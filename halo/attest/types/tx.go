@@ -8,6 +8,32 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// VoteSource identifies the source block being voted on.
+// Multiple votes to the same source by the same validator qualifies as double signing as is slashable.
+type VoteSource struct {
+	ChainID     uint64
+	ConfLevel   uint32
+	BlockOffset uint64
+}
+
+// VoteSource returns the source block being voted on.
+func (a *AggVote) VoteSource() VoteSource {
+	return VoteSource{
+		ChainID:     a.BlockHeader.GetChainId(),
+		ConfLevel:   a.BlockHeader.GetConfLevel(),
+		BlockOffset: a.BlockHeader.GetOffset(),
+	}
+}
+
+// VoteSource returns the source block being voted on.
+func (v *Vote) VoteSource() VoteSource {
+	return VoteSource{
+		ChainID:     v.BlockHeader.GetChainId(),
+		ConfLevel:   v.BlockHeader.GetConfLevel(),
+		BlockOffset: v.BlockHeader.GetOffset(),
+	}
+}
+
 func (v *Vote) AttestationRoot() (common.Hash, error) {
 	return xchain.AttestationRoot(v.BlockHeader.ToXChain(), common.Hash(v.MsgRoot))
 }
@@ -130,13 +156,16 @@ func (a *AggVote) Verify() error {
 		return err
 	}
 
+	duplicateVals := make(map[common.Address]bool)
 	for _, sig := range a.Signatures {
 		if err := sig.Verify(); err != nil {
 			return errors.Wrap(err, "signature")
 		}
 
+		addr := common.BytesToAddress(sig.ValidatorAddress)
+
 		ok, err := k1util.Verify(
-			common.Address(sig.ValidatorAddress),
+			addr,
 			attRoot,
 			xchain.Signature65(sig.Signature),
 		)
@@ -145,6 +174,11 @@ func (a *AggVote) Verify() error {
 		} else if !ok {
 			return errors.New("invalid attestation signature")
 		}
+
+		if duplicateVals[addr] {
+			return errors.New("duplicate validator signature", "validator", addr)
+		}
+		duplicateVals[addr] = true
 	}
 
 	return nil

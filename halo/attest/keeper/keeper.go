@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
@@ -29,7 +30,8 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 )
 
-const initialXOffset uint64 = 1
+// initialBlockOffset is the first block offset to attest to for all chains.
+const initialBlockOffset uint64 = 1
 
 var _ sdk.ExtendVoteHandler = (*Keeper)(nil).ExtendVote
 var _ sdk.VerifyVoteExtensionHandler = (*Keeper)(nil).VerifyVoteExtension
@@ -208,13 +210,24 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 	// Insert signatures
 	for _, sig := range agg.Signatures {
 		err := k.sigTable.Insert(ctx, &Signature{
-			Signature:        sig.Signature,
-			ValidatorAddress: sig.ValidatorAddress,
+			Signature:        sig.GetSignature(),
+			ValidatorAddress: sig.GetValidatorAddress(),
 			AttId:            attID,
+			ChainId:          agg.BlockHeader.GetChainId(),
+			ConfLevel:        agg.BlockHeader.GetConfLevel(),
+			BlockOffset:      agg.BlockHeader.GetOffset(),
 		})
 
 		if errors.Is(err, ormerrors.UniqueKeyViolation) {
-			log.Warn(ctx, "Ignoring duplicate vote", nil,
+			msg := "Ignoring duplicate vote"
+			if ok, err := k.isDoubleSign(ctx, attID, agg, sig); err != nil {
+				return err
+			} else if ok {
+				doubleSignCounter.WithLabelValues(common.BytesToAddress(sig.ValidatorAddress).Hex()).Inc()
+				msg = "🚨 Ignoring duplicate slashable vote"
+			}
+
+			log.Warn(ctx, msg, nil,
 				"agg_id", attID,
 				"chain", k.namer(header.XChainVersion()),
 				"offset", header.Offset,
@@ -261,7 +274,7 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 				}
 			}
 			head, ok := approvedByChain[chainVer]
-			if !ok && att.GetBlockOffset() != 1 {
+			if !ok && att.GetBlockOffset() != initialBlockOffset {
 				// Only start attesting from offset==1
 				continue
 			} else if ok && head+1 != att.GetBlockOffset() {
@@ -534,7 +547,7 @@ func (k *Keeper) listAllAttestations(ctx context.Context, version xchain.ChainVe
 
 // getSigs returns the signatures for the given attestation ID.
 func (k *Keeper) getSigs(ctx context.Context, attID uint64) ([]*Signature, error) {
-	attIDIdx := SignatureAttIdIndexKey{}.WithAttId(attID)
+	attIDIdx := SignatureAttIdValidatorAddressIndexKey{}.WithAttId(attID)
 	sigIter, err := k.sigTable.List(ctx, attIDIdx)
 	if err != nil {
 		return nil, errors.Wrap(err, "list sig")
@@ -598,6 +611,7 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 
 	// Filter by vote window and if limited exceeded.
 	countsByChainVer := make(map[xchain.ChainVersion]int)
+	duplicate := make(map[types.VoteSource]bool)
 	var filtered []*types.Vote
 	for _, vote := range votes {
 		if ok, err := k.portalRegistry.SupportedChain(ctx, vote.BlockHeader.ChainId); err != nil {
@@ -606,6 +620,14 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 			log.Warn(ctx, "Skipping own vote for unsupported chain", nil, "chain", k.namer(vote.BlockHeader.XChainVersion()))
 			continue
 		}
+
+		if duplicate[vote.VoteSource()] {
+			doubleSignCounter.WithLabelValues(k.voter.LocalAddress().Hex()).Inc()
+			log.Warn(ctx, "🚨 Skipping own duplicate slashable vote [BUG]", nil, "chain", k.namer(vote.BlockHeader.XChainVersion()), "offset", vote.BlockHeader.GetOffset())
+
+			continue
+		}
+		duplicate[vote.VoteSource()] = true
 
 		if cmp, err := k.windowCompare(ctx, vote.BlockHeader.XChainVersion(), vote.BlockHeader.Offset); err != nil {
 			return nil, errors.Wrap(err, "windower")
@@ -688,18 +710,26 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 		log.Warn(ctx, "Rejecting invalid vote extension", err)
 		return respReject, nil
 	} else if !ok {
-		log.Debug(ctx, "Accepting nil vote extension") // This can happen if no non-empty blocks are present.
 		return respAccept, nil
 	} else if len(votes.Votes) > int(k.voteExtLimit) {
 		log.Warn(ctx, "Rejecting vote extension exceeding limit", nil, "count", len(votes.Votes), "limit", k.voteExtLimit)
 		return respReject, nil
 	}
 
+	duplicate := make(map[types.VoteSource]bool)
 	for _, vote := range votes.Votes {
 		if err := vote.Verify(); err != nil {
 			log.Warn(ctx, "Rejecting invalid vote", err)
 			return respReject, nil
 		}
+
+		if duplicate[vote.VoteSource()] {
+			doubleSignCounter.WithLabelValues(ethAddr.Hex()).Inc()
+			log.Warn(ctx, "Rejecting duplicate slashable vote", err)
+
+			return respReject, nil
+		}
+		duplicate[vote.VoteSource()] = true
 
 		// Ensure the votes are from the requesting validator itself.
 		if common.BytesToAddress(vote.Signature.ValidatorAddress) != ethAddr {
@@ -774,7 +804,7 @@ func (k *Keeper) windowCompare(ctx context.Context, chainVer xchain.ChainVersion
 		return 0, err
 	}
 
-	latestOffset := initialXOffset // Use initial offset if attestation doesn't exist.
+	latestOffset := initialBlockOffset // Use initial offset if attestation doesn't exist.
 	if exists {
 		latestOffset = latest.GetBlockOffset()
 	}
@@ -783,14 +813,20 @@ func (k *Keeper) windowCompare(ctx context.Context, chainVer xchain.ChainVersion
 }
 
 // verifyAggVotes verifies the given aggregates votes:
+// - Ensure all aggregate votes are valid.
+// - Ensure all votes are for supported chains.
+// - Ensure all aggregation is valid; no duplicate aggregate votes.
+// - Ensure the vote extension limit is not exceeded per validator.
 // - Ensure all votes are from validators in the provided set.
 // - Ensure the vote block header is in the vote window.
 func (k *Keeper) verifyAggVotes(ctx context.Context, valset ValSet, aggs []*types.AggVote) error {
+	duplicate := make(map[types.VoteSource]bool)    // Detects duplicate aggregate votes.
+	countsPerVal := make(map[common.Address]uint64) // Enforce vote extension limit.
 	for _, agg := range aggs {
 		if err := agg.Verify(); err != nil {
 			return errors.Wrap(err, "verify aggregate vote")
 		}
-		errAttrs := []any{"chain_id", agg.BlockHeader.ChainId, "offset", agg.BlockHeader.Offset, log.Hex7("val0", agg.Signatures[0].ValidatorAddress)}
+		errAttrs := []any{"chain", k.namer(agg.BlockHeader.XChainVersion()), "offset", agg.BlockHeader.Offset}
 
 		if ok, err := k.portalRegistry.SupportedChain(ctx, agg.BlockHeader.ChainId); err != nil {
 			return errors.Wrap(err, "supported chain")
@@ -798,13 +834,21 @@ func (k *Keeper) verifyAggVotes(ctx context.Context, valset ValSet, aggs []*type
 			return errors.New("vote for unsupported chain", errAttrs...)
 		}
 
-		// Ensure all votes are from validators in the set
+		if duplicate[agg.VoteSource()] {
+			return errors.New("invalid duplicate aggregate votes", errAttrs...) // Note this is duplicate aggregates, which may contain non-overlapping votes so not technically slashable.
+		}
+		duplicate[agg.VoteSource()] = true
+
+		// Ensure all votes are from unique validators in the set
 		for _, sig := range agg.Signatures {
 			addr := common.BytesToAddress(sig.GetValidatorAddress())
 			if !valset.Contains(addr) {
-				errAttrs = append(errAttrs, log.Hex7("validator", sig.GetValidatorAddress()))
+				return errors.New("vote from unknown validator", append(errAttrs, "validator", addr)...)
+			}
 
-				return errors.New("vote from unknown validator", errAttrs...)
+			countsPerVal[addr]++
+			if countsPerVal[addr] > k.voteExtLimit {
+				return errors.New("vote extension limit exceeded", append(errAttrs, "validator", addr)...)
 			}
 		}
 
@@ -875,7 +919,7 @@ func (k *Keeper) deleteBefore(ctx context.Context, height uint64) error {
 		}
 
 		// Delete signatures
-		if err := k.sigTable.DeleteBy(ctx, SignatureAttIdIndexKey{}.WithAttId(att.GetId())); err != nil {
+		if err := k.sigTable.DeleteBy(ctx, SignatureAttIdValidatorAddressIndexKey{}.WithAttId(att.GetId())); err != nil {
 			return errors.Wrap(err, "delete sigs")
 		}
 
@@ -887,6 +931,30 @@ func (k *Keeper) deleteBefore(ctx context.Context, height uint64) error {
 	}
 
 	return nil
+}
+
+// isDoubleSign returns true if the vote qualifies as a slashable double sign.
+func (k *Keeper) isDoubleSign(ctx context.Context, attID uint64, agg *types.AggVote, sig *types.SigTuple) (bool, error) {
+	// Check if this is a duplicate of an existing vote
+	if identicalVote, err := k.sigTable.GetByAttIdValidatorAddress(ctx, attID, sig.ValidatorAddress); err == nil {
+		// Sanity check that this is indeed an identical vote
+		if !bytes.Equal(identicalVote.GetSignature(), sig.GetSignature()) {
+			return false, errors.New("different signature for identical vote [BUG]")
+		}
+
+		return false, nil
+	} else if !errors.Is(err, ormerrors.NotFound) {
+		return false, errors.Wrap(err, "get identical vote")
+	} // else identical vote doesn't exist
+
+	doubleSign, err := k.sigTable.HasByChainIdConfLevelBlockOffsetValidatorAddress(ctx, agg.BlockHeader.ChainId, agg.BlockHeader.ConfLevel, agg.BlockHeader.Offset, sig.ValidatorAddress)
+	if err != nil {
+		return false, errors.Wrap(err, "check double sign")
+	} else if !doubleSign {
+		return false, errors.New("duplicate vote neither identical nor double sign [BUG]")
+	} // else double sign
+
+	return true, nil
 }
 
 // isApproved returns whether the given signatures are approved by the given validators.
