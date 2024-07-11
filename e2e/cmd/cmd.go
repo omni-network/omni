@@ -77,6 +77,7 @@ func New() *cobra.Command {
 		newTestCmd(&def),
 		newUpgradeCmd(&def),
 		newKeyCreate(&def),
+		newAdminCmd(&def),
 		fundAccounts(&def),
 	)
 

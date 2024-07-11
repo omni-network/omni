@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"time"
 
@@ -14,31 +15,13 @@ import (
 )
 
 func Run(ctx context.Context, cfg Config) error {
+	httpServer, err := newHTTPServer(ctx, cfg)
+	if err != nil {
+		return errors.Wrap(err, "new http server")
+	}
+
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-
-	chainID, err := getChainID(ctx, cfg.BaseRPC)
-	if err != nil {
-		return errors.Wrap(err, "get chain ID")
-	}
-
-	fireCl, err := newFireblocks(cfg, chainID)
-	if err != nil {
-		return errors.Wrap(err, "new fireblocks")
-	}
-
-	proxy, err := newProxy(cfg.BaseRPC, NewSendTxMiddleware(fireCl, chainID))
-	if err != nil {
-		return errors.Wrap(err, "new proxy")
-	}
-
-	httpServer := &http.Server{
-		Addr:              cfg.ListenAddr,
-		ReadHeaderTimeout: 30 * time.Second,
-		IdleTimeout:       30 * time.Second,
-		WriteTimeout:      30 * time.Second,
-		Handler:           http.HandlerFunc(proxy.Proxy),
-	}
 
 	log.Info(ctx, "Starting fbproxy server", "address", cfg.ListenAddr)
 
@@ -71,6 +54,70 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 
 	return nil
+}
+
+func Start(ctx context.Context, cfg Config) (string, error) {
+	httpServer, err := newHTTPServer(ctx, cfg)
+	if err != nil {
+		return "", errors.Wrap(err, "new http server")
+	}
+
+	var eg errgroup.Group
+	addrCh := make(chan string, 1)
+
+	eg.Go(func() error {
+		listener, err := net.Listen("tcp", cfg.ListenAddr)
+		if err != nil {
+			return errors.Wrap(err, "listen")
+		}
+
+		addrCh <- listener.Addr().String()
+
+		// ListenAndServe always returns an error.
+		return errors.Wrap(httpServer.Serve(listener), "serve")
+	})
+
+	eg.Go(func() error {
+		<-ctx.Done()
+		log.Info(ctx, "Shutdown detected, stopping server")
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := httpServer.Shutdown(shutdownCtx); err != nil { //nolint:contextcheck // Explicit new shutdown context.
+			return errors.Wrap(err, "server shutdown")
+		}
+
+		return nil
+	})
+
+	addr := <-addrCh
+
+	return addr, nil
+}
+
+func newHTTPServer(ctx context.Context, cfg Config) (*http.Server, error) {
+	chainID, err := getChainID(ctx, cfg.BaseRPC)
+	if err != nil {
+		return nil, errors.Wrap(err, "get chain ID")
+	}
+
+	fireCl, err := newFireblocks(cfg, chainID)
+	if err != nil {
+		return nil, errors.Wrap(err, "new fireblocks")
+	}
+
+	proxy, err := newProxy(cfg.BaseRPC, NewSendTxMiddleware(fireCl, chainID))
+	if err != nil {
+		return nil, errors.Wrap(err, "new proxy")
+	}
+
+	return &http.Server{
+		ReadHeaderTimeout: 30 * time.Second,
+		IdleTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		Handler:           http.HandlerFunc(proxy.Proxy),
+	}, nil
 }
 
 func getChainID(ctx context.Context, rpc string) (uint64, error) {

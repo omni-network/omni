@@ -3,6 +3,7 @@ package cmd
 
 import (
 	"github.com/omni-network/omni/e2e/app"
+	"github.com/omni-network/omni/e2e/app/admin"
 	"github.com/omni-network/omni/e2e/app/agent"
 	"github.com/omni-network/omni/e2e/app/key"
 	"github.com/omni-network/omni/e2e/types"
@@ -53,4 +54,8 @@ func bindKeyCreateFlags(cmd *cobra.Command, cfg *key.UploadConfig) {
 
 	_ = cmd.MarkFlagRequired("name")
 	_ = cmd.MarkFlagRequired("type")
+}
+
+func bindPausePortalFlags(flags *pflag.FlagSet, cfg *admin.PausePortalConfig) {
+	flags.StringVar(&cfg.Chain, "chain", cfg.Chain, "pause a specific chain")
 }

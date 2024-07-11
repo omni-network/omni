@@ -58,6 +58,10 @@ func MetadataByName(name string) (Metadata, bool) {
 	return Metadata{}, false
 }
 
+func IsOmniEVM(name string) bool {
+	return name == omniEVMName
+}
+
 var static = map[uint64]Metadata{
 	IDEthereum: {
 		ChainID:     IDEthereum,
