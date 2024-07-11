@@ -154,7 +154,7 @@ func (s Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 		errAttrs := slices.Concat(receiptAttrs, reqAttrs, []any{
 			"call_resp", hexutil.Encode(resp),
 			"call_err", err,
-			"gas_limit", estimatedGas,
+			"gas_limit", tx.Gas(),
 		})
 
 		revertedSubmissionTotal.WithLabelValues(srcChain, dstChain).Inc()
