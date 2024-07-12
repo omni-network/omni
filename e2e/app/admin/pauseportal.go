@@ -3,7 +3,6 @@ package admin
 import (
 	"context"
 
-	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -14,8 +13,6 @@ import (
 type PausePortalConfig struct {
 	Chain string // Pause a specific chain
 }
-
-var pausePortalABI = mustGetABI(bindings.PausePortalMetaData)
 
 func DefaultPausePortalConfig() PausePortalConfig {
 	return PausePortalConfig{
@@ -55,7 +52,7 @@ func PausePortal(ctx context.Context, def app.Definition, cfg PausePortalConfig)
 }
 
 func pausePortalForge(ctx context.Context, rpc string, sender common.Address, portal common.Address) error {
-	calldata, err := pausePortalABI.Pack("run", portal)
+	calldata, err := adminABI.Pack("pausePortal", portal)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}

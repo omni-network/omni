@@ -21,6 +21,9 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
+// adminABI is the ABI for the Admin script contract.
+var adminABI = mustGetABI(bindings.AdminMetaData)
+
 // shared contains common resources for all admin operations.
 type shared struct {
 	admin       common.Address
