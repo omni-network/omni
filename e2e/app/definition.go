@@ -220,6 +220,11 @@ func adaptNode(ctx context.Context, manifest types.Manifest, testnet *e2e.Testne
 		return nil, err
 	}
 
+	// Pinned tag overrides the cli --omni-image-tag flag.
+	if manifest.PinnedHaloTag != "" {
+		tag = manifest.PinnedHaloTag
+	}
+
 	node.Version = "omniops/halo:" + tag
 	node.PrivvalKey = valKey.PrivKey
 	node.NodeKey = nodeKey.PrivKey
