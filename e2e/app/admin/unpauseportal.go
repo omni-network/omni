@@ -3,15 +3,12 @@ package admin
 import (
 	"context"
 
-	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/common"
 )
-
-var unpausePortalABI = mustGetABI(bindings.UnpausePortalMetaData)
 
 // UnpausePortal unpauses the portal contracts on a network. Only single chain is supported.
 func UnpausePortal(ctx context.Context, def app.Definition, cfg PausePortalConfig) error {
@@ -37,7 +34,7 @@ func UnpausePortal(ctx context.Context, def app.Definition, cfg PausePortalConfi
 }
 
 func unpausePortalForge(ctx context.Context, rpc string, sender common.Address, portal common.Address) error {
-	calldata, err := unpausePortalABI.Pack("run", portal)
+	calldata, err := adminABI.Pack("unpausePortal", portal)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
