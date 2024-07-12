@@ -134,6 +134,33 @@ func DevPrivateKeys() []*ecdsa.PrivateKey {
 	return []*ecdsa.PrivateKey{pk0, pk1, pk2, pk3, pk4, pk5, pk6, pk7, pk8, pk9}
 }
 
+func PrivateKey(account common.Address) (*ecdsa.PrivateKey, bool) {
+	switch account {
+	case acc0:
+		return pk0, true
+	case acc1:
+		return pk1, true
+	case acc2:
+		return pk2, true
+	case acc3:
+		return pk3, true
+	case acc4:
+		return pk4, true
+	case acc5:
+		return pk5, true
+	case acc6:
+		return pk6, true
+	case acc7:
+		return pk7, true
+	case acc8:
+		return pk8, true
+	case acc9:
+		return pk9, true
+	default:
+		return nil, false
+	}
+}
+
 //
 // Utils.
 //

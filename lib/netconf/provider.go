@@ -143,6 +143,16 @@ func MetadataByID(network ID, chainID uint64) evmchain.Metadata {
 	}
 }
 
+func MetadataByName(network ID, name string) (evmchain.Metadata, bool) {
+	// there are multiple omni EVM metadatas with the same name,
+	// so we need go get by chainID of this network's omniEVM chain
+	if evmchain.IsOmniEVM(name) {
+		return evmchain.MetadataByID(network.Static().OmniExecutionChainID)
+	}
+
+	return evmchain.MetadataByName(name)
+}
+
 func ChainNamer(network ID) func(uint64) string {
 	return func(chainID uint64) string {
 		return MetadataByID(network, chainID).Name
