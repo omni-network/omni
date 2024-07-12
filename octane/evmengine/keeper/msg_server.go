@@ -125,13 +125,16 @@ func (s msgServer) deliverEvents(ctx context.Context, height uint64, blockHash c
 		branchMS := sdkCtx.MultiStore().CacheMultiStore()
 		branchCtx := sdkCtx.WithMultiStore(branchMS)
 
-		if err := catch(func() error { return proc.Deliver(branchCtx, blockHash, evmLog) }); err != nil { //nolint:contextcheck // False positive
+		// Deliver the event inside the catch function that converts panics into errors; similar to CosmosSDK BaseApp.runTx
+		if err := catch(func() error { //nolint:contextcheck // False positive wrt ctx
+			return proc.Deliver(branchCtx, blockHash, evmLog)
+		}); err != nil {
 			log.Warn(ctx, "Delivering EVM log event failed", err,
 				"name", proc.Name(),
 				"height", height,
 			)
 
-			continue // Don't write state on error.
+			continue // Don't write state on error (or panics).
 		}
 
 		branchMS.Write()
@@ -204,7 +207,6 @@ func isInvalid(status engine.PayloadStatusV1) (bool, error) {
 }
 
 // catch executes the function, returning an error if it panics.
-// TODO(corver): Rather fix panics.
 func catch(fn func() error) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
