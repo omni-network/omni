@@ -97,6 +97,11 @@ type Manifest struct {
 
 	// Perturb defines additional (non-cometBFT) perturbations by service name.
 	Perturb map[string][]Perturb `json:"perturb"`
+
+	// PinnedHaloTag defines the pinned halo docker image tag.
+	// This allows source code defined versions for protected networks.
+	// The --omni-image-tag flag is then only used for non-halo services (relayer, monitor).
+	PinnedHaloTag string `toml:"pinned_halo_tag"`
 }
 
 // Seeds returns a map of seed nodes by name.
