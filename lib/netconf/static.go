@@ -13,6 +13,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/google/uuid"
+
+	_ "embed"
 )
 
 const consensusIDPrefix = "omni-"
@@ -120,8 +122,21 @@ var runid = uuid.New().String()
 
 //nolint:gochecknoglobals // Static addresses
 var (
-	omegaAVS   = common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
-	mainnetAVS = common.HexToAddress("0xed2f4d90b073128ae6769a9A8D51547B1Df766C8")
+	omegaAVS    = common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
+	mainnetAVS  = common.HexToAddress("0xed2f4d90b073128ae6769a9A8D51547B1Df766C8")
+	omegaPortal = common.HexToAddress("0xc9Eb081a0F3D891f5edc21234B57c834E837307c")
+
+	//go:embed omega/consensus-genesis.json
+	omegaConsensusGenesisJSON []byte
+
+	//go:embed omega/consensus-seeds.txt
+	omegaConsensusSeedsTXT []byte
+
+	//go:embed omega/execution-genesis.json
+	omegaExecutionGenesisJSON []byte
+
+	//go:embed omega/execution-seeds.txt
+	omegaExecutionSeedsTXT []byte
 )
 
 //nolint:gochecknoglobals // Static mappings.
@@ -151,11 +166,15 @@ var statics = map[ID]Static{
 		OmniExecutionChainID: evmchain.IDOmniOmega,
 		MaxValidators:        maxValidators,
 		Portals: []Deployment{
-			{ChainID: evmchain.IDArbSepolia, Address: common.HexToAddress("0xc9Eb081a0F3D891f5edc21234B57c834E837307c"), DeployHeight: 62741669},
-			{ChainID: evmchain.IDBaseSepolia, Address: common.HexToAddress("0xc9Eb081a0F3D891f5edc21234B57c834E837307c"), DeployHeight: 12423582},
-			{ChainID: evmchain.IDHolesky, Address: common.HexToAddress("0xc9Eb081a0F3D891f5edc21234B57c834E837307c"), DeployHeight: 1900042},
-			{ChainID: evmchain.IDOpSepolia, Address: common.HexToAddress("0xc9Eb081a0F3D891f5edc21234B57c834E837307c"), DeployHeight: 14406450},
+			{ChainID: evmchain.IDArbSepolia, Address: omegaPortal, DeployHeight: 62741669},
+			{ChainID: evmchain.IDBaseSepolia, Address: omegaPortal, DeployHeight: 12423582},
+			{ChainID: evmchain.IDHolesky, Address: omegaPortal, DeployHeight: 1900042},
+			{ChainID: evmchain.IDOpSepolia, Address: omegaPortal, DeployHeight: 14406450},
 		},
+		ConsensusGenesisJSON: omegaConsensusGenesisJSON,
+		ConsensusSeedTXT:     omegaConsensusSeedsTXT,
+		ExecutionGenesisJSON: omegaExecutionGenesisJSON,
+		ExecutionSeedTXT:     omegaExecutionSeedsTXT,
 	},
 	Mainnet: {
 		Network:            Mainnet,
