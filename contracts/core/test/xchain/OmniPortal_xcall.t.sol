@@ -106,7 +106,7 @@ contract OmniPortal_xcall_Test is Base {
         vm.chainId(thisChainId);
         portal.xcall{ value: 10 ether }(
             xmsg.destChainId,
-            ConfLevel.Safe, // not added in MockXRegistryReplica
+            2, // not added in MockXRegistryReplica, Finalized == 1 and Latest == 4
             xmsg.to,
             xmsg.data,
             xmsg.gasLimit
