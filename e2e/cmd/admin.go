@@ -13,7 +13,10 @@ func newAdminCmd(def *app.Definition) *cobra.Command {
 		Short: "Network admin commands",
 	}
 
-	cmd.AddCommand(newPausePortalCmd(def))
+	cmd.AddCommand(
+		newPausePortalCmd(def),
+		newUnpausePortalCmd(def),
+	)
 
 	return cmd
 }
@@ -29,6 +32,23 @@ func newPausePortalCmd(def *app.Definition) *cobra.Command {
 		},
 	}
 
+	bindPausePortalFlags(cmd.Flags(), &cfg)
+
+	return cmd
+}
+
+func newUnpausePortalCmd(def *app.Definition) *cobra.Command {
+	cfg := admin.DefaultPausePortalConfig()
+
+	cmd := &cobra.Command{
+		Use:   "unpause-portal",
+		Short: "Unpause a portal contract",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.PausePortal(cmd.Context(), *def, cfg)
+		},
+	}
+
+	// uses same flags as pause-portal
 	bindPausePortalFlags(cmd.Flags(), &cfg)
 
 	return cmd
