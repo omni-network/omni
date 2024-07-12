@@ -3,7 +3,7 @@ public_chains = ["holesky","op_sepolia", "base_sepolia","arb_sepolia"]
 
 multi_omni_evms = true
 prometheus = true
-pinned_halo_tag = "1da6143"
+pinned_halo_tag = "1734918"
 
 [node.validator01]
 [node.validator02]
