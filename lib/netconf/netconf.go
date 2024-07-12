@@ -267,13 +267,13 @@ func (n Network) StreamsBetween(srcChainID uint64, dstChainID uint64) []xchain.S
 // the Omni cross chain protocol. This is most supported Rollup EVMs, but
 // also the Omni EVM, and the Omni Consensus chain.
 type Chain struct {
-	ID             uint64           // Chain ID asa per https://chainlist.org
-	Name           string           // Chain name as per https://chainlist.org
-	PortalAddress  common.Address   // Address of the omni portal contract on the chain
-	DeployHeight   uint64           // Height that the portal contracts were deployed
-	BlockPeriod    time.Duration    // Block period of the chain
-	Shards         []xchain.ShardID // Supported xmsg shards
-	AttestInterval uint64           // Attest to every Nth block, even if empty.
+	ID             uint64           `json:"id"`               // Chain ID asa per https://chainlist.org
+	Name           string           `json:"name"`             // Chain name as per https://chainlist.org
+	PortalAddress  common.Address   `json:"portal_address"`   // Address of the omni portal contract on the chain
+	DeployHeight   uint64           `json:"deploy_height"`    // Height that the portal contracts were deployed
+	BlockPeriod    time.Duration    `json:"block_period"`     // Block period of the chain
+	Shards         []xchain.ShardID `json:"shards"`           // Supported xmsg shards
+	AttestInterval uint64           `json:"address_interval"` // Attest to every Nth block, even if empty.
 }
 
 // ConfLevels returns the uniq set of confirmation levels
