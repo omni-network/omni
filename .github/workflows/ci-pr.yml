@@ -25,3 +25,5 @@ jobs:
     uses: ./.github/workflows/soltest.yml
   e2e-tests:
     uses: ./.github/workflows/pr-e2etest.yml
+  codeql:
+    uses: ./.github/workflows/codeql.yml

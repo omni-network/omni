@@ -23,6 +23,9 @@ import (
 func TestVotesFromCommitNonUnique(t *testing.T) {
 	t.Parallel()
 
+	var z uint64
+	require.NotNil(t, z-uint64(1))
+
 	const chainID = 100
 	const offset = 200
 	const height = 300
