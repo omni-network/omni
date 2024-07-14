@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
 	"github.com/omni-network/omni/monitor/xfeemngr/ticker"
 
@@ -43,7 +44,8 @@ func TestBufferStream(t *testing.T) {
 
 	// just increase a little, but not above threshold
 	for chainID, price := range initials {
-		mocks[chainID].SetPrice(price + uint64(float64(price)*thresh) - 1)
+		delta := umath.SubtractOrZero(uint64(float64(price)*thresh), 1)
+		mocks[chainID].SetPrice(price + delta)
 	}
 
 	tick.Tick()

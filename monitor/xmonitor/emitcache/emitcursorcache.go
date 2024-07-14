@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	ormv1alpha1 "cosmossdk.io/api/cosmos/orm/v1alpha1"
@@ -76,7 +77,7 @@ func Start(
 			}
 
 			if block.BlockHeight > cacheTrimLag { // Only trim after cacheTrimLag blocks.
-				if err := cache.trim(ctx, block.BlockHeight-cacheTrimLag); err != nil {
+				if err := cache.trim(ctx, umath.SubtractOrZero(block.BlockHeight, cacheTrimLag)); err != nil {
 					return err
 				}
 			}

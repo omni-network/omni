@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -174,7 +175,7 @@ func isFuzzyXMsgLogFilter(ctx context.Context, perturb types.Perturb, target str
 
 	const buffer = 2 // Avoid race conditions, require query to be more than 2 ahead of finalized.
 
-	return block-buffer > finalized.Number.Uint64(), block, nil
+	return umath.SubtractOrZero(block, buffer) > finalized.Number.Uint64(), block, nil
 }
 
 // mustGetABI returns the metadata's ABI as an abi.ABI type.

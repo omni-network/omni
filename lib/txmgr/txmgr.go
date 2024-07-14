@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -87,7 +88,7 @@ func (m *simple) ReserveNextNonce(ctx context.Context) (uint64, error) {
 			return 0, errors.Wrap(err, "sync progress")
 		} else if syncing != nil && !syncing.Done() { // Note syncing is nil if node is not syncing.
 			return 0, errors.New("backend not synced",
-				"lag", syncing.HighestBlock-syncing.CurrentBlock,
+				"lag", umath.SubtractOrZero(syncing.HighestBlock, syncing.CurrentBlock),
 				"indexing", syncing.TxIndexRemainingBlocks,
 			)
 		}
