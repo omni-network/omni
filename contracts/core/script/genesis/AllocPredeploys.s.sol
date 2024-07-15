@@ -7,8 +7,8 @@ import { PortalRegistry } from "src/xchain/PortalRegistry.sol";
 import { OmniBridgeNative } from "src/token/OmniBridgeNative.sol";
 import { Staking } from "src/octane/Staking.sol";
 import { Preinstalls } from "src/octane/Preinstalls.sol";
-import { EIP1967Helper } from "./utils/EIP1967Helper.sol";
-import { InitializableHelper } from "./utils/InitializableHelper.sol";
+import { InitializableHelper } from "script/utils/InitializableHelper.sol";
+import { EIP1967Helper } from "script/utils/EIP1967Helper.sol";
 import { Script } from "forge-std/Script.sol";
 
 /**

@@ -3,6 +3,7 @@ package admin
 import (
 	"context"
 	"os/exec"
+	"strings"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app"
@@ -27,10 +28,62 @@ var adminABI = mustGetABI(bindings.AdminMetaData)
 // shared contains common resources for all admin operations.
 type shared struct {
 	admin       common.Address
+	deployer    common.Address
 	endpoints   xchain.RPCEndpoints
 	network     netconf.Network
 	fireAPIKey  string
 	fireKeyPath string
+}
+
+// chain contains chain specific resources, exteding netconf.Chain with an rpc endpoint.
+type chain struct {
+	netconf.Chain
+	rpc string
+}
+
+// runner is an interface for running Admin forge scripts.
+type runner interface {
+	run(ctx context.Context, input []byte, senders ...common.Address) (string, error)
+}
+
+// forgeRunner is a runner that runs forge scripts against an rpc.
+type forgeRunner struct {
+	rpc string
+}
+
+var _ runner = forgeRunner{}
+
+// run runs an Admin forge script against an rpc, returning the output.
+func (r forgeRunner) run(ctx context.Context, input []byte, senders ...common.Address) (string, error) {
+	return runForge(ctx, "Admin", r.rpc, input, senders...)
+}
+
+// action is a function that performs an admin action.
+type action func(ctx context.Context, s shared, c chain, r runner) error
+
+// run runs an admin action with some config on an app definition.
+func run(ctx context.Context, def app.Definition, cfg PortalAdminConfig, act action) error {
+	if err := cfg.Validate(); err != nil {
+		return errors.Wrap(err, "validate config")
+	}
+
+	s, err := setup(ctx, def)
+	if err != nil {
+		return errors.Wrap(err, "setup")
+	}
+
+	c, err := setupChain(ctx, s, cfg.Chain)
+	if err != nil {
+		return errors.Wrap(err, "setup chain")
+	}
+
+	r := forgeRunner{rpc: c.rpc}
+
+	if err := act(ctx, s, c, r); err != nil {
+		return errors.Wrap(err, "run action")
+	}
+
+	return nil
 }
 
 // setup returns common resources for all admin operations.
@@ -40,6 +93,11 @@ func setup(ctx context.Context, def app.Definition) (shared, error) {
 	admin, ok := eoa.Address(netID, eoa.RoleAdmin)
 	if !ok {
 		return shared{}, errors.New("admin eoas not found", "network", netID)
+	}
+
+	deployer, ok := eoa.Address(netID, eoa.RoleDeployer)
+	if !ok {
+		return shared{}, errors.New("deployer eoas not found", "network", netID)
 	}
 
 	endpoints := makeEndpoints(def)
@@ -56,6 +114,7 @@ func setup(ctx context.Context, def app.Definition) (shared, error) {
 
 	return shared{
 		admin:       admin,
+		deployer:    deployer,
 		endpoints:   endpoints,
 		network:     network,
 		fireAPIKey:  def.Cfg.FireAPIKey,
@@ -63,12 +122,7 @@ func setup(ctx context.Context, def app.Definition) (shared, error) {
 	}, nil
 }
 
-// chain contains chain specific resources, exteding netconf.Chain with an rpc endpoint.
-type chain struct {
-	netconf.Chain
-	rpc string
-}
-
+// setupChain returns chain specific resources.
 func setupChain(ctx context.Context, s shared, name string) (chain, error) {
 	meta, ok := netconf.MetadataByName(s.network.ID, name)
 	if !ok {
@@ -96,22 +150,40 @@ func setupChain(ctx context.Context, s shared, name string) (chain, error) {
 	return chain{Chain: c, rpc: rpc}, nil
 }
 
-func runForge(ctx context.Context, script string, rpc string, input []byte, sender common.Address,
+// runForge runs a forge script against an rpc, returning the ouptut.
+// if the senders are known anvil accounts, it will sign with private keys directly.
+// otherwise, it will use the unlocked flag.
+func runForge(ctx context.Context, script string, rpc string, input []byte, senders ...common.Address,
 ) (string, error) {
 	// assumes running from root
 	dir := "./contracts/core"
 
+	anvilPks := make([]string, 0, len(senders))
+	for _, sender := range senders {
+		pk, ok := anvil.PrivateKey(sender)
+		if !ok {
+			continue
+		}
+
+		anvilPks = append(anvilPks, hexutil.EncodeBig(pk.D))
+	}
+
+	if len(anvilPks) > 0 && len(anvilPks) != len(senders) {
+		return "", errors.New("cannot mix anvil and non-anvil accounts")
+	}
+
 	// for dev anvil accounts, we signed with private key directly
-	if pk, ok := anvil.PrivateKey(sender); ok {
+	// TODO: consider refactoring fbproxy to "txproxy" that allows for different
+	// signing methods (one fireblocks, one providing private keys directly)
+	if len(anvilPks) > 0 {
 		return execCmd(ctx, dir, "forge", "script", script,
 			"--broadcast", "--slow", "--rpc-url", rpc, "--sig", hexutil.Encode(input),
-			"--private-key", hexutil.EncodeBig(pk.D),
+			"--private-keys", strings.Join(anvilPks, ","),
 		)
 	}
 
 	return execCmd(ctx, dir, "forge", "script", script,
-		"--broadcast", "--slow", "--rpc-url", rpc, "--sig", hexutil.Encode(input),
-		"--unlocked", "--sender", sender.Hex(),
+		"--broadcast", "--slow", "--rpc-url", rpc, "--sig", hexutil.Encode(input), "--unlocked",
 	)
 }
 

@@ -2,7 +2,7 @@
 pragma solidity =0.8.24;
 
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import { InitializableHelper } from "script/genesis/utils/InitializableHelper.sol";
+import { InitializableHelper } from "script/utils/InitializableHelper.sol";
 import { Test } from "forge-std/Test.sol";
 
 /**

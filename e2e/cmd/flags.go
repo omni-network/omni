@@ -56,6 +56,6 @@ func bindKeyCreateFlags(cmd *cobra.Command, cfg *key.UploadConfig) {
 	_ = cmd.MarkFlagRequired("type")
 }
 
-func bindPausePortalFlags(flags *pflag.FlagSet, cfg *admin.PausePortalConfig) {
+func bindPortalAdminFlags(flags *pflag.FlagSet, cfg *admin.PortalAdminConfig) {
 	flags.StringVar(&cfg.Chain, "chain", cfg.Chain, "pause a specific chain")
 }
