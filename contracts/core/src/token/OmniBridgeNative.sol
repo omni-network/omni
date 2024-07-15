@@ -82,13 +82,6 @@ contract OmniBridgeNative is OwnableUpgradeable {
     }
 
     /**
-     * @dev Exposed to allow disabling initializers in predeployed implementations in AllocPredeploys.
-     */
-    function disableInitializers() external {
-        _disableInitializers();
-    }
-
-    /**
      * @notice Withdraw `amount` native OMNI to `to`. Only callable via xcall from OmniBridgeL1.
      */
     function withdraw(address payor, address to, uint256 amount) external {
