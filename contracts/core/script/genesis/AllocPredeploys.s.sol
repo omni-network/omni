@@ -8,6 +8,7 @@ import { OmniBridgeNative } from "src/token/OmniBridgeNative.sol";
 import { Staking } from "src/octane/Staking.sol";
 import { Preinstalls } from "src/octane/Preinstalls.sol";
 import { EIP1967Helper } from "./utils/EIP1967Helper.sol";
+import { InitializableHelper } from "./utils/InitializableHelper.sol";
 import { Script } from "forge-std/Script.sol";
 
 /**
@@ -182,7 +183,7 @@ contract AllocPredeploys is Script {
         address impl = Predeploys.impl(Predeploys.PortalRegistry);
         vm.etch(impl, vm.getDeployedCode("PortalRegistry.sol:PortalRegistry"));
 
-        PortalRegistry(impl).disableInitializers();
+        InitializableHelper.disableInitializers(impl);
         PortalRegistry(Predeploys.PortalRegistry).initialize(cfg.admin);
     }
 
@@ -194,10 +195,9 @@ contract AllocPredeploys is Script {
         vm.deal(Predeploys.OmniBridgeNative, totalSupply);
 
         address impl = Predeploys.impl(Predeploys.OmniBridgeNative);
-
         vm.etch(impl, vm.getDeployedCode("OmniBridgeNative.sol:OmniBridgeNative"));
 
-        OmniBridgeNative(impl).disableInitializers();
+        InitializableHelper.disableInitializers(impl);
         OmniBridgeNative(Predeploys.OmniBridgeNative).initialize(cfg.admin);
     }
 
@@ -216,7 +216,7 @@ contract AllocPredeploys is Script {
         address impl = Predeploys.impl(Predeploys.Staking);
         vm.etch(impl, vm.getDeployedCode("Staking.sol:Staking"));
 
-        Staking(impl).disableInitializers();
+        InitializableHelper.disableInitializers(impl);
         Staking(Predeploys.Staking).initialize(cfg.admin, cfg.enableStakingAllowlist);
     }
 

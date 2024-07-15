@@ -48,13 +48,6 @@ contract PortalRegistry is OwnableUpgradeable {
     }
 
     /**
-     * @dev Exposed to allow disabling initializers in predeployed implementations in AllocPredeploys.
-     */
-    function disableInitializers() external {
-        _disableInitializers();
-    }
-
-    /**
      * @notice Get the OmniPortal deployment for a chain.
      */
     function get(uint64 chainId) external view returns (Deployment memory) {

@@ -58,13 +58,6 @@ contract Staking is OwnableUpgradeable {
     }
 
     /**
-     * @dev Exposed to allow disabling initializers in predeployed implementations in AllocPredeploys.
-     */
-    function disableInitializers() external {
-        _disableInitializers();
-    }
-
-    /**
      * @notice Create a new validator
      * @param pubkey The validators consensus public key. 33 bytes compressed secp256k1 public key
      * @dev Proxies x/staking.MsgCreateValidator

@@ -9,6 +9,7 @@ import { Predeploys } from "src/libraries/Predeploys.sol";
 import { Preinstalls } from "src/octane/Preinstalls.sol";
 import { EIP1967Helper } from "script/genesis/utils/EIP1967Helper.sol";
 import { AllocPredeploys } from "script/genesis/AllocPredeploys.s.sol";
+import { InitializableHelper } from "script/genesis/utils/InitializableHelper.sol";
 import { Staking } from "src/octane/Staking.sol";
 import { Test } from "forge-std/Test.sol";
 import { Process } from "./utils/Process.sol";
@@ -117,18 +118,23 @@ contract AllocPredeploys_Test is Test, AllocPredeploys {
         assertEq(cfg.admin, OwnableUpgradeable(Predeploys.Staking).owner(), "Staking owner check");
 
         // test proxies initialized
-        assertTrue(_isInitialized(Predeploys.PortalRegistry), "PortalRegistry initialized check");
-        assertTrue(_isInitialized(Predeploys.OmniBridgeNative), "OmniBridgeNative initialized check");
-        assertTrue(_isInitialized(Predeploys.Staking), "Staking initialized check");
+        assertTrue(InitializableHelper.isInitialized(Predeploys.PortalRegistry), "PortalRegistry initialized check");
+        assertTrue(InitializableHelper.isInitialized(Predeploys.OmniBridgeNative), "OmniBridgeNative initialized check");
+        assertTrue(InitializableHelper.isInitialized(Predeploys.Staking), "Staking initialized check");
 
         // test initializers disabled on implementations
         assertTrue(
-            _areInitializersDisabled(Predeploys.impl(Predeploys.PortalRegistry)), "PortalRegistry initializer check"
+            InitializableHelper.areInitializersDisabled(Predeploys.impl(Predeploys.PortalRegistry)),
+            "PortalRegistry initializer check"
         );
         assertTrue(
-            _areInitializersDisabled(Predeploys.impl(Predeploys.OmniBridgeNative)), "OmniBridgeNative initializer check"
+            InitializableHelper.areInitializersDisabled(Predeploys.impl(Predeploys.OmniBridgeNative)),
+            "OmniBridgeNative initializer check"
         );
-        assertTrue(_areInitializersDisabled(Predeploys.impl(Predeploys.Staking)), "Staking initializer check");
+        assertTrue(
+            InitializableHelper.areInitializersDisabled(Predeploys.impl(Predeploys.Staking)),
+            "Staking initializer check"
+        );
     }
 
     /**
@@ -180,55 +186,6 @@ contract AllocPredeploys_Test is Test, AllocPredeploys {
                 f(addr);
             }
         }
-    }
-
-    //////////////////////////////////////////////////////////////////////////////
-    //                      Initializable Utils                                 //
-    //////////////////////////////////////////////////////////////////////////////
-
-    // keccak256(abi.encode(uint256(keccak256("openzeppelin.storage.Initializable")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant INITIALIZABLE_STORAGE = 0xf0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a00;
-
-    // INITIALIZABLE_STORAGE stores the following struct:
-    //
-    // struct InitializableStorage {
-    //     /**
-    //      * @dev Indicates that the contract has been initialized.
-    //      */
-    //     uint64 _initialized;
-    //     /**
-    //      * @dev Indicates that the contract is in the process of being initialized.
-    //      */
-    //     bool _initializing;
-    // }
-
-    /**
-     * @notice Returns the Initializable._initialized value for a given address, at slot 0.
-     */
-    function _getInitialized_notInitializing(address addr) internal view returns (uint64) {
-        // _initialized is the first field in the storage layout
-        bytes32 slot = vm.load(addr, INITIALIZABLE_STORAGE);
-
-        // if _initializing is false, it's bit will be 0, and will not affect uint conversion
-        // if _initializing is true, it's bit will be 1, and will affect uint conversion
-        // we therefore require it is 0
-        require(uint256(slot) <= uint256(type(uint64).max), "initializing");
-
-        return uint64(uint256(slot));
-    }
-
-    /**
-     * @notice Returns true if the address has been initialized.
-     */
-    function _isInitialized(address addr) internal view returns (bool) {
-        return _getInitialized_notInitializing(addr) == uint64(1);
-    }
-
-    /**
-     * @notice Returns true if the initializers are disabled for a given address.
-     */
-    function _areInitializersDisabled(address addr) internal view returns (bool) {
-        return _getInitialized_notInitializing(addr) == type(uint64).max;
     }
 
     //////////////////////////////////////////////////////////////////////////////
