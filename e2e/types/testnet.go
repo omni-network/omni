@@ -7,6 +7,7 @@ import (
 	"net"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
@@ -128,7 +129,23 @@ type EVMChain struct {
 
 // AttestInterval returns the a constant interval for which attestations are always required, even if empty..
 func (c EVMChain) AttestInterval(network netconf.ID) uint64 {
-	return netconf.IntervalFromPeriod(network, c.BlockPeriod)
+	return intervalFromPeriod(network, c.BlockPeriod)
+}
+
+// intervalFromPeriod returns the minimum number of blocks between attestations for a given block period.
+func intervalFromPeriod(network netconf.ID, period time.Duration) uint64 {
+	target := time.Hour
+	if network == netconf.Staging {
+		target = time.Minute * 10
+	} else if network == netconf.Devnet {
+		target = time.Second * 10
+	}
+
+	if period == 0 {
+		return 0
+	}
+
+	return uint64(target / period)
 }
 
 func (c EVMChain) ShardsUint64() []uint64 {

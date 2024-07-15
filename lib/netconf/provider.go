@@ -40,7 +40,10 @@ func AwaitOnChain(ctx context.Context, netID ID, portalRegistry *bindings.Portal
 			continue
 		}
 
-		network := networkFromPortals(ctx, netID, portals)
+		network, err := networkFromPortals(ctx, netID, portals)
+		if err != nil {
+			return Network{}, err
+		}
 
 		if !containsAll(network, expected) {
 			log.Info(ctx, "XChain registry doesn't contain all expected chains (will retry)", ""+
@@ -75,7 +78,7 @@ func containsAll(network Network, expected []string) bool {
 	return len(want) == 0
 }
 
-func networkFromPortals(ctx context.Context, network ID, portals []bindings.PortalRegistryDeployment) Network {
+func networkFromPortals(ctx context.Context, network ID, portals []bindings.PortalRegistryDeployment) (Network, error) {
 	var chains []Chain
 	for _, portal := range portals {
 		// Ephemeral networks may contain mock portals for testing purposes, just ignore them.
@@ -84,15 +87,20 @@ func networkFromPortals(ctx context.Context, network ID, portals []bindings.Port
 			continue
 		}
 
-		metadata := MetadataByID(network, portal.ChainId)
+		// PortalRegistry garuntees BlockPeriod <= int64 max, but we check here to be safe.
+		blockPeriod := time.Duration(int64(portal.BlockPeriod))
+		if blockPeriod < 0 {
+			return Network{}, errors.New("block period overflow", "period", portal.BlockPeriod)
+		}
+
 		chains = append(chains, Chain{
 			ID:             portal.ChainId,
-			Name:           metadata.Name,
+			Name:           portal.Name,
 			PortalAddress:  portal.Addr,
 			DeployHeight:   portal.DeployHeight,
-			BlockPeriod:    metadata.BlockPeriod,
+			BlockPeriod:    blockPeriod,
 			Shards:         toShardIDs(portal.Shards),
-			AttestInterval: IntervalFromPeriod(network, metadata.BlockPeriod),
+			AttestInterval: portal.AttestInterval,
 		})
 	}
 
@@ -102,24 +110,7 @@ func networkFromPortals(ctx context.Context, network ID, portals []bindings.Port
 	return Network{
 		ID:     network,
 		Chains: chains,
-	}
-}
-
-// IntervalFromPeriod returns the minimum number of blocks between attestations for a given block period.
-// TODO(kevin): Move this to e2e/types once MinAttestPeriod is added to PortalRegistry.
-func IntervalFromPeriod(network ID, period time.Duration) uint64 {
-	target := time.Hour
-	if network == Staging {
-		target = time.Minute * 10
-	} else if network == Devnet {
-		target = time.Second * 10
-	}
-
-	if period == 0 {
-		return 0
-	}
-
-	return uint64(target / period)
+	}, nil
 }
 
 func MetadataByID(network ID, chainID uint64) evmchain.Metadata {
