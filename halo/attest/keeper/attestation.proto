@@ -41,12 +41,15 @@ message Signature {
   option (cosmos.orm.v1.table) = {
     id: 2;
     primary_key: { fields: "id", auto_increment: true }
-    index: {id: 1, fields: "att_id,validator_address", unique: true} // Only allow one signature per validator per block.
-    index: {id: 2, fields: "att_id"} // Allow querying by Attestation ID
+    index: {id: 1, fields: "att_id,validator_address", unique: true} // Allow querying by Attestation ID and only allow one signature per validator per attestation.
+    index: {id: 2, fields: "chain_id,conf_level,block_offset,validator_address", unique: true} // Detects double signing.
   };
 
   uint64 id                 = 1; // Auto-incremented ID
   bytes  signature          = 3; // Validator signature over XBlockRoot; Ethereum 65 bytes [R || S || V] format.
   bytes  validator_address  = 2; // Validator ethereum address; 20 bytes.
   uint64 att_id             = 4; // Attestation ID to which this signature belongs.
+  uint64 chain_id           = 5; // Chain ID as per https://chainlist.org
+  uint32 conf_level         = 6; // Confirmation level of the cross-chain block
+  uint64 block_offset       = 7; // Offset of the cross-chain block
 }

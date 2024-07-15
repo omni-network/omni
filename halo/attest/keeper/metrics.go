@@ -45,6 +45,13 @@ var (
 		Help:      "Latency (in seconds) for each db function call (both internal and external)",
 		Buckets:   []float64{.001, .002, .005, .01, .025, .05, .1},
 	}, []string{"method"})
+
+	doubleSignCounter = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "halo",
+		Subsystem: "attest",
+		Name:      "double_sign_total",
+		Help:      "Total number of double sign votes detected per validator",
+	}, []string{"validator"})
 )
 
 func latency(method string) func() {

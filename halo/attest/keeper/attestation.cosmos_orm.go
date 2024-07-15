@@ -223,6 +223,9 @@ type SignatureTable interface {
 	HasByAttIdValidatorAddress(ctx context.Context, att_id uint64, validator_address []byte) (found bool, err error)
 	// GetByAttIdValidatorAddress returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
 	GetByAttIdValidatorAddress(ctx context.Context, att_id uint64, validator_address []byte) (*Signature, error)
+	HasByChainIdConfLevelBlockOffsetValidatorAddress(ctx context.Context, chain_id uint64, conf_level uint32, block_offset uint64, validator_address []byte) (found bool, err error)
+	// GetByChainIdConfLevelBlockOffsetValidatorAddress returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
+	GetByChainIdConfLevelBlockOffsetValidatorAddress(ctx context.Context, chain_id uint64, conf_level uint32, block_offset uint64, validator_address []byte) (*Signature, error)
 	List(ctx context.Context, prefixKey SignatureIndexKey, opts ...ormlist.Option) (SignatureIterator, error)
 	ListRange(ctx context.Context, from, to SignatureIndexKey, opts ...ormlist.Option) (SignatureIterator, error)
 	DeleteBy(ctx context.Context, prefixKey SignatureIndexKey) error
@@ -281,16 +284,33 @@ func (this SignatureAttIdValidatorAddressIndexKey) WithAttIdValidatorAddress(att
 	return this
 }
 
-type SignatureAttIdIndexKey struct {
+type SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey struct {
 	vs []interface{}
 }
 
-func (x SignatureAttIdIndexKey) id() uint32            { return 2 }
-func (x SignatureAttIdIndexKey) values() []interface{} { return x.vs }
-func (x SignatureAttIdIndexKey) signatureIndexKey()    {}
+func (x SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey) id() uint32 { return 2 }
+func (x SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey) values() []interface{} {
+	return x.vs
+}
+func (x SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey) signatureIndexKey() {}
 
-func (this SignatureAttIdIndexKey) WithAttId(att_id uint64) SignatureAttIdIndexKey {
-	this.vs = []interface{}{att_id}
+func (this SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey) WithChainId(chain_id uint64) SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey {
+	this.vs = []interface{}{chain_id}
+	return this
+}
+
+func (this SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey) WithChainIdConfLevel(chain_id uint64, conf_level uint32) SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey {
+	this.vs = []interface{}{chain_id, conf_level}
+	return this
+}
+
+func (this SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey) WithChainIdConfLevelBlockOffset(chain_id uint64, conf_level uint32, block_offset uint64) SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey {
+	this.vs = []interface{}{chain_id, conf_level, block_offset}
+	return this
+}
+
+func (this SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey) WithChainIdConfLevelBlockOffsetValidatorAddress(chain_id uint64, conf_level uint32, block_offset uint64, validator_address []byte) SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey {
+	this.vs = []interface{}{chain_id, conf_level, block_offset, validator_address}
 	return this
 }
 
@@ -349,6 +369,32 @@ func (this signatureTable) GetByAttIdValidatorAddress(ctx context.Context, att_i
 	var signature Signature
 	found, err := this.table.GetIndexByID(1).(ormtable.UniqueIndex).Get(ctx, &signature,
 		att_id,
+		validator_address,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if !found {
+		return nil, ormerrors.NotFound
+	}
+	return &signature, nil
+}
+
+func (this signatureTable) HasByChainIdConfLevelBlockOffsetValidatorAddress(ctx context.Context, chain_id uint64, conf_level uint32, block_offset uint64, validator_address []byte) (found bool, err error) {
+	return this.table.GetIndexByID(2).(ormtable.UniqueIndex).Has(ctx,
+		chain_id,
+		conf_level,
+		block_offset,
+		validator_address,
+	)
+}
+
+func (this signatureTable) GetByChainIdConfLevelBlockOffsetValidatorAddress(ctx context.Context, chain_id uint64, conf_level uint32, block_offset uint64, validator_address []byte) (*Signature, error) {
+	var signature Signature
+	found, err := this.table.GetIndexByID(2).(ormtable.UniqueIndex).Get(ctx, &signature,
+		chain_id,
+		conf_level,
+		block_offset,
 		validator_address,
 	)
 	if err != nil {

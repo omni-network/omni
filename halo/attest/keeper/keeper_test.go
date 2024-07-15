@@ -52,8 +52,8 @@ func TestKeeper_Add(t *testing.T) {
 					expectPendingAtt(1, defaultOffset),
 				},
 				sigs: []*keeper.Signature{
-					expectValSig(1, 1, val1),
-					expectValSig(2, 1, val2),
+					expectValSig(1, 1, val1, defaultOffset),
+					expectValSig(2, 1, val2, defaultOffset),
 				},
 			},
 			postrequisites: []postrequisite{func(t *testing.T, k *keeper.Keeper, ctx sdk.Context) {
@@ -91,10 +91,10 @@ func TestKeeper_Add(t *testing.T) {
 					),
 				},
 				sigs: []*keeper.Signature{
-					expectValSig(1, 1, val1),
-					expectValSig(2, 1, val2),
-					expectValSig(3, 2, val1),
-					expectValSig(4, 2, val3),
+					expectValSig(1, 1, val1, defaultOffset),
+					expectValSig(2, 1, val2, defaultOffset),
+					expectValSig(3, 2, val1, defaultOffset+1),
+					expectValSig(4, 2, val3, defaultOffset+1),
 				},
 			},
 		},
@@ -118,10 +118,10 @@ func TestKeeper_Add(t *testing.T) {
 					),
 				},
 				sigs: []*keeper.Signature{
-					expectValSig(1, 1, val1),
-					expectValSig(2, 1, val2),
-					expectValSig(3, 2, val1),
-					expectValSig(4, 2, val3),
+					expectValSig(1, 1, val1, defaultOffset),
+					expectValSig(2, 1, val2, defaultOffset),
+					expectValSig(3, 2, val1, defaultOffset+1),
+					expectValSig(4, 2, val3, defaultOffset+1),
 				},
 			},
 		},
@@ -140,9 +140,9 @@ func TestKeeper_Add(t *testing.T) {
 					expectPendingAtt(1, defaultOffset),
 				},
 				sigs: []*keeper.Signature{
-					expectValSig(1, 1, val1),
-					expectValSig(2, 1, val2),
-					expectValSig(3, 1, val3),
+					expectValSig(1, 1, val1, defaultOffset),
+					expectValSig(2, 1, val2, defaultOffset),
+					expectValSig(3, 1, val3, defaultOffset),
 				},
 			},
 		},
@@ -165,16 +165,17 @@ func TestKeeper_Add(t *testing.T) {
 					expectPendingAtt(1, defaultOffset),
 				},
 				sigs: []*keeper.Signature{
-					expectValSig(1, 1, val1),
-					expectValSig(2, 1, val2),
+					expectValSig(1, 1, val1, defaultOffset),
+					expectValSig(2, 1, val2, defaultOffset),
 				},
 			},
 		},
 		{
-			name: "mismatching_block_root",
+			name: "skip_mismatching_att_root_same_block_and_vals",
 			args: args{
 				msg: defaultMsg().
 					WithVotes(
+						// Update agg vote to a different att root but identical block, signed by same vals (double sign)
 						defaultAggVote().
 							WithMsgRoot(common.BytesToHash([]byte("different root"))).
 							Vote(),
@@ -183,7 +184,7 @@ func TestKeeper_Add(t *testing.T) {
 			prerequisites: []prerequisite{
 				func(t *testing.T, k *keeper.Keeper, ctx sdk.Context) {
 					t.Helper()
-					// the same message as the one in the args
+					// Insert default agg vote first, so above message is a double sign
 					msg := defaultMsg().Msg()
 					err := k.Add(ctx, msg)
 					require.NoError(t, err)
@@ -191,8 +192,8 @@ func TestKeeper_Add(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					expectPendingAtt(1, defaultOffset),
-					update(
+					expectPendingAtt(1, defaultOffset), // Default agg vote resulting in pending attestation.
+					update( // Update agg vote resulting in second att with different root
 						expectPendingAtt(2, defaultOffset),
 						func(att *keeper.Attestation) {
 							att.MsgRoot = common.BytesToHash([]byte("different root")).Bytes()
@@ -200,10 +201,47 @@ func TestKeeper_Add(t *testing.T) {
 					),
 				},
 				sigs: []*keeper.Signature{
-					expectValSig(1, 1, val1),
-					expectValSig(2, 1, val2),
-					expectValSig(3, 2, val1),
-					expectValSig(4, 2, val2),
+					expectValSig(1, 1, val1, defaultOffset),
+					expectValSig(2, 1, val2, defaultOffset),
+					// Update agg vote's signatures are not added, since they are double signs
+				},
+			},
+		},
+		{
+			name: "mismatching_att_root_same_block_diff_vals",
+			args: args{
+				msg: defaultMsg().
+					WithVotes(
+						// Update agg vote to a different att root but identical block, signed by val 3 only
+						defaultAggVote().
+							WithMsgRoot(common.BytesToHash([]byte("different root"))).
+							WithSignatures(sigsTuples(val3)...).
+							Vote(),
+					).Msg(),
+			},
+			prerequisites: []prerequisite{
+				func(t *testing.T, k *keeper.Keeper, ctx sdk.Context) {
+					t.Helper()
+					// Insert default agg vote first, same block but signed by val 1 and 2
+					msg := defaultMsg().Msg()
+					err := k.Add(ctx, msg)
+					require.NoError(t, err)
+				},
+			},
+			want: want{
+				atts: []*keeper.Attestation{
+					expectPendingAtt(1, defaultOffset), // Default agg vote resulting in pending attestation.
+					update( // Update agg vote resulting in second att with different root
+						expectPendingAtt(2, defaultOffset),
+						func(att *keeper.Attestation) {
+							att.MsgRoot = common.BytesToHash([]byte("different root")).Bytes()
+						},
+					),
+				},
+				sigs: []*keeper.Signature{
+					expectValSig(1, 1, val1, defaultOffset),
+					expectValSig(2, 1, val2, defaultOffset),
+					expectValSig(3, 2, val3, defaultOffset), // Signature of updated agg vote by val 3
 				},
 			},
 		},
@@ -312,8 +350,8 @@ func TestKeeper_Approve(t *testing.T) {
 					expectApprovedAtt(1, defaultOffset, valset1_2, 1),
 				},
 				sigs: []*keeper.Signature{
-					expectValSig(1, 1, val1),
-					expectValSig(2, 1, val2),
+					expectValSig(1, 1, val1, defaultOffset),
+					expectValSig(2, 1, val2, defaultOffset),
 				},
 			},
 		},
@@ -338,8 +376,8 @@ func TestKeeper_Approve(t *testing.T) {
 					expectPendingAtt(1, defaultOffset),
 				},
 				sigs: []*keeper.Signature{
-					expectValSig(1, 1, val1),
-					expectValSig(2, 1, val2),
+					expectValSig(1, 1, val1, defaultOffset),
+					expectValSig(2, 1, val2, defaultOffset),
 				},
 			},
 		},
@@ -359,7 +397,7 @@ func TestKeeper_Approve(t *testing.T) {
 					// add sig from val3
 					ethAddr, err := val3.EthereumAddress()
 					require.NoError(t, err)
-					sig := &keeper.Signature{AttId: 1, Signature: ethAddr.Bytes(), ValidatorAddress: ethAddr.Bytes()}
+					sig := &keeper.Signature{AttId: 1, Signature: ethAddr.Bytes(), ValidatorAddress: ethAddr.Bytes(), ChainId: 1, BlockOffset: defaultOffset}
 					err = k.SignatureTable().Insert(ctx, sig)
 					require.NoError(t, err)
 				},
@@ -372,8 +410,8 @@ func TestKeeper_Approve(t *testing.T) {
 					expectApprovedAtt(1, defaultOffset, valset2_3, 1),
 				},
 				sigs: []*keeper.Signature{
-					expectValSig(2, 1, val2),
-					expectValSig(3, 1, val3),
+					expectValSig(2, 1, val2, defaultOffset),
+					expectValSig(3, 1, val3, defaultOffset),
 				},
 			},
 		},
@@ -406,10 +444,10 @@ func TestKeeper_Approve(t *testing.T) {
 					expectApprovedAtt(2, defaultOffset+1, valset1_2, 1),
 				},
 				sigs: []*keeper.Signature{
-					expectValSig(1, 1, val1),
-					expectValSig(2, 1, val2),
-					expectValSig(3, 2, val1),
-					expectValSig(4, 2, val2),
+					expectValSig(1, 1, val1, defaultOffset),
+					expectValSig(2, 1, val2, defaultOffset),
+					expectValSig(3, 2, val1, defaultOffset+1),
+					expectValSig(4, 2, val2, defaultOffset+1),
 				},
 			},
 		},
@@ -442,10 +480,10 @@ func TestKeeper_Approve(t *testing.T) {
 					expectPendingAtt(2, defaultOffset+2),
 				},
 				sigs: []*keeper.Signature{
-					expectValSig(1, 1, val1),
-					expectValSig(2, 1, val2),
-					expectValSig(3, 2, val1),
-					expectValSig(4, 2, val2),
+					expectValSig(1, 1, val1, defaultOffset),
+					expectValSig(2, 1, val2, defaultOffset),
+					expectValSig(3, 2, val1, defaultOffset+2),
+					expectValSig(4, 2, val2, defaultOffset+2),
 				},
 			},
 		},
@@ -503,10 +541,10 @@ func TestKeeper_Approve(t *testing.T) {
 					expectApprovedAtt(4, defaultOffset+3, valset1_2, 19),
 				},
 				sigs: []*keeper.Signature{
-					expectValSig(5, 3, val1),
-					expectValSig(6, 3, val2),
-					expectValSig(7, 4, val1),
-					expectValSig(8, 4, val2),
+					expectValSig(5, 3, val1, defaultOffset+2),
+					expectValSig(6, 3, val2, defaultOffset+2),
+					expectValSig(7, 4, val1, defaultOffset+3),
+					expectValSig(8, 4, val2, defaultOffset+3),
 				},
 			},
 		},
@@ -558,9 +596,16 @@ func toValSet(valset *vtypes.ValidatorSetResponse) keeper.ValSet {
 	}
 }
 
-func expectValSig(id uint64, attID uint64, val *vtypes.Validator) *keeper.Signature {
+func expectValSig(id uint64, attID uint64, val *vtypes.Validator, offset uint64) *keeper.Signature {
 	ethAddr, _ := val.EthereumAddress()
-	return &keeper.Signature{Id: id, AttId: attID, Signature: ethAddr.Bytes(), ValidatorAddress: ethAddr.Bytes()}
+	return &keeper.Signature{
+		Id:               id,
+		Signature:        ethAddr.Bytes(),
+		ValidatorAddress: ethAddr.Bytes(),
+		AttId:            attID,
+		ChainId:          1,
+		BlockOffset:      offset,
+	}
 }
 
 func expectPendingAtt(id uint64, offset uint64) *keeper.Attestation {
