@@ -44,6 +44,12 @@ interface IOmniPortalAdmin {
     event XReceiptMaxErrorSizeSet(uint16 size);
 
     /**
+     * @notice Emitted when the xsubValsetCutoff is updated
+     * @param cutoff The new cutoff
+     */
+    event XSubValsetCutoffSet(uint8 cutoff);
+
+    /**
      * @notice Emitted the portal is paused, all xcalls and xsubmissions
      */
     event Paused();

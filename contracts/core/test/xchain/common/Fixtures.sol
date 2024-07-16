@@ -503,6 +503,7 @@ contract Fixtures is CommonBase, StdCheats {
                             xmsgMinGasLimit,
                             xmsgMaxDataSize,
                             xreceiptMaxErrorSize,
+                            10, // xsub valset cutoff
                             1, // cchain xmsg offset
                             1, // cchain xblock offset
                             genesisValSetId,
@@ -551,6 +552,7 @@ contract Fixtures is CommonBase, StdCheats {
                             xmsgMinGasLimit,
                             xmsgMaxDataSize,
                             xreceiptMaxErrorSize,
+                            10, // xsub valset cutoff
                             1, // cchain xmsg offset
                             1, // cchain xblock offset
                             genesisValSetId,
@@ -599,6 +601,7 @@ contract Fixtures is CommonBase, StdCheats {
                             xmsgMinGasLimit,
                             xmsgMaxDataSize,
                             xreceiptMaxErrorSize,
+                            10, // xsub valset cutoff
                             1, // cchain xmsg offset
                             1, // cchain xblock offset
                             genesisValSetId,

@@ -60,8 +60,9 @@ contract OmniPortal is
      * @custom:field xmsgMinGasLimit        Minimum gas limit for xmsg
      * @custom:field xmsgMaxDataSize        Maximum size of xmsg data in bytes
      * @custom:field xreceiptMaxErrorSize   Maximum size of xreceipt error in bytes
+     * @custom:field xsubValsetCutoff       Number of validator sets since the latest that validate an XSubmission
      * @custom:field cChainXMsgOffset       Offset for xmsgs from the consensus chain
-     * @custom:field cChainXBlockOffset    Offset for xblocks from the consensus chain
+     * @custom:field cChainXBlockOffset     Offset for xblocks from the consensus chain
      * @custom:field valSetId               Initial validator set id
      * @custom:field validators             Initial validator set
      */
@@ -74,6 +75,7 @@ contract OmniPortal is
         uint64 xmsgMinGasLimit;
         uint16 xmsgMaxDataSize;
         uint16 xreceiptMaxErrorSize;
+        uint8 xsubValsetCutoff;
         uint64 cChainXMsgOffset;
         uint64 cChainXBlockOffset;
         uint64 valSetId;
@@ -91,6 +93,7 @@ contract OmniPortal is
         _setXMsgMinGasLimit(p.xmsgMinGasLimit);
         _setXMsgMaxDataSize(p.xmsgMaxDataSize);
         _setXReceiptMaxErrorSize(p.xreceiptMaxErrorSize);
+        _setXSubValsetCutoff(p.xsubValsetCutoff);
         _addValidatorSet(p.valSetId, p.validators);
 
         omniChainId = p.omniChainId;
@@ -328,9 +331,9 @@ contract OmniPortal is
      * @notice Returns the minimum validator set id that can be used for xsubmissions
      */
     function _minValSet() internal view returns (uint64) {
-        return latestValSetId > XSubValsetCutoff
+        return latestValSetId > xsubValsetCutoff
             // plus 1, so the number of accepted valsets == XSubValsetCutoff
-            ? (latestValSetId - XSubValsetCutoff + 1)
+            ? (latestValSetId - xsubValsetCutoff + 1)
             : 1;
     }
 
@@ -518,6 +521,13 @@ contract OmniPortal is
     }
 
     /**
+     * @notice Set the number of validator sets since the latest that can validate an XSubmission
+     */
+    function setXSubValsetCutoff(uint8 xsubValsetCutoff_) external onlyOwner {
+        _setXSubValsetCutoff(xsubValsetCutoff_);
+    }
+
+    /**
      * @notice Pause xcalls and xsubissions from all chains
      */
     function pause() external onlyOwner {
@@ -663,6 +673,15 @@ contract OmniPortal is
         require(numBytes > 0, "OmniPortal: no zero max size");
         xreceiptMaxErrorSize = numBytes;
         emit XReceiptMaxErrorSizeSet(numBytes);
+    }
+
+    /**
+     * @notice Set the number of validator sets since the latest that can validate an XSubmission
+     */
+    function _setXSubValsetCutoff(uint8 xsubValsetCutoff_) internal {
+        require(xsubValsetCutoff_ > 0, "OmniPortal: no zero cutoff");
+        xsubValsetCutoff = xsubValsetCutoff_;
+        emit XSubValsetCutoffSet(xsubValsetCutoff_);
     }
 
     /**

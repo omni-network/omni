@@ -27,6 +27,7 @@ type DeploymentConfig struct {
 	XMsgMaxGasLimit       uint64
 	XMsgMaxDataSize       uint16
 	XReceiptMaxErrorBytes uint16
+	XSubValsetCutoff      uint8
 	CChainXMsgOffset      uint64
 	CChainXBlockOffset    uint64
 	ExpectedAddr          common.Address
@@ -37,6 +38,7 @@ const (
 	XMsgMaxGasLimit       = 5_000_000
 	XMsgMaxDataSize       = 20_000
 	XReceiptMaxErrorBytes = 256
+	XSubValsetCutoff      = 10
 
 	// We use default cchain xmsg and xblock offsets of 1. This xmsg / block
 	// contains the genesis validator set. This is set in the portal contract
@@ -144,9 +146,10 @@ func omegaCfg() DeploymentConfig {
 		XMsgMinGasLimit:       XMsgMinGasLimit,
 		XMsgMaxGasLimit:       XMsgMaxGasLimit,
 		XMsgMaxDataSize:       XMsgMaxDataSize,
+		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
+		XSubValsetCutoff:      XSubValsetCutoff,
 		CChainXMsgOffset:      GenesisCChainXMsgOffset,
 		CChainXBlockOffset:    GenesisCChainXBlockOffset,
-		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
 		ExpectedAddr:          contracts.OmegaPortal(),
 	}
 }
@@ -163,9 +166,10 @@ func stagingCfg() DeploymentConfig {
 		XMsgMinGasLimit:       XMsgMinGasLimit,
 		XMsgMaxGasLimit:       XMsgMaxGasLimit,
 		XMsgMaxDataSize:       XMsgMaxDataSize,
+		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
+		XSubValsetCutoff:      XSubValsetCutoff,
 		CChainXMsgOffset:      GenesisCChainXMsgOffset,
 		CChainXBlockOffset:    GenesisCChainXBlockOffset,
-		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
 		ExpectedAddr:          contracts.StagingPortal(),
 	}
 }
@@ -182,9 +186,10 @@ func devnetCfg() DeploymentConfig {
 		XMsgMinGasLimit:       XMsgMinGasLimit,
 		XMsgMaxGasLimit:       XMsgMaxGasLimit,
 		XMsgMaxDataSize:       XMsgMaxDataSize,
+		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
+		XSubValsetCutoff:      XSubValsetCutoff,
 		CChainXMsgOffset:      GenesisCChainXMsgOffset,
 		CChainXBlockOffset:    GenesisCChainXBlockOffset,
-		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
 		ExpectedAddr:          contracts.DevnetPortal(),
 	}
 }
@@ -311,6 +316,7 @@ func packInitCode(cfg DeploymentConfig, feeOracle common.Address, impl common.Ad
 			XmsgMinGasLimit:      cfg.XMsgMinGasLimit,
 			XmsgMaxDataSize:      cfg.XMsgMaxDataSize,
 			XreceiptMaxErrorSize: cfg.XReceiptMaxErrorBytes,
+			XsubValsetCutoff:     cfg.XSubValsetCutoff,
 			CChainXMsgOffset:     cfg.CChainXMsgOffset,
 			CChainXBlockOffset:   cfg.CChainXBlockOffset,
 			ValSetId:             valSetID,
