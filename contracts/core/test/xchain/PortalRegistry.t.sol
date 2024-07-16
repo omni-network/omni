@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { PortalRegistry } from "src/xchain/PortalRegistry.sol";
 import { MockPortal } from "test/utils/MockPortal.sol";
 import { Predeploys } from "src/libraries/Predeploys.sol";
@@ -10,7 +11,15 @@ import { Test } from "forge-std/Test.sol";
 
 contract PortalRegistry_Test is Test {
     // copied from PortalRegistry.sol
-    event PortalRegistered(uint64 indexed chainId, address indexed addr, uint64 deployHeight, uint64[] shards);
+    event PortalRegistered(
+        uint64 indexed chainId,
+        address indexed addr,
+        uint64 deployHeight,
+        uint64 attestInterval,
+        uint64 blockPeriod,
+        uint64[] shards,
+        string name
+    );
 
     PortalRegistryHarness reg;
     address owner;
@@ -23,20 +32,49 @@ contract PortalRegistry_Test is Test {
     function test_register() public {
         PortalRegistry.Deployment memory dep;
 
+        // only owner can pause
+        address notOwner = address(0x456);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, notOwner));
+        vm.prank(notOwner);
+        reg.register(dep);
+
         // no zero address
-        vm.expectRevert("PortalRegistry: no zero addr");
+        vm.expectRevert("PortalRegistry: zero addr");
         vm.prank(owner);
         reg.register(dep);
 
         // no zero chain ID
         dep.addr = makeAddr("addr");
-        dep.chainId = 0;
-        vm.expectRevert("PortalRegistry: no zero chain ID");
+        vm.expectRevert("PortalRegistry: zero chain ID");
+        vm.prank(owner);
+        reg.register(dep);
+        dep.chainId = 1;
+
+        // no zero attestInterval
+        vm.expectRevert("PortalRegistry: zero interval");
+        vm.prank(owner);
+        reg.register(dep);
+        dep.attestInterval = 60 * 60 * 1000; // 1 hour in ms
+
+        // no zero blockPeriod
+        vm.expectRevert("PortalRegistry: zero period");
         vm.prank(owner);
         reg.register(dep);
 
+        // period cannot be bigger than type(int64).max
+        dep.blockPeriod = uint64(type(int64).max) + 1;
+        vm.expectRevert("PortalRegistry: period too large");
+        vm.prank(owner);
+        reg.register(dep);
+        dep.blockPeriod = 1000; // 1 second in ms
+
+        // Must have name
+        vm.expectRevert("PortalRegistry: no name");
+        vm.prank(owner);
+        reg.register(dep);
+        dep.name = "omni_evm";
+
         // Must have shards
-        dep.chainId = 1;
         vm.expectRevert("PortalRegistry: no shards");
         vm.prank(owner);
         reg.register(dep);
@@ -53,7 +91,9 @@ contract PortalRegistry_Test is Test {
         dep.shards[0] = ConfLevel.Finalized;
         dep.shards[1] = ConfLevel.Latest;
         vm.expectEmit();
-        emit PortalRegistered(dep.chainId, dep.addr, dep.deployHeight, dep.shards);
+        emit PortalRegistered(
+            dep.chainId, dep.addr, dep.deployHeight, dep.attestInterval, dep.blockPeriod, dep.shards, dep.name
+        );
         vm.prank(owner);
         reg.register(dep);
 
@@ -74,7 +114,9 @@ contract PortalRegistry_Test is Test {
             dep = _deployment(i);
 
             vm.expectEmit();
-            emit PortalRegistered(i, dep.addr, dep.deployHeight, dep.shards);
+            emit PortalRegistered(
+                dep.chainId, dep.addr, dep.deployHeight, dep.attestInterval, dep.blockPeriod, dep.shards, dep.name
+            );
 
             vm.prank(owner);
             reg.register(dep);
@@ -93,6 +135,9 @@ contract PortalRegistry_Test is Test {
             chainId: chainId,
             addr: makeAddr(string(abi.encodePacked("portal", chainId))),
             deployHeight: chainId * 1234,
+            name: string(abi.encodePacked("omni_evm_", chainId)),
+            attestInterval: chainId * 60 * 60 * 1000,
+            blockPeriod: chainId * 1000,
             shards: new uint64[](2)
         });
 

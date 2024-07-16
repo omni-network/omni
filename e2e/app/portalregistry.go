@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -106,59 +107,55 @@ func (m registryMngr) registerPortals(ctx context.Context) error {
 
 // makePortalDeps creates a map of portal deployments by chain id.
 func makePortalDeps(def Definition) (map[uint64]bindings.PortalRegistryDeployment, error) {
-	tnet := def.Testnet
-	infos := def.DeployInfos()
-
-	deps := make(map[uint64]bindings.PortalRegistryDeployment)
-
-	for _, c := range tnet.PublicChains {
-		chain := c.Chain()
-
-		info, ok := infos[chain.ChainID][types.ContractPortal]
-		if !ok {
-			return nil, errors.New("missing info", "chain", chain.ChainID)
-		}
-
-		deps[chain.ChainID] = bindings.PortalRegistryDeployment{
-			ChainId:      chain.ChainID,
-			Addr:         info.Address,
-			DeployHeight: info.Height,
-			Shards:       chain.ShardsUint64(),
-		}
+	chains, err := evmChains(def)
+	if err != nil {
+		return nil, err
 	}
 
-	for _, c := range tnet.AnvilChains {
-		chain := c.Chain
+	return toPortalDepls(def, chains)
+}
 
-		info, ok := infos[chain.ChainID][types.ContractPortal]
-		if !ok {
-			return nil, errors.New("missing info", "chain", chain.ChainID)
-		}
-
-		deps[chain.ChainID] = bindings.PortalRegistryDeployment{
-			ChainId:      chain.ChainID,
-			Addr:         info.Address,
-			DeployHeight: info.Height,
-			Shards:       chain.ShardsUint64(),
-		}
-	}
-
-	if len(tnet.OmniEVMs) == 0 {
+// evmChains returns the EVM chains from the definition.
+func evmChains(def Definition) ([]types.EVMChain, error) {
+	if len(def.Testnet.OmniEVMs) == 0 {
 		return nil, errors.New("missing omni evm")
 	}
 
-	chain := tnet.OmniEVMs[0].Chain
+	var chains []types.EVMChain
 
-	info, ok := infos[chain.ChainID][types.ContractPortal]
-	if !ok {
-		return nil, errors.New("missing info", "chain", chain.ChainID)
+	for _, c := range def.Testnet.PublicChains {
+		chains = append(chains, c.Chain())
 	}
 
-	deps[chain.ChainID] = bindings.PortalRegistryDeployment{
-		ChainId:      chain.ChainID,
-		Addr:         info.Address,
-		DeployHeight: info.Height,
-		Shards:       chain.ShardsUint64(),
+	for _, c := range def.Testnet.AnvilChains {
+		chains = append(chains, c.Chain)
+	}
+
+	chains = append(chains, def.Testnet.OmniEVMs[0].Chain)
+
+	return chains, nil
+}
+
+// toPortalDepls converts EVM chains to portal registry deployments.
+func toPortalDepls(def Definition, chains []types.EVMChain) (map[uint64]bindings.PortalRegistryDeployment, error) {
+	infos := def.DeployInfos()
+	deps := make(map[uint64]bindings.PortalRegistryDeployment)
+
+	for _, chain := range chains {
+		info, ok := infos[chain.ChainID][types.ContractPortal]
+		if !ok {
+			return nil, errors.New("missing info", "chain", chain.ChainID)
+		}
+
+		deps[chain.ChainID] = bindings.PortalRegistryDeployment{
+			Name:           chain.Name,
+			ChainId:        chain.ChainID,
+			Addr:           info.Address,
+			BlockPeriod:    uint64(chain.BlockPeriod),
+			AttestInterval: chain.AttestInterval(def.Testnet.Network),
+			DeployHeight:   info.Height,
+			Shards:         chain.ShardsUint64(),
+		}
 	}
 
 	return deps, nil
@@ -202,9 +199,13 @@ func startAddingMockPortals(ctx context.Context, def Definition) func() error {
 			}
 
 			portal := bindings.PortalRegistryDeployment{
-				ChainId: chainID,
-				Addr:    tutil.RandomAddress(),
-				Shards:  []uint64{uint64(xchain.ShardFinalized0)},
+				ChainId:        chainID,
+				Addr:           tutil.RandomAddress(),
+				DeployHeight:   chainID, // does not matter
+				AttestInterval: 60,      // 60 blocks,
+				BlockPeriod:    1000,    // 1 second
+				Shards:         []uint64{uint64(xchain.ShardFinalized0)},
+				Name:           fmt.Sprintf("mock-portal-%d", chainID),
 			}
 
 			log.Debug(ctx, "Adding mock portal", "chain", chainID)

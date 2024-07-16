@@ -12,7 +12,7 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
  *      Genesis storage slots must:
  *          - set _owner on proxy
  *          - set _initialized on proxy to 1, to disable the initializer
- *          - set _initialized on implementation to 255, to disabled all initializers
+ *          - set _initialized on implementation to type(uint64).max, to disabled all initializers
  *          - set isAllowlistEnabled to false for ephemeral networks, true otherwise
  */
 contract Staking is OwnableUpgradeable {

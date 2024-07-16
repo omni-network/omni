@@ -7,10 +7,8 @@ pragma solidity =0.8.24;
  *         Calls are proxied, and not executed syncronously. Their execution is left to
  *         the consensus chain, and they may fail.
  * @dev This contract is predeployed as an upgradable proxy, though currently has no storage.
- *      It therefoes does not need to be Initializeable. If storage is added, it will need to
- *      be Initializeable (in current v0.4.9 of OpenZeppelin). If we upgrade to  v5 of OpenZeppelin,
- *      we could wait to add Initializeable until initialization logic is required, as
- *      Initializeable storage is stored in a custom slot, not the first slots.
+ *      It therefoes does not need to be Initializeable. Initializeable should be added when
+ *      initialization logic is required.
  */
 contract Slashing {
     /**

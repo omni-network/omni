@@ -99,7 +99,13 @@ func WithPortalRegister(network netconf.Network) func(*engineMock) {
 
 		var eventLogs []types.Log
 		for _, chain := range network.EVMChains() {
-			data, err := portalRegEvent.Inputs.NonIndexed().Pack(chain.DeployHeight, chain.Shards)
+			data, err := portalRegEvent.Inputs.NonIndexed().Pack(
+				chain.DeployHeight,
+				chain.AttestInterval,
+				uint64(chain.BlockPeriod),
+				chain.Shards,
+				chain.Name,
+			)
 			if err != nil {
 				panic(errors.Wrap(err, "pack delegate"))
 			}
