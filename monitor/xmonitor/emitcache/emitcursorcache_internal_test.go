@@ -52,9 +52,9 @@ func TestEmitCursorCache(t *testing.T) {
 		require.NoError(t, cache.set(ctx, height, cursor))
 	}
 
-	trim := func(t *testing.T, height uint64) {
+	trim := func(t *testing.T, chainID uint64, retain uint64) {
 		t.Helper()
-		require.NoError(t, cache.trim(ctx, height))
+		require.NoError(t, cache.trimOnce(ctx, chainID, retain))
 	}
 
 	stream1 := xchain.StreamID{SourceChainID: 1}
@@ -73,13 +73,13 @@ func TestEmitCursorCache(t *testing.T) {
 	assertContains(t, 1, stream1, cursor12)
 	set(t, 1, cursor11) // Update it to 11
 	assertContains(t, 1, stream1, cursor11)
-	trim(t, 0) // Nothing trimmed
+	trim(t, stream1.SourceChainID, 99) // Nothing trimmed
 	assertContains(t, 1, stream1, cursor11)
 	assertHighest(t, stream1, cursor11)
 
 	assertNotContains(t, 2, stream1)
 	set(t, 2, cursor12)
-	trim(t, 0) // Nothing trimmed
+	trim(t, stream1.SourceChainID, 99) // Nothing trimmed
 	assertContains(t, 2, stream1, cursor12)
 	assertContains(t, 1, stream1, cursor11)
 	assertHighest(t, stream1, cursor12)
@@ -99,12 +99,18 @@ func TestEmitCursorCache(t *testing.T) {
 	assertNotContains(t, 1, stream99)
 	assertNotContains(t, 2, stream99)
 
-	trim(t, 1)
+	trim(t, stream1.SourceChainID, 1)
 	assertNotContains(t, 1, stream1)
-	assertNotContains(t, 1, stream2)
 	assertContains(t, 2, stream1, cursor12)
+	assertContains(t, 1, stream2, cursor21)
+	assertContains(t, 2, stream2, cursor22)
 
-	trim(t, 2)
+	trim(t, stream1.SourceChainID, 0)
 	assertNotContains(t, 2, stream1)
+	assertContains(t, 1, stream2, cursor21)
+	assertContains(t, 2, stream2, cursor22)
+
+	trim(t, stream2.SourceChainID, 0)
 	assertNotContains(t, 2, stream2)
+	assertNotContains(t, 1, stream2)
 }

@@ -22,9 +22,8 @@ func Start(
 	xprovider xchain.Provider,
 	cprovider cchain.Provider,
 	rpcClients map[uint64]ethclient.Client,
+	db dbm.DB,
 ) error {
-	db := dbm.NewMemDB() // TODO(corver): Replace with on-disk DB.
-
 	cache, err := emitcache.Start(ctx, network, xprovider, db)
 	if err != nil {
 		return err

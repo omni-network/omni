@@ -15,6 +15,7 @@ func bindRunFlags(flags *pflag.FlagSet, cfg *monitor.Config) {
 	flags.StringVar(&cfg.PrivateKey, "private-key", cfg.PrivateKey, "The path to the private key e.g path/private.key")
 	flags.StringVar(&cfg.MonitoringAddr, "monitoring-addr", cfg.MonitoringAddr, "The address to bind the monitoring server")
 	flags.StringVar(&cfg.HaloURL, "halo-url", cfg.HaloURL, "The URL of the halo node e.g localhost:26657")
+	flags.StringVar(&cfg.DBDir, "db-dir", cfg.DBDir, "The path to the database directory")
 }
 
 func bindLoadGenFlags(flags *pflag.FlagSet, cfg *loadgen.Config) {
