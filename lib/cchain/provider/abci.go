@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tracer"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
@@ -337,7 +338,7 @@ func searchOffsetInHistory(ctx context.Context, client ABCIClient, cl atypes.Que
 	endHeightIndex := uint64(info.Response.LastBlockHeight)
 	lookback := uint64(1)
 	var lookbackStepsCounter uint64 // For metrics only
-	queryHeight := endHeightIndex - lookback
+	queryHeight := umath.SubtractOrZero(endHeightIndex, lookback)
 	for queryHeight > 0 {
 		lookbackStepsCounter++
 		earliestAtt, ok, err := queryEarliestAttestation(ctx, cl, chainVer, queryHeight)
@@ -389,7 +390,7 @@ func searchOffsetInHistory(ctx context.Context, client ABCIClient, cl atypes.Que
 	var binarySearchStepsCounter uint64 // For metrics only
 	for startHeightIndex <= endHeightIndex {
 		binarySearchStepsCounter++
-		midHeightIndex := startHeightIndex + (endHeightIndex-startHeightIndex)/2
+		midHeightIndex := startHeightIndex + umath.SubtractOrZero(endHeightIndex, startHeightIndex)/2
 
 		earliestAtt, ok, err := queryEarliestAttestation(ctx, cl, chainVer, midHeightIndex)
 		if err != nil {
@@ -421,7 +422,7 @@ func searchOffsetInHistory(ctx context.Context, client ABCIClient, cl atypes.Que
 		// Query at a lower or higher height depending on whether fromOffset
 		// is smaller or larger than the earliest offset we found
 		if fromOffset < earliestAtt.BlockHeader.BlockOffset {
-			endHeightIndex = midHeightIndex - 1
+			endHeightIndex = umath.SubtractOrZero(midHeightIndex, 1)
 		} else {
 			startHeightIndex = midHeightIndex + 1
 		}

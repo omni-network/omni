@@ -56,6 +56,13 @@ repos:
         entry: .pre-commit/run_go_tests.sh
         types: [ file, go ]
 
+      - id: run-golint
+        name: run-golint
+        language: script
+        require_serial: true # Don't run this in parallel
+        entry: .pre-commit/run_golint.sh
+        types: [ file, go ]
+
       - id: run-forge-tests
         name: run-forge-tests
         language: script

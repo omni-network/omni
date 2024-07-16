@@ -15,6 +15,7 @@ import (
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/txmgr"
+	"github.com/omni-network/omni/lib/umath"
 
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 
@@ -254,7 +255,7 @@ func (b *Backend) EnsureSynced(ctx context.Context) error {
 		return nil // Syncing is nil if node is not syncing.
 	} else if !syncing.Done() {
 		return errors.New("backend not synced",
-			"lag", syncing.HighestBlock-syncing.CurrentBlock,
+			"lag", umath.SubtractOrZero(syncing.HighestBlock, syncing.CurrentBlock),
 			"indexing", syncing.TxIndexRemainingBlocks,
 		)
 	}

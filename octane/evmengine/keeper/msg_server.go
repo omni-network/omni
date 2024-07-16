@@ -6,6 +6,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
@@ -88,8 +89,13 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 		return nil, err
 	}
 
+	parentHeight, ok := umath.Subtract(payload.Number, 1)
+	if !ok { // payload.Number == 0
+		return nil, errors.New("invalid zero payload number")
+	}
+
 	// Deliver all the previous payload log events
-	if err := s.deliverEvents(ctx, payload.Number-1, payload.ParentHash, msg.PrevPayloadEvents); err != nil {
+	if err := s.deliverEvents(ctx, parentHeight, payload.ParentHash, msg.PrevPayloadEvents); err != nil {
 		return nil, errors.Wrap(err, "deliver event logs")
 	}
 

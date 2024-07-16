@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -163,9 +164,14 @@ func (m *Mock) parentBlockHash(chainVer xchain.ChainVersion, height uint64) comm
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
+	parentHeight, ok := umath.Subtract(height, 1)
+	if !ok {
+		return common.Hash{} // Height == 0
+	}
+
 	key := blockKey{
 		ChainID:   chainVer.ID,
-		Height:    height - 1,
+		Height:    parentHeight,
 		ConfLevel: chainVer.ConfLevel,
 	}
 
