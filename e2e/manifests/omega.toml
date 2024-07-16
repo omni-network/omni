@@ -27,6 +27,8 @@ mode = "full"
 
 [node.archive01]
 mode = "archive"
+[node.archive02]
+mode = "archive"
 
 
 [keys.validator01]
