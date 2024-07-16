@@ -16,13 +16,14 @@ func newAdminCmd(def *app.Definition) *cobra.Command {
 	cmd.AddCommand(
 		newPausePortalCmd(def),
 		newUnpausePortalCmd(def),
+		newUpgradePortalCmd(def),
 	)
 
 	return cmd
 }
 
 func newPausePortalCmd(def *app.Definition) *cobra.Command {
-	cfg := admin.DefaultPausePortalConfig()
+	cfg := admin.DefaultPortalAdminConfig()
 
 	cmd := &cobra.Command{
 		Use:   "pause-portal",
@@ -32,24 +33,39 @@ func newPausePortalCmd(def *app.Definition) *cobra.Command {
 		},
 	}
 
-	bindPausePortalFlags(cmd.Flags(), &cfg)
+	bindPortalAdminFlags(cmd.Flags(), &cfg)
 
 	return cmd
 }
 
 func newUnpausePortalCmd(def *app.Definition) *cobra.Command {
-	cfg := admin.DefaultPausePortalConfig()
+	cfg := admin.DefaultPortalAdminConfig()
 
 	cmd := &cobra.Command{
 		Use:   "unpause-portal",
 		Short: "Unpause a portal contract",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return admin.PausePortal(cmd.Context(), *def, cfg)
+			return admin.UnpausePortal(cmd.Context(), *def, cfg)
 		},
 	}
 
-	// uses same flags as pause-portal
-	bindPausePortalFlags(cmd.Flags(), &cfg)
+	bindPortalAdminFlags(cmd.Flags(), &cfg)
+
+	return cmd
+}
+
+func newUpgradePortalCmd(def *app.Definition) *cobra.Command {
+	cfg := admin.DefaultPortalAdminConfig()
+
+	cmd := &cobra.Command{
+		Use:   "upgrade-portal",
+		Short: "Upgrade a portal contract",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.UpgradePortal(cmd.Context(), *def, cfg)
+		},
+	}
+
+	bindPortalAdminFlags(cmd.Flags(), &cfg)
 
 	return cmd
 }

@@ -7,9 +7,9 @@ import { ITransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/tran
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { Predeploys } from "src/libraries/Predeploys.sol";
 import { Preinstalls } from "src/octane/Preinstalls.sol";
-import { EIP1967Helper } from "script/genesis/utils/EIP1967Helper.sol";
+import { EIP1967Helper } from "script/utils/EIP1967Helper.sol";
 import { AllocPredeploys } from "script/genesis/AllocPredeploys.s.sol";
-import { InitializableHelper } from "script/genesis/utils/InitializableHelper.sol";
+import { InitializableHelper } from "script/utils/InitializableHelper.sol";
 import { Staking } from "src/octane/Staking.sol";
 import { Test } from "forge-std/Test.sol";
 import { Process } from "./utils/Process.sol";

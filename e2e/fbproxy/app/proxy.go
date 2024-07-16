@@ -58,6 +58,11 @@ func (p *proxy) Proxy(w http.ResponseWriter, r *http.Request) {
 
 	err := p.proxy(ctx, w, r)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			http.Error(w, "proxy closed", http.StatusServiceUnavailable)
+			return
+		}
+
 		log.Error(ctx, "Proxy error", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
