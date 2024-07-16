@@ -157,7 +157,6 @@ func setupSimnet(t *testing.T) haloapp.Config {
 	err = halocmd.InitFiles(log.WithNoopLogger(context.Background()), halocmd.InitConfig{
 		HomeDir:       homeDir,
 		Network:       netconf.Simnet,
-		Cosmos:        true,
 		ExecutionHash: executionGenesis.Hash(),
 	})
 	tutil.RequireNoError(t, err)

@@ -163,9 +163,11 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 
 		// Initialize the node's data directory (with noop logger since it is noisy).
 		initCfg := halocmd.InitConfig{
-			HomeDir:      nodeDir,
-			Network:      def.Testnet.Network,
-			RCPEndpoints: endpoints,
+			HomeDir: nodeDir,
+			Network: def.Testnet.Network,
+			HaloCfgFunc: func(cfg *halocfg.Config) {
+				cfg.RPCEndpoints = endpoints
+			},
 		}
 		if err := halocmd.InitFiles(log.WithNoopLogger(ctx), initCfg); err != nil {
 			return errors.Wrap(err, "init files")

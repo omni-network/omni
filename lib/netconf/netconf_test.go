@@ -55,8 +55,9 @@ func TestGenConsSeeds(t *testing.T) {
 					if typ != key.P2PConsensus {
 						continue
 					}
+					addr = strings.ToLower(addr) // CometBFT P2P IDs are lowercase.
 
-					peers = append(peers, fmt.Sprintf("%s@%s.%s.omni.network", addr, node, test.network)) // ABCDE123@seed01.staging.omni.network
+					peers = append(peers, fmt.Sprintf("%s@%s.%s.omni.network:26656", addr, node, test.network)) // abcde123@seed01.staging.omni.network:26656
 				}
 			}
 
