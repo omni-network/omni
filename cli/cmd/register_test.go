@@ -455,7 +455,7 @@ func registerOperator(t *testing.T, ctx context.Context, contracts Contracts, b 
 	err := eigenecdsa.WriteKey(keystoreFile, key, password)
 	require.NoError(t, err)
 
-	cfg := eigentypes.OperatorConfigNew{
+	cfg := eigentypes.OperatorConfig{
 		Operator: eigensdktypes.Operator{
 			Address:                   addr.Hex(),
 			EarningsReceiverAddress:   addr.Hex(),
@@ -464,14 +464,20 @@ func registerOperator(t *testing.T, ctx context.Context, contracts Contracts, b 
 		},
 		ELDelegationManagerAddress: contracts.DelegationManagerAddr.Hex(),
 		EthRPCUrl:                  b.Address(),
-		PrivateKeyStorePath:        keystoreFile,
-		SignerType:                 eigentypes.LocalKeystoreSigner,
-		ChainId:                    *big.NewInt(int64(chainID)),
+		SignerConfig: eigentypes.SignerConfig{
+			PrivateKeyStorePath: keystoreFile,
+			SignerType:          eigentypes.LocalKeystoreSigner,
+		},
+		ChainId: *big.NewInt(int64(chainID)),
 	}
 
-	bz, err := yaml.Marshal(cfg)
+	cfgYAML, err := cfg.MarshalYAML() // Convert into custom yaml struct first
+	require.NoError(t, err)
+	bz, err := yaml.Marshal(cfgYAML)
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(configFile, bz, 0644))
+
+	require.NoError(t, yaml.Unmarshal(bz, new(eigentypes.OperatorConfig))) // Ensure unmarshalling works
 
 	// Override register options for testing.
 	testOpts := func(deps *clicmd.RegDeps) {

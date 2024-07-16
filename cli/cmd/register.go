@@ -72,9 +72,9 @@ func Register(ctx context.Context, cfg RegConfig, opts ...regOpt) error {
 		return errors.Wrap(err, "read input")
 	}
 
-	privKey, err := eigenecdsa.ReadKey(eigenCfg.PrivateKeyStorePath, password)
+	privKey, err := eigenecdsa.ReadKey(eigenCfg.SignerConfig.PrivateKeyStorePath, password)
 	if err != nil {
-		return errors.Wrap(err, "read private key", "path", eigenCfg.PrivateKeyStorePath)
+		return errors.Wrap(err, "read private key", "path", eigenCfg.SignerConfig.PrivateKeyStorePath)
 	}
 
 	ethCl, err := ethclient.Dial(chainNameFromID(eigenCfg.ChainId), eigenCfg.EthRPCUrl)
@@ -138,19 +138,19 @@ func Register(ctx context.Context, cfg RegConfig, opts ...regOpt) error {
 }
 
 // readConfig returns the eigen-layer operator configuration from the given file.
-func readConfig(file string) (eigentypes.OperatorConfigNew, error) {
+func readConfig(file string) (eigentypes.OperatorConfig, error) {
 	if _, err := os.Stat(file); os.IsNotExist(err) {
-		return eigentypes.OperatorConfigNew{}, errors.Wrap(err, "eigen config file not found", "path", file)
+		return eigentypes.OperatorConfig{}, errors.Wrap(err, "eigen config file not found", "path", file)
 	}
 
 	bz, err := os.ReadFile(file)
 	if err != nil {
-		return eigentypes.OperatorConfigNew{}, errors.Wrap(err, "read eigen config file", "path", file)
+		return eigentypes.OperatorConfig{}, errors.Wrap(err, "read eigen config file", "path", file)
 	}
 
-	var config eigentypes.OperatorConfigNew
+	var config eigentypes.OperatorConfig
 	if err := yaml.Unmarshal(bz, &config); err != nil {
-		return eigentypes.OperatorConfigNew{}, errors.Wrap(err, "unmarshal eigen config file")
+		return eigentypes.OperatorConfig{}, errors.Wrap(err, "unmarshal eigen config file")
 	}
 
 	return config, nil
