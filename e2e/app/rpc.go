@@ -105,22 +105,28 @@ func waitForNode(ctx context.Context, node *e2e.Node, height int64, timeout time
 
 	timer := time.NewTimer(0)
 	defer timer.Stop()
-	var curHeight int64
+
+	var lastHeight int64
+	var lastErr error
 	lastChanged := time.Now()
+
 	for {
 		select {
 		case <-ctx.Done():
 			return nil, errors.Wrap(ctx.Err(), "context canceled")
 		case <-timer.C:
+			if time.Since(lastChanged) > timeout {
+				return nil, errors.New("timed out waiting for height", "name", node.Name, "height", height, "last_err", lastErr, "last_height", lastHeight)
+			}
+
 			status, err := client.Status(ctx)
 			switch {
-			case time.Since(lastChanged) > timeout:
-				return nil, errors.New("timed out waiting for height", "name", node.Name, "height", height)
 			case err != nil:
+				lastErr = err
 			case status.SyncInfo.LatestBlockHeight >= height && (height == 0 || !status.SyncInfo.CatchingUp):
 				return status, nil
-			case curHeight < status.SyncInfo.LatestBlockHeight:
-				curHeight = status.SyncInfo.LatestBlockHeight
+			case lastHeight < status.SyncInfo.LatestBlockHeight:
+				lastHeight = status.SyncInfo.LatestBlockHeight
 				lastChanged = time.Now()
 			}
 
