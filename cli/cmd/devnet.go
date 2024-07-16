@@ -201,7 +201,7 @@ func loadDevnetNetwork(ctx context.Context) (netconf.Network, xchain.RPCEndpoint
 
 	endpointsFile := filepath.Join(devnetPath, "endpoints.json")
 	if _, err := os.Stat(endpointsFile); os.IsNotExist(err) {
-		return netconf.Network{}, nil, &cliError{
+		return netconf.Network{}, nil, &CliError{
 			Msg:     "failed to load ~/.omni/devnet/endpoints.json",
 			Suggest: "Have you run `omni devnet start` yet?",
 		}
@@ -223,7 +223,7 @@ func loadDevnetNetwork(ctx context.Context) (netconf.Network, xchain.RPCEndpoint
 
 	network, err := netconf.AwaitOnChain(log.WithNoopLogger(ctx), netID, portalReg, endpoints.Keys())
 	if err != nil {
-		return netconf.Network{}, nil, &cliError{
+		return netconf.Network{}, nil, &CliError{
 			Msg:     "failed to check on-chain registry",
 			Suggest: "Have you run `omni devnet start` yet?",
 		}

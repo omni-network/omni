@@ -15,7 +15,6 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/xchain"
 
 	cmtconfig "github.com/cometbft/cometbft/config"
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
@@ -23,7 +22,6 @@ import (
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
-	"github.com/cometbft/cometbft/types"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -33,21 +31,32 @@ import (
 // InitConfig is the config for the init command.
 type InitConfig struct {
 	HomeDir       string
+	Moniker       string
 	Network       netconf.ID
 	TrustedSync   bool
-	RCPEndpoints  xchain.RPCEndpoints
+	HaloCfgFunc   func(*halocfg.Config)
 	Force         bool
 	Clean         bool
-	Cosmos        bool
 	ExecutionHash common.Hash
+}
+
+func (c InitConfig) Verify() error {
+	return c.Network.Verify()
+}
+
+func (c InitConfig) HaloCfg(cfg *halocfg.Config) {
+	if c.HaloCfgFunc != nil {
+		c.HaloCfgFunc(cfg)
+	}
 }
 
 // newInitCmd returns a new cobra command that initializes the files and folders required by halo.
 func newInitCmd() *cobra.Command {
 	// Default config flags
 	cfg := InitConfig{
-		HomeDir: halocfg.DefaultHomeDir,
-		Force:   false,
+		HomeDir:     halocfg.DefaultHomeDir,
+		Force:       false,
+		HaloCfgFunc: func(*halocfg.Config) {},
 	}
 
 	cmd := &cobra.Command{
@@ -77,6 +86,10 @@ The home directory should only contain subdirectories, no files, use --force to 
 				return err
 			}
 
+			if err := cfg.Verify(); err != nil {
+				return errors.Wrap(err, "verify flags")
+			}
+
 			return InitFiles(cmd.Context(), cfg)
 		},
 	}
@@ -89,7 +102,7 @@ The home directory should only contain subdirectories, no files, use --force to 
 // InitFiles initializes the files and folders required by halo.
 // It ensures a network and genesis file is generated/downloaded for the provided network.
 //
-//nolint:gocognit,gocyclo,nestif // This is just many sequential steps.
+//nolint:gocognit,nestif // This is just many sequential steps.
 func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	if initCfg.Network == "" {
 		return errors.New("required flag --network empty")
@@ -122,10 +135,11 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 
 	// Initialize default configs.
 	comet := DefaultCometConfig(homeDir)
+	comet.Moniker = initCfg.Moniker
 	cfg := halocfg.DefaultConfig()
 	cfg.HomeDir = homeDir
-	cfg.RPCEndpoints = initCfg.RCPEndpoints
 	cfg.Network = network
+	initCfg.HaloCfg(&cfg)
 
 	// Folders
 	folders := []struct {
@@ -155,7 +169,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	}
 
 	if initCfg.TrustedSync && network.IsProtected() {
-		rpcServer := fmt.Sprintf("https://rpc.consensus.%s.omni.network", network)
+		rpcServer := fmt.Sprintf("https://consensus.%s.omni.network", network)
 
 		// Trusted state sync only supported for protected networks.
 		height, hash, err := getTrustHeightAndHash(ctx, rpcServer)
@@ -230,22 +244,14 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 			return errors.Wrap(err, "get public key")
 		}
 
-		var genDoc *types.GenesisDoc
-		if initCfg.Cosmos {
-			cosmosGen, err := genutil.MakeGenesis(network, time.Now(), initCfg.ExecutionHash, pubKey)
-			if err != nil {
-				return err
-			}
+		cosmosGen, err := genutil.MakeGenesis(network, time.Now(), initCfg.ExecutionHash, pubKey)
+		if err != nil {
+			return err
+		}
 
-			genDoc, err = cosmosGen.ToGenesisDoc()
-			if err != nil {
-				return errors.Wrap(err, "convert to genesis doc")
-			}
-		} else {
-			genDoc, err = MakeGenesis(network, pubKey)
-			if err != nil {
-				return err
-			}
+		genDoc, err := cosmosGen.ToGenesisDoc()
+		if err != nil {
+			return errors.Wrap(err, "convert to genesis doc")
 		}
 
 		if err := genDoc.SaveAs(genFile); err != nil {
