@@ -135,13 +135,13 @@ func testnetPrefundAlloc() types.GenesisAlloc {
 		eoa.MustAddress(netconf.Omega, eoa.RoleRelayer): {Balance: eth1m},
 
 		// team dev accounts
-		common.HexToAddress("0x00000d4De727593D6fbbFe39eE9EbddB49ED5b8A"): {Balance: eth1m}, // shared
 		common.HexToAddress("0xFbD05C5dD1c09970D30Ad8BBf29BC34283E84E20"): {Balance: eth1m}, // corver
 		common.HexToAddress("0xe3481474b23f88a8917DbcB4cBC55Efcf0f68CC7"): {Balance: eth1m}, // kevin
 		common.HexToAddress("0x38E2a3FC1923767F74d2308a529a353e91763EBF"): {Balance: eth1m}, // tt
-		common.HexToAddress("0xcfc5Ff8F4C26ebE2Cb23fBE83C6D537BEAE0C1A0"): {Balance: eth1m}, // dennis
 		common.HexToAddress("0x5816EBCe5421c85B952F1f193980b96462B296De"): {Balance: eth1m}, // fab
-		common.HexToAddress("0x04DCFaadEe3aa5a0F9C5411D9CDB79901201aaD6"): {Balance: eth1m}, // pavel
+		common.HexToAddress("0xDEdDf2DA39E0E39469a28F5A0392DcFbe40323de"): {Balance: eth1m}, // chase
+		common.HexToAddress("0xb95512856C7044431E300C9b72C90297529B53DC"): {Balance: eth1m}, // austin
+		common.HexToAddress("0x12444cDeD3BC994684D4Dc109240a22B8AC64f7C"): {Balance: eth1m}, // graham
 
 		// TODO: add validators, relayer
 	}
