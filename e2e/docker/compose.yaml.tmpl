@@ -20,12 +20,12 @@ services:
     image: {{ .Version }}
     init: true
     ports:
-    - {{ if $.BindAll }}26656:{{end}}26656
-    - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657
+    - {{ if $.BindAll }}26656:{{end}}26656 # Consensus P2P
+    - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657 # Consensus RPC
 {{- if .PrometheusProxyPort }}
-    - {{ .PrometheusProxyPort }}:26660
+    - {{ .PrometheusProxyPort }}:26660 # Prometheus
 {{- end }}
-    - 6060
+    - 6060 # Pprof
     volumes:
     - ./{{ .Name }}:/halo
     networks:
@@ -72,11 +72,11 @@ services:
       - --metrics
       {{ if .IsArchive }}- --gcmode=archive{{ end }}
     ports:
-      - {{ if $.BindAll }}8551:{{end}}8551
-      - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}8545
-      - {{ if $.BindAll }}30303:{{end}}30303
-      - 8546
-      - 6060
+      - {{ if $.BindAll }}8551:{{end}}8551 # Auth RPC
+      - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}8545 # HTTP RPC
+      - {{ if $.BindAll }}30303:{{end}}30303 # Execution P2P
+      - 8546 # Websockets RPC
+      - 6060 # Prometheus metrics and pprof
     healthcheck:
       test: "nc -z localhost 8545"
       interval: 1s
@@ -95,6 +95,8 @@ services:
     container_name: relayer
     image: omniops/relayer:{{or .OmniTag "main"}}
     restart: unless-stopped # Restart on crash to mitigate startup race issues
+    ports:
+      - 26660 # Prometheus and pprof
     volumes:
       - ./relayer:/relayer
     networks:
@@ -109,6 +111,8 @@ services:
     container_name: monitor
     image: omniops/monitor:{{or .OmniTag "main"}}
     restart: unless-stopped # Restart on crash to mitigate startup race issues
+    ports:
+      - 26660 # Prometheus and pprof
     volumes:
       - ./monitor:/monitor
     networks:
