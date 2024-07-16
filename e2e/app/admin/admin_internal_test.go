@@ -38,7 +38,7 @@ func TestPausePortalAction(t *testing.T) {
 	s := mockShared()
 	c := mockChain()
 
-	err := pausePortal(ctx, s, c, r)
+	_, err := pausePortal(ctx, s, c, r)
 	require.NoError(t, err)
 	require.Len(t, r.calls, 1)
 	require.Equal(t, mustPack(t, adminABI, "pausePortal", s.admin, c.PortalAddress), r.calls[0].calldata)
@@ -54,7 +54,7 @@ func TestUnpausePortalAction(t *testing.T) {
 	s := mockShared()
 	c := mockChain()
 
-	err := unpausePortal(ctx, s, c, r)
+	_, err := unpausePortal(ctx, s, c, r)
 	require.NoError(t, err)
 	require.Len(t, r.calls, 1)
 	require.Equal(t, mustPack(t, adminABI, "unpausePortal", s.admin, c.PortalAddress), r.calls[0].calldata)
@@ -70,7 +70,7 @@ func TestUpgradePortalAction(t *testing.T) {
 	s := mockShared()
 	c := mockChain()
 
-	err := upgradePortal(ctx, s, c, r)
+	_, err := upgradePortal(ctx, s, c, r)
 	require.NoError(t, err)
 	require.Len(t, r.calls, 1)
 	require.Equal(t, mustPack(t, adminABI, "upgradePortal", s.admin, s.deployer, c.PortalAddress, []byte{}), r.calls[0].calldata)

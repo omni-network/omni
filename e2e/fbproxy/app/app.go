@@ -35,7 +35,7 @@ func Run(ctx context.Context, cfg Config) error {
 
 	eg.Go(func() error {
 		<-ctx.Done()
-		log.Info(ctx, "Shutdown detected, stopping server")
+		log.Info(ctx, "Shutdown detected, stopping fbproxy server")
 
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
@@ -77,9 +77,13 @@ func Start(ctx context.Context, cfg Config) (string, error) {
 		return errors.Wrap(httpServer.Serve(listener), "serve")
 	})
 
+	addr := <-addrCh
+
+	log.Info(ctx, "Started fbproxy server", "addr", addr)
+
 	eg.Go(func() error {
 		<-ctx.Done()
-		log.Info(ctx, "Shutdown detected, stopping server")
+		log.Info(ctx, "Shutdown detected, stopping fbproxy server", "addr", addr)
 
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
@@ -90,8 +94,6 @@ func Start(ctx context.Context, cfg Config) (string, error) {
 
 		return nil
 	})
-
-	addr := <-addrCh
 
 	return addr, nil
 }
