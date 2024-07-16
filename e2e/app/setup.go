@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -120,7 +121,7 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 			}
 		}
 
-		cfg, err := MakeConfig(node, nodeDir)
+		cfg, err := MakeConfig(def.Testnet.Network, node, nodeDir)
 		if err != nil {
 			return err
 		}
@@ -232,13 +233,13 @@ func writeAnvilState(testnet types.Testnet) error {
 // MakeConfig generates a CometBFT config for a node.
 //
 //nolint:lll // CometBFT super long names :(
-func MakeConfig(node *e2e.Node, nodeDir string) (*config.Config, error) {
+func MakeConfig(network netconf.ID, node *e2e.Node, nodeDir string) (*config.Config, error) {
 	cfg := halocmd.DefaultCometConfig(nodeDir)
 	cfg.Moniker = node.Name
 	cfg.ProxyApp = AppAddressTCP
 	cfg.RPC.ListenAddress = "tcp://0.0.0.0:26657"
 	cfg.RPC.PprofListenAddress = ":6060"
-	cfg.P2P.ExternalAddress = fmt.Sprintf("tcp://%v", node.AddressP2P(false))
+	cfg.P2P.ExternalAddress = fmt.Sprintf("tcp://%v:26656", advertisedIP(network, node.Mode, node.InternalIP, node.ExternalIP))
 	cfg.P2P.AddrBookStrict = false
 	cfg.DBBackend = node.Database
 	cfg.StateSync.DiscoveryTime = 5 * time.Second
@@ -312,6 +313,22 @@ func MakeConfig(node *e2e.Node, nodeDir string) (*config.Config, error) {
 	}
 
 	return &cfg, nil
+}
+
+// advertisedIP returns the IP address to advertise for a node on a network.
+func advertisedIP(network netconf.ID, mode types.Mode, internal, external net.IP) net.IP {
+	if network.IsEphemeral() {
+		// Ephemeral networks do not support external peers connecting to it, so we use the internal IP.
+		return internal
+	}
+
+	if mode == types.ModeSeed || mode == types.ModeFull {
+		// Only seeds and fullnodes allow external peers to connect to them.
+		return external
+	}
+	// Validators and archive nodes are "secured" and only allow internal peers to connect to them.
+
+	return internal
 }
 
 // writeHaloConfig generates an halo application config for a node and writes it to disk.
