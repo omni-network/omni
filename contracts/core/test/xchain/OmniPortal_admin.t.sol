@@ -264,4 +264,18 @@ contract OmniPortal_admin_Test is Base {
         portal.setInXBlockOffset(srcChainId, shardId, offset);
         assertEq(portal.inXBlockOffset(srcChainId, shardId), offset);
     }
+
+    function test_setXSubValsetCutoff() public {
+        // only owner
+        address notOwner = address(0x456);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, notOwner));
+        vm.prank(notOwner);
+        portal.setXSubValsetCutoff(1);
+
+        // set cutoff
+        vm.prank(owner);
+        portal.setXSubValsetCutoff(1);
+
+        assertEq(portal.xsubValsetCutoff(), 1);
+    }
 }

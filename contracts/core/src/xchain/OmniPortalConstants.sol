@@ -17,11 +17,6 @@ contract OmniPortalConstants {
     uint8 public constant XSubQuorumDenominator = 3;
 
     /**
-     * @notice Number of validator sets since the latest that can be used to validate an XSubmission
-     */
-    uint8 public constant XSubValsetCutoff = 10;
-
-    /**
      * @notice Action ID for xsubmissions, used as Pauseable key
      */
     bytes32 public constant ActionXSubmit = keccak256("xsubmit");

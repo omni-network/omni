@@ -11,6 +11,11 @@ import { XTypes } from "../libraries/XTypes.sol";
  */
 abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
     /**
+     * @notice Number of validator sets since the latest that can be used to validate an XSubmission
+     */
+    uint8 public xsubValsetCutoff;
+
+    /**
      * @notice Maxium number of bytes allowed in xreceipt result
      */
     uint16 public xreceiptMaxErrorSize;
