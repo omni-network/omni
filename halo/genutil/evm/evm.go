@@ -142,6 +142,7 @@ func testnetPrefundAlloc() types.GenesisAlloc {
 		common.HexToAddress("0xDEdDf2DA39E0E39469a28F5A0392DcFbe40323de"): {Balance: eth1m}, // chase
 		common.HexToAddress("0xb95512856C7044431E300C9b72C90297529B53DC"): {Balance: eth1m}, // austin
 		common.HexToAddress("0x12444cDeD3BC994684D4Dc109240a22B8AC64f7C"): {Balance: eth1m}, // graham
+		common.HexToAddress("0x29f26d43B2639aa8C6E99478C55a8645aD466766"): {Balance: eth1m}, // mark
 
 		// TODO: add validators, relayer
 	}
