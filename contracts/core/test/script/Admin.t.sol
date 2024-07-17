@@ -104,6 +104,7 @@ contract Admin_Test is Test {
                 xmsgMinGasLimit: 21_000,
                 xmsgMaxDataSize: 20_000,
                 xreceiptMaxErrorSize: 256,
+                xsubValsetCutoff: 10,
                 cChainXMsgOffset: 1,
                 cChainXBlockOffset: 1,
                 valSetId: 1,

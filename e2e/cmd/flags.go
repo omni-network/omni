@@ -57,5 +57,5 @@ func bindKeyCreateFlags(cmd *cobra.Command, cfg *key.UploadConfig) {
 }
 
 func bindPortalAdminFlags(flags *pflag.FlagSet, cfg *admin.PortalAdminConfig) {
-	flags.StringVar(&cfg.Chain, "chain", cfg.Chain, "pause a specific chain")
+	flags.StringVar(&cfg.Chain, "chain", cfg.Chain, "Run admin command on a specific chain (\"--chain=all\" for all chains)")
 }

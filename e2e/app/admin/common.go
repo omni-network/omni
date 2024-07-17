@@ -13,6 +13,8 @@ import (
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/forkjoin"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -58,11 +60,11 @@ func (r forgeRunner) run(ctx context.Context, input []byte, senders ...common.Ad
 	return runForge(ctx, "Admin", r.rpc, input, senders...)
 }
 
-// action is a function that performs an admin action.
-type action func(ctx context.Context, s shared, c chain, r runner) error
+// action is a function that performs an admin action. It returns the output of the action and an error.
+type action func(ctx context.Context, s shared, c chain, r runner) (string, error)
 
 // run runs an admin action with some config on an app definition.
-func run(ctx context.Context, def app.Definition, cfg PortalAdminConfig, act action) error {
+func run(ctx context.Context, def app.Definition, cfg PortalAdminConfig, name string, act action) error {
 	if err := cfg.Validate(); err != nil {
 		return errors.Wrap(err, "validate config")
 	}
@@ -72,15 +74,70 @@ func run(ctx context.Context, def app.Definition, cfg PortalAdminConfig, act act
 		return errors.Wrap(err, "setup")
 	}
 
-	c, err := setupChain(ctx, s, cfg.Chain)
-	if err != nil {
-		return errors.Wrap(err, "setup chain")
+	chains := getChains(s.network, cfg.Chain)
+
+	// runForChain runs the action for a single chain.
+	runForChain := func(ctx context.Context, chain string) (string, error) {
+		c, err := setupChain(ctx, s, chain)
+		if err != nil {
+			return "", errors.Wrap(err, "setup chain")
+		}
+
+		r := forgeRunner{rpc: c.rpc}
+
+		out, err := act(ctx, s, c, r)
+		if err != nil {
+			return out, errors.Wrap(err, "run action", "action", name, "chain", chain)
+		}
+
+		return out, nil
 	}
 
-	r := forgeRunner{rpc: c.rpc}
+	results, cancel := forkjoin.NewWithInputs(ctx, runForChain, chains)
+	defer cancel()
 
-	if err := act(ctx, s, c, r); err != nil {
-		return errors.Wrap(err, "run action")
+	return report(log.WithCtx(ctx, "action", name), results)
+}
+
+// getChains returns the chain names to run an admin action on, returning all chains if chain is "all".
+func getChains(network netconf.Network, chain string) []string {
+	if chain == chainAll {
+		var chains []string
+		for _, c := range network.EVMChains() {
+			chains = append(chains, c.Name)
+		}
+
+		return chains
+	}
+
+	return []string{chain}
+}
+
+// runResults is a type alias for the results of a forkjoin of admin actions.
+// They take a chain name as input, and return cli output.
+type runResults = forkjoin.Results[string, string]
+
+// report logs the results of a forkjoin, returning an error only if all runs failed.
+func report(ctx context.Context, results runResults) error {
+	var failed []string
+	var success []string
+	for res := range results {
+		if res.Err != nil {
+			log.Error(ctx, "Run  failed", res.Err, "chain", res.Input)
+			failed = append(failed, res.Input)
+		} else {
+			log.Info(ctx, "Run succeeded", "chain", res.Input, "out", res.Output)
+			success = append(success, res.Input)
+		}
+	}
+
+	if len(failed) == len(results) {
+		return errors.New("all runs failed", "chains", failed)
+	} else if len(failed) > 0 {
+		log.Error(ctx, "Runs failed", errors.New("runs failed"), "chains", failed)
+		log.Info(ctx, "Runs succeeded", "chains", success)
+	} else {
+		log.Info(ctx, "All runs succeeded", "chains", success)
 	}
 
 	return nil
@@ -140,7 +197,7 @@ func setupChain(ctx context.Context, s shared, name string) (chain, error) {
 	}
 
 	// only use fb proxy for non-devnet - devnet uses anvil accounts
-	if s.network.ID == netconf.Devnet {
+	if s.network.ID != netconf.Devnet {
 		rpc, err = startFBProxy(ctx, s.network.ID, rpc, s.fireAPIKey, s.fireKeyPath)
 		if err != nil {
 			return chain{}, errors.Wrap(err, "start fb proxy")
@@ -178,7 +235,7 @@ func runForge(ctx context.Context, script string, rpc string, input []byte, send
 	if len(anvilPks) > 0 {
 		return execCmd(ctx, dir, "forge", "script", script,
 			"--broadcast", "--slow", "--rpc-url", rpc, "--sig", hexutil.Encode(input),
-			"--private-keys", strings.Join(anvilPks, ","),
+			"--private-keys", strings.Join(dedup(anvilPks), ","),
 		)
 	}
 
@@ -268,4 +325,19 @@ func mustGetABI(metadata *bind.MetaData) *abi.ABI {
 	}
 
 	return abi
+}
+
+func dedup(strs []string) []string {
+	seen := make(map[string]bool)
+	var res []string
+	for _, s := range strs {
+		if seen[s] {
+			continue
+		}
+
+		seen[s] = true
+		res = append(res, s)
+	}
+
+	return res
 }
