@@ -14,5 +14,6 @@ The following table contains the audit reports for the Omni Protocol. We will up
 
 | Auditing Firm | Date | Report URL | Scope |
 | ------------- | ---- | ---------- | ----- |
+| Sigma Prime   | July 17, 2024   | [Report](https://docs.omni.network/sigma-prime-chain.pdf) | Chain, Smart Contracts |
 | Sigma Prime   | April 04, 2024  | [Report](https://docs.omni.network/sigma-prime-avs.pdf) | AVS, Token |
 | Zellic        | March 29, 2024  | [Report](https://docs.omni.network/zellic-avs.pdf) | AVS, Token |
