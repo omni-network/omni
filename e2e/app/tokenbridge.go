@@ -31,11 +31,6 @@ func setupTokenBridge(ctx context.Context, def Definition) error {
 		return nil
 	}
 
-	if !def.Testnet.Network.IsEphemeral() {
-		log.Warn(ctx, "Skipping token bridge setup", errors.New("only ephemeral networks"))
-		return nil
-	}
-
 	omniEVM, ok := network.OmniEVMChain()
 	if !ok {
 		return errors.New("no omni evm chain")
@@ -60,21 +55,29 @@ func setupTokenBridge(ctx context.Context, def Definition) error {
 
 	// Deploy the token
 
-	tokenAddr, receipt, err := omnitoken.Deploy(ctx, networkID, l1Backend)
+	tokenAddr, receipt, err := omnitoken.DeployIfNeeded(ctx, networkID, l1Backend)
 	if err != nil {
 		return errors.Wrap(err, "deploy omni token")
 	}
 
-	log.Info(ctx, "Deployed Omni Token", "chain", l1.Name, "addr", tokenAddr.Hex(), "block", receipt.BlockNumber)
+	if receipt != nil {
+		log.Info(ctx, "Deployed Omni Token", "chain", l1.Name, "addr", tokenAddr.Hex(), "block", receipt.BlockNumber)
+	} else if tokenAddr != networkID.Static().TokenAddress {
+		log.Warn(ctx, "Omni token already deployed, but not in network static", errors.New("missing static token addr"), "addr", tokenAddr.Hex())
+	}
 
 	// Deploy the bridge
 
-	l1BridgeAddr, receipt, err := l1bridge.Deploy(ctx, networkID, l1Backend)
+	l1BridgeAddr, receipt, err := l1bridge.DeployIfNeeded(ctx, networkID, l1Backend)
 	if err != nil {
 		return errors.Wrap(err, "deploy l1 bridge")
 	}
 
-	log.Info(ctx, "Deployed L1 Bridge", "chain", l1.Name, "addr", l1BridgeAddr.Hex(), "block", receipt.BlockNumber)
+	if receipt != nil {
+		log.Info(ctx, "Deployed L1 Bridge", "chain", l1.Name, "addr", l1BridgeAddr.Hex(), "block", receipt.BlockNumber)
+	} else if l1BridgeAddr != networkID.Static().L1BridgeAddress {
+		log.Warn(ctx, "L1 bridge already deployed, but not in network static", errors.New("missing static bridge addr"), "addr", l1BridgeAddr.Hex())
+	}
 
 	// Configure the OmniBridge native predeploy
 

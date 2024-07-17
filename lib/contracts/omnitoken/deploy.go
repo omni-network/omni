@@ -60,7 +60,23 @@ func getDeployCfg(network netconf.ID) (DeploymentConfig, error) {
 		return stagingCfg(), nil
 	}
 
+	if network == netconf.Omega {
+		return omnegaCfg(), nil
+	}
+
+	// NOTE: mainnet not supported, as mainnet token is already deployed.
+
 	return DeploymentConfig{}, errors.New("unsupported network", "network", network)
+}
+
+func omnegaCfg() DeploymentConfig {
+	return DeploymentConfig{
+		Create3Factory: contracts.OmegaCreate3Factory(),
+		Create3Salt:    contracts.TokenSalt(netconf.Omega),
+		Deployer:       eoa.MustAddress(netconf.Omega, eoa.RoleDeployer),
+		Recipient:      eoa.MustAddress(netconf.Omega, eoa.RoleTester),
+		ExpectedAddr:   contracts.OmegaToken(),
+	}
 }
 
 func stagingCfg() DeploymentConfig {
@@ -93,6 +109,54 @@ func InitialSupplyRecipient(network netconf.ID) (common.Address, bool) {
 	}
 
 	return common.Address{}, false
+}
+
+func AddrForNetwork(network netconf.ID) (common.Address, bool) {
+	switch network {
+	case netconf.Mainnet:
+		return contracts.MainnetToken(), true
+	case netconf.Omega:
+		return contracts.OmegaToken(), true
+	case netconf.Staging:
+		return contracts.StagingToken(), true
+	case netconf.Devnet:
+		return contracts.DevnetToken(), true
+	default:
+		return common.Address{}, false
+	}
+}
+
+// isDeployed returns true if the token contract is already deployed to its expected address.
+func isDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (bool, common.Address, error) {
+	addr, ok := AddrForNetwork(network)
+	if !ok {
+		return false, addr, errors.New("unsupported network", "network", network)
+	}
+
+	code, err := backend.CodeAt(ctx, addr, nil)
+	if err != nil {
+		return false, addr, errors.Wrap(err, "code at", "address", addr)
+	}
+
+	if len(code) == 0 {
+		return false, addr, nil
+	}
+
+	return true, addr, nil
+}
+
+// DeployIfNeeded deploys a new token contract if it is not already deployed.
+// If the contract is already deployed, the receipt is nil.
+func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+	deployed, addr, err := isDeployed(ctx, network, backend)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "is deployed")
+	}
+	if deployed {
+		return addr, nil, nil
+	}
+
+	return Deploy(ctx, network, backend)
 }
 
 // Deploy deploys a new ERC20 OMNI token contract and returns the address and receipt.
