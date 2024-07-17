@@ -16,7 +16,7 @@
   "Headers": ""
  },
  "Comet": {
-  "Version": "0.38.9",
+  "Version": "0.38.10",
   "RootDir": "foo",
   "ProxyApp": "tcp://127.0.0.1:26658",
   "Moniker": "testmoniker",
