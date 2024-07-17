@@ -327,7 +327,7 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 	}
 
 	var omniEVMS []types.OmniEVM
-	for name, isArchive := range manifest.OmniEVMs() {
+	for name, mode := range manifest.OmniEVMs() {
 		inst, ok := infd.Instances[name]
 		if !ok {
 			return types.Testnet{}, errors.New("omni evm instance not found in infrastructure data")
@@ -345,22 +345,20 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 		en := enode.NewV4(&nodeKey.PublicKey, inst.IPAddress, 30303, 30303)
 
 		internalIP := inst.IPAddress.String()
-		advertisedIP := inst.ExtIPAddress // EVM P2P NAT advertised address.
 		if infd.Provider == docker.ProviderName {
-			internalIP = name             // For docker, we use container names
-			advertisedIP = inst.IPAddress // For docker, we use container IPs for evm p2p networking, not localhost.
+			internalIP = name // For docker, we use container names
 		}
 
 		omniEVMS = append(omniEVMS, types.OmniEVM{
 			Chain:        types.OmniEVMByNetwork(manifest.Network),
 			InstanceName: name,
-			AdvertisedIP: advertisedIP,
+			AdvertisedIP: advertisedIP(manifest.Network, mode, inst.IPAddress, inst.ExtIPAddress),
 			ProxyPort:    inst.Port,
 			InternalRPC:  fmt.Sprintf("http://%s:8545", internalIP),
 			ExternalRPC:  fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
 			NodeKey:      nodeKey,
 			Enode:        en,
-			IsArchive:    isArchive,
+			IsArchive:    mode == types.ModeArchive,
 			JWTSecret:    tutil.RandomHash().Hex(),
 		})
 	}

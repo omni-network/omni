@@ -32,7 +32,7 @@ services:
     command:
       - --config=/geth/config.toml
       # Flags not available via config.toml
-      - --nat=extip:<nil>
+      - --nat=extip:127.0.0.2
       - --pprof
       - --pprof.addr=0.0.0.0
       - --metrics

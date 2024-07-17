@@ -116,19 +116,19 @@ func (m Manifest) Seeds() map[string]bool {
 	return resp
 }
 
-// OmniEVMs returns a map of omni evm instances names by <IsArchive> to deploy.
+// OmniEVMs returns a map of omni evm instances names by mode to deploy.
 // If only a single Omni EVM is to be deployed, the name is "omni_evm".
 // Otherwise, the names are "<node>_evm".
-func (m Manifest) OmniEVMs() map[string]bool {
+func (m Manifest) OmniEVMs() map[string]Mode {
 	if !m.MultiOmniEVMs {
-		return map[string]bool{
-			"omni_evm": false,
+		return map[string]Mode{
+			"omni_evm": ModeValidator,
 		}
 	}
 
-	resp := make(map[string]bool)
+	resp := make(map[string]Mode)
 	for name, node := range m.Nodes {
-		resp[name+"_evm"] = Mode(node.Mode) == ModeArchive
+		resp[name+"_evm"] = Mode(node.Mode)
 	}
 
 	return resp
