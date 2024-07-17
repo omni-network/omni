@@ -13,7 +13,7 @@ require (
 	cosmossdk.io/store v1.1.0
 	cosmossdk.io/x/tx v0.13.3
 	github.com/BurntSushi/toml v1.4.0
-	github.com/Layr-Labs/eigenlayer-cli v0.9.1
+	github.com/Layr-Labs/eigenlayer-cli v0.9.2
 	github.com/Layr-Labs/eigensdk-go v0.1.9-0.20240705173150-8f12390d1974
 	github.com/bufbuild/buf v1.34.0
 	github.com/charmbracelet/log v0.4.0
