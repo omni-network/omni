@@ -20,7 +20,7 @@ Below is a summarized fragment for the underlying logic beneath `xcall` from the
 
 <GitHubCodeBlock url="https://github.com/omni-network/omni/blob/3064e8ad22557c8756547f1875d026e348846c9d/contracts/src/xchain/OmniPortal.sol#L100-L129" />
 
-For detailed instructions on conducting cross-chain transactions, refer to the [developer section](../../../develop/introduction.md).
+For detailed instructions on conducting cross-chain transactions, refer to the [developer section](../../../develop/xchain-messaging.md).
 
 ## Portal Receive Logic
 

@@ -12,7 +12,7 @@ The `developer new` command is used to scaffold a new project from a template. T
 omni developer new
 ```
 
-This will scaffold a new Forge project with an [`XGreeter`](../../develop/xapp/example.md#xgreeter-contract) contract
+This will scaffold a new Forge project with an [`XGreeter`](../../develop/xapp/example.md) contract
 accompanied by simple mocked testing and a multi-chain deployment script.
 
 ## Starting a Local Devnet

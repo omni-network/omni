@@ -16,21 +16,17 @@ Fields will be updated soon.
 
 | Network | Chain ID | RPC URL |
 |---------|----------|---------|
-| Omni    | `$OMNI_TESNET_CHAIN_ID$` | `$OMNI_TESTNET_RPC_URL$` |
+| Omni    | 165 | `$OMNI_TESTNET_RPC_URL$` |
 | Ethereum Holesky |    `17000`    | [See ChainList Page](https://chainlist.org/chain/17000) |
-| Arbitrum Sepolia |   `421614`      | `https://sepolia-rollup.arbitrum.io/rpc` |
-| Optimism Sepolia |    `11155420`    | `https://sepolia.optimism.io` |
-| Base Sepolia |    `84532`    | `https://sepolia.base.org` |
+| Arbitrum Sepolia |   `421614`      | [See Chainlist](https://chainlist.org/chain/421614) |
+| Optimism Sepolia |    `11155420`    | [See Chainlist](https://chainlist.org/chain/11155420) |
+| Base Sepolia |    `84532`    | [See Chainlist](https://chainlist.org/chain/84532) |
 
 ## Addresses
 
-| Contract | Omni Omega | Ethereum Holesky | Arbitrum Sepolia | Optimism Sepolia |
-|---------|------------|----------|----------|----------|
-| Portal |`$OMNI-OMEGA-ADDRESS$` | `$HOLESKY-ADDRESS$` |`$ARBITRUM-ADDRESS$` |`$OPTIMISM-ADDRESS$` |
-
-### Precompiled Contracts
-
-Precompiles on the Omni EVM are equivalent to the Ethereum EVM precompiles.
+| Contract | Address | Note |
+|---------|------------|----------|
+| Portal | `$PORTAL_ADDRESS` | Our Portal contracts have a single, unified contract address across the Omni EVM and all supported rollups. |
 
 ## Faucets
 
@@ -50,3 +46,18 @@ Precompiles on the Omni EVM are equivalent to the Ethereum EVM precompiles.
 | Arbitrum Sepolia       | https://sepolia.arbiscan.io/ |
 | Optimism Sepolia       | https://sepolia-optimism.etherscan.io/ |
 | Base Sepolia           | https://sepolia.basescan.org/ |
+
+## Documentation
+
+| Subject | URL |
+|---------|------------|
+| Quickstart | https://docs.omni.network/testnet |
+| Developing XApps | https://docs.omni.network/develop/introduction |
+| Examples & Tutorials | https://github.com/omni-network/awesome-omni |
+
+## Socials
+
+| Subject | URL |
+|---------|------------|
+| Builder TG Channel | Reach out to the team |
+| Community Discussions | https://github.com/orgs/omni-network/discussions |
