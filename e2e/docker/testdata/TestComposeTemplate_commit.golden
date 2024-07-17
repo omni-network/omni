@@ -82,7 +82,7 @@ services:
       - 8551 # Auth RPC
       - 8000:8545 # HTTP RPC
       - 30303 # Execution P2P
-      - 8546 # Websockets RPC
+      - 8546:8546 # Websockets RPC
       - 6060 # Prometheus metrics and pprof
     healthcheck:
       test: "nc -z localhost 8545"
