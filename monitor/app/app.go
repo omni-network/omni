@@ -100,7 +100,7 @@ func startXMonitor(ctx context.Context, cfg Config, network netconf.Network, eth
 		db = dbm.NewMemDB()
 	} else {
 		var err error
-		db, err = dbm.NewGoLevelDB("emitcqche", cfg.DBDir, nil)
+		db, err = dbm.NewGoLevelDB("emitcache", cfg.DBDir, nil)
 		if err != nil {
 			return errors.Wrap(err, "new golevel db")
 		}

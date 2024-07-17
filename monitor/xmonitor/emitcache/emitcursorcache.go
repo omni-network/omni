@@ -54,7 +54,7 @@ func Start(
 			// Update the emit cursor cache for each stream for this height.
 			for _, stream := range network.StreamsFrom(chain.ID) {
 				ref := xchain.EmitRef{Height: &block.BlockHeight}
-				emit, ok, err := xprov.GetEmittedCursor(ctx, ref, stream)
+				emit, _, err := xprov.GetEmittedCursor(ctx, ref, stream)
 				if err != nil {
 					latest, err := xprov.ChainVersionHeight(ctx, xchain.ChainVersion{ID: chain.ID, ConfLevel: xchain.ConfLatest})
 					if err != nil {
@@ -67,9 +67,8 @@ func Start(
 					)
 
 					continue
-				} else if !ok {
-					continue
 				}
+				// Populate a zero cursor if not found.
 
 				if err := cache.set(ctx, block.BlockHeight, emit); err != nil {
 					return err
@@ -244,7 +243,7 @@ func (c *emitCursorCache) AtOrBefore(ctx context.Context, height uint64, stream 
 func (c *emitCursorCache) trimForever(ctx context.Context, network netconf.ID, chainID uint64) {
 	period := time.Hour // Only trim once an hour, since it does table scans.
 	if network.IsEphemeral() {
-		period = time.Minute // Make it faster for ephemeral chains
+		period = time.Minute * 10 // Make it faster for ephemeral chains
 	}
 
 	ticker := time.NewTicker(period)
