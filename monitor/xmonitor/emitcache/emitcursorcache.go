@@ -3,11 +3,11 @@ package emitcache
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	ormv1alpha1 "cosmossdk.io/api/cosmos/orm/v1alpha1"
@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	// cacheTrimLag is the number of blocks after which cursors are evicted from the cache.
-	cacheTrimLag = 10_000
+	// cacheRetain is the number of block heights after which cursors are evicted from the cache.
+	cacheRetain = 10_000
 	// cacheStartLag is the number of blocks behind latest to start streaming and populating the cache.
 	// 128 is the default number of historical block state that geth stores in non-archive mode.
 	cacheStartLag = 128
@@ -76,11 +76,7 @@ func Start(
 				}
 			}
 
-			if block.BlockHeight > cacheTrimLag { // Only trim after cacheTrimLag blocks.
-				if err := cache.trim(ctx, umath.SubtractOrZero(block.BlockHeight, cacheTrimLag)); err != nil {
-					return err
-				}
-			}
+			log.Debug(ctx, "Populated emit cursor cache", "height", block.BlockHeight, "chain", chain.Name)
 
 			return nil
 		}
@@ -108,6 +104,9 @@ func Start(
 		if err := xprov.StreamAsync(ctx, req, callback); err != nil {
 			return nil, err
 		}
+
+		// Start a goroutine to trim this chain.
+		go cache.trimForever(ctx, network.ID, chain.ID)
 	}
 
 	return cache, nil
@@ -242,19 +241,92 @@ func (c *emitCursorCache) AtOrBefore(ctx context.Context, height uint64, stream 
 	}, true, err
 }
 
-// trim removes all cursors at or below the provided height.
-func (c *emitCursorCache) trim(ctx context.Context, height uint64) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	start := EmitCursorHeightIndexKey{}
-	end := EmitCursorHeightIndexKey{}.WithHeight(height)
-	err := c.table.DeleteRange(ctx, start, end)
-	if err != nil {
-		return errors.Wrap(err, "delete emit cursor cache")
+func (c *emitCursorCache) trimForever(ctx context.Context, network netconf.ID, chainID uint64) {
+	period := time.Hour // Only trim once an hour, since it does table scans.
+	if network.IsEphemeral() {
+		period = time.Minute // Make it faster for ephemeral chains
 	}
 
+	ticker := time.NewTicker(period)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			err := c.trimOnce(ctx, chainID, cacheRetain)
+			if ctx.Err() != nil {
+				return // Don't log error on shutdown
+			} else if err != nil {
+				log.Warn(ctx, "Trim emit cursor cache failed (will retry)", err, "chain", chainID)
+			}
+		}
+	}
+}
+
+func (c *emitCursorCache) trimOnce(ctx context.Context, chainID uint64, retain uint64) error {
+	t0 := time.Now()
+
+	ids, err := c.detectTrim(ctx, chainID, retain)
+	if err != nil {
+		return err
+	}
+
+	for _, id := range ids {
+		c.mu.Lock()
+		err := c.table.DeleteBy(ctx, EmitCursorIdIndexKey{}.WithId(id))
+		c.mu.Unlock()
+		if err != nil {
+			return errors.Wrap(err, "delete emit cursor cache")
+		}
+	}
+
+	var first, last uint64
+	if len(ids) > 0 {
+		first, last = ids[0], ids[len(ids)-1]
+	}
+
+	log.Debug(ctx, "Trimmed emit cursor cache", "chain", chainID, "count", len(ids), "first", first, "last", last, "duration", time.Since(t0))
+
 	return nil
+}
+
+// detectTrim returns a list of emit cursor IDs to delete from the cache.
+// It returns the IDs of the oldest chainID cursors, excluding the most recent `retainHeight` cursor heights.
+func (c *emitCursorCache) detectTrim(ctx context.Context, chainID uint64, retainHeights uint64) ([]uint64, error) {
+	// Not taking a read lock since this is a very slow an expensive table scan.
+	prefix := EmitCursorSrcChainIdDstChainIdShardIdHeightIndexKey{}.WithSrcChainId(chainID)
+	iter, err := c.table.List(ctx, prefix, ormlist.Reverse())
+	if err != nil {
+		return nil, errors.Wrap(err, "delete emit cursor cache")
+	}
+	defer iter.Close()
+
+	var ids []uint64
+	var prevHeight uint64
+	for iter.Next() {
+		cursor, err := iter.Value()
+		if err != nil {
+			return nil, errors.Wrap(err, "emit cursor value")
+		}
+
+		if prevHeight == 0 {
+			prevHeight = cursor.GetHeight()
+		} else if retainHeights > 0 && cursor.GetHeight() < prevHeight {
+			// Skip the most recent `retainHeights` cursors.
+			prevHeight = cursor.GetHeight()
+			retainHeights--
+		}
+
+		if retainHeights > 0 {
+			continue
+		}
+
+		ids = append(ids, cursor.GetId())
+	}
+
+	return ids, nil
 }
 
 func subtract(a uint64, b uint64) int64 {

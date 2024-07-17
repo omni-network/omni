@@ -12,7 +12,6 @@ message EmitCursor {
     id: 1;
     primary_key: { fields: "id", auto_increment: true }
     index: {id: 2, fields: "src_chain_id,dst_chain_id,shard_id,height", unique: true} // Allow querying and searching.
-    index: {id: 3, fields: "height"} // Allow trimming by height.
   };
 
   uint64 id             = 1; // Auto-incremented ID

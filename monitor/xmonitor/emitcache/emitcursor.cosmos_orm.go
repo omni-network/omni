@@ -90,19 +90,6 @@ func (this EmitCursorSrcChainIdDstChainIdShardIdHeightIndexKey) WithSrcChainIdDs
 	return this
 }
 
-type EmitCursorHeightIndexKey struct {
-	vs []interface{}
-}
-
-func (x EmitCursorHeightIndexKey) id() uint32            { return 3 }
-func (x EmitCursorHeightIndexKey) values() []interface{} { return x.vs }
-func (x EmitCursorHeightIndexKey) emitCursorIndexKey()   {}
-
-func (this EmitCursorHeightIndexKey) WithHeight(height uint64) EmitCursorHeightIndexKey {
-	this.vs = []interface{}{height}
-	return this
-}
-
 type emitCursorTable struct {
 	table ormtable.AutoIncrementTable
 }

@@ -23,12 +23,14 @@ type Config struct {
 	PrivateKey     string
 	HaloURL        string
 	LoadGen        loadgen.Config
+	DBDir          string
 }
 
 func DefaultConfig() Config {
 	return Config{
 		PrivateKey:     "monitor.key",
 		MonitoringAddr: ":26660",
+		DBDir:          "./db",
 	}
 }
 

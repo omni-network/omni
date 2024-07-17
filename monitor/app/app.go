@@ -27,6 +27,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -93,6 +94,17 @@ func startXMonitor(ctx context.Context, cfg Config, network netconf.Network, eth
 		log.Warn(ctx, "No Halo URL provided, skipping xchain monitor", nil)
 		return nil
 	}
+	var db dbm.DB
+	if cfg.DBDir == "" {
+		log.Warn(ctx, "No --db-dir provided, using in-memory DB", nil)
+		db = dbm.NewMemDB()
+	} else {
+		var err error
+		db, err = dbm.NewGoLevelDB("emitcqche", cfg.DBDir, nil)
+		if err != nil {
+			return errors.Wrap(err, "new golevel db")
+		}
+	}
 
 	tmClient, err := newClient(cfg.HaloURL)
 	if err != nil {
@@ -102,7 +114,7 @@ func startXMonitor(ctx context.Context, cfg Config, network netconf.Network, eth
 	cprov := cprovider.NewABCIProvider(tmClient, network.ID, netconf.ChainVersionNamer(cfg.Network))
 	xprov := xprovider.New(network, ethClients, cprov)
 
-	return xmonitor.Start(ctx, network, xprov, cprov, ethClients)
+	return xmonitor.Start(ctx, network, xprov, cprov, ethClients, db)
 }
 
 // serveMonitoring starts a goroutine that serves the monitoring API. It

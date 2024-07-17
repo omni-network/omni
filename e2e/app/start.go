@@ -193,7 +193,7 @@ func waitForEVMs(ctx context.Context, network netconf.Network, backends ethbacke
 }
 
 func waitForEVM(ctx context.Context, backend *ethbackend.Backend) error {
-	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	ctx, cancel := context.WithTimeout(ctx, time.Second*30)
 	defer cancel()
 
 	var once sync.Once

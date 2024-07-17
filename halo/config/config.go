@@ -26,7 +26,6 @@ const (
 	dataDir         = "data"
 	configDir       = "config"
 	snapshotDataDir = "snapshots"
-	networkFile     = "network.json"
 	voterStateFile  = "voter_state.json"
 
 	DefaultHomeDir            = "./halo" // Defaults to "halo" in current directory
