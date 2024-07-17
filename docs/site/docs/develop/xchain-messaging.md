@@ -63,7 +63,9 @@ Note that these risks are possible with all xchain messaging protocols.
 
 ## Bridging
 
-Please not that Omni does not bridge native tokens.
+Please note that Omni does not bridge native tokens.
+
+The `msg.value` in an `xcall` is for fees, not for bridging native tokens.
 
 Omni's xchain messaging system allows contracts to send and receive function calls across chains. It is a simple and secure way to interact with contracts on other chains.
 
