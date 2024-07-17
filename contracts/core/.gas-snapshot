@@ -1,3 +1,5 @@
+Admin_Test:test_pause_unpause() (gas: 9551453)
+Admin_Test:test_upgrade() (gas: 13394750)
 AllocPredeploys_Test:test_num_allocs() (gas: 1180751948)
 AllocPredeploys_Test:test_predeploys() (gas: 1180682047)
 AllocPredeploys_Test:test_preinstalls() (gas: 1181323465)
