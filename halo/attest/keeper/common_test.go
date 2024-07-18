@@ -6,6 +6,7 @@ import (
 	"github.com/omni-network/omni/halo/attest/keeper"
 	"github.com/omni-network/omni/halo/attest/testutil"
 	"github.com/omni-network/omni/halo/attest/types"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
 	storetypes "cosmossdk.io/store/types"
@@ -60,7 +61,8 @@ func setupKeeper(t *testing.T, expectations ...expectation) (*keeper.Keeper, sdk
 	key := storetypes.NewKVStoreKey(types.ModuleName)
 	storeSvc := runtime.NewKVStoreService(key)
 	ctx := sdktestutil.DefaultContext(key, storetypes.NewTransientStoreKey("test_key"))
-	ctx = ctx.WithBlockHeight(1)
+	ctx = ctx.WithBlockHeight(1).WithChainID(netconf.Simnet.Static().OmniConsensusChainIDStr())
+
 	codec := moduletestutil.MakeTestEncodingConfig().Codec
 
 	// gomock initialization

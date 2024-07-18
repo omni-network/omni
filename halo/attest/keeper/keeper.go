@@ -935,7 +935,7 @@ func (k *Keeper) deleteBefore(ctx context.Context, height uint64, consensusID ui
 			earliestFuzzy, ok, err := earliestOffset(ctx, fuzzyVer)
 			if err != nil {
 				return err
-			} else if !ok && att.GetBlockOffset() <= earliestFuzzy {
+			} else if !ok || att.GetBlockOffset() >= earliestFuzzy {
 				// If !ok, then no fuzzy attestations have been created, so we can't delete finalized.
 				// The earliest fuzzy must be AFTER the finalized att.
 				fuzzyDepsFound = true
@@ -1058,5 +1058,5 @@ func (stubPortalRegistry) SupportedChain(context.Context, uint64) (bool, error) 
 }
 
 func (stubPortalRegistry) ConfLevels(context.Context) (map[uint64][]xchain.ConfLevel, error) {
-	return nil, nil
+	return map[uint64][]xchain.ConfLevel{}, nil
 }
