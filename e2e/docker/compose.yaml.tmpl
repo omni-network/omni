@@ -70,12 +70,13 @@ services:
       - --pprof
       - --pprof.addr=0.0.0.0
       - --metrics
+      - --graphql
       {{ if .IsArchive }}- --gcmode=archive{{ end }}
     ports:
       - {{ if $.BindAll }}8551:{{end}}8551 # Auth RPC
       - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}8545 # HTTP RPC
       - {{ if $.BindAll }}30303:{{end}}30303 # Execution P2P
-      - 8546 # Websockets RPC
+      - {{ if $.BindAll }}8546:{{end}}8546 # Websockets RPC
       - 6060 # Prometheus metrics and pprof
     healthcheck:
       test: "nc -z localhost 8545"

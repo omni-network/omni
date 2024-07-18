@@ -120,8 +120,10 @@ func MakeGethConfig(conf Config) FullConfig {
 	// Allow all incoming connections.
 	cfg.Node.HTTPVirtualHosts = []string{"*"}
 	cfg.Node.AuthVirtualHosts = []string{"*"}
+	cfg.Node.GraphQLVirtualHosts = []string{"*"}
 	cfg.Node.WSOrigins = []string{"*"}
 	cfg.Node.HTTPCors = []string{"*"}
+	cfg.Node.GraphQLCors = []string{"*"}
 
 	return cfg
 }
