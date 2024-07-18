@@ -18,6 +18,7 @@ import (
 	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/xchain"
 
+	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -44,6 +45,7 @@ type valSetResponse struct {
 
 // Provider implements cchain.Provider.
 type Provider struct {
+	cometCl     rpcclient.Client
 	fetch       fetchFunc
 	latest      latestFunc
 	window      windowFunc
@@ -68,6 +70,10 @@ func NewProviderForT(_ *testing.T, fetch fetchFunc, latest latestFunc, window wi
 		backoffFunc: backoffFunc,
 		chainNamer:  func(xchain.ChainVersion) string { return "" },
 	}
+}
+
+func (p Provider) CometClient() rpcclient.Client {
+	return p.cometCl
 }
 
 func (p Provider) AttestationsFrom(ctx context.Context, chainVer xchain.ChainVersion, xBlockOffset uint64,
