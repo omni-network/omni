@@ -45,76 +45,47 @@ func (cfg DeploymentConfig) Validate() error {
 	return nil
 }
 
-func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) {
-	if network == netconf.Devnet {
-		return devnetCfg(), nil
-	}
-
-	if network == netconf.Mainnet {
-		return mainnetCfg(), nil
-	}
-
-	if network == netconf.Omega {
-		return omegaCfg(), nil
-	}
-
-	if network == netconf.Staging {
-		return stagingCfg(), nil
-	}
-
-	return DeploymentConfig{}, errors.New("unsupported chain for network", "chain_id", chainID, "network", network)
-}
-
 // NOTE: monitor is owner of fee oracle contracts, because monitor manages on chain gas prices / conversion rates
 
-func mainnetCfg() DeploymentConfig {
-	return DeploymentConfig{
+var configs = map[netconf.ID]DeploymentConfig{
+	netconf.Mainnet: {
 		Owner:           eoa.MustAddress(netconf.Mainnet, eoa.RoleAdmin),
 		Manager:         eoa.MustAddress(netconf.Mainnet, eoa.RoleMonitor),
 		Deployer:        eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer),
 		ProxyAdminOwner: eoa.MustAddress(netconf.Mainnet, eoa.RoleAdmin),
 		BaseGasLimit:    50_000,
 		ProtocolFee:     big.NewInt(0),
-	}
-}
-
-func omegaCfg() DeploymentConfig {
-	return DeploymentConfig{
+	},
+	netconf.Omega: {
 		Owner:           eoa.MustAddress(netconf.Omega, eoa.RoleAdmin),
 		Manager:         eoa.MustAddress(netconf.Omega, eoa.RoleMonitor),
 		Deployer:        eoa.MustAddress(netconf.Omega, eoa.RoleDeployer),
 		ProxyAdminOwner: eoa.MustAddress(netconf.Omega, eoa.RoleAdmin),
 		BaseGasLimit:    50_000,
 		ProtocolFee:     big.NewInt(0),
-	}
-}
-
-func devnetCfg() DeploymentConfig {
-	return DeploymentConfig{
-		Owner:           eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
-		Manager:         eoa.MustAddress(netconf.Devnet, eoa.RoleMonitor),
-		Deployer:        eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
-		ProxyAdminOwner: eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
-		BaseGasLimit:    50_000,
-		ProtocolFee:     big.NewInt(0),
-	}
-}
-
-func stagingCfg() DeploymentConfig {
-	return DeploymentConfig{
+	},
+	netconf.Staging: {
 		Owner:           eoa.MustAddress(netconf.Staging, eoa.RoleAdmin),
 		Manager:         eoa.MustAddress(netconf.Staging, eoa.RoleMonitor),
 		Deployer:        eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
 		ProxyAdminOwner: eoa.MustAddress(netconf.Staging, eoa.RoleAdmin),
 		BaseGasLimit:    50_000,
 		ProtocolFee:     big.NewInt(0),
-	}
+	},
+	netconf.Devnet: {
+		Owner:           eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
+		Manager:         eoa.MustAddress(netconf.Devnet, eoa.RoleMonitor),
+		Deployer:        eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
+		ProxyAdminOwner: eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
+		BaseGasLimit:    50_000,
+		ProtocolFee:     big.NewInt(0),
+	},
 }
 
 func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainIDs []uint64, backends ethbackend.Backends) (common.Address, *ethtypes.Receipt, error) {
-	cfg, err := getDeployCfg(chainID, network)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get deployment config")
+	cfg, ok := configs[network]
+	if !ok {
+		return common.Address{}, nil, errors.New("unsupported network", "network", network)
 	}
 
 	backend, err := backends.Backend(chainID)

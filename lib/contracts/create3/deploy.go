@@ -26,48 +26,19 @@ func (cfg DeploymentConfig) Validate() error {
 	return nil
 }
 
-func getDeployCfg(chainID uint64, network netconf.ID) (DeploymentConfig, error) {
-	if network == netconf.Devnet {
-		return devnetCfg(), nil
-	}
-
-	if network == netconf.Mainnet {
-		return mainnetCfg(), nil
-	}
-
-	if network == netconf.Omega {
-		return omegaCfg(), nil
-	}
-
-	if network == netconf.Staging {
-		return stagingCfg(), nil
-	}
-
-	return DeploymentConfig{}, errors.New("unsupported chain for network", "chain_id", chainID, "network", network)
-}
-
-func mainnetCfg() DeploymentConfig {
-	return DeploymentConfig{
+var configs = map[netconf.ID]DeploymentConfig{
+	netconf.Mainnet: {
 		Deployer: eoa.MustAddress(netconf.Mainnet, eoa.RoleCreate3Deployer),
-	}
-}
-
-func omegaCfg() DeploymentConfig {
-	return DeploymentConfig{
+	},
+	netconf.Omega: {
 		Deployer: eoa.MustAddress(netconf.Omega, eoa.RoleCreate3Deployer),
-	}
-}
-
-func stagingCfg() DeploymentConfig {
-	return DeploymentConfig{
+	},
+	netconf.Staging: {
 		Deployer: eoa.MustAddress(netconf.Staging, eoa.RoleCreate3Deployer),
-	}
-}
-
-func devnetCfg() DeploymentConfig {
-	return DeploymentConfig{
+	},
+	netconf.Devnet: {
 		Deployer: eoa.MustAddress(netconf.Devnet, eoa.RoleCreate3Deployer),
-	}
+	},
 }
 
 func AddrForNetwork(network netconf.ID) (common.Address, bool) {
@@ -121,14 +92,9 @@ func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend
 // Deploy deploys a new Create3 factory contract and returns the address and receipt.
 // It only allows deployments to explicitly supported chains.
 func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
-	chainID, err := backend.ChainID(ctx)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "chain id")
-	}
-
-	cfg, err := getDeployCfg(chainID.Uint64(), network)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get deployment config")
+	cfg, ok := configs[network]
+	if !ok {
+		return common.Address{}, nil, errors.New("unsupported network", "network", network)
 	}
 
 	return deploy(ctx, cfg, backend)

@@ -104,38 +104,15 @@ func (cfg DeploymentConfig) Validate() error {
 	return nil
 }
 
-func getDeployCfg(network netconf.ID) (DeploymentConfig, error) {
-	if network == netconf.Devnet {
-		return devnetCfg(), nil
-	}
-
-	if network == netconf.Mainnet {
-		return mainnetCfg(), nil
-	}
-
-	if network == netconf.Omega {
-		return omegaCfg(), nil
-	}
-
-	if network == netconf.Staging {
-		return stagingCfg(), nil
-	}
-
-	return DeploymentConfig{}, errors.New("unsupported network", "network", network)
-}
-
-func mainnetCfg() DeploymentConfig {
-	return DeploymentConfig{
+var configs = map[netconf.ID]DeploymentConfig{
+	netconf.Mainnet: {
 		Create3Factory: contracts.MainnetCreate3Factory(),
 		Create3Salt:    contracts.PortalSalt(netconf.Mainnet),
 		Owner:          eoa.MustAddress(netconf.Mainnet, eoa.RoleAdmin),
 		Deployer:       eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer),
 		// TODO: fill in the rest
-	}
-}
-
-func omegaCfg() DeploymentConfig {
-	return DeploymentConfig{
+	},
+	netconf.Omega: {
 		Create3Factory:        contracts.OmegaCreate3Factory(),
 		Create3Salt:           contracts.PortalSalt(netconf.Omega),
 		Owner:                 eoa.MustAddress(netconf.Omega, eoa.RoleAdmin),
@@ -151,11 +128,8 @@ func omegaCfg() DeploymentConfig {
 		CChainXMsgOffset:      GenesisCChainXMsgOffset,
 		CChainXBlockOffset:    GenesisCChainXBlockOffset,
 		ExpectedAddr:          contracts.OmegaPortal(),
-	}
-}
-
-func stagingCfg() DeploymentConfig {
-	return DeploymentConfig{
+	},
+	netconf.Staging: {
 		Create3Factory:        contracts.StagingCreate3Factory(),
 		Create3Salt:           contracts.PortalSalt(netconf.Staging),
 		Owner:                 eoa.MustAddress(netconf.Staging, eoa.RoleAdmin),
@@ -171,11 +145,8 @@ func stagingCfg() DeploymentConfig {
 		CChainXMsgOffset:      GenesisCChainXMsgOffset,
 		CChainXBlockOffset:    GenesisCChainXBlockOffset,
 		ExpectedAddr:          contracts.StagingPortal(),
-	}
-}
-
-func devnetCfg() DeploymentConfig {
-	return DeploymentConfig{
+	},
+	netconf.Devnet: {
 		Create3Factory:        contracts.DevnetCreate3Factory(),
 		Create3Salt:           contracts.PortalSalt(netconf.Devnet),
 		Owner:                 eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
@@ -191,7 +162,7 @@ func devnetCfg() DeploymentConfig {
 		CChainXMsgOffset:      GenesisCChainXMsgOffset,
 		CChainXBlockOffset:    GenesisCChainXBlockOffset,
 		ExpectedAddr:          contracts.DevnetPortal(),
-	}
+	},
 }
 
 func AddrForNetwork(network netconf.ID) (common.Address, bool) {
@@ -233,9 +204,9 @@ func IsDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Bac
 // It only allows deployments to explicitly supported chains.
 func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, feeOracle common.Address, valSetID uint64, validators []bindings.Validator,
 ) (common.Address, *ethtypes.Receipt, error) {
-	cfg, err := getDeployCfg(network)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get deployment config")
+	cfg, ok := configs[network]
+	if !ok {
+		return common.Address{}, nil, errors.New("unsupported network", "network", network)
 	}
 
 	return deploy(ctx, cfg, backend, feeOracle, valSetID, validators)

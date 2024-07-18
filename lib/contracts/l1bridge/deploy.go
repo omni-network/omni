@@ -59,24 +59,8 @@ func (cfg DeploymentConfig) Validate() error {
 	return nil
 }
 
-func getDeployCfg(network netconf.ID) (DeploymentConfig, error) {
-	if network == netconf.Devnet {
-		return devnetCfg(), nil
-	}
-
-	if network == netconf.Staging {
-		return stagingCfg(), nil
-	}
-
-	if network == netconf.Omega {
-		return omegaCfg(), nil
-	}
-
-	return DeploymentConfig{}, errors.New("unsupported network", "network", network)
-}
-
-func omegaCfg() DeploymentConfig {
-	return DeploymentConfig{
+var configs = map[netconf.ID]DeploymentConfig{
+	netconf.Omega: {
 		Create3Factory:  contracts.OmegaCreate3Factory(),
 		Create3Salt:     contracts.L1BridgeSalt(netconf.Omega),
 		Owner:           eoa.MustAddress(netconf.Omega, eoa.RoleAdmin),
@@ -85,11 +69,8 @@ func omegaCfg() DeploymentConfig {
 		Portal:          contracts.OmegaPortal(),
 		Token:           contracts.OmegaToken(),
 		ExpectedAddr:    contracts.OmegaL1Bridge(),
-	}
-}
-
-func stagingCfg() DeploymentConfig {
-	return DeploymentConfig{
+	},
+	netconf.Staging: {
 		Create3Factory:  contracts.StagingCreate3Factory(),
 		Create3Salt:     contracts.L1BridgeSalt(netconf.Staging),
 		Owner:           eoa.MustAddress(netconf.Staging, eoa.RoleAdmin),
@@ -98,11 +79,8 @@ func stagingCfg() DeploymentConfig {
 		Portal:          contracts.StagingPortal(),
 		Token:           contracts.StagingToken(),
 		ExpectedAddr:    contracts.StagingL1Bridge(),
-	}
-}
-
-func devnetCfg() DeploymentConfig {
-	return DeploymentConfig{
+	},
+	netconf.Devnet: {
 		Create3Factory:  contracts.DevnetCreate3Factory(),
 		Create3Salt:     contracts.L1BridgeSalt(netconf.Devnet),
 		Owner:           eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
@@ -111,7 +89,7 @@ func devnetCfg() DeploymentConfig {
 		Portal:          contracts.DevnetPortal(),
 		Token:           contracts.DevnetToken(),
 		ExpectedAddr:    contracts.DevnetL1Bridge(),
-	}
+	},
 }
 
 func AddrForNetwork(network netconf.ID) (common.Address, bool) {
@@ -164,9 +142,9 @@ func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend
 
 // Deploy deploys a new L1Bridge contract and returns the address and receipt.
 func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
-	cfg, err := getDeployCfg(network)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get deployment config")
+	cfg, ok := configs[network]
+	if !ok {
+		return common.Address{}, nil, errors.New("unsupported network", "network", network)
 	}
 
 	return deploy(ctx, cfg, backend)
