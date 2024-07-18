@@ -2,11 +2,13 @@ package keeper
 
 import (
 	"context"
+	"sort"
 	"sync"
 
 	"github.com/omni-network/omni/halo/registry/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -42,13 +44,50 @@ func (k Keeper) updateNetwork(ctx context.Context, network *Network) error {
 	return nil
 }
 
+func (k Keeper) ConfLevels(ctx context.Context) (map[uint64][]xchain.ConfLevel, error) {
+	portals, err := k.getLatestPortals(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "get latest portals")
+	}
+
+	resp := make(map[uint64][]xchain.ConfLevel, len(portals)+1)
+	for _, portal := range portals {
+		uniqLevels := make(map[xchain.ConfLevel]struct{})
+		for _, shardID := range portal.GetShardIds() {
+			uniqLevels[xchain.ShardID(shardID).ConfLevel()] = struct{}{}
+		}
+
+		var confLevels []xchain.ConfLevel
+		for confLevel := range uniqLevels {
+			confLevels = append(confLevels, confLevel)
+		}
+
+		sort.Slice(confLevels, func(i, j int) bool {
+			return confLevels[i] < confLevels[j]
+		})
+
+		resp[portal.GetChainId()] = confLevels
+	}
+
+	// Add the consensus chain shard/conf level; only ConfFinalized
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	consensusID, err := netconf.ConsensusChainIDStr2Uint64(sdkCtx.ChainID())
+	if err != nil {
+		return nil, errors.Wrap(err, "parse chain id")
+	}
+
+	resp[consensusID] = []xchain.ConfLevel{xchain.ConfFinalized}
+
+	return resp, nil
+}
+
 func (k Keeper) SupportedChain(ctx context.Context, chainID uint64) (bool, error) {
-	portal, err := k.getLatestPortals(ctx)
+	portals, err := k.getLatestPortals(ctx)
 	if err != nil {
 		return false, errors.Wrap(err, "get latest portals")
 	}
 
-	for _, p := range portal {
+	for _, p := range portals {
 		if p.GetChainId() == chainID {
 			return true, nil
 		}

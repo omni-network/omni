@@ -83,7 +83,8 @@ func setupKeeper(t *testing.T, expectations ...expectation) (*keeper.Keeper, sdk
 	const voteWindow = 1
 	const voteLimit = 4
 	const trimLag = 4
-	k, err := keeper.New(codec, storeSvc, m.skeeper, m.namer.ChainName, m.voter, voteWindow, voteLimit, trimLag)
+	const cTrimLag = 4
+	k, err := keeper.New(codec, storeSvc, m.skeeper, m.namer.ChainName, m.voter, voteWindow, voteLimit, trimLag, cTrimLag)
 	require.NoError(t, err, "new keeper")
 
 	k.SetValidatorProvider(m.valProvider)

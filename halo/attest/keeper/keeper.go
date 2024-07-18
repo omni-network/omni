@@ -12,6 +12,8 @@ import (
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -48,9 +50,11 @@ type Keeper struct {
 	portalRegistry rtypes.PortalRegistry
 	namer          types.ChainVerNameFunc
 	voter          types.Voter
-	voteWindow     uint64
-	voteExtLimit   uint64
-	trimLag        uint64
+
+	voteWindow   uint64
+	voteExtLimit uint64
+	trimLag      uint64 // Non-consensus chain trim lag
+	cTrimLag     uint64 // Consensus chain trim lag
 
 	valAddrCache *valAddrCache
 }
@@ -65,6 +69,7 @@ func New(
 	voteWindow uint64,
 	voteExtLimit uint64,
 	trimLag uint64,
+	cTrimLag uint64,
 ) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
 		{Id: 1, ProtoFileName: File_halo_attest_keeper_attestation_proto.Path()},
@@ -80,6 +85,10 @@ func New(
 		return nil, errors.Wrap(err, "create attestation store")
 	}
 
+	if cTrimLag < trimLag {
+		return nil, errors.New("consensus trim lag must be greater than or equal to trim lag")
+	}
+
 	k := &Keeper{
 		attTable:       attstore.AttestationTable(),
 		sigTable:       attstore.SignatureTable(),
@@ -91,6 +100,7 @@ func New(
 		voteWindow:     voteWindow,
 		voteExtLimit:   voteExtLimit,
 		trimLag:        trimLag,
+		cTrimLag:       cTrimLag,
 		portalRegistry: stubPortalRegistry{},
 		valAddrCache:   new(valAddrCache),
 	}
@@ -586,9 +596,17 @@ func (k *Keeper) getSigTuples(ctx context.Context, attID uint64) ([]*types.SigTu
 }
 
 func (k *Keeper) BeginBlock(ctx context.Context) error {
-	head := uint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	consensusID, err := netconf.ConsensusChainIDStr2Uint64(sdkCtx.ChainID())
+	if err != nil {
+		return errors.Wrap(err, "parse chain id")
+	}
 
-	return k.deleteBefore(ctx, uintSub(head, k.trimLag))
+	head := uint64(sdkCtx.BlockHeight())
+	before := umath.SubtractOrZero(head, k.trimLag)
+	cBefore := umath.SubtractOrZero(head, k.cTrimLag)
+
+	return k.deleteBefore(ctx, before, consensusID, cBefore)
 }
 
 func (k *Keeper) EndBlock(ctx context.Context) error {
@@ -866,30 +884,19 @@ func (k *Keeper) verifyAggVotes(ctx context.Context, valset ValSet, aggs []*type
 }
 
 // deleteBefore deletes all attestations and signatures before the given height (inclusive).
+// Consensus chain attestations are compared against cHeight (inclusive).
 // Note this always deletes block 0, but genesis block doesn't contain any attestations.
-func (k *Keeper) deleteBefore(ctx context.Context, height uint64) error {
+func (k *Keeper) deleteBefore(ctx context.Context, height uint64, consensusID uint64, cHeight uint64) error {
 	defer latency("delete_before")()
 
-	// Cache latest offset by chain version so we don't delete it.
-	// TODO(corver): Add tests for this.
-	latestByChain := make(map[xchain.ChainVersion]uint64)
-	// Returns the offset of the latest attestation and true if one is found, 0 and false otherwise
-	getLatest := func(chainVer xchain.ChainVersion) (uint64, bool, error) {
-		if latest, ok := latestByChain[chainVer]; ok {
-			return latest, true, nil
-		}
+	// Create latest- and earliest- read-through caches to mitigate DB reads.
+	latestOffset := newLatestLookupCache(k)
+	earliestOffset := newEarliestLookupCache(k)
 
-		latest, ok, err := k.latestAttestation(ctx, chainVer)
-		if err != nil {
-			return 0, false, err
-		} else if !ok {
-			return 0, false, nil
-		}
-
-		offset := latest.GetBlockOffset()
-		latestByChain[chainVer] = offset
-
-		return offset, true, nil
+	// Get all supported confirmation levels.
+	confLevels, err := k.portalRegistry.ConfLevels(ctx)
+	if err != nil {
+		return errors.Wrap(err, "conf levels")
 	}
 
 	start := AttestationCreatedHeightIndexKey{}
@@ -906,16 +913,37 @@ func (k *Keeper) deleteBefore(ctx context.Context, height uint64) error {
 			return errors.Wrap(err, "value att")
 		} else if att.GetCreatedHeight() > height {
 			return errors.New("query sanity check [BUG]")
+		} else if att.GetChainId() == consensusID && att.GetCreatedHeight() > cHeight {
+			// Consensus chain attestations are deleted much later, since they have possible valset update dependencies.
+			continue
 		}
 
 		// Never delete anything after the last approved attestation offset per chain,
 		// even if it is very old. Otherwise, we could introduce a gap
 		// once we start catching up.
 		// Also, don't delete anything if we don't have an approved attestation yet (leave all pending attestations).
-		if latest, ok, err := getLatest(att.XChainVersion()); err != nil {
+		if latest, ok, err := latestOffset(ctx, att.XChainVersion()); err != nil {
 			return err
 		} else if !ok || att.GetBlockOffset() >= latest {
-			continue
+			continue // Skip deleting finalized attestation.
+		}
+
+		var fuzzyDepsFound bool
+		for _, fuzzyVer := range fuzzyDependents(att.XChainVersion(), confLevels) {
+			// For finalized attestations (with fuzzy dependents), only delete them AFTER all fuzzy attestations have been deleted.
+			// This avoids deleting finalized overrides for current or future fuzzy attestations.
+			earliestFuzzy, ok, err := earliestOffset(ctx, fuzzyVer)
+			if err != nil {
+				return err
+			} else if !ok && att.GetBlockOffset() <= earliestFuzzy {
+				// If !ok, then no fuzzy attestations have been created, so we can't delete finalized.
+				// The earliest fuzzy must be AFTER the finalized att.
+				fuzzyDepsFound = true
+				break
+			}
+		}
+		if fuzzyDepsFound {
+			continue // Skip deleting finalized attestation.
 		}
 
 		// Delete signatures
@@ -1027,4 +1055,8 @@ type stubPortalRegistry struct{}
 
 func (stubPortalRegistry) SupportedChain(context.Context, uint64) (bool, error) {
 	return false, nil
+}
+
+func (stubPortalRegistry) ConfLevels(context.Context) (map[uint64][]xchain.ConfLevel, error) {
+	return nil, nil
 }
