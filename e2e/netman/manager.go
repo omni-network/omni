@@ -5,6 +5,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/types"
+	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/feeoraclev1"
 	"github.com/omni-network/omni/lib/contracts/portal"
 	"github.com/omni-network/omni/lib/errors"
@@ -46,18 +47,13 @@ func NewManager(testnet types.Testnet, backends ethbackend.Backends) (Manager, e
 
 	network := testnet.Network
 
-	privPortalAddr, found := portal.AddrForNetwork(network)
-	if !found {
-		return nil, errors.New("unknown network", "network", network)
-	}
-
 	// Create partial portals. This will be updated by Deploy*Portals.
 	portals := make(map[uint64]Portal)
 
 	// Private chains have deterministic deploy height and addresses.
 	privateChainDeployInfo := DeployInfo{
 		DeployHeight:  0,
-		PortalAddress: privPortalAddr,
+		PortalAddress: contracts.Portal(network),
 	}
 
 	if testnet.HasOmniEVM() {

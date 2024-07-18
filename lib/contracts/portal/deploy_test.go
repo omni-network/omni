@@ -28,7 +28,7 @@ const (
 
 func TestDeployDevnet(t *testing.T) {
 	t.Parallel()
-
+	network := netconf.Devnet
 	ctx := context.Background()
 
 	client, _, stop, err := anvil.Start(ctx, tutil.TempDir(t), chainID)
@@ -39,9 +39,9 @@ func TestDeployDevnet(t *testing.T) {
 	require.NoError(t, err)
 
 	// devnet create3 factory is required
-	addr, _, err := create3.Deploy(ctx, netconf.Devnet, backend)
+	addr, _, err := create3.Deploy(ctx, network, backend)
 	require.NoError(t, err)
-	require.Equal(t, contracts.DevnetCreate3Factory(), addr)
+	require.Equal(t, contracts.Create3Factory(network), addr)
 
 	valSetID := uint64(1)
 	vals := []bindings.Validator{
@@ -51,16 +51,16 @@ func TestDeployDevnet(t *testing.T) {
 	}
 
 	feeOracle := common.HexToAddress("0xfffff")
-	addr, _, err = portal.Deploy(ctx, netconf.Devnet, backend, feeOracle, valSetID, vals)
+	addr, _, err = portal.Deploy(ctx, network, backend, feeOracle, valSetID, vals)
 	require.NoError(t, err)
-	require.Equal(t, contracts.DevnetPortal(), addr)
+	require.Equal(t, contracts.Portal(network), addr)
 
 	portal, err := bindings.NewOmniPortal(addr, backend)
 	require.NoError(t, err)
 
 	owner, err := portal.Owner(nil)
 	require.NoError(t, err)
-	require.Equal(t, eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin), owner)
+	require.Equal(t, eoa.MustAddress(network, eoa.RoleAdmin), owner)
 
 	// check validators
 	totalPower, err := portal.ValSetTotalPower(nil, 1)

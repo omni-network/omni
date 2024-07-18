@@ -19,7 +19,7 @@ import (
 // TotalSupply is the 100M, total supply of the token.
 var TotalSupply = new(big.Int).Mul(big.NewInt(100e6), big.NewInt(1e18))
 
-type DeploymentConfig struct {
+type deploymentConfig struct {
 	Create3Factory common.Address
 	Create3Salt    string
 	Deployer       common.Address
@@ -27,11 +27,21 @@ type DeploymentConfig struct {
 	ExpectedAddr   common.Address
 }
 
+func getConfig(network netconf.ID) deploymentConfig {
+	return deploymentConfig{
+		Create3Factory: contracts.Create3Factory(network),
+		Create3Salt:    contracts.TokenSalt(network),
+		Deployer:       eoa.MustAddress(network, eoa.RoleDeployer),
+		Recipient:      eoa.MustAddress(network, eoa.RoleTester),
+		ExpectedAddr:   contracts.Token(network),
+	}
+}
+
 func isDeadOrEmpty(addr common.Address) bool {
 	return addr == common.Address{} || addr == common.HexToAddress(eoa.ZeroXDead)
 }
 
-func (cfg DeploymentConfig) Validate() error {
+func (cfg deploymentConfig) Validate() error {
 	if (cfg.Create3Factory == common.Address{}) {
 		return errors.New("create3 factory is zero")
 	}
@@ -51,87 +61,13 @@ func (cfg DeploymentConfig) Validate() error {
 	return nil
 }
 
-func getDeployCfg(network netconf.ID) (DeploymentConfig, error) {
-	if network == netconf.Devnet {
-		return devnetCfg(), nil
-	}
-
-	if network == netconf.Staging {
-		return stagingCfg(), nil
-	}
-
-	if network == netconf.Omega {
-		return omnegaCfg(), nil
-	}
-
-	// NOTE: mainnet not supported, as mainnet token is already deployed.
-
-	return DeploymentConfig{}, errors.New("unsupported network", "network", network)
-}
-
-func omnegaCfg() DeploymentConfig {
-	return DeploymentConfig{
-		Create3Factory: contracts.OmegaCreate3Factory(),
-		Create3Salt:    contracts.TokenSalt(netconf.Omega),
-		Deployer:       eoa.MustAddress(netconf.Omega, eoa.RoleDeployer),
-		Recipient:      eoa.MustAddress(netconf.Omega, eoa.RoleTester),
-		ExpectedAddr:   contracts.OmegaToken(),
-	}
-}
-
-func stagingCfg() DeploymentConfig {
-	return DeploymentConfig{
-		Create3Factory: contracts.StagingCreate3Factory(),
-		Create3Salt:    contracts.TokenSalt(netconf.Staging),
-		Deployer:       eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
-		Recipient:      eoa.MustAddress(netconf.Staging, eoa.RoleTester),
-		ExpectedAddr:   contracts.StagingToken(),
-	}
-}
-
-func devnetCfg() DeploymentConfig {
-	return DeploymentConfig{
-		Create3Factory: contracts.DevnetCreate3Factory(),
-		Create3Salt:    contracts.TokenSalt(netconf.Devnet),
-		Deployer:       eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
-		Recipient:      eoa.MustAddress(netconf.Devnet, eoa.RoleTester),
-		ExpectedAddr:   contracts.DevnetToken(),
-	}
-}
-
-func InitialSupplyRecipient(network netconf.ID) (common.Address, bool) {
-	if network == netconf.Devnet {
-		return devnetCfg().Recipient, true
-	}
-
-	if network == netconf.Staging {
-		return stagingCfg().Recipient, true
-	}
-
-	return common.Address{}, false
-}
-
-func AddrForNetwork(network netconf.ID) (common.Address, bool) {
-	switch network {
-	case netconf.Mainnet:
-		return contracts.MainnetToken(), true
-	case netconf.Omega:
-		return contracts.OmegaToken(), true
-	case netconf.Staging:
-		return contracts.StagingToken(), true
-	case netconf.Devnet:
-		return contracts.DevnetToken(), true
-	default:
-		return common.Address{}, false
-	}
+func InitialSupplyRecipient(network netconf.ID) common.Address {
+	return getConfig(network).Recipient
 }
 
 // isDeployed returns true if the token contract is already deployed to its expected address.
 func isDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (bool, common.Address, error) {
-	addr, ok := AddrForNetwork(network)
-	if !ok {
-		return false, addr, errors.New("unsupported network", "network", network)
-	}
+	addr := contracts.Token(network)
 
 	code, err := backend.CodeAt(ctx, addr, nil)
 	if err != nil {
@@ -164,15 +100,14 @@ func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend
 // NOTE: the mainnet ERC20 OMNI token is already deployed to ETH mainnet. We use
 // this code for test / ephemeral networks.
 func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
-	cfg, err := getDeployCfg(network)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get deployment config")
+	if network == netconf.Mainnet {
+		return common.Address{}, nil, errors.New("mainnet token already deployed")
 	}
 
-	return deploy(ctx, cfg, backend)
+	return deploy(ctx, getConfig(network), backend)
 }
 
-func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func deploy(ctx context.Context, cfg deploymentConfig, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
 	if err := cfg.Validate(); err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "validate config")
 	}
@@ -214,7 +149,7 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 	return addr, receipt, nil
 }
 
-func packInitCode(cfg DeploymentConfig) ([]byte, error) {
+func packInitCode(cfg deploymentConfig) ([]byte, error) {
 	abi, err := bindings.OmniMetaData.GetAbi()
 	if err != nil {
 		return nil, errors.Wrap(err, "get abi")

@@ -47,11 +47,8 @@ func TestBridge(t *testing.T) {
 		l1Client, err := ethclient.Dial(l1.Name, l1RPC)
 		require.NoError(t, err)
 
-		l1TokenAddr, ok := contracts.Token(network.ID)
-		require.True(t, ok)
-
-		l1BridgeAddr, ok := contracts.L1Bridge(network.ID)
-		require.True(t, ok)
+		l1TokenAddr := contracts.Token(network.ID)
+		l1BridgeAddr := contracts.L1Bridge(network.ID)
 
 		l1Token, err := bindings.NewOmni(l1TokenAddr, l1Client)
 		require.NoError(t, err)

@@ -15,7 +15,7 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
-type DeploymentConfig struct {
+type deploymentConfig struct {
 	Create3Factory        common.Address
 	Create3Salt           string
 	ProxyAdminOwner       common.Address
@@ -57,7 +57,7 @@ func isDeadOrEmpty(addr common.Address) bool {
 	return addr == common.Address{} || addr == common.HexToAddress(eoa.ZeroXDead)
 }
 
-func (cfg DeploymentConfig) Validate() error {
+func (cfg deploymentConfig) Validate() error {
 	if (cfg.Create3Factory == common.Address{}) {
 		return errors.New("create3 factory is zero")
 	}
@@ -104,118 +104,10 @@ func (cfg DeploymentConfig) Validate() error {
 	return nil
 }
 
-func getDeployCfg(network netconf.ID) (DeploymentConfig, error) {
-	if network == netconf.Devnet {
-		return devnetCfg(), nil
-	}
-
-	if network == netconf.Mainnet {
-		return mainnetCfg(), nil
-	}
-
-	if network == netconf.Omega {
-		return omegaCfg(), nil
-	}
-
-	if network == netconf.Staging {
-		return stagingCfg(), nil
-	}
-
-	return DeploymentConfig{}, errors.New("unsupported network", "network", network)
-}
-
-func mainnetCfg() DeploymentConfig {
-	return DeploymentConfig{
-		Create3Factory: contracts.MainnetCreate3Factory(),
-		Create3Salt:    contracts.PortalSalt(netconf.Mainnet),
-		Owner:          eoa.MustAddress(netconf.Mainnet, eoa.RoleAdmin),
-		Deployer:       eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer),
-		// TODO: fill in the rest
-	}
-}
-
-func omegaCfg() DeploymentConfig {
-	return DeploymentConfig{
-		Create3Factory:        contracts.OmegaCreate3Factory(),
-		Create3Salt:           contracts.PortalSalt(netconf.Omega),
-		Owner:                 eoa.MustAddress(netconf.Omega, eoa.RoleAdmin),
-		Deployer:              eoa.MustAddress(netconf.Omega, eoa.RoleDeployer),
-		ProxyAdminOwner:       eoa.MustAddress(netconf.Omega, eoa.RoleAdmin),
-		OmniChainID:           netconf.Omega.Static().OmniExecutionChainID,
-		OmniCChainID:          netconf.Omega.Static().OmniConsensusChainIDUint64(),
-		XMsgMinGasLimit:       XMsgMinGasLimit,
-		XMsgMaxGasLimit:       XMsgMaxGasLimit,
-		XMsgMaxDataSize:       XMsgMaxDataSize,
-		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
-		XSubValsetCutoff:      XSubValsetCutoff,
-		CChainXMsgOffset:      GenesisCChainXMsgOffset,
-		CChainXBlockOffset:    GenesisCChainXBlockOffset,
-		ExpectedAddr:          contracts.OmegaPortal(),
-	}
-}
-
-func stagingCfg() DeploymentConfig {
-	return DeploymentConfig{
-		Create3Factory:        contracts.StagingCreate3Factory(),
-		Create3Salt:           contracts.PortalSalt(netconf.Staging),
-		Owner:                 eoa.MustAddress(netconf.Staging, eoa.RoleAdmin),
-		Deployer:              eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
-		ProxyAdminOwner:       eoa.MustAddress(netconf.Staging, eoa.RoleAdmin),
-		OmniChainID:           netconf.Staging.Static().OmniExecutionChainID,
-		OmniCChainID:          netconf.Staging.Static().OmniConsensusChainIDUint64(),
-		XMsgMinGasLimit:       XMsgMinGasLimit,
-		XMsgMaxGasLimit:       XMsgMaxGasLimit,
-		XMsgMaxDataSize:       XMsgMaxDataSize,
-		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
-		XSubValsetCutoff:      XSubValsetCutoff,
-		CChainXMsgOffset:      GenesisCChainXMsgOffset,
-		CChainXBlockOffset:    GenesisCChainXBlockOffset,
-		ExpectedAddr:          contracts.StagingPortal(),
-	}
-}
-
-func devnetCfg() DeploymentConfig {
-	return DeploymentConfig{
-		Create3Factory:        contracts.DevnetCreate3Factory(),
-		Create3Salt:           contracts.PortalSalt(netconf.Devnet),
-		Owner:                 eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
-		Deployer:              eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
-		ProxyAdminOwner:       eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
-		OmniChainID:           netconf.Devnet.Static().OmniExecutionChainID,
-		OmniCChainID:          netconf.Devnet.Static().OmniConsensusChainIDUint64(),
-		XMsgMinGasLimit:       XMsgMinGasLimit,
-		XMsgMaxGasLimit:       XMsgMaxGasLimit,
-		XMsgMaxDataSize:       XMsgMaxDataSize,
-		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
-		XSubValsetCutoff:      XSubValsetCutoff,
-		CChainXMsgOffset:      GenesisCChainXMsgOffset,
-		CChainXBlockOffset:    GenesisCChainXBlockOffset,
-		ExpectedAddr:          contracts.DevnetPortal(),
-	}
-}
-
-func AddrForNetwork(network netconf.ID) (common.Address, bool) {
-	switch network {
-	case netconf.Mainnet:
-		return contracts.MainnetPortal(), true
-	case netconf.Omega:
-		return contracts.OmegaPortal(), true
-	case netconf.Staging:
-		return contracts.StagingPortal(), true
-	case netconf.Devnet:
-		return contracts.DevnetPortal(), true
-	default:
-		return common.Address{}, false
-	}
-}
-
 // IsDeployed checks if the Portal contract is deployed to the provided backend
 // to its expected network address.
 func IsDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (bool, common.Address, error) {
-	addr, ok := AddrForNetwork(network)
-	if !ok {
-		return false, addr, errors.New("unsupported network", "network", network)
-	}
+	addr := contracts.Portal(network)
 
 	code, err := backend.CodeAt(ctx, addr, nil)
 	if err != nil {
@@ -233,15 +125,28 @@ func IsDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Bac
 // It only allows deployments to explicitly supported chains.
 func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, feeOracle common.Address, valSetID uint64, validators []bindings.Validator,
 ) (common.Address, *ethtypes.Receipt, error) {
-	cfg, err := getDeployCfg(network)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get deployment config")
+	cfg := deploymentConfig{
+		Create3Factory:        contracts.Create3Factory(network),
+		Create3Salt:           contracts.PortalSalt(network),
+		Owner:                 eoa.MustAddress(network, eoa.RoleAdmin),
+		Deployer:              eoa.MustAddress(network, eoa.RoleDeployer),
+		ProxyAdminOwner:       eoa.MustAddress(network, eoa.RoleAdmin),
+		OmniChainID:           network.Static().OmniExecutionChainID,
+		OmniCChainID:          network.Static().OmniConsensusChainIDUint64(),
+		XMsgMinGasLimit:       XMsgMinGasLimit,
+		XMsgMaxGasLimit:       XMsgMaxGasLimit,
+		XMsgMaxDataSize:       XMsgMaxDataSize,
+		XReceiptMaxErrorBytes: XReceiptMaxErrorBytes,
+		XSubValsetCutoff:      XSubValsetCutoff,
+		CChainXMsgOffset:      GenesisCChainXMsgOffset,
+		CChainXBlockOffset:    GenesisCChainXBlockOffset,
+		ExpectedAddr:          contracts.Portal(network),
 	}
 
 	return deploy(ctx, cfg, backend, feeOracle, valSetID, validators)
 }
 
-func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backend, feeOracle common.Address, valSetID uint64, validators []bindings.Validator,
+func deploy(ctx context.Context, cfg deploymentConfig, backend *ethbackend.Backend, feeOracle common.Address, valSetID uint64, validators []bindings.Validator,
 ) (common.Address, *ethtypes.Receipt, error) {
 	if err := cfg.Validate(); err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "validate")
@@ -294,7 +199,7 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 	return addr, receipt, nil
 }
 
-func packInitCode(cfg DeploymentConfig, feeOracle common.Address, impl common.Address, valSetID uint64, validators []bindings.Validator,
+func packInitCode(cfg deploymentConfig, feeOracle common.Address, impl common.Address, valSetID uint64, validators []bindings.Validator,
 ) ([]byte, error) {
 	portalAbi, err := bindings.OmniPortalMetaData.GetAbi()
 	if err != nil {

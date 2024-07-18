@@ -186,11 +186,10 @@ func TestAddrs(t *testing.T) {
 	t.Parallel()
 
 	// test that hardcoded address in netconf match lib/contract addresses
-
 	for _, deployment := range netconf.Omega.Static().Portals {
-		require.Equal(t, contracts.OmegaPortal(), deployment.Address)
+		require.Equal(t, contracts.Portal(netconf.Omega), deployment.Address)
 	}
 
-	require.Equal(t, contracts.OmegaAVS(), netconf.Omega.Static().AVSContractAddress)
-	require.Equal(t, contracts.MainnetAVS(), netconf.Mainnet.Static().AVSContractAddress)
+	require.Equal(t, contracts.AVS(netconf.Omega), netconf.Omega.Static().AVSContractAddress)
+	require.Equal(t, contracts.AVS(netconf.Mainnet), netconf.Mainnet.Static().AVSContractAddress)
 }

@@ -59,82 +59,9 @@ func (cfg DeploymentConfig) Validate() error {
 	return nil
 }
 
-func getDeployCfg(network netconf.ID) (DeploymentConfig, error) {
-	if network == netconf.Devnet {
-		return devnetCfg(), nil
-	}
-
-	if network == netconf.Staging {
-		return stagingCfg(), nil
-	}
-
-	if network == netconf.Omega {
-		return omegaCfg(), nil
-	}
-
-	return DeploymentConfig{}, errors.New("unsupported network", "network", network)
-}
-
-func omegaCfg() DeploymentConfig {
-	return DeploymentConfig{
-		Create3Factory:  contracts.OmegaCreate3Factory(),
-		Create3Salt:     contracts.L1BridgeSalt(netconf.Omega),
-		Owner:           eoa.MustAddress(netconf.Omega, eoa.RoleAdmin),
-		Deployer:        eoa.MustAddress(netconf.Omega, eoa.RoleDeployer),
-		ProxyAdminOwner: eoa.MustAddress(netconf.Omega, eoa.RoleAdmin),
-		Portal:          contracts.OmegaPortal(),
-		Token:           contracts.OmegaToken(),
-		ExpectedAddr:    contracts.OmegaL1Bridge(),
-	}
-}
-
-func stagingCfg() DeploymentConfig {
-	return DeploymentConfig{
-		Create3Factory:  contracts.StagingCreate3Factory(),
-		Create3Salt:     contracts.L1BridgeSalt(netconf.Staging),
-		Owner:           eoa.MustAddress(netconf.Staging, eoa.RoleAdmin),
-		Deployer:        eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
-		ProxyAdminOwner: eoa.MustAddress(netconf.Staging, eoa.RoleAdmin),
-		Portal:          contracts.StagingPortal(),
-		Token:           contracts.StagingToken(),
-		ExpectedAddr:    contracts.StagingL1Bridge(),
-	}
-}
-
-func devnetCfg() DeploymentConfig {
-	return DeploymentConfig{
-		Create3Factory:  contracts.DevnetCreate3Factory(),
-		Create3Salt:     contracts.L1BridgeSalt(netconf.Devnet),
-		Owner:           eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
-		Deployer:        eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
-		ProxyAdminOwner: eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
-		Portal:          contracts.DevnetPortal(),
-		Token:           contracts.DevnetToken(),
-		ExpectedAddr:    contracts.DevnetL1Bridge(),
-	}
-}
-
-func AddrForNetwork(network netconf.ID) (common.Address, bool) {
-	switch network {
-	case netconf.Mainnet:
-		return contracts.MainnetToken(), true
-	case netconf.Omega:
-		return contracts.OmegaL1Bridge(), true
-	case netconf.Staging:
-		return contracts.StagingL1Bridge(), true
-	case netconf.Devnet:
-		return contracts.DevnetL1Bridge(), true
-	default:
-		return common.Address{}, false
-	}
-}
-
 // isDeployed returns true if the token contract is already deployed to its expected address.
 func isDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (bool, common.Address, error) {
-	addr, ok := AddrForNetwork(network)
-	if !ok {
-		return false, addr, errors.New("unsupported network", "network", network)
-	}
+	addr := contracts.L1Bridge(network)
 
 	code, err := backend.CodeAt(ctx, addr, nil)
 	if err != nil {
@@ -164,9 +91,15 @@ func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend
 
 // Deploy deploys a new L1Bridge contract and returns the address and receipt.
 func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
-	cfg, err := getDeployCfg(network)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get deployment config")
+	cfg := DeploymentConfig{
+		Create3Factory:  contracts.Create3Factory(network),
+		Create3Salt:     contracts.L1BridgeSalt(network),
+		Owner:           eoa.MustAddress(network, eoa.RoleAdmin),
+		Deployer:        eoa.MustAddress(network, eoa.RoleDeployer),
+		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleAdmin),
+		Portal:          contracts.Portal(network),
+		Token:           contracts.Token(network),
+		ExpectedAddr:    contracts.L1Bridge(network),
 	}
 
 	return deploy(ctx, cfg, backend)
