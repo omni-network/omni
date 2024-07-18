@@ -1,0 +1,57 @@
+{
+ "arb_sepolia": {
+  "block_period": "300ms",
+  "ephemeral_attest_interval": 2000,
+  "protected_attest_interval": 12000
+ },
+ "base_sepolia": {
+  "block_period": "2s",
+  "ephemeral_attest_interval": 300,
+  "protected_attest_interval": 1800
+ },
+ "ethereum": {
+  "block_period": "12s",
+  "ephemeral_attest_interval": 50,
+  "protected_attest_interval": 300
+ },
+ "holesky": {
+  "block_period": "12s",
+  "ephemeral_attest_interval": 50,
+  "protected_attest_interval": 300
+ },
+ "mock_arb": {
+  "block_period": "1s",
+  "ephemeral_attest_interval": 600,
+  "protected_attest_interval": 3600
+ },
+ "mock_l1": {
+  "block_period": "1s",
+  "ephemeral_attest_interval": 600,
+  "protected_attest_interval": 3600
+ },
+ "mock_l2": {
+  "block_period": "1s",
+  "ephemeral_attest_interval": 600,
+  "protected_attest_interval": 3600
+ },
+ "mock_op": {
+  "block_period": "2s",
+  "ephemeral_attest_interval": 300,
+  "protected_attest_interval": 1800
+ },
+ "omni_evm": {
+  "block_period": "2s",
+  "ephemeral_attest_interval": 300,
+  "protected_attest_interval": 1800
+ },
+ "op_sepolia": {
+  "block_period": "2s",
+  "ephemeral_attest_interval": 300,
+  "protected_attest_interval": 1800
+ },
+ "slow_l1": {
+  "block_period": "12s",
+  "ephemeral_attest_interval": 50,
+  "protected_attest_interval": 300
+ }
+}
