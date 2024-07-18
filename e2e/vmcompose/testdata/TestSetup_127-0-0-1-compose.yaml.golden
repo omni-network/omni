@@ -36,6 +36,7 @@ services:
       - --pprof
       - --pprof.addr=0.0.0.0
       - --metrics
+      - --graphql
       
     ports:
       - 8551:8551 # Auth RPC
