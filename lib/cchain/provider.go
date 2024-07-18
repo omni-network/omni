@@ -6,6 +6,8 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
 
+	rpcclient "github.com/cometbft/cometbft/rpc/client"
+
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -46,6 +48,9 @@ type Provider interface {
 
 	// XBlock returns the validator sync xblock for the given height/offset (or latest) or false if none exist or an error.
 	XBlock(ctx context.Context, heightAndOffset uint64, latest bool) (xchain.Block, bool, error)
+
+	// CometClient returns the underlying cometBFT RPC client.
+	CometClient() rpcclient.Client
 }
 
 // Validator is a consensus chain validator in a validator set.

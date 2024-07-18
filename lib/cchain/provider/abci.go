@@ -26,13 +26,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-// ABCIClient abstracts the cometBFT RPC client consisting of only the required methods.
-type ABCIClient interface {
-	rpcclient.ABCIClient
-	rpcclient.SignClient
-}
-
-func NewABCIProvider(abci ABCIClient, network netconf.ID, chainNamer func(xchain.ChainVersion) string) Provider {
+func NewABCIProvider(abci rpcclient.Client, network netconf.ID, chainNamer func(xchain.ChainVersion) string) Provider {
 	// Stream backoff for 1s, querying new attestations after 1 consensus block
 	backoffFunc := func(ctx context.Context) func() {
 		return expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second))
@@ -124,7 +118,7 @@ func newABCIValsetFunc(cl vtypes.QueryClient) valsetFunc {
 	}
 }
 
-func newABCIFetchFunc(cl atypes.QueryClient, client ABCIClient) fetchFunc {
+func newABCIFetchFunc(cl atypes.QueryClient, client rpcclient.Client) fetchFunc {
 	return func(ctx context.Context, chainVer xchain.ChainVersion, fromOffset uint64) ([]xchain.Attestation, error) {
 		const endpoint = "fetch_attestations"
 		defer latency(endpoint)()
@@ -324,7 +318,7 @@ func spanName(endpoint string) string {
 // searchOffsetInHistory searches the consensus state history and
 // returns a historical consensus block height that contains an approved attestation
 // for the provided chain version and fromOffset.
-func searchOffsetInHistory(ctx context.Context, client ABCIClient, cl atypes.QueryClient, chainVer xchain.ChainVersion, fromOffset uint64) (uint64, error) {
+func searchOffsetInHistory(ctx context.Context, client rpcclient.Client, cl atypes.QueryClient, chainVer xchain.ChainVersion, fromOffset uint64) (uint64, error) {
 	const endpoint = "search_offset"
 	defer latency(endpoint)
 
