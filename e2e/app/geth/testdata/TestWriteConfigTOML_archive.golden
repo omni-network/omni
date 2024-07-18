@@ -70,7 +70,8 @@ WSHost = "0.0.0.0"
 WSPort = 8546
 WSOrigins = ["*"]
 WSModules = ["net", "web3", "eth", "debug"]
-GraphQLVirtualHosts = ["localhost"]
+GraphQLCors = ["*"]
+GraphQLVirtualHosts = ["*"]
 BatchRequestLimit = 1000
 BatchResponseMaxSize = 25000000
 
