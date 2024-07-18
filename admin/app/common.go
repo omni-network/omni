@@ -1,18 +1,19 @@
-package admin
+package app
 
 import (
 	"context"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
-	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	fbproxy "github.com/omni-network/omni/e2e/fbproxy/app"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/forkjoin"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -64,12 +65,12 @@ func (r forgeRunner) run(ctx context.Context, input []byte, senders ...common.Ad
 type action func(ctx context.Context, s shared, c chain, r runner) (string, error)
 
 // run runs an admin action with some config on an app definition.
-func run(ctx context.Context, def app.Definition, cfg PortalAdminConfig, name string, act action) error {
+func run(ctx context.Context, cfg Config, name string, act action) error {
 	if err := cfg.Validate(); err != nil {
 		return errors.Wrap(err, "validate config")
 	}
 
-	s, err := setup(ctx, def)
+	s, err := setup(ctx, cfg)
 	if err != nil {
 		return errors.Wrap(err, "setup")
 	}
@@ -96,6 +97,8 @@ func run(ctx context.Context, def app.Definition, cfg PortalAdminConfig, name st
 	results, cancel := forkjoin.NewWithInputs(ctx, runForChain, chains)
 	defer cancel()
 
+	log.Debug(ctx, "Running admin action", "action", name, "chains", chains)
+
 	return report(log.WithCtx(ctx, "action", name), results)
 }
 
@@ -121,7 +124,10 @@ type runResults = forkjoin.Results[string, string]
 func report(ctx context.Context, results runResults) error {
 	var failed []string
 	var success []string
+	runs := 0
 	for res := range results {
+		runs++
+
 		if res.Err != nil {
 			log.Error(ctx, "Run  failed", res.Err, "chain", res.Input)
 			failed = append(failed, res.Input)
@@ -131,7 +137,7 @@ func report(ctx context.Context, results runResults) error {
 		}
 	}
 
-	if len(failed) == len(results) {
+	if len(failed) == runs {
 		return errors.New("all runs failed", "chains", failed)
 	} else if len(failed) > 0 {
 		log.Error(ctx, "Runs failed", errors.New("runs failed"), "chains", failed)
@@ -144,8 +150,8 @@ func report(ctx context.Context, results runResults) error {
 }
 
 // setup returns common resources for all admin operations.
-func setup(ctx context.Context, def app.Definition) (shared, error) {
-	netID := def.Testnet.Network
+func setup(ctx context.Context, cfg Config) (shared, error) {
+	netID := cfg.Network
 
 	admin, ok := eoa.Address(netID, eoa.RoleAdmin)
 	if !ok {
@@ -157,7 +163,10 @@ func setup(ctx context.Context, def app.Definition) (shared, error) {
 		return shared{}, errors.New("deployer eoas not found", "network", netID)
 	}
 
-	endpoints := makeEndpoints(def)
+	endpoints, err := makeEndpoints(ctx, cfg)
+	if err != nil {
+		return shared{}, errors.Wrap(err, "endpoints")
+	}
 
 	portalReg, err := makePortalRegistry(netID, endpoints)
 	if err != nil {
@@ -174,8 +183,8 @@ func setup(ctx context.Context, def app.Definition) (shared, error) {
 		deployer:    deployer,
 		endpoints:   endpoints,
 		network:     network,
-		fireAPIKey:  def.Cfg.FireAPIKey,
-		fireKeyPath: def.Cfg.FireKeyPath,
+		fireAPIKey:  cfg.FireAPIKey,
+		fireKeyPath: cfg.FireKeyPath,
 	}, nil
 }
 
@@ -275,27 +284,30 @@ func execCmd(ctx context.Context, dir string, cmd string, args ...string) (strin
 	return string(out), nil
 }
 
-func makeEndpoints(def app.Definition) xchain.RPCEndpoints {
+func makeEndpoints(ctx context.Context, cfg Config) (xchain.RPCEndpoints, error) {
 	endpoints := make(xchain.RPCEndpoints)
+	netID := cfg.Network
 
-	// Add all public chains
-	for _, public := range def.Testnet.PublicChains {
-		endpoints[public.Chain().Name] = public.NextRPCAddress()
+	// add omni evm endpoint
+	omniEVMID := netID.Static().OmniExecutionChainID
+	omniEVMMetadata, ok := evmchain.MetadataByID(omniEVMID)
+	if !ok {
+		return xchain.RPCEndpoints{}, errors.New("omni evm metadata not found")
+	}
+	if _, err := endpoints.ByNameOrID(omniEVMMetadata.Name, omniEVMMetadata.ChainID); err != nil {
+		endpoints[omniEVMMetadata.Name] = netID.Static().ExecutionRPC()
 	}
 
-	// Connect to a proper omni_evm that isn't unavailable
-	omniEVM := def.Testnet.BroadcastOmniEVM()
-	endpoints[omniEVM.Chain.Name] = omniEVM.ExternalRPC
+	// add enpoints from config
+	for name, rpc := range cfg.RPCs {
+		if err := checkChainID(ctx, name, rpc); err != nil {
+			return xchain.RPCEndpoints{}, errors.Wrap(err, "check chain ID", "chain", name)
+		}
 
-	// Add omni consensus chain
-	endpoints[def.Testnet.Network.Static().OmniConsensusChain().Name] = def.Testnet.BroadcastNode().AddressRPC()
-
-	// Add all anvil chains
-	for _, anvil := range def.Testnet.AnvilChains {
-		endpoints[anvil.Chain.Name] = anvil.ExternalRPC
+		endpoints[name] = rpc
 	}
 
-	return endpoints
+	return endpoints, nil
 }
 
 func makePortalRegistry(network netconf.ID, endpoints xchain.RPCEndpoints) (*bindings.PortalRegistry, error) {
@@ -340,4 +352,32 @@ func dedup(strs []string) []string {
 	}
 
 	return res
+}
+
+// checkChainID checks that the chain ID of the base RPC matches the expected chain ID for chainName.
+func checkChainID(ctx context.Context, chainName string, rpc string) error {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	client, err := ethclient.Dial(chainName, rpc)
+	if err != nil {
+		return errors.Wrap(err, "dial base rpc")
+	}
+
+	id, err := client.ChainID(ctx)
+	if err != nil {
+		return errors.Wrap(err, "get chain ID")
+	}
+
+	meta, ok := evmchain.MetadataByName(chainName)
+	if !ok {
+		return errors.New("unknown chain name", "chain", chainName)
+	}
+
+	if meta.ChainID != id.Uint64() {
+		return errors.New("chain ID mismatch",
+			"chain", chainName, "expected", meta.ChainID, "actual", id.Uint64())
+	}
+
+	return nil
 }

@@ -1,15 +1,14 @@
-package admin
+package app
 
 import (
 	"context"
 
-	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/lib/errors"
 )
 
 // UnpausePortal unpauses the portal contracts on a network. Only single chain is supported.
-func UnpausePortal(ctx context.Context, def app.Definition, cfg PortalAdminConfig) error {
-	return run(ctx, def, cfg, "unpausePortal", unpausePortal)
+func UnpausePortal(ctx context.Context, cfg Config) error {
+	return run(ctx, cfg, "unpausePortal", unpausePortal)
 }
 
 func unpausePortal(ctx context.Context, s shared, c chain, r runner) (string, error) {

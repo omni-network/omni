@@ -1,15 +1,14 @@
-package admin
+package app
 
 import (
 	"context"
 
-	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/lib/errors"
 )
 
 // UpgradePortal upgrades the portal contracts on a network. Only single chain is supported.
-func UpgradePortal(ctx context.Context, def app.Definition, cfg PortalAdminConfig) error {
-	return run(ctx, def, cfg, "upgradePortal", upgradePortal)
+func UpgradePortal(ctx context.Context, cfg Config) error {
+	return run(ctx, cfg, "upgradePortal", upgradePortal)
 }
 
 func upgradePortal(ctx context.Context, s shared, c chain, r runner) (string, error) {
