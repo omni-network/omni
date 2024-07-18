@@ -113,8 +113,12 @@ func (p *Provider) Setup() error {
 	return nil
 }
 
-func (*Provider) Upgrade(context.Context, types.UpgradeConfig) error {
+func (*Provider) Upgrade(context.Context, types.ServiceConfig) error {
 	return errors.New("upgrade not supported for docker provider")
+}
+
+func (*Provider) Restart(context.Context, types.ServiceConfig) error {
+	return errors.New("restart not supported for docker provider")
 }
 
 func (p *Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {

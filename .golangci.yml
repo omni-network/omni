@@ -66,6 +66,7 @@ linters-settings:
           - "github.com/gogo/protobuf/proto"     # Prefer google.golang.org/protobuf
           - "github.com/stretchr/testify/assert" # Prefer github.com/stretchr/testify/require
           - "golang.org/x/exp/slices"            # Prefer slices
+          - "golang.org/x/exp/maps"              # Prefer maps
       - name: unhandled-error
         arguments:
          - 'fmt.Printf'

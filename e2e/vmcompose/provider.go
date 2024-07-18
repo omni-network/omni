@@ -132,9 +132,32 @@ func (p *Provider) Setup() error {
 	return nil
 }
 
+func (p *Provider) Restart(ctx context.Context, cfg types.ServiceConfig) error {
+	log.Info(ctx, "Restarting docker-compose on VMs")
+
+	for vmName, instance := range p.Data.VMs {
+		if !matchAny(cfg, p.Data.ServicesByInstance(instance)) {
+			log.Debug(ctx, "Skipping vm restart, no matching services", "vm", vmName, "regexp", cfg.Regexp)
+			continue
+		}
+
+		startCmd := fmt.Sprintf("cd /omni/%s && "+
+			"sudo docker compose down && "+
+			"sudo docker compose up -d",
+			p.Testnet.Name)
+
+		err := execOnVM(ctx, vmName, startCmd)
+		if err != nil {
+			return errors.Wrap(err, "compose down up ", "vm", vmName)
+		}
+	}
+
+	return nil
+}
+
 // Upgrade copies some of the local e2e generated artifacts to the VMs and starts the docker-compose services.
-func (p *Provider) Upgrade(ctx context.Context, cfg types.UpgradeConfig) error {
-	log.Info(ctx, "Upgrading docker-compose on VMs", "image", p.Testnet.UpgradeVersion)
+func (p *Provider) Upgrade(ctx context.Context, cfg types.ServiceConfig) error {
+	log.Info(ctx, "Upgrading docker-compose artifacts on VMs")
 
 	filesByService := make(map[string][]string)
 	addFile := func(service string, paths ...string) {
@@ -166,7 +189,7 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.UpgradeConfig) error {
 	// Do initial sequential ssh to each VM, ensure we can connect.
 	for vmName, instance := range p.Data.VMs {
 		if !matchAny(cfg, p.Data.ServicesByInstance(instance)) {
-			log.Debug(ctx, "Skipping vm upgrade, no matching services", "vm", vmName, "regexp", cfg.ServiceRegexp)
+			log.Debug(ctx, "Skipping vm upgrade, no matching services", "vm", vmName, "regexp", cfg.Regexp)
 			continue
 		}
 
@@ -240,13 +263,13 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.UpgradeConfig) error {
 
 // matchAny returns true if the pattern matches any of the services in the services map.
 // An empty pattern returns true, matching anything.
-func matchAny(cfg types.UpgradeConfig, services map[string]bool) bool {
-	if cfg.ServiceRegexp == "" {
+func matchAny(cfg types.ServiceConfig, services map[string]bool) bool {
+	if cfg.Regexp == "" {
 		return true
 	}
 
 	for service := range services {
-		matched, _ := regexp.MatchString(cfg.ServiceRegexp, service)
+		matched, _ := regexp.MatchString(cfg.Regexp, service)
 		if matched {
 			return true
 		}

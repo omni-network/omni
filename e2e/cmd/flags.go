@@ -40,8 +40,8 @@ func bindDeployFlags(flags *pflag.FlagSet, cfg *app.DeployConfig) {
 	flags.Uint64Var(&cfg.PingPongN, "ping-pong", cfg.PingPongN, "Number of ping pongs messages to send. 0 disables it")
 }
 
-func bindUpgradeFlags(flags *pflag.FlagSet, cfg *types.UpgradeConfig) {
-	flags.StringVar(&cfg.ServiceRegexp, "services", cfg.ServiceRegexp, "Regexp applied to services per VM. Any match results in the VM being upgraded (all services on that VM are upgraded, not only matching services)")
+func bindServiceFlags(flags *pflag.FlagSet, cfg *types.ServiceConfig) {
+	flags.StringVar(&cfg.Regexp, "services", cfg.Regexp, "Regexp applied to services per VM. Any match results in the VM being upgraded/restarted (all services on that VM are upgraded/restarted, not only matching services)")
 }
 
 func bindCreate3DeployFlags(flags *pflag.FlagSet, cfg *app.Create3DeployConfig) {

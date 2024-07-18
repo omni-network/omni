@@ -256,14 +256,31 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 	return nil
 }
 
-// Upgrade generates all local artifacts, but only copies the docker-compose file to the VMs.
-// It them calls docker-compose up.
-func Upgrade(ctx context.Context, def Definition, cfg DeployConfig, upgradeCfg types.UpgradeConfig) error {
+// Upgrade generates all local artifacts, but only copies the dynamic artifacts (excl genesis) to the VMs.
+// It then calls docker-compose up.
+func Upgrade(ctx context.Context, def Definition, cfg DeployConfig, upgradeCfg types.ServiceConfig) error {
+	if def.Testnet.Network.IsEphemeral() {
+		// TODO(corver): Staging could support upgrades.
+		//  Currently, validator private keys are rotated,
+		//  so they stop being validators,
+		//  resulting in the chain stalling.
+		return errors.New("cannot upgrade ephemeral network", "network", def.Testnet.Network)
+	}
+
 	if err := Setup(ctx, def, cfg); err != nil {
 		return err
 	}
 
 	return def.Infra.Upgrade(ctx, upgradeCfg)
+}
+
+// Restart calls docker-compose down-up on all VMs.
+func Restart(ctx context.Context, def Definition, cfg DeployConfig, upgradeCfg types.ServiceConfig) error {
+	if err := Setup(ctx, def, cfg); err != nil {
+		return err
+	}
+
+	return def.Infra.Restart(ctx, upgradeCfg)
 }
 
 // toPortalValidators returns the provided validator set as a lice of portal validators.
