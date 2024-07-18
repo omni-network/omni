@@ -68,7 +68,24 @@ func getDeployCfg(network netconf.ID) (DeploymentConfig, error) {
 		return stagingCfg(), nil
 	}
 
+	if network == netconf.Omega {
+		return omegaCfg(), nil
+	}
+
 	return DeploymentConfig{}, errors.New("unsupported network", "network", network)
+}
+
+func omegaCfg() DeploymentConfig {
+	return DeploymentConfig{
+		Create3Factory:  contracts.OmegaCreate3Factory(),
+		Create3Salt:     contracts.L1BridgeSalt(netconf.Omega),
+		Owner:           eoa.MustAddress(netconf.Omega, eoa.RoleAdmin),
+		Deployer:        eoa.MustAddress(netconf.Omega, eoa.RoleDeployer),
+		ProxyAdminOwner: eoa.MustAddress(netconf.Omega, eoa.RoleAdmin),
+		Portal:          contracts.OmegaPortal(),
+		Token:           contracts.OmegaToken(),
+		ExpectedAddr:    contracts.OmegaL1Bridge(),
+	}
 }
 
 func stagingCfg() DeploymentConfig {
@@ -95,6 +112,54 @@ func devnetCfg() DeploymentConfig {
 		Token:           contracts.DevnetToken(),
 		ExpectedAddr:    contracts.DevnetL1Bridge(),
 	}
+}
+
+func AddrForNetwork(network netconf.ID) (common.Address, bool) {
+	switch network {
+	case netconf.Mainnet:
+		return contracts.MainnetToken(), true
+	case netconf.Omega:
+		return contracts.OmegaL1Bridge(), true
+	case netconf.Staging:
+		return contracts.StagingL1Bridge(), true
+	case netconf.Devnet:
+		return contracts.DevnetL1Bridge(), true
+	default:
+		return common.Address{}, false
+	}
+}
+
+// isDeployed returns true if the token contract is already deployed to its expected address.
+func isDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (bool, common.Address, error) {
+	addr, ok := AddrForNetwork(network)
+	if !ok {
+		return false, addr, errors.New("unsupported network", "network", network)
+	}
+
+	code, err := backend.CodeAt(ctx, addr, nil)
+	if err != nil {
+		return false, addr, errors.Wrap(err, "code at", "address", addr)
+	}
+
+	if len(code) == 0 {
+		return false, addr, nil
+	}
+
+	return true, addr, nil
+}
+
+// DeployIfNeeded deploys a new token contract if it is not already deployed.
+// If the contract is already deployed, the receipt is nil.
+func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+	deployed, addr, err := isDeployed(ctx, network, backend)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "is deployed")
+	}
+	if deployed {
+		return addr, nil, nil
+	}
+
+	return Deploy(ctx, network, backend)
 }
 
 // Deploy deploys a new L1Bridge contract and returns the address and receipt.
