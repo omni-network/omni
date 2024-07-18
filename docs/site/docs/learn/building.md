@@ -15,7 +15,7 @@ Omni offers a programmable, EVM-compatible layer that enables the development of
 
 It integrates seamlessly with rollups, allowing developers to access state, messages, and liquidity, simplifying the creation of decentralized applications. Omni's approach sets a new standard, enabling developers to leverage the advantages of rollups cost-effectively while ensuring broad accessibility for Web3 users.
 
-To jump right into developing cross-chain applications read further about developing using Omni [here](../develop/introduction.md).
+To jump right into developing cross-chain applications read further about developing using Omni [here](../develop/xchain-messaging.md).
 
 ## The Omni Native Token
 

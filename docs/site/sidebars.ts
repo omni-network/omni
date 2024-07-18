@@ -205,6 +205,8 @@ const sidebars: SidebarsConfig = {
       collapsible: false,
       items: [
         "develop/introduction",
+        "develop/xchain-messaging",
+        "develop/omni-evm",
         "develop/state",
       ]
     },
