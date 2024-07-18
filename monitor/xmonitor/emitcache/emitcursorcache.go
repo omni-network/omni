@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	ormv1alpha1 "cosmossdk.io/api/cosmos/orm/v1alpha1"
@@ -16,6 +17,7 @@ import (
 	"cosmossdk.io/orm/model/ormlist"
 	"cosmossdk.io/orm/types/ormerrors"
 	db "github.com/cosmos/cosmos-db"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -51,31 +53,31 @@ func Start(
 				return nil
 			}
 
-			// Update the emit cursor cache for each stream for this height.
+			// Update the emit cursor cache for each stream for this height (in parallel).
+			var eg errgroup.Group
 			for _, stream := range network.StreamsFrom(chain.ID) {
-				ref := xchain.EmitRef{Height: &block.BlockHeight}
-				emit, _, err := xprov.GetEmittedCursor(ctx, ref, stream)
-				if err != nil {
-					latest, err := xprov.ChainVersionHeight(ctx, xchain.ChainVersion{ID: chain.ID, ConfLevel: xchain.ConfLatest})
+				eg.Go(func() error {
+					ref := xchain.EmitRef{Height: &block.BlockHeight}
+					emit, _, err := xprov.GetEmittedCursor(ctx, ref, stream)
 					if err != nil {
-						return err
+						latest, _ := xprov.ChainVersionHeight(ctx, xchain.ChainVersion{ID: chain.ID, ConfLevel: xchain.ConfLatest})
+						return errors.Wrap(err, "get emit cursor", err,
+							"stream", network.StreamName(stream),
+							"lagging", umath.SubtractOrZero(latest, block.BlockHeight),
+						)
 					}
+					// Populate a zero cursor if not found.
 
-					log.Warn(ctx, "Skipping populating emit cursor cache", err,
-						"stream", network.StreamName(stream),
-						"lagging", subtract(latest, block.BlockHeight),
-					)
-
-					continue
-				}
-				// Populate a zero cursor if not found.
-
-				if err := cache.set(ctx, block.BlockHeight, emit); err != nil {
-					return err
-				}
+					return cache.set(ctx, block.BlockHeight, emit)
+				})
 			}
 
-			log.Debug(ctx, "Populated emit cursor cache", "height", block.BlockHeight, "chain", chain.Name)
+			if err := eg.Wait(); err != nil {
+				// Log warn and continue, don't block or retry.
+				log.Warn(ctx, "Failed (partially) to populate emit cursor cache (skipping)", err, "height", block.BlockHeight, "chain", chain.Name)
+			} else {
+				log.Debug(ctx, "Populated emit cursor cache", "height", block.BlockHeight, "chain", chain.Name)
+			}
 
 			return nil
 		}
@@ -326,10 +328,6 @@ func (c *emitCursorCache) detectTrim(ctx context.Context, chainID uint64, retain
 	}
 
 	return ids, nil
-}
-
-func subtract(a uint64, b uint64) int64 {
-	return int64(a) - int64(b)
 }
 
 // dbStoreService wraps a cosmos-db instance and provides it via OpenKVStore.
