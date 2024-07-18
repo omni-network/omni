@@ -118,17 +118,23 @@ func (p EventProcessor) Deliver(ctx context.Context, _ common.Hash, elog *evmeng
 			return errors.Wrap(err, "parse create validator")
 		}
 
-		return p.deliverCreateValidator(ctx, ev)
+		if err := p.deliverCreateValidator(ctx, ev); err != nil {
+			return errors.Wrap(err, "create validator")
+		}
 	case delegateEvent.ID:
 		ev, err := p.contract.ParseDelegate(ethlog)
 		if err != nil {
 			return errors.Wrap(err, "parse delegate")
 		}
 
-		return p.delivereDelegate(ctx, ev)
+		if err := p.deliverDelegate(ctx, ev); err != nil {
+			return errors.Wrap(err, "delegate")
+		}
 	default:
 		return errors.New("unknown event")
 	}
+
+	return nil
 }
 
 // deliverCreateValidator processes a CreateValidator event, and creates a new validator.
@@ -185,13 +191,13 @@ func (p EventProcessor) deliverCreateValidator(ctx context.Context, ev *bindings
 	return nil
 }
 
-// delivereDelegate processes a Delegate event, and delegates to an existing validator.
+// deliverDelegate processes a Delegate event, and delegates to an existing validator.
 // - Mint the corresponding amount of $STAKE coins.
 // - Send the minted coins to the delegator's account.
 // - Delegate the minted coins to the validator.
 //
 // NOTE: if we error, the deposit is lost (on EVM). consider recovery methods.
-func (p EventProcessor) delivereDelegate(ctx context.Context, ev *bindings.StakingDelegate) error {
+func (p EventProcessor) deliverDelegate(ctx context.Context, ev *bindings.StakingDelegate) error {
 	if ev.Delegator != ev.Validator {
 		return errors.New("only self delegation")
 	}
@@ -200,7 +206,7 @@ func (p EventProcessor) delivereDelegate(ctx context.Context, ev *bindings.Staki
 	valAddr := sdk.ValAddress(ev.Validator.Bytes())
 
 	if _, err := p.sKeeper.GetValidator(ctx, valAddr); err != nil {
-		return errors.New("validator does not exist")
+		return errors.New("validator does not exist", "validator", valAddr.String())
 	}
 
 	amountCoin, amountCoins := omniToBondCoin(ev.Amount)

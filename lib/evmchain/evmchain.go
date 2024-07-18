@@ -6,6 +6,7 @@
 package evmchain
 
 import (
+	"sort"
 	"time"
 
 	"github.com/omni-network/omni/lib/tokens"
@@ -60,6 +61,20 @@ func MetadataByName(name string) (Metadata, bool) {
 
 func IsOmniEVM(name string) bool {
 	return name == omniEVMName
+}
+
+// All returns all evmchain metadatas ordered by chain ID.
+func All() []Metadata {
+	var resp []Metadata
+	for _, metadata := range static {
+		resp = append(resp, metadata)
+	}
+
+	sort.Slice(resp, func(i, j int) bool {
+		return resp[i].ChainID < resp[j].ChainID
+	})
+
+	return resp
 }
 
 var static = map[uint64]Metadata{
