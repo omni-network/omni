@@ -14,55 +14,10 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
-type DeploymentConfig struct {
-	Deployer common.Address
-}
-
-func (cfg DeploymentConfig) Validate() error {
-	if (cfg.Deployer == common.Address{}) {
-		return errors.New("deployer is zero")
-	}
-
-	return nil
-}
-
-var configs = map[netconf.ID]DeploymentConfig{
-	netconf.Mainnet: {
-		Deployer: eoa.MustAddress(netconf.Mainnet, eoa.RoleCreate3Deployer),
-	},
-	netconf.Omega: {
-		Deployer: eoa.MustAddress(netconf.Omega, eoa.RoleCreate3Deployer),
-	},
-	netconf.Staging: {
-		Deployer: eoa.MustAddress(netconf.Staging, eoa.RoleCreate3Deployer),
-	},
-	netconf.Devnet: {
-		Deployer: eoa.MustAddress(netconf.Devnet, eoa.RoleCreate3Deployer),
-	},
-}
-
-func AddrForNetwork(network netconf.ID) (common.Address, bool) {
-	switch network {
-	case netconf.Mainnet:
-		return contracts.MainnetCreate3Factory(), true
-	case netconf.Omega:
-		return contracts.OmegaCreate3Factory(), true
-	case netconf.Staging:
-		return contracts.StagingCreate3Factory(), true
-	case netconf.Devnet:
-		return contracts.DevnetCreate3Factory(), true
-	default:
-		return common.Address{}, false
-	}
-}
-
 // IsDeployed checks if the Create3 factory contract is deployed to the provided backend
 // to its expected network address.
 func IsDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (bool, common.Address, error) {
-	addr, ok := AddrForNetwork(network)
-	if !ok {
-		return false, addr, errors.New("unsupported network", "network", network)
-	}
+	addr := contracts.Create3Factory(network)
 
 	code, err := backend.CodeAt(ctx, addr, nil)
 	if err != nil {
@@ -92,7 +47,7 @@ func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend
 // Deploy deploys a new Create3 factory contract and returns the address and receipt.
 // It only allows deployments to explicitly supported chains.
 func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
-	cfg, ok := configs[network]
+	cfg, ok := eoa.Address(network, eoa.RoleCreate3Deployer)
 	if !ok {
 		return common.Address{}, nil, errors.New("unsupported network", "network", network)
 	}
@@ -100,17 +55,13 @@ func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend
 	return deploy(ctx, cfg, backend)
 }
 
-func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
-	if err := cfg.Validate(); err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "validate config")
-	}
-
-	txOpts, err := backend.BindOpts(ctx, cfg.Deployer)
+func deploy(ctx context.Context, deployer common.Address, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+	txOpts, err := backend.BindOpts(ctx, deployer)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "bind opts")
 	}
 
-	nonce, err := backend.PendingNonceAt(ctx, cfg.Deployer)
+	nonce, err := backend.PendingNonceAt(ctx, deployer)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "pending nonce")
 	} else if nonce != 0 {

@@ -38,10 +38,7 @@ func setupTokenBridge(ctx context.Context, def Definition) error {
 
 	admin := eoa.MustAddress(networkID, eoa.RoleAdmin)
 
-	portalAddr, ok := contracts.Portal(networkID)
-	if !ok {
-		return errors.New("get portal address")
-	}
+	portalAddr := contracts.Portal(networkID)
 
 	l1Backend, err := def.Backends().Backend(l1.ID)
 	if err != nil {
@@ -183,20 +180,9 @@ func bridgeToNative(ctx context.Context, def Definition, toBridge []BridgeTest) 
 	}
 
 	// payor is initial supply recipient, the only account with OMNI on L1
-	payor, ok := omnitoken.InitialSupplyRecipient(networkID)
-	if !ok {
-		return errors.New("get bridger")
-	}
-
-	l1BridgeAddr, ok := contracts.L1Bridge(networkID)
-	if !ok {
-		return errors.New("get bridge address")
-	}
-
-	tokenAddr, ok := contracts.Token(networkID)
-	if !ok {
-		return errors.New("get token address")
-	}
+	payor := omnitoken.InitialSupplyRecipient(networkID)
+	l1BridgeAddr := contracts.L1Bridge(networkID)
+	tokenAddr := contracts.Token(networkID)
 
 	txOpts, backend, err := def.Backends().BindOpts(ctx, l1.ID, payor)
 	if err != nil {

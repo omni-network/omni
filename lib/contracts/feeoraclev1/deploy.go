@@ -15,7 +15,7 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
-type DeploymentConfig struct {
+type deploymentConfig struct {
 	Owner           common.Address
 	Manager         common.Address // manager is the address that can set fee parameters (gas price, conversion rates)
 	Deployer        common.Address
@@ -28,7 +28,7 @@ func isDeadOrEmpty(addr common.Address) bool {
 	return addr == common.Address{} || addr == common.HexToAddress(eoa.ZeroXDead)
 }
 
-func (cfg DeploymentConfig) Validate() error {
+func (cfg deploymentConfig) Validate() error {
 	if isDeadOrEmpty(cfg.Owner) {
 		return errors.New("owner is zero")
 	}
@@ -45,47 +45,17 @@ func (cfg DeploymentConfig) Validate() error {
 	return nil
 }
 
-// NOTE: monitor is owner of fee oracle contracts, because monitor manages on chain gas prices / conversion rates
-
-var configs = map[netconf.ID]DeploymentConfig{
-	netconf.Mainnet: {
-		Owner:           eoa.MustAddress(netconf.Mainnet, eoa.RoleAdmin),
-		Manager:         eoa.MustAddress(netconf.Mainnet, eoa.RoleMonitor),
-		Deployer:        eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer),
-		ProxyAdminOwner: eoa.MustAddress(netconf.Mainnet, eoa.RoleAdmin),
-		BaseGasLimit:    50_000,
-		ProtocolFee:     big.NewInt(0),
-	},
-	netconf.Omega: {
-		Owner:           eoa.MustAddress(netconf.Omega, eoa.RoleAdmin),
-		Manager:         eoa.MustAddress(netconf.Omega, eoa.RoleMonitor),
-		Deployer:        eoa.MustAddress(netconf.Omega, eoa.RoleDeployer),
-		ProxyAdminOwner: eoa.MustAddress(netconf.Omega, eoa.RoleAdmin),
-		BaseGasLimit:    50_000,
-		ProtocolFee:     big.NewInt(0),
-	},
-	netconf.Staging: {
-		Owner:           eoa.MustAddress(netconf.Staging, eoa.RoleAdmin),
-		Manager:         eoa.MustAddress(netconf.Staging, eoa.RoleMonitor),
-		Deployer:        eoa.MustAddress(netconf.Staging, eoa.RoleDeployer),
-		ProxyAdminOwner: eoa.MustAddress(netconf.Staging, eoa.RoleAdmin),
-		BaseGasLimit:    50_000,
-		ProtocolFee:     big.NewInt(0),
-	},
-	netconf.Devnet: {
-		Owner:           eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
-		Manager:         eoa.MustAddress(netconf.Devnet, eoa.RoleMonitor),
-		Deployer:        eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
-		ProxyAdminOwner: eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
-		BaseGasLimit:    50_000,
-		ProtocolFee:     big.NewInt(0),
-	},
-}
-
 func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainIDs []uint64, backends ethbackend.Backends) (common.Address, *ethtypes.Receipt, error) {
-	cfg, ok := configs[network]
-	if !ok {
-		return common.Address{}, nil, errors.New("unsupported network", "network", network)
+	cfg := deploymentConfig{
+		Owner:           eoa.MustAddress(network, eoa.RoleAdmin),
+		Manager:         eoa.MustAddress(network, eoa.RoleMonitor), // NOTE: monitor is owner of fee oracle contracts, because monitor manages on chain gas prices / conversion rates
+		Deployer:        eoa.MustAddress(network, eoa.RoleDeployer),
+		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleAdmin),
+		BaseGasLimit:    50_000,
+		ProtocolFee:     big.NewInt(0),
+	}
+	if err := cfg.Validate(); err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "validate cfg")
 	}
 
 	backend, err := backends.Backend(chainID)

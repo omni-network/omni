@@ -9,146 +9,41 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-//
-// AVS.
-//
-
-func MainnetAVS() common.Address {
-	// This AVS was deployed outside of the e2e deployment flow, without Create3.
-	return common.HexToAddress("0xed2f4d90b073128ae6769a9A8D51547B1Df766C8")
-}
-
-func OmegaAVS() common.Address {
-	// This AVS was deployed outside of the e2e deployment flow, without Create3.
-	return common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
-}
-
-func StagingAVS() common.Address {
-	return create3.Address(StagingCreate3Factory(), AVSSalt(netconf.Staging), eoa.MustAddress(netconf.Staging, eoa.RoleDeployer))
-}
-
-func DevnetAVS() common.Address {
-	return create3.Address(DevnetCreate3Factory(), AVSSalt(netconf.Devnet), eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer))
-}
-
-//
-// Create3Factory.
-//
-
-func MainnetCreate3Factory() common.Address {
-	return crypto.CreateAddress(eoa.MustAddress(netconf.Mainnet, eoa.RoleCreate3Deployer), 0)
-}
-
-func OmegaCreate3Factory() common.Address {
-	return crypto.CreateAddress(eoa.MustAddress(netconf.Omega, eoa.RoleCreate3Deployer), 0)
-}
-
-func StagingCreate3Factory() common.Address {
-	return crypto.CreateAddress(eoa.MustAddress(netconf.Staging, eoa.RoleCreate3Deployer), 0)
-}
-
-func DevnetCreate3Factory() common.Address {
-	return crypto.CreateAddress(eoa.MustAddress(netconf.Devnet, eoa.RoleCreate3Deployer), 0)
-}
-
-//
-// Portal.
-//
-
-func MainnetPortal() common.Address {
-	return create3.Address(MainnetCreate3Factory(), PortalSalt(netconf.Mainnet), eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer))
-}
-
-func OmegaPortal() common.Address {
-	return create3.Address(OmegaCreate3Factory(), PortalSalt(netconf.Omega), eoa.MustAddress(netconf.Omega, eoa.RoleDeployer))
-}
-
-func StagingPortal() common.Address {
-	return create3.Address(StagingCreate3Factory(), PortalSalt(netconf.Staging), eoa.MustAddress(netconf.Staging, eoa.RoleDeployer))
-}
-
-func DevnetPortal() common.Address {
-	return create3.Address(DevnetCreate3Factory(), PortalSalt(netconf.Devnet), eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer))
-}
-
-func Portal(network netconf.ID) (common.Address, bool) {
-	switch network {
-	case netconf.Mainnet:
-		return MainnetPortal(), true
-	case netconf.Omega:
-		return OmegaPortal(), true
-	case netconf.Staging:
-		return StagingPortal(), true
-	case netconf.Devnet:
-		return DevnetPortal(), true
-	default:
-		return common.Address{}, false
+// AVS returns the AVS contract address for the given network.
+func AVS(network netconf.ID) common.Address {
+	if network == netconf.Mainnet {
+		return common.HexToAddress("0xed2f4d90b073128ae6769a9A8D51547B1Df766C8")
+	} else if network == netconf.Omega {
+		return common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
 	}
+
+	return create3.Address(Create3Factory(network), AVSSalt(network), eoa.MustAddress(network, eoa.RoleDeployer))
 }
 
-//
-// L1Bridge.
+// Create3Factory returns the Create3 factory address for the given network.
+func Create3Factory(network netconf.ID) common.Address {
+	return crypto.CreateAddress(eoa.MustAddress(network, eoa.RoleCreate3Deployer), 0)
+}
+
+// Portal returns the Portal contract address for the given network.
+func Portal(network netconf.ID) common.Address {
+	return create3.Address(Create3Factory(network), PortalSalt(network), eoa.MustAddress(network, eoa.RoleDeployer))
+}
+
+// L1Bridge returns the L1Bridge contract address for the given network.
 //
 // We use create3 deployments so we can have predictable addresses in ephemeral networks.
-
-func MainnetL1Bridge() common.Address {
-	return create3.Address(MainnetCreate3Factory(), L1BridgeSalt(netconf.Mainnet), eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer))
+func L1Bridge(network netconf.ID) common.Address {
+	return create3.Address(Create3Factory(network), L1BridgeSalt(network), eoa.MustAddress(network, eoa.RoleDeployer))
 }
 
-func OmegaL1Bridge() common.Address {
-	return create3.Address(OmegaCreate3Factory(), L1BridgeSalt(netconf.Omega), eoa.MustAddress(netconf.Omega, eoa.RoleDeployer))
-}
-
-func StagingL1Bridge() common.Address {
-	return create3.Address(StagingCreate3Factory(), L1BridgeSalt(netconf.Staging), eoa.MustAddress(netconf.Staging, eoa.RoleDeployer))
-}
-
-func DevnetL1Bridge() common.Address {
-	return create3.Address(DevnetCreate3Factory(), L1BridgeSalt(netconf.Devnet), eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer))
-}
-
-func L1Bridge(network netconf.ID) (common.Address, bool) {
-	switch network {
-	case netconf.Staging:
-		return StagingL1Bridge(), true
-	case netconf.Devnet:
-		return DevnetL1Bridge(), true
-	default:
-		return common.Address{}, false
+// Token returns the Token contract address for the given network.
+func Token(network netconf.ID) common.Address {
+	if network == netconf.Mainnet {
+		return common.HexToAddress("0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4")
 	}
-}
 
-//
-// Token.
-//
-// We use create3 deployments so we can have predictable addresses in ephemeral networks.
-
-func MainnetToken() common.Address {
-	// This toke was deployed outside of the e2e deployment flow, without Create3.
-	return common.HexToAddress("0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4")
-}
-
-func OmegaToken() common.Address {
-	return create3.Address(OmegaCreate3Factory(), TokenSalt(netconf.Omega), eoa.MustAddress(netconf.Omega, eoa.RoleDeployer))
-}
-
-func StagingToken() common.Address {
-	return create3.Address(StagingCreate3Factory(), TokenSalt(netconf.Staging), eoa.MustAddress(netconf.Staging, eoa.RoleDeployer))
-}
-
-func DevnetToken() common.Address {
-	return create3.Address(DevnetCreate3Factory(), TokenSalt(netconf.Devnet), eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer))
-}
-
-func Token(network netconf.ID) (common.Address, bool) {
-	switch network {
-	case netconf.Staging:
-		return StagingToken(), true
-	case netconf.Devnet:
-		return DevnetToken(), true
-	default:
-		return common.Address{}, false
-	}
+	return create3.Address(Create3Factory(network), TokenSalt(network), eoa.MustAddress(network, eoa.RoleDeployer))
 }
 
 //

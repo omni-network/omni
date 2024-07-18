@@ -143,7 +143,7 @@ func testDeployCfg(t *testing.T) deployConfig {
 		metadataURI:      "https://test-operator.com",
 		omniChainID:      netconf.Devnet.Static().OmniExecutionChainID,
 		stratParams:      testStratParams(),
-		portal:           contracts.DevnetPortal(),
+		portal:           contracts.Portal(netconf.Devnet),
 		ethStakeInbox:    common.HexToAddress("0x1234"), // stub
 		minOperatorStake: big.NewInt(1e18),              // 1 ETH
 		maxOperatorCount: 10,
