@@ -16,7 +16,7 @@ Fields will be updated soon.
 
 | Network | Chain ID | RPC URL |
 |---------|----------|---------|
-| Omni    | 165 | `$OMNI_TESTNET_RPC_URL$` |
+| Omni    | 164 | `$OMNI_TESTNET_RPC_URL$` |
 | Ethereum Holesky |    `17000`    | [See ChainList Page](https://chainlist.org/chain/17000) |
 | Arbitrum Sepolia |   `421614`      | [See Chainlist](https://chainlist.org/chain/421614) |
 | Optimism Sepolia |    `11155420`    | [See Chainlist](https://chainlist.org/chain/11155420) |

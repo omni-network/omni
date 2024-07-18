@@ -27,7 +27,7 @@ The following steps provide a comprehensive overview of how an XMsg travels from
 
     ```solidity
     omni.xcall(
-      destChainId,  // desintation chain id, e.g. 1 for Ethereum mainnet
+      destChainId,  // destination chain id, e.g. 1 for Ethereum mainnet
       to,           // contract address on the destination chain
       data,         // abi encoded calldata, ex abi.encodeWithSignature("foo()")
       gasLimit      // (optional) gas limit for the call on the destination chain

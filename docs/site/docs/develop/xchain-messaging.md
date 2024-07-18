@@ -8,7 +8,7 @@ You can use Omni to call a contract on another chain. We call this an `xcall`.
 
 ```solidity
 omni.xcall(
-   destChainId,  // desintation chain id, e.g. 1 for Ethereum mainnet
+   destChainId,  // destination chain id, e.g. 1 for Ethereum mainnet
    conf,         // confirmation strategy, e.g. 1 for `latest` and 4 for `finalized`
    to,           // contract address on the destination chain
    data,         // abi encoded calldata, ex abi.encodeWithSignature("foo()")
@@ -48,7 +48,7 @@ Summary:
 
 ### `latest`
 
-Latest xmsgs are attested to and delivered as soon as the transaction with the xmsg is included by the L2 sequencer in a block. This provides extremely low-latency message delivery – roughly 5-10s. However, it does come with an associated risk: the xmsg has a higher risk of being reorg'd out if the L2 sequencer misbehaves or fails. This may result in unintended consequences, and you should decide how much you're willing to trust L2 sequencers.
+Latest xmsgs are attested to and delivered as soon as the transaction with the xmsg is included by the L2 sequencer in a block. This provides a much lower latency for message delivery – roughly 5-10s. However, it does come with an associated risk: the xmsg has a higher risk of being reorg'd out if the L2 sequencer misbehaves or fails. This may result in unintended consequences, and you should decide how much you're willing to trust L2 sequencers.
 
 - an xmsg is delivered on a destination chain, but the txn that initiated the xmsg gets reorged out of the source chain
 - an xmsg is included in a txn on a source chain, but not delivered on the destination
