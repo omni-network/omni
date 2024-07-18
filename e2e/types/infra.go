@@ -7,23 +7,33 @@ import (
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
 )
 
-func DefaultUpgradeConfig() UpgradeConfig {
-	return UpgradeConfig{
-		ServiceRegexp: ".*",
+func DefaultServiceConfig() ServiceConfig {
+	return ServiceConfig{
+		Regexp: ".*",
 	}
 }
 
-type UpgradeConfig struct {
-	ServiceRegexp string
+type ServiceConfig struct {
+	// Regexp to match the service names.
+	Regexp string
 }
 
 type InfraProvider interface {
 	infra.Provider
 
-	Upgrade(ctx context.Context, cfg UpgradeConfig) error
+	// Upgrade copies dynamic config and files to VMs and restarts services.
+	// This assumes that important files are long-lived/deterministic (e.g. private keys).
+	// It notably doesn't copy newly generated genesis files.
+	// Note that all services on matching VMs are upgraded.
+	Upgrade(ctx context.Context, cfg ServiceConfig) error
 
 	// Clean deletes all containers, networks, and data on disk.
 	Clean(ctx context.Context) error
+
+	// Restart restarts the services that match the given config.
+	// I.e., docker-compose up/down.
+	// Note that all services on matching VMs are restarted.
+	Restart(ctx context.Context, cfg ServiceConfig) error
 }
 
 // InfrastructureData wraps e2e.InfrastructureData with additional omni-specific fields.

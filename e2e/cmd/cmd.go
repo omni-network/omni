@@ -76,6 +76,7 @@ func New() *cobra.Command {
 		newCleanCmd(&def),
 		newTestCmd(&def),
 		newUpgradeCmd(&def),
+		newRestartCmd(&def),
 		newKeyCreate(&def),
 		newAdminCmd(&def),
 		fundAccounts(&def),
@@ -152,18 +153,36 @@ func newTestCmd(def *app.Definition) *cobra.Command {
 
 func newUpgradeCmd(def *app.Definition) *cobra.Command {
 	cfg := app.DefaultDeployConfig()
-	upgradeCfg := types.DefaultUpgradeConfig()
+	svcCfg := types.DefaultServiceConfig()
 
 	cmd := &cobra.Command{
 		Use:   "upgrade",
-		Short: "Upgrades docker containers of a previously preserved network",
+		Short: "Upgrades docker containers of a vmcompose network",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return app.Upgrade(cmd.Context(), *def, cfg, upgradeCfg)
+			return app.Upgrade(cmd.Context(), *def, cfg, svcCfg)
 		},
 	}
 
 	bindDeployFlags(cmd.Flags(), &cfg)
-	bindUpgradeFlags(cmd.Flags(), &upgradeCfg)
+	bindServiceFlags(cmd.Flags(), &svcCfg)
+
+	return cmd
+}
+
+func newRestartCmd(def *app.Definition) *cobra.Command {
+	cfg := app.DefaultDeployConfig()
+	svcCfg := types.DefaultServiceConfig()
+
+	cmd := &cobra.Command{
+		Use:   "restart",
+		Short: "Restarts docker containers of a vmcompose network",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return app.Restart(cmd.Context(), *def, cfg, svcCfg)
+		},
+	}
+
+	bindDeployFlags(cmd.Flags(), &cfg)
+	bindServiceFlags(cmd.Flags(), &svcCfg)
 
 	return cmd
 }
