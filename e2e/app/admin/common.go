@@ -117,11 +117,15 @@ func getChains(network netconf.Network, chain string) []string {
 // They take a chain name as input, and return cli output.
 type runResults = forkjoin.Results[string, string]
 
-// report logs the results of a forkjoin, returning an error only if all runs failed.
+// report logs the results of a forkjoin, returning an error if any runs failed.
 func report(ctx context.Context, results runResults) error {
 	var failed []string
 	var success []string
+	runs := 0
+
 	for res := range results {
+		runs++
+
 		if res.Err != nil {
 			log.Error(ctx, "Run  failed", res.Err, "chain", res.Input)
 			failed = append(failed, res.Input)
@@ -131,14 +135,16 @@ func report(ctx context.Context, results runResults) error {
 		}
 	}
 
-	if len(failed) == len(results) {
+	if len(failed) == runs {
 		return errors.New("all runs failed", "chains", failed)
 	} else if len(failed) > 0 {
 		log.Error(ctx, "Runs failed", errors.New("runs failed"), "chains", failed)
 		log.Info(ctx, "Runs succeeded", "chains", success)
-	} else {
-		log.Info(ctx, "All runs succeeded", "chains", success)
+
+		return errors.New("some runs failed", "chains", failed)
 	}
+
+	log.Info(ctx, "All runs succeeded", "chains", success)
 
 	return nil
 }
