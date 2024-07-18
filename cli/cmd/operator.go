@@ -107,6 +107,7 @@ func initNodes(ctx context.Context, cfg initConfig) error {
 		Moniker:     cfg.Moniker,
 		Network:     cfg.Network,
 		TrustedSync: true,
+		AddrBook:    true,
 		HaloCfgFunc: func(cfg *halocfg.Config) {
 			cfg.EngineEndpoint = "http://omni_evm:8551"
 			cfg.EngineJWTFile = "/geth/jwtsecret"
@@ -130,12 +131,18 @@ func writeComposeFile(ctx context.Context, home string) error {
 		return errors.Wrap(err, "parse template")
 	}
 
+	// TODO(corver): Replace git commit with buildinfo.Version once we release proper versions.
+	commit, ok := buildinfo.GitCommit()
+	if !ok {
+		return errors.New("missing git commit (go install first?)")
+	}
+
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, struct {
 		HaloTag string
 		GethTag string
 	}{
-		HaloTag: buildinfo.Version(),
+		HaloTag: commit,
 		GethTag: geth.Version,
 	})
 	if err != nil {
@@ -146,7 +153,7 @@ func writeComposeFile(ctx context.Context, home string) error {
 		return errors.Wrap(err, "writing compose file")
 	}
 
-	log.Info(ctx, "Generated docker compose file", "path", filepath.Join(home, "compose.yml"))
+	log.Info(ctx, "Generated docker compose file", "path", filepath.Join(home, "compose.yml"), "geth_version", geth.Version, "halo_version", commit)
 
 	return nil
 }

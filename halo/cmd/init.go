@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,6 +21,7 @@ import (
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 	cmtos "github.com/cometbft/cometbft/libs/os"
 	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/privval"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 
@@ -28,12 +30,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const maxPeers = 5 // Limit the amount of peers to add to the address book.
+
 // InitConfig is the config for the init command.
 type InitConfig struct {
 	HomeDir       string
 	Moniker       string
 	Network       netconf.ID
 	TrustedSync   bool
+	AddrBook      bool
 	HaloCfgFunc   func(*halocfg.Config)
 	Force         bool
 	Clean         bool
@@ -102,13 +107,13 @@ The home directory should only contain subdirectories, no files, use --force to 
 // InitFiles initializes the files and folders required by halo.
 // It ensures a network and genesis file is generated/downloaded for the provided network.
 //
-//nolint:gocognit,nestif // This is just many sequential steps.
+//nolint:gocognit,nestif,gocyclo,maintidx // This is just many sequential steps.
 func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	if initCfg.Network == "" {
 		return errors.New("required flag --network empty")
 	}
 
-	log.Info(ctx, "Initializing halo files and directories")
+	log.Info(ctx, "Initializing halo files and directories", "home", initCfg.HomeDir, "network", initCfg.Network)
 	homeDir := initCfg.HomeDir
 	network := initCfg.Network
 
@@ -168,11 +173,26 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 		comet.P2P.Seeds = strings.Join(seeds, ",")
 	}
 
-	if initCfg.TrustedSync && network.IsProtected() {
-		rpcServer := fmt.Sprintf("https://consensus.%s.omni.network", network)
+	// Setup node key
+	nodeKeyFile := comet.NodeKeyFile()
+	if cmtos.FileExists(nodeKeyFile) {
+		log.Info(ctx, "Found node key", "path", nodeKeyFile)
+	} else if _, err := p2p.LoadOrGenNodeKey(nodeKeyFile); err != nil {
+		return errors.Wrap(err, "load or generate node key")
+	} else {
+		log.Info(ctx, "Generated node key", "path", nodeKeyFile)
+	}
 
+	// Connect to RPC server
+	rpcServer := fmt.Sprintf("https://consensus.%s.omni.network", network)
+	rpcCl, err := rpchttp.New(rpcServer, "/websocket")
+	if err != nil {
+		return errors.Wrap(err, "create rpc client")
+	}
+
+	if initCfg.TrustedSync && network.IsProtected() {
 		// Trusted state sync only supported for protected networks.
-		height, hash, err := getTrustHeightAndHash(ctx, rpcServer)
+		height, hash, err := getTrustHeightAndHash(ctx, rpcCl)
 		if err != nil {
 			return errors.Wrap(err, "get trusted height")
 		}
@@ -185,6 +205,29 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 		log.Info(ctx, "Trusted state-sync enabled", "height", height, "hash", hash, "rpc_endpoint", rpcServer)
 	} else {
 		log.Info(ctx, "Not initializing trusted state sync")
+	}
+
+	addrBookPath := filepath.Join(homeDir, cmtconfig.DefaultConfigDir, cmtconfig.DefaultAddrBookName)
+	if initCfg.AddrBook && network.IsProtected() && !cmtos.FileExists(addrBookPath) {
+		// Populate address book with random public peers from the connected node.
+		// This aids in bootstrapping the P2P network. Seed nodes don't work well on their pwn for some reason.
+
+		peers, err := getPeers(ctx, rpcCl, maxPeers)
+		if err != nil {
+			return errors.Wrap(err, "get peers", "rpc", rpcServer)
+		} else if len(peers) == 0 {
+			return errors.New("no routable public peers found", "rpc", rpcServer)
+		}
+
+		addrBook := pex.NewAddrBook(addrBookPath, true)
+		for _, peer := range peers {
+			if err := addrBook.AddAddress(peer, peer); err != nil {
+				return errors.Wrap(err, "add address")
+			}
+		}
+		addrBook.Save()
+
+		log.Info(ctx, "Populated comet address book", "path", addrBookPath, "peers", len(peers), "rpc_endpoint", rpcServer)
 	}
 
 	// Setup comet config
@@ -222,16 +265,6 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 		log.Info(ctx, "Generated private validator",
 			"key_file", privValKeyFile,
 			"state_file", privValStateFile)
-	}
-
-	// Setup node key
-	nodeKeyFile := comet.NodeKeyFile()
-	if cmtos.FileExists(nodeKeyFile) {
-		log.Info(ctx, "Found node key", "path", nodeKeyFile)
-	} else if _, err := p2p.LoadOrGenNodeKey(nodeKeyFile); err != nil {
-		return errors.Wrap(err, "load or generate node key")
-	} else {
-		log.Info(ctx, "Generated node key", "path", nodeKeyFile)
 	}
 
 	// Setup genesis file
@@ -281,12 +314,43 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	return nil
 }
 
-func getTrustHeightAndHash(ctx context.Context, baseURL string) (int64, string, error) {
-	cl, err := rpchttp.New(baseURL, "/websocket")
+// getPeers returns up to max random public peer addresses of the connected node.
+func getPeers(ctx context.Context, cl *rpchttp.HTTP, max int) ([]*p2p.NetAddress, error) {
+	info, err := cl.NetInfo(ctx)
 	if err != nil {
-		return 0, "", errors.Wrap(err, "create rpc client")
+		return nil, errors.Wrap(err, "get net info")
 	}
 
+	// Shuffle to pick random list of max peers.
+	peers := info.Peers
+	rand.Shuffle(len(peers), func(i, j int) {
+		peers[i], peers[j] = peers[j], peers[i]
+	})
+
+	var resp []*p2p.NetAddress
+	for _, peer := range peers {
+		info := peer.NodeInfo
+		addr, err := p2p.NewNetAddressString(p2p.IDAddressString(info.ID(), info.ListenAddr))
+		if err != nil {
+			return nil, errors.Wrap(err, "parse net address", "addr", p2p.IDAddressString(info.ID(), info.ListenAddr))
+		}
+		if !addr.Routable() {
+			continue // Drop non-routable (private) peers
+		}
+
+		log.Info(ctx, "Adding peer to comet address book", "addr", addr.String(), "moniker", peer.NodeInfo.Moniker)
+
+		resp = append(resp, addr)
+
+		if len(resp) >= max {
+			break
+		}
+	}
+
+	return resp, nil
+}
+
+func getTrustHeightAndHash(ctx context.Context, cl *rpchttp.HTTP) (int64, string, error) {
 	latest, err := cl.Block(ctx, nil)
 	if err != nil {
 		return 0, "", errors.Wrap(err, "get latest block")
