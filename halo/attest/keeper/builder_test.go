@@ -3,6 +3,8 @@ package keeper_test
 import (
 	"github.com/omni-network/omni/halo/attest/types"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
+	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/cometbft/cometbft/crypto"
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
@@ -18,16 +20,26 @@ func init() {
 	fuzz.New().NilChance(0).NumElements(3, 3).Fuzz(&blockHashes)
 }
 
+const (
+	defaultChainID   = uint64(1)
+	defaultConfLevel = uint32(xchain.ConfFinalized)
+	defaultOffset    = uint64(1)
+	defaultHeight    = uint64(700)
+	trimLag          = 4
+	cTrimLag         = 5
+)
+
 //nolint:gochecknoglobals // Hard-coded test data.
 var (
-	blockHashes   []common.Hash
-	vals          = []k1.PrivKey{k1.GenPrivKey(), k1.GenPrivKey(), k1.GenPrivKey()}
-	val1          = newValidator(vals[0].PubKey(), 10)
-	val2          = newValidator(vals[1].PubKey(), 15)
-	val3          = newValidator(vals[2].PubKey(), 15)
-	msgRoot       = common.BytesToHash([]byte("test message root"))
-	defaultOffset = uint64(1)
-	defaultHeight = uint64(700)
+	blockHashes []common.Hash
+	vals        = []k1.PrivKey{k1.GenPrivKey(), k1.GenPrivKey(), k1.GenPrivKey()}
+	val1        = newValidator(vals[0].PubKey(), 10)
+	val2        = newValidator(vals[1].PubKey(), 15)
+	val3        = newValidator(vals[2].PubKey(), 15)
+	msgRoot     = common.BytesToHash([]byte("test message root"))
+
+	defaultChainVer = xchain.ChainVersion{ID: defaultChainID, ConfLevel: xchain.ConfLevel(defaultConfLevel)}
+	consensusID     = netconf.Simnet.Static().OmniConsensusChainIDUint64()
 )
 
 func newValSet(id uint64, vals ...*vtypes.Validator) *vtypes.ValidatorSetResponse {
@@ -99,10 +111,11 @@ type AggVoteBuilder struct {
 func (b *AggVoteBuilder) Default() *AggVoteBuilder {
 	b.vote = &types.AggVote{
 		BlockHeader: &types.BlockHeader{
-			ChainId: 1,
-			Offset:  defaultOffset,
-			Height:  defaultHeight,
-			Hash:    blockHashes[0].Bytes(),
+			ChainId:   defaultChainID,
+			Offset:    defaultOffset,
+			Height:    defaultHeight,
+			Hash:      blockHashes[0].Bytes(),
+			ConfLevel: defaultConfLevel,
 		},
 		MsgRoot:    msgRoot.Bytes(),
 		Signatures: sigsTuples(val1, val2),
@@ -129,6 +142,17 @@ func (b *AggVoteBuilder) WithBlockOffset(o uint64) *AggVoteBuilder {
 		b.vote.BlockHeader = &types.BlockHeader{}
 	}
 	b.vote.BlockHeader.Offset = o
+
+	return b
+}
+
+func (b *AggVoteBuilder) WithFuzzy() *AggVoteBuilder {
+	if b.vote == nil {
+		b.vote = &types.AggVote{BlockHeader: &types.BlockHeader{}}
+	} else if b.vote.BlockHeader == nil {
+		b.vote.BlockHeader = &types.BlockHeader{}
+	}
+	b.vote.BlockHeader.ConfLevel = uint32(xchain.ConfLatest)
 
 	return b
 }

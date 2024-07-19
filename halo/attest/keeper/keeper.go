@@ -274,7 +274,6 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 		// Ensure we approve sequentially, not skipping any heights.
 		{
 			// Populate the cache if not already.
-			// TODO(corver): Add tests for this
 			if _, ok := approvedByChain[chainVer]; !ok {
 				latest, found, err := k.latestAttestation(ctx, att.XChainVersion())
 				if err != nil {
@@ -906,7 +905,6 @@ func (k *Keeper) deleteBefore(ctx context.Context, height uint64, consensusID ui
 		return errors.Wrap(err, "list atts")
 	}
 	defer iter.Close()
-
 	for iter.Next() {
 		att, err := iter.Value()
 		if err != nil {
@@ -925,7 +923,7 @@ func (k *Keeper) deleteBefore(ctx context.Context, height uint64, consensusID ui
 		if latest, ok, err := latestOffset(ctx, att.XChainVersion()); err != nil {
 			return err
 		} else if !ok || att.GetBlockOffset() >= latest {
-			continue // Skip deleting finalized attestation.
+			continue // Skip deleting pending attestations after latest finalized (or self if latest).
 		}
 
 		var fuzzyDepsFound bool

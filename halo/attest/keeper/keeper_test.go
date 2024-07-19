@@ -6,6 +6,8 @@ import (
 	"github.com/omni-network/omni/halo/attest/keeper"
 	"github.com/omni-network/omni/halo/attest/types"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
+	"github.com/omni-network/omni/lib/umath"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -49,7 +51,7 @@ func TestKeeper_Add(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					expectPendingAtt(1, defaultOffset),
+					expectPendingAtt(1, defaultOffset, 1),
 				},
 				sigs: []*keeper.Signature{
 					expectValSig(1, 1, val1, defaultOffset),
@@ -58,7 +60,7 @@ func TestKeeper_Add(t *testing.T) {
 			},
 			postrequisites: []postrequisite{func(t *testing.T, k *keeper.Keeper, ctx sdk.Context) {
 				t.Helper()
-				expectAtt := expectPendingAtt(1, defaultOffset)
+				expectAtt := expectPendingAtt(1, defaultOffset, 1)
 				allAtts, err := k.ListAllAttestations(ctx, &types.ListAllAttestationsRequest{
 					ChainId:    expectAtt.GetChainId(),
 					ConfLevel:  expectAtt.GetConfLevel(),
@@ -82,9 +84,9 @@ func TestKeeper_Add(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					expectPendingAtt(1, defaultOffset),
+					expectPendingAtt(1, defaultOffset, 1),
 					update(
-						expectPendingAtt(2, defaultOffset+1),
+						expectPendingAtt(2, defaultOffset+1, 1),
 						func(att *keeper.Attestation) {
 							att.BlockHash = blockHashes[1].Bytes()
 						},
@@ -109,9 +111,9 @@ func TestKeeper_Add(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					expectPendingAtt(1, defaultOffset),
+					expectPendingAtt(1, defaultOffset, 1),
 					update(
-						expectPendingAtt(2, defaultOffset+1),
+						expectPendingAtt(2, defaultOffset+1, 1),
 						func(att *keeper.Attestation) {
 							att.BlockHeight = defaultHeight
 						},
@@ -137,7 +139,7 @@ func TestKeeper_Add(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					expectPendingAtt(1, defaultOffset),
+					expectPendingAtt(1, defaultOffset, 1),
 				},
 				sigs: []*keeper.Signature{
 					expectValSig(1, 1, val1, defaultOffset),
@@ -162,7 +164,7 @@ func TestKeeper_Add(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					expectPendingAtt(1, defaultOffset),
+					expectPendingAtt(1, defaultOffset, 1),
 				},
 				sigs: []*keeper.Signature{
 					expectValSig(1, 1, val1, defaultOffset),
@@ -192,9 +194,9 @@ func TestKeeper_Add(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					expectPendingAtt(1, defaultOffset), // Default agg vote resulting in pending attestation.
+					expectPendingAtt(1, defaultOffset, 1), // Default agg vote resulting in pending attestation.
 					update( // Update agg vote resulting in second att with different root
-						expectPendingAtt(2, defaultOffset),
+						expectPendingAtt(2, defaultOffset, 1),
 						func(att *keeper.Attestation) {
 							att.MsgRoot = common.BytesToHash([]byte("different root")).Bytes()
 						},
@@ -230,9 +232,9 @@ func TestKeeper_Add(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					expectPendingAtt(1, defaultOffset), // Default agg vote resulting in pending attestation.
+					expectPendingAtt(1, defaultOffset, 1), // Default agg vote resulting in pending attestation.
 					update( // Update agg vote resulting in second att with different root
-						expectPendingAtt(2, defaultOffset),
+						expectPendingAtt(2, defaultOffset, 1),
 						func(att *keeper.Attestation) {
 							att.MsgRoot = common.BytesToHash([]byte("different root")).Bytes()
 						},
@@ -373,7 +375,7 @@ func TestKeeper_Approve(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					expectPendingAtt(1, defaultOffset),
+					expectPendingAtt(1, defaultOffset, 1),
 				},
 				sigs: []*keeper.Signature{
 					expectValSig(1, 1, val1, defaultOffset),
@@ -395,9 +397,7 @@ func TestKeeper_Approve(t *testing.T) {
 					require.NoError(t, err)
 
 					// add sig from val3
-					ethAddr, err := val3.EthereumAddress()
-					require.NoError(t, err)
-					sig := &keeper.Signature{AttId: 1, Signature: ethAddr.Bytes(), ValidatorAddress: ethAddr.Bytes(), ChainId: 1, BlockOffset: defaultOffset}
+					sig := expectValSig(0, 1, val3, defaultOffset)
 					err = k.SignatureTable().Insert(ctx, sig)
 					require.NoError(t, err)
 				},
@@ -477,7 +477,7 @@ func TestKeeper_Approve(t *testing.T) {
 			want: want{
 				atts: []*keeper.Attestation{
 					expectApprovedAtt(1, defaultOffset, valset1_2, 1),
-					expectPendingAtt(2, defaultOffset+2),
+					expectPendingAtt(2, defaultOffset+2, 1),
 				},
 				sigs: []*keeper.Signature{
 					expectValSig(1, 1, val1, defaultOffset),
@@ -496,7 +496,8 @@ func TestKeeper_Approve(t *testing.T) {
 				activeSetQueried(10),
 				activeSetQueried(17),
 				activeSetQueried(18),
-				trimBehindCalled(1),
+				trimBehindCalled(),
+				noFuzzyDeps(),
 			},
 			prerequisites: []prerequisite{
 				func(t *testing.T, k *keeper.Keeper, ctx sdk.Context) {
@@ -545,6 +546,380 @@ func TestKeeper_Approve(t *testing.T) {
 					expectValSig(6, 3, val2, defaultOffset+2),
 					expectValSig(7, 4, val1, defaultOffset+3),
 					expectValSig(8, 4, val2, defaultOffset+3),
+				},
+			},
+		},
+		{
+			name: "dont_delete_latest",
+			expectations: []expectation{
+				namerCalled(1),
+				defaultExpectations,
+				activeSetQueried(9),
+				activeSetQueried(10),
+				trimBehindCalled(),
+				noFuzzyDeps(),
+			},
+			prerequisites: []prerequisite{
+				func(t *testing.T, k *keeper.Keeper, ctx sdk.Context) {
+					t.Helper()
+
+					initHeight := int64(10)
+					vote1 := defaultAggVote().WithBlockOffset(defaultOffset).Vote()
+					msg1 := defaultMsg().Default().WithVotes(vote1).Msg()
+					err := k.Add(ctx.WithBlockHeight(initHeight), msg1)
+					require.NoError(t, err)
+
+					vote2 := defaultAggVote().WithBlockOffset(defaultOffset + 1).Vote()
+					msg2 := defaultMsg().Default().WithVotes(vote2).Msg()
+					err = k.Add(ctx.WithBlockHeight(initHeight+1), msg2)
+					require.NoError(t, err)
+
+					// Approve all 2 attestations so they're no longer pending
+					err = k.Approve(ctx, toValSet(valset1_2))
+					require.NoError(t, err)
+
+					// Begin the block at height 20, which should cause the first attestations to be deleted, but not the second (since it is latest)
+					err = k.BeginBlock(ctx.WithBlockHeight(initHeight + 10))
+					require.NoError(t, err)
+				},
+			},
+			args: args{
+				valset: valset1_2,
+			},
+			want: want{
+				atts: []*keeper.Attestation{
+					expectApprovedAtt(2, defaultOffset+1, valset1_2, 11),
+				},
+				sigs: []*keeper.Signature{
+					expectValSig(3, 2, val1, defaultOffset+1),
+					expectValSig(4, 2, val2, defaultOffset+1),
+				},
+			},
+		},
+		{
+			name: "only_delete_old_pending",
+			expectations: []expectation{
+				namerCalled(1),
+				defaultExpectations,
+				activeSetQueried(9),
+				activeSetQueried(10),
+				activeSetQueried(11),
+				trimBehindCalled(),
+				noFuzzyDeps(),
+			},
+			prerequisites: []prerequisite{
+				func(t *testing.T, k *keeper.Keeper, ctx sdk.Context) {
+					t.Helper()
+
+					otherHash := common.BytesToHash([]byte("other hash"))
+					initHeight := int64(10)
+
+					defaultOffsetMin1 := umath.SubtractOrZero(defaultOffset, 1)
+
+					// Att 1 at defaultOffset-1 (and other hash) signed by val3 (so not approved below so stays pending)
+					vote1 := defaultAggVote().WithBlockHash(otherHash).WithBlockOffset(defaultOffsetMin1).WithSignatures(sigsTuples(val3)...).Vote()
+					msg1 := defaultMsg().Default().WithVotes(vote1).Msg()
+					err := k.Add(ctx.WithBlockHeight(initHeight), msg1)
+					require.NoError(t, err)
+
+					// Att 2 at defaultOffset (and defaultHeight) signed by val1 and val2 (and approved below and is latest approved att)
+					vote2 := defaultAggVote().WithBlockOffset(defaultOffset).Vote()
+					msg2 := defaultMsg().Default().WithVotes(vote2).Msg()
+					err = k.Add(ctx.WithBlockHeight(initHeight+1), msg2)
+					require.NoError(t, err)
+
+					// Att 3 at defaultOffset+1 signed by val3 (so not approved below so stays pending)
+					vote3 := defaultAggVote().WithBlockOffset(defaultOffset + 1).WithSignatures(sigsTuples(val3)...).Vote()
+					msg3 := defaultMsg().Default().WithVotes(vote3).Msg()
+					err = k.Add(ctx.WithBlockHeight(initHeight+2), msg3)
+					require.NoError(t, err)
+
+					// Approve all 2nd attestation
+					err = k.Approve(ctx, toValSet(valset1_2))
+					require.NoError(t, err)
+
+					// Begin the block at height 20, which should cause the first pending attestations to be deleted,
+					// but not the second (since it is latest),
+					// and not the last pending attestation (since it is after latest approved)
+					err = k.BeginBlock(ctx.WithBlockHeight(initHeight + 10))
+					require.NoError(t, err)
+				},
+			},
+			args: args{
+				valset: valset1_2,
+			},
+			want: want{
+				atts: []*keeper.Attestation{
+					expectApprovedAtt(2, defaultOffset, valset1_2, 11),
+					expectPendingAtt(3, defaultOffset+1, 12),
+				},
+				sigs: []*keeper.Signature{
+					expectValSig(2, 2, val1, defaultOffset),
+					expectValSig(3, 2, val2, defaultOffset),
+					expectValSig(4, 3, val3, defaultOffset+1),
+				},
+			},
+		},
+		{
+			name: "delete_fuzzy_first",
+			expectations: []expectation{
+				namerCalled(1),
+				defaultExpectations,
+				activeSetQueried(9),
+				activeSetQueried(10),
+				activeSetQueried(11),
+				activeSetQueried(12),
+				trimBehindCalled(),
+				fuzzyDeps(1),
+			},
+			prerequisites: []prerequisite{
+				func(t *testing.T, k *keeper.Keeper, ctx sdk.Context) {
+					t.Helper()
+
+					initHeight := int64(10)
+
+					// Finalized att 1
+					vote1 := defaultAggVote().Vote()
+					msg1 := defaultMsg().Default().WithVotes(vote1).Msg()
+					err := k.Add(ctx.WithBlockHeight(initHeight), msg1)
+					require.NoError(t, err)
+
+					// Finalized att 2
+					vote2 := defaultAggVote().WithBlockOffset(defaultOffset + 1).Vote()
+					msg2 := defaultMsg().Default().WithVotes(vote2).Msg()
+					err = k.Add(ctx.WithBlockHeight(initHeight+1), msg2)
+					require.NoError(t, err)
+
+					// Fuzzy att 3
+					vote3 := defaultAggVote().WithBlockOffset(defaultOffset).WithFuzzy().Vote()
+					msg3 := defaultMsg().Default().WithVotes(vote3).Msg()
+					err = k.Add(ctx.WithBlockHeight(initHeight+2), msg3)
+					require.NoError(t, err)
+
+					// Fuzzy att 4
+					vote4 := defaultAggVote().WithBlockOffset(defaultOffset + 1).WithFuzzy().Vote()
+					msg4 := defaultMsg().Default().WithVotes(vote4).Msg()
+					err = k.Add(ctx.WithBlockHeight(initHeight+3), msg4)
+					require.NoError(t, err)
+
+					// Approve all 4 attestations so they're no longer pending
+					err = k.Approve(ctx, toValSet(valset1_2))
+					require.NoError(t, err)
+
+					// Begin the block at height 20,
+					// which should cause the Fuzzy att 3 to be deleted (fuzzy deleted first),
+					// but not the first (since it is finalized and should be deleted after the fuzzy),
+					// or the last 2 (since it is the latest fuzzy and finalized atts)
+					err = k.BeginBlock(ctx.WithBlockHeight(initHeight + 10))
+					require.NoError(t, err)
+				},
+			},
+			args: args{
+				valset: valset1_2,
+			},
+			want: want{
+				atts: []*keeper.Attestation{
+					expectApprovedAtt(1, defaultOffset, valset1_2, 10),
+					expectApprovedAtt(2, defaultOffset+1, valset1_2, 11),
+					expectFuzzyAtt(expectApprovedAtt(4, defaultOffset+1, valset1_2, 13)),
+				},
+				sigs: []*keeper.Signature{
+					expectValSig(1, 1, val1, defaultOffset),
+					expectValSig(2, 1, val2, defaultOffset),
+					expectValSig(3, 2, val1, defaultOffset+1),
+					expectValSig(4, 2, val2, defaultOffset+1),
+					expectFuzzySig(expectValSig(7, 4, val1, defaultOffset+1)),
+					expectFuzzySig(expectValSig(8, 4, val2, defaultOffset+1)),
+				},
+			},
+		},
+		{
+			name: "delete_final_after_fuzzy",
+			expectations: []expectation{
+				namerCalled(1),
+				defaultExpectations,
+				activeSetQueried(9),
+				activeSetQueried(10),
+				activeSetQueried(11),
+				activeSetQueried(12),
+				trimBehindCalled(),
+				fuzzyDeps(2),
+			},
+			prerequisites: []prerequisite{
+				func(t *testing.T, k *keeper.Keeper, ctx sdk.Context) {
+					t.Helper()
+
+					initHeight := int64(10)
+
+					// Same setup as 'delete_fuzzy_first' test
+
+					// Finalized att 1
+					vote1 := defaultAggVote().Vote()
+					msg1 := defaultMsg().Default().WithVotes(vote1).Msg()
+					err := k.Add(ctx.WithBlockHeight(initHeight), msg1)
+					require.NoError(t, err)
+
+					// Finalized att 2
+					vote2 := defaultAggVote().WithBlockOffset(defaultOffset + 1).Vote()
+					msg2 := defaultMsg().Default().WithVotes(vote2).Msg()
+					err = k.Add(ctx.WithBlockHeight(initHeight+1), msg2)
+					require.NoError(t, err)
+
+					// Fuzzy att 3
+					vote3 := defaultAggVote().WithBlockOffset(defaultOffset).WithFuzzy().Vote()
+					msg3 := defaultMsg().Default().WithVotes(vote3).Msg()
+					err = k.Add(ctx.WithBlockHeight(initHeight+2), msg3)
+					require.NoError(t, err)
+
+					// Fuzzy att 4
+					vote4 := defaultAggVote().WithBlockOffset(defaultOffset + 1).WithFuzzy().Vote()
+					msg4 := defaultMsg().Default().WithVotes(vote4).Msg()
+					err = k.Add(ctx.WithBlockHeight(initHeight+3), msg4)
+					require.NoError(t, err)
+
+					// Approve all 4 attestations so they're no longer pending
+					err = k.Approve(ctx, toValSet(valset1_2))
+					require.NoError(t, err)
+
+					// Begin the block at height 20,
+					// which should cause the Fuzzy att 3 to be deleted (fuzzy deleted first),
+					// but not the first (since it is finalized and should be deleted after the fuzzy),
+					// or the last 2 (since it is the latest fuzzy and finalized atts)
+					err = k.BeginBlock(ctx.WithBlockHeight(initHeight + 10))
+					require.NoError(t, err)
+
+					// Now delete again
+
+					// This time the finalized att 1 should be deleted, since it doesn't have a fuzzy att anymore
+					err = k.BeginBlock(ctx.WithBlockHeight(initHeight + 11))
+					require.NoError(t, err)
+				},
+			},
+			args: args{
+				valset: valset1_2,
+			},
+			want: want{
+				atts: []*keeper.Attestation{
+					expectApprovedAtt(2, defaultOffset+1, valset1_2, 11),
+					expectFuzzyAtt(expectApprovedAtt(4, defaultOffset+1, valset1_2, 13)),
+				},
+				sigs: []*keeper.Signature{
+					expectValSig(3, 2, val1, defaultOffset+1),
+					expectValSig(4, 2, val2, defaultOffset+1),
+					expectFuzzySig(expectValSig(7, 4, val1, defaultOffset+1)),
+					expectFuzzySig(expectValSig(8, 4, val2, defaultOffset+1)),
+				},
+			},
+		},
+		{
+			name: "dont_delete_consensus_yet",
+			expectations: []expectation{
+				func(_ sdk.Context, m mocks) {
+					m.namer.EXPECT().ChainName(xchain.ChainVersion{ID: consensusID, ConfLevel: xchain.ConfFinalized}).Times(1).Return("test-chain")
+				},
+				defaultExpectations,
+				activeSetQueried(9),
+				activeSetQueried(10),
+				trimBehindCalled(),
+				noFuzzyDeps(),
+			},
+			prerequisites: []prerequisite{
+				func(t *testing.T, k *keeper.Keeper, ctx sdk.Context) {
+					t.Helper()
+
+					initHeight := int64(10)
+
+					// Consensus att 1
+					vote1 := defaultAggVote().WithChainID(consensusID).WithBlockOffset(defaultOffset).Vote()
+					msg1 := defaultMsg().Default().WithVotes(vote1).Msg()
+					err := k.Add(ctx.WithBlockHeight(initHeight), msg1)
+					require.NoError(t, err)
+
+					// Consensus att 2
+					vote2 := defaultAggVote().WithChainID(consensusID).WithBlockOffset(defaultOffset + 1).Vote()
+					msg2 := defaultMsg().Default().WithVotes(vote2).Msg()
+					err = k.Add(ctx.WithBlockHeight(initHeight+1), msg2)
+					require.NoError(t, err)
+
+					// Approve all 2 attestations so they're no longer pending
+					err = k.Approve(ctx, toValSet(valset1_2))
+					require.NoError(t, err)
+
+					// Begin the block at height 14,
+					// which should not delete attestations since they require cTrimLag which is 5.
+					err = k.BeginBlock(ctx.WithBlockHeight(initHeight + trimLag))
+					require.NoError(t, err)
+
+					// See next test for it being deleted
+				},
+			},
+			args: args{
+				valset: valset1_2,
+			},
+			want: want{
+				atts: []*keeper.Attestation{
+					consensusAtt(expectApprovedAtt(1, defaultOffset, valset1_2, 10)),
+					consensusAtt(expectApprovedAtt(2, defaultOffset+1, valset1_2, 11)),
+				},
+				sigs: []*keeper.Signature{
+					consensusSig(expectValSig(1, 1, val1, defaultOffset)),
+					consensusSig(expectValSig(2, 1, val2, defaultOffset)),
+					consensusSig(expectValSig(3, 2, val1, defaultOffset+1)),
+					consensusSig(expectValSig(4, 2, val2, defaultOffset+1)),
+				},
+			},
+		}, {
+			name: "delete_consensus",
+			expectations: []expectation{
+				func(_ sdk.Context, m mocks) {
+					m.namer.EXPECT().ChainName(xchain.ChainVersion{ID: consensusID, ConfLevel: xchain.ConfFinalized}).Times(1).Return("test-chain")
+				},
+				defaultExpectations,
+				activeSetQueried(9),
+				activeSetQueried(10),
+				trimBehindCalled(),
+				noFuzzyDeps(),
+			},
+			prerequisites: []prerequisite{
+				func(t *testing.T, k *keeper.Keeper, ctx sdk.Context) {
+					t.Helper()
+
+					initHeight := int64(10)
+
+					// Same setup as "dont_delete_consensus_yet"
+
+					// Consensus att 1
+					vote1 := defaultAggVote().WithChainID(consensusID).WithBlockOffset(defaultOffset).Vote()
+					msg1 := defaultMsg().Default().WithVotes(vote1).Msg()
+					err := k.Add(ctx.WithBlockHeight(initHeight), msg1)
+					require.NoError(t, err)
+
+					// Consensus att 2
+					vote2 := defaultAggVote().WithChainID(consensusID).WithBlockOffset(defaultOffset + 1).Vote()
+					msg2 := defaultMsg().Default().WithVotes(vote2).Msg()
+					err = k.Add(ctx.WithBlockHeight(initHeight+1), msg2)
+					require.NoError(t, err)
+
+					// Approve all 2 attestations so they're no longer pending
+					err = k.Approve(ctx, toValSet(valset1_2))
+					require.NoError(t, err)
+
+					// Begin the block at height 15,
+					// which should delete att Consensus att 1.
+					err = k.BeginBlock(ctx.WithBlockHeight(initHeight + cTrimLag))
+					require.NoError(t, err)
+				},
+			},
+			args: args{
+				valset: valset1_2,
+			},
+			want: want{
+				atts: []*keeper.Attestation{
+					consensusAtt(expectApprovedAtt(2, defaultOffset+1, valset1_2, 11)),
+				},
+				sigs: []*keeper.Signature{
+					consensusSig(expectValSig(3, 2, val1, defaultOffset+1)),
+					consensusSig(expectValSig(4, 2, val2, defaultOffset+1)),
 				},
 			},
 		},
@@ -603,20 +978,22 @@ func expectValSig(id uint64, attID uint64, val *vtypes.Validator, offset uint64)
 		Signature:        ethAddr.Bytes(),
 		ValidatorAddress: ethAddr.Bytes(),
 		AttId:            attID,
-		ChainId:          1,
+		ChainId:          defaultChainID,
 		BlockOffset:      offset,
+		ConfLevel:        defaultConfLevel,
 	}
 }
 
-func expectPendingAtt(id uint64, offset uint64) *keeper.Attestation {
+func expectPendingAtt(id uint64, offset uint64, createdHeight uint64) *keeper.Attestation {
 	return &keeper.Attestation{
 		Id:            id,
 		MsgRoot:       msgRoot.Bytes(),
-		ChainId:       1,
+		ChainId:       defaultChainID,
 		BlockHash:     blockHashes[0].Bytes(),
 		BlockOffset:   offset,
 		BlockHeight:   defaultHeight,
-		CreatedHeight: 1,
+		CreatedHeight: createdHeight,
+		ConfLevel:     defaultConfLevel,
 		Status:        uint32(keeper.Status_Pending),
 	}
 }
@@ -625,11 +1002,12 @@ func expectApprovedAtt(id uint64, offset uint64, valset *vtypes.ValidatorSetResp
 	return &keeper.Attestation{
 		Id:             id,
 		MsgRoot:        msgRoot.Bytes(),
-		ChainId:        1,
+		ChainId:        defaultChainID,
 		BlockHash:      blockHashes[0].Bytes(),
 		BlockOffset:    offset,
 		BlockHeight:    defaultHeight,
 		CreatedHeight:  createdHeight,
+		ConfLevel:      defaultConfLevel,
 		Status:         uint32(keeper.Status_Approved),
 		ValidatorSetId: valset.Id,
 	}
@@ -649,4 +1027,23 @@ func populateKeyHashes(atts []*keeper.Attestation) []*keeper.Attestation {
 	}
 
 	return atts
+}
+
+func expectFuzzyAtt(att *keeper.Attestation) *keeper.Attestation {
+	att.ConfLevel = uint32(xchain.ConfLatest)
+	return att
+}
+func expectFuzzySig(sig *keeper.Signature) *keeper.Signature {
+	sig.ConfLevel = uint32(xchain.ConfLatest)
+	return sig
+}
+
+func consensusAtt(att *keeper.Attestation) *keeper.Attestation {
+	att.ChainId = consensusID
+	return att
+}
+
+func consensusSig(sig *keeper.Signature) *keeper.Signature {
+	sig.ChainId = consensusID
+	return sig
 }

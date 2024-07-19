@@ -23,6 +23,7 @@ type mocks struct {
 	voter       *testutil.MockVoter
 	namer       *testutil.MockChainNamer
 	valProvider *testutil.MockValProvider
+	registry    *testutil.MockRegistry
 }
 
 type expectation func(sdk.Context, mocks)
@@ -30,19 +31,35 @@ type prerequisite func(t *testing.T, k *keeper.Keeper, ctx sdk.Context)
 type postrequisite func(t *testing.T, k *keeper.Keeper, ctx sdk.Context)
 
 func mockDefaultExpectations(_ sdk.Context, m mocks) {
-	m.namer.EXPECT().ChainName(xchain.ChainVersion{ID: 1}).Return("test_chain").AnyTimes()
+	m.namer.EXPECT().ChainName(defaultChainVer).Return("test_chain").AnyTimes()
 	m.valProvider.EXPECT().ActiveSetByHeight(gomock.Any(), uint64(0)).
 		Return(newValSet(1, val1, val2, val3), nil).
 		AnyTimes()
 }
 
-func namerCalled(times int) expectation {
+// noFuzzyDeps returns an expectation that the registry will return no fuzzy dependencies once.
+func noFuzzyDeps() expectation {
 	return func(_ sdk.Context, m mocks) {
-		m.namer.EXPECT().ChainName(xchain.ChainVersion{ID: 1}).Times(times).Return("test-chain")
+		m.registry.EXPECT().ConfLevels(gomock.Any()).Return(nil, nil).Times(1)
 	}
 }
 
-func trimBehindCalled(times int) expectation {
+// fuzzyDeps returns an expectation that the registry will return the default latest fuzzy dependency once.
+func fuzzyDeps(times int) expectation {
+	return func(_ sdk.Context, m mocks) {
+		m.registry.EXPECT().ConfLevels(gomock.Any()).Return(map[uint64][]xchain.ConfLevel{
+			defaultChainID: {xchain.ConfFinalized, xchain.ConfLatest},
+		}, nil).Times(times)
+	}
+}
+
+func namerCalled(times int) expectation {
+	return func(_ sdk.Context, m mocks) {
+		m.namer.EXPECT().ChainName(defaultChainVer).Times(times).Return("test-chain")
+	}
+}
+
+func trimBehindCalled() expectation {
 	return func(_ sdk.Context, m mocks) {
 		m.voter.EXPECT().TrimBehind(gomock.Any()).Times(1).Return(0)
 	}
@@ -72,6 +89,7 @@ func setupKeeper(t *testing.T, expectations ...expectation) (*keeper.Keeper, sdk
 		voter:       testutil.NewMockVoter(ctrl),
 		namer:       testutil.NewMockChainNamer(ctrl),
 		valProvider: testutil.NewMockValProvider(ctrl),
+		registry:    testutil.NewMockRegistry(ctrl),
 	}
 
 	if len(expectations) == 0 {
@@ -84,12 +102,11 @@ func setupKeeper(t *testing.T, expectations ...expectation) (*keeper.Keeper, sdk
 
 	const voteWindow = 1
 	const voteLimit = 4
-	const trimLag = 4
-	const cTrimLag = 4
 	k, err := keeper.New(codec, storeSvc, m.skeeper, m.namer.ChainName, m.voter, voteWindow, voteLimit, trimLag, cTrimLag)
 	require.NoError(t, err, "new keeper")
 
 	k.SetValidatorProvider(m.valProvider)
+	k.SetPortalRegistry(m.registry)
 
 	return k, ctx
 }

@@ -241,3 +241,56 @@ func (mr *MockChainNamerMockRecorder) ChainName(chainVer any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChainName", reflect.TypeOf((*MockChainNamer)(nil).ChainName), chainVer)
 }
+
+// MockRegistry is a mock of Registry interface.
+type MockRegistry struct {
+	ctrl     *gomock.Controller
+	recorder *MockRegistryMockRecorder
+}
+
+// MockRegistryMockRecorder is the mock recorder for MockRegistry.
+type MockRegistryMockRecorder struct {
+	mock *MockRegistry
+}
+
+// NewMockRegistry creates a new mock instance.
+func NewMockRegistry(ctrl *gomock.Controller) *MockRegistry {
+	mock := &MockRegistry{ctrl: ctrl}
+	mock.recorder = &MockRegistryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockRegistry) EXPECT() *MockRegistryMockRecorder {
+	return m.recorder
+}
+
+// ConfLevels mocks base method.
+func (m *MockRegistry) ConfLevels(ctx context.Context) (map[uint64][]xchain.ConfLevel, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ConfLevels", ctx)
+	ret0, _ := ret[0].(map[uint64][]xchain.ConfLevel)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ConfLevels indicates an expected call of ConfLevels.
+func (mr *MockRegistryMockRecorder) ConfLevels(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfLevels", reflect.TypeOf((*MockRegistry)(nil).ConfLevels), ctx)
+}
+
+// SupportedChain mocks base method.
+func (m *MockRegistry) SupportedChain(ctx context.Context, chainID uint64) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SupportedChain", ctx, chainID)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SupportedChain indicates an expected call of SupportedChain.
+func (mr *MockRegistryMockRecorder) SupportedChain(ctx, chainID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SupportedChain", reflect.TypeOf((*MockRegistry)(nil).SupportedChain), ctx, chainID)
+}

@@ -70,7 +70,7 @@ func newLookupCache(lookup func(context.Context, xchain.ChainVersion) (*Attestat
 		if err != nil {
 			return 0, false, err
 		} else if !ok {
-			cache[chainVer] = 0 // Populate mis
+			cache[chainVer] = 0 // Populate miss
 			return 0, false, nil
 		} else if latest.GetBlockOffset() == 0 { // Offsets start at 1
 			return 0, false, errors.New("invalid zero attestation offset [BUG]")
