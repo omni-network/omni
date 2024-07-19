@@ -25,12 +25,12 @@ type ConfLevel byte
 
 // Valid returns true if this confirmation level is valid.
 func (c ConfLevel) Valid() bool {
-	return c > ConfUnknown && c < confSentinel
+	return c > ConfUnknown && c < confSentinel && !strings.Contains(c.String(), "ConfLevel")
 }
 
 // IsFuzzy returns true if this confirmation level is not ConfFinalized.
 func (c ConfLevel) IsFuzzy() bool {
-	return c != ConfFinalized
+	return c == ConfLatest
 }
 
 // Label returns a short label for the confirmation level.
@@ -43,11 +43,16 @@ func (c ConfLevel) Label() string {
 const (
 	ConfUnknown   ConfLevel = 0 // unknown
 	ConfLatest    ConfLevel = 1 // latest
-	ConfFast      ConfLevel = 2 // fast
-	ConfSafe      ConfLevel = 3 // safe
+	_             ConfLevel = 2 // reserved
+	_             ConfLevel = 3 // reserved
 	ConfFinalized ConfLevel = 4 // final
 	confSentinel  ConfLevel = 5 // sentinel must always be last
 )
+
+// FuzzyConfLevels returns a list of all fuzzy confirmation levels.
+func FuzzyConfLevels() []ConfLevel {
+	return []ConfLevel{ConfLatest}
+}
 
 type ShardID uint64
 

@@ -3,6 +3,7 @@ package testutil
 
 import (
 	"github.com/omni-network/omni/halo/attest/types"
+	rtypes "github.com/omni-network/omni/halo/registry/types"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -23,4 +24,8 @@ type ValProvider interface {
 
 type ChainNamer interface {
 	ChainName(chainVer xchain.ChainVersion) string
+}
+
+type Registry interface {
+	rtypes.PortalRegistry
 }

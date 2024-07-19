@@ -441,8 +441,6 @@ func headTypeFromConfLevel(conf xchain.ConfLevel) (ethclient.HeadType, bool) {
 	switch conf {
 	case xchain.ConfLatest:
 		return ethclient.HeadLatest, true
-	case xchain.ConfSafe:
-		return ethclient.HeadSafe, true
 	case xchain.ConfFinalized:
 		return ethclient.HeadFinalized, true
 	default:

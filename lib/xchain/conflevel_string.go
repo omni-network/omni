@@ -10,19 +10,28 @@ func _() {
 	var x [1]struct{}
 	_ = x[ConfUnknown-0]
 	_ = x[ConfLatest-1]
-	_ = x[ConfFast-2]
-	_ = x[ConfSafe-3]
 	_ = x[ConfFinalized-4]
 	_ = x[confSentinel-5]
 }
 
-const _ConfLevel_name = "unknownlatestfastsafefinalsentinel must always be last"
+const (
+	_ConfLevel_name_0 = "unknownlatest"
+	_ConfLevel_name_1 = "finalsentinel must always be last"
+)
 
-var _ConfLevel_index = [...]uint8{0, 7, 13, 17, 21, 26, 54}
+var (
+	_ConfLevel_index_0 = [...]uint8{0, 7, 13}
+	_ConfLevel_index_1 = [...]uint8{0, 5, 33}
+)
 
 func (i ConfLevel) String() string {
-	if i >= ConfLevel(len(_ConfLevel_index)-1) {
+	switch {
+	case i <= 1:
+		return _ConfLevel_name_0[_ConfLevel_index_0[i]:_ConfLevel_index_0[i+1]]
+	case 4 <= i && i <= 5:
+		i -= 4
+		return _ConfLevel_name_1[_ConfLevel_index_1[i]:_ConfLevel_index_1[i+1]]
+	default:
 		return "ConfLevel(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _ConfLevel_name[_ConfLevel_index[i]:_ConfLevel_index[i+1]]
 }

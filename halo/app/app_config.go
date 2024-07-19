@@ -39,14 +39,15 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-// Bech32HRP is the human-readable-part of the Bech32 address format.
 const (
+	// Bech32HRP is the human-readable-part of the Bech32 address format.
 	Bech32HRP = "omni"
 
 	// TODO(corver): Maybe move these to genesis itself.
 	genesisVoteWindow   = 64
 	genesisVoteExtLimit = 256
 	genesisTrimLag      = 72_000 // Delete attestations state after +-1 day (given a period of 1.2s).
+	genesisCTrimLag     = 72_000 // Delete consensus attestations state after +-1 day (given a period of 1.2s).
 
 	defaultPruningKeep     = 72_000 // Keep 1 day's of application state by default (given period of 1.2s).
 	defaultPruningInterval = 300    // Prune every 5 minutes or so.
@@ -192,6 +193,7 @@ var (
 					VoteWindow:         genesisVoteWindow,
 					VoteExtensionLimit: genesisVoteExtLimit,
 					TrimLag:            genesisTrimLag,
+					ConsensusTrimLag:   genesisCTrimLag,
 				}),
 			},
 			{

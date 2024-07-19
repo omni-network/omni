@@ -141,6 +141,7 @@ func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 		in.Config.GetVoteWindow(),
 		in.Config.GetVoteExtensionLimit(),
 		in.Config.GetTrimLag(),
+		in.Config.GetConsensusTrimLag(),
 	)
 	if err != nil {
 		return ModuleOutputs{}, err
