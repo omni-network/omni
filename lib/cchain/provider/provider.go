@@ -155,6 +155,9 @@ func (p Provider) Subscribe(in context.Context, chainVer xchain.ChainVersion, xB
 	}()
 }
 
+// ErrHistoryPruned indicates that the necessary state for the requested height isn't found in the store.
+var ErrHistoryPruned = errors.New("no commit info found (history pruned)")
+
 // IsErrHistoryPruned reports whether the input error matches the CosmosSDK error returned when
 // the state for the requested height isn't found in the store.
 func IsErrHistoryPruned(err error) bool {

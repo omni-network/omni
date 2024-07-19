@@ -333,7 +333,7 @@ func searchOffsetInHistory(ctx context.Context, client rpcclient.Client, cl atyp
 	lookback := uint64(1)
 	var lookbackStepsCounter uint64 // For metrics only
 	queryHeight := umath.SubtractOrZero(endHeightIndex, lookback)
-	for queryHeight > 0 {
+	for {
 		lookbackStepsCounter++
 		earliestAtt, ok, err := queryEarliestAttestation(ctx, cl, chainVer, queryHeight)
 		if IsErrHistoryPruned(err) {
@@ -356,7 +356,7 @@ func searchOffsetInHistory(ctx context.Context, client rpcclient.Client, cl atyp
 			}
 
 			// Otherwise, we just don't have the needed state, fail
-			return 0, errors.New("missing state for requested offset")
+			return 0, ErrHistoryPruned
 		}
 		if err != nil {
 			incQueryErr(endpoint)
@@ -373,11 +373,11 @@ func searchOffsetInHistory(ctx context.Context, client rpcclient.Client, cl atyp
 		endHeightIndex = queryHeight
 		lookback *= 2
 		if queryHeight < lookback {
-			startHeightIndex = 1
-			break
+			// Query from the start, but don't break out yet -- we need to find the earliest height that we have state for
+			queryHeight = 1
+		} else {
+			queryHeight -= lookback
 		}
-
-		queryHeight -= lookback
 	}
 
 	// We now have reasonable start and end indices for binary search
