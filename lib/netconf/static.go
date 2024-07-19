@@ -180,11 +180,12 @@ var statics = map[ID]Static{
 		ExecutionSeedTXT:     omegaExecutionSeedsTXT,
 	},
 	Mainnet: {
-		Network:            Mainnet,
-		Version:            "v0.0.1",
-		AVSContractAddress: mainnetAVS,
-		MaxValidators:      maxValidators,
-		TokenAddress:       mainnetToken,
+		Network:              Mainnet,
+		Version:              "v0.0.1",
+		AVSContractAddress:   mainnetAVS,
+		OmniExecutionChainID: evmchain.IDOmniMainnet,
+		MaxValidators:        maxValidators,
+		TokenAddress:         mainnetToken,
 	},
 }
 
