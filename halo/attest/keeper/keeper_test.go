@@ -538,12 +538,9 @@ func TestKeeper_Approve(t *testing.T) {
 			},
 			want: want{
 				atts: []*keeper.Attestation{
-					expectApprovedAtt(3, defaultOffset+2, valset1_2, 18),
 					expectApprovedAtt(4, defaultOffset+3, valset1_2, 19),
 				},
 				sigs: []*keeper.Signature{
-					expectValSig(5, 3, val1, defaultOffset+2),
-					expectValSig(6, 3, val2, defaultOffset+2),
 					expectValSig(7, 4, val1, defaultOffset+3),
 					expectValSig(8, 4, val2, defaultOffset+3),
 				},

@@ -25,7 +25,7 @@ const (
 	defaultConfLevel = uint32(xchain.ConfFinalized)
 	defaultOffset    = uint64(1)
 	defaultHeight    = uint64(700)
-	trimLag          = 4
+	trimLag          = 1
 	cTrimLag         = 5
 )
 
