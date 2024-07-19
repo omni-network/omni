@@ -126,6 +126,7 @@ var runid = uuid.New().String()
 var (
 	omegaAVS     = common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
 	mainnetAVS   = common.HexToAddress("0xed2f4d90b073128ae6769a9A8D51547B1Df766C8")
+	omegaPortal  = common.HexToAddress("0x0eEaA62754A0628C062F45bd7605E57a9d3e3813")
 	mainnetToken = common.HexToAddress("0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4")
 
 	//go:embed omega/consensus-genesis.json
@@ -167,7 +168,12 @@ var statics = map[ID]Static{
 		AVSContractAddress:   omegaAVS,
 		OmniExecutionChainID: evmchain.IDOmniOmega,
 		MaxValidators:        maxValidators,
-		Portals:              nil,
+		Portals: []Deployment{
+			{ChainID: evmchain.IDArbSepolia, Address: omegaPortal, DeployHeight: 64990937},
+			{ChainID: evmchain.IDBaseSepolia, Address: omegaPortal, DeployHeight: 12808134},
+			{ChainID: evmchain.IDHolesky, Address: omegaPortal, DeployHeight: 1958423},
+			{ChainID: evmchain.IDOpSepolia, Address: omegaPortal, DeployHeight: 14791006},
+		},
 		ConsensusGenesisJSON: omegaConsensusGenesisJSON,
 		ConsensusSeedTXT:     omegaConsensusSeedsTXT,
 		ExecutionGenesisJSON: omegaExecutionGenesisJSON,
