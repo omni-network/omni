@@ -119,7 +119,7 @@ cast send 0x8464135c8F25Da09e49BC8782676a84730C318bC 'greet(string)' 'Yay in 3 m
 You can check the greet has been saved on the Omni EVM global state by running the following command:
 
 ```bash
-cast call 0x8464135c8F25Da09e49BC8782676a84730C318bC "lastGreet():(uint64,uint256,uint256,address,address,string)" --rpc-url http://localhost:8000
+cast call 0x8464135c8F25Da09e49BC8782676a84730C318bC "lastGreet():(uint64,uint256,address,string)" --rpc-url http://localhost:8000
 ```
 
 ### 🎉 Done 🎉
