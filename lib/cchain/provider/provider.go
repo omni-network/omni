@@ -158,12 +158,15 @@ func (p Provider) Subscribe(in context.Context, chainVer xchain.ChainVersion, xB
 // ErrHistoryPruned indicates that the necessary state for the requested height isn't found in the store.
 var ErrHistoryPruned = errors.New("no commit info found (history pruned)")
 
-// IsErrHistoryPruned reports whether the input error matches the CosmosSDK error returned when
+// IsErrHistoryPruned reports whether the input error matches the CosmosSDK errors returned when
 // the state for the requested height isn't found in the store.
 func IsErrHistoryPruned(err error) bool {
 	if err == nil {
 		return false
 	}
 
-	return strings.Contains(err.Error(), "no commit info found")
+	// There are two possible errors CosmosSDK returns when the state for the requested height isn't found in the store.
+	// First: https://github.com/cosmos/cosmos-sdk/blob/1bbb499cdf32dbf2bed3607860c30693c3f5674a/baseapp/abci.go#L1244
+	// Second: https://github.com/cosmos/cosmos-sdk/blob/7edd86813f4b17bed6f603bc5b3629a1a5aa41e8/store/rootmulti/store.go#L1134
+	return strings.Contains(err.Error(), "failed to load state at height") || strings.Contains(err.Error(), "no commit info found")
 }

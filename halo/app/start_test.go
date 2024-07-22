@@ -1,3 +1,4 @@
+//nolint:paralleltest // CosmosSDK dependency prevents parallel execution
 package app_test
 
 import (
@@ -25,8 +26,6 @@ import (
 )
 
 func TestSmoke(t *testing.T) {
-	t.Parallel()
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

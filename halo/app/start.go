@@ -95,8 +95,10 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		return nil, nil, err
 	}
 
-	if err := enableSDKTelemetry(); err != nil {
-		return nil, nil, errors.Wrap(err, "enable cosmos-sdk telemetry")
+	if cfg.Network != netconf.Simnet {
+		if err := enableSDKTelemetry(); err != nil {
+			return nil, nil, errors.Wrap(err, "enable cosmos-sdk telemetry")
+		}
 	}
 
 	privVal, err := loadPrivVal(cfg)
