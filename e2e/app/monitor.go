@@ -21,7 +21,7 @@ func LogMetrics(ctx context.Context, def Definition) error {
 	extNetwork := networkFromDef(def)
 
 	// Pick a random node to monitor.
-	if err := MonitorCProvider(ctx, random(def.Testnet.Nodes), extNetwork); err != nil {
+	if err := MonitorCProvider(ctx, def.Testnet.BroadcastNode(), extNetwork); err != nil {
 		return errors.Wrap(err, "monitoring cchain provider")
 	}
 
