@@ -249,6 +249,7 @@ contract Fixtures is CommonBase, StdCheats {
                 sourceChainId: chainAId,
                 confLevel: ConfLevel.Finalized,
                 offset: offset,
+                sourceBlockHeight: 100,
                 sourceBlockHash: keccak256("blockhash")
             }),
             xmsgs
@@ -273,6 +274,7 @@ contract Fixtures is CommonBase, StdCheats {
                 sourceChainId: omniCChainID,
                 confLevel: ConfLevel.Finalized,
                 offset: valSetId,
+                sourceBlockHeight: 100,
                 sourceBlockHash: bytes32(0)
             }),
             xmsgs
@@ -294,6 +296,7 @@ contract Fixtures is CommonBase, StdCheats {
                 sourceChainId: chainAId,
                 offset: 1,
                 confLevel: ConfLevel.Finalized,
+                sourceBlockHeight: 100,
                 sourceBlockHash: keccak256("blockhash")
             }),
             xmsgs
@@ -318,6 +321,7 @@ contract Fixtures is CommonBase, StdCheats {
                 sourceChainId: chainAId,
                 confLevel: ConfLevel.Finalized,
                 offset: 1,
+                sourceBlockHeight: 100,
                 sourceBlockHash: keccak256("blockhash")
             }),
             xmsgs

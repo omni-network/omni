@@ -12,6 +12,7 @@ export const xBlockHeaderParams = {
     { name: 'sourceChainId', type: 'uint64' },
     { name: 'confLevel', type: 'uint8' },
     { name: 'offset', type: 'uint64' },
+    { name: 'sourceBlockHeight', type: 'uint64'},
     { name: 'sourceBlockHash', type: 'bytes32' },
   ],
 } as const
