@@ -4,7 +4,6 @@ import (
 	"context"
 	"math/big"
 	"testing"
-	"time"
 
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/tutil"
@@ -15,9 +14,7 @@ import (
 )
 
 const (
-	chainName   = "test"
-	chainID     = 99
-	blockPeriod = time.Second
+	chainID = 99
 )
 
 func TestFundAccounts(t *testing.T) {
