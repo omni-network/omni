@@ -15,7 +15,7 @@ require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/Layr-Labs/eigenlayer-cli v0.9.2
 	github.com/Layr-Labs/eigensdk-go v0.1.9
-	github.com/bufbuild/buf v1.34.0
+	github.com/bufbuild/buf v1.35.0
 	github.com/charmbracelet/log v0.4.0
 	github.com/cometbft/cometbft v0.38.10
 	github.com/cosmos/cosmos-db v1.0.2
@@ -121,7 +121,7 @@ require (
 	github.com/fjl/memsize v0.0.2 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/getsentry/sentry-go v0.27.0 // indirect
-	github.com/go-chi/chi/v5 v5.0.13 // indirect
+	github.com/go-chi/chi/v5 v5.0.14 // indirect
 	github.com/go-kit/kit v0.12.0 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
@@ -142,7 +142,7 @@ require (
 	github.com/google/cel-go v0.20.1 // indirect
 	github.com/google/go-containerregistry v0.19.2 // indirect
 	github.com/google/orderedcode v0.0.1 // indirect
-	github.com/google/pprof v0.0.0-20240618054019-d3b898a103f8 // indirect
+	github.com/google/pprof v0.0.0-20240622144329-c177fd99eaa9 // indirect
 	github.com/gorilla/handlers v1.5.1 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
