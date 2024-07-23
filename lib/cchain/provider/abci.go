@@ -332,9 +332,19 @@ func searchOffsetInHistory(ctx context.Context, client rpcclient.Client, cl atyp
 	endHeightIndex := uint64(info.Response.LastBlockHeight)
 	lookback := uint64(1)
 	var lookbackStepsCounter uint64 // For metrics only
-	queryHeight := umath.SubtractOrZero(endHeightIndex, lookback)
-	for queryHeight > 0 {
+	queryHeight := endHeightIndex
+	for {
 		lookbackStepsCounter++
+		if queryHeight <= lookback {
+			// Query from the start, but don't break out yet -- we need to find the earliest height that we have state for
+			queryHeight = 1
+		} else {
+			queryHeight -= lookback
+		}
+
+		if queryHeight == 0 || queryHeight >= uint64(info.Response.LastBlockHeight) {
+			return 0, errors.New("unexpected query height [BUG]", "queryHeight", queryHeight) // This should never happen
+		}
 		earliestAtt, ok, err := queryEarliestAttestation(ctx, cl, chainVer, queryHeight)
 		if IsErrHistoryPruned(err) {
 			// We've jumped to before the prune height, but _might_ still have the requested offset
@@ -356,7 +366,7 @@ func searchOffsetInHistory(ctx context.Context, client rpcclient.Client, cl atyp
 			}
 
 			// Otherwise, we just don't have the needed state, fail
-			return 0, errors.New("missing state for requested offset")
+			return 0, ErrHistoryPruned
 		}
 		if err != nil {
 			incQueryErr(endpoint)
@@ -372,12 +382,6 @@ func searchOffsetInHistory(ctx context.Context, client rpcclient.Client, cl atyp
 		// Otherwise, keep moving back
 		endHeightIndex = queryHeight
 		lookback *= 2
-		if queryHeight < lookback {
-			startHeightIndex = 1
-			break
-		}
-
-		queryHeight -= lookback
 	}
 
 	// We now have reasonable start and end indices for binary search

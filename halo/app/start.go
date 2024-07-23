@@ -95,7 +95,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		return nil, nil, err
 	}
 
-	if err := enableSDKTelemetry(); err != nil {
+	if err := enableSDKTelemetry(cfg.Network); err != nil {
 		return nil, nil, errors.Wrap(err, "enable cosmos-sdk telemetry")
 	}
 
@@ -309,7 +309,12 @@ func newEngineClient(ctx context.Context, cfg Config, network netconf.ID, pubkey
 }
 
 // enableSDKTelemetry enables prometheus based cosmos-sdk telemetry.
-func enableSDKTelemetry() error {
+func enableSDKTelemetry(id netconf.ID) error {
+	// Skip telemetry for simnet, because it uses globals which conflict when running tests in parallel.
+	if id == netconf.Simnet {
+		return nil
+	}
+
 	const farFuture = time.Hour * 24 * 365 * 10 // 10 years ~= infinity.
 
 	_, err := sdktelemetry.New(sdktelemetry.Config{
