@@ -7,6 +7,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+const (
+	DSTUnknown     merkle.DomainSeparationTag = 0
+	DSTBlockHeader merkle.DomainSeparationTag = 1
+	DSTMessage     merkle.DomainSeparationTag = 2
+)
+
 // MsgTree is a merkle tree of all the messages in a cross-chain block.
 // It is used as a leaf when calculating the AttestationRoot.
 // Its proofs are used to submit messages to destination chains.
@@ -82,7 +88,7 @@ func msgLeaf(msg Msg) ([32]byte, error) {
 		return [32]byte{}, errors.Wrap(err, "encode message")
 	}
 
-	return merkle.StdLeafHash(bz), nil
+	return merkle.StdLeafHash(DSTMessage, bz), nil
 }
 
 func BlockHeaderLeaf(header BlockHeader) ([32]byte, error) {
@@ -91,7 +97,7 @@ func BlockHeaderLeaf(header BlockHeader) ([32]byte, error) {
 		return [32]byte{}, errors.Wrap(err, "encode block header")
 	}
 
-	return merkle.StdLeafHash(bz), nil
+	return merkle.StdLeafHash(DSTBlockHeader, bz), nil
 }
 
 // AttestationRoot returns the attestation root of the provided block header and message root.

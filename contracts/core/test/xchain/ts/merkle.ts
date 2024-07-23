@@ -55,11 +55,15 @@ export class XMsgMerkleTree {
   }
 }
 
+const DST_XBLOCK_HEADER = 1
+const DST_XMSG = 2
+
 export const attestationRoot = (header: XBlockHeader, msgRoot: Bytes) =>
   oz.makeMerkleTree([msgRoot, headerLeafHash(header)])[0]
-const stdLeafHash = (data: `0x${string}`) => keccak256(keccak256(hexToBytes(data)))
-const msgLeafHash = (msg: XMsg) => stdLeafHash(encodeXMsg(msg))
-const headerLeafHash = (header: XBlockHeader) => stdLeafHash(encodeXBlockHeader(header))
+const stdLeafHash = (dst: number, data: `0x${string}`) => keccak256(keccak256(new Uint8Array([dst, ...hexToBytes(data)])));
+
+const msgLeafHash = (msg: XMsg) => stdLeafHash(DST_XMSG, encodeXMsg(msg))
+const headerLeafHash = (header: XBlockHeader) => stdLeafHash(DST_XBLOCK_HEADER, encodeXBlockHeader(header))
 
 function leafIndex(tree: readonly Bytes[], leaf: Bytes) {
   const index = tree.findIndex(node => equalsBytes(node, leaf))

@@ -9,6 +9,12 @@ import { XTypes } from "./XTypes.sol";
  * @dev Library for verifying XBlock merkle proofs
  */
 library XBlockMerkleProof {
+    /// @dev Domain separation tag for XBlockHeaders, prepended to leaves before hashing and signing.
+    uint8 internal constant DST_XBLOCK_HEADER = 1;
+
+    /// @dev Domain separation tag for XMsgs, prepended to leaves before hashing and signing.
+    uint8 internal constant DST_XMSG = 2;
+
     /**
      * @notice Verifies that the provided xmsgs & multi proof produce an xmsg merkle root that, when
      *         combined with the xblock header, produces the provided root.
@@ -36,7 +42,7 @@ library XBlockMerkleProof {
         bytes32[] memory leaves = new bytes32[](msgs.length);
 
         for (uint256 i = 0; i < msgs.length; i++) {
-            leaves[i] = _leafHash(abi.encode(msgs[i]));
+            leaves[i] = _leafHash(DST_XMSG, abi.encode(msgs[i]));
         }
 
         return leaves;
@@ -44,12 +50,13 @@ library XBlockMerkleProof {
 
     /// @dev Convert xblock header to leaf hash
     function _blockHeaderLeaf(XTypes.BlockHeader calldata blockHeader) private pure returns (bytes32) {
-        return _leafHash(abi.encode(blockHeader));
+        return _leafHash(DST_XBLOCK_HEADER, abi.encode(blockHeader));
     }
 
     /// @dev Double hash leaves, as recommended by OpenZeppelin, to prevent second preimage attacks
     ///      Leaves must be double hashed in tree / proof construction
-    function _leafHash(bytes memory leaf) private pure returns (bytes32) {
-        return keccak256(bytes.concat(keccak256(leaf)));
+    ///      Callers must specify the domain separation tag of the leaf, which will be hashed in
+    function _leafHash(uint8 dst, bytes memory leaf) private pure returns (bytes32) {
+        return keccak256(bytes.concat(keccak256(abi.encodePacked(dst, leaf))));
     }
 }

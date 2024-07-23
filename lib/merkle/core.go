@@ -12,10 +12,13 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
+// Specifies the domain of a single leaf in the tree.
+type DomainSeparationTag byte
+
 // StdLeafHash returns the standard leaf hash of the given data.
 // The data is hashed twice with keccak256 to prevent pre-image attacks.
-func StdLeafHash(data []byte) [32]byte {
-	h1 := hash(data)
+func StdLeafHash(dst DomainSeparationTag, data []byte) [32]byte {
+	h1 := hash(append([]byte{byte(dst)}, data...))
 	h2 := hash(h1[:])
 
 	return h2
