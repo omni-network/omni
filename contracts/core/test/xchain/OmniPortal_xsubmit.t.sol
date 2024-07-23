@@ -250,7 +250,7 @@ contract OmniPortal_xsubmit_Test is Base {
         assertEq(portal_.inXBlockOffset(sourceChainId, shardId), xsub.blockHeader.offset);
         assertEq(counter_.count(), expectedCount);
         assertEq(counter_.countByChainId(sourceChainId), expectedCount);
-        assertReceipts(vm.getRecordedLogs(), xsub.msgs);
+        assertReceipts(vm.getRecordedLogs(), xsub.msgs, sourceChainId);
     }
 
     /// @dev A simple algo to over-esimate the gas limit for an xsubmission

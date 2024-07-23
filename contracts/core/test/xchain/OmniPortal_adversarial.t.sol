@@ -18,7 +18,6 @@ contract OmniPortal_adversarial is Base {
     /// @dev Test than an xcall to the portal address fails
     function test_xcallToPortal__fails() public {
         XTypes.Msg memory xmsg = XTypes.Msg({
-            sourceChainId: chainAId,
             destChainId: thisChainId,
             shardId: uint64(ConfLevel.Finalized),
             offset: 1,
@@ -50,7 +49,7 @@ contract OmniPortal_adversarial is Base {
     // @dev Helper to create a XBlock header for an xmsg
     function _xheader(XTypes.Msg memory xmsg) internal pure returns (XTypes.BlockHeader memory) {
         return XTypes.BlockHeader({
-            sourceChainId: xmsg.sourceChainId,
+            sourceChainId: chainAId,
             confLevel: uint8(xmsg.shardId),
             offset: 1,
             sourceBlockHeight: 100,

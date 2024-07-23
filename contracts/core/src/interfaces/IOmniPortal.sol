@@ -109,7 +109,7 @@ interface IOmniPortal {
      *          - xmsg().sourceChainId  == 0
      *          - xmsg().sender         == address(0)
      */
-    function xmsg() external view returns (XTypes.MsgShort memory);
+    function xmsg() external view returns (XTypes.MsgContext memory);
 
     /**
      * @notice Returns true the current transaction is an xcall, false otherwise

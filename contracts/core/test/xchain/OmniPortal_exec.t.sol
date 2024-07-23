@@ -21,7 +21,7 @@ contract OmniPortal_exec_Test is Base {
         XTypes.BlockHeader memory xheader = _xheader(xmsg);
 
         uint256 count = counter.count();
-        uint256 countForChain = counter.countByChainId(xmsg.sourceChainId);
+        uint256 countForChain = counter.countByChainId(xheader.sourceChainId);
 
         vm.prank(relayer);
         vm.expectCall(xmsg.to, xmsg.data);
@@ -30,9 +30,9 @@ contract OmniPortal_exec_Test is Base {
         portal.exec(xheader, xmsg);
 
         assertEq(counter.count(), count + 1);
-        assertEq(counter.countByChainId(xmsg.sourceChainId), countForChain + 1);
-        assertEq(portal.inXMsgOffset(xmsg.sourceChainId, xmsg.shardId), xmsg.offset);
-        assertReceipt(vm.getRecordedLogs()[0], xmsg);
+        assertEq(counter.countByChainId(xheader.sourceChainId), countForChain + 1);
+        assertEq(portal.inXMsgOffset(xheader.sourceChainId, xmsg.shardId), xmsg.offset);
+        assertReceipt(vm.getRecordedLogs()[0], xmsg, xheader.sourceChainId);
     }
 
     /// @dev Test that exec of an XMsg that reverts succeeds, and emits the correct XReceipt
@@ -46,8 +46,8 @@ contract OmniPortal_exec_Test is Base {
         vm.chainId(xmsg.destChainId);
         portal.exec(xheader, xmsg);
 
-        assertEq(portal.inXMsgOffset(xmsg.sourceChainId, xmsg.shardId), xmsg.offset);
-        assertReceipt(vm.getRecordedLogs()[0], xmsg);
+        assertEq(portal.inXMsgOffset(xheader.sourceChainId, xmsg.shardId), xmsg.offset);
+        assertReceipt(vm.getRecordedLogs()[0], xmsg, xheader.sourceChainId);
     }
 
     /// @dev Test that exec of an XMsg with the wrong destChainId reverts
@@ -226,7 +226,7 @@ contract OmniPortal_exec_Test is Base {
     // @dev Helper to create a XBlock header for an xmsg
     function _xheader(XTypes.Msg memory xmsg) internal pure returns (XTypes.BlockHeader memory) {
         return XTypes.BlockHeader({
-            sourceChainId: xmsg.sourceChainId,
+            sourceChainId: chainAId,
             confLevel: uint8(xmsg.shardId),
             offset: 1,
             sourceBlockHeight: 100,

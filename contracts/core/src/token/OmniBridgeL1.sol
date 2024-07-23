@@ -63,7 +63,7 @@ contract OmniBridgeL1 is OwnableUpgradeable {
      *     have enough balance to cover the withdrawal.
      */
     function withdraw(address to, uint256 amount) external {
-        XTypes.MsgShort memory xmsg = omni.xmsg();
+        XTypes.MsgContext memory xmsg = omni.xmsg();
 
         require(msg.sender == address(omni), "OmniBridge: not xcall");
         require(xmsg.sender == Predeploys.OmniBridgeNative, "OmniBridge: not bridge");

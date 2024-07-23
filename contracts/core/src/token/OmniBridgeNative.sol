@@ -85,7 +85,7 @@ contract OmniBridgeNative is OwnableUpgradeable {
      * @notice Withdraw `amount` native OMNI to `to`. Only callable via xcall from OmniBridgeL1.
      */
     function withdraw(address payor, address to, uint256 amount) external {
-        XTypes.MsgShort memory xmsg = omni.xmsg();
+        XTypes.MsgContext memory xmsg = omni.xmsg();
 
         require(msg.sender == address(omni), "OmniBridge: not xcall"); // this protects against reentrancy
         require(xmsg.sender == l1Bridge, "OmniBridge: not bridge");
@@ -147,7 +147,7 @@ contract OmniBridgeNative is OwnableUpgradeable {
      *      withdraw is the same as the address of a contract on Omni deployed and owned by a malicious actor.
      */
     function claim(address to) external {
-        XTypes.MsgShort memory xmsg = omni.xmsg();
+        XTypes.MsgContext memory xmsg = omni.xmsg();
 
         require(msg.sender == address(omni), "OmniBridge: not xcall");
         require(xmsg.sourceChainId == l1ChainId, "OmniBridge: not L1");

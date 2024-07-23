@@ -34,7 +34,7 @@ contract XApp {
     /**
      * @notice Transient storage for the current xmsg
      */
-    XTypes.MsgShort internal xmsg;
+    XTypes.MsgContext internal xmsg;
 
     /**
      * @notice Read current xmsg into storage before execution, delete it afterwards
