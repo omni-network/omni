@@ -16,12 +16,11 @@ const (
 
 //nolint:gochecknoglobals // Static ABI types
 var (
-	// headerABI encodes a BlockHeader for submissions.
-	// Note it only includes BlockOffset, not BlockHeight, as height isn't required by submissions.
 	headerABI = mustABITuple([]abi.ArgumentMarshaling{
 		{Name: "SourceChainID", Type: typUint64},
 		{Name: "ConfLevel", Type: typUint8},
 		{Name: "BlockOffset", Type: typUint64},
+		{Name: "BlockHeight", Type: typUint64},
 		{Name: "BlockHash", Type: typBytes32},
 	})
 

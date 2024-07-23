@@ -229,6 +229,7 @@ contract OmniPortal_exec_Test is Base {
             sourceChainId: xmsg.sourceChainId,
             confLevel: uint8(xmsg.shardId),
             offset: 1,
+            sourceBlockHeight: 100,
             sourceBlockHash: bytes32(0)
         });
     }

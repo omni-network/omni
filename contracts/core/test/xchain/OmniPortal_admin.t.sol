@@ -158,6 +158,7 @@ contract OmniPortal_admin_Test is Base {
             sourceChainId: chainAId,
             confLevel: ConfLevel.Finalized,
             offset: 1,
+            sourceBlockHeight: 100,
             sourceBlockHash: keccak256("hash")
         });
         vm.expectRevert("OmniPortal: no xmsgs");

@@ -46,12 +46,14 @@ library XTypes {
      * @custom:field sourceChainId      Chain ID of the source chain
      * @custom:field confLevel          Confirmation level of the cross chain block
      * @custom:field offset             Offset of the cross chain block
+     * @custom:field sourceBlockHeight  Height of the source chain block
      * @custom:field sourceBlockHash    Hash of the source chain block
      */
     struct BlockHeader {
         uint64 sourceChainId;
         uint8 confLevel;
         uint64 offset;
+        uint64 sourceBlockHeight;
         bytes32 sourceBlockHash;
     }
 
