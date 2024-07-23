@@ -445,7 +445,7 @@ func getEarliestStoreHeight(ctx context.Context, cl atypes.QueryClient, chainVer
 			return 0, errors.Wrap(err, "querying earliest attestation")
 		}
 
-		return startPoint, nil
+		return startPoint + i, nil
 	}
 }
 
