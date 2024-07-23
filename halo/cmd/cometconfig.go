@@ -42,6 +42,8 @@ func DefaultCometConfig(homeDir string) cfg.Config {
 	conf.StateSync.DiscoveryTime = time.Second * 10    // Increase discovery time
 	conf.StateSync.ChunkRequestTimeout = time.Minute   // Increase timeout
 	conf.Mempool.Type = cfg.MempoolTypeNop             // Disable cometBFT mempool
+	conf.ProxyApp = ""                                 // Only support built-in ABCI app supported.
+	conf.ABCI = ""                                     // Only support built-in ABCI app supported.
 
 	return *conf
 }
