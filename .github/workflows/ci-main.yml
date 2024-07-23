@@ -1,10 +1,11 @@
 name: ci main
-# continuous integration on push to main
+# continuous integration on push to main and release branches
 
 on:
   push:
     branches:
       - main
+      - release*
 
 permissions:
   contents: read
