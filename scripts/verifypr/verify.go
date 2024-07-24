@@ -148,18 +148,19 @@ func verifyScope(commit *cc.ConventionalCommit) error {
 }
 
 func verifyFooter(commit *cc.ConventionalCommit) error {
+	const issueFooter = "issue"
 	if len(commit.Footers) == 0 {
-		return errors.New("missing `task` footer")
+		return errors.New("missing `issue` footer")
 	}
-	if len(commit.Footers) > 1 {
-		return errors.New("invalid number of footers, only `issue` required")
+	if len(commit.Footers[issueFooter]) == 0 {
+		return errors.New("missing `issue` footer")
 	}
 
-	if len(commit.Footers["issue"]) != 1 {
+	if len(commit.Footers[issueFooter]) != 1 {
 		return errors.New("invalid number of issue footers, only one allowed")
 	}
 
-	issue := commit.Footers["issue"][0]
+	issue := strings.TrimSpace(commit.Footers[issueFooter][0])
 	if issue == "" {
 		return errors.New("issue footer empty")
 	} else if issue == "none" {
