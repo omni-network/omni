@@ -8,7 +8,7 @@ import (
 
 func (h *BlockHeader) XChainVersion() xchain.ChainVersion {
 	return xchain.ChainVersion{
-		ID:        h.ChainId,
+		ID:        h.SourceChainId,
 		ConfLevel: xchain.ConfLevel(h.ConfLevel),
 	}
 }
@@ -72,10 +72,11 @@ func SigFromProto(sig *SigTuple) (xchain.SigTuple, error) {
 // BlockHeaderFromProto converts a protobuf BlockHeader to a xchain.BlockHeader.
 func BlockHeaderFromProto(header *BlockHeader) xchain.BlockHeader {
 	return xchain.BlockHeader{
-		SourceChainID: header.GetChainId(),
-		ConfLevel:     xchain.ConfLevel(byte(header.ConfLevel)),
-		BlockOffset:   header.GetOffset(),
-		BlockHeight:   header.GetHeight(),
-		BlockHash:     common.Hash(header.GetHash()),
+		SourceChainID:    header.GetSourceChainId(),
+		ConsensusChainID: header.GetConsensusChainId(),
+		ConfLevel:        xchain.ConfLevel(byte(header.ConfLevel)),
+		BlockOffset:      header.GetOffset(),
+		BlockHeight:      header.GetHeight(),
+		BlockHash:        common.Hash(header.GetHash()),
 	}
 }

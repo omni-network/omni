@@ -476,8 +476,8 @@ func (v *Voter) latestByChain(chainVer xchain.ChainVersion) (*types.Vote, bool) 
 func (v *Voter) saveUnsafe() error {
 	sortVotes := func(atts []*types.Vote) {
 		sort.Slice(atts, func(i, j int) bool {
-			if atts[i].BlockHeader.ChainId != atts[j].BlockHeader.ChainId {
-				return atts[i].BlockHeader.ChainId < atts[j].BlockHeader.ChainId
+			if atts[i].BlockHeader.SourceChainId != atts[j].BlockHeader.SourceChainId {
+				return atts[i].BlockHeader.SourceChainId < atts[j].BlockHeader.SourceChainId
 			}
 
 			return atts[i].BlockHeader.Offset < atts[j].BlockHeader.Offset
@@ -613,12 +613,12 @@ func headerMap(headers []*types.BlockHeader) map[xchain.BlockHeader]bool {
 func pruneLatestPerChain(atts []*types.Vote) []*types.Vote {
 	latest := make(map[uint64]*types.Vote)
 	for _, vote := range atts {
-		latestAtt, ok := latest[vote.BlockHeader.ChainId]
+		latestAtt, ok := latest[vote.BlockHeader.SourceChainId]
 		if ok && latestAtt.BlockHeader.Offset >= vote.BlockHeader.Offset {
 			continue
 		}
 
-		latest[vote.BlockHeader.ChainId] = vote
+		latest[vote.BlockHeader.SourceChainId] = vote
 	}
 
 	// Flatten

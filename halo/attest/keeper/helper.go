@@ -22,11 +22,11 @@ func (a *Attestation) IsFuzzy() bool {
 func AttestationFromDB(att *Attestation, sigs []*Signature) *types.Attestation {
 	return &types.Attestation{
 		BlockHeader: &types.BlockHeader{
-			ChainId:   att.GetChainId(),
-			ConfLevel: att.GetConfLevel(),
-			Offset:    att.GetBlockOffset(),
-			Height:    att.GetBlockHeight(),
-			Hash:      att.GetBlockHash(),
+			SourceChainId: att.GetChainId(),
+			ConfLevel:     att.GetConfLevel(),
+			Offset:        att.GetBlockOffset(),
+			Height:        att.GetBlockHeight(),
+			Hash:          att.GetBlockHash(),
 		},
 		ValidatorSetId: att.GetValidatorSetId(),
 		MsgRoot:        att.GetMsgRoot(),

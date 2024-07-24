@@ -37,6 +37,7 @@ export const xMsgJson = (xmsg: XMsg) => ({
 
 export const xBlockHeaderJson = (xblockHeader: XBlockHeader) => ({
   sourceChainId: xblockHeader.sourceChainId.toString(),
+  consensusChainId: xblockHeader.consensusChainId.toString(),
   confLevel: xblockHeader.confLevel.toString(),
   offset: xblockHeader.offset.toString(),
   sourceBlockHash: xblockHeader.sourceBlockHash,

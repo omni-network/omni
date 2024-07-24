@@ -146,11 +146,12 @@ type Receipt struct {
 
 // BlockHeader uniquely identifies a cross chain block.
 type BlockHeader struct {
-	SourceChainID uint64      // Source chain ID as per https://chainlist.org
-	ConfLevel     ConfLevel   // ConfLevel defines the cross-chain block "version"; either some fuzzy version or finalized.
-	BlockOffset   uint64      // Offset of the cross-chain block
-	BlockHeight   uint64      // Height of the source-chain block
-	BlockHash     common.Hash // Hash of the source-chain block
+	SourceChainID    uint64      // Source chain ID as per https://chainlist.org
+	ConsensusChainID uint64      // Consensus Chain ID as per https://chainlist.org, for replay protection.
+	ConfLevel        ConfLevel   // ConfLevel defines the cross-chain block "version"; either some fuzzy version or finalized.
+	BlockOffset      uint64      // Offset of the cross-chain block
+	BlockHeight      uint64      // Height of the source-chain block
+	BlockHash        common.Hash // Hash of the source-chain block
 }
 
 func (b BlockHeader) ChainVersion() ChainVersion {

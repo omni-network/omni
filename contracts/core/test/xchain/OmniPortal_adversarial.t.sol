@@ -50,6 +50,7 @@ contract OmniPortal_adversarial is Base {
     function _xheader(XTypes.Msg memory xmsg) internal pure returns (XTypes.BlockHeader memory) {
         return XTypes.BlockHeader({
             sourceChainId: chainAId,
+            consensusChainId: omniCChainID,
             confLevel: uint8(xmsg.shardId),
             offset: 1,
             sourceBlockHeight: 100,

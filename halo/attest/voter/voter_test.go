@@ -355,10 +355,10 @@ func (w *wrappedVoter) Propose(t *testing.T, chainID, offset uint64) {
 	t.Helper()
 
 	header := &types.BlockHeader{
-		ChainId:   chainID,
-		ConfLevel: uint32(xchain.ConfFinalized),
-		Offset:    offset,
-		Hash:      common.Hash{}.Bytes(),
+		SourceChainId: chainID,
+		ConfLevel:     uint32(xchain.ConfFinalized),
+		Offset:        offset,
+		Hash:          common.Hash{}.Bytes(),
 	}
 
 	err := w.v.SetProposed([]*types.BlockHeader{header})
@@ -369,10 +369,10 @@ func (w *wrappedVoter) Commit(t *testing.T, chainID, offset uint64) {
 	t.Helper()
 
 	header := &types.BlockHeader{
-		ChainId:   chainID,
-		ConfLevel: uint32(xchain.ConfFinalized),
-		Offset:    offset,
-		Hash:      common.Hash{}.Bytes(),
+		SourceChainId: chainID,
+		ConfLevel:     uint32(xchain.ConfFinalized),
+		Offset:        offset,
+		Hash:          common.Hash{}.Bytes(),
 	}
 
 	err := w.v.SetCommitted([]*types.BlockHeader{header})
@@ -385,7 +385,7 @@ func (w *wrappedVoter) Available(t *testing.T, chainID, offset uint64, ok bool) 
 
 	var found bool
 	for _, att := range w.v.GetAvailable() {
-		if att.BlockHeader.ChainId == chainID && att.BlockHeader.Offset == offset && att.BlockHeader.ConfLevel == uint32(xchain.ConfFinalized) {
+		if att.BlockHeader.SourceChainId == chainID && att.BlockHeader.Offset == offset && att.BlockHeader.ConfLevel == uint32(xchain.ConfFinalized) {
 			found = true
 			break
 		}

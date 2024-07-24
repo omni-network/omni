@@ -42,11 +42,12 @@ func TestEncodeHeader(t *testing.T) {
 	t.Parallel()
 
 	header := BlockHeader{
-		SourceChainID: 1,
-		ConfLevel:     1,
-		BlockOffset:   100,
-		BlockHeight:   99, // Ignored
-		BlockHash:     common.HexToHash("0x412d62a6a3115ab5a0e0cae9d63082ff8dfb002a98cc889d06dc986a9461586b"),
+		SourceChainID:    1,
+		ConsensusChainID: 1,
+		ConfLevel:        1,
+		BlockOffset:      100,
+		BlockHeight:      99,
+		BlockHash:        common.HexToHash("0x412d62a6a3115ab5a0e0cae9d63082ff8dfb002a98cc889d06dc986a9461586b"),
 	}
 
 	packed, err := encodeHeader(header)

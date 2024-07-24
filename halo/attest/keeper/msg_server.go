@@ -83,7 +83,7 @@ func logLocalVotes(ctx context.Context, headers []*types.BlockHeader, typ string
 	const limit = 5
 	offsets := make(map[uint64][]string)
 	for _, header := range headers {
-		offset := offsets[header.ChainId]
+		offset := offsets[header.SourceChainId]
 		if len(offset) == limit {
 			offset = append(offset, "...")
 		} else if len(offset) < limit {
@@ -91,7 +91,7 @@ func logLocalVotes(ctx context.Context, headers []*types.BlockHeader, typ string
 		} else {
 			continue
 		}
-		offsets[header.ChainId] = offset
+		offsets[header.SourceChainId] = offset
 	}
 	attrs := []any{
 		slog.Int("votes", len(headers)),

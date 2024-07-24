@@ -10,6 +10,7 @@ export const xBlockHeaderParams = {
   type: 'tuple',
   components: [
     { name: 'sourceChainId', type: 'uint64' },
+    { name: 'consensusChainId', type: 'uint64' },
     { name: 'confLevel', type: 'uint8' },
     { name: 'offset', type: 'uint64' },
     { name: 'sourceBlockHeight', type: 'uint64'},

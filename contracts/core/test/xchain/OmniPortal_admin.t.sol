@@ -156,6 +156,7 @@ contract OmniPortal_admin_Test is Base {
         XTypes.Submission memory xsub;
         xsub.blockHeader = XTypes.BlockHeader({
             sourceChainId: chainAId,
+            consensusChainId: omniCChainID,
             confLevel: ConfLevel.Finalized,
             offset: 1,
             sourceBlockHeight: 100,

@@ -18,6 +18,7 @@ const (
 var (
 	headerABI = mustABITuple([]abi.ArgumentMarshaling{
 		{Name: "SourceChainID", Type: typUint64},
+		{Name: "ConsensusChainID", Type: typUint64},
 		{Name: "ConfLevel", Type: typUint8},
 		{Name: "BlockOffset", Type: typUint64},
 		{Name: "BlockHeight", Type: typUint64},

@@ -111,11 +111,11 @@ type AggVoteBuilder struct {
 func (b *AggVoteBuilder) Default() *AggVoteBuilder {
 	b.vote = &types.AggVote{
 		BlockHeader: &types.BlockHeader{
-			ChainId:   defaultChainID,
-			Offset:    defaultOffset,
-			Height:    defaultHeight,
-			Hash:      blockHashes[0].Bytes(),
-			ConfLevel: defaultConfLevel,
+			SourceChainId: defaultChainID,
+			Offset:        defaultOffset,
+			Height:        defaultHeight,
+			Hash:          blockHashes[0].Bytes(),
+			ConfLevel:     defaultConfLevel,
 		},
 		MsgRoot:    msgRoot.Bytes(),
 		Signatures: sigsTuples(val1, val2),
@@ -130,7 +130,7 @@ func (b *AggVoteBuilder) WithChainID(id uint64) *AggVoteBuilder {
 	} else if b.vote.BlockHeader == nil {
 		b.vote.BlockHeader = &types.BlockHeader{}
 	}
-	b.vote.BlockHeader.ChainId = id
+	b.vote.BlockHeader.SourceChainId = id
 
 	return b
 }
@@ -185,7 +185,7 @@ func (b *AggVoteBuilder) WithBlockHeader(chainID uint64, offset uint64, height u
 	} else if b.vote.BlockHeader == nil {
 		b.vote.BlockHeader = &types.BlockHeader{}
 	}
-	b.vote.BlockHeader.ChainId = chainID
+	b.vote.BlockHeader.SourceChainId = chainID
 	b.vote.BlockHeader.Offset = offset
 	b.vote.BlockHeader.Height = height
 	b.vote.BlockHeader.Hash = hash.Bytes()

@@ -2,6 +2,7 @@
   "addValSet2": {
     "blockHeader": {
       "sourceChainId": "1000166",
+      "consensusChainId": "1000166",
       "confLevel": "4",
       "offset": "2",
       "sourceBlockHash": "0x0000000000000000000000000000000000000000000000000000000000000000"
@@ -20,6 +21,7 @@
   "guzzle1": {
     "blockHeader": {
       "sourceChainId": "102",
+      "consensusChainId": "1000166",
       "confLevel": "4",
       "offset": "1",
       "sourceBlockHash": "0xd60ee5d9b1a312631632d0ab8816ca64259093d8ab0b4d29f35db6a6151b0f8d"
@@ -38,6 +40,7 @@
   "guzzle10": {
     "blockHeader": {
       "sourceChainId": "102",
+      "consensusChainId": "1000166",
       "confLevel": "4",
       "offset": "1",
       "sourceBlockHash": "0xd60ee5d9b1a312631632d0ab8816ca64259093d8ab0b4d29f35db6a6151b0f8d"
@@ -128,6 +131,7 @@
   "guzzle25": {
     "blockHeader": {
       "sourceChainId": "102",
+      "consensusChainId": "1000166",
       "confLevel": "4",
       "offset": "1",
       "sourceBlockHash": "0xd60ee5d9b1a312631632d0ab8816ca64259093d8ab0b4d29f35db6a6151b0f8d"
@@ -338,6 +342,7 @@
   "guzzle5": {
     "blockHeader": {
       "sourceChainId": "102",
+      "consensusChainId": "1000166",
       "confLevel": "4",
       "offset": "1",
       "sourceBlockHash": "0xd60ee5d9b1a312631632d0ab8816ca64259093d8ab0b4d29f35db6a6151b0f8d"
@@ -388,6 +393,7 @@
   "guzzle50": {
     "blockHeader": {
       "sourceChainId": "102",
+      "consensusChainId": "1000166",
       "confLevel": "4",
       "offset": "1",
       "sourceBlockHash": "0xd60ee5d9b1a312631632d0ab8816ca64259093d8ab0b4d29f35db6a6151b0f8d"
@@ -798,6 +804,7 @@
   "reentrancy": {
     "blockHeader": {
       "sourceChainId": "102",
+      "consensusChainId": "1000166",
       "confLevel": "4",
       "offset": "1",
       "sourceBlockHash": "0xd60ee5d9b1a312631632d0ab8816ca64259093d8ab0b4d29f35db6a6151b0f8d"
@@ -816,6 +823,7 @@
   "xblock1": {
     "blockHeader": {
       "sourceChainId": "102",
+      "consensusChainId": "1000166",
       "confLevel": "4",
       "offset": "1",
       "sourceBlockHash": "0xd60ee5d9b1a312631632d0ab8816ca64259093d8ab0b4d29f35db6a6151b0f8d"
@@ -906,6 +914,7 @@
   "xblock2": {
     "blockHeader": {
       "sourceChainId": "102",
+      "consensusChainId": "1000166",
       "confLevel": "4",
       "offset": "2",
       "sourceBlockHash": "0xd60ee5d9b1a312631632d0ab8816ca64259093d8ab0b4d29f35db6a6151b0f8d"

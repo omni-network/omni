@@ -175,7 +175,7 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 	if ormerrors.IsNotFound(err) {
 		// Insert new attestation
 		attID, err = k.attTable.InsertReturningId(ctx, &Attestation{
-			ChainId:         agg.BlockHeader.ChainId,
+			ChainId:         agg.BlockHeader.SourceChainId,
 			ConfLevel:       agg.BlockHeader.ConfLevel,
 			BlockOffset:     agg.BlockHeader.Offset,
 			BlockHeight:     agg.BlockHeader.Height,
@@ -223,7 +223,7 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 			Signature:        sig.GetSignature(),
 			ValidatorAddress: sig.GetValidatorAddress(),
 			AttId:            attID,
-			ChainId:          agg.BlockHeader.GetChainId(),
+			ChainId:          agg.BlockHeader.GetSourceChainId(),
 			ConfLevel:        agg.BlockHeader.GetConfLevel(),
 			BlockOffset:      agg.BlockHeader.GetOffset(),
 		})
@@ -358,6 +358,11 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 // ListAttestationsFrom returns the subsequent approved attestations from the provided offset (inclusive).
 func (k *Keeper) ListAttestationsFrom(ctx context.Context, chainID uint64, confLevel uint32, offset uint64, max uint64) ([]*types.Attestation, error) {
 	defer latency("attestations_from")()
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	consensusID, err := netconf.ConsensusChainIDStr2Uint64(sdkCtx.ChainID())
+	if err != nil {
+		return nil, errors.Wrap(err, "parse chain id")
+	}
 
 	from := AttestationStatusChainIdConfLevelBlockOffsetIndexKey{}.WithStatusChainIdConfLevelBlockOffset(uint32(Status_Approved), chainID, confLevel, offset)
 	to := AttestationStatusChainIdConfLevelBlockOffsetIndexKey{}.WithStatusChainIdConfLevelBlockOffset(uint32(Status_Approved), chainID, confLevel, offset+max)
@@ -394,7 +399,7 @@ func (k *Keeper) ListAttestationsFrom(ctx context.Context, chainID uint64, confL
 			return nil, errors.Wrap(err, "get att sigs")
 		}
 
-		resp = append(resp, toProto(att, sigs))
+		resp = append(resp, toProto(att, sigs, consensusID))
 	}
 
 	return resp, nil
@@ -528,6 +533,11 @@ func (k *Keeper) earliestAttestation(ctx context.Context, version xchain.ChainVe
 // listAllAttestations returns all approved attestations for the given chain.
 func (k *Keeper) listAllAttestations(ctx context.Context, version xchain.ChainVersion, status Status, blockOffset uint64) ([]*types.Attestation, error) {
 	defer latency("list_all_attestations")()
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	consensusID, err := netconf.ConsensusChainIDStr2Uint64(sdkCtx.ChainID())
+	if err != nil {
+		return nil, errors.Wrap(err, "parse chain id")
+	}
 
 	idx := AttestationStatusChainIdConfLevelBlockOffsetIndexKey{}.WithStatusChainIdConfLevelBlockOffset(uint32(status), version.ID, uint32(version.ConfLevel), blockOffset)
 	iter, err := k.attTable.List(ctx, idx)
@@ -548,7 +558,7 @@ func (k *Keeper) listAllAttestations(ctx context.Context, version xchain.ChainVe
 			return nil, errors.Wrap(err, "get att sigs")
 		}
 
-		resp = append(resp, toProto(att, sigs))
+		resp = append(resp, toProto(att, sigs, consensusID))
 	}
 
 	return resp, nil
@@ -631,7 +641,7 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 	duplicate := make(map[types.VoteSource]bool)
 	var filtered []*types.Vote
 	for _, vote := range votes {
-		if ok, err := k.portalRegistry.SupportedChain(ctx, vote.BlockHeader.ChainId); err != nil {
+		if ok, err := k.portalRegistry.SupportedChain(ctx, vote.BlockHeader.SourceChainId); err != nil {
 			return nil, errors.Wrap(err, "supported chain")
 		} else if !ok {
 			log.Warn(ctx, "Skipping own vote for unsupported chain", nil, "chain", k.namer(vote.BlockHeader.XChainVersion()))
@@ -754,7 +764,7 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 			return respReject, nil
 		}
 
-		if ok, err := k.portalRegistry.SupportedChain(ctx, vote.BlockHeader.ChainId); err != nil {
+		if ok, err := k.portalRegistry.SupportedChain(ctx, vote.BlockHeader.SourceChainId); err != nil {
 			return nil, errors.Wrap(err, "supported chain")
 		} else if !ok {
 			log.Warn(ctx, "Rejecting vote for unsupported chain", nil, "chain", k.namer(vote.BlockHeader.XChainVersion()))
@@ -845,7 +855,7 @@ func (k *Keeper) verifyAggVotes(ctx context.Context, valset ValSet, aggs []*type
 		}
 		errAttrs := []any{"chain", k.namer(agg.BlockHeader.XChainVersion()), "offset", agg.BlockHeader.Offset}
 
-		if ok, err := k.portalRegistry.SupportedChain(ctx, agg.BlockHeader.ChainId); err != nil {
+		if ok, err := k.portalRegistry.SupportedChain(ctx, agg.BlockHeader.SourceChainId); err != nil {
 			return errors.Wrap(err, "supported chain")
 		} else if !ok {
 			return errors.New("vote for unsupported chain", errAttrs...)
@@ -973,7 +983,7 @@ func (k *Keeper) isDoubleSign(ctx context.Context, attID uint64, agg *types.AggV
 		return false, errors.Wrap(err, "get identical vote")
 	} // else identical vote doesn't exist
 
-	doubleSign, err := k.sigTable.HasByChainIdConfLevelBlockOffsetValidatorAddress(ctx, agg.BlockHeader.ChainId, agg.BlockHeader.ConfLevel, agg.BlockHeader.Offset, sig.ValidatorAddress)
+	doubleSign, err := k.sigTable.HasByChainIdConfLevelBlockOffsetValidatorAddress(ctx, agg.BlockHeader.SourceChainId, agg.BlockHeader.ConfLevel, agg.BlockHeader.Offset, sig.ValidatorAddress)
 	if err != nil {
 		return false, errors.Wrap(err, "check double sign")
 	} else if !doubleSign {
@@ -1032,14 +1042,15 @@ func isApprovedByDifferentSet(att *Attestation, valSetID uint64) bool {
 }
 
 // toProto converts from the keeper.Attestation type to the types.Attestation type.
-func toProto(att *Attestation, sigs []*types.SigTuple) *types.Attestation {
+func toProto(att *Attestation, sigs []*types.SigTuple, cchainID uint64) *types.Attestation {
 	return &types.Attestation{
 		BlockHeader: &types.BlockHeader{
-			ChainId:   att.GetChainId(),
-			ConfLevel: att.GetConfLevel(),
-			Offset:    att.GetBlockOffset(),
-			Height:    att.GetBlockHeight(),
-			Hash:      att.GetBlockHash(),
+			SourceChainId:    att.GetChainId(),
+			ConsensusChainId: cchainID,
+			ConfLevel:        att.GetConfLevel(),
+			Offset:           att.GetBlockOffset(),
+			Height:           att.GetBlockHeight(),
+			Hash:             att.GetBlockHash(),
 		},
 		ValidatorSetId: att.GetValidatorSetId(),
 		MsgRoot:        att.GetMsgRoot(),

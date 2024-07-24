@@ -46,7 +46,7 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
     uint64 public omniChainId;
 
     /**
-     * @notice Virtual chain ID used in xmsgs from Omni's consensus chain
+     * @notice Virtual Chain ID of Omni's consensus chain
      */
     uint64 public omniCChainId;
 

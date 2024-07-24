@@ -244,10 +244,11 @@ func (p *Provider) GetBlock(ctx context.Context, req xchain.ProviderRequest) (xc
 
 	resp := xchain.Block{
 		BlockHeader: xchain.BlockHeader{
-			SourceChainID: req.ChainID,
-			ConfLevel:     req.ConfLevel,
-			BlockHeight:   req.Height,
-			BlockHash:     header.Hash(),
+			SourceChainID:    req.ChainID,
+			ConsensusChainID: p.cChainID,
+			ConfLevel:        req.ConfLevel,
+			BlockHeight:      req.Height,
+			BlockHash:        header.Hash(),
 		},
 		Msgs:       msgs,
 		Receipts:   receipts,

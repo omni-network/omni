@@ -247,6 +247,7 @@ contract Fixtures is CommonBase, StdCheats {
         return TestXTypes.Block(
             XTypes.BlockHeader({
                 sourceChainId: chainAId,
+                consensusChainId: omniCChainID,
                 confLevel: ConfLevel.Finalized,
                 offset: offset,
                 sourceBlockHeight: 100,
@@ -271,6 +272,7 @@ contract Fixtures is CommonBase, StdCheats {
         return TestXTypes.Block(
             XTypes.BlockHeader({
                 sourceChainId: omniCChainID,
+                consensusChainId: omniCChainID,
                 confLevel: ConfLevel.Finalized,
                 offset: valSetId,
                 sourceBlockHeight: 100,
@@ -293,6 +295,7 @@ contract Fixtures is CommonBase, StdCheats {
         return TestXTypes.Block(
             XTypes.BlockHeader({
                 sourceChainId: chainAId,
+                consensusChainId: omniCChainID,
                 offset: 1,
                 confLevel: ConfLevel.Finalized,
                 sourceBlockHeight: 100,
@@ -317,6 +320,7 @@ contract Fixtures is CommonBase, StdCheats {
         return TestXTypes.Block(
             XTypes.BlockHeader({
                 sourceChainId: chainAId,
+                consensusChainId: omniCChainID,
                 confLevel: ConfLevel.Finalized,
                 offset: 1,
                 sourceBlockHeight: 100,

@@ -19,7 +19,7 @@ type VoteSource struct {
 // VoteSource returns the source block being voted on.
 func (a *AggVote) VoteSource() VoteSource {
 	return VoteSource{
-		ChainID:     a.BlockHeader.GetChainId(),
+		ChainID:     a.BlockHeader.GetSourceChainId(),
 		ConfLevel:   a.BlockHeader.GetConfLevel(),
 		BlockOffset: a.BlockHeader.GetOffset(),
 	}
@@ -28,7 +28,7 @@ func (a *AggVote) VoteSource() VoteSource {
 // VoteSource returns the source block being voted on.
 func (v *Vote) VoteSource() VoteSource {
 	return VoteSource{
-		ChainID:     v.BlockHeader.GetChainId(),
+		ChainID:     v.BlockHeader.GetSourceChainId(),
 		ConfLevel:   v.BlockHeader.GetConfLevel(),
 		BlockOffset: v.BlockHeader.GetOffset(),
 	}
