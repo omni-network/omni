@@ -6,6 +6,7 @@ import (
 	"time"
 
 	atypes "github.com/omni-network/omni/halo/attest/types"
+	"github.com/omni-network/omni/halo/genutil/genserve"
 	ptypes "github.com/omni-network/omni/halo/portal/types"
 	rtypes "github.com/omni-network/omni/halo/registry/types"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
@@ -36,6 +37,7 @@ func NewABCIProvider(abci rpcclient.Client, network netconf.ID, chainNamer func(
 	vcl := vtypes.NewQueryClient(rpcAdaptor{abci: abci})
 	pcl := ptypes.NewQueryClient(rpcAdaptor{abci: abci})
 	rcl := rtypes.NewQueryClient(rpcAdaptor{abci: abci})
+	gcl := genserve.NewQueryClient(rpcAdaptor{abci: abci})
 
 	return Provider{
 		fetch:       newABCIFetchFunc(acl, abci),
@@ -44,6 +46,7 @@ func NewABCIProvider(abci rpcclient.Client, network netconf.ID, chainNamer func(
 		valset:      newABCIValsetFunc(vcl),
 		portalBlock: newABCIPortalBlockFunc(pcl),
 		networkFunc: newABCINetworkFunc(rcl),
+		genesisFunc: newABCIGenesisFunc(gcl),
 		chainID:     newChainIDFunc(abci),
 		header:      abci.Header,
 		backoffFunc: backoffFunc,
@@ -233,6 +236,7 @@ func newABCIPortalBlockFunc(pcl ptypes.QueryClient) portalBlockFunc {
 		return resp, true, nil
 	}
 }
+
 func newABCINetworkFunc(pcl rtypes.QueryClient) networkFunc {
 	return func(ctx context.Context, networkID uint64, latest bool) (*rtypes.NetworkResponse, bool, error) {
 		const endpoint = "registry_network"
@@ -250,6 +254,24 @@ func newABCINetworkFunc(pcl rtypes.QueryClient) networkFunc {
 		}
 
 		return resp, true, nil
+	}
+}
+
+func newABCIGenesisFunc(gcl genserve.QueryClient) genesisFunc {
+	return func(ctx context.Context) (execution []byte, consensus []byte, err error) { //nolint:nonamedreturns // Disambiguate identical return types
+		const endpoint = "genesis"
+		defer latency(endpoint)()
+
+		ctx, span := tracer.Start(ctx, spanName(endpoint))
+		defer span.End()
+
+		resp, err := gcl.Genesis(ctx, &genserve.GenesisRequest{})
+		if err != nil {
+			incQueryErr(endpoint)
+			return nil, nil, errors.Wrap(err, "abci genesis")
+		}
+
+		return resp.ExecutionGenesisJson, resp.ConsensusGenesisJson, nil
 	}
 }
 

@@ -35,6 +35,7 @@ type networkFunc func(ctx context.Context, networkID uint64, latest bool) (*rtyp
 type valsetFunc func(ctx context.Context, valSetID uint64, latest bool) (valSetResponse, bool, error)
 type headerFunc func(ctx context.Context, height *int64) (*ctypes.ResultHeader, error)
 type chainIDFunc func(ctx context.Context) (uint64, error)
+type genesisFunc func(ctx context.Context) (execution []byte, consensus []byte, err error)
 
 type valSetResponse struct {
 	ValSetID      uint64
@@ -54,6 +55,7 @@ type Provider struct {
 	header      headerFunc
 	portalBlock portalBlockFunc
 	networkFunc networkFunc
+	genesisFunc genesisFunc
 	backoffFunc func(context.Context) func()
 	chainNamer  func(xchain.ChainVersion) string
 	network     netconf.ID
@@ -93,6 +95,10 @@ func (p Provider) WindowCompare(ctx context.Context, chainVer xchain.ChainVersio
 func (p Provider) ValidatorSet(ctx context.Context, valSetID uint64) ([]cchain.Validator, bool, error) {
 	resp, ok, err := p.valset(ctx, valSetID, false)
 	return resp.Validators, ok, err
+}
+
+func (p Provider) GenesisFiles(ctx context.Context) (execution []byte, consensus []byte, err error) { //nolint:nonamedreturns // Disambiguate identical return types
+	return p.genesisFunc(ctx)
 }
 
 // Subscribe implements cchain.Provider.

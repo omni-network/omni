@@ -242,3 +242,17 @@ func mustSimnetChain(id uint64, shard xchain.ShardID) Chain {
 		Shards:      []xchain.ShardID{shard},
 	}
 }
+
+// SetEphemeralGenesis sets the ephemeral genesis files.
+func SetEphemeralGenesis(network ID, execution, consensus []byte) error {
+	if network.IsProtected() {
+		return errors.New("cannot set ephemeral genesis for protected network", "network", network)
+	}
+
+	static := statics[network]
+	static.ExecutionGenesisJSON = execution
+	static.ConsensusGenesisJSON = consensus
+	statics[network] = static
+
+	return nil
+}

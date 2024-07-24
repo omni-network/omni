@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package halo.genutil.genserve;
+
+option go_package = "halo/genutil/genserve";
+
+// Query defines the gRPC querier service.
+service Query {
+  rpc Genesis(GenesisRequest) returns (GenesisResponse) {}
+}
+
+message GenesisRequest {}
+
+message GenesisResponse{
+  bytes consensus_genesis_json = 1;
+  bytes execution_genesis_json = 2;
+}

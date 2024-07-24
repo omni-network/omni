@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"math/rand/v2"
 	"os"
 	"path/filepath"
@@ -184,7 +183,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	}
 
 	// Connect to RPC server
-	rpcServer := fmt.Sprintf("https://consensus.%s.omni.network", network)
+	rpcServer := network.Static().ConsensusRPC()
 	rpcCl, err := rpchttp.New(rpcServer, "/websocket")
 	if err != nil {
 		return errors.Wrap(err, "create rpc client")
