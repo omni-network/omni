@@ -18,7 +18,7 @@
  "Comet": {
   "Version": "0.38.10",
   "RootDir": "foo",
-  "ProxyApp": "tcp://127.0.0.1:26658",
+  "ProxyApp": "",
   "Moniker": "testmoniker",
   "DBBackend": "goleveldb",
   "DBPath": "data",
@@ -29,7 +29,7 @@
   "PrivValidatorState": "data/priv_validator_state.json",
   "PrivValidatorListenAddr": "",
   "NodeKey": "config/node_key.json",
-  "ABCI": "socket",
+  "ABCI": "",
   "FilterPeers": false,
   "RPC": {
    "RootDir": "foo",

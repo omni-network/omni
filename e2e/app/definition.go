@@ -342,7 +342,9 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 			return types.Testnet{}, err
 		}
 
-		en := enode.NewV4(&nodeKey.PublicKey, inst.IPAddress, 30303, 30303)
+		ip := advertisedIP(manifest.Network, mode, inst.IPAddress, inst.ExtIPAddress)
+
+		en := enode.NewV4(&nodeKey.PublicKey, ip, 30303, 30303)
 
 		internalIP := inst.IPAddress.String()
 		if infd.Provider == docker.ProviderName {
@@ -352,7 +354,7 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 		omniEVMS = append(omniEVMS, types.OmniEVM{
 			Chain:        types.OmniEVMByNetwork(manifest.Network),
 			InstanceName: name,
-			AdvertisedIP: advertisedIP(manifest.Network, mode, inst.IPAddress, inst.ExtIPAddress),
+			AdvertisedIP: ip,
 			ProxyPort:    inst.Port,
 			InternalRPC:  fmt.Sprintf("http://%s:8545", internalIP),
 			ExternalRPC:  fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),

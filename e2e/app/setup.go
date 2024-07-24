@@ -231,12 +231,13 @@ func writeAnvilState(testnet types.Testnet) error {
 }
 
 // MakeConfig generates a CometBFT config for a node.
-//
-//nolint:lll // CometBFT super long names :(
 func MakeConfig(network netconf.ID, node *e2e.Node, nodeDir string) (*config.Config, error) {
+	if node.ABCIProtocol != e2e.ProtocolBuiltin {
+		return nil, errors.New("only Builtin ABCI is supported")
+	}
+
 	cfg := halocmd.DefaultCometConfig(nodeDir)
 	cfg.Moniker = node.Name
-	cfg.ProxyApp = AppAddressTCP
 	cfg.RPC.ListenAddress = "tcp://0.0.0.0:26657"
 	cfg.RPC.PprofListenAddress = ":6060"
 	cfg.P2P.ExternalAddress = fmt.Sprintf("tcp://%v:26656", advertisedIP(network, node.Mode, node.InternalIP, node.ExternalIP))
@@ -244,23 +245,6 @@ func MakeConfig(network netconf.ID, node *e2e.Node, nodeDir string) (*config.Con
 	cfg.DBBackend = node.Database
 	cfg.StateSync.DiscoveryTime = 5 * time.Second
 	cfg.BlockSync.Version = node.BlockSyncVersion
-	cfg.Mempool.ExperimentalMaxGossipConnectionsToNonPersistentPeers = int(node.Testnet.ExperimentalMaxGossipConnectionsToNonPersistentPeers)
-	cfg.Mempool.ExperimentalMaxGossipConnectionsToPersistentPeers = int(node.Testnet.ExperimentalMaxGossipConnectionsToPersistentPeers)
-
-	switch node.ABCIProtocol {
-	case e2e.ProtocolUNIX:
-		cfg.ProxyApp = AppAddressUNIX
-	case e2e.ProtocolTCP:
-		cfg.ProxyApp = AppAddressTCP
-	case e2e.ProtocolGRPC:
-		cfg.ProxyApp = AppAddressTCP
-		cfg.ABCI = "grpc"
-	case e2e.ProtocolBuiltin, e2e.ProtocolBuiltinConnSync:
-		cfg.ProxyApp = ""
-		cfg.ABCI = ""
-	default:
-		return nil, errors.New("unexpected ABCI protocol")
-	}
 
 	// CometBFT errors if it does not have a privval key set up, regardless of whether
 	// it's actually needed (e.g. for remote KMS or non-validators). We set up a dummy
@@ -298,14 +282,14 @@ func MakeConfig(network netconf.ID, node *e2e.Node, nodeDir string) (*config.Con
 		if len(cfg.P2P.Seeds) > 0 {
 			cfg.P2P.Seeds += ","
 		}
-		cfg.P2P.Seeds += seed.AddressP2P(true)
+		cfg.P2P.Seeds += advertisedP2PAddr(network, seed)
 	}
 	cfg.P2P.PersistentPeers = ""
 	for _, peer := range node.PersistentPeers {
 		if len(cfg.P2P.PersistentPeers) > 0 {
 			cfg.P2P.PersistentPeers += ","
 		}
-		cfg.P2P.PersistentPeers += peer.AddressP2P(true)
+		cfg.P2P.PersistentPeers += advertisedP2PAddr(network, peer)
 	}
 
 	if node.Prometheus {
@@ -313,6 +297,14 @@ func MakeConfig(network netconf.ID, node *e2e.Node, nodeDir string) (*config.Con
 	}
 
 	return &cfg, nil
+}
+
+// advertisedP2PAddr returns the cometBFT network address <ID@IP:port> to advertise for a node.
+func advertisedP2PAddr(network netconf.ID, node *e2e.Node) string {
+	id := node.NodeKey.PubKey().Address().Bytes()
+	ip := advertisedIP(network, node.Mode, node.InternalIP, node.ExternalIP)
+
+	return fmt.Sprintf("%x@%s:26656", id, ip)
 }
 
 // advertisedIP returns the IP address to advertise for a node on a network.
