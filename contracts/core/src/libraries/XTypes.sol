@@ -11,7 +11,6 @@ library XTypes {
      * @notice A cross chain message - the product of an xcall. This matches the XMsg type used
      *        throughout Omni's cross-chain messaging protocol. Msg is used to construct and verify
      *        XSubmission merkle trees / proofs.
-     * @custom:field sourceChainId  Chain ID of the source chain
      * @custom:field destChainId    Chain ID of the destination chain
      * @custom:field shardId        Shard ID of the XStream (first byte is the confirmation level)
      * @custom:field offset         Monotonically incremented offset of Msg in source -> dest Stream
@@ -21,7 +20,6 @@ library XTypes {
      * @custom:field gasLimit       Gas limit to use for call execution on destination chain
      */
     struct Msg {
-        uint64 sourceChainId;
         uint64 destChainId;
         uint64 shardId;
         uint64 offset;
@@ -32,11 +30,11 @@ library XTypes {
     }
 
     /**
-     * @notice Trimmed version of Msg that presents the minimum required context for consuming xapps.
+     * @notice Msg context exposed during its execution to consuming xapps.
      * @custom:field sourceChainId  Chain ID of the source chain
      * @custom:field sender         msg.sender of xcall on source chain
      */
-    struct MsgShort {
+    struct MsgContext {
         uint64 sourceChainId;
         address sender;
     }

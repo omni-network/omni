@@ -27,7 +27,6 @@ export const encodeXBlockHeader = (xblockHeader: XBlockHeader) =>
 // JSON.stringify cannot serialized bigints, so we convert them to strings
 
 export const xMsgJson = (xmsg: XMsg) => ({
-  sourceChainId: xmsg.sourceChainId.toString(),
   destChainId: xmsg.destChainId.toString(),
   offset: xmsg.offset.toString(),
   sender: xmsg.sender,

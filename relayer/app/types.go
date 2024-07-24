@@ -41,14 +41,13 @@ func submissionToBinding(sub xchain.Submission) bindings.XSubmission {
 	msgs := make([]bindings.XMsg, 0, len(sub.Msgs))
 	for _, msg := range sub.Msgs {
 		msgs = append(msgs, bindings.XMsg{
-			SourceChainId: msg.SourceChainID,
-			DestChainId:   msg.DestChainID,
-			ShardId:       uint64(msg.ShardID),
-			Offset:        msg.StreamOffset,
-			Sender:        msg.SourceMsgSender,
-			To:            msg.DestAddress,
-			Data:          msg.Data,
-			GasLimit:      msg.DestGasLimit,
+			DestChainId: msg.DestChainID,
+			ShardId:     uint64(msg.ShardID),
+			Offset:      msg.StreamOffset,
+			Sender:      msg.SourceMsgSender,
+			To:          msg.DestAddress,
+			Data:        msg.Data,
+			GasLimit:    msg.DestGasLimit,
 		})
 	}
 

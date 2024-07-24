@@ -25,7 +25,6 @@ var (
 	})
 
 	msgABI = mustABITuple([]abi.ArgumentMarshaling{
-		{Name: "SourceChainID", Type: typUint64},
 		{Name: "DestChainID", Type: typUint64},
 		{Name: "ShardID", Type: typUint64},
 		{Name: "StreamOffset", Type: typUint64},

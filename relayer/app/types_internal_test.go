@@ -20,9 +20,10 @@ func Test_translateSubmission(t *testing.T) {
 	xsub := submissionToBinding(sub)
 	reversedSub := submissionFromBinding(xsub, sub.DestChainID)
 
-	// Zero TxHash for comparison since it isn't translated.
+	// Zero TxHash and SourceChainID for comparison since they aren't translated.
 	for i := range sub.Msgs {
 		sub.Msgs[i].TxHash = common.Hash{}
+		sub.Msgs[i].SourceChainID = 0
 	}
 
 	// Zero BlockHeight as we only submit BlockOffset
@@ -45,9 +46,8 @@ func submissionFromBinding(sub bindings.XTypesSubmission, destChainID uint64) xc
 		msgs = append(msgs, xchain.Msg{
 			MsgID: xchain.MsgID{
 				StreamID: xchain.StreamID{
-					SourceChainID: msg.SourceChainId,
-					DestChainID:   msg.DestChainId,
-					ShardID:       xchain.ShardID(msg.ShardId),
+					DestChainID: msg.DestChainId,
+					ShardID:     xchain.ShardID(msg.ShardId),
 				},
 				StreamOffset: msg.Offset,
 			},

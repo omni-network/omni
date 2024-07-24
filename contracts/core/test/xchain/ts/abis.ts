@@ -22,7 +22,6 @@ export const xMsgParams = {
   name: 'msgs',
   type: 'tuple',
   components: [
-    { name: 'sourceChainId', type: 'uint64' },
     { name: 'destChainId', type: 'uint64' },
     { name: 'shardId', type: 'uint64' },
     { name: 'offset', type: 'uint64' },

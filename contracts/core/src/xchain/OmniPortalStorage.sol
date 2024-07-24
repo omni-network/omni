@@ -103,5 +103,5 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
      * @dev Internal state + public getter preferred over public state with default getter
      *      so that we can use the XMsg struct type in the interface.
      */
-    XTypes.MsgShort internal _xmsg;
+    XTypes.MsgContext internal _xmsg;
 }

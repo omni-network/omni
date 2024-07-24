@@ -33,7 +33,7 @@ contract MockPortal is IOmniPortal, OmniPortalConstants {
     mapping(uint64 => bool) public isSupportedShard;
     mapping(uint64 => bool) public isSupportedDest;
 
-    XTypes.MsgShort internal _xmsg;
+    XTypes.MsgContext internal _xmsg;
 
     constructor() {
         chainId = uint64(block.chainid);
@@ -65,7 +65,7 @@ contract MockPortal is IOmniPortal, OmniPortalConstants {
         return IFeeOracle(feeOracle).feeFor(destChainId, data, gasLimit);
     }
 
-    function xmsg() external view returns (XTypes.MsgShort memory) {
+    function xmsg() external view returns (XTypes.MsgContext memory) {
         return _xmsg;
     }
 
@@ -85,7 +85,7 @@ contract MockPortal is IOmniPortal, OmniPortalConstants {
         require(gasLimit <= xmsgMaxGasLimit, "OmniPortal: gasLimit too high");
         require(gasLimit >= xmsgMinGasLimit, "OmniPortal: gasLimit too low");
 
-        _xmsg = XTypes.MsgShort({ sourceChainId: sourceChainId, sender: sender });
+        _xmsg = XTypes.MsgContext({ sourceChainId: sourceChainId, sender: sender });
 
         gasUsed = gasleft();
         (bool success, bytes memory returnData) = to.call{ gas: gasLimit }(data);

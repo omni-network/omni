@@ -33,19 +33,19 @@ contract Utils is Test, Events, Fixtures {
     }
 
     /// _dev Assert that the logs are XReceipt events with the correct fields.
-    function assertReceipts(Vm.Log[] memory logs, XTypes.Msg[] memory xmsgs) internal {
+    function assertReceipts(Vm.Log[] memory logs, XTypes.Msg[] memory xmsgs, uint64 sourceChainId) internal {
         assertEq(logs.length, xmsgs.length);
         for (uint256 i = 0; i < logs.length; i++) {
-            assertReceipt(logs[i], xmsgs[i]);
+            assertReceipt(logs[i], xmsgs[i], sourceChainId);
         }
     }
 
     /// @dev Assert that the log is an XReceipt event with the correct fields.
     ///      We use this helper rather than vm.expectEmit(), because gasUsed is difficult to predict.
-    function assertReceipt(Vm.Log memory log, XTypes.Msg memory xmsg) internal {
+    function assertReceipt(Vm.Log memory log, XTypes.Msg memory xmsg, uint64 sourceChainId) internal {
         TestXTypes.Receipt memory receipt = parseReceipt(log);
 
-        assertEq(receipt.sourceChainId, xmsg.sourceChainId);
+        assertEq(receipt.sourceChainId, sourceChainId);
         assertEq(receipt.offset, xmsg.offset);
         assertEq(receipt.relayer, relayer);
         assertEq(

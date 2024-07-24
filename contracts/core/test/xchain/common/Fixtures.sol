@@ -259,7 +259,6 @@ contract Fixtures is CommonBase, StdCheats {
     function _addValidatorSet_xblock(uint64 valSetId) internal view returns (TestXTypes.Block memory) {
         XTypes.Msg[] memory xmsgs = new XTypes.Msg[](1);
         xmsgs[0] = XTypes.Msg({
-            sourceChainId: omniCChainID,
             destChainId: broadcastChainId,
             shardId: ConfLevel.toBroadcastShard(ConfLevel.Finalized),
             offset: valSetId,
@@ -287,7 +286,7 @@ contract Fixtures is CommonBase, StdCheats {
 
         for (uint256 i = 0; i < numGuzzles; i++) {
             // all guzzles from chain a to this chain
-            xmsgs[i] = _guzzle(chainAId, thisChainId, offset, 100_000);
+            xmsgs[i] = _guzzle(thisChainId, offset, 100_000);
             offset += 1;
         }
 
@@ -306,7 +305,6 @@ contract Fixtures is CommonBase, StdCheats {
     function _reentrancy_xblock() internal view returns (TestXTypes.Block memory) {
         XTypes.Msg[] memory xmsgs = new XTypes.Msg[](1);
         xmsgs[0] = XTypes.Msg({
-            sourceChainId: chainAId,
             destChainId: thisChainId,
             shardId: uint64(ConfLevel.Finalized),
             offset: 1,
@@ -350,7 +348,6 @@ contract Fixtures is CommonBase, StdCheats {
         returns (XTypes.Msg memory)
     {
         return XTypes.Msg({
-            sourceChainId: sourceChainId,
             destChainId: destChainId,
             shardId: uint64(ConfLevel.Finalized),
             offset: offset,
@@ -377,7 +374,6 @@ contract Fixtures is CommonBase, StdCheats {
         returns (XTypes.Msg memory)
     {
         return XTypes.Msg({
-            sourceChainId: sourceChainId,
             destChainId: destChainId,
             shardId: uint64(ConfLevel.Finalized),
             offset: offset,
@@ -389,13 +385,8 @@ contract Fixtures is CommonBase, StdCheats {
     }
 
     /// @dev Create a GasGuzzler.guzzle() XMsg
-    function _guzzle(uint64 sourceChainId, uint64 destChainId, uint64 offset, uint64 gasLimit)
-        internal
-        view
-        returns (XTypes.Msg memory)
-    {
+    function _guzzle(uint64 destChainId, uint64 offset, uint64 gasLimit) internal view returns (XTypes.Msg memory) {
         return XTypes.Msg({
-            sourceChainId: sourceChainId,
             destChainId: destChainId,
             shardId: uint64(ConfLevel.Finalized),
             offset: offset,

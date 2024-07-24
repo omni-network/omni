@@ -210,7 +210,7 @@ contract OmniPortal is
      *          - xmsg().sourceChainId  == 0
      *          - xmsg().sender         == address(0)
      */
-    function xmsg() external view returns (XTypes.MsgShort memory) {
+    function xmsg() external view returns (XTypes.MsgContext memory) {
         return _xmsg;
     }
 
@@ -226,12 +226,11 @@ contract OmniPortal is
      * @dev Verify if an XMsg is next in its XStream, execute it, increment inXMsgOffset, emit an XReceipt event
      */
     function _exec(XTypes.BlockHeader memory xheader, XTypes.Msg calldata xmsg_) internal {
-        uint64 sourceChainId = xmsg_.sourceChainId;
+        uint64 sourceChainId = xheader.sourceChainId;
         uint64 destChainId = xmsg_.destChainId;
         uint64 shardId = xmsg_.shardId;
         uint64 offset = xmsg_.offset;
 
-        require(sourceChainId == xheader.sourceChainId, "OmniPortal: wrong source chain"); // TODO: we can remove xmsg sourceChainId, and instead just used xheader.sourceChainId
         require(destChainId == chainId() || destChainId == BroadcastChainId, "OmniPortal: wrong dest chain");
         require(offset == inXMsgOffset[sourceChainId][shardId] + 1, "OmniPortal: wrong offset");
 
@@ -265,7 +264,7 @@ contract OmniPortal is
         }
 
         // set _xmsg to the one we're executing, allowing external contracts to query the current xmsg via xmsg()
-        _xmsg = XTypes.MsgShort(sourceChainId, xmsg_.sender);
+        _xmsg = XTypes.MsgContext(sourceChainId, xmsg_.sender);
 
         (bool success, bytes memory result, uint256 gasUsed) = xmsg_.to == VirtualPortalAddress // calls to VirtualPortalAddress are syscalls
             ? _syscall(xmsg_.data)
