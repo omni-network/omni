@@ -435,17 +435,15 @@ func getEarliestStoreHeight(ctx context.Context, cl atypes.QueryClient, chainVer
 	// However, as far as I can tell, Cosmos doesn't ever set this value, it's stubbed out with a TODO: https://github.com/cosmos/cosmos-sdk/blob/main/client/grpc/node/service.go#L58
 	// For now, we just very inefficiently walk forwards in time hoping to find the earliest commit info
 
-	var i uint64
-	for i = 0; ; i++ {
-		_, _, err := queryEarliestAttestation(ctx, cl, chainVer, startPoint+i)
+	for height := startPoint; ; height++ {
+		_, _, err := queryEarliestAttestation(ctx, cl, chainVer, height)
 		if IsErrHistoryPruned(err) {
 			continue
-		}
-		if err != nil {
+		} else if err != nil {
 			return 0, errors.Wrap(err, "querying earliest attestation")
 		}
 
-		return startPoint + i, nil
+		return height, nil
 	}
 }
 
