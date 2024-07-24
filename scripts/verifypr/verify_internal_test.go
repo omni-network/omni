@@ -169,6 +169,23 @@ Adds two github actions:
 
 issue: none`,
 		},
+		{
+			name: "valid space around none issue footer",
+			commit: `ci(*): foo baz bar
+
+foo bar baz
+
+issue:  none `,
+		},
+		{
+			name: "valid multiple footers",
+			commit: `ci(*): foo baz bar
+
+foo bar baz
+
+more: stuff
+issue:  none `,
+		},
 	}
 
 	for _, tt := range tests {
