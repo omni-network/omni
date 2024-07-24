@@ -13,7 +13,7 @@ import (
 
 const (
 	defaultTemplate       = "hello-world-template"
-	defaultTemplateCommit = "f4002e9" // Commit hash of the template, update as needed
+	defaultTemplateCommit = "main" // Commit hash of the template, update as needed
 )
 
 func newDeveloperCmds() *cobra.Command {
