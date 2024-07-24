@@ -2,6 +2,7 @@ package ethclient
 
 import (
 	"context"
+	"math/big"
 
 	"github.com/omni-network/omni/lib/errors"
 
@@ -96,20 +97,18 @@ func (w Wrapper) HeaderByType(ctx context.Context, typ HeadType) (*types.Header,
 	const endpoint = "header_by_type"
 	defer latency(w.chain, endpoint)()
 
-	var header *types.Header
-	err := w.cl.Client().CallContext(
-		ctx,
-		&header,
-		"eth_getBlockByNumber",
-		typ.String(),
-		false,
-	)
-	if err != nil {
-		incError(w.chain, endpoint)
-		return nil, errors.Wrap(err, "get block")
+	var bn rpc.BlockNumber
+	if err := bn.UnmarshalJSON([]byte(typ.String())); err != nil {
+		return nil, errors.Wrap(err, "unmarshal head type")
 	}
 
-	return header, nil
+	header, err := w.cl.HeaderByNumber(ctx, big.NewInt(int64(bn)))
+	if err != nil {
+		incError(w.chain, endpoint)
+		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
+	}
+
+	return header, err
 }
 
 // SetHead sets the current head of the local chain by block number.
