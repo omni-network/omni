@@ -4,16 +4,18 @@ Omni's core protocol smart contracts.
 
 ## Contents
 
-- `src/`
-    - `xchain/`     : Cross-chain protocol smart contracts (incl OmniPortal)
-    - `octane/`     : Octane protocol smart contracts
-    - `interfaces/` : All interfaces
-    - `libraries/`  : All libraries
-    - `pkg/`        : Exported utility contracts
-    - `utils/`      : Internal utility contracts
-    - `token/`      : Token & bridge contracts
-    - `deploy/`     : Deployment utilities
-    - `examples/`   : Example cross-chain contracts
+<pre>
+└── <a href="./src/">src/</a>
+  ├── <a href="./xchain/">xchain/</a>: Cross-chain protocol smart contracts (incl OmniPortal)
+  ├── <a href="./octane/">octane/</a>: Octane protocol smart contracts
+  ├── <a href="./interfaces/">interfaces/</a>: All interfaces
+  ├── <a href="./libraries/">libraries/</a>: All libraries
+  ├── <a href="./pkg/">pkg/</a>: Exported utility contracts
+  ├── <a href="./utils/">utils/</a>: Internal utility contracts
+  ├── <a href="./token/">token/</a>: Token & bridge contracts
+  ├── <a href="./deploy/">deploy/</a>: Deployment utilities
+  └── <a href="./examples/">examples/</a>: Example cross-chain contracts
+</pre>
 
 ## Development
 

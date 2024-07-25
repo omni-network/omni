@@ -4,10 +4,13 @@ Omni smart contracts and related software.
 
 ## Contents
 
-- `core/`: Core protocol smart contracts
-- `avs/`: Eigen AVS smart contracts
-- `bindings/`: Go smark contract bindings
-- `allocs/`: Predeploy allocations
+<pre>
+├── <a href="./core/">core/</a>: Core protocol smart contracts.
+├── <a href="./avs/">avs/</a>: Eigen AVS smart contracts.
+├── <a href="./bindings/">bindings/</a>: Go smart contract bindings.
+├── <a href="./allocs/">allocs/</a>: Predeploy allocations.
+</pre>
+
 
 ## Build
 
