@@ -12,18 +12,17 @@ build: version ## Build contracts.
 	(cd core && forge build)
 	(cd avs && forge build)
 
+
+.PHONY: all
+all: build bindings allocs ## Build contracts, generate bindings and predeploy allocations.
+
+
 CORE_CONTRACTS := OmniPortal FeeOracleV1 Create3 TransparentUpgradeableProxy \
 			Staking Slashing OmniBridgeL1 OmniBridgeNative Omni WOmni \
 			PortalRegistry AllocPredeploys PingPong ProxyAdmin Admin
 
 AVS_CONTRACTS := OmniAVS DelegationManager StrategyManager StrategyBase AVSDirectory \
 			avs/test/common/MockERC20.sol:MockERC20
-
-.PHONY: all
-all: build bindings allocs
-
-.PHONY: all
-all: build bindings allocs
 
 .PHONY: bindings
 bindings: check-abigen-version build ## Generate golang contract bindings.
@@ -33,7 +32,7 @@ bindings: check-abigen-version build ## Generate golang contract bindings.
 	go run ./bindings/scripts/commenttypes.go -- bindings/avsdirectory.go ISignatureUtilsSignatureWithSaltAndExpiry
 
 .PHONY: allocs
-allocs: bindings
+allocs: bindings ## Generate predeploy allocations.
 	go run ./allocs/scripts/genallocs.go
 
 .PHONY: check-abigen-version
