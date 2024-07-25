@@ -32,6 +32,6 @@ func TestCreateVerifyVotes(t *testing.T) {
 	require.Equal(t, addr, common.Address(att.Signature.ValidatorAddress))
 
 	// Verify the attestation
-	err = att.Verify()
+	err = att.Verify(block.ConsensusChainID)
 	require.NoError(t, err)
 }

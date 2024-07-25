@@ -536,7 +536,7 @@ func (k *Keeper) listAllAttestations(ctx context.Context, version xchain.ChainVe
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	consensusID, err := netconf.ConsensusChainIDStr2Uint64(sdkCtx.ChainID())
 	if err != nil {
-		return nil, errors.Wrap(err, "parse chain id")
+		return nil, errors.Wrap(err, "get consensus chain id")
 	}
 
 	idx := AttestationStatusChainIdConfLevelBlockOffsetIndexKey{}.WithStatusChainIdConfLevelBlockOffset(uint32(status), version.ID, uint32(version.ConfLevel), blockOffset)
@@ -743,9 +743,14 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 		return respReject, nil
 	}
 
+	cchainID, err := netconf.ConsensusChainIDStr2Uint64(ctx.ChainID())
+	if err != nil {
+		return nil, errors.Wrap(err, "parse chain id")
+	}
+
 	duplicate := make(map[types.VoteSource]bool)
 	for _, vote := range votes.Votes {
-		if err := vote.Verify(); err != nil {
+		if err := vote.Verify(cchainID); err != nil {
 			log.Warn(ctx, "Rejecting invalid vote", err)
 			return respReject, nil
 		}
@@ -849,8 +854,13 @@ func (k *Keeper) windowCompare(ctx context.Context, chainVer xchain.ChainVersion
 func (k *Keeper) verifyAggVotes(ctx context.Context, valset ValSet, aggs []*types.AggVote) error {
 	duplicate := make(map[types.VoteSource]bool)    // Detects duplicate aggregate votes.
 	countsPerVal := make(map[common.Address]uint64) // Enforce vote extension limit.
+	cchainID, err := netconf.ConsensusChainIDStr2Uint64(sdk.UnwrapSDKContext(ctx).ChainID())
+	if err != nil {
+		return errors.Wrap(err, "get consensus chain id")
+	}
+
 	for _, agg := range aggs {
-		if err := agg.Verify(); err != nil {
+		if err := agg.Verify(cchainID); err != nil {
 			return errors.Wrap(err, "verify aggregate vote")
 		}
 		errAttrs := []any{"chain", k.namer(agg.BlockHeader.XChainVersion()), "offset", agg.BlockHeader.Offset}

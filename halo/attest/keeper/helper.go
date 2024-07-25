@@ -19,14 +19,15 @@ func (a *Attestation) IsFuzzy() bool {
 	return xchain.ConfLevel(a.GetConfLevel()).IsFuzzy()
 }
 
-func AttestationFromDB(att *Attestation, sigs []*Signature) *types.Attestation {
+func AttestationFromDB(att *Attestation, consensusChainID uint64, sigs []*Signature) *types.Attestation {
 	return &types.Attestation{
 		BlockHeader: &types.BlockHeader{
-			SourceChainId: att.GetChainId(),
-			ConfLevel:     att.GetConfLevel(),
-			Offset:        att.GetBlockOffset(),
-			Height:        att.GetBlockHeight(),
-			Hash:          att.GetBlockHash(),
+			SourceChainId:    att.GetChainId(),
+			ConsensusChainId: consensusChainID,
+			ConfLevel:        att.GetConfLevel(),
+			Offset:           att.GetBlockOffset(),
+			Height:           att.GetBlockHeight(),
+			Hash:             att.GetBlockHash(),
 		},
 		ValidatorSetId: att.GetValidatorSetId(),
 		MsgRoot:        att.GetMsgRoot(),

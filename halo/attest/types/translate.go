@@ -21,10 +21,10 @@ func (h *WindowCompareRequest) XChainVersion() xchain.ChainVersion {
 }
 
 // AttestationsFromProto converts a slice of protobuf Attestations to a slice of xchain.Attestations.
-func AttestationsFromProto(atts []*Attestation) ([]xchain.Attestation, error) {
+func AttestationsFromProto(atts []*Attestation, cchainID uint64) ([]xchain.Attestation, error) {
 	resp := make([]xchain.Attestation, 0, len(atts))
 	for _, attpb := range atts {
-		att, err := AttestationFromProto(attpb)
+		att, err := AttestationFromProto(attpb, cchainID)
 		if err != nil {
 			return nil, err
 		}
@@ -35,8 +35,8 @@ func AttestationsFromProto(atts []*Attestation) ([]xchain.Attestation, error) {
 }
 
 // AttestationFromProto converts a protobuf Attestation to a xchain.Attestation.
-func AttestationFromProto(att *Attestation) (xchain.Attestation, error) {
-	if err := att.Verify(); err != nil {
+func AttestationFromProto(att *Attestation, cchainID uint64) (xchain.Attestation, error) {
+	if err := att.Verify(cchainID); err != nil {
 		return xchain.Attestation{}, err
 	}
 

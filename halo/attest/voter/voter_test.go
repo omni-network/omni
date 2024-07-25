@@ -58,10 +58,11 @@ func TestRunner(t *testing.T) {
 		setIsVal(t, v, pk, isVal)
 		err := sub.callback(ctx, xchain.Block{
 			BlockHeader: xchain.BlockHeader{
-				SourceChainID: chain1,
-				ConfLevel:     conf,
-				BlockOffset:   height,
-				BlockHeight:   height,
+				SourceChainID:    chain1,
+				ConsensusChainID: network.ID.Static().OmniConsensusChainIDUint64(),
+				ConfLevel:        conf,
+				BlockOffset:      height,
+				BlockHeight:      height,
 			},
 			Msgs: []xchain.Msg{{}}, // Non-empty XBlock should always be attested to
 		})
@@ -147,7 +148,7 @@ func TestVoteWindow(t *testing.T) {
 	v.Start(ctx)
 	expectSubscriptions(t, prov, chain1, 0)
 
-	w := &wrappedVoter{v: v, f: fuzz.New().NilChance(0).NumElements(1, 64)}
+	w := &wrappedVoter{v: v, f: fuzz.New().NilChance(0).NumElements(1, 64), consensusChainID: network.ID.Static().OmniConsensusChainIDUint64()}
 
 	// Add 1,2,3
 	w.Add(t, chain1, 1)
@@ -225,7 +226,7 @@ func TestVoter(t *testing.T) {
 			chain3, 0,
 		)
 
-		return &wrappedVoter{v: v, f: fuzzer}
+		return &wrappedVoter{v: v, f: fuzzer, consensusChainID: network.ID.Static().OmniConsensusChainIDUint64()}
 	}
 
 	v := reloadVoter(t, 0, 0)
@@ -332,8 +333,9 @@ var _ types.VoterDeps = stubDeps{}
 var _ types.VoterDeps = new(mockDeps)
 
 type wrappedVoter struct {
-	v *voter.Voter
-	f *fuzz.Fuzzer
+	v                *voter.Voter
+	f                *fuzz.Fuzzer
+	consensusChainID uint64
 }
 
 func (w *wrappedVoter) Add(t *testing.T, chainID, offset uint64) {
@@ -341,10 +343,11 @@ func (w *wrappedVoter) Add(t *testing.T, chainID, offset uint64) {
 	var block xchain.Block
 	w.f.Fuzz(&block)
 	block.BlockHeader = xchain.BlockHeader{
-		SourceChainID: chainID,
-		ConfLevel:     xchain.ConfFinalized,
-		BlockOffset:   offset,
-		BlockHash:     common.Hash{},
+		SourceChainID:    chainID,
+		ConsensusChainID: w.consensusChainID,
+		ConfLevel:        xchain.ConfFinalized,
+		BlockOffset:      offset,
+		BlockHash:        common.Hash{},
 	}
 
 	err := w.v.Vote(block, false)
@@ -355,10 +358,11 @@ func (w *wrappedVoter) Propose(t *testing.T, chainID, offset uint64) {
 	t.Helper()
 
 	header := &types.BlockHeader{
-		SourceChainId: chainID,
-		ConfLevel:     uint32(xchain.ConfFinalized),
-		Offset:        offset,
-		Hash:          common.Hash{}.Bytes(),
+		SourceChainId:    chainID,
+		ConsensusChainId: w.consensusChainID,
+		ConfLevel:        uint32(xchain.ConfFinalized),
+		Offset:           offset,
+		Hash:             common.Hash{}.Bytes(),
 	}
 
 	err := w.v.SetProposed([]*types.BlockHeader{header})
@@ -369,10 +373,11 @@ func (w *wrappedVoter) Commit(t *testing.T, chainID, offset uint64) {
 	t.Helper()
 
 	header := &types.BlockHeader{
-		SourceChainId: chainID,
-		ConfLevel:     uint32(xchain.ConfFinalized),
-		Offset:        offset,
-		Hash:          common.Hash{}.Bytes(),
+		SourceChainId:    chainID,
+		ConsensusChainId: w.consensusChainID,
+		ConfLevel:        uint32(xchain.ConfFinalized),
+		Offset:           offset,
+		Hash:             common.Hash{}.Bytes(),
 	}
 
 	err := w.v.SetCommitted([]*types.BlockHeader{header})
@@ -400,9 +405,10 @@ func (w *wrappedVoter) AddErr(t *testing.T, chainID, offset uint64) {
 	var block xchain.Block
 	w.f.Fuzz(&block)
 	block.BlockHeader = xchain.BlockHeader{
-		SourceChainID: chainID,
-		ConfLevel:     xchain.ConfFinalized,
-		BlockOffset:   offset,
+		SourceChainID:    chainID,
+		ConsensusChainID: w.consensusChainID,
+		ConfLevel:        xchain.ConfFinalized,
+		BlockOffset:      offset,
 	}
 
 	err := w.v.Vote(block, false)

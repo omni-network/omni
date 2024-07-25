@@ -75,7 +75,7 @@ func LoadVoter(privKey crypto.PrivKey, path string, provider xchain.Provider, de
 		return nil, errors.New("invalid private key")
 	}
 
-	s, err := loadState(path)
+	s, err := loadState(path, network.ID.Static().OmniConsensusChainIDUint64())
 	if err != nil {
 		return nil, err
 	}
@@ -277,7 +277,7 @@ func (v *Voter) Vote(block xchain.Block, allowSkip bool) error {
 	vote, err := CreateVote(v.privKey, block)
 	if err != nil {
 		return err
-	} else if err := vote.Verify(); err != nil {
+	} else if err := vote.Verify(v.network.ID.Static().OmniConsensusChainIDUint64()); err != nil {
 		return errors.Wrap(err, "verify vote")
 	}
 
@@ -569,7 +569,7 @@ type stateJSON struct {
 }
 
 // loadState loads a path state from the given path.
-func loadState(path string) (stateJSON, error) {
+func loadState(path string, cchainID uint64) (stateJSON, error) {
 	bz, err := os.ReadFile(path)
 	if err != nil {
 		return stateJSON{}, errors.Wrap(err, "read state path")
@@ -583,7 +583,7 @@ func loadState(path string) (stateJSON, error) {
 	verify := func(voteSets ...[]*types.Vote) error {
 		for _, votes := range voteSets {
 			for _, vote := range votes {
-				if err := vote.Verify(); err != nil {
+				if err := vote.Verify(cchainID); err != nil {
 					return errors.Wrap(err, "verify vote")
 				}
 			}

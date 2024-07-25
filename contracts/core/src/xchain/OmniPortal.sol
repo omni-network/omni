@@ -173,7 +173,7 @@ contract OmniPortal is
         XTypes.BlockHeader calldata xheader = xsub.blockHeader;
         uint64 valSetId = xsub.validatorSetId;
 
-        require(xheader.consensusChainId == omniCChainId, "OmniPortal: wrong consensus chain");
+        require(xheader.consensusChainId == omniCChainId, "OmniPortal: wrong cchain ID");
         require(xmsgs.length > 0, "OmniPortal: no xmsgs");
         require(valSetTotalPower[valSetId] > 0, "OmniPortal: unknown val set");
         require(valSetId >= _minValSet(), "OmniPortal: old val set");

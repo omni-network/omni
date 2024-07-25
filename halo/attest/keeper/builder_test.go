@@ -111,11 +111,12 @@ type AggVoteBuilder struct {
 func (b *AggVoteBuilder) Default() *AggVoteBuilder {
 	b.vote = &types.AggVote{
 		BlockHeader: &types.BlockHeader{
-			SourceChainId: defaultChainID,
-			Offset:        defaultOffset,
-			Height:        defaultHeight,
-			Hash:          blockHashes[0].Bytes(),
-			ConfLevel:     defaultConfLevel,
+			SourceChainId:    defaultChainID,
+			ConsensusChainId: consensusID,
+			Offset:           defaultOffset,
+			Height:           defaultHeight,
+			Hash:             blockHashes[0].Bytes(),
+			ConfLevel:        defaultConfLevel,
 		},
 		MsgRoot:    msgRoot.Bytes(),
 		Signatures: sigsTuples(val1, val2),
