@@ -89,10 +89,11 @@ make devnet-clean
 ## Directory Structure
 
 <pre>
-├── <a href="./contracts/">contracts</a>: Solidity contracts, bindings, and testing for the Omni protocol.
-│ ├── <a href="./contracts/bindings/">bindings</a>: Go bindings for smart contracts.
-│ ├── <a href="./contracts/src/">src</a>: Solidity source files for the protocol's smart contracts.
-│ └── <a href="./contracts/test/">test</a>: Tests for smart contracts.
+├── <a href="./contracts/">contracts</a>: Solidity contracts and related software.
+│ ├── <a href="./core/">core/</a>: Core protocol smart contracts.
+│ ├── <a href="./avs/">avs/</a>: Eigen AVS smart contracts.
+│ ├── <a href="./bindings/">bindings/</a>: Go smart contract bindings.
+│ └── <a href="./allocs/">allocs/</a>: Predeploy allocations.
 ├── <a href="./docs/">docs</a>: Documentation resources, including images and diagrams.
 ├── <a href="./halo/">halo</a>: The Halo instance, including application logic and attestation mechanisms.
 │ ├── <a href="./halo/app/">app</a>: Application logic for Halo.
