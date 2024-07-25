@@ -127,6 +127,11 @@ func testCProvider(t *testing.T, ctx context.Context, cprov cprovider.Provider) 
 	_, ok, err = cprov.ValidatorSet(ctx, 33)
 	require.NoError(t, err)
 	require.False(t, ok)
+
+	exec, cons, err := cprov.GenesisFiles(ctx)
+	require.NoError(t, err)
+	require.Nil(t, exec)
+	require.NotNil(t, cons)
 }
 
 func setupSimnet(t *testing.T) haloapp.Config {

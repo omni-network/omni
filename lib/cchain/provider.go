@@ -49,6 +49,9 @@ type Provider interface {
 	// XBlock returns the validator sync xblock for the given height/offset (or latest) or false if none exist or an error.
 	XBlock(ctx context.Context, heightAndOffset uint64, latest bool) (xchain.Block, bool, error)
 
+	// GenesisFiles returns the execution (optional) and consensus genesis files.
+	GenesisFiles(ctx context.Context) (execution []byte, consensus []byte, err error)
+
 	// CometClient returns the underlying cometBFT RPC client.
 	CometClient() rpcclient.Client
 }

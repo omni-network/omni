@@ -34,7 +34,7 @@ do
 done
 
 echo "Generating gogo protos for cosmos module types"
-for DIR in halo/*/types/ octane/*/types/
+for DIR in halo/*/types/ octane/*/types/ halo/genutil/genserve
 do
   bufgen gogo "${DIR}"
 done

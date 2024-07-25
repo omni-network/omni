@@ -69,6 +69,10 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	if err != nil {
 		return errors.Wrap(err, "make genesis")
 	}
+	gethGenesisBz, err := json.MarshalIndent(gethGenesis, "", "  ")
+	if err != nil {
+		return errors.Wrap(err, "marshal genesis")
+	}
 	if err := geth.WriteAllConfig(def.Testnet, gethGenesis); err != nil {
 		return err
 	}
@@ -150,6 +154,9 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 		err = cmtGenesis.SaveAs(filepath.Join(nodeDir, "config", "genesis.json"))
 		if err != nil {
 			return errors.Wrap(err, "write genesis")
+		}
+		if err := os.WriteFile(filepath.Join(nodeDir, "config", "execution_genesis.json"), gethGenesisBz, 0o644); err != nil {
+			return errors.Wrap(err, "write execution genesis")
 		}
 
 		err = (&p2p.NodeKey{PrivKey: node.NodeKey}).SaveAs(filepath.Join(nodeDir, "config", "node_key.json"))

@@ -22,11 +22,12 @@ import (
 )
 
 const (
-	configFile      = "halo.toml"
-	dataDir         = "data"
-	configDir       = "config"
-	snapshotDataDir = "snapshots"
-	voterStateFile  = "voter_state.json"
+	configFile           = "halo.toml"
+	dataDir              = "data"
+	configDir            = "config"
+	snapshotDataDir      = "snapshots"
+	voterStateFile       = "voter_state.json"
+	executionGenesisFile = "execution_genesis.json"
 
 	DefaultHomeDir            = "./halo" // Defaults to "halo" in current directory
 	defaultSnapshotInterval   = 1000     // Roughly once an hour (given 3s blocks)
@@ -93,6 +94,10 @@ func (c Config) AppStateDir() string {
 
 func (c Config) SnapshotDir() string {
 	return filepath.Join(c.DataDir(), snapshotDataDir)
+}
+
+func (c Config) ExecutionGenesisFile() string {
+	return filepath.Join(c.HomeDir, configDir, executionGenesisFile)
 }
 
 func (c Config) Verify() error {

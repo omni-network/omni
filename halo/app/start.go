@@ -2,10 +2,12 @@ package app
 
 import (
 	"context"
+	"os"
 	"time"
 
 	"github.com/omni-network/omni/halo/comet"
 	halocfg "github.com/omni-network/omni/halo/config"
+	"github.com/omni-network/omni/halo/genutil/genserve"
 	"github.com/omni-network/omni/lib/buildinfo"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
@@ -35,6 +37,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/server"
 	sdktelemetry "github.com/cosmos/cosmos-sdk/telemetry"
 	"github.com/cosmos/cosmos-sdk/types/mempool"
+	grpc1 "github.com/cosmos/gogoproto/grpc"
 )
 
 // Config wraps the halo (app) and comet (client) configurations.
@@ -136,6 +139,10 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 	)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "create app")
+	}
+
+	if err := registerGenesisServer(ctx, app.GRPCQueryRouter(), cfg); err != nil {
+		return nil, nil, err
 	}
 
 	app.EVMEngKeeper.SetBuildDelay(cfg.EVMBuildDelay)
@@ -347,6 +354,32 @@ func (burnEVMFees) VerifyFeeRecipient(address common.Address) error {
 	if address != burnAddress {
 		return errors.New("fee recipient not the burn address", "addr", address.Hex())
 	}
+
+	return nil
+}
+
+// registerGenesisServer registers a custom non-cosmos-sdk-module grpc query server that serves the consensus and execution layer genesis files.
+// This enables a trusted way to join an ephemeral network without well-known long-lived genesis files.
+func registerGenesisServer(ctx context.Context, s grpc1.Server, cfg Config) error {
+	if !cfg.Network.IsEphemeral() {
+		// Don't do this for protected networks since execution genesis is very big.
+		return nil
+	}
+
+	consensus, err := os.ReadFile(cfg.Comet.GenesisFile())
+	if err != nil {
+		return errors.Wrap(err, "read consensus genesis file") // This is expected to succeed
+	}
+
+	execution, err := os.ReadFile(cfg.ExecutionGenesisFile())
+	if os.IsNotExist(err) {
+		// This is optional feature, so not an error.
+		log.Info(ctx, "Not serving execution_genesis.json; file not in config folder")
+	} else if err != nil {
+		log.Warn(ctx, "Not serving execution_genesis.json file", err)
+	}
+
+	genserve.Register(s, execution, consensus)
 
 	return nil
 }
