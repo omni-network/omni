@@ -641,11 +641,8 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 	duplicate := make(map[types.VoteSource]bool)
 	var filtered []*types.Vote
 	for _, vote := range votes {
-		if ok, err := k.portalRegistry.SupportedChain(ctx, vote.BlockHeader.SourceChainId); err != nil {
-			return nil, errors.Wrap(err, "supported chain")
-		} else if !ok {
-			log.Warn(ctx, "Skipping own vote for unsupported chain", nil, "chain", k.namer(vote.BlockHeader.XChainVersion()))
-			continue
+		if err := checkSupportedChainAndConfLevel(ctx, k.portalRegistry, vote.BlockHeader.ChainId, vote.BlockHeader.ConfLevel); err != nil {
+			return nil, errors.Wrap(err, "check supported chain")
 		}
 
 		if duplicate[vote.VoteSource()] {
@@ -769,10 +766,8 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 			return respReject, nil
 		}
 
-		if ok, err := k.portalRegistry.SupportedChain(ctx, vote.BlockHeader.SourceChainId); err != nil {
-			return nil, errors.Wrap(err, "supported chain")
-		} else if !ok {
-			log.Warn(ctx, "Rejecting vote for unsupported chain", nil, "chain", k.namer(vote.BlockHeader.XChainVersion()))
+		if err := checkSupportedChainAndConfLevel(ctx, k.portalRegistry, vote.BlockHeader.ChainId, vote.BlockHeader.ConfLevel); err != nil {
+			log.Warn(ctx, "Rejecting vote for unsupported chain", err, "chain", k.namer(vote.BlockHeader.XChainVersion()))
 			return respReject, nil
 		}
 
@@ -865,10 +860,8 @@ func (k *Keeper) verifyAggVotes(ctx context.Context, valset ValSet, aggs []*type
 		}
 		errAttrs := []any{"chain", k.namer(agg.BlockHeader.XChainVersion()), "offset", agg.BlockHeader.Offset}
 
-		if ok, err := k.portalRegistry.SupportedChain(ctx, agg.BlockHeader.SourceChainId); err != nil {
-			return errors.Wrap(err, "supported chain")
-		} else if !ok {
-			return errors.New("vote for unsupported chain", errAttrs...)
+		if err := checkSupportedChainAndConfLevel(ctx, k.portalRegistry, agg.BlockHeader.ChainId, agg.BlockHeader.ConfLevel); err != nil {
+			return errors.Wrap(err, "check supported chain")
 		}
 
 		if duplicate[agg.VoteSource()] {
@@ -1019,6 +1012,35 @@ func isApproved(sigs []*Signature, valset ValSet) ([]*Signature, bool) {
 	}
 
 	return toDelete, sum > valset.TotalPower()*2/3
+}
+
+func checkSupportedChainAndConfLevel(ctx context.Context, registry rtypes.PortalRegistry, chainID uint64, confLevel uint32) error {
+	supportedChain, err := registry.SupportedChain(ctx, chainID)
+	if err != nil {
+		return errors.Wrap(err, "supported chain")
+	}
+
+	if !supportedChain {
+		return errors.New("unsupported chain", "chainID", chainID)
+	}
+
+	confLevelsMap, err := registry.ConfLevels(ctx)
+	if err != nil {
+		return errors.Wrap(err, "supported conf levels")
+	}
+
+	supportedConfLevels, ok := confLevelsMap[chainID]
+	if !ok {
+		return errors.New("missing conf levels", "chainID", chainID)
+	}
+
+	for _, supportedConfLevel := range supportedConfLevels {
+		if uint32(supportedConfLevel) == confLevel {
+			return nil
+		}
+	}
+
+	return errors.New("unsupported conf level", "chainID", chainID, "confLevel", confLevel)
 }
 
 // windowCompare returns -1 if x < mid-voteWindow, 1 if x > mid+voteWindow, else 0.
