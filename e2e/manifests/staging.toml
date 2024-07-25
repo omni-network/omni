@@ -13,10 +13,15 @@ mode = "seed"
 [node.fullnode01]
 mode = "archive"
 
-# Testing long-lived keys on staging while testnet doens't exist. Remove this.
 [keys.validator01]
 validator = "0xD6CD71dF91a6886f69761826A9C4D123178A8d9D"
 p2p_consensus = "324F0A865DB7EAFBF53A387FC74E58169EDFA6C4"
 
 [keys.validator01_evm]
 p2p_execution = "0x86e640Ac9c8c693BBFFd2E31f91522b95c1274BF"
+
+[keys.seed01]
+p2p_consensus = "4B2D413D49F0549694DC2522B1CBD367B61A3411"
+
+[keys.seed01_evm]
+p2p_execution = "0x657D5AB16fe5A8fE9979eF5eCfB533AB3B6FbaCa"

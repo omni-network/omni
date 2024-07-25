@@ -189,7 +189,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 		return errors.Wrap(err, "create rpc client")
 	}
 
-	if initCfg.TrustedSync && network.IsProtected() {
+	if initCfg.TrustedSync {
 		// Trusted state sync only supported for protected networks.
 		height, hash, err := getTrustHeightAndHash(ctx, rpcCl)
 		if err != nil {
@@ -207,7 +207,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	}
 
 	addrBookPath := filepath.Join(homeDir, cmtconfig.DefaultConfigDir, cmtconfig.DefaultAddrBookName)
-	if initCfg.AddrBook && network.IsProtected() && !cmtos.FileExists(addrBookPath) {
+	if initCfg.AddrBook && !cmtos.FileExists(addrBookPath) {
 		// Populate address book with random public peers from the connected node.
 		// This aids in bootstrapping the P2P network. Seed nodes don't work well on their pwn for some reason.
 

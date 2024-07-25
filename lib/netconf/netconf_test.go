@@ -37,6 +37,10 @@ func TestGenConsSeeds(t *testing.T) {
 			network:      netconf.Omega,
 			manifestFunc: manifests.Omega,
 		},
+		{
+			network:      netconf.Staging,
+			manifestFunc: manifests.Staging,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.network.String(), func(t *testing.T) {
@@ -86,6 +90,10 @@ func TestGenExecutionSeeds(t *testing.T) {
 		{
 			network:      netconf.Omega,
 			manifestFunc: manifests.Omega,
+		},
+		{
+			network:      netconf.Staging,
+			manifestFunc: manifests.Staging,
 		},
 	}
 	for _, test := range tests {
