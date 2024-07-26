@@ -29,8 +29,9 @@ import (
 )
 
 const (
-	prodBackoff  = time.Second
-	maxAvailable = 1_000
+	prodBackoff         = time.Second
+	maxAvailable        = 1_000
+	initialAttestOffset = uint64(1)
 )
 
 var _ types.Voter = (*Voter)(nil)
@@ -267,6 +268,9 @@ func (v *Voter) runOnce(ctx context.Context, chainVer xchain.ChainVersion) error
 //
 //nolint:nonamedreturns // Ambiguous return values.
 func (v *Voter) getFromHeightAndOffset(ctx context.Context, chainVer xchain.ChainVersion) (fromBlockHeight uint64, fromAttestOffset uint64, err error) {
+	fromAttestOffset = initialAttestOffset // Default to initial offset.
+	// Note that initialisation of fromBlockHeight is handled in xprovider.
+
 	// Get latest state from disk.
 	if latest, ok := v.latestByChain(chainVer); ok {
 		fromBlockHeight = latest.BlockHeader.BlockHeight + 1

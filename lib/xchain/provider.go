@@ -15,6 +15,13 @@ type ProviderRequest struct {
 	ConfLevel ConfLevel // Confirmation level to ensure
 }
 
+func (r ProviderRequest) ChainVersion() ChainVersion {
+	return ChainVersion{
+		ID:        r.ChainID,
+		ConfLevel: r.ConfLevel,
+	}
+}
+
 // Provider abstracts fetching cross chain data from any supported chain.
 // This is basically a cross-chain data client for all supported chains.
 type Provider interface {

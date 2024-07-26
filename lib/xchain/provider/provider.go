@@ -23,8 +23,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-const initialXOffset uint64 = 1
-
 // fetchWorkerThresholds defines the number of concurrent workers
 // to fetch xblocks by chain block period.
 var fetchWorkerThresholds = []struct {
@@ -37,11 +35,6 @@ var fetchWorkerThresholds = []struct {
 }
 
 var _ xchain.Provider = (*Provider)(nil)
-
-type chainVersion struct {
-	ID        uint64
-	ConfLevel xchain.ConfLevel
-}
 
 // Provider stores the source chain configuration and the global quit channel.
 type Provider struct {
@@ -57,7 +50,7 @@ type Provider struct {
 	// behind the chain version head.
 	// Also, since many L2s finalize in batches, the stream
 	// lags behind the chain version head every time a new batch is finalized.
-	confHeads map[chainVersion]uint64
+	confHeads map[xchain.ChainVersion]uint64
 }
 
 // New instantiates the provider instance which will be ready to accept
@@ -80,7 +73,7 @@ func New(network netconf.Network, rpcClients map[uint64]ethclient.Client, cProvi
 		cChainID:    cChain.ID,
 		cProvider:   cProvider,
 		backoffFunc: backoffFunc,
-		confHeads:   make(map[chainVersion]uint64),
+		confHeads:   make(map[xchain.ChainVersion]uint64),
 	}
 }
 

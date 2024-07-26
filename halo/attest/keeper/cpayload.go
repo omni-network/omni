@@ -132,8 +132,9 @@ func aggregateVotes(votes []*types.Vote) ([]*types.AggVote, error) {
 		agg, ok := uniqueAggs[attRoot]
 		if !ok {
 			agg = &types.AggVote{
-				BlockHeader: vote.BlockHeader,
-				MsgRoot:     vote.MsgRoot,
+				AttestHeader: vote.AttestHeader,
+				BlockHeader:  vote.BlockHeader,
+				MsgRoot:      vote.MsgRoot,
 			}
 		}
 

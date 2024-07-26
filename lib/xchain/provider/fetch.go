@@ -187,8 +187,6 @@ func (p *Provider) GetBlock(ctx context.Context, req xchain.ProviderRequest) (xc
 		return xchain.Block{}, false, err
 	}
 
-	chainVer := reqToChainVersion(req)
-
 	// An xblock is constructed from an eth header, and xmsg logs, and xreceipt logs.
 	var (
 		header   *types.Header
@@ -197,9 +195,9 @@ func (p *Provider) GetBlock(ctx context.Context, req xchain.ProviderRequest) (xc
 	)
 
 	// First check if height is confirmed.
-	if !p.confirmedCache(chainVer, req.Height) {
+	if !p.confirmedCache(req.ChainVersion(), req.Height) {
 		// No higher cached header available, so fetch the latest head
-		latest, err := p.headerByChainVersion(ctx, chainVer)
+		latest, err := p.headerByChainVersion(ctx, req.ChainVersion())
 		if err != nil {
 			return xchain.Block{}, false, errors.Wrap(err, "header by strategy")
 		}
@@ -371,16 +369,16 @@ func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, blockHash co
 
 // confirmedCache returns true if the height is confirmedCache based on the chain version
 // on the cached strategy head.
-func (p *Provider) confirmedCache(chain chainVersion, height uint64) bool {
+func (p *Provider) confirmedCache(chainVer xchain.ChainVersion, height uint64) bool {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	return p.confHeads[chain] >= height
+	return p.confHeads[chainVer] >= height
 }
 
 // headerByChainVersion returns the chain's header by confirmation level (finalization/latest)
 // by querying via ethclient. It caches the result.
-func (p *Provider) headerByChainVersion(ctx context.Context, chainVer chainVersion) (*types.Header, error) {
+func (p *Provider) headerByChainVersion(ctx context.Context, chainVer xchain.ChainVersion) (*types.Header, error) {
 	_, rpcClient, err := p.getEVMChain(chainVer.ID)
 	if err != nil {
 		return nil, err
@@ -440,10 +438,6 @@ func headTypeFromConfLevel(conf xchain.ConfLevel) (ethclient.HeadType, bool) {
 	default:
 		return "", false
 	}
-}
-
-func reqToChainVersion(req xchain.ProviderRequest) chainVersion {
-	return chainVersion{ID: req.ChainID, ConfLevel: req.ConfLevel}
 }
 
 func getLogs(ctx context.Context, rpcClient ethclient.Client, contractAddr common.Address, blockHash common.Hash, topicName string) ([]types.Log, error) {

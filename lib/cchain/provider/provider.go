@@ -123,7 +123,7 @@ func (p Provider) Subscribe(in context.Context, chainVer xchain.ChainVersion, xB
 			if !chainVer.ConfLevel.IsFuzzy() && att.ChainVersion.ConfLevel.IsFuzzy() {
 				return errors.New("fuzzy attestation while streaming finalized [BUG]")
 			} else if att.AttestOffset != offset {
-				return errors.New("invalid attestation height",
+				return errors.New("invalid attestation offset",
 					"actual", att.AttestOffset,
 					"expected", offset,
 				)
