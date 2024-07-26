@@ -2,11 +2,12 @@ package keeper
 
 import (
 	"context"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/netconf"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 type proposalServer struct {

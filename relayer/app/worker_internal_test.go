@@ -55,8 +55,8 @@ func TestWorker_Run(t *testing.T) {
 					BlockHeight: req.Height,
 				},
 				Msgs: []xchain.Msg{
-					{MsgID: xchain.MsgID{StreamID: streamA, StreamOffset: 0}},
-					{MsgID: xchain.MsgID{StreamID: streamB, StreamOffset: 0}},
+					{MsgID: xchain.MsgID{StreamID: streamA, StreamOffset: req.Height}},
+					{MsgID: xchain.MsgID{StreamID: streamB, StreamOffset: req.Height}},
 				},
 			}, true, nil
 		},
@@ -112,6 +112,8 @@ func TestWorker_Run(t *testing.T) {
 				block, _, _ := mockXClient.GetBlock(ctx, xchain.ProviderRequest{
 					ChainID:   chainVer.ID,
 					ConfLevel: chainVer.ConfLevel,
+					// We treat the offset as the requested height for the test.
+					Height: offset,
 				})
 				tree, _ := xchain.NewMsgTree(block.Msgs)
 
@@ -122,7 +124,8 @@ func TestWorker_Run(t *testing.T) {
 						AttestOffset: offset,
 					},
 					BlockHeader: xchain.BlockHeader{
-						ChainID: chainVer.ID,
+						ChainID:     chainVer.ID,
+						BlockHeight: offset,
 					},
 				}
 			}

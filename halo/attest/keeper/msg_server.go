@@ -7,10 +7,11 @@ import (
 	"log/slog"
 	"strconv"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )

@@ -1,10 +1,10 @@
 package xchain
 
 import (
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 const (

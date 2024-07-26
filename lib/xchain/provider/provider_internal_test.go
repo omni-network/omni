@@ -2,10 +2,11 @@ package provider
 
 import (
 	"context"
+	"testing"
+
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
-	"testing"
 )
 
 // NewForT returns a new provider for testing. Note that cprovider isn't supported yet.
