@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -29,15 +30,20 @@ func (s msgServer) AddVotes(ctx context.Context, msg *types.MsgAddVotes,
 		return nil, errors.New("only allowed in finalize mode")
 	}
 
+	cchainID, err := netconf.ConsensusChainIDStr2Uint64(sdkCtx.ChainID())
+	if err != nil {
+		return nil, errors.Wrap(err, "get consensus chain id")
+	}
+
 	for _, aggVote := range msg.Votes {
-		if err := aggVote.Verify(); err != nil {
-			return nil, errors.Wrap(err, "verify vote")
+		if err := aggVote.Verify(cchainID); err != nil {
+			return nil, errors.Wrap(err, "verify aggVote")
 		}
 	}
 
 	// Not verifying votes here since this block is now finalized, so it is too late to reject votes.
 
-	err := s.Keeper.Add(ctx, msg)
+	err = s.Keeper.Add(ctx, msg)
 	if err != nil {
 		return nil, errors.Wrap(err, "add votes")
 	}
@@ -83,7 +89,7 @@ func logLocalVotes(ctx context.Context, headers []*types.BlockHeader, typ string
 	const limit = 5
 	offsets := make(map[uint64][]string)
 	for _, header := range headers {
-		offset := offsets[header.ChainId]
+		offset := offsets[header.SourceChainId]
 		if len(offset) == limit {
 			offset = append(offset, "...")
 		} else if len(offset) < limit {
@@ -91,7 +97,7 @@ func logLocalVotes(ctx context.Context, headers []*types.BlockHeader, typ string
 		} else {
 			continue
 		}
-		offsets[header.ChainId] = offset
+		offsets[header.SourceChainId] = offset
 	}
 	attrs := []any{
 		slog.Int("votes", len(headers)),

@@ -4,8 +4,11 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/halo/attest/types"
+	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -41,12 +44,12 @@ func (k *Keeper) LatestAttestation(ctx context.Context, req *types.LatestAttesta
 		return nil, status.Error(codes.NotFound, "no approved attestations for chain")
 	}
 
-	sigs, err := k.getSigs(ctx, att.GetId())
+	resp, err := k.formAttestationResponse(ctx, att)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, errors.Wrap(err, "form response")
 	}
 
-	return &types.LatestAttestationResponse{Attestation: AttestationFromDB(att, sigs)}, nil
+	return &types.LatestAttestationResponse{Attestation: resp}, nil
 }
 
 func (k *Keeper) EarliestAttestation(ctx context.Context, req *types.EarliestAttestationRequest) (*types.EarliestAttestationResponse, error) {
@@ -63,12 +66,26 @@ func (k *Keeper) EarliestAttestation(ctx context.Context, req *types.EarliestAtt
 		return nil, status.Error(codes.NotFound, "no approved attestations for chain")
 	}
 
+	resp, err := k.formAttestationResponse(ctx, att)
+	if err != nil {
+		return nil, errors.Wrap(err, "form response")
+	}
+
+	return &types.EarliestAttestationResponse{Attestation: resp}, nil
+}
+
+func (k *Keeper) formAttestationResponse(ctx context.Context, att *Attestation) (*types.Attestation, error) {
 	sigs, err := k.getSigs(ctx, att.GetId())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &types.EarliestAttestationResponse{Attestation: AttestationFromDB(att, sigs)}, nil
+	consensusChainID, err := getConsensusChainID(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "get consensus chain id")
+	}
+
+	return AttestationFromDB(att, consensusChainID, sigs), nil
 }
 
 func (k *Keeper) ListAllAttestations(ctx context.Context, req *types.ListAllAttestationsRequest) (*types.ListAllAttestationsResponse, error) {
@@ -97,4 +114,9 @@ func (k *Keeper) WindowCompare(ctx context.Context, req *types.WindowCompareRequ
 	}
 
 	return &types.WindowCompareResponse{Cmp: int32(cmp)}, nil
+}
+
+func getConsensusChainID(ctx context.Context) (uint64, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	return netconf.ConsensusChainIDStr2Uint64(sdkCtx.ChainID())
 }

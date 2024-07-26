@@ -38,11 +38,12 @@ func CreateVote(privKey crypto.PrivKey, block xchain.Block) (*types.Vote, error)
 
 	return &types.Vote{
 		BlockHeader: &types.BlockHeader{
-			ChainId:   block.SourceChainID,
-			ConfLevel: uint32(block.ConfLevel),
-			Offset:    block.BlockOffset,
-			Height:    block.BlockHeight,
-			Hash:      block.BlockHash[:],
+			SourceChainId:    block.SourceChainID,
+			ConsensusChainId: block.ConsensusChainID,
+			ConfLevel:        uint32(block.ConfLevel),
+			Offset:           block.BlockOffset,
+			Height:           block.BlockHeight,
+			Hash:             block.BlockHash[:],
 		},
 		MsgRoot: msgRoot[:],
 		Signature: &types.SigTuple{

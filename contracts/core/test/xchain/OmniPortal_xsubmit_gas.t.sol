@@ -91,6 +91,7 @@ contract OmniPortal_xsubmit_gas_Test is Base {
     function _xheader(XTypes.Msg memory xmsg, uint64 sourceChainId) internal pure returns (XTypes.BlockHeader memory) {
         return XTypes.BlockHeader({
             sourceChainId: sourceChainId,
+            consensusChainId: omniCChainID,
             confLevel: uint8(xmsg.shardId),
             offset: 1,
             sourceBlockHeight: 100,

@@ -54,11 +54,12 @@ message Vote {
 
 // BlockHeader uniquely identifies a cross chain block/attestation.
 message BlockHeader {
-  uint64 chain_id    = 1; // Chain ID as per https://chainlist.org
-  uint32 conf_level  = 2; // Confirmation level (aka version) of the cross-chain block/attestation.
-  uint64 offset      = 3; // Offset of the cross-chain block
-  uint64 height      = 4; // Height of the source-chain block
-  bytes  hash        = 5; // Hash of the source-chain block
+  uint64 source_chain_id      = 1; // Source Chain ID as per https://chainlist.org
+  uint64 consensus_chain_id   = 2; // Consensus Chain ID, for replay protection.
+  uint32 conf_level           = 3; // Confirmation level (aka version) of the cross-chain block/attestation.
+  uint64 offset               = 4; // Offset of the cross-chain block
+  uint64 height               = 5; // Height of the source-chain block
+  bytes  hash                 = 6; // Hash of the source-chain block
 }
 
 // SigTuple is a validator public key and signature (over the attestation root).

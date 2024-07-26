@@ -55,7 +55,7 @@ contract OmniPortal is
      * @custom:field owner                  The owner of the contract
      * @custom:field feeOracle              Address of the fee oracle contract
      * @custom:field omniChainId            Chain ID of Omni's EVM execution chain
-     * @custom:field omniCChainId           Virtual chain ID used in xmsgs from Omni's consensus chain
+     * @custom:field omniCChainId           Chain ID of Omni's consensus chain
      * @custom:field xmsgMaxGasLimit        Maximum gas limit for xmsg
      * @custom:field xmsgMinGasLimit        Minimum gas limit for xmsg
      * @custom:field xmsgMaxDataSize        Maximum size of xmsg data in bytes
@@ -173,6 +173,7 @@ contract OmniPortal is
         XTypes.BlockHeader calldata xheader = xsub.blockHeader;
         uint64 valSetId = xsub.validatorSetId;
 
+        require(xheader.consensusChainId == omniCChainId, "OmniPortal: wrong cchain ID");
         require(xmsgs.length > 0, "OmniPortal: no xmsgs");
         require(valSetTotalPower[valSetId] > 0, "OmniPortal: unknown val set");
         require(valSetId >= _minValSet(), "OmniPortal: old val set");

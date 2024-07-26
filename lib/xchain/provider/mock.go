@@ -240,10 +240,11 @@ func (m *Mock) nextBlock(
 
 	b := xchain.Block{
 		BlockHeader: xchain.BlockHeader{
-			SourceChainID: chainVer.ID,
-			ConfLevel:     chainVer.ConfLevel,
-			BlockHeight:   height,
-			BlockHash:     random32(r),
+			SourceChainID:    chainVer.ID,
+			ConsensusChainID: m.cChainID,
+			ConfLevel:        chainVer.ConfLevel,
+			BlockHeight:      height,
+			BlockHash:        random32(r),
 		},
 		Msgs:       msgs,
 		Receipts:   nil,        // TODO(corver): Add receipts

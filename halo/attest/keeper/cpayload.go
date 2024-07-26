@@ -73,7 +73,7 @@ func votesFromLastCommit(
 
 		var selected []*types.Vote
 		for _, v := range votes.Votes {
-			if ok, err := supportedChain(ctx, v.BlockHeader.ChainId); err != nil {
+			if ok, err := supportedChain(ctx, v.BlockHeader.SourceChainId); err != nil {
 				return nil, err
 			} else if !ok {
 				// Skip votes for unsupported chains.
@@ -145,8 +145,8 @@ func sortAggregates(aggs []*types.AggVote) []*types.AggVote {
 		if aggs[i].BlockHeader.Offset != aggs[j].BlockHeader.Offset {
 			return aggs[i].BlockHeader.Offset < aggs[j].BlockHeader.Offset
 		}
-		if aggs[i].BlockHeader.ChainId != aggs[j].BlockHeader.ChainId {
-			return aggs[i].BlockHeader.ChainId < aggs[j].BlockHeader.ChainId
+		if aggs[i].BlockHeader.SourceChainId != aggs[j].BlockHeader.SourceChainId {
+			return aggs[i].BlockHeader.SourceChainId < aggs[j].BlockHeader.SourceChainId
 		}
 
 		return bytes.Compare(aggs[i].BlockHeader.Hash, aggs[j].BlockHeader.Hash) < 0

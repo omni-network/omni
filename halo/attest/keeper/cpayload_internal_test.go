@@ -32,10 +32,10 @@ func TestVotesFromCommitNonUnique(t *testing.T) {
 	newVote := func(hash, msgRoot common.Hash) *types.Vote {
 		return &types.Vote{
 			BlockHeader: &types.BlockHeader{
-				ChainId: chainID,
-				Offset:  offset,
-				Height:  height,
-				Hash:    hash[:],
+				SourceChainId: chainID,
+				Offset:        offset,
+				Height:        height,
+				Hash:          hash[:],
 			},
 			MsgRoot: msgRoot[:],
 			Signature: &types.SigTuple{
@@ -98,11 +98,11 @@ func TestVotesFromCommit(t *testing.T) {
 
 					vote := &types.Vote{
 						BlockHeader: &types.BlockHeader{
-							ChainId:   chain,
-							ConfLevel: uint32(xchain.ConfFinalized),
-							Offset:    offset,
-							Height:    offset * 2,
-							Hash:      blockHash[:],
+							SourceChainId: chain,
+							ConfLevel:     uint32(xchain.ConfFinalized),
+							Offset:        offset,
+							Height:        offset * 2,
+							Hash:          blockHash[:],
 						},
 						MsgRoot: blockHash[:],
 						Signature: &types.SigTuple{

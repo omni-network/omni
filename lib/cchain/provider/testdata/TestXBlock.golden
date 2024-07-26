@@ -1,5 +1,6 @@
 {
  "SourceChainID": 77,
+ "ConsensusChainID": 77,
  "ConfLevel": 4,
  "BlockOffset": 4862148799961033790,
  "BlockHeight": 4862148799961033790,

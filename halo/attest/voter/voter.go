@@ -75,7 +75,7 @@ func LoadVoter(privKey crypto.PrivKey, path string, provider xchain.Provider, de
 		return nil, errors.New("invalid private key")
 	}
 
-	s, err := loadState(path)
+	s, err := loadState(path, network.ID.Static().OmniConsensusChainIDUint64())
 	if err != nil {
 		return nil, err
 	}
@@ -277,7 +277,7 @@ func (v *Voter) Vote(block xchain.Block, allowSkip bool) error {
 	vote, err := CreateVote(v.privKey, block)
 	if err != nil {
 		return err
-	} else if err := vote.Verify(); err != nil {
+	} else if err := vote.Verify(v.network.ID.Static().OmniConsensusChainIDUint64()); err != nil {
 		return errors.Wrap(err, "verify vote")
 	}
 
@@ -476,8 +476,8 @@ func (v *Voter) latestByChain(chainVer xchain.ChainVersion) (*types.Vote, bool) 
 func (v *Voter) saveUnsafe() error {
 	sortVotes := func(atts []*types.Vote) {
 		sort.Slice(atts, func(i, j int) bool {
-			if atts[i].BlockHeader.ChainId != atts[j].BlockHeader.ChainId {
-				return atts[i].BlockHeader.ChainId < atts[j].BlockHeader.ChainId
+			if atts[i].BlockHeader.SourceChainId != atts[j].BlockHeader.SourceChainId {
+				return atts[i].BlockHeader.SourceChainId < atts[j].BlockHeader.SourceChainId
 			}
 
 			return atts[i].BlockHeader.Offset < atts[j].BlockHeader.Offset
@@ -569,7 +569,7 @@ type stateJSON struct {
 }
 
 // loadState loads a path state from the given path.
-func loadState(path string) (stateJSON, error) {
+func loadState(path string, cchainID uint64) (stateJSON, error) {
 	bz, err := os.ReadFile(path)
 	if err != nil {
 		return stateJSON{}, errors.Wrap(err, "read state path")
@@ -583,7 +583,7 @@ func loadState(path string) (stateJSON, error) {
 	verify := func(voteSets ...[]*types.Vote) error {
 		for _, votes := range voteSets {
 			for _, vote := range votes {
-				if err := vote.Verify(); err != nil {
+				if err := vote.Verify(cchainID); err != nil {
 					return errors.Wrap(err, "verify vote")
 				}
 			}
@@ -613,12 +613,12 @@ func headerMap(headers []*types.BlockHeader) map[xchain.BlockHeader]bool {
 func pruneLatestPerChain(atts []*types.Vote) []*types.Vote {
 	latest := make(map[uint64]*types.Vote)
 	for _, vote := range atts {
-		latestAtt, ok := latest[vote.BlockHeader.ChainId]
+		latestAtt, ok := latest[vote.BlockHeader.SourceChainId]
 		if ok && latestAtt.BlockHeader.Offset >= vote.BlockHeader.Offset {
 			continue
 		}
 
-		latest[vote.BlockHeader.ChainId] = vote
+		latest[vote.BlockHeader.SourceChainId] = vote
 	}
 
 	// Flatten

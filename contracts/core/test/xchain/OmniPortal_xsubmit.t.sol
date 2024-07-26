@@ -97,6 +97,14 @@ contract OmniPortal_xsubmit_Test is Base {
         chainBPortal.xsubmit(xsub);
     }
 
+    function test_xsubmit_wrongConsensusChainId_reverts() public {
+        XTypes.Submission memory xsub = readXSubmission({ name: "xblock1", destChainId: thisChainId });
+
+        vm.expectRevert("OmniPortal: wrong cchain ID");
+        xsub.blockHeader.consensusChainId = chainBId;
+        chainBPortal.xsubmit(xsub);
+    }
+
     function test_xsubmit_wrongStreamOffset_reverts() public {
         XTypes.Submission memory xsub = readXSubmission({ name: "xblock2", destChainId: thisChainId });
 

@@ -1018,7 +1018,7 @@ func update[T any](t T, fn func(T)) T {
 
 func populateKeyHashes(atts []*keeper.Attestation) []*keeper.Attestation {
 	for i := range atts {
-		a := keeper.AttestationFromDB(atts[i], nil)
+		a := keeper.AttestationFromDB(atts[i], consensusID, nil)
 		attRoot, _ := a.AttestationRoot()
 		atts[i].AttestationRoot = attRoot[:]
 	}
