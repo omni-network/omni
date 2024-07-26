@@ -641,7 +641,7 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 	duplicate := make(map[types.VoteSource]bool)
 	var filtered []*types.Vote
 	for _, vote := range votes {
-		if err := checkSupportedChainAndConfLevel(ctx, k.portalRegistry, vote.BlockHeader.ChainId, vote.BlockHeader.ConfLevel); err != nil {
+		if err := checkSupportedChainAndConfLevel(ctx, k.portalRegistry, vote.BlockHeader.SourceChainId, vote.BlockHeader.ConfLevel); err != nil {
 			return nil, errors.Wrap(err, "check supported chain")
 		}
 
@@ -766,7 +766,7 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 			return respReject, nil
 		}
 
-		if err := checkSupportedChainAndConfLevel(ctx, k.portalRegistry, vote.BlockHeader.ChainId, vote.BlockHeader.ConfLevel); err != nil {
+		if err := checkSupportedChainAndConfLevel(ctx, k.portalRegistry, vote.BlockHeader.SourceChainId, vote.BlockHeader.ConfLevel); err != nil {
 			log.Warn(ctx, "Rejecting vote for unsupported chain", err, "chain", k.namer(vote.BlockHeader.XChainVersion()))
 			return respReject, nil
 		}
@@ -860,7 +860,7 @@ func (k *Keeper) verifyAggVotes(ctx context.Context, valset ValSet, aggs []*type
 		}
 		errAttrs := []any{"chain", k.namer(agg.BlockHeader.XChainVersion()), "offset", agg.BlockHeader.Offset}
 
-		if err := checkSupportedChainAndConfLevel(ctx, k.portalRegistry, agg.BlockHeader.ChainId, agg.BlockHeader.ConfLevel); err != nil {
+		if err := checkSupportedChainAndConfLevel(ctx, k.portalRegistry, agg.BlockHeader.SourceChainId, agg.BlockHeader.ConfLevel); err != nil {
 			return errors.Wrap(err, "check supported chain")
 		}
 
