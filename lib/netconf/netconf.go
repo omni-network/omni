@@ -111,26 +111,15 @@ func (n Network) OmniConsensusChain() (Chain, bool) {
 // EthereumChain returns the ethereum Layer1 chain config or false if it does not exist.
 func (n Network) EthereumChain() (Chain, bool) {
 	for _, chain := range n.Chains {
-		switch n.ID {
-		case Mainnet:
-			if chain.ID == evmchain.IDEthereum {
-				return chain, true
-			}
-		case Omega:
-			if chain.ID == evmchain.IDHolesky {
-				return chain, true
-			}
-		default:
-			if chain.ID == evmchain.IDMockL1Fast || chain.ID == evmchain.IDMockL1Slow {
-				return chain, true
-			}
+		if IsEthereumChain(n.ID, chain.ID) {
+			return chain, true
 		}
 	}
 
 	return Chain{}, false
 }
 
-// IsEthereumChainID returns true if the chainID is the EthereumChainID for the given network.
+// IsEthereumChain returns true if the chainID is the EthereumChainID for the given network.
 func IsEthereumChain(network ID, chainID uint64) bool {
 	switch network {
 	case Mainnet:
@@ -279,9 +268,7 @@ type Chain struct {
 // ConfLevels returns the uniq set of confirmation levels
 // supported by the chain. This is inferred from the supported shards.
 func (c Chain) ConfLevels() []xchain.ConfLevel {
-	dedup := map[xchain.ConfLevel]struct{}{
-		xchain.ConfFinalized: {}, // All chains require ConfFinalized.
-	}
+	dedup := make(map[xchain.ConfLevel]struct{})
 
 	for _, shard := range c.Shards {
 		conf := shard.ConfLevel()

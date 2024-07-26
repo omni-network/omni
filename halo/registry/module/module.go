@@ -103,6 +103,7 @@ type ModuleInputs struct {
 	EmitPortal   ptypes.EmitPortal
 	StoreService store.KVStoreService
 	EthCl        ethclient.Client
+	ChainNamer   types.ChainNameFunc
 	Config       *Module
 }
 
@@ -118,6 +119,7 @@ func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 		in.EmitPortal,
 		in.StoreService,
 		in.EthCl,
+		in.ChainNamer,
 	)
 	if err != nil {
 		return ModuleOutputs{}, err

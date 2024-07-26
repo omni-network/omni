@@ -6,6 +6,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	ptypes "github.com/omni-network/omni/halo/portal/types"
+	"github.com/omni-network/omni/halo/registry/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/xchain"
@@ -24,11 +25,17 @@ type Keeper struct {
 	ethCl           ethclient.Client
 	portalRegAdress common.Address
 	portalRegistry  *bindings.PortalRegistryFilterer
+	chainNamer      types.ChainNameFunc
 
 	latestCache *cache
 }
 
-func NewKeeper(emilPortal ptypes.EmitPortal, storeService store.KVStoreService, ethCl ethclient.Client) (Keeper, error) {
+func NewKeeper(
+	emilPortal ptypes.EmitPortal,
+	storeService store.KVStoreService,
+	ethCl ethclient.Client,
+	namer types.ChainNameFunc,
+) (Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
 		{Id: 1, ProtoFileName: File_halo_registry_keeper_registry_proto.Path()},
 	}}
@@ -55,6 +62,7 @@ func NewKeeper(emilPortal ptypes.EmitPortal, storeService store.KVStoreService, 
 		ethCl:           ethCl,
 		portalRegAdress: address,
 		portalRegistry:  protalReg,
+		chainNamer:      namer,
 		latestCache:     new(cache),
 	}, nil
 }

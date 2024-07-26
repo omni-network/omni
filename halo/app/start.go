@@ -134,6 +134,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		engineCl,
 		voter,
 		netconf.ChainVersionNamer(cfg.Network),
+		netconf.ChainNamer(cfg.Network),
 		burnEVMFees{},
 		baseAppOpts...,
 	)

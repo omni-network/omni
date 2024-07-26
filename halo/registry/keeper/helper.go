@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -28,4 +29,13 @@ func (p *Portal) Verify() error {
 	}
 
 	return nil
+}
+
+func shardLabels(shardIDs []uint64) []string {
+	var labels []string
+	for _, shardID := range shardIDs {
+		labels = append(labels, xchain.ShardID(shardID).Label())
+	}
+
+	return labels
 }
