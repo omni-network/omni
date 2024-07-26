@@ -21,6 +21,7 @@ import (
 	bankmodulev1 "cosmossdk.io/api/cosmos/bank/module/v1"
 	consensusmodulev1 "cosmossdk.io/api/cosmos/consensus/module/v1"
 	distrmodulev1 "cosmossdk.io/api/cosmos/distribution/module/v1"
+	evidmodulev1 "cosmossdk.io/api/cosmos/evidence/module/v1"
 	genutilmodulev1 "cosmossdk.io/api/cosmos/genutil/module/v1"
 	slashingmodulev1 "cosmossdk.io/api/cosmos/slashing/module/v1"
 	stakingmodulev1 "cosmossdk.io/api/cosmos/staking/module/v1"
@@ -28,6 +29,7 @@ import (
 	"cosmossdk.io/core/appconfig"
 	"cosmossdk.io/depinject"
 	sdkmath "cosmossdk.io/math"
+	evidtypes "cosmossdk.io/x/evidence/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -92,6 +94,7 @@ var (
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
 		genutiltypes.ModuleName,
+		evidtypes.ModuleName,
 		valsynctypes.ModuleName,
 		engevmtypes.ModuleName,
 	}
@@ -100,6 +103,7 @@ var (
 		distrtypes.ModuleName, // Note: slashing happens after distr.BeginBlocker
 		slashingtypes.ModuleName,
 		stakingtypes.ModuleName, // Note: staking module is required if HistoricalEntries param > 0
+		evidtypes.ModuleName,
 		attesttypes.ModuleName,
 	}
 
@@ -182,6 +186,10 @@ var (
 			{
 				Name:   slashingtypes.ModuleName,
 				Config: appconfig.WrapAny(&slashingmodulev1.Module{}),
+			},
+			{
+				Name:   evidtypes.ModuleName,
+				Config: appconfig.WrapAny(&evidmodulev1.Module{}),
 			},
 			{
 				Name:   engevmtypes.ModuleName,

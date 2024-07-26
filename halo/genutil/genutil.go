@@ -11,13 +11,14 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/netconf"
-	etypes "github.com/omni-network/omni/octane/evmengine/types"
+	evmtypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/cometbft/cometbft/crypto"
 
 	"github.com/ethereum/go-ethereum/common"
 
 	"cosmossdk.io/math"
+	etypes "cosmossdk.io/x/evidence/types"
 	"cosmossdk.io/x/tx/signing"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -155,6 +156,14 @@ func validateGenesis(cdc codec.Codec, appState map[string]json.RawMessage) error
 		return errors.Wrap(err, "validate auth genesis")
 	}
 
+	// Evidence module
+	estate := new(etypes.GenesisState)
+	if err := cdc.UnmarshalJSON(appState[etypes.ModuleName], estate); err != nil {
+		return errors.Wrap(err, "unmarshal evidence genesis")
+	} else if err := estate.Validate(); err != nil {
+		return errors.Wrap(err, "validate evidence genesis")
+	}
+
 	return nil
 }
 
@@ -227,16 +236,17 @@ func defaultAppState(
 	slashingGenesis := sltypes.DefaultGenesisState()
 	slashingGenesis.Params.SignedBlocksWindow = slashingBlocksWindow
 
-	evmengGenesis := etypes.NewGenesisState(executionBlockHash)
+	evmengGenesis := evmtypes.NewGenesisState(executionBlockHash)
 
 	return map[string]json.RawMessage{
-		sttypes.ModuleName: marshal(stakingGenesis),
-		sltypes.ModuleName: marshal(slashingGenesis),
-		atypes.ModuleName:  marshal(atypes.DefaultGenesisState()),
-		btypes.ModuleName:  marshal(btypes.DefaultGenesisState()),
-		dtypes.ModuleName:  marshal(dtypes.DefaultGenesisState()),
-		vtypes.ModuleName:  marshal(vtypes.DefaultGenesisState()),
-		etypes.ModuleName:  marshal(evmengGenesis),
+		sttypes.ModuleName:  marshal(stakingGenesis),
+		sltypes.ModuleName:  marshal(slashingGenesis),
+		atypes.ModuleName:   marshal(atypes.DefaultGenesisState()),
+		btypes.ModuleName:   marshal(btypes.DefaultGenesisState()),
+		dtypes.ModuleName:   marshal(dtypes.DefaultGenesisState()),
+		etypes.ModuleName:   marshal(etypes.DefaultGenesisState()),
+		vtypes.ModuleName:   marshal(vtypes.DefaultGenesisState()),
+		evmtypes.ModuleName: marshal(evmengGenesis),
 	}
 }
 
@@ -261,6 +271,7 @@ func getCodec() *codec.ProtoCodec {
 	btypes.RegisterInterfaces(reg)
 	dtypes.RegisterInterfaces(reg)
 	etypes.RegisterInterfaces(reg)
+	evmtypes.RegisterInterfaces(reg)
 	attesttypes.RegisterInterfaces(reg)
 
 	return codec.NewProtoCodec(reg)

@@ -84,6 +84,9 @@
    "delegator_starting_infos": [],
    "validator_slash_events": []
   },
+  "evidence": {
+   "evidence": []
+  },
   "evmengine": {
    "execution_block_hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAABibG9ja2hhc2g="
   },

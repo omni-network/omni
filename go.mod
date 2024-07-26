@@ -11,6 +11,7 @@ require (
 	cosmossdk.io/math v1.3.0
 	cosmossdk.io/orm v1.0.0-beta.3
 	cosmossdk.io/store v1.1.0
+	cosmossdk.io/x/evidence v0.1.1
 	cosmossdk.io/x/tx v0.13.3
 	github.com/BurntSushi/toml v1.4.0
 	github.com/Layr-Labs/eigenlayer-cli v0.9.2
@@ -37,7 +38,6 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
-	github.com/syndtr/goleveldb v1.0.1 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.28.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.28.0
 	go.uber.org/goleak v1.3.0
@@ -52,6 +52,8 @@ require (
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.34.2-20240508200655-46a4cf4ba109.2 // indirect
+	buf.build/gen/go/bufbuild/registry/connectrpc/go v1.16.2-20240610164129-660609bc46d3.1 // indirect
+	buf.build/gen/go/bufbuild/registry/protocolbuffers/go v1.34.2-20240610164129-660609bc46d3.2 // indirect
 	connectrpc.com/connect v1.16.2 // indirect
 	connectrpc.com/otelconnect v0.7.0 // indirect
 	cosmossdk.io/collections v0.4.0 // indirect
@@ -72,6 +74,7 @@ require (
 	github.com/bits-and-blooms/bitset v1.10.0 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
 	github.com/bufbuild/protocompile v0.14.0 // indirect
+	github.com/bufbuild/protoplugin v0.0.0-20240323223605-e2735f6c31ee // indirect
 	github.com/bufbuild/protovalidate-go v0.6.2 // indirect
 	github.com/bufbuild/protoyaml-go v0.1.9 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
@@ -79,6 +82,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/charmbracelet/lipgloss v0.10.0 // indirect
 	github.com/cockroachdb/errors v1.11.3 // indirect
+	github.com/cockroachdb/fifo v0.0.0-20240606204812-0bbfbd93a7ce // indirect
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
 	github.com/cockroachdb/pebble v1.1.1 // indirect
 	github.com/cockroachdb/redact v1.1.5 // indirect
@@ -115,6 +119,7 @@ require (
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
 	github.com/emicklei/dot v1.6.1 // indirect
 	github.com/ethereum/c-kzg-4844 v1.0.0 // indirect
+	github.com/ethereum/go-verkle v0.1.1-0.20240306133620-7d920df305f0 // indirect
 	github.com/fatih/color v1.17.0 // indirect
 	github.com/felixge/fgprof v0.9.4 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -155,6 +160,7 @@ require (
 	github.com/hashicorp/go-metrics v0.5.3 // indirect
 	github.com/hashicorp/go-plugin v1.5.2 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/hdevalence/ed25519consensus v0.1.0 // indirect
@@ -226,6 +232,7 @@ require (
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/supranational/blst v0.3.11 // indirect
+	github.com/syndtr/goleveldb v1.0.1 // indirect
 	github.com/tendermint/go-amino v0.16.0 // indirect
 	github.com/tidwall/btree v1.7.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
@@ -264,15 +271,6 @@ require (
 	pgregory.net/rapid v1.1.0 // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
-)
-
-require (
-	buf.build/gen/go/bufbuild/registry/connectrpc/go v1.16.2-20240610164129-660609bc46d3.1 // indirect
-	buf.build/gen/go/bufbuild/registry/protocolbuffers/go v1.34.2-20240610164129-660609bc46d3.2 // indirect
-	github.com/bufbuild/protoplugin v0.0.0-20240323223605-e2735f6c31ee // indirect
-	github.com/cockroachdb/fifo v0.0.0-20240606204812-0bbfbd93a7ce // indirect
-	github.com/ethereum/go-verkle v0.1.1-0.20240306133620-7d920df305f0 // indirect
-	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 )
 
 // See https://github.com/cosmos/cosmos-sdk/pull/14952

@@ -31,6 +31,7 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 
 	_ "cosmossdk.io/api/cosmos/tx/config/v1"          // import for side-effects
+	_ "cosmossdk.io/x/evidence"                       // import for side-effects
 	_ "github.com/cosmos/cosmos-sdk/x/auth"           // import for side-effects
 	_ "github.com/cosmos/cosmos-sdk/x/auth/tx/config" // import for side-effects
 	_ "github.com/cosmos/cosmos-sdk/x/bank"           // import for side-effects
