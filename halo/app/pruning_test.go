@@ -29,9 +29,9 @@ func TestPruningHistory(t *testing.T) {
 
 	cfg := setupSimnet(t)
 
-	// Prune everything > 10 blocks old
+	// Prune everything > 3 blocks old
 	cfg.PruningOption = pruningtypes.PruningOptionEverything
-	cfg.MinRetainBlocks = 10
+	cfg.MinRetainBlocks = 3
 
 	// Start the server async
 	async, stopfunc, err := haloapp.Start(ctx, cfg)
@@ -41,7 +41,7 @@ func TestPruningHistory(t *testing.T) {
 	}()
 
 	// Connect to the server.
-	cl, err := rpchttp.New("http://localhost:26657", "/websocket")
+	cl, err := rpchttp.New(cfg.Comet.RPC.ListenAddress, "/websocket")
 	require.NoError(t, err)
 
 	cprov := cprovider.NewABCIProvider(cl, netconf.Simnet, netconf.ChainVersionNamer(netconf.Simnet))
@@ -58,48 +58,61 @@ func TestPruningHistory(t *testing.T) {
 		return s.SyncInfo.LatestBlockHeight >= int64(waitUntilHeight)
 	}, time.Second*time.Duration(waitUntilHeight*2), time.Millisecond*100)
 
-	srcChain := evmchain.IDMockL1Fast
+	srcChain := evmchain.IDOmniEphemeral // Pick chain without fuzzy conf levels
 	chainVer := xchain.ChainVersion{ID: srcChain, ConfLevel: xchain.ConfFinalized}
 
-	var attOffset uint64
-	// Wait until we have an attestation for srcChain
+	// Wait until we have an attestation with offset 2-or-more for srcChain
+	// That means that offset=1 is eligible for deletion.
+	var eligibleHeight uint64
 	require.Eventually(t, func() bool {
-		att, ok, err := cprov.LatestAttestation(ctx, chainVer)
-		tutil.RequireNoError(t, err)
-		if !ok {
-			t.Log("still waiting for an attestation")
-			return false
-		}
-
-		require.Equal(t, srcChain, att.SourceChainID)
-
-		attOffset = att.BlockOffset
-
 		status, err := cl.Status(ctx)
 		tutil.RequireNoError(t, err)
 
-		// Wait until after the height at which the state containing this attestation should be pruned.
-		waitUntilHeight = uint64(status.SyncInfo.LatestBlockHeight) + cfg.MinRetainBlocks + 2
+		att, ok, err := cprov.LatestAttestation(ctx, chainVer)
+		tutil.RequireNoError(t, err)
+		if !ok {
+			t.Logf("still waiting for an attestation: height=%d", status.SyncInfo.LatestBlockHeight)
+			return false
+		} else if att.BlockOffset == 1 {
+			t.Logf("still waiting for 2nd attestation: height=%d", status.SyncInfo.LatestBlockHeight)
+		}
+
+		require.NotEmpty(t, att.BlockOffset)
+		require.Equal(t, srcChain, att.SourceChainID)
+
+		eligibleHeight = uint64(status.SyncInfo.LatestBlockHeight)
 
 		return true
-	}, time.Minute, time.Second)
+	}, time.Minute, time.Millisecond*300)
 
-	// Now wait until we pass the height at which the attestation should be pruned.
+	// Now wait until we pass the height at which the offset=1 attestation
+	// has been deleted and the eligibleHeight state pruned from the DB.
+	var prunedHeight uint64
 	require.Eventually(t, func() bool {
-		s, err := cl.Status(ctx)
-		if err != nil {
-			t.Log("Failed to get status: ", err)
+		status, err := cl.Status(ctx)
+		tutil.RequireNoError(t, err)
+
+		_, err = cprov.AttestationsFrom(ctx, chainVer, 1)
+		if err == nil {
+			t.Logf("att still available: created=%d, current=%d", eligibleHeight, status.SyncInfo.LatestBlockHeight)
 			return false
 		}
 
-		return s.SyncInfo.LatestBlockHeight >= int64(waitUntilHeight)
-	}, time.Second*time.Duration(waitUntilHeight*2), time.Millisecond*100)
+		require.True(t, cprovider.IsErrHistoryPruned(err))
+		prunedHeight = uint64(status.SyncInfo.LatestBlockHeight)
 
-	_, err = cprov.AttestationsFrom(ctx, chainVer, attOffset)
-	require.True(t, cprovider.IsErrHistoryPruned(err))
+		return true
+	}, time.Minute, time.Millisecond*300)
+
+	minPrunedHeight := eligibleHeight + cfg.MinRetainBlocks
+	maxPrunedHeight := eligibleHeight + (2 * cfg.MinRetainBlocks) // Allow some wiggle room
+	t.Logf("prunedHeight=%d, createdHeight=%d, minRetainBlocks=%d", prunedHeight, eligibleHeight, cfg.MinRetainBlocks)
+
+	require.GreaterOrEqual(t, prunedHeight, minPrunedHeight, "prunedHeight=%d too low (eligibleHeight=%d)", prunedHeight, eligibleHeight)
+	require.LessOrEqual(t, prunedHeight, maxPrunedHeight, "prunedHeight=%d too height (eligibleHeight=%d)", prunedHeight, eligibleHeight)
 
 	cancel()
 
 	// Stop the server.
-	require.NoError(t, stopfunc(ctx))
+	require.NoError(t, stopfunc(context.Background()))
 }
