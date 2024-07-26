@@ -42,7 +42,7 @@ func TestSmoke(t *testing.T) {
 	}()
 
 	// Connect to the server.
-	cl, err := rpchttp.New("http://localhost:26657", "/websocket")
+	cl, err := rpchttp.New(cfg.Comet.RPC.ListenAddress, "/websocket")
 	require.NoError(t, err)
 
 	cprov := cprovider.NewABCIProvider(cl, netconf.Simnet, netconf.ChainVersionNamer(netconf.Simnet))
@@ -96,8 +96,8 @@ func TestSmoke(t *testing.T) {
 
 	<-ctx.Done()
 
-	// Stop the server.
-	require.NoError(t, stopfunc(ctx))
+	// Stop the server, with a fresh context
+	require.NoError(t, stopfunc(context.Background()))
 }
 
 func testCProvider(t *testing.T, ctx context.Context, cprov cprovider.Provider) {
@@ -140,6 +140,9 @@ func setupSimnet(t *testing.T) haloapp.Config {
 
 	cmtCfg := halocmd.DefaultCometConfig(homeDir)
 	cmtCfg.BaseConfig.DBBackend = string(db.MemDBBackend)
+	cmtCfg.P2P.ListenAddress = tutil.RandomListenAddress(t) // Avoid port clashes
+	cmtCfg.RPC.ListenAddress = tutil.RandomListenAddress(t) // Avoid port clashes
+	cmtCfg.Instrumentation.Prometheus = false
 
 	haloCfg := halocfg.DefaultConfig()
 	haloCfg.HomeDir = homeDir
