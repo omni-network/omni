@@ -316,8 +316,8 @@ func advertisedP2PAddr(network netconf.ID, node *e2e.Node) string {
 
 // advertisedIP returns the IP address to advertise for a node on a network.
 func advertisedIP(network netconf.ID, mode types.Mode, internal, external net.IP) net.IP {
-	if network.IsEphemeral() {
-		// Ephemeral networks do not support external peers connecting to it, so we use the internal IP.
+	if network == netconf.Devnet {
+		// Devnet does not support external peers connecting to it, so we use the internal IP.
 		return internal
 	}
 
