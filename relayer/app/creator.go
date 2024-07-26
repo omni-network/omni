@@ -21,7 +21,7 @@ func CreateSubmissions(up StreamUpdate) ([]xchain.Submission, error) {
 
 	att := up.Attestation
 
-	attRoot, err := xchain.AttestationRoot(att.BlockHeader, att.MsgRoot)
+	attRoot, err := xchain.AttestationRoot(att.AttestHeader, att.BlockHeader, att.MsgRoot)
 	if err != nil {
 		return nil, err
 	}
@@ -36,6 +36,7 @@ func CreateSubmissions(up StreamUpdate) ([]xchain.Submission, error) {
 		resp = append(resp, xchain.Submission{
 			AttestationRoot: attRoot,
 			ValidatorSetID:  att.ValidatorSetID,
+			AttHeader:       att.AttestHeader,
 			BlockHeader:     att.BlockHeader,
 			Msgs:            msgs,
 			Proof:           multi.Proof,

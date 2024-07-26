@@ -58,11 +58,8 @@ func TestRunner(t *testing.T) {
 		setIsVal(t, v, pk, isVal)
 		err := sub.callback(ctx, xchain.Block{
 			BlockHeader: xchain.BlockHeader{
-				ChainID:          chain1,
-				ConsensusChainID: network.ID.Static().OmniConsensusChainIDUint64(),
-				ConfLevel:        conf,
-				BlockOffset:      height,
-				BlockHeight:      height,
+				ChainID:     chain1,
+				BlockHeight: height,
 			},
 			Msgs: []xchain.Msg{{}}, // Non-empty XBlock should always be attested to
 		})
@@ -88,7 +85,6 @@ func TestRunner(t *testing.T) {
 
 	sub := <-prov // Get the subscription
 	require.EqualValues(t, chain1, sub.req.ChainID)
-	require.EqualValues(t, 0, sub.req.Offset)
 	require.EqualValues(t, 0, sub.req.Height)
 
 	callback(t, sub, 0, isVal, returnsOk) // Callback block 0 (in window)
@@ -100,7 +96,6 @@ func TestRunner(t *testing.T) {
 	// Assert it reset
 	sub = <-prov // Get the new subscription
 	require.EqualValues(t, chain1, sub.req.ChainID)
-	require.EqualValues(t, 2, sub.req.Offset) // Assert it starts from 2 this time
 	require.EqualValues(t, 2, sub.req.Height) // Assert it starts from 2 this time
 
 	v.TrimBehind(minByChain(network, chain1, 2)) // Set window to 2
@@ -118,7 +113,6 @@ func TestRunner(t *testing.T) {
 	// Assert it reset
 	sub = <-prov // Get the new subscription
 	require.EqualValues(t, chain1, sub.req.ChainID)
-	require.EqualValues(t, newOffset+1, sub.req.Offset) // Assert it starts from newOffset+1 this time
 	require.EqualValues(t, newHeight+1, sub.req.Height) // Assert it starts from newHeight+1 this time
 
 	cancel()
@@ -182,7 +176,7 @@ func TestVoteWindow(t *testing.T) {
 	// Ensure latest by chain not trimmed.
 	latest, ok := w.v.LatestByChain(xchain.ChainVersion{ID: chain1, ConfLevel: xchain.ConfFinalized})
 	require.True(t, ok)
-	require.EqualValues(t, 3, latest.BlockHeader.Offset)
+	require.EqualValues(t, 3, latest.AttestHeader.AttestOffset)
 }
 
 func TestVoter(t *testing.T) {
@@ -318,9 +312,8 @@ func expectSubscriptions(t *testing.T, prov stubProvider, chainOffsets ...uint64
 		case <-ctx.Done():
 			require.Fail(t, "timed out waiting for subscription")
 		case next := <-prov:
-			h, ok := expected[next.req.ChainID]
+			_, ok := expected[next.req.ChainID]
 			require.True(t, ok)
-			require.EqualValues(t, h, next.req.Offset)
 			delete(expected, next.req.ChainID)
 		}
 		cancel()
@@ -342,45 +335,48 @@ func (w *wrappedVoter) Add(t *testing.T, chainID, offset uint64) {
 	t.Helper()
 	var block xchain.Block
 	w.f.Fuzz(&block)
-	block.BlockHeader = xchain.BlockHeader{
-		ChainID:          chainID,
+
+	attHeader := xchain.AttestHeader{
 		ConsensusChainID: w.consensusChainID,
-		ConfLevel:        xchain.ConfFinalized,
-		BlockOffset:      offset,
-		BlockHash:        common.Hash{},
+		ChainVersion:     xchain.NewChainVersion(chainID, xchain.ConfFinalized),
+		AttestOffset:     offset,
 	}
 
-	err := w.v.Vote(block, false)
+	block.BlockHeader = xchain.BlockHeader{
+		ChainID: chainID,
+
+		BlockHash: common.Hash{},
+	}
+
+	err := w.v.Vote(attHeader, block, false)
 	require.NoError(t, err)
 }
 
 func (w *wrappedVoter) Propose(t *testing.T, chainID, offset uint64) {
 	t.Helper()
 
-	header := &types.BlockHeader{
+	header := &types.AttestHeader{
 		SourceChainId:    chainID,
 		ConsensusChainId: w.consensusChainID,
 		ConfLevel:        uint32(xchain.ConfFinalized),
-		Offset:           offset,
-		Hash:             common.Hash{}.Bytes(),
+		AttestOffset:     offset,
 	}
 
-	err := w.v.SetProposed([]*types.BlockHeader{header})
+	err := w.v.SetProposed([]*types.AttestHeader{header})
 	require.NoError(t, err)
 }
 
 func (w *wrappedVoter) Commit(t *testing.T, chainID, offset uint64) {
 	t.Helper()
 
-	header := &types.BlockHeader{
+	header := &types.AttestHeader{
 		SourceChainId:    chainID,
 		ConsensusChainId: w.consensusChainID,
 		ConfLevel:        uint32(xchain.ConfFinalized),
-		Offset:           offset,
-		Hash:             common.Hash{}.Bytes(),
+		AttestOffset:     offset,
 	}
 
-	err := w.v.SetCommitted([]*types.BlockHeader{header})
+	err := w.v.SetCommitted([]*types.AttestHeader{header})
 	require.NoError(t, err)
 }
 
@@ -390,7 +386,7 @@ func (w *wrappedVoter) Available(t *testing.T, chainID, offset uint64, ok bool) 
 
 	var found bool
 	for _, att := range w.v.GetAvailable() {
-		if att.BlockHeader.SourceChainId == chainID && att.BlockHeader.Offset == offset && att.BlockHeader.ConfLevel == uint32(xchain.ConfFinalized) {
+		if att.AttestHeader.SourceChainId == chainID && att.AttestHeader.AttestOffset == offset && att.AttestHeader.ConfLevel == uint32(xchain.ConfFinalized) {
 			found = true
 			break
 		}
@@ -405,13 +401,16 @@ func (w *wrappedVoter) AddErr(t *testing.T, chainID, offset uint64) {
 	var block xchain.Block
 	w.f.Fuzz(&block)
 	block.BlockHeader = xchain.BlockHeader{
-		ChainID:          chainID,
-		ConsensusChainID: w.consensusChainID,
-		ConfLevel:        xchain.ConfFinalized,
-		BlockOffset:      offset,
+		ChainID: chainID,
 	}
 
-	err := w.v.Vote(block, false)
+	attHeader := xchain.AttestHeader{
+		ConsensusChainID: w.consensusChainID,
+		ChainVersion:     xchain.NewChainVersion(chainID, xchain.ConfFinalized),
+		AttestOffset:     offset,
+	}
+
+	err := w.v.Vote(attHeader, block, false)
 	require.Error(t, err)
 }
 
@@ -432,11 +431,15 @@ func (m *mockDeps) LatestAttestation(context.Context, xchain.ChainVersion) (xcha
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	return xchain.Attestation{BlockHeader: xchain.BlockHeader{
-		BlockOffset: m.offset,
-		BlockHeight: m.height,
-		ConfLevel:   xchain.ConfFinalized,
-	}}, m.height > 0, nil
+	return xchain.Attestation{
+		AttestHeader: xchain.AttestHeader{
+			AttestOffset: m.offset,
+			ChainVersion: xchain.ChainVersion{ConfLevel: xchain.ConfFinalized},
+		},
+		BlockHeader: xchain.BlockHeader{
+			BlockHeight: m.height,
+		},
+	}, m.height > 0, nil
 }
 
 type stubDeps struct{}

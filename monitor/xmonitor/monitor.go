@@ -166,7 +166,7 @@ func monitorAttestedForever(
 			}
 
 			attestedHeight.WithLabelValues(srcChain.Name).Set(float64(att.BlockHeight))
-			attestedBlockOffset.WithLabelValues(srcChain.Name).Set(float64(att.BlockOffset))
+			attestedOffset.WithLabelValues(srcChain.Name).Set(float64(att.AttestOffset))
 
 			// Query emit cursor cache for offsets of the original xblock from the chain itself.
 			for _, stream := range network.StreamsFrom(srcChain.ID) {
@@ -198,7 +198,7 @@ func getConsXHead(ctx context.Context, cprovider cchain.Provider) map[ethclient.
 	}
 
 	return map[ethclient.HeadType]uint64{
-		"xfinal": xblock.BlockOffset,
+		"xfinal": xblock.BlockHeight,
 	}
 }
 

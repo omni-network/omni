@@ -19,6 +19,13 @@ type ChainVersion struct {
 	ConfLevel ConfLevel // ConfLevel defines the block "version"; either some fuzzy version or finalized.
 }
 
+func NewChainVersion(chainID uint64, confLevel ConfLevel) ChainVersion {
+	return ChainVersion{
+		ID:        chainID,
+		ConfLevel: confLevel,
+	}
+}
+
 // ConfLevel defines a xblock confirmation level.
 // This is similar to a "version"; with ConfFinalized being the final version and fuzzy conf levels being drafts.
 type ConfLevel byte
@@ -213,14 +220,15 @@ type SigTuple struct {
 
 // Submission is a cross-chain submission of a set of messages and their proofs.
 type Submission struct {
-	AttestationRoot common.Hash // Attestation merkle root of the cross-chain Block
-	ValidatorSetID  uint64      // Validator set that approved the attestation.
-	BlockHeader     BlockHeader // BlockHeader identifies the cross-chain Block
-	Msgs            []Msg       // Messages to be submitted
-	Proof           [][32]byte  // Merkle multi proofs of the messages
-	ProofFlags      []bool      // Flags indicating whether the proof is a left or right proof
-	Signatures      []SigTuple  // Validator signatures and public keys
-	DestChainID     uint64      // Destination chain ID, for internal use only
+	AttestationRoot common.Hash  // Attestation merkle root of the cross-chain Block
+	ValidatorSetID  uint64       // Validator set that approved the attestation.
+	AttHeader       AttestHeader // AttestHeader identifies the attestation this submission belongs to.
+	BlockHeader     BlockHeader  // BlockHeader identifies the cross-chain Block
+	Msgs            []Msg        // Messages to be submitted
+	Proof           [][32]byte   // Merkle multi proofs of the messages
+	ProofFlags      []bool       // Flags indicating whether the proof is a left or right proof
+	Signatures      []SigTuple   // Validator signatures and public keys
+	DestChainID     uint64       // Destination chain ID, for internal use only
 }
 
 // SubmitCursor is a cursor that tracks the progress of a cross-chain stream on destination portal contracts.

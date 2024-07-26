@@ -31,11 +31,15 @@ func TestVotesFromCommitNonUnique(t *testing.T) {
 
 	newVote := func(hash, msgRoot common.Hash) *types.Vote {
 		return &types.Vote{
+			AttestHeader: &types.AttestHeader{
+				ConsensusChainId: 0,
+				SourceChainId:    chainID,
+				AttestOffset:     offset,
+			},
 			BlockHeader: &types.BlockHeader{
-				SourceChainId: chainID,
-				Offset:        offset,
-				Height:        height,
-				Hash:          hash[:],
+				ChainId:     chainID,
+				BlockHeight: height,
+				BlockHash:   hash[:],
 			},
 			MsgRoot: msgRoot[:],
 			Signature: &types.SigTuple{
@@ -97,12 +101,15 @@ func TestVotesFromCommit(t *testing.T) {
 					fuzzer.Fuzz(&sig)
 
 					vote := &types.Vote{
-						BlockHeader: &types.BlockHeader{
+						AttestHeader: &types.AttestHeader{
 							SourceChainId: chain,
 							ConfLevel:     uint32(xchain.ConfFinalized),
-							Offset:        offset,
-							Height:        offset * 2,
-							Hash:          blockHash[:],
+							AttestOffset:  offset,
+						},
+						BlockHeader: &types.BlockHeader{
+							ChainId:     chain,
+							BlockHeight: offset * 2,
+							BlockHash:   blockHash[:],
 						},
 						MsgRoot: blockHash[:],
 						Signature: &types.SigTuple{
@@ -153,7 +160,7 @@ func TestVotesFromCommit(t *testing.T) {
 		return 0, nil
 	}
 
-	supported := func(ctx context.Context, chainID uint64) (bool, error) {
+	supported := func(context.Context, xchain.ChainVersion) (bool, error) {
 		return true, nil
 	}
 

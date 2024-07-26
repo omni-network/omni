@@ -52,7 +52,7 @@ func TestEncodeHeader(t *testing.T) {
 		BlockHash:   common.HexToHash("0x412d62a6a3115ab5a0e0cae9d63082ff8dfb002a98cc889d06dc986a9461586b"),
 	}
 
-	packed, err := encodeHeader(aHeader, bHeader)
+	packed, err := encodeSubmissionHeader(aHeader, bHeader)
 	require.NoError(t, err)
 
 	tutil.RequireGoldenBytes(t, []byte(hex.EncodeToString(packed)))

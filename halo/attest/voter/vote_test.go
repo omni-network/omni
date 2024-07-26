@@ -17,21 +17,26 @@ import (
 
 func TestCreateVerifyVotes(t *testing.T) {
 	t.Parallel()
+	fuzzer := fuzz.New().NilChance(0).NumElements(1, 64)
 
 	privKey := k1.GenPrivKey()
 	addr, err := k1util.PubKeyToAddress(privKey.PubKey())
 	require.NoError(t, err)
 
 	var block xchain.Block
-	fuzz.New().NilChance(0).NumElements(1, 64).Fuzz(&block)
-	block.ConfLevel = xchain.ConfLatest // Pick valid conf level
+	fuzzer.Fuzz(&block)
 
-	att, err := voter.CreateVote(privKey, block)
+	var attHeader xchain.AttestHeader
+	fuzzer.Fuzz(&attHeader)
+	attHeader.ChainVersion.ID = block.ChainID            // Align headers
+	attHeader.ChainVersion.ConfLevel = xchain.ConfLatest // Pick valid conf level
+
+	att, err := voter.CreateVote(privKey, attHeader, block)
 	require.NoError(t, err)
 	require.Equal(t, block.BlockHeader, att.BlockHeader.ToXChain())
 	require.Equal(t, addr, common.Address(att.Signature.ValidatorAddress))
 
 	// Verify the attestation
-	err = att.Verify(block.ConsensusChainID)
+	err = att.Verify()
 	require.NoError(t, err)
 }

@@ -94,7 +94,7 @@ func (s Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 	}
 
 	dstChain := s.chain.Name
-	srcChain := s.chainNames[sub.BlockHeader.ChainVersion()]
+	srcChain := s.chainNames[sub.AttHeader.ChainVersion]
 
 	// Request attributes added to context (for downstream logging) and manually added to errors (for upstream logging).
 	reqAttrs := []any{
@@ -104,7 +104,7 @@ func (s Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 
 	ctx = log.WithCtx(ctx, reqAttrs...)
 	log.Debug(ctx, "Received submission",
-		"block_offset", sub.BlockHeader.BlockOffset,
+		"block_offset", sub.AttHeader.ChainVersion,
 		"start_msg_offset", startOffset,
 		"msgs", len(sub.Msgs),
 	)

@@ -15,9 +15,9 @@ const (
 	typAddress = "address"
 )
 
-// header defines the header leaf of the attestation merkle tree.
+// submissionHeader defines the header leaf of the attestation merkle tree.
 // It contains fields from the AttestHeader and BlockHeader.
-type header struct {
+type submissionHeader struct {
 	SourceChainID    uint64
 	ConsensusChainID uint64
 	ConfLevel        ConfLevel
@@ -28,7 +28,7 @@ type header struct {
 
 //nolint:gochecknoglobals // Static ABI types
 var (
-	headerABI = mustABITuple([]abi.ArgumentMarshaling{
+	submissionHeaderABI = mustABITuple([]abi.ArgumentMarshaling{
 		{Name: "SourceChainID", Type: typUint64},
 		{Name: "ConsensusChainID", Type: typUint64},
 		{Name: "ConfLevel", Type: typUint8},
@@ -58,13 +58,13 @@ func encodeMsg(msg Msg) ([]byte, error) {
 	return resp, nil
 }
 
-// encodeHeader ABI encodes a cross chain block header into a byte slice.
-func encodeHeader(attHeader AttestHeader, blockHeader BlockHeader) ([]byte, error) {
+// encodeSubmissionHeader ABI encodes a attest header and block header into a byte slice.
+func encodeSubmissionHeader(attHeader AttestHeader, blockHeader BlockHeader) ([]byte, error) {
 	if attHeader.ChainVersion.ID != blockHeader.ChainID {
 		return nil, errors.New("chain ID mismatch")
 	}
 
-	resp, err := headerABI.Pack(header{
+	resp, err := submissionHeaderABI.Pack(submissionHeader{
 		SourceChainID:    attHeader.ChainVersion.ID,
 		ConsensusChainID: attHeader.ConsensusChainID,
 		ConfLevel:        attHeader.ChainVersion.ConfLevel,
@@ -73,7 +73,7 @@ func encodeHeader(attHeader AttestHeader, blockHeader BlockHeader) ([]byte, erro
 		BlockHash:        blockHeader.BlockHash,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "pack xchain header")
+		return nil, errors.Wrap(err, "pack xchain submissionHeader")
 	}
 
 	return resp, nil

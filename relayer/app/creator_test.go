@@ -45,6 +45,10 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 	fuzzer.NilChance(0).NumElements(2, 64).Fuzz(&block)
 	require.NotEmpty(t, block.Msgs)
 
+	var attestHeader xchain.AttestHeader
+	fuzzer.Fuzz(&attestHeader)
+	attestHeader.ChainVersion.ID = block.ChainID // Align headers
+
 	var valSetID uint64
 	fuzzer.Fuzz(&valSetID)
 
@@ -53,7 +57,7 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 		block.Msgs[i].StreamOffset = uint64(i)
 	}
 
-	vote, err := voter.CreateVote(privKey, block)
+	vote, err := voter.CreateVote(privKey, attestHeader, block)
 	require.NoError(t, err)
 	require.Equal(t, block.BlockHeader, vote.BlockHeader.ToXChain())
 	require.Equal(t, addr, common.Address(vote.Signature.ValidatorAddress))
@@ -62,6 +66,7 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 	require.NoError(t, err)
 
 	att := xchain.Attestation{
+		AttestHeader:   vote.AttestHeader.ToXChain(),
 		BlockHeader:    vote.BlockHeader.ToXChain(),
 		ValidatorSetID: valSetID,
 		MsgRoot:        [32]byte(vote.MsgRoot),

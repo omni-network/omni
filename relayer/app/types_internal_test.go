@@ -16,6 +16,7 @@ func Test_translateSubmission(t *testing.T) {
 	t.Parallel()
 	var sub xchain.Submission
 	fuzz.New().NilChance(0).Fuzz(&sub)
+	sub.AttHeader.ChainVersion.ID = sub.BlockHeader.ChainID // Align headers
 
 	xsub := submissionToBinding(sub)
 	reversedSub := submissionFromBinding(xsub, sub.DestChainID)
@@ -61,12 +62,14 @@ func submissionFromBinding(sub bindings.XTypesSubmission, destChainID uint64) xc
 	return xchain.Submission{
 		AttestationRoot: sub.AttestationRoot,
 		ValidatorSetID:  sub.ValidatorSetId,
-		BlockHeader: xchain.BlockHeader{
-			ChainID:          sub.BlockHeader.SourceChainId,
+		AttHeader: xchain.AttestHeader{
 			ConsensusChainID: sub.BlockHeader.ConsensusChainId,
-			BlockOffset:      sub.BlockHeader.Offset,
-			BlockHash:        sub.BlockHeader.SourceBlockHash,
-			ConfLevel:        xchain.ConfLevel(sub.BlockHeader.ConfLevel),
+			ChainVersion:     xchain.NewChainVersion(sub.BlockHeader.SourceChainId, xchain.ConfLevel(sub.BlockHeader.ConfLevel)),
+			AttestOffset:     sub.BlockHeader.Offset,
+		},
+		BlockHeader: xchain.BlockHeader{
+			ChainID:   sub.BlockHeader.SourceChainId,
+			BlockHash: sub.BlockHeader.SourceBlockHash,
 		},
 		Proof:       sub.Proof,
 		ProofFlags:  sub.ProofFlags,

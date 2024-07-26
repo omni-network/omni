@@ -8,9 +8,9 @@ import (
 )
 
 const (
-	DSTUnknown     merkle.DomainSeparationTag = 0
-	DSTBlockHeader merkle.DomainSeparationTag = 1
-	DSTMessage     merkle.DomainSeparationTag = 2
+	DSTUnknown merkle.DomainSeparationTag = 0
+	DSTHeader  merkle.DomainSeparationTag = 1
+	DSTMessage merkle.DomainSeparationTag = 2
 )
 
 // MsgTree is a merkle tree of all the messages in a cross-chain block.
@@ -25,7 +25,7 @@ func (t MsgTree) MsgRoot() [32]byte {
 	return t.tree[0]
 }
 
-// Proof returns the merkle multi proof for the provided header and messages.
+// Proof returns the merkle multi proof for the provided submissionHeader and messages.
 func (t MsgTree) Proof(msgs []Msg) (merkle.MultiProof, error) {
 	// Get the indices to prove
 	indices := make([]int, 0, len(msgs))
@@ -91,18 +91,18 @@ func msgLeaf(msg Msg) ([32]byte, error) {
 	return merkle.StdLeafHash(DSTMessage, bz), nil
 }
 
-func HeaderLeaf(attHeader AttestHeader, blockHeader BlockHeader) ([32]byte, error) {
-	bz, err := encodeHeader(attHeader, blockHeader)
+func submissionHeaderLeaf(attHeader AttestHeader, blockHeader BlockHeader) ([32]byte, error) {
+	bz, err := encodeSubmissionHeader(attHeader, blockHeader)
 	if err != nil {
-		return [32]byte{}, errors.Wrap(err, "encode block header")
+		return [32]byte{}, errors.Wrap(err, "encode block submissionHeader")
 	}
 
-	return merkle.StdLeafHash(DSTBlockHeader, bz), nil
+	return merkle.StdLeafHash(DSTHeader, bz), nil
 }
 
-// AttestationRoot returns the attestation root of the provided block header and message root.
+// AttestationRoot returns the attestation root of the provided block submissionHeader and message root.
 func AttestationRoot(attHeader AttestHeader, blockHeader BlockHeader, msgRoot common.Hash) (common.Hash, error) {
-	headerLeaf, err := HeaderLeaf(attHeader, blockHeader)
+	headerLeaf, err := submissionHeaderLeaf(attHeader, blockHeader)
 	if err != nil {
 		return [32]byte{}, err
 	}

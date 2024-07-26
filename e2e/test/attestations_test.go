@@ -122,7 +122,7 @@ func fetchAllAtts(ctx context.Context, cprov cchain.Provider, chainVer xchain.Ch
 		resp = append(resp, atts...)
 
 		// Update the from height to fetch the next batch of attestation
-		fromOffset = atts[len(atts)-1].BlockOffset + 1
+		fromOffset = atts[len(atts)-1].AttestOffset + 1
 	}
 
 	return resp, nil
