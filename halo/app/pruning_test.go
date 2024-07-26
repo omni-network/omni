@@ -73,12 +73,12 @@ func TestPruningHistory(t *testing.T) {
 		if !ok {
 			t.Logf("still waiting for an attestation: height=%d", status.SyncInfo.LatestBlockHeight)
 			return false
-		} else if att.BlockOffset == 1 {
+		} else if att.AttestOffset == 1 {
 			t.Logf("still waiting for 2nd attestation: height=%d", status.SyncInfo.LatestBlockHeight)
 		}
 
-		require.NotEmpty(t, att.BlockOffset)
-		require.Equal(t, srcChain, att.SourceChainID)
+		require.NotEmpty(t, att.AttestOffset)
+		require.Equal(t, srcChain, att.ChainID)
 
 		eligibleHeight = uint64(status.SyncInfo.LatestBlockHeight)
 

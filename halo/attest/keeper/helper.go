@@ -21,13 +21,16 @@ func (a *Attestation) IsFuzzy() bool {
 
 func AttestationFromDB(att *Attestation, consensusChainID uint64, sigs []*Signature) *types.Attestation {
 	return &types.Attestation{
-		BlockHeader: &types.BlockHeader{
-			SourceChainId:    att.GetChainId(),
+		AttestHeader: &types.AttestHeader{
 			ConsensusChainId: consensusChainID,
+			SourceChainId:    att.GetChainId(),
 			ConfLevel:        att.GetConfLevel(),
-			Offset:           att.GetBlockOffset(),
-			Height:           att.GetBlockHeight(),
-			Hash:             att.GetBlockHash(),
+			AttestOffset:     att.GetAttestOffset(),
+		},
+		BlockHeader: &types.BlockHeader{
+			ChainId:     att.GetChainId(),
+			BlockHeight: att.GetBlockHeight(),
+			BlockHash:   att.GetBlockHash(),
 		},
 		ValidatorSetId: att.GetValidatorSetId(),
 		MsgRoot:        att.GetMsgRoot(),
@@ -73,12 +76,12 @@ func newLookupCache(lookup func(context.Context, xchain.ChainVersion) (*Attestat
 		} else if !ok {
 			cache[chainVer] = 0 // Populate miss
 			return 0, false, nil
-		} else if latest.GetBlockOffset() == 0 { // Offsets start at 1
+		} else if latest.GetAttestOffset() == 0 { // Offsets start at 1
 			return 0, false, errors.New("invalid zero attestation offset [BUG]")
 		}
 
 		// Populate hit
-		offset := latest.GetBlockOffset()
+		offset := latest.GetAttestOffset()
 		cache[chainVer] = offset
 
 		return offset, true, nil

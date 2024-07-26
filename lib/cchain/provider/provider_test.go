@@ -65,7 +65,7 @@ func TestProvider(t *testing.T) {
 
 	require.Len(t, actual, total)
 	for i, attestation := range actual {
-		require.Equal(t, chainID, attestation.SourceChainID)
+		require.Equal(t, chainID, attestation.ChainID)
 		require.Equal(t, conf, attestation.ConfLevel)
 		require.Equal(t, fromHeight+uint64(i), attestation.BlockOffset)
 	}
@@ -132,9 +132,9 @@ func (f *testFetcher) Fetch(ctx context.Context, chainVer xchain.ChainVersion, f
 	for i := 0; i < toReturn; i++ {
 		resp = append(resp, xchain.Attestation{
 			BlockHeader: xchain.BlockHeader{
-				SourceChainID: chainVer.ID,
-				ConfLevel:     chainVer.ConfLevel,
-				BlockOffset:   fromHeight + uint64(i),
+				ChainID:     chainVer.ID,
+				ConfLevel:   chainVer.ConfLevel,
+				BlockOffset: fromHeight + uint64(i),
 			},
 		})
 	}

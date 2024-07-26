@@ -256,7 +256,7 @@ func fetchXBlock(rootCtx context.Context, xProvider xchain.Provider, att xchain.
 	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second))
 	for {
 		req := xchain.ProviderRequest{
-			ChainID:   att.SourceChainID,
+			ChainID:   att.ChainID,
 			Height:    att.BlockHeight,
 			Offset:    att.BlockOffset,
 			ConfLevel: att.ConfLevel,

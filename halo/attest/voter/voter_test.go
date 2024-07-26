@@ -58,7 +58,7 @@ func TestRunner(t *testing.T) {
 		setIsVal(t, v, pk, isVal)
 		err := sub.callback(ctx, xchain.Block{
 			BlockHeader: xchain.BlockHeader{
-				SourceChainID:    chain1,
+				ChainID:          chain1,
 				ConsensusChainID: network.ID.Static().OmniConsensusChainIDUint64(),
 				ConfLevel:        conf,
 				BlockOffset:      height,
@@ -343,7 +343,7 @@ func (w *wrappedVoter) Add(t *testing.T, chainID, offset uint64) {
 	var block xchain.Block
 	w.f.Fuzz(&block)
 	block.BlockHeader = xchain.BlockHeader{
-		SourceChainID:    chainID,
+		ChainID:          chainID,
 		ConsensusChainID: w.consensusChainID,
 		ConfLevel:        xchain.ConfFinalized,
 		BlockOffset:      offset,
@@ -405,7 +405,7 @@ func (w *wrappedVoter) AddErr(t *testing.T, chainID, offset uint64) {
 	var block xchain.Block
 	w.f.Fuzz(&block)
 	block.BlockHeader = xchain.BlockHeader{
-		SourceChainID:    chainID,
+		ChainID:          chainID,
 		ConsensusChainID: w.consensusChainID,
 		ConfLevel:        xchain.ConfFinalized,
 		BlockOffset:      offset,

@@ -43,6 +43,7 @@ var _ types.Voter = (*Voter)(nil)
 // GetAvailable, SetProposed, and SetCommitted are thread safe, but must be called after Start.
 type Voter struct {
 	path        string
+	cChainID    uint64
 	privKey     crypto.PrivKey
 	network     netconf.Network
 	address     common.Address
@@ -75,7 +76,7 @@ func LoadVoter(privKey crypto.PrivKey, path string, provider xchain.Provider, de
 		return nil, errors.New("invalid private key")
 	}
 
-	s, err := loadState(path, network.ID.Static().OmniConsensusChainIDUint64())
+	s, err := loadState(path)
 	if err != nil {
 		return nil, err
 	}
@@ -87,6 +88,7 @@ func LoadVoter(privKey crypto.PrivKey, path string, provider xchain.Provider, de
 
 	return &Voter{
 		privKey:  privKey,
+		cChainID: network.ID.Static().OmniConsensusChainIDUint64(),
 		address:  addr,
 		path:     path,
 		network:  network,
@@ -176,25 +178,25 @@ func (v *Voter) runOnce(ctx context.Context, chainVer xchain.ChainVersion) error
 
 	// Use finalized chain version to calculate height and offset to start streaming from (for correct offset calcs).
 	finalVer := xchain.ChainVersion{ID: chainVer.ID, ConfLevel: xchain.ConfFinalized}
-	fromHeight, fromOffset, err := v.getFromHeightAndOffset(ctx, finalVer)
+	fromBlockHeight, fromAttestOffset, err := v.getFromHeightAndOffset(ctx, finalVer)
 	if err != nil {
 		return errors.Wrap(err, "get from height and offset")
 	}
 
 	log.Info(ctx, "Voting started for chain",
-		"from_height", fromHeight,
-		"from_offset", fromOffset,
+		"from_block_height", fromBlockHeight,
+		"from_attest_offset", fromAttestOffset,
 		"skip_before_offset", skipBeforeOffset,
 		"chain", v.network.ChainVersionName(chainVer),
 	)
 
 	req := xchain.ProviderRequest{
 		ChainID:   chainVer.ID,
-		Height:    fromHeight,
+		Height:    fromBlockHeight,
 		ConfLevel: chainVer.ConfLevel,
-		Offset:    fromOffset,
 	}
 
+	tracker := newOffsetTracker(fromAttestOffset)
 	streamOffsets := make(map[xchain.StreamID]uint64)
 	var prevBlock *xchain.Block
 
@@ -216,31 +218,45 @@ func (v *Voter) runOnce(ctx context.Context, chainVer xchain.ChainVersion) error
 				maybeDebugLog(ctx, "Not creating vote for empty cross chain block")
 
 				return nil // Do not vote for empty blocks.
-			} else if block.BlockOffset < skipBeforeOffset {
-				maybeDebugLog(ctx, "Skipping previously voted block on startup", "offset", block.BlockOffset, "skip_before_offset", skipBeforeOffset)
-
-				return nil // Do not vote for offsets already approved or that we voted for previously
 			}
 
-			minimum, ok := v.minWindow(block.ChainVersion())
-			if ok && block.BlockOffset < minimum {
+			attestOffset, err := tracker.NextAttestOffset(block.BlockHeight)
+			if err != nil {
+				return errors.Wrap(err, "next attestation offset")
+			}
+
+			// Create a vote for the block.
+			attHeader := xchain.AttestHeader{
+				ConsensusChainID: v.cChainID,
+				ChainVersion:     chainVer,
+				AttestOffset:     attestOffset,
+			}
+
+			if attestOffset < skipBeforeOffset {
+				maybeDebugLog(ctx, "Skipping previously voted block on startup", "attest_offset", attestOffset, "skip_before_offset", skipBeforeOffset)
+
+				return nil // Do not vote for offsets already approved or that we voted for previously (this risks double signing).
+			}
+
+			minimum, ok := v.minWindow(chainVer)
+			if ok && attestOffset < minimum {
 				// Restart stream, jumping ahead to middle of vote window.
-				return errors.New("behind vote window (too slow)", "vote_offset", block.BlockOffset, "window_minimum", minimum)
+				return errors.New("behind vote window (too slow)", "attest_offset", attestOffset, "window_minimum", minimum)
 			}
 
 			backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second*5))
 			for v.AvailableCount() > maxAvailable {
-				log.Warn(ctx, "Voting paused, latest approved attestation is too far behind (stuck?)", nil, "vote_height", block.BlockOffset)
+				log.Warn(ctx, "Voting paused, latest approved attestation is too far behind (stuck?)", nil, "attest_offset", attestOffset, "block_height", block.BlockHeight)
 				backoff()
 			}
 
-			if err := v.Vote(block, first); err != nil {
+			if err := v.Vote(attHeader, block, first); err != nil {
 				return errors.Wrap(err, "vote")
 			}
 			first = false
 
 			// TODO(corver): Remove if this becomes too noisy.
-			logVoteCreated(ctx, v.network, block)
+			logVoteCreated(ctx, v.network, attHeader, block)
 
 			return nil
 		},
@@ -250,47 +266,47 @@ func (v *Voter) runOnce(ctx context.Context, chainVer xchain.ChainVersion) error
 // getFromHeightAndOffset returns the height and offset to start streaming from for the given chain version.
 //
 //nolint:nonamedreturns // Ambiguous return values.
-func (v *Voter) getFromHeightAndOffset(ctx context.Context, chainVer xchain.ChainVersion) (fromHeight uint64, fromOffset uint64, err error) {
+func (v *Voter) getFromHeightAndOffset(ctx context.Context, chainVer xchain.ChainVersion) (fromBlockHeight uint64, fromAttestOffset uint64, err error) {
 	// Get latest state from disk.
 	if latest, ok := v.latestByChain(chainVer); ok {
-		fromHeight = latest.BlockHeader.Height + 1
-		fromOffset = latest.BlockHeader.Offset + 1
+		fromBlockHeight = latest.BlockHeader.BlockHeight + 1
+		fromAttestOffset = latest.AttestHeader.AttestOffset + 1
 	}
 
 	// Get latest approved attestation from the chain.
 	if latest, ok, err := v.deps.LatestAttestation(ctx, chainVer); err != nil {
 		return 0, 0, errors.Wrap(err, "latest attestation")
-	} else if ok && fromHeight < latest.BlockHeight+1 {
+	} else if ok && fromBlockHeight < latest.BlockHeight+1 {
 		// Allows skipping ahead of we were behind for some reason.
-		fromHeight = latest.BlockHeight + 1
-		fromOffset = latest.BlockOffset + 1
+		fromBlockHeight = latest.BlockHeight + 1
+		fromAttestOffset = latest.AttestHeader.AttestOffset + 1
 	}
 
-	return fromHeight, fromOffset, nil
+	return fromBlockHeight, fromAttestOffset, nil
 }
 
 // Vote creates a vote for the given block and adds it to the internal state.
-func (v *Voter) Vote(block xchain.Block, allowSkip bool) error {
+func (v *Voter) Vote(attHeader xchain.AttestHeader, block xchain.Block, allowSkip bool) error {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
-	vote, err := CreateVote(v.privKey, block)
+	vote, err := CreateVote(v.privKey, attHeader, block)
 	if err != nil {
 		return err
-	} else if err := vote.Verify(v.network.ID.Static().OmniConsensusChainIDUint64()); err != nil {
+	} else if err := vote.Verify(); err != nil {
 		return errors.Wrap(err, "verify vote")
 	}
 
-	chainVer := vote.BlockHeader.XChainVersion()
+	chainVer := vote.AttestHeader.XChainVersion()
 
 	// Ensure attestation is sequential and not a duplicate.
 	latest, ok := v.latest[chainVer]
-	if ok && latest.BlockHeader.Offset >= vote.BlockHeader.Offset {
+	if ok && latest.AttestHeader.AttestOffset >= vote.AttestHeader.AttestOffset {
 		return errors.New("attestation height already exists",
-			"latest", latest.BlockHeader.Offset, "new", vote.BlockHeader.Offset)
-	} else if ok && !allowSkip && latest.BlockHeader.Offset+1 != vote.BlockHeader.Offset {
+			"latest", latest.AttestHeader.AttestOffset, "new", vote.AttestHeader.AttestOffset)
+	} else if ok && !allowSkip && latest.AttestHeader.AttestOffset+1 != vote.AttestHeader.AttestOffset {
 		return errors.New("attestation is not sequential",
-			"existing", latest.BlockHeader.Offset, "new", vote.BlockHeader.Offset)
+			"existing", latest.AttestHeader.AttestOffset, "new", vote.AttestHeader.AttestOffset)
 	}
 
 	v.latest[chainVer] = vote
@@ -299,8 +315,8 @@ func (v *Voter) Vote(block xchain.Block, allowSkip bool) error {
 	lag := time.Since(block.Timestamp).Seconds()
 	name := v.network.ChainVersionName(chainVer)
 	createLag.WithLabelValues(name).Set(lag)
-	createHeight.WithLabelValues(name).Set(float64(vote.BlockHeader.Height))
-	createBlockOffset.WithLabelValues(name).Set(float64(vote.BlockHeader.Offset))
+	createHeight.WithLabelValues(name).Set(float64(vote.BlockHeader.BlockHeight))
+	createAttestOffset.WithLabelValues(name).Set(float64(vote.AttestHeader.AttestOffset))
 	for stream, msgOffset := range latestMsgOffsets(block.Msgs) {
 		createMsgOffset.WithLabelValues(v.network.StreamName(stream)).Set(float64(msgOffset))
 	}
@@ -342,9 +358,9 @@ func (v *Voter) TrimBehind(minsByChain map[xchain.ChainVersion]uint64) int {
 	trim := func(votes []*types.Vote) []*types.Vote {
 		var remaining []*types.Vote
 		for _, vote := range votes {
-			chainVer := vote.BlockHeader.XChainVersion()
+			chainVer := vote.AttestHeader.XChainVersion()
 			minimum, ok := minsByChain[chainVer]
-			if ok && vote.BlockHeader.Offset < minimum {
+			if ok && vote.AttestHeader.AttestOffset < minimum {
 				trimTotal.WithLabelValues(v.network.ChainVersionName(chainVer)).Inc()
 				continue // Skip/Trim
 			}
@@ -384,7 +400,7 @@ func (v *Voter) GetAvailable() []*types.Vote {
 }
 
 // SetProposed sets the votes as proposed.
-func (v *Voter) SetProposed(headers []*types.BlockHeader) error {
+func (v *Voter) SetProposed(headers []*types.AttestHeader) error {
 	proposedPerBlock.Observe(float64(len(headers)))
 
 	if len(headers) == 0 {
@@ -399,7 +415,7 @@ func (v *Voter) SetProposed(headers []*types.BlockHeader) error {
 	var newAvailable, newProposed []*types.Vote
 	for _, vote := range v.availableAndProposedUnsafe() {
 		// If proposed, move it to the proposed list.
-		if proposed[vote.BlockHeader.ToXChain()] {
+		if proposed[vote.AttestHeader.ToXChain()] {
 			newProposed = append(newProposed, vote)
 		} else { // Otherwise, keep or move it to in the available list.
 			newAvailable = append(newAvailable, vote)
@@ -413,7 +429,7 @@ func (v *Voter) SetProposed(headers []*types.BlockHeader) error {
 }
 
 // SetCommitted sets the votes as committed. Persisting the result to disk.
-func (v *Voter) SetCommitted(headers []*types.BlockHeader) error {
+func (v *Voter) SetCommitted(headers []*types.AttestHeader) error {
 	committedPerBlock.Observe(float64(len(headers)))
 
 	if len(headers) == 0 {
@@ -430,7 +446,7 @@ func (v *Voter) SetCommitted(headers []*types.BlockHeader) error {
 	var newAvailable []*types.Vote
 	for _, vote := range v.availableAndProposedUnsafe() {
 		// If newly committed, add to committed.
-		if committed[vote.BlockHeader.ToXChain()] {
+		if committed[vote.AttestHeader.ToXChain()] {
 			newCommitted = append(newCommitted, vote)
 		} else { // Otherwise, keep/move it back to available.
 			newAvailable = append(newAvailable, vote)
@@ -443,7 +459,7 @@ func (v *Voter) SetCommitted(headers []*types.BlockHeader) error {
 
 	// Update committed height metrics.
 	for _, vote := range v.committed {
-		commitHeight.WithLabelValues(v.network.ChainVersionName(vote.BlockHeader.XChainVersion())).Set(float64(vote.BlockHeader.Height))
+		commitHeight.WithLabelValues(v.network.ChainVersionName(vote.AttestHeader.XChainVersion())).Set(float64(vote.BlockHeader.BlockHeight))
 	}
 
 	return v.saveUnsafe()
@@ -476,11 +492,11 @@ func (v *Voter) latestByChain(chainVer xchain.ChainVersion) (*types.Vote, bool) 
 func (v *Voter) saveUnsafe() error {
 	sortVotes := func(atts []*types.Vote) {
 		sort.Slice(atts, func(i, j int) bool {
-			if atts[i].BlockHeader.SourceChainId != atts[j].BlockHeader.SourceChainId {
-				return atts[i].BlockHeader.SourceChainId < atts[j].BlockHeader.SourceChainId
+			if atts[i].BlockHeader.ChainId != atts[j].BlockHeader.ChainId {
+				return atts[i].BlockHeader.ChainId < atts[j].BlockHeader.ChainId
 			}
 
-			return atts[i].BlockHeader.Offset < atts[j].BlockHeader.Offset
+			return atts[i].AttestHeader.AttestOffset < atts[j].AttestHeader.AttestOffset
 		})
 	}
 	sortVotes(v.available)
@@ -512,7 +528,7 @@ func (v *Voter) instrumentUnsafe() {
 	count := func(atts []*types.Vote, gaugeVec *prometheus.GaugeVec) {
 		counts := make(map[xchain.ChainVersion]int)
 		for _, vote := range atts {
-			counts[vote.BlockHeader.XChainVersion()]++
+			counts[vote.AttestHeader.XChainVersion()]++
 		}
 
 		for chain, count := range counts {
@@ -554,10 +570,10 @@ func detectReorg(chainVer xchain.ChainVersion, prevBlock *xchain.Block, block xc
 	}
 
 	if chainVer.ConfLevel.IsFuzzy() {
-		return errors.New("fuzzy chain reorg detected", "height", block.BlockHeight, "offset", block.BlockOffset, "parent_hash", prevBlock.BlockHash, "new_parent_hash", block.ParentHash)
+		return errors.New("fuzzy chain reorg detected", "height", block.BlockHeight, "parent_hash", prevBlock.BlockHash, "new_parent_hash", block.ParentHash)
 	}
 
-	return errors.New("finalized chain reorg detected [BUG]", "height", block.BlockHeight, "offset", block.BlockOffset, "parent_hash", prevBlock.BlockHash, "new_parent_hash", block.ParentHash)
+	return errors.New("finalized chain reorg detected [BUG]", "height", block.BlockHeight, "parent_hash", prevBlock.BlockHash, "new_parent_hash", block.ParentHash)
 }
 
 // stateJSON is the JSON representation of the attester state.
@@ -569,7 +585,7 @@ type stateJSON struct {
 }
 
 // loadState loads a path state from the given path.
-func loadState(path string, cchainID uint64) (stateJSON, error) {
+func loadState(path string) (stateJSON, error) {
 	bz, err := os.ReadFile(path)
 	if err != nil {
 		return stateJSON{}, errors.Wrap(err, "read state path")
@@ -583,7 +599,7 @@ func loadState(path string, cchainID uint64) (stateJSON, error) {
 	verify := func(voteSets ...[]*types.Vote) error {
 		for _, votes := range voteSets {
 			for _, vote := range votes {
-				if err := vote.Verify(cchainID); err != nil {
+				if err := vote.Verify(); err != nil {
 					return errors.Wrap(err, "verify vote")
 				}
 			}
@@ -600,8 +616,8 @@ func loadState(path string, cchainID uint64) (stateJSON, error) {
 }
 
 // headerMap converts a list of headers to a bool map (set).
-func headerMap(headers []*types.BlockHeader) map[xchain.BlockHeader]bool {
-	resp := make(map[xchain.BlockHeader]bool) // Can't use protos as map keys.
+func headerMap(headers []*types.AttestHeader) map[xchain.AttestHeader]bool {
+	resp := make(map[xchain.AttestHeader]bool) // Can't use protos as map keys.
 	for _, header := range headers {
 		resp[header.ToXChain()] = true
 	}
@@ -613,12 +629,12 @@ func headerMap(headers []*types.BlockHeader) map[xchain.BlockHeader]bool {
 func pruneLatestPerChain(atts []*types.Vote) []*types.Vote {
 	latest := make(map[uint64]*types.Vote)
 	for _, vote := range atts {
-		latestAtt, ok := latest[vote.BlockHeader.SourceChainId]
-		if ok && latestAtt.BlockHeader.Offset >= vote.BlockHeader.Offset {
+		latestAtt, ok := latest[vote.BlockHeader.ChainId]
+		if ok && latestAtt.AttestHeader.AttestOffset >= vote.AttestHeader.AttestOffset {
 			continue
 		}
 
-		latest[vote.BlockHeader.SourceChainId] = vote
+		latest[vote.BlockHeader.ChainId] = vote
 	}
 
 	// Flatten
@@ -666,13 +682,13 @@ func latestToJSON(latest map[xchain.ChainVersion]*types.Vote) []*types.Vote {
 func latestFromJSON(latest []*types.Vote) map[xchain.ChainVersion]*types.Vote {
 	resp := make(map[xchain.ChainVersion]*types.Vote, len(latest))
 	for _, v := range latest {
-		resp[v.BlockHeader.XChainVersion()] = v
+		resp[v.AttestHeader.XChainVersion()] = v
 	}
 
 	return resp
 }
 
-func logVoteCreated(ctx context.Context, network netconf.Network, block xchain.Block) {
+func logVoteCreated(ctx context.Context, network netconf.Network, attHeader xchain.AttestHeader, block xchain.Block) {
 	// Collect start offsets per shard.
 	startOffsets := make(map[string]uint64)
 	for _, msg := range block.Msgs {
@@ -684,7 +700,7 @@ func logVoteCreated(ctx context.Context, network netconf.Network, block xchain.B
 	}
 
 	attrs := []any{
-		"offset", block.BlockOffset,
+		"offset", attHeader.AttestOffset,
 		"msgs", len(block.Msgs),
 	}
 	for shard, offset := range startOffsets {

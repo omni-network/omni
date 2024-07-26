@@ -134,7 +134,7 @@ func (k *Keeper) Add(ctx context.Context, msg *types.MsgAddVotes) error {
 
 	countsByChainVer := make(map[xchain.ChainVersion]int)
 	for _, aggVote := range msg.Votes {
-		countsByChainVer[aggVote.BlockHeader.XChainVersion()]++
+		countsByChainVer[aggVote.AttestHeader.XChainVersion()]++
 
 		// Sanity check that all votes are from prev block validators.
 		for _, sig := range aggVote.Signatures {
@@ -163,7 +163,7 @@ func (k *Keeper) Add(ctx context.Context, msg *types.MsgAddVotes) error {
 func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64) error {
 	defer latency("add_one")()
 
-	header := agg.BlockHeader
+	header := agg.AttestHeader
 	attRoot, err := agg.AttestationRoot()
 	if err != nil {
 		return errors.Wrap(err, "attestation root")
@@ -175,11 +175,11 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 	if ormerrors.IsNotFound(err) {
 		// Insert new attestation
 		attID, err = k.attTable.InsertReturningId(ctx, &Attestation{
-			ChainId:         agg.BlockHeader.SourceChainId,
-			ConfLevel:       agg.BlockHeader.ConfLevel,
-			BlockOffset:     agg.BlockHeader.Offset,
-			BlockHeight:     agg.BlockHeader.Height,
-			BlockHash:       agg.BlockHeader.Hash,
+			ChainId:         agg.AttestHeader.SourceChainId,
+			ConfLevel:       agg.AttestHeader.ConfLevel,
+			AttestOffset:    agg.AttestHeader.AttestOffset,
+			BlockHeight:     agg.BlockHeader.BlockHeight,
+			BlockHash:       agg.BlockHeader.BlockHash,
 			MsgRoot:         agg.MsgRoot,
 			AttestationRoot: attRoot[:],
 			Status:          uint32(Status_Pending),
@@ -196,7 +196,7 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 		log.Debug(ctx, "Ignoring vote for attestation with finalized override", nil,
 			"agg_id", attID,
 			"chain", k.namer(header.XChainVersion()),
-			"offset", header.Offset,
+			"attest_offset", header.AttestOffset,
 		)
 
 		return nil
@@ -206,7 +206,7 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 			"existing_valset_id", existing.GetValidatorSetId(),
 			"vote_valset_id", valSetID,
 			"chain", k.namer(header.XChainVersion()),
-			"offset", header.Offset,
+			"attest_offset", header.AttestOffset,
 			"sigs", len(agg.Signatures),
 		)
 		// Technically these new votes could be from validators also in that previous set, but
@@ -223,9 +223,9 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 			Signature:        sig.GetSignature(),
 			ValidatorAddress: sig.GetValidatorAddress(),
 			AttId:            attID,
-			ChainId:          agg.BlockHeader.GetSourceChainId(),
-			ConfLevel:        agg.BlockHeader.GetConfLevel(),
-			BlockOffset:      agg.BlockHeader.GetOffset(),
+			ChainId:          agg.AttestHeader.GetSourceChainId(),
+			ConfLevel:        agg.AttestHeader.GetConfLevel(),
+			AttestOffset:     agg.AttestHeader.GetAttestOffset(),
 		})
 
 		if errors.Is(err, ormerrors.UniqueKeyViolation) {
@@ -240,7 +240,7 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 			log.Warn(ctx, msg, nil,
 				"agg_id", attID,
 				"chain", k.namer(header.XChainVersion()),
-				"offset", header.Offset,
+				"attest_offset", header.AttestOffset,
 				log.Hex7("validator", sig.ValidatorAddress),
 			)
 		} else if err != nil {
@@ -255,7 +255,7 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 	defer latency("approve")()
 
-	pendingIdx := AttestationStatusChainIdConfLevelBlockOffsetIndexKey{}.WithStatus(uint32(Status_Pending))
+	pendingIdx := AttestationStatusChainIdConfLevelAttestOffsetIndexKey{}.WithStatus(uint32(Status_Pending))
 	iter, err := k.attTable.List(ctx, pendingIdx)
 	if err != nil {
 		return errors.Wrap(err, "list pending")
@@ -279,14 +279,14 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 				if err != nil {
 					return errors.Wrap(err, "latest approved")
 				} else if found {
-					approvedByChain[chainVer] = latest.GetBlockOffset()
+					approvedByChain[chainVer] = latest.GetAttestOffset()
 				}
 			}
 			head, ok := approvedByChain[chainVer]
-			if !ok && att.GetBlockOffset() != initialBlockOffset {
+			if !ok && att.GetAttestOffset() != initialBlockOffset {
 				// Only start attesting from offset==1
 				continue
-			} else if ok && head+1 != att.GetBlockOffset() {
+			} else if ok && head+1 != att.GetAttestOffset() {
 				// This isn't the next attestation to approve, so we can't approve it yet.
 				continue
 			}
@@ -299,7 +299,7 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 
 		setMetrics := func(att *Attestation) {
 			approvedHeight.WithLabelValues(chainVerName).Set(float64(att.GetBlockHeight()))
-			approvedOffset.WithLabelValues(chainVerName).Set(float64(att.GetBlockOffset()))
+			approvedOffset.WithLabelValues(chainVerName).Set(float64(att.GetAttestOffset()))
 		}
 
 		toDelete, ok := isApproved(sigs, valset)
@@ -309,7 +309,7 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 				return err
 			} else if ok {
 				setMetrics(att)
-				approvedByChain[chainVer] = att.GetBlockOffset()
+				approvedByChain[chainVer] = att.GetAttestOffset()
 			}
 
 			continue
@@ -331,11 +331,11 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 		}
 
 		setMetrics(att)
-		approvedByChain[chainVer] = att.GetBlockOffset()
+		approvedByChain[chainVer] = att.GetAttestOffset()
 
 		log.Debug(ctx, "📬 Approved attestation",
 			"chain", chainVerName,
-			"offset", att.GetBlockOffset(),
+			"attest_offset", att.GetAttestOffset(),
 			"height", att.GetBlockHeight(),
 			log.Hex7("hash", att.GetBlockHash()),
 		)
@@ -364,8 +364,8 @@ func (k *Keeper) ListAttestationsFrom(ctx context.Context, chainID uint64, confL
 		return nil, errors.Wrap(err, "parse chain id")
 	}
 
-	from := AttestationStatusChainIdConfLevelBlockOffsetIndexKey{}.WithStatusChainIdConfLevelBlockOffset(uint32(Status_Approved), chainID, confLevel, offset)
-	to := AttestationStatusChainIdConfLevelBlockOffsetIndexKey{}.WithStatusChainIdConfLevelBlockOffset(uint32(Status_Approved), chainID, confLevel, offset+max)
+	from := AttestationStatusChainIdConfLevelAttestOffsetIndexKey{}.WithStatusChainIdConfLevelAttestOffset(uint32(Status_Approved), chainID, confLevel, offset)
+	to := AttestationStatusChainIdConfLevelAttestOffsetIndexKey{}.WithStatusChainIdConfLevelAttestOffset(uint32(Status_Approved), chainID, confLevel, offset+max)
 
 	iter, err := k.attTable.ListRange(ctx, from, to)
 	if err != nil {
@@ -381,7 +381,7 @@ func (k *Keeper) ListAttestationsFrom(ctx context.Context, chainID uint64, confL
 			return nil, errors.Wrap(err, "value")
 		}
 
-		if att.GetBlockOffset() != next {
+		if att.GetAttestOffset() != next {
 			break
 		}
 		next++
@@ -415,7 +415,7 @@ func (k *Keeper) maybeOverrideFinalized(ctx context.Context, att *Attestation) (
 		return false, nil // Only fuzzy attestations are overwritten with finalized attestations.
 	}
 
-	finalizedIdx := AttestationStatusChainIdConfLevelBlockOffsetIndexKey{}.WithStatusChainIdConfLevelBlockOffset(uint32(Status_Approved), att.GetChainId(), uint32(xchain.ConfFinalized), att.GetBlockOffset())
+	finalizedIdx := AttestationStatusChainIdConfLevelAttestOffsetIndexKey{}.WithStatusChainIdConfLevelAttestOffset(uint32(Status_Approved), att.GetChainId(), uint32(xchain.ConfFinalized), att.GetAttestOffset())
 	iter, err := k.attTable.List(ctx, finalizedIdx)
 	if err != nil {
 		return false, errors.Wrap(err, "list finalized")
@@ -446,7 +446,7 @@ func (k *Keeper) maybeOverrideFinalized(ctx context.Context, att *Attestation) (
 
 	log.Debug(ctx, "📬 Fuzzy attestation overridden by finalized",
 		"chain", k.namer(att.XChainVersion()),
-		"offset", att.GetBlockOffset(),
+		"attest_offset", att.GetAttestOffset(),
 		"height", att.GetBlockHeight(),
 		log.Hex7("hash", att.GetBlockHash()),
 	)
@@ -459,7 +459,7 @@ func (k *Keeper) maybeOverrideFinalized(ctx context.Context, att *Attestation) (
 func (k *Keeper) latestAttestation(ctx context.Context, version xchain.ChainVersion) (*Attestation, bool, error) {
 	defer latency("latest_attestation")()
 
-	idx := AttestationStatusChainIdConfLevelBlockOffsetIndexKey{}.WithStatusChainIdConfLevel(uint32(Status_Approved), version.ID, uint32(version.ConfLevel))
+	idx := AttestationStatusChainIdConfLevelAttestOffsetIndexKey{}.WithStatusChainIdConfLevel(uint32(Status_Approved), version.ID, uint32(version.ConfLevel))
 	iter, err := k.attTable.List(ctx, idx, ormlist.Reverse(), ormlist.DefaultLimit(1))
 	if err != nil {
 		return nil, false, errors.Wrap(err, "list")
@@ -497,7 +497,7 @@ func (k *Keeper) latestAttestation(ctx context.Context, version xchain.ChainVers
 func (k *Keeper) earliestAttestation(ctx context.Context, version xchain.ChainVersion) (*Attestation, bool, error) {
 	defer latency("earliest_attestation")()
 
-	idx := AttestationStatusChainIdConfLevelBlockOffsetIndexKey{}.WithStatusChainIdConfLevel(uint32(Status_Approved), version.ID, uint32(version.ConfLevel))
+	idx := AttestationStatusChainIdConfLevelAttestOffsetIndexKey{}.WithStatusChainIdConfLevel(uint32(Status_Approved), version.ID, uint32(version.ConfLevel))
 	iter, err := k.attTable.List(ctx, idx, ormlist.DefaultLimit(1))
 	if err != nil {
 		return nil, false, errors.Wrap(err, "list")
@@ -539,7 +539,7 @@ func (k *Keeper) listAllAttestations(ctx context.Context, version xchain.ChainVe
 		return nil, errors.Wrap(err, "get consensus chain id")
 	}
 
-	idx := AttestationStatusChainIdConfLevelBlockOffsetIndexKey{}.WithStatusChainIdConfLevelBlockOffset(uint32(status), version.ID, uint32(version.ConfLevel), blockOffset)
+	idx := AttestationStatusChainIdConfLevelAttestOffsetIndexKey{}.WithStatusChainIdConfLevelAttestOffset(uint32(status), version.ID, uint32(version.ConfLevel), blockOffset)
 	iter, err := k.attTable.List(ctx, idx)
 	if err != nil {
 		return nil, errors.Wrap(err, "list")
@@ -634,32 +634,40 @@ func (k *Keeper) EndBlock(ctx context.Context) error {
 
 // ExtendVote extends a vote with application-injected data (vote extensions).
 func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
+	cChainID, err := netconf.ConsensusChainIDStr2Uint64(ctx.ChainID())
+	if err != nil {
+		return nil, errors.Wrap(err, "parse chain id")
+	}
+
 	votes := k.voter.GetAvailable()
 
 	// Filter by vote window and if limited exceeded.
 	countsByChainVer := make(map[xchain.ChainVersion]int)
-	duplicate := make(map[types.VoteSource]bool)
+	duplicate := make(map[xchain.AttestHeader]bool)
 	var filtered []*types.Vote
 	for _, vote := range votes {
-		if err := checkSupportedChainAndConfLevel(ctx, k.portalRegistry, vote.BlockHeader.SourceChainId, vote.BlockHeader.ConfLevel); err != nil {
+		if err := vote.Verify(); err != nil {
+			return nil, errors.Wrap(err, "verify vote")
+		}
+		if err := verifyHeaderChains(ctx, cChainID, k.portalRegistry, vote.AttestHeader, vote.BlockHeader); err != nil {
 			return nil, errors.Wrap(err, "check supported chain")
 		}
 
-		if duplicate[vote.VoteSource()] {
+		if duplicate[vote.AttestHeader.ToXChain()] {
 			doubleSignCounter.WithLabelValues(k.voter.LocalAddress().Hex()).Inc()
-			log.Warn(ctx, "🚨 Skipping own duplicate slashable vote [BUG]", nil, "chain", k.namer(vote.BlockHeader.XChainVersion()), "offset", vote.BlockHeader.GetOffset())
+			log.Warn(ctx, "🚨 Skipping own duplicate slashable vote [BUG]", nil, "chain", k.namer(vote.AttestHeader.XChainVersion()), "attest_offset", vote.AttestHeader.AttestOffset)
 
 			continue
 		}
-		duplicate[vote.VoteSource()] = true
+		duplicate[vote.AttestHeader.ToXChain()] = true
 
-		if cmp, err := k.windowCompare(ctx, vote.BlockHeader.XChainVersion(), vote.BlockHeader.Offset); err != nil {
+		if cmp, err := k.windowCompare(ctx, vote.AttestHeader.XChainVersion(), vote.AttestHeader.AttestOffset); err != nil {
 			return nil, errors.Wrap(err, "windower")
 		} else if cmp != 0 {
 			// Skip votes no in the window
 			continue
 		}
-		countsByChainVer[vote.BlockHeader.XChainVersion()]++
+		countsByChainVer[vote.AttestHeader.XChainVersion()]++
 		filtered = append(filtered, vote)
 
 		if len(filtered) >= int(k.voteExtLimit) {
@@ -682,15 +690,15 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 	const limit = 5
 	offsets := make(map[xchain.ChainVersion][]string)
 	for _, vote := range votes {
-		offset := offsets[vote.BlockHeader.XChainVersion()]
+		offset := offsets[vote.AttestHeader.XChainVersion()]
 		if len(offset) < limit {
-			offset = append(offset, strconv.FormatUint(vote.BlockHeader.Offset, 10))
+			offset = append(offset, strconv.FormatUint(vote.AttestHeader.AttestOffset, 10))
 		} else if len(offset) == limit {
 			offset = append(offset, "...")
 		} else {
 			continue
 		}
-		offsets[vote.BlockHeader.XChainVersion()] = offset
+		offsets[vote.AttestHeader.XChainVersion()] = offset
 	}
 	attrs := []any{slog.Int("votes", len(votes))}
 	for chainVer, offset := range offsets {
@@ -720,6 +728,11 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 		Status: abci.ResponseVerifyVoteExtension_REJECT,
 	}
 
+	cChainID, err := netconf.ConsensusChainIDStr2Uint64(ctx.ChainID())
+	if err != nil {
+		return nil, errors.Wrap(err, "parse chain id")
+	}
+
 	// Get the ethereum address of the validator
 	ethAddr, err := k.getValEthAddr(ctx, req.ValidatorAddress)
 	if err != nil {
@@ -740,25 +753,20 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 		return respReject, nil
 	}
 
-	cchainID, err := netconf.ConsensusChainIDStr2Uint64(ctx.ChainID())
-	if err != nil {
-		return nil, errors.Wrap(err, "parse chain id")
-	}
-
-	duplicate := make(map[types.VoteSource]bool)
+	duplicate := make(map[xchain.AttestHeader]bool)
 	for _, vote := range votes.Votes {
-		if err := vote.Verify(cchainID); err != nil {
+		if err := vote.Verify(); err != nil {
 			log.Warn(ctx, "Rejecting invalid vote", err)
 			return respReject, nil
 		}
 
-		if duplicate[vote.VoteSource()] {
+		if duplicate[vote.AttestHeader.ToXChain()] {
 			doubleSignCounter.WithLabelValues(ethAddr.Hex()).Inc()
 			log.Warn(ctx, "Rejecting duplicate slashable vote", err)
 
 			return respReject, nil
 		}
-		duplicate[vote.VoteSource()] = true
+		duplicate[vote.AttestHeader.ToXChain()] = true
 
 		// Ensure the votes are from the requesting validator itself.
 		if common.BytesToAddress(vote.Signature.ValidatorAddress) != ethAddr {
@@ -766,12 +774,12 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 			return respReject, nil
 		}
 
-		if err := checkSupportedChainAndConfLevel(ctx, k.portalRegistry, vote.BlockHeader.SourceChainId, vote.BlockHeader.ConfLevel); err != nil {
-			log.Warn(ctx, "Rejecting vote for unsupported chain", err, "chain", k.namer(vote.BlockHeader.XChainVersion()))
+		if err := verifyHeaderChains(ctx, cChainID, k.portalRegistry, vote.AttestHeader, vote.BlockHeader); err != nil {
+			log.Warn(ctx, "Rejecting vote for invalid header chains", err, "chain", k.namer(vote.AttestHeader.XChainVersion()))
 			return respReject, nil
 		}
 
-		if cmp, err := k.windowCompare(ctx, vote.BlockHeader.XChainVersion(), vote.BlockHeader.Offset); err != nil {
+		if cmp, err := k.windowCompare(ctx, vote.AttestHeader.XChainVersion(), vote.AttestHeader.AttestOffset); err != nil {
 			return nil, errors.Wrap(err, "windower")
 		} else if cmp != 0 {
 			log.Warn(ctx, "Rejecting out-of-window vote", nil, "cmp", cmp)
@@ -833,7 +841,7 @@ func (k *Keeper) windowCompare(ctx context.Context, chainVer xchain.ChainVersion
 
 	latestOffset := initialBlockOffset // Use initial offset if attestation doesn't exist.
 	if exists {
-		latestOffset = latest.GetBlockOffset()
+		latestOffset = latest.GetAttestOffset()
 	}
 
 	return windowCompare(k.voteWindow, latestOffset, offset), nil
@@ -846,28 +854,23 @@ func (k *Keeper) windowCompare(ctx context.Context, chainVer xchain.ChainVersion
 // - Ensure the vote extension limit is not exceeded per validator.
 // - Ensure all votes are from validators in the provided set.
 // - Ensure the vote block header is in the vote window.
-func (k *Keeper) verifyAggVotes(ctx context.Context, valset ValSet, aggs []*types.AggVote) error {
-	duplicate := make(map[types.VoteSource]bool)    // Detects duplicate aggregate votes.
+func (k *Keeper) verifyAggVotes(ctx context.Context, cChainID uint64, valset ValSet, aggs []*types.AggVote) error {
+	duplicate := make(map[xchain.AttestHeader]bool) // Detects duplicate aggregate votes.
 	countsPerVal := make(map[common.Address]uint64) // Enforce vote extension limit.
-	cchainID, err := netconf.ConsensusChainIDStr2Uint64(sdk.UnwrapSDKContext(ctx).ChainID())
-	if err != nil {
-		return errors.Wrap(err, "get consensus chain id")
-	}
-
 	for _, agg := range aggs {
-		if err := agg.Verify(cchainID); err != nil {
+		if err := agg.Verify(); err != nil {
 			return errors.Wrap(err, "verify aggregate vote")
 		}
-		errAttrs := []any{"chain", k.namer(agg.BlockHeader.XChainVersion()), "offset", agg.BlockHeader.Offset}
+		errAttrs := []any{"chain", k.namer(agg.AttestHeader.XChainVersion()), "attest_offset", agg.AttestHeader.AttestOffset}
 
-		if err := checkSupportedChainAndConfLevel(ctx, k.portalRegistry, agg.BlockHeader.SourceChainId, agg.BlockHeader.ConfLevel); err != nil {
+		if err := verifyHeaderChains(ctx, cChainID, k.portalRegistry, agg.AttestHeader, agg.BlockHeader); err != nil {
 			return errors.Wrap(err, "check supported chain")
 		}
 
-		if duplicate[agg.VoteSource()] {
+		if duplicate[agg.AttestHeader.ToXChain()] {
 			return errors.New("invalid duplicate aggregate votes", errAttrs...) // Note this is duplicate aggregates, which may contain non-overlapping votes so not technically slashable.
 		}
-		duplicate[agg.VoteSource()] = true
+		duplicate[agg.AttestHeader.ToXChain()] = true
 
 		// Ensure all votes are from unique validators in the set
 		for _, sig := range agg.Signatures {
@@ -883,7 +886,7 @@ func (k *Keeper) verifyAggVotes(ctx context.Context, valset ValSet, aggs []*type
 		}
 
 		// Ensure the block header is in the vote window.
-		if resp, err := k.windowCompare(ctx, agg.BlockHeader.XChainVersion(), agg.BlockHeader.Offset); err != nil {
+		if resp, err := k.windowCompare(ctx, agg.AttestHeader.XChainVersion(), agg.AttestHeader.AttestOffset); err != nil {
 			return errors.Wrap(err, "windower")
 		} else if resp != 0 {
 			errAttrs = append(errAttrs, "resp", resp)
@@ -935,7 +938,7 @@ func (k *Keeper) deleteBefore(ctx context.Context, height uint64, consensusID ui
 		// Also, don't delete anything if we don't have an approved attestation yet (leave all pending attestations).
 		if latest, ok, err := latestOffset(ctx, att.XChainVersion()); err != nil {
 			return err
-		} else if !ok || att.GetBlockOffset() >= latest {
+		} else if !ok || att.GetAttestOffset() >= latest {
 			continue // Skip deleting pending attestations after latest finalized (or self if latest).
 		}
 
@@ -946,7 +949,7 @@ func (k *Keeper) deleteBefore(ctx context.Context, height uint64, consensusID ui
 			earliestFuzzy, ok, err := earliestOffset(ctx, fuzzyVer)
 			if err != nil {
 				return err
-			} else if !ok || att.GetBlockOffset() >= earliestFuzzy {
+			} else if !ok || att.GetAttestOffset() >= earliestFuzzy {
 				// If !ok, then no fuzzy attestations have been created, so we can't delete finalized.
 				// The earliest fuzzy must be AFTER the finalized att.
 				fuzzyDepsFound = true
@@ -986,7 +989,7 @@ func (k *Keeper) isDoubleSign(ctx context.Context, attID uint64, agg *types.AggV
 		return false, errors.Wrap(err, "get identical vote")
 	} // else identical vote doesn't exist
 
-	doubleSign, err := k.sigTable.HasByChainIdConfLevelBlockOffsetValidatorAddress(ctx, agg.BlockHeader.SourceChainId, agg.BlockHeader.ConfLevel, agg.BlockHeader.Offset, sig.ValidatorAddress)
+	doubleSign, err := k.sigTable.HasByChainIdConfLevelAttestOffsetValidatorAddress(ctx, agg.BlockHeader.ChainId, agg.AttestHeader.ConfLevel, agg.AttestHeader.AttestOffset, sig.ValidatorAddress)
 	if err != nil {
 		return false, errors.Wrap(err, "check double sign")
 	} else if !doubleSign {
@@ -1014,33 +1017,37 @@ func isApproved(sigs []*Signature, valset ValSet) ([]*Signature, bool) {
 	return toDelete, sum > valset.TotalPower()*2/3
 }
 
-func checkSupportedChainAndConfLevel(ctx context.Context, registry rtypes.PortalRegistry, chainID uint64, confLevel uint32) error {
-	supportedChain, err := registry.SupportedChain(ctx, chainID)
-	if err != nil {
-		return errors.Wrap(err, "supported chain")
+func verifyHeaderChains(ctx context.Context, cChainID uint64, registry rtypes.PortalRegistry, attHeader *types.AttestHeader, blockHeader *types.BlockHeader) error {
+	if attHeader.SourceChainId != blockHeader.ChainId {
+		return errors.New("mismatching chain id", "block", blockHeader.ChainId, "att", attHeader.SourceChainId)
 	}
 
-	if !supportedChain {
-		return errors.New("unsupported chain", "chain", chainID)
+	if attHeader.ConsensusChainId != cChainID {
+		return errors.New("invalid consensus chain id", "expected", cChainID, "got", attHeader.ConsensusChainId)
 	}
 
-	confLevelsMap, err := registry.ConfLevels(ctx)
+	chainConfLevels, err := registry.ConfLevels(ctx)
 	if err != nil {
 		return errors.Wrap(err, "supported conf levels")
 	}
 
-	supportedConfLevels, ok := confLevelsMap[chainID]
+	confLevels, ok := chainConfLevels[blockHeader.ChainId]
 	if !ok {
-		return errors.New("missing conf levels", "chain", chainID)
+		return errors.New("missing conf levels", "chain", blockHeader.ChainId)
 	}
 
-	for _, supportedConfLevel := range supportedConfLevels {
-		if uint32(supportedConfLevel) == confLevel {
-			return nil
+	var found bool
+	for _, confLevel := range confLevels {
+		if uint32(confLevel) == attHeader.ConfLevel {
+			found = true
+			break
 		}
 	}
+	if !found {
+		return errors.New("unsupported conf level", "chain", blockHeader.ChainId, "conf", xchain.ConfLevel(attHeader.ConfLevel).String())
+	}
 
-	return errors.New("unsupported conf level", "chain", chainID, "conf", xchain.ConfLevel(confLevel).String())
+	return nil
 }
 
 // windowCompare returns -1 if x < mid-voteWindow, 1 if x > mid+voteWindow, else 0.
@@ -1074,15 +1081,18 @@ func isApprovedByDifferentSet(att *Attestation, valSetID uint64) bool {
 }
 
 // toProto converts from the keeper.Attestation type to the types.Attestation type.
-func toProto(att *Attestation, sigs []*types.SigTuple, cchainID uint64) *types.Attestation {
+func toProto(att *Attestation, sigs []*types.SigTuple, cChainID uint64) *types.Attestation {
 	return &types.Attestation{
-		BlockHeader: &types.BlockHeader{
+		AttestHeader: &types.AttestHeader{
+			ConsensusChainId: cChainID,
 			SourceChainId:    att.GetChainId(),
-			ConsensusChainId: cchainID,
 			ConfLevel:        att.GetConfLevel(),
-			Offset:           att.GetBlockOffset(),
-			Height:           att.GetBlockHeight(),
-			Hash:             att.GetBlockHash(),
+			AttestOffset:     att.GetAttestOffset(),
+		},
+		BlockHeader: &types.BlockHeader{
+			ChainId:     att.GetChainId(),
+			BlockHeight: att.GetBlockHeight(),
+			BlockHash:   att.GetBlockHash(),
 		},
 		ValidatorSetId: att.GetValidatorSetId(),
 		MsgRoot:        att.GetMsgRoot(),
@@ -1093,10 +1103,6 @@ func toProto(att *Attestation, sigs []*types.SigTuple, cchainID uint64) *types.A
 // stubPortalRegistry is a stub implementation of the portal registry.
 // It doesn't support any chains.
 type stubPortalRegistry struct{}
-
-func (stubPortalRegistry) SupportedChain(context.Context, uint64) (bool, error) {
-	return false, nil
-}
 
 func (stubPortalRegistry) ConfLevels(context.Context) (map[uint64][]xchain.ConfLevel, error) {
 	return map[uint64][]xchain.ConfLevel{}, nil

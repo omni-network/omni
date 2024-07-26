@@ -20,7 +20,7 @@ func Test_translateSubmission(t *testing.T) {
 	xsub := submissionToBinding(sub)
 	reversedSub := submissionFromBinding(xsub, sub.DestChainID)
 
-	// Zero TxHash and SourceChainID for comparison since they aren't translated.
+	// Zero TxHash and ChainID for comparison since they aren't translated.
 	for i := range sub.Msgs {
 		sub.Msgs[i].TxHash = common.Hash{}
 		sub.Msgs[i].SourceChainID = 0
@@ -62,7 +62,7 @@ func submissionFromBinding(sub bindings.XTypesSubmission, destChainID uint64) xc
 		AttestationRoot: sub.AttestationRoot,
 		ValidatorSetID:  sub.ValidatorSetId,
 		BlockHeader: xchain.BlockHeader{
-			SourceChainID:    sub.BlockHeader.SourceChainId,
+			ChainID:          sub.BlockHeader.SourceChainId,
 			ConsensusChainID: sub.BlockHeader.ConsensusChainId,
 			BlockOffset:      sub.BlockHeader.Offset,
 			BlockHash:        sub.BlockHeader.SourceBlockHash,

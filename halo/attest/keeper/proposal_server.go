@@ -2,6 +2,8 @@ package keeper
 
 import (
 	"context"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/lib/errors"
@@ -15,11 +17,17 @@ type proposalServer struct {
 // AddVotes verifies all aggregated votes included in a proposed block.
 func (s proposalServer) AddVotes(ctx context.Context, msg *types.MsgAddVotes,
 ) (*types.AddVotesResponse, error) {
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	consensusID, err := netconf.ConsensusChainIDStr2Uint64(sdkCtx.ChainID())
+	if err != nil {
+		return nil, errors.Wrap(err, "parse chain id")
+	}
+
 	// Verify proposed msg
 	valset, err := s.prevBlockValSet(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetch validators")
-	} else if err := s.verifyAggVotes(ctx, valset, msg.Votes); err != nil {
+	} else if err := s.verifyAggVotes(ctx, consensusID, valset, msg.Votes); err != nil {
 		return nil, errors.Wrap(err, "verify votes")
 	}
 

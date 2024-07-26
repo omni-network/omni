@@ -50,7 +50,7 @@ func TestWorker_Run(t *testing.T) {
 
 			// Each block has two messages, one for each stream.
 			return xchain.Block{
-				BlockHeader: xchain.BlockHeader{SourceChainID: req.ChainID, BlockOffset: req.Offset, BlockHeight: req.Height, ConfLevel: req.ConfLevel},
+				BlockHeader: xchain.BlockHeader{ChainID: req.ChainID, BlockOffset: req.Offset, BlockHeight: req.Height, ConfLevel: req.ConfLevel},
 				Msgs: []xchain.Msg{
 					{MsgID: xchain.MsgID{StreamID: streamA, StreamOffset: req.Offset}},
 					{MsgID: xchain.MsgID{StreamID: streamB, StreamOffset: req.Offset}},
@@ -116,9 +116,9 @@ func TestWorker_Run(t *testing.T) {
 				return xchain.Attestation{
 					MsgRoot: tree.MsgRoot(),
 					BlockHeader: xchain.BlockHeader{
-						SourceChainID: chainVer.ID,
-						ConfLevel:     chainVer.ConfLevel,
-						BlockOffset:   offset},
+						ChainID:     chainVer.ID,
+						ConfLevel:   chainVer.ConfLevel,
+						BlockOffset: offset},
 				}
 			}
 

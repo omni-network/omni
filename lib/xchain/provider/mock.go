@@ -84,12 +84,6 @@ func (m *Mock) stream(
 
 	sOffset := make(streamOffseter).offset
 
-	fromOffset := req.Offset
-	if fromOffset == 0 {
-		fromOffset = initialXOffset
-	}
-	bOffset := newBlockOffseter(fromOffset)
-
 	// Similarly as the real xprovider, we bump fromHeight to netconf.DeployHeight if below,
 	// this is only required for consensus chain in the mock.
 	fromHeight := req.Height
@@ -100,7 +94,7 @@ func (m *Mock) stream(
 	} else {
 		// Populate historical blocks for mocked chains so offsets are consistent for heights.
 		for i := uint64(0); i < fromHeight; i++ {
-			m.addBlock(m.nextBlock(ctx, chainVer, i, sOffset, bOffset.getAndInc))
+			m.addBlock(m.nextBlock(ctx, chainVer, i, sOffset), req.ConfLevel)
 		}
 	}
 
@@ -110,8 +104,8 @@ func (m *Mock) stream(
 	height := fromHeight
 
 	for ctx.Err() == nil {
-		block := m.nextBlock(ctx, chainVer, height, sOffset, bOffset.getAndInc)
-		m.addBlock(block)
+		block := m.nextBlock(ctx, chainVer, height, sOffset)
+		m.addBlock(block, req.ConfLevel)
 
 		err := callback(ctx, block)
 		if ctx.Err() != nil {
@@ -178,14 +172,14 @@ func (m *Mock) parentBlockHash(chainVer xchain.ChainVersion, height uint64) comm
 	return m.blocks[key].BlockHash
 }
 
-func (m *Mock) addBlock(block xchain.Block) {
+func (m *Mock) addBlock(block xchain.Block, confLevel xchain.ConfLevel) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	key := blockKey{
-		ChainID:   block.SourceChainID,
+		ChainID:   block.ChainID,
 		Height:    block.BlockHeight,
-		ConfLevel: block.ConfLevel,
+		ConfLevel: confLevel,
 	}
 	m.blocks[key] = block
 }
@@ -195,7 +189,6 @@ func (m *Mock) nextBlock(
 	chainVer xchain.ChainVersion,
 	height uint64,
 	sOffsetFunc func(xchain.StreamID) uint64,
-	bOffsetFunc func() uint64,
 ) xchain.Block {
 	if m.cChainID == chainVer.ID {
 		// For omni consensus chain, we query the real cprovider for blocks.
@@ -238,26 +231,17 @@ func (m *Mock) nextBlock(
 		msgs = append(msgs, newMsgA(), newMsgA(), newMsgB()) // Msgs: 3*chainA, 1*chainB
 	}
 
-	b := xchain.Block{
+	return xchain.Block{
 		BlockHeader: xchain.BlockHeader{
-			SourceChainID:    chainVer.ID,
-			ConsensusChainID: m.cChainID,
-			ConfLevel:        chainVer.ConfLevel,
-			BlockHeight:      height,
-			BlockHash:        random32(r),
+			ChainID:     chainVer.ID,
+			BlockHeight: height,
+			BlockHash:   random32(r),
 		},
 		Msgs:       msgs,
 		Receipts:   nil,        // TODO(corver): Add receipts
 		Timestamp:  time.Now(), // Should this also be deterministic?
 		ParentHash: m.parentBlockHash(chainVer, height),
 	}
-
-	const noEmptyAttestations uint64 = 0
-	if b.ShouldAttest(noEmptyAttestations) {
-		b.BlockHeader.BlockOffset = bOffsetFunc()
-	}
-
-	return b
 }
 
 func newMsg(r *rand.Rand, srcChain, destChain uint64, offsetFunc func(xchain.StreamID) uint64) xchain.Msg {
@@ -299,17 +283,6 @@ type streamOffseter map[xchain.StreamID]uint64
 func (o streamOffseter) offset(id xchain.StreamID) uint64 {
 	defer func() { o[id]++ }()
 	return o[id]
-}
-
-type blockOffseter uint64
-
-func newBlockOffseter(from uint64) *blockOffseter {
-	return (*blockOffseter)(&from)
-}
-
-func (o *blockOffseter) getAndInc() uint64 {
-	defer func() { *o++ }()
-	return uint64(*o)
 }
 
 type blockKey struct {

@@ -8,45 +8,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// VoteSource identifies the source block being voted on.
-// Multiple votes to the same source by the same validator qualifies as double signing as is slashable.
-type VoteSource struct {
-	ChainID     uint64
-	ConfLevel   uint32
-	BlockOffset uint64
-}
-
-// VoteSource returns the source block being voted on.
-func (a *AggVote) VoteSource() VoteSource {
-	return VoteSource{
-		ChainID:     a.BlockHeader.GetSourceChainId(),
-		ConfLevel:   a.BlockHeader.GetConfLevel(),
-		BlockOffset: a.BlockHeader.GetOffset(),
-	}
-}
-
-// VoteSource returns the source block being voted on.
-func (v *Vote) VoteSource() VoteSource {
-	return VoteSource{
-		ChainID:     v.BlockHeader.GetSourceChainId(),
-		ConfLevel:   v.BlockHeader.GetConfLevel(),
-		BlockOffset: v.BlockHeader.GetOffset(),
-	}
-}
-
 func (v *Vote) AttestationRoot() (common.Hash, error) {
-	return xchain.AttestationRoot(v.BlockHeader.ToXChain(), common.Hash(v.MsgRoot))
+	return xchain.AttestationRoot(v.AttestHeader.ToXChain(), v.BlockHeader.ToXChain(), common.Hash(v.MsgRoot))
 }
 
-func (v *Vote) Verify(cchainID uint64) error {
+func (v *Vote) Verify() error {
 	if v == nil {
 		return errors.New("nil attestation")
 	}
-
-	if err := v.BlockHeader.Verify(cchainID); err != nil {
-		return errors.Wrap(err, "verify block header")
-	}
-
 	if v.Signature == nil {
 		return errors.New("nil signature")
 	}
@@ -55,8 +24,12 @@ func (v *Vote) Verify(cchainID uint64) error {
 		return errors.New("invalid message root length")
 	}
 
-	if len(v.BlockHeader.Hash) != len(common.Hash{}) {
-		return errors.New("invalid block header hash length")
+	if err := v.BlockHeader.Verify(); err != nil {
+		return errors.Wrap(err, "verify block header")
+	}
+
+	if err := v.AttestHeader.Verify(); err != nil {
+		return errors.Wrap(err, "verify attestation header")
 	}
 
 	if len(v.Signature.Signature) != len(xchain.Signature65{}) {
@@ -86,21 +59,41 @@ func (v *Vote) Verify(cchainID uint64) error {
 	return nil
 }
 
-func (h *BlockHeader) Verify(cchainID uint64) error {
+func (h *AttestHeader) Verify() error {
 	if h == nil {
-		return errors.New("nil block header")
+		return errors.New("nil attestation header")
 	}
 
-	if len(h.Hash) != len(common.Hash{}) {
-		return errors.New("invalid block header hash length")
+	if h.SourceChainId == 0 {
+		return errors.New("empty source chain id")
 	}
 
 	if conf := xchain.ConfLevel(byte(h.GetConfLevel())); !conf.Valid() {
 		return errors.New("invalid conf level", "conf_level", conf.String())
 	}
 
-	if h.ConsensusChainId != cchainID {
-		return errors.New("wrong consensus chain id", "expected", cchainID, "got", h.ConsensusChainId)
+	if h.ConsensusChainId == 0 {
+		return errors.New("zero consensus chain ID")
+	}
+
+	if h.AttestOffset == 0 {
+		return errors.New("zero attestation offset")
+	}
+
+	return nil
+}
+
+func (h *AttestHeader) ToXChain() xchain.AttestHeader {
+	return AttestHeaderFromProto(h)
+}
+
+func (h *BlockHeader) Verify() error {
+	if h == nil {
+		return errors.New("nil block header")
+	}
+
+	if len(h.BlockHash) != len(common.Hash{}) {
+		return errors.New("invalid block header hash length")
 	}
 
 	return nil
@@ -108,11 +101,6 @@ func (h *BlockHeader) Verify(cchainID uint64) error {
 
 func (h *BlockHeader) ToXChain() xchain.BlockHeader {
 	return BlockHeaderFromProto(h)
-}
-
-// BlockRoot returns a unique key for the block header.
-func (h *BlockHeader) BlockRoot() ([32]byte, error) {
-	return xchain.BlockHeaderLeaf(h.ToXChain())
 }
 
 func (s *SigTuple) Verify() error {
@@ -138,12 +126,16 @@ func (s *SigTuple) ToXChain() xchain.SigTuple {
 	}
 }
 
-func (a *AggVote) Verify(cchainID uint64) error {
+func (a *AggVote) Verify() error {
 	if a == nil {
 		return errors.New("nil aggregate vote")
 	}
 
-	if err := a.BlockHeader.Verify(cchainID); err != nil {
+	if err := a.BlockHeader.Verify(); err != nil {
+		return errors.Wrap(err, "verify block header")
+	}
+
+	if err := a.AttestHeader.Verify(); err != nil {
 		return errors.Wrap(err, "verify block header")
 	}
 
@@ -189,16 +181,20 @@ func (a *AggVote) Verify(cchainID uint64) error {
 }
 
 func (a *AggVote) AttestationRoot() (common.Hash, error) {
-	return xchain.AttestationRoot(a.BlockHeader.ToXChain(), common.Hash(a.MsgRoot))
+	return xchain.AttestationRoot(a.AttestHeader.ToXChain(), a.BlockHeader.ToXChain(), common.Hash(a.MsgRoot))
 }
 
-func (a *Attestation) Verify(cchainID uint64) error {
+func (a *Attestation) Verify() error {
 	if a == nil {
 		return errors.New("nil attestation")
 	}
 
-	if err := a.BlockHeader.Verify(cchainID); err != nil {
-		return errors.Wrap(err, "block header")
+	if err := a.BlockHeader.Verify(); err != nil {
+		return errors.Wrap(err, "verify block header")
+	}
+
+	if err := a.AttestHeader.Verify(); err != nil {
+		return errors.Wrap(err, "verify attest header")
 	}
 
 	if len(a.MsgRoot) != len(common.Hash{}) {
@@ -237,7 +233,7 @@ func (a *Attestation) ToXChain() xchain.Attestation {
 }
 
 func (a *Attestation) AttestationRoot() (common.Hash, error) {
-	return xchain.AttestationRoot(a.BlockHeader.ToXChain(), common.Hash(a.MsgRoot))
+	return xchain.AttestationRoot(a.AttestHeader.ToXChain(), a.BlockHeader.ToXChain(), common.Hash(a.MsgRoot))
 }
 
 func (v *Vote) ToXChain() xchain.Vote {

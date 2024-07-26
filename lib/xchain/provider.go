@@ -8,12 +8,11 @@ import (
 type ProviderCallback func(context.Context, Block) error
 
 // ProviderRequest is the request struct for fetching cross-chain blocks.
-// When used in streaming context, the Height and Offset fields define the starting point (inclusive).
+// When used in streaming context, the Height defines the starting point (inclusive).
 type ProviderRequest struct {
 	ChainID   uint64    // Source chain ID to query for xblocks.
 	Height    uint64    // Height to query (from inclusive).
-	ConfLevel ConfLevel // Confirmation level to ensure (and populate in returned BlockHeader)
-	Offset    uint64    // Cross-chain block offset to populate (from inclusive) in BlockHeader (if required).
+	ConfLevel ConfLevel // Confirmation level to ensure
 }
 
 // Provider abstracts fetching cross chain data from any supported chain.

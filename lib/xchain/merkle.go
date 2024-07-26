@@ -91,8 +91,8 @@ func msgLeaf(msg Msg) ([32]byte, error) {
 	return merkle.StdLeafHash(DSTMessage, bz), nil
 }
 
-func BlockHeaderLeaf(header BlockHeader) ([32]byte, error) {
-	bz, err := encodeHeader(header)
+func HeaderLeaf(attHeader AttestHeader, blockHeader BlockHeader) ([32]byte, error) {
+	bz, err := encodeHeader(attHeader, blockHeader)
 	if err != nil {
 		return [32]byte{}, errors.Wrap(err, "encode block header")
 	}
@@ -101,8 +101,8 @@ func BlockHeaderLeaf(header BlockHeader) ([32]byte, error) {
 }
 
 // AttestationRoot returns the attestation root of the provided block header and message root.
-func AttestationRoot(header BlockHeader, msgRoot common.Hash) (common.Hash, error) {
-	headerLeaf, err := BlockHeaderLeaf(header)
+func AttestationRoot(attHeader AttestHeader, blockHeader BlockHeader, msgRoot common.Hash) (common.Hash, error) {
+	headerLeaf, err := HeaderLeaf(attHeader, blockHeader)
 	if err != nil {
 		return [32]byte{}, err
 	}

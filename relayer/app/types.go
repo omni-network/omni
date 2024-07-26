@@ -55,7 +55,7 @@ func submissionToBinding(sub xchain.Submission) bindings.XSubmission {
 		AttestationRoot: sub.AttestationRoot,
 		ValidatorSetId:  sub.ValidatorSetID,
 		BlockHeader: bindings.XBlockHeader{
-			SourceChainId:     sub.BlockHeader.SourceChainID,
+			SourceChainId:     sub.BlockHeader.ChainID,
 			ConsensusChainId:  sub.BlockHeader.ConsensusChainID,
 			SourceBlockHash:   sub.BlockHeader.BlockHash,
 			SourceBlockHeight: sub.BlockHeader.BlockHeight,

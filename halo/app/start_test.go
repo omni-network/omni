@@ -83,10 +83,10 @@ func TestSmoke(t *testing.T) {
 		att, ok, err := cprov.LatestAttestation(ctx, chainVer)
 		tutil.RequireNoError(t, err)
 		require.True(t, ok)
-		require.Equal(t, srcChain, att.SourceChainID)
+		require.Equal(t, srcChain, att.ChainID)
 
-		require.Equal(t, srcChain, approved.SourceChainID)
-		t.Logf("cprovider streamed approved block: %d", approved.BlockOffset)
+		require.Equal(t, srcChain, approved.ChainID)
+		t.Logf("cprovider streamed approved block: %d", approved.AttestOffset)
 		if approved.BlockHeight >= target {
 			cancel()
 		}
@@ -112,7 +112,6 @@ func testCProvider(t *testing.T, ctx context.Context, cprov cprovider.Provider) 
 	xblock, ok, err := cprov.XBlock(ctx, 0, true)
 	tutil.RequireNoError(t, err)
 	require.True(t, ok)
-	require.GreaterOrEqual(t, xblock.BlockOffset, uint64(1))
 	require.Len(t, xblock.Msgs, 1)
 	require.Equal(t, xchain.ShardBroadcast0, xblock.Msgs[0].ShardID)
 	require.Equal(t, xchain.BroadcastChainID, xblock.Msgs[0].DestChainID)

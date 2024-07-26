@@ -10,7 +10,7 @@ import (
 )
 
 // CreateVote creates a vote for the given block.
-func CreateVote(privKey crypto.PrivKey, block xchain.Block) (*types.Vote, error) {
+func CreateVote(privKey crypto.PrivKey, attHeader xchain.AttestHeader, block xchain.Block) (*types.Vote, error) {
 	var msgRoot [32]byte
 	if len(block.Msgs) > 0 {
 		tree, err := xchain.NewMsgTree(block.Msgs)
@@ -21,7 +21,7 @@ func CreateVote(privKey crypto.PrivKey, block xchain.Block) (*types.Vote, error)
 		msgRoot = tree.MsgRoot()
 	} // else use zero value msgRoot
 
-	attRoot, err := xchain.AttestationRoot(block.BlockHeader, msgRoot)
+	attRoot, err := xchain.AttestationRoot(attHeader, block.BlockHeader, msgRoot)
 	if err != nil {
 		return nil, err
 	}
@@ -37,13 +37,16 @@ func CreateVote(privKey crypto.PrivKey, block xchain.Block) (*types.Vote, error)
 	}
 
 	return &types.Vote{
+		AttestHeader: &types.AttestHeader{
+			ConsensusChainId: attHeader.ConsensusChainID,
+			SourceChainId:    attHeader.ChainVersion.ID,
+			ConfLevel:        uint32(attHeader.ChainVersion.ConfLevel),
+			AttestOffset:     attHeader.AttestOffset,
+		},
 		BlockHeader: &types.BlockHeader{
-			SourceChainId:    block.SourceChainID,
-			ConsensusChainId: block.ConsensusChainID,
-			ConfLevel:        uint32(block.ConfLevel),
-			Offset:           block.BlockOffset,
-			Height:           block.BlockHeight,
-			Hash:             block.BlockHash[:],
+			ChainId:     block.ChainID,
+			BlockHeight: block.BlockHeight,
+			BlockHash:   block.BlockHash.Bytes(),
 		},
 		MsgRoot: msgRoot[:],
 		Signature: &types.SigTuple{

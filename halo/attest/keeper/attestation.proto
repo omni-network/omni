@@ -17,7 +17,7 @@ message Attestation {
     id: 1;
     primary_key: { fields: "id", auto_increment: true }
     index: {id: 1, fields: "attestation_root", unique: true} // Unique index on attestation root.
-    index: {id: 2, fields: "status,chain_id,conf_level,block_offset" } // Allows querying by approved attestations by confLevel and offset.
+    index: {id: 2, fields: "status,chain_id,conf_level,attest_offset" } // Allows querying by approved attestations by confLevel and offset.
     index: {id: 3, fields: "created_height"} // Allows querying/deleting by created height.
   };
 
@@ -25,7 +25,7 @@ message Attestation {
 
   uint64 chain_id         = 2; // Chain ID as per https://chainlist.org
   uint32 conf_level       = 3; // Confirmation level of the cross-chain block
-  uint64 block_offset     = 4; // Offset of the cross-chain block
+  uint64 attest_offset    = 4; // Offset of the cross-chain block
   uint64 block_height     = 5; // Height of the source-chain block
   bytes  block_hash       = 6; // Hash of the source-chain block
   bytes  msg_root         = 7; // Merkle root of all the messages in the cross-chain Block
@@ -42,7 +42,7 @@ message Signature {
     id: 2;
     primary_key: { fields: "id", auto_increment: true }
     index: {id: 1, fields: "att_id,validator_address", unique: true} // Allow querying by Attestation ID and only allow one signature per validator per attestation.
-    index: {id: 2, fields: "chain_id,conf_level,block_offset,validator_address", unique: true} // Detects double signing.
+    index: {id: 2, fields: "chain_id,conf_level,attest_offset,validator_address", unique: true} // Detects double signing.
   };
 
   uint64 id                 = 1; // Auto-incremented ID
@@ -51,5 +51,5 @@ message Signature {
   uint64 att_id             = 4; // Attestation ID to which this signature belongs.
   uint64 chain_id           = 5; // Chain ID as per https://chainlist.org
   uint32 conf_level         = 6; // Confirmation level of the cross-chain block
-  uint64 block_offset       = 7; // Offset of the cross-chain block
+  uint64 attest_offset       = 7; // Offset of the cross-chain block
 }

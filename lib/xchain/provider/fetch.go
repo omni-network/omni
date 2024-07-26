@@ -20,7 +20,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// LatestHeight returns the latest height for the provided chain version.
+// ChainVersionHeight returns the latest height for the provided chain version.
 func (p *Provider) ChainVersionHeight(ctx context.Context, chainVer xchain.ChainVersion) (uint64, error) {
 	if chainVer.ID == p.cChainID {
 		// Consensus chain versions all reduce to `latest`.
@@ -175,14 +175,14 @@ func (p *Provider) GetBlock(ctx context.Context, req xchain.ProviderRequest) (xc
 			return xchain.Block{}, false, nil
 		} else if len(b.Msgs) == 0 {
 			return xchain.Block{}, false, errors.New("empty consensus block [BUG]")
-		} else if b.BlockHeight != req.Height && b.BlockOffset != req.Offset {
-			return xchain.Block{}, false, errors.New("unexpected block height and offset [BUG]")
+		} else if b.BlockHeight != req.Height {
+			return xchain.Block{}, false, errors.New("unexpected block height [BUG]")
 		}
 
 		return b, true, nil
 	}
 
-	chain, ethCl, err := p.getEVMChain(req.ChainID)
+	_, ethCl, err := p.getEVMChain(req.ChainID)
 	if err != nil {
 		return xchain.Block{}, false, err
 	}
@@ -242,24 +242,17 @@ func (p *Provider) GetBlock(ctx context.Context, req xchain.ProviderRequest) (xc
 		return xchain.Block{}, false, errors.Wrap(err, "wait")
 	}
 
-	resp := xchain.Block{
+	return xchain.Block{
 		BlockHeader: xchain.BlockHeader{
-			SourceChainID:    req.ChainID,
-			ConsensusChainID: p.cChainID,
-			ConfLevel:        req.ConfLevel,
-			BlockHeight:      req.Height,
-			BlockHash:        header.Hash(),
+			ChainID:     req.ChainID,
+			BlockHeight: req.Height,
+			BlockHash:   header.Hash(),
 		},
 		Msgs:       msgs,
 		Receipts:   receipts,
 		ParentHash: header.ParentHash,
 		Timestamp:  time.Unix(int64(header.Time), 0),
-	}
-	if resp.ShouldAttest(chain.AttestInterval) {
-		resp.BlockOffset = req.Offset
-	}
-
-	return resp, true, nil
+	}, true, nil
 }
 
 func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, blockHash common.Hash) ([]xchain.Receipt, error) {

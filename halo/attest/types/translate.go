@@ -6,7 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func (h *BlockHeader) XChainVersion() xchain.ChainVersion {
+func (h *AttestHeader) XChainVersion() xchain.ChainVersion {
 	return xchain.ChainVersion{
 		ID:        h.SourceChainId,
 		ConfLevel: xchain.ConfLevel(h.ConfLevel),
@@ -21,10 +21,10 @@ func (h *WindowCompareRequest) XChainVersion() xchain.ChainVersion {
 }
 
 // AttestationsFromProto converts a slice of protobuf Attestations to a slice of xchain.Attestations.
-func AttestationsFromProto(atts []*Attestation, cchainID uint64) ([]xchain.Attestation, error) {
+func AttestationsFromProto(atts []*Attestation) ([]xchain.Attestation, error) {
 	resp := make([]xchain.Attestation, 0, len(atts))
 	for _, attpb := range atts {
-		att, err := AttestationFromProto(attpb, cchainID)
+		att, err := AttestationFromProto(attpb)
 		if err != nil {
 			return nil, err
 		}
@@ -35,8 +35,8 @@ func AttestationsFromProto(atts []*Attestation, cchainID uint64) ([]xchain.Attes
 }
 
 // AttestationFromProto converts a protobuf Attestation to a xchain.Attestation.
-func AttestationFromProto(att *Attestation, cchainID uint64) (xchain.Attestation, error) {
-	if err := att.Verify(cchainID); err != nil {
+func AttestationFromProto(att *Attestation) (xchain.Attestation, error) {
+	if err := att.Verify(); err != nil {
 		return xchain.Attestation{}, err
 	}
 
@@ -72,11 +72,20 @@ func SigFromProto(sig *SigTuple) (xchain.SigTuple, error) {
 // BlockHeaderFromProto converts a protobuf BlockHeader to a xchain.BlockHeader.
 func BlockHeaderFromProto(header *BlockHeader) xchain.BlockHeader {
 	return xchain.BlockHeader{
-		SourceChainID:    header.GetSourceChainId(),
+		ChainID:     header.GetChainId(),
+		BlockHeight: header.GetBlockHeight(),
+		BlockHash:   common.Hash(header.GetBlockHash()),
+	}
+}
+
+// AttestHeaderFromProto converts a protobuf AttestHeader to a xchain.AttestHeader.
+func AttestHeaderFromProto(header *AttestHeader) xchain.AttestHeader {
+	return xchain.AttestHeader{
 		ConsensusChainID: header.GetConsensusChainId(),
-		ConfLevel:        xchain.ConfLevel(byte(header.ConfLevel)),
-		BlockOffset:      header.GetOffset(),
-		BlockHeight:      header.GetHeight(),
-		BlockHash:        common.Hash(header.GetHash()),
+		ChainVersion: xchain.ChainVersion{
+			ID:        header.GetSourceChainId(),
+			ConfLevel: xchain.ConfLevel(header.GetConfLevel()),
+		},
+		AttestOffset: header.GetAttestOffset(),
 	}
 }

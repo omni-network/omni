@@ -41,8 +41,8 @@ type voteDeps struct {
 type voterLoader struct {
 	mu         sync.Mutex
 	voter      *voter.Voter
-	proposed   []*atypes.BlockHeader
-	committed  []*atypes.BlockHeader
+	proposed   []*atypes.AttestHeader
+	committed  []*atypes.AttestHeader
 	lastValSet *vtypes.ValidatorSetResponse
 	isVal      bool
 	localAddr  common.Address
@@ -211,7 +211,7 @@ func (l *voterLoader) GetAvailable() []*atypes.Vote {
 	return nil // Return empty list if voter not available yet.
 }
 
-func (l *voterLoader) SetProposed(headers []*atypes.BlockHeader) error {
+func (l *voterLoader) SetProposed(headers []*atypes.AttestHeader) error {
 	if v, ok := l.getVoter(); ok {
 		return v.SetProposed(headers)
 	}
@@ -225,7 +225,7 @@ func (l *voterLoader) SetProposed(headers []*atypes.BlockHeader) error {
 	return nil
 }
 
-func (l *voterLoader) SetCommitted(headers []*atypes.BlockHeader) error {
+func (l *voterLoader) SetCommitted(headers []*atypes.AttestHeader) error {
 	if v, ok := l.getVoter(); ok {
 		return v.SetCommitted(headers)
 	}

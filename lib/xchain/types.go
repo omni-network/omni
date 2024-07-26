@@ -146,16 +146,9 @@ type Receipt struct {
 
 // BlockHeader uniquely identifies a cross chain block.
 type BlockHeader struct {
-	SourceChainID    uint64      // Source chain ID as per https://chainlist.org
-	ConsensusChainID uint64      // Consensus Chain ID as per https://chainlist.org, for replay protection.
-	ConfLevel        ConfLevel   // ConfLevel defines the cross-chain block "version"; either some fuzzy version or finalized.
-	BlockOffset      uint64      // Offset of the cross-chain block
-	BlockHeight      uint64      // Height of the source-chain block
-	BlockHash        common.Hash // Hash of the source-chain block
-}
-
-func (b BlockHeader) ChainVersion() ChainVersion {
-	return ChainVersion{ID: b.SourceChainID, ConfLevel: b.ConfLevel}
+	ChainID     uint64      // Source chain ID as per https://chainlist.org
+	BlockHeight uint64      // Height of the source-chain block
+	BlockHash   common.Hash // Hash of the source-chain block
 }
 
 // Block is a deterministic representation of the omni cross-chain properties of a source chain EVM block.
@@ -183,15 +176,25 @@ func (b Block) ShouldAttest(attestInterval uint64) bool {
 	return b.BlockHeight%attestInterval == 0
 }
 
-// Vote by a validator of a cross-chain Block.
+// AttestHeader uniquely identifies an attestation that require quorum vote.
+// This is used to determine duplicate votes.
+type AttestHeader struct {
+	ConsensusChainID uint64       // Omni consensus chain ID this attestation/vote belangs to. Used for replay-protection.
+	ChainVersion     ChainVersion // ChainVersion defines a "version" of a chain being attested to ; either some fuzzy version or finalized.
+	AttestOffset     uint64       // Monotonically increasing offset of this vote per chain version. 1-indexed.
+}
+
+// Vote by a validator for a cross-chain Block.
 type Vote struct {
-	BlockHeader             // BlockHeader identifies the cross-chain Block
-	MsgRoot     common.Hash // Merkle root of all messages in the cross-chain Block
-	Signature   SigTuple    // Validator signature and public key
+	AttestHeader             // AttestHeader identifies the attestation this vote should be included in.
+	BlockHeader              // BlockHeader identifies the cross-chain Block being voted for.
+	MsgRoot      common.Hash // Merkle root of all messages in the cross-chain Block
+	Signature    SigTuple    // Validator signature and public key
 }
 
 // Attestation containing quorum votes by the validator set of a cross-chain Block.
 type Attestation struct {
+	AttestHeader               // AttestHeader uniquely identifies the attestation.
 	BlockHeader                // BlockHeader identifies the cross-chain Block
 	ValidatorSetID uint64      // Validator set that approved this attestation.
 	MsgRoot        common.Hash // Merkle root of all messages in the cross-chain Block
@@ -199,7 +202,7 @@ type Attestation struct {
 }
 
 func (a Attestation) AttestationRoot() ([32]byte, error) {
-	return AttestationRoot(a.BlockHeader, a.MsgRoot)
+	return AttestationRoot(a.AttestHeader, a.BlockHeader, a.MsgRoot)
 }
 
 // SigTuple is a validator signature and address.

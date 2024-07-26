@@ -34,10 +34,26 @@ func (k *Keeper) PrepareVotes(ctx context.Context, commit abci.ExtendedCommitInf
 		return nil, nil
 	}
 
+	// Adapt portal registry to the supportedChainFunc signature.
+	supportedChainFunc := func(ctx context.Context, chainVersion xchain.ChainVersion) (bool, error) {
+		chainVersions, err := k.portalRegistry.ConfLevels(ctx)
+		if err != nil {
+			return false, err
+		}
+
+		for _, confLevel := range chainVersions[chainVersion.ID] {
+			if confLevel == chainVersion.ConfLevel {
+				return true, nil
+			}
+		}
+
+		return false, nil
+	}
+
 	msg, err := votesFromLastCommit(
 		ctx,
 		k.windowCompare,
-		k.portalRegistry.SupportedChain,
+		supportedChainFunc,
 		commit,
 	)
 	if err != nil {
@@ -48,7 +64,7 @@ func (k *Keeper) PrepareVotes(ctx context.Context, commit abci.ExtendedCommitInf
 }
 
 type windowCompareFunc func(context.Context, xchain.ChainVersion, uint64) (int, error)
-type supportedChainFunc func(context.Context, uint64) (bool, error)
+type supportedChainFunc func(context.Context, xchain.ChainVersion) (bool, error)
 
 // votesFromLastCommit returns the aggregated votes contained in vote extensions
 // of the last local commit.
@@ -73,14 +89,14 @@ func votesFromLastCommit(
 
 		var selected []*types.Vote
 		for _, v := range votes.Votes {
-			if ok, err := supportedChain(ctx, v.BlockHeader.SourceChainId); err != nil {
+			if ok, err := supportedChain(ctx, v.AttestHeader.XChainVersion()); err != nil {
 				return nil, err
 			} else if !ok {
 				// Skip votes for unsupported chains.
 				continue
 			}
 
-			cmp, err := windowCompare(ctx, v.BlockHeader.XChainVersion(), v.BlockHeader.Offset)
+			cmp, err := windowCompare(ctx, v.AttestHeader.XChainVersion(), v.AttestHeader.AttestOffset)
 			if err != nil {
 				return nil, err
 			} else if cmp != 0 {
@@ -142,14 +158,14 @@ func flattenAggs(aggsByHeader map[[32]byte]*types.AggVote) []*types.AggVote {
 // Note the provided slice is also sorted in-place.
 func sortAggregates(aggs []*types.AggVote) []*types.AggVote {
 	sort.Slice(aggs, func(i, j int) bool {
-		if aggs[i].BlockHeader.Offset != aggs[j].BlockHeader.Offset {
-			return aggs[i].BlockHeader.Offset < aggs[j].BlockHeader.Offset
+		if aggs[i].AttestHeader.AttestOffset != aggs[j].AttestHeader.AttestOffset {
+			return aggs[i].AttestHeader.AttestOffset < aggs[j].AttestHeader.AttestOffset
 		}
-		if aggs[i].BlockHeader.SourceChainId != aggs[j].BlockHeader.SourceChainId {
-			return aggs[i].BlockHeader.SourceChainId < aggs[j].BlockHeader.SourceChainId
+		if aggs[i].BlockHeader.ChainId != aggs[j].BlockHeader.ChainId {
+			return aggs[i].BlockHeader.ChainId < aggs[j].BlockHeader.ChainId
 		}
 
-		return bytes.Compare(aggs[i].BlockHeader.Hash, aggs[j].BlockHeader.Hash) < 0
+		return bytes.Compare(aggs[i].BlockHeader.BlockHash, aggs[j].BlockHeader.BlockHash) < 0
 	})
 
 	return aggs
