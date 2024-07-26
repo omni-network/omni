@@ -222,14 +222,14 @@ func SimnetNetwork() Network {
 		ID: Simnet,
 		Chains: []Chain{
 			mustSimnetChain(Simnet.Static().OmniExecutionChainID, xchain.ShardFinalized0),
-			mustSimnetChain(evmchain.IDMockL1Fast, xchain.ShardLatest0),
-			mustSimnetChain(evmchain.IDMockL2, xchain.ShardLatest0),
+			mustSimnetChain(evmchain.IDMockL1Fast, xchain.ShardFinalized0, xchain.ShardLatest0),
+			mustSimnetChain(evmchain.IDMockL2, xchain.ShardFinalized0),
 			Simnet.Static().OmniConsensusChain(),
 		},
 	}
 }
 
-func mustSimnetChain(id uint64, shard xchain.ShardID) Chain {
+func mustSimnetChain(id uint64, shards ...xchain.ShardID) Chain {
 	meta, ok := evmchain.MetadataByID(id)
 	if !ok {
 		panic("missing chain metadata")
@@ -239,7 +239,7 @@ func mustSimnetChain(id uint64, shard xchain.ShardID) Chain {
 		ID:          meta.ChainID,
 		Name:        meta.Name,
 		BlockPeriod: time.Millisecond * 500, // Speed up block times for testing
-		Shards:      []xchain.ShardID{shard},
+		Shards:      shards,
 	}
 }
 

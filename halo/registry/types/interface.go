@@ -13,3 +13,6 @@ type PortalRegistry interface {
 	// ConfLevels returns all confirmation levels supported by all chains.
 	ConfLevels(ctx context.Context) (map[uint64][]xchain.ConfLevel, error)
 }
+
+// ChainNameFunc returns the name of the chain.
+type ChainNameFunc func(chainID uint64) string

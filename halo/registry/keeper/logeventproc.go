@@ -107,8 +107,8 @@ func (k Keeper) addPortal(ctx context.Context, portal *Portal) error {
 
 	log.Info(ctx, "🔭 Added network portal",
 		"network_id", network.GetId(),
-		"chain_id", portal.GetChainId(),
-		"shards", portal.GetShardIds(),
+		"chain", k.chainNamer(portal.GetChainId()),
+		"shards", shardLabels(portal.GetShardIds()),
 		"height", sdk.UnwrapSDKContext(ctx).BlockHeight(),
 	)
 

@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/halo/evmslashing"
 	"github.com/omni-network/omni/halo/evmstaking"
 	registrykeeper "github.com/omni-network/omni/halo/registry/keeper"
+	rtypes "github.com/omni-network/omni/halo/registry/types"
 	valsynckeeper "github.com/omni-network/omni/halo/valsync/keeper"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -74,7 +75,8 @@ func newApp(
 	db dbm.DB,
 	engineCl ethclient.EngineClient,
 	voter atypes.Voter,
-	namer atypes.ChainVerNameFunc,
+	chainVerNamer atypes.ChainVerNameFunc,
+	chainNamer rtypes.ChainNameFunc,
 	feeRecProvider etypes.FeeRecipientProvider,
 	baseAppOpts ...func(*baseapp.BaseApp),
 ) (*App, error) {
@@ -83,7 +85,8 @@ func newApp(
 		depinject.Supply(
 			logger,
 			engineCl,
-			namer,
+			chainVerNamer,
+			chainNamer,
 			voter,
 			feeRecProvider,
 		),

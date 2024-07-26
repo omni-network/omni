@@ -1021,7 +1021,7 @@ func checkSupportedChainAndConfLevel(ctx context.Context, registry rtypes.Portal
 	}
 
 	if !supportedChain {
-		return errors.New("unsupported chain", "chainID", chainID)
+		return errors.New("unsupported chain", "chain", chainID)
 	}
 
 	confLevelsMap, err := registry.ConfLevels(ctx)
@@ -1031,7 +1031,7 @@ func checkSupportedChainAndConfLevel(ctx context.Context, registry rtypes.Portal
 
 	supportedConfLevels, ok := confLevelsMap[chainID]
 	if !ok {
-		return errors.New("missing conf levels", "chainID", chainID)
+		return errors.New("missing conf levels", "chain", chainID)
 	}
 
 	for _, supportedConfLevel := range supportedConfLevels {
@@ -1040,7 +1040,7 @@ func checkSupportedChainAndConfLevel(ctx context.Context, registry rtypes.Portal
 		}
 	}
 
-	return errors.New("unsupported conf level", "chainID", chainID, "confLevel", confLevel)
+	return errors.New("unsupported conf level", "chain", chainID, "conf", xchain.ConfLevel(confLevel).String())
 }
 
 // windowCompare returns -1 if x < mid-voteWindow, 1 if x > mid+voteWindow, else 0.

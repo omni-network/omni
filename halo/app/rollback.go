@@ -58,6 +58,7 @@ func Rollback(ctx context.Context, cfg Config, rCfg RollbackConfig) error {
 		engineCl,
 		voter,
 		netconf.ChainVersionNamer(cfg.Network),
+		netconf.ChainNamer(cfg.Network),
 		burnEVMFees{},
 		baseAppOpts...,
 	)
