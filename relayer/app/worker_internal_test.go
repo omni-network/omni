@@ -50,10 +50,13 @@ func TestWorker_Run(t *testing.T) {
 
 			// Each block has two messages, one for each stream.
 			return xchain.Block{
-				BlockHeader: xchain.BlockHeader{SourceChainID: req.ChainID, BlockOffset: req.Offset, BlockHeight: req.Height, ConfLevel: req.ConfLevel},
+				BlockHeader: xchain.BlockHeader{
+					ChainID:     req.ChainID,
+					BlockHeight: req.Height,
+				},
 				Msgs: []xchain.Msg{
-					{MsgID: xchain.MsgID{StreamID: streamA, StreamOffset: req.Offset}},
-					{MsgID: xchain.MsgID{StreamID: streamB, StreamOffset: req.Offset}},
+					{MsgID: xchain.MsgID{StreamID: streamA, StreamOffset: req.Height}},
+					{MsgID: xchain.MsgID{StreamID: streamB, StreamOffset: req.Height}},
 				},
 			}, true, nil
 		},
@@ -108,17 +111,22 @@ func TestWorker_Run(t *testing.T) {
 				// Calculate the attestation root
 				block, _, _ := mockXClient.GetBlock(ctx, xchain.ProviderRequest{
 					ChainID:   chainVer.ID,
-					Offset:    offset,
 					ConfLevel: chainVer.ConfLevel,
+					// We treat the offset as the requested height for the test.
+					Height: offset,
 				})
 				tree, _ := xchain.NewMsgTree(block.Msgs)
 
 				return xchain.Attestation{
 					MsgRoot: tree.MsgRoot(),
+					AttestHeader: xchain.AttestHeader{
+						ChainVersion: chainVer,
+						AttestOffset: offset,
+					},
 					BlockHeader: xchain.BlockHeader{
-						SourceChainID: chainVer.ID,
-						ConfLevel:     chainVer.ConfLevel,
-						BlockOffset:   offset},
+						ChainID:     chainVer.ID,
+						BlockHeight: offset,
+					},
 				}
 			}
 

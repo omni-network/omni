@@ -26,18 +26,20 @@ message AddVotesResponse {}
 
 // Attestation contains quorum votes for a cross-chain block of a specific validator set.
 message Attestation {
-  BlockHeader       block_header     = 1; // BlockHeader identifies the cross-chain Block
-  bytes             msg_root         = 2; // Merkle root of all the messages in the cross-chain Block
-  repeated SigTuple signatures       = 3; // Validator signatures and public keys
-  uint64            validator_set_id = 4; // Validator set that approved this attestation.
+  AttestHeader      attest_header    = 1; // AttestHeader uniquely identifies an attestation that requires quorum votes.
+  BlockHeader       block_header     = 2; // BlockHeader identifies the cross-chain Block
+  bytes             msg_root         = 3; // Merkle root of all the messages in the cross-chain Block
+  repeated SigTuple signatures       = 4; // Validator signatures and public keys
+  uint64            validator_set_id = 5; // Validator set that approved this attestation.
 }
 
 
 // AggVote aggregates multiple votes of a cross-chain Block.
 message AggVote {
-  BlockHeader       block_header     = 1; // BlockHeader identifies the cross-chain Block
-  bytes             msg_root         = 2; // Merkle root of all the messages in the cross-chain Block
-  repeated SigTuple signatures       = 3; // Validator signatures and public keys
+  AttestHeader      attest_header    = 1; // AttestHeader uniquely identifies an attestation that requires quorum votes.
+  BlockHeader       block_header     = 2; // BlockHeader identifies the cross-chain Block
+  bytes             msg_root         = 3; // Merkle root of all the messages in the cross-chain Block
+  repeated SigTuple signatures       = 4; // Validator signatures and public keys
 }
 
 // Votes contains multiple votes for different cross-chain Blocks. Usually by the same validator.
@@ -47,19 +49,26 @@ message Votes {
 
 // Vote by a validator of a cross-chain Block.
 message Vote {
-  BlockHeader block_header     = 1; // BlockHeader identifies the cross-chain Block
-  bytes        msg_root        = 2; // Merkle root of all the messages in the cross-chain Block
-  SigTuple    signature        = 3; // Validator signatures and public keys
+  AttestHeader attest_header   = 1; // AttestHeader uniquely identifies an attestation that requires quorum votes.
+  BlockHeader  block_header    = 2; // BlockHeader identifies the cross-chain Block
+  bytes        msg_root        = 3; // Merkle root of all the messages in the cross-chain Block
+  SigTuple     signature       = 4; // Validator signatures and public keys
 }
 
-// BlockHeader uniquely identifies a cross chain block/attestation.
+// BlockHeader uniquely identifies a cross chain block.
 message BlockHeader {
-  uint64 source_chain_id      = 1; // Source Chain ID as per https://chainlist.org
-  uint64 consensus_chain_id   = 2; // Consensus Chain ID, for replay protection.
-  uint32 conf_level           = 3; // Confirmation level (aka version) of the cross-chain block/attestation.
-  uint64 offset               = 4; // Offset of the cross-chain block
-  uint64 height               = 5; // Height of the source-chain block
-  bytes  hash                 = 6; // Hash of the source-chain block
+  uint64 chain_id     = 1; // Source chain ID as per https://chainlist.org
+  uint64 block_height = 2; // Height of the source-chain block
+  bytes  block_hash   = 3; // Hash of the source-chain block
+}
+
+// AttestHeader uniquely identifies an attestation that requires quorum votes.
+// This is used to determine duplicate votes.
+message AttestHeader {
+  uint64 consensus_chain_id = 1; // Omni consensus chain ID this attestation/vote belangs to. Used for replay-protection.
+  uint64 source_chain_id    = 2; // Source Chain ID as per https://chainlist.org
+  uint32 conf_level         = 3; // Confirmation level (aka version) of the cross-chain block/attestation.
+  uint64 attest_offset      = 4; // Monotonically increasing offset of this vote per chain version. 1-indexed.
 }
 
 // SigTuple is a validator public key and signature (over the attestation root).

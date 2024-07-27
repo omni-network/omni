@@ -41,16 +41,18 @@ func TestEncodeMsg(t *testing.T) {
 func TestEncodeHeader(t *testing.T) {
 	t.Parallel()
 
-	header := BlockHeader{
-		SourceChainID:    1,
+	aHeader := AttestHeader{
 		ConsensusChainID: 1,
-		ConfLevel:        1,
-		BlockOffset:      100,
-		BlockHeight:      99,
-		BlockHash:        common.HexToHash("0x412d62a6a3115ab5a0e0cae9d63082ff8dfb002a98cc889d06dc986a9461586b"),
+		ChainVersion:     ChainVersion{ID: 1, ConfLevel: ConfLatest},
+		AttestOffset:     100,
+	}
+	bHeader := BlockHeader{
+		ChainID:     1,
+		BlockHeight: 99,
+		BlockHash:   common.HexToHash("0x412d62a6a3115ab5a0e0cae9d63082ff8dfb002a98cc889d06dc986a9461586b"),
 	}
 
-	packed, err := encodeHeader(header)
+	packed, err := encodeSubmissionHeader(aHeader, bHeader)
 	require.NoError(t, err)
 
 	tutil.RequireGoldenBytes(t, []byte(hex.EncodeToString(packed)))

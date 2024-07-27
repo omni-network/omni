@@ -112,7 +112,7 @@ func (mr *MockVoterMockRecorder) LocalAddress() *gomock.Call {
 }
 
 // SetCommitted mocks base method.
-func (m *MockVoter) SetCommitted(headers []*types0.BlockHeader) error {
+func (m *MockVoter) SetCommitted(headers []*types0.AttestHeader) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetCommitted", headers)
 	ret0, _ := ret[0].(error)
@@ -126,7 +126,7 @@ func (mr *MockVoterMockRecorder) SetCommitted(headers any) *gomock.Call {
 }
 
 // SetProposed mocks base method.
-func (m *MockVoter) SetProposed(headers []*types0.BlockHeader) error {
+func (m *MockVoter) SetProposed(headers []*types0.AttestHeader) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetProposed", headers)
 	ret0, _ := ret[0].(error)
@@ -278,19 +278,4 @@ func (m *MockRegistry) ConfLevels(ctx context.Context) (map[uint64][]xchain.Conf
 func (mr *MockRegistryMockRecorder) ConfLevels(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfLevels", reflect.TypeOf((*MockRegistry)(nil).ConfLevels), ctx)
-}
-
-// SupportedChain mocks base method.
-func (m *MockRegistry) SupportedChain(ctx context.Context, chainID uint64) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SupportedChain", ctx, chainID)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// SupportedChain indicates an expected call of SupportedChain.
-func (mr *MockRegistryMockRecorder) SupportedChain(ctx, chainID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SupportedChain", reflect.TypeOf((*MockRegistry)(nil).SupportedChain), ctx, chainID)
 }

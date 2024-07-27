@@ -256,10 +256,9 @@ func fetchXBlock(rootCtx context.Context, xProvider xchain.Provider, att xchain.
 	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second))
 	for {
 		req := xchain.ProviderRequest{
-			ChainID:   att.SourceChainID,
+			ChainID:   att.ChainID,
 			Height:    att.BlockHeight,
-			Offset:    att.BlockOffset,
-			ConfLevel: att.ConfLevel,
+			ConfLevel: att.ChainVersion.ConfLevel,
 		}
 		block, ok, err := xProvider.GetBlock(ctx, req)
 		if rootCtx.Err() != nil {
@@ -277,7 +276,7 @@ func fetchXBlock(rootCtx context.Context, xProvider xchain.Provider, att xchain.
 		}
 
 		if err := verifyAttBlock(att, block); err != nil {
-			if att.ConfLevel.IsFuzzy() {
+			if att.ChainVersion.ConfLevel.IsFuzzy() {
 				log.Warn(ctx, "Skipping fuzzy attestation mismatching block", err)
 				return block, false, nil
 			}
@@ -297,9 +296,6 @@ func verifyAttBlock(att xchain.Attestation, block xchain.Block) error {
 			log.Hex7("attestation_hash", att.BlockHash[:]),
 			log.Hex7("block_hash", block.BlockHash[:]),
 		)
-	} else if block.BlockOffset != att.BlockOffset {
-		// All attestations must map to non-empty xblocks with XBlockOffset populated.
-		return errors.New("unexpected XBlockOffset")
 	} else if block.BlockHeader != att.BlockHeader {
 		return errors.New("attestation block header mismatch")
 	}
@@ -326,9 +322,9 @@ func verifyAttBlock(att xchain.Attestation, block xchain.Block) error {
 // attestationForShard returns true if the attestation proof contains messages for the shard.
 // Fuzzy attestations cannot be used to prove finalized shards. But finalized attestations can prove all shards.
 func attestationForShard(att xchain.Attestation, shard xchain.ShardID) bool {
-	if att.ConfLevel == xchain.ConfFinalized {
+	if att.ChainVersion.ConfLevel == xchain.ConfFinalized {
 		return true // Finalized attestation, matches all streams.
 	}
 
-	return att.ConfLevel == shard.ConfLevel()
+	return att.ChainVersion.ConfLevel == shard.ConfLevel()
 }

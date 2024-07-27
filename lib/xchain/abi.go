@@ -4,6 +4,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -14,13 +15,24 @@ const (
 	typAddress = "address"
 )
 
+// submissionHeader defines the header leaf of the attestation merkle tree.
+// It contains fields from the AttestHeader and BlockHeader.
+type submissionHeader struct {
+	SourceChainID    uint64
+	ConsensusChainID uint64
+	ConfLevel        ConfLevel
+	AttestOffset     uint64
+	BlockHeight      uint64
+	BlockHash        common.Hash
+}
+
 //nolint:gochecknoglobals // Static ABI types
 var (
-	headerABI = mustABITuple([]abi.ArgumentMarshaling{
+	submissionHeaderABI = mustABITuple([]abi.ArgumentMarshaling{
 		{Name: "SourceChainID", Type: typUint64},
 		{Name: "ConsensusChainID", Type: typUint64},
 		{Name: "ConfLevel", Type: typUint8},
-		{Name: "BlockOffset", Type: typUint64},
+		{Name: "AttestOffset", Type: typUint64},
 		{Name: "BlockHeight", Type: typUint64},
 		{Name: "BlockHash", Type: typBytes32},
 	})
@@ -46,11 +58,22 @@ func encodeMsg(msg Msg) ([]byte, error) {
 	return resp, nil
 }
 
-// encodeHeader ABI encodes a cross chain block header into a byte slice.
-func encodeHeader(header BlockHeader) ([]byte, error) {
-	resp, err := headerABI.Pack(header)
+// encodeSubmissionHeader ABI encodes a attest header and block header into a byte slice.
+func encodeSubmissionHeader(attHeader AttestHeader, blockHeader BlockHeader) ([]byte, error) {
+	if attHeader.ChainVersion.ID != blockHeader.ChainID {
+		return nil, errors.New("chain ID mismatch")
+	}
+
+	resp, err := submissionHeaderABI.Pack(submissionHeader{
+		SourceChainID:    attHeader.ChainVersion.ID,
+		ConsensusChainID: attHeader.ConsensusChainID,
+		ConfLevel:        attHeader.ChainVersion.ConfLevel,
+		AttestOffset:     attHeader.AttestOffset,
+		BlockHeight:      blockHeader.BlockHeight,
+		BlockHash:        blockHeader.BlockHash,
+	})
 	if err != nil {
-		return nil, errors.Wrap(err, "pack xchain header")
+		return nil, errors.Wrap(err, "pack xchain submissionHeader")
 	}
 
 	return resp, nil

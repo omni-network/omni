@@ -32,7 +32,6 @@ func TestProvider(t *testing.T) {
 		workers = 2
 
 		chainID    = uint64(999)
-		fromOffset = uint64(50)
 		fromHeight = uint64(200)
 	)
 
@@ -81,7 +80,6 @@ func TestProvider(t *testing.T) {
 	req := xchain.ProviderRequest{
 		ChainID:   chainID,
 		Height:    fromHeight,
-		Offset:    fromOffset,
 		ConfLevel: xchain.ConfLatest,
 	}
 	var actual []xchain.Block
@@ -101,16 +99,9 @@ func TestProvider(t *testing.T) {
 
 	require.Len(t, actual, total)
 
-	nextXBlockOffset := uint64(1)
 	for i, block := range actual {
-		require.Equal(t, chainID, block.SourceChainID)
+		require.Equal(t, chainID, block.ChainID)
 		require.Equal(t, fromHeight+uint64(i), block.BlockHeight)
-		if block.ShouldAttest(0) {
-			require.Equal(t, nextXBlockOffset, block.BlockOffset)
-			nextXBlockOffset++
-		} else {
-			require.Empty(t, block.BlockOffset)
-		}
 	}
 }
 

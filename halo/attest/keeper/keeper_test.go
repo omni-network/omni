@@ -70,7 +70,7 @@ func TestKeeper_Add(t *testing.T) {
 
 				require.NoError(t, err)
 				require.Len(t, allAtts.Attestations, 1)
-				require.Equal(t, allAtts.Attestations[0].BlockHeader.Offset, expectAtt.GetId())
+				require.Equal(t, allAtts.Attestations[0].AttestHeader.AttestOffset, expectAtt.GetAttestOffset())
 			}},
 		},
 		{
@@ -976,7 +976,7 @@ func expectValSig(id uint64, attID uint64, val *vtypes.Validator, offset uint64)
 		ValidatorAddress: ethAddr.Bytes(),
 		AttId:            attID,
 		ChainId:          defaultChainID,
-		BlockOffset:      offset,
+		AttestOffset:     offset,
 		ConfLevel:        defaultConfLevel,
 	}
 }
@@ -987,7 +987,7 @@ func expectPendingAtt(id uint64, offset uint64, createdHeight uint64) *keeper.At
 		MsgRoot:       msgRoot.Bytes(),
 		ChainId:       defaultChainID,
 		BlockHash:     blockHashes[0].Bytes(),
-		BlockOffset:   offset,
+		AttestOffset:  offset,
 		BlockHeight:   defaultHeight,
 		CreatedHeight: createdHeight,
 		ConfLevel:     defaultConfLevel,
@@ -1001,7 +1001,7 @@ func expectApprovedAtt(id uint64, offset uint64, valset *vtypes.ValidatorSetResp
 		MsgRoot:        msgRoot.Bytes(),
 		ChainId:        defaultChainID,
 		BlockHash:      blockHashes[0].Bytes(),
-		BlockOffset:    offset,
+		AttestOffset:   offset,
 		BlockHeight:    defaultHeight,
 		CreatedHeight:  createdHeight,
 		ConfLevel:      defaultConfLevel,

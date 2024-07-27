@@ -117,15 +117,15 @@ func (p Provider) Subscribe(in context.Context, chainVer xchain.ChainVersion, xB
 		RetryCallback: true,
 		FetchWorkers:  1, // Only single worker supported since we fetch batches of unknown lengths so can't shard.
 		Height: func(att xchain.Attestation) uint64 {
-			return att.BlockOffset
+			return att.AttestOffset
 		},
-		Verify: func(_ context.Context, att xchain.Attestation, h uint64) error {
-			if !chainVer.ConfLevel.IsFuzzy() && att.ConfLevel.IsFuzzy() {
+		Verify: func(_ context.Context, att xchain.Attestation, offset uint64) error {
+			if !chainVer.ConfLevel.IsFuzzy() && att.ChainVersion.ConfLevel.IsFuzzy() {
 				return errors.New("fuzzy attestation while streaming finalized [BUG]")
-			} else if att.BlockOffset != h {
-				return errors.New("invalid attestation height",
-					"actual", att.BlockOffset,
-					"expected", h,
+			} else if att.AttestOffset != offset {
+				return errors.New("invalid attestation offset",
+					"actual", att.AttestOffset,
+					"expected", offset,
 				)
 			}
 

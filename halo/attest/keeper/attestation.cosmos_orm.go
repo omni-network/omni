@@ -75,31 +75,31 @@ func (this AttestationAttestationRootIndexKey) WithAttestationRoot(attestation_r
 	return this
 }
 
-type AttestationStatusChainIdConfLevelBlockOffsetIndexKey struct {
+type AttestationStatusChainIdConfLevelAttestOffsetIndexKey struct {
 	vs []interface{}
 }
 
-func (x AttestationStatusChainIdConfLevelBlockOffsetIndexKey) id() uint32            { return 2 }
-func (x AttestationStatusChainIdConfLevelBlockOffsetIndexKey) values() []interface{} { return x.vs }
-func (x AttestationStatusChainIdConfLevelBlockOffsetIndexKey) attestationIndexKey()  {}
+func (x AttestationStatusChainIdConfLevelAttestOffsetIndexKey) id() uint32            { return 2 }
+func (x AttestationStatusChainIdConfLevelAttestOffsetIndexKey) values() []interface{} { return x.vs }
+func (x AttestationStatusChainIdConfLevelAttestOffsetIndexKey) attestationIndexKey()  {}
 
-func (this AttestationStatusChainIdConfLevelBlockOffsetIndexKey) WithStatus(status uint32) AttestationStatusChainIdConfLevelBlockOffsetIndexKey {
+func (this AttestationStatusChainIdConfLevelAttestOffsetIndexKey) WithStatus(status uint32) AttestationStatusChainIdConfLevelAttestOffsetIndexKey {
 	this.vs = []interface{}{status}
 	return this
 }
 
-func (this AttestationStatusChainIdConfLevelBlockOffsetIndexKey) WithStatusChainId(status uint32, chain_id uint64) AttestationStatusChainIdConfLevelBlockOffsetIndexKey {
+func (this AttestationStatusChainIdConfLevelAttestOffsetIndexKey) WithStatusChainId(status uint32, chain_id uint64) AttestationStatusChainIdConfLevelAttestOffsetIndexKey {
 	this.vs = []interface{}{status, chain_id}
 	return this
 }
 
-func (this AttestationStatusChainIdConfLevelBlockOffsetIndexKey) WithStatusChainIdConfLevel(status uint32, chain_id uint64, conf_level uint32) AttestationStatusChainIdConfLevelBlockOffsetIndexKey {
+func (this AttestationStatusChainIdConfLevelAttestOffsetIndexKey) WithStatusChainIdConfLevel(status uint32, chain_id uint64, conf_level uint32) AttestationStatusChainIdConfLevelAttestOffsetIndexKey {
 	this.vs = []interface{}{status, chain_id, conf_level}
 	return this
 }
 
-func (this AttestationStatusChainIdConfLevelBlockOffsetIndexKey) WithStatusChainIdConfLevelBlockOffset(status uint32, chain_id uint64, conf_level uint32, block_offset uint64) AttestationStatusChainIdConfLevelBlockOffsetIndexKey {
-	this.vs = []interface{}{status, chain_id, conf_level, block_offset}
+func (this AttestationStatusChainIdConfLevelAttestOffsetIndexKey) WithStatusChainIdConfLevelAttestOffset(status uint32, chain_id uint64, conf_level uint32, attest_offset uint64) AttestationStatusChainIdConfLevelAttestOffsetIndexKey {
+	this.vs = []interface{}{status, chain_id, conf_level, attest_offset}
 	return this
 }
 
@@ -223,9 +223,9 @@ type SignatureTable interface {
 	HasByAttIdValidatorAddress(ctx context.Context, att_id uint64, validator_address []byte) (found bool, err error)
 	// GetByAttIdValidatorAddress returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
 	GetByAttIdValidatorAddress(ctx context.Context, att_id uint64, validator_address []byte) (*Signature, error)
-	HasByChainIdConfLevelBlockOffsetValidatorAddress(ctx context.Context, chain_id uint64, conf_level uint32, block_offset uint64, validator_address []byte) (found bool, err error)
-	// GetByChainIdConfLevelBlockOffsetValidatorAddress returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
-	GetByChainIdConfLevelBlockOffsetValidatorAddress(ctx context.Context, chain_id uint64, conf_level uint32, block_offset uint64, validator_address []byte) (*Signature, error)
+	HasByChainIdConfLevelAttestOffsetValidatorAddress(ctx context.Context, chain_id uint64, conf_level uint32, attest_offset uint64, validator_address []byte) (found bool, err error)
+	// GetByChainIdConfLevelAttestOffsetValidatorAddress returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
+	GetByChainIdConfLevelAttestOffsetValidatorAddress(ctx context.Context, chain_id uint64, conf_level uint32, attest_offset uint64, validator_address []byte) (*Signature, error)
 	List(ctx context.Context, prefixKey SignatureIndexKey, opts ...ormlist.Option) (SignatureIterator, error)
 	ListRange(ctx context.Context, from, to SignatureIndexKey, opts ...ormlist.Option) (SignatureIterator, error)
 	DeleteBy(ctx context.Context, prefixKey SignatureIndexKey) error
@@ -284,33 +284,33 @@ func (this SignatureAttIdValidatorAddressIndexKey) WithAttIdValidatorAddress(att
 	return this
 }
 
-type SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey struct {
+type SignatureChainIdConfLevelAttestOffsetValidatorAddressIndexKey struct {
 	vs []interface{}
 }
 
-func (x SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey) id() uint32 { return 2 }
-func (x SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey) values() []interface{} {
+func (x SignatureChainIdConfLevelAttestOffsetValidatorAddressIndexKey) id() uint32 { return 2 }
+func (x SignatureChainIdConfLevelAttestOffsetValidatorAddressIndexKey) values() []interface{} {
 	return x.vs
 }
-func (x SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey) signatureIndexKey() {}
+func (x SignatureChainIdConfLevelAttestOffsetValidatorAddressIndexKey) signatureIndexKey() {}
 
-func (this SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey) WithChainId(chain_id uint64) SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey {
+func (this SignatureChainIdConfLevelAttestOffsetValidatorAddressIndexKey) WithChainId(chain_id uint64) SignatureChainIdConfLevelAttestOffsetValidatorAddressIndexKey {
 	this.vs = []interface{}{chain_id}
 	return this
 }
 
-func (this SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey) WithChainIdConfLevel(chain_id uint64, conf_level uint32) SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey {
+func (this SignatureChainIdConfLevelAttestOffsetValidatorAddressIndexKey) WithChainIdConfLevel(chain_id uint64, conf_level uint32) SignatureChainIdConfLevelAttestOffsetValidatorAddressIndexKey {
 	this.vs = []interface{}{chain_id, conf_level}
 	return this
 }
 
-func (this SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey) WithChainIdConfLevelBlockOffset(chain_id uint64, conf_level uint32, block_offset uint64) SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey {
-	this.vs = []interface{}{chain_id, conf_level, block_offset}
+func (this SignatureChainIdConfLevelAttestOffsetValidatorAddressIndexKey) WithChainIdConfLevelAttestOffset(chain_id uint64, conf_level uint32, attest_offset uint64) SignatureChainIdConfLevelAttestOffsetValidatorAddressIndexKey {
+	this.vs = []interface{}{chain_id, conf_level, attest_offset}
 	return this
 }
 
-func (this SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey) WithChainIdConfLevelBlockOffsetValidatorAddress(chain_id uint64, conf_level uint32, block_offset uint64, validator_address []byte) SignatureChainIdConfLevelBlockOffsetValidatorAddressIndexKey {
-	this.vs = []interface{}{chain_id, conf_level, block_offset, validator_address}
+func (this SignatureChainIdConfLevelAttestOffsetValidatorAddressIndexKey) WithChainIdConfLevelAttestOffsetValidatorAddress(chain_id uint64, conf_level uint32, attest_offset uint64, validator_address []byte) SignatureChainIdConfLevelAttestOffsetValidatorAddressIndexKey {
+	this.vs = []interface{}{chain_id, conf_level, attest_offset, validator_address}
 	return this
 }
 
@@ -380,21 +380,21 @@ func (this signatureTable) GetByAttIdValidatorAddress(ctx context.Context, att_i
 	return &signature, nil
 }
 
-func (this signatureTable) HasByChainIdConfLevelBlockOffsetValidatorAddress(ctx context.Context, chain_id uint64, conf_level uint32, block_offset uint64, validator_address []byte) (found bool, err error) {
+func (this signatureTable) HasByChainIdConfLevelAttestOffsetValidatorAddress(ctx context.Context, chain_id uint64, conf_level uint32, attest_offset uint64, validator_address []byte) (found bool, err error) {
 	return this.table.GetIndexByID(2).(ormtable.UniqueIndex).Has(ctx,
 		chain_id,
 		conf_level,
-		block_offset,
+		attest_offset,
 		validator_address,
 	)
 }
 
-func (this signatureTable) GetByChainIdConfLevelBlockOffsetValidatorAddress(ctx context.Context, chain_id uint64, conf_level uint32, block_offset uint64, validator_address []byte) (*Signature, error) {
+func (this signatureTable) GetByChainIdConfLevelAttestOffsetValidatorAddress(ctx context.Context, chain_id uint64, conf_level uint32, attest_offset uint64, validator_address []byte) (*Signature, error) {
 	var signature Signature
 	found, err := this.table.GetIndexByID(2).(ormtable.UniqueIndex).Get(ctx, &signature,
 		chain_id,
 		conf_level,
-		block_offset,
+		attest_offset,
 		validator_address,
 	)
 	if err != nil {

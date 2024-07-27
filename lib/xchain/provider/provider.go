@@ -23,8 +23,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-const initialXOffset uint64 = 1
-
 // fetchWorkerThresholds defines the number of concurrent workers
 // to fetch xblocks by chain block period.
 var fetchWorkerThresholds = []struct {
@@ -37,11 +35,6 @@ var fetchWorkerThresholds = []struct {
 }
 
 var _ xchain.Provider = (*Provider)(nil)
-
-type chainVersion struct {
-	ID        uint64
-	ConfLevel xchain.ConfLevel
-}
 
 // Provider stores the source chain configuration and the global quit channel.
 type Provider struct {
@@ -57,7 +50,7 @@ type Provider struct {
 	// behind the chain version head.
 	// Also, since many L2s finalize in batches, the stream
 	// lags behind the chain version head every time a new batch is finalized.
-	confHeads map[chainVersion]uint64
+	confHeads map[xchain.ChainVersion]uint64
 }
 
 // New instantiates the provider instance which will be ready to accept
@@ -80,7 +73,7 @@ func New(network netconf.Network, rpcClients map[uint64]ethclient.Client, cProvi
 		cChainID:    cChain.ID,
 		cProvider:   cProvider,
 		backoffFunc: backoffFunc,
-		confHeads:   make(map[chainVersion]uint64),
+		confHeads:   make(map[xchain.ChainVersion]uint64),
 	}
 }
 
@@ -148,14 +141,6 @@ func (p *Provider) stream(
 		fromHeight = chain.DeployHeight
 	}
 
-	// XBlockOffset is 1-indexed (starts at 1)
-	fromOffset := req.Offset
-	if fromOffset == 0 {
-		fromOffset = initialXOffset
-	}
-
-	tracker := newOffsetTracker(fromOffset, fromHeight, chain.AttestInterval)
-
 	deps := stream.Deps[xchain.Block]{
 		FetchWorkers: workers,
 		FetchBatch: func(ctx context.Context, chainID uint64, height uint64) ([]xchain.Block, error) {
@@ -163,7 +148,6 @@ func (p *Provider) stream(
 				ChainID:   chainID,
 				Height:    height,
 				ConfLevel: req.ConfLevel,
-				Offset:    0, // Don't assign block offset yet
 			}
 
 			xBlock, exists, err := p.GetBlock(ctx, fetchReq)
@@ -171,14 +155,6 @@ func (p *Provider) stream(
 				return nil, err
 			} else if !exists {
 				return nil, nil
-			}
-
-			// Get block offset from tracker.
-			// Possibly waiting for another fetch worker to fetch "next height";
-			// since offsets need to be assigned in sequential order.
-			xBlock.BlockOffset, err = tracker.awaitOffset(ctx, xBlock)
-			if err != nil {
-				return nil, err
 			}
 
 			return []xchain.Block{xBlock}, nil
@@ -190,12 +166,10 @@ func (p *Provider) stream(
 			return block.BlockHeight
 		},
 		Verify: func(_ context.Context, block xchain.Block, h uint64) error {
-			if block.SourceChainID != req.ChainID {
+			if block.ChainID != req.ChainID {
 				return errors.New("invalid block source chain id")
 			} else if block.BlockHeight != h {
 				return errors.New("invalid block height")
-			} else if block.ShouldAttest(chain.AttestInterval) && block.BlockOffset == 0 {
-				return errors.New("invalid block offset")
 			}
 
 			return nil
@@ -242,79 +216,4 @@ func (p *Provider) getEVMChain(chainID uint64) (netconf.Chain, ethclient.Client,
 	}
 
 	return chain, client, nil
-}
-
-// offsetTracker tracks and assigns the XBlockOffset.
-type offsetTracker struct {
-	attestInterval uint64
-
-	// mutable defines all mutable fields protected by a RWMutex.
-	mutable struct {
-		sync.RWMutex
-		nextOffset uint64
-		nextHeight uint64
-	}
-}
-
-// newOffsetTracker returns a new offset tracker, setting the next state to the provided values.
-func newOffsetTracker(nextOffset uint64, nextHeight uint64, attestInterval uint64) *offsetTracker {
-	tracker := offsetTracker{
-		attestInterval: attestInterval,
-	}
-
-	// Take lock, this is only require due to `go test -race`
-	tracker.mutable.Lock()
-	defer tracker.mutable.Unlock()
-
-	tracker.mutable.nextOffset = nextOffset
-	tracker.mutable.nextHeight = nextHeight
-
-	return &tracker
-}
-
-// awaitOffset block and waits for the provided block to be the next expected height,
-// it then maybe assigns-and-returns a block offset if block.ShouldAttest,
-// it also updates internal state..
-func (c *offsetTracker) awaitOffset(ctx context.Context, block xchain.Block) (uint64, error) {
-	// Wait for this block to be the next expected height.
-	ticker := time.NewTicker(time.Millisecond) // Avoid spinning
-	defer ticker.Stop()
-	ctx, cancel := context.WithTimeout(ctx, time.Minute) // Avoid blocking forever
-	defer cancel()
-	for c.nextHeightRLock() != block.BlockHeight {
-		select {
-		case <-ctx.Done():
-			return 0, errors.Wrap(ctx.Err(), "timeout waiting for next height", "next_height", c.nextHeightRLock(), "height", block.BlockHeight)
-		case <-ticker.C:
-		}
-	}
-
-	c.mutable.Lock()
-	defer c.mutable.Unlock()
-
-	// Sanity check that next height is still as expected.
-	if c.mutable.nextHeight != block.BlockHeight {
-		return 0, errors.New("unexpected next height [BUG]")
-	}
-
-	// Get block offset to return, maybe increment nextOffset.
-	var blockOffset uint64
-	if block.ShouldAttest(c.attestInterval) {
-		blockOffset = c.mutable.nextOffset
-		c.mutable.nextOffset++
-	}
-
-	// Update next height.
-	c.mutable.nextHeight++
-
-	return blockOffset, nil
-}
-
-// nextHeightRLock returns the next height.
-// It takes a read lock, so the write lock MUST not be held.
-func (c *offsetTracker) nextHeightRLock() uint64 {
-	c.mutable.RLock()
-	defer c.mutable.RUnlock()
-
-	return c.mutable.nextHeight
 }

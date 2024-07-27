@@ -70,11 +70,8 @@ func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchai
 	// Return a mostly stubbed xchain.Block with the encoded validators.
 	return xchain.Block{
 		BlockHeader: xchain.BlockHeader{
-			SourceChainID:    chainID,
-			ConsensusChainID: chainID,
-			ConfLevel:        xchain.ConfFinalized, // Hardcode ConfLevel for now.
-			BlockOffset:      block.Id,
-			BlockHeight:      block.Id,
+			ChainID:     chainID,
+			BlockHeight: block.Id,
 		},
 		Msgs: msgs,
 	}, true, nil

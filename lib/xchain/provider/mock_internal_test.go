@@ -17,7 +17,6 @@ func TestMock(t *testing.T) {
 	const (
 		chainID    = 123
 		fromHeight = 0
-		fromOffset = 1
 		total      = 5
 	)
 
@@ -27,7 +26,6 @@ func TestMock(t *testing.T) {
 	req := xchain.ProviderRequest{
 		ChainID:   chainID,
 		Height:    fromHeight,
-		Offset:    fromOffset,
 		ConfLevel: xchain.ConfLatest,
 	}
 	var blocks []xchain.Block
@@ -57,16 +55,8 @@ func TestMock(t *testing.T) {
 func assertOffsets(t *testing.T, blocks []xchain.Block) {
 	t.Helper()
 	sOffsets := make(map[xchain.StreamID]uint64)
-	bOffset := 1
 
 	for _, block := range blocks {
-		if block.ShouldAttest(0) {
-			require.EqualValues(t, bOffset, block.BlockOffset)
-			bOffset++
-		} else {
-			require.Empty(t, block.BlockOffset)
-		}
-
 		for _, msg := range block.Msgs {
 			require.Equal(t, sOffsets[msg.StreamID], msg.StreamOffset)
 			sOffsets[msg.StreamID]++

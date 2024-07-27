@@ -97,7 +97,6 @@ func Start(
 			ChainID:   chain.ID,
 			Height:    fromHeight,
 			ConfLevel: xchain.ConfLatest, // Stream latest height to ensure state is available for querying.
-			Offset:    0,                 // No offset required for emit cursors.
 		}
 
 		log.Info(ctx, "Subscribing to xblocks to populate emit cursor cache", "chain", chain.Name, "from_height", fromHeight)

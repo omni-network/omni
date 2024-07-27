@@ -21,11 +21,11 @@ var (
 		Help:      "Latest created vote height per source chain version. Alert if not growing.",
 	}, []string{"chain_version"})
 
-	createBlockOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	createAttestOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "halo",
 		Subsystem: "voter",
-		Name:      "create_block_offset",
-		Help:      "Latest created vote block offset per source chain version. Alert if not growing.",
+		Name:      "create_attest_offset",
+		Help:      "Latest created vote attest offset per source chain version. Alert if not growing.",
 	}, []string{"chain_version"})
 
 	createMsgOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
