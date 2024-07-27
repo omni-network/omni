@@ -513,7 +513,7 @@ func (v *Voter) saveUnsafe() error {
 		Committed: v.committed,
 		Latest:    latestToJSON(v.latest),
 	}
-	bz, err := json.Marshal(s)
+	bz, err := json.MarshalIndent(s, "", " ")
 	if err != nil {
 		return errors.Wrap(err, "marshal state path")
 	}

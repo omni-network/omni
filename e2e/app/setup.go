@@ -325,6 +325,12 @@ func advertisedIP(network netconf.ID, mode types.Mode, internal, external net.IP
 		// Only seeds and fullnodes allow external peers to connect to them.
 		return external
 	}
+
+	if network == netconf.Staging && mode == types.ModeArchive {
+		// Staging fullnode1 is an archive node, but we need to connect to it.
+		return external
+	}
+
 	// Validators and archive nodes are "secured" and only allow internal peers to connect to them.
 
 	return internal

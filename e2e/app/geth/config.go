@@ -95,7 +95,7 @@ func MakeGethConfig(conf Config) FullConfig {
 	cfg.Eth.Miner.Recommit = 500 * time.Millisecond
 
 	// Set the bootnodes and trusted nodes.
-	cfg.Node.P2P.Name = conf.Moniker
+	cfg.Node.UserIdent = conf.Moniker
 	cfg.Node.P2P.DiscoveryV4 = true // TODO(corver): Switch to v5.
 	cfg.Node.P2P.BootstrapNodesV5 = conf.BootNodes
 	cfg.Node.P2P.BootstrapNodes = conf.BootNodes

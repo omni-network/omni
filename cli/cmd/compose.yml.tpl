@@ -21,11 +21,12 @@ services:
       # Flags not available via config.toml
       #- --nat=extip:<my-external-ip>
       #- --metrics
+      #- --verbosity=4 # Log level (4=debug)
     ports:
       - 8551         # Auth-RPC (used by halo)
       - 8545:8545    # JSON-RCP
       - 8546:8546    # Websocket-RPC
       - 30303:30303  # Execution P2P
-      # - 6060:6060         # Prometheus metrics
+      #- 6060:6060   # Prometheus metrics
     volumes:
       - ./geth:/geth
