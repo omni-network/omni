@@ -49,7 +49,7 @@ type cmtLogger struct {
 	level int
 }
 
-func newCmtLogger(ctx context.Context, levelStr string) (cmtlog.Logger, error) {
+func NewCmtLogger(ctx context.Context, levelStr string) (cmtlog.Logger, error) {
 	level, ok := levels[strings.ToLower(levelStr)]
 	if !ok {
 		return cmtLogger{}, errors.New("invalid comet log level", "level", levelStr)

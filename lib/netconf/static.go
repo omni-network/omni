@@ -140,6 +140,12 @@ var (
 
 	//go:embed omega/execution-seeds.txt
 	omegaExecutionSeedsTXT []byte
+
+	//go:embed staging/consensus-seeds.txt
+	stagingConsensusSeedsTXT []byte
+
+	//go:embed staging/execution-seeds.txt
+	stagingExecutionSeedsTXT []byte
 )
 
 //nolint:gochecknoglobals // Static mappings.
@@ -161,6 +167,8 @@ var statics = map[ID]Static{
 		Version:              runid,
 		OmniExecutionChainID: evmchain.IDOmniEphemeral,
 		MaxValidators:        maxValidators,
+		ConsensusSeedTXT:     stagingConsensusSeedsTXT,
+		ExecutionSeedTXT:     stagingExecutionSeedsTXT,
 	},
 	Omega: {
 		Network:              Omega,

@@ -56,6 +56,7 @@ MaxPrice = 500000000000
 IgnorePrice = 2
 
 [Node]
+UserIdent = "archive"
 DataDir = "/geth"
 IPCPath = "/geth/geth.ipc"
 HTTPHost = "0.0.0.0"
