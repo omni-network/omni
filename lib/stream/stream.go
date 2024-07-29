@@ -146,6 +146,10 @@ func Stream[E any](ctx context.Context, deps Deps[E], srcChainID uint64, startHe
 	// Sorting buffer connects the concurrent fetch workers to the callback
 	sorter := newSortingBuffer(startHeight, deps, callbackFunc)
 
+	// Ensure that fetch workers are stopped when streaming / processing is done.
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	// Start fetching workers
 	startFetchWorkers(ctx, deps, fetchFunc, sorter, startHeight)
 
