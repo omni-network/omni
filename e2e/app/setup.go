@@ -375,7 +375,7 @@ func isPublicNode(network netconf.ID, mode types.Mode) bool {
 // All persisted peers are added. This aids seed nodes that don't seem
 // to add persisted peer consistently.
 func writeHaloAddressBook(network netconf.ID, path string, node *e2e.Node) error {
-	addrBook := pex.NewAddrBook(path, true)
+	addrBook := pex.NewAddrBook(path, false)
 	for _, peer := range node.PersistentPeers {
 		addr := advertisedP2PAddr(network, peer)
 		netAddr, err := p2p.NewNetAddressString(addr)
