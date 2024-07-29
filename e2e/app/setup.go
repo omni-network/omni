@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/omni-network/omni/e2e/app/agent"
@@ -125,7 +126,7 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 			}
 		}
 
-		cfg, err := MakeConfig(def.Testnet.Network, node, nodeDir)
+		cfg, err := MakeConfig(def.Testnet, node, nodeDir)
 		if err != nil {
 			return err
 		}
@@ -238,7 +239,7 @@ func writeAnvilState(testnet types.Testnet) error {
 }
 
 // MakeConfig generates a CometBFT config for a node.
-func MakeConfig(network netconf.ID, node *e2e.Node, nodeDir string) (*config.Config, error) {
+func MakeConfig(testnet types.Testnet, node *e2e.Node, nodeDir string) (*config.Config, error) {
 	if node.ABCIProtocol != e2e.ProtocolBuiltin {
 		return nil, errors.New("only Builtin ABCI is supported")
 	}
@@ -247,8 +248,7 @@ func MakeConfig(network netconf.ID, node *e2e.Node, nodeDir string) (*config.Con
 	cfg.Moniker = node.Name
 	cfg.RPC.ListenAddress = "tcp://0.0.0.0:26657"
 	cfg.RPC.PprofListenAddress = ":6060"
-	cfg.P2P.ExternalAddress = fmt.Sprintf("tcp://%v:26656", advertisedIP(network, node.Mode, node.InternalIP, node.ExternalIP))
-	cfg.P2P.AddrBookStrict = false
+	cfg.P2P.ExternalAddress = fmt.Sprintf("tcp://%v:26656", advertisedIP(testnet.Network, node.Mode, node.InternalIP, node.ExternalIP))
 	cfg.DBBackend = node.Database
 	cfg.StateSync.DiscoveryTime = 5 * time.Second
 	cfg.BlockSync.Version = node.BlockSyncVersion
@@ -267,7 +267,6 @@ func MakeConfig(network netconf.ID, node *e2e.Node, nodeDir string) (*config.Con
 
 	if node.Mode == types.ModeSeed {
 		cfg.P2P.SeedMode = true
-		cfg.P2P.PexReactor = true
 	}
 
 	if node.StateSync {
@@ -289,14 +288,20 @@ func MakeConfig(network netconf.ID, node *e2e.Node, nodeDir string) (*config.Con
 		if len(cfg.P2P.Seeds) > 0 {
 			cfg.P2P.Seeds += ","
 		}
-		cfg.P2P.Seeds += advertisedP2PAddr(network, seed)
+		cfg.P2P.Seeds += advertisedP2PAddr(testnet.Network, seed)
 	}
+
 	cfg.P2P.PersistentPeers = ""
 	for _, peer := range node.PersistentPeers {
 		if len(cfg.P2P.PersistentPeers) > 0 {
 			cfg.P2P.PersistentPeers += ","
 		}
-		cfg.P2P.PersistentPeers += advertisedP2PAddr(network, peer)
+		cfg.P2P.PersistentPeers += advertisedP2PAddr(testnet.Network, peer)
+	}
+
+	cfg.P2P.PrivatePeerIDs = privatePeerIDs(testnet, node)
+	if !isPublicNode(testnet.Network, node.Mode) {
+		cfg.P2P.AddrBookStrict = false // Strict addresses only supported by public nodes.
 	}
 
 	if node.Prometheus {
@@ -304,6 +309,22 @@ func MakeConfig(network netconf.ID, node *e2e.Node, nodeDir string) (*config.Con
 	}
 
 	return &cfg, nil
+}
+
+// privatePeerIDs returns a comma-separated list of private peer IDs that should not be gossiped.
+func privatePeerIDs(testnet types.Testnet, self *e2e.Node) string {
+	var ids []string
+	for _, node := range testnet.Nodes {
+		if node.Name == self.Name {
+			continue // Skip self
+		}
+		if isPublicNode(testnet.Network, node.Mode) {
+			continue
+		}
+		ids = append(ids, fmt.Sprintf("%x", node.NodeKey.PubKey().Address().Bytes()))
+	}
+
+	return strings.Join(ids, ",")
 }
 
 // advertisedP2PAddr returns the cometBFT network address <ID@IP:port> to advertise for a node.
@@ -314,26 +335,35 @@ func advertisedP2PAddr(network netconf.ID, node *e2e.Node) string {
 	return fmt.Sprintf("%x@%s:26656", id, ip)
 }
 
-// advertisedIP returns the IP address to advertise for a node on a network.
-func advertisedIP(network netconf.ID, mode types.Mode, internal, external net.IP) net.IP {
+func advertisedIP(network netconf.ID, mode e2e.Mode, internal net.IP, external net.IP) net.IP {
+	if isPublicNode(network, mode) {
+		return external
+	}
+
+	return internal
+}
+
+// isPublicNode returns true if the node should be publicly accessible;
+// i.e., allow inbound connections from external peers.
+func isPublicNode(network netconf.ID, mode types.Mode) bool {
 	if network == netconf.Devnet {
 		// Devnet does not support external peers connecting to it, so we use the internal IP.
-		return internal
+		return false
 	}
 
 	if mode == types.ModeSeed || mode == types.ModeFull {
 		// Only seeds and fullnodes allow external peers to connect to them.
-		return external
+		return true
 	}
 
 	if network == netconf.Staging && mode == types.ModeArchive {
 		// Staging fullnode1 is an archive node, but we need to connect to it.
-		return external
+		return true
 	}
 
 	// Validators and archive nodes are "secured" and only allow internal peers to connect to them.
 
-	return internal
+	return false
 }
 
 // writeHaloConfig generates an halo application config for a node and writes it to disk.

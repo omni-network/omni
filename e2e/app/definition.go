@@ -237,6 +237,13 @@ func adaptNode(ctx context.Context, manifest types.Manifest, testnet *e2e.Testne
 		}
 		node.Seeds = append(node.Seeds, testnet.LookupNode(seed))
 	}
+
+	if node.Mode == types.ModeSeed {
+		// Seed nodes should wait for incoming connections; so no persistent peers.
+		node.PersistentPeers = nil
+		return node, nil
+	}
+
 	// Remove seeds from persisted peers (cometBFT adds all nodes as peers by default).
 	var persisted []*e2e.Node
 	for _, peer := range node.PersistentPeers {
