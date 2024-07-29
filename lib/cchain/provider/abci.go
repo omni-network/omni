@@ -40,7 +40,7 @@ func NewABCIProvider(abci rpcclient.Client, network netconf.ID, chainNamer func(
 	gcl := genserve.NewQueryClient(rpcAdaptor{abci: abci})
 
 	return Provider{
-		fetch:       newABCIFetchFunc(acl, abci),
+		fetch:       newABCIFetchFunc(acl, abci, chainNamer),
 		latest:      newABCILatestFunc(acl),
 		window:      newABCIWindowFunc(acl),
 		valset:      newABCIValsetFunc(vcl),
@@ -121,13 +121,15 @@ func newABCIValsetFunc(cl vtypes.QueryClient) valsetFunc {
 	}
 }
 
-func newABCIFetchFunc(cl atypes.QueryClient, client rpcclient.Client) fetchFunc {
+func newABCIFetchFunc(cl atypes.QueryClient, client rpcclient.Client, chainNamer func(xchain.ChainVersion) string) fetchFunc {
 	return func(ctx context.Context, chainVer xchain.ChainVersion, fromOffset uint64) ([]xchain.Attestation, error) {
 		const endpoint = "fetch_attestations"
 		defer latency(endpoint)()
 
 		ctx, span := tracer.Start(ctx, spanName(endpoint))
 		defer span.End()
+
+		chainName := chainNamer(chainVer)
 
 		// try fetching from latest height
 		atts, ok, err := attsFromAtHeight(ctx, cl, chainVer, fromOffset, 0)
@@ -137,7 +139,7 @@ func newABCIFetchFunc(cl atypes.QueryClient, client rpcclient.Client) fetchFunc 
 		}
 
 		if ok {
-			fetchStepsMetrics(0, 0)
+			fetchStepsMetrics(chainName, 0, 0)
 			return atts, nil
 		}
 
@@ -154,7 +156,7 @@ func newABCIFetchFunc(cl atypes.QueryClient, client rpcclient.Client) fetchFunc 
 			return []xchain.Attestation{}, nil
 		}
 
-		offsetHeight, err := searchOffsetInHistory(ctx, client, cl, chainVer, fromOffset)
+		offsetHeight, err := searchOffsetInHistory(ctx, client, cl, chainVer, chainName, fromOffset)
 		if err != nil {
 			incQueryErr(endpoint)
 			return nil, errors.Wrap(err, "searching offset in history")
@@ -340,7 +342,7 @@ func spanName(endpoint string) string {
 // searchOffsetInHistory searches the consensus state history and
 // returns a historical consensus block height that contains an approved attestation
 // for the provided chain version and fromOffset.
-func searchOffsetInHistory(ctx context.Context, client rpcclient.Client, cl atypes.QueryClient, chainVer xchain.ChainVersion, fromOffset uint64) (uint64, error) {
+func searchOffsetInHistory(ctx context.Context, client rpcclient.Client, cl atypes.QueryClient, chainVer xchain.ChainVersion, chainName string, fromOffset uint64) (uint64, error) {
 	const endpoint = "search_offset"
 	defer latency(endpoint)
 
@@ -435,7 +437,7 @@ func searchOffsetInHistory(ctx context.Context, client rpcclient.Client, cl atyp
 		}
 
 		if fromOffset >= earliestAtt.AttestOffset && fromOffset <= latestAtt.AttestOffset {
-			fetchStepsMetrics(lookbackStepsCounter, binarySearchStepsCounter)
+			fetchStepsMetrics(chainName, lookbackStepsCounter, binarySearchStepsCounter)
 			return midHeightIndex, nil
 		}
 
