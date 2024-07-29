@@ -33,6 +33,7 @@ import (
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/p2p/pex"
 	"github.com/cometbft/cometbft/privval"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 
@@ -131,6 +132,10 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 			return err
 		}
 		config.WriteConfigFile(filepath.Join(nodeDir, "config", "config.toml"), cfg) // panics
+
+		if err := writeHaloAddressBook(def.Testnet.Network, filepath.Join(nodeDir, "config", "addrbook.json"), node); err != nil {
+			return err
+		}
 
 		endpoints := internalEndpoints(def, node.Name)
 		omniEVM := omniEVMByPrefix(def.Testnet, node.Name)
@@ -364,6 +369,26 @@ func isPublicNode(network netconf.ID, mode types.Mode) bool {
 	// Validators and archive nodes are "secured" and only allow internal peers to connect to them.
 
 	return false
+}
+
+// writeHaloAddressBook pre-populates the halo address book for a node.
+// All persisted peers are added. This aids seed nodes that don't seem
+// to add persisted peer consistently.
+func writeHaloAddressBook(network netconf.ID, path string, node *e2e.Node) error {
+	addrBook := pex.NewAddrBook(path, false)
+	for _, peer := range node.PersistentPeers {
+		addr := advertisedP2PAddr(network, peer)
+		netAddr, err := p2p.NewNetAddressString(addr)
+		if err != nil {
+			return errors.Wrap(err, "parse net address")
+		}
+		if err := addrBook.AddAddress(netAddr, netAddr); err != nil {
+			return errors.Wrap(err, "add address")
+		}
+	}
+	addrBook.Save()
+
+	return nil
 }
 
 // writeHaloConfig generates an halo application config for a node and writes it to disk.
