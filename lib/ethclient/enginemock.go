@@ -200,6 +200,14 @@ func (m *engineMock) maybeErr(ctx context.Context) error {
 	return nil
 }
 
+func (*engineMock) PeerCount(context.Context) (uint64, error) {
+	return 1, nil
+}
+
+func (*engineMock) SyncProgress(context.Context) (*ethereum.SyncProgress, error) {
+	return nil, nil //nolint:nilnil // nil-nil return means not syncing.
+}
+
 func (m *engineMock) FilterLogs(_ context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

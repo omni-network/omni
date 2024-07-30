@@ -39,6 +39,7 @@ type InitConfig struct {
 	TrustedSync   bool
 	AddrBook      bool
 	HaloCfgFunc   func(*halocfg.Config)
+	CometCfgFunc  func(*cmtconfig.Config)
 	Force         bool
 	Clean         bool
 	ExecutionHash common.Hash
@@ -54,13 +55,20 @@ func (c InitConfig) HaloCfg(cfg *halocfg.Config) {
 	}
 }
 
+func (c InitConfig) CometCfg(cfg *cmtconfig.Config) {
+	if c.CometCfgFunc != nil {
+		c.CometCfgFunc(cfg)
+	}
+}
+
 // newInitCmd returns a new cobra command that initializes the files and folders required by halo.
 func newInitCmd() *cobra.Command {
 	// Default config flags
 	cfg := InitConfig{
-		HomeDir:     halocfg.DefaultHomeDir,
-		Force:       false,
-		HaloCfgFunc: func(*halocfg.Config) {},
+		HomeDir:      halocfg.DefaultHomeDir,
+		Force:        false,
+		HaloCfgFunc:  func(*halocfg.Config) {},
+		CometCfgFunc: func(*cmtconfig.Config) {},
 	}
 
 	cmd := &cobra.Command{
@@ -137,9 +145,12 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 		}
 	}
 
-	// Initialize default configs.
+	// Initialize comet config.
 	comet := DefaultCometConfig(homeDir)
 	comet.Moniker = initCfg.Moniker
+	initCfg.CometCfg(&comet)
+
+	// Initialize halo config.
 	cfg := halocfg.DefaultConfig()
 	cfg.HomeDir = homeDir
 	cfg.Network = network
@@ -358,6 +369,10 @@ func getTrustHeightAndHash(ctx context.Context, cl *rpchttp.HTTP) (int64, string
 	// Truncate height to last defaultSnapshotPeriod
 	const defaultSnapshotPeriod int64 = 1000
 	snapshotHeight := defaultSnapshotPeriod * (latest.Block.Height / defaultSnapshotPeriod)
+
+	if snapshotHeight == 0 {
+		return 0, "", errors.New("initial snapshot height not reached yet", "latest_height", latest.Block.Height, "target", defaultSnapshotPeriod)
+	}
 
 	b, err := cl.Block(ctx, &snapshotHeight)
 	if err != nil {

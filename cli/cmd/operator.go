@@ -19,6 +19,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
+	cmtconfig "github.com/cometbft/cometbft/config"
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 
@@ -118,6 +119,10 @@ func initNodes(ctx context.Context, cfg initConfig) error {
 		HaloCfgFunc: func(cfg *halocfg.Config) {
 			cfg.EngineEndpoint = "http://omni_evm:8551"
 			cfg.EngineJWTFile = "/geth/jwtsecret"
+			cfg.RPCEndpoints = xchain.RPCEndpoints{cfg.Network.Static().OmniExecutionChainName(): "http://omni_evm:8545"}
+		},
+		CometCfgFunc: func(cfg *cmtconfig.Config) {
+			cfg.LogLevel = "info"
 		},
 	})
 	if err != nil {
