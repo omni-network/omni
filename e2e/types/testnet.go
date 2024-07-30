@@ -107,17 +107,6 @@ func (t Testnet) BroadcastNode() *e2e.Node {
 	return t.Nodes[0]
 }
 
-// HasArchiveNode returns whether the Testnet has any nodes running in ModeArchive.
-func (t Testnet) HasArchiveNode() bool {
-	for _, node := range t.Nodes {
-		if node.Mode == ModeArchive {
-			return true
-		}
-	}
-
-	return false
-}
-
 // ArchiveNode returns the first node running in ModeArchive.
 // Note that this is different from the CometBFT Testnet.ArchiveNodes() method.
 func (t Testnet) ArchiveNode() (*e2e.Node, bool) {

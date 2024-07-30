@@ -101,10 +101,8 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	}
 
 	logCfg := logConfig(def)
-	if def.Testnet.HasArchiveNode() {
-		if err := writeMonitorConfig(ctx, def, logCfg, valPrivKeys); err != nil {
-			return err
-		}
+	if err := writeMonitorConfig(ctx, def, logCfg, valPrivKeys); err != nil {
+		return err
 	}
 
 	if err := writeRelayerConfig(ctx, def, logCfg); err != nil {
@@ -489,10 +487,15 @@ func writeRelayerConfig(ctx context.Context, def Definition, logCfg log.Config) 
 		return errors.Wrap(err, "write private key")
 	}
 
+	archiveNode, ok := def.Testnet.ArchiveNode()
+	if !ok {
+		return errors.New("archive node not found")
+	}
+
 	relayCfg := relayapp.DefaultConfig()
 	relayCfg.PrivateKey = privKeyFile
 	relayCfg.Network = def.Testnet.Network
-	relayCfg.HaloURL = def.Testnet.RandomHaloAddr()
+	relayCfg.HaloURL = archiveNode.AddressRPC()
 	relayCfg.RPCEndpoints = endpoints
 
 	if err := relayapp.WriteConfigTOML(relayCfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
