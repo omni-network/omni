@@ -19,9 +19,12 @@ import (
 
 func LogMetrics(ctx context.Context, def Definition) error {
 	extNetwork := networkFromDef(def)
+	archiveNode, ok := def.Testnet.ArchiveNode()
+	if !ok {
+		return errors.New("monitor must use archive node, no archive node found")
+	}
 
-	// Pick a random node to monitor.
-	if err := MonitorCProvider(ctx, def.Testnet.BroadcastNode(), extNetwork); err != nil {
+	if err := MonitorCProvider(ctx, archiveNode, extNetwork); err != nil {
 		return errors.Wrap(err, "monitoring cchain provider")
 	}
 

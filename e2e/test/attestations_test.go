@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/k1util"
@@ -21,6 +22,12 @@ func TestApprovedAttestations(t *testing.T) {
 	t.Parallel()
 	testNode(t, func(t *testing.T, network netconf.Network, node *e2e.Node, portals []Portal) {
 		t.Helper()
+
+		// Only archive nodes have the necessary state to fetch all attestations
+		if node.Mode != types.ModeArchive {
+			return
+		}
+
 		client, err := node.Client()
 		require.NoError(t, err)
 		cprov := provider.NewABCIProvider(client, network.ID, netconf.ChainVersionNamer(netconf.Simnet))

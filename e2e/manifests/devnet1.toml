@@ -7,3 +7,6 @@ prometheus = true
 
 [node.validator01]
 [node.validator02]
+
+[node.fullnode01]
+mode="archive"

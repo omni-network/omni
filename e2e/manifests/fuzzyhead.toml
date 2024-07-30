@@ -10,3 +10,7 @@ pingpong_n = 6 # Increased ping pong to span forks
 
 [perturb]
 mock_l1 = ["fuzzyhead_dropmsgs","fuzzyhead_dropblocks","fuzzyhead_attroot","fuzzyhead_moremsgs"]
+
+
+[node.fullnode01]
+mode = "archive"

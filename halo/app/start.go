@@ -258,9 +258,8 @@ func makeBaseAppOpts(cfg Config) ([]func(*baseapp.BaseApp), error) {
 
 	pruneOpts := pruningtypes.NewPruningOptionsFromString(cfg.PruningOption)
 	if cfg.PruningOption == pruningtypes.PruningOptionDefault {
-		// Override the default cosmosSDK pruning values with much more aggressive defaults
-		// since historical state isn't very important for most use-cases.
-		pruneOpts = pruningtypes.NewCustomPruningOptions(defaultPruningKeep, defaultPruningInterval)
+		// We interpret "default" to be PruningEverything, since historical state isn't very important.
+		pruneOpts = pruningtypes.NewPruningOptions(pruningtypes.PruningEverything)
 	}
 
 	return []func(*baseapp.BaseApp){
