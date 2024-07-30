@@ -7,8 +7,8 @@
  "SnapshotInterval": 123,
  "SnapshotKeepRecent": 2,
  "BackendType": "goleveldb",
- "MinRetainBlocks": 0,
- "PruningOption": "nothing",
+ "MinRetainBlocks": 1,
+ "PruningOption": "default",
  "EVMBuildDelay": 600000000,
  "EVMBuildOptimistic": true,
  "Tracer": {

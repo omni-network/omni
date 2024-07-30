@@ -32,9 +32,9 @@ const (
 	DefaultHomeDir            = "./halo" // Defaults to "halo" in current directory
 	defaultSnapshotInterval   = 1000     // Roughly once an hour (given 3s blocks)
 	defaultSnapshotKeepRecent = 2
-	defaultMinRetainBlocks    = 0 // Retain all blocks
+	defaultMinRetainBlocks    = 1 // Prune all blocks by default, Cosmsos will still respect other needs like snapshots
 
-	defaultPruningOption      = pruningtypes.PruningOptionNothing // Prune nothing
+	defaultPruningOption      = pruningtypes.PruningOptionDefault // Note that Halo interprets this to be PruningEverything
 	defaultDBBackend          = db.GoLevelDBBackend
 	defaultEVMBuildDelay      = time.Millisecond * 600 // 100ms longer than geth's --miner.recommit=500ms.
 	defaultEVMBuildOptimistic = true

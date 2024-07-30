@@ -271,7 +271,10 @@ func additionalServices(testnet types.Testnet) []string {
 		resp = append(resp, "prometheus")
 	}
 
-	resp = append(resp, "monitor")
+	// Monitor must connect to an archive node.
+	if testnet.HasArchiveNode() {
+		resp = append(resp, "monitor")
+	}
 
 	// In monitor only mode, we only start monitor and prometheus.
 	if testnet.OnlyMonitor {

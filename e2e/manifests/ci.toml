@@ -25,3 +25,6 @@ full01 = 100 # Add full01 as validator by depositing 100 ether $OMNI (the minimu
 validator02_evm = ["stopstart"]
 relayer = ["restart"]
 validator03 = ["rollback"]
+
+[node.fullnode02]
+mode = "archive"

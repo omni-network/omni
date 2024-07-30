@@ -101,8 +101,10 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	}
 
 	logCfg := logConfig(def)
-	if err := writeMonitorConfig(ctx, def, logCfg, valPrivKeys); err != nil {
-		return err
+	if def.Testnet.HasArchiveNode() {
+		if err := writeMonitorConfig(ctx, def, logCfg, valPrivKeys); err != nil {
+			return err
+		}
 	}
 
 	if err := writeRelayerConfig(ctx, def, logCfg); err != nil {
@@ -406,15 +408,13 @@ func writeHaloConfig(
 	cfg := halocfg.DefaultConfig()
 
 	switch mode {
-	case e2e.ModeValidator, e2e.ModeFull:
+	case types.ModeArchive:
 		cfg.PruningOption = "nothing"
+		// Setting this to 0 retains all blocks
 		cfg.MinRetainBlocks = 0
-	case e2e.ModeSeed, e2e.ModeLight:
-		cfg.PruningOption = "everything"
-		cfg.MinRetainBlocks = 1
 	default:
 		cfg.PruningOption = "default"
-		cfg.MinRetainBlocks = 0
+		cfg.MinRetainBlocks = 1
 	}
 
 	cfg.Network = network
@@ -546,10 +546,15 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 		}
 	}
 
+	archiveNode, ok := def.Testnet.ArchiveNode()
+	if !ok {
+		return errors.New("monitor must use archive node, no archive node found")
+	}
+
 	cfg := monapp.DefaultConfig()
 	cfg.PrivateKey = privKeyFile
 	cfg.Network = def.Testnet.Network
-	cfg.HaloURL = def.Testnet.BroadcastNode().AddressRPC()
+	cfg.HaloURL = archiveNode.AddressRPC()
 	cfg.LoadGen.ValidatorKeysGlob = validatorKeyGlob
 	cfg.RPCEndpoints = endpoints
 
