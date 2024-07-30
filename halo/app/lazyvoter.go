@@ -75,19 +75,21 @@ func (l *voterLoader) LazyLoad(
 ) error {
 	if len(endpoints) == 0 {
 		log.Warn(ctx, "Flag --xchain-evm-rpc-endpoints empty. The app will crash if it becomes a validator since it cannot perform xchain voting duties", nil)
+	}
 
-		// Wait until this node becomes a validator and then crash.
+	// Wait until this node becomes a validator before initializing voter.
+	// This mitigates crashes due to invalid rpc endpoint config in non-validator nodes.
+	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second))
+	for !l.isValidator() {
+		backoff()
+		if ctx.Err() != nil {
+			return errors.Wrap(ctx.Err(), "lazy loading canceled")
+		}
+	}
+
+	if len(endpoints) == 0 {
 		// Note that this negatively affects chain liveness, but xchain liveness already negatively affected so rather
 		// highlight the issue to the operator by crashing. #allornothing
-
-		backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second))
-		for !l.isValidator() {
-			backoff()
-			if ctx.Err() != nil {
-				return errors.Wrap(ctx.Err(), "lazy loading canceled")
-			}
-		}
-
 		return errors.New("flag --xchain-evm-rpc-endpoints empty so cannot perform xchain voting duties")
 	}
 

@@ -26,4 +26,11 @@ var (
 		Name:      "peers",
 		Help:      "Number of execution P2P peers of the attached omni_evm",
 	})
+
+	cometSynced = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: "halo",
+		Subsystem: "comet",
+		Name:      "synced",
+		Help:      "Constant gauge of 1 if attached the cometBFT is synced, 0 if syncing.",
+	})
 )

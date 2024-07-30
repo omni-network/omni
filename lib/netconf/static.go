@@ -49,6 +49,12 @@ func (s Static) OmniConsensusChainIDStr() string {
 	return fmt.Sprintf("%s%d", consensusIDPrefix, s.OmniConsensusChainIDUint64())
 }
 
+// OmniExecutionChainName returns the name of the Omni execution chain.
+func (s Static) OmniExecutionChainName() string {
+	meta, _ := evmchain.MetadataByID(s.OmniExecutionChainID)
+	return meta.Name
+}
+
 // OmniConsensusChainIDUint64 returns the chain ID uint64 for the Omni consensus chain.
 // It is calculated as 1_000_000 + OmniExecutionChainID.
 func (s Static) OmniConsensusChainIDUint64() uint64 {
