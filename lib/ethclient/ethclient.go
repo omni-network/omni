@@ -126,7 +126,7 @@ func (w Wrapper) SetHead(ctx context.Context, height uint64) error {
 	)
 	if err != nil {
 		incError(w.chain, endpoint)
-		return errors.Wrap(err, "set head")
+		return errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return nil
@@ -140,7 +140,7 @@ func (w Wrapper) PeerCount(ctx context.Context) (uint64, error) {
 	resp, err := w.cl.PeerCount(ctx)
 	if err != nil {
 		incError(w.chain, endpoint)
-		return 0, errors.Wrap(err, "rpc get payload v3")
+		return 0, errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return resp, nil
