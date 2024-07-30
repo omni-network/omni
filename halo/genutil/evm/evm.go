@@ -130,6 +130,18 @@ func testnetPrefundAlloc() types.GenesisAlloc {
 		common.HexToAddress("0xf63316AA39fEc9D2109AB0D9c7B1eE3a6F60AEA4"): {Balance: eth1k}, // fb: funder
 		common.HexToAddress("0xfE921e06Ed0a22c035b4aCFF0A5D3a434A330c96"): {Balance: eth1k}, // dev: relayer
 
+		// Faucet
+		common.HexToAddress("0xAd5c6124305AB7F0101eC2e3BC9C2A5ec06E3594"): {Balance: eth1m},
+		common.HexToAddress("0xC4C6ABeDf3C585C5efD755CB6591c92aa6E66079"): {Balance: eth1m},
+		common.HexToAddress("0x7aAA75265052BFCe2A4910a4f50B68939E157fBD"): {Balance: eth1m},
+		common.HexToAddress("0x815BA064f72667B11da226201991A2106C6f4ae0"): {Balance: eth1m},
+		common.HexToAddress("0x78b223A22000f65033E1422A623cC3d6B566c3E8"): {Balance: eth1m},
+		common.HexToAddress("0xAE2927bFEBF272a74340FC99D23d002035e5a0EA"): {Balance: eth1m},
+		common.HexToAddress("0x64BC5a64713d4642c38a4e6521b0Fa6F293Ed85b"): {Balance: eth1m},
+		common.HexToAddress("0x4A5EB30AFED3ED1A5eAB5bb95D5e6769fF1bc44E"): {Balance: eth1m},
+		common.HexToAddress("0x24D2f0e25e1a321B1dFe2fAB5936907047CEfc97"): {Balance: eth1m},
+		common.HexToAddress("0x371A5561c150C1ac051F3C190e4072f56B251cE6"): {Balance: eth1m},
+
 		// Relayer and Monitor EOAs
 		eoa.MustAddress(netconf.Omega, eoa.RoleMonitor): {Balance: eth1m},
 		eoa.MustAddress(netconf.Omega, eoa.RoleRelayer): {Balance: eth1m},
