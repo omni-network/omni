@@ -9,12 +9,12 @@ import GitHubCodeBlock from '@site/src/components/GitHubCodeBlock/GitHubCodeBloc
 
 Here's an example of a simple cross-chain contract set for setting and getting a string. This contract lets you send greetings from a rollup chain to a global storage contract deployed on Omni. Two main contracts are used in this example:
 
-1. `RollupGreeter` - A contract deployed on a rollup chain that sends greetings to the Omni chain.
-2. `GlobalGreeter` - A contract deployed on the Omni chain that stores greetings.
+1. `Greeter` - A contract deployed on a rollup that sends greetings to the Omni EVM.
+2. `GreetingBook` - A contract deployed on the Omni EVM that stores greetings from all supported chains.
 
-## `RollupGreeter` Contract
+## `Greeter` Contract
 
-<GitHubCodeBlock url="https://github.com/omni-network/hello-world-template/blob/f4002e90960e013be18c0be44d07aadb34264489/src/RollupGreeter.sol" />
+<GitHubCodeBlock url="https://github.com/omni-network/hello-world-template/blob/48ff2f5277b4c144802c1ffa894a03ac071f02fc/src/Greeter.sol" />
 
 ### Walkthrough
 
@@ -24,7 +24,7 @@ First, inherit from `XApp`.
 
 
 ```solidity
-contract XGreeter is XApp {
+contract Greeter is XApp {
     // ...
 }
 ```
@@ -32,9 +32,9 @@ contract XGreeter is XApp {
 You may also specify the confirmation level for the cross-chain message. This is the level of finalisation of the transaction containing the message you want to wait for. In this example, we set it to `Latest`, meaning the message is relayed on block creation at source. You can see the supported confirmation levels [here](https://github.com/omni-network/omni/blob/main/contracts/src/libraries/ConfLevel.sol).
 
 ```solidity
-constructor(address portal, address _omniChainGreeter) XApp(portal, ConfLevel.Latest) {
-    omniChainGreeter = _omniChainGreeter;
-}
+constructor(address portal, address _greetingBook) XApp(portal, ConfLevel.Latest) {
+        greetingBook = _greetingBook;
+    }
 ```
 
 ### Perform a Cross Chain Call
@@ -43,27 +43,28 @@ To call a contract on another chain, use `xcall`.
 
 ```solidity
 function greet(string calldata greeting) external payable {
-    xcall(
+    uint256 fee = xcall(
         // params for xcall
     );
 }
+
 ```
 
 ## `GlobalGreeter` Contract
 
-<GitHubCodeBlock url="https://github.com/omni-network/hello-world-template/blob/1d0ba3c882c47284b1b16bc4b02f68e996a1e4a1/src/GlobalGreeter.sol" />
+<GitHubCodeBlock url="https://github.com/omni-network/hello-world-template/blob/48ff2f5277b4c144802c1ffa894a03ac071f02fc/src/GreetingBook.sol" />
 
 ### Walkthrough
 
-Similar to `RollupGreeter`, we inherit from `XApp`.
+Similar to `Greeter`, we inherit from `XApp`.
 
 ```solidity
-contract GlobalGreeter is XApp {
+contract GreetingBook is XApp {
     // ...
 }
 ```
 
-Similiar to `RollupGreeter`, we can specify the confirmation level for the cross-chain message.
+Similiar to `Greeter`, we can specify the confirmation level for the cross-chain message.
 
 ```solidity
 constructor(address portal) XApp(portal, ConfLevel.Latest) {
@@ -72,31 +73,21 @@ constructor(address portal) XApp(portal, ConfLevel.Latest) {
 
 ### Receive a Cross Chain Call
 
-When receiving an `xcall`, you can read its context via `omni.xmsg()`.
+When receiving an `xcall`, you can read its context via `omni.xmsg()`, which is shortened by `XAapp` to `xmsg` for convenience.
 
 ```solidity
 xmsg.sourceChainId // where this xcall came from
 xmsg.sender        // who sent it
 ```
 
-With this context, we can have our `XGreeter` extract the source chain and sender of the `xcall` to store the greeting in a struct.
+With this context, we can have our `GreetingBook` extract the source chain and sender of the `xcall` to store the greeting in a struct.
 
 ```solidity
-function greet(string calldata _greeting) external xrecv {
-    // Initialize the fee to 0, for local calls
-    uint256 fee = 0;
-    if (isXCall() && xmsg.sourceChainId != omni.chainId()) {
-        // Calculate the fee for the cross-chain call
-        fee = feeFor(xmsg.sourceChainId, abi.encodeWithSelector(this.greet.selector, _greeting), DEST_TX_GAS_LIMIT);
+function greet(address user, string calldata _greeting) external xrecv {
+        require(omni.isXCall(), "GreetingBook: only xcalls");
+
+        lastGreet = Greeting(user, _greeting, xmsg.sourceChainId, block.timestamp);
     }
-
-    // Create a Greeting struct to store information about the received greeting
-    Greeting memory greeting =
-        Greeting(xmsg.sourceChainId, block.timestamp, fee, msg.sender, xmsg.sender, _greeting);
-
-    // Update the lastGreet variable with the information about the received greeting
-    lastGreet = greeting;
-}
 ```
 
 For convenience, `XApp` defines the `xrecv` modifier. This modifier reads the current xmsg into storage, and deletes after its function's execution.
