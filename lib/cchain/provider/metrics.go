@@ -52,24 +52,26 @@ var (
 		Help:      "Total number of query errors per endpoint. Alert if growing.",
 	}, []string{"endpoint"})
 
-	fetchLookbackSteps = promauto.NewHistogram(prometheus.HistogramOpts{
+	fetchLookbackSteps = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "lib",
 		Subsystem: "cprovider",
 		Name:      "fetch_lookback_steps",
+		Buckets:   []float64{0, 1, 2, 4, 8, 16, 32, 64, 128, 256},
 		Help:      "Number of steps in the exponential backoff process to find a start for binary search",
-	})
+	}, []string{"chain_version"})
 
-	fetchBinarySearchSteps = promauto.NewHistogram(prometheus.HistogramOpts{
+	fetchBinarySearchSteps = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "lib",
 		Subsystem: "cprovider",
 		Name:      "fetch_binary_search_steps",
+		Buckets:   []float64{0, 1, 2, 4, 8, 16, 32, 64, 128, 256},
 		Help:      "Number of steps in the binary search process to find the right height",
-	})
+	}, []string{"chain_version"})
 )
 
-func fetchStepsMetrics(lookbackSteps, binarySearchSteps uint64) {
-	fetchLookbackSteps.Observe(float64(lookbackSteps))
-	fetchBinarySearchSteps.Observe(float64(binarySearchSteps))
+func fetchStepsMetrics(chainName string, lookbackSteps, binarySearchSteps uint64) {
+	fetchLookbackSteps.WithLabelValues(chainName).Observe(float64(lookbackSteps))
+	fetchBinarySearchSteps.WithLabelValues(chainName).Observe(float64(binarySearchSteps))
 }
 
 func latency(endpoint string) func() {

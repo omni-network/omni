@@ -23,7 +23,7 @@ func TestApprovedAttestations(t *testing.T) {
 		t.Helper()
 		client, err := node.Client()
 		require.NoError(t, err)
-		cprov := provider.NewABCIProvider(client, network.ID, nil)
+		cprov := provider.NewABCIProvider(client, network.ID, netconf.ChainVersionNamer(netconf.Simnet))
 
 		ctx := context.Background()
 		for _, portal := range portals {
@@ -73,7 +73,7 @@ func TestApprovedValUpdates(t *testing.T) {
 
 		client, err := node.Client()
 		require.NoError(t, err)
-		cprov := provider.NewABCIProvider(client, network.ID, nil)
+		cprov := provider.NewABCIProvider(client, network.ID, netconf.ChainVersionNamer(netconf.Simnet))
 
 		addr, err := k1util.PubKeyToAddress(node.PrivvalKey.PubKey())
 		require.NoError(t, err)
