@@ -7,8 +7,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/omni-network/omni/e2e/app/agent"
 	"github.com/omni-network/omni/e2e/docker"
@@ -201,6 +203,7 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.ServiceConfig) error {
 
 	// Then upgrade VMs in parallel
 	eg, ctx := errgroup.WithContext(ctx)
+
 	for vmName, instance := range p.Data.VMs {
 		services := p.Data.ServicesByInstance(instance)
 		if !matchAny(cfg, services) {
@@ -209,6 +212,8 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.ServiceConfig) error {
 
 		eg.Go(func() error {
 			log.Debug(ctx, "Copying artifacts", "vm", vmName, "count", len(filesByService))
+			timestampDir := time.Now()
+			identifier := fmt.Sprintf("UPGRADE%s", timestampDir.Format(time.RFC3339))
 			for service, filePaths := range filesByService {
 				if !services[service] {
 					continue
@@ -217,8 +222,14 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.ServiceConfig) error {
 					localPath := filepath.Join(p.Testnet.Dir, service, filePath)
 					remotePath := filepath.Join("/omni", p.Testnet.Name, service, filePath)
 					if err := copyFileToVM(ctx, vmName, localPath, remotePath); err != nil {
-						return errors.Wrap(err, "copy file", "vm", vmName, "service", service, "file", filePath)
+						return errors.Wrap(err, "copy file to VM", "vm", vmName, "service", service, "file", filePath)
 					}
+					go func(localPath string, remotePath string) {
+						err := copyFileToGCP(ctx, localPath, remotePath, identifier)
+						if err != nil {
+							log.Warn(ctx, "Failed to copy file to GCP", err, "local", localPath, "remote", remotePath)
+						}
+					}(localPath, remotePath)
 				}
 			}
 
@@ -229,6 +240,12 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.ServiceConfig) error {
 			if err := copyFileToVM(ctx, vmName, localComposePath, remoteComposePath); err != nil {
 				return errors.Wrap(err, "copy docker compose", "vm", vmName)
 			}
+			go func(localPath string, remotePath string) {
+				err := copyFileToGCP(ctx, localPath, remotePath, identifier)
+				if err != nil {
+					log.Warn(ctx, "Failed to copy file to GCP", err, "local", localPath, "remote", remotePath)
+				}
+			}(localComposePath, remoteComposePath)
 
 			log.Debug(ctx, "Copying evm-init.sh", "vm", vmName)
 			initFile := vmInitFile(instance.IPAddress.String())
@@ -237,6 +254,12 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.ServiceConfig) error {
 			if err := copyFileToVM(ctx, vmName, localInitPath, remoteInitPath); err != nil {
 				return errors.Wrap(err, "copy evm init", "vm", vmName)
 			}
+			go func(localPath string, remotePath string) {
+				err := copyFileToGCP(ctx, localPath, remotePath, identifier)
+				if err != nil {
+					log.Warn(ctx, "Failed to copy file to GCP", err, "local", localPath, "remote", remotePath)
+				}
+			}(localInitPath, remoteInitPath)
 
 			// TODO(corver): Once evm-init.sh is idempotent, call it here.
 
@@ -282,12 +305,20 @@ func (p *Provider) StartNodes(ctx context.Context, _ ...*e2e.Node) error {
 	var onceErr error
 	p.once.Do(func() {
 		log.Info(ctx, "Copying artifacts to VMs")
+		timestampDir := time.Now()
+		identifier := fmt.Sprintf("DEPLOY%s", timestampDir.Format(time.RFC3339))
 		for vmName := range p.Data.VMs {
 			err := copyToVM(ctx, vmName, p.Testnet.Dir)
 			if err != nil {
-				onceErr = errors.Wrap(err, "copy files", "vm", vmName)
+				onceErr = errors.Wrap(err, "copy files to VM", "vm", vmName)
 				return
 			}
+			go func(vmName string) {
+				err = copyToGCP(ctx, vmName, p.Testnet.Dir, p.Testnet.Name, identifier)
+				if err != nil {
+					log.Warn(ctx, "Failed to copy to GCP", err, "vm", vmName)
+				}
+			}(vmName)
 		}
 
 		log.Info(ctx, "Starting VM deployments")
@@ -380,11 +411,38 @@ func copyToVM(ctx context.Context, vmName string, path string) error {
 	return nil
 }
 
+func copyToGCP(ctx context.Context, vmName string, path string, network string, identifier string) error {
+	cpgcp := fmt.Sprintf("tar czf %s.tar.gz %s && gcloud storage cp %s.tar.gz gs://e2e-configs/%s/%s/", vmName, filepath.Base(path), vmName, network, identifier)
+
+	cmd := exec.CommandContext(ctx, "bash", "-c", cpgcp)
+	cmd.Dir = filepath.Dir(path)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return errors.Wrap(err, "copy to GCP error", "output", string(out), "cmd", cpgcp)
+	}
+
+	return nil
+}
+
 func copyFileToVM(ctx context.Context, vmName string, localPath string, remotePath string) error {
 	scp := fmt.Sprintf("gcloud compute scp --zone=us-east1-c --quiet %s %s:%s", localPath, vmName, remotePath)
+
 	cmd := exec.CommandContext(ctx, "bash", "-c", scp)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrap(err, "copy to VM", "output", string(out), "cmd", scp)
+	}
+
+	return nil
+}
+
+func copyFileToGCP(ctx context.Context, localPath string, remotePath string, identifier string) error {
+	// Remap filesystem path to be compatible with our destination bucket format
+	newpath := slices.Insert(strings.Split(remotePath, "/")[2:], 1, identifier)
+	cpgcp := fmt.Sprintf("gcloud storage cp %s gs://e2e-configs/%s", filepath.Base(localPath), strings.Join(newpath, "/"))
+
+	cmd := exec.CommandContext(ctx, "bash", "-c", cpgcp)
+	cmd.Dir = filepath.Dir(localPath)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return errors.Wrap(err, "copy file to GCP error", "output", string(out), "cmd", cpgcp)
 	}
 
 	return nil
