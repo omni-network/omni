@@ -270,9 +270,10 @@ func MakeConfig(testnet types.Testnet, node *e2e.Node, nodeDir string) (*config.
 		return nil, errors.New("only PrivvalKeyFile is supported")
 	}
 
-	if node.Mode == types.ModeSeed {
-		cfg.P2P.SeedMode = true
-	}
+	// Try disabling seedmode to fix joining network issues.
+	// if node.Mode == types.ModeSeed {
+	// cfg.P2P.SeedMode = true
+	// }
 
 	if node.StateSync {
 		cfg.StateSync.Enable = true
