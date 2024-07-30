@@ -183,6 +183,8 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		return nil, nil, errors.Wrap(err, "start comet node")
 	}
 
+	go monitorEVMForever(ctx, cfg, engineCl)
+
 	// Return async and stop functions.
 	// Note that the original context used to start the app must be canceled first.
 	// And a fresh context should be passed into the stop function.

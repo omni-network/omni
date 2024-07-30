@@ -51,7 +51,7 @@ func TestGenConsSeeds(t *testing.T) {
 
 			var peers []string
 			for _, node := range sortedKeys(manifest.Keys) {
-				if !strings.HasPrefix(node, "seed") {
+				if !isSeedNode(test.network, node) {
 					continue
 				}
 
@@ -106,7 +106,7 @@ func TestGenExecutionSeeds(t *testing.T) {
 
 			var peers []string
 			for _, node := range sortedKeys(manifest.Keys) {
-				if !strings.HasPrefix(node, "seed") {
+				if !isSeedNode(test.network, node) {
 					continue
 				}
 
@@ -135,16 +135,6 @@ func TestGenExecutionSeeds(t *testing.T) {
 			tutil.RequireGoldenBytes(t, []byte(seeds), tutil.WithFilename(seedsFile))
 		})
 	}
-}
-
-func sortedKeys[T any](m map[string]T) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	return keys
 }
 
 func TestConsensusSeeds(t *testing.T) {
@@ -199,4 +189,29 @@ func TestAddrs(t *testing.T) {
 
 	require.Equal(t, contracts.AVS(netconf.Omega), netconf.Omega.Static().AVSContractAddress)
 	require.Equal(t, contracts.AVS(netconf.Mainnet), netconf.Mainnet.Static().AVSContractAddress)
+}
+
+// isSeedNode returns true if the node should be added to seed node static config.
+func isSeedNode(network netconf.ID, node string) bool {
+	// All "seed*" nodes in the manifest are seed noes
+	if strings.HasPrefix(node, "seed") {
+		return true
+	}
+
+	// In staging, we only have 1 seednode, so add the fullnode as well
+	if network == netconf.Staging && strings.HasPrefix(node, "full") {
+		return true
+	}
+
+	return false
+}
+
+func sortedKeys[T any](m map[string]T) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	return keys
 }

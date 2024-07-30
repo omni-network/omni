@@ -167,9 +167,9 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 		log.Info(ctx, "Generated folder", "reason", folder.Name, "path", folder.Path)
 	}
 
-	// Add P2P seeds to comet config
+	// Add P2P seeds to comet config (persisted peers works better than seeds)
 	if seeds := network.Static().ConsensusSeeds(); len(seeds) > 0 {
-		comet.P2P.Seeds = strings.Join(seeds, ",")
+		comet.P2P.PersistentPeers = strings.Join(seeds, ",")
 	}
 
 	// Setup node key
