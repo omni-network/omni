@@ -33,4 +33,11 @@ var (
 		Name:      "synced",
 		Help:      "Constant gauge of 1 if attached the cometBFT is synced, 0 if syncing.",
 	})
+
+	dbSize = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: "halo",
+		Subsystem: "db",
+		Name:      "size_bytes",
+		Help:      "Current size of the database directory in bytes.",
+	})
 )

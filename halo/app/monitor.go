@@ -2,18 +2,31 @@ package app
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 )
 
 // monitorCometForever blocks until the context is canceled.
 // It periodically calls monitorCometOnce.
-func monitorCometForever(ctx context.Context, rpcClient rpcclient.Client, isSyncing func() bool) {
+func monitorCometForever(
+	ctx context.Context,
+	network netconf.ID,
+	rpcClient rpcclient.Client,
+	isSyncing func() bool,
+	dbDir string,
+) {
+	if network == netconf.Simnet {
+		return // Simnet doesn't need to monitor cometBFT, since no p2p.
+	}
+
 	ticker := time.NewTicker(time.Second * 30)
 	defer ticker.Stop()
 
@@ -31,6 +44,14 @@ func monitorCometForever(ctx context.Context, rpcClient rpcclient.Client, isSync
 				// Don't reset lastHeight to zero.
 			} else {
 				lastHeight = height
+			}
+
+			// Monitor db size.
+			size, err := dirSize(dbDir)
+			if err != nil {
+				log.Warn(ctx, "Failed monitoring db size (will retry)", err)
+			} else {
+				dbSize.Set(float64(size))
 			}
 		}
 	}
@@ -54,8 +75,8 @@ func monitorCometOnce(ctx context.Context, rpcClient rpcclient.Client, isSyncing
 	abciInfo, err := rpcClient.ABCIInfo(ctx)
 	if err != nil {
 		return 0, errors.Wrap(err, "abci info")
-	} else if !isSyncing() && abciInfo.Response.LastBlockHeight <= lastHeight {
-		log.Warn(ctx, "Halo height is not increasing, evm syncing?", nil)
+	} else if !isSyncing() && lastHeight > 0 && abciInfo.Response.LastBlockHeight <= lastHeight {
+		log.Warn(ctx, "Halo height is not increasing, evm syncing?", nil, "height", abciInfo.Response.LastBlockHeight)
 	}
 
 	return abciInfo.Response.LastBlockHeight, nil
@@ -64,6 +85,10 @@ func monitorCometOnce(ctx context.Context, rpcClient rpcclient.Client, isSyncing
 // monitorEVMForever blocks until the contract is canceled.
 // It periodically calls monitorEVMOnce.
 func monitorEVMForever(ctx context.Context, cfg Config, ethCl ethclient.Client) {
+	if cfg.Network == netconf.Simnet {
+		return // Simnet doesn't have an EVM tp monitor.
+	}
+
 	ticker := time.NewTicker(time.Second * 30)
 	defer ticker.Stop()
 
@@ -127,4 +152,21 @@ func monitorEVMOnce(ctx context.Context, ethCl ethclient.Client) error {
 	evmHeight.Set(float64(latest))
 
 	return nil
+}
+
+// dirSize returns the total size of the directory at path.
+func dirSize(path string) (int64, error) {
+	var size int64
+	err := filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			size += info.Size()
+		}
+
+		return err
+	})
+	if err != nil {
+		return 0, errors.Wrap(err, "walk")
+	}
+
+	return size, nil
 }
