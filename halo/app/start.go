@@ -183,7 +183,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		return nil, nil, errors.Wrap(err, "start comet node")
 	}
 
-	go monitorCometForever(ctx, rpcClient, cmtNode.ConsensusReactor().WaitSync)
+	go monitorCometForever(ctx, cfg.Network, rpcClient, cmtNode.ConsensusReactor().WaitSync, cfg.DataDir())
 	go monitorEVMForever(ctx, cfg, engineCl)
 
 	// Return async and stop functions.
