@@ -106,7 +106,7 @@ func (p Provider) Subscribe(in context.Context, chainVer xchain.ChainVersion, xB
 	callback cchain.ProviderCallback,
 ) {
 	srcChain := p.chainNamer(chainVer)
-	ctx := log.WithCtx(in, "src_chain", srcChain)
+	ctx := log.WithCtx(in, "src_chain", srcChain, "worker", workerName)
 
 	deps := stream.Deps[xchain.Attestation]{
 		FetchBatch: func(ctx context.Context, _ uint64, offset uint64) ([]xchain.Attestation, error) {

@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/expbackoff"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/umath"
@@ -155,6 +156,8 @@ func newABCIFetchFunc(cl atypes.QueryClient, client rpcclient.Client, chainNamer
 			// First attestation hasn't happened yet, return empty
 			return []xchain.Attestation{}, nil
 		}
+
+		log.Debug(ctx, "Offset not found in latest state", "chain", chainName, "offset", fromOffset, "earliestAttestationAtLatestHeight", earliestAttestationAtLatestHeight.AttestOffset)
 
 		offsetHeight, err := searchOffsetInHistory(ctx, client, cl, chainVer, chainName, fromOffset)
 		if err != nil {
@@ -437,7 +440,9 @@ func searchOffsetInHistory(ctx context.Context, client rpcclient.Client, cl atyp
 		}
 
 		if fromOffset >= earliestAtt.AttestOffset && fromOffset <= latestAtt.AttestOffset {
+			log.Debug(ctx, "Fetching offset from history", "chain", chainName, "fromOffset", fromOffset, "latestHeight", info.Response.LastBlockHeight, "foundHeight", midHeightIndex, "lookbackSteps", lookbackStepsCounter, "binarySearchSteps", binarySearchStepsCounter)
 			fetchStepsMetrics(chainName, lookbackStepsCounter, binarySearchStepsCounter)
+
 			return midHeightIndex, nil
 		}
 
