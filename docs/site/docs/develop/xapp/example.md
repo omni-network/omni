@@ -50,9 +50,9 @@ function greet(string calldata greeting) external payable {
 
 ```
 
-## `GlobalGreeter` Contract
+## `GreetingBook` Contract
 
-<GitHubCodeBlock url="https://github.com/omni-network/hello-world-template/blob/48ff2f5277b4c144802c1ffa894a03ac071f02fc/src/GreetingBook.sol" />
+<GitHubCodeBlock url="https://github.com/omni-network/hello-world-template/blob/eb02c55bc8ef92c09e7cb6e40420353e41e2841c/src/GreetingBook.sol" />
 
 ### Walkthrough
 
@@ -84,7 +84,7 @@ With this context, we can have our `GreetingBook` extract the source chain and s
 
 ```solidity
 function greet(address user, string calldata _greeting) external xrecv {
-        require(omni.isXCall(), "GreetingBook: only xcalls");
+        // ...
 
         lastGreet = Greeting(user, _greeting, xmsg.sourceChainId, block.timestamp);
     }
@@ -111,8 +111,12 @@ xmsg.sourceChainId // 0
 xmsg.sender        // address(0)
 ```
 
-You can check if the current call is an `xcall` with `isXCall`.
+You can check if the current call is an `xcall`, and the sender is the portal, with `isXCall()`.
 
-<GitHubCodeBlock url="https://github.com/omni-network/omni/blob/ad2f5b7dddc245e7f5b6b662d6c1fc44170694ab/contracts/src/xchain/OmniPortal.sol#L200-L202" />
+```solidity
+function greet(address user, string calldata _greeting) external xrecv {
+        require(isXCall(), "GreetingBook: only xcalls");
 
-Note that not only does `isXCall` check with the portal that the current transaction is an `xcall`. This helps avoid mistaking calls later in an `xcall` stacktrace with the original `xcall`. Using this helper, we can ensure that `greet()` can only ever be called via an `xcall`.
+        // ...
+    }
+```
