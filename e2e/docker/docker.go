@@ -127,7 +127,7 @@ func (p *Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 		svcs := additionalServices(p.testnet)
 		log.Info(ctx, "Starting additional services", "names", svcs)
 
-		err = cmtdocker.ExecCompose(ctx, p.Testnet.Dir, "create") // This fails if containers not available.
+		err = ExecCompose(ctx, p.Testnet.Dir, "create") // This fails if containers not available.
 		if err != nil {
 			err = errors.Wrap(err, "create containers")
 			return
@@ -137,7 +137,7 @@ func (p *Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 			return
 		}
 
-		err = cmtdocker.ExecCompose(ctx, p.Testnet.Dir, append([]string{"up", "-d"}, svcs...)...)
+		err = ExecCompose(ctx, p.Testnet.Dir, append([]string{"up", "-d"}, svcs...)...)
 		if err != nil {
 			err = errors.Wrap(err, "start additional services")
 			return
@@ -157,7 +157,7 @@ func (p *Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 	for i, n := range nodes {
 		nodeNames[i] = n.Name
 	}
-	err = cmtdocker.ExecCompose(ctx, p.Testnet.Dir, append([]string{"up", "-d", "--no-deps"}, nodeNames...)...)
+	err = ExecCompose(ctx, p.Testnet.Dir, append([]string{"up", "-d", "--no-deps"}, nodeNames...)...)
 	if err != nil {
 		return errors.Wrap(err, "start nodes")
 	}
@@ -287,4 +287,38 @@ func additionalServices(testnet types.Testnet) []string {
 	resp = append(resp, "relayer")
 
 	return resp
+}
+
+// ExecCompose runs a Docker Compose command for a testnet.
+func ExecCompose(ctx context.Context, dir string, args ...string) error {
+	err := exec.Command(ctx, append(
+		[]string{"docker", "compose", "-f", filepath.Join(dir, "docker-compose.yml")},
+		args...)...)
+	if err != nil {
+		return errors.Wrap(err, "exec docker-compose")
+	}
+
+	return nil
+}
+
+// ExecComposeVerbose runs a Docker Compose command for a testnet and displays its output.
+func ExecComposeVerbose(ctx context.Context, dir string, args ...string) error {
+	err := exec.CommandVerbose(ctx, append(
+		[]string{"docker", "compose", "-f", filepath.Join(dir, "docker-compose.yml")},
+		args...)...)
+	if err != nil {
+		return errors.Wrap(err, "exec docker-compose verbose")
+	}
+
+	return nil
+}
+
+// Exec runs a Docker command.
+func Exec(ctx context.Context, args ...string) error {
+	err := exec.Command(ctx, append([]string{"docker"}, args...)...)
+	if err != nil {
+		return errors.Wrap(err, "exec docker")
+	}
+
+	return nil
 }

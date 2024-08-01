@@ -5,6 +5,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
 
 	dbm "github.com/cosmos/cosmos-db"
@@ -14,7 +15,14 @@ import (
 func TestEmitCursorCache(t *testing.T) {
 	t.Parallel()
 	db := dbm.NewMemDB()
-	cache, err := newEmitCursorCache(db)
+
+	fallbackErr := errors.New("fallback")
+	fallbackFunc := func(context.Context, xchain.EmitRef, xchain.StreamID) (xchain.EmitCursor, bool, error) {
+		return xchain.EmitCursor{}, false, fallbackErr
+	}
+	streamNamer := func(xchain.StreamID) string { return "" }
+
+	cache, err := newEmitCursorCache(db, streamNamer, fallbackFunc)
 	require.NoError(t, err)
 	ctx := context.Background()
 
@@ -43,7 +51,7 @@ func TestEmitCursorCache(t *testing.T) {
 	assertNotContains := func(t *testing.T, height uint64, stream xchain.StreamID) {
 		t.Helper()
 		_, ok, err := cache.Get(ctx, height, stream)
-		require.NoError(t, err)
+		require.ErrorIs(t, err, fallbackErr)
 		require.False(t, ok)
 	}
 

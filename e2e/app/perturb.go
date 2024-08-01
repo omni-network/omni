@@ -4,13 +4,13 @@ import (
 	"context"
 	"time"
 
+	"github.com/omni-network/omni/e2e/docker"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
 	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
-	"github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
 )
 
 // perturb the running testnet.

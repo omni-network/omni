@@ -8,13 +8,12 @@ import (
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/app/key"
+	"github.com/omni-network/omni/e2e/docker"
 	"github.com/omni-network/omni/e2e/types"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-
-	cmtdocker "github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -117,7 +116,7 @@ func newLogsCmd(def *app.Definition) *cobra.Command {
 		Use:   "logs",
 		Short: "Prints the infrastructure logs (of a previously preserved network)",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			err := cmtdocker.ExecComposeVerbose(cmd.Context(), def.Testnet.Dir, "logs")
+			err := docker.ExecComposeVerbose(cmd.Context(), def.Testnet.Dir, "logs")
 			if err != nil {
 				return errors.Wrap(err, "executing docker-compose logs")
 			}

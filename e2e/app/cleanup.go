@@ -7,10 +7,9 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/omni-network/omni/e2e/docker"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-
-	"github.com/cometbft/cometbft/test/e2e/pkg/infra/docker"
 )
 
 // CleanInfra stops and removes the infra containers.

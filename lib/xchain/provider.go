@@ -78,6 +78,13 @@ func ConfEmitRef(level ConfLevel) EmitRef {
 	}
 }
 
+// HeightEmitRef returns a EmitRef with the provided confirmation level.
+func HeightEmitRef(height uint64) EmitRef {
+	return EmitRef{
+		Height: &height,
+	}
+}
+
 // LatestEmitRef returns a EmitRef with the latest confirmation level.
 func LatestEmitRef() EmitRef {
 	return ConfEmitRef(ConfLatest)
