@@ -3,6 +3,7 @@ package cchain
 import (
 	"context"
 
+	rtypes "github.com/omni-network/omni/halo/registry/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -54,6 +55,9 @@ type Provider interface {
 
 	// CometClient returns the underlying cometBFT RPC client.
 	CometClient() rpcclient.Client
+
+	// Portals returns the portals registered in the registry module.
+	Portals(ctx context.Context) ([]*rtypes.Portal, bool, error)
 }
 
 // Validator is a consensus chain validator in a validator set.

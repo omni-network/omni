@@ -71,7 +71,7 @@ func New(ctx context.Context, netID netconf.ID, endpoints xchain.RPCEndpoints) (
 		return Connector{}, err
 	}
 
-	network, err := netconf.AwaitOnChain(ctx, netID, portalReg, nil)
+	network, err := netconf.AwaitOnExecutionChain(ctx, netID, portalReg, nil)
 	if err != nil {
 		return Connector{}, err
 	}
