@@ -150,14 +150,22 @@ func (p *Provider) stream(
 				ConfLevel: req.ConfLevel,
 			}
 
-			xBlock, exists, err := p.GetBlock(ctx, fetchReq)
-			if err != nil {
-				return nil, err
-			} else if !exists {
-				return nil, nil
+			var lastErr error
+			const retryCount = 5
+			backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Millisecond*100))
+			for i := 0; i < retryCount; i++ {
+				xBlock, exists, err := p.GetBlock(ctx, fetchReq)
+				if err != nil {
+					lastErr = err
+					backoff()
+				} else if !exists {
+					return nil, nil
+				} else {
+					return []xchain.Block{xBlock}, nil
+				}
 			}
 
-			return []xchain.Block{xBlock}, nil
+			return nil, lastErr
 		},
 		Backoff:       p.backoffFunc,
 		ElemLabel:     "block",

@@ -27,9 +27,11 @@ func TestProvider(t *testing.T) {
 
 	var mu sync.Mutex
 	const (
-		errs    = 2
-		total   = 20
-		workers = 2
+		// the number of times the FetchBatch method tries before giving up, leading to a backoff
+		retryCount = 5
+		errs       = 10
+		total      = 20
+		workers    = 2
 
 		chainID    = uint64(999)
 		fromHeight = uint64(200)
@@ -55,7 +57,7 @@ func TestProvider(t *testing.T) {
 		defer mu.Unlock()
 		if remainErrs > 0 {
 			remainErrs--
-			return nil, errors.New("test errpr")
+			return nil, errors.New("test error")
 		}
 
 		return &ethtypes.Header{
@@ -95,7 +97,7 @@ func TestProvider(t *testing.T) {
 
 	<-ctx.Done()
 
-	require.Equal(t, errs, backoff.Count()) // 2 errors
+	require.Equal(t, errs/retryCount, backoff.Count()) // a backoff happens for every retryCount errors
 
 	require.Len(t, actual, total)
 
