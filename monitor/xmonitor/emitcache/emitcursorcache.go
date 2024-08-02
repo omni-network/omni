@@ -41,7 +41,7 @@ func Start(
 	xprov xchain.Provider,
 	db db.DB,
 ) (Cache, error) {
-	cache, err := newEmitCursorCache(db)
+	cache, err := newEmitCursorCache(db, network.StreamName, xprov.GetEmittedCursor)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func Start(
 			return nil, errors.Wrap(err, "latest height", "chain", chain.Name)
 		}
 
-		fromHeight := uintSub(latest, cacheStartLag) // Start as far back as cacheStartLag blocks.
+		fromHeight := umath.SubtractOrZero(latest, cacheStartLag) // Start as far back as cacheStartLag blocks.
 		if fromHeight < chain.DeployHeight {
 			fromHeight = chain.DeployHeight // But not before chain deploy height.
 		}
@@ -113,7 +113,11 @@ func Start(
 }
 
 // newEmitCursorCache creates a new emit cursor cache using the provided DB.
-func newEmitCursorCache(db db.DB) (*emitCursorCache, error) {
+func newEmitCursorCache(
+	db db.DB,
+	streamNamer func(xchain.StreamID) string,
+	fallbackFunc func(context.Context, xchain.EmitRef, xchain.StreamID) (xchain.EmitCursor, bool, error),
+) (*emitCursorCache, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
 		{Id: 1, ProtoFileName: File_monitor_xmonitor_emitcache_emitcursor_proto.Path()},
 	}}
@@ -131,7 +135,9 @@ func newEmitCursorCache(db db.DB) (*emitCursorCache, error) {
 	}
 
 	return &emitCursorCache{
-		table: dbStore.EmitCursorTable(),
+		table:        dbStore.EmitCursorTable(),
+		streamNamer:  streamNamer,
+		fallbackFunc: fallbackFunc,
 	}, nil
 }
 
@@ -141,8 +147,12 @@ func newEmitCursorCache(db db.DB) (*emitCursorCache, error) {
 // Instead we cache the emit cursor of latest blocks, and query the cache for historical blocks
 // while monitoring attested stream offsets.
 type emitCursorCache struct {
-	mu    sync.RWMutex
-	table EmitCursorTable
+	mu          sync.RWMutex
+	table       EmitCursorTable
+	streamNamer func(xchain.StreamID) string
+	// fallbackFunc is called when a cursor is not found in the cache.
+	// This is a workaround for the cache not being fully populated yet.
+	fallbackFunc func(context.Context, xchain.EmitRef, xchain.StreamID) (xchain.EmitCursor, bool, error)
 }
 
 // set adds a cursor to the cache for the given height and stream.
@@ -184,10 +194,13 @@ func (c *emitCursorCache) Get(ctx context.Context, height uint64, stream xchain.
 
 	cursor, err := c.table.GetBySrcChainIdDstChainIdShardIdHeight(ctx, stream.SourceChainID, stream.DestChainID, uint64(stream.ShardID), height)
 	if ormerrors.IsNotFound(err) {
-		return xchain.EmitCursor{}, false, nil
+		missCounter.WithLabelValues(c.streamNamer(stream)).Inc()
+		return c.fallbackFunc(ctx, xchain.HeightEmitRef(height), stream)
 	} else if err != nil {
 		return xchain.EmitCursor{}, false, errors.Wrap(err, "get emit cursor")
 	}
+
+	hitCounter.WithLabelValues(c.streamNamer(stream)).Inc()
 
 	return xchain.EmitCursor{
 		StreamID:  stream,
@@ -223,7 +236,8 @@ func (c *emitCursorCache) AtOrBefore(ctx context.Context, height uint64, stream 
 	defer iter.Close()
 
 	if !iter.Next() {
-		return xchain.EmitCursor{}, false, nil // Nothing found
+		missCounter.WithLabelValues(c.streamNamer(stream)).Inc()
+		return c.fallbackFunc(ctx, xchain.HeightEmitRef(height), stream)
 	}
 
 	cursor, err := iter.Value()
@@ -234,6 +248,8 @@ func (c *emitCursorCache) AtOrBefore(ctx context.Context, height uint64, stream 
 	if iter.Next() {
 		return xchain.EmitCursor{}, false, errors.New("multiple results [BUG]")
 	}
+
+	hitCounter.WithLabelValues(c.streamNamer(stream)).Inc()
 
 	return xchain.EmitCursor{
 		StreamID:  stream,
@@ -336,12 +352,4 @@ type dbStoreService struct {
 
 func (db dbStoreService) OpenKVStore(context.Context) store.KVStore {
 	return db.DB
-}
-
-func uintSub(a, b uint64) uint64 {
-	if a < b {
-		return 0
-	}
-
-	return a - b
 }
