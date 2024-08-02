@@ -24,7 +24,9 @@ func TestSetup(t *testing.T) {
 		ManifestFile:  manifestFile,
 		InfraProvider: vmcompose.ProviderName,
 		InfraDataFile: dataFile,
-		OmniImgTag:    "7d1ae53",
+		HaloImgTag:    "7d1ae53",
+		RelayerImgTag: "2a0a9bb",
+		MonitorImgTag: "ad788b3",
 	}, "")
 	require.NoError(t, err)
 

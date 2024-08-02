@@ -28,17 +28,21 @@ const ProviderName = "vmcompose"
 var _ types.InfraProvider = (*Provider)(nil)
 
 type Provider struct {
-	Testnet types.Testnet
-	Data    types.InfrastructureData
-	once    sync.Once
-	omniTag string
+	Testnet    types.Testnet
+	Data       types.InfrastructureData
+	once       sync.Once
+	haloTag    string
+	relayerTag string
+	monitorTag string
 }
 
-func NewProvider(testnet types.Testnet, data types.InfrastructureData, imgTag string) *Provider {
+func NewProvider(testnet types.Testnet, data types.InfrastructureData, haloTag string, relayerTag string, monitorTag string) *Provider {
 	return &Provider{
-		Testnet: testnet,
-		Data:    data,
-		omniTag: imgTag,
+		Testnet:    testnet,
+		Data:       data,
+		haloTag:    haloTag,
+		relayerTag: relayerTag,
+		monitorTag: monitorTag,
 	}
 }
 
@@ -90,7 +94,9 @@ func (p *Provider) Setup() error {
 			Relayer:     services["relayer"],
 			Monitor:     services["monitor"],
 			Prometheus:  p.Testnet.Prometheus,
-			OmniTag:     p.omniTag,
+			HaloTag:     p.haloTag,
+			RelayerTag:  p.relayerTag,
+			MonitorTag:  p.monitorTag,
 		}
 		compose, err := docker.GenerateComposeFile(def)
 		if err != nil {

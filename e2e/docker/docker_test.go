@@ -28,17 +28,23 @@ func TestComposeTemplate(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		tag        string
+		haloTag    string
+		relayerTag string
+		monitorTag string
 		isEmpheral bool
 	}{
 		{
 			name:       "commit",
-			tag:        "7d1ae53",
+			haloTag:    "7d1ae53",
+			relayerTag: "2a0a9bb",
+			monitorTag: "ad788b3",
 			isEmpheral: false,
 		},
 		{
 			name:       "empheral_network",
-			tag:        "main",
+			haloTag:    "main",
+			relayerTag: "main",
+			monitorTag: "main",
 			isEmpheral: true,
 		},
 	}
@@ -62,7 +68,7 @@ func TestComposeTemplate(t *testing.T) {
 					Prometheus: true,
 					Nodes: []*e2e.Node{{
 						Name:       "node0",
-						Version:    "omniops/halo:" + test.tag,
+						Version:    "omniops/halo:" + test.haloTag,
 						InternalIP: ipNet.IP,
 						ProxyPort:  8584,
 					}},
@@ -106,7 +112,7 @@ func TestComposeTemplate(t *testing.T) {
 				testnet.Network = netconf.Devnet
 			}
 
-			p := docker.NewProvider(testnet, types.InfrastructureData{}, test.tag)
+			p := docker.NewProvider(testnet, types.InfrastructureData{}, test.haloTag, test.relayerTag, test.monitorTag)
 			require.NoError(t, err)
 
 			require.NoError(t, p.Setup())

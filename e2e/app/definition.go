@@ -44,7 +44,9 @@ type DefinitionConfig struct {
 	RPCOverrides  map[string]string // map[chainName]rpcURL1,rpcURL2,...
 
 	InfraDataFile string // Not required for docker provider
-	OmniImgTag    string // OmniImgTag is the docker image tag used for halo and relayer.
+	HaloImgTag    string // HaloImgTag is the docker image tag used for halo.
+	RelayerImgTag string // RelayerImgTag is the docker image tag used for relayer.
+	MonitorImgTag string // MonitorImgTag is the docker image tag used for relayer.
 
 	TracingEndpoint string
 	TracingHeaders  string
@@ -60,7 +62,9 @@ func DefaultDefinitionConfig(ctx context.Context) DefinitionConfig {
 	return DefinitionConfig{
 		AgentSecrets:  agent.Secrets{}, // empty agent.Secrets by default
 		InfraProvider: docker.ProviderName,
-		OmniImgTag:    defaultTag,
+		HaloImgTag:    defaultTag,
+		RelayerImgTag: defaultTag,
+		MonitorImgTag: defaultTag,
 	}
 }
 
@@ -146,9 +150,9 @@ func MakeDefinition(ctx context.Context, cfg DefinitionConfig, commandName strin
 	var infp types.InfraProvider
 	switch cfg.InfraProvider {
 	case docker.ProviderName:
-		infp = docker.NewProvider(testnet, infd, cfg.OmniImgTag)
+		infp = docker.NewProvider(testnet, infd, cfg.HaloImgTag, cfg.RelayerImgTag, cfg.MonitorImgTag)
 	case vmcompose.ProviderName:
-		infp = vmcompose.NewProvider(testnet, infd, cfg.OmniImgTag)
+		infp = vmcompose.NewProvider(testnet, infd, cfg.HaloImgTag, cfg.RelayerImgTag, cfg.MonitorImgTag)
 	default:
 		return Definition{}, errors.New("unknown infra provider", "provider", cfg.InfraProvider)
 	}
@@ -220,11 +224,6 @@ func adaptNode(ctx context.Context, manifest types.Manifest, node *e2e.Node, tag
 		return nil, err
 	}
 
-	// Pinned tag overrides the cli --omni-image-tag flag.
-	if manifest.PinnedHaloTag != "" {
-		tag = manifest.PinnedHaloTag
-	}
-
 	node.Version = "omniops/halo:" + tag
 	node.PrivvalKey = valKey.PrivKey
 	node.NodeKey = nodeKey.PrivKey
@@ -294,8 +293,24 @@ func noNodesTestnet(manifest e2e.Manifest, file string, ifd e2e.InfrastructureDa
 	return testnet, nil
 }
 
+func setPinnedTags(manifest types.Manifest, cfg DefinitionConfig) DefinitionConfig {
+	if manifest.PinnedHaloTag != "" {
+		cfg.HaloImgTag = manifest.PinnedHaloTag
+	}
+	if manifest.PinnedRelayerTag != "" {
+		cfg.RelayerImgTag = manifest.PinnedRelayerTag
+	}
+	if manifest.PinnedMonitorTag != "" {
+		cfg.MonitorImgTag = manifest.PinnedMonitorTag
+	}
+
+	return cfg
+}
+
 //nolint:nosprintfhostport // Not an issue for non-critical e2e test code.
 func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd types.InfrastructureData, cfg DefinitionConfig) (types.Testnet, error) {
+	cfg = setPinnedTags(manifest, cfg)
+
 	if manifest.OnlyMonitor || len(manifest.Nodes) == 0 {
 		// Create a bare minimum comet testnet only with test di, prometheus and ipnet.
 		// Otherwise e2e.NewTestnetFromManifest panics because there are no nodes set
@@ -307,7 +322,7 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 	if err != nil {
 		return types.Testnet{}, errors.Wrap(err, "testnet from manifest")
 	}
-	cmtTestnet, err = adaptCometTestnet(ctx, manifest, cmtTestnet, cfg.OmniImgTag)
+	cmtTestnet, err = adaptCometTestnet(ctx, manifest, cmtTestnet, cfg.HaloImgTag)
 	if err != nil {
 		return types.Testnet{}, errors.Wrap(err, "adapt comet testnet")
 	}

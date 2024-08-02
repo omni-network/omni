@@ -3,6 +3,8 @@ public_chains = ["op_sepolia","base_sepolia","arb_sepolia"]
 anvil_chains = ["slow_l1"]
 multi_omni_evms = true
 prometheus = true
+pinned_relayer_tag = "2a0a9bb"
+pinned_monitor_tag = "2a0a9bb"
 
 [node.validator01]
 [node.validator02]

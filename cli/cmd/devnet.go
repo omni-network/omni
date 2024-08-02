@@ -177,7 +177,9 @@ func devnetDefinition(ctx context.Context) (app.Definition, error) {
 		imgTag = "main"
 	}
 
-	defCfg.OmniImgTag = imgTag
+	defCfg.HaloImgTag = imgTag
+	defCfg.RelayerImgTag = imgTag
+	defCfg.MonitorImgTag = imgTag
 
 	def, err := app.MakeDefinition(ctx, defCfg, "devnet")
 	if err != nil {
