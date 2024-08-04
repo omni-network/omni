@@ -4,6 +4,14 @@ sidebar_position: 3
 
 # Operator Commands
 
+## Start a full node
+
+```bash
+omni operator init-nodes --network=omega --moniker=foo --clean
+cd ~/.omni/omega
+docker compose up
+```
+
 ## Registering as an Operator
 
 Registers EigenLayer operator to Omni using the `operator.yml` file.
