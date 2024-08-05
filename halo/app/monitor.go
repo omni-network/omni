@@ -158,11 +158,15 @@ func monitorEVMOnce(ctx context.Context, ethCl ethclient.Client) error {
 func dirSize(path string) (int64, error) {
 	var size int64
 	err := filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
 		if !info.IsDir() {
 			size += info.Size()
 		}
 
-		return err
+		return nil
 	})
 	if err != nil {
 		return 0, errors.Wrap(err, "walk")

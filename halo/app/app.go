@@ -16,6 +16,8 @@ import (
 
 	"cosmossdk.io/depinject"
 	"cosmossdk.io/log"
+	evidencekeeper "cosmossdk.io/x/evidence/keeper"
+	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -33,6 +35,7 @@ import (
 
 	_ "cosmossdk.io/api/cosmos/tx/config/v1"          // import for side-effects
 	_ "cosmossdk.io/x/evidence"                       // import for side-effects
+	_ "cosmossdk.io/x/upgrade"                        // import for side-effects
 	_ "github.com/cosmos/cosmos-sdk/x/auth"           // import for side-effects
 	_ "github.com/cosmos/cosmos-sdk/x/auth/tx/config" // import for side-effects
 	_ "github.com/cosmos/cosmos-sdk/x/bank"           // import for side-effects
@@ -67,6 +70,8 @@ type App struct {
 	AttestKeeper          *attestkeeper.Keeper
 	ValSyncKeeper         *valsynckeeper.Keeper
 	RegistryKeeper        registrykeeper.Keeper
+	EvidenceKeeper        evidencekeeper.Keeper
+	UpgradeKeeper         *upgradekeeper.Keeper
 }
 
 // newApp returns a reference to an initialized App.
@@ -81,7 +86,7 @@ func newApp(
 	baseAppOpts ...func(*baseapp.BaseApp),
 ) (*App, error) {
 	depCfg := depinject.Configs(
-		DepConfig(),
+		appConfig,
 		depinject.Supply(
 			logger,
 			engineCl,
@@ -111,6 +116,8 @@ func newApp(
 		&app.AttestKeeper,
 		&app.ValSyncKeeper,
 		&app.RegistryKeeper,
+		&app.EvidenceKeeper,
+		&app.UpgradeKeeper,
 	); err != nil {
 		return nil, errors.Wrap(err, "dep inject")
 	}
