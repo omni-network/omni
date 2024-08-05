@@ -94,7 +94,7 @@ services:
     labels:
       e2e: true
     container_name: relayer
-    image: omniops/relayer:{{or .OmniTag "main"}}
+    image: omniops/relayer:{{or .RelayerTag "main"}}
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     ports:
       - 26660 # Prometheus and pprof
@@ -110,7 +110,7 @@ services:
     labels:
       e2e: true
     container_name: monitor
-    image: omniops/monitor:{{or .OmniTag "main"}}
+    image: omniops/monitor:{{or .MonitorTag "main"}}
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     ports:
       - 26660 # Prometheus and pprof

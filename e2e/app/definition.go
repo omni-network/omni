@@ -122,7 +122,6 @@ func MakeDefinition(ctx context.Context, cfg DefinitionConfig, commandName strin
 	if err != nil {
 		return Definition{}, errors.Wrap(err, "loading infrastructure data")
 	}
-
 	testnet, err := TestnetFromManifest(ctx, manifest, infd, cfg)
 	if err != nil {
 		return Definition{}, errors.Wrap(err, "loading testnet")
@@ -146,9 +145,9 @@ func MakeDefinition(ctx context.Context, cfg DefinitionConfig, commandName strin
 	var infp types.InfraProvider
 	switch cfg.InfraProvider {
 	case docker.ProviderName:
-		infp = docker.NewProvider(testnet, infd, cfg.OmniImgTag)
+		infp = docker.NewProvider(testnet, infd)
 	case vmcompose.ProviderName:
-		infp = vmcompose.NewProvider(testnet, infd, cfg.OmniImgTag)
+		infp = vmcompose.NewProvider(testnet, infd)
 	default:
 		return Definition{}, errors.New("unknown infra provider", "provider", cfg.InfraProvider)
 	}
@@ -193,14 +192,14 @@ func newBackends(ctx context.Context, cfg DefinitionConfig, testnet types.Testne
 }
 
 // adaptCometTestnet adapts the default comet testnet for omni specific changes and custom config.
-func adaptCometTestnet(ctx context.Context, manifest types.Manifest, testnet *e2e.Testnet, imgTag string) (*e2e.Testnet, error) {
+func adaptCometTestnet(ctx context.Context, manifest types.Manifest, testnet *e2e.Testnet, imgTag string, finalImgTag string) (*e2e.Testnet, error) {
 	testnet.Dir = runsDir(testnet.File)
 	testnet.VoteExtensionsEnableHeight = 1
 	testnet.UpgradeVersion = "omniops/halo:" + imgTag
 
 	for i := range testnet.Nodes {
 		var err error
-		testnet.Nodes[i], err = adaptNode(ctx, manifest, testnet.Nodes[i], imgTag)
+		testnet.Nodes[i], err = adaptNode(ctx, manifest, testnet.Nodes[i], finalImgTag)
 		if err != nil {
 			return nil, err
 		}
@@ -218,11 +217,6 @@ func adaptNode(ctx context.Context, manifest types.Manifest, node *e2e.Node, tag
 	nodeKey, err := getOrGenKey(ctx, manifest, node.Name, key.P2PConsensus)
 	if err != nil {
 		return nil, err
-	}
-
-	// Pinned tag overrides the cli --omni-image-tag flag.
-	if manifest.PinnedHaloTag != "" {
-		tag = manifest.PinnedHaloTag
 	}
 
 	node.Version = "omniops/halo:" + tag
@@ -294,8 +288,41 @@ func noNodesTestnet(manifest e2e.Manifest, file string, ifd e2e.InfrastructureDa
 	return testnet, nil
 }
 
+type finalTags struct {
+	omni    string
+	relayer string
+	monitor string
+}
+
+func getFinalTags(manifest types.Manifest, omniImgTag string) finalTags {
+	omniFinalTag := omniImgTag
+	relayerFinalTag := omniImgTag
+	monitorFinalTag := omniImgTag
+
+	for _, field := range []struct {
+		tagName   string
+		pinnedTag *string
+		finalTag  *string
+	}{
+		{"omni", &manifest.PinnedHaloTag, &omniFinalTag},
+		{"relayer", &manifest.PinnedRelayerTag, &relayerFinalTag},
+		{"monitor", &manifest.PinnedMonitorTag, &monitorFinalTag},
+	} {
+		if *field.pinnedTag != "" {
+			*field.finalTag = *field.pinnedTag
+		}
+	}
+
+	return finalTags{
+		omni:    omniFinalTag,
+		relayer: relayerFinalTag,
+		monitor: monitorFinalTag,
+	}
+}
+
 //nolint:nosprintfhostport // Not an issue for non-critical e2e test code.
 func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd types.InfrastructureData, cfg DefinitionConfig) (types.Testnet, error) {
+	finalTags := getFinalTags(manifest, cfg.OmniImgTag)
 	if manifest.OnlyMonitor || len(manifest.Nodes) == 0 {
 		// Create a bare minimum comet testnet only with test di, prometheus and ipnet.
 		// Otherwise e2e.NewTestnetFromManifest panics because there are no nodes set
@@ -307,7 +334,7 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 	if err != nil {
 		return types.Testnet{}, errors.Wrap(err, "testnet from manifest")
 	}
-	cmtTestnet, err = adaptCometTestnet(ctx, manifest, cmtTestnet, cfg.OmniImgTag)
+	cmtTestnet, err = adaptCometTestnet(ctx, manifest, cmtTestnet, cfg.OmniImgTag, finalTags.omni)
 	if err != nil {
 		return types.Testnet{}, errors.Wrap(err, "adapt comet testnet")
 	}
@@ -396,12 +423,15 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 	}
 
 	return types.Testnet{
-		Network:      manifest.Network,
-		Testnet:      cmtTestnet,
-		OmniEVMs:     omniEVMS,
-		AnvilChains:  anvils,
-		PublicChains: publics,
-		Perturb:      manifest.Perturb,
+		Network:       manifest.Network,
+		Testnet:       cmtTestnet,
+		OmniEVMs:      omniEVMS,
+		AnvilChains:   anvils,
+		PublicChains:  publics,
+		Perturb:       manifest.Perturb,
+		OmniImgTag:    finalTags.omni,
+		RelayerImgTag: finalTags.relayer,
+		MonitorImgTag: finalTags.monitor,
 	}, nil
 }
 

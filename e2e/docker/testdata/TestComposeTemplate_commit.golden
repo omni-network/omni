@@ -99,7 +99,7 @@ services:
     labels:
       e2e: true
     container_name: relayer
-    image: omniops/relayer:7d1ae53
+    image: omniops/relayer:9fecc1a
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     ports:
       - 26660 # Prometheus and pprof
@@ -113,7 +113,7 @@ services:
     labels:
       e2e: true
     container_name: monitor
-    image: omniops/monitor:7d1ae53
+    image: omniops/monitor:555ede3
     restart: unless-stopped # Restart on crash to mitigate startup race issues
     ports:
       - 26660 # Prometheus and pprof

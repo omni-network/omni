@@ -43,7 +43,6 @@ type Provider struct {
 	*cmtdocker.Provider
 	servicesOnce sync.Once
 	testnet      types.Testnet
-	omniTag      string
 }
 
 func (*Provider) Clean(ctx context.Context) error {
@@ -60,7 +59,7 @@ func (*Provider) Clean(ctx context.Context) error {
 }
 
 // NewProvider returns a new Provider.
-func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag string) *Provider {
+func NewProvider(testnet types.Testnet, infd types.InfrastructureData) *Provider {
 	return &Provider{
 		Provider: &cmtdocker.Provider{
 			ProviderData: infra.ProviderData{
@@ -69,7 +68,6 @@ func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag st
 			},
 		},
 		testnet: testnet,
-		omniTag: imgTag,
 	}
 }
 
@@ -87,7 +85,9 @@ func (p *Provider) Setup() error {
 		Relayer:     true,
 		Prometheus:  p.testnet.Prometheus,
 		Monitor:     true,
-		OmniTag:     p.omniTag,
+		OmniTag:     p.testnet.OmniImgTag,
+		RelayerTag:  p.testnet.RelayerImgTag,
+		MonitorTag:  p.testnet.MonitorImgTag,
 	}
 
 	bz, err := GenerateComposeFile(def)
@@ -177,6 +177,8 @@ type ComposeDef struct {
 
 	Monitor    bool
 	OmniTag    string
+	RelayerTag string
+	MonitorTag string
 	Relayer    bool
 	Prometheus bool
 }

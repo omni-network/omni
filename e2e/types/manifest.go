@@ -102,6 +102,14 @@ type Manifest struct {
 	// This allows source code defined versions for protected networks.
 	// The --omni-image-tag flag is then only used for non-halo services (relayer, monitor).
 	PinnedHaloTag string `toml:"pinned_halo_tag"`
+
+	// PinnedMonitorTag defines the pinned monitor docker image tag.
+	// The --omni-image-tag flag is then only used for halo and relayer services, unless also pinned.
+	PinnedMonitorTag string `toml:"pinned_monitor_tag"`
+
+	// PinnedRelayerTag defines the pinned relayer docker image tag.
+	// The --omni-image-tag flag is then only used for halo and monitor services, unless also pinned.
+	PinnedRelayerTag string `toml:"pinned_relayer_tag"`
 }
 
 // Seeds returns a map of seed nodes by name.

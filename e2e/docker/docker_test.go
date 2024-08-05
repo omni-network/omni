@@ -28,17 +28,23 @@ func TestComposeTemplate(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		tag        string
+		omniTag    string
+		relayerTag string
+		monitorTag string
 		isEmpheral bool
 	}{
 		{
 			name:       "commit",
-			tag:        "7d1ae53",
+			omniTag:    "7d1ae53",
+			relayerTag: "9fecc1a",
+			monitorTag: "555ede3",
 			isEmpheral: false,
 		},
 		{
 			name:       "empheral_network",
-			tag:        "main",
+			omniTag:    "main",
+			relayerTag: "main",
+			monitorTag: "main",
 			isEmpheral: true,
 		},
 	}
@@ -62,7 +68,7 @@ func TestComposeTemplate(t *testing.T) {
 					Prometheus: true,
 					Nodes: []*e2e.Node{{
 						Name:       "node0",
-						Version:    "omniops/halo:" + test.tag,
+						Version:    "omniops/halo:" + test.omniTag,
 						InternalIP: ipNet.IP,
 						ProxyPort:  8584,
 					}},
@@ -99,6 +105,9 @@ func TestComposeTemplate(t *testing.T) {
 						LoadState:  "path/to/anvil/state.json",
 					},
 				},
+				OmniImgTag:    test.omniTag,
+				RelayerImgTag: test.relayerTag,
+				MonitorImgTag: test.monitorTag,
 			}
 
 			// If the network is empheral, we use the devnet configuration.
@@ -106,7 +115,7 @@ func TestComposeTemplate(t *testing.T) {
 				testnet.Network = netconf.Devnet
 			}
 
-			p := docker.NewProvider(testnet, types.InfrastructureData{}, test.tag)
+			p := docker.NewProvider(testnet, types.InfrastructureData{})
 			require.NoError(t, err)
 
 			require.NoError(t, p.Setup())

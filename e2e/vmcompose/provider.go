@@ -31,14 +31,12 @@ type Provider struct {
 	Testnet types.Testnet
 	Data    types.InfrastructureData
 	once    sync.Once
-	omniTag string
 }
 
-func NewProvider(testnet types.Testnet, data types.InfrastructureData, imgTag string) *Provider {
+func NewProvider(testnet types.Testnet, data types.InfrastructureData) *Provider {
 	return &Provider{
 		Testnet: testnet,
 		Data:    data,
-		omniTag: imgTag,
 	}
 }
 
@@ -90,7 +88,9 @@ func (p *Provider) Setup() error {
 			Relayer:     services["relayer"],
 			Monitor:     services["monitor"],
 			Prometheus:  p.Testnet.Prometheus,
-			OmniTag:     p.omniTag,
+			OmniTag:     p.Testnet.OmniImgTag,
+			RelayerTag:  p.Testnet.RelayerImgTag,
+			MonitorTag:  p.Testnet.MonitorImgTag,
 		}
 		compose, err := docker.GenerateComposeFile(def)
 		if err != nil {
