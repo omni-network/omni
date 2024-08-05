@@ -191,7 +191,7 @@ contract AllocPredeploys is Script {
      * @notice Setup OmniBridgeNative predeploy
      */
     function setOmniBridgeNative() internal {
-        uint256 totalSupply = 1e6 * 1e18; // 100M total supply
+        uint256 totalSupply = 100e6 * 1e18; // 100M total supply
         vm.deal(Predeploys.OmniBridgeNative, totalSupply);
 
         address impl = Predeploys.impl(Predeploys.OmniBridgeNative);
@@ -199,6 +199,8 @@ contract AllocPredeploys is Script {
 
         InitializableHelper.disableInitializers(impl);
         OmniBridgeNative(Predeploys.OmniBridgeNative).initialize(cfg.admin);
+
+        require(address(Predeploys.OmniBridgeNative).balance == 100_000_000 ether, "invalid balance");
     }
 
     /**
