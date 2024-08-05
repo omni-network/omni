@@ -263,6 +263,7 @@ const sidebars: SidebarsConfig = {
       value: "<div class='sidebar-separator'></div>",
     },
     "develop/contracts",
+    "develop/faq",
   ],
   operateSidebar: [
     {
