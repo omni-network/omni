@@ -24,6 +24,16 @@ mode = "full"
 mode = "full"
 [node.fullnode05]
 mode = "full"
+[node.fullnode06]
+mode = "full"
+[node.fullnode07]
+mode = "full"
+[node.fullnode08]
+mode = "full"
+[node.fullnode09]
+mode = "full"
+[node.fullnode10]
+mode = "full"
 
 [node.archive01]
 mode = "archive"
