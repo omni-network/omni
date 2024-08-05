@@ -12,7 +12,7 @@ require (
 	cosmossdk.io/orm v1.0.0-beta.3
 	cosmossdk.io/store v1.1.0
 	cosmossdk.io/x/evidence v0.1.1
-	cosmossdk.io/x/tx v0.13.3
+	cosmossdk.io/x/tx v0.13.4
 	github.com/BurntSushi/toml v1.4.0
 	github.com/Layr-Labs/eigenlayer-cli v0.9.3
 	github.com/Layr-Labs/eigensdk-go v0.1.10-0.20240730214828-67787e959b72
