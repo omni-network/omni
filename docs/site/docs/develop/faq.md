@@ -8,11 +8,11 @@ sidebar_position: 6
 
 **How fast is a message delivered?**
 
-We are still collecting data on this and it depends on various parameters, but rollup to rollup messages are roughly 5-10s for "latest" messages and 12 minutes for "finalized" messages.
+Rollup to rollup messages are roughly 5-10s for "latest" messages and 12 minutes for "finalized" messages.
 
 **How should I use finalized vs. latest?**
 
-It depends on the use case, but we generally recommend using `finalized` for high value transactions where exactly once delivery semantics is critical. `latest` can ba used for smaller magnitude transactions where delivery guarantees can be loosened.
+It depends on the use case, but we generally recommend using `finalized` for high value transactions where exactly once delivery semantics is critical. `latest` can be used for smaller magnitude transactions where delivery guarantees can be loosened.
 
 **How much does an xcall cost?**
 
