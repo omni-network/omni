@@ -227,7 +227,7 @@ func toPortalBindings(portals []*rtypes.Portal) []bindings.PortalRegistryDeploym
 			DeployHeight:   p.DeployHeight,
 			Shards:         p.ShardIds,
 			AttestInterval: p.AttestInterval,
-			BlockPeriod:    p.BlockPeriod,
+			BlockPeriod:    p.BlockPeriodMs,
 			Name:           p.Name,
 		}
 	}
