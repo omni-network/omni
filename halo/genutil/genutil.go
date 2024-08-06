@@ -3,6 +3,7 @@ package genutil
 import (
 	"encoding/json"
 	"os"
+	"sort"
 	"time"
 
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
@@ -84,7 +85,7 @@ func MakeGenesis(
 
 	// Step 3: Create the genesis validators; genesis account and a MsgCreateValidator.
 	valTxs := make([]sdk.Tx, 0, len(valPubkeys))
-	for _, pubkey := range valPubkeys {
+	for _, pubkey := range sortByAddress(valPubkeys) {
 		tx, err := addValidator(txConfig, pubkey, cdc, tempFile.Name())
 		if err != nil {
 			return nil, errors.Wrap(err, "add validator")
@@ -275,4 +276,12 @@ func getCodec() *codec.ProtoCodec {
 	attesttypes.RegisterInterfaces(reg)
 
 	return codec.NewProtoCodec(reg)
+}
+
+func sortByAddress(pubkeys []crypto.PubKey) []crypto.PubKey {
+	sort.Slice(pubkeys, func(i, j int) bool {
+		return pubkeys[i].Address().String() < pubkeys[j].Address().String()
+	})
+
+	return pubkeys
 }
