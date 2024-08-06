@@ -22,6 +22,7 @@ import (
 // Testnet wraps e2e.Omega with additional omni-specific fields.
 type Testnet struct {
 	*e2e.Testnet
+	Manifest     Manifest
 	Network      netconf.ID
 	OmniEVMs     []OmniEVM
 	AnvilChains  []AnvilChain

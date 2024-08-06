@@ -87,8 +87,8 @@ func (p *Provider) Setup() error {
 		Relayer:     true,
 		Prometheus:  p.testnet.Prometheus,
 		Monitor:     true,
-		OmniTag:     p.omniTag,
 	}
+	def = SetImageTags(def, p.testnet.Manifest, p.omniTag)
 
 	bz, err := GenerateComposeFile(def)
 	if err != nil {
@@ -175,10 +175,12 @@ type ComposeDef struct {
 	OmniEVMs []types.OmniEVM
 	Anvils   []types.AnvilChain
 
-	Monitor    bool
-	OmniTag    string
-	Relayer    bool
-	Prometheus bool
+	Monitor       bool
+	AnvilProxyTag string
+	RelayerTag    string
+	MonitorTag    string
+	Relayer       bool
+	Prometheus    bool
 }
 
 func (ComposeDef) GethTag() string {
@@ -197,6 +199,28 @@ func (c ComposeDef) NodeOmniEVMs() map[string]string {
 	}
 
 	return resp
+}
+
+// SetImageTags returns a new ComposeDef with the image tags set.
+// This is a convenience function to avoid setting the tags manually.
+func SetImageTags(def ComposeDef, manifest types.Manifest, omniImgTag string) ComposeDef {
+	anvilProxyTag := omniImgTag
+
+	monitorTag := omniImgTag
+	if manifest.PinnedMonitorTag != "" {
+		monitorTag = manifest.PinnedMonitorTag
+	}
+
+	relayerTag := omniImgTag
+	if manifest.PinnedRelayerTag != "" {
+		relayerTag = manifest.PinnedRelayerTag
+	}
+
+	def.AnvilProxyTag = anvilProxyTag
+	def.MonitorTag = monitorTag
+	def.RelayerTag = relayerTag
+
+	return def
 }
 
 func GenerateComposeFile(def ComposeDef) ([]byte, error) {
