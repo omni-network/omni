@@ -251,6 +251,12 @@ func (l *voterLoader) TrimBehind(minsByChain map[xchain.ChainVersion]uint64) int
 }
 
 func (l *voterLoader) UpdateValidatorSet(valset *vtypes.ValidatorSetResponse) error {
+	isVal, err := valset.IsValidator(l.localAddr)
+	if err != nil {
+		return err
+	}
+	setConstantGauge(cometValidator, isVal)
+
 	if v, ok := l.getVoter(); ok {
 		return v.UpdateValidatorSet(valset)
 	}
@@ -258,12 +264,7 @@ func (l *voterLoader) UpdateValidatorSet(valset *vtypes.ValidatorSetResponse) er
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	var err error
-	l.isVal, err = valset.IsValidator(l.localAddr)
-	if err != nil {
-		return err
-	}
-
+	l.isVal = isVal
 	l.lastValSet = valset
 
 	return nil
