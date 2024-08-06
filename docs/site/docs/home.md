@@ -20,14 +20,14 @@ import ThemedBanner from '@site/src/components/ThemedBanner/ThemedBanner';
 
 ### _Welcome to the documentation portal for all things Omni!_
 
-Omni is an Ethereum-native interoperability protocol that establishes low latency communications between all Ethereum rollups. Omni offers a secure, performant, and globally compatible architecture that presents Ethereum as a single, unified operating system to both users and developers.
+Omni is a messaging protocol built with a native EVM that allows dApps to access liquidity and users from all Ethereum rollups. dApps can become chain-agnostic with a single deployment using Omni.
 
-[**Learn**](./learn/introduction/introduction.md): New to Omni or Ethereum interoperability? Start here to understand the basics of how Omni connects all Ethereum rollups.
+[**Learn**](./learn/introduction/introduction.md): New to Omni? Start here to understand the basics of how Omni connects all Ethereum rollups.
 
-[**Protocol**](./protocol/introduction/introduction.md): Dive deep into Omni’s network architecture and core processes. This section is ideal for those interested in the technical underpinnings and innovative solutions Omni brings to Ethereum interoperability.
+[**Protocol**](./protocol/introduction/introduction.md): Dive into Omni’s network architecture and core processes. This section is ideal for those interested in how Omni works at a technical level.
 
 [**Develop**](./develop/contracts.md): Ready to build on Omni? Explore our developer resources and examples to easily integrate Omni into your application. This area is tailored for developers seeking practical tools and examples to expand their applications to all Ethereum rollups.
 
-[**Operate**](./operate/introduction/introduction.md): Learn how to run an Omni validator and contribute security to Omni’s network.
+[**Operate**](./operate/introduction/introduction.md): Learn how to run an Omni validator and contribute to Omni’s security.
 
 <TestnetCTA />
