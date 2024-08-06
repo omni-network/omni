@@ -30,8 +30,7 @@ func monitorCometForever(
 	ticker := time.NewTicker(time.Second * 30)
 	defer ticker.Stop()
 
-	// Run initial monitoring immediately.
-	lastHeight, _ := monitorCometOnce(ctx, rpcClient, isSyncing, 0)
+	var lastHeight int64
 
 	for {
 		select {
@@ -65,12 +64,7 @@ func monitorCometOnce(ctx context.Context, rpcClient rpcclient.Client, isSyncing
 		log.Error(ctx, "Halo has 0 consensus p2p peers", nil)
 	}
 
-	synced := 1
-	if isSyncing() {
-		synced = 0
-		log.Warn(ctx, "Halo is syncing", nil)
-	}
-	cometSynced.Set(float64(synced))
+	setConstantGauge(cometSynced, !isSyncing())
 
 	abciInfo, err := rpcClient.ABCIInfo(ctx)
 	if err != nil {
@@ -104,9 +98,6 @@ func monitorEVMForever(ctx context.Context, cfg Config, ethCl ethclient.Client) 
 		}
 	}
 
-	// Run initial monitoring immediately.
-	_ = monitorEVMOnce(ctx, ethCl)
-
 	for {
 		select {
 		case <-ctx.Done():
@@ -135,15 +126,15 @@ func monitorEVMOnce(ctx context.Context, ethCl ethclient.Client) error {
 		evmPeers.Set(float64(peers))
 	}
 
-	synced := 1
 	if syncing, err := ethCl.SyncProgress(ctx); err != nil {
 		return errors.Wrap(err, "sync progress")
 	} else if syncing != nil && !syncing.Done() {
 		// SyncProgress returns nil of not syncing.
-		synced = 0
+		evmSynced.Set(0)
 		log.Warn(ctx, "Attached omni evm is syncing", nil, "highest_block", syncing.HighestBlock, "current_block", syncing.CurrentBlock, "tx_indexing", syncing.TxIndexRemainingBlocks)
+	} else {
+		evmSynced.Set(1)
 	}
-	evmSynced.Set(float64(synced))
 
 	latest, err := ethCl.BlockNumber(ctx)
 	if err != nil {

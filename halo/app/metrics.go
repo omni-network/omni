@@ -34,6 +34,13 @@ var (
 		Help:      "Constant gauge of 1 if attached the cometBFT is synced, 0 if syncing.",
 	})
 
+	cometValidator = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: "halo",
+		Subsystem: "comet",
+		Name:      "validator",
+		Help:      "Constant gauge of 1 if local halo node is a cometBFT validator, 0 if not a validator.",
+	})
+
 	dbSize = promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: "halo",
 		Subsystem: "db",
@@ -41,3 +48,12 @@ var (
 		Help:      "Current size of the database directory in bytes.",
 	})
 )
+
+// setConstantGauge sets the value of a gauge to 1 if b is true, 0 otherwise.
+func setConstantGauge(gauge prometheus.Gauge, b bool) {
+	var val float64
+	if b {
+		val = 1
+	}
+	gauge.Set(val)
+}
