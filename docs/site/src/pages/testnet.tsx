@@ -61,7 +61,7 @@ function TestnetPage() {
                             <p>Learn how to stake <strong>$ETH</strong> and interact with the network</p>
                         </div>
                         <div className="start-box">
-                            <a href="/develop/testnet/" className="start-box-link"></a>
+                            <a href="/develop/testnet/resources" className="start-box-link"></a>
                             <div className='dot'></div>
                             <ThemedIcon />
                             <h3>Build</h3>
