@@ -21,15 +21,16 @@ import (
 	bankmodulev1 "cosmossdk.io/api/cosmos/bank/module/v1"
 	consensusmodulev1 "cosmossdk.io/api/cosmos/consensus/module/v1"
 	distrmodulev1 "cosmossdk.io/api/cosmos/distribution/module/v1"
-	evidmodulev1 "cosmossdk.io/api/cosmos/evidence/module/v1"
+	evidencemodulev1 "cosmossdk.io/api/cosmos/evidence/module/v1"
 	genutilmodulev1 "cosmossdk.io/api/cosmos/genutil/module/v1"
 	slashingmodulev1 "cosmossdk.io/api/cosmos/slashing/module/v1"
 	stakingmodulev1 "cosmossdk.io/api/cosmos/staking/module/v1"
 	txconfigv1 "cosmossdk.io/api/cosmos/tx/config/v1"
+	upgrademodulev1 "cosmossdk.io/api/cosmos/upgrade/module/v1"
 	"cosmossdk.io/core/appconfig"
-	"cosmossdk.io/depinject"
 	sdkmath "cosmossdk.io/math"
-	evidtypes "cosmossdk.io/x/evidence/types"
+	evidencetypes "cosmossdk.io/x/evidence/types"
+	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -74,14 +75,6 @@ func init() {
 	sdk.DefaultPowerReduction = sdkmath.NewInt(params.Ether)
 }
 
-// DepConfig returns the default app depinject config.
-func DepConfig() depinject.Config {
-	return depinject.Configs(
-		appConfig,
-		depinject.Supply(),
-	)
-}
-
 //nolint:gochecknoglobals // Cosmos-style
 var (
 	genesisModuleOrder = []string{
@@ -91,7 +84,8 @@ var (
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
 		genutiltypes.ModuleName,
-		evidtypes.ModuleName,
+		evidencetypes.ModuleName,
+		upgradetypes.ModuleName,
 		valsynctypes.ModuleName,
 		engevmtypes.ModuleName,
 	}
@@ -100,13 +94,14 @@ var (
 		distrtypes.ModuleName, // Note: slashing happens after distr.BeginBlocker
 		slashingtypes.ModuleName,
 		stakingtypes.ModuleName, // Note: staking module is required if HistoricalEntries param > 0
-		evidtypes.ModuleName,
+		evidencetypes.ModuleName,
 		attesttypes.ModuleName,
 	}
 
 	endBlockers = []string{
 		attesttypes.ModuleName,
 		valsynctypes.ModuleName, // Wraps staking module end blocker (must come after attest module)
+		upgradetypes.ModuleName,
 	}
 
 	// blocked account addresses.
@@ -134,6 +129,7 @@ var (
 				Config: appconfig.WrapAny(&runtimev1alpha1.Module{
 					AppName:       Name,
 					BeginBlockers: beginBlockers,
+					PreBlockers:   []string{upgradetypes.ModuleName},
 					// Setting endblockers in newApp since valsync replaces staking endblocker.
 					InitGenesis: genesisModuleOrder,
 					OverrideStoreKeys: []*runtimev1alpha1.StoreKeyConfig{
@@ -185,8 +181,12 @@ var (
 				Config: appconfig.WrapAny(&slashingmodulev1.Module{}),
 			},
 			{
-				Name:   evidtypes.ModuleName,
-				Config: appconfig.WrapAny(&evidmodulev1.Module{}),
+				Name:   evidencetypes.ModuleName,
+				Config: appconfig.WrapAny(&evidencemodulev1.Module{}),
+			},
+			{
+				Name:   upgradetypes.ModuleName,
+				Config: appconfig.WrapAny(&upgrademodulev1.Module{}),
 			},
 			{
 				Name:   engevmtypes.ModuleName,
