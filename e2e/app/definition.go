@@ -266,6 +266,7 @@ func NoNodesTestnet(manifest types.Manifest, infd types.InfrastructureData, cfg 
 	}
 
 	return types.Testnet{
+		Manifest:     manifest,
 		Network:      manifest.Network,
 		Testnet:      cmtTestnet,
 		PublicChains: publics,
@@ -396,6 +397,7 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 	}
 
 	return types.Testnet{
+		Manifest:     manifest,
 		Network:      manifest.Network,
 		Testnet:      cmtTestnet,
 		OmniEVMs:     omniEVMS,

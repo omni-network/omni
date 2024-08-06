@@ -100,8 +100,18 @@ type Manifest struct {
 
 	// PinnedHaloTag defines the pinned halo docker image tag.
 	// This allows source code defined versions for protected networks.
-	// The --omni-image-tag flag is then only used for non-halo services (relayer, monitor).
+	// This overrides the --omni-image-tag if non-empty.
 	PinnedHaloTag string `toml:"pinned_halo_tag"`
+
+	// PinnedMonitorTag defines the pinned monitor docker image tag.
+	// This allows source code defined versions for protected networks.
+	// This overrides the --omni-image-tag if non-empty.
+	PinnedMonitorTag string `toml:"pinned_monitor_tag"`
+
+	// PinnedRelayerTag defines the pinned relayer docker image tag.
+	// This allows source code defined versions for protected networks.
+	// This overrides the --omni-image-tag if non-empty.
+	PinnedRelayerTag string `toml:"pinned_relayer_tag"`
 }
 
 // Seeds returns a map of seed nodes by name.

@@ -90,8 +90,9 @@ func (p *Provider) Setup() error {
 			Relayer:     services["relayer"],
 			Monitor:     services["monitor"],
 			Prometheus:  p.Testnet.Prometheus,
-			OmniTag:     p.omniTag,
 		}
+		def = docker.SetImageTags(def, p.Testnet.Manifest, p.omniTag)
+
 		compose, err := docker.GenerateComposeFile(def)
 		if err != nil {
 			return errors.Wrap(err, "generate compose file")
