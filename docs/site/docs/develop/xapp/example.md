@@ -29,7 +29,7 @@ contract Greeter is XApp {
 }
 ```
 
-You may also specify the confirmation level for the cross-chain message. This is the level of finalisation of the transaction containing the message you want to wait for. In this example, we set it to `Latest`, meaning the message is relayed on block creation at source. You can see the supported confirmation levels [here](https://github.com/omni-network/omni/blob/main/contracts/src/libraries/ConfLevel.sol).
+You may also specify the confirmation level for the cross-chain message. This is the level of finalisation of the transaction containing the message you want to wait for. In this example, we set it to `Latest`, meaning the message is relayed on block creation at source. You can see the supported confirmation levels [here](https://github.com/omni-network/omni/blob/main/contracts/core/src/libraries/ConfLevel.sol).
 
 ```solidity
 constructor(address portal, address _greetingBook) XApp(portal, ConfLevel.Latest) {
