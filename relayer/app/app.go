@@ -34,7 +34,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	network, err := netconf.AwaitOnChain(ctx, cfg.Network, portalReg, cfg.RPCEndpoints.Keys())
+	network, err := netconf.AwaitOnExecutionChain(ctx, cfg.Network, portalReg, cfg.RPCEndpoints.Keys())
 	if err != nil {
 		return err
 	}

@@ -161,6 +161,20 @@ func (p Provider) Subscribe(in context.Context, chainVer xchain.ChainVersion, xB
 	}()
 }
 
+func (p Provider) Portals(ctx context.Context) ([]*rtypes.Portal, bool, error) {
+	// networkID is ignored when latest is true.
+	netResp, ok, err := p.networkFunc(ctx, 0, true)
+	if err != nil {
+		return nil, false, errors.Wrap(err, "failed to fetch network info")
+	}
+
+	if !ok {
+		return nil, ok, nil
+	}
+
+	return netResp.Portals, true, nil
+}
+
 // ErrHistoryPruned indicates that the necessary state for the requested height isn't found in the store.
 var ErrHistoryPruned = errors.New("no commit info found (history pruned)")
 

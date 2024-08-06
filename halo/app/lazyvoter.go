@@ -5,11 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/omni-network/omni/contracts/bindings"
 	atypes "github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/attest/voter"
 	"github.com/omni-network/omni/halo/comet"
-	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/cchain"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
@@ -93,14 +91,9 @@ func (l *voterLoader) LazyLoad(
 		return errors.New("flag --xchain-evm-rpc-endpoints empty so cannot perform xchain voting duties")
 	}
 
-	portalReg, err := bindings.NewPortalRegistry(common.HexToAddress(predeploys.PortalRegistry), omniEVMCl)
-	if err != nil {
-		return errors.Wrap(err, "new portal registry")
-	}
-
 	// Use the RPCEndpoints config as the list of expected chains to load from the registry.
 	// This is required for fresh genesis chains since portals are registered one at a time.
-	// So netconf.AwaitOnChain can wait for all to be registered before returning.
+	// So netconf.AwaitOnConsensusChain can wait for all to be registered before returning.
 	//
 	// For existing chains however, clear expected, since we take what we get on-chain
 	// and avoid a dependency on possibly mismatching/incorrect RPCEndpoints config.
@@ -112,7 +105,7 @@ func (l *voterLoader) LazyLoad(
 		expected = nil
 	}
 
-	network, err := netconf.AwaitOnChain(ctx, netID, portalReg, expected)
+	network, err := netconf.AwaitOnConsensusChain(ctx, netID, cprov, expected)
 	if err != nil {
 		return err
 	}

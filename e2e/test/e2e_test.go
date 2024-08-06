@@ -251,7 +251,7 @@ func loadEnv(t *testing.T) (types.Testnet, netconf.Network, types.DeployInfos, x
 	portalReg, err := makePortalRegistry(testnet.Network, endpoints)
 	require.NoError(t, err)
 
-	network, err := netconf.AwaitOnChain(context.Background(), testnet.Network, portalReg, endpoints.Keys())
+	network, err := netconf.AwaitOnExecutionChain(context.Background(), testnet.Network, portalReg, endpoints.Keys())
 	require.NoError(t, err)
 	networkCache[manifestFile] = network
 

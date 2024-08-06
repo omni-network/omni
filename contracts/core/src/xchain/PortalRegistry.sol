@@ -43,7 +43,7 @@ contract PortalRegistry is OwnableUpgradeable {
      * @custom:field chainId            The chain ID of the deployment.
      * @custom:field deployHeight       The height at which the deployment was deployed.
      * @custom:field attestInterval     The interval, in blocks, at which validators must attest, even if empty.
-     * @custom:field blockPeriod        The block period of the, in milliseconds.
+     * @custom:field blockPeriod        The block period of the chain deployed to, in milliseconds.
      * @custom:field shards             Supported shards of the deployment.
      * @custom:field name               The name of the chain deployed to (ex "omni_evm", "ethereum")
      */

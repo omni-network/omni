@@ -170,7 +170,7 @@ func setup(ctx context.Context, def app.Definition) (shared, error) {
 		return shared{}, errors.Wrap(err, "portal registry")
 	}
 
-	network, err := netconf.AwaitOnChain(ctx, netID, portalReg, nil)
+	network, err := netconf.AwaitOnExecutionChain(ctx, netID, portalReg, nil)
 	if err != nil {
 		return shared{}, errors.Wrap(err, "await on chain")
 	}

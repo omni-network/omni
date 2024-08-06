@@ -72,10 +72,13 @@ func (k Keeper) Deliver(ctx context.Context, _ common.Hash, elog *evmenginetypes
 		}
 
 		return k.addPortal(ctx, &Portal{
-			ChainId:      reg.ChainId,
-			Address:      reg.Addr.Bytes(),
-			DeployHeight: reg.DeployHeight,
-			ShardIds:     reg.Shards,
+			ChainId:        reg.ChainId,
+			Address:        reg.Addr.Bytes(),
+			DeployHeight:   reg.DeployHeight,
+			ShardIds:       reg.Shards,
+			AttestInterval: reg.AttestInterval,
+			BlockPeriodMs:  reg.BlockPeriod,
+			Name:           reg.Name,
 		})
 	default:
 		return errors.New("unknown event")
