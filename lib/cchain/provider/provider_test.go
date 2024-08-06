@@ -44,7 +44,7 @@ func TestProvider(t *testing.T) {
 	wg.Add(1)
 
 	chainVer := xchain.ChainVersion{ID: chainID, ConfLevel: conf}
-	p.Subscribe(ctx, chainVer, fromHeight, "test", func(ctx context.Context, approved xchain.Attestation) error {
+	p.StreamAsync(ctx, chainVer, fromHeight, "test", func(ctx context.Context, approved xchain.Attestation) error {
 		actual = append(actual, approved)
 		if len(actual) == total {
 			cancel()  // Cancel the context to stop further fetch operations

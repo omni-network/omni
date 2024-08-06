@@ -136,7 +136,7 @@ type mockProvider struct {
 	SubscribeFn func(ctx context.Context, chainVer xchain.ChainVersion, xBlockOffset uint64, callback cchain.ProviderCallback)
 }
 
-func (m *mockProvider) Subscribe(ctx context.Context, chainVer xchain.ChainVersion, xBlockOffset uint64,
+func (m *mockProvider) StreamAsync(ctx context.Context, chainVer xchain.ChainVersion, xBlockOffset uint64,
 	_ string, callback cchain.ProviderCallback,
 ) {
 	m.SubscribeFn(ctx, chainVer, xBlockOffset, callback)

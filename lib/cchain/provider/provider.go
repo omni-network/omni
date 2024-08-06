@@ -29,7 +29,7 @@ var _ cchain.Provider = Provider{}
 
 type fetchFunc func(ctx context.Context, chainVer xchain.ChainVersion, fromOffset uint64) ([]xchain.Attestation, error)
 type latestFunc func(ctx context.Context, chainVer xchain.ChainVersion) (xchain.Attestation, bool, error)
-type windowFunc func(ctx context.Context, chainVer xchain.ChainVersion, xBlockOffset uint64) (int, error)
+type windowFunc func(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64) (int, error)
 type portalBlockFunc func(ctx context.Context, blockOffset uint64, latest bool) (*ptypes.BlockResponse, bool, error)
 type networkFunc func(ctx context.Context, networkID uint64, latest bool) (*rtypes.NetworkResponse, bool, error)
 type valsetFunc func(ctx context.Context, valSetID uint64, latest bool) (valSetResponse, bool, error)
@@ -78,9 +78,9 @@ func (p Provider) CometClient() rpcclient.Client {
 	return p.cometCl
 }
 
-func (p Provider) AttestationsFrom(ctx context.Context, chainVer xchain.ChainVersion, xBlockOffset uint64,
+func (p Provider) AttestationsFrom(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64,
 ) ([]xchain.Attestation, error) {
-	return p.fetch(ctx, chainVer, xBlockOffset)
+	return p.fetch(ctx, chainVer, attestOffset)
 }
 
 func (p Provider) LatestAttestation(ctx context.Context, chainVer xchain.ChainVersion,
@@ -88,8 +88,8 @@ func (p Provider) LatestAttestation(ctx context.Context, chainVer xchain.ChainVe
 	return p.latest(ctx, chainVer)
 }
 
-func (p Provider) WindowCompare(ctx context.Context, chainVer xchain.ChainVersion, xBlockOffset uint64) (int, error) {
-	return p.window(ctx, chainVer, xBlockOffset)
+func (p Provider) WindowCompare(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64) (int, error) {
+	return p.window(ctx, chainVer, attestOffset)
 }
 
 func (p Provider) ValidatorSet(ctx context.Context, valSetID uint64) ([]cchain.Validator, bool, error) {
@@ -101,10 +101,43 @@ func (p Provider) GenesisFiles(ctx context.Context) (execution []byte, consensus
 	return p.genesisFunc(ctx)
 }
 
-// Subscribe implements cchain.Provider.
-func (p Provider) Subscribe(in context.Context, chainVer xchain.ChainVersion, xBlockOffset uint64, workerName string,
+func (p Provider) StreamAttestations(
+	ctx context.Context,
+	chainVer xchain.ChainVersion,
+	attestOffset uint64,
+	workerName string,
+	callback cchain.ProviderCallback,
+) error {
+	return p.stream(ctx, chainVer, attestOffset, workerName, callback, false)
+}
+
+func (p Provider) StreamAsync(
+	ctx context.Context,
+	chainVer xchain.ChainVersion,
+	attestOffset uint64,
+	workerName string,
 	callback cchain.ProviderCallback,
 ) {
+	go func() {
+		err := p.stream(ctx, chainVer, attestOffset, workerName, callback, true)
+		if err != nil { // RetryCallback==true, so this never return an error.
+			log.Error(ctx, "Unexpected stream error [BUG]", err)
+		}
+	}()
+}
+
+func (p Provider) stream(
+	in context.Context,
+	chainVer xchain.ChainVersion,
+	attestOffset uint64,
+	workerName string,
+	callback cchain.ProviderCallback,
+	retryCallback bool,
+) error {
+	if attestOffset == 0 {
+		return errors.New("invalid zero attest offset [BUG]", "workerName", workerName)
+	}
+
 	srcChain := p.chainNamer(chainVer)
 	ctx := log.WithCtx(in, "src_chain", srcChain, "worker", workerName)
 
@@ -114,7 +147,8 @@ func (p Provider) Subscribe(in context.Context, chainVer xchain.ChainVersion, xB
 		},
 		Backoff:       p.backoffFunc,
 		ElemLabel:     "attestation",
-		RetryCallback: true,
+		HeightLabel:   "offset",
+		RetryCallback: retryCallback,
 		FetchWorkers:  1, // Only single worker supported since we fetch batches of unknown lengths so can't shard.
 		Height: func(att xchain.Attestation) uint64 {
 			return att.AttestOffset
@@ -152,13 +186,12 @@ func (p Provider) Subscribe(in context.Context, chainVer xchain.ChainVersion, xB
 	}
 
 	cb := (stream.Callback[xchain.Attestation])(callback)
+	err := stream.Stream(ctx, deps, chainVer.ID, attestOffset, cb)
+	if err != nil {
+		return errors.Wrap(err, "stream attestations", "worker", workerName, "chain", srcChain)
+	}
 
-	go func() {
-		err := stream.Stream(ctx, deps, chainVer.ID, xBlockOffset, cb)
-		if err != nil { // RetryCallback==true, so this never return an error.
-			log.Error(ctx, "Unexpected stream error [BUG]", err)
-		}
-	}()
+	return nil
 }
 
 func (p Provider) Portals(ctx context.Context) ([]*rtypes.Portal, bool, error) {

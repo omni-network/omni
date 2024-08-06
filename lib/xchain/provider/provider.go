@@ -169,6 +169,7 @@ func (p *Provider) stream(
 		},
 		Backoff:       p.backoffFunc,
 		ElemLabel:     "block",
+		HeightLabel:   "height",
 		RetryCallback: retryCallback,
 		Height: func(block xchain.Block) uint64 {
 			return block.BlockHeight
