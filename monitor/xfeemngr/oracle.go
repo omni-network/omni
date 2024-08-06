@@ -67,7 +67,9 @@ func (o feeOracle) syncForever(ctx context.Context, tick ticker.Ticker) {
 func (o feeOracle) syncOnce(ctx context.Context) {
 	ctx = log.WithCtx(ctx, "srcChainID", o.chain.ChainID, "srcToken", o.chain.NativeToken)
 
-	for _, dest := range o.dests {
+	// sync for all destination chains and source chain
+	// we include source chain, to allow calculation of xcall callbacks
+	for _, dest := range append(o.dests, o.chain) {
 		err := o.syncGasPrice(ctx, dest)
 		if err != nil {
 			log.Error(ctx, "Failed to sync gas price", err, "destChainID", dest.ChainID)
