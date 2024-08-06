@@ -6,6 +6,7 @@ import (
 	"github.com/omni-network/omni/halo/comet"
 	"github.com/omni-network/omni/halo/evmslashing"
 	"github.com/omni-network/omni/halo/evmstaking"
+	"github.com/omni-network/omni/halo/evmupgrade"
 	registrykeeper "github.com/omni-network/omni/halo/registry/keeper"
 	rtypes "github.com/omni-network/omni/halo/registry/types"
 	valsynckeeper "github.com/omni-network/omni/halo/valsync/keeper"
@@ -133,10 +134,16 @@ func newApp(
 		return nil, errors.Wrap(err, "create evm slashing")
 	}
 
+	evmUpgrade, err := evmupgrade.New(engineCl, app.UpgradeKeeper)
+	if err != nil {
+		return nil, errors.Wrap(err, "create evm upgrade")
+	}
+
 	// Set evmengine vote and evm msg providers.
 	app.EVMEngKeeper.SetVoteProvider(app.AttestKeeper)
 	app.EVMEngKeeper.AddEventProcessor(evmStaking)
 	app.EVMEngKeeper.AddEventProcessor(evmSlashing)
+	app.EVMEngKeeper.AddEventProcessor(evmUpgrade)
 	app.EVMEngKeeper.AddEventProcessor(app.RegistryKeeper)
 	app.AttestKeeper.SetValidatorProvider(app.ValSyncKeeper)
 	app.AttestKeeper.SetPortalRegistry(app.RegistryKeeper)

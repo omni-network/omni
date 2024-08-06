@@ -14,7 +14,7 @@ import (
 
 //go:generate go test . -golden -clean
 
-func TestMakeGenesis(t *testing.T) {
+func TestMakeEVMGenesis(t *testing.T) {
 	t.Parallel()
 
 	genesis, err := evm.MakeGenesis(netconf.Staging)

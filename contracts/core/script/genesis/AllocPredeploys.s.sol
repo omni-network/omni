@@ -6,6 +6,7 @@ import { Predeploys } from "src/libraries/Predeploys.sol";
 import { PortalRegistry } from "src/xchain/PortalRegistry.sol";
 import { OmniBridgeNative } from "src/token/OmniBridgeNative.sol";
 import { Staking } from "src/octane/Staking.sol";
+import { Upgrade } from "src/octane/Upgrade.sol";
 import { Preinstalls } from "src/octane/Preinstalls.sol";
 import { InitializableHelper } from "script/utils/InitializableHelper.sol";
 import { EIP1967Helper } from "script/utils/EIP1967Helper.sol";
@@ -88,6 +89,7 @@ contract AllocPredeploys is Script {
         setWOmni();
         setStaking();
         setSlashing();
+        setUpgrade();
     }
 
     /**
@@ -228,5 +230,16 @@ contract AllocPredeploys is Script {
     function setSlashing() internal {
         address impl = Predeploys.impl(Predeploys.Slashing);
         vm.etch(impl, vm.getDeployedCode("Slashing.sol:Slashing"));
+    }
+
+    /**
+     * @notice Setup Upgrade predeploy
+     */
+    function setUpgrade() internal {
+        address impl = Predeploys.impl(Predeploys.Upgrade);
+        vm.etch(impl, vm.getDeployedCode("Upgrade.sol:Upgrade"));
+
+        InitializableHelper.disableInitializers(impl);
+        Upgrade(Predeploys.Upgrade).initialize(cfg.admin);
     }
 }

@@ -19,6 +19,7 @@ const (
 	// Octane Predeploys.
 	Staking  = "0xcccccc0000000000000000000000000000000001"
 	Slashing = "0xcccccc0000000000000000000000000000000002"
+	Upgrade  = "0xcccccc0000000000000000000000000000000003"
 )
 
 // Alloc returns the genesis allocs for the predeployed contracts.
