@@ -26,7 +26,7 @@ Congrats, you're running a full node!
 
 ## AVS Registration
 
-## Registering as an Operator
+### Registering as an Operator
 
 Operators can currently register with Omni's Eigenlayer AVS contract. Please note that **\$ETH** delegation will only be enable in the mainnet staking upgrade alongside other features like **\$OMNI** delegation, validator withdrawals, and more.
 
