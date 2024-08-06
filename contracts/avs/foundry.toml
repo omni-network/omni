@@ -22,6 +22,8 @@ fs_permissions = [
 
 allow_paths = ["../core"]
 
+solc_version = "0.8.12"
+
 [fuzz]
 seed = "0x6eed"
 

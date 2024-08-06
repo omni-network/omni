@@ -7,14 +7,22 @@ version: ## Print tool versions.
 	@forge --version
 	@abigen --version
 
+
+
+.PHONY: install-deps
+install-deps: ## Install dependencies.
+	(cd avs && pnpm install --frozen-lockfile)
+	(cd core && pnpm install --frozen-lockfile)
+	go install github.com/ethereum/go-ethereum/cmd/abigen@v1.13.14
+
 .PHONY: build
 build: version ## Build contracts.
-	(cd core && forge build)
-	(cd avs && forge build)
+	forge build --force --root core
+	forge build --force --root avs
 
 
 .PHONY: all
-all: build bindings allocs ## Build contracts, generate bindings and predeploy allocations.
+all: install-deps build bindings allocs ## Build contracts, generate bindings and predeploy allocations.
 
 
 CORE_CONTRACTS := OmniPortal FeeOracleV1 Create3 TransparentUpgradeableProxy \

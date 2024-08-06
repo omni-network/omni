@@ -23,6 +23,10 @@ allow_paths = ["../avs"]
 gas_limit = 9223372036854775807 # prev foundry default
 ffi = true
 
+
+# TODO: upgrade solc
+solc_version = "0.8.24"
+
 [fuzz]
 seed = "0x6eed"
 
