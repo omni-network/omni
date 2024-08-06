@@ -61,14 +61,14 @@ function TestnetPage() {
                             <p>Learn how to stake <strong>$ETH</strong> and interact with the network</p>
                         </div>
                         <div className="start-box">
-                            <a href="/develop/testnet/" className="start-box-link"></a>
+                            <a href="/develop/testnet/resources" className="start-box-link"></a>
                             <div className='dot'></div>
                             <ThemedIcon />
                             <h3>Build</h3>
                             <p>Learn how to build native cross-chain applications</p>
                         </div>
                         <div className="start-box">
-                            <a href="/operate/onboarding/" className="start-box-link"></a>
+                            <a href="/operate/run/full_node" className="start-box-link"></a>
                             <div className='dot'></div>
                             <ThemedIcon />
                             <h3>Operate</h3>

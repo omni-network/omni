@@ -4,10 +4,14 @@ sidebar_position: 1
 
 # Introduction
 
-## What Is a Node Operator in Omni?
+A **node** is any instance of Omni client software that is connected to other instances in the peer to peer network.
 
-Operators run Omni node software and play an active role in validating the Omni network.
+Every node must run 2 clients:
 
-Validators must run the Omni client in addition to nodes for all supported chains, since validators attest to xchain blocks. Full nodes don't need to run nodes for supported chains.
-
-Validators stake **\$OMNI**, and can optionally stake **\$ETH** or receive **\$ETH** delegations via Eigenlayer. Many staking features including validator withdrawals, **\$OMNI** delegation, **\$ETH** delegation, and more will be released in the staking network upgrade.
+- consensus client: `halo`
+  - allows the network to agree on the state of cross chain blocks (`XBlocks`)
+  - allows the network to agree (reach "consensus") on the state of the Omni execution client
+- execution client: `geth`
+  - listens to new transactions broadcasted in the network
+  - executes transactions and builds blocks
+  - keeps a database of execution state
