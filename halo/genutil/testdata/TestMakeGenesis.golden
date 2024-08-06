@@ -17,14 +17,14 @@
    "accounts": [
     {
      "@type": "/cosmos.auth.v1beta1.BaseAccount",
-     "address": "omni1lmet2guatml9h9qsm2pvc525xk0mrkfyeq6t3n",
+     "address": "omni1anz94xtvltxrfr3ejllev7fegc8ntgkjdwutfl",
      "pub_key": null,
      "account_number": "0",
      "sequence": "0"
     },
     {
      "@type": "/cosmos.auth.v1beta1.BaseAccount",
-     "address": "omni1anz94xtvltxrfr3ejllev7fegc8ntgkjdwutfl",
+     "address": "omni1lmet2guatml9h9qsm2pvc525xk0mrkfyeq6t3n",
      "pub_key": null,
      "account_number": "1",
      "sequence": "0"
@@ -98,7 +98,7 @@
        {
         "@type": "/cosmos.staking.v1beta1.MsgCreateValidator",
         "description": {
-         "moniker": "0xFeF2b5239D5efe5b9410dA82cC5154359FB1d924",
+         "moniker": "0xECC45A996cfacC348E3997fF967939460F35a2D2",
          "identity": "",
          "website": "",
          "security_contact": "",
@@ -111,10 +111,10 @@
         },
         "min_self_delegation": "1000000000000000000",
         "delegator_address": "",
-        "validator_address": "omnivaloper1lmet2guatml9h9qsm2pvc525xk0mrkfylr3vxp",
+        "validator_address": "omnivaloper1anz94xtvltxrfr3ejllev7fegc8ntgkjtdhv7d",
         "pubkey": {
          "@type": "/cosmos.crypto.secp256k1.PubKey",
-         "key": "A1xEGMRhExV5BfGP3sWqAHJPLu+p2l8g20ZBg7KGnpO8"
+         "key": "Az1zc5dYc9IwXuBjyaIF09SGA5ITmu5mMoVPMfOw7Vsq"
         },
         "value": {
          "denom": "stake",
@@ -145,7 +145,7 @@
        {
         "@type": "/cosmos.staking.v1beta1.MsgCreateValidator",
         "description": {
-         "moniker": "0xECC45A996cfacC348E3997fF967939460F35a2D2",
+         "moniker": "0xFeF2b5239D5efe5b9410dA82cC5154359FB1d924",
          "identity": "",
          "website": "",
          "security_contact": "",
@@ -158,10 +158,10 @@
         },
         "min_self_delegation": "1000000000000000000",
         "delegator_address": "",
-        "validator_address": "omnivaloper1anz94xtvltxrfr3ejllev7fegc8ntgkjtdhv7d",
+        "validator_address": "omnivaloper1lmet2guatml9h9qsm2pvc525xk0mrkfylr3vxp",
         "pubkey": {
          "@type": "/cosmos.crypto.secp256k1.PubKey",
-         "key": "Az1zc5dYc9IwXuBjyaIF09SGA5ITmu5mMoVPMfOw7Vsq"
+         "key": "A1xEGMRhExV5BfGP3sWqAHJPLu+p2l8g20ZBg7KGnpO8"
         },
         "value": {
          "denom": "stake",
