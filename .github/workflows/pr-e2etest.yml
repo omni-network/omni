@@ -24,26 +24,28 @@ jobs:
 
       - name: Build halo image
         run: |
+          printenv
           cd dist/halo_linux_amd64_v1
-          docker build -f "../../halo/Dockerfile" . -t "omniops/halo:${GITHUB_SHA::7}"
+          docker build -f "../../halo/Dockerfile" -t "omniops/halo:${GITHUB_SHA::7}" -t "docker.io/omniops/halo:${GITHUB_SHA::7}" .
+          docker inspect "omniops/halo:${GITHUB_SHA::7}"
+          docker inspect "docker.io/omniops/halo:${GITHUB_SHA::7}"
+          cd -
+          scripts/halovisor/build.sh "${GITHUB_SHA::7}"
 
       - name: Build relayer image
         run: |
           cd dist/relayer_linux_amd64_v1
-          docker build -f "../../relayer/Dockerfile" . -t "omniops/relayer:${GITHUB_SHA::7}"
+          docker build -f "../../relayer/Dockerfile" -t "omniops/relayer:${GITHUB_SHA::7}" .
 
       - name: Build monitor image
         run: |
           cd dist/monitor_linux_amd64_v1
-          docker build -f "../../monitor/Dockerfile" . -t "omniops/monitor:${GITHUB_SHA::7}"
+          docker build -f "../../monitor/Dockerfile" -t "omniops/monitor:${GITHUB_SHA::7}" .
 
       - name: Build anvilproxy image
         run: |
           cd dist/anvilproxy_linux_amd64_v1
-          docker build -f "../../e2e/anvilproxy/Dockerfile" . -t "omniops/anvilproxy:${GITHUB_SHA::7}"
-
-      - name: Build halovisor image
-        run: scripts/halovisor/build.sh "${GITHUB_SHA::7}"
+          docker build -f "../../e2e/anvilproxy/Dockerfile" -t "omniops/anvilproxy:${GITHUB_SHA::7}" .
 
       - name: Run devnet1 e2e test
         run: |
