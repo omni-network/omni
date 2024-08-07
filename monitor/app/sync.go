@@ -13,7 +13,11 @@ import (
 // startMonitoringSyncDiff starts a goroutine per chain that periodically calculates the rpc-sync-diff
 // which indicates the difference in latest heights (sync) of possible HA upstream RPC servers.
 // A rpc-sync-diff of 2 or more can indicate the upstreams are not 100% consistently synced.
-func startMonitoringSyncDiff(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client) {
+func startMonitoringSyncDiff(
+	ctx context.Context,
+	network netconf.Network,
+	ethClients map[uint64]ethclient.Client,
+) {
 	for chainID, ethCl := range ethClients {
 		go func(chainID uint64, ethCl ethclient.Client) {
 			ticker := time.NewTicker(time.Second * 20)

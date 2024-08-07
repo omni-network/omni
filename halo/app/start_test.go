@@ -78,7 +78,7 @@ func TestSmoke(t *testing.T) {
 	chainVer := xchain.ChainVersion{ID: srcChain, ConfLevel: xchain.ConfFinalized}
 
 	// Ensure all blocks are attested and approved.
-	cprov.Subscribe(ctx, chainVer, 1, "test", func(ctx context.Context, approved xchain.Attestation) error {
+	cprov.StreamAsync(ctx, chainVer, 1, "test", func(ctx context.Context, approved xchain.Attestation) error {
 		// Sanity check we can fetch latest directly as well.
 		att, ok, err := cprov.LatestAttestation(ctx, chainVer)
 		tutil.RequireNoError(t, err)

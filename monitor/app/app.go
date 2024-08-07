@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/buildinfo"
+	"github.com/omni-network/omni/lib/cchain"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -55,6 +56,17 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
+	if cfg.HaloURL == "" {
+		return errors.New("empty --halo-url flag")
+	}
+
+	tmClient, err := newClient(cfg.HaloURL)
+	if err != nil {
+		return err
+	}
+
+	cprov := cprovider.NewABCIProvider(tmClient, network.ID, netconf.ChainVersionNamer(cfg.Network))
+
 	if err := avs.StartMonitor(ctx, network, ethClients); err != nil {
 		return errors.Wrap(err, "monitor AVS")
 	}
@@ -69,7 +81,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "start AVS sync")
 	}
 
-	if err := startXMonitor(ctx, cfg, network, ethClients); err != nil {
+	if err := startXMonitor(ctx, cfg, network, ethClients, cprov); err != nil {
 		return errors.Wrap(err, "start xchain monitor")
 	}
 
@@ -78,6 +90,7 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 
 	startMonitoringSyncDiff(ctx, network, ethClients)
+	go runHistoricalBaselineForever(ctx, network, cprov)
 
 	select {
 	case <-ctx.Done():
@@ -89,11 +102,13 @@ func Run(ctx context.Context, cfg Config) error {
 }
 
 // startXMonitor starts the xchain offset/head monitoring.
-func startXMonitor(ctx context.Context, cfg Config, network netconf.Network, ethClients map[uint64]ethclient.Client) error {
-	if cfg.HaloURL == "" {
-		log.Warn(ctx, "No Halo URL provided, skipping xchain monitor", nil)
-		return nil
-	}
+func startXMonitor(
+	ctx context.Context,
+	cfg Config,
+	network netconf.Network,
+	ethClients map[uint64]ethclient.Client,
+	cprov cchain.Provider,
+) error {
 	var db dbm.DB
 	if cfg.DBDir == "" {
 		log.Warn(ctx, "No --db-dir provided, using in-memory DB", nil)
@@ -106,12 +121,6 @@ func startXMonitor(ctx context.Context, cfg Config, network netconf.Network, eth
 		}
 	}
 
-	tmClient, err := newClient(cfg.HaloURL)
-	if err != nil {
-		return err
-	}
-
-	cprov := cprovider.NewABCIProvider(tmClient, network.ID, netconf.ChainVersionNamer(cfg.Network))
 	xprov := xprovider.New(network, ethClients, cprov)
 
 	return xmonitor.Start(ctx, network, xprov, cprov, ethClients, db)

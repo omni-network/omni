@@ -22,13 +22,20 @@ type ProviderCallback func(ctx context.Context, approved xchain.Attestation) err
 // It provides exactly once-delivery guarantees for the callback function.
 // It will exponentially backoff and retry forever while the callback function returns an error.
 type Provider interface {
-	// Subscribe registers a callback function that will be called with all approved
-	// attestations (as they become available per versioned cross-chain block) on the consensus chain from
-	// the provided source chain ID, confLevel and attestOffset (inclusive).
+	// StreamAsync starts a goroutine that streams approved attestation forever from the
+	// provided source chain and attest offset (inclusive).
 	//
-	// Worker name is only used for metrics.
-	Subscribe(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64,
+	// It returns immediately.
+	// This is the async version of StreamAttestations.
+	// It retries forever (with backoff) on all fetch and callback errors.
+	StreamAsync(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64,
 		workerName string, callback ProviderCallback)
+
+	// StreamAttestations is the synchronous fail-fast version of Subscribe. It streams
+	// approved attestations as they become available but returns on the first callback error.
+	// This is useful for workers that need to reset on application errors.
+	StreamAttestations(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64,
+		workerName string, callback ProviderCallback) error
 
 	// AttestationsFrom returns the subsequent approved attestations for the provided source chain
 	// and attestOffset (inclusive). It will return max 100 attestations per call.

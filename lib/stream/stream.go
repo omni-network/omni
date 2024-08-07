@@ -30,6 +30,7 @@ type Deps[E any] struct {
 	// Config
 	FetchWorkers  uint64
 	ElemLabel     string
+	HeightLabel   string
 	RetryCallback bool
 
 	// Metrics
@@ -70,7 +71,7 @@ func Stream[E any](ctx context.Context, deps Deps[E], srcChainID uint64, startHe
 			if ctx.Err() != nil {
 				return nil
 			} else if err != nil {
-				log.Warn(ctx, "Failed fetching "+deps.ElemLabel+" (will retry)", err, "height", height)
+				log.Warn(ctx, "Failed fetching "+deps.ElemLabel+" (will retry)", err, deps.HeightLabel, height)
 				deps.IncFetchErr()
 				backoff()
 
@@ -85,7 +86,7 @@ func Stream[E any](ctx context.Context, deps Deps[E], srcChainID uint64, startHe
 			heightsOK := true
 			for i, elem := range elems {
 				if h := deps.Height(elem); h != height+uint64(i) {
-					log.Error(ctx, "Invalid "+deps.ElemLabel+" height [BUG]", nil,
+					log.Error(ctx, "Invalid "+deps.ElemLabel+" "+deps.HeightLabel+" [BUG]", nil,
 						"expect", height,
 						"actual", h,
 					)
@@ -107,7 +108,7 @@ func Stream[E any](ctx context.Context, deps Deps[E], srcChainID uint64, startHe
 		height := deps.Height(elem)
 		ctx, span := deps.StartTrace(ctx, height, "callback")
 		defer span.End()
-		ctx = log.WithCtx(ctx, "height", height)
+		ctx = log.WithCtx(ctx, deps.HeightLabel, height)
 
 		backoff := deps.Backoff(ctx)
 
