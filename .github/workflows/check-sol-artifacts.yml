@@ -1,0 +1,29 @@
+name: check solidity artifacts
+
+on:
+  workflow_call:
+
+jobs:
+  check_sol_artifacts:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+          run_install: false
+      - name: Build artifacts
+        run: make all
+      - name: Check for changes
+        run: git diff --exit-code

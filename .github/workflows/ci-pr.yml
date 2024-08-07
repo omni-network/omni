@@ -26,3 +26,5 @@ jobs:
     uses: ./.github/workflows/soltest.yml
   e2e-tests:
     uses: ./.github/workflows/pr-e2etest.yml
+  check-sol-artifacts:
+    uses: ./.github/workflows/check-sol-artifacts.yml

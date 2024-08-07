@@ -1,4 +1,3 @@
-//go:generate make bindings
-//go:generate make allocs
+//go:generate make all
 
 package contracts
