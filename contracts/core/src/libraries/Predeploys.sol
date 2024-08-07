@@ -18,6 +18,7 @@ library Predeploys {
     // octane predeploys
     address internal constant Staking = 0xCCcCcC0000000000000000000000000000000001;
     address internal constant Slashing = 0xCccCCC0000000000000000000000000000000002;
+    address internal constant Upgrade = 0xccCCcc0000000000000000000000000000000003;
 
     function namespaces() internal pure returns (address[] memory ns) {
         ns = new address[](2);
