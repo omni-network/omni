@@ -30,6 +30,12 @@ jobs:
         id: git_ref
         run: echo "short_sha=`echo ${GITHUB_SHA::7}`" >> "$GITHUB_OUTPUT"
 
+      - name: Build and push halovisor
+        run: |
+          scripts/halovisor/build.sh ${GITHUB_SHA::7}
+          docker push omniops/halovisor:${GITHUB_SHA::7}
+          docker push omniops/halovisor:main
+
       - name: Push Halo to Dockerhub
         run: |
           docker push omniops/halo:${GITHUB_SHA::7}

@@ -10,14 +10,16 @@ services:
     labels:
       e2e: true
     container_name: fullnode01
-    image: omniops/halo:7d1ae53
+    image: omniops/halovisor:7d1ae53
+    restart: unless-stopped
     init: true
     ports:
     - 26656:26656 # Consensus P2P
     - 26657:26657 # Consensus RPC
     - 6060 # Pprof
     volumes:
-    - ./fullnode01:/halo
+    - ./fullnode01/config:/halo/config
+    - ./fullnode01/data:/halo/data
     networks:
       test:
         
@@ -29,6 +31,7 @@ services:
       e2e: true
     container_name: fullnode01_evm
     image: "ethereum/client-go:v1.14.7"
+    restart: unless-stopped
     command:
       - --config=/geth/config.toml
       # Flags not available via config.toml

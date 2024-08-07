@@ -15,13 +15,15 @@ services:
       e2e: true
     container_name: node0
     image: omniops/halo:main
+    restart: unless-stopped
     init: true
     ports:
     - 26656 # Consensus P2P
     - 8584:26657 # Consensus RPC
     - 6060 # Pprof
     volumes:
-    - ./node0:/halo
+    - ./node0/config:/halo/config
+    - ./node0/data:/halo/data
     networks:
       test:
         ipv4_address: 10.186.73.0
@@ -70,6 +72,7 @@ services:
       e2e: true
     container_name: omni_evm_0
     image: "ethereum/client-go:v1.14.7"
+    restart: unless-stopped
     command:
       - --config=/geth/config.toml
       # Flags not available via config.toml
@@ -100,7 +103,7 @@ services:
       e2e: true
     container_name: relayer
     image: omniops/relayer:v2
-    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    restart: unless-stopped
     ports:
       - 26660 # Prometheus and pprof
     volumes:
@@ -114,7 +117,7 @@ services:
       e2e: true
     container_name: monitor
     image: omniops/monitor:v3
-    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    restart: unless-stopped
     ports:
       - 26660 # Prometheus and pprof
     volumes:

@@ -33,7 +33,7 @@ services:
       e2e: true
     container_name: relayer
     image: omniops/relayer:7d1ae53
-    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    restart: unless-stopped
     ports:
       - 26660 # Prometheus and pprof
     volumes:

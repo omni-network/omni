@@ -42,6 +42,9 @@ jobs:
           cd dist/anvilproxy_linux_amd64_v1
           docker build -f "../../e2e/anvilproxy/Dockerfile" . -t "omniops/anvilproxy:${GITHUB_SHA::7}"
 
+      - name: Build halovisor image
+        run: scripts/halovisor/build.sh "${GITHUB_SHA::7}"
+
       - name: Run devnet1 e2e test
         run: |
           go install github.com/omni-network/omni/e2e
