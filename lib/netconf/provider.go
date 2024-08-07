@@ -37,7 +37,7 @@ func AwaitOnExecutionChain(ctx context.Context, netID ID, portalRegistry *bindin
 
 		portals, err := portalRegistry.List(&bind.CallOpts{Context: ctx})
 		if err != nil {
-			log.Warn(ctx, "Failed fetching xchain registry from omni_evm (will retry)", err)
+			log.Warn(ctx, "Failed fetching network from execution registry (will retry)", err)
 			backoff()
 
 			continue
@@ -49,7 +49,7 @@ func AwaitOnExecutionChain(ctx context.Context, netID ID, portalRegistry *bindin
 		}
 
 		if !containsAll(network, expected) {
-			log.Info(ctx, "XChain registry doesn't contain all expected chains (will retry)", ""+
+			log.Info(ctx, "Execution registry doesn't contain all expected chains (will retry)", ""+
 				"expected", expected, "actual", network.ChainNamesByIDs())
 			backoff()
 
@@ -60,7 +60,7 @@ func AwaitOnExecutionChain(ctx context.Context, netID ID, portalRegistry *bindin
 			return Network{}, errors.Wrap(err, "invalid network configuration")
 		}
 
-		log.Info(ctx, "XChain network configuration initialized from on-chain registry", "chains", network.ChainNamesByIDs())
+		log.Info(ctx, "Network initialized from execution registry", "chains", network.ChainNamesByIDs())
 
 		return network, nil
 	}
@@ -83,7 +83,7 @@ func AwaitOnConsensusChain(ctx context.Context, netID ID, cprov cchain.Provider,
 
 		portals, ok, err := cprov.Portals(ctx)
 		if err != nil || !ok {
-			log.Warn(ctx, "Failed fetching registry from consensus chain (will retry)", err)
+			log.Warn(ctx, "Failed fetching network from consensus registry (will retry)", err)
 			backoff()
 
 			continue
@@ -99,7 +99,7 @@ func AwaitOnConsensusChain(ctx context.Context, netID ID, cprov cchain.Provider,
 		}
 
 		if !containsAll(network, expected) {
-			log.Info(ctx, "XChain registry doesn't contain all expected chains (will retry)", ""+
+			log.Info(ctx, "Consensus registry doesn't contain all expected chains (will retry)", ""+
 				"expected", expected, "actual", network.ChainNamesByIDs())
 			backoff()
 
@@ -110,7 +110,7 @@ func AwaitOnConsensusChain(ctx context.Context, netID ID, cprov cchain.Provider,
 			return Network{}, errors.Wrap(err, "invalid network configuration")
 		}
 
-		log.Info(ctx, "XChain network configuration initialized from on-chain registry", "chains", network.ChainNamesByIDs())
+		log.Info(ctx, "Network initialized from consensus registry", "chains", network.ChainNamesByIDs())
 
 		return network, nil
 	}
