@@ -14,6 +14,12 @@ jobs:
         with:
           go-version: 'stable'
 
+      - name: Login to Dockerhub container registry
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Build binaries
         uses: goreleaser/goreleaser-action@v5
         env:
@@ -30,6 +36,7 @@ jobs:
           docker inspect "omniops/halo:${GITHUB_SHA::7}"
           docker inspect "docker.io/omniops/halo:${GITHUB_SHA::7}"
           cd -
+          docker images
           scripts/halovisor/build.sh "${GITHUB_SHA::7}"
 
       - name: Build relayer image
