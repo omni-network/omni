@@ -18,8 +18,8 @@ contract Upgrade is OwnableUpgradeable {
     /**
      * @notice Emitted when a software upgrade is planned
      * @param name     (MsgSoftwareUpgrade.plan.name) The name for the upgrade
-     * @param height   (MsgCreateValidator.plan.height) The height at which the upgrade must be performed
-     * @param info     (MsgCreateValidator.plan.info) Any application specific upgrade info to be included on-chain such as a git commit that validators could automatically upgrade to
+     * @param height   (MsgSoftwareUpgrade.plan.height) The height at which the upgrade must be performed
+     * @param info     (MsgSoftwareUpgrade.plan.info) Any application specific upgrade info to be included on-chain such as a git commit that validators could automatically upgrade to
      */
     event PlanUpgrade(string name, uint64 height, string info);
 
@@ -31,8 +31,8 @@ contract Upgrade is OwnableUpgradeable {
     /**
      * @notice Plan specifies information about a planned upgrade and when it should occur..
      * @custom:field name      (MsgSoftwareUpgrade.plan.name) The name for the upgrade
-     * @custom:field height    (MsgCreateValidator.plan.height) The height at which the upgrade must be performed
-     * @custom:field info      (MsgCreateValidator.plan.info) Any application specific upgrade info to be included on-chain such as a git commit that validators could automatically upgrade to
+     * @custom:field height    (MsgSoftwareUpgrade.plan.height) The height at which the upgrade must be performed
+     * @custom:field info      (MsgSoftwareUpgrade.plan.info) Any application specific upgrade info to be included on-chain such as a git commit that validators could automatically upgrade to
      */
     struct Plan {
         string name;
