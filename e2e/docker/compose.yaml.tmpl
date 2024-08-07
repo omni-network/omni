@@ -18,6 +18,7 @@ services:
       e2e: true
     container_name: {{ .Name }}
     image: {{ .Version }}
+    restart: unless-stopped
     init: true
     ports:
     - {{ if $.BindAll }}26656:{{end}}26656 # Consensus P2P
@@ -27,7 +28,8 @@ services:
 {{- end }}
     - 6060 # Pprof
     volumes:
-    - ./{{ .Name }}:/halo
+    - ./{{ .Name }}/config:/halo/config
+    - ./{{ .Name }}/data:/halo/data
     networks:
       {{ $.NetworkName }}:
         {{ if $.Network }}ipv4_address: {{ .InternalIP }}{{ end }}
@@ -63,6 +65,7 @@ services:
       e2e: true
     container_name: {{ .InstanceName }}
     image: "ethereum/client-go:{{ $.GethTag }}"
+    restart: unless-stopped
     command:
       - --config=/geth/config.toml
       # Flags not available via config.toml
@@ -95,7 +98,7 @@ services:
       e2e: true
     container_name: relayer
     image: omniops/relayer:{{or .RelayerTag "main"}}
-    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    restart: unless-stopped
     ports:
       - 26660 # Prometheus and pprof
     volumes:
@@ -111,7 +114,7 @@ services:
       e2e: true
     container_name: monitor
     image: omniops/monitor:{{or .MonitorTag "main"}}
-    restart: unless-stopped # Restart on crash to mitigate startup race issues
+    restart: unless-stopped
     ports:
       - 26660 # Prometheus and pprof
     volumes:

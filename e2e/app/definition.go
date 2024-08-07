@@ -225,7 +225,7 @@ func adaptNode(ctx context.Context, manifest types.Manifest, node *e2e.Node, tag
 		tag = manifest.PinnedHaloTag
 	}
 
-	node.Version = "omniops/halo:" + tag
+	node.Version = "omniops/halovisor:" + tag
 	node.PrivvalKey = valKey.PrivKey
 	node.NodeKey = nodeKey.PrivKey
 

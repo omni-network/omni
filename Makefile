@@ -8,6 +8,7 @@ help:  ## Display this help message
 .PHONY: build-docker
 build-docker: ensure-go-releaser ## Builds the docker images.
 	@goreleaser release --snapshot --clean
+	@scripts/halovisor/build.sh
 
 .PHONY: build-halo-relayer
 build-halo-relayer: ensure-go-releaser ## Builds the halo and relayer docker images only (slightly faster than above).
@@ -15,6 +16,7 @@ build-halo-relayer: ensure-go-releaser ## Builds the halo and relayer docker ima
 	@scripts/build_docker.sh relayer
 	@scripts/build_docker.sh monitor
 	@scripts/build_docker.sh anvilproxy 'e2e' '' 'amd64'
+	@scripts/halovisor/build.sh
 
 ###############################################################################
 ###                                Contracts                                 ###
