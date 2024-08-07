@@ -28,6 +28,13 @@ docker compose up
 
 Congrats, you're running a full node!
 
+<details>
+<summary>Known Issue **"validator does not exist"**</summary>
+
+Please note if you see this error that it is a known issue, it is sporadic and resolves itself after a couple tries. If you're interested to follow along the solution (or give it a shot yourself!), you can follow along [here](https://github.com/omni-network/omni/issues/1524).
+
+</details>
+
 ### Details
 
 What's actually happening here?
