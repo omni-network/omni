@@ -18,7 +18,8 @@ import (
 
 func feeParams(ctx context.Context, network netconf.ID, srcChainID uint64, destChainIDs []uint64, backends ethbackend.Backends, pricer tokens.Pricer,
 ) ([]bindings.IFeeOracleV1ChainFeeParams, error) {
-	params := make([]bindings.IFeeOracleV1ChainFeeParams, len(destChainIDs))
+	// len(destChainIDs) + 1, because we also add fee params for the source chain
+	params := make([]bindings.IFeeOracleV1ChainFeeParams, len(destChainIDs)+1)
 
 	// used cached pricer, to avoid multiple price requests for same token
 	pricer = tokens.NewCachedPricer(pricer)
@@ -30,7 +31,8 @@ func feeParams(ctx context.Context, network netconf.ID, srcChainID uint64, destC
 
 	l1, hasL1 := l1ChainID(network, destChainIDs)
 
-	for i, destChainID := range destChainIDs {
+	// we include source chain, to allow calculation of xcall callbacks
+	for i, destChainID := range append(destChainIDs, srcChainID) {
 		destChain, ok := evmchain.MetadataByID(destChainID)
 		if !ok {
 			return nil, errors.New("meta by chain id", "dest_chain", destChain.Name)
