@@ -19,9 +19,11 @@ services:
     command:
       - --config=/geth/config.toml
       # Flags not available via config.toml
-      #- --nat=extip:<my-external-ip>
-      #- --metrics
-      #- --verbosity=4 # Log level (4=debug)
+      #- --nat=extip:<my-external-ip> # External IP for P2P via NAT
+      #- --metrics                    # Enable prometheus metrics
+      #- --pprof                      # Enable prometheus metrics
+      #- --pprof.addr=0.0.0.0         # Enable prometheus metrics
+      #- --verbosity=4                # Log level (4=debug)
     ports:
       - 8551         # Auth-RPC (used by halo)
       - 8545:8545    # JSON-RCP

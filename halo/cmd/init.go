@@ -38,6 +38,7 @@ type InitConfig struct {
 	Network       netconf.ID
 	TrustedSync   bool
 	AddrBook      bool
+	LogCfgFunc    func(*log.Config)
 	HaloCfgFunc   func(*halocfg.Config)
 	CometCfgFunc  func(*cmtconfig.Config)
 	Force         bool
@@ -59,6 +60,15 @@ func (c InitConfig) CometCfg(cfg *cmtconfig.Config) {
 	if c.CometCfgFunc != nil {
 		c.CometCfgFunc(cfg)
 	}
+}
+
+func (c InitConfig) LogCfg() log.Config {
+	cfg := log.DefaultConfig()
+	if c.LogCfgFunc != nil {
+		c.LogCfgFunc(&cfg)
+	}
+
+	return cfg
 }
 
 // newInitCmd returns a new cobra command that initializes the files and folders required by halo.
@@ -253,7 +263,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	haloConfigFile := cfg.ConfigFile()
 	if cmtos.FileExists(haloConfigFile) {
 		log.Info(ctx, "Found halo config file", "path", haloConfigFile)
-	} else if err := halocfg.WriteConfigTOML(cfg, log.DefaultConfig()); err != nil {
+	} else if err := halocfg.WriteConfigTOML(cfg, initCfg.LogCfg()); err != nil {
 		return err
 	} else {
 		log.Info(ctx, "Generated default halo config file", "path", haloConfigFile)
