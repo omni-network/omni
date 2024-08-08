@@ -22,7 +22,7 @@ require (
 	github.com/cometbft/cometbft v0.38.10
 	github.com/cosmos/cosmos-db v1.0.2
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
-	github.com/cosmos/cosmos-sdk v0.50.8
+	github.com/cosmos/cosmos-sdk v0.50.9
 	github.com/cosmos/gogoproto v1.5.0
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
 	github.com/ethereum/go-ethereum v1.14.7
