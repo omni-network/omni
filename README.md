@@ -90,10 +90,10 @@ make devnet-clean
 
 <pre>
 ├── <a href="./contracts/">contracts</a>: Solidity contracts and related software.
-│ ├── <a href="./core/">core/</a>: Core protocol smart contracts.
-│ ├── <a href="./avs/">avs/</a>: Eigen AVS smart contracts.
-│ ├── <a href="./bindings/">bindings/</a>: Go smart contract bindings.
-│ └── <a href="./allocs/">allocs/</a>: Predeploy allocations.
+│ ├── <a href="./contracts/core/">core/</a>: Core protocol smart contracts.
+│ ├── <a href="./contracts/avs/">avs/</a>: Eigen AVS smart contracts.
+│ ├── <a href="./contracts/bindings/">bindings/</a>: Go smart contract bindings.
+│ └── <a href="./contracts/allocs/">allocs/</a>: Predeploy allocations.
 ├── <a href="./docs/">docs</a>: Documentation resources, including images and diagrams.
 ├── <a href="./halo/">halo</a>: The Halo instance, including application logic and attestation mechanisms.
 │ ├── <a href="./halo/app/">app</a>: Application logic for Halo.
@@ -106,7 +106,7 @@ make devnet-clean
 ├── <a href="./relayer/">relayer</a>: Relayer service for cross-chain messages and transactions.
 │ └── <a href="./relayer/app/">app</a>: Application logic for the relayer service.
 ├── <a href="./scripts/">scripts</a>: Utility scripts for development and operational tasks.
-└── <a href="./test/">test</a>: Testing suite for end-to-end, smoke, and utility testing.
+└── <a href="./e2e/test/">test</a>: Testing suite for end-to-end, smoke, and utility testing.
 </pre>
 
 ## Contributing
