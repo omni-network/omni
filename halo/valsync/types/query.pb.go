@@ -299,6 +299,7 @@ func _Query_ValidatorSet_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+var Query_serviceDesc = _Query_serviceDesc
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "halo.valsync.types.Query",
 	HandlerType: (*QueryServer)(nil),
