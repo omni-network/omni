@@ -17,20 +17,22 @@ contract OmniFund is XApp, Ownable {
     /**
      * @notice Try to withdraw remaining funds owned to `to`.
      *         The amount owed is `total - funded[to][xmsg.sourceChainId]`.
+     * @param recipient     Address to receive the funds
+     * @param total         Total (historical) amount requested for `recipient`
      */
-    function tryWithdrawRemaining(address to, uint256 total) external xrecv {
+    function tryWithdrawRemaining(address recipient, uint256 total) external xrecv {
         require(isXCall() && authed[xmsg.sourceChainId][xmsg.sender], "OmniFund: unauthorized");
 
         // we've already funded total requested
-        require(total >= funded[to][xmsg.sourceChainId], "OmniFund: already funded");
+        require(total >= funded[recipient][xmsg.sourceChainId], "OmniFund: already funded");
 
-        uint256 amt = total - funded[to][xmsg.sourceChainId];
-        (bool success,) = to.call{ value: amt }("");
+        uint256 amt = total - funded[recipient][xmsg.sourceChainId];
+        (bool success,) = recipient.call{ value: amt }("");
 
         // Only update funded if the transfer was successful
         // This allows the user to retry if the transfer fails
         // A transer may fail if this fund runs out of funds
-        if (success) funded[to][xmsg.sourceChainId] += amt;
+        if (success) funded[recipient][xmsg.sourceChainId] += amt;
     }
 
     function authorize(uint64 chainID, address addr) external onlyOwner {
