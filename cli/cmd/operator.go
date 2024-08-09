@@ -123,6 +123,10 @@ func initNodes(ctx context.Context, cfg initConfig) error {
 		},
 		CometCfgFunc: func(cfg *cmtconfig.Config) {
 			cfg.LogLevel = "info"
+			cfg.Instrumentation.Prometheus = true
+		},
+		LogCfgFunc: func(cfg *log.Config) {
+			cfg.Color = log.ColorForce
 		},
 	})
 	if err != nil {
