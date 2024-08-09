@@ -165,10 +165,8 @@ contract AllocPredeploys is Script {
             // set admin storage, to follow EIP1967 standard
             EIP1967Helper.setAdmin(addr, EIP1967Helper.getAdmin(tmp));
 
-            // reset impl
+            // reset impl & tmp
             vm.etch(impl, "");
-
-            //
             vm.etch(tmp, "");
 
             // can we reset nonce here? we are using "deployer" addr
