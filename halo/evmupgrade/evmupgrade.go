@@ -4,7 +4,7 @@ package evmupgrade
 
 import (
 	"context"
-
+	"fmt"
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/errors"
@@ -28,7 +28,7 @@ var _ evmenginetypes.EvmEventProcessor = EventProcessor{}
 
 var (
 	upgradeABI         = mustGetABI(bindings.UpgradeMetaData)
-	planUpgradeEvent   = mustGetEvent(upgradeABI, "PlanUpgrade")
+	PlanUpgradeEvent   = mustGetEvent(upgradeABI, "PlanUpgrade")
 	cancelUpgradeEvent = mustGetEvent(upgradeABI, "CancelUpgrade")
 )
 
@@ -47,6 +47,7 @@ func New(ethCl ethclient.Client, uKeeper *ukeeper.Keeper) (EventProcessor, error
 	if err != nil {
 		return EventProcessor{}, errors.Wrap(err, "new staking")
 	}
+	fmt.Printf("🔥!! evmupgrade address=%v\n", address)
 
 	return EventProcessor{
 		contract: contract,
@@ -61,7 +62,7 @@ func (p EventProcessor) Prepare(ctx context.Context, blockHash common.Hash) ([]*
 	logs, err := p.ethCl.FilterLogs(ctx, ethereum.FilterQuery{
 		BlockHash: &blockHash,
 		Addresses: p.Addresses(),
-		Topics:    [][]common.Hash{{planUpgradeEvent.ID, cancelUpgradeEvent.ID}},
+		Topics:    [][]common.Hash{{PlanUpgradeEvent.ID, cancelUpgradeEvent.ID}},
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "filter logs")
@@ -98,7 +99,7 @@ func (p EventProcessor) Deliver(ctx context.Context, _ common.Hash, elog *evmeng
 	ethlog := elog.ToEthLog()
 
 	switch ethlog.Topics[0] {
-	case planUpgradeEvent.ID:
+	case PlanUpgradeEvent.ID:
 		plan, err := p.contract.ParsePlanUpgrade(ethlog)
 		if err != nil {
 			return errors.Wrap(err, "parse plan upgrade")
@@ -135,7 +136,7 @@ func (p EventProcessor) deliverCancelUpgrade(ctx context.Context, _ *bindings.Up
 
 // deliverPlanUpgrade processes a PlanUpgrade event.
 func (p EventProcessor) deliverPlanUpgrade(ctx context.Context, plan *bindings.UpgradePlanUpgrade) error {
-	log.Info(ctx, "EVM plan upgrade detected", "name", plan.Name, "height", plan.Height)
+	log.Info(ctx, "🚀🚀🚀🚀EVM plan upgrade detected", "name", plan.Name, "height", plan.Height)
 
 	height := int64(plan.Height)
 	if height < 0 {

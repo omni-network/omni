@@ -3,6 +3,9 @@ package app
 import (
 	"context"
 	"fmt"
+	"github.com/ethereum/go-ethereum"
+	v2 "github.com/omni-network/omni/halo/app/upgrades/v2"
+	"github.com/omni-network/omni/halo/evmupgrade"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -19,6 +22,76 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
+
+func triggerUpgrade(ctx context.Context, def Definition) error {
+	backend, err := def.Backends().Backend(def.Testnet.OmniEVMs[0].Chain.ChainID)
+	if err != nil {
+		return errors.Wrap(err, "backend")
+	}
+
+	upgradeAddr := common.HexToAddress(predeploys.Upgrade)
+	fmt.Printf("🔥!! upgradeAddr=%v\n", upgradeAddr)
+	contract, err := bindings.NewUpgrade(upgradeAddr, backend)
+	if err != nil {
+		return errors.Wrap(err, "new upgrade")
+	}
+
+	codeAt, err := backend.CodeAt(ctx, upgradeAddr, nil)
+	if err != nil {
+		return errors.Wrap(err, "code at")
+	}
+	fmt.Printf("🔥!! len(codeAt)=%v\n", len(codeAt))
+
+	admin := eoa.MustAddress(def.Testnet.Network, eoa.RoleAdmin)
+	txOpts, err := backend.BindOpts(ctx, admin)
+	if err != nil {
+		return errors.Wrap(err, "bind opts")
+	}
+
+	tx, err := contract.PlanUpgrade(txOpts, bindings.UpgradePlan{
+		Name:   v2.UpgradeName,
+		Height: 20,
+		Info:   "",
+	})
+	if err != nil {
+		return errors.Wrap(err, "plan upgrade")
+	}
+
+	fmt.Printf("🔥!! planned upgrade tx=%v\n", tx.Hash())
+
+	receipt, err := backend.WaitMined(ctx, tx)
+	if err != nil {
+		return errors.Wrap(err, "wait mined")
+	}
+	fmt.Printf("🔥!! receipt.Status=%v\n", receipt.Status)
+	fmt.Printf("🔥!! receipt.ContractAddress=%v\n", receipt.ContractAddress)
+	fmt.Printf("🔥!! receipt.Type=%v\n", receipt.Type)
+	fmt.Printf("🔥!! receipt.BlockNumber=%v\n", receipt.BlockNumber)
+	fmt.Printf("🔥!! receipt.BlockHash=%v\n", receipt.BlockHash)
+	fmt.Printf("🔥!! len(receipt.Logs)=%v\n", len(receipt.Logs))
+
+	logs, err := backend.FilterLogs(ctx, ethereum.FilterQuery{
+		BlockHash: &receipt.BlockHash,
+		Addresses: []common.Address{upgradeAddr},
+		Topics:    [][]common.Hash{{evmupgrade.PlanUpgradeEvent.ID}},
+	})
+	if err != nil {
+		return errors.Wrap(err, "get logs")
+	} else if len(logs) == 0 {
+		return errors.New("no event logs for mined ")
+	}
+
+	fmt.Printf("🔥!! len(logs)=%v\n", len(logs))
+
+	plan, err := contract.ParsePlanUpgrade(logs[0])
+	if err != nil {
+		return errors.Wrap(err, "parse plan upgrade PlanUpgrade transaction")
+	}
+
+	fmt.Printf("🔥!! plan=%#v\n", plan)
+
+	return nil
+}
 
 // initPortalRegistry initializes the PortalRegistry predeploy.
 func initPortalRegistry(ctx context.Context, def Definition) error {
