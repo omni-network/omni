@@ -203,6 +203,8 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 			return errors.Wrap(err, "stop tracer")
 		}
 
+		log.Info(ctx, "Halo consensus client stopped")
+
 		return nil
 	}, nil
 }
