@@ -74,30 +74,40 @@ const config: Config = {
           label: "Learn",
           to: "/learn/introduction",
         },
+        // {
+        //   position: "left",
+        //   label: "Protocol",
+        //   to: "/protocol/introduction",
+        // },
+        // {
+        //   position: "left",
+        //   label: "Octane",
+        //   to: "/octane/background/introduction",
+        // },
         {
           position: "left",
-          label: "Protocol",
-          to: "/protocol/introduction",
+          label: "Build",
+          to: "/develop/quickstart",
         },
+        // {
+        //   position: "left",
+        //   label: "Operate",
+        //   to: "/operate/introduction",
+        // },
         {
           position: "left",
-          label: "Octane",
-          to: "/octane/background/introduction",
+          label: "FAQ",
+          to: "/develop/faq",
         },
+        // {
+        //   position: "right",
+        //   label: "Tools",
+        //   to: "/tools",
+        // },
         {
-          position: "left",
-          label: "Develop",
-          to: "/develop/introduction",
-        },
-        {
-          position: "left",
-          label: "Operate",
-          to: "/operate/introduction",
-        },
-        {
+          href: "https://t.me/+zDWsRVjLXzZkOTIx",
+          label: "Chat to us on TG",
           position: "right",
-          label: "Tools",
-          to: "/tools",
         },
         {
           href: "https://github.com/omni-network/omni",
