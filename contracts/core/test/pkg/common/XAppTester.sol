@@ -58,6 +58,10 @@ abstract contract XAppTesterBase is XAppBase {
     function setOmniPortal(address portal) public {
         _setOmniPortal(portal);
     }
+
+    function getOmniChainId() public view returns (uint64) {
+        return omniChainId();
+    }
 }
 
 /**

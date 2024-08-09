@@ -60,6 +60,13 @@ abstract contract XAppBase {
     }
 
     /**
+     * @notice Returns the chain ID of the Omni EVM in this Omni network
+     */
+    function omniChainId() internal view returns (uint64) {
+        return omni.omniChainId();
+    }
+
+    /**
      * @notice Call a contract on another. (Default ConfLevel)
      * @param destChainId   Destination chain ID
      * @param to            Address of contract to call on destination chain

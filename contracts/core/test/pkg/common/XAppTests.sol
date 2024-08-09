@@ -98,6 +98,10 @@ abstract contract XAppTests is Test {
         assertEq(address(XApp(address(xapp)).omni()), newPortal);
     }
 
+    function test_omniChainId() public view {
+        assertEq(xapp.getOmniChainId(), portal.omniChainId());
+    }
+
     /// @dev Helper function to expect an xcall to the portal
     function _expectXCall(uint64 destChainId, uint8 conf, address to, bytes memory data, uint64 gasLimit, uint256 fee)
         internal
