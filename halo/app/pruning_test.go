@@ -29,9 +29,10 @@ func TestPruningHistory(t *testing.T) {
 
 	cfg := setupSimnet(t)
 
-	// Prune everything > 3 blocks old
+	// Prune everything > 2 blocks old (every interval=10 blocks)
 	cfg.PruningOption = pruningtypes.PruningOptionEverything
-	cfg.MinRetainBlocks = 3
+	cfg.MinRetainBlocks = 2
+	// Note the pruneInterval is 10, so we only prune at height 20
 
 	// Start the server async
 	async, stopfunc, err := haloapp.Start(ctx, cfg)
@@ -104,8 +105,9 @@ func TestPruningHistory(t *testing.T) {
 		return true
 	}, time.Minute, time.Millisecond*300)
 
+	const pruneInterval = uint64(10)
 	minPrunedHeight := eligibleHeight + cfg.MinRetainBlocks
-	maxPrunedHeight := eligibleHeight + (2 * cfg.MinRetainBlocks) // Allow some wiggle room
+	maxPrunedHeight := eligibleHeight/pruneInterval + (2 * pruneInterval) // Allow pruning up to the next interval
 	t.Logf("prunedHeight=%d, createdHeight=%d, minRetainBlocks=%d", prunedHeight, eligibleHeight, cfg.MinRetainBlocks)
 
 	require.GreaterOrEqual(t, prunedHeight, minPrunedHeight, "prunedHeight=%d too low (eligibleHeight=%d)", prunedHeight, eligibleHeight)

@@ -38,8 +38,9 @@ type payloadArgs struct {
 
 //nolint:gochecknoglobals // This is a static mapping.
 var (
-	delegateEvent  = mustGetABI(bindings.StakingMetaData).Events["Delegate"]
-	portalRegEvent = mustGetABI(bindings.PortalRegistryMetaData).Events["PortalRegistered"]
+	delegateEvent    = mustGetABI(bindings.StakingMetaData).Events["Delegate"]
+	portalRegEvent   = mustGetABI(bindings.PortalRegistryMetaData).Events["PortalRegistered"]
+	planUpgradeEvent = mustGetABI(bindings.UpgradeMetaData).Events["PlanUpgrade"]
 )
 
 var _ EngineClient = (*engineMock)(nil)
@@ -124,6 +125,34 @@ func WithPortalRegister(network netconf.Network) func(*engineMock) {
 		}
 
 		mock.pendingLogs[contractAddr] = eventLogs
+	}
+}
+
+func WithFarFutureUpgradePlan() func(mock *engineMock) {
+	return func(mock *engineMock) {
+		mock.mu.Lock()
+		defer mock.mu.Unlock()
+
+		contractAddr := common.HexToAddress(predeploys.Upgrade)
+
+		data, err := planUpgradeEvent.Inputs.NonIndexed().Pack(
+			"mock_upgrade",
+			uint64(999999999),
+			"",
+		)
+		if err != nil {
+			panic(errors.Wrap(err, "pack plan upgrade"))
+		}
+
+		eventLog := types.Log{
+			Address: contractAddr,
+			Topics: []common.Hash{
+				planUpgradeEvent.ID,
+			},
+			Data: data,
+		}
+
+		mock.pendingLogs[contractAddr] = []types.Log{eventLog}
 	}
 }
 

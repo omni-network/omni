@@ -68,10 +68,6 @@ func AwaitOnExecutionChain(ctx context.Context, netID ID, portalRegistry *bindin
 
 // AwaitOnConsensusChain blocks and returns network configuration as soon as it can be loaded from the Consensus Chain's registry.
 func AwaitOnConsensusChain(ctx context.Context, netID ID, cprov cchain.Provider, expected []string) (Network, error) {
-	if netID == Simnet {
-		return SimnetNetwork(), nil
-	}
-
 	cfg := expbackoff.DefaultConfig
 	cfg.MaxDelay = 5 * time.Second
 	backoff := expbackoff.New(ctx, expbackoff.With(cfg))
