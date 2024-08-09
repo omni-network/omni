@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -109,6 +110,8 @@ func (l *voterLoader) LazyLoad(
 	if err != nil {
 		return err
 	}
+
+	fmt.Printf("🔥!! network=%v\n", len(network.EVMChains()))
 
 	var xprov xchain.Provider
 	if netID == netconf.Simnet {

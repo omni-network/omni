@@ -54,6 +54,7 @@ func (AppModuleBasic) Name() string {
 	return types.ModuleName
 }
 
+// ConsensusVersion implements AppModule/ConsensusVersion.
 func (AppModuleBasic) ConsensusVersion() uint64 {
 	return ConsensusVersion
 }

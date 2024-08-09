@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"fmt"
-
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
