@@ -91,6 +91,8 @@ contract MockPortal is IOmniPortal, OmniPortalConstants {
         (bool success, bytes memory returnData) = to.call{ gas: gasLimit }(data);
         gasUsed = gasUsed - gasleft();
 
+        delete _xmsg;
+
         if (!success && gasUsed >= gasLimit) revert("MockPortal: out of gas");
         if (!success) {
             assembly {
