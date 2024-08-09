@@ -21,6 +21,7 @@ import (
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 
+	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -36,6 +37,7 @@ type valsetFunc func(ctx context.Context, valSetID uint64, latest bool) (valSetR
 type headerFunc func(ctx context.Context, height *int64) (*ctypes.ResultHeader, error)
 type chainIDFunc func(ctx context.Context) (uint64, error)
 type genesisFunc func(ctx context.Context) (execution []byte, consensus []byte, err error)
+type upgradeFunc func(ctx context.Context) (upgradetypes.Plan, bool, error)
 
 type valSetResponse struct {
 	ValSetID      uint64
@@ -56,6 +58,7 @@ type Provider struct {
 	portalBlock portalBlockFunc
 	networkFunc networkFunc
 	genesisFunc genesisFunc
+	upgradeFunc upgradeFunc
 	backoffFunc func(context.Context) func()
 	chainNamer  func(xchain.ChainVersion) string
 	network     netconf.ID
@@ -76,6 +79,10 @@ func NewProviderForT(_ *testing.T, fetch fetchFunc, latest latestFunc, window wi
 
 func (p Provider) CometClient() rpcclient.Client {
 	return p.cometCl
+}
+
+func (p Provider) CurrentUpgradePlan(ctx context.Context) (upgradetypes.Plan, bool, error) {
+	return p.upgradeFunc(ctx)
 }
 
 func (p Provider) AttestationsFrom(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64,

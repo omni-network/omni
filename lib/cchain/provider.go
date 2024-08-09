@@ -10,6 +10,8 @@ import (
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 
 	"github.com/ethereum/go-ethereum/common"
+
+	utypes "cosmossdk.io/x/upgrade/types"
 )
 
 // ProviderCallback is the callback function signature that will be called with each approved attestation per
@@ -65,6 +67,9 @@ type Provider interface {
 
 	// Portals returns the portals registered in the registry module.
 	Portals(ctx context.Context) ([]*rtypes.Portal, bool, error)
+
+	// CurrentUpgradePlan returns the current (non-activated) upgrade plan.
+	CurrentUpgradePlan(ctx context.Context) (utypes.Plan, bool, error)
 }
 
 // Validator is a consensus chain validator in a validator set.

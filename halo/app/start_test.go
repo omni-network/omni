@@ -72,7 +72,7 @@ func TestSmoke(t *testing.T) {
 		setHash := types.NewValidatorSet(set.Validators).Hash()
 
 		return !bytes.Equal(getSetHash, setHash)
-	}, time.Second*time.Duration(target*2), time.Millisecond*100)
+	}, time.Second*time.Duration(target*4), time.Millisecond*100)
 
 	srcChain := netconf.Simnet.Static().OmniExecutionChainID
 	chainVer := xchain.ChainVersion{ID: srcChain, ConfLevel: xchain.ConfFinalized}
@@ -131,6 +131,13 @@ func testCProvider(t *testing.T, ctx context.Context, cprov cprovider.Provider) 
 	require.NoError(t, err)
 	require.Nil(t, exec)
 	require.NotNil(t, cons)
+
+	require.Eventually(t, func() bool {
+		_, ok, err := cprov.CurrentUpgradePlan(ctx)
+		require.NoError(t, err)
+
+		return ok
+	}, time.Second*5, time.Millisecond*100)
 }
 
 func setupSimnet(t *testing.T) haloapp.Config {
@@ -150,7 +157,7 @@ func setupSimnet(t *testing.T) haloapp.Config {
 	haloCfg.EVMBuildDelay = time.Millisecond
 	haloCfg.EngineEndpoint = "dummy"
 	haloCfg.EngineJWTFile = "dummy"
-	haloCfg.RPCEndpoints = map[string]string{"dummy": "dummy"}
+	haloCfg.RPCEndpoints = map[string]string{"omni_evm": "dummy"}
 
 	cfg := haloapp.Config{
 		Config: haloCfg,

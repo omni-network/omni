@@ -143,6 +143,7 @@ linters:
     - gofumpt              # Not compatible with gci, see https://github.com/golangci/golangci-lint/issues/1490.
     - gomnd                # Too many false positives
     - gomoddirectives      # We have a replace directive
+    - interfacebloat       # This isn't a big problem
     - intrange             # Intrange just result in other lint warns in many cases.
     - ireturn              # Too many false positives
     - mnd                  # Too many false positives
