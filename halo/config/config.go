@@ -73,6 +73,7 @@ type Config struct {
 	EVMBuildDelay      time.Duration
 	EVMBuildOptimistic bool
 	Tracer             tracer.Config
+	UnsafeSkipUpgrades []int
 }
 
 // ConfigFile returns the default path to the toml halo config file.

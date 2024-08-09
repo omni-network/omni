@@ -116,11 +116,13 @@ contract AllocPredeploys_Test is Test, AllocPredeploys {
         assertEq(cfg.admin, OwnableUpgradeable(Predeploys.PortalRegistry).owner(), "PortalRegistry owner check");
         assertEq(cfg.admin, OwnableUpgradeable(Predeploys.OmniBridgeNative).owner(), "OmniBridgeNative owner check");
         assertEq(cfg.admin, OwnableUpgradeable(Predeploys.Staking).owner(), "Staking owner check");
+        assertEq(cfg.admin, OwnableUpgradeable(Predeploys.Upgrade).owner(), "Upgrade owner check");
 
         // test proxies initialized
         assertTrue(InitializableHelper.isInitialized(Predeploys.PortalRegistry), "PortalRegistry initialized check");
         assertTrue(InitializableHelper.isInitialized(Predeploys.OmniBridgeNative), "OmniBridgeNative initialized check");
         assertTrue(InitializableHelper.isInitialized(Predeploys.Staking), "Staking initialized check");
+        assertTrue(InitializableHelper.isInitialized(Predeploys.Upgrade), "Upgrade initialized check");
 
         // test initializers disabled on implementations
         assertTrue(
@@ -134,6 +136,10 @@ contract AllocPredeploys_Test is Test, AllocPredeploys {
         assertTrue(
             InitializableHelper.areInitializersDisabled(Predeploys.impl(Predeploys.Staking)),
             "Staking initializer check"
+        );
+        assertTrue(
+            InitializableHelper.areInitializersDisabled(Predeploys.impl(Predeploys.Upgrade)),
+            "Upgrade initializer check"
         );
     }
 

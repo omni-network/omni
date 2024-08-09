@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"fmt"
-
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -60,6 +59,7 @@ func Rollback(ctx context.Context, cfg Config, rCfg RollbackConfig) error {
 		netconf.ChainVersionNamer(cfg.Network),
 		netconf.ChainNamer(cfg.Network),
 		burnEVMFees{},
+		serverAppOptsFromCfg(cfg),
 		baseAppOpts...,
 	)
 	if err != nil {

@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	attestkeeper "github.com/omni-network/omni/halo/attest/keeper"
 	atypes "github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/comet"
@@ -84,8 +86,10 @@ func newApp(
 	chainVerNamer atypes.ChainVerNameFunc,
 	chainNamer rtypes.ChainNameFunc,
 	feeRecProvider etypes.FeeRecipientProvider,
+	appOpts servertypes.AppOptions,
 	baseAppOpts ...func(*baseapp.BaseApp),
 ) (*App, error) {
+	fmt.Printf("🔥!! auth=%v\n", authtypes.NewModuleAddress(evmupgrade.ModuleName).String())
 	depCfg := depinject.Configs(
 		appConfig,
 		depinject.Supply(
@@ -95,6 +99,7 @@ func newApp(
 			chainNamer,
 			voter,
 			feeRecProvider,
+			appOpts,
 		),
 	)
 
@@ -122,6 +127,8 @@ func newApp(
 	); err != nil {
 		return nil, errors.Wrap(err, "dep inject")
 	}
+
+	fmt.Printf("🔥!! auth=%v\n", authtypes.NewModuleAddress(evmupgrade.ModuleName).String())
 
 	// TODO(corver): Refactor this to use depinject
 	evmStaking, err := evmstaking.New(engineCl, app.StakingKeeper, app.BankKeeper, app.AccountKeeper)
@@ -170,9 +177,17 @@ func newApp(
 		app.SetEndBlocker(app.EndBlocker)
 	}
 
+	// setupUpgradeHandlers should be called before `LoadLatestVersion()`
+	// because StoreLoad is sealed after that
+	if err := app.setUpgradeHandlers(); err != nil {
+		return nil, errors.Wrap(err, "set upgrade handlers")
+	}
+
 	if err := app.Load(true); err != nil {
 		return nil, errors.Wrap(err, "load app")
 	}
+
+	fmt.Printf("🔥!! auth=%v\n", authtypes.NewModuleAddress(evmupgrade.ModuleName).String())
 
 	return app, nil
 }

@@ -48,8 +48,8 @@ library Predeploys {
      * @notice Return true if `addr` is an active predeploy
      */
     function isActivePredeploy(address addr) internal pure returns (bool) {
-        return
-            addr == PortalRegistry || addr == OmniBridgeNative || addr == WOmni || addr == Staking || addr == Slashing;
+        return addr == PortalRegistry || addr == OmniBridgeNative || addr == WOmni || addr == Staking
+            || addr == Slashing || addr == Upgrade;
     }
 
     /**
