@@ -33,6 +33,7 @@ const config: Config = {
       "classic",
       {
         docs: {
+          path: "../content",
           routeBasePath: "/",
           sidebarPath: "./sidebars.ts",
           // Please change this to your repo.
