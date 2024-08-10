@@ -6,21 +6,15 @@ import rehypeKatex from 'rehype-katex';
 
 const config: Config = {
   title: "Omni Docs",
-  tagline: "Documentation for the Omni Network",
+  tagline: "Omni Docs",
   favicon: "img/favicon.svg",
 
-  // Set the production url of your site here
   url: "https://docs.omni.network/",
-  // Set the /<baseUrl>/ pathname under which your site is served
-  // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: "/",
 
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "throw",
 
-  // Even if you don't use internationalization, you can use this field to set
-  // useful metadata like html lang. For example, if your site is Chinese, you
-  // may want to replace "en" with "zh-Hans".
   i18n: {
     defaultLocale: "en",
     locales: ["en"],
@@ -36,8 +30,6 @@ const config: Config = {
           path: "../content",
           routeBasePath: "/",
           sidebarPath: "./sidebars.ts",
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
           editUrl: "https://github.com/omni-network/omni/tree/main/docs/site",
           remarkPlugins: [remarkMath],
           rehypePlugins: [rehypeKatex],
@@ -61,7 +53,6 @@ const config: Config = {
   ],
 
   themeConfig: {
-    // Replace with your project's social card
     image: "img/omni-banner.png",
     navbar: {
       title: "Omni Docs",
@@ -111,7 +102,7 @@ const config: Config = {
       // style: "dark",
       links: [
         {
-          label: "Main Site",
+          label: "Website",
           href: "https://omni.network",
         },
         {

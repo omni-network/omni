@@ -111,7 +111,7 @@ make devnet-clean
 
 ## Contributing
 
-For detailed instructions on how to contribute, including our coding standards, testing practices, and how to submit pull requests, please see [the contribution guidelines](./docs/contributing.md).
+For detailed instructions on how to contribute, including our coding standards, testing practices, and how to submit pull requests, please see [the contribution guidelines](./docs/contributing/contributing.md).
 
 ## Acknowledgements
 
