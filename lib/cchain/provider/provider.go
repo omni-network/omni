@@ -38,6 +38,7 @@ type headerFunc func(ctx context.Context, height *int64) (*ctypes.ResultHeader, 
 type chainIDFunc func(ctx context.Context) (uint64, error)
 type genesisFunc func(ctx context.Context) (execution []byte, consensus []byte, err error)
 type upgradeFunc func(ctx context.Context) (upgradetypes.Plan, bool, error)
+type upgradeAppliedFunc func(ctx context.Context, name string) (uint64, bool, error)
 
 type valSetResponse struct {
 	ValSetID      uint64
@@ -48,20 +49,22 @@ type valSetResponse struct {
 
 // Provider implements cchain.Provider.
 type Provider struct {
-	cometCl     rpcclient.Client
-	fetch       fetchFunc
-	latest      latestFunc
-	window      windowFunc
-	valset      valsetFunc
-	chainID     chainIDFunc
-	header      headerFunc
-	portalBlock portalBlockFunc
-	networkFunc networkFunc
-	genesisFunc genesisFunc
-	upgradeFunc upgradeFunc
-	backoffFunc func(context.Context) func()
-	chainNamer  func(xchain.ChainVersion) string
-	network     netconf.ID
+	cometCl                              rpcclient.Client
+	fetch                                fetchFunc
+	latest                               latestFunc
+	window                               windowFunc
+	valset                               valsetFunc
+	chainID                              chainIDFunc
+	header                               headerFunc
+	portalBlock                          portalBlockFunc
+	networkFunc                          networkFunc
+	genesisFunc                          genesisFunc
+	upgradeFunc                          upgradeFunc
+	upgradeAppliedFunc                   upgradeAppliedFunc
+	CurrentUpgradePlanupgradeAppliedFunc upgradeAppliedFunc
+	backoffFunc                          func(context.Context) func()
+	chainNamer                           func(xchain.ChainVersion) string
+	network                              netconf.ID
 }
 
 // NewProviderForT creates a new provider for testing.
@@ -83,6 +86,10 @@ func (p Provider) CometClient() rpcclient.Client {
 
 func (p Provider) CurrentUpgradePlan(ctx context.Context) (upgradetypes.Plan, bool, error) {
 	return p.upgradeFunc(ctx)
+}
+
+func (p Provider) AppliedUpgradeHeight(ctx context.Context, name string) (uint64, bool, error) {
+	return p.upgradeAppliedFunc(ctx, name)
 }
 
 func (p Provider) AttestationsFrom(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64,

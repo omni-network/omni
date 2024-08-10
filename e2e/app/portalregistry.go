@@ -3,9 +3,11 @@ package app
 import (
 	"context"
 	"fmt"
-	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/p2p/netutil"
 	v2 "github.com/omni-network/omni/halo/app/upgrades/v2"
-	"github.com/omni-network/omni/halo/evmupgrade"
+	v3 "github.com/omni-network/omni/halo/app/upgrades/v3"
+	cprovider "github.com/omni-network/omni/lib/cchain/provider"
+	"net"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -30,17 +32,10 @@ func triggerUpgrade(ctx context.Context, def Definition) error {
 	}
 
 	upgradeAddr := common.HexToAddress(predeploys.Upgrade)
-	fmt.Printf("🔥!! upgradeAddr=%v\n", upgradeAddr)
 	contract, err := bindings.NewUpgrade(upgradeAddr, backend)
 	if err != nil {
 		return errors.Wrap(err, "new upgrade")
 	}
-
-	codeAt, err := backend.CodeAt(ctx, upgradeAddr, nil)
-	if err != nil {
-		return errors.Wrap(err, "code at")
-	}
-	fmt.Printf("🔥!! len(codeAt)=%v\n", len(codeAt))
 
 	admin := eoa.MustAddress(def.Testnet.Network, eoa.RoleAdmin)
 	txOpts, err := backend.BindOpts(ctx, admin)
@@ -48,49 +43,68 @@ func triggerUpgrade(ctx context.Context, def Definition) error {
 		return errors.Wrap(err, "bind opts")
 	}
 
-	tx, err := contract.PlanUpgrade(txOpts, bindings.UpgradePlan{
-		Name:   v2.UpgradeName,
-		Height: 20,
-		Info:   "",
-	})
+	node := def.Testnet.BroadcastNode()
+	rpcclient, err := node.Client()
 	if err != nil {
-		return errors.Wrap(err, "plan upgrade")
+		return errors.Wrap(err, "getting client")
 	}
 
-	fmt.Printf("🔥!! planned upgrade tx=%v\n", tx.Hash())
+	cprov := cprovider.NewABCIProvider(rpcclient, def.Testnet.Network, netconf.ChainVersionNamer(def.Testnet.Network))
 
-	receipt, err := backend.WaitMined(ctx, tx)
-	if err != nil {
-		return errors.Wrap(err, "wait mined")
-	}
-	fmt.Printf("🔥!! receipt.Status=%v\n", receipt.Status)
-	fmt.Printf("🔥!! receipt.ContractAddress=%v\n", receipt.ContractAddress)
-	fmt.Printf("🔥!! receipt.Type=%v\n", receipt.Type)
-	fmt.Printf("🔥!! receipt.BlockNumber=%v\n", receipt.BlockNumber)
-	fmt.Printf("🔥!! receipt.BlockHash=%v\n", receipt.BlockHash)
-	fmt.Printf("🔥!! len(receipt.Logs)=%v\n", len(receipt.Logs))
+	go func() {
+		for _, upgrade := range []string{v2.UpgradeName, v3.UpgradeName} {
+			info, err := rpcclient.ABCIInfo(ctx)
+			if err != nil {
+				log.Error(ctx, "get abci info", err)
+				return
+			}
 
-	logs, err := backend.FilterLogs(ctx, ethereum.FilterQuery{
-		BlockHash: &receipt.BlockHash,
-		Addresses: []common.Address{upgradeAddr},
-		Topics:    [][]common.Hash{{evmupgrade.PlanUpgradeEvent.ID}},
-	})
-	if err != nil {
-		return errors.Wrap(err, "get logs")
-	} else if len(logs) == 0 {
-		return errors.New("no event logs for mined ")
-	}
+			height := info.Response.LastBlockHeight + 3
 
-	fmt.Printf("🔥!! len(logs)=%v\n", len(logs))
+			log.Info(ctx, "🏵️🏵️!! planning upgrade", "upgrade", upgrade, "height", height)
 
-	plan, err := contract.ParsePlanUpgrade(logs[0])
-	if err != nil {
-		return errors.Wrap(err, "parse plan upgrade PlanUpgrade transaction")
-	}
+			tx, err := contract.PlanUpgrade(txOpts, bindings.UpgradePlan{
+				Name:   upgrade,
+				Height: uint64(height),
+				Info:   "",
+			})
+			if err != nil {
+				log.Error(ctx, "plan upgrade", err)
+				return
+			}
 
-	fmt.Printf("🔥!! plan=%#v\n", plan)
+			log.Info(ctx, "🏵️🏵️!! planned upgrade", "upgrade", upgrade, "tx", tx.Hash())
+
+			// Wait for the upgrade to be applied
+			for {
+				height, ok, err := cprov.AppliedUpgradeHeight(ctx, upgrade)
+				if netutil.IsTemporaryError(err) || isNetworkError(err) {
+					log.Warn(ctx, "Temporary applied upgrade height error", err)
+				} else if err != nil {
+					log.Error(ctx, "applied upgrade height", err)
+					return
+				} else if ok {
+					log.Info(ctx, "🏵️🏵️!! upgrade applied", "upgrade", upgrade, "height", height)
+					break
+				}
+
+				time.Sleep(1 * time.Second)
+			}
+		}
+	}()
 
 	return nil
+}
+
+// isNetworkError returns true if the error is a network error.
+func isNetworkError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	opErr := new(net.OpError)
+
+	return errors.As(err, &opErr)
 }
 
 // initPortalRegistry initializes the PortalRegistry predeploy.

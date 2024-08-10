@@ -70,6 +70,8 @@ type Provider interface {
 
 	// CurrentUpgradePlan returns the current (non-activated) upgrade plan.
 	CurrentUpgradePlan(ctx context.Context) (utypes.Plan, bool, error)
+
+	AppliedUpgradeHeight(ctx context.Context, name string) (uint64, bool, error)
 }
 
 // Validator is a consensus chain validator in a validator set.

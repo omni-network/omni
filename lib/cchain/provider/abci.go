@@ -43,19 +43,35 @@ func NewABCIProvider(abci rpcclient.Client, network netconf.ID, chainNamer func(
 	ucl := utypes.NewQueryClient(rpcAdaptor{abci: abci})
 
 	return Provider{
-		fetch:       newABCIFetchFunc(acl, abci, chainNamer),
-		latest:      newABCILatestFunc(acl),
-		window:      newABCIWindowFunc(acl),
-		valset:      newABCIValsetFunc(vcl),
-		portalBlock: newABCIPortalBlockFunc(pcl),
-		networkFunc: newABCINetworkFunc(rcl),
-		genesisFunc: newABCIGenesisFunc(gcl),
-		upgradeFunc: newABCIUpgradeFunc(ucl),
-		chainID:     newChainIDFunc(abci),
-		header:      abci.Header,
-		backoffFunc: backoffFunc,
-		chainNamer:  chainNamer,
-		network:     network,
+		fetch:              newABCIFetchFunc(acl, abci, chainNamer),
+		latest:             newABCILatestFunc(acl),
+		window:             newABCIWindowFunc(acl),
+		valset:             newABCIValsetFunc(vcl),
+		portalBlock:        newABCIPortalBlockFunc(pcl),
+		networkFunc:        newABCINetworkFunc(rcl),
+		genesisFunc:        newABCIGenesisFunc(gcl),
+		upgradeFunc:        newABCIUpgradeFunc(ucl),
+		upgradeAppliedFunc: newABCIAppliedUpgradeFunc(ucl),
+		chainID:            newChainIDFunc(abci),
+		header:             abci.Header,
+		backoffFunc:        backoffFunc,
+		chainNamer:         chainNamer,
+		network:            network,
+	}
+}
+
+func newABCIAppliedUpgradeFunc(ucl utypes.QueryClient) upgradeAppliedFunc {
+	return func(ctx context.Context, name string) (uint64, bool, error) {
+		resp, err := ucl.AppliedPlan(ctx, &utypes.QueryAppliedPlanRequest{Name: name})
+		if err != nil {
+			return 0, false, errors.Wrap(err, "abci query applied plan")
+		} else if resp.Height < 0 {
+			return 0, false, errors.New("negative height in applied plan response")
+		} else if resp.Height == 0 {
+			return 0, false, nil
+		}
+
+		return uint64(resp.Height), true, nil
 	}
 }
 
