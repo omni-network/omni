@@ -30,7 +30,7 @@ const config: Config = {
           path: "../content",
           routeBasePath: "/",
           sidebarPath: "./sidebars.ts",
-          editUrl: "https://github.com/omni-network/omni/tree/main/docs/site",
+          editUrl: "https://github.com/omni-network/omni/tree/main/docs/content",
           remarkPlugins: [remarkMath],
           rehypePlugins: [rehypeKatex],
         },
