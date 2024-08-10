@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-package halo.attest.keeper;
+package halo.attest.migrations.v2;
 
 import "cosmos/orm/v1/orm.proto";
 
-option go_package = "halo/attest/keeper";
+option go_package = "halo/attest/migrations/v2";
 
 enum Status {
   Unknown   = 0;
@@ -19,7 +19,6 @@ message Attestation {
     index: {id: 1, fields: "attestation_root", unique: true} // Unique index on attestation root.
     index: {id: 2, fields: "status,chain_id,conf_level,attest_offset" } // Allows querying by approved attestations by confLevel and offset.
     index: {id: 3, fields: "created_height"} // Allows querying/deleting by created height.
-    index: {id: 4, fields: "msg_root"}
   };
 
   uint64 id = 1; // Auto-incremented ID
@@ -27,8 +26,8 @@ message Attestation {
   uint64 chain_id         = 2; // Chain ID as per https://chainlist.org
   uint32 conf_level       = 3; // Confirmation level of the cross-chain block
   uint64 attest_offset    = 4; // Offset of the cross-chain block
-  uint64 block_height     = 6; // Height of the source-chain block
-  bytes  block_hash       = 5; // Hash of the source-chain block
+  uint64 block_height     = 5; // Height of the source-chain block
+  bytes  block_hash       = 6; // Hash of the source-chain block
   bytes  msg_root         = 7; // Merkle root of all the messages in the cross-chain Block
   bytes  attestation_root = 8; // Attestation merkle root of the cross-chain Block
   uint32 status           = 9; // Status of the block; pending, approved.

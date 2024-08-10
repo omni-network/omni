@@ -59,6 +59,30 @@ type Keeper struct {
 	valAddrCache *valAddrCache
 }
 
+func (k *Keeper) StoreService() store.KVStoreService {
+	return k.storeService
+}
+
+func (k *Keeper) AttTable() AttestationTable {
+	return k.attTable
+}
+
+func (k *Keeper) UpgradeSigAttIDs(ctx context.Context, from, to uint64) error {
+	sigs, err := k.getSigs(ctx, from)
+	if err != nil {
+		return errors.Wrap(err, "get sigs")
+	}
+
+	for _, sig := range sigs {
+		sig.AttId = to
+		if err := k.sigTable.Update(ctx, sig); err != nil {
+			return errors.Wrap(err, "update sig")
+		}
+	}
+
+	return nil
+}
+
 // New returns a new attestation keeper.
 func New(
 	cdc codec.BinaryCodec,
