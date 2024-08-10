@@ -15,6 +15,7 @@
   "Endpoint": "",
   "Headers": ""
  },
+ "UnsafeSkipUpgrades": null,
  "Comet": {
   "Version": "0.38.10",
   "RootDir": "./halo",

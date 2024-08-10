@@ -21,6 +21,7 @@ import (
 	"cosmossdk.io/math"
 	etypes "cosmossdk.io/x/evidence/types"
 	"cosmossdk.io/x/tx/signing"
+	utypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -247,7 +248,9 @@ func defaultAppState(
 		dtypes.ModuleName:   marshal(dtypes.DefaultGenesisState()),
 		etypes.ModuleName:   marshal(etypes.DefaultGenesisState()),
 		vtypes.ModuleName:   marshal(vtypes.DefaultGenesisState()),
+		gtypes.ModuleName:   marshal(gtypes.DefaultGenesisState()),
 		evmtypes.ModuleName: marshal(evmengGenesis),
+		utypes.ModuleName:   []byte("{}"), // See cosmossdk.io/x/upgrade@v0.1.4/module.go#DefaultGenesis
 	}
 }
 

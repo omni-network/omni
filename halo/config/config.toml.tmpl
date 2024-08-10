@@ -9,7 +9,7 @@ version = "{{ .Version }}"
 network = "{{ .Network }}"
 
 #######################################################################
-###                          Halo Options                           ###
+###                       Halo Octane Options                       ###
 #######################################################################
 
 # Omni execution client Engine API http endpoint.
@@ -17,6 +17,20 @@ engine-endpoint = "{{ .EngineEndpoint }}"
 
 # Omni execution client JWT file used for authentication.
 engine-jwt-file = "{{ .EngineJWTFile }}"
+
+# EVMBuildDelay defines the minimum delay between triggering a EVM payload build and fetching the result.
+# This is a tradeoff between "high value blocks" and "fast consensus".
+# It should be slightly higher than geth's --miner.recommit value.
+evm-build-delay = "{{.EVMBuildDelay}}"
+
+# EVMBuildOptimistic defines whether to trigger optimistic EVM payload building.
+# If true, the EVM payload will be triggered on previous finalisation. This allows
+# more time for block building while ensuring faster consensus blocks.
+evm-build-optimistic = {{.EVMBuildOptimistic}}
+
+#######################################################################
+###                          Cosmos SDK                             ###
+#######################################################################
 
 # SnapshotInterval specifies the height interval at which halo
 # will take state sync snapshots. Defaults to 1000 (roughly once an hour), setting this to
@@ -42,9 +56,9 @@ snapshot-keep-recent = {{ .SnapshotKeepRecent }}
 # ResponseCommit.RetainHeight.
 min-retain-blocks = {{ .MinRetainBlocks }}
 
-# default: the last 362880 states are kept, pruning at 10 block intervals
-# nothing: all historic states will be saved, nothing will be deleted (i.e. archiving node)
+# default: 'default' is the same as 'everything'; reducing disk usage for normal full nodes.
 # everything: 2 latest states will be kept; pruning at 10 block intervals.
+# nothing: all historic states will be saved, nothing will be deleted (i.e. archiving node)
 pruning = "{{ .PruningOption }}"
 
 # AppDBBackend defines the database backend type to use for the application and snapshots DBs.
@@ -52,15 +66,8 @@ pruning = "{{ .PruningOption }}"
 # The fallback is the db_backend value set in CometBFT's config.toml.
 app-db-backend = "{{ .BackendType }}"
 
-# EVMBuildDelay defines the minimum delay between triggering a EVM payload build and fetching the result.
-# This is a tradeoff between "high value blocks" and "fast consensus".
-# It should be slightly higher than geth's --miner.recommit value.
-evm-build-delay = "{{.EVMBuildDelay}}"
-
-# EVMBuildOptimistic defines whether to trigger optimistic EVM payload building.
-# If true, the EVM payload will be triggered on previous finalisation. This allows
-# more time for block building while ensuring faster consensus blocks.
-evm-build-optimistic = {{.EVMBuildOptimistic}}
+# Skip a set of upgrade heights to continue the old binary
+unsafe-skip-upgrades = {{ FmtIntSlice .UnsafeSkipUpgrades }}
 
 #######################################################################
 ###                             X-Chain                             ###

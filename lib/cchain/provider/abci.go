@@ -22,6 +22,7 @@ import (
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 
 	errorsmod "cosmossdk.io/errors"
+	utypes "cosmossdk.io/x/upgrade/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	gogogrpc "github.com/cosmos/gogoproto/grpc"
 	"github.com/cosmos/gogoproto/proto"
@@ -39,6 +40,7 @@ func NewABCIProvider(abci rpcclient.Client, network netconf.ID, chainNamer func(
 	pcl := ptypes.NewQueryClient(rpcAdaptor{abci: abci})
 	rcl := rtypes.NewQueryClient(rpcAdaptor{abci: abci})
 	gcl := genserve.NewQueryClient(rpcAdaptor{abci: abci})
+	ucl := utypes.NewQueryClient(rpcAdaptor{abci: abci})
 
 	return Provider{
 		fetch:       newABCIFetchFunc(acl, abci, chainNamer),
@@ -48,11 +50,25 @@ func NewABCIProvider(abci rpcclient.Client, network netconf.ID, chainNamer func(
 		portalBlock: newABCIPortalBlockFunc(pcl),
 		networkFunc: newABCINetworkFunc(rcl),
 		genesisFunc: newABCIGenesisFunc(gcl),
+		upgradeFunc: newABCIUpgradeFunc(ucl),
 		chainID:     newChainIDFunc(abci),
 		header:      abci.Header,
 		backoffFunc: backoffFunc,
 		chainNamer:  chainNamer,
 		network:     network,
+	}
+}
+
+func newABCIUpgradeFunc(ucl utypes.QueryClient) upgradeFunc {
+	return func(ctx context.Context) (utypes.Plan, bool, error) {
+		resp, err := ucl.CurrentPlan(ctx, &utypes.QueryCurrentPlanRequest{})
+		if err != nil {
+			return utypes.Plan{}, false, errors.Wrap(err, "abci query current plan")
+		} else if resp.Plan == nil {
+			return utypes.Plan{}, false, nil
+		}
+
+		return *resp.Plan, true, nil
 	}
 }
 

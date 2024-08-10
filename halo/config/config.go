@@ -2,7 +2,9 @@ package config
 
 import (
 	"bytes"
+	"fmt"
 	"path/filepath"
+	"strings"
 	"text/template"
 	"time"
 
@@ -73,6 +75,7 @@ type Config struct {
 	EVMBuildDelay      time.Duration
 	EVMBuildOptimistic bool
 	Tracer             tracer.Config
+	UnsafeSkipUpgrades []int
 }
 
 // ConfigFile returns the default path to the toml halo config file.
@@ -121,7 +124,9 @@ var tomlTemplate []byte
 func WriteConfigTOML(cfg Config, logCfg log.Config) error {
 	var buffer bytes.Buffer
 
-	t, err := template.New("").Parse(string(tomlTemplate))
+	t, err := template.New("").
+		Funcs(template.FuncMap{"FmtIntSlice": fmtSlice[int]}).
+		Parse(string(tomlTemplate))
 	if err != nil {
 		return errors.Wrap(err, "parse template")
 	}
@@ -145,4 +150,16 @@ func WriteConfigTOML(cfg Config, logCfg log.Config) error {
 	}
 
 	return nil
+}
+
+func fmtSlice[T any](slice []T) string {
+	var sb strings.Builder
+	for i, v := range slice {
+		if i > 0 {
+			_, _ = sb.WriteString(",")
+		}
+		_, _ = sb.WriteString(fmt.Sprint(v))
+	}
+
+	return "[" + sb.String() + "]"
 }

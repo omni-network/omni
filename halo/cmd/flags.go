@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/xchain"
 
+	sdkserver "github.com/cosmos/cosmos-sdk/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -28,6 +29,7 @@ func bindRunFlags(cmd *cobra.Command, cfg *halocfg.Config) {
 	flags.StringVar(&cfg.PruningOption, "pruning", cfg.PruningOption, "Pruning strategy (default|nothing|everything)")
 	flags.DurationVar(&cfg.EVMBuildDelay, "evm-build-delay", cfg.EVMBuildDelay, "Minimum delay between triggering and fetching a EVM payload build")
 	flags.BoolVar(&cfg.EVMBuildOptimistic, "evm-build-optimistic", cfg.EVMBuildOptimistic, "Enables optimistic building of EVM payloads on previous block finalize")
+	flags.IntSliceVar(&cfg.UnsafeSkipUpgrades, sdkserver.FlagUnsafeSkipUpgrades, cfg.UnsafeSkipUpgrades, "Skip a set of upgrade heights to continue the old binary")
 }
 
 func bindRollbackFlags(flags *pflag.FlagSet, cfg *app.RollbackConfig) {

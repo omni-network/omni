@@ -124,6 +124,18 @@ func bindFlags(cmd *cobra.Command, v *viper.Viper) error {
 				continue
 			}
 
+			// Special case handling of slice flags.
+			if sliceVal, ok := f.Value.(pflag.SliceValue); ok {
+				for _, v := range v.GetStringSlice(name) {
+					err := sliceVal.Append(v)
+					if err != nil {
+						lastErr = errors.Wrap(err, "append flag", "name", f.Name, "type", f.Value.Type(), "value", v)
+					}
+				}
+
+				break
+			}
+
 			val := v.Get(name)
 
 			// Special case handling of map[string]string flags.
@@ -142,11 +154,12 @@ func bindFlags(cmd *cobra.Command, v *viper.Viper) error {
 				}
 
 				val = strings.Join(kvs, ",")
+				// Set flag below
 			}
 
-			err := cmd.Flags().Set(f.Name, fmt.Sprintf("%v", val))
+			err := f.Value.Set(fmt.Sprintf("%v", val))
 			if err != nil {
-				lastErr = err
+				lastErr = errors.Wrap(err, "set flag", "name", f.Name, "type", f.Value.Type(), "value", val)
 			}
 
 			break
