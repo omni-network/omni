@@ -7,6 +7,6 @@ assignees: ''
 
 ---
 
-*Problem to Solve*
+#### Problem to Solve
 
-*Proposed Solution*
+#### Proposed Solution
