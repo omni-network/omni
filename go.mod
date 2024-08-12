@@ -19,7 +19,7 @@ require (
 	github.com/Layr-Labs/eigensdk-go v0.1.10-0.20240730214828-67787e959b72
 	github.com/bufbuild/buf v1.36.0
 	github.com/charmbracelet/log v0.4.0
-	github.com/cometbft/cometbft v0.38.10
+	github.com/cometbft/cometbft v0.38.11
 	github.com/cosmos/cosmos-db v1.0.2
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
 	github.com/cosmos/cosmos-sdk v0.50.9
