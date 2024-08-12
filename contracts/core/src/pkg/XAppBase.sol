@@ -2,6 +2,7 @@
 pragma solidity ^0.8.12;
 
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
+import { IOmniGasEx } from "../interfaces/IOmniGasEx.sol";
 import { XTypes } from "../libraries/XTypes.sol";
 import { ConfLevel } from "../libraries/ConfLevel.sol";
 
@@ -13,11 +14,15 @@ abstract contract XAppBase {
     /**
      * @notice Emitted when the OmniPortal contract address is set
      */
-    event OmniPortalSet(address omni);
+    event OmniPortalSet(address portal);
+
+    /**
+     * @notice Emitted when the OmniGasEx contract address is set
+     */
+    event OmniGasExSet(address gasex);
 
     /**
      * @notice Emitted when the default confirmation level is set
-     * @param conf  Confirmation level
      */
     event DefaultConfLevelSet(uint8 conf);
 
@@ -25,6 +30,11 @@ abstract contract XAppBase {
      * @notice The OmniPortal contract
      */
     IOmniPortal public omni;
+
+    /**
+     * @notice The OmniGasEx contract
+     */
+    IOmniGasEx public gasex;
 
     /**
      * @notice Default confirmation level for xcalls
@@ -80,6 +90,29 @@ abstract contract XAppBase {
         return fee;
     }
 
+    function fund(address recipient, uint256 amtETH) internal returns (uint256) {
+        uint64 defaultGasLimit = 100_000;
+        uint256 fee = gasex.fundFee(recipient, amtETH, defaultGasLimit);
+        require(msg.value >= fee + amtETH, "XApp: insufficient funds");
+        gasex.fund{ value: fee + amtETH }(recipient, amtETH, defaultGasLimit);
+        return fee + amtETH;
+    }
+
+    function fundOrRefund(address recipient, uint256 excess) internal {
+        uint64 defaultGasLimit = 100_000;
+        // Use max - as we don't know fee yet, and max will give us largest fee
+        uint256 fee = gasex.fundFee(recipient, type(uint256).max, defaultGasLimit);
+
+        // if not enough excess to cover fee, refund excess
+        if (fee > excess) {
+            payable(msg.sender).transfer(excess);
+            return;
+        }
+
+        require(msg.value >= fee + excess, "XApp: insufficient funds");
+        gasex.fund{ value: fee + excess }(recipient, excess - fee, defaultGasLimit);
+    }
+
     /**
      * @notice Call a contract on another chain. (Explicit ConfLevel)
      * @param destChainId   Destination chain ID
@@ -113,8 +146,14 @@ abstract contract XAppBase {
      * @param _omni    The OmniPortal contract address
      */
     function _setOmniPortal(address _omni) internal {
-        require(_omni != address(0), "XApp: no zero omni");
+        require(_omni != address(0), "XApp: zero addr");
         omni = IOmniPortal(_omni);
         emit OmniPortalSet(_omni);
+    }
+
+    function _setOmniGasEx(address _gasex) internal {
+        require(_gasex != address(0), "XApp: zero addr");
+        gasex = IOmniGasEx(_gasex);
+        emit OmniGasExSet(_gasex);
     }
 }

@@ -32,7 +32,7 @@ contract PingPong is XApp {
      */
     event Ping(string id, uint64 srcChainID, address from, uint64 n);
 
-    constructor(address portal) XApp(portal, ConfLevel.Latest) { }
+    constructor(address portal, address gasex) XApp(portal, gasex, ConfLevel.Latest) { }
 
     /**
      * @notice Start the pingpong xmsg loop

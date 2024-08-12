@@ -69,7 +69,8 @@ abstract contract XAppTesterBase is XAppBase {
  * @dev Test helper for XApp
  */
 contract XAppTester is XAppTesterBase, XApp {
-    constructor(address portal, uint8 defaultConfLevel) XApp(portal, defaultConfLevel) { }
+    // Stub gas ex
+    constructor(address portal, uint8 defaultConfLevel) XApp(portal, address(1234), defaultConfLevel) { }
 }
 
 /**
@@ -78,7 +79,8 @@ contract XAppTester is XAppTesterBase, XApp {
  */
 contract XAppUpgradeableTester is XAppTesterBase, XAppUpgradeable {
     function initialize(address portal, uint8 defaultConfLevel) public initializer {
-        __XApp_init(portal, defaultConfLevel);
+        // Stub gas ex
+        __XApp_init(portal, address(1234), defaultConfLevel);
     }
 }
 

@@ -8,8 +8,9 @@ import { XAppBase } from "./XAppBase.sol";
  * @notice Base contract for Omni cross-chain applications
  */
 abstract contract XApp is XAppBase {
-    constructor(address omni_, uint8 defaultConfLevel_) {
-        _setOmniPortal(omni_);
-        _setDefaultConfLevel(defaultConfLevel_);
+    constructor(address portal, address exchange, uint8 defaultConf) {
+        _setOmniPortal(portal);
+        _setOmniGasEx(exchange);
+        _setDefaultConfLevel(defaultConf);
     }
 }
