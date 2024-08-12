@@ -4,6 +4,7 @@ import (
 	attestmodule "github.com/omni-network/omni/halo/attest/module"
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/evmstaking"
+	"github.com/omni-network/omni/halo/evmupgrade"
 	portalmodule "github.com/omni-network/omni/halo/portal/module"
 	portaltypes "github.com/omni-network/omni/halo/portal/types"
 	registrymodule "github.com/omni-network/omni/halo/registry/module"
@@ -185,8 +186,10 @@ var (
 				Config: appconfig.WrapAny(&evidencemodulev1.Module{}),
 			},
 			{
-				Name:   upgradetypes.ModuleName,
-				Config: appconfig.WrapAny(&upgrademodulev1.Module{}),
+				Name: upgradetypes.ModuleName,
+				Config: appconfig.WrapAny(&upgrademodulev1.Module{
+					Authority: evmupgrade.ModuleName,
+				}),
 			},
 			{
 				Name:   engevmtypes.ModuleName,

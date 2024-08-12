@@ -216,6 +216,7 @@
    "redelegations": [],
    "exported": false
   },
+  "upgrade": {},
   "valsync": {}
  },
  "consensus": {

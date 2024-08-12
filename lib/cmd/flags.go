@@ -7,10 +7,11 @@ import (
 
 	"github.com/omni-network/omni/lib/log"
 
+	sdkflags "github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/spf13/pflag"
 )
 
-const homeFlag = "home"
+const homeFlag = sdkflags.FlagHome
 
 // BindHomeFlag binds the home flag to the given flag set.
 // This is generally only required for apps that require multiple config files or persist data to disk.

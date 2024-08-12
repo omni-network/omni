@@ -22,6 +22,8 @@ const executionHeadID = 1
 func (k *Keeper) InsertGenesisHead(ctx context.Context, executionBlockHash []byte) error {
 	if len(executionBlockHash) != common.HashLength {
 		return errors.New("invalid execution block hash length", "length", len(executionBlockHash))
+	} else if common.BytesToHash(executionBlockHash) == (common.Hash{}) {
+		return errors.New("invalid zero execution block hash")
 	}
 
 	const genesisHeight = 0 // Genesis block height is 0.

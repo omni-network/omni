@@ -23,6 +23,7 @@ func TestDefaultConfigReference(t *testing.T) {
 	cfg.RPCEndpoints = map[string]string{
 		"ethereum": "http://127.0.0.1:8545",
 	}
+	cfg.UnsafeSkipUpgrades = []int{1, 2, 3}
 
 	require.NoError(t, os.MkdirAll(filepath.Join(tempDir, "config"), 0o755))
 	require.NoError(t, halocfg.WriteConfigTOML(cfg, log.DefaultConfig()))

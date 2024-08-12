@@ -84,6 +84,7 @@ func newApp(
 	chainVerNamer atypes.ChainVerNameFunc,
 	chainNamer rtypes.ChainNameFunc,
 	feeRecProvider etypes.FeeRecipientProvider,
+	appOpts servertypes.AppOptions,
 	baseAppOpts ...func(*baseapp.BaseApp),
 ) (*App, error) {
 	depCfg := depinject.Configs(
@@ -95,6 +96,7 @@ func newApp(
 			chainNamer,
 			voter,
 			feeRecProvider,
+			appOpts,
 		),
 	)
 

@@ -24,6 +24,10 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 )
 
+const (
+	ConsensusVersion = 1
+)
+
 var (
 	_ module.AppModuleBasic  = (*AppModule)(nil)
 	_ module.HasGenesis      = (*AppModule)(nil)
@@ -48,6 +52,10 @@ func NewAppModuleBasic(cdc codec.BinaryCodec) AppModuleBasic {
 // Name returns the name of the module as a string.
 func (AppModuleBasic) Name() string {
 	return types.ModuleName
+}
+
+func (AppModuleBasic) ConsensusVersion() uint64 {
+	return ConsensusVersion
 }
 
 // RegisterLegacyAminoCodec registers the amino codec for the module, which is used

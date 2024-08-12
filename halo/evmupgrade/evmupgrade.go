@@ -19,6 +19,7 @@ import (
 
 	ukeeper "cosmossdk.io/x/upgrade/keeper"
 	utypes "cosmossdk.io/x/upgrade/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
 const ModuleName = "evmupgrade"
@@ -120,7 +121,11 @@ func (p EventProcessor) Deliver(ctx context.Context, _ common.Hash, elog *evmeng
 func (p EventProcessor) deliverCancelUpgrade(ctx context.Context, _ *bindings.UpgradeCancelUpgrade) error {
 	log.Info(ctx, "EVM cancel upgrade detected")
 
-	_, err := ukeeper.NewMsgServerImpl(p.uKeeper).CancelUpgrade(ctx, &utypes.MsgCancelUpgrade{})
+	msg := utypes.MsgCancelUpgrade{
+		Authority: authtypes.NewModuleAddress(ModuleName).String(),
+	}
+
+	_, err := ukeeper.NewMsgServerImpl(p.uKeeper).CancelUpgrade(ctx, &msg)
 	if err != nil {
 		return errors.Wrap(err, "cancel software upgrade")
 	}
@@ -138,6 +143,7 @@ func (p EventProcessor) deliverPlanUpgrade(ctx context.Context, plan *bindings.U
 	}
 
 	msg := utypes.MsgSoftwareUpgrade{
+		Authority: authtypes.NewModuleAddress(ModuleName).String(),
 		Plan: utypes.Plan{
 			Name:   plan.Name,
 			Height: height,

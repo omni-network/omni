@@ -18,6 +18,7 @@
   "Endpoint": "http://tracing.com",
   "Headers": "Authorization=Basic 123456"
  },
+ "UnsafeSkipUpgrades": null,
  "Comet": {
   "Version": "0.38.10",
   "RootDir": "testinput/input1",

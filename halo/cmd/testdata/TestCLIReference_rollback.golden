@@ -29,4 +29,5 @@ Flags:
       --snapshot-keep-recent uint                 State sync snapshot to keep (default 2)
       --tracing-endpoint string                   Tracing OTLP endpoint
       --tracing-headers string                    Tracing OTLP headers
+      --unsafe-skip-upgrades ints                 Skip a set of upgrade heights to continue the old binary
       --xchain-evm-rpc-endpoints stringToString   Cross-chain EVM RPC endpoints. e.g. "ethereum=http://geth:8545,optimism=https://optimism.io" (default [])

@@ -34,7 +34,9 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/server"
+	sdkflags "github.com/cosmos/cosmos-sdk/client/flags"
+	sdkserver "github.com/cosmos/cosmos-sdk/server"
+	sdkservertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdktelemetry "github.com/cosmos/cosmos-sdk/telemetry"
 	"github.com/cosmos/cosmos-sdk/types/mempool"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
@@ -136,6 +138,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		netconf.ChainVersionNamer(cfg.Network),
 		netconf.ChainNamer(cfg.Network),
 		burnEVMFees{},
+		serverAppOptsFromCfg(cfg),
 		baseAppOpts...,
 	)
 	if err != nil {
@@ -222,7 +225,7 @@ func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App, privVal cmt
 	}
 
 	wrapper := newABCIWrapper(
-		server.NewCometABCIWrapper(app),
+		sdkserver.NewCometABCIWrapper(app),
 		app.EVMEngKeeper.PostFinalize,
 		func() storetypes.CacheMultiStore {
 			return app.CommitMultiStore().CacheMultiStore()
@@ -302,8 +305,9 @@ func chainIDFromGenesis(cfg Config) (string, error) {
 func newEngineClient(ctx context.Context, cfg Config, network netconf.ID, pubkey crypto.PubKey) (ethclient.EngineClient, error) {
 	if network == netconf.Simnet {
 		return ethclient.NewEngineMock(
-			ethclient.WithMockSelfDelegation(pubkey, 1),
 			ethclient.WithPortalRegister(netconf.SimnetNetwork()),
+			ethclient.WithFarFutureUpgradePlan(),
+			ethclient.WithMockSelfDelegation(pubkey, 1),
 		)
 	}
 
@@ -387,4 +391,22 @@ func registerGenesisServer(ctx context.Context, s grpc1.Server, cfg Config) erro
 	genserve.Register(s, execution, consensus)
 
 	return nil
+}
+
+var _ sdkservertypes.AppOptions = serverAppOpts{}
+
+// serverAppOpts implements the cosmos-sdk server app options interface.
+type serverAppOpts map[string]any
+
+func (o serverAppOpts) Get(key string) any {
+	return o[key]
+}
+
+// serverAppOptsFromCfg returns the cosmos-sdk server app options from the given config.
+// This is required by the upgrade module.
+func serverAppOptsFromCfg(cfg Config) serverAppOpts {
+	return serverAppOpts{
+		sdkflags.FlagHome:                cfg.HomeDir,
+		sdkserver.FlagUnsafeSkipUpgrades: cfg.UnsafeSkipUpgrades,
+	}
 }
