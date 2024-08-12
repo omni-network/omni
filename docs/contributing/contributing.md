@@ -2,16 +2,13 @@
 
 Thank you for considering contributing to the Omni Network! We appreciate contributions of all forms, from code to documentation. Here's how you can help:
 
-## Branching Model
+## Branching
 
-We use Trunk Based Development for managing branches, please refer to the [Branching Model](./branching.md) for more details.
+Our project adheres to the **Trunk Based Development** approach for managing branches. This methodology emphasizes the use of short-lived development branches, allowing us to integrate "micro-commits" directly into the stable main branch. This practice not only accelerates the review process but also fosters early alignment and increases development velocity.
+
+Branches should be named `<author initials>/<description>`.
 
 ## How to Contribute
-
-### Testing
-
-- **Unit Testing:** Isolate tests to specific code paths or failure modes within functions. Ensure each function's failure modes and code paths are thoroughly tested.
-- **Integration Testing:** Focus on testing sophisticated interactions between components.
 
 ### Issues
 
