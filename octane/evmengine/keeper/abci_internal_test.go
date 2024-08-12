@@ -156,10 +156,9 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			address: common.BytesToAddress([]byte("test")),
 		}
 		frp := newRandomFeeRecipientProvider()
-		keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp)
+		keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, mockLogProvider{})
 		require.NoError(t, err)
 		keeper.SetVoteProvider(mockVEProvider{})
-		keeper.AddEventProcessor(mockLogProvider{})
 		populateGenesisHead(ctx, t, keeper)
 
 		// get the genesis block to build on top of
@@ -220,9 +219,8 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			address: common.BytesToAddress([]byte("test")),
 		}
 		frp := newRandomFeeRecipientProvider()
-		keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp)
+		keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, mockLogProvider{})
 		require.NoError(t, err)
-		keeper.AddEventProcessor(mockLogProvider{})
 		keeper.SetVoteProvider(mockVEProvider{})
 		populateGenesisHead(ctx, t, keeper)
 
@@ -288,10 +286,9 @@ func TestOptimistic(t *testing.T) {
 		address: val1,
 	}
 	frp := newRandomFeeRecipientProvider()
-	keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp)
+	keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, mockLogProvider{})
 	require.NoError(t, err)
 	keeper.SetVoteProvider(mockVEProvider{})
-	keeper.AddEventProcessor(mockLogProvider{})
 	keeper.SetCometAPI(cmtAPI)
 	keeper.SetBuildOptimistic(true)
 	populateGenesisHead(ctx, t, keeper)

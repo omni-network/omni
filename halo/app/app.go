@@ -73,6 +73,10 @@ type App struct {
 	RegistryKeeper        registrykeeper.Keeper
 	EvidenceKeeper        evidencekeeper.Keeper
 	UpgradeKeeper         *upgradekeeper.Keeper
+
+	SlashingEventProc evmslashing.EventProcessor
+	StakingEventProc  evmstaking.EventProcessor
+	UpgradeEventProc  evmupgrade.EventProcessor
 }
 
 // newApp returns a reference to an initialized App.
@@ -89,6 +93,7 @@ func newApp(
 ) (*App, error) {
 	depCfg := depinject.Configs(
 		appConfig,
+		depinject.Provide(diProviders...),
 		depinject.Supply(
 			logger,
 			engineCl,
@@ -121,32 +126,15 @@ func newApp(
 		&app.RegistryKeeper,
 		&app.EvidenceKeeper,
 		&app.UpgradeKeeper,
+		&app.SlashingEventProc,
+		&app.StakingEventProc,
+		&app.UpgradeEventProc,
 	); err != nil {
 		return nil, errors.Wrap(err, "dep inject")
 	}
 
-	// TODO(corver): Refactor this to use depinject
-	evmStaking, err := evmstaking.New(engineCl, app.StakingKeeper, app.BankKeeper, app.AccountKeeper)
-	if err != nil {
-		return nil, errors.Wrap(err, "create evm staking")
-	}
-
-	evmSlashing, err := evmslashing.New(engineCl, app.SlashingKeeper)
-	if err != nil {
-		return nil, errors.Wrap(err, "create evm slashing")
-	}
-
-	evmUpgrade, err := evmupgrade.New(engineCl, app.UpgradeKeeper)
-	if err != nil {
-		return nil, errors.Wrap(err, "create evm upgrade")
-	}
-
-	// Set evmengine vote and evm msg providers.
+	// Wire provider.
 	app.EVMEngKeeper.SetVoteProvider(app.AttestKeeper)
-	app.EVMEngKeeper.AddEventProcessor(evmStaking)
-	app.EVMEngKeeper.AddEventProcessor(evmSlashing)
-	app.EVMEngKeeper.AddEventProcessor(evmUpgrade)
-	app.EVMEngKeeper.AddEventProcessor(app.RegistryKeeper)
 	app.AttestKeeper.SetValidatorProvider(app.ValSyncKeeper)
 	app.AttestKeeper.SetPortalRegistry(app.RegistryKeeper)
 

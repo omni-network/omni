@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
+	"cosmossdk.io/depinject"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -31,3 +32,18 @@ type EvmEventProcessor interface {
 	Addresses() []common.Address
 	Deliver(ctx context.Context, blockHash common.Hash, log *EVMEvent) error
 }
+
+var _ depinject.ManyPerContainerType = InjectedEventProc{}
+
+// InjectedEventProc wraps an EvmEventProcessor such that
+// many instances can be injected during app wiring.
+type InjectedEventProc struct {
+	EvmEventProcessor
+}
+
+// InjectEventProc returns an InjectedEventProc that wraps the given EvmEventProcessor.
+func InjectEventProc(proc EvmEventProcessor) InjectedEventProc {
+	return InjectedEventProc{EvmEventProcessor: proc}
+}
+
+func (InjectedEventProc) IsManyPerContainerType() {}
