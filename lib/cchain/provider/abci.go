@@ -173,7 +173,7 @@ func newABCIFetchFunc(cl atypes.QueryClient, client rpcclient.Client, chainNamer
 			return []xchain.Attestation{}, nil
 		}
 
-		log.Debug(ctx, "Offset not found in latest state", "chain", chainName, "offset", fromOffset, "earliestAttestationAtLatestHeight", earliestAttestationAtLatestHeight.AttestOffset)
+		log.Debug(ctx, "Offset not found in latest state", "chain", chainName, "offset", fromOffset, "earliest", earliestAttestationAtLatestHeight.AttestOffset)
 
 		offsetHeight, err := searchOffsetInHistory(ctx, client, cl, chainVer, chainName, fromOffset)
 		if err != nil {
@@ -386,7 +386,7 @@ func searchOffsetInHistory(ctx context.Context, client rpcclient.Client, cl atyp
 		}
 
 		if queryHeight == 0 || queryHeight >= uint64(info.Response.LastBlockHeight) {
-			return 0, errors.New("unexpected query height [BUG]", "queryHeight", queryHeight) // This should never happen
+			return 0, errors.New("unexpected query height [BUG]", "height", queryHeight) // This should never happen
 		}
 		earliestAtt, ok, err := queryEarliestAttestation(ctx, cl, chainVer, queryHeight)
 		if IsErrHistoryPruned(err) {
@@ -456,7 +456,7 @@ func searchOffsetInHistory(ctx context.Context, client rpcclient.Client, cl atyp
 		}
 
 		if fromOffset >= earliestAtt.AttestOffset && fromOffset <= latestAtt.AttestOffset {
-			log.Debug(ctx, "Fetching offset from history", "chain", chainName, "fromOffset", fromOffset, "latestHeight", info.Response.LastBlockHeight, "foundHeight", midHeightIndex, "lookbackSteps", lookbackStepsCounter, "binarySearchSteps", binarySearchStepsCounter)
+			log.Debug(ctx, "Fetching offset from history", "chain", chainName, "from", fromOffset, "latest", info.Response.LastBlockHeight, "found", midHeightIndex, "lookback", lookbackStepsCounter, "search", binarySearchStepsCounter)
 			fetchStepsMetrics(chainName, lookbackStepsCounter, binarySearchStepsCounter)
 
 			return midHeightIndex, nil

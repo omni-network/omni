@@ -81,7 +81,7 @@ func logAttrs(i *inspector.Inspector) ([]analysis.Diagnostic, error) {
 	return diags, err
 }
 
-var snakeRegex = regexp.MustCompile(`"[a-z][a-z0-9_]+"`)
+var snakeRegex = regexp.MustCompile(`"[a-z0-9_]+"`)
 
 func isSnakeCase(value string) bool {
 	return snakeRegex.MatchString(value)
