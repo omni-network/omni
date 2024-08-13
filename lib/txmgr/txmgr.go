@@ -330,9 +330,8 @@ func (m *simple) sendTx(ctx context.Context, tx *types.Transaction) (*types.Tran
 				return nil, nil, errors.New("mined hash mismatch [BUG]", "tx", mined.Tx.Hash(), "receipt", mined.Rec.TxHash)
 			}
 			if mined.Rec.EffectiveGasPrice != nil {
-				txEffectiveGasPrice.
-					WithLabelValues(m.chainName).
-					Set(float64(mined.Rec.EffectiveGasPrice.Uint64() / params.GWei))
+				gasPrice, _ := mined.Rec.EffectiveGasPrice.Float64()
+				txEffectiveGasPrice.WithLabelValues(m.chainName).Set(gasPrice / params.GWei)
 				txGasUsed.WithLabelValues(m.chainName).Observe(float64(mined.Rec.GasUsed))
 			}
 
