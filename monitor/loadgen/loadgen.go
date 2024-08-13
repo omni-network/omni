@@ -69,7 +69,7 @@ func Start(ctx context.Context, network netconf.Network, ethClients map[uint64]e
 		return errors.Wrap(err, "new omni stake")
 	}
 
-	var period = time.Hour
+	var period = time.Hour * 6
 	if network.ID == netconf.Devnet {
 		period = time.Second * 5
 	}

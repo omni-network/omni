@@ -17,7 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-const saneMaxEther = 20 // Maximum amount to fund in ether. // TODO(corver): Increase this.
+const saneMaxEther = 50 // Maximum amount to fund in ether.
 
 // noAnvilDev returns a list of accounts that are not dev anvil accounts.
 func noAnvilDev(accounts []common.Address) []common.Address {
