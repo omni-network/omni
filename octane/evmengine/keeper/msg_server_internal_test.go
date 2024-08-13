@@ -49,10 +49,9 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 	}
 	frp := newRandomFeeRecipientProvider()
 	evmLogProc := mockLogProvider{deliverErr: errors.New("test error")}
-	keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp)
+	keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, evmLogProc)
 	require.NoError(t, err)
 	keeper.SetCometAPI(cmtAPI)
-	keeper.AddEventProcessor(evmLogProc)
 	populateGenesisHead(ctx, t, keeper)
 	msgSrv := NewMsgServerImpl(keeper)
 

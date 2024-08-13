@@ -55,6 +55,7 @@ func NewKeeper(
 	txConfig client.TxConfig,
 	addrProvider types.AddressProvider,
 	feeRecProvider types.FeeRecipientProvider,
+	eventProcs ...types.EvmEventProcessor,
 ) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
 		{Id: 1, ProtoFileName: File_octane_evmengine_keeper_evmengine_proto.Path()},
@@ -78,12 +79,8 @@ func NewKeeper(
 		txConfig:       txConfig,
 		addrProvider:   addrProvider,
 		feeRecProvider: feeRecProvider,
+		eventProcs:     eventProcs,
 	}, nil
-}
-
-// TODO(corver): Figure out how to use depinject for this.
-func (k *Keeper) AddEventProcessor(p types.EvmEventProcessor) {
-	k.eventProcs = append(k.eventProcs, p)
 }
 
 func (k *Keeper) SetVoteProvider(p types.VoteExtensionProvider) {
