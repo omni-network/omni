@@ -145,6 +145,10 @@ func monitorEVMOnce(ctx context.Context, ethCl ethclient.Client) error {
 	return nil
 }
 
+func New() error {
+	return nil
+}
+
 // dirSize returns the total size of the directory at path.
 func dirSize(path string) (int64, error) {
 	var size int64
