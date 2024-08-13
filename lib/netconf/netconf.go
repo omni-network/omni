@@ -127,7 +127,7 @@ func IsEthereumChain(network ID, chainID uint64) bool {
 	case Omega:
 		return chainID == evmchain.IDHolesky
 	default:
-		return chainID == evmchain.IDMockL1Fast || chainID == evmchain.IDMockL1Slow
+		return chainID == evmchain.IDMockL1
 	}
 }
 

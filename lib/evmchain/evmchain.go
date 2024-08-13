@@ -20,14 +20,14 @@ const (
 	// Testnets.
 	IDOmniOmega   uint64 = 164
 	IDHolesky     uint64 = 17000
+	IDSepolia     uint64 = 11155111
 	IDArbSepolia  uint64 = 421614
 	IDOpSepolia   uint64 = 11155420
 	IDBaseSepolia uint64 = 84532
 
 	// Ephemeral.
 	IDOmniEphemeral uint64 = 1651
-	IDMockL1Fast    uint64 = 1652
-	IDMockL1Slow    uint64 = 1653
+	IDMockL1        uint64 = 1652
 	IDMockL2        uint64 = 1654
 	IDMockOp        uint64 = 1655
 	IDMockArb       uint64 = 1656
@@ -38,7 +38,7 @@ const (
 
 type Metadata struct {
 	ChainID     uint64
-	IsL2        bool
+	PostsTo     uint64 // chain id to which tx data is posted
 	Name        string
 	BlockPeriod time.Duration
 	NativeToken tokens.Token
@@ -102,26 +102,32 @@ var static = map[uint64]Metadata{
 		BlockPeriod: 12 * time.Second,
 		NativeToken: tokens.ETH,
 	},
+	IDSepolia: {
+		ChainID:     IDSepolia,
+		Name:        "sepolia",
+		BlockPeriod: 12 * time.Second,
+		NativeToken: tokens.ETH,
+	},
 	IDArbSepolia: {
 		ChainID:     IDArbSepolia,
 		Name:        "arb_sepolia",
 		BlockPeriod: 300 * time.Millisecond,
 		NativeToken: tokens.ETH,
-		IsL2:        true,
+		PostsTo:     IDSepolia,
 	},
 	IDOpSepolia: {
 		ChainID:     IDOpSepolia,
 		Name:        "op_sepolia",
 		BlockPeriod: 2 * time.Second,
 		NativeToken: tokens.ETH,
-		IsL2:        true,
+		PostsTo:     IDSepolia,
 	},
 	IDBaseSepolia: {
 		ChainID:     IDBaseSepolia,
 		Name:        "base_sepolia",
 		BlockPeriod: 2 * time.Second,
 		NativeToken: tokens.ETH,
-		IsL2:        true,
+		PostsTo:     IDSepolia,
 	},
 	IDOmniEphemeral: {
 		ChainID:     IDOmniEphemeral,
@@ -129,16 +135,10 @@ var static = map[uint64]Metadata{
 		BlockPeriod: omniEVMBlockPeriod,
 		NativeToken: tokens.OMNI,
 	},
-	IDMockL1Fast: {
-		ChainID:     IDMockL1Fast,
+	IDMockL1: {
+		ChainID:     IDMockL1,
 		Name:        "mock_l1",
 		BlockPeriod: time.Second,
-		NativeToken: tokens.ETH,
-	},
-	IDMockL1Slow: {
-		ChainID:     IDMockL1Slow,
-		Name:        "slow_l1",
-		BlockPeriod: time.Second * 12,
 		NativeToken: tokens.ETH,
 	},
 	IDMockL2: {
@@ -146,20 +146,17 @@ var static = map[uint64]Metadata{
 		Name:        "mock_l2",
 		BlockPeriod: time.Second,
 		NativeToken: tokens.ETH,
-		IsL2:        true,
 	},
 	IDMockOp: {
 		ChainID:     IDMockOp,
 		Name:        "mock_op",
 		BlockPeriod: time.Second * 2,
 		NativeToken: tokens.ETH,
-		IsL2:        true,
 	},
 	IDMockArb: {
 		ChainID:     IDMockArb,
 		Name:        "mock_arb",
 		BlockPeriod: time.Second,
 		NativeToken: tokens.ETH,
-		IsL2:        true,
 	},
 }
