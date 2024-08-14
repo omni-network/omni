@@ -77,16 +77,17 @@ func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag st
 // any of these operations fail.
 func (p *Provider) Setup() error {
 	def := ComposeDef{
-		Network:     true,
-		NetworkName: p.testnet.Name,
-		NetworkCIDR: p.testnet.IP.String(),
-		BindAll:     false,
-		Nodes:       p.testnet.Nodes,
-		OmniEVMs:    p.testnet.OmniEVMs,
-		Anvils:      p.testnet.AnvilChains,
-		Relayer:     true,
-		Prometheus:  p.testnet.Prometheus,
-		Monitor:     true,
+		Network:        true,
+		NetworkName:    p.testnet.Name,
+		UpgradeVersion: p.testnet.UpgradeVersion,
+		NetworkCIDR:    p.testnet.IP.String(),
+		BindAll:        false,
+		Nodes:          p.testnet.Nodes,
+		OmniEVMs:       p.testnet.OmniEVMs,
+		Anvils:         p.testnet.AnvilChains,
+		Relayer:        true,
+		Prometheus:     p.testnet.Prometheus,
+		Monitor:        true,
 	}
 	def = SetImageTags(def, p.testnet.Manifest, p.omniTag)
 
@@ -166,10 +167,11 @@ func (p *Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 }
 
 type ComposeDef struct {
-	Network     bool
-	NetworkName string
-	NetworkCIDR string
-	BindAll     bool
+	Network        bool
+	NetworkName    string
+	UpgradeVersion string
+	NetworkCIDR    string
+	BindAll        bool
 
 	Nodes    []*e2e.Node
 	OmniEVMs []types.OmniEVM
@@ -323,6 +325,13 @@ func ExecCompose(ctx context.Context, dir string, args ...string) error {
 	}
 
 	return nil
+}
+
+// ExecComposeOutput runs a Docker Compose command for a testnet and returns the command's output.
+func ExecComposeOutput(ctx context.Context, dir string, args ...string) ([]byte, error) {
+	return exec.CommandOutput(ctx, append(
+		[]string{"docker", "compose", "-f", filepath.Join(dir, "docker-compose.yml")},
+		args...)...)
 }
 
 // ExecComposeVerbose runs a Docker Compose command for a testnet and displays its output.

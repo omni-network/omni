@@ -196,7 +196,6 @@ func newBackends(ctx context.Context, cfg DefinitionConfig, testnet types.Testne
 func adaptCometTestnet(ctx context.Context, manifest types.Manifest, testnet *e2e.Testnet, imgTag string) (*e2e.Testnet, error) {
 	testnet.Dir = runsDir(testnet.File)
 	testnet.VoteExtensionsEnableHeight = 1
-	testnet.UpgradeVersion = "omniops/halo:" + imgTag
 
 	for i := range testnet.Nodes {
 		var err error

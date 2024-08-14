@@ -89,6 +89,18 @@ func perturbNode(ctx context.Context, node *e2e.Node, perturbation e2e.Perturbat
 	name := node.Name
 	ctx = log.WithCtx(ctx, "name", name)
 
+	out, err := docker.ExecComposeOutput(context.Background(), testnet.Dir, "ps", "-q", node.Name)
+	if err != nil {
+		return nil, err
+	}
+	upgraded := false
+	if len(out) == 0 {
+		name = name + "_u"
+		upgraded = true
+		log.Info(ctx, "Perturb node: node already upgraded, operating on alternate container", "old_container",
+			node.Name, "new_container", name)
+	}
+
 	switch perturbation {
 	case e2e.PerturbationDisconnect:
 		networkName := testnet.Name + "_" + testnet.Name
@@ -127,7 +139,24 @@ func perturbNode(ctx context.Context, node *e2e.Node, perturbation e2e.Perturbat
 		}
 
 	case e2e.PerturbationUpgrade:
-		return nil, errors.New("upgrade perturbation not supported")
+		oldV := node.Version
+		newV := node.Testnet.UpgradeVersion
+		if upgraded {
+			return nil, errors.New("node has already been upgraded", "name", node.Name, "old_version", oldV, "new_version", newV)
+		}
+		if oldV == newV {
+			log.Info(ctx, "Perturb node: skipping upgrade since old and new versions are the same", "name", node.Name, "old_version", oldV, "new_version", newV)
+			break
+		}
+		log.Info(ctx, "Perturb node: upgrade", "old_version", oldV, "new_version", newV)
+
+		if err := docker.ExecCompose(context.Background(), testnet.Dir, "stop", name); err != nil {
+			return nil, err
+		}
+		time.Sleep(10 * time.Second)
+		if err := docker.ExecCompose(context.Background(), testnet.Dir, "up", "-d", name+"_u"); err != nil {
+			return nil, err
+		}
 
 	default:
 		return nil, errors.New("unexpected perturbation type", "type", perturbation)

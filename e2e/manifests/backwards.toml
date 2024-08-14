@@ -1,0 +1,18 @@
+# Backwards is a manifest designed to test backwards compatibility of our development.
+# Our pinned halo tag should interop with latest commit, except for known breaking changes.
+
+network = "devnet"
+anvil_chains = ["mock_l2", "mock_l1"]
+upgrade_version = "main"
+
+[node.validator01]
+[node.validator02]
+[node.validator03]
+version = "v0.4.0"
+perturb = ["upgrade"]
+[node.validator04]
+version = "v0.4.0"
+perturb = ["upgrade"]
+
+[node.fullnode01]
+mode = "archive"

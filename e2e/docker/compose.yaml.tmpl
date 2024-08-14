@@ -33,6 +33,30 @@ services:
     networks:
       {{ $.NetworkName }}:
         {{ if $.Network }}ipv4_address: {{ .InternalIP }}{{ end }}
+{{- if ne .Version $.UpgradeVersion}}
+
+  {{ .Name }}_u:
+    labels:
+      e2e: true
+    container_name: {{ .Name }}_u
+    image: {{ $.UpgradeVersion }}
+    restart: unless-stopped
+    init: true
+    ports:
+    - {{ if $.BindAll }}26656:{{end}}26656 # Consensus P2P
+    - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657 # Consensus RPC
+{{- if .PrometheusProxyPort }}
+    - {{ .PrometheusProxyPort }}:26660 # Prometheus
+{{- end }}
+    - 6060 # Pprof
+    volumes:
+    - ./{{ .Name }}/config:/halo/config
+    - ./{{ .Name }}/data:/halo/data
+    networks:
+      {{ $.NetworkName }}:
+        {{ if $.Network }}ipv4_address: {{ .InternalIP }}{{ end }}
+{{- end }}
+
 {{end}}
 
 {{- range .Anvils }}

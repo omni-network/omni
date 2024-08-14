@@ -80,16 +80,17 @@ func (p *Provider) Setup() error {
 		}
 
 		def := docker.ComposeDef{
-			Network:     false,
-			BindAll:     true,
-			NetworkName: p.Testnet.Name,
-			NetworkCIDR: p.Testnet.IP.String(),
-			Nodes:       nodes,
-			OmniEVMs:    omniEVMs,
-			Anvils:      anvilChains,
-			Relayer:     services["relayer"],
-			Monitor:     services["monitor"],
-			Prometheus:  p.Testnet.Prometheus,
+			Network:        false,
+			BindAll:        true,
+			NetworkName:    p.Testnet.Name,
+			UpgradeVersion: p.Testnet.UpgradeVersion,
+			NetworkCIDR:    p.Testnet.IP.String(),
+			Nodes:          nodes,
+			OmniEVMs:       omniEVMs,
+			Anvils:         anvilChains,
+			Relayer:        services["relayer"],
+			Monitor:        services["monitor"],
+			Prometheus:     p.Testnet.Prometheus,
 		}
 		def = docker.SetImageTags(def, p.Testnet.Manifest, p.omniTag)
 

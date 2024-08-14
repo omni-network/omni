@@ -37,7 +37,7 @@ const (
 	// Note technically a seed node is also a "full node".
 	ModeSeed = e2e.ModeSeed
 
-	// ModeFull defines a full node. A full node a normal node without a special role.
+	// ModeFull defines a full node. A full node is a normal node without a special role.
 	// [genesis_validator_set=false,pruning=default,consensus=default,special_p2p=false].
 	ModeFull = e2e.ModeFull
 
