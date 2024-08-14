@@ -559,7 +559,7 @@ func detectReorg(chainVer xchain.ChainVersion, prevBlock *xchain.Block, block xc
 	for _, xmsg := range block.Msgs {
 		offset, ok := streamOffsets[xmsg.StreamID]
 		if ok && xmsg.StreamOffset != offset+1 {
-			return errors.New("non-consecutive message offsets", "streamID", xmsg.StreamID, "prev_offset", offset, "new_offset", xmsg.StreamOffset)
+			return errors.New("non-consecutive message offsets", "stream", xmsg.StreamID, "prev_offset", offset, "new_offset", xmsg.StreamOffset)
 		}
 
 		// Update the cursor

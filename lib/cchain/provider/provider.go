@@ -142,7 +142,7 @@ func (p Provider) stream(
 	retryCallback bool,
 ) error {
 	if attestOffset == 0 {
-		return errors.New("invalid zero attest offset [BUG]", "workerName", workerName)
+		return errors.New("invalid zero attest offset [BUG]", "worker", workerName)
 	}
 
 	srcChain := p.chainNamer(chainVer)
