@@ -130,8 +130,8 @@ var runid = uuid.New().String()
 
 //nolint:gochecknoglobals // Static addresses
 var (
-	omegaAVS     = common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
-	omegaPortal  = common.HexToAddress("0x1ce5094EE8b861674D3aD0da116D90592193c7d9")
+	omegaAVS = common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
+	// omegaPortal  = common.HexToAddress("0x1ce5094EE8b861674D3aD0da116D90592193c7d9").
 	mainnetAVS   = common.HexToAddress("0xed2f4d90b073128ae6769a9A8D51547B1Df766C8")
 	mainnetToken = common.HexToAddress("0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4")
 
@@ -178,16 +178,16 @@ var statics = map[ID]Static{
 	},
 	Omega: {
 		Network:              Omega,
-		Version:              "v0.0.9",
+		Version:              "v0.1.0",
 		AVSContractAddress:   omegaAVS,
 		OmniExecutionChainID: evmchain.IDOmniOmega,
 		MaxValidators:        maxValidators,
-		Portals: []Deployment{
-			{ChainID: evmchain.IDArbSepolia, Address: omegaPortal, DeployHeight: 67804723},
-			{ChainID: evmchain.IDBaseSepolia, Address: omegaPortal, DeployHeight: 13302705},
-			{ChainID: evmchain.IDHolesky, Address: omegaPortal, DeployHeight: 2034739},
-			{ChainID: evmchain.IDOpSepolia, Address: omegaPortal, DeployHeight: 15285567},
-		},
+		// Portals:              []Deployment{
+		// {ChainID: evmchain.IDArbSepolia, Address: omegaPortal, DeployHeight: 67804723},
+		// {ChainID: evmchain.IDBaseSepolia, Address: omegaPortal, DeployHeight: 13302705},
+		// {ChainID: evmchain.IDHolesky, Address: omegaPortal, DeployHeight: 2034739},
+		// {ChainID: evmchain.IDOpSepolia, Address: omegaPortal, DeployHeight: 15285567},
+		// },
 		ConsensusGenesisJSON: omegaConsensusGenesisJSON,
 		ConsensusSeedTXT:     omegaConsensusSeedsTXT,
 		ExecutionGenesisJSON: omegaExecutionGenesisJSON,
