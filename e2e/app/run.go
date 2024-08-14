@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 
@@ -46,7 +47,9 @@ type DeployConfig struct {
 // Deploy a new e2e network. It also starts all services in order to deploy private portals.
 // It also returns an optional deployed ping pong contract is enabled.
 func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XDapp, error) {
-	if def.Testnet.Network.IsProtected() {
+	if def.Testnet.Network == netconf.Omega {
+		log.Warn(ctx, "Deploying Omega network. TODO: disable this", nil)
+	} else if def.Testnet.Network.IsProtected() {
 		// If a protected network needs to be deployed temporarily comment out this check.
 		return nil, errors.New("cannot deploy protected network", "network", def.Testnet.Network)
 	}

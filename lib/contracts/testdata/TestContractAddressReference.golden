@@ -9,8 +9,8 @@
  "omega": {
   "avs": "0xa7b2e7830c51728832d33421670dbbe30299fd92",
   "create3": "0x4bf2e538446b3faa2c439a4f8867a9052db8f1d0",
-  "l1bridge": "0x21abb45dcdceed997e2a6f7af80ea1c5cafafff6",
-  "portal": "0x1ce5094ee8b861674d3ad0da116d90592193c7d9",
-  "token": "0x21d1b3793bc3eebe2ce6aae2535315bdbd1e54c9"
+  "l1bridge": "0x084ef227534a6ad2de4c4e54db19f1c457a57a27",
+  "portal": "0xcb60a0451831e4865bc49f41f9c67665fc9b75c3",
+  "token": "0xd036c60f46ff51dd7fbf6a819b5b171c8a076b07"
  }
 }
