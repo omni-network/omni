@@ -147,7 +147,7 @@ const config: Config = {
       theme: prismThemes.vsLight,
       darkTheme: prismThemes.vsDark,
       additionalLanguages: ["solidity", "bash"],
-    },    
+    },
     algolia: {
       // The application ID provided by Algolia
       appId: "YGLZ6VW4T5", // pragma: allowlist secret
