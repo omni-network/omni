@@ -1,0 +1,8 @@
+{
+  "label": "Dive Deeper",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "description": "Learn how Omni works under the hood"
+  }
+}

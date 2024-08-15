@@ -61,31 +61,31 @@ const config: Config = {
         src: "img/logo.svg",
       },
       items: [
-        {
-          position: "left",
-          label: "Learn",
-          to: "/learn/introduction",
-        },
-        {
-          position: "left",
-          label: "Protocol",
-          to: "/protocol/introduction",
-        },
-        {
-          position: "left",
-          label: "Octane",
-          to: "/octane/background/introduction",
-        },
-        {
-          position: "left",
-          label: "Develop",
-          to: "/develop/introduction",
-        },
-        {
-          position: "left",
-          label: "Operate",
-          to: "/operate/introduction",
-        },
+        // {
+        //   position: "left",
+        //   label: "Learn",
+        //   to: "/learn/introduction",
+        // },
+        // {
+        //   position: "left",
+        //   label: "Protocol",
+        //   to: "/protocol/introduction",
+        // },
+        // {
+        //   position: "left",
+        //   label: "Octane",
+        //   to: "/octane/background/introduction",
+        // },
+        // {
+        //   position: "left",
+        //   label: "Develop",
+        //   to: "/develop/introduction",
+        // },
+        // {
+        //   position: "left",
+        //   label: "Operate",
+        //   to: "/operate/introduction",
+        // },
         {
           position: "right",
           label: "Tools",
