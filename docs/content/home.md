@@ -8,7 +8,7 @@ slug: /
 <!-- import TestnetCTA from '@site/src/components/TestnetCTA/TestnetCTA'; -->
 import ThemedBanner from '@site/src/components/ThemedBanner/ThemedBanner';
 
-# Omni: Dapps made easy
+# Omni: Cross-chain dapps made easy
 
 <!-- ## Omni: Build cross-rollups dapps quickly -->
 

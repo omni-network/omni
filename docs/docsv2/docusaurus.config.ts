@@ -4,7 +4,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
   title: 'Omni',
-  tagline: 'Dapps made easy',
+  tagline: 'Cross-chain dapps made easy',
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
@@ -86,8 +86,12 @@ const config: Config = {
       style: 'dark',
       links: [
         {
-          title: 'Docs',
+          title: 'Code',
           items: [
+            {
+              label: 'GitHub',
+              href: 'https://github.com/facebook/docusaurus',
+            },
             // {
             //   label: 'Build',
             //   to: '/docs/build',
