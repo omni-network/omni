@@ -29,7 +29,7 @@ xmsg.sender          // who sent it (msg.sender of the source xcall)
 
 Omni's xchain message protocol currently offers 2 confirmation strategies. You can specify your confirmation strategy with each xcall.
 
-You may choose want to use the same confirmation strategy for every `xcall` in your dapp. If this is the case, you can just hardcode a confirmation strategy.
+You may want to use the same confirmation strategy for every `xcall` in your dapp. If this is the case, you can just hardcode a confirmation strategy.
 
 Or, you may want to adjust the `xcall`'s confirmation strategy based on the transaction's associated "value". For example, you may choose to implement logic that says:
 
@@ -39,7 +39,7 @@ Here are the details of each type:
 
 ### `finalized`
 
-Finalized xmsgs are attested to and delivered only after the rollup's transaction data containing this xmsg finalizes on Ethereum Layer 1. This requires 2 beacon chain epochs, which typically takes about 12 minutes. However, this strategy offer strong benefits around delivery guarantees – a delivered message can only be "reorg'd out" if Ethereum itself reorgs, which is highly unlikely and requires 2/3 of Ethereum's validators to be slashed.
+Finalized xmsgs are attested to and delivered only after the rollup's transaction data containing this xmsg finalizes on Ethereum Layer 1. This requires 2 beacon chain epochs, which typically takes about 12 minutes. However, this strategy offers strong benefits around delivery guarantees – a delivered message can only be "reorg'd out" if Ethereum itself reorgs, which is highly unlikely and requires 2/3 of Ethereum's validators to be slashed.
 
 Summary:
 
