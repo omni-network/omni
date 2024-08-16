@@ -44,7 +44,7 @@ const config: Config = {
           editUrl:
             'https://github.com/omni-network/omni/tree/main/packages/create-docusaurus/templates/shared/',
             remarkPlugins: [remarkMath],
-            rehypePlugins: [rehypeKatex],  
+            rehypePlugins: [rehypeKatex],
         },
         // blog: {
         //   showReadingTime: true,

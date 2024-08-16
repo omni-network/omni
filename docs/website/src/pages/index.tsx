@@ -19,7 +19,7 @@ function HomepageHeader() {
         <div className={styles.buttons}>
           <Link
             className="button button--secondary button--lg"
-            to="/build/quickstart">
+            to="/build-xdapp/quickstart">
             Build a dapp in 5min ⏱️
           </Link>
         </div>
