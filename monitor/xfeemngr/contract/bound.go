@@ -21,7 +21,6 @@ type BoundFeeOracleV1 struct {
 	addr    common.Address        // address of the FeeOracle oracle contract addrss
 	backend *ethbackend.Backend   // ethbackend initialized with owner pk
 	bound   *bindings.FeeOracleV1 // bound FeeOracleV1 contract
-	txOpts  *bind.TransactOpts    // transaction opts
 }
 
 var _ FeeOracleV1 = BoundFeeOracleV1{}
@@ -50,17 +49,11 @@ func New(ctx context.Context, chain netconf.Chain, ethCl ethclient.Client, pk *e
 
 	owner := crypto.PubkeyToAddress(pk.PublicKey)
 
-	txOpts, err := backend.BindOpts(ctx, owner)
-	if err != nil {
-		return BoundFeeOracleV1{}, errors.Wrap(err, "bind opts")
-	}
-
 	return BoundFeeOracleV1{
 		owner:   owner,
 		addr:    addr,
 		backend: backend,
 		bound:   contract,
-		txOpts:  txOpts,
 	}, nil
 }
 
@@ -71,7 +64,12 @@ func (c BoundFeeOracleV1) GasPriceOn(ctx context.Context, destChainID uint64) (*
 
 // SetGasPriceOn sets the gas price on the FeeOracleV1 contract for the destination chain.
 func (c BoundFeeOracleV1) SetGasPriceOn(ctx context.Context, destChainID uint64, gasPrice *big.Int) error {
-	tx, err := c.bound.SetGasPrice(c.txOptsWithCtx(ctx), destChainID, gasPrice)
+	txOpts, err := c.txOptsWithCtx(ctx)
+	if err != nil {
+		return errors.Wrap(err, "tx opts")
+	}
+
+	tx, err := c.bound.SetGasPrice(txOpts, destChainID, gasPrice)
 	if err != nil {
 		return errors.Wrap(err, "set gas price")
 	}
@@ -84,9 +82,14 @@ func (c BoundFeeOracleV1) SetGasPriceOn(ctx context.Context, destChainID uint64,
 	return nil
 }
 
-// setToNativeRate sets the conversion rate on the FeeOracleV1 contract for the destination chain.
+// SetToNativeRate sets the conversion rate on the FeeOracleV1 contract for the destination chain.
 func (c BoundFeeOracleV1) SetToNativeRate(ctx context.Context, destChainID uint64, rate *big.Int) error {
-	tx, err := c.bound.SetToNativeRate(c.txOptsWithCtx(ctx), destChainID, rate)
+	txOpts, err := c.txOptsWithCtx(ctx)
+	if err != nil {
+		return errors.Wrap(err, "tx opts")
+	}
+
+	tx, err := c.bound.SetToNativeRate(txOpts, destChainID, rate)
 	if err != nil {
 		return errors.Wrap(err, "set conversion rate")
 	}
@@ -105,12 +108,8 @@ func (c BoundFeeOracleV1) ToNativeRate(ctx context.Context, destChainID uint64) 
 }
 
 // txOpts returns a new transact opts with the given context.
-func (c BoundFeeOracleV1) txOptsWithCtx(ctx context.Context) *bind.TransactOpts {
-	return &bind.TransactOpts{
-		Context: ctx,
-		From:    c.txOpts.From,
-		Signer:  c.txOpts.Signer,
-	}
+func (c BoundFeeOracleV1) txOptsWithCtx(ctx context.Context) (*bind.TransactOpts, error) {
+	return c.backend.BindOpts(ctx, c.owner)
 }
 
 // callOpts returns a new call opts with the given context.

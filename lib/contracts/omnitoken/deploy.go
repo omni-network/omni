@@ -27,21 +27,25 @@ type deploymentConfig struct {
 	ExpectedAddr   common.Address
 }
 
-func getConfig(network netconf.ID) deploymentConfig {
+func getConfig(network netconf.ID) (deploymentConfig, error) {
+	if network == netconf.Mainnet {
+		return deploymentConfig{}, errors.New("do not use this code for mainnet")
+	}
+
 	return deploymentConfig{
 		Create3Factory: contracts.Create3Factory(network),
 		Create3Salt:    contracts.TokenSalt(network),
 		Deployer:       eoa.MustAddress(network, eoa.RoleDeployer),
 		Recipient:      eoa.MustAddress(network, eoa.RoleTester),
 		ExpectedAddr:   contracts.Token(network),
-	}
+	}, nil
 }
 
 func isDeadOrEmpty(addr common.Address) bool {
 	return addr == common.Address{} || addr == common.HexToAddress(eoa.ZeroXDead)
 }
 
-func (cfg deploymentConfig) Validate() error {
+func (cfg deploymentConfig) validate() error {
 	if (cfg.Create3Factory == common.Address{}) {
 		return errors.New("create3 factory is zero")
 	}
@@ -61,8 +65,13 @@ func (cfg deploymentConfig) Validate() error {
 	return nil
 }
 
-func InitialSupplyRecipient(network netconf.ID) common.Address {
-	return getConfig(network).Recipient
+func InitialSupplyRecipient(network netconf.ID) (common.Address, error) {
+	cfg, err := getConfig(network)
+	if err != nil {
+		return common.Address{}, err
+	}
+
+	return cfg.Recipient, nil
 }
 
 // isDeployed returns true if the token contract is already deployed to its expected address.
@@ -104,11 +113,16 @@ func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend
 		return common.Address{}, nil, errors.New("mainnet token already deployed")
 	}
 
-	return deploy(ctx, getConfig(network), backend)
+	cfg, err := getConfig(network)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "get config")
+	}
+
+	return deploy(ctx, cfg, backend)
 }
 
 func deploy(ctx context.Context, cfg deploymentConfig, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
-	if err := cfg.Validate(); err != nil {
+	if err := cfg.validate(); err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "validate config")
 	}
 

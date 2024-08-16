@@ -78,6 +78,7 @@ func New() *cobra.Command {
 		newRestartCmd(&def),
 		newKeyCreate(&def),
 		newAdminCmd(&def),
+		newERC20FaucetCmd(&def),
 		fundAccounts(&def),
 	)
 
@@ -249,6 +250,22 @@ func fundAccounts(def *app.Definition) *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&dryRun, "dry-run", dryRun, "Enables dry-run for testing")
+
+	return cmd
+}
+
+func newERC20FaucetCmd(def *app.Definition) *cobra.Command {
+	cfg := app.DefaultRunERC20FaucetConfig()
+
+	cmd := &cobra.Command{
+		Use:   "run-erc20-faucet",
+		Short: "Runs the ERC20 faucet",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return app.RunERC20Faucet(cmd.Context(), *def, cfg)
+		},
+	}
+
+	bindERC20FaucetFlags(cmd.Flags(), &cfg)
 
 	return cmd
 }
