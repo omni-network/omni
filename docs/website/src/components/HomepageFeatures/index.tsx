@@ -18,7 +18,7 @@ const FeatureList: FeatureItem[] = [
       <>
       </>
     ),
-    link: "/category/build",
+    link: "/category/learn",
   },
   {
     title: 'Learn',
