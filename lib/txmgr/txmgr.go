@@ -344,6 +344,7 @@ func (m *simple) sendTx(ctx context.Context, tx *types.Transaction) (*types.Tran
 // it will bump the fees and retry.
 // Returns the latest fee bumped tx, and a boolean indicating whether the tx was sent or not.
 func (m *simple) publishTx(ctx context.Context, tx *types.Transaction, sendState *SendState, bumpFeesImmediately bool) (*types.Transaction, bool) {
+	backoff := expbackoff.New(ctx, expbackoff.WithFastConfig())
 	for {
 		if ctx.Err() != nil {
 			return tx, false
@@ -385,13 +386,19 @@ func (m *simple) publishTx(ctx context.Context, tx *types.Transaction, sendState
 		case errStringMatch(err, txpool.ErrAlreadyKnown):
 			log.Warn(ctx, "Resubmitted already known transaction", err)
 		case errStringMatch(err, txpool.ErrReplaceUnderpriced):
-			log.Warn(ctx, "Transaction replacement is underpriced", err)
+			log.Warn(ctx, "Transaction replacement is underpriced (will retry)", err)
+			backoff()
+
 			continue // retry with fee bump
 		case errStringMatch(err, txpool.ErrUnderpriced):
-			log.Warn(ctx, "Transaction is underpriced", err)
+			log.Warn(ctx, "Transaction is underpriced (will retry)", err)
+			backoff()
+
 			continue // retry with fee bump
 		case errStringMatch(err, core.ErrIntrinsicGas):
-			log.Warn(ctx, "Intrinsic gas too low", err)
+			log.Warn(ctx, "Intrinsic gas too low (will retry)", err)
+			backoff()
+
 			continue // retry with fee bump
 		default:
 			log.Error(ctx, "Unknown error publishing transaction", err)
