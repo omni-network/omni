@@ -458,7 +458,6 @@ func registerOperator(t *testing.T, ctx context.Context, contracts Contracts, b 
 	cfg := eigentypes.OperatorConfig{
 		Operator: eigensdktypes.Operator{
 			Address:                   addr.Hex(),
-			EarningsReceiverAddress:   addr.Hex(),
 			DelegationApproverAddress: eigensdktypes.ZeroAddress,
 			StakerOptOutWindowBlocks:  0,
 		},
