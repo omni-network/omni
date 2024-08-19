@@ -37,6 +37,14 @@ const sidebars: SidebarsConfig = {
       ],
       collapsed: false,
     },
+    {
+      type: 'category',
+      label: 'Testnet',
+      items: [
+        'testnet/run-full-node',
+      ],
+      collapsed: false,
+    },
     'faq',
   ],
 };

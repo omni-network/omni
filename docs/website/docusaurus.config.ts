@@ -42,21 +42,10 @@ const config: Config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/omni-network/omni/tree/main/packages/create-docusaurus/templates/shared/',
+            'https://github.com/omni-network/omni/tree/main/docs/website',
             remarkPlugins: [remarkMath],
             rehypePlugins: [rehypeKatex],
         },
-        // blog: {
-        //   showReadingTime: true,
-        //   feedOptions: {
-        //     type: ['rss', 'atom'],
-        //     xslt: true,
-        //   },
-        //   // Please change this to your repo.
-        //   // Remove this to remove the "edit this page" links.
-        //   editUrl:
-        //     'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
-        // },
         theme: {
           customCss: './src/css/custom.css',
         },
@@ -93,11 +82,15 @@ const config: Config = {
     footer: {
       links: [
         {
-          title: 'CODE',
+          title: 'TECH',
           items: [
             {
               label: 'GitHub',
               href: 'https://github.com/facebook/docusaurus',
+            },
+            {
+              label: 'Status page',
+              href: 'https://status.omni.network/',
             },
           ],
         },
@@ -105,7 +98,7 @@ const config: Config = {
           title: 'COMMUNITY',
           items: [
             {
-              label: 'Telegram for devs',
+              label: 'Telegram for developers',
               href: 'https://discordapp.com/invite/docusaurus',
             },
             {
@@ -119,12 +112,8 @@ const config: Config = {
           ],
         },
         {
-          title: 'MORE',
+          title: 'JOIN US',
           items: [
-            {
-              label: 'Whitepaper',
-              to: 'https://docs.omni.network/whitepaper.pdf',
-            },
             {
               label: 'Career',
               to: 'https://boards.greenhouse.io/omnifdn',

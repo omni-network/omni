@@ -2,9 +2,9 @@
 sidebar_position: 1
 ---
 
-# Hello World
+# First XDapp
 
-This QuickStart guide will run through how to start an Omni XApp in 5 minutes.
+This QuickStart guide will run through how to start an Omni XDApp (cross-chain decentralized app) in 5 minutes.
 
 In this guide you will:
 

@@ -1,11 +1,10 @@
 ---
 sidebar_position: 1
-sidebar_label: Hello World walkthrough
 ---
 
 import GitHubCodeBlock from '@site/src/components/GitHubCodeBlock/GitHubCodeBlock';
 
-# Hello World walkthrough
+# XDapp walkthrough
 
 Here's an example of a simple cross-chain contract set for setting and getting a string. This contract lets you send greetings from a rollup chain to a global storage contract deployed on Omni. Two main contracts are used in this example:
 
