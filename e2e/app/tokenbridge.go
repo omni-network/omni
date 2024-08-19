@@ -179,8 +179,12 @@ func bridgeToNative(ctx context.Context, def Definition, toBridge []BridgeTest) 
 		return errors.New("no ethereum L1 chain")
 	}
 
-	// payor is initial supply recipient, the only account with OMNI on L1
-	payor := omnitoken.InitialSupplyRecipient(networkID)
+	// payor is initial supply recipient, the only account with OMNI on L1 (for non-mainnet networks)
+	payor, err := omnitoken.InitialSupplyRecipient(networkID)
+	if err != nil {
+		return errors.Wrap(err, "initial supply recipient")
+	}
+
 	l1BridgeAddr := contracts.L1Bridge(networkID)
 	tokenAddr := contracts.Token(networkID)
 

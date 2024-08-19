@@ -854,8 +854,14 @@ func (k *Keeper) windowCompare(ctx context.Context, chainVer xchain.ChainVersion
 // - Ensure the vote extension limit is not exceeded per validator.
 // - Ensure all votes are from validators in the provided set.
 // - Ensure the vote block header is in the vote window.
-func (k *Keeper) verifyAggVotes(ctx context.Context, cChainID uint64, valset ValSet, aggs []*types.AggVote) error {
-	duplicate := make(map[xchain.AttestHeader]bool) // Detects duplicate aggregate votes.
+func (k *Keeper) verifyAggVotes(
+	ctx context.Context,
+	cChainID uint64,
+	valset ValSet,
+	aggs []*types.AggVote,
+	windowCompareFunc windowCompareFunc, // Aliased for testing
+) error {
+	duplicate := make(map[common.Hash]bool)         // Detects duplicate aggregate votes.
 	countsPerVal := make(map[common.Address]uint64) // Enforce vote extension limit.
 	for _, agg := range aggs {
 		if err := agg.Verify(); err != nil {
@@ -867,10 +873,15 @@ func (k *Keeper) verifyAggVotes(ctx context.Context, cChainID uint64, valset Val
 			return errors.Wrap(err, "check supported chain")
 		}
 
-		if duplicate[agg.AttestHeader.ToXChain()] {
+		attRoot, err := agg.AttestationRoot()
+		if err != nil {
+			return errors.Wrap(err, "attestation root")
+		}
+
+		if duplicate[attRoot] {
 			return errors.New("invalid duplicate aggregate votes", errAttrs...) // Note this is duplicate aggregates, which may contain non-overlapping votes so not technically slashable.
 		}
-		duplicate[agg.AttestHeader.ToXChain()] = true
+		duplicate[attRoot] = true
 
 		// Ensure all votes are from unique validators in the set
 		for _, sig := range agg.Signatures {
@@ -886,7 +897,7 @@ func (k *Keeper) verifyAggVotes(ctx context.Context, cChainID uint64, valset Val
 		}
 
 		// Ensure the block header is in the vote window.
-		if resp, err := k.windowCompare(ctx, agg.AttestHeader.XChainVersion(), agg.AttestHeader.AttestOffset); err != nil {
+		if resp, err := windowCompareFunc(ctx, agg.AttestHeader.XChainVersion(), agg.AttestHeader.AttestOffset); err != nil {
 			return errors.Wrap(err, "windower")
 		} else if resp != 0 {
 			errAttrs = append(errAttrs, "resp", resp)

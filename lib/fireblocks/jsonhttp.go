@@ -81,12 +81,12 @@ func (c jsonHTTP) Send(ctx context.Context, uri string, httpMethod string, reque
 			if resp.Header.Get("Content-Type") != "application/json" {
 				errResponse.Code = resp.StatusCode
 
-				return false, errors.New("non-JSON error response", "status code", resp.StatusCode, "body", string(respBytes))
+				return false, errors.New("non-JSON error response", "status_code", resp.StatusCode, "body", string(respBytes))
 			}
 
 			err = json.Unmarshal(respBytes, errResponse)
 			if err != nil {
-				return false, errors.Wrap(err, "unmarshal error response", "status code", resp.StatusCode, "body", string(respBytes))
+				return false, errors.Wrap(err, "unmarshal error response", "status_code", resp.StatusCode, "body", string(respBytes))
 			}
 		}
 

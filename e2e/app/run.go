@@ -20,8 +20,8 @@ import (
 const (
 	// defaultPingPongN defines a few days of ping pong hops after each deploy.
 	defaultPingPongN = 100_000
-	// defaultPingPongP defines 10 parallel ping pongs per edge.
-	defaultPingPongP = 10
+	// defaultPingPongP defines 3 parallel ping pongs per edge.
+	defaultPingPongP = 3
 	// defaultPingPongL defines a single parallel ping pongs to use Latest confirmation level. This decreases on-chain costs.
 	defaultPingPongL = 1
 )

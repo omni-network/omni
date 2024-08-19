@@ -72,12 +72,12 @@ func (o feeOracle) syncOnce(ctx context.Context) {
 	for _, dest := range append(o.dests, o.chain) {
 		err := o.syncGasPrice(ctx, dest)
 		if err != nil {
-			log.Error(ctx, "Failed to sync gas price", err, "destChainID", dest.ChainID)
+			log.Error(ctx, "Failed to sync gas price", err, "dest_chain", dest.ChainID)
 		}
 
 		err = o.syncToNativeRate(ctx, dest)
 		if err != nil {
-			log.Error(ctx, "Failed to sync conversion rate", err, "destChainID", dest.ChainID)
+			log.Error(ctx, "Failed to sync conversion rate", err, "dest_chain", dest.ChainID)
 		}
 	}
 }
@@ -93,7 +93,7 @@ func (o feeOracle) syncGasPrice(ctx context.Context, dest evmchain.Metadata) err
 	}
 
 	if buffered > maxSaneGasPrice {
-		log.Warn(ctx, "Buffered gas price exceeds sane max", errors.New("unexpected gas price"), "buffered", buffered, "maxSane", maxSaneGasPrice)
+		log.Warn(ctx, "Buffered gas price exceeds sane max", errors.New("unexpected gas price"), "buffered", buffered, "max_sane", maxSaneGasPrice)
 		buffered = maxSaneGasPrice
 	}
 
@@ -143,12 +143,12 @@ func (o feeOracle) syncToNativeRate(ctx context.Context, dest evmchain.Metadata)
 	bufferedRate := destPrice / srcPrice
 
 	if o.chain.NativeToken == tokens.OMNI && dest.NativeToken == tokens.ETH && bufferedRate > maxSaneOmniPerEth {
-		log.Warn(ctx, "Buffered omni-per-eth exceeds sane max", errors.New("unexpected conversion rate"), "buffered", bufferedRate, "maxSane", maxSaneOmniPerEth)
+		log.Warn(ctx, "Buffered omni-per-eth exceeds sane max", errors.New("unexpected conversion rate"), "buffered", bufferedRate, "max_sane", maxSaneOmniPerEth)
 		bufferedRate = maxSaneOmniPerEth
 	}
 
 	if o.chain.NativeToken == tokens.ETH && dest.NativeToken == tokens.OMNI && bufferedRate > maxSaneEthPerOmni {
-		log.Warn(ctx, "Buffered eth-per-omni exceeds sane max", errors.New("unexpected conversion rate"), "buffered", bufferedRate, "maxSane", maxSaneEthPerOmni)
+		log.Warn(ctx, "Buffered eth-per-omni exceeds sane max", errors.New("unexpected conversion rate"), "buffered", bufferedRate, "max_sane", maxSaneEthPerOmni)
 		bufferedRate = maxSaneEthPerOmni
 	}
 

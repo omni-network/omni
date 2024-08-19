@@ -3,6 +3,7 @@ package app
 import (
 	attestmodule "github.com/omni-network/omni/halo/attest/module"
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
+	"github.com/omni-network/omni/halo/evmslashing"
 	"github.com/omni-network/omni/halo/evmstaking"
 	"github.com/omni-network/omni/halo/evmupgrade"
 	portalmodule "github.com/omni-network/omni/halo/portal/module"
@@ -218,4 +219,12 @@ var (
 			},
 		},
 	})
+
+	// diProviders defines a list of depinject provider functions.
+	// These are non-cosmos module constructors used in halo's app wiring.
+	diProviders = []any{
+		evmslashing.DIProvide,
+		evmstaking.DIProvide,
+		evmupgrade.DIProvide,
+	}
 )
