@@ -31,7 +31,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Learn',
       items: [
-        'learn/what-is-omni', 
+        'learn/what-is-omni',
         'learn/architecture',
         'learn/token',
         'learn/whitepaper',
