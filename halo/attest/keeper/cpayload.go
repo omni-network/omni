@@ -14,6 +14,8 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -123,7 +125,7 @@ func votesFromLastCommit(
 
 // aggregateVotes aggregates the provided attestations by block header.
 func aggregateVotes(votes []*types.Vote) ([]*types.AggVote, error) {
-	uniqueAggs := make(map[[32]byte]*types.AggVote)
+	uniqueAggs := make(map[common.Hash]*types.AggVote)
 	for _, vote := range votes {
 		attRoot, err := vote.AttestationRoot()
 		if err != nil {
@@ -146,9 +148,9 @@ func aggregateVotes(votes []*types.Vote) ([]*types.AggVote, error) {
 }
 
 // flattenAggs returns the values of the provided map.
-func flattenAggs(aggsByHeader map[[32]byte]*types.AggVote) []*types.AggVote {
-	aggs := make([]*types.AggVote, 0, len(aggsByHeader))
-	for _, agg := range aggsByHeader {
+func flattenAggs(aggsByRoot map[common.Hash]*types.AggVote) []*types.AggVote {
+	aggs := make([]*types.AggVote, 0, len(aggsByRoot))
+	for _, agg := range aggsByRoot {
 		aggs = append(aggs, agg)
 	}
 
