@@ -28,7 +28,7 @@ func (s proposalServer) AddVotes(ctx context.Context, msg *types.MsgAddVotes,
 	valset, err := s.prevBlockValSet(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetch validators")
-	} else if err := s.verifyAggVotes(ctx, consensusID, valset, msg.Votes); err != nil {
+	} else if err := s.verifyAggVotes(ctx, consensusID, valset, msg.Votes, s.windowCompare); err != nil {
 		return nil, errors.Wrap(err, "verify votes")
 	}
 

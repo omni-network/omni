@@ -13,7 +13,6 @@ import (
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/forkjoin"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
@@ -78,6 +77,9 @@ func run(ctx context.Context, def app.Definition, cfg PortalAdminConfig, name st
 
 	// runForChain runs the action for a single chain.
 	runForChain := func(ctx context.Context, chain string) (string, error) {
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
 		c, err := setupChain(ctx, s, chain)
 		if err != nil {
 			return "", errors.Wrap(err, "setup chain")
@@ -93,10 +95,18 @@ func run(ctx context.Context, def app.Definition, cfg PortalAdminConfig, name st
 		return out, nil
 	}
 
-	results, cancel := forkjoin.NewWithInputs(ctx, runForChain, chains)
-	defer cancel()
+	for _, chain := range chains {
+		out, err := runForChain(ctx, chain)
 
-	return report(log.WithCtx(ctx, "action", name), results)
+		if err != nil {
+			log.Error(ctx, "Run failed", err, "chain", chain)
+			return err
+		}
+
+		log.Info(ctx, "Run succeeded", "chain", chain, "out", out)
+	}
+
+	return nil
 }
 
 // getChains returns the chain names to run an admin action on, returning all chains if chain is "all".
@@ -111,42 +121,6 @@ func getChains(network netconf.Network, chain string) []string {
 	}
 
 	return []string{chain}
-}
-
-// runResults is a type alias for the results of a forkjoin of admin actions.
-// They take a chain name as input, and return cli output.
-type runResults = forkjoin.Results[string, string]
-
-// report logs the results of a forkjoin, returning an error if any runs failed.
-func report(ctx context.Context, results runResults) error {
-	var failed []string
-	var success []string
-	runs := 0
-
-	for res := range results {
-		runs++
-
-		if res.Err != nil {
-			log.Error(ctx, "Run  failed", res.Err, "chain", res.Input)
-			failed = append(failed, res.Input)
-		} else {
-			log.Info(ctx, "Run succeeded", "chain", res.Input, "out", res.Output)
-			success = append(success, res.Input)
-		}
-	}
-
-	if len(failed) == runs {
-		return errors.New("all runs failed", "chains", failed)
-	} else if len(failed) > 0 {
-		log.Error(ctx, "Runs failed", errors.New("runs failed"), "chains", failed)
-		log.Info(ctx, "Runs succeeded", "chains", success)
-
-		return errors.New("some runs failed", "chains", failed)
-	}
-
-	log.Info(ctx, "All runs succeeded", "chains", success)
-
-	return nil
 }
 
 // setup returns common resources for all admin operations.

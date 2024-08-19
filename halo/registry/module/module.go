@@ -5,6 +5,7 @@ import (
 	"github.com/omni-network/omni/halo/registry/keeper"
 	"github.com/omni-network/omni/halo/registry/types"
 	"github.com/omni-network/omni/lib/ethclient"
+	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/core/store"
@@ -116,8 +117,9 @@ type ModuleInputs struct {
 type ModuleOutputs struct {
 	depinject.Out
 
-	Keeper keeper.Keeper
-	Module appmodule.AppModule
+	Keeper       keeper.Keeper
+	Module       appmodule.AppModule
+	EVMEventProc evmenginetypes.InjectedEventProc
 }
 
 func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
@@ -137,7 +139,8 @@ func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 	)
 
 	return ModuleOutputs{
-		Keeper: k,
-		Module: m,
+		Keeper:       k,
+		Module:       m,
+		EVMEventProc: evmenginetypes.InjectEventProc(k),
 	}, nil
 }

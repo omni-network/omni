@@ -9,7 +9,7 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
+  pull-requests: write
 
 jobs:
   pre-commit:
@@ -28,3 +28,5 @@ jobs:
     uses: ./.github/workflows/pr-e2etest.yml
   check-sol-artifacts:
     uses: ./.github/workflows/check-sol-artifacts.yml
+  pr-label:
+    uses: ./.github/workflows/pr-label.yml

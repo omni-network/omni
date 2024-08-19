@@ -8,5 +8,8 @@ import (
 )
 
 func main() {
-	multichecker.Main(uintSubtractAnalyzer)
+	multichecker.Main(
+		uintSubtractAnalyzer,
+		logAttrsAnalyzer,
+	)
 }

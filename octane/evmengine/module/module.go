@@ -150,6 +150,7 @@ type ModuleInputs struct {
 	EngineCl       ethclient.EngineClient
 	AddrProvider   types.AddressProvider
 	FeeRecProvider types.FeeRecipientProvider
+	EventProcs     []types.InjectedEventProc
 }
 
 type ModuleOutputs struct {
@@ -161,6 +162,12 @@ type ModuleOutputs struct {
 }
 
 func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
+	// Unwrap the depinject event processors
+	var eventProcs []types.EvmEventProcessor
+	for _, proc := range in.EventProcs {
+		eventProcs = append(eventProcs, proc)
+	}
+
 	k, err := keeper.NewKeeper(
 		in.Cdc,
 		in.StoreService,
@@ -168,6 +175,7 @@ func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 		in.TXConfig,
 		in.AddrProvider,
 		in.FeeRecProvider,
+		eventProcs...,
 	)
 	if err != nil {
 		return ModuleOutputs{}, err
