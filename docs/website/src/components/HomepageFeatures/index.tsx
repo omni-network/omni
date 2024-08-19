@@ -18,7 +18,7 @@ const FeatureList: FeatureItem[] = [
       <>
       </>
     ),
-    link: "/category/build",
+    link: "/build-xdapp/quickstart",
   },
   {
     title: 'Learn',
@@ -27,7 +27,7 @@ const FeatureList: FeatureItem[] = [
       <>
       </>
     ),
-    link: "/category/learn",
+    link: "/learn/what-is-omni",
   },
   {
     title: 'FAQ',

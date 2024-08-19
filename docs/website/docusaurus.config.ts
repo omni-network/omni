@@ -70,7 +70,7 @@ const config: Config = {
   themeConfig: {
     image: "img/omni-banner.png",
     navbar: {
-      title: 'Omni Builders',
+      title: 'Omni Developers',
       logo: {
         alt: 'Omni Logo',
         src: 'img/logo.svg',
@@ -91,60 +91,56 @@ const config: Config = {
       ],
     },
     footer: {
-      style: 'dark',
       links: [
         {
-          title: 'Code',
+          title: 'CODE',
           items: [
             {
               label: 'GitHub',
               href: 'https://github.com/facebook/docusaurus',
             },
-            // {
-            //   label: 'Build',
-            //   to: '/docs/build',
-            // },
-            // {
-            //   label: 'Run a node',
-            //   to: '/docs/intro',
-            // },
-            // {
-            //   label: '$OMNI token',
-            //   to: '/docs/intro',
-            // },
-            // {
-            //   label: 'FAQ',
-            //   to: '/docs/intro',
-            // },
           ],
         },
         {
-          title: 'Community',
+          title: 'COMMUNITY',
           items: [
             {
               label: 'Telegram for devs',
               href: 'https://discordapp.com/invite/docusaurus',
             },
             {
-              label: 'Discord',
-              href: 'https://discordapp.com/invite/docusaurus',
-            },
-            {
               label: 'Twitter',
               href: 'https://twitter.com/docusaurus',
+            },
+            {
+              label: 'Discord',
+              href: 'https://discordapp.com/invite/docusaurus',
             },
           ],
         },
         {
-          title: 'More',
+          title: 'MORE',
           items: [
             {
               label: 'Whitepaper',
               to: 'https://docs.omni.network/whitepaper.pdf',
             },
             {
-              label: 'GitHub',
-              href: 'https://github.com/facebook/docusaurus',
+              label: 'Career',
+              to: 'https://boards.greenhouse.io/omnifdn',
+            },
+          ],
+        },
+        {
+          title: 'LEGAL',
+          items: [
+            {
+              label: 'Terms of Service',
+              to: 'https://docs.omni.network/tos.pdf',
+            },
+            {
+              label: 'Privacy Policy',
+              to: 'https://docs.omni.network/privacy-policy.pdf',
             },
           ],
         },

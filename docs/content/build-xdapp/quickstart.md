@@ -2,9 +2,9 @@
 sidebar_position: 1
 ---
 
-# Build an xdapp in 5min
+# Hello World
 
-This QuickStart guide will run through how to start an Omni XApp in less than 3 minutes.
+This QuickStart guide will run through how to start an Omni XApp in 5 minutes.
 
 In this guide you will:
 
@@ -108,7 +108,7 @@ mock_arb: 0x8464135c8F25Da09e49BC8782676a84730C318bC
 </details>
 
 ```bash
-cast send 0x8464135c8F25Da09e49BC8782676a84730C318bC 'greet(string)' 'Yay in 3 minutes!' --private-key 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d --rpc-url http://localhost:8001 --value 1ether
+cast send 0x8464135c8F25Da09e49BC8782676a84730C318bC 'greet(string)' 'Yay in 5 minutes!' --private-key 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d --rpc-url http://localhost:8001 --value 1ether
 ```
 
 ### Step 6: Check the Greet
@@ -121,7 +121,7 @@ cast call 0x8464135c8F25Da09e49BC8782676a84730C318bC "lastGreet():(address,strin
 
 ### 🎉 Done 🎉
 
-You have successfully deployed and interacted with an Omni XApp in less than three minutes!
+You have successfully deployed and interacted with an Omni XApp in less than five minutes!
 
 <figure align="center">
     <img src="/img/cat.png" alt="gg wp" width="350" height="350" />

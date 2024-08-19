@@ -27,7 +27,8 @@
   --ifm-code-font-size: 85%;
   --ifm-heading-color: #003b99;
   --ifm-navbar-background-color: #ffffff;
-  --ifm-footer-background-color: #ffffff;
+  --ifm-footer-background-color: #f1f4f9;
+  --ifm-footer-title-color: black;
   background-color: #ffffff;
 }
 
