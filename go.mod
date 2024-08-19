@@ -217,6 +217,7 @@ require (
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
 	github.com/muesli/reflow v0.3.0 // indirect
+	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/naoina/go-stringutil v0.1.0 // indirect
 	github.com/oasisprotocol/curve25519-voi v0.0.0-20230904125328-1f23a7beb09a // indirect
 	github.com/oklog/run v1.1.0 // indirect
@@ -297,8 +298,10 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-require github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-
 // See https://github.com/cosmos/cosmos-sdk/pull/14952
 // Also https://github.com/cosmos/cosmos-db/blob/main/go.mod#L11-L12
 replace github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
+
+// See https://github.com/cosmos/iavl/pull/983
+// Can remove once the iavl imported by cosmos includes this fix.
+replace github.com/cosmos/iavl => github.com/omni-network/iavl v1.9.11
