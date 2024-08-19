@@ -13,7 +13,7 @@ import (
 
 // version of the whole omni-monorepo and all binaries built from this git commit.
 // This value is set by goreleaser at build-time and should be the git tag for official releases.
-var version = "v0.4-dev"
+var version = "v0.5.0"
 
 // unknown is the default value for the git commit hash and timestamp.
 const unknown = "unknown"
