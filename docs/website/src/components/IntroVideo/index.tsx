@@ -48,6 +48,5 @@ export default function VideoSequence() {
       </video>
     </div>
   );
-  
-}
 
+}
