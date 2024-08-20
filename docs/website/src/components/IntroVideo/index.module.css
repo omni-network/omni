@@ -26,7 +26,7 @@
   display: inline-block;
   justify-content: center;
   align-items: center;
-  height: 50vh;
+  /* height: 40vh; */
   background-color: #000;
   position: relative;
 }

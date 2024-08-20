@@ -2,7 +2,21 @@
 sidebar_position: 1
 ---
 
+import IntroVideo from '@site/src/components/IntroVideo';
+
 # What is Omni
+
+<IntroVideo/>
+
+The problem
+Fragmentation has become an existential threat to Ethereum’s network effects.
+
+How Omni solve this
+
+
+Vision
+Empower us to source users and capital across the entire Ethereum rollup ecosystem
+
 
 > Omni is a **natively secured**, **externally verified** interoperability network that establishes a new precedent in **security**, **performance**, and **global compatibility** for the future of Ethereum’s modular ecosystem.
 

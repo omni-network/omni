@@ -23,6 +23,7 @@ const sidebars: SidebarsConfig = {
         'build-xdapp/quickstart',
         'build-xdapp/walkthrough',
         'build-xdapp/showcase-dapps',
+        'build-xdapp/run-full-node',
       ],
       collapsed: false,
     },
@@ -39,11 +40,11 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Testnet',
+      label: 'Operate',
       items: [
-        'testnet/run-full-node',
+        'operate/validator',
       ],
-      collapsed: false,
+      collapsed: true,
     },
     'faq',
   ],
