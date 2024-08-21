@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/monitor/loadgen"
+	"github.com/omni-network/omni/monitor/xfeemngr"
 
 	cmtos "github.com/cometbft/cometbft/libs/os"
 
@@ -23,6 +24,7 @@ type Config struct {
 	PrivateKey     string
 	HaloURL        string
 	LoadGen        loadgen.Config
+	XFeeMngr       xfeemngr.Config
 	DBDir          string
 }
 

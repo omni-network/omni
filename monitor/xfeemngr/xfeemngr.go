@@ -28,6 +28,10 @@ type Manager struct {
 	ticker  ticker.Ticker
 }
 
+type Config struct {
+	RPCEndpoints xchain.RPCEndpoints
+}
+
 const (
 	// feeOracleSyncInterval is the interval at which fee oracles syncs buffered gas and token prices with FeeOracle deployments.
 	feeOracleSyncInterval = 5 * time.Minute
@@ -52,7 +56,9 @@ const (
 	maxSaneEthPerOmni = float64(1)
 )
 
-func Start(ctx context.Context, network netconf.Network, rpcs xchain.RPCEndpoints, privKeyPath string) error {
+func Start(ctx context.Context, network netconf.Network, cfg Config, privKeyPath string) error {
+	log.Info(ctx, "Starting fee manager", "endpoint", cfg.RPCEndpoints)
+
 	privKey, err := crypto.LoadECDSA(privKeyPath)
 	if err != nil {
 		return errors.Wrap(err, "load private key")
@@ -63,7 +69,7 @@ func Start(ctx context.Context, network netconf.Network, rpcs xchain.RPCEndpoint
 		return err
 	}
 
-	ethClients, err := makeEthClients(toSync, rpcs)
+	ethClients, err := makeEthClients(toSync, cfg.RPCEndpoints)
 	if err != nil {
 		return err
 	}

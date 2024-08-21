@@ -35,6 +35,19 @@ halo-url = ""
 
 
 #######################################################################
+###                             X-FeeMngr                           ###
+#######################################################################
+
+[xfeemngr]
+
+# EVM RPC endpoints to use in xfeemngr. This may include out-of-network rpcs.
+[xfeemngr.rpc-endpoints]
+# ethereum = "http://my-ethreum-node:8545"
+# optimism = "https://my-op-node.com"
+
+
+
+#######################################################################
 ###                         Logging Options                         ###
 #######################################################################
 
