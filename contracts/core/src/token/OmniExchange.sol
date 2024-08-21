@@ -6,9 +6,9 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 import { FeeOracleV1 } from "src/xchain/FeeOracleV1.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
 import { OmniFund } from "./OmniFund.sol";
-import { IOmniGasEx } from "src/interfaces/IOmniGasEx.sol";
+import { IOmniExchange } from "src/interfaces/IOmniExchange.sol";
 
-contract OmniGasEx is IOmniGasEx, OwnableUpgradeable {
+contract OmniExchange is IOmniExchange, OwnableUpgradeable {
     /// @notice Max amtETH (in OMNI) that can be swapped in a single tx
     uint256 internal _maxOmniPerSwap = 1e18;
 

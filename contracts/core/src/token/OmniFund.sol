@@ -2,20 +2,24 @@
 pragma solidity 0.8.24;
 
 import { XTypes } from "src/libraries/XTypes.sol";
-import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { ConfLevel } from "src/libraries/ConfLevel.sol";
+import { XAppUpgradeable } from "src/pkg/XAppUpgradeable.sol";
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract OmniFund is Ownable {
+contract OmniFund is XAppUpgradeable, OwnableUpgradeable {
     /// @notice Map chainID to addr to true, if authorized to withdraw
     mapping(uint64 => mapping(address => bool)) public authed;
 
     /// @notice Map address to chainID to total funded
     mapping(address => mapping(uint64 => uint256)) public funded;
 
-    IOmniPortal public omni;
+    constructor() {
+        _disableInitializers();
+    }
 
-    constructor(address portal, address owner) Ownable(owner) {
-        omni = IOmniPortal(portal);
+    function initialize(address portal, address owner) external initializer {
+        __XApp_init(portal, ConfLevel.Finalized);
+        __Ownable_init(owner);
     }
 
     /**

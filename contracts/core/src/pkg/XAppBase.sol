@@ -2,7 +2,6 @@
 pragma solidity ^0.8.12;
 
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
-import { IOmniGasEx } from "../interfaces/IOmniGasEx.sol";
 import { XTypes } from "../libraries/XTypes.sol";
 import { ConfLevel } from "../libraries/ConfLevel.sol";
 
@@ -30,11 +29,6 @@ abstract contract XAppBase {
      * @notice The OmniPortal contract
      */
     IOmniPortal public omni;
-
-    /**
-     * @notice The OmniGasEx contract
-     */
-    IOmniGasEx public gasex;
 
     /**
      * @notice Default confirmation level for xcalls
@@ -88,29 +82,6 @@ abstract contract XAppBase {
         require(address(this).balance >= fee || msg.value >= fee, "XApp: insufficient funds");
         omni.xcall{ value: fee }(destChainId, defaultConfLevel, to, data, gasLimit);
         return fee;
-    }
-
-    function fund(address recipient, uint256 amtETH) internal returns (uint256) {
-        uint64 defaultGasLimit = 100_000;
-        uint256 fee = gasex.fundFee(recipient, amtETH, defaultGasLimit);
-        require(msg.value >= fee + amtETH, "XApp: insufficient funds");
-        gasex.fund{ value: fee + amtETH }(recipient, amtETH, defaultGasLimit);
-        return fee + amtETH;
-    }
-
-    function fundOrRefund(address recipient, uint256 excess) internal {
-        uint64 defaultGasLimit = 100_000;
-        // Use max - as we don't know fee yet, and max will give us largest fee
-        uint256 fee = gasex.fundFee(recipient, type(uint256).max, defaultGasLimit);
-
-        // if not enough excess to cover fee, refund excess
-        if (fee > excess) {
-            payable(msg.sender).transfer(excess);
-            return;
-        }
-
-        require(msg.value >= fee + excess, "XApp: insufficient funds");
-        gasex.fund{ value: fee + excess }(recipient, excess - fee, defaultGasLimit);
     }
 
     /**

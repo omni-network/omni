@@ -10,9 +10,8 @@ import { XAppBase } from "./XAppBase.sol";
  *         Allows for future upgrades to the XAppBase contract
  */
 abstract contract XAppUpgradeable is Initializable, XAppBase {
-    function __XApp_init(address portal, address exchange, uint8 defaultConf) internal onlyInitializing {
+    function __XApp_init(address portal,  uint8 defaultConf) internal onlyInitializing {
         _setOmniPortal(portal);
-        _setOmniGasEx(exchange);
         _setDefaultConfLevel(defaultConf);
     }
 
