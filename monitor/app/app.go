@@ -88,7 +88,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "start xchain monitor")
 	}
 
-	if err := xfeemngr.Start(ctx, network, ethClients, cfg.PrivateKey); err != nil {
+	if err := xfeemngr.Start(ctx, network, cfg.RPCEndpoints, cfg.PrivateKey); err != nil {
 		return errors.Wrap(err, "start xfee manager")
 	}
 

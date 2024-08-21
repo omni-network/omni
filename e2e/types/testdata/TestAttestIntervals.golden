@@ -49,7 +49,7 @@
   "ephemeral_attest_interval": 300,
   "protected_attest_interval": 1800
  },
- "slow_l1": {
+ "sepolia": {
   "block_period": "12s",
   "ephemeral_attest_interval": 50,
   "protected_attest_interval": 300

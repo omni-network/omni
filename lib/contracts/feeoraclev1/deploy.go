@@ -68,7 +68,7 @@ func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainID
 		return common.Address{}, nil, errors.Wrap(err, "bind opts")
 	}
 
-	feeparams, err := feeParams(ctx, network, chainID, destChainIDs, backends, coingecko.New())
+	feeparams, err := feeParams(ctx, chainID, destChainIDs, backends, coingecko.New())
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "fee params")
 	}

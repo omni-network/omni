@@ -112,6 +112,30 @@ func (c BoundFeeOracleV1) txOptsWithCtx(ctx context.Context) (*bind.TransactOpts
 	return c.backend.BindOpts(ctx, c.owner)
 }
 
+// PostsTo returns the postsTo value on the FeeOracleV1 contract for the destination chain.
+func (c BoundFeeOracleV1) PostsTo(ctx context.Context, destChainID uint64) (uint64, error) {
+	return c.bound.PostsTo(callOpts(ctx), destChainID)
+}
+
+func (c BoundFeeOracleV1) BulkSetFeeParams(ctx context.Context, params []bindings.IFeeOracleV1ChainFeeParams) error {
+	txOpts, err := c.txOptsWithCtx(ctx)
+	if err != nil {
+		return errors.Wrap(err, "tx opts")
+	}
+
+	tx, err := c.bound.BulkSetFeeParams(txOpts, params)
+	if err != nil {
+		return errors.Wrap(err, "bulk set fee params")
+	}
+
+	_, err = c.backend.WaitMined(ctx, tx)
+	if err != nil {
+		return errors.Wrap(err, "wait mined", "tx", tx.Hash().Hex())
+	}
+
+	return nil
+}
+
 // callOpts returns a new call opts with the given context.
 func callOpts(ctx context.Context) *bind.CallOpts {
 	return &bind.CallOpts{Context: ctx}
