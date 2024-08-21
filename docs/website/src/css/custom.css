@@ -11,11 +11,12 @@
 
 /* You can override the default Infima variables here. */
 :root {
-  --ifm-font-family-base: "Manrope";
+  /* --ifm-font-family-base: "Manrope"; */
+  --ifm-font-family-base: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
   --ifm-heading-font-family: "Inter";
   --ifm-font-family-monospace: "Geist Mono", monospace;
-  --ifm-color-primary: #0564ff;
-  --ifm-color-primary-dark: #0056e1;
+  --ifm-color-primary: #edf4ff;
+  --ifm-color-primary-dark: #0564ff;
   --ifm-color-primary-darker: #0049be;
   --ifm-color-primary-darkest: #003b99;
   --ifm-color-primary-light: #3e88ff;
@@ -28,7 +29,12 @@
   --ifm-heading-color: #003b99;
   --ifm-navbar-background-color: #ffffff;
   --ifm-footer-background-color: #f1f4f9;
-  --ifm-footer-title-color: black;
+  --ifm-footer-title-color: grey;
+  --ifm-menu-color-background-active: #edf4ff;
+  --ifm-menu-color-active: #606770;
+  --ifm-cta-color: black;
+  --ifm-link-color: #3e88ff;
+  --ifm-navbar-link-hover-color: #3e88ff;
   background-color: #ffffff;
 }
 
@@ -44,9 +50,12 @@
   --ifm-color-gray-800: #8498b9;
   --ifm-color-secondary: #0d2143;
   --ifm-color-secondary-dark: #153161;
-  --ifm-heading-color: #afbfd8;
+  --ifm-heading-color: #0564ff;
   --ifm-navbar-background-color: #00122f;
   --ifm-footer-background-color: #00122f;
+  --ifm-menu-color-background-active: #0d2143;
+  --ifm-menu-color-active: #606770;
+  --ifm-cta-color: #e7ebeb;
   background-color: #00122f;
 }
 
@@ -163,4 +172,26 @@ figcaption {
   font-size: 0.8em;
   font-style: italic;
   font-family: 'Inter';
+}
+
+.cta {
+  color: var(--ifm-cta-color);
+}
+
+.hero__subtitle {
+  font-size: 1.5rem;
+  color: var(--ifm-heading-color);
+}
+
+.button.button--secondary {
+  color: var(--ifm-color-primary);
+  background-color: var(--ifm-color-primary-dark);
+}
+
+.table-of-contents__link--active {
+  color: var(--ifm-color-primary-light);
+}
+
+.table-of-contents__link:hover {
+  color: var(--ifm-color-primary-light);
 }

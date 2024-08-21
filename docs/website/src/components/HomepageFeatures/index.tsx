@@ -12,8 +12,8 @@ type FeatureItem = {
 
 const FeatureList: FeatureItem[] = [
   {
-    title: 'Build',
-    Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
+    title: 'BUILD',
+    Svg: require('@site/static/img/Build.svg').default,
     description: (
       <>
       </>
@@ -21,8 +21,8 @@ const FeatureList: FeatureItem[] = [
     link: "/build-xdapp/quickstart",
   },
   {
-    title: 'Learn',
-    Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
+    title: 'LEARN',
+    Svg: require('@site/static/img/Learn.svg').default,
     description: (
       <>
       </>
@@ -31,7 +31,7 @@ const FeatureList: FeatureItem[] = [
   },
   {
     title: 'FAQ',
-    Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
+    Svg: require('@site/static/img/FAQ.svg').default,
     description: (
       <>
       </>
@@ -45,10 +45,10 @@ function Feature({title, Svg, description, link}: FeatureItem) {
     <div className={clsx('col col--4')}>
       <Link href={link}>
       <div className="text--center">
-        <Svg className={styles.featureSvg} role="img" />
+        <Svg className={styles.featureSvg} role="img"/>
       </div>
       <div className="text--center padding-horiz--md">
-          <Heading as="h3">{title}</Heading>
+          <Heading as="h3" className="cta">{title}</Heading>
           <p>{description}</p>
       </div>
       </Link>

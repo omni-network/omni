@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-# Running a Validator
+# Run a Validator
 
 ## Validator Requirements
 

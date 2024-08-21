@@ -41,9 +41,8 @@ function HomepageHeader() {
     <header className={clsx('hero hero--primary', styles.heroBanner)}>
       <div className="container">
         <Heading as="h1" className="hero__title">
-          {siteConfig.title}
+        Cross-Chain Liquidity at your fingertips
         </Heading>
-        <p className="hero__subtitle">{siteConfig.tagline}</p>
 
        <IntroVideo/>
 
@@ -66,8 +65,8 @@ export default function Home(): JSX.Element {
   const {siteConfig} = useDocusaurusContext();
   return (
     <Layout
-      title={`Hello from ${siteConfig.title}`}
-      description="Description will go into a meta tag in <head />">
+      title={`${siteConfig.title}`}
+      description="Omni Developers portal and docs">
       <HomepageHeader />
       <main>
         <HomepageFeatures />

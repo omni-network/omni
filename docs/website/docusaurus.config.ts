@@ -5,7 +5,7 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 
 const config: Config = {
-  title: 'Omni',
+  title: 'Omni Devs | Docs',
   tagline: 'Cross-chain dapps made easy',
   favicon: 'img/favicon.ico',
 
@@ -65,15 +65,13 @@ const config: Config = {
         src: 'img/logo.svg',
       },
       items: [
-        // {
-        //   type: 'docSidebar',
-        //   sidebarId: 'tutorialSidebar',
-        //   position: 'left',
-        //   label: 'Build',
-        // },
-        // {to: '/blog', label: 'Blog', position: 'left'},
         {
-          href: 'https://github.com/facebook/docusaurus',
+          href: 'https://tally.so/r/wAJ2EB',
+          label: 'Build with us',
+          position: 'right',
+        },
+        {
+          href: 'https://github.com/omni-network/omni',
           label: 'GitHub',
           position: 'right',
         },
@@ -86,7 +84,11 @@ const config: Config = {
           items: [
             {
               label: 'GitHub',
-              href: 'https://github.com/facebook/docusaurus',
+              href: 'https://github.com/omni-network/omni',
+            },
+            {
+              label: 'Explorer',
+              href: 'https://omega.omniscan.network/',
             },
             {
               label: 'Status page',
@@ -115,7 +117,7 @@ const config: Config = {
           title: 'JOIN US',
           items: [
             {
-              label: 'Career',
+              label: 'Careers',
               to: 'https://boards.greenhouse.io/omnifdn',
             },
           ],
