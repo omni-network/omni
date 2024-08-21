@@ -39,6 +39,23 @@ halo-url = "{{ .HaloURL }}"
 {{ end }}
 
 #######################################################################
+###                             X-FeeMngr                           ###
+#######################################################################
+
+[xfeemngr]
+
+# EVM RPC endpoints to use in xfeemngr. This may include out-of-network rpcs.
+[xfeemngr.rpc-endpoints]
+{{- if not .XFeeMngr.RPCEndpoints }}
+# ethereum = "http://my-ethreum-node:8545"
+# optimism = "https://my-op-node.com"
+{{ end -}}
+{{- range $key, $value := .XFeeMngr.RPCEndpoints }}
+{{ $key }} = "{{ $value }}"
+{{ end }}
+
+
+#######################################################################
 ###                         Logging Options                         ###
 #######################################################################
 

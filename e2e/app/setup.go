@@ -523,6 +523,23 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 		endpoints = externalEndpoints(def)
 	}
 
+	// xfeemngr may need out-of-network endpoints, passed in via rpc overrides.
+	// We pass these only to the xfeemngr, so that other processes don't assume
+	// they are in-network.
+	xfeemngrEndpoints := make(xchain.RPCEndpoints)
+
+	// First, clone the in-network endpoints.
+	for name, rpc := range endpoints {
+		xfeemngrEndpoints[name] = rpc
+	}
+
+	// Then, add the out-of-network endpoints.
+	for name, rpc := range def.Cfg.RPCOverrides {
+		if _, ok := xfeemngrEndpoints[name]; !ok {
+			xfeemngrEndpoints[name] = rpc
+		}
+	}
+
 	// Save private key
 	privKey, err := eoa.PrivateKey(ctx, def.Testnet.Network, eoa.RoleMonitor)
 	if err != nil {
@@ -560,6 +577,7 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 	cfg.HaloURL = archiveNode.AddressRPC()
 	cfg.LoadGen.ValidatorKeysGlob = validatorKeyGlob
 	cfg.RPCEndpoints = endpoints
+	cfg.XFeeMngr.RPCEndpoints = xfeemngrEndpoints
 
 	if err := monapp.WriteConfigTOML(cfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write relayer config")
