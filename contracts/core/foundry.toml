@@ -33,3 +33,8 @@ seed = "0x6eed"
 [fmt]
 bracket_spacing = true
 number_underscore = "thousands"
+
+[etherscan]
+holesky = { key = "${ETHERSCAN_KEY}" }
+optimism_sepolia = { key = "${OPSCAN_KEY}" }
+arbitrum_sepolia = { key = "${ARBSCAN_KEY}" }
