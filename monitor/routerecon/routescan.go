@@ -7,137 +7,59 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"strings"
-	"time"
 
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/xchain"
-
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/omni-network/omni/lib/evmchain"
 )
 
 const (
 	baseURL    = "https://api.routescan.io"
-	crossTxURL = "/v2/network/testnet/evm/cross-transactions?types=omni&limit=100"
+	crossTxURL = "/v2/network/testnet/evm/cross-transactions"
 )
 
-type chainID string
-
-func (c chainID) ID() (uint64, error) {
-	if strings.Contains(string(c), "_") {
-		var resp, dummy uint64
-		_, err := fmt.Sscanf(string(c), "%d_%d", &resp, &dummy)
+func paginateLatestCrossTx(ctx context.Context, filter queryFilter) (crossTxJSON, error) {
+	var (
+		resp crossTxJSON
+		next string
+		err  error
+	)
+	for {
+		resp, next, err = queryLatestCrossTx(ctx, filter, next)
 		if err != nil {
-			return 0, errors.Wrap(err, "parse chain id")
+			return crossTxJSON{}, errors.Wrap(err, "query latest cross tx")
+		} else if next != "" {
+			// Query next page
+			continue
 		}
 
 		return resp, nil
 	}
+}
 
-	resp, err := strconv.ParseUint(string(c), 10, 64)
-	if err != nil {
-		return 0, errors.Wrap(err, "parse chain id")
+func queryLatestCrossTx(ctx context.Context, filter queryFilter, next string) (crossTxJSON, string, error) {
+	url := baseURL + next
+	if next == "" {
+		// Build initial path
+		url += crossTxURL
 	}
 
-	return resp, nil
-}
-
-func (c *chainID) UnmarshalJSON(bz []byte) error {
-	var str string
-	if err := json.Unmarshal(bz, &str); err == nil {
-		*c = chainID(str)
-		return nil
-	}
-
-	var i uint64
-	if err := json.Unmarshal(bz, &i); err != nil {
-		return errors.Wrap(err, "unmarshal chain id")
-	}
-
-	*c = chainID(strconv.FormatUint(i, 10))
-
-	return nil
-}
-
-type crossTxJSON struct {
-	ID             string    `json:"id"`
-	Type           string    `json:"type"`
-	Status         string    `json:"status"`
-	SrcChainID     chainID   `json:"srcChainId"`
-	SrcTimestamp   time.Time `json:"srcTimestamp"`
-	SrcTxHash      string    `json:"srcTxHash"`
-	SrcBlockNumber uint64    `json:"srcBlockNumber"`
-	SrcBlockHash   string    `json:"srcBlockHash"`
-	SrcGasLimit    string    `json:"srcGasLimit"`
-	DstChainID     chainID   `json:"dstChainId"`
-	DstTimestamp   time.Time `json:"dstTimestamp"`
-	DstTxHash      string    `json:"dstTxHash"`
-	DstBlockNumber uint64    `json:"dstBlockNumber"`
-	DstBlockHash   string    `json:"dstBlockHash"`
-	DstGasLimit    string    `json:"dstGasLimit"`
-	From           string    `json:"from"`
-	To             string    `json:"to"`
-	Data           struct {
-		Relayer           string        `json:"relayer"`
-		GasUsed           uint64        `json:"gasUsed,string"`
-		Error             hexutil.Bytes `json:"error"`
-		Offset            uint64        `json:"offset,string"`
-		ShardID           uint64        `json:"shardId,string"`
-		ConfirmationLevel string        `json:"confirmationLevel"`
-		GasLimit          uint64        `json:"gasLimit,string"`
-		Fees              string        `json:"fees"`
-	} `json:"data"`
-}
-
-func (c crossTxJSON) MsgID() (xchain.MsgID, error) {
-	srcChainID, err := c.SrcChainID.ID()
-	if err != nil {
-		return xchain.MsgID{}, errors.Wrap(err, "parse src chain id")
-	}
-
-	dstChainID, err := c.DstChainID.ID()
-	if err != nil {
-		return xchain.MsgID{}, errors.Wrap(err, "parse dst chain id")
-	}
-
-	return xchain.MsgID{
-		StreamID: xchain.StreamID{
-			SourceChainID: srcChainID,
-			DestChainID:   dstChainID,
-			ShardID:       xchain.ShardID(c.Data.ShardID),
-		},
-		StreamOffset: c.Data.Offset,
-	}, nil
-}
-
-type crossTxResponse struct {
-	Items []crossTxJSON `json:"items"`
-	Links links         `json:"link"`
-}
-
-type links struct {
-	Next      string `json:"next"`
-	NextToken string `json:"nextToken"`
-}
-
-func paginateLatestCrossTx(ctx context.Context) (crossTxJSON, error) {
-	next := crossTxURL
-	for {
-		var resp crossTxJSON
-		var err error
-		resp, next, err = queryLatestCrossTx(ctx, next)
-		if err != nil {
-			return crossTxJSON{}, errors.Wrap(err, "query latest cross tx")
-		} else if next == "" {
-			return resp, nil
-		}
-	}
-}
-
-func queryLatestCrossTx(ctx context.Context, next string) (crossTxJSON, string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+next, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return crossTxJSON{}, "", errors.Wrap(err, "new request")
+	}
+
+	const limit = 100
+
+	if next == "" {
+		// Build initial query params (server side filtering)
+		q := req.URL.Query()
+		q.Add("types", "omni")
+		q.Add("limit", strconv.FormatUint(limit, 10))
+		if filter.HasStream() {
+			q.Add("srcChainIds", routeScanChainID(filter.Stream.SourceChainID))
+			q.Add("dstChainIds", routeScanChainID(filter.Stream.DestChainID))
+		}
+		req.URL.RawQuery = q.Encode()
 	}
 
 	resp, err := http.DefaultClient.Do(req)
@@ -158,21 +80,52 @@ func queryLatestCrossTx(ctx context.Context, next string) (crossTxJSON, string, 
 
 	if len(crossTxResp.Items) == 0 {
 		return crossTxJSON{}, "", errors.New("empty response")
+	} else if len(crossTxResp.Items) > limit {
+		return crossTxJSON{}, "", errors.New("too many items in response")
 	}
 
 	for _, item := range crossTxResp.Items {
+		// Validate server side filtering
 		if item.Type != "omni" {
 			return crossTxJSON{}, "", errors.New("invalid cross tx type")
 		}
 
-		if item.Status == "completed" {
-			return item, "", nil
+		msgID, err := item.MsgID()
+		if err != nil {
+			return crossTxJSON{}, "", errors.Wrap(err, "parse msg id")
 		}
+
+		if filter.HasStream() && (filter.Stream.DestChainID != msgID.DestChainID || filter.Stream.SourceChainID != msgID.SourceChainID) {
+			return crossTxJSON{}, "", errors.New("invalid dest or source chain", "filter", filter.Stream, "msg", msgID)
+		}
+
+		// Client side filtering
+		if filter.HasStream() && filter.Stream != msgID.StreamID {
+			continue
+		} else if filter.Pending && item.Status != "pending" {
+			continue
+		} else if !filter.Pending && item.Status != "completed" {
+			continue
+		}
+
+		return item, "", nil // Return found item
 	}
+
+	// No matching item found
 
 	if crossTxResp.Links.Next == "" {
-		return crossTxJSON{}, "", errors.New("no more cross tx")
+		return crossTxJSON{}, "", errors.New("no matching cross tx found")
 	}
 
-	return crossTxJSON{}, crossTxResp.Links.Next, nil
+	return crossTxJSON{}, crossTxResp.Links.Next, nil // Return next page to query
+}
+
+const omegaResets = 4
+
+func routeScanChainID(id uint64) string {
+	if id == evmchain.IDOmniOmega {
+		return fmt.Sprintf("%d_%d", id, omegaResets)
+	}
+
+	return strconv.FormatUint(id, 10)
 }
