@@ -109,7 +109,7 @@ func (s Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 		"msgs", len(sub.Msgs),
 	)
 
-	txData, err := s.getXSubmitBytes(submissionToBinding(sub))
+	txData, err := xchain.EncodeXSubmit(xchain.SubmissionToBinding(sub))
 	if err != nil {
 		return err
 	}
@@ -165,16 +165,6 @@ func (s Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 	log.Info(ctx, "Sent submission", receiptAttrs...)
 
 	return nil
-}
-
-// getXSubmitBytes returns the byte representation of the xsubmit function call.
-func (s Sender) getXSubmitBytes(sub bindings.XSubmission) ([]byte, error) {
-	bytes, err := s.abi.Pack("xsubmit", sub)
-	if err != nil {
-		return nil, errors.Wrap(err, "pack xsubmit")
-	}
-
-	return bytes, nil
 }
 
 func callFromTx(from common.Address, tx *ethtypes.Transaction) ethereum.CallMsg {

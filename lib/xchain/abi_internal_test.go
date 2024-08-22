@@ -4,10 +4,12 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/ethereum/go-ethereum/common"
 
+	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
 )
 
@@ -56,4 +58,38 @@ func TestEncodeHeader(t *testing.T) {
 	require.NoError(t, err)
 
 	tutil.RequireGoldenBytes(t, []byte(hex.EncodeToString(packed)))
+}
+
+func TestSubmissionToFromBinding(t *testing.T) {
+	t.Parallel()
+	var sub Submission
+	fuzz.New().NilChance(0).Fuzz(&sub)
+	sub.AttHeader.ChainVersion.ID = sub.BlockHeader.ChainID // Align headers
+
+	xsub := SubmissionToBinding(sub)
+	reversedSub := SubmissionFromBinding(xsub, sub.DestChainID)
+
+	// Zero TxHash and ChainID for comparison since they aren't translated.
+	for i := range sub.Msgs {
+		sub.Msgs[i].TxHash = common.Hash{}
+		sub.Msgs[i].SourceChainID = 0
+	}
+
+	// Zero BlockHeight as we only submit AttestOffset
+	sub.BlockHeader.BlockHeight = 0
+
+	require.Equal(t, sub, reversedSub)
+}
+
+func TestXSubmitEncodeDecode(t *testing.T) {
+	t.Parallel()
+	var sub bindings.XSubmission
+	fuzz.New().NilChance(0).Fuzz(&sub)
+
+	calldata, err := EncodeXSubmit(sub)
+	require.NoError(t, err)
+
+	decoded, err := DecodeXSubmit(calldata)
+	require.NoError(t, err)
+	require.Equal(t, sub, decoded)
 }

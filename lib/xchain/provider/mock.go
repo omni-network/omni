@@ -74,6 +74,10 @@ func (*Mock) ChainVersionHeight(context.Context, xchain.ChainVersion) (uint64, e
 	return 0, errors.New("unsupported")
 }
 
+func (*Mock) GetSubmission(context.Context, uint64, common.Hash) (xchain.Submission, error) {
+	return xchain.Submission{}, errors.New("unsupported")
+}
+
 func (m *Mock) stream(
 	ctx context.Context,
 	req xchain.ProviderRequest,
