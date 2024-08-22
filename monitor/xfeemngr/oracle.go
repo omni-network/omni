@@ -123,8 +123,10 @@ func (o feeOracle) correctPostsTo(ctx context.Context, dest evmchain.Metadata) e
 		return errors.Wrap(err, "postsTo")
 	}
 
-	// if postsTo is correct, do nothing
-	if postsTo == dest.PostsTo {
+	// If postsTo is correct, do nothing
+	// Either metadata.PostsTo == onchain postsTo
+	// Or     metadata.PostsTo == 0, then chain "postsTo" itself, and on-chain postTo should be self
+	if (dest.PostsTo == postsTo) || (dest.PostsTo == 0 && postsTo == dest.ChainID) {
 		return nil
 	}
 
