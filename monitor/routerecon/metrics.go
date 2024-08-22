@@ -19,4 +19,11 @@ var (
 		Name:      "failure_total",
 		Help:      "Total count of failed route recons",
 	})
+
+	reconCompletedOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "monitor",
+		Subsystem: "routerecon",
+		Name:      "completed_offset",
+		Help:      "Latest completed attest offset per stream",
+	}, []string{"stream"})
 )

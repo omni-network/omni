@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/e2e/types"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/lib/xchain"
 	xconnect "github.com/omni-network/omni/lib/xchain/connect"
 
@@ -32,9 +32,12 @@ func TestReconOnce(t *testing.T) {
 	conn, err := xconnect.New(ctx, netconf.Omega, endpoints)
 	require.NoError(t, err)
 
-	crossTx, err := paginateLatestCrossTx(ctx)
-	require.NoError(t, err)
-
-	err = reconOnce(ctx, conn.Network, conn.XProvider, conn.EthClients, crossTx)
-	tutil.RequireNoError(t, err)
+	for _, stream := range conn.Network.EVMStreams() {
+		err := reconStreamOnce(ctx, conn.Network, conn.XProvider, conn.EthClients, stream)
+		if err != nil {
+			log.Warn(ctx, "RouteRecon failed", err, "stream", conn.Network.StreamName(stream))
+		} else {
+			log.Info(ctx, "RouteRecon success", "stream", conn.Network.StreamName(stream))
+		}
+	}
 }

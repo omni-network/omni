@@ -177,6 +177,16 @@ func (n Network) ChainVersionsTo(dstChainID uint64) []xchain.ChainVersion {
 	return resp
 }
 
+// EVMStreams returns the all streams between EVM chains.
+func (n Network) EVMStreams() []xchain.StreamID {
+	var resp []xchain.StreamID
+	for _, srcChain := range n.EVMChains() {
+		resp = append(resp, n.StreamsFrom(srcChain.ID)...)
+	}
+
+	return resp
+}
+
 // StreamsTo returns the all streams to the provided destination chain.
 func (n Network) StreamsTo(dstChainID uint64) []xchain.StreamID {
 	if dstChainID == n.ID.Static().OmniConsensusChainIDUint64() {
