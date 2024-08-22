@@ -2,6 +2,8 @@ package xchain
 
 import (
 	"context"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // ProviderCallback is the callback function signature that will be called with every finalized.
@@ -57,6 +59,9 @@ type Provider interface {
 
 	// ChainVersionHeight returns the height for the provided chain version.
 	ChainVersionHeight(ctx context.Context, chainVer ChainVersion) (uint64, error)
+
+	// GetSubmission returns the submission for the provided chain and tx hash, or an error.
+	GetSubmission(ctx context.Context, chainID uint64, txHash common.Hash) (Submission, error)
 }
 
 // EmitRef specifies which block to query for emit cursors.

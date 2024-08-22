@@ -7,6 +7,8 @@ import (
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/xchain"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -95,6 +97,10 @@ type mockXChainClient struct {
 	GetBlockFn           func(context.Context, xchain.ProviderRequest) (xchain.Block, bool, error)
 	GetSubmittedCursorFn func(context.Context, xchain.StreamID) (xchain.SubmitCursor, bool, error)
 	GetEmittedCursorFn   func(context.Context, xchain.EmitRef, xchain.StreamID) (xchain.EmitCursor, bool, error)
+}
+
+func (*mockXChainClient) GetSubmission(context.Context, uint64, common.Hash) (xchain.Submission, error) {
+	panic("unexpected")
 }
 
 func (m *mockXChainClient) StreamAsync(context.Context, xchain.ProviderRequest, xchain.ProviderCallback) error {

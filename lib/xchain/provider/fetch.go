@@ -367,6 +367,26 @@ func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, blockHash co
 	return xmsgs, nil
 }
 
+// GetSubmission returns the submission associated with the transaction hash or an error.
+func (p *Provider) GetSubmission(ctx context.Context, chainID uint64, txHash common.Hash) (xchain.Submission, error) {
+	chain, rpcClient, err := p.getEVMChain(chainID)
+	if err != nil {
+		return xchain.Submission{}, errors.Wrap(err, "get evm chain")
+	}
+
+	tx, _, err := rpcClient.TransactionByHash(ctx, txHash)
+	if err != nil {
+		return xchain.Submission{}, errors.Wrap(err, "tx by hash")
+	}
+
+	sub, err := xchain.DecodeXSubmit(tx.Data())
+	if err != nil {
+		return xchain.Submission{}, errors.Wrap(err, "decode xsubmit")
+	}
+
+	return xchain.SubmissionFromBinding(sub, chain.ID), nil
+}
+
 // confirmedCache returns true if the height is confirmedCache based on the chain version
 // on the cached strategy head.
 func (p *Provider) confirmedCache(chainVer xchain.ChainVersion, height uint64) bool {
