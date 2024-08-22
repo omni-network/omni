@@ -28,7 +28,7 @@ OMNI is an ERC-20 token on Layer 1, and we understand that developers and users 
 <GitHubCodeBlock url="https://github.com/omni-network/omni/blob/main/contracts/core/src/token/OmniBridgeNative.sol" />
 
 
-## What else? 
+## What else?
 
 :::tip
 Get inspired by the following ideas. Looking forward to seeing your PRs on https://github.com/omni-network/awesome-omni
