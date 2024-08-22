@@ -24,7 +24,7 @@ const sidebars: SidebarsConfig = {
         'build-xdapp/walkthrough',
         'build-xdapp/showcase-dapps',
       ],
-      collapsed: false,
+      collapsed: true,
     },
     {
       type: 'category',
@@ -35,7 +35,7 @@ const sidebars: SidebarsConfig = {
         'learn/token',
         'learn/whitepaper',
       ],
-      collapsed: false,
+      collapsed: true,
     },
     {
       type: 'category',
