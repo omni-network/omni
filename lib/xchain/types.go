@@ -143,7 +143,6 @@ type Msg struct {
 // Receipt is a cross-chain message receipt, the result of applying the Msg on the destination chain.
 type Receipt struct {
 	MsgID                         // Unique ID of the cross chain message that was applied.
-	ConfLevel      ConfLevel      // Confirmation level of submitted attestation
 	GasUsed        uint64         // Gas used during message "call"
 	Success        bool           // Result, true for success, false for revert
 	Error          []byte         // Error message if the message failed
