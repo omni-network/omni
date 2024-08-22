@@ -40,7 +40,7 @@ export default function VideoSequence() {
     // <div className={styles.videoContainer}>
     <div>
 
-      <img src='img/omni-intro.png' width="90%"/>
+      <img src='img/omni-intro.png' width="1000px"/>
 
       {/* <video ref={video1Ref} className={styles.video} controls style={{ display: 'block' }}>
         <source src="/img/OmniDocsAnim.mp4" type="video/mp4" />
