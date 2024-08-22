@@ -6,7 +6,7 @@ import GitHubCodeBlock from '@site/src/components/GitHubCodeBlock/GitHubCodeBloc
 
 # XDapp walkthrough
 
-Here's an example of a simple cross-chain contract set for setting and getting a string. This contract lets you send greetings from a rollup chain to a global storage contract deployed on Omni. Two main contracts are used in this example:
+Let's see what's happening under the hood. This contract lets you send greetings from a rollup chain to a global storage contract deployed on Omni. Two main contracts are used in this example:
 
 1. `Greeter` - A contract deployed on a rollup that sends greetings to the Omni EVM.
 2. `GreetingBook` - A contract deployed on the Omni EVM that stores greetings from all supported chains.
@@ -14,8 +14,6 @@ Here's an example of a simple cross-chain contract set for setting and getting a
 ## `Greeter` Contract
 
 <GitHubCodeBlock url="https://github.com/omni-network/hello-world-template/blob/48ff2f5277b4c144802c1ffa894a03ac071f02fc/src/Greeter.sol" />
-
-### Walkthrough
 
 Let's walk through this step by step.
 
@@ -52,8 +50,6 @@ function greet(string calldata greeting) external payable {
 ## `GreetingBook` Contract
 
 <GitHubCodeBlock url="https://github.com/omni-network/hello-world-template/blob/eb02c55bc8ef92c09e7cb6e40420353e41e2841c/src/GreetingBook.sol" />
-
-### Walkthrough
 
 Similar to `Greeter`, we inherit from `XApp`.
 

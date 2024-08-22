@@ -58,6 +58,11 @@ const config: Config = {
 
   themeConfig: {
     image: "img/omni-banner.png",
+    docs: {
+      sidebar: {
+        autoCollapseCategories: true,
+      },
+    },
     navbar: {
       title: 'Omni Developers',
       logo: {

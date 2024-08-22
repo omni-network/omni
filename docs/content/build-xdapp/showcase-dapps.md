@@ -2,17 +2,37 @@
 sidebar_position: 1
 ---
 
+import GitHubCodeBlock from '@site/src/components/GitHubCodeBlock/GitHubCodeBlock';
+
 # Showcase
 
-TODO
 
 
-Awesome Omni Examples and Templates
+## Cross-stake
 
-See the Awesome Omni repo for a list of Omni examples and templates that you can use to get started with your Omni projects.
+ An example xchain staking app that allows ERC20 deposits on multiple chains.
+ https://github.com/kevinhalliday/xstake
 
-- Cross-stake
-- Bridge
+ <GitHubCodeBlock url="https://github.com/kevinhalliday/xstake/blob/main/src/XStaker.sol"/>
+
+
+## Ethereum to Omni bridge
+
+OMNI is an ERC-20 token on Layer 1, and we understand that developers and users need a seamless way to transfer it to the Omni EVM for gas payments. To address this, we've developed a bridge that utilizes the Omni protocol, ensuring smooth and secure token transfers.
+
+
+### Omni to Ethereum
+<GitHubCodeBlock url="https://github.com/omni-network/omni/blob/main/contracts/core/src/token/OmniBridgeL1.sol"/>
+
+### Ethereum to Omni
+<GitHubCodeBlock url="https://github.com/omni-network/omni/blob/main/contracts/core/src/token/OmniBridgeNative.sol" />
+
+
+## What else? 
+
+:::tip
+Get inspired by the following ideas. Looking forward to seeing your PRs on https://github.com/omni-network/awesome-omni
+:::
 
 <div class="grid-wrapper">
   <div class="grid-rfp">

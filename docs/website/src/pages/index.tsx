@@ -38,7 +38,7 @@ function HomepageHeader() {
 
 
   return (
-    <header className={clsx('hero hero--primary', styles.heroBanner)}>
+    <header className={clsx('hero', styles.heroBanner)}>
       <div className="container">
         <Heading as="h1" className="hero__title">
         Cross-Chain Liquidity at your fingertips

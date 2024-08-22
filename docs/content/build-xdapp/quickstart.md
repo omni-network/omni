@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-# First XDapp
+# My First XDapp
 
 This QuickStart guide will run through how to start an Omni XDApp (cross-chain decentralized app) in 5 minutes.
 

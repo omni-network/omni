@@ -35,13 +35,15 @@
   --ifm-cta-color: black;
   --ifm-link-color: #3e88ff;
   --ifm-navbar-link-hover-color: #3e88ff;
+  --ifm-footer-link-hover-color: #3e88ff;
+  --ifm-hero-background-color: #edf4ff;
   background-color: #ffffff;
 }
 
 /* For readability concerns, you should choose a lighter palette in dark mode. */
 [data-theme="dark"] {
   --ifm-color-primary: #7eafff;
-  --ifm-color-primary-dark: #6285bc;
+  --ifm-color-primary-dark: #0d2143;
   --ifm-color-primary-darker: #8498b9;
   --ifm-color-primary-darkest: #afbfd8;
   --ifm-color-primary-light: #79cbcf;
@@ -56,6 +58,7 @@
   --ifm-menu-color-background-active: #0d2143;
   --ifm-menu-color-active: #606770;
   --ifm-cta-color: #e7ebeb;
+  --ifm-hero-background-color: #edf4ff;
   background-color: #00122f;
 }
 
@@ -178,14 +181,24 @@ figcaption {
   color: var(--ifm-cta-color);
 }
 
+.cta-img {
+  width: 30%;
+  height: auto;
+}
+
+.hero__title {
+  font-size: 2.5rem;
+}
+
 .hero__subtitle {
   font-size: 1.5rem;
   color: var(--ifm-heading-color);
 }
 
 .button.button--secondary {
-  color: var(--ifm-color-primary);
+  color: white;
   background-color: var(--ifm-color-primary-dark);
+  margin-top: 3%;
 }
 
 .table-of-contents__link--active {
