@@ -27,7 +27,7 @@ func Test_translateSubmission(t *testing.T) {
 		sub.Msgs[i].SourceChainID = 0
 	}
 
-	// Zero BlockHeight as we only submit BlockOffset
+	// Zero BlockHeight as we only submit AttestOffset
 	sub.BlockHeader.BlockHeight = 0
 
 	require.Equal(t, sub, reversedSub)

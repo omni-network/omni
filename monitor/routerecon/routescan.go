@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -17,7 +18,7 @@ const (
 	crossTxURL = "/v2/network/testnet/evm/cross-transactions"
 )
 
-func paginateLatestCrossTx(ctx context.Context, filter queryFilter) (crossTxJSON, error) {
+func paginateLatestCrossTx(ctx context.Context, filter filter) (crossTxJSON, error) {
 	var (
 		resp crossTxJSON
 		next string
@@ -36,7 +37,14 @@ func paginateLatestCrossTx(ctx context.Context, filter queryFilter) (crossTxJSON
 	}
 }
 
-func queryLatestCrossTx(ctx context.Context, filter queryFilter, next string) (crossTxJSON, string, error) {
+type filter interface {
+	// QueryParams sets any server-side query param filters.
+	QueryParams(q url.Values)
+	// Match returns true if the item should be returned.
+	Match(tx crossTxJSON) (bool, error)
+}
+
+func queryLatestCrossTx(ctx context.Context, filter filter, next string) (crossTxJSON, string, error) {
 	url := baseURL + next
 	if next == "" {
 		// Build initial path
@@ -55,10 +63,7 @@ func queryLatestCrossTx(ctx context.Context, filter queryFilter, next string) (c
 		q := req.URL.Query()
 		q.Add("types", "omni")
 		q.Add("limit", strconv.FormatUint(limit, 10))
-		if filter.HasStream() {
-			q.Add("srcChainIds", routeScanChainID(filter.Stream.SourceChainID))
-			q.Add("dstChainIds", routeScanChainID(filter.Stream.DestChainID))
-		}
+		filter.QueryParams(q)
 		req.URL.RawQuery = q.Encode()
 	}
 
@@ -78,40 +83,27 @@ func queryLatestCrossTx(ctx context.Context, filter queryFilter, next string) (c
 		return crossTxJSON{}, "", errors.Wrap(err, "decode response")
 	}
 
-	if len(crossTxResp.Items) == 0 {
+	if len(crossTxResp.CrossTxs) == 0 {
 		return crossTxJSON{}, "", errors.New("empty response")
-	} else if len(crossTxResp.Items) > limit {
+	} else if len(crossTxResp.CrossTxs) > limit {
 		return crossTxJSON{}, "", errors.New("too many items in response")
 	}
 
-	for _, item := range crossTxResp.Items {
-		// Validate server side filtering
-		if item.Type != "omni" {
-			return crossTxJSON{}, "", errors.New("invalid cross tx type")
+	for _, crossTx := range crossTxResp.CrossTxs {
+		if err := crossTx.Verify(); err != nil {
+			return crossTxJSON{}, "", errors.Wrap(err, "verify cross tx")
 		}
 
-		msgID, err := item.MsgID()
-		if err != nil {
-			return crossTxJSON{}, "", errors.Wrap(err, "parse msg id")
-		}
-
-		if filter.HasStream() && (filter.Stream.DestChainID != msgID.DestChainID || filter.Stream.SourceChainID != msgID.SourceChainID) {
-			return crossTxJSON{}, "", errors.New("invalid dest or source chain", "filter", filter.Stream, "msg", msgID)
-		}
-
-		// Client side filtering
-		if filter.HasStream() && filter.Stream != msgID.StreamID {
-			continue
-		} else if filter.Pending && item.Status != "pending" {
-			continue
-		} else if !filter.Pending && item.Status != "completed" {
+		if ok, err := filter.Match(crossTx); err != nil {
+			return crossTxJSON{}, "", errors.Wrap(err, "match filter")
+		} else if !ok {
 			continue
 		}
 
-		return item, "", nil // Return found item
+		return crossTx, "", nil // Return found crossTx
 	}
 
-	// No matching item found
+	// No matching crossTx found
 
 	if crossTxResp.Links.Next == "" {
 		return crossTxJSON{}, "", errors.New("no matching cross tx found")

@@ -196,7 +196,7 @@ func newABCIFetchFunc(cl atypes.QueryClient, client rpcclient.Client, chainNamer
 }
 
 func newABCIWindowFunc(cl atypes.QueryClient) windowFunc {
-	return func(ctx context.Context, chainVer xchain.ChainVersion, xBlockOffset uint64) (int, error) {
+	return func(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64) (int, error) {
 		const endpoint = "window_compare"
 		defer latency(endpoint)()
 
@@ -204,9 +204,9 @@ func newABCIWindowFunc(cl atypes.QueryClient) windowFunc {
 		defer span.End()
 
 		resp, err := cl.WindowCompare(ctx, &atypes.WindowCompareRequest{
-			ChainId:     chainVer.ID,
-			ConfLevel:   uint32(chainVer.ConfLevel),
-			BlockOffset: xBlockOffset,
+			ChainId:      chainVer.ID,
+			ConfLevel:    uint32(chainVer.ConfLevel),
+			AttestOffset: attestOffset,
 		})
 		if err != nil {
 			incQueryErr(endpoint)
@@ -239,14 +239,14 @@ func newABCILatestFunc(cl atypes.QueryClient) latestFunc {
 }
 
 func newABCIPortalBlockFunc(pcl ptypes.QueryClient) portalBlockFunc {
-	return func(ctx context.Context, blockOffset uint64, latest bool) (*ptypes.BlockResponse, bool, error) {
+	return func(ctx context.Context, attestOffset uint64, latest bool) (*ptypes.BlockResponse, bool, error) {
 		const endpoint = "portal_block"
 		defer latency(endpoint)()
 
 		ctx, span := tracer.Start(ctx, spanName(endpoint))
 		defer span.End()
 
-		resp, err := pcl.Block(ctx, &ptypes.BlockRequest{Id: blockOffset, Latest: latest})
+		resp, err := pcl.Block(ctx, &ptypes.BlockRequest{Id: attestOffset, Latest: latest})
 		if errors.Is(err, sdkerrors.ErrKeyNotFound) {
 			return nil, false, nil
 		} else if err != nil {

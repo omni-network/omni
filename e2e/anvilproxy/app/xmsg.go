@@ -99,7 +99,7 @@ func fuzzXMsgs(perturb types.Perturb, msgs []*bindings.OmniPortalXMsg) ([]*bindi
 		}
 	case types.PerturbFuzzyHeadDropBlocks: // Every odd block.
 		// Remove all msgs.
-		// Will reach consensus, but results in BlockOffset mismatch of subsequent xblock with Finalized.
+		// Will reach consensus, but results in AttestOffset mismatch of subsequent xblock with Finalized.
 		msgs = nil
 	case types.PerturbFuzzyHeadMoreMsgs:
 		// Duplicate last message, incrementing the offset.

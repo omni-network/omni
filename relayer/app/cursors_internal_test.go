@@ -35,13 +35,13 @@ func Test_fromOffsets(t *testing.T) {
 	makeCursors := func(offset1, offset2, offset3 uint64) []xchain.SubmitCursor {
 		var resp []xchain.SubmitCursor
 		if offset1 != 0 {
-			resp = append(resp, xchain.SubmitCursor{StreamID: stream1, BlockOffset: offset1})
+			resp = append(resp, xchain.SubmitCursor{StreamID: stream1, AttestOffset: offset1})
 		}
 		if offset2 != 0 {
-			resp = append(resp, xchain.SubmitCursor{StreamID: stream2, BlockOffset: offset2})
+			resp = append(resp, xchain.SubmitCursor{StreamID: stream2, AttestOffset: offset2})
 		}
 		if offset3 != 0 {
-			resp = append(resp, xchain.SubmitCursor{StreamID: stream3, BlockOffset: offset3})
+			resp = append(resp, xchain.SubmitCursor{StreamID: stream3, AttestOffset: offset3})
 		}
 
 		return resp
@@ -133,11 +133,11 @@ func (m *mockSender) SendTransaction(ctx context.Context, submission xchain.Subm
 
 type mockProvider struct {
 	cchain.Provider
-	SubscribeFn func(ctx context.Context, chainVer xchain.ChainVersion, xBlockOffset uint64, callback cchain.ProviderCallback)
+	SubscribeFn func(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64, callback cchain.ProviderCallback)
 }
 
-func (m *mockProvider) StreamAsync(ctx context.Context, chainVer xchain.ChainVersion, xBlockOffset uint64,
+func (m *mockProvider) StreamAsync(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64,
 	_ string, callback cchain.ProviderCallback,
 ) {
-	m.SubscribeFn(ctx, chainVer, xBlockOffset, callback)
+	m.SubscribeFn(ctx, chainVer, attestOffset, callback)
 }

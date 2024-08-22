@@ -110,7 +110,7 @@ func TestApprovedValUpdates(t *testing.T) {
 }
 
 func fetchAllAtts(ctx context.Context, cprov cchain.Provider, chainVer xchain.ChainVersion, nodeIsDelayed bool) ([]xchain.Attestation, error) {
-	fromOffset := uint64(1) // Start at initialXBlockOffset
+	fromOffset := uint64(1) // Start at initialXAttestOffset
 	var resp []xchain.Attestation
 	for {
 		atts, err := cprov.AttestationsFrom(ctx, chainVer, fromOffset)

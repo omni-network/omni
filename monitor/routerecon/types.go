@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -84,6 +85,27 @@ type crossTxJSON struct {
 	} `json:"data"`
 }
 
+func (c crossTxJSON) IsCompleted() bool {
+	return c.Status == "completed"
+}
+
+func (c crossTxJSON) IsPending() bool {
+	return c.Status == "pending"
+}
+
+// Verify returns an error if fields are invalid.
+func (c crossTxJSON) Verify() error {
+	if c.Type != "omni" {
+		return errors.New("invalid cross tx type", "got", c.Type)
+	} else if !c.IsCompleted() && !c.IsPending() {
+		return errors.New("invalid cross tx status", "got", c.Status)
+	} else if c.Data.ConfLevel != "finalized" && c.Data.ConfLevel != "latest" {
+		return errors.New("invalid conf level", "got", c.Data.ConfLevel)
+	}
+
+	return nil
+}
+
 // ExpectedID calculates the expected ID of the cross transaction from its fields.
 func (c crossTxJSON) ExpectedID() string {
 	s := fmt.Sprintf("omni#%s#%s#%d#%d", c.SrcChainID, c.DstChainID, c.Data.ShardID, c.Data.Offset)
@@ -130,8 +152,8 @@ func (c crossTxJSON) MsgID() (xchain.MsgID, error) {
 }
 
 type crossTxResponse struct {
-	Items []crossTxJSON `json:"items"`
-	Links links         `json:"link"`
+	CrossTxs []crossTxJSON `json:"items"`
+	Links    links         `json:"link"`
 }
 
 type links struct {
@@ -139,10 +161,43 @@ type links struct {
 	NextToken string `json:"nextToken"`
 }
 
+var _ filter = queryFilter{}
+
 // queryFilter defines the cross transactions to query.
 type queryFilter struct {
 	Stream  xchain.StreamID // Defaults to any stream if zero
 	Pending bool            // Default to Completed if false
+}
+
+func (f queryFilter) QueryParams(q url.Values) {
+	if !f.HasStream() {
+		return
+	}
+
+	q.Add("srcChainIds", routeScanChainID(f.Stream.SourceChainID))
+	q.Add("dstChainIds", routeScanChainID(f.Stream.DestChainID))
+}
+
+func (f queryFilter) Match(crossTx crossTxJSON) (bool, error) {
+	msgID, err := crossTx.MsgID()
+	if err != nil {
+		return false, errors.Wrap(err, "parse msg id")
+	}
+
+	if f.HasStream() && (f.Stream.DestChainID != msgID.DestChainID || f.Stream.SourceChainID != msgID.SourceChainID) {
+		return false, errors.New("invalid dest or source chain", "filter", f.Stream, "msg", msgID)
+	}
+
+	// Client side filtering
+	if f.HasStream() && f.Stream != msgID.StreamID {
+		return false, nil
+	} else if f.Pending && !crossTx.IsPending() {
+		return false, nil
+	} else if !f.Pending && !crossTx.IsCompleted() {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func (f queryFilter) HasStream() bool {

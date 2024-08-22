@@ -213,8 +213,8 @@ func (k *Keeper) insertValidatorSet(ctx context.Context, vals []*Validator, isGe
 		return 0, errors.Wrap(err, "insert valset")
 	}
 
-	// Emit this validator set message to portals, updating the resulting block offset/height/id.
-	valset.BlockOffset, err = k.emilPortal.EmitMsg(
+	// Emit this validator set message to portals, updating the resulting attest offset/height/id.
+	valset.AttestOffset, err = k.emilPortal.EmitMsg(
 		sdkCtx,
 		ptypes.MsgTypeValSet,
 		valset.GetId(),
@@ -310,7 +310,7 @@ func (k *Keeper) processAttested(ctx context.Context) ([]abci.ValidatorUpdate, e
 	conf := xchain.ConfFinalized // TODO(corver): Move this to static netconf.
 
 	// Check if this unattested set was attested to
-	if atts, err := k.aKeeper.ListAttestationsFrom(ctx, chainID, uint32(conf), valset.GetBlockOffset(), 1); err != nil {
+	if atts, err := k.aKeeper.ListAttestationsFrom(ctx, chainID, uint32(conf), valset.GetAttestOffset(), 1); err != nil {
 		return nil, errors.Wrap(err, "list attestations")
 	} else if len(atts) == 0 {
 		return nil, nil // No attested set, so no updates.

@@ -31,7 +31,7 @@ var _ cchain.Provider = Provider{}
 type fetchFunc func(ctx context.Context, chainVer xchain.ChainVersion, fromOffset uint64) ([]xchain.Attestation, error)
 type latestFunc func(ctx context.Context, chainVer xchain.ChainVersion) (xchain.Attestation, bool, error)
 type windowFunc func(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64) (int, error)
-type portalBlockFunc func(ctx context.Context, blockOffset uint64, latest bool) (*ptypes.BlockResponse, bool, error)
+type portalBlockFunc func(ctx context.Context, attestOffset uint64, latest bool) (*ptypes.BlockResponse, bool, error)
 type networkFunc func(ctx context.Context, networkID uint64, latest bool) (*rtypes.NetworkResponse, bool, error)
 type valsetFunc func(ctx context.Context, valSetID uint64, latest bool) (valSetResponse, bool, error)
 type headerFunc func(ctx context.Context, height *int64) (*ctypes.ResultHeader, error)

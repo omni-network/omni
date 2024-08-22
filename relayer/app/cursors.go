@@ -12,8 +12,8 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 )
 
-// initialXBlockOffset defines the first xBlockOffset for all chains, it starts at 1, not 0.
-const initialXBlockOffset = 1
+// initialAttestOffset defines the first AttestOffset for all chains, it starts at 1, not 0.
+const initialAttestOffset = 1
 
 // getSubmittedCursors returns the last submitted cursor for each source chain on the destination chain.
 func getSubmittedCursors(ctx context.Context, network netconf.Network, dstChainID uint64, xClient xchain.Provider,
@@ -85,7 +85,7 @@ func filterMsgs(
 	return res, nil
 }
 
-// fromChainVersionOffsets calculates the starting block offsets for all chain versions (to the destination chain).
+// fromChainVersionOffsets calculates the starting attest offsets for all chain versions (to the destination chain).
 func fromChainVersionOffsets(
 	cursors []xchain.SubmitCursor, // All actual on-chain submit cursors
 	chainVers []xchain.ChainVersion, // All expected chain versions
@@ -94,12 +94,12 @@ func fromChainVersionOffsets(
 
 	// Initialize all chain versions to start at 1 by default or if local state is present
 	for _, chainVer := range chainVers {
-		res[chainVer] = initialXBlockOffset
+		res[chainVer] = initialAttestOffset
 	}
 
 	// sort cursors by decreasing offset, so we start streaming from minimum offset per source chain
 	sort.Slice(cursors, func(i, j int) bool {
-		return cursors[i].BlockOffset > cursors[j].BlockOffset
+		return cursors[i].AttestOffset > cursors[j].AttestOffset
 	})
 
 	for _, cursor := range cursors {
@@ -108,11 +108,11 @@ func fromChainVersionOffsets(
 			return nil, errors.New("unexpected cursor [BUG]")
 		}
 
-		if offset >= cursor.BlockOffset {
+		if offset >= cursor.AttestOffset {
 			continue // Skip if local state is higher than cursor
 		}
 
-		res[cursor.ChainVersion()] = cursor.BlockOffset
+		res[cursor.ChainVersion()] = cursor.AttestOffset
 	}
 
 	return res, nil

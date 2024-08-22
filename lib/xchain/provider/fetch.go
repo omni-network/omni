@@ -55,7 +55,7 @@ func (p *Provider) ChainVersionHeight(ctx context.Context, chainVer xchain.Chain
 // GetEmittedCursor returns the emitted cursor for the destination chain on the source chain,
 // or false if not available, or an error. Calls the source chain portal OutXStreamOffset method.
 //
-// Note that the BlockOffset field is not populated for emit cursors, since it isn't stored on-chain
+// Note that the AttestOffset field is not populated for emit cursors, since it isn't stored on-chain
 // but tracked off-chain.
 func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, stream xchain.StreamID,
 ) (xchain.EmitCursor, bool, error) {
@@ -149,15 +149,15 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, stream xchain.StreamI
 		return xchain.SubmitCursor{}, false, nil
 	}
 
-	blockOffset, err := caller.InXBlockOffset(callOpts, stream.SourceChainID, uint64(stream.ShardID))
+	attestOffset, err := caller.InXBlockOffset(callOpts, stream.SourceChainID, uint64(stream.ShardID))
 	if err != nil {
 		return xchain.SubmitCursor{}, false, errors.Wrap(err, "call InXBlockOffset")
 	}
 
 	return xchain.SubmitCursor{
-		StreamID:    stream,
-		MsgOffset:   msgOffset,
-		BlockOffset: blockOffset,
+		StreamID:     stream,
+		MsgOffset:    msgOffset,
+		AttestOffset: attestOffset,
 	}, true, nil
 }
 
