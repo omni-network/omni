@@ -38,7 +38,7 @@ type Provider interface {
 	StreamBlocks(ctx context.Context, req ProviderRequest, callback ProviderCallback) error
 
 	// GetBlock returns the block for the given chain and height, or false if not available (not finalized yet),
-	// or an error. The XBlockOffset field is populated with the provided offset (if required).
+	// or an error. The AttestOffset field is populated with the provided offset (if required).
 	GetBlock(ctx context.Context, req ProviderRequest) (Block, bool, error)
 
 	// GetSubmittedCursor returns the submitted cursor for the provided stream,
@@ -51,7 +51,7 @@ type Provider interface {
 	// or false if not available, or an error.
 	// Calls the source chain portal OutXStreamOffset method.
 	//
-	// Note that the BlockOffset field is not populated for emit cursors, since it isn't stored on-chain
+	// Note that the AttestOffset field is not populated for emit cursors, since it isn't stored on-chain
 	// but tracked off-chain.
 	GetEmittedCursor(ctx context.Context, ref EmitRef, stream StreamID) (EmitCursor, bool, error)
 

@@ -111,7 +111,7 @@ func monitorConsOffsetOnce(ctx context.Context, network netconf.Network, xprovid
 		}
 
 		submitMsgOffset.WithLabelValues(streamName).Set(float64(submitted.MsgOffset))
-		submitBlockOffset.WithLabelValues(streamName).Set(float64(submitted.BlockOffset))
+		submitAttestOffset.WithLabelValues(streamName).Set(float64(submitted.AttestOffset))
 	}
 
 	return nil
@@ -289,7 +289,7 @@ func monitorOffsetsOnce(
 		name := network.StreamName(stream)
 		emitMsgOffset.WithLabelValues(name).Set(float64(emitted.MsgOffset))
 		submitMsgOffset.WithLabelValues(name).Set(float64(submitted.MsgOffset))
-		submitBlockOffset.WithLabelValues(name).Set(float64(submitted.BlockOffset))
+		submitAttestOffset.WithLabelValues(name).Set(float64(submitted.AttestOffset))
 	}
 
 	return lastErr

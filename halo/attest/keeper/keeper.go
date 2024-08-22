@@ -32,8 +32,8 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 )
 
-// initialBlockOffset is the first block offset to attest to for all chains.
-const initialBlockOffset uint64 = 1
+// initialAttestOffset is the first attest offset to attest to for all chains.
+const initialAttestOffset uint64 = 1
 
 var _ sdk.ExtendVoteHandler = (*Keeper)(nil).ExtendVote
 var _ sdk.VerifyVoteExtensionHandler = (*Keeper)(nil).VerifyVoteExtension
@@ -283,7 +283,7 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 				}
 			}
 			head, ok := approvedByChain[chainVer]
-			if !ok && att.GetAttestOffset() != initialBlockOffset {
+			if !ok && att.GetAttestOffset() != initialAttestOffset {
 				// Only start attesting from offset==1
 				continue
 			} else if ok && head+1 != att.GetAttestOffset() {
@@ -531,7 +531,7 @@ func (k *Keeper) earliestAttestation(ctx context.Context, version xchain.ChainVe
 }
 
 // listAllAttestations returns all approved attestations for the given chain.
-func (k *Keeper) listAllAttestations(ctx context.Context, version xchain.ChainVersion, status Status, blockOffset uint64) ([]*types.Attestation, error) {
+func (k *Keeper) listAllAttestations(ctx context.Context, version xchain.ChainVersion, status Status, attestOfset uint64) ([]*types.Attestation, error) {
 	defer latency("list_all_attestations")()
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	consensusID, err := netconf.ConsensusChainIDStr2Uint64(sdkCtx.ChainID())
@@ -539,7 +539,7 @@ func (k *Keeper) listAllAttestations(ctx context.Context, version xchain.ChainVe
 		return nil, errors.Wrap(err, "get consensus chain id")
 	}
 
-	idx := AttestationStatusChainIdConfLevelAttestOffsetIndexKey{}.WithStatusChainIdConfLevelAttestOffset(uint32(status), version.ID, uint32(version.ConfLevel), blockOffset)
+	idx := AttestationStatusChainIdConfLevelAttestOffsetIndexKey{}.WithStatusChainIdConfLevelAttestOffset(uint32(status), version.ID, uint32(version.ConfLevel), attestOfset)
 	iter, err := k.attTable.List(ctx, idx)
 	if err != nil {
 		return nil, errors.Wrap(err, "list")
@@ -839,7 +839,7 @@ func (k *Keeper) windowCompare(ctx context.Context, chainVer xchain.ChainVersion
 		return 0, err
 	}
 
-	latestOffset := initialBlockOffset // Use initial offset if attestation doesn't exist.
+	latestOffset := initialAttestOffset // Use initial offset if attestation doesn't exist.
 	if exists {
 		latestOffset = latest.GetAttestOffset()
 	}

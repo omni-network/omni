@@ -14,7 +14,7 @@ message Block {
     index: {id: 2, fields: "created_height", unique: true} // Allow querying by created_height.
   };
 
-  uint64 id               = 1; // Auto-incremented ID (BlockHeight, BlockOffset)
+  uint64 id               = 1; // Auto-incremented ID (BlockHeight, AttestOffset)
   uint64 created_height   = 2; // Height this block was created at.
 }
 

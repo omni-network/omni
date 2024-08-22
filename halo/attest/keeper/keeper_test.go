@@ -424,8 +424,8 @@ func TestKeeper_Approve(t *testing.T) {
 			prerequisites: []prerequisite{
 				func(t *testing.T, k *keeper.Keeper, ctx sdk.Context) {
 					t.Helper()
-					vote1 := defaultAggVote().WithBlockOffset(defaultOffset).Vote()
-					vote2 := defaultAggVote().WithBlockOffset(defaultOffset + 1).Vote()
+					vote1 := defaultAggVote().WithAttestOfset(defaultOffset).Vote()
+					vote2 := defaultAggVote().WithAttestOfset(defaultOffset + 1).Vote()
 
 					msg1 := defaultMsg().Default().WithVotes(vote1).Msg()
 					err := k.Add(ctx, msg1)
@@ -460,8 +460,8 @@ func TestKeeper_Approve(t *testing.T) {
 			prerequisites: []prerequisite{
 				func(t *testing.T, k *keeper.Keeper, ctx sdk.Context) {
 					t.Helper()
-					vote1 := defaultAggVote().WithBlockOffset(defaultOffset).Vote()
-					vote3 := defaultAggVote().WithBlockOffset(defaultOffset + 2).Vote()
+					vote1 := defaultAggVote().WithAttestOfset(defaultOffset).Vote()
+					vote3 := defaultAggVote().WithAttestOfset(defaultOffset + 2).Vote()
 
 					msg1 := defaultMsg().Default().WithVotes(vote1).Msg()
 					err := k.Add(ctx, msg1)
@@ -504,22 +504,22 @@ func TestKeeper_Approve(t *testing.T) {
 					t.Helper()
 
 					initHeight := int64(10)
-					vote1 := defaultAggVote().WithBlockOffset(defaultOffset).Vote()
+					vote1 := defaultAggVote().WithAttestOfset(defaultOffset).Vote()
 					msg1 := defaultMsg().Default().WithVotes(vote1).Msg()
 					err := k.Add(ctx.WithBlockHeight(initHeight), msg1)
 					require.NoError(t, err)
 
-					vote2 := defaultAggVote().WithBlockOffset(defaultOffset + 1).Vote()
+					vote2 := defaultAggVote().WithAttestOfset(defaultOffset + 1).Vote()
 					msg2 := defaultMsg().Default().WithVotes(vote2).Msg()
 					err = k.Add(ctx.WithBlockHeight(initHeight+1), msg2)
 					require.NoError(t, err)
 
-					vote3 := defaultAggVote().WithBlockOffset(defaultOffset + 2).Vote()
+					vote3 := defaultAggVote().WithAttestOfset(defaultOffset + 2).Vote()
 					msg3 := defaultMsg().Default().WithVotes(vote3).Msg()
 					err = k.Add(ctx.WithBlockHeight(initHeight+8), msg3)
 					require.NoError(t, err)
 
-					vote4 := defaultAggVote().WithBlockOffset(defaultOffset + 3).Vote()
+					vote4 := defaultAggVote().WithAttestOfset(defaultOffset + 3).Vote()
 					msg4 := defaultMsg().Default().WithVotes(vote4).Msg()
 					err = k.Add(ctx.WithBlockHeight(initHeight+9), msg4)
 					require.NoError(t, err)
@@ -561,12 +561,12 @@ func TestKeeper_Approve(t *testing.T) {
 					t.Helper()
 
 					initHeight := int64(10)
-					vote1 := defaultAggVote().WithBlockOffset(defaultOffset).Vote()
+					vote1 := defaultAggVote().WithAttestOfset(defaultOffset).Vote()
 					msg1 := defaultMsg().Default().WithVotes(vote1).Msg()
 					err := k.Add(ctx.WithBlockHeight(initHeight), msg1)
 					require.NoError(t, err)
 
-					vote2 := defaultAggVote().WithBlockOffset(defaultOffset + 1).Vote()
+					vote2 := defaultAggVote().WithAttestOfset(defaultOffset + 1).Vote()
 					msg2 := defaultMsg().Default().WithVotes(vote2).Msg()
 					err = k.Add(ctx.WithBlockHeight(initHeight+1), msg2)
 					require.NoError(t, err)
@@ -614,19 +614,19 @@ func TestKeeper_Approve(t *testing.T) {
 					defaultOffsetMin1 := umath.SubtractOrZero(defaultOffset, 1)
 
 					// Att 1 at defaultOffset-1 (and other hash) signed by val3 (so not approved below so stays pending)
-					vote1 := defaultAggVote().WithBlockHash(otherHash).WithBlockOffset(defaultOffsetMin1).WithSignatures(sigsTuples(val3)...).Vote()
+					vote1 := defaultAggVote().WithBlockHash(otherHash).WithAttestOfset(defaultOffsetMin1).WithSignatures(sigsTuples(val3)...).Vote()
 					msg1 := defaultMsg().Default().WithVotes(vote1).Msg()
 					err := k.Add(ctx.WithBlockHeight(initHeight), msg1)
 					require.NoError(t, err)
 
 					// Att 2 at defaultOffset (and defaultHeight) signed by val1 and val2 (and approved below and is latest approved att)
-					vote2 := defaultAggVote().WithBlockOffset(defaultOffset).Vote()
+					vote2 := defaultAggVote().WithAttestOfset(defaultOffset).Vote()
 					msg2 := defaultMsg().Default().WithVotes(vote2).Msg()
 					err = k.Add(ctx.WithBlockHeight(initHeight+1), msg2)
 					require.NoError(t, err)
 
 					// Att 3 at defaultOffset+1 signed by val3 (so not approved below so stays pending)
-					vote3 := defaultAggVote().WithBlockOffset(defaultOffset + 1).WithSignatures(sigsTuples(val3)...).Vote()
+					vote3 := defaultAggVote().WithAttestOfset(defaultOffset + 1).WithSignatures(sigsTuples(val3)...).Vote()
 					msg3 := defaultMsg().Default().WithVotes(vote3).Msg()
 					err = k.Add(ctx.WithBlockHeight(initHeight+2), msg3)
 					require.NoError(t, err)
@@ -682,19 +682,19 @@ func TestKeeper_Approve(t *testing.T) {
 					require.NoError(t, err)
 
 					// Finalized att 2
-					vote2 := defaultAggVote().WithBlockOffset(defaultOffset + 1).Vote()
+					vote2 := defaultAggVote().WithAttestOfset(defaultOffset + 1).Vote()
 					msg2 := defaultMsg().Default().WithVotes(vote2).Msg()
 					err = k.Add(ctx.WithBlockHeight(initHeight+1), msg2)
 					require.NoError(t, err)
 
 					// Fuzzy att 3
-					vote3 := defaultAggVote().WithBlockOffset(defaultOffset).WithFuzzy().Vote()
+					vote3 := defaultAggVote().WithAttestOfset(defaultOffset).WithFuzzy().Vote()
 					msg3 := defaultMsg().Default().WithVotes(vote3).Msg()
 					err = k.Add(ctx.WithBlockHeight(initHeight+2), msg3)
 					require.NoError(t, err)
 
 					// Fuzzy att 4
-					vote4 := defaultAggVote().WithBlockOffset(defaultOffset + 1).WithFuzzy().Vote()
+					vote4 := defaultAggVote().WithAttestOfset(defaultOffset + 1).WithFuzzy().Vote()
 					msg4 := defaultMsg().Default().WithVotes(vote4).Msg()
 					err = k.Add(ctx.WithBlockHeight(initHeight+3), msg4)
 					require.NoError(t, err)
@@ -757,19 +757,19 @@ func TestKeeper_Approve(t *testing.T) {
 					require.NoError(t, err)
 
 					// Finalized att 2
-					vote2 := defaultAggVote().WithBlockOffset(defaultOffset + 1).Vote()
+					vote2 := defaultAggVote().WithAttestOfset(defaultOffset + 1).Vote()
 					msg2 := defaultMsg().Default().WithVotes(vote2).Msg()
 					err = k.Add(ctx.WithBlockHeight(initHeight+1), msg2)
 					require.NoError(t, err)
 
 					// Fuzzy att 3
-					vote3 := defaultAggVote().WithBlockOffset(defaultOffset).WithFuzzy().Vote()
+					vote3 := defaultAggVote().WithAttestOfset(defaultOffset).WithFuzzy().Vote()
 					msg3 := defaultMsg().Default().WithVotes(vote3).Msg()
 					err = k.Add(ctx.WithBlockHeight(initHeight+2), msg3)
 					require.NoError(t, err)
 
 					// Fuzzy att 4
-					vote4 := defaultAggVote().WithBlockOffset(defaultOffset + 1).WithFuzzy().Vote()
+					vote4 := defaultAggVote().WithAttestOfset(defaultOffset + 1).WithFuzzy().Vote()
 					msg4 := defaultMsg().Default().WithVotes(vote4).Msg()
 					err = k.Add(ctx.WithBlockHeight(initHeight+3), msg4)
 					require.NoError(t, err)
@@ -827,13 +827,13 @@ func TestKeeper_Approve(t *testing.T) {
 					initHeight := int64(10)
 
 					// Consensus att 1
-					vote1 := defaultAggVote().WithChainID(consensusID).WithBlockOffset(defaultOffset).Vote()
+					vote1 := defaultAggVote().WithChainID(consensusID).WithAttestOfset(defaultOffset).Vote()
 					msg1 := defaultMsg().Default().WithVotes(vote1).Msg()
 					err := k.Add(ctx.WithBlockHeight(initHeight), msg1)
 					require.NoError(t, err)
 
 					// Consensus att 2
-					vote2 := defaultAggVote().WithChainID(consensusID).WithBlockOffset(defaultOffset + 1).Vote()
+					vote2 := defaultAggVote().WithChainID(consensusID).WithAttestOfset(defaultOffset + 1).Vote()
 					msg2 := defaultMsg().Default().WithVotes(vote2).Msg()
 					err = k.Add(ctx.WithBlockHeight(initHeight+1), msg2)
 					require.NoError(t, err)
@@ -886,13 +886,13 @@ func TestKeeper_Approve(t *testing.T) {
 					// Same setup as "dont_delete_consensus_yet"
 
 					// Consensus att 1
-					vote1 := defaultAggVote().WithChainID(consensusID).WithBlockOffset(defaultOffset).Vote()
+					vote1 := defaultAggVote().WithChainID(consensusID).WithAttestOfset(defaultOffset).Vote()
 					msg1 := defaultMsg().Default().WithVotes(vote1).Msg()
 					err := k.Add(ctx.WithBlockHeight(initHeight), msg1)
 					require.NoError(t, err)
 
 					// Consensus att 2
-					vote2 := defaultAggVote().WithChainID(consensusID).WithBlockOffset(defaultOffset + 1).Vote()
+					vote2 := defaultAggVote().WithChainID(consensusID).WithAttestOfset(defaultOffset + 1).Vote()
 					msg2 := defaultMsg().Default().WithVotes(vote2).Msg()
 					err = k.Add(ctx.WithBlockHeight(initHeight+1), msg2)
 					require.NoError(t, err)
