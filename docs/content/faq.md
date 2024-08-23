@@ -4,7 +4,11 @@ sidebar_position: 4
 
 # FAQ
 
-<!-- ## Developing Smart Contracts -->
+**Which chains does Omni support?**
+
+Mainnet v1 launch: Ethereum, Omni, Arbitrum, Optimism, Base
+
+Omega Testnet: Ethereum Holesky, Omni Omega, Arbitrum Sepolia, Optimism Sepolia, Base Sepolia
 
 **How fast is a message delivered?**
 
@@ -29,12 +33,6 @@ An xcall will only revert on the destination if there is logic in your smart con
 **What happens if a rollup reorgs?**
 
 Reorgs have no impact on a `finalized` stream, as these streams wait for the rollup to be finalized on Ethereum before validating an XMsg.
-
-**What chains does Omni support?**
-
-Mainnet v1 launch: Ethereum, Omni, Arbitrum, Optimism, Base
-
-Omega Testnet: Ethereum Holesky, Omni Omega, Arbitrum Sepolia, Optimism Sepolia, Base Sepolia
 
 **Why doesn’t Omni wait for the 7-day challenge period for rollups?**
 

@@ -41,7 +41,7 @@ function HomepageHeader() {
     <header className={clsx('hero', styles.heroBanner)}>
       <div className="container">
         <Heading as="h1" className="hero__title">
-        Cross-Chain Liquidity at your fingertips
+        Deploy Once, Access All Users & Capital
         </Heading>
 
        <IntroVideo/>
