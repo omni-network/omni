@@ -82,13 +82,15 @@ contract OmniBridgeNative_Test is Test {
         vm.expectCall(
             address(portal),
             fee,
-            abi.encodeWithSelector(
-                IOmniPortal.xcall.selector,
-                l1ChainId,
-                ConfLevel.Finalized,
-                l1Bridge,
-                abi.encodeWithSelector(OmniBridgeL1.withdraw.selector, to, amount),
-                b.XCALL_WITHDRAW_GAS_LIMIT()
+            abi.encodeCall(
+                IOmniPortal.xcall,
+                (
+                    l1ChainId,
+                    ConfLevel.Finalized,
+                    address(l1Bridge),
+                    abi.encodeCall(OmniBridgeL1.withdraw, (to, amount)),
+                    b.XCALL_WITHDRAW_GAS_LIMIT()
+                )
             )
         );
         b.bridge{ value: amount + fee }(to, amount);
@@ -103,11 +105,12 @@ contract OmniBridgeNative_Test is Test {
         address payor = makeAddr("payor");
         address to = makeAddr("to");
         uint256 amount = 1e18;
+        uint256 l1BridgeBalance = 100e18;
         uint64 gasLimit = l1Bridge.XCALL_WITHDRAW_GAS_LIMIT();
 
         // sender must be portal
         vm.expectRevert("OmniBridge: not xcall");
-        b.withdraw(payor, to, amount);
+        b.withdraw(payor, to, amount, l1BridgeBalance);
 
         // xmsg must be from l1Bridge
         vm.expectRevert("OmniBridge: not bridge");
@@ -115,7 +118,7 @@ contract OmniBridgeNative_Test is Test {
             sourceChainId: l1ChainId,
             sender: address(1234), // wrong
             to: address(b),
-            data: abi.encodeWithSelector(OmniBridgeNative.withdraw.selector, payor, to, amount),
+            data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount, l1BridgeBalance)),
             gasLimit: gasLimit
         });
 
@@ -125,7 +128,7 @@ contract OmniBridgeNative_Test is Test {
             sourceChainId: l1ChainId + 1, // wrong
             sender: address(l1Bridge),
             to: address(b),
-            data: abi.encodeWithSelector(OmniBridgeNative.withdraw.selector, payor, to, amount),
+            data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount, l1BridgeBalance)),
             gasLimit: gasLimit
         });
 
@@ -141,7 +144,7 @@ contract OmniBridgeNative_Test is Test {
             sourceChainId: l1ChainId,
             sender: address(l1Bridge),
             to: address(b),
-            data: abi.encodeWithSelector(OmniBridgeNative.withdraw.selector, payor, to, amount),
+            data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount, l1BridgeBalance)),
             gasLimit: gasLimit
         });
 
@@ -153,8 +156,8 @@ contract OmniBridgeNative_Test is Test {
         // nothing claimable
         assertEq(b.claimable(payor), 0);
 
-        // increments l1BridgeBalance
-        assertEq(b.l1BridgeBalance(), amount);
+        // syncs l1BridgeBalance
+        assertEq(b.l1BridgeBalance(), l1BridgeBalance);
 
         // adds claimable if to.call fails
         //
@@ -168,7 +171,7 @@ contract OmniBridgeNative_Test is Test {
             sourceChainId: l1ChainId,
             sender: address(l1Bridge),
             to: address(b),
-            data: abi.encodeWithSelector(OmniBridgeNative.withdraw.selector, payor, noReceiver, amount),
+            data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, noReceiver, amount, l1BridgeBalance)),
             gasLimit: gasLimit
         });
 
@@ -192,7 +195,7 @@ contract OmniBridgeNative_Test is Test {
             sourceChainId: l1ChainId + 1, // wrong
             sender: claimant,
             to: address(b),
-            data: abi.encodeWithSelector(OmniBridgeNative.claim.selector, to),
+            data: abi.encodeCall(OmniBridgeNative.claim, to),
             gasLimit: 100_000
         });
 
@@ -202,7 +205,7 @@ contract OmniBridgeNative_Test is Test {
             sourceChainId: l1ChainId,
             sender: claimant,
             to: address(b),
-            data: abi.encodeWithSelector(OmniBridgeNative.claim.selector, address(0)),
+            data: abi.encodeCall(OmniBridgeNative.claim, address(0)),
             gasLimit: 100_000
         });
 
@@ -212,7 +215,7 @@ contract OmniBridgeNative_Test is Test {
             sourceChainId: l1ChainId,
             sender: claimant,
             to: address(b),
-            data: abi.encodeWithSelector(OmniBridgeNative.claim.selector, to),
+            data: abi.encodeCall(OmniBridgeNative.claim, to),
             gasLimit: 100_000
         });
 
@@ -228,7 +231,7 @@ contract OmniBridgeNative_Test is Test {
             sourceChainId: l1ChainId,
             sender: claimant,
             to: address(b),
-            data: abi.encodeWithSelector(OmniBridgeNative.claim.selector, noReceiver),
+            data: abi.encodeCall(OmniBridgeNative.claim, noReceiver),
             gasLimit: 100_000
         });
 
@@ -245,7 +248,7 @@ contract OmniBridgeNative_Test is Test {
             sourceChainId: l1ChainId,
             sender: claimant,
             to: address(b),
-            data: abi.encodeWithSelector(OmniBridgeNative.claim.selector, to),
+            data: abi.encodeCall(OmniBridgeNative.claim, to),
             gasLimit: 100_000
         });
 

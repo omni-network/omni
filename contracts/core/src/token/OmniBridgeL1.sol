@@ -13,8 +13,6 @@ import { OmniBridgeNative } from "./OmniBridgeNative.sol";
  * @title OmniBridgeL1
  * @notice The Ethereum side of Omni's native token bridge. Partner to OmniBridgeNative, which is
  *         deployed to Omni's EVM.
- * @dev We currently do now have any onlyOwner methods, but we inherit from OwnableUpgradeable let us
- *      add them in the future.
  */
 contract OmniBridgeL1 is OwnableUpgradeable {
     /**
@@ -94,7 +92,7 @@ contract OmniBridgeL1 is OwnableUpgradeable {
             omni.omniChainId(),
             ConfLevel.Finalized,
             Predeploys.OmniBridgeNative,
-            abi.encodeWithSelector(OmniBridgeNative.withdraw.selector, payor, to, amount),
+            abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount, token.balanceOf(address(this)))),
             XCALL_WITHDRAW_GAS_LIMIT
         );
 
@@ -107,7 +105,7 @@ contract OmniBridgeL1 is OwnableUpgradeable {
     function bridgeFee(address payor, address to, uint256 amount) public view returns (uint256) {
         return omni.feeFor(
             omni.omniChainId(),
-            abi.encodeWithSelector(OmniBridgeNative.withdraw.selector, payor, to, amount),
+            abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount, token.balanceOf(address(this)))),
             XCALL_WITHDRAW_GAS_LIMIT
         );
     }
