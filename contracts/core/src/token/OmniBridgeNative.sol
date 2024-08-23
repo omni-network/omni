@@ -47,23 +47,24 @@ contract OmniBridgeNative is OwnableUpgradeable {
 
     /**
      * @notice L1 chain id, configurable so that this contract can be used on testnets.
-     * @dev We do not use immutable to avoid requiring setting immutable variables in
-     *      predeploys, which is currently not supported.
      */
     uint64 public l1ChainId;
 
     /**
      * @notice The OmniPortal contract.
-     * @dev We do not use immutable to avoid requiring setting immutable variables in
-     *      predeploys, which is currently not supported.
      */
     IOmniPortal public omni;
 
     /**
      * @notice Total OMNI tokens deposited to OmniBridgeL1.
+     *
      *         If l1BridgeBalance == totalL1Supply, all OMNI tokens are on Omni's EVM.
-     *         If l1BridgeBalance == 0, then withdraws to L1 are blocked. Without validator rewards totalL1Deposits == 0
-     *         would mean all OMNI tokens are on Ethereum. However with validator rewards, some OMNI may remain on Omni.
+     *         If l1BridgeBalance == 0, withdraws to L1 are blocked.
+     *
+     *         Without validator rewards, totalL1Deposits == 0 would mean all OMNI tokens are on Ethereum.
+     *         However with validator rewards, some OMNI may remain on Omni.
+     *
+     *         This balance is synced on each withdraw to Omni, and decremented on each bridge to back L1.
      */
     uint256 public l1BridgeBalance;
 
@@ -83,15 +84,19 @@ contract OmniBridgeNative is OwnableUpgradeable {
 
     /**
      * @notice Withdraw `amount` native OMNI to `to`. Only callable via xcall from OmniBridgeL1.
+     * @param payor     The address of the account with OMNI on L1.
+     * @param to        The address to receive the OMNI on Omni.
+     * @param amount    The amount of OMNI to withdraw.
+     * @param l1Balance The OMNI balance of the L1 bridge contract, synced on each withdraw.
      */
-    function withdraw(address payor, address to, uint256 amount) external {
+    function withdraw(address payor, address to, uint256 amount, uint256 l1Balance) external {
         XTypes.MsgContext memory xmsg = omni.xmsg();
 
         require(msg.sender == address(omni), "OmniBridge: not xcall"); // this protects against reentrancy
         require(xmsg.sender == l1Bridge, "OmniBridge: not bridge");
         require(xmsg.sourceChainId == l1ChainId, "OmniBridge: not L1");
 
-        l1BridgeBalance += amount;
+        l1BridgeBalance = l1Balance;
 
         (bool success,) = to.call{ value: amount }("");
 
@@ -124,7 +129,7 @@ contract OmniBridgeNative is OwnableUpgradeable {
             l1ChainId,
             ConfLevel.Finalized,
             l1Bridge,
-            abi.encodeWithSelector(OmniBridgeL1.withdraw.selector, to, amount),
+            abi.encodeCall(OmniBridgeL1.withdraw, (to, amount)),
             XCALL_WITHDRAW_GAS_LIMIT
         );
 
@@ -135,9 +140,7 @@ contract OmniBridgeNative is OwnableUpgradeable {
      * @notice Return the xcall fee required to bridge `amount` to `to`.
      */
     function bridgeFee(address to, uint256 amount) public view returns (uint256) {
-        return omni.feeFor(
-            l1ChainId, abi.encodeWithSelector(OmniBridgeL1.withdraw.selector, to, amount), XCALL_WITHDRAW_GAS_LIMIT
-        );
+        return omni.feeFor(l1ChainId, abi.encodeCall(OmniBridgeL1.withdraw, (to, amount)), XCALL_WITHDRAW_GAS_LIMIT);
     }
 
     /**
@@ -171,7 +174,6 @@ contract OmniBridgeNative is OwnableUpgradeable {
 
     /**
      * @notice Setup core contract parameters, done by owner immediately after pre-deployment.
-     * @dev TODO: we may do this at genesis
      * @param l1ChainId_    The chain id of the L1 network.
      * @param omni_         The address of the OmniPortal contract.
      * @param l1Bridge_     The address of the L1 OmniBridge contract.

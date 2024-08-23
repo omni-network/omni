@@ -42,7 +42,7 @@ contract OmniBridgeL1_Test is Test {
         b = OmniBridgeL1Harness(
             address(
                 new TransparentUpgradeableProxy(
-                    impl, proxyAdmin, abi.encodeWithSelector(OmniBridgeL1.initialize.selector, owner, address(portal))
+                    impl, proxyAdmin, abi.encodeCall(OmniBridgeL1.initialize, (owner, address(portal)))
                 )
             )
         );
@@ -92,13 +92,15 @@ contract OmniBridgeL1_Test is Test {
         vm.expectCall(
             address(portal),
             fee,
-            abi.encodeWithSelector(
-                IOmniPortal.xcall.selector,
-                portal.omniChainId(),
-                ConfLevel.Finalized,
-                Predeploys.OmniBridgeNative,
-                abi.encodeWithSelector(OmniBridgeNative.withdraw.selector, payor, to, amount),
-                b.XCALL_WITHDRAW_GAS_LIMIT()
+            abi.encodeCall(
+                IOmniPortal.xcall,
+                (
+                    portal.omniChainId(),
+                    ConfLevel.Finalized,
+                    Predeploys.OmniBridgeNative,
+                    abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount, token.balanceOf(address(b)) + amount)),
+                    b.XCALL_WITHDRAW_GAS_LIMIT()
+                )
             )
         );
         b.bridge{ value: fee }(to, amount);
@@ -124,7 +126,7 @@ contract OmniBridgeL1_Test is Test {
             sourceChainId: omniChainId,
             sender: address(1234), // wrong
             to: address(b),
-            data: abi.encodeWithSelector(OmniBridgeL1.withdraw.selector, to, amount),
+            data: abi.encodeCall(OmniBridgeL1.withdraw, (to, amount)),
             gasLimit: gasLimit
         });
 
@@ -134,7 +136,7 @@ contract OmniBridgeL1_Test is Test {
             sourceChainId: omniChainId + 1, // wrong
             sender: Predeploys.OmniBridgeNative,
             to: address(b),
-            data: abi.encodeWithSelector(OmniBridgeL1.withdraw.selector, to, amount),
+            data: abi.encodeCall(OmniBridgeL1.withdraw, (to, amount)),
             gasLimit: gasLimit
         });
 
@@ -149,12 +151,12 @@ contract OmniBridgeL1_Test is Test {
         emit Withdraw(to, amount);
 
         // tranfers amount to to
-        vm.expectCall(address(token), abi.encodeWithSelector(token.transfer.selector, to, amount));
+        vm.expectCall(address(token), abi.encodeCall(token.transfer, (to, amount)));
         uint256 gasUsed = portal.mockXCall({
             sourceChainId: portal.omniChainId(),
             sender: Predeploys.OmniBridgeNative,
             to: address(b),
-            data: abi.encodeWithSelector(OmniBridgeL1.withdraw.selector, to, amount),
+            data: abi.encodeCall(OmniBridgeL1.withdraw, (to, amount)),
             gasLimit: gasLimit
         });
 
