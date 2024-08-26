@@ -1,6 +1,8 @@
 .code-snippet-container {
     position: relative;
     display: block;
+    height: 200px; /* Set your desired height */
+    overflow-y: auto; /* Enable vertical scrolling if content exceeds height */
 }
 
 .code-snippet-footer {

@@ -1,41 +1,53 @@
-import { themes as prismThemes } from "prism-react-renderer";
-import type { Config } from "@docusaurus/types";
-import type * as Preset from "@docusaurus/preset-classic";
+import {themes as prismThemes} from 'prism-react-renderer';
+import type {Config} from '@docusaurus/types';
+import type * as Preset from '@docusaurus/preset-classic';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 
 const config: Config = {
-  title: "Omni Docs",
-  tagline: "Omni Docs",
-  favicon: "img/favicon.svg",
+  title: 'Omni Devs | Docs',
+  tagline: 'Cross-chain dapps made easy',
+  favicon: 'img/favicon.svg',
 
-  url: "https://docs.omni.network/",
-  baseUrl: "/",
+  // Set the production url of your site here
+  url: 'https://docs.omni.network',
+  // Set the /<baseUrl>/ pathname under which your site is served
+  // For GitHub pages deployment, it is often '/<projectName>/'
+  baseUrl: '/',
 
-  onBrokenLinks: "throw",
-  onBrokenMarkdownLinks: "throw",
+  // GitHub pages deployment config.
+  // If you aren't using GitHub pages, you don't need these.
+  organizationName: 'omni-network', // Usually your GitHub org/user name.
+  projectName: 'omni', // Usually your repo name.
 
+  onBrokenLinks: 'throw',
+  onBrokenMarkdownLinks: 'throw',
+
+  // Even if you don't use internationalization, you can use this field to set
+  // useful metadata like html lang. For example, if your site is Chinese, you
+  // may want to replace "en" with "zh-Hans".
   i18n: {
-    defaultLocale: "en",
-    locales: ["en"],
+    defaultLocale: 'en',
+    locales: ['en'],
   },
-
-  clientModules: ["src/client-modules/index.ts"],
 
   presets: [
     [
-      "classic",
+      'classic',
       {
         docs: {
           path: "../content",
           routeBasePath: "/",
-          sidebarPath: "./sidebars.ts",
-          editUrl: "https://github.com/omni-network/omni/tree/main/docs/content",
-          remarkPlugins: [remarkMath],
-          rehypePlugins: [rehypeKatex],
+          sidebarPath: './sidebars.ts',
+          // Please change this to your repo.
+          // Remove this to remove the "edit this page" links.
+          editUrl:
+            'https://github.com/omni-network/omni/tree/main/docs/website',
+            remarkPlugins: [remarkMath],
+            rehypePlugins: [rehypeKatex],
         },
         theme: {
-          customCss: "./src/css/custom.css",
+          customCss: './src/css/custom.css',
         },
         gtag: {
           trackingID: 'G-P82Q1TL0SX',
@@ -43,86 +55,93 @@ const config: Config = {
       } satisfies Preset.Options,
     ],
   ],
-  stylesheets: [
-    {
-      href: 'https://cdn.jsdelivr.net/npm/katex@0.13.24/dist/katex.min.css',
-      type: 'text/css',
-      integrity: 'sha384-odtC+0UGzzFL/6PNoE8rX/SPcQDXBJ+uRepguP4QkPCm2LBxH3FA3y+fKSiJ+AmM', // pragma: allowlist secret
-      crossorigin: 'anonymous',
-    },
-  ],
 
   themeConfig: {
     image: "img/omni-banner.png",
+    docs: {
+      sidebar: {
+        autoCollapseCategories: true,
+      },
+    },
     navbar: {
-      title: "Omni Docs",
+      title: 'Omni Developers',
       logo: {
-        alt: "Omni Logo",
-        src: "img/logo.svg",
+        alt: 'Omni Logo',
+        src: 'img/logo.svg',
       },
       items: [
         {
-          position: "left",
-          label: "Learn",
-          to: "/learn/introduction",
+          href: 'https://tally.so/r/wAJ2EB',
+          label: 'Build with us',
+          position: 'right',
         },
         {
-          position: "left",
-          label: "Protocol",
-          to: "/protocol/introduction",
-        },
-        {
-          position: "left",
-          label: "Octane",
-          to: "/octane/background/introduction",
-        },
-        {
-          position: "left",
-          label: "Develop",
-          to: "/develop/introduction",
-        },
-        {
-          position: "left",
-          label: "Operate",
-          to: "/operate/introduction",
-        },
-        {
-          position: "right",
-          label: "Tools",
-          to: "/tools",
-        },
-        {
-          href: "https://github.com/omni-network/omni",
-          label: "GitHub",
-          position: "right",
+          href: 'https://github.com/omni-network/omni',
+          label: 'GitHub',
+          position: 'right',
         },
       ],
     },
     footer: {
-      // style: "dark",
       links: [
         {
-          label: "Website",
-          href: "https://omni.network",
+          title: 'TECH',
+          items: [
+            {
+              label: 'GitHub',
+              to: 'https://github.com/omni-network/omni',
+            },
+            {
+              label: 'Explorer',
+              to: 'https://omega.omniscan.network/',
+            },
+            {
+              label: 'Status page',
+              to: 'https://status.omni.network/',
+            },
+          ],
         },
         {
-          label: "Discord",
-          href: "https://discord.gg/bKNXmaX9VD",
+          title: 'COMMUNITY',
+          items: [
+            {
+              label: 'Telegram for developers',
+              to: 'https://discordapp.com/invite/docusaurus',
+            },
+            {
+              label: 'Twitter',
+              to: 'https://twitter.com/docusaurus',
+            },
+            {
+              label: 'Discord',
+              to: 'https://discordapp.com/invite/docusaurus',
+            },
+          ],
         },
         {
-          label: "Twitter",
-          href: "https://twitter.com/OmniFDN",
+          title: 'JOIN US',
+          items: [
+            {
+              label: 'Careers',
+              to: 'https://boards.greenhouse.io/omnifdn',
+            },
+          ],
         },
         {
-          label: "Telegram",
-          href: "https://t.me/omnifdn",
-        },
-        {
-          label: "GitHub",
-          href: "https://github.com/omni-network/omni/",
+          title: 'LEGAL',
+          items: [
+            {
+              label: 'Terms of Service',
+              to: 'https://docs.omni.network/tos.pdf',
+            },
+            {
+              label: 'Privacy Policy',
+              to: 'https://docs.omni.network/privacy-policy.pdf',
+            },
+          ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} The Omni Network`,
+      // copyright: `Copyright © ${new Date().getFullYear()}`,
     },
     prism: {
       theme: prismThemes.vsLight,
