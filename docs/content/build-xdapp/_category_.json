@@ -1,0 +1,8 @@
+{
+  "label": "Build",
+  "position": 1,
+  "link": {
+    "type": "generated-index",
+    "description": "Build your first xdapp and get inspired"
+  }
+}
