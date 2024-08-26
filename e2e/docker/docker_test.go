@@ -30,6 +30,7 @@ func TestComposeTemplate(t *testing.T) {
 		name       string
 		tag        string
 		isEmpheral bool
+		upgrade    string
 	}{
 		{
 			name:       "commit",
@@ -40,6 +41,7 @@ func TestComposeTemplate(t *testing.T) {
 			name:       "empheral_network",
 			tag:        "main",
 			isEmpheral: true,
+			upgrade:    "omniops/halo:v1.0",
 		},
 	}
 
@@ -53,6 +55,7 @@ func TestComposeTemplate(t *testing.T) {
 			require.NoError(t, err)
 			en := enode.NewV4(&key.PublicKey, ipNet.IP, 30303, 30303)
 
+			const node0 = "node0"
 			dir := t.TempDir()
 			testnet := types.Testnet{
 				Manifest: types.Manifest{
@@ -65,11 +68,12 @@ func TestComposeTemplate(t *testing.T) {
 					Dir:        dir,
 					Prometheus: true,
 					Nodes: []*e2e.Node{{
-						Name:       "node0",
+						Name:       node0,
 						Version:    "omniops/halo:" + test.tag,
 						InternalIP: ipNet.IP,
 						ProxyPort:  8584,
 					}},
+					UpgradeVersion: "omniops/halo:" + test.tag,
 				},
 				OmniEVMs: []types.OmniEVM{
 					{
@@ -110,6 +114,10 @@ func TestComposeTemplate(t *testing.T) {
 				testnet.Network = netconf.Devnet
 			}
 
+			if test.upgrade != "" {
+				testnet.UpgradeVersion = test.upgrade
+			}
+
 			p := docker.NewProvider(testnet, types.InfrastructureData{}, test.tag)
 			require.NoError(t, err)
 
@@ -119,6 +127,21 @@ func TestComposeTemplate(t *testing.T) {
 			require.NoError(t, err)
 
 			tutil.RequireGoldenBytes(t, bz)
+
+			t.Run("upgrade", func(t *testing.T) {
+				t.Parallel()
+				err := docker.ReplaceUpgradeImage(dir, node0)
+				if test.upgrade == "" {
+					require.Error(t, err)
+					return
+				}
+				require.NoError(t, err)
+
+				bz, err := os.ReadFile(filepath.Join(dir, "docker-compose.yml"))
+				require.NoError(t, err)
+
+				tutil.RequireGoldenBytes(t, bz)
+			})
 		})
 	}
 }

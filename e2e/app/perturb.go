@@ -127,7 +127,18 @@ func perturbNode(ctx context.Context, node *e2e.Node, perturbation e2e.Perturbat
 		}
 
 	case e2e.PerturbationUpgrade:
-		return nil, errors.New("upgrade perturbation not supported")
+		log.Info(ctx, "Perturb node: upgrade", "from", node.Version, "to", testnet.UpgradeVersion)
+		if err := docker.ExecCompose(ctx, testnet.Dir, "stop", name); err != nil {
+			return nil, errors.Wrap(err, "stop service")
+		}
+
+		if err := docker.ReplaceUpgradeImage(testnet.Dir, name); err != nil {
+			return nil, errors.Wrap(err, "upgrade service")
+		}
+
+		if err := docker.ExecCompose(ctx, testnet.Dir, "start", name); err != nil {
+			return nil, errors.Wrap(err, "start service")
+		}
 
 	default:
 		return nil, errors.New("unexpected perturbation type", "type", perturbation)

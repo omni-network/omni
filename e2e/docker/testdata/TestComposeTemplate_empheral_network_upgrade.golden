@@ -14,7 +14,7 @@ services:
     labels:
       e2e: true
     container_name: node0
-    image: omniops/halo:main # Upgrade node0:omniops/halo:v1.0
+    image: omniops/halo:v1.0
     restart: unless-stopped
     init: true
     ports:
