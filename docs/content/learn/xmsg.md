@@ -17,7 +17,7 @@ The following steps provide a comprehensive overview of how an XMsg travels from
 
 ## Steps
 
-### 1. User Call 
+### 1. User Call
 
 - A user calls an xdapp smart contract function on a rollup VM.
 
