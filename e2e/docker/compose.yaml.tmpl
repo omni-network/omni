@@ -17,7 +17,7 @@ services:
     labels:
       e2e: true
     container_name: {{ .Name }}
-    image: {{ .Version }}
+    image: {{ .Version }}{{if ne .Version $.UpgradeVersion}} # Upgrade {{ .Name }}:{{ $.UpgradeVersion }}{{end}}
     restart: unless-stopped
     init: true
     ports:

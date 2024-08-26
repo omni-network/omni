@@ -196,7 +196,7 @@ func newBackends(ctx context.Context, cfg DefinitionConfig, testnet types.Testne
 func adaptCometTestnet(ctx context.Context, manifest types.Manifest, testnet *e2e.Testnet, imgTag string) (*e2e.Testnet, error) {
 	testnet.Dir = runsDir(testnet.File)
 	testnet.VoteExtensionsEnableHeight = 1
-	testnet.UpgradeVersion = "omniops/halo:" + imgTag
+	testnet.UpgradeVersion = "omniops/halovisor:" + imgTag // Currently only support upgrading to "latest" version
 
 	for i := range testnet.Nodes {
 		var err error
@@ -225,7 +225,12 @@ func adaptNode(ctx context.Context, manifest types.Manifest, node *e2e.Node, tag
 		tag = manifest.PinnedHaloTag
 	}
 
-	node.Version = "omniops/halovisor:" + tag
+	// Override default comet version with our own, see github.com/cometbft/cometbft@v0.38.11/test/e2e/pkg/testnet.go:36
+	const cometLocalVersion = "cometbft/e2e-node:local-version"
+	if node.Version == cometLocalVersion {
+		node.Version = "omniops/halovisor:" + tag
+	}
+
 	node.PrivvalKey = valKey.PrivKey
 	node.NodeKey = nodeKey.PrivKey
 
