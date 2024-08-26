@@ -7,6 +7,7 @@ import (
 	"os"
 	osexec "os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"sync"
 	"text/template"
@@ -77,16 +78,17 @@ func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag st
 // any of these operations fail.
 func (p *Provider) Setup() error {
 	def := ComposeDef{
-		Network:     true,
-		NetworkName: p.testnet.Name,
-		NetworkCIDR: p.testnet.IP.String(),
-		BindAll:     false,
-		Nodes:       p.testnet.Nodes,
-		OmniEVMs:    p.testnet.OmniEVMs,
-		Anvils:      p.testnet.AnvilChains,
-		Relayer:     true,
-		Prometheus:  p.testnet.Prometheus,
-		Monitor:     true,
+		Network:        true,
+		NetworkName:    p.testnet.Name,
+		NetworkCIDR:    p.testnet.IP.String(),
+		BindAll:        false,
+		UpgradeVersion: p.testnet.UpgradeVersion,
+		Nodes:          p.testnet.Nodes,
+		OmniEVMs:       p.testnet.OmniEVMs,
+		Anvils:         p.testnet.AnvilChains,
+		Relayer:        true,
+		Prometheus:     p.testnet.Prometheus,
+		Monitor:        true,
 	}
 	def = SetImageTags(def, p.testnet.Manifest, p.omniTag)
 
@@ -166,10 +168,11 @@ func (p *Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 }
 
 type ComposeDef struct {
-	Network     bool
-	NetworkName string
-	NetworkCIDR string
-	BindAll     bool
+	Network        bool
+	NetworkName    string
+	NetworkCIDR    string
+	BindAll        bool
+	UpgradeVersion string
 
 	Nodes    []*e2e.Node
 	OmniEVMs []types.OmniEVM
@@ -342,6 +345,37 @@ func Exec(ctx context.Context, args ...string) error {
 	err := exec.Command(ctx, append([]string{"docker"}, args...)...)
 	if err != nil {
 		return errors.Wrap(err, "exec docker")
+	}
+
+	return nil
+}
+
+// ReplaceUpgradeImage replaces the docker image of the provided service with the
+// version specified in comments. Expected format below upgrades node0 from main v1.0 to v2.0:
+//
+//	  services:
+//		 node0:
+//		   labels:
+//		     e2e: true
+//		   container_name: node0
+//		   image: omniops/halo:main # Upgrade node0:omniops/halo:v1.0
+//		   restart: unless-stopped
+func ReplaceUpgradeImage(dir, service string) error {
+	before, err := os.ReadFile(filepath.Join(dir, "docker-compose.yml"))
+	if err != nil {
+		return errors.Wrap(err, "read compose file")
+	}
+
+	regex := regexp.MustCompile(`(\s+image: ).+\s#\sUpgrade ` + service + `:(.*)`)
+
+	after := regex.ReplaceAll(before, []byte("$1$2"))
+	if bytes.Equal(before, after) {
+		return errors.New("no upgrade image found")
+	}
+
+	err = os.WriteFile(filepath.Join(dir, "docker-compose.yml"), after, 0o644)
+	if err != nil {
+		return errors.Wrap(err, "write compose file")
 	}
 
 	return nil

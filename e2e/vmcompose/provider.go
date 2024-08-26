@@ -50,6 +50,10 @@ func (p *Provider) Setup() error {
 		var nodes []*e2e.Node
 		var halos []string
 		for _, node := range p.Testnet.Nodes {
+			if node.Version != p.Testnet.UpgradeVersion {
+				return errors.New("upgrades not supported for vmcompose")
+			}
+
 			if services[node.Name] {
 				nodes = append(nodes, node)
 				halos = append(halos, node.Name)
@@ -80,16 +84,17 @@ func (p *Provider) Setup() error {
 		}
 
 		def := docker.ComposeDef{
-			Network:     false,
-			BindAll:     true,
-			NetworkName: p.Testnet.Name,
-			NetworkCIDR: p.Testnet.IP.String(),
-			Nodes:       nodes,
-			OmniEVMs:    omniEVMs,
-			Anvils:      anvilChains,
-			Relayer:     services["relayer"],
-			Monitor:     services["monitor"],
-			Prometheus:  p.Testnet.Prometheus,
+			UpgradeVersion: p.Testnet.UpgradeVersion,
+			Network:        false,
+			BindAll:        true,
+			NetworkName:    p.Testnet.Name,
+			NetworkCIDR:    p.Testnet.IP.String(),
+			Nodes:          nodes,
+			OmniEVMs:       omniEVMs,
+			Anvils:         anvilChains,
+			Relayer:        services["relayer"],
+			Monitor:        services["monitor"],
+			Prometheus:     p.Testnet.Prometheus,
 		}
 		def = docker.SetImageTags(def, p.Testnet.Manifest, p.omniTag)
 
