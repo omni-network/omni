@@ -83,7 +83,7 @@ devnet-clean: ## Deletes devnet1 containers
 .PHONY: e2e-ci
 e2e-ci: ## Runs all e2e CI tests
 	@go install github.com/omni-network/omni/e2e
-	@cd e2e && ./run-multiple.sh manifests/devnet1.toml manifests/fuzzyhead.toml manifests/ci.toml
+	@cd e2e && ./run-multiple.sh manifests/devnet1.toml manifests/fuzzyhead.toml manifests/ci.toml manifests/backwards.toml
 
 .PHONY: e2e-run
 e2e-run: ## Run specific e2e manifest (MANIFEST=single, MANIFEST=devnet1, etc). Note container remain running after the test.

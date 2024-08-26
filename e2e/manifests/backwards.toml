@@ -1,0 +1,17 @@
+# Backwards ensures backwards-compatibility with v0.4.0.
+network = "devnet"
+anvil_chains = ["mock_l1", "mock_l2"]
+
+multi_omni_evms = true
+
+[node.validator01]
+[node.validator02]
+mode = "archive"
+
+[node.validator03]
+version="omniops/halovisor:v0.4.0"
+perturb = ["upgrade"]
+
+[node.validator04]
+version="omniops/halovisor:v0.4.0"
+perturb = ["upgrade"]
