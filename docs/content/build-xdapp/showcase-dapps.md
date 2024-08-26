@@ -1,5 +1,5 @@
 ---
-sidebar_position: 1
+sidebar_position: 3
 ---
 
 import GitHubCodeBlock from '@site/src/components/GitHubCodeBlock/GitHubCodeBlock';

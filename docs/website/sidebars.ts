@@ -23,6 +23,7 @@ const sidebars: SidebarsConfig = {
         'build-xdapp/quickstart',
         'build-xdapp/walkthrough',
         'build-xdapp/showcase-dapps',
+        'build-xdapp/testnet-omega',
       ],
       collapsed: true,
     },
