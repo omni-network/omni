@@ -5,6 +5,7 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 	monitor "github.com/omni-network/omni/monitor/app"
 	"github.com/omni-network/omni/monitor/loadgen"
+	"github.com/omni-network/omni/monitor/xfeemngr"
 
 	"github.com/spf13/pflag"
 )
@@ -20,4 +21,8 @@ func bindRunFlags(flags *pflag.FlagSet, cfg *monitor.Config) {
 
 func bindLoadGenFlags(flags *pflag.FlagSet, cfg *loadgen.Config) {
 	flags.StringVar(&cfg.ValidatorKeysGlob, "loadgen-validator-keys-glob", cfg.ValidatorKeysGlob, "Glob path to the validator keys used for self-delegation load generation. Only applicable to devnet and staging")
+}
+
+func bindXFeeMngrFlags(flags *pflag.FlagSet, cfg *xfeemngr.Config) {
+	flags.StringToStringVar((*map[string]string)(&cfg.RPCEndpoints), "xfeemngr-rpc-endpoints", cfg.RPCEndpoints, "Cross-chain EVM RPC endpoints. e.g. \"ethereum=http://geth:8545,optimism=https://optimism.io\"")
 }

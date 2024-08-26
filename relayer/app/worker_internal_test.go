@@ -39,8 +39,8 @@ func TestWorker_Run(t *testing.T) {
 		ShardID:       xchain.ShardLatest0,
 	}
 	cursors := map[xchain.StreamID]xchain.SubmitCursor{
-		streamA: {StreamID: streamA, MsgOffset: destChainACursor, BlockOffset: destChainACursor},
-		streamB: {StreamID: streamB, MsgOffset: destChainBCursor, BlockOffset: destChainBCursor},
+		streamA: {StreamID: streamA, MsgOffset: destChainACursor, AttestOffset: destChainACursor},
+		streamB: {StreamID: streamB, MsgOffset: destChainBCursor, AttestOffset: destChainBCursor},
 	}
 
 	// Return mock blocks (with a single msg per dest chain).
@@ -96,15 +96,15 @@ func TestWorker_Run(t *testing.T) {
 
 	// Provider mock attestations as requested until context canceled.
 	mockProvider := &mockProvider{
-		SubscribeFn: func(ctx context.Context, chainVer xchain.ChainVersion, xBlockOffset uint64, callback cchain.ProviderCallback) {
+		SubscribeFn: func(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64, callback cchain.ProviderCallback) {
 			if chainVer.ID != srcChain {
 				return // Only subscribe to source chain.
 			}
-			if xBlockOffset != destChainACursor && xBlockOffset != destChainBCursor {
+			if attestOffset != destChainACursor && attestOffset != destChainBCursor {
 				return
 			}
 
-			offset := xBlockOffset
+			offset := attestOffset
 			nextAtt := func() xchain.Attestation {
 				defer func() { offset++ }()
 

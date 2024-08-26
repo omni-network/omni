@@ -491,6 +491,10 @@ func (stubProvider) ChainVersionHeight(context.Context, xchain.ChainVersion) (ui
 	panic("unexpected")
 }
 
+func (stubProvider) GetSubmission(context.Context, uint64, common.Hash) (xchain.Submission, error) {
+	panic("unexpected")
+}
+
 type testBackOff struct {
 	mu      sync.Mutex
 	backoff int

@@ -9,14 +9,13 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/monitor/xfeemngr"
 
 	"github.com/ethereum/go-ethereum/params"
 )
 
-func feeParams(ctx context.Context, network netconf.ID, srcChainID uint64, destChainIDs []uint64, backends ethbackend.Backends, pricer tokens.Pricer,
+func feeParams(ctx context.Context, srcChainID uint64, destChainIDs []uint64, backends ethbackend.Backends, pricer tokens.Pricer,
 ) ([]bindings.IFeeOracleV1ChainFeeParams, error) {
 	// len(destChainIDs) + 1, because we also add fee params for the source chain
 	params := make([]bindings.IFeeOracleV1ChainFeeParams, len(destChainIDs)+1)
@@ -29,8 +28,6 @@ func feeParams(ctx context.Context, network netconf.ID, srcChainID uint64, destC
 		return nil, errors.New("meta by chain id", "chain_id", srcChainID)
 	}
 
-	l1, hasL1 := l1ChainID(network, destChainIDs)
-
 	// we include source chain, to allow calculation of xcall callbacks
 	for i, destChainID := range append(destChainIDs, srcChainID) {
 		destChain, ok := evmchain.MetadataByID(destChainID)
@@ -38,24 +35,7 @@ func feeParams(ctx context.Context, network netconf.ID, srcChainID uint64, destC
 			return nil, errors.New("meta by chain id", "dest_chain", destChain.Name)
 		}
 
-		// We assume that all L2s post to the networks "l1 chain", if it exists.
-		// This may not always be accurate, but it is a useful assumption, as
-		// explicitly configuring PostsTo for each L2 would currently be messy.
-		//
-		// For ex:
-		// 	 - In testnet, we use ArbSepolia and OpSepolia, but use Holesky as EthereumChain
-		//   - In devnet, we use MockL2, but may use MockL1Fast or MockL1Slow as EthereumChain
-		// 	 - The PostsTo for each chain must exist in the network for monitor/xfeemngr
-		//	   to manage its fee parameters on chain.
-		//
-		// Allowing a chain that PostsTo some L1 that is not in the network is a
-		// feature left for later, when it is a requirement for mainnet.
-		postsTo := destChainID
-		if destChain.IsL2 && hasL1 {
-			postsTo = l1
-		}
-
-		ps, err := destFeeParams(ctx, srcChain, destChain, postsTo, backends, pricer)
+		ps, err := destFeeParams(ctx, srcChain, destChain, backends, pricer)
 		if err != nil {
 			return nil, err
 		}
@@ -67,7 +47,7 @@ func feeParams(ctx context.Context, network netconf.ID, srcChainID uint64, destC
 }
 
 // feeParams returns the fee parameters for the given source token and destination chains.
-func destFeeParams(ctx context.Context, srcChain evmchain.Metadata, destChain evmchain.Metadata, postsTo uint64, backends ethbackend.Backends, pricer tokens.Pricer,
+func destFeeParams(ctx context.Context, srcChain evmchain.Metadata, destChain evmchain.Metadata, backends ethbackend.Backends, pricer tokens.Pricer,
 ) (bindings.IFeeOracleV1ChainFeeParams, error) {
 	backend, err := backends.Backend(destChain.ChainID)
 	if err != nil {
@@ -86,6 +66,13 @@ func destFeeParams(ctx context.Context, srcChain evmchain.Metadata, destChain ev
 	if err != nil {
 		log.Warn(ctx, "Failed fetching gas price, using default 1 Gwei", err, "dest_chain", destChain.Name)
 		gasPrice = big.NewInt(params.GWei)
+	}
+
+	postsTo := destChain.PostsTo
+
+	// if not configured, chain "posts to" itself
+	if postsTo == 0 {
+		postsTo = destChain.ChainID
 	}
 
 	return bindings.IFeeOracleV1ChainFeeParams{
@@ -142,16 +129,4 @@ func rateToNumerator(r float64) *big.Int {
 func withGasPriceShield(gasPrice *big.Int) *big.Int {
 	gasPriceF := float64(gasPrice.Uint64())
 	return new(big.Int).SetUint64(uint64(gasPriceF + (xfeemngr.GasPriceShield * gasPriceF)))
-}
-
-// l1ChainID returns the chain ID of the chain that acts as L1 for the given
-// network, if it exists in the provided chainIDs.
-func l1ChainID(network netconf.ID, chainIDs []uint64) (uint64, bool) {
-	for _, chainID := range chainIDs {
-		if netconf.IsEthereumChain(network, chainID) {
-			return chainID, true
-		}
-	}
-
-	return 0, false
 }

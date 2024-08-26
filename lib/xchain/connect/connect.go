@@ -26,7 +26,7 @@ type Connector struct {
 	Network    netconf.Network
 	XProvider  xchain.Provider
 	CProvider  cchain.Provider
-	ethClients map[uint64]ethclient.Client
+	EthClients map[uint64]ethclient.Client
 }
 
 // Backend returns an ethbackend for the given chainID.
@@ -36,7 +36,7 @@ func (c Connector) Backend(chainID uint64) (*ethbackend.Backend, error) {
 		return nil, errors.New("chain not found")
 	}
 
-	cl, ok := c.ethClients[chainID]
+	cl, ok := c.EthClients[chainID]
 	if !ok {
 		return nil, errors.New("ethclient not confired for chain")
 	}
@@ -106,7 +106,7 @@ func New(ctx context.Context, netID netconf.ID, endpoints xchain.RPCEndpoints) (
 		Network:    network,
 		XProvider:  xprov,
 		CProvider:  cprov,
-		ethClients: ethClients,
+		EthClients: ethClients,
 	}, nil
 }
 

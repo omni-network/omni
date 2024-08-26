@@ -2,6 +2,8 @@ package xchain
 
 import (
 	"context"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // ProviderCallback is the callback function signature that will be called with every finalized.
@@ -38,7 +40,7 @@ type Provider interface {
 	StreamBlocks(ctx context.Context, req ProviderRequest, callback ProviderCallback) error
 
 	// GetBlock returns the block for the given chain and height, or false if not available (not finalized yet),
-	// or an error. The XBlockOffset field is populated with the provided offset (if required).
+	// or an error. The AttestOffset field is populated with the provided offset (if required).
 	GetBlock(ctx context.Context, req ProviderRequest) (Block, bool, error)
 
 	// GetSubmittedCursor returns the submitted cursor for the provided stream,
@@ -51,12 +53,15 @@ type Provider interface {
 	// or false if not available, or an error.
 	// Calls the source chain portal OutXStreamOffset method.
 	//
-	// Note that the BlockOffset field is not populated for emit cursors, since it isn't stored on-chain
+	// Note that the AttestOffset field is not populated for emit cursors, since it isn't stored on-chain
 	// but tracked off-chain.
 	GetEmittedCursor(ctx context.Context, ref EmitRef, stream StreamID) (EmitCursor, bool, error)
 
 	// ChainVersionHeight returns the height for the provided chain version.
 	ChainVersionHeight(ctx context.Context, chainVer ChainVersion) (uint64, error)
+
+	// GetSubmission returns the submission for the provided chain and tx hash, or an error.
+	GetSubmission(ctx context.Context, chainID uint64, txHash common.Hash) (Submission, error)
 }
 
 // EmitRef specifies which block to query for emit cursors.

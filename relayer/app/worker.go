@@ -77,7 +77,7 @@ func (w *Worker) runOnce(ctx context.Context) error {
 	for _, cursor := range cursors {
 		log.Info(ctx, "Worker fetched submitted cursor",
 			"stream", w.network.StreamName(cursor.StreamID),
-			"block_offset", cursor.BlockOffset,
+			"block_offset", cursor.AttestOffset,
 			"msg_offset", cursor.MsgOffset,
 		)
 	}
@@ -89,7 +89,7 @@ func (w *Worker) runOnce(ctx context.Context) error {
 
 	buf := newActiveBuffer(w.destChain.Name, mempoolLimit, sender)
 
-	blockOffsets, err := fromChainVersionOffsets(cursors, w.network.ChainVersionsTo(w.destChain.ID))
+	attestOffsets, err := fromChainVersionOffsets(cursors, w.network.ChainVersionsTo(w.destChain.ID))
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func (w *Worker) runOnce(ctx context.Context) error {
 	}
 
 	var logAttrs []any //nolint:prealloc // Not worth it
-	for chainVer, fromOffset := range blockOffsets {
+	for chainVer, fromOffset := range attestOffsets {
 		if chainVer.ID == w.destChain.ID { // Sanity check
 			return errors.New("unexpected chain version [BUG]")
 		}

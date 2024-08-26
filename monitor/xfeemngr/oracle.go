@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"math/big"
 
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/evmchain"
@@ -20,26 +21,16 @@ import (
 type feeOracle struct {
 	contract contract.FeeOracleV1
 	chain    evmchain.Metadata   // source chain
-	dests    []evmchain.Metadata // destination chains
+	toSync   []evmchain.Metadata // chains to sync on fee oracle
 	gprice   *gasprice.Buffer    // gas price buffer
 	tprice   *tokenprice.Buffer  // token price buffer
 }
 
-func makeOracle(ctx context.Context, chain netconf.Chain, network netconf.Network, ethClients map[uint64]ethclient.Client,
+func makeOracle(ctx context.Context, chain netconf.Chain, toSync []evmchain.Metadata, ethCl ethclient.Client,
 	pk *ecdsa.PrivateKey, gprice *gasprice.Buffer, tprice *tokenprice.Buffer) (feeOracle, error) {
 	chainmeta, ok := evmchain.MetadataByID(chain.ID)
 	if !ok {
 		return feeOracle{}, errors.New("chain metadata not found", "chain", chain.ID)
-	}
-
-	destChains, err := makeDestChains(chain.ID, network)
-	if err != nil {
-		return feeOracle{}, errors.Wrap(err, "make dest chains")
-	}
-
-	ethCl, ok := ethClients[chain.ID]
-	if !ok {
-		return feeOracle{}, errors.New("eth client not found", "chain", chain.ID)
 	}
 
 	bound, err := contract.New(ctx, chain, ethCl, pk)
@@ -49,7 +40,7 @@ func makeOracle(ctx context.Context, chain netconf.Chain, network netconf.Networ
 
 	return feeOracle{
 		chain:    chainmeta,
-		dests:    destChains,
+		toSync:   toSync,
 		contract: bound,
 		gprice:   gprice,
 		tprice:   tprice,
@@ -65,11 +56,9 @@ func (o feeOracle) syncForever(ctx context.Context, tick ticker.Ticker) {
 
 // syncOnce syncs the on-chain gas price and token conversion rates with their respective buffers, once.
 func (o feeOracle) syncOnce(ctx context.Context) {
-	ctx = log.WithCtx(ctx, "srcChainID", o.chain.ChainID, "srcToken", o.chain.NativeToken)
+	ctx = log.WithCtx(ctx, "src_token", o.chain.NativeToken)
 
-	// sync for all destination chains and source chain
-	// we include source chain, to allow calculation of xcall callbacks
-	for _, dest := range append(o.dests, o.chain) {
+	for _, dest := range o.toSync {
 		err := o.syncGasPrice(ctx, dest)
 		if err != nil {
 			log.Error(ctx, "Failed to sync gas price", err, "dest_chain", dest.ChainID)
@@ -79,12 +68,17 @@ func (o feeOracle) syncOnce(ctx context.Context) {
 		if err != nil {
 			log.Error(ctx, "Failed to sync conversion rate", err, "dest_chain", dest.ChainID)
 		}
+
+		err = o.correctPostsTo(ctx, dest)
+		if err != nil {
+			log.Error(ctx, "Failed to correct postsTo chain", err, "dest_chain", dest.ChainID)
+		}
 	}
 }
 
 // syncGasPrice sets the on-chain gas price to the buffered gas price, if they differ.
 func (o feeOracle) syncGasPrice(ctx context.Context, dest evmchain.Metadata) error {
-	ctx = log.WithCtx(ctx, "destChainID", dest.ChainID)
+	ctx = log.WithCtx(ctx, "chainId", dest.ChainID)
 
 	buffered := o.gprice.GasPrice(dest.ChainID)
 
@@ -123,6 +117,51 @@ func (o feeOracle) syncGasPrice(ctx context.Context, dest evmchain.Metadata) err
 	return nil
 }
 
+func (o feeOracle) correctPostsTo(ctx context.Context, dest evmchain.Metadata) error {
+	postsTo, err := o.contract.PostsTo(ctx, dest.ChainID)
+	if err != nil {
+		return errors.Wrap(err, "postsTo")
+	}
+
+	// If postsTo is correct, do nothing
+	// Either metadata.PostsTo == onchain postsTo
+	// Or     metadata.PostsTo == 0, then chain "postsTo" itself, and on-chain postTo should be self
+	if (dest.PostsTo == postsTo) || (dest.PostsTo == 0 && postsTo == dest.ChainID) {
+		return nil
+	}
+
+	// if not correct, correct via BulkSetFeeParams (there is not a single setter for postsTo)
+	// use current onchain gas price and conversion rate
+
+	gasPrice, err := o.contract.GasPriceOn(ctx, dest.ChainID)
+	if err != nil {
+		return errors.Wrap(err, "gas price on")
+	}
+
+	rate, err := o.contract.ToNativeRate(ctx, dest.ChainID)
+	if err != nil {
+		return errors.Wrap(err, "conversion rate on")
+	}
+
+	params := []bindings.IFeeOracleV1ChainFeeParams{
+		{
+			ChainId:      dest.ChainID,
+			GasPrice:     gasPrice,
+			ToNativeRate: rate,
+			PostsTo:      dest.PostsTo,
+		},
+	}
+
+	err = o.contract.BulkSetFeeParams(ctx, params)
+	if err != nil {
+		return errors.Wrap(err, "bulk set fee params")
+	}
+
+	log.Info(ctx, "Corrected postsTo", "dest_chain", dest.Name, "correct", dest.PostsTo, "actual", postsTo)
+
+	return nil
+}
+
 // guageGasPrice updates the gas price gauge for the given chain.
 func guageGasPrice(src, dest evmchain.Metadata, price uint64) {
 	onChainGasPrice.WithLabelValues(src.Name, dest.Name).Set(float64(price))
@@ -130,7 +169,7 @@ func guageGasPrice(src, dest evmchain.Metadata, price uint64) {
 
 // syncToNativeRate sets the on-chain conversion rate to the buffered conversion rate, if they differ.
 func (o feeOracle) syncToNativeRate(ctx context.Context, dest evmchain.Metadata) error {
-	ctx = log.WithCtx(ctx, "destChainID", dest.ChainID, "destToken", dest.NativeToken)
+	ctx = log.WithCtx(ctx, "dest_chain", dest.Name, "dest_token", dest.NativeToken)
 
 	srcPrice := o.tprice.Price(o.chain.NativeToken)
 	destPrice := o.tprice.Price(dest.NativeToken)
@@ -188,33 +227,6 @@ func (o feeOracle) syncToNativeRate(ctx context.Context, dest evmchain.Metadata)
 // guageRate updates the conversion rate gauge for the given source and destination chains.
 func guageRate(src, dest evmchain.Metadata, rate float64) {
 	onChainConversionRate.WithLabelValues(src.Name, dest.Name, src.NativeToken.String(), dest.NativeToken.String()).Set(rate)
-}
-
-// makeDestChains generates a list of destination chains, excluding the source chain.
-func makeDestChains(srcChainID uint64, network netconf.Network) ([]evmchain.Metadata, error) {
-	chains := network.EVMChains()
-	destChains := make([]evmchain.Metadata, 0, len(chains)-1)
-
-	var foundSrc bool
-	for _, chain := range chains {
-		if chain.ID == srcChainID {
-			foundSrc = true
-			continue
-		}
-
-		meta, ok := evmchain.MetadataByID(chain.ID)
-		if !ok {
-			return nil, errors.New("chain metadata not found", "chain", chain.ID)
-		}
-
-		destChains = append(destChains, meta)
-	}
-
-	if !foundSrc {
-		return nil, errors.New("source chain not in network", "chain", srcChainID)
-	}
-
-	return destChains, nil
 }
 
 // rateDenom matches FeeOracleV1.CONVERSION_RATE_DENOM

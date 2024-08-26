@@ -143,7 +143,6 @@ type Msg struct {
 // Receipt is a cross-chain message receipt, the result of applying the Msg on the destination chain.
 type Receipt struct {
 	MsgID                         // Unique ID of the cross chain message that was applied.
-	ConfLevel      ConfLevel      // Confirmation level of submitted attestation
 	GasUsed        uint64         // Gas used during message "call"
 	Success        bool           // Result, true for success, false for revert
 	Error          []byte         // Error message if the message failed
@@ -170,7 +169,7 @@ type Block struct {
 // ShouldAttest returns true if the xblock should be attested by the omni consensus chain validators.
 // All "non-empty" xblocks should be attested to.
 // Every Nth block based on the chain's attest interval should be attested to.
-// Attested blocks are assigned an incremented XBlockOffset.
+// Attested blocks are assigned an incremented AttestOffset.
 func (b Block) ShouldAttest(attestInterval uint64) bool {
 	if len(b.Msgs) > 0 {
 		return true
@@ -233,9 +232,9 @@ type Submission struct {
 
 // SubmitCursor is a cursor that tracks the progress of a cross-chain stream on destination portal contracts.
 type SubmitCursor struct {
-	StreamID           // Stream ID of the Stream this cursor belongs to
-	MsgOffset   uint64 // Latest submitted Msg offset of the Stream
-	BlockOffset uint64 // Latest submitted cross chain block offset
+	StreamID            // Stream ID of the Stream this cursor belongs to
+	MsgOffset    uint64 // Latest submitted Msg offset of the Stream
+	AttestOffset uint64 // Latest submitted cross chain attest offset
 }
 
 // EmitCursor is a cursor that tracks the progress of a cross-chain stream on source portal contracts.

@@ -140,7 +140,7 @@ func (b *AggVoteBuilder) WithChainID(id uint64) *AggVoteBuilder {
 	return b
 }
 
-func (b *AggVoteBuilder) WithBlockOffset(o uint64) *AggVoteBuilder {
+func (b *AggVoteBuilder) WithAttestOfset(o uint64) *AggVoteBuilder {
 	if b.vote == nil {
 		b.vote = &types.AggVote{BlockHeader: &types.BlockHeader{}}
 	} else if b.vote.BlockHeader == nil {

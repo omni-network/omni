@@ -20,6 +20,7 @@ import (
 	"github.com/omni-network/omni/monitor/account"
 	"github.com/omni-network/omni/monitor/avs"
 	"github.com/omni-network/omni/monitor/loadgen"
+	"github.com/omni-network/omni/monitor/routerecon"
 	"github.com/omni-network/omni/monitor/xfeemngr"
 	"github.com/omni-network/omni/monitor/xmonitor"
 
@@ -67,6 +68,8 @@ func Run(ctx context.Context, cfg Config) error {
 
 	cprov := cprovider.NewABCIProvider(tmClient, network.ID, netconf.ChainVersionNamer(cfg.Network))
 
+	xprov := xprovider.New(network, ethClients, cprov)
+
 	if err := avs.StartMonitor(ctx, network, ethClients); err != nil {
 		return errors.Wrap(err, "monitor AVS")
 	}
@@ -81,16 +84,17 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "start AVS sync")
 	}
 
-	if err := startXMonitor(ctx, cfg, network, ethClients, cprov); err != nil {
+	if err := startXMonitor(ctx, cfg, network, ethClients, cprov, xprov); err != nil {
 		return errors.Wrap(err, "start xchain monitor")
 	}
 
-	if err := xfeemngr.Start(ctx, network, ethClients, cfg.PrivateKey); err != nil {
+	if err := xfeemngr.Start(ctx, network, cfg.XFeeMngr, cfg.PrivateKey); err != nil {
 		return errors.Wrap(err, "start xfee manager")
 	}
 
 	startMonitoringSyncDiff(ctx, network, ethClients)
 	go runHistoricalBaselineForever(ctx, network, cprov)
+	go routerecon.ReconForever(ctx, network, xprov, ethClients)
 
 	select {
 	case <-ctx.Done():
@@ -108,6 +112,7 @@ func startXMonitor(
 	network netconf.Network,
 	ethClients map[uint64]ethclient.Client,
 	cprov cchain.Provider,
+	xprov xchain.Provider,
 ) error {
 	var db dbm.DB
 	if cfg.DBDir == "" {
@@ -120,8 +125,6 @@ func startXMonitor(
 			return errors.Wrap(err, "new golevel db")
 		}
 	}
-
-	xprov := xprovider.New(network, ethClients, cprov)
 
 	return xmonitor.Start(ctx, network, xprov, cprov, ethClients, db)
 }

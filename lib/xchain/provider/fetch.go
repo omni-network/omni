@@ -55,7 +55,7 @@ func (p *Provider) ChainVersionHeight(ctx context.Context, chainVer xchain.Chain
 // GetEmittedCursor returns the emitted cursor for the destination chain on the source chain,
 // or false if not available, or an error. Calls the source chain portal OutXStreamOffset method.
 //
-// Note that the BlockOffset field is not populated for emit cursors, since it isn't stored on-chain
+// Note that the AttestOffset field is not populated for emit cursors, since it isn't stored on-chain
 // but tracked off-chain.
 func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, stream xchain.StreamID,
 ) (xchain.EmitCursor, bool, error) {
@@ -149,15 +149,15 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, stream xchain.StreamI
 		return xchain.SubmitCursor{}, false, nil
 	}
 
-	blockOffset, err := caller.InXBlockOffset(callOpts, stream.SourceChainID, uint64(stream.ShardID))
+	attestOffset, err := caller.InXBlockOffset(callOpts, stream.SourceChainID, uint64(stream.ShardID))
 	if err != nil {
 		return xchain.SubmitCursor{}, false, errors.Wrap(err, "call InXBlockOffset")
 	}
 
 	return xchain.SubmitCursor{
-		StreamID:    stream,
-		MsgOffset:   msgOffset,
-		BlockOffset: blockOffset,
+		StreamID:     stream,
+		MsgOffset:    msgOffset,
+		AttestOffset: attestOffset,
 	}, true, nil
 }
 
@@ -365,6 +365,26 @@ func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, blockHash co
 	}
 
 	return xmsgs, nil
+}
+
+// GetSubmission returns the submission associated with the transaction hash or an error.
+func (p *Provider) GetSubmission(ctx context.Context, chainID uint64, txHash common.Hash) (xchain.Submission, error) {
+	chain, rpcClient, err := p.getEVMChain(chainID)
+	if err != nil {
+		return xchain.Submission{}, errors.Wrap(err, "get evm chain")
+	}
+
+	tx, _, err := rpcClient.TransactionByHash(ctx, txHash)
+	if err != nil {
+		return xchain.Submission{}, errors.Wrap(err, "tx by hash")
+	}
+
+	sub, err := xchain.DecodeXSubmit(tx.Data())
+	if err != nil {
+		return xchain.Submission{}, errors.Wrap(err, "decode xsubmit")
+	}
+
+	return xchain.SubmissionFromBinding(sub, chain.ID), nil
 }
 
 // confirmedCache returns true if the height is confirmedCache based on the chain version

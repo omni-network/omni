@@ -7,10 +7,12 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tokens/coingecko"
+	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
 	"github.com/omni-network/omni/monitor/xfeemngr/ticker"
 	"github.com/omni-network/omni/monitor/xfeemngr/tokenprice"
@@ -24,6 +26,10 @@ type Manager struct {
 	tprice  *tokenprice.Buffer
 	oracles map[uint64]feeOracle
 	ticker  ticker.Ticker
+}
+
+type Config struct {
+	RPCEndpoints xchain.RPCEndpoints
 }
 
 const (
@@ -50,16 +56,28 @@ const (
 	maxSaneEthPerOmni = float64(1)
 )
 
-func Start(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client, privKeyPath string) error {
+func Start(ctx context.Context, network netconf.Network, cfg Config, privKeyPath string) error {
+	log.Info(ctx, "Starting fee manager", "endpoint", cfg.RPCEndpoints)
+
 	privKey, err := crypto.LoadECDSA(privKeyPath)
 	if err != nil {
 		return errors.Wrap(err, "load private key")
 	}
 
+	toSync, err := chainsToSync(network)
+	if err != nil {
+		return err
+	}
+
+	ethClients, err := makeEthClients(toSync, cfg.RPCEndpoints)
+	if err != nil {
+		return err
+	}
+
 	gprice := gasprice.NewBuffer(makeGasPricers(ethClients), gasprice.WithThresholdPct(gasPriceBufferThreshold))
 	tprice := tokenprice.NewBuffer(coingecko.New(), tokens.OMNI, tokens.ETH, tokenprice.WithThresholdPct(tokenPriceBufferThreshold))
 
-	oracles, err := makeOracles(ctx, network, ethClients, privKey, gprice, tprice)
+	oracles, err := makeOracles(ctx, network, toSync, ethClients, privKey, gprice, tprice)
 	if err != nil {
 		return err
 	}
@@ -103,12 +121,17 @@ func makeGasPricers(ethClients map[uint64]ethclient.Client) map[uint64]ethereum.
 }
 
 // makeOracles makes a map chainID to feeOracle for each chain in the network.
-func makeOracles(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client,
+func makeOracles(ctx context.Context, network netconf.Network, toSync []evmchain.Metadata, ethClients map[uint64]ethclient.Client,
 	pk *ecdsa.PrivateKey, gprice *gasprice.Buffer, tprice *tokenprice.Buffer) (map[uint64]feeOracle, error) {
 	oracles := make(map[uint64]feeOracle)
 
 	for _, chain := range network.EVMChains() {
-		oracle, err := makeOracle(ctx, chain, network, ethClients, pk, gprice, tprice)
+		ethCl, ok := ethClients[chain.ID]
+		if !ok {
+			return nil, errors.New("eth client not found", "chain", chain.ID)
+		}
+
+		oracle, err := makeOracle(ctx, chain, toSync, ethCl, pk, gprice, tprice)
 		if err != nil {
 			return nil, errors.Wrap(err, "make oracle", "chain", chain.Name)
 		}
@@ -117,4 +140,61 @@ func makeOracles(ctx context.Context, network netconf.Network, ethClients map[ui
 	}
 
 	return oracles, nil
+}
+
+// chainsToSync returns a list of evmchain.Metadata to sync on each fee oracle.
+// This includes all evm chains in the network, and their "postsTo" chains.
+func chainsToSync(network netconf.Network) ([]evmchain.Metadata, error) {
+	var toSync []evmchain.Metadata
+
+	// avoid dups - some chains have same postsTo, and they may be in the network
+	set := make(map[uint64]bool)
+
+	// add all chains in network
+	for _, chain := range network.EVMChains() {
+		meta, ok := evmchain.MetadataByID(chain.ID)
+		if !ok {
+			return nil, errors.New("chain metadata not found", "chain", chain.ID)
+		}
+
+		toSync = append(toSync, meta)
+		set[meta.ChainID] = true
+	}
+
+	// add all "postsTo" chains
+	for _, chain := range toSync {
+		if chain.PostsTo == 0 || set[chain.PostsTo] {
+			continue
+		}
+
+		meta, ok := evmchain.MetadataByID(chain.PostsTo)
+		if !ok {
+			return nil, errors.New("chain metadata not found", "chain", meta.ChainID)
+		}
+
+		toSync = append(toSync, meta)
+		set[meta.ChainID] = true
+	}
+
+	return toSync, nil
+}
+
+func makeEthClients(chains []evmchain.Metadata, rpcs xchain.RPCEndpoints) (map[uint64]ethclient.Client, error) {
+	clients := make(map[uint64]ethclient.Client)
+
+	for _, chain := range chains {
+		rpc, err := rpcs.ByNameOrID(chain.Name, chain.ChainID)
+		if err != nil {
+			return nil, err
+		}
+
+		c, err := ethclient.Dial(chain.Name, rpc)
+		if err != nil {
+			return nil, errors.Wrap(err, "dial rpc", "chain_name", chain.Name, "chain_id", chain.ChainID, "rpc_url", rpc)
+		}
+
+		clients[chain.ChainID] = c
+	}
+
+	return clients, nil
 }

@@ -236,7 +236,7 @@ func SimnetNetwork() Network {
 		ID: Simnet,
 		Chains: []Chain{
 			mustSimnetChain(Simnet.Static().OmniExecutionChainID, xchain.ShardFinalized0),
-			mustSimnetChain(evmchain.IDMockL1Fast, xchain.ShardFinalized0, xchain.ShardLatest0),
+			mustSimnetChain(evmchain.IDMockL1, xchain.ShardFinalized0, xchain.ShardLatest0),
 			mustSimnetChain(evmchain.IDMockL2, xchain.ShardFinalized0),
 			Simnet.Static().OmniConsensusChain(),
 		},

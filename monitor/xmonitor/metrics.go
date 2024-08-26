@@ -20,11 +20,11 @@ var (
 		Help:      "The latest submitted xmsg stream offset on a destination chain for a specific source chain",
 	}, []string{"stream"})
 
-	submitBlockOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	submitAttestOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "monitor",
 		Subsystem: "xchain",
-		Name:      "submit_block_offset",
-		Help:      "The latest submitted xblock offset on a destination chain for a specific source chain",
+		Name:      "submit_attest_offset",
+		Help:      "The latest submitted attest offset on a destination chain for a specific source chain",
 	}, []string{"stream"})
 
 	headHeight = promauto.NewGaugeVec(prometheus.GaugeOpts{

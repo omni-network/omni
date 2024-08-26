@@ -75,6 +75,16 @@ func TestStart(t *testing.T) {
 	chains := makeChains(chainIDs)
 	oracles := makeMockOracles(chains, gpriceBuf, tpriceBuf)
 
+	// make sure all postsTo are zero, at start
+	// this way when we check them later, we know they have been updated
+	for _, oracle := range oracles {
+		for _, dest := range oracle.toSync {
+			postsTo, err := oracle.contract.PostsTo(context.Background(), dest.ChainID)
+			require.NoError(t, err)
+			require.Equal(t, uint64(0), postsTo)
+		}
+	}
+
 	ctx := context.Background()
 
 	mngr := Manager{
@@ -96,7 +106,7 @@ func TestStart(t *testing.T) {
 		for _, oracle := range oracles {
 			src := oracle.chain
 
-			for _, dest := range oracle.dests {
+			for _, dest := range oracle.toSync {
 				// check gas price
 				gasprice, err := oracle.contract.GasPriceOn(ctx, dest.ChainID)
 				require.NoError(t, err)
@@ -154,7 +164,7 @@ func TestStart(t *testing.T) {
 	for _, oracle := range oracles {
 		src := oracle.chain
 
-		for _, dest := range oracle.dests {
+		for _, dest := range oracle.toSync {
 			// check gas price
 			gasprice, err := oracle.contract.GasPriceOn(ctx, dest.ChainID)
 			require.NoError(t, err)
@@ -191,6 +201,15 @@ func TestStart(t *testing.T) {
 
 	tick.Tick()
 
+	// make sure all postsTo have been corrected
+	for _, oracle := range oracles {
+		for _, dest := range oracle.toSync {
+			postsTo, err := oracle.contract.PostsTo(ctx, dest.ChainID)
+			require.NoError(t, err)
+			require.Equal(t, dest.PostsTo, postsTo)
+		}
+	}
+
 	// expect on chain values to be back to initials
 	expectInitials()
 }
@@ -201,7 +220,7 @@ func makeMockOracles(chains []evmchain.Metadata, gprice *gasprice.Buffer, tprice
 	for _, chain := range chains {
 		oracles[chain.ChainID] = feeOracle{
 			chain:    chain,
-			dests:    makeDests(chain.ChainID, chains),
+			toSync:   chains,
 			gprice:   gprice,
 			tprice:   tprice,
 			contract: contract.NewMockFeeOracleV1(),
@@ -222,32 +241,25 @@ func makeChains(chainIDs []uint64) []evmchain.Metadata {
 			token = tokens.OMNI
 		}
 
+		// every even chian "postsTo" the last chain
+		// every other chain "postsTo" itself
+		postsTo := chainID
+		if chainID%2 == 0 {
+			postsTo = chainIDs[len(chainIDs)-1]
+		}
+
 		meta := evmchain.Metadata{
 			ChainID:     chainID,
 			Name:        "test-chain-" + fmt.Sprint(chainID),
 			BlockPeriod: time.Second,
 			NativeToken: token,
+			PostsTo:     postsTo,
 		}
 
 		chains = append(chains, meta)
 	}
 
 	return chains
-}
-
-// makeDests filters out the source chain from a list of chains.
-func makeDests(srcChainID uint64, chains []evmchain.Metadata) []evmchain.Metadata {
-	dests := make([]evmchain.Metadata, 0, len(chains)-1)
-
-	for _, chain := range chains {
-		if chain.ChainID == srcChainID {
-			continue
-		}
-
-		dests = append(dests, chain)
-	}
-
-	return dests
 }
 
 // makeGasPrices generates a map chainID -> gas price for each chainID.
