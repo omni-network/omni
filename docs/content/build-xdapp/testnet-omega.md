@@ -15,7 +15,7 @@ This document lays out relevant developer resources for the Omni Omega testnet. 
 
 ### General Information
 
-Contracts can be deployed to the Omni EVM RPC listed below. This will require having some testnet **$OMNI**. To obtain some either join the Telegram group or reach out to the team.
+Contracts can be deployed on the Omni EVM using the RPC below. To get started, you can request $OMNI tokens via our [faucet](https://faucet.omni.network/).
 
 ### RPC URLs
 
