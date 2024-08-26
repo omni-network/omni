@@ -8,12 +8,11 @@ import GitHubCodeBlock from '@site/src/components/GitHubCodeBlock/GitHubCodeBloc
 
 
 
-## Cross-stake
+## xstake
 
- An example xchain staking app that allows ERC20 deposits on multiple chains.
- https://github.com/kevinhalliday/xstake
+ An [example xchain staking app](https://github.com/omni-netwpr/xstake) that allows ERC20 deposits on multiple chains.
 
- <GitHubCodeBlock url="https://github.com/kevinhalliday/xstake/blob/main/src/XStaker.sol"/>
+ <GitHubCodeBlock url="https://github.com/omni-network/xstake/blob/main/src/XStaker.sol"/>
 
 
 ## Ethereum to Omni bridge
