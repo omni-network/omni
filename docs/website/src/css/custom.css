@@ -74,8 +74,9 @@
   --docsearch-searchbox-focus-background: var(--ifm-color-white);
   /* Hit */
   --docsearch-hit-color: var(--ifm-font-color-base);
-  --docsearch-hit-active-color: var(--ifm-color-white);
+  --docsearch-hit-active-color: var(--ifm-font-color-base);
   --docsearch-hit-background: var(--ifm-color-white);
+  --docsearch-highlight-color: var(--ifm-color-primary-lightest);
   /* Footer */
   --docsearch-footer-background: var(--ifm-color-white);
 }
