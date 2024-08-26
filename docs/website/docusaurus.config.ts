@@ -89,15 +89,15 @@ const config: Config = {
           items: [
             {
               label: 'GitHub',
-              href: 'https://github.com/omni-network/omni',
+              to: 'https://github.com/omni-network/omni',
             },
             {
               label: 'Explorer',
-              href: 'https://omega.omniscan.network/',
+              to: 'https://omega.omniscan.network/',
             },
             {
               label: 'Status page',
-              href: 'https://status.omni.network/',
+              to: 'https://status.omni.network/',
             },
           ],
         },
@@ -106,15 +106,15 @@ const config: Config = {
           items: [
             {
               label: 'Telegram for developers',
-              href: 'https://discordapp.com/invite/docusaurus',
+              to: 'https://discordapp.com/invite/docusaurus',
             },
             {
               label: 'Twitter',
-              href: 'https://twitter.com/docusaurus',
+              to: 'https://twitter.com/docusaurus',
             },
             {
               label: 'Discord',
-              href: 'https://discordapp.com/invite/docusaurus',
+              to: 'https://discordapp.com/invite/docusaurus',
             },
           ],
         },
