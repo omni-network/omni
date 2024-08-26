@@ -2,7 +2,7 @@
 sidebar_position: 4
 ---
 
-# Omni Omega Testnet
+# Omega Testnet
 
 ### Have Questions?
 
@@ -16,6 +16,7 @@ This document lays out relevant developer resources for the Omni Omega testnet. 
 ### General Information
 
 Contracts can be deployed on the Omni EVM using the RPC below. To get started, you can request $OMNI tokens via our [faucet](https://faucet.omni.network/).
+
 
 ### RPC URLs
 
@@ -41,4 +42,4 @@ Contracts can be deployed on the Omni EVM using the RPC below. To get started, y
 
 | Contract | Address | Note |
 | --- | --- | --- |
-| Portal | `0xcB60A0451831E4865bC49f41F9C67665Fc9b75C3` | Our Portal contracts have a single, unified contract address across the Omni EVM and all supported rollups. |
+| OmniPortal | `0xcB60A0451831E4865bC49f41F9C67665Fc9b75C3` | Our portal contracts have the same address on all chains. |

@@ -20,10 +20,9 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Build',
       items: [
-        'build-xdapp/quickstart',
-        'build-xdapp/walkthrough',
-        'build-xdapp/showcase-dapps',
-        'build-xdapp/testnet-omega',
+        'build/quickstart',
+        'build/walkthrough',
+        'build/omega',
       ],
       collapsed: true,
     },
