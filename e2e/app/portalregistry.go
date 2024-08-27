@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/types"
+	"github.com/omni-network/omni/halo/genutil/evm"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -224,4 +225,58 @@ func startAddingMockPortals(ctx context.Context, def Definition) func() error {
 		close(quit)
 		return <-errChan
 	}
+}
+
+// allowStagingValidators adds all prefund addresses as allowed validators to the staking predeploy on staging.
+// This allows manual testing of "adding a validator" to staging by dev team.
+func allowStagingValidators(ctx context.Context, def Definition) error {
+	if def.Testnet.Network != netconf.Staging {
+		return nil
+	}
+
+	if !def.Testnet.HasOmniEVM() {
+		return errors.New("missing omni evm")
+	}
+
+	omniEVM := def.Testnet.OmniEVMs[0].Chain
+
+	backend, err := def.Backends().Backend(omniEVM.ChainID)
+	if err != nil {
+		return err
+	}
+
+	contract, err := bindings.NewStaking(common.HexToAddress(predeploys.Staking), backend)
+	if err != nil {
+		return errors.Wrap(err, "new staking")
+	}
+
+	admin := eoa.MustAddress(def.Testnet.Network, eoa.RoleAdmin)
+	txOpts, err := backend.BindOpts(ctx, admin)
+	if err != nil {
+		return err
+	}
+
+	allocs, err := evm.PrefundAlloc(def.Testnet.Network)
+	if err != nil {
+		return errors.Wrap(err, "prefund alloc")
+	}
+
+	var addrs []common.Address
+	for addr := range allocs {
+		addrs = append(addrs, addr)
+	}
+
+	tx, err := contract.AllowValidators(txOpts, addrs)
+	if err != nil {
+		return errors.Wrap(err, "allow validators")
+	}
+
+	_, err = backend.WaitMined(ctx, tx)
+	if err != nil {
+		return errors.Wrap(err, "wait mined")
+	}
+
+	log.Debug(ctx, "Added prefund alloc addresses as allowed validators", "count", len(addrs))
+
+	return nil
 }

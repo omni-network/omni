@@ -4,12 +4,13 @@ Usage:
   halo [command]
 
 Available Commands:
-  completion  Generate the autocompletion script for the specified shell
-  help        Help about any command
-  init        Initializes required halo files and directories
-  rollback    Rollback Cosmos SDK and CometBFT state by one height
-  run         Runs the halo consensus client
-  version     Print the version information of this binary
+  completion       Generate the autocompletion script for the specified shell
+  consensus-pubkey Print the consensus public key
+  help             Help about any command
+  init             Initializes required halo files and directories
+  rollback         Rollback Cosmos SDK and CometBFT state by one height
+  run              Runs the halo consensus client
+  version          Print the version information of this binary
 
 Flags:
   -h, --help   help for halo

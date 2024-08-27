@@ -31,14 +31,9 @@ func MakeGenesis(network netconf.ID) (core.Genesis, error) {
 		return core.Genesis{}, errors.Wrap(err, "predeploys")
 	}
 
-	allocs := mergeAllocs(precompilesAlloc(), predeps)
-
-	if network.IsEphemeral() {
-		allocs = mergeAllocs(allocs, stagingPrefundAlloc())
-	} else if network == netconf.Omega {
-		allocs = mergeAllocs(allocs, testnetPrefundAlloc())
-	} else {
-		return core.Genesis{}, errors.New("unsupported network", "network", network.String())
+	prefunds, err := PrefundAlloc(network)
+	if err != nil {
+		return core.Genesis{}, errors.Wrap(err, "prefund alloc")
 	}
 
 	return core.Genesis{
@@ -46,7 +41,7 @@ func MakeGenesis(network netconf.ID) (core.Genesis, error) {
 		GasLimit:   miner.DefaultConfig.GasCeil,
 		BaseFee:    big.NewInt(params.InitialBaseFee),
 		Difficulty: big.NewInt(0),
-		Alloc:      allocs,
+		Alloc:      mergeAllocs(precompilesAlloc(), predeps, prefunds),
 	}, nil
 }
 
@@ -91,8 +86,18 @@ func precompilesAlloc() types.GenesisAlloc {
 	}
 }
 
-// devPrefundAlloc returns allocs for pre-funded geth dev accounts.
-func stagingPrefundAlloc() types.GenesisAlloc {
+func PrefundAlloc(network netconf.ID) (types.GenesisAlloc, error) {
+	if network.IsEphemeral() {
+		return ephemeralPrefundAlloc(), nil
+	} else if network == netconf.Omega {
+		return omegaPrefundAlloc(), nil
+	}
+
+	return nil, errors.New("unsupported network", "network", network.String())
+}
+
+// ephemeralPrefundAlloc returns allocs for pre-funded geth accounts.
+func ephemeralPrefundAlloc() types.GenesisAlloc {
 	return types.GenesisAlloc{
 		// anvil pre-funded accounts
 		anvil.DevAccount0(): {Balance: eth1m},
@@ -120,7 +125,7 @@ func stagingPrefundAlloc() types.GenesisAlloc {
 	}
 }
 
-func testnetPrefundAlloc() types.GenesisAlloc {
+func omegaPrefundAlloc() types.GenesisAlloc {
 	return types.GenesisAlloc{
 		// team ops accounts
 		common.HexToAddress("0x7a6cF389082dc698285474976d7C75CAdE08ab7e"): {Balance: eth1m}, // fb: dev

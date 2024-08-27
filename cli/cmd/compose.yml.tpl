@@ -2,7 +2,7 @@ services:
 
   halo:
     container_name: halo
-    image: omniops/halo:{{.HaloTag}}
+    image: omniops/halovisor:{{.HaloTag}}
     restart: unless-stopped
     ports:
       - 26656:26656 # Consensus P2P

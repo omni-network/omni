@@ -51,3 +51,27 @@ func bindRPCURL(cmd *cobra.Command, rpcURL *string) {
 	cmd.Flags().StringVar(rpcURL, flagRPCURL, *rpcURL, "URL of the eth-json RPC server")
 	_ = cmd.MarkFlagRequired(flagRPCURL)
 }
+
+func bindCreateValConfig(cmd *cobra.Command, cfg *createValConfig) {
+	netconf.BindFlag(cmd.Flags(), &cfg.Network)
+
+	const (
+		flagPrivateKeyFile = "private-key-file"
+		flagConsPubKeyHex  = "consensus-pubkey-hex"
+		flagSelfDelegation = "self-delegation"
+	)
+	cmd.Flags().StringVar(&cfg.PrivateKeyFile, flagPrivateKeyFile, cfg.PrivateKeyFile, "Path to the insecure operator private key file")
+	cmd.Flags().StringVar(&cfg.ConsensusPubKeyHex, flagConsPubKeyHex, cfg.ConsensusPubKeyHex, "Hex-encoded validator consensus public key")
+	cmd.Flags().Uint64Var(&cfg.SelfDelegation, flagSelfDelegation, cfg.SelfDelegation, "Self-delegation amount in OMNI (minimum 100 OMNI)")
+
+	_ = cmd.MarkFlagRequired(flagPrivateKeyFile)
+	_ = cmd.MarkFlagRequired(flagConsPubKeyHex)
+	_ = cmd.MarkFlagRequired(flagSelfDelegation)
+	_ = cmd.MarkFlagRequired("network")
+}
+
+func bindCreateKeyConfig(cmd *cobra.Command, cfg *createKeyConfig) {
+	const flagType = "type"
+	cmd.Flags().StringVar((*string)(&cfg.Type), flagType, string(cfg.Type), "Type of key to create")
+	cmd.Flags().StringVar(&cfg.PrivateKeyFile, "output-file", cfg.PrivateKeyFile, "Path to output private key file")
+}
