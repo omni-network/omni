@@ -497,6 +497,7 @@ func TestKeeper_Approve(t *testing.T) {
 				activeSetQueried(17),
 				activeSetQueried(18),
 				trimBehindCalled(),
+				valsetCalled(),
 				noFuzzyDeps(),
 			},
 			prerequisites: []prerequisite{
@@ -554,6 +555,7 @@ func TestKeeper_Approve(t *testing.T) {
 				activeSetQueried(9),
 				activeSetQueried(10),
 				trimBehindCalled(),
+				valsetCalled(),
 				noFuzzyDeps(),
 			},
 			prerequisites: []prerequisite{
@@ -667,6 +669,7 @@ func TestKeeper_Approve(t *testing.T) {
 				activeSetQueried(11),
 				activeSetQueried(12),
 				trimBehindCalled(),
+				valsetCalled(),
 				fuzzyDeps(1),
 			},
 			prerequisites: []prerequisite{
@@ -740,6 +743,7 @@ func TestKeeper_Approve(t *testing.T) {
 				activeSetQueried(11),
 				activeSetQueried(12),
 				trimBehindCalled(),
+				valsetCalled(),
 				fuzzyDeps(2),
 			},
 			prerequisites: []prerequisite{
@@ -875,6 +879,7 @@ func TestKeeper_Approve(t *testing.T) {
 				activeSetQueried(9),
 				activeSetQueried(10),
 				trimBehindCalled(),
+				valsetCalled(),
 				noFuzzyDeps(),
 			},
 			prerequisites: []prerequisite{

@@ -52,6 +52,32 @@ var (
 		Name:      "double_sign_total",
 		Help:      "Total number of double sign votes detected per validator",
 	}, []string{"validator"})
+
+	approvedVotesCounter = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "halo",
+		Subsystem: "attest",
+		Name:      "votes_approved_total",
+		Help: "Total number of votes included in approved attestations per validator per stream. " +
+			"Approved votes were present in approved attestations at time of deletion. They count towards rewards",
+	}, []string{"validator", "stream"})
+
+	discardedVotesCounter = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "halo",
+		Subsystem: "attest",
+		Name:      "votes_discarded_total",
+		Help: "Total number of votes included in discarded attestations per validator per stream. " +
+			"Discarded votes were included on-chain but were either for previously approved attestations (late) or " +
+			"for non-quorum attestations (wrong). They don't count towards rewards",
+	}, []string{"validator", "stream"})
+
+	missingVotesCounter = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "halo",
+		Subsystem: "attest",
+		Name:      "votes_missing_total",
+		Help: "Total number of votes missing from approved attestations per validator per stream. " +
+			"Missing votes were missing from approved attestations at time of deletion. " +
+			"They may be late or never included on-chain. missing-discarded==not-voting",
+	}, []string{"validator", "stream"})
 )
 
 func latency(method string) func() {

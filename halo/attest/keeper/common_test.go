@@ -6,6 +6,7 @@ import (
 	"github.com/omni-network/omni/halo/attest/keeper"
 	"github.com/omni-network/omni/halo/attest/testutil"
 	"github.com/omni-network/omni/halo/attest/types"
+	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -50,6 +51,13 @@ func fuzzyDeps(times int) expectation {
 		m.registry.EXPECT().ConfLevels(gomock.Any()).Return(map[uint64][]xchain.ConfLevel{
 			defaultChainID: {xchain.ConfFinalized, xchain.ConfLatest},
 		}, nil).Times(times)
+	}
+}
+
+func valsetCalled() expectation {
+	return func(_ sdk.Context, m mocks) {
+		m.valProvider.EXPECT().ValidatorSet(gomock.Any(), gomock.Any()).
+			Return(&vtypes.ValidatorSetResponse{}, nil).AnyTimes()
 	}
 }
 
