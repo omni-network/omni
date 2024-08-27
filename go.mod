@@ -15,7 +15,7 @@ require (
 	cosmossdk.io/x/tx v0.13.4
 	cosmossdk.io/x/upgrade v0.1.4
 	github.com/BurntSushi/toml v1.4.0
-	github.com/Layr-Labs/eigenlayer-cli v0.10.2
+	github.com/Layr-Labs/eigenlayer-cli v0.10.3
 	github.com/Layr-Labs/eigensdk-go v0.1.10
 	github.com/bufbuild/buf v1.38.0
 	github.com/charmbracelet/log v0.4.0
