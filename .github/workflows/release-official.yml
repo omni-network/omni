@@ -27,3 +27,8 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push halovisor
+        run: |
+          scripts/halovisor/build.sh ${{ github.ref_name }}
+          docker push omniops/halovisor:${{ github.ref_name }}
