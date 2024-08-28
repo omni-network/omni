@@ -17,9 +17,6 @@ import (
 
 func feeParams(ctx context.Context, srcChainID uint64, destChainIDs []uint64, backends ethbackend.Backends, pricer tokens.Pricer,
 ) ([]bindings.IFeeOracleV1ChainFeeParams, error) {
-	// len(destChainIDs) + 1, because we also add fee params for the source chain
-	params := make([]bindings.IFeeOracleV1ChainFeeParams, len(destChainIDs)+1)
-
 	// used cached pricer, to avoid multiple price requests for same token
 	pricer = tokens.NewCachedPricer(pricer)
 
@@ -28,8 +25,8 @@ func feeParams(ctx context.Context, srcChainID uint64, destChainIDs []uint64, ba
 		return nil, errors.New("meta by chain id", "chain_id", srcChainID)
 	}
 
-	// we include source chain, to allow calculation of xcall callbacks
-	for i, destChainID := range append(destChainIDs, srcChainID) {
+	var resp []bindings.IFeeOracleV1ChainFeeParams
+	for _, destChainID := range destChainIDs {
 		destChain, ok := evmchain.MetadataByID(destChainID)
 		if !ok {
 			return nil, errors.New("meta by chain id", "dest_chain", destChain.Name)
@@ -40,10 +37,20 @@ func feeParams(ctx context.Context, srcChainID uint64, destChainIDs []uint64, ba
 			return nil, err
 		}
 
-		params[i] = ps
+		resp = append(resp, ps)
+
+		// Add postsTo rates if not already present
+		if destChain.PostsTo != 0 && !contains(resp, destChain.PostsTo) {
+			resp = append(resp, bindings.IFeeOracleV1ChainFeeParams{
+				ChainId:      destChain.PostsTo,
+				PostsTo:      destChain.PostsTo,
+				GasPrice:     big.NewInt(params.GWei),
+				ToNativeRate: rateToNumerator(1), // Stub native rates for now
+			})
+		}
 	}
 
-	return params, nil
+	return resp, nil
 }
 
 // feeParams returns the fee parameters for the given source token and destination chains.
@@ -129,4 +136,14 @@ func rateToNumerator(r float64) *big.Int {
 func withGasPriceShield(gasPrice *big.Int) *big.Int {
 	gasPriceF := float64(gasPrice.Uint64())
 	return new(big.Int).SetUint64(uint64(gasPriceF + (xfeemngr.GasPriceShield * gasPriceF)))
+}
+
+func contains(params []bindings.IFeeOracleV1ChainFeeParams, chainID uint64) bool {
+	for _, param := range params {
+		if param.ChainId == chainID {
+			return true
+		}
+	}
+
+	return false
 }
