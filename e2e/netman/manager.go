@@ -313,7 +313,7 @@ func (m *manager) deployIfNeeded(ctx context.Context, chain types.EVMChain, back
 		return staticDeploy.Address, staticDeploy.DeployHeight, nil
 	}
 
-	feeOracle, _, err := feeoraclev1.Deploy(ctx, m.network, chain.ChainID, m.destChainIDs(chain.ChainID), m.backends)
+	feeOracle, _, err := feeoraclev1.Deploy(ctx, m.network, chain.ChainID, m.allChainIDs(), m.backends)
 	if err != nil {
 		return common.Address{}, 0, errors.Wrap(err, "deploy fee oracle", "chain", chain.Name)
 	}
@@ -330,14 +330,12 @@ func (m *manager) deployIfNeeded(ctx context.Context, chain types.EVMChain, back
 	return addr, receipt.BlockNumber.Uint64(), nil
 }
 
-// destChainIDs returns all configured destination chain ids for a given source.
-func (m *manager) destChainIDs(srcChainID uint64) []uint64 {
+// allChainIDs returns all configured destination chain ids.
+func (m *manager) allChainIDs() []uint64 {
 	var destChainIDs []uint64
 
 	for id := range m.Portals() {
-		if id != srcChainID {
-			destChainIDs = append(destChainIDs, id)
-		}
+		destChainIDs = append(destChainIDs, id)
 	}
 
 	return destChainIDs
