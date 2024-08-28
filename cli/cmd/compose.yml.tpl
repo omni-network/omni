@@ -9,7 +9,8 @@ services:
       - 26657:26657 # Consensus RPC
       # - 26660:26660 # Prometheus metrics
     volumes:
-      - ./halo:/halo
+      - ./halo/config:/halo/config
+      - ./halo/data:/halo/data
       - ./geth/geth/jwtsecret:/geth/jwtsecret
 
   omni_evm:
@@ -18,12 +19,13 @@ services:
     restart: unless-stopped
     command:
       - --config=/geth/config.toml
+      - --verbosity={{.GethVerbosity}}                 # Log level (1=error,2=warn,3=info,4=debug)
       # Flags not available via config.toml
       #- --nat=extip:<my-external-ip> # External IP for P2P via NAT
       #- --metrics                    # Enable prometheus metrics
       #- --pprof                      # Enable prometheus metrics
       #- --pprof.addr=0.0.0.0         # Enable prometheus metrics
-      #- --verbosity=4                # Log level (4=debug)
+
     ports:
       - 8551         # Auth-RPC (used by halo)
       - 8545:8545    # JSON-RCP

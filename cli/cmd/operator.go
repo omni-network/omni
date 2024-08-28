@@ -30,6 +30,8 @@ import (
 	_ "embed"
 )
 
+const gethVerbosity = 3 // Geth log level (1=error,2=warn,3=info,4=debug,5=trace)
+
 type initConfig struct {
 	Network netconf.ID
 	Home    string
@@ -181,11 +183,13 @@ func writeComposeFile(ctx context.Context, home string) error {
 
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, struct {
-		HaloTag string
-		GethTag string
+		HaloTag       string
+		GethTag       string
+		GethVerbosity int
 	}{
-		HaloTag: commit,
-		GethTag: geth.Version,
+		HaloTag:       commit,
+		GethTag:       geth.Version,
+		GethVerbosity: gethVerbosity,
 	})
 	if err != nil {
 		return errors.Wrap(err, "execute template")
