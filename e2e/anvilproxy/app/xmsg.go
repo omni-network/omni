@@ -14,7 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -99,7 +98,7 @@ func fuzzXMsgs(perturb types.Perturb, msgs []*bindings.OmniPortalXMsg) ([]*bindi
 		}
 	case types.PerturbFuzzyHeadDropBlocks: // Every odd block.
 		// Remove all msgs.
-		// Will reach consensus, but results in AttestOffset mismatch of subsequent xblock with Finalized.
+		// Will reach consensus, but results in StreamOffset mismatch of subsequent xblock with Finalized.
 		msgs = nil
 	case types.PerturbFuzzyHeadMoreMsgs:
 		// Duplicate last message, incrementing the offset.
@@ -125,8 +124,7 @@ func isFuzzyXMsgLogFilter(ctx context.Context, perturb types.Perturb, target str
 
 	var args []struct {
 		Topics    [][]common.Hash `json:"topics"`
-		FromBlock string          `json:"fromBlock"`
-		ToBlock   string          `json:"toBlock"`
+		BlockHash common.Hash     `json:"blockHash"`
 	}
 	if err := json.Unmarshal(reqMsg.Params, &args); err != nil {
 		return false, 0, errors.Wrap(err, "unmarshal params")
@@ -143,19 +141,15 @@ func isFuzzyXMsgLogFilter(ctx context.Context, perturb types.Perturb, target str
 		return false, 0, nil
 	}
 
-	if arg.FromBlock != arg.ToBlock {
-		return false, 0, errors.New("fromBlock and toBlock must be equal")
+	if arg.BlockHash == (common.Hash{}) {
+		return false, 0, nil
 	}
-
-	block, err := hexutil.DecodeUint64(arg.FromBlock)
-	if err != nil {
-		return false, 0, errors.Wrap(err, "decode block number")
-	}
+	lastByte := arg.BlockHash.Bytes()[31]
 
 	switch perturb {
 	case types.PerturbFuzzyHeadDropBlocks:
-		if block%2 != 0 {
-			return false, 0, nil // Only drop even blocks.
+		if lastByte%2 != 0 {
+			return false, 0, nil // Only drop even-hash-last-byte blocks.
 		}
 	case types.PerturbFuzzyHeadAttRoot, types.PerturbFuzzyHeadMoreMsgs, types.PerturbFuzzyHeadDropMsgs:
 	// Always allow.
@@ -173,9 +167,16 @@ func isFuzzyXMsgLogFilter(ctx context.Context, perturb types.Perturb, target str
 		return false, 0, errors.Wrap(err, "get finalized header")
 	}
 
+	// Convert BlockHash to height
+	queryBlock, err := ethCl.HeaderByHash(ctx, arg.BlockHash)
+	if err != nil {
+		return false, 0, errors.Wrap(err, "get block header")
+	}
+	queryHeight := queryBlock.Number.Uint64()
+
 	const buffer = 2 // Avoid race conditions, require query to be more than 2 ahead of finalized.
 
-	return umath.SubtractOrZero(block, buffer) > finalized.Number.Uint64(), block, nil
+	return umath.SubtractOrZero(queryHeight, buffer) > finalized.Number.Uint64(), queryHeight, nil
 }
 
 // mustGetABI returns the metadata's ABI as an abi.ABI type.
