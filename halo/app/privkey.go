@@ -19,7 +19,7 @@ func loadPrivVal(cfg Config) (*privval.FilePV, error) {
 		return nil, errors.New("cometBFT priv validator key file is required", "comet_file", cmtFile)
 	}
 
-	key, err := loadCometFilePV(cmtFile)
+	key, err := LoadCometFilePV(cmtFile)
 	if err != nil {
 		return nil, err
 	}
@@ -42,8 +42,8 @@ func loadPrivVal(cfg Config) (*privval.FilePV, error) {
 	return resp, nil
 }
 
-// loadCometFilePV loads a CometBFT privval file and returns the private key.
-func loadCometFilePV(file string) (crypto.PrivKey, error) {
+// LoadCometFilePV loads a CometBFT privval file and returns the private key.
+func LoadCometFilePV(file string) (crypto.PrivKey, error) {
 	bz, err := os.ReadFile(file)
 	if err != nil {
 		return nil, errors.Wrap(err, "read comet privval", "path", file)

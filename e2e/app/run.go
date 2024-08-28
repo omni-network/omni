@@ -105,6 +105,10 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, err
 	}
 
+	if err := allowStagingValidators(ctx, def); err != nil {
+		return nil, err
+	}
+
 	if err := setupTokenBridge(ctx, def); err != nil {
 		return nil, errors.Wrap(err, "setup token bridge")
 	}

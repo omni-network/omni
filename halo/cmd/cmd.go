@@ -3,12 +3,16 @@ package cmd
 
 import (
 	"context"
+	"os"
 
 	"github.com/omni-network/omni/halo/app"
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/lib/buildinfo"
 	libcmd "github.com/omni-network/omni/lib/cmd"
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+
+	cmtcfg "github.com/cometbft/cometbft/config"
 
 	"github.com/spf13/cobra"
 )
@@ -22,6 +26,7 @@ func New() *cobra.Command {
 		newInitCmd(),
 		newRollbackCmd(),
 		buildinfo.NewVersionCmd(),
+		newConsKeyCmd(),
 	)
 }
 
@@ -103,6 +108,39 @@ different block N cannot be re-built/re-proposed since that would result in vali
 	bindRunFlags(cmd, &haloCfg)
 	bindRollbackFlags(cmd.Flags(), &rollCfg)
 	log.BindFlags(cmd.Flags(), &logCfg)
+
+	return cmd
+}
+
+func newConsKeyCmd() *cobra.Command {
+	home := halocfg.DefaultConfig().HomeDir
+
+	cmd := &cobra.Command{
+		Use:   "consensus-pubkey",
+		Short: "Print the consensus public key",
+		Long: "Print the consensus public key of the node used for CometBFT consensus and cross-chain attestations in 33 byte compressed hex format." +
+			"This is equivalent to: cat halo/config/priv_validator_key.json | jq -r .pub_key.value | base64 -d | xxd -ps -c33",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			cfg := cmtcfg.DefaultConfig()
+			cfg.RootDir = home
+
+			file := cfg.PrivValidatorKeyFile()
+			if _, err := os.Stat(file); err != nil {
+				return errors.Wrap(err, "<home>/config/priv_validator_key.json not found", "file", file)
+			}
+
+			key, err := app.LoadCometFilePV(file)
+			if err != nil {
+				return errors.Wrap(err, "load comet file priv validator", "file", file)
+			}
+
+			cmd.Printf("Consensus public key: %x\n", key.PubKey().Bytes())
+
+			return nil
+		},
+	}
+
+	libcmd.BindHomeFlag(cmd.Flags(), &home)
 
 	return cmd
 }
