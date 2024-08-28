@@ -121,6 +121,8 @@ func reconCrossTx(
 		return errors.New("source timestamp after destination", "src", crossTx.SrcTimestamp, "dst", crossTx.DstTimestamp)
 	} else if crossTx.ID != crossTx.ExpectedID() {
 		return errors.New("cross tx id mismatch", "got", crossTx.ID, "want", crossTx.ExpectedID())
+	} else if !crossTx.IsCompleted() {
+		return errors.New("cross tx status not completed", "status", crossTx.Status)
 	}
 
 	return nil

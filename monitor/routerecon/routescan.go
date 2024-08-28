@@ -78,6 +78,13 @@ func queryLatestCrossTx(ctx context.Context, filter filter, next string) (crossT
 		return crossTxJSON{}, "", errors.Wrap(err, "read response body")
 	}
 
+	if resp.StatusCode/http.StatusOK != 1 { // Checking for 2xx status code
+		var errJSON errorJSON
+		_ = json.Unmarshal(bz, &errJSON)
+
+		return crossTxJSON{}, "", errors.New("bad response", "status", resp.Status, "err_code", errJSON.Code, "err_msg", errJSON.Message)
+	}
+
 	var crossTxResp crossTxResponse
 	if err := json.Unmarshal(bz, &crossTxResp); err != nil {
 		return crossTxJSON{}, "", errors.Wrap(err, "decode response")
