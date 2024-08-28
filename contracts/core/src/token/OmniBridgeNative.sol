@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.24;
 
-import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { OmniBridgeCommon } from "./OmniBridgeCommon.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { OmniBridgeL1 } from "./OmniBridgeL1.sol";
 import { ConfLevel } from "../libraries/ConfLevel.sol";
@@ -18,7 +18,7 @@ import { XTypes } from "../libraries/XTypes.sol";
  *          - set _initialized on proxy to 1, to disable the initializer
  *          - set _initialized on implementation to 255, to disabled all initializers
  */
-contract OmniBridgeNative is OwnableUpgradeable {
+contract OmniBridgeNative is OmniBridgeCommon {
     /**
      * @notice Emitted when an account deposits OMNI, bridging it to Ethereum.
      */
@@ -36,14 +36,9 @@ contract OmniBridgeNative is OwnableUpgradeable {
     event Claimed(address indexed claimant, address indexed to, uint256 amount);
 
     /**
-     * @notice Total supply of OMNI tokens minted on L1.
-     */
-    uint256 public constant totalL1Supply = 100_000_000 * 10 ** 18;
-
-    /**
      * @notice xcall gas limit for OmniBridgeL1.withdraw
      */
-    uint64 public constant XCALL_WITHDRAW_GAS_LIMIT = 75_000;
+    uint64 public constant XCALL_WITHDRAW_GAS_LIMIT = 80_000;
 
     /**
      * @notice L1 chain id, configurable so that this contract can be used on testnets.
@@ -89,7 +84,10 @@ contract OmniBridgeNative is OwnableUpgradeable {
      * @param amount    The amount of OMNI to withdraw.
      * @param l1Balance The OMNI balance of the L1 bridge contract, synced on each withdraw.
      */
-    function withdraw(address payor, address to, uint256 amount, uint256 l1Balance) external {
+    function withdraw(address payor, address to, uint256 amount, uint256 l1Balance)
+        external
+        whenNotPaused(ACTION_WITHDRAW)
+    {
         XTypes.MsgContext memory xmsg = omni.xmsg();
 
         require(msg.sender == address(omni), "OmniBridge: not xcall"); // this protects against reentrancy
@@ -108,7 +106,7 @@ contract OmniBridgeNative is OwnableUpgradeable {
     /**
      * @notice Bridge `amount` OMNI to `to` on L1.
      */
-    function bridge(address to, uint256 amount) external payable {
+    function bridge(address to, uint256 amount) external payable whenNotPaused(ACTION_BRIDGE) {
         _bridge(to, amount);
     }
 
@@ -149,7 +147,7 @@ contract OmniBridgeNative is OwnableUpgradeable {
      *      claim for that address on L1. Consider the case wherein the address of the L1 contract that initiated the
      *      withdraw is the same as the address of a contract on Omni deployed and owned by a malicious actor.
      */
-    function claim(address to) external {
+    function claim(address to) external whenNotPaused(ACTION_WITHDRAW) {
         XTypes.MsgContext memory xmsg = omni.xmsg();
 
         require(msg.sender == address(omni), "OmniBridge: not xcall");

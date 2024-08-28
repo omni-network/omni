@@ -167,6 +167,90 @@ contract OmniBridgeL1_Test is Test {
         // log gas, to inform xcall gas limit
         console.log("OmniBridgeL1.withdraw gas used: ", gasUsed);
     }
+
+    function test_pauseBridging() public {
+        address to = makeAddr("to");
+        uint256 amount = 1e18;
+        bytes32 action = b.ACTION_BRIDGE();
+
+        // pause bridging
+        vm.prank(owner);
+        b.pause(action);
+
+        // assert paused
+        assertTrue(b.isPaused(action));
+
+        // bridge reverts
+        vm.expectRevert("OmniBridge: paused");
+        b.bridge(to, amount);
+
+        // unpause bridging
+        vm.prank(owner);
+        b.unpause(action);
+
+        // assert unpaused
+        assertFalse(b.isPaused(action));
+
+        // bridge succeeds
+        vm.expectRevert("OmniBridge: incorrect fee");
+        b.bridge(to, amount);
+    }
+
+    function test_pauseWithdraws() public {
+        address to = makeAddr("to");
+        uint256 amount = 1e18;
+        bytes32 action = b.ACTION_WITHDRAW();
+
+        // pause withdraws
+        vm.prank(owner);
+        b.pause(action);
+
+        // assert paused
+        assertTrue(b.isPaused(action));
+
+        // withdraw reverts
+        vm.expectRevert("OmniBridge: paused");
+        b.withdraw(to, amount);
+
+        // unpause
+        vm.prank(owner);
+        b.unpause(action);
+
+        // assert unpaued
+        assertFalse(b.isPaused(action));
+
+        // no longer paused
+        vm.expectRevert("OmniBridge: not xcall");
+        b.withdraw(to, amount);
+    }
+
+    function test_pauseAll() public {
+        address to = makeAddr("to");
+        uint256 amount = 1e18;
+
+        // pause all
+        vm.prank(owner);
+        b.pause();
+
+        // assert actions paus
+        assertTrue(b.isPaused(b.ACTION_BRIDGE()));
+        assertTrue(b.isPaused(b.ACTION_WITHDRAW()));
+
+        // bridge reverts
+        vm.expectRevert("OmniBridge: paused");
+        b.bridge(to, amount);
+
+        // withdraw reverts
+        vm.expectRevert("OmniBridge: paused");
+        b.withdraw(to, amount);
+
+        // unpause all
+        vm.prank(owner);
+        b.unpause();
+
+        assertFalse(b.isPaused(b.ACTION_BRIDGE()));
+        assertFalse(b.isPaused(b.ACTION_WITHDRAW()));
+    }
 }
 
 contract OmniBridgeL1Harness is OmniBridgeL1 {

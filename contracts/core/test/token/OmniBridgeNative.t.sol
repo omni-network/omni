@@ -22,9 +22,9 @@ contract OmniBridgeNative_Test is Test {
     MockPortal portal;
     OmniBridgeNativeHarness b;
     OmniBridgeL1 l1Bridge;
+    address owner;
 
     uint64 l1ChainId;
-
     uint256 totalSupply = 100_000_000 * 10 ** 18;
 
     function setUp() public {
@@ -32,7 +32,12 @@ contract OmniBridgeNative_Test is Test {
         b = new OmniBridgeNativeHarness();
         l1ChainId = 1;
         l1Bridge = new OmniBridgeL1(makeAddr("token"));
-        b.setupNoAuth(l1ChainId, address(portal), address(l1Bridge));
+
+        owner = makeAddr("owner");
+        b.initialize(owner);
+
+        vm.prank(owner);
+        b.setup(l1ChainId, address(portal), address(l1Bridge));
         vm.deal(address(b), totalSupply);
     }
 
@@ -258,6 +263,105 @@ contract OmniBridgeNative_Test is Test {
         // to has amount
         assertEq(to.balance, amount);
     }
+
+    function test_pauseBridging() public {
+        address to = makeAddr("to");
+        uint256 amount = 1e18;
+        bytes32 action = b.ACTION_BRIDGE();
+
+        // pause bridging
+        vm.prank(owner);
+        b.pause(action);
+
+        // assert paused
+        assertTrue(b.isPaused(action));
+
+        // bridge reverts
+        vm.expectRevert("OmniBridge: paused");
+        b.bridge(to, amount);
+
+        // unpause bridging
+        vm.prank(owner);
+        b.unpause(action);
+
+        // assert unpaused
+        assertFalse(b.isPaused(action));
+
+        // no longer paused
+        vm.expectRevert("OmniBridge: no liquidity");
+        b.bridge(to, amount);
+    }
+
+    function test_pauseWithdraws() public {
+        address payor = makeAddr("payor");
+        address to = makeAddr("to");
+        uint256 amount = 1e18;
+        uint256 l1BridgeBalance = 100e18;
+        bytes32 action = b.ACTION_WITHDRAW();
+
+        // pause withdraws
+        vm.prank(owner);
+        b.pause(action);
+
+        // assert paused
+        assertTrue(b.isPaused(action));
+
+        // withdraw reverts
+        vm.expectRevert("OmniBridge: paused");
+        b.withdraw(payor, to, amount, l1BridgeBalance);
+
+        // claim reverts
+        vm.expectRevert("OmniBridge: paused");
+        b.claim(to);
+
+        // unpause
+        vm.prank(owner);
+        b.unpause(action);
+
+        // assert unpaued
+        assertFalse(b.isPaused(action));
+
+        // no longer paused
+        vm.expectRevert("OmniBridge: not xcall");
+        b.withdraw(payor, to, amount, l1BridgeBalance);
+
+        vm.expectRevert("OmniBridge: not xcall");
+        b.claim(to);
+    }
+
+    function test_pauseAll() public {
+        address payor = makeAddr("payor");
+        address to = makeAddr("to");
+        uint256 amount = 1e18;
+        uint256 l1BridgeBalance = 100e18;
+
+        // pause all
+        vm.prank(owner);
+        b.pause();
+
+        // assert actions paus
+        assertTrue(b.isPaused(b.ACTION_BRIDGE()));
+        assertTrue(b.isPaused(b.ACTION_WITHDRAW()));
+
+        // bridge reverts
+        vm.expectRevert("OmniBridge: paused");
+        b.bridge(to, amount);
+
+        // withdraw reverts
+        vm.expectRevert("OmniBridge: paused");
+        b.withdraw(payor, to, amount, l1BridgeBalance);
+
+        // claim reverts
+        vm.expectRevert("OmniBridge: paused");
+        b.claim(to);
+
+        // unpause all
+        vm.prank(owner);
+        b.unpause();
+
+        assertFalse(b.isPaused(b.ACTION_BRIDGE()));
+        assertFalse(b.isPaused(b.ACTION_WITHDRAW()));
+    }
 }
 
 /**
@@ -265,12 +369,6 @@ contract OmniBridgeNative_Test is Test {
  * @notice A harness for testing OmniBridgeNative that exposes setup and state modifiers.
  */
 contract OmniBridgeNativeHarness is OmniBridgeNative {
-    function setupNoAuth(uint64 l1ChainId_, address omni_, address l1Bridge_) public {
-        l1ChainId = l1ChainId_;
-        omni = IOmniPortal(omni_);
-        l1Bridge = l1Bridge_;
-    }
-
     function setL1BridgeBalance(uint256 balance) public {
         l1BridgeBalance = balance;
     }

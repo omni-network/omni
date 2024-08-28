@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.24;
 
-import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { OmniBridgeCommon } from "./OmniBridgeCommon.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { XTypes } from "../libraries/XTypes.sol";
 import { ConfLevel } from "../libraries/ConfLevel.sol";
@@ -14,7 +14,7 @@ import { OmniBridgeNative } from "./OmniBridgeNative.sol";
  * @notice The Ethereum side of Omni's native token bridge. Partner to OmniBridgeNative, which is
  *         deployed to Omni's EVM.
  */
-contract OmniBridgeL1 is OwnableUpgradeable {
+contract OmniBridgeL1 is OmniBridgeCommon {
     /**
      * @notice Emitted when an account deposits OMNI, bridging it to Ethereum.
      */
@@ -26,14 +26,9 @@ contract OmniBridgeL1 is OwnableUpgradeable {
     event Withdraw(address indexed to, uint256 amount);
 
     /**
-     * @notice Total supply of OMNI tokens minted on L1.
-     */
-    uint256 public constant totalL1Supply = 100_000_000 * 10 ** 18;
-
-    /**
      * @notice xcall gas limit for OmniBridgeNative.withdraw
      */
-    uint64 public constant XCALL_WITHDRAW_GAS_LIMIT = 75_000;
+    uint64 public constant XCALL_WITHDRAW_GAS_LIMIT = 80_000;
 
     /**
      * @notice The OMNI token contract.
@@ -60,7 +55,7 @@ contract OmniBridgeL1 is OwnableUpgradeable {
      * @dev Omni native <> L1 bridge accounting rules ensure that this contract will always
      *     have enough balance to cover the withdrawal.
      */
-    function withdraw(address to, uint256 amount) external {
+    function withdraw(address to, uint256 amount) external whenNotPaused(ACTION_WITHDRAW) {
         XTypes.MsgContext memory xmsg = omni.xmsg();
 
         require(msg.sender == address(omni), "OmniBridge: not xcall");
@@ -75,7 +70,7 @@ contract OmniBridgeL1 is OwnableUpgradeable {
     /**
      * @notice Bridge `amount` OMNI to `to` on Omni's EVM.
      */
-    function bridge(address to, uint256 amount) external payable {
+    function bridge(address to, uint256 amount) external payable whenNotPaused(ACTION_BRIDGE) {
         _bridge(msg.sender, to, amount);
     }
 

@@ -13,7 +13,7 @@ import { XBlockMerkleProof } from "../libraries/XBlockMerkleProof.sol";
 import { XTypes } from "../libraries/XTypes.sol";
 import { Quorum } from "../libraries/Quorum.sol";
 import { ConfLevel } from "../libraries/ConfLevel.sol";
-import { PausableUpgradeable } from "../utils/Pausable.sol";
+import { PausableUpgradeable } from "../utils/PausableUpgradeable.sol";
 
 import { OmniPortalConstants } from "./OmniPortalConstants.sol";
 import { OmniPortalStorage } from "./OmniPortalStorage.sol";
