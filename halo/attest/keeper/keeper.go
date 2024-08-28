@@ -972,39 +972,8 @@ func (k *Keeper) deleteBefore(ctx context.Context, height uint64, consensusID ui
 			continue // Skip deleting finalized attestation.
 		}
 
-		// Instrument votes
-		{
-			chainVerName := k.namer(att.XChainVersion())
-			sigs, err := k.getSigs(ctx, att.GetId())
-			if err != nil {
-				return errors.Wrap(err, "get att sigs")
-			}
-
-			included := make(map[common.Address]bool)
-			for _, sig := range sigs {
-				addr := common.BytesToAddress(sig.GetValidatorAddress())
-				included[addr] = true
-				if att.GetStatus() == uint32(Status_Pending) {
-					discardedVotesCounter.WithLabelValues(addr.Hex(), chainVerName).Inc()
-				} else {
-					approvedVotesCounter.WithLabelValues(addr.Hex(), chainVerName).Inc()
-				}
-			}
-
-			if att.GetStatus() == uint32(Status_Approved) {
-				valset, err := k.valProvider.ValidatorSet(ctx, &vtypes.ValidatorSetRequest{Id: att.GetValidatorSetId()})
-				if err != nil {
-					return errors.Wrap(err, "validator set")
-				}
-
-				for _, val := range valset.Validators {
-					if addr, err := val.EthereumAddress(); err != nil {
-						return errors.Wrap(err, "validator address")
-					} else if !included[addr] {
-						missingVotesCounter.WithLabelValues(addr.Hex(), chainVerName).Inc()
-					}
-				}
-			}
+		if err := k.instrumentVotes(ctx, att); err != nil {
+			return errors.Wrap(err, "instrument votes")
 		}
 
 		// Delete signatures
@@ -1016,6 +985,53 @@ func (k *Keeper) deleteBefore(ctx context.Context, height uint64, consensusID ui
 		err = k.attTable.Delete(ctx, att)
 		if err != nil {
 			return errors.Wrap(err, "delete att")
+		}
+	}
+
+	return nil
+}
+
+// instrumentVotes tracks basic voter performance by instrumenting votes.
+// It tracks whether validators are voting vs voting late vs not voting.
+func (k *Keeper) instrumentVotes(ctx context.Context, att *Attestation) error {
+	// Votes only count towards rewards if attestation approved and not overridden.
+	rewardVoters := att.GetStatus() == uint32(Status_Approved) && att.GetFinalizedAttId() == 0
+
+	chainVerName := k.namer(att.XChainVersion())
+	sigs, err := k.getSigs(ctx, att.GetId())
+	if err != nil {
+		return errors.Wrap(err, "get att sigs")
+	}
+
+	included := make(map[common.Address]bool)
+	// Mark attestation on-chain votes as either approved or discarded (based on rewardVoters).
+	for _, sig := range sigs {
+		addr := common.BytesToAddress(sig.GetValidatorAddress())
+		included[addr] = true
+		if rewardVoters {
+			approvedVotesCounter.WithLabelValues(addr.Hex(), chainVerName).Inc()
+		} else {
+			discardedVotesCounter.WithLabelValues(addr.Hex(), chainVerName).Inc()
+		}
+	}
+
+	// Mark missing votes if attestation is approved (and not overridden).
+	if rewardVoters {
+		if att.GetValidatorSetId() == 0 { // Sanity check
+			return errors.New("missing validator set id for approved non-overridden attestation [BUG]", "att_id", att.GetId())
+		}
+
+		valset, err := k.valProvider.ValidatorSet(ctx, &vtypes.ValidatorSetRequest{Id: att.GetValidatorSetId()})
+		if err != nil {
+			return errors.Wrap(err, "validator set", "id", att.GetValidatorSetId())
+		}
+
+		for _, val := range valset.Validators {
+			if addr, err := val.EthereumAddress(); err != nil {
+				return errors.Wrap(err, "validator address")
+			} else if !included[addr] {
+				missingVotesCounter.WithLabelValues(addr.Hex(), chainVerName).Inc()
+			}
 		}
 	}
 
