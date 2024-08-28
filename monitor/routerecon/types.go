@@ -55,6 +55,13 @@ func (c *chainID) UnmarshalJSON(bz []byte) error {
 	return nil
 }
 
+type errorJSON struct {
+	StatusCode int    `json:"statusCode"`
+	Code       string `json:"code"`
+	Error      string `json:"error"`
+	Message    string `json:"message"`
+}
+
 type crossTxJSON struct {
 	ID             string         `json:"id"` // sha256("omni#{srcChainId}#{dstChainId}#{shardId}#{offset}")
 	Type           string         `json:"type"`
