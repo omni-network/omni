@@ -16,6 +16,7 @@ import (
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/test/e2e/pkg/exec"
@@ -26,6 +27,8 @@ import (
 )
 
 const ProviderName = "docker"
+
+const defaultGethVerbosity = 3
 
 // composeTmpl is our own custom docker compose template. This differs from cometBFT's.
 //
@@ -90,6 +93,10 @@ func (p *Provider) Setup() error {
 		Prometheus:     p.testnet.Prometheus,
 		Monitor:        true,
 	}
+	if p.testnet.Network == netconf.Staging {
+		def.gethVerbosity = 5 // TODO(corver): Revert to info logs after debugging snapsync issues.
+	}
+
 	def = SetImageTags(def, p.testnet.Manifest, p.omniTag)
 
 	bz, err := GenerateComposeFile(def)
@@ -173,6 +180,7 @@ type ComposeDef struct {
 	NetworkCIDR    string
 	BindAll        bool
 	UpgradeVersion string
+	gethVerbosity  int // # Geth log level (1=error,2=warn,3=info(default),4=debug,5=trace)
 
 	Nodes    []*e2e.Node
 	OmniEVMs []types.OmniEVM
@@ -188,6 +196,14 @@ type ComposeDef struct {
 
 func (ComposeDef) GethTag() string {
 	return geth.Version
+}
+
+func (c ComposeDef) GethVerbosity() int {
+	if c.gethVerbosity == 0 {
+		return defaultGethVerbosity // InfoLevel
+	}
+
+	return c.gethVerbosity
 }
 
 // NodeOmniEVMs returns a map of node name to OmniEVM instance name; map[node_name]omni_evm.
