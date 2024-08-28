@@ -9,6 +9,7 @@ import (
 // ValidatorProvider is the interface that provides the active set of validators at a given height.
 type ValidatorProvider interface {
 	ActiveSetByHeight(ctx context.Context, height uint64) (*ValidatorSetResponse, error)
+	ValidatorSet(ctx context.Context, req *ValidatorSetRequest) (*ValidatorSetResponse, error)
 }
 
 type RegisterPortalRequest struct {

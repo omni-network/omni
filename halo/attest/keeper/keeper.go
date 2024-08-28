@@ -316,6 +316,7 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 		}
 
 		for _, sig := range toDelete {
+			discardedVotesCounter.WithLabelValues(common.BytesToAddress(sig.GetValidatorAddress()).Hex(), chainVerName).Inc()
 			err := k.sigTable.Delete(ctx, sig)
 			if err != nil {
 				return errors.Wrap(err, "delete sig")
@@ -969,6 +970,41 @@ func (k *Keeper) deleteBefore(ctx context.Context, height uint64, consensusID ui
 		}
 		if fuzzyDepsFound {
 			continue // Skip deleting finalized attestation.
+		}
+
+		// Instrument votes
+		{
+			chainVerName := k.namer(att.XChainVersion())
+			sigs, err := k.getSigs(ctx, att.GetId())
+			if err != nil {
+				return errors.Wrap(err, "get att sigs")
+			}
+
+			included := make(map[common.Address]bool)
+			for _, sig := range sigs {
+				addr := common.BytesToAddress(sig.GetValidatorAddress())
+				included[addr] = true
+				if att.GetStatus() == uint32(Status_Pending) {
+					discardedVotesCounter.WithLabelValues(addr.Hex(), chainVerName).Inc()
+				} else {
+					approvedVotesCounter.WithLabelValues(addr.Hex(), chainVerName).Inc()
+				}
+			}
+
+			if att.GetStatus() == uint32(Status_Approved) {
+				valset, err := k.valProvider.ValidatorSet(ctx, &vtypes.ValidatorSetRequest{Id: att.GetValidatorSetId()})
+				if err != nil {
+					return errors.Wrap(err, "validator set")
+				}
+
+				for _, val := range valset.Validators {
+					if addr, err := val.EthereumAddress(); err != nil {
+						return errors.Wrap(err, "validator address")
+					} else if !included[addr] {
+						missingVotesCounter.WithLabelValues(addr.Hex(), chainVerName).Inc()
+					}
+				}
+			}
 		}
 
 		// Delete signatures

@@ -205,6 +205,21 @@ func (mr *MockValProviderMockRecorder) ActiveSetByHeight(ctx, height any) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ActiveSetByHeight", reflect.TypeOf((*MockValProvider)(nil).ActiveSetByHeight), ctx, height)
 }
 
+// ValidatorSet mocks base method.
+func (m *MockValProvider) ValidatorSet(ctx context.Context, req *types1.ValidatorSetRequest) (*types1.ValidatorSetResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ValidatorSet", ctx, req)
+	ret0, _ := ret[0].(*types1.ValidatorSetResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ValidatorSet indicates an expected call of ValidatorSet.
+func (mr *MockValProviderMockRecorder) ValidatorSet(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidatorSet", reflect.TypeOf((*MockValProvider)(nil).ValidatorSet), ctx, req)
+}
+
 // MockChainNamer is a mock of ChainNamer interface.
 type MockChainNamer struct {
 	ctrl     *gomock.Controller
