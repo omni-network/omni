@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"encoding/hex"
-
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
@@ -35,7 +33,6 @@ func newCreateKeyCmd() *cobra.Command {
 				"type", cfg.Type,
 				"file", cfg.PrivateKeyFile,
 				"address", crypto.PubkeyToAddress(privKey.PublicKey).Hex(),
-				"pubkey", hex.EncodeToString(crypto.CompressPubkey(&privKey.PublicKey)),
 			)
 			log.Info(cmd.Context(), "🚧 Remember to backup this key 🚧")
 

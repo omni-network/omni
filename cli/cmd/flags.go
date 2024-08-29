@@ -6,10 +6,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	flagPrivateKeyFile = "private-key-file"
+	flagConsPubKeyHex  = "consensus-pubkey-hex"
+	flagSelfDelegation = "self-delegation"
+	flagConfig         = "config-file"
+	flagOperator       = "operator"
+	flagRPCURL         = "rpc-url"
+	flagAddress        = "address"
+	flagType           = "type"
+)
+
 func bindRegConfig(cmd *cobra.Command, cfg *RegConfig) {
 	bindAVSAddress(cmd, &cfg.AVSAddr)
 
-	const flagConfig = "config-file"
 	cmd.Flags().StringVar(&cfg.ConfigFile, flagConfig, cfg.ConfigFile, "Path to the Eigen-Layer yaml configuration file")
 	_ = cmd.MarkFlagRequired(flagConfig)
 }
@@ -35,7 +45,6 @@ func bindDevnetAVSAllowConfig(cmd *cobra.Command, cfg *devnetAllowConfig) {
 	bindRPCURL(cmd, &cfg.RPCURL)
 	bindAVSAddress(cmd, &cfg.AVSAddr)
 
-	const flagOperator = "operator"
 	cmd.Flags().StringVar(&cfg.OperatorAddr, flagOperator, cfg.OperatorAddr, "Operator address to allow")
 	_ = cmd.MarkFlagRequired(flagOperator)
 }
@@ -43,37 +52,39 @@ func bindDevnetAVSAllowConfig(cmd *cobra.Command, cfg *devnetAllowConfig) {
 func bindDevnetFundConfig(cmd *cobra.Command, d *devnetFundConfig) {
 	bindRPCURL(cmd, &d.RPCURL)
 
-	const flagAddress = "address"
 	cmd.Flags().StringVar(&d.Address, flagAddress, d.Address, "Address to fund")
 	_ = cmd.MarkFlagRequired(flagAddress)
 }
 
 func bindRPCURL(cmd *cobra.Command, rpcURL *string) {
-	const flagRPCURL = "rpc-url"
 	cmd.Flags().StringVar(rpcURL, flagRPCURL, *rpcURL, "URL of the eth-json RPC server")
 	_ = cmd.MarkFlagRequired(flagRPCURL)
 }
 
+func bindUnjailConfig(cmd *cobra.Command, cfg *unjailConfig) {
+	netconf.BindFlag(cmd.Flags(), &cfg.Network)
+	bindPrivateKeyFile(cmd, &cfg.PrivateKeyFile)
+	_ = cmd.MarkFlagRequired("network")
+}
+
 func bindCreateValConfig(cmd *cobra.Command, cfg *createValConfig) {
 	netconf.BindFlag(cmd.Flags(), &cfg.Network)
+	bindPrivateKeyFile(cmd, &cfg.PrivateKeyFile)
 
-	const (
-		flagPrivateKeyFile = "private-key-file"
-		flagConsPubKeyHex  = "consensus-pubkey-hex"
-		flagSelfDelegation = "self-delegation"
-	)
-	cmd.Flags().StringVar(&cfg.PrivateKeyFile, flagPrivateKeyFile, cfg.PrivateKeyFile, "Path to the insecure operator private key file")
 	cmd.Flags().StringVar(&cfg.ConsensusPubKeyHex, flagConsPubKeyHex, cfg.ConsensusPubKeyHex, "Hex-encoded validator consensus public key")
 	cmd.Flags().Uint64Var(&cfg.SelfDelegation, flagSelfDelegation, cfg.SelfDelegation, "Self-delegation amount in OMNI (minimum 100 OMNI)")
 
-	_ = cmd.MarkFlagRequired(flagPrivateKeyFile)
 	_ = cmd.MarkFlagRequired(flagConsPubKeyHex)
 	_ = cmd.MarkFlagRequired(flagSelfDelegation)
 	_ = cmd.MarkFlagRequired("network")
 }
 
+func bindPrivateKeyFile(cmd *cobra.Command, privateKeyFile *string) {
+	cmd.Flags().StringVar(privateKeyFile, flagPrivateKeyFile, *privateKeyFile, "Path to the private key file")
+	_ = cmd.MarkFlagRequired(flagPrivateKeyFile)
+}
+
 func bindCreateKeyConfig(cmd *cobra.Command, cfg *createKeyConfig) {
-	const flagType = "type"
 	cmd.Flags().StringVar((*string)(&cfg.Type), flagType, string(cfg.Type), "Type of key to create")
 	cmd.Flags().StringVar(&cfg.PrivateKeyFile, "output-file", cfg.PrivateKeyFile, "Path to output private key file")
 }

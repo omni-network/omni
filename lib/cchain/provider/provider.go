@@ -21,7 +21,10 @@ import (
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	upgradetypes "cosmossdk.io/x/upgrade/types"
+	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -33,6 +36,9 @@ type latestFunc func(ctx context.Context, chainVer xchain.ChainVersion) (xchain.
 type windowFunc func(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64) (int, error)
 type portalBlockFunc func(ctx context.Context, attestOffset uint64, latest bool) (*ptypes.BlockResponse, bool, error)
 type networkFunc func(ctx context.Context, networkID uint64, latest bool) (*rtypes.NetworkResponse, bool, error)
+type valFunc func(ctx context.Context, operator common.Address) (stypes.Validator, bool, error)
+type valsFunc func(ctx context.Context) ([]stypes.Validator, error)
+type rewardsFunc func(ctx context.Context, operator common.Address) (float64, bool, error)
 type valsetFunc func(ctx context.Context, valSetID uint64, latest bool) (valSetResponse, bool, error)
 type headerFunc func(ctx context.Context, height *int64) (*ctypes.ResultHeader, error)
 type chainIDFunc func(ctx context.Context) (uint64, error)
@@ -53,6 +59,9 @@ type Provider struct {
 	latest      latestFunc
 	window      windowFunc
 	valset      valsetFunc
+	val         valFunc
+	vals        valsFunc
+	rewards     rewardsFunc
 	chainID     chainIDFunc
 	header      headerFunc
 	portalBlock portalBlockFunc
@@ -102,6 +111,18 @@ func (p Provider) WindowCompare(ctx context.Context, chainVer xchain.ChainVersio
 func (p Provider) ValidatorSet(ctx context.Context, valSetID uint64) ([]cchain.Validator, bool, error) {
 	resp, ok, err := p.valset(ctx, valSetID, false)
 	return resp.Validators, ok, err
+}
+
+func (p Provider) Validator(ctx context.Context, operator common.Address) (stypes.Validator, bool, error) {
+	return p.val(ctx, operator)
+}
+
+func (p Provider) Validators(ctx context.Context) ([]stypes.Validator, error) {
+	return p.vals(ctx)
+}
+
+func (p Provider) Rewards(ctx context.Context, operator common.Address) (float64, bool, error) {
+	return p.rewards(ctx, operator)
 }
 
 func (p Provider) GenesisFiles(ctx context.Context) (execution []byte, consensus []byte, err error) { //nolint:nonamedreturns // Disambiguate identical return types

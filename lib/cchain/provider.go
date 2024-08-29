@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	utypes "cosmossdk.io/x/upgrade/types"
+	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // ProviderCallback is the callback function signature that will be called with each approved attestation per
@@ -55,6 +56,15 @@ type Provider interface {
 	// ValidatorSet returns the validators for the given validator set ID or false if none exist or an error.
 	// Note the genesis validator set has ID 1.
 	ValidatorSet(ctx context.Context, valSetID uint64) ([]Validator, bool, error)
+
+	// Validator returns the staking module validator by operator address from latest height.
+	Validator(ctx context.Context, operator common.Address) (stypes.Validator, bool, error)
+
+	// Validators returns the current staking module validators from latest height.
+	Validators(ctx context.Context) ([]stypes.Validator, error)
+
+	// Rewards returns the staking module rewards for the given operator address from latest height.
+	Rewards(ctx context.Context, operator common.Address) (float64, bool, error)
 
 	// XBlock returns the portal module block for the given blockHeight/attestOffset (or latest) or false if none exist or an error.
 	XBlock(ctx context.Context, heightAndOffset uint64, latest bool) (xchain.Block, bool, error)
