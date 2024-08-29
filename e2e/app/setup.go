@@ -357,17 +357,12 @@ func isPublicNode(network netconf.ID, mode types.Mode) bool {
 		return false
 	}
 
-	if mode == types.ModeSeed || mode == types.ModeFull {
-		// Only seeds and fullnodes allow external peers to connect to them.
+	if mode == types.ModeSeed || mode == types.ModeFull || mode == types.ModeArchive {
+		// Only seeds and fullnodes and archives allow external peers to connect to them.
 		return true
 	}
 
-	if network == netconf.Staging && mode == types.ModeArchive {
-		// Staging fullnode1 is an archive node, but we need to connect to it.
-		return true
-	}
-
-	// Validators and archive nodes are "secured" and only allow internal peers to connect to them.
+	// Validators nodes are "secured" and only allow internal peers to connect to them.
 
 	return false
 }
@@ -405,14 +400,10 @@ func writeHaloConfig(
 ) error {
 	cfg := halocfg.DefaultConfig()
 
-	switch mode {
-	case types.ModeArchive:
+	if mode == types.ModeArchive {
 		cfg.PruningOption = "nothing"
 		// Setting this to 0 retains all blocks
 		cfg.MinRetainBlocks = 0
-	default:
-		cfg.PruningOption = "default"
-		cfg.MinRetainBlocks = 1
 	}
 
 	cfg.Network = network

@@ -30,13 +30,18 @@ import (
 	_ "embed"
 )
 
-const gethVerbosity = 3 // Geth log level (1=error,2=warn,3=info,4=debug,5=trace)
+const (
+	gethVerbosityInfo  = 3 // Geth log level (1=error,2=warn,3=info,4=debug,5=trace)
+	gethVerbosityDebug = 4
+)
 
 type initConfig struct {
 	Network netconf.ID
 	Home    string
 	Moniker string
 	Clean   bool
+	Archive bool
+	Debug   bool
 }
 
 func (c initConfig) Verify() error {
@@ -107,35 +112,46 @@ func initNodes(ctx context.Context, cfg initConfig) error {
 		return errors.Wrap(err, "download genesis")
 	}
 
-	err := gethInit(ctx, cfg.Network, filepath.Join(cfg.Home, "geth"), cfg.Moniker)
+	err := gethInit(ctx, cfg, filepath.Join(cfg.Home, "geth"))
 	if err != nil {
 		return errors.Wrap(err, "init geth")
+	}
+
+	logLevel := log.LevelInfo
+	if cfg.Debug {
+		logLevel = log.LevelDebug
 	}
 
 	err = halocmd.InitFiles(ctx, halocmd.InitConfig{
 		HomeDir:     filepath.Join(cfg.Home, "halo"),
 		Moniker:     cfg.Moniker,
 		Network:     cfg.Network,
-		TrustedSync: true,
+		TrustedSync: !cfg.Archive, // Don't state sync if archive
 		AddrBook:    true,
-		HaloCfgFunc: func(cfg *halocfg.Config) {
-			cfg.EngineEndpoint = "http://omni_evm:8551"
-			cfg.EngineJWTFile = "/geth/jwtsecret"
-			cfg.RPCEndpoints = xchain.RPCEndpoints{cfg.Network.Static().OmniExecutionChainName(): "http://omni_evm:8545"}
+		HaloCfgFunc: func(haloCfg *halocfg.Config) {
+			haloCfg.EngineEndpoint = "http://omni_evm:8551"
+			haloCfg.EngineJWTFile = "/geth/jwtsecret"
+			haloCfg.RPCEndpoints = xchain.RPCEndpoints{cfg.Network.Static().OmniExecutionChainName(): "http://omni_evm:8545"}
+			if cfg.Archive {
+				haloCfg.PruningOption = "nothing"
+				// Setting this to 0 retains all blocks
+				haloCfg.MinRetainBlocks = 0
+			}
 		},
-		CometCfgFunc: func(cfg *cmtconfig.Config) {
-			cfg.LogLevel = "info"
-			cfg.Instrumentation.Prometheus = true
+		CometCfgFunc: func(cmtCfg *cmtconfig.Config) {
+			cmtCfg.LogLevel = logLevel
+			cmtCfg.Instrumentation.Prometheus = true
 		},
-		LogCfgFunc: func(cfg *log.Config) {
-			cfg.Color = log.ColorForce
+		LogCfgFunc: func(logCfg *log.Config) {
+			logCfg.Color = log.ColorForce
+			logCfg.Level = logLevel
 		},
 	})
 	if err != nil {
 		return errors.Wrap(err, "init halo")
 	}
 
-	err = writeComposeFile(ctx, cfg.Home)
+	err = writeComposeFile(ctx, cfg)
 	if err != nil {
 		return errors.Wrap(err, "write compose file")
 	}
@@ -169,7 +185,7 @@ func maybeDownloadGenesis(ctx context.Context, network netconf.ID) error {
 	return netconf.SetEphemeralGenesis(network, execution, consensus)
 }
 
-func writeComposeFile(ctx context.Context, home string) error {
+func writeComposeFile(ctx context.Context, cfg initConfig) error {
 	tmpl, err := template.New("compose").Parse(string(composeTpl))
 	if err != nil {
 		return errors.Wrap(err, "parse template")
@@ -181,30 +197,37 @@ func writeComposeFile(ctx context.Context, home string) error {
 		return errors.New("missing git commit (go install first?)")
 	}
 
+	verbosity := gethVerbosityInfo
+	if cfg.Debug {
+		verbosity = gethVerbosityDebug
+	}
+
 	var buf bytes.Buffer
 	err = tmpl.Execute(&buf, struct {
 		HaloTag       string
 		GethTag       string
 		GethVerbosity int
+		GethArchive   bool
 	}{
 		HaloTag:       commit,
 		GethTag:       geth.Version,
-		GethVerbosity: gethVerbosity,
+		GethVerbosity: verbosity,
+		GethArchive:   cfg.Archive,
 	})
 	if err != nil {
 		return errors.Wrap(err, "execute template")
 	}
 
-	if err := os.WriteFile(filepath.Join(home, "compose.yml"), buf.Bytes(), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(cfg.Home, "compose.yml"), buf.Bytes(), 0o644); err != nil {
 		return errors.Wrap(err, "writing compose file")
 	}
 
-	log.Info(ctx, "Generated docker compose file", "path", filepath.Join(home, "compose.yml"), "geth_version", geth.Version, "halo_version", commit)
+	log.Info(ctx, "Generated docker compose file", "path", filepath.Join(cfg.Home, "compose.yml"), "geth_version", geth.Version, "halo_version", commit)
 
 	return nil
 }
 
-func gethInit(ctx context.Context, network netconf.ID, dir string, moniker string) error {
+func gethInit(ctx context.Context, cfg initConfig, dir string) error {
 	log.Info(ctx, "Initializing geth", "path", dir)
 
 	// Create the dir, ensuring it doesn't already exist
@@ -214,12 +237,12 @@ func gethInit(ctx context.Context, network netconf.ID, dir string, moniker strin
 
 	// Write genesis.json file
 	{
-		genesisJSON := network.Static().ExecutionGenesisJSON
+		genesisJSON := cfg.Network.Static().ExecutionGenesisJSON
 		if len(genesisJSON) == 0 {
-			return errors.New("genesis json is empty for network", "network", network)
+			return errors.New("genesis json is empty for network", "network", cfg.Network)
 		}
 		if err := os.WriteFile(filepath.Join(dir, "genesis.json"), genesisJSON, 0o644); err != nil {
-			return errors.Wrap(err, "writing genesis file", "network", network)
+			return errors.Wrap(err, "writing genesis file", "network", cfg.Network)
 		}
 
 		log.Info(ctx, "Generated geth genesis", "path", filepath.Join(dir, "genesis.json"))
@@ -228,22 +251,22 @@ func gethInit(ctx context.Context, network netconf.ID, dir string, moniker strin
 	// Write config.toml file
 	{
 		var bootnodes []*enode.Node
-		for _, seed := range network.Static().ExecutionSeeds() {
+		for _, seed := range cfg.Network.Static().ExecutionSeeds() {
 			node, err := enode.ParseV4(seed)
 			if err != nil {
 				return errors.Wrap(err, "parsing seed", "seed", seed)
 			}
 			bootnodes = append(bootnodes, node)
 		}
-		cfg := geth.Config{
-			Moniker:      moniker,
-			ChainID:      network.Static().OmniExecutionChainID,
-			IsArchive:    false,
+		gethCfg := geth.Config{
+			Moniker:      cfg.Moniker,
+			ChainID:      cfg.Network.Static().OmniExecutionChainID,
+			IsArchive:    cfg.Archive,
 			BootNodes:    bootnodes,
 			TrustedNodes: nil,
 		}
-		if err := geth.WriteConfigTOML(cfg, filepath.Join(dir, "config.toml")); err != nil {
-			return errors.Wrap(err, "writing config.toml", "network", network)
+		if err := geth.WriteConfigTOML(gethCfg, filepath.Join(dir, "config.toml")); err != nil {
+			return errors.Wrap(err, "writing config.toml", "network", cfg.Network)
 		}
 
 		log.Info(ctx, "Generated geth config", "path", filepath.Join(dir, "config.toml"))
@@ -266,11 +289,16 @@ func gethInit(ctx context.Context, network netconf.ID, dir string, moniker strin
 	// Run geth init via docker
 	{
 		image := "ethereum/client-go:" + geth.Version
+		stateScheme := "path"
+		if cfg.Archive {
+			stateScheme = "hash"
+		}
 		dockerArgs := []string{"run",
 			"-v", dir + ":/geth",
 			image, "--",
 			"init",
 			"--datadir=/geth",
+			"--state.scheme=" + stateScheme,
 			"/geth/genesis.json",
 		}
 

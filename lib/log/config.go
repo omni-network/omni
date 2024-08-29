@@ -23,12 +23,12 @@ const (
 
 //nolint:gochecknoglobals // Static mapping.
 var (
-	levelDebug = strings.ToLower(slog.LevelDebug.String())
-	levelInfo  = strings.ToLower(slog.LevelInfo.String())
+	LevelDebug = strings.ToLower(slog.LevelDebug.String())
+	LevelInfo  = strings.ToLower(slog.LevelInfo.String())
 	levelWarn  = strings.ToLower(slog.LevelWarn.String())
 	levelError = strings.ToLower(slog.LevelError.String())
 
-	levels = []string{levelDebug, levelInfo, levelWarn, levelError}
+	levels = []string{LevelDebug, LevelInfo, levelWarn, levelError}
 )
 
 //nolint:gochecknoglobals // Static mapping.
@@ -49,7 +49,7 @@ var colors = map[string]termenv.Profile{
 // DefaultConfig returns a default config.
 func DefaultConfig() Config {
 	return Config{
-		Level:  levelInfo,
+		Level:  LevelInfo,
 		Color:  ColorAuto,
 		Format: FormatConsole,
 	}
