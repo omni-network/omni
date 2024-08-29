@@ -50,7 +50,7 @@ contract OmniGasStation is XAppUpgradeable, OwnableUpgradeable, PausableUpgradea
         uint256 settled = fueled[recipient][xmsg.sourceChainId];
 
         // If already settled, revert
-        require(owed >= settled, "GasStation: already funded");
+        require(owed > settled, "GasStation: already funded");
 
         // Transfer the difference
         (bool success,) = recipient.call{ value: owed - settled }("");
@@ -62,9 +62,12 @@ contract OmniGasStation is XAppUpgradeable, OwnableUpgradeable, PausableUpgradea
     }
 
     /// @notice Set the pump addr for a chain
-    function setPump(uint64 chainID, address addr) external onlyOwner {
-        pumps[chainID] = addr;
-        emit GasPumpAdded(chainID, addr);
+    function setPump(uint64 chainId, address addr) external onlyOwner {
+        require(addr != address(0), "GasStation: zero addr");
+        require(chainId != 0, "GasStation: zero chainId");
+
+        pumps[chainId] = addr;
+        emit GasPumpAdded(chainId, addr);
     }
 
     /// @notice Return true if `chainID` has a registered pump at `addr`
