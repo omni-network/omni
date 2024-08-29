@@ -10,6 +10,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
+	"github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -17,6 +18,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
@@ -120,6 +122,20 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 		return err
 	}
 
+	cprov, err := provider.Dial(cfg.Network)
+	if err != nil {
+		return err
+	}
+
+	if _, ok, err = cprov.Validator(ctx, opAddr); err != nil {
+		return err
+	} else if ok {
+		return &CliError{
+			Msg:     "Operator address already a validator: " + opAddr.Hex(),
+			Suggest: "Ensure correct operator address",
+		}
+	}
+
 	backend, err := ethbackend.NewBackend(chainMeta.Name, chainID, chainMeta.BlockPeriod, ethCl, opPrivKey)
 	if err != nil {
 		return err
@@ -165,13 +181,132 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 		return errors.Wrap(err, "create validator")
 	}
 
-	_, err = backend.WaitMined(ctx, tx)
+	rec, err := backend.WaitMined(ctx, tx)
 	if err != nil {
 		return errors.Wrap(err, "wait mined")
 	}
 
 	link := fmt.Sprintf("https://%s.omniscan.network/tx/%s", cfg.Network, tx.Hash().Hex())
-	log.Info(ctx, "🎉 Create-validator transaction created and included on-chain", "link", link)
+	log.Info(ctx, "🎉 Create-validator transaction sent and included on-chain", "link", link, "block", rec.BlockNumber.Uint64())
+
+	return nil
+}
+
+func newUnjailCmd() *cobra.Command {
+	var cfg unjailConfig
+
+	cmd := &cobra.Command{
+		Use:   "unjail",
+		Short: "Unjail a validator",
+		Long: "Sign and broadcast a unjail transaction that unjails a jailed validator. " +
+			"This transaction must be sent by the operator address and costs 0.1 OMNI.",
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if err := cfg.Verify(); err != nil {
+				return errors.Wrap(err, "verify flags")
+			}
+
+			err := unjailValidator(cmd.Context(), cfg)
+			if err != nil {
+				return errors.Wrap(err, "unjail")
+			}
+
+			return nil
+		},
+	}
+
+	bindUnjailConfig(cmd, &cfg)
+
+	return cmd
+}
+
+type unjailConfig struct {
+	Network        netconf.ID
+	PrivateKeyFile string
+}
+
+func (c unjailConfig) Verify() error {
+	if c.PrivateKeyFile == "" {
+		return errors.New("required flag --private-key-file not set")
+	}
+
+	if err := c.Network.Verify(); err != nil {
+		return errors.Wrap(err, "verify --network flag")
+	}
+
+	return nil
+}
+
+func unjailValidator(ctx context.Context, cfg unjailConfig) error {
+	opPrivKey, err := crypto.LoadECDSA(cfg.PrivateKeyFile)
+	if err != nil {
+		return errors.Wrap(err, "load private key")
+	}
+	opAddr := crypto.PubkeyToAddress(opPrivKey.PublicKey)
+
+	chainID := cfg.Network.Static().OmniExecutionChainID
+	chainMeta, ok := evmchain.MetadataByID(chainID)
+	if !ok {
+		return errors.New("chain metadata not found")
+	}
+
+	ethCl, err := ethclient.Dial(chainMeta.Name, cfg.Network.Static().ExecutionRPC())
+	if err != nil {
+		return err
+	}
+
+	cprov, err := provider.Dial(cfg.Network)
+	if err != nil {
+		return err
+	}
+
+	if val, ok, err := cprov.Validator(ctx, opAddr); err != nil {
+		return err
+	} else if !ok {
+		return &CliError{
+			Msg:     "Operator address not a validator: " + opAddr.Hex(),
+			Suggest: "Ensure operator address is a validator",
+		}
+	} else if !val.IsJailed() {
+		return &CliError{
+			Msg:     "Validator not jailed: " + opAddr.Hex(),
+			Suggest: "Ensure validator is jailed before unjailing",
+		}
+	}
+
+	backend, err := ethbackend.NewBackend(chainMeta.Name, chainID, chainMeta.BlockPeriod, ethCl, opPrivKey)
+	if err != nil {
+		return err
+	}
+
+	contract, err := bindings.NewSlashing(common.HexToAddress(predeploys.Slashing), backend)
+	if err != nil {
+		return err
+	}
+
+	fee, err := contract.Fee(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		return err
+	}
+
+	txOpts, err := backend.BindOpts(ctx, opAddr)
+	if err != nil {
+		return err
+	}
+
+	txOpts.Value = fee
+	tx, err := contract.Unjail(txOpts)
+	if err != nil {
+		return errors.Wrap(err, "unjail validator")
+	}
+
+	rec, err := backend.WaitMined(ctx, tx)
+	if err != nil {
+		return errors.Wrap(err, "wait mined")
+	}
+
+	link := fmt.Sprintf("https://%s.omniscan.network/tx/%s", cfg.Network, rec.TxHash.Hex())
+	log.Info(ctx, "🎉 Unjail transaction sent and included on-chain", "link", link, "block", rec.BlockNumber.Uint64())
 
 	return nil
 }

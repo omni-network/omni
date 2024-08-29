@@ -20,42 +20,68 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
+	"github.com/cometbft/cometbft/rpc/client/http"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	errorsmod "cosmossdk.io/errors"
 	utypes "cosmossdk.io/x/upgrade/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	dtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	gogogrpc "github.com/cosmos/gogoproto/grpc"
 	"github.com/cosmos/gogoproto/proto"
 	"google.golang.org/grpc"
 )
 
-func NewABCIProvider(abci rpcclient.Client, network netconf.ID, chainNamer func(xchain.ChainVersion) string) Provider {
+func Dial(network netconf.ID) (Provider, error) {
+	consRPC := network.Static().ConsensusRPC()
+	if consRPC == "" {
+		return Provider{}, errors.New("consensus rpc not configured for network")
+	}
+
+	cl, err := http.New(consRPC, "/websocket")
+	if err != nil {
+		return Provider{}, errors.Wrap(err, "new tendermint client")
+	}
+
+	return NewABCIProvider(cl, network, netconf.ChainVersionNamer(network)), nil
+}
+
+func NewABCIProvider(cmtCl rpcclient.Client, network netconf.ID, chainNamer func(xchain.ChainVersion) string) Provider {
 	// Stream backoff for 1s, querying new attestations after 1 consensus block
 	backoffFunc := func(ctx context.Context) func() {
 		return expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second))
 	}
 
-	acl := atypes.NewQueryClient(rpcAdaptor{abci: abci})
-	vcl := vtypes.NewQueryClient(rpcAdaptor{abci: abci})
-	pcl := ptypes.NewQueryClient(rpcAdaptor{abci: abci})
-	rcl := rtypes.NewQueryClient(rpcAdaptor{abci: abci})
-	gcl := genserve.NewQueryClient(rpcAdaptor{abci: abci})
-	ucl := utypes.NewQueryClient(rpcAdaptor{abci: abci})
+	acl := atypes.NewQueryClient(rpcAdaptor{abci: cmtCl})
+	vcl := vtypes.NewQueryClient(rpcAdaptor{abci: cmtCl})
+	pcl := ptypes.NewQueryClient(rpcAdaptor{abci: cmtCl})
+	rcl := rtypes.NewQueryClient(rpcAdaptor{abci: cmtCl})
+	gcl := genserve.NewQueryClient(rpcAdaptor{abci: cmtCl})
+	ucl := utypes.NewQueryClient(rpcAdaptor{abci: cmtCl})
+	scl := stypes.NewQueryClient(rpcAdaptor{abci: cmtCl})
+	dcl := dtypes.NewQueryClient(rpcAdaptor{abci: cmtCl})
 
 	return Provider{
-		fetch:       newABCIFetchFunc(acl, abci, chainNamer),
+		fetch:       newABCIFetchFunc(acl, cmtCl, chainNamer),
 		latest:      newABCILatestFunc(acl),
 		window:      newABCIWindowFunc(acl),
 		valset:      newABCIValsetFunc(vcl),
+		val:         newABCIValFunc(scl),
+		vals:        newABCIValsFunc(scl),
+		rewards:     newABCIRewards(dcl),
 		portalBlock: newABCIPortalBlockFunc(pcl),
 		networkFunc: newABCINetworkFunc(rcl),
 		genesisFunc: newABCIGenesisFunc(gcl),
 		upgradeFunc: newABCIUpgradeFunc(ucl),
-		chainID:     newChainIDFunc(abci),
-		header:      abci.Header,
+		chainID:     newChainIDFunc(cmtCl),
+		header:      cmtCl.Header,
 		backoffFunc: backoffFunc,
 		chainNamer:  chainNamer,
 		network:     network,
+		cometCl:     cmtCl,
 	}
 }
 
@@ -98,6 +124,69 @@ func newChainIDFunc(abci rpcclient.SignClient) chainIDFunc {
 		}
 
 		return chainID, nil
+	}
+}
+
+func newABCIRewards(cl dtypes.QueryClient) rewardsFunc {
+	return func(ctx context.Context, operator common.Address) (float64, bool, error) {
+		const endpoint = "rewards"
+		defer latency(endpoint)()
+
+		ctx, span := tracer.Start(ctx, spanName(endpoint))
+		defer span.End()
+
+		req := &dtypes.QueryValidatorOutstandingRewardsRequest{
+			ValidatorAddress: sdk.ValAddress(operator.Bytes()).String(),
+		}
+
+		resp, err := cl.ValidatorOutstandingRewards(ctx, req)
+		if errors.Is(err, sdkerrors.ErrKeyNotFound) {
+			return 0, false, nil
+		} else if err != nil {
+			incQueryErr(endpoint)
+			return 0, false, errors.Wrap(err, "abci query rewards")
+		}
+
+		return resp.Rewards.Rewards.AmountOf(sdk.DefaultBondDenom).MustFloat64(), true, nil
+	}
+}
+
+func newABCIValFunc(cl stypes.QueryClient) valFunc {
+	return func(ctx context.Context, operatorAddr common.Address) (stypes.Validator, bool, error) {
+		const endpoint = "validator"
+		defer latency(endpoint)()
+
+		ctx, span := tracer.Start(ctx, spanName(endpoint))
+		defer span.End()
+
+		valAddr := sdk.ValAddress(operatorAddr.Bytes())
+		val, err := cl.Validator(ctx, &stypes.QueryValidatorRequest{ValidatorAddr: valAddr.String()})
+		if errors.Is(err, sdkerrors.ErrKeyNotFound) {
+			return stypes.Validator{}, false, nil
+		} else if err != nil {
+			incQueryErr(endpoint)
+			return stypes.Validator{}, false, errors.Wrap(err, "abci query validator")
+		}
+
+		return val.Validator, true, nil
+	}
+}
+
+func newABCIValsFunc(cl stypes.QueryClient) valsFunc {
+	return func(ctx context.Context) ([]stypes.Validator, error) {
+		const endpoint = "vals"
+		defer latency(endpoint)()
+
+		ctx, span := tracer.Start(ctx, spanName(endpoint))
+		defer span.End()
+
+		resp, err := cl.Validators(ctx, &stypes.QueryValidatorsRequest{})
+		if err != nil {
+			incQueryErr(endpoint)
+			return nil, errors.Wrap(err, "abci query validators")
+		}
+
+		return resp.Validators, nil
 	}
 }
 
