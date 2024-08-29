@@ -4,7 +4,7 @@ pragma solidity 0.8.24;
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import { XAppUpgradeable } from "src/pkg/XAppUpgradeable.sol";
-import { FeeOracleV1 } from "src/xchain/FeeOracleV1.sol";
+import { IConversionRateOracle } from "src/interfaces/IConversionRateOracle.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
 import { OmniGasStation } from "./OmniGasStation.sol";
 
@@ -18,6 +18,9 @@ contract OmniGasPump is XAppUpgradeable, OwnableUpgradeable, PausableUpgradeable
 
     /// @notice Emitted when the gas station is set
     event GasStationSet(address station);
+
+    /// @notice Emitted when the fee oracle is set
+    event OracleSet(address oracle);
 
     /// @notice Emitted when the toll is set
     event TollSet(uint256 pct);
@@ -34,10 +37,13 @@ contract OmniGasPump is XAppUpgradeable, OwnableUpgradeable, PausableUpgradeable
     event FilledUp(address indexed recipient, uint256 owed, uint256 amtETH, uint256 fee, uint256 toll, uint256 amtOMNI);
 
     /// @notice Gas limit passed to OmniGasStation.settleUp xcall
-    uint64 internal constant SETTLE_GAS = 100_000;
+    uint64 public constant SETTLE_GAS = 100_000;
 
     /// @notice Denominator for toll percentage calculations
-    uint256 internal constant TOLL_DENOM = 1000;
+    uint256 public constant TOLL_DENOM = 1000;
+
+    /// @notice Native token conversion rate oracle
+    IConversionRateOracle public oracle;
 
     /// @notice Address of OmniGasStation on Omni
     address public gasStation;
@@ -57,6 +63,7 @@ contract OmniGasPump is XAppUpgradeable, OwnableUpgradeable, PausableUpgradeable
 
     struct InitParams {
         address gasStation;
+        address oracle;
         address portal;
         address owner;
         uint256 maxSwap;
@@ -64,9 +71,11 @@ contract OmniGasPump is XAppUpgradeable, OwnableUpgradeable, PausableUpgradeable
     }
 
     function initialize(InitParams calldata p) external initializer {
+        _setOracle(p.oracle);
         _setGasStation(p.gasStation);
         _setMaxSwap(p.maxSwap);
         _setToll(p.toll);
+
         __XApp_init(p.portal, ConfLevel.Latest);
         __Ownable_init(p.owner);
     }
@@ -160,14 +169,15 @@ contract OmniGasPump is XAppUpgradeable, OwnableUpgradeable, PausableUpgradeable
 
     /// @notice Converts `amtOMNI` to ETH, using the current conversion rate
     function _toEth(uint256 amtOMNI) internal view returns (uint256) {
-        FeeOracleV1 o = FeeOracleV1(omni.feeOracle());
-        return amtOMNI * o.CONVERSION_RATE_DENOM() / o.toNativeRate(omniChainId());
+        // toNativeRate(omniChainId()) ==  ETH per OMNI
+        return amtOMNI * oracle.toNativeRate(omniChainId()) / oracle.CONVERSION_RATE_DENOM();
     }
 
     /// @notice Converts `amtETH` to OMNI, using the current conversion rate
     function _toOmni(uint256 amtETH) internal view returns (uint256) {
-        FeeOracleV1 o = FeeOracleV1(omni.feeOracle());
-        return amtETH * o.toNativeRate(omniChainId()) / o.CONVERSION_RATE_DENOM();
+        // toNativeRate(omniChainId()) ==  ETH per OMNI
+        // to convert ETH to OMNI, we use 1 / toNativeRate(omniChainId())
+        return amtETH * oracle.CONVERSION_RATE_DENOM() / oracle.toNativeRate(omniChainId());
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -196,8 +206,13 @@ contract OmniGasPump is XAppUpgradeable, OwnableUpgradeable, PausableUpgradeable
     }
 
     /// @notice Set the address of the OmniGasStation, on Omni
-    function setOmniGasStation(address station) external onlyOwner {
+    function setGasStation(address station) external onlyOwner {
         _setGasStation(station);
+    }
+
+    /// @notice Set the conversion rate oracle
+    function setOracle(address oracle_) external onlyOwner {
+        _setOracle(oracle_);
     }
 
     /// @notice Set the toll (as a percentage over PCT_DENOM)
@@ -221,5 +236,12 @@ contract OmniGasPump is XAppUpgradeable, OwnableUpgradeable, PausableUpgradeable
         require(station != address(0), "OmniGasPump: zero address");
         gasStation = station;
         emit GasStationSet(station);
+    }
+
+    function _setOracle(address oracle_) internal {
+        require(oracle_ != address(0), "OmniGasPump: zero oracle");
+        oracle = IConversionRateOracle(oracle_);
+
+        emit OracleSet(oracle_);
     }
 }
