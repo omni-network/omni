@@ -6,7 +6,7 @@ sidebar_position: 4
 
 ### Have Questions?
 
-Join our developer Telegram channel [here](https://t.me/+zDWsRVjLXzZkOTIx)!
+Join our developer Telegram channel [here](https://t.me/omnidevsupport)!
 
 ### Overview
 
