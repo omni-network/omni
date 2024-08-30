@@ -106,15 +106,15 @@ const config: Config = {
           items: [
             {
               label: 'Telegram for developers',
-              to: 'https://discordapp.com/invite/docusaurus',
+              to: 'https://t.me/omnidevsupport',
             },
             {
               label: 'Twitter',
-              to: 'https://twitter.com/docusaurus',
+              to: 'https://twitter.com/OmniFDN',
             },
             {
               label: 'Discord',
-              to: 'https://discordapp.com/invite/docusaurus',
+              to: 'https://discord.com/invite/bKNXmaX9VD',
             },
           ],
         },
