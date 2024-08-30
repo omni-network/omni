@@ -2,12 +2,13 @@
 pragma solidity ^0.8.12;
 
 import { IFeeOracle } from "./IFeeOracle.sol";
+import { IConversionRateOracle } from "./IConversionRateOracle.sol";
 
 /**
  * @title IFeeOracleV1
  * @notice Extends IFeeOracle with FeeOracleV1 methods
  */
-interface IFeeOracleV1 is IFeeOracle {
+interface IFeeOracleV1 is IFeeOracle, IConversionRateOracle {
     /**
      * @notice Emitted when fee parameters for a chain are set.
      */
@@ -83,9 +84,4 @@ interface IFeeOracleV1 is IFeeOracle {
      * @notice Set the manager admin account.
      */
     function setManager(address manager_) external;
-
-    /**
-     * @notice returns the conversion rate denominator, used in to
-     */
-    function CONVERSION_RATE_DENOM() external view returns (uint256);
 }

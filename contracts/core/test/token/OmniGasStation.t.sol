@@ -184,7 +184,7 @@ contract OmniGasStation_Test is Test {
 
         // settledUp is unpaused
         vm.prank(owner);
-        vm.expectRevert("GasStation: unauthorized"); // still reverts,  but not because of pause
+        vm.expectRevert("GasStation: unauthorized"); // reverts,  but not because its paused
         station.settleUp(recipient, owed);
     }
 }
