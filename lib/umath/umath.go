@@ -8,11 +8,9 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/lib/errors"
-)
 
-type anyInt interface {
-	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64
-}
+	"golang.org/x/exp/constraints"
+)
 
 // Subtract returns a - b and true if a >= b, otherwise 0 and false.
 func Subtract(a, b uint64) (uint64, bool) {
@@ -48,7 +46,7 @@ func Len[T any](slice []T) uint64 {
 }
 
 // ToUint64 returns i as an uint64 or an error if it cannot be represented as such.
-func ToUint64[N anyInt](i N) (uint64, error) {
+func ToUint64[N constraints.Integer](i N) (uint64, error) {
 	if i < 0 {
 		return 0, errors.New("underflow")
 	}
@@ -57,7 +55,7 @@ func ToUint64[N anyInt](i N) (uint64, error) {
 }
 
 // ToInt64 returns i as an int64 or an error if it cannot be represented as such.
-func ToInt64[N anyInt](n N) (int64, error) {
+func ToInt64[N constraints.Integer](n N) (int64, error) {
 	// All negative int values are valid int64
 	if n < 0 {
 		return int64(n), nil
@@ -71,7 +69,7 @@ func ToInt64[N anyInt](n N) (int64, error) {
 }
 
 // ToUint32 returns i as an uint32 or an error if it cannot be represented as such.
-func ToUint32[N anyInt](i N) (uint32, error) {
+func ToUint32[N constraints.Integer](i N) (uint32, error) {
 	if i < 0 {
 		return 0, errors.New("underflow")
 	} else if uint64(i) > math.MaxUint32 {
@@ -82,7 +80,7 @@ func ToUint32[N anyInt](i N) (uint32, error) {
 }
 
 // ToInt32 returns i as an int32 or an error if it cannot be represented as such.
-func ToInt32[N anyInt](i N) (int32, error) {
+func ToInt32[N constraints.Integer](i N) (int32, error) {
 	// Using float64 for int32 is fine since rounding not a problem.
 	if float64(i) > math.MaxInt32 {
 		return 0, errors.New("overflow")
