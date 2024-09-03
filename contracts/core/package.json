@@ -17,7 +17,7 @@
     "test:gen:xsubs": "ts-node test/xchain/ts/script/genxsubs/main.ts"
   },
   "devDependencies": {
-    "@openzeppelin/merkle-tree": "^1.0.5",
+    "@openzeppelin/merkle-tree": "1.0.5",
     "@types/node": "^20.11.7",
     "ds-test": "github:dapphub/ds-test",
     "ethereum-cryptography": "^2.1.3",
