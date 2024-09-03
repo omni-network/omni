@@ -2,6 +2,8 @@
  "mainnet": {
   "avs": "0xed2f4d90b073128ae6769a9a8d51547b1df766c8",
   "create3": "0x9b137463d4e7986d7f535f9b79e28b4ef1938e9b",
+  "gaspump": "0x47174077a08b1a88f4fa9db8e9d32e6917a4c5a9",
+  "gasstation": "0xc0ae1198bac99175e1e84bd5e53f02c054f870c0",
   "l1bridge": "0x1ef02175337fd1b808d95a2e15498e767fe5e87c",
   "portal": "0x84db9693ba18e77f66a3906aa4544a0d238b6221",
   "token": "0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4"
@@ -9,6 +11,8 @@
  "omega": {
   "avs": "0xa7b2e7830c51728832d33421670dbbe30299fd92",
   "create3": "0x4bf2e538446b3faa2c439a4f8867a9052db8f1d0",
+  "gaspump": "0x75d3358d7df0c6e004aec4c26c459f211c97cb77",
+  "gasstation": "0x3266c030c1e302264063cf44f6df8bbaaf3d9767",
   "l1bridge": "0x084ef227534a6ad2de4c4e54db19f1c457a57a27",
   "portal": "0xcb60a0451831e4865bc49f41f9c67665fc9b75c3",
   "token": "0xd036c60f46ff51dd7fbf6a819b5b171c8a076b07"
