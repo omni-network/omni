@@ -17,7 +17,7 @@
  },
  "UnsafeSkipUpgrades": null,
  "Comet": {
-  "Version": "0.38.11",
+  "Version": "0.38.12",
   "RootDir": "testinput/input2",
   "ProxyApp": "",
   "Moniker": "testmoniker",

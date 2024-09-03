@@ -13,7 +13,7 @@ version: ## Print tool versions.
 install-deps: ## Install dependencies.
 	(cd avs && pnpm install --frozen-lockfile)
 	(cd core && pnpm install --frozen-lockfile)
-	go install github.com/ethereum/go-ethereum/cmd/abigen@v1.13.14
+	go install github.com/ethereum/go-ethereum/cmd/abigen@v1.14.8
 
 .PHONY: build
 build: version ## Build contracts.
@@ -46,8 +46,8 @@ allocs: bindings ## Generate predeploy allocations.
 .PHONY: check-abigen-version
 check-abigen-version: ## Check abigen version, exit(1) if not 1.13.14-stable.
 	@version=$$(abigen --version); \
-	if [ "$$version" != "abigen version 1.13.14-stable" ]; then \
-		echo "abigen version is not 1.13.14-stable"; \
-		echo "Install with go install github.com/ethereum/go-ethereum/cmd/abigen@v1.13.14"; \
+	if [ "$$version" != "abigen version 1.14.8-stable" ]; then \
+		echo "abigen version is not 1.14.8-stable"; \
+		echo "Install with go install github.com/ethereum/go-ethereum/cmd/abigen@v1.14.8"; \
 		exit 1; \
 	fi
