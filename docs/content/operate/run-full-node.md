@@ -15,7 +15,7 @@ Please note that if you're running an Omega full node, you will need to redeploy
 The simplest way to run a full node is with the following commands:
 
 ```bash
-# Install the Omni CLI (alternate instructions here: https://docs.omni.network/tools/cli/)
+# Install the Omni CLI
 curl -sSfL https://raw.githubusercontent.com/omni-network/omni/main/scripts/install_omni_cli.sh | sh -s
 
 # init geth and halo
@@ -27,13 +27,6 @@ docker compose up
 ```
 
 Congrats, you're running a full node!
-
-<details>
-<summary>Known Issue **"validator does not exist"**</summary>
-
-Please note if you see this error that it is a known issue, it is sporadic and resolves itself after a couple tries. If you're interested to follow along the solution (or give it a shot yourself!), you can follow along [here](https://github.com/omni-network/omni/issues/1524).
-
-</details>
 
 ### Details
 
