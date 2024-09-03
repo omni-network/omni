@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -130,16 +131,19 @@ func containsAll(network Network, expected []string) bool {
 func networkFromPortals(ctx context.Context, network ID, portals []bindings.PortalRegistryDeployment) (Network, error) {
 	var chains []Chain
 	for _, portal := range portals {
+		// PortalRegistry guarantees BlockPeriod <= MaxInt64, but we check here to be safe.
+		periodNanos, err := umath.ToInt64(portal.BlockPeriod)
+		if err != nil {
+			return Network{}, err
+		}
+		period := time.Duration(periodNanos) * time.Nanosecond
+
 		// Ephemeral networks may contain mock portals for testing purposes, just ignore them.
-		if _, ok := evmchain.MetadataByID(portal.ChainId); !ok && network.IsEphemeral() {
+		if meta, ok := evmchain.MetadataByID(portal.ChainId); !ok && network.IsEphemeral() {
 			log.Warn(ctx, "Ignoring ephemeral network mock portal", nil, "chain_id", portal.ChainId)
 			continue
-		}
-
-		// PortalRegistry guarantees BlockPeriod <= int64 max, but we check here to be safe.
-		blockPeriod := time.Duration(int64(portal.BlockPeriod))
-		if blockPeriod < 0 {
-			return Network{}, errors.New("block period overflow", "period", portal.BlockPeriod)
+		} else if network != Simnet && ok && meta.BlockPeriod != period { // Sanity check block period
+			return Network{}, errors.New("invalid portal block period [BUG]", "chain", portal.Name, "got", period, "want", meta.BlockPeriod) // Sanity check
 		}
 
 		chains = append(chains, Chain{
@@ -147,7 +151,7 @@ func networkFromPortals(ctx context.Context, network ID, portals []bindings.Port
 			Name:           portal.Name,
 			PortalAddress:  portal.Addr,
 			DeployHeight:   portal.DeployHeight,
-			BlockPeriod:    blockPeriod,
+			BlockPeriod:    period,
 			Shards:         toShardIDs(portal.Shards),
 			AttestInterval: portal.AttestInterval,
 		})

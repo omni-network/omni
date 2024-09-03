@@ -8,6 +8,7 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -101,7 +102,7 @@ func (m CLIConfig) Check() error {
 }
 
 func externalSignerFn(external ExternalSigner, address common.Address, chainID uint64) SignerFn {
-	signer := types.LatestSignerForChainID(big.NewInt(int64(chainID)))
+	signer := types.LatestSignerForChainID(umath.NewBigInt(chainID))
 	return func(ctx context.Context, from common.Address, tx *types.Transaction) (*types.Transaction, error) {
 		if address != from {
 			return nil, bind.ErrNotAuthorized
@@ -124,7 +125,7 @@ func externalSignerFn(external ExternalSigner, address common.Address, chainID u
 // privateKeySignerFn returns a SignerFn that signs transactions with the given private key.
 func privateKeySignerFn(key *ecdsa.PrivateKey, chainID uint64) SignerFn {
 	from := crypto.PubkeyToAddress(key.PublicKey)
-	signer := types.LatestSignerForChainID(big.NewInt(int64(chainID)))
+	signer := types.LatestSignerForChainID(umath.NewBigInt(chainID))
 
 	return func(_ context.Context, address common.Address, tx *types.Transaction) (*types.Transaction, error) {
 		if address != from {
@@ -248,8 +249,6 @@ func newConfig(cfg CLIConfig, signer SignerFn, from common.Address, client ethcl
 		return Config{}, errors.Wrap(err, "invalid min tip cap")
 	}
 
-	chainID := big.NewInt(int64(cfg.ChainID))
-
 	return Config{
 		Backend:                   client,
 		ResubmissionTimeout:       cfg.ResubmissionTimeout,
@@ -257,7 +256,7 @@ func newConfig(cfg CLIConfig, signer SignerFn, from common.Address, client ethcl
 		FeeLimitThreshold:         feeLimitThreshold,
 		MinBaseFee:                minBaseFee,
 		MinTipCap:                 minTipCap,
-		ChainID:                   chainID,
+		ChainID:                   umath.NewBigInt(cfg.ChainID),
 		TxSendTimeout:             cfg.TxSendTimeout,
 		TxNotInMempoolTimeout:     cfg.TxNotInMempoolTimeout,
 		NetworkTimeout:            cfg.NetworkTimeout,

@@ -68,7 +68,7 @@ func (c jsonHTTP) Send(ctx context.Context, uri string, httpMethod string, reque
 		return false, errors.Wrap(err, "read response body")
 	}
 
-	if resp.StatusCode/100 != 2 { //nolint:usestdlibvars,nestif // False positive.
+	if resp.StatusCode/100 != 2 { //nolint:nestif // False positive.
 		if errResponse != nil {
 			// When rate limited, Fireblocks returns http body and not JSON.
 			if resp.StatusCode == http.StatusTooManyRequests {

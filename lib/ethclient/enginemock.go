@@ -15,6 +15,7 @@ import (
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/cometbft/cometbft/crypto"
 
@@ -115,8 +116,8 @@ func WithPortalRegister(network netconf.Network) func(*engineMock) {
 				Address: contractAddr,
 				Topics: []common.Hash{
 					portalRegEvent.ID,
-					common.BytesToHash(math.U256Bytes(big.NewInt(int64(chain.ID)))), // ChainID
-					common.BytesToHash(chain.PortalAddress.Bytes()),                 // Address
+					common.BytesToHash(math.U256Bytes(umath.NewBigInt(chain.ID))), // ChainID
+					common.BytesToHash(chain.PortalAddress.Bytes()),               // Address
 				},
 				Data: data,
 			}
@@ -203,7 +204,7 @@ func NewEngineMock(opts ...func(mock *engineMock)) (EngineClient, error) {
 	}
 
 	m := &engineMock{
-		fuzzer:      NewFuzzer(int64(genesisBlock.Time())),
+		fuzzer:      NewFuzzer(int64(genesisBlock.Time())), //nolint:gosec // Not a problem
 		head:        genesisBlock,
 		pendingLogs: make(map[common.Address][]types.Log),
 		payloads:    make(map[engine.PayloadID]payloadArgs),
@@ -300,7 +301,7 @@ func (m *engineMock) HeaderByType(ctx context.Context, typ HeadType) (*types.Hea
 		return nil, err
 	}
 
-	return m.HeaderByNumber(ctx, big.NewInt(int64(number)))
+	return m.HeaderByNumber(ctx, umath.NewBigInt(number))
 }
 
 func (m *engineMock) HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error) {
@@ -384,7 +385,7 @@ func (m *engineMock) ForkchoiceUpdatedV3(ctx context.Context, update engine.Fork
 	}
 
 	// Maybe update head
-	//nolint: nestif // this is a mock it's fine
+	//nolint:nestif // this is a mock it's fine
 	if m.head.Hash() != update.HeadBlockHash {
 		var found bool
 		for _, args := range m.payloads {
@@ -483,7 +484,7 @@ func makePayload(fuzzer *fuzz.Fuzzer, height uint64, timestamp uint64, parentHas
 	// Build a new header
 	var header types.Header
 	fuzzer.Fuzz(&header)
-	header.Number = big.NewInt(int64(height))
+	header.Number = umath.NewBigInt(height)
 	header.Time = timestamp
 	header.ParentHash = parentHash
 	header.MixDigest = randao      // this corresponds to Random field in PayloadAttributes

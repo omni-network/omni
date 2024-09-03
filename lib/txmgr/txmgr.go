@@ -116,14 +116,14 @@ func (m *simple) From() common.Address {
 // txFields returns a logger with the transaction hash and nonce fields set.
 func txFields(tx *types.Transaction, logGas bool) []any {
 	fields := []any{
-		slog.Int64("nonce", int64(tx.Nonce())),
+		slog.Uint64("nonce", tx.Nonce()),
 		slog.String("tx", tx.Hash().String()),
 	}
 	if logGas {
 		fields = append(fields,
 			slog.String("gas_tip_cap", tx.GasTipCap().String()),
 			slog.String("gas_fee_cap", tx.GasFeeCap().String()),
-			slog.Int64("gas_limit", int64(tx.Gas())),
+			slog.Uint64("gas_limit", tx.Gas()),
 		)
 	}
 
@@ -618,7 +618,7 @@ func (m *simple) suggestGasPriceCaps(ctx context.Context) (*big.Int, *big.Int, e
 // if FeeLimitThreshold is specified in config, any increase which stays under the threshold are allowed.
 func (m *simple) checkLimits(tip, baseFee, bumpedTip, bumpedFee *big.Int) error {
 	threshold := m.cfg.FeeLimitThreshold
-	limit := big.NewInt(int64(m.cfg.FeeLimitMultiplier))
+	limit := umath.NewBigInt(m.cfg.FeeLimitMultiplier)
 	maxTip := new(big.Int).Mul(tip, limit)
 	maxFee := calcGasFeeCap(new(big.Int).Mul(baseFee, limit), maxTip)
 	var errs error

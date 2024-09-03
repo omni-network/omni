@@ -148,6 +148,7 @@ linters:
     - ireturn              # Too many false positives
     - mnd                  # Too many false positives
     - prealloc             # Too many false positives
+    - predeclared          # Too strict
     - tagliatelle          # Too strict
     - varnamelen           # False positives
     - wsl                  # Way to strict and opinionated
@@ -155,3 +156,4 @@ linters:
 
     # Disable deprecated/archived linters (alphabetical order)
     - execinquery
+    - exportloopref

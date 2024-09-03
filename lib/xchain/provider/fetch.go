@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"math/big"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -10,6 +9,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/tracer"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum"
@@ -91,7 +91,7 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, str
 
 	opts := &bind.CallOpts{Context: ctx}
 	if ref.Height != nil {
-		opts.BlockNumber = big.NewInt(int64(*ref.Height))
+		opts.BlockNumber = umath.NewBigInt(*ref.Height)
 	} else if head, ok := headTypeFromConfLevel(*ref.ConfLevel); !ok {
 		return xchain.EmitCursor{}, false, errors.New("invalid conf level")
 	} else {
@@ -138,7 +138,7 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, stream xchain.StreamI
 		return xchain.SubmitCursor{}, false, err
 	}
 
-	callOpts := &bind.CallOpts{Context: ctx, BlockNumber: big.NewInt(int64(height))}
+	callOpts := &bind.CallOpts{Context: ctx, BlockNumber: umath.NewBigInt(height)}
 
 	msgOffset, err := caller.InXMsgOffset(callOpts, stream.SourceChainID, uint64(stream.ShardID))
 	if err != nil {
@@ -215,7 +215,7 @@ func (p *Provider) GetBlock(ctx context.Context, req xchain.ProviderRequest) (xc
 
 	// Fetch the header if we didn't find it in the cache
 	if header == nil {
-		header, err = ethCl.HeaderByNumber(ctx, big.NewInt(int64(req.Height)))
+		header, err = ethCl.HeaderByNumber(ctx, umath.NewBigInt(req.Height))
 		if err != nil {
 			return xchain.Block{}, false, errors.Wrap(err, "header by number")
 		}
@@ -240,6 +240,11 @@ func (p *Provider) GetBlock(ctx context.Context, req xchain.ProviderRequest) (xc
 		return xchain.Block{}, false, errors.Wrap(err, "wait")
 	}
 
+	timeSecs, err := umath.ToInt64(header.Time)
+	if err != nil {
+		return xchain.Block{}, false, err
+	}
+
 	return xchain.Block{
 		BlockHeader: xchain.BlockHeader{
 			ChainID:     req.ChainID,
@@ -249,7 +254,7 @@ func (p *Provider) GetBlock(ctx context.Context, req xchain.ProviderRequest) (xc
 		Msgs:       msgs,
 		Receipts:   receipts,
 		ParentHash: header.ParentHash,
-		Timestamp:  time.Unix(int64(header.Time), 0),
+		Timestamp:  time.Unix(timeSecs, 0),
 	}, true, nil
 }
 

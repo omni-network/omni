@@ -16,8 +16,8 @@ import (
 var omniEvmRegx = regexp.MustCompile(".*_evm")
 
 const (
-	evmPort  = 8545
-	haloPort = 26657
+	evmPort  = uint32(8545)
+	haloPort = uint32(26657)
 	relayer  = "relayer"
 )
 
@@ -76,7 +76,7 @@ func LoadData(path string) (types.InfrastructureData, error) {
 		instances[serviceName] = e2e.InstanceData{
 			IPAddress:    vm.IPAddress,
 			ExtIPAddress: vm.ExtIPAddress,
-			Port:         uint32(port),
+			Port:         port,
 		}
 	}
 

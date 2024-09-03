@@ -26,7 +26,7 @@ Flags:
       --network string                            Omni network to participate in: mainnet, omega, devnet
       --pruning string                            Pruning strategy (default|nothing|everything) (default "default")
       --snapshot-interval uint                    State sync snapshot interval (default 1000)
-      --snapshot-keep-recent uint                 State sync snapshot to keep (default 2)
+      --snapshot-keep-recent uint32               State sync snapshot to keep (default 2)
       --tracing-endpoint string                   Tracing OTLP endpoint
       --tracing-headers string                    Tracing OTLP headers
       --unsafe-skip-upgrades ints                 Skip a set of upgrade heights to continue the old binary

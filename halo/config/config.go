@@ -68,7 +68,7 @@ type Config struct {
 	EngineEndpoint     string
 	RPCEndpoints       xchain.RPCEndpoints
 	SnapshotInterval   uint64 // See cosmossdk.io/store/snapshots/types/options.go
-	SnapshotKeepRecent uint64 // See cosmossdk.io/store/snapshots/types/options.go
+	SnapshotKeepRecent uint32 // See cosmossdk.io/store/snapshots/types/options.go
 	BackendType        string // See cosmos-db/db.go
 	MinRetainBlocks    uint64
 	PruningOption      string // See cosmossdk.io/store/pruning/types/options.go

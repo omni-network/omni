@@ -671,7 +671,7 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 		countsByChainVer[vote.AttestHeader.XChainVersion()]++
 		filtered = append(filtered, vote)
 
-		if len(filtered) >= int(k.voteExtLimit) {
+		if umath.Len(filtered) >= k.voteExtLimit {
 			break
 		}
 	}
@@ -749,7 +749,7 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 		return respReject, nil
 	} else if !ok {
 		return respAccept, nil
-	} else if len(votes.Votes) > int(k.voteExtLimit) {
+	} else if umath.Len(votes.Votes) > k.voteExtLimit {
 		log.Warn(ctx, "Rejecting vote extension exceeding limit", nil, "count", len(votes.Votes), "limit", k.voteExtLimit)
 		return respReject, nil
 	}

@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/umath"
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/ethereum/go-ethereum"
@@ -137,21 +138,21 @@ func (p EventProcessor) deliverCancelUpgrade(ctx context.Context, _ *bindings.Up
 func (p EventProcessor) deliverPlanUpgrade(ctx context.Context, plan *bindings.UpgradePlanUpgrade) error {
 	log.Info(ctx, "EVM plan upgrade detected", "name", plan.Name, "height", plan.Height)
 
-	height := int64(plan.Height)
-	if height < 0 {
-		return errors.New("invalid height")
+	heightInt64, err := umath.ToInt64(plan.Height)
+	if err != nil {
+		return err
 	}
 
 	msg := utypes.MsgSoftwareUpgrade{
 		Authority: authtypes.NewModuleAddress(ModuleName).String(),
 		Plan: utypes.Plan{
 			Name:   plan.Name,
-			Height: height,
+			Height: heightInt64,
 			Info:   plan.Info,
 		},
 	}
 
-	_, err := ukeeper.NewMsgServerImpl(p.uKeeper).SoftwareUpgrade(ctx, &msg)
+	_, err = ukeeper.NewMsgServerImpl(p.uKeeper).SoftwareUpgrade(ctx, &msg)
 	if err != nil {
 		return errors.Wrap(err, "plan software upgrade")
 	}

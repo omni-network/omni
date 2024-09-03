@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 )
 
 // startMonitoringSyncDiff starts a goroutine per chain that periodically calculates the rpc-sync-diff
@@ -38,12 +39,12 @@ func startMonitoringSyncDiff(
 }
 
 // calcMaxDiff returns the maximum difference between the provided heights.
-func calcMaxDiff(heights []int64) int64 {
+func calcMaxDiff(heights []uint64) uint64 {
 	if len(heights) == 0 {
 		return 0
 	}
 
-	minimum, maximum := int64(math.MaxInt64), int64(math.MinInt64)
+	minimum, maximum := uint64(0), uint64(math.MaxUint64)
 	for _, height := range heights {
 		if minimum > height {
 			minimum = height
@@ -53,11 +54,11 @@ func calcMaxDiff(heights []int64) int64 {
 		}
 	}
 
-	return maximum - minimum
+	return umath.SubtractOrZero(maximum, minimum)
 }
 
 // concurrentLatestHeights returns the non-zero latest heights returned from N concurrent queries.
-func concurrentLatestHeights(ctx context.Context, ethCl ethclient.Client, n int) []int64 {
+func concurrentLatestHeights(ctx context.Context, ethCl ethclient.Client, n int) []uint64 {
 	collect := make(chan uint64, n)
 	for i := 0; i < n; i++ {
 		go func() {
@@ -69,11 +70,11 @@ func concurrentLatestHeights(ctx context.Context, ethCl ethclient.Client, n int)
 		}()
 	}
 
-	var resp []int64
+	var resp []uint64
 	for i := 0; i < n; i++ {
 		height := <-collect
 		if height > 0 {
-			resp = append(resp, int64(height))
+			resp = append(resp, height)
 		}
 	}
 

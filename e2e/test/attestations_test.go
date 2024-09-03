@@ -49,7 +49,7 @@ func TestApprovedAttestations(t *testing.T) {
 		for _, chainVer := range consChain.ChainVersions() {
 			atts, err := fetchAllAtts(ctx, cprov, chainVer, node.StartAt > 0)
 			require.NoError(t, err)
-			require.NotEmpty(t, len(atts))
+			require.NotEmpty(t, atts)
 		}
 	})
 }

@@ -427,7 +427,12 @@ func (a rpcAdaptor) Invoke(ctx context.Context, method string, req, resp any, _ 
 		queryHeight = v
 	}
 
-	r, err := a.abci.ABCIQueryWithOptions(ctx, method, bz, rpcclient.ABCIQueryOptions{Height: int64(queryHeight)})
+	queryHeightInt64, err := umath.ToInt64(queryHeight)
+	if err != nil {
+		return err
+	}
+
+	r, err := a.abci.ABCIQueryWithOptions(ctx, method, bz, rpcclient.ABCIQueryOptions{Height: queryHeightInt64})
 	if err != nil {
 		return errors.Wrap(err, "abci query")
 	} else if !r.Response.IsOK() {

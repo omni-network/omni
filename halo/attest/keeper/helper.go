@@ -5,6 +5,7 @@ import (
 
 	"github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 )
 
@@ -17,6 +18,21 @@ func (a *Attestation) XChainVersion() xchain.ChainVersion {
 
 func (a *Attestation) IsFuzzy() bool {
 	return xchain.ConfLevel(a.GetConfLevel()).IsFuzzy()
+}
+
+func statusToDB(status uint32) (Status, error) {
+	statusInt32, err := umath.ToInt32(status)
+	if err != nil {
+		return Status_Unknown, err
+	}
+
+	resp := Status(statusInt32)
+
+	if resp <= Status_Unknown || resp > Status_Approved {
+		return 0, errors.New("invalid status")
+	}
+
+	return resp, nil
 }
 
 func AttestationFromDB(att *Attestation, consensusChainID uint64, sigs []*Signature) *types.Attestation {
