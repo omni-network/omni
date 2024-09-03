@@ -24,11 +24,13 @@ func TestContractAddressReference(t *testing.T) {
 		}
 
 		addrs := map[string]common.Address{
-			"create3":  contracts.Create3Factory(network),
-			"portal":   contracts.Portal(network),
-			"avs":      contracts.AVS(network),
-			"l1bridge": contracts.L1Bridge(network),
-			"token":    contracts.Token(network),
+			"create3":    contracts.Create3Factory(network),
+			"portal":     contracts.Portal(network),
+			"avs":        contracts.AVS(network),
+			"l1bridge":   contracts.L1Bridge(network),
+			"token":      contracts.Token(network),
+			"gaspump":    contracts.GasPump(network),
+			"gasstation": contracts.GasStation(network),
 		}
 
 		for name, addr := range addrs {

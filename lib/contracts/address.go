@@ -46,6 +46,16 @@ func Token(network netconf.ID) common.Address {
 	return create3.Address(Create3Factory(network), TokenSalt(network), eoa.MustAddress(network, eoa.RoleDeployer))
 }
 
+// GasPump returns the GasPump contract address for the given network.
+func GasPump(network netconf.ID) common.Address {
+	return create3.Address(Create3Factory(network), GasPumpSalt(network), eoa.MustAddress(network, eoa.RoleDeployer))
+}
+
+// GasStation returns the GasStation contract address for the given network.
+func GasStation(network netconf.ID) common.Address {
+	return create3.Address(Create3Factory(network), GasStationSalt(network), eoa.MustAddress(network, eoa.RoleDeployer))
+}
+
 //
 // Salts.
 //
@@ -65,6 +75,14 @@ func L1BridgeSalt(network netconf.ID) string {
 
 func TokenSalt(network netconf.ID) string {
 	return salt(network, "token-"+network.Version())
+}
+
+func GasPumpSalt(network netconf.ID) string {
+	return salt(network, "gas-pump-"+network.Version())
+}
+
+func GasStationSalt(network netconf.ID) string {
+	return salt(network, "gas-station-"+network.Version())
 }
 
 //
