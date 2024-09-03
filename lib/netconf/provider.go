@@ -142,8 +142,8 @@ func networkFromPortals(ctx context.Context, network ID, portals []bindings.Port
 		if meta, ok := evmchain.MetadataByID(portal.ChainId); !ok && network.IsEphemeral() {
 			log.Warn(ctx, "Ignoring ephemeral network mock portal", nil, "chain_id", portal.ChainId)
 			continue
-		} else if ok && meta.BlockPeriod != period {
-			return Network{}, errors.New("invalid portal block period [BUG]") // Sanity check
+		} else if network != Simnet && ok && meta.BlockPeriod != period { // Sanity check block period
+			return Network{}, errors.New("invalid portal block period [BUG]", "chain", portal.Name, "got", period, "want", meta.BlockPeriod) // Sanity check
 		}
 
 		chains = append(chains, Chain{
