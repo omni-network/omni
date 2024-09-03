@@ -17,6 +17,7 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -169,7 +170,7 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 	if err != nil {
 		return err
 	}
-	txOpts.Value = new(big.Int).Mul(big.NewInt(int64(cfg.SelfDelegation)), big.NewInt(params.Ether)) // Send self-delegation
+	txOpts.Value = new(big.Int).Mul(umath.NewBigInt(cfg.SelfDelegation), big.NewInt(params.Ether)) // Send self-delegation
 
 	consPubkey, err := cfg.ConsensusPubKey()
 	if err != nil {

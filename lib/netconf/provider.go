@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -136,10 +137,10 @@ func networkFromPortals(ctx context.Context, network ID, portals []bindings.Port
 			continue
 		}
 
-		// PortalRegistry guarantees BlockPeriod <= int64 max, but we check here to be safe.
-		blockPeriod := time.Duration(int64(portal.BlockPeriod))
-		if blockPeriod < 0 {
-			return Network{}, errors.New("block period overflow", "period", portal.BlockPeriod)
+		// PortalRegistry guarantees BlockPeriod <= MaxInt64, but we check here to be safe.
+		periodMS, err := umath.ToInt64(portal.BlockPeriod)
+		if err != nil {
+			return Network{}, err
 		}
 
 		chains = append(chains, Chain{
@@ -147,7 +148,7 @@ func networkFromPortals(ctx context.Context, network ID, portals []bindings.Port
 			Name:           portal.Name,
 			PortalAddress:  portal.Addr,
 			DeployHeight:   portal.DeployHeight,
-			BlockPeriod:    blockPeriod,
+			BlockPeriod:    time.Duration(periodMS) * time.Millisecond,
 			Shards:         toShardIDs(portal.Shards),
 			AttestInterval: portal.AttestInterval,
 		})

@@ -259,7 +259,7 @@ func makeBaseAppOpts(cfg Config) ([]func(*baseapp.BaseApp), error) {
 		return nil, err
 	}
 
-	snapshotOptions := snapshottypes.NewSnapshotOptions(cfg.SnapshotInterval, uint32(cfg.SnapshotKeepRecent))
+	snapshotOptions := snapshottypes.NewSnapshotOptions(cfg.SnapshotInterval, cfg.SnapshotKeepRecent)
 
 	pruneOpts := pruningtypes.NewPruningOptionsFromString(cfg.PruningOption)
 	if cfg.PruningOption == pruningtypes.PruningOptionDefault {

@@ -155,3 +155,4 @@ linters:
 
     # Disable deprecated/archived linters (alphabetical order)
     - execinquery
+    - exportloopref

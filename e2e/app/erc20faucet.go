@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
@@ -41,7 +42,7 @@ func RunERC20Faucet(ctx context.Context, def Definition, cfg RunERC20FaucetConfi
 	network := networkFromDef(def)
 	addr := common.HexToAddress(cfg.AddrToFund)
 	tokenAddr := contracts.Token(networkID)
-	amt := new(big.Int).Mul(big.NewInt(int64(cfg.Amount)), big.NewInt(params.Ether))
+	amt := new(big.Int).Mul(umath.NewBigInt(cfg.Amount), big.NewInt(params.Ether))
 
 	funder, err := omnitoken.InitialSupplyRecipient(networkID)
 	if err != nil {

@@ -13,7 +13,7 @@ import (
 const (
 	ipPrefix      = "10.186.73." // See github.com/cometbft/cometbft/test/e2e/pkg for reference
 	startIPSuffix = 100
-	startPort     = 8000
+	startPort     = uint32(8000)
 )
 
 var localhost = net.ParseIP("127.0.0.1") //nolint:gochecknoglobals // Static IP
@@ -37,7 +37,7 @@ func NewInfraData(manifest types.Manifest) (types.InfrastructureData, error) {
 	port := startPort
 	nextPort := func() uint32 {
 		defer func() { port++ }()
-		return uint32(port)
+		return port
 	}
 
 	for name := range manifest.OmniEVMs() {

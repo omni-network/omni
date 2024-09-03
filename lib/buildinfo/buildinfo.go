@@ -57,7 +57,7 @@ func NewVersionCmd() *cobra.Command {
 			_, _ = sb.WriteString("Git Timestamp " + timestamp)
 			_, _ = sb.WriteString("\n")
 
-			cmd.Printf(sb.String())
+			cmd.Printf(sb.String()) //nolint:govet // Not a problem
 		},
 	}
 }

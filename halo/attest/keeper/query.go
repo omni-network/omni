@@ -6,6 +6,7 @@ import (
 	"github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -93,9 +94,14 @@ func (k *Keeper) ListAllAttestations(ctx context.Context, req *types.ListAllAtte
 		return nil, status.Error(codes.InvalidArgument, "invalid request")
 	}
 
+	s, err := statusToDB(req.Status)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	chainVer := xchain.ChainVersion{ID: req.ChainId, ConfLevel: xchain.ConfLevel(req.ConfLevel)}
 
-	atts, err := k.listAllAttestations(ctx, chainVer, Status(req.Status), req.FromOffset)
+	atts, err := k.listAllAttestations(ctx, chainVer, s, req.FromOffset)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -113,7 +119,12 @@ func (k *Keeper) WindowCompare(ctx context.Context, req *types.WindowCompareRequ
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &types.WindowCompareResponse{Cmp: int32(cmp)}, nil
+	cmpInt32, err := umath.ToInt32(cmp)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.WindowCompareResponse{Cmp: cmpInt32}, nil
 }
 
 func getConsensusChainID(ctx context.Context) (uint64, error) {

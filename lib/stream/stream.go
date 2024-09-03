@@ -3,6 +3,7 @@ package stream
 
 import (
 	"context"
+	"math"
 	"sync"
 	"time"
 
@@ -173,7 +174,7 @@ func startFetchWorkers[E any](
 	startHeight uint64,
 ) {
 	for i := uint64(0); i < deps.FetchWorkers; i++ {
-		go func(workerID int, height uint64) {
+		go func(workerID uint64, height uint64) {
 			for {
 				// Work function MUST be robust, always returning a non-empty strictly-sequential batch
 				// or nil if the context was canceled.
@@ -202,7 +203,7 @@ func startFetchWorkers[E any](
 				// Calculate next height to fetch
 				height = last + deps.FetchWorkers
 			}
-		}(int(i), startHeight+i) // Initialize a height to fetch per worker
+		}(i, startHeight+i) // Initialize a height to fetch per worker
 	}
 }
 
@@ -215,20 +216,20 @@ type sortingBuffer[E any] struct {
 
 	mu      sync.Mutex
 	buffer  map[uint64]workerElem[E] // Worker elements by height
-	counts  map[int]int              // Count of elements per worker
-	signals map[int]chan struct{}    // Processes <> Worker comms
+	counts  map[uint64]int           // Count of elements per worker
+	signals map[uint64]chan struct{} // Processes <> Worker comms
 }
 
-const processorID = -1
+const processorID = math.MaxUint64
 
 func newSortingBuffer[E any](
 	startHeight uint64,
 	deps Deps[E],
 	callback func(ctx context.Context, elem E) error,
 ) *sortingBuffer[E] {
-	signals := make(map[int]chan struct{})
+	signals := make(map[uint64]chan struct{})
 	signals[processorID] = make(chan struct{}, 1)
-	for i := 0; i < int(deps.FetchWorkers); i++ {
+	for i := uint64(0); i < deps.FetchWorkers; i++ {
 		signals[i] = make(chan struct{}, 1)
 	}
 
@@ -237,13 +238,13 @@ func newSortingBuffer[E any](
 		deps:        deps,
 		callback:    callback,
 		buffer:      make(map[uint64]workerElem[E]),
-		counts:      make(map[int]int),
+		counts:      make(map[uint64]int),
 		signals:     signals,
 	}
 }
 
 // signal signals the ID to wakeup.
-func (m *sortingBuffer[E]) signal(signalID int) {
+func (m *sortingBuffer[E]) signal(signalID uint64) {
 	select {
 	case m.signals[signalID] <- struct{}{}:
 	default:
@@ -252,7 +253,7 @@ func (m *sortingBuffer[E]) signal(signalID int) {
 
 // retryLock repeatedly obtains the lock and calls the callback while it returns false.
 // It returns once the callback returns true or an error.
-func (m *sortingBuffer[E]) retryLock(ctx context.Context, signalID int, fn func(ctx context.Context) (bool, error)) error {
+func (m *sortingBuffer[E]) retryLock(ctx context.Context, signalID uint64, fn func(ctx context.Context) (bool, error)) error {
 	timer := time.NewTicker(time.Nanosecond) // Initial timer is instant
 	defer timer.Stop()
 
@@ -278,7 +279,7 @@ func (m *sortingBuffer[E]) retryLock(ctx context.Context, signalID int, fn func(
 	}
 }
 
-func (m *sortingBuffer[E]) Add(ctx context.Context, workerID int, batch []E) {
+func (m *sortingBuffer[E]) Add(ctx context.Context, workerID uint64, batch []E) {
 	_ = m.retryLock(ctx, workerID, func(_ context.Context) (bool, error) {
 		// Wait for any previous batch this worker added to be processed before adding this batch.
 		// This results in backpressure to workers, basically only buffering a single batch per worker.
@@ -339,6 +340,6 @@ func (m *sortingBuffer[E]) Process(ctx context.Context) error {
 
 // workerElem represents an element processed by a worker.
 type workerElem[E any] struct {
-	WorkerID int
+	WorkerID uint64
 	E        E
 }

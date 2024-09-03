@@ -23,7 +23,7 @@ func TestPortalOffsets(t *testing.T) {
 				require.NoError(t, err)
 
 				// require at least some xmsgs were sent
-				require.Greater(t, sourceOffset, uint64(0),
+				require.Positive(t, sourceOffset,
 					"no xmsgs sent from source chain %v to dest chain %v",
 					source.Chain.ID, dest.Chain.ID)
 

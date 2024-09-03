@@ -5,6 +5,8 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/omni-network/omni/lib/umath"
+
 	"github.com/ethereum/go-ethereum"
 )
 
@@ -26,7 +28,7 @@ func (m *MockPricer) SuggestGasPrice(_ context.Context) (*big.Int, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	return big.NewInt(int64(m.price)), nil
+	return umath.NewBigInt(m.price), nil
 }
 
 func (m *MockPricer) SetPrice(price uint64) {

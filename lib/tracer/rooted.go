@@ -33,7 +33,7 @@ func StartChainHeight(ctx context.Context, network netconf.ID, chain string, hei
 	ctx, span := tracer.Start(RootedCtx(ctx, traceID), spanName, opts...)
 
 	span.SetAttributes(attribute.String("chain", chain))
-	span.SetAttributes(attribute.Int64("height", int64(height)))
+	span.SetAttributes(attribute.Int64("height", int64(height))) //nolint:gosec // Not critical
 
 	return ctx, span
 }
