@@ -104,7 +104,7 @@ func (s Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 
 	ctx = log.WithCtx(ctx, reqAttrs...)
 	log.Debug(ctx, "Received submission",
-		"block_offset", sub.AttHeader.ChainVersion,
+		"attest_offset", sub.AttHeader.AttestOffset,
 		"start_msg_offset", startOffset,
 		"msgs", len(sub.Msgs),
 	)

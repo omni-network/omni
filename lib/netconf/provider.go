@@ -131,16 +131,19 @@ func containsAll(network Network, expected []string) bool {
 func networkFromPortals(ctx context.Context, network ID, portals []bindings.PortalRegistryDeployment) (Network, error) {
 	var chains []Chain
 	for _, portal := range portals {
-		// Ephemeral networks may contain mock portals for testing purposes, just ignore them.
-		if _, ok := evmchain.MetadataByID(portal.ChainId); !ok && network.IsEphemeral() {
-			log.Warn(ctx, "Ignoring ephemeral network mock portal", nil, "chain_id", portal.ChainId)
-			continue
-		}
-
 		// PortalRegistry guarantees BlockPeriod <= MaxInt64, but we check here to be safe.
-		periodMS, err := umath.ToInt64(portal.BlockPeriod)
+		periodNanos, err := umath.ToInt64(portal.BlockPeriod)
 		if err != nil {
 			return Network{}, err
+		}
+		period := time.Duration(periodNanos) * time.Nanosecond
+
+		// Ephemeral networks may contain mock portals for testing purposes, just ignore them.
+		if meta, ok := evmchain.MetadataByID(portal.ChainId); !ok && network.IsEphemeral() {
+			log.Warn(ctx, "Ignoring ephemeral network mock portal", nil, "chain_id", portal.ChainId)
+			continue
+		} else if ok && meta.BlockPeriod != period {
+			return Network{}, errors.New("invalid portal block period [BUG]") // Sanity check
 		}
 
 		chains = append(chains, Chain{
@@ -148,7 +151,7 @@ func networkFromPortals(ctx context.Context, network ID, portals []bindings.Port
 			Name:           portal.Name,
 			PortalAddress:  portal.Addr,
 			DeployHeight:   portal.DeployHeight,
-			BlockPeriod:    time.Duration(periodMS) * time.Millisecond,
+			BlockPeriod:    period,
 			Shards:         toShardIDs(portal.Shards),
 			AttestInterval: portal.AttestInterval,
 		})

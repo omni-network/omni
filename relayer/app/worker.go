@@ -77,7 +77,7 @@ func (w *Worker) runOnce(ctx context.Context) error {
 	for _, cursor := range cursors {
 		log.Info(ctx, "Worker fetched submitted cursor",
 			"stream", w.network.StreamName(cursor.StreamID),
-			"block_offset", cursor.AttestOffset,
+			"attest_offset", cursor.AttestOffset,
 			"msg_offset", cursor.MsgOffset,
 		)
 	}
