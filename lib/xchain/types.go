@@ -1,9 +1,13 @@
 package xchain
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -130,6 +134,12 @@ type MsgID struct {
 	StreamOffset uint64 // Monotonically incremented offset of Msg in the Stream (1-indexed)
 }
 
+// Hash returns the RouteScan cross-transaction IDHash of the MsgID.
+func (m MsgID) Hash() common.Hash {
+	s := fmt.Sprintf("omni#%d#%d#%d#%d", m.SourceChainID, m.DestChainID, m.ShardID, m.StreamOffset)
+	return sha256.Sum256([]byte(s))
+}
+
 // Msg is a cross-chain message.
 type Msg struct {
 	MsgID                          // Unique ID of the message
@@ -180,6 +190,26 @@ func (b Block) ShouldAttest(attestInterval uint64) bool {
 	}
 
 	return b.BlockHeight%attestInterval == 0
+}
+
+func (b Block) MsgByID(msgID MsgID) (Msg, error) {
+	for _, msg := range b.Msgs {
+		if msg.MsgID == msgID {
+			return msg, nil
+		}
+	}
+
+	return Msg{}, errors.New("msg not found")
+}
+
+func (b Block) ReceiptByID(msgID MsgID) (Receipt, error) {
+	for _, receipt := range b.Receipts {
+		if receipt.MsgID == msgID {
+			return receipt, nil
+		}
+	}
+
+	return Receipt{}, errors.New("receipt not found")
 }
 
 // AttestHeader uniquely identifies an attestation that require quorum vote.
