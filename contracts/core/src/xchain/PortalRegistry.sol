@@ -22,7 +22,7 @@ contract PortalRegistry is OwnableUpgradeable {
         address indexed addr,
         uint64 deployHeight,
         uint64 attestInterval,
-        uint64 blockPeriod,
+        uint64 blockPeriodNs,
         uint64[] shards,
         string name
     );
@@ -43,7 +43,7 @@ contract PortalRegistry is OwnableUpgradeable {
      * @custom:field chainId            The chain ID of the deployment.
      * @custom:field deployHeight       The height at which the deployment was deployed.
      * @custom:field attestInterval     The interval, in blocks, at which validators must attest, even if empty.
-     * @custom:field blockPeriod        The block period of the chain deployed to, in milliseconds.
+     * @custom:field blockPeriodNs      The block period of the chain deployed to, in nanoseconds.
      * @custom:field shards             Supported shards of the deployment.
      * @custom:field name               The name of the chain deployed to (ex "omni_evm", "ethereum")
      */
@@ -52,7 +52,7 @@ contract PortalRegistry is OwnableUpgradeable {
         uint64 chainId;
         uint64 deployHeight;
         uint64 attestInterval;
-        uint64 blockPeriod;
+        uint64 blockPeriodNs;
         uint64[] shards;
         string name;
     }
@@ -105,8 +105,8 @@ contract PortalRegistry is OwnableUpgradeable {
         require(dep.addr != address(0), "PortalRegistry: zero addr");
         require(dep.chainId > 0, "PortalRegistry: zero chain ID");
         require(dep.attestInterval > 0, "PortalRegistry: zero interval");
-        require(dep.blockPeriod <= uint64(type(int64).max), "PortalRegistry: period too large");
-        require(dep.blockPeriod > 0, "PortalRegistry: zero period");
+        require(dep.blockPeriodNs <= uint64(type(int64).max), "PortalRegistry: period too large");
+        require(dep.blockPeriodNs > 0, "PortalRegistry: zero period");
         require(bytes(dep.name).length > 0, "PortalRegistry: no name");
         require(dep.shards.length > 0, "PortalRegistry: no shards");
 
@@ -123,7 +123,7 @@ contract PortalRegistry is OwnableUpgradeable {
         chainIds.push(dep.chainId);
 
         emit PortalRegistered(
-            dep.chainId, dep.addr, dep.deployHeight, dep.attestInterval, dep.blockPeriod, dep.shards, dep.name
+            dep.chainId, dep.addr, dep.deployHeight, dep.attestInterval, dep.blockPeriodNs, dep.shards, dep.name
         );
     }
 }
