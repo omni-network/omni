@@ -79,6 +79,7 @@ func New() *cobra.Command {
 		newKeyCreate(&def),
 		newAdminCmd(&def),
 		newERC20FaucetCmd(&def),
+		newDeployGasAppCmd(&def),
 		fundAccounts(&def),
 	)
 
@@ -266,6 +267,22 @@ func newERC20FaucetCmd(def *app.Definition) *cobra.Command {
 	}
 
 	bindERC20FaucetFlags(cmd.Flags(), &cfg)
+
+	return cmd
+}
+
+func newDeployGasAppCmd(def *app.Definition) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "deploy-gas-app",
+		Short: "Deploys gas pump and gas station contracts",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if def.Testnet.Network.IsEphemeral() {
+				return errors.New("only permanent networks")
+			}
+
+			return app.DeployGasApp(cmd.Context(), *def)
+		},
+	}
 
 	return cmd
 }
