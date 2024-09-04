@@ -77,7 +77,7 @@ func (k Keeper) Deliver(ctx context.Context, _ common.Hash, elog *evmenginetypes
 			DeployHeight:   reg.DeployHeight,
 			ShardIds:       reg.Shards,
 			AttestInterval: reg.AttestInterval,
-			BlockPeriodNs:  reg.BlockPeriod,
+			BlockPeriodNs:  reg.BlockPeriodNs,
 			Name:           reg.Name,
 		})
 	default:

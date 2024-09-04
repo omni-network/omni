@@ -152,7 +152,7 @@ func toPortalDepls(def Definition, chains []types.EVMChain) (map[uint64]bindings
 			Name:           chain.Name,
 			ChainId:        chain.ChainID,
 			Addr:           info.Address,
-			BlockPeriod:    uint64(chain.BlockPeriod),
+			BlockPeriodNs:  uint64(chain.BlockPeriod),
 			AttestInterval: chain.AttestInterval(def.Testnet.Network),
 			DeployHeight:   info.Height,
 			Shards:         chain.ShardsUint64(),
@@ -204,7 +204,7 @@ func startAddingMockPortals(ctx context.Context, def Definition) func() error {
 				Addr:           tutil.RandomAddress(),
 				DeployHeight:   chainID, // does not matter
 				AttestInterval: 60,      // 60 blocks,
-				BlockPeriod:    1000,    // 1 second
+				BlockPeriodNs:  uint64(time.Second),
 				Shards:         []uint64{uint64(xchain.ShardFinalized0)},
 				Name:           fmt.Sprintf("mock-portal-%d", chainID),
 			}

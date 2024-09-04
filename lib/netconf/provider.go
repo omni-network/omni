@@ -132,7 +132,7 @@ func networkFromPortals(ctx context.Context, network ID, portals []bindings.Port
 	var chains []Chain
 	for _, portal := range portals {
 		// PortalRegistry guarantees BlockPeriod <= MaxInt64, but we check here to be safe.
-		periodNanos, err := umath.ToInt64(portal.BlockPeriod)
+		periodNanos, err := umath.ToInt64(portal.BlockPeriodNs)
 		if err != nil {
 			return Network{}, err
 		}
@@ -227,7 +227,7 @@ func toPortalBindings(portals []*rtypes.Portal) []bindings.PortalRegistryDeploym
 			DeployHeight:   p.DeployHeight,
 			Shards:         p.ShardIds,
 			AttestInterval: p.AttestInterval,
-			BlockPeriod:    p.BlockPeriodNs,
+			BlockPeriodNs:  p.BlockPeriodNs,
 			Name:           p.Name,
 		}
 	}
