@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"sync"
+	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -50,6 +51,8 @@ func Start(
 		}
 	}
 
+	go deleteForever(ctx, indexer)
+
 	return nil
 }
 
@@ -84,6 +87,7 @@ func newIndexer(
 	}, nil
 }
 
+// indexer indexes xchain blocks and messages.
 type indexer struct {
 	mu           sync.RWMutex
 	blockTable   BlockTable
@@ -94,6 +98,7 @@ type indexer struct {
 	sampleFunc   func(sample)
 }
 
+// cursors returns the indexed block height for each chain.
 func (i *indexer) cursors(ctx context.Context) (map[xchain.ChainVersion]uint64, error) {
 	i.mu.RLock()
 	defer i.mu.RUnlock()
@@ -120,10 +125,12 @@ func (i *indexer) cursors(ctx context.Context) (map[xchain.ChainVersion]uint64, 
 	return resp, nil
 }
 
+// delete deletes all blocks (and msg links) that have been fully indexed.
 func (i *indexer) delete(ctx context.Context) ([]xchain.BlockHeader, error) {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 
+	// Iterate over all blocks
 	blockIter, err := i.blockTable.List(ctx, BlockPrimaryKey{})
 	if err != nil {
 		return nil, errors.Wrap(err, "list blocks")
@@ -206,6 +213,7 @@ func (i *indexer) delete(ctx context.Context) ([]xchain.BlockHeader, error) {
 	return deleted, nil
 }
 
+// updateCursor updates the cursor to the provided chain to the provided height.
 func (i *indexer) updateCursor(ctx context.Context, block xchain.Block) error {
 	err := i.cursorTable.Save(ctx, &Cursor{
 		ChainId:     block.ChainID,
@@ -219,10 +227,17 @@ func (i *indexer) updateCursor(ctx context.Context, block xchain.Block) error {
 	return nil
 }
 
+// index indexes the given block.
 func (i *indexer) index(ctx context.Context, block xchain.Block) error {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 
+	// Skip empty blocks
+	if len(block.Msgs) == 0 && len(block.Receipts) == 0 {
+		return nil
+	}
+
+	// Marshal block (we don't store all block fields explicitly)
 	bz, err := json.Marshal(block) //nolint:musttag // TODO: Rather use protobuf
 	if err != nil {
 		return errors.Wrap(err, "marshal block")
@@ -263,7 +278,7 @@ func (i *indexer) index(ctx context.Context, block xchain.Block) error {
 			return errors.Wrap(err, "save msg link")
 		}
 
-		// Maybe instrument
+		// Maybe instrument if both msg and receipt are indexed
 		if link.GetMsgBlockId() != 0 && link.GetReceiptBlockId() != 0 {
 			if err := i.instrumentMsg(ctx, link); err != nil {
 				return err
@@ -300,6 +315,7 @@ func (i *indexer) index(ctx context.Context, block xchain.Block) error {
 	return i.updateCursor(ctx, block) // Update cursor since we are done with this block
 }
 
+// getLink returns the msg link for the given id or a new one.
 func (i *indexer) getLink(ctx context.Context, id xchain.MsgID) (*MsgLink, bool, error) {
 	hash := id.Hash()
 	link, err := i.msgLinkTable.Get(ctx, hash.Bytes())
@@ -314,6 +330,7 @@ func (i *indexer) getLink(ctx context.Context, id xchain.MsgID) (*MsgLink, bool,
 	return link, true, nil
 }
 
+// instrumentMsg instruments the message vs receipt metrics.
 func (i *indexer) instrumentMsg(ctx context.Context, link *MsgLink) error {
 	// Get stuff
 	msgBlockDB, err := i.blockTable.Get(ctx, link.GetMsgBlockId())
@@ -382,6 +399,7 @@ func (i *indexer) instrumentMsg(ctx context.Context, link *MsgLink) error {
 	return nil
 }
 
+// xdapp returns the xdapp name for the given sender address or "unknown".
 func (i *indexer) xdapp(sender common.Address) string {
 	resp, ok := i.xdapps[sender]
 	if !ok {
@@ -389,6 +407,36 @@ func (i *indexer) xdapp(sender common.Address) string {
 	}
 
 	return resp
+}
+
+// deleteForever deletes indexed blocks every X minutes.
+func deleteForever(ctx context.Context, i *indexer) {
+	ticker := time.NewTicker(time.Minute * 10)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			deleted, err := i.delete(ctx)
+			if ctx.Err() != nil {
+				return
+			} else if err != nil {
+				log.Warn(ctx, "Failed to delete indexed blocks (will retry)", err)
+				continue
+			}
+
+			highest := make(map[uint64]uint64)
+			for _, header := range deleted {
+				if header.BlockHeight > highest[header.ChainID] {
+					highest[header.ChainID] = header.BlockHeight
+				}
+			}
+
+			log.Debug(ctx, "Deleted indexed blocks", "count", len(deleted), "highest", highest)
+		}
+	}
 }
 
 // dbStoreService wraps a cosmos-db instance and provides it via OpenKVStore.
