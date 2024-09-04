@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts/gasstation"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -19,7 +20,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-// deployGasApp deploys OmniGasPump and OmniGasStation contracts.
+// DeployGasApp deploys OmniGasPump and OmniGasStation contracts.
 func DeployGasApp(ctx context.Context, def Definition) error {
 	if err := deployGasPumps(ctx, def); err != nil {
 		return errors.Wrap(err, "deploy gas pumps")
@@ -106,6 +107,10 @@ func deployGasStation(ctx context.Context, def Definition) error {
 // TODO: handle funding / monitoring properly.
 // consider joining with e2e/app/eoa, or introduce something similar for contracts.
 func fundGasStation(ctx context.Context, def Definition) error {
+	if def.Testnet.Network != netconf.Devnet && def.Testnet.Network != netconf.Staging {
+		return errors.New("funding of gas station only supported on devnet and staging (fixme)")
+	}
+
 	network := networkFromDef(def)
 	omniEVM, ok := network.OmniEVMChain()
 	if !ok {
@@ -118,9 +123,7 @@ func fundGasStation(ctx context.Context, def Definition) error {
 	}
 
 	funder := eoa.Funder()
-
-	// use dev account for ephemeral networks
-	if network.ID.IsEphemeral() {
+	if network.ID == netconf.Devnet { // use dev account for devnet
 		funder = anvil.DevAccount8()
 	}
 
