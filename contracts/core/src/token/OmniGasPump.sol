@@ -37,7 +37,7 @@ contract OmniGasPump is XAppUpgradeable, OwnableUpgradeable, PausableUpgradeable
     event FilledUp(address indexed recipient, uint256 owed, uint256 amtETH, uint256 fee, uint256 toll, uint256 amtOMNI);
 
     /// @notice Gas limit passed to OmniGasStation.settleUp xcall
-    uint64 public constant SETTLE_GAS = 100_000;
+    uint64 public constant SETTLE_GAS = 140_000;
 
     /// @notice Denominator for toll percentage calculations
     uint256 public constant TOLL_DENOM = 1000;

@@ -34,9 +34,19 @@ contract OmniGasStation is XAppUpgradeable, OwnableUpgradeable, PausableUpgradea
         _disableInitializers();
     }
 
-    function initialize(address portal, address owner) external initializer {
+    /// @dev GasPump struct, just used in initialize params
+    struct GasPump {
+        uint64 chainID;
+        address addr;
+    }
+
+    function initialize(address portal, address owner, GasPump[] calldata pumps_) external initializer {
         __XApp_init(portal, ConfLevel.Finalized);
         __Ownable_init(owner);
+
+        for (uint256 i = 0; i < pumps_.length; i++) {
+            _setPump(pumps_[i].chainID, pumps_[i].addr);
+        }
     }
 
     /**
@@ -63,11 +73,7 @@ contract OmniGasStation is XAppUpgradeable, OwnableUpgradeable, PausableUpgradea
 
     /// @notice Set the pump addr for a chain
     function setPump(uint64 chainId, address addr) external onlyOwner {
-        require(addr != address(0), "GasStation: zero addr");
-        require(chainId != 0, "GasStation: zero chainId");
-
-        pumps[chainId] = addr;
-        emit GasPumpAdded(chainId, addr);
+        _setPump(chainId, addr);
     }
 
     /// @notice Return true if `chainID` has a registered pump at `addr`
@@ -83,6 +89,14 @@ contract OmniGasStation is XAppUpgradeable, OwnableUpgradeable, PausableUpgradea
     /// @notice Unpause withdrawals
     function unpause() external onlyOwner {
         _unpause();
+    }
+
+    function _setPump(uint64 chainId, address addr) internal {
+        require(addr != address(0), "GasStation: zero addr");
+        require(chainId != 0, "GasStation: zero chainId");
+
+        pumps[chainId] = addr;
+        emit GasPumpAdded(chainId, addr);
     }
 
     receive() external payable { }
