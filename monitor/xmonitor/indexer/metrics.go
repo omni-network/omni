@@ -30,6 +30,13 @@ var (
 		Help:      "Total number of reverted cross chain transactions per stream per xdapp",
 	}, []string{"stream", "xdapp"})
 
+	fuzzyOverrideCounter = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "monitor",
+		Subsystem: "indexer",
+		Name:      "fuzzy_override_total",
+		Help:      "Total number of fuzzy override cross chain transactions per stream per xdapp",
+	}, []string{"stream", "xdapp"})
+
 	excessGasHist = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "monitor",
 		Subsystem: "indexer",
@@ -40,11 +47,12 @@ var (
 )
 
 type sample struct {
-	Stream    string
-	XDApp     string
-	Latency   time.Duration
-	ExcessGas uint64
-	Success   bool
+	Stream        string
+	XDApp         string
+	Latency       time.Duration
+	ExcessGas     uint64
+	Success       bool
+	FuzzyOverride bool
 }
 
 func instrumentSample(s sample) {
@@ -52,6 +60,9 @@ func instrumentSample(s sample) {
 		successCounter.WithLabelValues(s.Stream, s.XDApp).Inc()
 	} else {
 		revertCounter.WithLabelValues(s.Stream, s.XDApp).Inc()
+	}
+	if s.FuzzyOverride {
+		fuzzyOverrideCounter.WithLabelValues(s.Stream, s.XDApp).Inc()
 	}
 	latencyHist.WithLabelValues(s.Stream, s.XDApp).Observe(s.Latency.Seconds())
 	excessGasHist.WithLabelValues(s.Stream, s.XDApp).Observe(float64(s.ExcessGas))
