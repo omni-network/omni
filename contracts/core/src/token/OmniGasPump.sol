@@ -51,7 +51,7 @@ contract OmniGasPump is XAppUpgradeable, OwnableUpgradeable, PausableUpgradeable
     /// @notice Max amt (in native token) that can be swapped in a single tx
     uint256 public maxSwap;
 
-    /// @notice Percentage toll taken by this contract for each swap, to disencentivize spamming
+    /// @notice Percentage toll taken by this contract for each swap, to disincentivize spamming
     uint256 public toll;
 
     /// @notice Map recipient to total owed (sum of historical fillUps()), denominated in OMNI.
