@@ -17,6 +17,7 @@ import (
 )
 
 //go:generate go test . -count=1000 -race
+
 func TestIndexer(t *testing.T) {
 	t.Parallel()
 
@@ -176,10 +177,10 @@ func (m mockXProvider) GetSubmission(_ context.Context, chainID uint64, txHash c
 }
 
 func mockConfLevel(txHash common.Hash) xchain.ConfLevel {
-	confLevel = xchain.ConfFinalized
+	resp := xchain.ConfFinalized
 	if txHash[0]%2 == 0 {
-		confLevel = xchain.ConfLatest
+		resp = xchain.ConfLatest
 	}
 
-	return confLevel
+	return resp
 }
