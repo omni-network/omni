@@ -33,6 +33,22 @@ contract Staking is OwnableUpgradeable {
     event Delegate(address indexed delegator, address indexed validator, uint256 amount);
 
     /**
+     * @notice Emitted when the allowlist is enabled
+     */
+    event AllowlistEnabled();
+
+    /**
+     * @notice Emitted when the allowlist is disabled
+     */
+    event AllowlistDisabled();
+
+    /**
+     * @notice Emitted when validators are added to the allowlist
+     * @param validators The list of validators that were added
+     */
+    event AllowlistSet(address[] validators);
+
+    /**
      * @notice The minimum deposit required to create a validator
      */
     uint256 public constant MinDeposit = 100 ether;
@@ -51,6 +67,15 @@ contract Staking is OwnableUpgradeable {
      * @notice True if the validator address is allowed to create a validator.
      */
     mapping(address => bool) public isAllowedValidator;
+
+    /**
+     * @notice The list of allowed validator addresses.
+     */
+    address[] internal _allowlist;
+
+    constructor() {
+        _disableInitializers();
+    }
 
     function initialize(address owner_, bool isAllowlistEnabled_) public initializer {
         __Ownable_init(owner_);
@@ -85,39 +110,50 @@ contract Staking is OwnableUpgradeable {
         emit Delegate(msg.sender, validator, msg.value);
     }
 
+    /**
+     * @notice Returns the list of allowed validator addresses
+     */
+    function allowlist() external view returns (address[] memory) {
+        return _allowlist;
+    }
+
     //////////////////////////////////////////////////////////////////////////////
     //                                  Admin                                   //
     //////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @notice Enable the validator allowlist
+     * @notice Add validators to the allowlist
+     * @param enabled True to enable the allowlist, false to disable
      */
-    function enableAllowlist() external onlyOwner {
-        isAllowlistEnabled = true;
+    function setAllowlistEnabled(bool enabled) external onlyOwner {
+        require(isAllowlistEnabled != enabled, "Staking: already set");
+
+        isAllowlistEnabled = enabled;
+
+        if (enabled) {
+            emit AllowlistEnabled();
+        } else {
+            emit AllowlistDisabled();
+        }
     }
 
     /**
-     * @notice Disable the validator allowlist
+     * @notice Add validators to the allowlist
+     * @param validators The list of validators to add
      */
-    function disableAllowlist() external onlyOwner {
-        isAllowlistEnabled = false;
-    }
+    function setAllowlist(address[] calldata validators) external onlyOwner {
+        // reset current
+        for (uint256 i = 0; i < _allowlist.length; i++) {
+            isAllowedValidator[_allowlist[i]] = false;
+        }
 
-    /**
-     * @notice Add validators to allow list
-     */
-    function allowValidators(address[] calldata validators) external onlyOwner {
+        _allowlist = validators;
+
+        // set new
         for (uint256 i = 0; i < validators.length; i++) {
             isAllowedValidator[validators[i]] = true;
         }
-    }
 
-    /**
-     * @notice Remove validators from allow list
-     */
-    function disallowValidators(address[] calldata validators) external onlyOwner {
-        for (uint256 i = 0; i < validators.length; i++) {
-            isAllowedValidator[validators[i]] = false;
-        }
+        emit AllowlistSet(validators);
     }
 }

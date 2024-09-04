@@ -272,7 +272,7 @@ func allowStagingValidators(ctx context.Context, def Definition) error {
 		addrs = append(addrs, addr)
 	}
 
-	tx, err := contract.AllowValidators(txOpts, addrs)
+	tx, err := contract.SetAllowlist(txOpts, addrs)
 	if err != nil {
 		return errors.Wrap(err, "allow validators")
 	}

@@ -27,7 +27,8 @@ all: install-deps build bindings allocs ## Build contracts, generate bindings an
 
 CORE_CONTRACTS := OmniPortal FeeOracleV1 Create3 TransparentUpgradeableProxy \
 			Staking Slashing OmniBridgeL1 OmniBridgeNative Omni WOmni \
-			PortalRegistry AllocPredeploys PingPong ProxyAdmin Admin \
+			PortalRegistry AllocPredeploys PingPong ProxyAdmin \
+			PortalAdmin StakingAdmin \
 			OmniGasPump OmniGasStation
 
 AVS_CONTRACTS := OmniAVS DelegationManager StrategyManager StrategyBase AVSDirectory \

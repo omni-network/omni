@@ -3,7 +3,6 @@ package cmd
 
 import (
 	"github.com/omni-network/omni/e2e/app"
-	"github.com/omni-network/omni/e2e/app/admin"
 	"github.com/omni-network/omni/e2e/app/agent"
 	"github.com/omni-network/omni/e2e/app/key"
 	"github.com/omni-network/omni/e2e/types"
@@ -56,7 +55,7 @@ func bindKeyCreateFlags(cmd *cobra.Command, cfg *key.UploadConfig) {
 	_ = cmd.MarkFlagRequired("type")
 }
 
-func bindPortalAdminFlags(flags *pflag.FlagSet, cfg *admin.PortalAdminConfig) {
+func bindPortalAdminFlags(flags *pflag.FlagSet, cfg *app.PortalAdminConfig) {
 	flags.StringVar(&cfg.Chain, "chain", cfg.Chain, "Run admin command on a specific chain (\"--chain=all\" for all chains)")
 }
 

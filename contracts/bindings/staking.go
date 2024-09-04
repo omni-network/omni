@@ -31,8 +31,8 @@ var (
 
 // StakingMetaData contains all meta data concerning the Staking contract.
 var StakingMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"MinDelegation\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"MinDeposit\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"allowValidators\",\"inputs\":[{\"name\":\"validators\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"createValidator\",\"inputs\":[{\"name\":\"pubkey\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"delegate\",\"inputs\":[{\"name\":\"validator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"disableAllowlist\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"disallowValidators\",\"inputs\":[{\"name\":\"validators\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"enableAllowlist\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"owner_\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"isAllowlistEnabled_\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"isAllowedValidator\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isAllowlistEnabled\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"CreateValidator\",\"inputs\":[{\"name\":\"validator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"pubkey\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"},{\"name\":\"deposit\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Delegate\",\"inputs\":[{\"name\":\"delegator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"validator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"InvalidInitialization\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotInitializing\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OwnableInvalidOwner\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"OwnableUnauthorizedAccount\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}]}]",
-	Bin: "0x608060405234801561001057600080fd5b50610a86806100206000396000f3fe6080604052600436106100dd5760003560e01c806384768b7a1161007f578063c6a2aac811610059578063c6a2aac814610252578063cf8e629a14610267578063d146fd1b1461027c578063f2fde38b1461029657600080fd5b806384768b7a146101b85780638da5cb5b146101f8578063a5a470ad1461023f57600080fd5b8063400ada75116100bb578063400ada751461015457806359bcddde146101745780635c19a95c14610190578063715018a6146101a357600080fd5b8063117407e3146100e257806311bcd830146101045780633f0b1edf14610134575b600080fd5b3480156100ee57600080fd5b506101026100fd3660046108b2565b6102b6565b005b34801561011057600080fd5b5061012168056bc75e2d6310000081565b6040519081526020015b60405180910390f35b34801561014057600080fd5b5061010261014f3660046108b2565b61032a565b34801561016057600080fd5b5061010261016f366004610943565b61039a565b34801561018057600080fd5b50610121670de0b6b3a764000081565b61010261019e36600461097f565b6104b9565b3480156101af57600080fd5b506101026105b1565b3480156101c457600080fd5b506101e86101d336600461097f565b60016020526000908152604090205460ff1681565b604051901515815260200161012b565b34801561020457600080fd5b507f9016d09d72d40fdae2fd8ceac6b6234c7706214fd39c1cd1e609a0528c199300546040516001600160a01b03909116815260200161012b565b61010261024d3660046109a1565b6105c5565b34801561025e57600080fd5b5061010261071b565b34801561027357600080fd5b50610102610732565b34801561028857600080fd5b506000546101e89060ff1681565b3480156102a257600080fd5b506101026102b136600461097f565b610746565b6102be610784565b60005b818110156103255760018060008585858181106102e0576102e0610a01565b90506020020160208101906102f5919061097f565b6001600160a01b031681526020810191909152604001600020805460ff19169115159190911790556001016102c1565b505050565b610332610784565b60005b818110156103255760006001600085858581811061035557610355610a01565b905060200201602081019061036a919061097f565b6001600160a01b031681526020810191909152604001600020805460ff1916911515919091179055600101610335565b7ff0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a008054600160401b810460ff16159067ffffffffffffffff166000811580156103e05750825b905060008267ffffffffffffffff1660011480156103fd5750303b155b90508115801561040b575080155b156104295760405163f92ee8a960e01b815260040160405180910390fd5b845467ffffffffffffffff19166001178555831561045357845460ff60401b1916600160401b1785555b61045c876107df565b6000805460ff191687151517905583156104b057845460ff60401b19168555604051600181527fc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d29060200160405180910390a15b50505050505050565b670de0b6b3a76400003410156105165760405162461bcd60e51b815260206004820152601d60248201527f5374616b696e673a20696e73756666696369656e74206465706f73697400000060448201526064015b60405180910390fd5b336001600160a01b0382161461056e5760405162461bcd60e51b815260206004820152601d60248201527f5374616b696e673a206f6e6c792073656c662064656c65676174696f6e000000604482015260640161050d565b6040513481526001600160a01b0382169033907f510b11bb3f3c799b11307c01ab7db0d335683ef5b2da98f7697de744f465eacc9060200160405180910390a350565b6105b9610784565b6105c360006107f0565b565b60005460ff1615806105e657503360009081526001602052604090205460ff165b6106295760405162461bcd60e51b815260206004820152601460248201527314dd185ada5b99ce881b9bdd08185b1b1bddd95960621b604482015260640161050d565b602181146106795760405162461bcd60e51b815260206004820152601e60248201527f5374616b696e673a20696e76616c6964207075626b6579206c656e6774680000604482015260640161050d565b68056bc75e2d631000003410156106d25760405162461bcd60e51b815260206004820152601d60248201527f5374616b696e673a20696e73756666696369656e74206465706f736974000000604482015260640161050d565b336001600160a01b03167fc7abef7b73f049da6a9bc2349ba5066a39e316eabc9f671b6f9406aa9490a45383833460405161070f93929190610a17565b60405180910390a25050565b610723610784565b6000805460ff19166001179055565b61073a610784565b6000805460ff19169055565b61074e610784565b6001600160a01b03811661077857604051631e4fbdf760e01b81526000600482015260240161050d565b610781816107f0565b50565b336107b67f9016d09d72d40fdae2fd8ceac6b6234c7706214fd39c1cd1e609a0528c199300546001600160a01b031690565b6001600160a01b0316146105c35760405163118cdaa760e01b815233600482015260240161050d565b6107e7610861565b610781816108aa565b7f9016d09d72d40fdae2fd8ceac6b6234c7706214fd39c1cd1e609a0528c19930080546001600160a01b031981166001600160a01b03848116918217845560405192169182907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e090600090a3505050565b7ff0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a0054600160401b900460ff166105c357604051631afcd79f60e31b815260040160405180910390fd5b61074e610861565b600080602083850312156108c557600080fd5b823567ffffffffffffffff808211156108dd57600080fd5b818501915085601f8301126108f157600080fd5b81358181111561090057600080fd5b8660208260051b850101111561091557600080fd5b60209290920196919550909350505050565b80356001600160a01b038116811461093e57600080fd5b919050565b6000806040838503121561095657600080fd5b61095f83610927565b91506020830135801515811461097457600080fd5b809150509250929050565b60006020828403121561099157600080fd5b61099a82610927565b9392505050565b600080602083850312156109b457600080fd5b823567ffffffffffffffff808211156109cc57600080fd5b818501915085601f8301126109e057600080fd5b8135818111156109ef57600080fd5b86602082850101111561091557600080fd5b634e487b7160e01b600052603260045260246000fd5b604081528260408201528284606083013760006060848301015260006060601f19601f860116830101905082602083015294935050505056fea26469706673582212201ad1d9aad3c7d43b13774db3308d59675ed3c15f01a079646644a291ecce45c964736f6c63430008180033",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"MinDelegation\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"MinDeposit\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"allowlist\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"createValidator\",\"inputs\":[{\"name\":\"pubkey\",\"type\":\"bytes\",\"internalType\":\"bytes\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"delegate\",\"inputs\":[{\"name\":\"validator\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"payable\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"owner_\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"isAllowlistEnabled_\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"isAllowedValidator\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isAllowlistEnabled\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setAllowlist\",\"inputs\":[{\"name\":\"validators\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setAllowlistEnabled\",\"inputs\":[{\"name\":\"enabled\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"AllowlistDisabled\",\"inputs\":[],\"anonymous\":false},{\"type\":\"event\",\"name\":\"AllowlistEnabled\",\"inputs\":[],\"anonymous\":false},{\"type\":\"event\",\"name\":\"AllowlistSet\",\"inputs\":[{\"name\":\"validators\",\"type\":\"address[]\",\"indexed\":false,\"internalType\":\"address[]\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"CreateValidator\",\"inputs\":[{\"name\":\"validator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"pubkey\",\"type\":\"bytes\",\"indexed\":false,\"internalType\":\"bytes\"},{\"name\":\"deposit\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Delegate\",\"inputs\":[{\"name\":\"delegator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"validator\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"InvalidInitialization\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotInitializing\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OwnableInvalidOwner\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"OwnableUnauthorizedAccount\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}]}]",
+	Bin: "0x608060405234801561001057600080fd5b5061001961001e565b6100d0565b7ff0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a00805468010000000000000000900460ff161561006e5760405163f92ee8a960e01b815260040160405180910390fd5b80546001600160401b03908116146100cd5780546001600160401b0319166001600160401b0390811782556040519081527fc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d29060200160405180910390a15b50565b610ccc806100df6000396000f3fe6080604052600436106100c25760003560e01c8063715018a61161007f578063a5a470ad11610059578063a5a470ad14610226578063d146fd1b14610239578063d7644ba214610253578063f2fde38b1461027357600080fd5b8063715018a61461018a57806384768b7a1461019f5780638da5cb5b146101df57600080fd5b806311bcd830146100c75780632b47da52146100f7578063400ada7514610119578063552b818b1461013b57806359bcddde1461015b5780635c19a95c14610177575b600080fd5b3480156100d357600080fd5b506100e468056bc75e2d6310000081565b6040519081526020015b60405180910390f35b34801561010357600080fd5b5061010c610293565b6040516100ee9190610a3d565b34801561012557600080fd5b50610139610134366004610ab6565b6102f5565b005b34801561014757600080fd5b50610139610156366004610ae9565b610414565b34801561016757600080fd5b506100e4670de0b6b3a764000081565b610139610185366004610b5e565b610531565b34801561019657600080fd5b50610139610629565b3480156101ab57600080fd5b506101cf6101ba366004610b5e565b60016020526000908152604090205460ff1681565b60405190151581526020016100ee565b3480156101eb57600080fd5b507f9016d09d72d40fdae2fd8ceac6b6234c7706214fd39c1cd1e609a0528c199300546040516001600160a01b0390911681526020016100ee565b610139610234366004610b80565b61063d565b34801561024557600080fd5b506000546101cf9060ff1681565b34801561025f57600080fd5b5061013961026e366004610be0565b610793565b34801561027f57600080fd5b5061013961028e366004610b5e565b61085c565b606060028054806020026020016040519081016040528092919081815260200182805480156102eb57602002820191906000526020600020905b81546001600160a01b031681526001909101906020018083116102cd575b5050505050905090565b7ff0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a008054600160401b810460ff16159067ffffffffffffffff1660008115801561033b5750825b905060008267ffffffffffffffff1660011480156103585750303b155b905081158015610366575080155b156103845760405163f92ee8a960e01b815260040160405180910390fd5b845467ffffffffffffffff1916600117855583156103ae57845460ff60401b1916600160401b1785555b6103b787610897565b6000805460ff1916871515179055831561040b57845460ff60401b19168555604051600181527fc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d29060200160405180910390a15b50505050505050565b61041c6108a8565b60005b60025481101561047e576000600160006002848154811061044257610442610bfb565b6000918252602080832091909101546001600160a01b031683528201929092526040019020805460ff191691151591909117905560010161041f565b5061048b600283836109c5565b5060005b818110156104f35760018060008585858181106104ae576104ae610bfb565b90506020020160208101906104c39190610b5e565b6001600160a01b031681526020810191909152604001600020805460ff191691151591909117905560010161048f565b507f27f242de1bc4ed72c4329591ffff7d223b5f025e3514a07e05afec6d4eb889cf8282604051610525929190610c11565b60405180910390a15050565b670de0b6b3a764000034101561058e5760405162461bcd60e51b815260206004820152601d60248201527f5374616b696e673a20696e73756666696369656e74206465706f73697400000060448201526064015b60405180910390fd5b336001600160a01b038216146105e65760405162461bcd60e51b815260206004820152601d60248201527f5374616b696e673a206f6e6c792073656c662064656c65676174696f6e0000006044820152606401610585565b6040513481526001600160a01b0382169033907f510b11bb3f3c799b11307c01ab7db0d335683ef5b2da98f7697de744f465eacc9060200160405180910390a350565b6106316108a8565b61063b6000610903565b565b60005460ff16158061065e57503360009081526001602052604090205460ff165b6106a15760405162461bcd60e51b815260206004820152601460248201527314dd185ada5b99ce881b9bdd08185b1b1bddd95960621b6044820152606401610585565b602181146106f15760405162461bcd60e51b815260206004820152601e60248201527f5374616b696e673a20696e76616c6964207075626b6579206c656e67746800006044820152606401610585565b68056bc75e2d6310000034101561074a5760405162461bcd60e51b815260206004820152601d60248201527f5374616b696e673a20696e73756666696369656e74206465706f7369740000006044820152606401610585565b336001600160a01b03167fc7abef7b73f049da6a9bc2349ba5066a39e316eabc9f671b6f9406aa9490a45383833460405161078793929190610c5d565b60405180910390a25050565b61079b6108a8565b60005481151560ff9091161515036107ec5760405162461bcd60e51b815260206004820152601460248201527314dd185ada5b99ce88185b1c9958591e481cd95d60621b6044820152606401610585565b6000805460ff1916821580159190911790915561082f576040517f8a943acd5f4e6d3df7565a4a08a93f6b04cc31bb6c01ca4aef7abd6baf455ec390600090a150565b6040517f2d35c8d348a345fd7b3b03b7cfcf7ad0b60c2d46742d5ca536342e4185becb0790600090a15b50565b6108646108a8565b6001600160a01b03811661088e57604051631e4fbdf760e01b815260006004820152602401610585565b61085981610903565b61089f610974565b610859816109bd565b336108da7f9016d09d72d40fdae2fd8ceac6b6234c7706214fd39c1cd1e609a0528c199300546001600160a01b031690565b6001600160a01b03161461063b5760405163118cdaa760e01b8152336004820152602401610585565b7f9016d09d72d40fdae2fd8ceac6b6234c7706214fd39c1cd1e609a0528c19930080546001600160a01b031981166001600160a01b03848116918217845560405192169182907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e090600090a3505050565b7ff0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a0054600160401b900460ff1661063b57604051631afcd79f60e31b815260040160405180910390fd5b610864610974565b828054828255906000526020600020908101928215610a18579160200282015b82811115610a185781546001600160a01b0319166001600160a01b038435161782556020909201916001909101906109e5565b50610a24929150610a28565b5090565b5b80821115610a245760008155600101610a29565b6020808252825182820181905260009190848201906040850190845b81811015610a7e5783516001600160a01b031683529284019291840191600101610a59565b50909695505050505050565b80356001600160a01b0381168114610aa157600080fd5b919050565b80358015158114610aa157600080fd5b60008060408385031215610ac957600080fd5b610ad283610a8a565b9150610ae060208401610aa6565b90509250929050565b60008060208385031215610afc57600080fd5b823567ffffffffffffffff80821115610b1457600080fd5b818501915085601f830112610b2857600080fd5b813581811115610b3757600080fd5b8660208260051b8501011115610b4c57600080fd5b60209290920196919550909350505050565b600060208284031215610b7057600080fd5b610b7982610a8a565b9392505050565b60008060208385031215610b9357600080fd5b823567ffffffffffffffff80821115610bab57600080fd5b818501915085601f830112610bbf57600080fd5b813581811115610bce57600080fd5b866020828501011115610b4c57600080fd5b600060208284031215610bf257600080fd5b610b7982610aa6565b634e487b7160e01b600052603260045260246000fd5b60208082528181018390526000908460408401835b86811015610c52576001600160a01b03610c3f84610a8a565b1682529183019190830190600101610c26565b509695505050505050565b604081528260408201528284606083013760006060848301015260006060601f19601f860116830101905082602083015294935050505056fea26469706673582212209626a613dbfb7e12830784942389803c43dd0de89220444072e10a535d8573cc64736f6c63430008180033",
 }
 
 // StakingABI is the input ABI used to generate the binding from.
@@ -264,6 +264,37 @@ func (_Staking *StakingCallerSession) MinDeposit() (*big.Int, error) {
 	return _Staking.Contract.MinDeposit(&_Staking.CallOpts)
 }
 
+// Allowlist is a free data retrieval call binding the contract method 0x2b47da52.
+//
+// Solidity: function allowlist() view returns(address[])
+func (_Staking *StakingCaller) Allowlist(opts *bind.CallOpts) ([]common.Address, error) {
+	var out []interface{}
+	err := _Staking.contract.Call(opts, &out, "allowlist")
+
+	if err != nil {
+		return *new([]common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]common.Address)).(*[]common.Address)
+
+	return out0, err
+
+}
+
+// Allowlist is a free data retrieval call binding the contract method 0x2b47da52.
+//
+// Solidity: function allowlist() view returns(address[])
+func (_Staking *StakingSession) Allowlist() ([]common.Address, error) {
+	return _Staking.Contract.Allowlist(&_Staking.CallOpts)
+}
+
+// Allowlist is a free data retrieval call binding the contract method 0x2b47da52.
+//
+// Solidity: function allowlist() view returns(address[])
+func (_Staking *StakingCallerSession) Allowlist() ([]common.Address, error) {
+	return _Staking.Contract.Allowlist(&_Staking.CallOpts)
+}
+
 // IsAllowedValidator is a free data retrieval call binding the contract method 0x84768b7a.
 //
 // Solidity: function isAllowedValidator(address ) view returns(bool)
@@ -357,27 +388,6 @@ func (_Staking *StakingCallerSession) Owner() (common.Address, error) {
 	return _Staking.Contract.Owner(&_Staking.CallOpts)
 }
 
-// AllowValidators is a paid mutator transaction binding the contract method 0x117407e3.
-//
-// Solidity: function allowValidators(address[] validators) returns()
-func (_Staking *StakingTransactor) AllowValidators(opts *bind.TransactOpts, validators []common.Address) (*types.Transaction, error) {
-	return _Staking.contract.Transact(opts, "allowValidators", validators)
-}
-
-// AllowValidators is a paid mutator transaction binding the contract method 0x117407e3.
-//
-// Solidity: function allowValidators(address[] validators) returns()
-func (_Staking *StakingSession) AllowValidators(validators []common.Address) (*types.Transaction, error) {
-	return _Staking.Contract.AllowValidators(&_Staking.TransactOpts, validators)
-}
-
-// AllowValidators is a paid mutator transaction binding the contract method 0x117407e3.
-//
-// Solidity: function allowValidators(address[] validators) returns()
-func (_Staking *StakingTransactorSession) AllowValidators(validators []common.Address) (*types.Transaction, error) {
-	return _Staking.Contract.AllowValidators(&_Staking.TransactOpts, validators)
-}
-
 // CreateValidator is a paid mutator transaction binding the contract method 0xa5a470ad.
 //
 // Solidity: function createValidator(bytes pubkey) payable returns()
@@ -418,69 +428,6 @@ func (_Staking *StakingSession) Delegate(validator common.Address) (*types.Trans
 // Solidity: function delegate(address validator) payable returns()
 func (_Staking *StakingTransactorSession) Delegate(validator common.Address) (*types.Transaction, error) {
 	return _Staking.Contract.Delegate(&_Staking.TransactOpts, validator)
-}
-
-// DisableAllowlist is a paid mutator transaction binding the contract method 0xcf8e629a.
-//
-// Solidity: function disableAllowlist() returns()
-func (_Staking *StakingTransactor) DisableAllowlist(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _Staking.contract.Transact(opts, "disableAllowlist")
-}
-
-// DisableAllowlist is a paid mutator transaction binding the contract method 0xcf8e629a.
-//
-// Solidity: function disableAllowlist() returns()
-func (_Staking *StakingSession) DisableAllowlist() (*types.Transaction, error) {
-	return _Staking.Contract.DisableAllowlist(&_Staking.TransactOpts)
-}
-
-// DisableAllowlist is a paid mutator transaction binding the contract method 0xcf8e629a.
-//
-// Solidity: function disableAllowlist() returns()
-func (_Staking *StakingTransactorSession) DisableAllowlist() (*types.Transaction, error) {
-	return _Staking.Contract.DisableAllowlist(&_Staking.TransactOpts)
-}
-
-// DisallowValidators is a paid mutator transaction binding the contract method 0x3f0b1edf.
-//
-// Solidity: function disallowValidators(address[] validators) returns()
-func (_Staking *StakingTransactor) DisallowValidators(opts *bind.TransactOpts, validators []common.Address) (*types.Transaction, error) {
-	return _Staking.contract.Transact(opts, "disallowValidators", validators)
-}
-
-// DisallowValidators is a paid mutator transaction binding the contract method 0x3f0b1edf.
-//
-// Solidity: function disallowValidators(address[] validators) returns()
-func (_Staking *StakingSession) DisallowValidators(validators []common.Address) (*types.Transaction, error) {
-	return _Staking.Contract.DisallowValidators(&_Staking.TransactOpts, validators)
-}
-
-// DisallowValidators is a paid mutator transaction binding the contract method 0x3f0b1edf.
-//
-// Solidity: function disallowValidators(address[] validators) returns()
-func (_Staking *StakingTransactorSession) DisallowValidators(validators []common.Address) (*types.Transaction, error) {
-	return _Staking.Contract.DisallowValidators(&_Staking.TransactOpts, validators)
-}
-
-// EnableAllowlist is a paid mutator transaction binding the contract method 0xc6a2aac8.
-//
-// Solidity: function enableAllowlist() returns()
-func (_Staking *StakingTransactor) EnableAllowlist(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _Staking.contract.Transact(opts, "enableAllowlist")
-}
-
-// EnableAllowlist is a paid mutator transaction binding the contract method 0xc6a2aac8.
-//
-// Solidity: function enableAllowlist() returns()
-func (_Staking *StakingSession) EnableAllowlist() (*types.Transaction, error) {
-	return _Staking.Contract.EnableAllowlist(&_Staking.TransactOpts)
-}
-
-// EnableAllowlist is a paid mutator transaction binding the contract method 0xc6a2aac8.
-//
-// Solidity: function enableAllowlist() returns()
-func (_Staking *StakingTransactorSession) EnableAllowlist() (*types.Transaction, error) {
-	return _Staking.Contract.EnableAllowlist(&_Staking.TransactOpts)
 }
 
 // Initialize is a paid mutator transaction binding the contract method 0x400ada75.
@@ -525,6 +472,48 @@ func (_Staking *StakingTransactorSession) RenounceOwnership() (*types.Transactio
 	return _Staking.Contract.RenounceOwnership(&_Staking.TransactOpts)
 }
 
+// SetAllowlist is a paid mutator transaction binding the contract method 0x552b818b.
+//
+// Solidity: function setAllowlist(address[] validators) returns()
+func (_Staking *StakingTransactor) SetAllowlist(opts *bind.TransactOpts, validators []common.Address) (*types.Transaction, error) {
+	return _Staking.contract.Transact(opts, "setAllowlist", validators)
+}
+
+// SetAllowlist is a paid mutator transaction binding the contract method 0x552b818b.
+//
+// Solidity: function setAllowlist(address[] validators) returns()
+func (_Staking *StakingSession) SetAllowlist(validators []common.Address) (*types.Transaction, error) {
+	return _Staking.Contract.SetAllowlist(&_Staking.TransactOpts, validators)
+}
+
+// SetAllowlist is a paid mutator transaction binding the contract method 0x552b818b.
+//
+// Solidity: function setAllowlist(address[] validators) returns()
+func (_Staking *StakingTransactorSession) SetAllowlist(validators []common.Address) (*types.Transaction, error) {
+	return _Staking.Contract.SetAllowlist(&_Staking.TransactOpts, validators)
+}
+
+// SetAllowlistEnabled is a paid mutator transaction binding the contract method 0xd7644ba2.
+//
+// Solidity: function setAllowlistEnabled(bool enabled) returns()
+func (_Staking *StakingTransactor) SetAllowlistEnabled(opts *bind.TransactOpts, enabled bool) (*types.Transaction, error) {
+	return _Staking.contract.Transact(opts, "setAllowlistEnabled", enabled)
+}
+
+// SetAllowlistEnabled is a paid mutator transaction binding the contract method 0xd7644ba2.
+//
+// Solidity: function setAllowlistEnabled(bool enabled) returns()
+func (_Staking *StakingSession) SetAllowlistEnabled(enabled bool) (*types.Transaction, error) {
+	return _Staking.Contract.SetAllowlistEnabled(&_Staking.TransactOpts, enabled)
+}
+
+// SetAllowlistEnabled is a paid mutator transaction binding the contract method 0xd7644ba2.
+//
+// Solidity: function setAllowlistEnabled(bool enabled) returns()
+func (_Staking *StakingTransactorSession) SetAllowlistEnabled(enabled bool) (*types.Transaction, error) {
+	return _Staking.Contract.SetAllowlistEnabled(&_Staking.TransactOpts, enabled)
+}
+
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
 // Solidity: function transferOwnership(address newOwner) returns()
@@ -544,6 +533,406 @@ func (_Staking *StakingSession) TransferOwnership(newOwner common.Address) (*typ
 // Solidity: function transferOwnership(address newOwner) returns()
 func (_Staking *StakingTransactorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
 	return _Staking.Contract.TransferOwnership(&_Staking.TransactOpts, newOwner)
+}
+
+// StakingAllowlistDisabledIterator is returned from FilterAllowlistDisabled and is used to iterate over the raw logs and unpacked data for AllowlistDisabled events raised by the Staking contract.
+type StakingAllowlistDisabledIterator struct {
+	Event *StakingAllowlistDisabled // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *StakingAllowlistDisabledIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(StakingAllowlistDisabled)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(StakingAllowlistDisabled)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *StakingAllowlistDisabledIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *StakingAllowlistDisabledIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// StakingAllowlistDisabled represents a AllowlistDisabled event raised by the Staking contract.
+type StakingAllowlistDisabled struct {
+	Raw types.Log // Blockchain specific contextual infos
+}
+
+// FilterAllowlistDisabled is a free log retrieval operation binding the contract event 0x2d35c8d348a345fd7b3b03b7cfcf7ad0b60c2d46742d5ca536342e4185becb07.
+//
+// Solidity: event AllowlistDisabled()
+func (_Staking *StakingFilterer) FilterAllowlistDisabled(opts *bind.FilterOpts) (*StakingAllowlistDisabledIterator, error) {
+
+	logs, sub, err := _Staking.contract.FilterLogs(opts, "AllowlistDisabled")
+	if err != nil {
+		return nil, err
+	}
+	return &StakingAllowlistDisabledIterator{contract: _Staking.contract, event: "AllowlistDisabled", logs: logs, sub: sub}, nil
+}
+
+// WatchAllowlistDisabled is a free log subscription operation binding the contract event 0x2d35c8d348a345fd7b3b03b7cfcf7ad0b60c2d46742d5ca536342e4185becb07.
+//
+// Solidity: event AllowlistDisabled()
+func (_Staking *StakingFilterer) WatchAllowlistDisabled(opts *bind.WatchOpts, sink chan<- *StakingAllowlistDisabled) (event.Subscription, error) {
+
+	logs, sub, err := _Staking.contract.WatchLogs(opts, "AllowlistDisabled")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(StakingAllowlistDisabled)
+				if err := _Staking.contract.UnpackLog(event, "AllowlistDisabled", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseAllowlistDisabled is a log parse operation binding the contract event 0x2d35c8d348a345fd7b3b03b7cfcf7ad0b60c2d46742d5ca536342e4185becb07.
+//
+// Solidity: event AllowlistDisabled()
+func (_Staking *StakingFilterer) ParseAllowlistDisabled(log types.Log) (*StakingAllowlistDisabled, error) {
+	event := new(StakingAllowlistDisabled)
+	if err := _Staking.contract.UnpackLog(event, "AllowlistDisabled", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// StakingAllowlistEnabledIterator is returned from FilterAllowlistEnabled and is used to iterate over the raw logs and unpacked data for AllowlistEnabled events raised by the Staking contract.
+type StakingAllowlistEnabledIterator struct {
+	Event *StakingAllowlistEnabled // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *StakingAllowlistEnabledIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(StakingAllowlistEnabled)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(StakingAllowlistEnabled)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *StakingAllowlistEnabledIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *StakingAllowlistEnabledIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// StakingAllowlistEnabled represents a AllowlistEnabled event raised by the Staking contract.
+type StakingAllowlistEnabled struct {
+	Raw types.Log // Blockchain specific contextual infos
+}
+
+// FilterAllowlistEnabled is a free log retrieval operation binding the contract event 0x8a943acd5f4e6d3df7565a4a08a93f6b04cc31bb6c01ca4aef7abd6baf455ec3.
+//
+// Solidity: event AllowlistEnabled()
+func (_Staking *StakingFilterer) FilterAllowlistEnabled(opts *bind.FilterOpts) (*StakingAllowlistEnabledIterator, error) {
+
+	logs, sub, err := _Staking.contract.FilterLogs(opts, "AllowlistEnabled")
+	if err != nil {
+		return nil, err
+	}
+	return &StakingAllowlistEnabledIterator{contract: _Staking.contract, event: "AllowlistEnabled", logs: logs, sub: sub}, nil
+}
+
+// WatchAllowlistEnabled is a free log subscription operation binding the contract event 0x8a943acd5f4e6d3df7565a4a08a93f6b04cc31bb6c01ca4aef7abd6baf455ec3.
+//
+// Solidity: event AllowlistEnabled()
+func (_Staking *StakingFilterer) WatchAllowlistEnabled(opts *bind.WatchOpts, sink chan<- *StakingAllowlistEnabled) (event.Subscription, error) {
+
+	logs, sub, err := _Staking.contract.WatchLogs(opts, "AllowlistEnabled")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(StakingAllowlistEnabled)
+				if err := _Staking.contract.UnpackLog(event, "AllowlistEnabled", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseAllowlistEnabled is a log parse operation binding the contract event 0x8a943acd5f4e6d3df7565a4a08a93f6b04cc31bb6c01ca4aef7abd6baf455ec3.
+//
+// Solidity: event AllowlistEnabled()
+func (_Staking *StakingFilterer) ParseAllowlistEnabled(log types.Log) (*StakingAllowlistEnabled, error) {
+	event := new(StakingAllowlistEnabled)
+	if err := _Staking.contract.UnpackLog(event, "AllowlistEnabled", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// StakingAllowlistSetIterator is returned from FilterAllowlistSet and is used to iterate over the raw logs and unpacked data for AllowlistSet events raised by the Staking contract.
+type StakingAllowlistSetIterator struct {
+	Event *StakingAllowlistSet // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *StakingAllowlistSetIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(StakingAllowlistSet)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(StakingAllowlistSet)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *StakingAllowlistSetIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *StakingAllowlistSetIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// StakingAllowlistSet represents a AllowlistSet event raised by the Staking contract.
+type StakingAllowlistSet struct {
+	Validators []common.Address
+	Raw        types.Log // Blockchain specific contextual infos
+}
+
+// FilterAllowlistSet is a free log retrieval operation binding the contract event 0x27f242de1bc4ed72c4329591ffff7d223b5f025e3514a07e05afec6d4eb889cf.
+//
+// Solidity: event AllowlistSet(address[] validators)
+func (_Staking *StakingFilterer) FilterAllowlistSet(opts *bind.FilterOpts) (*StakingAllowlistSetIterator, error) {
+
+	logs, sub, err := _Staking.contract.FilterLogs(opts, "AllowlistSet")
+	if err != nil {
+		return nil, err
+	}
+	return &StakingAllowlistSetIterator{contract: _Staking.contract, event: "AllowlistSet", logs: logs, sub: sub}, nil
+}
+
+// WatchAllowlistSet is a free log subscription operation binding the contract event 0x27f242de1bc4ed72c4329591ffff7d223b5f025e3514a07e05afec6d4eb889cf.
+//
+// Solidity: event AllowlistSet(address[] validators)
+func (_Staking *StakingFilterer) WatchAllowlistSet(opts *bind.WatchOpts, sink chan<- *StakingAllowlistSet) (event.Subscription, error) {
+
+	logs, sub, err := _Staking.contract.WatchLogs(opts, "AllowlistSet")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(StakingAllowlistSet)
+				if err := _Staking.contract.UnpackLog(event, "AllowlistSet", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseAllowlistSet is a log parse operation binding the contract event 0x27f242de1bc4ed72c4329591ffff7d223b5f025e3514a07e05afec6d4eb889cf.
+//
+// Solidity: event AllowlistSet(address[] validators)
+func (_Staking *StakingFilterer) ParseAllowlistSet(log types.Log) (*StakingAllowlistSet, error) {
+	event := new(StakingAllowlistSet)
+	if err := _Staking.contract.UnpackLog(event, "AllowlistSet", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
 }
 
 // StakingCreateValidatorIterator is returned from FilterCreateValidator and is used to iterate over the raw logs and unpacked data for CreateValidator events raised by the Staking contract.
