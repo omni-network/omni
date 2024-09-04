@@ -23,6 +23,7 @@ import (
 	"github.com/omni-network/omni/monitor/routerecon"
 	"github.com/omni-network/omni/monitor/xfeemngr"
 	"github.com/omni-network/omni/monitor/xmonitor"
+	"github.com/omni-network/omni/monitor/xmonitor/indexer"
 
 	"github.com/cometbft/cometbft/rpc/client"
 	comethttp "github.com/cometbft/cometbft/rpc/client/http"
@@ -88,6 +89,10 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "start xchain monitor")
 	}
 
+	if err := startIndexer(ctx, cfg, network, xprov); err != nil {
+		return errors.Wrap(err, "start xchain indexer")
+	}
+
 	if err := xfeemngr.Start(ctx, network, cfg.XFeeMngr, cfg.PrivateKey); err != nil {
 		return errors.Wrap(err, "start xfee manager")
 	}
@@ -103,6 +108,28 @@ func Run(ctx context.Context, cfg Config) error {
 	case err := <-monitorChan:
 		return err
 	}
+}
+
+// startIndexer starts the xchain indexer.
+func startIndexer(
+	ctx context.Context,
+	cfg Config,
+	network netconf.Network,
+	xprov xchain.Provider,
+) error {
+	var db dbm.DB
+	if cfg.DBDir == "" {
+		log.Warn(ctx, "No --db-dir provided, using in-memory DB", nil)
+		db = dbm.NewMemDB()
+	} else {
+		var err error
+		db, err = dbm.NewGoLevelDB("indexer", cfg.DBDir, nil)
+		if err != nil {
+			return errors.Wrap(err, "new golevel db")
+		}
+	}
+
+	return indexer.Start(ctx, network, xprov, db)
 }
 
 // startXMonitor starts the xchain offset/head monitoring.

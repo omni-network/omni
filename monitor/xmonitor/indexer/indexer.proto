@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package monitor.xmonitor.indexer;
+
+import "cosmos/orm/v1/orm.proto";
+
+option go_package = "monitor/xmonitor/indexer";
+
+message Block {
+  option (cosmos.orm.v1.table) = {
+    id: 1;
+    primary_key: { fields: "id", auto_increment: true }
+    index: {id: 2, fields: "chain_id,block_height,block_hash", unique: true} // Allow querying by block.
+  };
+
+  uint64 id           = 1; // Auto-incremented ID
+  uint64 chain_id     = 2; // Source chain ID as per https://chainlist.org
+  uint64 block_height = 3; // Height of the source-chain block
+  bytes  block_hash   = 4; // Hash of the source-chain block
+  bytes  block_json   = 5; // xchain.Block JSON
+}
+
+message MsgLink {
+  option (cosmos.orm.v1.table) = {
+    id: 2;
+    primary_key: { fields: "id_hash" }
+  };
+
+  bytes  id_hash          = 1; // RouteScan IDHash of the MsgID
+  uint64 msg_block_id     = 2;
+  uint64 receipt_block_id = 3;
+}
+
+
+message Cursor {
+  option (cosmos.orm.v1.table) = {
+    id: 3;
+    primary_key: { fields: "chain_id,conf_level" }
+  };
+
+  uint64 chain_id     = 1;
+  uint32 conf_level   = 2;
+  uint64 block_height = 3;
+}
+
+
