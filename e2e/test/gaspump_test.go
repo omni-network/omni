@@ -2,12 +2,15 @@ package e2e_test
 
 import (
 	"context"
+	"math/big"
 	"testing"
 
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/stretchr/testify/require"
 )
@@ -28,14 +31,30 @@ func TestGasPumps(t *testing.T) {
 		omniClient, err := ethclient.Dial(omniEVM.Name, omniRPC)
 		require.NoError(t, err)
 
+		// Sum targetOMNI for each chain / test case pair
+		// Each test case is run on per chain, except for OmniEVM
+
+		totalTargetOMNI := make(map[common.Address]*big.Int)
+		for _, chain := range network.EVMChains() {
+			// skip OmniEVM
+			if chain.ID == omniEVM.ID {
+				continue
+			}
+
+			for _, test := range app.GasPumpTests {
+				current, ok := totalTargetOMNI[test.Recipient]
+				if !ok {
+					current = big.NewInt(0)
+				}
+
+				totalTargetOMNI[test.Recipient] = new(big.Int).Add(current, test.TargetOMNI)
+			}
+		}
+
 		for _, test := range app.GasPumpTests {
 			balance, err := omniClient.BalanceAt(ctx, test.Recipient, nil)
 			require.NoError(t, err)
-
-			// Just test that balance > 0 for now
-			// TODO: assert that amount is equal to sum of AmountETH spent converted to OMNI
-			// Should account for the xcall fee, gas pump toll, and fee oracle conversion rates
-			require.Positive(t, balance.Uint64(), "recipient: %s", test.Recipient)
+			require.Equalf(t, totalTargetOMNI[test.Recipient], balance, "recipient: %s", test.Recipient.Hex())
 		}
 	})
 }
