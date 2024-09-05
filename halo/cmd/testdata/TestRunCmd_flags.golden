@@ -130,7 +130,7 @@
   "Consensus": {
    "RootDir": "foo",
    "WalPath": "data/cs.wal/wal",
-   "TimeoutPropose": 3000000000,
+   "TimeoutPropose": 1000000000,
    "TimeoutProposeDelta": 500000000,
    "TimeoutPrevote": 1000000000,
    "TimeoutPrevoteDelta": 500000000,

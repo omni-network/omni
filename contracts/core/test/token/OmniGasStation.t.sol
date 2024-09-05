@@ -28,7 +28,11 @@ contract OmniGasStation_Test is Test {
             payable(
                 address(
                     new TransparentUpgradeableProxy(
-                        impl, makeAddr("admin"), abi.encodeCall(OmniGasStation.initialize, (address(portal), owner))
+                        impl,
+                        makeAddr("admin"),
+                        abi.encodeCall(
+                            OmniGasStation.initialize, (address(portal), owner, new OmniGasStation.GasPump[](0))
+                        )
                     )
                 )
             )

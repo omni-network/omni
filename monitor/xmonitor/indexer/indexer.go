@@ -30,7 +30,7 @@ func Start(
 	xprov xchain.Provider,
 	db db.DB,
 ) error {
-	indexer, err := newIndexer(db, network.StreamName)
+	indexer, err := newIndexer(db, xprov, network.StreamName)
 	if err != nil {
 		return errors.Wrap(err, "create indexer")
 	}
@@ -59,6 +59,7 @@ func Start(
 // newIndexer creates a new indexer using the provided DB.
 func newIndexer(
 	db db.DB,
+	xprov xchain.Provider,
 	streamNamer func(xchain.StreamID) string,
 ) (*indexer, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
@@ -78,6 +79,7 @@ func newIndexer(
 	}
 
 	return &indexer{
+		xprov:        xprov,
 		streamNamer:  streamNamer,
 		blockTable:   dbStore.BlockTable(),
 		msgLinkTable: dbStore.MsgLinkTable(),
@@ -90,6 +92,7 @@ func newIndexer(
 // indexer indexes xchain blocks and messages.
 type indexer struct {
 	mu           sync.RWMutex
+	xprov        xchain.Provider
 	blockTable   BlockTable
 	msgLinkTable MsgLinkTable
 	cursorTable  CursorTable
@@ -377,13 +380,19 @@ func (i *indexer) instrumentMsg(ctx context.Context, link *MsgLink) error {
 		return errors.New("receipt not found in receipt block [BUG]")
 	}
 
+	override, err := isFuzzyOverride(ctx, i.xprov, receipt)
+	if err != nil {
+		return err
+	}
+
 	// Instrument sample
 	s := sample{
-		Stream:    i.streamNamer(msg.StreamID),
-		XDApp:     i.xdapp(msg.SourceMsgSender),
-		Latency:   receiptBlock.Timestamp.Sub(msgBlock.Timestamp),
-		Success:   receipt.Success,
-		ExcessGas: umath.SubtractOrZero(msg.DestGasLimit, receipt.GasUsed),
+		Stream:        i.streamNamer(msg.StreamID),
+		XDApp:         i.xdapp(msg.SourceMsgSender),
+		Latency:       receiptBlock.Timestamp.Sub(msgBlock.Timestamp),
+		Success:       receipt.Success,
+		ExcessGas:     umath.SubtractOrZero(msg.DestGasLimit, receipt.GasUsed),
+		FuzzyOverride: override,
 	}
 	i.sampleFunc(s)
 
@@ -397,6 +406,21 @@ func (i *indexer) instrumentMsg(ctx context.Context, link *MsgLink) error {
 	)
 
 	return nil
+}
+
+// isFuzzyOverride returns true if this was a fuzzy xchain message that was
+// submitted by a finalized confirmation attestation (and not by a fuzzy attestation).
+func isFuzzyOverride(ctx context.Context, xprov xchain.Provider, receipt xchain.Receipt) (bool, error) {
+	if receipt.ShardID.ConfLevel().IsFinalized() {
+		return false, nil // Only fuzzy shards can be overridden.
+	}
+
+	sub, err := xprov.GetSubmission(ctx, receipt.DestChainID, receipt.TxHash)
+	if err != nil {
+		return false, errors.Wrap(err, "get submission")
+	}
+
+	return sub.AttHeader.ChainVersion.ConfLevel.IsFinalized(), nil
 }
 
 // xdapp returns the xdapp name for the given sender address or "unknown".

@@ -38,7 +38,7 @@ func (k Keeper) Network(ctx context.Context, req *types.NetworkRequest) (*types.
 			DeployHeight:   portal.GetDeployHeight(),
 			ShardIds:       portal.GetShardIds(),
 			AttestInterval: portal.GetAttestInterval(),
-			BlockPeriodMs:  portal.GetBlockPeriodMs(),
+			BlockPeriodNs:  portal.GetBlockPeriodNs(),
 			Name:           portal.GetName(),
 		})
 	}
