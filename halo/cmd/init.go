@@ -190,7 +190,10 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 
 	// Add P2P seeds to comet config (persisted peers works better than seeds)
 	if seeds := network.Static().ConsensusSeeds(); len(seeds) > 0 {
-		comet.P2P.PersistentPeers = strings.Join(seeds, ",")
+		if comet.P2P.PersistentPeers != "" {
+			comet.P2P.PersistentPeers += ","
+		}
+		comet.P2P.PersistentPeers += strings.Join(seeds, ",")
 	}
 
 	// Setup node key

@@ -33,6 +33,7 @@ type Static struct {
 	MaxValidators        uint32
 	ConsensusGenesisJSON []byte
 	ConsensusSeedTXT     []byte
+	ConsensusArchiveTXT  []byte
 	ExecutionGenesisJSON []byte
 	ExecutionSeedTXT     []byte
 }
@@ -96,6 +97,17 @@ func (s Static) ConsensusSeeds() []string {
 	return resp
 }
 
+func (s Static) ConsensusArchives() []string {
+	var resp []string
+	for _, archive := range strings.Split(string(s.ConsensusArchiveTXT), "\n") {
+		if archive = strings.TrimSpace(archive); archive != "" {
+			resp = append(resp, archive)
+		}
+	}
+
+	return resp
+}
+
 func (s Static) ExecutionSeeds() []string {
 	var resp []string
 	for _, seed := range strings.Split(string(s.ExecutionSeedTXT), "\n") {
@@ -141,6 +153,9 @@ var (
 	//go:embed omega/consensus-seeds.txt
 	omegaConsensusSeedsTXT []byte
 
+	//go:embed omega/consensus-archives.txt
+	omegaConsensusArchivesTXT []byte
+
 	//go:embed omega/execution-genesis.json
 	omegaExecutionGenesisJSON []byte
 
@@ -149,6 +164,9 @@ var (
 
 	//go:embed staging/consensus-seeds.txt
 	stagingConsensusSeedsTXT []byte
+
+	//go:embed staging/consensus-archives.txt
+	stagingConsensusArchivesTXT []byte
 
 	//go:embed staging/execution-seeds.txt
 	stagingExecutionSeedsTXT []byte
@@ -174,6 +192,7 @@ var statics = map[ID]Static{
 		OmniExecutionChainID: evmchain.IDOmniEphemeral,
 		MaxValidators:        maxValidators,
 		ConsensusSeedTXT:     stagingConsensusSeedsTXT,
+		ConsensusArchiveTXT:  stagingConsensusArchivesTXT,
 		ExecutionSeedTXT:     stagingExecutionSeedsTXT,
 	},
 	Omega: {
@@ -190,6 +209,7 @@ var statics = map[ID]Static{
 		},
 		ConsensusGenesisJSON: omegaConsensusGenesisJSON,
 		ConsensusSeedTXT:     omegaConsensusSeedsTXT,
+		ConsensusArchiveTXT:  omegaConsensusArchivesTXT,
 		ExecutionGenesisJSON: omegaExecutionGenesisJSON,
 		ExecutionSeedTXT:     omegaExecutionSeedsTXT,
 	},

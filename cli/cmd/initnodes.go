@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/omni-network/omni/e2e/app/geth"
@@ -141,6 +142,12 @@ func initNodes(ctx context.Context, cfg initConfig) error {
 		CometCfgFunc: func(cmtCfg *cmtconfig.Config) {
 			cmtCfg.LogLevel = logLevel
 			cmtCfg.Instrumentation.Prometheus = true
+			if cfg.Archive {
+				if cmtCfg.P2P.PersistentPeers != "" {
+					cmtCfg.P2P.PersistentPeers += ","
+				}
+				cmtCfg.P2P.PersistentPeers += strings.Join(cfg.Network.Static().ConsensusArchives(), ",")
+			}
 		},
 		LogCfgFunc: func(logCfg *log.Config) {
 			logCfg.Color = log.ColorForce
