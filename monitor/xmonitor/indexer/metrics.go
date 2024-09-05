@@ -56,11 +56,15 @@ type sample struct {
 }
 
 func instrumentSample(s sample) {
+	// Initialize success/revert counters so both exist
+	revertCounter.WithLabelValues(s.Stream, s.XDApp).Add(0)
+	successCounter.WithLabelValues(s.Stream, s.XDApp).Add(0)
 	if s.Success {
 		successCounter.WithLabelValues(s.Stream, s.XDApp).Inc()
 	} else {
 		revertCounter.WithLabelValues(s.Stream, s.XDApp).Inc()
 	}
+
 	if s.FuzzyOverride {
 		fuzzyOverrideCounter.WithLabelValues(s.Stream, s.XDApp).Inc()
 	}
