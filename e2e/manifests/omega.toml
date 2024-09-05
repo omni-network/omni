@@ -40,7 +40,6 @@ mode = "archive"
 [node.archive02]
 mode = "archive"
 
-
 [keys.validator01]
 validator = "0xCE624ce5C5717b63CED36AfB76857183E0a8a6eb"
 
@@ -64,3 +63,15 @@ p2p_consensus = "7582E893545ECDC8D43402198CCB9100584973B6"
 
 [keys.seed02_evm]
 p2p_execution = "0x492dA9a43ADD943A5359bF83CCD2d3Fd4235b870"
+
+[keys.archive01]
+p2p_consensus = "2320703BF5434BBC4B1050A90F0FBF842D4878F9"
+
+[keys.archive01_evm]
+p2p_execution = "0x33194570113B14FFD00b9E53cf2e405Bc62C2a5E"
+
+[keys.archive02]
+p2p_consensus = "1AFC3479B2A16BCA9DA5BEC7BFF750A7B5FFE53D"
+
+[keys.archive02_evm]
+p2p_execution = "0xd9B2Ca2215f5a04C1BbaAb8379A37cE21C025AE8"
