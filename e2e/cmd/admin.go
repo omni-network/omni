@@ -17,7 +17,24 @@ func newAdminCmd(def *app.Definition) *cobra.Command {
 		newPausePortalCmd(def),
 		newUnpausePortalCmd(def),
 		newUpgradePortalCmd(def),
+		newAllowValidatorsCmd(def),
 	)
+
+	return cmd
+}
+
+func newAllowValidatorsCmd(def *app.Definition) *cobra.Command {
+	cfg := admin.DefaultPortalAdminConfig()
+
+	cmd := &cobra.Command{
+		Use:   "allow-operators",
+		Short: "Ensure all operators are allowed as validators",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.AllowOperators(cmd.Context(), *def, cfg)
+		},
+	}
+
+	bindPortalAdminFlags(cmd.Flags(), &cfg)
 
 	return cmd
 }
