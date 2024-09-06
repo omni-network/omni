@@ -62,6 +62,7 @@ linters-settings:
         arguments:
           - "log"                                # Prefer ./lib/log
           - "errors"                             # Prefer ./lib/errors
+          - "github.com/cosmos/cosmos-sdk/types" # Prefer ./halo/sdk
           - "github.com/pkg/errors"              # Prefer ./lib/errors
           - "github.com/gogo/protobuf/proto"     # Prefer google.golang.org/protobuf
           - "github.com/stretchr/testify/assert" # Prefer github.com/stretchr/testify/require

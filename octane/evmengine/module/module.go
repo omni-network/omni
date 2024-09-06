@@ -3,6 +3,7 @@ package module
 import (
 	"encoding/json"
 
+	"github.com/omni-network/omni/halo/sdk"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/octane/evmengine/keeper"
@@ -16,7 +17,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	staking "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"

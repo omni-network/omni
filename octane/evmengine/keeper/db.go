@@ -3,12 +3,11 @@ package keeper
 import (
 	"context"
 
+	"github.com/omni-network/omni/halo/sdk"
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 func (h *ExecutionHead) Hash() common.Hash {

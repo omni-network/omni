@@ -4,16 +4,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/omni-network/omni/halo/sdk"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-
-	cosmosk1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/gogoproto/proto"
 )
 
 func MonitorForever(ctx context.Context, cprov cchain.Provider) {
@@ -34,7 +28,7 @@ func MonitorForever(ctx context.Context, cprov cchain.Provider) {
 }
 
 func monitorOnce(ctx context.Context, cprov cchain.Provider) error {
-	vals, err := cprov.Validators(ctx)
+	vals, err := cprov.SDKValidators(ctx)
 	if err != nil {
 		return errors.Wrap(err, "query validators")
 	}
@@ -45,30 +39,26 @@ func monitorOnce(ctx context.Context, cprov cchain.Provider) error {
 	bondedGauge.Reset()
 
 	for _, val := range vals {
-		pk := new(cosmosk1.PubKey)
-		err := proto.Unmarshal(val.ConsensusPubkey.Value, pk)
+		opAddr, err := val.OperatorEthAddr()
 		if err != nil {
-			return errors.Wrap(err, "unmarshal consensus pubkey")
+			return err
 		}
 
-		pubkey, err := crypto.DecompressPubkey(pk.Bytes())
+		consAddrEth, err := val.ConsensusEthAddr()
 		if err != nil {
-			return errors.Wrap(err, "decompress pubkey")
+			return err
 		}
 
-		opAddr, err := sdk.ValAddressFromBech32(val.OperatorAddress)
+		consAddrCmt, err := val.ConsensusCmtAddr()
 		if err != nil {
-			return errors.Wrap(err, "parse operator address")
+			return err
 		}
 
-		opAddrEth := common.BytesToAddress(opAddr)
-		consAddrEth := crypto.PubkeyToAddress(*pubkey)
-		consAddrCmt := pk.Address()
 		power := val.ConsensusPower(sdk.DefaultPowerReduction)
 		jailed := val.IsJailed()
 		bonded := val.IsBonded()
 
-		powerGauge.WithLabelValues(consAddrEth.String(), consAddrCmt.String(), opAddrEth.String()).Set(float64(power))
+		powerGauge.WithLabelValues(consAddrEth.String(), consAddrCmt.String(), opAddr.String()).Set(float64(power))
 		jailedGauge.WithLabelValues(consAddrEth.String()).Set(boolToFloat(jailed))
 		bondedGauge.WithLabelValues(consAddrEth.String()).Set(boolToFloat(bonded))
 	}

@@ -11,8 +11,6 @@ import (
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 
 	"github.com/ethereum/go-ethereum/common"
-
-	_ "github.com/omni-network/omni/halo/app" // To init SDK config.
 )
 
 //go:generate go test . -golden -clean

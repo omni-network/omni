@@ -5,13 +5,13 @@ import (
 
 	types1 "github.com/omni-network/omni/halo/attest/types"
 	ptypes "github.com/omni-network/omni/halo/portal/types"
+	"github.com/omni-network/omni/halo/sdk"
 	"github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/crypto"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"

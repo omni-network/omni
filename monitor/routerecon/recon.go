@@ -23,7 +23,7 @@ func ReconForever(ctx context.Context, network netconf.Network, xprov xchain.Pro
 		return
 	}
 
-	ticker := time.NewTicker(time.Minute)
+	ticker := time.NewTicker(time.Minute * 10) // RouteScan rate limits prevent faster recon.
 	defer ticker.Stop()
 
 	for {
@@ -56,6 +56,14 @@ func reconStreamOnce(
 	ethCls map[uint64]ethclient.Client,
 	stream xchain.StreamID,
 ) error {
+	// Skip recon for empty streams
+	_, ok, err := xprov.GetEmittedCursor(ctx, xchain.ConfEmitRef(xchain.ConfLatest), stream)
+	if err != nil {
+		return err
+	} else if !ok {
+		return nil
+	}
+
 	crossTx, err := paginateLatestCrossTx(ctx, queryFilter{Stream: stream})
 	if err != nil {
 		return errors.Wrap(err, "fetch latest cross tx")

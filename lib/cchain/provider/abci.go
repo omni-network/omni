@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/halo/genutil/genserve"
 	ptypes "github.com/omni-network/omni/halo/portal/types"
 	rtypes "github.com/omni-network/omni/halo/registry/types"
+	"github.com/omni-network/omni/halo/sdk"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
@@ -26,7 +27,6 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	utypes "cosmossdk.io/x/upgrade/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	dtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -152,7 +152,7 @@ func newABCIRewards(cl dtypes.QueryClient) rewardsFunc {
 }
 
 func newABCIValFunc(cl stypes.QueryClient) valFunc {
-	return func(ctx context.Context, operatorAddr common.Address) (stypes.Validator, bool, error) {
+	return func(ctx context.Context, operatorAddr common.Address) (cchain.SDKValidator, bool, error) {
 		const endpoint = "validator"
 		defer latency(endpoint)()
 
@@ -160,20 +160,20 @@ func newABCIValFunc(cl stypes.QueryClient) valFunc {
 		defer span.End()
 
 		valAddr := sdk.ValAddress(operatorAddr.Bytes())
-		val, err := cl.Validator(ctx, &stypes.QueryValidatorRequest{ValidatorAddr: valAddr.String()})
+		resp, err := cl.Validator(ctx, &stypes.QueryValidatorRequest{ValidatorAddr: valAddr.String()})
 		if errors.Is(err, sdkerrors.ErrKeyNotFound) {
-			return stypes.Validator{}, false, nil
+			return cchain.SDKValidator{}, false, nil
 		} else if err != nil {
 			incQueryErr(endpoint)
-			return stypes.Validator{}, false, errors.Wrap(err, "abci query validator")
+			return cchain.SDKValidator{}, false, errors.Wrap(err, "abci query validator")
 		}
 
-		return val.Validator, true, nil
+		return cchain.SDKValidator{Validator: resp.Validator}, true, nil
 	}
 }
 
 func newABCIValsFunc(cl stypes.QueryClient) valsFunc {
-	return func(ctx context.Context) ([]stypes.Validator, error) {
+	return func(ctx context.Context) ([]cchain.SDKValidator, error) {
 		const endpoint = "vals"
 		defer latency(endpoint)()
 
@@ -186,7 +186,12 @@ func newABCIValsFunc(cl stypes.QueryClient) valsFunc {
 			return nil, errors.Wrap(err, "abci query validators")
 		}
 
-		return resp.Validators, nil
+		vals := make([]cchain.SDKValidator, 0, len(resp.Validators))
+		for _, val := range resp.Validators {
+			vals = append(vals, cchain.SDKValidator{Validator: val})
+		}
+
+		return vals, nil
 	}
 }
 

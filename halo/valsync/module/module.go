@@ -6,6 +6,7 @@ import (
 
 	atypes "github.com/omni-network/omni/halo/attest/types"
 	ptypes "github.com/omni-network/omni/halo/portal/types"
+	"github.com/omni-network/omni/halo/sdk"
 	"github.com/omni-network/omni/halo/valsync/keeper"
 	"github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/errors"
@@ -19,7 +20,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 )

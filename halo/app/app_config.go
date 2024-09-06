@@ -10,12 +10,11 @@ import (
 	portaltypes "github.com/omni-network/omni/halo/portal/types"
 	registrymodule "github.com/omni-network/omni/halo/registry/module"
 	registrytypes "github.com/omni-network/omni/halo/registry/types"
+	"github.com/omni-network/omni/halo/sdk"
 	valsyncmodule "github.com/omni-network/omni/halo/valsync/module"
 	valsynctypes "github.com/omni-network/omni/halo/valsync/types"
 	engevmmodule "github.com/omni-network/omni/octane/evmengine/module"
 	engevmtypes "github.com/omni-network/omni/octane/evmengine/types"
-
-	"github.com/ethereum/go-ethereum/params"
 
 	runtimev1alpha1 "cosmossdk.io/api/cosmos/app/runtime/v1alpha1"
 	appv1alpha1 "cosmossdk.io/api/cosmos/app/v1alpha1"
@@ -30,11 +29,9 @@ import (
 	txconfigv1 "cosmossdk.io/api/cosmos/tx/config/v1"
 	upgrademodulev1 "cosmossdk.io/api/cosmos/upgrade/module/v1"
 	"cosmossdk.io/core/appconfig"
-	sdkmath "cosmossdk.io/math"
 	evidencetypes "cosmossdk.io/x/evidence/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	consensustypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
@@ -45,37 +42,12 @@ import (
 )
 
 const (
-	// Bech32HRP is the human-readable-part of the Bech32 address format.
-	Bech32HRP = "omni"
-
 	// TODO(corver): Maybe move these to genesis itself.
 	genesisVoteWindow   = 64
 	genesisVoteExtLimit = 256
 	genesisTrimLag      = 1      // Delete attestations state after each epoch, only storing the very latest attestations.
 	genesisCTrimLag     = 72_000 // Delete consensus attestations state after +-1 day (given a period of 1.2s).
 )
-
-// init initializes the Cosmos SDK configuration.
-//
-//nolint:gochecknoinits // Cosmos-style
-func init() {
-	// Set prefixes
-	accountPubKeyPrefix := Bech32HRP + "pub"
-	validatorAddressPrefix := Bech32HRP + "valoper"
-	validatorPubKeyPrefix := Bech32HRP + "valoperpub"
-	consNodeAddressPrefix := Bech32HRP + "valcons"
-	consNodePubKeyPrefix := Bech32HRP + "valconspub"
-
-	// Set and seal config
-	cfg := sdk.GetConfig()
-	cfg.SetBech32PrefixForAccount(Bech32HRP, accountPubKeyPrefix)
-	cfg.SetBech32PrefixForValidator(validatorAddressPrefix, validatorPubKeyPrefix)
-	cfg.SetBech32PrefixForConsensusNode(consNodeAddressPrefix, consNodePubKeyPrefix)
-	cfg.Seal()
-
-	// Override default power reduction: 1 ether (1e18) $STAKE == 1 power.
-	sdk.DefaultPowerReduction = sdkmath.NewInt(params.Ether)
-}
 
 //nolint:gochecknoglobals // Cosmos-style
 var (
@@ -146,7 +118,7 @@ var (
 				Name: authtypes.ModuleName,
 				Config: appconfig.WrapAny(&authmodulev1.Module{
 					ModuleAccountPermissions: moduleAccPerms,
-					Bech32Prefix:             Bech32HRP,
+					Bech32Prefix:             sdk.Bech32HRP,
 				}),
 			},
 			{

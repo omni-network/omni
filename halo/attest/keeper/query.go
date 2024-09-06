@@ -4,12 +4,12 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/halo/attest/types"
+	"github.com/omni-network/omni/halo/sdk"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	ptypes "github.com/omni-network/omni/halo/portal/types"
 	"github.com/omni-network/omni/halo/registry/types"
+	"github.com/omni-network/omni/halo/sdk"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/xchain"
@@ -16,7 +17,6 @@ import (
 	ormv1alpha1 "cosmossdk.io/api/cosmos/orm/v1alpha1"
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/orm/model/ormdb"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 type Keeper struct {

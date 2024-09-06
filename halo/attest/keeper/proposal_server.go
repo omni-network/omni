@@ -4,10 +4,9 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/halo/attest/types"
+	"github.com/omni-network/omni/halo/sdk"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 type proposalServer struct {

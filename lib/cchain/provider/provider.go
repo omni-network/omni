@@ -24,7 +24,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	upgradetypes "cosmossdk.io/x/upgrade/types"
-	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -36,8 +35,8 @@ type latestFunc func(ctx context.Context, chainVer xchain.ChainVersion) (xchain.
 type windowFunc func(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64) (int, error)
 type portalBlockFunc func(ctx context.Context, attestOffset uint64, latest bool) (*ptypes.BlockResponse, bool, error)
 type networkFunc func(ctx context.Context, networkID uint64, latest bool) (*rtypes.NetworkResponse, bool, error)
-type valFunc func(ctx context.Context, operator common.Address) (stypes.Validator, bool, error)
-type valsFunc func(ctx context.Context) ([]stypes.Validator, error)
+type valFunc func(ctx context.Context, operator common.Address) (cchain.SDKValidator, bool, error)
+type valsFunc func(ctx context.Context) ([]cchain.SDKValidator, error)
 type rewardsFunc func(ctx context.Context, operator common.Address) (float64, bool, error)
 type valsetFunc func(ctx context.Context, valSetID uint64, latest bool) (valSetResponse, bool, error)
 type headerFunc func(ctx context.Context, height *int64) (*ctypes.ResultHeader, error)
@@ -113,11 +112,11 @@ func (p Provider) ValidatorSet(ctx context.Context, valSetID uint64) ([]cchain.V
 	return resp.Validators, ok, err
 }
 
-func (p Provider) Validator(ctx context.Context, operator common.Address) (stypes.Validator, bool, error) {
+func (p Provider) SDKValidator(ctx context.Context, operator common.Address) (cchain.SDKValidator, bool, error) {
 	return p.val(ctx, operator)
 }
 
-func (p Provider) Validators(ctx context.Context) ([]stypes.Validator, error) {
+func (p Provider) SDKValidators(ctx context.Context) ([]cchain.SDKValidator, error) {
 	return p.vals(ctx)
 }
 

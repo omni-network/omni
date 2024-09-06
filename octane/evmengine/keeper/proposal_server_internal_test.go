@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/omni-network/omni/halo/sdk"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/tutil"
@@ -16,7 +17,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/stretchr/testify/require"

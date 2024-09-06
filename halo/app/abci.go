@@ -5,13 +5,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/omni-network/omni/halo/sdk"
 	"github.com/omni-network/omni/lib/log"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	storetypes "cosmossdk.io/store/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 type postFinalizeCallback func(sdk.Context) error

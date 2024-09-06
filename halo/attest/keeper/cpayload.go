@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/omni-network/omni/halo/attest/types"
+	"github.com/omni-network/omni/halo/sdk"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
@@ -17,7 +18,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/gogoproto/proto"
 )
