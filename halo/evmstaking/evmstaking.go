@@ -8,7 +8,6 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
-	"github.com/omni-network/omni/halo/sdk"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/k1util"
@@ -21,6 +20,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	akeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	bkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	skeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"

@@ -4,10 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/omni-network/omni/halo/sdk"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 func MonitorForever(ctx context.Context, cprov cchain.Provider) {

@@ -9,7 +9,6 @@ import (
 	"github.com/omni-network/omni/halo/genutil/genserve"
 	ptypes "github.com/omni-network/omni/halo/portal/types"
 	rtypes "github.com/omni-network/omni/halo/registry/types"
-	"github.com/omni-network/omni/halo/sdk"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
@@ -27,6 +26,7 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	utypes "cosmossdk.io/x/upgrade/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	dtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/halo/portal/types"
-	"github.com/omni-network/omni/halo/sdk"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -12,6 +11,7 @@ import (
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/orm/model/ormdb"
 	"cosmossdk.io/orm/types/ormerrors"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 type Keeper struct {

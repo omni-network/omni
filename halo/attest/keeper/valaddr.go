@@ -4,13 +4,14 @@ import (
 	"context"
 	"sync"
 
-	"github.com/omni-network/omni/halo/sdk"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/cometbft/cometbft/crypto"
 
 	"github.com/ethereum/go-ethereum/common"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // valAddrCache is a simple read-through cache for validator comet-to-eth address lookups.
