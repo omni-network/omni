@@ -15,6 +15,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+// TODO(corver): Add all other consts/vars/funcs
+
 const (
 	ExecModeFinalize = sdk.ExecModeFinalize
 )

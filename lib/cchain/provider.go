@@ -107,6 +107,8 @@ func (v Validator) Verify() error {
 	return nil
 }
 
+// SDKValidator wraps the cosmos staking validator type and extends it with
+// convenience functions.
 type SDKValidator struct {
 	stypes.Validator
 }
