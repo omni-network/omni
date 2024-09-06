@@ -403,6 +403,7 @@ func (i *indexer) instrumentMsg(ctx context.Context, link *MsgLink) error {
 		"latency", s.Latency,
 		"msg_tx", msg.TxHash,
 		"receipt_tx", receipt.TxHash,
+		"id_hash", msg.Hash(),
 	)
 
 	return nil
