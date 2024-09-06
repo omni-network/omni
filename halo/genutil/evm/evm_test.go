@@ -8,6 +8,8 @@ import (
 	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/stretchr/testify/require"
+
+	_ "github.com/omni-network/omni/halo/sdk" // To init SDK config.
 )
 
 //go:generate go test . -golden -clean

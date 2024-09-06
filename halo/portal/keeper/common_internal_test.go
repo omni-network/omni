@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/halo/portal/types"
-	"github.com/omni-network/omni/halo/sdk"
 
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdktestutil "github.com/cosmos/cosmos-sdk/testutil"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
 

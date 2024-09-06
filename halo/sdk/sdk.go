@@ -1,12 +1,14 @@
-// Package sdk wraps the cosmos-sdk/types package (via dot-import) and initializes the Cosmos SDK configuration.
-// Always use this package instead of cosmos-sdk/types.
+// Package sdk implements the Cosmos SDK configuration.
 package sdk
 
 import (
+	"github.com/ethereum/go-ethereum/params"
+
+	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// Bech32HRP is the human-readable-part of the cosmos bech32 address format.
+// Bech32HRP is the human-readable-part of the Bech32 address format.
 const Bech32HRP = "omni"
 
 // init initializes the Cosmos SDK configuration.
@@ -26,4 +28,7 @@ func init() {
 	cfg.SetBech32PrefixForValidator(validatorAddressPrefix, validatorPubKeyPrefix)
 	cfg.SetBech32PrefixForConsensusNode(consNodeAddressPrefix, consNodePubKeyPrefix)
 	cfg.Seal()
+
+	// Override default power reduction: 1 ether (1e18) $STAKE == 1 power.
+	sdk.DefaultPowerReduction = sdkmath.NewInt(params.Ether)
 }

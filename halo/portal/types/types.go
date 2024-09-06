@@ -1,9 +1,10 @@
 package types
 
 import (
-	"github.com/omni-network/omni/halo/sdk"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 type MsgType uint32

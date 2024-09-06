@@ -4,7 +4,6 @@ import (
 	"context"
 
 	atypes "github.com/omni-network/omni/halo/attest/types"
-	"github.com/omni-network/omni/halo/sdk"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	etypes "github.com/omni-network/omni/octane/evmengine/types"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // makeProcessProposalRouter creates a new process proposal router that only routes

@@ -3,13 +3,12 @@ package types
 import (
 	"context"
 
-	"github.com/omni-network/omni/halo/sdk"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 
 	"github.com/ethereum/go-ethereum/common"
 
 	"cosmossdk.io/depinject"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // VoteExtensionProvider abstracts logic that provides consensus payload messages

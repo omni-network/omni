@@ -26,6 +26,8 @@ import (
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+
+	_ "github.com/omni-network/omni/halo/sdk" // To init SDK config.
 )
 
 var _ cchain.Provider = Provider{}

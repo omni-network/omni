@@ -3,10 +3,10 @@ package keeper
 import (
 	"context"
 
-	"github.com/omni-network/omni/halo/sdk"
 	"github.com/omni-network/omni/lib/log"
 
 	sdkmath "cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/slashing/types"
 )
 

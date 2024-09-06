@@ -5,7 +5,6 @@ import (
 	"crypto/ecdsa"
 
 	rtypes "github.com/omni-network/omni/halo/registry/types"
-	"github.com/omni-network/omni/halo/sdk"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
@@ -18,6 +17,7 @@ import (
 
 	utypes "cosmossdk.io/x/upgrade/types"
 	cosmosk1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/gogoproto/proto"
 )
