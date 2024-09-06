@@ -7,6 +7,7 @@ import (
 	atypes "github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	ptypes "github.com/omni-network/omni/halo/portal/types"
+	"github.com/omni-network/omni/halo/sdk"
 	"github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -23,7 +24,6 @@ import (
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/orm/model/ormdb"
 	"cosmossdk.io/orm/model/ormlist"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 

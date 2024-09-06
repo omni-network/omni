@@ -5,13 +5,13 @@ import (
 
 	"github.com/omni-network/omni/halo/attest/keeper"
 	"github.com/omni-network/omni/halo/attest/types"
+	"github.com/omni-network/omni/halo/sdk"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"

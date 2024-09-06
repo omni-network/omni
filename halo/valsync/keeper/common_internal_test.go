@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	ptestutil "github.com/omni-network/omni/halo/portal/testutil"
+	"github.com/omni-network/omni/halo/sdk"
 	"github.com/omni-network/omni/halo/valsync/testutil"
 	"github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/netconf"
@@ -11,7 +12,6 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdktestutil "github.com/cosmos/cosmos-sdk/testutil"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )

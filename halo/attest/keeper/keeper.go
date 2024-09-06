@@ -9,6 +9,7 @@ import (
 
 	"github.com/omni-network/omni/halo/attest/types"
 	rtypes "github.com/omni-network/omni/halo/registry/types"
+	"github.com/omni-network/omni/halo/sdk"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -27,7 +28,6 @@ import (
 	"cosmossdk.io/orm/types/ormerrors"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
 	"github.com/cosmos/gogoproto/proto"
 )

@@ -2,17 +2,24 @@ package cchain
 
 import (
 	"context"
+	"crypto/ecdsa"
 
 	rtypes "github.com/omni-network/omni/halo/registry/types"
+	"github.com/omni-network/omni/halo/sdk"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
+	cmtcrypto "github.com/cometbft/cometbft/crypto"
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 
 	utypes "cosmossdk.io/x/upgrade/types"
+	cosmosk1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/cosmos/gogoproto/proto"
 )
 
 // ProviderCallback is the callback function signature that will be called with each approved attestation per
@@ -57,11 +64,11 @@ type Provider interface {
 	// Note the genesis validator set has ID 1.
 	ValidatorSet(ctx context.Context, valSetID uint64) ([]Validator, bool, error)
 
-	// Validator returns the staking module validator by operator address from latest height.
-	Validator(ctx context.Context, operator common.Address) (stypes.Validator, bool, error)
+	// SDKValidator returns the cosmos staking module validator by operator address from latest height.
+	SDKValidator(ctx context.Context, operator common.Address) (SDKValidator, bool, error)
 
-	// Validators returns the current staking module validators from latest height.
-	Validators(ctx context.Context) ([]stypes.Validator, error)
+	// SDKValidators returns the current cosmos staking module validators from latest height.
+	SDKValidators(ctx context.Context) ([]SDKValidator, error)
 
 	// Rewards returns the staking module rewards for the given operator address from latest height.
 	Rewards(ctx context.Context, operator common.Address) (float64, bool, error)
@@ -98,4 +105,62 @@ func (v Validator) Verify() error {
 	}
 
 	return nil
+}
+
+type SDKValidator struct {
+	stypes.Validator
+}
+
+// Power returns the validators cometBFT power.
+func (v SDKValidator) Power() (uint64, error) {
+	return umath.ToUint64(v.ConsensusPower(sdk.DefaultPowerReduction))
+}
+
+// OperatorEthAddr returns the validator operator ethereum address.
+func (v SDKValidator) OperatorEthAddr() (common.Address, error) {
+	opAddr, err := sdk.ValAddressFromBech32(v.OperatorAddress)
+	if err != nil {
+		return common.Address{}, errors.Wrap(err, "parse operator address")
+	} else if len(opAddr) != common.AddressLength {
+		return common.Address{}, errors.New("invalid operator address length")
+	}
+
+	return common.BytesToAddress(opAddr), nil
+}
+
+// ConsensusEthAddr returns the validator consensus eth address.
+func (v SDKValidator) ConsensusEthAddr() (common.Address, error) {
+	pk, err := v.ConsensusPublicKey()
+	if err != nil {
+		return common.Address{}, err
+	}
+
+	return crypto.PubkeyToAddress(*pk), nil
+}
+
+// ConsensusCmtAddr returns the validator consensus cometBFT address.
+func (v SDKValidator) ConsensusCmtAddr() (cmtcrypto.Address, error) {
+	pk := new(cosmosk1.PubKey)
+	err := proto.Unmarshal(v.ConsensusPubkey.Value, pk)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshal consensus pubkey")
+	}
+
+	return pk.Address(), nil
+}
+
+// ConsensusPublicKey returns the validator consensus public key (eth ecdsa style).
+func (v SDKValidator) ConsensusPublicKey() (*ecdsa.PublicKey, error) {
+	pk := new(cosmosk1.PubKey)
+	err := proto.Unmarshal(v.ConsensusPubkey.Value, pk)
+	if err != nil {
+		return nil, errors.Wrap(err, "unmarshal consensus pubkey")
+	}
+
+	pubkey, err := crypto.DecompressPubkey(pk.Bytes())
+	if err != nil {
+		return nil, errors.Wrap(err, "decompress pubkey")
+	}
+
+	return pubkey, nil
 }
