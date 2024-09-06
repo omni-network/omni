@@ -17,7 +17,7 @@ import (
 )
 
 var ensureOmegaOperators = []common.Address{
-	// TODO(corver): Add omega operators to ensure are added here.
+	common.HexToAddress("0x900118D32A7e2b74f10f68BC3DA654dA8c9Dd0b7"), // Mark test operator address
 }
 
 // AllowOperators ensures that all operators hard-coded in this package is allowed as validators.
