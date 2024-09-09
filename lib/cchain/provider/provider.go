@@ -45,10 +45,11 @@ type headerFunc func(ctx context.Context, height *int64) (*ctypes.ResultHeader, 
 type chainIDFunc func(ctx context.Context) (uint64, error)
 type genesisFunc func(ctx context.Context) (execution []byte, consensus []byte, err error)
 type upgradeFunc func(ctx context.Context) (upgradetypes.Plan, bool, error)
+type signingFunc func(ctx context.Context) ([]cchain.SDKSigningInfo, error)
 
 type valSetResponse struct {
 	ValSetID      uint64
-	Validators    []cchain.Validator
+	Validators    []cchain.PortalValidator
 	CreatedHeight uint64
 	activedHeight uint64
 }
@@ -61,6 +62,7 @@ type Provider struct {
 	window      windowFunc
 	valset      valsetFunc
 	val         valFunc
+	signing     signingFunc
 	vals        valsFunc
 	rewards     rewardsFunc
 	chainID     chainIDFunc
@@ -109,7 +111,7 @@ func (p Provider) WindowCompare(ctx context.Context, chainVer xchain.ChainVersio
 	return p.window(ctx, chainVer, attestOffset)
 }
 
-func (p Provider) ValidatorSet(ctx context.Context, valSetID uint64) ([]cchain.Validator, bool, error) {
+func (p Provider) PortalValidatorSet(ctx context.Context, valSetID uint64) ([]cchain.PortalValidator, bool, error) {
 	resp, ok, err := p.valset(ctx, valSetID, false)
 	return resp.Validators, ok, err
 }
@@ -122,7 +124,11 @@ func (p Provider) SDKValidators(ctx context.Context) ([]cchain.SDKValidator, err
 	return p.vals(ctx)
 }
 
-func (p Provider) Rewards(ctx context.Context, operator common.Address) (float64, bool, error) {
+func (p Provider) SDKSigningInfos(ctx context.Context) ([]cchain.SDKSigningInfo, error) {
+	return p.signing(ctx)
+}
+
+func (p Provider) SDKRewards(ctx context.Context, operator common.Address) (float64, bool, error) {
 	return p.rewards(ctx, operator)
 }
 

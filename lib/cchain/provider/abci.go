@@ -29,6 +29,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	dtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	sltypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	gogogrpc "github.com/cosmos/gogoproto/grpc"
 	"github.com/cosmos/gogoproto/proto"
@@ -63,6 +64,7 @@ func NewABCIProvider(cmtCl rpcclient.Client, network netconf.ID, chainNamer func
 	ucl := utypes.NewQueryClient(rpcAdaptor{abci: cmtCl})
 	scl := stypes.NewQueryClient(rpcAdaptor{abci: cmtCl})
 	dcl := dtypes.NewQueryClient(rpcAdaptor{abci: cmtCl})
+	slcl := sltypes.NewQueryClient(rpcAdaptor{abci: cmtCl})
 
 	return Provider{
 		fetch:       newABCIFetchFunc(acl, cmtCl, chainNamer),
@@ -71,6 +73,7 @@ func NewABCIProvider(cmtCl rpcclient.Client, network netconf.ID, chainNamer func
 		valset:      newABCIValsetFunc(vcl),
 		val:         newABCIValFunc(scl),
 		vals:        newABCIValsFunc(scl),
+		signing:     newABCISigningFunc(slcl),
 		rewards:     newABCIRewards(dcl),
 		portalBlock: newABCIPortalBlockFunc(pcl),
 		networkFunc: newABCINetworkFunc(rcl),
@@ -82,6 +85,45 @@ func NewABCIProvider(cmtCl rpcclient.Client, network netconf.ID, chainNamer func
 		chainNamer:  chainNamer,
 		network:     network,
 		cometCl:     cmtCl,
+	}
+}
+
+func newABCISigningFunc(cl sltypes.QueryClient) signingFunc {
+	return func(ctx context.Context) ([]cchain.SDKSigningInfo, error) {
+		const endpoint = "signing_info"
+		defer latency(endpoint)()
+
+		ctx, span := tracer.Start(ctx, spanName(endpoint))
+		defer span.End()
+
+		req := &sltypes.QuerySigningInfosRequest{}
+		resp, err := cl.SigningInfos(ctx, req)
+		if err != nil {
+			incQueryErr(endpoint)
+			return nil, errors.Wrap(err, "abci query signing info")
+		}
+
+		params, err := cl.Params(ctx, &sltypes.QueryParamsRequest{})
+		if err != nil {
+			incQueryErr(endpoint)
+			return nil, errors.Wrap(err, "abci query params")
+		}
+
+		var infos []cchain.SDKSigningInfo
+		for _, info := range resp.Info {
+			// uptime over the past <SignedBlocksWindow> blocks.
+			uptime := 1.0 - (float64(info.MissedBlocksCounter) / float64(params.Params.SignedBlocksWindow))
+			if info.JailedUntil.Unix() != 0 {
+				uptime = 0
+			}
+
+			infos = append(infos, cchain.SDKSigningInfo{
+				ValidatorSigningInfo: info,
+				Uptime:               uptime,
+			})
+		}
+
+		return infos, nil
 	}
 }
 
@@ -211,13 +253,13 @@ func newABCIValsetFunc(cl vtypes.QueryClient) valsetFunc {
 			return valSetResponse{}, false, errors.Wrap(err, "abci query valset")
 		}
 
-		vals := make([]cchain.Validator, 0, len(resp.Validators))
+		vals := make([]cchain.PortalValidator, 0, len(resp.Validators))
 		for _, v := range resp.Validators {
 			ethAddr, err := v.EthereumAddress()
 			if err != nil {
 				return valSetResponse{}, false, err
 			}
-			vals = append(vals, cchain.Validator{
+			vals = append(vals, cchain.PortalValidator{
 				Address: ethAddr,
 				Power:   v.Power,
 			})

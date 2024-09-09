@@ -20,7 +20,7 @@ func MonitorForever(ctx context.Context, cprov cchain.Provider) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			err := monitorOnce(ctx, cprov)
+			err := monitorOnce(ctx, cprov, sampleValidator)
 			if err != nil {
 				log.Warn(ctx, "Monitoring validator failed (will retry)", err)
 			}
@@ -28,7 +28,17 @@ func MonitorForever(ctx context.Context, cprov cchain.Provider) {
 	}
 }
 
-func monitorOnce(ctx context.Context, cprov cchain.Provider) error {
+func monitorOnce(ctx context.Context, cprov cchain.Provider, sampleFunc func(sample)) error {
+	signings, err := cprov.SDKSigningInfos(ctx)
+	if err != nil {
+		return err
+	}
+
+	infos, err := infosByConsAddr(signings)
+	if err != nil {
+		return err
+	}
+
 	vals, err := cprov.SDKValidators(ctx)
 	if err != nil {
 		return errors.Wrap(err, "query validators")
@@ -45,6 +55,13 @@ func monitorOnce(ctx context.Context, cprov cchain.Provider) error {
 			return err
 		}
 
+		rewards, ok, err := cprov.SDKRewards(ctx, opAddr)
+		if err != nil {
+			return err
+		} else if !ok {
+			return errors.New("missing rewards for validator")
+		}
+
 		consAddrEth, err := val.ConsensusEthAddr()
 		if err != nil {
 			return err
@@ -55,16 +72,38 @@ func monitorOnce(ctx context.Context, cprov cchain.Provider) error {
 			return err
 		}
 
-		power := val.ConsensusPower(sdk.DefaultPowerReduction)
-		jailed := val.IsJailed()
-		bonded := val.IsBonded()
+		info, ok := infos[consAddrCmt.String()]
+		if !ok {
+			return errors.New("missing signing info")
+		}
 
-		powerGauge.WithLabelValues(consAddrEth.String(), consAddrCmt.String(), opAddr.String()).Set(float64(power))
-		jailedGauge.WithLabelValues(consAddrEth.String()).Set(boolToFloat(jailed))
-		bondedGauge.WithLabelValues(consAddrEth.String()).Set(boolToFloat(bonded))
+		sampleFunc(sample{
+			ConsensusEthAddr: consAddrEth,
+			ConsensusCmtAddr: consAddrCmt,
+			OperatorEthAddr:  opAddr,
+			Power:            val.ConsensusPower(sdk.DefaultPowerReduction),
+			Jailed:           val.IsJailed(),
+			Bonded:           val.IsBonded(),
+			Tombstoned:       info.Tombstoned,
+			Uptime:           info.Uptime,
+			Rewards:          rewards,
+		})
 	}
 
 	return nil
+}
+
+func infosByConsAddr(signings []cchain.SDKSigningInfo) (map[string]cchain.SDKSigningInfo, error) {
+	resp := make(map[string]cchain.SDKSigningInfo)
+	for _, signing := range signings {
+		addr, err := signing.ConsensusCmtAddr()
+		if err != nil {
+			return nil, err
+		}
+		resp[addr.String()] = signing
+	}
+
+	return resp, nil
 }
 
 func boolToFloat(b bool) float64 {
