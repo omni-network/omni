@@ -313,8 +313,8 @@ github.com/btcsuite/btcd/btcutil v1.1.6 h1:zFL2+c3Lb9gEgqKNzowKUPQNb8jV7v5Oaodi/
 github.com/btcsuite/btcd/btcutil v1.1.6/go.mod h1:9dFymx8HpuLqBnsPELrImQeTQfKBQqzqGbbV3jK55aE=
 github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1 h1:q0rUy8C/TYNBQS1+CGKw68tLOFYSNEs0TFnxxnS9+4U=
 github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1/go.mod h1:7SFka0XMvUgj3hfZtydOrQY2mwhPclbT2snogU7SQQc=
-github.com/bufbuild/buf v1.40.0 h1:EWiJiZsJumV0z8sPVjGx+3e8IxqAVv/Jg/4zG9bFxSI=
-github.com/bufbuild/buf v1.40.0/go.mod h1:PMkhwcFMP8d/aBJsvJL7GZq/CdeT7jwTS96RwFyKSU8=
+github.com/bufbuild/buf v1.40.1 h1:u99ME/yC6zzZH5yGfwmcTt46bxFqDfuvFuif/W9F3Qo=
+github.com/bufbuild/buf v1.40.1/go.mod h1:PMkhwcFMP8d/aBJsvJL7GZq/CdeT7jwTS96RwFyKSU8=
 github.com/bufbuild/bufplugin-go v0.1.0 h1:3LmgSHaSf8mPvwoFunimgm8uKJFLg+YePdi7NQgnfdY=
 github.com/bufbuild/bufplugin-go v0.1.0/go.mod h1:gIbsJlcYJRLylxxNN3FPNd91fYxJmGVQgbZ67xLVrXk=
 github.com/bufbuild/protocompile v0.14.1 h1:iA73zAf/fyljNjQKwYzUHD6AD4R8KMasmwa/FBatYVw=
