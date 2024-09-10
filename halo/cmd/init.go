@@ -277,11 +277,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	privValKeyFile := comet.PrivValidatorKeyFile()
 	privValStateFile := comet.PrivValidatorStateFile()
 	if cmtos.FileExists(privValKeyFile) {
-		pv = privval.LoadFilePV(privValKeyFile, privValStateFile) // This hard exits on any error.
-		log.Info(ctx, "Found cometBFT private validator",
-			"key_file", privValKeyFile,
-			"state_file", privValStateFile,
-		)
+		log.Info(ctx, "Found cometBFT private validator", "key_file", privValKeyFile)
 	} else {
 		pv = privval.NewFilePV(k1.GenPrivKey(), privValKeyFile, privValStateFile)
 		pv.Save()

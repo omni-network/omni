@@ -1,15 +1,87 @@
 package cmd
 
 import (
+	"os"
+	"path"
+
+	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+
+	"github.com/cometbft/cometbft/config"
+	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/privval"
 
 	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/spf13/cobra"
 )
 
-func newCreateKeyCmd() *cobra.Command {
+func newCreateConsensusKeyCmd() *cobra.Command {
+	var home string
+	cmd := &cobra.Command{
+		Use:   "create-consensus-key",
+		Short: "Create new CometBFT consensus private key and state files",
+		Long: "Create new CometBFT consensus private key and state files " +
+			"used for P2P consensus and xchain attestation. It is created in the default " +
+			"cometBFT paths: `<home>/config/priv_validator_key.json` and `<home>/data/priv_validator_state.json`",
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			cfg := config.DefaultConfig()
+			cfg.RootDir = home
+
+			filePV := privval.NewFilePV(k1.GenPrivKey(), cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile())
+
+			if err := os.MkdirAll(path.Dir(cfg.PrivValidatorKeyFile()), 0o755); err != nil {
+				return errors.Wrap(err, "ensure config dir")
+			}
+			if err := os.MkdirAll(path.Dir(cfg.PrivValidatorStateFile()), 0o755); err != nil {
+				return errors.Wrap(err, "ensure data dir")
+			}
+			if err := ensureNotExist(cfg.PrivValidatorKeyFile()); err != nil {
+				return &CliError{Msg: "existing private key file found: " + cfg.PrivValidatorKeyFile()}
+			}
+			if err := ensureNotExist(cfg.PrivValidatorStateFile()); err != nil {
+				return &CliError{Msg: "existing state file found: " + cfg.PrivValidatorKeyFile()}
+			}
+
+			// CometBFT panics instead of error :(
+			err := func() (err error) {
+				defer func() {
+					if r := recover(); r != nil {
+						if e, ok := r.(error); ok {
+							err = errors.Wrap(e, "save private validator key files")
+						} else {
+							err = errors.New("save private validator key files", "err", r)
+						}
+					}
+				}()
+
+				filePV.Save()
+
+				return nil
+			}()
+			if err != nil {
+				return err
+			}
+
+			log.Info(cmd.Context(), "🎉 Created consensus private key",
+				"home", home,
+				"private_key", cfg.PrivValidatorKeyFile(),
+				"state_file", cfg.PrivValidatorStateFile(),
+			)
+			log.Info(cmd.Context(), "🚧 Remember to backup the private key if the node is a validator 🚧")
+
+			return nil
+		},
+	}
+
+	libcmd.BindHomeFlag(cmd.Flags(), &home)
+
+	return cmd
+}
+
+func newCreateOperatorKeyCmd() *cobra.Command {
 	cfg := defaultCreateKeyConfig()
 	cmd := &cobra.Command{
 		Use:   "create-operator-key",
@@ -81,4 +153,15 @@ func defaultCreateKeyConfig() createKeyConfig {
 		Type:           KeyTypeInsecure,
 		PrivateKeyFile: "./operator-private-key",
 	}
+}
+
+func ensureNotExist(file string) error {
+	_, err := os.Stat(file)
+	if err == nil {
+		return errors.New("file exists", "path", file)
+	} else if !os.IsNotExist(err) {
+		return errors.Wrap(err, "unexpected error")
+	}
+
+	return nil
 }
