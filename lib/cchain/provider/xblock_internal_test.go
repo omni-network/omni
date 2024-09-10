@@ -22,7 +22,7 @@ func TestXBlock(t *testing.T) {
 	t.Parallel()
 	f := fuzz.NewWithSeed(99).NilChance(0).Funcs(
 		// Fuzz valid validators.
-		func(e *cchain.Validator, c fuzz.Continue) {
+		func(e *cchain.PortalValidator, c fuzz.Continue) {
 			c.FuzzNoCustom(e)
 			if e.Power < 0 {
 				e.Power = -e.Power
@@ -38,7 +38,7 @@ func TestXBlock(t *testing.T) {
 
 	valFunc := func(ctx context.Context, h uint64, _ bool) (valSetResponse, bool, error) {
 		require.EqualValues(t, height, h)
-		var resp []cchain.Validator
+		var resp []cchain.PortalValidator
 		f.Fuzz(&resp)
 
 		return valSetResponse{

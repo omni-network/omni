@@ -125,8 +125,8 @@ func mustGetABI(metadata *bind.MetaData) *abi.ABI {
 	return abi
 }
 
-// toPortalVals converts a slice of cchain.Validator to a slice of bindings.Validator.
-func toPortalVals(vals []cchain.Validator) ([]bindings.Validator, error) {
+// toPortalVals converts a slice of cchain.PortalValidator to a slice of bindings.Validator.
+func toPortalVals(vals []cchain.PortalValidator) ([]bindings.Validator, error) {
 	resp := make([]bindings.Validator, 0, len(vals))
 	for _, val := range vals {
 		if err := val.Verify(); err != nil {

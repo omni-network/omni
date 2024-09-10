@@ -17,6 +17,34 @@ import (
 
 var integration = flag.Bool("integration", false, "run integration tests")
 
+func TestSigningInfos(t *testing.T) {
+	t.Parallel()
+	if !*integration {
+		t.Skip("skipping integration test")
+	}
+
+	ctx := context.Background()
+
+	cprov, err := provider.Dial(netconf.Omega)
+	require.NoError(t, err)
+
+	infos, err := cprov.SDKSigningInfos(ctx)
+	require.NoError(t, err)
+
+	for _, info := range infos {
+		consCmtAddr, err := info.ConsensusCmtAddr()
+		require.NoError(t, err)
+
+		log.Info(ctx, "Validator Signing Info",
+			"consensus_addr", consCmtAddr,
+			"jailed", info.Jailed(),
+			"uptime", info.Uptime,
+			"tombstoned", info.Tombstoned,
+			"expected_blocks", info.IndexOffset,
+			"missed_blocks", info.MissedBlocksCounter,
+		)
+	}
+}
 func TestSDKValidator(t *testing.T) {
 	t.Parallel()
 	if !*integration {
@@ -35,6 +63,9 @@ func TestSDKValidator(t *testing.T) {
 		opAddr, err := val.OperatorEthAddr()
 		require.NoError(t, err)
 
+		consEthAddr, err := val.ConsensusEthAddr()
+		require.NoError(t, err)
+
 		consCmtAddr, err := val.ConsensusCmtAddr()
 		require.NoError(t, err)
 
@@ -43,6 +74,7 @@ func TestSDKValidator(t *testing.T) {
 
 		log.Info(ctx, "Validator",
 			"operator", opAddr,
+			"consensus_eth_addr", consEthAddr,
 			"consensus_addr", consCmtAddr,
 			"power", power,
 			"is_jailed", val.IsJailed(),
