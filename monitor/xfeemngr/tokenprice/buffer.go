@@ -70,7 +70,7 @@ func (b *Buffer) stream(ctx context.Context) {
 	callback := func(ctx context.Context) {
 		prices, err := b.pricer.Price(ctx, b.tokens...)
 		if err != nil {
-			log.Error(ctx, "Failed to get prices - will retry", err)
+			log.Warn(ctx, "Failed to get prices (will retry)", err)
 			return
 		}
 
