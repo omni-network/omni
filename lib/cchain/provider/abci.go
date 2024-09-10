@@ -309,8 +309,6 @@ func newABCIFetchFunc(cl atypes.QueryClient, client rpcclient.Client, chainNamer
 			return []xchain.Attestation{}, nil
 		}
 
-		log.Debug(ctx, "Offset not found in latest state", "chain", chainName, "offset", fromOffset, "earliest", earliestAttestationAtLatestHeight.AttestOffset)
-
 		offsetHeight, err := searchOffsetInHistory(ctx, client, cl, chainVer, chainName, fromOffset)
 		if err != nil {
 			incQueryErr(endpoint)

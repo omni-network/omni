@@ -143,6 +143,7 @@ func (s Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 		"valset_id", sub.ValidatorSetID,
 		"status", rec.Status,
 		"nonce", tx.Nonce(),
+		"height", rec.BlockNumber.Uint64(),
 		"gas_used", rec.GasUsed,
 		"tx_hash", rec.TxHash,
 	}
