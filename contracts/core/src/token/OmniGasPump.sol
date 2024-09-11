@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.24;
 
+// solhint-disable no-console
+
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import { XAppUpgradeable } from "src/pkg/XAppUpgradeable.sol";
@@ -132,7 +134,7 @@ contract OmniGasPump is XAppUpgradeable, OwnableUpgradeable, PausableUpgradeable
         // take xcall fee
         uint256 f = xfee();
         if (amtETH < f) return (0, false, "insufficient fee");
-        amtETH = amtETH - f;
+        amtETH -= f;
 
         // check max
         if (amtETH > maxSwap) return (0, false, "over max");
@@ -161,7 +163,7 @@ contract OmniGasPump is XAppUpgradeable, OwnableUpgradeable, PausableUpgradeable
         uint256 amtETH = _toEth(amtOMNI);
 
         // "undo" toll
-        amtETH += (amtETH * TOLL_DENOM / (TOLL_DENOM - toll));
+        amtETH = (amtETH * TOLL_DENOM / (TOLL_DENOM - toll));
 
         // "undo" xcall fee
         return amtETH + xfee();
