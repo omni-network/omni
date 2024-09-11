@@ -1,14 +1,17 @@
 package cmd
 
 import (
+	"encoding/hex"
 	"os"
 	"path"
 
+	"github.com/omni-network/omni/halo/attest/voter"
+	halocmd "github.com/omni-network/omni/halo/cmd"
+	halocfg "github.com/omni-network/omni/halo/config"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
-	"github.com/cometbft/cometbft/config"
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/privval"
 
@@ -24,29 +27,40 @@ func newCreateConsensusKeyCmd() *cobra.Command {
 		Short: "Create new CometBFT consensus private key and state files",
 		Long: "Create new CometBFT consensus private key and state files " +
 			"used for P2P consensus and xchain attestation. It is created in the default " +
-			"cometBFT paths: `<home>/config/priv_validator_key.json` and `<home>/data/priv_validator_state.json`",
+			"cometBFT paths: `<home>/config/priv_validator_key.json` " +
+			"and `<home>/data/priv_validator_state.json` " +
+			"and `<home>/data/voter_state.json`",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			cfg := config.DefaultConfig()
-			cfg.RootDir = home
+			// Initialize comet config.
+			cmtCfg := halocmd.DefaultCometConfig(home)
 
-			filePV := privval.NewFilePV(k1.GenPrivKey(), cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile())
+			// Initialize halo config.
+			haloCfg := halocfg.DefaultConfig()
+			haloCfg.HomeDir = home
 
-			if err := os.MkdirAll(path.Dir(cfg.PrivValidatorKeyFile()), 0o755); err != nil {
-				return errors.Wrap(err, "ensure config dir")
+			keyFile := cmtCfg.PrivValidatorKeyFile()
+			stateFile := cmtCfg.PrivValidatorStateFile()
+			voterFile := haloCfg.VoterStateFile()
+
+			for _, file := range []string{keyFile, stateFile, voterFile} {
+				if err := os.MkdirAll(path.Dir(file), 0o755); err != nil {
+					return errors.Wrap(err, "ensure dir")
+				}
+				if err := ensureNotExist(file); err != nil {
+					return &CliError{Msg: "existing file found: " + file}
+				}
 			}
-			if err := os.MkdirAll(path.Dir(cfg.PrivValidatorStateFile()), 0o755); err != nil {
-				return errors.Wrap(err, "ensure data dir")
+
+			filePV := privval.NewFilePV(k1.GenPrivKey(), keyFile, stateFile)
+			pubkey, err := filePV.GetPubKey()
+			if err != nil {
+				return errors.Wrap(err, "pubkey")
 			}
-			if err := ensureNotExist(cfg.PrivValidatorKeyFile()); err != nil {
-				return &CliError{Msg: "existing private key file found: " + cfg.PrivValidatorKeyFile()}
-			}
-			if err := ensureNotExist(cfg.PrivValidatorStateFile()); err != nil {
-				return &CliError{Msg: "existing state file found: " + cfg.PrivValidatorKeyFile()}
-			}
+			pubkeyHex := hex.EncodeToString(pubkey.Bytes())
 
 			// CometBFT panics instead of error :(
-			err := func() (err error) {
+			err = func() (err error) {
 				defer func() {
 					if r := recover(); r != nil {
 						if e, ok := r.(error); ok {
@@ -65,12 +79,15 @@ func newCreateConsensusKeyCmd() *cobra.Command {
 				return err
 			}
 
-			log.Info(cmd.Context(), "🎉 Created consensus private key",
-				"home", home,
-				"private_key", cfg.PrivValidatorKeyFile(),
-				"state_file", cfg.PrivValidatorStateFile(),
-			)
-			log.Info(cmd.Context(), "🚧 Remember to backup the private key if the node is a validator 🚧")
+			if err := voter.GenEmptyStateFile(voterFile); err != nil {
+				return err
+			}
+
+			ctx := cmd.Context()
+			log.Info(ctx, "Created consensus voter state file", "path", voterFile)
+			log.Info(ctx, "Created consensus private validator state file", "path", stateFile)
+			log.Info(ctx, "Created consensus private key", "path", keyFile, "pubkey", pubkeyHex)
+			log.Info(ctx, "🚧 Remember to backup the private key if the node is a validator 🚧")
 
 			return nil
 		},
