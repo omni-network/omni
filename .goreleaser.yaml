@@ -75,7 +75,9 @@ dockers:
 
 archives:
   - format: tar.gz
-    allow_different_binary_count: true # Required since anvilproxy only has linux-amd64
+    builds: # Only include external facing binaries. We use docker internally.
+      - halo
+      - omni
     # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: >-
       {{ .ProjectName }}_
