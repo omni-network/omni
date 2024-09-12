@@ -31,6 +31,7 @@ const config: Config = {
     locales: ['en'],
   },
 
+  clientModules: ["src/client-modules/index.ts", "src/client-modules/ask-cookbook.ts"],
   presets: [
     [
       'classic',
