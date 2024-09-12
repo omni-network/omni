@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/hex"
 	"os"
 	"time"
 
@@ -21,11 +22,13 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/node"
 	"github.com/cometbft/cometbft/p2p"
+	"github.com/cometbft/cometbft/privval"
 	"github.com/cometbft/cometbft/proxy"
 	rpclocal "github.com/cometbft/cometbft/rpc/client/local"
 	cmttypes "github.com/cometbft/cometbft/types"
 
 	"github.com/ethereum/go-ethereum/common"
+	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 
 	"cosmossdk.io/store"
 	pruningtypes "cosmossdk.io/store/pruning/types"
@@ -86,7 +89,7 @@ func Run(ctx context.Context, cfg Config) error {
 // Note that the original context used to start the app must be canceled first
 // before calling the stop function and a fresh context should be passed into the stop function.
 func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context) error, error) {
-	log.Info(ctx, "Starting halo consensus client")
+	log.Info(ctx, "Starting halo consensus client", "moniker", cfg.Comet.Moniker)
 
 	if err := cfg.Verify(); err != nil {
 		return nil, nil, errors.Wrap(err, "verify halo config")
@@ -108,6 +111,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "load validator key")
 	}
+	logPrivVal(ctx, privVal)
 
 	db, err := dbm.NewDB("application", cfg.BackendType(), cfg.DataDir())
 	if err != nil {
@@ -409,4 +413,18 @@ func serverAppOptsFromCfg(cfg Config) serverAppOpts {
 		sdkflags.FlagHome:                cfg.HomeDir,
 		sdkserver.FlagUnsafeSkipUpgrades: cfg.UnsafeSkipUpgrades,
 	}
+}
+
+// logPrivVal logs the private validator key details.
+func logPrivVal(ctx context.Context, privVal *privval.FilePV) {
+	pk := privVal.Key.PubKey
+	ethPK, err := ethcrypto.DecompressPubkey(pk.Bytes())
+	if err != nil {
+		return
+	}
+
+	log.Info(ctx, "Loaded consensus private validator key from disk",
+		"pubkey", hex.EncodeToString(pk.Bytes()),
+		"comet_addr", pk.Address(),
+		"eth_addr", ethcrypto.PubkeyToAddress(*ethPK))
 }
