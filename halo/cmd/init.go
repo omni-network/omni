@@ -149,7 +149,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	}
 
 	if initCfg.Clean {
-		log.Info(ctx, "Deleting home directory, since --clean=true")
+		log.Info(ctx, "Deleting home directory since --clean=true")
 		if err := os.RemoveAll(homeDir); err != nil {
 			return errors.Wrap(err, "remove home dir")
 		}
@@ -199,7 +199,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	// Setup node key
 	nodeKeyFile := comet.NodeKeyFile()
 	if cmtos.FileExists(nodeKeyFile) {
-		log.Info(ctx, "Found node key", "path", nodeKeyFile)
+		log.Info(ctx, "Found existing node key", "path", nodeKeyFile)
 	} else if _, err := p2p.LoadOrGenNodeKey(nodeKeyFile); err != nil {
 		return errors.Wrap(err, "load or generate node key")
 	} else {
@@ -213,25 +213,10 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 		return errors.Wrap(err, "create rpc client")
 	}
 
-	if initCfg.TrustedSync {
-		// Trusted state sync only supported for protected networks.
-		height, hash, err := getTrustHeightAndHash(ctx, rpcCl)
-		if err != nil {
-			return errors.Wrap(err, "get trusted height")
-		}
-
-		comet.StateSync.Enable = true
-		comet.StateSync.RPCServers = []string{rpcServer, rpcServer} // CometBFT requires two RPC servers. Duplicate our RPC for now.
-		comet.StateSync.TrustHeight = height
-		comet.StateSync.TrustHash = hash
-
-		log.Info(ctx, "Trusted state-sync enabled", "height", height, "hash", hash, "rpc_endpoint", rpcServer)
-	} else {
-		log.Info(ctx, "Not initializing trusted state sync")
-	}
-
 	addrBookPath := filepath.Join(homeDir, cmtconfig.DefaultConfigDir, cmtconfig.DefaultAddrBookName)
-	if initCfg.AddrBook && !cmtos.FileExists(addrBookPath) {
+	if initCfg.AddrBook && cmtos.FileExists(addrBookPath) {
+		log.Info(ctx, "Found existing address book", "path", addrBookPath)
+	} else if initCfg.AddrBook {
 		// Populate address book with random public peers from the connected node.
 		// This aids in bootstrapping the P2P network. Seed nodes don't work well on their pwn for some reason.
 
@@ -250,26 +235,32 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 		}
 		addrBook.Save()
 
-		log.Info(ctx, "Populated comet address book", "path", addrBookPath, "peers", len(peers), "rpc_endpoint", rpcServer)
+		log.Info(ctx, "Populated cometBFT address book", "path", addrBookPath, "peers", len(peers), "rpc_endpoint", rpcServer)
 	}
 
 	// Setup comet config
 	cmtConfigFile := filepath.Join(homeDir, cmtconfig.DefaultConfigDir, cmtconfig.DefaultConfigFileName)
 	if cmtos.FileExists(cmtConfigFile) {
-		log.Info(ctx, "Found comet config file", "path", cmtConfigFile)
+		log.Info(ctx, "Found existing comet config file", "path", cmtConfigFile)
 	} else {
+		if !initCfg.TrustedSync {
+			log.Info(ctx, "Not initializing trusted state sync")
+		} else if err := setTrustedSync(ctx, rpcCl, &comet); err != nil {
+			return err
+		}
+
 		cmtconfig.WriteConfigFile(cmtConfigFile, &comet) // This panics on any error :(
-		log.Info(ctx, "Generated default comet config file", "path", cmtConfigFile)
+		log.Info(ctx, "Generated comet config file", "path", cmtConfigFile)
 	}
 
 	// Setup halo config
 	haloConfigFile := cfg.ConfigFile()
 	if cmtos.FileExists(haloConfigFile) {
-		log.Info(ctx, "Found halo config file", "path", haloConfigFile)
+		log.Info(ctx, "Found existing halo config file", "path", haloConfigFile)
 	} else if err := halocfg.WriteConfigTOML(cfg, initCfg.LogCfg()); err != nil {
 		return err
 	} else {
-		log.Info(ctx, "Generated default halo config file", "path", haloConfigFile)
+		log.Info(ctx, "Generated halo config file", "path", haloConfigFile)
 	}
 
 	// Setup comet private validator
@@ -277,19 +268,26 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	privValKeyFile := comet.PrivValidatorKeyFile()
 	privValStateFile := comet.PrivValidatorStateFile()
 	if cmtos.FileExists(privValKeyFile) {
-		log.Info(ctx, "Found cometBFT private validator", "key_file", privValKeyFile)
+		log.Info(ctx, "Found existing cometBFT private validator key", "path", privValKeyFile)
 	} else {
 		pv = privval.NewFilePV(k1.GenPrivKey(), privValKeyFile, privValStateFile)
 		pv.Save()
-		log.Info(ctx, "Generated private validator",
+		log.Info(ctx, "Generated cometBFT private validator key",
 			"key_file", privValKeyFile,
 			"state_file", privValStateFile)
+	}
+
+	// Generate state file if missing
+	if !cmtos.FileExists(privValStateFile) {
+		pv = privval.LoadFilePVEmptyState(privValKeyFile, privValStateFile)
+		pv.Save()
+		log.Info(ctx, "Generated private validator state file", "path", privValStateFile)
 	}
 
 	// Setup genesis file
 	genFile := comet.GenesisFile()
 	if cmtos.FileExists(genFile) {
-		log.Info(ctx, "Found genesis file", "path", genFile)
+		log.Info(ctx, "Found existing genesis file", "path", genFile)
 	} else if network == netconf.Simnet {
 		pubKey, err := pv.GetPubKey()
 		if err != nil {
@@ -323,12 +321,28 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	// Vote state
 	voterStateFile := cfg.VoterStateFile()
 	if cmtos.FileExists(voterStateFile) {
-		log.Info(ctx, "Found voter state file", "path", voterStateFile)
+		log.Info(ctx, "Found existing voter state file", "path", voterStateFile)
 	} else if err := voter.GenEmptyStateFile(voterStateFile); err != nil {
 		return err
 	} else {
 		log.Info(ctx, "Generated voter state file", "path", voterStateFile)
 	}
+
+	return nil
+}
+
+func setTrustedSync(ctx context.Context, rpcCl *rpchttp.HTTP, cfg *cmtconfig.Config) error {
+	height, hash, err := getTrustHeightAndHash(ctx, rpcCl)
+	if err != nil {
+		return errors.Wrap(err, "get trusted height")
+	}
+
+	cfg.StateSync.Enable = true
+	cfg.StateSync.RPCServers = []string{rpcCl.Remote(), rpcCl.Remote()} // CometBFT requires two RPC servers. Duplicate our RPC for now.
+	cfg.StateSync.TrustHeight = height
+	cfg.StateSync.TrustHash = hash
+
+	log.Info(ctx, "Trusted state-sync enabled", "height", height, "hash", hash, "rpc_endpoint", rpcCl.Remote())
 
 	return nil
 }
