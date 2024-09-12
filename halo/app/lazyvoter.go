@@ -75,6 +75,10 @@ func (l *voterLoader) LazyLoad(
 		log.Warn(ctx, "Flag --xchain-evm-rpc-endpoints empty. The app will crash if it becomes a validator since it cannot perform xchain voting duties", nil)
 	}
 
+	if !l.isValidator() {
+		log.Info(ctx, "Local halo node is not a validator")
+	}
+
 	// Wait until this node becomes a validator before initializing voter.
 	// This mitigates crashes due to invalid rpc endpoint config in non-validator nodes.
 	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second))
@@ -84,6 +88,8 @@ func (l *voterLoader) LazyLoad(
 			return errors.Wrap(ctx.Err(), "lazy loading canceled")
 		}
 	}
+
+	log.Info(ctx, "🫡 Local halo node is a validator, starting voter")
 
 	if len(endpoints) == 0 {
 		// Note that this negatively affects chain liveness, but xchain liveness already negatively affected so rather
