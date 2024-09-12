@@ -31,4 +31,6 @@ jobs:
       - name: Build and push halovisor
         run: |
           scripts/halovisor/build.sh ${{ github.ref_name }}
+          docker tag  omniops/halovisor:${{ github.ref_name }}  omniops/halovisor:latest
           docker push omniops/halovisor:${{ github.ref_name }}
+          docker push omniops/halovisor:latest
