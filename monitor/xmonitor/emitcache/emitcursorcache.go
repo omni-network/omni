@@ -61,7 +61,7 @@ func Start(
 					emit, _, err := xprov.GetEmittedCursor(ctx, ref, stream)
 					if err != nil {
 						latest, _ := xprov.ChainVersionHeight(ctx, xchain.ChainVersion{ID: chain.ID, ConfLevel: xchain.ConfLatest})
-						return errors.Wrap(err, "get emit cursor", err,
+						return errors.Wrap(err, "get emit cursor",
 							"stream", network.StreamName(stream),
 							"lagging", umath.SubtractOrZero(latest, block.BlockHeight),
 						)
