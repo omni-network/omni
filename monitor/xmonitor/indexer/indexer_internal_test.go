@@ -9,12 +9,15 @@ import (
 	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	dbm "github.com/cosmos/cosmos-db"
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
 )
 
 //go:generate go test . -count=1000 -race
+
 func TestIndexer(t *testing.T) {
 	t.Parallel()
 
@@ -24,7 +27,7 @@ func TestIndexer(t *testing.T) {
 
 	streamNamer := func(s xchain.StreamID) string { return fmt.Sprint(s) }
 
-	indexer, err := newIndexer(db, streamNamer)
+	indexer, err := newIndexer(db, mockXProvider{}, streamNamer)
 	require.NoError(t, err)
 	var samples []sample
 	indexer.sampleFunc = func(s sample) {
@@ -110,12 +113,21 @@ func TestIndexer(t *testing.T) {
 
 func makeSample(blocks []xchain.Block, receipts []xchain.Receipt, msgs []xchain.Msg, idx int) sample {
 	return sample{
-		Stream:    fmt.Sprint(receipts[idx].StreamID),
-		XDApp:     "unknown",
-		Latency:   getReceiptBlock(blocks, receipts[idx].MsgID).Timestamp.Sub(getMsgBlock(blocks, msgs[idx].MsgID).Timestamp),
-		ExcessGas: umath.SubtractOrZero(msgs[idx].DestGasLimit, receipts[idx].GasUsed),
-		Success:   receipts[idx].Success,
+		Stream:        fmt.Sprint(receipts[idx].StreamID),
+		XDApp:         "unknown",
+		Latency:       getReceiptBlock(blocks, receipts[idx].MsgID).Timestamp.Sub(getMsgBlock(blocks, msgs[idx].MsgID).Timestamp),
+		ExcessGas:     umath.SubtractOrZero(msgs[idx].DestGasLimit, receipts[idx].GasUsed),
+		Success:       receipts[idx].Success,
+		FuzzyOverride: expectFuzzyOverride(receipts[idx]),
 	}
+}
+
+func expectFuzzyOverride(receipt xchain.Receipt) bool {
+	if !receipt.ConfLevel().IsFuzzy() {
+		return false
+	}
+
+	return !mockConfLevel(receipt.TxHash).IsFuzzy()
 }
 
 func getReceiptBlock(blocks []xchain.Block, msgID xchain.MsgID) xchain.Block {
@@ -145,6 +157,30 @@ func fuzzBlock(f *fuzz.Fuzzer, msgs []xchain.Msg, receipts []xchain.Receipt) xch
 	f.Fuzz(&resp)
 	resp.Msgs = msgs
 	resp.Receipts = receipts
+
+	return resp
+}
+
+type mockXProvider struct {
+	xchain.Provider
+}
+
+func (m mockXProvider) GetSubmission(_ context.Context, chainID uint64, txHash common.Hash) (xchain.Submission, error) {
+	return xchain.Submission{
+		AttHeader: xchain.AttestHeader{
+			ChainVersion: xchain.ChainVersion{
+				ID:        chainID,
+				ConfLevel: mockConfLevel(txHash),
+			},
+		},
+	}, nil
+}
+
+func mockConfLevel(txHash common.Hash) xchain.ConfLevel {
+	resp := xchain.ConfFinalized
+	if txHash[0]%2 == 0 {
+		resp = xchain.ConfLatest
+	}
 
 	return resp
 }

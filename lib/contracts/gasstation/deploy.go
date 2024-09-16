@@ -73,7 +73,12 @@ func isDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Bac
 
 // DeployIfNeeded deploys a new token contract if it is not already deployed.
 // If the contract is already deployed, the receipt is nil.
-func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func DeployIfNeeded(
+	ctx context.Context,
+	network netconf.ID,
+	backend *ethbackend.Backend,
+	gasPumps []bindings.OmniGasStationGasPump,
+) (common.Address, *ethtypes.Receipt, error) {
 	deployed, addr, err := isDeployed(ctx, network, backend)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "is deployed")
@@ -82,11 +87,16 @@ func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend
 		return addr, nil, nil
 	}
 
-	return Deploy(ctx, network, backend)
+	return Deploy(ctx, network, backend, gasPumps)
 }
 
 // Deploy deploys a new L1Bridge contract and returns the address and receipt.
-func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func Deploy(
+	ctx context.Context,
+	network netconf.ID,
+	backend *ethbackend.Backend,
+	gasPumps []bindings.OmniGasStationGasPump,
+) (common.Address, *ethtypes.Receipt, error) {
 	cfg := DeploymentConfig{
 		Create3Factory:  contracts.Create3Factory(network),
 		Create3Salt:     contracts.GasStationSalt(network),
@@ -97,10 +107,16 @@ func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend
 		ExpectedAddr:    contracts.GasStation(network),
 	}
 
-	return deploy(ctx, network, cfg, backend)
+	return deploy(ctx, network, cfg, backend, gasPumps)
 }
 
-func deploy(ctx context.Context, network netconf.ID, cfg DeploymentConfig, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func deploy(
+	ctx context.Context,
+	network netconf.ID,
+	cfg DeploymentConfig,
+	backend *ethbackend.Backend,
+	gasPumps []bindings.OmniGasStationGasPump,
+) (common.Address, *ethtypes.Receipt, error) {
 	if err := cfg.Validate(); err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "validate config")
 	}
@@ -143,7 +159,7 @@ func deploy(ctx context.Context, network netconf.ID, cfg DeploymentConfig, backe
 		return common.Address{}, nil, errors.Wrap(err, "wait mined impl")
 	}
 
-	initCode, err := packInitCode(cfg, impl)
+	initCode, err := packInitCode(cfg, impl, gasPumps)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "pack init code")
 	}
@@ -161,7 +177,7 @@ func deploy(ctx context.Context, network netconf.ID, cfg DeploymentConfig, backe
 	return addr, receipt, nil
 }
 
-func packInitCode(cfg DeploymentConfig, impl common.Address) ([]byte, error) {
+func packInitCode(cfg DeploymentConfig, impl common.Address, gasPumps []bindings.OmniGasStationGasPump) ([]byte, error) {
 	gasStationAbi, err := bindings.OmniGasStationMetaData.GetAbi()
 	if err != nil {
 		return nil, errors.Wrap(err, "get abi")
@@ -172,7 +188,7 @@ func packInitCode(cfg DeploymentConfig, impl common.Address) ([]byte, error) {
 		return nil, errors.Wrap(err, "get proxy abi")
 	}
 
-	initializer, err := gasStationAbi.Pack("initialize", cfg.Portal, cfg.Owner)
+	initializer, err := gasStationAbi.Pack("initialize", cfg.Portal, cfg.Owner, gasPumps)
 	if err != nil {
 		return nil, errors.Wrap(err, "encode initializer")
 	}

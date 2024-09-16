@@ -15,6 +15,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -148,11 +149,16 @@ func toPortalDepls(def Definition, chains []types.EVMChain) (map[uint64]bindings
 			return nil, errors.New("missing info", "chain", chain.ChainID)
 		}
 
+		blockPeriodNs, err := umath.ToUint64(chain.BlockPeriod.Nanoseconds())
+		if err != nil {
+			return nil, errors.Wrap(err, "block period ns")
+		}
+
 		deps[chain.ChainID] = bindings.PortalRegistryDeployment{
 			Name:           chain.Name,
 			ChainId:        chain.ChainID,
 			Addr:           info.Address,
-			BlockPeriod:    uint64(chain.BlockPeriod),
+			BlockPeriodNs:  blockPeriodNs,
 			AttestInterval: chain.AttestInterval(def.Testnet.Network),
 			DeployHeight:   info.Height,
 			Shards:         chain.ShardsUint64(),
@@ -204,7 +210,7 @@ func startAddingMockPortals(ctx context.Context, def Definition) func() error {
 				Addr:           tutil.RandomAddress(),
 				DeployHeight:   chainID, // does not matter
 				AttestInterval: 60,      // 60 blocks,
-				BlockPeriod:    1000,    // 1 second
+				BlockPeriodNs:  uint64(time.Second),
 				Shards:         []uint64{uint64(xchain.ShardFinalized0)},
 				Name:           fmt.Sprintf("mock-portal-%d", chainID),
 			}

@@ -44,6 +44,7 @@ func DefaultCometConfig(homeDir string) cfg.Config {
 	conf.Mempool.Type = cfg.MempoolTypeNop             // Disable cometBFT mempool
 	conf.ProxyApp = ""                                 // Only support built-in ABCI app supported.
 	conf.ABCI = ""                                     // Only support built-in ABCI app supported.
+	conf.Consensus.TimeoutPropose = time.Second        // Mitigate slow blocks when proposer inactive (default=3s).
 
 	return *conf
 }

@@ -10,7 +10,7 @@ func TestConfLevelFuzzy(t *testing.T) {
 	t.Parallel()
 	var fuzzies []ConfLevel
 	for conf := ConfUnknown; conf < confSentinel; conf++ {
-		if conf.IsFuzzy() {
+		if conf.Valid() && conf.IsFuzzy() {
 			fuzzies = append(fuzzies, conf)
 		}
 	}

@@ -109,6 +109,10 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, err
 	}
 
+	if err := DeployGasApp(ctx, def); err != nil {
+		return nil, err
+	}
+
 	if err := setupTokenBridge(ctx, def); err != nil {
 		return nil, errors.Wrap(err, "setup token bridge")
 	}
@@ -168,6 +172,10 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 	pingpong, err := Deploy(ctx, def, depCfg)
 	if err != nil {
 		return err
+	}
+
+	if err := testGasPumps(ctx, def); err != nil {
+		return errors.Wrap(err, "test gas app")
 	}
 
 	if err := testBridge(ctx, def); err != nil {

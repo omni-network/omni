@@ -62,11 +62,11 @@ contract PortalRegistry_Test is Test {
         reg.register(dep);
 
         // period cannot be bigger than type(int64).max
-        dep.blockPeriod = uint64(type(int64).max) + 1;
+        dep.blockPeriodNs = uint64(type(int64).max) + 1;
         vm.expectRevert("PortalRegistry: period too large");
         vm.prank(owner);
         reg.register(dep);
-        dep.blockPeriod = 1000; // 1 second in ms
+        dep.blockPeriodNs = 1000;
 
         // Must have name
         vm.expectRevert("PortalRegistry: no name");
@@ -92,7 +92,7 @@ contract PortalRegistry_Test is Test {
         dep.shards[1] = ConfLevel.Latest;
         vm.expectEmit();
         emit PortalRegistered(
-            dep.chainId, dep.addr, dep.deployHeight, dep.attestInterval, dep.blockPeriod, dep.shards, dep.name
+            dep.chainId, dep.addr, dep.deployHeight, dep.attestInterval, dep.blockPeriodNs, dep.shards, dep.name
         );
         vm.prank(owner);
         reg.register(dep);
@@ -115,7 +115,7 @@ contract PortalRegistry_Test is Test {
 
             vm.expectEmit();
             emit PortalRegistered(
-                dep.chainId, dep.addr, dep.deployHeight, dep.attestInterval, dep.blockPeriod, dep.shards, dep.name
+                dep.chainId, dep.addr, dep.deployHeight, dep.attestInterval, dep.blockPeriodNs, dep.shards, dep.name
             );
 
             vm.prank(owner);
@@ -137,7 +137,7 @@ contract PortalRegistry_Test is Test {
             deployHeight: chainId * 1234,
             name: string(abi.encodePacked("omni_evm_", chainId)),
             attestInterval: chainId * 60 * 60 * 1000,
-            blockPeriod: chainId * 1000,
+            blockPeriodNs: chainId * 1000,
             shards: new uint64[](2)
         });
 

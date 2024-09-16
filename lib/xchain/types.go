@@ -41,7 +41,12 @@ func (c ConfLevel) Valid() bool {
 
 // IsFuzzy returns true if this confirmation level is not ConfFinalized.
 func (c ConfLevel) IsFuzzy() bool {
-	return c == ConfLatest
+	return !c.IsFinalized()
+}
+
+// IsFinalized returns true if this confirmation level is ConfFinalized.
+func (c ConfLevel) IsFinalized() bool {
+	return c == ConfFinalized
 }
 
 // Label returns a short label for the confirmation level.
