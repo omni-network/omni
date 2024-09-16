@@ -92,7 +92,7 @@ contract Quorum_Test is Test {
         // make a duplicate validator
         sigs[1].validatorAddr = sigs[0].validatorAddr;
 
-        vm.expectRevert("Quorum: duplicate validator");
+        vm.expectRevert("Quorum: sigs not deduped/sorted");
         quorum.verify({ digest: digest, sigs: sigs, valSetId: 1, qNumerator: 2, qDenominator: 3 });
     }
 
@@ -105,7 +105,7 @@ contract Quorum_Test is Test {
         // swap first two sigs
         (sigs[0], sigs[1]) = (sigs[1], sigs[0]);
 
-        vm.expectRevert("Quorum: sigs not sorted");
+        vm.expectRevert("Quorum: sigs not deduped/sorted");
         quorum.verify({ digest: digest, sigs: sigs, valSetId: 1, qNumerator: 2, qDenominator: 3 });
     }
 
