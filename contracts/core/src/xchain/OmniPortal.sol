@@ -226,7 +226,7 @@ contract OmniPortal is
      * @notice Execute an xmsg.
      * @dev Verify if an XMsg is next in its XStream, execute it, increment inXMsgOffset, emit an XReceipt event
      */
-    function _exec(XTypes.BlockHeader memory xheader, XTypes.Msg calldata xmsg_) internal {
+    function _exec(XTypes.BlockHeader calldata xheader, XTypes.Msg calldata xmsg_) internal {
         uint64 sourceChainId = xheader.sourceChainId;
         uint64 destChainId = xmsg_.destChainId;
         uint64 shardId = xmsg_.shardId;
