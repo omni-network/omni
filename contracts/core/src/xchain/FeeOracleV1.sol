@@ -76,7 +76,7 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
         //       non-zero bytes (consuming L2 execution gas) to reduce their L1 data fee
         uint256 dataGas = data.length * 16;
 
-        return protocolFee + (baseGasLimit * execGasPrice) + (gasLimit * execGasPrice) + (dataGas * dataGasPrice);
+        return protocolFee + (baseGasLimit + gasLimit) * execGasPrice + (dataGas * dataGasPrice);
     }
 
     /**
