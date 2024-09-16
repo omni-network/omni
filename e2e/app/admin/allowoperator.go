@@ -16,8 +16,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-var ensureOmegaOperators = []common.Address{
-	common.HexToAddress("0x900118D32A7e2b74f10f68BC3DA654dA8c9Dd0b7"), // Mark test operator address
+// omegaOperators are the operators that are allowed to be validators on the Omega network.
+var omegaOperators = []common.Address{
+	common.HexToAddress("0xdc5754Fb79163A65753D2CAF23dDA2398cC1f277"), // A41
+	common.HexToAddress("0x446924c33A33F413B773d952E7054504788E4c08"), // BlockDaemon
 }
 
 // AllowOperators ensures that all operators hard-coded in this package is allowed as validators.
@@ -43,7 +45,7 @@ func AllowOperators(ctx context.Context, def app.Definition, cfg PortalAdminConf
 	}
 
 	var toAllow []common.Address
-	for _, operator := range ensureOmegaOperators {
+	for _, operator := range omegaOperators {
 		if ok, err := contract.IsAllowedValidator(&bind.CallOpts{}, operator); err != nil {
 			return errors.Wrap(err, "call is allowed validator")
 		} else if ok {
@@ -56,7 +58,7 @@ func AllowOperators(ctx context.Context, def app.Definition, cfg PortalAdminConf
 	}
 
 	if len(toAllow) == 0 {
-		log.Info(ctx, "All operators already allowed to be validators", "count", len(ensureOmegaOperators))
+		log.Info(ctx, "All operators already allowed to be validators", "count", len(omegaOperators))
 		return nil
 	}
 
