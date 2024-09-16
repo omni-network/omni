@@ -33,7 +33,7 @@ library Quorum {
             sig = sigs[i];
 
             if (i > 0) {
-                XTypes.SigTuple memory prev = sigs[i - 1];
+                XTypes.SigTuple calldata prev = sigs[i - 1];
                 require(sig.validatorAddr != prev.validatorAddr, "Quorum: duplicate validator");
                 require(sig.validatorAddr > prev.validatorAddr, "Quorum: sigs not sorted");
             }
