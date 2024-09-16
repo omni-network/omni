@@ -125,3 +125,11 @@ func fuzzyDependents(chainVer xchain.ChainVersion, confLevels map[uint64][]xchai
 
 	return resp
 }
+
+func boolToFloat(b bool) float64 {
+	if !b {
+		return 0
+	}
+
+	return 1
+}
