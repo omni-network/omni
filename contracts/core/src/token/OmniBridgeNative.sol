@@ -36,6 +36,11 @@ contract OmniBridgeNative is OmniBridgeCommon {
     event Claimed(address indexed claimant, address indexed to, uint256 amount);
 
     /**
+     * @notice Emitted on setup(...)
+     */
+    event Setup(uint64 l1ChainId, address omni, address l1Bridge);
+
+    /**
      * @notice xcall gas limit for OmniBridgeL1.withdraw
      */
     uint64 public constant XCALL_WITHDRAW_GAS_LIMIT = 80_000;
@@ -180,5 +185,6 @@ contract OmniBridgeNative is OmniBridgeCommon {
         l1ChainId = l1ChainId_;
         omni = IOmniPortal(omni_);
         l1Bridge = l1Bridge_;
+        emit Setup(l1ChainId_, omni_, l1Bridge_);
     }
 }
