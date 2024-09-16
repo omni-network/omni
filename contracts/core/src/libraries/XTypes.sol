@@ -42,7 +42,7 @@ library XTypes {
     /**
      * @notice BlockHeader of an XBlock.
      * @custom:field sourceChainId      Chain ID of the source chain
-     * @custom:field sourceChainId      Chain ID of the Omni consensus chain
+     * @custom:field consensusChainId   Chain ID of the Omni consensus chain
      * @custom:field confLevel          Confirmation level of the cross chain block
      * @custom:field offset             Offset of the cross chain block
      * @custom:field sourceBlockHeight  Height of the source chain block
