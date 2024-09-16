@@ -90,7 +90,7 @@ contract PortalRegistry is OwnableUpgradeable {
     /**
      * @notice Register multiple OmniPortal deployments.
      */
-    function bulkRegister(Deployment[] calldata deps) external payable onlyOwner {
+    function bulkRegister(Deployment[] calldata deps) external onlyOwner {
         for (uint64 i = 0; i < deps.length; i++) {
             _register(deps[i]);
         }
