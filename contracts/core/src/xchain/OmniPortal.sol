@@ -101,8 +101,8 @@ contract OmniPortal is
 
         // omni consensus chain uses Finalised+Broadcast shard
         uint64 omniCShard = ConfLevel.toBroadcastShard(ConfLevel.Finalized);
-        inXMsgOffset[p.omniCChainId][omniCShard] = p.cChainXMsgOffset;
-        inXBlockOffset[p.omniCChainId][omniCShard] = p.cChainXBlockOffset;
+        _setInXMsgOffset(p.omniCChainId, omniCShard, p.cChainXMsgOffset);
+        _setInXBlockOffset(p.omniCChainId, omniCShard, p.cChainXBlockOffset);
     }
 
     function chainId() public view returns (uint64) {
@@ -456,8 +456,7 @@ contract OmniPortal is
      * @param offset           New xmsg offset
      */
     function setInXMsgOffset(uint64 sourceChainId, uint64 shardId, uint64 offset) external onlyOwner {
-        inXMsgOffset[sourceChainId][shardId] = offset;
-        emit InXMsgOffsetSet(sourceChainId, shardId, offset);
+        _setInXMsgOffset(sourceChainId, shardId, offset);
     }
 
     /**
@@ -467,8 +466,7 @@ contract OmniPortal is
      * @param offset           New xblock offset
      */
     function setInXBlockOffset(uint64 sourceChainId, uint64 shardId, uint64 offset) external onlyOwner {
-        inXBlockOffset[sourceChainId][shardId] = offset;
-        emit InXBlockOffsetSet(sourceChainId, shardId, offset);
+        _setInXBlockOffset(sourceChainId, shardId, offset);
     }
 
     /**
@@ -691,5 +689,21 @@ contract OmniPortal is
         require(feeOracle_ != address(0), "OmniPortal: no zero feeOracle");
         feeOracle = feeOracle_;
         emit FeeOracleSet(feeOracle_);
+    }
+
+    /**
+     * @notice Set the inbound xmsg offset for a chain and shard
+     */
+    function _setInXMsgOffset(uint64 sourceChainId, uint64 shardId, uint64 offset) internal {
+        inXMsgOffset[sourceChainId][shardId] = offset;
+        emit InXMsgOffsetSet(sourceChainId, shardId, offset);
+    }
+
+    /**
+     * @notice Set the inbound xblock offset for a chain and shard
+     */
+    function _setInXBlockOffset(uint64 sourceChainId, uint64 shardId, uint64 offset) internal {
+        inXBlockOffset[sourceChainId][shardId] = offset;
+        emit InXBlockOffsetSet(sourceChainId, shardId, offset);
     }
 }
