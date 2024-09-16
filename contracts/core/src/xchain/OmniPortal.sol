@@ -31,7 +31,7 @@ contract OmniPortal is
     using ExcessivelySafeCall for address;
 
     /**
-     * @notice Modifier the requires an action is not paused. An action is paused if:
+     * @notice Modifier that requires an action is not paused. An action is paused if:
      *          - actionId is paused for all chains
      *          - actionId is paused for chainId
      *          - All actions are paused
