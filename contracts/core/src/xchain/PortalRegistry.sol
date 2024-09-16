@@ -69,7 +69,7 @@ contract PortalRegistry is OwnableUpgradeable {
     }
 
     /**
-     * @notice Get the OmniPortal address for a chain.
+     * @notice List all registered OmniPortal deployments.
      */
     function list() external view returns (Deployment[] memory) {
         Deployment[] memory deps = new Deployment[](chainIds.length);

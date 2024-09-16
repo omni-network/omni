@@ -77,13 +77,13 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
     mapping(uint64 => mapping(uint64 => uint64)) public outXMsgOffset;
 
     /**
-     * @notice Offset of the last outbound XMsg that was sent to destChainId in shardId
-     *         Maps destChainId -> shardId -> offset.
+     * @notice Offset of the last inbout XMsg that was sent from sourceChainId in shardId
+     *         Maps sourceChainId -> shardId -> offset.
      */
     mapping(uint64 => mapping(uint64 => uint64)) public inXMsgOffset;
 
     /**
-     * @notice The xblock offset of the last inbound XMsg that was received from sourceChainId in shardIdj
+     * @notice The xblock offset of the last inbound XMsg that was received from sourceChainId in shardId
      *         Maps sourceChainId -> shardId -> xblockOffset.
      */
     mapping(uint64 => mapping(uint64 => uint64)) public inXBlockOffset;

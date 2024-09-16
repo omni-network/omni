@@ -16,7 +16,7 @@ import { XTypes } from "../libraries/XTypes.sol";
  *      Genesis storage slots must:
  *          - set _owner on proxy
  *          - set _initialized on proxy to 1, to disable the initializer
- *          - set _initialized on implementation to 255, to disabled all initializers
+ *          - set _initialized on implementation to 0xffffffffffffffff, to disabled all initializers
  */
 contract OmniBridgeNative is OmniBridgeCommon {
     /**
@@ -69,7 +69,7 @@ contract OmniBridgeNative is OmniBridgeCommon {
     address public l1Bridge;
 
     /**
-     * @notice Track claimable amount per address. Claimable amount increases when withdraw transfer failes.
+     * @notice Track claimable amount per address. Claimable amount increases when withdraw transfer fails.
      */
     mapping(address => uint256) public claimable;
 
