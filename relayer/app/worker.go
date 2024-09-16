@@ -281,7 +281,8 @@ func fetchXBlock(rootCtx context.Context, xProvider xchain.Provider, att xchain.
 				return block, false, nil
 			}
 
-			return xchain.Block{}, false, errors.Wrap(err, "mismatching block vs finalized attestation [BUG]")
+			return xchain.Block{}, false, errors.Wrap(err, "mismatching block vs finalized attestation [BUG]",
+				"block_height", block.BlockHeight)
 		}
 
 		// We got the xblock, it is finalized and its hash matches the attestation block hash.

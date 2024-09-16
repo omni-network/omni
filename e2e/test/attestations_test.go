@@ -92,7 +92,7 @@ func TestApprovedValUpdates(t *testing.T) {
 
 		valSetID := consChain.DeployHeight
 		for {
-			vals, ok, err := cprov.ValidatorSet(ctx, valSetID)
+			vals, ok, err := cprov.PortalValidatorSet(ctx, valSetID)
 			require.NoError(t, err)
 			require.True(t, ok, "Validator update not found in any set: node=%s, valSetID=%v", node.Name, valSetID)
 

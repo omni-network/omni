@@ -50,7 +50,7 @@ func StartInitial(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) e
 			"proxy_port", node.ProxyPort,
 			"prom", node.PrometheusProxyPort,
 		)
-		if _, err := waitForNode(ctx, node, 0, 15*time.Second); err != nil {
+		if _, err := waitForNode(ctx, node, 0, 30*time.Second); err != nil {
 			return err
 		}
 	}

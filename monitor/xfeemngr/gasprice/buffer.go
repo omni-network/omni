@@ -67,7 +67,7 @@ func (b *Buffer) streamOne(ctx context.Context, chainID uint64) {
 	callback := func(ctx context.Context) {
 		gpriceBig, err := pricer.SuggestGasPrice(ctx)
 		if err != nil {
-			log.Error(ctx, "Failed to get gas price - will retry", err)
+			log.Warn(ctx, "Failed to get gas price (will retry)", err)
 			return
 		}
 

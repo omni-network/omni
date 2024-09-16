@@ -1,15 +1,104 @@
 package cmd
 
 import (
+	"encoding/hex"
+	"os"
+	"path"
+
+	"github.com/omni-network/omni/halo/attest/voter"
+	halocmd "github.com/omni-network/omni/halo/cmd"
+	halocfg "github.com/omni-network/omni/halo/config"
+	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+
+	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
+	"github.com/cometbft/cometbft/privval"
 
 	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/spf13/cobra"
 )
 
-func newCreateKeyCmd() *cobra.Command {
+func newCreateConsensusKeyCmd() *cobra.Command {
+	var home string
+	cmd := &cobra.Command{
+		Use:   "create-consensus-key",
+		Short: "Create new CometBFT consensus private key and state files",
+		Long: "Create new CometBFT consensus private key and state files " +
+			"used for P2P consensus and xchain attestation. It is created in the default " +
+			"cometBFT paths: `<home>/config/priv_validator_key.json` " +
+			"and `<home>/data/priv_validator_state.json` " +
+			"and `<home>/data/voter_state.json`",
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			// Initialize comet config.
+			cmtCfg := halocmd.DefaultCometConfig(home)
+
+			// Initialize halo config.
+			haloCfg := halocfg.DefaultConfig()
+			haloCfg.HomeDir = home
+
+			keyFile := cmtCfg.PrivValidatorKeyFile()
+			stateFile := cmtCfg.PrivValidatorStateFile()
+			voterFile := haloCfg.VoterStateFile()
+
+			for _, file := range []string{keyFile, stateFile, voterFile} {
+				if err := os.MkdirAll(path.Dir(file), 0o755); err != nil {
+					return errors.Wrap(err, "ensure dir")
+				}
+				if err := ensureNotExist(file); err != nil {
+					return &CliError{Msg: "existing file found: " + file}
+				}
+			}
+
+			filePV := privval.NewFilePV(k1.GenPrivKey(), keyFile, stateFile)
+			pubkey, err := filePV.GetPubKey()
+			if err != nil {
+				return errors.Wrap(err, "pubkey")
+			}
+			pubkeyHex := hex.EncodeToString(pubkey.Bytes())
+
+			// CometBFT panics instead of error :(
+			err = func() (err error) {
+				defer func() {
+					if r := recover(); r != nil {
+						if e, ok := r.(error); ok {
+							err = errors.Wrap(e, "save private validator key files")
+						} else {
+							err = errors.New("save private validator key files", "err", r)
+						}
+					}
+				}()
+
+				filePV.Save()
+
+				return nil
+			}()
+			if err != nil {
+				return err
+			}
+
+			if err := voter.GenEmptyStateFile(voterFile); err != nil {
+				return err
+			}
+
+			ctx := cmd.Context()
+			log.Info(ctx, "Created consensus voter state file", "path", voterFile)
+			log.Info(ctx, "Created consensus private validator state file", "path", stateFile)
+			log.Info(ctx, "Created consensus private key", "path", keyFile, "pubkey", pubkeyHex)
+			log.Info(ctx, "🚧 Remember to backup the private key if the node is a validator 🚧")
+
+			return nil
+		},
+	}
+
+	libcmd.BindHomeFlag(cmd.Flags(), &home)
+
+	return cmd
+}
+
+func newCreateOperatorKeyCmd() *cobra.Command {
 	cfg := defaultCreateKeyConfig()
 	cmd := &cobra.Command{
 		Use:   "create-operator-key",
@@ -81,4 +170,15 @@ func defaultCreateKeyConfig() createKeyConfig {
 		Type:           KeyTypeInsecure,
 		PrivateKeyFile: "./operator-private-key",
 	}
+}
+
+func ensureNotExist(file string) error {
+	_, err := os.Stat(file)
+	if err == nil {
+		return errors.New("file exists", "path", file)
+	} else if !os.IsNotExist(err) {
+		return errors.Wrap(err, "unexpected error")
+	}
+
+	return nil
 }

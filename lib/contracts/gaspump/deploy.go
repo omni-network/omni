@@ -125,7 +125,7 @@ func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend
 		GasStation:      contracts.GasStation(network),
 		Oracle:          oracle,
 		MaxSwap:         big.NewInt(20000000000000000), // 0.02 ETH
-		Toll:            big.NewInt(10),                // 10 / 1000 = 0.1% (1000 = GasPump.TOLL_DENOM),
+		Toll:            big.NewInt(100),               // 100 / 1000 = 0.1 = 10% (1000 = GasPump.TOLL_DENOM),
 		ExpectedAddr:    contracts.GasPump(network),
 	}
 
