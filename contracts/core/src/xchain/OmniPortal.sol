@@ -366,17 +366,17 @@ contract OmniPortal is
 
         uint64 totalPower;
         XTypes.Validator memory val;
-        mapping(address => uint64) storage valSet = valSet[valSetId];
+        mapping(address => uint64) storage _valSet = valSet[valSetId];
 
         for (uint256 i = 0; i < numVals; i++) {
             val = validators[i];
 
             require(val.addr != address(0), "OmniPortal: no zero validator");
             require(val.power > 0, "OmniPortal: no zero power");
-            require(valSet[val.addr] == 0, "OmniPortal: duplicate validator");
+            require(_valSet[val.addr] == 0, "OmniPortal: duplicate validator");
 
             totalPower += val.power;
-            valSet[val.addr] = val.power;
+            _valSet[val.addr] = val.power;
         }
 
         valSetTotalPower[valSetId] = totalPower;
