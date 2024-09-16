@@ -57,27 +57,34 @@ var (
 		Namespace: "halo",
 		Subsystem: "attest",
 		Name:      "votes_approved_total",
-		Help: "Total number of votes included in approved attestations per validator per stream. " +
+		Help: "Total number of votes included in approved attestations per validator per chain version. " +
 			"Approved votes were present in approved attestations at time of deletion. They count towards rewards",
-	}, []string{"validator", "stream"})
+	}, []string{"validator", "chain_version"})
 
 	discardedVotesCounter = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "halo",
 		Subsystem: "attest",
 		Name:      "votes_discarded_total",
-		Help: "Total number of votes included in discarded attestations per validator per stream. " +
+		Help: "Total number of votes included in discarded attestations per validator per chain version. " +
 			"Discarded votes were included on-chain but were either for previously approved attestations (late) or " +
 			"for non-quorum attestations (wrong). They don't count towards rewards",
-	}, []string{"validator", "stream"})
+	}, []string{"validator", "chain_version"})
 
 	missingVotesCounter = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "halo",
 		Subsystem: "attest",
 		Name:      "votes_missing_total",
-		Help: "Total number of votes missing from approved attestations per validator per stream. " +
+		Help: "Total number of votes missing from approved attestations per validator per chain version. " +
 			"Missing votes were missing from approved attestations at time of deletion. " +
 			"They may be late or never included on-chain. missing-discarded==not-voting",
-	}, []string{"validator", "stream"})
+	}, []string{"validator", "chain_version"})
+
+	expectedVotesCounter = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "halo",
+		Subsystem: "attest",
+		Name:      "votes_expected_total",
+		Help:      "Total number of expected votes for attestations per validator per chain version.",
+	}, []string{"validator", "chain_version"})
 )
 
 func latency(method string) func() {
