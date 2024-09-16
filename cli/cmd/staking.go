@@ -128,7 +128,7 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 		return err
 	}
 
-	if _, ok, err = cprov.Validator(ctx, opAddr); err != nil {
+	if _, ok, err = cprov.SDKValidator(ctx, opAddr); err != nil {
 		return err
 	} else if ok {
 		return &CliError{
@@ -261,7 +261,7 @@ func unjailValidator(ctx context.Context, cfg unjailConfig) error {
 		return err
 	}
 
-	if val, ok, err := cprov.Validator(ctx, opAddr); err != nil {
+	if val, ok, err := cprov.SDKValidator(ctx, opAddr); err != nil {
 		return err
 	} else if !ok {
 		return &CliError{

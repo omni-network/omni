@@ -31,7 +31,8 @@ func newOperatorCmds() *cobra.Command {
 		newRegisterCmd(),
 		newInitCmd(),
 		newCreateValCmd(),
-		newCreateKeyCmd(),
+		newCreateOperatorKeyCmd(),
+		newCreateConsensusKeyCmd(),
 		newUnjailCmd(),
 	)
 

@@ -24,7 +24,7 @@ contract OmniGasPump_Test is Test {
     address gasStation;
     address feeOracleMngr;
     uint256 maxSwap = 2 ether;
-    uint256 toll = 50; // 5%
+    uint256 toll = 100; // 10%
 
     function setUp() public {
         portal = new MockPortal();
@@ -253,5 +253,23 @@ contract OmniGasPump_Test is Test {
         // fillUp is unpaused
         vm.expectRevert("OmniGasPump: insufficient fee"); // reverts, but not becasue its paused
         pump.fillUp(recipient);
+    }
+
+    /// @notice Test that GasPump.quote is accurate
+    function testFuzz_quote(uint32 _targetOMNI) public view {
+        uint256 targetOMNI = bound(_targetOMNI, 0.1 ether, 10 ether);
+        uint256 neededETH = pump.quote(targetOMNI);
+
+        (uint256 dryRunOMNI, bool wouldSucceed, string memory reason) = pump.dryFillUp(neededETH);
+
+        assertTrue(wouldSucceed, reason);
+
+        // assert quoted and actual within 10 wei of each other
+        // allows for rounding errors in different between taking / undoing toll
+        _assertWithinEpsilon(dryRunOMNI, targetOMNI, 10);
+    }
+
+    function _assertWithinEpsilon(uint256 a, uint256 b, uint256 epsilon) internal pure {
+        assertTrue(a >= b - epsilon && a <= b + epsilon);
     }
 }

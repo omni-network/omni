@@ -72,6 +72,54 @@ func TestGenConsSeeds(t *testing.T) {
 	}
 }
 
+//go:generate go test -golden -run=TestGenConsArchives
+
+// TestGenConsArchives generates <network>/consensus-archives.txt by loading e2e manifests and parsing archive* p2p_consensus keys.
+func TestGenConsArchives(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		network      netconf.ID
+		manifestFunc func() []byte
+	}{
+		{
+			network:      netconf.Omega,
+			manifestFunc: manifests.Omega,
+		},
+		{
+			network:      netconf.Staging,
+			manifestFunc: manifests.Staging,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.network.String(), func(t *testing.T) {
+			t.Parallel()
+			var manifest types.Manifest
+			_, err := toml.Decode(string(test.manifestFunc()), &manifest)
+			require.NoError(t, err)
+
+			var peers []string
+			for _, node := range sortedKeys(manifest.Keys) {
+				if !isArchiveNode(test.network, node) {
+					continue
+				}
+
+				for typ, addr := range manifest.Keys[node] {
+					if typ != key.P2PConsensus {
+						continue
+					}
+					addr = strings.ToLower(addr) // CometBFT P2P IDs are lowercase.
+
+					peers = append(peers, fmt.Sprintf("%s@%s.%s.omni.network:26656", addr, node, test.network)) // abcde123@archive01.staging.omni.network:26656
+				}
+			}
+
+			seeds := strings.Join(peers, "\n")
+			seedsFile := fmt.Sprintf("../%s/consensus-archives.txt", test.network)
+			tutil.RequireGoldenBytes(t, []byte(seeds), tutil.WithFilename(seedsFile))
+		})
+	}
+}
+
 var genExecutionSeeds = flag.Bool("gen-execution-seeds", false, "Enable to generate execution-seeds.txt. Note this requires GCP secret manager read-access")
 
 //go:generate go test -golden -gen-execution-seeds -run=TestGenExecutionSeeds
@@ -199,6 +247,21 @@ func isSeedNode(network netconf.ID, node string) bool {
 	}
 
 	// In staging, we only have 1 seednode, so add the fullnode as well
+	if network == netconf.Staging && strings.HasPrefix(node, "full") {
+		return true
+	}
+
+	return false
+}
+
+// isArchiveNode returns true if the node should be added to archive node static config.
+func isArchiveNode(network netconf.ID, node string) bool {
+	// All "seed*" nodes in the manifest are seed noes
+	if strings.HasPrefix(node, "archive") {
+		return true
+	}
+
+	// In staging, we only have 1 archive, it the fullnode as well
 	if network == netconf.Staging && strings.HasPrefix(node, "full") {
 		return true
 	}

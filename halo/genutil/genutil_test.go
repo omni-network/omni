@@ -12,7 +12,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	_ "github.com/omni-network/omni/halo/app" // To init SDK config.
+	_ "github.com/omni-network/omni/halo/sdk" // To init SDK config.
 )
 
 //go:generate go test . -golden -clean

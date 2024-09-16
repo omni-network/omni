@@ -4,7 +4,6 @@ import (
 	"context"
 
 	rtypes "github.com/omni-network/omni/halo/registry/types"
-	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
 
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
@@ -12,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	utypes "cosmossdk.io/x/upgrade/types"
-	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // ProviderCallback is the callback function signature that will be called with each approved attestation per
@@ -53,18 +51,21 @@ type Provider interface {
 	// attestation for the provided chain.
 	WindowCompare(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64) (int, error)
 
-	// ValidatorSet returns the validators for the given validator set ID or false if none exist or an error.
+	// PortalValidatorSet returns the valsync/portal validators for the given validator set ID or false if none exist or an error.
 	// Note the genesis validator set has ID 1.
-	ValidatorSet(ctx context.Context, valSetID uint64) ([]Validator, bool, error)
+	PortalValidatorSet(ctx context.Context, valSetID uint64) ([]PortalValidator, bool, error)
 
-	// Validator returns the staking module validator by operator address from latest height.
-	Validator(ctx context.Context, operator common.Address) (stypes.Validator, bool, error)
+	// SDKValidator returns the cosmos staking module validator by operator address from latest height.
+	SDKValidator(ctx context.Context, operator common.Address) (SDKValidator, bool, error)
 
-	// Validators returns the current staking module validators from latest height.
-	Validators(ctx context.Context) ([]stypes.Validator, error)
+	// SDKValidators returns the current cosmos staking module validators from latest height.
+	SDKValidators(ctx context.Context) ([]SDKValidator, error)
 
-	// Rewards returns the staking module rewards for the given operator address from latest height.
-	Rewards(ctx context.Context, operator common.Address) (float64, bool, error)
+	// SDKSigningInfos returns the slashing module signing infos for all validators from latest height.
+	SDKSigningInfos(ctx context.Context) ([]SDKSigningInfo, error)
+
+	// SDKRewards returns the staking module rewards for the given operator address from latest height.
+	SDKRewards(ctx context.Context, operator common.Address) (float64, bool, error)
 
 	// XBlock returns the portal module block for the given blockHeight/attestOffset (or latest) or false if none exist or an error.
 	XBlock(ctx context.Context, heightAndOffset uint64, latest bool) (xchain.Block, bool, error)
@@ -80,22 +81,4 @@ type Provider interface {
 
 	// CurrentUpgradePlan returns the current (non-activated) upgrade plan.
 	CurrentUpgradePlan(ctx context.Context) (utypes.Plan, bool, error)
-}
-
-// Validator is a consensus chain validator in a validator set.
-type Validator struct {
-	Address common.Address
-	Power   int64
-}
-
-// Verify returns an error if the validator is invalid.
-func (v Validator) Verify() error {
-	if v.Address == (common.Address{}) {
-		return errors.New("empty validator address")
-	}
-	if v.Power <= 0 {
-		return errors.New("invalid validator power")
-	}
-
-	return nil
 }

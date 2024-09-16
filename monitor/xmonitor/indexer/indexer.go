@@ -21,6 +21,10 @@ import (
 	db "github.com/cosmos/cosmos-db"
 )
 
+// emptyBlockCursorUpdate defines the Nth block to update cursors for empty blocks
+// This avoids needing to catchup a lot on startup for quite streams.
+const emptyBlockCursorUpdate = 100
+
 var confLevel = xchain.ConfFinalized
 
 // Start streams goroutines that streams xblocks and indexes xmsgs vs xreceipt metrics.
@@ -237,6 +241,13 @@ func (i *indexer) index(ctx context.Context, block xchain.Block) error {
 
 	// Skip empty blocks
 	if len(block.Msgs) == 0 && len(block.Receipts) == 0 {
+		// Update cursor for every Nth empty block
+		if block.BlockHeight%emptyBlockCursorUpdate == 0 {
+			if err := i.updateCursor(ctx, block); err != nil {
+				return err
+			}
+		}
+
 		return nil
 	}
 
@@ -403,6 +414,7 @@ func (i *indexer) instrumentMsg(ctx context.Context, link *MsgLink) error {
 		"latency", s.Latency,
 		"msg_tx", msg.TxHash,
 		"receipt_tx", receipt.TxHash,
+		"id_hash", msg.Hash(),
 	)
 
 	return nil

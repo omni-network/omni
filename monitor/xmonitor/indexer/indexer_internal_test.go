@@ -109,6 +109,26 @@ func TestIndexer(t *testing.T) {
 	require.NoError(t, err)
 	defer liter.Close()
 	require.False(t, liter.Next())
+
+	// Ensure empty blocks also update cursors every emptyBlockCursorUpdate
+	for i := range uint64(2) {
+		emptyBlock := fuzzBlock(f, nil, nil)
+		emptyBlock.BlockHeight -= emptyBlock.BlockHeight % emptyBlockCursorUpdate // Truncate
+		emptyBlock.BlockHeight += i                                               // Maybe offset
+		err = indexer.index(ctx, emptyBlock)
+		require.NoError(t, err)
+		require.Empty(t, samples)
+
+		cursors, err := indexer.cursors(ctx)
+		require.NoError(t, err)
+
+		chainVer := xchain.NewChainVersion(emptyBlock.ChainID, xchain.ConfFinalized)
+		if i == 0 {
+			require.Equal(t, emptyBlock.BlockHeight, cursors[chainVer])
+		} else {
+			require.NotEqual(t, emptyBlock.BlockHeight, cursors[chainVer])
+		}
+	}
 }
 
 func makeSample(blocks []xchain.Block, receipts []xchain.Receipt, msgs []xchain.Msg, idx int) sample {

@@ -88,6 +88,8 @@ issues:
   fix: true
   exclude-files:
     - ".*\\.pb\\.go$" # Ignore generated protobuf files
+  exclude-dirs:
+    - "scratch" # Ignore scratch folder if present
   exclude-rules:
     - path: '(.*)(_test|tutil|scripts)(.*)'
       linters:         # Relax linters for both tests/scripts (non-production code)

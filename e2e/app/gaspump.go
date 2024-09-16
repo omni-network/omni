@@ -15,6 +15,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
@@ -157,23 +158,23 @@ func maybeTxHash(receipt *ethtypes.Receipt) string {
 }
 
 type GasPumpTest struct {
-	Recipient common.Address
-	AmountETH *big.Int
+	Recipient  common.Address
+	TargetOMNI *big.Int
 }
 
 var (
 	GasPumpTests = []GasPumpTest{
 		{
-			Recipient: common.HexToAddress("0x0000000000000000000000000000000000001111"),
-			AmountETH: big.NewInt(5000000000000000), // 0.005 ETH
+			Recipient:  common.HexToAddress("0x0000000000000000000000000000000000001111"),
+			TargetOMNI: big.NewInt(5000000000000000), // 0.005 OMNI
 		},
 		{
-			Recipient: common.HexToAddress("0x0000000000000000000000000000000000002222"),
-			AmountETH: big.NewInt(10000000000000000), // 0.01 ETH
+			Recipient:  common.HexToAddress("0x0000000000000000000000000000000000002222"),
+			TargetOMNI: big.NewInt(10000000000000000), // 0.01 OMNI
 		},
 		{
-			Recipient: common.HexToAddress("0x0000000000000000000000000000000000003333"),
-			AmountETH: big.NewInt(15000000000000000), // 0.015 ETH
+			Recipient:  common.HexToAddress("0x0000000000000000000000000000000000003333"),
+			TargetOMNI: big.NewInt(15000000000000000), // 0.015 OMNI
 		},
 	}
 )
@@ -217,13 +218,31 @@ func testGasPumps(ctx context.Context, def Definition) error {
 		}
 
 		for _, test := range GasPumpTests {
-			txOpts.Value = test.AmountETH
-			tx, err := gasPump.FillUp(txOpts, test.Recipient)
+			neededETH, err := gasPump.Quote(&bind.CallOpts{Context: ctx}, test.TargetOMNI)
 			if err != nil {
-				return errors.Wrap(err, "pump", "chain", chain.Name)
+				return errors.Wrap(err, "quote", "chain", chain.Name)
 			}
 
-			log.Info(ctx, "Pumped gas", "chain", chain.Name, "tx", tx.Hash(), "recipient", test.Recipient.Hex(), "amount", test.AmountETH)
+			actualOMNI, wouldSucceed, revertReason, err := gasPump.DryFillUp(&bind.CallOpts{Context: ctx}, neededETH)
+			if err != nil {
+				return errors.Wrap(err, "dry fill up", "chain", chain.Name, "needed_eth", neededETH)
+			}
+
+			if !wouldSucceed {
+				return errors.New("dry fill up failed", "chain", chain.Name, "revert_reason", revertReason)
+			}
+
+			if actualOMNI.Cmp(test.TargetOMNI) != 0 {
+				return errors.New("inaccurate quote", "chain", chain.Name, "actual_omni", actualOMNI, "provided_eth", neededETH, "target_omni", test.TargetOMNI)
+			}
+
+			txOpts.Value = neededETH
+			tx, err := gasPump.FillUp(txOpts, test.Recipient)
+			if err != nil {
+				return errors.Wrap(err, "pump", "chain", chain.Name, "recipient", test.Recipient.Hex(), "target_omni", test.TargetOMNI, "needed_eth", neededETH)
+			}
+
+			log.Info(ctx, "Pumped gas", "chain", chain.Name, "tx", tx.Hash(), "recipient", test.Recipient.Hex(), "target_omni", test.TargetOMNI, "needed_eth", neededETH)
 		}
 	}
 

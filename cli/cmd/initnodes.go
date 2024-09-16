@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/omni-network/omni/e2e/app/geth"
@@ -21,6 +22,7 @@ import (
 
 	cmtconfig "github.com/cometbft/cometbft/config"
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
+	cmtos "github.com/cometbft/cometbft/libs/os"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 
 	"github.com/ethereum/go-ethereum/p2p/enode"
@@ -94,17 +96,9 @@ func initNodes(ctx context.Context, cfg initConfig) error {
 	}
 
 	if cfg.Clean {
+		log.Info(ctx, "Deleting home since --clean=true", "path", cfg.Home)
 		if err := os.RemoveAll(cfg.Home); err != nil {
 			return errors.Wrap(err, "clean home")
-		}
-	}
-
-	if files, err := filepath.Glob(cfg.Home + "/*"); err != nil {
-		return errors.Wrap(err, "glob home")
-	} else if len(files) > 0 {
-		return &CliError{
-			Msg:     "--home directory is not empty: " + cfg.Home,
-			Suggest: "Use --clean flag to delete existing files (be careful!), or provide a different --home flag",
 		}
 	}
 
@@ -141,6 +135,12 @@ func initNodes(ctx context.Context, cfg initConfig) error {
 		CometCfgFunc: func(cmtCfg *cmtconfig.Config) {
 			cmtCfg.LogLevel = logLevel
 			cmtCfg.Instrumentation.Prometheus = true
+			if cfg.Archive {
+				if cmtCfg.P2P.PersistentPeers != "" {
+					cmtCfg.P2P.PersistentPeers += ","
+				}
+				cmtCfg.P2P.PersistentPeers += strings.Join(cfg.Network.Static().ConsensusArchives(), ",")
+			}
 		},
 		LogCfgFunc: func(logCfg *log.Config) {
 			logCfg.Color = log.ColorForce
@@ -186,6 +186,13 @@ func maybeDownloadGenesis(ctx context.Context, network netconf.ID) error {
 }
 
 func writeComposeFile(ctx context.Context, cfg initConfig) error {
+	composeFile := filepath.Join(cfg.Home, "compose.yml")
+
+	if cmtos.FileExists(composeFile) {
+		log.Info(ctx, "Found existing compose file", "path", composeFile)
+		return nil
+	}
+
 	tmpl, err := template.New("compose").Parse(string(composeTpl))
 	if err != nil {
 		return errors.Wrap(err, "parse template")
@@ -218,7 +225,7 @@ func writeComposeFile(ctx context.Context, cfg initConfig) error {
 		return errors.Wrap(err, "execute template")
 	}
 
-	if err := os.WriteFile(filepath.Join(cfg.Home, "compose.yml"), buf.Bytes(), 0o644); err != nil {
+	if err := os.WriteFile(composeFile, buf.Bytes(), 0o644); err != nil {
 		return errors.Wrap(err, "writing compose file")
 	}
 
@@ -237,53 +244,67 @@ func gethInit(ctx context.Context, cfg initConfig, dir string) error {
 
 	// Write genesis.json file
 	{
-		genesisJSON := cfg.Network.Static().ExecutionGenesisJSON
-		if len(genesisJSON) == 0 {
-			return errors.New("genesis json is empty for network", "network", cfg.Network)
-		}
-		if err := os.WriteFile(filepath.Join(dir, "genesis.json"), genesisJSON, 0o644); err != nil {
-			return errors.Wrap(err, "writing genesis file", "network", cfg.Network)
-		}
+		genesisFile := filepath.Join(dir, "genesis.json")
+		if cmtos.FileExists(genesisFile) {
+			log.Info(ctx, "Found existing execution genesis file", "path", genesisFile)
+		} else {
+			genesisJSON := cfg.Network.Static().ExecutionGenesisJSON
+			if len(genesisJSON) == 0 {
+				return errors.New("genesis json is empty for network", "network", cfg.Network)
+			}
+			if err := os.WriteFile(genesisFile, genesisJSON, 0o644); err != nil {
+				return errors.Wrap(err, "writing genesis file", "network", cfg.Network)
+			}
 
-		log.Info(ctx, "Generated geth genesis", "path", filepath.Join(dir, "genesis.json"))
+			log.Info(ctx, "Generated geth genesis", "path", genesisFile)
+		}
 	}
 
 	// Write config.toml file
 	{
-		var bootnodes []*enode.Node
-		for _, seed := range cfg.Network.Static().ExecutionSeeds() {
-			node, err := enode.ParseV4(seed)
-			if err != nil {
-				return errors.Wrap(err, "parsing seed", "seed", seed)
+		configFile := filepath.Join(dir, "config.toml")
+		if cmtos.FileExists(configFile) {
+			log.Info(ctx, "Found existing geth config file", "path", configFile)
+		} else {
+			var bootnodes []*enode.Node
+			for _, seed := range cfg.Network.Static().ExecutionSeeds() {
+				node, err := enode.ParseV4(seed)
+				if err != nil {
+					return errors.Wrap(err, "parsing seed", "seed", seed)
+				}
+				bootnodes = append(bootnodes, node)
 			}
-			bootnodes = append(bootnodes, node)
-		}
-		gethCfg := geth.Config{
-			Moniker:      cfg.Moniker,
-			ChainID:      cfg.Network.Static().OmniExecutionChainID,
-			IsArchive:    cfg.Archive,
-			BootNodes:    bootnodes,
-			TrustedNodes: nil,
-		}
-		if err := geth.WriteConfigTOML(gethCfg, filepath.Join(dir, "config.toml")); err != nil {
-			return errors.Wrap(err, "writing config.toml", "network", cfg.Network)
-		}
+			gethCfg := geth.Config{
+				Moniker:      cfg.Moniker,
+				ChainID:      cfg.Network.Static().OmniExecutionChainID,
+				IsArchive:    cfg.Archive,
+				BootNodes:    bootnodes,
+				TrustedNodes: nil,
+			}
+			if err := geth.WriteConfigTOML(gethCfg, configFile); err != nil {
+				return errors.Wrap(err, "writing config.toml", "network", cfg.Network)
+			}
 
-		log.Info(ctx, "Generated geth config", "path", filepath.Join(dir, "config.toml"))
+			log.Info(ctx, "Generated geth config", "path", configFile)
+		}
 	}
 
 	// Write jwtsecret file
 	{
-		secret := hex.EncodeToString(k1.GenPrivKey().Bytes())
-		path := filepath.Join(dir, "geth", "jwtsecret")
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-			return errors.Wrap(err, "creating geth jwtsecret directory", "path", path)
-		}
-		if err := os.WriteFile(path, []byte(secret), 0o666); err != nil {
-			return errors.Wrap(err, "writing geth jwtsecret", "path", path)
-		}
+		secretFile := filepath.Join(dir, "geth", "jwtsecret")
+		if cmtos.FileExists(secretFile) {
+			log.Info(ctx, "Found existing geth jwtsecret file", "path", secretFile)
+		} else {
+			secret := hex.EncodeToString(k1.GenPrivKey().Bytes())
+			if err := os.MkdirAll(filepath.Dir(secretFile), 0o755); err != nil {
+				return errors.Wrap(err, "creating geth jwtsecret directory", "path", secretFile)
+			}
+			if err := os.WriteFile(secretFile, []byte(secret), 0o666); err != nil {
+				return errors.Wrap(err, "writing geth jwtsecret", "path", secretFile)
+			}
 
-		log.Info(ctx, "Generated geth jwtsecret", "path", path)
+			log.Info(ctx, "Generated geth jwtsecret", "path", secretFile)
+		}
 	}
 
 	// Run geth init via docker
