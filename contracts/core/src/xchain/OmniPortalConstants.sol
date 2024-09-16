@@ -32,7 +32,7 @@ contract OmniPortalConstants {
     uint64 internal constant BroadcastChainId = 0;
 
     /**
-     * @dev xmg.sender for xmsgs from Omni's consensus chain
+     * @dev xmsg.sender for xmsgs from Omni's consensus chain
      */
     address internal constant CChainSender = address(0);
 

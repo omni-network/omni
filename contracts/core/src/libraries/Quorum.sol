@@ -5,7 +5,7 @@ import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { XTypes } from "./XTypes.sol";
 
 /**
- * @title Quorom
+ * @title Quorum
  * @dev Defines quorum verification logic.
  */
 library Quorum {

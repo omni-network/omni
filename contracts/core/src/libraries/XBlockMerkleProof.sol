@@ -23,7 +23,7 @@ library XBlockMerkleProof {
      * @param msgs          Xmsgs to verify.
      * @param msgProof      Xmsg merkle proof.
      * @param msgProofFlags Xmsg merkle proof flags.
-     * @return              True if the msgs, msg proof & block header are valid, agsinst the provided root.
+     * @return              True if the msgs, msg proof & block header are valid, against the provided root.
      */
     function verify(
         bytes32 root,
