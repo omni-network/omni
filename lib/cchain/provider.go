@@ -42,6 +42,10 @@ type Provider interface {
 	// and attestOffset (inclusive). It will return max 100 attestations per call.
 	AttestationsFrom(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64) ([]xchain.Attestation, error)
 
+	// AllAttestationsFrom returns the all pending and approve attestations for the provided source chain
+	// and attestOffset (inclusive).
+	AllAttestationsFrom(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64) ([]xchain.Attestation, error)
+
 	// LatestAttestation returns the latest approved attestation for the provided source chain or false
 	// if none exist.
 	LatestAttestation(ctx context.Context, chainVer xchain.ChainVersion) (xchain.Attestation, bool, error)

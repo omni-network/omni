@@ -68,6 +68,7 @@ func NewABCIProvider(cmtCl rpcclient.Client, network netconf.ID, chainNamer func
 
 	return Provider{
 		fetch:       newABCIFetchFunc(acl, cmtCl, chainNamer),
+		allAtts:     newABCIAllAttsFunc(acl),
 		latest:      newABCILatestFunc(acl),
 		window:      newABCIWindowFunc(acl),
 		valset:      newABCIValsetFunc(vcl),
@@ -271,6 +272,30 @@ func newABCIValsetFunc(cl vtypes.QueryClient) valsetFunc {
 			CreatedHeight: resp.CreatedHeight,
 			activedHeight: resp.ActivatedHeight,
 		}, true, nil
+	}
+}
+
+func newABCIAllAttsFunc(cl atypes.QueryClient) allAttsFunc {
+	return func(ctx context.Context, chainVer xchain.ChainVersion, fromOffset uint64) ([]xchain.Attestation, error) {
+		var atts []xchain.Attestation
+		for _, status := range []uint32{atypes.StatusPending, atypes.StatusApproved} {
+			req := &atypes.ListAllAttestationsRequest{
+				ChainId:    chainVer.ID,
+				ConfLevel:  uint32(chainVer.ConfLevel),
+				Status:     status,
+				FromOffset: fromOffset,
+			}
+			resp, err := cl.ListAllAttestations(ctx, req)
+			if err != nil {
+				return nil, errors.Wrap(err, "abci query all attestations")
+			}
+
+			for _, att := range resp.Attestations {
+				atts = append(atts, att.ToXChain())
+			}
+		}
+
+		return atts, nil
 	}
 }
 

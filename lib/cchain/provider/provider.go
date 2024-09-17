@@ -33,6 +33,7 @@ import (
 var _ cchain.Provider = Provider{}
 
 type fetchFunc func(ctx context.Context, chainVer xchain.ChainVersion, fromOffset uint64) ([]xchain.Attestation, error)
+type allAttsFunc func(ctx context.Context, chainVer xchain.ChainVersion, fromOffset uint64) ([]xchain.Attestation, error)
 type latestFunc func(ctx context.Context, chainVer xchain.ChainVersion) (xchain.Attestation, bool, error)
 type windowFunc func(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64) (int, error)
 type portalBlockFunc func(ctx context.Context, attestOffset uint64, latest bool) (*ptypes.BlockResponse, bool, error)
@@ -58,6 +59,7 @@ type valSetResponse struct {
 type Provider struct {
 	cometCl     rpcclient.Client
 	fetch       fetchFunc
+	allAtts     allAttsFunc
 	latest      latestFunc
 	window      windowFunc
 	valset      valsetFunc
@@ -100,6 +102,11 @@ func (p Provider) CurrentUpgradePlan(ctx context.Context) (upgradetypes.Plan, bo
 func (p Provider) AttestationsFrom(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64,
 ) ([]xchain.Attestation, error) {
 	return p.fetch(ctx, chainVer, attestOffset)
+}
+
+func (p Provider) AllAttestationsFrom(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64,
+) ([]xchain.Attestation, error) {
+	return p.allAtts(ctx, chainVer, attestOffset)
 }
 
 func (p Provider) LatestAttestation(ctx context.Context, chainVer xchain.ChainVersion,

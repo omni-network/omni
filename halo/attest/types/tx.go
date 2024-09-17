@@ -8,6 +8,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+const (
+	StatusUnknown  uint32 = 0
+	StatusPending  uint32 = 1
+	StatusApproved uint32 = 2
+)
+
 func (v *Vote) AttestationRoot() (common.Hash, error) {
 	return xchain.AttestationRoot(v.AttestHeader.ToXChain(), v.BlockHeader.ToXChain(), common.Hash(v.MsgRoot))
 }
