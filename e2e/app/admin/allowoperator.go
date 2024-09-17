@@ -20,6 +20,7 @@ import (
 var omegaOperators = []common.Address{
 	common.HexToAddress("0xdc5754Fb79163A65753D2CAF23dDA2398cC1f277"), // A41
 	common.HexToAddress("0x446924c33A33F413B773d952E7054504788E4c08"), // BlockDaemon
+	common.HexToAddress("0xb3E5246B42BC6a12033d5758Dc1752d43807B1dC"), // RHINO
 }
 
 // AllowOperators ensures that all operators hard-coded in this package is allowed as validators.
