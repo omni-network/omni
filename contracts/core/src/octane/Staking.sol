@@ -33,6 +33,28 @@ contract Staking is OwnableUpgradeable {
     event Delegate(address indexed delegator, address indexed validator, uint256 amount);
 
     /**
+     * @notice Emitted when a validator is allowed to create a validator
+     * @param validator     The validator address
+     */
+    event ValidatorAllowed(address indexed validator);
+
+    /**
+     * @notice Emitted when a validator is disallowed to create a validator
+     * @param validator     The validator address
+     */
+    event ValidatorDisallowed(address indexed validator);
+
+    /**
+     * @notice Emitted when the allowlist is enabled
+     */
+    event AllowlistEnabled();
+
+    /**
+     * @notice Emitted when the allowlist is disabled
+     */
+    event AllowlistDisabled();
+
+    /**
      * @notice The minimum deposit required to create a validator
      */
     uint256 public constant MinDeposit = 100 ether;
@@ -94,6 +116,7 @@ contract Staking is OwnableUpgradeable {
      */
     function enableAllowlist() external onlyOwner {
         isAllowlistEnabled = true;
+        emit AllowlistEnabled();
     }
 
     /**
@@ -101,6 +124,7 @@ contract Staking is OwnableUpgradeable {
      */
     function disableAllowlist() external onlyOwner {
         isAllowlistEnabled = false;
+        emit AllowlistDisabled();
     }
 
     /**
@@ -109,6 +133,7 @@ contract Staking is OwnableUpgradeable {
     function allowValidators(address[] calldata validators) external onlyOwner {
         for (uint256 i = 0; i < validators.length; i++) {
             isAllowedValidator[validators[i]] = true;
+            emit ValidatorAllowed(validators[i]);
         }
     }
 
@@ -118,6 +143,7 @@ contract Staking is OwnableUpgradeable {
     function disallowValidators(address[] calldata validators) external onlyOwner {
         for (uint256 i = 0; i < validators.length; i++) {
             isAllowedValidator[validators[i]] = false;
+            emit ValidatorDisallowed(validators[i]);
         }
     }
 }
