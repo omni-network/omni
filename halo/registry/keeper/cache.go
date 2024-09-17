@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"google.golang.org/protobuf/proto"
 )
 
 var _ types.PortalRegistry = Keeper{}
@@ -22,16 +23,25 @@ type cache struct {
 }
 
 func (c *cache) Set(network *Network) {
+	if network == nil {
+		return
+	}
+
 	c.Lock()
-	c.network = network
-	c.Unlock()
+	defer c.Unlock()
+
+	c.network = proto.Clone(network).(*Network) //nolint:revive,forcetypeassert // Panic not possible
 }
 
 func (c *cache) Get() (*Network, bool) {
 	c.RLock()
 	defer c.RUnlock()
 
-	return c.network, c.network != nil
+	if c.network == nil {
+		return nil, false
+	}
+
+	return proto.Clone(c.network).(*Network), true //nolint:revive,forcetypeassert // Panic not possible
 }
 
 func (k Keeper) updateNetwork(ctx context.Context, network *Network) error {

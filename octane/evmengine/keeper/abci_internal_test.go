@@ -188,7 +188,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		// initialize mutable payload so we trigger the optimistic flow
 		keeper.mutablePayload.Height = 2
 		keeper.mutablePayload.UpdatedAt = time.Now()
-		keeper.mutablePayload.ID = payloadID
+		keeper.mutablePayload.ID = *payloadID
 
 		resp, err := keeper.PrepareProposal(withRandomErrs(t, ctx), req)
 		require.NoError(t, err)
@@ -309,7 +309,7 @@ func TestOptimistic(t *testing.T) {
 	b, err := mockEngine.HeaderByType(ctx, ethclient.HeadLatest)
 	require.NoError(t, err)
 
-	env, err := mockEngine.GetPayloadV3(ctx, *payloadID)
+	env, err := mockEngine.GetPayloadV3(ctx, payloadID)
 	require.NoError(t, err)
 
 	payload := env.ExecutionPayload

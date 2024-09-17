@@ -42,7 +42,7 @@ type Keeper struct {
 	// so we might not actually be the next proposer.
 	mutablePayload struct {
 		sync.Mutex
-		ID        *engine.PayloadID
+		ID        engine.PayloadID
 		Height    uint64
 		UpdatedAt time.Time
 	}
@@ -194,7 +194,7 @@ func (k *Keeper) isNextProposer(ctx context.Context, currentProposer []byte, cur
 	return isNextProposer, nil
 }
 
-func (k *Keeper) setOptimisticPayload(id *engine.PayloadID, height uint64) {
+func (k *Keeper) setOptimisticPayload(id engine.PayloadID, height uint64) {
 	k.mutablePayload.Lock()
 	defer k.mutablePayload.Unlock()
 
@@ -203,7 +203,7 @@ func (k *Keeper) setOptimisticPayload(id *engine.PayloadID, height uint64) {
 	k.mutablePayload.UpdatedAt = time.Now()
 }
 
-func (k *Keeper) getOptimisticPayload() (*engine.PayloadID, uint64, time.Time) {
+func (k *Keeper) getOptimisticPayload() (engine.PayloadID, uint64, time.Time) {
 	k.mutablePayload.Lock()
 	defer k.mutablePayload.Unlock()
 
