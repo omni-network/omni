@@ -246,7 +246,7 @@ func fundAccounts(def *app.Definition) *cobra.Command {
 				return errors.Wrap(err, "init network")
 			}
 
-			return app.FundEOAAccounts(cmd.Context(), *def, dryRun)
+			return app.FundAccounts(cmd.Context(), *def, dryRun)
 		},
 	}
 
