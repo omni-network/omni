@@ -125,7 +125,6 @@ func initNodes(ctx context.Context, cfg initConfig) error {
 		HaloCfgFunc: func(haloCfg *halocfg.Config) {
 			haloCfg.EngineEndpoint = "http://omni_evm:8551"
 			haloCfg.EngineJWTFile = "/geth/jwtsecret"
-			haloCfg.RPCEndpoints = xchain.RPCEndpoints{cfg.Network.Static().OmniExecutionChainName(): "http://omni_evm:8545"}
 			if cfg.Archive {
 				haloCfg.PruningOption = "nothing"
 				// Setting this to 0 retains all blocks

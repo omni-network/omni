@@ -55,3 +55,8 @@ jobs:
         run: |
           docker push omniops/anvilproxy:${GITHUB_SHA::7}
           docker push omniops/anvilproxy:main
+
+      - name: Push Omni cli to Dockerhub
+        run: |
+          docker push omniops/omni:${GITHUB_SHA::7}
+          docker push omniops/omni:main
