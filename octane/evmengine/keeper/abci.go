@@ -57,18 +57,20 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 
 	// Either use the optimistic payload or create a new one.
 	payloadID, height, triggeredAt := k.getOptimisticPayload()
-	if uint64(req.Height) != height {
+	if uint64(req.Height) != height { //nolint:nestif // Not an issue
 		// Create a new payload (retrying on network errors).
 		err := retryForever(ctx, func(ctx context.Context) (bool, error) {
-			response, err := k.startBuild(ctx, appHash, req.Time)
+			fcr, err := k.startBuild(ctx, appHash, req.Time)
 			if err != nil {
 				log.Warn(ctx, "Preparing proposal failed: build new evm payload (will retry)", err)
 				return false, nil
-			} else if response.PayloadStatus.Status != engine.VALID {
+			} else if fcr.PayloadStatus.Status != engine.VALID {
 				return false, errors.New("status not valid")
+			} else if fcr.PayloadID == nil {
+				return false, errors.New("missing payload ID [BUG]")
 			}
 
-			payloadID = response.PayloadID
+			payloadID = *fcr.PayloadID
 
 			return true, nil
 		})
@@ -92,7 +94,7 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 	var payloadResp *engine.ExecutionPayloadEnvelope
 	err := retryForever(ctx, func(ctx context.Context) (bool, error) {
 		var err error
-		payloadResp, err = k.engineCl.GetPayloadV3(ctx, *payloadID)
+		payloadResp, err = k.engineCl.GetPayloadV3(ctx, payloadID)
 		if isUnknownPayload(err) {
 			return false, err
 		} else if err != nil {
@@ -192,9 +194,12 @@ func (k *Keeper) PostFinalize(ctx sdk.Context) error {
 	} else if invalid, err := isInvalid(fcr.PayloadStatus); invalid {
 		log.Error(ctx, "Starting optimistic build failed; invalid payload [BUG]", err, logAttr)
 		return nil
+	} else if fcr.PayloadID == nil {
+		log.Error(ctx, "Starting optimistic build failed; missing payload ID [BUG]", nil, logAttr)
+		return nil
 	}
 
-	k.setOptimisticPayload(fcr.PayloadID, uint64(nextHeight))
+	k.setOptimisticPayload(*fcr.PayloadID, uint64(nextHeight))
 
 	return nil
 }
