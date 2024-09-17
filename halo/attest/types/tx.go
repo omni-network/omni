@@ -80,6 +80,10 @@ func (h *AttestHeader) Verify() error {
 		return errors.New("zero attestation offset")
 	}
 
+	if (h.ConfLevel >> 8) > 0 { // Ensure conf level is max 1 byte
+		return errors.New("invalid conf level")
+	}
+
 	return nil
 }
 
@@ -195,6 +199,10 @@ func (a *Attestation) Verify() error {
 
 	if err := a.AttestHeader.Verify(); err != nil {
 		return errors.Wrap(err, "verify attest header")
+	}
+
+	if a.BlockHeader.ChainId != a.AttestHeader.SourceChainId {
+		return errors.New("chain ID mismatch")
 	}
 
 	if len(a.MsgRoot) != len(common.Hash{}) {

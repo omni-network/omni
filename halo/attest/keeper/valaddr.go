@@ -30,9 +30,6 @@ func (c *valAddrCache) GetEthAddress(cmtAddr [crypto.AddressSize]byte) (common.A
 }
 
 func (c *valAddrCache) SetAll(vals []*vtypes.Validator) error {
-	c.Lock()
-	defer c.Unlock()
-
 	var ethAddrs = make(map[[crypto.AddressSize]byte]common.Address, len(vals))
 	for _, val := range vals {
 		cmtAddr, err := val.CometAddress()
@@ -49,6 +46,9 @@ func (c *valAddrCache) SetAll(vals []*vtypes.Validator) error {
 
 		ethAddrs[[crypto.AddressSize]byte(cmtAddr)] = ethAddr
 	}
+
+	c.Lock()
+	defer c.Unlock()
 
 	c.ethAddrs = ethAddrs
 
