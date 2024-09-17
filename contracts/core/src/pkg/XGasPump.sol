@@ -13,8 +13,8 @@ abstract contract XGasPump {
 
     IOmniGasPump public immutable omniGasPump;
 
-    constructor(address exchange) {
-        omniGasPump = IOmniGasPump(exchange);
+    constructor(address pump) {
+        omniGasPump = IOmniGasPump(pump);
     }
 
     /**
