@@ -1,4 +1,13 @@
 {
+ "devnet": {
+  "avs": "0xc8b1fd61db088d45f9b30f76f6cef6d55b7b036b",
+  "create3": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+  "gaspump": "0x8d0e4bc3d9409f2aa001671efb08a0455859b456",
+  "gasstation": "0x87d948ada3fef75236adc0961044b57add66e7a8",
+  "l1bridge": "0x96183c6b4ce669007d0de43f1e7eb9a4494271d8",
+  "portal": "0xb835dc695c6bfc8373c0d56973b5d9e9b083e97b",
+  "token": "0xac5e38c77804058a1c7df7e8363af1be2132276a"
+ },
  "mainnet": {
   "avs": "0xed2f4d90b073128ae6769a9a8d51547b1df766c8",
   "create3": "0x9b137463d4e7986d7f535f9b79e28b4ef1938e9b",
