@@ -42,9 +42,9 @@ abstract contract XGasPump {
     }
 
     function _fillUpOrRefund(address refundTo, address recipient, uint256 amtETH) internal {
-        (, bool succes, string memory reason) = omniGasPump.dryFillUp(amtETH);
+        (, bool success, string memory reason) = omniGasPump.dryFillUp(amtETH);
 
-        if (!succes) {
+        if (!success) {
             emit Refunded(refundTo, amtETH, reason);
             payable(refundTo).transfer(amtETH);
             return;
