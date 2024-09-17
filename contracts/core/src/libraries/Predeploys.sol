@@ -56,7 +56,7 @@ library Predeploys {
      * @notice Return true if `addr` is in some predeploy namespace
      */
     function isPredeploy(address addr) internal pure returns (bool) {
-        return (uint160(addr) >> 11 == uint160(OmniNamespace) >> 11)
-            || (uint160(addr) >> 11 == uint160(OctaneNamespace) >> 11);
+        return (uint160(addr) >> 10 == uint160(OmniNamespace) >> 10)
+            || (uint160(addr) >> 10 == uint160(OctaneNamespace) >> 10);
     }
 }
