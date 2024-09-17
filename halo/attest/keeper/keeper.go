@@ -531,8 +531,8 @@ func (k *Keeper) earliestAttestation(ctx context.Context, version xchain.ChainVe
 	return att, true, nil
 }
 
-// listAllAttestations returns all approved attestations for the given chain.
-func (k *Keeper) listAllAttestations(ctx context.Context, version xchain.ChainVersion, status Status, attestOfset uint64) ([]*types.Attestation, error) {
+// listAllAttestations returns all attestations for the given chain and status and attestOffset up to a maximum of 100.
+func (k *Keeper) listAllAttestations(ctx context.Context, version xchain.ChainVersion, status Status, attestOffset uint64) ([]*types.Attestation, error) {
 	defer latency("list_all_attestations")()
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	consensusID, err := netconf.ConsensusChainIDStr2Uint64(sdkCtx.ChainID())
@@ -540,8 +540,11 @@ func (k *Keeper) listAllAttestations(ctx context.Context, version xchain.ChainVe
 		return nil, errors.Wrap(err, "get consensus chain id")
 	}
 
-	idx := AttestationStatusChainIdConfLevelAttestOffsetIndexKey{}.WithStatusChainIdConfLevelAttestOffset(uint32(status), version.ID, uint32(version.ConfLevel), attestOfset)
-	iter, err := k.attTable.List(ctx, idx)
+	const limit = 100
+
+	start := AttestationStatusChainIdConfLevelAttestOffsetIndexKey{}.WithStatusChainIdConfLevelAttestOffset(uint32(status), version.ID, uint32(version.ConfLevel), attestOffset)
+	end := AttestationStatusChainIdConfLevelAttestOffsetIndexKey{}.WithStatusChainIdConfLevel(uint32(status), version.ID, uint32(version.ConfLevel))
+	iter, err := k.attTable.ListRange(ctx, start, end)
 	if err != nil {
 		return nil, errors.Wrap(err, "list")
 	}
@@ -560,6 +563,10 @@ func (k *Keeper) listAllAttestations(ctx context.Context, version xchain.ChainVe
 		}
 
 		resp = append(resp, toProto(att, sigs, consensusID))
+
+		if len(resp) >= limit {
+			break
+		}
 	}
 
 	return resp, nil

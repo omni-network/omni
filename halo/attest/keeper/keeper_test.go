@@ -65,7 +65,7 @@ func TestKeeper_Add(t *testing.T) {
 					ChainId:    expectAtt.GetChainId(),
 					ConfLevel:  expectAtt.GetConfLevel(),
 					Status:     uint32(keeper.Status_Pending),
-					FromOffset: defaultOffset,
+					FromOffset: 0,
 				})
 
 				require.NoError(t, err)
