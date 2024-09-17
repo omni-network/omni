@@ -13,10 +13,9 @@ import { XTypes } from "../libraries/XTypes.sol";
  *         This contract is predeployed to Omni's EVM, prefunded with native OMNI tokens to match totalL1Supply, such
  *         that each L1 token has a "sibling" native token on Omni.
  * @dev This contract is predeployed, and requires storage slots to be set in genesis.
- *      Genesis storage slots must:
- *          - set _owner on proxy
- *          - set _initialized on proxy to 1, to disable the initializer
- *          - set _initialized on implementation to 0xffffffffffffffff, to disabled all initializers
+ *      initialize(...) is called pre-deployment, in sctips/genesis/AllocPredeploys.s.sol
+ *      iniitializers on the implementation are disabled via manual storage updates, rather than in a constructor.
+ *      If an new implementation is required, a constructor should be added.
  */
 contract OmniBridgeNative is OmniBridgeCommon {
     /**
