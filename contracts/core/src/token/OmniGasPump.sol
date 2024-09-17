@@ -7,6 +7,7 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import { XAppUpgradeable } from "src/pkg/XAppUpgradeable.sol";
 import { IConversionRateOracle } from "src/interfaces/IConversionRateOracle.sol";
+import { IOmniGasPump } from "src/interfaces/IOmniGasPump.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
 import { OmniGasStation } from "./OmniGasStation.sol";
 
@@ -14,7 +15,7 @@ import { OmniGasStation } from "./OmniGasStation.sol";
  * @title OmniGasPump
  * @notice A unidirectional cross-chain gas exchange, allowing users to swap native ETH for native OMNI.
  */
-contract OmniGasPump is XAppUpgradeable, OwnableUpgradeable, PausableUpgradeable {
+contract OmniGasPump is IOmniGasPump, XAppUpgradeable, OwnableUpgradeable, PausableUpgradeable {
     /// @notice Emitted when the max swap is set
     event MaxSwapSet(uint256 max);
 
@@ -26,17 +27,6 @@ contract OmniGasPump is XAppUpgradeable, OwnableUpgradeable, PausableUpgradeable
 
     /// @notice Emitted when the toll is set
     event TollSet(uint256 pct);
-
-    /**
-     * @notice Emitted on a fillUp
-     * @param recipient Address on Omni to send OMNI to
-     * @param owed      Total amount owed to `recipient` (sum of historical fillUps()), denominated in OMNI.
-     * @param amtETH    Amount of ETH paid
-     * @param fee       Xcall fee, denominated in ETH
-     * @param toll      Toll taken by this contract, denominated in ETH
-     * @param amtOMNI   Amount of OMNI swapped for
-     */
-    event FilledUp(address indexed recipient, uint256 owed, uint256 amtETH, uint256 fee, uint256 toll, uint256 amtOMNI);
 
     /// @notice Gas limit passed to OmniGasStation.settleUp xcall
     uint64 public constant SETTLE_GAS = 140_000;
