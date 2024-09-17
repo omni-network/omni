@@ -88,7 +88,7 @@ Below is a summarized fragment for `xsubmit` from the [Portal contract Solidity 
 To ensure the integrity and authenticity of incoming cross-chain messages, the following validation processes are performed:
 
 ```solidity
-        
+
         require(xheader.consensusChainId == omniCChainId, "OmniPortal: wrong cchain ID");
         require(xmsgs.length > 0, "OmniPortal: no xmsgs");
         require(valSetTotalPower[valSetId] > 0, "OmniPortal: unknown val set");
@@ -112,7 +112,7 @@ To ensure the integrity and authenticity of incoming cross-chain messages, the f
             XBlockMerkleProof.verify(xsub.attestationRoot, xheader, xmsgs, xsub.proof, xsub.proofFlags),
             "OmniPortal: invalid proof"
         );
-        
+
 ```
 
 Through these meticulous validation, verification, and execution steps, the system guarantees the secure handling of cross-chain messages, facilitating reliable communication across different chains.
