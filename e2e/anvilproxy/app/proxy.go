@@ -86,6 +86,12 @@ func (p *proxy) proxy(ctx context.Context, w http.ResponseWriter, r *http.Reques
 	}
 	defer resp.Body.Close()
 
+	for k, vs := range resp.Header {
+		for _, v := range vs {
+			w.Header().Add(k, v)
+		}
+	}
+
 	if resp.StatusCode != http.StatusOK || !p.IsFuzzyEnabled() {
 		w.WriteHeader(resp.StatusCode)
 		_, _ = io.Copy(w, resp.Body)
