@@ -26,11 +26,12 @@ const (
 	IDBaseSepolia uint64 = 84532
 
 	// Ephemeral.
-	IDOmniEphemeral uint64 = 1651
-	IDMockL1        uint64 = 1652
-	IDMockL2        uint64 = 1654
-	IDMockOp        uint64 = 1655
-	IDMockArb       uint64 = 1656
+	IDOmniStaging uint64 = 1650
+	IDOmniDevnet  uint64 = 1651
+	IDMockL1      uint64 = 1652
+	IDMockL2      uint64 = 1654
+	IDMockOp      uint64 = 1655
+	IDMockArb     uint64 = 1656
 
 	omniEVMName        = "omni_evm"
 	omniEVMBlockPeriod = time.Second * 2
@@ -129,8 +130,14 @@ var static = map[uint64]Metadata{
 		NativeToken: tokens.ETH,
 		PostsTo:     IDSepolia,
 	},
-	IDOmniEphemeral: {
-		ChainID:     IDOmniEphemeral,
+	IDOmniDevnet: {
+		ChainID:     IDOmniDevnet,
+		Name:        omniEVMName,
+		BlockPeriod: omniEVMBlockPeriod,
+		NativeToken: tokens.OMNI,
+	},
+	IDOmniStaging: {
+		ChainID:     IDOmniStaging,
 		Name:        omniEVMName,
 		BlockPeriod: omniEVMBlockPeriod,
 		NativeToken: tokens.OMNI,
