@@ -19,6 +19,7 @@ import (
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 	"github.com/omni-network/omni/monitor/account"
 	"github.com/omni-network/omni/monitor/avs"
+	"github.com/omni-network/omni/monitor/contract"
 	"github.com/omni-network/omni/monitor/loadgen"
 	"github.com/omni-network/omni/monitor/routerecon"
 	"github.com/omni-network/omni/monitor/validator"
@@ -77,6 +78,7 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 
 	account.StartMonitoring(ctx, network, ethClients)
+	contract.StartMonitoring(ctx, network, ethClients)
 
 	if err := startLoadGen(ctx, cfg, network, ethClients); err != nil {
 		return errors.Wrap(err, "start load generator")
