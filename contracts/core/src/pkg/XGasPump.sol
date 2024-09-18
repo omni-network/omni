@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.12;
 
-import { OmniGasPump } from "../token/OmniGasPump.sol";
+import { IOmniGasPump } from "../interfaces/IOmniGasPump.sol";
 
 /**
  * @title XGasPump
@@ -11,10 +11,10 @@ abstract contract XGasPump {
     event Refunded(address indexed recipient, uint256 amtETH, string reason);
     event FundedOMNI(address indexed recipient, uint256 ethPaid, uint256 omniReceived);
 
-    OmniGasPump public immutable omniGasPump;
+    IOmniGasPump public immutable omniGasPump;
 
-    constructor(address exchange) {
-        omniGasPump = OmniGasPump(exchange);
+    constructor(address pump) {
+        omniGasPump = IOmniGasPump(pump);
     }
 
     /**
