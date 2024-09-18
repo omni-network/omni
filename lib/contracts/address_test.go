@@ -41,8 +41,8 @@ func TestContractAddressReference(t *testing.T) {
 			duplicate[addr] = true
 		}
 
-		if !network.IsEphemeral() {
-			golden[network] = addrs // Don't add ephemeral networks to golden since it's not deterministic.
+		if network != netconf.Staging {
+			golden[network] = addrs // Don't add staging to golden since it's not deterministic.
 		}
 	}
 
