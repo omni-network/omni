@@ -64,11 +64,6 @@ func (p *proxy) proxy(ctx context.Context, w http.ResponseWriter, r *http.Reques
 		return errors.Wrap(err, "read body")
 	}
 
-	var reqMsg jsonRPCMessage
-	if err := json.Unmarshal(reqBody, &reqMsg); err != nil {
-		return errors.Wrap(err, "unmarshal request")
-	}
-
 	nextReq, err := http.NewRequestWithContext(
 		ctx,
 		r.Method,
@@ -92,11 +87,16 @@ func (p *proxy) proxy(ctx context.Context, w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	if resp.StatusCode != http.StatusOK || !p.IsFuzzyEnabled() {
+	if r.Method != http.MethodPost || resp.StatusCode != http.StatusOK || !p.IsFuzzyEnabled() {
 		w.WriteHeader(resp.StatusCode)
 		_, _ = io.Copy(w, resp.Body)
 
 		return nil
+	}
+
+	var reqMsg jsonRPCMessage
+	if err := json.Unmarshal(reqBody, &reqMsg); err != nil {
+		return errors.Wrap(err, "unmarshal request")
 	}
 
 	perturb := p.Perturb()
