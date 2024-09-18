@@ -1042,6 +1042,7 @@ func (k *Keeper) instrumentVotes(ctx context.Context, att *Attestation) error {
 		expectedVotesCounter.WithLabelValues(addr.Hex(), chainVerName).Inc()
 		approvedVotesCounter.WithLabelValues(addr.Hex(), chainVerName).Add(boolToFloat(included[addr]))
 		missingVotesCounter.WithLabelValues(addr.Hex(), chainVerName).Add(boolToFloat(!included[addr]))
+		discardedVotesCounter.WithLabelValues(addr.Hex(), chainVerName).Add(0)
 	}
 
 	return nil
