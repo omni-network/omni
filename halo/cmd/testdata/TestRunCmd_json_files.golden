@@ -16,6 +16,14 @@
   "Headers": ""
  },
  "UnsafeSkipUpgrades": null,
+ "SDKAPI": {
+  "Enable": false,
+  "Address": "api/json"
+ },
+ "SDKGRPC": {
+  "Enable": true,
+  "Address": "localhost:9090"
+ },
  "Comet": {
   "Version": "0.38.12",
   "RootDir": "testinput/input2",

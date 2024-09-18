@@ -19,6 +19,14 @@
   "Headers": "Authorization=Basic 123456"
  },
  "UnsafeSkipUpgrades": null,
+ "SDKAPI": {
+  "Enable": false,
+  "Address": "api/toml"
+ },
+ "SDKGRPC": {
+  "Enable": true,
+  "Address": "grpc/toml"
+ },
  "Comet": {
   "Version": "0.38.12",
   "RootDir": "testinput/input1",

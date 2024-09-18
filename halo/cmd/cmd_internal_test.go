@@ -127,6 +127,9 @@ func TestTomlConfig(t *testing.T) {
 		func(i *uint64, c fuzz.Continue) {
 			*i = uint64(rand.Intn(1_000_000))
 		},
+		func(i *uint, c fuzz.Continue) {
+			*i = uint(rand.Intn(1_000_000))
+		},
 		func(s *string, c fuzz.Continue) {
 			*s = randomString()
 		},

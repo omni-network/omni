@@ -1,6 +1,8 @@
 package app
 
 import (
+	"context"
+
 	attestkeeper "github.com/omni-network/omni/halo/attest/keeper"
 	atypes "github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/comet"
@@ -184,6 +186,16 @@ func (App) SimulationManager() *module.SimulationManager {
 // TODO(corver): Figure out how to use depinject to set this.
 func (a App) SetCometAPI(api comet.API) {
 	a.EVMEngKeeper.SetCometAPI(api)
+}
+
+// ClientContext returns a new client context with the app's codec and tx config.
+func (a App) ClientContext(ctx context.Context) client.Context {
+	return client.Context{}.
+		WithInterfaceRegistry(a.interfaceRegistry).
+		WithTxConfig(a.txConfig).
+		WithChainID(a.ChainID()).
+		WithCmdContext(ctx).
+		WithCodec(a.appCodec)
 }
 
 var (

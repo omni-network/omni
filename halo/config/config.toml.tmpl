@@ -29,7 +29,7 @@ evm-build-delay = "{{.EVMBuildDelay}}"
 evm-build-optimistic = {{.EVMBuildOptimistic}}
 
 #######################################################################
-###                          Cosmos SDK                             ###
+###                 Cosmos SDK Base Configuration                   ###
 #######################################################################
 
 # SnapshotInterval specifies the height interval at which halo
@@ -68,6 +68,31 @@ app-db-backend = "{{ .BackendType }}"
 
 # Skip a set of upgrade heights to continue the old binary
 unsafe-skip-upgrades = {{ FmtIntSlice .UnsafeSkipUpgrades }}
+
+
+###############################################################################
+###                    Cosmos SDK API Configuration                         ###
+###############################################################################
+
+[api]
+
+# Enable defines if the API server should be enabled.
+enable = {{ .SDKAPI.Enable }}
+
+# Address defines the API server to listen on.
+address = "{{ .SDKAPI.Address }}"
+
+###############################################################################
+###                     Cosmos SDK gRPC Configuration                       ###
+###############################################################################
+
+[grpc]
+
+# Enable defines if the gRPC server should be enabled.
+enable = {{ .SDKGRPC.Enable }}
+
+# Address defines the gRPC server address to bind to.
+address = "{{ .SDKGRPC.Address }}"
 
 #######################################################################
 ###                             X-Chain                             ###

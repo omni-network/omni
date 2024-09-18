@@ -5,9 +5,11 @@ services:
     image: omniops/halovisor:{{.HaloTag}}
     restart: unless-stopped
     ports:
-      - 26656:26656 # Consensus P2P
-      - 26657:26657 # Consensus RPC
+      - 26656:26656   # CometBFT Consensus P2P
+      - 26657:26657   # CometBFT Consensus RPC
       # - 26660:26660 # Prometheus metrics
+      # - 1317:1317   # Cosmos REST API
+      # - 9090:9090   # Cosmos gRPC API
     volumes:
       - ./halo/config:/halo/config
       - ./halo/data:/halo/data
