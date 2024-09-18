@@ -14,8 +14,10 @@ services:
     restart: unless-stopped
     init: true
     ports:
-    - 26656:26656 # Consensus P2P
-    - 26657:26657 # Consensus RPC
+    - 26656:26656 # CometBFT Consensus P2P
+    - 26657:26657 # CometBFT Consensus RPC
+    - 9090:9090 # Cosmos gRPC API
+    - 1317:1317 # Cosmos REST API
     - 6060 # Pprof
     volumes:
     - ./validator02/config:/halo/config

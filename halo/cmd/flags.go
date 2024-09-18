@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/omni-network/omni/halo/app"
 	halocfg "github.com/omni-network/omni/halo/config"
 	libcmd "github.com/omni-network/omni/lib/cmd"
@@ -20,6 +23,8 @@ func bindRunFlags(cmd *cobra.Command, cfg *halocfg.Config) {
 	tracer.BindFlags(flags, &cfg.Tracer)
 	xchain.BindFlags(flags, &cfg.RPCEndpoints)
 	netconf.BindFlag(flags, &cfg.Network)
+	bindRPCFlags(flags, "api", &cfg.SDKAPI)
+	bindRPCFlags(flags, "grpc", &cfg.SDKGRPC)
 	flags.StringVar(&cfg.EngineEndpoint, "engine-endpoint", cfg.EngineEndpoint, "An EVM execution client Engine API http endpoint")
 	flags.StringVar(&cfg.EngineJWTFile, "engine-jwt-file", cfg.EngineJWTFile, "The path to the Engine API JWT file")
 	flags.Uint64Var(&cfg.SnapshotInterval, "snapshot-interval", cfg.SnapshotInterval, "State sync snapshot interval")
@@ -42,4 +47,9 @@ func bindInitFlags(flags *pflag.FlagSet, cfg *InitConfig) {
 	flags.BoolVar(&cfg.TrustedSync, "trusted-sync", cfg.TrustedSync, "Initialize trusted state-sync height and hash by querying the Omni RPC")
 	flags.BoolVar(&cfg.Force, "force", cfg.Force, "Force initialization (overwrite existing files)")
 	flags.BoolVar(&cfg.Clean, "clean", cfg.Clean, "Delete home directory before initialization")
+}
+
+func bindRPCFlags(flags *pflag.FlagSet, prefix string, cfg *halocfg.RPCConfig) {
+	flags.BoolVar(&cfg.Enable, prefix+"-enable", cfg.Enable, fmt.Sprintf("Enable defines if the %s server should be enabled.", strings.ToUpper(prefix)))
+	flags.StringVar(&cfg.Address, prefix+"-address", cfg.Address, fmt.Sprintf("Address defines the %s server to listen on", strings.ToUpper(prefix)))
 }

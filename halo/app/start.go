@@ -30,6 +30,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 
+	sdklog "cosmossdk.io/log"
 	"cosmossdk.io/store"
 	pruningtypes "cosmossdk.io/store/pruning/types"
 	"cosmossdk.io/store/snapshots"
@@ -37,8 +38,11 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/client"
 	sdkflags "github.com/cosmos/cosmos-sdk/client/flags"
 	sdkserver "github.com/cosmos/cosmos-sdk/server"
+	"github.com/cosmos/cosmos-sdk/server/api"
+	"github.com/cosmos/cosmos-sdk/server/grpc"
 	sdkservertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdktelemetry "github.com/cosmos/cosmos-sdk/telemetry"
 	"github.com/cosmos/cosmos-sdk/types/mempool"
@@ -103,7 +107,8 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		return nil, nil, err
 	}
 
-	if err := enableSDKTelemetry(cfg.Network); err != nil {
+	metrics, err := enableSDKTelemetry(cfg.Network)
+	if err != nil {
 		return nil, nil, errors.Wrap(err, "enable cosmos-sdk telemetry")
 	}
 
@@ -133,9 +138,11 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		return nil, nil, err
 	}
 
+	sdkLogger := newSDKLogger(ctx)
+
 	//nolint:contextcheck // False positive
 	app, err := newApp(
-		newSDKLogger(ctx),
+		sdkLogger,
 		db,
 		engineCl,
 		voter,
@@ -190,6 +197,11 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		return nil, nil, errors.Wrap(err, "start comet node")
 	}
 
+	clientCtx := app.ClientContext(ctx).WithClient(rpcClient).WithHomeDir(cfg.HomeDir)
+	if err := startRPCServers(ctx, cfg, app, sdkLogger, metrics, async, clientCtx); err != nil {
+		return nil, nil, err
+	}
+
 	go monitorCometForever(ctx, cfg.Network, rpcClient, cmtNode.ConsensusReactor().WaitSync, cfg.DataDir())
 	go monitorEVMForever(ctx, cfg, engineCl)
 
@@ -214,6 +226,45 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 
 		return nil
 	}, nil
+}
+
+// startRPCServers starts the Cosmos REST and gRPC servers.
+func startRPCServers(
+	ctx context.Context,
+	cfg Config,
+	app *App,
+	logger sdklog.Logger,
+	metrics *sdktelemetry.Metrics,
+	async chan error,
+	clientCtx client.Context,
+) error {
+	app.RegisterTendermintService(clientCtx)
+	app.RegisterNodeService(clientCtx, cfg.SDKRPCConfig())
+
+	rpcCfg := cfg.SDKRPCConfig()
+
+	grpcSrv, err := grpc.NewGRPCServer(clientCtx, app, rpcCfg.GRPC)
+	if err != nil {
+		return errors.Wrap(err, "new grpc server")
+	}
+
+	apiSrv := api.New(clientCtx, logger.With("module", "api-server"), grpcSrv)
+	apiSrv.SetTelemetry(metrics)
+	app.RegisterAPIRoutes(apiSrv, rpcCfg.API)
+
+	if cfg.SDKAPI.Enable {
+		go func() {
+			async <- apiSrv.Start(ctx, cfg.SDKRPCConfig())
+		}()
+	}
+
+	if cfg.SDKGRPC.Enable {
+		go func() {
+			async <- grpc.StartGRPCServer(ctx, logger.With("module", "grpc-server"), rpcCfg.GRPC, grpcSrv)
+		}()
+	}
+
+	return nil
 }
 
 func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App, privVal cmttypes.PrivValidator,
@@ -329,24 +380,24 @@ func newEngineClient(ctx context.Context, cfg Config, network netconf.ID, pubkey
 }
 
 // enableSDKTelemetry enables prometheus based cosmos-sdk telemetry.
-func enableSDKTelemetry(id netconf.ID) error {
+func enableSDKTelemetry(id netconf.ID) (*sdktelemetry.Metrics, error) {
 	// Skip telemetry for simnet, because it uses globals which conflict when running tests in parallel.
 	if id == netconf.Simnet {
-		return nil
+		return nil, nil //nolint:nilnil // Not a problem
 	}
 
 	const farFuture = time.Hour * 24 * 365 * 10 // 10 years ~= infinity.
 
-	_, err := sdktelemetry.New(sdktelemetry.Config{
+	m, err := sdktelemetry.New(sdktelemetry.Config{
 		ServiceName:             "cosmos",
 		Enabled:                 true,
 		PrometheusRetentionTime: int64(farFuture.Seconds()), // Prometheus metrics never expire once created in-app.
 	})
 	if err != nil {
-		return errors.Wrap(err, "enable cosmos-sdk telemetry")
+		return nil, errors.Wrap(err, "enable cosmos-sdk telemetry")
 	}
 
-	return nil
+	return m, nil
 }
 
 var (

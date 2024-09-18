@@ -4,13 +4,18 @@ package app_test
 import (
 	"bytes"
 	"context"
+	"net/http"
+	"net/url"
 	"os"
 	"testing"
 	"time"
 
 	haloapp "github.com/omni-network/omni/halo/app"
+	atypes "github.com/omni-network/omni/halo/attest/types"
 	halocmd "github.com/omni-network/omni/halo/cmd"
 	halocfg "github.com/omni-network/omni/halo/config"
+	ptypes "github.com/omni-network/omni/halo/portal/types"
+	"github.com/omni-network/omni/lib/cchain/grpc"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
@@ -22,6 +27,8 @@ import (
 	"github.com/cometbft/cometbft/types"
 
 	db "github.com/cosmos/cosmos-db"
+	sltypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
+	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -59,6 +66,8 @@ func TestSmoke(t *testing.T) {
 		return s.SyncInfo.LatestBlockHeight >= int64(target)
 	}, time.Second*time.Duration(target*2), time.Millisecond*100)
 
+	testAPI(t, cfg)
+	testGRPC(t, ctx, cfg)
 	testCProvider(t, ctx, cprov)
 
 	genSet, err := cl.Validators(ctx, int64Ptr(1), nil, nil)
@@ -98,6 +107,46 @@ func TestSmoke(t *testing.T) {
 
 	// Stop the server, with a fresh context
 	require.NoError(t, stopfunc(context.Background()))
+}
+
+//nolint:bodyclose,noctx // We don't care about best practices here.
+func testAPI(t *testing.T, cfg haloapp.Config) {
+	t.Helper()
+
+	u, err := url.Parse(cfg.SDKAPI.Address)
+	require.NoError(t, err)
+
+	base := "http://" + u.Host
+
+	for _, path := range []string{"/", "/status"} {
+		_, err = http.Get(base + path)
+		require.NoError(t, err)
+	}
+}
+
+func testGRPC(t *testing.T, ctx context.Context, cfg haloapp.Config) {
+	t.Helper()
+	cl, err := grpc.Dial(cfg.SDKGRPC.Address)
+	require.NoError(t, err)
+
+	vals, err := cl.Staking.Validators(ctx, &stypes.QueryValidatorsRequest{})
+	require.NoError(t, err)
+	require.NotEmpty(t, vals.Validators)
+
+	infos, err := cl.Slashing.SigningInfos(ctx, &sltypes.QuerySigningInfosRequest{})
+	require.NoError(t, err)
+	require.NotEmpty(t, infos.Info)
+
+	_, err = cl.Portal.Block(ctx, &ptypes.BlockRequest{Latest: true})
+	require.NoError(t, err)
+
+	_, err = cl.Attest.ListAllAttestations(ctx, &atypes.ListAllAttestationsRequest{
+		ChainId:    cfg.Network.Static().OmniExecutionChainID,
+		ConfLevel:  uint32(xchain.ConfFinalized),
+		Status:     1,
+		FromOffset: 0,
+	})
+	require.NoError(t, err)
 }
 
 func testCProvider(t *testing.T, ctx context.Context, cprov cprovider.Provider) {
@@ -158,6 +207,7 @@ func setupSimnet(t *testing.T) haloapp.Config {
 	haloCfg.EngineEndpoint = "dummy"
 	haloCfg.EngineJWTFile = "dummy"
 	haloCfg.RPCEndpoints = map[string]string{"omni_evm": "dummy"}
+	haloCfg.SDKAPI.Enable = true
 
 	cfg := haloapp.Config{
 		Config: haloCfg,

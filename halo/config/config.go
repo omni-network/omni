@@ -19,6 +19,7 @@ import (
 
 	pruningtypes "cosmossdk.io/store/pruning/types"
 	db "github.com/cosmos/cosmos-db"
+	srvconfig "github.com/cosmos/cosmos-sdk/server/config"
 
 	_ "embed"
 )
@@ -44,6 +45,8 @@ const (
 
 // DefaultConfig returns the default halo config.
 func DefaultConfig() Config {
+	sdkConfig := srvconfig.DefaultConfig()
+
 	return Config{
 		HomeDir:            DefaultHomeDir,
 		Network:            "", // No default
@@ -57,6 +60,8 @@ func DefaultConfig() Config {
 		EVMBuildDelay:      defaultEVMBuildDelay,
 		EVMBuildOptimistic: defaultEVMBuildOptimistic,
 		Tracer:             tracer.DefaultConfig(),
+		SDKAPI:             RPCConfig{Enable: sdkConfig.API.Enable, Address: sdkConfig.API.Address},
+		SDKGRPC:            RPCConfig{Enable: sdkConfig.GRPC.Enable, Address: sdkConfig.GRPC.Address},
 	}
 }
 
@@ -76,11 +81,40 @@ type Config struct {
 	EVMBuildOptimistic bool
 	Tracer             tracer.Config
 	UnsafeSkipUpgrades []int
+	SDKAPI             RPCConfig `mapstructure:"api"`
+	SDKGRPC            RPCConfig `mapstructure:"grpc"`
+}
+
+// RPCConfig is an abridged version of CosmosSDK srvconfig.API/GRPCConfig.
+type RPCConfig struct {
+	Enable  bool
+	Address string
 }
 
 // ConfigFile returns the default path to the toml halo config file.
 func (c Config) ConfigFile() string {
 	return filepath.Join(c.HomeDir, configDir, configFile)
+}
+
+// SDKRPCConfig returns the SDK config with only RPC fields populated.
+func (c Config) SDKRPCConfig() srvconfig.Config {
+	cfg := srvconfig.DefaultConfig()
+
+	api := cfg.API
+	api.Enable = c.SDKAPI.Enable
+	api.Address = c.SDKAPI.Address
+
+	grpc := cfg.GRPC
+	grpc.Enable = c.SDKGRPC.Enable
+	grpc.Address = c.SDKGRPC.Address
+
+	grpcweb := cfg.GRPCWeb
+
+	return srvconfig.Config{
+		API:     api,
+		GRPC:    grpc,
+		GRPCWeb: grpcweb,
+	}
 }
 
 func (c Config) DataDir() string {

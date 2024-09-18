@@ -2,5 +2,6 @@
 "eigenlayer-key-password": "123456",
 "engine-jwt-file": "jwt.json",
 "snapshot-interval": 123,
-"state-persist-interval": 12
+"state-persist-interval": 12,
+"api-address": "api/json"
 }

@@ -21,8 +21,10 @@ services:
     restart: unless-stopped
     init: true
     ports:
-    - {{ if $.BindAll }}26656:{{end}}26656 # Consensus P2P
-    - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657 # Consensus RPC
+    - {{ if $.BindAll }}26656:{{end}}26656 # CometBFT Consensus P2P
+    - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}26657 # CometBFT Consensus RPC
+    - {{ if $.BindAll }}9090:{{end}}9090 # Cosmos gRPC API
+    - {{ if $.BindAll }}1317:{{end}}1317 # Cosmos REST API
 {{- if .PrometheusProxyPort }}
     - {{ .PrometheusProxyPort }}:26660 # Prometheus
 {{- end }}

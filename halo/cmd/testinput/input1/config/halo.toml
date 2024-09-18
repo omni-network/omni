@@ -15,3 +15,9 @@ headers="Authorization=Basic 123456"
 [xchain.evm-rpc-endpoints]
 ethereum = "http://ethereum.rpc"
 optimism = "http://optimism.rpc"
+
+[api]
+address = "api/toml"
+
+[grpc]
+address = "grpc/toml"
