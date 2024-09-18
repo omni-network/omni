@@ -118,7 +118,12 @@ func testAPI(t *testing.T, cfg haloapp.Config) {
 
 	base := "http://" + u.Host
 
-	for _, path := range []string{"/", "/status"} {
+	for _, path := range []string{
+		"/",
+		"/status",
+		"/cosmos/staking/v1beta1/validators",
+		"/cosmos/slashing/v1beta1/signing_infos",
+	} {
 		_, err = http.Get(base + path)
 		require.NoError(t, err)
 	}
