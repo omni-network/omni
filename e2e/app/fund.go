@@ -7,7 +7,9 @@ import (
 
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/anvil"
+	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
@@ -17,7 +19,9 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-const saneMaxEther = 50 // Maximum amount to fund in ether.
+const saneEOAMaxEther = 50       // Maximum amount of ETH to fund an eoe (in ether).
+const saneContractMaxEther = 50  // Maximum amount of ETH to fund a contract (in ether).
+const saneContractMaxOMNI = 5000 // Maximum amount of OMNI to fund a contract (in OMNI).
 
 // noAnvilDev returns a list of accounts that are not dev anvil accounts.
 func noAnvilDev(accounts []common.Address) []common.Address {
@@ -56,8 +60,8 @@ func fundAccounts(ctx context.Context, def Definition) error {
 	return nil
 }
 
-// FundEOAAccounts funds the EOAs that need funding to their target balance.
-func FundEOAAccounts(ctx context.Context, def Definition, dryRun bool) error {
+// FundAccounts funds the EOAs and contracts that need funding to their target balance.
+func FundAccounts(ctx context.Context, def Definition, dryRun bool) error {
 	if def.Testnet.Network == netconf.Mainnet {
 		return errors.New("mainnet funding not supported yet")
 	}
@@ -107,73 +111,147 @@ func FundEOAAccounts(ctx context.Context, def Definition, dryRun bool) error {
 				continue
 			}
 
-			balance, err := backend.BalanceAt(accCtx, account.Address, nil)
-			if err != nil {
-				log.Warn(accCtx, "Failed fetching balance, skipping", err)
-				continue
-			} else if thresholds.MinBalance().Cmp(balance) < 0 {
-				log.Info(accCtx,
-					"Not funding account, balance sufficient",
-					"balance", etherStr(balance),
-					"min_balance", etherStr(thresholds.MinBalance()),
-				)
+			saneMax := new(big.Int).Mul(big.NewInt(saneEOAMaxEther), big.NewInt(params.Ether))
 
-				continue
+			if err := fund(accCtx, fundParams{
+				backend:       backend,
+				account:       account.Address,
+				minBalance:    thresholds.MinBalance(),
+				targetBalance: thresholds.TargetBalance(),
+				saneMax:       saneMax,
+				dryRun:        dryRun,
+			}); err != nil {
+				return errors.Wrap(err, "fund account")
 			}
+		}
 
-			saneMax := new(big.Int).Mul(big.NewInt(saneMaxEther), big.NewInt(params.Ether))
+		if network.ID == netconf.Staging {
+			// Staging contracts have ephemeral per-run-time addresses, so the
+			// addresses used here (in `e2e fund`) will not be the same as the
+			// live staging addresses.
+			log.Info(ctx, "Skipping contract funding for staging", "network", network.ID)
+			continue
+		}
 
-			amount := new(big.Int).Sub(thresholds.TargetBalance(), balance)
-			if amount.Cmp(big.NewInt(0)) <= 0 {
-				return errors.New("unexpected negative amount [BUG]") // Target balance below minimum balance
-			} else if amount.Cmp(saneMax) > 0 {
-				log.Warn(accCtx, "Funding amount exceeds sane max, skipping", nil,
-					"amount", etherStr(amount),
-					"max", etherStr(saneMax),
-				)
-
-				continue
-			} else if amount.Cmp(funderBal) >= 0 {
-				return errors.New("funder balance too low",
-					"amount", etherStr(amount),
-					"funder", etherStr(funderBal),
-				)
-			}
-
-			log.Info(accCtx, "Funding account",
-				"amount", etherStr(amount),
-				"balance", etherStr(balance),
-				"target_balance", etherStr(thresholds.TargetBalance()),
+		for _, contract := range contracts.ToFund(network.ID) {
+			ctrCtx := log.WithCtx(ctx,
+				"chain", chain.Name,
+				"contract", contract.Name,
+				"address", contract.Address,
 			)
 
-			if dryRun {
-				log.Warn(accCtx, "Skipping actual funding tx due to dry-run", nil)
+			isOmniEVM := chain.ID == network.ID.Static().OmniExecutionChainID
+
+			if contract.OnlyOmniEVM && !isOmniEVM {
+				log.Info(ctrCtx, "Skipping non-OmniEVM chain", "chain", chain.ID)
 				continue
 			}
 
-			tx, rec, err := backend.Send(accCtx, eoa.Funder(), txmgr.TxCandidate{
-				To:       &account.Address,
-				GasLimit: 0,
-				Value:    amount,
-			})
-			if err != nil {
-				return errors.Wrap(err, "send tx")
-			} else if rec.Status != types.ReceiptStatusSuccessful {
-				return errors.New("funding tx failed", "tx", tx.Hash())
+			saneMax := new(big.Int).Mul(big.NewInt(saneContractMaxEther), big.NewInt(params.Ether))
+			if isOmniEVM {
+				saneMax = new(big.Int).Mul(big.NewInt(saneContractMaxOMNI), big.NewInt(params.Ether))
 			}
 
-			b, err := backend.BalanceAt(accCtx, account.Address, nil)
-			if err != nil {
-				return errors.Wrap(err, "get balance")
+			if err := fund(ctrCtx, fundParams{
+				backend:       backend,
+				account:       contract.Address,
+				minBalance:    contract.Thresholds.MinBalance(),
+				targetBalance: contract.Thresholds.TargetBalance(),
+				saneMax:       saneMax,
+				dryRun:        dryRun,
+			}); err != nil {
+				return errors.Wrap(err, "fund contract")
 			}
-
-			log.Info(accCtx, "Account funded 🎉",
-				"amount_funded", etherStr(amount),
-				"resulting_balance", etherStr(b),
-				"tx", tx.Hash().Hex(),
-			)
 		}
 	}
+
+	return nil
+}
+
+type fundParams struct {
+	backend       *ethbackend.Backend
+	account       common.Address
+	minBalance    *big.Int
+	targetBalance *big.Int
+	saneMax       *big.Int
+	dryRun        bool
+}
+
+func fund(ctx context.Context, params fundParams) error {
+	backend := params.backend
+	account := params.account
+	minBalance := params.minBalance
+	targetBalance := params.targetBalance
+	saneMax := params.saneMax
+	dryRun := params.dryRun
+
+	funderBal, err := backend.BalanceAt(ctx, eoa.Funder(), nil)
+	if err != nil {
+		log.Warn(ctx, "Failed fetching balance, skipping", err)
+		return nil
+	}
+
+	balance, err := backend.BalanceAt(ctx, account, nil)
+	if err != nil {
+		log.Warn(ctx, "Failed fetching balance, skipping", err)
+		return nil
+	} else if minBalance.Cmp(balance) < 0 {
+		log.Info(ctx,
+			"Not funding account, balance sufficient",
+			"balance", etherStr(balance),
+			"min_balance", etherStr(minBalance),
+		)
+
+		return nil
+	}
+
+	amount := new(big.Int).Sub(targetBalance, balance)
+	if amount.Cmp(big.NewInt(0)) <= 0 {
+		return errors.New("unexpected negative amount [BUG]") // Target balance below minimum balance
+	} else if saneMax != nil && amount.Cmp(saneMax) > 0 {
+		log.Warn(ctx, "Funding amount exceeds sane max, skipping", nil,
+			"amount", etherStr(amount),
+			"max", etherStr(saneMax),
+		)
+	} else if amount.Cmp(funderBal) >= 0 {
+		return errors.New("funder balance too low",
+			"amount", etherStr(amount),
+			"funder", etherStr(funderBal),
+		)
+	}
+
+	log.Info(ctx, "Funding account",
+		"amount", etherStr(amount),
+		"balance", etherStr(balance),
+		"target_balance", etherStr(targetBalance),
+	)
+
+	if dryRun {
+		log.Warn(ctx, "Skipping actual funding tx due to dry-run", nil)
+		return nil
+	}
+
+	tx, rec, err := backend.Send(ctx, eoa.Funder(), txmgr.TxCandidate{
+		To:       &account,
+		GasLimit: 0,
+		Value:    amount,
+	})
+	if err != nil {
+		return errors.Wrap(err, "send tx")
+	} else if rec.Status != types.ReceiptStatusSuccessful {
+		return errors.New("funding tx failed", "tx", tx.Hash())
+	}
+
+	b, err := backend.BalanceAt(ctx, account, nil)
+	if err != nil {
+		return errors.Wrap(err, "get balance")
+	}
+
+	log.Info(ctx, "Account funded 🎉",
+		"amount_funded", etherStr(amount),
+		"resulting_balance", etherStr(b),
+		"tx", tx.Hash().Hex(),
+	)
 
 	return nil
 }
