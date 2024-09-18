@@ -239,6 +239,7 @@ func (a *Attestation) ToXChain() xchain.Attestation {
 	}
 
 	return xchain.Attestation{
+		AttestHeader:   a.AttestHeader.ToXChain(),
 		BlockHeader:    a.BlockHeader.ToXChain(),
 		ValidatorSetID: a.ValidatorSetId,
 		MsgRoot:        common.Hash(a.MsgRoot),
@@ -252,8 +253,9 @@ func (a *Attestation) AttestationRoot() (common.Hash, error) {
 
 func (v *Vote) ToXChain() xchain.Vote {
 	return xchain.Vote{
-		BlockHeader: v.BlockHeader.ToXChain(),
-		MsgRoot:     common.Hash(v.MsgRoot),
-		Signature:   v.Signature.ToXChain(),
+		AttestHeader: v.AttestHeader.ToXChain(),
+		BlockHeader:  v.BlockHeader.ToXChain(),
+		MsgRoot:      common.Hash(v.MsgRoot),
+		Signature:    v.Signature.ToXChain(),
 	}
 }
