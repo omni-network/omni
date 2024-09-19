@@ -417,10 +417,6 @@ func writeHaloConfig(
 	if testCfg {
 		cfg.SnapshotInterval = 1   // Write snapshots each block in e2e tests
 		cfg.SnapshotKeepRecent = 0 // Keep all snapshots in e2e tests
-	} else if network == netconf.Staging {
-		// TODO(corver): Remove this once debugging staging snapsync issues are solved.
-		cfg.SnapshotInterval = 1     // Write snapshots each block in staging
-		cfg.SnapshotKeepRecent = 500 // Keep a lot of snapshots in staging
 	}
 
 	return halocfg.WriteConfigTOML(cfg, logCfg)

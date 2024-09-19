@@ -15,6 +15,11 @@ import (
 	"github.com/ethereum/go-ethereum/eth/downloader"
 )
 
+// snapshotCacheMB increases the default snapshot cache size of 102MB.
+// This is required to support SnapSync since it must overlap with cosmos which
+// takes snapshots every 1000 blocks.
+const snapshotCacheMB = 1024
+
 // WriteAllConfig writes all the geth config files for all omniEVMs.
 func WriteAllConfig(testnet types.Testnet, genesis core.Genesis) error {
 	gethGenesisBz, err := json.MarshalIndent(genesis, "", "  ")
@@ -42,11 +47,12 @@ func WriteAllConfig(testnet types.Testnet, genesis core.Genesis) error {
 		}
 
 		conf := Config{
-			Moniker:      evm.InstanceName,
-			IsArchive:    evm.IsArchive,
-			ChainID:      evm.Chain.ChainID,
-			BootNodes:    evm.Peers, // TODO(corver): Use seed nodes once available.
-			TrustedNodes: evm.Peers,
+			Moniker:         evm.InstanceName,
+			IsArchive:       evm.IsArchive,
+			ChainID:         evm.Chain.ChainID,
+			BootNodes:       evm.Peers, // TODO(corver): Use seed nodes once available.
+			TrustedNodes:    evm.Peers,
+			SnapshotCacheMB: snapshotCacheMB,
 		}
 		if err := WriteConfigTOML(conf, filepath.Join(testnet.Dir, evm.InstanceName, "config.toml")); err != nil {
 			return errors.Wrap(err, "write geth config")
@@ -93,6 +99,10 @@ func MakeGethConfig(conf Config) FullConfig {
 	// Ethereum has slow block building times (2~4s), but we need fast times (<1s).
 	// Use 500ms so blocks are built in less than 1s.
 	cfg.Eth.Miner.Recommit = 500 * time.Millisecond
+
+	if conf.SnapshotCacheMB > 0 {
+		cfg.Eth.SnapshotCache = conf.SnapshotCacheMB
+	}
 
 	// Set the bootnodes and trusted nodes.
 	cfg.Node.UserIdent = conf.Moniker
