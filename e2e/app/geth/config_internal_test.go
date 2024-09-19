@@ -27,23 +27,28 @@ func TestWriteConfigTOML(t *testing.T) {
 	node1 := enode.NewV4(&testKey.PublicKey, net.IP{127, 0, 0, 1}, 1, 1)
 	node2 := enode.NewV4(&testKey.PublicKey, net.IP{127, 0, 0, 2}, 2, 2)
 
-	tests := map[string]bool{
-		"archive": true,
-		"full":    false,
+	tests := []struct {
+		name            string
+		isArchive       bool
+		snapShotCacheMB int
+	}{
+		{"archive", true, 0},
+		{"full", false, 999},
 	}
-	for name, isArchive := range tests {
-		t.Run(name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
 			data := Config{
-				Moniker:      name,
-				BootNodes:    []*enode.Node{node1},
-				TrustedNodes: []*enode.Node{node1, node2},
-				ChainID:      15651,
-				IsArchive:    isArchive,
+				Moniker:         test.name,
+				BootNodes:       []*enode.Node{node1},
+				TrustedNodes:    []*enode.Node{node1, node2},
+				ChainID:         15651,
+				IsArchive:       test.isArchive,
+				SnapshotCacheMB: test.snapShotCacheMB,
 			}
 
-			tempFile := filepath.Join(t.TempDir(), name+".toml")
+			tempFile := filepath.Join(t.TempDir(), test.name+".toml")
 
 			err := WriteConfigTOML(data, tempFile)
 			require.NoError(t, err)

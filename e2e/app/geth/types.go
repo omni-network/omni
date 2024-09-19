@@ -28,6 +28,8 @@ type Config struct {
 	BootNodes []*enode.Node
 	// TrustedNodes are the enode URLs of the P2P trusted nodes.
 	TrustedNodes []*enode.Node
+	// SnapshotCacheMB overrides the default snapshot cache size in MB if not zero.
+	SnapshotCacheMB int
 }
 
 // defaultGethConfig returns the default geth config.
