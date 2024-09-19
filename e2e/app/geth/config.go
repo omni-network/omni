@@ -85,7 +85,7 @@ func MakeGethConfig(conf Config) FullConfig {
 
 	// Use syncmode=full. Since default "snap" sync has race condition on startup. Where engineAPI newPayload fails
 	// if snapsync has not completed. Should probably wait for snapsync to complete before starting engineAPI?
-	cfg.Eth.SyncMode = downloader.SnapSync
+	cfg.Eth.SyncMode = downloader.FullSync
 
 	// Disable pruning for archive nodes.
 	// Note that runtime flags are also required for archive nodes, specifically:
