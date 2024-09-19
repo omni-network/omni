@@ -69,7 +69,7 @@ contract PortalRegistry is OwnableUpgradeable {
     }
 
     /**
-     * @notice Get the OmniPortal address for a chain.
+     * @notice List all registered OmniPortal deployments.
      */
     function list() external view returns (Deployment[] memory) {
         Deployment[] memory deps = new Deployment[](chainIds.length);
@@ -90,7 +90,7 @@ contract PortalRegistry is OwnableUpgradeable {
     /**
      * @notice Register multiple OmniPortal deployments.
      */
-    function bulkRegister(Deployment[] calldata deps) external payable onlyOwner {
+    function bulkRegister(Deployment[] calldata deps) external onlyOwner {
         for (uint64 i = 0; i < deps.length; i++) {
             _register(deps[i]);
         }

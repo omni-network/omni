@@ -36,9 +36,9 @@ interface IOmniPortal {
      * @param shardId       Shard ID of the XStream (first byte is the confirmation level)
      * @param offset        Offset the XMsg in the source -> dest XStream
      * @param gasUsed       Gas used in execution of the XMsg
-     * @param success       Whether the execution succeeded
      * @param relayer       Address of the relayer who submitted the XMsg
-     * @param error         Result of XMsg execution, if success == false. Limited to
+     * @param success       Whether the execution succeeded
+     * @param err           Result of XMsg execution, if success == false. Limited to
      *                      xreceiptMaxErrorBytes(). Empty if success == true.
      */
     event XReceipt(
@@ -48,7 +48,7 @@ interface IOmniPortal {
         uint256 gasUsed,
         address relayer,
         bool success,
-        bytes error
+        bytes err
     );
 
     /**

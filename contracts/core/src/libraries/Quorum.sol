@@ -5,7 +5,7 @@ import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { XTypes } from "./XTypes.sol";
 
 /**
- * @title Quorom
+ * @title Quorum
  * @dev Defines quorum verification logic.
  */
 library Quorum {
@@ -33,9 +33,8 @@ library Quorum {
             sig = sigs[i];
 
             if (i > 0) {
-                XTypes.SigTuple memory prev = sigs[i - 1];
-                require(sig.validatorAddr != prev.validatorAddr, "Quorum: duplicate validator");
-                require(sig.validatorAddr > prev.validatorAddr, "Quorum: sigs not sorted");
+                XTypes.SigTuple calldata prev = sigs[i - 1];
+                require(sig.validatorAddr > prev.validatorAddr, "Quorum: sigs not deduped/sorted");
             }
 
             require(_isValidSig(sig, digest), "Quorum: invalid signature");
@@ -59,6 +58,6 @@ library Quorum {
         pure
         returns (bool)
     {
-        return votedPower > (totalPower * numerator) / denominator;
+        return votedPower * uint256(denominator) > totalPower * uint256(numerator);
     }
 }

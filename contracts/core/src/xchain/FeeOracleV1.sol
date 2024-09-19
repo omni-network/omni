@@ -65,18 +65,18 @@ contract FeeOracleV1 is IFeeOracle, IFeeOracleV1, OwnableUpgradeable {
         IFeeOracleV1.ChainFeeParams storage execP = _feeParams[destChainId];
         IFeeOracleV1.ChainFeeParams storage dataP = _feeParams[execP.postsTo];
 
-        require(execP.gasPrice > 0 && execP.toNativeRate > 0, "FeeOracleV1: no fee params");
-        require(dataP.gasPrice > 0 && dataP.toNativeRate > 0, "FeeOracleV1: no fee params");
-
         uint256 execGasPrice = execP.gasPrice * execP.toNativeRate / CONVERSION_RATE_DENOM;
         uint256 dataGasPrice = dataP.gasPrice * dataP.toNativeRate / CONVERSION_RATE_DENOM;
+
+        require(execGasPrice > 0, "FeeOracleV1: no fee params");
+        require(dataGasPrice > 0, "FeeOracleV1: no fee params");
 
         // 16 gas per non-zero byte, assume non-zero bytes
         // TODO: given we mostly support rollups that post data to L1, it may be cheaper for users to count
         //       non-zero bytes (consuming L2 execution gas) to reduce their L1 data fee
         uint256 dataGas = data.length * 16;
 
-        return protocolFee + (baseGasLimit * execGasPrice) + (gasLimit * execGasPrice) + (dataGas * dataGasPrice);
+        return protocolFee + (baseGasLimit + gasLimit) * execGasPrice + (dataGas * dataGasPrice);
     }
 
     /**

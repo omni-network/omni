@@ -8,6 +8,12 @@ pragma solidity =0.8.24;
  *      This allows for flexible pausing, but at higher gas cost.
  */
 contract PausableUpgradeable {
+    /// @notice Emitted when a key is paused.
+    event Paused(bytes32 indexed key);
+
+    /// @notice Emitted when a key is unpaused.
+    event Unpaused(bytes32 indexed key);
+
     /// @custom:storage-location erc7201:omni.storage.Pauseable
     struct PauseableStorage {
         mapping(bytes32 => bool) _paused;
@@ -34,6 +40,7 @@ contract PausableUpgradeable {
         PauseableStorage storage $ = _getPauseableStorage();
         require(!$._paused[key], "Pausable: paused");
         $._paused[key] = true;
+        emit Paused(key);
     }
 
     /**
@@ -43,6 +50,7 @@ contract PausableUpgradeable {
         PauseableStorage storage $ = _getPauseableStorage();
         require($._paused[key], "Pausable: not paused");
         $._paused[key] = false;
+        emit Unpaused(key);
     }
 
     /**

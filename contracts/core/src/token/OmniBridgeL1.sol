@@ -80,15 +80,16 @@ contract OmniBridgeL1 is OmniBridgeCommon {
     function _bridge(address payor, address to, uint256 amount) internal {
         require(amount > 0, "OmniBridge: amount must be > 0");
         require(to != address(0), "OmniBridge: no bridge to zero");
-        require(msg.value == bridgeFee(payor, to, amount), "OmniBridge: incorrect fee");
+
+        uint64 omniChainId = omni.omniChainId();
+        bytes memory xcalldata =
+            abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount, token.balanceOf(address(this)) + amount));
+
+        require(msg.value == omni.feeFor(omniChainId, xcalldata, XCALL_WITHDRAW_GAS_LIMIT), "OmniBridge: incorrect fee");
         require(token.transferFrom(payor, address(this), amount), "OmniBridge: transfer failed");
 
         omni.xcall{ value: msg.value }(
-            omni.omniChainId(),
-            ConfLevel.Finalized,
-            Predeploys.OmniBridgeNative,
-            abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount, token.balanceOf(address(this)))),
-            XCALL_WITHDRAW_GAS_LIMIT
+            omniChainId, ConfLevel.Finalized, Predeploys.OmniBridgeNative, xcalldata, XCALL_WITHDRAW_GAS_LIMIT
         );
 
         emit Bridge(payor, to, amount);
@@ -100,7 +101,7 @@ contract OmniBridgeL1 is OmniBridgeCommon {
     function bridgeFee(address payor, address to, uint256 amount) public view returns (uint256) {
         return omni.feeFor(
             omni.omniChainId(),
-            abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount, token.balanceOf(address(this)))),
+            abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount, token.balanceOf(address(this)) + amount)),
             XCALL_WITHDRAW_GAS_LIMIT
         );
     }

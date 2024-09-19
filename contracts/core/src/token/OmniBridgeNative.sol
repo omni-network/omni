@@ -16,7 +16,7 @@ import { XTypes } from "../libraries/XTypes.sol";
  *      Genesis storage slots must:
  *          - set _owner on proxy
  *          - set _initialized on proxy to 1, to disable the initializer
- *          - set _initialized on implementation to 255, to disabled all initializers
+ *          - set _initialized on implementation to 0xffffffffffffffff, to disabled all initializers
  */
 contract OmniBridgeNative is OmniBridgeCommon {
     /**
@@ -34,6 +34,11 @@ contract OmniBridgeNative is OmniBridgeCommon {
      * @notice Emitted when an account claims OMNI tokens that failed to be withdrawn.
      */
     event Claimed(address indexed claimant, address indexed to, uint256 amount);
+
+    /**
+     * @notice Emitted on setup(...)
+     */
+    event Setup(uint64 l1ChainId, address omni, address l1Bridge);
 
     /**
      * @notice xcall gas limit for OmniBridgeL1.withdraw
@@ -69,7 +74,7 @@ contract OmniBridgeNative is OmniBridgeCommon {
     address public l1Bridge;
 
     /**
-     * @notice Track claimable amount per address. Claimable amount increases when withdraw transfer failes.
+     * @notice Track claimable amount per address. Claimable amount increases when withdraw transfer fails.
      */
     mapping(address => uint256) public claimable;
 
@@ -180,5 +185,6 @@ contract OmniBridgeNative is OmniBridgeCommon {
         l1ChainId = l1ChainId_;
         omni = IOmniPortal(omni_);
         l1Bridge = l1Bridge_;
+        emit Setup(l1ChainId_, omni_, l1Bridge_);
     }
 }

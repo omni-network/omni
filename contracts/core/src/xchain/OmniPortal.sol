@@ -31,7 +31,7 @@ contract OmniPortal is
     using ExcessivelySafeCall for address;
 
     /**
-     * @notice Modifier the requires an action is not paused. An action is paused if:
+     * @notice Modifier that requires an action is not paused. An action is paused if:
      *          - actionId is paused for all chains
      *          - actionId is paused for chainId
      *          - All actions are paused
@@ -101,8 +101,8 @@ contract OmniPortal is
 
         // omni consensus chain uses Finalised+Broadcast shard
         uint64 omniCShard = ConfLevel.toBroadcastShard(ConfLevel.Finalized);
-        inXMsgOffset[p.omniCChainId][omniCShard] = p.cChainXMsgOffset;
-        inXBlockOffset[p.omniCChainId][omniCShard] = p.cChainXBlockOffset;
+        _setInXMsgOffset(p.omniCChainId, omniCShard, p.cChainXMsgOffset);
+        _setInXBlockOffset(p.omniCChainId, omniCShard, p.cChainXBlockOffset);
     }
 
     function chainId() public view returns (uint64) {
@@ -226,7 +226,7 @@ contract OmniPortal is
      * @notice Execute an xmsg.
      * @dev Verify if an XMsg is next in its XStream, execute it, increment inXMsgOffset, emit an XReceipt event
      */
-    function _exec(XTypes.BlockHeader memory xheader, XTypes.Msg calldata xmsg_) internal {
+    function _exec(XTypes.BlockHeader calldata xheader, XTypes.Msg calldata xmsg_) internal {
         uint64 sourceChainId = xheader.sourceChainId;
         uint64 destChainId = xmsg_.destChainId;
         uint64 shardId = xmsg_.shardId;
@@ -366,17 +366,17 @@ contract OmniPortal is
 
         uint64 totalPower;
         XTypes.Validator memory val;
-        mapping(address => uint64) storage valSet = valSet[valSetId];
+        mapping(address => uint64) storage _valSet = valSet[valSetId];
 
         for (uint256 i = 0; i < numVals; i++) {
             val = validators[i];
 
             require(val.addr != address(0), "OmniPortal: no zero validator");
             require(val.power > 0, "OmniPortal: no zero power");
-            require(valSet[val.addr] == 0, "OmniPortal: duplicate validator");
+            require(_valSet[val.addr] == 0, "OmniPortal: duplicate validator");
 
             totalPower += val.power;
-            valSet[val.addr] = val.power;
+            _valSet[val.addr] = val.power;
         }
 
         valSetTotalPower[valSetId] = totalPower;
@@ -456,8 +456,7 @@ contract OmniPortal is
      * @param offset           New xmsg offset
      */
     function setInXMsgOffset(uint64 sourceChainId, uint64 shardId, uint64 offset) external onlyOwner {
-        inXMsgOffset[sourceChainId][shardId] = offset;
-        emit InXMsgOffsetSet(sourceChainId, shardId, offset);
+        _setInXMsgOffset(sourceChainId, shardId, offset);
     }
 
     /**
@@ -467,8 +466,7 @@ contract OmniPortal is
      * @param offset           New xblock offset
      */
     function setInXBlockOffset(uint64 sourceChainId, uint64 shardId, uint64 offset) external onlyOwner {
-        inXBlockOffset[sourceChainId][shardId] = offset;
-        emit InXBlockOffsetSet(sourceChainId, shardId, offset);
+        _setInXBlockOffset(sourceChainId, shardId, offset);
     }
 
     /**
@@ -691,5 +689,21 @@ contract OmniPortal is
         require(feeOracle_ != address(0), "OmniPortal: no zero feeOracle");
         feeOracle = feeOracle_;
         emit FeeOracleSet(feeOracle_);
+    }
+
+    /**
+     * @notice Set the inbound xmsg offset for a chain and shard
+     */
+    function _setInXMsgOffset(uint64 sourceChainId, uint64 shardId, uint64 offset) internal {
+        inXMsgOffset[sourceChainId][shardId] = offset;
+        emit InXMsgOffsetSet(sourceChainId, shardId, offset);
+    }
+
+    /**
+     * @notice Set the inbound xblock offset for a chain and shard
+     */
+    function _setInXBlockOffset(uint64 sourceChainId, uint64 shardId, uint64 offset) internal {
+        inXBlockOffset[sourceChainId][shardId] = offset;
+        emit InXBlockOffsetSet(sourceChainId, shardId, offset);
     }
 }
