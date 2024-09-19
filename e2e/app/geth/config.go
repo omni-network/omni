@@ -18,7 +18,7 @@ import (
 // snapshotCacheMB increases the default snapshot cache size of 102MB.
 // This is required to support SnapSync since it must overlap with cosmos which
 // takes snapshots every 1000 blocks.
-const snapshotCacheMB = 1024
+const snapshotCacheMB = 2 * 1024
 
 // WriteAllConfig writes all the geth config files for all omniEVMs.
 func WriteAllConfig(testnet types.Testnet, genesis core.Genesis) error {
