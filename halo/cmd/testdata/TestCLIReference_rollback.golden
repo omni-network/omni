@@ -29,7 +29,7 @@ Flags:
       --min-retain-blocks uint                    Minimum block height offset during ABCI commit to prune CometBFT blocks (default 1)
       --network string                            Omni network to participate in: mainnet, omega, devnet
       --pruning string                            Pruning strategy (default|nothing|everything) (default "default")
-      --snapshot-interval uint                    State sync snapshot interval (default 1000)
+      --snapshot-interval uint                    State sync snapshot interval (default 100)
       --snapshot-keep-recent uint32               State sync snapshot to keep (default 2)
       --tracing-endpoint string                   Tracing OTLP endpoint
       --tracing-headers string                    Tracing OTLP headers

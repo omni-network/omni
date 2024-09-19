@@ -4,7 +4,7 @@
  "EngineJWTFile": "bar",
  "EngineEndpoint": "",
  "RPCEndpoints": null,
- "SnapshotInterval": 1000,
+ "SnapshotInterval": 100,
  "SnapshotKeepRecent": 2,
  "BackendType": "goleveldb",
  "MinRetainBlocks": 1,
