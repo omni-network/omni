@@ -15,7 +15,7 @@ var (
 		Namespace: "monitor",
 		Subsystem: "validator",
 		Name:      "power",
-		Help:      "Current power by validator",
+		Help:      "Current potential power by validator (may not be bonded)",
 	}, []string{"validator", "validator_address", "operator"}) // Main metric with additional label identifiers
 
 	jailedGauge = promutil.NewResetGaugeVec(prometheus.GaugeOpts{

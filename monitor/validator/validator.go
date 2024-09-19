@@ -81,7 +81,7 @@ func monitorOnce(ctx context.Context, cprov cchain.Provider, sampleFunc func(sam
 			ConsensusEthAddr: consAddrEth,
 			ConsensusCmtAddr: consAddrCmt,
 			OperatorEthAddr:  opAddr,
-			Power:            val.ConsensusPower(sdk.DefaultPowerReduction),
+			Power:            val.PotentialConsensusPower(sdk.DefaultPowerReduction),
 			Jailed:           val.IsJailed(),
 			Bonded:           val.IsBonded(),
 			Tombstoned:       info.Tombstoned,
