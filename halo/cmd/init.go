@@ -390,7 +390,7 @@ func getTrustHeightAndHash(ctx context.Context, cl *rpchttp.HTTP) (int64, string
 	}
 
 	// Truncate height to last defaultSnapshotPeriod
-	const defaultSnapshotPeriod int64 = 1000
+	const defaultSnapshotPeriod int64 = 100
 	snapshotHeight := defaultSnapshotPeriod * (latest.Block.Height / defaultSnapshotPeriod)
 
 	if snapshotHeight == 0 {
