@@ -5,27 +5,30 @@ import (
 
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
 )
 
-// UpgradePortal upgrades the portal contracts on a network. Only single chain is supported.
-func UpgradePortal(ctx context.Context, def app.Definition, cfg PortalAdminConfig) error {
-	return run(ctx, def, cfg, "upgradePortal", upgradePortal)
+// UpgradePortal upgrades the portal contracts on a network.
+func UpgradePortal(ctx context.Context, def app.Definition, cfg Config) error {
+	return setup(def).run(ctx, cfg, upgradePortal)
 }
 
-func upgradePortal(ctx context.Context, s shared, c chain, r runner) (string, error) {
+func upgradePortal(ctx context.Context, s shared, c chain) error {
 	// TODO: thie is the calldata to execute on the portal contract post upgrade
 	// this is empty for now, but should be replaced with calldata if portal re-initialization is required
-	initCalldata := []byte{}
+	initializer := []byte{}
 
-	calldata, err := adminABI.Pack("upgradePortal", s.admin, s.deployer, c.PortalAddress, initCalldata)
+	calldata, err := adminABI.Pack("upgradePortal", s.admin, s.deployer, c.PortalAddress, initializer)
 	if err != nil {
-		return "", errors.Wrap(err, "pack calldata")
+		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := r.run(ctx, calldata, s.admin, s.deployer)
+	out, err := runForge(ctx, scriptAdmin, c.rpc, calldata, s.admin, s.deployer)
 	if err != nil {
-		return out, errors.Wrap(err, "run forge")
+		return errors.Wrap(err, "run forge", "out", out)
 	}
 
-	return out, nil
+	log.Info(ctx, "Portal upgraded ✅", "chain", c.Name, "addr", c.PortalAddress, "out", out)
+
+	return nil
 }

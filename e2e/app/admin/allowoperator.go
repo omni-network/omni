@@ -26,13 +26,9 @@ var omegaOperators = []common.Address{
 
 // AllowOperators ensures that all operators hard-coded in this package is allowed as validators.
 // Note it only adds any of the operators that are missing, it doesn't remove any ever.
-func AllowOperators(ctx context.Context, def app.Definition, cfg PortalAdminConfig) error {
+func AllowOperators(ctx context.Context, def app.Definition) error {
 	network := def.Testnet.Network
-	if err := cfg.Validate(); err != nil {
-		return err
-	} else if cfg.Chain != "omni_evm" {
-		return errors.New("allow operator only supported on omni_evm", "chain", cfg.Chain)
-	} else if network.Static().Network != netconf.Omega {
+	if network.Static().Network != netconf.Omega {
 		return errors.New("allow operator only supported on omega", "network", network.Static().Network.String())
 	}
 

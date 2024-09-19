@@ -9,11 +9,8 @@ import (
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	fbproxy "github.com/omni-network/omni/e2e/fbproxy/app"
-	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -21,6 +18,11 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+)
+
+const (
+	// scriptAdmin is name of the forge script in contracts/core with admin operations.
+	scriptAdmin = "Admin"
 )
 
 // adminABI is the ABI for the Admin script contract.
@@ -42,112 +44,13 @@ type chain struct {
 	rpc string
 }
 
-// runner is an interface for running Admin forge scripts.
-type runner interface {
-	run(ctx context.Context, input []byte, senders ...common.Address) (string, error)
-}
-
-// forgeRunner is a runner that runs forge scripts against an rpc.
-type forgeRunner struct {
-	rpc string
-}
-
-var _ runner = forgeRunner{}
-
-// run runs an Admin forge script against an rpc, returning the output.
-func (r forgeRunner) run(ctx context.Context, input []byte, senders ...common.Address) (string, error) {
-	return runForge(ctx, "Admin", r.rpc, input, senders...)
-}
-
-// action is a function that performs an admin action. It returns the output of the action and an error.
-type action func(ctx context.Context, s shared, c chain, r runner) (string, error)
-
-// run runs an admin action with some config on an app definition.
-func run(ctx context.Context, def app.Definition, cfg PortalAdminConfig, name string, act action) error {
-	if err := cfg.Validate(); err != nil {
-		return errors.Wrap(err, "validate config")
-	}
-
-	s, err := setup(ctx, def)
-	if err != nil {
-		return errors.Wrap(err, "setup")
-	}
-
-	chains := getChains(s.network, cfg.Chain)
-
-	// runForChain runs the action for a single chain.
-	runForChain := func(ctx context.Context, chain string) (string, error) {
-		ctx, cancel := context.WithCancel(ctx)
-		defer cancel()
-
-		c, err := setupChain(ctx, s, chain)
-		if err != nil {
-			return "", errors.Wrap(err, "setup chain")
-		}
-
-		r := forgeRunner{rpc: c.rpc}
-
-		out, err := act(ctx, s, c, r)
-		if err != nil {
-			return out, errors.Wrap(err, "run action", "action", name, "chain", chain)
-		}
-
-		return out, nil
-	}
-
-	for _, chain := range chains {
-		out, err := runForChain(ctx, chain)
-
-		if err != nil {
-			log.Error(ctx, "Run failed", err, "chain", chain)
-			return err
-		}
-
-		log.Info(ctx, "Run succeeded", "chain", chain, "out", out)
-	}
-
-	return nil
-}
-
-// getChains returns the chain names to run an admin action on, returning all chains if chain is "all".
-func getChains(network netconf.Network, chain string) []string {
-	if chain == chainAll {
-		var chains []string
-		for _, c := range network.EVMChains() {
-			chains = append(chains, c.Name)
-		}
-
-		return chains
-	}
-
-	return []string{chain}
-}
-
 // setup returns common resources for all admin operations.
-func setup(ctx context.Context, def app.Definition) (shared, error) {
+func setup(def app.Definition) shared {
 	netID := def.Testnet.Network
-
-	admin, ok := eoa.Address(netID, eoa.RoleAdmin)
-	if !ok {
-		return shared{}, errors.New("admin eoas not found", "network", netID)
-	}
-
-	deployer, ok := eoa.Address(netID, eoa.RoleDeployer)
-	if !ok {
-		return shared{}, errors.New("deployer eoas not found", "network", netID)
-	}
-
-	endpoints := makeEndpoints(def)
-
-	portalReg, err := makePortalRegistry(netID, endpoints)
-	if err != nil {
-		return shared{}, errors.Wrap(err, "portal registry")
-	}
-
-	network, err := netconf.AwaitOnExecutionChain(ctx, netID, portalReg, nil)
-	if err != nil {
-		return shared{}, errors.Wrap(err, "await on chain")
-	}
+	admin := eoa.MustAddress(netID, eoa.RoleAdmin)
+	deployer := eoa.MustAddress(netID, eoa.RoleDeployer)
+	endpoints := app.ExternalEndpoints(def)
+	network := app.NetworkFromDef(def)
 
 	return shared{
 		admin:       admin,
@@ -156,19 +59,15 @@ func setup(ctx context.Context, def app.Definition) (shared, error) {
 		network:     network,
 		fireAPIKey:  def.Cfg.FireAPIKey,
 		fireKeyPath: def.Cfg.FireKeyPath,
-	}, nil
+	}
 }
 
 // setupChain returns chain specific resources.
+// starts and fbproxy for non-devnet chains.
 func setupChain(ctx context.Context, s shared, name string) (chain, error) {
-	meta, ok := netconf.MetadataByName(s.network.ID, name)
+	c, ok := s.network.ChainByName(name)
 	if !ok {
 		return chain{}, errors.New("chain not found", "chain", name)
-	}
-
-	c, ok := s.network.Chain(meta.ChainID)
-	if !ok {
-		return chain{}, errors.New("chain not found", "chain", name, "id", meta.ChainID)
 	}
 
 	rpc, err := s.endpoints.ByNameOrID(c.Name, c.ID)
@@ -185,6 +84,43 @@ func setupChain(ctx context.Context, s shared, name string) (chain, error) {
 	}
 
 	return chain{Chain: c, rpc: rpc}, nil
+}
+
+// run runs a function for all configured chains (all applicable, if not specified).
+func (s shared) run(
+	ctx context.Context,
+	cfg Config,
+	fn func(context.Context, shared, chain) error,
+) error {
+	names := maybeAll(s.network, cfg.Chain)
+
+	for _, name := range names {
+		c, err := setupChain(ctx, s, name)
+		if err != nil {
+			return errors.Wrap(err, "setup chain", "chain", name)
+		}
+
+		if err := fn(ctx, s, c); err != nil {
+			return errors.Wrap(err, "chain", "chain", name)
+		}
+	}
+
+	return nil
+}
+
+// maybeAll returns all chains if chain is empty, otherwise returns chain.
+func maybeAll(network netconf.Network, chain string) []string {
+	if chain == "" {
+		var chains []string
+
+		for _, c := range network.EVMChains() {
+			chains = append(chains, c.Name)
+		}
+
+		return chains
+	}
+
+	return []string{chain}
 }
 
 // runForge runs a forge script against an rpc, returning the ouptut.
@@ -209,9 +145,7 @@ func runForge(ctx context.Context, script string, rpc string, input []byte, send
 		return "", errors.New("cannot mix anvil and non-anvil accounts")
 	}
 
-	// for dev anvil accounts, we signed with private key directly
-	// TODO: consider refactoring fbproxy to "txproxy" that allows for different
-	// signing methods (one fireblocks, one providing private keys directly)
+	// for dev anvil accounts, we sign with privates key directly
 	if len(anvilPks) > 0 {
 		return execCmd(ctx, dir, "forge", "script", script,
 			"--broadcast", "--slow", "--rpc-url", rpc, "--sig", hexutil.Encode(input),
@@ -219,7 +153,7 @@ func runForge(ctx context.Context, script string, rpc string, input []byte, send
 		)
 	}
 
-	return execCmd(ctx, dir, "forge", "script", script,
+	return execCmd(ctx, dir, "forge", "script", script, "--timeout", "300", // 5 minute timeout, allow for fb signing
 		"--broadcast", "--slow", "--rpc-url", rpc, "--sig", hexutil.Encode(input), "--unlocked",
 	)
 }
@@ -253,49 +187,6 @@ func execCmd(ctx context.Context, dir string, cmd string, args ...string) (strin
 	}
 
 	return string(out), nil
-}
-
-func makeEndpoints(def app.Definition) xchain.RPCEndpoints {
-	endpoints := make(xchain.RPCEndpoints)
-
-	// Add all public chains
-	for _, public := range def.Testnet.PublicChains {
-		endpoints[public.Chain().Name] = public.NextRPCAddress()
-	}
-
-	// Connect to a proper omni_evm that isn't unavailable
-	omniEVM := def.Testnet.BroadcastOmniEVM()
-	endpoints[omniEVM.Chain.Name] = omniEVM.ExternalRPC
-
-	// Add omni consensus chain
-	endpoints[def.Testnet.Network.Static().OmniConsensusChain().Name] = def.Testnet.BroadcastNode().AddressRPC()
-
-	// Add all anvil chains
-	for _, anvil := range def.Testnet.AnvilChains {
-		endpoints[anvil.Chain.Name] = anvil.ExternalRPC
-	}
-
-	return endpoints
-}
-
-func makePortalRegistry(network netconf.ID, endpoints xchain.RPCEndpoints) (*bindings.PortalRegistry, error) {
-	meta := netconf.MetadataByID(network, network.Static().OmniExecutionChainID)
-	rpc, err := endpoints.ByNameOrID(meta.Name, meta.ChainID)
-	if err != nil {
-		return nil, err
-	}
-
-	ethCl, err := ethclient.Dial(meta.Name, rpc)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := bindings.NewPortalRegistry(common.HexToAddress(predeploys.PortalRegistry), ethCl)
-	if err != nil {
-		return nil, errors.Wrap(err, "create portal registry")
-	}
-
-	return resp, nil
 }
 
 func mustGetABI(metadata *bind.MetaData) *abi.ABI {

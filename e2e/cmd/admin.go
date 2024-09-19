@@ -3,6 +3,8 @@ package cmd
 import (
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/e2e/app/admin"
+	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/spf13/cobra"
 )
@@ -18,29 +20,26 @@ func newAdminCmd(def *app.Definition) *cobra.Command {
 		newUnpausePortalCmd(def),
 		newUpgradePortalCmd(def),
 		newAllowValidatorsCmd(def),
+		newAdminTestCmd(def),
 	)
 
 	return cmd
 }
 
 func newAllowValidatorsCmd(def *app.Definition) *cobra.Command {
-	cfg := admin.DefaultPortalAdminConfig()
-
 	cmd := &cobra.Command{
 		Use:   "allow-operators",
 		Short: "Ensure all operators are allowed as validators",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return admin.AllowOperators(cmd.Context(), *def, cfg)
+			return admin.AllowOperators(cmd.Context(), *def)
 		},
 	}
-
-	bindPortalAdminFlags(cmd.Flags(), &cfg)
 
 	return cmd
 }
 
 func newPausePortalCmd(def *app.Definition) *cobra.Command {
-	cfg := admin.DefaultPortalAdminConfig()
+	cfg := admin.DefaultConfig()
 
 	cmd := &cobra.Command{
 		Use:   "pause-portal",
@@ -50,13 +49,13 @@ func newPausePortalCmd(def *app.Definition) *cobra.Command {
 		},
 	}
 
-	bindPortalAdminFlags(cmd.Flags(), &cfg)
+	bindAdminFlags(cmd.Flags(), &cfg)
 
 	return cmd
 }
 
 func newUnpausePortalCmd(def *app.Definition) *cobra.Command {
-	cfg := admin.DefaultPortalAdminConfig()
+	cfg := admin.DefaultConfig()
 
 	cmd := &cobra.Command{
 		Use:   "unpause-portal",
@@ -66,13 +65,13 @@ func newUnpausePortalCmd(def *app.Definition) *cobra.Command {
 		},
 	}
 
-	bindPortalAdminFlags(cmd.Flags(), &cfg)
+	bindAdminFlags(cmd.Flags(), &cfg)
 
 	return cmd
 }
 
 func newUpgradePortalCmd(def *app.Definition) *cobra.Command {
-	cfg := admin.DefaultPortalAdminConfig()
+	cfg := admin.DefaultConfig()
 
 	cmd := &cobra.Command{
 		Use:   "upgrade-portal",
@@ -82,7 +81,32 @@ func newUpgradePortalCmd(def *app.Definition) *cobra.Command {
 		},
 	}
 
-	bindPortalAdminFlags(cmd.Flags(), &cfg)
+	bindAdminFlags(cmd.Flags(), &cfg)
+
+	return cmd
+}
+
+func newAdminTestCmd(def *app.Definition) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "test",
+		Short: "Test contract admin commands",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			ctx := cmd.Context()
+
+			if def.Testnet.Network != netconf.Devnet {
+				return errors.New("only devnet")
+			}
+
+			if _, err := app.Deploy(ctx, *def, app.DeployConfig{
+				PingPongN: 0,
+				PingPongP: 0,
+				PingPongL: 0}); err != nil {
+				return errors.Wrap(err, "deploy")
+			}
+
+			return admin.Test(ctx, *def)
+		},
+	}
 
 	return cmd
 }

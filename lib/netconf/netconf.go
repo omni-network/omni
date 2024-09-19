@@ -163,6 +163,17 @@ func (n Network) Chain(id uint64) (Chain, bool) {
 	return Chain{}, false
 }
 
+// ChainByName returns the chain config for the given name or false if it does not exist.
+func (n Network) ChainByName(name string) (Chain, bool) {
+	for _, chain := range n.Chains {
+		if chain.Name == name {
+			return chain, true
+		}
+	}
+
+	return Chain{}, false
+}
+
 // ChainVersionsTo returns the all chain versions submitted to the provided destination chain.
 func (n Network) ChainVersionsTo(dstChainID uint64) []xchain.ChainVersion {
 	var resp []xchain.ChainVersion

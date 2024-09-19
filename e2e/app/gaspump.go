@@ -40,7 +40,7 @@ func DeployGasApp(ctx context.Context, def Definition) error {
 
 // deployGasPumps deploys OmniGasPump contracts to all chains except Omni's EVM.
 func deployGasPumps(ctx context.Context, def Definition) error {
-	network := networkFromDef(def)
+	network := NetworkFromDef(def)
 	omniEVM, ok := network.OmniEVMChain()
 	if !ok {
 		return errors.New("no omni evm chain")
@@ -70,7 +70,7 @@ func deployGasPumps(ctx context.Context, def Definition) error {
 
 // deployGasStation deploys OmniGasStation contract to Omni's EVM.
 func deployGasStation(ctx context.Context, def Definition) error {
-	network := networkFromDef(def)
+	network := NetworkFromDef(def)
 	omniEVM, ok := network.OmniEVMChain()
 	if !ok {
 		return errors.New("no omni evm chain")
@@ -112,7 +112,7 @@ func fundGasStation(ctx context.Context, def Definition) error {
 		return errors.New("funding of gas station only supported on devnet and staging (fixme)")
 	}
 
-	network := networkFromDef(def)
+	network := NetworkFromDef(def)
 	omniEVM, ok := network.OmniEVMChain()
 	if !ok {
 		return errors.New("no omni evm chain")
@@ -181,7 +181,7 @@ var (
 
 func testGasPumps(ctx context.Context, def Definition) error {
 	networkID := def.Testnet.Network
-	network := networkFromDef(def)
+	network := NetworkFromDef(def)
 	pumpAddr := contracts.GasPump(networkID)
 
 	omniEVM, ok := network.OmniEVMChain()

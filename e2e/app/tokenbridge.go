@@ -23,7 +23,7 @@ import (
 // setupTokenBridge deploys the OmniBridgeL1 & OmniToken contracts (if necessary), and configures the OmniBridgeNative predeploy.
 func setupTokenBridge(ctx context.Context, def Definition) error {
 	networkID := def.Testnet.Network
-	network := networkFromDef(def)
+	network := NetworkFromDef(def)
 
 	l1, ok := network.EthereumChain()
 	if !ok {
@@ -142,7 +142,7 @@ var ToL1BridgeTests = []BridgeTest{
 // Tokens must be bridged to OmniEVM first, before the native bridge contract will allow bridging back to L1.
 func testBridge(ctx context.Context, def Definition) error {
 	networkID := def.Testnet.Network
-	network := networkFromDef(def)
+	network := NetworkFromDef(def)
 
 	if !networkID.IsEphemeral() {
 		log.Warn(ctx, "Skipping bridge test", errors.New("only ephemeral networks"))
@@ -172,7 +172,7 @@ func testBridge(ctx context.Context, def Definition) error {
 // bridgeToNative bridges tokens from L1 to OmniEVM.
 func bridgeToNative(ctx context.Context, def Definition, toBridge []BridgeTest) error {
 	networkID := def.Testnet.Network
-	network := networkFromDef(def)
+	network := NetworkFromDef(def)
 
 	l1, ok := network.EthereumChain()
 	if !ok {
@@ -249,7 +249,7 @@ func waitNativeBridges(ctx context.Context, def Definition, bridges []BridgeTest
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	network := networkFromDef(def)
+	network := NetworkFromDef(def)
 	omniEVM, ok := network.OmniEVMChain()
 	if !ok {
 		return errors.New("no omni evm")
@@ -291,7 +291,7 @@ func waitNativeBridges(ctx context.Context, def Definition, bridges []BridgeTest
 
 // bridgeToL1 bridges tokens from OmniEVM to L1.
 func bridgeToL1(ctx context.Context, def Definition, toBridge []BridgeTest) error {
-	network := networkFromDef(def)
+	network := NetworkFromDef(def)
 
 	omniEVM, ok := network.OmniEVMChain()
 	if !ok {

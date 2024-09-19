@@ -35,7 +35,7 @@ func FundValidatorsForTesting(ctx context.Context, def Definition) error {
 
 	log.Info(ctx, "Funding validators for testing", "count", len(def.Testnet.Nodes))
 
-	network := networkFromDef(def)
+	network := NetworkFromDef(def)
 	omniEVM, _ := network.OmniEVMChain()
 	funder := eoa.MustAddress(network.ID, eoa.RoleTester) // Fund validators using tester eoa
 	_, fundBackend, err := def.Backends().BindOpts(ctx, omniEVM.ID, funder)
@@ -125,8 +125,8 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 		})
 
 		// Create a backend to trigger deposits from
-		network := networkFromDef(def)
-		endpoints := externalEndpoints(def)
+		network := NetworkFromDef(def)
+		endpoints := ExternalEndpoints(def)
 		omniEVM, _ := network.OmniEVMChain()
 		rpc, err := endpoints.ByNameOrID(omniEVM.Name, omniEVM.ID)
 		if err != nil {

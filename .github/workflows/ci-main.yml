@@ -31,3 +31,6 @@ jobs:
   e2e:
     uses: ./.github/workflows/e2etest.yml
     needs: [release-snapshot]
+  e2e-test-admin:
+    uses: ./.github/workflows/e2etestadmin.yml
+    needs: [release-snapshot]

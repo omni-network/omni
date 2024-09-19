@@ -1,25 +1,10 @@
 package admin
 
-import (
-	"github.com/omni-network/omni/lib/errors"
-)
-
-const chainAll = "all"
-
-type PortalAdminConfig struct {
-	Chain string // Name of chain to run admin command on, use "all" to run on all chains
+type Config struct {
+	// Chain is the Name of chain to run on. Leave empty to run on all applicable chains.
+	Chain string
 }
 
-func DefaultPortalAdminConfig() PortalAdminConfig {
-	return PortalAdminConfig{
-		Chain: "",
-	}
-}
-
-func (cfg PortalAdminConfig) Validate() error {
-	if cfg.Chain == "" {
-		return errors.New("chain must be set")
-	}
-
-	return nil
+func DefaultConfig() Config {
+	return Config{Chain: ""}
 }

@@ -1,0 +1,28 @@
+name: e2e contract admin tests
+
+on:
+  workflow_call:
+
+jobs:
+  e2e_tests:
+    runs-on: namespace-profile-default
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Run tests
+        run: |
+          go run github.com/omni-network/omni/e2e admin test -f e2e/manifests/devnet1.toml
+
+
+      - name: Upload failed logs
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: failed-logs
+          path: e2e/failed-logs.txt
+          retention-days: 3

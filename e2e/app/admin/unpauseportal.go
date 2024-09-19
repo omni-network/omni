@@ -5,23 +5,26 @@ import (
 
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
 )
 
-// UnpausePortal unpauses the portal contracts on a network. Only single chain is supported.
-func UnpausePortal(ctx context.Context, def app.Definition, cfg PortalAdminConfig) error {
-	return run(ctx, def, cfg, "unpausePortal", unpausePortal)
+// UnpausePortal unpauses the portal contracts on a network.
+func UnpausePortal(ctx context.Context, def app.Definition, cfg Config) error {
+	return setup(def).run(ctx, cfg, unpausePortal)
 }
 
-func unpausePortal(ctx context.Context, s shared, c chain, r runner) (string, error) {
+func unpausePortal(ctx context.Context, s shared, c chain) error {
 	calldata, err := adminABI.Pack("unpausePortal", s.admin, c.PortalAddress)
 	if err != nil {
-		return "", errors.Wrap(err, "pack calldata")
+		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
 
-	out, err := r.run(ctx, calldata, s.admin)
+	out, err := runForge(ctx, scriptAdmin, c.rpc, calldata, s.admin)
 	if err != nil {
-		return out, errors.Wrap(err, "run forge")
+		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}
 
-	return out, nil
+	log.Info(ctx, "Portal unpaused ✅", "chain", c.Name, "addr", c.PortalAddress, "out", out)
+
+	return nil
 }
