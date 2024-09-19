@@ -1,0 +1,29 @@
+name: Check @omni-network/contracts version
+
+on:
+  push:
+    tags:
+      - 'contracts/v*'   # Trigger on contracts/v* tags
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout the repository
+      uses: actions/checkout@v3
+
+    - name: Check version
+      run: |
+        cd contracts/core
+        npm_version=$(cat package.json | jq -r '.version')
+        tag_version=${GITHUB_REF#refs/tags/contracts/v}
+
+        echo "npm version: $npm_version"
+        echo "tag version: $tag_version"
+
+        if [ "$npm_version" != "$tag_version" ]; then
+          echo "Error: package.json version '$npm_version' does not match github tag '$tag_version')"
+          exit 1
+        fi
+      shell: bash
