@@ -33,7 +33,7 @@ const (
 	executionGenesisFile = "execution_genesis.json"
 
 	DefaultHomeDir            = "./halo" // Defaults to "halo" in current directory
-	defaultSnapshotInterval   = 1000     // Roughly once an hour (given 3s blocks)
+	defaultSnapshotInterval   = 100      // Roughly once an hour (given 3s blocks)
 	defaultSnapshotKeepRecent = 2
 	defaultMinRetainBlocks    = 1 // Prune all blocks by default, Cosmsos will still respect other needs like snapshots
 
