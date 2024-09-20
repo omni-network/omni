@@ -19,6 +19,8 @@ func newAdminCmd(def *app.Definition) *cobra.Command {
 		newPausePortalCmd(def),
 		newUnpausePortalCmd(def),
 		newUpgradePortalCmd(def),
+		newPauseXCallCmd(def),
+		newUnpauseXCallCmd(def),
 		newAllowValidatorsCmd(def),
 		newAdminTestCmd(def),
 	)
@@ -82,6 +84,42 @@ func newUpgradePortalCmd(def *app.Definition) *cobra.Command {
 	}
 
 	bindAdminFlags(cmd.Flags(), &cfg)
+
+	return cmd
+}
+
+func newPauseXCallCmd(def *app.Definition) *cobra.Command {
+	cfg := admin.DefaultConfig()
+	xcallCfg := admin.XCallConfig{}
+
+	cmd := &cobra.Command{
+		Use:   "pause-xcall",
+		Short: "Pause cross-chain calls",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.PauseXCall(cmd.Context(), *def, cfg, xcallCfg)
+		},
+	}
+
+	bindAdminFlags(cmd.Flags(), &cfg)
+	bindAdminXCallFlags(cmd.Flags(), &xcallCfg)
+
+	return cmd
+}
+
+func newUnpauseXCallCmd(def *app.Definition) *cobra.Command {
+	cfg := admin.DefaultConfig()
+	xcallCfg := admin.XCallConfig{}
+
+	cmd := &cobra.Command{
+		Use:   "unpause-xcall",
+		Short: "Unpause cross-chain calls",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.UnpauseXCall(cmd.Context(), *def, cfg, xcallCfg)
+		},
+	}
+
+	bindAdminFlags(cmd.Flags(), &cfg)
+	bindAdminXCallFlags(cmd.Flags(), &xcallCfg)
 
 	return cmd
 }
