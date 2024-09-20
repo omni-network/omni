@@ -177,19 +177,19 @@ var statics = map[ID]Static{
 	Simnet: {
 		Network:              Simnet,
 		Version:              "simnet",
-		OmniExecutionChainID: evmchain.IDOmniEphemeral,
+		OmniExecutionChainID: evmchain.IDOmniDevnet,
 		MaxValidators:        maxValidators,
 	},
 	Devnet: {
 		Network:              Devnet,
 		Version:              "devnet",
-		OmniExecutionChainID: evmchain.IDOmniEphemeral,
+		OmniExecutionChainID: evmchain.IDOmniDevnet,
 		MaxValidators:        maxValidators,
 	},
 	Staging: {
 		Network:              Staging,
 		Version:              runid,
-		OmniExecutionChainID: evmchain.IDOmniEphemeral,
+		OmniExecutionChainID: evmchain.IDOmniStaging,
 		MaxValidators:        maxValidators,
 		ConsensusSeedTXT:     stagingConsensusSeedsTXT,
 		ConsensusArchiveTXT:  stagingConsensusArchivesTXT,

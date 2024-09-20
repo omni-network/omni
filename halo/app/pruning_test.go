@@ -59,7 +59,7 @@ func TestPruningHistory(t *testing.T) {
 		return s.SyncInfo.LatestBlockHeight >= int64(waitUntilHeight)
 	}, time.Second*time.Duration(waitUntilHeight*2), time.Millisecond*100)
 
-	srcChain := evmchain.IDOmniEphemeral // Pick chain without fuzzy conf levels
+	srcChain := evmchain.IDOmniDevnet // Pick chain without fuzzy conf levels
 	chainVer := xchain.ChainVersion{ID: srcChain, ConfLevel: xchain.ConfFinalized}
 
 	// Wait until we have an attestation with offset 2-or-more for srcChain
