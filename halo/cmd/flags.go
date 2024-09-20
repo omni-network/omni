@@ -53,3 +53,10 @@ func bindRPCFlags(flags *pflag.FlagSet, prefix string, cfg *halocfg.RPCConfig) {
 	flags.BoolVar(&cfg.Enable, prefix+"-enable", cfg.Enable, fmt.Sprintf("Enable defines if the %s server should be enabled.", strings.ToUpper(prefix)))
 	flags.StringVar(&cfg.Address, prefix+"-address", cfg.Address, fmt.Sprintf("Address defines the %s server to listen on", strings.ToUpper(prefix)))
 }
+
+func bindStatusFlags(cmd *cobra.Command, cfg *statusConfig) {
+	flags := cmd.Flags()
+
+	flags.StringVarP(&cfg.Node, "node", "n", cfg.Node, "Node to connect to")
+	flags.StringVarP(&cfg.Output, "output", "o", cfg.Output, "Output format (text|json)")
+}

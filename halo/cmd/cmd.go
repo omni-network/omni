@@ -27,6 +27,7 @@ func New() *cobra.Command {
 		newRollbackCmd(),
 		buildinfo.NewVersionCmd(),
 		newConsKeyCmd(),
+		newStatusCmd(),
 	)
 }
 
