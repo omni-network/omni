@@ -10,6 +10,7 @@ Available Commands:
   init             Initializes required halo files and directories
   rollback         Rollback Cosmos SDK and CometBFT state by one height
   run              Runs the halo consensus client
+  status           Query remote node for status
   version          Print the version information of this binary
 
 Flags:
