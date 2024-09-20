@@ -1,5 +1,6 @@
 ---
 sidebar_position: 1
+title: Run a Validator
 ---
 
 # Run a Validator on Omni Omega Testnet
@@ -226,8 +227,8 @@ This may happen if you specify your own operator key, and it's the wrong length 
 
 ### What are the validation duties of a validator?
 - Omni validators have two duty types to perform:
-  1. Normal cosmos/cometBFT consensus : UptimeC
-  2. XChain votes and attestations: UptimeX
+  1. Normal cosmos/cometBFT consensus : UptimeC on dashboard
+  2. XChain votes and attestations: UptimeX on dashboard
 
 ### How do validators vote?
 - Validators vote in the Omni consensus chain, using a new feature of CosmosSDK/CometBFT called [“vote extensions”](https://docs.cosmos.network/main/build/abci/vote-extensions)
@@ -247,11 +248,11 @@ omni operator register --config-file ~/path/to/operator.yaml
 
 ### Which tokens can be staked?
 
-Validators must stake **\$OMNI**. Validators can also opt into receiving **\$ETH** delegations once the Eigenlayer integration is complete.
+Validators must stake native **\$OMNI**. Validators can also opt into receiving **\$ETH** delegations once the Eigenlayer integration is complete.
 
 ### What is the validator whitelist?
 
-Omni currently has a validator whitelist. The whitelist applies to both native $OMNI staking and $ETH staking via the Omni AVS. A future network upgrade will enable permissionless validator registration.
+Omni currently has a validator whitelist. The whitelist applies to both native **\$OMNI** staking and **\$ETH** staking via the Omni AVS. A future network upgrade will enable permissionless validator registration.
 
 ### What are the planned staking upgrades?
 
