@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/omni-network/omni/halo/attest/voter"
 	halocmd "github.com/omni-network/omni/halo/cmd"
@@ -114,14 +115,18 @@ func newCreateOperatorKeyCmd() *cobra.Command {
 			if err != nil {
 				return errors.Wrap(err, "generate key")
 			}
-			if err := crypto.SaveECDSA(cfg.PrivateKeyFile, privKey); err != nil {
+
+			addr := crypto.PubkeyToAddress(privKey.PublicKey).Hex()
+			privKeyfile := strings.Replace(cfg.PrivateKeyFile, "{ADDRESS}", addr, 1)
+
+			if err := crypto.SaveECDSA(privKeyfile, privKey); err != nil {
 				return errors.Wrap(err, "save key")
 			}
 
 			log.Info(cmd.Context(), "🎉 Created operator private key",
 				"type", cfg.Type,
-				"file", cfg.PrivateKeyFile,
-				"address", crypto.PubkeyToAddress(privKey.PublicKey).Hex(),
+				"file", privKeyfile,
+				"address", addr,
 			)
 			log.Info(cmd.Context(), "🚧 Remember to backup this key 🚧")
 
@@ -168,7 +173,7 @@ func (c createKeyConfig) Verify() error {
 func defaultCreateKeyConfig() createKeyConfig {
 	return createKeyConfig{
 		Type:           KeyTypeInsecure,
-		PrivateKeyFile: "./operator-private-key",
+		PrivateKeyFile: "./operator-private-key-{ADDRESS}",
 	}
 }
 
