@@ -46,19 +46,6 @@ jobs:
         id: git_ref
         run: echo "short_sha=`echo ${GITHUB_SHA::7}`" >> "$GITHUB_OUTPUT"
 
-      - name: Build and push halovisor
-        uses: docker/build-push-action@v6
-        with:
-          file: scripts/halovisor/Dockerfile
-          build-args: |
-            HALO_VERSION_GENESIS=${{ steps.git_ref.outputs.short_sha }}
-          platforms: |
-            linux/amd64
-          push: true
-          tags: |
-            omniops/halovisor:main
-            omniops/halovisor:${{ steps.git_ref.outputs.short_sha }}
-
       - name: Push Halo to Dockerhub
         run: |
           docker push omniops/halo:${GITHUB_SHA::7}
@@ -83,3 +70,16 @@ jobs:
         run: |
           docker push omniops/omni:${GITHUB_SHA::7}
           docker push omniops/omni:main
+
+      - name: Build and push halovisor
+        uses: docker/build-push-action@v6
+        with:
+          file: scripts/halovisor/Dockerfile
+          build-args: |
+            HALO_VERSION_GENESIS=${{ steps.git_ref.outputs.short_sha }}
+          platforms: |
+            linux/amd64
+          push: true
+          tags: |
+            omniops/halovisor:main
+            omniops/halovisor:${{ steps.git_ref.outputs.short_sha }}
