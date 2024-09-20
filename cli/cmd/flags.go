@@ -86,5 +86,5 @@ func bindPrivateKeyFile(cmd *cobra.Command, privateKeyFile *string) {
 
 func bindCreateKeyConfig(cmd *cobra.Command, cfg *createKeyConfig) {
 	cmd.Flags().StringVar((*string)(&cfg.Type), flagType, string(cfg.Type), "Type of key to create")
-	cmd.Flags().StringVar(&cfg.PrivateKeyFile, "output-file", cfg.PrivateKeyFile, "Path to output private key file")
+	cmd.Flags().StringVar(&cfg.PrivateKeyFile, "output-file", cfg.PrivateKeyFile, "Path to output private key file. Note that '{ADDRESS}' will be replaced with the address")
 }
