@@ -66,7 +66,7 @@ func FundAccounts(ctx context.Context, def Definition, dryRun bool) error {
 		return errors.New("mainnet funding not supported yet")
 	}
 
-	network := networkFromDef(def)
+	network := NetworkFromDef(def)
 	accounts := eoa.AllAccounts(network.ID)
 
 	log.Info(ctx, "Checking accounts to fund", "network", network.ID, "count", len(accounts))

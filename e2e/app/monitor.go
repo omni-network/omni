@@ -18,7 +18,7 @@ import (
 )
 
 func LogMetrics(ctx context.Context, def Definition) error {
-	extNetwork := networkFromDef(def)
+	extNetwork := NetworkFromDef(def)
 	archiveNode, ok := def.Testnet.ArchiveNode()
 	if !ok {
 		return errors.New("monitor must use archive node, no archive node found")
@@ -43,7 +43,7 @@ func StartMonitoringReceipts(ctx context.Context, def Definition) func() error {
 		return func() error { return errors.Wrap(err, "getting client") }
 	}
 
-	network := networkFromDef(def)
+	network := NetworkFromDef(def)
 	cProvider := cprovider.NewABCIProvider(client, def.Testnet.Network, netconf.ChainVersionNamer(def.Testnet.Network))
 	xProvider := xprovider.New(network, def.Backends().RPCClients(), cProvider)
 	cChainID := def.Testnet.Network.Static().OmniConsensusChainIDUint64()

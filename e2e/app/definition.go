@@ -477,9 +477,9 @@ func internalEndpoints(def Definition, nodePrefix string) xchain.RPCEndpoints {
 	return endpoints
 }
 
-// externalEndpoints returns the evm rpc endpoints for access from outside the
+// ExternalEndpoints returns the evm rpc endpoints for access from outside the
 // docker network.
-func externalEndpoints(def Definition) xchain.RPCEndpoints {
+func ExternalEndpoints(def Definition) xchain.RPCEndpoints {
 	endpoints := make(xchain.RPCEndpoints)
 
 	// Add all public chains
@@ -507,8 +507,8 @@ func externalEndpoints(def Definition) xchain.RPCEndpoints {
 	return endpoints
 }
 
-// networkFromDef returns the network configuration from the definition.
-func networkFromDef(def Definition) netconf.Network {
+// NetworkFromDef returns the network configuration from the definition.
+func NetworkFromDef(def Definition) netconf.Network {
 	var chains []netconf.Chain
 
 	newChain := func(chain types.EVMChain) netconf.Chain {

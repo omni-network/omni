@@ -56,8 +56,8 @@ func bindKeyCreateFlags(cmd *cobra.Command, cfg *key.UploadConfig) {
 	_ = cmd.MarkFlagRequired("type")
 }
 
-func bindPortalAdminFlags(flags *pflag.FlagSet, cfg *admin.PortalAdminConfig) {
-	flags.StringVar(&cfg.Chain, "chain", cfg.Chain, "Run admin command on a specific chain (\"--chain=all\" for all chains)")
+func bindAdminFlags(flags *pflag.FlagSet, cfg *admin.Config) {
+	flags.StringVar(&cfg.Chain, "chain", cfg.Chain, "Run admin command on a specific chain. Leave empty to run on all applicable chains.")
 }
 
 func bindERC20FaucetFlags(flags *pflag.FlagSet, cfg *app.RunERC20FaucetConfig) {

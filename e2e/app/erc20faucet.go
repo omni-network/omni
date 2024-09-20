@@ -39,7 +39,7 @@ func RunERC20Faucet(ctx context.Context, def Definition, cfg RunERC20FaucetConfi
 	}
 
 	networkID := def.Testnet.Network
-	network := networkFromDef(def)
+	network := NetworkFromDef(def)
 	addr := common.HexToAddress(cfg.AddrToFund)
 	tokenAddr := contracts.Token(networkID)
 	amt := new(big.Int).Mul(umath.NewBigInt(cfg.Amount), big.NewInt(params.Ether))

@@ -24,7 +24,7 @@ const (
 // Test runs test cases under tests/.
 func Test(ctx context.Context, def Definition, verbose bool) error {
 	log.Info(ctx, "Running tests in ./test/...")
-	endpoints := externalEndpoints(def)
+	endpoints := ExternalEndpoints(def)
 
 	networkDir, err := os.MkdirTemp("", "omni-e2e")
 	if err != nil {
