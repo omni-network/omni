@@ -51,13 +51,13 @@ jobs:
         with:
           file: scripts/halovisor/Dockerfile
           build-args: |
-            HALO_VERSION_GENESIS=${GITHUB_SHA::7}
+            HALO_VERSION_GENESIS=${{ steps.git_ref.outputs.short_sha }}"
           platforms: |
             linux/amd64
           push: true
           tags: |
             omniops/halovisor:main
-            omniops/halovisor:${GITHUB_SHA::7}
+            omniops/halovisor:${{ steps.git_ref.outputs.short_sha }}"
 
       - name: Push Halo to Dockerhub
         run: |
