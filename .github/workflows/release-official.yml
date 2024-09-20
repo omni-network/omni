@@ -14,6 +14,12 @@ jobs:
         with:
           go-version: 'stable'
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Login to Dockerhub container registry
         uses: docker/login-action@v3
         with:
@@ -29,8 +35,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push halovisor
-        run: |
-          scripts/halovisor/build.sh ${{ github.ref_name }}
-          docker tag  omniops/halovisor:${{ github.ref_name }}  omniops/halovisor:latest
-          docker push omniops/halovisor:${{ github.ref_name }}
-          docker push omniops/halovisor:latest
+        uses: docker/build-push-action@v6
+        with:
+          file: scripts/halovisor/Dockerfile
+          build-args: |
+            HALO_VERSION_GENESIS=${{ github.ref_name }}
+          platforms: |
+            linux/amd64
+            linux/arm64
+            darwin/amd64
+            darwin/arm64
+          push: true
+          tags: |
+            omniops/halovisor:latest
+            omniops/halovisor:${{ github.ref_name }}
