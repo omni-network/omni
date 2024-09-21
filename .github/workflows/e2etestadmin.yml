@@ -9,10 +9,23 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
+
       - name: Install Go
         uses: actions/setup-go@v5
         with:
           go-version: 'stable'
+
+      - name: Install foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Insttall pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Build contracts
+        run: |
+          cd contracts/core
+          pnpm install
+          forge build
 
       - name: Run tests
         run: |
