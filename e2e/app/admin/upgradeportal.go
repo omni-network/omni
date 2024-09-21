@@ -23,7 +23,7 @@ func upgradePortal(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := runForge(ctx, scriptAdmin, c.rpc, calldata, s.admin, s.deployer)
+	out, err := runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}

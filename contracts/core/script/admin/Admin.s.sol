@@ -58,4 +58,50 @@ contract Admin is Script {
         // TODO: add more
         require(InitializableHelper.areInitializersDisabled(impl), "initializers not disabled");
     }
+
+    /**
+     * @notice Pause all xcalls from a portal.
+     * @param admin     The owner of the portal contract.
+     * @param portal    The address of the portal contract.
+     */
+    function pauseXCall(address admin, address portal) public {
+        vm.startBroadcast(admin);
+        OmniPortal(portal).pauseXCall();
+        vm.stopBroadcast();
+    }
+
+    /**
+     * @notice Unpause all xcalls from a portal to a specific chain.
+     * @param admin     The owner of the portal contract.
+     * @param portal    The address of the portal contract.
+     * @param to        The chain id to pause xcalls to
+     */
+    function pauseXCallTo(address admin, address portal, uint64 to) public {
+        vm.startBroadcast(admin);
+        OmniPortal(portal).pauseXCallTo(to);
+        vm.stopBroadcast();
+    }
+
+    /**
+     * @notice Unpause all xcalls from a portal.
+     * @param admin     The owner of the portal contract.
+     * @param portal    The address of the portal contract.
+     */
+    function unpauseXCall(address admin, address portal) public {
+        vm.startBroadcast(admin);
+        OmniPortal(portal).unpauseXCall();
+        vm.stopBroadcast();
+    }
+
+    /**
+     * @notice Unpause all xcalls from a portal to a specific chain.
+     * @param admin     The owner of the portal contract.
+     * @param portal    The address of the portal contract.
+     * @param to        The chain id to unpause xcalls to
+     */
+    function unpauseXCallTo(address admin, address portal, uint64 to) public {
+        vm.startBroadcast(admin);
+        OmniPortal(portal).unpauseXCallTo(to);
+        vm.stopBroadcast();
+    }
 }

@@ -32,6 +32,7 @@ contract Admin_Test is Test {
 
         // pause
         a.pausePortal(admin, portal);
+        assertTrue(OmniPortal(portal).isPaused());
 
         // should revert
         vm.expectRevert("OmniPortal: paused");
@@ -39,9 +40,33 @@ contract Admin_Test is Test {
 
         // unpause
         a.unpausePortal(admin, portal);
+        assertFalse(OmniPortal(portal).isPaused());
 
         // no revert
         makeXCall(portal);
+    }
+
+    function test_pause_unpause_xcall() public {
+        Admin a = new Admin();
+
+        address admin = makeAddr("admin");
+        OmniPortal portal = OmniPortal(deployPortal(admin));
+
+        // test pause/unpause xcall
+
+        a.pauseXCall(admin, address(portal));
+        assertTrue(portal.isPaused(portal.ActionXCall()));
+
+        a.unpauseXCall(admin, address(portal));
+        assertFalse(portal.isPaused(portal.ActionXCall()));
+
+        // test pause/unpause xcall to
+
+        a.pauseXCallTo(admin, address(portal), thatChainId);
+        assertTrue(portal.isPaused(portal.ActionXCall(), thatChainId));
+
+        a.unpauseXCallTo(admin, address(portal), thatChainId);
+        assertFalse(portal.isPaused(portal.ActionXCall(), thatChainId));
     }
 
     function test_upgrade() public {

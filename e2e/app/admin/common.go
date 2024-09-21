@@ -20,11 +20,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-const (
-	// scriptAdmin is name of the forge script in contracts/core with admin operations.
-	scriptAdmin = "Admin"
-)
-
 // adminABI is the ABI for the Admin script contract.
 var adminABI = mustGetABI(bindings.AdminMetaData)
 
@@ -123,11 +118,14 @@ func maybeAll(network netconf.Network, chain string) []string {
 	return []string{chain}
 }
 
-// runForge runs a forge script against an rpc, returning the ouptut.
+// runForge runs an Admin forge script against an rpc, returning the ouptut.
 // if the senders are known anvil accounts, it will sign with private keys directly.
 // otherwise, it will use the unlocked flag.
-func runForge(ctx context.Context, script string, rpc string, input []byte, senders ...common.Address,
+func runForge(ctx context.Context, rpc string, input []byte, senders ...common.Address,
 ) (string, error) {
+	// name of admin forge script in contracts/core
+	const script = "Admin"
+
 	// assumes running from root
 	dir := "./contracts/core"
 
