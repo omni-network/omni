@@ -142,7 +142,11 @@ func newAdminTestCmd(def *app.Definition) *cobra.Command {
 				return errors.Wrap(err, "deploy")
 			}
 
-			return admin.Test(ctx, *def)
+			if err := admin.Test(ctx, *def); err != nil {
+				return err
+			}
+
+			return app.CleanInfra(ctx, *def)
 		},
 	}
 
