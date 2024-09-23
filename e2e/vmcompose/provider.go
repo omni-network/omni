@@ -17,7 +17,6 @@ import (
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 
@@ -85,9 +84,6 @@ func (p *Provider) Setup() error {
 		}
 
 		gethVerbosity := 3 // Info level
-		if p.Testnet.Network == netconf.Staging {
-			gethVerbosity = 5 // TODO(corver): Revert to info logs after debugging snapsync issues.
-		}
 
 		def := docker.ComposeDef{
 			UpgradeVersion: p.Testnet.UpgradeVersion,
