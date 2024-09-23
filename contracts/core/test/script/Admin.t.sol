@@ -69,6 +69,29 @@ contract Admin_Test is Test {
         assertFalse(portal.isPaused(portal.ActionXCall(), thatChainId));
     }
 
+    function test_pause_unpause_xsubmit() public {
+        Admin a = new Admin();
+
+        address admin = makeAddr("admin");
+        OmniPortal portal = OmniPortal(deployPortal(admin));
+
+        // test pause/unpause xsubmit
+
+        a.pauseXSubmit(admin, address(portal));
+        assertTrue(portal.isPaused(portal.ActionXSubmit()));
+
+        a.unpauseXSubmit(admin, address(portal));
+        assertFalse(portal.isPaused(portal.ActionXSubmit()));
+
+        // test pause/unpause xsubmit from
+
+        a.pauseXSubmitFrom(admin, address(portal), thatChainId);
+        assertTrue(portal.isPaused(portal.ActionXSubmit(), thatChainId));
+
+        a.unpauseXSubmitFrom(admin, address(portal), thatChainId);
+        assertFalse(portal.isPaused(portal.ActionXSubmit(), thatChainId));
+    }
+
     function test_upgrade() public {
         Admin a = new Admin();
 

@@ -64,6 +64,10 @@ func bindAdminXCallFlags(flags *pflag.FlagSet, cfg *admin.XCallConfig) {
 	flags.StringVar(&cfg.To, "to", cfg.To, "Name of chain to pause/unpause xcalls to. Leave empty to pause/unpause xcalls to all chains.")
 }
 
+func bindAdminXSubmitFlags(flags *pflag.FlagSet, cfg *admin.XSubmitConfig) {
+	flags.StringVar(&cfg.From, "from", cfg.From, "Name of chain to pause/unpause xsubmits from. Leave empty to pause/unpause xsubmits from all chains.")
+}
+
 func bindERC20FaucetFlags(flags *pflag.FlagSet, cfg *app.RunERC20FaucetConfig) {
 	flags.StringVar(&cfg.AddrToFund, "addr", cfg.AddrToFund, "Address to fauchet tokens to")
 	flags.Uint64Var(&cfg.Amount, "amount", cfg.Amount, "Amount of tokens to fauchet")

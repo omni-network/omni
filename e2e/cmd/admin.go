@@ -21,6 +21,8 @@ func newAdminCmd(def *app.Definition) *cobra.Command {
 		newUpgradePortalCmd(def),
 		newPauseXCallCmd(def),
 		newUnpauseXCallCmd(def),
+		newPauseXSubmitCmd(def),
+		newUnpauseXSubmitCmd(def),
 		newAllowValidatorsCmd(def),
 		newAdminTestCmd(def),
 	)
@@ -120,6 +122,42 @@ func newUnpauseXCallCmd(def *app.Definition) *cobra.Command {
 
 	bindAdminFlags(cmd.Flags(), &cfg)
 	bindAdminXCallFlags(cmd.Flags(), &xcallCfg)
+
+	return cmd
+}
+
+func newPauseXSubmitCmd(def *app.Definition) *cobra.Command {
+	cfg := admin.DefaultConfig()
+	xsubCfg := admin.XSubmitConfig{}
+
+	cmd := &cobra.Command{
+		Use:   "pause-xsubmit",
+		Short: "Pause cross-chain submissions",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.PauseXSubmit(cmd.Context(), *def, cfg, xsubCfg)
+		},
+	}
+
+	bindAdminFlags(cmd.Flags(), &cfg)
+	bindAdminXSubmitFlags(cmd.Flags(), &xsubCfg)
+
+	return cmd
+}
+
+func newUnpauseXSubmitCmd(def *app.Definition) *cobra.Command {
+	cfg := admin.DefaultConfig()
+	xsubCfg := admin.XSubmitConfig{}
+
+	cmd := &cobra.Command{
+		Use:   "unpause-xsubmit",
+		Short: "Unpause cross-chain submissions",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.UnpauseXSubmit(cmd.Context(), *def, cfg, xsubCfg)
+		},
+	}
+
+	bindAdminFlags(cmd.Flags(), &cfg)
+	bindAdminXSubmitFlags(cmd.Flags(), &xsubCfg)
 
 	return cmd
 }
