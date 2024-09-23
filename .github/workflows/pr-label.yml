@@ -22,8 +22,8 @@ jobs:
           if [[ $GIT_BRANCH = main ]]; then
             # Do not label main branch PRs
             LABEL="skip"
-          elif [[ $GIT_BRANCH = release* ]]; then
-            # Label release branches
+          elif [[ $GIT_BRANCH =~ (release*|upgrade*) ]]; then
+            # Label release/upgrade branches
             LABEL="$GIT_BRANCH"
           else
             # Label all other branches as invalid
