@@ -1,3 +1,4 @@
+//nolint:dupl // similar code is okay
 package admin
 
 import (

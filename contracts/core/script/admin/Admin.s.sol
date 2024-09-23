@@ -13,15 +13,20 @@ import { OmniPortal } from "src/xchain/OmniPortal.sol";
  * @notice A colleciton of admin scripts.
  */
 contract Admin is Script {
+    /// @dev Start broadcating from `sender`
+    modifier withBroadcast(address sender) {
+        vm.startBroadcast(sender);
+        _;
+        vm.stopBroadcast();
+    }
+
     /**
      * @notice Pause a portal contract.
      * @param admin     The owner of the portal contract.
      * @param portal    The address of the portal contract.
      */
-    function pausePortal(address admin, address portal) public {
-        vm.startBroadcast(admin);
+    function pausePortal(address admin, address portal) public withBroadcast(admin) {
         OmniPortal(portal).pause();
-        vm.stopBroadcast();
     }
 
     /**
@@ -29,10 +34,8 @@ contract Admin is Script {
      * @param admin     The owner of the portal contract.
      * @param portal    The address of the portal contract.
      */
-    function unpausePortal(address admin, address portal) public {
-        vm.startBroadcast(admin);
+    function unpausePortal(address admin, address portal) public withBroadcast(admin) {
         OmniPortal(portal).unpause();
-        vm.stopBroadcast();
     }
 
     /**
@@ -64,10 +67,8 @@ contract Admin is Script {
      * @param admin     The owner of the portal contract.
      * @param portal    The address of the portal contract.
      */
-    function pauseXCall(address admin, address portal) public {
-        vm.startBroadcast(admin);
+    function pauseXCall(address admin, address portal) public withBroadcast(admin) {
         OmniPortal(portal).pauseXCall();
-        vm.stopBroadcast();
     }
 
     /**
@@ -76,10 +77,8 @@ contract Admin is Script {
      * @param portal    The address of the portal contract.
      * @param to        The chain id to pause xcalls to
      */
-    function pauseXCallTo(address admin, address portal, uint64 to) public {
-        vm.startBroadcast(admin);
+    function pauseXCallTo(address admin, address portal, uint64 to) public withBroadcast(admin) {
         OmniPortal(portal).pauseXCallTo(to);
-        vm.stopBroadcast();
     }
 
     /**
@@ -87,10 +86,8 @@ contract Admin is Script {
      * @param admin     The owner of the portal contract.
      * @param portal    The address of the portal contract.
      */
-    function unpauseXCall(address admin, address portal) public {
-        vm.startBroadcast(admin);
+    function unpauseXCall(address admin, address portal) public withBroadcast(admin) {
         OmniPortal(portal).unpauseXCall();
-        vm.stopBroadcast();
     }
 
     /**
@@ -99,9 +96,45 @@ contract Admin is Script {
      * @param portal    The address of the portal contract.
      * @param to        The chain id to unpause xcalls to
      */
-    function unpauseXCallTo(address admin, address portal, uint64 to) public {
-        vm.startBroadcast(admin);
+    function unpauseXCallTo(address admin, address portal, uint64 to) public withBroadcast(admin) {
         OmniPortal(portal).unpauseXCallTo(to);
-        vm.stopBroadcast();
+    }
+
+    /**
+     * @notice Pause all xsubmits from a portal.
+     * @param admin     The owner of the portal contract.
+     * @param portal    The address of the portal contract.
+     */
+    function pauseXSubmit(address admin, address portal) public withBroadcast(admin) {
+        OmniPortal(portal).pauseXSubmit();
+    }
+
+    /**
+     * @notice Unpause all xsubmits from a portal.
+     * @param admin     The owner of the portal contract.
+     * @param portal    The address of the portal contract.
+     */
+    function unpauseXSubmit(address admin, address portal) public withBroadcast(admin) {
+        OmniPortal(portal).unpauseXSubmit();
+    }
+
+    /**
+     * @notice Pause all xsubmits from a portal to a specific chain.
+     * @param admin     The owner of the portal contract.
+     * @param portal    The address of the portal contract.
+     * @param from      The chain id to pause xsubmits from
+     */
+    function pauseXSubmitFrom(address admin, address portal, uint64 from) public withBroadcast(admin) {
+        OmniPortal(portal).pauseXSubmitFrom(from);
+    }
+
+    /**
+     * @notice Unpause all xsubmits from a portal to a specific chain.
+     * @param admin     The owner of the portal contract.
+     * @param portal    The address of the portal contract.
+     * @param from      The chain id to unpause xsubmits from
+     */
+    function unpauseXSubmitFrom(address admin, address portal, uint64 from) public withBroadcast(admin) {
+        OmniPortal(portal).unpauseXSubmitFrom(from);
     }
 }

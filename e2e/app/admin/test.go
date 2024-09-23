@@ -1,3 +1,4 @@
+//nolint:dupl // similar code is okay
 package admin
 
 import (
@@ -36,6 +37,14 @@ func Test(ctx context.Context, def app.Definition) error {
 	}
 
 	if err := testPauseUnpauseXCallTo(ctx, def, network); err != nil {
+		return err
+	}
+
+	if err := testPauseUnpauseXSubmit(ctx, def, network); err != nil {
+		return err
+	}
+
+	if err := testPauseUnpauseXSubmitFrom(ctx, def, network); err != nil {
 		return err
 	}
 
@@ -138,6 +147,78 @@ func testPauseUnpauseXCallTo(ctx context.Context, def app.Definition, network ne
 	err = forAll(ctx, def, network, unpauseXCallTo, checkXCallToPaused(to, false))
 	if err != nil {
 		return errors.Wrap(err, "unpause all xcalls to")
+	}
+
+	return nil
+}
+
+// testPauseUnpauseXSubmit tests PauseXSubmit and UnpauseXSubmit commands (without XSubmitConfig.From).
+func testPauseUnpauseXSubmit(ctx context.Context, def app.Definition, network netconf.Network) error {
+	pauseXSubmit := func(ctx context.Context, def app.Definition, config Config) error {
+		return PauseXSubmit(ctx, def, config, XSubmitConfig{})
+	}
+
+	unpauseXSubmit := func(ctx context.Context, def app.Definition, config Config) error {
+		return UnpauseXSubmit(ctx, def, config, XSubmitConfig{})
+	}
+
+	chain := randChain(network)
+
+	err := forOne(ctx, def, chain, pauseXSubmit, checkXSubmitPaused(true))
+	if err != nil {
+		return errors.Wrap(err, "pause xsubmit")
+	}
+
+	err = forOne(ctx, def, chain, unpauseXSubmit, checkXSubmitPaused(false))
+	if err != nil {
+		return errors.Wrap(err, "unpause xsubmit")
+	}
+
+	err = forAll(ctx, def, network, pauseXSubmit, checkXSubmitPaused(true))
+	if err != nil {
+		return errors.Wrap(err, "pause all xsubmits")
+	}
+
+	err = forAll(ctx, def, network, unpauseXSubmit, checkXSubmitPaused(false))
+	if err != nil {
+		return errors.Wrap(err, "unpause all xsubmits")
+	}
+
+	return nil
+}
+
+// testPauseUnpauseXSubmitFrom tests PauseXSubmit and UnpauseXSubmit commands (with XSubmitConfig.From).
+func testPauseUnpauseXSubmitFrom(ctx context.Context, def app.Definition, network netconf.Network) error {
+	from := randChain(network)
+
+	pauseXSubmitFrom := func(ctx context.Context, def app.Definition, config Config) error {
+		return PauseXSubmit(ctx, def, config, XSubmitConfig{From: from.Name})
+	}
+
+	unpauseXSubmitFrom := func(ctx context.Context, def app.Definition, config Config) error {
+		return UnpauseXSubmit(ctx, def, config, XSubmitConfig{From: from.Name})
+	}
+
+	chain := randChain(network)
+
+	err := forOne(ctx, def, chain, pauseXSubmitFrom, checkXSubmitFromPaused(from, true))
+	if err != nil {
+		return errors.Wrap(err, "pause xsubmit from")
+	}
+
+	err = forOne(ctx, def, chain, unpauseXSubmitFrom, checkXSubmitFromPaused(from, false))
+	if err != nil {
+		return errors.Wrap(err, "unpause xsubmit from")
+	}
+
+	err = forAll(ctx, def, network, pauseXSubmitFrom, checkXSubmitFromPaused(from, true))
+	if err != nil {
+		return errors.Wrap(err, "pause all xsubmits from")
+	}
+
+	err = forAll(ctx, def, network, unpauseXSubmitFrom, checkXSubmitFromPaused(from, false))
+	if err != nil {
+		return errors.Wrap(err, "unpause all xsubmits from")
 	}
 
 	return nil
@@ -280,6 +361,66 @@ func checkXCallToPaused(to netconf.Chain, expected bool) func(context.Context, a
 		}
 
 		paused, err := portal.IsPaused0(&bind.CallOpts{Context: ctx}, pauseAction, to.ID)
+		if err != nil {
+			return errors.Wrap(err, "get paused")
+		}
+
+		if paused != expected {
+			return errors.New("check paused", "chain", chain.Name, "paused", paused, "expected", expected)
+		}
+
+		return nil
+	}
+}
+
+func checkXSubmitPaused(expected bool) func(context.Context, app.Definition, netconf.Chain) error {
+	return func(ctx context.Context, def app.Definition, chain netconf.Chain) error {
+		backend, err := def.Backends().Backend(chain.ID)
+		if err != nil {
+			return errors.Wrap(err, "get backend")
+		}
+
+		portal, err := bindings.NewOmniPortal(chain.PortalAddress, backend)
+		if err != nil {
+			return errors.Wrap(err, "new portal")
+		}
+
+		pauseAction, err := portal.ActionXSubmit(&bind.CallOpts{Context: ctx})
+		if err != nil {
+			return errors.Wrap(err, "get paused")
+		}
+
+		paused, err := portal.IsPaused(&bind.CallOpts{Context: ctx}, pauseAction)
+		if err != nil {
+			return errors.Wrap(err, "get paused")
+		}
+
+		if paused != expected {
+			return errors.New("check paused", "chain", chain.Name, "paused", paused, "expected", expected)
+		}
+
+		return nil
+	}
+}
+
+func checkXSubmitFromPaused(from netconf.Chain, expected bool) func(context.Context, app.Definition, netconf.Chain) error {
+	return func(ctx context.Context, def app.Definition, chain netconf.Chain) error {
+		backend, err := def.Backends().Backend(chain.ID)
+		if err != nil {
+			return errors.Wrap(err, "get backend")
+		}
+
+		portal, err := bindings.NewOmniPortal(chain.PortalAddress, backend)
+		if err != nil {
+			return errors.Wrap(err, "new portal")
+		}
+
+		pauseAction, err := portal.ActionXSubmit(&bind.CallOpts{Context: ctx})
+		if err != nil {
+			return errors.Wrap(err, "get paused")
+		}
+
+		paused, err := portal.IsPaused0(&bind.CallOpts{Context: ctx}, pauseAction, from.ID)
 		if err != nil {
 			return errors.Wrap(err, "get paused")
 		}
