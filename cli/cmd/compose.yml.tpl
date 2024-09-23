@@ -30,10 +30,11 @@ services:
       #- --pprof.addr=0.0.0.0         # Enable prometheus metrics
 
     ports:
-      - 8551         # Auth-RPC (used by halo)
-      - 8545:8545    # JSON-RCP
-      - 8546:8546    # Websocket-RPC
-      - 30303:30303  # Execution P2P
-      #- 6060:6060   # Prometheus metrics
+      - 8551             # Auth-RPC (used by halo)
+      - 8545:8545        # JSON-RCP
+      - 8546:8546        # Websocket-RPC
+      - 30303:30303      # Execution P2P
+      - 30303:30303/udp  # Execution P2P Discovery
+      #- 6060:6060       # Prometheus metrics
     volumes:
       - ./geth:/geth

@@ -82,6 +82,7 @@ services:
       - {{ if $.BindAll }}8551:{{end}}8551 # Auth RPC
       - {{ if .ProxyPort }}{{ .ProxyPort }}:{{ end }}8545 # HTTP RPC
       - {{ if $.BindAll }}30303:{{end}}30303 # Execution P2P
+      - {{ if $.BindAll }}30303:{{end}}30303/udp # Execution P2P Discovery
       - {{ if $.BindAll }}8546:{{end}}8546 # Websockets RPC
       - 6060 # Prometheus metrics and pprof
     healthcheck:

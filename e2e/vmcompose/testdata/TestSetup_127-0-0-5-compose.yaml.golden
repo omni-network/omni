@@ -48,6 +48,7 @@ services:
       - 8551:8551 # Auth RPC
       - 8545:8545 # HTTP RPC
       - 30303:30303 # Execution P2P
+      - 30303:30303/udp # Execution P2P Discovery
       - 8546:8546 # Websockets RPC
       - 6060 # Prometheus metrics and pprof
     healthcheck:
