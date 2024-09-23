@@ -231,6 +231,10 @@ func (k *Keeper) insertValidatorSet(ctx context.Context, vals []*Validator, isGe
 	var totalPower, totalUpdated, totalLen, totalRemoved int64
 	powers := make(map[common.Address]int64)
 	for _, val := range vals {
+		if err := val.Validate(); err != nil {
+			return 0, err
+		}
+
 		val.ValsetId = valset.GetId()
 		err = k.valTable.Insert(ctx, val)
 		if err != nil {
