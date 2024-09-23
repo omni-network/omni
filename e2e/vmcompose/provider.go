@@ -158,7 +158,7 @@ func (p *Provider) Restart(ctx context.Context, cfg types.ServiceConfig) error {
 
 		startCmd := fmt.Sprintf("cd /omni/%s && "+
 			"sudo docker compose down && "+
-			"sudo docker compose up -d",
+			"sudo docker compose up -d", // Don't pull on restart
 			p.Testnet.Name)
 
 		err := execOnVM(ctx, vmName, startCmd)
@@ -279,7 +279,7 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.ServiceConfig) error {
 			startCmd := fmt.Sprintf("cd /omni/%s && "+
 				"sudo mv %s docker-compose.yaml && "+
 				"sudo docker compose down && "+
-				"sudo docker compose up -d",
+				"sudo docker compose up -d --pull=always",
 				p.Testnet.Name, composeFile)
 
 			log.Debug(ctx, "Executing docker-compose up", "vm", vmName)
@@ -346,7 +346,7 @@ func (p *Provider) StartNodes(ctx context.Context, _ ...*e2e.Node) error {
 				"sudo mv %s evm-init.sh && "+
 				"sudo mv %s prometheus/prometheus.yml && "+
 				"sudo ./evm-init.sh && "+
-				"sudo docker compose up -d",
+				"sudo docker compose up -d --pull=always",
 				p.Testnet.Name, composeFile, initFile, agentFile)
 
 			err := execOnVM(ctx, vmName, startCmd)
