@@ -23,6 +23,9 @@ import (
 // adminABI is the ABI for the Admin script contract.
 var adminABI = mustGetABI(bindings.AdminMetaData)
 
+// omniEVMName is the name of the omni EVM chain.
+const omniEVMName = "omni_evm"
+
 // shared contains common resources for all admin operations.
 type shared struct {
 	admin       common.Address
@@ -81,13 +84,35 @@ func setupChain(ctx context.Context, s shared, name string) (chain, error) {
 	return chain{Chain: c, rpc: rpc}, nil
 }
 
+type runOpts struct {
+	// exclude chains by name.
+	exclude []string
+}
+
+type runOpt func(*runOpts)
+
+func withExclude(names ...string) runOpt {
+	return func(o *runOpts) {
+		o.exclude = append(o.exclude, names...)
+	}
+}
+
 // run runs a function for all configured chains (all applicable, if not specified).
 func (s shared) run(
 	ctx context.Context,
 	cfg Config,
 	fn func(context.Context, shared, chain) error,
+	options ...runOpt,
 ) error {
-	names := maybeAll(s.network, cfg.Chain)
+	opts := runOpts{}
+	for _, o := range options {
+		o(&opts)
+	}
+
+	names, err := maybeAll(s.network, cfg.Chain, opts.exclude)
+	if err != nil {
+		return err
+	}
 
 	for _, name := range names {
 		c, err := setupChain(ctx, s, name)
@@ -104,18 +129,31 @@ func (s shared) run(
 }
 
 // maybeAll returns all chains if chain is empty, otherwise returns chain.
-func maybeAll(network netconf.Network, chain string) []string {
+func maybeAll(network netconf.Network, chain string, exclude []string) ([]string, error) {
+	excluded := make(map[string]bool)
+	for _, e := range exclude {
+		excluded[e] = true
+	}
+
 	if chain == "" {
 		var chains []string
 
 		for _, c := range network.EVMChains() {
+			if excluded[c.Name] {
+				continue
+			}
+
 			chains = append(chains, c.Name)
 		}
 
-		return chains
+		return chains, nil
 	}
 
-	return []string{chain}
+	if excluded[chain] {
+		return nil, errors.New("unsupported chain", "chain", chain)
+	}
+
+	return []string{chain}, nil
 }
 
 // runForge runs an Admin forge script against an rpc, returning the ouptut.
