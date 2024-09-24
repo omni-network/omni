@@ -8,10 +8,9 @@ import { ConfLevel } from "../libraries/ConfLevel.sol";
  * @title PortalRegistry
  * @notice Registry for OmniPortal deployments. Predeployed on Omni's EVM.
  * @dev This contract is predeployed, and requires storage slots to be set in genesis.
- *      Genesis storage slots must:
- *          - set _owner on proxy
- *          - set _initialized on proxy to 1, to disable the initializer
- *          - set _initialized on implementation to type(uint64).max, to disabled all initializers
+ *      initialize(...) is called pre-deployment, in sctips/genesis/AllocPredeploys.s.sol
+ *      iniitializers on the implementation are disabled via manual storage updates, rather than in a constructor.
+ *      If an new implementation is required, a constructor should be added.
  */
 contract PortalRegistry is OwnableUpgradeable {
     /**
