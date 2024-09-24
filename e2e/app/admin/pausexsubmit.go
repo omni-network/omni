@@ -43,7 +43,7 @@ func pauseXSubmitFrom(from netconf.Chain) func(ctx context.Context, s shared, c 
 			return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 		}
 
-		log.Info(ctx, "XSubmit paused ✅", "chain", c.Name, "to", from.Name, "addr", c.PortalAddress, "out", out)
+		log.Info(ctx, "XSubmit paused ✅", "chain", c.Name, "from", from.Name, "addr", c.PortalAddress, "out", out)
 
 		return nil
 	}
