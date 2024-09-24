@@ -101,7 +101,7 @@ func newApp(
 	baseAppOpts ...func(*baseapp.BaseApp),
 ) (*App, error) {
 	depCfg := depinject.Configs(
-		appConfig,
+		appConfig(),
 		depinject.Provide(diProviders...),
 		depinject.Supply(
 			logger,

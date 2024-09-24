@@ -345,7 +345,7 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 	// Trim votes behind minimum vote-window
 	minVoteWindows := make(map[xchain.ChainVersion]uint64)
 	for chainVer, head := range approvedByChain {
-		minVoteWindows[chainVer] = uintSub(head, k.voteWindow)
+		minVoteWindows[chainVer] = umath.SubtractOrZero(head, k.voteWindow)
 	}
 
 	count := k.voter.TrimBehind(minVoteWindows)
@@ -951,14 +951,12 @@ func (k *Keeper) deleteBefore(ctx context.Context, height uint64, consensusID ui
 			continue
 		}
 
-		// Never delete anything after the last approved attestation offset per chain,
-		// even if it is very old. Otherwise, we could introduce a gap
-		// once we start catching up.
-		// Also, don't delete anything if we don't have an approved attestation yet (leave all pending attestations).
+		// Wait for the attestation to exit the vote window before deleting it.
+		// This includes pending attestations.
 		if latest, ok, err := latestOffset(ctx, att.XChainVersion()); err != nil {
 			return err
-		} else if !ok || att.GetAttestOffset() >= latest {
-			continue // Skip deleting pending attestations after latest finalized (or self if latest).
+		} else if !ok || windowCompare(k.voteWindow, latest, att.GetAttestOffset()) >= 0 {
+			continue
 		}
 
 		var fuzzyDepsFound bool
@@ -1125,23 +1123,13 @@ func verifyHeaderChains(ctx context.Context, cChainID uint64, registry rtypes.Po
 
 // windowCompare returns -1 if x < mid-voteWindow, 1 if x > mid+voteWindow, else 0.
 func windowCompare(voteWindow uint64, mid uint64, x uint64) int {
-	if x < uintSub(mid, voteWindow) {
+	if x < umath.SubtractOrZero(mid, voteWindow) {
 		return -1
 	} else if x > mid+voteWindow {
 		return 1
 	}
 
 	return 0
-}
-
-// uintSub returns a - b if a > b, else 0.
-// Subtracting uints can result in underflow, so we need to check for that.
-func uintSub(a, b uint64) uint64 {
-	if a <= b {
-		return 0
-	}
-
-	return a - b
 }
 
 // isApprovedByDifferentSet returns true if the attestation is approved by a different validator set.

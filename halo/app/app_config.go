@@ -29,6 +29,7 @@ import (
 	txconfigv1 "cosmossdk.io/api/cosmos/tx/config/v1"
 	upgrademodulev1 "cosmossdk.io/api/cosmos/upgrade/module/v1"
 	"cosmossdk.io/core/appconfig"
+	"cosmossdk.io/depinject"
 	evidencetypes "cosmossdk.io/x/evidence/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
@@ -43,11 +44,14 @@ import (
 
 const (
 	// TODO(corver): Maybe move these to genesis itself.
-	genesisVoteWindow   = 64
-	genesisVoteExtLimit = 256
-	genesisTrimLag      = 1      // Delete attestations state after each epoch, only storing the very latest attestations.
-	genesisCTrimLag     = 72_000 // Delete consensus attestations state after +-1 day (given a period of 1.2s).
+	genesisVoteWindow   uint64 = 64
+	genesisVoteExtLimit uint64 = 256
+	genesisTrimLag      uint64 = 1      // Delete attestations state after each epoch, only storing the very latest attestations.
+	genesisCTrimLag     uint64 = 72_000 // Delete consensus attestations state after +-1 day (given a period of 1.2s).
 )
+
+// genesisVoteWindowVar is aliased for testing.
+var genesisVoteWindowVar = genesisVoteWindow
 
 //nolint:gochecknoglobals // Cosmos-style
 var (
@@ -96,101 +100,103 @@ var (
 	}
 
 	// appConfig application configuration (used by depinject).
-	appConfig = appconfig.Compose(&appv1alpha1.Config{
-		Modules: []*appv1alpha1.ModuleConfig{
-			{
-				Name: runtime.ModuleName,
-				Config: appconfig.WrapAny(&runtimev1alpha1.Module{
-					AppName:       Name,
-					BeginBlockers: beginBlockers,
-					PreBlockers:   []string{upgradetypes.ModuleName},
-					// Setting endblockers in newApp since valsync replaces staking endblocker.
-					InitGenesis: genesisModuleOrder,
-					OverrideStoreKeys: []*runtimev1alpha1.StoreKeyConfig{
-						{
-							ModuleName: authtypes.ModuleName,
-							KvStoreKey: "acc",
+	appConfig = func() depinject.Config {
+		return appconfig.Compose(&appv1alpha1.Config{
+			Modules: []*appv1alpha1.ModuleConfig{
+				{
+					Name: runtime.ModuleName,
+					Config: appconfig.WrapAny(&runtimev1alpha1.Module{
+						AppName:       Name,
+						BeginBlockers: beginBlockers,
+						PreBlockers:   []string{upgradetypes.ModuleName},
+						// Setting endblockers in newApp since valsync replaces staking endblocker.
+						InitGenesis: genesisModuleOrder,
+						OverrideStoreKeys: []*runtimev1alpha1.StoreKeyConfig{
+							{
+								ModuleName: authtypes.ModuleName,
+								KvStoreKey: "acc",
+							},
 						},
-					},
-				}),
+					}),
+				},
+				{
+					Name: authtypes.ModuleName,
+					Config: appconfig.WrapAny(&authmodulev1.Module{
+						ModuleAccountPermissions: moduleAccPerms,
+						Bech32Prefix:             sdk.Bech32HRP,
+					}),
+				},
+				{
+					Name: "tx",
+					Config: appconfig.WrapAny(&txconfigv1.Config{
+						SkipAnteHandler: true, // Disable ante handler (since we don't have proper txs).
+						SkipPostHandler: true,
+					}),
+				},
+				{
+					Name: banktypes.ModuleName,
+					Config: appconfig.WrapAny(&bankmodulev1.Module{
+						BlockedModuleAccountsOverride: blockAccAddrs,
+					}),
+				},
+				{
+					Name:   consensustypes.ModuleName,
+					Config: appconfig.WrapAny(&consensusmodulev1.Module{}),
+				},
+				{
+					Name:   distrtypes.ModuleName,
+					Config: appconfig.WrapAny(&distrmodulev1.Module{}),
+				},
+				{
+					Name:   genutiltypes.ModuleName,
+					Config: appconfig.WrapAny(&genutilmodulev1.Module{}),
+				},
+				{
+					Name:   stakingtypes.ModuleName,
+					Config: appconfig.WrapAny(&stakingmodulev1.Module{}),
+				},
+				{
+					Name:   slashingtypes.ModuleName,
+					Config: appconfig.WrapAny(&slashingmodulev1.Module{}),
+				},
+				{
+					Name:   evidencetypes.ModuleName,
+					Config: appconfig.WrapAny(&evidencemodulev1.Module{}),
+				},
+				{
+					Name: upgradetypes.ModuleName,
+					Config: appconfig.WrapAny(&upgrademodulev1.Module{
+						Authority: evmupgrade.ModuleName,
+					}),
+				},
+				{
+					Name:   engevmtypes.ModuleName,
+					Config: appconfig.WrapAny(&engevmmodule.Module{}),
+				},
+				{
+					Name: attesttypes.ModuleName,
+					Config: appconfig.WrapAny(&attestmodule.Module{
+						VoteWindow:         genesisVoteWindowVar,
+						VoteExtensionLimit: genesisVoteExtLimit,
+						TrimLag:            genesisTrimLag,
+						ConsensusTrimLag:   genesisCTrimLag,
+					}),
+				},
+				{
+					Name:   valsynctypes.ModuleName,
+					Config: appconfig.WrapAny(&valsyncmodule.Module{}),
+				},
+				{
+					Name:   portaltypes.ModuleName,
+					Config: appconfig.WrapAny(&portalmodule.Module{}),
+				},
+				{
+					Name:   registrytypes.ModuleName,
+					Config: appconfig.WrapAny(&registrymodule.Module{}),
+				},
 			},
-			{
-				Name: authtypes.ModuleName,
-				Config: appconfig.WrapAny(&authmodulev1.Module{
-					ModuleAccountPermissions: moduleAccPerms,
-					Bech32Prefix:             sdk.Bech32HRP,
-				}),
-			},
-			{
-				Name: "tx",
-				Config: appconfig.WrapAny(&txconfigv1.Config{
-					SkipAnteHandler: true, // Disable ante handler (since we don't have proper txs).
-					SkipPostHandler: true,
-				}),
-			},
-			{
-				Name: banktypes.ModuleName,
-				Config: appconfig.WrapAny(&bankmodulev1.Module{
-					BlockedModuleAccountsOverride: blockAccAddrs,
-				}),
-			},
-			{
-				Name:   consensustypes.ModuleName,
-				Config: appconfig.WrapAny(&consensusmodulev1.Module{}),
-			},
-			{
-				Name:   distrtypes.ModuleName,
-				Config: appconfig.WrapAny(&distrmodulev1.Module{}),
-			},
-			{
-				Name:   genutiltypes.ModuleName,
-				Config: appconfig.WrapAny(&genutilmodulev1.Module{}),
-			},
-			{
-				Name:   stakingtypes.ModuleName,
-				Config: appconfig.WrapAny(&stakingmodulev1.Module{}),
-			},
-			{
-				Name:   slashingtypes.ModuleName,
-				Config: appconfig.WrapAny(&slashingmodulev1.Module{}),
-			},
-			{
-				Name:   evidencetypes.ModuleName,
-				Config: appconfig.WrapAny(&evidencemodulev1.Module{}),
-			},
-			{
-				Name: upgradetypes.ModuleName,
-				Config: appconfig.WrapAny(&upgrademodulev1.Module{
-					Authority: evmupgrade.ModuleName,
-				}),
-			},
-			{
-				Name:   engevmtypes.ModuleName,
-				Config: appconfig.WrapAny(&engevmmodule.Module{}),
-			},
-			{
-				Name: attesttypes.ModuleName,
-				Config: appconfig.WrapAny(&attestmodule.Module{
-					VoteWindow:         genesisVoteWindow,
-					VoteExtensionLimit: genesisVoteExtLimit,
-					TrimLag:            genesisTrimLag,
-					ConsensusTrimLag:   genesisCTrimLag,
-				}),
-			},
-			{
-				Name:   valsynctypes.ModuleName,
-				Config: appconfig.WrapAny(&valsyncmodule.Module{}),
-			},
-			{
-				Name:   portaltypes.ModuleName,
-				Config: appconfig.WrapAny(&portalmodule.Module{}),
-			},
-			{
-				Name:   registrytypes.ModuleName,
-				Config: appconfig.WrapAny(&registrymodule.Module{}),
-			},
-		},
-	})
+		})
+	}
 
 	// diProviders defines a list of depinject provider functions.
 	// These are non-cosmos module constructors used in halo's app wiring.
