@@ -15,16 +15,20 @@ message Module {
   // authority defines the custom module authority. If not set, defaults to the governance module.
   string authority = 1;
 
-  // vote_window defines the number of blocks before and after the latest approved attestation
+  // vote_window_up defines the number of blocks before (higher than) the latest approved attestation
   // that votes are allowed for.
-  uint64 vote_window = 2;
+  uint64 vote_window_up = 2;
+
+  // vote_window_down defines the number of blocks after (lower than) the latest approved attestation
+  // that votes are allowed for.
+  uint64 vote_window_down = 3;
 
   // vote_extension_limit defines the maximum number of votes that a validator may include in a single vote extension.
-  uint64 vote_extension_limit = 3;
+  uint64 vote_extension_limit = 4;
 
   // trim_lag defines the number of blocks after which non-consensus-chain attestations are deleted from the module state.
-  uint64 trim_lag = 4;
+  uint64 trim_lag = 5;
 
   // consensus_trim_lag defines the number of blocks after which consensus-chain attestations are deleted from the module state.
-  uint64 consensus_trim_lag = 5;
+  uint64 consensus_trim_lag = 6;
 }

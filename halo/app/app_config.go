@@ -44,14 +44,12 @@ import (
 
 const (
 	// TODO(corver): Maybe move these to genesis itself.
-	genesisVoteWindow   uint64 = 64
-	genesisVoteExtLimit uint64 = 256
-	genesisTrimLag      uint64 = 1      // Delete attestations state after each epoch, only storing the very latest attestations.
-	genesisCTrimLag     uint64 = 72_000 // Delete consensus attestations state after +-1 day (given a period of 1.2s).
+	genesisVoteWindowUp   uint64 = 64 // Allow early votes for <latest attestation - 64>
+	genesisVoteWindowDown uint64 = 2  // Only allow late votes for <latest attestation - 2>
+	genesisVoteExtLimit   uint64 = 256
+	genesisTrimLag        uint64 = 1      // Allow deleting attestations in block after approval.
+	genesisCTrimLag       uint64 = 72_000 // Delete consensus attestations state after +-1 day (given a period of 1.2s).
 )
-
-// genesisVoteWindowVar is aliased for testing.
-var genesisVoteWindowVar = genesisVoteWindow
 
 //nolint:gochecknoglobals // Cosmos-style
 var (
@@ -176,7 +174,8 @@ var (
 				{
 					Name: attesttypes.ModuleName,
 					Config: appconfig.WrapAny(&attestmodule.Module{
-						VoteWindow:         genesisVoteWindowVar,
+						VoteWindowUp:       genesisVoteWindowUp,
+						VoteWindowDown:     genesisVoteWindowDown,
 						VoteExtensionLimit: genesisVoteExtLimit,
 						TrimLag:            genesisTrimLag,
 						ConsensusTrimLag:   genesisCTrimLag,
