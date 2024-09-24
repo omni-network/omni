@@ -1,6 +1,8 @@
 package netconf
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -8,11 +10,14 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
+	ethcore "github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/google/uuid"
+	cosmgen "github.com/cosmos/cosmos-sdk/x/genutil/types"
 
 	_ "embed"
 )
@@ -24,7 +29,6 @@ const maxValidators = 30
 // Static defines static config and data for a network.
 type Static struct {
 	Network              ID
-	Version              string
 	OmniExecutionChainID uint64
 	AVSContractAddress   common.Address
 	TokenAddress         common.Address
@@ -36,6 +40,8 @@ type Static struct {
 	ConsensusArchiveTXT  []byte
 	ExecutionGenesisJSON []byte
 	ExecutionSeedTXT     []byte
+
+	version string
 }
 
 type Deployment struct {
@@ -135,11 +141,6 @@ func (s Static) ConsensusRPC() string {
 	return fmt.Sprintf("https://consensus.%s.omni.network", s.Network)
 }
 
-// Use random runid for staging version.
-//
-//nolint:gochecknoglobals // Static ID
-var runid = uuid.New().String()
-
 //nolint:gochecknoglobals // Static addresses
 var (
 	omegaAVS     = common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
@@ -176,19 +177,18 @@ var (
 var statics = map[ID]Static{
 	Simnet: {
 		Network:              Simnet,
-		Version:              "simnet",
+		version:              "simnet",
 		OmniExecutionChainID: evmchain.IDOmniDevnet,
 		MaxValidators:        maxValidators,
 	},
 	Devnet: {
 		Network:              Devnet,
-		Version:              "devnet",
+		version:              "devnet",
 		OmniExecutionChainID: evmchain.IDOmniDevnet,
 		MaxValidators:        maxValidators,
 	},
 	Staging: {
 		Network:              Staging,
-		Version:              runid,
 		OmniExecutionChainID: evmchain.IDOmniStaging,
 		MaxValidators:        maxValidators,
 		ConsensusSeedTXT:     stagingConsensusSeedsTXT,
@@ -197,7 +197,7 @@ var statics = map[ID]Static{
 	},
 	Omega: {
 		Network:              Omega,
-		Version:              "v0.1.0",
+		version:              "v0.1.0",
 		AVSContractAddress:   omegaAVS,
 		OmniExecutionChainID: evmchain.IDOmniOmega,
 		MaxValidators:        maxValidators,
@@ -215,12 +215,22 @@ var statics = map[ID]Static{
 	},
 	Mainnet: {
 		Network:              Mainnet,
-		Version:              "v0.0.1",
+		version:              "v0.0.1",
 		AVSContractAddress:   mainnetAVS,
 		OmniExecutionChainID: evmchain.IDOmniMainnet,
 		MaxValidators:        maxValidators,
 		TokenAddress:         mainnetToken,
 	},
+}
+
+// Version returns the version of the network.
+func (s Static) Version() string {
+	if s.version == "" {
+		log.Warn(context.Background(), "Using unset network version. Must call netcong/genesis::Init()", nil, "network", s.Network)
+		// Or panic? panic(errors.New("using unset network version - must call genesis.Init()", "network", s.Network))
+	}
+
+	return s.version
 }
 
 // ConsensusChainIDStr2Uint64 parses the uint suffix from the provided a consensus chain ID string.
@@ -263,6 +273,50 @@ func SimnetNetwork() Network {
 	}
 }
 
+// GetGenesis returns the genesis files for the network if they are set.
+// If they are not set, or set but invalid, it returns an err.
+func Genesis(network ID) (cosmgen.AppGenesis, ethcore.Genesis, error) {
+	var consensus cosmgen.AppGenesis
+	var execution ethcore.Genesis
+
+	static := statics[network]
+
+	if static.ExecutionGenesisJSON == nil || static.ConsensusGenesisJSON == nil {
+		return consensus, execution, errors.New("genesis not set", "network", network)
+	}
+
+	err := json.Unmarshal(static.ConsensusGenesisJSON, &consensus)
+	if err != nil {
+		return consensus, execution, errors.Wrap(err, "unmarshal consensus genesis")
+	}
+
+	err = json.Unmarshal(static.ExecutionGenesisJSON, &execution)
+	if err != nil {
+		return consensus, execution, errors.Wrap(err, "unmarshal execution genesis")
+	}
+
+	return consensus, execution, nil
+}
+
+// SetEphemeralGenesis sets the genesis files for the network.
+func SetEphemeralGenesis(network ID, consensus cosmgen.AppGenesis, execution ethcore.Genesis) error {
+	if network.IsProtected() {
+		return errors.New("cannot set genesis for protected network", "network", network)
+	}
+
+	consensusBz, err := json.Marshal(consensus)
+	if err != nil {
+		return errors.Wrap(err, "marshal consensus genesis")
+	}
+
+	executionBz, err := json.Marshal(execution)
+	if err != nil {
+		return errors.Wrap(err, "marshal execution genesis")
+	}
+
+	return SetEphemeralGenesisBz(network, executionBz, consensusBz)
+}
+
 func mustSimnetChain(id uint64, shards ...xchain.ShardID) Chain {
 	meta, ok := evmchain.MetadataByID(id)
 	if !ok {
@@ -277,15 +331,21 @@ func mustSimnetChain(id uint64, shards ...xchain.ShardID) Chain {
 	}
 }
 
-// SetEphemeralGenesis sets the ephemeral genesis files.
-func SetEphemeralGenesis(network ID, execution, consensus []byte) error {
+// SetEphemeralGenesisBz sets the genesis files (in bytes) for the network.
+func SetEphemeralGenesisBz(network ID, executionBz, consensusBz []byte) error {
 	if network.IsProtected() {
 		return errors.New("cannot set ephemeral genesis for protected network", "network", network)
 	}
 
 	static := statics[network]
-	static.ExecutionGenesisJSON = execution
-	static.ConsensusGenesisJSON = consensus
+	static.ExecutionGenesisJSON = executionBz
+	static.ConsensusGenesisJSON = consensusBz
+
+	// set staging version to hash of consensus genesis. could also use timestamp.
+	if network == Staging {
+		static.version = crypto.Keccak256Hash(consensusBz).Hex()
+	}
+
 	statics[network] = static
 
 	return nil

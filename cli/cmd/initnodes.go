@@ -14,16 +14,14 @@ import (
 	halocmd "github.com/omni-network/omni/halo/cmd"
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/lib/buildinfo"
-	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/xchain"
+	"github.com/omni-network/omni/lib/netconf/genesis"
 
 	cmtconfig "github.com/cometbft/cometbft/config"
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 	cmtos "github.com/cometbft/cometbft/libs/os"
-	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 
 	"github.com/ethereum/go-ethereum/p2p/enode"
 
@@ -102,7 +100,7 @@ func initNodes(ctx context.Context, cfg initConfig) error {
 		}
 	}
 
-	if err := maybeDownloadGenesis(ctx, cfg.Network); err != nil {
+	if err := genesis.MaybeDownload(ctx, cfg.Network); err != nil {
 		return errors.Wrap(err, "download genesis")
 	}
 
@@ -156,32 +154,6 @@ func initNodes(ctx context.Context, cfg initConfig) error {
 	}
 
 	return nil
-}
-
-// maybeDownloadGenesis downloads the genesis files via cprovider the network if they are not already set.
-func maybeDownloadGenesis(ctx context.Context, network netconf.ID) error {
-	if network.IsProtected() {
-		return nil // No need to download genesis for protected networks
-	}
-
-	rpcServer := network.Static().ConsensusRPC()
-	rpcCl, err := rpchttp.New(rpcServer, "/websocket")
-	if err != nil {
-		return errors.Wrap(err, "create rpc client")
-	}
-	stubNamer := func(xchain.ChainVersion) string { return "" }
-	cprov := cprovider.NewABCIProvider(rpcCl, network, stubNamer)
-
-	execution, consensus, err := cprov.GenesisFiles(ctx)
-	if err != nil {
-		return errors.Wrap(err, "fetching genesis files")
-	} else if len(execution) == 0 {
-		return errors.New("empty execution genesis file downloaded", "server", rpcServer)
-	}
-
-	log.Info(ctx, "Downloaded genesis files", "execution", len(execution), "consensus", len(consensus), "rpc", rpcServer)
-
-	return netconf.SetEphemeralGenesis(network, execution, consensus)
 }
 
 func writeComposeFile(ctx context.Context, cfg initConfig) error {

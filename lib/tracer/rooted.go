@@ -23,7 +23,7 @@ func StartChainHeight(ctx context.Context, network netconf.ID, chain string, hei
 
 	h := fnv.New128a()
 	_, _ = h.Write([]byte(network.String()))
-	_, _ = h.Write([]byte(network.Static().Version))
+	_, _ = h.Write([]byte(network.Static().Version()))
 	_, _ = h.Write([]byte(chain))
 	_ = binary.Write(h, binary.BigEndian, height)
 

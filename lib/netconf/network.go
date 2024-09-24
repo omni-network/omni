@@ -35,7 +35,7 @@ func (i ID) String() string {
 }
 
 func (i ID) Version() string {
-	return i.Static().Version
+	return i.Static().Version()
 }
 
 const (

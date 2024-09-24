@@ -26,6 +26,7 @@ import (
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/netconf/genesis"
 	"github.com/omni-network/omni/lib/xchain"
 	monapp "github.com/omni-network/omni/monitor/app"
 	relayapp "github.com/omni-network/omni/relayer/app"
@@ -37,7 +38,10 @@ import (
 	"github.com/cometbft/cometbft/privval"
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 
+	ethcore "github.com/ethereum/go-ethereum/core"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
+
+	cosmgen "github.com/cosmos/cosmos-sdk/x/genutil/types"
 
 	_ "embed" // Embed requires blank import
 )
@@ -66,20 +70,6 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 		return SetupOnlyMonitor(ctx, def)
 	}
 
-	// Setup geth execution genesis
-	gethGenesis, err := evmgenutil.MakeGenesis(def.Manifest.Network)
-	if err != nil {
-		return errors.Wrap(err, "make genesis")
-	}
-	gethGenesisBz, err := json.MarshalIndent(gethGenesis, "", "  ")
-	if err != nil {
-		return errors.Wrap(err, "marshal genesis")
-	}
-	if err := geth.WriteAllConfig(def.Testnet, gethGenesis); err != nil {
-		return err
-	}
-
-	// Setup halo consensus genesis
 	var vals []crypto.PubKey
 	var valPrivKeys []crypto.PrivKey
 	for val := range def.Testnet.Validators {
@@ -87,14 +77,20 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 		valPrivKeys = append(valPrivKeys, val.PrivvalKey)
 	}
 
-	cosmosGenesis, err := genutil.MakeGenesis(
-		def.Manifest.Network,
-		time.Now(),
-		gethGenesis.ToBlock().Hash(),
-		vals...)
+	cosmosGenesis, gethGenesis, err := getOrMakeGenesis(ctx, def, depCfg, vals)
 	if err != nil {
-		return errors.Wrap(err, "make genesis")
+		return err
 	}
+
+	if err := geth.WriteAllConfig(def.Testnet, gethGenesis); err != nil {
+		return errors.Wrap(err, "write geth config")
+	}
+
+	gethGenesisBz, err := json.MarshalIndent(gethGenesis, "", "  ")
+	if err != nil {
+		return errors.Wrap(err, "marshal genesis")
+	}
+
 	cmtGenesis, err := cosmosGenesis.ToGenesisDoc()
 	if err != nil {
 		return errors.Wrap(err, "convert genesis")
@@ -208,6 +204,56 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	}
 
 	return nil
+}
+
+func getOrMakeGenesis(ctx context.Context, def Definition, depCfg DeployConfig, vals []crypto.PubKey) (cosmgen.AppGenesis, ethcore.Genesis, error) {
+	network := def.Testnet.Network
+
+	if depCfg.isDeploy {
+		cons, exec, err := makeGenesis(def, vals)
+		if err != nil {
+			return cons, exec, errors.Wrap(err, "new genesis")
+		}
+
+		if def.Testnet.Network.IsEphemeral() {
+			err = netconf.SetEphemeralGenesis(network, cons, exec)
+			if err != nil {
+				return cons, exec, errors.Wrap(err, "set genesis")
+			}
+		}
+
+		return cons, exec, nil
+	}
+
+	err := genesis.Init(ctx, network)
+	if err != nil {
+		return cosmgen.AppGenesis{}, ethcore.Genesis{}, errors.Wrap(err, "init genesis")
+	}
+
+	cons, exec, err := netconf.Genesis(network)
+	if err != nil {
+		return cons, exec, errors.Wrap(err, "get genesis", "network", network)
+	}
+
+	return cons, exec, nil
+}
+
+func makeGenesis(def Definition, vals []crypto.PubKey) (cosmgen.AppGenesis, ethcore.Genesis, error) {
+	gethGenesis, err := evmgenutil.MakeGenesis(def.Manifest.Network)
+	if err != nil {
+		return cosmgen.AppGenesis{}, ethcore.Genesis{}, errors.Wrap(err, "make geth genesis")
+	}
+
+	cosmosGenesis, err := genutil.MakeGenesis(
+		def.Manifest.Network,
+		time.Now(),
+		gethGenesis.ToBlock().Hash(),
+		vals...)
+	if err != nil {
+		return cosmgen.AppGenesis{}, ethcore.Genesis{}, errors.Wrap(err, "make cosmos genesis")
+	}
+
+	return *cosmosGenesis, gethGenesis, nil
 }
 
 func SetupOnlyMonitor(ctx context.Context, def Definition) error {

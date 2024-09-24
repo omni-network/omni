@@ -41,11 +41,16 @@ type DeployConfig struct {
 
 	// Internal use parameters (no command line flags).
 	testConfig bool
+
+	// isDeploy is true if a new network is being deployed.
+	isDeploy bool
 }
 
 // Deploy a new e2e network. It also starts all services in order to deploy private portals.
 // It also returns an optional deployed ping pong contract is enabled.
 func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XDapp, error) {
+	cfg.isDeploy = true
+
 	if def.Testnet.Network.IsProtected() {
 		// If a protected network needs to be deployed temporarily comment out this check.
 		return nil, errors.New("cannot deploy protected network", "network", def.Testnet.Network)
@@ -59,15 +64,6 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 
 	genesisVals, err := toPortalValidators(def.Testnet.Validators)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := deployPublicCreate3(ctx, def); err != nil {
-		return nil, err
-	}
-
-	// Deploy public portals first so their addresses are available for setup.
-	if err := def.Netman().DeployPublicPortals(ctx, genesisValSetID, genesisVals); err != nil {
 		return nil, err
 	}
 
@@ -89,6 +85,17 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 	}
 
 	if err := fundAccounts(ctx, def); err != nil {
+		return nil, err
+	}
+
+	// TODO: join pulic / private deploy
+
+	if err := deployPublicCreate3(ctx, def); err != nil {
+		return nil, err
+	}
+
+	// Deploy public portals first so their addresses are available for setup.
+	if err := def.Netman().DeployPublicPortals(ctx, genesisValSetID, genesisVals); err != nil {
 		return nil, err
 	}
 

@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/netconf/genesis"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -45,6 +46,10 @@ func New() *cobra.Command {
 		def, err = app.MakeDefinition(ctx, defCfg, cmd.Use)
 		if err != nil {
 			return errors.Wrap(err, "make definition")
+		}
+
+		if err := genesis.Init(ctx, def.Testnet.Network); err != nil {
+			return errors.Wrap(err, "init genesis")
 		}
 
 		// Some commands require networking, this ensures proper errors instead of panics.
