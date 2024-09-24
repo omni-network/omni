@@ -17,12 +17,20 @@ func newAdminCmd(def *app.Definition) *cobra.Command {
 
 	cmd.AddCommand(
 		newPausePortalCmd(def),
-		newUnpausePortalCmd(def),
-		newUpgradePortalCmd(def),
 		newPauseXCallCmd(def),
-		newUnpauseXCallCmd(def),
 		newPauseXSubmitCmd(def),
+		newUnpausePortalCmd(def),
+		newUnpauseXCallCmd(def),
 		newUnpauseXSubmitCmd(def),
+		newUpgradePortalCmd(def),
+		newUpgradeFeeOracleV1Cmd(def),
+		newUpgradeGasStationCmd(def),
+		newUpgradeGasPumpCmd(def),
+		newUpgradeStakingCmd(def),
+		newUpgradeSlashingCmd(def),
+		newUpgradeBridgeNativeCmd(def),
+		newUpgradeBridgeL1(def),
+		newUpgradePortalRegistryCmd(def),
 		newAllowValidatorsCmd(def),
 		newAdminTestCmd(def),
 	)
@@ -158,6 +166,110 @@ func newUnpauseXSubmitCmd(def *app.Definition) *cobra.Command {
 
 	bindAdminFlags(cmd.Flags(), &cfg)
 	bindAdminXSubmitFlags(cmd.Flags(), &xsubCfg)
+
+	return cmd
+}
+
+func newUpgradeFeeOracleV1Cmd(def *app.Definition) *cobra.Command {
+	cfg := admin.DefaultConfig()
+
+	cmd := &cobra.Command{
+		Use:   "upgrade-fee-oracle-v1",
+		Short: "Upgrade FeeOracleV1 contracts.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.UpgradeFeeOracleV1(cmd.Context(), *def, cfg)
+		},
+	}
+
+	bindAdminFlags(cmd.Flags(), &cfg)
+
+	return cmd
+}
+
+func newUpgradeGasStationCmd(def *app.Definition) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "upgrade-gas-station",
+		Short: "Upgrade the OmniGasStation contract.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.UpgradeGasStation(cmd.Context(), *def)
+		},
+	}
+
+	return cmd
+}
+
+func newUpgradeGasPumpCmd(def *app.Definition) *cobra.Command {
+	cfg := admin.DefaultConfig()
+
+	cmd := &cobra.Command{
+		Use:   "upgrade-gas-pump",
+		Short: "Upgrade OmniGasPump contracts.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.UpgradeGasPump(cmd.Context(), *def, cfg)
+		},
+	}
+
+	bindAdminFlags(cmd.Flags(), &cfg)
+
+	return cmd
+}
+
+func newUpgradeStakingCmd(def *app.Definition) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "upgrade-staking",
+		Short: "Upgrade the Staking predeploy.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.UpgradeStaking(cmd.Context(), *def)
+		},
+	}
+
+	return cmd
+}
+
+func newUpgradeSlashingCmd(def *app.Definition) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "upgrade-slashing",
+		Short: "Upgrade the Slashing predeploy.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.UpgradeSlashing(cmd.Context(), *def)
+		},
+	}
+
+	return cmd
+}
+
+func newUpgradeBridgeNativeCmd(def *app.Definition) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "upgrade-bridge-native",
+		Short: "Upgrade the OmniBridgeNative predeploy.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.UpgradeBridgeNative(cmd.Context(), *def)
+		},
+	}
+
+	return cmd
+}
+
+func newUpgradeBridgeL1(def *app.Definition) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "upgrade-bridge-l1",
+		Short: "Upgrade the OmniBridgeL1 contract.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.UpgradeBridgeL1(cmd.Context(), *def)
+		},
+	}
+
+	return cmd
+}
+
+func newUpgradePortalRegistryCmd(def *app.Definition) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "upgrade-portal-registry",
+		Short: "Upgrade the PortalRegistry predeploy.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.UpgradePortalRegistry(cmd.Context(), *def)
+		},
+	}
 
 	return cmd
 }

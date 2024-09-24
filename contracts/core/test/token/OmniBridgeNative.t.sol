@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.24;
 
+import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { MockPortal } from "test/utils/MockPortal.sol";
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { OmniBridgeNative } from "src/token/OmniBridgeNative.sol";
@@ -29,12 +30,18 @@ contract OmniBridgeNative_Test is Test {
 
     function setUp() public {
         portal = new MockPortal();
-        b = new OmniBridgeNativeHarness();
         l1ChainId = 1;
         l1Bridge = new OmniBridgeL1(makeAddr("token"));
-
         owner = makeAddr("owner");
-        b.initialize(owner);
+
+        address impl = address(new OmniBridgeNativeHarness());
+        b = OmniBridgeNativeHarness(
+            address(
+                new TransparentUpgradeableProxy(
+                    impl, owner, abi.encodeWithSelector(OmniBridgeNative.initialize.selector, (owner))
+                )
+            )
+        );
 
         vm.prank(owner);
         b.setup(l1ChainId, address(portal), address(l1Bridge));

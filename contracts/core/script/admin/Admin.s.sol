@@ -7,6 +7,15 @@ import { ITransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/tran
 import { InitializableHelper } from "script/utils/InitializableHelper.sol";
 import { EIP1967Helper } from "script/utils/EIP1967Helper.sol";
 import { OmniPortal } from "src/xchain/OmniPortal.sol";
+import { FeeOracleV1 } from "src/xchain/FeeOracleV1.sol";
+import { PortalRegistry } from "src/xchain/PortalRegistry.sol";
+import { OmniGasPump } from "src/token/OmniGasPump.sol";
+import { OmniGasStation } from "src/token/OmniGasStation.sol";
+import { OmniBridgeNative } from "src/token/OmniBridgeNative.sol";
+import { OmniBridgeL1 } from "src/token/OmniBridgeL1.sol";
+import { Staking } from "src/octane/Staking.sol";
+import { Slashing } from "src/octane/Slashing.sol";
+import { Predeploys } from "src/libraries/Predeploys.sol";
 
 /**
  * @title Admin
@@ -46,20 +55,13 @@ contract Admin is Script {
      * @param data      Calldata to execute after upgrading the contract.
      */
     function upgradePortal(address admin, address deployer, address portal, bytes calldata data) public {
-        // deploy new implementation
         vm.startBroadcast(deployer);
         address impl = address(new OmniPortal());
         vm.stopBroadcast();
 
-        // upgrade proxy
-        vm.startBroadcast(admin);
-        address proxyAdmin = EIP1967Helper.getAdmin(portal);
-        ProxyAdmin(proxyAdmin).upgradeAndCall(ITransparentUpgradeableProxy(portal), impl, data);
-        vm.stopBroadcast();
+        _upgradeProxy(admin, portal, impl, data);
 
-        // run tests
-        // TODO: add more
-        require(InitializableHelper.areInitializersDisabled(impl), "initializers not disabled");
+        // TODO: add post upgrade tests
     }
 
     /**
@@ -136,5 +138,156 @@ contract Admin is Script {
      */
     function unpauseXSubmitFrom(address admin, address portal, uint64 from) public withBroadcast(admin) {
         OmniPortal(portal).unpauseXSubmitFrom(from);
+    }
+
+    /**
+     * @notice Upgrade a FeeOracleV1 contract.
+     * @param admin     The address of the admin account, owner of the proxy admin
+     * @param deployer  The address of the account that will deploy the new implementation.
+     * @param proxy     The address of the proxy to upgrade.
+     */
+    function upgradeFeeOracleV1(address admin, address deployer, address proxy, bytes calldata data) public {
+        vm.startBroadcast(deployer);
+        address impl = address(new FeeOracleV1());
+        vm.stopBroadcast();
+
+        _upgradeProxy(admin, proxy, impl, data);
+
+        // TODO: add post upgrade tests
+    }
+
+    /**
+     * @notice Upgrade an OmniGasPump contract.
+     * @param admin     The address of the admin account, owner of the proxy admin
+     * @param deployer  The address of the account that will deploy the new implementation.
+     * @param proxy     The address of the proxy to upgrade.
+     */
+    function upgradeGasPump(address admin, address deployer, address proxy, bytes calldata data) public {
+        vm.startBroadcast(deployer);
+        address impl = address(new OmniGasPump());
+        vm.stopBroadcast();
+
+        _upgradeProxy(admin, proxy, impl, data);
+
+        // TODO: add post upgrade tests
+    }
+
+    /**
+     * @notice Upgrade an OmniGasStation contract.
+     * @param admin     The address of the admin account, owner of the proxy admin
+     * @param deployer  The address of the account that will deploy the new implementation.
+     * @param proxy     The address of the proxy to upgrade.
+     */
+    function upgradeGasStation(address admin, address deployer, address proxy, bytes calldata data) public {
+        vm.startBroadcast(deployer);
+        address impl = address(new OmniGasStation());
+        vm.stopBroadcast();
+
+        _upgradeProxy(admin, proxy, impl, data);
+
+        // TODO: add post upgrade tests
+    }
+
+    /**
+     * @notice Upgrade the Staking predeploy.
+     * @param admin     The address of the admin account, owner of the proxy admin
+     * @param deployer  The address of the account that will deploy the new implementation.
+     */
+    function upgradeStaking(address admin, address deployer, bytes calldata data) public {
+        vm.startBroadcast(deployer);
+        address impl = address(new Staking());
+        vm.stopBroadcast();
+
+        _upgradeProxy(admin, Predeploys.Staking, impl, data);
+
+        // TODO: add post upgrade tests
+    }
+
+    /**
+     * @notice Upgrade the Staking predeploy.
+     * @param admin     The address of the admin account, owner of the proxy admin
+     * @param deployer  The address of the account that will deploy the new implementation.
+     */
+    function upgradeSlashing(address admin, address deployer, bytes calldata data) public {
+        vm.startBroadcast(deployer);
+        address impl = address(new Slashing());
+        vm.stopBroadcast();
+
+        _upgradeProxy(admin, Predeploys.Slashing, impl, data, false); // Slashing has no initializers
+
+        // TODO: add post upgrade tests
+    }
+
+    /**
+     * @notice Upgrade the OmniBridgeNative predeploy.
+     * @param admin     The address of the admin account, owner of the proxy admin
+     * @param deployer  The address of the account that will deploy the new implementation.
+     */
+    function upgradeBridgeNative(address admin, address deployer, bytes calldata data) public {
+        vm.startBroadcast(deployer);
+        address impl = address(new OmniBridgeNative());
+        vm.stopBroadcast();
+
+        _upgradeProxy(admin, Predeploys.OmniBridgeNative, impl, data);
+
+        // TODO: add post upgrade tests
+    }
+
+    /**
+     * @notice Upgrade the OmniBridgeL1 contract.
+     * @param admin     The address of the admin account, owner of the proxy admin
+     * @param deployer  The address of the account that will deploy the new implementation.
+     * @param proxy     The address of the proxy to upgrade.
+     */
+    function upgradeBridgeL1(address admin, address deployer, address proxy, bytes calldata data) public {
+        address token = address(OmniBridgeL1(proxy).token());
+
+        vm.startBroadcast(deployer);
+        address impl = address(new OmniBridgeL1(token));
+        vm.stopBroadcast();
+
+        _upgradeProxy(admin, proxy, impl, data);
+
+        // TODO: add post upgrade tests
+    }
+
+    /**
+     * @notice Upgrade the PortalRegistry predeploy.
+     * @param admin     The address of the admin account, owner of the proxy admin
+     * @param deployer  The address of the account that will deploy the new implementation.
+     */
+    function upgradePortalRegistry(address admin, address deployer, bytes calldata data) public {
+        vm.startBroadcast(deployer);
+        address impl = address(new PortalRegistry());
+        vm.stopBroadcast();
+
+        _upgradeProxy(admin, Predeploys.PortalRegistry, impl, data);
+
+        // TODO: add post upgrade tests
+    }
+
+    /**
+     * @notice Upgrade a proxy contract.
+     * @param admin     The address of the admin account, owner of the proxy admin
+     * @param proxy     The address of the proxy to upgrade.
+     * @param impl      The address of the new implementation.
+     * @param data      Calldata to execute after upgrading the contract.
+     */
+    function _upgradeProxy(address admin, address proxy, address impl, bytes calldata data) internal {
+        _upgradeProxy(admin, proxy, impl, data, true);
+    }
+
+    function _upgradeProxy(address admin, address proxy, address impl, bytes calldata data, bool initializable)
+        internal
+    {
+        address proxyAdmin = EIP1967Helper.getAdmin(proxy);
+
+        vm.startBroadcast(admin);
+        ProxyAdmin(proxyAdmin).upgradeAndCall(ITransparentUpgradeableProxy(proxy), impl, data);
+        vm.stopBroadcast();
+
+        if (initializable) require(InitializableHelper.areInitializersDisabled(impl), "initializers not disabled");
+
+        require(EIP1967Helper.getImplementation(proxy) == impl, "upgrade failed");
     }
 }

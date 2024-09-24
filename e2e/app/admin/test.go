@@ -48,6 +48,34 @@ func Test(ctx context.Context, def app.Definition) error {
 		return err
 	}
 
+	if err := tesUpgradeFeeOracleV1(ctx, def, network); err != nil {
+		return err
+	}
+
+	if err := testUpgradeGasStation(ctx, def); err != nil {
+		return err
+	}
+
+	if err := testUpgradeGasPump(ctx, def, network); err != nil {
+		return err
+	}
+
+	if err := testUpgradeSlashing(ctx, def); err != nil {
+		return err
+	}
+
+	if err := testUpgradeStaking(ctx, def); err != nil {
+		return err
+	}
+
+	if err := testUpgradeBridgeNative(ctx, def); err != nil {
+		return err
+	}
+
+	if err := testUpgradeBridgeL1(ctx, def); err != nil {
+		return err
+	}
+
 	log.Info(ctx, "Done.")
 
 	return nil
@@ -224,11 +252,11 @@ func testPauseUnpauseXSubmitFrom(ctx context.Context, def app.Definition, networ
 	return nil
 }
 
+// noCheck always returns nil. Use for upgrade actions, where only check is if upgrade succeeds.
+func noCheck(context.Context, app.Definition, netconf.Chain) error { return nil }
+
 // testUpgradePortal tests UpgradePortal command.
 func testUpgradePortal(ctx context.Context, def app.Definition, network netconf.Network) error {
-	// no upgrade check - just make sure it doesn't error
-	noCheck := func(context.Context, app.Definition, netconf.Chain) error { return nil }
-
 	err := forOne(ctx, def, randChain(network), UpgradePortal, noCheck)
 	if err != nil {
 		return errors.Wrap(err, "upgrade portal")
@@ -237,6 +265,89 @@ func testUpgradePortal(ctx context.Context, def app.Definition, network netconf.
 	err = forAll(ctx, def, network, UpgradePortal, noCheck)
 	if err != nil {
 		return errors.Wrap(err, "upgrade all portals")
+	}
+
+	return nil
+}
+
+func tesUpgradeFeeOracleV1(ctx context.Context, def app.Definition, network netconf.Network) error {
+	err := forOne(ctx, def, randChain(network), UpgradeFeeOracleV1, noCheck)
+	if err != nil {
+		return errors.Wrap(err, "upgrade feeoracle")
+	}
+
+	err = forAll(ctx, def, network, UpgradeFeeOracleV1, noCheck)
+	if err != nil {
+		return errors.Wrap(err, "upgrade all feeoracles")
+	}
+
+	return nil
+}
+
+func testUpgradeGasStation(ctx context.Context, def app.Definition) error {
+	err := UpgradeGasStation(ctx, def)
+	if err != nil {
+		return errors.Wrap(err, "upgrade gas station")
+	}
+
+	return nil
+}
+
+func testUpgradeGasPump(ctx context.Context, def app.Definition, network netconf.Network) error {
+	// cannot UpgradeGasPump on omni evm
+	c := randChain(network)
+	for {
+		if c.Name != omniEVMName {
+			break
+		}
+
+		c = randChain(network)
+	}
+
+	err := forOne(ctx, def, c, UpgradeGasPump, noCheck)
+	if err != nil {
+		return errors.Wrap(err, "upgrade gas pump")
+	}
+
+	err = forAll(ctx, def, network, UpgradeGasPump, noCheck)
+	if err != nil {
+		return errors.Wrap(err, "upgrade all gas pumps")
+	}
+
+	return nil
+}
+
+func testUpgradeSlashing(ctx context.Context, def app.Definition) error {
+	err := UpgradeSlashing(ctx, def)
+	if err != nil {
+		return errors.Wrap(err, "upgrade slashing")
+	}
+
+	return nil
+}
+
+func testUpgradeStaking(ctx context.Context, def app.Definition) error {
+	err := UpgradeStaking(ctx, def)
+	if err != nil {
+		return errors.Wrap(err, "upgrade staking")
+	}
+
+	return nil
+}
+
+func testUpgradeBridgeNative(ctx context.Context, def app.Definition) error {
+	err := UpgradeBridgeNative(ctx, def)
+	if err != nil {
+		return errors.Wrap(err, "upgrade bridge native")
+	}
+
+	return nil
+}
+
+func testUpgradeBridgeL1(ctx context.Context, def app.Definition) error {
+	err := UpgradeBridgeL1(ctx, def)
+	if err != nil {
+		return errors.Wrap(err, "upgrade bridge l1")
 	}
 
 	return nil

@@ -77,6 +77,10 @@ contract OmniBridgeNative is OmniBridgeCommon {
      */
     mapping(address => uint256) public claimable;
 
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize(address owner_) external initializer {
         __Ownable_init(owner_);
     }
