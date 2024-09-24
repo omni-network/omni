@@ -11,6 +11,7 @@ import (
 	"time"
 
 	haloapp "github.com/omni-network/omni/halo/app"
+	uluwatu1 "github.com/omni-network/omni/halo/app/upgrades/uluwatu"
 	atypes "github.com/omni-network/omni/halo/attest/types"
 	halocmd "github.com/omni-network/omni/halo/cmd"
 	halocfg "github.com/omni-network/omni/halo/config"
@@ -223,9 +224,10 @@ func setupSimnet(t *testing.T) haloapp.Config {
 	tutil.RequireNoError(t, err)
 
 	err = halocmd.InitFiles(log.WithNoopLogger(context.Background()), halocmd.InitConfig{
-		HomeDir:       homeDir,
-		Network:       netconf.Simnet,
-		ExecutionHash: executionGenesis.Hash(),
+		HomeDir:        homeDir,
+		Network:        netconf.Simnet,
+		ExecutionHash:  executionGenesis.Hash(),
+		GenesisUpgrade: uluwatu1.UpgradeName,
 	})
 	tutil.RequireNoError(t, err)
 

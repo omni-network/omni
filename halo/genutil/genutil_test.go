@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	uluwatu1 "github.com/omni-network/omni/halo/app/upgrades/uluwatu"
 	"github.com/omni-network/omni/halo/genutil"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
@@ -26,7 +27,7 @@ func TestMakeGenesis(t *testing.T) {
 
 	executionBlockHash := common.BytesToHash([]byte("blockhash"))
 
-	resp, err := genutil.MakeGenesis(netconf.Simnet, timestamp, executionBlockHash, val1, val2)
+	resp, err := genutil.MakeGenesis(netconf.Simnet, timestamp, executionBlockHash, uluwatu1.UpgradeName, val1, val2)
 	tutil.RequireNoError(t, err)
 
 	tutil.RequireGoldenJSON(t, resp)

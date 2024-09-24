@@ -183,6 +183,12 @@ func newApp(
 		})
 	}
 
+	// setUpgradeHandlers should be called before `Load()`
+	// because StoreLoad is sealed after that
+	if err := app.setUpgradeHandlers(); err != nil {
+		return nil, errors.Wrap(err, "set upgrade handlers")
+	}
+
 	if err := app.Load(true); err != nil {
 		return nil, errors.Wrap(err, "load app")
 	}

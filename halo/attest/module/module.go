@@ -18,7 +18,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 )
 
-const ConsensusVersion = 1
+const ConsensusVersion = 2
 
 var (
 	_ module.AppModuleBasic     = (*AppModule)(nil)
@@ -95,6 +95,7 @@ func (m AppModule) EndBlock(ctx context.Context) error {
 func (m AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServiceServer(cfg.MsgServer(), keeper.NewMsgServerImpl(m.keeper))
 	types.RegisterQueryServer(cfg.QueryServer(), m.keeper)
+	registerMigrations(cfg)
 }
 
 // IsOnePerModuleType implements the depinject.OnePerModuleType interface.

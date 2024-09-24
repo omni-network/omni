@@ -114,6 +114,10 @@ type Manifest struct {
 	// This allows source code defined versions for protected networks.
 	// This overrides the --omni-image-tag if non-empty.
 	PinnedRelayerTag string `toml:"pinned_relayer_tag"`
+
+	// NetworkUpgradeHeight defines the network upgrade height, default is genesis, negative is disabled.
+	// Note that it might be scheduled at a later height.
+	NetworkUpgradeHeight int64 `toml:"network_upgrade_height"`
 }
 
 // Seeds returns a map of seed nodes by name.
