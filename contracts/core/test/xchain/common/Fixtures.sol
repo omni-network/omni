@@ -2,7 +2,6 @@
 pragma solidity =0.8.24;
 
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import { XTypes } from "src/libraries/XTypes.sol";
@@ -76,10 +75,6 @@ contract Fixtures is CommonBase, StdCheats {
     uint256 val3PrivKey;
     uint256 val4PrivKey;
     uint256 val5PrivKey;
-
-    ProxyAdmin proxyAdmin;
-    ProxyAdmin chainAProxyAdmin;
-    ProxyAdmin chainBProxyAdmin;
 
     FeeOracleV1 feeOracle;
     FeeOracleV1 feeOracleImpl;
@@ -466,14 +461,12 @@ contract Fixtures is CommonBase, StdCheats {
             toNativeRate: 1e6 // feeOracle.CONVERSION_RATE_DENOM , so 1:1
          });
 
-        proxyAdmin = new ProxyAdmin(owner);
-
         feeOracleImpl = new FeeOracleV1();
         feeOracle = FeeOracleV1(
             address(
                 new TransparentUpgradeableProxy(
                     address(feeOracleImpl),
-                    address(proxyAdmin),
+                    owner,
                     abi.encodeWithSelector(
                         FeeOracleV1.initialize.selector,
                         owner,
@@ -490,7 +483,7 @@ contract Fixtures is CommonBase, StdCheats {
             address(
                 new TransparentUpgradeableProxy(
                     address(portalImpl),
-                    address(proxyAdmin),
+                    owner,
                     abi.encodeWithSelector(
                         OmniPortal.initialize.selector,
                         OmniPortal.InitParams(
@@ -515,14 +508,12 @@ contract Fixtures is CommonBase, StdCheats {
         counter = new Counter(portal);
         reverter = new Reverter();
 
-        chainAProxyAdmin = new ProxyAdmin(owner);
-
         chainAfeeOracleImpl = new FeeOracleV1();
         chainAFeeOracle = FeeOracleV1(
             address(
                 new TransparentUpgradeableProxy(
                     address(chainAfeeOracleImpl),
-                    address(chainAProxyAdmin),
+                    owner,
                     abi.encodeWithSelector(
                         FeeOracleV1.initialize.selector,
                         owner,
@@ -539,7 +530,7 @@ contract Fixtures is CommonBase, StdCheats {
             address(
                 new TransparentUpgradeableProxy(
                     address(chainAPortalImpl),
-                    address(chainAProxyAdmin),
+                    owner,
                     abi.encodeWithSelector(
                         OmniPortal.initialize.selector,
                         OmniPortal.InitParams(
@@ -564,14 +555,12 @@ contract Fixtures is CommonBase, StdCheats {
         chainACounter = new Counter(chainAPortal);
         chainAReverter = new Reverter();
 
-        chainBProxyAdmin = new ProxyAdmin(owner);
-
         chainBfeeOracleImpl = new FeeOracleV1();
         chainBFeeOracle = FeeOracleV1(
             address(
                 new TransparentUpgradeableProxy(
                     address(chainBfeeOracleImpl),
-                    address(chainBProxyAdmin),
+                    owner,
                     abi.encodeWithSelector(
                         FeeOracleV1.initialize.selector,
                         owner,
@@ -588,7 +577,7 @@ contract Fixtures is CommonBase, StdCheats {
             address(
                 new TransparentUpgradeableProxy(
                     address(chainBPortalImpl),
-                    address(chainBProxyAdmin),
+                    owner,
                     abi.encodeWithSelector(
                         OmniPortal.initialize.selector,
                         OmniPortal.InitParams(
