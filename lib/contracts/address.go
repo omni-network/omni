@@ -36,8 +36,18 @@ func version(ctx context.Context, network netconf.ID) (string, error) {
 	}
 }
 
-// Cached staging version.
-var stagingVersion string
+var (
+	// Cached staging version.
+	stagingVersion string
+
+	// Overrides default https://staging.omni.network
+	stagingOmniRPC string
+)
+
+// UseStagingOmniRPC overrides the default staging Omni EVM RPC URL.
+func UseStagingOmniRPC(rpc string) {
+	stagingOmniRPC = rpc
+}
 
 func getStagingVersion(ctx context.Context) (string, error) {
 	// Cache the staging version.
@@ -45,7 +55,12 @@ func getStagingVersion(ctx context.Context) (string, error) {
 		return stagingVersion, nil
 	}
 
-	client, err := ethclient.Dial("omni_evm", netconf.Staging.Static().ExecutionRPC())
+	rpc := netconf.Staging.Static().ExecutionRPC()
+	if stagingOmniRPC != "" {
+		rpc = stagingOmniRPC
+	}
+
+	client, err := ethclient.Dial("omni_evm", rpc)
 	if err != nil {
 		return "", errors.Wrap(err, "dial omni")
 	}
@@ -80,15 +95,16 @@ type Salts struct {
 }
 
 var (
-	// cached addrs.
-	addrs = map[netconf.ID]Addresses{}
-	// cached salts.
-	salts = map[netconf.ID]Salts{}
+	// cached addresses by network.
+	addrsCache = map[netconf.ID]Addresses{}
+
+	// cached salts by network.
+	saltsCache = map[netconf.ID]Salts{}
 )
 
 // GetAddresses returns the contract addresses for the given network.
 func GetAddresses(ctx context.Context, network netconf.ID) (Addresses, error) {
-	addrs, ok := addrs[network]
+	addrs, ok := addrsCache[network]
 	if ok {
 		return addrs, nil
 	}
@@ -98,7 +114,7 @@ func GetAddresses(ctx context.Context, network netconf.ID) (Addresses, error) {
 		return Addresses{}, err
 	}
 
-	return Addresses{
+	addrs = Addresses{
 		Create3Factory: create3Factory(network),
 		AVS:            avs(network),
 		Portal:         portal(network, ver),
@@ -106,12 +122,16 @@ func GetAddresses(ctx context.Context, network netconf.ID) (Addresses, error) {
 		Token:          token(network, ver),
 		GasPump:        gasPump(network, ver),
 		GasStation:     gasStation(network, ver),
-	}, nil
+	}
+
+	addrsCache[network] = addrs
+
+	return addrs, nil
 }
 
 // GetSalts returns the contract salts for the given network.
 func GetSalts(ctx context.Context, network netconf.ID) (Salts, error) {
-	salts, ok := salts[network]
+	salts, ok := saltsCache[network]
 	if ok {
 		return salts, nil
 	}
@@ -121,14 +141,18 @@ func GetSalts(ctx context.Context, network netconf.ID) (Salts, error) {
 		return Salts{}, err
 	}
 
-	return Salts{
+	salts = Salts{
 		AVS:        avsSalt(network),
 		Portal:     portalSalt(network, ver),
 		L1Bridge:   l1BridgeSalt(network, ver),
 		Token:      tokenSalt(network, ver),
 		GasPump:    gasPumpSalt(network, ver),
 		GasStation: gasStationSalt(network, ver),
-	}, nil
+	}
+
+	saltsCache[network] = salts
+
+	return salts, nil
 }
 
 // avs returns the AVS contract address for the given network.

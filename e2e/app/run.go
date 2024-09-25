@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/e2e/netman"
 	"github.com/omni-network/omni/e2e/netman/pingpong"
 	"github.com/omni-network/omni/e2e/types"
+	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
@@ -78,6 +79,8 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 	if err := waitForEVMs(ctx, NetworkFromDef(def), def.Backends()); err != nil {
 		return nil, err
 	}
+
+	contracts.UseStagingOmniRPC(def.Testnet.BroadcastOmniEVM().ExternalRPC)
 
 	if err := deployPublicCreate3(ctx, def); err != nil {
 		return nil, err
