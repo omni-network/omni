@@ -27,7 +27,6 @@ func TestPruningHistory(t *testing.T) {
 	ctx, err := log.Init(ctx, log.Config{Color: log.ColorForce, Level: "debug", Format: log.FormatConsole})
 	require.NoError(t, err)
 
-	haloapp.SetVoteWindowForT(t, 1)
 	cfg := setupSimnet(t)
 
 	// Prune everything > 2 blocks old (every interval=10 blocks)

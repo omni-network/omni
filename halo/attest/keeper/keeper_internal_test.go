@@ -19,19 +19,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// AttestTable returns the attestations ORM table.
-func (k *Keeper) AttestTable() AttestationTable {
+// AttestTable returns the attestations ORM table for testing purposes.
+func (k *Keeper) AttestTableForT() AttestationTable {
 	return k.attTable
 }
 
-// SignatureTable returns the attestations ORM table.
-func (k *Keeper) SignatureTable() SignatureTable {
+// SignatureTable returns the attestations ORM table for testing purposes.
+func (k *Keeper) SignatureTableForT() SignatureTable {
 	return k.sigTable
+}
+
+// SetVoteWindowDownForT sets vote window down for testing purposes.
+func (k *Keeper) SetVoteWindowDownForT(voteWindowDown uint64) {
+	k.voteWindowDown = voteWindowDown
 }
 
 func TestWindowCompose(t *testing.T) {
 	t.Parallel()
-	const window = 64
+	const windowUp = 64
+	const windowDown = 8
 	const mid = 32
 	const bigMid = 256
 
@@ -47,18 +53,18 @@ func TestWindowCompose(t *testing.T) {
 		{mid, mid, in},
 		{mid, mid + 1, in},
 		{mid, mid - 1, in},
-		{mid, mid + window, in},
-		{mid, 0, in},
-		{mid, mid + window + 1, above},
-		{mid, mid + window + window, above},
-		{bigMid, bigMid - window - 1, below},
-		{bigMid, bigMid - window - window, below},
+		{mid, mid + windowUp, in},
+		{mid, 0, below},
+		{mid, mid + windowUp + 1, above},
+		{mid, mid + windowUp + windowUp, above},
+		{bigMid, bigMid - windowDown - 1, below},
+		{bigMid, bigMid - windowDown - windowDown, below},
 	}
 
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("mid_%d_target_%d", tt.Mid, tt.Target), func(t *testing.T) {
 			t.Parallel()
-			got := windowCompare(window, tt.Mid, tt.Target)
+			got := windowCompare(windowDown, windowUp, tt.Mid, tt.Target)
 			if got != tt.Expected {
 				t.Errorf("Test %d: Expected %d, got %d", i, tt.Expected, got)
 			}
@@ -169,7 +175,8 @@ func TestVerifyAggVotes(t *testing.T) {
 				portalRegistry: portalReg,
 				namer:          netconf.SimnetNetwork().ChainVersionName,
 				voter:          nil,
-				voteWindow:     0,
+				voteWindowUp:   0,
+				voteWindowDown: 0,
 				voteExtLimit:   voteExtLimit,
 			}
 
