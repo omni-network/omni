@@ -4,7 +4,6 @@ import (
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/e2e/app/admin"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/spf13/cobra"
 )
@@ -281,8 +280,8 @@ func newAdminTestCmd(def *app.Definition) *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 
-			if def.Testnet.Network != netconf.Devnet {
-				return errors.New("only devnet")
+			if !def.Testnet.Network.IsEphemeral() {
+				return errors.New("only ephemeral networks")
 			}
 
 			if _, err := app.Deploy(ctx, *def, app.DeployConfig{
