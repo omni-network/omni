@@ -108,15 +108,14 @@ func newABCISigningFunc(cl sltypes.QueryClient) signingFunc {
 		if err != nil {
 			incQueryErr(endpoint)
 			return nil, errors.Wrap(err, "abci query params")
+		} else if params.Params.SignedBlocksWindow == 0 {
+			return nil, errors.New("signed blocks window is zero")
 		}
 
 		var infos []cchain.SDKSigningInfo
 		for _, info := range resp.Info {
 			// uptime over the past <SignedBlocksWindow> blocks.
 			uptime := 1.0 - (float64(info.MissedBlocksCounter) / float64(params.Params.SignedBlocksWindow))
-			if info.JailedUntil.Unix() != 0 {
-				uptime = 0
-			}
 
 			infos = append(infos, cchain.SDKSigningInfo{
 				ValidatorSigningInfo: info,

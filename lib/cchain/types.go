@@ -40,6 +40,7 @@ func (v PortalValidator) Verify() error {
 type SDKSigningInfo struct {
 	sltypes.ValidatorSigningInfo
 	// Uptime is the percentage [0,1] of blocks signed in the previous <SignedBlockWindow> (1000).
+	// Note this is 100% if the validator isn't bonded, since it can't technically miss blocks.
 	Uptime float64
 }
 
