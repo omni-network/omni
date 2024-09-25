@@ -4,6 +4,7 @@ import (
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/e2e/app/admin"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/spf13/cobra"
 )
@@ -284,11 +285,14 @@ func newAdminTestCmd(def *app.Definition) *cobra.Command {
 				return errors.New("only ephemeral networks")
 			}
 
-			if _, err := app.Deploy(ctx, *def, app.DeployConfig{
-				PingPongN: 0,
-				PingPongP: 0,
-				PingPongL: 0}); err != nil {
-				return errors.Wrap(err, "deploy")
+			// deploy devnet, but not staging
+			if def.Testnet.Network == netconf.Devnet {
+				if _, err := app.Deploy(ctx, *def, app.DeployConfig{
+					PingPongN: 0,
+					PingPongP: 0,
+					PingPongL: 0}); err != nil {
+					return errors.Wrap(err, "deploy")
+				}
 			}
 
 			if err := admin.Test(ctx, *def); err != nil {
