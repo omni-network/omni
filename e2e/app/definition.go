@@ -135,7 +135,7 @@ func MakeDefinition(ctx context.Context, cfg DefinitionConfig, commandName strin
 			return ethbackend.Backends{}, nil, errors.Wrap(err, "new backends")
 		}
 
-		netman, err := netman.NewManager(testnet, backends)
+		netman, err := netman.NewManager(ctx, testnet, backends)
 		if err != nil {
 			return ethbackend.Backends{}, nil, errors.Wrap(err, "get network")
 		}

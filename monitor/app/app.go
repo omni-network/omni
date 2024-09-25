@@ -78,7 +78,10 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 
 	account.StartMonitoring(ctx, network, ethClients)
-	contract.StartMonitoring(ctx, network, ethClients)
+
+	if err := contract.StartMonitoring(ctx, network, ethClients); err != nil {
+		return errors.Wrap(err, "monitor contracts")
+	}
 
 	if err := startLoadGen(ctx, cfg, network, ethClients); err != nil {
 		return errors.Wrap(err, "start load generator")

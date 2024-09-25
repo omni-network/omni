@@ -12,8 +12,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/google/uuid"
-
 	_ "embed"
 )
 
@@ -24,7 +22,6 @@ const maxValidators = 30
 // Static defines static config and data for a network.
 type Static struct {
 	Network              ID
-	Version              string
 	OmniExecutionChainID uint64
 	AVSContractAddress   common.Address
 	TokenAddress         common.Address
@@ -135,11 +132,6 @@ func (s Static) ConsensusRPC() string {
 	return fmt.Sprintf("https://consensus.%s.omni.network", s.Network)
 }
 
-// Use random runid for staging version.
-//
-//nolint:gochecknoglobals // Static ID
-var runid = uuid.New().String()
-
 //nolint:gochecknoglobals // Static addresses
 var (
 	omegaAVS     = common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
@@ -176,19 +168,16 @@ var (
 var statics = map[ID]Static{
 	Simnet: {
 		Network:              Simnet,
-		Version:              "simnet",
 		OmniExecutionChainID: evmchain.IDOmniDevnet,
 		MaxValidators:        maxValidators,
 	},
 	Devnet: {
 		Network:              Devnet,
-		Version:              "devnet",
 		OmniExecutionChainID: evmchain.IDOmniDevnet,
 		MaxValidators:        maxValidators,
 	},
 	Staging: {
 		Network:              Staging,
-		Version:              runid,
 		OmniExecutionChainID: evmchain.IDOmniStaging,
 		MaxValidators:        maxValidators,
 		ConsensusSeedTXT:     stagingConsensusSeedsTXT,
@@ -197,7 +186,6 @@ var statics = map[ID]Static{
 	},
 	Omega: {
 		Network:              Omega,
-		Version:              "v0.1.0",
 		AVSContractAddress:   omegaAVS,
 		OmniExecutionChainID: evmchain.IDOmniOmega,
 		MaxValidators:        maxValidators,
@@ -215,7 +203,6 @@ var statics = map[ID]Static{
 	},
 	Mainnet: {
 		Network:              Mainnet,
-		Version:              "v0.0.1",
 		AVSContractAddress:   mainnetAVS,
 		OmniExecutionChainID: evmchain.IDOmniMainnet,
 		MaxValidators:        maxValidators,

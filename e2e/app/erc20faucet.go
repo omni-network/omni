@@ -39,15 +39,15 @@ func RunERC20Faucet(ctx context.Context, def Definition, cfg RunERC20FaucetConfi
 	}
 
 	networkID := def.Testnet.Network
-	network := NetworkFromDef(def)
-	addr := common.HexToAddress(cfg.AddrToFund)
-	tokenAddr := contracts.Token(networkID)
-	amt := new(big.Int).Mul(umath.NewBigInt(cfg.Amount), big.NewInt(params.Ether))
-
-	funder, err := omnitoken.InitialSupplyRecipient(networkID)
+	addrs, err := contracts.GetAddresses(ctx, networkID)
 	if err != nil {
-		return errors.Wrap(err, "initial supply recipient")
+		return errors.Wrap(err, "get addrs")
 	}
+
+	network := NetworkFromDef(def)
+	account := common.HexToAddress(cfg.AddrToFund)
+	amt := new(big.Int).Mul(umath.NewBigInt(cfg.Amount), big.NewInt(params.Ether))
+	funder := omnitoken.InitialSupplyRecipient(networkID)
 
 	chain, ok := network.EthereumChain()
 	if !ok {
@@ -59,7 +59,7 @@ func RunERC20Faucet(ctx context.Context, def Definition, cfg RunERC20FaucetConfi
 		return errors.Wrap(err, "backend")
 	}
 
-	token, err := bindings.NewOmni(tokenAddr, backend)
+	token, err := bindings.NewOmni(addrs.Token, backend)
 	if err != nil {
 		return errors.Wrap(err, "new omni")
 	}
@@ -69,7 +69,7 @@ func RunERC20Faucet(ctx context.Context, def Definition, cfg RunERC20FaucetConfi
 		return errors.Wrap(err, "bind opts")
 	}
 
-	tx, err := token.Transfer(txOpts, addr, amt)
+	tx, err := token.Transfer(txOpts, account, amt)
 	if err != nil {
 		return errors.Wrap(err, "transfer")
 	}
@@ -79,7 +79,7 @@ func RunERC20Faucet(ctx context.Context, def Definition, cfg RunERC20FaucetConfi
 		return errors.Wrap(err, "wait mined")
 	}
 
-	log.Info(ctx, "Funded", "addr", addr.Hex(), "token", tokenAddr, "amount", cfg.Amount, "tx", rec.TxHash.Hex())
+	log.Info(ctx, "Funded", "addr", account.Hex(), "token", addrs.Token, "amount", cfg.Amount, "tx", rec.TxHash.Hex())
 
 	return nil
 }

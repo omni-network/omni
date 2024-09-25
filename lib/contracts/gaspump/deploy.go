@@ -75,18 +75,21 @@ func (cfg DeploymentConfig) Validate() error {
 
 // isDeployed returns true if the token contract is already deployed to its expected address.
 func isDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (bool, common.Address, error) {
-	addr := contracts.GasPump(network)
-
-	code, err := backend.CodeAt(ctx, addr, nil)
+	addrs, err := contracts.GetAddresses(ctx, network)
 	if err != nil {
-		return false, addr, errors.Wrap(err, "code at", "address", addr)
+		return false, common.Address{}, errors.Wrap(err, "get addrs")
+	}
+
+	code, err := backend.CodeAt(ctx, addrs.GasPump, nil)
+	if err != nil {
+		return false, addrs.GasPump, errors.Wrap(err, "code at", "address", addrs.GasPump)
 	}
 
 	if len(code) == 0 {
-		return false, addr, nil
+		return false, addrs.GasPump, nil
 	}
 
-	return true, addr, nil
+	return true, addrs.GasPump, nil
 }
 
 // DeployIfNeeded deploys a new token contract if it is not already deployed.
@@ -105,7 +108,17 @@ func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend
 
 // Deploy deploys a new L1Bridge contract and returns the address and receipt.
 func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
-	portal, err := bindings.NewOmniPortal(contracts.Portal(network), backend)
+	addrs, err := contracts.GetAddresses(ctx, network)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "get addresses")
+	}
+
+	salts, err := contracts.GetSalts(ctx, network)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "get salts")
+	}
+
+	portal, err := bindings.NewOmniPortal(addrs.Portal, backend)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "new portal")
 	}
@@ -116,17 +129,17 @@ func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend
 	}
 
 	cfg := DeploymentConfig{
-		Create3Factory:  contracts.Create3Factory(network),
-		Create3Salt:     contracts.GasPumpSalt(network),
+		Create3Factory:  addrs.Create3Factory,
+		Create3Salt:     salts.GasPump,
 		Owner:           eoa.MustAddress(network, eoa.RoleAdmin),
 		Deployer:        eoa.MustAddress(network, eoa.RoleDeployer),
 		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleAdmin),
-		Portal:          contracts.Portal(network),
-		GasStation:      contracts.GasStation(network),
+		Portal:          addrs.Portal,
+		GasStation:      addrs.GasStation,
 		Oracle:          oracle,
 		MaxSwap:         big.NewInt(20000000000000000), // 0.02 ETH
 		Toll:            big.NewInt(100),               // 100 / 1000 = 0.1 = 10% (1000 = GasPump.TOLL_DENOM),
-		ExpectedAddr:    contracts.GasPump(network),
+		ExpectedAddr:    addrs.GasPump,
 	}
 
 	return deploy(ctx, network, cfg, backend)

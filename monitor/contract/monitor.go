@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/contracts"
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -13,13 +14,18 @@ import (
 )
 
 // StartMonitoring starts the monitoring goroutines.
-func StartMonitoring(ctx context.Context, network netconf.Network, rpcClients map[uint64]ethclient.Client) {
+func StartMonitoring(ctx context.Context, network netconf.Network, rpcClients map[uint64]ethclient.Client) error {
 	log.Info(ctx, "Monitoring contracts")
+
+	toFund, err := contracts.ToFund(ctx, network.ID)
+	if err != nil {
+		return errors.Wrap(err, "get contracts to fund")
+	}
 
 	for _, chain := range network.EVMChains() {
 		isOmniEVM := chain.ID == network.ID.Static().OmniExecutionChainID
 
-		for _, contract := range contracts.ToFund(network.ID) {
+		for _, contract := range toFund {
 			if contract.OnlyOmniEVM && !isOmniEVM {
 				continue
 			}
@@ -27,6 +33,8 @@ func StartMonitoring(ctx context.Context, network netconf.Network, rpcClients ma
 			go monitorContractForever(ctx, contract, chain.Name, rpcClients[chain.ID])
 		}
 	}
+
+	return nil
 }
 
 // monitorContractForever blocks and periodically monitors the contract for the given chain.

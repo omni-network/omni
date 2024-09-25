@@ -38,7 +38,10 @@ func setupTokenBridge(ctx context.Context, def Definition) error {
 
 	admin := eoa.MustAddress(networkID, eoa.RoleAdmin)
 
-	portalAddr := contracts.Portal(networkID)
+	addrs, err := contracts.GetAddresses(ctx, networkID)
+	if err != nil {
+		return errors.Wrap(err, "get addrs")
+	}
 
 	l1Backend, err := def.Backends().Backend(l1.ID)
 	if err != nil {
@@ -88,7 +91,7 @@ func setupTokenBridge(ctx context.Context, def Definition) error {
 		return errors.Wrap(err, "bind opts")
 	}
 
-	tx, err := nativeBridge.Setup(txOpts, l1.ID, portalAddr, l1BridgeAddr)
+	tx, err := nativeBridge.Setup(txOpts, l1.ID, addrs.Portal, l1BridgeAddr)
 	if err != nil {
 		return errors.Wrap(err, "setup bridge native")
 	}
@@ -180,25 +183,24 @@ func bridgeToNative(ctx context.Context, def Definition, toBridge []BridgeTest) 
 	}
 
 	// payor is initial supply recipient, the only account with OMNI on L1 (for non-mainnet networks)
-	payor, err := omnitoken.InitialSupplyRecipient(networkID)
-	if err != nil {
-		return errors.Wrap(err, "initial supply recipient")
-	}
+	payor := omnitoken.InitialSupplyRecipient(networkID)
 
-	l1BridgeAddr := contracts.L1Bridge(networkID)
-	tokenAddr := contracts.Token(networkID)
+	addrs, err := contracts.GetAddresses(ctx, networkID)
+	if err != nil {
+		return errors.Wrap(err, "get addrs")
+	}
 
 	txOpts, backend, err := def.Backends().BindOpts(ctx, l1.ID, payor)
 	if err != nil {
 		return errors.Wrap(err, "bind opts")
 	}
 
-	token, err := bindings.NewOmni(tokenAddr, backend)
+	token, err := bindings.NewOmni(addrs.Token, backend)
 	if err != nil {
 		return errors.Wrap(err, "token")
 	}
 
-	tx, err := token.IncreaseAllowance(txOpts, l1BridgeAddr, omnitoken.TotalSupply)
+	tx, err := token.IncreaseAllowance(txOpts, addrs.L1Bridge, omnitoken.TotalSupply)
 	if err != nil {
 		return errors.Wrap(err, "increase allowance")
 	}
@@ -208,7 +210,7 @@ func bridgeToNative(ctx context.Context, def Definition, toBridge []BridgeTest) 
 		return errors.Wrap(err, "wait mined")
 	}
 
-	bridge, err := bindings.NewOmniBridgeL1(l1BridgeAddr, backend)
+	bridge, err := bindings.NewOmniBridgeL1(addrs.L1Bridge, backend)
 	if err != nil {
 		return errors.Wrap(err, "l1 bridge")
 	}

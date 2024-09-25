@@ -162,12 +162,15 @@ func upgradeFeeOracleV1(ctx context.Context, s shared, c chain) error {
 }
 
 func upgradeGasStation(ctx context.Context, s shared, c chain) error {
-	addr := contracts.GasStation(s.network.ID)
+	addrs, err := contracts.GetAddresses(ctx, s.network.ID)
+	if err != nil {
+		return errors.Wrap(err, "get addrs")
+	}
 
 	// TODO: replace if re-initialization is required
 	initializer := []byte{}
 
-	calldata, err := adminABI.Pack("upgradeGasStation", s.admin, s.deployer, addr, initializer)
+	calldata, err := adminABI.Pack("upgradeGasStation", s.admin, s.deployer, addrs.GasStation, initializer)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
@@ -177,18 +180,21 @@ func upgradeGasStation(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
 
-	log.Info(ctx, "GasStation upgraded ✅", "chain", c.Name, "addr", addr, "out", out)
+	log.Info(ctx, "GasStation upgraded ✅", "chain", c.Name, "addr", addrs.GasStation, "out", out)
 
 	return nil
 }
 
 func upgradeGasPump(ctx context.Context, s shared, c chain) error {
-	addr := contracts.GasPump(s.network.ID)
+	addrs, err := contracts.GetAddresses(ctx, s.network.ID)
+	if err != nil {
+		return errors.Wrap(err, "get addrs")
+	}
 
 	// TODO: replace if re-initialization is required
 	initializer := []byte{}
 
-	calldata, err := adminABI.Pack("upgradeGasPump", s.admin, s.deployer, addr, initializer)
+	calldata, err := adminABI.Pack("upgradeGasPump", s.admin, s.deployer, addrs.GasPump, initializer)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
@@ -198,7 +204,7 @@ func upgradeGasPump(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
 
-	log.Info(ctx, "GasPump upgraded ✅", "chain", c.Name, "addr", addr, "out", out)
+	log.Info(ctx, "GasPump upgraded ✅", "chain", c.Name, "addr", addrs.GasPump, "out", out)
 
 	return nil
 }
@@ -261,12 +267,15 @@ func upgradeBridgeNative(ctx context.Context, s shared, c chain) error {
 }
 
 func upgradeBridgeL1(ctx context.Context, s shared, c chain) error {
-	proxy := contracts.L1Bridge(s.network.ID)
+	addrs, err := contracts.GetAddresses(ctx, s.network.ID)
+	if err != nil {
+		return errors.Wrap(err, "get addrs")
+	}
 
 	// TODO: replace if re-initialization is required
 	initializer := []byte{}
 
-	calldata, err := adminABI.Pack("upgradeBridgeL1", s.admin, s.deployer, proxy, initializer)
+	calldata, err := adminABI.Pack("upgradeBridgeL1", s.admin, s.deployer, addrs.L1Bridge, initializer)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
@@ -276,7 +285,7 @@ func upgradeBridgeL1(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
 
-	log.Info(ctx, "OmniBridgeL1 upgraded ✅", "chain", c.Name, "addr", proxy, "out", out)
+	log.Info(ctx, "OmniBridgeL1 upgraded ✅", "chain", c.Name, "addr", addrs.L1Bridge, "out", out)
 
 	return nil
 }

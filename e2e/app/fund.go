@@ -133,7 +133,12 @@ func FundAccounts(ctx context.Context, def Definition, dryRun bool) error {
 			continue
 		}
 
-		for _, contract := range contracts.ToFund(network.ID) {
+		toFund, err := contracts.ToFund(ctx, network.ID)
+		if err != nil {
+			return errors.Wrap(err, "get contracts to fund")
+		}
+
+		for _, contract := range toFund {
 			ctrCtx := log.WithCtx(ctx,
 				"chain", chain.Name,
 				"contract", contract.Name,

@@ -136,6 +136,9 @@ func testStratParams() []bindings.IOmniAVSStrategyParam {
 func testDeployCfg(t *testing.T) deployConfig {
 	t.Helper()
 
+	addrs, err := contracts.GetAddresses(context.Background(), netconf.Devnet)
+	require.NoError(t, err)
+
 	return deployConfig{
 		deployer:         eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
 		owner:            eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
@@ -143,7 +146,7 @@ func testDeployCfg(t *testing.T) deployConfig {
 		metadataURI:      "https://test-operator.com",
 		omniChainID:      netconf.Devnet.Static().OmniExecutionChainID,
 		stratParams:      testStratParams(),
-		portal:           contracts.Portal(netconf.Devnet),
+		portal:           addrs.Portal,
 		ethStakeInbox:    common.HexToAddress("0x1234"), // stub
 		minOperatorStake: big.NewInt(1e18),              // 1 ETH
 		maxOperatorCount: 10,
