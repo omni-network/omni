@@ -1,6 +1,7 @@
 package contracts
 
 import (
+	"context"
 	"math/big"
 
 	"github.com/omni-network/omni/lib/netconf"
@@ -18,15 +19,20 @@ type WithFundThreshold struct {
 	Thresholds  FundThresholds
 }
 
-func ToFund(network netconf.ID) []WithFundThreshold {
+func ToFund(ctx context.Context, network netconf.ID) ([]WithFundThreshold, error) {
+	addrs, err := GetAddresses(ctx, network)
+	if err != nil {
+		return nil, err
+	}
+
 	return []WithFundThreshold{
 		{
 			Name:        "gas-station",
-			Address:     GasStation(network),
+			Address:     addrs.GasStation,
 			OnlyOmniEVM: true,
 			Thresholds:  FundThresholds{minEther: 200, targetEther: 1000}, // GasStation funds user GasPump requests, and needs a large OMNI balance.
 		},
-	}
+	}, nil
 }
 
 type FundThresholds struct {

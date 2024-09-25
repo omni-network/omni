@@ -34,7 +34,7 @@ type Manager interface {
 	Portals() map[uint64]Portal
 }
 
-func NewManager(testnet types.Testnet, backends ethbackend.Backends) (Manager, error) {
+func NewManager(ctx context.Context, testnet types.Testnet, backends ethbackend.Backends) (Manager, error) {
 	if testnet.OnlyMonitor {
 		if !netconf.IsAny(testnet.Network, netconf.Omega, netconf.Mainnet) {
 			return nil, errors.New("monitor-only only supported for testnet and mainnet")
@@ -47,13 +47,18 @@ func NewManager(testnet types.Testnet, backends ethbackend.Backends) (Manager, e
 
 	network := testnet.Network
 
+	addrs, err := contracts.GetAddresses(ctx, network)
+	if err != nil {
+		return nil, errors.Wrap(err, "get addrs")
+	}
+
 	// Create partial portals. This will be updated by Deploy*Portals.
 	portals := make(map[uint64]Portal)
 
 	// Private chains have deterministic deploy height and addresses.
 	privateChainDeployInfo := DeployInfo{
 		DeployHeight:  0,
-		PortalAddress: contracts.Portal(network),
+		PortalAddress: addrs.Portal,
 	}
 
 	if testnet.HasOmniEVM() {

@@ -230,13 +230,19 @@ func TestConfLevels(t *testing.T) {
 func TestAddrs(t *testing.T) {
 	t.Parallel()
 
+	omegaAddrs, err := contracts.GetAddresses(context.Background(), netconf.Omega)
+	require.NoError(t, err)
+
+	mainnetAddrs, err := contracts.GetAddresses(context.Background(), netconf.Mainnet)
+	require.NoError(t, err)
+
 	// test that hardcoded address in netconf match lib/contract addresses
 	for _, deployment := range netconf.Omega.Static().Portals {
-		require.Equal(t, contracts.Portal(netconf.Omega), deployment.Address)
+		require.Equal(t, omegaAddrs.Portal, deployment.Address)
 	}
 
-	require.Equal(t, contracts.AVS(netconf.Omega), netconf.Omega.Static().AVSContractAddress)
-	require.Equal(t, contracts.AVS(netconf.Mainnet), netconf.Mainnet.Static().AVSContractAddress)
+	require.Equal(t, omegaAddrs.AVS, netconf.Omega.Static().AVSContractAddress)
+	require.Equal(t, mainnetAddrs.AVS, netconf.Mainnet.Static().AVSContractAddress)
 }
 
 // isSeedNode returns true if the node should be added to seed node static config.

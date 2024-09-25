@@ -16,14 +16,13 @@ import (
 //
 //nolint:spancheck // False positive.
 func StartChainHeight(ctx context.Context, network netconf.ID, chain string, height uint64, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
-	// Deterministic TraceID for network+network.Version+chain+height.
+	// Deterministic TraceID for network+chain+height.
 	// So all traces of the same block across all apps/instances of the same network are correlated.
 	// Note this only works for protected networks with consistent versions.
 	// Ephemeral network traces will not be correlated.
 
 	h := fnv.New128a()
 	_, _ = h.Write([]byte(network.String()))
-	_, _ = h.Write([]byte(network.Static().Version))
 	_, _ = h.Write([]byte(chain))
 	_ = binary.Write(h, binary.BigEndian, height)
 

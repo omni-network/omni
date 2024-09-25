@@ -1,6 +1,7 @@
 package contracts_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/omni-network/omni/lib/contracts"
@@ -23,17 +24,24 @@ func TestContractAddressReference(t *testing.T) {
 			continue // Skip simnet since it doesn't have eoas.
 		}
 
-		addrs := map[string]common.Address{
-			"create3":    contracts.Create3Factory(network),
-			"portal":     contracts.Portal(network),
-			"avs":        contracts.AVS(network),
-			"l1bridge":   contracts.L1Bridge(network),
-			"token":      contracts.Token(network),
-			"gaspump":    contracts.GasPump(network),
-			"gasstation": contracts.GasStation(network),
+		if network == netconf.Staging {
+			continue // Skip staging because salt version is dynamic.
 		}
 
-		for name, addr := range addrs {
+		addrs, err := contracts.GetAddresses(context.Background(), network)
+		require.NoError(t, err)
+
+		addrsJSON := map[string]common.Address{
+			"create3":    addrs.Create3Factory,
+			"portal":     addrs.Portal,
+			"avs":        addrs.AVS,
+			"l1bridge":   addrs.L1Bridge,
+			"token":      addrs.Token,
+			"gaspump":    addrs.GasPump,
+			"gasstation": addrs.GasStation,
+		}
+
+		for name, addr := range addrsJSON {
 			require.NotEmpty(t, addr, "empty address %s in networks: network=%v", name, network)
 			if duplicate[addr] {
 				t.Errorf("duplicate address %s in networks: network=%v", name, network)
@@ -41,9 +49,7 @@ func TestContractAddressReference(t *testing.T) {
 			duplicate[addr] = true
 		}
 
-		if network != netconf.Staging {
-			golden[network] = addrs // Don't add staging to golden since it's not deterministic.
-		}
+		golden[network] = addrsJSON
 	}
 
 	tutil.RequireGoldenJSON(t, golden)

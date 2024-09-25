@@ -81,6 +81,11 @@ func deployGasStation(ctx context.Context, def Definition) error {
 		return errors.Wrap(err, "backend")
 	}
 
+	addrs, err := contracts.GetAddresses(ctx, network.ID)
+	if err != nil {
+		return errors.Wrap(err, "get addrs")
+	}
+
 	gasPumps := make([]bindings.OmniGasStationGasPump, 0, len(network.EVMChains())-1)
 	for _, chain := range network.EVMChains() {
 		if chain.ID == omniEVM.ID {
@@ -89,7 +94,7 @@ func deployGasStation(ctx context.Context, def Definition) error {
 
 		gasPumps = append(gasPumps, bindings.OmniGasStationGasPump{
 			ChainID: chain.ID,
-			Addr:    contracts.GasPump(network.ID),
+			Addr:    addrs.GasPump,
 		})
 	}
 
@@ -128,13 +133,16 @@ func fundGasStation(ctx context.Context, def Definition) error {
 		funder = anvil.DevAccount8()
 	}
 
-	addr := contracts.GasStation(network.ID)
+	addrs, err := contracts.GetAddresses(ctx, network.ID)
+	if err != nil {
+		return errors.Wrap(err, "get addrs")
+	}
 
 	// 1000 OMNI
 	amt := new(big.Int).Mul(big.NewInt(1000), big.NewInt(params.Ether))
 
 	tx, rec, err := backend.Send(ctx, funder, txmgr.TxCandidate{
-		To:       &addr,
+		To:       &addrs.GasStation,
 		GasLimit: 0,
 		Value:    amt,
 	})
@@ -182,7 +190,11 @@ var (
 func testGasPumps(ctx context.Context, def Definition) error {
 	networkID := def.Testnet.Network
 	network := NetworkFromDef(def)
-	pumpAddr := contracts.GasPump(networkID)
+
+	addrs, err := contracts.GetAddresses(ctx, networkID)
+	if err != nil {
+		return errors.Wrap(err, "get addrs")
+	}
 
 	omniEVM, ok := network.OmniEVMChain()
 	if !ok {
@@ -207,7 +219,7 @@ func testGasPumps(ctx context.Context, def Definition) error {
 			return errors.Wrap(err, "backend", "chain", chain.Name)
 		}
 
-		gasPump, err := bindings.NewOmniGasPump(pumpAddr, backend)
+		gasPump, err := bindings.NewOmniGasPump(addrs.GasPump, backend)
 		if err != nil {
 			return errors.Wrap(err, "new gas pump")
 		}

@@ -34,10 +34,6 @@ func (i ID) String() string {
 	return string(i)
 }
 
-func (i ID) Version() string {
-	return i.Static().Version
-}
-
 const (
 	// Simnet is a simulated network for very simple testing of individual binaries.
 	// It is a single binary with mocked clients (no networking).

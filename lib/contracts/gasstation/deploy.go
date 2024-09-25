@@ -57,18 +57,21 @@ func (cfg DeploymentConfig) Validate() error {
 
 // isDeployed returns true if the token contract is already deployed to its expected address.
 func isDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (bool, common.Address, error) {
-	addr := contracts.GasStation(network)
-
-	code, err := backend.CodeAt(ctx, addr, nil)
+	addrs, err := contracts.GetAddresses(ctx, network)
 	if err != nil {
-		return false, addr, errors.Wrap(err, "code at", "address", addr)
+		return false, common.Address{}, errors.Wrap(err, "get addresses")
+	}
+
+	code, err := backend.CodeAt(ctx, addrs.GasStation, nil)
+	if err != nil {
+		return false, addrs.GasStation, errors.Wrap(err, "code at", "address", addrs.GasStation)
 	}
 
 	if len(code) == 0 {
-		return false, addr, nil
+		return false, addrs.GasStation, nil
 	}
 
-	return true, addr, nil
+	return true, addrs.GasStation, nil
 }
 
 // DeployIfNeeded deploys a new token contract if it is not already deployed.
@@ -97,14 +100,24 @@ func Deploy(
 	backend *ethbackend.Backend,
 	gasPumps []bindings.OmniGasStationGasPump,
 ) (common.Address, *ethtypes.Receipt, error) {
+	addrs, err := contracts.GetAddresses(ctx, network)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "get addresses")
+	}
+
+	salts, err := contracts.GetSalts(ctx, network)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "get salts")
+	}
+
 	cfg := DeploymentConfig{
-		Create3Factory:  contracts.Create3Factory(network),
-		Create3Salt:     contracts.GasStationSalt(network),
+		Create3Factory:  addrs.Create3Factory,
+		Create3Salt:     salts.GasStation,
 		Owner:           eoa.MustAddress(network, eoa.RoleAdmin),
 		Deployer:        eoa.MustAddress(network, eoa.RoleDeployer),
 		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleAdmin),
-		Portal:          contracts.Portal(network),
-		ExpectedAddr:    contracts.GasStation(network),
+		Portal:          addrs.Portal,
+		ExpectedAddr:    addrs.GasStation,
 	}
 
 	return deploy(ctx, network, cfg, backend, gasPumps)

@@ -47,10 +47,10 @@ func TestBridge(t *testing.T) {
 		l1Client, err := ethclient.Dial(l1.Name, l1RPC)
 		require.NoError(t, err)
 
-		l1TokenAddr := contracts.Token(network.ID)
-		l1BridgeAddr := contracts.L1Bridge(network.ID)
+		addrs, err := contracts.GetAddresses(ctx, network.ID)
+		require.NoError(t, err)
 
-		l1Token, err := bindings.NewOmni(l1TokenAddr, l1Client)
+		l1Token, err := bindings.NewOmni(addrs.Token, l1Client)
 		require.NoError(t, err)
 
 		nativeBridge, err := bindings.NewOmniBridgeNative(common.HexToAddress(predeploys.OmniBridgeNative), omniClient)
@@ -81,7 +81,7 @@ func TestBridge(t *testing.T) {
 		require.Equal(t, expectedL1BridgeBalance, trackedL1BridgeBalance)
 
 		// assert actual token balance of l1 bridge is expected
-		l1BridgeBalance, err := l1Token.BalanceOf(nil, l1BridgeAddr)
+		l1BridgeBalance, err := l1Token.BalanceOf(nil, addrs.L1Bridge)
 		require.NoError(t, err)
 		require.Equal(t, expectedL1BridgeBalance, l1BridgeBalance)
 	})

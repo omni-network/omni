@@ -38,10 +38,13 @@ func TestDeployDevnet(t *testing.T) {
 	backend, err := ethbackend.NewAnvilBackend(chainName, chainID, blockPeriod, client)
 	require.NoError(t, err)
 
+	addrs, err := contracts.GetAddresses(ctx, network)
+	require.NoError(t, err)
+
 	// devnet create3 factory is required
 	addr, _, err := create3.Deploy(ctx, network, backend)
 	require.NoError(t, err)
-	require.Equal(t, contracts.Create3Factory(network), addr)
+	require.Equal(t, addrs.Create3Factory, addr)
 
 	valSetID := uint64(1)
 	vals := []bindings.Validator{
@@ -53,7 +56,7 @@ func TestDeployDevnet(t *testing.T) {
 	feeOracle := common.HexToAddress("0xfffff")
 	addr, _, err = portal.Deploy(ctx, network, backend, feeOracle, valSetID, vals)
 	require.NoError(t, err)
-	require.Equal(t, contracts.Portal(network), addr)
+	require.Equal(t, addrs.Portal, addr)
 
 	portal, err := bindings.NewOmniPortal(addr, backend)
 	require.NoError(t, err)

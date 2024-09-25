@@ -17,18 +17,21 @@ import (
 // IsDeployed checks if the Create3 factory contract is deployed to the provided backend
 // to its expected network address.
 func IsDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (bool, common.Address, error) {
-	addr := contracts.Create3Factory(network)
-
-	code, err := backend.CodeAt(ctx, addr, nil)
+	addrs, err := contracts.GetAddresses(ctx, network)
 	if err != nil {
-		return false, addr, errors.Wrap(err, "code at", "address", addr)
+		return false, common.Address{}, errors.Wrap(err, "get addrs")
+	}
+
+	code, err := backend.CodeAt(ctx, addrs.Create3Factory, nil)
+	if err != nil {
+		return false, addrs.Create3Factory, errors.Wrap(err, "code at", "address", addrs.Create3Factory)
 	}
 
 	if len(code) == 0 {
-		return false, addr, nil
+		return false, addrs.Create3Factory, nil
 	}
 
-	return true, addr, nil
+	return true, addrs.Create3Factory, nil
 }
 
 // DeployIfNeeded deploys a new Create3 factory contract if it is not already deployed.

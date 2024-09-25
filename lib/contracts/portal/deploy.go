@@ -107,27 +107,40 @@ func (cfg deploymentConfig) Validate() error {
 // IsDeployed checks if the Portal contract is deployed to the provided backend
 // to its expected network address.
 func IsDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (bool, common.Address, error) {
-	addr := contracts.Portal(network)
-
-	code, err := backend.CodeAt(ctx, addr, nil)
+	addrs, err := contracts.GetAddresses(ctx, network)
 	if err != nil {
-		return false, addr, errors.Wrap(err, "code at")
+		return false, common.Address{}, errors.Wrap(err, "get addresses")
+	}
+
+	code, err := backend.CodeAt(ctx, addrs.Portal, nil)
+	if err != nil {
+		return false, addrs.Portal, errors.Wrap(err, "code at")
 	}
 
 	if len(code) == 0 {
-		return false, addr, nil
+		return false, addrs.Portal, nil
 	}
 
-	return true, addr, nil
+	return true, addrs.Portal, nil
 }
 
 // Deploy deploys a new Portal contract and returns the address and receipt.
 // It only allows deployments to explicitly supported chains.
 func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, feeOracle common.Address, valSetID uint64, validators []bindings.Validator,
 ) (common.Address, *ethtypes.Receipt, error) {
+	addrs, err := contracts.GetAddresses(ctx, network)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "get addrs")
+	}
+
+	salts, err := contracts.GetSalts(ctx, network)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "get salts")
+	}
+
 	cfg := deploymentConfig{
-		Create3Factory:        contracts.Create3Factory(network),
-		Create3Salt:           contracts.PortalSalt(network),
+		Create3Factory:        addrs.Create3Factory,
+		Create3Salt:           salts.Portal,
 		Owner:                 eoa.MustAddress(network, eoa.RoleAdmin),
 		Deployer:              eoa.MustAddress(network, eoa.RoleDeployer),
 		ProxyAdminOwner:       eoa.MustAddress(network, eoa.RoleAdmin),
@@ -140,7 +153,7 @@ func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend
 		XSubValsetCutoff:      XSubValsetCutoff,
 		CChainXMsgOffset:      GenesisCChainXMsgOffset,
 		CChainXBlockOffset:    GenesisCChainXBlockOffset,
-		ExpectedAddr:          contracts.Portal(network),
+		ExpectedAddr:          addrs.Portal,
 	}
 
 	return deploy(ctx, cfg, backend, feeOracle, valSetID, validators)

@@ -62,15 +62,6 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, err
 	}
 
-	if err := deployPublicCreate3(ctx, def); err != nil {
-		return nil, err
-	}
-
-	// Deploy public portals first so their addresses are available for setup.
-	if err := def.Netman().DeployPublicPortals(ctx, genesisValSetID, genesisVals); err != nil {
-		return nil, err
-	}
-
 	if err := Setup(ctx, def, cfg); err != nil {
 		return nil, err
 	}
@@ -85,6 +76,15 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 	}
 
 	if err := waitForEVMs(ctx, NetworkFromDef(def), def.Backends()); err != nil {
+		return nil, err
+	}
+
+	if err := deployPublicCreate3(ctx, def); err != nil {
+		return nil, err
+	}
+
+	// Deploy public portals first so their addresses are available for setup.
+	if err := def.Netman().DeployPublicPortals(ctx, genesisValSetID, genesisVals); err != nil {
 		return nil, err
 	}
 

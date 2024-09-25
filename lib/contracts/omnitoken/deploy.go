@@ -27,20 +27,6 @@ type deploymentConfig struct {
 	ExpectedAddr   common.Address
 }
 
-func getConfig(network netconf.ID) (deploymentConfig, error) {
-	if network == netconf.Mainnet {
-		return deploymentConfig{}, errors.New("do not use this code for mainnet")
-	}
-
-	return deploymentConfig{
-		Create3Factory: contracts.Create3Factory(network),
-		Create3Salt:    contracts.TokenSalt(network),
-		Deployer:       eoa.MustAddress(network, eoa.RoleDeployer),
-		Recipient:      eoa.MustAddress(network, eoa.RoleTester),
-		ExpectedAddr:   contracts.Token(network),
-	}, nil
-}
-
 func isDeadOrEmpty(addr common.Address) bool {
 	return addr == common.Address{} || addr == common.HexToAddress(eoa.ZeroXDead)
 }
@@ -65,29 +51,28 @@ func (cfg deploymentConfig) validate() error {
 	return nil
 }
 
-func InitialSupplyRecipient(network netconf.ID) (common.Address, error) {
-	cfg, err := getConfig(network)
-	if err != nil {
-		return common.Address{}, err
-	}
-
-	return cfg.Recipient, nil
+// InitialSupplyRecipient returns the address that receives the initial supply of the token.
+func InitialSupplyRecipient(network netconf.ID) common.Address {
+	return eoa.MustAddress(network, eoa.RoleTester)
 }
 
 // isDeployed returns true if the token contract is already deployed to its expected address.
 func isDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (bool, common.Address, error) {
-	addr := contracts.Token(network)
-
-	code, err := backend.CodeAt(ctx, addr, nil)
+	addrs, err := contracts.GetAddresses(ctx, network)
 	if err != nil {
-		return false, addr, errors.Wrap(err, "code at", "address", addr)
+		return false, common.Address{}, errors.Wrap(err, "get addresses")
+	}
+
+	code, err := backend.CodeAt(ctx, addrs.Token, nil)
+	if err != nil {
+		return false, addrs.Token, errors.Wrap(err, "code at", "address", addrs.Token)
 	}
 
 	if len(code) == 0 {
-		return false, addr, nil
+		return false, addrs.Token, nil
 	}
 
-	return true, addr, nil
+	return true, addrs.Token, nil
 }
 
 // DeployIfNeeded deploys a new token contract if it is not already deployed.
@@ -113,9 +98,22 @@ func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend
 		return common.Address{}, nil, errors.New("mainnet token already deployed")
 	}
 
-	cfg, err := getConfig(network)
+	addrs, err := contracts.GetAddresses(ctx, network)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get config")
+		return common.Address{}, nil, errors.Wrap(err, "get addresses")
+	}
+
+	salts, err := contracts.GetSalts(ctx, network)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "get salts")
+	}
+
+	cfg := deploymentConfig{
+		Create3Factory: addrs.Create3Factory,
+		Create3Salt:    salts.Token,
+		Deployer:       eoa.MustAddress(network, eoa.RoleDeployer),
+		Recipient:      InitialSupplyRecipient(network),
+		ExpectedAddr:   addrs.Token,
 	}
 
 	return deploy(ctx, cfg, backend)
