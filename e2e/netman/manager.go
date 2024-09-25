@@ -5,7 +5,6 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/types"
-	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/feeoraclev1"
 	"github.com/omni-network/omni/lib/contracts/portal"
 	"github.com/omni-network/omni/lib/errors"
@@ -34,7 +33,7 @@ type Manager interface {
 	Portals() map[uint64]Portal
 }
 
-func NewManager(ctx context.Context, testnet types.Testnet, backends ethbackend.Backends) (Manager, error) {
+func NewManager(testnet types.Testnet, backends ethbackend.Backends) (Manager, error) {
 	if testnet.OnlyMonitor {
 		if !netconf.IsAny(testnet.Network, netconf.Omega, netconf.Mainnet) {
 			return nil, errors.New("monitor-only only supported for testnet and mainnet")
@@ -47,18 +46,12 @@ func NewManager(ctx context.Context, testnet types.Testnet, backends ethbackend.
 
 	network := testnet.Network
 
-	addrs, err := contracts.GetAddresses(ctx, network)
-	if err != nil {
-		return nil, errors.Wrap(err, "get addrs")
-	}
-
 	// Create partial portals. This will be updated by Deploy*Portals.
 	portals := make(map[uint64]Portal)
 
 	// Private chains have deterministic deploy height and addresses.
 	privateChainDeployInfo := DeployInfo{
-		DeployHeight:  0,
-		PortalAddress: addrs.Portal,
+		DeployHeight: 0,
 	}
 
 	if testnet.HasOmniEVM() {
@@ -223,11 +216,6 @@ func (m *manager) DeployPrivatePortals(ctx context.Context, valSetID uint64, val
 		addr, height, err := m.deployIfNeeded(ctx, p.Chain, backend, valSetID, validators)
 		if err != nil {
 			return deployResult{}, errors.Wrap(err, "deploy private portals", "chain", p.Chain.Name)
-		} else if addr != p.DeployInfo.PortalAddress {
-			return deployResult{}, errors.New("deployed address does not match existing address",
-				"expected", p.DeployInfo.PortalAddress.Hex(),
-				"actual", addr.Hex(),
-				"chain", p.Chain.Name)
 		}
 
 		contract, err := bindings.NewOmniPortal(addr, backend)
