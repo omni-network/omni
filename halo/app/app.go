@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	attestkeeper "github.com/omni-network/omni/halo/attest/keeper"
 	atypes "github.com/omni-network/omni/halo/attest/types"
@@ -14,13 +16,17 @@ import (
 	valsynckeeper "github.com/omni-network/omni/halo/valsync/keeper"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/log"
 	evmengkeeper "github.com/omni-network/omni/octane/evmengine/keeper"
 	etypes "github.com/omni-network/omni/octane/evmengine/types"
 
+	abci "github.com/cometbft/cometbft/abci/types"
+
 	"cosmossdk.io/depinject"
-	"cosmossdk.io/log"
+	sdklog "cosmossdk.io/log"
 	evidencekeeper "cosmossdk.io/x/evidence/keeper"
 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
+	utypes "cosmossdk.io/x/upgrade/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -28,6 +34,7 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
@@ -83,7 +90,7 @@ type App struct {
 
 // newApp returns a reference to an initialized App.
 func newApp(
-	logger log.Logger,
+	logger sdklog.Logger,
 	db dbm.DB,
 	engineCl ethclient.EngineClient,
 	voter atypes.Voter,
@@ -156,10 +163,27 @@ func newApp(
 
 	app.App = appBuilder.Build(db, nil, baseAppOpts...)
 
-	// Workaround for official endblockers since valsync replaces staking endblocker, but cosmos panics if it's not there.
+	// Blocker overrides
 	{
+		// Workaround for official endblockers since valsync replaces staking endblocker, but cosmos panics if it's not there.
 		app.ModuleManager.OrderEndBlockers = endBlockers
 		app.SetEndBlocker(app.EndBlocker)
+
+		// Also dump upgrade info to disk if binary is too old.
+		// Cosmos upgrade only dumps when doing the upgrade.
+		app.SetPreBlocker(func(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+			resp, err := app.PreBlocker(ctx, req)
+			if lastAppliedUpgrade, ok := isErrWrongVersion(err); ok {
+				height := sdk.UnwrapSDKContext(ctx).BlockHeight()
+				err := app.UpgradeKeeper.DumpUpgradeInfoToDisk(height, utypes.Plan{Name: lastAppliedUpgrade})
+				if err != nil {
+					// Best effort just log
+					log.Warn(ctx, "Failed writing upgrade info", err)
+				}
+			}
+
+			return resp, err //nolint:wrapcheck // Don't wrap this cosmos error.
+		})
 	}
 
 	if err := app.Load(true); err != nil {
@@ -196,6 +220,35 @@ func (a App) ClientContext(ctx context.Context) client.Context {
 		WithChainID(a.ChainID()).
 		WithCmdContext(ctx).
 		WithCodec(a.appCodec)
+}
+
+// isErrWrongVersion returns the last applied upgrade if the error is due to a wrong app version, else it returns false.
+func isErrWrongVersion(err error) (string, bool) {
+	if err == nil {
+		return "", false
+	}
+
+	// Get the root cause of the error.
+	cause := err
+	for {
+		next := errors.Unwrap(cause)
+		if next == nil {
+			break
+		}
+		cause = next
+	}
+
+	var ignore int
+	var lastAppliedUpgrade string
+	i, err := fmt.Fscanf(
+		strings.NewReader(cause.Error()),
+		"wrong app version %d, upgrade handler is missing for %s upgrade plan",
+		&ignore, &lastAppliedUpgrade)
+	if err != nil || i != 2 {
+		return "", false
+	}
+
+	return lastAppliedUpgrade, true
 }
 
 var (
