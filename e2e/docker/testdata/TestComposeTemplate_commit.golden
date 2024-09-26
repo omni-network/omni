@@ -24,8 +24,7 @@ services:
     - 1317 # Cosmos REST API
     - 6060 # Pprof
     volumes:
-    - ./node0/config:/halo/config
-    - ./node0/data:/halo/data
+    - ./node0:/halo
     networks:
       test:
         ipv4_address: 10.186.73.0

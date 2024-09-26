@@ -30,8 +30,7 @@ services:
 {{- end }}
     - 6060 # Pprof
     volumes:
-    - ./{{ .Name }}/config:/halo/config
-    - ./{{ .Name }}/data:/halo/data
+    - ./{{ .Name }}:/halo
     networks:
       {{ $.NetworkName }}:
         {{ if $.Network }}ipv4_address: {{ .InternalIP }}{{ end }}
