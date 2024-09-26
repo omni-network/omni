@@ -9,11 +9,15 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 type BoundFeeOracleV1 struct {
@@ -21,9 +25,17 @@ type BoundFeeOracleV1 struct {
 	addr    common.Address        // address of the FeeOracle oracle contract addrss
 	backend *ethbackend.Backend   // ethbackend initialized with owner pk
 	bound   *bindings.FeeOracleV1 // bound FeeOracleV1 contract
+	chain   evmchain.Metadata
 }
 
 var _ FeeOracleV1 = BoundFeeOracleV1{}
+
+const (
+	// method names, for metrics.
+	methodSetGasPriceOn    = "SetGasPriceOn"
+	methodSetToNativeRate  = "SetToNativeRate"
+	methodBulkSetFeeParams = "BulkSetFeeParams"
+)
 
 // New creates a new bound FeeOracleV1 contract.
 func New(ctx context.Context, chain netconf.Chain, ethCl ethclient.Client, pk *ecdsa.PrivateKey) (BoundFeeOracleV1, error) {
@@ -49,11 +61,17 @@ func New(ctx context.Context, chain netconf.Chain, ethCl ethclient.Client, pk *e
 
 	owner := crypto.PubkeyToAddress(pk.PublicKey)
 
+	meta, ok := evmchain.MetadataByID(chain.ID)
+	if !ok {
+		return BoundFeeOracleV1{}, errors.New("chain metadata not found", "chain", chain.ID)
+	}
+
 	return BoundFeeOracleV1{
 		owner:   owner,
 		addr:    addr,
 		backend: backend,
 		bound:   contract,
+		chain:   meta,
 	}, nil
 }
 
@@ -74,10 +92,12 @@ func (c BoundFeeOracleV1) SetGasPriceOn(ctx context.Context, destChainID uint64,
 		return errors.Wrap(err, "set gas price")
 	}
 
-	_, err = c.backend.WaitMined(ctx, tx)
+	rec, err := c.backend.WaitMined(ctx, tx)
 	if err != nil {
 		return errors.Wrap(err, "wait mined", "tx", tx.Hash().Hex())
 	}
+
+	spendTotal.WithLabelValues(c.chain.Name, string(c.chain.NativeToken), methodSetGasPriceOn).Add(totalSpentGwei(tx, rec))
 
 	return nil
 }
@@ -94,10 +114,12 @@ func (c BoundFeeOracleV1) SetToNativeRate(ctx context.Context, destChainID uint6
 		return errors.Wrap(err, "set conversion rate")
 	}
 
-	_, err = c.backend.WaitMined(ctx, tx)
+	rec, err := c.backend.WaitMined(ctx, tx)
 	if err != nil {
 		return errors.Wrap(err, "wait mined", "tx", tx.Hash().Hex())
 	}
+
+	spendTotal.WithLabelValues(c.chain.Name, string(c.chain.NativeToken), methodSetToNativeRate).Add(totalSpentGwei(tx, rec))
 
 	return nil
 }
@@ -128,12 +150,23 @@ func (c BoundFeeOracleV1) BulkSetFeeParams(ctx context.Context, params []binding
 		return errors.Wrap(err, "bulk set fee params")
 	}
 
-	_, err = c.backend.WaitMined(ctx, tx)
+	rec, err := c.backend.WaitMined(ctx, tx)
 	if err != nil {
 		return errors.Wrap(err, "wait mined", "tx", tx.Hash().Hex())
 	}
 
+	spendTotal.WithLabelValues(c.chain.Name, string(c.chain.NativeToken), methodBulkSetFeeParams).Add(totalSpentGwei(tx, rec))
+
 	return nil
+}
+
+// totalSpentGwei returns the total amount spent on a transaction in gwei.
+func totalSpentGwei(tx *ethtypes.Transaction, rec *ethtypes.Receipt) float64 {
+	fees := new(big.Int).Mul(rec.EffectiveGasPrice, umath.NewBigInt(rec.GasUsed))
+	total := new(big.Int).Add(tx.Value(), fees)
+	totalGwei, _ := new(big.Int).Div(total, umath.NewBigInt(params.GWei)).Float64()
+
+	return totalGwei
 }
 
 // callOpts returns a new call opts with the given context.
