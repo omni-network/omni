@@ -20,8 +20,7 @@ services:
     - 1317:1317 # Cosmos REST API
     - 6060 # Pprof
     volumes:
-    - ./seed01/config:/halo/config
-    - ./seed01/data:/halo/data
+    - ./seed01:/halo
     networks:
       test:
         

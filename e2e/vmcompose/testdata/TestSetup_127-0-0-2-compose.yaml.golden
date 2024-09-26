@@ -20,8 +20,7 @@ services:
     - 1317:1317 # Cosmos REST API
     - 6060 # Pprof
     volumes:
-    - ./validator02/config:/halo/config
-    - ./validator02/data:/halo/data
+    - ./validator02:/halo
     networks:
       test:
         

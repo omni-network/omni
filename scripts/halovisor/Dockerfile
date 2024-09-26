@@ -1,15 +1,10 @@
 # Docker build args
-# TODO: Pin halo genesis to public omega release
-ARG HALO_VERSION_GENESIS=main
+ARG OMNI_COSMOVISOR_VERSION=v0.1.0
+ARG HALO_VERSION_0_GENESIS=v0.8.0
 
 # Build stages
-FROM golang:alpine AS build-cosmovisor
-ENV COSMOVISOR_VERSION=v1.5.0
-RUN go install cosmossdk.io/tools/cosmovisor/cmd/cosmovisor@${COSMOVISOR_VERSION}
-
-FROM omniops/halo:${HALO_VERSION_GENESIS} AS build-genesis
-
-# TODO: Add post-genesis network-upgrade versions here.
+FROM omniops/cosmovisor:${OMNI_COSMOVISOR_VERSION} AS build-cosmovisor
+FROM omniops/halo:${HALO_VERSION_0_GENESIS} AS build-0-genesis
 
 # Runtime stage
 FROM scratch AS runtime
@@ -26,14 +21,15 @@ ENV DAEMON_NAME=halo
 ENV DAEMON_ALLOW_DOWNLOAD_BINARIES=false
 ENV DAEMON_RESTART_AFTER_UPGRADE=true
 ENV COSMOVISOR_TIMEFORMAT_LOGS=rfc3339nano
+ENV COSMOVISOR_CUSTOM_ROOT=/halovisor
+ENV COSMOVISOR_CUSTOM_CURRENT_LINK=/halo/halovisor-current
 
-# Define mounted volumes
-VOLUME /halo/config
-VOLUME /halo/data
+# Define mounted volume
+VOLUME /halo
 
 # Copy binaries from build stages.
-COPY --from=build-cosmovisor /go/bin/cosmovisor /usr/local/bin/cosmovisor
-COPY --from=build-genesis /app $DAEMON_HOME/cosmovisor/genesis/bin/halo
+COPY --from=build-cosmovisor /ko-app/cosmovisor /usr/local/bin/cosmovisor
+COPY --from=build-0-genesis /app /halovisor/genesis/bin/halo
 
 # Cosmovisor is the entrypoint
 ENTRYPOINT [ "cosmovisor" ]

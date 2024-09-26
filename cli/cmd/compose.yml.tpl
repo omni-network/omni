@@ -11,8 +11,7 @@ services:
       # - 1317:1317   # Cosmos REST API
       # - 9090:9090   # Cosmos gRPC API
     volumes:
-      - ./halo/config:/halo/config
-      - ./halo/data:/halo/data
+      - ./halo:/halo
       - ./geth/geth/jwtsecret:/geth/jwtsecret
 
   omni_evm:
