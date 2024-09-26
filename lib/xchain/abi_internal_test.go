@@ -69,10 +69,11 @@ func TestSubmissionToFromBinding(t *testing.T) {
 	xsub := SubmissionToBinding(sub)
 	reversedSub := SubmissionFromBinding(xsub, sub.DestChainID)
 
-	// Zero TxHash and ChainID for comparison since they aren't translated.
+	// Zero TxHash, ChainID, and Fees for comparison since they aren't translated.
 	for i := range sub.Msgs {
 		sub.Msgs[i].TxHash = common.Hash{}
 		sub.Msgs[i].SourceChainID = 0
+		sub.Msgs[i].Fees = nil
 	}
 
 	// Zero BlockHeight as we only submit AttestOffset

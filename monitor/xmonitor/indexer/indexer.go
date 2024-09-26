@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/umath"
@@ -25,6 +26,9 @@ import (
 // emptyBlockCursorUpdate defines the Nth block to update cursors for empty blocks
 // This avoids needing to catchup a lot on startup for quite streams.
 const emptyBlockCursorUpdate = 100
+
+// unknown is the string used for unknown values.
+const unknown = "unknown"
 
 var confLevel = xchain.ConfFinalized
 
@@ -397,10 +401,25 @@ func (i *indexer) instrumentMsg(ctx context.Context, link *MsgLink) error {
 		return err
 	}
 
+	// defaults to unknown. evmchain.MetadataByID fails in fuzz tests
+	srcChainName := unknown
+	feeToken := unknown
+
+	srcChain, ok := evmchain.MetadataByID(msg.SourceChainID)
+	if ok {
+		srcChainName = srcChain.Name
+
+		// for now, fee token is always src chain native token
+		feeToken = string(srcChain.NativeToken)
+	}
+
 	// Instrument sample
 	s := sample{
 		Stream:        i.streamNamer(msg.StreamID),
 		XDApp:         i.xdapp(msg.SourceMsgSender),
+		SrcChain:      srcChainName,
+		FeeToken:      feeToken,
+		FeeAmount:     msg.Fees,
 		Latency:       receiptBlock.Timestamp.Sub(msgBlock.Timestamp),
 		Success:       receipt.Success,
 		ExcessGas:     umath.SubtractOrZero(msg.DestGasLimit, receipt.GasUsed),
@@ -440,7 +459,7 @@ func isFuzzyOverride(ctx context.Context, xprov xchain.Provider, receipt xchain.
 func (i *indexer) xdapp(sender common.Address) string {
 	resp, ok := i.xdapps[sender]
 	if !ok {
-		return "unknown"
+		return unknown
 	}
 
 	return resp
