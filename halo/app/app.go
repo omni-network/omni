@@ -169,16 +169,13 @@ func newApp(
 		app.ModuleManager.OrderEndBlockers = endBlockers
 		app.SetEndBlocker(app.EndBlocker)
 
-		// Also dump upgrade info to disk if binary is too old.
-		// Cosmos upgrade only dumps when doing the upgrade.
+		// Wrap upgrade module preblocker to dump upgrade info to disk if binary is too old.
+		// By default, it only dumps when doing the upgrade.
 		app.SetPreBlocker(func(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
 			resp, err := app.PreBlocker(ctx, req)
-			if lastAppliedUpgrade, ok := isErrWrongVersion(err); ok {
-				height := sdk.UnwrapSDKContext(ctx).BlockHeight()
-				err := app.UpgradeKeeper.DumpUpgradeInfoToDisk(height, utypes.Plan{Name: lastAppliedUpgrade})
-				if err != nil {
-					// Best effort just log
-					log.Warn(ctx, "Failed writing upgrade info", err)
+			if isErrOldBinary(err) {
+				if err := dumpLastAppliedUpgradeInfo(ctx, app.UpgradeKeeper); err != nil {
+					log.Error(ctx, "Failed writing last applied upgrade info", err)
 				}
 			}
 
@@ -222,10 +219,40 @@ func (a App) ClientContext(ctx context.Context) client.Context {
 		WithCodec(a.appCodec)
 }
 
-// isErrWrongVersion returns the last applied upgrade if the error is due to a wrong app version, else it returns false.
-func isErrWrongVersion(err error) (string, bool) {
+// dumpLastAppliedUpgradeInfo dumps the last applied upgrade info to disk.
+// This is a workaround for halovisor to auto upgrade binaries
+// after snapsyncing to a post-upgrade state using a pre-upgrade (old) binary.
+func dumpLastAppliedUpgradeInfo(ctx sdk.Context, keeper *upgradekeeper.Keeper) error {
+	name, height, err := keeper.GetLastCompletedUpgrade(ctx)
+	if err != nil {
+		return errors.Wrap(err, "get last completed upgrade")
+	}
+
+	// Note that we need to ensure that the next binary doesn't actually run any
+	// store loader upgrades on startup, it was already done during the upgrade.
+	// We therefore ensure height isn't current.
+
+	current := sdk.UnwrapSDKContext(ctx).BlockHeight()
+	if height >= current { // Sanity check that the upgrade was in the past.
+		return errors.New("unexpected last upgrade height [BUG]")
+	}
+
+	err = keeper.DumpUpgradeInfoToDisk(height, utypes.Plan{
+		Name:   name,
+		Height: height,
+	})
+	if err != nil {
+		return errors.Wrap(err, "dump upgrade info")
+	}
+
+	return nil
+}
+
+// isErrOldBinary returns the true if the error is due to the
+// upgrade module detecting the binary is too old.
+func isErrOldBinary(err error) bool {
 	if err == nil {
-		return "", false
+		return false
 	}
 
 	// Get the root cause of the error.
@@ -238,17 +265,17 @@ func isErrWrongVersion(err error) (string, bool) {
 		cause = next
 	}
 
-	var ignore int
-	var lastAppliedUpgrade string
+	var d int
+	var s string
 	i, err := fmt.Fscanf(
 		strings.NewReader(cause.Error()),
 		"wrong app version %d, upgrade handler is missing for %s upgrade plan",
-		&ignore, &lastAppliedUpgrade)
+		&d, &s)
 	if err != nil || i != 2 {
-		return "", false
+		return false
 	}
 
-	return lastAppliedUpgrade, true
+	return true
 }
 
 var (
