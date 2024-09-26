@@ -134,7 +134,10 @@ func TestIndexer(t *testing.T) {
 func makeSample(blocks []xchain.Block, receipts []xchain.Receipt, msgs []xchain.Msg, idx int) sample {
 	return sample{
 		Stream:        fmt.Sprint(receipts[idx].StreamID),
-		XDApp:         "unknown",
+		XDApp:         unknown,
+		SrcChain:      unknown,
+		FeeToken:      unknown,
+		FeeAmount:     msgs[idx].Fees,
 		Latency:       getReceiptBlock(blocks, receipts[idx].MsgID).Timestamp.Sub(getMsgBlock(blocks, msgs[idx].MsgID).Timestamp),
 		ExcessGas:     umath.SubtractOrZero(msgs[idx].DestGasLimit, receipts[idx].GasUsed),
 		Success:       receipts[idx].Success,

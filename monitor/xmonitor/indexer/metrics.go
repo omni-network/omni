@@ -1,6 +1,7 @@
 package indexer
 
 import (
+	"math/big"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -44,11 +45,21 @@ var (
 		Help:      "Excess gas per stream per xdapp (msg.GasLimit - receipt.GasUsed)",
 		Buckets:   prometheus.ExponentialBucketsRange(1, 1e6, 10),
 	}, []string{"stream", "xdapp"})
+
+	feesCollectedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "monitor",
+		Subsystem: "indexer",
+		Name:      "fees_collected_total",
+		Help:      "Total fees collected from xcalls by a portal contract",
+	}, []string{"chain", "token"})
 )
 
 type sample struct {
 	Stream        string
 	XDApp         string
+	SrcChain      string
+	FeeToken      string
+	FeeAmount     *big.Int
 	Latency       time.Duration
 	ExcessGas     uint64
 	Success       bool
@@ -70,4 +81,9 @@ func instrumentSample(s sample) {
 	}
 	latencyHist.WithLabelValues(s.Stream, s.XDApp).Observe(s.Latency.Seconds())
 	excessGasHist.WithLabelValues(s.Stream, s.XDApp).Observe(float64(s.ExcessGas))
+
+	if s.FeeAmount != nil {
+		feeAmount, _ := s.FeeAmount.Float64()
+		feesCollectedTotal.WithLabelValues(s.SrcChain, s.FeeToken).Add(feeAmount)
+	}
 }

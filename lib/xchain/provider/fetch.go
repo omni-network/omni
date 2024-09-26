@@ -366,6 +366,7 @@ func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, blockHash co
 			Data:            e.Data,
 			DestGasLimit:    e.GasLimit,
 			TxHash:          e.Raw.TxHash,
+			Fees:            e.Fees,
 		})
 	}
 

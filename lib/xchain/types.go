@@ -3,6 +3,7 @@ package xchain
 import (
 	"crypto/sha256"
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
 	"time"
@@ -153,6 +154,7 @@ type Msg struct {
 	Data            []byte         // Data to provide to "call" on destination chain
 	DestGasLimit    uint64         // Gas limit to use for "call" on destination chain
 	TxHash          common.Hash    // Hash of the source chain transaction that emitted the message
+	Fees            *big.Int       // Fees paid for the xcall
 }
 
 // Receipt is a cross-chain message receipt, the result of applying the Msg on the destination chain.
