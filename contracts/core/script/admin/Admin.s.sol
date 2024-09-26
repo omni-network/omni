@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.24;
 
-import { Script } from "forge-std/Script.sol";
 import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import { ITransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { InitializableHelper } from "script/utils/InitializableHelper.sol";
@@ -16,6 +15,10 @@ import { OmniBridgeL1 } from "src/token/OmniBridgeL1.sol";
 import { Staking } from "src/octane/Staking.sol";
 import { Slashing } from "src/octane/Slashing.sol";
 import { Predeploys } from "src/libraries/Predeploys.sol";
+import { Script } from "forge-std/Script.sol";
+
+import { BridgeL1PostUpgradeTest } from "./BridgeL1PostUpgradeTest.sol";
+import { BridgeNativePostUpgradeTest } from "./BridgeNativePostUpgradeTest.sol";
 
 /**
  * @title Admin
@@ -224,13 +227,29 @@ contract Admin is Script {
      * @param deployer  The address of the account that will deploy the new implementation.
      */
     function upgradeBridgeNative(address admin, address deployer, bytes calldata data) public {
+        OmniBridgeNative b = OmniBridgeNative(Predeploys.OmniBridgeNative);
+
+        // read storage pre-upgrade
+        address owner = b.owner();
+        address omni = address(b.omni());
+        address l1Bridge = b.l1Bridge();
+        uint64 l1ChainId = b.l1ChainId();
+        uint256 l1BridgeBalance = b.l1BridgeBalance();
+
         vm.startBroadcast(deployer);
         address impl = address(new OmniBridgeNative());
         vm.stopBroadcast();
 
         _upgradeProxy(admin, Predeploys.OmniBridgeNative, impl, data);
 
-        // TODO: add post upgrade tests
+        // assert storage unchanged
+        require(b.owner() == owner, "owner changed");
+        require(b.l1ChainId() == l1ChainId, "l1ChainId changed");
+        require(address(b.omni()) == omni, "omni changed");
+        require(b.l1BridgeBalance() == l1BridgeBalance, "l1BridgeBalance changed");
+        require(b.l1Bridge() == l1Bridge, "l1Bridge changed");
+
+        new BridgeNativePostUpgradeTest().run();
     }
 
     /**
@@ -240,7 +259,12 @@ contract Admin is Script {
      * @param proxy     The address of the proxy to upgrade.
      */
     function upgradeBridgeL1(address admin, address deployer, address proxy, bytes calldata data) public {
-        address token = address(OmniBridgeL1(proxy).token());
+        OmniBridgeL1 b = OmniBridgeL1(proxy);
+
+        // read storage pre-upgrade
+        address owner = b.owner();
+        address token = address(b.token());
+        address omni = address(b.omni());
 
         vm.startBroadcast(deployer);
         address impl = address(new OmniBridgeL1(token));
@@ -248,7 +272,12 @@ contract Admin is Script {
 
         _upgradeProxy(admin, proxy, impl, data);
 
-        // TODO: add post upgrade tests
+        // assert storage unchanged
+        require(b.owner() == owner, "owner changed");
+        require(address(b.token()) == token, "token changed");
+        require(address(b.omni()) == omni, "omni changed");
+
+        new BridgeL1PostUpgradeTest().run(proxy);
     }
 
     /**

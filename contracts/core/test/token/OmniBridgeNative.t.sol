@@ -3,6 +3,7 @@ pragma solidity 0.8.24;
 
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { MockPortal } from "test/utils/MockPortal.sol";
+import { NoReceive } from "test/utils/NoReceive.sol";
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { OmniBridgeNative } from "src/token/OmniBridgeNative.sol";
 import { OmniBridgeL1 } from "src/token/OmniBridgeL1.sol";
@@ -384,9 +385,3 @@ contract OmniBridgeNativeHarness is OmniBridgeNative {
         claimable[claimant] = amount;
     }
 }
-
-/**
- * @title NoReceive
- * @notice An contract that does not implement the receive function.
- */
-contract NoReceive { }
