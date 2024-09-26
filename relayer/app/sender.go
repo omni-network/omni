@@ -10,9 +10,12 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/txmgr"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum"
@@ -20,6 +23,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 // Sender uses txmgr to send transactions to the destination chain.
@@ -30,6 +34,7 @@ type Sender struct {
 	portal       common.Address
 	abi          *abi.ABI
 	chain        netconf.Chain
+	gasToken     tokens.Token
 	chainNames   map[xchain.ChainVersion]string
 	rpcClient    ethclient.Client
 }
@@ -66,6 +71,11 @@ func NewSender(
 		return Sender{}, errors.Wrap(err, "parse abi error")
 	}
 
+	meta, ok := evmchain.MetadataByID(chain.ID)
+	if !ok {
+		return Sender{}, errors.New("chain metadata not found", "chain_id", chain.ID)
+	}
+
 	return Sender{
 		network:      network,
 		txMgr:        txMgr,
@@ -73,6 +83,7 @@ func NewSender(
 		portal:       chain.PortalAddress,
 		abi:          &parsedAbi,
 		chain:        chain,
+		gasToken:     meta.NativeToken,
 		chainNames:   chainNames,
 		rpcClient:    rpcClient,
 	}, nil
@@ -148,6 +159,8 @@ func (s Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 		"tx_hash", rec.TxHash,
 	}
 
+	spendTotal.WithLabelValues(dstChain, string(s.gasToken)).Add(totalSpentGwei(tx, rec))
+
 	if rec.Status == 0 {
 		// Try and get debug information of the reverted transaction
 		resp, err := s.rpcClient.CallContract(ctx, callFromTx(s.txMgr.From(), tx), rec.BlockNumber)
@@ -189,4 +202,13 @@ func callFromTx(from common.Address, tx *ethtypes.Transaction) ethereum.CallMsg 
 	}
 
 	return resp
+}
+
+// totalSpentGwei returns the total amount spent on a transaction in gwei.
+func totalSpentGwei(tx *ethtypes.Transaction, rec *ethtypes.Receipt) float64 {
+	fees := new(big.Int).Mul(rec.EffectiveGasPrice, umath.NewBigInt(rec.GasUsed))
+	total := new(big.Int).Add(tx.Value(), fees)
+	totalGwei, _ := new(big.Int).Div(total, umath.NewBigInt(params.GWei)).Float64()
+
+	return totalGwei
 }

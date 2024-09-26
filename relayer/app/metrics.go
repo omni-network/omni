@@ -55,4 +55,11 @@ var (
 		Help:      "Estimated max gas usage by submissions by destination chain",
 		Buckets:   prometheus.ExponentialBucketsRange(21_000, 10_000_000, 8),
 	}, []string{"dst_chain"})
+
+	spendTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "relayer",
+		Subsystem: "worker",
+		Name:      "spend_gwei_total",
+		Help:      "Total amount of tokens spent by the relayer on a destination chain (in gwei)",
+	}, []string{"chain", "token"})
 )
