@@ -100,7 +100,7 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 
 	if err := xfeemngr.Start(ctx, network, cfg.XFeeMngr, cfg.PrivateKey); err != nil {
-		return errors.Wrap(err, "start xfee manager")
+		log.Error(ctx, "Failed to start xfee manager [BUG]", err)
 	}
 
 	startMonitoringSyncDiff(ctx, network, ethClients)
