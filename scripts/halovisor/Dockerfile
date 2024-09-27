@@ -1,10 +1,12 @@
 # Docker build args
 ARG OMNI_COSMOVISOR_VERSION=v0.1.0
 ARG HALO_VERSION_0_GENESIS=v0.8.0
+ARG HALO_VERSION_1_ULUWATU=main
 
 # Build stages
 FROM omniops/cosmovisor:${OMNI_COSMOVISOR_VERSION} AS build-cosmovisor
 FROM omniops/halo:${HALO_VERSION_0_GENESIS} AS build-0-genesis
+FROM omniops/halo:${HALO_VERSION_1_ULUWATU} AS build-1-uluwatu
 
 # Runtime stage
 FROM scratch AS runtime
@@ -30,6 +32,7 @@ VOLUME /halo
 # Copy binaries from build stages.
 COPY --from=build-cosmovisor /ko-app/cosmovisor /usr/local/bin/cosmovisor
 COPY --from=build-0-genesis /app /halovisor/genesis/bin/halo
+COPY --from=build-1-uluwatu /app /halovisor/upgrades/1_uluwatu/bin/halo
 
 # Cosmovisor is the entrypoint
 ENTRYPOINT [ "cosmovisor" ]

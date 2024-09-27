@@ -398,7 +398,7 @@ func TestKeeper_Approve(t *testing.T) {
 
 					// add sig from val3
 					sig := expectValSig(0, 1, val3, defaultOffset)
-					err = k.SignatureTable().Insert(ctx, sig)
+					err = k.SignatureTableForT().Insert(ctx, sig)
 					require.NoError(t, err)
 				},
 			},
@@ -529,7 +529,7 @@ func TestKeeper_Approve(t *testing.T) {
 					err = k.Approve(ctx, toValSet(valset1_2))
 					require.NoError(t, err)
 
-					// Begin the block at height 20, which should cause the first 2 attestations to be deleted, but not the third and fourth
+					// Begin the block at height 20, which should cause the first 3 attestations to be deleted, but not the fourth
 					err = k.BeginBlock(ctx.WithBlockHeight(initHeight + 10))
 					require.NoError(t, err)
 				},
@@ -542,6 +542,73 @@ func TestKeeper_Approve(t *testing.T) {
 					expectApprovedAtt(4, defaultOffset+3, valset1_2, 19),
 				},
 				sigs: []*keeper.Signature{
+					expectValSig(7, 4, val1, defaultOffset+3),
+					expectValSig(8, 4, val2, defaultOffset+3),
+				},
+			},
+		},
+		{
+			name: "dont_delete_vote_window",
+			expectations: []expectation{
+				namerCalled(1),
+				defaultExpectations,
+				activeSetQueried(9),
+				activeSetQueried(10),
+				activeSetQueried(17),
+				activeSetQueried(18),
+				trimBehindCalled(),
+				valsetCalled(),
+				noFuzzyDeps(),
+			},
+			prerequisites: []prerequisite{
+				func(t *testing.T, k *keeper.Keeper, ctx sdk.Context) {
+					t.Helper()
+					k.SetVoteWindowDownForT(2) // Change voteWindowDown from 0 to 2, so less atts are deleted.
+
+					initHeight := int64(10)
+					vote1 := defaultAggVote().WithAttestOfset(defaultOffset).Vote()
+					msg1 := defaultMsg().Default().WithVotes(vote1).Msg()
+					err := k.Add(ctx.WithBlockHeight(initHeight), msg1)
+					require.NoError(t, err)
+
+					vote2 := defaultAggVote().WithAttestOfset(defaultOffset + 1).Vote()
+					msg2 := defaultMsg().Default().WithVotes(vote2).Msg()
+					err = k.Add(ctx.WithBlockHeight(initHeight+1), msg2)
+					require.NoError(t, err)
+
+					vote3 := defaultAggVote().WithAttestOfset(defaultOffset + 2).Vote()
+					msg3 := defaultMsg().Default().WithVotes(vote3).Msg()
+					err = k.Add(ctx.WithBlockHeight(initHeight+8), msg3)
+					require.NoError(t, err)
+
+					vote4 := defaultAggVote().WithAttestOfset(defaultOffset + 3).Vote()
+					msg4 := defaultMsg().Default().WithVotes(vote4).Msg()
+					err = k.Add(ctx.WithBlockHeight(initHeight+9), msg4)
+					require.NoError(t, err)
+
+					// Approve all four attestations so they're no longer pending
+					err = k.Approve(ctx, toValSet(valset1_2))
+					require.NoError(t, err)
+
+					// Begin the block at height 20, which should cause the only first attestations to be deleted, but not the others (due to increased vote window)
+					err = k.BeginBlock(ctx.WithBlockHeight(initHeight + 10))
+					require.NoError(t, err)
+				},
+			},
+			args: args{
+				valset: valset1_2,
+			},
+			want: want{
+				atts: []*keeper.Attestation{
+					expectApprovedAtt(2, defaultOffset+1, valset1_2, 11),
+					expectApprovedAtt(3, defaultOffset+2, valset1_2, 18),
+					expectApprovedAtt(4, defaultOffset+3, valset1_2, 19),
+				},
+				sigs: []*keeper.Signature{
+					expectValSig(3, 2, val1, defaultOffset+1),
+					expectValSig(4, 2, val2, defaultOffset+1),
+					expectValSig(5, 3, val1, defaultOffset+2),
+					expectValSig(6, 3, val2, defaultOffset+2),
 					expectValSig(7, 4, val1, defaultOffset+3),
 					expectValSig(8, 4, val2, defaultOffset+3),
 				},

@@ -101,7 +101,7 @@ func newApp(
 	baseAppOpts ...func(*baseapp.BaseApp),
 ) (*App, error) {
 	depCfg := depinject.Configs(
-		appConfig,
+		appConfig(),
 		depinject.Provide(diProviders...),
 		depinject.Supply(
 			logger,
@@ -181,6 +181,12 @@ func newApp(
 
 			return resp, err //nolint:wrapcheck // Don't wrap this cosmos error.
 		})
+	}
+
+	// setUpgradeHandlers should be called before `Load()`
+	// because StoreLoad is sealed after that
+	if err := app.setUpgradeHandlers(); err != nil {
+		return nil, errors.Wrap(err, "set upgrade handlers")
 	}
 
 	if err := app.Load(true); err != nil {

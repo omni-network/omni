@@ -108,9 +108,10 @@ func setupKeeper(t *testing.T, expectations ...expectation) (*keeper.Keeper, sdk
 		}
 	}
 
-	const voteWindow = 1
+	const voteWindowUp = 1
+	const voteWindowDown = 0
 	const voteLimit = 4
-	k, err := keeper.New(codec, storeSvc, m.skeeper, m.namer.ChainName, m.voter, voteWindow, voteLimit, trimLag, cTrimLag)
+	k, err := keeper.New(codec, storeSvc, m.skeeper, m.namer.ChainName, m.voter, voteWindowUp, voteWindowDown, voteLimit, trimLag, cTrimLag)
 	require.NoError(t, err, "new keeper")
 
 	k.SetValidatorProvider(m.valProvider)
@@ -123,7 +124,7 @@ func setupKeeper(t *testing.T, expectations ...expectation) (*keeper.Keeper, sdk
 func dumpTables(t *testing.T, ctx sdk.Context, k *keeper.Keeper) ([]*keeper.Attestation, []*keeper.Signature) {
 	t.Helper()
 	var atts []*keeper.Attestation
-	aitr, err := k.AttestTable().List(ctx, keeper.AttestationIdIndexKey{})
+	aitr, err := k.AttestTableForT().List(ctx, keeper.AttestationIdIndexKey{})
 	require.NoError(t, err, "list attestations")
 	defer aitr.Close()
 
@@ -134,7 +135,7 @@ func dumpTables(t *testing.T, ctx sdk.Context, k *keeper.Keeper) ([]*keeper.Atte
 	}
 
 	var sigs []*keeper.Signature
-	sitr, err := k.SignatureTable().List(ctx, keeper.SignatureIdIndexKey{})
+	sitr, err := k.SignatureTableForT().List(ctx, keeper.SignatureIdIndexKey{})
 	require.NoError(t, err, "list signatures")
 	defer sitr.Close()
 
