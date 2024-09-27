@@ -1,0 +1,42 @@
+{
+ "devnet": {
+  "Global": {
+   "PauseAll": false,
+   "PauseXCall": false,
+   "PauseXCallTo": null,
+   "PauseXSubmit": false,
+   "PauseXSubmitFrom": null
+  },
+  "ChainOverrides": null
+ },
+ "mainnet": {
+  "Global": {
+   "PauseAll": false,
+   "PauseXCall": false,
+   "PauseXCallTo": null,
+   "PauseXSubmit": false,
+   "PauseXSubmitFrom": null
+  },
+  "ChainOverrides": null
+ },
+ "omega": {
+  "Global": {
+   "PauseAll": false,
+   "PauseXCall": false,
+   "PauseXCallTo": null,
+   "PauseXSubmit": false,
+   "PauseXSubmitFrom": null
+  },
+  "ChainOverrides": null
+ },
+ "staging": {
+  "Global": {
+   "PauseAll": false,
+   "PauseXCall": false,
+   "PauseXCallTo": null,
+   "PauseXSubmit": false,
+   "PauseXSubmitFrom": null
+  },
+  "ChainOverrides": null
+ }
+}

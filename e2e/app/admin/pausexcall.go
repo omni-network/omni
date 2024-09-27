@@ -4,52 +4,14 @@ package admin
 import (
 	"context"
 
-	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
 )
 
-type XCallConfig struct {
-	// Name of chain to pause/unpause xcalls to
-	To string
-}
-
-// PauseXCall pauses xcalls on a network.
-func PauseXCall(ctx context.Context, def app.Definition, baseCfg Config, xcallCfg XCallConfig) error {
-	s := setup(def)
-
-	if xcallCfg.To == "" {
-		return s.run(ctx, baseCfg, pauseXCall)
-	}
-
-	to, ok := s.network.ChainByName(xcallCfg.To)
-	if !ok {
-		return errors.New("chain not found", "chain", xcallCfg.To)
-	}
-
-	return s.run(ctx, baseCfg, pauseXCallTo(to))
-}
-
-func pauseXCallTo(to netconf.Chain) func(ctx context.Context, s shared, c chain) error {
-	return func(ctx context.Context, s shared, c chain) error {
-		calldata, err := adminABI.Pack("pauseXCallTo", s.admin, c.PortalAddress, to.ID)
-		if err != nil {
-			return errors.Wrap(err, "pack calldata", "chain", c.Name)
-		}
-
-		out, err := runForge(ctx, c.rpc, calldata, s.admin)
-		if err != nil {
-			return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
-		}
-
-		log.Info(ctx, "Xcall paused ✅", "chain", c.Name, "to", to.Name, "addr", c.PortalAddress, "out", out)
-
-		return nil
-	}
-}
-
+// pauseXCall pauses xcalls on a chain.
 func pauseXCall(ctx context.Context, s shared, c chain) error {
+	log.Info(ctx, "Pausing xcall...", "chain", c.Name, "addr", c.PortalAddress)
+
 	calldata, err := adminABI.Pack("pauseXCall", s.admin, c.PortalAddress)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
@@ -61,6 +23,73 @@ func pauseXCall(ctx context.Context, s shared, c chain) error {
 	}
 
 	log.Info(ctx, "Xcall paused ✅", "chain", c.Name, "addr", c.PortalAddress, "out", out)
+
+	return nil
+}
+
+// pauseXCallTo pauses xcalls to a chain, on a chain.
+func pauseXCallTo(ctx context.Context, s shared, c chain, toID uint64) error {
+	to, ok := s.network.Chain(toID)
+	if !ok {
+		return errors.New("chain id not in network", "chain", toID)
+	}
+
+	log.Info(ctx, "Pausing xcall...", "chain", c.Name, "to", to.Name, "addr", c.PortalAddress)
+
+	calldata, err := adminABI.Pack("pauseXCallTo", s.admin, c.PortalAddress, to.ID)
+	if err != nil {
+		return errors.Wrap(err, "pack calldata", "chain", c.Name)
+	}
+
+	out, err := runForge(ctx, c.rpc, calldata, s.admin)
+	if err != nil {
+		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
+	}
+
+	log.Info(ctx, "Xcall paused ✅", "chain", c.Name, "to", to.Name, "addr", c.PortalAddress, "out", out)
+
+	return nil
+}
+
+// pauseXCall pauses xcalls on a chain.
+func unpauseXCall(ctx context.Context, s shared, c chain) error {
+	log.Info(ctx, "Unpausing xcall...", "chain", c.Name, "addr", c.PortalAddress)
+
+	calldata, err := adminABI.Pack("unpauseXCall", s.admin, c.PortalAddress)
+	if err != nil {
+		return errors.Wrap(err, "pack calldata", "chain", c.Name)
+	}
+
+	out, err := runForge(ctx, c.rpc, calldata, s.admin)
+	if err != nil {
+		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
+	}
+
+	log.Info(ctx, "Xcall unpaused ✅", "chain", c.Name, "addr", c.PortalAddress, "out", out)
+
+	return nil
+}
+
+// pauseXCallTo pauses xcalls to a chain, on a chain.
+func unpauseXCallTo(ctx context.Context, s shared, c chain, toID uint64) error {
+	to, ok := s.network.Chain(toID)
+	if !ok {
+		return errors.New("chain id not in network", "chain", toID)
+	}
+
+	log.Info(ctx, "Unpausing xcall...", "chain", c.Name, "to", to.Name, "addr", c.PortalAddress)
+
+	calldata, err := adminABI.Pack("unpauseXCallTo", s.admin, c.PortalAddress, to.ID)
+	if err != nil {
+		return errors.Wrap(err, "pack calldata", "chain", c.Name)
+	}
+
+	out, err := runForge(ctx, c.rpc, calldata, s.admin)
+	if err != nil {
+		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
+	}
+
+	log.Info(ctx, "Xcall unpaused ✅", "chain", c.Name, "to", to.Name, "addr", c.PortalAddress, "out", out)
 
 	return nil
 }
