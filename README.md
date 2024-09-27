@@ -31,30 +31,13 @@
     </a>
 </p>
 
-
-## Table of Contents
-
-- [About Omni](#about-omni)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Directory Structure](#directory-structure)
-- [Contributing](#contributing)
-- [Acknowledgements](#acknowledgements)
-- [Security](#security)
-
 ## About Omni
 
-Omni Protocol is a groundbreaking blockchain designed to seamlessly connect Ethereum's rollups, addressing the fragmentation issue in the ecosystem. It enables developers to create applications accessible across all rollups, simplifying user interaction and expanding the market reach for developers.
+This monorepo contains all source code for the Omni protocol. Omni's goal is to make it easy for smart contract developers to source liquidity and users from anywhere. The protocol consists of various components including an EVM and cross-chain messaging.
 
-Key Features of Omni:
+The [Omni Docs](https://docs.omni.network/) are the best place to get started learning about Omni.
 
-- **ETH Restaking**: Utilizes Ethereum validators through restaking, providing a robust security layer parallel to Ethereum, enhancing performance where Ethereum has limitations.
-- **Fast Finality**: Offers quick transaction confirmations, crucial for a responsive user experience and mass adoption.
-- **Cross-Rollup Programmability**: Empowers developers with a global state layer, allowing the creation of natively cross-rollup applications in a familiar EVM environment.
-
-Omni Protocol stands as a vital infrastructure piece for Ethereum's future, offering a developer-friendly platform that combines security with performance, paving the way for a new era of dApp development.
-
-## Installation
+## Quickstart
 
 Building the node requires a working Go (version 1.22 or higher, see `go.mod`) and `goreleaser` ([see installation guide here](https://goreleaser.com/install/) or install with `make ensure-go-releaser`). You can install them using your favorite package manager. Once the dependencies are installed, run:
 
@@ -62,17 +45,11 @@ Building the node requires a working Go (version 1.22 or higher, see `go.mod`) a
 make build-docker
 ```
 
-## Usage
-
-### Testing
-
 To run the end-to-end tests, run:
 
 ```bash
 MANIFEST=devnet1 make e2e-run
 ```
-
-### Starting a devnet
 
 To start a devnet, run:
 
@@ -111,23 +88,7 @@ make devnet-clean
 
 ## Contributing
 
-For detailed instructions on how to contribute, including our coding standards, testing practices, and how to submit pull requests, please see [the contribution guidelines](./docs/contributing/contributing.md).
-
-## Acknowledgements
-
-The development of Omni has been a journey of learning, adaptation, and innovation. As we built Omni, we drew inspiration and knowledge from the work of several remarkable teams within the blockchain and Ethereum ecosystem.
-
-We extend our gratitude to the following teams for their pioneering work and the open-source resources they've provided, which have significantly influenced our development process:
-
-- [**CometBFT**](https://github.com/cometbft/cometbft): Our heartfelt thanks go to the CometBFT team for their groundbreaking work in consensus algorithms.
-
-- [**Geth**](https://github.com/ethereum/go-ethereum): The go-ethereum team's relentless dedication to the Ethereum ecosystem has been nothing short of inspiring. Their comprehensive and robust implementation of the Ethereum protocol has provided us with a solid foundation to build upon.
-
-- [**Erigon**](https://github.com/ledgerwatch/erigon): We are grateful to Erigon for their novel work in maximizing EVM performance.
-
-- [**Optimism**](https://github.com/ethereum-optimism/optimism): We thank the Optimism team for their dedication to open source work within the Ethereum ecosystem.
-
-Acknowledging these teams is not only a gesture of gratitude but also a reflection of our commitment to collaborative progress and the open-source ethos. The path they've paved has enabled us to contribute our innovations back to the community, and we look forward to continuing this tradition of mutual growth and support.
+We are open to contributions, but don't currently have a formal process for contributors. If you are interested, browse through [open issues](https://github.com/omni-network/omni/issues), read our [code of conduct](./CODE_OF_CONDUCT.md), or chat with the team.
 
 ## Security
 
