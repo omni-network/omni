@@ -17,4 +17,8 @@ contract MockFeeOracle is IFeeOracle {
     function feeFor(uint64, bytes calldata, uint64) external view returns (uint256) {
         return fee;
     }
+
+    function version() external pure returns (uint64) {
+        return 1;
+    }
 }
