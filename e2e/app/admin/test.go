@@ -99,7 +99,7 @@ func tesUpgradeFeeOracleV1(ctx context.Context, def app.Definition, network netc
 }
 
 func testUpgradeGasStation(ctx context.Context, def app.Definition) error {
-	err := UpgradeGasStation(ctx, def)
+	err := UpgradeGasStation(ctx, def, Config{Broadcast: true})
 	if err != nil {
 		return errors.Wrap(err, "upgrade gas station")
 	}
@@ -132,7 +132,7 @@ func testUpgradeGasPump(ctx context.Context, def app.Definition, network netconf
 }
 
 func testUpgradeSlashing(ctx context.Context, def app.Definition) error {
-	err := UpgradeSlashing(ctx, def)
+	err := UpgradeSlashing(ctx, def, Config{Broadcast: true})
 	if err != nil {
 		return errors.Wrap(err, "upgrade slashing")
 	}
@@ -141,7 +141,7 @@ func testUpgradeSlashing(ctx context.Context, def app.Definition) error {
 }
 
 func testUpgradeStaking(ctx context.Context, def app.Definition) error {
-	err := UpgradeStaking(ctx, def)
+	err := UpgradeStaking(ctx, def, Config{Broadcast: true})
 	if err != nil {
 		return errors.Wrap(err, "upgrade staking")
 	}
@@ -150,7 +150,7 @@ func testUpgradeStaking(ctx context.Context, def app.Definition) error {
 }
 
 func testUpgradeBridgeNative(ctx context.Context, def app.Definition) error {
-	err := UpgradeBridgeNative(ctx, def)
+	err := UpgradeBridgeNative(ctx, def, Config{Broadcast: true})
 	if err != nil {
 		return errors.Wrap(err, "upgrade bridge native")
 	}
@@ -159,7 +159,7 @@ func testUpgradeBridgeNative(ctx context.Context, def app.Definition) error {
 }
 
 func testUpgradeBridgeL1(ctx context.Context, def app.Definition) error {
-	err := UpgradeBridgeL1(ctx, def)
+	err := UpgradeBridgeL1(ctx, def, Config{Broadcast: true})
 	if err != nil {
 		return errors.Wrap(err, "upgrade bridge l1")
 	}
