@@ -1,7 +1,3 @@
----
-sidebar_position: 2
----
-
 # Portals
 
 Portal contracts are an integral part of Omni and are deployed to every supported rollup network EVM and the Omni EVM itself. These contracts are responsible for initiating `XMsg` requests and maintaining a record of the Omni validator set to verify inbound `XMsg` deliveries.

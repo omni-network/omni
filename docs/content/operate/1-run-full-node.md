@@ -1,7 +1,3 @@
----
-sidebar_position: 2
----
-
 # Run a Full Node
 
 Currently, anyone can run a node on Omega Testnet. Stay tuned for running full nodes on mainnet.

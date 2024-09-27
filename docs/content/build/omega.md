@@ -1,7 +1,3 @@
----
-sidebar_position: 4
----
-
 # Omega Testnet
 
 ### Have Questions?

@@ -1,8 +1,3 @@
----
-sidebar_position: 1
----
-
-
 # Architecture
 
 <img src="/img/staking.png" width="1000px"/>
