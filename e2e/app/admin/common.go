@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	fbproxy "github.com/omni-network/omni/e2e/fbproxy/app"
 	"github.com/omni-network/omni/lib/anvil"
+	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
@@ -32,6 +33,7 @@ type shared struct {
 	deployer    common.Address
 	endpoints   xchain.RPCEndpoints
 	network     netconf.Network
+	cfg         Config
 	fireAPIKey  string
 	fireKeyPath string
 }
@@ -43,18 +45,21 @@ type chain struct {
 }
 
 // setup returns common resources for all admin operations.
-func setup(def app.Definition) shared {
+func setup(def app.Definition, cfg Config) shared {
 	netID := def.Testnet.Network
 	admin := eoa.MustAddress(netID, eoa.RoleAdmin)
 	deployer := eoa.MustAddress(netID, eoa.RoleDeployer)
 	endpoints := app.ExternalEndpoints(def)
 	network := app.NetworkFromDef(def)
 
+	// addrs set lazily in setupChain
+
 	return shared{
 		admin:       admin,
 		deployer:    deployer,
 		endpoints:   endpoints,
 		network:     network,
+		cfg:         cfg,
 		fireAPIKey:  def.Cfg.FireAPIKey,
 		fireKeyPath: def.Cfg.FireKeyPath,
 	}
@@ -71,6 +76,16 @@ func setupChain(ctx context.Context, s shared, name string) (chain, error) {
 	rpc, err := s.endpoints.ByNameOrID(c.Name, c.ID)
 	if err != nil {
 		return chain{}, errors.Wrap(err, "rpc endpoint")
+	}
+
+	// add portal address if not already set
+	if c.PortalAddress == (common.Address{}) {
+		addrs, err := contracts.GetAddresses(ctx, s.network.ID)
+		if err != nil {
+			return chain{}, errors.Wrap(err, "get addresses")
+		}
+
+		c.PortalAddress = addrs.Portal
 	}
 
 	// only use fb proxy for non-devnet - devnet uses anvil accounts
@@ -100,7 +115,6 @@ func withExclude(names ...string) runOpt {
 // run runs a function for all configured chains (all applicable, if not specified).
 func (s shared) run(
 	ctx context.Context,
-	cfg Config,
 	fn func(context.Context, shared, chain) error,
 	options ...runOpt,
 ) error {
@@ -109,7 +123,7 @@ func (s shared) run(
 		o(&opts)
 	}
 
-	names, err := maybeAll(s.network, cfg.Chain, opts.exclude)
+	names, err := maybeAll(s.network, s.cfg.Chain, opts.exclude)
 	if err != nil {
 		return err
 	}
@@ -156,42 +170,54 @@ func maybeAll(network netconf.Network, chain string, exclude []string) ([]string
 	return []string{chain}, nil
 }
 
+func (s shared) runForge(ctx context.Context, rpc string, input []byte, senders ...common.Address,
+) (string, error) {
+	return runForge(ctx, rpc, input, s.cfg.Broadcast, senders...)
+}
+
 // runForge runs an Admin forge script against an rpc, returning the ouptut.
 // if the senders are known anvil accounts, it will sign with private keys directly.
 // otherwise, it will use the unlocked flag.
-func runForge(ctx context.Context, rpc string, input []byte, senders ...common.Address,
+func runForge(ctx context.Context, rpc string, input []byte, broadcast bool, senders ...common.Address,
 ) (string, error) {
 	// name of admin forge script in contracts/core
 	const script = "Admin"
-
 	// assumes running from root
 	dir := "./contracts/core"
-
 	anvilPks := make([]string, 0, len(senders))
 	for _, sender := range senders {
 		pk, ok := anvil.PrivateKey(sender)
 		if !ok {
 			continue
 		}
-
 		anvilPks = append(anvilPks, hexutil.EncodeBig(pk.D))
 	}
-
 	if len(anvilPks) > 0 && len(anvilPks) != len(senders) {
 		return "", errors.New("cannot mix anvil and non-anvil accounts")
 	}
 
-	// for dev anvil accounts, we sign with privates key directly
-	if len(anvilPks) > 0 {
-		return execCmd(ctx, dir, "forge", "script", script,
-			"--broadcast", "--slow", "--rpc-url", rpc, "--sig", hexutil.Encode(input),
-			"--private-keys", strings.Join(dedup(anvilPks), ","),
-		)
+	args := []string{
+		"script", script,
+		"--slow",         // wait for each tx to succed before sending the next
+		"--rpc-url", rpc, // rpc endpoint, fb proxy for non-devnet
+		"--sig", hexutil.Encode(input), // Admin.sol calldata
 	}
 
-	return execCmd(ctx, dir, "forge", "script", script, "--timeout", "300", // 5 minute timeout, allow for fb signing
-		"--broadcast", "--slow", "--rpc-url", rpc, "--sig", hexutil.Encode(input), "--unlocked",
-	)
+	if broadcast {
+		// if omitted, transactions are not broadcasted
+		args = append(args, "--broadcast")
+	}
+
+	if len(anvilPks) > 0 {
+		// for dev anvil accounts, we sign with privates key directly
+		args = append(args, "--private-keys", strings.Join(dedup(anvilPks), ","))
+	} else {
+		// else, we use --unlocked flag, to send unsigned eth_sendTransaction requests
+		// with 5 minute timeout, to allow for fireblocks signing.
+		args = append(args, "--timeout", "300", "--unlocked")
+	}
+
+	return execCmd(ctx, dir, "forge", args...)
 }
 
 // startFBProxy starts a fireblocks proxy to rpc, returns the listen address. The proxy stops when ctx is done.

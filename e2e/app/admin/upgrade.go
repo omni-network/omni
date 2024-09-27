@@ -15,17 +15,17 @@ import (
 
 // UpgradePortal upgrades the portal contracts on a network.
 func UpgradePortal(ctx context.Context, def app.Definition, cfg Config) error {
-	return setup(def).run(ctx, cfg, upgradePortal)
+	return setup(def, cfg).run(ctx, upgradePortal)
 }
 
 // UpgradeFeeOracleV1 upgrades the FeeOracleV1 contracts on a network.
 func UpgradeFeeOracleV1(ctx context.Context, def app.Definition, cfg Config) error {
-	return setup(def).run(ctx, cfg, upgradeFeeOracleV1)
+	return setup(def, cfg).run(ctx, upgradeFeeOracleV1)
 }
 
 // UpgradeGasStation upgrades the GasStation contracts on a network.
-func UpgradeGasStation(ctx context.Context, def app.Definition) error {
-	s := setup(def)
+func UpgradeGasStation(ctx context.Context, def app.Definition, cfg Config) error {
+	s := setup(def, cfg)
 
 	c, err := setupChain(ctx, s, omniEVMName)
 	if err != nil {
@@ -37,12 +37,12 @@ func UpgradeGasStation(ctx context.Context, def app.Definition) error {
 
 // UpgradeGasPump upgrades the OmniGasPump contracts on a network.
 func UpgradeGasPump(ctx context.Context, def app.Definition, cfg Config) error {
-	return setup(def).run(ctx, cfg, upgradeGasPump, withExclude(omniEVMName))
+	return setup(def, cfg).run(ctx, upgradeGasPump, withExclude(omniEVMName))
 }
 
 // UpgradeSlashing upgrades the Slashing predeploy.
-func UpgradeSlashing(ctx context.Context, def app.Definition) error {
-	s := setup(def)
+func UpgradeSlashing(ctx context.Context, def app.Definition, cfg Config) error {
+	s := setup(def, cfg)
 
 	c, err := setupChain(ctx, s, omniEVMName)
 	if err != nil {
@@ -53,8 +53,8 @@ func UpgradeSlashing(ctx context.Context, def app.Definition) error {
 }
 
 // UpgradeStaking upgrades the Staking predeploy.
-func UpgradeStaking(ctx context.Context, def app.Definition) error {
-	s := setup(def)
+func UpgradeStaking(ctx context.Context, def app.Definition, cfg Config) error {
+	s := setup(def, cfg)
 
 	c, err := setupChain(ctx, s, omniEVMName)
 	if err != nil {
@@ -65,8 +65,8 @@ func UpgradeStaking(ctx context.Context, def app.Definition) error {
 }
 
 // UpgradeBridgeNative upgrades the OmniBridgeNative predeploy.
-func UpgradeBridgeNative(ctx context.Context, def app.Definition) error {
-	s := setup(def)
+func UpgradeBridgeNative(ctx context.Context, def app.Definition, cfg Config) error {
+	s := setup(def, cfg)
 
 	c, err := setupChain(ctx, s, omniEVMName)
 	if err != nil {
@@ -77,8 +77,8 @@ func UpgradeBridgeNative(ctx context.Context, def app.Definition) error {
 }
 
 // UpgradeBridgeL1 upgrades the OmniBridgeL1 contract.
-func UpgradeBridgeL1(ctx context.Context, def app.Definition) error {
-	s := setup(def)
+func UpgradeBridgeL1(ctx context.Context, def app.Definition, cfg Config) error {
+	s := setup(def, cfg)
 
 	l1, ok := s.network.EthereumChain()
 	if !ok {
@@ -94,8 +94,8 @@ func UpgradeBridgeL1(ctx context.Context, def app.Definition) error {
 }
 
 // UpgradePortalRegistry upgrades the PortalRegistry predeploy.
-func UpgradePortalRegistry(ctx context.Context, def app.Definition) error {
-	s := setup(def)
+func UpgradePortalRegistry(ctx context.Context, def app.Definition, cfg Config) error {
+	s := setup(def, cfg)
 
 	c, err := setupChain(ctx, s, omniEVMName)
 	if err != nil {
@@ -114,7 +114,7 @@ func upgradePortal(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -151,7 +151,7 @@ func upgradeFeeOracleV1(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -175,7 +175,7 @@ func upgradeGasStation(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -199,7 +199,7 @@ func upgradeGasPump(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -218,7 +218,7 @@ func ugpradeSlashing(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -237,7 +237,7 @@ func upgradeStaking(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -256,7 +256,7 @@ func upgradeBridgeNative(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -280,7 +280,7 @@ func upgradeBridgeL1(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -299,7 +299,7 @@ func upgradePortalRegistry(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}

@@ -26,7 +26,7 @@ var omegaOperators = []common.Address{
 
 // AllowOperators ensures that all operators hard-coded in this package is allowed as validators.
 // Note it only adds any of the operators that are missing, it doesn't remove any ever.
-func AllowOperators(ctx context.Context, def app.Definition) error {
+func AllowOperators(ctx context.Context, def app.Definition, cfg Config) error {
 	network := def.Testnet.Network
 	if network.Static().Network != netconf.Omega {
 		return errors.New("allow operator only supported on omega", "network", network.Static().Network.String())
@@ -63,6 +63,11 @@ func AllowOperators(ctx context.Context, def app.Definition) error {
 	txOpts, err := backend.BindOpts(ctx, eoa.MustAddress(network, eoa.RoleAdmin))
 	if err != nil {
 		return errors.Wrap(err, "bind tx opts")
+	}
+
+	if !cfg.Broadcast {
+		log.Info(ctx, "Dry-run mode, skipping transaction broadcast", "count", len(toAllow))
+		return nil
 	}
 
 	tx, err := contract.AllowValidators(txOpts, toAllow)

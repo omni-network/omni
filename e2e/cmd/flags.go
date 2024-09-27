@@ -58,6 +58,7 @@ func bindKeyCreateFlags(cmd *cobra.Command, cfg *key.UploadConfig) {
 
 func bindAdminFlags(flags *pflag.FlagSet, cfg *admin.Config) {
 	flags.StringVar(&cfg.Chain, "chain", cfg.Chain, "Run admin command on a specific chain. Leave empty to run on all applicable chains.")
+	flags.BoolVar(&cfg.Broadcast, "broadcast", cfg.Broadcast, "If set, transactions will be broadcasted. Leave unset for dry-run.")
 }
 
 func bindERC20FaucetFlags(flags *pflag.FlagSet, cfg *app.RunERC20FaucetConfig) {

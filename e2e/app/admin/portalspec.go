@@ -2,11 +2,13 @@ package admin
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -99,7 +101,7 @@ var portalSpec = map[netconf.ID]NetworkPortalSpec{
 
 // EnsurePortalSpec ensures that live portal contracts are configured as per the local spec.
 func EnsurePortalSpec(ctx context.Context, def app.Definition, cfg Config, localSpecOverride *PortalSpec) error {
-	return setup(def).run(ctx, cfg, func(ctx context.Context, s shared, c chain) error {
+	return setup(def, cfg).run(ctx, func(ctx context.Context, s shared, c chain) error {
 		local, err := localPortalSpec(s.network.ID, c.ID)
 		if err != nil {
 			return errors.Wrap(err, "get local portal spec", "chain", c.Name)
@@ -273,6 +275,9 @@ func livePortalSpec(ctx context.Context, network netconf.Network, c netconf.Chai
 	if err != nil {
 		return PortalSpec{}, errors.Wrap(err, "new portal contract", "chain", c.Name)
 	}
+
+	log.Info(ctx, "Fetching portal spec", "chain", c.Name, "address", c.PortalAddress)
+
 	paused, err := portal.IsPaused1(&bind.CallOpts{Context: ctx})
 	if err != nil {
 		return PortalSpec{}, errors.Wrap(err, "is paused", "chain", c.Name)
@@ -350,6 +355,11 @@ func runPortalDirectives(ctx context.Context, s shared, c chain, directives Port
 		return errors.Wrap(err, "verify directives", "chain", c.Name)
 	}
 
+	if isEmpty(directives) {
+		log.Info(ctx, "No directives to apply", "chain", c.Name)
+		return nil
+	}
+
 	if directives.PauseAll {
 		err := pausePortal(ctx, s, c)
 		if err != nil {
@@ -421,6 +431,23 @@ func runPortalDirectives(ctx context.Context, s shared, c chain, directives Port
 	}
 
 	return nil
+}
+
+func isEmpty(v any) bool {
+	rv := reflect.ValueOf(v)
+
+	// If the value is invalid (e.g., nil interface), return true
+	if !rv.IsValid() {
+		return true
+	}
+
+	// Report len 0 slices, maps, and channels as empty
+	switch rv.Kind() {
+	case reflect.Slice, reflect.Map, reflect.Chan:
+		return rv.Len() == 0
+	default:
+		return rv.IsZero()
+	}
 }
 
 func contains[T comparable](ts []T, t T) bool {
