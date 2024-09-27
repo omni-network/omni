@@ -1,7 +1,3 @@
----
-sidebar_position: 1
----
-
 # Whitepaper
 
 The following whitepaper is the culmination of years of research and development and formed the foundation of the Omni Protocol. Hope you enjoy reading it!

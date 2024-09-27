@@ -1,7 +1,3 @@
----
-sidebar_position: 1
----
-
 # `XMsg` Lifecycle
 
 Cross-rollup messages are referred to as `XMsg` in the Omni protocol. Omni uses CometBFT to process `XMsg`s according to the following sequence.

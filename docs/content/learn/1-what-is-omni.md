@@ -1,7 +1,3 @@
----
-sidebar_position: 1
----
-
 import IntroVideo from '@site/src/components/IntroVideo';
 
 # What is Omni
