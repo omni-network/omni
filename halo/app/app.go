@@ -2,8 +2,7 @@ package app
 
 import (
 	"context"
-	"fmt"
-	"strings"
+	"regexp"
 
 	attestkeeper "github.com/omni-network/omni/halo/attest/keeper"
 	atypes "github.com/omni-network/omni/halo/attest/types"
@@ -98,6 +97,7 @@ func newApp(
 	chainNamer rtypes.ChainNameFunc,
 	feeRecProvider etypes.FeeRecipientProvider,
 	appOpts servertypes.AppOptions,
+	quitChan chan<- error,
 	baseAppOpts ...func(*baseapp.BaseApp),
 ) (*App, error) {
 	depCfg := depinject.Configs(
@@ -169,14 +169,19 @@ func newApp(
 		app.ModuleManager.OrderEndBlockers = endBlockers
 		app.SetEndBlocker(app.EndBlocker)
 
-		// Wrap upgrade module preblocker to dump upgrade info to disk if binary is too old.
-		// By default, it only dumps when doing the upgrade.
+		// Wrap upgrade module preblocker and do immediate shutdown if upgrade is needed.
 		app.SetPreBlocker(func(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
 			resp, err := app.PreBlocker(ctx, req)
-			if isErrOldBinary(err) {
+			if upgrade, ok := isErrOldBinary(err); ok {
+				// Dump last applied upgrade info to disk so cosmovisor can auto upgrade.
 				if err := dumpLastAppliedUpgradeInfo(ctx, app.UpgradeKeeper); err != nil {
 					log.Error(ctx, "Failed writing last applied upgrade info", err)
 				}
+				quitChan <- errors.Wrap(err, "⛔️ network already upgraded, switch halo binary", "upgrade", upgrade)
+				<-ctx.Done() // Wait for shutdown.
+			} else if upgrade, ok := isErrUpgradeNeeded(err); ok {
+				quitChan <- errors.Wrap(err, "⛔️ network upgrade needed now, switch halo binary", "upgrade", upgrade)
+				<-ctx.Done() // Wait for shutdown.
 			}
 
 			return resp, err //nolint:wrapcheck // Don't wrap this cosmos error.
@@ -248,34 +253,46 @@ func dumpLastAppliedUpgradeInfo(ctx sdk.Context, keeper *upgradekeeper.Keeper) e
 	return nil
 }
 
-// isErrOldBinary returns the true if the error is due to the
+// isErrOldBinary returns the last applied upgrade and true if the error is due to the
 // upgrade module detecting the binary is too old.
-func isErrOldBinary(err error) bool {
+func isErrOldBinary(err error) (string, bool) {
 	if err == nil {
-		return false
+		return "", false
 	}
 
-	// Get the root cause of the error.
-	cause := err
-	for {
-		next := errors.Unwrap(cause)
-		if next == nil {
-			break
-		}
-		cause = next
+	cause := errors.Cause(err)
+
+	reg := regexp.MustCompile(`wrong app version \d+, upgrade handler is missing for (.+) upgrade plan`)
+	if !reg.MatchString(cause.Error()) {
+		return "", false
 	}
 
-	var d int
-	var s string
-	i, err := fmt.Fscanf(
-		strings.NewReader(cause.Error()),
-		"wrong app version %d, upgrade handler is missing for %s upgrade plan",
-		&d, &s)
-	if err != nil || i != 2 {
-		return false
+	matches := reg.FindStringSubmatch(cause.Error())
+	if len(matches) != 2 {
+		return "", false
 	}
 
-	return true
+	return matches[1], true
+}
+
+func isErrUpgradeNeeded(err error) (string, bool) {
+	if err == nil {
+		return "", false
+	}
+
+	cause := errors.Cause(err)
+
+	reg := regexp.MustCompile(`UPGRADE "(.+)" NEEDED .+`)
+	if !reg.MatchString(cause.Error()) {
+		return "", false
+	}
+
+	matches := reg.FindStringSubmatch(cause.Error())
+	if len(matches) != 2 {
+		return "", false
+	}
+
+	return matches[1], true
 }
 
 var (
