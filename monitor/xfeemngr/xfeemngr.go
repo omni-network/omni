@@ -77,7 +77,7 @@ func Start(ctx context.Context, network netconf.Network, cfg Config, privKeyPath
 	gprice := gasprice.NewBuffer(makeGasPricers(ethClients), gasprice.WithThresholdPct(gasPriceBufferThreshold))
 	tprice := tokenprice.NewBuffer(coingecko.New(), tokens.OMNI, tokens.ETH, tokenprice.WithThresholdPct(tokenPriceBufferThreshold))
 
-	oracles, err := makeOracles(ctx, network, toSync, ethClients, privKey, gprice, tprice)
+	oracles, err := makeOracles(network, toSync, ethClients, privKey, gprice, tprice)
 	if err != nil {
 		return err
 	}
@@ -121,7 +121,7 @@ func makeGasPricers(ethClients map[uint64]ethclient.Client) map[uint64]ethereum.
 }
 
 // makeOracles makes a map chainID to feeOracle for each chain in the network.
-func makeOracles(ctx context.Context, network netconf.Network, toSync []evmchain.Metadata, ethClients map[uint64]ethclient.Client,
+func makeOracles(network netconf.Network, toSync []evmchain.Metadata, ethClients map[uint64]ethclient.Client,
 	pk *ecdsa.PrivateKey, gprice *gasprice.Buffer, tprice *tokenprice.Buffer) (map[uint64]feeOracle, error) {
 	oracles := make(map[uint64]feeOracle)
 
@@ -131,7 +131,7 @@ func makeOracles(ctx context.Context, network netconf.Network, toSync []evmchain
 			return nil, errors.New("eth client not found", "chain", chain.ID)
 		}
 
-		oracle, err := makeOracle(ctx, chain, toSync, ethCl, pk, gprice, tprice)
+		oracle, err := makeOracle(chain, toSync, ethCl, pk, gprice, tprice)
 		if err != nil {
 			return nil, errors.Wrap(err, "make oracle", "chain", chain.Name)
 		}

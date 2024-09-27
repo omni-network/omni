@@ -19,31 +19,46 @@ import (
 )
 
 type feeOracle struct {
-	contract contract.FeeOracleV1
-	chain    evmchain.Metadata   // source chain
-	toSync   []evmchain.Metadata // chains to sync on fee oracle
-	gprice   *gasprice.Buffer    // gas price buffer
-	tprice   *tokenprice.Buffer  // token price buffer
+	chain  evmchain.Metadata   // source chain
+	toSync []evmchain.Metadata // chains to sync on fee oracle
+	gprice *gasprice.Buffer    // gas price buffer
+	tprice *tokenprice.Buffer  // token price buffer
+
+	getContract func(context.Context) (contract.FeeOracleV1, error)
 }
 
-func makeOracle(ctx context.Context, chain netconf.Chain, toSync []evmchain.Metadata, ethCl ethclient.Client,
+func makeOracle(chain netconf.Chain, toSync []evmchain.Metadata, ethCl ethclient.Client,
 	pk *ecdsa.PrivateKey, gprice *gasprice.Buffer, tprice *tokenprice.Buffer) (feeOracle, error) {
 	chainmeta, ok := evmchain.MetadataByID(chain.ID)
 	if !ok {
 		return feeOracle{}, errors.New("chain metadata not found", "chain", chain.ID)
 	}
 
-	bound, err := contract.New(ctx, chain, ethCl, pk)
-	if err != nil {
-		return feeOracle{}, errors.Wrap(err, "new bound fee oracle")
-	}
+	getContract := func() func(context.Context) (contract.FeeOracleV1, error) {
+		var c *contract.BoundFeeOracleV1
+
+		return func(ctx context.Context) (contract.FeeOracleV1, error) {
+			if c != nil {
+				return c, nil
+			}
+
+			bound, err := contract.New(ctx, chain, ethCl, pk)
+			if err != nil {
+				return nil, errors.Wrap(err, "new bound fee oracle")
+			}
+
+			c = bound
+
+			return bound, nil
+		}
+	}()
 
 	return feeOracle{
-		chain:    chainmeta,
-		toSync:   toSync,
-		contract: bound,
-		gprice:   gprice,
-		tprice:   tprice,
+		chain:       chainmeta,
+		toSync:      toSync,
+		gprice:      gprice,
+		tprice:      tprice,
+		getContract: getContract,
 	}, nil
 }
 
@@ -91,7 +106,12 @@ func (o feeOracle) syncGasPrice(ctx context.Context, dest evmchain.Metadata) err
 		buffered = maxSaneGasPrice
 	}
 
-	onChain, err := o.contract.GasPriceOn(ctx, dest.ChainID)
+	c, err := o.getContract(ctx)
+	if err != nil {
+		return errors.Wrap(err, "get contract")
+	}
+
+	onChain, err := c.GasPriceOn(ctx, dest.ChainID)
 	if err != nil {
 		return errors.Wrap(err, "gas price on")
 	}
@@ -106,7 +126,7 @@ func (o feeOracle) syncGasPrice(ctx context.Context, dest evmchain.Metadata) err
 		return nil
 	}
 
-	err = o.contract.SetGasPriceOn(ctx, dest.ChainID, new(big.Int).SetUint64(shielded))
+	err = c.SetGasPriceOn(ctx, dest.ChainID, new(big.Int).SetUint64(shielded))
 	if err != nil {
 		return errors.Wrap(err, "set gas price on")
 	}
@@ -118,7 +138,12 @@ func (o feeOracle) syncGasPrice(ctx context.Context, dest evmchain.Metadata) err
 }
 
 func (o feeOracle) correctPostsTo(ctx context.Context, dest evmchain.Metadata) error {
-	postsTo, err := o.contract.PostsTo(ctx, dest.ChainID)
+	c, err := o.getContract(ctx)
+	if err != nil {
+		return errors.Wrap(err, "get contract")
+	}
+
+	postsTo, err := c.PostsTo(ctx, dest.ChainID)
 	if err != nil {
 		return errors.Wrap(err, "postsTo")
 	}
@@ -133,12 +158,12 @@ func (o feeOracle) correctPostsTo(ctx context.Context, dest evmchain.Metadata) e
 	// if not correct, correct via BulkSetFeeParams (there is not a single setter for postsTo)
 	// use current onchain gas price and conversion rate
 
-	gasPrice, err := o.contract.GasPriceOn(ctx, dest.ChainID)
+	gasPrice, err := c.GasPriceOn(ctx, dest.ChainID)
 	if err != nil {
 		return errors.Wrap(err, "gas price on")
 	}
 
-	rate, err := o.contract.ToNativeRate(ctx, dest.ChainID)
+	rate, err := c.ToNativeRate(ctx, dest.ChainID)
 	if err != nil {
 		return errors.Wrap(err, "conversion rate on")
 	}
@@ -152,7 +177,7 @@ func (o feeOracle) correctPostsTo(ctx context.Context, dest evmchain.Metadata) e
 		},
 	}
 
-	err = o.contract.BulkSetFeeParams(ctx, params)
+	err = c.BulkSetFeeParams(ctx, params)
 	if err != nil {
 		return errors.Wrap(err, "bulk set fee params")
 	}
@@ -193,7 +218,12 @@ func (o feeOracle) syncToNativeRate(ctx context.Context, dest evmchain.Metadata)
 
 	bufferedNumer := rateToNumerator(bufferedRate)
 
-	onChainNumer, err := o.contract.ToNativeRate(ctx, dest.ChainID)
+	c, err := o.getContract(ctx)
+	if err != nil {
+		return errors.Wrap(err, "get contract")
+	}
+
+	onChainNumer, err := c.ToNativeRate(ctx, dest.ChainID)
 	if err != nil {
 		return errors.Wrap(err, "conversion rate on")
 	}
@@ -213,7 +243,7 @@ func (o feeOracle) syncToNativeRate(ctx context.Context, dest evmchain.Metadata)
 		bufferedNumer = big.NewInt(1)
 	}
 
-	err = o.contract.SetToNativeRate(ctx, dest.ChainID, bufferedNumer)
+	err = c.SetToNativeRate(ctx, dest.ChainID, bufferedNumer)
 	if err != nil {
 		return errors.Wrap(err, "set to native rate")
 	}
