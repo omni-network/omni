@@ -125,14 +125,6 @@ func FundAccounts(ctx context.Context, def Definition, dryRun bool) error {
 			}
 		}
 
-		if network.ID == netconf.Staging {
-			// Staging contracts have ephemeral per-run-time addresses, so the
-			// addresses used here (in `e2e fund`) will not be the same as the
-			// live staging addresses.
-			log.Info(ctx, "Skipping contract funding for staging", "network", network.ID)
-			continue
-		}
-
 		toFund, err := contracts.ToFund(ctx, network.ID)
 		if err != nil {
 			return errors.Wrap(err, "get contracts to fund")
