@@ -40,3 +40,15 @@ func Wrap(err error, msg string, attrs ...any) error {
 		attrs: attrs,
 	}
 }
+
+// Cause calls Unwrap until it finds the root cause of the error.
+func Cause(err error) error {
+	cause := err
+	for {
+		next := pkgerrors.Unwrap(cause)
+		if next == nil {
+			return cause
+		}
+		cause = next
+	}
+}

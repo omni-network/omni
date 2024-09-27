@@ -95,7 +95,7 @@ func monitorConsOffsetOnce(ctx context.Context, network netconf.Network, xprovid
 		ref := xchain.EmitRef{ConfLevel: ptr(stream.ConfLevel())}
 		emitted, ok, err := xprovider.GetEmittedCursor(ctx, ref, stream)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "get emit cursor", "stream", network.StreamName(stream))
 		} else if !ok {
 			continue
 		}
@@ -105,7 +105,7 @@ func monitorConsOffsetOnce(ctx context.Context, network netconf.Network, xprovid
 
 		submitted, ok, err := xprovider.GetSubmittedCursor(ctx, stream)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "get submit cursor", "stream", network.StreamName(stream))
 		} else if !ok {
 			continue
 		}
