@@ -79,7 +79,7 @@ func TestStart(t *testing.T) {
 	// this way when we check them later, we know they have been updated
 	for _, oracle := range oracles {
 		for _, dest := range oracle.toSync {
-			postsTo, err := oracle.contract.PostsTo(context.Background(), dest.ChainID)
+			postsTo, err := mustGetContract(t, oracle).PostsTo(context.Background(), dest.ChainID)
 			require.NoError(t, err)
 			require.Equal(t, uint64(0), postsTo)
 		}
@@ -108,7 +108,9 @@ func TestStart(t *testing.T) {
 
 			for _, dest := range oracle.toSync {
 				// check gas price
-				gasprice, err := oracle.contract.GasPriceOn(ctx, dest.ChainID)
+				c, err := oracle.getContract(ctx)
+				require.NoError(t, err)
+				gasprice, err := c.GasPriceOn(ctx, dest.ChainID)
 				require.NoError(t, err)
 				require.Equal(t, withGasPriceShield(initialGasPrices[dest.ChainID]), gasprice.Uint64(), "initial gas price")
 
@@ -124,7 +126,7 @@ func TestStart(t *testing.T) {
 					require.Equal(t, float64(1), expectedRate, "expect 1:1 rate for same tokens")
 				}
 
-				onChainNumer, err := oracle.contract.ToNativeRate(ctx, dest.ChainID)
+				onChainNumer, err := mustGetContract(t, oracle).ToNativeRate(ctx, dest.ChainID)
 				require.NoError(t, err)
 				require.Equal(t, expectedNumer.Uint64(), onChainNumer.Uint64(), "initial conversion rate")
 			}
@@ -166,7 +168,7 @@ func TestStart(t *testing.T) {
 
 		for _, dest := range oracle.toSync {
 			// check gas price
-			gasprice, err := oracle.contract.GasPriceOn(ctx, dest.ChainID)
+			gasprice, err := mustGetContract(t, oracle).GasPriceOn(ctx, dest.ChainID)
 			require.NoError(t, err)
 			require.Equal(t, withGasPriceShield(gasPricers[dest.ChainID].Price()), gasprice.Uint64(), "updated gas price")
 
@@ -182,7 +184,7 @@ func TestStart(t *testing.T) {
 				require.Equal(t, float64(1), expectedRate, "expect 1:1 rate for same tokens")
 			}
 
-			onChainNumer, err := oracle.contract.ToNativeRate(ctx, dest.ChainID)
+			onChainNumer, err := mustGetContract(t, oracle).ToNativeRate(ctx, dest.ChainID)
 
 			require.NoError(t, err)
 			require.Equal(t, expectedNumer.Uint64(), onChainNumer.Uint64(), "updated conversion rate")
@@ -204,7 +206,7 @@ func TestStart(t *testing.T) {
 	// make sure all postsTo have been corrected
 	for _, oracle := range oracles {
 		for _, dest := range oracle.toSync {
-			postsTo, err := oracle.contract.PostsTo(ctx, dest.ChainID)
+			postsTo, err := mustGetContract(t, oracle).PostsTo(ctx, dest.ChainID)
 			require.NoError(t, err)
 			require.Equal(t, dest.PostsTo, postsTo)
 		}
@@ -218,16 +220,27 @@ func makeMockOracles(chains []evmchain.Metadata, gprice *gasprice.Buffer, tprice
 	oracles := make(map[uint64]feeOracle)
 
 	for _, chain := range chains {
+		mockContract := contract.NewMockFeeOracleV1()
+		getContract := func(context.Context) (contract.FeeOracleV1, error) { return mockContract, nil }
+
 		oracles[chain.ChainID] = feeOracle{
-			chain:    chain,
-			toSync:   chains,
-			gprice:   gprice,
-			tprice:   tprice,
-			contract: contract.NewMockFeeOracleV1(),
+			chain:       chain,
+			toSync:      chains,
+			gprice:      gprice,
+			tprice:      tprice,
+			getContract: getContract,
 		}
 	}
 
 	return oracles
+}
+
+func mustGetContract(t *testing.T, oracle feeOracle) contract.FeeOracleV1 {
+	t.Helper()
+	c, err := oracle.getContract(context.Background())
+	require.NoError(t, err)
+
+	return c
 }
 
 // makeChains generates a list of mock chains from a list of chainIDs.

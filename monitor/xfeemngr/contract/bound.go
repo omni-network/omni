@@ -38,35 +38,35 @@ const (
 )
 
 // New creates a new bound FeeOracleV1 contract.
-func New(ctx context.Context, chain netconf.Chain, ethCl ethclient.Client, pk *ecdsa.PrivateKey) (BoundFeeOracleV1, error) {
+func New(ctx context.Context, chain netconf.Chain, ethCl ethclient.Client, pk *ecdsa.PrivateKey) (*BoundFeeOracleV1, error) {
 	backend, err := ethbackend.NewBackend(chain.Name, chain.ID, chain.BlockPeriod, ethCl, pk)
 	if err != nil {
-		return BoundFeeOracleV1{}, errors.Wrap(err, "new backend")
+		return nil, errors.Wrap(err, "new backend")
 	}
 
 	portal, err := bindings.NewOmniPortal(chain.PortalAddress, ethCl)
 	if err != nil {
-		return BoundFeeOracleV1{}, errors.Wrap(err, "new omni portal")
+		return nil, errors.Wrap(err, "new omni portal")
 	}
 
 	addr, err := portal.FeeOracle(&bind.CallOpts{Context: ctx})
 	if err != nil {
-		return BoundFeeOracleV1{}, errors.Wrap(err, "fee oracle addr")
+		return nil, errors.Wrap(err, "fee oracle addr")
 	}
 
 	contract, err := bindings.NewFeeOracleV1(addr, backend)
 	if err != nil {
-		return BoundFeeOracleV1{}, errors.Wrap(err, "new fee oracle")
+		return nil, errors.Wrap(err, "new fee oracle")
 	}
 
 	owner := crypto.PubkeyToAddress(pk.PublicKey)
 
 	meta, ok := evmchain.MetadataByID(chain.ID)
 	if !ok {
-		return BoundFeeOracleV1{}, errors.New("chain metadata not found", "chain", chain.ID)
+		return nil, errors.New("chain metadata not found", "chain", chain.ID)
 	}
 
-	return BoundFeeOracleV1{
+	return &BoundFeeOracleV1{
 		owner:   owner,
 		addr:    addr,
 		backend: backend,
