@@ -42,7 +42,7 @@ Rollups are actually finalized once transaction calldata is posted to L1. The 7 
 
 Omni's xchain message protocol currently offers 2 confirmation strategies. You can specify your confirmation strategy with each xcall.
 
-You may choose want to use the same confirmation strategy for every `xcall` in your dapp. If this is the case, you can just hardcode a confirmation strategy.
+You may choose to use the same confirmation strategy for every `xcall` in your dapp. If this is the case, you can just hardcode a confirmation strategy.
 
 Or, you may want to adjust the `xcall`'s confirmation strategy based on the transaction's associated "value". For example, you may choose to implement logic that says:
 
