@@ -44,6 +44,7 @@ const sidebars: SidebarsConfig = {
         'operate/run-full-node',
         'operate/validator',
         'operate/uluwatu',
+        'operate/roadmap',
         'operate/faq',
       ],
       collapsed: true,
