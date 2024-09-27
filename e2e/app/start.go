@@ -55,15 +55,15 @@ func StartInitial(ctx context.Context, testnet *e2e.Testnet, p infra.Provider) e
 		}
 	}
 
-	networkHeight := testnet.InitialHeight
+	const initialHeight = 3 // Wait for at least for block 3 (evm block 1), since contract addresses require it.
 
 	// Wait for initial height
 	log.Info(ctx, "Waiting for initial height",
-		"height", networkHeight,
+		"height", initialHeight,
 		"initial", len(initialNodes),
 		"pending", len(allNodes)-len(initialNodes))
 
-	_, _, err = waitForHeight(ctx, testnet, networkHeight)
+	_, _, err = waitForHeight(ctx, testnet, initialHeight)
 	if err != nil {
 		return err
 	}
