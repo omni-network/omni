@@ -33,7 +33,7 @@
 
 ## About Omni
 
-This monorepo contains all source code for Omni Network. Omni's goal is to make it easy for smart contract developers to source liquidity and users from anywhere. The protocol consists of various components including an EVM and cross-chain messaging.
+This monorepo contains all source code for the Omni protocol. Omni's goal is to make it easy for smart contract developers to source liquidity and users from anywhere. The protocol consists of various components including an EVM and cross-chain messaging.
 
 The [Omni Docs](https://docs.omni.network/) are the best place to get started learning about Omni.
 
