@@ -8,7 +8,7 @@ This guide describes the process to configure and register an Omni Omega validat
 
 ## Pre-requisites
 
-- Synced Omni full node (`halo`+ `geth` ) on the [latest release](https://github.com/omni-network/omni/releases/latest). Otherwise follow the “[run a full node](https://docs.omni.network/operate/run-full-node)” guide first.
+- Synced Omni full node (`halo`+ `geth` ) on the [latest release](https://github.com/omni-network/omni/releases/latest). Otherwise follow the “[run a full node](./1-run-full-node.md)” guide first.
 - Ethereum L1 and multiple L2 RPC endpoints for the following chains. This is required for cross-chain validation duties:
   - [Ethereum Holesky](https://chainlist.org/chain/17000)
   - [Optimism Sepolia](https://chainlist.org/chain/11155420)
