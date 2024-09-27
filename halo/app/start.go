@@ -139,6 +139,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 	}
 
 	sdkLogger := newSDKLogger(ctx)
+	async := make(chan error, 1)
 
 	//nolint:contextcheck // False positive
 	app, err := newApp(
@@ -150,6 +151,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		netconf.ChainNamer(cfg.Network),
 		burnEVMFees{},
 		serverAppOptsFromCfg(cfg),
+		async,
 		baseAppOpts...,
 	)
 	if err != nil {
@@ -174,7 +176,6 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 
 	cProvider := cprovider.NewABCIProvider(rpcClient, cfg.Network, netconf.ChainVersionNamer(cfg.Network))
 
-	async := make(chan error, 1)
 	go func() {
 		err := voter.LazyLoad(
 			ctx,
