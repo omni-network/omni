@@ -76,7 +76,7 @@ jobs:
         with:
           file: scripts/halovisor/Dockerfile
           build-args: |
-            HALO_VERSION_0_GENESIS=${{ steps.git_ref.outputs.short_sha }}
+            HALO_VERSION_1_ULUWATU=${{ steps.git_ref.outputs.short_sha }}
           platforms: |
             linux/amd64
           push: true

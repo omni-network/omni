@@ -2,7 +2,7 @@ network = "devnet"
 anvil_chains = ["mock_l2", "mock_l1"]
 
 multi_omni_evms = true
-
+network_upgrade_height = 15
 pingpong_n = 5 # Increased ping pong to span validator updates
 
 [node.validator01]

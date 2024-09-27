@@ -5,9 +5,11 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/netman"
 	"github.com/omni-network/omni/e2e/netman/pingpong"
 	"github.com/omni-network/omni/e2e/types"
+	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
@@ -16,6 +18,7 @@ import (
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -137,6 +140,10 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 	err = pp.StartAllEdges(ctx, cfg.PingPongL, cfg.PingPongP, cfg.PingPongN)
 	if err != nil {
 		return nil, errors.Wrap(err, "start all edges")
+	}
+
+	if err := maybeSubmitNetworkUpgrade(ctx, def); err != nil {
+		return nil, err
 	}
 
 	if err := FundValidatorsForTesting(ctx, def); err != nil {
@@ -381,4 +388,59 @@ func checkSupportedChains(ctx context.Context, n netman.Manager) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// maybeSubmitNetworkUpgrade submits a network upgrade if required.
+func maybeSubmitNetworkUpgrade(ctx context.Context, def Definition) error {
+	if def.Manifest.NetworkUpgradeHeight <= 0 {
+		log.Debug(ctx, "Not submitting network upgrade admin tx")
+
+		return nil // No explicit network upgrade required.
+	}
+
+	network := def.Testnet.Network
+
+	backend, err := def.Backends().Backend(network.Static().OmniExecutionChainID)
+	if err != nil {
+		return err
+	}
+
+	contract, err := bindings.NewUpgrade(common.HexToAddress(predeploys.Upgrade), backend)
+	if err != nil {
+		return err
+	}
+
+	txOpts, err := backend.BindOpts(ctx, eoa.MustAddress(network, eoa.RoleAdmin))
+	if err != nil {
+		return err
+	}
+
+	height, err := backend.BlockNumber(ctx)
+	if err != nil {
+		return err
+	}
+
+	const minDelay = 5 // Upgrades fail if processed too late (mempool is non-deterministic, so we need a buffer).
+	height += minDelay
+
+	// If requested height is later, use that as is.
+	if uint64(def.Manifest.NetworkUpgradeHeight) > height {
+		height = uint64(def.Manifest.NetworkUpgradeHeight)
+	}
+
+	log.Info(ctx, "Planning upgrade", "height", height, "name", latestUpgrade)
+
+	tx, err := contract.PlanUpgrade(txOpts, bindings.UpgradePlan{
+		Name:   latestUpgrade,
+		Height: height,
+		Info:   "e2e triggered upgrade",
+	})
+	if err != nil {
+		return errors.Wrap(err, "plan upgrade")
+	}
+	if _, err := backend.WaitMined(ctx, tx); err != nil {
+		return errors.Wrap(err, "wait mined")
+	}
+
+	return nil
 }

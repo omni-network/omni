@@ -7,6 +7,7 @@ import (
 	"time"
 
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
+	"github.com/omni-network/omni/halo/evmupgrade"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
@@ -27,6 +28,7 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cosmosstd "github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/address"
 	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	atypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -52,6 +54,7 @@ func MakeGenesis(
 	network netconf.ID,
 	genesisTime time.Time,
 	executionBlockHash common.Hash,
+	upgradeName string,
 	valPubkeys ...crypto.PubKey,
 ) (*gtypes.AppGenesis, error) {
 	cdc := getCodec()
@@ -85,17 +88,25 @@ func MakeGenesis(
 	}
 
 	// Step 3: Create the genesis validators; genesis account and a MsgCreateValidator.
-	valTxs := make([]sdk.Tx, 0, len(valPubkeys))
+	var genTxs []sdk.Tx
 	for _, pubkey := range sortByAddress(valPubkeys) {
 		tx, err := addValidator(txConfig, pubkey, cdc, tempFile.Name())
 		if err != nil {
 			return nil, errors.Wrap(err, "add validator")
 		}
-		valTxs = append(valTxs, tx)
+		genTxs = append(genTxs, tx)
+	}
+
+	if upgradeName != "" {
+		tx, err := addUpgrade(txConfig, upgradeName)
+		if err != nil {
+			return nil, errors.Wrap(err, "add upgrade")
+		}
+		genTxs = append(genTxs, tx)
 	}
 
 	// Step 4: Collect the MsgCreateValidator txs and update the app state (again).
-	appState2, err := collectGenTxs(cdc, txConfig, tempFile.Name(), valTxs)
+	appState2, err := collectGenTxs(cdc, txConfig, tempFile.Name(), genTxs)
 	if err != nil {
 		return nil, errors.Wrap(err, "collect genesis transactions")
 	}
@@ -226,6 +237,25 @@ func addValidator(txConfig client.TxConfig, pubkey crypto.PubKey, cdc codec.Code
 	return builder.GetTx(), nil
 }
 
+func addUpgrade(txConfig client.TxConfig, name string) (sdk.Tx, error) {
+	msg := &utypes.MsgSoftwareUpgrade{
+		Authority: sdk.AccAddress(address.Module(evmupgrade.ModuleName)).String(),
+		Plan: utypes.Plan{
+			Name:   name,
+			Height: 1,
+			Info:   "genesis upgrade",
+		},
+	}
+
+	builder := txConfig.NewTxBuilder()
+
+	if err := builder.SetMsgs(msg); err != nil {
+		return nil, errors.Wrap(err, "set message")
+	}
+
+	return builder.GetTx(), nil
+}
+
 // defaultAppState returns the default genesis application state.
 func defaultAppState(
 	maxVals uint32,
@@ -277,6 +307,7 @@ func getCodec() *codec.ProtoCodec {
 	etypes.RegisterInterfaces(reg)
 	evmtypes.RegisterInterfaces(reg)
 	attesttypes.RegisterInterfaces(reg)
+	utypes.RegisterInterfaces(reg)
 
 	return codec.NewProtoCodec(reg)
 }

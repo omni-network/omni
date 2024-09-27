@@ -33,17 +33,18 @@ const maxPeers = 5 // Limit the amount of peers to add to the address book.
 
 // InitConfig is the config for the init command.
 type InitConfig struct {
-	HomeDir       string
-	Moniker       string
-	Network       netconf.ID
-	TrustedSync   bool
-	AddrBook      bool
-	LogCfgFunc    func(*log.Config)
-	HaloCfgFunc   func(*halocfg.Config)
-	CometCfgFunc  func(*cmtconfig.Config)
-	Force         bool
-	Clean         bool
-	ExecutionHash common.Hash
+	HomeDir        string
+	Moniker        string
+	Network        netconf.ID
+	TrustedSync    bool
+	AddrBook       bool
+	LogCfgFunc     func(*log.Config)
+	HaloCfgFunc    func(*halocfg.Config)
+	CometCfgFunc   func(*cmtconfig.Config)
+	Force          bool
+	Clean          bool
+	ExecutionHash  common.Hash
+	GenesisUpgrade string // Zero value omits network upgrade genesis tx
 }
 
 func (c InitConfig) Verify() error {
@@ -294,7 +295,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 			return errors.Wrap(err, "get public key")
 		}
 
-		cosmosGen, err := genutil.MakeGenesis(network, time.Now(), initCfg.ExecutionHash, pubKey)
+		cosmosGen, err := genutil.MakeGenesis(network, time.Now(), initCfg.ExecutionHash, initCfg.GenesisUpgrade, pubKey)
 		if err != nil {
 			return err
 		}
