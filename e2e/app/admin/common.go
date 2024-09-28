@@ -88,8 +88,7 @@ func setupChain(ctx context.Context, s shared, name string) (chain, error) {
 		c.PortalAddress = addrs.Portal
 	}
 
-	// only use fb proxy for non-devnet - devnet uses anvil accounts
-	if s.network.ID != netconf.Devnet {
+	if s.fireAPIKey != "" || s.fireKeyPath != "" {
 		rpc, err = startFBProxy(ctx, s.network.ID, rpc, s.fireAPIKey, s.fireKeyPath)
 		if err != nil {
 			return chain{}, errors.Wrap(err, "start fb proxy")
