@@ -97,7 +97,7 @@ func newApp(
 	chainNamer rtypes.ChainNameFunc,
 	feeRecProvider etypes.FeeRecipientProvider,
 	appOpts servertypes.AppOptions,
-	quitChan chan<- error,
+	asyncAbort chan<- error,
 	baseAppOpts ...func(*baseapp.BaseApp),
 ) (*App, error) {
 	depCfg := depinject.Configs(
@@ -177,10 +177,10 @@ func newApp(
 				if err := dumpLastAppliedUpgradeInfo(ctx, app.UpgradeKeeper); err != nil {
 					log.Error(ctx, "Failed writing last applied upgrade info", err)
 				}
-				quitChan <- errors.Wrap(err, "⛔️ network already upgraded, switch halo binary", "upgrade", upgrade)
+				asyncAbort <- errors.Wrap(err, "⛔️ network already upgraded, switch halo binary", "upgrade", upgrade)
 				<-ctx.Done() // Wait for shutdown.
 			} else if upgrade, ok := isErrUpgradeNeeded(err); ok {
-				quitChan <- errors.Wrap(err, "⛔️ network upgrade needed now, switch halo binary", "upgrade", upgrade)
+				asyncAbort <- errors.Wrap(err, "⛔️ network upgrade needed now, switch halo binary", "upgrade", upgrade)
 				<-ctx.Done() // Wait for shutdown.
 			}
 

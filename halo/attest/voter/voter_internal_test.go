@@ -19,7 +19,7 @@ func LoadVoterForT(t *testing.T, privKey crypto.PrivKey, path string, provider x
 	deps types.VoterDeps, network netconf.Network, backoff func(),
 ) *Voter {
 	t.Helper()
-	v, err := LoadVoter(privKey, path, provider, deps, network)
+	v, err := LoadVoter(privKey, path, provider, deps, network, make(chan error, 1))
 	require.NoError(t, err)
 
 	v.backoffFunc = func(ctx context.Context) func() { return backoff }
