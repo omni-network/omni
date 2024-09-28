@@ -198,7 +198,7 @@ func forOne(
 	action func(context.Context, app.Definition, Config) error,
 	check func(context.Context, app.Definition, netconf.Chain) error,
 ) error {
-	if err := action(ctx, def, Config{Chain: chain.Name}); err != nil {
+	if err := action(ctx, def, Config{Broadcast: true, Chain: chain.Name}); err != nil {
 		return errors.Wrap(err, "act", "chain", chain.Name)
 	}
 
@@ -217,7 +217,7 @@ func forAll(
 	action func(context.Context, app.Definition, Config) error,
 	check func(context.Context, app.Definition, netconf.Chain) error,
 ) error {
-	if err := action(ctx, def, Config{}); err != nil {
+	if err := action(ctx, def, Config{Broadcast: true}); err != nil {
 		return errors.Wrap(err, "act")
 	}
 
