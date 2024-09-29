@@ -70,6 +70,7 @@ func (l *voterLoader) LazyLoad(
 	privKey crypto.PrivKey,
 	voterStateFile string,
 	cmtAPI comet.API,
+	asyncAbort chan<- error,
 ) error {
 	if len(endpoints) == 0 {
 		log.Warn(ctx, "Flag --xchain-evm-rpc-endpoints empty. The app will crash if it becomes a validator since it cannot perform xchain voting duties", nil)
@@ -157,7 +158,7 @@ func (l *voterLoader) LazyLoad(
 		Provider: cprov,
 	}
 
-	v, err := voter.LoadVoter(privKey, voterStateFile, xprov, deps, network)
+	v, err := voter.LoadVoter(privKey, voterStateFile, xprov, deps, network, asyncAbort)
 	if err != nil {
 		return errors.Wrap(err, "create voter")
 	}

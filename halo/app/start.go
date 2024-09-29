@@ -139,7 +139,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 	}
 
 	sdkLogger := newSDKLogger(ctx)
-	async := make(chan error, 1)
+	asyncAbort := make(chan error, 1) // Allows async processes to abort the app
 
 	//nolint:contextcheck // False positive
 	app, err := newApp(
@@ -151,7 +151,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		netconf.ChainNamer(cfg.Network),
 		burnEVMFees{},
 		serverAppOptsFromCfg(cfg),
-		async,
+		asyncAbort,
 		baseAppOpts...,
 	)
 	if err != nil {
@@ -186,9 +186,10 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 			privVal.Key.PrivKey,
 			cfg.VoterStateFile(),
 			cmtAPI,
+			asyncAbort,
 		)
 		if err != nil {
-			async <- err
+			asyncAbort <- err
 		}
 	}()
 
@@ -199,17 +200,17 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 	}
 
 	clientCtx := app.ClientContext(ctx).WithClient(rpcClient).WithHomeDir(cfg.HomeDir)
-	if err := startRPCServers(ctx, cfg, app, sdkLogger, metrics, async, clientCtx); err != nil {
+	if err := startRPCServers(ctx, cfg, app, sdkLogger, metrics, asyncAbort, clientCtx); err != nil {
 		return nil, nil, err
 	}
 
 	go monitorCometForever(ctx, cfg.Network, rpcClient, cmtNode.ConsensusReactor().WaitSync, cfg.DataDir())
 	go monitorEVMForever(ctx, cfg, engineCl)
 
-	// Return async and stop functions.
+	// Return asyncAbort and stop functions.
 	// Note that the original context used to start the app must be canceled first.
 	// And a fresh context should be passed into the stop function.
-	return async, func(ctx context.Context) error {
+	return asyncAbort, func(ctx context.Context) error {
 		voter.WaitDone()
 
 		if err := cmtNode.Stop(); err != nil {

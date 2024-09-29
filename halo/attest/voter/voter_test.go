@@ -25,6 +25,69 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestAbort(t *testing.T) {
+	t.Parallel()
+
+	dir := filepath.Join(t.TempDir(), "deleteme")
+	err := os.MkdirAll(dir, 0o755)
+	require.NoError(t, err)
+
+	path := filepath.Join(dir, "state.json")
+	err = voter.GenEmptyStateFile(path)
+	require.NoError(t, err)
+
+	pk := k1.GenPrivKey()
+	require.NoError(t, err)
+
+	const (
+		chain1 = 1
+		conf   = xchain.ConfFinalized
+	)
+
+	network := testNetwork(chain1)
+	prov := make(stubProvider)
+	backoff := new(testBackOff)
+	deps := &mockDeps{}
+	v := voter.LoadVoterForT(t, pk, path, prov, deps, network, backoff.BackOff)
+
+	// Create a single vote (persisted to disk)
+	chainVer := xchain.ChainVersion{ID: chain1, ConfLevel: conf}
+	att1 := xchain.AttestHeader{ConsensusChainID: 1, ChainVersion: chainVer, AttestOffset: 1}
+	block := xchain.Block{BlockHeader: xchain.BlockHeader{ChainID: chain1, BlockHeight: 1}}
+	err = v.Vote(att1, block, true)
+	require.NoError(t, err)
+
+	// Assert it's available
+	vote, ok := v.LatestByChain(chainVer)
+	require.True(t, ok)
+	require.EqualValues(t, att1, vote.AttestHeader.ToXChain())
+
+	// Delete the state dir
+	err = os.RemoveAll(dir)
+	require.NoError(t, err)
+
+	// Create second vote (should abort)
+	const errAborted = "aborted"
+	att2 := xchain.AttestHeader{ConsensusChainID: 1, ChainVersion: chainVer, AttestOffset: 2}
+	err = v.Vote(att2, block, true)
+	require.ErrorContains(t, err, errAborted)
+
+	header1 := []*types.AttestHeader{{
+		ConsensusChainId: att1.ConsensusChainID,
+		SourceChainId:    att1.ChainVersion.ID,
+		ConfLevel:        uint32(att1.ChainVersion.ConfLevel),
+		AttestOffset:     att1.AttestOffset,
+	}}
+
+	// Assert that voter aborted
+	require.Empty(t, v.GetAvailable())
+	require.ErrorContains(t, v.Vote(att2, block, true), errAborted)
+	require.ErrorContains(t, v.SetProposed(header1), errAborted)
+	require.ErrorContains(t, v.SetCommitted(header1), errAborted)
+	require.ErrorContains(t, v.UpdateValidatorSet(nil), errAborted)
+	require.Empty(t, v.AvailableCount())
+}
+
 func TestRunner(t *testing.T) {
 	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -39,7 +102,6 @@ func TestRunner(t *testing.T) {
 
 	const (
 		chain1     = 1
-		conf       = xchain.ConfFinalized
 		isVal      = true
 		isNotVal   = false
 		returnsOk  = true
