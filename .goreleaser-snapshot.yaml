@@ -2,7 +2,7 @@ version: 2
 
 project_name: omni
 
-# No binaries need to be release for snapshots
+# No binaries (archives) need to be released for snapshots
 # Only linux/amd64 docker images are needed
 
 builds:
