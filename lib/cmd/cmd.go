@@ -36,7 +36,7 @@ func Main(cmd *cobra.Command) {
 	cancel()
 
 	if err != nil {
-		log.Error(ctx, "!! Fatal error occurred, app died️ unexpectedly !!", err)
+		log.Error(ctx, "!! Fatal error occurred, app died unexpectedly !!", err)
 
 		const errExitCode = 1
 		os.Exit(errExitCode) //nolint:revive // Deep exit is exactly the point of this helper function.
