@@ -6,10 +6,15 @@ import (
 	"math/rand"
 	"sort"
 
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app"
+	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
+	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -26,6 +31,10 @@ func Test(ctx context.Context, def app.Definition) error {
 	network := app.NetworkFromDef(def)
 
 	if err := testEnsurePortalSpec(ctx, def, network); err != nil {
+		return err
+	}
+
+	if err := testEnsureBridgeSpec(ctx, def, network); err != nil {
 		return err
 	}
 
@@ -190,6 +199,72 @@ func testEnsurePortalSpec(ctx context.Context, def app.Definition, network netco
 	return nil
 }
 
+func testEnsureBridgeSpec(ctx context.Context, def app.Definition, network netconf.Network) error {
+	expected := &NetworkBridgeSpec{
+		Native: randBridgeSpec(),
+		L1:     randBridgeSpec(),
+	}
+
+	if err := EnsureBridgeSpec(ctx, def, Config{Broadcast: true}, expected); err != nil {
+		return errors.Wrap(err, "ensure bridge spec")
+	}
+
+	addrs, err := contracts.GetAddresses(ctx, network.ID)
+	if err != nil {
+		return errors.Wrap(err, "get addrs")
+	}
+
+	omniEVM, ok := network.OmniEVMChain()
+	if !ok {
+		return errors.New("no omni evm chain")
+	}
+
+	omniBackend, err := def.Backends().Backend(omniEVM.ID)
+	if err != nil {
+		return errors.Wrap(err, "backend", "chain", omniEVM.Name)
+	}
+
+	l1, ok := network.EthereumChain()
+	if !ok {
+		return errors.New("no ethereum chain")
+	}
+
+	l1Backend, err := def.Backends().Backend(l1.ID)
+	if err != nil {
+		return errors.Wrap(err, "backend", "chain", l1.Name)
+	}
+
+	nativebridge, err := bindings.NewOmniBridgeNative(common.HexToAddress(predeploys.OmniBridgeNative), omniBackend)
+	if err != nil {
+		return errors.Wrap(err, "new omni bridge native")
+	}
+
+	l1bridge, err := bindings.NewOmniBridgeL1(addrs.L1Bridge, l1Backend)
+	if err != nil {
+		return errors.Wrap(err, "new omni bridge l1")
+	}
+
+	nativeSpec, err := liveBridgeSpec(ctx, nativebridge)
+	if err != nil {
+		return errors.Wrap(err, "live bridge spec", "chain", omniEVM.Name)
+	}
+
+	l1Spec, err := liveBridgeSpec(ctx, l1bridge)
+	if err != nil {
+		return errors.Wrap(err, "live bridge spec", "chain", l1.Name)
+	}
+
+	if !cmp.Equal(nativeSpec, expected.Native, cmpopts.EquateEmpty()) {
+		return errors.New("live native bridge spec mismatch", "live", nativeSpec, "expected", expected.Native)
+	}
+
+	if !cmp.Equal(l1Spec, expected.L1, cmpopts.EquateEmpty()) {
+		return errors.New("live l1 bridge spec mismatch", "live", l1Spec, "expected", expected.L1)
+	}
+
+	return nil
+}
+
 // forOne runs an action & check configured for a single chain (Config{Chain: "name"}).
 func forOne(
 	ctx context.Context,
@@ -285,6 +360,18 @@ func randPortalSpec(network netconf.Network) *PortalSpec {
 	}
 
 	return spec
+}
+
+func randBridgeSpec() BridgeSpec {
+	pauseAll := randBool()
+	if pauseAll {
+		return BridgeSpec{PauseAll: true}
+	}
+
+	return BridgeSpec{
+		PauseWithdraw: randBool(),
+		PauseBridge:   randBool(),
+	}
 }
 
 func sortUint64(ns []uint64) {

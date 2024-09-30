@@ -6,6 +6,7 @@ import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
 import { OmniPortal } from "src/xchain/OmniPortal.sol";
+import { OmniBridgeCommon } from "src/token/OmniBridgeCommon.sol";
 import { Admin } from "script/admin/Admin.s.sol";
 import { EIP1967Helper } from "script/utils/EIP1967Helper.sol";
 import { PortalHarness } from "test/xchain/common/PortalHarness.sol";
@@ -120,6 +121,48 @@ contract Admin_Test is Test {
         makeXCall(portal);
     }
 
+    function test_pause_unpause_bridge() public {
+        Admin a = new Admin();
+
+        address admin = makeAddr("admin");
+        OmniBridgeCommon b = new StubBridgeCommon(admin);
+
+        bytes32 pauseKeyAll = b.KeyPauseAll();
+        bytes32 pauseKeyWithdraw = b.ACTION_WITHDRAW();
+        bytes32 pauseKeyBridge = b.ACTION_BRIDGE();
+
+        // pause all
+        a.pauseBridge(admin, address(b), pauseKeyAll);
+        assertTrue(b.isPaused(pauseKeyAll));
+
+        // unpause all
+        a.unpauseBridge(admin, address(b), pauseKeyAll);
+        assertFalse(b.isPaused(pauseKeyAll));
+
+        // pause withdraw
+        a.pauseBridge(admin, address(b), pauseKeyWithdraw);
+        assertTrue(b.isPaused(pauseKeyWithdraw));
+
+        // unpause withdraw
+        a.unpauseBridge(admin, address(b), pauseKeyWithdraw);
+        assertFalse(b.isPaused(pauseKeyWithdraw));
+
+        // pause bridge
+        a.pauseBridge(admin, address(b), pauseKeyBridge);
+        assertTrue(b.isPaused(pauseKeyBridge));
+
+        // unpause bridge
+        a.unpauseBridge(admin, address(b), pauseKeyBridge);
+        assertFalse(b.isPaused(pauseKeyBridge));
+
+        // no invalid key
+        vm.expectRevert("invalid action");
+        a.pauseBridge(admin, address(b), bytes32(uint256(1234)));
+
+        vm.expectRevert("invalid action");
+        a.unpauseBridge(admin, address(b), bytes32(uint256(4567)));
+    }
+
     //////////////////////////////////////////////////////////////////////////////
     //                              Utils                                       //
     //////////////////////////////////////////////////////////////////////////////
@@ -178,5 +221,12 @@ contract Admin_Test is Test {
 
         vm.chainId(thisChainId);
         OmniPortal(portal).xcall{ value: 1 gwei }(thatChainId, conf, to, data, gasLimit);
+    }
+}
+
+// StubBridgeCommon is a non-abstract OmniBridgeCommon, used for testing.
+contract StubBridgeCommon is OmniBridgeCommon {
+    constructor(address owner_) initializer {
+        __Ownable_init(owner_);
     }
 }

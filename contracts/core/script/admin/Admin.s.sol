@@ -10,6 +10,7 @@ import { FeeOracleV1 } from "src/xchain/FeeOracleV1.sol";
 import { PortalRegistry } from "src/xchain/PortalRegistry.sol";
 import { OmniGasPump } from "src/token/OmniGasPump.sol";
 import { OmniGasStation } from "src/token/OmniGasStation.sol";
+import { OmniBridgeCommon } from "src/token/OmniBridgeCommon.sol";
 import { OmniBridgeNative } from "src/token/OmniBridgeNative.sol";
 import { OmniBridgeL1 } from "src/token/OmniBridgeL1.sol";
 import { Staking } from "src/octane/Staking.sol";
@@ -141,6 +142,42 @@ contract Admin is Script {
      */
     function unpauseXSubmitFrom(address admin, address portal, uint64 from) public withBroadcast(admin) {
         OmniPortal(portal).unpauseXSubmitFrom(from);
+    }
+
+    /**
+     * @notice Pause a bridge action.
+     * @param admin     The owner of the bridge contract.
+     * @param bridge    The address of the bridge contract.
+     * @param action    The action to pause.
+     */
+    function pauseBridge(address admin, address bridge, bytes32 action) public {
+        OmniBridgeCommon b = OmniBridgeCommon(bridge);
+
+        require(
+            action == b.ACTION_WITHDRAW() || action == b.ACTION_BRIDGE() || action == b.KeyPauseAll(), "invalid action"
+        );
+
+        vm.startBroadcast(admin);
+        b.pause(action);
+        vm.stopBroadcast();
+    }
+
+    /**
+     * @notice Unpause a bridge action.
+     * @param admin     The owner of the bridge contract.
+     * @param bridge    The address of the bridge contract.
+     * @param action    The action to unpause.
+     */
+    function unpauseBridge(address admin, address bridge, bytes32 action) public {
+        OmniBridgeCommon b = OmniBridgeCommon(bridge);
+
+        require(
+            action == b.ACTION_WITHDRAW() || action == b.ACTION_BRIDGE() || action == b.KeyPauseAll(), "invalid action"
+        );
+
+        vm.startBroadcast(admin);
+        b.unpause(action);
+        vm.stopBroadcast();
     }
 
     /**
