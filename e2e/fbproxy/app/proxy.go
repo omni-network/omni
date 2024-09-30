@@ -102,12 +102,8 @@ func (p *proxy) proxy(ctx context.Context, w http.ResponseWriter, r *http.Reques
 		return errors.Wrap(err, "create next request")
 	}
 
-	// copy request headers
-	for k, vs := range r.Header {
-		for _, v := range vs {
-			nextReq.Header.Add(k, v)
-		}
-	}
+	nextReq.ContentLength = int64(len(reqBody))
+	nextReq.Header = r.Header.Clone()
 
 	resp, err := new(http.Client).Do(nextReq)
 	if err != nil {
