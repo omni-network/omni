@@ -41,6 +41,5 @@ What's actually happening here?
 | RAM | 16GB |
 | SSD Hard Disk | 500 GB |
 | Docker | 24.0.7 |
-| Operating System | Linux/macOS (arm/64) |
-
-Inbound ports will be enabled for cometBFT (tcp://266567) and Geth (tcp://30303, udp://30303)
+| Operating System | `linux/amd64` (soon adding support for multi-platform docker images) |
+| Inbound ports | Enabled for cometBFT (`tcp://266567`) and Geth (`tcp://30303`, `udp://30303`) |
