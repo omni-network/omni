@@ -4,6 +4,10 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/omni-network/omni/lib/umath"
+
+	"github.com/ethereum/go-ethereum/params"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -46,10 +50,10 @@ var (
 		Buckets:   prometheus.ExponentialBucketsRange(1, 1e6, 10),
 	}, []string{"stream", "xdapp"})
 
-	feesCollectedTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+	feesGweiTotal = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "monitor",
 		Subsystem: "indexer",
-		Name:      "fees_collected_total",
+		Name:      "fees_gwei_total",
 		Help:      "Total fees collected from xcalls by a portal contract",
 	}, []string{"chain", "token"})
 )
@@ -83,7 +87,7 @@ func instrumentSample(s sample) {
 	excessGasHist.WithLabelValues(s.Stream, s.XDApp).Observe(float64(s.ExcessGas))
 
 	if s.FeeAmount != nil {
-		feeAmount, _ := s.FeeAmount.Float64()
-		feesCollectedTotal.WithLabelValues(s.SrcChain, s.FeeToken).Add(feeAmount)
+		feesGwei, _ := new(big.Int).Div(s.FeeAmount, umath.NewBigInt(params.GWei)).Float64()
+		feesGweiTotal.WithLabelValues(s.SrcChain, s.FeeToken).Add(feesGwei)
 	}
 }
