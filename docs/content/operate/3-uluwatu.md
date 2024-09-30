@@ -42,6 +42,7 @@ There are basically three ways to run a `halo`:
     - Suggested env vars:
         - `ENV DAEMON_ALLOW_DOWNLOAD_BINARIES=false`
         - `ENV DAEMON_RESTART_AFTER_UPGRADE=true`
+        - `ENV UNSAFE_SKIP_BACKUP=true`
     - The folder structure should be:
 
     ```bash
