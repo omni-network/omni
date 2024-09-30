@@ -41,7 +41,7 @@ jobs:
           build-args: |
             HALO_VERSION_1_ULUWATU=${{ github.ref_name }}
           platforms: |
-            linux/amd64
+            linux/amd64,linux/arm64
           push: true
           tags: |
             omniops/halovisor:latest
