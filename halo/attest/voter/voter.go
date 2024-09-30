@@ -52,6 +52,7 @@ type Voter struct {
 	deps        types.VoterDeps
 	backoffFunc func(context.Context) func()
 	wg          sync.WaitGroup
+	asyncAbort  chan<- error
 
 	mu          sync.Mutex
 	latest      map[xchain.ChainVersion]*types.Vote // Latest vote per chain
@@ -61,6 +62,7 @@ type Voter struct {
 	minsByChain map[xchain.ChainVersion]uint64 // map[chainID]offset
 	isVal       bool
 	valSetID    uint64
+	errAborted  error // Abort when state persistence fails.
 }
 
 // GenEmptyStateFile generates an empty attester state file at the given path.
@@ -70,8 +72,13 @@ func GenEmptyStateFile(path string) error {
 }
 
 // LoadVoter returns a new attester with state loaded from disk.
-func LoadVoter(privKey crypto.PrivKey, path string, provider xchain.Provider, deps types.VoterDeps,
+func LoadVoter(
+	privKey crypto.PrivKey,
+	path string,
+	provider xchain.Provider,
+	deps types.VoterDeps,
 	network netconf.Network,
+	asyncAbort chan<- error,
 ) (*Voter, error) {
 	if len(privKey.PubKey().Bytes()) != k1.PubKeySize {
 		return nil, errors.New("invalid private key")
@@ -87,14 +94,15 @@ func LoadVoter(privKey crypto.PrivKey, path string, provider xchain.Provider, de
 		return nil, err
 	}
 
-	return &Voter{
-		privKey:  privKey,
-		cChainID: network.ID.Static().OmniConsensusChainIDUint64(),
-		address:  addr,
-		path:     path,
-		network:  network,
-		provider: provider,
-		deps:     deps,
+	v := &Voter{
+		privKey:    privKey,
+		cChainID:   network.ID.Static().OmniConsensusChainIDUint64(),
+		address:    addr,
+		path:       path,
+		network:    network,
+		provider:   provider,
+		deps:       deps,
+		asyncAbort: asyncAbort,
 		backoffFunc: func(ctx context.Context) func() {
 			return expbackoff.New(ctx, expbackoff.WithPeriodicConfig(prodBackoff))
 		},
@@ -103,7 +111,14 @@ func LoadVoter(privKey crypto.PrivKey, path string, provider xchain.Provider, de
 		proposed:  s.Proposed,
 		committed: s.Committed,
 		latest:    latestFromJSON(s.Latest),
-	}, nil
+	}
+
+	// Ensure persistence is working.
+	if err := v.saveUnsafe(); err != nil {
+		return nil, err
+	}
+
+	return v, nil
 }
 
 // Start starts runners that attest to each source chain. It does not block, it returns immediately.
@@ -293,6 +308,9 @@ func (v *Voter) getFromHeightAndOffset(ctx context.Context, chainVer xchain.Chai
 func (v *Voter) Vote(attHeader xchain.AttestHeader, block xchain.Block, allowSkip bool) error {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.errAborted != nil {
+		return v.errAborted
+	}
 
 	vote, err := CreateVote(v.privKey, attHeader, block)
 	if err != nil {
@@ -332,6 +350,11 @@ func (v *Voter) Vote(attHeader xchain.AttestHeader, block xchain.Block, allowSki
 func (v *Voter) UpdateValidatorSet(valset *vtypes.ValidatorSetResponse) error {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.errAborted != nil {
+		return v.errAborted
+	} else if valset == nil {
+		return errors.New("nil validator set")
+	}
 
 	isVal, err := valset.IsValidator(v.address)
 	if err != nil {
@@ -358,6 +381,9 @@ func (v *Voter) UpdateValidatorSet(valset *vtypes.ValidatorSetResponse) error {
 func (v *Voter) TrimBehind(minsByChain map[xchain.ChainVersion]uint64) int {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.errAborted != nil {
+		return 0
+	}
 
 	trim := func(votes []*types.Vote) []*types.Vote {
 		var remaining []*types.Vote
@@ -391,6 +417,9 @@ func (v *Voter) TrimBehind(minsByChain map[xchain.ChainVersion]uint64) int {
 func (v *Voter) AvailableCount() int {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.errAborted != nil {
+		return 0
+	}
 
 	return len(v.available)
 }
@@ -399,6 +428,9 @@ func (v *Voter) AvailableCount() int {
 func (v *Voter) GetAvailable() []*types.Vote {
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.errAborted != nil {
+		return nil
+	}
 
 	return slices.Clone(v.available)
 }
@@ -413,6 +445,9 @@ func (v *Voter) SetProposed(headers []*types.AttestHeader) error {
 
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.errAborted != nil {
+		return v.errAborted
+	}
 
 	proposed := headerMap(headers)
 
@@ -442,6 +477,9 @@ func (v *Voter) SetCommitted(headers []*types.AttestHeader) error {
 
 	v.mu.Lock()
 	defer v.mu.Unlock()
+	if v.errAborted != nil {
+		return v.errAborted
+	}
 
 	committed := headerMap(headers)
 
@@ -519,7 +557,16 @@ func (v *Voter) saveUnsafe() error {
 	}
 
 	if err := tempfile.WriteFileAtomic(v.path, bz, 0o600); err != nil {
-		return errors.Wrap(err, "write state path")
+		// Abort the voter if the state cannot be persisted.
+		// Voter in-memory and disk state are now inconsistent.
+		// Force binary restart to recover.
+		v.errAborted = errors.Wrap(err, "🚨 voter aborted while storing state")
+		select {
+		case v.asyncAbort <- v.errAborted: // Assume asyncAbort is buffered.
+		default:
+		}
+
+		return v.errAborted
 	}
 
 	v.instrumentUnsafe()
