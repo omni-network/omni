@@ -55,7 +55,8 @@ builds:
       - -s -w -X github.com/omni-network/omni/lib/buildinfo.version={{.Tag}}
 
 dockers:
-  - id: halo
+  - id: halo-amd64
+    ids: [halo]
     goos: linux
     goarch: amd64
     use: buildx
@@ -65,7 +66,8 @@ dockers:
     image_templates:
       - omniops/halo:{{.Tag}}-amd64
 
-  - id: halo
+  - id: halo-arm64
+    ids: [halo]
     goos: linux
     goarch: arm64
     use: buildx
@@ -75,7 +77,8 @@ dockers:
     image_templates:
       - omniops/halo:{{.Tag}}-arm64
 
-  - id: omni
+  - id: omni-amd64
+    ids: [omni]
     goos: linux
     goarch: amd64
     use: buildx
@@ -85,7 +88,8 @@ dockers:
     image_templates:
       - omniops/omni:{{.Tag}}-amd64
 
-  - id: omni
+  - id: omni-arm64
+    ids: [omni]
     goos: linux
     goarch: arm64
     use: buildx
@@ -95,7 +99,7 @@ dockers:
     image_templates:
       - omniops/omni:{{.Tag}}-arm64
 
-  - id: relayer
+  - ids: [relayer]
     # Defaults to linux/amd64
     dockerfile: ./relayer/Dockerfile
     image_templates:
