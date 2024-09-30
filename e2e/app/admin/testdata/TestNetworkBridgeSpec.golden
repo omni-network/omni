@@ -1,0 +1,50 @@
+{
+ "devnet": {
+  "Native": {
+   "PauseAll": false,
+   "PauseWithdraw": false,
+   "PauseBridge": false
+  },
+  "L1": {
+   "PauseAll": false,
+   "PauseWithdraw": false,
+   "PauseBridge": false
+  }
+ },
+ "mainnet": {
+  "Native": {
+   "PauseAll": false,
+   "PauseWithdraw": false,
+   "PauseBridge": false
+  },
+  "L1": {
+   "PauseAll": false,
+   "PauseWithdraw": false,
+   "PauseBridge": false
+  }
+ },
+ "omega": {
+  "Native": {
+   "PauseAll": false,
+   "PauseWithdraw": false,
+   "PauseBridge": false
+  },
+  "L1": {
+   "PauseAll": false,
+   "PauseWithdraw": false,
+   "PauseBridge": false
+  }
+ },
+ "staging": {
+  "Native": {
+   "PauseAll": false,
+   "PauseWithdraw": false,
+   "PauseBridge": false
+  },
+  "L1": {
+   "PauseAll": false,
+   "PauseWithdraw": false,
+   "PauseBridge": false
+  }
+ }
+}

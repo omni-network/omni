@@ -14,6 +14,16 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
 
+// portalSpec defines portal specs per network, with chain specific overrides.
+// To update portal spec, update this map.
+// Then run `ensure-portal-spec` to apply the changes.
+var portalSpec = map[netconf.ID]NetworkPortalSpec{
+	netconf.Devnet:  {Global: DefaultPortalSpec()},
+	netconf.Staging: {Global: DefaultPortalSpec()},
+	netconf.Omega:   {Global: DefaultPortalSpec()},
+	netconf.Mainnet: {Global: DefaultPortalSpec()},
+}
+
 // PortalSpec is the specification for the OmniPortal contract.
 type PortalSpec struct {
 	// PauseAll indicates that all actions on the portal should be paused.
@@ -81,22 +91,6 @@ func DefaultPortalSpec() PortalSpec {
 		PauseXSubmit:     false,
 		PauseXSubmitFrom: nil,
 	}
-}
-
-// portalSpec sets portal specs per network, with chain specific overrides.
-var portalSpec = map[netconf.ID]NetworkPortalSpec{
-	netconf.Devnet: {
-		Global: DefaultPortalSpec(),
-	},
-	netconf.Staging: {
-		Global: DefaultPortalSpec(),
-	},
-	netconf.Omega: {
-		Global: DefaultPortalSpec(),
-	},
-	netconf.Mainnet: {
-		Global: DefaultPortalSpec(),
-	},
 }
 
 // EnsurePortalSpec ensures that live portal contracts are configured as per the local spec.
