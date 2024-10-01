@@ -17,11 +17,11 @@ fi
 
 HALO_VERSION_1_ULUWATU="${2}"
 if [ -z "$HALO_VERSION_1_ULUWATU" ]; then
-  HALO_VERSION_1_ULUWATU=$(git rev-parse --short=7 HEAD)
-  echo "Using head as HALO_VERSION_ULUWATU: ${HALO_VERSION_1_ULUWATU}"
+  HALO_VERSION_1_ULUWATU=$(git rev-parse --short=7 origin/main)
+  echo "Using origin/main HEAD as HALO_VERSION_ULUWATU: ${HALO_VERSION_1_ULUWATU}"
 fi
 
-IMAGEREF="omniops/halovisor:${HALO_VERSION_1_ULUWATU}"
+IMAGEREF="omniops/halovisor:$(git rev-parse --short=7 HEAD)"
 IMAGEMAIN="omniops/halovisor:main"
 
 docker build \
