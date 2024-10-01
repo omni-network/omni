@@ -42,4 +42,4 @@ What's actually happening here?
 | SSD Hard Disk | 500 GB |
 | Docker | 24.0.7 |
 | Operating System | `linux/amd64` (soon adding support for multi-platform docker images) |
-| Inbound ports | Enabled for cometBFT (`tcp://26657`) and Geth (`tcp://30303`, `udp://30303`) |
+| Inbound ports | Enabled for cometBFT (`tcp://26656`) and Geth (`tcp://30303`, `udp://30303`) |
