@@ -58,7 +58,7 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
     /**
      * @notice A list of supported chains & shards.
      */
-    XTypes.Chain[] public network;
+    XTypes.Chain[] internal _network;
 
     /**
      * @notice Maps shard ID to true, if the shard is supported.

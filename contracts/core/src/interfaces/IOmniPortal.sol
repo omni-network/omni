@@ -151,4 +151,9 @@ interface IOmniPortal {
      *              and a block header and message batch, proven against the attestation root.
      */
     function xsubmit(XTypes.Submission calldata xsub) external;
+
+    /**
+     * @notice Returns the current network (supported chain IDs and shards)
+     */
+    function network() external view returns (XTypes.Chain[] memory);
 }
