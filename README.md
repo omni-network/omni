@@ -90,6 +90,21 @@ make devnet-clean
 
 We are open to contributions, but don't currently have a formal process for contributors. If you are interested, browse through [open issues](https://github.com/omni-network/omni/issues), read our [code of conduct](./CODE_OF_CONDUCT.md), or chat with the team.
 
+Follow these steps to set up a functional development environment:
+
+1. Install Docker Desktop.
+2. Run `make install-pre-commit`.
+3. Run `pre-commit install --install-hooks` in the repo root directory.
+4. Create a PGP key.
+5. Add the public PGP key to Github.
+6. Configure Git:
+```
+git config --local user.name <Foo Bar>
+git config --local user.email <email@host.com>
+git config --local core.abbrev 7
+git config --local commit.gpgsign true
+```
+
 ## Security
 
 Please refer to [SECURITY.md](./SECURITY.md).
