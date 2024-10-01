@@ -11,7 +11,7 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 HALO_VERSION_0_GENESIS="${1}"
 if [ -z "$HALO_VERSION_0_GENESIS" ]; then
   # TODO(corver): Replace with v0.8.1 when released. Below is v0.8.1-rc1
-  HALO_VERSION_0_GENESIS=b9964ac
+  HALO_VERSION_0_GENESIS=v0.8.0-rc1
   echo "Using HALO_VERSION_GENESIS: ${HALO_VERSION_0_GENESIS}"
 fi
 
