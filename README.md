@@ -93,10 +93,10 @@ We are open to contributions, but don't currently have a formal process for cont
 Follow these steps to set up a functional development environment:
 
 1. Install Docker Desktop.
-2. Run `make install-pre-commit`.
-3. Run `pre-commit install --install-hooks` in the repo root directory.
-4. Create a PGP key.
-5. Add the public PGP key to Github.
+2. Run `make install-go-tools`.
+3. Run `make install-pre-commit`.
+4. Run `pre-commit install --install-hooks` in the repo root directory.
+5. Create a PGP key pair and [add the public key to Github](https://docs.github.com/en/authentication/managing-commit-signature-verification/adding-a-gpg-key-to-your-github-account).
 6. Configure Git:
 ```
 git config --local user.name <Foo Bar>
