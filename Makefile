@@ -5,17 +5,13 @@ help:  ## Display this help message
 ###                                Docker                                 	###
 ###############################################################################
 
-.PHONY: build-docker
-build-docker: ensure-go-releaser ## Builds the docker images.
-	@goreleaser release --snapshot --clean
-	@scripts/halovisor/build.sh
+ARCH := $(shell arch)
 
-.PHONY: build-halo-relayer
-build-halo-relayer: ensure-go-releaser ## Builds the halo and relayer docker images only (slightly faster than above).
-	@scripts/build_docker.sh halo
-	@scripts/build_docker.sh relayer
-	@scripts/build_docker.sh monitor
-	@scripts/build_docker.sh anvilproxy 'e2e' '' 'amd64'
+.PHONY: build-docker
+build-docker: ensure-go-releaser ## Builds the docker images using local arch.
+	@sed "s/amd64/$(ARCH)/g" .goreleaser-snapshot.yaml > .goreleaser-local.yaml
+	@goreleaser release -f .goreleaser-local.yaml --snapshot --clean --skip=archive
+	@rm .goreleaser-local.yaml
 	@scripts/halovisor/build.sh
 
 ###############################################################################

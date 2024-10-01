@@ -44,30 +44,40 @@ builds:
 dockers:
   - ids: [ halo ]
     dockerfile: ./halo/Dockerfile
+    goos: linux
+    goarch: amd64
     image_templates:
       - omniops/halo:{{ .ShortCommit }}
       - omniops/halo:main
 
   - ids: [omni]
     dockerfile: ./cli/cmd/omni/Dockerfile
+    goos: linux
+    goarch: amd64
     image_templates:
       - omniops/omni:{{ .ShortCommit }}
       - omniops/omni:main
 
   - ids: [relayer]
     dockerfile: ./relayer/Dockerfile
+    goos: linux
+    goarch: amd64
     image_templates:
      - omniops/relayer:{{ .ShortCommit }}
      - omniops/relayer:main
 
   - ids: [monitor]
     dockerfile: ./monitor/Dockerfile
+    goos: linux
+    goarch: amd64
     image_templates:
      - omniops/monitor:{{ .ShortCommit }}
      - omniops/monitor:main
 
   - ids: [anvilproxy]
     dockerfile: ./e2e/anvilproxy/Dockerfile
+    goos: linux
+    goarch: amd64
     image_templates:
      - omniops/anvilproxy:{{ .ShortCommit }}
      - omniops/anvilproxy:main
