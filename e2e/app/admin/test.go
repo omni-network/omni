@@ -200,15 +200,6 @@ func testEnsurePortalSpec(ctx context.Context, def app.Definition, network netco
 }
 
 func testEnsureBridgeSpec(ctx context.Context, def app.Definition, network netconf.Network) error {
-	expected := &NetworkBridgeSpec{
-		Native: randBridgeSpec(),
-		L1:     randBridgeSpec(),
-	}
-
-	if err := EnsureBridgeSpec(ctx, def, Config{Broadcast: true}, expected); err != nil {
-		return errors.Wrap(err, "ensure bridge spec")
-	}
-
 	addrs, err := contracts.GetAddresses(ctx, network.ID)
 	if err != nil {
 		return errors.Wrap(err, "get addrs")
@@ -244,22 +235,51 @@ func testEnsureBridgeSpec(ctx context.Context, def app.Definition, network netco
 		return errors.Wrap(err, "new omni bridge l1")
 	}
 
-	nativeSpec, err := liveBridgeSpec(ctx, nativebridge)
-	if err != nil {
-		return errors.Wrap(err, "live bridge spec", "chain", omniEVM.Name)
+	//  test rand spec
+
+	randSpec := &NetworkBridgeSpec{
+		Native: randBridgeSpec(),
+		L1:     randBridgeSpec(),
+	}
+
+	if err := ensureBridgeSpec(ctx, def, l1bridge, nativebridge, randSpec); err != nil {
+		return err
+	}
+
+	// reset to defaults
+
+	defaultSpec := DefaultBridgeSpec()
+
+	return ensureBridgeSpec(ctx, def, l1bridge, nativebridge, &defaultSpec)
+}
+
+func ensureBridgeSpec(
+	ctx context.Context,
+	def app.Definition,
+	l1bridge *bindings.OmniBridgeL1,
+	nativebridge *bindings.OmniBridgeNative,
+	spec *NetworkBridgeSpec,
+) error {
+	if err := EnsureBridgeSpec(ctx, def, Config{Broadcast: true}, spec); err != nil {
+		return errors.Wrap(err, "ensure bridge spec")
 	}
 
 	l1Spec, err := liveBridgeSpec(ctx, l1bridge)
 	if err != nil {
-		return errors.Wrap(err, "live bridge spec", "chain", l1.Name)
+		return errors.Wrap(err, "live l1 bridge spec")
 	}
 
-	if !cmp.Equal(nativeSpec, expected.Native, cmpopts.EquateEmpty()) {
-		return errors.New("live native bridge spec mismatch", "live", nativeSpec, "expected", expected.Native)
+	nativeSpec, err := liveBridgeSpec(ctx, nativebridge)
+	if err != nil {
+		return errors.Wrap(err, "live native bridge spec")
 	}
 
-	if !cmp.Equal(l1Spec, expected.L1, cmpopts.EquateEmpty()) {
-		return errors.New("live l1 bridge spec mismatch", "live", l1Spec, "expected", expected.L1)
+	if !cmp.Equal(nativeSpec, spec.Native, cmpopts.EquateEmpty()) {
+		return errors.New("live native bridge spec mismatch", "live", nativeSpec, "expected", spec.Native)
+	}
+
+	if !cmp.Equal(l1Spec, spec.L1, cmpopts.EquateEmpty()) {
+		return errors.New("live l1 bridge spec mismatch", "live", l1Spec, "expected", spec.L1)
 	}
 
 	return nil
