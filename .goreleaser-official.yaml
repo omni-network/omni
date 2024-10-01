@@ -1,0 +1,153 @@
+version: 2
+
+project_name: omni
+
+# halo and omni cli:
+# - External facing
+# - Released as binaries inside archive tarball
+# - So require linux/darwin/amd/arm matrix of binaires (tarballs)
+# - Only linux/amd/arm docker images required
+# - Tag images with {Tag} and latest
+#
+# relayer, monitor:
+# - Internal facing (not external)
+# - Not released as binaries
+# - Only linux/amd docker image required.
+# - Tag images with {Tag} only
+#
+# anvilproxy: nothing required for official release
+
+builds:
+  - id: halo
+    main: ./halo
+    binary: halo
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X github.com/omni-network/omni/lib/buildinfo.version={{.Tag}}
+
+  - id: omni
+    main: ./cli/cmd/omni
+    binary: omni
+    env: [ CGO_ENABLED=0 ]
+    goos: [ linux, darwin ]
+    goarch: [ amd64, arm64 ]
+    ldflags:
+      - -s -w -X github.com/omni-network/omni/lib/buildinfo.version={{.Tag}}
+
+  - id: relayer
+    main: ./relayer
+    binary: relayer
+    env: [CGO_ENABLED=0]
+    goos: [linux]
+    goarch: [amd64]
+    ldflags:
+      - -s -w -X github.com/omni-network/omni/lib/buildinfo.version={{.Tag}}
+
+  - id: monitor
+    main: ./monitor
+    binary: monitor
+    env: [CGO_ENABLED=0]
+    goos: [linux]
+    goarch: [amd64]
+    ldflags:
+      - -s -w -X github.com/omni-network/omni/lib/buildinfo.version={{.Tag}}
+
+dockers:
+  - id: halo-amd64
+    ids: [halo]
+    goos: linux
+    goarch: amd64
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/amd64"
+    dockerfile: ./halo/Dockerfile
+    image_templates:
+      - omniops/halo:{{.Tag}}-amd64
+
+  - id: halo-arm64
+    ids: [halo]
+    goos: linux
+    goarch: arm64
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/arm64"
+    dockerfile: ./halo/Dockerfile
+    image_templates:
+      - omniops/halo:{{.Tag}}-arm64
+
+  - id: omni-amd64
+    ids: [omni]
+    goos: linux
+    goarch: amd64
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/amd64"
+    dockerfile: ./cli/cmd/omni/Dockerfile
+    image_templates:
+      - omniops/omni:{{.Tag}}-amd64
+
+  - id: omni-arm64
+    ids: [omni]
+    goos: linux
+    goarch: arm64
+    use: buildx
+    build_flag_templates:
+      - "--platform=linux/arm64"
+    dockerfile: ./cli/cmd/omni/Dockerfile
+    image_templates:
+      - omniops/omni:{{.Tag}}-arm64
+
+  - ids: [relayer]
+    # Defaults to linux/amd64
+    dockerfile: ./relayer/Dockerfile
+    image_templates:
+     - omniops/relayer:{{.Tag}}
+
+  - ids: [monitor]
+    # Defaults to linux/amd64
+    dockerfile: ./monitor/Dockerfile
+    image_templates:
+      - omniops/monitor:{{.Tag}}
+
+docker_manifests:
+  - name_template: omniops/halo:{{.Tag}}
+    image_templates:
+      - omniops/halo:{{.Tag}}-amd64
+      - omniops/halo:{{.Tag}}-arm64
+  - name_template: omniops/halo:latest
+    image_templates:
+      - omniops/halo:{{.Tag}}-amd64
+      - omniops/halo:{{.Tag}}-arm64
+  - name_template: omniops/omni:{{.Tag}}
+    image_templates:
+      - omniops/omni:{{.Tag}}-amd64
+      - omniops/omni:{{.Tag}}-arm64
+  - name_template: omniops/omni:latest
+    image_templates:
+      - omniops/omni:{{.Tag}}-amd64
+      - omniops/omni:{{.Tag}}-arm64
+
+archives:
+  - format: tar.gz
+    builds: # Only include external facing binaries. We use docker internally.
+      - halo
+      - omni
+    # this name template makes the OS and Arch compatible with the results of `uname`.
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+
+release:
+  draft: true
+  replace_existing_draft: true
+  prerelease: auto
+  mode: append
+
+changelog:
+  disable: true

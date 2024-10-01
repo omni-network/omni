@@ -1,0 +1,79 @@
+version: 2
+
+project_name: omni
+
+# No binaries (archives) need to be released for snapshots
+# Only linux/amd64 docker images are needed
+
+builds:
+  - id: halo
+    main: ./halo
+    binary: halo
+    env: [CGO_ENABLED=0]
+    goos: [linux]
+    goarch: [amd64]
+
+  - id: relayer
+    main: ./relayer
+    binary: relayer
+    env: [CGO_ENABLED=0]
+    goos: [linux]
+    goarch: [amd64]
+
+  - id: monitor
+    main: ./monitor
+    binary: monitor
+    env: [CGO_ENABLED=0]
+    goos: [linux]
+    goarch: [amd64]
+
+  - id: omni
+    main: ./cli/cmd/omni
+    binary: omni
+    env: [ CGO_ENABLED=0 ]
+    goos: [ linux ]
+    goarch: [ amd64 ]
+
+  - id: anvilproxy
+    main: ./e2e/anvilproxy
+    binary: anvilproxy
+    env: [ CGO_ENABLED=0 ]
+    goos: [ linux ]
+    goarch: [ amd64 ]
+
+dockers:
+  - ids: [ halo ]
+    dockerfile: ./halo/Dockerfile
+    image_templates:
+      - omniops/halo:{{ .ShortCommit }}
+      - omniops/halo:main
+
+  - ids: [omni]
+    dockerfile: ./cli/cmd/omni/Dockerfile
+    image_templates:
+      - omniops/omni:{{ .ShortCommit }}
+      - omniops/omni:main
+
+  - ids: [relayer]
+    dockerfile: ./relayer/Dockerfile
+    image_templates:
+     - omniops/relayer:{{ .ShortCommit }}
+     - omniops/relayer:main
+
+  - ids: [monitor]
+    dockerfile: ./monitor/Dockerfile
+    image_templates:
+     - omniops/monitor:{{ .ShortCommit }}
+     - omniops/monitor:main
+
+  - ids: [anvilproxy]
+    dockerfile: ./e2e/anvilproxy/Dockerfile
+    image_templates:
+     - omniops/anvilproxy:{{ .ShortCommit }}
+     - omniops/anvilproxy:main
+
+release:
+  disable: true
+
+changelog:
+  disable: true
