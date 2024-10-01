@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/omni-network/omni/halo/comet"
@@ -48,6 +49,45 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/mempool"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
 )
+
+type ReadyResponse struct {
+	mu                 sync.RWMutex
+	ConsensusSynced    bool   `json:"consensus_synced"`      // Return 503 if false
+	ConsensusP2PPeers  int    `json:"consensus_p_2_p_peers"` // Returns 503 if 0
+	ExecutionConnected bool   `json:"execution_connected"`   // Returns 503 if false
+	ExecutionSynced    bool   `json:"execution_synced"`      // Returns 503 if false
+	ExecutionP2PPeers  uint64 `json:"execution_p_2_p_peers"` // Returns 503 if 0
+}
+
+func (r *ReadyResponse) SetConsensusSynced(value bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.ConsensusSynced = value
+}
+
+func (r *ReadyResponse) SetConsensusP2PPeers(value int) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.ConsensusP2PPeers = value
+}
+
+func (r *ReadyResponse) SetExecutionConnected(value bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.ExecutionConnected = value
+}
+
+func (r *ReadyResponse) SetExecutionSynced(value bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.ExecutionSynced = value
+}
+
+func (r *ReadyResponse) SetExecutionP2PPeers(value uint64) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.ExecutionP2PPeers = value
+}
 
 // Config wraps the halo (app) and comet (client) configurations.
 type Config struct {
@@ -204,8 +244,10 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		return nil, nil, errors.Wrap(err, "start comet node")
 	}
 
-	go monitorCometForever(ctx, cfg.Network, rpcClient, cmtNode.ConsensusReactor().WaitSync, cfg.DataDir())
-	go monitorEVMForever(ctx, cfg, engineCl)
+	readiness := &ReadyResponse{}
+
+	go monitorCometForever(ctx, cfg.Network, rpcClient, cmtNode.ConsensusReactor().WaitSync, cfg.DataDir(), readiness)
+	go monitorEVMForever(ctx, cfg, engineCl, readiness)
 
 	// Return asyncAbort and stop functions.
 	// Note that the original context used to start the app must be canceled first.

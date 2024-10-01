@@ -22,6 +22,7 @@ func monitorCometForever(
 	rpcClient rpcclient.Client,
 	isSyncing func() bool,
 	dbDir string,
+	readiness *ReadyResponse,
 ) {
 	if network == netconf.Simnet {
 		return // Simnet doesn't need to monitor cometBFT, since no p2p.
@@ -37,7 +38,7 @@ func monitorCometForever(
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			height, err := monitorCometOnce(ctx, rpcClient, isSyncing, lastHeight)
+			height, err := monitorCometOnce(ctx, rpcClient, isSyncing, lastHeight, readiness)
 			if err != nil {
 				log.Warn(ctx, "Failed monitoring cometBFT (will retry)", err)
 				// Don't reset lastHeight to zero.
@@ -57,14 +58,18 @@ func monitorCometForever(
 }
 
 // monitorCometOnce monitors the cometBFT peers, and sync status.
-func monitorCometOnce(ctx context.Context, rpcClient rpcclient.Client, isSyncing func() bool, lastHeight int64) (int64, error) {
+func monitorCometOnce(ctx context.Context, rpcClient rpcclient.Client, isSyncing func() bool, lastHeight int64, readiness *ReadyResponse) (int64, error) {
 	if netInfo, err := rpcClient.NetInfo(ctx); err != nil {
 		return 0, errors.Wrap(err, "net info")
 	} else if netInfo.NPeers == 0 {
 		log.Error(ctx, "Halo has 0 consensus p2p peers", nil)
+	} else {
+		readiness.SetConsensusP2PPeers(netInfo.NPeers)
 	}
 
-	setConstantGauge(cometSynced, !isSyncing())
+	synced := !isSyncing()
+	setConstantGauge(cometSynced, synced)
+	readiness.SetConsensusSynced(synced)
 
 	abciInfo, err := rpcClient.ABCIInfo(ctx)
 	if err != nil {
@@ -78,7 +83,7 @@ func monitorCometOnce(ctx context.Context, rpcClient rpcclient.Client, isSyncing
 
 // monitorEVMForever blocks until the contract is canceled.
 // It periodically calls monitorEVMOnce.
-func monitorEVMForever(ctx context.Context, cfg Config, ethCl ethclient.Client) {
+func monitorEVMForever(ctx context.Context, cfg Config, ethCl ethclient.Client, readiness *ReadyResponse) {
 	if cfg.Network == netconf.Simnet {
 		return // Simnet doesn't have an EVM tp monitor.
 	}
@@ -95,6 +100,7 @@ func monitorEVMForever(ctx context.Context, cfg Config, ethCl ethclient.Client) 
 		if err == nil {
 			ethCl = newEthCl
 			log.Info(ctx, "Using rpc endpoint to monitor attached omni evm", "rpc", omniEVMRPC)
+			readiness.SetExecutionConnected(true)
 		}
 	}
 
@@ -103,7 +109,7 @@ func monitorEVMForever(ctx context.Context, cfg Config, ethCl ethclient.Client) 
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			err := monitorEVMOnce(ctx, ethCl)
+			err := monitorEVMOnce(ctx, ethCl, readiness)
 			if err != nil {
 				log.Warn(ctx, "Failed monitoring attached omni evm (will retry)", err, "addr", ethCl.Address())
 			}
@@ -112,7 +118,7 @@ func monitorEVMForever(ctx context.Context, cfg Config, ethCl ethclient.Client) 
 }
 
 // monitorEVMOnce monitors the attached omni_evm height, peers, and sync status.
-func monitorEVMOnce(ctx context.Context, ethCl ethclient.Client) error {
+func monitorEVMOnce(ctx context.Context, ethCl ethclient.Client, readiness *ReadyResponse) error {
 	// Best effort monitoring of peer count, since method not available in auth API.
 	peers, err := ethCl.PeerCount(ctx)
 	if ethclient.IsErrMethodNotAvailable(err) { //nolint:revive // Empty block skips error handling below.
@@ -124,6 +130,7 @@ func monitorEVMOnce(ctx context.Context, ethCl ethclient.Client) error {
 		evmPeers.Set(0)
 	} else {
 		evmPeers.Set(float64(peers))
+		readiness.SetExecutionP2PPeers(peers)
 	}
 
 	if syncing, err := ethCl.SyncProgress(ctx); err != nil {
@@ -134,6 +141,7 @@ func monitorEVMOnce(ctx context.Context, ethCl ethclient.Client) error {
 		log.Warn(ctx, "Attached omni evm is syncing", nil, "highest_block", syncing.HighestBlock, "current_block", syncing.CurrentBlock, "tx_indexing", syncing.TxIndexRemainingBlocks)
 	} else {
 		evmSynced.Set(1)
+		readiness.SetConsensusSynced(true)
 	}
 
 	latest, err := ethCl.BlockNumber(ctx)
