@@ -25,20 +25,11 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Speed up CI by skipping multi-arch builds
-      - name: Skip multi-arch builds
-        run: |
-          cp .goreleaser.yaml .snapshot-goreleaser.yaml
-          sed -i -e 's/linux, darwin/linux/g' .snapshot-goreleaser.yaml
-          sed -i -e 's/amd64, arm64/amd64/g' .snapshot-goreleaser.yaml
-          cat .snapshot-goreleaser.yaml
-
       - name: Build docker images
         uses: goreleaser/goreleaser-action@v5
         with:
           version: 2
-          # Use --snapshot to build current HEAD commit (this doesn't publish images)
-          args: release --snapshot --clean --config=.snapshot-goreleaser.yaml
+          args: release -f .goreleaser-snapshot.yaml --snapshot --clean --skip=archive
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

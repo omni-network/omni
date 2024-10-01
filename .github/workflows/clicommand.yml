@@ -32,31 +32,9 @@ jobs:
 
     - name: Build binaries
       uses: goreleaser/goreleaser-action@v5
-      env:
-        GOOS: linux
       with:
         version: 2
-        args: build --single-target --snapshot --clean --id=halo --id=relayer --id=monitor --id=anvilproxy
-
-    - name: Build halo image
-      run: |
-        cd dist/halo_linux_amd64_v1
-        docker build -f "../../halo/Dockerfile" . -t "omniops/halo:${GITHUB_SHA::7}"
-
-    - name: Build relayer image
-      run: |
-        cd dist/relayer_linux_amd64_v1
-        docker build -f "../../relayer/Dockerfile" . -t "omniops/relayer:${GITHUB_SHA::7}"
-
-    - name: Build monitor image
-      run: |
-        cd dist/monitor_linux_amd64_v1
-        docker build -f "../../monitor/Dockerfile" . -t "omniops/monitor:${GITHUB_SHA::7}"
-
-    - name: Build anvilproxy image
-      run: |
-        cd dist/anvilproxy_linux_amd64_v1
-        docker build -f "../../e2e/anvilproxy/Dockerfile" . -t "omniops/anvilproxy:${GITHUB_SHA::7}"
+        args: release -f .goreleaser-snapshot.yaml --snapshot --clean --skip=archive
 
     - name: Build halovisor image
       run: scripts/halovisor/build.sh "${GITHUB_SHA::7}"
