@@ -59,5 +59,5 @@ func TestGetPrice(t *testing.T) {
 }
 
 func randPrice() float64 {
-	return float64(int(rand.Float64()*10000)) / 100
+	return float64(int((rand.Float64()+0.01)*10000)) / 100
 }
