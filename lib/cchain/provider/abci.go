@@ -526,7 +526,7 @@ func spanName(endpoint string) string {
 // for the provided chain version and fromOffset.
 func searchOffsetInHistory(ctx context.Context, client rpcclient.Client, cl atypes.QueryClient, chainVer xchain.ChainVersion, chainName string, fromOffset uint64) (uint64, error) {
 	const endpoint = "search_offset"
-	defer latency(endpoint)
+	defer latency(endpoint)()
 
 	// Exponentially backoff to find a good start point for binary search, this prefers more recent queries
 	info, err := client.ABCIInfo(ctx)
