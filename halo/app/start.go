@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
+	"net/http"
 	"os"
 	"sync"
 	"time"
@@ -245,6 +247,24 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 	}
 
 	readiness := &ReadyResponse{}
+	server := &http.Server{
+		Addr:              ":25560",
+		ReadHeaderTimeout: 3 * time.Second,
+	}
+
+	go func() {
+		http.HandleFunc("/ready", func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			if err := json.NewEncoder(w).Encode(readiness); err != nil {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+		})
+
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Error(ctx, "HTTP server failed to start", err)
+		}
+	}()
 
 	go monitorCometForever(ctx, cfg.Network, rpcClient, cmtNode.ConsensusReactor().WaitSync, cfg.DataDir(), readiness)
 	go monitorEVMForever(ctx, cfg, engineCl, readiness)
@@ -259,6 +279,12 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 			return errors.Wrap(err, "stop comet node")
 		}
 		cmtNode.Wait()
+
+		if err := server.Shutdown(ctx); err != nil {
+			log.Error(ctx, "HTTP server shutdown failed", err)
+		} else {
+			log.Info(ctx, "HTTP server stopped")
+		}
 
 		// Note that cometBFT doesn't shut down cleanly. It leaves a bunch of goroutines running...
 

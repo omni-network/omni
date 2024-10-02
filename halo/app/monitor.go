@@ -28,7 +28,7 @@ func monitorCometForever(
 		return // Simnet doesn't need to monitor cometBFT, since no p2p.
 	}
 
-	ticker := time.NewTicker(time.Second * 30)
+	ticker := time.NewTicker(time.Second * 10)
 	defer ticker.Stop()
 
 	var lastHeight int64
@@ -88,7 +88,7 @@ func monitorEVMForever(ctx context.Context, cfg Config, ethCl ethclient.Client, 
 		return // Simnet doesn't have an EVM tp monitor.
 	}
 
-	ticker := time.NewTicker(time.Second * 30)
+	ticker := time.NewTicker(time.Second * 10)
 	defer ticker.Stop()
 
 	// Geth Auth API (EngineClient) doesn't enable net module, so we can't monitor peer count with it.
