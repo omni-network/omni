@@ -83,3 +83,7 @@ The `msg.value` in an `xcall` is for fees, not for bridging native tokens.
 Omni's xchain messaging system allows contracts to send and receive function calls across chains. It is a simple and secure way to interact with contracts on other chains.
 
 However, Omni is not a bridge for canonical or native tokens. If you believe you need a bridge, we invite you to consider building a "chain-agnostic", rather than a cross-chain, application. Chat with the team if you're curious about this mental model! We believe the future of smart contract development should not force users to bridge – it should meet users where they are!
+
+### Does the Omni EVM support pre-EIP-155 transactions?
+
+Our public RPCs do not support pre-EIP-155 transactions. If you'd like to submit a pre-155 transaction, you can run a full node (see [relevant page](./operate/1-run-full-node.md)), enable [AllowUnprotectedTxs](https://github.com/ethereum/go-ethereum/blob/e67d5f8c441d5c85cfa69317db8d85794645af14/node/config.go#L199), and submit the transaction to your own endpoint.
