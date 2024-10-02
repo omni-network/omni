@@ -91,11 +91,9 @@ type Attestation struct {
 
 func (x *Attestation) Reset() {
 	*x = Attestation{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_halo_attest_keeper_attestation_proto_msgTypes[0]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
+	mi := &file_halo_attest_keeper_attestation_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
 }
 
 func (x *Attestation) String() string {
@@ -106,7 +104,7 @@ func (*Attestation) ProtoMessage() {}
 
 func (x *Attestation) ProtoReflect() protoreflect.Message {
 	mi := &file_halo_attest_keeper_attestation_proto_msgTypes[0]
-	if protoimpl.UnsafeEnabled && x != nil {
+	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -222,11 +220,9 @@ type Signature struct {
 
 func (x *Signature) Reset() {
 	*x = Signature{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_halo_attest_keeper_attestation_proto_msgTypes[1]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
+	mi := &file_halo_attest_keeper_attestation_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
 }
 
 func (x *Signature) String() string {
@@ -237,7 +233,7 @@ func (*Signature) ProtoMessage() {}
 
 func (x *Signature) ProtoReflect() protoreflect.Message {
 	mi := &file_halo_attest_keeper_attestation_proto_msgTypes[1]
-	if protoimpl.UnsafeEnabled && x != nil {
+	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -412,32 +408,6 @@ func init() { file_halo_attest_keeper_attestation_proto_init() }
 func file_halo_attest_keeper_attestation_proto_init() {
 	if File_halo_attest_keeper_attestation_proto != nil {
 		return
-	}
-	if !protoimpl.UnsafeEnabled {
-		file_halo_attest_keeper_attestation_proto_msgTypes[0].Exporter = func(v any, i int) any {
-			switch v := v.(*Attestation); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_halo_attest_keeper_attestation_proto_msgTypes[1].Exporter = func(v any, i int) any {
-			switch v := v.(*Signature); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
