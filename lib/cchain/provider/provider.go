@@ -95,7 +95,7 @@ func (p Provider) CometClient() rpcclient.Client {
 	return p.cometCl
 }
 
-func (p Provider) CurrentUpgradePlan(ctx context.Context) (upgradetypes.Plan, bool, error) {
+func (p Provider) CurrentPlannedPlan(ctx context.Context) (upgradetypes.Plan, bool, error) {
 	return p.upgradeFunc(ctx)
 }
 

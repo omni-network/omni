@@ -105,6 +105,7 @@ func Run(ctx context.Context, cfg Config) error {
 
 	startMonitoringSyncDiff(ctx, network, ethClients)
 	go runHistoricalBaselineForever(ctx, network, cprov)
+	go monitorUpgradesForever(ctx, cprov)
 	go routerecon.ReconForever(ctx, network, xprov, ethClients)
 	go validator.MonitorForever(ctx, cprov)
 
