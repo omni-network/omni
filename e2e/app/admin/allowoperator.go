@@ -81,7 +81,11 @@ func AllowOperators(ctx context.Context, def app.Definition, cfg Config) error {
 	}
 
 	link := fmt.Sprintf("https://%s.omniscan.network/tx/%s", network, tx.Hash().Hex())
-	log.Info(ctx, "🎉 Successfully allowed operators as validators", "count", len(toAllow), "link", link)
+	log.Info(ctx, "🎉 Successfully allowed operators as validators",
+		"count", len(toAllow),
+		"link", link,
+		"network", network,
+	)
 
 	return nil
 }

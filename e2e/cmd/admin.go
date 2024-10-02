@@ -31,6 +31,7 @@ func newAdminCmd(def *app.Definition) *cobra.Command {
 		newUpgradeBridgeL1(def, &cfg),
 		newUpgradePortalRegistryCmd(def, &cfg),
 		newAllowValidatorsCmd(def, &cfg),
+		newPlanUpgradeCmd(def, &cfg),
 		newAdminTestCmd(def),
 	)
 
@@ -43,6 +44,18 @@ func newAllowValidatorsCmd(def *app.Definition, cfg *admin.Config) *cobra.Comman
 		Short: "Ensure all operators are allowed as validators",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return admin.AllowOperators(cmd.Context(), *def, *cfg)
+		},
+	}
+
+	return cmd
+}
+
+func newPlanUpgradeCmd(def *app.Definition, cfg *admin.Config) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "plan-upgrade",
+		Short: "Plan a network upgrade",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.PlanUpgrade(cmd.Context(), *def, *cfg)
 		},
 	}
 
