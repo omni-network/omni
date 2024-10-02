@@ -98,3 +98,7 @@ e2e-clean: ## Deletes all running containers from previously ran e2e.
 	@if [ -z "$(MANIFEST)" ]; then echo "⚠️  Please specify a manifest: MANIFEST=devnet1 make e2e-clean" && exit 1; fi
 	@echo "Using MANIFEST=$(MANIFEST)"
 	@go run github.com/omni-network/omni/e2e -f e2e/manifests/$(MANIFEST).toml clean
+
+.PHONY: unittest-run
+unittest-run:
+	go test -timeout=5m -race -tags=verify_logs ./...

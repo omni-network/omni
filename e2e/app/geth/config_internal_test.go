@@ -103,7 +103,8 @@ func gethDumpConfigToml(t *testing.T, baseCfg FullConfig) []byte {
 		fmt.Sprintf("--volume=%s:/tmp/config.toml", baseFile),
 		fmt.Sprintf("ethereum/client-go:%s", Version),
 		"dumpconfig",
-		"--config=/tmp/config.toml")
+		"--config=/tmp/config.toml",
+		"--discv5=false")
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 

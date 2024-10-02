@@ -107,7 +107,6 @@ func MakeGethConfig(conf Config) FullConfig {
 	// Set the bootnodes and trusted nodes.
 	cfg.Node.UserIdent = conf.Moniker
 	cfg.Node.P2P.DiscoveryV4 = true
-	cfg.Node.P2P.DiscoveryV5 = true
 	cfg.Node.P2P.BootstrapNodesV5 = conf.BootNodes
 	cfg.Node.P2P.BootstrapNodes = conf.BootNodes
 	cfg.Node.P2P.TrustedNodes = conf.TrustedNodes
