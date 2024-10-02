@@ -41,12 +41,15 @@ const (
 	defaultDBBackend          = db.GoLevelDBBackend
 	defaultEVMBuildDelay      = time.Millisecond * 600 // 100ms longer than geth's --miner.recommit=500ms.
 	defaultEVMBuildOptimistic = true
+
+	defaultAPIEnable   = true                 // Halo runs in docker, so enabled via port mapping
+	defaultAPIAddress  = "tcp://0.0.0.0:1317" // Halo runs inside docker
+	defaultGRPCEnable  = true                 // Halo runs in docker, so enabled via port mapping
+	defaultGRPCAddress = "0.0.0.0:9090"       // Halo runs inside docker
 )
 
 // DefaultConfig returns the default halo config.
 func DefaultConfig() Config {
-	sdkConfig := srvconfig.DefaultConfig()
-
 	return Config{
 		HomeDir:            DefaultHomeDir,
 		Network:            "", // No default
@@ -60,8 +63,8 @@ func DefaultConfig() Config {
 		EVMBuildDelay:      defaultEVMBuildDelay,
 		EVMBuildOptimistic: defaultEVMBuildOptimistic,
 		Tracer:             tracer.DefaultConfig(),
-		SDKAPI:             RPCConfig{Enable: sdkConfig.API.Enable, Address: sdkConfig.API.Address},
-		SDKGRPC:            RPCConfig{Enable: sdkConfig.GRPC.Enable, Address: sdkConfig.GRPC.Address},
+		SDKAPI:             RPCConfig{Enable: defaultAPIEnable, Address: defaultAPIAddress},
+		SDKGRPC:            RPCConfig{Enable: defaultGRPCEnable, Address: defaultGRPCAddress},
 	}
 }
 
