@@ -31,7 +31,7 @@
 ## 🗺️ Mainnet - Beta
 
 - Pending audit completion, our mainnet v1 release will be the same as Omega.
-- You will need to stake a minimum amount of 100 $OMNI tokens to be able to register your validator on mainnet.
+- You will need to stake a minimum amount of 100 OMNI tokens to be able to register your validator on mainnet.
 - Slashing will be enabled for double signing. You may be jailed for inactivity, but can unjail your validator if you come back online.
 - Staking rewards, withdrawals, delegations, and ETH restaking will NOT be enabled.
 - You will need to run full nodes for: Ethereum, Arbitrum, Optimism, and Base (if you don’t already). Your Omni validator will need access to RPC endpoints for those chains.
@@ -54,4 +54,4 @@ We plan to batch release these in 3-4 network upgrades.
 
 - After launching each of these phases, we’ll be removing the validator whitelist.
 - The **top n*** validators of the registered set will be included in the active validator set.
-- The precise formula for determining the “top n” will be released with this upgrade. For most blockchains, the formula is simply the n validators with the most native tokens staked/delegated to them. However, because Omni validators can stake/receive delegation in both $OMNI and $ETH, the formula used to compute validator power is slightly more complex and will depend on several factors like the amount of economic security currently derived from each asset, the desired ratio, and more.
+- The precise formula for determining the “top n” will be released with this upgrade. For most blockchains, the formula is simply the n validators with the most native tokens staked/delegated to them. However, because Omni validators can stake/receive delegation in both OMNI and ETH, the formula used to compute validator power is slightly more complex and will depend on several factors like the amount of economic security currently derived from each asset, the desired ratio, and more.
