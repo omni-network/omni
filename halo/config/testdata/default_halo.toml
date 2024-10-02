@@ -77,10 +77,10 @@ unsafe-skip-upgrades = [1,2,3]
 [api]
 
 # Enable defines if the API server should be enabled.
-enable = false
+enable = true
 
 # Address defines the API server to listen on.
-address = "tcp://localhost:1317"
+address = "tcp://0.0.0.0:1317"
 
 ###############################################################################
 ###                     Cosmos SDK gRPC Configuration                       ###
@@ -92,7 +92,7 @@ address = "tcp://localhost:1317"
 enable = true
 
 # Address defines the gRPC server address to bind to.
-address = "localhost:9090"
+address = "0.0.0.0:9090"
 
 #######################################################################
 ###                             X-Chain                             ###

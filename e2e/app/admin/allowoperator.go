@@ -22,6 +22,7 @@ var omegaOperators = []common.Address{
 	common.HexToAddress("0x446924c33A33F413B773d952E7054504788E4c08"), // BlockDaemon
 	common.HexToAddress("0xb3E5246B42BC6a12033d5758Dc1752d43807B1dC"), // RHINO
 	common.HexToAddress("0x1B6881C66fFd311eE7b0C9b925EB7fd612E1C7B9"), // Kingnodes
+	common.HexToAddress("0x641F5938E0d093988d7Cf99509C3152FC7922B88"), // Galaxy
 }
 
 // AllowOperators ensures that all operators hard-coded in this package is allowed as validators.
@@ -80,7 +81,11 @@ func AllowOperators(ctx context.Context, def app.Definition, cfg Config) error {
 	}
 
 	link := fmt.Sprintf("https://%s.omniscan.network/tx/%s", network, tx.Hash().Hex())
-	log.Info(ctx, "🎉 Successfully allowed operators as validators", "count", len(toAllow), "link", link)
+	log.Info(ctx, "🎉 Successfully allowed operators as validators",
+		"count", len(toAllow),
+		"link", link,
+		"network", network,
+	)
 
 	return nil
 }

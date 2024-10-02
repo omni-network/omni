@@ -9,17 +9,35 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/params"
 )
 
 // StartMonitoring starts the monitoring goroutines.
-func StartMonitoring(ctx context.Context, network netconf.Network, rpcClients map[uint64]ethclient.Client) error {
+func StartMonitoring(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints, rpcClients map[uint64]ethclient.Client) error {
 	log.Info(ctx, "Monitoring contracts")
+
+	// If staging, we UseStagingOmniRPC(), to set rpc from which staging
+	// addrs are derived (Create3 salt is derivative of first block hash)
+	if network.ID == netconf.Staging {
+		omniEVM, ok := network.Chain(netconf.Staging.Static().OmniExecutionChainID)
+		if !ok {
+			return errors.New("network missing omniEVM chain")
+		}
+
+		omniEVMRPC, err := endpoints.ByNameOrID(omniEVM.Name, omniEVM.ID)
+		if err != nil {
+			return err
+		}
+
+		contracts.UseStagingOmniRPC(omniEVMRPC)
+	}
 
 	toFund, err := contracts.ToFund(ctx, network.ID)
 	if err != nil {
-		return errors.Wrap(err, "get contracts to fund")
+		log.Error(ctx, "Failed to get contract addreses to monitor - skipping monitoring", err)
+		return nil
 	}
 
 	for _, chain := range network.EVMChains() {
