@@ -34,11 +34,9 @@ type Network struct {
 
 func (x *Network) Reset() {
 	*x = Network{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_halo_registry_keeper_registry_proto_msgTypes[0]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
+	mi := &file_halo_registry_keeper_registry_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
 }
 
 func (x *Network) String() string {
@@ -49,7 +47,7 @@ func (*Network) ProtoMessage() {}
 
 func (x *Network) ProtoReflect() protoreflect.Message {
 	mi := &file_halo_registry_keeper_registry_proto_msgTypes[0]
-	if protoimpl.UnsafeEnabled && x != nil {
+	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -101,11 +99,9 @@ type Portal struct {
 
 func (x *Portal) Reset() {
 	*x = Portal{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_halo_registry_keeper_registry_proto_msgTypes[1]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
+	mi := &file_halo_registry_keeper_registry_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
 }
 
 func (x *Portal) String() string {
@@ -116,7 +112,7 @@ func (*Portal) ProtoMessage() {}
 
 func (x *Portal) ProtoReflect() protoreflect.Message {
 	mi := &file_halo_registry_keeper_registry_proto_msgTypes[1]
-	if protoimpl.UnsafeEnabled && x != nil {
+	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -258,32 +254,6 @@ func init() { file_halo_registry_keeper_registry_proto_init() }
 func file_halo_registry_keeper_registry_proto_init() {
 	if File_halo_registry_keeper_registry_proto != nil {
 		return
-	}
-	if !protoimpl.UnsafeEnabled {
-		file_halo_registry_keeper_registry_proto_msgTypes[0].Exporter = func(v any, i int) any {
-			switch v := v.(*Network); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_halo_registry_keeper_registry_proto_msgTypes[1].Exporter = func(v any, i int) any {
-			switch v := v.(*Portal); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

@@ -35,11 +35,9 @@ type Block struct {
 
 func (x *Block) Reset() {
 	*x = Block{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_monitor_xmonitor_indexer_indexer_proto_msgTypes[0]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
+	mi := &file_monitor_xmonitor_indexer_indexer_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
 }
 
 func (x *Block) String() string {
@@ -50,7 +48,7 @@ func (*Block) ProtoMessage() {}
 
 func (x *Block) ProtoReflect() protoreflect.Message {
 	mi := &file_monitor_xmonitor_indexer_indexer_proto_msgTypes[0]
-	if protoimpl.UnsafeEnabled && x != nil {
+	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -112,11 +110,9 @@ type MsgLink struct {
 
 func (x *MsgLink) Reset() {
 	*x = MsgLink{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_monitor_xmonitor_indexer_indexer_proto_msgTypes[1]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
+	mi := &file_monitor_xmonitor_indexer_indexer_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
 }
 
 func (x *MsgLink) String() string {
@@ -127,7 +123,7 @@ func (*MsgLink) ProtoMessage() {}
 
 func (x *MsgLink) ProtoReflect() protoreflect.Message {
 	mi := &file_monitor_xmonitor_indexer_indexer_proto_msgTypes[1]
-	if protoimpl.UnsafeEnabled && x != nil {
+	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -175,11 +171,9 @@ type Cursor struct {
 
 func (x *Cursor) Reset() {
 	*x = Cursor{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_monitor_xmonitor_indexer_indexer_proto_msgTypes[2]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
+	mi := &file_monitor_xmonitor_indexer_indexer_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
 }
 
 func (x *Cursor) String() string {
@@ -190,7 +184,7 @@ func (*Cursor) ProtoMessage() {}
 
 func (x *Cursor) ProtoReflect() protoreflect.Message {
 	mi := &file_monitor_xmonitor_indexer_indexer_proto_msgTypes[2]
-	if protoimpl.UnsafeEnabled && x != nil {
+	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -312,44 +306,6 @@ func init() { file_monitor_xmonitor_indexer_indexer_proto_init() }
 func file_monitor_xmonitor_indexer_indexer_proto_init() {
 	if File_monitor_xmonitor_indexer_indexer_proto != nil {
 		return
-	}
-	if !protoimpl.UnsafeEnabled {
-		file_monitor_xmonitor_indexer_indexer_proto_msgTypes[0].Exporter = func(v any, i int) any {
-			switch v := v.(*Block); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_monitor_xmonitor_indexer_indexer_proto_msgTypes[1].Exporter = func(v any, i int) any {
-			switch v := v.(*MsgLink); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_monitor_xmonitor_indexer_indexer_proto_msgTypes[2].Exporter = func(v any, i int) any {
-			switch v := v.(*Cursor); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

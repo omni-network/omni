@@ -37,11 +37,9 @@ type ExecutionHead struct {
 
 func (x *ExecutionHead) Reset() {
 	*x = ExecutionHead{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_octane_evmengine_keeper_evmengine_proto_msgTypes[0]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
+	mi := &file_octane_evmengine_keeper_evmengine_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
 }
 
 func (x *ExecutionHead) String() string {
@@ -52,7 +50,7 @@ func (*ExecutionHead) ProtoMessage() {}
 
 func (x *ExecutionHead) ProtoReflect() protoreflect.Message {
 	mi := &file_octane_evmengine_keeper_evmengine_proto_msgTypes[0]
-	if protoimpl.UnsafeEnabled && x != nil {
+	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
 			ms.StoreMessageInfo(mi)
@@ -168,20 +166,6 @@ func init() { file_octane_evmengine_keeper_evmengine_proto_init() }
 func file_octane_evmengine_keeper_evmengine_proto_init() {
 	if File_octane_evmengine_keeper_evmengine_proto != nil {
 		return
-	}
-	if !protoimpl.UnsafeEnabled {
-		file_octane_evmengine_keeper_evmengine_proto_msgTypes[0].Exporter = func(v any, i int) any {
-			switch v := v.(*ExecutionHead); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
