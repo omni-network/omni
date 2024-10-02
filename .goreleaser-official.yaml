@@ -100,13 +100,15 @@ dockers:
       - omniops/omni:{{.Tag}}-arm64
 
   - ids: [relayer]
-    # Defaults to linux/amd64
+    goos: linux
+    goarch: amd64
     dockerfile: ./relayer/Dockerfile
     image_templates:
      - omniops/relayer:{{.Tag}}
 
   - ids: [monitor]
-    # Defaults to linux/amd64
+    goos: linux
+    goarch: amd64
     dockerfile: ./monitor/Dockerfile
     image_templates:
       - omniops/monitor:{{.Tag}}
