@@ -11,14 +11,14 @@ Usage:
   halo rollback [flags]
 
 Flags:
-      --api-address string                        Address defines the API server to listen on (default "tcp://localhost:1317")
-      --api-enable                                Enable defines if the API server should be enabled.
+      --api-address string                        Address defines the API server to listen on (default "tcp://0.0.0.0:1317")
+      --api-enable                                Enable defines if the API server should be enabled. (default true)
       --app-db-backend string                     The type of database for application and snapshots databases (default "goleveldb")
       --engine-endpoint string                    An EVM execution client Engine API http endpoint
       --engine-jwt-file string                    The path to the Engine API JWT file
       --evm-build-delay duration                  Minimum delay between triggering and fetching a EVM payload build (default 600ms)
       --evm-build-optimistic                      Enables optimistic building of EVM payloads on previous block finalize (default true)
-      --grpc-address string                       Address defines the GRPC server to listen on (default "localhost:9090")
+      --grpc-address string                       Address defines the GRPC server to listen on (default "0.0.0.0:9090")
       --grpc-enable                               Enable defines if the GRPC server should be enabled. (default true)
       --hard                                      Remove last block as well as state
   -h, --help                                      help for rollback

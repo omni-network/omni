@@ -193,15 +193,15 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		}
 	}()
 
-	log.Info(ctx, "Starting CometBFT", "listeners", cmtNode.Listeners())
-
-	if err := cmtNode.Start(); err != nil {
-		return nil, nil, errors.Wrap(err, "start comet node")
-	}
-
 	clientCtx := app.ClientContext(ctx).WithClient(rpcClient).WithHomeDir(cfg.HomeDir)
 	if err := startRPCServers(ctx, cfg, app, sdkLogger, metrics, asyncAbort, clientCtx); err != nil {
 		return nil, nil, err
+	}
+
+	log.Info(ctx, "Starting CometBFT")
+
+	if err := cmtNode.Start(); err != nil {
+		return nil, nil, errors.Wrap(err, "start comet node")
 	}
 
 	go monitorCometForever(ctx, cfg.Network, rpcClient, cmtNode.ConsensusReactor().WaitSync, cfg.DataDir())
