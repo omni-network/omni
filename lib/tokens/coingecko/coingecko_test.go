@@ -15,33 +15,127 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type testCase struct {
+	name         string
+	invalid      bool         // invalid response
+	empty        bool         // empty response
+	omitToken    tokens.Token // omit a requested token
+	renameToken  tokens.Token // rename a requested token
+	omitCurrency string       // omit a requested currency
+	zeros        bool         // include zero prices
+	negatives    bool         // include negative prices
+}
+
 func TestGetPrice(t *testing.T) {
 	t.Parallel()
 
-	// map token id -> currency -> price
-	// set during request handler
-	testPrices := make(map[string]map[string]float64)
+	tests := []testCase{
+		{name: "success"},
+		{name: "empty", empty: true},
+		{name: "omit eth", omitToken: tokens.ETH},
+		{name: "rename eth", renameToken: tokens.ETH},
+		{name: "omit omni", omitToken: tokens.OMNI},
+		{name: "rename omni", renameToken: tokens.OMNI},
+		{name: "omit usd", omitCurrency: "usd"},
+		{name: "zeros", zeros: true},
+		{name: "negatives", negatives: true},
+	}
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	shouldErr := func(t *testing.T, test testCase) bool {
+		t.Helper()
+		return (test.invalid ||
+			test.empty ||
+			test.omitToken != "" ||
+			test.renameToken != "" ||
+			test.omitCurrency != "" ||
+			test.zeros ||
+			test.negatives)
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			server, servedPrices := makeTestServer(t, test)
+			defer server.Close()
+
+			c := coingecko.New(coingecko.WithHost(server.URL))
+			prices, err := c.Price(context.Background(), tokens.OMNI, tokens.ETH)
+
+			if shouldErr(t, test) {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.InEpsilon(t, prices[tokens.OMNI], servedPrices[tokens.OMNI.CoingeckoID()]["usd"], 0.01)
+			require.InEpsilon(t, prices[tokens.ETH], servedPrices[tokens.ETH.CoingeckoID()]["usd"], 0.01)
+		})
+	}
+}
+
+func makeTestServer(t *testing.T, test testCase) (*httptest.Server, map[string]map[string]float64) {
+	t.Helper()
+
+	// set during request handler
+	servedPrices := make(map[string]map[string]float64)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/api/v3/simple/price", r.URL.Path)
+
+		resp := make(map[string]map[string]float64)
+
+		if test.invalid {
+			_, _ = w.Write([]byte("invalid json"))
+			return
+		}
+
+		if test.empty {
+			bz, err := json.Marshal(resp)
+			require.NoError(t, err)
+			_, _ = w.Write(bz)
+
+			return
+		}
 
 		q := r.URL.Query()
 		ids := strings.Split(q.Get("ids"), ",")
 		currencies := strings.Split(q.Get("vs_currencies"), ",")
 
-		resp := make(map[string]map[string]float64)
 		for _, id := range ids {
+			if id == test.omitToken.CoingeckoID() {
+				continue
+			}
+
+			if id == test.renameToken.CoingeckoID() {
+				id = "renamed"
+			}
+
 			resp[id] = make(map[string]float64)
 
-			if _, ok := testPrices[id]; !ok {
-				testPrices[id] = make(map[string]float64)
+			if _, ok := servedPrices[id]; !ok {
+				servedPrices[id] = make(map[string]float64)
 			}
 
 			for _, currency := range currencies {
-				resp[id][currency] = randPrice()
+				if currency == test.omitCurrency {
+					continue
+				}
+
+				price := randPrice()
+
+				if test.zeros {
+					price = 0
+				}
+
+				if test.negatives {
+					price = -price
+				}
+
+				resp[id][currency] = price
 
 				// also store the price, so we can assert against it
-				testPrices[id][currency] = resp[id][currency]
+				servedPrices[id][currency] = resp[id][currency]
 			}
 		}
 
@@ -49,13 +143,7 @@ func TestGetPrice(t *testing.T) {
 		_, _ = w.Write(bz)
 	}))
 
-	defer ts.Close()
-
-	c := coingecko.New(coingecko.WithHost(ts.URL))
-	prices, err := c.Price(context.Background(), tokens.OMNI, tokens.ETH)
-	require.NoError(t, err)
-	require.InEpsilon(t, prices[tokens.OMNI], testPrices[tokens.OMNI.CoingeckoID()]["usd"], 0.01)
-	require.InEpsilon(t, prices[tokens.ETH], testPrices[tokens.ETH.CoingeckoID()]["usd"], 0.01)
+	return server, servedPrices
 }
 
 func randPrice() float64 {

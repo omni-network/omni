@@ -61,8 +61,23 @@ func (c Client) getPrice(ctx context.Context, currency string, tkns ...tokens.To
 	}
 
 	prices := make(map[tokens.Token]float64)
-	for id, price := range resp {
-		prices[tokens.MustFromCoingeckoID(id)] = price[currency]
+
+	for _, tkn := range tkns {
+		priceByCurrency, ok := resp[tkn.CoingeckoID()]
+		if !ok {
+			return nil, errors.New("missing token in response", "token", tkn)
+		}
+
+		price, ok := priceByCurrency[currency]
+		if !ok {
+			return nil, errors.New("missing price in response", "token", tkn, "currency", currency)
+		}
+
+		if price <= 0 {
+			return nil, errors.New("invalid price in response", "token", tkn, "price", price)
+		}
+
+		prices[tkn] = price
 	}
 
 	return prices, nil
