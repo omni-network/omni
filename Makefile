@@ -5,7 +5,7 @@ help:  ## Display this help message
 ###                                Docker                                 	###
 ###############################################################################
 
-ARCH := $(shell arch)
+ARCH := $(shell arch | sed 's/x86_64/amd64/')
 
 .PHONY: build-docker
 build-docker: ensure-go-releaser ## Builds the docker images using local arch.
