@@ -95,14 +95,14 @@ Follow these steps to set up a functional development environment:
 1. Install Docker Desktop.
 2. Run `make install-go-tools`.
 3. Run `make install-pre-commit`.
-4. Run `pre-commit install --install-hooks` in the repo root directory.
-5. Create a PGP key pair and [add the public key to Github](https://docs.github.com/en/authentication/managing-commit-signature-verification/adding-a-gpg-key-to-your-github-account).
-6. Configure Git:
-```
+4. Create a PGP key pair and [add the public key to Github](https://docs.github.com/en/authentication/managing-commit-signature-verification/adding-a-gpg-key-to-your-github-account).
+5. Configure Git. Please note that signing commits is required to merge a PR, and length 7 commit abbreviation is required to run `make build-docker` locally.
+
+```bash
 git config --local user.name <Foo Bar>
 git config --local user.email <email@host.com>
-git config --local core.abbrev 7
-git config --local commit.gpgsign true
+git config --local core.abbrev 7                 # align short commits
+git config --local commit.gpgsign true           # sign commits
 ```
 
 ## Security

@@ -126,7 +126,7 @@ echo $CONTROLLER    # XStakeController contract address on Omni EVM
 
 ### 5. Try it out
 
-Setup env.
+Setup environment.
 ```bash
 source deployments.sh
 
@@ -143,7 +143,7 @@ cast send $OP_TOKEN "approve(address,uint256)"   $OP_XSTAKER 100 --rpc-url $OP_R
 
 Calculate xcall fee.
 ```bash
-cast call $OP_XSTAKER "stakeFee(uint256)(uint256)" 100 --rpc-url $OP_RCP
+cast call $OP_XSTAKER "stakeFee(uint256)(uint256)" 100 --rpc-url $OP_RPC
 ```
 
 
