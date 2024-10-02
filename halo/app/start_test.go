@@ -143,6 +143,10 @@ func testGRPC(t *testing.T, ctx context.Context, cfg haloapp.Config) {
 	require.NoError(t, err)
 	require.NotEmpty(t, infos.Info)
 
+	pResp, err := cl.Slashing.Params(ctx, &sltypes.QueryParamsRequest{})
+	require.NoError(t, err)
+	require.Equal(t, uluwatu1.SlashingParams, pResp.Params)
+
 	_, err = cl.Portal.Block(ctx, &ptypes.BlockRequest{Latest: true})
 	require.NoError(t, err)
 

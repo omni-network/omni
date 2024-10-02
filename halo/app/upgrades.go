@@ -16,7 +16,7 @@ func (a App) setUpgradeHandlers() error {
 	}{
 		{
 			Name:    uluwatu1.UpgradeName,
-			Handler: uluwatu1.CreateUpgradeHandler(a.ModuleManager, a.Configurator()),
+			Handler: uluwatu1.CreateUpgradeHandler(a.ModuleManager, a.Configurator(), a.SlashingKeeper),
 			Store:   uluwatu1.StoreUpgrades,
 		},
 	}
