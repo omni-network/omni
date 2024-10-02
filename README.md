@@ -94,7 +94,7 @@ Follow these steps to set up a functional development environment:
 
 1. Install Docker Desktop.
 2. [Create a PGP key pair](https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key) and [add the public key to Github](https://docs.github.com/en/authentication/managing-commit-signature-verification/adding-a-gpg-key-to-your-github-account).
-3. Run `make-setup` to initialize your dev environment. See `Makefile` for details.
+3. Run `make setup` to initialize your dev environment. See `Makefile` for details.
 
 ## Security
 
