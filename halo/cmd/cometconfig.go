@@ -45,6 +45,7 @@ func DefaultCometConfig(homeDir string) cfg.Config {
 	conf.ProxyApp = ""                                 // Only support built-in ABCI app supported.
 	conf.ABCI = ""                                     // Only support built-in ABCI app supported.
 	conf.Consensus.TimeoutPropose = time.Second        // Mitigate slow blocks when proposer inactive (default=3s).
+	conf.RPC.ListenAddress = "tcp://0.0.0.0:26657"     // Halo always run inside docker
 
 	return *conf
 }

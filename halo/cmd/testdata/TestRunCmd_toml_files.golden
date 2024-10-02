@@ -20,7 +20,7 @@
  },
  "UnsafeSkipUpgrades": null,
  "SDKAPI": {
-  "Enable": false,
+  "Enable": true,
   "Address": "api/toml"
  },
  "SDKGRPC": {
