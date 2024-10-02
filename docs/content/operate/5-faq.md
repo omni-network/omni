@@ -54,6 +54,19 @@
   1. Normal cosmos/cometBFT consensus : UptimeC on dashboard
   2. XChain votes and attestations: UptimeX on dashboard
 
+### When and how is a "rollback" performed?
+CosmosSDK chains, including `halo` supports the `rollback` command that rolls back the CosmosSDK and CometBFT state by one height.
+
+A state rollback is performed to recover from an incorrect application state transition, when CometBFT has persisted an incorrect app hash and is thus unable to make progress. Rollback overwrites a state at height `n` with the state at height `n - 1`. `Halo` application state also rolls back to height `n - 1`. No blocks are removed, so upon restarting the transactions in block `n` will be re-executed against the application.
+
+Assuming that the `halo` is deploying with docker-compose and runs inside the `omniops/halovisor` container:
+```
+docker compose down
+docker compose run halo run rollback
+docker compose up -d
+```
+Note pure `halo` command is just `rollback`. But when running via `halovisor` one needs to specify `run rollback`, with the `run` being the Cosmovisor command to execute halo binary commands.
+
 ### How do validators vote?
 - Validators vote in the Omni consensus chain, using a new feature of CosmosSDK/CometBFT called [“vote extensions”](https://docs.cosmos.network/main/build/abci/vote-extensions)
 
