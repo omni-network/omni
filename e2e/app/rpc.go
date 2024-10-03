@@ -66,8 +66,8 @@ func waitForHeight(ctx context.Context, testnet *e2e.Testnet, height int64) (*ty
 				}
 
 				result, err := currentBlock(ctx, client)
-				if errors.Is(err, context.DeadlineExceeded) {
-					return nil, nil, errors.Wrap(err, "timeout")
+				if ctx.Err() != nil {
+					return nil, nil, errors.Wrap(err, "parent context canceled")
 				} else if err != nil {
 					continue
 				}
