@@ -168,11 +168,11 @@ func (p *proxy) GetTarget() *url.URL {
 	return p.target
 }
 
-func (p *proxy) getInstance() *anvilInstance {
+func (p *proxy) stopInstance() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	return p.instance
+	p.instance.stop()
 }
 
 func (p *proxy) setTarget(target anvilInstance) error {
