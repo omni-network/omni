@@ -167,6 +167,37 @@ func TestTomlConfig(t *testing.T) {
 	tutil.RequireNoError(t, rootCmd.Execute())
 }
 
+func TestInvalidCmds(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		Name        string
+		Args        []string
+		ErrContains string
+	}{
+		{
+			Name:        "no args",
+			Args:        []string{},
+			ErrContains: "no sub-command specified, see --help",
+		},
+		{
+			Name:        "invalid args",
+			Args:        []string{"invalid"},
+			ErrContains: "unknown command \"invalid\" for \"halo\"",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			t.Parallel()
+			rootCmd := libcmd.NewRootCmd("halo", "", New())
+			rootCmd.SetArgs(test.Args)
+			err := rootCmd.Execute()
+			require.Error(t, err)
+			require.Contains(t, err.Error(), test.ErrContains)
+		})
+	}
+}
+
 // slice is a convenience function for creating string slice literals.
 func slice(strs ...string) []string {
 	return strs
