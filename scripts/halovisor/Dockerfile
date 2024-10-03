@@ -1,5 +1,5 @@
 # Docker build args
-ARG OMNI_COSMOVISOR_VERSION=v0.1.0
+ARG OMNI_COSMOVISOR_VERSION=v0.2.0
 # TODO(corver): Replace with v0.8.1 when released
 ARG HALO_VERSION_0_GENESIS=v0.8.0-rc1
 ARG HALO_VERSION_1_ULUWATU=main
