@@ -2,7 +2,6 @@ package monitor
 
 import (
 	"context"
-	"strconv"
 	"time"
 
 	"github.com/omni-network/omni/lib/cchain"
@@ -11,6 +10,8 @@ import (
 	utypes "cosmossdk.io/x/upgrade/types"
 )
 
+// monitorUpgradesForever blocks until the context is closed and
+// periodically updates the planned upgrade gauge.
 func monitorUpgradesForever(ctx context.Context, cprov cchain.Provider) {
 	ticker := time.NewTicker(time.Second * 15)
 	defer ticker.Stop()
@@ -32,7 +33,7 @@ func monitorUpgradesForever(ctx context.Context, cprov cchain.Provider) {
 			}
 
 			plannedUpgradeGauge.Reset()
-			plannedUpgradeGauge.WithLabelValues(plan.Name, strconv.FormatInt(plan.Height, 10)).Set(1)
+			plannedUpgradeGauge.WithLabelValues(plan.Name).Set(float64(plan.Height))
 		}
 	}
 }
