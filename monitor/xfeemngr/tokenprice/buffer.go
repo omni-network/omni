@@ -88,7 +88,7 @@ func (b *Buffer) stream(ctx context.Context) {
 			b.setPrice(token, price)
 		}
 
-		guageBuffered(b.buffer)
+		b.gaugeBuffered()
 	}
 
 	tick.Go(ctx, callback)
@@ -116,16 +116,18 @@ func guageLive(prices map[tokens.Token]float64) {
 	}
 }
 
-// guageBuffered updates "buffered" guages for token prices and conversion rates.
-func guageBuffered(prices map[tokens.Token]float64) {
-	for token, price := range prices {
+// gaugeBuffered updates "buffered" gauges for token prices and conversion rates.
+func (b *Buffer) gaugeBuffered() {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	for token, price := range b.buffer {
 		if price == 0 {
 			continue
 		}
 
 		bufferedTokenPrice.WithLabelValues(token.String()).Set(price)
 
-		for otherToken, otherPrice := range prices {
+		for otherToken, otherPrice := range b.buffer {
 			if otherToken == token {
 				continue
 			}
