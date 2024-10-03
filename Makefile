@@ -65,12 +65,6 @@ fix-golden: ## Fixes golden test fixtures.
 ###                                Testing                                 	###
 ###############################################################################
 
-.PHONY: halo-simnet
-halo-simnet: ## Runs halo in simnet mode.
-	@go install github.com/omni-network/omni/halo
-	@halo init --home=/tmp/halo --network=simnet --clean
-	@halo run --home=/tmp/halo
-
 .PHONY: devnet-deploy
 devnet-deploy: ## Deploys devnet1
 	@echo "Creating a docker-compose devnet in ./e2e/run/devnet1"
