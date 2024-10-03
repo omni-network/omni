@@ -63,7 +63,7 @@ func Run(ctx context.Context, cfg Config) error {
 			return errors.Wrap(err, "server shutdown")
 		}
 
-		proxy.getInstance().stop()
+		proxy.stopInstance()
 
 		return nil
 	})
