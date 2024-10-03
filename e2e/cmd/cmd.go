@@ -103,7 +103,12 @@ func newDeployCmd(def *app.Definition) *cobra.Command {
 		Use:   "deploy",
 		Short: "Deploys the e2e network",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			_, err := app.Deploy(cmd.Context(), *def, cfg)
+			ctx := cmd.Context()
+			_, err := app.Deploy(ctx, *def, cfg)
+			if err != nil {
+				log.Error(ctx, "Deployment failed", err)
+			}
+
 			return err
 		},
 	}
