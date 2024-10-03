@@ -2,6 +2,9 @@ package buildinfo
 
 import (
 	"context"
+	"debug/elf"
+	"debug/macho"
+	"os"
 	"runtime/debug"
 	"strings"
 	"time"
@@ -32,6 +35,7 @@ func Instrument(ctx context.Context) {
 		"version", version,
 		"git_commit", commit,
 		"git_timestamp", timestamp,
+		"arch", getArch(),
 	)
 
 	versionGauge.WithLabelValues(version).Set(1)
@@ -95,4 +99,21 @@ func get() (hash string, timestamp string) { //nolint:nonamedreturns // Disambig
 	}
 
 	return hash, timestamp
+}
+
+// getArch returns the running binary's architecture.
+// This is best effort. It may not work on all platforms.
+func getArch() string {
+	path, err := os.Executable()
+	if err != nil {
+		return "unknown"
+	}
+
+	if f, err := elf.Open(path); err == nil {
+		return f.Machine.String()
+	} else if f, err := macho.Open(path); err == nil {
+		return f.Cpu.String()
+	}
+
+	return "unknown"
 }
