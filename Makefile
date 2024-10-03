@@ -26,11 +26,6 @@ contract-bindings: ## Generate golang contract bindings.
 ###                                Utils                                 	###
 ###############################################################################
 
-.PHONY: setup
-setup: install-go-tools install-pre-commit
-	@git config --local core.abbrev 7
-	@git config --local commit.gpgsign true
-
 .PHONY: install-cli
 install-cli: ## Install the omni cli to $GOPATH/bin/omni.
 	@go install github.com/omni-network/omni/cli/cmd/omni || echo "❌go install failed"
@@ -64,12 +59,6 @@ fix-golden: ## Fixes golden test fixtures.
 ###############################################################################
 ###                                Testing                                 	###
 ###############################################################################
-
-.PHONY: halo-simnet
-halo-simnet: ## Runs halo in simnet mode.
-	@go install github.com/omni-network/omni/halo
-	@halo init --home=/tmp/halo --network=simnet --clean
-	@halo run --home=/tmp/halo
 
 .PHONY: devnet-deploy
 devnet-deploy: ## Deploys devnet1
