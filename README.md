@@ -50,6 +50,7 @@ To run the end-to-end tests, run:
 ```bash
 MANIFEST=devnet1 make e2e-run
 ```
+_If the above command fails, [see the troubleshooting section](./e2e/README.md#troubleshooting)._
 
 To start a devnet, run:
 
