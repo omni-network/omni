@@ -113,6 +113,13 @@ func getArch() string {
 		return f.Machine.String()
 	} else if f, err := macho.Open(path); err == nil {
 		return f.Cpu.String()
+	} else if f, err := macho.OpenFat(path); err == nil {
+		var arches []string
+		for _, a := range f.Arches {
+			arches = append(arches, a.Cpu.String())
+		}
+
+		return strings.Join(arches, ",")
 	}
 
 	return "unknown"
