@@ -3,10 +3,9 @@ package app
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/omni-network/omni/halo/comet"
@@ -50,46 +49,8 @@ import (
 	sdktelemetry "github.com/cosmos/cosmos-sdk/telemetry"
 	"github.com/cosmos/cosmos-sdk/types/mempool"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
-
-type ReadyResponse struct {
-	mu                 sync.RWMutex
-	ConsensusSynced    bool   `json:"consensus_synced"`      // Return 503 if false
-	ConsensusP2PPeers  int    `json:"consensus_p_2_p_peers"` // Returns 503 if 0
-	ExecutionConnected bool   `json:"execution_connected"`   // Returns 503 if false
-	ExecutionSynced    bool   `json:"execution_synced"`      // Returns 503 if false
-	ExecutionP2PPeers  uint64 `json:"execution_p_2_p_peers"` // Returns 503 if 0
-}
-
-func (r *ReadyResponse) SetConsensusSynced(value bool) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	r.ConsensusSynced = value
-}
-
-func (r *ReadyResponse) SetConsensusP2PPeers(value int) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	r.ConsensusP2PPeers = value
-}
-
-func (r *ReadyResponse) SetExecutionConnected(value bool) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	r.ExecutionConnected = value
-}
-
-func (r *ReadyResponse) SetExecutionSynced(value bool) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	r.ExecutionSynced = value
-}
-
-func (r *ReadyResponse) SetExecutionP2PPeers(value uint64) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	r.ExecutionP2PPeers = value
-}
 
 // Config wraps the halo (app) and comet (client) configurations.
 type Config struct {
@@ -207,7 +168,9 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 	app.EVMEngKeeper.SetBuildDelay(cfg.EVMBuildDelay)
 	app.EVMEngKeeper.SetBuildOptimistic(cfg.EVMBuildOptimistic)
 
-	cmtNode, err := newCometNode(ctx, &cfg.Comet, app, privVal)
+	readiness := &ReadyResponse{}
+
+	cmtNode, err := newCometNode(ctx, &cfg.Comet, app, privVal, readiness)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "create comet node")
 	}
@@ -246,26 +209,6 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		return nil, nil, errors.Wrap(err, "start comet node")
 	}
 
-	readiness := &ReadyResponse{}
-	server := &http.Server{
-		Addr:              ":25560",
-		ReadHeaderTimeout: 3 * time.Second,
-	}
-
-	go func() {
-		http.HandleFunc("/ready", func(w http.ResponseWriter, _ *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			if err := json.NewEncoder(w).Encode(readiness); err != nil {
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				return
-			}
-		})
-
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Error(ctx, "HTTP server failed to start", err)
-		}
-	}()
-
 	go monitorCometForever(ctx, cfg.Network, rpcClient, cmtNode.ConsensusReactor().WaitSync, cfg.DataDir(), readiness)
 	go monitorEVMForever(ctx, cfg, engineCl, readiness)
 
@@ -279,12 +222,6 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 			return errors.Wrap(err, "stop comet node")
 		}
 		cmtNode.Wait()
-
-		if err := server.Shutdown(ctx); err != nil {
-			log.Error(ctx, "HTTP server shutdown failed", err)
-		} else {
-			log.Info(ctx, "HTTP server stopped")
-		}
 
 		// Note that cometBFT doesn't shut down cleanly. It leaves a bunch of goroutines running...
 
@@ -337,8 +274,8 @@ func startRPCServers(
 	return nil
 }
 
-func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App, privVal cmttypes.PrivValidator,
-) (*node.Node, error) {
+func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App,
+	privVal cmttypes.PrivValidator, readiness *ReadyResponse) (*node.Node, error) {
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
 		return nil, errors.Wrap(err, "load or gen node key", "key_file", cfg.NodeKeyFile())
@@ -357,6 +294,10 @@ func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App, privVal cmt
 		},
 	)
 
+	// Don't instantiate the default prometheus server.
+	prometheusEnabled := cfg.Instrumentation.Prometheus
+	cfg.Instrumentation.Prometheus = false
+
 	cmtNode, err := node.NewNode(cfg,
 		privVal,
 		nodeKey,
@@ -370,7 +311,50 @@ func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App, privVal cmt
 		return nil, errors.Wrap(err, "create node")
 	}
 
+	startHTTPServer(ctx, cfg, prometheusEnabled, readiness, cmtNode)
+
 	return cmtNode, nil
+}
+
+// Starts an http server serving the `/ready` endpoint and prometheus metrics, if enabled.
+func startHTTPServer(ctx context.Context, cfg *cmtcfg.Config, prometheusEnabled bool, readiness *ReadyResponse, cmtNode *node.Node) {
+	server := &http.Server{
+		Addr:              cfg.Instrumentation.PrometheusListenAddr,
+		ReadHeaderTimeout: 3 * time.Second,
+	}
+
+	go func() {
+		// If configured, we have to serve the Prometheus metrics because we disabled the default server.
+		if prometheusEnabled {
+			http.Handle("/metrics", promhttp.Handler())
+		}
+
+		// On the `/ready` endpoint, we serve the readiness of the halo node.
+		// Additionally, in case when the node is not ready, the response status code is set to 503.
+		http.HandleFunc("/ready", func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+
+			if !readiness.Healthy() {
+				w.WriteHeader(http.StatusServiceUnavailable)
+			}
+			if err := readiness.Serialize(w); err != nil {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+				return
+			}
+		})
+
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			panic(fmt.Sprintf("HTTP server failed to start: %v", err))
+		}
+	}()
+
+	// Schedule the HTTP server shutdown.
+	go func() {
+		cmtNode.Wait()
+		if err := server.Shutdown(ctx); err != nil {
+			log.Error(ctx, "HTTP server shutdown failed", err)
+		}
+	}()
 }
 
 func makeBaseAppOpts(cfg Config) ([]func(*baseapp.BaseApp), error) {

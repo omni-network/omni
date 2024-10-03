@@ -59,12 +59,12 @@ func monitorCometForever(
 
 // monitorCometOnce monitors the cometBFT peers, and sync status.
 func monitorCometOnce(ctx context.Context, rpcClient rpcclient.Client, isSyncing func() bool, lastHeight int64, readiness *ReadyResponse) (int64, error) {
-	if netInfo, err := rpcClient.NetInfo(ctx); err != nil {
+	netInfo, err := rpcClient.NetInfo(ctx)
+	readiness.SetConsensusP2PPeers(netInfo.NPeers)
+	if err != nil {
 		return 0, errors.Wrap(err, "net info")
 	} else if netInfo.NPeers == 0 {
 		log.Error(ctx, "Halo has 0 consensus p2p peers", nil)
-	} else {
-		readiness.SetConsensusP2PPeers(netInfo.NPeers)
 	}
 
 	synced := !isSyncing()
