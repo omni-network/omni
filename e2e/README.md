@@ -48,3 +48,18 @@ Auxiliary commands:
 * `logs`: outputs all node logs.
 
 * `tail`: tails (follows) node logs until canceled.
+
+
+## Troubleshooting
+**MacBook E2E test fails to start docker container**
+If you are experiencing an issue running the e2e tests and the error output looks like this:
+```
+Error response from daemon: no match for platform in manifest
+```
+This error is known to happen on a freshly installed MacBook, we are investigating the underlying issue, but meanwhile, there is a workaround:
+1. Clean all the build images `docker system prune -a -f --volumes` 
+2. Set the platform env: `export DOCKER_DEFAULT_PLATFORM=linux/amd64`
+3. Rerun docker build: `make build-docker`
+4. Run tests again: `make e2e-ci` or any other tests using the e2e command.
+
+Please let the team know if you experienced the above issue.
