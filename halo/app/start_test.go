@@ -192,7 +192,7 @@ func testCProvider(t *testing.T, ctx context.Context, cprov cprovider.Provider) 
 	require.NotNil(t, cons)
 
 	require.Eventually(t, func() bool {
-		_, ok, err := cprov.CurrentUpgradePlan(ctx)
+		_, ok, err := cprov.CurrentPlannedPlan(ctx)
 		require.NoError(t, err)
 
 		return ok

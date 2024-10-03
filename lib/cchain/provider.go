@@ -83,6 +83,6 @@ type Provider interface {
 	// Portals returns the portals registered in the registry module.
 	Portals(ctx context.Context) ([]*rtypes.Portal, bool, error)
 
-	// CurrentUpgradePlan returns the current (non-activated) upgrade plan.
-	CurrentUpgradePlan(ctx context.Context) (utypes.Plan, bool, error)
+	// CurrentPlannedPlan returns the current (non-activated) upgrade plan.
+	CurrentPlannedPlan(ctx context.Context) (utypes.Plan, bool, error)
 }
