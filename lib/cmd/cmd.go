@@ -174,6 +174,10 @@ func wrapRunCmd(cmd *cobra.Command) {
 	SilenceErrUsage(runCmd)
 	runFunc := runCmd.RunE
 	runCmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if runFunc == nil {
+			return errors.New("run command RunE nil [BUG]")
+		}
+
 		err := runFunc(cmd, args)
 		if err != nil {
 			log.Error(cmd.Context(), "!! Fatal error occurred, app died !!", err)
