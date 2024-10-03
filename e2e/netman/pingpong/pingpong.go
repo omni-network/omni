@@ -162,6 +162,11 @@ func (d *XDapp) StartAllEdges(ctx context.Context, latest, parallel, count uint6
 		edgesByFrom[edge.From] = append(edgesByFrom[edge.From], d.contracts[edge.To])
 	}
 
+	// Only send on latest conf level if one of the vertexes is slow (holesky)
+	isSlow := func(period time.Duration) bool {
+		return period > 5*time.Second
+	}
+
 	for fromID, toContracts := range edgesByFrom {
 		from := d.contracts[fromID]
 		log.Debug(ctx, "Starting pingpong deployments for sender", "from", from.Chain.Name)
@@ -181,8 +186,12 @@ func (d *XDapp) StartAllEdges(ctx context.Context, latest, parallel, count uint6
 				for i := uint64(0); i < parallel; i++ {
 					// First are latest, rest is finalized
 					conf := xchain.ConfFinalized
+
+					// Only use latest conf is one of the chains is slow (otherwise we spend too much funds too fast).
+					hasSlow := isSlow(from.Chain.BlockPeriod) || isSlow(to.Chain.BlockPeriod)
+
 					// Only use latest shard if the chain has it and "latest" is enabled (i.e. not 0)
-					if slices.Contains(shards, xchain.ShardLatest0) && i < latest {
+					if hasSlow && slices.Contains(shards, xchain.ShardLatest0) && i < latest {
 						conf = xchain.ConfLatest
 					}
 
