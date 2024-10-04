@@ -444,6 +444,8 @@ func getConsXBlock(ctx context.Context, ref xchain.EmitRef, cprov cchain.Provide
 		return xchain.Block{}, errors.Wrap(err, "fetch consensus xblock")
 	} else if !ok {
 		return xchain.Block{}, errors.New("no consensus xblocks [BUG]")
+	} else if len(xblock.Msgs) == 0 {
+		return xchain.Block{}, errors.New("no xblock messages [BUG]")
 	} else if xblock.Msgs[0].DestChainID != 0 {
 		return xchain.Block{}, errors.New("non-broadcast consensus chain xmsg [BUG]")
 	}
