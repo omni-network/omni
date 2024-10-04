@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/omni-network/omni/halo/comet"
@@ -52,6 +53,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+// Global variable refernced from the http handler, returning it.
+var readiness ReadyResponse
+
+// User to ensure we register the http endpoints exactly once (otherwise, tests will panic).
+var registerOnce sync.Once
+
 // Config wraps the halo (app) and comet (client) configurations.
 type Config struct {
 	halocfg.Config
@@ -66,6 +73,34 @@ func (c Config) BackendType() dbm.BackendType {
 	}
 
 	return dbm.BackendType(c.Config.BackendType)
+}
+
+// Register metrics and health endpoints.
+func registerEndpoints(cfg *cmtcfg.Config) {
+	http.Handle("/", promhttp.Handler())
+
+	// On the `/ready` endpoint, we serve the readiness of the halo node.
+	// Additionally, in case when the node is not ready, the response status code is set to 503.
+	http.HandleFunc("/ready", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		if !readiness.Healthy() {
+			w.WriteHeader(http.StatusServiceUnavailable)
+		}
+		if err := readiness.Serialize(w); err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+	})
+
+	server := &http.Server{
+		Addr:              cfg.Instrumentation.PrometheusListenAddr,
+		ReadHeaderTimeout: 3 * time.Second,
+	}
+
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		panic(fmt.Sprintf("HTTP server failed to start: %v", err))
+	}
 }
 
 // Run runs the halo client until the context is canceled.
@@ -97,6 +132,8 @@ func Run(ctx context.Context, cfg Config) error {
 // before calling the stop function and a fresh context should be passed into the stop function.
 func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context) error, error) {
 	log.Info(ctx, "Starting halo consensus client", "moniker", cfg.Comet.Moniker)
+
+	registerOnce.Do(func() { go registerEndpoints(&cfg.Comet) })
 
 	if err := cfg.Verify(); err != nil {
 		return nil, nil, errors.Wrap(err, "verify halo config")
@@ -168,9 +205,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 	app.EVMEngKeeper.SetBuildDelay(cfg.EVMBuildDelay)
 	app.EVMEngKeeper.SetBuildOptimistic(cfg.EVMBuildOptimistic)
 
-	readiness := &ReadyResponse{}
-
-	cmtNode, err := newCometNode(ctx, &cfg.Comet, app, privVal, readiness)
+	cmtNode, err := newCometNode(ctx, &cfg.Comet, app, privVal)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "create comet node")
 	}
@@ -209,8 +244,8 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		return nil, nil, errors.Wrap(err, "start comet node")
 	}
 
-	go monitorCometForever(ctx, cfg.Network, rpcClient, cmtNode.ConsensusReactor().WaitSync, cfg.DataDir(), readiness)
-	go monitorEVMForever(ctx, cfg, engineCl, readiness)
+	go monitorCometForever(ctx, cfg.Network, rpcClient, cmtNode.ConsensusReactor().WaitSync, cfg.DataDir(), &readiness)
+	go monitorEVMForever(ctx, cfg, engineCl, &readiness)
 
 	// Return asyncAbort and stop functions.
 	// Note that the original context used to start the app must be canceled first.
@@ -274,8 +309,8 @@ func startRPCServers(
 	return nil
 }
 
-func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App,
-	privVal cmttypes.PrivValidator, readiness *ReadyResponse) (*node.Node, error) {
+func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App, privVal cmttypes.PrivValidator) (
+	*node.Node, error) {
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
 		return nil, errors.Wrap(err, "load or gen node key", "key_file", cfg.NodeKeyFile())
@@ -295,7 +330,6 @@ func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App,
 	)
 
 	// Don't instantiate the default prometheus server.
-	prometheusEnabled := cfg.Instrumentation.Prometheus
 	cfg.Instrumentation.Prometheus = false
 
 	cmtNode, err := node.NewNode(cfg,
@@ -311,50 +345,7 @@ func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App,
 		return nil, errors.Wrap(err, "create node")
 	}
 
-	startHTTPServer(ctx, cfg, prometheusEnabled, readiness, cmtNode)
-
 	return cmtNode, nil
-}
-
-// Starts an http server serving the `/ready` endpoint and prometheus metrics, if enabled.
-func startHTTPServer(ctx context.Context, cfg *cmtcfg.Config, prometheusEnabled bool, readiness *ReadyResponse, cmtNode *node.Node) {
-	server := &http.Server{
-		Addr:              cfg.Instrumentation.PrometheusListenAddr,
-		ReadHeaderTimeout: 3 * time.Second,
-	}
-
-	go func() {
-		// If configured, we have to serve the Prometheus metrics because we disabled the default server.
-		if prometheusEnabled {
-			http.Handle("/metrics", promhttp.Handler())
-		}
-
-		// On the `/ready` endpoint, we serve the readiness of the halo node.
-		// Additionally, in case when the node is not ready, the response status code is set to 503.
-		http.HandleFunc("/ready", func(w http.ResponseWriter, _ *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-
-			if !readiness.Healthy() {
-				w.WriteHeader(http.StatusServiceUnavailable)
-			}
-			if err := readiness.Serialize(w); err != nil {
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				return
-			}
-		})
-
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			panic(fmt.Sprintf("HTTP server failed to start: %v", err))
-		}
-	}()
-
-	// Schedule the HTTP server shutdown.
-	go func() {
-		cmtNode.Wait()
-		if err := server.Shutdown(ctx); err != nil {
-			log.Error(ctx, "HTTP server shutdown failed", err)
-		}
-	}()
 }
 
 func makeBaseAppOpts(cfg Config) ([]func(*baseapp.BaseApp), error) {
