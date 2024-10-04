@@ -33,7 +33,7 @@ func (k *Keeper) PrepareVotes(ctx context.Context, commit abci.ExtendedCommitInf
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if err := baseapp.ValidateVoteExtensions(sdkCtx, k.skeeper, sdkCtx.BlockHeight(), sdkCtx.ChainID(), commit); err != nil {
 		log.Error(ctx, "Cannot include invalid vote extensions in payload", err, "height", sdkCtx.BlockHeight())
-		return nil, nil
+		return nil, errors.Wrap(err, "validate extensions")
 	}
 
 	// Adapt portal registry to the supportedChainFunc signature.
