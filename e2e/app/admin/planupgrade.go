@@ -43,7 +43,7 @@ func PlanUpgrade(ctx context.Context, def app.Definition, cfg Config) error {
 			return err
 		}
 
-		const delay = 5 // Upgrades must be planned in the future, add a small buffer
+		const delay = 100 // Upgrades must be planned in the future, add a buffer of few minutes
 		plan.Height = latest + delay
 	}
 

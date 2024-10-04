@@ -45,7 +45,8 @@ type valsetFunc func(ctx context.Context, valSetID uint64, latest bool) (valSetR
 type headerFunc func(ctx context.Context, height *int64) (*ctypes.ResultHeader, error)
 type chainIDFunc func(ctx context.Context) (uint64, error)
 type genesisFunc func(ctx context.Context) (execution []byte, consensus []byte, err error)
-type upgradeFunc func(ctx context.Context) (upgradetypes.Plan, bool, error)
+type planedUpgradeFunc func(ctx context.Context) (upgradetypes.Plan, bool, error)
+type appliedUpgradeFunc func(ctx context.Context, name string) (upgradetypes.Plan, bool, error)
 type signingFunc func(ctx context.Context) ([]cchain.SDKSigningInfo, error)
 
 type valSetResponse struct {
@@ -72,7 +73,8 @@ type Provider struct {
 	portalBlock portalBlockFunc
 	networkFunc networkFunc
 	genesisFunc genesisFunc
-	upgradeFunc upgradeFunc
+	plannedFunc planedUpgradeFunc
+	appliedFunc appliedUpgradeFunc
 	backoffFunc func(context.Context) func()
 	chainNamer  func(xchain.ChainVersion) string
 	network     netconf.ID
@@ -96,7 +98,11 @@ func (p Provider) CometClient() rpcclient.Client {
 }
 
 func (p Provider) CurrentPlannedPlan(ctx context.Context) (upgradetypes.Plan, bool, error) {
-	return p.upgradeFunc(ctx)
+	return p.plannedFunc(ctx)
+}
+
+func (p Provider) AppliedPlan(ctx context.Context, name string) (upgradetypes.Plan, bool, error) {
+	return p.appliedFunc(ctx, name)
 }
 
 func (p Provider) AttestationsFrom(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64,
