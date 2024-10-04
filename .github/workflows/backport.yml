@@ -5,23 +5,6 @@ on:
     types: ["labeled", "closed"]
 
 jobs:
-  dump_contexts_to_log:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Dump GitHub context
-        env:
-          JSON_DOC: ${{ toJson(github.event.pull_request) }}
-          MERGED: ${{ github.event.pull_request.merged }}
-          LABEL1: ${{ github.event.pull_request.labels.*.name }}
-          LABEL2: ${{ toJson(github.event.pull_request.labels.*.name) }}
-          LABEL3: ${{ contains(toJson(github.event.pull_request.labels.*.name), 'backport-to') }}
-        run: |
-          echo "MERGED=$MERGED"
-          echo "LABEL1=$LABEL1"
-          echo "LABEL2=$LABEL2"
-          echo "LABEL3=$LABEL3"
-          echo "$JSON_DOC"
-
   backport:
     name: Backport PR
     # Only run on merged PRs with the 'backport-to` label
@@ -34,7 +17,7 @@ jobs:
         uses: sorenlouv/backport-github-action@v9.5.1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          auto_backport_label_prefix: "backport-to: "
+          auto_backport_label_prefix: "backport-to:"
 
       - name: Info log
         if: ${{ success() }}
