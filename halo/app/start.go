@@ -53,10 +53,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-// Global variable refernced from the http handler, returning it.
+// Global variable referenced from the http handler, returning it.
 var readiness ReadyResponse
 
-// User to ensure we register the http endpoints exactly once (otherwise, tests will panic).
+// Ensures we register the http endpoints exactly once (otherwise, tests will panic).
 var registerOnce sync.Once
 
 // Config wraps the halo (app) and comet (client) configurations.

@@ -27,7 +27,7 @@ func (r *ReadyResponse) Healthy() bool {
 		r.ExecutionSynced && r.ExecutionP2PPeers > 0
 }
 
-// Marshals the strucxt to the specified writer.
+// Marshals the struct to the specified writer.
 func (r *ReadyResponse) Serialize(w io.Writer) error {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
