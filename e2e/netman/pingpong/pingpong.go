@@ -162,11 +162,6 @@ func (d *XDapp) StartAllEdges(ctx context.Context, latest, parallel, count uint6
 		edgesByFrom[edge.From] = append(edgesByFrom[edge.From], d.contracts[edge.To])
 	}
 
-	// Only send on latest conf level if one of the vertexes is slow (holesky)
-	isSlow := func(period time.Duration) bool {
-		return period > 5*time.Second
-	}
-
 	for fromID, toContracts := range edgesByFrom {
 		from := d.contracts[fromID]
 		log.Debug(ctx, "Starting pingpong deployments for sender", "from", from.Chain.Name)
@@ -187,11 +182,12 @@ func (d *XDapp) StartAllEdges(ctx context.Context, latest, parallel, count uint6
 					// First are latest, rest is finalized
 					conf := xchain.ConfFinalized
 
-					// Only use latest conf is one of the chains is slow (otherwise we spend too much funds too fast).
-					hasSlow := isSlow(from.Chain.BlockPeriod) || isSlow(to.Chain.BlockPeriod)
-
-					// Only use latest shard if the chain has it and "latest" is enabled (i.e. not 0)
-					if hasSlow && slices.Contains(shards, xchain.ShardLatest0) && i < latest {
+					// Only use latest shard if the chain has it and
+					// if "latest" is enabled (i.e. not 0) and
+					// if the pair allows it (is slowish pair)
+					if allowLatestPair(d.network, from, to) &&
+						slices.Contains(shards, xchain.ShardLatest0) &&
+						i < latest {
 						conf = xchain.ConfLatest
 					}
 
@@ -383,4 +379,32 @@ func randomHex7() string {
 	}
 
 	return hexString
+}
+
+// allowLatestPair returns true if the pair of chains is slow enough to allow latest conf
+// level ping pongs. This ensures that we don't burn through contract balance with
+// many fast ping pongs, instead, space them out with slow ping pongs.
+func allowLatestPair(network netconf.ID, from, to contract) bool {
+	if network == netconf.Devnet {
+		return true // No need to ensure mostly slow ping pongs on devnet
+	}
+
+	isVerySlow := func(c contract) bool { // aka isHolesky
+		return c.Chain.BlockPeriod >= time.Second*5
+	}
+	isVeryFast := func(c contract) bool { // aka isArb
+		return c.Chain.BlockPeriod < time.Second
+	}
+
+	// Ensure that one of the chains is very slow (aka one is holesky)
+	if !isVerySlow(from) && !isVerySlow(to) {
+		return false
+	}
+
+	// Ensure that neither of the chains is fast (aka neither is arb)
+	if isVeryFast(from) || isVeryFast(to) {
+		return false
+	}
+
+	return true
 }
