@@ -57,7 +57,7 @@ If you are experiencing an issue running the e2e tests and the error output look
 Error response from daemon: no match for platform in manifest
 ```
 This error is known to happen on a freshly installed MacBook, we are investigating the underlying issue, but meanwhile, there is a workaround:
-1. Clean all the build images `docker system prune -a -f --volumes` 
+1. Clean all the build images `docker system prune -a -f --volumes`
 2. Set the platform env: `export DOCKER_DEFAULT_PLATFORM=linux/amd64`
 3. Rerun docker build: `make build-docker`
 4. Run tests again: `make e2e-ci` or any other tests using the e2e command.
