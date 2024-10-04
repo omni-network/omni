@@ -79,7 +79,8 @@ func NewABCIProvider(cmtCl rpcclient.Client, network netconf.ID, chainNamer func
 		portalBlock: newABCIPortalBlockFunc(pcl),
 		networkFunc: newABCINetworkFunc(rcl),
 		genesisFunc: newABCIGenesisFunc(gcl),
-		upgradeFunc: newABCIUpgradeFunc(ucl),
+		plannedFunc: newABCIPlannedUpgradeFunc(ucl),
+		appliedFunc: newABCIAppliedUpgradeFunc(ucl),
 		chainID:     newChainIDFunc(cmtCl),
 		header:      cmtCl.Header,
 		backoffFunc: backoffFunc,
@@ -127,7 +128,25 @@ func newABCISigningFunc(cl sltypes.QueryClient) signingFunc {
 	}
 }
 
-func newABCIUpgradeFunc(ucl utypes.QueryClient) upgradeFunc {
+func newABCIAppliedUpgradeFunc(ucl utypes.QueryClient) appliedUpgradeFunc {
+	return func(ctx context.Context, name string) (utypes.Plan, bool, error) {
+		resp, err := ucl.AppliedPlan(ctx, &utypes.QueryAppliedPlanRequest{
+			Name: name,
+		})
+		if err != nil {
+			return utypes.Plan{}, false, errors.Wrap(err, "abci query applied plan")
+		} else if resp.Height == 0 {
+			return utypes.Plan{}, false, nil
+		}
+
+		return utypes.Plan{
+			Name:   name,
+			Height: resp.Height,
+		}, true, nil
+	}
+}
+
+func newABCIPlannedUpgradeFunc(ucl utypes.QueryClient) planedUpgradeFunc {
 	return func(ctx context.Context) (utypes.Plan, bool, error) {
 		resp, err := ucl.CurrentPlan(ctx, &utypes.QueryCurrentPlanRequest{})
 		if err != nil {

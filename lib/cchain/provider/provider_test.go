@@ -17,6 +17,22 @@ import (
 
 var integration = flag.Bool("integration", false, "run integration tests")
 
+func TestUpgradeQueries(t *testing.T) {
+	t.Parallel()
+	if !*integration {
+		t.Skip("skipping integration test")
+	}
+
+	ctx := context.Background()
+
+	cprov, err := provider.Dial(netconf.Staging)
+	require.NoError(t, err)
+
+	_, ok, err := cprov.AppliedPlan(ctx, "not an upgrade")
+	require.NoError(t, err)
+	require.False(t, ok)
+}
+
 func TestSigningInfos(t *testing.T) {
 	t.Parallel()
 	if !*integration {

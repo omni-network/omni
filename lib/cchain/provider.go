@@ -85,4 +85,7 @@ type Provider interface {
 
 	// CurrentPlannedPlan returns the current (non-activated) upgrade plan.
 	CurrentPlannedPlan(ctx context.Context) (utypes.Plan, bool, error)
+
+	// AppliedPlan returns the applied (activated) upgrade plan by name.
+	AppliedPlan(ctx context.Context, name string) (utypes.Plan, bool, error)
 }
