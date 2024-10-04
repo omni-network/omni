@@ -700,7 +700,7 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 	// Make nice logs
 	const limit = 5
 	offsets := make(map[xchain.ChainVersion][]string)
-	for _, vote := range votes {
+	for _, vote := range filtered {
 		offset := offsets[vote.AttestHeader.XChainVersion()]
 		if len(offset) < limit {
 			offset = append(offset, strconv.FormatUint(vote.AttestHeader.AttestOffset, 10))
@@ -711,7 +711,7 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 		}
 		offsets[vote.AttestHeader.XChainVersion()] = offset
 	}
-	attrs := []any{slog.Int("votes", len(votes))}
+	attrs := []any{slog.Int("votes", len(offsets))}
 	for chainVer, offset := range offsets {
 		attrs = append(attrs, slog.String(
 			fmt.Sprintf("%d-%d", chainVer.ID, chainVer.ConfLevel),
