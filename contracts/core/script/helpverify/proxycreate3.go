@@ -58,12 +58,19 @@ func parseProxyCreate3Tx(ctx context.Context, chain ChainName, txHash common.Has
 		return ProxyCreate3Tx{}, errors.Wrap(err, "get transaction", "hash", txHash.Hex())
 	}
 
-	txData := tx.Data()
+	parsed, err := parseProxyCreate3TxData(tx.Data())
+	if err != nil {
+		return ProxyCreate3Tx{}, errors.Wrap(err, "parse tx data", "chain", chain, "hash", txHash.Hex())
+	}
 
+	return parsed, nil
+}
+
+func parseProxyCreate3TxData(txData []byte) (ProxyCreate3Tx, error) {
 	// first 4 bytes are signature
 	deployArgsI, err := create3ABI.Methods["deploy"].Inputs.Unpack(txData[4:])
 	if err != nil {
-		return ProxyCreate3Tx{}, errors.Wrap(err, "unpack deploy args", "chain", chain, "tx", txHash.Hex())
+		return ProxyCreate3Tx{}, errors.Wrap(err, "unpack deploy args")
 	}
 
 	creationCode, ok := deployArgsI[1].([]byte)
