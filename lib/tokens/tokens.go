@@ -31,12 +31,3 @@ func FromCoingeckoID(id string) (Token, bool) {
 
 	return "", false
 }
-
-func MustFromCoingeckoID(id string) Token {
-	t, ok := FromCoingeckoID(id)
-	if !ok {
-		panic("unknown coingecko id: " + id)
-	}
-
-	return t
-}
