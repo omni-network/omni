@@ -22,9 +22,6 @@ func (v *Vote) Verify() error {
 	if v == nil {
 		return errors.New("nil attestation")
 	}
-	if v.Signature == nil {
-		return errors.New("nil signature")
-	}
 
 	if len(v.MsgRoot) != len(common.Hash{}) {
 		return errors.New("invalid message root length")
@@ -38,12 +35,8 @@ func (v *Vote) Verify() error {
 		return errors.Wrap(err, "verify attestation header")
 	}
 
-	if len(v.Signature.Signature) != len(xchain.Signature65{}) {
-		return errors.New("invalid signature length")
-	}
-
-	if len(v.Signature.ValidatorAddress) != len(common.Address{}) {
-		return errors.New("invalid validator address length")
+	if err := v.Signature.Verify(); err != nil {
+		return errors.Wrap(err, "verify signature")
 	}
 
 	attRoot, err := v.AttestationRoot()
