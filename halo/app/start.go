@@ -54,7 +54,7 @@ import (
 )
 
 // Global variable referenced from the http handler, returning it.
-var readiness ReadyResponse
+var status readinessStatus
 
 // Ensures we register the http endpoints exactly once (otherwise, tests will panic).
 var registerOnce sync.Once
@@ -84,10 +84,10 @@ func registerEndpoints(cfg *cmtcfg.Config) {
 	http.HandleFunc("/ready", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		if !readiness.Healthy() {
+		if !status.ready() {
 			w.WriteHeader(http.StatusServiceUnavailable)
 		}
-		if err := readiness.Serialize(w); err != nil {
+		if err := status.serialize(w); err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
@@ -244,8 +244,8 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		return nil, nil, errors.Wrap(err, "start comet node")
 	}
 
-	go monitorCometForever(ctx, cfg.Network, rpcClient, cmtNode.ConsensusReactor().WaitSync, cfg.DataDir(), &readiness)
-	go monitorEVMForever(ctx, cfg, engineCl, &readiness)
+	go monitorCometForever(ctx, cfg.Network, rpcClient, cmtNode.ConsensusReactor().WaitSync, cfg.DataDir(), &status)
+	go monitorEVMForever(ctx, cfg, engineCl, &status)
 
 	// Return asyncAbort and stop functions.
 	// Note that the original context used to start the app must be canceled first.

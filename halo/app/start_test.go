@@ -142,13 +142,12 @@ func testHealthAndMetricsEndpoints(t *testing.T, cfg haloapp.Config) {
 	require.NoError(t, err)
 	defer response.Body.Close()
 
-	// TODO: import it from github once published.
-	type ReadyResponse struct {
+	type status struct {
 		ConsensusSynced bool `json:"consensus_synced"`
 		ExecutionSynced bool `json:"execution_synced"`
 	}
 
-	var readyResponse ReadyResponse
+	var readyResponse status
 	err = json.NewDecoder(response.Body).Decode(&readyResponse)
 	// We only check that the endpoint returns a parsable response.
 	require.NoError(t, err)
