@@ -27,7 +27,7 @@ import (
 //		     libcmd.Main(appcmd.New())
 //	   }
 func Main(cmd *cobra.Command) {
-	wrapRunCmd(cmd)
+	wrapRunE(cmd)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	err := cmd.ExecuteContext(ctx)
@@ -39,6 +39,26 @@ func Main(cmd *cobra.Command) {
 	}
 }
 
+// wrapRunE wraps all (nested) RunE functions adding omni logging (stack traces + structured errors).
+// Done here, so cobra command/flag errors are cli style (usage + simple errors).
+func wrapRunE(cmd *cobra.Command) {
+	runE := cmd.RunE
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		err := runE(cmd, args)
+		if err != nil {
+			cmd.SilenceUsage = true
+			cmd.SilenceErrors = true
+			log.Error(cmd.Context(), "!! Fatal error occurred, app died !!", err)
+		}
+
+		return err
+	}
+
+	for _, subCmd := range cmd.Commands() {
+		wrapRunE(subCmd)
+	}
+}
+
 // NewRootCmd returns a new root cobra command that handles our command line tool.
 // It sets up the general viper config and binds the cobra flags to the viper flags.
 func NewRootCmd(appName string, appDescription string, subCmds ...*cobra.Command) *cobra.Command {
@@ -47,6 +67,8 @@ func NewRootCmd(appName string, appDescription string, subCmds ...*cobra.Command
 		Short: appDescription,
 		Args:  cobra.NoArgs,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			// Note that callers should wrap this if replacing PersistentPreRunE.
+			// So they get proper toml+env config.
 			return initializeConfig(appName, cmd)
 		},
 		RunE: func(*cobra.Command, []string) error {
@@ -166,35 +188,4 @@ func bindFlags(cmd *cobra.Command, v *viper.Viper) error {
 	})
 
 	return lastErr
-}
-
-// wrapRunCmd wraps the "app run" command to custom fatal error log and silence cobra output.
-func wrapRunCmd(cmd *cobra.Command) {
-	runCmd := getRunCmd(cmd)
-	SilenceErrUsage(runCmd)
-	runFunc := runCmd.RunE
-	runCmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if runFunc == nil {
-			return errors.New("run command RunE nil [BUG]")
-		}
-
-		err := runFunc(cmd, args)
-		if err != nil {
-			log.Error(cmd.Context(), "!! Fatal error occurred, app died !!", err)
-		}
-
-		return err
-	}
-}
-
-// getRunCmd returns the "run" subcommand of the given command or the command itself.
-func getRunCmd(cmd *cobra.Command) *cobra.Command {
-	const name = "run"
-	for _, sub := range cmd.Commands() {
-		if sub.Use == name {
-			return sub
-		}
-	}
-
-	return cmd
 }
