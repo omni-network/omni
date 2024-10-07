@@ -263,7 +263,7 @@ func (k *Keeper) insertValidatorSet(ctx context.Context, vals []*Validator, isGe
 	// Log a warn if any validator has 1/3 or more of the total power.
 	// This is a potential attack vector, as a single validator could halt the chain.
 	for address, power := range powers {
-		if power >= totalPower/3 && len(powers) > 1 {
+		if power > totalPower/3 && len(powers) > 1 {
 			log.Warn(ctx, "🚨 Validator has 1/3 or more of total power", nil,
 				"address", address.Hex(),
 				"power", power,
