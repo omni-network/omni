@@ -78,7 +78,7 @@ func SigFromProto(sig *SigTuple) (xchain.SigTuple, error) {
 
 // BlockHeaderFromProto converts a protobuf BlockHeader to a xchain.BlockHeader.
 func BlockHeaderFromProto(header *BlockHeader) (xchain.BlockHeader, error) {
-	addr, err := cast.Array32(header.GetBlockHash())
+	hash, err := cast.Array32(header.GetBlockHash())
 	if err != nil {
 		return xchain.BlockHeader{}, err
 	}
@@ -86,7 +86,7 @@ func BlockHeaderFromProto(header *BlockHeader) (xchain.BlockHeader, error) {
 	return xchain.BlockHeader{
 		ChainID:     header.GetChainId(),
 		BlockHeight: header.GetBlockHeight(),
-		BlockHash:   addr,
+		BlockHash:   hash,
 	}, nil
 }
 
