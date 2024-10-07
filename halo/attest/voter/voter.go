@@ -443,13 +443,13 @@ func (v *Voter) SetProposed(headers []*types.AttestHeader) error {
 		return nil
 	}
 
+	proposed := headerMap(headers)
+
 	v.mu.Lock()
 	defer v.mu.Unlock()
 	if v.errAborted != nil {
 		return v.errAborted
 	}
-
-	proposed := headerMap(headers)
 
 	var newAvailable, newProposed []*types.Vote
 	for _, vote := range v.availableAndProposedUnsafe() {
@@ -475,13 +475,13 @@ func (v *Voter) SetCommitted(headers []*types.AttestHeader) error {
 		return nil
 	}
 
+	committed := headerMap(headers)
+
 	v.mu.Lock()
 	defer v.mu.Unlock()
 	if v.errAborted != nil {
 		return v.errAborted
 	}
-
-	committed := headerMap(headers)
 
 	newCommitted := v.committed
 
