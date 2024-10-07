@@ -184,6 +184,10 @@ func (a *AggVote) Verify() error {
 }
 
 func (a *AggVote) AttestationRoot() (common.Hash, error) {
+	if a == nil {
+		return common.Hash{}, errors.New("nil aggvote")
+	}
+
 	return xchain.AttestationRoot(a.AttestHeader.ToXChain(), a.BlockHeader.ToXChain(), common.Hash(a.MsgRoot))
 }
 
@@ -241,6 +245,10 @@ func (a *Attestation) ToXChain() xchain.Attestation {
 }
 
 func (a *Attestation) AttestationRoot() (common.Hash, error) {
+	if a == nil {
+		return common.Hash{}, errors.New("nil attestation")
+	}
+
 	return xchain.AttestationRoot(a.AttestHeader.ToXChain(), a.BlockHeader.ToXChain(), common.Hash(a.MsgRoot))
 }
 
