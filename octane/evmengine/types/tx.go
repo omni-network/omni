@@ -27,10 +27,6 @@ func (l *EVMEvent) Verify() error {
 		return errors.New("nil log")
 	}
 
-	if l.Address == nil {
-		return errors.New("nil address")
-	}
-
 	if len(l.Topics) == 0 {
 		return errors.New("empty topics")
 	}
