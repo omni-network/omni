@@ -4,6 +4,7 @@ package k1util
 import (
 	stdecdsa "crypto/ecdsa"
 
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/cometbft/cometbft/crypto"
@@ -40,7 +41,7 @@ func Sign(key crypto.PrivKey, input [32]byte) ([65]byte, error) {
 	sig := ecdsa.SignCompact(secp256k1.PrivKeyFromBytes(bz), input[:], false)
 
 	// Convert signature from "compact" into "Ethereum R S V" format.
-	return [65]byte(append(sig[1:], sig[0])), nil
+	return cast.Array65(append(sig[1:], sig[0]))
 }
 
 // Verify returns whether the 65 byte signature is valid for the provided hash

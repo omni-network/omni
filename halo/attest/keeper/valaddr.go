@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/cometbft/cometbft/crypto"
@@ -39,12 +40,17 @@ func (c *valAddrCache) SetAll(vals []*vtypes.Validator) error {
 			return errors.New("invalid comet address length [BUG]", "len", len(cmtAddr))
 		}
 
+		cmtAddrArr, err := cast.Array20(cmtAddr)
+		if err != nil {
+			return err
+		}
+
 		ethAddr, err := val.EthereumAddress()
 		if err != nil {
 			return err
 		}
 
-		ethAddrs[[crypto.AddressSize]byte(cmtAddr)] = ethAddr
+		ethAddrs[cmtAddrArr] = ethAddr
 	}
 
 	c.Lock()
@@ -59,10 +65,10 @@ func (c *valAddrCache) SetAll(vals []*vtypes.Validator) error {
 // It uses the validator read-through-cache to avoid querying the underlying validator set provider.
 // Note it assumes the provided validator is inside the current set. It doesn't ensure this.
 func (k *Keeper) getValEthAddr(ctx context.Context, cmtAddr []byte) (common.Address, error) {
-	if len(cmtAddr) != crypto.AddressSize {
-		return common.Address{}, errors.New("invalid comet address length [BUG]", "len", len(cmtAddr))
+	addr, err := cast.Array20(cmtAddr)
+	if err != nil {
+		return common.Address{}, errors.Wrap(err, "invalid comet address length [BUG]", "len", len(cmtAddr))
 	}
-	addr := [crypto.AddressSize]byte(cmtAddr)
 
 	// Check cache
 	if ethAddr, ok := k.valAddrCache.GetEthAddress(addr); ok {

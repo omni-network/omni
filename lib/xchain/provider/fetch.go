@@ -390,7 +390,7 @@ func (p *Provider) GetSubmission(ctx context.Context, chainID uint64, txHash com
 		return xchain.Submission{}, errors.Wrap(err, "decode xsubmit")
 	}
 
-	return xchain.SubmissionFromBinding(sub, chain.ID), nil
+	return xchain.SubmissionFromBinding(sub, chain.ID)
 }
 
 // confirmedCache returns true if the height is confirmedCache based on the chain version

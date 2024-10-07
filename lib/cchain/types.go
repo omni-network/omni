@@ -3,6 +3,7 @@ package cchain
 import (
 	"crypto/ecdsa"
 
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/umath"
 
@@ -79,7 +80,7 @@ func (v SDKValidator) OperatorEthAddr() (common.Address, error) {
 		return common.Address{}, errors.New("invalid operator address length")
 	}
 
-	return common.BytesToAddress(opAddr), nil
+	return cast.EthAddress(opAddr)
 }
 
 // ConsensusEthAddr returns the validator consensus eth address.

@@ -33,7 +33,9 @@ func TestCreateVerifyVotes(t *testing.T) {
 
 	att, err := voter.CreateVote(privKey, attHeader, block)
 	require.NoError(t, err)
-	require.Equal(t, block.BlockHeader, att.BlockHeader.ToXChain())
+	header, err := att.BlockHeader.ToXChain()
+	require.NoError(t, err)
+	require.Equal(t, block.BlockHeader, header)
 	require.Equal(t, addr, common.Address(att.Signature.ValidatorAddress))
 
 	// Verify the attestation

@@ -234,9 +234,10 @@ func sigsTuples(vals ...*vtypes.Validator) []*types.SigTuple {
 	var sigs []*types.SigTuple
 	for _, v := range vals {
 		ethAddr, _ := v.EthereumAddress()
+		paddedSig := pad65(ethAddr.Bytes()) // Just make it valid and deterministic
 		sigs = append(sigs, &types.SigTuple{
 			ValidatorAddress: ethAddr.Bytes(),
-			Signature:        ethAddr.Bytes(), // Just make it non-nil for now
+			Signature:        paddedSig[:],
 		})
 	}
 
@@ -249,4 +250,11 @@ func defaultMsg() *MsgBuilder {
 
 func defaultAggVote() *AggVoteBuilder {
 	return new(AggVoteBuilder).Default()
+}
+
+func pad65(b []byte) [65]byte {
+	var arr [65]byte
+	copy(arr[:], b)
+
+	return arr
 }

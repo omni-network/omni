@@ -7,12 +7,13 @@ import (
 	"bytes"
 	"sort"
 
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-// Specifies the domain of a single leaf in the tree.
+// DomainSeparationTag defines the domain of a single leaf in the tree.
 type DomainSeparationTag byte
 
 // StdLeafHash returns the standard leaf hash of the given data.
@@ -206,7 +207,5 @@ func hashPair(a [32]byte, b [32]byte) [32]byte {
 
 // hash returns the 32 byte keccak256 hash of the given byte slice.
 func hash(buf []byte) [32]byte {
-	resp := crypto.Keccak256(buf)
-
-	return [32]byte(resp)
+	return cast.Must32(crypto.Keccak256(buf)) // Fine to use Must, as Keccak256 always returns 32 bytes.
 }

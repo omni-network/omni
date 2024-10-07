@@ -1,9 +1,8 @@
 package types
 
 import (
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/xchain"
-
-	"github.com/ethereum/go-ethereum/common"
 )
 
 func (h *AttestHeader) XChainVersion() xchain.ChainVersion {
@@ -49,11 +48,21 @@ func AttestationFromProto(att *Attestation) (xchain.Attestation, error) {
 		sigs = append(sigs, sig)
 	}
 
+	header, err := BlockHeaderFromProto(att.GetBlockHeader())
+	if err != nil {
+		return xchain.Attestation{}, err
+	}
+
+	msgRoot, err := cast.Array32(att.GetMsgRoot())
+	if err != nil {
+		return xchain.Attestation{}, err
+	}
+
 	return xchain.Attestation{
 		AttestHeader:   AttestHeaderFromProto(att.GetAttestHeader()),
-		BlockHeader:    BlockHeaderFromProto(att.GetBlockHeader()),
+		BlockHeader:    header,
 		ValidatorSetID: att.GetValidatorSetId(),
-		MsgRoot:        common.BytesToHash(att.GetMsgRoot()),
+		MsgRoot:        msgRoot,
 		Signatures:     sigs,
 	}, nil
 }
@@ -64,19 +73,21 @@ func SigFromProto(sig *SigTuple) (xchain.SigTuple, error) {
 		return xchain.SigTuple{}, err
 	}
 
-	return xchain.SigTuple{
-		ValidatorAddress: common.Address(sig.GetValidatorAddress()),
-		Signature:        xchain.Signature65(sig.GetSignature()),
-	}, nil
+	return sig.ToXChain()
 }
 
 // BlockHeaderFromProto converts a protobuf BlockHeader to a xchain.BlockHeader.
-func BlockHeaderFromProto(header *BlockHeader) xchain.BlockHeader {
+func BlockHeaderFromProto(header *BlockHeader) (xchain.BlockHeader, error) {
+	addr, err := cast.Array32(header.GetBlockHash())
+	if err != nil {
+		return xchain.BlockHeader{}, err
+	}
+
 	return xchain.BlockHeader{
 		ChainID:     header.GetChainId(),
 		BlockHeight: header.GetBlockHeight(),
-		BlockHash:   common.Hash(header.GetBlockHash()),
-	}
+		BlockHash:   addr,
+	}, nil
 }
 
 // AttestHeaderFromProto converts a protobuf AttestHeader to a xchain.AttestHeader.

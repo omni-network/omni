@@ -298,9 +298,7 @@ func (backendStubSigner) Sender(tx *ethtypes.Transaction) (common.Address, error
 
 	v, r, s := tx.RawSignatureValues()
 
-	addrLen := len(common.Address{})
-
-	if len(r.Bytes()) > addrLen {
+	if len(r.Bytes()) > common.AddressLength {
 		return common.Address{}, errors.New("invalid r length", "length", len(r.Bytes()))
 	}
 	if s.Uint64() != 0 {
@@ -310,12 +308,12 @@ func (backendStubSigner) Sender(tx *ethtypes.Transaction) (common.Address, error
 		return common.Address{}, errors.New("non-empty v [BUG]", "length", len(v.Bytes()))
 	}
 
-	addr := make([]byte, addrLen)
+	var addr [common.AddressLength]byte
 	// big.Int.Bytes() truncates leading zeros, so we need to left pad the address to 20 bytes.
-	pad := addrLen - len(r.Bytes())
+	pad := common.AddressLength - len(r.Bytes())
 	copy(addr[pad:], r.Bytes())
 
-	return common.Address(addr), nil
+	return addr, nil
 }
 
 //nolint:nonamedreturns // Ambiguous return values

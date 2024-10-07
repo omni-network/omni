@@ -96,7 +96,10 @@ func (p EventProcessor) Addresses() []common.Address {
 // - PlanUpgrade.
 // - CancelUpgrade.
 func (p EventProcessor) Deliver(ctx context.Context, _ common.Hash, elog *evmenginetypes.EVMEvent) error {
-	ethlog := elog.ToEthLog()
+	ethlog, err := elog.ToEthLog()
+	if err != nil {
+		return err
+	}
 
 	switch ethlog.Topics[0] {
 	case planUpgradeEvent.ID:

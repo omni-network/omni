@@ -141,7 +141,11 @@ func (k *Keeper) Add(ctx context.Context, msg *types.MsgAddVotes) error {
 
 		// Sanity check that all votes are from prev block validators.
 		for _, sig := range aggVote.Signatures {
-			if !valset.Contains(common.BytesToAddress(sig.ValidatorAddress)) {
+			sigTup, err := sig.ToXChain()
+			if err != nil {
+				return err
+			}
+			if !valset.Contains(sigTup.ValidatorAddress) {
 				return errors.New("vote from unknown validator [BUG]")
 			}
 		}
@@ -222,7 +226,12 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 
 	// Insert signatures
 	for _, sig := range agg.Signatures {
-		err := k.sigTable.Insert(ctx, &Signature{
+		sigTup, err := sig.ToXChain()
+		if err != nil {
+			return err
+		}
+
+		err = k.sigTable.Insert(ctx, &Signature{
 			Signature:        sig.GetSignature(),
 			ValidatorAddress: sig.GetValidatorAddress(),
 			AttId:            attID,
@@ -236,7 +245,7 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 			if ok, err := k.isDoubleSign(ctx, attID, agg, sig); err != nil {
 				return err
 			} else if ok {
-				doubleSignCounter.WithLabelValues(common.BytesToAddress(sig.ValidatorAddress).Hex()).Inc()
+				doubleSignCounter.WithLabelValues(sigTup.ValidatorAddress.Hex()).Inc()
 				msg = "🚨 Ignoring duplicate slashable vote"
 			}
 
