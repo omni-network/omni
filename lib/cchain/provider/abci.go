@@ -739,5 +739,5 @@ func attsFromAtHeight(ctx context.Context, cl atypes.QueryClient, chainVer xchai
 		return []xchain.Attestation{}, false, errors.Wrap(err, "attestations from proto")
 	}
 
-	return atts, len(resp.Attestations) != 0, nil
+	return atts, true, nil
 }
