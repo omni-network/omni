@@ -31,7 +31,7 @@ var _ evmenginetypes.VoteExtensionProvider = (*Keeper)(nil)
 func (k *Keeper) PrepareVotes(ctx context.Context, commit abci.ExtendedCommitInfo) ([]sdk.Msg, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if err := baseapp.ValidateVoteExtensions(sdkCtx, k.skeeper, sdkCtx.BlockHeight(), sdkCtx.ChainID(), commit); err != nil {
-		return nil, errors.Wrap(err, "validate extensions")
+		return nil, errors.Wrap(err, "validate extensions [BUG]")
 	}
 
 	// Adapt portal registry to the supportedChainFunc signature.
