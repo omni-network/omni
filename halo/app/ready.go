@@ -42,7 +42,7 @@ func (r *readinessStatus) serialize(w io.Writer) error {
 	defer r.mu.RUnlock()
 
 	if err := json.NewEncoder(w).Encode(r); err != nil {
-		return errors.Wrap(err, "serialization failed")
+		return errors.Wrap(err, "readiness status serialization")
 	}
 
 	return nil

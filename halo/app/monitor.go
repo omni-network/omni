@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -14,7 +13,6 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 
 	cmtcfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/node"
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -82,7 +80,6 @@ func monitorCometOnce(ctx context.Context, rpcClient rpcclient.Client, isSyncing
 		return 0, errors.Wrap(err, "abci info")
 	} else if !isSyncing() && lastHeight > 0 && abciInfo.Response.LastBlockHeight <= lastHeight {
 		log.Warn(ctx, "Halo height is not increasing, evm syncing?", nil, "height", abciInfo.Response.LastBlockHeight)
-		status.setConsensusSynced(false)
 	}
 
 	return abciInfo.Response.LastBlockHeight, nil
@@ -186,8 +183,15 @@ func dirSize(path string) (int64, error) {
 }
 
 // startMonitoringAPI registers metrics and health endpoints.
-func startMonitoringAPI(ctx context.Context, cfg *cmtcfg.Config, cmtNode *node.Node, syncAbort chan error, status *readinessStatus) {
+// Return the function shutting down the HTTP server.
+func startMonitoringAPI(
+	cfg *cmtcfg.Config,
+	asyncAbort chan<- error,
+	status *readinessStatus) func(context.Context) error {
 	mux := http.NewServeMux()
+
+	mux.Handle("/metrics", promhttp.Handler())
+	// We also export the metrics on the root path as this is how the default prometheus server works.
 	mux.Handle("/", promhttp.Handler())
 
 	// On the `/ready` endpoint, we serve the readiness of the halo node.
@@ -212,16 +216,9 @@ func startMonitoringAPI(ctx context.Context, cfg *cmtcfg.Config, cmtNode *node.N
 
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			errorMsg := fmt.Sprintf("HTTP server failed to start: %v", err)
-			syncAbort <- errors.New(errorMsg)
+			asyncAbort <- errors.Wrap(err, "http server failed to start")
 		}
 	}()
 
-	go func() {
-		cmtNode.Wait()
-
-		if err := server.Shutdown(ctx); err != nil {
-			syncAbort <- err
-		}
-	}()
+	return server.Shutdown
 }
