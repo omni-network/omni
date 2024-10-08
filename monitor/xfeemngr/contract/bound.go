@@ -88,7 +88,7 @@ func (c BoundFeeOracleV1) SetGasPriceOn(ctx context.Context, destChainID uint64,
 		return errors.Wrap(err, "tx opts")
 	}
 
-	log.Info(ctx, "Setting gas price on chain", "destination_chain_id", destChainID, "rate", gasPrice.Int64())
+	log.Info(ctx, "Setting gas price on chain", "dest_chain", c.chain.Name, "rate", new(big.Int).Div(gasPrice, big.NewInt(params.GWei)))
 	tx, err := c.bound.SetGasPrice(txOpts, destChainID, gasPrice)
 	if err != nil {
 		return errors.Wrap(err, "set gas price")
@@ -111,7 +111,7 @@ func (c BoundFeeOracleV1) SetToNativeRate(ctx context.Context, destChainID uint6
 		return errors.Wrap(err, "tx opts")
 	}
 
-	log.Info(ctx, "Setting native rate on chain", "destination_chain_id", destChainID, "rate", rate.Int64())
+	log.Info(ctx, "Setting native rate on chain", "dest_chain", c.chain.Name, "rate", rate.Int64())
 	tx, err := c.bound.SetToNativeRate(txOpts, destChainID, rate)
 	if err != nil {
 		return errors.Wrap(err, "set conversion rate")

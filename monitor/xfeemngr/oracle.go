@@ -93,7 +93,7 @@ func (o feeOracle) syncOnce(ctx context.Context) {
 
 // syncGasPrice sets the on-chain gas price to the buffered gas price, if they differ.
 func (o feeOracle) syncGasPrice(ctx context.Context, dest evmchain.Metadata) error {
-	ctx = log.WithCtx(ctx, "chainId", dest.ChainID)
+	ctx = log.WithCtx(ctx, "chainId", dest.ChainID, "chain", dest.Name)
 
 	buffered := o.gprice.GasPrice(dest.ChainID)
 
@@ -120,7 +120,7 @@ func (o feeOracle) syncGasPrice(ctx context.Context, dest evmchain.Metadata) err
 
 	shielded := withGasPriceShield(buffered)
 
-	log.Info(ctx, "Syncing gas price", "buffered", buffered, "buffered_w_shield", shielded, "on_chain", onChain.Uint64())
+	log.Info(ctx, "Syncing gas price", "buffered", buffered, "shielded", shielded, "dest_chain", onChain.Uint64())
 	// if on chain gas price is within epsilon of buffered + GasPriceShield, do nothing
 	// The shield helps keep on-chain gas prices higher than live gas prices
 	if inEpsilon(float64(onChain.Uint64()), float64(shielded), 0.001) {
