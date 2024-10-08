@@ -2,6 +2,7 @@ package types
 
 import (
 	"github.com/omni-network/omni/lib/cast"
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
 )
 
@@ -78,6 +79,10 @@ func SigFromProto(sig *SigTuple) (xchain.SigTuple, error) {
 
 // BlockHeaderFromProto converts a protobuf BlockHeader to a xchain.BlockHeader.
 func BlockHeaderFromProto(header *BlockHeader) (xchain.BlockHeader, error) {
+	if header == nil {
+		return xchain.BlockHeader{}, errors.New("nil block header")
+	}
+
 	hash, err := cast.Array32(header.GetBlockHash())
 	if err != nil {
 		return xchain.BlockHeader{}, err

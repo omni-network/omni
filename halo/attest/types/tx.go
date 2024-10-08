@@ -16,6 +16,10 @@ const (
 )
 
 func (v *Vote) AttestationRoot() (common.Hash, error) {
+	if v == nil {
+		return common.Hash{}, errors.New("nil vote")
+	}
+
 	msgRoot, err := cast.Array32(v.MsgRoot)
 	if err != nil {
 		return common.Hash{}, err
@@ -146,6 +150,10 @@ func (s *SigTuple) Verify() error {
 }
 
 func (s *SigTuple) ToXChain() (xchain.SigTuple, error) {
+	if s == nil {
+		return xchain.SigTuple{}, errors.New("nil sig tuple")
+	}
+
 	addr, err := cast.EthAddress(s.ValidatorAddress)
 	if err != nil {
 		return xchain.SigTuple{}, err
@@ -220,6 +228,10 @@ func (a *AggVote) Verify() error {
 }
 
 func (a *AggVote) AttestationRoot() (common.Hash, error) {
+	if a == nil {
+		return common.Hash{}, errors.New("nil agg vote")
+	}
+
 	msgRoot, err := cast.Array32(a.MsgRoot)
 	if err != nil {
 		return common.Hash{}, err
@@ -272,6 +284,10 @@ func (a *Attestation) Verify() error {
 }
 
 func (a *Attestation) ToXChain() (xchain.Attestation, error) {
+	if a == nil {
+		return xchain.Attestation{}, errors.New("nil attestation")
+	}
+
 	sigs := make([]xchain.SigTuple, 0, len(a.Signatures))
 	for _, sig := range a.Signatures {
 		sigTuple, err := sig.ToXChain()
@@ -302,6 +318,10 @@ func (a *Attestation) ToXChain() (xchain.Attestation, error) {
 }
 
 func (a *Attestation) AttestationRoot() (common.Hash, error) {
+	if a == nil {
+		return common.Hash{}, errors.New("nil attestation")
+	}
+
 	msgRoot, err := cast.Array32(a.MsgRoot)
 	if err != nil {
 		return common.Hash{}, err
@@ -316,6 +336,10 @@ func (a *Attestation) AttestationRoot() (common.Hash, error) {
 }
 
 func (v *Vote) ToXChain() (xchain.Vote, error) {
+	if v == nil {
+		return xchain.Vote{}, errors.New("nil vote")
+	}
+
 	msgRoot, err := cast.Array32(v.MsgRoot)
 	if err != nil {
 		return xchain.Vote{}, err
