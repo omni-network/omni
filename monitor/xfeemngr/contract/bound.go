@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/umath"
 
@@ -87,6 +88,7 @@ func (c BoundFeeOracleV1) SetGasPriceOn(ctx context.Context, destChainID uint64,
 		return errors.Wrap(err, "tx opts")
 	}
 
+	log.Info(ctx, "Setting gas price on chain", "destination_chain_id", destChainID, "rate", gasPrice.Int64())
 	tx, err := c.bound.SetGasPrice(txOpts, destChainID, gasPrice)
 	if err != nil {
 		return errors.Wrap(err, "set gas price")
@@ -109,6 +111,7 @@ func (c BoundFeeOracleV1) SetToNativeRate(ctx context.Context, destChainID uint6
 		return errors.Wrap(err, "tx opts")
 	}
 
+	log.Info(ctx, "Setting native rate on chain", "destination_chain_id", destChainID, "rate", rate.Int64())
 	tx, err := c.bound.SetToNativeRate(txOpts, destChainID, rate)
 	if err != nil {
 		return errors.Wrap(err, "set conversion rate")
