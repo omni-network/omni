@@ -7,7 +7,6 @@ import (
 
 	"github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
@@ -32,8 +31,7 @@ var _ evmenginetypes.VoteExtensionProvider = (*Keeper)(nil)
 func (k *Keeper) PrepareVotes(ctx context.Context, commit abci.ExtendedCommitInfo) ([]sdk.Msg, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if err := baseapp.ValidateVoteExtensions(sdkCtx, k.skeeper, sdkCtx.BlockHeight(), sdkCtx.ChainID(), commit); err != nil {
-		log.Error(ctx, "Cannot include invalid vote extensions in payload", err, "height", sdkCtx.BlockHeight())
-		return nil, nil
+		return nil, errors.Wrap(err, "validate extensions [BUG]")
 	}
 
 	// Adapt portal registry to the supportedChainFunc signature.

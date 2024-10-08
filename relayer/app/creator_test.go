@@ -59,18 +59,26 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 
 	vote, err := voter.CreateVote(privKey, attestHeader, block)
 	require.NoError(t, err)
-	require.Equal(t, block.BlockHeader, vote.BlockHeader.ToXChain())
+	header, err := vote.BlockHeader.ToXChain()
+	require.NoError(t, err)
+	require.Equal(t, block.BlockHeader, header)
 	require.Equal(t, addr, common.Address(vote.Signature.ValidatorAddress))
 
 	tree, err := xchain.NewMsgTree(block.Msgs)
 	require.NoError(t, err)
 
+	blockHeader, err := vote.BlockHeader.ToXChain()
+	require.NoError(t, err)
+
+	sig, err := vote.Signature.ToXChain()
+	require.NoError(t, err)
+
 	att := xchain.Attestation{
 		AttestHeader:   vote.AttestHeader.ToXChain(),
-		BlockHeader:    vote.BlockHeader.ToXChain(),
+		BlockHeader:    blockHeader,
 		ValidatorSetID: valSetID,
 		MsgRoot:        [32]byte(vote.MsgRoot),
-		Signatures:     []xchain.SigTuple{vote.Signature.ToXChain()},
+		Signatures:     []xchain.SigTuple{sig},
 	}
 
 	ensureNoDuplicates := func(t *testing.T, msgs []xchain.Msg) {

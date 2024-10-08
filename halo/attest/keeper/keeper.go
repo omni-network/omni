@@ -141,7 +141,11 @@ func (k *Keeper) Add(ctx context.Context, msg *types.MsgAddVotes) error {
 
 		// Sanity check that all votes are from prev block validators.
 		for _, sig := range aggVote.Signatures {
-			if !valset.Contains(common.BytesToAddress(sig.ValidatorAddress)) {
+			sigTup, err := sig.ToXChain()
+			if err != nil {
+				return err
+			}
+			if !valset.Contains(sigTup.ValidatorAddress) {
 				return errors.New("vote from unknown validator [BUG]")
 			}
 		}
@@ -222,7 +226,12 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 
 	// Insert signatures
 	for _, sig := range agg.Signatures {
-		err := k.sigTable.Insert(ctx, &Signature{
+		sigTup, err := sig.ToXChain()
+		if err != nil {
+			return err
+		}
+
+		err = k.sigTable.Insert(ctx, &Signature{
 			Signature:        sig.GetSignature(),
 			ValidatorAddress: sig.GetValidatorAddress(),
 			AttId:            attID,
@@ -236,7 +245,7 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 			if ok, err := k.isDoubleSign(ctx, attID, agg, sig); err != nil {
 				return err
 			} else if ok {
-				doubleSignCounter.WithLabelValues(common.BytesToAddress(sig.ValidatorAddress).Hex()).Inc()
+				doubleSignCounter.WithLabelValues(sigTup.ValidatorAddress.Hex()).Inc()
 				msg = "🚨 Ignoring duplicate slashable vote"
 			}
 
@@ -700,7 +709,7 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 	// Make nice logs
 	const limit = 5
 	offsets := make(map[xchain.ChainVersion][]string)
-	for _, vote := range votes {
+	for _, vote := range filtered {
 		offset := offsets[vote.AttestHeader.XChainVersion()]
 		if len(offset) < limit {
 			offset = append(offset, strconv.FormatUint(vote.AttestHeader.AttestOffset, 10))
@@ -711,7 +720,7 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 		}
 		offsets[vote.AttestHeader.XChainVersion()] = offset
 	}
-	attrs := []any{slog.Int("votes", len(votes))}
+	attrs := []any{slog.Int("votes", len(offsets))}
 	for chainVer, offset := range offsets {
 		attrs = append(attrs, slog.String(
 			fmt.Sprintf("%d-%d", chainVer.ID, chainVer.ConfLevel),

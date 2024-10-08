@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"encoding/hex"
 
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/crypto"
@@ -183,7 +184,7 @@ func (t transaction) Sig0() ([65]byte, error) {
 	// V is either 0 or 1
 	sig = append(sig, byte(msg.Signature.V))
 
-	return [65]byte(sig), nil
+	return cast.Array65(sig)
 }
 
 type amountInfo struct {

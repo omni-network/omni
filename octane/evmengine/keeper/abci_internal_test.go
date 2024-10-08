@@ -125,7 +125,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 				require.NoError(t, err)
 
 				ap := mockAddressProvider{
-					address: common.BytesToAddress([]byte("test")),
+					address: tutil.RandomAddress(),
 				}
 				frp := newRandomFeeRecipientProvider()
 				k, err := NewKeeper(cdc, storeService, &tt.mockEngine, txConfig, ap, frp)

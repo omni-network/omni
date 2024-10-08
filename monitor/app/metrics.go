@@ -28,6 +28,12 @@ var (
 	plannedUpgradeGauge = promutil.NewResetGaugeVec(prometheus.GaugeOpts{
 		Namespace: "monitor",
 		Name:      "planned_upgrade",
-		Help:      "Height of current planned (non-progressed) upgrade by name",
+		Help:      "Height of current planned (non-processed) upgrade by name",
+	}, []string{"upgrade"})
+
+	appliedUpgradeGauge = promutil.NewResetGaugeVec(prometheus.GaugeOpts{
+		Namespace: "monitor",
+		Name:      "applied_upgrade",
+		Help:      "Height of last applied (processed) upgrade by name",
 	}, []string{"upgrade"})
 )

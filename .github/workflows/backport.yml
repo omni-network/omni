@@ -7,14 +7,17 @@ on:
 jobs:
   backport:
     name: Backport PR
-    if: github.event.pull_request.merged == true && !(contains(github.event.pull_request.labels.*.name, 'backport'))
+    # Only run on merged PRs with the 'backport-to` label
+    if: |
+      github.event.pull_request.merged == true &&
+      contains(toJson(github.event.pull_request.labels.*.name), 'backport-to')
     runs-on: ubuntu-latest
     steps:
       - name: Backport Action
         uses: sorenlouv/backport-github-action@v9.5.1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          auto_backport_label_prefix: "backport-to: "
+          auto_backport_label_prefix: "backport-to:"
 
       - name: Info log
         if: ${{ success() }}

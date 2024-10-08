@@ -23,6 +23,7 @@ const sidebars: SidebarsConfig = {
         'build/quickstart',
         'build/walkthrough',
         'build/omega',
+        'build/faq',
       ],
       collapsed: true,
     },
@@ -34,6 +35,7 @@ const sidebars: SidebarsConfig = {
         'learn/architecture',
         'learn/token',
         'learn/whitepaper',
+        'learn/resources',
       ],
       collapsed: true,
     },
@@ -49,7 +51,6 @@ const sidebars: SidebarsConfig = {
       ],
       collapsed: true,
     },
-    'faq',
   ],
 };
 

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
@@ -58,12 +59,19 @@ func parseProxyCreate3Tx(ctx context.Context, chain ChainName, txHash common.Has
 		return ProxyCreate3Tx{}, errors.Wrap(err, "get transaction", "hash", txHash.Hex())
 	}
 
-	txData := tx.Data()
+	parsed, err := parseProxyCreate3TxData(tx.Data())
+	if err != nil {
+		return ProxyCreate3Tx{}, errors.Wrap(err, "parse tx data", "chain", chain, "hash", txHash.Hex())
+	}
 
+	return parsed, nil
+}
+
+func parseProxyCreate3TxData(txData []byte) (ProxyCreate3Tx, error) {
 	// first 4 bytes are signature
 	deployArgsI, err := create3ABI.Methods["deploy"].Inputs.Unpack(txData[4:])
 	if err != nil {
-		return ProxyCreate3Tx{}, errors.Wrap(err, "unpack deploy args", "chain", chain, "tx", txHash.Hex())
+		return ProxyCreate3Tx{}, errors.Wrap(err, "unpack deploy args")
 	}
 
 	creationCode, ok := deployArgsI[1].([]byte)
@@ -73,9 +81,14 @@ func parseProxyCreate3Tx(ctx context.Context, chain ChainName, txHash common.Has
 
 	constructorArgs := creationCode[len(mustDecodeHex(bindings.TransparentUpgradeableProxyBin)):]
 
+	// Address is encoded in first word (32 bytes), but left padded.
+	impl, err := cast.EthAddress(constructorArgs[12:32])
+	if err != nil {
+		return ProxyCreate3Tx{}, err
+	}
+
 	return ProxyCreate3Tx{
-		// implementation is first 32 byte word of constructor args
-		Implementation:  common.BytesToAddress(constructorArgs[:32]),
+		Implementation:  impl,
 		ConstructorArgs: hexutil.Encode(constructorArgs),
 	}, nil
 }

@@ -73,6 +73,11 @@ contract MockPortal is IOmniPortal, OmniPortalConstants {
         return _xmsg.sourceChainId != 0;
     }
 
+    // stub
+    function network() external pure returns (XTypes.Chain[] memory) {
+        return new XTypes.Chain[](0);
+    }
+
     //////////////////////////////////////////////////////////////////////////////
     //                              Portal Mocks                                //
     //////////////////////////////////////////////////////////////////////////////

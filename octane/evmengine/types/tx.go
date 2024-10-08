@@ -1,6 +1,7 @@
 package types
 
 import (
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -9,17 +10,28 @@ import (
 
 // ToEthLog converts an EVMEvent to an Ethereum Log.
 // Note it assumes that Verify has been called before.
-func (l *EVMEvent) ToEthLog() ethtypes.Log {
+func (l *EVMEvent) ToEthLog() (ethtypes.Log, error) {
+	if l == nil {
+		return ethtypes.Log{}, errors.New("nil log")
+	} else if len(l.Topics) == 0 {
+		return ethtypes.Log{}, errors.New("empty topics")
+	}
+
 	topics := make([]common.Hash, 0, len(l.Topics))
 	for _, t := range l.Topics {
 		topics = append(topics, common.BytesToHash(t))
 	}
 
+	addr, err := cast.EthAddress(l.Address)
+	if err != nil {
+		return ethtypes.Log{}, err
+	}
+
 	return ethtypes.Log{
-		Address: common.BytesToAddress(l.Address),
+		Address: addr,
 		Topics:  topics,
 		Data:    l.Data,
-	}
+	}, nil
 }
 
 func (l *EVMEvent) Verify() error {

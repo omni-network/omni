@@ -1,6 +1,7 @@
 package types
 
 import (
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/xchain"
@@ -15,7 +16,21 @@ const (
 )
 
 func (v *Vote) AttestationRoot() (common.Hash, error) {
-	return xchain.AttestationRoot(v.AttestHeader.ToXChain(), v.BlockHeader.ToXChain(), common.Hash(v.MsgRoot))
+	if v == nil {
+		return common.Hash{}, errors.New("nil vote")
+	}
+
+	msgRoot, err := cast.Array32(v.MsgRoot)
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	header, err := v.BlockHeader.ToXChain()
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	return xchain.AttestationRoot(v.AttestHeader.ToXChain(), header, msgRoot)
 }
 
 func (v *Vote) Verify() error {
@@ -51,10 +66,15 @@ func (v *Vote) Verify() error {
 		return err
 	}
 
+	sigTuple, err := v.Signature.ToXChain()
+	if err != nil {
+		return err
+	}
+
 	ok, err := k1util.Verify(
-		common.Address(v.Signature.ValidatorAddress),
+		sigTuple.ValidatorAddress,
 		attRoot,
-		xchain.Signature65(v.Signature.Signature),
+		sigTuple.Signature,
 	)
 	if err != nil {
 		return err
@@ -109,7 +129,7 @@ func (h *BlockHeader) Verify() error {
 	return nil
 }
 
-func (h *BlockHeader) ToXChain() xchain.BlockHeader {
+func (h *BlockHeader) ToXChain() (xchain.BlockHeader, error) {
 	return BlockHeaderFromProto(h)
 }
 
@@ -129,11 +149,25 @@ func (s *SigTuple) Verify() error {
 	return nil
 }
 
-func (s *SigTuple) ToXChain() xchain.SigTuple {
-	return xchain.SigTuple{
-		ValidatorAddress: common.Address(s.ValidatorAddress),
-		Signature:        xchain.Signature65(s.Signature),
+func (s *SigTuple) ToXChain() (xchain.SigTuple, error) {
+	if s == nil {
+		return xchain.SigTuple{}, errors.New("nil sig tuple")
 	}
+
+	addr, err := cast.EthAddress(s.ValidatorAddress)
+	if err != nil {
+		return xchain.SigTuple{}, err
+	}
+
+	sig, err := cast.Array65(s.Signature)
+	if err != nil {
+		return xchain.SigTuple{}, err
+	}
+
+	return xchain.SigTuple{
+		ValidatorAddress: addr,
+		Signature:        sig,
+	}, nil
 }
 
 func (a *AggVote) Verify() error {
@@ -168,12 +202,15 @@ func (a *AggVote) Verify() error {
 			return errors.Wrap(err, "signature")
 		}
 
-		addr := common.BytesToAddress(sig.ValidatorAddress)
+		sigTup, err := sig.ToXChain()
+		if err != nil {
+			return err
+		}
 
 		ok, err := k1util.Verify(
-			addr,
+			sigTup.ValidatorAddress,
 			attRoot,
-			xchain.Signature65(sig.Signature),
+			sigTup.Signature,
 		)
 		if err != nil {
 			return err
@@ -181,17 +218,31 @@ func (a *AggVote) Verify() error {
 			return errors.New("invalid attestation signature")
 		}
 
-		if duplicateVals[addr] {
-			return errors.New("duplicate validator signature", "validator", addr)
+		if duplicateVals[sigTup.ValidatorAddress] {
+			return errors.New("duplicate validator signature", "validator", sigTup.ValidatorAddress)
 		}
-		duplicateVals[addr] = true
+		duplicateVals[sigTup.ValidatorAddress] = true
 	}
 
 	return nil
 }
 
 func (a *AggVote) AttestationRoot() (common.Hash, error) {
-	return xchain.AttestationRoot(a.AttestHeader.ToXChain(), a.BlockHeader.ToXChain(), common.Hash(a.MsgRoot))
+	if a == nil {
+		return common.Hash{}, errors.New("nil agg vote")
+	}
+
+	msgRoot, err := cast.Array32(a.MsgRoot)
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	blockHeader, err := a.BlockHeader.ToXChain()
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	return xchain.AttestationRoot(a.AttestHeader.ToXChain(), blockHeader, msgRoot)
 }
 
 func (a *Attestation) Verify() error {
@@ -232,30 +283,82 @@ func (a *Attestation) Verify() error {
 	return nil
 }
 
-func (a *Attestation) ToXChain() xchain.Attestation {
+func (a *Attestation) ToXChain() (xchain.Attestation, error) {
+	if a == nil {
+		return xchain.Attestation{}, errors.New("nil attestation")
+	}
+
 	sigs := make([]xchain.SigTuple, 0, len(a.Signatures))
 	for _, sig := range a.Signatures {
-		sigs = append(sigs, sig.ToXChain())
+		sigTuple, err := sig.ToXChain()
+		if err != nil {
+			return xchain.Attestation{}, err
+		}
+
+		sigs = append(sigs, sigTuple)
+	}
+
+	msgRoot, err := cast.Array32(a.MsgRoot)
+	if err != nil {
+		return xchain.Attestation{}, err
+	}
+
+	blockHeader, err := a.BlockHeader.ToXChain()
+	if err != nil {
+		return xchain.Attestation{}, err
 	}
 
 	return xchain.Attestation{
 		AttestHeader:   a.AttestHeader.ToXChain(),
-		BlockHeader:    a.BlockHeader.ToXChain(),
+		BlockHeader:    blockHeader,
 		ValidatorSetID: a.ValidatorSetId,
-		MsgRoot:        common.Hash(a.MsgRoot),
+		MsgRoot:        msgRoot,
 		Signatures:     sigs,
-	}
+	}, nil
 }
 
 func (a *Attestation) AttestationRoot() (common.Hash, error) {
-	return xchain.AttestationRoot(a.AttestHeader.ToXChain(), a.BlockHeader.ToXChain(), common.Hash(a.MsgRoot))
+	if a == nil {
+		return common.Hash{}, errors.New("nil attestation")
+	}
+
+	msgRoot, err := cast.Array32(a.MsgRoot)
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	blockHeader, err := a.BlockHeader.ToXChain()
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	return xchain.AttestationRoot(a.AttestHeader.ToXChain(), blockHeader, msgRoot)
 }
 
-func (v *Vote) ToXChain() xchain.Vote {
+func (v *Vote) ToXChain() (xchain.Vote, error) {
+	if v == nil {
+		return xchain.Vote{}, errors.New("nil vote")
+	}
+
+	msgRoot, err := cast.Array32(v.MsgRoot)
+	if err != nil {
+		return xchain.Vote{}, err
+	}
+
+	blockHeader, err := v.BlockHeader.ToXChain()
+	if err != nil {
+		return xchain.Vote{}, err
+	}
+
+	sigTuple, err := v.Signature.ToXChain()
+	if err != nil {
+		return xchain.Vote{}, err
+	}
+
 	return xchain.Vote{
 		AttestHeader: v.AttestHeader.ToXChain(),
-		BlockHeader:  v.BlockHeader.ToXChain(),
-		MsgRoot:      common.Hash(v.MsgRoot),
-		Signature:    v.Signature.ToXChain(),
-	}
+		BlockHeader:  blockHeader,
+		MsgRoot:      msgRoot,
+		Signature:    sigTuple,
+	}, nil
 }

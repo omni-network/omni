@@ -93,7 +93,10 @@ func (p EventProcessor) Addresses() []common.Address {
 // Deliver processes a omni deposit log event, which must be one of:
 // - Unjail.
 func (p EventProcessor) Deliver(ctx context.Context, _ common.Hash, elog *evmenginetypes.EVMEvent) error {
-	ethlog := elog.ToEthLog()
+	ethlog, err := elog.ToEthLog()
+	if err != nil {
+		return err
+	}
 
 	switch ethlog.Topics[0] {
 	case unjailEvent.ID:

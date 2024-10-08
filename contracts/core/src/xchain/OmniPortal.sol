@@ -109,6 +109,13 @@ contract OmniPortal is
         return uint64(block.chainid);
     }
 
+    /**
+     * @notice Returns the current network (supported chain IDs and shards)
+     */
+    function network() external view returns (XTypes.Chain[] memory) {
+        return _network;
+    }
+
     //////////////////////////////////////////////////////////////////////////////
     //                      Outbound xcall functions                            //
     //////////////////////////////////////////////////////////////////////////////
@@ -408,7 +415,7 @@ contract OmniPortal is
         XTypes.Chain calldata c;
         for (uint256 i = 0; i < network_.length; i++) {
             c = network_[i];
-            network.push(c);
+            _network.push(c);
 
             // if not this chain, mark as supported dest
             if (c.chainId != chainId()) {
@@ -428,8 +435,8 @@ contract OmniPortal is
      */
     function _clearNetwork() private {
         XTypes.Chain storage c;
-        for (uint256 i = 0; i < network.length; i++) {
-            c = network[i];
+        for (uint256 i = 0; i < _network.length; i++) {
+            c = _network[i];
 
             // if not this chain, mark as unsupported dest
             if (c.chainId != chainId()) {
@@ -442,7 +449,8 @@ contract OmniPortal is
                 isSupportedShard[c.shards[j]] = false;
             }
         }
-        delete network;
+
+        delete _network;
     }
 
     //////////////////////////////////////////////////////////////////////////////

@@ -51,7 +51,7 @@ func NewMock(period time.Duration, cChainID uint64, cProvider cchain.Provider) (
 		blocks:     make(map[blockKey]xchain.Block),
 		cChainID:   cChainID,
 		cProvider:  cProvider,
-		destChains: [2]uint64(destChains),
+		destChains: [2]uint64{destChains[0], destChains[1]},
 	}, nil
 }
 
