@@ -22,6 +22,7 @@
     "ds-test": "github:dapphub/ds-test",
     "ethereum-cryptography": "^2.2.1",
     "forge-std": "github:foundry-rs/forge-std",
+    "multiproof": "github:sigp/multiproof",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.4",
     "viem": "^2.17.10"

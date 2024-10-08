@@ -43,6 +43,9 @@ devDependencies:
   forge-std:
     specifier: github:foundry-rs/forge-std
     version: github.com/foundry-rs/forge-std/c28115db8d90ebffb41953cf83aac63130f4bd40
+  multiproof:
+    specifier: github:sigp/multiproof
+    version: github.com/sigp/multiproof/7b03986eebcef4dbbe1ef40b8ef01838a3b43788
   ts-node:
     specifier: ^10.9.2
     version: 10.9.2(@types/node@20.14.11)(typescript@5.5.4)
@@ -2727,3 +2730,9 @@ packages:
     name: '@nomad-xyz/excessively-safe-call'
     version: 0.0.1-rc.1
     dev: false
+
+  github.com/sigp/multiproof/7b03986eebcef4dbbe1ef40b8ef01838a3b43788:
+    resolution: {tarball: https://codeload.github.com/sigp/multiproof/tar.gz/7b03986eebcef4dbbe1ef40b8ef01838a3b43788}
+    name: multiproof
+    version: 0.0.0
+    dev: true
