@@ -64,8 +64,8 @@ func newRegistryMngr(ctx context.Context, def Definition) (registryMngr, error) 
 		return registryMngr{}, errors.Wrap(err, "new portal registry")
 	}
 
-	admin := eoa.MustAddress(def.Testnet.Network, eoa.RoleAdmin)
-	txOpts, err := backend.BindOpts(ctx, admin)
+	manager := eoa.MustAddress(def.Testnet.Network, eoa.RoleManager)
+	txOpts, err := backend.BindOpts(ctx, manager)
 	if err != nil {
 		return registryMngr{}, err
 	}
@@ -256,8 +256,8 @@ func allowStagingValidators(ctx context.Context, def Definition) error {
 		return errors.Wrap(err, "new staking")
 	}
 
-	admin := eoa.MustAddress(def.Testnet.Network, eoa.RoleAdmin)
-	txOpts, err := backend.BindOpts(ctx, admin)
+	manager := eoa.MustAddress(def.Testnet.Network, eoa.RoleManager)
+	txOpts, err := backend.BindOpts(ctx, manager)
 	if err != nil {
 		return err
 	}

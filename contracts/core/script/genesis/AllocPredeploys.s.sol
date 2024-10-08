@@ -18,7 +18,8 @@ import { Script } from "forge-std/Script.sol";
  */
 contract AllocPredeploys is Script {
     struct Config {
-        address admin;
+        address manager;
+        address upgrader;
         uint256 chainId;
         uint256 nativeBridgeBalance;
         bool enableStakingAllowlist;
@@ -157,7 +158,7 @@ contract AllocPredeploys is Script {
             vm.etch(impl, "00");
 
             // new use new, so that the immutable variable the holds the ProxyAdmin addr is set in properly in bytecode
-            address tmp = address(new TransparentUpgradeableProxy(impl, cfg.admin, ""));
+            address tmp = address(new TransparentUpgradeableProxy(impl, cfg.upgrader, ""));
             vm.etch(addr, tmp.code);
 
             // set implempentation storage manually
@@ -185,7 +186,7 @@ contract AllocPredeploys is Script {
         vm.etch(impl, vm.getDeployedCode("PortalRegistry.sol:PortalRegistry"));
 
         InitializableHelper.disableInitializers(impl);
-        PortalRegistry(Predeploys.PortalRegistry).initialize(cfg.admin);
+        PortalRegistry(Predeploys.PortalRegistry).initialize(cfg.upgrader);
     }
 
     /**
@@ -198,7 +199,7 @@ contract AllocPredeploys is Script {
         vm.etch(impl, vm.getDeployedCode("OmniBridgeNative.sol:OmniBridgeNative"));
 
         InitializableHelper.disableInitializers(impl);
-        OmniBridgeNative(Predeploys.OmniBridgeNative).initialize(cfg.admin);
+        OmniBridgeNative(Predeploys.OmniBridgeNative).initialize(cfg.manager);
     }
 
     /**
@@ -217,7 +218,7 @@ contract AllocPredeploys is Script {
         vm.etch(impl, vm.getDeployedCode("Staking.sol:Staking"));
 
         InitializableHelper.disableInitializers(impl);
-        Staking(Predeploys.Staking).initialize(cfg.admin, cfg.enableStakingAllowlist);
+        Staking(Predeploys.Staking).initialize(cfg.manager, cfg.enableStakingAllowlist);
     }
 
     /**
@@ -236,6 +237,6 @@ contract AllocPredeploys is Script {
         vm.etch(impl, vm.getDeployedCode("Upgrade.sol:Upgrade"));
 
         InitializableHelper.disableInitializers(impl);
-        Upgrade(Predeploys.Upgrade).initialize(cfg.admin);
+        Upgrade(Predeploys.Upgrade).initialize(cfg.upgrader);
     }
 }

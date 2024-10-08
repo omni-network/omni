@@ -7,11 +7,6 @@ import (
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 )
 
-// Funder returns the address of the funder account.
-func Funder() common.Address {
-	return common.HexToAddress(fbFunder)
-}
-
 func dummy(roles ...Role) []Account {
 	var resp []Account
 	for _, role := range roles {
