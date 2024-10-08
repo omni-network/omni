@@ -88,7 +88,8 @@ func (c BoundFeeOracleV1) SetGasPriceOn(ctx context.Context, destChainID uint64,
 		return errors.Wrap(err, "tx opts")
 	}
 
-	log.Info(ctx, "Setting gas price on chain", "dest_chain", c.chain.Name, "rate", new(big.Int).Div(gasPrice, big.NewInt(params.GWei)))
+	gweiPrice, _ := new(big.Int).Div(gasPrice, umath.NewBigInt(params.GWei)).Float64()
+	log.Info(ctx, "Setting gas price on chain", "dest_chain", c.chain.Name, "rate", gweiPrice)
 	tx, err := c.bound.SetGasPrice(txOpts, destChainID, gasPrice)
 	if err != nil {
 		return errors.Wrap(err, "set gas price")
