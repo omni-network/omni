@@ -36,6 +36,7 @@ func (k *Keeper) evmEvents(ctx context.Context, blockHash common.Hash) ([]*types
 			return cmp < 0
 		}
 
+		// TODO: replace this with sort.CompareFunc in next network upgrade which is more performant but has slightly different results
 		topicI := slices.Concat(events[i].Topics...)
 		topicJ := slices.Concat(events[j].Topics...)
 		if cmp := bytes.Compare(topicI, topicJ); cmp != 0 {
