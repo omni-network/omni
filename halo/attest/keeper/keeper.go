@@ -314,8 +314,10 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 			approvedOffset.WithLabelValues(chainVerName).Set(float64(att.GetAttestOffset()))
 		}
 
-		toDelete, ok := isApproved(sigs, valset)
-		if !ok {
+		toDelete, ok, err := isApproved(sigs, valset)
+		if err != nil {
+			return err
+		} else if !ok {
 			// Check if there is a finalized attestation that overrides this one.
 			if ok, err := k.maybeOverrideFinalized(ctx, att); err != nil {
 				return err
@@ -328,9 +330,14 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 		}
 
 		for _, sig := range toDelete {
-			discardedVotesCounter.WithLabelValues(common.BytesToAddress(sig.GetValidatorAddress()).Hex(), chainVerName).Inc()
-			err := k.sigTable.Delete(ctx, sig)
+			addr, err := sig.ValidatorEthAddress()
 			if err != nil {
+				return err
+			}
+
+			discardedVotesCounter.WithLabelValues(addr.Hex(), chainVerName).Inc()
+
+			if err = k.sigTable.Delete(ctx, sig); err != nil {
 				return errors.Wrap(err, "delete sig")
 			}
 		}
@@ -789,7 +796,7 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 		duplicate[vote.AttestHeader.ToXChain()] = true
 
 		// Ensure the votes are from the requesting validator itself.
-		if common.BytesToAddress(vote.Signature.ValidatorAddress) != ethAddr {
+		if !bytes.Equal(vote.Signature.ValidatorAddress, ethAddr[:]) {
 			log.Warn(ctx, "Rejecting mismatching vote and req validator address", nil, "vote", ethAddr, "req", req.ValidatorAddress)
 			return respReject, nil
 		}
@@ -905,7 +912,11 @@ func (k *Keeper) verifyAggVotes(
 
 		// Ensure all votes are from unique validators in the set
 		for _, sig := range agg.Signatures {
-			addr := common.BytesToAddress(sig.GetValidatorAddress())
+			addr, err := sig.ValidatorEthAddress()
+			if err != nil {
+				return err
+			}
+
 			if !valset.Contains(addr) {
 				return errors.New("vote from unknown validator", append(errAttrs, "validator", addr)...)
 			}
@@ -1022,7 +1033,11 @@ func (k *Keeper) instrumentVotes(ctx context.Context, att *Attestation) error {
 
 	included := make(map[common.Address]bool)
 	for _, sig := range sigs {
-		addr := common.BytesToAddress(sig.GetValidatorAddress())
+		addr, err := sig.ValidatorEthAddress()
+		if err != nil {
+			return err
+		}
+
 		included[addr] = true
 		if discardVotes {
 			discardedVotesCounter.WithLabelValues(addr.Hex(), chainVerName).Inc()
@@ -1084,11 +1099,16 @@ func (k *Keeper) isDoubleSign(ctx context.Context, attID uint64, agg *types.AggV
 
 // isApproved returns whether the given signatures are approved by the given validators.
 // It also returns the signatures to delete (not in the validator set).
-func isApproved(sigs []*Signature, valset ValSet) ([]*Signature, bool) {
+func isApproved(sigs []*Signature, valset ValSet) ([]*Signature, bool, error) {
 	var sum int64
 	var toDelete []*Signature
 	for _, sig := range sigs {
-		power, ok := valset.Vals[common.BytesToAddress(sig.GetValidatorAddress())]
+		addr, err := sig.ValidatorEthAddress()
+		if err != nil {
+			return nil, false, err
+		}
+
+		power, ok := valset.Vals[addr]
 		if !ok {
 			toDelete = append(toDelete, sig)
 			continue
@@ -1097,7 +1117,9 @@ func isApproved(sigs []*Signature, valset ValSet) ([]*Signature, bool) {
 		sum += power
 	}
 
-	return toDelete, sum > valset.TotalPower()*2/3
+	isApproved := sum > valset.TotalPower()*2/3
+
+	return toDelete, isApproved, nil
 }
 
 func verifyHeaderChains(ctx context.Context, cChainID uint64, registry rtypes.PortalRegistry, attHeader *types.AttestHeader, blockHeader *types.BlockHeader) error {

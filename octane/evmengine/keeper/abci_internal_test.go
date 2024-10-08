@@ -227,6 +227,8 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		// Get the parent block we will build on top of
 		head, err := keeper.getExecutionHead(ctx)
 		require.NoError(t, err)
+		headHash, err := head.Hash()
+		require.NoError(t, err)
 
 		req := &abci.RequestPrepareProposal{
 			Txs:        nil,
@@ -236,7 +238,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		}
 
 		resp, err := keeper.PrepareProposal(withRandomErrs(t, ctx), req)
-		require.NoError(t, err)
+		tutil.RequireNoError(t, err)
 		require.NotNil(t, resp)
 
 		// decode the txn and get the messages
@@ -247,7 +249,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		// assert that the message is an executable payload
 		for _, msg := range tx.GetMsgs() {
 			if _, ok := msg.(*etypes.MsgExecutionPayload); ok {
-				assertExecutablePayload(t, msg, req.Time.Unix(), head.Hash(), frp, head.GetBlockHeight()+1)
+				assertExecutablePayload(t, msg, req.Time.Unix(), headHash, frp, head.GetBlockHeight()+1)
 			}
 			if msgDelegate, ok := msg.(*stypes.MsgDelegate); ok {
 				require.Equal(t, msgDelegate.Amount, sdk.NewInt64Coin("stake", 100))
@@ -361,7 +363,10 @@ func setupCtxStore(t *testing.T, header *cmtproto.Header) (sdk.Context, store.KV
 	storeService := runtime.NewKVStoreService(key)
 	testCtx := testutil.DefaultContextWithDB(t, key, storetypes.NewTransientStoreKey("transient_test"))
 	if header == nil {
-		header = &cmtproto.Header{Time: cmttime.Now()}
+		header = &cmtproto.Header{
+			Time:    cmttime.Now(),
+			AppHash: tutil.RandomHash().Bytes(),
+		}
 	}
 	ctx := testCtx.Ctx.WithBlockHeader(*header)
 

@@ -47,6 +47,9 @@ func TestCast(t *testing.T) {
 	resp32, err := cast.Array32(slice[:32])
 	require.NoError(t, err)
 	require.Equal(t, slice[:32], resp32[:])
+	hash, err := cast.EthHash(slice[:32])
+	require.NoError(t, err)
+	require.EqualValues(t, resp32, hash)
 
 	// 65
 	_, err = cast.Array65(slice)
