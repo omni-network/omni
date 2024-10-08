@@ -74,9 +74,8 @@ func parseProxyCreate3Tx(ctx context.Context, chain ChainName, txHash common.Has
 
 	constructorArgs := creationCode[len(mustDecodeHex(bindings.TransparentUpgradeableProxyBin)):]
 
-	// implementation is first 20 byte word of constructor args
-	// TODO(kevin): EthAddress length != 32
-	impl, err := cast.EthAddress(constructorArgs[:20])
+	// Address is encoded in first word (32 bytes), but left padded.
+	impl, err := cast.EthAddress(constructorArgs[12:32])
 	if err != nil {
 		return ProxyCreate3Tx{}, err
 	}
