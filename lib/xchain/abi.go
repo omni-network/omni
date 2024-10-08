@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -94,12 +95,17 @@ func DecodeXSubmit(txCallData []byte) (bindings.XSubmission, error) {
 	return wrap.Sub, nil
 }
 
-func SubmissionFromBinding(sub bindings.XSubmission, destChainID uint64) Submission {
+func SubmissionFromBinding(sub bindings.XSubmission, destChainID uint64) (Submission, error) {
 	sigs := make([]SigTuple, 0, len(sub.Signatures))
 	for _, sig := range sub.Signatures {
+		sig65, err := cast.Array65(sig.Signature)
+		if err != nil {
+			return Submission{}, err
+		}
+
 		sigs = append(sigs, SigTuple{
 			ValidatorAddress: sig.ValidatorAddr,
-			Signature:        Signature65(sig.Signature),
+			Signature:        sig65,
 		})
 	}
 
@@ -137,7 +143,7 @@ func SubmissionFromBinding(sub bindings.XSubmission, destChainID uint64) Submiss
 		DestChainID: destChainID,
 		Signatures:  sigs,
 		Msgs:        msgs,
-	}
+	}, nil
 }
 
 // SubmissionToBinding converts a go xchain submission to a solidity binding submission.

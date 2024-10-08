@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/octane/evmengine/types"
@@ -53,7 +54,10 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 		return &abci.ResponsePrepareProposal{}, nil
 	}
 
-	appHash := common.BytesToHash(ctx.BlockHeader().AppHash)
+	appHash, err := cast.EthHash(ctx.BlockHeader().AppHash)
+	if err != nil {
+		return nil, err
+	}
 
 	// Either use the optimistic payload or create a new one.
 	payloadID, height, triggeredAt := k.getOptimisticPayload()
@@ -92,7 +96,7 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 
 	// Fetch the payload (retrying on network errors).
 	var payloadResp *engine.ExecutionPayloadEnvelope
-	err := retryForever(ctx, func(ctx context.Context) (bool, error) {
+	err = retryForever(ctx, func(ctx context.Context) (bool, error) {
 		var err error
 		payloadResp, err = k.engineCl.GetPayloadV3(ctx, payloadID)
 		if isUnknownPayload(err) {
@@ -170,7 +174,10 @@ func (k *Keeper) PostFinalize(ctx sdk.Context) error {
 	height := ctx.BlockHeight()
 	proposer := ctx.BlockHeader().ProposerAddress
 	timestamp := ctx.BlockTime()
-	appHash := common.BytesToHash(ctx.BlockHeader().AppHash) // This is the app hash after the block is finalized.
+	appHash, err := cast.EthHash(ctx.BlockHeader().AppHash) // This is the app hash after the block is finalized.
+	if err != nil {
+		return err
+	}
 
 	// Maybe start building the next block if we are the next proposer.
 	isNext, err := k.isNextProposer(ctx, proposer, height)
@@ -220,16 +227,21 @@ func (k *Keeper) startBuild(ctx context.Context, appHash common.Hash, timestamp 
 		ts = head.GetBlockTime() + 1 // Subsequent blocks must have a higher timestamp.
 	}
 
+	headHash, err := head.Hash()
+	if err != nil {
+		return engine.ForkChoiceResponse{}, err
+	}
+
 	// CometBFT has instant finality, so head/safe/finalized is latest height.
 	fcs := engine.ForkchoiceStateV1{
-		HeadBlockHash:      head.Hash(),
-		SafeBlockHash:      head.Hash(),
-		FinalizedBlockHash: head.Hash(),
+		HeadBlockHash:      headHash,
+		SafeBlockHash:      headHash,
+		FinalizedBlockHash: headHash,
 	}
 
 	attrs := &engine.PayloadAttributes{
 		Timestamp:             ts,
-		Random:                head.Hash(), // We use head block hash as randao.
+		Random:                headHash, // We use head block hash as randao.
 		SuggestedFeeRecipient: k.feeRecProvider.LocalFeeRecipient(),
 		Withdrawals:           []*etypes.Withdrawal{}, // Withdrawals not supported yet.
 		BeaconRoot:            &appHash,

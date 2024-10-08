@@ -3,12 +3,13 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/omni-network/omni/lib/errors"
 
 	cc "github.com/leodido/go-conventionalcommits"
 	"github.com/leodido/go-conventionalcommits/parser"
@@ -80,7 +81,7 @@ func verify(commitMsg string) error {
 	m.WithTypes(cc.TypesConventional)
 	msg, err := m.Parse([]byte(commitMsg))
 	if err != nil {
-		return fmt.Errorf("parse conventional commit message: %w", err)
+		return errors.Wrap(err, "parse conventional commit message")
 	}
 
 	commit, ok := msg.(*cc.ConventionalCommit)

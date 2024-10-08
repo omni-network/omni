@@ -173,10 +173,8 @@ func TestVotesFromCommit(t *testing.T) {
 		attRoot, err := agg.AttestationRoot()
 		require.NoError(t, err)
 		for _, s := range agg.Signatures {
-			sig := xchain.SigTuple{
-				ValidatorAddress: common.BytesToAddress(s.ValidatorAddress),
-				Signature:        xchain.Signature65(s.Signature),
-			}
+			sig, err := s.ToXChain()
+			require.NoError(t, err)
 			require.True(t, expected[attRoot][sig], agg, sig)
 			delete(expected[attRoot], sig)
 			if len(expected[attRoot]) == 0 {

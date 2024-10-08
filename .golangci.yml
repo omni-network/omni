@@ -9,6 +9,8 @@ linters-settings:
       - 'fmt\.Print.*(# Avoid debug logging)?'
       - 'fmt\.Errorf.*(# Prefer lib/errors.Wrap)?'
       - 'prometheus\.New.*(# Prefer promauto)?'
+      - 'common\.BytesToAddress.*(# Prefer cast pkg)?'
+      - 'common\.BytesToHash.*(# Prefer cast pkg)?'
   gci: # Auto-format imports
     sections:
       - standard                           # Go stdlib
@@ -101,12 +103,17 @@ issues:
         - maintidx     # Relax linter for table driven tests
         - dupl         # Many tests share similar testing logic but call different methods with different args
         - forcetypeassert # Asserting casts in tests not required.
+    - path: '(.*)(_test|tutil|scripts)(.*)'
+      linters: # Relax forbidigo common.BytesTo* in non-production code
+        - forbidigo
+      text: "Prefer cast"
     - path: '(.*)(e2e)(.*)'
       linters:         # Relax linters for both e2e (performance not required)
         - perfsprint   # Performance not an issue here
     - path: '(.*)(scripts|cli)(.*)'
       linters:        # Relax linters for scripts and clis
         - forbidigo   # Allow debug printing
+      text: "debug"
   exclude:
     - add-constant         # Ignore "add-constant: avoid magic numbers like" since it is too strict
     - fieldalignment # Ignore "fieldalignment: struct with XXX pointer bytes could be YYY"

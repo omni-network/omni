@@ -62,7 +62,10 @@ func (k Keeper) Prepare(ctx context.Context, blockHash common.Hash) ([]*evmengin
 
 // Deliver processes a omni portal registry events.
 func (k Keeper) Deliver(ctx context.Context, _ common.Hash, elog *evmenginetypes.EVMEvent) error {
-	ethlog := elog.ToEthLog()
+	ethlog, err := elog.ToEthLog()
+	if err != nil {
+		return err
+	}
 
 	switch ethlog.Topics[0] {
 	case portalRegEvent.ID:

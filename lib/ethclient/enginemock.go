@@ -11,6 +11,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
@@ -112,12 +113,17 @@ func WithPortalRegister(network netconf.Network) func(*engineMock) {
 				panic(errors.Wrap(err, "pack delegate"))
 			}
 
+			topicChainID, err := cast.EthHash(math.U256Bytes(umath.NewBigInt(chain.ID)))
+			if err != nil {
+				panic(errors.Wrap(err, "cast chain ID"))
+			}
+
 			eventLog := types.Log{
 				Address: contractAddr,
 				Topics: []common.Hash{
 					portalRegEvent.ID,
-					common.BytesToHash(math.U256Bytes(umath.NewBigInt(chain.ID))), // ChainID
-					common.BytesToHash(chain.PortalAddress.Bytes()),               // Address
+					topicChainID,
+					common.BytesToHash(chain.PortalAddress.Bytes()), //nolint:forbidigo // Explicit left padded
 				},
 				Data: data,
 			}
@@ -519,7 +525,7 @@ func MockPayloadID(params engine.ExecutableData, beaconRoot *common.Hash) (engin
 	_, _ = h.Write(beaconRoot.Bytes())
 	hash := h.Sum(nil)
 
-	return engine.PayloadID(hash[:8]), nil
+	return cast.Array8(hash[:8])
 }
 
 // verifyChild returns an error if child is not a valid child of parent.

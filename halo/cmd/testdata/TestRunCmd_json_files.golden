@@ -1,6 +1,6 @@
 {
  "HomeDir": "testinput/input2",
- "Network": "",
+ "Network": "GOTEST",
  "EngineJWTFile": "jwt.json",
  "EngineEndpoint": "",
  "RPCEndpoints": null,

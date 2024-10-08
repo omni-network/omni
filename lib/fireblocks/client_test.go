@@ -18,7 +18,6 @@ import (
 	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/google/uuid"
@@ -117,7 +116,7 @@ func TestSmoke(t *testing.T) {
 	client, err := fireblocks.New(netconf.Staging, apiKey, parseKey(t, privKey))
 	require.NoError(t, err)
 
-	addr := common.BytesToAddress(hexutil.MustDecode("0x7a6cF389082dc698285474976d7C75CAdE08ab7e"))
+	addr := common.HexToAddress("0x7a6cF389082dc698285474976d7C75CAdE08ab7e")
 
 	t.Run("assets", func(t *testing.T) {
 		t.Parallel()

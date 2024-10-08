@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
@@ -121,7 +122,12 @@ func (s msgServer) deliverEvents(ctx context.Context, height uint64, blockHash c
 			return errors.Wrap(err, "verify log [BUG]") // This shouldn't happen
 		}
 
-		proc, ok := procs[common.BytesToAddress(evmLog.Address)]
+		elog, err := evmLog.ToEthLog()
+		if err != nil {
+			return err
+		}
+
+		proc, ok := procs[elog.Address]
 		if !ok {
 			return errors.New("unknown log address [BUG]", log.Hex7("address", evmLog.Address))
 		}
@@ -155,8 +161,10 @@ func (s msgServer) deliverEvents(ctx context.Context, height uint64, blockHash c
 // It returns the engine payload status or an error.
 func pushPayload(ctx context.Context, engineCl ethclient.EngineClient, payload engine.ExecutableData) (engine.PayloadStatusV1, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	appHash := common.BytesToHash(sdkCtx.BlockHeader().AppHash)
-	if appHash == (common.Hash{}) {
+	appHash, err := cast.EthHash(sdkCtx.BlockHeader().AppHash)
+	if err != nil {
+		return engine.PayloadStatusV1{}, err
+	} else if appHash == (common.Hash{}) {
 		return engine.PayloadStatusV1{}, errors.New("app hash is empty")
 	}
 

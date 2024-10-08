@@ -378,7 +378,7 @@ func (i *indexer) instrumentMsg(ctx context.Context, link *MsgLink) error {
 
 	var msg xchain.Msg
 	for _, m := range msgBlock.Msgs {
-		if m.Hash() == link.Hash() {
+		if link.IsMsg(m) {
 			msg = m
 		}
 	}
@@ -388,7 +388,7 @@ func (i *indexer) instrumentMsg(ctx context.Context, link *MsgLink) error {
 
 	var receipt xchain.Receipt
 	for _, r := range receiptBlock.Receipts {
-		if r.Hash() == link.Hash() {
+		if link.IsReceipt(r) {
 			receipt = r
 		}
 	}

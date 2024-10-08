@@ -1,8 +1,10 @@
 package keeper
 
 import (
+	"bytes"
 	"context"
 
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
@@ -11,8 +13,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-func (h *ExecutionHead) Hash() common.Hash {
-	return common.BytesToHash(h.GetBlockHash())
+func (h *ExecutionHead) Hash() (common.Hash, error) {
+	return cast.EthHash(h.GetBlockHash())
 }
 
 // executionHeadID is the ID of the singleton execution head row in the database.
@@ -22,7 +24,7 @@ const executionHeadID = 1
 func (k *Keeper) InsertGenesisHead(ctx context.Context, executionBlockHash []byte) error {
 	if len(executionBlockHash) != common.HashLength {
 		return errors.New("invalid execution block hash length", "length", len(executionBlockHash))
-	} else if common.BytesToHash(executionBlockHash) == (common.Hash{}) {
+	} else if bytes.Equal(executionBlockHash, common.Hash{}.Bytes()) {
 		return errors.New("invalid zero execution block hash")
 	}
 

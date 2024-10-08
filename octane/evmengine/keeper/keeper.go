@@ -132,12 +132,16 @@ func (k *Keeper) parseAndVerifyProposedPayload(ctx context.Context, msg *types.M
 	if err != nil {
 		return engine.ExecutableData{}, errors.Wrap(err, "latest execution block")
 	}
+	headHash, err := head.Hash()
+	if err != nil {
+		return engine.ExecutableData{}, err
+	}
 
 	// Ensure the parent hash and block height matches
 	if payload.Number != head.GetBlockHeight()+1 {
 		return engine.ExecutableData{}, errors.New("invalid proposed payload number", "proposed", payload.Number, "head", head.GetBlockHeight())
-	} else if payload.ParentHash != head.Hash() {
-		return engine.ExecutableData{}, errors.New("invalid proposed payload parent hash", "proposed", payload.ParentHash, "head", head.Hash())
+	} else if payload.ParentHash != headHash {
+		return engine.ExecutableData{}, errors.New("invalid proposed payload parent hash", "proposed", payload.ParentHash, "head", headHash)
 	}
 
 	// Ensure the payload timestamp is after latest execution block and before or equaled to the current consensus block.
@@ -153,8 +157,8 @@ func (k *Keeper) parseAndVerifyProposedPayload(ctx context.Context, msg *types.M
 	}
 
 	// Ensure the Randao Digest is equaled to parent hash as this is our workaround at this point.
-	if payload.Random != head.Hash() {
-		return engine.ExecutableData{}, errors.New("invalid payload random", "proposed", payload.Random, "latest", head.Hash())
+	if payload.Random != headHash {
+		return engine.ExecutableData{}, errors.New("invalid payload random", "proposed", payload.Random, "latest", headHash)
 	}
 
 	return payload, nil

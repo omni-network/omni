@@ -1,8 +1,10 @@
 package indexer
 
 import (
+	"bytes"
 	"encoding/json"
 
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -18,6 +20,16 @@ func (b *Block) XChainBlock() (xchain.Block, error) {
 	return resp, nil
 }
 
-func (l *MsgLink) Hash() common.Hash {
-	return common.BytesToHash(l.GetIdHash())
+func (l *MsgLink) Hash() (common.Hash, error) {
+	return cast.EthHash(l.GetIdHash())
+}
+
+// IsMsg returns true if the message belongs to this link.
+func (l *MsgLink) IsMsg(msg xchain.Msg) bool {
+	return bytes.Equal(l.GetIdHash(), msg.Hash().Bytes())
+}
+
+// IsReceipt returns true if the receipt belongs to this link.
+func (l *MsgLink) IsReceipt(receipt xchain.Receipt) bool {
+	return bytes.Equal(l.GetIdHash(), receipt.Hash().Bytes())
 }
