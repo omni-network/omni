@@ -1,18 +1,17 @@
-# Backwards ensures backwards-compatibility with v0.8.0.
+# Backwards ensures backwards-compatibility with v0.9.0 (the first version supporting uluwatu)
 network = "devnet"
 anvil_chains = ["mock_l1", "mock_l2"]
 
 multi_omni_evms = true
-network_upgrade_height = -1 # Disable network upgrade
 
 [node.validator01]
 [node.validator02]
 mode = "archive"
 
 [node.validator03]
-version="omniops/halovisor:v0.8.0"
+version="omniops/halovisor:v0.9.0"
 perturb = ["upgrade"]
 
 [node.validator04]
-version="omniops/halovisor:v0.8.0"
+version="omniops/halovisor:v0.9.0"
 perturb = ["upgrade"]
