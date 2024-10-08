@@ -26,6 +26,17 @@ var (
 	omegaAlloc   = mustUnmarshalAlloc(omegaJSON)
 )
 
+// locked maps network ID to whether the network's allocations are locked.
+// Once a persistent network has been deployed, its allocs should be locked,
+// so that allocs here are consistent with the live network's genesis.
+var locked = map[netconf.ID]bool{
+	netconf.Omega: true,
+}
+
+func IsLocked(network netconf.ID) bool {
+	return locked[network]
+}
+
 func Alloc(network netconf.ID) (types.GenesisAlloc, error) {
 	switch network {
 	case netconf.Devnet:
