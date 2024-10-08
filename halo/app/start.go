@@ -206,7 +206,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 
 	status := new(readinessStatus)
 
-	httpShutDownFn := startMonitoringAPI(&cfg.Comet, asyncAbort, status)
+	stopMonitoringAPI := startMonitoringAPI(&cfg.Comet, asyncAbort, status)
 
 	go monitorCometForever(ctx, cfg.Network, rpcClient, cmtNode.ConsensusReactor().WaitSync, cfg.DataDir(), status)
 	go monitorEVMForever(ctx, cfg, engineCl, status)
@@ -224,7 +224,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 
 		// Note that cometBFT doesn't shut down cleanly. It leaves a bunch of goroutines running...
 
-		if err := httpShutDownFn(ctx); err != nil {
+		if err := stopMonitoringAPI(ctx); err != nil {
 			return errors.Wrap(err, "stop HTTP server")
 		}
 

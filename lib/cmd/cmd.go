@@ -35,7 +35,6 @@ func Main(cmd *cobra.Command) {
 
 	if err != nil {
 		const errExitCode = 1
-		log.Error(ctx, "Command execution failed", err)
 		os.Exit(errExitCode) //nolint:revive // Deep exit is exactly the point of this helper function.
 	}
 }

@@ -143,6 +143,7 @@ func monitorEVMOnce(ctx context.Context, ethCl ethclient.Client, status *readine
 		// SyncProgress returns nil of not syncing.
 		evmSynced.Set(0)
 		log.Warn(ctx, "Attached omni evm is syncing", nil, "highest_block", syncing.HighestBlock, "current_block", syncing.CurrentBlock, "tx_indexing", syncing.TxIndexRemainingBlocks)
+		status.setExecutionSynced(false)
 	} else {
 		evmSynced.Set(1)
 		status.setExecutionSynced(true)
@@ -190,8 +191,9 @@ func startMonitoringAPI(
 	status *readinessStatus) func(context.Context) error {
 	mux := http.NewServeMux()
 
+	// We align both with industry standards (endpoint /metrics)
+	// and with cometBFT (endpoint /).
 	mux.Handle("/metrics", promhttp.Handler())
-	// We also export the metrics on the root path as this is how the default prometheus server works.
 	mux.Handle("/", promhttp.Handler())
 
 	// On the `/ready` endpoint, we serve the readiness of the halo node.

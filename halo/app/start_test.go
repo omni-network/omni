@@ -68,7 +68,7 @@ func TestSmoke(t *testing.T) {
 		return s.SyncInfo.LatestBlockHeight >= int64(target)
 	}, time.Second*time.Duration(target*2), time.Millisecond*100)
 
-	testHealthAndMetricsEndpoints(t, cfg)
+	testReadyEndpoint(t, cfg)
 	testAPI(t, cfg)
 	testGRPC(t, ctx, cfg)
 	testCProvider(t, ctx, cprov)
@@ -133,7 +133,7 @@ func testAPI(t *testing.T, cfg haloapp.Config) {
 }
 
 //nolint:noctx // We don't care about best practices here.
-func testHealthAndMetricsEndpoints(t *testing.T, cfg haloapp.Config) {
+func testReadyEndpoint(t *testing.T, cfg haloapp.Config) {
 	t.Helper()
 
 	base := "http://0.0.0.0" + cfg.Comet.Instrumentation.PrometheusListenAddr
