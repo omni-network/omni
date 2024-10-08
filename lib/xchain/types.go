@@ -239,9 +239,9 @@ type Vote struct {
 type Attestation struct {
 	AttestHeader               // AttestHeader uniquely identifies the attestation.
 	BlockHeader                // BlockHeader identifies the cross-chain Block
-	ValidatorSetID uint64      // Validator set that approved this attestation.
 	MsgRoot        common.Hash // Merkle root of all messages in the cross-chain Block
 	Signatures     []SigTuple  // Validator signatures and public keys
+	ValidatorSetID uint64      // Validator set that approved this attestation.
 }
 
 func (a Attestation) AttestationRoot() ([32]byte, error) {
