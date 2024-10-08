@@ -73,6 +73,8 @@ func defaultChainConfig(network netconf.ID) *params.ChainConfig {
 
 // precompilesAlloc returns allocs for precompiled contracts
 // precompile balances are set to 1 as a performance optimization, as done in geth.
+//
+//nolint:forbidigo // Explicitly use BytesToAddress with left padding.
 func precompilesAlloc() types.GenesisAlloc {
 	return types.GenesisAlloc{
 		common.BytesToAddress([]byte{1}): {Balance: big.NewInt(1)}, // ECRecover

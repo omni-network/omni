@@ -113,12 +113,17 @@ func WithPortalRegister(network netconf.Network) func(*engineMock) {
 				panic(errors.Wrap(err, "pack delegate"))
 			}
 
+			topicChainID, err := cast.EthHash(math.U256Bytes(umath.NewBigInt(chain.ID)))
+			if err != nil {
+				panic(errors.Wrap(err, "cast chain ID"))
+			}
+
 			eventLog := types.Log{
 				Address: contractAddr,
 				Topics: []common.Hash{
 					portalRegEvent.ID,
-					common.BytesToHash(math.U256Bytes(umath.NewBigInt(chain.ID))), // ChainID
-					common.BytesToHash(chain.PortalAddress.Bytes()),               // EthAddress
+					topicChainID,
+					common.BytesToHash(chain.PortalAddress.Bytes()), //nolint:forbidigo // Explicit left padded
 				},
 				Data: data,
 			}

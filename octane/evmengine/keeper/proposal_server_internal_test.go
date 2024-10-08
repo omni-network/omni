@@ -7,10 +7,7 @@ import (
 
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/expbackoff"
-	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/octane/evmengine/types"
-
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
@@ -30,7 +27,7 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 	mockEngine, err := newMockEngineAPI(0)
 	require.NoError(t, err)
 
-	sdkCtx, storeService := setupCtxStore(t, &cmtproto.Header{AppHash: tutil.RandomHash().Bytes()})
+	sdkCtx, storeService := setupCtxStore(t, nil)
 	sdkCtx = sdkCtx.WithExecMode(sdk.ExecModeFinalize)
 
 	frp := newRandomFeeRecipientProvider()

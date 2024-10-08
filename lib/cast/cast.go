@@ -36,6 +36,16 @@ func Must20[A any](slice []A) [20]A {
 	return arr
 }
 
+// EthHash casts a byte slice to an Ethereum hash.
+func EthHash(b []byte) (common.Hash, error) {
+	resp, err := Array32(b)
+	if err != nil {
+		return common.Hash{}, errors.New("invalid hash length", "len", len(b))
+	}
+
+	return resp, nil
+}
+
 // Array32 casts a slice to an array of length 32.
 func Array32[A any](slice []A) ([32]A, error) {
 	if len(slice) == 32 {

@@ -4,10 +4,17 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/halo/attest/types"
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
+
+	"github.com/ethereum/go-ethereum/common"
 )
+
+func (s *Signature) ValidatorEthAddress() (common.Address, error) {
+	return cast.EthAddress(s.GetValidatorAddress())
+}
 
 func (a *Attestation) XChainVersion() xchain.ChainVersion {
 	return xchain.ChainVersion{

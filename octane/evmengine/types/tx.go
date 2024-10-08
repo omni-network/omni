@@ -19,7 +19,12 @@ func (l *EVMEvent) ToEthLog() (ethtypes.Log, error) {
 
 	topics := make([]common.Hash, 0, len(l.Topics))
 	for _, t := range l.Topics {
-		topics = append(topics, common.BytesToHash(t))
+		hash, err := cast.EthHash(t)
+		if err != nil {
+			return ethtypes.Log{}, err
+		}
+
+		topics = append(topics, hash)
 	}
 
 	addr, err := cast.EthAddress(l.Address)

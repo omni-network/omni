@@ -149,6 +149,14 @@ func (s *SigTuple) Verify() error {
 	return nil
 }
 
+func (s *SigTuple) ValidatorEthAddress() (common.Address, error) {
+	if s == nil {
+		return common.Address{}, errors.New("nil sig tuple")
+	}
+
+	return cast.EthAddress(s.ValidatorAddress)
+}
+
 func (s *SigTuple) ToXChain() (xchain.SigTuple, error) {
 	if s == nil {
 		return xchain.SigTuple{}, errors.New("nil sig tuple")
