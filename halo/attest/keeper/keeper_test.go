@@ -6,6 +6,7 @@ import (
 	"github.com/omni-network/omni/halo/attest/keeper"
 	"github.com/omni-network/omni/halo/attest/types"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
+	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -341,7 +342,7 @@ func TestKeeper_Approve(t *testing.T) {
 					t.Helper()
 					msg := defaultMsg().Msg() // Signed by 1 and 2, but also approved by 1 and 2
 					err := k.Add(ctx, msg)
-					require.NoError(t, err)
+					tutil.RequireNoError(t, err)
 				},
 			},
 			args: args{
@@ -1042,9 +1043,11 @@ func toValSet(valset *vtypes.ValidatorSetResponse) keeper.ValSet {
 
 func expectValSig(id uint64, attID uint64, val *vtypes.Validator, offset uint64) *keeper.Signature {
 	ethAddr, _ := val.EthereumAddress()
+	paddedSig := pad65(ethAddr.Bytes())
+
 	return &keeper.Signature{
 		Id:               id,
-		Signature:        ethAddr.Bytes(),
+		Signature:        paddedSig[:],
 		ValidatorAddress: ethAddr.Bytes(),
 		AttId:            attID,
 		ChainId:          defaultChainID,

@@ -309,7 +309,12 @@ func newABCIAllAttsFunc(cl atypes.QueryClient) allAttsFunc {
 			}
 
 			for _, att := range resp.Attestations {
-				atts = append(atts, att.ToXChain())
+				attX, err := att.ToXChain()
+				if err != nil {
+					return nil, err
+				}
+
+				atts = append(atts, attX)
 			}
 		}
 

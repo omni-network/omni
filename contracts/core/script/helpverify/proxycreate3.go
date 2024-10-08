@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
@@ -80,9 +81,14 @@ func parseProxyCreate3TxData(txData []byte) (ProxyCreate3Tx, error) {
 
 	constructorArgs := creationCode[len(mustDecodeHex(bindings.TransparentUpgradeableProxyBin)):]
 
+	// Address is encoded in first word (32 bytes), but left padded.
+	impl, err := cast.EthAddress(constructorArgs[12:32])
+	if err != nil {
+		return ProxyCreate3Tx{}, err
+	}
+
 	return ProxyCreate3Tx{
-		// implementation is first 32 byte word of constructor args
-		Implementation:  common.BytesToAddress(constructorArgs[:32]),
+		Implementation:  impl,
 		ConstructorArgs: hexutil.Encode(constructorArgs),
 	}, nil
 }

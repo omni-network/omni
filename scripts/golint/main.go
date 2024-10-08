@@ -11,5 +11,6 @@ func main() {
 	multichecker.Main(
 		uintSubtractAnalyzer,
 		logAttrsAnalyzer,
+		arrayCastAnalyzer,
 	)
 }

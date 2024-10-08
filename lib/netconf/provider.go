@@ -8,6 +8,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	rtypes "github.com/omni-network/omni/halo/registry/types"
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
@@ -17,7 +18,6 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 // AwaitOnExecutionChain blocks and returns network configuration as soon as it can be loaded from the EVM Execution Chain's registry.
@@ -90,7 +90,12 @@ func AwaitOnConsensusChain(ctx context.Context, netID ID, cprov cchain.Provider,
 			return Network{}, errors.New("nil portals response")
 		}
 
-		network, err := networkFromPortals(ctx, netID, toPortalBindings(portals))
+		portalBinds, err := toPortalBindings(portals)
+		if err != nil {
+			return Network{}, err
+		}
+
+		network, err := networkFromPortals(ctx, netID, portalBinds)
 		if err != nil {
 			return Network{}, err
 		}
@@ -187,16 +192,6 @@ func MetadataByID(network ID, chainID uint64) evmchain.Metadata {
 	}
 }
 
-func MetadataByName(network ID, name string) (evmchain.Metadata, bool) {
-	// there are multiple omni EVM metadatas with the same name,
-	// so we need go get by chainID of this network's omniEVM chain
-	if evmchain.IsOmniEVM(name) {
-		return evmchain.MetadataByID(network.Static().OmniExecutionChainID)
-	}
-
-	return evmchain.MetadataByName(name)
-}
-
 func ChainNamer(network ID) func(uint64) string {
 	return func(chainID uint64) string {
 		return MetadataByID(network, chainID).Name
@@ -218,12 +213,17 @@ func toShardIDs(shards []uint64) []xchain.ShardID {
 	return resp
 }
 
-func toPortalBindings(portals []*rtypes.Portal) []bindings.PortalRegistryDeployment {
+func toPortalBindings(portals []*rtypes.Portal) ([]bindings.PortalRegistryDeployment, error) {
 	rtypesPortals := make([]bindings.PortalRegistryDeployment, len(portals))
 	for i, p := range portals {
+		addr, err := cast.EthAddress(p.Address)
+		if err != nil {
+			return nil, err
+		}
+
 		rtypesPortals[i] = bindings.PortalRegistryDeployment{
 			ChainId:        p.ChainId,
-			Addr:           common.BytesToAddress(p.Address),
+			Addr:           addr,
 			DeployHeight:   p.DeployHeight,
 			Shards:         p.ShardIds,
 			AttestInterval: p.AttestInterval,
@@ -232,5 +232,5 @@ func toPortalBindings(portals []*rtypes.Portal) []bindings.PortalRegistryDeploym
 		}
 	}
 
-	return rtypesPortals
+	return rtypesPortals, nil
 }
