@@ -67,7 +67,7 @@ func (c *valAddrCache) SetAll(vals []*vtypes.Validator) error {
 func (k *Keeper) getValEthAddr(ctx context.Context, cmtAddr []byte) (common.Address, error) {
 	addr, err := cast.Array20(cmtAddr)
 	if err != nil {
-		return common.Address{}, errors.Wrap(err, "invalid comet address length [BUG]", "len", len(cmtAddr))
+		return common.Address{}, errors.Wrap(err, "invalid comet address length [BUG]")
 	}
 
 	// Check cache
