@@ -14,13 +14,13 @@
     <a href="https://docs.omni.network/">
         <img src="https://img.shields.io/badge/Docs-docs.omni.network-darkblue.svg?style=flat&logo=read-the-docs&logoColor=white" alt="Documentation">
     </a>
-    <a href="https://discord.com/channels/850218821398822922/1199003528824356935">
+    <a href="https://discord.com/invite/bKNXmaX9VD">
         <img src="https://img.shields.io/discord/850218821398822922.svg?label=Discord&logo=discord&colorB=7289DA&style=flat" alt="Discord">
     </a>
     <a href="https://t.me/OmniFDN">
         <img src="https://img.shields.io/badge/Telegram-Join%20Chat-blue.svg?style=flat&logo=telegram" alt="Telegram">
     </a>
-    <a href="https://twitter.com/OmniFDN">
+    <a href="https://x.com/OmniFDN">
         <img src="https://img.shields.io/twitter/follow/OmniFDN.svg?style=social&label=Follow" alt="Twitter Follow">
     </a>
 </p>
