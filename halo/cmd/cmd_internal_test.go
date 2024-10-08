@@ -22,13 +22,14 @@ import (
 
 //go:generate go test . -golden -clean
 
-func TestRunCmd(t *testing.T) { //nolint:paralleltest,tparallel // RunCmd modifies global state via setMonikerForT
+func TestRunCmd(t *testing.T) {
 	setMonikerForT(t)
 
 	tests := []struct {
 		Name  string
 		Args  []string
 		Files map[string][]byte
+		Env   map[string]string
 	}{
 		{
 			Name: "defaults",
@@ -45,18 +46,21 @@ func TestRunCmd(t *testing.T) { //nolint:paralleltest,tparallel // RunCmd modifi
 		{
 			Name: "json files",
 			Args: slice("run", "--home=testinput/input2"),
+			Env:  map[string]string{"HALO_NETWORK": "GOTEST"},
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.Name, func(t *testing.T) {
-			t.Parallel()
-
 			cmd := newRunCmd("run", func(_ context.Context, actual app.Config) error {
 				tutil.RequireGoldenJSON(t, actual)
 
 				return nil
 			})
+
+			for k, v := range test.Env {
+				t.Setenv(k, v)
+			}
 
 			rootCmd := libcmd.NewRootCmd("halo", "", cmd)
 			rootCmd.SetArgs(test.Args)

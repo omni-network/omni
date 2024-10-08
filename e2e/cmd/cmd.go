@@ -31,7 +31,12 @@ func New() *cobra.Command {
 	var def app.Definition
 
 	cmd := libcmd.NewRootCmd("e2e", "e2e network generator and test runner")
+	cachedPreRun := cmd.PersistentPreRunE
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, _ []string) error {
+		if err := cachedPreRun(cmd, nil); err != nil {
+			return err
+		}
+
 		ctx := cmd.Context()
 		if _, err := log.Init(ctx, logCfg); err != nil {
 			return err
