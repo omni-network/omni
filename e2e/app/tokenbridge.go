@@ -36,7 +36,7 @@ func setupTokenBridge(ctx context.Context, def Definition) error {
 		return errors.New("no omni evm chain")
 	}
 
-	admin := eoa.MustAddress(networkID, eoa.RoleAdmin)
+	admin := eoa.MustAddress(networkID, eoa.RoleOwner)
 
 	addrs, err := contracts.GetAddresses(ctx, networkID)
 	if err != nil {

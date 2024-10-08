@@ -141,7 +141,7 @@ func testDeployCfg(t *testing.T) deployConfig {
 
 	return deployConfig{
 		deployer:         eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
-		owner:            eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
+		owner:            eoa.MustAddress(netconf.Devnet, eoa.RoleOwner),
 		eigen:            devnetEigenDeployments(t),
 		metadataURI:      "https://test-operator.com",
 		omniChainID:      netconf.Devnet.Static().OmniExecutionChainID,
@@ -245,7 +245,7 @@ func makeEOAS(t *testing.T, backend *ethbackend.Backend) EOAS {
 	require.NoError(t, err)
 
 	return EOAS{
-		AVSOwner:     eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
+		AVSOwner:     eoa.MustAddress(netconf.Devnet, eoa.RoleOwner),
 		EigenOwner:   anvil.DevAccount9(), // account used to deploy eigen contracts
 		Operator1:    operator1,
 		Operator1Key: operator1Key,

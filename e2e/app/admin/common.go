@@ -47,7 +47,7 @@ type chain struct {
 // setup returns common resources for all admin operations.
 func setup(def app.Definition, cfg Config) shared {
 	netID := def.Testnet.Network
-	admin := eoa.MustAddress(netID, eoa.RoleAdmin)
+	admin := eoa.MustAddress(netID, eoa.RoleOwner)
 	deployer := eoa.MustAddress(netID, eoa.RoleDeployer)
 	endpoints := app.ExternalEndpoints(def)
 	network := app.NetworkFromDef(def)

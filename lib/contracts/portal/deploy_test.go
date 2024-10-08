@@ -63,7 +63,7 @@ func TestDeployDevnet(t *testing.T) {
 
 	owner, err := portal.Owner(nil)
 	require.NoError(t, err)
-	require.Equal(t, eoa.MustAddress(network, eoa.RoleAdmin), owner)
+	require.Equal(t, eoa.MustAddress(network, eoa.RoleOwner), owner)
 
 	// check validators
 	totalPower, err := portal.ValSetTotalPower(nil, 1)

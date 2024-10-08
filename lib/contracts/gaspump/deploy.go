@@ -131,9 +131,9 @@ func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend
 	cfg := DeploymentConfig{
 		Create3Factory:  addrs.Create3Factory,
 		Create3Salt:     salts.GasPump,
-		Owner:           eoa.MustAddress(network, eoa.RoleAdmin),
+		Owner:           eoa.MustAddress(network, eoa.RoleOwner),
 		Deployer:        eoa.MustAddress(network, eoa.RoleDeployer),
-		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleAdmin),
+		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleOwner),
 		Portal:          addrs.Portal,
 		GasStation:      addrs.GasStation,
 		Oracle:          oracle,

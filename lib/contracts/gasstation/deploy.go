@@ -113,9 +113,9 @@ func Deploy(
 	cfg := DeploymentConfig{
 		Create3Factory:  addrs.Create3Factory,
 		Create3Salt:     salts.GasStation,
-		Owner:           eoa.MustAddress(network, eoa.RoleAdmin),
+		Owner:           eoa.MustAddress(network, eoa.RoleOwner),
 		Deployer:        eoa.MustAddress(network, eoa.RoleDeployer),
-		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleAdmin),
+		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleOwner),
 		Portal:          addrs.Portal,
 		ExpectedAddr:    addrs.GasStation,
 	}

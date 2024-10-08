@@ -23,8 +23,8 @@ const (
 	RoleCreate3Deployer Role = "create3-deployer"
 	// RoleDeployer is used to deploy official omni contracts on all chains.
 	RoleDeployer Role = "deployer"
-	// RoleAdmin is used to manage the omni contracts on all chains. It has admin privileges on official omni contracts.
-	RoleAdmin Role = "admin"
+	// RoleOwner is used to manage the omni contracts on all chains. It has admin privileges on official omni contracts.
+	RoleOwner Role = "owner"
 	// RoleTester is used for general tasks and testing in non-mainnet networks.
 	RoleTester Role = "tester"
 )
@@ -35,7 +35,7 @@ func AllRoles() []Role {
 		RoleMonitor,
 		RoleCreate3Deployer,
 		RoleDeployer,
-		RoleAdmin,
+		RoleOwner,
 		RoleTester,
 	}
 }
