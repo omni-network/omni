@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -11,7 +13,11 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 
+	cmtcfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/node"
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // monitorCometForever blocks until the context is canceled.
@@ -76,6 +82,7 @@ func monitorCometOnce(ctx context.Context, rpcClient rpcclient.Client, isSyncing
 		return 0, errors.Wrap(err, "abci info")
 	} else if !isSyncing() && lastHeight > 0 && abciInfo.Response.LastBlockHeight <= lastHeight {
 		log.Warn(ctx, "Halo height is not increasing, evm syncing?", nil, "height", abciInfo.Response.LastBlockHeight)
+		status.setConsensusSynced(false)
 	}
 
 	return abciInfo.Response.LastBlockHeight, nil
@@ -111,6 +118,7 @@ func monitorEVMForever(ctx context.Context, cfg Config, ethCl ethclient.Client, 
 			err := monitorEVMOnce(ctx, ethCl, status)
 			if err != nil {
 				log.Warn(ctx, "Failed monitoring attached omni evm (will retry)", err, "addr", ethCl.Address())
+				status.setExecutionConnected(false)
 			}
 		}
 	}
@@ -175,4 +183,45 @@ func dirSize(path string) (int64, error) {
 	}
 
 	return size, nil
+}
+
+// startMonitoringAPI registers metrics and health endpoints.
+func startMonitoringAPI(ctx context.Context, cfg *cmtcfg.Config, cmtNode *node.Node, syncAbort chan error, status *readinessStatus) {
+	mux := http.NewServeMux()
+	mux.Handle("/", promhttp.Handler())
+
+	// On the `/ready` endpoint, we serve the readiness of the halo node.
+	// Additionally, in case when the node is not ready, the response status code is set to 503.
+	mux.HandleFunc("/ready", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		if !status.ready() {
+			w.WriteHeader(http.StatusServiceUnavailable)
+		}
+		if err := status.serialize(w); err != nil {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+	})
+
+	server := &http.Server{
+		Addr:              cfg.Instrumentation.PrometheusListenAddr,
+		ReadHeaderTimeout: 3 * time.Second,
+		Handler:           mux,
+	}
+
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			errorMsg := fmt.Sprintf("HTTP server failed to start: %v", err)
+			syncAbort <- errors.New(errorMsg)
+		}
+	}()
+
+	go func() {
+		cmtNode.Wait()
+
+		if err := server.Shutdown(ctx); err != nil {
+			syncAbort <- err
+		}
+	}()
 }
