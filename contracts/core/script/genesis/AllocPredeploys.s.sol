@@ -20,6 +20,7 @@ contract AllocPredeploys is Script {
     struct Config {
         address admin;
         uint256 chainId;
+        uint256 nativeBridgeBalance;
         bool enableStakingAllowlist;
         string output;
     }
@@ -191,16 +192,13 @@ contract AllocPredeploys is Script {
      * @notice Setup OmniBridgeNative predeploy
      */
     function setOmniBridgeNative() internal {
-        uint256 totalSupply = 100e6 * 1e18; // 100M total supply
-        vm.deal(Predeploys.OmniBridgeNative, totalSupply);
+        vm.deal(Predeploys.OmniBridgeNative, cfg.nativeBridgeBalance);
 
         address impl = Predeploys.impl(Predeploys.OmniBridgeNative);
         vm.etch(impl, vm.getDeployedCode("OmniBridgeNative.sol:OmniBridgeNative"));
 
         InitializableHelper.disableInitializers(impl);
         OmniBridgeNative(Predeploys.OmniBridgeNative).initialize(cfg.admin);
-
-        require(address(Predeploys.OmniBridgeNative).balance == 100_000_000 ether, "invalid balance");
     }
 
     /**
