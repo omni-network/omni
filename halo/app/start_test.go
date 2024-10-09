@@ -4,6 +4,7 @@ package app_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"os"
@@ -67,6 +68,7 @@ func TestSmoke(t *testing.T) {
 		return s.SyncInfo.LatestBlockHeight >= int64(target)
 	}, time.Second*time.Duration(target*2), time.Millisecond*100)
 
+	testReadyEndpoint(t, cfg)
 	testAPI(t, cfg)
 	testGRPC(t, ctx, cfg)
 	testCProvider(t, ctx, cprov)
@@ -128,6 +130,27 @@ func testAPI(t *testing.T, cfg haloapp.Config) {
 		_, err = http.Get(base + path)
 		require.NoError(t, err)
 	}
+}
+
+//nolint:noctx // We don't care about best practices here.
+func testReadyEndpoint(t *testing.T, cfg haloapp.Config) {
+	t.Helper()
+
+	base := "http://0.0.0.0" + cfg.Comet.Instrumentation.PrometheusListenAddr
+
+	response, err := http.Get(base + "/ready")
+	require.NoError(t, err)
+	defer response.Body.Close()
+
+	type status struct {
+		ConsensusSynced bool `json:"consensus_synced"`
+		ExecutionSynced bool `json:"execution_synced"`
+	}
+
+	var readyResponse status
+	err = json.NewDecoder(response.Body).Decode(&readyResponse)
+	// We only check that the endpoint returns a parsable response.
+	require.NoError(t, err)
 }
 
 func testGRPC(t *testing.T, ctx context.Context, cfg haloapp.Config) {

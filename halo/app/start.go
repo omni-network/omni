@@ -204,8 +204,12 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		return nil, nil, errors.Wrap(err, "start comet node")
 	}
 
-	go monitorCometForever(ctx, cfg.Network, rpcClient, cmtNode.ConsensusReactor().WaitSync, cfg.DataDir())
-	go monitorEVMForever(ctx, cfg, engineCl)
+	status := new(readinessStatus)
+
+	stopMonitoringAPI := startMonitoringAPI(&cfg.Comet, asyncAbort, status)
+
+	go monitorCometForever(ctx, cfg.Network, rpcClient, cmtNode.ConsensusReactor().WaitSync, cfg.DataDir(), status)
+	go monitorEVMForever(ctx, cfg, engineCl, status)
 
 	// Return asyncAbort and stop functions.
 	// Note that the original context used to start the app must be canceled first.
@@ -219,6 +223,10 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		cmtNode.Wait()
 
 		// Note that cometBFT doesn't shut down cleanly. It leaves a bunch of goroutines running...
+
+		if err := stopMonitoringAPI(ctx); err != nil {
+			return errors.Wrap(err, "stop HTTP server")
+		}
 
 		if err := stopTracer(ctx); err != nil {
 			return errors.Wrap(err, "stop tracer")
@@ -269,8 +277,8 @@ func startRPCServers(
 	return nil
 }
 
-func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App, privVal cmttypes.PrivValidator,
-) (*node.Node, error) {
+func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App, privVal cmttypes.PrivValidator) (
+	*node.Node, error) {
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
 		return nil, errors.Wrap(err, "load or gen node key", "key_file", cfg.NodeKeyFile())
@@ -288,6 +296,9 @@ func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App, privVal cmt
 			return app.CommitMultiStore().CacheMultiStore()
 		},
 	)
+
+	// Don't instantiate the default prometheus server.
+	cfg.Instrumentation.Prometheus = false
 
 	cmtNode, err := node.NewNode(cfg,
 		privVal,
