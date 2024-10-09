@@ -22,6 +22,8 @@ import { HelloWorld } from "./utils/HelloWorld.sol";
  *      which keeps this contract's state out of the state dump.
  */
 contract AllocPredeploys_Test is Test, AllocPredeploys {
+    uint256 omniTotalSupply = 100e6 * 1e18;
+
     /**
      * @notice Tests predeploy allocs, asserting the number of allocs is expected.
      */
@@ -29,7 +31,15 @@ contract AllocPredeploys_Test is Test, AllocPredeploys {
         address admin = makeAddr("admin");
         string memory output = tmpfile();
 
-        this.run(AllocPredeploys.Config({ admin: admin, chainId: 165, enableStakingAllowlist: false, output: output }));
+        this.run(
+            AllocPredeploys.Config({
+                admin: admin,
+                chainId: 165,
+                nativeBridgeBalance: omniTotalSupply,
+                enableStakingAllowlist: false,
+                output: output
+            })
+        );
 
         uint256 expected;
 
@@ -62,23 +72,46 @@ contract AllocPredeploys_Test is Test, AllocPredeploys {
 
     function test_proxies() public {
         this.runNoStateDump(
-            AllocPredeploys.Config({ admin: makeAddr("admin"), chainId: 165, enableStakingAllowlist: false, output: "" })
+            AllocPredeploys.Config({
+                admin: makeAddr("admin"),
+                chainId: 165,
+                nativeBridgeBalance: omniTotalSupply,
+                enableStakingAllowlist: false,
+                output: ""
+            })
         );
 
         _testProxies();
     }
 
     function test_predeploys() public {
+        // test setting native bridge balance to less than total supply
+        uint256 nativeBridgeBalance = omniTotalSupply - 100e18;
+
         this.runNoStateDump(
-            AllocPredeploys.Config({ admin: makeAddr("admin"), chainId: 165, enableStakingAllowlist: false, output: "" })
+            AllocPredeploys.Config({
+                admin: makeAddr("admin"),
+                chainId: 165,
+                nativeBridgeBalance: nativeBridgeBalance,
+                enableStakingAllowlist: false,
+                output: ""
+            })
         );
 
         _testPredeploys();
+
+        assertEq(Predeploys.OmniBridgeNative.balance, nativeBridgeBalance, "native bridge balance check");
     }
 
     function test_preinstalls() public {
         this.runNoStateDump(
-            AllocPredeploys.Config({ admin: makeAddr("admin"), chainId: 165, enableStakingAllowlist: false, output: "" })
+            AllocPredeploys.Config({
+                admin: makeAddr("admin"),
+                chainId: 165,
+                nativeBridgeBalance: omniTotalSupply,
+                enableStakingAllowlist: false,
+                output: ""
+            })
         );
 
         _testPreinstalls();

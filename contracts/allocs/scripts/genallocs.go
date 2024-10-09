@@ -11,12 +11,16 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/halo/genutil/evm"
+	"github.com/omni-network/omni/lib/contracts/omnitoken"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 var forgeScriptABI = mustGetABI(bindings.AllocPredeploysMetaData)
@@ -34,15 +38,19 @@ func main() {
 
 func genallocs() error {
 	for _, network := range netconf.All() {
-		if network == netconf.Simnet {
+		// always skip simnet. skip mainnet until it is required
+		if network == netconf.Simnet || network == netconf.Mainnet {
 			continue
 		}
 
-		cfg := bindings.AllocPredeploysConfig{
-			Admin:                  eoa.MustAddress(network, eoa.RoleAdmin),
-			ChainId:                new(big.Int).SetUint64(network.Static().OmniExecutionChainID),
-			EnableStakingAllowlist: network.IsProtected(),
-			Output:                 "allocs/" + network.String() + ".json",
+		prefunds, err := evm.PrefundAlloc(network)
+		if err != nil {
+			return errors.Wrap(err, "prefund alloc")
+		}
+
+		cfg, err := allocConfig(network, prefunds)
+		if err != nil {
+			return errors.Wrap(err, "alloc config")
 		}
 
 		calldata, err := forgeScriptABI.Pack("run", cfg)
@@ -56,6 +64,7 @@ func genallocs() error {
 		}
 
 		// format and sort output
+
 		formatted, err := execCmd(".", "jq", "-S", ".", cfg.Output)
 		if err != nil {
 			return errors.Wrap(err, "format output")
@@ -68,6 +77,35 @@ func genallocs() error {
 	}
 
 	return nil
+}
+
+func allocConfig(network netconf.ID, prefunds types.GenesisAlloc) (bindings.AllocPredeploysConfig, error) {
+	nativeBridgeBalance := new(big.Int).Set(omnitoken.TotalSupply)
+
+	// for mainnet (when supported), we subtract the prefunds from the native bridge balance
+	if network == netconf.Mainnet {
+		for _, prefund := range prefunds {
+			nativeBridgeBalance.Sub(nativeBridgeBalance, prefund.Balance)
+		}
+
+		// sanity check - require we do not subtract more than 100 OMNI
+		minSaneBalance := new(big.Int).Sub(
+			omnitoken.TotalSupply,
+			new(big.Int).Mul(big.NewInt(100), big.NewInt(params.Ether)),
+		)
+
+		if nativeBridgeBalance.Cmp(minSaneBalance) < 0 {
+			return bindings.AllocPredeploysConfig{}, errors.New("native bridge below sane min", "balance", nativeBridgeBalance)
+		}
+	}
+
+	return bindings.AllocPredeploysConfig{
+		Admin:                  eoa.MustAddress(network, eoa.RoleAdmin),
+		ChainId:                new(big.Int).SetUint64(network.Static().OmniExecutionChainID),
+		EnableStakingAllowlist: network.IsProtected(),
+		NativeBridgeBalance:    nativeBridgeBalance,
+		Output:                 "allocs/" + network.String() + ".json",
+	}, nil
 }
 
 func execCmd(dir string, cmd string, args ...string) (string, error) {
