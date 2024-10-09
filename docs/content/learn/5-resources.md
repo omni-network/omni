@@ -15,6 +15,7 @@ Below is a list of resources that may be helpful as you explore Omni:
 
 ## Audits
 
-- [Sigma Prime Chain pt1](https://docs.omni.network/sigma-prime-chain.pdf)
-- [Sigma Prime AVS](https://docs.omni.network/sigma-prime-avs.pdf)
-- [Zellic AVS](https://docs.omni.network/zellic-avs.pdf)
+- [Sigma Prime Preliminary Protocol Review](https://docs.omni.network/sigma-prime-chain.pdf)
+- [Sigma Prime AVS Review](https://docs.omni.network/sigma-prime-avs.pdf)
+- [Zellic AVS Review](https://docs.omni.network/zellic-avs.pdf)
+- [Spearbit Solidity Review](https://docs.omni.network/spearbit-solidity.pdf)
