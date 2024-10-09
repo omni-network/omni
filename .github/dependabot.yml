@@ -5,3 +5,11 @@ updates:
   schedule:
     interval: "daily"
   labels: []
+- package-ecosystem: "npm"
+  directories:
+    - "/docs/website"
+    - "/contracts/avs"
+    - "/contracts/core"
+  schedule:
+    interval: "daily"
+  labels: []
