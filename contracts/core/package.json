@@ -25,7 +25,7 @@
     "multiproof": "github:sigp/multiproof",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.4",
-    "viem": "^2.17.10"
+    "viem": "^2.21.19"
   },
   "dependencies": {
     "@nomad-xyz/excessively-safe-call": "github:nomad-xyz/ExcessivelySafeCall",
