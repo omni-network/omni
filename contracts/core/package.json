@@ -20,7 +20,7 @@
     "@openzeppelin/merkle-tree": "1.0.5",
     "@types/node": "^20.14.11",
     "ds-test": "github:dapphub/ds-test",
-    "ethereum-cryptography": "^2.2.1",
+    "ethereum-cryptography": "^3.0.0",
     "forge-std": "github:foundry-rs/forge-std",
     "multiproof": "github:sigp/multiproof",
     "ts-node": "^10.9.2",
