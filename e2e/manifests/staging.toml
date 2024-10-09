@@ -3,8 +3,6 @@ public_chains = ["op_sepolia","base_sepolia","arb_sepolia","holesky"]
 multi_omni_evms = true
 prometheus = true
 
-network_upgrade_height = -1 # TODO: Remove this once testing plan upgrade done.
-
 [node.validator01]
 [node.validator02]
 
