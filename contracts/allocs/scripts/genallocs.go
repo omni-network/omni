@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/omni-network/omni/contracts/allocs"
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/halo/genutil/evm"
@@ -40,6 +41,10 @@ func genallocs() error {
 	for _, network := range netconf.All() {
 		// always skip simnet. skip mainnet until it is required
 		if network == netconf.Simnet || network == netconf.Mainnet {
+			continue
+		}
+
+		if allocs.IsLocked(network) {
 			continue
 		}
 

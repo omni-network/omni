@@ -42,7 +42,7 @@ func MakeGenesis(network netconf.ID) (core.Genesis, error) {
 		GasLimit:   miner.DefaultConfig.GasCeil,
 		BaseFee:    big.NewInt(params.InitialBaseFee),
 		Difficulty: big.NewInt(0),
-		Alloc:      mergeAllocs(precompilesAlloc(), predeps, prefunds),
+		Alloc:      mergeAllocs(PrecompilesAlloc(), predeps, prefunds),
 	}, nil
 }
 
@@ -75,7 +75,7 @@ func defaultChainConfig(network netconf.ID) *params.ChainConfig {
 // precompile balances are set to 1 as a performance optimization, as done in geth.
 //
 //nolint:forbidigo // Explicitly use BytesToAddress with left padding.
-func precompilesAlloc() types.GenesisAlloc {
+func PrecompilesAlloc() types.GenesisAlloc {
 	return types.GenesisAlloc{
 		common.BytesToAddress([]byte{1}): {Balance: big.NewInt(1)}, // ECRecover
 		common.BytesToAddress([]byte{2}): {Balance: big.NewInt(1)}, // SHA256
