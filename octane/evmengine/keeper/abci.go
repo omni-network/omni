@@ -191,6 +191,7 @@ func (k *Keeper) PostFinalize(ctx sdk.Context) error {
 	logAttr := slog.Int64("next_height", nextHeight)
 	log.Debug(ctx, "Starting optimistic EVM payload build", logAttr)
 
+	// No need to wrap this in retryForever since this is a best-effort optimisation, if it fails, just skip it.
 	fcr, err := k.startBuild(ctx, appHash, timestamp)
 	if err != nil || isUnknown(fcr.PayloadStatus) {
 		log.Warn(ctx, "Starting optimistic build failed", err, logAttr)
