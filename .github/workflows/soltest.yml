@@ -13,9 +13,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: foundry-rs/foundry-toolchain@v1
-      - uses: pnpm/action-setup@v4
-        with:
-          package_json_file: contracts/core/package.json
+      - name: Install pnpm
+        run: make install-tools
+        working-directory: contracts
       - run: pnpm install
       - name: Check fmt
         run: forge fmt --check
@@ -35,9 +35,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: foundry-rs/foundry-toolchain@v1
-      - uses: pnpm/action-setup@v2
-        with:
-          package_json_file: contracts/avs/package.json
+      - name: Install pnpm
+        run: make install-tools
+        working-directory: contracts
       - run: pnpm install
       - name: Check fmt
         run: forge fmt --check

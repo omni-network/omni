@@ -7,7 +7,10 @@ version: ## Print tool versions.
 	@forge --version
 	@abigen --version
 
-
+.PHONY: install-tools
+install-tools:
+	@which npm > /dev/null || echo "npm not installed, see https://nodejs.org/en/download/package-manager"
+	@which pnpm > /dev/null || (echo "pnpm not installed, installing..."; npm install -g pnpm@8.14.0)
 
 .PHONY: install-deps
 install-deps: ## Install dependencies.
