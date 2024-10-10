@@ -16,6 +16,11 @@ var (
 	backoffFunc   = expbackoff.New
 )
 
+// retryForever retries the given function forever until it returns true or an error.
+// In order for the function to be retried, it must return false and no error.
+//
+// Networking (any IO) is non-deterministic and can fail with temporary errors.
+// Keeper logic must however be deterministic, retrying forever mitigates this.
 func retryForever(ctx context.Context, fn func(ctx context.Context) (bool, error)) error {
 	backoffFuncMu.RLock()
 	backoff := backoffFunc(ctx)

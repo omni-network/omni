@@ -33,14 +33,14 @@ func (s proposalServer) ExecutionPayload(ctx context.Context, msg *types.MsgExec
 
 			return false, nil // Retry
 		} else if invalid, err := isInvalid(status); invalid {
-			return false, errors.Wrap(err, "invalid payload, rejecting proposal") // Don't retry
+			return false, errors.Wrap(err, "invalid payload, rejecting proposal") // Abort, don't retry
 		} else if isSyncing(status) {
 			// If this is initial sync, we need to continue and set a target head to sync to, so don't retry.
 			log.Warn(ctx, "Can't properly verifying proposal: evm syncing", err,
 				"payload_height", payload.Number)
 		}
 
-		return true, nil // We are done, don't retry.
+		return true, nil // Done
 	})
 	if err != nil {
 		return nil, err

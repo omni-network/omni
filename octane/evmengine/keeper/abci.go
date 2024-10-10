@@ -67,16 +67,16 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 			fcr, err := k.startBuild(ctx, appHash, req.Time)
 			if err != nil {
 				log.Warn(ctx, "Preparing proposal failed: build new evm payload (will retry)", err)
-				return false, nil
+				return false, nil // Retry
 			} else if fcr.PayloadStatus.Status != engine.VALID {
-				return false, errors.New("status not valid")
+				return false, errors.New("status not valid") // Abort, don't retry
 			} else if fcr.PayloadID == nil {
-				return false, errors.New("missing payload ID [BUG]")
+				return false, errors.New("missing payload ID [BUG]") // Abort, don't retry
 			}
 
 			payloadID = *fcr.PayloadID
 
-			return true, nil
+			return true, nil // Done
 		})
 		if err != nil {
 			return nil, err
@@ -100,13 +100,13 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 		var err error
 		payloadResp, err = k.engineCl.GetPayloadV3(ctx, payloadID)
 		if isUnknownPayload(err) {
-			return false, err
+			return false, err // Abort, don't retry
 		} else if err != nil {
 			log.Warn(ctx, "Preparing proposal failed: get evm payload (will retry)", err)
-			return false, nil
+			return false, nil // Retry
 		}
 
-		return true, nil
+		return true, nil // Done
 	})
 	if err != nil {
 		return nil, err

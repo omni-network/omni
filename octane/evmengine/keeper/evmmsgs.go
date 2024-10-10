@@ -22,12 +22,12 @@ func (k *Keeper) evmEvents(ctx context.Context, blockHash common.Hash) ([]*types
 			ll, err := proc.Prepare(ctx, blockHash)
 			if err != nil {
 				log.Warn(ctx, "Failed fetching evm events (will retry)", err, "proc", proc.Name())
-				return false, nil
+				return false, nil // Retry
 			}
 
 			events = append(events, ll...)
 
-			return true, nil
+			return true, nil // Done
 		})
 		if err != nil {
 			return nil, err
