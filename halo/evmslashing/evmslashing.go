@@ -100,22 +100,22 @@ func (p EventProcessor) Deliver(ctx context.Context, _ common.Hash, elog *evmeng
 
 	switch ethlog.Topics[0] {
 	case unjailEvent.ID:
-		ev, err := p.contract.ParseUnjail(ethlog)
+		unjail, err := p.contract.ParseUnjail(ethlog)
 		if err != nil {
 			return errors.Wrap(err, "parse create validator")
 		}
 
-		return p.deliverUnjail(ctx, ev)
+		return p.deliverUnjail(ctx, unjail)
 	default:
 		return errors.New("unknown event")
 	}
 }
 
 // deliverUnjail processes a Unjail event, and unjails an existing validator.
-func (p EventProcessor) deliverUnjail(ctx context.Context, ev *bindings.SlashingUnjail) error {
-	valAddr := sdk.ValAddress(ev.Validator.Bytes())
+func (p EventProcessor) deliverUnjail(ctx context.Context, unjail *bindings.SlashingUnjail) error {
+	valAddr := sdk.ValAddress(unjail.Validator.Bytes())
 
-	log.Info(ctx, "EVM unjail detected, unjailing validator", "validator", ev.Validator.Hex())
+	log.Info(ctx, "EVM unjail detected, unjailing validator", "validator", unjail.Validator.Hex())
 
 	msg := stypes.NewMsgUnjail(valAddr.String())
 

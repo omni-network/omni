@@ -54,6 +54,8 @@ const (
 )
 
 // Setup sets up the testnet configuration.
+//
+//nolint:gocyclo // Just many sequential steps.
 func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	log.Info(ctx, "Setup testnet", "dir", def.Testnet.Dir)
 
@@ -140,7 +142,9 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 		if err != nil {
 			return err
 		}
-		config.WriteConfigFile(filepath.Join(nodeDir, "config", "config.toml"), cfg) // panics
+		if err := halocmd.WriteCometConfig(filepath.Join(nodeDir, "config", "config.toml"), cfg); err != nil {
+			return err
+		}
 
 		if err := writeHaloAddressBook(def.Testnet.Network, filepath.Join(nodeDir, "config", "addrbook.json"), node); err != nil {
 			return err

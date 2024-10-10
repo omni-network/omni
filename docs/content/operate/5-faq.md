@@ -1,11 +1,5 @@
 # Operator FAQ
 
-### What is the Omni software stack?
-- The Omni architecture is similar to Ethereum PoS in that it consists of two chains: an execution chain and a consensus chain.
-- The execution chain is implemented by running the latest version of `geth` . Note that Omni doesn’t fork geth, we use the stock standard version, just with a custom Omni execution genesis.
-- The consensus chain is implemented by running `halo` which is a CosmosSDK application chain. Halo connects to geth via the [EngineAPI](https://geth.ethereum.org/docs/interacting-with-geth/rpc#engine-api).
-- Running a Omni full node therefore consists of running both `halo` and `geth`.
-
 ### Does Omni provide official docker images?
 - Yes, see [omniops/halovisor](https://hub.docker.com/r/omniops/halovisor/tags?page_size=&ordering=&name=latest) and [ethereum/client-go](https://hub.docker.com/r/ethereum/client-go/tags?page_size=&ordering=&name=latest)
 - Note that the `omni operator init-nodes` CLI command generates all the required config files, genesis files, keys and a docker compose file required to run `halo` and `geth` using docker compose. It also calls `geth init` with the Omni execution genesis file.

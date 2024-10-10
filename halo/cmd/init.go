@@ -250,7 +250,10 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 			return err
 		}
 
-		cmtconfig.WriteConfigFile(cmtConfigFile, &comet) // This panics on any error :(
+		if err := WriteCometConfig(cmtConfigFile, &comet); err != nil {
+			return err
+		}
+
 		log.Info(ctx, "Generated comet config file", "path", cmtConfigFile)
 	}
 

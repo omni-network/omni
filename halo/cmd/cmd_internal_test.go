@@ -202,6 +202,30 @@ func TestInvalidCmds(t *testing.T) {
 	}
 }
 
+func TestDefaultCometConfig(t *testing.T) {
+	t.Parallel()
+	setMonikerForT(t)
+
+	home := t.TempDir()
+	path := filepath.Join(home, "config", "config.toml")
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o755))
+
+	cfg := DefaultCometConfig(home)
+
+	err := WriteCometConfig(path, &cfg)
+	require.NoError(t, err)
+
+	cfg2, err := parseCometConfig(context.Background(), home)
+	require.NoError(t, err)
+
+	cfg.StateSync.RPCServers = []string{} // Replace nil with empty slice for comparison.
+	require.Equal(t, cfg, cfg2)
+
+	bz, err := os.ReadFile(path)
+	require.NoError(t, err)
+	tutil.RequireGoldenBytes(t, bz, tutil.WithFilename("default_config.toml"))
+}
+
 // slice is a convenience function for creating string slice literals.
 func slice(strs ...string) []string {
 	return strs

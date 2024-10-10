@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -48,6 +50,31 @@ func DefaultCometConfig(homeDir string) cfg.Config {
 	conf.RPC.ListenAddress = "tcp://0.0.0.0:26657"     // Halo always run inside docker
 
 	return *conf
+}
+
+// WriteCometConfig writes the cometBFT config to disk.
+// TODO(corevr): Remove this once mempool.type issue is fixed upstream.
+func WriteCometConfig(path string, config *cfg.Config) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New("failed writing comet config", "err", r)
+		}
+	}()
+
+	cfg.WriteConfigFile(path, config) // This panics on error
+
+	bz, err := os.ReadFile(path)
+	if err != nil {
+		return errors.Wrap(err, "read comet config")
+	}
+
+	// Workaround for issue: https://github.com/cometbft/cometbft/pull/4281
+	bz = bytes.ReplaceAll(bz, []byte(`"flood"`), []byte(`"nop"`))
+	if err := os.WriteFile(path, bz, 0o644); err != nil {
+		return errors.Wrap(err, "update comet config")
+	}
+
+	return nil
 }
 
 // parseCometConfig parses the cometBFT config from disk and verifies it.
