@@ -17,24 +17,27 @@ import (
 func (k *Keeper) evmEvents(ctx context.Context, blockHash common.Hash) ([]*types.EVMEvent, error) {
 	var events []*types.EVMEvent
 	for _, proc := range k.eventProcs {
+		// Fetching evm events over the network is unreliable, retry forever.
 		err := retryForever(ctx, func(ctx context.Context) (bool, error) {
 			ll, err := proc.Prepare(ctx, blockHash)
 			if err != nil {
-				log.Warn(ctx, "Failed fetching evm logs (will retry)", err, "proc", proc)
+				log.Warn(ctx, "Failed fetching evm events (will retry)", err, "proc", proc.Name())
 				return false, nil
 			}
-			// Verify all logs
-			for _, l := range ll {
-				if err := l.Verify(); err != nil {
-					return false, errors.Wrap(err, "verify log")
-				}
-			}
+
 			events = append(events, ll...)
 
 			return true, nil
 		})
 		if err != nil {
 			return nil, err
+		}
+	}
+
+	// Verify all events
+	for _, event := range events {
+		if err := event.Verify(); err != nil {
+			return nil, errors.Wrap(err, "verify evm events")
 		}
 	}
 
