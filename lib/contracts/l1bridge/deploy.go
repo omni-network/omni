@@ -107,9 +107,9 @@ func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend
 	cfg := DeploymentConfig{
 		Create3Factory:  addrs.Create3Factory,
 		Create3Salt:     salts.L1Bridge,
-		Owner:           eoa.MustAddress(network, eoa.RoleAdmin),
+		Owner:           eoa.MustAddress(network, eoa.RoleManager),
 		Deployer:        eoa.MustAddress(network, eoa.RoleDeployer),
-		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleAdmin),
+		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleUpgrader),
 		Portal:          addrs.Portal,
 		Token:           addrs.Token,
 		ExpectedAddr:    addrs.L1Bridge,

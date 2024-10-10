@@ -410,7 +410,7 @@ func maybeSubmitNetworkUpgrade(ctx context.Context, def Definition) error {
 		return err
 	}
 
-	txOpts, err := backend.BindOpts(ctx, eoa.MustAddress(network, eoa.RoleAdmin))
+	txOpts, err := backend.BindOpts(ctx, eoa.MustAddress(network, eoa.RoleUpgrader))
 	if err != nil {
 		return err
 	}

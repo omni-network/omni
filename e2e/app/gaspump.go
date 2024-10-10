@@ -12,7 +12,6 @@ import (
 	"github.com/omni-network/omni/lib/contracts/gasstation"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -113,10 +112,6 @@ func deployGasStation(ctx context.Context, def Definition) error {
 // TODO: handle funding / monitoring properly.
 // consider joining with e2e/app/eoa, or introduce something similar for contracts.
 func fundGasStation(ctx context.Context, def Definition) error {
-	if def.Testnet.Network != netconf.Devnet && def.Testnet.Network != netconf.Staging {
-		return errors.New("funding of gas station only supported on devnet and staging (fixme)")
-	}
-
 	network := NetworkFromDef(def)
 	omniEVM, ok := network.OmniEVMChain()
 	if !ok {
@@ -128,10 +123,7 @@ func fundGasStation(ctx context.Context, def Definition) error {
 		return errors.Wrap(err, "backend")
 	}
 
-	funder := eoa.Funder()
-	if network.ID == netconf.Devnet { // use dev account for devnet
-		funder = anvil.DevAccount8()
-	}
+	funder := eoa.MustAddress(network.ID, eoa.RoleFunder)
 
 	addrs, err := contracts.GetAddresses(ctx, network.ID)
 	if err != nil {

@@ -15,6 +15,8 @@ import (
 type Role string
 
 const (
+	// RoleFunder is used to fund omni accounts on all networks.
+	RoleFunder Role = "funder"
 	// RoleRelayer is the relayer eoa on all networks. It creates submissions to portals.
 	RoleRelayer Role = "relayer"
 	// RoleMonitor is the monitor service eoa on all networks. It is used by the feemanager.
@@ -23,8 +25,11 @@ const (
 	RoleCreate3Deployer Role = "create3-deployer"
 	// RoleDeployer is used to deploy official omni contracts on all chains.
 	RoleDeployer Role = "deployer"
-	// RoleAdmin is used to manage the omni contracts on all chains. It has admin privileges on official omni contracts.
-	RoleAdmin Role = "admin"
+	// RoleManager is used to manage the omni contracts on all chains. It has admin privileges on official omni contracts.
+	// The role can pause, unpause and configure contracts.
+	RoleManager Role = "manager"
+	// RoleUpgrader is the owner of each proxy contract and can trigger upgrade actions.
+	RoleUpgrader Role = "upgrader"
 	// RoleTester is used for general tasks and testing in non-mainnet networks.
 	RoleTester Role = "tester"
 )
@@ -35,7 +40,8 @@ func AllRoles() []Role {
 		RoleMonitor,
 		RoleCreate3Deployer,
 		RoleDeployer,
-		RoleAdmin,
+		RoleManager,
+		RoleUpgrader,
 		RoleTester,
 	}
 }

@@ -29,7 +29,8 @@ const omniEVMName = "omni_evm"
 
 // shared contains common resources for all admin operations.
 type shared struct {
-	admin       common.Address
+	manager     common.Address
+	upgrader    common.Address
 	deployer    common.Address
 	endpoints   xchain.RPCEndpoints
 	network     netconf.Network
@@ -47,7 +48,8 @@ type chain struct {
 // setup returns common resources for all admin operations.
 func setup(def app.Definition, cfg Config) shared {
 	netID := def.Testnet.Network
-	admin := eoa.MustAddress(netID, eoa.RoleAdmin)
+	manager := eoa.MustAddress(netID, eoa.RoleManager)
+	upgrader := eoa.MustAddress(netID, eoa.RoleUpgrader)
 	deployer := eoa.MustAddress(netID, eoa.RoleDeployer)
 	endpoints := app.ExternalEndpoints(def)
 	network := app.NetworkFromDef(def)
@@ -55,7 +57,8 @@ func setup(def app.Definition, cfg Config) shared {
 	// addrs set lazily in setupChain
 
 	return shared{
-		admin:       admin,
+		manager:     manager,
+		upgrader:    upgrader,
 		deployer:    deployer,
 		endpoints:   endpoints,
 		network:     network,

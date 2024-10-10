@@ -110,7 +110,7 @@ type eigenDeployments struct {
 type deployConfig struct {
 	eigen            eigenDeployments
 	deployer         common.Address
-	owner            common.Address
+	upgrader         common.Address
 	portal           common.Address
 	omniChainID      uint64
 	metadataURI      string
@@ -141,7 +141,7 @@ func testDeployCfg(t *testing.T) deployConfig {
 
 	return deployConfig{
 		deployer:         eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer),
-		owner:            eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
+		upgrader:         eoa.MustAddress(netconf.Devnet, eoa.RoleUpgrader),
 		eigen:            devnetEigenDeployments(t),
 		metadataURI:      "https://test-operator.com",
 		omniChainID:      netconf.Devnet.Static().OmniExecutionChainID,
@@ -168,7 +168,7 @@ func deployAVS(t *testing.T, ctx context.Context, backend *ethbackend.Backend) c
 	_, err = backend.WaitMined(ctx, tx)
 	require.NoError(t, err)
 
-	addr, tx, _, err := bindings.DeployTransparentUpgradeableProxy(txOpts, backend, impl, cfg.owner, packInitialzer(t, cfg))
+	addr, tx, _, err := bindings.DeployTransparentUpgradeableProxy(txOpts, backend, impl, cfg.upgrader, packInitialzer(t, cfg))
 	require.NoError(t, err)
 	_, err = backend.WaitMined(ctx, tx)
 	require.NoError(t, err)
@@ -185,7 +185,7 @@ func packInitialzer(t *testing.T, cfg deployConfig) []byte {
 	t.Helper()
 
 	enc, err := avsABI.Pack("initialize",
-		cfg.owner, cfg.portal, cfg.omniChainID, cfg.ethStakeInbox,
+		cfg.upgrader, cfg.portal, cfg.omniChainID, cfg.ethStakeInbox,
 		cfg.minOperatorStake, cfg.maxOperatorCount, cfg.stratParams,
 		cfg.metadataURI, cfg.allowlistEnabled)
 	require.NoError(t, err)
@@ -204,7 +204,7 @@ func devnetEigenDeployments(t *testing.T) eigenDeployments {
 }
 
 type EOAS struct {
-	AVSOwner     common.Address
+	AVSManager   common.Address
 	EigenOwner   common.Address
 	Operator1    common.Address
 	Operator1Key *ecdsa.PrivateKey
@@ -245,7 +245,7 @@ func makeEOAS(t *testing.T, backend *ethbackend.Backend) EOAS {
 	require.NoError(t, err)
 
 	return EOAS{
-		AVSOwner:     eoa.MustAddress(netconf.Devnet, eoa.RoleAdmin),
+		AVSManager:   eoa.MustAddress(netconf.Devnet, eoa.RoleManager),
 		EigenOwner:   anvil.DevAccount9(), // account used to deploy eigen contracts
 		Operator1:    operator1,
 		Operator1Key: operator1Key,

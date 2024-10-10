@@ -62,10 +62,6 @@ func fundAccounts(ctx context.Context, def Definition) error {
 
 // FundAccounts funds the EOAs and contracts that need funding to their target balance.
 func FundAccounts(ctx context.Context, def Definition, dryRun bool) error {
-	if def.Testnet.Network == netconf.Mainnet {
-		return errors.New("mainnet funding not supported yet")
-	}
-
 	network := NetworkFromDef(def)
 	accounts := eoa.AllAccounts(network.ID)
 
@@ -77,7 +73,7 @@ func FundAccounts(ctx context.Context, def Definition, dryRun bool) error {
 			return errors.Wrap(err, "backend")
 		}
 
-		funder := eoa.Funder()
+		funder := eoa.MustAddress(network.ID, eoa.RoleFunder)
 		funderBal, err := backend.BalanceAt(ctx, funder, nil)
 		if err != nil {
 			return err
@@ -120,6 +116,7 @@ func FundAccounts(ctx context.Context, def Definition, dryRun bool) error {
 				targetBalance: thresholds.TargetBalance(),
 				saneMax:       saneMax,
 				dryRun:        dryRun,
+				funder:        funder,
 			}); err != nil {
 				return errors.Wrap(err, "fund account")
 			}
@@ -156,6 +153,7 @@ func FundAccounts(ctx context.Context, def Definition, dryRun bool) error {
 				targetBalance: contract.Thresholds.TargetBalance(),
 				saneMax:       saneMax,
 				dryRun:        dryRun,
+				funder:        funder,
 			}); err != nil {
 				return errors.Wrap(err, "fund contract")
 			}
@@ -167,6 +165,7 @@ func FundAccounts(ctx context.Context, def Definition, dryRun bool) error {
 
 type fundParams struct {
 	backend       *ethbackend.Backend
+	funder        common.Address
 	account       common.Address
 	minBalance    *big.Int
 	targetBalance *big.Int
@@ -181,8 +180,9 @@ func fund(ctx context.Context, params fundParams) error {
 	targetBalance := params.targetBalance
 	saneMax := params.saneMax
 	dryRun := params.dryRun
+	funder := params.funder
 
-	funderBal, err := backend.BalanceAt(ctx, eoa.Funder(), nil)
+	funderBal, err := backend.BalanceAt(ctx, funder, nil)
 	if err != nil {
 		log.Warn(ctx, "Failed fetching balance, skipping", err)
 		return nil
@@ -228,7 +228,7 @@ func fund(ctx context.Context, params fundParams) error {
 		return nil
 	}
 
-	tx, rec, err := backend.Send(ctx, eoa.Funder(), txmgr.TxCandidate{
+	tx, rec, err := backend.Send(ctx, funder, txmgr.TxCandidate{
 		To:       &account,
 		GasLimit: 0,
 		Value:    amount,

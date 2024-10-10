@@ -28,12 +28,14 @@ contract AllocPredeploys_Test is Test, AllocPredeploys {
      * @notice Tests predeploy allocs, asserting the number of allocs is expected.
      */
     function test_num_allocs() public {
-        address admin = makeAddr("admin");
+        address manager = makeAddr("manager");
+        address upgrader = makeAddr("upgrader");
         string memory output = tmpfile();
 
         this.run(
             AllocPredeploys.Config({
-                admin: admin,
+                manager: manager,
+                upgrader: upgrader,
                 chainId: 165,
                 nativeBridgeBalance: omniTotalSupply,
                 enableStakingAllowlist: false,
@@ -73,7 +75,8 @@ contract AllocPredeploys_Test is Test, AllocPredeploys {
     function test_proxies() public {
         this.runNoStateDump(
             AllocPredeploys.Config({
-                admin: makeAddr("admin"),
+                manager: makeAddr("manager"),
+                upgrader: makeAddr("upgrader"),
                 chainId: 165,
                 nativeBridgeBalance: omniTotalSupply,
                 enableStakingAllowlist: false,
@@ -90,7 +93,8 @@ contract AllocPredeploys_Test is Test, AllocPredeploys {
 
         this.runNoStateDump(
             AllocPredeploys.Config({
-                admin: makeAddr("admin"),
+                manager: makeAddr("manager"),
+                upgrader: makeAddr("upgrader"),
                 chainId: 165,
                 nativeBridgeBalance: nativeBridgeBalance,
                 enableStakingAllowlist: false,
@@ -106,7 +110,8 @@ contract AllocPredeploys_Test is Test, AllocPredeploys {
     function test_preinstalls() public {
         this.runNoStateDump(
             AllocPredeploys.Config({
-                admin: makeAddr("admin"),
+                manager: makeAddr("manager"),
+                upgrader: makeAddr("upgrader"),
                 chainId: 165,
                 nativeBridgeBalance: omniTotalSupply,
                 enableStakingAllowlist: false,
@@ -146,10 +151,10 @@ contract AllocPredeploys_Test is Test, AllocPredeploys {
 
     function _testPredeploys() internal view {
         // test owners
-        assertEq(cfg.admin, OwnableUpgradeable(Predeploys.PortalRegistry).owner(), "PortalRegistry owner check");
-        assertEq(cfg.admin, OwnableUpgradeable(Predeploys.OmniBridgeNative).owner(), "OmniBridgeNative owner check");
-        assertEq(cfg.admin, OwnableUpgradeable(Predeploys.Staking).owner(), "Staking owner check");
-        assertEq(cfg.admin, OwnableUpgradeable(Predeploys.Upgrade).owner(), "Upgrade owner check");
+        assertEq(cfg.upgrader, OwnableUpgradeable(Predeploys.PortalRegistry).owner(), "PortalRegistry owner check");
+        assertEq(cfg.manager, OwnableUpgradeable(Predeploys.OmniBridgeNative).owner(), "OmniBridgeNative owner check");
+        assertEq(cfg.manager, OwnableUpgradeable(Predeploys.Staking).owner(), "Staking owner check");
+        assertEq(cfg.upgrader, OwnableUpgradeable(Predeploys.Upgrade).owner(), "Upgrade owner check");
 
         // test proxies initialized
         assertTrue(InitializableHelper.isInitialized(Predeploys.PortalRegistry), "PortalRegistry initialized check");
@@ -197,7 +202,7 @@ contract AllocPredeploys_Test is Test, AllocPredeploys {
 
         address proxyAdmin = EIP1967Helper.getAdmin(addr);
 
-        vm.prank(cfg.admin);
+        vm.prank(cfg.upgrader);
         ProxyAdmin(proxyAdmin).upgradeAndCall(ITransparentUpgradeableProxy(addr), helloWorld, "");
 
         // check new implementation
