@@ -18,8 +18,8 @@ import (
 
 //go:generate go test . -golden -clean
 
-func TestXBlock(t *testing.T) {
-	t.Parallel()
+func setupTest(t *testing.T) (uint64, valsetFunc, chainIDFunc, headerFunc, portalBlockFunc) {
+	t.Helper()
 	f := fuzz.NewWithSeed(99).NilChance(0).Funcs(
 		// Fuzz valid validators.
 		func(e *cchain.PortalValidator, c fuzz.Continue) {
@@ -69,10 +69,38 @@ func TestXBlock(t *testing.T) {
 		}, true, nil
 	}
 
+	return height, valFunc, chainFunc, headerFunc, portalBlockFunc
+}
+
+// TestXBlock ensures we receive expected xblock response from provider.
+func TestXBlock(t *testing.T) {
+	t.Parallel()
+
+	height, valFunc, chainFunc, headerFunc, portalBlockFunc := setupTest(t)
 	prov := Provider{valset: valFunc, chainID: chainFunc, header: headerFunc, portalBlock: portalBlockFunc}
 
 	block, ok, err := prov.XBlock(context.Background(), height, false)
 	require.NoError(t, err)
 	require.True(t, ok)
 	tutil.RequireGoldenJSON(t, block)
+}
+
+// TestXBlock_MaliciousResponse ensures that the provider will return an error if any of the msgs in the msgs slice
+// of the block response is nil.
+func TestXBlock_MaliciousResponse(t *testing.T) {
+	t.Parallel()
+
+	portalBlockFunc := func(ctx context.Context, h uint64, _ bool) (*ptypes.BlockResponse, bool, error) {
+		return &ptypes.BlockResponse{
+			Id:            h,
+			CreatedHeight: 123456,
+			Msgs:          []*ptypes.Msg{nil, nil, nil}, // set msgs to nil
+		}, true, nil
+	}
+
+	height, valFunc, chainFunc, headerFunc, _ := setupTest(t)
+	prov := Provider{valset: valFunc, chainID: chainFunc, header: headerFunc, portalBlock: portalBlockFunc}
+	_, ok, err := prov.XBlock(context.Background(), height, false)
+	require.Errorf(t, err, "unexpected nil msg in block response msgs slice possible malicious response [BUG]")
+	require.False(t, ok)
 }

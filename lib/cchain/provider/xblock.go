@@ -40,6 +40,12 @@ func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchai
 
 	var msgs []xchain.Msg
 	for _, msg := range block.Msgs {
+		// msg will only be nil if receive a malicious response from a client
+		// nil check ensures we won't panic in that case.
+		if msg == nil {
+			return xchain.Block{}, false, errors.New("unexpected nil msg in block response msgs slice possible malicious response [BUG]")
+		}
+
 		if msg.ShardID() == xchain.ShardBroadcast0 && msg.StreamOffset == 1 && msg.MsgType() != ptypes.MsgTypeValSet {
 			return xchain.Block{}, false, errors.New("initial broadcast message not genesis valset [BUG]", "type", msg.MsgType())
 		}
