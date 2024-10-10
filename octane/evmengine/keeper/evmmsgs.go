@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -16,17 +17,28 @@ import (
 func (k *Keeper) evmEvents(ctx context.Context, blockHash common.Hash) ([]*types.EVMEvent, error) {
 	var events []*types.EVMEvent
 	for _, proc := range k.eventProcs {
-		ll, err := proc.Prepare(ctx, blockHash)
-		if err != nil {
-			return nil, errors.Wrap(err, "prepare msgs")
-		}
-		for _, log := range ll {
-			if err := log.Verify(); err != nil {
-				return nil, errors.Wrap(err, "verify log")
+		// Fetching evm events over the network is unreliable, retry forever.
+		err := retryForever(ctx, func(ctx context.Context) (bool, error) {
+			ll, err := proc.Prepare(ctx, blockHash)
+			if err != nil {
+				log.Warn(ctx, "Failed fetching evm events (will retry)", err, "proc", proc.Name())
+				return false, nil // Retry
 			}
-		}
 
-		events = append(events, ll...)
+			events = append(events, ll...)
+
+			return true, nil // Done
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Verify all events
+	for _, event := range events {
+		if err := event.Verify(); err != nil {
+			return nil, errors.Wrap(err, "verify evm events")
+		}
 	}
 
 	// Sort by Address > Topics > Data

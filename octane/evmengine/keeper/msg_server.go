@@ -46,12 +46,13 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 			// This should never happen. This node will stall now.
 			log.Error(ctx, "Processing finalized payload failed; payload invalid [BUG]", err)
 
-			return false, err // Don't retry, error out.
+			return false, err // // Abort, don't retry
 		} else if isSyncing(status) {
+			// Payload pushed, but EVM syncing continue to ForkChoiceUpdate below
 			log.Warn(ctx, "Processing finalized payload; evm syncing", nil)
 		}
 
-		return true, nil // We are done, don't retry
+		return true, nil // Done
 	})
 	if err != nil {
 		return nil, err
@@ -81,10 +82,10 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 			log.Error(ctx, "Processing finalized payload failed; forkchoice update invalid [BUG]", err,
 				"payload_height", payload.Number)
 
-			return false, err // Don't retry
+			return false, err // Abort, don't retry
 		}
 
-		return true, nil
+		return true, nil // Done
 	})
 	if err != nil {
 		return nil, err
