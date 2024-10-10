@@ -74,15 +74,9 @@ contract OmniBridgeNative_Test is Test {
 
         b.setL1BridgeBalance(amount);
 
-        // requires msg.value == fee + amount
-        vm.expectRevert("OmniBridge: incorrect funds");
-        b.bridge{ value: amount }(to, amount);
-        vm.expectRevert("OmniBridge: incorrect funds");
-        b.bridge{ value: amount + 1 }(to, amount);
-
-        // must equal amount + fee
-        vm.expectRevert("OmniBridge: incorrect funds");
-        b.bridge{ value: amount + fee + 1 }(to, amount);
+        // requires msg.value >= fee + amount
+        vm.expectRevert("OmniBridge: insufficient funds");
+        b.bridge{ value: amount + fee - 1 }(to, amount);
 
         // succeeds
         //
@@ -92,9 +86,10 @@ contract OmniBridgeNative_Test is Test {
         emit Bridge(address(this), to, amount);
 
         // emits xcall
+        uint256 feeWithExcess = fee + 1; // test that bridge forwards excess fee to portal
         vm.expectCall(
             address(portal),
-            fee,
+            feeWithExcess,
             abi.encodeCall(
                 IOmniPortal.xcall,
                 (
@@ -106,7 +101,7 @@ contract OmniBridgeNative_Test is Test {
                 )
             )
         );
-        b.bridge{ value: amount + fee }(to, amount);
+        b.bridge{ value: amount + feeWithExcess }(to, amount);
 
         // decrements l1BridgeBalance
         assertEq(b.l1BridgeBalance(), 0);

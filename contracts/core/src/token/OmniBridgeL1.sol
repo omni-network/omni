@@ -85,7 +85,9 @@ contract OmniBridgeL1 is OmniBridgeCommon {
         bytes memory xcalldata =
             abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount, token.balanceOf(address(this)) + amount));
 
-        require(msg.value == omni.feeFor(omniChainId, xcalldata, XCALL_WITHDRAW_GAS_LIMIT), "OmniBridge: incorrect fee");
+        require(
+            msg.value >= omni.feeFor(omniChainId, xcalldata, XCALL_WITHDRAW_GAS_LIMIT), "OmniBridge: insufficient fee"
+        );
         require(token.transferFrom(payor, address(this), amount), "OmniBridge: transfer failed");
 
         omni.xcall{ value: msg.value }(
