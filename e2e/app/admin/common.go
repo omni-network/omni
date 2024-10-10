@@ -29,7 +29,7 @@ const omniEVMName = "omni_evm"
 
 // shared contains common resources for all admin operations.
 type shared struct {
-	owner       common.Address
+	manager     common.Address
 	upgrader    common.Address
 	deployer    common.Address
 	endpoints   xchain.RPCEndpoints
@@ -57,7 +57,7 @@ func setup(def app.Definition, cfg Config) shared {
 	// addrs set lazily in setupChain
 
 	return shared{
-		owner:       owner,
+		manager:     owner,
 		upgrader:    upgrader,
 		deployer:    deployer,
 		endpoints:   endpoints,

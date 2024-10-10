@@ -13,12 +13,12 @@ import (
 func pauseBridge(ctx context.Context, s shared, c chain, addr common.Address, actionID [32]byte, actionLabel string) error {
 	log.Info(ctx, "Pausing bridge...", "chain", c.Name, "addr", addr, "action", actionLabel)
 
-	calldata, err := adminABI.Pack("pauseBridge", s.owner, addr, actionID)
+	calldata, err := adminABI.Pack("pauseBridge", s.manager, addr, actionID)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.owner)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.manager)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}
@@ -32,12 +32,12 @@ func pauseBridge(ctx context.Context, s shared, c chain, addr common.Address, ac
 func unpauseBridge(ctx context.Context, s shared, c chain, addr common.Address, actionID [32]byte, actionLabel string) error {
 	log.Info(ctx, "Unpausing bridge...", "chain", c.Name, "addr", addr, "action", actionLabel)
 
-	calldata, err := adminABI.Pack("unpauseBridge", s.owner, addr, actionID)
+	calldata, err := adminABI.Pack("unpauseBridge", s.manager, addr, actionID)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.owner)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.manager)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}
