@@ -24,7 +24,7 @@ var omegaOperators = []common.Address{
 	common.HexToAddress("0x1B6881C66fFd311eE7b0C9b925EB7fd612E1C7B9"), // Kingnodes
 	common.HexToAddress("0x641F5938E0d093988d7Cf99509C3152FC7922B88"), // Galaxy
 	common.HexToAddress("0xb86DDe58C05dF3C09a8eB7476152793138D113C9"), // Chorusone
-	common.HexToAddress("0xcf8EB4Ee3cb3C9c14a4b290bD902dC06d2926ec1"), // Pops.one
+	common.HexToAddress("0xcf8EB4Ee3cb3C9c14a4b290bD902dC06d2926ec1"), // P-OPS
 }
 
 // AllowOperators ensures that all operators hard-coded in this package is allowed as validators.
