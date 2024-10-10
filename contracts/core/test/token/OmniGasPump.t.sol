@@ -97,6 +97,10 @@ contract OmniGasPump_Test is Test {
         uint64 omniChainId = portal.omniChainId();
         vm.deal(recipient, initialBalance);
 
+        // no zero recipient
+        vm.expectRevert("OmniGasPump: no zero addr");
+        pump.fillUp(address(0));
+
         // requires fee
         vm.expectRevert("OmniGasPump: insufficient fee");
         pump.fillUp(recipient);
@@ -253,6 +257,28 @@ contract OmniGasPump_Test is Test {
         // fillUp is unpaused
         vm.expectRevert("OmniGasPump: insufficient fee"); // reverts, but not becasue its paused
         pump.fillUp(recipient);
+    }
+
+    function test_withdraw() public {
+        vm.deal(address(pump), 10 ether);
+
+        // no zero address
+        vm.prank(owner);
+        vm.expectRevert("OmniGasPump: no zero addr");
+        pump.withdraw(address(0));
+
+        // only owner
+        address notOwner = address(0x456);
+        vm.prank(notOwner);
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, notOwner));
+        pump.withdraw(owner);
+
+        // success
+        address to = makeAddr("to");
+        vm.prank(owner);
+        pump.withdraw(to);
+        assertEq(address(pump).balance, 0);
+        assertEq(to.balance, 10 ether);
     }
 
     /// @notice Test that GasPump.quote is accurate

@@ -12,6 +12,9 @@ contract Staking_Test is Test {
     /// @dev Matches Staking.CreateValidator event
     event CreateValidator(address indexed validator, bytes pubkey, uint256 deposit);
 
+    /// @dev Matches Staking.Delegate event
+    event Delegate(address indexed delegator, address indexed validator, uint256 amount);
+
     address owner;
     StakingHarness staking;
 
@@ -88,6 +91,42 @@ contract Staking_Test is Test {
 
         vm.prank(validator);
         staking.createValidator{ value: deposit }(pubkey);
+    }
+
+    function test_delegate() public {
+        // requires min delegation
+        address validator = makeAddr("validator");
+        uint256 minDelegation = staking.MinDelegation();
+
+        vm.deal(validator, minDelegation);
+
+        vm.expectRevert("Staking: insufficient deposit");
+        staking.delegate{ value: minDelegation - 1 }(validator);
+
+        // requires self-delegation
+        vm.expectRevert("Staking: only self delegation");
+        vm.prank(validator);
+        staking.delegate{ value: minDelegation }(makeAddr("someone else"));
+
+        // if allowlist enabled, must be in allowlist
+        vm.prank(owner);
+        staking.enableAllowlist();
+
+        vm.expectRevert("Staking: not allowed val");
+        vm.prank(validator);
+        staking.delegate{ value: minDelegation }(validator);
+
+        // succeeds
+        address[] memory validators = new address[](1);
+        validators[0] = validator;
+        vm.prank(owner);
+        staking.allowValidators(validators);
+
+        vm.expectEmit();
+        emit Delegate(validator, validator, minDelegation);
+
+        vm.prank(validator);
+        staking.delegate{ value: minDelegation }(validator);
     }
 }
 
