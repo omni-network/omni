@@ -581,12 +581,12 @@ func setIsVal(t *testing.T, v *voter.Voter, pk k1.PrivKey, isVal bool) {
 	cmtPubkey, err := k1util.PBPubKeyFromBytes(pk.PubKey().Bytes())
 	require.NoError(t, err)
 
-	vals := []*vtypes.Validator{{
+	vals := []vtypes.Validator{{
 		ConsensusPubkey: k1.GenPrivKey().PubKey().Bytes(),
 		Power:           1,
 	}}
 	if isVal {
-		vals = append(vals, &vtypes.Validator{
+		vals = append(vals, vtypes.Validator{
 			ConsensusPubkey: cmtPubkey.GetSecp256K1(),
 			Power:           1,
 		})

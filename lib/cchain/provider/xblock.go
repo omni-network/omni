@@ -33,7 +33,7 @@ func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchai
 		return xchain.Block{}, false, errors.Wrap(err, "get chain ID")
 	}
 
-	dataProviders := map[ptypes.MsgType]func(ctx context.Context, msg *ptypes.Msg) ([]byte, error){
+	dataProviders := map[ptypes.MsgType]func(ctx context.Context, msg ptypes.Msg) ([]byte, error){
 		ptypes.MsgTypeValSet:  p.msgValSetData,
 		ptypes.MsgTypeNetwork: p.msgNetworkData,
 	}
@@ -77,7 +77,7 @@ func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchai
 	}, true, nil
 }
 
-func (p Provider) msgValSetData(ctx context.Context, msg *ptypes.Msg) ([]byte, error) {
+func (p Provider) msgValSetData(ctx context.Context, msg ptypes.Msg) ([]byte, error) {
 	valset, ok, err := p.valset(ctx, msg.MsgTypeId, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "get valset")
@@ -98,7 +98,7 @@ func (p Provider) msgValSetData(ctx context.Context, msg *ptypes.Msg) ([]byte, e
 	return data, nil
 }
 
-func (p Provider) msgNetworkData(ctx context.Context, msg *ptypes.Msg) ([]byte, error) {
+func (p Provider) msgNetworkData(ctx context.Context, msg ptypes.Msg) ([]byte, error) {
 	network, ok, err := p.networkFunc(ctx, msg.MsgTypeId, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "get network")
@@ -142,7 +142,7 @@ func toPortalVals(vals []cchain.PortalValidator) ([]bindings.Validator, error) {
 	return resp, nil
 }
 
-func toPortalChains(portals []*types.Portal) []bindings.XTypesChain {
+func toPortalChains(portals []types.Portal) []bindings.XTypesChain {
 	resp := make([]bindings.XTypesChain, 0, len(portals))
 	for _, portal := range portals {
 		resp = append(resp, bindings.XTypesChain{

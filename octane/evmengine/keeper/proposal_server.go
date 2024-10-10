@@ -68,13 +68,13 @@ func NewProposalServer(keeper *Keeper) types.MsgServiceServer {
 
 var _ types.MsgServiceServer = proposalServer{}
 
-func evmEventsEqual(a, b []*types.EVMEvent) error {
+func evmEventsEqual(a, b []types.EVMEvent) error {
 	if len(a) != len(b) {
 		return errors.New("count mismatch", "a", len(a), "b", len(b))
 	}
 
 	for i := range a {
-		if !proto.Equal(a[i], b[i]) {
+		if !proto.Equal(&a[i], &b[i]) {
 			return errors.New("log mismatch", "index", i)
 		}
 	}

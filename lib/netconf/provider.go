@@ -213,7 +213,7 @@ func toShardIDs(shards []uint64) []xchain.ShardID {
 	return resp
 }
 
-func toPortalBindings(portals []*rtypes.Portal) ([]bindings.PortalRegistryDeployment, error) {
+func toPortalBindings(portals []rtypes.Portal) ([]bindings.PortalRegistryDeployment, error) {
 	rtypesPortals := make([]bindings.PortalRegistryDeployment, len(portals))
 	for i, p := range portals {
 		addr, err := cast.EthAddress(p.Address)

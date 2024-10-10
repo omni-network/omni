@@ -242,7 +242,7 @@ func (p Provider) stream(
 	return nil
 }
 
-func (p Provider) Portals(ctx context.Context) ([]*rtypes.Portal, bool, error) {
+func (p Provider) Portals(ctx context.Context) ([]rtypes.Portal, bool, error) {
 	// networkID is ignored when latest is true.
 	netResp, ok, err := p.networkFunc(ctx, 0, true)
 	if err != nil {

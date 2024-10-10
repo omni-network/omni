@@ -57,7 +57,7 @@ func TestXBlock(t *testing.T) {
 		}, nil
 	}
 	portalBlockFunc := func(ctx context.Context, h uint64, _ bool) (*ptypes.BlockResponse, bool, error) {
-		var valSetMsg *ptypes.Msg
+		var valSetMsg ptypes.Msg
 		f.Fuzz(&valSetMsg)
 		valSetMsg.Type = uint32(ptypes.MsgTypeValSet)
 		valSetMsg.MsgTypeId = h
@@ -65,7 +65,7 @@ func TestXBlock(t *testing.T) {
 		return &ptypes.BlockResponse{
 			Id:            h,
 			CreatedHeight: 123456,
-			Msgs:          []*ptypes.Msg{valSetMsg},
+			Msgs:          []ptypes.Msg{valSetMsg},
 		}, true, nil
 	}
 

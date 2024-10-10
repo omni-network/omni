@@ -110,7 +110,7 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 
 // deliverEvents delivers the given logs to the registered log providers.
 // TODO(corver): Return log event results to properly manage failures.
-func (s msgServer) deliverEvents(ctx context.Context, height uint64, blockHash common.Hash, logs []*types.EVMEvent) error {
+func (s msgServer) deliverEvents(ctx context.Context, height uint64, blockHash common.Hash, logs []types.EVMEvent) error {
 	procs := make(map[common.Address]types.EvmEventProcessor)
 	for _, proc := range s.eventProcs {
 		for _, addr := range proc.Addresses() {

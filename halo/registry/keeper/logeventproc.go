@@ -34,7 +34,7 @@ func (k Keeper) Addresses() []common.Address {
 }
 
 // Prepare returns all omni portal registry contract EVM event logs from the provided block hash.
-func (k Keeper) Prepare(ctx context.Context, blockHash common.Hash) ([]*evmenginetypes.EVMEvent, error) {
+func (k Keeper) Prepare(ctx context.Context, blockHash common.Hash) ([]evmenginetypes.EVMEvent, error) {
 	logs, err := k.ethCl.FilterLogs(ctx, ethereum.FilterQuery{
 		BlockHash: &blockHash,
 		Addresses: k.Addresses(),
@@ -44,13 +44,13 @@ func (k Keeper) Prepare(ctx context.Context, blockHash common.Hash) ([]*evmengin
 		return nil, errors.Wrap(err, "filter logs")
 	}
 
-	resp := make([]*evmenginetypes.EVMEvent, 0, len(logs))
+	resp := make([]evmenginetypes.EVMEvent, 0, len(logs))
 	for _, l := range logs {
 		topics := make([][]byte, 0, len(l.Topics))
 		for _, t := range l.Topics {
 			topics = append(topics, t.Bytes())
 		}
-		resp = append(resp, &evmenginetypes.EVMEvent{
+		resp = append(resp, evmenginetypes.EVMEvent{
 			Address: l.Address.Bytes(),
 			Topics:  topics,
 			Data:    l.Data,
@@ -61,7 +61,7 @@ func (k Keeper) Prepare(ctx context.Context, blockHash common.Hash) ([]*evmengin
 }
 
 // Deliver processes a omni portal registry events.
-func (k Keeper) Deliver(ctx context.Context, _ common.Hash, elog *evmenginetypes.EVMEvent) error {
+func (k Keeper) Deliver(ctx context.Context, _ common.Hash, elog evmenginetypes.EVMEvent) error {
 	ethlog, err := elog.ToEthLog()
 	if err != nil {
 		return err

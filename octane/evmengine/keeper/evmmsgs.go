@@ -14,8 +14,8 @@ import (
 )
 
 // evmEvents returns all EVM log events from the provided block hash.
-func (k *Keeper) evmEvents(ctx context.Context, blockHash common.Hash) ([]*types.EVMEvent, error) {
-	var events []*types.EVMEvent
+func (k *Keeper) evmEvents(ctx context.Context, blockHash common.Hash) ([]types.EVMEvent, error) {
+	var events []types.EVMEvent
 	for _, proc := range k.eventProcs {
 		// Fetching evm events over the network is unreliable, retry forever.
 		err := retryForever(ctx, func(ctx context.Context) (bool, error) {

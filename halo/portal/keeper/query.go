@@ -30,9 +30,9 @@ func (k Keeper) Block(ctx context.Context, req *types.BlockRequest) (*types.Bloc
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	var messages []*types.Msg
+	var messages []types.Msg
 	for _, msg := range msgs {
-		messages = append(messages, &types.Msg{
+		messages = append(messages, types.Msg{
 			Id:           msg.GetId(),
 			Type:         msg.GetMsgType(),
 			MsgTypeId:    msg.GetMsgTypeId(),

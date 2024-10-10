@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package octane.evmengine.types;
 
+import "gogoproto/gogo.proto";
 import "cosmos/msg/v1/msg.proto";
 
 option go_package = "octane/evmengine/types";
@@ -25,7 +26,7 @@ message MsgExecutionPayload {
   option (cosmos.msg.v1.signer) = "authority";
   string            authority           = 1;
   bytes             execution_payload   = 2;
-  repeated EVMEvent prev_payload_events = 3;
+  repeated EVMEvent prev_payload_events = 3 [(gogoproto.nullable) = false];
 }
 
 message ExecutionPayloadResponse {}
