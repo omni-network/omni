@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package halo.portal.types;
 
+import "gogoproto/gogo.proto";
+
 option go_package = "halo/portal/types";
 
 // Query defines the gRPC querier service.
@@ -17,7 +19,7 @@ message BlockRequest {
 message BlockResponse {
   uint64       id             = 1;
   uint64       created_height = 2;
-  repeated Msg msgs           = 3;
+  repeated Msg msgs           = 3 [(gogoproto.nullable) = false];
 }
 
 message Msg {

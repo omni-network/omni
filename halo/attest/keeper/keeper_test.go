@@ -1041,7 +1041,7 @@ func toValSet(valset *vtypes.ValidatorSetResponse) keeper.ValSet {
 	}
 }
 
-func expectValSig(id uint64, attID uint64, val *vtypes.Validator, offset uint64) *keeper.Signature {
+func expectValSig(id uint64, attID uint64, val vtypes.Validator, offset uint64) *keeper.Signature {
 	ethAddr, _ := val.EthereumAddress()
 	paddedSig := pad65(ethAddr.Bytes())
 

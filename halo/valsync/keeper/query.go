@@ -100,7 +100,7 @@ func (k *Keeper) ValidatorSet(ctx context.Context, req *types.ValidatorSetReques
 	}
 	defer valIter.Close()
 
-	var vals []*types.Validator
+	var vals []types.Validator
 	for valIter.Next() {
 		val, err := valIter.Value()
 		if err != nil {
@@ -111,7 +111,7 @@ func (k *Keeper) ValidatorSet(ctx context.Context, req *types.ValidatorSetReques
 			continue // Skip zero power validators.
 		}
 
-		vals = append(vals, &types.Validator{
+		vals = append(vals, types.Validator{
 			ConsensusPubkey: val.GetPubKey(),
 			Power:           val.GetPower(),
 		})
@@ -126,9 +126,9 @@ func (k *Keeper) ValidatorSet(ctx context.Context, req *types.ValidatorSetReques
 }
 
 func valSetResponse(set *ValidatorSet, vals []*Validator) *types.ValidatorSetResponse {
-	var validators []*types.Validator
+	var validators []types.Validator
 	for _, val := range vals {
-		validators = append(validators, &types.Validator{
+		validators = append(validators, types.Validator{
 			ConsensusPubkey: val.GetPubKey(),
 			Power:           val.GetPower(),
 		})
