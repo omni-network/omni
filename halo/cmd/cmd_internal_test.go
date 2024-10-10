@@ -202,8 +202,8 @@ func TestInvalidCmds(t *testing.T) {
 	}
 }
 
+//nolint:paralleltest // Global test moniker is used.
 func TestDefaultCometConfig(t *testing.T) {
-	t.Parallel()
 	setMonikerForT(t)
 
 	home := t.TempDir()

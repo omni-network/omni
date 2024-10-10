@@ -14,19 +14,18 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 
 	"github.com/spf13/viper"
-	"go.uber.org/atomic"
 )
 
 //nolint:gochecknoglobals // Overrides cometbft default moniker for testing.
-var testMoniker = new(atomic.String)
+var testMoniker string
 
 // setMonikerForT sets the test moniker for the duration of the test.
 // This is required for deterministic default cometbft config.
 func setMonikerForT(t *testing.T) {
 	t.Helper()
-	testMoniker.Store("testmoniker")
+	testMoniker = "testmoniker"
 	t.Cleanup(func() {
-		testMoniker.Store("")
+		testMoniker = ""
 	})
 }
 
@@ -34,8 +33,8 @@ func setMonikerForT(t *testing.T) {
 func DefaultCometConfig(homeDir string) cfg.Config {
 	conf := cfg.DefaultConfig()
 
-	if moniker := testMoniker.Load(); moniker != "" {
-		conf.Moniker = moniker
+	if testMoniker != "" {
+		conf.Moniker = testMoniker
 	}
 
 	conf.RootDir = homeDir
