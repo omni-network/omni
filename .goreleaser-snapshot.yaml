@@ -9,9 +9,10 @@ builds:
   - id: halo
     main: ./halo
     binary: halo
-    env: [CGO_ENABLED=0]
+    env: ["CGO_ENABLED={{ if index .Env \"RACE\" }}1{{ else }}0{{ end }}"]
     goos: [linux]
     goarch: [amd64]
+    flags: ["{{ if index .Env \"RACE\" }}-race{{ end }}"]
 
   - id: relayer
     main: ./relayer
