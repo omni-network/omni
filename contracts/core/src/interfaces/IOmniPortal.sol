@@ -33,7 +33,7 @@ interface IOmniPortal {
     /**
      * @notice Emitted when an XMsg is executed on its destination chain
      * @param sourceChainId Source chain ID
-     * @param shardId       Shard ID of the XStream (first byte is the confirmation level)
+     * @param shardId       Shard ID of the XStream (last byte is the confirmation level)
      * @param offset        Offset the XMsg in the source -> dest XStream
      * @param gasUsed       Gas used in execution of the XMsg
      * @param relayer       Address of the relayer who submitted the XMsg
