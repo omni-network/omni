@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -66,7 +67,22 @@ func TestSubmissionToFromBinding(t *testing.T) {
 	fuzz.New().NilChance(0).Fuzz(&sub)
 	sub.AttHeader.ChainVersion.ID = sub.BlockHeader.ChainID // Align headers
 
-	xsub := SubmissionToBinding(sub)
+	// mock valid signatures
+	privKey, addr := tutil.PrivateKeyFixture(t)
+	cometPrivKey, err := k1util.StdPrivKeyToComet(privKey)
+	require.NoError(t, err)
+
+	sig, err := k1util.Sign(cometPrivKey, sub.AttestationRoot)
+	require.NoError(t, err)
+	for i := range sub.Signatures {
+		sub.Signatures[i] = SigTuple{
+			ValidatorAddress: addr,
+			Signature:        sig,
+		}
+	}
+
+	xsub, err := SubmissionToBinding(sub)
+	require.NoError(t, err)
 	reversedSub, err := SubmissionFromBinding(xsub, sub.DestChainID)
 	require.NoError(t, err)
 
@@ -81,6 +97,15 @@ func TestSubmissionToFromBinding(t *testing.T) {
 	sub.BlockHeader.BlockHeight = 0
 
 	require.Equal(t, sub, reversedSub)
+
+	// force invalid signature
+	sub.Signatures[0].Signature[0] = 0
+	_, err = SubmissionToBinding(sub)
+	require.Errorf(t, err, "invalid submission signature")
+
+	xsub.Signatures[0].Signature[0] = 0
+	_, err = SubmissionFromBinding(xsub, sub.DestChainID)
+	require.Errorf(t, err, "invalid submission signature")
 }
 
 func TestXSubmitEncodeDecode(t *testing.T) {
