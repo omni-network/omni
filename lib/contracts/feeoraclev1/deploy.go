@@ -47,10 +47,10 @@ func (cfg deploymentConfig) Validate() error {
 
 func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainIDs []uint64, backends ethbackend.Backends) (common.Address, *ethtypes.Receipt, error) {
 	cfg := deploymentConfig{
-		Owner:           eoa.MustAddress(network, eoa.RoleOwner),
+		Owner:           eoa.MustAddress(network, eoa.RoleManager),
 		Manager:         eoa.MustAddress(network, eoa.RoleMonitor), // NOTE: monitor is owner of fee oracle contracts, because monitor manages on chain gas prices / conversion rates
 		Deployer:        eoa.MustAddress(network, eoa.RoleDeployer),
-		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleOwner),
+		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleUpgrader),
 		BaseGasLimit:    50_000,
 		ProtocolFee:     big.NewInt(0),
 	}

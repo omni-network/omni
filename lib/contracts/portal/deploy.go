@@ -141,9 +141,9 @@ func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend
 	cfg := deploymentConfig{
 		Create3Factory:        addrs.Create3Factory,
 		Create3Salt:           salts.Portal,
-		Owner:                 eoa.MustAddress(network, eoa.RoleOwner),
+		Owner:                 eoa.MustAddress(network, eoa.RoleManager),
 		Deployer:              eoa.MustAddress(network, eoa.RoleDeployer),
-		ProxyAdminOwner:       eoa.MustAddress(network, eoa.RoleOwner),
+		ProxyAdminOwner:       eoa.MustAddress(network, eoa.RoleUpgrader),
 		OmniChainID:           network.Static().OmniExecutionChainID,
 		OmniCChainID:          network.Static().OmniConsensusChainIDUint64(),
 		XMsgMinGasLimit:       XMsgMinGasLimit,

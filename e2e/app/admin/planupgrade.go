@@ -52,7 +52,7 @@ func PlanUpgrade(ctx context.Context, def app.Definition, cfg Config) error {
 		return errors.Wrap(err, "new staking contract")
 	}
 
-	txOpts, err := backend.BindOpts(ctx, eoa.MustAddress(network, eoa.RoleOwner))
+	txOpts, err := backend.BindOpts(ctx, eoa.MustAddress(network, eoa.RoleUpgrader))
 	if err != nil {
 		return errors.Wrap(err, "bind tx opts")
 	}

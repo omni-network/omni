@@ -12,12 +12,12 @@ import (
 func pauseXSubmit(ctx context.Context, s shared, c chain) error {
 	log.Info(ctx, "Pausing xsubmit...", "chain", c.Name, "addr", c.PortalAddress)
 
-	calldata, err := adminABI.Pack("pauseXSubmit", s.admin, c.PortalAddress)
+	calldata, err := adminABI.Pack("pauseXSubmit", s.owner, c.PortalAddress)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.admin)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.owner)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}
@@ -36,12 +36,12 @@ func pauseXSubmitFrom(ctx context.Context, s shared, c chain, fromID uint64) err
 
 	log.Info(ctx, "Pausing xsubmit...", "chain", c.Name, "from", from.Name, "addr", c.PortalAddress)
 
-	calldata, err := adminABI.Pack("pauseXSubmitFrom", s.admin, c.PortalAddress, from.ID)
+	calldata, err := adminABI.Pack("pauseXSubmitFrom", s.owner, c.PortalAddress, from.ID)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.admin)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.owner)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}
@@ -55,12 +55,12 @@ func pauseXSubmitFrom(ctx context.Context, s shared, c chain, fromID uint64) err
 func unpauseXSubmit(ctx context.Context, s shared, c chain) error {
 	log.Info(ctx, "Unpausing xsubmit...", "chain", c.Name, "addr", c.PortalAddress)
 
-	calldata, err := adminABI.Pack("unpauseXSubmit", s.admin, c.PortalAddress)
+	calldata, err := adminABI.Pack("unpauseXSubmit", s.owner, c.PortalAddress)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.admin)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.owner)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}
@@ -79,12 +79,12 @@ func unpauseXSubmitFrom(ctx context.Context, s shared, c chain, fromID uint64) e
 
 	log.Info(ctx, "Unpausing xsubmit...", "chain", c.Name, "from", from.Name, "addr", c.PortalAddress)
 
-	calldata, err := adminABI.Pack("unpauseXSubmitFrom", s.admin, c.PortalAddress, from.ID)
+	calldata, err := adminABI.Pack("unpauseXSubmitFrom", s.owner, c.PortalAddress, from.ID)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.admin)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.owner)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}

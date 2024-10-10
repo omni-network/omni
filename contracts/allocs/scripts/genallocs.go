@@ -39,7 +39,7 @@ func genallocs() error {
 		}
 
 		cfg := bindings.AllocPredeploysConfig{
-			Admin:                  eoa.MustAddress(network, eoa.RoleOwner),
+			Admin:                  eoa.MustAddress(network, eoa.RoleManager),
 			ChainId:                new(big.Int).SetUint64(network.Static().OmniExecutionChainID),
 			EnableStakingAllowlist: network.IsProtected(),
 			Output:                 "allocs/" + network.String() + ".json",

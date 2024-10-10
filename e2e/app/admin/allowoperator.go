@@ -61,7 +61,7 @@ func AllowOperators(ctx context.Context, def app.Definition, cfg Config) error {
 		return nil
 	}
 
-	txOpts, err := backend.BindOpts(ctx, eoa.MustAddress(network, eoa.RoleOwner))
+	txOpts, err := backend.BindOpts(ctx, eoa.MustAddress(network, eoa.RoleManager))
 	if err != nil {
 		return errors.Wrap(err, "bind tx opts")
 	}
