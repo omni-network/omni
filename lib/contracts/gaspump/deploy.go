@@ -18,17 +18,17 @@ import (
 )
 
 type DeploymentConfig struct {
-	Create3Factory  common.Address
-	Create3Salt     string
-	ProxyAdminOwner common.Address
-	Owner           common.Address
-	Deployer        common.Address
-	Portal          common.Address
-	GasStation      common.Address
-	Oracle          common.Address
-	MaxSwap         *big.Int
-	Toll            *big.Int
-	ExpectedAddr    common.Address
+	Create3Factory common.Address
+	Create3Salt    string
+	Upgrader       common.Address
+	Manager        common.Address
+	Deployer       common.Address
+	Portal         common.Address
+	GasStation     common.Address
+	Oracle         common.Address
+	MaxSwap        *big.Int
+	Toll           *big.Int
+	ExpectedAddr   common.Address
 }
 
 func isDeadOrEmpty(addr common.Address) bool {
@@ -42,13 +42,13 @@ func (cfg DeploymentConfig) Validate() error {
 	if cfg.Create3Salt == "" {
 		return errors.New("create3 salt is empty")
 	}
-	if isDeadOrEmpty(cfg.ProxyAdminOwner) {
+	if isDeadOrEmpty(cfg.Upgrader) {
 		return errors.New("proxy admin is zero")
 	}
 	if isDeadOrEmpty(cfg.Deployer) {
 		return errors.New("deployer is not set")
 	}
-	if isDeadOrEmpty(cfg.Owner) {
+	if isDeadOrEmpty(cfg.Manager) {
 		return errors.New("owner is not set")
 	}
 	if (cfg.Portal == common.Address{}) {
@@ -129,17 +129,17 @@ func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend
 	}
 
 	cfg := DeploymentConfig{
-		Create3Factory:  addrs.Create3Factory,
-		Create3Salt:     salts.GasPump,
-		Owner:           eoa.MustAddress(network, eoa.RoleManager),
-		Deployer:        eoa.MustAddress(network, eoa.RoleDeployer),
-		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleUpgrader),
-		Portal:          addrs.Portal,
-		GasStation:      addrs.GasStation,
-		Oracle:          oracle,
-		MaxSwap:         big.NewInt(20000000000000000), // 0.02 ETH
-		Toll:            big.NewInt(100),               // 100 / 1000 = 0.1 = 10% (1000 = GasPump.TOLL_DENOM),
-		ExpectedAddr:    addrs.GasPump,
+		Create3Factory: addrs.Create3Factory,
+		Create3Salt:    salts.GasPump,
+		Manager:        eoa.MustAddress(network, eoa.RoleManager),
+		Deployer:       eoa.MustAddress(network, eoa.RoleDeployer),
+		Upgrader:       eoa.MustAddress(network, eoa.RoleUpgrader),
+		Portal:         addrs.Portal,
+		GasStation:     addrs.GasStation,
+		Oracle:         oracle,
+		MaxSwap:        big.NewInt(20000000000000000), // 0.02 ETH
+		Toll:           big.NewInt(100),               // 100 / 1000 = 0.1 = 10% (1000 = GasPump.TOLL_DENOM),
+		ExpectedAddr:   addrs.GasPump,
 	}
 
 	return deploy(ctx, network, cfg, backend)
@@ -221,7 +221,7 @@ func packInitCode(cfg DeploymentConfig, impl common.Address) ([]byte, error) {
 		GasStation: cfg.GasStation,
 		Oracle:     cfg.Oracle,
 		Portal:     cfg.Portal,
-		Owner:      cfg.Owner,
+		Manager:    cfg.Manager,
 		MaxSwap:    cfg.MaxSwap,
 		Toll:       cfg.Toll,
 	}
@@ -231,5 +231,5 @@ func packInitCode(cfg DeploymentConfig, impl common.Address) ([]byte, error) {
 		return nil, errors.Wrap(err, "encode initializer")
 	}
 
-	return contracts.PackInitCode(proxyAbi, bindings.TransparentUpgradeableProxyBin, impl, cfg.ProxyAdminOwner, initializer)
+	return contracts.PackInitCode(proxyAbi, bindings.TransparentUpgradeableProxyBin, impl, cfg.Upgrader, initializer)
 }

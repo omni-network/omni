@@ -19,7 +19,7 @@ type DeploymentConfig struct {
 	Create3Factory  common.Address
 	Create3Salt     string
 	ProxyAdminOwner common.Address
-	Owner           common.Address
+	Manager         common.Address
 	Portal          common.Address
 	Token           common.Address
 	Deployer        common.Address
@@ -43,7 +43,7 @@ func (cfg DeploymentConfig) Validate() error {
 	if isDeadOrEmpty(cfg.Deployer) {
 		return errors.New("deployer is not set")
 	}
-	if isDeadOrEmpty(cfg.Owner) {
+	if isDeadOrEmpty(cfg.Manager) {
 		return errors.New("owner is not set")
 	}
 	if (cfg.Token == common.Address{}) {
@@ -107,7 +107,7 @@ func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend
 	cfg := DeploymentConfig{
 		Create3Factory:  addrs.Create3Factory,
 		Create3Salt:     salts.L1Bridge,
-		Owner:           eoa.MustAddress(network, eoa.RoleManager),
+		Manager:         eoa.MustAddress(network, eoa.RoleManager),
 		Deployer:        eoa.MustAddress(network, eoa.RoleDeployer),
 		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleUpgrader),
 		Portal:          addrs.Portal,
@@ -181,7 +181,7 @@ func packInitCode(cfg DeploymentConfig, impl common.Address) ([]byte, error) {
 		return nil, errors.Wrap(err, "get proxy abi")
 	}
 
-	initializer, err := bridgeAbi.Pack("initialize", cfg.Owner, cfg.Portal)
+	initializer, err := bridgeAbi.Pack("initialize", cfg.Manager, cfg.Portal)
 	if err != nil {
 		return nil, errors.Wrap(err, "encode initializer")
 	}

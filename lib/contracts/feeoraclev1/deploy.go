@@ -16,12 +16,12 @@ import (
 )
 
 type deploymentConfig struct {
-	Owner           common.Address
-	Manager         common.Address // manager is the address that can set fee parameters (gas price, conversion rates)
-	Deployer        common.Address
-	ProxyAdminOwner common.Address
-	BaseGasLimit    uint64
-	ProtocolFee     *big.Int
+	Owner        common.Address
+	Manager      common.Address // manager is the address that can set fee parameters (gas price, conversion rates)
+	Deployer     common.Address
+	Upgrader     common.Address
+	BaseGasLimit uint64
+	ProtocolFee  *big.Int
 }
 
 func isDeadOrEmpty(addr common.Address) bool {
@@ -38,7 +38,7 @@ func (cfg deploymentConfig) Validate() error {
 	if isDeadOrEmpty(cfg.Deployer) {
 		return errors.New("deployer is zero")
 	}
-	if (cfg.ProxyAdminOwner == common.Address{}) {
+	if (cfg.Upgrader == common.Address{}) {
 		return errors.New("proxy admin is zero")
 	}
 
@@ -47,12 +47,12 @@ func (cfg deploymentConfig) Validate() error {
 
 func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainIDs []uint64, backends ethbackend.Backends) (common.Address, *ethtypes.Receipt, error) {
 	cfg := deploymentConfig{
-		Owner:           eoa.MustAddress(network, eoa.RoleManager),
-		Manager:         eoa.MustAddress(network, eoa.RoleMonitor), // NOTE: monitor is owner of fee oracle contracts, because monitor manages on chain gas prices / conversion rates
-		Deployer:        eoa.MustAddress(network, eoa.RoleDeployer),
-		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleUpgrader),
-		BaseGasLimit:    50_000,
-		ProtocolFee:     big.NewInt(0),
+		Owner:        eoa.MustAddress(network, eoa.RoleManager),
+		Manager:      eoa.MustAddress(network, eoa.RoleMonitor), // NOTE: monitor is owner of fee oracle contracts, because monitor manages on chain gas prices / conversion rates
+		Deployer:     eoa.MustAddress(network, eoa.RoleDeployer),
+		Upgrader:     eoa.MustAddress(network, eoa.RoleUpgrader),
+		BaseGasLimit: 50_000,
+		ProtocolFee:  big.NewInt(0),
 	}
 	if err := cfg.Validate(); err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "validate cfg")
@@ -93,7 +93,7 @@ func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainID
 		return common.Address{}, nil, errors.Wrap(err, "wait mined")
 	}
 
-	proxy, tx, _, err := bindings.DeployTransparentUpgradeableProxy(txOpts, backend, impl, cfg.ProxyAdminOwner, initializer)
+	proxy, tx, _, err := bindings.DeployTransparentUpgradeableProxy(txOpts, backend, impl, cfg.Upgrader, initializer)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "deploy proxy")
 	}

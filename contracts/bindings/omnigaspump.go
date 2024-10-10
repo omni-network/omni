@@ -34,7 +34,7 @@ type OmniGasPumpInitParams struct {
 	GasStation common.Address
 	Oracle     common.Address
 	Portal     common.Address
-	Owner      common.Address
+	Manager    common.Address
 	MaxSwap    *big.Int
 	Toll       *big.Int
 }

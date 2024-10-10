@@ -36,7 +36,7 @@ func setupTokenBridge(ctx context.Context, def Definition) error {
 		return errors.New("no omni evm chain")
 	}
 
-	owner := eoa.MustAddress(networkID, eoa.RoleManager)
+	manager := eoa.MustAddress(networkID, eoa.RoleManager)
 
 	addrs, err := contracts.GetAddresses(ctx, networkID)
 	if err != nil {
@@ -86,7 +86,7 @@ func setupTokenBridge(ctx context.Context, def Definition) error {
 		return errors.Wrap(err, "bridge native")
 	}
 
-	txOpts, err := l1Backend.BindOpts(ctx, owner)
+	txOpts, err := l1Backend.BindOpts(ctx, manager)
 	if err != nil {
 		return errors.Wrap(err, "bind opts")
 	}

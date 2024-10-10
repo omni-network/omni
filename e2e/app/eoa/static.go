@@ -42,8 +42,8 @@ var statics = map[netconf.ID][]Account{
 		remote("0x992b9de7D42981B90A75C523842C01e27875b65B", RoleCreate3Deployer),
 		remote("0x9496Bf1Bd2Fa5BCba72062cC781cC97eA6930A13", RoleDeployer),
 		remote("0x8F609f4d58355539c48C98464E1e54ab2709aCfe", RoleFunder),
-		dummy(RoleMonitor), // todo generate accounts and replace with secret type
-		dummy(RoleRelayer), // todo generate accounts and replace with secret type
+		secret("0xfD62020Cee216Dc543E29752058Ee9f60f7D9Ff9", RoleMonitor),
+		secret("0x6191442101086253A636aecBCC870e4778490AaB", RoleRelayer),
 		dummy(RoleTester),
 	),
 }
