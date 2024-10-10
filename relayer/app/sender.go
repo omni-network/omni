@@ -120,7 +120,11 @@ func (s Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 		"msgs", len(sub.Msgs),
 	)
 
-	txData, err := xchain.EncodeXSubmit(xchain.SubmissionToBinding(sub))
+	xsub, err := xchain.SubmissionToBinding(sub)
+	if err != nil {
+		return err
+	}
+	txData, err := xchain.EncodeXSubmit(xsub)
 	if err != nil {
 		return err
 	}
