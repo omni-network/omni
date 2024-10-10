@@ -7,6 +7,7 @@ import (
 
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/stretchr/testify/require"
@@ -16,20 +17,46 @@ import (
 
 func TestDefaultConfigReference(t *testing.T) {
 	t.Parallel()
-	tempDir := t.TempDir()
 
-	cfg := halocfg.DefaultConfig()
-	cfg.HomeDir = tempDir
-	cfg.RPCEndpoints = map[string]string{
-		"ethereum": "http://127.0.0.1:8545",
+	tests := []struct {
+		name    string
+		cfgFunc func() halocfg.Config
+	}{
+		{
+			name:    "default",
+			cfgFunc: halocfg.DefaultConfig,
+		},
+		{
+			name: "test",
+			cfgFunc: func() halocfg.Config {
+				cfg := halocfg.DefaultConfig()
+				cfg.Network = netconf.Omega
+				cfg.EngineEndpoint = "http://omni_evm:8551"
+				cfg.EngineJWTFile = "/geth/jwtsecret"
+				cfg.RPCEndpoints = map[string]string{
+					"mock": "http://mock_rpc:8545",
+				}
+				cfg.UnsafeSkipUpgrades = []int{1, 2, 3}
+
+				return cfg
+			},
+		},
 	}
-	cfg.UnsafeSkipUpgrades = []int{1, 2, 3}
 
-	require.NoError(t, os.MkdirAll(filepath.Join(tempDir, "config"), 0o755))
-	require.NoError(t, halocfg.WriteConfigTOML(cfg, log.DefaultConfig()))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			cfg := tt.cfgFunc()
+			tempDir := t.TempDir()
+			cfg.HomeDir = tempDir
 
-	b, err := os.ReadFile(filepath.Join(tempDir, "config", "halo.toml"))
-	require.NoError(t, err)
+			require.NoError(t, os.MkdirAll(filepath.Join(tempDir, "config"), 0o755))
+			require.NoError(t, halocfg.WriteConfigTOML(cfg, log.DefaultConfig()))
 
-	tutil.RequireGoldenBytes(t, b, tutil.WithFilename("default_halo.toml"))
+			b, err := os.ReadFile(filepath.Join(tempDir, "config", "halo.toml"))
+			require.NoError(t, err)
+
+			tutil.RequireGoldenBytes(t, b, tutil.WithFilename(tt.name+"_halo.toml"))
+		})
+	}
 }

@@ -44,6 +44,7 @@ const sidebars: SidebarsConfig = {
       label: 'Operate',
       items: [
         'operate/run-full-node',
+        'operate/config',
         'operate/validator',
         'operate/uluwatu',
         'operate/roadmap',

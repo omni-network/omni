@@ -19,18 +19,21 @@ This guide describes the process to configure and register an Omni Omega validat
 
 This guide will take you through the following steps:
 
-1. **Update `halo.toml`** config to include `xchain.evm-rpc-endpoints` for x-chain (cross-chain) votes/attestations (L1 + L2).
-2. **Obtain the halo consensus public key** by running a docker compose command.
-3. **Generate an operator address**, or use an existing Ethereum EOA account.
-4. **Fund the operator address** with `200 OMNI` on the [Omni Omega](https://chainlist.org/chain/164) chain.
-5. **Add the operator address** to the omni staking allow list.
-6. **Run the`omni operator create-validator`**  CLI command to register the validator.
+1. **Update validator config** for `halo` and `geth`.
+1. **Obtain the halo consensus public key** by running a docker compose command.
+1. **Generate an operator address**, or use an existing Ethereum EOA account.
+1. **Fund the operator address** with `200 OMNI` on the [Omni Omega](https://chainlist.org/chain/164) chain.
+1. **Add the operator address** to the omni staking allow list.
+1. **Run the`omni operator create-validator`**  CLI command to register the validator.
 
 ## Instructions
 
-### 1. **Update `halo.toml`**
+### 1. **Update validator config** for `halo` and `geth`.
 
-Halo nodes running as validators require RPC endpoints for L1 and L2 cross chain validation duties. This must to be configured under `[xchain.evm-rpc-endpoints]` in the halo config file `~/.omni/omega/halo/config/halo.toml`. The chains currently required are: `arb_sepolia, base_sepolia, holesky, op_sepolia`.
+#### 1.1 Configure XChain RPCs
+Halo nodes running as validators require RPC endpoints for L1 and L2 cross chain validation duties.
+This must to be configured in under `[xchain.evm-rpc-endpoints]` in the halo config file `~/.omni/omega/halo/config/halo.toml`.
+The chains currently required are: `arb_sepolia, base_sepolia, holesky, op_sepolia`.
 
 ```
 #######################################################################
@@ -50,12 +53,33 @@ op_sepolia = "http://my.op-sepolia.node:8545"
 ```
 
 > Note that a halo node that is a validator will crash if all xchain RPC endpoints are not configured.
-Normal full nodes do not however need to connect to xchain RPCs, so this config is ignored by full nodes.
->
+> Normal full nodes do not however need to connect to xchain RPCs, so this config is ignored by full nodes.
 
-If `halo` is already running, restart it to pickup the new config:
+#### 1.2 Synchronize block building config
+Halo the consensus client must be aligned with geth the execution client in terms of block building timing configuration.
+Execution blocks must be built slightly faster (500ms) than halo waits before fetching them (600ms).
 
-`$ docker compose restart halo`
+Ensure the following two fields are configured:
+- `halo/config/halo.toml`: `evm-build-delay = "600ms"`
+- `geth/config.toml`: `Eth.Miner.Recommit = 500000000` # 500ms
+
+If `halo` or `geth` is already running, restart them to pickup the new config:
+```
+❯ docker compose restart
+```
+
+#### 1.3 Consensus timeouts
+Omni aims to achieve fast 1s block times.
+All validator MUST ensure that CometBFT is configured with a 1s commit timeout.
+This must to be configured in under `[consensus.timeout_commit]` in the CometBFT config file `~/.omni/omega/halo/config/config.toml`.
+
+```
+# How long we wait after committing a block, before starting on the new
+# height (this gives us a chance to receive some more precommits, even
+# though we already have +2/3).
+timeout_commit = "1s"
+```
+
 
 ### 2. **Obtain the halo consensus public key**
 
@@ -88,9 +112,7 @@ Consensus public key: 02e47138b658317e8a9ce3fd59c4c41ede153cf2051de3bf9926bd6cfe
 > Note the `omni operator create-consesus-key` CLI command can also be used to generate a new consensus key and state files.
 >
 
- 
-
-‼️ **Remember to backup this consensus private key** if you haven’t already.
+**Remember to backup this consensus private key** if you haven’t already.
 
 ### 3. **Generate an operator address**
 
@@ -111,7 +133,7 @@ This creates the `./operator-private-key-{ADDRESS}` file containing the hex-enco
 🚧 Remember to backup this key 🚧
 ```
 
-‼️ **Remember to backup this operator private key** taking note of the associated **operator address**
+‼️ **Remember to backup this operator private key** taking note of the associated **operator address**
 
 ### 4. Fund the operator address
 
@@ -154,7 +176,7 @@ You should see an output similar to:
 
 After about 10-20 blocks, the omni full node will automatically detect that it has been registered as a validator and start performing validator duties.
 
-🎉 You’re all done. Watch the Halo logs to ensure things are running smoothly.
+🎉You’re all done. Watch the Halo logs to ensure things are running smoothly.
 
 ## Troubleshooting
 

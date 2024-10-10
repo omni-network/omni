@@ -20,6 +20,27 @@ import (
 
 //go:generate go test . -golden -clean
 
+func TestDefaultGethConfig(t *testing.T) {
+	t.Parallel()
+	data := Config{
+		Moniker:         "",
+		BootNodes:       nil,
+		ChainID:         0,
+		IsArchive:       false,
+		SnapshotCacheMB: 0,
+	}
+
+	tempFile := filepath.Join(t.TempDir(), "config.toml")
+
+	err := WriteConfigTOML(data, tempFile)
+	require.NoError(t, err)
+
+	bz, err := os.ReadFile(tempFile)
+	require.NoError(t, err)
+
+	tutil.RequireGoldenBytes(t, bz, tutil.WithFilename("default_config.toml"))
+}
+
 func TestWriteConfigTOML(t *testing.T) {
 	t.Parallel()
 

@@ -6,17 +6,17 @@
 version = "main"
 
 # Omni network to participate in: mainnet, testnet, or devnet.
-network = ""
+network = "omega"
 
 #######################################################################
 ###                       Halo Octane Options                       ###
 #######################################################################
 
 # Omni execution client Engine API http endpoint.
-engine-endpoint = ""
+engine-endpoint = "http://omni_evm:8551"
 
 # Omni execution client JWT file used for authentication.
-engine-jwt-file = ""
+engine-jwt-file = "/geth/jwtsecret"
 
 # EVMBuildDelay defines the minimum delay between triggering a EVM payload build and fetching the result.
 # This is a tradeoff between "high value blocks" and "fast consensus".
@@ -67,7 +67,7 @@ pruning = "default"
 app-db-backend = "goleveldb"
 
 # Skip a set of upgrade heights to continue the old binary
-unsafe-skip-upgrades = []
+unsafe-skip-upgrades = [1,2,3]
 
 
 ###############################################################################
@@ -103,8 +103,7 @@ address = "0.0.0.0:9090"
 # Cross-chain EVM RPC endpoints to use for voting; only required for validators. One per supported EVM is required.
 # It is strongly advised to operate fullnodes for each chain and NOT to use free public RPCs.
 [xchain.evm-rpc-endpoints]
-# ethereum = "http://my-ethreum-node:8545"
-# optimism = "https://my-op-node.com"
+mock = "http://mock_rpc:8545"
 
 #######################################################################
 ###                         Logging Options                         ###
