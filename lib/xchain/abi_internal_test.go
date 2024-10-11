@@ -66,7 +66,8 @@ func TestSubmissionToFromBinding(t *testing.T) {
 	fuzz.New().NilChance(0).Fuzz(&sub)
 	sub.AttHeader.ChainVersion.ID = sub.BlockHeader.ChainID // Align headers
 
-	reversedSub, err := SubmissionFromBinding(SubmissionToBinding(sub), sub.DestChainID)
+	xsub := SubmissionToBinding(sub)
+	reversedSub, err := SubmissionFromBinding(xsub, sub.DestChainID)
 	require.NoError(t, err)
 
 	// Zero TxHash, ChainID, and Fees for comparison since they aren't translated.
