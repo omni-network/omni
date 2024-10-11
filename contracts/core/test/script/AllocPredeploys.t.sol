@@ -54,10 +54,10 @@ contract AllocPredeploys_Test is Test, AllocPredeploys {
         expected += 1024 * 2 - 1;
 
         // predeploy implementations (excl. not proxied WOmni)
-        expected += 4;
+        expected += 5;
 
-        // preinstalls
-        expected += 16;
+        // preinstalls (excl 4788 deployer)
+        expected += 15;
 
         // 4788 deployer account (nonce set to 1)
         expected += 1;
