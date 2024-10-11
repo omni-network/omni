@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/k1util"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -246,6 +247,24 @@ type Attestation struct {
 
 func (a Attestation) AttestationRoot() ([32]byte, error) {
 	return AttestationRoot(a.AttestHeader, a.BlockHeader, a.MsgRoot)
+}
+
+// Verify verifies all the signatures in the attestation against the sigtuple validator address.
+func (a Attestation) Verify() (bool, error) {
+	attRoot, err := a.AttestationRoot()
+	if err != nil {
+		return false, err
+	}
+
+	for _, sig := range a.Signatures {
+		if ok, err := k1util.Verify(sig.ValidatorAddress, attRoot, sig.Signature); !ok {
+			return false, nil
+		} else if err != nil {
+			return false, err
+		}
+	}
+
+	return true, nil
 }
 
 // SigTuple is a validator signature and address.

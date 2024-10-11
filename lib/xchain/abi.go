@@ -7,7 +7,6 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/k1util"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -104,12 +103,6 @@ func SubmissionFromBinding(sub bindings.XSubmission, destChainID uint64) (Submis
 			return Submission{}, err
 		}
 
-		if ok, err := k1util.Verify(sig.ValidatorAddr, sub.AttestationRoot, sig65); !ok {
-			return Submission{}, errors.New("invalid submission signature")
-		} else if err != nil {
-			return Submission{}, err
-		}
-
 		sigs = append(sigs, SigTuple{
 			ValidatorAddress: sig.ValidatorAddr,
 			Signature:        sig65,
@@ -162,12 +155,6 @@ func SubmissionToBinding(sub Submission) (bindings.XSubmission, error) {
 
 	sigs := make([]bindings.ValidatorSigTuple, 0, len(sub.Signatures))
 	for _, sig := range sub.Signatures {
-		if ok, err := k1util.Verify(sig.ValidatorAddress, sub.AttestationRoot, sig.Signature); !ok {
-			return bindings.XSubmission{}, errors.New("invalid submission signature")
-		} else if err != nil {
-			return bindings.XSubmission{}, err
-		}
-
 		sigs = append(sigs, bindings.ValidatorSigTuple{
 			ValidatorAddr: sig.ValidatorAddress,
 			Signature:     sig.Signature[:],
