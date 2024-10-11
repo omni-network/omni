@@ -16,6 +16,12 @@ import (
 // BroadcastChainID is the chain ID used by broadcast messages.
 const BroadcastChainID uint64 = 0
 
+// CChainSender is the designated XMsg.SourceChainSender for consensus chain xmsgs.
+const CChainSender = "0x000000000000000000000000000000000000CcCc"
+
+// VirtualPortalAddress is designated XMsg.DestAddress for xmsgs to portal contracts.
+const VirtualPortalAddress = "0x0000000000000000000000000000000000001111"
+
 //go:generate stringer -type=ConfLevel -linecomment
 
 // ChainVersion defines a version of a source chain; either some draft (fuzzy) version or finalized.

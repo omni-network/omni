@@ -12,6 +12,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 //nolint:gochecknoglobals // Static ABI types
@@ -63,7 +64,9 @@ func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchai
 				},
 				StreamOffset: msg.StreamOffset,
 			},
-			Data: data,
+			SourceMsgSender: common.HexToAddress(xchain.CChainSender),
+			DestAddress:     common.HexToAddress(xchain.VirtualPortalAddress),
+			Data:            data,
 		})
 	}
 

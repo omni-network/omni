@@ -40,7 +40,11 @@ contract Fixtures is CommonBase, StdCheats {
 
     uint64 constant omniChainId = 166;
     uint64 constant omniCChainID = 1_000_166;
-    uint64 constant broadcastChainId = 0; // PORTAL._BROADCAST_CHAIN_ID
+
+    /// @dev copied OmniPortalConstants
+    uint64 internal constant broadcastChainId = 0;
+    address internal constant cChainSender = address(0xcccc);
+    address internal constant virtualPortalAddress = address(0x1111);
 
     uint64 constant baseValPower = 100;
     uint64 constant genesisValSetId = 1;
@@ -258,8 +262,8 @@ contract Fixtures is CommonBase, StdCheats {
             destChainId: broadcastChainId,
             shardId: ConfLevel.toBroadcastShard(ConfLevel.Finalized),
             offset: valSetId,
-            sender: address(0), // Portal._CCHAIN_SENDER
-            to: address(0), // Portal._VIRTUAL_PORTAL_ADDRRESS
+            sender: cChainSender,
+            to: virtualPortalAddress,
             data: abi.encodeWithSelector(OmniPortal.addValidatorSet.selector, valSetId, validatorSet[valSetId]),
             gasLimit: 0
         });

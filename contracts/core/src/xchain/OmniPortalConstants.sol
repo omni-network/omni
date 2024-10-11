@@ -34,10 +34,10 @@ contract OmniPortalConstants {
     /**
      * @dev xmsg.sender for xmsgs from Omni's consensus chain
      */
-    address internal constant CChainSender = address(0);
+    address internal constant CChainSender = address(0xcccc);
 
     /**
      * @dev xmsg.to for xcalls to be executed on the portal itself
      */
-    address internal constant VirtualPortalAddress = address(0);
+    address internal constant VirtualPortalAddress = address(0x1111);
 }
