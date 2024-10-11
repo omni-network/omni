@@ -147,7 +147,7 @@ func SubmissionFromBinding(sub bindings.XSubmission, destChainID uint64) (Submis
 }
 
 // SubmissionToBinding converts a go xchain submission to a solidity binding submission.
-func SubmissionToBinding(sub Submission) (bindings.XSubmission, error) {
+func SubmissionToBinding(sub Submission) bindings.XSubmission {
 	// Sort the signatures by validator address to ensure deterministic ordering.
 	sort.Slice(sub.Signatures, func(i, j int) bool {
 		return sub.Signatures[i].ValidatorAddress.Cmp(sub.Signatures[j].ValidatorAddress) < 0
@@ -189,7 +189,7 @@ func SubmissionToBinding(sub Submission) (bindings.XSubmission, error) {
 		ProofFlags: sub.ProofFlags,
 		Signatures: sigs,
 		Msgs:       msgs,
-	}, nil
+	}
 }
 
 func mustGetABI(metadata *bind.MetaData) *abi.ABI {
