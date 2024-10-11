@@ -46,6 +46,7 @@ contract OmniBridgeL1 is OmniBridgeCommon {
     }
 
     function initialize(address owner_, address omni_) external initializer {
+        require(omni_ != address(0), "OmniBridge: no zero addr");
         __Ownable_init(owner_);
         omni = IOmniPortal(omni_);
     }

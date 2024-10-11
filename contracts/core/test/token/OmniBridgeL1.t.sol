@@ -48,6 +48,14 @@ contract OmniBridgeL1_Test is Test {
         );
     }
 
+    function test_initialize() public {
+        address impl = address(new OmniBridgeL1(address(token)));
+        address proxy = address(new TransparentUpgradeableProxy(impl, proxyAdmin, ""));
+
+        vm.expectRevert("OmniBridge: no zero addr");
+        OmniBridgeL1(proxy).initialize(owner, address(0));
+    }
+
     function test_bridge() public {
         address to = makeAddr("to");
         uint256 amount = 1e18;

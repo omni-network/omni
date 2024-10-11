@@ -280,4 +280,40 @@ contract OmniPortal_admin_Test is Base {
 
         assertEq(portal.xsubValsetCutoff(), 1);
     }
+
+    function test_setXMsgGasLimits() public {
+        // only owner
+        address notOwner = address(0x456);
+
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, notOwner));
+        vm.prank(notOwner);
+        portal.setXMsgMinGasLimit(1);
+
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, notOwner));
+        vm.prank(notOwner);
+        portal.setXMsgMaxGasLimit(1);
+
+        vm.startPrank(owner);
+        uint64 min = portal.xmsgMinGasLimit();
+        uint64 max = portal.xmsgMaxGasLimit();
+
+        // min must be below max
+        vm.expectRevert("OmniPortal: not below max");
+        portal.setXMsgMinGasLimit(max);
+
+        // max must be above min
+        vm.expectRevert("OmniPortal: not above min");
+        portal.setXMsgMaxGasLimit(min);
+
+        // success
+        uint64 newMin = min - 1;
+        portal.setXMsgMinGasLimit(newMin);
+        assertEq(portal.xmsgMinGasLimit(), newMin);
+
+        uint64 newMax = max + 1;
+        portal.setXMsgMaxGasLimit(newMax);
+        assertEq(portal.xmsgMaxGasLimit(), newMax);
+
+        vm.stopPrank();
+    }
 }

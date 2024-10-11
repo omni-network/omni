@@ -84,6 +84,8 @@ contract OmniGasPump is IOmniGasPump, XAppUpgradeable, OwnableUpgradeable, Pausa
      * @param recipient Address on Omni to send OMNI to
      */
     function fillUp(address recipient) public payable whenNotPaused returns (uint256) {
+        require(recipient != address(0), "OmniGasPump: no zero addr");
+
         // take xcall fee
         uint256 f = xfee();
         require(msg.value >= f, "OmniGasPump: insufficient fee");
@@ -188,6 +190,7 @@ contract OmniGasPump is IOmniGasPump, XAppUpgradeable, OwnableUpgradeable, Pausa
 
     /// @notice Withdraw collected ETH to `to`
     function withdraw(address to) external onlyOwner {
+        require(to != address(0), "OmniGasPump: no zero addr");
         (bool success,) = to.call{ value: address(this).balance }("");
         require(success, "OmniGasPump: withdraw failed");
     }
