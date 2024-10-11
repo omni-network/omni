@@ -103,7 +103,7 @@ func (v SDKValidator) ConsensusCmtAddr() (cmtcrypto.Address, error) {
 	}
 
 	if len(pk.Bytes()) != k1.PubKeySize {
-		return nil, errors.Wrap(err, "invalid public key size after unmarshal consensus pubkey")
+		return nil, errors.New("invalid public key size")
 	}
 
 	return pk.Address(), nil
@@ -118,7 +118,7 @@ func (v SDKValidator) ConsensusPublicKey() (*ecdsa.PublicKey, error) {
 	}
 
 	if len(pk.Bytes()) != k1.PubKeySize {
-		return nil, errors.Wrap(err, "invalid public key size after unmarshal consensus pubkey")
+		return nil, errors.New("invalid public key size")
 	}
 
 	pubkey, err := crypto.DecompressPubkey(pk.Bytes())
