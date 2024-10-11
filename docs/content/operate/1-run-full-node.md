@@ -2,6 +2,8 @@
 
 Currently, anyone can run a node on Omega Testnet. Stay tuned for running full nodes on mainnet.
 
+Check out our latest [releases](https://github.com/omni-network/omni/releases/tag/latest).
+
 ## Omni Omega Testnet
 
 ### Quick Start
@@ -9,13 +11,13 @@ Currently, anyone can run a node on Omega Testnet. Stay tuned for running full n
 The simplest way to run a full node is with the following commands:
 
 ```bash
-# Install the Omni CLI
+# install the omni cli (or download https://github.com/omni-network/omni/releases/latest)
 curl -sSfL https://raw.githubusercontent.com/omni-network/omni/main/scripts/install_omni_cli.sh | sh -s
 
-# init geth and halo
-omni operator init-nodes --network=omega --moniker=foo --clean
+# init halo and geth
+omni operator init-nodes --network=omega --moniker=foo
 
-# start geth and helo
+# start halo and geth
 cd ~/.omni/omega
 docker compose up
 ```
@@ -25,19 +27,18 @@ Congrats, you're running a full node!
 ### Details
 
 #### What's actually happening here?
-
-- First, you're installing the `omni` cli. We've packaged up several flows into this CLI to make running a node easier for operators.
-- The `init-nodes` command is used to generate genesis files and config files and docker compose in the `~/.omni/<network>` directory.
-- `docker compose up -d` spins up docker containers `halovisor` and `geth`.
-- For detailed instructions on manually configuring a full node, see [Configure a Full Node](6-config.md)
+- First, you're installing the `omni` CLI which contains tooling to manage a node.
+- The `omni operator init-nodes` command generates config files, genesis files, and docker compose in `~/.omni/<network>`.
+- `docker compose up -d` spins up the `halovisor` and `geth` containers.
 
 #### What is the Omni Node software stack?
 - The Omni architecture is similar to Ethereum PoS in that it consists of two chains: an execution chain and a consensus chain.
 - The execution chain is implemented by running the latest version of `geth` . Note that Omni doesn’t fork geth, we use the stock standard version, just with a custom Omni execution genesis file.
 - The consensus chain is implemented by running `halo` which is a CosmosSDK application chain. Halo connects to geth via the [EngineAPI](https://geth.ethereum.org/docs/interacting-with-geth/rpc#engine-api).
-- Running a Omni full node therefore consists of running both `halo` and `geth`.
+- Running an Omni full node therefore consists of running both `halo` and `geth`.
+- For step-by-step instructions to manually configuring a full node, see [Configure a Full Node](6-config.md)
 
-#### Node Requirements
+#### Hardware Requirements
 
 | Category         | Recommendation                                                               |
 |------------------|------------------------------------------------------------------------------|
@@ -49,19 +50,21 @@ Congrats, you're running a full node!
 | Operating System | `linux/amd64`                                                                |
 | Inbound ports    | Enabled for cometBFT (`tcp://26656`) and Geth (`tcp://30303`, `udp://30303`) |
 
-#### `halo` Deployment Instructions
+#### `halo` Deployment Options
 
 Note that `halo` is a CosmosSDK application which requires a specific binary version to run at each network upgrade height.
 CosmosSDK uses [Cosmovisor](https://docs.cosmos.network/main/build/tooling/cosmovisor) to manage the binary versioning and swapping at the correct height.
 
 There are three ways to run `halo`, listed in order of preference:
 
-1. **🥇`omniops/halovisor:<latest>` docker container**
-    - Simply run the latest version of `halovisor` docker container. It will automatically detect and run the correct halo binary version using cosmovisor internally.
+1. **🥇 Halovisor docker container**
+    - Simply run the `omniops/halovisor:<latest>` docker container.
+    - It combines multiple `halo` versions with `cosmovisor` for automatic network upgrades.
     - E.g. `omniops/halovisor:v0.9.0` contains the `halo:v0.8.1` and `halo:v0.9.0` binaries and will automatically switch at the correct height.
     - It only requires a single docker volume mount: `-v ~/.omni/<network>/halo:/halo`
     - It will persist the cosmovisor “current” binary symlink to: `halo/halovisor-current`
-2. **🥈Standard Cosmovisor with `halo` binaries**
+
+2. **🥈 Cosmovisor with halo binaries**
     - Install and configure stock-standard CosmosSDK Cosmovisor with `halo` binaries, see docs [here](https://docs.cosmos.network/main/build/tooling/cosmovisor#setup) and [here](https://docs.archway.io/validators/running-a-node/cosmovisor) and [here](https://docs.junonetwork.io/validators/setting-up-cosmovisor). This will also automatically swap the “current” binary at the correct height.
     - The binaries versions to use are:
         - `genesis: halo:v0.8.1`
@@ -79,8 +82,9 @@ There are three ways to run `halo`, listed in order of preference:
       │ ├── genesis/bin/$DEAMONNAME # halo:v0.8.1
       │ ├── upgrades/1_uluwatu/bin/$DEAMONNAME # halo:v0.9.0
     ```
-3. **🥉Manual binary/docker swapping**
-    - Swapping halo binary version manually is also an option.
+
+3. **🥉 Manual binary/docker swapping**
+    - Swapping halo binary or docker version manually is also an option.
     - When `halo:v0.8.1` reaches the network upgrade height, it will stall.
     - Stop it, and replace it with `halo:v0.9.0`
     - Start the node and it should catch up and continue processing the chain.
