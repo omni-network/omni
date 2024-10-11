@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// PrivateKeyFixture generates an ethereum ecds private key.
 func PrivateKeyFixture(t *testing.T) (*ecdsa.PrivateKey, common.Address) {
 	t.Helper()
 	privKey, err := crypto.GenerateKey()
