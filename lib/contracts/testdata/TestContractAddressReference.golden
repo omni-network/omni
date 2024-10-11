@@ -10,11 +10,11 @@
  },
  "mainnet": {
   "avs": "0xed2f4d90b073128ae6769a9a8d51547b1df766c8",
-  "create3": "0x9b137463d4e7986d7f535f9b79e28b4ef1938e9b",
-  "gaspump": "0x47174077a08b1a88f4fa9db8e9d32e6917a4c5a9",
-  "gasstation": "0xc0ae1198bac99175e1e84bd5e53f02c054f870c0",
-  "l1bridge": "0x1ef02175337fd1b808d95a2e15498e767fe5e87c",
-  "portal": "0x84db9693ba18e77f66a3906aa4544a0d238b6221",
+  "create3": "0xe58e1002b51bc5ddf941de3b900d7179e4ea97bc",
+  "gaspump": "0xefe16889ee64a7c8af9de93855e283d1adf193e6",
+  "gasstation": "0x42bb1575df16f02e172bfb99e2e4ba9486351e42",
+  "l1bridge": "0x6bd6cf05285d1352ee9719fb3894734a5c8cedb2",
+  "portal": "0x88ebac668d54510699882f89eeb981cdc89782fe",
   "token": "0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4"
  },
  "omega": {
