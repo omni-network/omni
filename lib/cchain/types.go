@@ -117,6 +117,10 @@ func (v SDKValidator) ConsensusPublicKey() (*ecdsa.PublicKey, error) {
 		return nil, errors.Wrap(err, "unmarshal consensus pubkey")
 	}
 
+	if len(pk.Bytes()) != k1.PubKeySize {
+		return nil, errors.Wrap(err, "invalid public key size after unmarshal consensus pubkey")
+	}
+
 	pubkey, err := crypto.DecompressPubkey(pk.Bytes())
 	if err != nil {
 		return nil, errors.Wrap(err, "decompress pubkey")
