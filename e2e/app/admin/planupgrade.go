@@ -21,6 +21,10 @@ var upgradePlans = map[netconf.ID]bindings.UpgradePlan{
 		Name:   uluwatu1.UpgradeName,
 		Height: 0, // Dynamically calculated for ephemeral networks
 	},
+	netconf.Omega: {
+		Name:   uluwatu1.UpgradeName,
+		Height: 3_073_000, // Mon 14 Oct 9am EST
+	},
 }
 
 // PlanUpgrade plans the above configured network upgrade.
