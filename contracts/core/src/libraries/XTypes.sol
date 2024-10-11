@@ -12,7 +12,7 @@ library XTypes {
      *        throughout Omni's cross-chain messaging protocol. Msg is used to construct and verify
      *        XSubmission merkle trees / proofs.
      * @custom:field destChainId    Chain ID of the destination chain
-     * @custom:field shardId        Shard ID of the XStream (first byte is the confirmation level)
+     * @custom:field shardId        Shard ID of the XStream (last byte is the confirmation level)
      * @custom:field offset         Monotonically incremented offset of Msg in source -> dest Stream
      * @custom:field sender         msg.sender of xcall on source chain
      * @custom:field to             Target address to call on destination chain

@@ -139,7 +139,7 @@ contract OmniPortal is
         require(gasLimit >= xmsgMinGasLimit, "OmniPortal: gasLimit too low");
         require(data.length <= xmsgMaxDataSize, "OmniPortal: data too large");
 
-        // conf level will always be first byte of shardId. for now, shardId is just conf level
+        // conf level will always be last byte of shardId. for now, shardId is just conf level
         uint64 shardId = uint64(conf);
         require(isSupportedShard[shardId], "OmniPortal: unsupported shard");
 
