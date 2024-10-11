@@ -179,6 +179,7 @@ var (
 	}
 )
 
+// TODO(corver): Move this to actual tests package.
 func testGasPumps(ctx context.Context, def Definition) error {
 	networkID := def.Testnet.Network
 	network := NetworkFromDef(def)

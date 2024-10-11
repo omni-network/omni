@@ -79,30 +79,21 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, err
 	}
 
-	if err := waitForEVMs(ctx, NetworkFromDef(def), def.Backends()); err != nil {
+	if err := waitForEVMs(ctx, def.Testnet.EVMChains(), def.Backends()); err != nil {
 		return nil, err
 	}
 
 	contracts.UseStagingOmniRPC(def.Testnet.BroadcastOmniEVM().ExternalRPC)
 
-	if err := deployPublicCreate3(ctx, def); err != nil {
+	if err := fundAnvilAccounts(ctx, def); err != nil {
 		return nil, err
 	}
 
-	// Deploy public portals first so their addresses are available for setup.
-	if err := def.Netman().DeployPublicPortals(ctx, genesisValSetID, genesisVals); err != nil {
+	if err := deployAllCreate3(ctx, def); err != nil {
 		return nil, err
 	}
 
-	if err := fundAccounts(ctx, def); err != nil {
-		return nil, err
-	}
-
-	if err := deployPrivateCreate3(ctx, def); err != nil {
-		return nil, err
-	}
-
-	if err := def.Netman().DeployPrivatePortals(ctx, genesisValSetID, genesisVals); err != nil {
+	if err := def.Netman().DeployPortals(ctx, genesisValSetID, genesisVals); err != nil {
 		return nil, err
 	}
 	logRPCs(ctx, def)

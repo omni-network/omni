@@ -8,11 +8,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 	"github.com/cometbft/cometbft/test/e2e/pkg/infra"
@@ -176,9 +176,9 @@ func getSortedNodes(testnet *e2e.Testnet) ([]*e2e.Node, error) {
 // waitForEVMs waits for EVMs to be available.
 // This mitigates any issues if starting anvils or omni evms is slow.
 // It also ensures the public RPCs are accessible.
-func waitForEVMs(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
-	for _, chain := range network.EVMChains() {
-		backend, err := backends.Backend(chain.ID)
+func waitForEVMs(ctx context.Context, chains []types.EVMChain, backends ethbackend.Backends) error {
+	for _, chain := range chains {
+		backend, err := backends.Backend(chain.ChainID)
 		if err != nil {
 			return errors.Wrap(err, "backend")
 		}
