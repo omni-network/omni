@@ -143,6 +143,7 @@ var ToL1BridgeTests = []BridgeTest{
 
 // testBridge bridges some tokens from L1 to OmniEVM, and some from OmniEVM to L1.
 // Tokens must be bridged to OmniEVM first, before the native bridge contract will allow bridging back to L1.
+// TODO(corver): Move this to actual tests package.
 func testBridge(ctx context.Context, def Definition) error {
 	networkID := def.Testnet.Network
 	network := NetworkFromDef(def)

@@ -47,8 +47,8 @@ func accountsToFund(network netconf.ID) []common.Address {
 	}
 }
 
-// fundAccounts funds the EOAs that need funding (just on anvil chains, for now).
-func fundAccounts(ctx context.Context, def Definition) error {
+// fundAnvilAccounts funds the EOAs on anvil that need funding.
+func fundAnvilAccounts(ctx context.Context, def Definition) error {
 	accounts := accountsToFund(def.Testnet.Network)
 	eth100 := new(big.Int).Mul(big.NewInt(params.Ether), big.NewInt(100))
 	for _, chain := range def.Testnet.AnvilChains {

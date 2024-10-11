@@ -93,8 +93,13 @@ func (d Definition) Netman() netman.Manager {
 func (d Definition) DeployInfos() types.DeployInfos {
 	resp := make(types.DeployInfos)
 
-	for chainID, info := range d.Netman().DeployInfo() {
-		resp.Set(chainID, types.ContractPortal, info.PortalAddress, info.DeployHeight)
+	for chainID, portal := range d.Netman().Portals() {
+		resp.Set(
+			chainID,
+			types.ContractPortal,
+			portal.DeployInfo.PortalAddress,
+			portal.DeployInfo.DeployHeight,
+		)
 	}
 
 	return resp
@@ -512,15 +517,15 @@ func NetworkFromDef(def Definition) netconf.Network {
 	var chains []netconf.Chain
 
 	newChain := func(chain types.EVMChain) netconf.Chain {
-		depInfo := def.DeployInfos()[chain.ChainID]
+		portal := def.Netman().Portals()[chain.ChainID]
 		return netconf.Chain{
 			ID:             chain.ChainID,
 			Name:           chain.Name,
 			BlockPeriod:    chain.BlockPeriod,
 			Shards:         chain.Shards,
 			AttestInterval: chain.AttestInterval(def.Testnet.Network),
-			PortalAddress:  depInfo[types.ContractPortal].Address,
-			DeployHeight:   depInfo[types.ContractPortal].Height,
+			PortalAddress:  portal.DeployInfo.PortalAddress,
+			DeployHeight:   portal.DeployInfo.DeployHeight,
 		}
 	}
 
