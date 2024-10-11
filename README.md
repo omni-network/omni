@@ -39,30 +39,22 @@ The [Omni Docs](https://docs.omni.network/) are the best place to get started le
 
 ## Quickstart
 
-Building the node requires a working Go (version 1.22 or higher, see `go.mod`) and `goreleaser` ([see installation guide here](https://goreleaser.com/install/) or install with `make ensure-go-releaser`). You can install them using your favorite package manager. Once the dependencies are installed, run:
+Ensure [go](https://go.dev/doc/install), [goreleaser](https://goreleaser.com/install/) and [docker](https://docs.docker.com/engine/install/) are installed.
 
 ```bash
+# Build local docker containers
 make build-docker
-```
 
-To run the end-to-end tests, run:
-
-```bash
+# Run the end-to-end tests on a local devnet
 MANIFEST=devnet1 make e2e-run
-```
-_If the above command fails, [see the troubleshooting section](./e2e/README.md#troubleshooting)._
 
-To start a devnet, run:
-
-```bash
+# Start a local devnet
 make devnet-deploy
-```
 
-To stop it, run:
-
-```bash
+# Stop the local devnet
 make devnet-clean
 ```
+_If any of above commands fail, see the [troubleshooting section](./e2e/README.md#troubleshooting)._
 
 ## Directory Structure
 
