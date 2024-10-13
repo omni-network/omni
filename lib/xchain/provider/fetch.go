@@ -402,6 +402,7 @@ func parseXMsg(filterer *bindings.OmniPortalFilterer, event types.Log, chainID u
 		DestGasLimit:    e.GasLimit,
 		TxHash:          e.Raw.TxHash,
 		Fees:            e.Fees,
+		LogIndex:        uint64(e.Raw.Index),
 	}, nil
 }
 
@@ -425,6 +426,7 @@ func parseXReceipt(filterer *bindings.OmniPortalFilterer, event types.Log, chain
 		Error:          e.Err,
 		RelayerAddress: e.Relayer,
 		TxHash:         e.Raw.TxHash,
+		LogIndex:       uint64(e.Raw.Index),
 	}, nil
 }
 

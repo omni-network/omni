@@ -70,11 +70,12 @@ func TestSubmissionToFromBinding(t *testing.T) {
 	reversedSub, err := SubmissionFromBinding(xsub, sub.DestChainID)
 	require.NoError(t, err)
 
-	// Zero TxHash, ChainID, and Fees for comparison since they aren't translated.
+	// Zero TxHash, ChainID, Fees, and LogIndex for comparison since they aren't translated.
 	for i := range sub.Msgs {
 		sub.Msgs[i].TxHash = common.Hash{}
 		sub.Msgs[i].SourceChainID = 0
 		sub.Msgs[i].Fees = nil
+		sub.Msgs[i].LogIndex = 0
 	}
 
 	// Zero BlockHeight as we only submit AttestOffset

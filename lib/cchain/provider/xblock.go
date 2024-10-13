@@ -39,7 +39,7 @@ func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchai
 	}
 
 	var msgs []xchain.Msg
-	for _, msg := range block.Msgs {
+	for i, msg := range block.Msgs {
 		if msg.ShardID() == xchain.ShardBroadcast0 && msg.StreamOffset == 1 && msg.MsgType() != ptypes.MsgTypeValSet {
 			return xchain.Block{}, false, errors.New("initial broadcast message not genesis valset [BUG]", "type", msg.MsgType())
 		}
@@ -63,7 +63,8 @@ func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchai
 				},
 				StreamOffset: msg.StreamOffset,
 			},
-			Data: data,
+			Data:     data,
+			LogIndex: uint64(i), // Converting slice index to uint64 is safe
 		})
 	}
 
