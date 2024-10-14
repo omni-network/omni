@@ -16,8 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-
-	"golang.org/x/sync/errgroup"
 )
 
 // ChainVersionHeight returns the latest height for the provided chain version.
@@ -221,23 +219,9 @@ func (p *Provider) GetBlock(ctx context.Context, req xchain.ProviderRequest) (xc
 		}
 	}
 
-	// Fetch the msgs and receipts in parallel.
-	var eg errgroup.Group
-	eg.Go(func() error {
-		var err error
-		msgs, err = p.getXMsgLogs(ctx, req.ChainID, header.Hash())
-
-		return err
-	})
-	eg.Go(func() error {
-		var err error
-		receipts, err = p.getXReceiptLogs(ctx, req.ChainID, header.Hash())
-
-		return err
-	})
-
-	if err := eg.Wait(); err != nil {
-		return xchain.Block{}, false, errors.Wrap(err, "wait")
+	msgs, receipts, err = p.getMsgsAndReceipts(ctx, req.ChainID, header.Hash())
+	if err != nil {
+		return xchain.Block{}, false, errors.Wrap(err, "get msgs and receipts")
 	}
 
 	timeSecs, err := umath.ToInt64(header.Time)
@@ -258,119 +242,87 @@ func (p *Provider) GetBlock(ctx context.Context, req xchain.ProviderRequest) (xc
 	}, true, nil
 }
 
-func (p *Provider) getXReceiptLogs(ctx context.Context, chainID uint64, blockHash common.Hash) ([]xchain.Receipt, error) {
-	ctx, span := tracer.Start(ctx, spanName("get_receipt_logs"))
+// getMsgsAndReceipts returns the xmsgs and xreceipts for the chain and block hash.
+//
+//nolint:nestif // Not worth refactoring
+func (p *Provider) getMsgsAndReceipts(ctx context.Context, chainID uint64, blockHash common.Hash) ([]xchain.Msg, []xchain.Receipt, error) {
+	ctx, span := tracer.Start(ctx, spanName("get_mgs_and_receipts"))
 	defer span.End()
 
 	chain, rpcClient, err := p.getEVMChain(chainID)
 	if err != nil {
-		return nil, errors.Wrap(err, "get evm chain")
+		return nil, nil, errors.Wrap(err, "get evm chain")
 	}
 
-	logs, err := getLogs(ctx, rpcClient, chain.PortalAddress, blockHash, "XReceipt")
+	portalAbi, err := bindings.OmniPortalMetaData.GetAbi()
 	if err != nil {
-		return nil, errors.Wrap(err, "get xreceipt logs")
+		return nil, nil, errors.Wrap(err, "get abi")
 	}
 
-	expectedShards := make(map[uint64]bool)
+	msgEvent, ok := portalAbi.Events["XMsg"]
+	if !ok {
+		return nil, nil, errors.New("missing XMsg event [BUG]")
+	}
+
+	receiptEvent, ok := portalAbi.Events["XReceipt"]
+	if !ok {
+		return nil, nil, errors.New("missing XReceipt event [BUG]")
+	}
+
+	topics := []common.Hash{msgEvent.ID, receiptEvent.ID}
+	events, err := getEventLogs(ctx, rpcClient, chain.PortalAddress, blockHash, topics)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "get logs")
+	}
+
+	expectedShards := make(map[xchain.ShardID]bool)
 	for _, stream := range p.network.StreamsTo(chainID) {
-		expectedShards[uint64(stream.ShardID)] = true
+		expectedShards[stream.ShardID] = true
 	}
-
-	filterer, err := bindings.NewOmniPortalFilterer(chain.PortalAddress, rpcClient)
-	if err != nil {
-		return nil, errors.Wrap(err, "new filterer")
-	}
-
-	var receipts []xchain.Receipt
-	for _, xreceiptLog := range logs {
-		e, err := filterer.ParseXReceipt(xreceiptLog)
-		if err != nil {
-			return nil, errors.Wrap(err, "parse xreceipt log")
-		}
-
-		if !expectedShards[e.ShardId] {
-			return nil, errors.New("unexpected receipt shard",
-				"shard", e.ShardId,
-				"src_chain", e.SourceChainId,
-				"expected", p.network.StreamsBetween(e.SourceChainId, chainID),
+	verifyShard := func(shardID xchain.ShardID) error {
+		if !expectedShards[shardID] {
+			return errors.New("unexpected shard",
+				"shard", shardID,
+				"chain", chainID,
+				"expected", p.network.StreamsTo(chainID),
 			)
 		}
 
-		receipts = append(receipts, xchain.Receipt{
-			MsgID: xchain.MsgID{
-				StreamID: xchain.StreamID{
-					SourceChainID: e.SourceChainId,
-					DestChainID:   chain.ID,
-					ShardID:       xchain.ShardID(e.ShardId),
-				},
-				StreamOffset: e.Offset,
-			},
-			GasUsed:        e.GasUsed.Uint64(),
-			Success:        e.Success,
-			Error:          e.Err,
-			RelayerAddress: e.Relayer,
-			TxHash:         e.Raw.TxHash,
-		})
-	}
-
-	return receipts, nil
-}
-
-func (p *Provider) getXMsgLogs(ctx context.Context, chainID uint64, blockHash common.Hash) ([]xchain.Msg, error) {
-	ctx, span := tracer.Start(ctx, spanName("get_msg_logs"))
-	defer span.End()
-
-	chain, rpcClient, err := p.getEVMChain(chainID)
-	if err != nil {
-		return nil, errors.Wrap(err, "get evm chain")
-	}
-
-	logs, err := getLogs(ctx, rpcClient, chain.PortalAddress, blockHash, "XMsg")
-	if err != nil {
-		return nil, errors.Wrap(err, "get xmsg logs")
-	}
-
-	expectedShards := make(map[uint64]bool)
-	for _, shard := range chain.Shards {
-		expectedShards[uint64(shard)] = true
+		return nil
 	}
 
 	filterer, err := bindings.NewOmniPortalFilterer(chain.PortalAddress, rpcClient)
 	if err != nil {
-		return nil, err
+		return nil, nil, errors.Wrap(err, "new filterer")
 	}
 
-	var xmsgs []xchain.Msg
-	for _, xmsgLog := range logs {
-		e, err := filterer.ParseXMsg(xmsgLog)
-		if err != nil {
-			return nil, errors.Wrap(err, "parse xmsg log")
-		}
+	var msgs []xchain.Msg
+	var receipts []xchain.Receipt
+	for _, event := range events {
+		if event.Topics[0] == msgEvent.ID {
+			msg, err := parseXMsg(filterer, event, chainID)
+			if err != nil {
+				return nil, nil, err
+			} else if err := verifyShard(msg.ShardID); err != nil {
+				return nil, nil, err
+			}
 
-		if !expectedShards[e.ShardId] {
-			return nil, errors.New("unexpected xmsg shard", "shard", e.ShardId)
-		}
+			msgs = append(msgs, msg)
+		} else if event.Topics[0] == receiptEvent.ID {
+			receipt, err := parseXReceipt(filterer, event, chainID)
+			if err != nil {
+				return nil, nil, err
+			} else if err := verifyShard(receipt.ShardID); err != nil {
+				return nil, nil, err
+			}
 
-		xmsgs = append(xmsgs, xchain.Msg{
-			MsgID: xchain.MsgID{
-				StreamID: xchain.StreamID{
-					SourceChainID: chain.ID,
-					DestChainID:   e.DestChainId,
-					ShardID:       xchain.ShardID(e.ShardId),
-				},
-				StreamOffset: e.Offset,
-			},
-			SourceMsgSender: e.Sender,
-			DestAddress:     e.To,
-			Data:            e.Data,
-			DestGasLimit:    e.GasLimit,
-			TxHash:          e.Raw.TxHash,
-			Fees:            e.Fees,
-		})
+			receipts = append(receipts, receipt)
+		} else {
+			return nil, nil, errors.New("unexpected event topic")
+		}
 	}
 
-	return xmsgs, nil
+	return msgs, receipts, nil
 }
 
 // GetSubmission returns the submission associated with the transaction hash or an error.
@@ -429,6 +381,53 @@ func (p *Provider) headerByChainVersion(ctx context.Context, chainVer xchain.Cha
 	return header, nil
 }
 
+func parseXMsg(filterer *bindings.OmniPortalFilterer, event types.Log, chainID uint64) (xchain.Msg, error) {
+	e, err := filterer.ParseXMsg(event)
+	if err != nil {
+		return xchain.Msg{}, errors.Wrap(err, "parse xmsg log")
+	}
+
+	return xchain.Msg{
+		MsgID: xchain.MsgID{
+			StreamID: xchain.StreamID{
+				SourceChainID: chainID,
+				DestChainID:   e.DestChainId,
+				ShardID:       xchain.ShardID(e.ShardId),
+			},
+			StreamOffset: e.Offset,
+		},
+		SourceMsgSender: e.Sender,
+		DestAddress:     e.To,
+		Data:            e.Data,
+		DestGasLimit:    e.GasLimit,
+		TxHash:          e.Raw.TxHash,
+		Fees:            e.Fees,
+	}, nil
+}
+
+func parseXReceipt(filterer *bindings.OmniPortalFilterer, event types.Log, chainID uint64) (xchain.Receipt, error) {
+	e, err := filterer.ParseXReceipt(event)
+	if err != nil {
+		return xchain.Receipt{}, errors.Wrap(err, "parse xreceipt log")
+	}
+
+	return xchain.Receipt{
+		MsgID: xchain.MsgID{
+			StreamID: xchain.StreamID{
+				SourceChainID: e.SourceChainId,
+				DestChainID:   chainID,
+				ShardID:       xchain.ShardID(e.ShardId),
+			},
+			StreamOffset: e.Offset,
+		},
+		GasUsed:        e.GasUsed.Uint64(),
+		Success:        e.Success,
+		Error:          e.Err,
+		RelayerAddress: e.Relayer,
+		TxHash:         e.Raw.TxHash,
+	}, nil
+}
+
 func getConsXBlock(ctx context.Context, ref xchain.EmitRef, cprov cchain.Provider) (xchain.Block, error) {
 	var height uint64
 	var latest bool
@@ -468,19 +467,26 @@ func headTypeFromConfLevel(conf xchain.ConfLevel) (ethclient.HeadType, bool) {
 	}
 }
 
-func getLogs(ctx context.Context, rpcClient ethclient.Client, contractAddr common.Address, blockHash common.Hash, topicName string) ([]types.Log, error) {
-	portalAbi, err := bindings.OmniPortalMetaData.GetAbi()
-	if err != nil {
-		return nil, errors.Wrap(err, "get abi")
-	}
-
+// getEventLogs returns the logs for the contract address and block hash with any of the provided topics in the first position.
+func getEventLogs(ctx context.Context, rpcClient ethclient.Client, contractAddr common.Address, blockHash common.Hash, topics []common.Hash) ([]types.Log, error) {
 	logs, err := rpcClient.FilterLogs(ctx, ethereum.FilterQuery{
 		BlockHash: &blockHash,
 		Addresses: []common.Address{contractAddr},
-		Topics:    [][]common.Hash{{portalAbi.Events[topicName].ID}},
+		Topics:    [][]common.Hash{topics}, // Match any of the topics in the first position.
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "filter xreceipt logs")
+	}
+
+	// Ensure events are valid and sorted by index.
+	for i, log := range logs {
+		if i > 0 && log.Index <= logs[i-1].Index {
+			return nil, errors.New("unordered log index", "index", i)
+		} else if log.BlockHash != blockHash {
+			return nil, errors.New("unexpected log block hash", "index", i)
+		} else if len(log.Topics) == 0 {
+			return nil, errors.New("missing log topics", "index", i)
+		}
 	}
 
 	return logs, nil
