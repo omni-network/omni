@@ -114,17 +114,17 @@ var (
 
 // GetAddresses returns the contract addresses for the given network.
 func GetAddresses(ctx context.Context, network netconf.ID) (Addresses, error) {
+	ver, err := version(ctx, network)
+	if err != nil {
+		return Addresses{}, err
+	}
+
 	addrsCache.mu.Lock()
 	defer addrsCache.mu.Unlock()
 
 	addrs, ok := addrsCache.cache[network]
 	if ok {
 		return addrs, nil
-	}
-
-	ver, err := version(ctx, network)
-	if err != nil {
-		return Addresses{}, err
 	}
 
 	addrs = Addresses{
