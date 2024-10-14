@@ -44,6 +44,10 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 	var block xchain.Block
 	fuzzer.NilChance(0).NumElements(2, 64).Fuzz(&block)
 	require.NotEmpty(t, block.Msgs)
+	// Ensure msg.LogIndex is increasing
+	for i := 1; i < len(block.Msgs); i++ {
+		block.Msgs[i].LogIndex = block.Msgs[i-1].LogIndex + 1 + uint64(rand.Intn(1000))
+	}
 
 	var attestHeader xchain.AttestHeader
 	fuzzer.Fuzz(&attestHeader)

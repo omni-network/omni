@@ -55,8 +55,8 @@ func TestWorker_Run(t *testing.T) {
 					BlockHeight: req.Height,
 				},
 				Msgs: []xchain.Msg{
-					{MsgID: xchain.MsgID{StreamID: streamA, StreamOffset: req.Height}},
-					{MsgID: xchain.MsgID{StreamID: streamB, StreamOffset: req.Height}},
+					{MsgID: xchain.MsgID{StreamID: streamA, StreamOffset: req.Height}, LogIndex: 0},
+					{MsgID: xchain.MsgID{StreamID: streamB, StreamOffset: req.Height}, LogIndex: 1},
 				},
 			}, true, nil
 		},
@@ -115,7 +115,8 @@ func TestWorker_Run(t *testing.T) {
 					// We treat the offset as the requested height for the test.
 					Height: offset,
 				})
-				tree, _ := xchain.NewMsgTree(block.Msgs)
+				tree, err := xchain.NewMsgTree(block.Msgs)
+				require.NoError(t, err)
 
 				return xchain.Attestation{
 					MsgRoot: tree.MsgRoot(),

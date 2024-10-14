@@ -946,7 +946,7 @@
     "signatures": []
   },
   "xblock1_xsub_destChainId100": {
-    "attestationRoot": "0xf426944a798ca58d82550372330f136e5772ffd202458a19d01d1f854ddab349",
+    "attestationRoot": "0x0b0b14165ec924b805c27b2939a56f8e19249fabc64f5a1f5fab343ea137ff2e",
     "validatorSetId": "1",
     "blockHeader": {
       "sourceChainId": "102",
@@ -999,22 +999,26 @@
     ],
     "proof": [
       "0x4420685b737f787e22c71567ebc25a64bf00d37e555337770fffd246b84ba106",
-      "0xfcd0bf961d42311d55ef953a3572ab8a1e98b5350ae28a0d3c2896cc09f98128",
-      "0x50daf74dbe9df62893e2b6f7903ebbfd08e4b353fd40bdd93f15af3899ef92f0"
+      "0xd9dae5d03830ec8209fe5d50627ea9ebdf94db83d5132c37805e46fa339ecb1e",
+      "0x9db023b16ee0dfc485e7fe98e684b24be39bdb716a563cc78c18ec98a86a1711",
+      "0x897708e4f30ac48f1c484cc3ec0c66e8634b8d334e217d6c026f49c48adb2a07",
+      "0xd1f556680f6877bb81e836120b4a60a10413b988f578c2df09938ed8ac4d412a"
     ],
     "proofFlags": [
-      true,
-      true,
-      false,
-      true,
       false,
       false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
       true
     ],
     "signatures": []
   },
   "xblock1_xsub_destChainId103": {
-    "attestationRoot": "0xf426944a798ca58d82550372330f136e5772ffd202458a19d01d1f854ddab349",
+    "attestationRoot": "0x0b0b14165ec924b805c27b2939a56f8e19249fabc64f5a1f5fab343ea137ff2e",
     "validatorSetId": "1",
     "blockHeader": {
       "sourceChainId": "102",
@@ -1066,21 +1070,27 @@
       }
     ],
     "proof": [
-      "0xa263f9f0beedf97e1a7735ef98ac5f1a239c1c06be2b3fe01b2e286486e71c0f",
-      "0x07df2fcf678fd4dbce16f5ce0e1302cb2e0e7da36d76163bea7eb6aebe71a66f"
+      "0x604b33e808a30f4ecab6c4abe1767c38915818fa21e9de81481624bf2d0ec073",
+      "0x78c44c6cea257d8acc0bcd79923dc05869a03f0f298e349c62c369f04f5aa536",
+      "0xb5fa22b41c2d84b6a034f1565445466586e44998520203659d21beda89196988",
+      "0xa59b0da35b78dcbf6991c447cfade85f4a49446a73effde4d7f16332ed83ec12",
+      "0xa263f9f0beedf97e1a7735ef98ac5f1a239c1c06be2b3fe01b2e286486e71c0f"
     ],
     "proofFlags": [
       false,
-      true,
-      true,
-      true,
       false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
       true
     ],
     "signatures": []
   },
   "xblock2_xsub_destChainId100": {
-    "attestationRoot": "0xb8d8c48c2be913e1746c4282698637a446ed887986fb18c9264620d5da96e52a",
+    "attestationRoot": "0x961d1faee22a7a289d10237376d990ddfb3067e7a48a96582b8647a6be44e162",
     "validatorSetId": "1",
     "blockHeader": {
       "sourceChainId": "102",
@@ -1133,22 +1143,26 @@
     ],
     "proof": [
       "0x3bcc020230b9bd2f78d980df7e47f810b85a1e5f5a9bcf3410a61779dad3a642",
-      "0x0abaddaaa4a4fb52b0ded38f84cd1389a68781fb9048579f0cd2b28facb8d206",
-      "0x325599eea609a4756fa73aedb6da0140fa57724b715aa2b90d4f1e4f3768eae7"
+      "0xc3d7ab7ad9450264aed00a9d679c81db363857882f4a8deffba867d9878e1f0e",
+      "0xe7d1e6549f72917abc4a66a1d6cf6b7e04c834c41777d586c16a7407c8618802",
+      "0x8febede18e678e39c7931194600198ef566ea14877a6639d1a48ba25a082fffb",
+      "0x6e93caf2f26dc6a366c88abf2fd04a2337e09d64a8abe97d5ebc7cba65a6b83a"
     ],
     "proofFlags": [
-      true,
-      true,
-      false,
-      true,
       false,
       false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
       true
     ],
     "signatures": []
   },
   "xblock2_xsub_destChainId103": {
-    "attestationRoot": "0xb8d8c48c2be913e1746c4282698637a446ed887986fb18c9264620d5da96e52a",
+    "attestationRoot": "0x961d1faee22a7a289d10237376d990ddfb3067e7a48a96582b8647a6be44e162",
     "validatorSetId": "1",
     "blockHeader": {
       "sourceChainId": "102",
@@ -1200,15 +1214,21 @@
       }
     ],
     "proof": [
-      "0x334368c2947e1380441d12972911ecea9cbeed57b2b8f16f8b19867e31c218c1",
-      "0x69f730488bbd6102acc8fb1b2d9fa44395011d8bc90282a5cac3550ae65506fc"
+      "0xe16794c07d066e2119bab184d90f711ebddab5002fae60e0f909ce192e10ee3c",
+      "0x955103a53da497030ab105c795c19d54ecae0a18e126fea9ec70b1964f71cbc5",
+      "0x7fc8cbdfea4cdd05196ff964d661b8380cb61bd18a2e7cdfb1c60f0a88ce7ff2",
+      "0x519d98da8d11ddaf015e2326edebb2658fd69c238ff9dfedaae30545d0452d0d",
+      "0x334368c2947e1380441d12972911ecea9cbeed57b2b8f16f8b19867e31c218c1"
     ],
     "proofFlags": [
       false,
-      true,
-      true,
-      true,
       false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
       true
     ],
     "signatures": []

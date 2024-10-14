@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"sync"
@@ -397,6 +398,10 @@ func (w *wrappedVoter) Add(t *testing.T, chainID, offset uint64) {
 	t.Helper()
 	var block xchain.Block
 	w.f.Fuzz(&block)
+	// Ensure msg.LogIndex is increasing
+	for i := 1; i < len(block.Msgs); i++ {
+		block.Msgs[i].LogIndex = block.Msgs[i-1].LogIndex + 1 + uint64(rand.Intn(1000))
+	}
 
 	attHeader := xchain.AttestHeader{
 		ConsensusChainID: w.consensusChainID,
@@ -405,8 +410,7 @@ func (w *wrappedVoter) Add(t *testing.T, chainID, offset uint64) {
 	}
 
 	block.BlockHeader = xchain.BlockHeader{
-		ChainID: chainID,
-
+		ChainID:   chainID,
 		BlockHash: common.Hash{},
 	}
 

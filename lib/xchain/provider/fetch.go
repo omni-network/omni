@@ -402,6 +402,7 @@ func parseXMsg(filterer *bindings.OmniPortalFilterer, event types.Log, chainID u
 		DestGasLimit:    e.GasLimit,
 		TxHash:          e.Raw.TxHash,
 		Fees:            e.Fees,
+		LogIndex:        uint64(e.Raw.Index),
 	}, nil
 }
 
@@ -425,6 +426,7 @@ func parseXReceipt(filterer *bindings.OmniPortalFilterer, event types.Log, chain
 		Error:          e.Err,
 		RelayerAddress: e.Relayer,
 		TxHash:         e.Raw.TxHash,
+		LogIndex:       uint64(e.Raw.Index),
 	}, nil
 }
 
@@ -475,7 +477,7 @@ func getEventLogs(ctx context.Context, rpcClient ethclient.Client, contractAddr 
 		Topics:    [][]common.Hash{topics}, // Match any of the topics in the first position.
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "filter xreceipt logs")
+		return nil, errors.Wrap(err, "filter logs")
 	}
 
 	// Ensure events are valid and sorted by index.
