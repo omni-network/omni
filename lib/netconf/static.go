@@ -117,7 +117,7 @@ func (s Static) ExecutionSeeds() []string {
 }
 
 func (s Static) ExecutionRPC() string {
-	if s.Network.IsEphemeral() {
+	if s.Network == Devnet {
 		panic("execution rpc not available for devnet")
 	}
 
@@ -125,7 +125,7 @@ func (s Static) ExecutionRPC() string {
 }
 
 func (s Static) ConsensusRPC() string {
-	if s.Network.IsEphemeral() {
+	if s.Network == Devnet {
 		panic("consensus rpc not available for devnet")
 	}
 
