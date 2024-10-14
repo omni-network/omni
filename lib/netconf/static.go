@@ -117,16 +117,16 @@ func (s Static) ExecutionSeeds() []string {
 }
 
 func (s Static) ExecutionRPC() string {
-	if s.Network == Devnet {
-		return "http://localhost:8001"
+	if s.Network.IsEphemeral() {
+		panic("execution rpc not available for devnet")
 	}
 
 	return fmt.Sprintf("https://%s.omni.network", s.Network)
 }
 
 func (s Static) ConsensusRPC() string {
-	if s.Network == Devnet {
-		return "http://localhost:5701"
+	if s.Network.IsEphemeral() {
+		panic("consensus rpc not available for devnet")
 	}
 
 	return fmt.Sprintf("https://consensus.%s.omni.network", s.Network)
