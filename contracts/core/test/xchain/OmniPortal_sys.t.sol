@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
-import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import { Base } from "./common/Base.sol";
+import { OmniPortalFixtures } from "test/templates/fixtures/OmniPortalFixtures.sol";
+import { OmniPortal } from "src/xchain/OmniPortal.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
 
@@ -10,7 +10,7 @@ import { ConfLevel } from "src/libraries/ConfLevel.sol";
  * @title OmniPortal_sys_Test
  * @dev Test of OmniPortal sys calls
  */
-contract OmniPortal_sys_Test is Base {
+contract OmniPortal_sys_Test is OmniPortalFixtures {
     function test_setNetwork() public {
         uint64[] memory chain1Shards = new uint64[](2);
         chain1Shards[0] = 3;
@@ -27,11 +27,12 @@ contract OmniPortal_sys_Test is Base {
         network[0] = chain1;
         network[1] = chain2;
 
-        // assume chain id 1. this should result in
-        //  - chain1 is not a supported dest, but defines supprted shards
-        //  - chain2 is a supported dest, but does not define supported shards
+        XTypes.BlockHeader memory xheader = xsubgen.makeXHeader(omniCChainID, ConfLevel.Finalized);
+        XTypes.Msg[] memory msgs = new XTypes.Msg[](1);
+        msgs[0] = _sysXMsg(abi.encodeCall(OmniPortal.setNetwork, (network)));
+
         vm.chainId(1);
-        portal.setNetworkNoAuth(network);
+        portal.xsubmit(xsubgen.makeXSub(xheader, msgs));
 
         XTypes.Chain[] memory read = portal.network();
 
@@ -62,5 +63,102 @@ contract OmniPortal_sys_Test is Base {
         for (uint256 i = 0; i < chain2Shards.length; i++) {
             assertFalse(portal.isSupportedShard(chain2Shards[i]));
         }
+    }
+
+    /// @dev Test syscalls (xcalls to VirtualPortalAddress) are properly authorized
+    function test_syscall_auth() public {
+        uint64 destChainId = 1;
+        vm.chainId(destChainId);
+
+        XTypes.Submission memory xsub;
+        bytes memory data = abi.encodeCall(OmniPortal.setNetwork, (new XTypes.Chain[](0))); // must be known syscall
+        XTypes.BlockHeader memory xheader = xsubgen.makeXHeader(omniCChainID, ConfLevel.Finalized);
+        XTypes.Msg[] memory xmsgs = new XTypes.Msg[](1);
+        xmsgs[0] = _sysXMsg(data);
+
+        // source chain must be omniCChainID
+        xheader.sourceChainId = 1234;
+        xmsgs[0].offset = 1; // changing source chain id changes ofset required
+        xsub = xsubgen.makeXSub(xheader, xmsgs);
+        vm.expectRevert("OmniPortal: invalid syscall");
+        portal.xsubmit(xsub);
+        xheader.sourceChainId = omniCChainID;
+        xmsgs[0].offset = 2; // cchain initialized with offset 1
+
+        // shard must be broadcast shard
+        xmsgs[0].shardId = 1234;
+        xmsgs[0].offset = 1; // changing shard id changes ofset required
+        xsub = xsubgen.makeXSub(xheader, xmsgs);
+        vm.expectRevert("OmniPortal: invalid syscall");
+        portal.xsubmit(xsub);
+        xmsgs[0].shardId = ConfLevel.toBroadcastShard(ConfLevel.Finalized);
+        xmsgs[0].offset = 2; // cchain initialized with offset 1
+
+        // must be to broadcast chain
+        xmsgs[0].destChainId = destChainId;
+        xsub = xsubgen.makeXSub(xheader, xmsgs);
+        vm.expectRevert("OmniPortal: invalid syscall");
+        vm.chainId(destChainId);
+        portal.xsubmit(xsub);
+        xmsgs[0].destChainId = broadcastChainId;
+
+        // sender must be cChainSender
+        xmsgs[0].sender = address(1234);
+        xsub = xsubgen.makeXSub(xheader, xmsgs);
+        vm.expectRevert("OmniPortal: invalid syscall");
+        portal.xsubmit(xsub);
+        xmsgs[0].sender = cChainSender;
+
+        // data must be a known syscall
+        xmsgs[0].data = abi.encodePacked("not a known syscall");
+        xsub = xsubgen.makeXSub(xheader, xmsgs);
+        vm.expectRevert("OmniPortal: invalid syscall");
+        portal.xsubmit(xsub);
+
+        // if xmsg.to != VirtualPortalAddress, the xmsg must not have been broadcast from the cchain
+        xmsgs[0].to = address(1234);
+        xsub = xsubgen.makeXSub(xheader, xmsgs);
+        vm.expectRevert("OmniPortal: invalid xcall");
+        portal.xsubmit(xsub);
+
+        // just changing source chain id is not enough to bypass the check
+        xheader.sourceChainId = 1234;
+        xmsgs[0].offset = 1;
+        xsub = xsubgen.makeXSub(xheader, xmsgs);
+        vm.expectRevert("OmniPortal: invalid xcall");
+        portal.xsubmit(xsub);
+
+        // changing dest chain id is not enough
+        xmsgs[0].destChainId = destChainId;
+        xsub = xsubgen.makeXSub(xheader, xmsgs);
+        vm.expectRevert("OmniPortal: invalid xcall");
+        portal.xsubmit(xsub);
+
+        // changing shard id is not enough
+        xmsgs[0].shardId = ConfLevel.Finalized;
+        xsub = xsubgen.makeXSub(xheader, xmsgs);
+        vm.expectRevert("OmniPortal: invalid xcall");
+        portal.xsubmit(xsub);
+
+        // changing source chain, dest chain / shard and sender is enough
+        xmsgs[0].sender = address(1234);
+        xsub = xsubgen.makeXSub(xheader, xmsgs);
+        portal.xsubmit(xsub);
+    }
+
+    function _sysXMsg(bytes memory data) internal pure returns (XTypes.Msg memory) {
+        return _sysXMsg(data, 2);
+    }
+
+    function _sysXMsg(bytes memory data, uint64 offset) internal pure returns (XTypes.Msg memory) {
+        return XTypes.Msg({
+            destChainId: broadcastChainId,
+            shardId: ConfLevel.toBroadcastShard(ConfLevel.Finalized),
+            offset: offset,
+            sender: cChainSender,
+            to: virtualPortalAddress,
+            data: data,
+            gasLimit: 0
+        });
     }
 }

@@ -48,6 +48,20 @@ contract XSubGen is Test {
         });
     }
 
+    /// @dev Make an xsubmission signed by the genesis valset, with the given xheader and xmsgs.
+    function makeXSub(XTypes.BlockHeader memory xheader, XTypes.Msg[] memory msgs)
+        public
+        view
+        returns (XTypes.Submission memory)
+    {
+        bool[] memory msgFlags = new bool[](msgs.length);
+        for (uint256 i = 0; i < msgs.length; i++) {
+            msgFlags[i] = true;
+        }
+
+        return makeXSub(1, xheader, msgs, msgFlags);
+    }
+
     /// @dev Make an xsubmission signed by `valSetId`, with the given xheader and selected xmsgs.
     function makeXSub(
         uint64 valSetId,
