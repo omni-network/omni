@@ -53,8 +53,8 @@ devDependencies:
     specifier: ^5.6.3
     version: 5.6.3
   viem:
-    specifier: ^2.21.19
-    version: 2.21.19(typescript@5.6.3)
+    specifier: ^2.21.25
+    version: 2.21.25(typescript@5.6.3)
 
 packages:
 
@@ -455,7 +455,7 @@ packages:
     dependencies:
       '@noble/curves': 1.6.0
       '@noble/hashes': 1.5.0
-      '@scure/base': 1.1.7
+      '@scure/base': 1.1.9
     dev: true
 
   /@scure/bip39@1.1.1:
@@ -2562,8 +2562,8 @@ packages:
   /v8-compile-cache-lib@3.0.1:
     resolution: {integrity: sha512-wa7YjyUGfNZngI/vtK0UHAN+lgDCxBPCylVXGp0zu59Fz5aiGtNXaq3DhIov063MorB+VfufLh3JlF2KdTK3xg==}
 
-  /viem@2.21.19(typescript@5.6.3):
-    resolution: {integrity: sha512-FdlkN+UI1IU5sYOmzvygkxsUNjDRD5YHht3gZFu2X9xFv6Z3h9pXq9ycrYQ3F17lNfb41O2Ot4/aqbUkwOv9dA==}
+  /viem@2.21.25(typescript@5.6.3):
+    resolution: {integrity: sha512-fQbFLVW5RjC1MwjelmzzDygmc2qMfY17NruAIIdYeiB8diQfhqsczU5zdGw/jTbmNXbKoYnSdgqMb8MFZcbZ1w==}
     peerDependencies:
       typescript: '>=5.0.4'
     peerDependenciesMeta:
