@@ -118,7 +118,7 @@ func (s Static) ExecutionSeeds() []string {
 
 func (s Static) ExecutionRPC() string {
 	if s.Network == Devnet {
-		panic("execution rpc not available for devnet")
+		return "http://127.0.0.1:8000"
 	}
 
 	return fmt.Sprintf("https://%s.omni.network", s.Network)
@@ -126,7 +126,7 @@ func (s Static) ExecutionRPC() string {
 
 func (s Static) ConsensusRPC() string {
 	if s.Network == Devnet {
-		panic("consensus rpc not available for devnet")
+		return "http://localhost:5701"
 	}
 
 	return fmt.Sprintf("https://consensus.%s.omni.network", s.Network)

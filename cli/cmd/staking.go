@@ -20,8 +20,6 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/umath"
 
-	"github.com/cometbft/cometbft/rpc/client/http"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -62,7 +60,6 @@ func newCreateValCmd() *cobra.Command {
 type validatorConfig struct {
 	network        netconf.ID
 	evmRPC         string
-	consensusRPC   string
 	privateKeyFile string
 }
 
@@ -142,7 +139,7 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 	}
 	opAddr := crypto.PubkeyToAddress(operatorPriv.PublicKey)
 
-	eth, cprov, backend, err := setupClients(cfg.evmRPC, cfg.consensusRPC, cfg.network, operatorPriv)
+	eth, cprov, backend, err := setupClients(cfg.evmRPC, cfg.network, operatorPriv)
 	if err != nil {
 		return err
 	}
@@ -255,7 +252,7 @@ func delegate(ctx context.Context, cfg delegateValConfig) error {
 	}
 	opAddr := crypto.PubkeyToAddress(operatorPriv.PublicKey)
 
-	eth, cprov, backend, err := setupClients(cfg.evmRPC, cfg.consensusRPC, cfg.network, operatorPriv)
+	eth, cprov, backend, err := setupClients(cfg.evmRPC, cfg.network, operatorPriv)
 	if err != nil {
 		return err
 	}
@@ -432,7 +429,6 @@ func unjailValidator(ctx context.Context, cfg unjailConfig) error {
 // omni consensus client and a backend set with the operator private key.
 func setupClients(
 	evmRPC string,
-	consensusRPC string,
 	network netconf.ID,
 	operatorPriv *ecdsa.PrivateKey,
 ) (ethclient.Client, cchain.Provider, *ethbackend.Backend, error) {
@@ -446,16 +442,10 @@ func setupClients(
 		evmRPC = network.Static().ExecutionRPC()
 	}
 
-	if consensusRPC == "" {
-		consensusRPC = network.Static().ConsensusRPC()
-	}
-
-	cl, err := http.New(consensusRPC, "/websocket")
+	cprov, err := provider.Dial(network)
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "failed to create consensus client")
+		return nil, nil, nil, err
 	}
-
-	cprov := provider.NewABCIProvider(cl, network, netconf.ChainVersionNamer(network))
 
 	eth, err := ethclient.Dial(chainMeta.Name, evmRPC)
 	if err != nil {

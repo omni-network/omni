@@ -57,12 +57,6 @@ func TestValidatorCommands(t *testing.T) {
 		t.Helper()
 		testnet, _, _, _ := loadEnv(t)
 
-		// test setup
-		var consensusRPC string
-		for n := range testnet.Validators {
-			consensusRPC = fmt.Sprintf("http://localhost:%d", n.ProxyPort)
-		}
-
 		e, ok := network.OmniEVMChain()
 		require.True(t, ok)
 		executionRPC, err := endpoints.ByNameOrID(e.Name, e.ID)
@@ -80,7 +74,7 @@ func TestValidatorCommands(t *testing.T) {
 			"failed to save new validator private key to temp file",
 		)
 
-		cl, err := http.New(consensusRPC, "/websocket")
+		cl, err := http.New(testnet.Network.Static().ConsensusRPC(), "/websocket")
 		require.NoError(t, err)
 
 		cprov := provider.NewABCIProvider(cl, network.ID, netconf.ChainVersionNamer(network.ID))
@@ -95,7 +89,6 @@ func TestValidatorCommands(t *testing.T) {
 			// we use minimum stake so the new validator doesn't affect the network too much
 			"--self-delegation", fmt.Sprintf("%d", delegation),
 			"--evm-rpc", executionRPC,
-			"--consensus-rpc", consensusRPC,
 		)
 		require.NoError(t, err)
 		require.Empty(t, res)
@@ -128,7 +121,6 @@ func TestValidatorCommands(t *testing.T) {
 			"--amount",
 			"5",
 			"--evm-rpc", executionRPC,
-			"--consensus-rpc", consensusRPC,
 		)
 		require.NoError(t, err)
 		require.Empty(t, res)
