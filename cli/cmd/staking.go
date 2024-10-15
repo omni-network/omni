@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"net/url"
 	"strings"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -29,6 +30,7 @@ import (
 )
 
 const minSelfDelegation = uint64(100)
+const minDelegationIncrease = uint64(1)
 
 func newCreateValCmd() *cobra.Command {
 	var cfg createValConfig
@@ -57,13 +59,14 @@ func newCreateValCmd() *cobra.Command {
 	return cmd
 }
 
-type validatorConfig struct {
+// eoaConfig defines the required data to sign and submit evm transactions.
+type eoaConfig struct {
 	network        netconf.ID
 	evmRPC         string
 	privateKeyFile string
 }
 
-func (v validatorConfig) privateKey() (*ecdsa.PrivateKey, error) {
+func (v eoaConfig) privateKey() (*ecdsa.PrivateKey, error) {
 	if v.privateKeyFile == "" {
 		return nil, errors.New("required flag --private-key-file not set")
 	}
@@ -76,7 +79,7 @@ func (v validatorConfig) privateKey() (*ecdsa.PrivateKey, error) {
 	return opPrivKey, nil
 }
 
-func (v validatorConfig) validate() error {
+func (v eoaConfig) validate() error {
 	if _, err := v.privateKey(); err != nil {
 		return errors.Wrap(err, "verify --private-key-file flag")
 	}
@@ -85,11 +88,17 @@ func (v validatorConfig) validate() error {
 		return errors.Wrap(err, "verify --network flag")
 	}
 
+	if v.evmRPC != "" {
+		if _, err := url.ParseRequestURI(v.evmRPC); err != nil {
+			return errors.Wrap(err, "verify --evm-rpc flag")
+		}
+	}
+
 	return nil
 }
 
 type createValConfig struct {
-	validatorConfig
+	eoaConfig
 	consensusPubKeyHex string
 	selfDelegation     uint64
 }
@@ -113,7 +122,7 @@ func (c createValConfig) consensusPublicKey() (*ecdsa.PublicKey, error) {
 }
 
 func (c createValConfig) validate() error {
-	if err := c.validatorConfig.validate(); err != nil {
+	if err := c.eoaConfig.validate(); err != nil {
 		return err
 	}
 
@@ -160,8 +169,11 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 	}
 
 	// only check if validator is on allow list if the allow list is enabled
-	if enabled, err := contract.IsAllowlistEnabled(nil); enabled {
-		if ok, err := contract.IsAllowedValidator(nil, opAddr); err != nil {
+	bindOpts := &bind.CallOpts{Context: ctx}
+	if enabled, err := contract.IsAllowlistEnabled(bindOpts); err != nil {
+		return err
+	} else if enabled {
+		if ok, err := contract.IsAllowedValidator(bindOpts, opAddr); err != nil {
 			return err
 		} else if !ok {
 			return &CliError{
@@ -169,8 +181,6 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 				Suggest: "Contact Omni team to be included in validator allow list",
 			}
 		}
-	} else if err != nil {
-		return err
 	}
 
 	bal, err := eth.EtherBalanceAt(ctx, opAddr)
@@ -209,22 +219,27 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 	return nil
 }
 
-type delegateValConfig struct {
-	validatorConfig
+type delegateConfig struct {
+	eoaConfig
 	amount uint64
+	self   bool
 }
 
-func (d delegateValConfig) validate() error {
-	return d.validatorConfig.validate()
+func (d delegateConfig) validate() error {
+	if d.amount < minDelegationIncrease {
+		return errors.New("insufficient --amount", "minimum", minDelegationIncrease, "amount", d.amount)
+	}
+
+	return d.eoaConfig.validate()
 }
 
 func newDelegateCmd() *cobra.Command {
-	var cfg delegateValConfig
+	var cfg delegateConfig
 
 	cmd := &cobra.Command{
 		Use:   "delegate",
-		Short: "Increase existing validator self delegation",
-		Long:  `Sign and broadcast a delegation transaction that increases validator self delegation on the omni consensus chain`,
+		Short: "Delegate Omni tokens to a validator",
+		Long:  `Delegate an amount of Omni tokens to a validator from your wallet. Only self-delegation by validators supported at the moment.`,
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := cfg.validate(); err != nil {
@@ -240,12 +255,12 @@ func newDelegateCmd() *cobra.Command {
 		},
 	}
 
-	bindDelegateValConfig(cmd, &cfg)
+	bindDelegateConfig(cmd, &cfg)
 
 	return cmd
 }
 
-func delegate(ctx context.Context, cfg delegateValConfig) error {
+func delegate(ctx context.Context, cfg delegateConfig) error {
 	operatorPriv, err := cfg.privateKey()
 	if err != nil {
 		return err
@@ -299,7 +314,7 @@ func delegate(ctx context.Context, cfg delegateValConfig) error {
 	}
 
 	link := fmt.Sprintf("https://%s.omniscan.network/tx/%s", cfg.network, tx.Hash().Hex())
-	log.Info(ctx, "🎉 Delegate increase transaction sent and included on-chain", "link", link, "block", rec.BlockNumber.Uint64())
+	log.Info(ctx, "🎉 Delegate transaction sent and included on-chain", "link", link, "block", rec.BlockNumber.Uint64())
 
 	return nil
 }
@@ -425,7 +440,7 @@ func unjailValidator(ctx context.Context, cfg unjailConfig) error {
 	return nil
 }
 
-// setupClients is a test helper that creates the omni evm client,
+// setupClients is a helper that creates the omni evm client,
 // omni consensus client and a backend set with the operator private key.
 func setupClients(
 	evmRPC string,
@@ -459,6 +474,9 @@ func setupClients(
 		eth,
 		operatorPriv,
 	)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 
 	return eth, cprov, backend, err
 }

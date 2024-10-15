@@ -69,35 +69,34 @@ func bindUnjailConfig(cmd *cobra.Command, cfg *unjailConfig) {
 	_ = cmd.MarkFlagRequired(flagNetwork)
 }
 
-func bindDelegateValConfig(cmd *cobra.Command, cfg *delegateValConfig) {
-	netconf.BindFlag(cmd.Flags(), &cfg.network)
+func bindEOAConfig(cmd *cobra.Command, cfg *eoaConfig) {
 	bindPrivateKeyFile(cmd, &cfg.privateKeyFile)
+	netconf.BindFlag(cmd.Flags(), &cfg.network)
 
-	cmd.Flags().Uint64Var(&cfg.amount, flagDelegationAmount, cfg.amount, "increase delegation amount in OMNI (minimum 1 OMNI)")
+	cmd.Flags().StringVar(&cfg.evmRPC, "evm-rpc", "", "Optional Omni EVM execution RPC API endpoint. Defaults to consensus.<network>.omni.network")
 
-	bindExecutionRPC(cmd, &cfg.evmRPC)
-
-	_ = cmd.MarkFlagRequired(flagConsPubKeyHex)
-	_ = cmd.MarkFlagRequired(flagDelegationAmount)
 	_ = cmd.MarkFlagRequired(flagNetwork)
 }
 
+func bindDelegateConfig(cmd *cobra.Command, cfg *delegateConfig) {
+	bindEOAConfig(cmd, &cfg.eoaConfig)
+	const flagSelf = "self"
+	cmd.Flags().Uint64Var(&cfg.amount, flagDelegationAmount, cfg.amount, "Increase delegation amount in OMNI (minimum 1 OMNI)")
+	cmd.Flags().BoolVar(&cfg.self, flagSelf, true, "Mark self-delegation")
+
+	_ = cmd.MarkFlagRequired(flagConsPubKeyHex)
+	_ = cmd.MarkFlagRequired(flagDelegationAmount)
+	_ = cmd.MarkFlagRequired(flagSelf)
+}
+
 func bindCreateValConfig(cmd *cobra.Command, cfg *createValConfig) {
-	netconf.BindFlag(cmd.Flags(), &cfg.network)
-	bindPrivateKeyFile(cmd, &cfg.privateKeyFile)
+	bindEOAConfig(cmd, &cfg.eoaConfig)
 
 	cmd.Flags().StringVar(&cfg.consensusPubKeyHex, flagConsPubKeyHex, cfg.consensusPubKeyHex, "Hex-encoded validator consensus public key")
 	cmd.Flags().Uint64Var(&cfg.selfDelegation, flagSelfDelegation, cfg.selfDelegation, "Self-delegation amount in OMNI (minimum 100 OMNI)")
 
-	bindExecutionRPC(cmd, &cfg.evmRPC)
-
 	_ = cmd.MarkFlagRequired(flagConsPubKeyHex)
 	_ = cmd.MarkFlagRequired(flagSelfDelegation)
-	_ = cmd.MarkFlagRequired(flagNetwork)
-}
-
-func bindExecutionRPC(cmd *cobra.Command, evmRPC *string) {
-	cmd.Flags().StringVar(evmRPC, "evm-rpc", "", "Omni EVM execution RPC API endpoint")
 }
 
 func bindPrivateKeyFile(cmd *cobra.Command, privateKeyFile *string) {
