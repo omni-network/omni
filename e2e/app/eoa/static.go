@@ -17,8 +17,8 @@ var statics = map[netconf.ID][]Account{
 		wellKnown(anvil.DevPrivateKey8(), RoleFunder),
 	),
 	netconf.Staging: flatten(
-		remote("0x4891925c4f13A34FC26453FD168Db80aF3273014", RoleManager),
-		remote("0xEAD625eB2011394cdD739E91Bf9D51A7169C22F5", RoleUpgrader),
+		remote("0xCC43713c9C9c565Fd4830cC85F7f254979F64518", RoleManager),
+		remote("0x4891925c4f13A34FC26453FD168Db80aF3273014", RoleUpgrader),
 		remote("0xf63316AA39fEc9D2109AB0D9c7B1eE3a6F60AEA4", RoleFunder), // we use shared-funder
 		remote("0xC8103859Ac7CB547d70307EdeF1A2319FC305fdC", RoleCreate3Deployer),
 		remote("0x274c4B3e5d27A65196d63964532366872F81D261", RoleDeployer),
