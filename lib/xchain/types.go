@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/k1util"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -247,42 +246,6 @@ type Attestation struct {
 
 func (a Attestation) AttestationRoot() ([32]byte, error) {
 	return AttestationRoot(a.AttestHeader, a.BlockHeader, a.MsgRoot)
-}
-
-// Verify returns an error if the attestation is invalid.
-func (a Attestation) Verify() error {
-	if len(a.Signatures) == 0 {
-		return errors.New("empty attestation signatures")
-	}
-
-	attRoot, err := a.AttestationRoot()
-	if err != nil {
-		return err
-	}
-
-	duplicateVals := make(map[common.Address]bool)
-	duplicateSig := make(map[Signature65]bool)
-	for _, sig := range a.Signatures {
-		if duplicateVals[sig.ValidatorAddress] {
-			return errors.New("duplicate validator signature")
-		}
-
-		if duplicateSig[sig.Signature] {
-			return errors.New("duplicate attestation signature")
-		}
-
-		ok, err := k1util.Verify(sig.ValidatorAddress, attRoot, sig.Signature)
-		if err != nil {
-			return err
-		} else if !ok {
-			return errors.New("invalid attestation signature")
-		}
-
-		duplicateVals[sig.ValidatorAddress] = true
-		duplicateSig[sig.Signature] = true
-	}
-
-	return nil
 }
 
 // SigTuple is a validator signature and address.
