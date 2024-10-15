@@ -55,7 +55,7 @@ func (v *Vote) Verify() error {
 		return err
 	}
 
-	if err := v.Signature.Verify(attRoot); err != nil {
+	if err := v.Signature.Verify(); err != nil {
 		return errors.Wrap(err, "verify signature")
 	}
 
@@ -126,7 +126,7 @@ func (h *BlockHeader) ToXChain() (xchain.BlockHeader, error) {
 	return BlockHeaderFromProto(h)
 }
 
-func (s *SigTuple) Verify(attRoot common.Hash) error {
+func (s *SigTuple) Verify() error {
 	if s == nil {
 		return errors.New("nil sig tuple")
 	}
@@ -137,23 +137,6 @@ func (s *SigTuple) Verify(attRoot common.Hash) error {
 
 	if len(s.Signature) != len(xchain.Signature65{}) {
 		return errors.New("invalid signature length")
-	}
-
-	valEthAddr, err := s.ValidatorEthAddress()
-	if err != nil {
-		return err
-	}
-
-	sig65, err := cast.Array65(s.Signature)
-	if err != nil {
-		return err
-	}
-
-	ok, err := k1util.Verify(valEthAddr, attRoot, sig65)
-	if err != nil {
-		return err
-	} else if !ok {
-		return errors.New("invalid attestation signature")
 	}
 
 	return nil
@@ -216,7 +199,7 @@ func (a *AggVote) Verify() error {
 
 	duplicateVals := make(map[common.Address]bool)
 	for _, sig := range a.Signatures {
-		if err := sig.Verify(attRoot); err != nil {
+		if err := sig.Verify(); err != nil {
 			return errors.Wrap(err, "signature")
 		}
 
@@ -313,8 +296,24 @@ func (a *Attestation) Verify() error {
 			return errors.New("duplicate attestation signature")
 		}
 
-		if err := sig.Verify(attRoot); err != nil {
+		if err := sig.Verify(); err != nil {
 			return errors.Wrap(err, "signature")
+		}
+
+		sig65, err := cast.Array65(sig.Signature)
+		if err != nil {
+			return err
+		}
+
+		ok, err := k1util.Verify(
+			valEthAddr,
+			attRoot,
+			sig65,
+		)
+		if err != nil {
+			return err
+		} else if !ok {
+			return errors.New("invalid attestation signature")
 		}
 
 		duplicateVals[valEthAddr] = true

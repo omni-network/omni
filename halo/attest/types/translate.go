@@ -4,8 +4,6 @@ import (
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
-
-	"github.com/ethereum/go-ethereum/common"
 )
 
 func (h *AttestHeader) XChainVersion() xchain.ChainVersion {
@@ -42,14 +40,9 @@ func AttestationFromProto(att *Attestation) (xchain.Attestation, error) {
 		return xchain.Attestation{}, err
 	}
 
-	attRoot, err := att.AttestationRoot()
-	if err != nil {
-		return xchain.Attestation{}, err
-	}
-
 	sigs := make([]xchain.SigTuple, 0, len(att.GetSignatures()))
 	for _, sigpb := range att.GetSignatures() {
-		sig, err := SigFromProto(sigpb, attRoot)
+		sig, err := SigFromProto(sigpb)
 		if err != nil {
 			return xchain.Attestation{}, err
 		}
@@ -76,8 +69,8 @@ func AttestationFromProto(att *Attestation) (xchain.Attestation, error) {
 }
 
 // SigFromProto converts a protobuf SigTuple to a xchain.SigTuple.
-func SigFromProto(sig *SigTuple, attRoot common.Hash) (xchain.SigTuple, error) {
-	if err := sig.Verify(attRoot); err != nil {
+func SigFromProto(sig *SigTuple) (xchain.SigTuple, error) {
+	if err := sig.Verify(); err != nil {
 		return xchain.SigTuple{}, err
 	}
 
