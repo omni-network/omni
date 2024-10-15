@@ -7,8 +7,9 @@ This guide describes the process to participate in the *critical coordinated* Om
 - Simply ensure the `omniops/halovisor:v0.9.0` docker image is running **BEFORE** the upgrade height.
   - `halovisor:v0.9.0`: wraps cosmovisor with `halo:v0.8.1` and `halo:v0.9.0`
   - It will perform the binary switch automatically at the required block.
-- Omega upgrade height: TBD
-- Approximate upgrade date: 7~11 Oct 2024
+- Upgrade name (for Cosmovisor): `1_uluwatu`
+- Omega upgrade height: `3 070 000`
+- Omega upgrade date: 14 Oct 2024
 - Version(s) supported before upgrade: `halo:v0.4.0 .. v0.8.1`
 - Version required after upgrade: `halo:v0.9.0`
 
