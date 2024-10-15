@@ -26,6 +26,8 @@ func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchai
 		return xchain.Block{}, false, nil
 	} else if !latest && block.Id != height {
 		return xchain.Block{}, false, errors.New("unexpected block height [BUG]")
+	} else if len(block.Msgs) == 0 {
+		return xchain.Block{}, false, errors.New("unexpected empty block [BUG]")
 	}
 
 	chainID, err := p.chainID(ctx)
@@ -43,7 +45,7 @@ func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchai
 		// msg will only be nil if receive a malicious response from a client
 		// nil check ensures we won't panic in that case.
 		if msg == nil {
-			return xchain.Block{}, false, errors.New("unexpected nil msg in block response msgs slice possible malicious response [BUG]")
+			return xchain.Block{}, false, errors.New("unexpected nil msg [BUG]")
 		}
 
 		if msg.ShardID() == xchain.ShardBroadcast0 && msg.StreamOffset == 1 && msg.MsgType() != ptypes.MsgTypeValSet {
