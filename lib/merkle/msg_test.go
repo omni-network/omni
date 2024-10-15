@@ -19,7 +19,7 @@ func TestMsgTree(t *testing.T) {
 
 	// Ensure msg.LogIndex is increasing
 	for i := 1; i < len(msgs); i++ {
-		msgs[i].LogIndex = msgs[i-1].LogIndex + uint64(rand.Intn(1000))
+		msgs[i].LogIndex = msgs[i-1].LogIndex + 1 + uint64(rand.Intn(1000))
 	}
 
 	tree, err := xchain.NewMsgTree(msgs)

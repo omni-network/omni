@@ -50,7 +50,7 @@ func NewVersionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "Print the version information of this binary",
 		Args:  cobra.NoArgs,
-		Run: func(cmd *cobra.Command, _ []string) {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			commit, timestamp := get()
 
 			var sb strings.Builder
@@ -62,6 +62,8 @@ func NewVersionCmd() *cobra.Command {
 			_, _ = sb.WriteString("\n")
 
 			cmd.Printf(sb.String()) //nolint:govet // Not a problem
+
+			return nil
 		},
 	}
 }

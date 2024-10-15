@@ -15,24 +15,22 @@ import (
 
 func main() {
 	cmd := clicmd.New()
+	libcmd.WrapRunE(cmd, func(ctx context.Context, err error) {
+		if cliErr := new(clicmd.CliError); errors.As(err, &cliErr) {
+			// Easy on the eyes CLI error message with suggestions.
+			log.Error(ctx, "❌ "+cliErr.Error(), nil)
+		} else {
+			log.Error(ctx, "❌ Error", err)
+		}
+	})
 
 	fig := figure.NewFigure("omni", "", true)
 	cmd.SetHelpTemplate(fig.String() + "\n" + cmd.HelpTemplate())
 
-	libcmd.SilenceErrUsage(cmd)
-
 	ctx := log.WithCLILogger(context.Background())
 
 	err := cmd.ExecuteContext(ctx)
-	if err == nil {
-		return
+	if err != nil {
+		os.Exit(1)
 	}
-	cliErr := new(clicmd.CliError)
-	if errors.As(err, &cliErr) {
-		log.Error(ctx, "❌ "+cliErr.Error(), nil)
-	} else {
-		log.Error(ctx, "❌ Fatal error", err)
-	}
-
-	os.Exit(1)
 }

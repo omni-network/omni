@@ -27,7 +27,9 @@ import (
 //		     libcmd.Main(appcmd.New())
 //	   }
 func Main(cmd *cobra.Command) {
-	wrapRunE(cmd)
+	WrapRunE(cmd, func(ctx context.Context, err error) {
+		log.Error(ctx, "!! Fatal error occurred, app died !!", err)
+	})
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	err := cmd.ExecuteContext(ctx)
@@ -39,23 +41,30 @@ func Main(cmd *cobra.Command) {
 	}
 }
 
-// wrapRunE wraps all (nested) RunE functions adding omni logging (stack traces + structured errors).
+// WrapRunE wraps all (nested) RunE functions adding omni logging (stack traces + structured errors).
 // Done here, so cobra command/flag errors are cli style (usage + simple errors).
-func wrapRunE(cmd *cobra.Command) {
-	runE := cmd.RunE
-	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		err := runE(cmd, args)
-		if err != nil {
-			cmd.SilenceUsage = true
-			cmd.SilenceErrors = true
-			log.Error(cmd.Context(), "!! Fatal error occurred, app died !!", err)
+func WrapRunE(cmd *cobra.Command, printFatal func(ctx context.Context, err error)) {
+	if cmd.RunE == nil {
+		// Cobra style error with usage if no sub-command specified.
+		cmd.RunE = func(*cobra.Command, []string) error {
+			return errors.New("no sub-command specified")
 		}
+	} else {
+		runE := cmd.RunE
+		cmd.RunE = func(cmd *cobra.Command, args []string) error {
+			err := runE(cmd, args)
+			if err != nil {
+				cmd.SilenceUsage = true
+				cmd.SilenceErrors = true
+				printFatal(cmd.Context(), err)
+			}
 
-		return err
+			return err
+		}
 	}
 
 	for _, subCmd := range cmd.Commands() {
-		wrapRunE(subCmd)
+		WrapRunE(subCmd, printFatal)
 	}
 }
 
@@ -70,10 +79,6 @@ func NewRootCmd(appName string, appDescription string, subCmds ...*cobra.Command
 			// Note that callers should wrap this if replacing PersistentPreRunE.
 			// So they get proper toml+env config.
 			return initializeConfig(appName, cmd)
-		},
-		RunE: func(*cobra.Command, []string) error {
-			// Callers should either add sub-commands or override RunE.
-			return errors.New("no sub-command specified, see --help")
 		},
 	}
 

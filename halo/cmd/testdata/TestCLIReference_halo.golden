@@ -1,7 +1,6 @@
 Halo is a consensus client implementation for the Omni Protocol
 
 Usage:
-  halo [flags]
   halo [command]
 
 Available Commands:
