@@ -30,7 +30,7 @@ func (c *valAddrCache) GetEthAddress(cmtAddr [crypto.AddressSize]byte) (common.A
 	return ethAddr, ok
 }
 
-func (c *valAddrCache) SetAll(vals []*vtypes.Validator) error {
+func (c *valAddrCache) SetAll(vals []vtypes.Validator) error {
 	var ethAddrs = make(map[[crypto.AddressSize]byte]common.Address, len(vals))
 	for _, val := range vals {
 		cmtAddr, err := val.CometAddress()

@@ -125,13 +125,13 @@ contract OmniBridgeNative is OmniBridgeCommon {
         require(to != address(0), "OmniBridge: no bridge to zero");
         require(amount > 0, "OmniBridge: amount must be > 0");
         require(amount <= l1BridgeBalance, "OmniBridge: no liquidity");
-
-        uint256 fee = bridgeFee(to, amount);
-        require(msg.value == amount + fee, "OmniBridge: incorrect funds");
+        require(msg.value >= amount + bridgeFee(to, amount), "OmniBridge: insufficient funds");
 
         l1BridgeBalance -= amount;
 
-        omni.xcall{ value: fee }(
+        // if fee is overpaid, forward excess to portal.
+        // balance of this contract should continue to reflect funds bridged to L1.
+        omni.xcall{ value: msg.value - amount }(
             l1ChainId,
             ConfLevel.Finalized,
             l1Bridge,

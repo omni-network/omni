@@ -28,9 +28,9 @@ type VoteExtensionProvider interface {
 // the consensus block. It is also called during ProcessPayload to verify the proposed EVM events.
 type EvmEventProcessor interface {
 	Name() string
-	Prepare(ctx context.Context, blockHash common.Hash) ([]*EVMEvent, error)
+	Prepare(ctx context.Context, blockHash common.Hash) ([]EVMEvent, error)
 	Addresses() []common.Address
-	Deliver(ctx context.Context, blockHash common.Hash, log *EVMEvent) error
+	Deliver(ctx context.Context, blockHash common.Hash, log EVMEvent) error
 }
 
 var _ depinject.ManyPerContainerType = InjectedEventProc{}

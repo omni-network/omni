@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package halo.valsync.types;
 
+import "gogoproto/gogo.proto";
+
 option go_package = "halo/valsync/types";
 
 // Query defines the gRPC querier service.
@@ -18,7 +20,7 @@ message ValidatorSetResponse {
   uint64             id               = 1;
   uint64             created_height   = 2;
   uint64             activated_height = 3;
-  repeated Validator validators       = 4;
+  repeated Validator validators       = 4 [(gogoproto.nullable) = false];
 }
 
 message Validator {

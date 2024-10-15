@@ -81,7 +81,7 @@ type Provider interface {
 	CometClient() rpcclient.Client
 
 	// Portals returns the portals registered in the registry module.
-	Portals(ctx context.Context) ([]*rtypes.Portal, bool, error)
+	Portals(ctx context.Context) ([]rtypes.Portal, bool, error)
 
 	// CurrentPlannedPlan returns the current (non-activated) upgrade plan.
 	CurrentPlannedPlan(ctx context.Context) (utypes.Plan, bool, error)

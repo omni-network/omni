@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"context"
+	"encoding/hex"
+	"fmt"
 	"net/url"
+	"path/filepath"
 	"strings"
 
 	"github.com/omni-network/omni/lib/log"
@@ -66,10 +69,7 @@ func redact(flag, val string) string {
 		return ""
 	}
 
-	u, err := url.Parse(val)
-	if err == nil {
-		return u.Redacted()
-	}
+	flag = strings.ToLower(flag)
 
 	// Don't redact --.*path or --.*file flags.
 	if strings.Contains(flag, "file") ||
@@ -86,5 +86,24 @@ func redact(flag, val string) string {
 		return "xxxxx"
 	}
 
+	u, err := url.Parse(val)
+	if err == nil {
+		u.Path = maybeRedactHexToken(u.Path)
+		return u.Redacted()
+	}
+
 	return val
+}
+
+// maybeRedactToken redacts the last element of the given path
+// if it is a hex token of more than 16 chars.
+func maybeRedactHexToken(path string) string {
+	token := filepath.Base(path)
+	if len(token) < 16 {
+		return path
+	} else if _, err := hex.DecodeString(token); err != nil {
+		return path
+	}
+
+	return filepath.Join(filepath.Dir(path), fmt.Sprintf("%s..%s", token[:2], token[len(token)-2:]))
 }

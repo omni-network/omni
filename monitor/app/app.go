@@ -9,7 +9,6 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/buildinfo"
-	"github.com/omni-network/omni/lib/cchain"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -91,7 +90,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "start AVS sync")
 	}
 
-	if err := startXMonitor(ctx, cfg, network, ethClients, cprov, xprov); err != nil {
+	if err := xmonitor.Start(ctx, network, xprov, cprov, ethClients); err != nil {
 		return errors.Wrap(err, "start xchain monitor")
 	}
 
@@ -138,30 +137,6 @@ func startIndexer(
 	}
 
 	return indexer.Start(ctx, network, xprov, db)
-}
-
-// startXMonitor starts the xchain offset/head monitoring.
-func startXMonitor(
-	ctx context.Context,
-	cfg Config,
-	network netconf.Network,
-	ethClients map[uint64]ethclient.Client,
-	cprov cchain.Provider,
-	xprov xchain.Provider,
-) error {
-	var db dbm.DB
-	if cfg.DBDir == "" {
-		log.Warn(ctx, "No --db-dir provided, using in-memory DB", nil)
-		db = dbm.NewMemDB()
-	} else {
-		var err error
-		db, err = dbm.NewGoLevelDB("emitcache", cfg.DBDir, nil)
-		if err != nil {
-			return errors.Wrap(err, "new golevel db")
-		}
-	}
-
-	return xmonitor.Start(ctx, network, xprov, cprov, ethClients, db)
 }
 
 // serveMonitoring starts a goroutine that serves the monitoring API. It

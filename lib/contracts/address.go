@@ -3,6 +3,7 @@ package contracts
 import (
 	"context"
 	"math/big"
+	"sync"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/create3"
@@ -94,24 +95,36 @@ type Salts struct {
 	Token      string
 }
 
+type cache[T any] struct {
+	mu    sync.Mutex
+	cache T
+}
+
 var (
 	// cached addresses by network.
-	addrsCache = map[netconf.ID]Addresses{}
+	addrsCache = cache[map[netconf.ID]Addresses]{
+		cache: map[netconf.ID]Addresses{},
+	}
 
 	// cached salts by network.
-	saltsCache = map[netconf.ID]Salts{}
+	saltsCache = cache[map[netconf.ID]Salts]{
+		cache: map[netconf.ID]Salts{},
+	}
 )
 
 // GetAddresses returns the contract addresses for the given network.
 func GetAddresses(ctx context.Context, network netconf.ID) (Addresses, error) {
-	addrs, ok := addrsCache[network]
-	if ok {
-		return addrs, nil
-	}
-
 	ver, err := version(ctx, network)
 	if err != nil {
 		return Addresses{}, err
+	}
+
+	addrsCache.mu.Lock()
+	defer addrsCache.mu.Unlock()
+
+	addrs, ok := addrsCache.cache[network]
+	if ok {
+		return addrs, nil
 	}
 
 	addrs = Addresses{
@@ -124,14 +137,17 @@ func GetAddresses(ctx context.Context, network netconf.ID) (Addresses, error) {
 		GasStation:     gasStation(network, ver),
 	}
 
-	addrsCache[network] = addrs
+	addrsCache.cache[network] = addrs
 
 	return addrs, nil
 }
 
 // GetSalts returns the contract salts for the given network.
 func GetSalts(ctx context.Context, network netconf.ID) (Salts, error) {
-	salts, ok := saltsCache[network]
+	saltsCache.mu.Lock()
+	defer saltsCache.mu.Unlock()
+
+	salts, ok := saltsCache.cache[network]
 	if ok {
 		return salts, nil
 	}
@@ -150,7 +166,7 @@ func GetSalts(ctx context.Context, network netconf.ID) (Salts, error) {
 		GasStation: gasStationSalt(network, ver),
 	}
 
-	saltsCache[network] = salts
+	saltsCache.cache[network] = salts
 
 	return salts, nil
 }

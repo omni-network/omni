@@ -64,8 +64,8 @@ func newRegistryMngr(ctx context.Context, def Definition) (registryMngr, error) 
 		return registryMngr{}, errors.Wrap(err, "new portal registry")
 	}
 
-	admin := eoa.MustAddress(def.Testnet.Network, eoa.RoleAdmin)
-	txOpts, err := backend.BindOpts(ctx, admin)
+	manager := eoa.MustAddress(def.Testnet.Network, eoa.RoleUpgrader)
+	txOpts, err := backend.BindOpts(ctx, manager)
 	if err != nil {
 		return registryMngr{}, err
 	}
@@ -140,13 +140,12 @@ func evmChains(def Definition) ([]types.EVMChain, error) {
 
 // toPortalDepls converts EVM chains to portal registry deployments.
 func toPortalDepls(def Definition, chains []types.EVMChain) (map[uint64]bindings.PortalRegistryDeployment, error) {
-	infos := def.DeployInfos()
 	deps := make(map[uint64]bindings.PortalRegistryDeployment)
 
 	for _, chain := range chains {
-		info, ok := infos[chain.ChainID][types.ContractPortal]
+		portal, ok := def.Netman().Portals()[chain.ChainID]
 		if !ok {
-			return nil, errors.New("missing info", "chain", chain.ChainID)
+			return nil, errors.New("missing portal", "chain", chain.ChainID)
 		}
 
 		blockPeriodNs, err := umath.ToUint64(chain.BlockPeriod.Nanoseconds())
@@ -157,10 +156,10 @@ func toPortalDepls(def Definition, chains []types.EVMChain) (map[uint64]bindings
 		deps[chain.ChainID] = bindings.PortalRegistryDeployment{
 			Name:           chain.Name,
 			ChainId:        chain.ChainID,
-			Addr:           info.Address,
+			Addr:           portal.DeployInfo.PortalAddress,
 			BlockPeriodNs:  blockPeriodNs,
 			AttestInterval: chain.AttestInterval(def.Testnet.Network),
-			DeployHeight:   info.Height,
+			DeployHeight:   portal.DeployInfo.DeployHeight,
 			Shards:         chain.ShardsUint64(),
 		}
 	}
@@ -256,8 +255,8 @@ func allowStagingValidators(ctx context.Context, def Definition) error {
 		return errors.Wrap(err, "new staking")
 	}
 
-	admin := eoa.MustAddress(def.Testnet.Network, eoa.RoleAdmin)
-	txOpts, err := backend.BindOpts(ctx, admin)
+	manager := eoa.MustAddress(def.Testnet.Network, eoa.RoleManager)
+	txOpts, err := backend.BindOpts(ctx, manager)
 	if err != nil {
 		return err
 	}

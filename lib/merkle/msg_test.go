@@ -17,6 +17,11 @@ func TestMsgTree(t *testing.T) {
 	var msgs []xchain.Msg
 	fuzz.New().NilChance(0).NumElements(1, 64).Fuzz(&msgs)
 
+	// Ensure msg.LogIndex is increasing
+	for i := 1; i < len(msgs); i++ {
+		msgs[i].LogIndex = msgs[i-1].LogIndex + uint64(rand.Intn(1000))
+	}
+
 	tree, err := xchain.NewMsgTree(msgs)
 	require.NoError(t, err)
 

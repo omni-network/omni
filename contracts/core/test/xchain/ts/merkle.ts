@@ -45,13 +45,11 @@ export class XMsgMerkleTree {
     return tree[0]
   }
 
-  // Order msgs by destination chain id, then offset
+  // Order msgs by offset. XMsgs within an xblock are ordered by log index, which implicity orders
+  // by offset (ascending).
   static order(msgs: readonly XMsg[]): readonly XMsg[] {
     // Number(bigint) cast okay, because test chain ids and offsets are small
-    return [...msgs].sort((a, b) => {
-      if (a.destChainId !== b.destChainId) return Number(a.destChainId - b.destChainId)
-      return Number(a.offset - b.offset)
-    })
+    return [...msgs].sort((a, b) => Number(a.offset - b.offset))
   }
 }
 
@@ -60,10 +58,12 @@ const DST_XMSG = 2
 
 export const attestationRoot = (header: XBlockHeader, msgRoot: Bytes) =>
   oz.makeMerkleTree([msgRoot, headerLeafHash(header)])[0]
-const stdLeafHash = (dst: number, data: `0x${string}`) => keccak256(keccak256(new Uint8Array([dst, ...hexToBytes(data)])));
+const stdLeafHash = (dst: number, data: `0x${string}`) =>
+  keccak256(keccak256(new Uint8Array([dst, ...hexToBytes(data)])))
 
 const msgLeafHash = (msg: XMsg) => stdLeafHash(DST_XMSG, encodeXMsg(msg))
-const headerLeafHash = (header: XBlockHeader) => stdLeafHash(DST_XBLOCK_HEADER, encodeXBlockHeader(header))
+const headerLeafHash = (header: XBlockHeader) =>
+  stdLeafHash(DST_XBLOCK_HEADER, encodeXBlockHeader(header))
 
 function leafIndex(tree: readonly Bytes[], leaf: Bytes) {
   const index = tree.findIndex(node => equalsBytes(node, leaf))
@@ -72,15 +72,10 @@ function leafIndex(tree: readonly Bytes[], leaf: Bytes) {
 }
 
 function checkMsgOrder(msgs: readonly XMsg[]) {
-  let lastSeenDestChainId = 0n
   let lastSeenOffset = 0n
 
   for (const msg of msgs) {
-    if (msg.destChainId < lastSeenDestChainId) throwError('Msgs not ordered by dest chain id')
-    if (msg.destChainId === lastSeenDestChainId && msg.offset < lastSeenOffset)
-      throwError('Msgs not ordered by stream offset')
-
-    lastSeenDestChainId = msg.destChainId
+    if (msg.offset < lastSeenOffset) throwError('Msgs not ordered by stream offset')
     lastSeenOffset = msg.offset
   }
 }

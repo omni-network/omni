@@ -23,7 +23,7 @@ func ReconForever(ctx context.Context, network netconf.Network, xprov xchain.Pro
 		return
 	}
 
-	ticker := time.NewTicker(time.Minute * 10) // RouteScan rate limits prevent faster recon.
+	ticker := time.NewTicker(time.Minute * 30) // RouteScan rate limits prevent faster recon.
 	defer ticker.Stop()
 
 	for {
@@ -43,6 +43,14 @@ func ReconForever(ctx context.Context, network netconf.Network, xprov xchain.Pro
 				} else {
 					reconSuccess.Inc()
 					log.Info(ctx, "RouteRecon success", "stream", network.StreamName(stream))
+				}
+
+				// Sleep to avoid rate limiting.
+				select {
+				case <-ctx.Done():
+					return
+				case <-time.After(time.Minute):
+					// Continue
 				}
 			}
 		}

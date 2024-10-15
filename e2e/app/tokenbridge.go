@@ -36,7 +36,7 @@ func setupTokenBridge(ctx context.Context, def Definition) error {
 		return errors.New("no omni evm chain")
 	}
 
-	admin := eoa.MustAddress(networkID, eoa.RoleAdmin)
+	manager := eoa.MustAddress(networkID, eoa.RoleManager)
 
 	addrs, err := contracts.GetAddresses(ctx, networkID)
 	if err != nil {
@@ -86,7 +86,7 @@ func setupTokenBridge(ctx context.Context, def Definition) error {
 		return errors.Wrap(err, "bridge native")
 	}
 
-	txOpts, err := l1Backend.BindOpts(ctx, admin)
+	txOpts, err := l1Backend.BindOpts(ctx, manager)
 	if err != nil {
 		return errors.Wrap(err, "bind opts")
 	}
@@ -143,6 +143,7 @@ var ToL1BridgeTests = []BridgeTest{
 
 // testBridge bridges some tokens from L1 to OmniEVM, and some from OmniEVM to L1.
 // Tokens must be bridged to OmniEVM first, before the native bridge contract will allow bridging back to L1.
+// TODO(corver): Move this to actual tests package.
 func testBridge(ctx context.Context, def Definition) error {
 	networkID := def.Testnet.Network
 	network := NetworkFromDef(def)

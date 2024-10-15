@@ -48,6 +48,14 @@ contract OmniBridgeL1_Test is Test {
         );
     }
 
+    function test_initialize() public {
+        address impl = address(new OmniBridgeL1(address(token)));
+        address proxy = address(new TransparentUpgradeableProxy(impl, proxyAdmin, ""));
+
+        vm.expectRevert("OmniBridge: no zero addr");
+        OmniBridgeL1(proxy).initialize(owner, address(0));
+    }
+
     function test_bridge() public {
         address to = makeAddr("to");
         uint256 amount = 1e18;
@@ -62,10 +70,8 @@ contract OmniBridgeL1_Test is Test {
         vm.expectRevert("OmniBridge: no bridge to zero");
         b.bridge(address(0), amount);
 
-        // value must equal fee
-        vm.expectRevert("OmniBridge: incorrect fee");
-        b.bridge{ value: fee + 1 }(to, amount);
-        vm.expectRevert("OmniBridge: incorrect fee");
+        // value must be greater than or equal fee
+        vm.expectRevert("OmniBridge: insufficient fee");
         b.bridge{ value: fee - 1 }(to, amount);
 
         // requires allowance
@@ -191,8 +197,8 @@ contract OmniBridgeL1_Test is Test {
         // assert unpaused
         assertFalse(b.isPaused(action));
 
-        // bridge succeeds
-        vm.expectRevert("OmniBridge: incorrect fee");
+        // bridge not paused (reverts, but not due to pause)
+        vm.expectRevert("OmniBridge: insufficient fee");
         b.bridge(to, amount);
     }
 

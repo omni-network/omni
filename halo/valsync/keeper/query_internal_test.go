@@ -185,9 +185,9 @@ func newActivatedResp(id uint64, set []*Validator) *types.ValidatorSetResponse {
 }
 
 func newResp(id uint64, set []*Validator) *types.ValidatorSetResponse {
-	var vals []*types.Validator
+	var vals []types.Validator
 	for _, v := range set {
-		vals = append(vals, &types.Validator{
+		vals = append(vals, types.Validator{
 			ConsensusPubkey: v.GetPubKey(),
 			Power:           v.GetPower(),
 		})

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	ptypes "github.com/omni-network/omni/halo/portal/types"
+	rtypes "github.com/omni-network/omni/halo/registry/types"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/tutil"
 
@@ -18,7 +19,7 @@ import (
 
 //go:generate go test . -golden -clean
 
-func setupTest(t *testing.T) (uint64, valsetFunc, chainIDFunc, headerFunc, portalBlockFunc) {
+func setupTest(t *testing.T) (uint64, func(ctx context.Context, h uint64, _ bool) (*rtypes.NetworkResponse, bool, error), valsetFunc, chainIDFunc, headerFunc, portalBlockFunc) {
 	t.Helper()
 	f := fuzz.NewWithSeed(99).NilChance(0).Funcs(
 		// Fuzz valid validators.
@@ -46,6 +47,13 @@ func setupTest(t *testing.T) (uint64, valsetFunc, chainIDFunc, headerFunc, porta
 			Validators: resp,
 		}, true, nil
 	}
+	networkFunc := func(ctx context.Context, h uint64, _ bool) (*rtypes.NetworkResponse, bool, error) {
+		require.EqualValues(t, height, h)
+		var resp rtypes.NetworkResponse
+		f.Fuzz(&resp)
+
+		return &resp, true, nil
+	}
 	chainFunc := func(ctx context.Context) (uint64, error) {
 		return 77, nil
 	}
@@ -57,27 +65,32 @@ func setupTest(t *testing.T) (uint64, valsetFunc, chainIDFunc, headerFunc, porta
 		}, nil
 	}
 	portalBlockFunc := func(ctx context.Context, h uint64, _ bool) (*ptypes.BlockResponse, bool, error) {
-		var valSetMsg *ptypes.Msg
+		var valSetMsg ptypes.Msg
 		f.Fuzz(&valSetMsg)
 		valSetMsg.Type = uint32(ptypes.MsgTypeValSet)
 		valSetMsg.MsgTypeId = h
 
+		var networkMsg ptypes.Msg
+		f.Fuzz(&networkMsg)
+		networkMsg.Type = uint32(ptypes.MsgTypeNetwork)
+		networkMsg.MsgTypeId = h
+
 		return &ptypes.BlockResponse{
 			Id:            h,
 			CreatedHeight: 123456,
-			Msgs:          []*ptypes.Msg{valSetMsg},
+			Msgs:          []ptypes.Msg{valSetMsg, networkMsg},
 		}, true, nil
 	}
 
-	return height, valFunc, chainFunc, headerFunc, portalBlockFunc
+	return height, networkFunc, valFunc, chainFunc, headerFunc, portalBlockFunc
 }
 
 // TestXBlock ensures we receive expected xblock response from provider.
 func TestXBlock(t *testing.T) {
 	t.Parallel()
 
-	height, valFunc, chainFunc, headerFunc, portalBlockFunc := setupTest(t)
-	prov := Provider{valset: valFunc, chainID: chainFunc, header: headerFunc, portalBlock: portalBlockFunc}
+	height, networkFunc, valFunc, chainFunc, headerFunc, portalBlockFunc := setupTest(t)
+	prov := Provider{valset: valFunc, networkFunc: networkFunc, chainID: chainFunc, header: headerFunc, portalBlock: portalBlockFunc}
 
 	block, ok, err := prov.XBlock(context.Background(), height, false)
 	require.NoError(t, err)
@@ -94,13 +107,14 @@ func TestXBlock_MaliciousResponse(t *testing.T) {
 		return &ptypes.BlockResponse{
 			Id:            h,
 			CreatedHeight: 123456,
-			Msgs:          []*ptypes.Msg{nil, nil, nil}, // set msgs to nil
+			Msgs:          []ptypes.Msg{}, // set empty msgs
 		}, true, nil
 	}
 
-	height, valFunc, chainFunc, headerFunc, _ := setupTest(t)
-	prov := Provider{valset: valFunc, chainID: chainFunc, header: headerFunc, portalBlock: portalBlockFunc}
+	height, networkFunc, valFunc, chainFunc, headerFunc, _ := setupTest(t)
+	prov := Provider{valset: valFunc, networkFunc: networkFunc, chainID: chainFunc, header: headerFunc, portalBlock: portalBlockFunc}
 	_, ok, err := prov.XBlock(context.Background(), height, false)
-	require.Errorf(t, err, "unexpected nil msg in block response msgs slice possible malicious response [BUG]")
+	require.Error(t, err)
+	require.Equal(t, "unexpected empty block [BUG]", err.Error())
 	require.False(t, ok)
 }

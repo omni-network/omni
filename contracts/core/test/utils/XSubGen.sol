@@ -145,15 +145,13 @@ contract XSubGen is Test {
         }
     }
 
-    /// @dev Sorce xmsgs by dest chain id and offset. The XBlock merkle root is built from sorted xmsgs.
+    /// @dev Sort xmsgs by offset. XMsgs within an xblock are order by log index,
+    ///      which implicity orders them by offset (ascending).
     function _sortXMsgs(XTypes.Msg[] memory msgs, bool[] memory msgFlags) internal pure {
         uint256 n = msgs.length;
         for (uint256 i = 0; i < n - 1; i++) {
             for (uint256 j = 0; j < n - i - 1; j++) {
-                if (msgs[j].destChainId > msgs[j + 1].destChainId) {
-                    (msgs[j], msgs[j + 1]) = (msgs[j + 1], msgs[j]);
-                    (msgFlags[j], msgFlags[j + 1]) = (msgFlags[j + 1], msgFlags[j]);
-                } else if (msgs[j].destChainId == msgs[j + 1].destChainId && msgs[j].offset > msgs[j + 1].offset) {
+                if (msgs[j].offset > msgs[j + 1].offset) {
                     (msgs[j], msgs[j + 1]) = (msgs[j + 1], msgs[j]);
                     (msgFlags[j], msgFlags[j + 1]) = (msgFlags[j + 1], msgFlags[j]);
                 }

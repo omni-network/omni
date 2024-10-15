@@ -9,6 +9,7 @@ ARCH := $(shell arch | sed 's/x86_64/amd64/')
 
 .PHONY: build-docker
 build-docker: ensure-go-releaser ## Builds the docker images using local arch.
+	@git config --local core.abbrev 7
 	@sed "s/amd64/$(ARCH)/g" .goreleaser-snapshot.yaml > .goreleaser-local.yaml
 	@goreleaser release -f .goreleaser-local.yaml --snapshot --clean --skip=archive
 	@rm .goreleaser-local.yaml

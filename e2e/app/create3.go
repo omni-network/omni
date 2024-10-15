@@ -40,31 +40,11 @@ func Create3Deploy(ctx context.Context, def Definition, cfg Create3DeployConfig)
 	return nil
 }
 
-func deployPrivateCreate3(ctx context.Context, def Definition) error {
-	for _, c := range def.Testnet.AnvilChains {
-		_, _, err := deployCreate3(ctx, def, c.Chain.ChainID)
+func deployAllCreate3(ctx context.Context, def Definition) error {
+	for _, chain := range def.Testnet.EVMChains() {
+		_, _, err := deployCreate3(ctx, def, chain.ChainID)
 		if err != nil {
-			return errors.Wrap(err, "deploy create3")
-		}
-	}
-
-	// only deploy to omni evm once
-	if len(def.Testnet.OmniEVMs) > 0 {
-		c := def.Testnet.OmniEVMs[0]
-		_, _, err := deployCreate3(ctx, def, c.Chain.ChainID)
-		if err != nil {
-			return errors.Wrap(err, "deploy create3")
-		}
-	}
-
-	return nil
-}
-
-func deployPublicCreate3(ctx context.Context, def Definition) error {
-	for _, c := range def.Testnet.PublicChains {
-		_, _, err := deployCreate3(ctx, def, c.Chain().ChainID)
-		if err != nil {
-			return errors.Wrap(err, "deploy create3")
+			return errors.Wrap(err, "deploy create3", "chain", chain.Name)
 		}
 	}
 

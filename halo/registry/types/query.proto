@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package halo.registry.types;
 
+import "gogoproto/gogo.proto";
+
 option go_package = "halo/registry/types";
 
 // Query defines the gRPC querier service.
@@ -17,7 +19,7 @@ message NetworkRequest {
 message NetworkResponse {
   uint64          id             = 1;
   uint64          created_height = 2; // Height this network was created at
-  repeated Portal portals        = 3; // Supported portals by source chain.
+  repeated Portal portals        = 3 [(gogoproto.nullable) = false]; // Supported portals by source chain.
 }
 
 message Portal {
@@ -26,6 +28,6 @@ message Portal {
   uint64          deploy_height      = 3; // Height this portal contract was deployed at
   repeated uint64 shard_ids          = 4; // Shard IDs supported by this portal
   uint64          attest_interval    = 5; // The interval, in blocks, at which validators must attest, even if empty
-  uint64          block_period_ns       = 6; // The block period of the chain deployed to, in nanoseconds.
+  uint64          block_period_ns    = 6; // The block period of the chain deployed to, in nanoseconds.
   string          name               = 7; // The name of the chain deployed to (ex "omni_evm", "ethereum")
 }
