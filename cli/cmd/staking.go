@@ -21,6 +21,8 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/umath"
 
+	"github.com/cometbft/cometbft/rpc/client/http"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -30,7 +32,7 @@ import (
 )
 
 const minSelfDelegation = uint64(100)
-const minDelegationIncrease = uint64(1)
+const minDelegation = uint64(1)
 
 func newCreateValCmd() *cobra.Command {
 	var cfg createValConfig
@@ -62,7 +64,8 @@ func newCreateValCmd() *cobra.Command {
 // eoaConfig defines the required data to sign and submit evm transactions.
 type eoaConfig struct {
 	network        netconf.ID
-	evmRPC         string
+	executionRPC   string
+	consensusRPC   string
 	privateKeyFile string
 }
 
@@ -88,9 +91,15 @@ func (v eoaConfig) validate() error {
 		return errors.Wrap(err, "verify --network flag")
 	}
 
-	if v.evmRPC != "" {
-		if _, err := url.ParseRequestURI(v.evmRPC); err != nil {
-			return errors.Wrap(err, "verify --evm-rpc flag")
+	if v.executionRPC != "" {
+		if _, err := url.Parse(v.executionRPC); err != nil {
+			return errors.Wrap(err, "verify --execution-rpc flag")
+		}
+	}
+
+	if v.consensusRPC != "" {
+		if _, err := url.Parse(v.consensusRPC); err != nil {
+			return errors.Wrap(err, "verify --consensus-rpc flag")
 		}
 	}
 
@@ -148,7 +157,7 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 	}
 	opAddr := crypto.PubkeyToAddress(operatorPriv.PublicKey)
 
-	eth, cprov, backend, err := setupClients(cfg.evmRPC, cfg.network, operatorPriv)
+	eth, cprov, backend, err := setupClients(cfg.eoaConfig, operatorPriv)
 	if err != nil {
 		return err
 	}
@@ -226,8 +235,8 @@ type delegateConfig struct {
 }
 
 func (d delegateConfig) validate() error {
-	if d.amount < minDelegationIncrease {
-		return errors.New("insufficient --amount", "minimum", minDelegationIncrease, "amount", d.amount)
+	if d.amount < minDelegation {
+		return errors.New("insufficient --amount", "minimum", minDelegation, "amount", d.amount)
 	}
 
 	return d.eoaConfig.validate()
@@ -267,7 +276,7 @@ func delegate(ctx context.Context, cfg delegateConfig) error {
 	}
 	opAddr := crypto.PubkeyToAddress(operatorPriv.PublicKey)
 
-	eth, cprov, backend, err := setupClients(cfg.evmRPC, cfg.network, operatorPriv)
+	eth, cprov, backend, err := setupClients(cfg.eoaConfig, operatorPriv)
 	if err != nil {
 		return err
 	}
@@ -443,26 +452,33 @@ func unjailValidator(ctx context.Context, cfg unjailConfig) error {
 // setupClients is a helper that creates the omni evm client,
 // omni consensus client and a backend set with the operator private key.
 func setupClients(
-	evmRPC string,
-	network netconf.ID,
+	conf eoaConfig,
 	operatorPriv *ecdsa.PrivateKey,
 ) (ethclient.Client, cchain.Provider, *ethbackend.Backend, error) {
-	chainID := network.Static().OmniExecutionChainID
+	static := conf.network.Static()
+	chainID := static.OmniExecutionChainID
+
 	chainMeta, ok := evmchain.MetadataByID(chainID)
 	if !ok {
 		return nil, nil, nil, errors.New("chain metadata not found")
 	}
 
-	if evmRPC == "" {
-		evmRPC = network.Static().ExecutionRPC()
+	if conf.executionRPC == "" {
+		conf.executionRPC = static.ExecutionRPC()
 	}
 
-	cprov, err := provider.Dial(network)
+	if conf.consensusRPC == "" {
+		conf.consensusRPC = static.ConsensusRPC()
+	}
+
+	cl, err := http.New(conf.consensusRPC, "/websocket")
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, errors.Wrap(err, "new tendermint client")
 	}
 
-	eth, err := ethclient.Dial(chainMeta.Name, evmRPC)
+	cprov := provider.NewABCIProvider(cl, conf.network, netconf.ChainVersionNamer(conf.network))
+
+	eth, err := ethclient.Dial(chainMeta.Name, conf.executionRPC)
 	if err != nil {
 		return nil, nil, nil, err
 	}

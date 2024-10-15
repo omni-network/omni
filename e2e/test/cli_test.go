@@ -62,7 +62,7 @@ func TestCLIOperator(t *testing.T) {
 
 		// use an existing test anvil account for new validator and write it's pkey to temp file
 		validatorPriv := anvil.DevPrivateKey6()
-		validatorPub := ethcrypto.CompressPubkey(&validatorPriv.PublicKey)
+		validatorPubBz := ethcrypto.CompressPubkey(&validatorPriv.PublicKey)
 		validatorAddr := ethcrypto.PubkeyToAddress(validatorPriv.PublicKey)
 		tmpDir := t.TempDir()
 		privKeyFile := filepath.Join(tmpDir, "privkey")
@@ -73,15 +73,15 @@ func TestCLIOperator(t *testing.T) {
 		)
 
 		// operator create-validator test
-		const delegation = uint64(100)
+		const selfDelegation = uint64(100)
 		res, err := execCLI(
 			ctx, "operator", "create-validator",
 			"--network", "devnet",
 			"--private-key-file", privKeyFile,
-			"--consensus-pubkey-hex", hex.EncodeToString(validatorPub),
+			"--consensus-pubkey-hex", hex.EncodeToString(validatorPubBz),
 			// we use minimum stake so the new validator doesn't affect the network too much
-			"--self-delegation", fmt.Sprintf("%d", delegation),
-			"--evm-rpc", executionRPC,
+			"--self-delegation", fmt.Sprintf("%d", selfDelegation),
+			"--execution-rpc", executionRPC,
 		)
 		require.NoError(t, err)
 		require.Empty(t, res)
@@ -104,18 +104,19 @@ func TestCLIOperator(t *testing.T) {
 		require.True(t, ok)
 		power, err := val.Power()
 		require.NoError(t, err)
-		require.Equal(t, delegation, power)
+		require.Equal(t, selfDelegation, power)
 
 		// operator delegate test
 
 		// delegate more stake for the validator, since we are using an anvil account
 		// it is already sufficiently funded
+		const delegation = uint64(1)
 		res, err = execCLI(
 			ctx, "operator", "delegate",
 			"--network", "devnet",
 			"--private-key-file", privKeyFile,
-			"--amount", "1",
-			"--evm-rpc", executionRPC,
+			"--amount", fmt.Sprintf("%d", delegation),
+			"--execution-rpc", executionRPC,
 			"--self",
 		)
 		require.NoError(t, err)

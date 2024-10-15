@@ -73,7 +73,8 @@ func bindEOAConfig(cmd *cobra.Command, cfg *eoaConfig) {
 	bindPrivateKeyFile(cmd, &cfg.privateKeyFile)
 	netconf.BindFlag(cmd.Flags(), &cfg.network)
 
-	cmd.Flags().StringVar(&cfg.evmRPC, "evm-rpc", "", "Optional Omni EVM execution RPC API endpoint. Defaults to consensus.<network>.omni.network")
+	cmd.Flags().StringVar(&cfg.executionRPC, "execution-rpc", "", "Optional Omni EVM execution RPC API endpoint. Defaults to <network>.omni.network")
+	cmd.Flags().StringVar(&cfg.consensusRPC, "consensus-rpc", "", "Optional Omni consensus RPC API endpoint. Defaults to consensus.<network>.omni.network")
 
 	_ = cmd.MarkFlagRequired(flagNetwork)
 }
@@ -81,8 +82,8 @@ func bindEOAConfig(cmd *cobra.Command, cfg *eoaConfig) {
 func bindDelegateConfig(cmd *cobra.Command, cfg *delegateConfig) {
 	bindEOAConfig(cmd, &cfg.eoaConfig)
 	const flagSelf = "self"
-	cmd.Flags().Uint64Var(&cfg.amount, flagDelegationAmount, cfg.amount, "Increase delegation amount in OMNI (minimum 1 OMNI)")
-	cmd.Flags().BoolVar(&cfg.self, flagSelf, true, "Mark self-delegation")
+	cmd.Flags().Uint64Var(&cfg.amount, flagDelegationAmount, cfg.amount, "Delegation amount in OMNI (minimum 1 OMNI)")
+	cmd.Flags().BoolVar(&cfg.self, flagSelf, false, "Enables self-delegation setting target validator address to provided private key")
 
 	_ = cmd.MarkFlagRequired(flagConsPubKeyHex)
 	_ = cmd.MarkFlagRequired(flagDelegationAmount)
