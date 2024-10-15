@@ -50,13 +50,13 @@ func (v *Vote) Verify() error {
 		return errors.Wrap(err, "verify attestation header")
 	}
 
+	if err := v.Signature.Verify(); err != nil {
+		return errors.Wrap(err, "verify signature")
+	}
+
 	attRoot, err := v.AttestationRoot()
 	if err != nil {
 		return err
-	}
-
-	if err := v.Signature.Verify(); err != nil {
-		return errors.Wrap(err, "verify signature")
 	}
 
 	sigTuple, err := v.Signature.ToXChain()
@@ -281,34 +281,20 @@ func (a *Attestation) Verify() error {
 	}
 
 	duplicateVals := make(map[common.Address]bool)
-	duplicateSig := make(map[string]bool)
 	for _, sig := range a.Signatures {
-		valEthAddr, err := sig.ValidatorEthAddress()
-		if err != nil {
-			return err
-		}
-
-		if duplicateVals[valEthAddr] {
-			return errors.New("duplicate validator signature")
-		}
-
-		if duplicateSig[sig.String()] {
-			return errors.New("duplicate attestation signature")
-		}
-
 		if err := sig.Verify(); err != nil {
 			return errors.Wrap(err, "signature")
 		}
 
-		sig65, err := cast.Array65(sig.Signature)
+		sigTup, err := sig.ToXChain()
 		if err != nil {
 			return err
 		}
 
 		ok, err := k1util.Verify(
-			valEthAddr,
+			sigTup.ValidatorAddress,
 			attRoot,
-			sig65,
+			sigTup.Signature,
 		)
 		if err != nil {
 			return err
@@ -316,8 +302,11 @@ func (a *Attestation) Verify() error {
 			return errors.New("invalid attestation signature")
 		}
 
-		duplicateVals[valEthAddr] = true
-		duplicateSig[sig.String()] = true
+		if duplicateVals[sigTup.ValidatorAddress] {
+			return errors.New("duplicate validator signature", "validator", sigTup.ValidatorAddress)
+		}
+
+		duplicateVals[sigTup.ValidatorAddress] = true
 	}
 
 	return nil
