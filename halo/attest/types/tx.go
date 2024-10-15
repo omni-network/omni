@@ -275,10 +275,38 @@ func (a *Attestation) Verify() error {
 		return errors.New("empty signatures")
 	}
 
+	attRoot, err := a.AttestationRoot()
+	if err != nil {
+		return err
+	}
+
+	duplicateVals := make(map[common.Address]bool)
 	for _, sig := range a.Signatures {
 		if err := sig.Verify(); err != nil {
 			return errors.Wrap(err, "signature")
 		}
+
+		sigTup, err := sig.ToXChain()
+		if err != nil {
+			return err
+		}
+
+		ok, err := k1util.Verify(
+			sigTup.ValidatorAddress,
+			attRoot,
+			sigTup.Signature,
+		)
+		if err != nil {
+			return err
+		} else if !ok {
+			return errors.New("invalid attestation signature")
+		}
+
+		if duplicateVals[sigTup.ValidatorAddress] {
+			return errors.New("duplicate validator signature", "validator", sigTup.ValidatorAddress)
+		}
+
+		duplicateVals[sigTup.ValidatorAddress] = true
 	}
 
 	return nil
