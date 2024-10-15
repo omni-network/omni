@@ -47,8 +47,7 @@ import (
 const slashingBlocksWindow = 1000
 
 // validatorPower is the default power assigned to genesis validators.
-// It is also the minimum stake enforced by the omni staking contract.
-const validatorPower = 100
+const validatorPower = 1000
 
 func MakeGenesis(
 	network netconf.ID,

@@ -6,10 +6,12 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"net/url"
 	"strings"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
+	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -18,6 +20,8 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/umath"
+
+	"github.com/cometbft/cometbft/rpc/client/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -28,6 +32,7 @@ import (
 )
 
 const minSelfDelegation = uint64(100)
+const minDelegation = uint64(1)
 
 func newCreateValCmd() *cobra.Command {
 	var cfg createValConfig
@@ -38,7 +43,7 @@ func newCreateValCmd() *cobra.Command {
 		Long:  `Sign and broadcast a create-validator transaction that registers a new validator on the omni consensus chain initialized with a self-delegation`,
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := cfg.Verify(); err != nil {
+			if err := cfg.validate(); err != nil {
 				return errors.Wrap(err, "verify flags")
 			}
 
@@ -56,14 +61,58 @@ func newCreateValCmd() *cobra.Command {
 	return cmd
 }
 
+// eoaConfig defines the required data to sign and submit evm transactions.
+type eoaConfig struct {
+	Network        netconf.ID
+	ExecutionRPC   string
+	ConsensusRPC   string
+	PrivateKeyFile string
+}
+
+func (v eoaConfig) privateKey() (*ecdsa.PrivateKey, error) {
+	if v.PrivateKeyFile == "" {
+		return nil, errors.New("required flag --private-key-file not set")
+	}
+
+	opPrivKey, err := crypto.LoadECDSA(v.PrivateKeyFile)
+	if err != nil {
+		return nil, errors.Wrap(err, "load private key")
+	}
+
+	return opPrivKey, nil
+}
+
+func (v eoaConfig) validate() error {
+	if _, err := v.privateKey(); err != nil {
+		return errors.Wrap(err, "verify --private-key-file flag")
+	}
+
+	if err := v.Network.Verify(); err != nil {
+		return errors.Wrap(err, "verify --network flag")
+	}
+
+	if v.ExecutionRPC != "" {
+		if _, err := url.Parse(v.ExecutionRPC); err != nil {
+			return errors.Wrap(err, "verify --execution-rpc flag")
+		}
+	}
+
+	if v.ConsensusRPC != "" {
+		if _, err := url.Parse(v.ConsensusRPC); err != nil {
+			return errors.Wrap(err, "verify --consensus-rpc flag")
+		}
+	}
+
+	return nil
+}
+
 type createValConfig struct {
-	Network            netconf.ID
-	PrivateKeyFile     string
+	eoaConfig
 	ConsensusPubKeyHex string
 	SelfDelegation     uint64
 }
 
-func (c createValConfig) ConsensusPubKey() (*ecdsa.PublicKey, error) {
+func (c createValConfig) consensusPublicKey() (*ecdsa.PublicKey, error) {
 	if strings.HasPrefix(c.ConsensusPubKeyHex, "0x") {
 		return nil, errors.New("consensus pubkey hex should not have 0x prefix")
 	}
@@ -81,16 +130,12 @@ func (c createValConfig) ConsensusPubKey() (*ecdsa.PublicKey, error) {
 	return resp, nil
 }
 
-func (c createValConfig) Verify() error {
-	if c.PrivateKeyFile == "" {
-		return errors.New("required flag --private-key-file not set")
+func (c createValConfig) validate() error {
+	if err := c.eoaConfig.validate(); err != nil {
+		return err
 	}
 
-	if err := c.Network.Verify(); err != nil {
-		return errors.Wrap(err, "verify --network flag")
-	}
-
-	if _, err := c.ConsensusPubKey(); err != nil {
+	if _, err := c.consensusPublicKey(); err != nil {
 		return errors.Wrap(err, "verify --consensus-pubkey-hex flag")
 	}
 
@@ -106,29 +151,19 @@ func (c createValConfig) Verify() error {
 }
 
 func createValidator(ctx context.Context, cfg createValConfig) error {
-	opPrivKey, err := crypto.LoadECDSA(cfg.PrivateKeyFile)
+	operatorPriv, err := cfg.privateKey()
 	if err != nil {
-		return errors.Wrap(err, "load private key")
+		return err
 	}
-	opAddr := crypto.PubkeyToAddress(opPrivKey.PublicKey)
+	opAddr := crypto.PubkeyToAddress(operatorPriv.PublicKey)
 
-	chainID := cfg.Network.Static().OmniExecutionChainID
-	chainMeta, ok := evmchain.MetadataByID(chainID)
-	if !ok {
-		return errors.New("chain metadata not found")
-	}
-
-	ethCl, err := ethclient.Dial(chainMeta.Name, cfg.Network.Static().ExecutionRPC())
+	eth, cprov, backend, err := setupClients(cfg.eoaConfig, operatorPriv)
 	if err != nil {
 		return err
 	}
 
-	cprov, err := provider.Dial(cfg.Network)
-	if err != nil {
-		return err
-	}
-
-	if _, ok, err = cprov.SDKValidator(ctx, opAddr); err != nil {
+	// check if we already have an existing validator
+	if _, ok, err := cprov.SDKValidator(ctx, opAddr); err != nil {
 		return err
 	} else if ok {
 		return &CliError{
@@ -137,26 +172,27 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 		}
 	}
 
-	backend, err := ethbackend.NewBackend(chainMeta.Name, chainID, chainMeta.BlockPeriod, ethCl, opPrivKey)
-	if err != nil {
-		return err
-	}
-
 	contract, err := bindings.NewStaking(common.HexToAddress(predeploys.Staking), backend)
 	if err != nil {
 		return err
 	}
 
-	if ok, err := contract.IsAllowedValidator(nil, opAddr); err != nil {
+	// only check if validator is on allow list if the allow list is enabled
+	bindOpts := &bind.CallOpts{Context: ctx}
+	if enabled, err := contract.IsAllowlistEnabled(bindOpts); err != nil {
 		return err
-	} else if !ok {
-		return &CliError{
-			Msg:     "Operator address not allowed to create validator: " + opAddr.Hex(),
-			Suggest: "Contact Omni team to be included in validator allow list",
+	} else if enabled {
+		if ok, err := contract.IsAllowedValidator(bindOpts, opAddr); err != nil {
+			return err
+		} else if !ok {
+			return &CliError{
+				Msg:     "Operator address not allowed to create validator: " + opAddr.Hex(),
+				Suggest: "Contact Omni team to be included in validator allow list",
+			}
 		}
 	}
 
-	bal, err := ethCl.EtherBalanceAt(ctx, opAddr)
+	bal, err := eth.EtherBalanceAt(ctx, opAddr)
 	if err != nil {
 		return err
 	} else if bal <= float64(cfg.SelfDelegation) {
@@ -171,8 +207,7 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 		return err
 	}
 	txOpts.Value = new(big.Int).Mul(umath.NewBigInt(cfg.SelfDelegation), big.NewInt(params.Ether)) // Send self-delegation
-
-	consPubkey, err := cfg.ConsensusPubKey()
+	consPubkey, err := cfg.consensusPublicKey()
 	if err != nil {
 		return err
 	}
@@ -189,6 +224,110 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 
 	link := fmt.Sprintf("https://%s.omniscan.network/tx/%s", cfg.Network, tx.Hash().Hex())
 	log.Info(ctx, "🎉 Create-validator transaction sent and included on-chain", "link", link, "block", rec.BlockNumber.Uint64())
+
+	return nil
+}
+
+type delegateConfig struct {
+	eoaConfig
+	Amount uint64
+	Self   bool
+}
+
+func (d delegateConfig) validate() error {
+	if !d.Self {
+		return errors.New("required --self", "required_value", "true")
+	}
+
+	if d.Amount < minDelegation {
+		return errors.New("insufficient --amount", "minimum", minDelegation, "amount", d.Amount)
+	}
+
+	return d.eoaConfig.validate()
+}
+
+func newDelegateCmd() *cobra.Command {
+	var cfg delegateConfig
+
+	cmd := &cobra.Command{
+		Use:   "delegate",
+		Short: "Delegate Omni tokens to a validator",
+		Long:  `Delegate an amount of Omni tokens to a validator from your wallet. Only self-delegation by validators supported at the moment.`,
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if err := cfg.validate(); err != nil {
+				return errors.Wrap(err, "verify flags")
+			}
+
+			err := delegate(cmd.Context(), cfg)
+			if err != nil {
+				return errors.Wrap(err, "delegate")
+			}
+
+			return nil
+		},
+	}
+
+	bindDelegateConfig(cmd, &cfg)
+
+	return cmd
+}
+
+func delegate(ctx context.Context, cfg delegateConfig) error {
+	delegatorPriv, err := cfg.privateKey()
+	if err != nil {
+		return err
+	}
+	delegatorAddr := crypto.PubkeyToAddress(delegatorPriv.PublicKey)
+
+	eth, cprov, backend, err := setupClients(cfg.eoaConfig, delegatorPriv)
+	if err != nil {
+		return err
+	}
+
+	// check if we already have an existing validator
+	if _, ok, err := cprov.SDKValidator(ctx, delegatorAddr); err != nil {
+		return err
+	} else if !ok {
+		return &CliError{
+			Msg:     "Operator address is not a validator: " + delegatorAddr.Hex(),
+			Suggest: "Ensure operator is already created as validator, see create-validator command",
+		}
+	}
+
+	contract, err := bindings.NewStaking(common.HexToAddress(predeploys.Staking), backend)
+	if err != nil {
+		return err
+	}
+
+	bal, err := eth.EtherBalanceAt(ctx, delegatorAddr)
+	if err != nil {
+		return err
+	} else if bal <= float64(cfg.Amount) {
+		return &CliError{
+			Msg:     fmt.Sprintf("Delegator address has insufficient balance=%.2f OMNI, address=%s", bal, delegatorAddr),
+			Suggest: "Fund the delegator address with sufficient OMNI for self-delegation and gas",
+		}
+	}
+
+	txOpts, err := backend.BindOpts(ctx, delegatorAddr)
+	if err != nil {
+		return err
+	}
+	txOpts.Value = new(big.Int).Mul(umath.NewBigInt(cfg.Amount), big.NewInt(params.Ether)) // Send self-delegation
+
+	tx, err := contract.Delegate(txOpts, delegatorAddr)
+	if err != nil {
+		return errors.Wrap(err, "create validator")
+	}
+
+	rec, err := backend.WaitMined(ctx, tx)
+	if err != nil {
+		return errors.Wrap(err, "wait mined")
+	}
+
+	link := fmt.Sprintf("https://%s.omniscan.network/tx/%s", cfg.Network, tx.Hash().Hex())
+	log.Info(ctx, "🎉 Delegate transaction sent and included on-chain", "link", link, "block", rec.BlockNumber.Uint64())
 
 	return nil
 }
@@ -244,6 +383,8 @@ func unjailValidator(ctx context.Context, cfg unjailConfig) error {
 		return errors.Wrap(err, "load private key")
 	}
 	opAddr := crypto.PubkeyToAddress(opPrivKey.PublicKey)
+
+	// todo reuse setupClient
 
 	chainID := cfg.Network.Static().OmniExecutionChainID
 	chainMeta, ok := evmchain.MetadataByID(chainID)
@@ -310,4 +451,52 @@ func unjailValidator(ctx context.Context, cfg unjailConfig) error {
 	log.Info(ctx, "🎉 Unjail transaction sent and included on-chain", "link", link, "block", rec.BlockNumber.Uint64())
 
 	return nil
+}
+
+// setupClients is a helper that creates the omni evm client,
+// omni consensus client and a backend set with the operator private key.
+func setupClients(
+	conf eoaConfig,
+	operatorPriv *ecdsa.PrivateKey,
+) (ethclient.Client, cchain.Provider, *ethbackend.Backend, error) {
+	static := conf.Network.Static()
+	chainID := static.OmniExecutionChainID
+
+	chainMeta, ok := evmchain.MetadataByID(chainID)
+	if !ok {
+		return nil, nil, nil, errors.New("chain metadata not found")
+	}
+
+	if conf.ExecutionRPC == "" {
+		conf.ExecutionRPC = static.ExecutionRPC()
+	}
+
+	if conf.ConsensusRPC == "" {
+		conf.ConsensusRPC = static.ConsensusRPC()
+	}
+
+	cl, err := http.New(conf.ConsensusRPC, "/websocket")
+	if err != nil {
+		return nil, nil, nil, errors.Wrap(err, "new tendermint client")
+	}
+
+	cprov := provider.NewABCIProvider(cl, conf.Network, netconf.ChainVersionNamer(conf.Network))
+
+	eth, err := ethclient.Dial(chainMeta.Name, conf.ExecutionRPC)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	backend, err := ethbackend.NewBackend(
+		chainMeta.Name,
+		chainID,
+		chainMeta.BlockPeriod,
+		eth,
+		operatorPriv,
+	)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return eth, cprov, backend, err
 }
