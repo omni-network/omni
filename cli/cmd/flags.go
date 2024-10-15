@@ -63,12 +63,6 @@ func bindRPCURL(cmd *cobra.Command, rpcURL *string) {
 	_ = cmd.MarkFlagRequired(flagRPCURL)
 }
 
-func bindUnjailConfig(cmd *cobra.Command, cfg *unjailConfig) {
-	netconf.BindFlag(cmd.Flags(), &cfg.Network)
-	bindPrivateKeyFile(cmd, &cfg.PrivateKeyFile)
-	_ = cmd.MarkFlagRequired(flagNetwork)
-}
-
 func bindEOAConfig(cmd *cobra.Command, cfg *eoaConfig) {
 	bindPrivateKeyFile(cmd, &cfg.PrivateKeyFile)
 	netconf.BindFlag(cmd.Flags(), &cfg.Network)

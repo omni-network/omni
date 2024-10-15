@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"encoding/hex"
@@ -8,6 +9,7 @@ import (
 	"math/big"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
@@ -333,7 +335,7 @@ func delegate(ctx context.Context, cfg delegateConfig) error {
 }
 
 func newUnjailCmd() *cobra.Command {
-	var cfg unjailConfig
+	var cfg eoaConfig
 
 	cmd := &cobra.Command{
 		Use:   "unjail",
@@ -342,7 +344,7 @@ func newUnjailCmd() *cobra.Command {
 			"This transaction must be sent by the operator address and costs 0.1 OMNI.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := cfg.Verify(); err != nil {
+			if err := cfg.validate(); err != nil {
 				return errors.Wrap(err, "verify flags")
 			}
 
@@ -355,69 +357,39 @@ func newUnjailCmd() *cobra.Command {
 		},
 	}
 
-	bindUnjailConfig(cmd, &cfg)
+	bindEOAConfig(cmd, &cfg)
 
 	return cmd
 }
 
-type unjailConfig struct {
-	Network        netconf.ID
-	PrivateKeyFile string
-}
-
-func (c unjailConfig) Verify() error {
-	if c.PrivateKeyFile == "" {
-		return errors.New("required flag --private-key-file not set")
-	}
-
-	if err := c.Network.Verify(); err != nil {
-		return errors.Wrap(err, "verify --network flag")
-	}
-
-	return nil
-}
-
-func unjailValidator(ctx context.Context, cfg unjailConfig) error {
+func unjailValidator(ctx context.Context, cfg eoaConfig) error {
 	opPrivKey, err := crypto.LoadECDSA(cfg.PrivateKeyFile)
 	if err != nil {
 		return errors.Wrap(err, "load private key")
 	}
 	opAddr := crypto.PubkeyToAddress(opPrivKey.PublicKey)
 
-	// todo reuse setupClient
-
-	chainID := cfg.Network.Static().OmniExecutionChainID
-	chainMeta, ok := evmchain.MetadataByID(chainID)
-	if !ok {
-		return errors.New("chain metadata not found")
-	}
-
-	ethCl, err := ethclient.Dial(chainMeta.Name, cfg.Network.Static().ExecutionRPC())
+	_, cprov, backend, err := setupClients(cfg, opPrivKey)
 	if err != nil {
 		return err
 	}
 
-	cprov, err := provider.Dial(cfg.Network)
+	validator, ok, err := cprov.SDKValidator(ctx, opAddr)
 	if err != nil {
-		return err
-	}
-
-	if val, ok, err := cprov.SDKValidator(ctx, opAddr); err != nil {
 		return err
 	} else if !ok {
 		return &CliError{
 			Msg:     "Operator address not a validator: " + opAddr.Hex(),
 			Suggest: "Ensure operator address is a validator",
 		}
-	} else if !val.IsJailed() {
+	} else if !validator.IsJailed() {
 		return &CliError{
 			Msg:     "Validator not jailed: " + opAddr.Hex(),
 			Suggest: "Ensure validator is jailed before unjailing",
 		}
 	}
 
-	backend, err := ethbackend.NewBackend(chainMeta.Name, chainID, chainMeta.BlockPeriod, ethCl, opPrivKey)
-	if err != nil {
+	if err := checkUnjailPeriod(ctx, cprov, validator); err != nil {
 		return err
 	}
 
@@ -449,6 +421,41 @@ func unjailValidator(ctx context.Context, cfg unjailConfig) error {
 
 	link := fmt.Sprintf("https://%s.omniscan.network/tx/%s", cfg.Network, rec.TxHash.Hex())
 	log.Info(ctx, "🎉 Unjail transaction sent and included on-chain", "link", link, "block", rec.BlockNumber.Uint64())
+
+	return nil
+}
+
+// checkUnjailPeriod returns an error if the validator is still in the unjail period.
+func checkUnjailPeriod(ctx context.Context, cprov cchain.Provider, val cchain.SDKValidator) error {
+	consCmtAddr, err := val.ConsensusCmtAddr()
+	if err != nil {
+		return err
+	}
+	// Ensure the validator can be unjailed
+	infos, err := cprov.SDKSigningInfos(ctx)
+	if err != nil {
+		return err
+	}
+	var found bool
+	for _, info := range infos {
+		if addr, err := info.ConsensusCmtAddr(); err != nil {
+			return err
+		} else if !bytes.Equal(addr, consCmtAddr) {
+			continue
+		}
+		found = true
+		if info.JailedUntil.After(time.Now()) {
+			return &CliError{
+				Msg:     "Validator cannot be unjailed yet",
+				Suggest: "Retry after unjail period ends at " + info.JailedUntil.String(),
+			}
+		}
+
+		break
+	}
+	if !found {
+		return errors.New("missing signing info for validator [BUG]")
+	}
 
 	return nil
 }
