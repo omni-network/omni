@@ -181,7 +181,7 @@ func TestInvalidCmds(t *testing.T) {
 		{
 			Name:        "no args",
 			Args:        []string{},
-			ErrContains: "no sub-command specified, see --help",
+			ErrContains: "no sub-command specified",
 		},
 		{
 			Name:        "invalid args",
@@ -194,6 +194,7 @@ func TestInvalidCmds(t *testing.T) {
 		t.Run(test.Name, func(t *testing.T) {
 			t.Parallel()
 			rootCmd := libcmd.NewRootCmd("halo", "", New())
+			libcmd.WrapRunE(rootCmd, func(ctx context.Context, err error) {})
 			rootCmd.SetArgs(test.Args)
 			err := rootCmd.Execute()
 			require.Error(t, err)
