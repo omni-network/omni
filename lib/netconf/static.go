@@ -118,6 +118,8 @@ func (s Static) ExecutionSeeds() []string {
 
 func (s Static) ExecutionRPC() string {
 	if s.Network == Devnet {
+		// First omni_evm in devnet docker-compose.
+		// Note that it might not be running.
 		return "http://127.0.0.1:8000"
 	}
 
@@ -126,6 +128,8 @@ func (s Static) ExecutionRPC() string {
 
 func (s Static) ConsensusRPC() string {
 	if s.Network == Devnet {
+		// First halo in devnet docker-compose.
+		// Note that it might not be running.
 		return "http://localhost:5701"
 	}
 

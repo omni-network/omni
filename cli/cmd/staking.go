@@ -63,18 +63,18 @@ func newCreateValCmd() *cobra.Command {
 
 // eoaConfig defines the required data to sign and submit evm transactions.
 type eoaConfig struct {
-	network        netconf.ID
-	executionRPC   string
-	consensusRPC   string
-	privateKeyFile string
+	Network        netconf.ID
+	ExecutionRPC   string
+	ConsensusRPC   string
+	PrivateKeyFile string
 }
 
 func (v eoaConfig) privateKey() (*ecdsa.PrivateKey, error) {
-	if v.privateKeyFile == "" {
+	if v.PrivateKeyFile == "" {
 		return nil, errors.New("required flag --private-key-file not set")
 	}
 
-	opPrivKey, err := crypto.LoadECDSA(v.privateKeyFile)
+	opPrivKey, err := crypto.LoadECDSA(v.PrivateKeyFile)
 	if err != nil {
 		return nil, errors.Wrap(err, "load private key")
 	}
@@ -87,18 +87,18 @@ func (v eoaConfig) validate() error {
 		return errors.Wrap(err, "verify --private-key-file flag")
 	}
 
-	if err := v.network.Verify(); err != nil {
+	if err := v.Network.Verify(); err != nil {
 		return errors.Wrap(err, "verify --network flag")
 	}
 
-	if v.executionRPC != "" {
-		if _, err := url.Parse(v.executionRPC); err != nil {
+	if v.ExecutionRPC != "" {
+		if _, err := url.Parse(v.ExecutionRPC); err != nil {
 			return errors.Wrap(err, "verify --execution-rpc flag")
 		}
 	}
 
-	if v.consensusRPC != "" {
-		if _, err := url.Parse(v.consensusRPC); err != nil {
+	if v.ConsensusRPC != "" {
+		if _, err := url.Parse(v.ConsensusRPC); err != nil {
 			return errors.Wrap(err, "verify --consensus-rpc flag")
 		}
 	}
@@ -108,16 +108,16 @@ func (v eoaConfig) validate() error {
 
 type createValConfig struct {
 	eoaConfig
-	consensusPubKeyHex string
-	selfDelegation     uint64
+	ConsensusPubKeyHex string
+	SelfDelegation     uint64
 }
 
 func (c createValConfig) consensusPublicKey() (*ecdsa.PublicKey, error) {
-	if strings.HasPrefix(c.consensusPubKeyHex, "0x") {
+	if strings.HasPrefix(c.ConsensusPubKeyHex, "0x") {
 		return nil, errors.New("consensus pubkey hex should not have 0x prefix")
 	}
 
-	bz, err := hex.DecodeString(c.consensusPubKeyHex)
+	bz, err := hex.DecodeString(c.ConsensusPubKeyHex)
 	if err != nil {
 		return nil, errors.Wrap(err, "decode consensus pubkey hex")
 	}
@@ -139,12 +139,12 @@ func (c createValConfig) validate() error {
 		return errors.Wrap(err, "verify --consensus-pubkey-hex flag")
 	}
 
-	if c.selfDelegation < minSelfDelegation {
-		return errors.New("insufficient --self-delegation", "minimum", minSelfDelegation, "self_delegation", c.selfDelegation)
+	if c.SelfDelegation < minSelfDelegation {
+		return errors.New("insufficient --self-delegation", "minimum", minSelfDelegation, "self_delegation", c.SelfDelegation)
 	}
 
-	if c.selfDelegation > 1e3*minSelfDelegation {
-		return errors.New("excessive --self-delegation", "maximum", 1e3*minSelfDelegation, "self_delegation", c.selfDelegation)
+	if c.SelfDelegation > 1e3*minSelfDelegation {
+		return errors.New("excessive --self-delegation", "maximum", 1e3*minSelfDelegation, "self_delegation", c.SelfDelegation)
 	}
 
 	return nil
@@ -195,7 +195,7 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 	bal, err := eth.EtherBalanceAt(ctx, opAddr)
 	if err != nil {
 		return err
-	} else if bal <= float64(cfg.selfDelegation) {
+	} else if bal <= float64(cfg.SelfDelegation) {
 		return &CliError{
 			Msg:     fmt.Sprintf("Operator address has insufficient balance=%.2f OMNI, address=%s", bal, opAddr),
 			Suggest: "Fund the operator address with sufficient OMNI for self-delegation and gas",
@@ -206,7 +206,7 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 	if err != nil {
 		return err
 	}
-	txOpts.Value = new(big.Int).Mul(umath.NewBigInt(cfg.selfDelegation), big.NewInt(params.Ether)) // Send self-delegation
+	txOpts.Value = new(big.Int).Mul(umath.NewBigInt(cfg.SelfDelegation), big.NewInt(params.Ether)) // Send self-delegation
 	consPubkey, err := cfg.consensusPublicKey()
 	if err != nil {
 		return err
@@ -222,7 +222,7 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 		return errors.Wrap(err, "wait mined")
 	}
 
-	link := fmt.Sprintf("https://%s.omniscan.network/tx/%s", cfg.network, tx.Hash().Hex())
+	link := fmt.Sprintf("https://%s.omniscan.network/tx/%s", cfg.Network, tx.Hash().Hex())
 	log.Info(ctx, "🎉 Create-validator transaction sent and included on-chain", "link", link, "block", rec.BlockNumber.Uint64())
 
 	return nil
@@ -230,13 +230,17 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 
 type delegateConfig struct {
 	eoaConfig
-	amount uint64
-	self   bool
+	Amount uint64
+	Self   bool
 }
 
 func (d delegateConfig) validate() error {
-	if d.amount < minDelegation {
-		return errors.New("insufficient --amount", "minimum", minDelegation, "amount", d.amount)
+	if !d.Self {
+		return errors.New("required --self", "required_value", "true")
+	}
+
+	if d.Amount < minDelegation {
+		return errors.New("insufficient --amount", "minimum", minDelegation, "amount", d.Amount)
 	}
 
 	return d.eoaConfig.validate()
@@ -299,10 +303,10 @@ func delegate(ctx context.Context, cfg delegateConfig) error {
 	bal, err := eth.EtherBalanceAt(ctx, delegatorAddr)
 	if err != nil {
 		return err
-	} else if bal <= float64(cfg.amount) {
+	} else if bal <= float64(cfg.Amount) {
 		return &CliError{
 			Msg:     fmt.Sprintf("Delegator address has insufficient balance=%.2f OMNI, address=%s", bal, delegatorAddr),
-			Suggest: "Fund the operator address with sufficient OMNI for self-delegation and gas",
+			Suggest: "Fund the delegator address with sufficient OMNI for self-delegation and gas",
 		}
 	}
 
@@ -310,7 +314,7 @@ func delegate(ctx context.Context, cfg delegateConfig) error {
 	if err != nil {
 		return err
 	}
-	txOpts.Value = new(big.Int).Mul(umath.NewBigInt(cfg.amount), big.NewInt(params.Ether)) // Send self-delegation
+	txOpts.Value = new(big.Int).Mul(umath.NewBigInt(cfg.Amount), big.NewInt(params.Ether)) // Send self-delegation
 
 	tx, err := contract.Delegate(txOpts, delegatorAddr)
 	if err != nil {
@@ -322,7 +326,7 @@ func delegate(ctx context.Context, cfg delegateConfig) error {
 		return errors.Wrap(err, "wait mined")
 	}
 
-	link := fmt.Sprintf("https://%s.omniscan.network/tx/%s", cfg.network, tx.Hash().Hex())
+	link := fmt.Sprintf("https://%s.omniscan.network/tx/%s", cfg.Network, tx.Hash().Hex())
 	log.Info(ctx, "🎉 Delegate transaction sent and included on-chain", "link", link, "block", rec.BlockNumber.Uint64())
 
 	return nil
@@ -455,7 +459,7 @@ func setupClients(
 	conf eoaConfig,
 	operatorPriv *ecdsa.PrivateKey,
 ) (ethclient.Client, cchain.Provider, *ethbackend.Backend, error) {
-	static := conf.network.Static()
+	static := conf.Network.Static()
 	chainID := static.OmniExecutionChainID
 
 	chainMeta, ok := evmchain.MetadataByID(chainID)
@@ -463,22 +467,22 @@ func setupClients(
 		return nil, nil, nil, errors.New("chain metadata not found")
 	}
 
-	if conf.executionRPC == "" {
-		conf.executionRPC = static.ExecutionRPC()
+	if conf.ExecutionRPC == "" {
+		conf.ExecutionRPC = static.ExecutionRPC()
 	}
 
-	if conf.consensusRPC == "" {
-		conf.consensusRPC = static.ConsensusRPC()
+	if conf.ConsensusRPC == "" {
+		conf.ConsensusRPC = static.ConsensusRPC()
 	}
 
-	cl, err := http.New(conf.consensusRPC, "/websocket")
+	cl, err := http.New(conf.ConsensusRPC, "/websocket")
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "new tendermint client")
 	}
 
-	cprov := provider.NewABCIProvider(cl, conf.network, netconf.ChainVersionNamer(conf.network))
+	cprov := provider.NewABCIProvider(cl, conf.Network, netconf.ChainVersionNamer(conf.Network))
 
-	eth, err := ethclient.Dial(chainMeta.Name, conf.executionRPC)
+	eth, err := ethclient.Dial(chainMeta.Name, conf.ExecutionRPC)
 	if err != nil {
 		return nil, nil, nil, err
 	}
