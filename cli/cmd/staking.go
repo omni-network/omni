@@ -301,7 +301,7 @@ func delegate(ctx context.Context, cfg delegateConfig) error {
 		return err
 	} else if bal <= float64(cfg.amount) {
 		return &CliError{
-			Msg:     fmt.Sprintf("Operator address has insufficient balance=%.2f OMNI, address=%s", bal, delegatorAddr),
+			Msg:     fmt.Sprintf("Delegator address has insufficient balance=%.2f OMNI, address=%s", bal, delegatorAddr),
 			Suggest: "Fund the operator address with sufficient OMNI for self-delegation and gas",
 		}
 	}
