@@ -101,6 +101,14 @@ foo bar baz
 issue: closed https://github.com/omni-network/omni/issues/1334`,
 		},
 		{
+			name: "valid full issue from ops repo",
+			commit: `feat(*): add foo bar
+
+foo bar baz
+
+issue: closed https://github.com/omni-network/ops/issues/1334`,
+		},
+		{
 			name:    "invalid description title case",
 			wantErr: true,
 			commit: `feat(*): Add foo bar

@@ -10,9 +10,6 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
-	"github.com/omni-network/omni/monitor/xmonitor/emitcache"
-
-	dbm "github.com/cosmos/cosmos-db"
 )
 
 // Start starts the xchain monitoring goroutines.
@@ -22,13 +19,7 @@ func Start(
 	xprovider xchain.Provider,
 	cprovider cchain.Provider,
 	rpcClients map[uint64]ethclient.Client,
-	db dbm.DB,
 ) error {
-	cache, err := emitcache.Start(ctx, network, xprovider, db)
-	if err != nil {
-		return err
-	}
-
 	// Monitor the head of all chains, including consensus.
 	for _, srcChain := range network.Chains {
 		headsFunc := func(ctx context.Context) map[ethclient.HeadType]uint64 {
@@ -41,7 +32,7 @@ func Start(
 		}
 
 		go monitorHeadsForever(ctx, srcChain, headsFunc)
-		go monitorAttestedForever(ctx, srcChain, cprovider, network, cache)
+		go monitorAttestedForever(ctx, srcChain, cprovider, network, xprovider)
 	}
 
 	// Monitors below only apply to EVM chains.
@@ -51,7 +42,7 @@ func Start(
 				continue
 			}
 
-			go monitorOffsetsForever(ctx, xprovider, network, srcChain, dstChain, cache)
+			go monitorOffsetsForever(ctx, xprovider, network, srcChain, dstChain)
 		}
 	}
 
@@ -145,7 +136,7 @@ func monitorAttestedForever(
 	srcChain netconf.Chain,
 	cprovider cchain.Provider,
 	network netconf.Network,
-	cache emitcache.Cache,
+	xprovider xchain.Provider,
 ) {
 	chainVer := srcChain.ChainVersions()[0]
 
@@ -172,14 +163,9 @@ func monitorAttestedForever(
 			for _, stream := range network.StreamsFrom(srcChain.ID) {
 				name := network.StreamName(stream)
 
-				cursor, ok, err := cache.Get(ctx, att.BlockHeight, stream)
+				cursor, _, err := xprovider.GetEmittedCursor(ctx, xchain.EmitRef{Height: &att.BlockHeight}, stream)
 				if err != nil {
-					log.Warn(ctx, "Getting cache failed (will retry)", err, "chain", srcChain.Name)
-					continue
-				} else if !ok {
-					log.Warn(ctx, "Emit cursor cache not populated", nil,
-						"height", att.BlockHeight, "stream", name)
-
+					log.Warn(ctx, "Failed getting emit cursor (will retry)", err, "chain", srcChain.Name)
 					continue
 				}
 
@@ -229,7 +215,6 @@ func monitorOffsetsForever(
 	xprovider xchain.Provider,
 	network netconf.Network,
 	src, dst netconf.Chain,
-	cache emitcache.Cache,
 ) {
 	ticker := time.NewTicker(time.Second * 30)
 	defer ticker.Stop()
@@ -239,7 +224,7 @@ func monitorOffsetsForever(
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			err := monitorOffsetsOnce(ctx, xprovider, network, src, dst, cache)
+			err := monitorOffsetsOnce(ctx, xprovider, network, src, dst)
 			if ctx.Err() != nil {
 				return
 			} else if err != nil {
@@ -257,7 +242,6 @@ func monitorOffsetsOnce(
 	xprovider xchain.Provider,
 	network netconf.Network,
 	src, dst netconf.Chain,
-	cache emitcache.Cache,
 ) error {
 	var lastErr error
 	for _, stream := range network.StreamsBetween(src.ID, dst.ID) {
@@ -271,12 +255,10 @@ func monitorOffsetsOnce(
 			continue // Don't monitor chains before finalized.
 		}
 
-		emitted, ok, err := cache.AtOrBefore(ctx, height, stream)
+		confLevel := stream.ConfLevel()
+		emitted, _, err := xprovider.GetEmittedCursor(ctx, xchain.EmitRef{ConfLevel: &confLevel}, stream)
 		if err != nil {
-			lastErr = errors.Wrap(err, "query cache")
-			continue
-		} else if !ok {
-			lastErr = errors.New("emit cursor cache not populated", "stream", network.StreamName(stream), "height", height)
+			lastErr = errors.Wrap(err, "get emit cursor", "stream", stream)
 			continue
 		}
 

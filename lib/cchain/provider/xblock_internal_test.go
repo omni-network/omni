@@ -6,6 +6,7 @@ import (
 	"time"
 
 	ptypes "github.com/omni-network/omni/halo/portal/types"
+	rtypes "github.com/omni-network/omni/halo/registry/types"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/tutil"
 
@@ -46,6 +47,13 @@ func TestXBlock(t *testing.T) {
 			Validators: resp,
 		}, true, nil
 	}
+	networkFunc := func(ctx context.Context, h uint64, _ bool) (*rtypes.NetworkResponse, bool, error) {
+		require.EqualValues(t, height, h)
+		var resp rtypes.NetworkResponse
+		f.Fuzz(&resp)
+
+		return &resp, true, nil
+	}
 	chainFunc := func(ctx context.Context) (uint64, error) {
 		return 77, nil
 	}
@@ -57,19 +65,24 @@ func TestXBlock(t *testing.T) {
 		}, nil
 	}
 	portalBlockFunc := func(ctx context.Context, h uint64, _ bool) (*ptypes.BlockResponse, bool, error) {
-		var valSetMsg *ptypes.Msg
+		var valSetMsg ptypes.Msg
 		f.Fuzz(&valSetMsg)
 		valSetMsg.Type = uint32(ptypes.MsgTypeValSet)
 		valSetMsg.MsgTypeId = h
 
+		var networkMsg ptypes.Msg
+		f.Fuzz(&networkMsg)
+		networkMsg.Type = uint32(ptypes.MsgTypeNetwork)
+		networkMsg.MsgTypeId = h
+
 		return &ptypes.BlockResponse{
 			Id:            h,
 			CreatedHeight: 123456,
-			Msgs:          []*ptypes.Msg{valSetMsg},
+			Msgs:          []ptypes.Msg{valSetMsg, networkMsg},
 		}, true, nil
 	}
 
-	prov := Provider{valset: valFunc, chainID: chainFunc, header: headerFunc, portalBlock: portalBlockFunc}
+	prov := Provider{valset: valFunc, networkFunc: networkFunc, chainID: chainFunc, header: headerFunc, portalBlock: portalBlockFunc}
 
 	block, ok, err := prov.XBlock(context.Background(), height, false)
 	require.NoError(t, err)

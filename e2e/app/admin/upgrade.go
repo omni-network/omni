@@ -109,12 +109,12 @@ func upgradePortal(ctx context.Context, s shared, c chain) error {
 	// TODO: replace if re-initialization is required
 	initializer := []byte{}
 
-	calldata, err := adminABI.Pack("upgradePortal", s.admin, s.deployer, c.PortalAddress, initializer)
+	calldata, err := adminABI.Pack("upgradePortal", s.upgrader, s.deployer, c.PortalAddress, initializer)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -146,12 +146,12 @@ func upgradeFeeOracleV1(ctx context.Context, s shared, c chain) error {
 	// TODO: replace if re-initialization is required
 	initializer := []byte{}
 
-	calldata, err := adminABI.Pack("upgradeFeeOracleV1", s.admin, s.deployer, proxy, initializer)
+	calldata, err := adminABI.Pack("upgradeFeeOracleV1", s.upgrader, s.deployer, proxy, initializer)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -170,12 +170,12 @@ func upgradeGasStation(ctx context.Context, s shared, c chain) error {
 	// TODO: replace if re-initialization is required
 	initializer := []byte{}
 
-	calldata, err := adminABI.Pack("upgradeGasStation", s.admin, s.deployer, addrs.GasStation, initializer)
+	calldata, err := adminABI.Pack("upgradeGasStation", s.upgrader, s.deployer, addrs.GasStation, initializer)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -194,12 +194,12 @@ func upgradeGasPump(ctx context.Context, s shared, c chain) error {
 	// TODO: replace if re-initialization is required
 	initializer := []byte{}
 
-	calldata, err := adminABI.Pack("upgradeGasPump", s.admin, s.deployer, addrs.GasPump, initializer)
+	calldata, err := adminABI.Pack("upgradeGasPump", s.upgrader, s.deployer, addrs.GasPump, initializer)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -213,12 +213,12 @@ func ugpradeSlashing(ctx context.Context, s shared, c chain) error {
 	// TODO: replace if re-initialization is required
 	initializer := []byte{}
 
-	calldata, err := adminABI.Pack("upgradeSlashing", s.admin, s.deployer, initializer)
+	calldata, err := adminABI.Pack("upgradeSlashing", s.upgrader, s.deployer, initializer)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -232,12 +232,12 @@ func upgradeStaking(ctx context.Context, s shared, c chain) error {
 	// TODO: replace if re-initialization is required
 	initializer := []byte{}
 
-	calldata, err := adminABI.Pack("upgradeStaking", s.admin, s.deployer, initializer)
+	calldata, err := adminABI.Pack("upgradeStaking", s.upgrader, s.deployer, initializer)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -251,12 +251,12 @@ func upgradeBridgeNative(ctx context.Context, s shared, c chain) error {
 	// TODO: replace if re-initialization is required
 	initializer := []byte{}
 
-	calldata, err := adminABI.Pack("upgradeBridgeNative", s.admin, s.deployer, initializer)
+	calldata, err := adminABI.Pack("upgradeBridgeNative", s.upgrader, s.deployer, initializer)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -275,12 +275,12 @@ func upgradeBridgeL1(ctx context.Context, s shared, c chain) error {
 	// TODO: replace if re-initialization is required
 	initializer := []byte{}
 
-	calldata, err := adminABI.Pack("upgradeBridgeL1", s.admin, s.deployer, addrs.L1Bridge, initializer)
+	calldata, err := adminABI.Pack("upgradeBridgeL1", s.upgrader, s.deployer, addrs.L1Bridge, initializer)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -294,12 +294,12 @@ func upgradePortalRegistry(ctx context.Context, s shared, c chain) error {
 	// TODO: replace if re-initialization is required
 	initializer := []byte{}
 
-	calldata, err := adminABI.Pack("upgradePortalRegistry", s.admin, s.deployer, initializer)
+	calldata, err := adminABI.Pack("upgradePortalRegistry", s.upgrader, s.deployer, initializer)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.admin, s.deployer)
+	out, err := s.runForge(ctx, c.rpc, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}

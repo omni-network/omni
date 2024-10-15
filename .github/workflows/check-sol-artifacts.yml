@@ -22,10 +22,7 @@ jobs:
           version:
             nightly-9dbfb2f1115466b28f2697e158131f90df6b2590
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 8
-          run_install: false
+        run: make install-tools
       - name: Build artifacts
         run: make all
       - name: Check for changes

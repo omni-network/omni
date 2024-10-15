@@ -21,6 +21,10 @@ var upgradePlans = map[netconf.ID]bindings.UpgradePlan{
 		Name:   uluwatu1.UpgradeName,
 		Height: 0, // Dynamically calculated for ephemeral networks
 	},
+	netconf.Omega: {
+		Name:   uluwatu1.UpgradeName,
+		Height: 3_073_000, // Mon 14 Oct 9am EST
+	},
 }
 
 // PlanUpgrade plans the above configured network upgrade.
@@ -52,7 +56,7 @@ func PlanUpgrade(ctx context.Context, def app.Definition, cfg Config) error {
 		return errors.Wrap(err, "new staking contract")
 	}
 
-	txOpts, err := backend.BindOpts(ctx, eoa.MustAddress(network, eoa.RoleAdmin))
+	txOpts, err := backend.BindOpts(ctx, eoa.MustAddress(network, eoa.RoleUpgrader))
 	if err != nil {
 		return errors.Wrap(err, "bind tx opts")
 	}

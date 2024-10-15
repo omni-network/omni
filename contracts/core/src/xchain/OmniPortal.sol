@@ -90,8 +90,8 @@ contract OmniPortal is
 
         _setFeeOracle(p.feeOracle);
         _setXMsgMaxGasLimit(p.xmsgMaxGasLimit);
-        _setXMsgMinGasLimit(p.xmsgMinGasLimit);
         _setXMsgMaxDataSize(p.xmsgMaxDataSize);
+        _setXMsgMinGasLimit(p.xmsgMinGasLimit);
         _setXReceiptMaxErrorSize(p.xreceiptMaxErrorSize);
         _setXSubValsetCutoff(p.xsubValsetCutoff);
         _addValidatorSet(p.valSetId, p.validators);
@@ -139,7 +139,7 @@ contract OmniPortal is
         require(gasLimit >= xmsgMinGasLimit, "OmniPortal: gasLimit too low");
         require(data.length <= xmsgMaxDataSize, "OmniPortal: data too large");
 
-        // conf level will always be first byte of shardId. for now, shardId is just conf level
+        // conf level will always be last byte of shardId. for now, shardId is just conf level
         uint64 shardId = uint64(conf);
         require(isSupportedShard[shardId], "OmniPortal: unsupported shard");
 
@@ -650,6 +650,7 @@ contract OmniPortal is
      */
     function _setXMsgMinGasLimit(uint64 gasLimit) internal {
         require(gasLimit > 0, "OmniPortal: no zero min gas");
+        require(gasLimit < xmsgMaxGasLimit, "OmniPortal: not below max");
         xmsgMinGasLimit = gasLimit;
         emit XMsgMinGasLimitSet(gasLimit);
     }
@@ -658,7 +659,7 @@ contract OmniPortal is
      * @notice Set the maximum gas limit for xmsg
      */
     function _setXMsgMaxGasLimit(uint64 gasLimit) internal {
-        require(gasLimit > 0, "OmniPortal: no zero max gas");
+        require(gasLimit > xmsgMinGasLimit, "OmniPortal: not above min");
         xmsgMaxGasLimit = gasLimit;
         emit XMsgMaxGasLimitSet(gasLimit);
     }

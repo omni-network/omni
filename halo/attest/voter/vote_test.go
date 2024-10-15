@@ -1,6 +1,7 @@
 package voter_test
 
 import (
+	"math/rand"
 	"testing"
 
 	"github.com/omni-network/omni/halo/attest/voter"
@@ -25,6 +26,10 @@ func TestCreateVerifyVotes(t *testing.T) {
 
 	var block xchain.Block
 	fuzzer.Fuzz(&block)
+	// Ensure msg.LogIndex is increasing
+	for i := 1; i < len(block.Msgs); i++ {
+		block.Msgs[i].LogIndex = block.Msgs[i-1].LogIndex + 1 + uint64(rand.Intn(1000))
+	}
 
 	var attHeader xchain.AttestHeader
 	fuzzer.Fuzz(&attHeader)

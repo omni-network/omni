@@ -1,31 +1,43 @@
 # Configure a Full Node
 
-This document provides a detailed step-by-step process describing how to manually
-reproduce what the `omni operators init-nodes` command does automatically.
+This document provides a detailed step-by-step process describing how to manually setup and configure an Omni node.
+It reproduces what the `omni operators init-nodes` command does automatically.
 See [Run a Full Node](1-run-full-node.md) docs for the automated process.
 
-Note that validator nodes require additional config as specified in the [Run a Validator](2-validator.md) docs.
+The resulting `~/.omni/<network>` folder has the following structure:
+```
+~/.omni/<network>/     # Node home folder
+ ├─ halo/              # Consensus client
+ ├─ geth/              # Execution client
+ ├─ compose.yml        # Docker compose
+```
+
+It is a valid configuration for running a production Omni full node.
+
+The only supported `<network>` at the moment is: `omega`
+
+Note that validator nodes require additional config as specified in the [Run a Validator](2-validator.md).
 
 ## Configure halo
 
 Halo is a CosmosSDK application. Configuring it is therefore very similar to any
-CosmosSDK application, learn more from their [Running a Node](https://docs.cosmos.network/main/user/run-node/run-node) docs.
+CosmosSDK application, learn more from their [Running a Node](https://docs.cosmos.network/main/user/run-node/run-node).
 
 The `~/.omni/<network>/halo` folder has the following structure:
 ```
-.                              # ~/.omni/<network>/halo
-├─ config/
-│ ├── halo.toml                # Halo configuration file, similar to Cosmos app.toml
-│ ├── config.toml              # Standard CometBFT configuration file
-│ ├── genesis.json             # The <network> consensus chain genesis file
-│ ├── node_key.json            # Standard CometBFT P2P node identity key
-│ ├── priv_validator_key.json  # Standard CometBFT consensus private key
-├─ data/
-│ ├─ priv_validator_state.json # Standard CometBFT slashing DB (validator last signed state)
-│ ├─ voter_state.json          # Omni xchain slashing DB (last signed state)
+~/.omni/<network>/halo/
+ ├─ config/
+ │ ├── halo.toml                # Halo configuration file, similar to Cosmos app.toml
+ │ ├── config.toml              # Standard CometBFT configuration file
+ │ ├── genesis.json             # The <network> consensus chain genesis file
+ │ ├── node_key.json            # Standard CometBFT P2P node identity key
+ │ ├── priv_validator_key.json  # Standard CometBFT consensus private key
+ ├─ data/
+ │ ├─ priv_validator_state.json # Standard CometBFT slashing DB (validator last signed state)
+ │ ├─ voter_state.json          # Omni xchain slashing DB (last signed state)
 ```
 
-#### halo.toml
+### halo.toml
 `halo.toml` is Halo's CosmosSDK application configuration file.
 It is similar to the `app.toml` file in other CosmosSDK applications.
 It is located in `~/.omni/<network>/halo/config/halo.toml`.
@@ -41,7 +53,7 @@ The following required fields are empty by default and must be populated:
 `config.toml` is the CometBFT configuration file. It is located in `~/.omni/<network>/halo/config/config.toml`.
 Learn more from CometBFT [docs](https://docs.cometbft.com/v0.38/core/configuration).
 
-Download the latest default `config.toml` [here](https://github.com/omni-network/omni/blob/main/halo/cmd/testdata/default_config.toml).
+Download the latest default omni `config.toml` [here](https://github.com/omni-network/omni/blob/main/halo/cmd/testdata/default_config.toml).
 
 Ensure the following fields are populated:
 - `moniker`: A custom human readable name for this node
@@ -51,7 +63,7 @@ Ensure the following fields are populated:
 - `p2p.seeds`: Omni consensus seed nodes to connect to, see omega's [here](https://github.com/omni-network/omni/blob/main/lib/netconf/omega/consensus-seeds.txt).
 - `p2p.persistent_peers`: Can configure this with same seed nodes above.
 
-#### Configure CometBFT State Sync
+### Configure CometBFT State Sync
 When syncing a new full node from scratch, state sync can be configured to speed up the process.
 Learn more from the CometBFT docs [here](https://docs.cometbft.com/v0.34/core/state-sync).
 
@@ -82,7 +94,7 @@ Then, configure state sync in `~/.omni/<network>/halo/config/config.toml`:
 `genesis.json` is the Omni consensus chain genesis file for the specific network (omega vs mainnet).
 It is located in `~/.omni/<network>/halo/config/genesis.json`.
 
-Download the Omega testnet consensus `genesis.json` [here](https://github.com/omni-network/omni/blob/main/lib/netconf/omega/consensus-genesis.json).
+Download the Omega consensus `genesis.json` [here](https://github.com/omni-network/omni/blob/main/lib/netconf/omega/consensus-genesis.json).
 
 ### node_key.json
 `node_key.json` is the CometBFT P2P node identity key.
@@ -115,19 +127,19 @@ Learn more from the [geth docs](https://geth.ethereum.org/docs/fundamentals/conf
 
 The `~/.omni/<network>/geth` folder has the following structure:
 ```
-.                             # ~/.omni/<network>/geth
-├─ config.toml                # Geth configuration file
-├─ genesis.json               # The <network> execution chain genesis file
-├─ geth/
-│ ├── nodekey                 # Geth P2P node identity key
-│ ├── jwtsecret               # Geth JWT secret file for auth RPC
+~/.omni/<network>/geth
+ ├─ config.toml                # Geth configuration file
+ ├─ genesis.json               # The <network> execution chain genesis file
+ ├─ geth/
+ │ ├── nodekey                 # Geth P2P node identity key
+ │ ├── jwtsecret               # Geth JWT secret file for auth RPC
 ```
 
 ### config.toml
 `config.toml` is the geth configuration file.
 It is located in `~/.omni/<network>/geth/config.toml`.
 
-Download the latest default `config.toml` [here](https://github.com/omni-network/omni/blob/main/e2e/app/geth/testdata/default_config.toml).
+Download the latest default omni `config.toml` [here](https://github.com/omni-network/omni/blob/main/e2e/app/geth/testdata/default_config.toml).
 
 Ensure the following fields are populated:
 - `NetworkId`: Omni network ID; Omega testnet is `164`, mainnet is `165`.
@@ -138,7 +150,7 @@ Ensure the following fields are populated:
 `genesis.json` is the Omni execution chain genesis file for the specific network (omega vs mainnet).
 It is located in `~/.omni/<network>/geth/genesis.json`.
 
-Download the Omega testnet execution `genesis.json` [here](https://github.com/omni-network/omni/blob/main/lib/netconf/omega/execution-genesis.json).
+Download the Omega execution `genesis.json` [here](https://github.com/omni-network/omni/blob/main/lib/netconf/omega/execution-genesis.json).
 
 `geth` **_MUST_** be initialized with this genesis file before starting for the first time, see geth [docs](https://geth.ethereum.org/docs/fundamentals/private-network#initializing-geth-database) to learn more:
 ```bash
@@ -160,13 +172,13 @@ A path to this file (or copy of) must be provided in the `halo.toml` `engine-jwt
 `geth` will automatically generate this file during `geth init` on startup if it doesn't exist.
 
 ## Configure Docker Compose
-The preferred way to run an Omni node is via Docker Compose as describe in the [Run a Full Node](1-run-full-node.md#halo-deployment-instructions) docs.
-The docker `compose.yml` file is located in `~/.omni/<network>/`.
+The preferred way to run an Omni node is via Docker Compose as describe in the [Run a Full Node](1-run-full-node.md#halo-deployment-options) docs.
+The docker `compose.yml` file is located in `~/.omni/<network>/compose.yml`.
 
 Download the latest template `compose.yml` [here](https://github.com/omni-network/omni/blob/main/cli/cmd/compose.yml.tpl).
 
 Ensure the following template fields are replaced:
-- `{{.HaloTag}}`: The latest release `omniops/halovisor` docker image tag, see [releases](https://github.com/omni-network/omni/releases)
-- `{{.GethTag}}`: The `ethereum/client-go` version supported by the above omni release, see release notes.
+- `{{.HaloTag}}`: The latest `omniops/halovisor` docker image tag, eg `v0.99.0`, see [releases](https://github.com/omni-network/omni/releases)
+- `{{.GethTag}}`: The `ethereum/client-go` version supported by the above omni release, see release notes, e.g. `v1.99.0`.
 - `{{.GethVerbosity}}`: Geth logging level, `3` is recommended for info level.
 - `{{ if .GethArchive }}- --gcmode=archive{{ end }}`: Remove this line if not an archive node.

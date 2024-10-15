@@ -235,6 +235,11 @@ func (m *Mock) nextBlock(
 		msgs = append(msgs, newMsgA(), newMsgA(), newMsgB()) // Msgs: 3*chainA, 1*chainB
 	}
 
+	// Ensure msgs order ordered by LogIndex
+	for i := 1; i < len(msgs); i++ {
+		msgs[i].LogIndex = msgs[i-1].LogIndex + 1 + uint64(r.Intn(1000))
+	}
+
 	return xchain.Block{
 		BlockHeader: xchain.BlockHeader{
 			ChainID:     chainVer.ID,

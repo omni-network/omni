@@ -30,9 +30,9 @@ func (k Keeper) Network(ctx context.Context, req *types.NetworkRequest) (*types.
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	portals := make([]*types.Portal, 0, len(network.GetPortals()))
+	portals := make([]types.Portal, 0, len(network.GetPortals()))
 	for _, portal := range network.GetPortals() {
-		portals = append(portals, &types.Portal{
+		portals = append(portals, types.Portal{
 			ChainId:        portal.GetChainId(),
 			Address:        portal.GetAddress(),
 			DeployHeight:   portal.GetDeployHeight(),

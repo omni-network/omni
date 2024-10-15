@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"sync"
@@ -397,6 +398,10 @@ func (w *wrappedVoter) Add(t *testing.T, chainID, offset uint64) {
 	t.Helper()
 	var block xchain.Block
 	w.f.Fuzz(&block)
+	// Ensure msg.LogIndex is increasing
+	for i := 1; i < len(block.Msgs); i++ {
+		block.Msgs[i].LogIndex = block.Msgs[i-1].LogIndex + 1 + uint64(rand.Intn(1000))
+	}
 
 	attHeader := xchain.AttestHeader{
 		ConsensusChainID: w.consensusChainID,
@@ -405,8 +410,7 @@ func (w *wrappedVoter) Add(t *testing.T, chainID, offset uint64) {
 	}
 
 	block.BlockHeader = xchain.BlockHeader{
-		ChainID: chainID,
-
+		ChainID:   chainID,
 		BlockHash: common.Hash{},
 	}
 
@@ -581,12 +585,12 @@ func setIsVal(t *testing.T, v *voter.Voter, pk k1.PrivKey, isVal bool) {
 	cmtPubkey, err := k1util.PBPubKeyFromBytes(pk.PubKey().Bytes())
 	require.NoError(t, err)
 
-	vals := []*vtypes.Validator{{
+	vals := []vtypes.Validator{{
 		ConsensusPubkey: k1.GenPrivKey().PubKey().Bytes(),
 		Power:           1,
 	}}
 	if isVal {
-		vals = append(vals, &vtypes.Validator{
+		vals = append(vals, vtypes.Validator{
 			ConsensusPubkey: cmtPubkey.GetSecp256K1(),
 			Power:           1,
 		})

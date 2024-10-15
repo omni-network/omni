@@ -58,7 +58,7 @@ func New(ethCl ethclient.Client, uKeeper *ukeeper.Keeper) (EventProcessor, error
 }
 
 // Prepare returns all omni stake contract EVM event logs from the provided block hash.
-func (p EventProcessor) Prepare(ctx context.Context, blockHash common.Hash) ([]*evmenginetypes.EVMEvent, error) {
+func (p EventProcessor) Prepare(ctx context.Context, blockHash common.Hash) ([]evmenginetypes.EVMEvent, error) {
 	logs, err := p.ethCl.FilterLogs(ctx, ethereum.FilterQuery{
 		BlockHash: &blockHash,
 		Addresses: p.Addresses(),
@@ -68,13 +68,13 @@ func (p EventProcessor) Prepare(ctx context.Context, blockHash common.Hash) ([]*
 		return nil, errors.Wrap(err, "filter logs")
 	}
 
-	resp := make([]*evmenginetypes.EVMEvent, 0, len(logs))
+	resp := make([]evmenginetypes.EVMEvent, 0, len(logs))
 	for _, l := range logs {
 		topics := make([][]byte, 0, len(l.Topics))
 		for _, t := range l.Topics {
 			topics = append(topics, t.Bytes())
 		}
-		resp = append(resp, &evmenginetypes.EVMEvent{
+		resp = append(resp, evmenginetypes.EVMEvent{
 			Address: l.Address.Bytes(),
 			Topics:  topics,
 			Data:    l.Data,
@@ -95,7 +95,7 @@ func (p EventProcessor) Addresses() []common.Address {
 // Deliver processes a upgrade log event, which must be one of:
 // - PlanUpgrade.
 // - CancelUpgrade.
-func (p EventProcessor) Deliver(ctx context.Context, _ common.Hash, elog *evmenginetypes.EVMEvent) error {
+func (p EventProcessor) Deliver(ctx context.Context, _ common.Hash, elog evmenginetypes.EVMEvent) error {
 	ethlog, err := elog.ToEthLog()
 	if err != nil {
 		return err

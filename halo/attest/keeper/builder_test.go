@@ -42,7 +42,7 @@ var (
 	consensusID     = netconf.Simnet.Static().OmniConsensusChainIDUint64()
 )
 
-func newValSet(id uint64, vals ...*vtypes.Validator) *vtypes.ValidatorSetResponse {
+func newValSet(id uint64, vals ...vtypes.Validator) *vtypes.ValidatorSetResponse {
 	return &vtypes.ValidatorSetResponse{
 		Id:              id,
 		CreatedHeight:   0,
@@ -51,8 +51,8 @@ func newValSet(id uint64, vals ...*vtypes.Validator) *vtypes.ValidatorSetRespons
 	}
 }
 
-func newValidator(key crypto.PubKey, power int64) *vtypes.Validator {
-	return &vtypes.Validator{
+func newValidator(key crypto.PubKey, power int64) vtypes.Validator {
+	return vtypes.Validator{
 		ConsensusPubkey: key.Bytes(),
 		Power:           power,
 	}
@@ -230,7 +230,7 @@ func (b *AggVoteBuilder) Vote() *types.AggVote {
 	return b.vote
 }
 
-func sigsTuples(vals ...*vtypes.Validator) []*types.SigTuple {
+func sigsTuples(vals ...vtypes.Validator) []*types.SigTuple {
 	var sigs []*types.SigTuple
 	for _, v := range vals {
 		ethAddr, _ := v.EthereumAddress()

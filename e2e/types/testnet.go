@@ -133,6 +133,26 @@ func (t Testnet) HasOmniEVM() bool {
 	return len(t.OmniEVMs) > 0
 }
 
+// EVMChains returns all EVM chains in the network.
+func (t Testnet) EVMChains() []EVMChain {
+	var chains []EVMChain
+
+	for _, c := range t.PublicChains {
+		chains = append(chains, c.Chain())
+	}
+
+	for _, c := range t.AnvilChains {
+		chains = append(chains, c.Chain)
+	}
+
+	for _, c := range t.OmniEVMs {
+		chains = append(chains, c.Chain)
+		break
+	}
+
+	return chains
+}
+
 // EVMChain represents a EVM chain in a omni network.
 type EVMChain struct {
 	evmchain.Metadata

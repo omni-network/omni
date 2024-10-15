@@ -56,6 +56,17 @@ func (t MsgTree) leafIndex(leaf [32]byte) (int, error) {
 // NewMsgTree returns the merkle root of the provided messages
 // to be submitted.
 func NewMsgTree(msgs []Msg) (MsgTree, error) {
+	if len(msgs) == 0 {
+		return MsgTree{}, errors.New("no messages [BUG]")
+	}
+
+	// Assert msgs are ordered by log index
+	for i := 1; i < len(msgs); i++ {
+		if msgs[i-1].LogIndex >= msgs[i].LogIndex {
+			return MsgTree{}, errors.New("messages not ordered by log index [BUG]")
+		}
+	}
+
 	leafs := make([][32]byte, 0, len(msgs))
 	for _, msg := range msgs {
 		msgLeaf, err := msgLeaf(msg)

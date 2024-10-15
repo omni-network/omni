@@ -155,6 +155,7 @@ type Msg struct {
 	DestGasLimit    uint64         // Gas limit to use for "call" on destination chain
 	TxHash          common.Hash    // Hash of the source chain transaction that emitted the message
 	Fees            *big.Int       // Fees paid for the xcall
+	LogIndex        uint64         // Evm event log index in block, used for sorting
 }
 
 // Receipt is a cross-chain message receipt, the result of applying the Msg on the destination chain.
@@ -165,6 +166,7 @@ type Receipt struct {
 	Error          []byte         // Error message if the message failed
 	RelayerAddress common.Address // Address of relayer that submitted the message
 	TxHash         common.Hash    // Hash of the relayer submission transaction
+	LogIndex       uint64         // Evm event log index in block, used for sorting
 }
 
 // BlockHeader uniquely identifies a cross chain block.
