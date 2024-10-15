@@ -116,6 +116,7 @@ func TestCLIOperator(t *testing.T) {
 			"--private-key-file", privKeyFile,
 			"--amount", "1",
 			"--evm-rpc", executionRPC,
+			"--self",
 		)
 		require.NoError(t, err)
 		require.Empty(t, res)
