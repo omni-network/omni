@@ -698,6 +698,11 @@ func queryEarliestAttestation(ctx context.Context, cl atypes.QueryClient, chainV
 		return xchain.Attestation{}, false, errors.Wrap(err, "attestations from proto")
 	}
 
+	err = att.Verify()
+	if err != nil {
+		return xchain.Attestation{}, false, err
+	}
+
 	return att, true, nil
 }
 
@@ -718,6 +723,11 @@ func queryLatestAttestation(ctx context.Context, cl atypes.QueryClient, chainVer
 	att, err := atypes.AttestationFromProto(resp.Attestation)
 	if err != nil {
 		return xchain.Attestation{}, false, errors.Wrap(err, "attestations from proto")
+	}
+
+	err = att.Verify()
+	if err != nil {
+		return xchain.Attestation{}, false, err
 	}
 
 	return att, true, nil

@@ -191,12 +191,6 @@ func (w *Worker) newCallback(
 	msgStreamMapper msgStreamMapper,
 ) cchain.ProviderCallback {
 	return func(ctx context.Context, att xchain.Attestation) error {
-		if ok, err := att.Verify(); !ok {
-			return errors.New("invalid attestation signature")
-		} else if err != nil {
-			return errors.Wrap(err, "failed to verify attestation")
-		}
-
 		block, ok, err := fetchXBlock(ctx, w.xProvider, att)
 		if err != nil {
 			return err

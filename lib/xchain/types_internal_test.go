@@ -28,31 +28,51 @@ func TestAttestation_Verify(t *testing.T) {
 	var att Attestation
 	fuzz.New().NilChance(0).Fuzz(&att)
 	att.AttestHeader.ChainVersion.ID = att.BlockHeader.ChainID // Align headers
+	att.Signatures = att.Signatures[:1]
 
 	// mock valid signatures
-	privKey, addr := tutil.PrivateKeyFixture(t)
-	cometPrivKey, err := k1util.StdPrivKeyToComet(privKey)
-	require.NoError(t, err)
+	_, cometPrivKey1, addr1 := tutil.PrivateKeyFixture(t)
+	_, cometPrivKey2, addr2 := tutil.PrivateKeyFixture(t)
 
 	attRoot, err := att.AttestationRoot()
 	require.NoError(t, err)
 
-	sig, err := k1util.Sign(cometPrivKey, attRoot)
+	sig1, err := k1util.Sign(cometPrivKey1, attRoot)
 	require.NoError(t, err)
-	for i := range att.Signatures {
-		att.Signatures[i] = SigTuple{
-			ValidatorAddress: addr,
-			Signature:        sig,
-		}
-	}
+	sig2, err := k1util.Sign(cometPrivKey2, attRoot)
+	require.NoError(t, err)
 
-	ok, err := att.Verify()
-	require.True(t, ok)
+	// valid signatures
+	att.Signatures = []SigTuple{
+		{ValidatorAddress: addr1, Signature: sig1},
+		{ValidatorAddress: addr2, Signature: sig2},
+	}
+	err = att.Verify()
 	require.NoError(t, err)
 
 	// force invalid signature
-	att.Signatures[0].Signature[0] = 0
-	ok, err = att.Verify()
-	require.False(t, ok)
-	require.NoError(t, err)
+	att.Signatures[0].Signature = sig2
+	err = att.Verify()
+	require.Error(t, err)
+	require.Equal(t, "invalid attestation signature", err.Error())
+
+	// force duplicate validator
+	att.Signatures[0].Signature = sig1
+	att.Signatures[1].ValidatorAddress = addr1
+	err = att.Verify()
+	require.Error(t, err)
+	require.Equal(t, "duplicate validator signature", err.Error())
+
+	// force duplicate signature
+	att.Signatures[1].ValidatorAddress = addr2
+	att.Signatures[1].Signature = sig1
+	err = att.Verify()
+	require.Error(t, err)
+	require.Equal(t, "duplicate attestation signature", err.Error())
+
+	// empty signatures
+	att.Signatures = []SigTuple{}
+	err = att.Verify()
+	require.Error(t, err)
+	require.Equal(t, "empty attestation signatures", err.Error())
 }
