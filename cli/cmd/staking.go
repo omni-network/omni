@@ -270,23 +270,23 @@ func newDelegateCmd() *cobra.Command {
 }
 
 func delegate(ctx context.Context, cfg delegateConfig) error {
-	operatorPriv, err := cfg.privateKey()
+	delegatorPriv, err := cfg.privateKey()
 	if err != nil {
 		return err
 	}
-	opAddr := crypto.PubkeyToAddress(operatorPriv.PublicKey)
+	delegatorAddr := crypto.PubkeyToAddress(delegatorPriv.PublicKey)
 
-	eth, cprov, backend, err := setupClients(cfg.eoaConfig, operatorPriv)
+	eth, cprov, backend, err := setupClients(cfg.eoaConfig, delegatorPriv)
 	if err != nil {
 		return err
 	}
 
 	// check if we already have an existing validator
-	if _, ok, err := cprov.SDKValidator(ctx, opAddr); err != nil {
+	if _, ok, err := cprov.SDKValidator(ctx, delegatorAddr); err != nil {
 		return err
 	} else if !ok {
 		return &CliError{
-			Msg:     "Operator address is not a validator: " + opAddr.Hex(),
+			Msg:     "Operator address is not a validator: " + delegatorAddr.Hex(),
 			Suggest: "Ensure operator is already created as validator, see create-validator command",
 		}
 	}
@@ -296,23 +296,23 @@ func delegate(ctx context.Context, cfg delegateConfig) error {
 		return err
 	}
 
-	bal, err := eth.EtherBalanceAt(ctx, opAddr)
+	bal, err := eth.EtherBalanceAt(ctx, delegatorAddr)
 	if err != nil {
 		return err
 	} else if bal <= float64(cfg.amount) {
 		return &CliError{
-			Msg:     fmt.Sprintf("Operator address has insufficient balance=%.2f OMNI, address=%s", bal, opAddr),
+			Msg:     fmt.Sprintf("Operator address has insufficient balance=%.2f OMNI, address=%s", bal, delegatorAddr),
 			Suggest: "Fund the operator address with sufficient OMNI for self-delegation and gas",
 		}
 	}
 
-	txOpts, err := backend.BindOpts(ctx, opAddr)
+	txOpts, err := backend.BindOpts(ctx, delegatorAddr)
 	if err != nil {
 		return err
 	}
 	txOpts.Value = new(big.Int).Mul(umath.NewBigInt(cfg.amount), big.NewInt(params.Ether)) // Send self-delegation
 
-	tx, err := contract.Delegate(txOpts, opAddr)
+	tx, err := contract.Delegate(txOpts, delegatorAddr)
 	if err != nil {
 		return errors.Wrap(err, "create validator")
 	}
