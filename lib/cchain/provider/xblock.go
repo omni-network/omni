@@ -26,6 +26,8 @@ func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchai
 		return xchain.Block{}, false, nil
 	} else if !latest && block.Id != height {
 		return xchain.Block{}, false, errors.New("unexpected block height [BUG]")
+	} else if len(block.Msgs) == 0 {
+		return xchain.Block{}, false, errors.New("unexpected empty block [BUG]")
 	}
 
 	chainID, err := p.chainID(ctx)
