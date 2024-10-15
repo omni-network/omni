@@ -271,12 +271,35 @@ contract OmniPortal is
             return;
         }
 
+        // calls to VirtualPortalAddress are syscalls
+        bool isSysCall = xmsg_.to == VirtualPortalAddress;
+
+        if (isSysCall) {
+            bytes4 selector = bytes4(xmsg_.data);
+
+            // sys calls must broadcast from the consensus chain to a supported handler
+            require(
+                xheader.sourceChainId == omniCChainId && xmsg_.sender == CChainSender
+                    && xmsg_.destChainId == BroadcastChainId
+                    && xmsg_.shardId == ConfLevel.toBroadcastShard(ConfLevel.Finalized)
+                    && (selector == this.addValidatorSet.selector || selector == this.setNetwork.selector),
+                "OmniPortal: invalid syscall"
+            );
+        } else {
+            // only sys calls can be broadcast from the consensus chain
+            require(
+                xheader.sourceChainId != omniCChainId && xmsg_.sender != CChainSender
+                    && xmsg_.destChainId != BroadcastChainId
+                    && xmsg_.shardId != ConfLevel.toBroadcastShard(ConfLevel.Finalized),
+                "OmniPortal: invalid xcall"
+            );
+        }
+
         // set _xmsg to the one we're executing, allowing external contracts to query the current xmsg via xmsg()
         _xmsg = XTypes.MsgContext(sourceChainId, xmsg_.sender);
 
-        (bool success, bytes memory result, uint256 gasUsed) = xmsg_.to == VirtualPortalAddress // calls to VirtualPortalAddress are syscalls
-            ? _syscall(xmsg_.data)
-            : _call(xmsg_.to, xmsg_.gasLimit, xmsg_.data);
+        (bool success, bytes memory result, uint256 gasUsed) =
+            isSysCall ? _syscall(xmsg_.data) : _call(xmsg_.to, xmsg_.gasLimit, xmsg_.data);
 
         // reset xmsg to zero
         delete _xmsg;
