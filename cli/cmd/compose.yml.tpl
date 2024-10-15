@@ -27,6 +27,10 @@ services:
       #- --metrics                    # Enable prometheus metrics
       #- --pprof                      # Enable prometheus metrics
       #- --pprof.addr=0.0.0.0         # Enable prometheus metrics
+    healthcheck:
+      test: "nc -z localhost 8545"
+      interval: 1s
+      retries: 30
 
     ports:
       - 8551             # Auth-RPC (used by halo)
