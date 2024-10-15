@@ -257,7 +257,7 @@ func newDelegateCmd() *cobra.Command {
 
 			err := delegate(cmd.Context(), cfg)
 			if err != nil {
-				return errors.Wrap(err, "create-validator")
+				return errors.Wrap(err, "delegate")
 			}
 
 			return nil
