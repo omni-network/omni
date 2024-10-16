@@ -26,6 +26,8 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
+type onSubmitFunc func(context.Context, *ethtypes.Transaction, *ethtypes.Receipt, xchain.Submission)
+
 // Sender uses txmgr to send transactions to the destination chain.
 type Sender struct {
 	network      netconf.ID
@@ -37,6 +39,7 @@ type Sender struct {
 	gasToken     tokens.Token
 	chainNames   map[xchain.ChainVersion]string
 	rpcClient    ethclient.Client
+	onSubmit     onSubmitFunc
 }
 
 // NewSender creates a new sender that uses txmgr to send transactions to the destination chain.
@@ -46,6 +49,7 @@ func NewSender(
 	rpcClient ethclient.Client,
 	privateKey ecdsa.PrivateKey,
 	chainNames map[xchain.ChainVersion]string,
+	onSubmit onSubmitFunc,
 ) (Sender, error) {
 	// we want to query receipts every 1/3 of the block time
 	cfg, err := txmgr.NewConfig(txmgr.NewCLIConfig(
@@ -86,6 +90,7 @@ func NewSender(
 		gasToken:     meta.NativeToken,
 		chainNames:   chainNames,
 		rpcClient:    rpcClient,
+		onSubmit:     onSubmit,
 	}, nil
 }
 
@@ -159,7 +164,11 @@ func (s Sender) SendTransaction(ctx context.Context, sub xchain.Submission) erro
 		"tx_hash", rec.TxHash,
 	}
 
-	spendTotal.WithLabelValues(dstChain, string(s.gasToken)).Add(totalSpentGwei(tx, rec))
+	spendTotal.WithLabelValues(dstChain, string(s.gasToken)).Add(totalSpendGwei(tx, rec))
+
+	if s.onSubmit != nil {
+		go s.onSubmit(ctx, tx, rec, sub)
+	}
 
 	if rec.Status == 0 {
 		// Try and get debug information of the reverted transaction
@@ -204,11 +213,16 @@ func callFromTx(from common.Address, tx *ethtypes.Transaction) ethereum.CallMsg 
 	return resp
 }
 
-// totalSpentGwei returns the total amount spent on a transaction in gwei.
-func totalSpentGwei(tx *ethtypes.Transaction, rec *ethtypes.Receipt) float64 {
+// totalSpendGwei returns the total amount spent on a transaction in gwei.
+func totalSpendGwei(tx *ethtypes.Transaction, rec *ethtypes.Receipt) float64 {
 	fees := new(big.Int).Mul(rec.EffectiveGasPrice, umath.NewBigInt(rec.GasUsed))
 	total := new(big.Int).Add(tx.Value(), fees)
-	totalGwei, _ := new(big.Int).Div(total, umath.NewBigInt(params.GWei)).Float64()
 
-	return totalGwei
+	return toGwei(total)
+}
+
+// toGwei converts a big.Int to gwei float64.
+func toGwei(b *big.Int) float64 {
+	gwei, _ := new(big.Int).Div(b, umath.NewBigInt(params.GWei)).Float64()
+	return gwei
 }
