@@ -26,9 +26,16 @@ const (
 	// RoleDeployer is used to deploy official omni contracts on all chains.
 	RoleDeployer Role = "deployer"
 	// RoleManager is used to manage the omni contracts on all chains. It has admin privileges on official omni contracts.
-	// The role can pause, unpause and configure contracts.
+	// The manager can make non-compromising managing actions:
+	// - managing validator allow list
+	// - pausing / unpausing contracts
+	// - configuration of contracts.
 	RoleManager Role = "manager"
 	// RoleUpgrader is the owner of each proxy contract and can trigger upgrade actions.
+	// The upgrader can do compromising destructive actions:
+	// - trigger / cancel upgrade actions
+	// - trigger Halo upgrades
+	// - register new portals.
 	RoleUpgrader Role = "upgrader"
 	// RoleTester is used for general tasks and testing in non-mainnet networks.
 	RoleTester Role = "tester"
