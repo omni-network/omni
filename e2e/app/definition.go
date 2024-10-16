@@ -90,6 +90,7 @@ func (d Definition) Netman() netman.Manager {
 }
 
 // DeployInfos returns the deploy information of the OmniPortal and OmniAVS contracts.
+// Note this panics if not called after netman.DeployPortals.
 func (d Definition) DeployInfos() types.DeployInfos {
 	resp := make(types.DeployInfos)
 
@@ -513,6 +514,7 @@ func ExternalEndpoints(def Definition) xchain.RPCEndpoints {
 }
 
 // NetworkFromDef returns the network configuration from the definition.
+// Note that this panics if not called after netman.DeployPortals.
 func NetworkFromDef(def Definition) netconf.Network {
 	var chains []netconf.Chain
 

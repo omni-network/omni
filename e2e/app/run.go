@@ -118,7 +118,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, nil //nolint:nilnil // No ping pong, no XDapp to return.
 	}
 
-	pp, err := pingpong.Deploy(ctx, NetworkFromDef(def), def.Backends())
+	pp, err := pingpong.Deploy(ctx, NetworkFromDef(def), def.Backends()) // Safe to call NetworkFromDef since this after netman.DeployContracts
 	if err != nil {
 		return nil, errors.Wrap(err, "deploy pingpong")
 	}
@@ -230,7 +230,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 		return errors.Wrap(err, "stop adding portals")
 	}
 
-	network := NetworkFromDef(def)
+	network := NetworkFromDef(def) // Safe to call NetworkFromDef since this after netman.DeployContracts
 	if err := WaitAllSubmissions(ctx, network, def.Netman().Portals(), sum(msgBatches)); err != nil {
 		return err
 	}
@@ -307,11 +307,10 @@ func toPortalValidators(validators map[*e2e.Node]int64) ([]bindings.Validator, e
 }
 
 func logRPCs(ctx context.Context, def Definition) {
-	network := NetworkFromDef(def)
 	endpoints := ExternalEndpoints(def)
-	for _, chain := range network.EVMChains() {
-		rpc, _ := endpoints.ByNameOrID(chain.Name, chain.ID)
-		log.Info(ctx, "EVM Chain RPC available", "chain_id", chain.ID,
+	for _, chain := range def.Testnet.EVMChains() {
+		rpc, _ := endpoints.ByNameOrID(chain.Name, chain.ChainID)
+		log.Info(ctx, "EVM Chain RPC available", "chain_id", chain.ChainID,
 			"chain_name", chain.Name, "url", rpc)
 	}
 }

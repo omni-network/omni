@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	fbproxy "github.com/omni-network/omni/e2e/fbproxy/app"
+	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
@@ -33,16 +34,18 @@ type shared struct {
 	upgrader    common.Address
 	deployer    common.Address
 	endpoints   xchain.RPCEndpoints
-	network     netconf.Network
+	testnet     types.Testnet
 	cfg         Config
 	fireAPIKey  string
 	fireKeyPath string
 }
 
-// chain contains chain specific resources, exteding netconf.Chain with an rpc endpoint.
+// chain contains chain specific resources, extending EVMChain with the PortalAddress and an RPCEndpoint endpoint.
+// Netconf.Chain cannot be used since we don't know the DeployHeight.
 type chain struct {
-	netconf.Chain
-	rpc string
+	types.EVMChain
+	PortalAddress common.Address
+	RPCEndpoint   string
 }
 
 // setup returns common resources for all admin operations.
@@ -52,7 +55,6 @@ func setup(def app.Definition, cfg Config) shared {
 	upgrader := eoa.MustAddress(netID, eoa.RoleUpgrader)
 	deployer := eoa.MustAddress(netID, eoa.RoleDeployer)
 	endpoints := app.ExternalEndpoints(def)
-	network := app.NetworkFromDef(def)
 
 	// addrs set lazily in setupChain
 
@@ -61,7 +63,7 @@ func setup(def app.Definition, cfg Config) shared {
 		upgrader:    upgrader,
 		deployer:    deployer,
 		endpoints:   endpoints,
-		network:     network,
+		testnet:     def.Testnet,
 		cfg:         cfg,
 		fireAPIKey:  def.Cfg.FireAPIKey,
 		fireKeyPath: def.Cfg.FireKeyPath,
@@ -71,34 +73,33 @@ func setup(def app.Definition, cfg Config) shared {
 // setupChain returns chain specific resources.
 // starts and fbproxy for non-devnet chains.
 func setupChain(ctx context.Context, s shared, name string) (chain, error) {
-	c, ok := s.network.ChainByName(name)
+	c, ok := s.testnet.EVMChainByName(name)
 	if !ok {
 		return chain{}, errors.New("chain not found", "chain", name)
 	}
 
-	rpc, err := s.endpoints.ByNameOrID(c.Name, c.ID)
+	rpc, err := s.endpoints.ByNameOrID(c.Name, c.ChainID)
 	if err != nil {
 		return chain{}, errors.Wrap(err, "rpc endpoint")
 	}
 
-	// add portal address if not already set
-	if c.PortalAddress == (common.Address{}) {
-		addrs, err := contracts.GetAddresses(ctx, s.network.ID)
-		if err != nil {
-			return chain{}, errors.Wrap(err, "get addresses")
-		}
-
-		c.PortalAddress = addrs.Portal
+	addrs, err := contracts.GetAddresses(ctx, s.testnet.Network)
+	if err != nil {
+		return chain{}, errors.Wrap(err, "get addresses")
 	}
 
 	if s.fireAPIKey != "" || s.fireKeyPath != "" {
-		rpc, err = startFBProxy(ctx, s.network.ID, rpc, s.fireAPIKey, s.fireKeyPath)
+		rpc, err = startFBProxy(ctx, s.testnet.Network, rpc, s.fireAPIKey, s.fireKeyPath)
 		if err != nil {
 			return chain{}, errors.Wrap(err, "start fb proxy")
 		}
 	}
 
-	return chain{Chain: c, rpc: rpc}, nil
+	return chain{
+		EVMChain:      c,
+		PortalAddress: addrs.Portal,
+		RPCEndpoint:   rpc,
+	}, nil
 }
 
 type runOpts struct {
@@ -125,7 +126,7 @@ func (s shared) run(
 		o(&opts)
 	}
 
-	names, err := maybeAll(s.network, s.cfg.Chain, opts.exclude)
+	names, err := maybeAll(s.testnet.EVMChains(), s.cfg.Chain, opts.exclude)
 	if err != nil {
 		return err
 	}
@@ -145,24 +146,24 @@ func (s shared) run(
 }
 
 // maybeAll returns all chains if chain is empty, otherwise returns chain.
-func maybeAll(network netconf.Network, chain string, exclude []string) ([]string, error) {
+func maybeAll(chains []types.EVMChain, chain string, exclude []string) ([]string, error) {
 	excluded := make(map[string]bool)
 	for _, e := range exclude {
 		excluded[e] = true
 	}
 
 	if chain == "" {
-		var chains []string
+		var resp []string
 
-		for _, c := range network.EVMChains() {
+		for _, c := range chains {
 			if excluded[c.Name] {
 				continue
 			}
 
-			chains = append(chains, c.Name)
+			resp = append(resp, c.Name)
 		}
 
-		return chains, nil
+		return resp, nil
 	}
 
 	if excluded[chain] {

@@ -62,18 +62,18 @@ func fundAnvilAccounts(ctx context.Context, def Definition) error {
 
 // FundAccounts funds the EOAs and contracts that need funding to their target balance.
 func FundAccounts(ctx context.Context, def Definition, dryRun bool) error {
-	network := NetworkFromDef(def)
-	accounts := eoa.AllAccounts(network.ID)
+	network := def.Testnet.Network
+	accounts := eoa.AllAccounts(network)
 
-	log.Info(ctx, "Checking accounts to fund", "network", network.ID, "count", len(accounts))
+	log.Info(ctx, "Checking accounts to fund", "network", network, "count", len(accounts))
 
-	for _, chain := range network.EVMChains() {
-		backend, err := def.Backends().Backend(chain.ID)
+	for _, chain := range def.Testnet.EVMChains() {
+		backend, err := def.Backends().Backend(chain.ChainID)
 		if err != nil {
 			return errors.Wrap(err, "backend")
 		}
 
-		funder := eoa.MustAddress(network.ID, eoa.RoleFunder)
+		funder := eoa.MustAddress(network, eoa.RoleFunder)
 		funderBal, err := backend.BalanceAt(ctx, funder, nil)
 		if err != nil {
 			return err
@@ -101,7 +101,7 @@ func FundAccounts(ctx context.Context, def Definition, dryRun bool) error {
 				continue
 			}
 
-			thresholds, ok := eoa.GetFundThresholds(network.ID, account.Role)
+			thresholds, ok := eoa.GetFundThresholds(network, account.Role)
 			if !ok {
 				log.Warn(accCtx, "Skipping account without fund thresholds", nil)
 				continue
@@ -122,7 +122,7 @@ func FundAccounts(ctx context.Context, def Definition, dryRun bool) error {
 			}
 		}
 
-		toFund, err := contracts.ToFund(ctx, network.ID)
+		toFund, err := contracts.ToFund(ctx, network)
 		if err != nil {
 			return errors.Wrap(err, "get contracts to fund")
 		}
@@ -134,10 +134,10 @@ func FundAccounts(ctx context.Context, def Definition, dryRun bool) error {
 				"address", contract.Address,
 			)
 
-			isOmniEVM := chain.ID == network.ID.Static().OmniExecutionChainID
+			isOmniEVM := chain.ChainID == def.Testnet.Network.Static().OmniExecutionChainID
 
 			if contract.OnlyOmniEVM && !isOmniEVM {
-				log.Info(ctrCtx, "Skipping non-OmniEVM chain", "chain", chain.ID)
+				log.Info(ctrCtx, "Skipping non-OmniEVM chain", "chain", chain.ChainID)
 				continue
 			}
 

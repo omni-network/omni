@@ -8,11 +8,11 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app"
+	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -28,21 +28,19 @@ func Test(ctx context.Context, def app.Definition) error {
 
 	log.Info(ctx, "Running contract admin tests.")
 
-	network := app.NetworkFromDef(def)
-
-	if err := testEnsurePortalSpec(ctx, def, network); err != nil {
+	if err := testEnsurePortalSpec(ctx, def); err != nil {
 		return err
 	}
 
-	if err := testEnsureBridgeSpec(ctx, def, network); err != nil {
+	if err := testEnsureBridgeSpec(ctx, def); err != nil {
 		return err
 	}
 
-	if err := testUpgradePortal(ctx, def, network); err != nil {
+	if err := testUpgradePortal(ctx, def); err != nil {
 		return err
 	}
 
-	if err := tesUpgradeFeeOracleV1(ctx, def, network); err != nil {
+	if err := tesUpgradeFeeOracleV1(ctx, def); err != nil {
 		return err
 	}
 
@@ -50,7 +48,7 @@ func Test(ctx context.Context, def app.Definition) error {
 		return err
 	}
 
-	if err := testUpgradeGasPump(ctx, def, network); err != nil {
+	if err := testUpgradeGasPump(ctx, def); err != nil {
 		return err
 	}
 
@@ -76,16 +74,16 @@ func Test(ctx context.Context, def app.Definition) error {
 }
 
 // noCheck always returns nil. Use for upgrade actions, where only check is if upgrade succeeds.
-func noCheck(context.Context, app.Definition, netconf.Chain) error { return nil }
+func noCheck(context.Context, app.Definition, types.EVMChain) error { return nil }
 
 // testUpgradePortal tests UpgradePortal command.
-func testUpgradePortal(ctx context.Context, def app.Definition, network netconf.Network) error {
-	err := forOne(ctx, def, randChain(network), UpgradePortal, noCheck)
+func testUpgradePortal(ctx context.Context, def app.Definition) error {
+	err := forOne(ctx, def, randChain(def.Testnet.EVMChains()), UpgradePortal, noCheck)
 	if err != nil {
 		return errors.Wrap(err, "upgrade portal")
 	}
 
-	err = forAll(ctx, def, network, UpgradePortal, noCheck)
+	err = forAll(ctx, def, UpgradePortal, noCheck)
 	if err != nil {
 		return errors.Wrap(err, "upgrade all portals")
 	}
@@ -93,13 +91,13 @@ func testUpgradePortal(ctx context.Context, def app.Definition, network netconf.
 	return nil
 }
 
-func tesUpgradeFeeOracleV1(ctx context.Context, def app.Definition, network netconf.Network) error {
-	err := forOne(ctx, def, randChain(network), UpgradeFeeOracleV1, noCheck)
+func tesUpgradeFeeOracleV1(ctx context.Context, def app.Definition) error {
+	err := forOne(ctx, def, randChain(def.Testnet.EVMChains()), UpgradeFeeOracleV1, noCheck)
 	if err != nil {
 		return errors.Wrap(err, "upgrade feeoracle")
 	}
 
-	err = forAll(ctx, def, network, UpgradeFeeOracleV1, noCheck)
+	err = forAll(ctx, def, UpgradeFeeOracleV1, noCheck)
 	if err != nil {
 		return errors.Wrap(err, "upgrade all feeoracles")
 	}
@@ -116,15 +114,11 @@ func testUpgradeGasStation(ctx context.Context, def app.Definition) error {
 	return nil
 }
 
-func testUpgradeGasPump(ctx context.Context, def app.Definition, network netconf.Network) error {
+func testUpgradeGasPump(ctx context.Context, def app.Definition) error {
 	// cannot UpgradeGasPump on omni evm
-	c := randChain(network)
-	for {
-		if c.Name != omniEVMName {
-			break
-		}
-
-		c = randChain(network)
+	c := randChain(def.Testnet.EVMChains())
+	for c.Name == omniEVMName {
+		c = randChain(def.Testnet.EVMChains())
 	}
 
 	err := forOne(ctx, def, c, UpgradeGasPump, noCheck)
@@ -132,7 +126,7 @@ func testUpgradeGasPump(ctx context.Context, def app.Definition, network netconf
 		return errors.Wrap(err, "upgrade gas pump")
 	}
 
-	err = forAll(ctx, def, network, UpgradeGasPump, noCheck)
+	err = forAll(ctx, def, UpgradeGasPump, noCheck)
 	if err != nil {
 		return errors.Wrap(err, "upgrade all gas pumps")
 	}
@@ -176,22 +170,23 @@ func testUpgradeBridgeL1(ctx context.Context, def app.Definition) error {
 	return nil
 }
 
-func testEnsurePortalSpec(ctx context.Context, def app.Definition, network netconf.Network) error {
-	expected := randPortalSpec(network)
+func testEnsurePortalSpec(ctx context.Context, def app.Definition) error {
+	chains := def.Testnet.EVMChains()
+	expected := randPortalSpec(chains)
 
 	ensurePortalSpec := func(ctx context.Context, def app.Definition, cfg Config) error {
 		return EnsurePortalSpec(ctx, def, cfg, expected)
 	}
 
-	err := forOne(ctx, def, randChain(network), ensurePortalSpec, checkPortalSpec(network, expected))
+	err := forOne(ctx, def, randChain(chains), ensurePortalSpec, checkPortalSpec(chains, expected))
 	if err != nil {
 		return errors.Wrap(err, "ensure portal spec")
 	}
 
 	// new random expected values
-	*expected = *randPortalSpec(network)
+	*expected = *randPortalSpec(def.Testnet.EVMChains())
 
-	err = forAll(ctx, def, network, ensurePortalSpec, checkPortalSpec(network, expected))
+	err = forAll(ctx, def, ensurePortalSpec, checkPortalSpec(chains, expected))
 	if err != nil {
 		return errors.Wrap(err, "ensure all portal specs")
 	}
@@ -199,28 +194,28 @@ func testEnsurePortalSpec(ctx context.Context, def app.Definition, network netco
 	return nil
 }
 
-func testEnsureBridgeSpec(ctx context.Context, def app.Definition, network netconf.Network) error {
-	addrs, err := contracts.GetAddresses(ctx, network.ID)
+func testEnsureBridgeSpec(ctx context.Context, def app.Definition) error {
+	addrs, err := contracts.GetAddresses(ctx, def.Testnet.Network)
 	if err != nil {
 		return errors.Wrap(err, "get addrs")
 	}
 
-	omniEVM, ok := network.OmniEVMChain()
+	omniEVM, ok := def.Testnet.OmniEVMChain()
 	if !ok {
 		return errors.New("no omni evm chain")
 	}
 
-	omniBackend, err := def.Backends().Backend(omniEVM.ID)
+	omniBackend, err := def.Backends().Backend(omniEVM.ChainID)
 	if err != nil {
 		return errors.Wrap(err, "backend", "chain", omniEVM.Name)
 	}
 
-	l1, ok := network.EthereumChain()
+	l1, ok := def.Testnet.EthereumChain()
 	if !ok {
 		return errors.New("no ethereum chain")
 	}
 
-	l1Backend, err := def.Backends().Backend(l1.ID)
+	l1Backend, err := def.Backends().Backend(l1.ChainID)
 	if err != nil {
 		return errors.Wrap(err, "backend", "chain", l1.Name)
 	}
@@ -289,9 +284,9 @@ func ensureBridgeSpec(
 func forOne(
 	ctx context.Context,
 	def app.Definition,
-	chain netconf.Chain,
+	chain types.EVMChain,
 	action func(context.Context, app.Definition, Config) error,
-	check func(context.Context, app.Definition, netconf.Chain) error,
+	check func(context.Context, app.Definition, types.EVMChain) error,
 ) error {
 	if err := action(ctx, def, Config{Broadcast: true, Chain: chain.Name}); err != nil {
 		return errors.Wrap(err, "act", "chain", chain.Name)
@@ -308,15 +303,14 @@ func forOne(
 func forAll(
 	ctx context.Context,
 	def app.Definition,
-	network netconf.Network,
 	action func(context.Context, app.Definition, Config) error,
-	check func(context.Context, app.Definition, netconf.Chain) error,
+	check func(context.Context, app.Definition, types.EVMChain) error,
 ) error {
 	if err := action(ctx, def, Config{Broadcast: true}); err != nil {
 		return errors.Wrap(err, "act")
 	}
 
-	for _, chain := range network.EVMChains() {
+	for _, chain := range def.Testnet.EVMChains() {
 		if err := check(ctx, def, chain); err != nil {
 			return errors.Wrap(err, "check", "chain", chain.Name)
 		}
@@ -325,14 +319,19 @@ func forAll(
 	return nil
 }
 
-func checkPortalSpec(network netconf.Network, expected *PortalSpec) func(context.Context, app.Definition, netconf.Chain) error {
-	return func(ctx context.Context, def app.Definition, chain netconf.Chain) error {
-		backend, err := def.Backends().Backend(chain.ID)
+func checkPortalSpec(chains []types.EVMChain, expected *PortalSpec) func(context.Context, app.Definition, types.EVMChain) error {
+	return func(ctx context.Context, def app.Definition, chain types.EVMChain) error {
+		backend, err := def.Backends().Backend(chain.ChainID)
 		if err != nil {
 			return errors.Wrap(err, "backend", "chain", chain.Name)
 		}
 
-		live, err := livePortalSpec(ctx, network, chain, backend)
+		addrs, err := contracts.GetAddresses(ctx, def.Testnet.Network)
+		if err != nil {
+			return errors.Wrap(err, "get addrs")
+		}
+
+		live, err := livePortalSpec(ctx, chains, chain, addrs.Portal, backend)
 		if err != nil {
 			return errors.Wrap(err, "live portal spec", "chain", chain.Name)
 		}
@@ -360,7 +359,7 @@ func checkPortalSpec(network netconf.Network, expected *PortalSpec) func(context
 	}
 }
 
-func randPortalSpec(network netconf.Network) *PortalSpec {
+func randPortalSpec(chains []types.EVMChain) *PortalSpec {
 	pauseAll := randBool()
 	if pauseAll {
 		return &PortalSpec{PauseAll: true}
@@ -372,11 +371,11 @@ func randPortalSpec(network netconf.Network) *PortalSpec {
 	}
 
 	if !spec.PauseXCall {
-		spec.PauseXCallTo = randChainIDs(network)
+		spec.PauseXCallTo = randChainIDs(chains)
 	}
 
 	if !spec.PauseXSubmit {
-		spec.PauseXSubmitFrom = randChainIDs(network)
+		spec.PauseXSubmitFrom = randChainIDs(chains)
 	}
 
 	return spec
@@ -398,14 +397,11 @@ func sortUint64(ns []uint64) {
 	sort.Slice(ns, func(i, j int) bool { return ns[i] < ns[j] })
 }
 
-func randChain(network netconf.Network) netconf.Chain {
-	chains := network.EVMChains()
+func randChain(chains []types.EVMChain) types.EVMChain {
 	return chains[rand.Intn(len(chains))]
 }
 
-func randChains(network netconf.Network) []netconf.Chain {
-	chains := network.EVMChains()
-
+func randChains(chains []types.EVMChain) []types.EVMChain {
 	n := rand.Intn(len(chains))
 	if n == 0 {
 		return nil
@@ -418,12 +414,12 @@ func randChains(network netconf.Network) []netconf.Chain {
 	return chains[:n]
 }
 
-func randChainIDs(network netconf.Network) []uint64 {
-	chains := randChains(network)
+func randChainIDs(chains []types.EVMChain) []uint64 {
+	chains = randChains(chains)
 
 	chainIDs := make([]uint64, len(chains))
 	for i, chain := range chains {
-		chainIDs[i] = chain.ID
+		chainIDs[i] = chain.ChainID
 	}
 
 	return chainIDs
