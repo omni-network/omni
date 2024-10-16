@@ -62,6 +62,11 @@ bufgen: ## Generates protobufs using buf generate.
 fix-golden: ## Fixes golden test fixtures.
 	@./scripts/fix_golden_tests.sh
 
+
+.PHONY: staging-addrs
+staging-addrs: ## Prints staging address json.
+	@go run ./scripts/stagingaddrs
+
 ###############################################################################
 ###                                Testing                                 	###
 ###############################################################################
