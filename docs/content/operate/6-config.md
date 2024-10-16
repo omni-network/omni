@@ -172,13 +172,13 @@ A path to this file (or copy of) must be provided in the `halo.toml` `engine-jwt
 `geth` will automatically generate this file during `geth init` on startup if it doesn't exist.
 
 ## Configure Docker Compose
-The preferred way to run an Omni node is via Docker Compose as describe in the [Run a Full Node](1-run-full-node.md#halo-deployment-options) docs.
+The preferred way to run an Omni node is via Docker Compose as described in the [Run a Full Node](1-run-full-node.md#halo-deployment-options) docs.
 The docker `compose.yml` file is located in `~/.omni/<network>/compose.yml`.
 
 Download the latest template `compose.yml` [here](https://github.com/omni-network/omni/blob/main/cli/cmd/compose.yml.tpl).
 
 Ensure the following template fields are replaced:
-- `{{.HaloTag}}`: The latest `omniops/halovisor` docker image tag, eg `v0.99.0`, see [releases](https://github.com/omni-network/omni/releases)
+- `{{.HaloTag}}`: The latest `omniops/halovisor` docker image tag, e.g. `v0.99.0`, see [releases](https://github.com/omni-network/omni/releases)
 - `{{.GethTag}}`: The `ethereum/client-go` version supported by the above omni release, see release notes, e.g. `v1.99.0`.
 - `{{.GethVerbosity}}`: Geth logging level, `3` is recommended for info level.
 - `{{ if .GethArchive }}- --gcmode=archive{{ end }}`: Remove this line if not an archive node.
