@@ -11,5 +11,5 @@ updates:
     - "/contracts/avs"
     - "/contracts/core"
   schedule:
-    interval: "daily"
+    interval: "weekly"
   labels: []
