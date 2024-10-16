@@ -80,7 +80,7 @@ func UpgradeBridgeNative(ctx context.Context, def app.Definition, cfg Config) er
 func UpgradeBridgeL1(ctx context.Context, def app.Definition, cfg Config) error {
 	s := setup(def, cfg)
 
-	l1, ok := s.network.EthereumChain()
+	l1, ok := s.testnet.EthereumChain()
 	if !ok {
 		return errors.New("no l1 eth chain")
 	}
@@ -114,7 +114,7 @@ func upgradePortal(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -128,9 +128,9 @@ func upgradeFeeOracleV1(ctx context.Context, s shared, c chain) error {
 	// FeeOracleV1 contracts were not deployed via Create3
 	// The address must be read from the portal
 
-	client, err := ethclient.Dial(c.Name, c.rpc)
+	client, err := ethclient.Dial(c.Name, c.RPCEndpoint)
 	if err != nil {
-		return errors.Wrap(err, "dial rpc")
+		return errors.Wrap(err, "dial RPCEndpoint")
 	}
 
 	portal, err := bindings.NewOmniPortal(c.PortalAddress, client)
@@ -151,7 +151,7 @@ func upgradeFeeOracleV1(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -162,7 +162,7 @@ func upgradeFeeOracleV1(ctx context.Context, s shared, c chain) error {
 }
 
 func upgradeGasStation(ctx context.Context, s shared, c chain) error {
-	addrs, err := contracts.GetAddresses(ctx, s.network.ID)
+	addrs, err := contracts.GetAddresses(ctx, s.testnet.Network)
 	if err != nil {
 		return errors.Wrap(err, "get addrs")
 	}
@@ -175,7 +175,7 @@ func upgradeGasStation(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -186,7 +186,7 @@ func upgradeGasStation(ctx context.Context, s shared, c chain) error {
 }
 
 func upgradeGasPump(ctx context.Context, s shared, c chain) error {
-	addrs, err := contracts.GetAddresses(ctx, s.network.ID)
+	addrs, err := contracts.GetAddresses(ctx, s.testnet.Network)
 	if err != nil {
 		return errors.Wrap(err, "get addrs")
 	}
@@ -199,7 +199,7 @@ func upgradeGasPump(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -218,7 +218,7 @@ func ugpradeSlashing(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -237,7 +237,7 @@ func upgradeStaking(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -256,7 +256,7 @@ func upgradeBridgeNative(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -267,7 +267,7 @@ func upgradeBridgeNative(ctx context.Context, s shared, c chain) error {
 }
 
 func upgradeBridgeL1(ctx context.Context, s shared, c chain) error {
-	addrs, err := contracts.GetAddresses(ctx, s.network.ID)
+	addrs, err := contracts.GetAddresses(ctx, s.testnet.Network)
 	if err != nil {
 		return errors.Wrap(err, "get addrs")
 	}
@@ -280,7 +280,7 @@ func upgradeBridgeL1(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
@@ -299,7 +299,7 @@ func upgradePortalRegistry(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}

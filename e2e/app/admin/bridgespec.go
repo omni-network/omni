@@ -82,7 +82,7 @@ func (s BridgeSpec) Verify() error {
 func EnsureBridgeSpec(ctx context.Context, def app.Definition, cfg Config, specOverride *NetworkBridgeSpec) error {
 	s := setup(def, cfg)
 
-	l1Chain, ok := s.network.EthereumChain()
+	l1Chain, ok := s.testnet.EthereumChain()
 	if !ok {
 		return errors.New("no ethereum chain")
 	}
@@ -120,12 +120,12 @@ func EnsureBridgeSpec(ctx context.Context, def app.Definition, cfg Config, specO
 
 // ensureNativeBridgeSpec ensures that the live native bridge contract is configured as per the local spec.
 func ensureNativeBridgeSpec(ctx context.Context, s shared, c chain, specOverride *BridgeSpec) error {
-	local := bridgeSpec[s.network.ID].Native
+	local := bridgeSpec[s.testnet.Network].Native
 	if specOverride != nil {
 		local = *specOverride
 	}
 
-	ethCl, err := ethclient.Dial(c.Name, c.rpc)
+	ethCl, err := ethclient.Dial(c.Name, c.RPCEndpoint)
 	if err != nil {
 		return errors.Wrap(err, "dial eth client")
 	}
@@ -152,17 +152,17 @@ func ensureNativeBridgeSpec(ctx context.Context, s shared, c chain, specOverride
 
 // ensureL1BridgeSpec ensures that the live L1 bridge contract is configured as per the local spec.
 func ensureL1BridgeSpec(ctx context.Context, s shared, c chain, specOverride *BridgeSpec) error {
-	local := bridgeSpec[s.network.ID].L1
+	local := bridgeSpec[s.testnet.Network].L1
 	if specOverride != nil {
 		local = *specOverride
 	}
 
-	ethCl, err := ethclient.Dial(c.Name, c.rpc)
+	ethCl, err := ethclient.Dial(c.Name, c.RPCEndpoint)
 	if err != nil {
 		return errors.Wrap(err, "dial eth client")
 	}
 
-	addrs, err := contracts.GetAddresses(ctx, s.network.ID)
+	addrs, err := contracts.GetAddresses(ctx, s.testnet.Network)
 	if err != nil {
 		return errors.Wrap(err, "get addrs")
 	}

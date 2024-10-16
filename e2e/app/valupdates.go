@@ -35,10 +35,9 @@ func FundValidatorsForTesting(ctx context.Context, def Definition) error {
 
 	log.Info(ctx, "Funding validators for testing", "count", len(def.Testnet.Nodes))
 
-	network := NetworkFromDef(def)
-	omniEVM, _ := network.OmniEVMChain()
-	funder := eoa.MustAddress(network.ID, eoa.RoleTester) // Fund validators using tester eoa
-	_, fundBackend, err := def.Backends().BindOpts(ctx, omniEVM.ID, funder)
+	omniEVM, _ := def.Testnet.OmniEVMChain()
+	funder := eoa.MustAddress(def.Testnet.Network, eoa.RoleTester) // Fund validators using tester eoa
+	_, fundBackend, err := def.Backends().BindOpts(ctx, omniEVM.ChainID, funder)
 	if err != nil {
 		return errors.Wrap(err, "bind opts")
 	}
@@ -125,10 +124,9 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 		})
 
 		// Create a backend to trigger deposits from
-		network := NetworkFromDef(def)
 		endpoints := ExternalEndpoints(def)
-		omniEVM, _ := network.OmniEVMChain()
-		rpc, err := endpoints.ByNameOrID(omniEVM.Name, omniEVM.ID)
+		omniEVM, _ := def.Testnet.OmniEVMChain()
+		rpc, err := endpoints.ByNameOrID(omniEVM.Name, omniEVM.ChainID)
 		if err != nil {
 			returnErr(errors.Wrap(err, "get rpc"))
 			return
@@ -138,7 +136,7 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 			returnErr(errors.Wrap(err, "dial"))
 			return
 		}
-		valBackend, err := ethbackend.NewBackend(omniEVM.Name, omniEVM.ID, omniEVM.BlockPeriod, ethCl, privkeys...)
+		valBackend, err := ethbackend.NewBackend(omniEVM.Name, omniEVM.ChainID, omniEVM.BlockPeriod, ethCl, privkeys...)
 		if err != nil {
 			returnErr(errors.Wrap(err, "new backend"))
 			return

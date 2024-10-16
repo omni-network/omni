@@ -17,7 +17,7 @@ func pauseXSubmit(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.manager)
+	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.manager)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}
@@ -29,19 +29,19 @@ func pauseXSubmit(ctx context.Context, s shared, c chain) error {
 
 // pauseXSubmitFrom pauses xsubmits from a chain, on a chain.
 func pauseXSubmitFrom(ctx context.Context, s shared, c chain, fromID uint64) error {
-	from, ok := s.network.Chain(fromID)
+	from, ok := s.testnet.EVMChainByID(fromID)
 	if !ok {
 		return errors.New("chain id not in network", "chain", fromID)
 	}
 
 	log.Info(ctx, "Pausing xsubmit...", "chain", c.Name, "from", from.Name, "addr", c.PortalAddress)
 
-	calldata, err := adminABI.Pack("pauseXSubmitFrom", s.manager, c.PortalAddress, from.ID)
+	calldata, err := adminABI.Pack("pauseXSubmitFrom", s.manager, c.PortalAddress, from.ChainID)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.manager)
+	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.manager)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}
@@ -60,7 +60,7 @@ func unpauseXSubmit(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.manager)
+	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.manager)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}
@@ -72,19 +72,19 @@ func unpauseXSubmit(ctx context.Context, s shared, c chain) error {
 
 // pauseXSubmitFrom pauses xsubmits from a chain, on a chain.
 func unpauseXSubmitFrom(ctx context.Context, s shared, c chain, fromID uint64) error {
-	from, ok := s.network.Chain(fromID)
+	from, ok := s.testnet.EVMChainByID(fromID)
 	if !ok {
 		return errors.New("chain id not in network", "chain", fromID)
 	}
 
 	log.Info(ctx, "Unpausing xsubmit...", "chain", c.Name, "from", from.Name, "addr", c.PortalAddress)
 
-	calldata, err := adminABI.Pack("unpauseXSubmitFrom", s.manager, c.PortalAddress, from.ID)
+	calldata, err := adminABI.Pack("unpauseXSubmitFrom", s.manager, c.PortalAddress, from.ChainID)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.manager)
+	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.manager)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}

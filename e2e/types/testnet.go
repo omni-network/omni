@@ -129,8 +129,36 @@ func (t Testnet) HasPerturbations() bool {
 	return t.Testnet.HasPerturbations()
 }
 
+func (t Testnet) EVMChainByID(id uint64) (EVMChain, bool) {
+	for _, c := range t.EVMChains() {
+		if c.ChainID == id {
+			return c, true
+		}
+	}
+
+	return EVMChain{}, false
+}
+
+func (t Testnet) EVMChainByName(name string) (EVMChain, bool) {
+	for _, c := range t.EVMChains() {
+		if c.Name == name {
+			return c, true
+		}
+	}
+
+	return EVMChain{}, false
+}
+
 func (t Testnet) HasOmniEVM() bool {
 	return len(t.OmniEVMs) > 0
+}
+
+func (t Testnet) OmniEVMChain() (EVMChain, bool) {
+	if len(t.OmniEVMs) == 0 {
+		return EVMChain{}, false
+	}
+
+	return t.OmniEVMs[0].Chain, true
 }
 
 // EVMChains returns all EVM chains in the network.
@@ -151,6 +179,16 @@ func (t Testnet) EVMChains() []EVMChain {
 	}
 
 	return chains
+}
+
+func (t Testnet) EthereumChain() (EVMChain, bool) {
+	for _, c := range t.EVMChains() {
+		if netconf.IsEthereumChain(t.Network, c.ChainID) {
+			return c, true
+		}
+	}
+
+	return EVMChain{}, false
 }
 
 // EVMChain represents a EVM chain in a omni network.

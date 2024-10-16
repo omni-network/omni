@@ -6,12 +6,14 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app"
+	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // portalSpec defines portal specs per network, with chain specific overrides.
@@ -96,7 +98,7 @@ func DefaultPortalSpec() PortalSpec {
 // EnsurePortalSpec ensures that live portal contracts are configured as per the local spec.
 func EnsurePortalSpec(ctx context.Context, def app.Definition, cfg Config, localSpecOverride *PortalSpec) error {
 	return setup(def, cfg).run(ctx, func(ctx context.Context, s shared, c chain) error {
-		local, err := localPortalSpec(s.network.ID, c.ID)
+		local, err := localPortalSpec(s.testnet.Network, c.ChainID)
 		if err != nil {
 			return errors.Wrap(err, "get local portal spec", "chain", c.Name)
 		}
@@ -105,12 +107,12 @@ func EnsurePortalSpec(ctx context.Context, def app.Definition, cfg Config, local
 			local = *localSpecOverride
 		}
 
-		ethCl, err := ethclient.Dial(c.Name, c.rpc)
+		ethCl, err := ethclient.Dial(c.Name, c.RPCEndpoint)
 		if err != nil {
 			return errors.Wrap(err, "dial eth client", "chain", c.Name)
 		}
 
-		live, err := livePortalSpec(ctx, s.network, c.Chain, ethCl)
+		live, err := livePortalSpec(ctx, s.testnet.EVMChains(), c.EVMChain, c.PortalAddress, ethCl)
 		if err != nil {
 			return errors.Wrap(err, "get live portal spec", "chain", c.Name)
 		}
@@ -262,15 +264,13 @@ func localPortalSpec(network netconf.ID, chainID uint64) (PortalSpec, error) {
 }
 
 // livePortalSpec returns the live, on-chain portal spec for a chain.
-func livePortalSpec(ctx context.Context, network netconf.Network, c netconf.Chain, ethCl ethclient.Client) (PortalSpec, error) {
-	chains := network.EVMChains()
-
-	portal, err := bindings.NewOmniPortal(c.PortalAddress, ethCl)
+func livePortalSpec(ctx context.Context, chains []types.EVMChain, c types.EVMChain, portalAddr common.Address, ethCl ethclient.Client) (PortalSpec, error) {
+	portal, err := bindings.NewOmniPortal(portalAddr, ethCl)
 	if err != nil {
 		return PortalSpec{}, errors.Wrap(err, "new portal contract", "chain", c.Name)
 	}
 
-	log.Info(ctx, "Fetching portal spec", "chain", c.Name, "address", c.PortalAddress)
+	log.Info(ctx, "Fetching portal spec", "chain", c.Name, "address", portalAddr)
 
 	paused, err := portal.IsPaused1(&bind.CallOpts{Context: ctx})
 	if err != nil {
@@ -306,22 +306,22 @@ func livePortalSpec(ctx context.Context, network netconf.Network, c netconf.Chai
 	var xSubmitPausedFrom []uint64
 
 	for _, chain := range chains {
-		isXSubmitPausedFrom, err := portal.IsPaused0(&bind.CallOpts{Context: ctx}, actionXSubmit, chain.ID)
+		isXSubmitPausedFrom, err := portal.IsPaused0(&bind.CallOpts{Context: ctx}, actionXSubmit, chain.ChainID)
 		if err != nil {
 			return PortalSpec{}, errors.Wrap(err, "is xsubmit paused from", "chain", c.Name, "from", chain.Name)
 		}
 
-		isXCallPausedTo, err := portal.IsPaused0(&bind.CallOpts{Context: ctx}, actionXCall, chain.ID)
+		isXCallPausedTo, err := portal.IsPaused0(&bind.CallOpts{Context: ctx}, actionXCall, chain.ChainID)
 		if err != nil {
 			return PortalSpec{}, errors.Wrap(err, "is xcall paused to", "chain", c.Name, "to", chain.Name)
 		}
 
 		if isXCallPausedTo {
-			xCallPausedTo = append(xCallPausedTo, chain.ID)
+			xCallPausedTo = append(xCallPausedTo, chain.ChainID)
 		}
 
 		if isXSubmitPausedFrom {
-			xSubmitPausedFrom = append(xSubmitPausedFrom, chain.ID)
+			xSubmitPausedFrom = append(xSubmitPausedFrom, chain.ChainID)
 		}
 	}
 

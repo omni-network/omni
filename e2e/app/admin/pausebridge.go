@@ -18,7 +18,7 @@ func pauseBridge(ctx context.Context, s shared, c chain, addr common.Address, ac
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.manager)
+	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.manager)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}
@@ -37,7 +37,7 @@ func unpauseBridge(ctx context.Context, s shared, c chain, addr common.Address, 
 		return errors.Wrap(err, "pack calldata", "chain", c.Name)
 	}
 
-	out, err := s.runForge(ctx, c.rpc, calldata, s.manager)
+	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.manager)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}
