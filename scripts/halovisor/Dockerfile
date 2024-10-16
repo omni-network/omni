@@ -35,6 +35,8 @@ COPY --from=build-cosmovisor /ko-app/cosmovisor /usr/local/bin/cosmovisor
 COPY --from=build-0-genesis /app /halovisor/genesis/bin/halo
 COPY --from=build-1-uluwatu /app /halovisor/upgrades/1_uluwatu/bin/halo
 
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s CMD ["/halovisor/upgrades/1_uluwatu/bin/halo", "ready"]
+
 # Cosmovisor is the entrypoint
 ENTRYPOINT [ "cosmovisor" ]
 # First 'run' is cosmovisor command, second 'run' is halo command.

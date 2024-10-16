@@ -28,6 +28,7 @@ func New() *cobra.Command {
 		buildinfo.NewVersionCmd(),
 		newConsKeyCmd(),
 		newStatusCmd(),
+		newReadyCmd(),
 	)
 }
 
