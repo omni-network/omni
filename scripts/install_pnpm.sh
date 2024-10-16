@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VERSION="8.14.0"
+VERSION="9.12.1"
 
 if ! which pnpm 1>/dev/null || [[ $(pnpm --version) != "$VERSION" ]]; then
   echo "Installing pnpm@$VERSION"
