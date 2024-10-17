@@ -59,7 +59,7 @@ func Run(ctx context.Context, cfg Config) error {
 
 	for _, destChain := range network.EVMChains() {
 		// Setup sender provider
-		sendProvider := func() (SendFunc, error) {
+		sendProvider := func() (SendAsync, error) {
 			sender, err := NewSender(
 				network.ID,
 				destChain,
@@ -71,7 +71,7 @@ func Run(ctx context.Context, cfg Config) error {
 				return nil, err
 			}
 
-			return sender.SendTransaction, nil
+			return sender.SendAsync, nil
 		}
 
 		// Setup validator set awaiter

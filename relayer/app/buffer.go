@@ -19,10 +19,10 @@ type activeBuffer struct {
 	buffer       chan xchain.Submission
 	mempoolLimit int64
 	errChan      chan error
-	sender       SendFunc
+	sender       SendAsync
 }
 
-func newActiveBuffer(chainName string, mempoolLimit int64, sender SendFunc) *activeBuffer {
+func newActiveBuffer(chainName string, mempoolLimit int64, sender SendAsync) *activeBuffer {
 	return &activeBuffer{
 		chainName:    chainName,
 		buffer:       make(chan xchain.Submission),
@@ -60,9 +60,11 @@ func (b *activeBuffer) Run(ctx context.Context) error {
 			}
 			mempoolLen.WithLabelValues(b.chainName).Inc()
 
+			response := b.sender(ctx, submission)
 			go func() {
-				if err := b.sender(ctx, submission); err != nil {
-					b.submitErr(err)
+				err := <- response
+				if err != nil {
+					b.submitErr(errors.Wrap(err, "send submission"))
 				}
 				sema.Release(1)
 				mempoolLen.WithLabelValues(b.chainName).Dec()
