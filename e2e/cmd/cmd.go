@@ -6,16 +6,12 @@ import (
 	"regexp"
 
 	"github.com/omni-network/omni/e2e/app"
-	"github.com/omni-network/omni/e2e/app/eoa"
-	"github.com/omni-network/omni/e2e/app/key"
 	"github.com/omni-network/omni/e2e/docker"
 	"github.com/omni-network/omni/e2e/types"
 	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-
-	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/spf13/cobra"
 )
@@ -82,6 +78,7 @@ func New() *cobra.Command {
 		newUpgradeCmd(&def),
 		newRestartCmd(&def),
 		newKeyCreate(&def),
+		newKeyCreateAll(&def),
 		newAdminCmd(&def),
 		newERC20FaucetCmd(&def),
 		newDeployGasAppCmd(&def),
@@ -208,35 +205,6 @@ func newCreate3DeployCmd(def *app.Definition) *cobra.Command {
 
 	return cmd
 }
-
-func newKeyCreate(def *app.Definition) *cobra.Command {
-	cfg := key.UploadConfig{}
-
-	cmd := &cobra.Command{
-		Use:   "key-create",
-		Short: "Creates a private key in GCP secret manager for a node in a manifest",
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			if def.Testnet.Network == netconf.Simnet || def.Testnet.Network == netconf.Devnet {
-				return errors.New("cannot create keys for simnet or devnet")
-			}
-
-			cfg.Network = def.Testnet.Network
-
-			if err := verifyKeyNodeType(*def, cfg); err != nil {
-				return err
-			}
-
-			_, err := key.UploadNew(cmd.Context(), cfg)
-
-			return err
-		},
-	}
-
-	bindKeyCreateFlags(cmd, &cfg)
-
-	return cmd
-}
-
 func fundAccounts(def *app.Definition) *cobra.Command {
 	var dryRun bool
 
@@ -290,55 +258,4 @@ func newDeployGasAppCmd(def *app.Definition) *cobra.Command {
 	}
 
 	return cmd
-}
-
-// verifyKeyNodeType checks if the node exists in the manifest and if the key type is allowed for the node.
-func verifyKeyNodeType(def app.Definition, cfg key.UploadConfig) error {
-	if err := cfg.Type.Verify(); err != nil {
-		return err
-	}
-
-	if cfg.Type == key.EOA {
-		eoaRole := eoa.Role(cfg.Name)
-		if err := eoaRole.Verify(); err != nil {
-			return errors.Wrap(err, "verifying name as eoa type")
-		}
-
-		account, ok := eoa.AccountForRole(def.Testnet.Network, eoaRole)
-		if !ok {
-			return errors.New("eoa account not found", "role", eoaRole)
-		}
-
-		if account.Type != eoa.TypeSecret {
-			return errors.New("cannot create eoa key for non secret account")
-		}
-
-		if account.Address != (common.Address{}) {
-			return errors.New("cannot create eoa key already defined", "addr", account.Address.Hex())
-		}
-
-		return nil
-	}
-
-	for _, node := range def.Testnet.Nodes {
-		if node.Name == cfg.Name {
-			if cfg.Type == key.P2PExecution {
-				return errors.New("cannot create execution key for halo node")
-			}
-
-			return nil
-		}
-	}
-
-	for _, evm := range def.Testnet.OmniEVMs {
-		if evm.InstanceName == cfg.Name {
-			if cfg.Type != key.P2PExecution {
-				return errors.New("only execution keys allowed for evm nodes")
-			}
-
-			return nil
-		}
-	}
-
-	return errors.New("node not found", "name", cfg.Name)
 }
