@@ -38,15 +38,15 @@ var (
 		Namespace: "monitor",
 		Subsystem: "xchain",
 		Name:      "halo_attested_height",
-		Help:      "The latest halo attested height of a specific chain",
-	}, []string{"chain"})
+		Help:      "The latest halo attested height of a specific chain version",
+	}, []string{"chain_version"})
 
 	attestedOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "monitor",
 		Subsystem: "xchain",
 		Name:      "halo_attest_offset",
-		Help:      "The latest halo attest offset of a specific chain",
-	}, []string{"chain"})
+		Help:      "The latest halo attest offset of a specific chain version",
+	}, []string{"chain_version"})
 
 	attestedMsgOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "monitor",
