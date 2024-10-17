@@ -1,5 +1,84 @@
 network = "mainnet"
-public_chains = ["ethereum"]
+public_chains = [] # TBD
 
-only_monitor = true
+multi_omni_evms = true
 prometheus   = true
+
+
+[node.validator01]
+[node.validator02]
+[node.validator03]
+[node.validator04]
+
+[node.seed01]
+mode = "seed"
+[node.seed02]
+mode = "seed"
+
+[node.fullnode01]
+mode = "full"
+[node.fullnode02]
+mode = "full"
+
+[node.archive01]
+mode = "archive"
+[node.archive02]
+mode = "archive"
+[node.archive03]
+mode = "archive"
+
+# Validator Keys
+[keys.validator01]
+p2p_consensus = "47AEAB2672A084F27CE04BDED0BC1DB608501070"
+validator = "0x58D2A4e3880635B7682A1BB7Ed8a43F5ac6cFD3d"
+[keys.validator01_evm]
+p2p_execution = "0x1eAf646255aE66164e5F366397FE94Ea0345e140"
+[keys.validator02]
+p2p_consensus = "0093BBC5D625A10D560101C4F3AD763B16A6A608"
+validator = "0x19a4Cb685af95A96BEd67C764b6dB137978a5B17"
+[keys.validator02_evm]
+p2p_execution = "0x683d5892729d5fC9670e68b3e3bABFdb4d01b7c9"
+[keys.validator03]
+p2p_consensus = "BD8B56EDE6AE5475671B39155D5EE8E674F48D5A"
+validator = "0xB007d2A7e4C27CECF62c1cEc7517550ab599c6c8"
+[keys.validator03_evm]
+p2p_execution = "0x30251DdFBEbB7809D2137EDA7dc70cA2ed18a056"
+[keys.validator04]
+p2p_consensus = "1A48E18DDBF09C5D0605592CE406B0F9A5D1842D"
+validator = "0x1B169F0Da80B6A074EC261C0e18e43109b151553"
+[keys.validator04_evm]
+p2p_execution = "0x18311881059D7F4A6DA363f45737259Fc541AbFF"
+
+# Seed keys
+[keys.seed01]
+p2p_consensus = "D0A9109801C7F78759A20765C30B00D06A6C2A8F"
+[keys.seed01_evm]
+p2p_execution = "0xcCA3DA71A9dd6ddB33Ff02dF1f4b75297D0aE8de"
+[keys.seed02]
+p2p_consensus = "C84E6A5E3C29F1B59B225613BE056E82AB5663C7"
+[keys.seed02_evm]
+p2p_execution = "0x1421b7476c3ba42E46D9D03781b6D8a3DCf4fCA1"
+
+# Archive keys
+[keys.archive01]
+p2p_consensus = "EAE99C1F0FAABA9AD96C943F17DE350566B028DD"
+[keys.archive01_evm]
+p2p_execution = "0x16a4e1D05518Be06313FAF02CC26D4c0715B8265"
+[keys.archive02]
+p2p_consensus = "95F7A9277E3FFB37B81E0653F23CE8C57F9DFBC0"
+[keys.archive02_evm]
+p2p_execution = "0xC7D4e560E05eaE9ba44769BF5f5B56e8d59eC98F"
+[keys.archive03]
+p2p_consensus = "A0451A082279BDB8971A964CB12FA3C8D1AD8BE4"
+[keys.archive03_evm]
+p2p_execution = "0x19363Da98cdAEE3E213cd803D43cCee237b67F4F"
+
+# Fullnode keys
+[keys.fullnode01]
+p2p_consensus = "87A9BD0A36CD04B5E6A445487D673AA1EF3A9D79"
+[keys.fullnode01_evm]
+p2p_execution = "0x6d6625acf358CdE192b840815050a90D43Dbb611"
+[keys.fullnode02]
+p2p_consensus = "D96BEBCD33EBC6224575E45C33E3CBB34707E384"
+[keys.fullnode02_evm]
+p2p_execution = "0x0391b4FA7f776e486F247363F5ADC0804Fe70C45"
