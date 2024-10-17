@@ -39,8 +39,8 @@ func main() {
 
 func genallocs() error {
 	for _, network := range netconf.All() {
-		// always skip simnet. skip mainnet until it is required
-		if network == netconf.Simnet || network == netconf.Mainnet {
+		// no allocs needed for simnet
+		if network == netconf.Simnet {
 			continue
 		}
 
@@ -93,10 +93,10 @@ func allocConfig(network netconf.ID, prefunds types.GenesisAlloc) (bindings.Allo
 			nativeBridgeBalance.Sub(nativeBridgeBalance, prefund.Balance)
 		}
 
-		// sanity check - require we do not subtract more than 100 OMNI
+		// sanity check - require we do not subtract more than 1000 OMNI
 		minSaneBalance := new(big.Int).Sub(
 			omnitoken.TotalSupply,
-			new(big.Int).Mul(big.NewInt(100), big.NewInt(params.Ether)),
+			new(big.Int).Mul(big.NewInt(1000), big.NewInt(params.Ether)),
 		)
 
 		if nativeBridgeBalance.Cmp(minSaneBalance) < 0 {
