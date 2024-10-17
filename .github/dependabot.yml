@@ -12,4 +12,10 @@ updates:
     - "/contracts/core"
   schedule:
     interval: "weekly"
+  ignore:
+    # The following are all solidity dependencies installed via github urls
+    # They not "real" npm packages, and dependabot fails to update them
+    - dependency-name: "forge-std"
+    - dependency-name: "eigenlayer-contracts"
+    - dependency-name: "eigenlayer-middleware"
   labels: []
