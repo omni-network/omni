@@ -19,8 +19,14 @@ import (
 	"cosmossdk.io/math"
 )
 
-var eth1k = math.NewInt(1000).MulRaw(params.Ether).BigInt()
-var eth1m = math.NewInt(1000000).MulRaw(params.Ether).BigInt()
+var (
+	eth0_1 = math.NewInt(1).MulRaw(params.Ether / 10).BigInt()
+	eth10  = math.NewInt(10).MulRaw(params.Ether).BigInt()
+	eth100 = math.NewInt(100).MulRaw(params.Ether).BigInt()
+	eth500 = math.NewInt(500).MulRaw(params.Ether).BigInt()
+	eth1k  = math.NewInt(1000).MulRaw(params.Ether).BigInt()
+	eth1m  = math.NewInt(1000000).MulRaw(params.Ether).BigInt()
+)
 
 func newUint64(val uint64) *uint64 { return &val }
 
@@ -94,6 +100,8 @@ func PrefundAlloc(network netconf.ID) (types.GenesisAlloc, error) {
 		return ephemeralPrefundAlloc(), nil
 	} else if network == netconf.Omega {
 		return omegaPrefundAlloc(), nil
+	} else if network == netconf.Mainnet {
+		return mainnetPrefundAllocs(), nil
 	}
 
 	return nil, errors.New("unsupported network", "network", network.String())
@@ -166,8 +174,24 @@ func omegaPrefundAlloc() types.GenesisAlloc {
 		common.HexToAddress("0x12444cDeD3BC994684D4Dc109240a22B8AC64f7C"): {Balance: eth1m}, // graham
 		common.HexToAddress("0x29f26d43B2639aa8C6E99478C55a8645aD466766"): {Balance: eth1m}, // mark
 		common.HexToAddress("0xEa64ab3af247d241E5389D1eE1aAB46262753906"): {Balance: eth1m}, // aayush
+	}
+}
 
-		// TODO: add validators, relayer
+// mainnetPrefundAllocs returns allocs for prefunded geth accounts on mainnet.
+//
+// mainnet prefunds are kept minimal, and are accounted for w.r.t OMNI's total
+// supply via "genesis bridging". That is, decrementing the pre-funded amount
+// from the native bridge's prefund balance, and transferring the same amount
+// to the bridge contract on L1.
+func mainnetPrefundAllocs() types.GenesisAlloc {
+	return types.GenesisAlloc{
+		eoa.MustAddress(netconf.Mainnet, eoa.RoleCreate3Deployer): {Balance: eth0_1}, // deploys one contract
+		eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer):        {Balance: eth0_1}, // deploys a couple contracts
+		eoa.MustAddress(netconf.Mainnet, eoa.RoleManager):         {Balance: eth10},  // rarely used
+		eoa.MustAddress(netconf.Mainnet, eoa.RoleUpgrader):        {Balance: eth10},  // rarely used
+		eoa.MustAddress(netconf.Mainnet, eoa.RoleRelayer):         {Balance: eth100}, // enough to relay for a while
+		eoa.MustAddress(netconf.Mainnet, eoa.RoleMonitor):         {Balance: eth100}, // enough to monitor for a while
+		eoa.MustAddress(netconf.Mainnet, eoa.RoleFunder):          {Balance: eth500}, // enough for a few funding actions
 	}
 }
 
