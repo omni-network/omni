@@ -7,13 +7,16 @@ version: ## Print tool versions.
 	@forge --version
 	@abigen --version
 
+PNPM_VERSION := 9.12.1
+ABIGEN_VERSION := 1.14.8
+
 .PHONY: install-tools
 install-tools:
 	@which npm > /dev/null || echo "npm not installed, see https://nodejs.org/en/download/package-manager"
-	@which pnpm > /dev/null || (echo "pnpm not installed, installing..."; npm install -g pnpm@9.12.1)
+	@which pnpm > /dev/null || (echo "pnpm not installed, installing..."; npm install -g pnpm@$(PNPM_VERSION))
 
 .PHONY: install-deps
-install-deps: ## Install dependencies.
+install-deps: check-pnpm-version ## Install dependencies.
 	(cd avs && pnpm install --frozen-lockfile)
 	(cd core && pnpm install --frozen-lockfile)
 	go install github.com/ethereum/go-ethereum/cmd/abigen@v1.14.8
@@ -48,10 +51,19 @@ allocs: bindings ## Generate predeploy allocations.
 	go run ./allocs/scripts/genallocs.go
 
 .PHONY: check-abigen-version
-check-abigen-version: ## Check abigen version, exit(1) if not 1.13.14-stable.
+check-abigen-version: ## Check abigen version, exit(1) if incorrect.
 	@version=$$(abigen --version); \
-	if [ "$$version" != "abigen version 1.14.8-stable" ]; then \
-		echo "abigen version is not 1.14.8-stable"; \
-		echo "Install with go install github.com/ethereum/go-ethereum/cmd/abigen@v1.14.8"; \
+	if [ "$$version" != "abigen version $(ABIGEN_VERSION)-stable" ]; then \
+		echo "abigen version is not $(ABIGEN_VERSION)"; \
+		echo "Install with go install github.com/ethereum/go-ethereum/cmd/abigen@v$(ABIGEN_VERSION)"; \
+		exit 1; \
+	fi
+
+.PHONY: check-pnpm-version
+check-pnpm-version: ## Check pnpm version, exit(1) if incorrect.
+	@version=$$(pnpm --version); \
+	if [ "$$version" != "$(PNPM_VERSION)" ]; then \
+		echo "pnpm version is not $(PNPM_VERSION)"; \
+		echo "Install with npm install -g pnpm@$(PNPM_VERSION)"; \
 		exit 1; \
 	fi
