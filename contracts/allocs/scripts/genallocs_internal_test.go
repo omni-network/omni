@@ -20,6 +20,7 @@ var (
 	eth10  = math.NewInt(10).MulRaw(params.Ether).BigInt()
 	eth20  = math.NewInt(20).MulRaw(params.Ether).BigInt()
 	eth100 = math.NewInt(100).MulRaw(params.Ether).BigInt()
+	eth1k  = math.NewInt(1000).MulRaw(params.Ether).BigInt()
 
 	addr1 = common.HexToAddress("0x1")
 	addr2 = common.HexToAddress("0x2")
@@ -53,10 +54,10 @@ func TestBridgeBalance(t *testing.T) {
 			shouldErr: false,
 		},
 		{
-			name: "200 eth - more than sane",
+			name: "1100 eth - more than sane",
 			prefunds: types.GenesisAlloc{
 				addr1: {Balance: eth100},
-				addr2: {Balance: eth100},
+				addr2: {Balance: eth1k},
 			},
 			shouldErr: true,
 		},
