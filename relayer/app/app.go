@@ -57,6 +57,9 @@ func Run(ctx context.Context, cfg Config) error {
 	cprov := cprovider.NewABCIProvider(tmClient, network.ID, netconf.ChainVersionNamer(cfg.Network))
 	xprov := xprovider.New(network, rpcClientPerChain, cprov)
 
+	pricer := newTokenPricer(ctx)
+	pnl := newPnlLogger(network.ID, pricer)
+
 	for _, destChain := range network.EVMChains() {
 		// Setup sender provider
 		sendProvider := func() (SendFunc, error) {
@@ -66,6 +69,7 @@ func Run(ctx context.Context, cfg Config) error {
 				rpcClientPerChain[destChain.ID],
 				*privateKey,
 				network.ChainVersionNames(),
+				pnl.log,
 			)
 			if err != nil {
 				return nil, err

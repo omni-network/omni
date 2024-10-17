@@ -2,6 +2,8 @@ package tokens
 
 import (
 	"context"
+	"sync"
+	"time"
 )
 
 // Pricer is the token price provider interface.
@@ -12,6 +14,7 @@ type Pricer interface {
 
 type CachedPricer struct {
 	p     Pricer
+	mu    sync.Mutex
 	cache map[Token]float64
 }
 
@@ -23,6 +26,9 @@ func NewCachedPricer(p Pricer) *CachedPricer {
 }
 
 func (c *CachedPricer) Price(ctx context.Context, tokens ...Token) (map[Token]float64, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	prices := make(map[Token]float64)
 
 	var uncached []Token
@@ -53,5 +59,22 @@ func (c *CachedPricer) Price(ctx context.Context, tokens ...Token) (map[Token]fl
 }
 
 func (c *CachedPricer) ClearCache() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	c.cache = make(map[Token]float64)
+}
+
+func (c *CachedPricer) ClearCacheForever(ctx context.Context, evictInterval time.Duration) {
+	ticker := time.NewTicker(evictInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			c.ClearCache()
+		}
+	}
 }
