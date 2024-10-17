@@ -55,7 +55,7 @@ importers:
         specifier: ^5.6.3
         version: 5.6.3
       viem:
-        specifier: ^2.21.25
+        specifier: ^2.21.27
         version: 2.21.27(typescript@5.6.3)
 
 packages:
@@ -1736,7 +1736,7 @@ snapshots:
     dependencies:
       '@noble/hashes': 1.2.0
       '@noble/secp256k1': 1.7.1
-      '@scure/base': 1.1.9
+      '@scure/base': 1.1.7
 
   '@scure/bip32@1.5.0':
     dependencies:
@@ -1747,7 +1747,7 @@ snapshots:
   '@scure/bip39@1.1.1':
     dependencies:
       '@noble/hashes': 1.2.0
-      '@scure/base': 1.1.9
+      '@scure/base': 1.1.7
 
   '@scure/bip39@1.4.0':
     dependencies:
