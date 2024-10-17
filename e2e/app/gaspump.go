@@ -106,9 +106,6 @@ func deployGasStation(ctx context.Context, def Definition) error {
 }
 
 // fundGasStation funds a network's OmniGasStation contract on Omni's EVM.
-//
-// TODO: handle funding / monitoring properly.
-// consider joining with e2e/app/eoa, or introduce something similar for contracts.
 func fundGasStation(ctx context.Context, def Definition) error {
 	omniEVM, ok := def.Testnet.OmniEVMChain()
 	if !ok {

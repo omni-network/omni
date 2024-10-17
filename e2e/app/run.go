@@ -106,8 +106,10 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, err
 	}
 
-	if err := DeployGasApp(ctx, def); err != nil {
-		return nil, err
+	if def.Testnet.Network.IsEphemeral() {
+		if err := DeployGasApp(ctx, def); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := setupTokenBridge(ctx, def); err != nil {
