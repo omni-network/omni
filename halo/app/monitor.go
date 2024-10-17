@@ -160,6 +160,25 @@ func monitorEVMOnce(ctx context.Context, ethCl ethclient.Client, status *readine
 	return nil
 }
 
+// exportReadiness exports the node readiness to prometheus.
+func exportReadiness(ctx context.Context, status *readinessStatus) {
+	ticker := time.NewTicker(time.Second * 10)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			health := 0.0
+			if status.ready() {
+				health = 1.0
+			}
+			nodeReadiness.Set(health)
+		}
+	}
+}
+
 // dirSize returns the total size of the directory at path.
 func dirSize(path string) (int64, error) {
 	var size int64

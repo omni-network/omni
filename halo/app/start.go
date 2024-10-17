@@ -205,6 +205,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 	}
 
 	status := new(readinessStatus)
+	go exportReadiness(ctx, status)
 
 	stopMonitoringAPI := startMonitoringAPI(&cfg.Comet, asyncAbort, status)
 

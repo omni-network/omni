@@ -47,6 +47,13 @@ var (
 		Name:      "size_bytes",
 		Help:      "Current size of the database directory in bytes.",
 	})
+
+	nodeReadiness = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: "halo",
+		Subsystem: "health",
+		Name:      "ready",
+		Help:      "Node readiness",
+	})
 )
 
 // setConstantGauge sets the value of a gauge to 1 if b is true, 0 otherwise.
