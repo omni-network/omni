@@ -52,7 +52,7 @@ var (
 		Namespace: "halo",
 		Subsystem: "health",
 		Name:      "ready",
-		Help:      "Node readiness",
+		Help:      "Constant gauge of 1 if local halo node is ready, 0 if not.",
 	})
 )
 

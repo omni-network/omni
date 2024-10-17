@@ -8,7 +8,7 @@ COPY --from=alpine:latest /tmp /tmp
 
 COPY halo /app
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s CMD ["/app", "ready"]
+HEALTHCHECK CMD ["/app", "ready"]
 
 # Mount home directory at /halo
 VOLUME ["/halo"]

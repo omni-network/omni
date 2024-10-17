@@ -160,8 +160,8 @@ func monitorEVMOnce(ctx context.Context, ethCl ethclient.Client, status *readine
 	return nil
 }
 
-// exportReadiness exports the node readiness to prometheus.
-func exportReadiness(ctx context.Context, status *readinessStatus) {
+// instrumentReadiness exports the node readiness to prometheus.
+func instrumentReadiness(ctx context.Context, status *readinessStatus) {
 	ticker := time.NewTicker(time.Second * 10)
 	defer ticker.Stop()
 
@@ -170,7 +170,7 @@ func exportReadiness(ctx context.Context, status *readinessStatus) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			health := 0.0
+			var health float64
 			if status.ready() {
 				health = 1.0
 			}

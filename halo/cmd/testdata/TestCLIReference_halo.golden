@@ -9,7 +9,7 @@ Available Commands:
   consensus-pubkey Print the consensus public key
   help             Help about any command
   init             Initializes required halo files and directories
-  ready            Query node for readiness
+  ready            Query remote node for readiness
   rollback         Rollback Cosmos SDK and CometBFT state by one height
   run              Runs the halo consensus client
   status           Query remote node for status

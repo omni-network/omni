@@ -11,12 +11,12 @@ import (
 )
 
 type readyConfig struct {
-	MonitoringAddr string
+	MonitoringURL string
 }
 
 func defaultReadyConfig() readyConfig {
 	return readyConfig{
-		MonitoringAddr: "http://localhost:26660",
+		MonitoringURL: "http://localhost:26660",
 	}
 }
 
@@ -25,17 +25,19 @@ func newReadyCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "ready",
-		Short: "Query node for readiness",
+		Short: "Query remote node for readiness",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			err := queryReady(cmd.Context(), cfg)
 			if err != nil {
-				return errors.Wrap(err, "ready failed")
+				return errors.Wrap(err, "ready")
 			}
 
 			return nil
 		},
 	}
+
+	bindReadyFlags(cmd, &cfg)
 
 	return cmd
 }
@@ -43,7 +45,7 @@ func newReadyCmd() *cobra.Command {
 // queryReady calls halo's /ready endpoint and returns nil if the status is ready
 // or an error otherwise.
 func queryReady(ctx context.Context, cfg readyConfig) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, cfg.MonitoringAddr, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, cfg.MonitoringURL, nil)
 	if err != nil {
 		return errors.Wrap(err, "http request creation")
 	}

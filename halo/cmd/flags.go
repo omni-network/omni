@@ -60,3 +60,9 @@ func bindStatusFlags(cmd *cobra.Command, cfg *statusConfig) {
 	flags.StringVarP(&cfg.Node, "node", "n", cfg.Node, "Node to connect to")
 	flags.StringVarP(&cfg.Output, "output", "o", cfg.Output, "Output format (text|json)")
 }
+
+func bindReadyFlags(cmd *cobra.Command, cfg *readyConfig) {
+	flags := cmd.Flags()
+
+	flags.StringVarP(&cfg.MonitoringURL, "monitoring-url", "u", cfg.MonitoringURL, "Readiness monitoring url")
+}
