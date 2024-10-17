@@ -8,6 +8,8 @@ COPY --from=alpine:latest /tmp /tmp
 
 COPY halo /app
 
+HEALTHCHECK CMD ["/app", "ready"]
+
 # Mount home directory at /halo
 VOLUME ["/halo"]
 
