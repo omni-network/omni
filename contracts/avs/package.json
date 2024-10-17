@@ -17,7 +17,7 @@
     "forge-std": "github:foundry-rs/forge-std"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "4.9.6",
+    "@openzeppelin/contracts": "5.1.0",
     "@openzeppelin/contracts-upgradeable": "4.9.6",
     "eigenlayer-contracts": "github:Layr-Labs/eigenlayer-contracts",
     "eigenlayer-middleware": "github:Layr-Labs/eigenlayer-middleware",
