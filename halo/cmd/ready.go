@@ -2,25 +2,33 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
-	cmtcfg "github.com/cometbft/cometbft/config"
-
 	"github.com/spf13/cobra"
 )
 
+type readyConfig struct {
+	MonitoringAddr string
+}
+
+func defaultReadyConfig() readyConfig {
+	return readyConfig{
+		MonitoringAddr: "http://localhost:26660",
+	}
+}
+
 func newReadyCmd() *cobra.Command {
+	cfg := defaultReadyConfig()
+
 	cmd := &cobra.Command{
 		Use:   "ready",
-		Short: "Assert the readiness of the halo node",
+		Short: "Query node for readiness",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			err := assertReady(cmd.Context())
+			err := queryReady(cmd.Context(), cfg)
 			if err != nil {
 				return errors.Wrap(err, "ready failed")
 			}
@@ -32,16 +40,10 @@ func newReadyCmd() *cobra.Command {
 	return cmd
 }
 
-// assertReady calls halo's /ready endpoint and returns nil if the status is ready
+// queryReady calls halo's /ready endpoint and returns nil if the status is ready
 // or an error otherwise.
-func assertReady(ctx context.Context) error {
-	cfg := cmtcfg.DefaultConfig()
-	url := fmt.Sprintf("http://0.0.0.0%v/ready", cfg.Instrumentation.PrometheusListenAddr)
-
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+func queryReady(ctx context.Context, cfg readyConfig) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, cfg.MonitoringAddr, nil)
 	if err != nil {
 		return errors.Wrap(err, "http request creation")
 	}
@@ -52,10 +54,11 @@ func assertReady(ctx context.Context) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode < 400 {
-		log.Info(ctx, "The node is ready")
-		return nil
+	if resp.StatusCode/100 != 2 {
+		return errors.New("node not ready")
 	}
 
-	return errors.New("the node is not ready yet")
+	log.Info(ctx, "Node ready")
+
+	return nil
 }
