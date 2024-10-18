@@ -24,8 +24,9 @@ jobs:
 
           # start halo and geth
           docker compose up -d
+
       - name: Wait for sync
-        run:
+        run: |
           t0=$(date +%s)  # Record the start time
 
           while true; do
