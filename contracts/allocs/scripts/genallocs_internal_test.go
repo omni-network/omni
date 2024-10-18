@@ -20,15 +20,15 @@ func TestBridgeBalance(t *testing.T) {
 
 	// mainnet prefunds
 	mp := big.NewInt(0)
-	mp = add(mp, div(ether(1), 10)) // 0.1  OMNI: create3-deployer
-	mp = add(mp, div(ether(1), 10)) // 0.1  OMNI: deployer
-	mp = add(mp, ether(10))         // 10   OMNI: manager
-	mp = add(mp, ether(10))         // 10   OMNI: upgrader
-	mp = add(mp, ether(100))        // 100  OMNI: relayer
-	mp = add(mp, ether(100))        // 100  OMNI: monitor
-	mp = add(mp, ether(500))        // 500  OMNI: funder
-	mp = add(mp, ether(1000))       // 1000 OMNI: genesis validator 1
-	mp = add(mp, ether(1000))       // 1000 OMNI: genesis validator 2
+	mp = add(mp, div(ether(1), 10)) // 0.1 OMNI: create3-deployer
+	mp = add(mp, div(ether(1), 10)) // 0.1 OMNI: deployer
+	mp = add(mp, ether(10))         // 10  OMNI: manager
+	mp = add(mp, ether(10))         // 10  OMNI: upgrader
+	mp = add(mp, ether(100))        // 100 OMNI: relayer
+	mp = add(mp, ether(100))        // 100 OMNI: monitor
+	mp = add(mp, ether(500))        // 500 OMNI: funder
+	mp = add(mp, ether(100))        // 100 OMNI: genesis validator 1
+	mp = add(mp, ether(100))        // 100 OMNI: genesis validator 2
 
 	tests := []struct {
 		name     string
