@@ -19,6 +19,8 @@ import (
 
 var errSentAsync = errors.New("sent async")
 
+//go:generate go test . -run TestSendAsync -count=1000
+
 func TestSendAsync(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -63,9 +65,11 @@ func TestSendAsync(t *testing.T) {
 	// Ensure nonces were reserved sequentially.
 	require.EqualValues(t, total, txMgr.ReservedNonces())
 
-	// Trigger each send and ensure expected result (errSentAsync)
+	// Complete all sends
+	txMgr.CompleteSends(total)
+
+	// Ensure expected result (errSentAsync)
 	for _, resp := range resps {
-		txMgr.MineNext()
 		require.ErrorIs(t, <-resp, errSentAsync)
 	}
 }
@@ -74,7 +78,7 @@ var _ txmgr.TxManager = (*mockTxMgr)(nil)
 
 func newMockTxMgr() *mockTxMgr {
 	return &mockTxMgr{
-		sends: make(chan txmgr.TxCandidate, 1),
+		sends: make(chan txmgr.TxCandidate),
 	}
 }
 
@@ -91,8 +95,10 @@ func (m *mockTxMgr) Send(_ context.Context, candidate txmgr.TxCandidate) (*types
 	return nil, nil, errSentAsync
 }
 
-func (m *mockTxMgr) MineNext() txmgr.TxCandidate {
-	return <-m.sends
+func (m *mockTxMgr) CompleteSends(expected int) {
+	for range expected {
+		<-m.sends
+	}
 }
 
 func (m *mockTxMgr) From() common.Address {

@@ -29,7 +29,7 @@ import (
 // Sender uses txmgr to send transactions a specific destination chain.
 type onSubmitFunc func(context.Context, *ethtypes.Transaction, *ethtypes.Receipt, xchain.Submission)
 
-// Sender uses txmgr to send transactions a specific destination chain.
+// Sender uses txmgr to send transactions to a specific destination chain.
 type Sender struct {
 	network      netconf.ID
 	txMgr        txmgr.TxManager
@@ -108,7 +108,7 @@ func (s Sender) SendAsync(ctx context.Context, sub xchain.Submission) <-chan err
 	}
 
 	if s.txMgr == nil {
-		return returnErr(errors.New("tx mgr not found", "dest_chain_id", sub.DestChainID))
+		return returnErr(errors.New("tx mgr not found [BUG]", "dest_chain_id", sub.DestChainID))
 	} else if sub.DestChainID != s.chain.ID {
 		return returnErr(errors.New("unexpected destination chain [BUG]",
 			"got", sub.DestChainID, "expect", s.chain.ID))
