@@ -4,9 +4,10 @@ type Config struct {
 	ListenAddr    string
 	ChainID       uint64
 	LoadState     string
-	BlockTimeSecs uint64
+	BlockTimeSecs float64
 	Silent        bool
 	SlotsInEpoch  uint64
+	ForkURL       string
 }
 
 func DefaultConfig() Config {
@@ -17,5 +18,6 @@ func DefaultConfig() Config {
 		Silent:        true,
 		BlockTimeSecs: 1,
 		SlotsInEpoch:  32,
+		ForkURL:       "",
 	}
 }

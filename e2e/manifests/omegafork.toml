@@ -1,0 +1,11 @@
+# MainnetFork is a devnet manifest with forked public omega chains
+
+network = "devnet"
+public_chains = ["holesky","op_sepolia", "base_sepolia","arb_sepolia"]
+
+fork = true
+
+[node.validator01]
+
+[node.fullnode01]
+mode="archive"
