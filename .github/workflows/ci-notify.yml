@@ -22,7 +22,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "🚨 `${{ github.event.repository.name }}` CI [failed](${{ github.event.workflow_run.html_url }}): `${{ github.event.workflow.name }}`"
+                    "text": "🚨 `${{ github.event.repository.name }}` repo CI <${{ github.event.workflow_run.html_url }}|failed>: `${{ github.event.workflow.name }}`"
                   }
                 }
               ]

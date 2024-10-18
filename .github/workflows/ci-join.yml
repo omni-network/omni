@@ -18,11 +18,18 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: 'stable'
+
+      - name: Build binaries
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          version: 2
+          args: release -f .goreleaser-snapshot.yaml --snapshot --clean --skip=archive
+
+      - name: Build halovisor image
+        run: scripts/halovisor/build.sh "${GITHUB_SHA::7}"
+
       - name: Run a full node
         run: |
-          # Build main docker images
-          make build-docker
-
           # Install latest omni CLI
           go install github.com/omni-network/omni/cli/cmd/omni
 
