@@ -45,7 +45,7 @@ func TestPruningHistory(t *testing.T) {
 	cl, err := rpchttp.New(cfg.Comet.RPC.ListenAddress, "/websocket")
 	require.NoError(t, err)
 
-	cprov := cprovider.NewABCIProvider(cl, netconf.Simnet, netconf.ChainVersionNamer(netconf.Simnet))
+	cprov := cprovider.NewABCI(cl, netconf.Simnet, netconf.ChainVersionNamer(netconf.Simnet))
 
 	// Wait until we get to block 1.
 	waitUntilHeight := uint64(1)

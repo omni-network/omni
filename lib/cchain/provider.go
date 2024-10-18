@@ -6,8 +6,6 @@ import (
 	rtypes "github.com/omni-network/omni/halo/registry/types"
 	"github.com/omni-network/omni/lib/xchain"
 
-	rpcclient "github.com/cometbft/cometbft/rpc/client"
-
 	"github.com/ethereum/go-ethereum/common"
 
 	utypes "cosmossdk.io/x/upgrade/types"
@@ -76,9 +74,6 @@ type Provider interface {
 
 	// GenesisFiles returns the execution (optional) and consensus genesis files.
 	GenesisFiles(ctx context.Context) (execution []byte, consensus []byte, err error)
-
-	// CometClient returns the underlying cometBFT RPC client.
-	CometClient() rpcclient.Client
 
 	// Portals returns the portals registered in the registry module.
 	Portals(ctx context.Context) ([]rtypes.Portal, bool, error)

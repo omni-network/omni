@@ -10,7 +10,6 @@ import (
 	"github.com/omni-network/omni/halo/comet"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/cchain"
-	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/expbackoff"
@@ -66,7 +65,7 @@ func (l *voterLoader) LazyLoad(
 	netID netconf.ID,
 	omniEVMCl ethclient.Client,
 	endpoints xchain.RPCEndpoints,
-	cprov cprovider.Provider,
+	cprov cchain.Provider,
 	privKey crypto.PrivKey,
 	voterStateFile string,
 	cmtAPI comet.API,

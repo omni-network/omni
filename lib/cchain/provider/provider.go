@@ -18,9 +18,6 @@ import (
 	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/xchain"
 
-	rpcclient "github.com/cometbft/cometbft/rpc/client"
-	ctypes "github.com/cometbft/cometbft/rpc/core/types"
-
 	"github.com/ethereum/go-ethereum/common"
 
 	upgradetypes "cosmossdk.io/x/upgrade/types"
@@ -42,7 +39,6 @@ type valFunc func(ctx context.Context, operator common.Address) (cchain.SDKValid
 type valsFunc func(ctx context.Context) ([]cchain.SDKValidator, error)
 type rewardsFunc func(ctx context.Context, operator common.Address) (float64, bool, error)
 type valsetFunc func(ctx context.Context, valSetID uint64, latest bool) (valSetResponse, bool, error)
-type headerFunc func(ctx context.Context, height *int64) (*ctypes.ResultHeader, error)
 type chainIDFunc func(ctx context.Context) (uint64, error)
 type genesisFunc func(ctx context.Context) (execution []byte, consensus []byte, err error)
 type planedUpgradeFunc func(ctx context.Context) (upgradetypes.Plan, bool, error)
@@ -58,7 +54,6 @@ type valSetResponse struct {
 
 // Provider implements cchain.Provider.
 type Provider struct {
-	cometCl     rpcclient.Client
 	fetch       fetchFunc
 	allAtts     allAttsFunc
 	latest      latestFunc
@@ -69,7 +64,6 @@ type Provider struct {
 	vals        valsFunc
 	rewards     rewardsFunc
 	chainID     chainIDFunc
-	header      headerFunc
 	portalBlock portalBlockFunc
 	networkFunc networkFunc
 	genesisFunc genesisFunc
@@ -91,10 +85,6 @@ func NewProviderForT(_ *testing.T, fetch fetchFunc, latest latestFunc, window wi
 		backoffFunc: backoffFunc,
 		chainNamer:  func(xchain.ChainVersion) string { return "" },
 	}
-}
-
-func (p Provider) CometClient() rpcclient.Client {
-	return p.cometCl
 }
 
 func (p Provider) CurrentPlannedPlan(ctx context.Context) (upgradetypes.Plan, bool, error) {
