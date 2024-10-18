@@ -22,22 +22,8 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "🚨 CI failed on `${{ github.event.repository.name }}:${{ github.event.workflow.name }}`."
+                    "text": "🚨 `${{ github.event.repository.name }}` CI [failed](${{ github.event.workflow_run.html_url }}): `${{ github.event.workflow.name }}`"
                   }
-                },
-                {
-                  "type": "context",
-                  "elements": [
-                    {
-                      "type": "image",
-                      "image_url": "https://upload.wikimedia.org/wikipedia/commons/4/43/Minimalist_info_Icon.png",
-                      "alt_text": "images"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "url: ${{ github.event.workflow_run.html_url }}"
-                    }
-                  ]
                 }
               ]
             }

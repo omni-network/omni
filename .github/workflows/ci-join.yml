@@ -20,7 +20,7 @@ jobs:
           curl -sSfL https://raw.githubusercontent.com/omni-network/omni/main/scripts/install_omni_cli.sh | bash -s
 
           # init halo and geth
-          omni operator init-nodes --network=omega --moniker=ci-nightly --home=$(pwd)
+          $HOME/bin/omni operator init-nodes --network=omega --moniker=ci-nightly --home=$(pwd)
 
           # start halo and geth
           docker compose up -d
