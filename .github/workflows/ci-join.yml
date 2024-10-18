@@ -17,7 +17,7 @@ jobs:
       - name: Run a full node
         run: |
           # As per public docs
-          curl -sSfL https://raw.githubusercontent.com/omni-network/omni/main/scripts/install_omni_cli.sh | sh -s
+          curl -sSfL https://raw.githubusercontent.com/omni-network/omni/main/scripts/install_omni_cli.sh | bash -s
 
           # init halo and geth
           omni operator init-nodes --network=omega --moniker=ci-nightly --home=$(pwd)
