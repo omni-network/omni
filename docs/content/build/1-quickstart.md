@@ -38,7 +38,7 @@ And the Omni CLI:
 
 ```bash
 # install
-curl -sSfL https://raw.githubusercontent.com/omni-network/omni/main/scripts/install_omni_cli.sh | sh -s
+curl -sSfL https://raw.githubusercontent.com/omni-network/omni/main/scripts/install_omni_cli.sh | bash -s
 
 # check installation
 omni version

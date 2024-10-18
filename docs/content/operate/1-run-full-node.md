@@ -12,7 +12,7 @@ The simplest way to run a full node is with the following commands:
 
 ```bash
 # install the omni cli (or download https://github.com/omni-network/omni/releases/latest)
-curl -sSfL https://raw.githubusercontent.com/omni-network/omni/main/scripts/install_omni_cli.sh | sh -s
+curl -sSfL https://raw.githubusercontent.com/omni-network/omni/main/scripts/install_omni_cli.sh | bash -s
 
 # init halo and geth
 omni operator init-nodes --network=omega --moniker=foo
