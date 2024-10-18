@@ -34,13 +34,15 @@ jobs:
           go install github.com/omni-network/omni/cli/cmd/omni
 
           # init halo and geth
-          ~/go/bin/omni operator init-nodes --network=omega --moniker=ci-nightly --home=$(pwd)
+          ~/go/bin/omni operator init-nodes --network=omega --moniker=ci-nightly --home=$(pwd)/join
 
           # start halo and geth
+          cd $(pwd)/join
           docker compose up -d
 
       - name: Wait for sync
         run: |
+          cd $(pwd)/join
           t0=$(date +%s)  # Record the start time
 
           while true; do
@@ -69,4 +71,4 @@ jobs:
 
       - name: Stop the node
         if: always()
-        run: docker compose down
+        run: cd $(pwd)/join && docker compose down
