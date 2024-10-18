@@ -130,10 +130,10 @@ func (m *mockXChainClient) GetEmittedCursor(ctx context.Context, ref xchain.Emit
 }
 
 type mockSender struct {
-	SendTransactionFn func(ctx context.Context, submission xchain.Submission) error
+	SendTransactionFn func(ctx context.Context, submission xchain.Submission) <-chan error
 }
 
-func (m *mockSender) SendTransaction(ctx context.Context, submission xchain.Submission) error {
+func (m *mockSender) SendTransaction(ctx context.Context, submission xchain.Submission) <-chan error {
 	return m.SendTransactionFn(ctx, submission)
 }
 

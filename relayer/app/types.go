@@ -18,8 +18,12 @@ type StreamUpdate struct {
 // CreateFunc is a function that creates one or more submissions from the given stream update.
 type CreateFunc func(streamUpdate StreamUpdate) ([]xchain.Submission, error)
 
-// SendFunc sends a submission to the destination chain by invoking "xsubmit" on portal contract.
-type SendFunc func(ctx context.Context, submission xchain.Submission) error
+// SendAsync sends a submission to the destination chain asynchronously
+// by invoking "xsubmit" on portal contract. It returns a channel that
+// will receive an error if the submission fails or nil when it succeeds.
+// Nonces are however reserved synchronously, so ordering of submissions
+// is preserved.
+type SendAsync func(ctx context.Context, submission xchain.Submission) <-chan error
 
 // randomHex7 returns a random 7-character hex string.
 func randomHex7() string {

@@ -88,7 +88,7 @@ func TestWorker_Run(t *testing.T) {
 
 	// mockSender should never be called, since we return empty slices from the creator.
 	mockSender := &mockSender{
-		SendTransactionFn: func(ctx context.Context, submission xchain.Submission) error {
+		SendTransactionFn: func(ctx context.Context, submission xchain.Submission) <-chan error {
 			require.Fail(t, "should not be called")
 			return nil
 		},
@@ -156,7 +156,7 @@ func TestWorker_Run(t *testing.T) {
 			mockProvider,
 			mockXClient,
 			mockCreateFunc,
-			func() (SendFunc, error) { return mockSender.SendTransaction, nil },
+			func() (SendAsync, error) { return mockSender.SendTransaction, nil },
 			noAwait)
 		go w.Run(ctx)
 	}

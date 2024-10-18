@@ -27,13 +27,13 @@ type Worker struct {
 	cProvider    cchain.Provider
 	xProvider    xchain.Provider
 	creator      CreateFunc
-	sendProvider func() (SendFunc, error)
+	sendProvider func() (SendAsync, error)
 	awaitValSet  awaitValSet
 }
 
 // NewWorker creates a new worker for a single destination chain.
 func NewWorker(destChain netconf.Chain, network netconf.Network, cProvider cchain.Provider,
-	xProvider xchain.Provider, creator CreateFunc, sendProvider func() (SendFunc, error),
+	xProvider xchain.Provider, creator CreateFunc, sendProvider func() (SendAsync, error),
 	awaitValSet awaitValSet,
 ) *Worker {
 	return &Worker{
@@ -187,7 +187,7 @@ func newMsgStreamMapper(network netconf.Network) msgStreamMapper {
 
 func (w *Worker) newCallback(
 	msgFilter *msgCursorFilter,
-	sender SendFunc,
+	sendBuffer func(context.Context, xchain.Submission) error,
 	msgStreamMapper msgStreamMapper,
 ) cchain.ProviderCallback {
 	return func(ctx context.Context, att xchain.Attestation) error {
@@ -238,7 +238,7 @@ func (w *Worker) newCallback(
 			}
 
 			for _, subs := range submissions {
-				if err := sender(ctx, subs); err != nil {
+				if err := sendBuffer(ctx, subs); err != nil {
 					return err
 				}
 			}

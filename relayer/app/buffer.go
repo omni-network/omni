@@ -9,30 +9,34 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-// activeBuffer links the output of cprovider/creator to the opsender.
-// It has an large activeBuffer allowing many submissions to be queued up.
-// It however limits the number of concurrent transactions it forwards to opsender
-// to limiting our mempool size.
+// activeBuffer links the output of each worker's cprovider/creators (one per chain version)
+// to the destination chain async sender. Fan-in buffer.
+//
+// It limits the number of concurrent transactions it forwards to the async sender
+// to limit the mempool size.
+//
+// While the mempool limit is reached, calls to AddInput block.
+//
 // If stops processing on any error.
 type activeBuffer struct {
 	chainName    string
 	buffer       chan xchain.Submission
 	mempoolLimit int64
 	errChan      chan error
-	sender       SendFunc
+	sendAsync    SendAsync
 }
 
-func newActiveBuffer(chainName string, mempoolLimit int64, sender SendFunc) *activeBuffer {
+func newActiveBuffer(chainName string, mempoolLimit int64, sendAsync SendAsync) *activeBuffer {
 	return &activeBuffer{
 		chainName:    chainName,
 		buffer:       make(chan xchain.Submission),
 		mempoolLimit: mempoolLimit,
 		errChan:      make(chan error, 1),
-		sender:       sender,
+		sendAsync:    sendAsync,
 	}
 }
 
-// AddInput adds a new submission to the buffer.
+// AddInput adds a new submission to the buffer. It blocks while mempoolLimit is reached.
 func (b *activeBuffer) AddInput(ctx context.Context, submission xchain.Submission) error {
 	select {
 	case <-ctx.Done():
@@ -45,7 +49,7 @@ func (b *activeBuffer) AddInput(ctx context.Context, submission xchain.Submissio
 	return nil
 }
 
-// Run processes the buffer, sending submissions to the opsender.
+// Run processes the buffer, sending submissions to the async sender.
 func (b *activeBuffer) Run(ctx context.Context) error {
 	sema := semaphore.NewWeighted(b.mempoolLimit)
 	for {
@@ -60,12 +64,16 @@ func (b *activeBuffer) Run(ctx context.Context) error {
 			}
 			mempoolLen.WithLabelValues(b.chainName).Inc()
 
+			// Trigger async send synchronously (for ordered nonces), but wait for response async.
+			response := b.sendAsync(ctx, submission)
 			go func() {
-				if err := b.sender(ctx, submission); err != nil {
-					b.submitErr(err)
+				err := <-response
+				if err != nil {
+					b.submitErr(errors.Wrap(err, "send submission"))
 				}
-				sema.Release(1)
+
 				mempoolLen.WithLabelValues(b.chainName).Dec()
+				sema.Release(1)
 			}()
 		}
 	}
