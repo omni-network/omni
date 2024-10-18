@@ -14,13 +14,20 @@ jobs:
   join:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
       - name: Run a full node
         run: |
-          # As per public docs
-          curl -sSfL https://raw.githubusercontent.com/omni-network/omni/main/scripts/install_omni_cli.sh | bash -s
+          # Build main docker images
+          make build-docker
+
+          # Install latest omni CLI
+          go install github.com/omni-network/omni/cli/cmd/omni
 
           # init halo and geth
-          $HOME/bin/omni operator init-nodes --network=omega --moniker=ci-nightly --home=$(pwd)
+          ~/go/bin/omni operator init-nodes --network=omega --moniker=ci-nightly --home=$(pwd)
 
           # start halo and geth
           docker compose up -d
@@ -30,17 +37,18 @@ jobs:
           t0=$(date +%s)  # Record the start time
 
           while true; do
-            elapsed=$(($(date +%s) - t0)) # Calculate the elapsed time in seconds
+            ELAPSED=$(($(date +%s) - t0)) # Calculate the elapsed time in seconds
+            ELAPSED_FMT="$((ELAPSED / 3600))h$(( (ELAPSED % 3600) / 60 ))m"
 
             # If more than 6 hours (21600 seconds) have passed, exit with a failure message
-            if [ $elapsed -gt 21600 ]; then
+            if [ ${ELAPSED} -gt 21600 ]; then
               echo "Node not synced after 6 hours, failing"
               exit 1
             fi
 
             # Get and print halo's health status
             STATUS=$(docker inspect --format "{{json .State.Health.Status }}" halo | sed 's/"//g')
-            echo "$(date +'%H:%M:%S') status=${STATUS}"
+            echo "$(date +'%H:%M:%S') status=${STATUS} elapsed=${ELAPSED_FMT}"
 
             # If the container is "healthy", it has synced, we are done
             if [ "${STATUS}" == "healthy" ]; then
@@ -48,8 +56,8 @@ jobs:
               break
             fi
 
-            # Wait for 5 seconds before checking again
-            sleep 5
+            # Wait for 30 seconds before checking again
+            sleep 30
           done
 
       - name: Stop the node
