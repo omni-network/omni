@@ -298,8 +298,13 @@ func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App, privVal cmt
 		},
 	)
 
-	// Don't instantiate the default prometheus server.
+	// We disable this flag so that the node does not start an http server with prometheus metrics.
 	cfg.Instrumentation.Prometheus = false
+	// We use a different instrumentation metric, with the prometheus flag enabled, so that the
+	// metrics still get exported.
+	instrumentationConfig := &cmtcfg.InstrumentationConfig{
+		Prometheus: true,
+	}
 
 	cmtNode, err := node.NewNode(cfg,
 		privVal,
@@ -307,7 +312,7 @@ func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App, privVal cmt
 		proxy.NewLocalClientCreator(wrapper),
 		node.DefaultGenesisDocProviderFunc(cfg),
 		cmtcfg.DefaultDBProvider,
-		node.DefaultMetricsProvider(cfg.Instrumentation),
+		node.DefaultMetricsProvider(instrumentationConfig),
 		cmtLog,
 	)
 	if err != nil {
