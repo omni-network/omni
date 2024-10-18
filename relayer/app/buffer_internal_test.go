@@ -47,9 +47,16 @@ func newMockSender() *mockBufSender {
 	}
 }
 
-func (m *mockBufSender) Send(_ context.Context, sub xchain.Submission) error {
-	m.sendChan <- sub
-	return nil
+func (m *mockBufSender) Send(_ context.Context, sub xchain.Submission) <-chan error {
+	// Simulate async send that returns success when MineNext is called below.
+	resp := make(chan error, 1)
+
+	go func() {
+		m.sendChan <- sub
+		resp <- nil
+	}()
+
+	return resp
 }
 
 func (m *mockBufSender) Next() xchain.Submission {
@@ -88,10 +95,12 @@ func Test_activeBuffer_Run(t *testing.T) {
 		}
 	}()
 
-	require.Eventuallyf(t, func() bool {
-		return counter.Load() == memLimit+1
-	},
-		time.Second, time.Millisecond, "expected %d", memLimit+1)
+	require.Eventuallyf(t,
+		func() bool {
+			return counter.Load() == memLimit+1
+		},
+		time.Second, time.Millisecond, "expected %d", memLimit+1,
+	)
 
 	// assert again that buf is blocking
 	require.Equal(t, memLimit+1, counter.Load())
@@ -102,9 +111,12 @@ func Test_activeBuffer_Run(t *testing.T) {
 		output = append(output, sender.Next())
 	}
 
-	require.Eventuallyf(t, func() bool {
-		return counter.Load() == int64(size)
-	}, time.Second, time.Millisecond, "expected %d", size)
+	require.Eventuallyf(t,
+		func() bool {
+			return counter.Load() == int64(size)
+		},
+		time.Second, time.Millisecond, "expected %d", size,
+	)
 
 	// Assert equality of input and output submissions
 	require.Len(t, input, len(output))
