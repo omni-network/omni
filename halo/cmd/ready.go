@@ -45,7 +45,8 @@ func newReadyCmd() *cobra.Command {
 // queryReady calls halo's /ready endpoint and returns nil if the status is ready
 // or an error otherwise.
 func queryReady(ctx context.Context, cfg readyConfig) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, cfg.MonitoringURL, nil)
+	url := cfg.MonitoringURL + "/ready"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return errors.Wrap(err, "http request creation")
 	}
