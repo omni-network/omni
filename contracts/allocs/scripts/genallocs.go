@@ -12,6 +12,9 @@ import (
 	"github.com/omni-network/omni/contracts/allocs"
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/e2e/manifests"
+	e2etypes "github.com/omni-network/omni/e2e/types"
+	"github.com/omni-network/omni/halo/genutil"
 	"github.com/omni-network/omni/halo/genutil/evm"
 	"github.com/omni-network/omni/lib/contracts/omnitoken"
 	"github.com/omni-network/omni/lib/errors"
@@ -20,11 +23,21 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
+
+	"github.com/BurntSushi/toml"
 )
 
-var forgeScriptABI = mustGetABI(bindings.AllocPredeploysMetaData)
+var (
+	// forgeScriptABI is the ABI for the AllocPredeploys script.
+	forgeScriptABI = mustGetABI(bindings.AllocPredeploysMetaData)
+
+	// genValAlloc is the genesis validator allocation.
+	genValAlloc = new(big.Int).Mul(
+		big.NewInt(genutil.ValidatorPower),
+		big.NewInt(params.Ether),
+	)
+)
 
 func main() {
 	err := genallocs()
@@ -39,8 +52,8 @@ func main() {
 
 func genallocs() error {
 	for _, network := range netconf.All() {
-		// always skip simnet. skip mainnet until it is required
-		if network == netconf.Simnet || network == netconf.Mainnet {
+		// no allocs needed for simnet
+		if network == netconf.Simnet {
 			continue
 		}
 
@@ -48,14 +61,18 @@ func genallocs() error {
 			continue
 		}
 
-		prefunds, err := evm.PrefundAlloc(network)
+		nativeBridgeBalance, err := getNativeBridgeBalance(network)
 		if err != nil {
-			return errors.Wrap(err, "prefund alloc")
+			return errors.Wrap(err, "get native bridge balance")
 		}
 
-		cfg, err := allocConfig(network, prefunds)
-		if err != nil {
-			return errors.Wrap(err, "alloc config")
+		cfg := bindings.AllocPredeploysConfig{
+			Manager:                eoa.MustAddress(network, eoa.RoleManager),
+			Upgrader:               eoa.MustAddress(network, eoa.RoleUpgrader),
+			ChainId:                new(big.Int).SetUint64(network.Static().OmniExecutionChainID),
+			EnableStakingAllowlist: network.IsProtected(),
+			NativeBridgeBalance:    nativeBridgeBalance,
+			Output:                 "allocs/" + network.String() + ".json",
 		}
 
 		calldata, err := forgeScriptABI.Pack("run", cfg)
@@ -84,34 +101,47 @@ func genallocs() error {
 	return nil
 }
 
-func allocConfig(network netconf.ID, prefunds types.GenesisAlloc) (bindings.AllocPredeploysConfig, error) {
+func getNativeBridgeBalance(network netconf.ID) (*big.Int, error) {
 	nativeBridgeBalance := new(big.Int).Set(omnitoken.TotalSupply)
 
-	// for mainnet (when supported), we subtract the prefunds from the native bridge balance
-	if network == netconf.Mainnet {
-		for _, prefund := range prefunds {
-			nativeBridgeBalance.Sub(nativeBridgeBalance, prefund.Balance)
-		}
+	// if not mainnet, return total supply
+	if network != netconf.Mainnet {
+		return nativeBridgeBalance, nil
+	}
 
-		// sanity check - require we do not subtract more than 100 OMNI
-		minSaneBalance := new(big.Int).Sub(
-			omnitoken.TotalSupply,
-			new(big.Int).Mul(big.NewInt(100), big.NewInt(params.Ether)),
-		)
+	// subtract prefunds
+	prefunds, err := evm.PrefundAlloc(network)
+	if err != nil {
+		return nil, errors.Wrap(err, "prefund alloc")
+	}
 
-		if nativeBridgeBalance.Cmp(minSaneBalance) < 0 {
-			return bindings.AllocPredeploysConfig{}, errors.New("native bridge below sane min", "balance", nativeBridgeBalance)
+	for _, prefund := range prefunds {
+		nativeBridgeBalance.Sub(nativeBridgeBalance, prefund.Balance)
+	}
+
+	// subtract genesis validator allocations
+	manifest, err := mainnetManifest()
+	if err != nil {
+		return nil, errors.Wrap(err, "mainnet manifest")
+	}
+
+	for _, node := range manifest.Nodes {
+		// empty mode is validator (defauly)
+		if node.Mode == string(e2etypes.ModeValidator) || node.Mode == "" {
+			nativeBridgeBalance.Sub(nativeBridgeBalance, genValAlloc)
 		}
 	}
 
-	return bindings.AllocPredeploysConfig{
-		Manager:                eoa.MustAddress(network, eoa.RoleManager),
-		Upgrader:               eoa.MustAddress(network, eoa.RoleUpgrader),
-		ChainId:                new(big.Int).SetUint64(network.Static().OmniExecutionChainID),
-		EnableStakingAllowlist: network.IsProtected(),
-		NativeBridgeBalance:    nativeBridgeBalance,
-		Output:                 "allocs/" + network.String() + ".json",
-	}, nil
+	return nativeBridgeBalance, nil
+}
+
+func mainnetManifest() (e2etypes.Manifest, error) {
+	bz := manifests.Mainnet()
+
+	var manifest e2etypes.Manifest
+	_, err := toml.Decode(string(bz), &manifest)
+
+	return manifest, err
 }
 
 func execCmd(dir string, cmd string, args ...string) (string, error) {

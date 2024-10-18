@@ -7,74 +7,74 @@ import (
 	"github.com/omni-network/omni/lib/contracts/omnitoken"
 	"github.com/omni-network/omni/lib/netconf"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 
-	"cosmossdk.io/math"
 	"github.com/stretchr/testify/require"
 )
 
-var (
-	eth1   = math.NewInt(1).MulRaw(params.Ether).BigInt()
-	eth10  = math.NewInt(10).MulRaw(params.Ether).BigInt()
-	eth20  = math.NewInt(20).MulRaw(params.Ether).BigInt()
-	eth100 = math.NewInt(100).MulRaw(params.Ether).BigInt()
-
-	addr1 = common.HexToAddress("0x1")
-	addr2 = common.HexToAddress("0x2")
-)
-
-// TestBridgeBalance the mainnet native bridge balance is total supply minus prefunds.
+// TestBridgeBalance the native bridge balance is as expected.
+// For all non-mainnet network, balance should be omnitoken.TotalSupply.
+// For mainnet, we should decrement evm prefund and genesis validator allocations.
 func TestBridgeBalance(t *testing.T) {
 	t.Parallel()
 
+	// mainnet prefunds
+	mp := big.NewInt(0)
+	mp = add(mp, div(ether(1), 10)) // 0.1  OMNI: create3-deployer
+	mp = add(mp, div(ether(1), 10)) // 0.1  OMNI: deployer
+	mp = add(mp, ether(10))         // 10   OMNI: manager
+	mp = add(mp, ether(10))         // 10   OMNI: upgrader
+	mp = add(mp, ether(100))        // 100  OMNI: relayer
+	mp = add(mp, ether(100))        // 100  OMNI: monitor
+	mp = add(mp, ether(500))        // 500  OMNI: funder
+	mp = add(mp, ether(1000))       // 1000 OMNI: genesis validator 1
+	mp = add(mp, ether(1000))       // 1000 OMNI: genesis validator 2
+
 	tests := []struct {
-		name      string
-		prefunds  types.GenesisAlloc
-		expected  *big.Int
-		shouldErr bool
+		name     string
+		network  netconf.ID
+		expected *big.Int
 	}{
 		{
-			name: "1 eth",
-			prefunds: types.GenesisAlloc{
-				addr1: {Balance: eth1},
-			},
-			expected:  new(big.Int).Sub(omnitoken.TotalSupply, eth1),
-			shouldErr: false,
+			name:     "devnet",
+			network:  netconf.Devnet,
+			expected: omnitoken.TotalSupply,
 		},
 		{
-			name: "20 eth",
-			prefunds: types.GenesisAlloc{
-				addr1: {Balance: eth10},
-				addr2: {Balance: eth10},
-			},
-			expected:  new(big.Int).Sub(omnitoken.TotalSupply, eth20),
-			shouldErr: false,
+			name:     "staging",
+			network:  netconf.Staging,
+			expected: omnitoken.TotalSupply,
 		},
 		{
-			name: "200 eth - more than sane",
-			prefunds: types.GenesisAlloc{
-				addr1: {Balance: eth100},
-				addr2: {Balance: eth100},
-			},
-			shouldErr: true,
+			name:     "omega",
+			network:  netconf.Omega,
+			expected: omnitoken.TotalSupply,
+		},
+		{
+			name:     "mainnet",
+			network:  netconf.Mainnet,
+			expected: new(big.Int).Sub(omnitoken.TotalSupply, mp),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-
-			cfg, err := allocConfig(netconf.Mainnet, tt.prefunds)
-
-			if tt.shouldErr {
-				require.Error(t, err)
-				return
-			}
-
+			balance, err := getNativeBridgeBalance(tt.network)
 			require.NoError(t, err)
-			require.Equal(t, tt.expected, cfg.NativeBridgeBalance)
+			require.Equal(t, tt.expected, balance)
 		})
 	}
+}
+
+func ether(n int64) *big.Int {
+	return new(big.Int).Mul(big.NewInt(n), big.NewInt(params.Ether))
+}
+
+func div(n *big.Int, d int64) *big.Int {
+	return new(big.Int).Div(n, big.NewInt(d))
+}
+
+func add(x, y *big.Int) *big.Int {
+	return new(big.Int).Add(x, y)
 }

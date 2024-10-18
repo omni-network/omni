@@ -13,6 +13,9 @@ var (
 
 	//go:embed staging.toml
 	staging []byte
+
+	//go:embed mainnet.toml
+	mainnet []byte
 )
 
 // Devnet0 returns the devnet0.toml manifest bytes.
@@ -28,4 +31,9 @@ func Omega() []byte {
 // Staging returns the staging.toml manifest bytes.
 func Staging() []byte {
 	return staging
+}
+
+// Mainnet returns the mainnet.toml manifest bytes.
+func Mainnet() []byte {
+	return mainnet
 }
