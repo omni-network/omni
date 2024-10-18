@@ -170,7 +170,7 @@ func maybeDownloadGenesis(ctx context.Context, network netconf.ID) error {
 		return errors.Wrap(err, "create rpc client")
 	}
 	stubNamer := func(xchain.ChainVersion) string { return "" }
-	cprov := cprovider.NewABCIProvider(rpcCl, network, stubNamer)
+	cprov := cprovider.NewABCI(rpcCl, network, stubNamer)
 
 	execution, consensus, err := cprov.GenesisFiles(ctx)
 	if err != nil {

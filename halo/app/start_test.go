@@ -13,11 +13,8 @@ import (
 
 	haloapp "github.com/omni-network/omni/halo/app"
 	uluwatu1 "github.com/omni-network/omni/halo/app/upgrades/uluwatu"
-	atypes "github.com/omni-network/omni/halo/attest/types"
 	halocmd "github.com/omni-network/omni/halo/cmd"
 	halocfg "github.com/omni-network/omni/halo/config"
-	ptypes "github.com/omni-network/omni/halo/portal/types"
-	"github.com/omni-network/omni/lib/cchain/grpc"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
@@ -29,8 +26,6 @@ import (
 	"github.com/cometbft/cometbft/types"
 
 	db "github.com/cosmos/cosmos-db"
-	sltypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
-	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -54,7 +49,9 @@ func TestSmoke(t *testing.T) {
 	cl, err := rpchttp.New(cfg.Comet.RPC.ListenAddress, "/websocket")
 	require.NoError(t, err)
 
-	cprov := cprovider.NewABCIProvider(cl, netconf.Simnet, netconf.ChainVersionNamer(netconf.Simnet))
+	cprov := cprovider.NewABCI(cl, netconf.Simnet, netconf.ChainVersionNamer(netconf.Simnet))
+	cprovGRPC, err := cprovider.NewGRPC(cfg.SDKGRPC.Address, netconf.Simnet, netconf.ChainVersionNamer(netconf.Simnet))
+	require.NoError(t, err)
 
 	// Wait until we get to block 3.
 	const target = uint64(3)
@@ -70,8 +67,8 @@ func TestSmoke(t *testing.T) {
 
 	testReadyEndpoint(t, cfg)
 	testAPI(t, cfg)
-	testGRPC(t, ctx, cfg)
 	testCProvider(t, ctx, cprov)
+	testCProvider(t, ctx, cprovGRPC)
 
 	genSet, err := cl.Validators(ctx, int64Ptr(1), nil, nil)
 	require.NoError(t, err)
@@ -150,35 +147,6 @@ func testReadyEndpoint(t *testing.T, cfg haloapp.Config) {
 	var readyResponse status
 	err = json.NewDecoder(response.Body).Decode(&readyResponse)
 	// We only check that the endpoint returns a parsable response.
-	require.NoError(t, err)
-}
-
-func testGRPC(t *testing.T, ctx context.Context, cfg haloapp.Config) {
-	t.Helper()
-	cl, err := grpc.Dial(cfg.SDKGRPC.Address)
-	require.NoError(t, err)
-
-	vals, err := cl.Staking.Validators(ctx, &stypes.QueryValidatorsRequest{})
-	require.NoError(t, err)
-	require.NotEmpty(t, vals.Validators)
-
-	infos, err := cl.Slashing.SigningInfos(ctx, &sltypes.QuerySigningInfosRequest{})
-	require.NoError(t, err)
-	require.NotEmpty(t, infos.Info)
-
-	pResp, err := cl.Slashing.Params(ctx, &sltypes.QueryParamsRequest{})
-	require.NoError(t, err)
-	require.Equal(t, uluwatu1.SlashingParams, pResp.Params)
-
-	_, err = cl.Portal.Block(ctx, &ptypes.BlockRequest{Latest: true})
-	require.NoError(t, err)
-
-	_, err = cl.Attest.ListAllAttestations(ctx, &atypes.ListAllAttestationsRequest{
-		ChainId:    cfg.Network.Static().OmniExecutionChainID,
-		ConfLevel:  uint32(xchain.ConfFinalized),
-		Status:     1,
-		FromOffset: 0,
-	})
 	require.NoError(t, err)
 }
 

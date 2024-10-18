@@ -16,6 +16,7 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 
+	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -27,6 +28,7 @@ type Connector struct {
 	XProvider  xchain.Provider
 	CProvider  cchain.Provider
 	EthClients map[uint64]ethclient.Client
+	CmtCl      rpcclient.Client
 }
 
 // Backend returns an ethbackend for the given chainID.
@@ -98,7 +100,7 @@ func New(ctx context.Context, netID netconf.ID, endpoints xchain.RPCEndpoints) (
 		return Connector{}, errors.Wrap(err, "comet rpc client")
 	}
 
-	cprov := cprovider.NewABCIProvider(cometCl, netID, netconf.ChainVersionNamer(netID))
+	cprov := cprovider.NewABCI(cometCl, netID, netconf.ChainVersionNamer(netID))
 
 	xprov := xprovider.New(network, ethClients, cprov)
 
@@ -107,6 +109,7 @@ func New(ctx context.Context, netID netconf.ID, endpoints xchain.RPCEndpoints) (
 		XProvider:  xprov,
 		CProvider:  cprov,
 		EthClients: ethClients,
+		CmtCl:      cometCl,
 	}, nil
 }
 

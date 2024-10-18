@@ -26,6 +26,7 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	utypes "cosmossdk.io/x/upgrade/types"
+	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	dtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
@@ -34,8 +35,12 @@ import (
 	gogogrpc "github.com/cosmos/gogoproto/grpc"
 	"github.com/cosmos/gogoproto/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 )
 
+// Dial returns a ABCI provider to the provided network connecting to well-known public RPCs.
 func Dial(network netconf.ID) (Provider, error) {
 	consRPC := network.Static().ConsensusRPC()
 	if consRPC == "" {
@@ -47,27 +52,45 @@ func Dial(network netconf.ID) (Provider, error) {
 		return Provider{}, errors.Wrap(err, "new tendermint client")
 	}
 
-	return NewABCIProvider(cl, network, netconf.ChainVersionNamer(network)), nil
+	return NewABCI(cl, network, netconf.ChainVersionNamer(network)), nil
 }
 
-func NewABCIProvider(cmtCl rpcclient.Client, network netconf.ID, chainNamer func(xchain.ChainVersion) string) Provider {
+// NewABCI returns a new provider using the provided cometBFT ABCI client.
+func NewABCI(cmtCl rpcclient.Client, network netconf.ID, chainNamer func(xchain.ChainVersion) string) Provider {
+	return newProvider(rpcAdaptor{abci: cmtCl}, network, chainNamer)
+}
+
+// NewGRPC returns a new provider using the provided gRPC server address.
+// This is preferred to NewABCI as it bypasses CometBFT so is much faster
+// and doesn't affect chain performance.
+func NewGRPC(target string, network netconf.ID, chainNamer func(xchain.ChainVersion) string) (Provider, error) {
+	grpcClient, err := grpc.NewClient(target, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return Provider{}, errors.Wrap(err, "new grpc client")
+	}
+
+	return newProvider(grpcClient, network, chainNamer), nil
+}
+
+func newProvider(cc gogogrpc.ClientConn, network netconf.ID, chainNamer func(xchain.ChainVersion) string) Provider {
 	// Stream backoff for 1s, querying new attestations after 1 consensus block
 	backoffFunc := func(ctx context.Context) func() {
 		return expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second))
 	}
 
-	acl := atypes.NewQueryClient(rpcAdaptor{abci: cmtCl})
-	vcl := vtypes.NewQueryClient(rpcAdaptor{abci: cmtCl})
-	pcl := ptypes.NewQueryClient(rpcAdaptor{abci: cmtCl})
-	rcl := rtypes.NewQueryClient(rpcAdaptor{abci: cmtCl})
-	gcl := genserve.NewQueryClient(rpcAdaptor{abci: cmtCl})
-	ucl := utypes.NewQueryClient(rpcAdaptor{abci: cmtCl})
-	scl := stypes.NewQueryClient(rpcAdaptor{abci: cmtCl})
-	dcl := dtypes.NewQueryClient(rpcAdaptor{abci: cmtCl})
-	slcl := sltypes.NewQueryClient(rpcAdaptor{abci: cmtCl})
+	acl := atypes.NewQueryClient(cc)
+	vcl := vtypes.NewQueryClient(cc)
+	pcl := ptypes.NewQueryClient(cc)
+	rcl := rtypes.NewQueryClient(cc)
+	gcl := genserve.NewQueryClient(cc)
+	ucl := utypes.NewQueryClient(cc)
+	scl := stypes.NewQueryClient(cc)
+	dcl := dtypes.NewQueryClient(cc)
+	slcl := sltypes.NewQueryClient(cc)
+	cmtcl := cmtservice.NewServiceClient(cc)
 
 	return Provider{
-		fetch:       newABCIFetchFunc(acl, cmtCl, chainNamer),
+		fetch:       newABCIFetchFunc(acl, cmtcl, chainNamer),
 		allAtts:     newABCIAllAttsFunc(acl),
 		latest:      newABCILatestFunc(acl),
 		window:      newABCIWindowFunc(acl),
@@ -81,12 +104,10 @@ func NewABCIProvider(cmtCl rpcclient.Client, network netconf.ID, chainNamer func
 		genesisFunc: newABCIGenesisFunc(gcl),
 		plannedFunc: newABCIPlannedUpgradeFunc(ucl),
 		appliedFunc: newABCIAppliedUpgradeFunc(ucl),
-		chainID:     newChainIDFunc(cmtCl),
-		header:      cmtCl.Header,
+		chainID:     newChainIDFunc(cmtcl),
 		backoffFunc: backoffFunc,
 		chainNamer:  chainNamer,
 		network:     network,
-		cometCl:     cmtCl,
 	}
 }
 
@@ -160,7 +181,7 @@ func newABCIPlannedUpgradeFunc(ucl utypes.QueryClient) planedUpgradeFunc {
 }
 
 // newChainIDFunc returns a function that returns the consensus chain ID. It caches the result.
-func newChainIDFunc(abci rpcclient.SignClient) chainIDFunc {
+func newChainIDFunc(cmtCl cmtservice.ServiceClient) chainIDFunc {
 	var mu sync.Mutex
 	var chainID uint64
 
@@ -174,12 +195,12 @@ func newChainIDFunc(abci rpcclient.SignClient) chainIDFunc {
 		ctx, span := tracer.Start(ctx, spanName("chain_id"))
 		defer span.End()
 
-		resp, err := abci.Header(ctx, nil)
+		resp, err := cmtCl.GetLatestBlock(ctx, &cmtservice.GetLatestBlockRequest{})
 		if err != nil {
 			return 0, errors.Wrap(err, "abci header")
 		}
 
-		chainID, err = netconf.ConsensusChainIDStr2Uint64(resp.Header.ChainID)
+		chainID, err = netconf.ConsensusChainIDStr2Uint64(resp.SdkBlock.Header.ChainID)
 		if err != nil {
 			return 0, errors.Wrap(err, "parse chain ID")
 		}
@@ -201,7 +222,7 @@ func newABCIRewards(cl dtypes.QueryClient) rewardsFunc {
 		}
 
 		resp, err := cl.ValidatorOutstandingRewards(ctx, req)
-		if errors.Is(err, sdkerrors.ErrKeyNotFound) {
+		if errors.Is(err, sdkerrors.ErrKeyNotFound) || status.Code(err) == codes.NotFound {
 			return 0, false, nil
 		} else if err != nil {
 			incQueryErr(endpoint)
@@ -222,7 +243,7 @@ func newABCIValFunc(cl stypes.QueryClient) valFunc {
 
 		valAddr := sdk.ValAddress(operatorAddr.Bytes())
 		resp, err := cl.Validator(ctx, &stypes.QueryValidatorRequest{ValidatorAddr: valAddr.String()})
-		if errors.Is(err, sdkerrors.ErrKeyNotFound) {
+		if errors.Is(err, sdkerrors.ErrKeyNotFound) || status.Code(err) == codes.NotFound {
 			return cchain.SDKValidator{}, false, nil
 		} else if err != nil {
 			incQueryErr(endpoint)
@@ -265,7 +286,7 @@ func newABCIValsetFunc(cl vtypes.QueryClient) valsetFunc {
 		defer span.End()
 
 		resp, err := cl.ValidatorSet(ctx, &vtypes.ValidatorSetRequest{Id: valSetID, Latest: latest})
-		if errors.Is(err, sdkerrors.ErrKeyNotFound) {
+		if errors.Is(err, sdkerrors.ErrKeyNotFound) || status.Code(err) == codes.NotFound {
 			return valSetResponse{}, false, nil
 		} else if err != nil {
 			incQueryErr(endpoint)
@@ -322,7 +343,7 @@ func newABCIAllAttsFunc(cl atypes.QueryClient) allAttsFunc {
 	}
 }
 
-func newABCIFetchFunc(cl atypes.QueryClient, client rpcclient.Client, chainNamer func(xchain.ChainVersion) string) fetchFunc {
+func newABCIFetchFunc(attCl atypes.QueryClient, cmtCl cmtservice.ServiceClient, chainNamer func(xchain.ChainVersion) string) fetchFunc {
 	return func(ctx context.Context, chainVer xchain.ChainVersion, fromOffset uint64) ([]xchain.Attestation, error) {
 		const endpoint = "fetch_attestations"
 		defer latency(endpoint)()
@@ -333,18 +354,16 @@ func newABCIFetchFunc(cl atypes.QueryClient, client rpcclient.Client, chainNamer
 		chainName := chainNamer(chainVer)
 
 		// try fetching from latest height
-		atts, ok, err := attsFromAtHeight(ctx, cl, chainVer, fromOffset, 0)
+		atts, ok, err := attsFromAtHeight(ctx, attCl, chainVer, fromOffset, 0)
 		if err != nil {
 			incQueryErr(endpoint)
 			return nil, errors.Wrap(err, "abci query attestations-from")
-		}
-
-		if ok {
+		} else if ok {
 			fetchStepsMetrics(chainName, 0, 0)
 			return atts, nil
 		}
 
-		earliestAttestationAtLatestHeight, ok, err := queryEarliestAttestation(ctx, cl, chainVer, 0)
+		earliestAttestationAtLatestHeight, ok, err := queryEarliestAttestation(ctx, attCl, chainVer, 0)
 		if err != nil {
 			incQueryErr(endpoint)
 			return nil, errors.Wrap(err, "abci query earliest-attestation-in-state")
@@ -357,19 +376,17 @@ func newABCIFetchFunc(cl atypes.QueryClient, client rpcclient.Client, chainNamer
 			return []xchain.Attestation{}, nil
 		}
 
-		offsetHeight, err := searchOffsetInHistory(ctx, client, cl, chainVer, chainName, fromOffset)
+		offsetHeight, err := searchOffsetInHistory(ctx, cmtCl, attCl, chainVer, chainName, fromOffset)
 		if err != nil {
 			incQueryErr(endpoint)
 			return nil, errors.Wrap(err, "searching offset in history")
 		}
 
-		atts, attsFromOk, err := attsFromAtHeight(ctx, cl, chainVer, fromOffset, offsetHeight)
+		atts, ok, err = attsFromAtHeight(ctx, attCl, chainVer, fromOffset, offsetHeight)
 		if err != nil {
 			incQueryErr(endpoint)
 			return nil, errors.Wrap(err, "abci query attestations-from")
-		}
-
-		if !attsFromOk {
+		} else if !ok {
 			return nil, errors.New("expected to find attestations [BUG]")
 		}
 
@@ -429,7 +446,7 @@ func newABCIPortalBlockFunc(pcl ptypes.QueryClient) portalBlockFunc {
 		defer span.End()
 
 		resp, err := pcl.Block(ctx, &ptypes.BlockRequest{Id: attestOffset, Latest: latest})
-		if errors.Is(err, sdkerrors.ErrKeyNotFound) {
+		if errors.Is(err, sdkerrors.ErrKeyNotFound) || status.Code(err) == codes.NotFound {
 			return nil, false, nil
 		} else if err != nil {
 			incQueryErr(endpoint)
@@ -449,7 +466,7 @@ func newABCINetworkFunc(pcl rtypes.QueryClient) networkFunc {
 		defer span.End()
 
 		resp, err := pcl.Network(ctx, &rtypes.NetworkRequest{Id: networkID, Latest: latest})
-		if errors.Is(err, sdkerrors.ErrKeyNotFound) {
+		if errors.Is(err, sdkerrors.ErrKeyNotFound) || status.Code(err) == codes.NotFound {
 			return nil, false, nil
 		} else if err != nil {
 			incQueryErr(endpoint)
@@ -548,18 +565,20 @@ func spanName(endpoint string) string {
 // searchOffsetInHistory searches the consensus state history and
 // returns a historical consensus block height that contains an approved attestation
 // for the provided chain version and fromOffset.
-func searchOffsetInHistory(ctx context.Context, client rpcclient.Client, cl atypes.QueryClient, chainVer xchain.ChainVersion, chainName string, fromOffset uint64) (uint64, error) {
+func searchOffsetInHistory(ctx context.Context, cmtCl cmtservice.ServiceClient, attCl atypes.QueryClient, chainVer xchain.ChainVersion, chainName string, fromOffset uint64) (uint64, error) {
 	const endpoint = "search_offset"
 	defer latency(endpoint)()
 
 	// Exponentially backoff to find a good start point for binary search, this prefers more recent queries
-	info, err := client.ABCIInfo(ctx)
+
+	latestBlockResp, err := cmtCl.GetLatestBlock(ctx, &cmtservice.GetLatestBlockRequest{})
 	if err != nil {
-		return 0, errors.Wrap(err, "abci query info")
+		return 0, errors.Wrap(err, "query latest block")
 	}
+	latestHeight := uint64(latestBlockResp.SdkBlock.Header.Height)
 
 	var startHeightIndex uint64
-	endHeightIndex := uint64(info.Response.LastBlockHeight)
+	endHeightIndex := latestHeight
 	lookback := uint64(1)
 	var lookbackStepsCounter uint64 // For metrics only
 	queryHeight := endHeightIndex
@@ -572,17 +591,17 @@ func searchOffsetInHistory(ctx context.Context, client rpcclient.Client, cl atyp
 			queryHeight -= lookback
 		}
 
-		if queryHeight == 0 || queryHeight >= uint64(info.Response.LastBlockHeight) {
+		if queryHeight == 0 || queryHeight >= latestHeight {
 			return 0, errors.New("unexpected query height [BUG]", "height", queryHeight) // This should never happen
 		}
-		earliestAtt, ok, err := queryEarliestAttestation(ctx, cl, chainVer, queryHeight)
+		earliestAtt, ok, err := queryEarliestAttestation(ctx, attCl, chainVer, queryHeight)
 		if IsErrHistoryPruned(err) {
 			// We've jumped to before the prune height, but _might_ still have the requested offset
-			earliestStoreHeight, err := getEarliestStoreHeight(ctx, cl, chainVer, queryHeight+1)
+			earliestStoreHeight, err := getEarliestStoreHeight(ctx, attCl, chainVer, queryHeight+1)
 			if err != nil {
 				return 0, errors.Wrap(err, "failed to get earliest store height")
 			}
-			earliestAtt, ok, err = queryEarliestAttestation(ctx, cl, chainVer, earliestStoreHeight)
+			earliestAtt, ok, err = queryEarliestAttestation(ctx, attCl, chainVer, earliestStoreHeight)
 			if err != nil {
 				incQueryErr(endpoint)
 				return 0, errors.Wrap(err, "abci query earliest-attestation-in-state")
@@ -620,7 +639,7 @@ func searchOffsetInHistory(ctx context.Context, client rpcclient.Client, cl atyp
 		binarySearchStepsCounter++
 		midHeightIndex := startHeightIndex + umath.SubtractOrZero(endHeightIndex, startHeightIndex)/2
 
-		earliestAtt, ok, err := queryEarliestAttestation(ctx, cl, chainVer, midHeightIndex)
+		earliestAtt, ok, err := queryEarliestAttestation(ctx, attCl, chainVer, midHeightIndex)
 		if err != nil {
 			incQueryErr(endpoint)
 			return 0, errors.Wrap(err, "abci query earliest-attestation-in-state")
@@ -632,7 +651,7 @@ func searchOffsetInHistory(ctx context.Context, client rpcclient.Client, cl atyp
 			continue
 		}
 
-		latestAtt, ok, err := queryLatestAttestation(ctx, cl, chainVer, midHeightIndex)
+		latestAtt, ok, err := queryLatestAttestation(ctx, attCl, chainVer, midHeightIndex)
 		if err != nil {
 			incQueryErr(endpoint)
 			return 0, errors.Wrap(err, "abci query latest-attestation")
@@ -643,7 +662,7 @@ func searchOffsetInHistory(ctx context.Context, client rpcclient.Client, cl atyp
 		}
 
 		if fromOffset >= earliestAtt.AttestOffset && fromOffset <= latestAtt.AttestOffset {
-			log.Debug(ctx, "Fetching offset from history", "chain", chainName, "from", fromOffset, "latest", info.Response.LastBlockHeight, "found", midHeightIndex, "lookback", lookbackStepsCounter, "search", binarySearchStepsCounter)
+			log.Debug(ctx, "Fetching offset from history", "chain", chainName, "from", fromOffset, "latest", latestHeight, "found", midHeightIndex, "lookback", lookbackStepsCounter, "search", binarySearchStepsCounter)
 			fetchStepsMetrics(chainName, lookbackStepsCounter, binarySearchStepsCounter)
 
 			return midHeightIndex, nil
@@ -687,7 +706,7 @@ func queryEarliestAttestation(ctx context.Context, cl atypes.QueryClient, chainV
 			ChainId:   chainVer.ID,
 			ConfLevel: uint32(chainVer.ConfLevel),
 		})
-	if errors.Is(err, sdkerrors.ErrKeyNotFound) {
+	if errors.Is(err, sdkerrors.ErrKeyNotFound) || status.Code(err) == codes.NotFound {
 		return xchain.Attestation{}, false, nil
 	} else if err != nil {
 		return xchain.Attestation{}, false, err
@@ -709,7 +728,7 @@ func queryLatestAttestation(ctx context.Context, cl atypes.QueryClient, chainVer
 			ChainId:   chainVer.ID,
 			ConfLevel: uint32(chainVer.ConfLevel),
 		})
-	if errors.Is(err, sdkerrors.ErrKeyNotFound) {
+	if errors.Is(err, sdkerrors.ErrKeyNotFound) || status.Code(err) == codes.NotFound {
 		return xchain.Attestation{}, false, nil
 	} else if err != nil {
 		return xchain.Attestation{}, false, err
@@ -733,9 +752,7 @@ func attsFromAtHeight(ctx context.Context, cl atypes.QueryClient, chainVer xchai
 	})
 	if err != nil {
 		return []xchain.Attestation{}, false, errors.Wrap(err, "abci query attestations-from")
-	}
-
-	if len(resp.Attestations) == 0 {
+	} else if len(resp.Attestations) == 0 {
 		return []xchain.Attestation{}, false, nil
 	}
 

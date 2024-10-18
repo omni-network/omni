@@ -10,6 +10,7 @@ import (
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/halo/genutil/genserve"
 	"github.com/omni-network/omni/lib/buildinfo"
+	"github.com/omni-network/omni/lib/cchain"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -174,7 +175,15 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 	cmtAPI := comet.NewAPI(rpcClient)
 	app.SetCometAPI(cmtAPI)
 
-	cProvider := cprovider.NewABCIProvider(rpcClient, cfg.Network, netconf.ChainVersionNamer(cfg.Network))
+	clientCtx := app.ClientContext(ctx).WithClient(rpcClient).WithHomeDir(cfg.HomeDir)
+	if err := startRPCServers(ctx, cfg, app, sdkLogger, metrics, asyncAbort, clientCtx); err != nil {
+		return nil, nil, err
+	}
+
+	cProvider, err := newCProvider(rpcClient, cfg)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	go func() {
 		err := voter.LazyLoad(
@@ -192,11 +201,6 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 			asyncAbort <- err
 		}
 	}()
-
-	clientCtx := app.ClientContext(ctx).WithClient(rpcClient).WithHomeDir(cfg.HomeDir)
-	if err := startRPCServers(ctx, cfg, app, sdkLogger, metrics, asyncAbort, clientCtx); err != nil {
-		return nil, nil, err
-	}
 
 	log.Info(ctx, "Starting CometBFT")
 
@@ -237,6 +241,16 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 
 		return nil
 	}, nil
+}
+
+// newCProvider returns a new cchain provider. Either GRPC if enabled since it is faster,
+// otherwise the ABCI provider.
+func newCProvider(rpcClient *rpclocal.Local, cfg Config) (cchain.Provider, error) {
+	if cfg.SDKGRPC.Enable {
+		return cprovider.NewGRPC(cfg.SDKGRPC.Address, cfg.Network, netconf.ChainVersionNamer(cfg.Network))
+	}
+
+	return cprovider.NewABCI(rpcClient, cfg.Network, netconf.ChainVersionNamer(cfg.Network)), nil
 }
 
 // startRPCServers starts the Cosmos REST and gRPC servers.
