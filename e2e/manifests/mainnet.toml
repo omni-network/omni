@@ -4,11 +4,8 @@ public_chains = [] # TBD
 multi_omni_evms = true
 prometheus   = true
 
-
 [node.validator01]
 [node.validator02]
-[node.validator03]
-[node.validator04]
 
 [node.seed01]
 mode = "seed"
@@ -38,16 +35,6 @@ p2p_consensus = "0093BBC5D625A10D560101C4F3AD763B16A6A608"
 validator = "0x19a4Cb685af95A96BEd67C764b6dB137978a5B17"
 [keys.validator02_evm]
 p2p_execution = "0x683d5892729d5fC9670e68b3e3bABFdb4d01b7c9"
-[keys.validator03]
-p2p_consensus = "BD8B56EDE6AE5475671B39155D5EE8E674F48D5A"
-validator = "0xB007d2A7e4C27CECF62c1cEc7517550ab599c6c8"
-[keys.validator03_evm]
-p2p_execution = "0x30251DdFBEbB7809D2137EDA7dc70cA2ed18a056"
-[keys.validator04]
-p2p_consensus = "1A48E18DDBF09C5D0605592CE406B0F9A5D1842D"
-validator = "0x1B169F0Da80B6A074EC261C0e18e43109b151553"
-[keys.validator04_evm]
-p2p_execution = "0x18311881059D7F4A6DA363f45737259Fc541AbFF"
 
 # Seed keys
 [keys.seed01]
