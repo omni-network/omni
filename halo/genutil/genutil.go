@@ -47,7 +47,7 @@ import (
 const slashingBlocksWindow = 1000
 
 // ValidatorPower is the default power assigned to genesis validators.
-const ValidatorPower = 1000
+const ValidatorPower = 100
 
 func MakeGenesis(
 	network netconf.ID,
