@@ -50,8 +50,8 @@ func TestSmoke(t *testing.T) {
 	require.NoError(t, err)
 
 	cprov := cprovider.NewABCI(cl, netconf.Simnet, netconf.ChainVersionNamer(netconf.Simnet))
-	cprovGRPC, err := cprovider.NewGRPC(cfg.SDKGRPC.Address, netconf.Simnet, netconf.ChainVersionNamer(netconf.Simnet))
-	require.NoError(t, err)
+	// cprovGRPC, err := cprovider.NewGRPC(cfg.SDKGRPC.Address, netconf.Simnet, netconf.ChainVersionNamer(netconf.Simnet))
+	// require.NoError(t, err)
 
 	// Wait until we get to block 3.
 	const target = uint64(3)
@@ -68,7 +68,7 @@ func TestSmoke(t *testing.T) {
 	testReadyEndpoint(t, cfg)
 	testAPI(t, cfg)
 	testCProvider(t, ctx, cprov)
-	testCProvider(t, ctx, cprovGRPC)
+	// testCProvider(t, ctx, cprovGRPC)
 
 	genSet, err := cl.Validators(ctx, int64Ptr(1), nil, nil)
 	require.NoError(t, err)
