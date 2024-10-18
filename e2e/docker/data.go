@@ -56,6 +56,17 @@ func NewInfraData(manifest types.Manifest) (types.InfrastructureData, error) {
 		}
 	}
 
+	// in fork mode, all public chains get an anvil instance
+	if manifest.Fork {
+		for _, name := range manifest.PublicChains {
+			infd.Instances[name] = e2e.InstanceData{
+				IPAddress:    nextInternalIP(),
+				ExtIPAddress: localhost,
+				Port:         nextPort(),
+			}
+		}
+	}
+
 	// No IP for relayer required since it doesn't serve an API.
 
 	return types.InfrastructureData{

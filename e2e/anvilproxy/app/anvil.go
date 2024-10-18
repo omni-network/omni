@@ -80,14 +80,17 @@ func startAnvil(ctx context.Context, cfg anvilConfig) (anvilInstance, error) {
 	args := []string{
 		"--port", strconv.Itoa(cfg.Port),
 		"--chain-id", strconv.FormatUint(cfg.ChainID, 10),
-		"--block-time", strconv.FormatUint(cfg.BlockTimeSecs, 10),
+		"--block-time", fmt.Sprintf("%.1f", cfg.BlockTimeSecs),
 		"--slots-in-an-epoch", strconv.FormatUint(cfg.SlotsInEpoch, 10),
 	}
 	if cfg.LoadState != "" {
 		args = append(args, "--load-state", cfg.LoadState)
 	}
-	if cfg.Silent {
-		args = append(args, "--silent")
+	// if cfg.Silent {
+	// 	args = append(args, "--silent")
+	// }
+	if cfg.ForkURL != "" {
+		args = append(args, "--fork-url", cfg.ForkURL)
 	}
 
 	dir, err := os.MkdirTemp("", "")
