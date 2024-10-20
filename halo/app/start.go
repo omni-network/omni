@@ -230,7 +230,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		// Note that cometBFT doesn't shut down cleanly. It leaves a bunch of goroutines running...
 
 		if err := stopMonitoringAPI(ctx); err != nil {
-			return errors.Wrap(err, "stop HTTP server")
+			return errors.Wrap(err, "stop monitoring API")
 		}
 
 		if err := stopTracer(ctx); err != nil {
@@ -314,7 +314,12 @@ func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App, privVal cmt
 		},
 	)
 
-	// Don't instantiate the default prometheus server.
+	// Configure CometBFT prometheus metrics as per provided config
+	metrics := node.DefaultMetricsProvider(&cmtcfg.InstrumentationConfig{
+		Prometheus: cfg.Instrumentation.Prometheus,
+		Namespace:  cfg.Instrumentation.Namespace,
+	})
+	// But don't instantiate the CometBFT prometheus server, we do it startMonitoringAPI.
 	cfg.Instrumentation.Prometheus = false
 
 	cmtNode, err := node.NewNode(cfg,
@@ -323,11 +328,11 @@ func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App, privVal cmt
 		proxy.NewLocalClientCreator(wrapper),
 		node.DefaultGenesisDocProviderFunc(cfg),
 		cmtcfg.DefaultDBProvider,
-		node.DefaultMetricsProvider(cfg.Instrumentation),
+		metrics,
 		cmtLog,
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "create node")
+		return nil, errors.Wrap(err, "create comet node")
 	}
 
 	return cmtNode, nil
