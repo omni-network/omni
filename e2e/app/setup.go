@@ -283,6 +283,10 @@ func MakeConfig(testnet types.Testnet, node *e2e.Node, nodeDir string) (*config.
 		return nil, errors.New("only PrivvalKeyFile is supported")
 	}
 
+	if testnet.Network == netconf.Staging {
+		cfg.LogLevel = "debug" // Debug log levels on staging
+	}
+
 	// Try disabling seedmode to fix joining network issues.
 	// if node.Mode == types.ModeSeed {
 	// cfg.P2P.SeedMode = true
@@ -430,6 +434,10 @@ func writeHaloConfig(
 	if testCfg {
 		cfg.SnapshotInterval = 1   // Write snapshots each block in e2e tests
 		cfg.SnapshotKeepRecent = 0 // Keep all snapshots in e2e tests
+	}
+
+	if network == netconf.Staging {
+		logCfg.Level = log.LevelDebug // Debug log levels on staging
 	}
 
 	return halocfg.WriteConfigTOML(cfg, logCfg)
