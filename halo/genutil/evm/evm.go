@@ -20,12 +20,11 @@ import (
 )
 
 var (
-	eth0_1 = math.NewInt(1).MulRaw(params.Ether / 10).BigInt()
-	eth10  = math.NewInt(10).MulRaw(params.Ether).BigInt()
-	eth100 = math.NewInt(100).MulRaw(params.Ether).BigInt()
-	eth500 = math.NewInt(500).MulRaw(params.Ether).BigInt()
-	eth1k  = math.NewInt(1000).MulRaw(params.Ether).BigInt()
-	eth1m  = math.NewInt(1000000).MulRaw(params.Ether).BigInt()
+	eth0_01 = math.NewInt(1).MulRaw(params.Ether / 100).BigInt()
+	eth2    = math.NewInt(2).MulRaw(params.Ether).BigInt()
+	eth4    = math.NewInt(4).MulRaw(params.Ether).BigInt()
+	eth1k   = math.NewInt(1000).MulRaw(params.Ether).BigInt()
+	eth1m   = math.NewInt(1000000).MulRaw(params.Ether).BigInt()
 )
 
 func newUint64(val uint64) *uint64 { return &val }
@@ -185,13 +184,13 @@ func omegaPrefundAlloc() types.GenesisAlloc {
 // to the bridge contract on L1.
 func mainnetPrefundAllocs() types.GenesisAlloc {
 	return types.GenesisAlloc{
-		eoa.MustAddress(netconf.Mainnet, eoa.RoleCreate3Deployer): {Balance: eth0_1}, // deploys one contract
-		eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer):        {Balance: eth0_1}, // deploys a couple contracts
-		eoa.MustAddress(netconf.Mainnet, eoa.RoleManager):         {Balance: eth10},  // rarely used
-		eoa.MustAddress(netconf.Mainnet, eoa.RoleUpgrader):        {Balance: eth10},  // rarely used
-		eoa.MustAddress(netconf.Mainnet, eoa.RoleRelayer):         {Balance: eth100}, // enough to relay for a while
-		eoa.MustAddress(netconf.Mainnet, eoa.RoleMonitor):         {Balance: eth100}, // enough to monitor for a while
-		eoa.MustAddress(netconf.Mainnet, eoa.RoleFunder):          {Balance: eth500}, // enough for a few funding actions
+		eoa.MustAddress(netconf.Mainnet, eoa.RoleCreate3Deployer): {Balance: eth0_01}, // deploys one contract
+		eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer):        {Balance: eth0_01}, // deploys a couple contracts
+		eoa.MustAddress(netconf.Mainnet, eoa.RoleManager):         {Balance: eth0_01}, // rarely used
+		eoa.MustAddress(netconf.Mainnet, eoa.RoleUpgrader):        {Balance: eth0_01}, // rarely used
+		eoa.MustAddress(netconf.Mainnet, eoa.RoleRelayer):         {Balance: eth2},    // enough to relay for at least 14 days
+		eoa.MustAddress(netconf.Mainnet, eoa.RoleMonitor):         {Balance: eth2},    // enough to monitor for at least 14 days
+		eoa.MustAddress(netconf.Mainnet, eoa.RoleFunder):          {Balance: eth4},    // enough for a two funding actions
 	}
 }
 

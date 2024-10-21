@@ -28,7 +28,7 @@ var (
 	// to last a weekend without topping up even if fees are spiking.
 	thresholdMedium = FundThresholds{
 		minEther:    0.5,
-		targetEther: 5,
+		targetEther: 2,
 	}
 
 	// thresholdLarge is used by EOAs that constantly perform actions and need enough balance
@@ -39,7 +39,7 @@ var (
 	}
 
 	defaultThresholdsByRole = map[Role]FundThresholds{
-		RoleRelayer:         thresholdLarge,  // Relayer needs a ton of balance.
+		RoleRelayer:         thresholdMedium, // Relayer needs a ton of balance.
 		RoleMonitor:         thresholdMedium, // Dynamic Fee updates every few hours.
 		RoleCreate3Deployer: thresholdTiny,   // Only 1 contract per chain
 		RoleManager:         thresholdTiny,   // Rarely used
