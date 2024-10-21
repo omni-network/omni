@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/halo/attest/voter"
+	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/xchain"
 	relayer "github.com/omni-network/omni/relayer/app"
@@ -111,6 +112,7 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 				Attestation: att,
 				Msgs:        block.Msgs,
 				MsgTree:     tree,
+				ValSet:      []cchain.PortalValidator{{Address: addr, Power: 1}},
 			},
 		},
 	}

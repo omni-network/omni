@@ -128,6 +128,7 @@ func TestWorker_Run(t *testing.T) {
 						ChainID:     chainVer.ID,
 						BlockHeight: offset,
 					},
+					ValidatorSetID: mockValSetID,
 				}
 			}
 

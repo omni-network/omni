@@ -2,9 +2,13 @@ package relayer
 
 import (
 	"slices"
+	"sort"
 
+	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // CreateSubmissions splits the update into multiple submissions that are each small enough (wrt calldata and gas)
@@ -17,6 +21,12 @@ func CreateSubmissions(up StreamUpdate) ([]xchain.Submission, error) {
 		} else if i > 0 && msg.StreamOffset != up.Msgs[i-1].StreamOffset+1 {
 			return nil, errors.New("msgs not sequential [BUG]")
 		}
+	}
+
+	// Select minimum signatures to reach quorum to reduce gas costs
+	sigs, err := quorumSigs(up.ValSet, up.Attestation.Signatures)
+	if err != nil {
+		return nil, errors.Wrap(err, "quorum sigs", "valset_id", up.Attestation.ValidatorSetID, "att_offset", up.Attestation.AttestOffset)
 	}
 
 	att := up.Attestation
@@ -41,9 +51,47 @@ func CreateSubmissions(up StreamUpdate) ([]xchain.Submission, error) {
 			Msgs:            msgs,
 			Proof:           multi.Proof,
 			ProofFlags:      multi.ProofFlags,
-			Signatures:      att.Signatures,
+			Signatures:      sigs,
 			DestChainID:     up.DestChainID,
 		})
+	}
+
+	return resp, nil
+}
+
+// quorumSigs returns the minimum number of signatures required to reach quorum.
+func quorumSigs(valSet []cchain.PortalValidator, signatures []xchain.SigTuple) ([]xchain.SigTuple, error) {
+	var totalPower int64
+	powers := make(map[common.Address]int64)
+	for _, val := range valSet {
+		totalPower += val.Power
+		powers[val.Address] = val.Power
+	}
+
+	quorum := totalPower * 2 / 3
+
+	// Order signatures by power decreasing
+	sort.Slice(signatures, func(i, j int) bool {
+		return powers[signatures[i].ValidatorAddress] > powers[signatures[j].ValidatorAddress]
+	})
+
+	// Select minimum signatures to reach quorum
+	var resp []xchain.SigTuple
+	var sum int64
+	for _, sig := range signatures {
+		resp = append(resp, sig)
+		power, ok := powers[sig.ValidatorAddress]
+		if !ok {
+			return nil, errors.New("signature not in validator set [BUG]", "val", sig.ValidatorAddress)
+		}
+		sum += power
+		if sum > quorum {
+			break
+		}
+	}
+
+	if sum <= quorum {
+		return nil, errors.New("quorum not reached", "got", sum, "need", quorum)
 	}
 
 	return resp, nil

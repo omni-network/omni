@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/lib/cchain"
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -137,6 +138,8 @@ func (m *mockSender) SendTransaction(ctx context.Context, submission xchain.Subm
 	return m.SendTransactionFn(ctx, submission)
 }
 
+const mockValSetID = 99
+
 type mockProvider struct {
 	cchain.Provider
 	SubscribeFn func(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64, callback cchain.ProviderCallback)
@@ -146,4 +149,16 @@ func (m *mockProvider) StreamAsync(ctx context.Context, chainVer xchain.ChainVer
 	_ string, callback cchain.ProviderCallback,
 ) {
 	m.SubscribeFn(ctx, chainVer, attestOffset, callback)
+}
+
+func (m *mockProvider) PortalValidatorSet(ctx context.Context, valSetID uint64) ([]cchain.PortalValidator, bool, error) {
+	if valSetID != mockValSetID {
+		return nil, false, errors.New("unknown validator set ID")
+	}
+
+	return []cchain.PortalValidator{
+		{
+			Power: -2, // Work around to avoid adding sigs in test, since power is negative, so 0 reaches quorum ;)
+		},
+	}, true, nil
 }
