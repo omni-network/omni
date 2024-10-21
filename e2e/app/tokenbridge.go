@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts/omnitoken"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -22,6 +23,11 @@ import (
 
 // setupTokenBridge deploys the OmniBridgeL1 & OmniToken contracts (if necessary), and configures the OmniBridgeNative predeploy.
 func setupTokenBridge(ctx context.Context, def Definition) error {
+	if def.Testnet.Network == netconf.Mainnet {
+		// mainnet bridge will be setup post network deployment
+		return nil
+	}
+
 	networkID := def.Testnet.Network
 	l1, ok := def.Testnet.EthereumChain()
 	if !ok {
