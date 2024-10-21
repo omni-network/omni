@@ -20,11 +20,8 @@ import (
 )
 
 var (
-	eth0_01 = math.NewInt(1).MulRaw(params.Ether / 100).BigInt()
-	eth2    = math.NewInt(2).MulRaw(params.Ether).BigInt()
-	eth4    = math.NewInt(4).MulRaw(params.Ether).BigInt()
-	eth1k   = math.NewInt(1000).MulRaw(params.Ether).BigInt()
-	eth1m   = math.NewInt(1000000).MulRaw(params.Ether).BigInt()
+	eth1k = math.NewInt(1000).MulRaw(params.Ether).BigInt()
+	eth1m = math.NewInt(1000000).MulRaw(params.Ether).BigInt()
 )
 
 func newUint64(val uint64) *uint64 { return &val }
@@ -183,15 +180,19 @@ func omegaPrefundAlloc() types.GenesisAlloc {
 // from the native bridge's prefund balance, and transferring the same amount
 // to the bridge contract on L1.
 func mainnetPrefundAllocs() types.GenesisAlloc {
-	return types.GenesisAlloc{
-		eoa.MustAddress(netconf.Mainnet, eoa.RoleCreate3Deployer): {Balance: eth0_01}, // deploys one contract
-		eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer):        {Balance: eth0_01}, // deploys a couple contracts
-		eoa.MustAddress(netconf.Mainnet, eoa.RoleManager):         {Balance: eth0_01}, // rarely used
-		eoa.MustAddress(netconf.Mainnet, eoa.RoleUpgrader):        {Balance: eth0_01}, // rarely used
-		eoa.MustAddress(netconf.Mainnet, eoa.RoleRelayer):         {Balance: eth2},    // enough to relay for at least 14 days
-		eoa.MustAddress(netconf.Mainnet, eoa.RoleMonitor):         {Balance: eth2},    // enough to monitor for at least 14 days
-		eoa.MustAddress(netconf.Mainnet, eoa.RoleFunder):          {Balance: eth4},    // enough for a two funding actions
+	allocs := make(types.GenesisAlloc)
+
+	for _, role := range eoa.AllRoles() {
+		fund, ok := eoa.GetFundThresholds(netconf.Mainnet, role)
+		if !ok {
+			continue
+		}
+
+		acc := types.Account{Balance: fund.TargetBalance()}
+		allocs[eoa.MustAddress(netconf.Mainnet, role)] = acc
 	}
+
+	return allocs
 }
 
 // mergeAllocs merges multiple allocs into one.
