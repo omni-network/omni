@@ -99,9 +99,12 @@ func FundAccounts(ctx context.Context, def Definition, dryRun bool) error {
 			} else if account.Type == eoa.TypeWellKnown {
 				log.Info(accCtx, "Skipping well-known anvil account")
 				continue
+			} else if account.Role == eoa.RoleFunder {
+				log.Info(accCtx, "Skipping funding funder")
+				continue
 			}
 
-			thresholds, ok := eoa.GetFundThresholds(network, account.Role)
+			thresholds, ok := eoa.GetFundThresholds(chain.NativeToken, network, account.Role)
 			if !ok {
 				log.Warn(accCtx, "Skipping account without fund thresholds", nil)
 				continue

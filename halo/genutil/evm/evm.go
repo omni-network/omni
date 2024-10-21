@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -182,8 +183,15 @@ func omegaPrefundAlloc() types.GenesisAlloc {
 func mainnetPrefundAllocs() types.GenesisAlloc {
 	allocs := make(types.GenesisAlloc)
 
-	for _, role := range eoa.AllRoles() {
-		fund, ok := eoa.GetFundThresholds(netconf.Mainnet, role)
+	fundRoles := []eoa.Role{
+		eoa.RoleRelayer, eoa.RoleMonitor,
+		eoa.RoleCreate3Deployer, eoa.RoleManager,
+		eoa.RoleUpgrader, eoa.RoleDeployer,
+		eoa.RoleFunder,
+	}
+
+	for _, role := range fundRoles {
+		fund, ok := eoa.GetFundThresholds(tokens.OMNI, netconf.Mainnet, role)
 		if !ok {
 			continue
 		}

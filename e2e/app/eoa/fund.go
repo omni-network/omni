@@ -4,11 +4,15 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens"
 
 	"github.com/ethereum/go-ethereum/params"
 
 	"cosmossdk.io/math"
 )
+
+// ethToOmniFactor upscales funding thresholds in ETH to OMNI token values.
+const ethToOmniFactor = 300
 
 var (
 	// thresholdTiny is used for EOAs which are rarely used, mostly to deploy a handful of contracts per network.
@@ -53,14 +57,25 @@ var (
 	}
 )
 
-func GetFundThresholds(network netconf.ID, role Role) (FundThresholds, bool) {
+func GetFundThresholds(token tokens.Token, network netconf.ID, role Role) (FundThresholds, bool) {
 	if network.IsEphemeral() {
 		if resp, ok := ephemeralOverrides[role]; ok {
 			return resp, true
 		}
 	}
 
+	// blacklist tester role on the mainnet
+	if network == netconf.Mainnet && role == RoleTester {
+		return FundThresholds{}, false
+	}
+
 	resp, ok := defaultThresholdsByRole[role]
+
+	// upscale all funding thresholds by fixed factor to reflect changes in token worth
+	if ok && token == tokens.OMNI {
+		resp.targetEther *= ethToOmniFactor
+		resp.minEther *= ethToOmniFactor
+	}
 
 	return resp, ok
 }

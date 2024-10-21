@@ -5,7 +5,9 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 
@@ -85,7 +87,12 @@ func monitorAccountOnce(
 	accountBalance.WithLabelValues(chainName, string(account.Role)).Set(balanceEth)
 	accountNonce.WithLabelValues(chainName, string(account.Role)).Set(float64(nonce))
 
-	thresholds, ok := eoa.GetFundThresholds(network, account.Role)
+	meta, ok := evmchain.MetadataByName(chainName)
+	if !ok {
+		return errors.New("invalid chain name [BUG]", "name", chainName)
+	}
+
+	thresholds, ok := eoa.GetFundThresholds(meta.NativeToken, network, account.Role)
 	if !ok {
 		// Skip accounts without thresholds
 		return nil
