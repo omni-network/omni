@@ -15,6 +15,7 @@ import (
 	cmtcfg "github.com/cometbft/cometbft/config"
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -64,12 +65,12 @@ func monitorCometForever(
 // monitorCometOnce monitors the cometBFT peers, and sync status.
 func monitorCometOnce(ctx context.Context, rpcClient rpcclient.Client, isSyncing func() bool, lastHeight int64, status *readinessStatus) (int64, error) {
 	netInfo, err := rpcClient.NetInfo(ctx)
-	status.setConsensusP2PPeers(netInfo.NPeers)
 	if err != nil {
 		return 0, errors.Wrap(err, "net info")
 	} else if netInfo.NPeers == 0 {
 		log.Error(ctx, "Halo has 0 consensus p2p peers", nil)
 	}
+	status.setConsensusP2PPeers(netInfo.NPeers)
 
 	synced := !isSyncing()
 	setConstantGauge(cometSynced, synced)
@@ -78,9 +79,16 @@ func monitorCometOnce(ctx context.Context, rpcClient rpcclient.Client, isSyncing
 	abciInfo, err := rpcClient.ABCIInfo(ctx)
 	if err != nil {
 		return 0, errors.Wrap(err, "abci info")
-	} else if !isSyncing() && lastHeight > 0 && abciInfo.Response.LastBlockHeight <= lastHeight {
-		log.Warn(ctx, "Halo height is not increasing, evm syncing?", nil, "height", abciInfo.Response.LastBlockHeight)
+	} else if lastHeight > 0 && abciInfo.Response.LastBlockHeight <= lastHeight {
+		if !isSyncing() {
+			log.Warn(ctx, "Halo consensus height is not increasing", nil, "height", abciInfo.Response.LastBlockHeight)
+		}
+		status.setConsensusRunning(false)
+	} else {
+		status.setConsensusRunning(true)
 	}
+
+	status.setConsensusHeight(abciInfo.Response.LastBlockHeight)
 
 	return abciInfo.Response.LastBlockHeight, nil
 }
@@ -156,6 +164,7 @@ func monitorEVMOnce(ctx context.Context, ethCl ethclient.Client, status *readine
 		return errors.Wrap(err, "block number")
 	}
 	evmHeight.Set(float64(latest))
+	status.setExecutionHeight(latest)
 
 	return nil
 }
@@ -202,30 +211,32 @@ func dirSize(path string) (int64, error) {
 	return size, nil
 }
 
-// startMonitoringAPI registers metrics and health endpoints.
-// Return the function shutting down the HTTP server.
+// startMonitoringAPI starts the monitoring API serving
+// metrics and health endpoints. It returns HTTP server shutdown function.
+// Note this replaces CometBFT's prometheus server, adding a `/ready` endpoint.
 func startMonitoringAPI(
 	cfg *cmtcfg.Config,
 	asyncAbort chan<- error,
-	status *readinessStatus) func(context.Context) error {
+	status *readinessStatus,
+) func(context.Context) error {
 	mux := http.NewServeMux()
 
-	// We align both with industry standards (endpoint /metrics)
-	// and with cometBFT (endpoint /).
-	mux.Handle("/metrics", promhttp.Handler())
-	mux.Handle("/", promhttp.Handler())
+	promHandler := promhttp.HandlerFor(
+		prometheus.DefaultGatherer,
+		promhttp.HandlerOpts{MaxRequestsInFlight: cfg.Instrumentation.MaxOpenConnections},
+	)
+	mux.Handle("/metrics", promHandler) // Industry standard `/metrics` path
+	mux.Handle("/", promHandler)        // CometBFT standard `/` path
 
-	// On the `/ready` endpoint, we serve the readiness of the halo node.
-	// Additionally, in case when the node is not ready, the response status code is set to 503.
+	// Serve readiness status json at `/ready`, returning 503 if not ready.
 	mux.HandleFunc("/ready", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		if !status.ready() {
-			w.WriteHeader(http.StatusServiceUnavailable)
-		}
-		if err := status.serialize(w); err != nil {
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		if ready, err := status.serialize(w); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
+		} else if !ready {
+			w.WriteHeader(http.StatusServiceUnavailable)
 		}
 	})
 
@@ -236,8 +247,8 @@ func startMonitoringAPI(
 	}
 
 	go func() {
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			asyncAbort <- errors.Wrap(err, "http server failed to start")
+		if err := server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+			asyncAbort <- errors.Wrap(err, "start monitoring server")
 		}
 	}()
 
