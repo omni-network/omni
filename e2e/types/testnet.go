@@ -254,6 +254,7 @@ func (o OmniEVM) NodeKeyHex() string {
 type AnvilChain struct {
 	Chain       EVMChain // For netconf
 	InternalIP  net.IP   // For docker container IP
+	ForkRPC     string   // The JSON-RPC to fork
 	ProxyPort   uint32   // For binding
 	InternalRPC string   // For JSON-RPC queries from halo/relayer
 	ExternalRPC string   // For JSON-RPC queries from e2e app.

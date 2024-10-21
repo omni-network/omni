@@ -1,3 +1,4 @@
+//nolint:nosprintfhostport // Our has been fine. TODO: address or disable
 package app
 
 import (
@@ -402,6 +403,23 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 		})
 	}
 
+	// in fork mode, return no public chains, only anvil forks
+	if manifest.Fork {
+		forks, err := forkedPublicChains(manifest, infd, cfg)
+		if err != nil {
+			return types.Testnet{}, err
+		}
+
+		return types.Testnet{
+			Manifest:    manifest,
+			Network:     manifest.Network,
+			Testnet:     cmtTestnet,
+			OmniEVMs:    omniEVMS,
+			AnvilChains: append(anvils, forks...),
+			Perturb:     manifest.Perturb,
+		}, nil
+	}
+
 	publics, err := publicChains(manifest, cfg)
 	if err != nil {
 		return types.Testnet{}, err
@@ -435,8 +453,47 @@ func getOrGenKey(ctx context.Context, manifest types.Manifest, nodeName string, 
 	return key.Download(ctx, manifest.Network, nodeName, typ, addr)
 }
 
+func forkedPublicChains(manifest types.Manifest, infd types.InfrastructureData, cfg DefinitionConfig) ([]types.AnvilChain, error) {
+	var forks []types.AnvilChain
+
+	// if fork, public chains use anvil instances
+	for _, name := range manifest.PublicChains {
+		inst, ok := infd.Instances[name]
+		if !ok {
+			return nil, errors.New("anvil instance for public chain not found in infrastructure data", "chain", name)
+		}
+
+		internalIP := inst.IPAddress.String()
+		if infd.Provider == docker.ProviderName {
+			internalIP = name // For docker, we use container names
+		}
+
+		chain, err := types.PublicChainByName(name)
+		if err != nil {
+			return nil, errors.Wrap(err, "get public chain", "chain", name)
+		}
+
+		forkRPC, ok := cfg.RPCOverrides[name]
+		if !ok {
+			forkRPC = types.PublicRPCByName(name)
+		}
+
+		forks = append(forks, types.AnvilChain{
+			Chain:       chain,
+			InternalIP:  inst.IPAddress,
+			ProxyPort:   inst.Port,
+			ForkRPC:     forkRPC,
+			InternalRPC: fmt.Sprintf("http://%s:8545", internalIP),
+			ExternalRPC: fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
+		})
+	}
+
+	return forks, nil
+}
+
 func publicChains(manifest types.Manifest, cfg DefinitionConfig) ([]types.PublicChain, error) {
 	var publics []types.PublicChain
+
 	for _, name := range manifest.PublicChains {
 		chain, err := types.PublicChainByName(name)
 		if err != nil {

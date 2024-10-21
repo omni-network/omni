@@ -91,6 +91,9 @@ type Manifest struct {
 	// OnlyMonitor indicates that the monitor is the only thing that we deploy in this network.
 	OnlyMonitor bool `toml:"only_monitor"`
 
+	// Fork defines whether to fork all public chains. In fork mode, the network is isolated.
+	Fork bool `toml:"fork"`
+
 	// PingPongN defines the number of ping pong messages to send. Defaults 3 if 0.
 	PingPongN uint64 `toml:"pingpong_n"`
 

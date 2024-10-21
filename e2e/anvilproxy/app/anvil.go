@@ -80,7 +80,7 @@ func startAnvil(ctx context.Context, cfg anvilConfig) (anvilInstance, error) {
 	args := []string{
 		"--port", strconv.Itoa(cfg.Port),
 		"--chain-id", strconv.FormatUint(cfg.ChainID, 10),
-		"--block-time", strconv.FormatUint(cfg.BlockTimeSecs, 10),
+		"--block-time", fmt.Sprintf("%.1f", cfg.BlockTimeSecs),
 		"--slots-in-an-epoch", strconv.FormatUint(cfg.SlotsInEpoch, 10),
 	}
 	if cfg.LoadState != "" {
@@ -88,6 +88,9 @@ func startAnvil(ctx context.Context, cfg anvilConfig) (anvilInstance, error) {
 	}
 	if cfg.Silent {
 		args = append(args, "--silent")
+	}
+	if cfg.ForkURL != "" {
+		args = append(args, "--fork-url", cfg.ForkURL)
 	}
 
 	dir, err := os.MkdirTemp("", "")
@@ -118,7 +121,14 @@ func startAnvil(ctx context.Context, cfg anvilConfig) (anvilInstance, error) {
 		Cmd: cmd,
 	}
 
-	if err := resp.AwaitHeight(ctx, 0, time.Second*5); err != nil {
+	startUpTimeout := time.Second * 5
+
+	// use a longer timeout when forking
+	if cfg.ForkURL != "" {
+		startUpTimeout = time.Second * 30
+	}
+
+	if err := resp.AwaitHeight(ctx, 0, startUpTimeout); err != nil {
 		return resp, errors.Wrap(err, "await anvil startup", "out", out.String())
 	}
 

@@ -105,6 +105,7 @@ func TestComposeTemplate(t *testing.T) {
 						InternalIP: ipNet.IP,
 						ProxyPort:  9000,
 						LoadState:  "path/to/anvil/state.json",
+						ForkRPC:    "http://mainnet:1234",
 					},
 				},
 			}
