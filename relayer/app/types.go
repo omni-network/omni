@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 
+	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/xchain"
 )
 
@@ -13,6 +14,7 @@ type StreamUpdate struct {
 	MsgTree     xchain.MsgTree
 	Attestation xchain.Attestation // Attestation for the xmsgs
 	Msgs        []xchain.Msg       // msgs that increment the cursor
+	ValSet      []cchain.PortalValidator
 }
 
 // CreateFunc is a function that creates one or more submissions from the given stream update.

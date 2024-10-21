@@ -190,6 +190,9 @@ func (w *Worker) newCallback(
 	sendBuffer func(context.Context, xchain.Submission) error,
 	msgStreamMapper msgStreamMapper,
 ) cchain.ProviderCallback {
+	var cachedValSetID uint64
+	var cachedValSet []cchain.PortalValidator
+
 	return func(ctx context.Context, att xchain.Attestation) error {
 		block, ok, err := fetchXBlock(ctx, w.xProvider, att)
 		if err != nil {
@@ -203,6 +206,16 @@ func (w *Worker) newCallback(
 		msgTree, err := xchain.NewMsgTree(block.Msgs)
 		if err != nil {
 			return err
+		}
+
+		if att.ValidatorSetID != cachedValSetID {
+			cachedValSetID = att.ValidatorSetID
+			cachedValSet, ok, err = w.cProvider.PortalValidatorSet(ctx, att.ValidatorSetID)
+			if err != nil {
+				return errors.Wrap(err, "fetch validator set")
+			} else if !ok {
+				return errors.New("validator set not found [BUG]", "valset", att.ValidatorSetID)
+			}
 		}
 
 		// Split into streams
@@ -230,6 +243,7 @@ func (w *Worker) newCallback(
 				Attestation: att,
 				Msgs:        msgs,
 				MsgTree:     msgTree,
+				ValSet:      cachedValSet,
 			}
 
 			submissions, err := w.creator(update)
