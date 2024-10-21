@@ -17,6 +17,10 @@
 - Note that setting up cosmovisor is strongly advised to support smooth network upgrades. See our [halovisor build scripts](https://github.com/omni-network/omni/tree/main/scripts/halovisor) for inspiration.
 - Note that before starting geth, it must first be initialised with the Omni Omega [`execution-genesis.json`](https://github.com/omni-network/omni/tree/main/lib/netconf/omega) file via `geth init`.
 
+### How to check if the validator is ready?
+- For Docker deployments, check the `docker ps` output for `healthy` or `unhealthy` status.
+- For binary deployments, visit `http://<NODE_IP>:26660/ready`. The JSON response shows multiple system metrics. Any of these metric being unhealthy leads to a `503` status, indicating the node is not ready.
+
 ### What is the XChain RPC request rate per validator?
 - Each validator needs to attest to each source chain block twice, once for `latest` confirmation level, and once for `finalized` confirmation level.
 - The validator does maximum 4 queries per block; once for the `block header`, once for `xmsg` event logs, once for `xreceipt` event logs plus some additional polling.
