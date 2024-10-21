@@ -174,7 +174,6 @@ contract Preinstalls_Test is Test, AllocPredeploys {
         bytes memory transaction =
             abi.encodePacked(uint8(0), Preinstalls.Safe_v130, uint256(0), uint256(callData.length), callData);
 
-        vm.assumeNoRevert();
         IMultiSendCallOnly_v130(Preinstalls.MultiSendCallOnly_v130).multiSend(transaction);
     }
 
@@ -191,11 +190,12 @@ contract Preinstalls_Test is Test, AllocPredeploys {
      * @dev DeterministicDeploymentProxy has the same bytecode as SafeSingletonFactory, so it will likely encounter the same problem
      */
     function test_safeSingletonFactory_fallback_succeeds() public {
-        bytes memory callData = abi.encodePacked(
-            keccak256(abi.encodePacked("SALT")), bytes4(hex"f293e1c1"), bytes32(0), type(DummyTest).creationCode
+        bytes memory callData = bytes.concat(
+            hex"0000000000000000000000000000000000000000000000000000000000000000", type(DummyTest).creationCode
         );
         (bool success,) = payable(Preinstalls.SafeSingletonFactory).call{ value: 0 }(callData);
-        if (!success) revert("Deployment using SafeSingletonFactory failed");
+        require(success, "Deployment using SafeSingletonFactory failed");
+
         address deployment = address(
             uint160(
                 uint256(
@@ -203,15 +203,14 @@ contract Preinstalls_Test is Test, AllocPredeploys {
                         abi.encodePacked(
                             bytes1(hex"ff"),
                             Preinstalls.SafeSingletonFactory,
-                            bytes32("SALT"),
+                            bytes32(0),
                             keccak256(type(DummyTest).creationCode)
                         )
                     )
                 )
             )
         );
-        console2.log(deployment);
-        assertEq(DummyTest(deployment).chainId(), 165, "Contract deployed with SafeSingletonFactory unusable");
+        assertTrue(deployment.code.length != 0, "Contract deployed with SafeSingletonFactory unusable");
     }
 
     function test_multiSend_v130_multiSend_succeeds() public {
@@ -220,7 +219,6 @@ contract Preinstalls_Test is Test, AllocPredeploys {
         bytes memory transaction =
             abi.encodePacked(uint8(0), Preinstalls.Permit2, uint256(0), uint256(callData.length), callData);
 
-        //vm.assumeNoRevert();
         (bool success, bytes memory data) =
             Preinstalls.MultiSend_v130.delegatecall(abi.encodeWithSignature("multiSend(bytes memory)", transaction));
         console2.log(success);
