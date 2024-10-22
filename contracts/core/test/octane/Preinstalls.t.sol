@@ -39,6 +39,15 @@ interface ICreate2Deployer {
     function computeAddress(bytes32 salt, bytes32 codeHash) external view returns (address);
 }
 
+interface ICreateX {
+    function deployCreate2(bytes memory initCode) external payable returns (address newContract);
+    function deployCreate2(bytes32 salt, bytes memory initCode) external payable returns (address newContract);
+    function computeCreate2Address(bytes32 salt, bytes32 initCodeHash)
+        external
+        view
+        returns (address computedAddress);
+}
+
 interface ISafe_v130 {
     function getChainId() external view returns (uint256);
 }
@@ -378,5 +387,21 @@ contract Preinstalls_Test is Test, AllocPredeploys {
     function test_erc1820Registry_interfaceHash_succeeds() public {
         bytes32 interfaceHash = IERC1820Registry(Preinstalls.ERC1820Registry).interfaceHash("testInterface(uint256)");
         assertTrue(interfaceHash != bytes32(0), "ERC1820Registry interfaceHash returned empty bytes32");
+    }
+
+    function test_createX_deployCreate2_succeeds() public {
+        // Standard deployment works
+        address deployment = ICreateX(Preinstalls.CreateX).deployCreate2(type(DummyTest).creationCode);
+        assertTrue(deployment.code.length != 0, "Deployment to address via CreateX failed");
+        assertEq(DummyTest(deployment).chainId(), 165, "Deployed contract does not function properly");
+
+        // Targeted deployment using salt works
+        bytes32 salt = bytes32(abi.encodePacked(address(this), hex"00", bytes11(keccak256(abi.encode("SALT")))));
+        bytes32 guardedSalt = keccak256(abi.encode(bytes32(uint256(uint160(address(this)))), salt));
+        address predicted =
+            ICreateX(Preinstalls.CreateX).computeCreate2Address(guardedSalt, keccak256(type(DummyTest).creationCode));
+        deployment = ICreateX(Preinstalls.CreateX).deployCreate2(salt, type(DummyTest).creationCode);
+        assertEq(predicted, deployment, "Deployment address using salt does not match predicted address");
+        assertEq(DummyTest(deployment).chainId(), 165, "Deployed contract does not function properly");
     }
 }
