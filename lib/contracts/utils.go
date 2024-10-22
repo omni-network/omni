@@ -4,6 +4,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -20,4 +21,8 @@ func PackInitCode(abi *abi.ABI, bytecodeHex string, params ...any) ([]byte, erro
 	}
 
 	return append(bytecode, input...), nil
+}
+
+func IsEmptyAddress(addr common.Address) bool {
+	return addr == common.Address{}
 }

@@ -85,6 +85,7 @@ func TestMainnet(t *testing.T) {
 		eoa.RoleCreate3Deployer: "0x992b9de7D42981B90A75C523842C01e27875b65B",
 		eoa.RoleDeployer:        "0x9496Bf1Bd2Fa5BCba72062cC781cC97eA6930A13",
 		eoa.RoleHot:             "0x8F609f4d58355539c48C98464E1e54ab2709aCfe",
+		eoa.RoleCold:            "0x8b6b217572582C57616262F9cE02A951A1D1b951",
 	}
 
 	n := netconf.Mainnet

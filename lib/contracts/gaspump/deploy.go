@@ -31,8 +31,8 @@ type DeploymentConfig struct {
 	ExpectedAddr    common.Address
 }
 
-func isDeadOrEmpty(addr common.Address) bool {
-	return addr == common.Address{} || addr == common.HexToAddress(eoa.ZeroXDead)
+func isEmpty(addr common.Address) bool {
+	return addr == common.Address{}
 }
 
 func (cfg DeploymentConfig) Validate() error {
@@ -42,13 +42,13 @@ func (cfg DeploymentConfig) Validate() error {
 	if cfg.Create3Salt == "" {
 		return errors.New("create3 salt is empty")
 	}
-	if isDeadOrEmpty(cfg.ProxyAdminOwner) {
+	if isEmpty(cfg.ProxyAdminOwner) {
 		return errors.New("proxy admin is zero")
 	}
-	if isDeadOrEmpty(cfg.Deployer) {
+	if isEmpty(cfg.Deployer) {
 		return errors.New("deployer is not set")
 	}
-	if isDeadOrEmpty(cfg.Owner) {
+	if isEmpty(cfg.Owner) {
 		return errors.New("owner is not set")
 	}
 	if (cfg.Portal == common.Address{}) {

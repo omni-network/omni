@@ -16,6 +16,8 @@ const (
 	coldDynamicMultiplier = 1
 )
 
+// dynamicThreshold list roles we use to sum their funding thresholds and a multiplier
+// that increases the sum to calculate the dynamic threshold. Used by funding roles.
 type dynamicThreshold struct {
 	Multiplier int
 	Roles      []Role

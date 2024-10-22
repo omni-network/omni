@@ -111,10 +111,7 @@ func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool
 				"type", account.Type,
 			)
 
-			if account.Address == common.HexToAddress(eoa.ZeroXDead) {
-				log.Info(accCtx, "Skipping 0xdead account")
-				continue
-			} else if account.Type == eoa.TypeWellKnown {
+			if account.Type == eoa.TypeWellKnown {
 				log.Info(accCtx, "Skipping well-known anvil account")
 				continue
 			}

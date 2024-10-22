@@ -27,10 +27,6 @@ type deploymentConfig struct {
 	ExpectedAddr   common.Address
 }
 
-func isDeadOrEmpty(addr common.Address) bool {
-	return addr == common.Address{} || addr == common.HexToAddress(eoa.ZeroXDead)
-}
-
 func (cfg deploymentConfig) validate() error {
 	if (cfg.Create3Factory == common.Address{}) {
 		return errors.New("create3 factory is zero")
@@ -38,10 +34,10 @@ func (cfg deploymentConfig) validate() error {
 	if cfg.Create3Salt == "" {
 		return errors.New("create3 salt is empty")
 	}
-	if isDeadOrEmpty(cfg.Deployer) {
+	if contracts.IsEmptyAddress(cfg.Deployer) {
 		return errors.New("deployer is not set")
 	}
-	if isDeadOrEmpty(cfg.Recipient) {
+	if contracts.IsEmptyAddress(cfg.Recipient) {
 		return errors.New("recipient is not set")
 	}
 	if (cfg.ExpectedAddr == common.Address{}) {
