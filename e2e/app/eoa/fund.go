@@ -1,6 +1,7 @@
 package eoa
 
 import (
+	"math"
 	"math/big"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -8,8 +9,6 @@ import (
 	"github.com/omni-network/omni/lib/tokens"
 
 	"github.com/ethereum/go-ethereum/params"
-
-	"cosmossdk.io/math"
 )
 
 const (
@@ -24,29 +23,29 @@ type dynamicThreshold struct {
 
 var (
 	// tokenConversion defines conversion rate for fund threshold amounts.
-	tokenConversion = map[tokens.Token]float64{
+	tokenConversion = map[tokens.Token]int{
 		tokens.OMNI: 500,
 		tokens.ETH:  1,
 	}
 
 	// thresholdTiny is used for EOAs which are rarely used, mostly to deploy a handful of contracts per network.
 	thresholdTiny = FundThresholds{
-		minETH:    0.001,
-		targetETH: 0.01,
+		minGwei:    gwei(0.001),
+		targetGwei: gwei(0.01),
 	}
 
 	// thresholdMedium is used by EOAs that regularly perform actions and need enough balance
 	// to last a weekend without topping up even if fees are spiking.
 	thresholdMedium = FundThresholds{
-		minETH:    0.5,
-		targetETH: 2,
+		minGwei:    gwei(0.5),
+		targetGwei: gwei(2),
 	}
 
 	// thresholdLarge is used by EOAs that constantly perform actions and need enough balance
 	// to last a weekend without topping up even if fees are spiking.
 	thresholdLarge = FundThresholds{
-		minETH:    10,
-		targetETH: 50,
+		minGwei:    gwei(10),
+		targetGwei: gwei(50),
 	}
 
 	staticThresholdsByRole = map[Role]FundThresholds{
@@ -91,27 +90,16 @@ func GetFundThresholds(token tokens.Token, network netconf.ID, role Role) (FundT
 }
 
 type FundThresholds struct {
-	minETH    float64
-	targetETH float64
+	minGwei    uint64
+	targetGwei uint64
 }
 
 func (t FundThresholds) MinBalance() *big.Int {
-	gwei := t.minETH * params.GWei
-
-	if gwei < 1 {
-		panic("ether float64 must be greater than 1 Gwei")
-	}
-
-	return math.NewInt(params.GWei).MulRaw(int64(gwei)).BigInt()
+	return new(big.Int).Mul(big.NewInt(params.GWei), new(big.Int).SetUint64(t.minGwei))
 }
 
 func (t FundThresholds) TargetBalance() *big.Int {
-	gwei := t.targetETH * params.GWei
-	if gwei < 1 {
-		panic("ether float64 must be greater than 1 Gwei")
-	}
-
-	return math.NewInt(params.GWei).MulRaw(int64(gwei)).BigInt()
+	return new(big.Int).Mul(big.NewInt(params.GWei), new(big.Int).SetUint64(t.targetGwei))
 }
 
 func convert(threshold FundThresholds, token tokens.Token) (FundThresholds, error) {
@@ -121,8 +109,8 @@ func convert(threshold FundThresholds, token tokens.Token) (FundThresholds, erro
 	}
 
 	return FundThresholds{
-		minETH:    threshold.minETH * conversion,
-		targetETH: threshold.targetETH * conversion,
+		minGwei:    threshold.minGwei * uint64(conversion),
+		targetGwei: threshold.targetGwei * uint64(conversion),
 	}, nil
 }
 
@@ -135,8 +123,8 @@ func multipleSum(network netconf.ID, multiplier int, roles []Role) FundThreshold
 			continue
 		}
 
-		sum.minETH += thresh.minETH * float64(multiplier)
-		sum.targetETH += thresh.targetETH * float64(multiplier)
+		sum.minGwei += thresh.minGwei * uint64(multiplier)
+		sum.targetGwei += thresh.targetGwei * uint64(multiplier)
 	}
 
 	return sum
@@ -163,4 +151,15 @@ func getThreshold(network netconf.ID, role Role) (FundThresholds, bool) {
 	thresh, ok := staticThresholdsByRole[role]
 
 	return thresh, ok
+}
+
+func gwei(eth float64) uint64 {
+	g := eth * params.GWei
+
+	_, dec := math.Modf(g)
+	if dec != 0 {
+		panic("ether float64 must be an int multiple of GWei")
+	}
+
+	return uint64(g)
 }
