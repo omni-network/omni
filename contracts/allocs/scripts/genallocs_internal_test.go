@@ -4,8 +4,10 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/contracts/omnitoken"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens"
 
 	"github.com/ethereum/go-ethereum/params"
 
@@ -20,15 +22,16 @@ func TestBridgeBalance(t *testing.T) {
 
 	// mainnet prefunds
 	mp := big.NewInt(0)
-	mp = add(mp, div(ether(1), 10)) // 0.1 OMNI: create3-deployer
-	mp = add(mp, div(ether(1), 10)) // 0.1 OMNI: deployer
-	mp = add(mp, ether(10))         // 10  OMNI: manager
-	mp = add(mp, ether(10))         // 10  OMNI: upgrader
-	mp = add(mp, ether(100))        // 100 OMNI: relayer
-	mp = add(mp, ether(100))        // 100 OMNI: monitor
-	mp = add(mp, ether(500))        // 500 OMNI: funder
-	mp = add(mp, ether(100))        // 100 OMNI: genesis validator 1
-	mp = add(mp, ether(100))        // 100 OMNI: genesis validator 2
+	for _, role := range eoa.AllRoles() {
+		th, ok := eoa.GetFundThresholds(tokens.OMNI, netconf.Mainnet, role)
+		if !ok {
+			continue
+		}
+		mp = add(mp, th.TargetBalance())
+	}
+
+	mp = add(mp, ether(100)) // 100 OMNI: genesis validator 1
+	mp = add(mp, ether(100)) // 100 OMNI: genesis validator 2
 
 	tests := []struct {
 		name     string
@@ -69,10 +72,6 @@ func TestBridgeBalance(t *testing.T) {
 
 func ether(n int64) *big.Int {
 	return new(big.Int).Mul(big.NewInt(n), big.NewInt(params.Ether))
-}
-
-func div(n *big.Int, d int64) *big.Int {
-	return new(big.Int).Div(n, big.NewInt(d))
 }
 
 func add(x, y *big.Int) *big.Int {

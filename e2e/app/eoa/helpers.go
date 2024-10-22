@@ -7,19 +7,6 @@ import (
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 )
 
-func dummy(roles ...Role) []Account {
-	var resp []Account
-	for _, role := range roles {
-		resp = append(resp, Account{
-			Type:    TypeWellKnown,
-			Role:    role,
-			Address: common.HexToAddress(ZeroXDead),
-		})
-	}
-
-	return resp
-}
-
 func remote(hex string, roles ...Role) []Account {
 	var resp []Account
 	for _, role := range roles {

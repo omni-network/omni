@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/txmgr"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -19,9 +20,8 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-const saneEOAMaxEther = 50       // Maximum amount of ETH to fund an eoe (in ether).
-const saneContractMaxEther = 50  // Maximum amount of ETH to fund a contract (in ether).
-const saneContractMaxOMNI = 5000 // Maximum amount of OMNI to fund a contract (in OMNI).
+const saneMaxETH = 112    // Maximum amount of ETH to fund (in ether).
+const saneMaxOmni = 56030 // Maximum amount of OMNI to fund (in ether OMNI).
 
 // noAnvilDev returns a list of accounts that are not dev anvil accounts.
 func noAnvilDev(accounts []common.Address) []common.Address {
@@ -61,10 +61,27 @@ func fundAnvilAccounts(ctx context.Context, def Definition) error {
 }
 
 // FundAccounts funds the EOAs and contracts that need funding to their target balance.
-func FundAccounts(ctx context.Context, def Definition, dryRun bool) error {
+func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool) error {
 	network := def.Testnet.Network
-	accounts := eoa.AllAccounts(network)
 
+	var funderRole eoa.Role
+	var accounts []eoa.Account
+	if hotOnly {
+		funder, ok := eoa.AccountForRole(network, eoa.RoleHot)
+		if !ok {
+			return errors.New("funder account not found")
+		}
+		accounts = []eoa.Account{funder}
+		funderRole = eoa.RoleCold
+	} else {
+		for _, account := range eoa.AllAccounts(network) {
+			if account.Role == eoa.RoleCold || account.Role == eoa.RoleHot {
+				continue // Don't fund safe or funder
+			}
+			accounts = append(accounts, account)
+		}
+		funderRole = eoa.RoleHot
+	}
 	log.Info(ctx, "Checking accounts to fund", "network", network, "count", len(accounts))
 
 	for _, chain := range def.Testnet.EVMChains() {
@@ -73,16 +90,17 @@ func FundAccounts(ctx context.Context, def Definition, dryRun bool) error {
 			return errors.Wrap(err, "backend")
 		}
 
-		funder := eoa.MustAddress(network, eoa.RoleFunder)
-		funderBal, err := backend.BalanceAt(ctx, funder, nil)
+		funderAddr := eoa.MustAddress(network, funderRole)
+		funderBal, err := backend.BalanceAt(ctx, funderAddr, nil)
 		if err != nil {
 			return err
 		}
 
-		log.Info(ctx, "Funder balance",
+		log.Info(ctx, "Funder account balance",
 			"chain", chain.Name,
-			"funder", funder,
+			"role", funderRole,
 			"balance", etherStr(funderBal),
+			"address", funderAddr,
 		)
 
 		for _, account := range accounts {
@@ -93,39 +111,40 @@ func FundAccounts(ctx context.Context, def Definition, dryRun bool) error {
 				"type", account.Type,
 			)
 
-			if account.Address == common.HexToAddress(eoa.ZeroXDead) {
-				log.Info(accCtx, "Skipping 0xdead account")
-				continue
-			} else if account.Type == eoa.TypeWellKnown {
+			if account.Type == eoa.TypeWellKnown {
 				log.Info(accCtx, "Skipping well-known anvil account")
 				continue
 			}
 
-			thresholds, ok := eoa.GetFundThresholds(network, account.Role)
+			thresholds, ok := eoa.GetFundThresholds(chain.NativeToken, network, account.Role)
 			if !ok {
 				log.Warn(accCtx, "Skipping account without fund thresholds", nil)
 				continue
 			}
-
-			saneMax := new(big.Int).Mul(big.NewInt(saneEOAMaxEther), big.NewInt(params.Ether))
 
 			if err := fund(accCtx, fundParams{
 				backend:       backend,
 				account:       account.Address,
 				minBalance:    thresholds.MinBalance(),
 				targetBalance: thresholds.TargetBalance(),
-				saneMax:       saneMax,
+				saneMax:       saneMax(chain.NativeToken),
 				dryRun:        dryRun,
-				funder:        funder,
+				funder:        funderAddr,
 			}); err != nil {
 				return errors.Wrap(err, "fund account")
 			}
+		}
+
+		if hotOnly {
+			continue // Skip contract funding if hotOnly.
 		}
 
 		toFund, err := contracts.ToFund(ctx, network)
 		if err != nil {
 			return errors.Wrap(err, "get contracts to fund")
 		}
+
+		log.Info(ctx, "Checking contracts to fund", "network", network, "count", len(toFund))
 
 		for _, contract := range toFund {
 			ctrCtx := log.WithCtx(ctx,
@@ -141,19 +160,14 @@ func FundAccounts(ctx context.Context, def Definition, dryRun bool) error {
 				continue
 			}
 
-			saneMax := new(big.Int).Mul(big.NewInt(saneContractMaxEther), big.NewInt(params.Ether))
-			if isOmniEVM {
-				saneMax = new(big.Int).Mul(big.NewInt(saneContractMaxOMNI), big.NewInt(params.Ether))
-			}
-
 			if err := fund(ctrCtx, fundParams{
 				backend:       backend,
 				account:       contract.Address,
 				minBalance:    contract.Thresholds.MinBalance(),
 				targetBalance: contract.Thresholds.TargetBalance(),
-				saneMax:       saneMax,
+				saneMax:       saneMax(chain.NativeToken),
 				dryRun:        dryRun,
-				funder:        funder,
+				funder:        funderAddr,
 			}); err != nil {
 				return errors.Wrap(err, "fund contract")
 			}
@@ -258,4 +272,15 @@ func etherStr(amount *big.Int) string {
 	b /= params.Ether
 
 	return fmt.Sprintf("%.4f", b)
+}
+
+func saneMax(token tokens.Token) *big.Int {
+	saneETH := new(big.Int).Mul(big.NewInt(saneMaxETH), big.NewInt(params.Ether))
+	saneOmni := new(big.Int).Mul(big.NewInt(saneMaxOmni), big.NewInt(params.Ether))
+
+	if token == tokens.OMNI {
+		return saneOmni
+	}
+
+	return saneETH
 }

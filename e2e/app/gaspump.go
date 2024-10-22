@@ -117,7 +117,7 @@ func fundGasStation(ctx context.Context, def Definition) error {
 		return errors.Wrap(err, "backend")
 	}
 
-	funder := eoa.MustAddress(def.Testnet.Network, eoa.RoleFunder)
+	funder := eoa.MustAddress(def.Testnet.Network, eoa.RoleHot)
 
 	addrs, err := contracts.GetAddresses(ctx, def.Testnet.Network)
 	if err != nil {

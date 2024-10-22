@@ -6,7 +6,10 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
@@ -14,24 +17,61 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+//go:generate go test . -run=TestThresholdReference -clean -golden
+
+func TestThresholdReference(t *testing.T) {
+	t.Parallel()
+
+	resp := make(map[netconf.ID]map[tokens.Token]map[eoa.Role]map[string]string)
+	for _, network := range []netconf.ID{netconf.Staging, netconf.Omega, netconf.Mainnet} {
+		resp[network] = make(map[tokens.Token]map[eoa.Role]map[string]string)
+		for _, token := range []tokens.Token{tokens.ETH, tokens.OMNI} {
+			resp[network][token] = make(map[eoa.Role]map[string]string)
+			for _, role := range eoa.AllRoles() {
+				resp[network][token][role] = make(map[string]string)
+
+				thresholds, ok := eoa.GetFundThresholds(token, network, role)
+				if network == netconf.Mainnet && role == eoa.RoleTester {
+					require.False(t, ok, "account should not exist: %s %s %s", network, role, token)
+					continue
+				}
+				require.True(t, ok, "thresholds not found: %s %s %s", network, role, token)
+
+				resp[network][token][role]["target"] = etherStr(thresholds.TargetBalance())
+				resp[network][token][role]["min"] = etherStr(thresholds.MinBalance())
+			}
+		}
+	}
+
+	tutil.RequireGoldenJSON(t, resp, tutil.WithFilename("threshold_reference.json"))
+}
+
 func TestStatic(t *testing.T) {
 	t.Parallel()
-	for _, network := range []netconf.ID{netconf.Devnet, netconf.Staging, netconf.Omega, netconf.Mainnet} {
-		for _, role := range eoa.AllRoles() {
-			acc, ok := eoa.AccountForRole(network, role)
-			require.True(t, ok, "account not found: %s %s", network, role)
-			require.NotZero(t, acc.Address)
-			require.True(t, common.IsHexAddress(acc.Address.Hex()))
+	for _, chain := range evmchain.All() {
+		for _, network := range []netconf.ID{netconf.Devnet, netconf.Staging, netconf.Omega, netconf.Mainnet} {
+			for _, role := range eoa.AllRoles() {
+				shouldExist := role != eoa.RoleTester || network != netconf.Mainnet // skip tester on mainnet
 
-			thresholds, ok := eoa.GetFundThresholds(network, acc.Role)
-			require.True(t, ok, "thresholds not found")
+				acc, ok := eoa.AccountForRole(network, role)
+				require.Equal(t, shouldExist, ok, "account not found: %s %s", network, role)
+				if shouldExist {
+					require.NotZero(t, acc.Address)
+					require.True(t, common.IsHexAddress(acc.Address.Hex()))
+				}
 
-			require.NotPanics(t, func() {
-				mini := thresholds.MinBalance()
-				target := thresholds.TargetBalance()
-				t.Logf("Thresholds: network=%s, role=%s, min=%s, target=%s",
-					network, acc.Role, etherStr(mini), etherStr(target))
-			})
+				thresholds, ok := eoa.GetFundThresholds(chain.NativeToken, network, acc.Role)
+				require.Equal(t, shouldExist, ok, "thresholds not found")
+
+				if shouldExist {
+					require.NotPanics(t, func() {
+						mini := thresholds.MinBalance()
+						target := thresholds.TargetBalance()
+						t.Logf("Thresholds: network=%s, role=%s, min=%s, target=%s",
+							network, acc.Role, etherStr(mini), etherStr(target))
+					})
+				}
+			}
 		}
 	}
 }
@@ -44,7 +84,8 @@ func TestMainnet(t *testing.T) {
 		eoa.RoleUpgrader:        "0xF8740c09f25E2cbF5C9b34Ef142ED7B343B42360",
 		eoa.RoleCreate3Deployer: "0x992b9de7D42981B90A75C523842C01e27875b65B",
 		eoa.RoleDeployer:        "0x9496Bf1Bd2Fa5BCba72062cC781cC97eA6930A13",
-		eoa.RoleFunder:          "0x8F609f4d58355539c48C98464E1e54ab2709aCfe",
+		eoa.RoleHot:             "0x8F609f4d58355539c48C98464E1e54ab2709aCfe",
+		eoa.RoleCold:            "0x8b6b217572582C57616262F9cE02A951A1D1b951",
 	}
 
 	n := netconf.Mainnet

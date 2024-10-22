@@ -15,8 +15,10 @@ import (
 type Role string
 
 const (
-	// RoleFunder is used to fund omni accounts on all networks.
-	RoleFunder Role = "funder"
+	// RoleCold is the main cold wallet with most security, it funds the funder.
+	RoleCold Role = "cold"
+	// RoleHot is used to fund omni accounts on all networks.
+	RoleHot Role = "hot"
 	// RoleRelayer is the relayer eoa on all networks. It creates submissions to portals.
 	RoleRelayer Role = "relayer"
 	// RoleMonitor is the monitor service eoa on all networks. It is used by the feemanager.
@@ -43,7 +45,9 @@ const (
 
 func AllRoles() []Role {
 	return []Role{
+		RoleCold,
 		RoleRelayer,
+		RoleHot,
 		RoleMonitor,
 		RoleCreate3Deployer,
 		RoleDeployer,

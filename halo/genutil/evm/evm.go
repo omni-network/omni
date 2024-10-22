@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -20,12 +21,8 @@ import (
 )
 
 var (
-	eth0_1 = math.NewInt(1).MulRaw(params.Ether / 10).BigInt()
-	eth10  = math.NewInt(10).MulRaw(params.Ether).BigInt()
-	eth100 = math.NewInt(100).MulRaw(params.Ether).BigInt()
-	eth500 = math.NewInt(500).MulRaw(params.Ether).BigInt()
-	eth1k  = math.NewInt(1000).MulRaw(params.Ether).BigInt()
-	eth1m  = math.NewInt(1000000).MulRaw(params.Ether).BigInt()
+	eth1k = math.NewInt(1000).MulRaw(params.Ether).BigInt()
+	eth1m = math.NewInt(1000000).MulRaw(params.Ether).BigInt()
 )
 
 func newUint64(val uint64) *uint64 { return &val }
@@ -126,7 +123,7 @@ func ephemeralPrefundAlloc() types.GenesisAlloc {
 		eoa.MustAddress(netconf.Staging, eoa.RoleMonitor):  {Balance: eth1m},
 		eoa.MustAddress(netconf.Staging, eoa.RoleRelayer):  {Balance: eth1m},
 		eoa.MustAddress(netconf.Staging, eoa.RoleDeployer): {Balance: eth1m},
-		eoa.MustAddress(netconf.Staging, eoa.RoleFunder):   {Balance: eth1m},
+		eoa.MustAddress(netconf.Staging, eoa.RoleHot):      {Balance: eth1m},
 		eoa.MustAddress(netconf.Staging, eoa.RoleUpgrader): {Balance: eth1m},
 		eoa.MustAddress(netconf.Staging, eoa.RoleManager):  {Balance: eth1m},
 
@@ -184,15 +181,19 @@ func omegaPrefundAlloc() types.GenesisAlloc {
 // from the native bridge's prefund balance, and transferring the same amount
 // to the bridge contract on L1.
 func mainnetPrefundAllocs() types.GenesisAlloc {
-	return types.GenesisAlloc{
-		eoa.MustAddress(netconf.Mainnet, eoa.RoleCreate3Deployer): {Balance: eth0_1}, // deploys one contract
-		eoa.MustAddress(netconf.Mainnet, eoa.RoleDeployer):        {Balance: eth0_1}, // deploys a couple contracts
-		eoa.MustAddress(netconf.Mainnet, eoa.RoleManager):         {Balance: eth10},  // rarely used
-		eoa.MustAddress(netconf.Mainnet, eoa.RoleUpgrader):        {Balance: eth10},  // rarely used
-		eoa.MustAddress(netconf.Mainnet, eoa.RoleRelayer):         {Balance: eth100}, // enough to relay for a while
-		eoa.MustAddress(netconf.Mainnet, eoa.RoleMonitor):         {Balance: eth100}, // enough to monitor for a while
-		eoa.MustAddress(netconf.Mainnet, eoa.RoleFunder):          {Balance: eth500}, // enough for a few funding actions
+	allocs := make(types.GenesisAlloc)
+
+	for _, role := range eoa.AllRoles() {
+		fund, ok := eoa.GetFundThresholds(tokens.OMNI, netconf.Mainnet, role)
+		if !ok {
+			continue
+		}
+
+		acc := types.Account{Balance: fund.TargetBalance()}
+		allocs[eoa.MustAddress(netconf.Mainnet, role)] = acc
 	}
+
+	return allocs
 }
 
 // mergeAllocs merges multiple allocs into one.

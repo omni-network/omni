@@ -26,10 +26,6 @@ type DeploymentConfig struct {
 	ExpectedAddr    common.Address
 }
 
-func isDeadOrEmpty(addr common.Address) bool {
-	return addr == common.Address{} || addr == common.HexToAddress(eoa.ZeroXDead)
-}
-
 func (cfg DeploymentConfig) Validate() error {
 	if (cfg.Create3Factory == common.Address{}) {
 		return errors.New("create3 factory is zero")
@@ -40,10 +36,10 @@ func (cfg DeploymentConfig) Validate() error {
 	if (cfg.ProxyAdminOwner == common.Address{}) {
 		return errors.New("proxy admin is zero")
 	}
-	if isDeadOrEmpty(cfg.Deployer) {
+	if contracts.IsEmptyAddress(cfg.Deployer) {
 		return errors.New("deployer is not set")
 	}
-	if isDeadOrEmpty(cfg.Owner) {
+	if contracts.IsEmptyAddress(cfg.Owner) {
 		return errors.New("owner is not set")
 	}
 	if (cfg.Token == common.Address{}) {
