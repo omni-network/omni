@@ -4,7 +4,7 @@ pragma solidity =0.8.24;
 import { Preinstalls } from "src/octane/Preinstalls.sol";
 import "./PreinstallInterfaces.sol";
 import { AllocPredeploys } from "script/genesis/AllocPredeploys.s.sol";
-import { Test, Vm, console2 } from "forge-std/Test.sol";
+import { Test, Vm } from "forge-std/Test.sol";
 
 /**
  * @title Preinstalls_Test
