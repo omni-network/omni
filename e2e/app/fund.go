@@ -20,8 +20,8 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-const saneMaxETH = 50    // Maximum amount of ETH to fund (in ether).
-const saneMaxOmni = 5000 // Maximum amount of OMNI to fund(in OMNI).
+const saneMaxETH = 112    // Maximum amount of ETH to fund (in ether).
+const saneMaxOmni = 56030 // Maximum amount of OMNI to fund (in ether OMNI).
 
 // noAnvilDev returns a list of accounts that are not dev anvil accounts.
 func noAnvilDev(accounts []common.Address) []common.Address {
@@ -72,10 +72,10 @@ func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool
 			return errors.New("funder account not found")
 		}
 		accounts = []eoa.Account{funder}
-		funderRole = eoa.RoleSafe
+		funderRole = eoa.RoleCold
 	} else {
 		for _, account := range eoa.AllAccounts(network) {
-			if account.Role == eoa.RoleSafe || account.Role == eoa.RoleHot {
+			if account.Role == eoa.RoleCold || account.Role == eoa.RoleHot {
 				continue // Don't fund safe or funder
 			}
 			accounts = append(accounts, account)

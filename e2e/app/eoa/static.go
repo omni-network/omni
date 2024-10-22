@@ -15,10 +15,10 @@ var statics = map[netconf.ID][]Account{
 		wellKnown(anvil.DevPrivateKey6(), RoleMonitor),
 		wellKnown(anvil.DevPrivateKey7(), RoleTester),
 		wellKnown(anvil.DevPrivateKey8(), RoleHot),
-		wellKnown(anvil.DevPrivateKey9(), RoleSafe),
+		wellKnown(anvil.DevPrivateKey9(), RoleCold),
 	),
 	netconf.Staging: flatten(
-		remote("0x64Bf40F5E6C4DE0dfe8fE6837F6339455657A2F5", RoleSafe), // we use shared-safe
+		remote("0x64Bf40F5E6C4DE0dfe8fE6837F6339455657A2F5", RoleCold), // we use shared-safe
 		remote("0xCC43713c9C9c565Fd4830cC85F7f254979F64518", RoleManager),
 		remote("0x4891925c4f13A34FC26453FD168Db80aF3273014", RoleUpgrader),
 		remote("0xf63316AA39fEc9D2109AB0D9c7B1eE3a6F60AEA4", RoleHot), // we use shared-funder
@@ -29,7 +29,7 @@ var statics = map[netconf.ID][]Account{
 		secret("0x0De553555Fa19d787Af4273B18bDB77282D618c4", RoleMonitor),
 	),
 	netconf.Omega: flatten(
-		remote("0x64Bf40F5E6C4DE0dfe8fE6837F6339455657A2F5", RoleSafe),     // we use shared-safe
+		remote("0x64Bf40F5E6C4DE0dfe8fE6837F6339455657A2F5", RoleCold),     // we use shared-safe
 		remote("0xEAD625eB2011394cdD739E91Bf9D51A7169C22F5", RoleManager),  // we reuse omega-owner-upgrader
 		remote("0xEAD625eB2011394cdD739E91Bf9D51A7169C22F5", RoleUpgrader), // we reuse omega-owner-upgrader
 		remote("0xf63316AA39fEc9D2109AB0D9c7B1eE3a6F60AEA4", RoleHot),      // we use shared-funder
@@ -40,7 +40,7 @@ var statics = map[netconf.ID][]Account{
 		secret("0xcef2a2c477Ec8473E4DeB9a8c2DF1D0585ea1040", RoleMonitor),
 	),
 	netconf.Mainnet: flatten(
-		remote("0x8b6b217572582C57616262F9cE02A951A1D1b951", RoleSafe),
+		remote("0x8b6b217572582C57616262F9cE02A951A1D1b951", RoleCold),
 		remote("0xd09DD1126385877352d24B669Fd68f462200756E", RoleManager),
 		remote("0xF8740c09f25E2cbF5C9b34Ef142ED7B343B42360", RoleUpgrader),
 		remote("0x992b9de7D42981B90A75C523842C01e27875b65B", RoleCreate3Deployer),

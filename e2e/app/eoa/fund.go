@@ -14,7 +14,7 @@ import (
 
 const (
 	hotDynamicMultiplier  = 2
-	safeDynamicMultiplier = 1
+	coldDynamicMultiplier = 1
 )
 
 type dynamicThreshold struct {
@@ -25,7 +25,7 @@ type dynamicThreshold struct {
 var (
 	// tokenConversion defines conversion rate for fund threshold amounts.
 	tokenConversion = map[tokens.Token]float64{
-		tokens.OMNI: 1000,
+		tokens.OMNI: 500,
 		tokens.ETH:  1,
 	}
 
@@ -64,8 +64,8 @@ var (
 			Multiplier: hotDynamicMultiplier,
 			Roles:      []Role{RoleRelayer, RoleMonitor, RoleCreate3Deployer, RoleManager, RoleUpgrader, RoleDeployer, RoleTester},
 		},
-		RoleSafe: {
-			Multiplier: safeDynamicMultiplier,
+		RoleCold: {
+			Multiplier: coldDynamicMultiplier,
 			Roles:      []Role{RoleHot},
 		},
 	}
