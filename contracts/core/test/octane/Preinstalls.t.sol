@@ -324,6 +324,22 @@ contract Preinstalls_Test is Test, AllocPredeploys {
         assertTrue(interfaceHash != bytes32(0), "ERC1820Registry interfaceHash returned empty bytes32");
     }
 
+    function test_createX_deployCreate2_succeeds() public {
+        // Standard deployment works
+        address deployment = ICreateX(Preinstalls.CreateX).deployCreate2(type(DummyTest).creationCode);
+        assertTrue(deployment.code.length != 0, "Deployment to address via CreateX failed");
+        assertEq(DummyTest(deployment).chainId(), 165, "Deployed contract does not function properly");
+
+        // Targeted deployment using salt works
+        bytes32 salt = bytes32(abi.encodePacked(address(this), hex"00", bytes11(keccak256(abi.encode("SALT")))));
+        bytes32 guardedSalt = keccak256(abi.encode(bytes32(uint256(uint160(address(this)))), salt));
+        address predicted =
+            ICreateX(Preinstalls.CreateX).computeCreate2Address(guardedSalt, keccak256(type(DummyTest).creationCode));
+        deployment = ICreateX(Preinstalls.CreateX).deployCreate2(salt, type(DummyTest).creationCode);
+        assertEq(predicted, deployment, "Deployment address using salt does not match predicted address");
+        assertEq(DummyTest(deployment).chainId(), 165, "Deployed contract does not function properly");
+    }
+
     /**
      * @notice Test BeaconBlockRoots in accordance to EIP-4788's pseudocode structure
      * @dev See: https://eips.ethereum.org/EIPS/eip-4788#block-structure-and-validity

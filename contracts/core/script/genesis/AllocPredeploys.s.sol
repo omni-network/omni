@@ -100,6 +100,7 @@ contract AllocPredeploys is Script {
     function setPreinstalls() internal {
         vm.etch(Preinstalls.MultiCall3, Preinstalls.MultiCall3Code);
         vm.etch(Preinstalls.Create2Deployer, Preinstalls.Create2DeployerCode);
+        vm.etch(Preinstalls.CreateX, Preinstalls.CreateXCode);
         vm.etch(Preinstalls.Safe_v130, Preinstalls.Safe_v130Code);
         vm.etch(Preinstalls.SafeL2_v130, Preinstalls.SafeL2_v130Code);
         vm.etch(Preinstalls.MultiSendCallOnly_v130, Preinstalls.MultiSendCallOnly_v130Code);
@@ -123,6 +124,7 @@ contract AllocPredeploys is Script {
         // as contracts are deployed with a nonce of 1 (post eip-161)
         vm.setNonce(Preinstalls.MultiCall3, 1);
         vm.setNonce(Preinstalls.Create2Deployer, 1);
+        vm.setNonce(Preinstalls.CreateX, 1);
         vm.setNonce(Preinstalls.Safe_v130, 1);
         vm.setNonce(Preinstalls.SafeL2_v130, 1);
         vm.setNonce(Preinstalls.MultiSendCallOnly_v130, 1);
