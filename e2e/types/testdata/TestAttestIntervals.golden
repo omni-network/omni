@@ -4,6 +4,16 @@
   "ephemeral_attest_interval": 2000,
   "protected_attest_interval": 12000
  },
+ "arbitrum_one": {
+  "block_period": "300ms",
+  "ephemeral_attest_interval": 2000,
+  "protected_attest_interval": 12000
+ },
+ "base": {
+  "block_period": "2s",
+  "ephemeral_attest_interval": 300,
+  "protected_attest_interval": 1800
+ },
  "base_sepolia": {
   "block_period": "2s",
   "ephemeral_attest_interval": 300,
@@ -45,6 +55,11 @@
   "protected_attest_interval": 1800
  },
  "op_sepolia": {
+  "block_period": "2s",
+  "ephemeral_attest_interval": 300,
+  "protected_attest_interval": 1800
+ },
+ "optimism": {
   "block_period": "2s",
   "ephemeral_attest_interval": 300,
   "protected_attest_interval": 1800

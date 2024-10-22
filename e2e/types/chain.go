@@ -17,6 +17,24 @@ var (
 		Shards:   allShards,
 	}
 
+	chainBase = EVMChain{
+		Metadata: mustMetadata(evmchain.IDBase),
+		IsPublic: true,
+		Shards:   allShards,
+	}
+
+	chainOptimism = EVMChain{
+		Metadata: mustMetadata(evmchain.IDOptimism),
+		IsPublic: true,
+		Shards:   allShards,
+	}
+
+	chainArbitrum = EVMChain{
+		Metadata: mustMetadata(evmchain.IDArbitrumOne),
+		IsPublic: true,
+		Shards:   allShards,
+	}
+
 	chainHolesky = EVMChain{
 		Metadata: mustMetadata(evmchain.IDHolesky),
 		IsPublic: true,
@@ -105,6 +123,12 @@ func PublicRPCByName(name string) string {
 		return "https://sepolia.base.org"
 	case chainEthereum.Name:
 		return "https://ethereum-rpc.publicnode.com"
+	case chainBase.Name:
+		return "https://base-rpc.publicnode.com"
+	case chainOptimism.Name:
+		return "https://optimism-rpc.publicnode.com"
+	case chainArbitrum.Name:
+		return "https://arbitrum-one-rpc.publicnode.com"
 	default:
 		return ""
 	}
