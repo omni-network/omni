@@ -317,10 +317,21 @@ contract Preinstalls_Test is Test, AllocPredeploys {
     }
 
     /**
+     * @notice Test that ERC1820Registry can return an interface hash for a function signature
+     */
+    function test_erc1820Registry_interfaceHash_succeeds() public {
+        bytes32 interfaceHash = IERC1820Registry(Preinstalls.ERC1820Registry).interfaceHash("testInterface(uint256)");
+        assertTrue(interfaceHash != bytes32(0), "ERC1820Registry interfaceHash returned empty bytes32");
+    }
+
+    /**
      * @notice Test BeaconBlockRoots in accordance to EIP-4788's pseudocode structure
      * @dev See: https://eips.ethereum.org/EIPS/eip-4788#block-structure-and-validity
+     * @dev This test is disabled as an evm_version must be set in foundry.toml, but changing it from Paris default
+     *         changes the bytecode. While there is widespread Paris support, Shanghai has less, and Cancun will take
+     *         much longer to roll out, potentially years. All we gain from Shanghai is PUSH0 support.
      */
-    function test_beaconBlockRoots_get_succeeds() public {
+    /*function test_beaconBlockRoots_get_succeeds() public {
         // Prank SYSTEM_ACCOUNT to set beacon block root
         bytes memory hash = abi.encodePacked(keccak256(abi.encode("HASH")));
         vm.prank(0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE);
@@ -331,15 +342,7 @@ contract Preinstalls_Test is Test, AllocPredeploys {
         (success, result) = Preinstalls.BeaconBlockRoots.call(abi.encode(block.timestamp));
         assertTrue(success, "External address cannot read beacon block root");
         assertEq(bytes32(result), keccak256(abi.encode("HASH")), "beacon block root is not what was assigned");
-    }
-
-    /**
-     * @notice Test that ERC1820Registry can return an interface hash for a function signature
-     */
-    function test_erc1820Registry_interfaceHash_succeeds() public {
-        bytes32 interfaceHash = IERC1820Registry(Preinstalls.ERC1820Registry).interfaceHash("testInterface(uint256)");
-        assertTrue(interfaceHash != bytes32(0), "ERC1820Registry interfaceHash returned empty bytes32");
-    }
+    }*/
 }
 
 /**
