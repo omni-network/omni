@@ -20,13 +20,16 @@ func TestStatic(t *testing.T) {
 	for _, chain := range evmchain.All() {
 		for _, network := range []netconf.ID{netconf.Devnet, netconf.Staging, netconf.Omega, netconf.Mainnet} {
 			for _, role := range eoa.AllRoles() {
+				shouldExist := role != eoa.RoleTester || network != netconf.Mainnet // skip tester on mainnet
+
 				acc, ok := eoa.AccountForRole(network, role)
-				require.True(t, ok, "account not found: %s %s", network, role)
-				require.NotZero(t, acc.Address)
-				require.True(t, common.IsHexAddress(acc.Address.Hex()))
+				require.Equal(t, shouldExist, ok, "account not found: %s %s", network, role)
+				if shouldExist {
+					require.NotZero(t, acc.Address)
+					require.True(t, common.IsHexAddress(acc.Address.Hex()))
+				}
 
 				thresholds, ok := eoa.GetFundThresholds(chain.NativeToken, network, acc.Role)
-				shouldExist := acc.Role != eoa.RoleTester || network != netconf.Mainnet // skip tester on mainnet
 				require.Equal(t, shouldExist, ok, "thresholds not found")
 
 				if shouldExist {

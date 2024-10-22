@@ -3,6 +3,7 @@ package eoa
 import (
 	"math/big"
 
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 
@@ -11,35 +12,43 @@ import (
 	"cosmossdk.io/math"
 )
 
-// ethToOmniFactor upscales funding thresholds in ETH to OMNI token values.
-const ethToOmniFactor = 300
-
 var (
+	// tokenConversion defines conversion rate for fund threshold amounts.
+	tokenConversion = map[tokens.Token]float64{
+		tokens.OMNI: 1000,
+	}
+
 	// thresholdTiny is used for EOAs which are rarely used, mostly to deploy a handful of contracts per network.
 	thresholdTiny = FundThresholds{
-		minEther:    0.001,
-		targetEther: 0.01,
+		minETH:    0.001,
+		targetETH: 0.01,
 	}
 
 	// thresholdSmall is used by EOAs that deploy contracts or perform actions a couple times per week/month.
 	//nolint:unused // Might be used in future.
 	thresholdSmall = FundThresholds{
-		minEther:    0.1,
-		targetEther: 1.0,
+		minETH:    0.1,
+		targetETH: 1.0,
 	}
 
 	// thresholdMedium is used by EOAs that regularly perform actions and need enough balance
 	// to last a weekend without topping up even if fees are spiking.
 	thresholdMedium = FundThresholds{
-		minEther:    0.5,
-		targetEther: 2,
+		minETH:    0.5,
+		targetETH: 2,
+	}
+
+	// thresholdBig is used for funding actions to the medium EOAs.
+	thresholdBig = FundThresholds{
+		minETH:    thresholdMedium.targetETH,
+		targetETH: thresholdMedium.targetETH * 3,
 	}
 
 	// thresholdLarge is used by EOAs that constantly perform actions and need enough balance
 	// to last a weekend without topping up even if fees are spiking.
 	thresholdLarge = FundThresholds{
-		minEther:    10,
-		targetEther: 50,
+		minETH:    10,
+		targetETH: 50,
 	}
 
 	defaultThresholdsByRole = map[Role]FundThresholds{
@@ -49,6 +58,8 @@ var (
 		RoleManager:         thresholdTiny,   // Rarely used
 		RoleUpgrader:        thresholdTiny,   // Rarely used
 		RoleDeployer:        thresholdTiny,   // Protected chains are only deployed once
+		RoleFunder:          thresholdBig,    // Used to fund medium and smaller accounts.
+		RoleSafe:            thresholdLarge,  // Used to fund funder.
 		RoleTester:          thresholdLarge,  // Tester funds pingpongs, validator updates, etc.
 	}
 
@@ -64,29 +75,31 @@ func GetFundThresholds(token tokens.Token, network netconf.ID, role Role) (FundT
 		}
 	}
 
-	// blacklist tester role on the mainnet
 	if network == netconf.Mainnet && role == RoleTester {
 		return FundThresholds{}, false
 	}
 
 	resp, ok := defaultThresholdsByRole[role]
 
-	// upscale all funding thresholds by fixed factor to reflect changes in token worth
-	if ok && token == tokens.OMNI {
-		resp.targetEther *= ethToOmniFactor
-		resp.minEther *= ethToOmniFactor
+	if ok && token != tokens.ETH {
+		conv, err := convert(resp, token)
+		if err != nil {
+			panic(err)
+		}
+
+		return conv, true
 	}
 
 	return resp, ok
 }
 
 type FundThresholds struct {
-	minEther    float64
-	targetEther float64
+	minETH    float64
+	targetETH float64
 }
 
 func (t FundThresholds) MinBalance() *big.Int {
-	gwei := t.minEther * params.GWei
+	gwei := t.minETH * params.GWei
 
 	if gwei < 1 {
 		panic("ether float64 must be greater than 1 Gwei")
@@ -96,10 +109,22 @@ func (t FundThresholds) MinBalance() *big.Int {
 }
 
 func (t FundThresholds) TargetBalance() *big.Int {
-	gwei := t.targetEther * params.GWei
+	gwei := t.targetETH * params.GWei
 	if gwei < 1 {
 		panic("ether float64 must be greater than 1 Gwei")
 	}
 
 	return math.NewInt(params.GWei).MulRaw(int64(gwei)).BigInt()
+}
+
+func convert(threshold FundThresholds, token tokens.Token) (FundThresholds, error) {
+	conversion, ok := tokenConversion[token]
+	if !ok {
+		return FundThresholds{}, errors.New("fund conversion", "token", token.String())
+	}
+
+	return FundThresholds{
+		minETH:    threshold.minETH * conversion,
+		targetETH: threshold.targetETH * conversion,
+	}, nil
 }

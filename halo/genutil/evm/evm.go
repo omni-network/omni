@@ -183,14 +183,7 @@ func omegaPrefundAlloc() types.GenesisAlloc {
 func mainnetPrefundAllocs() types.GenesisAlloc {
 	allocs := make(types.GenesisAlloc)
 
-	fundRoles := []eoa.Role{
-		eoa.RoleRelayer, eoa.RoleMonitor,
-		eoa.RoleCreate3Deployer, eoa.RoleManager,
-		eoa.RoleUpgrader, eoa.RoleDeployer,
-		eoa.RoleFunder,
-	}
-
-	for _, role := range fundRoles {
+	for _, role := range eoa.AllRoles() {
 		fund, ok := eoa.GetFundThresholds(tokens.OMNI, netconf.Mainnet, role)
 		if !ok {
 			continue

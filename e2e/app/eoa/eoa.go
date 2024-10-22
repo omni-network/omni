@@ -15,6 +15,8 @@ import (
 type Role string
 
 const (
+	// RoleSafe is used as to fund the funder.
+	RoleSafe Role = "safe"
 	// RoleFunder is used to fund omni accounts on all networks.
 	RoleFunder Role = "funder"
 	// RoleRelayer is the relayer eoa on all networks. It creates submissions to portals.
@@ -43,7 +45,9 @@ const (
 
 func AllRoles() []Role {
 	return []Role{
+		RoleSafe,
 		RoleRelayer,
+		RoleFunder,
 		RoleMonitor,
 		RoleCreate3Deployer,
 		RoleDeployer,
