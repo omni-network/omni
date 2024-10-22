@@ -125,6 +125,7 @@ contract AllocPredeploys_Test is Test, AllocPredeploys {
     function _testPreinstalls() internal view {
         _assertPreinstall(Preinstalls.MultiCall3, Preinstalls.MultiCall3Code);
         _assertPreinstall(Preinstalls.Create2Deployer, Preinstalls.Create2DeployerCode);
+        _assertPreinstall(Preinstalls.CreateX, Preinstalls.CreateXCode);
         _assertPreinstall(Preinstalls.Safe_v130, Preinstalls.Safe_v130Code);
         _assertPreinstall(Preinstalls.SafeL2_v130, Preinstalls.SafeL2_v130Code);
         _assertPreinstall(Preinstalls.MultiSendCallOnly_v130, Preinstalls.MultiSendCallOnly_v130Code);
