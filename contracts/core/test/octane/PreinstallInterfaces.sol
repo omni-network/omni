@@ -35,6 +35,15 @@ interface ICreate2Deployer {
     function computeAddress(bytes32 salt, bytes32 codeHash) external view returns (address);
 }
 
+interface ICreateX {
+    function deployCreate2(bytes memory initCode) external payable returns (address newContract);
+    function deployCreate2(bytes32 salt, bytes memory initCode) external payable returns (address newContract);
+    function computeCreate2Address(bytes32 salt, bytes32 initCodeHash)
+        external
+        view
+        returns (address computedAddress);
+}
+
 interface ISafe_v130 {
     function getChainId() external view returns (uint256);
 }
