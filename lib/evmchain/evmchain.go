@@ -12,10 +12,15 @@ import (
 	"github.com/omni-network/omni/lib/tokens"
 )
 
+// Source chain IDs as per https://chainlist.org/
+
 const (
 	// Mainnets.
 	IDEthereum    uint64 = 1
 	IDOmniMainnet uint64 = 166
+	IDArbitrumOne        = 42161
+	IDBase               = 8453
+	IDOptimism           = 10
 
 	// Testnets.
 	IDOmniOmega   uint64 = 164
@@ -90,6 +95,27 @@ var static = map[uint64]Metadata{
 		Name:        omniEVMName,
 		BlockPeriod: omniEVMBlockPeriod,
 		NativeToken: tokens.OMNI,
+	},
+	IDArbitrumOne: {
+		ChainID:     IDArbitrumOne,
+		Name:        "arbitrum_one",
+		BlockPeriod: 300 * time.Millisecond,
+		NativeToken: tokens.ETH,
+		PostsTo:     IDEthereum,
+	},
+	IDOptimism: {
+		ChainID:     IDOptimism,
+		Name:        "optimism",
+		BlockPeriod: 2 * time.Second,
+		NativeToken: tokens.ETH,
+		PostsTo:     IDEthereum,
+	},
+	IDBase: {
+		ChainID:     IDBase,
+		Name:        "base",
+		BlockPeriod: 2 * time.Second,
+		NativeToken: tokens.ETH,
+		PostsTo:     IDEthereum,
 	},
 	IDOmniOmega: {
 		ChainID:     IDOmniOmega,
