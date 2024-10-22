@@ -26,6 +26,7 @@ ffi = true
 
 # TODO: upgrade solc
 solc_version = "0.8.24"
+evm_version = "shanghai"
 
 [fuzz]
 seed = "0x6eed"

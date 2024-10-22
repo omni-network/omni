@@ -2,109 +2,9 @@
 pragma solidity =0.8.24;
 
 import { Preinstalls } from "src/octane/Preinstalls.sol";
+import "./PreinstallInterfaces.sol";
 import { AllocPredeploys } from "script/genesis/AllocPredeploys.s.sol";
 import { Test, Vm, console2 } from "forge-std/Test.sol";
-
-interface IEIP712 {
-    function DOMAIN_SEPARATOR() external view returns (bytes32);
-}
-
-interface IMultiCall3 {
-    struct Call {
-        address target;
-        bytes callData;
-    }
-
-    struct Result {
-        bool success;
-        bytes returnData;
-    }
-
-    function aggregate(Call[] calldata calls)
-        external
-        payable
-        returns (uint256 blockNumber, bytes[] memory returnData);
-    function tryAggregate(bool requireSuccess, Call[] calldata calls)
-        external
-        payable
-        returns (Result[] memory returnData);
-
-    function getBlockNumber() external view returns (uint256 blockNumber);
-    function getLastBlockHash() external view returns (bytes32 blockHash);
-    function getChainId() external view returns (uint256 chainid);
-}
-
-interface ICreate2Deployer {
-    function deploy(uint256 value, bytes32 salt, bytes memory code) external;
-    function computeAddress(bytes32 salt, bytes32 codeHash) external view returns (address);
-}
-
-interface ISafe_v130 {
-    function getChainId() external view returns (uint256);
-}
-
-interface ISafeL2_v130 {
-    function domainSeparator() external view returns (bytes32);
-}
-
-interface IMultiSendCallOnly_v130 {
-    function multiSend(bytes memory transactions) external payable;
-}
-
-interface IMultiSend_v130 {
-    function multiSend(bytes memory transactions) external payable;
-}
-
-interface IPermit2 {
-    function DOMAIN_SEPARATOR() external view returns (bytes32);
-}
-
-interface ISenderCreator_v060 {
-    function createSender(bytes calldata initCode) external returns (address sender);
-}
-
-interface ISimpleAccountFactory {
-    function getAddress(address owner, uint256 salt) external view returns (address);
-}
-
-interface IEntryPoint_v060 {
-    function getSenderAddress(bytes calldata initCode) external;
-}
-
-interface ISenderCreator_v070 {
-    function createSender(bytes calldata initCode) external returns (address sender);
-}
-
-interface IEntryPoint_v070 {
-    function getSenderAddress(bytes calldata initCode) external;
-}
-
-interface IBeaconBlockRoots {
-    function get() external view returns (bytes32 appHash);
-}
-
-interface IERC1820Registry {
-    function interfaceHash(string calldata interfaceName) external pure returns (bytes32);
-}
-
-/**
- * @notice Simple contract used in tests that involve contract deployment
- */
-contract DummyTest {
-    function chainId() external view returns (uint256) {
-        return block.chainid;
-    }
-}
-
-/**
- * @notice Proxy contract used when testing MultiSend, as it mandates interaction via delegatecall
- */
-contract MultiSendProxy {
-    function executeMultiSend(address multisendContract, bytes memory transactions) public {
-        (bool success,) = multisendContract.delegatecall(abi.encodeWithSignature("multiSend(bytes)", transactions));
-        require(success, "MultiSend call failed");
-    }
-}
 
 /**
  * @title Preinstalls_Test
@@ -167,6 +67,9 @@ contract Preinstalls_Test is Test, AllocPredeploys {
         assertEq(IEIP712(Preinstalls.Permit2).DOMAIN_SEPARATOR(), domainSeparator);
     }
 
+    /**
+     * @notice Test MultiCall3 by confirming values read from its own view functions
+     */
     function test_multiCall3_aggregate_succeeds() public {
         IMultiCall3.Call[] memory calls = new IMultiCall3.Call[](3);
         calls[0] = IMultiCall3.Call({
@@ -182,21 +85,29 @@ contract Preinstalls_Test is Test, AllocPredeploys {
             callData: abi.encodeWithSelector(IMultiCall3.getChainId.selector)
         });
         (, bytes[] memory returnData) = IMultiCall3(Preinstalls.MultiCall3).aggregate(calls);
+
+        // Assert that each value read matches what is expected
         assertEq(uint256(bytes32(returnData[0])), block.number, "MultiCall3 getBlockNumber result mismatch");
         assertEq(bytes32(returnData[1]), blockhash(block.number - 1), "MultiCall3 getLastBlockHash result mismatch");
         assertEq(uint256(bytes32(returnData[2])), block.chainid, "MultiCall3 getChainId result mismatch");
     }
 
+    /**
+     * @notice Use tryAggregate from MultiCall3 to also test other preinstalls
+     * @dev This tests Create2Deployer, Safe_v130, and SafeL2_v130 by calling view functions for each
+     */
     function test_multiCall3_tryAggregate_succeeds() public {
         IMultiCall3.Call[] memory calls = new IMultiCall3.Call[](3);
+
+        // Call 0 is to compute a deployment address for a given salt and initCodeHash
+        bytes32 deploySalt = keccak256(abi.encode("SALT"));
+        bytes32 initCodeHash = keccak256(abi.encodePacked(Preinstalls.Create2DeployerCode));
         calls[0] = IMultiCall3.Call({
             target: Preinstalls.Create2Deployer,
-            callData: abi.encodeWithSelector(
-                ICreate2Deployer.computeAddress.selector,
-                keccak256(abi.encode("SALT")),
-                keccak256(abi.encodePacked(Preinstalls.Create2DeployerCode))
-            )
+            callData: abi.encodeWithSelector(ICreate2Deployer.computeAddress.selector, deploySalt, initCodeHash)
         });
+
+        // Calls 1 and 2 are to view functions on Safe_v130 and SafeL2_v130 respectively
         calls[1] = IMultiCall3.Call({
             target: Preinstalls.Safe_v130,
             callData: abi.encodeWithSelector(ISafe_v130.getChainId.selector)
@@ -207,33 +118,42 @@ contract Preinstalls_Test is Test, AllocPredeploys {
         });
 
         IMultiCall3.Result[] memory returnData = IMultiCall3(Preinstalls.MultiCall3).tryAggregate(true, calls);
-        assertEq(
-            address(uint160(uint256(bytes32(returnData[0].returnData)))),
-            0x87C9fcd2CcAc5fDe445970AbC4fF1e6e74f325d7,
-            "Create2Deployer computeAddress result mismatch"
-        ); // Precomputed address
-        assertEq(uint256(bytes32(returnData[1].returnData)), 165, "Safe_v130 getChainId result mismatch");
-        assertEq(
-            bytes32(returnData[2].returnData),
-            keccak256(
-                abi.encode(
-                    bytes32(hex"47e79534a245952e8b16893a336b85a3d9ea9fa8c573f3d803afb92a79469218"),
-                    uint256(165),
-                    0xfb1bffC9d739B8D520DaF37dF666da4C687191EA
+
+        address computedAddress = address(uint160(uint256(bytes32(returnData[0].returnData))));
+        address expectedAddress = address(
+            uint160(
+                uint256(
+                    keccak256(abi.encodePacked(bytes1(hex"ff"), Preinstalls.Create2Deployer, deploySalt, initCodeHash))
                 )
-            ),
-            "SafeL2_v130 domainSeparator result mismatch"
-        );
+            )
+        ); // 0x87C9fcd2CcAc5fDe445970AbC4fF1e6e74f325d7
+        assertEq(computedAddress, expectedAddress, "Create2Deployer computeAddress result mismatch");
+
+        uint256 chainId = uint256(bytes32(returnData[1].returnData));
+        uint256 omniChainId = 165;
+        assertEq(chainId, omniChainId, "Safe_v130 getChainId result mismatch");
+
+        bytes32 domainSeparatorTypehash = bytes32(hex"47e79534a245952e8b16893a336b85a3d9ea9fa8c573f3d803afb92a79469218");
+        bytes32 returnedHash = bytes32(returnData[2].returnData);
+        bytes32 expectedHash = keccak256(abi.encode(domainSeparatorTypehash, omniChainId, Preinstalls.SafeL2_v130));
+        assertEq(returnedHash, expectedHash, "SafeL2_v130 domainSeparator result mismatch");
     }
 
+    /**
+     * @notice Test MultiSendCallOnly_v130 by calling Safe_v130
+     */
     function test_multiSendCallOnly_v130_multiSend_succeeds() public {
         bytes memory callData = abi.encodeWithSelector(ISafe_v130.getChainId.selector);
+        // MultiSendCallOnly TX structure is 1 byte TX type, target address, ETH value sent, calldata length, followed by the calldata
         bytes memory transaction =
             abi.encodePacked(uint8(0), Preinstalls.Safe_v130, uint256(0), uint256(callData.length), callData);
 
         IMultiSendCallOnly_v130(Preinstalls.MultiSendCallOnly_v130).multiSend(transaction);
     }
 
+    /**
+     * @notice Test SafeSingletonFactory deploys correctly by using its fallback function
+     */
     function test_safeSingletonFactory_fallback_succeeds() public {
         // Using calldata structure from https://github.com/Arachnid/deterministic-deployment-proxy/blob/master/scripts/test.sh
         bytes memory callData = bytes.concat(
@@ -242,6 +162,7 @@ contract Preinstalls_Test is Test, AllocPredeploys {
         (bool success,) = payable(Preinstalls.SafeSingletonFactory).call{ value: 0 }(callData);
         require(success, "Deployment using SafeSingletonFactory failed");
 
+        // Manually compute expected deployment address as SafeSingletonFactory doesn't return it
         address deployment = address(
             uint160(
                 uint256(
@@ -259,6 +180,9 @@ contract Preinstalls_Test is Test, AllocPredeploys {
         assertTrue(deployment.code.length != 0, "Contract deployed to incorrect address using SafeSingletonFactory");
     }
 
+    /**
+     * @notice DeterministicDeploymentProxy has the same bytecode as SafeSingletonFactory, hence the similar test
+     */
     function test_deterministicDeploymentProxy_fallback_succeeds() public {
         // Using calldata structure from https://github.com/Arachnid/deterministic-deployment-proxy/blob/master/scripts/test.sh
         bytes memory callData = bytes.concat(
@@ -267,6 +191,7 @@ contract Preinstalls_Test is Test, AllocPredeploys {
         (bool success,) = payable(Preinstalls.DeterministicDeploymentProxy).call{ value: 0 }(callData);
         require(success, "Deployment using SafeSingletonFactory failed");
 
+        // Manually compute expected deployment address as SafeSingletonFactory doesn't return it
         address deployment = address(
             uint160(
                 uint256(
@@ -286,16 +211,25 @@ contract Preinstalls_Test is Test, AllocPredeploys {
         );
     }
 
+    /**
+     * @notice Test MultiSend_v130 by calling the DummyTest contract via the MultiSendProxy contracts
+     * @dev Placeholder contracts were required as MultiSend only works when invoked via delegatecall
+     */
     function test_multiSend_v130_multiSend_succeeds() public {
         DummyTest dummy = new DummyTest();
         bytes memory callData = abi.encodeWithSelector(DummyTest.chainId.selector);
+        // MultiSend TX structure is 1 byte TX type, target address, ETH value sent, calldata length, followed by the calldata
         bytes memory transaction =
             abi.encodePacked(uint8(0), address(dummy), uint256(0), uint256(callData.length), callData);
 
+        // MultiSendProxy invokes MultiSend via delegatecall
         MultiSendProxy proxy = new MultiSendProxy();
         proxy.executeMultiSend(address(Preinstalls.MultiSend_v130), transaction);
     }
 
+    /**
+     * @notice Compare permit2 DOMAIN_SEPARATOR() return values
+     */
     function test_permit2_domain_separator_succeeds() public {
         bytes32 calledValue = IPermit2(Preinstalls.Permit2).DOMAIN_SEPARATOR();
         bytes32 derivedValue = keccak256(
@@ -309,26 +243,50 @@ contract Preinstalls_Test is Test, AllocPredeploys {
         assertEq(calledValue, derivedValue, "Permit2 DOMAIN_SEPARATOR result mismatch");
     }
 
+    /**
+     * @notice Test SenderCreator_v060 functions by emulating an intended call
+     */
     function test_senderCreator_v060_createSender_succeeds() public {
+        // SimpleAccountFactory is what SenderCreator calls onchain, and is deployed using Create2Deployer on Optimism
         ICreate2Deployer(Preinstalls.Create2Deployer).deploy(0, simpleAccountFactorySalt, simpleAccountFactoryCode);
         assertTrue(simpleAccountFactory.code.length != 0, "SimpleAccountFactory deployed to incorrect address");
+        // SenderCreator's initCode param refers to the SimpleAccountFactory's address, followed by calldata to its functions
         bytes memory initCode = abi.encodePacked(
             simpleAccountFactory, abi.encodeWithSignature("createAccount(address,uint256)", address(0xbeef), 0)
         );
         address sender = ISenderCreator_v060(Preinstalls.SenderCreator_v060).createSender(initCode);
-        assertEq(
-            sender,
-            ISimpleAccountFactory(simpleAccountFactory).getAddress(address(0xbeef), 0),
-            "Deployed sender account does not match SimpleAccountFactory derivation"
-        );
+        address expected = ISimpleAccountFactory(simpleAccountFactory).getAddress(address(0xbeef), 0);
+        assertEq(sender, expected, "Deployed sender account does not match SimpleAccountFactory derivation");
     }
 
-    function test_entryPoint_v060_getSenderAddress_reverts_correctly() public {
+    /**
+     * @notice Test SenderCreator_v070 functions by emulating an intended call
+     * @dev See test_senderCreator_v060_createSender_succeeds for notes as the call flow is the same
+     */
+    function test_senderCreator_v070_createSender_succeeds() public {
         ICreate2Deployer(Preinstalls.Create2Deployer).deploy(0, simpleAccountFactorySalt, simpleAccountFactoryCode);
         assertTrue(simpleAccountFactory.code.length != 0, "SimpleAccountFactory deployed to incorrect address");
         bytes memory initCode = abi.encodePacked(
             simpleAccountFactory, abi.encodeWithSignature("createAccount(address,uint256)", address(0xbeef), 0)
         );
+        address sender = ISenderCreator_v070(Preinstalls.SenderCreator_v070).createSender(initCode);
+        address expected = ISimpleAccountFactory(simpleAccountFactory).getAddress(address(0xbeef), 0);
+        assertEq(sender, expected, "Deployed sender account does not match SimpleAccountFactory derivation");
+    }
+
+    /**
+     * @notice Test EntryPoint_v060 by triggering the only function that doesnt require emulating AA completely
+     * @dev It has no view functions that do not revert, hence why we check for a correct revert
+     */
+    function test_entryPoint_v060_getSenderAddress_reverts_correctly() public {
+        // See test_senderCreator_v060_createSender_succeeds for notes about this section
+        ICreate2Deployer(Preinstalls.Create2Deployer).deploy(0, simpleAccountFactorySalt, simpleAccountFactoryCode);
+        assertTrue(simpleAccountFactory.code.length != 0, "SimpleAccountFactory deployed to incorrect address");
+        bytes memory initCode = abi.encodePacked(
+            simpleAccountFactory, abi.encodeWithSignature("createAccount(address,uint256)", address(0xbeef), 0)
+        );
+
+        // getSenderAddress returns its value via a revert as it is not meant to be executed onchain
         vm.expectRevert(
             abi.encodeWithSignature(
                 "SenderAddressResult(address)",
@@ -338,26 +296,17 @@ contract Preinstalls_Test is Test, AllocPredeploys {
         IEntryPoint_v060(Preinstalls.EntryPoint_v060).getSenderAddress(initCode);
     }
 
-    function test_senderCreator_v070_createSender_succeeds() public {
-        ICreate2Deployer(Preinstalls.Create2Deployer).deploy(0, simpleAccountFactorySalt, simpleAccountFactoryCode);
-        assertTrue(simpleAccountFactory.code.length != 0, "SimpleAccountFactory deployed to incorrect address");
-        bytes memory initCode = abi.encodePacked(
-            simpleAccountFactory, abi.encodeWithSignature("createAccount(address,uint256)", address(0xbeef), 0)
-        );
-        address sender = ISenderCreator_v070(Preinstalls.SenderCreator_v070).createSender(initCode);
-        assertEq(
-            sender,
-            ISimpleAccountFactory(simpleAccountFactory).getAddress(address(0xbeef), 0),
-            "Deployed sender account does not match SimpleAccountFactory derivation"
-        );
-    }
-
+    /**
+     * @notice Test EntryPoint_v070 by triggering the only function that doesnt require emulating AA completely
+     * @dev See test_entryPoint_v060_getSenderAddress_reverts_correctly for notes as the call flow is the same
+     */
     function test_entryPoint_v070_getSenderAddress_reverts_correctly() public {
         ICreate2Deployer(Preinstalls.Create2Deployer).deploy(0, simpleAccountFactorySalt, simpleAccountFactoryCode);
         assertTrue(simpleAccountFactory.code.length != 0, "SimpleAccountFactory deployed to incorrect address");
         bytes memory initCode = abi.encodePacked(
             simpleAccountFactory, abi.encodeWithSignature("createAccount(address,uint256)", address(0xbeef), 0)
         );
+
         vm.expectRevert(
             abi.encodeWithSignature(
                 "SenderAddressResult(address)",
@@ -368,15 +317,46 @@ contract Preinstalls_Test is Test, AllocPredeploys {
     }
 
     /**
-     * @notice This test is commented out because it throws EvmError: NotActivated, unsure if it is callable like this
-     * @dev See Preinstalls.sol L50
+     * @notice Test BeaconBlockRoots in accordance to EIP-4788's pseudocode structure
+     * @dev See: https://eips.ethereum.org/EIPS/eip-4788#block-structure-and-validity
      */
-    /*function test_beaconBlockRoots_get_succeeds() public {
-        IBeaconBlockRoots(Preinstalls.BeaconBlockRoots).get();
-    }*/
+    function test_beaconBlockRoots_get_succeeds() public {
+        // Prank SYSTEM_ACCOUNT to set beacon block root
+        bytes memory hash = abi.encodePacked(keccak256(abi.encode("HASH")));
+        vm.prank(0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE);
+        (bool success, bytes memory result) = Preinstalls.BeaconBlockRoots.call(hash);
+        assertTrue(success, "System address cannot set beacon block root");
 
+        // Retrieve beacon block root via any other account in the same time slot it was set
+        (success, result) = Preinstalls.BeaconBlockRoots.call(abi.encode(block.timestamp));
+        assertTrue(success, "External address cannot read beacon block root");
+        assertEq(bytes32(result), keccak256(abi.encode("HASH")), "beacon block root is not what was assigned");
+    }
+
+    /**
+     * @notice Test that ERC1820Registry can return an interface hash for a function signature
+     */
     function test_erc1820Registry_interfaceHash_succeeds() public {
         bytes32 interfaceHash = IERC1820Registry(Preinstalls.ERC1820Registry).interfaceHash("testInterface(uint256)");
         assertTrue(interfaceHash != bytes32(0), "ERC1820Registry interfaceHash returned empty bytes32");
+    }
+}
+
+/**
+ * @notice Simple contract used in tests that involve contract deployment
+ */
+contract DummyTest {
+    function chainId() external view returns (uint256) {
+        return block.chainid;
+    }
+}
+
+/**
+ * @notice Proxy contract used when testing MultiSend, as it mandates interaction via delegatecall
+ */
+contract MultiSendProxy {
+    function executeMultiSend(address multisendContract, bytes memory transactions) public {
+        (bool success,) = multisendContract.delegatecall(abi.encodeWithSignature("multiSend(bytes)", transactions));
+        require(success, "MultiSend call failed");
     }
 }
