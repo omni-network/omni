@@ -17,33 +17,33 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//go:generate go test . -run=TestDynamicThresholds -clean -golden
+//go:generate go test . -run=TestThresholdReference -clean -golden
 
-func TestDynamicThresholds(t *testing.T) {
+func TestThresholdReference(t *testing.T) {
 	t.Parallel()
 
-	type val struct {
-		Target string
-		Min    string
-	}
-
-	results := make(map[string]val)
+	resp := make(map[netconf.ID]map[tokens.Token]map[eoa.Role]map[string]string)
 	for _, network := range []netconf.ID{netconf.Staging, netconf.Omega, netconf.Mainnet} {
-		for _, role := range []eoa.Role{eoa.RoleSafe, eoa.RoleHot} {
-			for _, token := range []tokens.Token{tokens.ETH, tokens.OMNI} {
+		resp[network] = make(map[tokens.Token]map[eoa.Role]map[string]string)
+		for _, token := range []tokens.Token{tokens.ETH, tokens.OMNI} {
+			resp[network][token] = make(map[eoa.Role]map[string]string)
+			for _, role := range eoa.AllRoles() {
+				resp[network][token][role] = make(map[string]string)
+
 				thresholds, ok := eoa.GetFundThresholds(token, network, role)
+				if network == netconf.Mainnet && role == eoa.RoleTester {
+					require.False(t, ok, "account should not exist: %s %s %s", network, role, token)
+					continue
+				}
 				require.True(t, ok, "thresholds not found: %s %s %s", network, role, token)
 
-				key := fmt.Sprintf("%s %s %s", network, role, token)
-				results[key] = val{
-					Target: etherStr(thresholds.TargetBalance()),
-					Min:    etherStr(thresholds.MinBalance()),
-				}
+				resp[network][token][role]["target"] = etherStr(thresholds.MinBalance())
+				resp[network][token][role]["min"] = etherStr(thresholds.MinBalance())
 			}
 		}
 	}
 
-	tutil.RequireGoldenJSON(t, results)
+	tutil.RequireGoldenJSON(t, resp, tutil.WithFilename("threshold_reference.json"))
 }
 
 func TestStatic(t *testing.T) {
