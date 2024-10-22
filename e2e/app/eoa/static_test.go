@@ -8,12 +8,43 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
 
 	"github.com/stretchr/testify/require"
 )
+
+//go:generate go test . -run=TestDynamicThresholds -clean -golden
+
+func TestDynamicThresholds(t *testing.T) {
+	t.Parallel()
+
+	type val struct {
+		Target string
+		Min    string
+	}
+
+	results := make(map[string]val)
+	for _, network := range []netconf.ID{netconf.Staging, netconf.Omega, netconf.Mainnet} {
+		for _, role := range []eoa.Role{eoa.RoleSafe, eoa.RoleHot} {
+			for _, token := range []tokens.Token{tokens.ETH, tokens.OMNI} {
+				thresholds, ok := eoa.GetFundThresholds(token, network, role)
+				require.True(t, ok, "thresholds not found: %s %s %s", network, role, token)
+
+				key := fmt.Sprintf("%s %s %s", network, role, token)
+				results[key] = val{
+					Target: etherStr(thresholds.TargetBalance()),
+					Min:    etherStr(thresholds.MinBalance()),
+				}
+			}
+		}
+	}
+
+	tutil.RequireGoldenJSON(t, results)
+}
 
 func TestStatic(t *testing.T) {
 	t.Parallel()

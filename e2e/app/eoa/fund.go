@@ -132,7 +132,7 @@ func multipleSum(network netconf.ID, multiplier int, roles []Role) FundThreshold
 	for _, role := range roles {
 		thresh, ok := getThreshold(network, role)
 		if !ok {
-			panic(errors.New("unexpected missing thresholds", "role", role))
+			continue
 		}
 
 		sum.minETH += thresh.minETH * float64(multiplier)
