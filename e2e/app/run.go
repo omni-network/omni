@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 
@@ -116,7 +117,20 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, errors.Wrap(err, "setup token bridge")
 	}
 
-	if cfg.PingPongN == 0 {
+	if err := maybeSubmitNetworkUpgrade(ctx, def); err != nil {
+		return nil, err
+	}
+
+	if err := FundValidatorsForTesting(ctx, def); err != nil {
+		return nil, err
+	}
+
+	err = waitForSupportedChains(ctx, def)
+	if err != nil {
+		return nil, err
+	}
+
+	if cfg.PingPongN == 0 || def.Testnet.Network == netconf.Mainnet {
 		return nil, nil //nolint:nilnil // No ping pong, no XDapp to return.
 	}
 
@@ -125,22 +139,9 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, errors.Wrap(err, "deploy pingpong")
 	}
 
-	err = waitForSupportedChains(ctx, def)
-	if err != nil {
-		return nil, err
-	}
-
 	err = pp.StartAllEdges(ctx, cfg.PingPongL, cfg.PingPongP, cfg.PingPongN)
 	if err != nil {
 		return nil, errors.Wrap(err, "start all edges")
-	}
-
-	if err := maybeSubmitNetworkUpgrade(ctx, def); err != nil {
-		return nil, err
-	}
-
-	if err := FundValidatorsForTesting(ctx, def); err != nil {
-		return nil, err
 	}
 
 	return &pp, nil
