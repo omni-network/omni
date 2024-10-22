@@ -463,14 +463,14 @@ func forkedPublicChains(manifest types.Manifest, infd types.InfrastructureData, 
 			return nil, errors.New("anvil instance for public chain not found in infrastructure data", "chain", name)
 		}
 
-		internalIP := inst.IPAddress.String()
-		if infd.Provider == docker.ProviderName {
-			internalIP = name // For docker, we use container names
-		}
-
-		chain, err := types.PublicChainByName(name)
+		chain, err := types.ForkChainByName(name)
 		if err != nil {
 			return nil, errors.Wrap(err, "get public chain", "chain", name)
+		}
+
+		internalIP := inst.IPAddress.String()
+		if infd.Provider == docker.ProviderName {
+			internalIP = chain.Name // For docker, we use container names. chain.Name is `${name}_fork`
 		}
 
 		forkRPC, ok := cfg.RPCOverrides[name]

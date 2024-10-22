@@ -40,6 +40,31 @@ var (
 		IsPublic: true,
 		Shards:   allShards,
 	}
+
+	forkEthereum = EVMChain{
+		Metadata: mustMetadata(evmchain.ForkChainID(evmchain.IDEthereum)),
+		Shards:   allShards,
+	}
+
+	forkHolesky = EVMChain{
+		Metadata: mustMetadata(evmchain.ForkChainID(evmchain.IDHolesky)),
+		Shards:   allShards,
+	}
+
+	forkArbSepolia = EVMChain{
+		Metadata: mustMetadata(evmchain.ForkChainID(evmchain.IDArbSepolia)),
+		Shards:   allShards,
+	}
+
+	forkOpSepolia = EVMChain{
+		Metadata: mustMetadata(evmchain.ForkChainID(evmchain.IDOpSepolia)),
+		Shards:   allShards,
+	}
+
+	forkBaseSepolia = EVMChain{
+		Metadata: mustMetadata(evmchain.ForkChainID(evmchain.IDBaseSepolia)),
+		Shards:   allShards,
+	}
 )
 
 // OmniEVMByNetwork returns the Omni evm chain definition by netconf network.
@@ -87,6 +112,24 @@ func PublicChainByName(name string) (EVMChain, error) {
 		return chainBaseSepolia, nil
 	case chainEthereum.Name:
 		return chainEthereum, nil
+	default:
+		return EVMChain{}, errors.New("unknown chain name")
+	}
+}
+
+// ForkChainByName returns the fork chain definition by name.
+func ForkChainByName(name string) (EVMChain, error) {
+	switch name {
+	case chainHolesky.Name:
+		return forkHolesky, nil
+	case chainArbSepolia.Name:
+		return forkArbSepolia, nil
+	case chainOpSepolia.Name:
+		return forkOpSepolia, nil
+	case chainBaseSepolia.Name:
+		return forkBaseSepolia, nil
+	case chainEthereum.Name:
+		return forkEthereum, nil
 	default:
 		return EVMChain{}, errors.New("unknown chain name")
 	}

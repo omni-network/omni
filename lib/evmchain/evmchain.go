@@ -35,6 +35,8 @@ const (
 
 	omniEVMName        = "omni_evm"
 	omniEVMBlockPeriod = time.Second * 2
+
+	forkChainIDOffset = 1100000000
 )
 
 type Metadata struct {
@@ -78,7 +80,43 @@ func All() []Metadata {
 	return resp
 }
 
-var static = map[uint64]Metadata{
+func addForks(mds map[uint64]Metadata) map[uint64]Metadata {
+	withForks := make(map[uint64]Metadata)
+
+	for _, md := range mds {
+		withForks[md.ChainID] = md
+
+		if shouldFork(md.ChainID) {
+			// omit PostsTo in fork meta - no need for proper data fees
+			withForks[ForkChainID(md.ChainID)] = Metadata{
+				ChainID:     ForkChainID(md.ChainID),
+				Name:        md.Name + "_fork",
+				BlockPeriod: md.BlockPeriod,
+				NativeToken: md.NativeToken,
+			}
+		}
+	}
+
+	return withForks
+}
+
+func ForkChainID(chainID uint64) uint64 {
+	return chainID + forkChainIDOffset
+}
+
+func shouldFork(chainID uint64) bool {
+	// add fork metadata for all non-omni and all non-mock chains
+	return !(chainID == IDOmniMainnet ||
+		chainID == IDOmniOmega ||
+		chainID == IDOmniDevnet ||
+		chainID == IDOmniStaging ||
+		chainID == IDMockL1 ||
+		chainID == IDMockL2 ||
+		chainID == IDMockOp ||
+		chainID == IDMockArb)
+}
+
+var static = addForks(map[uint64]Metadata{
 	IDEthereum: {
 		ChainID:     IDEthereum,
 		Name:        "ethereum",
@@ -166,4 +204,4 @@ var static = map[uint64]Metadata{
 		BlockPeriod: time.Second,
 		NativeToken: tokens.ETH,
 	},
-}
+})

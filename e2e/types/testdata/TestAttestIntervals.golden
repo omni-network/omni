@@ -4,7 +4,17 @@
   "ephemeral_attest_interval": 2000,
   "protected_attest_interval": 12000
  },
+ "arb_sepolia_fork": {
+  "block_period": "300ms",
+  "ephemeral_attest_interval": 2000,
+  "protected_attest_interval": 12000
+ },
  "base_sepolia": {
+  "block_period": "2s",
+  "ephemeral_attest_interval": 300,
+  "protected_attest_interval": 1800
+ },
+ "base_sepolia_fork": {
   "block_period": "2s",
   "ephemeral_attest_interval": 300,
   "protected_attest_interval": 1800
@@ -14,7 +24,17 @@
   "ephemeral_attest_interval": 50,
   "protected_attest_interval": 300
  },
+ "ethereum_fork": {
+  "block_period": "12s",
+  "ephemeral_attest_interval": 50,
+  "protected_attest_interval": 300
+ },
  "holesky": {
+  "block_period": "12s",
+  "ephemeral_attest_interval": 50,
+  "protected_attest_interval": 300
+ },
+ "holesky_fork": {
   "block_period": "12s",
   "ephemeral_attest_interval": 50,
   "protected_attest_interval": 300
@@ -49,7 +69,17 @@
   "ephemeral_attest_interval": 300,
   "protected_attest_interval": 1800
  },
+ "op_sepolia_fork": {
+  "block_period": "2s",
+  "ephemeral_attest_interval": 300,
+  "protected_attest_interval": 1800
+ },
  "sepolia": {
+  "block_period": "12s",
+  "ephemeral_attest_interval": 50,
+  "protected_attest_interval": 300
+ },
+ "sepolia_fork": {
   "block_period": "12s",
   "ephemeral_attest_interval": 50,
   "protected_attest_interval": 300

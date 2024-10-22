@@ -123,11 +123,11 @@ func (n Network) EthereumChain() (Chain, bool) {
 func IsEthereumChain(network ID, chainID uint64) bool {
 	switch network {
 	case Mainnet:
-		return chainID == evmchain.IDEthereum
+		return chainID == evmchain.IDEthereum || chainID == evmchain.ForkChainID(evmchain.IDEthereum)
 	case Omega:
-		return chainID == evmchain.IDHolesky
+		return chainID == evmchain.IDHolesky || chainID == evmchain.ForkChainID(evmchain.IDHolesky)
 	default:
-		return chainID == evmchain.IDMockL1
+		return chainID == evmchain.IDMockL1 || chainID == evmchain.ForkChainID(evmchain.IDMockL1)
 	}
 }
 
