@@ -276,7 +276,8 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.ServiceConfig) error {
 				"sudo mv %s docker-compose.yaml && "+
 				"sudo docker compose pull && "+
 				"sudo docker compose down && "+
-				"sudo docker compose up -d",
+				"sudo docker compose up -d &&"+
+				"sudo docker system prune -a -f", // Prune old images
 				p.Testnet.Name, composeFile)
 
 			log.Debug(ctx, "Executing docker-compose up", "vm", vmName)
@@ -344,7 +345,8 @@ func (p *Provider) StartNodes(ctx context.Context, _ ...*e2e.Node) error {
 				"sudo mv %s prometheus/prometheus.yml && "+
 				"sudo docker compose pull &&"+
 				"sudo ./evm-init.sh && "+
-				"sudo docker compose up -d",
+				"sudo docker compose up -d &&"+
+				"sudo docker system prune -a -f", // Prune old images
 				p.Testnet.Name, composeFile, initFile, agentFile)
 
 			err := execOnVM(ctx, vmName, startCmd)
