@@ -37,7 +37,7 @@ func TestThresholdReference(t *testing.T) {
 				}
 				require.True(t, ok, "thresholds not found: %s %s %s", network, role, token)
 
-				resp[network][token][role]["target"] = etherStr(thresholds.MinBalance())
+				resp[network][token][role]["target"] = etherStr(thresholds.TargetBalance())
 				resp[network][token][role]["min"] = etherStr(thresholds.MinBalance())
 			}
 		}

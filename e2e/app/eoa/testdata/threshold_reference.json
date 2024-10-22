@@ -3,71 +3,71 @@
   "ETH": {
    "create3-deployer": {
     "min": "0.0010",
-    "target": "0.0010"
+    "target": "0.0100"
    },
    "deployer": {
     "min": "0.0010",
-    "target": "0.0010"
+    "target": "0.0100"
    },
    "hot": {
     "min": "2.0080",
-    "target": "2.0080"
+    "target": "8.0800"
    },
    "manager": {
     "min": "0.0010",
-    "target": "0.0010"
+    "target": "0.0100"
    },
    "monitor": {
     "min": "0.5000",
-    "target": "0.5000"
+    "target": "2.0000"
    },
    "relayer": {
     "min": "0.5000",
-    "target": "0.5000"
+    "target": "2.0000"
    },
    "safe": {
     "min": "2.0080",
-    "target": "2.0080"
+    "target": "8.0800"
    },
    "tester": {},
    "upgrader": {
     "min": "0.0010",
-    "target": "0.0010"
+    "target": "0.0100"
    }
   },
   "OMNI": {
    "create3-deployer": {
     "min": "1.0000",
-    "target": "1.0000"
+    "target": "10.0000"
    },
    "deployer": {
     "min": "1.0000",
-    "target": "1.0000"
+    "target": "10.0000"
    },
    "hot": {
     "min": "2008.0000",
-    "target": "2008.0000"
+    "target": "8080.0000"
    },
    "manager": {
     "min": "1.0000",
-    "target": "1.0000"
+    "target": "10.0000"
    },
    "monitor": {
     "min": "500.0000",
-    "target": "500.0000"
+    "target": "2000.0000"
    },
    "relayer": {
     "min": "500.0000",
-    "target": "500.0000"
+    "target": "2000.0000"
    },
    "safe": {
     "min": "2008.0000",
-    "target": "2008.0000"
+    "target": "8080.0000"
    },
    "tester": {},
    "upgrader": {
     "min": "1.0000",
-    "target": "1.0000"
+    "target": "10.0000"
    }
   }
  },
@@ -75,77 +75,77 @@
   "ETH": {
    "create3-deployer": {
     "min": "0.0010",
-    "target": "0.0010"
+    "target": "0.0100"
    },
    "deployer": {
     "min": "0.0010",
-    "target": "0.0010"
+    "target": "0.0100"
    },
    "hot": {
     "min": "22.0080",
-    "target": "22.0080"
+    "target": "108.0800"
    },
    "manager": {
     "min": "0.0010",
-    "target": "0.0010"
+    "target": "0.0100"
    },
    "monitor": {
     "min": "0.5000",
-    "target": "0.5000"
+    "target": "2.0000"
    },
    "relayer": {
     "min": "0.5000",
-    "target": "0.5000"
+    "target": "2.0000"
    },
    "safe": {
     "min": "22.0080",
-    "target": "22.0080"
+    "target": "108.0800"
    },
    "tester": {
     "min": "10.0000",
-    "target": "10.0000"
+    "target": "50.0000"
    },
    "upgrader": {
     "min": "0.0010",
-    "target": "0.0010"
+    "target": "0.0100"
    }
   },
   "OMNI": {
    "create3-deployer": {
     "min": "1.0000",
-    "target": "1.0000"
+    "target": "10.0000"
    },
    "deployer": {
     "min": "1.0000",
-    "target": "1.0000"
+    "target": "10.0000"
    },
    "hot": {
     "min": "22008.0000",
-    "target": "22008.0000"
+    "target": "108080.0000"
    },
    "manager": {
     "min": "1.0000",
-    "target": "1.0000"
+    "target": "10.0000"
    },
    "monitor": {
     "min": "500.0000",
-    "target": "500.0000"
+    "target": "2000.0000"
    },
    "relayer": {
     "min": "500.0000",
-    "target": "500.0000"
+    "target": "2000.0000"
    },
    "safe": {
     "min": "22008.0000",
-    "target": "22008.0000"
+    "target": "108080.0000"
    },
    "tester": {
     "min": "10000.0000",
-    "target": "10000.0000"
+    "target": "50000.0000"
    },
    "upgrader": {
     "min": "1.0000",
-    "target": "1.0000"
+    "target": "10.0000"
    }
   }
  },
@@ -153,77 +153,77 @@
   "ETH": {
    "create3-deployer": {
     "min": "0.0010",
-    "target": "0.0010"
+    "target": "0.0100"
    },
    "deployer": {
     "min": "0.5000",
-    "target": "0.5000"
+    "target": "2.0000"
    },
    "hot": {
     "min": "23.0060",
-    "target": "23.0060"
+    "target": "112.0600"
    },
    "manager": {
     "min": "0.0010",
-    "target": "0.0010"
+    "target": "0.0100"
    },
    "monitor": {
     "min": "0.5000",
-    "target": "0.5000"
+    "target": "2.0000"
    },
    "relayer": {
     "min": "0.5000",
-    "target": "0.5000"
+    "target": "2.0000"
    },
    "safe": {
     "min": "23.0060",
-    "target": "23.0060"
+    "target": "112.0600"
    },
    "tester": {
     "min": "10.0000",
-    "target": "10.0000"
+    "target": "50.0000"
    },
    "upgrader": {
     "min": "0.0010",
-    "target": "0.0010"
+    "target": "0.0100"
    }
   },
   "OMNI": {
    "create3-deployer": {
     "min": "1.0000",
-    "target": "1.0000"
+    "target": "10.0000"
    },
    "deployer": {
     "min": "500.0000",
-    "target": "500.0000"
+    "target": "2000.0000"
    },
    "hot": {
     "min": "23006.0000",
-    "target": "23006.0000"
+    "target": "112060.0000"
    },
    "manager": {
     "min": "1.0000",
-    "target": "1.0000"
+    "target": "10.0000"
    },
    "monitor": {
     "min": "500.0000",
-    "target": "500.0000"
+    "target": "2000.0000"
    },
    "relayer": {
     "min": "500.0000",
-    "target": "500.0000"
+    "target": "2000.0000"
    },
    "safe": {
     "min": "23006.0000",
-    "target": "23006.0000"
+    "target": "112060.0000"
    },
    "tester": {
     "min": "10000.0000",
-    "target": "10000.0000"
+    "target": "50000.0000"
    },
    "upgrader": {
     "min": "1.0000",
-    "target": "1.0000"
+    "target": "10.0000"
    }
   }
  }
