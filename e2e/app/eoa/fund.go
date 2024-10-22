@@ -12,23 +12,27 @@ import (
 	"cosmossdk.io/math"
 )
 
+const (
+	hotDynamicMultiplier  = 2
+	safeDynamicMultiplier = 1
+)
+
+type dynamicThreshold struct {
+	Multiplier int
+	Roles      []Role
+}
+
 var (
 	// tokenConversion defines conversion rate for fund threshold amounts.
 	tokenConversion = map[tokens.Token]float64{
 		tokens.OMNI: 1000,
+		tokens.ETH:  1,
 	}
 
 	// thresholdTiny is used for EOAs which are rarely used, mostly to deploy a handful of contracts per network.
 	thresholdTiny = FundThresholds{
 		minETH:    0.001,
 		targetETH: 0.01,
-	}
-
-	// thresholdSmall is used by EOAs that deploy contracts or perform actions a couple times per week/month.
-	//nolint:unused // Might be used in future.
-	thresholdSmall = FundThresholds{
-		minETH:    0.1,
-		targetETH: 1.0,
 	}
 
 	// thresholdMedium is used by EOAs that regularly perform actions and need enough balance
@@ -38,12 +42,6 @@ var (
 		targetETH: 2,
 	}
 
-	// thresholdBig is used for funding actions to the medium EOAs.
-	thresholdBig = FundThresholds{
-		minETH:    thresholdMedium.targetETH,
-		targetETH: thresholdMedium.targetETH * 3,
-	}
-
 	// thresholdLarge is used by EOAs that constantly perform actions and need enough balance
 	// to last a weekend without topping up even if fees are spiking.
 	thresholdLarge = FundThresholds{
@@ -51,16 +49,25 @@ var (
 		targetETH: 50,
 	}
 
-	defaultThresholdsByRole = map[Role]FundThresholds{
+	staticThresholdsByRole = map[Role]FundThresholds{
 		RoleRelayer:         thresholdMedium, // Relayer needs sufficient balance to operator for 2 weeks
 		RoleMonitor:         thresholdMedium, // Dynamic Fee updates every few hours.
 		RoleCreate3Deployer: thresholdTiny,   // Only 1 contract per chain
 		RoleManager:         thresholdTiny,   // Rarely used
 		RoleUpgrader:        thresholdTiny,   // Rarely used
 		RoleDeployer:        thresholdTiny,   // Protected chains are only deployed once
-		RoleFunder:          thresholdBig,    // Used to fund medium and smaller accounts.
-		RoleSafe:            thresholdLarge,  // Used to fund funder.
-		RoleTester:          thresholdLarge,  // Tester funds pingpongs, validator updates, etc.
+		RoleTester:          thresholdLarge,  // Tester funds pingpongs, validator updates, etc, on non-mainnet.
+	}
+
+	dynamicThresholdsByRole = map[Role]dynamicThreshold{
+		RoleHot: {
+			Multiplier: hotDynamicMultiplier,
+			Roles:      []Role{RoleRelayer, RoleMonitor, RoleCreate3Deployer, RoleManager, RoleUpgrader, RoleDeployer, RoleTester},
+		},
+		RoleSafe: {
+			Multiplier: safeDynamicMultiplier,
+			Roles:      []Role{RoleHot},
+		},
 	}
 
 	ephemeralOverrides = map[Role]FundThresholds{
@@ -69,28 +76,18 @@ var (
 )
 
 func GetFundThresholds(token tokens.Token, network netconf.ID, role Role) (FundThresholds, bool) {
-	if network.IsEphemeral() {
-		if resp, ok := ephemeralOverrides[role]; ok {
-			return resp, true
-		}
-	}
-
-	if network == netconf.Mainnet && role == RoleTester {
+	thresh, ok := getThreshold(network, role)
+	if !ok {
 		return FundThresholds{}, false
 	}
 
-	resp, ok := defaultThresholdsByRole[role]
-
-	if ok && token != tokens.ETH {
-		conv, err := convert(resp, token)
-		if err != nil {
-			panic(err)
-		}
-
-		return conv, true
+	// Convert thresholds to the token's denomination.
+	conv, err := convert(thresh, token)
+	if err != nil {
+		panic(err)
 	}
 
-	return resp, ok
+	return conv, true
 }
 
 type FundThresholds struct {
@@ -127,4 +124,43 @@ func convert(threshold FundThresholds, token tokens.Token) (FundThresholds, erro
 		minETH:    threshold.minETH * conversion,
 		targetETH: threshold.targetETH * conversion,
 	}, nil
+}
+
+// multipleSum returns a function that calculates the sum of the thresholds for the given roles and multiplier.
+func multipleSum(network netconf.ID, multiplier int, roles []Role) FundThresholds {
+	var sum FundThresholds
+	for _, role := range roles {
+		thresh, ok := getThreshold(network, role)
+		if !ok {
+			panic(errors.New("unexpected missing thresholds", "role", role))
+		}
+
+		sum.minETH += thresh.minETH * float64(multiplier)
+		sum.targetETH += thresh.targetETH * float64(multiplier)
+	}
+
+	return sum
+}
+
+func getThreshold(network netconf.ID, role Role) (FundThresholds, bool) {
+	if _, ok := AccountForRole(network, role); !ok {
+		// Skip roles that don't have an account.
+		return FundThresholds{}, false
+	}
+
+	if network.IsEphemeral() {
+		override, ok := ephemeralOverrides[role]
+		if ok {
+			return override, true
+		}
+	}
+
+	dynamic, ok := dynamicThresholdsByRole[role]
+	if ok {
+		return multipleSum(network, dynamic.Multiplier, dynamic.Roles), true
+	}
+
+	thresh, ok := staticThresholdsByRole[role]
+
+	return thresh, ok
 }

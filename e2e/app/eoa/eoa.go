@@ -15,10 +15,10 @@ import (
 type Role string
 
 const (
-	// RoleSafe is used as to fund the funder.
+	// RoleSafe is the main account with most security, it funds the funder. Like a cold wallet.
 	RoleSafe Role = "safe"
-	// RoleFunder is used to fund omni accounts on all networks.
-	RoleFunder Role = "funder"
+	// RoleHot is used to fund omni accounts on all networks. Like a hot wallet.
+	RoleHot Role = "hot"
 	// RoleRelayer is the relayer eoa on all networks. It creates submissions to portals.
 	RoleRelayer Role = "relayer"
 	// RoleMonitor is the monitor service eoa on all networks. It is used by the feemanager.
@@ -47,7 +47,7 @@ func AllRoles() []Role {
 	return []Role{
 		RoleSafe,
 		RoleRelayer,
-		RoleFunder,
+		RoleHot,
 		RoleMonitor,
 		RoleCreate3Deployer,
 		RoleDeployer,

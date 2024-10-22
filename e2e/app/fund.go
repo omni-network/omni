@@ -61,10 +61,27 @@ func fundAnvilAccounts(ctx context.Context, def Definition) error {
 }
 
 // FundAccounts funds the EOAs and contracts that need funding to their target balance.
-func FundAccounts(ctx context.Context, def Definition, dryRun bool) error {
+func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool) error {
 	network := def.Testnet.Network
-	accounts := eoa.AllAccounts(network)
 
+	var funderRole eoa.Role
+	var accounts []eoa.Account
+	if hotOnly {
+		funder, ok := eoa.AccountForRole(network, eoa.RoleHot)
+		if !ok {
+			return errors.New("funder account not found")
+		}
+		accounts = []eoa.Account{funder}
+		funderRole = eoa.RoleSafe
+	} else {
+		for _, account := range eoa.AllAccounts(network) {
+			if account.Role == eoa.RoleSafe || account.Role == eoa.RoleHot {
+				continue // Don't fund safe or funder
+			}
+			accounts = append(accounts, account)
+		}
+		funderRole = eoa.RoleHot
+	}
 	log.Info(ctx, "Checking accounts to fund", "network", network, "count", len(accounts))
 
 	for _, chain := range def.Testnet.EVMChains() {
@@ -73,16 +90,17 @@ func FundAccounts(ctx context.Context, def Definition, dryRun bool) error {
 			return errors.Wrap(err, "backend")
 		}
 
-		funder := eoa.MustAddress(network, eoa.RoleFunder)
-		funderBal, err := backend.BalanceAt(ctx, funder, nil)
+		funderAddr := eoa.MustAddress(network, funderRole)
+		funderBal, err := backend.BalanceAt(ctx, funderAddr, nil)
 		if err != nil {
 			return err
 		}
 
-		log.Info(ctx, "Funder balance",
+		log.Info(ctx, "Funder account balance",
 			"chain", chain.Name,
-			"funder", funder,
+			"role", funderRole,
 			"balance", etherStr(funderBal),
+			"address", funderAddr,
 		)
 
 		for _, account := range accounts {
@@ -99,12 +117,6 @@ func FundAccounts(ctx context.Context, def Definition, dryRun bool) error {
 			} else if account.Type == eoa.TypeWellKnown {
 				log.Info(accCtx, "Skipping well-known anvil account")
 				continue
-			} else if account.Role == eoa.RoleSafe {
-				continue // we fund safe manually
-			} else if account.Role == eoa.RoleFunder {
-				// if we are funding funder then use safe as funder address
-				// if funder has enough funds this step will be skipped
-				funder = eoa.MustAddress(network, eoa.RoleSafe)
 			}
 
 			thresholds, ok := eoa.GetFundThresholds(chain.NativeToken, network, account.Role)
@@ -120,16 +132,22 @@ func FundAccounts(ctx context.Context, def Definition, dryRun bool) error {
 				targetBalance: thresholds.TargetBalance(),
 				saneMax:       saneMax(chain.NativeToken),
 				dryRun:        dryRun,
-				funder:        funder,
+				funder:        funderAddr,
 			}); err != nil {
 				return errors.Wrap(err, "fund account")
 			}
+		}
+
+		if hotOnly {
+			continue // Skip contract funding if hotOnly.
 		}
 
 		toFund, err := contracts.ToFund(ctx, network)
 		if err != nil {
 			return errors.Wrap(err, "get contracts to fund")
 		}
+
+		log.Info(ctx, "Checking contracts to fund", "network", network, "count", len(toFund))
 
 		for _, contract := range toFund {
 			ctrCtx := log.WithCtx(ctx,
@@ -152,7 +170,7 @@ func FundAccounts(ctx context.Context, def Definition, dryRun bool) error {
 				targetBalance: contract.Thresholds.TargetBalance(),
 				saneMax:       saneMax(chain.NativeToken),
 				dryRun:        dryRun,
-				funder:        funder,
+				funder:        funderAddr,
 			}); err != nil {
 				return errors.Wrap(err, "fund contract")
 			}

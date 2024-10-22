@@ -207,6 +207,7 @@ func newCreate3DeployCmd(def *app.Definition) *cobra.Command {
 }
 func fundAccounts(def *app.Definition) *cobra.Command {
 	var dryRun bool
+	var hotOnly bool
 
 	cmd := &cobra.Command{
 		Use:   "fund",
@@ -219,11 +220,12 @@ func fundAccounts(def *app.Definition) *cobra.Command {
 				return errors.Wrap(err, "init network")
 			}
 
-			return app.FundAccounts(cmd.Context(), *def, dryRun)
+			return app.FundAccounts(cmd.Context(), *def, hotOnly, dryRun)
 		},
 	}
 
 	cmd.Flags().BoolVar(&dryRun, "dry-run", dryRun, "Enables dry-run for testing")
+	cmd.Flags().BoolVar(&hotOnly, "hot-only", hotOnly, "Only fund the hot wallet (from the safe)")
 
 	return cmd
 }

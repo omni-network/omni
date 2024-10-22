@@ -14,14 +14,14 @@ var statics = map[netconf.ID][]Account{
 		wellKnown(anvil.DevPrivateKey5(), RoleRelayer),
 		wellKnown(anvil.DevPrivateKey6(), RoleMonitor),
 		wellKnown(anvil.DevPrivateKey7(), RoleTester),
-		wellKnown(anvil.DevPrivateKey8(), RoleFunder),
+		wellKnown(anvil.DevPrivateKey8(), RoleHot),
 		wellKnown(anvil.DevPrivateKey9(), RoleSafe),
 	),
 	netconf.Staging: flatten(
 		remote("0x64Bf40F5E6C4DE0dfe8fE6837F6339455657A2F5", RoleSafe), // we use shared-safe
 		remote("0xCC43713c9C9c565Fd4830cC85F7f254979F64518", RoleManager),
 		remote("0x4891925c4f13A34FC26453FD168Db80aF3273014", RoleUpgrader),
-		remote("0xf63316AA39fEc9D2109AB0D9c7B1eE3a6F60AEA4", RoleFunder), // we use shared-funder
+		remote("0xf63316AA39fEc9D2109AB0D9c7B1eE3a6F60AEA4", RoleHot), // we use shared-funder
 		remote("0xC8103859Ac7CB547d70307EdeF1A2319FC305fdC", RoleCreate3Deployer),
 		remote("0x274c4B3e5d27A65196d63964532366872F81D261", RoleDeployer),
 		remote("0x7a6cF389082dc698285474976d7C75CAdE08ab7e", RoleTester), // reused shared-test with omega. Concurrent usage will result in nonce clashes.
@@ -32,7 +32,7 @@ var statics = map[netconf.ID][]Account{
 		remote("0x64Bf40F5E6C4DE0dfe8fE6837F6339455657A2F5", RoleSafe),     // we use shared-safe
 		remote("0xEAD625eB2011394cdD739E91Bf9D51A7169C22F5", RoleManager),  // we reuse omega-owner-upgrader
 		remote("0xEAD625eB2011394cdD739E91Bf9D51A7169C22F5", RoleUpgrader), // we reuse omega-owner-upgrader
-		remote("0xf63316AA39fEc9D2109AB0D9c7B1eE3a6F60AEA4", RoleFunder),   // we use shared-funder
+		remote("0xf63316AA39fEc9D2109AB0D9c7B1eE3a6F60AEA4", RoleHot),      // we use shared-funder
 		remote("0xeC5134556da0797A5C5cD51DD622b689Cac97Fe9", RoleCreate3Deployer),
 		remote("0x0CdCc644158b7D03f40197f55454dc7a11Bd92c1", RoleDeployer),
 		remote("0x7a6cF389082dc698285474976d7C75CAdE08ab7e", RoleTester), // reused shared-test with staging. Concurrent usage will result in nonce clashes.
@@ -45,7 +45,7 @@ var statics = map[netconf.ID][]Account{
 		remote("0xF8740c09f25E2cbF5C9b34Ef142ED7B343B42360", RoleUpgrader),
 		remote("0x992b9de7D42981B90A75C523842C01e27875b65B", RoleCreate3Deployer),
 		remote("0x9496Bf1Bd2Fa5BCba72062cC781cC97eA6930A13", RoleDeployer),
-		remote("0x8F609f4d58355539c48C98464E1e54ab2709aCfe", RoleFunder),
+		remote("0x8F609f4d58355539c48C98464E1e54ab2709aCfe", RoleHot),
 		secret("0xfD62020Cee216Dc543E29752058Ee9f60f7D9Ff9", RoleMonitor),
 		secret("0x6191442101086253A636aecBCC870e4778490AaB", RoleRelayer),
 	),
