@@ -18,6 +18,11 @@
 - Note that before starting geth, it must first be initialised with the Omni Omega [`execution-genesis.json`](https://github.com/omni-network/omni/tree/main/lib/netconf/omega) file via `geth init`.
 
 ### How to check if the validator is ready?
+A node is considered ready when it is healthy and functions as intended.
+This means both the consensus and execution chains are fully synchronized, there are execution and consensus P2P peers connected, and new blocks are being produced.
+The node will be deemed unhealthy while it is syncing, if P2P peers drop to zero, or if consensus is stalled.
+
+The node readiness can be checked as follows:
 - For Docker deployments, check the `docker ps` output for `healthy` or `unhealthy` status.
 - For binary deployments, visit `http://<NODE_IP>:26660/ready`. The JSON response shows multiple system metrics. Any of these metric being unhealthy leads to a `503` status, indicating the node is not ready.
 
