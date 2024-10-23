@@ -106,11 +106,11 @@ func PublicChainByName(name string) (EVMChain, error) {
 	case chainEthereum.Name:
 		return chainEthereum, nil
 	case chainBase.Name:
-		return chainEthereum, nil
+		return chainBase, nil
 	case chainOptimism.Name:
-		return chainEthereum, nil
+		return chainOptimism, nil
 	case chainArbitrum.Name:
-		return chainEthereum, nil
+		return chainArbitrum, nil
 	default:
 		return EVMChain{}, errors.New("unknown chain name")
 	}
