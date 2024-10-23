@@ -138,10 +138,11 @@ func (s Static) ConsensusRPC() string {
 
 //nolint:gochecknoglobals // Static addresses
 var (
-	omegaAVS     = common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
-	omegaPortal  = common.HexToAddress("0xcB60A0451831E4865bC49f41F9C67665Fc9b75C3")
-	mainnetAVS   = common.HexToAddress("0xed2f4d90b073128ae6769a9A8D51547B1Df766C8")
-	mainnetToken = common.HexToAddress("0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4")
+	omegaAVS      = common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
+	omegaPortal   = common.HexToAddress("0xcB60A0451831E4865bC49f41F9C67665Fc9b75C3")
+	mainnetAVS    = common.HexToAddress("0xed2f4d90b073128ae6769a9A8D51547B1Df766C8")
+	mainnetToken  = common.HexToAddress("0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4")
+	mainnetPortal = common.HexToAddress("0x5e9A8Aa213C912Bf54C86bf64aDB8ed6A79C04d1")
 
 	//go:embed omega/consensus-genesis.json
 	omegaConsensusGenesisJSON []byte
@@ -166,6 +167,21 @@ var (
 
 	//go:embed staging/execution-seeds.txt
 	stagingExecutionSeedsTXT []byte
+
+	//go:embed mainnet/consensus-genesis.json
+	mainnetConsensusGenesisJSON []byte
+
+	//go:embed mainnet/execution-genesis.json
+	mainnetExecutionGenesisJSON []byte
+
+	//go:embed mainnet/consensus-seeds.txt
+	mainnetConsensusSeedsTXT []byte
+
+	//go:embed mainnet/consensus-archives.txt
+	mainnetConsusensusArchivesTXT []byte
+
+	//go:embed mainnet/execution-seeds.txt
+	mainnetExecutionSeedsTXT []byte
 )
 
 //nolint:gochecknoglobals // Static mappings.
@@ -211,6 +227,18 @@ var statics = map[ID]Static{
 		OmniExecutionChainID: evmchain.IDOmniMainnet,
 		MaxValidators:        maxValidators,
 		TokenAddress:         mainnetToken,
+		Portals: []Deployment{
+			{ChainID: evmchain.IDEthereum, Address: mainnetPortal, DeployHeight: 21029795},
+			{ChainID: evmchain.IDArbitrumOne, Address: mainnetPortal, DeployHeight: 266889621},
+			{ChainID: evmchain.IDOptimism, Address: mainnetPortal, DeployHeight: 127052933},
+			{ChainID: evmchain.IDBase, Address: mainnetPortal, DeployHeight: 21457647},
+			{ChainID: evmchain.IDOmniMainnet, Address: mainnetPortal, DeployHeight: 4407},
+		},
+		ConsensusGenesisJSON: mainnetConsensusGenesisJSON,
+		ExecutionGenesisJSON: mainnetExecutionGenesisJSON,
+		ConsensusSeedTXT:     mainnetConsensusSeedsTXT,
+		ConsensusArchiveTXT:  mainnetConsusensusArchivesTXT,
+		ExecutionSeedTXT:     mainnetExecutionSeedsTXT,
 	},
 }
 

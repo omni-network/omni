@@ -34,7 +34,8 @@ var (
 // Once a persistent network has been deployed, its allocs should be locked,
 // so that allocs here are consistent with the live network's genesis.
 var locked = map[netconf.ID]bool{
-	netconf.Omega: true,
+	netconf.Omega:   true,
+	netconf.Mainnet: true,
 }
 
 func IsLocked(network netconf.ID) bool {
