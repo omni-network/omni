@@ -142,7 +142,7 @@ func omegaPrefundAlloc() types.GenesisAlloc {
 		common.HexToAddress("0xeC5134556da0797A5C5cD51DD622b689Cac97Fe9"): {Balance: eth1k}, // fb: create3-deployer
 		common.HexToAddress("0x0CdCc644158b7D03f40197f55454dc7a11Bd92c1"): {Balance: eth1k}, // fb: deployer
 		common.HexToAddress("0xEAD625eB2011394cdD739E91Bf9D51A7169C22F5"): {Balance: eth1k}, // fb: owner
-		common.HexToAddress("0xf63316AA39fEc9D2109AB0D9c7B1eE3a6F60AEA4"): {Balance: eth1k}, // fb: cold
+		common.HexToAddress("0xf63316AA39fEc9D2109AB0D9c7B1eE3a6F60AEA4"): {Balance: eth1k}, // fb: hot
 		common.HexToAddress("0xfE921e06Ed0a22c035b4aCFF0A5D3a434A330c96"): {Balance: eth1k}, // dev: relayer
 
 		// Faucet
