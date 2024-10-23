@@ -338,4 +338,4 @@ replace github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.2021
 
 // See https://github.com/cosmos/iavl/pull/983
 // Can remove once the iavl imported by cosmos includes this fix.
-replace github.com/cosmos/iavl => github.com/omni-network/iavl v1.9.11
+replace github.com/cosmos/iavl => github.com/omni-network/iavl v1.9.12
