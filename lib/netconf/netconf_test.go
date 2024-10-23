@@ -41,6 +41,10 @@ func TestGenConsSeeds(t *testing.T) {
 			network:      netconf.Staging,
 			manifestFunc: manifests.Staging,
 		},
+		{
+			network:      netconf.Mainnet,
+			manifestFunc: manifests.Mainnet,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.network.String(), func(t *testing.T) {
@@ -88,6 +92,10 @@ func TestGenConsArchives(t *testing.T) {
 		{
 			network:      netconf.Staging,
 			manifestFunc: manifests.Staging,
+		},
+		{
+			network:      netconf.Mainnet,
+			manifestFunc: manifests.Mainnet,
 		},
 	}
 	for _, test := range tests {
@@ -143,6 +151,10 @@ func TestGenExecutionSeeds(t *testing.T) {
 			network:      netconf.Staging,
 			manifestFunc: manifests.Staging,
 		},
+		{
+			network:      netconf.Mainnet,
+			manifestFunc: manifests.Mainnet,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.network.String(), func(t *testing.T) {
@@ -164,7 +176,7 @@ func TestGenExecutionSeeds(t *testing.T) {
 					}
 
 					key, err := key.Download(ctx, test.network, node, typ, addr)
-					require.NoError(t, err)
+					tutil.RequireNoError(t, err)
 
 					stdPrivKey, err := key.ECDSA()
 					require.NoError(t, err)

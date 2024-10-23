@@ -1,0 +1,2 @@
+d0a9109801c7f78759a20765c30b00d06a6c2a8f@seed01.mainnet.omni.network:26656
+c84e6a5e3c29f1b59b225613be056e82ab5663c7@seed02.mainnet.omni.network:26656
