@@ -21,9 +21,13 @@ var (
 	//go:embed omega.json
 	omegaJSON []byte
 
+	//go:embed mainnet.json
+	mainnetJSON []byte
+
 	devnetAlloc  = mustUnmarshalAlloc(devnetJSON)
 	stagingAlloc = mustUnmarshalAlloc(stagingJSON)
 	omegaAlloc   = mustUnmarshalAlloc(omegaJSON)
+	mainnetAlloc = mustUnmarshalAlloc(mainnetJSON)
 )
 
 // locked maps network ID to whether the network's allocations are locked.
@@ -45,6 +49,8 @@ func Alloc(network netconf.ID) (types.GenesisAlloc, error) {
 		return stagingAlloc, nil
 	case netconf.Omega:
 		return omegaAlloc, nil
+	case netconf.Mainnet:
+		return mainnetAlloc, nil
 	default:
 		return nil, errors.New("unknown network")
 	}
