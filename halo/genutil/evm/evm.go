@@ -124,6 +124,7 @@ func ephemeralPrefundAlloc() types.GenesisAlloc {
 		eoa.MustAddress(netconf.Staging, eoa.RoleRelayer):  {Balance: eth1m},
 		eoa.MustAddress(netconf.Staging, eoa.RoleDeployer): {Balance: eth1m},
 		eoa.MustAddress(netconf.Staging, eoa.RoleHot):      {Balance: eth1m},
+		eoa.MustAddress(netconf.Staging, eoa.RoleCold):     {Balance: eth1m},
 		eoa.MustAddress(netconf.Staging, eoa.RoleUpgrader): {Balance: eth1m},
 		eoa.MustAddress(netconf.Staging, eoa.RoleManager):  {Balance: eth1m},
 
