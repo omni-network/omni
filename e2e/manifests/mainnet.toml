@@ -1,5 +1,5 @@
 network = "mainnet"
-public_chains = [] # TBD
+public_chains = ["ethereum","arbitrum_one","base","optimism"]
 
 multi_omni_evms = true
 prometheus   = true
