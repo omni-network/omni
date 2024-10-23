@@ -246,11 +246,11 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 // newCProvider returns a new cchain provider. Either GRPC if enabled since it is faster,
 // otherwise the ABCI provider.
 //
-//nolint:unparam // We will enable grpc later.
+
 func newCProvider(rpcClient *rpclocal.Local, cfg Config) (cchain.Provider, error) {
-	// if cfg.SDKGRPC.Enable {
-	//	return cprovider.NewGRPC(cfg.SDKGRPC.Address, cfg.Network, netconf.ChainVersionNamer(cfg.Network))
-	// }
+	if cfg.SDKGRPC.Enable {
+		return cprovider.NewGRPC(cfg.SDKGRPC.Address, cfg.Network, netconf.ChainVersionNamer(cfg.Network))
+	}
 
 	return cprovider.NewABCI(rpcClient, cfg.Network, netconf.ChainVersionNamer(cfg.Network)), nil
 }
