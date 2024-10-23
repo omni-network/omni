@@ -18,7 +18,7 @@ import (
 const (
 	devnetVersion  = "devnet"
 	omegaVersion   = "v0.1.0"
-	mainnetVersion = "v0.0.1"
+	mainnetVersion = "v1.0.0"
 )
 
 // version returns the salt version for a given network. Staging version is block 1 hash.
