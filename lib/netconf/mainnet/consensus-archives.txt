@@ -1,0 +1,3 @@
+eae99c1f0faaba9ad96c943f17de350566b028dd@archive01.mainnet.omni.network:26656
+95f7a9277e3ffb37b81e0653f23ce8c57f9dfbc0@archive02.mainnet.omni.network:26656
+a0451a082279bdb8971a964cb12fa3c8d1ad8be4@archive03.mainnet.omni.network:26656
