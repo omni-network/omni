@@ -225,7 +225,7 @@ func fundAccounts(def *app.Definition) *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&dryRun, "dry-run", dryRun, "Enables dry-run for testing")
-	cmd.Flags().BoolVar(&hotOnly, "hot-only", hotOnly, "Only fund the hot wallet (from the safe)")
+	cmd.Flags().BoolVar(&hotOnly, "hot-only", hotOnly, "Only fund the hot wallet (from the cold)")
 
 	return cmd
 }
