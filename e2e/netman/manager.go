@@ -2,6 +2,7 @@ package netman
 
 import (
 	"context"
+	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/types"
@@ -165,9 +166,19 @@ func (m *manager) deployIfNeeded(ctx context.Context, chain types.EVMChain, back
 		return staticDeploy.Address, staticDeploy.DeployHeight, nil
 	}
 
-	feeOracle, _, err := feeoraclev1.Deploy(ctx, m.network, chain.ChainID, m.chainIDs(), m.backends)
-	if err != nil {
-		return common.Address{}, 0, errors.Wrap(err, "deploy fee oracle", "chain", chain.Name)
+	// Deploying fee oracle sporadically fails during gas estimation. Just retry a few times.
+	const retry = 3
+	var feeOracle common.Address
+	for i := 1; ; i++ {
+		feeOracle, _, err = feeoraclev1.Deploy(ctx, m.network, chain.ChainID, m.chainIDs(), m.backends)
+		if err == nil {
+			break
+		} else if i >= retry {
+			return common.Address{}, 0, errors.Wrap(err, "deploy fee oracle", "chain", chain.Name, "attempt", i)
+		}
+
+		log.Warn(ctx, "Failed deploying fee oracle (will retry)", err, "chain", chain.Name, "attempt", i)
+		time.Sleep(time.Second)
 	}
 
 	// at this point, we need to deploy the portal
