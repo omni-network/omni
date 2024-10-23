@@ -15,7 +15,7 @@ import (
 type Role string
 
 const (
-	// RoleCold is the main cold wallet with most security, it funds the funder.
+	// RoleCold is the main cold wallet with most security, it funds the hot wallet.
 	RoleCold Role = "cold"
 	// RoleHot is used to fund omni accounts on all networks.
 	RoleHot Role = "hot"

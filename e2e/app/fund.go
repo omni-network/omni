@@ -69,14 +69,14 @@ func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool
 	if hotOnly {
 		funder, ok := eoa.AccountForRole(network, eoa.RoleHot)
 		if !ok {
-			return errors.New("funder account not found")
+			return errors.New("hot wallet not found")
 		}
 		accounts = []eoa.Account{funder}
 		funderRole = eoa.RoleCold
 	} else {
 		for _, account := range eoa.AllAccounts(network) {
 			if account.Role == eoa.RoleCold || account.Role == eoa.RoleHot {
-				continue // Don't fund safe or funder
+				continue // Don't fund cold or hot
 			}
 			accounts = append(accounts, account)
 		}
