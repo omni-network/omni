@@ -67,17 +67,19 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, err
 	}
 
-	if err := Setup(ctx, def, cfg); err != nil {
-		return nil, err
-	}
+	if def.Testnet.Network != netconf.Mainnet {
+		if err := Setup(ctx, def, cfg); err != nil {
+			return nil, err
+		}
 
-	// Only stop and delete existing network right before actually starting new ones.
-	if err := CleanInfra(ctx, def); err != nil {
-		return nil, err
-	}
+		// Only stop and delete existing network right before actually starting new ones.
+		if err := CleanInfra(ctx, def); err != nil {
+			return nil, err
+		}
 
-	if err := StartInitial(ctx, def.Testnet.Testnet, def.Infra); err != nil {
-		return nil, err
+		if err := StartInitial(ctx, def.Testnet.Testnet, def.Infra); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := waitForEVMs(ctx, def.Testnet.EVMChains(), def.Backends()); err != nil {
