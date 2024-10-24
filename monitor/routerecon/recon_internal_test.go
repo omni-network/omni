@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/umath"
@@ -25,14 +24,7 @@ func TestReconOnce(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	endpoints := xchain.RPCEndpoints{
-		"omni_evm":     "https://omega.omni.network",
-		"op_sepolia":   types.PublicRPCByName("op_sepolia"),
-		"arb_sepolia":  types.PublicRPCByName("arb_sepolia"),
-		"base_sepolia": types.PublicRPCByName("base_sepolia"),
-		"holesky":      types.PublicRPCByName("holesky"),
-	}
-	conn, err := xconnect.New(ctx, netconf.Omega, endpoints)
+	conn, err := xconnect.New(ctx, netconf.Omega)
 	require.NoError(t, err)
 
 	for _, stream := range conn.Network.EVMStreams() {
@@ -56,14 +48,7 @@ func TestBasicHistorical(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	endpoints := xchain.RPCEndpoints{
-		"omni_evm":     "https://omega.omni.network",
-		"op_sepolia":   types.PublicRPCByName("op_sepolia"),
-		"arb_sepolia":  types.PublicRPCByName("arb_sepolia"),
-		"base_sepolia": types.PublicRPCByName("base_sepolia"),
-		"holesky":      types.PublicRPCByName("holesky"),
-	}
-	conn, err := xconnect.New(ctx, netconf.Omega, endpoints)
+	conn, err := xconnect.New(ctx, netconf.Omega)
 	require.NoError(t, err)
 
 	offsetsByStream := make(map[xchain.StreamID]map[uint64]crossTxJSON)

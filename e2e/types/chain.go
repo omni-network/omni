@@ -128,7 +128,7 @@ func PublicRPCByName(name string) string {
 	case chainBaseSepolia.Name:
 		return "https://sepolia.base.org"
 	case chainEthereum.Name:
-		return "https://ethereum-rpc.publicnode.com"
+		return "https://eth.merkle.io"
 	case chainBase.Name:
 		return "https://base-rpc.publicnode.com"
 	case chainOptimism.Name:
