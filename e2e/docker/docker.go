@@ -302,11 +302,6 @@ func additionalServices(testnet types.Testnet) []string {
 
 	resp = append(resp, "monitor")
 
-	// In monitor only mode, we only start monitor and prometheus.
-	if testnet.OnlyMonitor {
-		return resp
-	}
-
 	for _, omniEVM := range testnet.OmniEVMs {
 		resp = append(resp, omniEVM.InstanceName)
 	}
