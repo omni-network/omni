@@ -18,13 +18,14 @@ import { XSubmitter } from "./XSubmitter.sol";
 
 import { CommonBase } from "forge-std/Base.sol";
 import { StdCheats } from "forge-std/StdCheats.sol";
+import { XSubGen } from "test/utils/XSubGen.sol";
 
 /**
  * @title Fixtures
  * @dev Defines test dependencies. Deploys portals and test contracts, and provides
  *      utilites for generating XMsgs and XSubmissions between them.
  */
-contract Fixtures is CommonBase, StdCheats {
+contract Fixtures is CommonBase, StdCheats, XSubGen {
     // We introduce three "chains", this chain, chain a, and chain b. We deploy
     // portals and contracts for each chain. Obviously, they all live in the
     // test EVM state. But it's useful to semantically group contracts by
@@ -42,9 +43,6 @@ contract Fixtures is CommonBase, StdCheats {
     uint64 constant omniCChainID = 1_000_166;
     uint64 constant broadcastChainId = 0; // PORTAL._BROADCAST_CHAIN_ID
 
-    uint64 constant baseValPower = 100;
-    uint64 constant genesisValSetId = 1;
-
     address feeOracleManager = makeAddr("feeOracleManager");
     uint256 constant feeOracleBaseGasLimit = 50_000;
     uint256 constant feeOracleProtocolFee = 1 gwei;
@@ -59,23 +57,6 @@ contract Fixtures is CommonBase, StdCheats {
     uint16 xmsgMaxDataSize = 20_000;
     uint16 xreceiptMaxErrorSize = 256;
 
-    string constant valMnemonic = "test test test test test test test test test test test junk";
-
-    address val1;
-    address val2;
-    address val3;
-    address val4;
-    address val5;
-
-    mapping(uint64 => XTypes.Validator[]) validatorSet;
-    mapping(address => uint256) valPrivKeys;
-
-    uint256 val1PrivKey;
-    uint256 val2PrivKey;
-    uint256 val3PrivKey;
-    uint256 val4PrivKey;
-    uint256 val5PrivKey;
-
     FeeOracleV1 feeOracle;
     FeeOracleV1 feeOracleImpl;
     FeeOracleV1 chainAFeeOracle;
@@ -83,7 +64,6 @@ contract Fixtures is CommonBase, StdCheats {
     FeeOracleV1 chainBFeeOracle;
     FeeOracleV1 chainBfeeOracleImpl;
 
-    PortalHarness portal;
     PortalHarness portalImpl;
     PortalHarness chainAPortal;
     PortalHarness chainAPortalImpl;
@@ -105,106 +85,14 @@ contract Fixtures is CommonBase, StdCheats {
     mapping(uint64 => address) _reverters;
     mapping(uint64 => address) _counters;
 
-    // @dev Path to which test XBlocks are written relative to project root. Read by ts utilites
-    //      to generate XSubmissions for each test XBlock (see ts/script/genxsubs/io.ts)
-    string constant XBLOCKS_PATH = "test/xchain/data/xblocks.json";
-
-    // @dev Path to which test XSubmissions are written relative to project root. XSubmissions
-    //      are generated for each test XBlock, per destination chain, by ts/script/genxsubs/main.ts.
-    string constant XSUBS_PATH = "test/xchain/data/xsubs.json";
-
-    /// @dev XSubs json read from XSUBS_PATH, stored to avoid re-reading from disk
-    string private _xsubsJson;
-
     function setUp() public {
         _initAddrs();
-        _initValidators();
         _initContracts();
-    }
-
-    /// @dev Write test fixture XBlocks to a json file. This is allows ts utilities
-    ///      to generate XSubmissions, with valid merkle roots and proofs, for each test
-    ///      XBlock. These XSubmissions are then used as inputs into test cases.
-    function writeXBlocks() public {
-        string memory root = vm.projectRoot();
-        string memory fullpath = string.concat(root, "/", XBLOCKS_PATH);
-
-        TestXTypes.Block memory xblock1 = _xblock({ offset: 1, xmsgOffset: 1 });
-        TestXTypes.Block memory xblock2 = _xblock({ offset: 2, xmsgOffset: 6 });
-
-        TestXTypes.Block memory guzzle1 = _guzzle_xblock({ numGuzzles: 1 });
-        TestXTypes.Block memory guzzle5 = _guzzle_xblock({ numGuzzles: 5 });
-        TestXTypes.Block memory guzzle10 = _guzzle_xblock({ numGuzzles: 10 });
-        TestXTypes.Block memory guzzle25 = _guzzle_xblock({ numGuzzles: 25 });
-        TestXTypes.Block memory guzzle50 = _guzzle_xblock({ numGuzzles: 50 });
-        TestXTypes.Block memory reentrancy = _reentrancy_xblock();
-
-        TestXTypes.Block memory addValSet2 = _addValidatorSet_xblock({ valSetId: 2 });
-
-        // id identifies the json object we are writing to within vm state
-        // see https://book.getfoundry.sh/cheatcodes/serialize-json
-        string memory id = "ID";
-
-        vm.serializeBytes(id, "xblock1", abi.encode(xblock1));
-        vm.serializeBytes(id, "xblock2", abi.encode(xblock2));
-
-        vm.serializeBytes(id, "guzzle1", abi.encode(guzzle1));
-        vm.serializeBytes(id, "guzzle5", abi.encode(guzzle5));
-        vm.serializeBytes(id, "guzzle10", abi.encode(guzzle10));
-        vm.serializeBytes(id, "guzzle25", abi.encode(guzzle25));
-        vm.serializeBytes(id, "guzzle50", abi.encode(guzzle50));
-        vm.serializeBytes(id, "reentrancy", abi.encode(reentrancy));
-
-        string memory json = vm.serializeBytes(id, "addValSet2", abi.encode(addValSet2));
-
-        vm.writeJson(json, fullpath);
-    }
-
-    /// @dev Read a test fixture XSubmission, signed with the genesis val set
-    function readXSubmission(string memory name, uint64 destChainId) public returns (XTypes.Submission memory) {
-        return readXSubmission(name, destChainId, genesisValSetId);
-    }
-
-    /// @dev Read a test fixture XSubmission from XSUBS_PATH, for a given xblockName and destChainId.
-    ///      XSubmissions are generated by ts/script/genxsubs/main.ts, and written to XSUBS_PATH.
-    ///      Sign the submission with the validator set at valSetId.
-    function readXSubmission(string memory name, uint64 destChainId, uint64 valSetId)
-        public
-        returns (XTypes.Submission memory)
-    {
-        string memory root = vm.projectRoot();
-        string memory path = string.concat(root, "/", XSUBS_PATH);
-
-        if (bytes(_xsubsJson).length == 0) _xsubsJson = vm.readFile(path);
-
-        // matches xsub name in ts/script/genxsubs/main.ts
-        string memory xsubName = string.concat(name, "_xsub_destChainId", Strings.toString(destChainId));
-        bytes memory parsed = vm.parseJsonBytes(_xsubsJson, string.concat(".", xsubName));
-
-        XTypes.Submission memory xsub = abi.decode(parsed, (XTypes.Submission));
-
-        xsub.signatures = getSignatures(valSetId, xsub.attestationRoot);
-        xsub.validatorSetId = valSetId;
-
-        return xsub;
     }
 
     /// @dev Generate a SigTuple array for a given valSetId and digest
     function getSignatures(uint64 valSetId, bytes32 digest) internal view returns (XTypes.SigTuple[] memory sigs) {
-        XTypes.Validator[] storage vals = validatorSet[valSetId];
-        sigs = new XTypes.SigTuple[](vals.length);
-
-        for (uint256 i = 0; i < vals.length; i++) {
-            sigs[i] = XTypes.SigTuple(vals[i].addr, _sign(digest, valPrivKeys[vals[i].addr]));
-        }
-
-        _sortSigsByAddr(sigs);
-    }
-
-    /// @dev Sign a digest with a private key
-    function _sign(bytes32 digest, uint256 pk) internal pure returns (bytes memory) {
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(pk, digest);
-        return abi.encodePacked(r, s, v);
+        return _getSignatures(valSetId, digest);
     }
 
     /// @dev Sort sigs by validator address. OmniPortal.xsubmit expects sigs to be sorted.
@@ -260,7 +148,7 @@ contract Fixtures is CommonBase, StdCheats {
             offset: valSetId,
             sender: address(0), // Portal._CCHAIN_SENDER
             to: address(0), // Portal._VIRTUAL_PORTAL_ADDRRESS
-            data: abi.encodeWithSelector(OmniPortal.addValidatorSet.selector, valSetId, validatorSet[valSetId]),
+            data: abi.encodeWithSelector(OmniPortal.addValidatorSet.selector, valSetId, getVals(valSetId)),
             gasLimit: 0
         });
 
@@ -405,35 +293,6 @@ contract Fixtures is CommonBase, StdCheats {
         vm.deal(xcaller, 100 ether); // fund xcaller, so it can pay fees
     }
 
-    /// @dev Initialize test validators
-    function _initValidators() private {
-        (val1, val1PrivKey) = deriveRememberKey(valMnemonic, 0);
-        (val2, val2PrivKey) = deriveRememberKey(valMnemonic, 1);
-        (val3, val3PrivKey) = deriveRememberKey(valMnemonic, 2);
-        (val4, val4PrivKey) = deriveRememberKey(valMnemonic, 3);
-        (val5, val5PrivKey) = deriveRememberKey(valMnemonic, 4);
-
-        valPrivKeys[val1] = val1PrivKey;
-        valPrivKeys[val2] = val2PrivKey;
-        valPrivKeys[val3] = val3PrivKey;
-        valPrivKeys[val4] = val4PrivKey;
-        valPrivKeys[val5] = val5PrivKey;
-
-        // only use 1-4 for val set 1
-        XTypes.Validator[] storage genVals = validatorSet[genesisValSetId];
-        genVals.push(XTypes.Validator(val1, baseValPower));
-        genVals.push(XTypes.Validator(val2, baseValPower));
-        genVals.push(XTypes.Validator(val3, baseValPower));
-        genVals.push(XTypes.Validator(val4, baseValPower));
-
-        // val set 2 adds one validator, and removes val2
-        XTypes.Validator[] storage valSet2 = validatorSet[genesisValSetId + 1];
-        valSet2.push(XTypes.Validator(val1, baseValPower));
-        valSet2.push(XTypes.Validator(val3, baseValPower));
-        valSet2.push(XTypes.Validator(val4, baseValPower));
-        valSet2.push(XTypes.Validator(val5, baseValPower));
-    }
-
     /// @dev Initialize portals and test contracts
     function _initContracts() private {
         vm.startPrank(deployer);
@@ -499,7 +358,7 @@ contract Fixtures is CommonBase, StdCheats {
                             1, // cchain xmsg offset
                             1, // cchain xblock offset
                             genesisValSetId,
-                            validatorSet[genesisValSetId]
+                            getVals(genesisValSetId)
                         )
                     )
                 )
@@ -546,7 +405,7 @@ contract Fixtures is CommonBase, StdCheats {
                             1, // cchain xmsg offset
                             1, // cchain xblock offset
                             genesisValSetId,
-                            validatorSet[genesisValSetId]
+                            getVals(genesisValSetId)
                         )
                     )
                 )
@@ -593,7 +452,7 @@ contract Fixtures is CommonBase, StdCheats {
                             1, // cchain xmsg offset
                             1, // cchain xblock offset
                             genesisValSetId,
-                            validatorSet[genesisValSetId]
+                            getVals(genesisValSetId)
                         )
                     )
                 )
