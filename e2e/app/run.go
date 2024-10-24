@@ -51,7 +51,7 @@ type DeployConfig struct {
 // Deploy a new e2e network. It also starts all services in order to deploy private portals.
 // It also returns an optional deployed ping pong contract is enabled.
 func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XDapp, error) {
-	if def.Testnet.Network != netconf.Mainnet && def.Testnet.Network.IsProtected() { // TODO(corver): Remove mainnet after deploy.
+	if def.Testnet.Network.IsProtected() {
 		// If a protected network needs to be deployed temporarily comment out this check.
 		return nil, errors.New("cannot deploy protected network", "network", def.Testnet.Network)
 	}
@@ -67,19 +67,17 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, err
 	}
 
-	if def.Testnet.Network != netconf.Mainnet {
-		if err := Setup(ctx, def, cfg); err != nil {
-			return nil, err
-		}
+	if err := Setup(ctx, def, cfg); err != nil {
+		return nil, err
+	}
 
-		// Only stop and delete existing network right before actually starting new ones.
-		if err := CleanInfra(ctx, def); err != nil {
-			return nil, err
-		}
+	// Only stop and delete existing network right before actually starting new ones.
+	if err := CleanInfra(ctx, def); err != nil {
+		return nil, err
+	}
 
-		if err := StartInitial(ctx, def.Testnet.Testnet, def.Infra); err != nil {
-			return nil, err
-		}
+	if err := StartInitial(ctx, def.Testnet.Testnet, def.Infra); err != nil {
+		return nil, err
 	}
 
 	if err := waitForEVMs(ctx, def.Testnet.EVMChains(), def.Backends()); err != nil {
