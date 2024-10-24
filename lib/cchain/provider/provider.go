@@ -72,6 +72,7 @@ type Provider struct {
 	backoffFunc func(context.Context) func()
 	chainNamer  func(xchain.ChainVersion) string
 	network     netconf.ID
+	cache       *attestationCache
 }
 
 // NewProviderForT creates a new provider for testing.
@@ -84,6 +85,7 @@ func NewProviderForT(_ *testing.T, fetch fetchFunc, latest latestFunc, window wi
 		window:      window,
 		backoffFunc: backoffFunc,
 		chainNamer:  func(xchain.ChainVersion) string { return "" },
+		cache:       newAttestationCache(),
 	}
 }
 
@@ -181,7 +183,22 @@ func (p Provider) stream(
 
 	deps := stream.Deps[xchain.Attestation]{
 		FetchBatch: func(ctx context.Context, _ uint64, offset uint64) ([]xchain.Attestation, error) {
-			return p.fetch(ctx, chainVer, offset)
+			// If cached attestations found, return them.
+			cachedAtts := p.cache.get(chainVer, offset)
+			if len(cachedAtts) > 0 {
+				return cachedAtts, nil
+			}
+
+			// If the height is not cached, fetch the attestations.
+			atts, err := p.fetch(ctx, chainVer, offset)
+			if err != nil {
+				return []xchain.Attestation{}, err
+			}
+
+			// Instruct the cache to be updated.
+			p.cache.update(chainVer, atts)
+
+			return atts, nil
 		},
 		Backoff:       p.backoffFunc,
 		ElemLabel:     "attestation",

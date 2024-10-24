@@ -108,6 +108,7 @@ func newProvider(cc gogogrpc.ClientConn, network netconf.ID, chainNamer func(xch
 		backoffFunc: backoffFunc,
 		chainNamer:  chainNamer,
 		network:     network,
+		cache:       newAttestationCache(),
 	}
 }
 
