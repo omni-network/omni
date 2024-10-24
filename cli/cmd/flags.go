@@ -26,7 +26,7 @@ func bindRegConfig(cmd *cobra.Command, cfg *RegConfig) {
 	_ = cmd.MarkFlagRequired(flagConfig)
 }
 
-func bindInitConfig(cmd *cobra.Command, cfg *initConfig) {
+func bindInitConfig(cmd *cobra.Command, cfg *InitConfig) {
 	netconf.BindFlag(cmd.Flags(), &cfg.Network)
 	cmd.Flags().StringVar(&cfg.Moniker, "moniker", "", "Human-readable node name used in p2p networking")
 	cmd.Flags().StringVar(&cfg.Home, "home", "", "Home directory. If empty, defaults to: $HOME/.omni/<network>/")
