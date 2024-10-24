@@ -64,12 +64,11 @@ func reconStreamOnce(
 	ethCls map[uint64]ethclient.Client,
 	stream xchain.StreamID,
 ) error {
-	// Skip recon for empty streams
-	_, ok, err := xprov.GetEmittedCursor(ctx, xchain.ConfEmitRef(xchain.ConfLatest), stream)
+	cursor, ok, err := xprov.GetSubmittedCursor(ctx, stream)
 	if err != nil {
 		return err
 	} else if !ok {
-		return nil
+		return nil // Skip recon for empty streams
 	}
 
 	crossTx, err := paginateLatestCrossTx(ctx, queryFilter{Stream: stream})
@@ -78,6 +77,7 @@ func reconStreamOnce(
 	}
 
 	reconCompletedOffset.WithLabelValues(network.StreamName(stream)).Set(float64(crossTx.Data.Offset))
+	reconCompletedLag.WithLabelValues(network.StreamName(stream)).Set(float64(cursor.MsgOffset) - float64(crossTx.Data.Offset))
 
 	if err := reconCrossTx(ctx, network, xprov, ethCls, crossTx); err != nil {
 		return errors.Wrap(err, "recon cross tx", "id", crossTx.ID)

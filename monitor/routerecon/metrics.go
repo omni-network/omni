@@ -24,6 +24,13 @@ var (
 		Namespace: "monitor",
 		Subsystem: "routerecon",
 		Name:      "completed_offset",
-		Help:      "Latest completed attest offset per stream",
+		Help:      "Latest completed offset per stream. Only measured periodically",
+	}, []string{"stream"})
+
+	reconCompletedLag = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "monitor",
+		Subsystem: "routerecon",
+		Name:      "completed_lag",
+		Help:      "Routescan completed lag per stream. Difference between latest completed offset and submit cursor. Only measured periodically",
 	}, []string{"stream"})
 )
