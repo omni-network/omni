@@ -88,9 +88,6 @@ type Manifest struct {
 	// MultiOmniEVMs defines whether to deploy one or multiple Omni EVMs.
 	MultiOmniEVMs bool `toml:"multi_omni_evms"`
 
-	// OnlyMonitor indicates that the monitor is the only thing that we deploy in this network.
-	OnlyMonitor bool `toml:"only_monitor"`
-
 	// PingPongN defines the number of ping pong messages to send. Defaults 3 if 0.
 	PingPongN uint64 `toml:"pingpong_n"`
 

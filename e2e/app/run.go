@@ -56,10 +56,6 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, errors.New("cannot deploy protected network", "network", def.Testnet.Network)
 	}
 
-	if def.Testnet.OnlyMonitor {
-		return nil, deployMonitorOnly(ctx, def, cfg)
-	}
-
 	const genesisValSetID = 1 // validator set IDs start at 1
 
 	genesisVals, err := toPortalValidators(def.Testnet.Validators)
@@ -316,24 +312,6 @@ func logRPCs(ctx context.Context, def Definition) {
 		log.Info(ctx, "EVM Chain RPC available", "chain_id", chain.ChainID,
 			"chain_name", chain.Name, "url", rpc)
 	}
-}
-
-// deployMonitorOnly deploys the monitor service only.
-// It merely sets up config files and then starts the monitor service.
-func deployMonitorOnly(ctx context.Context, def Definition, cfg DeployConfig) error {
-	if err := Setup(ctx, def, cfg); err != nil {
-		return err
-	}
-
-	if err := CleanInfra(ctx, def); err != nil {
-		return err
-	}
-
-	if err := def.Infra.StartNodes(ctx); err != nil {
-		return errors.Wrap(err, "starting initial nodes")
-	}
-
-	return nil
 }
 
 // waitForSupportedChains waits for all dest chains to be supported by all src chains.

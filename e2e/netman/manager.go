@@ -27,16 +27,6 @@ type Manager interface {
 }
 
 func NewManager(testnet types.Testnet, backends ethbackend.Backends) (Manager, error) {
-	if testnet.OnlyMonitor {
-		if !netconf.IsAny(testnet.Network, netconf.Mainnet) {
-			return nil, errors.New("monitor-only only supported for mainnet")
-		}
-
-		return &manager{
-			backends: backends,
-		}, nil
-	}
-
 	return &manager{
 		backends: backends,
 		network:  testnet.Network,
