@@ -40,11 +40,11 @@ const (
 	tokenPriceBufferThreshold = 0.1
 
 	// gasPriceBufferThreshold is the pct threshold at which a new gas price is buffered.
-	gasPriceBufferThreshold = 0.1
+	gasPriceBufferThreshold = 0.2
 
 	// GasPriceShield is the pct offset above the buffered gas price the oracle sets on chain
 	// Setting shield == buffer threshold ensures that on chain gas price is always at least as high as the live gas price.
-	GasPriceShield = 0.1
+	GasPriceShield = 0.2
 
 	// maxSaneGasPrice is the maximum sane gas price in gwei to post for any destination chain. Set to 500 gwei.
 	maxSaneGasPrice = uint64(500_000_000_000)
