@@ -14,8 +14,8 @@ import (
 
 // StartMonitor starts monitoring the AVS contract. It doesn't block it returns immediately.
 func StartMonitor(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client) error {
-	if network.ID != netconf.Omega && network.ID != netconf.Mainnet {
-		// only monitor in Testned and Mainnet
+	if !network.ID.IsProtected() {
+		// only monitor protected networks
 		return nil
 	}
 
