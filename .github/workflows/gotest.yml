@@ -14,7 +14,13 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 'stable'
-      # TODO(corver): add coverage
+
       - name: Pull anvil # This can be slow and cause timeouts
         run: docker pull ghcr.io/foundry-rs/foundry:latest
-      - run: go test -timeout=5m -race -tags=verify_logs ./...
+
+      # TODO(corver): add coverage
+      - name: Run all tests (with race)
+        run: go test -timeout=5m -race ./...
+
+      - name: Run halo/app tests (without race)
+        run: go test -timeout=5m github.com/omni-network/omni/halo/app

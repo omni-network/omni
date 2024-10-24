@@ -1,3 +1,6 @@
+// Only run this if -race=false, since CosmosSDK has known data races when doing gRPC queries.
+//go:build !race
+
 //nolint:paralleltest // CosmosSDK dependency injection prevents parallel execution
 package app_test
 
