@@ -1,12 +1,17 @@
+//nolint:revive // unexported option type is fine.
 package connect
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/cchain"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
+	libcmd "github.com/omni-network/omni/lib/cmd"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -46,26 +51,84 @@ func (c Connector) Backend(chainID uint64) (*ethbackend.Backend, error) {
 	return ethbackend.NewBackend(chain.Name, chainID, chain.BlockPeriod, cl)
 }
 
+type option func(xchain.RPCEndpoints) error
+
+// WithPublicRPCs returns an option using well known public free RPCs for all xchains.
+// This is used be default if no other option is provided.
+func WithPublicRPCs() option {
+	return func(endpoints xchain.RPCEndpoints) error {
+		for name, rpc := range endpoints {
+			if rpc != "" {
+				continue
+			}
+			endpoints[name] = types.PublicRPCByName(name)
+		}
+
+		return nil
+	}
+}
+
+// WithEndpoint returns an option to set the RPC endpoint for the given chain name or chain ID.
+func WithEndpoint(chainName string, rpc string) option {
+	return func(endpoints xchain.RPCEndpoints) error {
+		endpoints[chainName] = rpc
+
+		return nil
+	}
+}
+
+// WithInfuraENV returns an option using the provided ENV VAR as infura API key for all xchains.
+func WithInfuraENV(keyVar string) option {
+	return func(endpoints xchain.RPCEndpoints) error {
+		infuraNames := map[string]string{
+			"ethreum":      "mainnet",
+			"holesky":      "holesky",
+			"base":         "base-mainnet",
+			"base_sepolia": "base-sepolia",
+			"arbitrum_one": "arbitrum-mainnet",
+			"arb_sepolia":  "arbitrum-sepolia",
+			"optimism":     "optimism-mainnet",
+			"op_sepolia":   "optimism-sepolia",
+		}
+
+		key, ok := os.LookupEnv(keyVar)
+		if !ok {
+			return errors.New("infura key not found in env", "key", keyVar)
+		}
+
+		for name, rpc := range endpoints {
+			if infuraNames[name] != "" && rpc == "" {
+				endpoints[name] = fmt.Sprintf("https://%s.infura.io/v3/%s", infuraNames[name], key)
+			}
+		}
+
+		return nil
+	}
+}
+
 // New returns a populated Connector for the given network.
-// By default, it supports connecting to the omni evm and consensus chains since they have well known RPCs.
-// To connect to other supported rollups, the RPC endpoints must be manually provided.
-func New(ctx context.Context, netID netconf.ID, endpoints xchain.RPCEndpoints) (Connector, error) {
-	if endpoints == nil {
-		endpoints = make(xchain.RPCEndpoints)
+// It connects to well-known free public RPCs. Use WithInfuraENV or WithEndpoint to override this.
+func New(ctx context.Context, netID netconf.ID, opts ...option) (Connector, error) {
+	if len(opts) == 0 {
+		opts = append(opts, WithPublicRPCs())
 	}
 
-	omniEVMID := netID.Static().OmniExecutionChainID
-	omniEVMMetadata, ok := evmchain.MetadataByID(omniEVMID)
+	endpoints := make(xchain.RPCEndpoints)
+
+	// Add default omni consensus and execution RPC endpoints.
+	omniCons := netID.Static().OmniConsensusChain()
+	omniExec, ok := evmchain.MetadataByID(netID.Static().OmniExecutionChainID)
 	if !ok {
 		return Connector{}, errors.New("omni evm metadata not found")
 	}
-	if _, err := endpoints.ByNameOrID(omniEVMMetadata.Name, omniEVMMetadata.ChainID); err != nil {
-		endpoints[omniEVMMetadata.Name] = netID.Static().ExecutionRPC()
-	}
+	endpoints[omniExec.Name] = netID.Static().ExecutionRPC()
+	endpoints[omniCons.Name] = netID.Static().ConsensusRPC()
 
-	omniCons := netID.Static().OmniConsensusChain()
-	if _, err := endpoints.ByNameOrID(omniCons.Name, omniCons.ID); err != nil {
-		endpoints[omniCons.Name] = netID.Static().ConsensusRPC()
+	// Apply any custom endpoint options.
+	for _, opt := range opts {
+		if err := opt(endpoints); err != nil {
+			return Connector{}, err
+		}
 	}
 
 	portalReg, err := makePortalRegistry(netID, endpoints)
@@ -76,6 +139,21 @@ func New(ctx context.Context, netID netconf.ID, endpoints xchain.RPCEndpoints) (
 	network, err := netconf.AwaitOnExecutionChain(ctx, netID, portalReg, nil)
 	if err != nil {
 		return Connector{}, err
+	}
+
+	// Add zero endpoints for all detected chains
+	for _, chain := range network.Chains {
+		if _, ok := endpoints[chain.Name]; ok {
+			continue
+		}
+		endpoints[chain.Name] = ""
+	}
+
+	// Apply option again, since we now know the network.
+	for _, opt := range opts {
+		if err := opt(endpoints); err != nil {
+			return Connector{}, err
+		}
 	}
 
 	ethClients := make(map[uint64]ethclient.Client)
@@ -91,7 +169,7 @@ func New(ctx context.Context, netID netconf.ID, endpoints xchain.RPCEndpoints) (
 			ethClients[chain.ID] = ethCl
 		}
 
-		log.Info(ctx, "Detected supported chain", "chain", chain.Name, "id", chain.ID, "rpc", rpc)
+		log.Info(ctx, "Network chain", "chain", chain.Name, "id", chain.ID, "rpc", libcmd.Redact("", rpc))
 	}
 
 	// Connect to the halo cometBFT RPC server.

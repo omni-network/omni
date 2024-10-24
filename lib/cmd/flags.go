@@ -38,7 +38,7 @@ func LogFlags(ctx context.Context, flags *pflag.FlagSet) error {
 		if mapVal, err := flags.GetStringToString(f.Name); err == nil { // First check if it is a map flag
 			// Redact each map value
 			for k, v := range mapVal {
-				mapVal[k] = redact(f.Name, v)
+				mapVal[k] = Redact(f.Name, v)
 			}
 			fields = append(fields, f.Name)
 			fields = append(fields, mapVal)
@@ -46,13 +46,13 @@ func LogFlags(ctx context.Context, flags *pflag.FlagSet) error {
 			// Redact each slice element
 			var vals []string
 			for _, v := range arrayVal {
-				vals = append(vals, redact(f.Name, v))
+				vals = append(vals, Redact(f.Name, v))
 			}
 			fields = append(fields, f.Name)
 			fields = append(fields, vals)
 		} else {
 			fields = append(fields, f.Name)
-			fields = append(fields, redact(f.Name, f.Value.String()))
+			fields = append(fields, Redact(f.Name, f.Value.String()))
 		}
 	})
 
@@ -61,17 +61,17 @@ func LogFlags(ctx context.Context, flags *pflag.FlagSet) error {
 	return nil
 }
 
-// redact returns a redacted version of the given flag value. It currently supports redacting
+// Redact returns a redacted version of the given flag value. It currently supports redacting
 // passwords in valid URLs as well as flags that contains words like "token", "password", "secret", "db" or "key".
-func redact(flag, val string) string {
-	// Don't redact empty flags ; i.e. show that they are empty.
+func Redact(flag, val string) string {
+	// Don't Redact empty flags ; i.e. show that they are empty.
 	if val == "" {
 		return ""
 	}
 
 	flag = strings.ToLower(flag)
 
-	// Don't redact --.*path or --.*file flags.
+	// Don't Redact --.*path or --.*file flags.
 	if strings.Contains(flag, "file") ||
 		strings.Contains(flag, "path") {
 		return val

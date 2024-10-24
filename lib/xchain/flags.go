@@ -11,9 +11,9 @@ import (
 type RPCEndpoints map[string]string
 
 func (e RPCEndpoints) ByNameOrID(name string, chainID uint64) (string, error) {
-	if val, ok := e[name]; ok {
+	if val := e[name]; val != "" {
 		return val, nil
-	} else if val, ok := e[strconv.FormatUint(chainID, 10)]; ok {
+	} else if val := e[strconv.FormatUint(chainID, 10)]; val != "" {
 		return val, nil
 	}
 
