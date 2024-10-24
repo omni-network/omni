@@ -28,47 +28,15 @@ jobs:
       - name: Build halovisor image
         run: scripts/halovisor/build.sh "${GITHUB_SHA::7}"
 
-      - name: Run a full node
+      - name: Run join test
         run: |
-          # Install latest omni CLI
-          go install github.com/omni-network/omni/cli/cmd/omni
+          cd scripts/join
+          go test . -v --integration --logs_file=docker_logs.txt
 
-          # init halo and geth
-          ~/go/bin/omni operator init-nodes --network=omega --moniker=ci-nightly --home=$(pwd)/join
-
-          # start halo and geth
-          cd $(pwd)/join
-          docker compose up -d
-
-      - name: Wait for sync
-        run: |
-          cd $(pwd)/join
-          t0=$(date +%s)  # Record the start time
-
-          while true; do
-            ELAPSED=$(($(date +%s) - t0)) # Calculate the elapsed time in seconds
-            ELAPSED_FMT="$((ELAPSED / 3600))h$(( (ELAPSED % 3600) / 60 ))m"
-
-            # If more than 6 hours (21600 seconds) have passed, exit with a failure message
-            if [ ${ELAPSED} -gt 21600 ]; then
-              echo "Node not synced after 6 hours, failing"
-              exit 1
-            fi
-
-            # Get and print halo's health status
-            STATUS=$(docker inspect --format "{{json .State.Health.Status }}" halo | sed 's/"//g')
-            echo "$(date +'%H:%M:%S') status=${STATUS} elapsed=${ELAPSED_FMT}"
-
-            # If the container is "healthy", it has synced, we are done
-            if [ "${STATUS}" == "healthy" ]; then
-              echo "Node synced"
-              break
-            fi
-
-            # Wait for 30 seconds before checking again
-            sleep 30
-          done
-
-      - name: Stop the node
+      - name: Upload docker logs
+        uses: actions/upload-artifact@v4
         if: always()
-        run: cd $(pwd)/join && docker compose down
+        with:
+          name: failed-logs
+          path: scripts/join/docker_logs.txt
+          retention-days: 3

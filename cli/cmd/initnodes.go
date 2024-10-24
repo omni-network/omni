@@ -37,16 +37,17 @@ const (
 	gethVerbosityDebug = 4
 )
 
-type initConfig struct {
+type InitConfig struct {
 	Network netconf.ID
 	Home    string
 	Moniker string
 	Clean   bool
 	Archive bool
 	Debug   bool
+	HaloTag string
 }
 
-func (c initConfig) Verify() error {
+func (c InitConfig) Verify() error {
 	return c.Network.Verify()
 }
 
@@ -54,7 +55,7 @@ func (c initConfig) Verify() error {
 var composeTpl []byte
 
 func newInitCmd() *cobra.Command {
-	var cfg initConfig
+	var cfg InitConfig
 
 	cmd := &cobra.Command{
 		Use:   "init-nodes",
@@ -66,7 +67,7 @@ func newInitCmd() *cobra.Command {
 				return errors.Wrap(err, "verify flags")
 			}
 
-			err := initNodes(cmd.Context(), cfg)
+			err := InitNodes(cmd.Context(), cfg)
 			if err != nil {
 				return errors.Wrap(err, "init-node")
 			}
@@ -80,7 +81,7 @@ func newInitCmd() *cobra.Command {
 	return cmd
 }
 
-func initNodes(ctx context.Context, cfg initConfig) error {
+func InitNodes(ctx context.Context, cfg InitConfig) error {
 	if cfg.Network == "" {
 		return errors.New("required flag --network not set")
 	} else if cfg.Moniker == "" {
@@ -184,7 +185,7 @@ func maybeDownloadGenesis(ctx context.Context, network netconf.ID) error {
 	return netconf.SetEphemeralGenesis(network, execution, consensus)
 }
 
-func writeComposeFile(ctx context.Context, cfg initConfig) error {
+func writeComposeFile(ctx context.Context, cfg InitConfig) error {
 	composeFile := filepath.Join(cfg.Home, "compose.yml")
 
 	if cmtos.FileExists(composeFile) {
@@ -197,10 +198,12 @@ func writeComposeFile(ctx context.Context, cfg initConfig) error {
 		return errors.Wrap(err, "parse template")
 	}
 
-	// TODO(corver): Replace git commit with buildinfo.Version once we release proper versions.
-	commit, ok := buildinfo.GitCommit()
-	if !ok {
-		return errors.New("missing git commit (go install first?)")
+	if cfg.HaloTag == "" {
+		gitCommit, ok := buildinfo.GitCommit()
+		if !ok {
+			return errors.New("missing git commit (go install first?)")
+		}
+		cfg.HaloTag = gitCommit
 	}
 
 	verbosity := gethVerbosityInfo
@@ -215,7 +218,7 @@ func writeComposeFile(ctx context.Context, cfg initConfig) error {
 		GethVerbosity int
 		GethArchive   bool
 	}{
-		HaloTag:       commit,
+		HaloTag:       cfg.HaloTag,
 		GethTag:       geth.Version,
 		GethVerbosity: verbosity,
 		GethArchive:   cfg.Archive,
@@ -228,12 +231,12 @@ func writeComposeFile(ctx context.Context, cfg initConfig) error {
 		return errors.Wrap(err, "writing compose file")
 	}
 
-	log.Info(ctx, "Generated docker compose file", "path", filepath.Join(cfg.Home, "compose.yml"), "geth_version", geth.Version, "halo_version", commit)
+	log.Info(ctx, "Generated docker compose file", "path", filepath.Join(cfg.Home, "compose.yml"), "geth_version", geth.Version, "halo_version", cfg.HaloTag)
 
 	return nil
 }
 
-func gethInit(ctx context.Context, cfg initConfig, dir string) error {
+func gethInit(ctx context.Context, cfg InitConfig, dir string) error {
 	log.Info(ctx, "Initializing geth", "path", dir)
 
 	// Create the dir, ensuring it doesn't already exist
