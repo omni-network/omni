@@ -30,7 +30,7 @@ func TestReconLag(t *testing.T) {
 
 	for _, stream := range conn.Network.EVMStreams() {
 		if stream.DestChainID == evmchain.IDArbSepolia || stream.SourceChainID == evmchain.IDArbSepolia {
-			// Skip arb since fetching cross txs frmo routescan fails
+			// Skip arb since fetching cross txs from routescan fails
 			continue // TODO(corver): Remove when routescan adds support for arb_sepolia.
 		}
 
