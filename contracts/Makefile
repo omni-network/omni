@@ -10,8 +10,8 @@ version: ## Print tool versions.
 PNPM_VERSION := 9.12.1
 ABIGEN_VERSION := 1.14.8
 
-.PHONY: install-tools
-install-tools:
+.PHONY: install-pnpm
+install-pnpm:
 	@which npm > /dev/null || echo "npm not installed, see https://nodejs.org/en/download/package-manager"
 	@which pnpm > /dev/null || (echo "pnpm not installed, installing..."; npm install -g pnpm@$(PNPM_VERSION))
 

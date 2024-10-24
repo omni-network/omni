@@ -22,7 +22,7 @@ jobs:
           version:
             nightly-9dbfb2f1115466b28f2697e158131f90df6b2590
       - name: Install pnpm
-        run: make install-tools
+        run: make install-pnpm
       - name: Build artifacts
         run: make all
       - name: Check for changes
