@@ -4,7 +4,9 @@ package provider
 import (
 	"context"
 	"path"
+	"sort"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -72,6 +74,7 @@ type Provider struct {
 	backoffFunc func(context.Context) func()
 	chainNamer  func(xchain.ChainVersion) string
 	network     netconf.ID
+	cache       *AttestationCache
 }
 
 // NewProviderForT creates a new provider for testing.
@@ -84,6 +87,7 @@ func NewProviderForT(_ *testing.T, fetch fetchFunc, latest latestFunc, window wi
 		window:      window,
 		backoffFunc: backoffFunc,
 		chainNamer:  func(xchain.ChainVersion) string { return "" },
+		cache:       &AttestationCache{1000, make(map[xchain.ChainVersion]map[uint64]xchain.Attestation), sync.RWMutex{}},
 	}
 }
 
@@ -164,6 +168,71 @@ func (p Provider) StreamAsync(
 	}()
 }
 
+// AttestationCache caches fetched attestations per chain version.
+// It automatically cleans up the cache to always keep at most `cacheSize` elements.
+type AttestationCache struct {
+	cacheSize int
+	cache     map[xchain.ChainVersion]map[uint64]xchain.Attestation
+	mu        sync.RWMutex
+}
+
+// get returns all cached consequent attestations, starting from the specified height.
+func (ac *AttestationCache) get(chainVer xchain.ChainVersion, height uint64) []xchain.Attestation {
+	var attestations []xchain.Attestation
+
+	ac.mu.RLock()
+	defer ac.mu.RUnlock()
+	chainVerCache := ac.cache[chainVer]
+
+	if chainVerCache == nil {
+		return attestations
+	}
+
+	for {
+		value, exists := chainVerCache[height]
+		if !exists {
+			break
+		}
+		attestations = append(attestations, value)
+		height++
+	}
+
+	return attestations
+}
+
+// update extends the cache of chain version with all new attestations and then removes the oldest ones,
+// to keep the total cache size at `cacheSize`.
+func (ac *AttestationCache) update(chainVer xchain.ChainVersion, attestastions []xchain.Attestation) {
+	if ac.cacheSize == 0 {
+		return
+	}
+
+	ac.mu.Lock()
+	defer ac.mu.Unlock()
+
+	if _, present := ac.cache[chainVer]; !present {
+		ac.cache[chainVer] = make(map[uint64]xchain.Attestation)
+	}
+
+	chainVerCache := ac.cache[chainVer]
+	for _, att := range attestastions {
+		chainVerCache[att.BlockHeader.BlockHeight] = att
+	}
+
+	keys := make([]uint64, 0, len(chainVerCache))
+	for k := range chainVerCache {
+		keys = append(keys, k)
+	}
+
+	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
+
+	lastRetainedKey := len(keys) - ac.cacheSize
+
+	for i := 0; i < lastRetainedKey; i++ {
+		delete(chainVerCache, keys[i])
+	}
+}
+
 func (p Provider) stream(
 	in context.Context,
 	chainVer xchain.ChainVersion,
@@ -181,7 +250,19 @@ func (p Provider) stream(
 
 	deps := stream.Deps[xchain.Attestation]{
 		FetchBatch: func(ctx context.Context, _ uint64, offset uint64) ([]xchain.Attestation, error) {
-			return p.fetch(ctx, chainVer, offset)
+			cachedAtts := p.cache.get(chainVer, offset)
+			if len(cachedAtts) > 0 {
+				return cachedAtts, nil
+			}
+
+			atts, err := p.fetch(ctx, chainVer, offset)
+			if err != nil {
+				return []xchain.Attestation{}, err
+			}
+
+			p.cache.update(chainVer, atts)
+
+			return atts, nil
 		},
 		Backoff:       p.backoffFunc,
 		ElemLabel:     "attestation",

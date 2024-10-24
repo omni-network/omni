@@ -89,6 +89,8 @@ func newProvider(cc gogogrpc.ClientConn, network netconf.ID, chainNamer func(xch
 	slcl := sltypes.NewQueryClient(cc)
 	cmtcl := cmtservice.NewServiceClient(cc)
 
+	cache := AttestationCache{100, make(map[xchain.ChainVersion]map[uint64]xchain.Attestation), sync.RWMutex{}}
+
 	return Provider{
 		fetch:       newABCIFetchFunc(acl, cmtcl, chainNamer),
 		allAtts:     newABCIAllAttsFunc(acl),
@@ -108,6 +110,7 @@ func newProvider(cc gogogrpc.ClientConn, network netconf.ID, chainNamer func(xch
 		backoffFunc: backoffFunc,
 		chainNamer:  chainNamer,
 		network:     network,
+		cache:       &cache,
 	}
 }
 
