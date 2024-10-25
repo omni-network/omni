@@ -18,6 +18,8 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
 
+	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
+
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
 )
@@ -27,6 +29,9 @@ var (
 	integration = flag.Bool("integration", false, "Run integration tests")
 )
 
+// TestJoinOmega starts a local node (using omni operator init-nodes)
+// and waits for it to sync.
+//
 //nolint:paralleltest // Parallel tests not supported since we start docker containers.
 func TestJoinOmega(t *testing.T) {
 	if !*integration {
@@ -61,26 +66,29 @@ func TestJoinOmega(t *testing.T) {
 
 	t0 := time.Now()
 
-	log.Info(ctx, "Exec: docker compose up", "logs_file", logsPath)
-	cmd := exec.CommandContext(ctx, "docker", "compose", "up")
-	cmd.Stderr = output
-	cmd.Stdout = output
-	cmd.Dir = home
-
 	var eg errgroup.Group
 	eg.Go(func() error {
+		defer cancel() // Stop other goroutine
+
 		// Start the nodes.
+		log.Info(ctx, "Exec: docker compose up", "logs_file", logsPath)
+		cmd := exec.CommandContext(ctx, "docker", "compose", "up")
+		cmd.Stderr = output
+		cmd.Stdout = output
+		cmd.Dir = home
 		err := cmd.Run()
 		if err == nil || ctx.Err() != nil {
 			return nil // Docker compose didn't error
 		}
 
-		defer cancel()
-
 		return errors.Wrap(err, "docker compose up early exit")
 	})
 	eg.Go(func() error {
+		defer cancel() // Stop other goroutine
+
 		// Monitor the progress until synced.
+		cmtCl, err := rpchttp.New("localhost:26657", "/websocket")
+		require.NoError(t, err)
 		ethCl, err := ethclient.Dial("omni_evm", "http://localhost:8545")
 		require.NoError(t, err)
 
@@ -95,11 +103,18 @@ func TestJoinOmega(t *testing.T) {
 			case <-ctx.Done():
 				return nil
 			case <-timeoutCtx.Done():
-				cancel()
 				return errors.New("timed out waiting for sync", "duration", "duration", time.Since(t0).Truncate(time.Second))
 			case <-ticker.C:
 				haloStatus, err := retry(ctx, haloStatus)
 				require.NoError(t, err)
+
+				// CometBFT RPC errors while syncing, so best effort fetch
+				var haloSynced bool
+				haloHeight := int64(-1) // Indicates failed fetch
+				if haloResult, err := cmtCl.Status(ctx); err == nil {
+					haloSynced = !haloResult.SyncInfo.CatchingUp
+					haloHeight = haloResult.SyncInfo.LatestBlockHeight
+				}
 
 				execStatus, err := retry(ctx, ethCl.SyncProgress)
 				require.NoError(t, err)
@@ -108,6 +123,8 @@ func TestJoinOmega(t *testing.T) {
 
 				log.Info(ctx, "Status",
 					"halo_status", haloStatus,
+					"halo_synced", haloSynced,
+					"halo_height", haloHeight,
 					"execution_synced", execSynced,
 					"execution_height", execHeight,
 					"duration", time.Since(t0).Truncate(time.Second),
@@ -116,12 +133,13 @@ func TestJoinOmega(t *testing.T) {
 				if haloStatus == "healthy" {
 					if !execSynced {
 						return errors.New("halo healthy but execution chain not synced", "height", execHeight)
+					} else if !haloSynced {
+						return errors.New("halo healthy but consensus chain not synced", "height", haloHeight)
 					} else if time.Since(t0) < minDuration {
 						return errors.New("halo healthy but not enough time has passed", "duration", time.Since(t0).Truncate(time.Second))
 					}
 
 					log.Info(ctx, "Synced 🎉", "duration", time.Since(t0).Truncate(time.Second))
-					cancel()
 
 					return nil
 				}
