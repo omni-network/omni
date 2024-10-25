@@ -3,7 +3,6 @@ package stream
 
 import (
 	"context"
-	"fmt"
 	"math"
 	"sync"
 	"time"
@@ -63,7 +62,6 @@ func Stream[E any](ctx context.Context, deps Deps[E], srcChainID uint64, startHe
 	// It only returns an empty list if the context is canceled.
 	// It retries forever on error or if no elements found.
 	fetchFunc := func(ctx context.Context, height uint64) []E {
-		cacheKey := fmt.Sprintf("%d-%d", srcChainID, height) // note: this is POC
 		if deps.Cache != nil {
 			elements, ok := deps.Cache.Get(height)
 			if ok {
@@ -114,7 +112,7 @@ func Stream[E any](ctx context.Context, deps Deps[E], srcChainID uint64, startHe
 
 			if deps.Cache != nil {
 				if ok := deps.Cache.Set(height, elems); !ok {
-					log.Debug(ctx, "Cache drop", "key", cacheKey)
+					log.Debug(ctx, "Cache drop", "height", height)
 				}
 			}
 
