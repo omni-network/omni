@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"os"
@@ -230,14 +231,19 @@ func startMonitoringAPI(
 
 	// Serve readiness status json at `/ready`, returning 503 if not ready.
 	mux.HandleFunc("/ready", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
-		if ready, err := status.serialize(w); err != nil {
+		var body bytes.Buffer
+		statusCode := http.StatusOK
+		if ready, err := status.serialize(&body); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		} else if !ready {
-			w.WriteHeader(http.StatusServiceUnavailable)
+			statusCode = http.StatusServiceUnavailable
 		}
+
+		// Do writes in correct order
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(statusCode)
+		_, _ = w.Write(body.Bytes())
 	})
 
 	server := &http.Server{
