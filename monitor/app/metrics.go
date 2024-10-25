@@ -36,4 +36,11 @@ var (
 		Name:      "applied_upgrade",
 		Help:      "Height of last applied (processed) upgrade by name",
 	}, []string{"upgrade"})
+
+	quicknodeRPCSyncDiff = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: "monitor",
+		Subsystem: "quicknode",
+		Name:      "public_rpc_sync_diff",
+		Help:      "Sync difference (highest blocks) betweent Quicknode public RPC and omni node",
+	})
 )
