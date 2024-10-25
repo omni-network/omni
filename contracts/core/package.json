@@ -7,14 +7,10 @@
   "files": [
     "src/**/*.sol",
     "test/**/*.sol",
-    "test/**/*.ts",
     "script/**/*.sol"
   ],
   "scripts": {
-    "test": "pnpm test:gen && forge test",
-    "test:gen": "pnpm test:gen:xblocks && pnpm test:gen:xsubs",
-    "test:gen:xblocks": "forge script WriteTestXBlocks",
-    "test:gen:xsubs": "ts-node test/xchain/ts/script/genxsubs/main.ts"
+    "test": "forge test"
   },
   "devDependencies": {
     "@openzeppelin/merkle-tree": "1.0.5",
