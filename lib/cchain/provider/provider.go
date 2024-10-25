@@ -180,6 +180,7 @@ func (p Provider) stream(
 	srcChain := p.chainNamer(chainVer)
 	ctx := log.WithCtx(in, "src_chain", srcChain, "worker", workerName)
 
+	// note: see the note from cache, this is poc
 	key := func(height uint64) string {
 		return fmt.Sprintf("%d-%d", chainVer.ConfLevel, height)
 	}
