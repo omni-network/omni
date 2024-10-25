@@ -9,6 +9,7 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"go.opentelemetry.io/otel/trace"
 )
@@ -20,7 +21,7 @@ type Deps[E any] struct {
 
 	// FetchBatch fetches the next batch of elements from the provided height (inclusive).
 	// The elements must be sequential, since the internal height cursors is incremented for each element returned.
-	FetchBatch func(ctx context.Context, chainID uint64, height uint64) ([]E, error)
+	FetchBatch func(ctx context.Context, chainVer xchain.ChainVersion, height uint64) ([]E, error)
 	// Backoff returns a backoff function. See expbackoff package for the implementation.
 	Backoff func(ctx context.Context) func()
 	// Verify is a sanity check function, it ensures each element is valid.
@@ -40,6 +41,27 @@ type Deps[E any] struct {
 	SetStreamHeight    func(uint64)
 	SetCallbackLatency func(time.Duration)
 	StartTrace         func(ctx context.Context, height uint64, spanName string) (context.Context, trace.Span)
+
+	cache *attestationCache
+}
+
+func (d *Deps[E]) cachedFetchBatch(ctx context.Context, chainVer xchain.ChainVersion, height uint64) ([]E, error) {
+	// If cached attestations found, return them.
+	cachedAtts := d.cache.get(chainVer, height)
+	if len(cachedAtts) > 0 {
+		return cachedAtts, nil
+	}
+
+	// If the height is not cached, fetch the attestations.
+	atts, err := d.FetchBatch(ctx, chainVer, height)
+	if err != nil {
+		return nil, err
+	}
+
+	// Instruct the cache to be updated.
+	d.cache.update(chainVer, atts)
+
+	return atts, nil
 }
 
 // Stream streams elements from the provided height (inclusive) of a specific chain.
@@ -50,7 +72,7 @@ type Deps[E any] struct {
 // It retries forever on fetch errors.
 // It can either retry or return callback errors.
 // It returns (nil) when the context is canceled.
-func Stream[E any](ctx context.Context, deps Deps[E], srcChainID uint64, startHeight uint64, callback Callback[E]) error {
+func Stream[E any](ctx context.Context, deps Deps[E], srcChainVer xchain.ChainVersion, startHeight uint64, callback Callback[E]) error {
 	if deps.FetchWorkers == 0 {
 		return errors.New("invalid zero fetch worker count")
 	}
@@ -66,7 +88,7 @@ func Stream[E any](ctx context.Context, deps Deps[E], srcChainID uint64, startHe
 			}
 
 			fetchCtx, span := deps.StartTrace(ctx, height, "fetch")
-			elems, err := deps.FetchBatch(fetchCtx, srcChainID, height)
+			elems, err := deps.cachedFetchBatch(fetchCtx, srcChainVer, height)
 			span.End()
 
 			if ctx.Err() != nil {
