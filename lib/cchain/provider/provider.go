@@ -192,7 +192,7 @@ func (p Provider) stream(
 			// If the height is not cached, fetch the attestations.
 			atts, err := p.fetch(ctx, chainVer, offset)
 			if err != nil {
-				return []xchain.Attestation{}, err
+				return nil, err
 			}
 
 			// Instruct the cache to be updated.

@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"math"
 	"sync"
 
 	"github.com/omni-network/omni/lib/xchain"
@@ -61,20 +62,22 @@ func (ac *attestationCache) update(chainVer xchain.ChainVersion, attestastions [
 
 	// If no cache exist yet, initialize it.
 	if _, present := ac.caches[chainVer]; !present {
-		ac.caches[chainVer] = &chainVersionCache{map[uint64]xchain.Attestation{}, 0}
+		ac.caches[chainVer] = &chainVersionCache{map[uint64]xchain.Attestation{}, math.MaxUint64}
 	}
 
 	chainVerCache := ac.caches[chainVer]
 
 	// Insert each attestation above the watermark into the cache.
-	// Note, it could overwrite previous values, but this is idempotent.
 	for _, att := range attestastions {
-		if att.BlockHeader.BlockHeight < chainVerCache.watermark {
+		attHeight := att.AttestOffset
+		if attHeight < chainVerCache.watermark {
 			continue
 		}
-		attHeight := att.BlockHeader.BlockHeight
+		if _, exists := chainVerCache.cache[attHeight]; exists {
+			break
+		}
 		chainVerCache.cache[attHeight] = att
-		chainVerCache.watermark = max(chainVerCache.watermark, attHeight)
+		chainVerCache.watermark = min(chainVerCache.watermark, attHeight)
 	}
 
 	// Raise the watermark until we hit the configured cache size and delete all
