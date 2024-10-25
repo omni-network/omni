@@ -33,7 +33,10 @@ func TestJoinOmega(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	const timeout = time.Hour * 6
+	const (
+		timeout     = time.Hour * 6
+		minDuration = time.Minute * 30
+	)
 
 	network := netconf.Omega
 	ctx, cancel := context.WithCancel(context.Background())
@@ -113,6 +116,8 @@ func TestJoinOmega(t *testing.T) {
 				if haloStatus == "healthy" {
 					if !execSynced {
 						return errors.New("halo healthy but execution chain not synced", "height", execHeight)
+					} else if time.Since(t0) < minDuration {
+						return errors.New("halo healthy but not enough time has passed", "duration", time.Since(t0).Truncate(time.Second))
 					}
 
 					log.Info(ctx, "Synced 🎉", "duration", time.Since(t0).Truncate(time.Second))
