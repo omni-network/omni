@@ -3,6 +3,7 @@ package stream
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"sync"
 	"time"
@@ -40,6 +41,9 @@ type Deps[E any] struct {
 	SetStreamHeight    func(uint64)
 	SetCallbackLatency func(time.Duration)
 	StartTrace         func(ctx context.Context, height uint64, spanName string) (context.Context, trace.Span)
+
+	// Cache storing elements retrieved from the fetch batch function.
+	Cache Cacher[string, E]
 }
 
 // Stream streams elements from the provided height (inclusive) of a specific chain.
@@ -59,6 +63,14 @@ func Stream[E any](ctx context.Context, deps Deps[E], srcChainID uint64, startHe
 	// It only returns an empty list if the context is canceled.
 	// It retries forever on error or if no elements found.
 	fetchFunc := func(ctx context.Context, height uint64) []E {
+		cacheKey := fmt.Sprintf("%d-%d", srcChainID, height) // note: this is POC
+		if deps.Cache != nil {
+			elements, ok := deps.Cache.Get(height)
+			if ok {
+				return elements
+			}
+		}
+
 		backoff := deps.Backoff(ctx) // Note that backoff returns immediately on ctx cancel.
 		for {
 			if ctx.Err() != nil {
@@ -98,6 +110,12 @@ func Stream[E any](ctx context.Context, deps Deps[E], srcChainID uint64, startHe
 			if !heightsOK { // Can't return invalid elements, just retry fetching for now.
 				backoff()
 				continue
+			}
+
+			if deps.Cache != nil {
+				if ok := deps.Cache.Set(height, elems); !ok {
+					log.Debug(ctx, "Cache drop", "key", cacheKey)
+				}
 			}
 
 			return elems

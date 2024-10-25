@@ -179,6 +179,11 @@ func (p Provider) stream(
 	srcChain := p.chainNamer(chainVer)
 	ctx := log.WithCtx(in, "src_chain", srcChain, "worker", workerName)
 
+	cache, err := stream.NewCache[xchain.Attestation]()
+	if err != nil {
+		return errors.Wrap(err, "cache fail [BUG]")
+	}
+
 	deps := stream.Deps[xchain.Attestation]{
 		FetchBatch: func(ctx context.Context, _ uint64, offset uint64) ([]xchain.Attestation, error) {
 			return p.fetch(ctx, chainVer, offset)
@@ -221,10 +226,11 @@ func (p Provider) stream(
 				trace.WithAttributes(attribute.String("worker", workerName)),
 			)
 		},
+		Cache: cache,
 	}
 
 	cb := (stream.Callback[xchain.Attestation])(callback)
-	err := stream.Stream(ctx, deps, chainVer.ID, attestOffset, cb)
+	err = stream.Stream(ctx, deps, chainVer.ID, attestOffset, cb)
 	if err != nil {
 		return errors.Wrap(err, "stream attestations", "worker", workerName, "chain", srcChain)
 	}
