@@ -41,7 +41,8 @@ contract OmniPortal_xsubmit_gas_Test is Base {
 
     function test_singleExec() public {
         TestXTypes.Block memory guzzle5 = _guzzle_xblock({ numGuzzles: 5 });
-        XTypes.Submission memory xsub = makeXSub(1, thisChainId, guzzle5.blockHeader, guzzle5.msgs);
+        XTypes.Submission memory xsub =
+            makeXSub(1, guzzle5.blockHeader, guzzle5.msgs, msgFlagsForDest(guzzle5.msgs, thisChainId));
         XTypes.Msg memory xmsg;
 
         for (uint256 i = 0; i < xsub.msgs.length; i++) {
@@ -63,7 +64,8 @@ contract OmniPortal_xsubmit_gas_Test is Base {
     }
 
     function _testGasSubmitXBlock(string memory name, TestXTypes.Block memory xblock, uint64 destChainId) internal {
-        XTypes.Submission memory xsub = makeXSub(1, destChainId, xblock.blockHeader, xblock.msgs);
+        XTypes.Submission memory xsub =
+            makeXSub(1, xblock.blockHeader, xblock.msgs, msgFlagsForDest(xblock.msgs, destChainId));
 
         uint64 sourceChainId = xsub.blockHeader.sourceChainId;
         uint64 shardId = xsub.msgs[xsub.msgs.length - 1].shardId;

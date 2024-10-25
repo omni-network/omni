@@ -52,7 +52,7 @@ contract XSubGen is Test {
     }
 
     /// @dev Make an xsubmission signed by the genesis valset, with the given xheader and xmsgs.
-    function makeXSub(uint64 valSetId, uint64 destChainId, XTypes.BlockHeader memory xheader, XTypes.Msg[] memory msgs)
+    function makeXSub(uint64 valSetId, XTypes.BlockHeader memory xheader, XTypes.Msg[] memory msgs)
         public
         view
         returns (XTypes.Submission memory)
@@ -62,20 +62,18 @@ contract XSubGen is Test {
             msgFlags[i] = true;
         }
 
-        return makeXSub(valSetId, destChainId, xheader, msgs, msgFlags);
+        return makeXSub(valSetId, xheader, msgs, msgFlags);
     }
 
     /// @dev Make an xsubmission signed by `valSetId`, with the given xheader and selected xmsgs.
     function makeXSub(
         uint64 valSetId,
-        uint64 destChainId,
         XTypes.BlockHeader memory xheader,
         XTypes.Msg[] memory msgs,
         bool[] memory msgFlags
     ) public view returns (XTypes.Submission memory) {
         require(msgs.length == msgFlags.length, "msg length must match msgFlags length");
 
-        (msgs, msgFlags) = _filterXMsgs(msgs, msgFlags, destChainId);
         _sortXMsgs(msgs, msgFlags);
 
         (XTypes.Msg[] memory selectedMsgs, uint256[] memory selectedIndices) = _getSelected(msgs, msgFlags);
@@ -99,6 +97,15 @@ contract XSubGen is Test {
             proofFlags: msgProofFlags,
             signatures: sigs
         });
+    }
+
+    /// @dev Set msgFlags according to destChainId
+    function msgFlagsForDest(XTypes.Msg[] memory msgs, uint64 destChainId) public pure returns (bool[] memory) {
+        bool[] memory msgFlags = new bool[](msgs.length);
+        for (uint256 i; i < msgs.length; ++i) {
+            if (msgs[i].destChainId == destChainId) msgFlags[i] = true;
+        }
+        return msgFlags;
     }
 
     /// @dev Get the validator set for a given valSetId
@@ -172,32 +179,6 @@ contract XSubGen is Test {
                 }
             }
         }
-    }
-
-    /// @dev As our generated XBlocks have messages for two destination chains,
-    ///      filter to destination chainId for XSubmission.
-    function _filterXMsgs(XTypes.Msg[] memory msgs, bool[] memory msgFlags, uint64 destChainId)
-        internal
-        pure
-        returns (XTypes.Msg[] memory, bool[] memory)
-    {
-        uint64 count;
-        for (uint256 i; i < msgs.length; ++i) {
-            if (msgs[i].destChainId == destChainId) ++count;
-        }
-
-        XTypes.Msg[] memory filteredMsgs = new XTypes.Msg[](count);
-        bool[] memory filteredMsgFlags = new bool[](count);
-        count = 0;
-        for (uint256 i; i < msgs.length; ++i) {
-            if (msgs[i].destChainId == destChainId) {
-                filteredMsgs[count] = msgs[i];
-                filteredMsgFlags[count] = msgFlags[i];
-                ++count;
-            }
-        }
-
-        return (filteredMsgs, filteredMsgFlags);
     }
 
     /// @dev Sort xmsgs by offset. XMsgs within an xblock are order by log index,

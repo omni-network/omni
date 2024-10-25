@@ -48,7 +48,8 @@ contract OmniPortal_admin_Test is Base {
 
         // xsubmit
         TestXTypes.Block memory xblock1 = _xblock({ offset: 1, xmsgOffset: 1 });
-        XTypes.Submission memory xsub1 = makeXSub(1, thisChainId, xblock1.blockHeader, xblock1.msgs);
+        XTypes.Submission memory xsub1 =
+            makeXSub(1, xblock1.blockHeader, xblock1.msgs, msgFlagsForDest(xblock1.msgs, thisChainId));
         vm.chainId(thisChainId);
         portal.xsubmit(xsub1);
 

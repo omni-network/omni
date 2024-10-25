@@ -75,7 +75,8 @@ contract OmniPortal_xsubmit_Test is Base {
 
     function test_xsubmit_reentrancy_reverts() public {
         TestXTypes.Block memory reentrancy = _reentrancy_xblock();
-        XTypes.Submission memory xsub = makeXSub(1, thisChainId, reentrancy.blockHeader, reentrancy.msgs);
+        XTypes.Submission memory xsub =
+            makeXSub(1, reentrancy.blockHeader, reentrancy.msgs, msgFlagsForDest(reentrancy.msgs, thisChainId));
 
         vm.recordLogs();
         vm.chainId(thisChainId);
@@ -91,7 +92,8 @@ contract OmniPortal_xsubmit_Test is Base {
 
     function test_xsubmit_noXmsgs_reverts() public {
         TestXTypes.Block memory xblock1 = _xblock({ offset: 1, xmsgOffset: 1 });
-        XTypes.Submission memory xsub = makeXSub(1, thisChainId, xblock1.blockHeader, xblock1.msgs);
+        XTypes.Submission memory xsub =
+            makeXSub(1, xblock1.blockHeader, xblock1.msgs, msgFlagsForDest(xblock1.msgs, thisChainId));
         xsub.msgs = new XTypes.Msg[](0);
 
         vm.expectRevert("OmniPortal: no xmsgs");
@@ -101,7 +103,8 @@ contract OmniPortal_xsubmit_Test is Base {
 
     function test_xsubmit_wrongDestChainId_reverts() public {
         TestXTypes.Block memory xblock1 = _xblock({ offset: 1, xmsgOffset: 1 });
-        XTypes.Submission memory xsub = makeXSub(1, thisChainId, xblock1.blockHeader, xblock1.msgs);
+        XTypes.Submission memory xsub =
+            makeXSub(1, xblock1.blockHeader, xblock1.msgs, msgFlagsForDest(xblock1.msgs, thisChainId));
 
         vm.expectRevert("OmniPortal: wrong dest chain");
         vm.chainId(chainBId);
@@ -110,7 +113,8 @@ contract OmniPortal_xsubmit_Test is Base {
 
     function test_xsubmit_wrongConsensusChainId_reverts() public {
         TestXTypes.Block memory xblock1 = _xblock({ offset: 1, xmsgOffset: 1 });
-        XTypes.Submission memory xsub = makeXSub(1, thisChainId, xblock1.blockHeader, xblock1.msgs);
+        XTypes.Submission memory xsub =
+            makeXSub(1, xblock1.blockHeader, xblock1.msgs, msgFlagsForDest(xblock1.msgs, thisChainId));
 
         vm.expectRevert("OmniPortal: wrong cchain ID");
         xsub.blockHeader.consensusChainId = chainBId;
@@ -119,7 +123,8 @@ contract OmniPortal_xsubmit_Test is Base {
 
     function test_xsubmit_wrongStreamOffset_reverts() public {
         TestXTypes.Block memory xblock2 = _xblock({ offset: 2, xmsgOffset: 6 });
-        XTypes.Submission memory xsub = makeXSub(1, thisChainId, xblock2.blockHeader, xblock2.msgs);
+        XTypes.Submission memory xsub =
+            makeXSub(1, xblock2.blockHeader, xblock2.msgs, msgFlagsForDest(xblock2.msgs, thisChainId));
 
         vm.expectRevert("OmniPortal: wrong offset");
         vm.chainId(thisChainId);
@@ -128,7 +133,8 @@ contract OmniPortal_xsubmit_Test is Base {
 
     function test_xsubmit_invalidAttestationRoot_reverts() public {
         TestXTypes.Block memory xblock1 = _xblock({ offset: 1, xmsgOffset: 1 });
-        XTypes.Submission memory xsub = makeXSub(1, thisChainId, xblock1.blockHeader, xblock1.msgs);
+        XTypes.Submission memory xsub =
+            makeXSub(1, xblock1.blockHeader, xblock1.msgs, msgFlagsForDest(xblock1.msgs, thisChainId));
 
         xsub.attestationRoot = keccak256("invalid");
 
@@ -141,7 +147,8 @@ contract OmniPortal_xsubmit_Test is Base {
 
     function test_xsubmit_noQuorum_reverts() public {
         TestXTypes.Block memory xblock1 = _xblock({ offset: 1, xmsgOffset: 1 });
-        XTypes.Submission memory xsub = makeXSub(1, thisChainId, xblock1.blockHeader, xblock1.msgs);
+        XTypes.Submission memory xsub =
+            makeXSub(1, xblock1.blockHeader, xblock1.msgs, msgFlagsForDest(xblock1.msgs, thisChainId));
 
         // remove last two signatures, to fail the quorum check
         XTypes.SigTuple[] memory sigs = new XTypes.SigTuple[](2);
@@ -157,7 +164,8 @@ contract OmniPortal_xsubmit_Test is Base {
 
     function test_xsubmit_duplicateValidator_reverts() public {
         TestXTypes.Block memory xblock1 = _xblock({ offset: 1, xmsgOffset: 1 });
-        XTypes.Submission memory xsub = makeXSub(1, thisChainId, xblock1.blockHeader, xblock1.msgs);
+        XTypes.Submission memory xsub =
+            makeXSub(1, xblock1.blockHeader, xblock1.msgs, msgFlagsForDest(xblock1.msgs, thisChainId));
 
         // add duplicate validator
         xsub.signatures[1] = xsub.signatures[0];
@@ -169,7 +177,8 @@ contract OmniPortal_xsubmit_Test is Base {
 
     function test_xsubmit_invalidMsgs_reverts() public {
         TestXTypes.Block memory xblock1 = _xblock({ offset: 1, xmsgOffset: 1 });
-        XTypes.Submission memory xsub = makeXSub(1, thisChainId, xblock1.blockHeader, xblock1.msgs);
+        XTypes.Submission memory xsub =
+            makeXSub(1, xblock1.blockHeader, xblock1.msgs, msgFlagsForDest(xblock1.msgs, thisChainId));
 
         // set invalid msg data, so proof fails
         xsub.msgs[0].data = abi.encodeWithSignature("invalid()");
@@ -181,7 +190,8 @@ contract OmniPortal_xsubmit_Test is Base {
 
     function test_xsubmit_addValidatorSet_succeeds() public {
         TestXTypes.Block memory addValSet2 = _addValidatorSet_xblock({ valSetId: 2 });
-        XTypes.Submission memory xsub = makeXSub(1, broadcastChainId, addValSet2.blockHeader, addValSet2.msgs);
+        XTypes.Submission memory xsub =
+            makeXSub(1, addValSet2.blockHeader, addValSet2.msgs, msgFlagsForDest(addValSet2.msgs, broadcastChainId));
         vm.chainId(thisChainId);
         portal.xsubmit(xsub);
 
@@ -211,7 +221,8 @@ contract OmniPortal_xsubmit_Test is Base {
     ///      xsubmission with the new valSetId has not been submitted for that source chain
     function test_xsubmit_notNewValSet_succeeds() public {
         TestXTypes.Block memory addValSet2 = _addValidatorSet_xblock({ valSetId: 2 });
-        XTypes.Submission memory xsub = makeXSub(1, broadcastChainId, addValSet2.blockHeader, addValSet2.msgs);
+        XTypes.Submission memory xsub =
+            makeXSub(1, addValSet2.blockHeader, addValSet2.msgs, msgFlagsForDest(addValSet2.msgs, broadcastChainId));
         vm.chainId(thisChainId);
         portal.xsubmit(xsub);
 
@@ -233,7 +244,8 @@ contract OmniPortal_xsubmit_Test is Base {
 
         // test that we cannot submit a block with the genesisValSetId
         TestXTypes.Block memory xblock1 = _xblock({ offset: 1, xmsgOffset: 1 });
-        XTypes.Submission memory xsub = makeXSub(1, thisChainId, xblock1.blockHeader, xblock1.msgs);
+        XTypes.Submission memory xsub =
+            makeXSub(1, xblock1.blockHeader, xblock1.msgs, msgFlagsForDest(xblock1.msgs, thisChainId));
 
         vm.expectRevert("OmniPortal: old val set");
         vm.chainId(thisChainId);
@@ -243,7 +255,8 @@ contract OmniPortal_xsubmit_Test is Base {
     function test_xsubmit_unknownValSetId_reverts() public {
         // generate an xsubmission for val set 2, without submitting the val set
         TestXTypes.Block memory xblock1 = _xblock({ offset: 1, xmsgOffset: 1 });
-        XTypes.Submission memory xsub = makeXSub(2, thisChainId, xblock1.blockHeader, xblock1.msgs);
+        XTypes.Submission memory xsub =
+            makeXSub(2, xblock1.blockHeader, xblock1.msgs, msgFlagsForDest(xblock1.msgs, thisChainId));
 
         vm.expectRevert("OmniPortal: unknown val set");
         vm.chainId(thisChainId);
@@ -259,7 +272,8 @@ contract OmniPortal_xsubmit_Test is Base {
         IOmniPortal portal_,
         Counter counter_
     ) internal {
-        XTypes.Submission memory xsub = makeXSub(valSetId, destChainId, xblock.blockHeader, xblock.msgs);
+        XTypes.Submission memory xsub =
+            makeXSub(valSetId, xblock.blockHeader, xblock.msgs, msgFlagsForDest(xblock.msgs, destChainId));
 
         uint64 sourceChainId = xsub.blockHeader.sourceChainId;
         uint64 shardId = xsub.blockHeader.confLevel; // conf level is shard id
