@@ -19,7 +19,7 @@ import (
 )
 
 func ReconForever(ctx context.Context, network netconf.Network, xprov xchain.Provider, ethCls map[uint64]ethclient.Client) {
-	if !network.ID.IsProtected() {
+	if network.ID != netconf.Omega {
 		return
 	}
 
