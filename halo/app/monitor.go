@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"os"
@@ -232,11 +233,21 @@ func startMonitoringAPI(
 	mux.HandleFunc("/ready", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		if ready, err := status.serialize(w); err != nil {
+		// We do not serialize `status` directly to the http writer, because even if
+		// it can be serialized without errors, we might need to set a different http status
+		// code than the one set by default on a successful write.
+		var buf bytes.Buffer
+		if ready, err := status.serialize(&buf); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		} else if !ready {
 			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+
+		_, err := w.Write(buf.Bytes())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
 
