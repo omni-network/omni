@@ -2,7 +2,7 @@
 pragma solidity ^0.8.12;
 
 import { IFeeOracle } from "./IFeeOracle.sol";
-import { IConversionRateOracle } from "./IConversionRateOracleV2.sol";
+import { IConversionRateOracle } from "./IConversionRateOracle.sol";
 
 /**
  * @title IFeeOracleV2
@@ -56,7 +56,7 @@ interface IFeeOracleV2 is IFeeOracle, IConversionRateOracle {
     function dataGasPrice(uint64 chainId) external view returns (uint64);
 
     /// @notice Returns the to-native conversion rate for a destination chain.
-    function toNativeRate(uint64 chainId) external view returns (uint64);
+    function toNativeRate(uint64 chainId) external view returns (uint256);
 
     /// @notice Returns the manager's address.
     function manager() external view returns (address);

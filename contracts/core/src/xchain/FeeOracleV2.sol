@@ -107,7 +107,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     /**
      * @notice Returns the to-native conversion rate for a destination chain.
      */
-    function toNativeRate(uint64 chainId) external view returns (uint64) {
+    function toNativeRate(uint64 chainId) external view returns (uint256) {
         return _feeParams[chainId].toNativeRate;
     }
 

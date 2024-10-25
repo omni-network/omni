@@ -76,7 +76,7 @@ contract FeeOracleV2_Test is Test {
         feeOracle.setExecGasPrice(destChainId, gasPrice); // reset
 
         // change to native rate
-        uint64 toNativeRate = feeOracle.toNativeRate(destChainId);
+        uint64 toNativeRate = uint64(feeOracle.toNativeRate(destChainId));
 
         feeOracle.setToNativeRate(destChainId, toNativeRate * 2);
         assertEq(fee < feeOracle.feeFor(destChainId, data, gasLimit), true); // should be higher
@@ -207,7 +207,7 @@ contract FeeOracleV2_Test is Test {
 
     function test_setToNativeRate() public {
         uint64 destChainId = chainAId;
-        uint64 newToNativeRate = feeOracle.toNativeRate(destChainId) + 1;
+        uint64 newToNativeRate = uint64(feeOracle.toNativeRate(destChainId) + 1);
 
         // only manager can set to native rate
         vm.expectRevert("FeeOracleV2: not manager");
@@ -236,21 +236,21 @@ contract FeeOracleV2_Test is Test {
             chainId: chainAId,
             execGasPrice: feeOracle.execGasPrice(chainAId) + 1 gwei,
             dataGasPrice: feeOracle.dataGasPrice(chainAId) + 2 gwei,
-            toNativeRate: feeOracle.toNativeRate(chainAId) + 1
+            toNativeRate: uint64(feeOracle.toNativeRate(chainAId) + 1)
         });
 
         feeParams[1] = IFeeOracleV2.FeeParams({
             chainId: chainBId,
             execGasPrice: feeOracle.execGasPrice(chainBId) + 2 gwei,
             dataGasPrice: feeOracle.dataGasPrice(chainBId) + 3 gwei,
-            toNativeRate: feeOracle.toNativeRate(chainBId) + 2
+            toNativeRate: uint64(feeOracle.toNativeRate(chainBId) + 2)
         });
 
         feeParams[2] = IFeeOracleV2.FeeParams({
             chainId: chainCId,
             execGasPrice: feeOracle.execGasPrice(chainCId) + 3 gwei,
             dataGasPrice: feeOracle.dataGasPrice(chainCId) + 4 gwei,
-            toNativeRate: feeOracle.toNativeRate(chainCId) + 3
+            toNativeRate: uint64(feeOracle.toNativeRate(chainCId) + 3)
         });
 
         feeParams[3] = IFeeOracleV2.FeeParams({
