@@ -3,6 +3,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 	"path"
 	"strings"
 	"testing"
@@ -179,7 +180,12 @@ func (p Provider) stream(
 	srcChain := p.chainNamer(chainVer)
 	ctx := log.WithCtx(in, "src_chain", srcChain, "worker", workerName)
 
-	cache, err := stream.NewCache[xchain.Attestation]()
+	key := func(height uint64) string {
+		return fmt.Sprintf("%d-%d", chainVer.ConfLevel, height)
+	}
+	cache, err := stream.NewCache[xchain.Attestation](
+		stream.WithKeyFunc[xchain.Attestation](key),
+	)
 	if err != nil {
 		return errors.Wrap(err, "cache fail [BUG]")
 	}
