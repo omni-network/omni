@@ -2,7 +2,7 @@
 pragma solidity ^0.8.12;
 
 import { IFeeOracle } from "./IFeeOracle.sol";
-import { IConversionRateOracle } from "./IConversionRateOracle.sol";
+import { IConversionRateOracle } from "./IConversionRateOracleV2.sol";
 
 /**
  * @title IFeeOracleV2
@@ -41,49 +41,49 @@ interface IFeeOracleV2 is IFeeOracle, IConversionRateOracle {
      */
     struct FeeParams {
         uint64 chainId;
-        uint256 execGasPrice;
-        uint256 dataGasPrice;
-        uint256 toNativeRate;
+        uint64 execGasPrice;
+        uint64 dataGasPrice;
+        uint64 toNativeRate;
     }
 
     /// @notice Returns the fee parameters for a destination chain.
     function feeParams(uint64 chainId) external view returns (FeeParams memory);
 
     /// @notice Returns the execution gas price for a destination chain.
-    function execGasPrice(uint64 chainId) external view returns (uint256);
+    function execGasPrice(uint64 chainId) external view returns (uint64);
 
     /// @notice Returns the data gas price for a destination chain.
-    function dataGasPrice(uint64 chainId) external view returns (uint256);
+    function dataGasPrice(uint64 chainId) external view returns (uint64);
 
     /// @notice Returns the to-native conversion rate for a destination chain.
-    function toNativeRate(uint64 chainId) external view returns (uint256);
+    function toNativeRate(uint64 chainId) external view returns (uint64);
 
     /// @notice Returns the manager's address.
     function manager() external view returns (address);
 
     /// @notice Returns the protocol fee.
-    function protocolFee() external view returns (uint256);
+    function protocolFee() external view returns (uint64);
 
     /// @notice Returns the base gas limit.
-    function baseGasLimit() external view returns (uint64);
+    function baseGasLimit() external view returns (uint32);
 
     /// @notice Set the fee parameters for a list of destination chains.
     function bulkSetFeeParams(FeeParams[] calldata params) external;
 
     /// @notice Set the execution gas price for a destination chain.
-    function setExecGasPrice(uint64 chainId, uint256 execGasPrice) external;
+    function setExecGasPrice(uint64 chainId, uint64 execGasPrice) external;
 
     /// @notice Set the data gas price for a destination chain.
-    function setDataGasPrice(uint64 chainId, uint256 dataGasPrice) external;
+    function setDataGasPrice(uint64 chainId, uint64 dataGasPrice) external;
 
     /// @notice Set the to native conversion rate for a destination chain.
-    function setToNativeRate(uint64 chainId, uint256 toNativeRate) external;
+    function setToNativeRate(uint64 chainId, uint64 toNativeRate) external;
 
     /// @notice Set the base gas limit for each xmsg.
-    function setBaseGasLimit(uint64 gasLimit) external;
+    function setBaseGasLimit(uint32 gasLimit) external;
 
     /// @notice Set the base protocol fee for each xmsg.
-    function setProtocolFee(uint256 fee) external;
+    function setProtocolFee(uint64 fee) external;
 
     /// @notice Set the manager admin account.
     function setManager(address manager) external;

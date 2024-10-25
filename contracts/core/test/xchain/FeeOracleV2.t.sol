@@ -65,7 +65,7 @@ contract FeeOracleV2_Test is Test {
         assertEq(fee, feeOracle.feeFor(destChainId, data, gasLimit)); // should be stable
 
         // change exec gas price
-        uint256 gasPrice = feeOracle.execGasPrice(destChainId);
+        uint64 gasPrice = feeOracle.execGasPrice(destChainId);
 
         feeOracle.setExecGasPrice(destChainId, gasPrice * 2);
         assertEq(fee < feeOracle.feeFor(destChainId, data, gasLimit), true); // should be higher now
@@ -76,7 +76,7 @@ contract FeeOracleV2_Test is Test {
         feeOracle.setExecGasPrice(destChainId, gasPrice); // reset
 
         // change to native rate
-        uint256 toNativeRate = feeOracle.toNativeRate(destChainId);
+        uint64 toNativeRate = feeOracle.toNativeRate(destChainId);
 
         feeOracle.setToNativeRate(destChainId, toNativeRate * 2);
         assertEq(fee < feeOracle.feeFor(destChainId, data, gasLimit), true); // should be higher
@@ -88,7 +88,7 @@ contract FeeOracleV2_Test is Test {
 
         // change data gas price
 
-        uint256 dataGasPrice = feeOracle.dataGasPrice(destChainId);
+        uint64 dataGasPrice = feeOracle.dataGasPrice(destChainId);
 
         feeOracle.setDataGasPrice(destChainId, dataGasPrice * 2);
         assertEq(fee < feeOracle.feeFor(destChainId, data, gasLimit), true); // should be higher
@@ -129,7 +129,7 @@ contract FeeOracleV2_Test is Test {
 
     function test_setExecGasPrice() public {
         uint64 destChainId = chainAId;
-        uint256 newGasPrice = feeOracle.execGasPrice(destChainId) + 1 gwei;
+        uint64 newGasPrice = feeOracle.execGasPrice(destChainId) + 1 gwei;
 
         // only manager can set gas price
         vm.expectRevert("FeeOracleV2: not manager");
@@ -153,7 +153,7 @@ contract FeeOracleV2_Test is Test {
 
     function test_setDataGasPrice() public {
         uint64 destChainId = chainAId;
-        uint256 newGasPrice = feeOracle.dataGasPrice(destChainId) + 1 gwei;
+        uint64 newGasPrice = feeOracle.dataGasPrice(destChainId) + 1 gwei;
 
         // only manager can set gas price
         vm.expectRevert("FeeOracleV2: not manager");
@@ -176,7 +176,7 @@ contract FeeOracleV2_Test is Test {
     }
 
     function test_setProtocolFee() public {
-        uint256 newProtocolFee = feeOracle.protocolFee() + 1 gwei;
+        uint64 newProtocolFee = feeOracle.protocolFee() + 1 gwei;
 
         // only owner can set protocol fee
         address notOwner = address(0x456);
@@ -191,7 +191,7 @@ contract FeeOracleV2_Test is Test {
     }
 
     function test_setBaseGasLimit() public {
-        uint64 newBaseGasLimit = feeOracle.baseGasLimit() + 10_000;
+        uint32 newBaseGasLimit = feeOracle.baseGasLimit() + 10_000;
 
         // only owner can set base gas limit
         address notOwner = address(0x456);
@@ -207,7 +207,7 @@ contract FeeOracleV2_Test is Test {
 
     function test_setToNativeRate() public {
         uint64 destChainId = chainAId;
-        uint256 newToNativeRate = feeOracle.toNativeRate(destChainId) + 1;
+        uint64 newToNativeRate = feeOracle.toNativeRate(destChainId) + 1;
 
         // only manager can set to native rate
         vm.expectRevert("FeeOracleV2: not manager");
