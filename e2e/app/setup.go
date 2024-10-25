@@ -54,8 +54,6 @@ const (
 )
 
 // Setup sets up the testnet configuration.
-//
-//nolint:gocyclo // Just many sequential steps.
 func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	log.Info(ctx, "Setup testnet", "dir", def.Testnet.Dir)
 
@@ -65,10 +63,6 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 
 	if err := os.MkdirAll(def.Testnet.Dir, os.ModePerm); err != nil {
 		return errors.Wrap(err, "mkdir")
-	}
-
-	if def.Manifest.OnlyMonitor {
-		return SetupOnlyMonitor(ctx, def)
 	}
 
 	// Setup geth execution genesis
@@ -208,25 +202,6 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 		return errors.Wrap(err, "marshal endpoints")
 	} else if err := os.WriteFile(filepath.Join(def.Testnet.Dir, "endpoints.json"), endpointBytes, 0o644); err != nil {
 		return errors.Wrap(err, "write endpoints")
-	}
-
-	if def.Testnet.Prometheus {
-		if err := agent.WriteConfig(ctx, def.Testnet, def.Cfg.AgentSecrets); err != nil {
-			return errors.Wrap(err, "write prom config")
-		}
-	}
-
-	if err := def.Infra.Setup(); err != nil {
-		return errors.Wrap(err, "setup provider")
-	}
-
-	return nil
-}
-
-func SetupOnlyMonitor(ctx context.Context, def Definition) error {
-	logCfg := logConfig(def)
-	if err := writeMonitorConfig(ctx, def, logCfg, nil); err != nil {
-		return err
 	}
 
 	if def.Testnet.Prometheus {

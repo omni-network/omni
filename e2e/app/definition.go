@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"fmt"
-	"net"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -169,11 +168,6 @@ func MakeDefinition(ctx context.Context, cfg DefinitionConfig, commandName strin
 }
 
 func newBackends(ctx context.Context, cfg DefinitionConfig, testnet types.Testnet, commandName string) (ethbackend.Backends, error) {
-	// Skip backends if only deploying monitor, since there are no EVM to connect to.
-	if testnet.OnlyMonitor {
-		return ethbackend.Backends{}, nil
-	}
-
 	// If no fireblocks API key, use in-memory keys.
 	if cfg.FireAPIKey == "" {
 		return ethbackend.NewBackends(ctx, testnet, cfg.DeployKeyFile)
@@ -265,56 +259,8 @@ func LoadManifest(path string) (types.Manifest, error) {
 	return manifest, nil
 }
 
-func NoNodesTestnet(manifest types.Manifest, infd types.InfrastructureData, cfg DefinitionConfig) (types.Testnet, error) {
-	publics, err := publicChains(manifest, cfg)
-	if err != nil {
-		return types.Testnet{}, err
-	}
-
-	cmtTestnet, err := noNodesTestnet(manifest.Manifest, cfg.ManifestFile, infd.InfrastructureData)
-	if err != nil {
-		return types.Testnet{}, errors.Wrap(err, "testnet from manifest")
-	}
-
-	return types.Testnet{
-		Manifest:     manifest,
-		Network:      manifest.Network,
-		Testnet:      cmtTestnet,
-		PublicChains: publics,
-		OnlyMonitor:  manifest.OnlyMonitor,
-	}, nil
-}
-
-// noNodesTestnet returns a bare minimum instance of *e2e.Omega. It doesn't have any nodes or chain details setup.
-func noNodesTestnet(manifest e2e.Manifest, file string, ifd e2e.InfrastructureData) (*e2e.Testnet, error) {
-	dir := strings.TrimSuffix(file, filepath.Ext(file))
-
-	_, ipNet, err := net.ParseCIDR(ifd.Network)
-	if err != nil {
-		return nil, errors.Wrap(err, "parse network ip", "network", ifd.Network)
-	}
-
-	testnet := &e2e.Testnet{
-		Name:         filepath.Base(dir),
-		File:         file,
-		Dir:          runsDir(file),
-		IP:           ipNet,
-		InitialState: manifest.InitialState,
-		Prometheus:   manifest.Prometheus,
-	}
-
-	return testnet, nil
-}
-
 //nolint:nosprintfhostport // Not an issue for non-critical e2e test code.
 func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd types.InfrastructureData, cfg DefinitionConfig) (types.Testnet, error) {
-	if manifest.OnlyMonitor || len(manifest.Nodes) == 0 {
-		// Create a bare minimum comet testnet only with test di, prometheus and ipnet.
-		// Otherwise e2e.NewTestnetFromManifest panics because there are no nodes set
-		// in the only_monitor manifest.
-		return NoNodesTestnet(manifest, infd, cfg)
-	}
-
 	cmtTestnet, err := e2e.NewTestnetFromManifest(manifest.Manifest, cfg.ManifestFile, infd.InfrastructureData)
 	if err != nil {
 		return types.Testnet{}, errors.Wrap(err, "testnet from manifest")
@@ -464,11 +410,6 @@ func internalEndpoints(def Definition, nodePrefix string) xchain.RPCEndpoints {
 		endpoints[public.Chain().Name] = public.NextRPCAddress()
 	}
 
-	// In monitor only mode, there is only public chains, so skip omni and anvil chains.
-	if def.Testnet.OnlyMonitor {
-		return endpoints
-	}
-
 	omniEVM := omniEVMByPrefix(def.Testnet, nodePrefix)
 	endpoints[omniEVM.Chain.Name] = omniEVM.InternalRPC
 
@@ -491,11 +432,6 @@ func ExternalEndpoints(def Definition) xchain.RPCEndpoints {
 	// Add all public chains
 	for _, public := range def.Testnet.PublicChains {
 		endpoints[public.Chain().Name] = public.NextRPCAddress()
-	}
-
-	// In monitor only mode, there is only public chains, so skip omni and anvil chains.
-	if def.Testnet.OnlyMonitor {
-		return endpoints
 	}
 
 	// Connect to a proper omni_evm that isn't unavailable
@@ -534,14 +470,6 @@ func NetworkFromDef(def Definition) netconf.Network {
 	// Add all public chains
 	for _, public := range def.Testnet.PublicChains {
 		chains = append(chains, newChain(public.Chain()))
-	}
-
-	// In monitor only mode, there is only public chains, so skip omni and anvil chains.
-	if def.Testnet.OnlyMonitor {
-		return netconf.Network{
-			ID:     def.Testnet.Network,
-			Chains: chains,
-		}
 	}
 
 	// Connect to a proper omni_evm that isn't unavailable
