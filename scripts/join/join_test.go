@@ -119,14 +119,16 @@ func TestJoinOmega(t *testing.T) {
 				execStatus, err := retry(ctx, ethCl.SyncProgress)
 				require.NoError(t, err)
 				execSynced := execStatus.Done()
-				execHeight := execStatus.HighestBlock
+				execHeight := execStatus.CurrentBlock
+				execTarget := execStatus.HighestBlock
 
 				log.Info(ctx, "Status",
-					"halo_status", haloStatus,
-					"halo_synced", haloSynced,
-					"halo_height", haloHeight,
-					"execution_synced", execSynced,
-					"execution_height", execHeight,
+					"cstatus", haloStatus,
+					"csynced", haloSynced,
+					"cheight", haloHeight,
+					"esynced", execSynced,
+					"eheight", execHeight,
+					"etarget", execTarget,
 					"duration", time.Since(t0).Truncate(time.Second),
 				)
 
