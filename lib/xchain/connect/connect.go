@@ -178,7 +178,7 @@ func New(ctx context.Context, netID netconf.ID, opts ...option) (Connector, erro
 		return Connector{}, errors.Wrap(err, "comet rpc client")
 	}
 
-	cprov := cprovider.NewABCI(cometCl, netID, netconf.ChainVersionNamer(netID))
+	cprov := cprovider.NewABCI(cometCl, netID)
 
 	xprov := xprovider.New(network, ethClients, cprov)
 

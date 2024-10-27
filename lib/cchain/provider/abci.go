@@ -15,6 +15,7 @@ import (
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/stream"
 	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
@@ -52,31 +53,52 @@ func Dial(network netconf.ID) (Provider, error) {
 		return Provider{}, errors.Wrap(err, "new tendermint client")
 	}
 
-	return NewABCI(cl, network, netconf.ChainVersionNamer(network)), nil
+	return NewABCI(cl, network), nil
 }
 
 // NewABCI returns a new provider using the provided cometBFT ABCI client.
-func NewABCI(cmtCl rpcclient.Client, network netconf.ID, chainNamer func(xchain.ChainVersion) string) Provider {
-	return newProvider(rpcAdaptor{abci: cmtCl}, network, chainNamer)
+func NewABCI(cmtCl rpcclient.Client, network netconf.ID, opts ...func(*Provider)) Provider {
+	return newProvider(rpcAdaptor{abci: cmtCl}, network, opts...)
 }
 
 // NewGRPC returns a new provider using the provided gRPC server address.
 // This is preferred to NewABCI as it bypasses CometBFT so is much faster
 // and doesn't affect chain performance.
-func NewGRPC(target string, network netconf.ID, chainNamer func(xchain.ChainVersion) string) (Provider, error) {
+func NewGRPC(target string, network netconf.ID, opts ...func(*Provider)) (Provider, error) {
 	grpcClient, err := grpc.NewClient(target, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return Provider{}, errors.Wrap(err, "new grpc client")
 	}
 
-	return newProvider(grpcClient, network, chainNamer), nil
+	return newProvider(grpcClient, network, opts...), nil
 }
 
-func newProvider(cc gogogrpc.ClientConn, network netconf.ID, chainNamer func(xchain.ChainVersion) string) Provider {
+// attestCacheProvider is a function that returns a cache for attestations.
+type attestCacheProvider func(xchain.ChainVersion) stream.Cache[xchain.Attestation]
+
+// nopCacheProvider returns a cache provider that doesn't cache anything.
+var nopCacheProvider = func(xchain.ChainVersion) stream.Cache[xchain.Attestation] {
+	return stream.NewNopCache[xchain.Attestation]()
+}
+
+// WithAttestCache returns an option that enables caching of attest streams.
+func WithAttestCache(limit int) func(*Provider) {
+	var caches sync.Map
+	return func(p *Provider) {
+		p.cacheProvider = func(chainVer xchain.ChainVersion) stream.Cache[xchain.Attestation] {
+			resp, _ := caches.LoadOrStore(chainVer, stream.NewCache[xchain.Attestation](limit))
+			return resp.(stream.Cache[xchain.Attestation]) //nolint:forcetypeassert,revive // Known type
+		}
+	}
+}
+
+func newProvider(cc gogogrpc.ClientConn, network netconf.ID, opts ...func(*Provider)) Provider {
 	// Stream backoff for 1s, querying new attestations after 1 consensus block
 	backoffFunc := func(ctx context.Context) func() {
 		return expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second))
 	}
+
+	namer := netconf.ChainVersionNamer(network)
 
 	acl := atypes.NewQueryClient(cc)
 	vcl := vtypes.NewQueryClient(cc)
@@ -89,26 +111,33 @@ func newProvider(cc gogogrpc.ClientConn, network netconf.ID, chainNamer func(xch
 	slcl := sltypes.NewQueryClient(cc)
 	cmtcl := cmtservice.NewServiceClient(cc)
 
-	return Provider{
-		fetch:       newABCIFetchFunc(acl, cmtcl, chainNamer),
-		allAtts:     newABCIAllAttsFunc(acl),
-		latest:      newABCILatestFunc(acl),
-		window:      newABCIWindowFunc(acl),
-		valset:      newABCIValsetFunc(vcl),
-		val:         newABCIValFunc(scl),
-		vals:        newABCIValsFunc(scl),
-		signing:     newABCISigningFunc(slcl),
-		rewards:     newABCIRewards(dcl),
-		portalBlock: newABCIPortalBlockFunc(pcl),
-		networkFunc: newABCINetworkFunc(rcl),
-		genesisFunc: newABCIGenesisFunc(gcl),
-		plannedFunc: newABCIPlannedUpgradeFunc(ucl),
-		appliedFunc: newABCIAppliedUpgradeFunc(ucl),
-		chainID:     newChainIDFunc(cmtcl),
-		backoffFunc: backoffFunc,
-		chainNamer:  chainNamer,
-		network:     network,
+	p := Provider{
+		fetch:         newABCIFetchFunc(acl, cmtcl, namer),
+		allAtts:       newABCIAllAttsFunc(acl),
+		latest:        newABCILatestFunc(acl),
+		window:        newABCIWindowFunc(acl),
+		valset:        newABCIValsetFunc(vcl),
+		val:           newABCIValFunc(scl),
+		vals:          newABCIValsFunc(scl),
+		signing:       newABCISigningFunc(slcl),
+		rewards:       newABCIRewards(dcl),
+		portalBlock:   newABCIPortalBlockFunc(pcl),
+		networkFunc:   newABCINetworkFunc(rcl),
+		genesisFunc:   newABCIGenesisFunc(gcl),
+		plannedFunc:   newABCIPlannedUpgradeFunc(ucl),
+		appliedFunc:   newABCIAppliedUpgradeFunc(ucl),
+		chainID:       newChainIDFunc(cmtcl),
+		backoffFunc:   backoffFunc,
+		chainNamer:    namer,
+		network:       network,
+		cacheProvider: nopCacheProvider,
 	}
+
+	for _, opt := range opts {
+		opt(&p)
+	}
+
+	return p
 }
 
 func newABCISigningFunc(cl sltypes.QueryClient) signingFunc {

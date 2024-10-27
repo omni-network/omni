@@ -89,7 +89,7 @@ func TestCLIOperator(t *testing.T) {
 		cl, err := http.New(testnet.Network.Static().ConsensusRPC(), "/websocket")
 		require.NoError(t, err)
 
-		cprov := provider.NewABCI(cl, network.ID, netconf.ChainVersionNamer(network.ID))
+		cprov := provider.NewABCI(cl, network.ID)
 
 		// wait for validator to be created
 		const valChangeWait = 15 * time.Second

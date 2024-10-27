@@ -44,7 +44,7 @@ func StartMonitoringReceipts(ctx context.Context, def Definition) func() error {
 	}
 
 	network := NetworkFromDef(def) // Safe to call NetworkFromDef since this after netman.DeployContracts
-	cProvider := cprovider.NewABCI(client, def.Testnet.Network, netconf.ChainVersionNamer(def.Testnet.Network))
+	cProvider := cprovider.NewABCI(client, def.Testnet.Network)
 	xProvider := xprovider.New(network, def.Backends().RPCClients(), cProvider)
 	cChainID := def.Testnet.Network.Static().OmniConsensusChainIDUint64()
 
@@ -153,7 +153,7 @@ func MonitorCProvider(ctx context.Context, node *e2e.Node, network netconf.Netwo
 		return errors.Wrap(err, "getting client")
 	}
 
-	cprov := cprovider.NewABCI(client, network.ID, netconf.ChainVersionNamer(network.ID))
+	cprov := cprovider.NewABCI(client, network.ID)
 
 	for _, chain := range network.Chains {
 		for _, chainVer := range chain.ChainVersions() {

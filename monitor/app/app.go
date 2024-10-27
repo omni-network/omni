@@ -68,7 +68,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	cprov := cprovider.NewABCI(tmClient, network.ID, netconf.ChainVersionNamer(cfg.Network))
+	cprov := cprovider.NewABCI(tmClient, network.ID)
 
 	xprov := xprovider.New(network, ethClients, cprov)
 

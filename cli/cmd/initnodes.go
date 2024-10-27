@@ -18,7 +18,6 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/xchain"
 
 	cmtconfig "github.com/cometbft/cometbft/config"
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
@@ -170,8 +169,7 @@ func maybeDownloadGenesis(ctx context.Context, network netconf.ID) error {
 	if err != nil {
 		return errors.Wrap(err, "create rpc client")
 	}
-	stubNamer := func(xchain.ChainVersion) string { return "" }
-	cprov := cprovider.NewABCI(rpcCl, network, stubNamer)
+	cprov := cprovider.NewABCI(rpcCl, network)
 
 	execution, consensus, err := cprov.GenesisFiles(ctx)
 	if err != nil {
