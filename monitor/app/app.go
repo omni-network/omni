@@ -86,10 +86,6 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "start load generator")
 	}
 
-	if err := startAVSSync(ctx, cfg, network, ethClients); err != nil {
-		return errors.Wrap(err, "start AVS sync")
-	}
-
 	if err := xmonitor.Start(ctx, network, xprov, cprov, ethClients); err != nil {
 		return errors.Wrap(err, "start xchain monitor")
 	}
