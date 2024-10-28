@@ -2,7 +2,6 @@ package portal
 
 import (
 	"context"
-	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
@@ -10,7 +9,6 @@ import (
 	"github.com/omni-network/omni/lib/create3"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
-	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -197,18 +195,9 @@ func deploy(ctx context.Context, cfg deploymentConfig, backend *ethbackend.Backe
 		return common.Address{}, nil, errors.Wrap(err, "pack init code")
 	}
 
-	// Deploying portal proxy sporadically fails during gas estimation. Just retry a few times.
-	const retry = 3
-	for i := 1; ; i++ {
-		tx, err = factory.Deploy(txOpts, salt, initCode)
-		if err == nil {
-			break
-		} else if i >= retry {
-			return common.Address{}, nil, errors.Wrap(err, "deploy portal proxy", "attempt", i)
-		}
-
-		log.Warn(ctx, "Failed deploying portal proxy (will retry)", err, "attempt", i)
-		time.Sleep(time.Second)
+	tx, err = factory.DeployWithRetry(txOpts, salt, initCode) //nolint:contextcheck // Context is txOpts
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "deploy proxy")
 	}
 
 	receipt, err := backend.WaitMined(ctx, tx)
