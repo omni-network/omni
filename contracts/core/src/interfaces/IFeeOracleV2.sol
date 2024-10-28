@@ -10,22 +10,22 @@ import { IConversionRateOracle } from "./IConversionRateOracle.sol";
  */
 interface IFeeOracleV2 is IFeeOracle, IConversionRateOracle {
     /// @notice Emitted when fee parameters for a chain are set.
-    event FeeParamsSet(uint64 chainId, uint256 execGasPrice, uint256 dataGasPrice, uint256 toNativeRate);
+    event FeeParamsSet(uint64 chainId, uint64 execGasPrice, uint64 dataGasPrice, uint64 toNativeRate);
 
     /// @notice Emitted when the base gas limit is set.
-    event BaseGasLimitSet(uint64 baseGasLimit);
+    event BaseGasLimitSet(uint24 baseGasLimit);
 
     /// @notice Emitted when the base protocol fee is set.
-    event ProtocolFeeSet(uint256 protocolFee);
+    event ProtocolFeeSet(uint72 protocolFee);
 
     /// @notice Emitted when the gas price for a destination chain is set.
-    event ExecGasPriceSet(uint64 chainId, uint256 gasPrice);
+    event ExecGasPriceSet(uint64 chainId, uint64 gasPrice);
 
     /// @notice Emitted when the data gas price for a destination chain is set.
-    event DataGasPriceSet(uint64 chainId, uint256 gasPrice);
+    event DataGasPriceSet(uint64 chainId, uint64 gasPrice);
 
     /// @notice Emitted when the to-native conversion rate for a destination chain is set.
-    event ToNativeRateSet(uint64 chainId, uint256 toNativeRate);
+    event ToNativeRateSet(uint64 chainId, uint64 toNativeRate);
 
     /// @notice Emitted when the manager is changed.
     event ManagerSet(address manager);
@@ -41,19 +41,19 @@ interface IFeeOracleV2 is IFeeOracle, IConversionRateOracle {
      */
     struct FeeParams {
         uint64 chainId;
-        uint256 execGasPrice;
-        uint256 dataGasPrice;
-        uint256 toNativeRate;
+        uint64 execGasPrice;
+        uint64 dataGasPrice;
+        uint64 toNativeRate;
     }
 
     /// @notice Returns the fee parameters for a destination chain.
     function feeParams(uint64 chainId) external view returns (FeeParams memory);
 
     /// @notice Returns the execution gas price for a destination chain.
-    function execGasPrice(uint64 chainId) external view returns (uint256);
+    function execGasPrice(uint64 chainId) external view returns (uint64);
 
     /// @notice Returns the data gas price for a destination chain.
-    function dataGasPrice(uint64 chainId) external view returns (uint256);
+    function dataGasPrice(uint64 chainId) external view returns (uint64);
 
     /// @notice Returns the to-native conversion rate for a destination chain.
     function toNativeRate(uint64 chainId) external view returns (uint256);
@@ -62,28 +62,28 @@ interface IFeeOracleV2 is IFeeOracle, IConversionRateOracle {
     function manager() external view returns (address);
 
     /// @notice Returns the protocol fee.
-    function protocolFee() external view returns (uint256);
+    function protocolFee() external view returns (uint72);
 
     /// @notice Returns the base gas limit.
-    function baseGasLimit() external view returns (uint64);
+    function baseGasLimit() external view returns (uint24);
 
     /// @notice Set the fee parameters for a list of destination chains.
     function bulkSetFeeParams(FeeParams[] calldata params) external;
 
     /// @notice Set the execution gas price for a destination chain.
-    function setExecGasPrice(uint64 chainId, uint256 execGasPrice) external;
+    function setExecGasPrice(uint64 chainId, uint64 execGasPrice) external;
 
     /// @notice Set the data gas price for a destination chain.
-    function setDataGasPrice(uint64 chainId, uint256 dataGasPrice) external;
+    function setDataGasPrice(uint64 chainId, uint64 dataGasPrice) external;
 
     /// @notice Set the to native conversion rate for a destination chain.
-    function setToNativeRate(uint64 chainId, uint256 toNativeRate) external;
+    function setToNativeRate(uint64 chainId, uint64 toNativeRate) external;
 
     /// @notice Set the base gas limit for each xmsg.
-    function setBaseGasLimit(uint64 gasLimit) external;
+    function setBaseGasLimit(uint24 gasLimit) external;
 
     /// @notice Set the base protocol fee for each xmsg.
-    function setProtocolFee(uint256 fee) external;
+    function setProtocolFee(uint72 fee) external;
 
     /// @notice Set the manager admin account.
     function setManager(address manager) external;

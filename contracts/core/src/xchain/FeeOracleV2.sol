@@ -12,14 +12,14 @@ import { IFeeOracleV2 } from "../interfaces/IFeeOracleV2.sol";
  */
 contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     /**
-     * @notice Base gas limit for each xmsg.
-     */
-    uint64 public baseGasLimit;
-
-    /**
      * @notice Base protocol fee for each xmsg.
      */
-    uint256 public protocolFee;
+    uint72 public protocolFee;
+
+    /**
+     * @notice Base gas limit for each xmsg.
+     */
+    uint24 public baseGasLimit;
 
     /**
      * @notice Address allowed to set gas prices and to-native conversion rates.
@@ -48,8 +48,8 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     function initialize(
         address owner_,
         address manager_,
-        uint64 baseGasLimit_,
-        uint256 protocolFee_,
+        uint24 baseGasLimit_,
+        uint72 protocolFee_,
         FeeParams[] calldata params
     ) public initializer {
         __Ownable_init(owner_);
@@ -93,14 +93,14 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     /**
      * @notice Returns the gas price for a destination chain.
      */
-    function execGasPrice(uint64 chainId) external view returns (uint256) {
+    function execGasPrice(uint64 chainId) external view returns (uint64) {
         return _feeParams[chainId].execGasPrice;
     }
 
     /**
      * @notice Returns the data gas price for a destination chain.
      */
-    function dataGasPrice(uint64 chainId) external view returns (uint256) {
+    function dataGasPrice(uint64 chainId) external view returns (uint64) {
         return _feeParams[chainId].dataGasPrice;
     }
 
@@ -121,35 +121,35 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     /**
      * @notice Set the execution gas price for a destination chain.
      */
-    function setExecGasPrice(uint64 chainId, uint256 gasPrice) external onlyManager {
+    function setExecGasPrice(uint64 chainId, uint64 gasPrice) external onlyManager {
         _setExecGasPrice(chainId, gasPrice);
     }
 
     /**
      * @notice Set the data gas price for a destination chain.
      */
-    function setDataGasPrice(uint64 chainId, uint256 gasPrice) external onlyManager {
+    function setDataGasPrice(uint64 chainId, uint64 gasPrice) external onlyManager {
         _setDataGasPrice(chainId, gasPrice);
     }
 
     /**
      * @notice Set the to native conversion rate for a destination chain.
      */
-    function setToNativeRate(uint64 chainId, uint256 rate) external onlyManager {
+    function setToNativeRate(uint64 chainId, uint64 rate) external onlyManager {
         _setToNativeRate(chainId, rate);
     }
 
     /**
      * @notice Set the base gas limit for each xmsg.
      */
-    function setBaseGasLimit(uint64 gasLimit) external onlyOwner {
+    function setBaseGasLimit(uint24 gasLimit) external onlyOwner {
         _setBaseGasLimit(gasLimit);
     }
 
     /**
      * @notice Set the base protocol fee for each xmsg.
      */
-    function setProtocolFee(uint256 fee) external onlyOwner {
+    function setProtocolFee(uint72 fee) external onlyOwner {
         _setProtocolFee(fee);
     }
 
@@ -182,7 +182,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     /**
      * @notice Set the execution gas price for a destination chain.
      */
-    function _setExecGasPrice(uint64 chainId, uint256 gasPrice) internal {
+    function _setExecGasPrice(uint64 chainId, uint64 gasPrice) internal {
         require(gasPrice > 0, "FeeOracleV2: no zero gas price");
         require(chainId != 0, "FeeOracleV2: no zero chain id");
 
@@ -193,7 +193,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     /**
      * @notice Set the data gas price for a destination chain.
      */
-    function _setDataGasPrice(uint64 chainId, uint256 gasPrice) internal {
+    function _setDataGasPrice(uint64 chainId, uint64 gasPrice) internal {
         require(gasPrice > 0, "FeeOracleV2: no zero gas price");
         require(chainId != 0, "FeeOracleV2: no zero chain id");
 
@@ -204,7 +204,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     /**
      * @notice Set the to-native conversion rate for a destination chain.
      */
-    function _setToNativeRate(uint64 chainId, uint256 rate) internal {
+    function _setToNativeRate(uint64 chainId, uint64 rate) internal {
         require(rate > 0, "FeeOracleV2: no zero rate");
         require(chainId != 0, "FeeOracleV2: no zero chain id");
 
@@ -215,7 +215,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     /**
      * @notice Set the base gas limit for each xmsg.
      */
-    function _setBaseGasLimit(uint64 gasLimit) internal {
+    function _setBaseGasLimit(uint24 gasLimit) internal {
         baseGasLimit = gasLimit;
         emit BaseGasLimitSet(gasLimit);
     }
@@ -223,7 +223,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     /**
      * @notice Set the base protocol fee for each xmsg.
      */
-    function _setProtocolFee(uint256 fee) internal {
+    function _setProtocolFee(uint72 fee) internal {
         protocolFee = fee;
         emit ProtocolFeeSet(fee);
     }
