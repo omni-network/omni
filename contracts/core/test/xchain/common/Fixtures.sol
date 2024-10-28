@@ -95,6 +95,23 @@ contract Fixtures is CommonBase, StdCheats, XSubGen {
         return _getSignatures(valSetId, digest);
     }
 
+    /// @dev Generate a new valset of an arbitrary size
+    function newValSet(uint32 valSetSize) public returns (uint64 valSetId) {
+        require(valSetSize >= 3, "Validator set size is too small");
+
+        valSetId = ++valsetCount;
+        Validator[] storage newValset = valset[valSetId];
+
+        for (uint32 i; i < valSetSize; ++i) {
+            Validator memory validator;
+            (address val, uint256 valPk) = deriveRememberKey(mnemonic, i);
+            validator = Validator(val, baseValPower, valPk);
+            newValset.push(validator);
+        }
+
+        return valSetId;
+    }
+
     /// @dev Sort sigs by validator address. OmniPortal.xsubmit expects sigs to be sorted.
     ///      Func is not really 'pure', because it modifies the input array in place. But it does not depend on contract state.
     function _sortSigsByAddr(XTypes.SigTuple[] memory sigs) internal pure {

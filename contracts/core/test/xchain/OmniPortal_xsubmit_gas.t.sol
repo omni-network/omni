@@ -16,27 +16,111 @@ import { console } from "forge-std/console.sol";
  */
 contract OmniPortal_xsubmit_gas_Test is Base {
     function test_xsubmit_guzzle1_succeeds() public {
-        _testGasSubmitXBlock("guzzle1", _guzzle_xblock({ numGuzzles: 1 }));
+        _testGasSubmitXBlock("guzzle1", 1, _guzzle_xblock({ numGuzzles: 1 }));
+    }
+
+    function test_xsubmit_guzzle1_10validators_succeeds() public {
+        uint64 valSetId = newValSet(10);
+        _silentTestGasSubmitXBlock(1, _addValidatorSet_xblock({ valSetId: 2 }), broadcastChainId);
+        _silentTestGasSubmitXBlock(2, _addValidatorSet_xblock({ valSetId: valSetId }), broadcastChainId);
+        _testGasSubmitXBlock("guzzle1", valSetId, _guzzle_xblock({ numGuzzles: 1 }));
+    }
+
+    function test_xsubmit_guzzle1_25validators_succeeds() public {
+        uint64 valSetId = newValSet(25);
+        _silentTestGasSubmitXBlock(1, _addValidatorSet_xblock({ valSetId: 2 }), broadcastChainId);
+        _silentTestGasSubmitXBlock(2, _addValidatorSet_xblock({ valSetId: valSetId }), broadcastChainId);
+        _testGasSubmitXBlock("guzzle1", valSetId, _guzzle_xblock({ numGuzzles: 1 }));
+    }
+
+    function test_xsubmit_guzzle1_100validators_succeeds() public {
+        uint64 valSetId = newValSet(100);
+        _silentTestGasSubmitXBlock(1, _addValidatorSet_xblock({ valSetId: 2 }), broadcastChainId);
+        _silentTestGasSubmitXBlock(2, _addValidatorSet_xblock({ valSetId: valSetId }), broadcastChainId);
+        _testGasSubmitXBlock("guzzle1", valSetId, _guzzle_xblock({ numGuzzles: 1 }));
     }
 
     function test_xsubmit_guzzle5_succeeds() public {
-        _testGasSubmitXBlock("guzzle5", _guzzle_xblock({ numGuzzles: 5 }));
+        _testGasSubmitXBlock("guzzle5", 1, _guzzle_xblock({ numGuzzles: 5 }));
+    }
+
+    function test_xsubmit_guzzle5_10validators_succeeds() public {
+        uint64 valSetId = newValSet(10);
+        _silentTestGasSubmitXBlock(1, _addValidatorSet_xblock({ valSetId: 2 }), broadcastChainId);
+        _silentTestGasSubmitXBlock(2, _addValidatorSet_xblock({ valSetId: valSetId }), broadcastChainId);
+        _testGasSubmitXBlock("guzzle5", valSetId, _guzzle_xblock({ numGuzzles: 5 }));
+    }
+
+    function test_xsubmit_guzzle5_25validators_succeeds() public {
+        uint64 valSetId = newValSet(25);
+        _silentTestGasSubmitXBlock(1, _addValidatorSet_xblock({ valSetId: 2 }), broadcastChainId);
+        _silentTestGasSubmitXBlock(2, _addValidatorSet_xblock({ valSetId: valSetId }), broadcastChainId);
+        _testGasSubmitXBlock("guzzle5", valSetId, _guzzle_xblock({ numGuzzles: 5 }));
     }
 
     function test_xsubmit_guzzle10_succeeds() public {
-        _testGasSubmitXBlock("guzzle10", _guzzle_xblock({ numGuzzles: 10 }));
+        _testGasSubmitXBlock("guzzle10", 1, _guzzle_xblock({ numGuzzles: 10 }));
+    }
+
+    function test_xsubmit_guzzle10_10validators_succeeds() public {
+        uint64 valSetId = newValSet(10);
+        _silentTestGasSubmitXBlock(1, _addValidatorSet_xblock({ valSetId: 2 }), broadcastChainId);
+        _silentTestGasSubmitXBlock(2, _addValidatorSet_xblock({ valSetId: valSetId }), broadcastChainId);
+        _testGasSubmitXBlock("guzzle10", valSetId, _guzzle_xblock({ numGuzzles: 10 }));
+    }
+
+    function test_xsubmit_guzzle10_25validators_succeeds() public {
+        uint64 valSetId = newValSet(25);
+        _silentTestGasSubmitXBlock(1, _addValidatorSet_xblock({ valSetId: 2 }), broadcastChainId);
+        _silentTestGasSubmitXBlock(2, _addValidatorSet_xblock({ valSetId: valSetId }), broadcastChainId);
+        _testGasSubmitXBlock("guzzle10", valSetId, _guzzle_xblock({ numGuzzles: 10 }));
     }
 
     function test_xsubmit_guzzle25_succeeds() public {
-        _testGasSubmitXBlock("guzzle25", _guzzle_xblock({ numGuzzles: 25 }));
+        _testGasSubmitXBlock("guzzle25", 1, _guzzle_xblock({ numGuzzles: 25 }));
+    }
+
+    function test_xsubmit_guzzle25_10validators_succeeds() public {
+        uint64 valSetId = newValSet(10);
+        _silentTestGasSubmitXBlock(1, _addValidatorSet_xblock({ valSetId: 2 }), broadcastChainId);
+        _silentTestGasSubmitXBlock(2, _addValidatorSet_xblock({ valSetId: valSetId }), broadcastChainId);
+        _testGasSubmitXBlock("guzzle25", valSetId, _guzzle_xblock({ numGuzzles: 25 }));
+    }
+
+    function test_xsubmit_guzzle25_25validators_succeeds() public {
+        uint64 valSetId = newValSet(25);
+        _silentTestGasSubmitXBlock(1, _addValidatorSet_xblock({ valSetId: 2 }), broadcastChainId);
+        _silentTestGasSubmitXBlock(2, _addValidatorSet_xblock({ valSetId: valSetId }), broadcastChainId);
+        _testGasSubmitXBlock("guzzle25", valSetId, _guzzle_xblock({ numGuzzles: 25 }));
     }
 
     function test_xsubmit_guzzle50_succeeds() public {
-        _testGasSubmitXBlock("guzzle50", _guzzle_xblock({ numGuzzles: 50 }));
+        _testGasSubmitXBlock("guzzle50", 1, _guzzle_xblock({ numGuzzles: 50 }));
+    }
+
+    function test_xsubmit_guzzle50_10validators_succeeds() public {
+        uint64 valSetId = newValSet(10);
+        _silentTestGasSubmitXBlock(1, _addValidatorSet_xblock({ valSetId: 2 }), broadcastChainId);
+        _silentTestGasSubmitXBlock(2, _addValidatorSet_xblock({ valSetId: valSetId }), broadcastChainId);
+        _testGasSubmitXBlock("guzzle50", valSetId, _guzzle_xblock({ numGuzzles: 50 }));
+    }
+
+    function test_xsubmit_guzzle50_25validators_succeeds() public {
+        uint64 valSetId = newValSet(25);
+        _silentTestGasSubmitXBlock(1, _addValidatorSet_xblock({ valSetId: 2 }), broadcastChainId);
+        _silentTestGasSubmitXBlock(2, _addValidatorSet_xblock({ valSetId: valSetId }), broadcastChainId);
+        _testGasSubmitXBlock("guzzle50", valSetId, _guzzle_xblock({ numGuzzles: 50 }));
+    }
+
+    function test_xsubmit_guzzle50_100validators_succeeds() public {
+        uint64 valSetId = newValSet(100);
+        _silentTestGasSubmitXBlock(1, _addValidatorSet_xblock({ valSetId: 2 }), broadcastChainId);
+        _silentTestGasSubmitXBlock(2, _addValidatorSet_xblock({ valSetId: valSetId }), broadcastChainId);
+        _testGasSubmitXBlock("guzzle50", valSetId, _guzzle_xblock({ numGuzzles: 50 }));
     }
 
     function test_xsubmit_addValidator_succeeds() public {
-        _testGasSubmitXBlock("addValSet2", _addValidatorSet_xblock({ valSetId: 2 }), broadcastChainId);
+        _testGasSubmitXBlock("addValSet2", 1, _addValidatorSet_xblock({ valSetId: 2 }), broadcastChainId);
     }
 
     function test_singleExec() public {
@@ -59,13 +143,33 @@ contract OmniPortal_xsubmit_gas_Test is Base {
         }
     }
 
-    function _testGasSubmitXBlock(string memory name, TestXTypes.Block memory xblock) internal {
-        _testGasSubmitXBlock(name, xblock, thisChainId);
+    function _silentTestGasSubmitXBlock(uint64 valSetId, TestXTypes.Block memory xblock, uint64 destChainId) internal {
+        XTypes.Submission memory xsub =
+            makeXSub(valSetId, xblock.blockHeader, xblock.msgs, msgFlagsForDest(xblock.msgs, destChainId));
+
+        uint64 sourceChainId = xsub.blockHeader.sourceChainId;
+        uint64 shardId = xsub.msgs[xsub.msgs.length - 1].shardId;
+        uint64 expectedOffset = xsub.msgs[xsub.msgs.length - 1].offset;
+
+        vm.chainId(destChainId);
+        portal.xsubmit(xsub);
+
+        assertEq(portal.inXMsgOffset(sourceChainId, shardId), expectedOffset);
+        assertEq(portal.inXBlockOffset(sourceChainId, shardId), xsub.blockHeader.offset);
     }
 
-    function _testGasSubmitXBlock(string memory name, TestXTypes.Block memory xblock, uint64 destChainId) internal {
+    function _testGasSubmitXBlock(string memory name, uint64 valSetId, TestXTypes.Block memory xblock) internal {
+        _testGasSubmitXBlock(name, valSetId, xblock, thisChainId);
+    }
+
+    function _testGasSubmitXBlock(
+        string memory name,
+        uint64 valSetId,
+        TestXTypes.Block memory xblock,
+        uint64 destChainId
+    ) internal {
         XTypes.Submission memory xsub =
-            makeXSub(1, xblock.blockHeader, xblock.msgs, msgFlagsForDest(xblock.msgs, destChainId));
+            makeXSub(valSetId, xblock.blockHeader, xblock.msgs, msgFlagsForDest(xblock.msgs, destChainId));
 
         uint64 sourceChainId = xsub.blockHeader.sourceChainId;
         uint64 shardId = xsub.msgs[xsub.msgs.length - 1].shardId;
