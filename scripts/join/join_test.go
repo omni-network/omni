@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,6 +18,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
+	"github.com/omni-network/omni/lib/umath"
 
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 
@@ -98,6 +100,8 @@ func TestJoinOmega(t *testing.T) {
 		timeoutCtx, timeoutCancel := context.WithTimeout(ctx, timeout)
 		defer timeoutCancel()
 
+		var t1 time.Time // When target execution height identified
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -122,6 +126,12 @@ func TestJoinOmega(t *testing.T) {
 				execHeight := execStatus.CurrentBlock
 				execTarget := execStatus.HighestBlock
 
+				if t1.IsZero() && execTarget > 0 {
+					t1 = time.Now()
+				}
+
+				eta, bps := estimate(execHeight, execTarget, time.Since(t1))
+
 				log.Info(ctx, "Status",
 					"cstatus", haloStatus,
 					"csynced", haloSynced,
@@ -130,6 +140,8 @@ func TestJoinOmega(t *testing.T) {
 					"eheight", execHeight,
 					"etarget", execTarget,
 					"duration", time.Since(t0).Truncate(time.Second),
+					"eta", eta,
+					"bps", bps,
 				)
 
 				if haloStatus == "healthy" {
@@ -153,6 +165,21 @@ func TestJoinOmega(t *testing.T) {
 		printLogsTail(t, logsPath)
 		tutil.RequireNoError(t, err)
 	}
+}
+
+// estimate returns the estimated time until the target height is reached, and blocks per second given
+// current height and time since start.
+func estimate(height uint64, target uint64, since time.Duration) (time.Duration, float64) {
+	remaining, ok := umath.Subtract(target, height)
+	if !ok || height == 0 {
+		return 0, 0
+	}
+
+	eta := since * time.Duration(float64(remaining)/float64(height))
+
+	bps := float64(height) / since.Seconds()
+
+	return eta.Truncate(time.Second), math.Round(bps)
 }
 
 func printLogsTail(t *testing.T, path string) {
