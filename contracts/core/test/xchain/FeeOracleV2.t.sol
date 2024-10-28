@@ -176,7 +176,7 @@ contract FeeOracleV2_Test is Test {
     }
 
     function test_setProtocolFee() public {
-        uint64 newProtocolFee = feeOracle.protocolFee() + 1 gwei;
+        uint72 newProtocolFee = feeOracle.protocolFee() + 1 gwei;
 
         // only owner can set protocol fee
         address notOwner = address(0x456);
@@ -191,7 +191,7 @@ contract FeeOracleV2_Test is Test {
     }
 
     function test_setBaseGasLimit() public {
-        uint32 newBaseGasLimit = feeOracle.baseGasLimit() + 10_000;
+        uint24 newBaseGasLimit = feeOracle.baseGasLimit() + 10_000;
 
         // only owner can set base gas limit
         address notOwner = address(0x456);

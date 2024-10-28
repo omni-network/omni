@@ -10,22 +10,22 @@ import { IConversionRateOracle } from "./IConversionRateOracle.sol";
  */
 interface IFeeOracleV2 is IFeeOracle, IConversionRateOracle {
     /// @notice Emitted when fee parameters for a chain are set.
-    event FeeParamsSet(uint64 chainId, uint256 execGasPrice, uint256 dataGasPrice, uint256 toNativeRate);
+    event FeeParamsSet(uint64 chainId, uint64 execGasPrice, uint64 dataGasPrice, uint64 toNativeRate);
 
     /// @notice Emitted when the base gas limit is set.
-    event BaseGasLimitSet(uint64 baseGasLimit);
+    event BaseGasLimitSet(uint24 baseGasLimit);
 
     /// @notice Emitted when the base protocol fee is set.
-    event ProtocolFeeSet(uint256 protocolFee);
+    event ProtocolFeeSet(uint72 protocolFee);
 
     /// @notice Emitted when the gas price for a destination chain is set.
-    event ExecGasPriceSet(uint64 chainId, uint256 gasPrice);
+    event ExecGasPriceSet(uint64 chainId, uint64 gasPrice);
 
     /// @notice Emitted when the data gas price for a destination chain is set.
-    event DataGasPriceSet(uint64 chainId, uint256 gasPrice);
+    event DataGasPriceSet(uint64 chainId, uint64 gasPrice);
 
     /// @notice Emitted when the to-native conversion rate for a destination chain is set.
-    event ToNativeRateSet(uint64 chainId, uint256 toNativeRate);
+    event ToNativeRateSet(uint64 chainId, uint64 toNativeRate);
 
     /// @notice Emitted when the manager is changed.
     event ManagerSet(address manager);
@@ -62,10 +62,10 @@ interface IFeeOracleV2 is IFeeOracle, IConversionRateOracle {
     function manager() external view returns (address);
 
     /// @notice Returns the protocol fee.
-    function protocolFee() external view returns (uint64);
+    function protocolFee() external view returns (uint72);
 
     /// @notice Returns the base gas limit.
-    function baseGasLimit() external view returns (uint32);
+    function baseGasLimit() external view returns (uint24);
 
     /// @notice Set the fee parameters for a list of destination chains.
     function bulkSetFeeParams(FeeParams[] calldata params) external;
@@ -80,10 +80,10 @@ interface IFeeOracleV2 is IFeeOracle, IConversionRateOracle {
     function setToNativeRate(uint64 chainId, uint64 toNativeRate) external;
 
     /// @notice Set the base gas limit for each xmsg.
-    function setBaseGasLimit(uint32 gasLimit) external;
+    function setBaseGasLimit(uint24 gasLimit) external;
 
     /// @notice Set the base protocol fee for each xmsg.
-    function setProtocolFee(uint64 fee) external;
+    function setProtocolFee(uint72 fee) external;
 
     /// @notice Set the manager admin account.
     function setManager(address manager) external;

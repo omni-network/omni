@@ -14,12 +14,12 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     /**
      * @notice Base protocol fee for each xmsg.
      */
-    uint64 public protocolFee;
+    uint72 public protocolFee;
 
     /**
      * @notice Base gas limit for each xmsg.
      */
-    uint32 public baseGasLimit;
+    uint24 public baseGasLimit;
 
     /**
      * @notice Address allowed to set gas prices and to-native conversion rates.
@@ -48,8 +48,8 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     function initialize(
         address owner_,
         address manager_,
-        uint32 baseGasLimit_,
-        uint64 protocolFee_,
+        uint24 baseGasLimit_,
+        uint72 protocolFee_,
         FeeParams[] calldata params
     ) public initializer {
         __Ownable_init(owner_);
@@ -142,14 +142,14 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     /**
      * @notice Set the base gas limit for each xmsg.
      */
-    function setBaseGasLimit(uint32 gasLimit) external onlyOwner {
+    function setBaseGasLimit(uint24 gasLimit) external onlyOwner {
         _setBaseGasLimit(gasLimit);
     }
 
     /**
      * @notice Set the base protocol fee for each xmsg.
      */
-    function setProtocolFee(uint64 fee) external onlyOwner {
+    function setProtocolFee(uint72 fee) external onlyOwner {
         _setProtocolFee(fee);
     }
 
@@ -215,7 +215,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     /**
      * @notice Set the base gas limit for each xmsg.
      */
-    function _setBaseGasLimit(uint32 gasLimit) internal {
+    function _setBaseGasLimit(uint24 gasLimit) internal {
         baseGasLimit = gasLimit;
         emit BaseGasLimitSet(gasLimit);
     }
@@ -223,7 +223,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     /**
      * @notice Set the base protocol fee for each xmsg.
      */
-    function _setProtocolFee(uint64 fee) internal {
+    function _setProtocolFee(uint72 fee) internal {
         protocolFee = fee;
         emit ProtocolFeeSet(fee);
     }
