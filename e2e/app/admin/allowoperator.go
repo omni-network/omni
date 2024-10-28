@@ -26,6 +26,7 @@ var omegaOperators = []common.Address{
 	common.HexToAddress("0xb86DDe58C05dF3C09a8eB7476152793138D113C9"), // Chorusone
 	common.HexToAddress("0xcf8EB4Ee3cb3C9c14a4b290bD902dC06d2926ec1"), // P-OPS
 	common.HexToAddress("0x27eA917d14d637797FDeb3f9A9824395e7744941"), // DAIC
+	common.HexToAddress("0x44Fb4c265E551139e4D3956Aba6fe2DEa27AE4De"), // Finoa
 }
 
 // AllowOperators ensures that all operators hard-coded in this package is allowed as validators.
