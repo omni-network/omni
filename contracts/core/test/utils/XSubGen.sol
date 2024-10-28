@@ -5,7 +5,7 @@ import { MerkleGen } from "multiproof/src/MerkleGen.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
 import { MerkleProof } from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import { XBlockMerkleProof } from "src/libraries/XBlockMerkleProof.sol";
-import { OmniPortal } from "src/xchain/OmniPortal.sol";
+import { PortalHarness } from "test/xchain/common/PortalHarness.sol";
 import { Test } from "forge-std/Test.sol";
 
 /**
@@ -15,6 +15,9 @@ import { Test } from "forge-std/Test.sol";
 contract XSubGen is Test {
     string constant mnemonic = "test test test test test test test test test test test junk";
 
+    uint64 constant baseValPower = 100;
+    uint64 constant genesisValSetId = 1;
+
     struct Validator {
         address addr;
         uint64 power;
@@ -23,7 +26,7 @@ contract XSubGen is Test {
 
     mapping(uint64 => Validator[]) public valset;
 
-    OmniPortal public portal;
+    PortalHarness public portal;
 
     constructor() {
         _initGenesisVals();
@@ -31,7 +34,7 @@ contract XSubGen is Test {
 
     /// @dev Set the OmniPortal contract address
     function setPortal(address portalAddr) public {
-        portal = OmniPortal(portalAddr);
+        portal = PortalHarness(portalAddr);
     }
 
     /// @dev Make a mock xheader from source chain id and conf level
@@ -49,7 +52,7 @@ contract XSubGen is Test {
     }
 
     /// @dev Make an xsubmission signed by the genesis valset, with the given xheader and xmsgs.
-    function makeXSub(XTypes.BlockHeader memory xheader, XTypes.Msg[] memory msgs)
+    function makeXSub(uint64 valSetId, XTypes.BlockHeader memory xheader, XTypes.Msg[] memory msgs)
         public
         view
         returns (XTypes.Submission memory)
@@ -59,7 +62,7 @@ contract XSubGen is Test {
             msgFlags[i] = true;
         }
 
-        return makeXSub(1, xheader, msgs, msgFlags);
+        return makeXSub(valSetId, xheader, msgs, msgFlags);
     }
 
     /// @dev Make an xsubmission signed by `valSetId`, with the given xheader and selected xmsgs.
@@ -96,6 +99,15 @@ contract XSubGen is Test {
         });
     }
 
+    /// @dev Set msgFlags according to destChainId
+    function msgFlagsForDest(XTypes.Msg[] memory msgs, uint64 destChainId) public pure returns (bool[] memory) {
+        bool[] memory msgFlags = new bool[](msgs.length);
+        for (uint256 i; i < msgs.length; ++i) {
+            if (msgs[i].destChainId == destChainId) msgFlags[i] = true;
+        }
+        return msgFlags;
+    }
+
     /// @dev Get the validator set for a given valSetId
     function getVals(uint64 valSetId) public view returns (XTypes.Validator[] memory) {
         XTypes.Validator[] memory vals = new XTypes.Validator[](valset[valSetId].length);
@@ -126,25 +138,35 @@ contract XSubGen is Test {
         Validator memory v2;
         Validator memory v3;
         Validator memory v4;
+        Validator memory v5;
 
-        uint64 basePower = 100;
-        uint64 genesisValSetId = 1;
+        {
+            (address val1, uint256 val1PK) = deriveRememberKey(mnemonic, 0);
+            (address val2, uint256 val2Pk) = deriveRememberKey(mnemonic, 1);
+            (address val3, uint256 val3Pk) = deriveRememberKey(mnemonic, 2);
+            (address val4, uint256 val4Pk) = deriveRememberKey(mnemonic, 3);
+            (address val5, uint256 val5Pk) = deriveRememberKey(mnemonic, 4);
 
-        (address val1, uint256 val1PK) = deriveRememberKey(mnemonic, 0);
-        (address val2, uint256 val2Pk) = deriveRememberKey(mnemonic, 1);
-        (address val3, uint256 val3Pk) = deriveRememberKey(mnemonic, 2);
-        (address val4, uint256 val4Pk) = deriveRememberKey(mnemonic, 3);
+            v1 = Validator(val1, baseValPower, val1PK);
+            v2 = Validator(val2, baseValPower, val2Pk);
+            v3 = Validator(val3, baseValPower, val3Pk);
+            v4 = Validator(val4, baseValPower, val4Pk);
+            v5 = Validator(val5, baseValPower, val5Pk);
+        }
 
-        v1 = Validator(val1, basePower, val1PK);
-        v2 = Validator(val2, basePower, val2Pk);
-        v3 = Validator(val3, basePower, val3Pk);
-        v4 = Validator(val4, basePower, val4Pk);
-
+        // only use 1-4 for val set 1
         Validator[] storage genVals = valset[genesisValSetId];
         genVals.push(v1);
         genVals.push(v2);
         genVals.push(v3);
         genVals.push(v4);
+
+        // val set 2 adds one validator, and removes val2
+        Validator[] storage valSet2 = valset[genesisValSetId + 1];
+        valSet2.push(v1);
+        valSet2.push(v3);
+        valSet2.push(v4);
+        valSet2.push(v5);
     }
 
     /// @dev Sort sigs by validator address. OmniPortal.xsubmit expects sigs to be sorted.

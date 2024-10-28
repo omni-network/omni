@@ -4,6 +4,7 @@ pragma solidity =0.8.24;
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { Base } from "./common/Base.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
+import { TestXTypes } from "./common/TestXTypes.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
 
 /**
@@ -46,7 +47,9 @@ contract OmniPortal_admin_Test is Base {
         portal.xcall{ value: 1 ether }(chainAId, conf, to, data, gasLimit);
 
         // xsubmit
-        XTypes.Submission memory xsub1 = readXSubmission({ name: "xblock1", destChainId: thisChainId });
+        TestXTypes.Block memory xblock1 = _xblock({ offset: 1, xmsgOffset: 1 });
+        XTypes.Submission memory xsub1 =
+            makeXSub(1, xblock1.blockHeader, xblock1.msgs, msgFlagsForDest(xblock1.msgs, thisChainId));
         vm.chainId(thisChainId);
         portal.xsubmit(xsub1);
 

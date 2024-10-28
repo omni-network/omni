@@ -71,7 +71,8 @@ contract OmniPortal_Test is OmniPortalFixtures {
         msgFlags[2] = false;
 
         // make and submit the xsubmission
-        XTypes.Submission memory xsub = xsubgen.makeXSub(valSetId, xheader, msgs, msgFlags);
+        XTypes.Submission memory xsub =
+            xsubgen.makeXSub(valSetId, xheader, msgs, xsubgen.msgFlagsForDest(msgs, thisChainId));
         portal.xsubmit(xsub);
 
         // check that the counter has been incremented

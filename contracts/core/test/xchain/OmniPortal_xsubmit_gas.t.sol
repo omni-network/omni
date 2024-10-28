@@ -2,6 +2,7 @@
 pragma solidity =0.8.24;
 
 import { XTypes } from "src/libraries/XTypes.sol";
+import { TestXTypes } from "./common/TestXTypes.sol";
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 
 import { Base } from "./common/Base.sol";
@@ -15,31 +16,33 @@ import { console } from "forge-std/console.sol";
  */
 contract OmniPortal_xsubmit_gas_Test is Base {
     function test_xsubmit_guzzle1_succeeds() public {
-        _testGasSubmitXBlock("guzzle1");
+        _testGasSubmitXBlock("guzzle1", _guzzle_xblock({ numGuzzles: 1 }));
     }
 
     function test_xsubmit_guzzle5_succeeds() public {
-        _testGasSubmitXBlock("guzzle5");
+        _testGasSubmitXBlock("guzzle5", _guzzle_xblock({ numGuzzles: 5 }));
     }
 
     function test_xsubmit_guzzle10_succeeds() public {
-        _testGasSubmitXBlock("guzzle10");
+        _testGasSubmitXBlock("guzzle10", _guzzle_xblock({ numGuzzles: 10 }));
     }
 
     function test_xsubmit_guzzle25_succeeds() public {
-        _testGasSubmitXBlock("guzzle25");
+        _testGasSubmitXBlock("guzzle25", _guzzle_xblock({ numGuzzles: 25 }));
     }
 
     function test_xsubmit_guzzle50_succeeds() public {
-        _testGasSubmitXBlock("guzzle50");
+        _testGasSubmitXBlock("guzzle50", _guzzle_xblock({ numGuzzles: 50 }));
     }
 
     function test_xsubmit_addValidator_succeeds() public {
-        _testGasSubmitXBlock("addValSet2", broadcastChainId);
+        _testGasSubmitXBlock("addValSet2", _addValidatorSet_xblock({ valSetId: 2 }), broadcastChainId);
     }
 
     function test_singleExec() public {
-        XTypes.Submission memory xsub = readXSubmission({ name: "guzzle5", destChainId: thisChainId });
+        TestXTypes.Block memory guzzle5 = _guzzle_xblock({ numGuzzles: 5 });
+        XTypes.Submission memory xsub =
+            makeXSub(1, guzzle5.blockHeader, guzzle5.msgs, msgFlagsForDest(guzzle5.msgs, thisChainId));
         XTypes.Msg memory xmsg;
 
         for (uint256 i = 0; i < xsub.msgs.length; i++) {
@@ -56,12 +59,13 @@ contract OmniPortal_xsubmit_gas_Test is Base {
         }
     }
 
-    function _testGasSubmitXBlock(string memory name) internal {
-        _testGasSubmitXBlock(name, thisChainId);
+    function _testGasSubmitXBlock(string memory name, TestXTypes.Block memory xblock) internal {
+        _testGasSubmitXBlock(name, xblock, thisChainId);
     }
 
-    function _testGasSubmitXBlock(string memory name, uint64 destChainId) internal {
-        XTypes.Submission memory xsub = readXSubmission(name, destChainId, genesisValSetId);
+    function _testGasSubmitXBlock(string memory name, TestXTypes.Block memory xblock, uint64 destChainId) internal {
+        XTypes.Submission memory xsub =
+            makeXSub(1, xblock.blockHeader, xblock.msgs, msgFlagsForDest(xblock.msgs, destChainId));
 
         uint64 sourceChainId = xsub.blockHeader.sourceChainId;
         uint64 shardId = xsub.msgs[xsub.msgs.length - 1].shardId;
