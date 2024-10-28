@@ -183,7 +183,7 @@ func estimate(height uint64, target uint64, since time.Duration) (time.Duration,
 		return 0, 0
 	}
 
-	eta := since * time.Duration(float64(remaining)/float64(height))
+	eta := time.Duration(float64(since) * float64(remaining) / float64(height))
 
 	bps := float64(height) / since.Seconds()
 
