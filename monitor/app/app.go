@@ -103,6 +103,7 @@ func Run(ctx context.Context, cfg Config) error {
 	go monitorUpgradesForever(ctx, cprov)
 	go routerecon.ReconForever(ctx, network, xprov, ethClients)
 	go validator.MonitorForever(ctx, cprov)
+	go monitorPublicRPCForever(ctx, network, ethClients)
 
 	select {
 	case <-ctx.Done():
