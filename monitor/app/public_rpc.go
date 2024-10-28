@@ -10,17 +10,15 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 )
 
-const (
-	quicknodePublicRPC = "https://damp-wandering-gadget.omni-omega.quiknode.pro"
-)
+const omegaPublicRPC = "https://damp-wandering-gadget.omni-omega.quiknode.pro"
 
-func monitorQuicknodePublicRPCForever(
+func monitorPublicRPCForever(
 	ctx context.Context,
 	network netconf.Network,
 	ethClients map[uint64]ethclient.Client,
 ) {
 	if network.ID != netconf.Omega {
-		return // No other network has a quicknode RPC yet
+		return // no public URL exists
 	}
 
 	omniChain, exist := network.OmniEVMChain()
@@ -28,9 +26,11 @@ func monitorQuicknodePublicRPCForever(
 		return
 	}
 
-	quicknodeRPC, err := ethclient.Dial(omniChain.Name, quicknodePublicRPC)
+	log.Info(ctx, "Setting up monitoring of a public RPC for %v", network.ID)
+
+	publicRPC, err := ethclient.Dial(omniChain.Name, omegaPublicRPC)
 	if err != nil {
-		log.Error(ctx, "Failed to dial into quicknode public rpc", err)
+		log.Error(ctx, "Failed to dial into public RPC", err)
 		return
 	}
 
@@ -44,27 +44,27 @@ func monitorQuicknodePublicRPCForever(
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			err := monitorQuicknodePublicRPCOnce(ctx, omniNodeRPC, quicknodeRPC)
+			err := monitorPublicRPCOnce(ctx, omniNodeRPC, publicRPC)
 			if err != nil {
-				log.Warn(ctx, "Failed monitoring quicknode RPC endpoint (will retry)", err)
+				log.Warn(ctx, "Failed monitoring public RPC endpoint (will retry)", err)
 			}
 		}
 	}
 }
 
-func monitorQuicknodePublicRPCOnce(ctx context.Context, omniNodeRPC, quicknodeRPC ethclient.Client) error {
+func monitorPublicRPCOnce(ctx context.Context, omniNodeRPC, publicRPC ethclient.Client) error {
 	omniNodeProgress, err := omniNodeRPC.SyncProgress(ctx)
 	if err != nil {
 		return errors.Wrap(err, "omni node sync progress")
 	}
 
-	quicknodeProgress, err := quicknodeRPC.SyncProgress(ctx)
+	publicRPCProgress, err := publicRPC.SyncProgress(ctx)
 	if err != nil {
-		return errors.Wrap(err, "quicknode sync progress")
+		return errors.Wrap(err, "public RPC sync progress")
 	}
 
-	heightDiff := float64(omniNodeProgress.HighestBlock) - float64(quicknodeProgress.HighestBlock)
-	quicknodeRPCSyncDiff.Set(heightDiff)
+	heightDiff := float64(omniNodeProgress.HighestBlock) - float64(publicRPCProgress.HighestBlock)
+	publicRPCSyncDiff.Set(heightDiff)
 
 	return nil
 }
