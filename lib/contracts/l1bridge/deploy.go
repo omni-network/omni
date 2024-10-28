@@ -153,7 +153,7 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 		return common.Address{}, nil, errors.Wrap(err, "pack init code")
 	}
 
-	tx, err = factory.Deploy(txOpts, salt, initCode)
+	tx, err = factory.DeployWithRetry(txOpts, salt, initCode) //nolint:contextcheck // Context is txOpts
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "deploy proxy")
 	}
