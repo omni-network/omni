@@ -26,6 +26,8 @@ contract XSubGen is Test {
 
     mapping(uint64 => Validator[]) public valset;
 
+    uint32 public valsetCount;
+
     PortalHarness public portal;
 
     constructor() {
@@ -160,6 +162,7 @@ contract XSubGen is Test {
         genVals.push(v2);
         genVals.push(v3);
         genVals.push(v4);
+        ++valsetCount;
 
         // val set 2 adds one validator, and removes val2
         Validator[] storage valSet2 = valset[genesisValSetId + 1];
@@ -167,6 +170,7 @@ contract XSubGen is Test {
         valSet2.push(v3);
         valSet2.push(v4);
         valSet2.push(v5);
+        ++valsetCount;
     }
 
     /// @dev Sort sigs by validator address. OmniPortal.xsubmit expects sigs to be sorted.
