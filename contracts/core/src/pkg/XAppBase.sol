@@ -68,6 +68,13 @@ abstract contract XAppBase {
 
     /**
      * @notice Call a contract on another. (Default ConfLevel)
+     * @dev This function pays the xcall fee to the OmniPortal from the
+     *      contract's balance. If you would prefer charge callers for the
+     *      fee, you must check msg.value.
+     *      Ex:
+     *          uint256 fee = xcall(...)
+     *          require(msg.value >= fee)
+     *
      * @param destChainId   Destination chain ID
      * @param to            Address of contract to call on destination chain
      * @param data          ABI Encoded function calldata
@@ -75,13 +82,20 @@ abstract contract XAppBase {
      */
     function xcall(uint64 destChainId, address to, bytes memory data, uint64 gasLimit) internal returns (uint256) {
         uint256 fee = omni.feeFor(destChainId, data, gasLimit);
-        require(address(this).balance >= fee || msg.value >= fee, "XApp: insufficient funds");
+        require(address(this).balance >= fee, "XApp: insufficient funds");
         omni.xcall{ value: fee }(destChainId, defaultConfLevel, to, data, gasLimit);
         return fee;
     }
 
     /**
      * @notice Call a contract on another chain. (Explicit ConfLevel)
+     * @dev This function pays the xcall fee to the OmniPortal from the
+     *      contract's balance. If you would prefer charge callers for the
+     *      fee, you must check msg.value.
+     *      Ex:
+     *          uint256 fee = xcall(...)
+     *          require(msg.value >= fee)
+     *
      * @param destChainId   Destination chain ID
      * @param conf          Confirmation level
      * @param to            Address of contract to call on destination chain
@@ -93,7 +107,7 @@ abstract contract XAppBase {
         returns (uint256)
     {
         uint256 fee = omni.feeFor(destChainId, data, gasLimit);
-        require(address(this).balance >= fee || msg.value >= fee, "XApp: insufficient funds");
+        require(address(this).balance >= fee, "XApp: insufficient funds");
         omni.xcall{ value: fee }(destChainId, conf, to, data, gasLimit);
         return fee;
     }
