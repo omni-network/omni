@@ -2,7 +2,7 @@
 
 Currently, anyone can run a node on Omega Testnet. Stay tuned for running full nodes on mainnet.
 
-Check out our latest [releases](https://github.com/omni-network/omni/releases/tag/latest).
+Check out our latest [releases](https://github.com/omni-network/omni/releases/latest).
 
 ## Omni Omega Testnet
 
