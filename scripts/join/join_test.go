@@ -1,7 +1,9 @@
 package join_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"math"
@@ -111,6 +113,8 @@ func TestJoinOmega(t *testing.T) {
 			case <-ticker.C:
 				haloStatus, err := retry(ctx, haloStatus)
 				require.NoError(t, err)
+				stats, err := retry(ctx, getContainerStats)
+				require.NoError(t, err)
 
 				// CometBFT RPC errors while syncing, so best effort fetch
 				var haloSynced bool
@@ -136,10 +140,14 @@ func TestJoinOmega(t *testing.T) {
 					"cstatus", haloStatus,
 					"csynced", haloSynced,
 					"cheight", haloHeight,
+					"ccpu", stats.HaloCPU,
+					"crx", stats.HaloRX,
 					"esynced", execSynced,
 					"eheight", execHeight,
 					"etarget", execTarget,
-					"duration", time.Since(t0).Truncate(time.Second),
+					"ecpu", stats.EVMCPU,
+					"erx", stats.EVMRX,
+					"duration", time.Since(t0).Truncate(10*time.Second),
 					"eta", eta,
 					"bps", bps,
 				)
@@ -240,4 +248,57 @@ func getGitCommit7(t *testing.T) string {
 	require.NoError(t, err)
 
 	return string(out)[0:7]
+}
+
+type stats struct {
+	HaloCPU string
+	HaloRX  string
+	EVMCPU  string
+	EVMRX   string
+}
+
+type statsJSON struct {
+	BlockIO   string `json:"BlockIO"`
+	CPUPerc   string `json:"CPUPerc"`
+	Container string `json:"Container"`
+	ID        string `json:"ID"`
+	MemPerc   string `json:"MemPerc"`
+	MemUsage  string `json:"MemUsage"`
+	Name      string `json:"Name"`
+	NetIO     string `json:"NetIO"`
+	PIDs      string `json:"PIDs"`
+}
+
+// getContainerStats returns halo and omni_evm CPU and network RX stats.
+func getContainerStats(ctx context.Context) (stats, error) {
+	out, err := exec.CommandContext(ctx, "docker", "stats", "--format=json", "--no-stream", "--no-trunc").CombinedOutput()
+	if err != nil {
+		return stats{}, errors.Wrap(err, "docker stats")
+	}
+
+	var resp stats
+	for _, line := range bytes.Split(out, []byte("\n")) {
+		line = bytes.TrimSpace(line)
+		if string(line) == "" {
+			continue
+		}
+
+		var s statsJSON
+		err := json.Unmarshal(line, &s)
+		if err != nil {
+			return stats{}, errors.Wrap(err, "json unmarshal")
+		}
+
+		cpu := strings.TrimSpace(s.CPUPerc)
+		rx := strings.TrimSpace(strings.Split(s.NetIO, "/")[0])
+		if s.Name == "halo" {
+			resp.HaloCPU = cpu
+			resp.HaloRX = rx
+		} else if s.Name == "omni_evm" {
+			resp.EVMCPU = cpu
+			resp.EVMRX = rx
+		}
+	}
+
+	return resp, nil
 }
