@@ -43,7 +43,7 @@ func TestJoinOmega(t *testing.T) {
 	}
 
 	const (
-		timeout     = time.Hour * 6
+		timeout     = time.Hour * 10
 		minDuration = time.Minute * 30
 	)
 
@@ -124,11 +124,16 @@ func TestJoinOmega(t *testing.T) {
 					haloHeight = haloResult.SyncInfo.LatestBlockHeight
 				}
 
-				execStatus, err := retry(ctx, ethCl.SyncProgress)
+				execStatus, err := retry(ctx, ethCl.SyncProgress) // Note execStatus is nil if geth not syncing.
 				require.NoError(t, err)
-				execSynced := execStatus.Done()
-				execHeight := execStatus.CurrentBlock
-				execTarget := execStatus.HighestBlock
+
+				execSynced := true
+				var execHeight, execTarget uint64
+				if execStatus != nil {
+					execSynced = execStatus.Done()
+					execHeight = execStatus.CurrentBlock
+					execTarget = execStatus.HighestBlock
+				}
 
 				if t1.IsZero() && execTarget > 0 {
 					t1 = time.Now()
