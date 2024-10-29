@@ -2,7 +2,6 @@ package monitor
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -18,6 +17,10 @@ func monitorPublicRPCForever(
 ) {
 	omniChain, exist := network.OmniEVMChain()
 	if !exist {
+		return
+	}
+
+	if ethClients == nil {
 		return
 	}
 
@@ -50,14 +53,14 @@ func monitorPublicRPCForever(
 // publicRPCEndpoint returns the public RPC endpoint for the network and chain specified.
 // If no public RPC is known, return a node of the chain directly.
 func publicRPCEndpoint(network netconf.Network, chain netconf.Chain, ethClients map[uint64]ethclient.Client) (ethclient.Client, error) {
-	subdomains := map[netconf.ID]string{
-		netconf.Staging: "staging",
-		netconf.Omega:   "quicknode.omega", // TODO: delete quicknode subdomain
-		netconf.Mainnet: "mainnet",
+	urls := map[netconf.ID]string{
+		netconf.Staging: "https://staging.omni.network",
+		netconf.Omega:   "https://quicknode.omega.omni.network", // TODO: delete quicknode subdomain
+		netconf.Mainnet: "https://mainnet.omni.network",
 	}
 
-	if subdomain, exists := subdomains[network.ID]; exists {
-		return ethclient.Dial(chain.Name, fmt.Sprintf("https://%v.omni.network", subdomain))
+	if url, exists := urls[network.ID]; exists {
+		return ethclient.Dial(chain.Name, url)
 	}
 
 	return ethClients[chain.ID], nil
