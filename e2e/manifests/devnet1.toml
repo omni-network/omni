@@ -4,6 +4,7 @@ anvil_chains = ["mock_l1", "mock_l2"]
 
 multi_omni_evms = true
 prometheus = true
+pingpong_n = 30 # Increased ping pong to span validator updates
 
 [node.validator01]
 [node.validator02]

@@ -13,7 +13,6 @@ import (
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/expbackoff"
-	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/umath"
@@ -344,54 +343,11 @@ func newABCIAllAttsFunc(cl atypes.QueryClient) allAttsFunc {
 }
 
 func newABCIFetchFunc(attCl atypes.QueryClient, cmtCl cmtservice.ServiceClient, chainNamer func(xchain.ChainVersion) string) fetchFunc {
-	return func(ctx context.Context, chainVer xchain.ChainVersion, fromOffset uint64) ([]xchain.Attestation, error) {
-		const endpoint = "fetch_attestations"
-		defer latency(endpoint)()
-
-		ctx, span := tracer.Start(ctx, spanName(endpoint))
-		defer span.End()
-
-		chainName := chainNamer(chainVer)
-
-		// try fetching from latest height
-		atts, ok, err := attsFromAtHeight(ctx, attCl, chainVer, fromOffset, 0)
-		if err != nil {
-			incQueryErr(endpoint)
-			return nil, errors.Wrap(err, "abci query attestations-from")
-		} else if ok {
-			fetchStepsMetrics(chainName, 0, 0)
-			return atts, nil
-		}
-
-		earliestAttestationAtLatestHeight, ok, err := queryEarliestAttestation(ctx, attCl, chainVer, 0)
-		if err != nil {
-			incQueryErr(endpoint)
-			return nil, errors.Wrap(err, "abci query earliest-attestation-in-state")
-		}
-
-		// Either no attestations have happened yet, or the queried fromOffset is in the "future"
-		// Caller has to wait and retry in both cases
-		if !ok || earliestAttestationAtLatestHeight.AttestOffset < fromOffset {
-			// First attestation hasn't happened yet, return empty
-			return []xchain.Attestation{}, nil
-		}
-
-		offsetHeight, err := searchOffsetInHistory(ctx, cmtCl, attCl, chainVer, chainName, fromOffset)
-		if err != nil {
-			incQueryErr(endpoint)
-			return nil, errors.Wrap(err, "searching offset in history")
-		}
-
-		atts, ok, err = attsFromAtHeight(ctx, attCl, chainVer, fromOffset, offsetHeight)
-		if err != nil {
-			incQueryErr(endpoint)
-			return nil, errors.Wrap(err, "abci query attestations-from")
-		} else if !ok {
-			return nil, errors.New("expected to find attestations [BUG]")
-		}
-
-		return atts, nil
-	}
+	return attestations{
+		query:      attCl,
+		service:    cmtCl,
+		chainNamer: chainNamer,
+	}.Find
 }
 
 func newABCIWindowFunc(cl atypes.QueryClient) windowFunc {
@@ -562,164 +518,6 @@ func spanName(endpoint string) string {
 	return "cprovider/" + endpoint
 }
 
-// searchOffsetInHistory searches the consensus state history and
-// returns a historical consensus block height that contains an approved attestation
-// for the provided chain version and fromOffset.
-func searchOffsetInHistory(ctx context.Context, cmtCl cmtservice.ServiceClient, attCl atypes.QueryClient, chainVer xchain.ChainVersion, chainName string, fromOffset uint64) (uint64, error) {
-	const endpoint = "search_offset"
-	defer latency(endpoint)()
-
-	// Exponentially backoff to find a good start point for binary search, this prefers more recent queries
-
-	latestBlockResp, err := cmtCl.GetLatestBlock(ctx, &cmtservice.GetLatestBlockRequest{})
-	if err != nil {
-		return 0, errors.Wrap(err, "query latest block")
-	}
-	latestHeight := uint64(latestBlockResp.SdkBlock.Header.Height)
-
-	var startHeightIndex uint64
-	endHeightIndex := latestHeight
-	lookback := uint64(1)
-	var lookbackStepsCounter uint64 // For metrics only
-	queryHeight := endHeightIndex
-	for {
-		lookbackStepsCounter++
-		if queryHeight <= lookback {
-			// Query from the start, but don't break out yet -- we need to find the earliest height that we have state for
-			queryHeight = 1
-		} else {
-			queryHeight -= lookback
-		}
-
-		if queryHeight == 0 || queryHeight >= latestHeight {
-			return 0, errors.New("unexpected query height [BUG]", "height", queryHeight) // This should never happen
-		}
-		earliestAtt, ok, err := queryEarliestAttestation(ctx, attCl, chainVer, queryHeight)
-		if IsErrHistoryPruned(err) {
-			// We've jumped to before the prune height, but _might_ still have the requested offset
-			earliestStoreHeight, err := getEarliestStoreHeight(ctx, attCl, chainVer, queryHeight+1)
-			if err != nil {
-				return 0, errors.Wrap(err, "failed to get earliest store height")
-			}
-			earliestAtt, ok, err = queryEarliestAttestation(ctx, attCl, chainVer, earliestStoreHeight)
-			if err != nil {
-				incQueryErr(endpoint)
-				return 0, errors.Wrap(err, "abci query earliest-attestation-in-state")
-			}
-
-			// If we're so far back that no attestation is found, or that we're before fromOffset,
-			// that's a good breaking point for binary search
-			if !ok || earliestAtt.AttestOffset <= fromOffset {
-				startHeightIndex = earliestStoreHeight
-				break
-			}
-
-			// Otherwise, we just don't have the needed state, fail
-			return 0, ErrHistoryPruned
-		}
-		if err != nil {
-			incQueryErr(endpoint)
-			return 0, errors.Wrap(err, "abci query earliest-attestation-in-state")
-		}
-
-		// If we're before the first attestation, or found an earlier attestation, it's a good start height
-		if !ok || earliestAtt.AttestOffset <= fromOffset {
-			startHeightIndex = queryHeight
-			break
-		}
-
-		// Otherwise, keep moving back
-		endHeightIndex = queryHeight
-		lookback *= 2
-	}
-
-	// We now have reasonable start and end indices for binary search
-	var binarySearchStepsCounter uint64 // For metrics only
-	for startHeightIndex <= endHeightIndex {
-		binarySearchStepsCounter++
-		midHeightIndex := startHeightIndex + umath.SubtractOrZero(endHeightIndex, startHeightIndex)/2
-
-		earliestAtt, ok, err := queryEarliestAttestation(ctx, attCl, chainVer, midHeightIndex)
-		if err != nil {
-			incQueryErr(endpoint)
-			return 0, errors.Wrap(err, "abci query earliest-attestation-in-state")
-		}
-
-		if !ok {
-			// If we're so far back that there's no attestation at all, move forward
-			startHeightIndex = midHeightIndex + 1
-			continue
-		}
-
-		latestAtt, ok, err := queryLatestAttestation(ctx, attCl, chainVer, midHeightIndex)
-		if err != nil {
-			incQueryErr(endpoint)
-			return 0, errors.Wrap(err, "abci query latest-attestation")
-		}
-
-		if !ok {
-			return 0, errors.New("no latest attestation found despite earlier check [BUG]")
-		}
-
-		if fromOffset >= earliestAtt.AttestOffset && fromOffset <= latestAtt.AttestOffset {
-			log.Debug(ctx, "Fetching offset from history", "chain", chainName, "from", fromOffset, "latest", latestHeight, "found", midHeightIndex, "lookback", lookbackStepsCounter, "search", binarySearchStepsCounter)
-			fetchStepsMetrics(chainName, lookbackStepsCounter, binarySearchStepsCounter)
-
-			return midHeightIndex, nil
-		}
-
-		// Query at a lower or higher height depending on whether fromOffset
-		// is smaller or larger than the earliest offset we found
-		if fromOffset < earliestAtt.AttestOffset {
-			endHeightIndex = umath.SubtractOrZero(midHeightIndex, 1)
-		} else {
-			startHeightIndex = midHeightIndex + 1
-		}
-	}
-
-	return 0, errors.New("unexpectedly reach end of search method [BUG]")
-}
-
-// getEarliestStoreHeight walks forward from startPoint, and returns the first height for which we have the state in our Store.
-func getEarliestStoreHeight(ctx context.Context, cl atypes.QueryClient, chainVer xchain.ChainVersion, startPoint uint64) (uint64, error) {
-	// Note: the correct thing to do here would be to query the node's Status, and look at its EarliestStoreHeight
-	// However, as far as I can tell, Cosmos doesn't ever set this value, it's stubbed out with a TODO: https://github.com/cosmos/cosmos-sdk/blob/main/client/grpc/node/service.go#L58
-	// For now, we just very inefficiently walk forwards in time hoping to find the earliest commit info
-
-	for height := startPoint; ; height++ {
-		_, _, err := queryEarliestAttestation(ctx, cl, chainVer, height)
-		if IsErrHistoryPruned(err) {
-			continue
-		} else if err != nil {
-			return 0, errors.Wrap(err, "querying earliest attestation")
-		}
-
-		return height, nil
-	}
-}
-
-// queryEarliestAttestation returns the earliest approved attestation for the provided chain version
-// at the provided consensus block height, or the latest block height if height is 0.
-func queryEarliestAttestation(ctx context.Context, cl atypes.QueryClient, chainVer xchain.ChainVersion, height uint64) (xchain.Attestation, bool, error) {
-	resp, err := cl.EarliestAttestation(withCtxHeight(ctx, height),
-		&atypes.EarliestAttestationRequest{
-			ChainId:   chainVer.ID,
-			ConfLevel: uint32(chainVer.ConfLevel),
-		})
-	if errors.Is(err, sdkerrors.ErrKeyNotFound) || status.Code(err) == codes.NotFound {
-		return xchain.Attestation{}, false, nil
-	} else if err != nil {
-		return xchain.Attestation{}, false, err
-	}
-
-	att, err := atypes.AttestationFromProto(resp.Attestation)
-	if err != nil {
-		return xchain.Attestation{}, false, errors.Wrap(err, "attestations from proto")
-	}
-
-	return att, true, nil
-}
-
 // queryLatestAttestation returns the latest approved attestation for the provided chain version
 // at the provided consensus block height, or the latest block height if height is 0.
 func queryLatestAttestation(ctx context.Context, cl atypes.QueryClient, chainVer xchain.ChainVersion, height uint64) (xchain.Attestation, bool, error) {
@@ -740,26 +538,4 @@ func queryLatestAttestation(ctx context.Context, cl atypes.QueryClient, chainVer
 	}
 
 	return att, true, nil
-}
-
-// attsFromAtHeight returns approved attestations for the provided chain version
-// at the provided consensus block height, or the latest block height if height is 0.
-func attsFromAtHeight(ctx context.Context, cl atypes.QueryClient, chainVer xchain.ChainVersion, fromOffset, height uint64) ([]xchain.Attestation, bool, error) {
-	resp, err := cl.AttestationsFrom(withCtxHeight(ctx, height), &atypes.AttestationsFromRequest{
-		ChainId:    chainVer.ID,
-		ConfLevel:  uint32(chainVer.ConfLevel),
-		FromOffset: fromOffset,
-	})
-	if err != nil {
-		return []xchain.Attestation{}, false, errors.Wrap(err, "abci query attestations-from")
-	} else if len(resp.Attestations) == 0 {
-		return []xchain.Attestation{}, false, nil
-	}
-
-	atts, err := atypes.AttestationsFromProto(resp.Attestations)
-	if err != nil {
-		return []xchain.Attestation{}, false, errors.Wrap(err, "attestations from proto")
-	}
-
-	return atts, true, nil
 }

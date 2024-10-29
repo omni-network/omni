@@ -29,7 +29,7 @@ import (
 
 var _ cchain.Provider = Provider{}
 
-type fetchFunc func(ctx context.Context, chainVer xchain.ChainVersion, fromOffset uint64) ([]xchain.Attestation, error)
+type fetchFunc func(ctx context.Context, chainVer xchain.ChainVersion, fromOffset uint64, prevFetchHeight uint64) ([]xchain.Attestation, uint64, error)
 type allAttsFunc func(ctx context.Context, chainVer xchain.ChainVersion, fromOffset uint64) ([]xchain.Attestation, error)
 type latestFunc func(ctx context.Context, chainVer xchain.ChainVersion) (xchain.Attestation, bool, error)
 type windowFunc func(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64) (int, error)
@@ -95,9 +95,13 @@ func (p Provider) AppliedPlan(ctx context.Context, name string) (upgradetypes.Pl
 	return p.appliedFunc(ctx, name)
 }
 
-func (p Provider) AttestationsFrom(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64,
+func (p Provider) AttestationsFrom(
+	ctx context.Context,
+	chainVer xchain.ChainVersion,
+	attestOffset uint64,
 ) ([]xchain.Attestation, error) {
-	return p.fetch(ctx, chainVer, attestOffset)
+	attestations, _, err := p.fetch(ctx, chainVer, attestOffset, 0)
+	return attestations, err
 }
 
 func (p Provider) AllAttestationsFrom(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64,
@@ -179,9 +183,19 @@ func (p Provider) stream(
 	srcChain := p.chainNamer(chainVer)
 	ctx := log.WithCtx(in, "src_chain", srcChain, "worker", workerName)
 
+	// prevFetchedHeight caches the consensus height at which previous batch was fetched
+	// this limits the height search range including the offset
+	var prevFetchedHeight uint64
+
 	deps := stream.Deps[xchain.Attestation]{
 		FetchBatch: func(ctx context.Context, _ uint64, offset uint64) ([]xchain.Attestation, error) {
-			return p.fetch(ctx, chainVer, offset)
+			atts, current, err := p.fetch(ctx, chainVer, offset, prevFetchedHeight)
+			if err != nil {
+				return nil, err
+			}
+			prevFetchedHeight = current
+
+			return atts, nil
 		},
 		Backoff:       p.backoffFunc,
 		ElemLabel:     "attestation",

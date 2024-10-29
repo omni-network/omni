@@ -197,19 +197,23 @@ func (f *testFetcher) Errs() int {
 	return f.errs
 }
 
-func (f *testFetcher) Fetch(ctx context.Context, chainVer xchain.ChainVersion, fromHeight uint64,
-) ([]xchain.Attestation, error) {
+func (f *testFetcher) Fetch(
+	ctx context.Context,
+	chainVer xchain.ChainVersion,
+	fromHeight uint64,
+	_ uint64,
+) ([]xchain.Attestation, uint64, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
 	if f.errs > 0 {
 		f.errs--
-		return nil, errors.New("test error")
+		return nil, 0, errors.New("test error")
 	} else if f.count >= f.maxCount {
 		// Block and wait for test to cancel the context
 		// This is required for deterministic fetch assertions since it is done async wrt callbacks.
 		<-ctx.Done()
-		return nil, ctx.Err()
+		return nil, 0, ctx.Err()
 	}
 
 	toReturn := f.count
@@ -230,7 +234,7 @@ func (f *testFetcher) Fetch(ctx context.Context, chainVer xchain.ChainVersion, f
 
 	f.fetched += len(resp)
 
-	return resp, nil
+	return resp, 0, nil
 }
 
 type testBackOff struct {
