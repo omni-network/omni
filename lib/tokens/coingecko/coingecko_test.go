@@ -3,17 +3,37 @@ package coingecko_test
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tokens/coingecko"
+	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/stretchr/testify/require"
 )
+
+var integration = flag.Bool("integration", false, "run integration tests")
+
+func TestIntegration(t *testing.T) {
+	t.Parallel()
+	if !*integration {
+		t.Skip("skipping integration test")
+	}
+
+	apikey, ok := os.LookupEnv("COINGECKO_APIKEY")
+	require.True(t, ok)
+
+	c := coingecko.New(coingecko.WithAPIKey(apikey))
+	prices, err := c.Price(context.Background(), tokens.OMNI, tokens.ETH)
+	tutil.RequireNoError(t, err)
+	require.NotEmpty(t, prices)
+}
 
 type testCase struct {
 	name         string
@@ -56,10 +76,10 @@ func TestGetPrice(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			server, servedPrices := makeTestServer(t, test)
+			server, servedPrices, token := makeTestServer(t, test)
 			defer server.Close()
 
-			c := coingecko.New(coingecko.WithHost(server.URL))
+			c := coingecko.New(coingecko.WithHost(server.URL), coingecko.WithAPIKey(token))
 			prices, err := c.Price(context.Background(), tokens.OMNI, tokens.ETH)
 
 			if shouldErr(t, test) {
@@ -74,14 +94,17 @@ func TestGetPrice(t *testing.T) {
 	}
 }
 
-func makeTestServer(t *testing.T, test testCase) (*httptest.Server, map[string]map[string]float64) {
+func makeTestServer(t *testing.T, test testCase) (*httptest.Server, map[string]map[string]float64, string) {
 	t.Helper()
 
 	// set during request handler
 	servedPrices := make(map[string]map[string]float64)
 
+	apikey := tutil.RandomHash().Hex()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.Equal(t, "/api/v3/simple/price", r.URL.Path)
+		require.Equal(t, "GET", r.Method)
+		require.Equal(t, apikey, r.Header.Get(coingecko.GetAPIKeyHeader()))
 
 		resp := make(map[string]map[string]float64)
 
@@ -143,7 +166,7 @@ func makeTestServer(t *testing.T, test testCase) (*httptest.Server, map[string]m
 		_, _ = w.Write(bz)
 	}))
 
-	return server, servedPrices
+	return server, servedPrices, apikey
 }
 
 func randPrice() float64 {

@@ -13,16 +13,19 @@ import (
 
 const (
 	endpointSimplePrice = "/api/v3/simple/price"
-	prodHost            = "https://api.coingecko.com"
+	defaultProdHost     = "https://api.coingecko.com"
+	proProdHost         = "https://pro-api.coingecko.com"
+	apikeyHeader        = "x-cg-pro-api-key" //nolint:gosec // This is the header
 )
 
 type Client struct {
-	host string
+	host   string
+	apikey string
 }
 
 var _ tokens.Pricer = Client{}
 
-// New creates a new goingecko Client with the given options.
+// New creates a new coingecko Client with the given options.
 func New(opts ...func(*options)) Client {
 	o := defaultOpts()
 	for _, opt := range opts {
@@ -30,11 +33,12 @@ func New(opts ...func(*options)) Client {
 	}
 
 	return Client{
-		host: o.Host,
+		host:   o.Host,
+		apikey: o.APIKey,
 	}
 }
 
-// GetPriceUSD returns the price of each coin in USD.
+// Price returns the price of each coin in USD.
 func (c Client) Price(ctx context.Context, tkns ...tokens.Token) (map[tokens.Token]float64, error) {
 	return c.getPrice(ctx, "usd", tkns...)
 }
@@ -57,7 +61,7 @@ func (c Client) getPrice(ctx context.Context, currency string, tkns ...tokens.To
 
 	var resp simplePriceResponse
 	if err := c.doReq(ctx, endpointSimplePrice, params, &resp); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "do req", "endpoint", "get_price")
 	}
 
 	prices := make(map[tokens.Token]float64)
@@ -95,14 +99,18 @@ func (c Client) doReq(ctx context.Context, path string, params url.Values, respo
 		return errors.Wrap(err, "create request", "url", uri.String())
 	}
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return errors.Wrap(err, "get", "url", uri.String())
+	if c.apikey != "" {
+		req.Header.Set(apikeyHeader, c.apikey) //nolint:canonicalheader // As per CoinGacko docs
 	}
 
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return errors.Wrap(err, "get req", "url", uri.String())
+	}
 	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
-		return errors.New("get", "url", uri.String(), "status", resp.Status)
+		return errors.New("non-200 response", "url", uri.String(), "status", resp.Status)
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(response); err != nil {
