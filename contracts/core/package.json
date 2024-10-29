@@ -13,15 +13,9 @@
     "test": "forge test"
   },
   "devDependencies": {
-    "@openzeppelin/merkle-tree": "1.0.5",
-    "@types/node": "^22.7.6",
     "ds-test": "github:dapphub/ds-test",
-    "ethereum-cryptography": "^3.0.0",
     "forge-std": "github:foundry-rs/forge-std",
-    "multiproof": "github:sigp/multiproof",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.6.3",
-    "viem": "^2.21.28"
+    "multiproof": "github:sigp/multiproof"
   },
   "dependencies": {
     "@nomad-xyz/excessively-safe-call": "github:nomad-xyz/ExcessivelySafeCall",
