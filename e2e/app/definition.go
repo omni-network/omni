@@ -37,10 +37,11 @@ type DefinitionConfig struct {
 	InfraProvider string
 
 	// Secrets (not required for devnet)
-	DeployKeyFile string
-	FireAPIKey    string
-	FireKeyPath   string
-	RPCOverrides  map[string]string // map[chainName]rpcURL1,rpcURL2,...
+	DeployKeyFile   string
+	FireAPIKey      string
+	FireKeyPath     string
+	CoinGeckoAPIKey string
+	RPCOverrides    map[string]string // map[chainName]rpcURL1,rpcURL2,...
 
 	InfraDataFile string // Not required for docker provider
 	OmniImgTag    string // OmniImgTag is the docker image tag used for halo and relayer.

@@ -29,7 +29,8 @@ type Manager struct {
 }
 
 type Config struct {
-	RPCEndpoints xchain.RPCEndpoints
+	RPCEndpoints    xchain.RPCEndpoints
+	CoinGeckoAPIKey string
 }
 
 const (
@@ -74,8 +75,10 @@ func Start(ctx context.Context, network netconf.Network, cfg Config, privKeyPath
 		return err
 	}
 
+	cgCl := coingecko.New(coingecko.WithAPIKey(cfg.CoinGeckoAPIKey))
+
 	gprice := gasprice.NewBuffer(makeGasPricers(ethClients), gasprice.WithThresholdPct(gasPriceBufferThreshold))
-	tprice := tokenprice.NewBuffer(coingecko.New(), tokens.OMNI, tokens.ETH, tokenprice.WithThresholdPct(tokenPriceBufferThreshold))
+	tprice := tokenprice.NewBuffer(cgCl, tokens.OMNI, tokens.ETH, tokenprice.WithThresholdPct(tokenPriceBufferThreshold))
 
 	oracles, err := makeOracles(network, toSync, ethClients, privKey, gprice, tprice)
 	if err != nil {

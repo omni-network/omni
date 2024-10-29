@@ -565,6 +565,7 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 	cfg.LoadGen.ValidatorKeysGlob = validatorKeyGlob
 	cfg.RPCEndpoints = endpoints
 	cfg.XFeeMngr.RPCEndpoints = xfeemngrEndpoints
+	cfg.XFeeMngr.CoinGeckoAPIKey = def.Cfg.CoinGeckoAPIKey
 
 	if err := monapp.WriteConfigTOML(cfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write relayer config")

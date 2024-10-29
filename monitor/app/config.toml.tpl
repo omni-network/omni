@@ -44,6 +44,9 @@ halo-url = "{{ .HaloURL }}"
 
 [xfeemngr]
 
+# The CoinGecko API key to use for fetching token prices.
+coingecko-apikey = "{{ .XFeeMngr.CoinGeckoAPIKey }}"
+
 # EVM RPC endpoints to use in xfeemngr. This may include out-of-network rpcs.
 [xfeemngr.rpc-endpoints]
 {{- if not .XFeeMngr.RPCEndpoints }}
