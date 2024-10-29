@@ -213,12 +213,11 @@ func (b *mockBackend) BlockNumber(ctx context.Context) (uint64, error) {
 	return b.blockHeight, nil
 }
 
-// SyncProgress returns the nil syncing progress; i.e. not syncing.
-func (b *mockBackend) SyncProgress(ctx context.Context) (*ethereum.SyncProgress, error) {
+func (b *mockBackend) ProgressIfSyncing(ctx context.Context) (*ethereum.SyncProgress, bool, error) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
-	return nil, nil //nolint:nilnil // This is how geth does it.
+	return nil, false, nil // False == synced.
 }
 
 func (b *mockBackend) HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error) {

@@ -48,6 +48,7 @@ type Client interface {
 	EtherBalanceAt(ctx context.Context, addr common.Address) (float64, error)
 	PeerCount(ctx context.Context) (uint64, error)
 	SetHead(ctx context.Context, height uint64) error
+	ProgressIfSyncing(ctx context.Context) (*ethereum.SyncProgress, bool, error)
 	Address() string
 	Close()
 }
@@ -77,7 +78,6 @@ type Client interface {
 		"ChainReader":        true,
 		"TransactionReader":  true,
 		"ChainStateReader":   true,
-		"ChainSyncReader":    true,
 		"ContractCaller":     true,
 		"LogFilterer":        true,
 		"TransactionSender":  true,

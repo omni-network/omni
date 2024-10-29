@@ -19,7 +19,6 @@ type Client interface {
 	ethereum.ChainIDReader
 	ethereum.ChainReader
 	ethereum.ChainStateReader
-	ethereum.ChainSyncReader
 	ethereum.ContractCaller
 	ethereum.GasEstimator
 	ethereum.GasPricer
@@ -32,6 +31,7 @@ type Client interface {
 	EtherBalanceAt(ctx context.Context, addr common.Address) (float64, error)
 	PeerCount(ctx context.Context) (uint64, error)
 	SetHead(ctx context.Context, height uint64) error
+	ProgressIfSyncing(ctx context.Context) (*ethereum.SyncProgress, bool, error)
 	Address() string
 	Close()
 }
@@ -248,22 +248,6 @@ func (w Wrapper) NonceAt(ctx context.Context, account common.Address, blockNumbe
 	defer span.End()
 
 	res0, err := w.cl.NonceAt(ctx, account, blockNumber)
-	if err != nil {
-		incError(w.chain, endpoint)
-		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
-	}
-
-	return res0, err
-}
-
-func (w Wrapper) SyncProgress(ctx context.Context) (*ethereum.SyncProgress, error) {
-	const endpoint = "sync_progress"
-	defer latency(w.chain, endpoint)()
-
-	ctx, span := tracer.Start(ctx, spanName(endpoint))
-	defer span.End()
-
-	res0, err := w.cl.SyncProgress(ctx)
 	if err != nil {
 		incError(w.chain, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)

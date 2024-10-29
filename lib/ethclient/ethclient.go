@@ -6,6 +6,7 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -90,6 +91,25 @@ func (w Wrapper) Close() {
 // Address returns the underlying RPC address.
 func (w Wrapper) Address() string {
 	return w.address
+}
+
+// ProgressIfSyncing returns the sync progress (and true) if the node is syncing else false if node is
+// not syncing or an error.
+//
+// This wrap SyncProgress which returns nil-nil if the node is not syncing which results in panics.
+func (w Wrapper) ProgressIfSyncing(ctx context.Context) (*ethereum.SyncProgress, bool, error) {
+	const endpoint = "sync_progress"
+	defer latency(w.chain, endpoint)()
+
+	resp, err := w.cl.SyncProgress(ctx)
+	if err != nil {
+		incError(w.chain, endpoint)
+		return nil, false, errors.Wrap(err, "json-rpc", "endpoint", endpoint)
+	} else if resp == nil {
+		return nil, false, nil
+	}
+
+	return resp, true, nil
 }
 
 // HeaderByType returns the block header for the given head type.

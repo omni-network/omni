@@ -53,17 +53,17 @@ func monitorPublicRPCForever(
 }
 
 func monitorPublicRPCOnce(ctx context.Context, omniNodeRPC, publicRPC ethclient.Client) error {
-	omniNodeProgress, err := omniNodeRPC.SyncProgress(ctx)
+	omniNodeHeight, err := omniNodeRPC.BlockNumber(ctx)
 	if err != nil {
-		return errors.Wrap(err, "omni node sync progress")
+		return errors.Wrap(err, "omni node height")
 	}
 
-	publicRPCProgress, err := publicRPC.SyncProgress(ctx)
+	publicRPCHeight, err := publicRPC.BlockNumber(ctx)
 	if err != nil {
-		return errors.Wrap(err, "public RPC sync progress")
+		return errors.Wrap(err, "public RPC height")
 	}
 
-	heightDiff := float64(omniNodeProgress.HighestBlock) - float64(publicRPCProgress.HighestBlock)
+	heightDiff := float64(omniNodeHeight) - float64(publicRPCHeight)
 	publicRPCSyncDiff.Set(heightDiff)
 
 	return nil

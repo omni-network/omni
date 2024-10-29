@@ -246,17 +246,17 @@ func (b *Backend) SendTransaction(ctx context.Context, in *ethtypes.Transaction)
 
 // EnsureSynced returns an error if the backend is not synced.
 func (b *Backend) EnsureSynced(ctx context.Context) error {
-	syncing, err := b.SyncProgress(ctx)
+	progress, syncing, err := b.ProgressIfSyncing(ctx)
 	if ethclient.IsErrMethodNotAvailable(err) {
 		return nil // Assume synced if method not available.
 	} else if err != nil {
 		return err
-	} else if syncing == nil {
-		return nil // Syncing is nil if node is not syncing.
-	} else if !syncing.Done() {
+	} else if !syncing {
+		return nil
+	} else if !progress.Done() {
 		return errors.New("backend not synced",
-			"lag", umath.SubtractOrZero(syncing.HighestBlock, syncing.CurrentBlock),
-			"indexing", syncing.TxIndexRemainingBlocks,
+			"lag", umath.SubtractOrZero(progress.HighestBlock, progress.CurrentBlock),
+			"indexing", progress.TxIndexRemainingBlocks,
 		)
 	}
 
