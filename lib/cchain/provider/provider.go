@@ -29,7 +29,12 @@ import (
 
 var _ cchain.Provider = Provider{}
 
-type fetchFunc func(ctx context.Context, chainVer xchain.ChainVersion, fromOffset uint64) ([]xchain.Attestation, error)
+// fetchFunc returns a slice of strictly-sequential attestations for the
+// provided fromOffset (inclusive) and chain version if present.
+//
+// It also accepts (optional) and returns an opaque cursor (when error is nil).
+// When streaming attestation, the returned cursor can be provided in the subsequent call for improved performance.
+type fetchFunc func(ctx context.Context, chainVer xchain.ChainVersion, fromOffset uint64, cursor uint64) ([]xchain.Attestation, uint64, error)
 type allAttsFunc func(ctx context.Context, chainVer xchain.ChainVersion, fromOffset uint64) ([]xchain.Attestation, error)
 type latestFunc func(ctx context.Context, chainVer xchain.ChainVersion) (xchain.Attestation, bool, error)
 type windowFunc func(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64) (int, error)
@@ -95,9 +100,13 @@ func (p Provider) AppliedPlan(ctx context.Context, name string) (upgradetypes.Pl
 	return p.appliedFunc(ctx, name)
 }
 
-func (p Provider) AttestationsFrom(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64,
+func (p Provider) AttestationsFrom(
+	ctx context.Context,
+	chainVer xchain.ChainVersion,
+	attestOffset uint64,
 ) ([]xchain.Attestation, error) {
-	return p.fetch(ctx, chainVer, attestOffset)
+	atts, _, err := p.fetch(ctx, chainVer, attestOffset, 0)
+	return atts, err
 }
 
 func (p Provider) AllAttestationsFrom(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64,
@@ -179,9 +188,19 @@ func (p Provider) stream(
 	srcChain := p.chainNamer(chainVer)
 	ctx := log.WithCtx(in, "src_chain", srcChain, "worker", workerName)
 
+	// Cache the previous cursor (consensus height) at which we found the attestation
+	// to be used in the next fetch call as the search start height
+	var fetchCursor uint64
+
 	deps := stream.Deps[xchain.Attestation]{
 		FetchBatch: func(ctx context.Context, offset uint64) ([]xchain.Attestation, error) {
-			return p.fetch(ctx, chainVer, offset)
+			atts, cursor, err := p.fetch(ctx, chainVer, offset, fetchCursor)
+			if err != nil {
+				return nil, err
+			}
+			fetchCursor = cursor
+
+			return atts, nil
 		},
 		Backoff:       p.backoffFunc,
 		ElemLabel:     "attestation",

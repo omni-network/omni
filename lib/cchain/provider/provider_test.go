@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -122,7 +123,7 @@ func TestProvider(t *testing.T) {
 	}
 
 	backoff := new(testBackOff)
-	fetcher := newTestFetcher(errs, expectCount)
+	fetcher := newTestFetcher(t, errs, expectCount)
 
 	p := provider.NewProviderForT(t, fetcher.Fetch, nil, nil, backoff.BackOff)
 
@@ -158,8 +159,10 @@ func TestProvider(t *testing.T) {
 	}
 }
 
-func newTestFetcher(errs, maxCount int) *testFetcher {
+func newTestFetcher(t *testing.T, errs, maxCount int) *testFetcher {
+	t.Helper()
 	return &testFetcher{
+		t:        t,
 		errs:     errs,
 		maxCount: maxCount,
 	}
@@ -169,6 +172,7 @@ func newTestFetcher(errs, maxCount int) *testFetcher {
 // It first returns errs errors.
 // Then it returns 0,1,2,3,4,5... attestations up to max.
 type testFetcher struct {
+	t        *testing.T
 	mu       sync.Mutex
 	errs     int
 	maxCount int
@@ -197,20 +201,27 @@ func (f *testFetcher) Errs() int {
 	return f.errs
 }
 
-func (f *testFetcher) Fetch(ctx context.Context, chainVer xchain.ChainVersion, fromHeight uint64,
-) ([]xchain.Attestation, error) {
+func (f *testFetcher) Fetch(
+	ctx context.Context,
+	chainVer xchain.ChainVersion,
+	fromHeight uint64,
+	cursor uint64,
+) ([]xchain.Attestation, uint64, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
 	if f.errs > 0 {
 		f.errs--
-		return nil, errors.New("test error")
+		return nil, 0, errors.New("test error")
 	} else if f.count >= f.maxCount {
 		// Block and wait for test to cancel the context
 		// This is required for deterministic fetch assertions since it is done async wrt callbacks.
 		<-ctx.Done()
-		return nil, ctx.Err()
+		return nil, cursor, ctx.Err()
 	}
+
+	// we use count as consensus block height
+	assert.Equal(f.t, uint64(f.count), cursor, "search start height invalid")
 
 	toReturn := f.count
 	f.count++
@@ -230,7 +241,7 @@ func (f *testFetcher) Fetch(ctx context.Context, chainVer xchain.ChainVersion, f
 
 	f.fetched += len(resp)
 
-	return resp, nil
+	return resp, uint64(f.count), nil
 }
 
 type testBackOff struct {
