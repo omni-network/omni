@@ -10,25 +10,23 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 )
 
-const omegaPublicRPC = "https://damp-wandering-gadget.omni-omega.quiknode.pro"
-
 func monitorPublicRPCForever(
 	ctx context.Context,
 	network netconf.Network,
 	ethClients map[uint64]ethclient.Client,
 ) {
-	if network.ID != netconf.Omega {
-		return // no public URL exists
-	}
-
 	omniChain, exist := network.OmniEVMChain()
 	if !exist {
 		return
 	}
 
+	if ethClients == nil {
+		return
+	}
+
 	log.Info(ctx, "Setting up monitoring of a public RPC for %v", network.ID)
 
-	publicRPC, err := ethclient.Dial(omniChain.Name, omegaPublicRPC)
+	publicRPC, err := publicRPCEndpoint(network, omniChain, ethClients)
 	if err != nil {
 		log.Error(ctx, "Failed to dial into public RPC", err)
 		return
@@ -50,6 +48,22 @@ func monitorPublicRPCForever(
 			}
 		}
 	}
+}
+
+// publicRPCEndpoint returns the public RPC endpoint for the network and chain specified.
+// If no public RPC is known, return a node of the chain directly.
+func publicRPCEndpoint(network netconf.Network, chain netconf.Chain, ethClients map[uint64]ethclient.Client) (ethclient.Client, error) {
+	urls := map[netconf.ID]string{
+		netconf.Staging: "https://staging.omni.network",
+		netconf.Omega:   "https://quicknode.omega.omni.network", // TODO: delete quicknode subdomain
+		netconf.Mainnet: "https://mainnet.omni.network",
+	}
+
+	if url, exists := urls[network.ID]; exists {
+		return ethclient.Dial(chain.Name, url)
+	}
+
+	return ethClients[chain.ID], nil
 }
 
 func monitorPublicRPCOnce(ctx context.Context, omniNodeRPC, publicRPC ethclient.Client) error {
