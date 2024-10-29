@@ -81,15 +81,15 @@ func (m *simple) ReserveNextNonce(ctx context.Context) (uint64, error) {
 
 	if m.nonce == nil {
 		// Ensure the node is synced before fetching the nonce
-		syncing, err := m.backend.SyncProgress(ctx)
+		progress, syncing, err := m.backend.ProgressIfSyncing(ctx)
 		if ethclient.IsErrMethodNotAvailable(err) { //nolint:revive // Empty block skips error handling below.
 			// Skip if method not available.
 		} else if err != nil {
 			return 0, errors.Wrap(err, "sync progress")
-		} else if syncing != nil && !syncing.Done() { // Note syncing is nil if node is not syncing.
+		} else if syncing && !progress.Done() {
 			return 0, errors.New("backend not synced",
-				"lag", umath.SubtractOrZero(syncing.HighestBlock, syncing.CurrentBlock),
-				"indexing", syncing.TxIndexRemainingBlocks,
+				"lag", umath.SubtractOrZero(progress.HighestBlock, progress.CurrentBlock),
+				"indexing", progress.TxIndexRemainingBlocks,
 			)
 		}
 

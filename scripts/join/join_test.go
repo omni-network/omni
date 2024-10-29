@@ -124,15 +124,15 @@ func TestJoinOmega(t *testing.T) {
 					haloHeight = haloResult.SyncInfo.LatestBlockHeight
 				}
 
-				execStatus, err := retry(ctx, ethCl.SyncProgress) // Note execStatus is nil if geth not syncing.
+				execProgress, execSyncing, err := retryOk(ctx, ethCl.ProgressIfSyncing)
 				require.NoError(t, err)
 
 				execSynced := true
 				var execHeight, execTarget uint64
-				if execStatus != nil {
-					execSynced = execStatus.Done()
-					execHeight = execStatus.CurrentBlock
-					execTarget = execStatus.HighestBlock
+				if execSyncing {
+					execSynced = execProgress.Done()
+					execHeight = execProgress.CurrentBlock
+					execTarget = execProgress.HighestBlock
 				}
 
 				if t1.IsZero() && execTarget > 0 {
@@ -207,6 +207,24 @@ func printLogsTail(t *testing.T, path string) {
 	}
 
 	fmt.Println(strings.Join(lines, "\n"))
+}
+
+func retryOk[R any](ctx context.Context, fn func(context.Context) (R, bool, error)) (R, bool, error) {
+	type commaOK struct {
+		R  R
+		Ok bool
+	}
+
+	resp, err := retry[commaOK](ctx, func(ctx context.Context) (commaOK, error) {
+		r, ok, err := fn(ctx)
+		return commaOK{R: r, Ok: ok}, err
+	})
+	if err != nil {
+		var zero R
+		return zero, false, err
+	}
+
+	return resp.R, resp.Ok, nil
 }
 
 func retry[R any](ctx context.Context, fn func(context.Context) (R, error)) (R, error) {

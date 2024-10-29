@@ -240,8 +240,8 @@ func (*engineMock) PeerCount(context.Context) (uint64, error) {
 	return 1, nil
 }
 
-func (*engineMock) SyncProgress(context.Context) (*ethereum.SyncProgress, error) {
-	return nil, nil //nolint:nilnil // nil-nil return means not syncing.
+func (*engineMock) ProgressIfSyncing(context.Context) (*ethereum.SyncProgress, bool, error) {
+	return nil, false, nil // False == synced
 }
 
 func (m *engineMock) FilterLogs(_ context.Context, q ethereum.FilterQuery) ([]types.Log, error) {

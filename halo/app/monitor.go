@@ -146,12 +146,11 @@ func monitorEVMOnce(ctx context.Context, ethCl ethclient.Client, status *readine
 		status.setExecutionP2PPeers(peers)
 	}
 
-	if syncing, err := ethCl.SyncProgress(ctx); err != nil {
+	if progress, syncing, err := ethCl.ProgressIfSyncing(ctx); err != nil {
 		return errors.Wrap(err, "sync progress")
-	} else if syncing != nil && !syncing.Done() {
-		// SyncProgress returns nil of not syncing.
+	} else if syncing && !progress.Done() {
 		evmSynced.Set(0)
-		log.Warn(ctx, "Attached omni evm is syncing", nil, "highest_block", syncing.HighestBlock, "current_block", syncing.CurrentBlock, "tx_indexing", syncing.TxIndexRemainingBlocks)
+		log.Warn(ctx, "Attached omni evm is syncing", nil, "highest_block", progress.HighestBlock, "current_block", progress.CurrentBlock, "tx_indexing", progress.TxIndexRemainingBlocks)
 		status.setExecutionSynced(false)
 	} else {
 		evmSynced.Set(1)

@@ -106,7 +106,7 @@ func (mr *MockClientMockRecorder) BlockByNumber(ctx, number any) *gomock.Call {
 // BlockNumber mocks base method.
 func (m *MockClient) BlockNumber(ctx context.Context) (uint64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BlockHeight", ctx)
+	ret := m.ctrl.Call(m, "BlockNumber", ctx)
 	ret0, _ := ret[0].(uint64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -115,7 +115,7 @@ func (m *MockClient) BlockNumber(ctx context.Context) (uint64, error) {
 // BlockNumber indicates an expected call of BlockNumber.
 func (mr *MockClientMockRecorder) BlockNumber(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BlockHeight", reflect.TypeOf((*MockClient)(nil).BlockNumber), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BlockNumber", reflect.TypeOf((*MockClient)(nil).BlockNumber), ctx)
 }
 
 // CallContract mocks base method.
@@ -263,6 +263,22 @@ func (m *MockClient) HeaderByType(ctx context.Context, typ ethclient.HeadType) (
 func (mr *MockClientMockRecorder) HeaderByType(ctx, typ any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HeaderByType", reflect.TypeOf((*MockClient)(nil).HeaderByType), ctx, typ)
+}
+
+// ProgressIfSyncing mocks base method.
+func (m *MockClient) ProgressIfSyncing(ctx context.Context) (*ethereum.SyncProgress, bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProgressIfSyncing", ctx)
+	ret0, _ := ret[0].(*ethereum.SyncProgress)
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ProgressIfSyncing indicates an expected call of ProgressIfSyncing.
+func (mr *MockClientMockRecorder) ProgressIfSyncing(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProgressIfSyncing", reflect.TypeOf((*MockClient)(nil).ProgressIfSyncing), ctx)
 }
 
 // NonceAt mocks base method.
@@ -471,21 +487,6 @@ func (m *MockClient) SuggestGasTipCap(ctx context.Context) (*big.Int, error) {
 func (mr *MockClientMockRecorder) SuggestGasTipCap(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SuggestGasTipCap", reflect.TypeOf((*MockClient)(nil).SuggestGasTipCap), ctx)
-}
-
-// SyncProgress mocks base method.
-func (m *MockClient) SyncProgress(ctx context.Context) (*ethereum.SyncProgress, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SyncProgress", ctx)
-	ret0, _ := ret[0].(*ethereum.SyncProgress)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// SyncProgress indicates an expected call of SyncProgress.
-func (mr *MockClientMockRecorder) SyncProgress(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncProgress", reflect.TypeOf((*MockClient)(nil).SyncProgress), ctx)
 }
 
 // TransactionByHash mocks base method.
