@@ -30,14 +30,15 @@ import (
 
 var (
 	logsFile    = flag.String("logs_file", "join_test.log", "File to write docker logs to")
+	network     = flag.String("network", "omega", "Network to join (default: omega)")
 	integration = flag.Bool("integration", false, "Run integration tests")
 )
 
-// TestJoinOmega starts a local node (using omni operator init-nodes)
+// TestJoinNetwork starts a local node (using omni operator init-nodes)
 // and waits for it to sync.
 //
 //nolint:paralleltest // Parallel tests not supported since we start docker containers.
-func TestJoinOmega(t *testing.T) {
+func TestJoinNetwork(t *testing.T) {
 	if !*integration {
 		t.Skip("skipping integration test")
 	}
@@ -47,7 +48,6 @@ func TestJoinOmega(t *testing.T) {
 		minDuration = time.Minute * 30
 	)
 
-	network := netconf.Omega
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	home := t.TempDir()
@@ -56,8 +56,9 @@ func TestJoinOmega(t *testing.T) {
 	output, err := os.OpenFile(logsPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	require.NoError(t, err)
 
+	networkID := netconf.ID(*network)
 	cfg := clicmd.InitConfig{
-		Network: network,
+		Network: networkID,
 		Home:    home,
 		Moniker: t.Name(),
 		HaloTag: getGitCommit7(t),
@@ -65,7 +66,7 @@ func TestJoinOmega(t *testing.T) {
 
 	require.NoError(t, ensureHaloImage(cfg.HaloTag))
 
-	log.Info(ctx, "Exec: omni operator init-nodes")
+	log.Info(ctx, "Exec: omni operator init-nodes", "network", networkID)
 	require.NoError(t, clicmd.InitNodes(log.WithNoopLogger(ctx), cfg))
 
 	t0 := time.Now()
