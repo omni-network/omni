@@ -2,18 +2,14 @@
 title: Run a Validator
 ---
 
-# Run a Validator on Omni Omega Testnet
+# Run a Validator
 
-This guide describes the process to configure and register an Omni Omega validator.
+This guide describes the process to configure and register a validator on **mainnet** and **Omega** testnet.
 
 ## Pre-requisites
 
-- Synced Omni full node (`halo`+ `geth` ) on the [latest release](https://github.com/omni-network/omni/releases/latest). Otherwise follow the “[run a full node](./1-run-full-node.md)” guide first.
-- Ethereum L1 and multiple L2 RPC endpoints for the following chains. This is required for cross-chain validation duties:
-  - [Ethereum Holesky](https://chainlist.org/chain/17000)
-  - [Optimism Sepolia](https://chainlist.org/chain/11155420)
-  - [Arbitrum Sepolia](https://chainlist.org/chain/421614)
-  - [Base Sepolia](https://chainlist.org/chain/84532)
+- Synced Omni full node (`halo`+ `geth` ) on the [latest release](https://github.com/omni-network/omni/releases/latest). Otherwise follow the [Run a Full Node](./1-run-full-node.md) guide first.
+- Ethereum L1 and multiple L2 RPC endpoints, required for cross-chain validation duties. See [Mainnet](../build/5-mainnet.md) and [Omega Testnet](../build/3-omega.md) for more details.
 
 ## Summary
 
@@ -22,11 +18,15 @@ This guide will take you through the following steps:
 1. **Update validator config** for `halo` and `geth`.
 1. **Obtain the halo consensus public key** by running a docker compose command.
 1. **Generate an operator address**, or use an existing Ethereum EOA account.
-1. **Fund the operator address** with `200 OMNI` on the [Omni Omega](https://chainlist.org/chain/164) chain.
+1. **Fund the operator address** with `native OMNI` (chain id [166](https://chainlist.org/chain/166) for `mainnet`) and [164](https://chainlist.org/chain/164) for `Omega`.
 1. **Add the operator address** to the omni staking allow list.
 1. **Run the`omni operator create-validator`**  CLI command to register the validator.
 
 ## Instructions
+
+:::info
+The config below is for the **Omega** testnet network. Adjust accordingly for the **mainnet** network.
+:::
 
 ### 1. **Update validator config** for `halo` and `geth`.
 

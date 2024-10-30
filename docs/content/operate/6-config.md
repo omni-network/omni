@@ -14,7 +14,9 @@ The resulting `~/.omni/<network>` folder has the following structure:
 
 It is a valid configuration for running a production Omni full node.
 
-The only supported `<network>` at the moment is: `omega`
+The supported `<network>` are:
+- `omega` testnet, chain id [164](https://chainlist.org/chain/164)
+- `mainnet` (experimental), chain id [166](https://chainlist.org/chain/166)
 
 Note that validator nodes require additional config as specified in the [Run a Validator](2-validator.md).
 
