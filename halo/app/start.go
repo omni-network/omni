@@ -249,10 +249,10 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 
 func newCProvider(rpcClient *rpclocal.Local, cfg Config) (cchain.Provider, error) {
 	if cfg.SDKGRPC.Enable {
-		return cprovider.NewGRPC(cfg.SDKGRPC.Address, cfg.Network, netconf.ChainVersionNamer(cfg.Network))
+		return cprovider.NewGRPC(cfg.SDKGRPC.Address, cfg.Network)
 	}
 
-	return cprovider.NewABCI(rpcClient, cfg.Network, netconf.ChainVersionNamer(cfg.Network)), nil
+	return cprovider.NewABCI(rpcClient, cfg.Network), nil
 }
 
 // startRPCServers starts the Cosmos REST and gRPC servers.

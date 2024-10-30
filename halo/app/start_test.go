@@ -52,8 +52,8 @@ func TestSmoke(t *testing.T) {
 	cl, err := rpchttp.New(cfg.Comet.RPC.ListenAddress, "/websocket")
 	require.NoError(t, err)
 
-	cprov := cprovider.NewABCI(cl, netconf.Simnet, netconf.ChainVersionNamer(netconf.Simnet))
-	cprovGRPC, err := cprovider.NewGRPC(cfg.SDKGRPC.Address, netconf.Simnet, netconf.ChainVersionNamer(netconf.Simnet))
+	cprov := cprovider.NewABCI(cl, netconf.Simnet)
+	cprovGRPC, err := cprovider.NewGRPC(cfg.SDKGRPC.Address, netconf.Simnet)
 	require.NoError(t, err)
 
 	// Wait until we get to block 3.

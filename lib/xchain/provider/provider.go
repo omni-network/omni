@@ -167,6 +167,7 @@ func (p *Provider) stream(
 
 			return nil, lastErr
 		},
+		Cache:         stream.NewNopCache[xchain.Block](),
 		Backoff:       p.backoffFunc,
 		ElemLabel:     "block",
 		HeightLabel:   "height",
@@ -189,6 +190,8 @@ func (p *Provider) stream(
 		IncCallbackErr: func() {
 			callbackErrTotal.WithLabelValues(chainVersionName).Inc()
 		},
+		IncCacheHit:  func() {}, // Caching not required for xprovider
+		IncCacheMiss: func() {}, // Caching not required for xprovider
 		SetStreamHeight: func(h uint64) {
 			streamHeight.WithLabelValues(chainVersionName).Set(float64(h))
 		},

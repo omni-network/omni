@@ -487,7 +487,7 @@ func setupClients(
 		return nil, nil, nil, errors.Wrap(err, "new tendermint client")
 	}
 
-	cprov := provider.NewABCI(cl, conf.Network, netconf.ChainVersionNamer(conf.Network))
+	cprov := provider.NewABCI(cl, conf.Network)
 
 	eth, err := ethclient.Dial(chainMeta.Name, conf.ExecutionRPC)
 	if err != nil {

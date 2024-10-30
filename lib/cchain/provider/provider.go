@@ -54,24 +54,25 @@ type valSetResponse struct {
 
 // Provider implements cchain.Provider.
 type Provider struct {
-	fetch       fetchFunc
-	allAtts     allAttsFunc
-	latest      latestFunc
-	window      windowFunc
-	valset      valsetFunc
-	val         valFunc
-	signing     signingFunc
-	vals        valsFunc
-	rewards     rewardsFunc
-	chainID     chainIDFunc
-	portalBlock portalBlockFunc
-	networkFunc networkFunc
-	genesisFunc genesisFunc
-	plannedFunc planedUpgradeFunc
-	appliedFunc appliedUpgradeFunc
-	backoffFunc func(context.Context) func()
-	chainNamer  func(xchain.ChainVersion) string
-	network     netconf.ID
+	fetch         fetchFunc
+	allAtts       allAttsFunc
+	latest        latestFunc
+	window        windowFunc
+	valset        valsetFunc
+	val           valFunc
+	signing       signingFunc
+	vals          valsFunc
+	rewards       rewardsFunc
+	chainID       chainIDFunc
+	portalBlock   portalBlockFunc
+	networkFunc   networkFunc
+	genesisFunc   genesisFunc
+	plannedFunc   planedUpgradeFunc
+	appliedFunc   appliedUpgradeFunc
+	backoffFunc   func(context.Context) func()
+	chainNamer    func(xchain.ChainVersion) string
+	network       netconf.ID
+	cacheProvider attestCacheProvider
 }
 
 // NewProviderForT creates a new provider for testing.
@@ -79,11 +80,12 @@ func NewProviderForT(_ *testing.T, fetch fetchFunc, latest latestFunc, window wi
 	backoffFunc func(context.Context) func(),
 ) Provider {
 	return Provider{
-		latest:      latest,
-		fetch:       fetch,
-		window:      window,
-		backoffFunc: backoffFunc,
-		chainNamer:  func(xchain.ChainVersion) string { return "" },
+		latest:        latest,
+		fetch:         fetch,
+		window:        window,
+		backoffFunc:   backoffFunc,
+		chainNamer:    func(xchain.ChainVersion) string { return "" },
+		cacheProvider: nopCacheProvider,
 	}
 }
 
@@ -183,6 +185,7 @@ func (p Provider) stream(
 		FetchBatch: func(ctx context.Context, _ uint64, offset uint64) ([]xchain.Attestation, error) {
 			return p.fetch(ctx, chainVer, offset)
 		},
+		Cache:         p.cacheProvider(chainVer),
 		Backoff:       p.backoffFunc,
 		ElemLabel:     "attestation",
 		HeightLabel:   "offset",
@@ -208,6 +211,12 @@ func (p Provider) stream(
 		},
 		IncCallbackErr: func() {
 			callbackErrTotal.WithLabelValues(workerName, srcChain).Inc()
+		},
+		IncCacheHit: func() {
+			cacheHits.WithLabelValues(srcChain).Inc()
+		},
+		IncCacheMiss: func() {
+			cacheMisses.WithLabelValues(srcChain).Inc()
 		},
 		SetStreamHeight: func(h uint64) {
 			streamHeight.WithLabelValues(workerName, srcChain).Set(float64(h))
