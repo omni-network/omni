@@ -217,7 +217,7 @@ func loadEnv(t *testing.T) (types.Testnet, netconf.Network, types.DeployInfos, x
 	case docker.ProviderName:
 		ifd, err = docker.NewInfraData(m)
 	case vmcompose.ProviderName:
-		ifd, err = vmcompose.LoadData(ifdFile)
+		ifd, err = vmcompose.LoadData(context.Background(), ifdFile)
 	default:
 		require.Fail(t, "unsupported infrastructure type", ifdType)
 	}

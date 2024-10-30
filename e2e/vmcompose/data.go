@@ -1,6 +1,7 @@
 package vmcompose
 
 import (
+	"context"
 	"encoding/json"
 	"net"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/log"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 )
@@ -33,7 +35,7 @@ type dataJSON struct {
 }
 
 // LoadData returns the vmcompose infrastructure data from the given path.
-func LoadData(path string) (types.InfrastructureData, error) {
+func LoadData(ctx context.Context, path string) (types.InfrastructureData, error) {
 	bz, err := os.ReadFile(path)
 	if err != nil {
 		return types.InfrastructureData{}, errors.Wrap(err, "read file")
@@ -45,8 +47,24 @@ func LoadData(path string) (types.InfrastructureData, error) {
 		return types.InfrastructureData{}, errors.Wrap(err, "unmarshal json")
 	}
 
+	// hasService returns true if the given VM has a service mapped to it.
+	hasService := func(vm string) bool {
+		for _, name := range data.ServicesByVM {
+			if vm == name {
+				return true
+			}
+		}
+
+		return false
+	}
+
 	vmsByName := make(map[string]e2e.InstanceData)
 	for _, vm := range data.VMs {
+		if !hasService(vm.Name) {
+			log.Error(ctx, "Ignoring VM in infra data without services", nil, "vm", vm.Name, "path", path)
+			continue
+		}
+
 		ip := net.ParseIP(vm.IP)
 		externalIP := net.ParseIP(vm.ExternalIP)
 

@@ -121,7 +121,7 @@ func MakeDefinition(ctx context.Context, cfg DefinitionConfig, commandName strin
 	case docker.ProviderName:
 		infd, err = docker.NewInfraData(manifest)
 	case vmcompose.ProviderName:
-		infd, err = vmcompose.LoadData(cfg.InfraDataFile)
+		infd, err = vmcompose.LoadData(ctx, cfg.InfraDataFile)
 	default:
 		return Definition{}, errors.New("unknown infra provider", "provider", cfg.InfraProvider)
 	}
