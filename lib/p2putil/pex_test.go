@@ -85,7 +85,7 @@ func TestRPCPeers(t *testing.T) {
 			t.Logf("Fetched %d peers", info.NPeers)
 			for i, peer := range info.Peers {
 				require.NoError(t, err)
-				t.Logf("Peer %d: %s, %s", i, peer.NodeInfo.Moniker, peer.RemoteIP)
+				t.Logf("Peer %d: %s, %s, %s", i, peer.NodeInfo.Moniker, peer.RemoteIP, peer.NodeInfo.ID())
 			}
 		})
 	}
