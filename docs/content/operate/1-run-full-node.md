@@ -63,6 +63,7 @@ There are three ways to run `halo`, listed in order of preference:
     - E.g. `omniops/halovisor:v0.9.0` contains the `halo:v0.8.1` and `halo:v0.9.0` binaries and will automatically switch at the correct height.
     - It only requires a single docker volume mount: `-v ~/.omni/<network>/halo:/halo`
     - It will persist the cosmovisor “current” binary symlink to: `halo/halovisor-current`
+    - It will persist the cosmovisor “current” upgrade info to: `halo/halovisor-upgradeinfo.json`
 
 2. **🥈 Cosmovisor with halo binaries**
     - Install and configure stock-standard CosmosSDK Cosmovisor with `halo` binaries, see docs [here](https://docs.cosmos.network/main/build/tooling/cosmovisor#setup) and [here](https://docs.archway.io/validators/running-a-node/cosmovisor) and [here](https://docs.junonetwork.io/validators/setting-up-cosmovisor). This will also automatically swap the “current” binary at the correct height.
