@@ -56,8 +56,9 @@ func TestJoinNetwork(t *testing.T) {
 	output, err := os.OpenFile(logsPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	require.NoError(t, err)
 
+	networkID := netconf.ID(*network)
 	cfg := clicmd.InitConfig{
-		Network: netconf.ID(*network),
+		Network: networkID,
 		Home:    home,
 		Moniker: t.Name(),
 		HaloTag: getGitCommit7(t),
@@ -65,7 +66,7 @@ func TestJoinNetwork(t *testing.T) {
 
 	require.NoError(t, ensureHaloImage(cfg.HaloTag))
 
-	log.Info(ctx, "Exec: omni operator init-nodes")
+	log.Info(ctx, "Exec: omni operator init-nodes", "network", networkID)
 	require.NoError(t, clicmd.InitNodes(log.WithNoopLogger(ctx), cfg))
 
 	t0 := time.Now()

@@ -10,7 +10,7 @@ on:
         options:
           - omega
           - mainnet
-        default: "mainnet" # this value will be picked by the cron job
+        default: "omega"
   schedule:
     - cron: "0 1 * * 1-5" # Weekdays at 1am UTC
 
@@ -39,7 +39,7 @@ jobs:
       - name: Run join test
         run: |
           cd scripts/join
-          go test . -v --integration --logs_file=docker_logs.txt --network=${github.event.inputs.network} -timeout 0
+          go test . -v --integration --logs_file=docker_logs.txt --network="${{github.event.inputs.network || 'mainnet'}}" -timeout 0
 
       - name: Upload docker logs
         uses: actions/upload-artifact@v4
