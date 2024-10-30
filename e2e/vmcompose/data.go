@@ -61,7 +61,7 @@ func LoadData(ctx context.Context, path string) (types.InfrastructureData, error
 	vmsByName := make(map[string]e2e.InstanceData)
 	for _, vm := range data.VMs {
 		if !hasService(vm.Name) {
-			log.Error(ctx, "Ignoring VM in infra data without services", nil, "vm", vm.Name, "path", path)
+			log.Info(ctx, "Ignoring VM in infra data without services", nil, "vm", vm.Name, "path", path)
 			continue
 		}
 
