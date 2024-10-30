@@ -35,7 +35,7 @@ type Config struct {
 
 const (
 	// feeOracleSyncInterval is the interval at which fee oracles syncs buffered gas and token prices with FeeOracle deployments.
-	feeOracleSyncInterval = 5 * time.Minute
+	feeOracleSyncInterval = 20 * time.Minute
 
 	// tokenPriceBufferThreshold is the pct threshold at which a new token price is buffered.
 	tokenPriceBufferThreshold = 0.1
