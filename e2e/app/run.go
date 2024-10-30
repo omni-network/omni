@@ -271,6 +271,11 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 // Upgrade generates all local artifacts, but only copies the dynamic artifacts (excl genesis) to the VMs.
 // It then calls docker-compose up.
 func Upgrade(ctx context.Context, def Definition, cfg DeployConfig, upgradeCfg types.ServiceConfig) error {
+	if def.Testnet.Network.IsEphemeral() {
+		// TODO(corver): We need to fix and support upgrading staging.
+		return errors.New("cannot upgrade ephemeral networks (yet)", "network", def.Testnet.Network)
+	}
+
 	if err := Setup(ctx, def, cfg); err != nil {
 		return err
 	}
