@@ -71,7 +71,7 @@ func TestRPCPeers(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	for _, network := range []netconf.ID{netconf.Staging, netconf.Omega} {
+	for _, network := range []netconf.ID{netconf.Mainnet, netconf.Omega, netconf.Staging} {
 		t.Run(network.String(), func(t *testing.T) {
 			rpcServer := network.Static().ConsensusRPC()
 			t.Logf("Fetching RPC peers from %s", rpcServer)
@@ -84,10 +84,8 @@ func TestRPCPeers(t *testing.T) {
 
 			t.Logf("Fetched %d peers", info.NPeers)
 			for i, peer := range info.Peers {
-				addr, err := p2p.NewNetAddressString(p2p.IDAddressString(peer.NodeInfo.ID(), peer.NodeInfo.ListenAddr))
 				require.NoError(t, err)
-
-				t.Logf("Peer %d: %s, %s", i, peer.NodeInfo.Moniker, addr)
+				t.Logf("Peer %d: %s, %s, %s", i, peer.NodeInfo.Moniker, peer.RemoteIP, peer.NodeInfo.ID())
 			}
 		})
 	}
