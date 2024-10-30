@@ -82,7 +82,6 @@ func Stream[E any](ctx context.Context, deps Deps[E], srcChainID uint64, startHe
 				deps.IncCacheHit()
 				return elems
 			}
-			deps.IncCacheMiss()
 
 			fetchCtx, span := deps.StartTrace(ctx, height, "fetch")
 			elems, err := deps.FetchBatch(fetchCtx, srcChainID, height)
@@ -103,22 +102,7 @@ func Stream[E any](ctx context.Context, deps Deps[E], srcChainID uint64, startHe
 				continue
 			}
 
-			heightsOK := true
-			for i, elem := range elems {
-				if h := deps.Height(elem); h != height+uint64(i) {
-					log.Error(ctx, "Invalid "+deps.ElemLabel+" "+deps.HeightLabel+" [BUG]", nil,
-						"expect", height,
-						"actual", h,
-					)
-
-					heightsOK = false
-				}
-			}
-			if !heightsOK { // Can't return invalid elements, just retry fetching for now.
-				backoff()
-				continue
-			}
-
+			deps.IncCacheMiss() // Only count non-empty fetches as cache misses.
 			deps.Cache.Set(height, elems)
 
 			return elems
