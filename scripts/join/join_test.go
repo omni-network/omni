@@ -158,15 +158,10 @@ func TestJoinNetwork(t *testing.T) {
 					"bps", bps,
 				)
 
-				if haloStatus == "healthy" {
-					if !execSynced {
-						return errors.New("halo healthy but execution chain not synced", "height", execHeight)
-					} else if !haloSynced {
-						return errors.New("halo healthy but consensus chain not synced", "height", haloHeight)
-					} else if time.Since(t0) < minDuration {
-						return errors.New("halo healthy but not enough time has passed", "duration", time.Since(t0).Truncate(time.Second))
-					}
-
+				if haloStatus == "healthy" &&
+					execSynced &&
+					haloSynced &&
+					time.Since(t0) > minDuration {
 					log.Info(ctx, "Synced 🎉", "duration", time.Since(t0).Truncate(time.Second))
 
 					return nil
