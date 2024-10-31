@@ -9,7 +9,7 @@ The resulting `~/.omni/<network>` folder has the following structure:
 ~/.omni/<network>/     # Node home folder
  ├─ halo/              # Consensus client
  ├─ geth/              # Execution client
- ├─ compose.yml        # Docker compose
+ ├─ compose.yaml        # Docker compose
 ```
 
 It is a valid configuration for running a production Omni full node.
@@ -175,9 +175,9 @@ A path to this file (or copy of) must be provided in the `halo.toml` `engine-jwt
 
 ## Configure Docker Compose
 The preferred way to run an Omni node is via Docker Compose as described in the [Run a Full Node](run-full-node.md#halo-deployment-options) docs.
-The docker `compose.yml` file is located in `~/.omni/<network>/compose.yml`.
+The docker `compose.yaml` file is located in `~/.omni/<network>/compose.yaml`.
 
-Download the latest template `compose.yml` [here](https://github.com/omni-network/omni/blob/main/cli/cmd/compose.yml.tpl).
+Download the latest template `compose.yaml` [here](https://github.com/omni-network/omni/blob/main/cli/cmd/compose.yaml.tpl).
 
 Ensure the following template fields are replaced:
 - `{{.HaloTag}}`: The latest `omniops/halovisor` docker image tag, e.g. `v0.99.0`, see [releases](https://github.com/omni-network/omni/releases)

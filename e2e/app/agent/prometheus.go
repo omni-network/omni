@@ -29,7 +29,7 @@ const (
 	gethPromPort = 6060
 )
 
-//go:embed prometheus.yml.tmpl
+//go:embed prometheus.yaml.tmpl
 var promConfigTmpl []byte
 
 func WriteConfig(ctx context.Context, testnet types.Testnet, secrets Secrets) error {
@@ -43,7 +43,7 @@ func WriteConfig(ctx context.Context, testnet types.Testnet, secrets Secrets) er
 		return errors.Wrap(err, "generating prometheus config")
 	}
 
-	promFile := filepath.Join(testnet.Dir, "prometheus", "prometheus.yml")
+	promFile := filepath.Join(testnet.Dir, "prometheus", "prometheus.yaml")
 	if err := os.MkdirAll(filepath.Dir(promFile), 0755); err != nil {
 		return errors.Wrap(err, "creating prometheus dir")
 	}

@@ -123,7 +123,7 @@ func TestComposeTemplate(t *testing.T) {
 
 			require.NoError(t, p.Setup())
 
-			bz, err := os.ReadFile(filepath.Join(dir, "docker-compose.yml"))
+			bz, err := os.ReadFile(filepath.Join(dir, "docker-compose.yaml"))
 			require.NoError(t, err)
 
 			tutil.RequireGoldenBytes(t, bz)
@@ -137,7 +137,7 @@ func TestComposeTemplate(t *testing.T) {
 				}
 				require.NoError(t, err)
 
-				bz, err := os.ReadFile(filepath.Join(dir, "docker-compose.yml"))
+				bz, err := os.ReadFile(filepath.Join(dir, "docker-compose.yaml"))
 				require.NoError(t, err)
 
 				tutil.RequireGoldenBytes(t, bz)

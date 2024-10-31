@@ -98,7 +98,7 @@ func (p *Provider) Setup() error {
 		return errors.Wrap(err, "generate compose file")
 	}
 
-	err = os.WriteFile(filepath.Join(p.Testnet.Dir, "docker-compose.yml"), bz, 0o644)
+	err = os.WriteFile(filepath.Join(p.Testnet.Dir, "docker-compose.yaml"), bz, 0o644)
 	if err != nil {
 		return errors.Wrap(err, "write compose file")
 	}
@@ -316,7 +316,7 @@ func additionalServices(testnet types.Testnet) []string {
 // ExecCompose runs a Docker Compose command for a testnet.
 func ExecCompose(ctx context.Context, dir string, args ...string) error {
 	err := exec.Command(ctx, append(
-		[]string{"docker", "compose", "-f", filepath.Join(dir, "docker-compose.yml")},
+		[]string{"docker", "compose", "-f", filepath.Join(dir, "docker-compose.yaml")},
 		args...)...)
 	if err != nil {
 		return errors.Wrap(err, "exec docker-compose")
@@ -328,7 +328,7 @@ func ExecCompose(ctx context.Context, dir string, args ...string) error {
 // ExecComposeVerbose runs a Docker Compose command for a testnet and displays its output.
 func ExecComposeVerbose(ctx context.Context, dir string, args ...string) error {
 	err := exec.CommandVerbose(ctx, append(
-		[]string{"docker", "compose", "-f", filepath.Join(dir, "docker-compose.yml")},
+		[]string{"docker", "compose", "-f", filepath.Join(dir, "docker-compose.yaml")},
 		args...)...)
 	if err != nil {
 		return errors.Wrap(err, "exec docker-compose verbose")
@@ -358,7 +358,7 @@ func Exec(ctx context.Context, args ...string) error {
 //		   image: omniops/halo:main # Upgrade node0:omniops/halo:v1.0
 //		   restart: unless-stopped
 func ReplaceUpgradeImage(dir, service string) error {
-	before, err := os.ReadFile(filepath.Join(dir, "docker-compose.yml"))
+	before, err := os.ReadFile(filepath.Join(dir, "docker-compose.yaml"))
 	if err != nil {
 		return errors.Wrap(err, "read compose file")
 	}
@@ -370,7 +370,7 @@ func ReplaceUpgradeImage(dir, service string) error {
 		return errors.New("no upgrade image found")
 	}
 
-	err = os.WriteFile(filepath.Join(dir, "docker-compose.yml"), after, 0o644)
+	err = os.WriteFile(filepath.Join(dir, "docker-compose.yaml"), after, 0o644)
 	if err != nil {
 		return errors.Wrap(err, "write compose file")
 	}

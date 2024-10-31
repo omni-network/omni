@@ -135,14 +135,14 @@ services:
     container_name: prometheus
     image: prom/prometheus:latest
     command:
-      - --config.file=/etc/prometheus/prometheus.yml
+      - --config.file=/etc/prometheus/prometheus.yaml
       - --web.console.libraries=/usr/share/prometheus/console_libraries
       - --web.console.templates=/usr/share/prometheus/consoles
       - --enable-feature=exemplar-storage
       - --enable-feature=agent
     restart: unless-stopped
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
     networks:
       test:
         ipv4_address: 10.186.73.202

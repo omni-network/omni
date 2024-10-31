@@ -125,8 +125,8 @@ func (p *Provider) Setup() error {
 			continue // No need to generate prometheus config
 		}
 
-		// Update custom prometheus.yml config for this VM
-		promCfgFile := filepath.Join(p.Testnet.Dir, "prometheus", "prometheus.yml")
+		// Update custom prometheus.yaml config for this VM
+		promCfgFile := filepath.Join(p.Testnet.Dir, "prometheus", "prometheus.yaml")
 		agentCfg, err := os.ReadFile(promCfgFile)
 		if err != nil {
 			return errors.Wrap(err, "read prometheus config")
@@ -195,7 +195,7 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.ServiceConfig) error {
 	addFile("monitor", "monitor.toml")
 	addFile("monitor", "privatekey")
 
-	addFile("prometheus", "prometheus.yml") // Prometheus isn't a "service", so not actually copied
+	addFile("prometheus", "prometheus.yaml") // Prometheus isn't a "service", so not actually copied
 
 	// Do initial sequential ssh to each VM, ensure we can connect.
 	for vmName, instance := range p.Data.VMs {
@@ -242,7 +242,7 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.ServiceConfig) error {
 				}
 			}
 
-			log.Debug(ctx, "Copying docker-compose.yml", "vm", vmName)
+			log.Debug(ctx, "Copying docker-compose.yaml", "vm", vmName)
 			composeFile := vmComposeFile(instance.IPAddress.String())
 			localComposePath := filepath.Join(p.Testnet.Dir, composeFile)
 			remoteComposePath := filepath.Join("/omni", p.Testnet.Name, composeFile)
@@ -342,7 +342,7 @@ func (p *Provider) StartNodes(ctx context.Context, _ ...*e2e.Node) error {
 			startCmd := fmt.Sprintf("cd /omni/%s && "+
 				"sudo mv %s docker-compose.yaml && "+
 				"sudo mv %s evm-init.sh && "+
-				"sudo mv %s prometheus/prometheus.yml && "+
+				"sudo mv %s prometheus/prometheus.yaml && "+
 				"sudo docker compose pull &&"+
 				"sudo ./evm-init.sh && "+
 				"sudo docker compose up -d &&"+
@@ -463,7 +463,7 @@ func copyFileToGCP(ctx context.Context, localPath string, remotePath string, ide
 }
 
 func vmAgentFile(internalIP string) string {
-	return "prometheus/" + strings.ReplaceAll(internalIP, ".", "-") + "-prometheus.yml"
+	return "prometheus/" + strings.ReplaceAll(internalIP, ".", "-") + "-prometheus.yaml"
 }
 
 func vmComposeFile(internalIP string) string {

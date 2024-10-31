@@ -50,7 +50,7 @@ func (c InitConfig) Verify() error {
 	return c.Network.Verify()
 }
 
-//go:embed compose.yml.tpl
+//go:embed compose.yaml.tpl
 var composeTpl []byte
 
 func newInitCmd() *cobra.Command {
@@ -184,7 +184,7 @@ func maybeDownloadGenesis(ctx context.Context, network netconf.ID) error {
 }
 
 func writeComposeFile(ctx context.Context, cfg InitConfig) error {
-	composeFile := filepath.Join(cfg.Home, "compose.yml")
+	composeFile := filepath.Join(cfg.Home, "compose.yaml")
 
 	if cmtos.FileExists(composeFile) {
 		log.Info(ctx, "Found existing compose file", "path", composeFile)
@@ -229,7 +229,7 @@ func writeComposeFile(ctx context.Context, cfg InitConfig) error {
 		return errors.Wrap(err, "writing compose file")
 	}
 
-	log.Info(ctx, "Generated docker compose file", "path", filepath.Join(cfg.Home, "compose.yml"), "geth_version", geth.Version, "halo_version", cfg.HaloTag)
+	log.Info(ctx, "Generated docker compose file", "path", filepath.Join(cfg.Home, "compose.yaml"), "geth_version", geth.Version, "halo_version", cfg.HaloTag)
 
 	return nil
 }
