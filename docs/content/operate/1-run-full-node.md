@@ -1,12 +1,6 @@
 # Run a Full Node
 
-Currently, anyone can run a node on Omega Testnet. Stay tuned for running full nodes on mainnet.
-
-Check out our latest [releases](https://github.com/omni-network/omni/releases/latest).
-
-## Omni Omega Testnet
-
-### Quick Start
+## Quick Start
 
 The simplest way to run a full node is with the following commands:
 
@@ -24,21 +18,23 @@ docker compose up
 
 Congrats, you're running a full node!
 
-### Details
+For the upcoming mainnet, replace the `omega` network with `mainnet`.
 
-#### What's actually happening here?
+## Details
+
+### What's actually happening here?
 - First, you're installing the `omni` CLI which contains tooling to manage a node.
 - The `omni operator init-nodes` command generates config files, genesis files, and docker compose in `~/.omni/<network>`.
 - `docker compose up -d` spins up the `halovisor` and `geth` containers.
 
-#### What is the Omni Node software stack?
+### What is the Omni Node software stack?
 - The Omni architecture is similar to Ethereum PoS in that it consists of two chains: an execution chain and a consensus chain.
 - The execution chain is implemented by running the latest version of `geth` . Note that Omni doesn’t fork geth, we use the stock standard version, just with a custom Omni execution genesis file.
 - The consensus chain is implemented by running `halo` which is a CosmosSDK application chain. Halo connects to geth via the [EngineAPI](https://geth.ethereum.org/docs/interacting-with-geth/rpc#engine-api).
 - Running an Omni full node therefore consists of running both `halo` and `geth`.
 - For step-by-step instructions to manually configuring a full node, see [Configure a Full Node](6-config.md)
 
-#### Hardware Requirements
+### Hardware Requirements
 
 | Category         | Recommendation                                                               |
 |------------------|------------------------------------------------------------------------------|
@@ -50,7 +46,7 @@ Congrats, you're running a full node!
 | Operating System | `linux/amd64`                                                                |
 | Inbound ports    | Enabled for cometBFT (`tcp://26656`) and Geth (`tcp://30303`, `udp://30303`) |
 
-#### `halo` Deployment Options
+### `halo` Deployment Options
 
 Note that `halo` is a CosmosSDK application which requires a specific binary version to run at each network upgrade height.
 CosmosSDK uses [Cosmovisor](https://docs.cosmos.network/main/build/tooling/cosmovisor) to manage the binary versioning and swapping at the correct height.

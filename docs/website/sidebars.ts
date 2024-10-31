@@ -22,6 +22,7 @@ const sidebars: SidebarsConfig = {
       items: [
         'build/quickstart',
         'build/walkthrough',
+        'build/mainnet',
         'build/omega',
         'build/faq',
       ],
@@ -46,7 +47,6 @@ const sidebars: SidebarsConfig = {
         'operate/run-full-node',
         'operate/config',
         'operate/validator',
-        'operate/uluwatu',
         'operate/roadmap',
         'operate/faq',
       ],

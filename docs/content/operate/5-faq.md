@@ -15,7 +15,7 @@
 ### Can raw binaries be used instead of docker containers?
 - Yes, the halo and geth binaries are available on their respective Github release pages.
 - Note that setting up cosmovisor is strongly advised to support smooth network upgrades. See our [halovisor build scripts](https://github.com/omni-network/omni/tree/main/scripts/halovisor) for inspiration.
-- Note that before starting geth, it must first be initialised with the Omni Omega [`execution-genesis.json`](https://github.com/omni-network/omni/tree/main/lib/netconf/omega) file via `geth init`.
+- Note that before starting geth, it must first be initialised with the relevant `execution-genesis.json` file via `geth init` (see [omega](https://github.com/omni-network/omni/tree/main/lib/netconf/omega) and [mainnet](https://github.com/omni-network/omni/tree/main/lib/netconf/mainnet)).
 
 ### How to check if the validator is ready?
 A node is considered ready when it is healthy and functions as intended.
@@ -49,6 +49,9 @@ The node readiness can be checked as follows:
         --network=omega \
         --private-key-file=./operator-private-key-0x6e9C5F0Ad4739C746f4398faAf773A3503476b90
     ```
+
+Use `--network=mainnet` for mainnet.
+
 ### What is the difference between L and F on the dashboard?
 - Each validator votes for each support chain twice: once for latest blocks (L) and once for finalized blocks (F). This allows users of our xchain protocol to decide if they want to wait for chain finalization (strong security and exactly once guarantees) or if they want fast xchain messages with latest (strong security but no delivery guarantees due to risk of reorg).
 

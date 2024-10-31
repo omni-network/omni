@@ -6,9 +6,11 @@ sidebar_position: 4
 
 ### Which chains does Omni support?
 
-Mainnet v1 launch: Ethereum, Omni, Arbitrum, Optimism, Base
+**Mainnet**: Ethereum, Omni, Arbitrum One, Optimism, Base
 
-Omega Testnet: Ethereum Holesky, Omni Omega, Arbitrum Sepolia, Optimism Sepolia, Base Sepolia
+**Omega testnet**: Ethereum Holesky, Omni Omega, Arbitrum Sepolia, Optimism Sepolia, Base Sepolia
+
+More chains will be added overtime.
 
 ### How fast is a message delivered?
 
