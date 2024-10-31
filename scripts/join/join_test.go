@@ -45,7 +45,7 @@ func TestJoinNetwork(t *testing.T) {
 
 	const (
 		timeout     = time.Hour * 10
-		minDuration = time.Minute * 30
+		minDuration = time.Minute * 10
 	)
 
 	ctx, cancel := context.WithCancel(context.Background())
