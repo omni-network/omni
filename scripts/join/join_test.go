@@ -92,7 +92,7 @@ func TestJoinNetwork(t *testing.T) {
 		defer cancel() // Stop other goroutine
 
 		// Monitor the progress until synced.
-		cmtCl, err := rpchttp.New("localhost:26657", "/websocket")
+		cmtCl, err := rpchttp.New("http://localhost:26657", "/websocket")
 		require.NoError(t, err)
 		ethCl, err := ethclient.Dial("omni_evm", "http://localhost:8545")
 		require.NoError(t, err)

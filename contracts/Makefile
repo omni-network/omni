@@ -37,12 +37,12 @@ CORE_CONTRACTS := OmniPortal FeeOracleV1 Create3 TransparentUpgradeableProxy \
 			OmniGasPump OmniGasStation
 
 AVS_CONTRACTS := OmniAVS DelegationManager StrategyManager StrategyBase AVSDirectory \
-			avs/test/common/MockERC20.sol:MockERC20
+			test/common/MockERC20.sol:MockERC20
 
 .PHONY: bindings
 bindings: check-abigen-version build ## Generate golang contract bindings.
 	ROOT=./core ./bindings/scripts/gen.sh $(CORE_CONTRACTS)
-	ROOT=./avs ./bindings/scripts/gen.sh $(CONTRACTS)
+	ROOT=./avs ./bindings/scripts/gen.sh $(AVS_CONTRACTS)
 	go run ./bindings/scripts/commenttypes.go -- bindings/strategymanager.go IStrategyManagerDeprecatedStructQueuedWithdrawal IStrategyManagerDeprecatedStructWithdrawerAndNonce
 	go run ./bindings/scripts/commenttypes.go -- bindings/avsdirectory.go ISignatureUtilsSignatureWithSaltAndExpiry
 

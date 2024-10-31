@@ -27,6 +27,6 @@ The upgrade also contains changes to `halo`’s `attest` module logic ensuring t
 
 No changes to `geth` is required, this version is compatible with `v1.14.11`.
 
-See [Run a Full Node](./1-run-full-node.md#halo-deployment-options) for more details on running `halo` with `cosmovisor`.
+See [Run a Full Node](./run-full-node.md#halo-deployment-options) for more details on running `halo` with `cosmovisor`.
 
-See the [Operator FAQ](./5-faq.md)  for details on `halovisor vs halo` and `docker vs binaries`
+See the [Operator FAQ](./faq.md)  for details on `halovisor vs halo` and `docker vs binaries`
