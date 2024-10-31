@@ -87,6 +87,14 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 		return errors.New("required flag --moniker not set")
 	}
 
+	if !filepath.IsAbs(cfg.Home) {
+		absPath, err := filepath.Abs(cfg.Home)
+		if err != nil {
+			return errors.Wrap(err, "convert path")
+		}
+		cfg.Home = absPath
+	}
+
 	if cfg.Home == "" {
 		var err error
 		cfg.Home, err = homeDir(cfg.Network)
