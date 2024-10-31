@@ -7,7 +7,7 @@
 ## ✅ Public Omega Testnet + Whitelisted Validators
 
 - Operators have been onboarded on Omega testnet. See [public dashbboard](https://omniops.grafana.net/d/ddycpqfje3pxcb/validator-dash-public)
-- Operators have applied the [Uluwatu](3-uluwatu.md) network upgrade.
+- Operators have applied the [Uluwatu](uluwatu.md) network upgrade.
 
 ## ⏳ Mainnet - Beta
 

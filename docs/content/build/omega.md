@@ -1,4 +1,6 @@
-# Omega Testnet
+# Testnet
+
+The current testnet network is called **Omega** (chain id [164](https://chainlist.org/chain/164)).
 
 ### Have Questions?
 

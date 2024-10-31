@@ -32,7 +32,7 @@ For the upcoming mainnet, replace the `omega` network with `mainnet`.
 - The execution chain is implemented by running the latest version of `geth` . Note that Omni doesn’t fork geth, we use the stock standard version, just with a custom Omni execution genesis file.
 - The consensus chain is implemented by running `halo` which is a CosmosSDK application chain. Halo connects to geth via the [EngineAPI](https://geth.ethereum.org/docs/interacting-with-geth/rpc#engine-api).
 - Running an Omni full node therefore consists of running both `halo` and `geth`.
-- For step-by-step instructions to manually configuring a full node, see [Configure a Full Node](6-config.md)
+- For step-by-step instructions to manually configuring a full node, see [Configure a Full Node](config.md)
 
 ### Hardware Requirements
 
@@ -87,4 +87,4 @@ There are three ways to run `halo`, listed in order of preference:
     - Start the node and it should catch up and continue processing the chain.
     - Note this will include downtime and is therefore not advised for validators as will negatively impact validator performance.
 
-See the [Operator FAQ](./5-faq.md)  for details on `halovisor vs halo` and `docker vs binaries`
+See the [Operator FAQ](./faq.md)  for details on `halovisor vs halo` and `docker vs binaries`
