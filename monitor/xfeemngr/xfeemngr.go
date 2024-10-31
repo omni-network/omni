@@ -14,7 +14,6 @@ import (
 	"github.com/omni-network/omni/lib/tokens/coingecko"
 	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
-	"github.com/omni-network/omni/monitor/xfeemngr/ticker"
 	"github.com/omni-network/omni/monitor/xfeemngr/tokenprice"
 
 	"github.com/ethereum/go-ethereum"
@@ -25,7 +24,6 @@ type Manager struct {
 	gprice  *gasprice.Buffer
 	tprice  *tokenprice.Buffer
 	oracles map[uint64]feeOracle
-	ticker  ticker.Ticker
 }
 
 type Config struct {
@@ -56,6 +54,14 @@ const (
 	// maxSaneEthPerOmni is the maximum sane conversion rate of eth to omni.
 	maxSaneEthPerOmni = float64(1)
 )
+
+var chainSyncOverrides = map[uint64]time.Duration{
+	// override for ethereum mainnet, to reduce spend
+	evmchain.IDEthereum: 90 * time.Minute,
+
+	// overide on holesky too, to test overide on omega
+	evmchain.IDHolesky: 90 * time.Minute,
+}
 
 func Start(ctx context.Context, network netconf.Network, cfg Config, privKeyPath string) error {
 	log.Info(ctx, "Starting fee manager", "endpoint", cfg.RPCEndpoints)
@@ -89,7 +95,6 @@ func Start(ctx context.Context, network netconf.Network, cfg Config, privKeyPath
 		gprice:  gprice,
 		tprice:  tprice,
 		oracles: oracles,
-		ticker:  ticker.New(ticker.WithInterval(feeOracleSyncInterval)),
 	}
 
 	startMonitoring(ctx, network, ethClients)
@@ -108,7 +113,7 @@ func (m *Manager) start(ctx context.Context) {
 
 	// start oracle sync
 	for _, oracle := range m.oracles {
-		oracle.syncForever(ctx, m.ticker)
+		oracle.syncForever(ctx)
 	}
 }
 

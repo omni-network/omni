@@ -20,6 +20,7 @@ import (
 
 type feeOracle struct {
 	chain  evmchain.Metadata   // source chain
+	tick   ticker.Ticker       // ticker to sync fee oracle
 	toSync []evmchain.Metadata // chains to sync on fee oracle
 	gprice *gasprice.Buffer    // gas price buffer
 	tprice *tokenprice.Buffer  // token price buffer
@@ -32,6 +33,12 @@ func makeOracle(chain netconf.Chain, toSync []evmchain.Metadata, ethCl ethclient
 	chainmeta, ok := evmchain.MetadataByID(chain.ID)
 	if !ok {
 		return feeOracle{}, errors.New("chain metadata not found", "chain", chain.ID)
+	}
+
+	syncInterval := feeOracleSyncInterval
+	override, ok := chainSyncOverrides[chain.ID]
+	if ok {
+		syncInterval = override
 	}
 
 	getContract := func() func(context.Context) (contract.FeeOracleV1, error) {
@@ -55,6 +62,7 @@ func makeOracle(chain netconf.Chain, toSync []evmchain.Metadata, ethCl ethclient
 
 	return feeOracle{
 		chain:       chainmeta,
+		tick:        ticker.New(ticker.WithInterval(syncInterval)),
 		toSync:      toSync,
 		gprice:      gprice,
 		tprice:      tprice,
@@ -63,10 +71,10 @@ func makeOracle(chain netconf.Chain, toSync []evmchain.Metadata, ethCl ethclient
 }
 
 // syncForever syncs the on-chain gas price and token conversion rates with their respective buffers, forever.
-func (o feeOracle) syncForever(ctx context.Context, tick ticker.Ticker) {
+func (o feeOracle) syncForever(ctx context.Context) {
 	ctx = log.WithCtx(ctx, "component", "feeOracle", "chain", o.chain.Name)
 	log.Info(ctx, "Starting fee oracle sync")
-	tick.Go(ctx, o.syncOnce)
+	o.tick.Go(ctx, o.syncOnce)
 }
 
 // syncOnce syncs the on-chain gas price and token conversion rates with their respective buffers, once.
