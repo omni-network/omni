@@ -11,7 +11,7 @@ fi
 
 # This tells https://foundry.paradigm.xyz where to install foundryup -
 # $FOUNDRY_DIR/bin. This dir is added to $GITHUB_PATH in
-# .github/workflows/pre-commit.yml
+# .github/workflows/pre-commit.yaml
 export FOUNDRY_DIR="$HOME/.foundry";
 
 

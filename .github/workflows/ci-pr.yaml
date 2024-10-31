@@ -14,20 +14,20 @@ permissions:
 
 jobs:
   pre-commit:
-    uses: ./.github/workflows/pre-commit.yml
+    uses: ./.github/workflows/pre-commit.yaml
   go-tests:
-    uses: ./.github/workflows/gotest.yml
+    uses: ./.github/workflows/gotest.yaml
   go-lint:
-    uses: ./.github/workflows/golangci-lint.yml
+    uses: ./.github/workflows/golangci-lint.yaml
   cli-install:
-    uses: ./.github/workflows/cliinstall.yml
+    uses: ./.github/workflows/cliinstall.yaml
   cli-command:
-    uses: ./.github/workflows/clicommand.yml
+    uses: ./.github/workflows/clicommand.yaml
   sol-tests:
-    uses: ./.github/workflows/soltest.yml
+    uses: ./.github/workflows/soltest.yaml
   e2e-tests:
-    uses: ./.github/workflows/pr-e2etest.yml
+    uses: ./.github/workflows/pr-e2etest.yaml
   check-sol-artifacts:
-    uses: ./.github/workflows/check-sol-artifacts.yml
+    uses: ./.github/workflows/check-sol-artifacts.yaml
   pr-label:
-    uses: ./.github/workflows/pr-label.yml
+    uses: ./.github/workflows/pr-label.yaml

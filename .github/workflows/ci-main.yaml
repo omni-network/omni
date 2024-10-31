@@ -13,24 +13,24 @@ permissions:
 
 jobs:
   pre-commit:
-    uses: ./.github/workflows/pre-commit.yml
+    uses: ./.github/workflows/pre-commit.yaml
   go-tests:
-    uses: ./.github/workflows/gotest.yml
+    uses: ./.github/workflows/gotest.yaml
   go-lint:
-    uses: ./.github/workflows/golangci-lint.yml
+    uses: ./.github/workflows/golangci-lint.yaml
   sol-tests:
-      uses: ./.github/workflows/soltest.yml
+      uses: ./.github/workflows/soltest.yaml
   cli-install:
-    uses: ./.github/workflows/cliinstall.yml
+    uses: ./.github/workflows/cliinstall.yaml
   cli-command:
-    uses: ./.github/workflows/clicommand.yml
+    uses: ./.github/workflows/clicommand.yaml
   release-snapshot:
-    uses: ./.github/workflows/release-snapshot.yml
+    uses: ./.github/workflows/release-snapshot.yaml
     needs: [pre-commit, go-tests, go-lint, sol-tests]
     secrets: inherit
   e2e:
-    uses: ./.github/workflows/e2etest.yml
+    uses: ./.github/workflows/e2etest.yaml
     needs: [release-snapshot]
   e2e-test-admin:
-    uses: ./.github/workflows/e2etestadmin.yml
+    uses: ./.github/workflows/e2etestadmin.yaml
     needs: [release-snapshot]

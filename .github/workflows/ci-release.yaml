@@ -11,5 +11,5 @@ permissions:
 
 jobs:
   release-official:
-    uses: ./.github/workflows/release-official.yml
+    uses: ./.github/workflows/release-official.yaml
     secrets: inherit
