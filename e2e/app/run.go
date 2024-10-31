@@ -107,6 +107,10 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		if err := DeployGasApp(ctx, def); err != nil {
 			return nil, err
 		}
+
+		if _ /* tokenDeployments */, _ /* vaultDeployments */, err := DeployMockSymbiotic(ctx, def); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := setupTokenBridge(ctx, def); err != nil {
