@@ -12,6 +12,7 @@ package scripts
 import (
 	_ "github.com/bufbuild/buf/cmd/buf"
 	_ "github.com/cosmos/gogoproto/protoc-gen-gocosmos"
+	_ "github.com/fjl/gencodec"
 	_ "golang.org/x/tools/cmd/stringer"
 	_ "google.golang.org/grpc/cmd/protoc-gen-go-grpc"
 	_ "google.golang.org/protobuf/cmd/protoc-gen-go"
@@ -29,3 +30,4 @@ import (
 //go:generate echo Installing tools: misc
 //go:generate go install golang.org/x/tools/cmd/stringer
 //go:generate go install go.uber.org/mock/mockgen@latest
+//go:generate go install github.com/fjl/gencodec@latest

@@ -18,6 +18,7 @@ import (
 	common "github.com/ethereum/go-ethereum/common"
 	types "github.com/ethereum/go-ethereum/core/types"
 	ethclient "github.com/omni-network/omni/lib/ethclient"
+	optypes "github.com/omni-network/omni/lib/optypes"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -25,6 +26,7 @@ import (
 type MockClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockClientMockRecorder
+	isgomock struct{}
 }
 
 // MockClientMockRecorder is the mock recorder for MockClient.
@@ -265,22 +267,6 @@ func (mr *MockClientMockRecorder) HeaderByType(ctx, typ any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HeaderByType", reflect.TypeOf((*MockClient)(nil).HeaderByType), ctx, typ)
 }
 
-// ProgressIfSyncing mocks base method.
-func (m *MockClient) ProgressIfSyncing(ctx context.Context) (*ethereum.SyncProgress, bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ProgressIfSyncing", ctx)
-	ret0, _ := ret[0].(*ethereum.SyncProgress)
-	ret1, _ := ret[1].(bool)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// ProgressIfSyncing indicates an expected call of ProgressIfSyncing.
-func (mr *MockClientMockRecorder) ProgressIfSyncing(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProgressIfSyncing", reflect.TypeOf((*MockClient)(nil).ProgressIfSyncing), ctx)
-}
-
 // NonceAt mocks base method.
 func (m *MockClient) NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error) {
 	m.ctrl.T.Helper()
@@ -294,6 +280,21 @@ func (m *MockClient) NonceAt(ctx context.Context, account common.Address, blockN
 func (mr *MockClientMockRecorder) NonceAt(ctx, account, blockNumber any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NonceAt", reflect.TypeOf((*MockClient)(nil).NonceAt), ctx, account, blockNumber)
+}
+
+// OPTransactionReceipt mocks base method.
+func (m *MockClient) OPTransactionReceipt(ctx context.Context, hash common.Hash) (*optypes.Receipt, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OPTransactionReceipt", ctx, hash)
+	ret0, _ := ret[0].(*optypes.Receipt)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// OPTransactionReceipt indicates an expected call of OPTransactionReceipt.
+func (mr *MockClientMockRecorder) OPTransactionReceipt(ctx, hash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OPTransactionReceipt", reflect.TypeOf((*MockClient)(nil).OPTransactionReceipt), ctx, hash)
 }
 
 // PeerCount mocks base method.
@@ -384,6 +385,22 @@ func (m *MockClient) PendingTransactionCount(ctx context.Context) (uint, error) 
 func (mr *MockClientMockRecorder) PendingTransactionCount(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PendingTransactionCount", reflect.TypeOf((*MockClient)(nil).PendingTransactionCount), ctx)
+}
+
+// ProgressIfSyncing mocks base method.
+func (m *MockClient) ProgressIfSyncing(ctx context.Context) (*ethereum.SyncProgress, bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProgressIfSyncing", ctx)
+	ret0, _ := ret[0].(*ethereum.SyncProgress)
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// ProgressIfSyncing indicates an expected call of ProgressIfSyncing.
+func (mr *MockClientMockRecorder) ProgressIfSyncing(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProgressIfSyncing", reflect.TypeOf((*MockClient)(nil).ProgressIfSyncing), ctx)
 }
 
 // SendTransaction mocks base method.
