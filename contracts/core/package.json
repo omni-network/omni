@@ -24,6 +24,7 @@
     "@openzeppelin/contracts-upgradeable": "^5.0.2",
     "eigenlayer-contracts": "github:Layr-Labs/eigenlayer-contracts",
     "eigenlayer-middleware": "github:Layr-Labs/eigenlayer-middleware",
+    "solady": "^0.0.261",
     "solmate": "^6.2.0"
   }
 }
