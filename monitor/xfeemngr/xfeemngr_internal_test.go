@@ -73,7 +73,7 @@ func TestStart(t *testing.T) {
 	tpriceBuf := tokenprice.NewBuffer(tokenPricer, tokens.OMNI, tokens.ETH, tokenprice.WithThresholdPct(tpriceThreshold), tokenprice.WithTicker(tick))
 
 	chains := makeChains(chainIDs)
-	oracles := makeMockOracles(chains, gpriceBuf, tpriceBuf)
+	oracles := makeMockOracles(chains, tick, gpriceBuf, tpriceBuf)
 
 	// make sure all postsTo are zero, at start
 	// this way when we check them later, we know they have been updated
@@ -90,7 +90,6 @@ func TestStart(t *testing.T) {
 	mngr := Manager{
 		gprice:  gpriceBuf,
 		tprice:  tpriceBuf,
-		ticker:  tick,
 		oracles: oracles,
 	}
 
@@ -216,7 +215,7 @@ func TestStart(t *testing.T) {
 	expectInitials()
 }
 
-func makeMockOracles(chains []evmchain.Metadata, gprice *gasprice.Buffer, tprice *tokenprice.Buffer) map[uint64]feeOracle {
+func makeMockOracles(chains []evmchain.Metadata, tick ticker.Ticker, gprice *gasprice.Buffer, tprice *tokenprice.Buffer) map[uint64]feeOracle {
 	oracles := make(map[uint64]feeOracle)
 
 	for _, chain := range chains {
@@ -225,6 +224,7 @@ func makeMockOracles(chains []evmchain.Metadata, gprice *gasprice.Buffer, tprice
 
 		oracles[chain.ChainID] = feeOracle{
 			chain:       chain,
+			tick:        tick,
 			toSync:      chains,
 			gprice:      gprice,
 			tprice:      tprice,
