@@ -67,6 +67,8 @@ func Run(ctx context.Context, cfg Config) error {
 	pricer := newTokenPricer(ctx)
 	pnl := newPnlLogger(network.ID, pricer)
 
+	attestStreamer := newLeaderStreamer(cprov, network)
+
 	for _, destChain := range network.EVMChains() {
 		// Setup send provider
 		sendProvider := func() (SendAsync, error) {
@@ -100,7 +102,8 @@ func Run(ctx context.Context, cfg Config) error {
 			xprov,
 			CreateSubmissions,
 			sendProvider,
-			awaitValSet)
+			awaitValSet,
+			attestStreamer)
 
 		go worker.Run(ctx)
 	}

@@ -2,6 +2,7 @@ package relayer
 
 import (
 	"context"
+	"golang.org/x/sync/errgroup"
 	"sync/atomic"
 	"time"
 
@@ -22,28 +23,30 @@ const (
 )
 
 type Worker struct {
-	destChain    netconf.Chain // Destination chain
-	network      netconf.Network
-	cProvider    cchain.Provider
-	xProvider    xchain.Provider
-	creator      CreateFunc
-	sendProvider func() (SendAsync, error)
-	awaitValSet  awaitValSet
+	destChain      netconf.Chain // Destination chain
+	network        netconf.Network
+	cProvider      cchain.Provider
+	xProvider      xchain.Provider
+	attestStreamer attestStreamer
+	creator        CreateFunc
+	sendProvider   func() (SendAsync, error)
+	awaitValSet    awaitValSet
 }
 
 // NewWorker creates a new worker for a single destination chain.
 func NewWorker(destChain netconf.Chain, network netconf.Network, cProvider cchain.Provider,
 	xProvider xchain.Provider, creator CreateFunc, sendProvider func() (SendAsync, error),
-	awaitValSet awaitValSet,
+	awaitValSet awaitValSet, attestStreamer attestStreamer,
 ) *Worker {
 	return &Worker{
-		destChain:    destChain,
-		network:      network,
-		cProvider:    cProvider,
-		xProvider:    xProvider,
-		creator:      creator,
-		sendProvider: sendProvider,
-		awaitValSet:  awaitValSet,
+		destChain:      destChain,
+		network:        network,
+		cProvider:      cProvider,
+		xProvider:      xProvider,
+		creator:        creator,
+		sendProvider:   sendProvider,
+		awaitValSet:    awaitValSet,
+		attestStreamer: attestStreamer,
 	}
 }
 
@@ -99,6 +102,9 @@ func (w *Worker) runOnce(ctx context.Context) error {
 		return err
 	}
 
+	// Errgroup to manage all goroutines: streams and buffer
+	eg, ctx := errgroup.WithContext(ctx)
+
 	var logAttrs []any //nolint:prealloc // Not worth it
 	for chainVer, fromOffset := range attestOffsets {
 		if chainVer.ID == w.destChain.ID { // Sanity check
@@ -107,14 +113,24 @@ func (w *Worker) runOnce(ctx context.Context) error {
 
 		callback := w.newCallback(msgFilter, buf.AddInput, newMsgStreamMapper(w.network))
 
-		w.cProvider.StreamAsync(ctx, chainVer, fromOffset, w.destChain.Name, callback)
+		eg.Go(func() error {
+			return w.attestStreamer(ctx, chainVer, fromOffset, w.destChain.Name, callback)
+		})
 
 		logAttrs = append(logAttrs, w.network.ChainVersionName(chainVer), fromOffset)
 	}
 
+	eg.Go(func() error {
+		return buf.Run(ctx)
+	})
+
 	log.Info(ctx, "Worker subscribed to chains", logAttrs...)
 
-	return buf.Run(ctx)
+	if err := eg.Wait(); err != nil {
+		return errors.Wrap(err, "worker error")
+	}
+
+	return nil
 }
 
 // awaitValSet blocks until the portal is aware of this validator set ID.
@@ -192,8 +208,21 @@ func (w *Worker) newCallback(
 ) cchain.ProviderCallback {
 	var cachedValSetID uint64
 	var cachedValSet []cchain.PortalValidator
+	var prevOffset uint64
 
-	return func(ctx context.Context, att xchain.Attestation) error {
+	return func(ctx context.Context, att xchain.Attestation) (err error) {
+		// Sanity check strictly sequential offsets.
+		{
+			if prevOffset != 0 && att.AttestOffset != prevOffset+1 {
+				return errors.New("non-sequential attestation offset [BUG]", "prev", prevOffset, "curr", att.AttestOffset)
+			}
+			defer func() {
+				if err == nil {
+					prevOffset = att.AttestOffset
+				}
+			}()
+		}
+
 		block, ok, err := fetchXBlock(ctx, w.xProvider, att)
 		if err != nil {
 			return err
