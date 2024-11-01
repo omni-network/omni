@@ -37,7 +37,6 @@ func DeployMockSymbiotic(ctx context.Context, def Definition) (map[uint64]TokenD
 	return deployedTokens, deployedVaults, nil
 }
 
-// deployTokens deploys OmniGasPump contracts to all chains except Omni's EVM.
 func deployTokens(ctx context.Context, def Definition) (map[uint64]TokenDeployment, error) {
 	tokens := []struct {
 		name   string
