@@ -7,8 +7,7 @@ library Solve {
         Open,
         Accepted,
         Rejected,
-        Fulfilled,
-        Paid
+        Fulfilled
     }
 
     /**

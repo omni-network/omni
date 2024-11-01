@@ -38,6 +38,13 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable {
     event Accepted(bytes32 indexed id, address indexed by);
 
     /**
+     * @notice Emitted when a request is rejected.
+     * @param id  ID of the request.
+     * @param by  Address of the solver who rejected the request.
+     */
+    event Rejected(bytes32 indexed id, address indexed by);
+
+    /**
      * @notice Emitted when a request is cancelled.
      * @param id  ID of the request.
      */
@@ -115,6 +122,21 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable {
         req.acceptedBy = msg.sender;
 
         emit Accepted(id, msg.sender);
+    }
+
+    /**
+     * @notice Reject an open request.
+     * @dev Only a whitelisted solver can reject.
+     * @param id  ID of the request.
+     */
+    function reject(bytes32 id) external onlyRoles(SOLVER) {
+        Solve.Request storage req = _requests[id];
+        if (req.status != Solve.Status.Open) revert RequestNotOpen();
+
+        req.updatedAt = uint40(block.timestamp);
+        req.status = Solve.Status.Rejected;
+
+        emit Rejected(id, msg.sender);
     }
 
     /**
