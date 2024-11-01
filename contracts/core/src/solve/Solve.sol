@@ -6,7 +6,6 @@ library Solve {
         Invalid,
         Open,
         Accepted,
-        Cancelled,
         Rejected,
         Fulfilled,
         Paid

@@ -18,6 +18,8 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable {
     error InvalidCall();
     error InvalidDeposit();
     error RequestNotOpen();
+    error TransferFailed();
+    error RequestNotCancelable();
 
     /**
      * @notice Emitted when a request is created.
@@ -34,6 +36,12 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable {
      * @param by  Address of the solver who accepted the request.
      */
     event Accepted(bytes32 indexed id, address indexed by);
+
+    /**
+     * @notice Emitted when a request is cancelled.
+     * @param id  ID of the request.
+     */
+    event Cancelled(bytes32 indexed id);
 
     /**
      * @notice Role for solvers.
@@ -94,7 +102,8 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable {
     }
 
     /**
-     * @notice Accept a request.
+     * @notice Accept an open request.
+     * @dev Only a whitelisted solver can accept.
      * @param id  ID of the request.
      */
     function accept(bytes32 id) external onlyRoles(SOLVER) {
@@ -106,6 +115,21 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable {
         req.acceptedBy = msg.sender;
 
         emit Accepted(id, msg.sender);
+    }
+
+    /**
+     * @notice Cancel an open or rejected request and refund deposits.
+     * @dev Only request initiator can cancel.
+     * @param id  ID of the request.
+     */
+    function cancel(bytes32 id) external {
+        Solve.Request storage req = _requests[id];
+        if (req.status != Solve.Status.Open && req.status != Solve.Status.Rejected) revert RequestNotCancelable();
+        if (req.from != msg.sender) revert Unauthorized();
+
+        _cancelRequest(req);
+
+        emit Cancelled(id);
     }
 
     /**
@@ -140,6 +164,23 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable {
             // This allows us to transfer while opening the request - saving some gas.
             IERC20(deposits[i].token).safeTransferFrom(msg.sender, address(this), deposits[i].amount);
         }
+    }
+
+    function _cancelRequest(Solve.Request storage req) internal {
+        // Refund deposits
+        uint256 length = req.deposits.length;
+        for (uint256 i = 0; i < length; i++) {
+            Solve.Deposit memory deposit = req.deposits[i];
+            if (deposit.isNative) {
+                (bool success,) = payable(msg.sender).call{ value: deposit.amount }("");
+                if (!success) revert TransferFailed();
+            } else {
+                IERC20(deposit.token).safeTransfer(msg.sender, deposit.amount);
+            }
+        }
+
+        // Delete request
+        delete _requests[req.id];
     }
 
     /**

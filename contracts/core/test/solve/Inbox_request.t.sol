@@ -216,12 +216,23 @@ contract Inbox_request_Test is Test {
         vm.expectRevert(Inbox.RequestNotOpen.selector);
         inbox.accept(bytes32(0));
 
-        // create valid request to advance through later states
+        // create request to be cancelled
         vm.deal(user, 1 ether);
         Solve.Call memory call = randCall();
         Solve.TokenDeposit[] memory deposits = new Solve.TokenDeposit[](0);
         vm.prank(user);
         bytes32 id = inbox.request{ value: 1 ether }(call, deposits);
+
+        // cannot accept cancelled request
+        vm.prank(user);
+        inbox.cancel(id);
+        vm.prank(solver);
+        vm.expectRevert(Inbox.RequestNotOpen.selector);
+        inbox.accept(id);
+
+        // create valid request to advance through later states
+        vm.prank(user);
+        id = inbox.request{ value: 1 ether }(call, deposits);
 
         // once accepted, non-solvers still cannot call accept
         vm.prank(solver);
@@ -334,6 +345,223 @@ contract Inbox_request_Test is Test {
         });
     }
 
+    function test_cancel_reverts() public {
+        // cannot cancel non-existent request
+        vm.expectRevert(Inbox.RequestNotCancelable.selector);
+        inbox.cancel(bytes32(0));
+
+        // create request to be cancelled
+        vm.deal(user, 1 ether);
+        Solve.Call memory call = randCall();
+        Solve.TokenDeposit[] memory deposits = new Solve.TokenDeposit[](0);
+        vm.prank(user);
+        bytes32 id = inbox.request{ value: 1 ether }(call, deposits);
+
+        // cannot cancel cancelled request
+        vm.startPrank(user);
+        inbox.cancel(id);
+        vm.expectRevert(Inbox.RequestNotCancelable.selector);
+        inbox.cancel(id);
+        vm.stopPrank();
+
+        // create valid request to advance through later states
+        vm.prank(user);
+        id = inbox.request{ value: 1 ether }(call, deposits);
+
+        // cannot cancel request not initiated by sender
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        inbox.cancel(id);
+
+        // cannot cancel accepted request
+        vm.prank(solver);
+        inbox.accept(id);
+        vm.expectRevert(Inbox.RequestNotCancelable.selector);
+        inbox.cancel(id);
+
+        // TODO: complete logic to advance through additional states and then test those
+    }
+
+    function test_cancel_one_request() public {
+        // create valid request
+        vm.deal(user, 1 ether);
+        Solve.Call memory call = randCall();
+        Solve.TokenDeposit[] memory deposits = new Solve.TokenDeposit[](0);
+        vm.prank(user);
+        bytes32 id = inbox.request{ value: 1 ether }(call, deposits);
+
+        // cancel request
+        vm.prank(user);
+        inbox.cancel(id);
+
+        assertEq(address(inbox).balance, 0, "address(inbox).balance");
+        assertEq(address(user).balance, 1 ether, "address(user).balance");
+        assertNewRequest({
+            id: id,
+            from: address(0),
+            status: Solve.Status.Invalid,
+            call: Solve.Call(0, address(0), 0, bytes("")),
+            deposits: deposits,
+            nativeDeposit: 0
+        });
+    }
+
+    function test_cancel_two_requests() public {
+        // create valid requests
+        vm.deal(user, 2 ether);
+        Solve.Call memory call = randCall();
+        Solve.TokenDeposit[] memory deposits = new Solve.TokenDeposit[](0);
+        vm.startPrank(user);
+        bytes32 id1 = inbox.request{ value: 1 ether }(call, deposits);
+        bytes32 id2 = inbox.request{ value: 1 ether }(call, deposits);
+        vm.stopPrank();
+
+        // cancel both requests
+        vm.startPrank(user);
+        inbox.cancel(id1);
+        inbox.cancel(id2);
+        vm.stopPrank();
+
+        assertEq(address(inbox).balance, 0, "address(inbox).balance");
+        assertEq(address(user).balance, 2 ether, "address(user).balance");
+        assertNewRequest({
+            id: id1,
+            from: address(0),
+            status: Solve.Status.Invalid,
+            call: Solve.Call(0, address(0), 0, bytes("")),
+            deposits: deposits,
+            nativeDeposit: 0
+        });
+        assertNewRequest({
+            id: id2,
+            from: address(0),
+            status: Solve.Status.Invalid,
+            call: Solve.Call(0, address(0), 0, bytes("")),
+            deposits: deposits,
+            nativeDeposit: 0
+        });
+    }
+
+    function test_cancel_oldest_request() public {
+        // create valid requests
+        vm.deal(user, 2 ether);
+        Solve.Call memory call = randCall();
+        Solve.TokenDeposit[] memory deposits = new Solve.TokenDeposit[](0);
+        vm.startPrank(user);
+        bytes32 id1 = inbox.request{ value: 1 ether }(call, deposits);
+        bytes32 id2 = inbox.request{ value: 1 ether }(call, deposits);
+        vm.stopPrank();
+
+        // cancel oldest request
+        vm.prank(user);
+        inbox.cancel(id1);
+
+        assertEq(address(inbox).balance, 1 ether, "address(inbox).balance");
+        assertEq(address(user).balance, 1 ether, "address(user).balance");
+        assertNewRequest({
+            id: id1,
+            from: address(0),
+            status: Solve.Status.Invalid,
+            call: Solve.Call(0, address(0), 0, bytes("")),
+            deposits: deposits,
+            nativeDeposit: 0
+        });
+        assertNewRequest({
+            id: id2,
+            from: user,
+            status: Solve.Status.Open,
+            call: call,
+            deposits: deposits,
+            nativeDeposit: 1 ether
+        });
+    }
+
+    function test_cancel_singleToken() public {
+        // create valid request
+        Solve.Call memory call = randCall();
+        Solve.TokenDeposit[] memory deposits = new Solve.TokenDeposit[](1);
+        deposits[0] = Solve.TokenDeposit({ token: address(token1), amount: 1 ether });
+
+        vm.startPrank(user);
+        mintAndApprove(deposits);
+        bytes32 id = inbox.request(call, deposits);
+
+        // cancel request
+        inbox.cancel(id);
+        vm.stopPrank();
+
+        assertEq(token1.balanceOf(address(inbox)), 0, "token1.balanceOf(inbox)");
+        assertEq(token1.balanceOf(user), 1 ether, "token1.balanceOf(user)");
+        assertNewRequest({
+            id: id,
+            from: address(0),
+            status: Solve.Status.Invalid,
+            call: Solve.Call(0, address(0), 0, bytes("")),
+            deposits: new Solve.TokenDeposit[](0),
+            nativeDeposit: 0
+        });
+    }
+
+    function test_cancel_multiToken() public {
+        // create valid request
+        Solve.Call memory call = randCall();
+        Solve.TokenDeposit[] memory deposits = new Solve.TokenDeposit[](2);
+        deposits[0] = Solve.TokenDeposit({ token: address(token1), amount: 1 ether });
+        deposits[1] = Solve.TokenDeposit({ token: address(token2), amount: 1 ether });
+
+        vm.startPrank(user);
+        mintAndApprove(deposits);
+        bytes32 id = inbox.request(call, deposits);
+
+        // cancel request
+        inbox.cancel(id);
+        vm.stopPrank();
+
+        assertEq(token1.balanceOf(address(inbox)), 0, "token1.balanceOf(inbox)");
+        assertEq(token2.balanceOf(address(inbox)), 0, "token2.balanceOf(inbox)");
+        assertEq(token1.balanceOf(user), 1 ether, "token1.balanceOf(user)");
+        assertEq(token2.balanceOf(user), 1 ether, "token2.balanceOf(user)");
+        assertNewRequest({
+            id: id,
+            from: address(0),
+            status: Solve.Status.Invalid,
+            call: Solve.Call(0, address(0), 0, bytes("")),
+            deposits: new Solve.TokenDeposit[](0),
+            nativeDeposit: 0
+        });
+    }
+
+    function test_cancel_nativeMultiToken() public {
+        // create valid request
+        vm.deal(user, 1 ether);
+        Solve.Call memory call = randCall();
+        Solve.TokenDeposit[] memory deposits = new Solve.TokenDeposit[](2);
+        deposits[0] = Solve.TokenDeposit({ token: address(token1), amount: 1 ether });
+        deposits[1] = Solve.TokenDeposit({ token: address(token2), amount: 1 ether });
+
+        vm.startPrank(user);
+        mintAndApprove(deposits);
+        bytes32 id = inbox.request{ value: 1 ether }(call, deposits);
+
+        // cancel request
+        inbox.cancel(id);
+        vm.stopPrank();
+
+        assertEq(address(inbox).balance, 0, "address(inbox).balance");
+        assertEq(address(user).balance, 1 ether, "address(user).balance");
+        assertEq(token1.balanceOf(address(inbox)), 0, "token1.balanceOf(inbox)");
+        assertEq(token2.balanceOf(address(inbox)), 0, "token2.balanceOf(inbox)");
+        assertEq(token1.balanceOf(user), 1 ether, "token1.balanceOf(user)");
+        assertEq(token2.balanceOf(user), 1 ether, "token2.balanceOf(user)");
+        assertNewRequest({
+            id: id,
+            from: address(0),
+            status: Solve.Status.Invalid,
+            call: Solve.Call(0, address(0), 0, bytes("")),
+            deposits: new Solve.TokenDeposit[](0),
+            nativeDeposit: 0
+        });
+    }
+
     /// @dev Test that inbox has the correct state after a request
     function assertNewRequest(
         bytes32 id,
@@ -347,9 +575,11 @@ contract Inbox_request_Test is Test {
 
         assertTrue(req.status == status, "_assertNewRequest : req.status");
 
-        assertEq(req.id, id, "_assertNewRequest : req.id");
+        assertEq(req.id, status == Solve.Status.Invalid ? bytes32(0) : id, "_assertNewRequest : req.id");
         assertEq(req.from, from, "_assertNewRequest : req.from");
-        assertEq(req.updatedAt, block.timestamp, "_assertNewRequest : req.updatedAt"); // assumes no vm.warp()
+        assertEq(
+            req.updatedAt, status == Solve.Status.Invalid ? 0 : block.timestamp, "_assertNewRequest : req.updatedAt"
+        ); // assumes no vm.warp()
         assertEq(req.call.target, call.target, "_assertNewRequest : req.call.target");
         assertEq(req.call.destChainId, call.destChainId, "_assertNewRequest : req.call.destChainId");
         assertEq(req.call.value, call.value, "_assertNewRequest : req.call.value");
