@@ -121,6 +121,16 @@ func verifyKeyNodeType(def app.Definition, cfg key.UploadConfig) error {
 		return err
 	}
 
+	if cfg.Type == key.Service {
+		// Service keys must be not already defined in the manifest.
+		_, ok := def.Manifest.Keys[cfg.Name][cfg.Type]
+		if ok {
+			return errors.New("service key already exists in manifest")
+		}
+
+		return nil
+	}
+
 	if cfg.Type != key.EOA {
 		// Non-EOA keys must be not already defined in the manifest.
 		_, ok := def.Manifest.Keys[cfg.Name][cfg.Type]

@@ -17,7 +17,7 @@ import (
 
 func TestKeys(t *testing.T) {
 	t.Parallel()
-	for _, typ := range []key.Type{key.Validator, key.P2PConsensus, key.P2PExecution, key.EOA} {
+	for _, typ := range []key.Type{key.Validator, key.P2PConsensus, key.P2PExecution, key.EOA, key.Service} {
 		t.Run(typ.String(), func(t *testing.T) {
 			t.Parallel()
 
@@ -37,7 +37,7 @@ func TestKeys(t *testing.T) {
 
 			ecdsaKey, err := key1.ECDSA()
 			switch typ {
-			case key.Validator, key.P2PExecution, key.EOA:
+			case key.Validator, key.P2PExecution, key.EOA, key.Service:
 				require.NoError(t, err)
 				addrC := crypto.PubkeyToAddress(ecdsaKey.PublicKey)
 				require.Equal(t, addrA, addrC.Hex())

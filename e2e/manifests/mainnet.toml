@@ -4,6 +4,9 @@ public_chains = ["ethereum","arbitrum_one","base","optimism"]
 multi_omni_evms = true
 prometheus   = true
 
+[keys.tester]
+service = "0x84aC7eeC1e035Fa13a7DEBD5f6da69B82CBDC5B5"
+
 [node.validator01]
 [node.validator02]
 

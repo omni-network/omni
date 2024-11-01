@@ -46,5 +46,6 @@ var statics = map[netconf.ID][]Account{
 		remote("0x9496Bf1Bd2Fa5BCba72062cC781cC97eA6930A13", RoleDeployer),
 		secret("0xfD62020Cee216Dc543E29752058Ee9f60f7D9Ff9", RoleMonitor),
 		secret("0x6191442101086253A636aecBCC870e4778490AaB", RoleRelayer),
+		secret("0x84aC7eeC1e035Fa13a7DEBD5f6da69B82CBDC5B5", RoleTester),
 	),
 }
