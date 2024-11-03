@@ -2,14 +2,17 @@ package relayer
 
 import (
 	"context"
+	"sync"
+	"time"
+
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
+
 	"github.com/tidwall/btree"
-	"sync"
-	"time"
 )
 
 // errStop is returned when the leader should stop streaming.
@@ -24,12 +27,21 @@ func getLimit(network netconf.ID) int {
 	return 10_000 // 10k atts & 1KB per attestation & 10 chain versions ~= 100MB
 }
 
+// getBackoff returns the duration to backoff before querying the cache again.
+func getBackoff(network netconf.ID) time.Duration {
+	if network == netconf.Simnet {
+		return time.Millisecond // No backoff in tests
+	}
+
+	return time.Second // Default 1 second blocks otherwise
+}
+
 // leadChaosTimeout returns a function that returns true if the leader chaos timeout has been reached.
 // This ensures we rotate leaders after a certain time (and test leader rotation).
 func leadChaosTimeout(network netconf.ID) func() bool {
 	t0 := time.Now()
 	return func() bool {
-		duration := time.Hour
+		duration := time.Hour // Default 1 hour timeout
 		if network == netconf.Devnet {
 			duration = time.Second * 10
 		} else if network == netconf.Staging {
@@ -38,7 +50,6 @@ func leadChaosTimeout(network netconf.ID) func() bool {
 
 		return time.Since(t0) > duration
 	}
-
 }
 
 // leader tracks a worker actively streaming attestations and adding them to the cache.
@@ -95,6 +106,8 @@ type attestBuffer struct {
 // Add adds an attestation to the cache if the cache is not full or
 // if the attestation is not too old.
 // It returns true if it was added and an existing key was replaced.
+//
+//nolint:nonamedreturns // Name for clarify of API.
 func (b *attestBuffer) Add(att xchain.Attestation) (replaced bool) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -175,17 +188,20 @@ type attestStreamer func(ctx context.Context, chainVer xchain.ChainVersion, atte
 
 // newLeaderStreamer returns a new attestStreamer that avoids multiple overlapping streaming queries
 // by selecting a leader to query each range of offsets.
-func newLeaderStreamer(cprov cchain.Provider, network netconf.Network) attestStreamer {
+func newLeaderStreamer(upstream attestStreamer, network netconf.ID) attestStreamer {
 	var buffers sync.Map // map[xchain.ChainVer]*attestBuffer
 
 	return func(ctx context.Context, chainVer xchain.ChainVersion, fromOffset uint64, workerName string, callback cchain.ProviderCallback) error {
-		anyBuffer, _ := buffers.LoadOrStore(chainVer, newAttestBuffer(getLimit(network.ID)))
-		buffer := anyBuffer.(*attestBuffer)
+		anyBuffer, _ := buffers.LoadOrStore(chainVer, newAttestBuffer(getLimit(network)))
+		buffer := anyBuffer.(*attestBuffer) //nolint:revive,forcetypeassert // Type is known
 
-		name := network.ChainVersionName(chainVer)
+		name := netconf.ChainVersionNamer(network)(chainVer)
 
 		// Track the offset of the last attestation we "processed"
-		prevOffset := fromOffset - 1
+		prevOffset, ok := umath.Subtract(fromOffset, 1)
+		if !ok {
+			return errors.New("attest from offset zero [BUG]", "from", fromOffset)
+		}
 
 		// lead blocks and streams attestations from the provided height using the provided leader.
 		// It populates the cache with fetched attestations.
@@ -193,9 +209,9 @@ func newLeaderStreamer(cprov cchain.Provider, network netconf.Network) attestStr
 		lead := func(l *leader, from uint64) error {
 			defer l.Delete()
 			log.Debug(ctx, "Starting attest stream", "chain", name, "offset", from, "worker", workerName)
-			timeout := leadChaosTimeout(network.ID)
+			timeout := leadChaosTimeout(network)
 
-			err := cprov.StreamAttestations(ctx, chainVer, from, workerName, func(ctx context.Context, att xchain.Attestation) error {
+			err := upstream(ctx, chainVer, from, workerName, func(ctx context.Context, att xchain.Attestation) error {
 				l.IncRange(att.AttestOffset)
 				replaced := buffer.Add(att)
 
@@ -258,7 +274,7 @@ func newLeaderStreamer(cprov cchain.Provider, network netconf.Network) attestStr
 				}
 
 				// Otherwise, wait a bit, and try the same offset again
-				timer.Reset(time.Second)
+				timer.Reset(getBackoff(network))
 			}
 		}
 	}

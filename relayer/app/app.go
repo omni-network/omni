@@ -67,7 +67,7 @@ func Run(ctx context.Context, cfg Config) error {
 	pricer := newTokenPricer(ctx)
 	pnl := newPnlLogger(network.ID, pricer)
 
-	attestStreamer := newLeaderStreamer(cprov, network)
+	attestStreamer := newLeaderStreamer(cprov.StreamAttestations, network.ID)
 
 	for _, destChain := range network.EVMChains() {
 		// Setup send provider

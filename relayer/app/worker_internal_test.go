@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/lib/cchain"
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -96,12 +97,18 @@ func TestWorker_Run(t *testing.T) {
 
 	// Provider mock attestations as requested until context canceled.
 	mockProvider := &mockProvider{
-		SubscribeFn: func(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64, callback cchain.ProviderCallback) {
+		StreamFunc: func(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64, callback cchain.ProviderCallback) error {
 			if chainVer.ID != srcChain {
-				return // Only subscribe to source chain.
+				return errors.New("not source chain")
 			}
+			if attestOffset == 1 {
+				// Block other streams
+				<-ctx.Done()
+				return ctx.Err()
+			}
+
 			if attestOffset != destChainACursor && attestOffset != destChainBCursor {
-				return
+				return errors.New("unexpected offset", "offset", attestOffset, "chain_a", destChainACursor, "chain_b", destChainBCursor)
 			}
 
 			offset := attestOffset
@@ -132,10 +139,10 @@ func TestWorker_Run(t *testing.T) {
 				}
 			}
 
-			for ctx.Err() == nil {
+			for {
 				err := callback(ctx, nextAtt())
 				if ctx.Err() != nil {
-					return
+					return nil //nolint:nilerr // Return nil as per contract
 				}
 				require.NoError(t, err)
 			}
@@ -158,7 +165,8 @@ func TestWorker_Run(t *testing.T) {
 			mockXClient,
 			mockCreateFunc,
 			func() (SendAsync, error) { return mockSender.SendTransaction, nil },
-			noAwait)
+			noAwait,
+			mockProvider.StreamAttestations)
 		go w.Run(ctx)
 	}
 

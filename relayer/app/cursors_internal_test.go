@@ -142,13 +142,13 @@ const mockValSetID = 99
 
 type mockProvider struct {
 	cchain.Provider
-	SubscribeFn func(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64, callback cchain.ProviderCallback)
+	StreamFunc func(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64, callback cchain.ProviderCallback) error
 }
 
-func (m *mockProvider) StreamAsync(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64,
+func (m *mockProvider) StreamAttestations(ctx context.Context, chainVer xchain.ChainVersion, attestOffset uint64,
 	_ string, callback cchain.ProviderCallback,
-) {
-	m.SubscribeFn(ctx, chainVer, attestOffset, callback)
+) error {
+	return m.StreamFunc(ctx, chainVer, attestOffset, callback)
 }
 
 func (m *mockProvider) PortalValidatorSet(ctx context.Context, valSetID uint64) ([]cchain.PortalValidator, bool, error) {

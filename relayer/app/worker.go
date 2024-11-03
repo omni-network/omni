@@ -2,7 +2,6 @@ package relayer
 
 import (
 	"context"
-	"golang.org/x/sync/errgroup"
 	"sync/atomic"
 	"time"
 
@@ -15,6 +14,8 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -210,6 +211,7 @@ func (w *Worker) newCallback(
 	var cachedValSet []cchain.PortalValidator
 	var prevOffset uint64
 
+	//nolint:nonamedreturns // Required for defer.
 	return func(ctx context.Context, att xchain.Attestation) (err error) {
 		// Sanity check strictly sequential offsets.
 		{
