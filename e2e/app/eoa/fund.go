@@ -58,12 +58,13 @@ var (
 		RoleUpgrader:        thresholdTiny,   // Rarely used
 		RoleDeployer:        thresholdTiny,   // Protected chains are only deployed once
 		RoleTester:          thresholdLarge,  // Tester funds pingpongs, validator updates, etc, on non-mainnet.
+		RoleXCaller:         thresholdMedium, // XCaller funds used for sending xmsgs across networks.
 	}
 
 	dynamicThresholdsByRole = map[Role]dynamicThreshold{
 		RoleHot: {
 			Multiplier: hotDynamicMultiplier,
-			Roles:      []Role{RoleRelayer, RoleMonitor, RoleCreate3Deployer, RoleManager, RoleUpgrader, RoleDeployer, RoleTester},
+			Roles:      []Role{RoleRelayer, RoleMonitor, RoleCreate3Deployer, RoleManager, RoleUpgrader, RoleDeployer, RoleTester, RoleXCaller},
 		},
 		RoleCold: {
 			Multiplier: coldDynamicMultiplier,

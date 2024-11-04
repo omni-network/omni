@@ -28,6 +28,10 @@ func TestThresholdReference(t *testing.T) {
 		for _, token := range []tokens.Token{tokens.ETH, tokens.OMNI} {
 			resp[network][token] = make(map[eoa.Role]map[string]string)
 			for _, role := range eoa.AllRoles() {
+				if !shouldExist(role, network) {
+					continue
+				}
+
 				resp[network][token][role] = make(map[string]string)
 
 				thresholds, ok := eoa.GetFundThresholds(token, network, role)
@@ -47,6 +51,10 @@ func TestStatic(t *testing.T) {
 	for _, chain := range evmchain.All() {
 		for _, network := range []netconf.ID{netconf.Devnet, netconf.Staging, netconf.Omega, netconf.Mainnet} {
 			for _, role := range eoa.AllRoles() {
+				if !shouldExist(role, network) {
+					continue
+				}
+
 				acc, ok := eoa.AccountForRole(network, role)
 				require.True(t, ok, "account not found: %s %s", network, role)
 				require.NotZero(t, acc.Address)
@@ -91,4 +99,15 @@ func etherStr(amount *big.Int) string {
 	b /= params.Ether
 
 	return fmt.Sprintf("%.4f", b)
+}
+
+func shouldExist(role eoa.Role, id netconf.ID) bool {
+	switch {
+	case role == eoa.RoleTester && id == netconf.Mainnet: // RoleTester not supported on mainnet
+		return false
+	case role == eoa.RoleXCaller && id == netconf.Devnet:
+		return false
+	default:
+		return true
+	}
 }
