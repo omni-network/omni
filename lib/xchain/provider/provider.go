@@ -23,6 +23,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+const (
+	streamTypeXBlock = "xblock"
+	streamTypeEvent  = "event"
+)
+
 // fetchWorkerThresholds defines the number of concurrent workers
 // to fetch xblocks by chain block period.
 var fetchWorkerThresholds = []struct {
@@ -32,6 +37,17 @@ var fetchWorkerThresholds = []struct {
 	{Workers: 1, MinPeriod: time.Second},     // 1 worker for normal chains.
 	{Workers: 2, MinPeriod: time.Second / 2}, // 2 workers for fast chains (op_sepolia)
 	{Workers: 4, MinPeriod: 0},               // 4 workers for fastest chains (arb_sepolia)
+}
+
+// getWorkers returns the workers from the first exceeded threshold that matches.
+func getWorkers(chain netconf.Chain) (uint64, error) {
+	for _, threshold := range fetchWorkerThresholds {
+		if chain.BlockPeriod >= threshold.MinPeriod {
+			return threshold.Workers, nil
+		}
+	}
+
+	return 0, errors.New("no matching threshold [BUG]")
 }
 
 var _ xchain.Provider = (*Provider)(nil)
@@ -124,15 +140,9 @@ func (p *Provider) stream(
 
 	chainVersionName := p.network.ChainVersionName(xchain.ChainVersion{ID: req.ChainID, ConfLevel: req.ConfLevel})
 
-	var workers uint64 // Pick the first threshold that matches (or the last one)
-	for _, threshold := range fetchWorkerThresholds {
-		workers = threshold.Workers
-		if chain.BlockPeriod >= threshold.MinPeriod {
-			break
-		}
-	}
-	if workers == 0 {
-		return errors.New("zero workers [BUG]")
+	workers, err := getWorkers(chain)
+	if err != nil {
+		return err
 	}
 
 	// Start streaming from chain's deploy height as per config.
@@ -143,9 +153,9 @@ func (p *Provider) stream(
 
 	deps := stream.Deps[xchain.Block]{
 		FetchWorkers: workers,
-		FetchBatch: func(ctx context.Context, chainID uint64, height uint64) ([]xchain.Block, error) {
+		FetchBatch: func(ctx context.Context, height uint64) ([]xchain.Block, error) {
 			fetchReq := xchain.ProviderRequest{
-				ChainID:   chainID,
+				ChainID:   req.ChainID,
 				Height:    height,
 				ConfLevel: req.ConfLevel,
 			}
@@ -184,19 +194,19 @@ func (p *Provider) stream(
 			return nil
 		},
 		IncFetchErr: func() {
-			fetchErrTotal.WithLabelValues(chainVersionName).Inc()
+			fetchErrTotal.WithLabelValues(chainVersionName, streamTypeXBlock).Inc()
 		},
 		IncCallbackErr: func() {
-			callbackErrTotal.WithLabelValues(chainVersionName).Inc()
+			callbackErrTotal.WithLabelValues(chainVersionName, streamTypeXBlock).Inc()
 		},
 		SetStreamHeight: func(h uint64) {
-			streamHeight.WithLabelValues(chainVersionName).Set(float64(h))
+			streamHeight.WithLabelValues(chainVersionName, streamTypeXBlock).Set(float64(h))
 		},
 		SetCallbackLatency: func(d time.Duration) {
-			callbackLatency.WithLabelValues(chainVersionName).Observe(d.Seconds())
+			callbackLatency.WithLabelValues(chainVersionName, streamTypeXBlock).Observe(d.Seconds())
 		},
 		StartTrace: func(ctx context.Context, height uint64, spanName string) (context.Context, trace.Span) {
-			return tracer.StartChainHeight(ctx, p.network.ID, chain.Name, height, path.Join("xprovider", spanName))
+			return tracer.StartChainHeight(ctx, p.network.ID, chain.Name, height, path.Join("xblock", spanName))
 		},
 	}
 
@@ -205,7 +215,7 @@ func (p *Provider) stream(
 	ctx = log.WithCtx(ctx, "chain", chainVersionName)
 	log.Info(ctx, "Streaming xprovider blocks", "from_height", fromHeight)
 
-	return stream.Stream(ctx, deps, req.ChainID, fromHeight, cb)
+	return stream.Stream(ctx, deps, fromHeight, cb)
 }
 
 // getEVMChain provides the configuration of the given chainID.

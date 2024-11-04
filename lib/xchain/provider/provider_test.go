@@ -20,9 +20,8 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+//nolint:paralleltest // Access global thresholds not locked
 func TestProvider(t *testing.T) {
-	t.Parallel()
-
 	ctx, cancel := context.WithCancel(context.Background())
 
 	var mu sync.Mutex

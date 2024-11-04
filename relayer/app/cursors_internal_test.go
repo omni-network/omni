@@ -104,11 +104,15 @@ func (*mockXChainClient) GetSubmission(context.Context, uint64, common.Hash) (xc
 	panic("unexpected")
 }
 
-func (m *mockXChainClient) StreamAsync(context.Context, xchain.ProviderRequest, xchain.ProviderCallback) error {
+func (*mockXChainClient) StreamAsync(context.Context, xchain.ProviderRequest, xchain.ProviderCallback) error {
 	panic("unexpected")
 }
 
-func (m *mockXChainClient) StreamBlocks(context.Context, xchain.ProviderRequest, xchain.ProviderCallback) error {
+func (*mockXChainClient) StreamBlocks(context.Context, xchain.ProviderRequest, xchain.ProviderCallback) error {
+	panic("unexpected")
+}
+
+func (*mockXChainClient) StreamEventLogs(context.Context, xchain.EventLogsReq, xchain.EventLogsCallback) error {
 	panic("unexpected")
 }
 
