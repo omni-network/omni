@@ -105,8 +105,6 @@ func shouldExist(role eoa.Role, id netconf.ID) bool {
 	switch {
 	case role == eoa.RoleTester && id == netconf.Mainnet: // RoleTester not supported on mainnet
 		return false
-	case role == eoa.RoleXCaller && id == netconf.Devnet:
-		return false
 	default:
 		return true
 	}

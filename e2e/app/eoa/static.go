@@ -14,6 +14,7 @@ var statics = map[netconf.ID][]Account{
 		wellKnown(anvil.DevPrivateKey7(), RoleTester),
 		wellKnown(anvil.DevPrivateKey8(), RoleHot),
 		wellKnown(anvil.DevPrivateKey9(), RoleCold),
+		wellKnown(anvil.DevPrivateKey10(), RoleXCaller),
 	),
 	netconf.Staging: flatten(
 		remote("0x64Bf40F5E6C4DE0dfe8fE6837F6339455657A2F5", RoleCold), // we use shared-cold

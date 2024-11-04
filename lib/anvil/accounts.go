@@ -10,27 +10,29 @@ import (
 
 //nolint:gochecknoglobals // Static keys and addresses
 var (
-	acc0 = addr("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
-	acc1 = addr("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
-	acc2 = addr("0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC")
-	acc3 = addr("0x90F79bf6EB2c4f870365E785982E1f101E93b906")
-	acc4 = addr("0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65")
-	acc5 = addr("0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc")
-	acc6 = addr("0x976EA74026E726554dB657fA54763abd0C3a0aa9")
-	acc7 = addr("0x14dC79964da2C08b23698B3D3cc7Ca32193d9955")
-	acc8 = addr("0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f")
-	acc9 = addr("0xa0Ee7A142d267C1f36714E4a8F75612F20a79720")
+	acc0  = addr("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+	acc1  = addr("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
+	acc2  = addr("0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC")
+	acc3  = addr("0x90F79bf6EB2c4f870365E785982E1f101E93b906")
+	acc4  = addr("0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65")
+	acc5  = addr("0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc")
+	acc6  = addr("0x976EA74026E726554dB657fA54763abd0C3a0aa9")
+	acc7  = addr("0x14dC79964da2C08b23698B3D3cc7Ca32193d9955")
+	acc8  = addr("0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f")
+	acc9  = addr("0xa0Ee7A142d267C1f36714E4a8F75612F20a79720")
+	acc10 = addr("0x351dd0b37c02Fc8916227d06dd4867F670D7A9e1")
 
-	pk0 = mustHexToKey("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
-	pk1 = mustHexToKey("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d")
-	pk2 = mustHexToKey("0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a")
-	pk3 = mustHexToKey("0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6")
-	pk4 = mustHexToKey("0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a")
-	pk5 = mustHexToKey("0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba")
-	pk6 = mustHexToKey("0x92db14e403b83dfe3df233f83dfa3a0d7096f21ca9b0d6d6b8d88b2b4ec1564e")
-	pk7 = mustHexToKey("0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356")
-	pk8 = mustHexToKey("0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97")
-	pk9 = mustHexToKey("0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6")
+	pk0  = mustHexToKey("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
+	pk1  = mustHexToKey("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d")
+	pk2  = mustHexToKey("0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a")
+	pk3  = mustHexToKey("0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6")
+	pk4  = mustHexToKey("0x47e179ec197488593b187f80a00eb0da91f1b9d0b13f8733639f19c30a34926a")
+	pk5  = mustHexToKey("0x8b3a350cf5c34c9194ca85829a2df0ec3153be0318b5e2d3348e872092edffba")
+	pk6  = mustHexToKey("0x92db14e403b83dfe3df233f83dfa3a0d7096f21ca9b0d6d6b8d88b2b4ec1564e")
+	pk7  = mustHexToKey("0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356")
+	pk8  = mustHexToKey("0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97")
+	pk9  = mustHexToKey("0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6")
+	pk10 = mustHexToKey("0x590ba8222b28a2bb6baed4171b8541d39337e71c5d5b98f54bd688f8badde744")
 )
 
 //
@@ -77,9 +79,13 @@ func DevAccount9() common.Address {
 	return acc9
 }
 
+func DevAccount10() common.Address {
+	return acc10
+}
+
 func IsDevAccount(addr common.Address) bool {
 	switch addr {
-	case acc0, acc1, acc2, acc3, acc4, acc5, acc6, acc7, acc8, acc9:
+	case acc0, acc1, acc2, acc3, acc4, acc5, acc6, acc7, acc8, acc9, acc10:
 		return true
 	}
 
@@ -130,8 +136,12 @@ func DevPrivateKey9() *ecdsa.PrivateKey {
 	return pk9
 }
 
+func DevPrivateKey10() *ecdsa.PrivateKey {
+	return pk10
+}
+
 func DevPrivateKeys() []*ecdsa.PrivateKey {
-	return []*ecdsa.PrivateKey{pk0, pk1, pk2, pk3, pk4, pk5, pk6, pk7, pk8, pk9}
+	return []*ecdsa.PrivateKey{pk0, pk1, pk2, pk3, pk4, pk5, pk6, pk7, pk8, pk9, pk10}
 }
 
 func PrivateKey(account common.Address) (*ecdsa.PrivateKey, bool) {
@@ -156,6 +166,8 @@ func PrivateKey(account common.Address) (*ecdsa.PrivateKey, bool) {
 		return pk8, true
 	case acc9:
 		return pk9, true
+	case acc10:
+		return pk10, true
 	default:
 		return nil, false
 	}
