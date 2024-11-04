@@ -113,7 +113,7 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable {
      * @dev Only a whitelisted solver can accept.
      * @param id  ID of the request.
      */
-    function accept(bytes32 id) external onlyRoles(SOLVER) {
+    function accept(bytes32 id) external onlyRoles(SOLVER) nonReentrant {
         Solve.Request storage req = _requests[id];
         if (req.status != Solve.Status.Open) revert RequestNotOpen();
 
@@ -129,7 +129,7 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable {
      * @dev Only a whitelisted solver can reject.
      * @param id  ID of the request.
      */
-    function reject(bytes32 id) external onlyRoles(SOLVER) {
+    function reject(bytes32 id) external onlyRoles(SOLVER) nonReentrant {
         Solve.Request storage req = _requests[id];
         if (req.status != Solve.Status.Open) revert RequestNotOpen();
 
@@ -144,7 +144,7 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable {
      * @dev Only request initiator can cancel.
      * @param id  ID of the request.
      */
-    function cancel(bytes32 id) external {
+    function cancel(bytes32 id) external nonReentrant {
         Solve.Request storage req = _requests[id];
         if (req.status != Solve.Status.Open && req.status != Solve.Status.Rejected) revert RequestNotCancelable();
         if (req.from != msg.sender) revert Unauthorized();
@@ -189,6 +189,10 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable {
     }
 
     function _cancelRequest(Solve.Request storage req) internal {
+        // Update state
+        req.updatedAt = uint40(block.timestamp);
+        req.status = Solve.Status.Cancelled;
+
         // Refund deposits
         uint256 length = req.deposits.length;
         for (uint256 i = 0; i < length; i++) {
@@ -200,9 +204,6 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable {
                 IERC20(deposit.token).safeTransfer(msg.sender, deposit.amount);
             }
         }
-
-        // Delete request
-        delete _requests[req.id];
     }
 
     /**

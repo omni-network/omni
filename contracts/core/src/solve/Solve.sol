@@ -7,6 +7,7 @@ library Solve {
         Open,
         Accepted,
         Rejected,
+        Cancelled,
         Fulfilled
     }
 
