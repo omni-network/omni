@@ -27,7 +27,7 @@ type Client interface {
 	ethereum.PendingStateReader
 	ethereum.TransactionReader
 	ethereum.TransactionSender
-	OPTransactionReceipt(ctx context.Context, hash common.Hash) (*Receipt, error)
+	TxReceipt(ctx context.Context, hash common.Hash) (*Receipt, error)
 	HeaderByType(ctx context.Context, typ HeadType) (*types.Header, error)
 	EtherBalanceAt(ctx context.Context, addr common.Address) (float64, error)
 	PeerCount(ctx context.Context) (uint64, error)

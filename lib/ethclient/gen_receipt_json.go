@@ -17,30 +17,30 @@ var _ = (*receiptMarshaling)(nil)
 // MarshalJSON marshals as JSON.
 func (r Receipt) MarshalJSON() ([]byte, error) {
 	type Receipt struct {
-		Type                  hexutil.Uint64  `json:"type,omitempty"`
-		PostState             hexutil.Bytes   `json:"root"`
-		Status                hexutil.Uint64  `json:"status"`
-		CumulativeGasUsed     hexutil.Uint64  `gencodec:"required"   json:"cumulativeGasUsed"`
-		Bloom                 types.Bloom     `gencodec:"required"   json:"logsBloom"`
-		Logs                  []*types.Log    `gencodec:"required"   json:"logs"`
-		TxHash                common.Hash     `gencodec:"required"           json:"transactionHash"`
-		ContractAddress       common.Address  `json:"contractAddress"`
-		GasUsed               hexutil.Uint64  `gencodec:"required"           json:"gasUsed"`
-		EffectiveGasPrice     *hexutil.Big    `json:"effectiveGasPrice"`
-		BlobGasUsed           hexutil.Uint64  `json:"blobGasUsed,omitempty"`
-		BlobGasPrice          *hexutil.Big    `json:"blobGasPrice,omitempty"`
-		DepositNonce          *hexutil.Uint64 `json:"depositNonce,omitempty"`
-		DepositReceiptVersion *hexutil.Uint64 `json:"depositReceiptVersion,omitempty"`
-		BlockHash             common.Hash     `json:"blockHash,omitempty"`
-		BlockNumber           *hexutil.Big    `json:"blockNumber,omitempty"`
-		TransactionIndex      hexutil.Uint    `json:"transactionIndex"`
-		L1GasPrice            *hexutil.Big    `json:"l1GasPrice,omitempty"`
-		L1BlobBaseFee         *hexutil.Big    `json:"l1BlobBaseFee,omitempty"`
-		L1GasUsed             *hexutil.Big    `json:"l1GasUsed,omitempty"`
-		L1Fee                 *hexutil.Big    `json:"l1Fee,omitempty"`
-		FeeScalar             *big.Float      `json:"l1FeeScalar,omitempty"`
-		L1BaseFeeScalar       *hexutil.Uint64 `json:"l1BaseFeeScalar,omitempty"`
-		L1BlobBaseFeeScalar   *hexutil.Uint64 `json:"l1BlobBaseFeeScalar,omitempty"`
+		Type                    hexutil.Uint64  `json:"type,omitempty"`
+		PostState               hexutil.Bytes   `json:"root"`
+		Status                  hexutil.Uint64  `json:"status"`
+		CumulativeGasUsed       hexutil.Uint64  `gencodec:"required"   json:"cumulativeGasUsed"`
+		Bloom                   types.Bloom     `gencodec:"required"   json:"logsBloom"`
+		Logs                    []*types.Log    `gencodec:"required"   json:"logs"`
+		TxHash                  common.Hash     `gencodec:"required"           json:"transactionHash"`
+		ContractAddress         common.Address  `json:"contractAddress"`
+		GasUsed                 hexutil.Uint64  `gencodec:"required"           json:"gasUsed"`
+		EffectiveGasPrice       *hexutil.Big    `json:"effectiveGasPrice"`
+		BlobGasUsed             hexutil.Uint64  `json:"blobGasUsed,omitempty"`
+		BlobGasPrice            *hexutil.Big    `json:"blobGasPrice,omitempty"`
+		BlockHash               common.Hash     `json:"blockHash,omitempty"`
+		BlockNumber             *hexutil.Big    `json:"blockNumber,omitempty"`
+		TransactionIndex        hexutil.Uint    `json:"transactionIndex"`
+		OPDepositNonce          *hexutil.Uint64 `json:"depositNonce,omitempty"`
+		OPDepositReceiptVersion *hexutil.Uint64 `json:"depositReceiptVersion,omitempty"`
+		OPL1GasPrice            *hexutil.Big    `json:"l1GasPrice,omitempty"`
+		OPL1BlobBaseFee         *hexutil.Big    `json:"l1BlobBaseFee,omitempty"`
+		OPL1GasUsed             *hexutil.Big    `json:"l1GasUsed,omitempty"`
+		OPL1Fee                 *hexutil.Big    `json:"l1Fee,omitempty"`
+		OPL1FeeScalar           *big.Float      `json:"l1FeeScalar,omitempty"`
+		OPL1BaseFeeScalar       *hexutil.Uint64 `json:"l1BaseFeeScalar,omitempty"`
+		OPL1BlobBaseFeeScalar   *hexutil.Uint64 `json:"l1BlobBaseFeeScalar,omitempty"`
 	}
 	var enc Receipt
 	enc.Type = hexutil.Uint64(r.Type)
@@ -55,48 +55,48 @@ func (r Receipt) MarshalJSON() ([]byte, error) {
 	enc.EffectiveGasPrice = (*hexutil.Big)(r.EffectiveGasPrice)
 	enc.BlobGasUsed = hexutil.Uint64(r.BlobGasUsed)
 	enc.BlobGasPrice = (*hexutil.Big)(r.BlobGasPrice)
-	enc.DepositNonce = (*hexutil.Uint64)(r.DepositNonce)
-	enc.DepositReceiptVersion = (*hexutil.Uint64)(r.DepositReceiptVersion)
 	enc.BlockHash = r.BlockHash
 	enc.BlockNumber = (*hexutil.Big)(r.BlockNumber)
 	enc.TransactionIndex = hexutil.Uint(r.TransactionIndex)
-	enc.L1GasPrice = (*hexutil.Big)(r.L1GasPrice)
-	enc.L1BlobBaseFee = (*hexutil.Big)(r.L1BlobBaseFee)
-	enc.L1GasUsed = (*hexutil.Big)(r.L1GasUsed)
-	enc.L1Fee = (*hexutil.Big)(r.L1Fee)
-	enc.FeeScalar = r.FeeScalar
-	enc.L1BaseFeeScalar = (*hexutil.Uint64)(r.L1BaseFeeScalar)
-	enc.L1BlobBaseFeeScalar = (*hexutil.Uint64)(r.L1BlobBaseFeeScalar)
+	enc.OPDepositNonce = (*hexutil.Uint64)(r.OPDepositNonce)
+	enc.OPDepositReceiptVersion = (*hexutil.Uint64)(r.OPDepositReceiptVersion)
+	enc.OPL1GasPrice = (*hexutil.Big)(r.OPL1GasPrice)
+	enc.OPL1BlobBaseFee = (*hexutil.Big)(r.OPL1BlobBaseFee)
+	enc.OPL1GasUsed = (*hexutil.Big)(r.OPL1GasUsed)
+	enc.OPL1Fee = (*hexutil.Big)(r.OPL1Fee)
+	enc.OPL1FeeScalar = r.OPL1FeeScalar
+	enc.OPL1BaseFeeScalar = (*hexutil.Uint64)(r.OPL1BaseFeeScalar)
+	enc.OPL1BlobBaseFeeScalar = (*hexutil.Uint64)(r.OPL1BlobBaseFeeScalar)
 	return json.Marshal(&enc)
 }
 
 // UnmarshalJSON unmarshals from JSON.
 func (r *Receipt) UnmarshalJSON(input []byte) error {
 	type Receipt struct {
-		Type                  *hexutil.Uint64 `json:"type,omitempty"`
-		PostState             *hexutil.Bytes  `json:"root"`
-		Status                *hexutil.Uint64 `json:"status"`
-		CumulativeGasUsed     *hexutil.Uint64 `gencodec:"required"   json:"cumulativeGasUsed"`
-		Bloom                 *types.Bloom    `gencodec:"required"   json:"logsBloom"`
-		Logs                  []*types.Log    `gencodec:"required"   json:"logs"`
-		TxHash                *common.Hash    `gencodec:"required"           json:"transactionHash"`
-		ContractAddress       *common.Address `json:"contractAddress"`
-		GasUsed               *hexutil.Uint64 `gencodec:"required"           json:"gasUsed"`
-		EffectiveGasPrice     *hexutil.Big    `json:"effectiveGasPrice"`
-		BlobGasUsed           *hexutil.Uint64 `json:"blobGasUsed,omitempty"`
-		BlobGasPrice          *hexutil.Big    `json:"blobGasPrice,omitempty"`
-		DepositNonce          *hexutil.Uint64 `json:"depositNonce,omitempty"`
-		DepositReceiptVersion *hexutil.Uint64 `json:"depositReceiptVersion,omitempty"`
-		BlockHash             *common.Hash    `json:"blockHash,omitempty"`
-		BlockNumber           *hexutil.Big    `json:"blockNumber,omitempty"`
-		TransactionIndex      *hexutil.Uint   `json:"transactionIndex"`
-		L1GasPrice            *hexutil.Big    `json:"l1GasPrice,omitempty"`
-		L1BlobBaseFee         *hexutil.Big    `json:"l1BlobBaseFee,omitempty"`
-		L1GasUsed             *hexutil.Big    `json:"l1GasUsed,omitempty"`
-		L1Fee                 *hexutil.Big    `json:"l1Fee,omitempty"`
-		FeeScalar             *big.Float      `json:"l1FeeScalar,omitempty"`
-		L1BaseFeeScalar       *hexutil.Uint64 `json:"l1BaseFeeScalar,omitempty"`
-		L1BlobBaseFeeScalar   *hexutil.Uint64 `json:"l1BlobBaseFeeScalar,omitempty"`
+		Type                    *hexutil.Uint64 `json:"type,omitempty"`
+		PostState               *hexutil.Bytes  `json:"root"`
+		Status                  *hexutil.Uint64 `json:"status"`
+		CumulativeGasUsed       *hexutil.Uint64 `gencodec:"required"   json:"cumulativeGasUsed"`
+		Bloom                   *types.Bloom    `gencodec:"required"   json:"logsBloom"`
+		Logs                    []*types.Log    `gencodec:"required"   json:"logs"`
+		TxHash                  *common.Hash    `gencodec:"required"           json:"transactionHash"`
+		ContractAddress         *common.Address `json:"contractAddress"`
+		GasUsed                 *hexutil.Uint64 `gencodec:"required"           json:"gasUsed"`
+		EffectiveGasPrice       *hexutil.Big    `json:"effectiveGasPrice"`
+		BlobGasUsed             *hexutil.Uint64 `json:"blobGasUsed,omitempty"`
+		BlobGasPrice            *hexutil.Big    `json:"blobGasPrice,omitempty"`
+		BlockHash               *common.Hash    `json:"blockHash,omitempty"`
+		BlockNumber             *hexutil.Big    `json:"blockNumber,omitempty"`
+		TransactionIndex        *hexutil.Uint   `json:"transactionIndex"`
+		OPDepositNonce          *hexutil.Uint64 `json:"depositNonce,omitempty"`
+		OPDepositReceiptVersion *hexutil.Uint64 `json:"depositReceiptVersion,omitempty"`
+		OPL1GasPrice            *hexutil.Big    `json:"l1GasPrice,omitempty"`
+		OPL1BlobBaseFee         *hexutil.Big    `json:"l1BlobBaseFee,omitempty"`
+		OPL1GasUsed             *hexutil.Big    `json:"l1GasUsed,omitempty"`
+		OPL1Fee                 *hexutil.Big    `json:"l1Fee,omitempty"`
+		OPL1FeeScalar           *big.Float      `json:"l1FeeScalar,omitempty"`
+		OPL1BaseFeeScalar       *hexutil.Uint64 `json:"l1BaseFeeScalar,omitempty"`
+		OPL1BlobBaseFeeScalar   *hexutil.Uint64 `json:"l1BlobBaseFeeScalar,omitempty"`
 	}
 	var dec Receipt
 	if err := json.Unmarshal(input, &dec); err != nil {
@@ -143,12 +143,6 @@ func (r *Receipt) UnmarshalJSON(input []byte) error {
 	if dec.BlobGasPrice != nil {
 		r.BlobGasPrice = (*big.Int)(dec.BlobGasPrice)
 	}
-	if dec.DepositNonce != nil {
-		r.DepositNonce = (*uint64)(dec.DepositNonce)
-	}
-	if dec.DepositReceiptVersion != nil {
-		r.DepositReceiptVersion = (*uint64)(dec.DepositReceiptVersion)
-	}
 	if dec.BlockHash != nil {
 		r.BlockHash = *dec.BlockHash
 	}
@@ -158,26 +152,32 @@ func (r *Receipt) UnmarshalJSON(input []byte) error {
 	if dec.TransactionIndex != nil {
 		r.TransactionIndex = uint(*dec.TransactionIndex)
 	}
-	if dec.L1GasPrice != nil {
-		r.L1GasPrice = (*big.Int)(dec.L1GasPrice)
+	if dec.OPDepositNonce != nil {
+		r.OPDepositNonce = (*uint64)(dec.OPDepositNonce)
 	}
-	if dec.L1BlobBaseFee != nil {
-		r.L1BlobBaseFee = (*big.Int)(dec.L1BlobBaseFee)
+	if dec.OPDepositReceiptVersion != nil {
+		r.OPDepositReceiptVersion = (*uint64)(dec.OPDepositReceiptVersion)
 	}
-	if dec.L1GasUsed != nil {
-		r.L1GasUsed = (*big.Int)(dec.L1GasUsed)
+	if dec.OPL1GasPrice != nil {
+		r.OPL1GasPrice = (*big.Int)(dec.OPL1GasPrice)
 	}
-	if dec.L1Fee != nil {
-		r.L1Fee = (*big.Int)(dec.L1Fee)
+	if dec.OPL1BlobBaseFee != nil {
+		r.OPL1BlobBaseFee = (*big.Int)(dec.OPL1BlobBaseFee)
 	}
-	if dec.FeeScalar != nil {
-		r.FeeScalar = dec.FeeScalar
+	if dec.OPL1GasUsed != nil {
+		r.OPL1GasUsed = (*big.Int)(dec.OPL1GasUsed)
 	}
-	if dec.L1BaseFeeScalar != nil {
-		r.L1BaseFeeScalar = (*uint64)(dec.L1BaseFeeScalar)
+	if dec.OPL1Fee != nil {
+		r.OPL1Fee = (*big.Int)(dec.OPL1Fee)
 	}
-	if dec.L1BlobBaseFeeScalar != nil {
-		r.L1BlobBaseFeeScalar = (*uint64)(dec.L1BlobBaseFeeScalar)
+	if dec.OPL1FeeScalar != nil {
+		r.OPL1FeeScalar = dec.OPL1FeeScalar
+	}
+	if dec.OPL1BaseFeeScalar != nil {
+		r.OPL1BaseFeeScalar = (*uint64)(dec.OPL1BaseFeeScalar)
+	}
+	if dec.OPL1BlobBaseFeeScalar != nil {
+		r.OPL1BlobBaseFeeScalar = (*uint64)(dec.OPL1BlobBaseFeeScalar)
 	}
 	return nil
 }

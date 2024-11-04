@@ -181,10 +181,10 @@ func (w Wrapper) EtherBalanceAt(ctx context.Context, addr common.Address) (float
 	return bf / params.Ether, nil
 }
 
-// OPTransactionReceipt returns the OP trasnaction receipt for the given hash.
-// OP receipts included additional fields for L1 fee info.
-func (w Wrapper) OPTransactionReceipt(ctx context.Context, txHash common.Hash) (*Receipt, error) {
-	const endpoint = "op_transaction_receipt"
+// TxReceipt returns the transaction receipt for the given transaction hash.
+// It includes additional fields not present in the geth ethclient, such as OP L1 fee info.
+func (w Wrapper) TxReceipt(ctx context.Context, txHash common.Hash) (*Receipt, error) {
+	const endpoint = "tx_receipt"
 	defer latency(w.chain, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))

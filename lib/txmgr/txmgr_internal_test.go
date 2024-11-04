@@ -302,7 +302,7 @@ func (b *mockBackend) TransactionReceipt(ctx context.Context, txHash common.Hash
 	}, nil
 }
 
-func (b *mockBackend) OPTransactionReceipt(ctx context.Context, txHash common.Hash) (*ethclient.Receipt, error) {
+func (b *mockBackend) TxReceipt(ctx context.Context, txHash common.Hash) (*ethclient.Receipt, error) {
 	rec, err := b.TransactionReceipt(ctx, txHash)
 	if err != nil {
 		return nil, err
@@ -792,7 +792,7 @@ func (b *failingBackend) TransactionReceipt(
 	}, nil
 }
 
-func (b *failingBackend) OPTransactionReceipt(_ context.Context, txHash common.Hash) (*ethclient.Receipt, error) {
+func (b *failingBackend) TxReceipt(_ context.Context, txHash common.Hash) (*ethclient.Receipt, error) {
 	rec, err := b.TransactionReceipt(context.Background(), txHash)
 	if err != nil {
 		return nil, err

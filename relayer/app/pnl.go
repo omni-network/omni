@@ -206,8 +206,10 @@ func spendByDenom(
 func totalSpendGwei(tx *ethtypes.Transaction, rec *ethclient.Receipt) float64 {
 	spend := new(big.Int).Mul(rec.EffectiveGasPrice, umath.NewBigInt(rec.GasUsed))
 
-	// add optypes::Receipt.L1Fee. will be zero for non-OP chains
-	spend = new(big.Int).Add(spend, rec.L1Fee)
+	// add op l1 fee, if any
+	if rec.OPL1Fee != nil {
+		spend = new(big.Int).Add(spend, rec.OPL1Fee)
+	}
 
 	// add tx value
 	spend = new(big.Int).Add(spend, tx.Value())

@@ -475,7 +475,7 @@ func (m *simple) queryReceipt(ctx context.Context, txHash common.Hash,
 	sendState *SendState) (*ethclient.Receipt, bool, error) {
 	ctx, cancel := context.WithTimeout(ctx, m.cfg.NetworkTimeout)
 	defer cancel()
-	receipt, err := m.backend.OPTransactionReceipt(ctx, txHash)
+	receipt, err := m.backend.TxReceipt(ctx, txHash)
 	if err != nil {
 		if strings.Contains(err.Error(), "transaction indexing is in progress") {
 			return nil, false, nil // Just back off here

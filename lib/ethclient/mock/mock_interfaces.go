@@ -281,21 +281,6 @@ func (mr *MockClientMockRecorder) NonceAt(ctx, account, blockNumber any) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NonceAt", reflect.TypeOf((*MockClient)(nil).NonceAt), ctx, account, blockNumber)
 }
 
-// OPTransactionReceipt mocks base method.
-func (m *MockClient) OPTransactionReceipt(ctx context.Context, hash common.Hash) (*ethclient.Receipt, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "OPTransactionReceipt", ctx, hash)
-	ret0, _ := ret[0].(*ethclient.Receipt)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// OPTransactionReceipt indicates an expected call of OPTransactionReceipt.
-func (mr *MockClientMockRecorder) OPTransactionReceipt(ctx, hash any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OPTransactionReceipt", reflect.TypeOf((*MockClient)(nil).OPTransactionReceipt), ctx, hash)
-}
-
 // PeerCount mocks base method.
 func (m *MockClient) PeerCount(ctx context.Context) (uint64, error) {
 	m.ctrl.T.Helper()
@@ -564,4 +549,19 @@ func (m *MockClient) TransactionReceipt(ctx context.Context, txHash common.Hash)
 func (mr *MockClientMockRecorder) TransactionReceipt(ctx, txHash any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TransactionReceipt", reflect.TypeOf((*MockClient)(nil).TransactionReceipt), ctx, txHash)
+}
+
+// TxReceipt mocks base method.
+func (m *MockClient) TxReceipt(ctx context.Context, hash common.Hash) (*ethclient.Receipt, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TxReceipt", ctx, hash)
+	ret0, _ := ret[0].(*ethclient.Receipt)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// TxReceipt indicates an expected call of TxReceipt.
+func (mr *MockClientMockRecorder) TxReceipt(ctx, hash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TxReceipt", reflect.TypeOf((*MockClient)(nil).TxReceipt), ctx, hash)
 }
