@@ -15,7 +15,6 @@ import (
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/stream"
 	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
@@ -73,25 +72,6 @@ func NewGRPC(target string, network netconf.ID, opts ...func(*Provider)) (Provid
 	return newProvider(grpcClient, network, opts...), nil
 }
 
-// attestCacheProvider is a function that returns a cache for attestations.
-type attestCacheProvider func(xchain.ChainVersion) stream.Cache[xchain.Attestation]
-
-// nopCacheProvider returns a cache provider that doesn't cache anything.
-var nopCacheProvider = func(xchain.ChainVersion) stream.Cache[xchain.Attestation] {
-	return stream.NewNopCache[xchain.Attestation]()
-}
-
-// WithAttestCache returns an option that enables caching of attest streams.
-func WithAttestCache(limit int) func(*Provider) {
-	var caches sync.Map
-	return func(p *Provider) {
-		p.cacheProvider = func(chainVer xchain.ChainVersion) stream.Cache[xchain.Attestation] {
-			resp, _ := caches.LoadOrStore(chainVer, stream.NewCache[xchain.Attestation](limit))
-			return resp.(stream.Cache[xchain.Attestation]) //nolint:forcetypeassert,revive // Known type
-		}
-	}
-}
-
 func newProvider(cc gogogrpc.ClientConn, network netconf.ID, opts ...func(*Provider)) Provider {
 	// Stream backoff for 1s, querying new attestations after 1 consensus block
 	backoffFunc := func(ctx context.Context) func() {
@@ -112,25 +92,24 @@ func newProvider(cc gogogrpc.ClientConn, network netconf.ID, opts ...func(*Provi
 	cmtcl := cmtservice.NewServiceClient(cc)
 
 	p := Provider{
-		fetch:         newABCIFetchFunc(acl, cmtcl, namer),
-		allAtts:       newABCIAllAttsFunc(acl),
-		latest:        newABCILatestFunc(acl),
-		window:        newABCIWindowFunc(acl),
-		valset:        newABCIValsetFunc(vcl),
-		val:           newABCIValFunc(scl),
-		vals:          newABCIValsFunc(scl),
-		signing:       newABCISigningFunc(slcl),
-		rewards:       newABCIRewards(dcl),
-		portalBlock:   newABCIPortalBlockFunc(pcl),
-		networkFunc:   newABCINetworkFunc(rcl),
-		genesisFunc:   newABCIGenesisFunc(gcl),
-		plannedFunc:   newABCIPlannedUpgradeFunc(ucl),
-		appliedFunc:   newABCIAppliedUpgradeFunc(ucl),
-		chainID:       newChainIDFunc(cmtcl),
-		backoffFunc:   backoffFunc,
-		chainNamer:    namer,
-		network:       network,
-		cacheProvider: nopCacheProvider,
+		fetch:       newABCIFetchFunc(acl, cmtcl, namer),
+		allAtts:     newABCIAllAttsFunc(acl),
+		latest:      newABCILatestFunc(acl),
+		window:      newABCIWindowFunc(acl),
+		valset:      newABCIValsetFunc(vcl),
+		val:         newABCIValFunc(scl),
+		vals:        newABCIValsFunc(scl),
+		signing:     newABCISigningFunc(slcl),
+		rewards:     newABCIRewards(dcl),
+		portalBlock: newABCIPortalBlockFunc(pcl),
+		networkFunc: newABCINetworkFunc(rcl),
+		genesisFunc: newABCIGenesisFunc(gcl),
+		plannedFunc: newABCIPlannedUpgradeFunc(ucl),
+		appliedFunc: newABCIAppliedUpgradeFunc(ucl),
+		chainID:     newChainIDFunc(cmtcl),
+		backoffFunc: backoffFunc,
+		chainNamer:  namer,
+		network:     network,
 	}
 
 	for _, opt := range opts {
