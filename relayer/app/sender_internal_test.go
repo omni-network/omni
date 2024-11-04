@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
 	"github.com/omni-network/omni/lib/xchain"
@@ -88,7 +89,7 @@ type mockTxMgr struct {
 	sends  chan txmgr.TxCandidate
 }
 
-func (m *mockTxMgr) Send(_ context.Context, candidate txmgr.TxCandidate) (*types.Transaction, *types.Receipt, error) {
+func (m *mockTxMgr) Send(_ context.Context, candidate txmgr.TxCandidate) (*types.Transaction, *ethclient.Receipt, error) {
 	// Blocks until MineNext is called.
 	m.sends <- candidate
 

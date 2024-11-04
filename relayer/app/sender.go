@@ -25,7 +25,7 @@ import (
 )
 
 // Sender uses txmgr to send transactions a specific destination chain.
-type onSubmitFunc func(context.Context, ethclient.Client, *ethtypes.Transaction, *ethtypes.Receipt, xchain.Submission)
+type onSubmitFunc func(context.Context, *ethtypes.Transaction, *ethclient.Receipt, xchain.Submission)
 
 // Sender uses txmgr to send transactions to a specific destination chain.
 type Sender struct {
@@ -177,7 +177,7 @@ func (s Sender) SendAsync(ctx context.Context, sub xchain.Submission) <-chan err
 		}
 
 		if s.onSubmit != nil {
-			go s.onSubmit(ctx, s.ethCl, tx, rec, sub)
+			go s.onSubmit(ctx, tx, rec, sub)
 		}
 
 		const statusReverted = 0

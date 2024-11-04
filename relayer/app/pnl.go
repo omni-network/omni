@@ -46,21 +46,14 @@ func newPnlLogger(network netconf.ID, pricer tokens.Pricer) pnlLogger {
 }
 
 // log logs the pnl for an xsubmit transaction, warning on error.
-func (l pnlLogger) log(ctx context.Context, ethCl ethclient.Client, tx *ethtypes.Transaction, receipt *ethtypes.Receipt, sub xchain.Submission) {
-	if err := l.logE(ctx, ethCl, tx, receipt, sub); err != nil {
+func (l pnlLogger) log(ctx context.Context, tx *ethtypes.Transaction, receipt *ethclient.Receipt, sub xchain.Submission) {
+	if err := l.logE(ctx, tx, receipt, sub); err != nil {
 		log.Warn(ctx, "Failed to log pnl", err)
 	}
 }
 
 // logE logs the pnl for an xsubmit transaction, returning any errors.
-func (l pnlLogger) logE(ctx context.Context, ethCl ethclient.Client, tx *ethtypes.Transaction, receipt *ethtypes.Receipt, sub xchain.Submission) error {
-	// OP transaction receipts include l1 fee info not included in geth receipts
-	// For non OP chains, these fields will be zero
-	opReceipt, err := ethCl.OPTransactionReceipt(ctx, receipt.TxHash)
-	if err != nil {
-		return errors.Wrap(err, "op tx receipt")
-	}
-
+func (l pnlLogger) logE(ctx context.Context, tx *ethtypes.Transaction, receipt *ethclient.Receipt, sub xchain.Submission) error {
 	srcChainID := sub.BlockHeader.ChainID
 	dstChainID := sub.DestChainID
 
@@ -69,7 +62,7 @@ func (l pnlLogger) logE(ctx context.Context, ethCl ethclient.Client, tx *ethtype
 		return errors.New("unknown chain ID")
 	}
 
-	spendGwei := totalSpendGwei(tx, opReceipt)
+	spendGwei := totalSpendGwei(tx, receipt)
 	spendTotal.WithLabelValues(dest.Name, string(dest.NativeToken)).Add(spendGwei)
 
 	prices, err := l.pricer.Price(ctx, tokens.OMNI, tokens.ETH)

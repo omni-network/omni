@@ -38,7 +38,7 @@ type TxManager interface {
 	// may be included on L1 even if the context is canceled.
 	//
 	// NOTE: Send can be called concurrently, the nonce will be managed internally.
-	Send(ctx context.Context, candidate TxCandidate) (*types.Transaction, *types.Receipt, error)
+	Send(ctx context.Context, candidate TxCandidate) (*types.Transaction, *ethclient.Receipt, error)
 
 	// From returns the sending address associated with the instance of the transaction manager.
 	// It is static for a single instance of a TxManager.
@@ -154,7 +154,7 @@ type TxCandidate struct {
 // transaction manager will do a gas estimation.
 //
 // NOTE: Send can be called concurrently, the nonce will be managed internally.
-func (m *simple) Send(ctx context.Context, candidate TxCandidate) (*types.Transaction, *types.Receipt, error) {
+func (m *simple) Send(ctx context.Context, candidate TxCandidate) (*types.Transaction, *ethclient.Receipt, error) {
 	tx, rec, err := m.doSend(ctx, candidate)
 	if err != nil {
 		m.resetNonce()
@@ -165,7 +165,7 @@ func (m *simple) Send(ctx context.Context, candidate TxCandidate) (*types.Transa
 }
 
 // doSend performs the actual transaction creation and sending.
-func (m *simple) doSend(ctx context.Context, candidate TxCandidate) (*types.Transaction, *types.Receipt, error) {
+func (m *simple) doSend(ctx context.Context, candidate TxCandidate) (*types.Transaction, *ethclient.Receipt, error) {
 	ctx, cancel := maybeSetTimeout(ctx, m.cfg.TxSendTimeout)
 	defer cancel()
 
@@ -276,7 +276,7 @@ func (m *simple) resetNonce() {
 // sendTx submits the same transaction several times with increasing gas prices as necessary.
 // It waits for the transaction to be confirmed on chain.
 // It returns the confirmed transaction.
-func (m *simple) sendTx(ctx context.Context, tx *types.Transaction) (*types.Transaction, *types.Receipt, error) {
+func (m *simple) sendTx(ctx context.Context, tx *types.Transaction) (*types.Transaction, *ethclient.Receipt, error) {
 	var wg sync.WaitGroup
 	defer wg.Wait()
 	ctx, cancel := context.WithCancel(ctx)
@@ -437,7 +437,7 @@ func (m *simple) waitForTx(ctx context.Context, tx *types.Transaction, sendState
 
 // waitMined waits for the transaction to be mined or for the context to be canceled.
 func (m *simple) waitMined(ctx context.Context, tx *types.Transaction,
-	sendState *SendState) (*types.Receipt, error) {
+	sendState *SendState) (*ethclient.Receipt, error) {
 	txHash := tx.Hash()
 	const logFreqFactor = 10 // Log every 10th attempt
 	attempt := 1
@@ -472,10 +472,10 @@ func (m *simple) waitMined(ctx context.Context, tx *types.Transaction,
 
 // queryReceipt queries for the receipt and returns the receipt if it has passed the confirmation depth.
 func (m *simple) queryReceipt(ctx context.Context, txHash common.Hash,
-	sendState *SendState) (*types.Receipt, bool, error) {
+	sendState *SendState) (*ethclient.Receipt, bool, error) {
 	ctx, cancel := context.WithTimeout(ctx, m.cfg.NetworkTimeout)
 	defer cancel()
-	receipt, err := m.backend.TransactionReceipt(ctx, txHash)
+	receipt, err := m.backend.OPTransactionReceipt(ctx, txHash)
 	if err != nil {
 		if strings.Contains(err.Error(), "transaction indexing is in progress") {
 			return nil, false, nil // Just back off here
@@ -730,5 +730,5 @@ func isNetworkError(err error) bool {
 // minedTTuple groups the mined/confirmed tx with its receipt.
 type minedTuple struct {
 	Tx  *types.Transaction
-	Rec *types.Receipt
+	Rec *ethclient.Receipt
 }

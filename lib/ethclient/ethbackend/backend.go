@@ -148,7 +148,7 @@ func (b *Backend) PublicKey(from common.Address) (*ecdsa.PublicKey, error) {
 	return &acc.privateKey.PublicKey, nil
 }
 
-func (b *Backend) Send(ctx context.Context, from common.Address, candidate txmgr.TxCandidate) (*ethtypes.Transaction, *ethtypes.Receipt, error) {
+func (b *Backend) Send(ctx context.Context, from common.Address, candidate txmgr.TxCandidate) (*ethtypes.Transaction, *ethclient.Receipt, error) {
 	acc, ok := b.accounts[from]
 	if !ok {
 		return nil, nil, errors.New("unknown from address", "from", from)
