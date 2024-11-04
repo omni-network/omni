@@ -67,20 +67,6 @@ var (
 		Buckets:   []float64{0, 1, 2, 4, 8, 16, 32, 64, 128, 256},
 		Help:      "Number of steps in the binary search process to find the right height",
 	}, []string{"chain_version"})
-
-	cacheHits = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "lib",
-		Subsystem: "cprovider",
-		Name:      "cache_hits_total",
-		Help:      "Total number of cache hits per source chain version.",
-	}, []string{"chain_version"})
-
-	cacheMisses = promauto.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "lib",
-		Subsystem: "cprovider",
-		Name:      "cache_misses_total",
-		Help:      "Total number of cache misses per source chain version.",
-	}, []string{"chain_version"})
 )
 
 func fetchStepsMetrics(chainName string, lookbackSteps, binarySearchSteps uint64) {

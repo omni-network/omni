@@ -21,13 +21,6 @@ import (
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 )
 
-// attestCacheLimit defines the attest stream cache limit per chain version.
-// - 10k attestations per chain version
-// - 10 chain versions (4 public chains with 2 versions, 2 omni chains with 1 version)
-// - 1KB per attestation (with 10 validator signatures)
-// - Total size ~= 1KB * 10k * 10 ~= 100MB.
-const attestCacheLimit = 10000
-
 func Run(ctx context.Context, cfg Config) error {
 	log.Info(ctx, "Starting relayer")
 
@@ -61,7 +54,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	cprov := cprovider.NewABCI(tmClient, network.ID, cprovider.WithAttestCache(attestCacheLimit))
+	cprov := cprovider.NewABCI(tmClient, network.ID)
 	xprov := xprovider.New(network, rpcClientPerChain, cprov)
 
 	pricer := newTokenPricer(ctx)

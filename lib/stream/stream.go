@@ -36,8 +36,6 @@ type Deps[E any] struct {
 	Verify func(ctx context.Context, elem E, height uint64) error
 	// Height returns the height of an element.
 	Height func(elem E) uint64
-	// Cache of elements.
-	Cache Cache[E]
 
 	// Config
 	FetchWorkers  uint64
@@ -49,8 +47,6 @@ type Deps[E any] struct {
 	IncFetchErr        func()
 	IncCallbackErr     func()
 	SetStreamHeight    func(uint64)
-	IncCacheHit        func()
-	IncCacheMiss       func()
 	SetCallbackLatency func(time.Duration)
 	StartTrace         func(ctx context.Context, height uint64, spanName string) (context.Context, trace.Span)
 }
@@ -78,11 +74,6 @@ func Stream[E any](ctx context.Context, deps Deps[E], srcChainID uint64, startHe
 				return nil
 			}
 
-			if elems := deps.Cache.Get(height); len(elems) > 0 {
-				deps.IncCacheHit()
-				return elems
-			}
-
 			fetchCtx, span := deps.StartTrace(ctx, height, "fetch")
 			elems, err := deps.FetchBatch(fetchCtx, srcChainID, height)
 			span.End()
@@ -101,9 +92,6 @@ func Stream[E any](ctx context.Context, deps Deps[E], srcChainID uint64, startHe
 
 				continue
 			}
-
-			deps.IncCacheMiss() // Only count non-empty fetches as cache misses.
-			deps.Cache.Set(height, elems)
 
 			return elems
 		}
