@@ -140,9 +140,12 @@ func (s Static) ConsensusRPC() string {
 var (
 	omegaAVS      = common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
 	omegaPortal   = common.HexToAddress("0xcB60A0451831E4865bC49f41F9C67665Fc9b75C3")
+	omegaBridge   = common.HexToAddress("0x084ef227534A6Ad2DE4C4e54dB19f1C457A57a27")
+	omegaToken    = common.HexToAddress("0xD036C60f46FF51dd7Fbf6a819b5B171c8A076b07")
 	mainnetAVS    = common.HexToAddress("0xed2f4d90b073128ae6769a9A8D51547B1Df766C8")
 	mainnetToken  = common.HexToAddress("0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4")
 	mainnetPortal = common.HexToAddress("0x5e9A8Aa213C912Bf54C86bf64aDB8ed6A79C04d1")
+	mainnetBridge = common.HexToAddress("0x5e9A8Aa213C912Bf54C86bf64aDB8ed6A79C04d1") // To be deployed
 
 	//go:embed omega/consensus-genesis.json
 	omegaConsensusGenesisJSON []byte
@@ -209,6 +212,8 @@ var statics = map[ID]Static{
 		AVSContractAddress:   omegaAVS,
 		OmniExecutionChainID: evmchain.IDOmniOmega,
 		MaxValidators:        maxValidators,
+		TokenAddress:         omegaToken,
+		L1BridgeAddress:      omegaBridge,
 		Portals: []Deployment{
 			{ChainID: evmchain.IDArbSepolia, Address: omegaPortal, DeployHeight: 71015563},
 			{ChainID: evmchain.IDBaseSepolia, Address: omegaPortal, DeployHeight: 13932203},
@@ -227,6 +232,7 @@ var statics = map[ID]Static{
 		OmniExecutionChainID: evmchain.IDOmniMainnet,
 		MaxValidators:        maxValidators,
 		TokenAddress:         mainnetToken,
+		L1BridgeAddress:      mainnetBridge,
 		Portals: []Deployment{
 			{ChainID: evmchain.IDEthereum, Address: mainnetPortal, DeployHeight: 21029795},
 			{ChainID: evmchain.IDArbitrumOne, Address: mainnetPortal, DeployHeight: 266889621},

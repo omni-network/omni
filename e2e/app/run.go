@@ -109,7 +109,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		}
 	}
 
-	if err := setupTokenBridge(ctx, def); err != nil {
+	if err := DeployBridge(ctx, def); err != nil {
 		return nil, errors.Wrap(err, "setup token bridge")
 	}
 
