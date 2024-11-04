@@ -180,7 +180,7 @@ func (p Provider) stream(
 	ctx := log.WithCtx(in, "src_chain", srcChain, "worker", workerName)
 
 	deps := stream.Deps[xchain.Attestation]{
-		FetchBatch: func(ctx context.Context, _ uint64, offset uint64) ([]xchain.Attestation, error) {
+		FetchBatch: func(ctx context.Context, offset uint64) ([]xchain.Attestation, error) {
 			return p.fetch(ctx, chainVer, offset)
 		},
 		Backoff:       p.backoffFunc,
@@ -224,7 +224,7 @@ func (p Provider) stream(
 	}
 
 	cb := (stream.Callback[xchain.Attestation])(callback)
-	err := stream.Stream(ctx, deps, chainVer.ID, attestOffset, cb)
+	err := stream.Stream(ctx, deps, attestOffset, cb)
 	if err != nil {
 		return errors.Wrap(err, "stream attestations", "worker", workerName, "chain", srcChain)
 	}

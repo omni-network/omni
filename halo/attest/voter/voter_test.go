@@ -541,6 +541,10 @@ func (stubProvider) StreamAsync(context.Context, xchain.ProviderRequest, xchain.
 	panic("unexpected")
 }
 
+func (stubProvider) StreamEventLogs(context.Context, xchain.EventLogsReq, xchain.EventLogsCallback) error {
+	panic("unexpected")
+}
+
 func (stubProvider) GetBlock(context.Context, xchain.ProviderRequest) (xchain.Block, bool, error) {
 	panic("unexpected")
 }

@@ -27,9 +27,9 @@ type Cache[E any] interface {
 type Deps[E any] struct {
 	// Dependency functions
 
-	// FetchBatch fetches the next batch of elements from the provided height (inclusive).
-	// The elements must be sequential, since the internal height cursors is incremented for each element returned.
-	FetchBatch func(ctx context.Context, chainID uint64, height uint64) ([]E, error)
+	// FetchBatch fetches the next batch of elements from the provided height (inclusive) if available.
+	// Returned elements must be strictly-sequential, since the internal height cursors is incremented for each element returned.
+	FetchBatch func(ctx context.Context, height uint64) ([]E, error)
 	// Backoff returns a backoff function. See expbackoff package for the implementation.
 	Backoff func(ctx context.Context) func()
 	// Verify is a sanity check function, it ensures each element is valid.
@@ -59,7 +59,7 @@ type Deps[E any] struct {
 // It retries forever on fetch errors.
 // It can either retry or return callback errors.
 // It returns (nil) when the context is canceled.
-func Stream[E any](ctx context.Context, deps Deps[E], srcChainID uint64, startHeight uint64, callback Callback[E]) error {
+func Stream[E any](ctx context.Context, deps Deps[E], startHeight uint64, callback Callback[E]) error {
 	if deps.FetchWorkers == 0 {
 		return errors.New("invalid zero fetch worker count")
 	}
@@ -75,7 +75,7 @@ func Stream[E any](ctx context.Context, deps Deps[E], srcChainID uint64, startHe
 			}
 
 			fetchCtx, span := deps.StartTrace(ctx, height, "fetch")
-			elems, err := deps.FetchBatch(fetchCtx, srcChainID, height)
+			elems, err := deps.FetchBatch(fetchCtx, height)
 			span.End()
 
 			if ctx.Err() != nil {
