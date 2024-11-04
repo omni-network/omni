@@ -10,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/optypes"
 	"github.com/omni-network/omni/lib/tracer"
 )
 
@@ -28,7 +27,7 @@ type Client interface {
 	ethereum.PendingStateReader
 	ethereum.TransactionReader
 	ethereum.TransactionSender
-	OPTransactionReceipt(ctx context.Context, hash common.Hash) (*optypes.Receipt, error)
+	OPTransactionReceipt(ctx context.Context, hash common.Hash) (*Receipt, error)
 	HeaderByType(ctx context.Context, typ HeadType) (*types.Header, error)
 	EtherBalanceAt(ctx context.Context, addr common.Address) (float64, error)
 	PeerCount(ctx context.Context) (uint64, error)

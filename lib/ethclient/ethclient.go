@@ -5,7 +5,6 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/optypes"
 	"github.com/omni-network/omni/lib/tracer"
 
 	"github.com/ethereum/go-ethereum"
@@ -184,14 +183,14 @@ func (w Wrapper) EtherBalanceAt(ctx context.Context, addr common.Address) (float
 
 // OPTransactionReceipt returns the OP trasnaction receipt for the given hash.
 // OP receipts included additional fields for L1 fee info.
-func (w Wrapper) OPTransactionReceipt(ctx context.Context, txHash common.Hash) (*optypes.Receipt, error) {
-	const endpoint = "eth_getTransactionReceipt"
+func (w Wrapper) OPTransactionReceipt(ctx context.Context, txHash common.Hash) (*Receipt, error) {
+	const endpoint = "op_transaction_receipt"
 	defer latency(w.chain, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
-	var r *optypes.Receipt
+	var r *Receipt
 	err := w.cl.Client().CallContext(ctx, &r, "eth_getTransactionReceipt", txHash)
 
 	// mirror geth ethclient behavior

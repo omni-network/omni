@@ -10,7 +10,6 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/optypes"
 	"github.com/omni-network/omni/lib/pnl"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tokens/coingecko"
@@ -164,7 +163,7 @@ func feeByDenom(
 	sub xchain.Submission,
 	prices map[tokens.Token]float64,
 ) (amtByDenom, error) {
-	fees := amtByDenom{}
+	var fees amtByDenom
 
 	for _, msg := range sub.Msgs {
 		if msg.SourceChainID != src.ChainID {
@@ -194,7 +193,7 @@ func spendByDenom(
 	spendGwei float64,
 	prices map[tokens.Token]float64,
 ) (amtByDenom, error) {
-	spend := amtByDenom{}
+	var spend amtByDenom
 
 	switch dest.NativeToken {
 	case tokens.OMNI:
@@ -211,14 +210,14 @@ func spendByDenom(
 }
 
 // totalSpendGwei returns the total amount spent on a transaction in gwei.
-func totalSpendGwei(tx *ethtypes.Transaction, rec *optypes.Receipt) float64 {
+func totalSpendGwei(tx *ethtypes.Transaction, rec *ethclient.Receipt) float64 {
 	spend := new(big.Int).Mul(rec.EffectiveGasPrice, umath.NewBigInt(rec.GasUsed))
 
 	// add optypes::Receipt.L1Fee. will be zero for non-OP chains
-	spend.Add(spend, rec.L1Fee)
+	spend = new(big.Int).Add(spend, rec.L1Fee)
 
 	// add tx value
-	spend.Add(spend, tx.Value())
+	spend = new(big.Int).Add(spend, tx.Value())
 
 	return toGwei(spend)
 }

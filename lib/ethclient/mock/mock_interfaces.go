@@ -18,7 +18,6 @@ import (
 	common "github.com/ethereum/go-ethereum/common"
 	types "github.com/ethereum/go-ethereum/core/types"
 	ethclient "github.com/omni-network/omni/lib/ethclient"
-	optypes "github.com/omni-network/omni/lib/optypes"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -283,10 +282,10 @@ func (mr *MockClientMockRecorder) NonceAt(ctx, account, blockNumber any) *gomock
 }
 
 // OPTransactionReceipt mocks base method.
-func (m *MockClient) OPTransactionReceipt(ctx context.Context, hash common.Hash) (*optypes.Receipt, error) {
+func (m *MockClient) OPTransactionReceipt(ctx context.Context, hash common.Hash) (*ethclient.Receipt, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "OPTransactionReceipt", ctx, hash)
-	ret0, _ := ret[0].(*optypes.Receipt)
+	ret0, _ := ret[0].(*ethclient.Receipt)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

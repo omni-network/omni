@@ -34,7 +34,6 @@ var (
 
 import (
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/optypes"
 	"github.com/ethereum/go-ethereum"
 {{- range .Imports}}
 	{{.}}
@@ -45,7 +44,7 @@ import (
 type Client interface {
     {{range .Providers}} ethereum.{{.}}
     {{end -}}
-	OPTransactionReceipt(ctx context.Context, hash common.Hash) (*optypes.Receipt, error)
+	OPTransactionReceipt(ctx context.Context, hash common.Hash) (*Receipt, error)
 	HeaderByType(ctx context.Context, typ HeadType) (*types.Header, error)
 	EtherBalanceAt(ctx context.Context, addr common.Address) (float64, error)
 	PeerCount(ctx context.Context) (uint64, error)

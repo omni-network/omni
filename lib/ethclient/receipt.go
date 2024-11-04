@@ -1,7 +1,7 @@
 // This file copies Receipt type from ethereum-optimism/op-geth/core/types/receipt.go
 // It omits everything else, refactoring where needed.
 
-package optypes
+package ethclient
 
 import (
 	"math/big"
