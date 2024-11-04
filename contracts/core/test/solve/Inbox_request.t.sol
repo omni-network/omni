@@ -94,7 +94,7 @@ contract Inbox_request_Test is Test {
         assertNewRequest({
             id: id,
             from: user,
-            status: Solve.Status.Open,
+            status: Solve.Status.Pending,
             call: call,
             deposits: deposits,
             nativeDeposit: 0
@@ -120,7 +120,7 @@ contract Inbox_request_Test is Test {
         assertNewRequest({
             id: id,
             from: user,
-            status: Solve.Status.Open,
+            status: Solve.Status.Pending,
             call: call,
             deposits: deposits,
             nativeDeposit: 0
@@ -140,7 +140,7 @@ contract Inbox_request_Test is Test {
         assertNewRequest({
             id: id,
             from: user,
-            status: Solve.Status.Open,
+            status: Solve.Status.Pending,
             call: call,
             deposits: deposits,
             nativeDeposit: 1 ether
@@ -169,7 +169,7 @@ contract Inbox_request_Test is Test {
         assertNewRequest({
             id: id,
             from: user,
-            status: Solve.Status.Open,
+            status: Solve.Status.Pending,
             call: call,
             deposits: deposits,
             nativeDeposit: 3 ether
@@ -190,7 +190,7 @@ contract Inbox_request_Test is Test {
         assertNewRequest({
             id: id1,
             from: user,
-            status: Solve.Status.Open,
+            status: Solve.Status.Pending,
             call: call,
             deposits: deposits,
             nativeDeposit: 1 ether
@@ -198,7 +198,7 @@ contract Inbox_request_Test is Test {
         assertNewRequest({
             id: id2,
             from: user,
-            status: Solve.Status.Open,
+            status: Solve.Status.Pending,
             call: call,
             deposits: deposits,
             nativeDeposit: 2 ether

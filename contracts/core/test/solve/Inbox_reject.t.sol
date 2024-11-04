@@ -123,7 +123,7 @@ contract Inbox_accept_Test is Test {
         assertEq(address(inbox).balance, 2 ether, "address(inbox).balance");
         assertEq(address(user).balance, 0, "address(user).balance");
         assertEq(uint8(inbox.getRequest(id1).status), uint8(Solve.Status.Rejected), "inbox.getRequest(id1).status");
-        assertEq(uint8(inbox.getRequest(id2).status), uint8(Solve.Status.Open), "inbox.getRequest(id2).status");
+        assertEq(uint8(inbox.getRequest(id2).status), uint8(Solve.Status.Pending), "inbox.getRequest(id2).status");
     }
 
     function test_reject_nativeMultiToken() public {

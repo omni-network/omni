@@ -48,7 +48,7 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable {
      * @notice Emitted when a request is cancelled.
      * @param id  ID of the request.
      */
-    event Cancelled(bytes32 indexed id);
+    event Reverted(bytes32 indexed id);
 
     /**
      * @notice Role for solvers.
@@ -115,7 +115,7 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable {
      */
     function accept(bytes32 id) external onlyRoles(SOLVER) nonReentrant {
         Solve.Request storage req = _requests[id];
-        if (req.status != Solve.Status.Open) revert RequestNotOpen();
+        if (req.status != Solve.Status.Pending) revert RequestNotOpen();
 
         req.updatedAt = uint40(block.timestamp);
         req.status = Solve.Status.Accepted;
@@ -131,7 +131,7 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable {
      */
     function reject(bytes32 id) external onlyRoles(SOLVER) nonReentrant {
         Solve.Request storage req = _requests[id];
-        if (req.status != Solve.Status.Open) revert RequestNotOpen();
+        if (req.status != Solve.Status.Pending) revert RequestNotOpen();
 
         req.updatedAt = uint40(block.timestamp);
         req.status = Solve.Status.Rejected;
@@ -146,12 +146,12 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable {
      */
     function cancel(bytes32 id) external nonReentrant {
         Solve.Request storage req = _requests[id];
-        if (req.status != Solve.Status.Open && req.status != Solve.Status.Rejected) revert RequestNotCancelable();
+        if (req.status != Solve.Status.Pending && req.status != Solve.Status.Rejected) revert RequestNotCancelable();
         if (req.from != msg.sender) revert Unauthorized();
 
         _cancelRequest(req);
 
-        emit Cancelled(id);
+        emit Reverted(id);
     }
 
     /**
@@ -168,7 +168,7 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable {
         req = _requests[id];
         req.id = id;
         req.updatedAt = uint40(block.timestamp);
-        req.status = Solve.Status.Open;
+        req.status = Solve.Status.Pending;
         req.from = from;
         req.call = call;
 
@@ -191,7 +191,7 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable {
     function _cancelRequest(Solve.Request storage req) internal {
         // Update state
         req.updatedAt = uint40(block.timestamp);
-        req.status = Solve.Status.Cancelled;
+        req.status = Solve.Status.Reverted;
 
         // Refund deposits
         uint256 length = req.deposits.length;

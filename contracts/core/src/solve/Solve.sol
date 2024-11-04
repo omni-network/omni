@@ -4,10 +4,10 @@ pragma solidity =0.8.24;
 library Solve {
     enum Status {
         Invalid,
-        Open,
+        Pending,
         Accepted,
         Rejected,
-        Cancelled,
+        Reverted,
         Fulfilled
     }
 

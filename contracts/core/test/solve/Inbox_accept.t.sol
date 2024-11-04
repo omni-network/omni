@@ -142,7 +142,7 @@ contract Inbox_accept_Test is Test {
 
         assertEq(inbox.getRequest(id1).acceptedBy, address(0), "inbox.getRequest(id1).acceptedBy");
         assertEq(inbox.getRequest(id2).acceptedBy, solver, "inbox.getRequest(id2).acceptedBy");
-        assertEq(uint8(inbox.getRequest(id1).status), uint8(Solve.Status.Open), "inbox.getRequest(id1).status");
+        assertEq(uint8(inbox.getRequest(id1).status), uint8(Solve.Status.Pending), "inbox.getRequest(id1).status");
         assertEq(uint8(inbox.getRequest(id2).status), uint8(Solve.Status.Accepted), "inbox.getRequest(id2).status");
     }
 

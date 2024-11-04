@@ -92,7 +92,7 @@ contract Inbox_request_Test is Test {
 
         assertEq(address(inbox).balance, 0, "address(inbox).balance");
         assertEq(address(user).balance, 1 ether, "address(user).balance");
-        assertEq(uint8(inbox.getRequest(id).status), uint8(Solve.Status.Cancelled), "inbox.getRequest(id).status");
+        assertEq(uint8(inbox.getRequest(id).status), uint8(Solve.Status.Reverted), "inbox.getRequest(id).status");
     }
 
     function test_cancel_two_requests() public {
@@ -113,8 +113,8 @@ contract Inbox_request_Test is Test {
 
         assertEq(address(inbox).balance, 0, "address(inbox).balance");
         assertEq(address(user).balance, 2 ether, "address(user).balance");
-        assertEq(uint8(inbox.getRequest(id1).status), uint8(Solve.Status.Cancelled), "inbox.getRequest(id1).status");
-        assertEq(uint8(inbox.getRequest(id2).status), uint8(Solve.Status.Cancelled), "inbox.getRequest(id2).status");
+        assertEq(uint8(inbox.getRequest(id1).status), uint8(Solve.Status.Reverted), "inbox.getRequest(id1).status");
+        assertEq(uint8(inbox.getRequest(id2).status), uint8(Solve.Status.Reverted), "inbox.getRequest(id2).status");
     }
 
     function test_cancel_oldest_request() public {
@@ -133,8 +133,8 @@ contract Inbox_request_Test is Test {
 
         assertEq(address(inbox).balance, 1 ether, "address(inbox).balance");
         assertEq(address(user).balance, 1 ether, "address(user).balance");
-        assertEq(uint8(inbox.getRequest(id1).status), uint8(Solve.Status.Cancelled), "inbox.getRequest(id1).status");
-        assertEq(uint8(inbox.getRequest(id2).status), uint8(Solve.Status.Open), "inbox.getRequest(id2).status");
+        assertEq(uint8(inbox.getRequest(id1).status), uint8(Solve.Status.Reverted), "inbox.getRequest(id1).status");
+        assertEq(uint8(inbox.getRequest(id2).status), uint8(Solve.Status.Pending), "inbox.getRequest(id2).status");
     }
 
     function test_cancel_singleToken() public {
@@ -153,7 +153,7 @@ contract Inbox_request_Test is Test {
 
         assertEq(token1.balanceOf(address(inbox)), 0, "token1.balanceOf(inbox)");
         assertEq(token1.balanceOf(user), 1 ether, "token1.balanceOf(user)");
-        assertEq(uint8(inbox.getRequest(id).status), uint8(Solve.Status.Cancelled), "inbox.getRequest(id).status");
+        assertEq(uint8(inbox.getRequest(id).status), uint8(Solve.Status.Reverted), "inbox.getRequest(id).status");
     }
 
     function test_cancel_multiToken() public {
@@ -175,7 +175,7 @@ contract Inbox_request_Test is Test {
         assertEq(token2.balanceOf(address(inbox)), 0, "token2.balanceOf(inbox)");
         assertEq(token1.balanceOf(user), 1 ether, "token1.balanceOf(user)");
         assertEq(token2.balanceOf(user), 1 ether, "token2.balanceOf(user)");
-        assertEq(uint8(inbox.getRequest(id).status), uint8(Solve.Status.Cancelled), "inbox.getRequest(id).status");
+        assertEq(uint8(inbox.getRequest(id).status), uint8(Solve.Status.Reverted), "inbox.getRequest(id).status");
     }
 
     function test_cancel_nativeMultiToken() public {
@@ -200,7 +200,7 @@ contract Inbox_request_Test is Test {
         assertEq(token2.balanceOf(address(inbox)), 0, "token2.balanceOf(inbox)");
         assertEq(token1.balanceOf(user), 1 ether, "token1.balanceOf(user)");
         assertEq(token2.balanceOf(user), 1 ether, "token2.balanceOf(user)");
-        assertEq(uint8(inbox.getRequest(id).status), uint8(Solve.Status.Cancelled), "inbox.getRequest(id).status");
+        assertEq(uint8(inbox.getRequest(id).status), uint8(Solve.Status.Reverted), "inbox.getRequest(id).status");
     }
 
     function test_cancel_rejected_nativeToken_request() public {
@@ -221,7 +221,7 @@ contract Inbox_request_Test is Test {
 
         assertEq(address(inbox).balance, 0, "address(inbox).balance");
         assertEq(address(user).balance, 1 ether, "address(user).balance");
-        assertEq(uint8(inbox.getRequest(id).status), uint8(Solve.Status.Cancelled), "inbox.getRequest(id).status");
+        assertEq(uint8(inbox.getRequest(id).status), uint8(Solve.Status.Reverted), "inbox.getRequest(id).status");
     }
 
     function test_cancel_rejected_nativeMultiToken_request() public {
@@ -250,7 +250,7 @@ contract Inbox_request_Test is Test {
         assertEq(token2.balanceOf(address(inbox)), 0, "token2.balanceOf(inbox)");
         assertEq(token1.balanceOf(user), 1 ether, "token1.balanceOf(user)");
         assertEq(token2.balanceOf(user), 1 ether, "token2.balanceOf(user)");
-        assertEq(uint8(inbox.getRequest(id).status), uint8(Solve.Status.Cancelled), "inbox.getRequest(id).status");
+        assertEq(uint8(inbox.getRequest(id).status), uint8(Solve.Status.Reverted), "inbox.getRequest(id).status");
     }
 
     function randCall() internal returns (Solve.Call memory) {
