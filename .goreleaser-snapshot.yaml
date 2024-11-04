@@ -27,6 +27,13 @@ builds:
     goos: [linux]
     goarch: [amd64]
 
+  - id: solver
+    main: ./solver
+    binary: solver
+    env: [CGO_ENABLED=0]
+    goos: [linux]
+    goarch: [amd64]
+
   - id: omni
     main: ./cli/cmd/omni
     binary: omni
@@ -73,6 +80,14 @@ dockers:
     image_templates:
      - omniops/monitor:{{ .ShortCommit }}
      - omniops/monitor:main
+
+  - ids: [solver]
+    dockerfile: ./solver/Dockerfile
+    goos: linux
+    goarch: amd64
+    image_templates:
+     - omniops/solver:{{ .ShortCommit }}
+     - omniops/solver:main
 
   - ids: [anvilproxy]
     dockerfile: ./e2e/anvilproxy/Dockerfile

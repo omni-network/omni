@@ -47,3 +47,11 @@ scrape_configs:
           network: 'staging'
           host: 'vm-2'
 
+  - job_name: "solver"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: [] # solver targets
+        labels:
+          network: 'staging'
+          host: 'vm-2'
+

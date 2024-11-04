@@ -30,6 +30,7 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 	monapp "github.com/omni-network/omni/monitor/app"
 	relayapp "github.com/omni-network/omni/relayer/app"
+	solverapp "github.com/omni-network/omni/solver/app"
 
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
@@ -54,6 +55,8 @@ const (
 )
 
 // Setup sets up the testnet configuration.
+//
+//nolint:gocyclo // Just multiple sequential steps.
 func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	log.Info(ctx, "Setup testnet", "dir", def.Testnet.Dir)
 
@@ -111,6 +114,10 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	}
 
 	if err := writeRelayerConfig(ctx, def, logCfg); err != nil {
+		return err
+	}
+
+	if err := writeSolverConfig(ctx, def, logCfg); err != nil {
 		return err
 	}
 
@@ -492,6 +499,45 @@ func writeRelayerConfig(ctx context.Context, def Definition, logCfg log.Config) 
 	return nil
 }
 
+func writeSolverConfig(_ context.Context, def Definition, logCfg log.Config) error {
+	confRoot := filepath.Join(def.Testnet.Dir, "solver")
+
+	const (
+		privKeyFile = "privatekey"
+		configFile  = "solver.toml"
+	)
+
+	if err := os.MkdirAll(confRoot, 0o755); err != nil {
+		return errors.Wrap(err, "mkdir", "path", confRoot)
+	}
+
+	// Save network config
+	endpoints := internalEndpoints(def, "")
+	if def.Infra.GetInfrastructureData().Provider == vmcompose.ProviderName {
+		endpoints = ExternalEndpoints(def)
+	}
+
+	// TODO(corver): save proper private key
+	privKey, err := ethcrypto.GenerateKey()
+	if err != nil {
+		return errors.Wrap(err, "generate private key")
+	}
+	if err := ethcrypto.SaveECDSA(filepath.Join(confRoot, privKeyFile), privKey); err != nil {
+		return errors.Wrap(err, "write private key")
+	}
+
+	solverCfg := solverapp.DefaultConfig()
+	solverCfg.PrivateKey = privKeyFile
+	solverCfg.Network = def.Testnet.Network
+	solverCfg.RPCEndpoints = endpoints
+
+	if err := solverapp.WriteConfigTOML(solverCfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
+		return errors.Wrap(err, "write solver config")
+	}
+
+	return nil
+}
+
 func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, valPrivKeys []crypto.PrivKey) error {
 	confRoot := filepath.Join(def.Testnet.Dir, "monitor")
 
@@ -530,7 +576,7 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 	// Save private key
 	privKey, err := eoa.PrivateKey(ctx, def.Testnet.Network, eoa.RoleMonitor)
 	if err != nil {
-		return errors.Wrap(err, "get relayer key")
+		return errors.Wrap(err, "get monitor key")
 	}
 	if err := ethcrypto.SaveECDSA(filepath.Join(confRoot, privKeyFile), privKey); err != nil {
 		return errors.Wrap(err, "write private key")
@@ -568,7 +614,7 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 	cfg.XFeeMngr.CoinGeckoAPIKey = def.Cfg.CoinGeckoAPIKey
 
 	if err := monapp.WriteConfigTOML(cfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
-		return errors.Wrap(err, "write relayer config")
+		return errors.Wrap(err, "write monitor config")
 	}
 
 	return nil

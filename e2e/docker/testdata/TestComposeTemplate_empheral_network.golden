@@ -129,6 +129,20 @@ services:
       test:
         ipv4_address: 10.186.73.201
 
+  solver:
+    labels:
+      e2e: true
+    container_name: solver
+    image: omniops/solver:main
+    restart: unless-stopped
+    ports:
+      - 26660 # Prometheus and pprof
+    volumes:
+      - ./solver:/solver
+    networks:
+      test:
+        ipv4_address: 10.186.73.203
+
   prometheus:
     labels:
       e2e: true
