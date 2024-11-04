@@ -83,8 +83,7 @@ contract OmniBridgeL1 is OmniBridgeCommon {
         require(to != address(0), "OmniBridge: no bridge to zero");
 
         uint64 omniChainId = omni.omniChainId();
-        bytes memory xcalldata =
-            abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount, token.balanceOf(address(this)) + amount));
+        bytes memory xcalldata = abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount));
 
         require(
             msg.value >= omni.feeFor(omniChainId, xcalldata, XCALL_WITHDRAW_GAS_LIMIT), "OmniBridge: insufficient fee"
@@ -103,9 +102,7 @@ contract OmniBridgeL1 is OmniBridgeCommon {
      */
     function bridgeFee(address payor, address to, uint256 amount) public view returns (uint256) {
         return omni.feeFor(
-            omni.omniChainId(),
-            abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount, token.balanceOf(address(this)) + amount)),
-            XCALL_WITHDRAW_GAS_LIMIT
+            omni.omniChainId(), abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount)), XCALL_WITHDRAW_GAS_LIMIT
         );
     }
 }

@@ -41,17 +41,18 @@ contract BridgeNativePostUpgradeTest is Test {
         l1ChainId = b.l1ChainId();
         owner = b.owner();
         portal = new MockPortal();
+        uint256 l1Deposits = b.l1Deposits();
 
         // change portal to mock portal
         vm.prank(owner);
-        b.setup(l1ChainId, address(portal), l1Bridge);
+        b.setup(l1ChainId, address(portal), l1Bridge, l1Deposits);
     }
 
     function _testWithdraw() internal {
         address to = makeAddr("to");
         uint256 amount = 1e18;
         address payor = makeAddr("payor");
-        uint256 l1BridgeBalance = 100e18;
+        uint256 l1Deposits = b.l1Deposits();
 
         vm.expectCall(to, amount, "");
 
@@ -59,11 +60,11 @@ contract BridgeNativePostUpgradeTest is Test {
             sourceChainId: l1ChainId,
             sender: address(l1Bridge),
             to: address(b),
-            data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount, l1BridgeBalance)),
+            data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount)),
             gasLimit: 100_000
         });
 
-        assertEq(b.l1BridgeBalance(), l1BridgeBalance);
+        assertEq(b.l1Deposits(), l1Deposits + amount);
         assertEq(b.claimable(payor), 0);
     }
 
@@ -94,7 +95,6 @@ contract BridgeNativePostUpgradeTest is Test {
         address to = makeAddr("to");
         uint256 amount = 1e18;
         address payor = makeAddr("payor");
-        uint256 l1BridgeBalance = 100e18;
 
         // will revert on withdraw
         address noReceiver = address(new NoReceive());
@@ -105,7 +105,7 @@ contract BridgeNativePostUpgradeTest is Test {
             sourceChainId: l1ChainId,
             sender: address(l1Bridge),
             to: address(b),
-            data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, noReceiver, amount, l1BridgeBalance)),
+            data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, noReceiver, amount)),
             gasLimit: 100_000
         });
 

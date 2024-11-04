@@ -37,7 +37,7 @@ contract OmniBridgeNative is OmniBridgeCommon {
     /**
      * @notice Emitted on setup(...)
      */
-    event Setup(uint64 l1ChainId, address omni, address l1Bridge);
+    event Setup(uint64 l1ChainId, address omni, address l1Bridge, uint256 l1Deposits);
 
     /**
      * @notice xcall gas limit for OmniBridgeL1.withdraw
@@ -57,15 +57,15 @@ contract OmniBridgeNative is OmniBridgeCommon {
     /**
      * @notice Total OMNI tokens deposited to OmniBridgeL1.
      *
-     *         If l1BridgeBalance == totalL1Supply, all OMNI tokens are on Omni's EVM.
-     *         If l1BridgeBalance == 0, withdraws to L1 are blocked.
+     *         If l1Deposits == totalL1Supply, all OMNI tokens are on Omni's EVM.
+     *         If l1Deposits == 0, withdraws to L1 are blocked.
      *
-     *         Without validator rewards, totalL1Deposits == 0 would mean all OMNI tokens are on Ethereum.
+     *         Without validator rewards, l1Deposits == 0 would mean all OMNI tokens are on Ethereum.
      *         However with validator rewards, some OMNI may remain on Omni.
      *
      *         This balance is synced on each withdraw to Omni, and decremented on each bridge to back L1.
      */
-    uint256 public l1BridgeBalance;
+    uint256 public l1Deposits;
 
     /**
      * @notice The address of the OmniBridgeL1 contract deployed to Ethereum.
@@ -90,19 +90,15 @@ contract OmniBridgeNative is OmniBridgeCommon {
      * @param payor     The address of the account with OMNI on L1.
      * @param to        The address to receive the OMNI on Omni.
      * @param amount    The amount of OMNI to withdraw.
-     * @param l1Balance The OMNI balance of the L1 bridge contract, synced on each withdraw.
      */
-    function withdraw(address payor, address to, uint256 amount, uint256 l1Balance)
-        external
-        whenNotPaused(ACTION_WITHDRAW)
-    {
+    function withdraw(address payor, address to, uint256 amount) external whenNotPaused(ACTION_WITHDRAW) {
         XTypes.MsgContext memory xmsg = omni.xmsg();
 
         require(msg.sender == address(omni), "OmniBridge: not xcall"); // this protects against reentrancy
         require(xmsg.sender == l1Bridge, "OmniBridge: not bridge");
         require(xmsg.sourceChainId == l1ChainId, "OmniBridge: not L1");
 
-        l1BridgeBalance = l1Balance;
+        l1Deposits += amount;
 
         (bool success,) = to.call{ value: amount }("");
 
@@ -124,10 +120,10 @@ contract OmniBridgeNative is OmniBridgeCommon {
     function _bridge(address to, uint256 amount) internal {
         require(to != address(0), "OmniBridge: no bridge to zero");
         require(amount > 0, "OmniBridge: amount must be > 0");
-        require(amount <= l1BridgeBalance, "OmniBridge: no liquidity");
+        require(amount <= l1Deposits, "OmniBridge: no liquidity");
         require(msg.value >= amount + bridgeFee(to, amount), "OmniBridge: insufficient funds");
 
-        l1BridgeBalance -= amount;
+        l1Deposits -= amount;
 
         // if fee is overpaid, forward excess to portal.
         // balance of this contract should continue to reflect funds bridged to L1.
@@ -183,11 +179,14 @@ contract OmniBridgeNative is OmniBridgeCommon {
      * @param l1ChainId_    The chain id of the L1 network.
      * @param omni_         The address of the OmniPortal contract.
      * @param l1Bridge_     The address of the L1 OmniBridge contract.
+     * @param l1Deposits_   The number of tokens deposied to L1 bridge contract at setup
+     *                      (to account for genesis prefunds)
      */
-    function setup(uint64 l1ChainId_, address omni_, address l1Bridge_) external onlyOwner {
+    function setup(uint64 l1ChainId_, address omni_, address l1Bridge_, uint256 l1Deposits_) external onlyOwner {
         l1ChainId = l1ChainId_;
         omni = IOmniPortal(omni_);
         l1Bridge = l1Bridge_;
-        emit Setup(l1ChainId_, omni_, l1Bridge_);
+        l1Deposits = l1Deposits_;
+        emit Setup(l1ChainId_, omni_, l1Bridge_, l1Deposits_);
     }
 }

@@ -45,7 +45,7 @@ contract OmniBridgeNative_Test is Test {
         );
 
         vm.prank(owner);
-        b.setup(l1ChainId, address(portal), address(l1Bridge));
+        b.setup(l1ChainId, address(portal), address(l1Bridge), 0);
         vm.deal(address(b), totalSupply);
     }
 
@@ -62,17 +62,17 @@ contract OmniBridgeNative_Test is Test {
         vm.expectRevert("OmniBridge: amount must be > 0");
         b.bridge(to, 0);
 
-        // requires l1BridgeBalance >= amount
+        // requires l1Deposits >= amount
         vm.expectRevert("OmniBridge: no liquidity");
         b.bridge(to, amount);
 
-        b.setL1BridgeBalance(amount - 1);
+        b.setL1Deposits(amount - 1);
 
         // still too low
         vm.expectRevert("OmniBridge: no liquidity");
         b.bridge(to, amount);
 
-        b.setL1BridgeBalance(amount);
+        b.setL1Deposits(amount);
 
         // requires msg.value >= fee + amount
         vm.expectRevert("OmniBridge: insufficient funds");
@@ -103,8 +103,8 @@ contract OmniBridgeNative_Test is Test {
         );
         b.bridge{ value: amount + feeWithExcess }(to, amount);
 
-        // decrements l1BridgeBalance
-        assertEq(b.l1BridgeBalance(), 0);
+        // decrements l1Deposits
+        assertEq(b.l1Deposits(), 0);
         vm.expectRevert("OmniBridge: no liquidity");
         b.bridge(to, amount);
     }
@@ -113,12 +113,11 @@ contract OmniBridgeNative_Test is Test {
         address payor = makeAddr("payor");
         address to = makeAddr("to");
         uint256 amount = 1e18;
-        uint256 l1BridgeBalance = 100e18;
         uint64 gasLimit = l1Bridge.XCALL_WITHDRAW_GAS_LIMIT();
 
         // sender must be portal
         vm.expectRevert("OmniBridge: not xcall");
-        b.withdraw(payor, to, amount, l1BridgeBalance);
+        b.withdraw(payor, to, amount);
 
         // xmsg must be from l1Bridge
         vm.expectRevert("OmniBridge: not bridge");
@@ -126,7 +125,7 @@ contract OmniBridgeNative_Test is Test {
             sourceChainId: l1ChainId,
             sender: address(1234), // wrong
             to: address(b),
-            data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount, l1BridgeBalance)),
+            data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount)),
             gasLimit: gasLimit
         });
 
@@ -136,7 +135,7 @@ contract OmniBridgeNative_Test is Test {
             sourceChainId: l1ChainId + 1, // wrong
             sender: address(l1Bridge),
             to: address(b),
-            data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount, l1BridgeBalance)),
+            data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount)),
             gasLimit: gasLimit
         });
 
@@ -152,7 +151,7 @@ contract OmniBridgeNative_Test is Test {
             sourceChainId: l1ChainId,
             sender: address(l1Bridge),
             to: address(b),
-            data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount, l1BridgeBalance)),
+            data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount)),
             gasLimit: gasLimit
         });
 
@@ -164,8 +163,8 @@ contract OmniBridgeNative_Test is Test {
         // nothing claimable
         assertEq(b.claimable(payor), 0);
 
-        // syncs l1BridgeBalance
-        assertEq(b.l1BridgeBalance(), l1BridgeBalance);
+        // adds amount to l1Deposits
+        assertEq(b.l1Deposits(), amount);
 
         // adds claimable if to.call fails
         //
@@ -179,7 +178,7 @@ contract OmniBridgeNative_Test is Test {
             sourceChainId: l1ChainId,
             sender: address(l1Bridge),
             to: address(b),
-            data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, noReceiver, amount, l1BridgeBalance)),
+            data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, noReceiver, amount)),
             gasLimit: gasLimit
         });
 
@@ -299,7 +298,6 @@ contract OmniBridgeNative_Test is Test {
         address payor = makeAddr("payor");
         address to = makeAddr("to");
         uint256 amount = 1e18;
-        uint256 l1BridgeBalance = 100e18;
         bytes32 action = b.ACTION_WITHDRAW();
 
         // pause withdraws
@@ -311,7 +309,7 @@ contract OmniBridgeNative_Test is Test {
 
         // withdraw reverts
         vm.expectRevert("OmniBridge: paused");
-        b.withdraw(payor, to, amount, l1BridgeBalance);
+        b.withdraw(payor, to, amount);
 
         // claim reverts
         vm.expectRevert("OmniBridge: paused");
@@ -326,7 +324,7 @@ contract OmniBridgeNative_Test is Test {
 
         // no longer paused
         vm.expectRevert("OmniBridge: not xcall");
-        b.withdraw(payor, to, amount, l1BridgeBalance);
+        b.withdraw(payor, to, amount);
 
         vm.expectRevert("OmniBridge: not xcall");
         b.claim(to);
@@ -336,7 +334,6 @@ contract OmniBridgeNative_Test is Test {
         address payor = makeAddr("payor");
         address to = makeAddr("to");
         uint256 amount = 1e18;
-        uint256 l1BridgeBalance = 100e18;
 
         // pause all
         vm.prank(owner);
@@ -352,7 +349,7 @@ contract OmniBridgeNative_Test is Test {
 
         // withdraw reverts
         vm.expectRevert("OmniBridge: paused");
-        b.withdraw(payor, to, amount, l1BridgeBalance);
+        b.withdraw(payor, to, amount);
 
         // claim reverts
         vm.expectRevert("OmniBridge: paused");
@@ -372,8 +369,8 @@ contract OmniBridgeNative_Test is Test {
  * @notice A harness for testing OmniBridgeNative that exposes setup and state modifiers.
  */
 contract OmniBridgeNativeHarness is OmniBridgeNative {
-    function setL1BridgeBalance(uint256 balance) public {
-        l1BridgeBalance = balance;
+    function setL1Deposits(uint256 deposits) public {
+        l1Deposits = deposits;
     }
 
     function setClaimable(address claimant, uint256 amount) public {

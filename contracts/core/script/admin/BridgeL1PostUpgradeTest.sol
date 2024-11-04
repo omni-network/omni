@@ -59,7 +59,7 @@ contract BridgeL1PostUpgradeTest is Test {
                     portal.omniChainId(),
                     ConfLevel.Finalized,
                     Predeploys.OmniBridgeNative,
-                    abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount, bridgeBalance + amount)),
+                    abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount)),
                     b.XCALL_WITHDRAW_GAS_LIMIT()
                 )
             )

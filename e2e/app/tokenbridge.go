@@ -85,7 +85,8 @@ func setupTokenBridge(ctx context.Context, def Definition) error {
 
 	// Configure the OmniBridge native predeploy
 
-	nativeBridge, err := bindings.NewOmniBridgeNative(common.HexToAddress(predeploys.OmniBridgeNative), omniBackend)
+	nativeBridgeAddr := common.HexToAddress(predeploys.OmniBridgeNative)
+	nativeBridge, err := bindings.NewOmniBridgeNative(nativeBridgeAddr, omniBackend)
 	if err != nil {
 		return errors.Wrap(err, "bridge native")
 	}
@@ -95,7 +96,15 @@ func setupTokenBridge(ctx context.Context, def Definition) error {
 		return errors.Wrap(err, "bind opts")
 	}
 
-	tx, err := nativeBridge.Setup(txOpts, l1.ChainID, addrs.Portal, l1BridgeAddr)
+	balance, err := omniBackend.BalanceAt(ctx, nativeBridgeAddr, nil)
+	if err != nil {
+		return errors.Wrap(err, "balance")
+	}
+
+	// initialize l1Deposits to total supply - native bridge balance
+	l1Deposits := new(big.Int).Sub(omnitoken.TotalSupply, balance)
+
+	tx, err := nativeBridge.Setup(txOpts, l1.ChainID, addrs.Portal, l1BridgeAddr, l1Deposits)
 	if err != nil {
 		return errors.Wrap(err, "setup bridge native")
 	}
