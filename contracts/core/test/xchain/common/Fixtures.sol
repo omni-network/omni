@@ -85,7 +85,7 @@ contract Fixtures is CommonBase, StdCheats, XSubGen {
     mapping(uint64 => address) _reverters;
     mapping(uint64 => address) _counters;
 
-    function setUp() public {
+    function setUp() public virtual {
         _initAddrs();
         _initContracts();
     }
@@ -123,6 +123,25 @@ contract Fixtures is CommonBase, StdCheats, XSubGen {
                 }
             }
         }
+    }
+
+    /// @dev Manually create an xblock from sourceChainId with crafted xmsgs
+    function _xblock(uint64 sourceChainId, uint8 confLevel, uint64 offset, XTypes.Msg[] memory xmsgs)
+        internal
+        pure
+        returns (TestXTypes.Block memory)
+    {
+        return TestXTypes.Block(
+            XTypes.BlockHeader({
+                sourceChainId: sourceChainId,
+                consensusChainId: omniCChainID,
+                confLevel: confLevel,
+                offset: offset,
+                sourceBlockHeight: 100,
+                sourceBlockHash: keccak256("blockhash")
+            }),
+            xmsgs
+        );
     }
 
     /// @dev Create an xblock from chainA with xmsgs for "this" chain and chain b.

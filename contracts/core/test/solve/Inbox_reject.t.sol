@@ -9,11 +9,11 @@ import { Test } from "forge-std/Test.sol";
 import { Ownable } from "solady/src/auth/Ownable.sol";
 
 /**
- * @title Inbox_accept_Test
- * @notice Test suite for solver Inbox.accept(...)
+ * @title Inbox_reject_Test
+ * @notice Test suite for solver Inbox.reject(...)
  * @dev TODO: add fuzz / invariant tests
  */
-contract Inbox_accept_Test is Test {
+contract Inbox_reject_Test is Test {
     Inbox inbox;
 
     MockToken token1;
@@ -24,7 +24,8 @@ contract Inbox_accept_Test is Test {
 
     function setUp() public {
         inbox = new Inbox();
-        inbox.initialize(address(this), solver);
+        // Omni and outbox addresses not needed for these tests
+        inbox.initialize(address(this), solver, address(0x1234), address(0x5678));
         token1 = new MockToken();
         token2 = new MockToken();
     }
@@ -32,7 +33,7 @@ contract Inbox_accept_Test is Test {
     function test_reject_reverts() public {
         // cannot reject non-existent request
         vm.prank(solver);
-        vm.expectRevert(Inbox.RequestNotOpen.selector);
+        vm.expectRevert(Inbox.RequestStateInvalid.selector);
         inbox.reject(bytes32(0));
 
         // needs to have solver role
@@ -50,7 +51,7 @@ contract Inbox_accept_Test is Test {
 
         // cannot reject cancelled request
         vm.prank(solver);
-        vm.expectRevert(Inbox.RequestNotOpen.selector);
+        vm.expectRevert(Inbox.RequestStateInvalid.selector);
         inbox.reject(id);
 
         // create request to accept before rejecting
@@ -61,7 +62,7 @@ contract Inbox_accept_Test is Test {
         // cannot reject accepted request
         vm.startPrank(solver);
         inbox.accept(id);
-        vm.expectRevert(Inbox.RequestNotOpen.selector);
+        vm.expectRevert(Inbox.RequestStateInvalid.selector);
         inbox.reject(id);
         vm.stopPrank();
     }

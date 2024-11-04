@@ -67,4 +67,17 @@ library Solve {
         address token;
         uint256 amount;
     }
+
+    /**
+     * @notice Details of a token pre-requisite for a call.
+     * @dev Not stored, only used in opening a request.
+     * @param token    Address of the token.
+     * @param spender  Address of the spender.
+     * @param amount   Transfer and approval amount.
+     */
+    struct TokenPrereq {
+        address token;
+        address spender;
+        uint256 amount;
+    }
 }
