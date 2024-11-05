@@ -105,6 +105,11 @@ func genPromConfig(ctx context.Context, testnet types.Testnet, secrets Secrets, 
 				MetricsPath: "/metrics",
 				targets:     []string{fmt.Sprintf("monitor:%d", promPort)},
 			},
+			{
+				JobName:     "solver",
+				MetricsPath: "/metrics",
+				targets:     []string{fmt.Sprintf("solver:%d", promPort)},
+			},
 		},
 	}
 
@@ -147,7 +152,7 @@ func (c promScrapConfig) Targets() string {
 //	It replaces the geth targets with provided.
 //	It replaces the host label.
 func ConfigForHost(bz []byte, newHost string, halos []string, geths []string, services map[string]bool) []byte {
-	for _, service := range []string{"relayer", "monitor"} {
+	for _, service := range []string{"relayer", "monitor", "solver"} {
 		if services[service] {
 			continue
 		}

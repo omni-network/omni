@@ -35,3 +35,11 @@ scrape_configs:
           network: 'manifest1-localhost'
           host: 'localhost'
 
+  - job_name: "solver"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: [solver:26660] # solver targets
+        labels:
+          network: 'manifest1-localhost'
+          host: 'localhost'
+

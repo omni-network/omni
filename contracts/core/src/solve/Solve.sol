@@ -3,12 +3,12 @@ pragma solidity =0.8.24;
 
 library Solve {
     enum Status {
-        Open,
+        Invalid,
+        Pending,
         Accepted,
-        Cancelled,
         Rejected,
-        Fulfilled,
-        Paid
+        Reverted,
+        Fulfilled
     }
 
     /**
@@ -16,7 +16,7 @@ library Solve {
      * @param id            ID for the request, globally unique per inbox.
      * @param updatedAt     Timestamp request status was last updated.
      * @param from          Address of the user who created the request.
-     * @param fulfilledBy   Address of the solver that fulfilled the request.
+     * @param acceptedBy    Address of the solver that accepted the request.
      * @param status        Request status (open, accepted, cancelled, rejected, fulfilled, paid).
      * @param call          Details of the call to be executed on another chain.
      * @param deposits      Array of deposits backing the request.
@@ -26,7 +26,7 @@ library Solve {
         uint40 updatedAt;
         Status status;
         address from;
-        address fulfilledBy;
+        address acceptedBy;
         Call call;
         Deposit[] deposits;
     }

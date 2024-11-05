@@ -89,6 +89,7 @@ func (p *Provider) Setup() error {
 		Relayer:        true,
 		Prometheus:     p.testnet.Prometheus,
 		Monitor:        true,
+		Solver:         true,
 		GethVerbosity:  3, // Info
 	}
 	def = SetImageTags(def, p.testnet.Manifest, p.omniTag)
@@ -180,12 +181,15 @@ type ComposeDef struct {
 	OmniEVMs []types.OmniEVM
 	Anvils   []types.AnvilChain
 
-	Monitor       bool
-	AnvilProxyTag string
-	RelayerTag    string
+	Monitor    bool
+	Relayer    bool
+	Solver     bool
+	Prometheus bool
+
 	MonitorTag    string
-	Relayer       bool
-	Prometheus    bool
+	RelayerTag    string
+	SolverTag     string
+	AnvilProxyTag string
 }
 
 func (ComposeDef) GethTag() string {
@@ -211,6 +215,7 @@ func (c ComposeDef) NodeOmniEVMs() map[string]string {
 func SetImageTags(def ComposeDef, manifest types.Manifest, omniImgTag string) ComposeDef {
 	anvilProxyTag := omniImgTag
 
+	// TODO(corver): Remove pinned tags since they are not used.
 	monitorTag := omniImgTag
 	if manifest.PinnedMonitorTag != "" {
 		monitorTag = manifest.PinnedMonitorTag
@@ -224,6 +229,7 @@ func SetImageTags(def ComposeDef, manifest types.Manifest, omniImgTag string) Co
 	def.AnvilProxyTag = anvilProxyTag
 	def.MonitorTag = monitorTag
 	def.RelayerTag = relayerTag
+	def.SolverTag = omniImgTag
 
 	return def
 }
@@ -300,15 +306,14 @@ func additionalServices(testnet types.Testnet) []string {
 		resp = append(resp, "prometheus")
 	}
 
-	resp = append(resp, "monitor")
-
 	for _, omniEVM := range testnet.OmniEVMs {
 		resp = append(resp, omniEVM.InstanceName)
 	}
 	for _, anvil := range testnet.AnvilChains {
 		resp = append(resp, anvil.Chain.Name)
 	}
-	resp = append(resp, "relayer")
+
+	resp = append(resp, "monitor", "relayer", "solver")
 
 	return resp
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // ProviderCallback is the callback function signature that will be called with every finalized.
@@ -24,6 +25,24 @@ func (r ProviderRequest) ChainVersion() ChainVersion {
 	}
 }
 
+// EventLogsReq is the request to fetch EVM event logs.
+type EventLogsReq struct {
+	ChainID       uint64         // Source chain ID to query for xblocks.
+	Height        uint64         // Height to query (from inclusive).
+	ConfLevel     ConfLevel      // Confirmation level to ensure
+	FilterAddress common.Address // Filter logs by optional address
+	FilterTopics  []common.Hash  // Filters zero or more topics (in the first position only).
+}
+
+func (r EventLogsReq) ChainVersion() ChainVersion {
+	return ChainVersion{
+		ID:        r.ChainID,
+		ConfLevel: r.ConfLevel,
+	}
+}
+
+type EventLogsCallback func(ctx context.Context, height uint64, events []types.Log) error
+
 // Provider abstracts fetching cross chain data from any supported chain.
 // This is basically a cross-chain data client for all supported chains.
 type Provider interface {
@@ -34,10 +53,16 @@ type Provider interface {
 	// It retries forever (with backoff) on all fetch and callback errors.
 	StreamAsync(ctx context.Context, req ProviderRequest, callback ProviderCallback) error
 
-	// StreamBlocks is the synchronous fail-fast version of Subscribe. It streams
+	// StreamBlocks is the synchronous fail-fast version of StreamBlocks. It streams
 	// xblocks as they become available but returns on the first callback error.
 	// This is useful for workers that need to reset on application errors.
 	StreamBlocks(ctx context.Context, req ProviderRequest, callback ProviderCallback) error
+
+	// StreamEventLogs streams EVM event logs as they become available.
+	//
+	// The callback will be called with strictly-sequential heights with logs matching the provided filter (which may be none).
+	// It returns any error encountered.
+	StreamEventLogs(ctx context.Context, req EventLogsReq, callback EventLogsCallback) error
 
 	// GetBlock returns the block for the given chain and height, or false if not available (not finalized yet),
 	// or an error. The AttestOffset field is populated with the provided offset (if required).

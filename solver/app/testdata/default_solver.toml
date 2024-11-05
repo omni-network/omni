@@ -3,17 +3,33 @@
 
 # The version of the Halo binary that created or
 # last modified the config file. Do not modify this.
-version = "v0.1.1"
+version = "main"
+
+# Omni network to participate in: mainnet, testnet, or devnet.
+network = ""
 
 #######################################################################
-###                         Monitor Options                         ###
+###                         Solver Options                          ###
 #######################################################################
 
-# The path to the Omni network configuration file.
-network-file = "network.json"
+# Path to the ethereum private key used to sign avs omni sync transactions.
+private-key = "solver.key"
 
-# The address that the monitor listens for metric scrape requests.
+# The address that the solver listens for metric scrape requests.
 monitoring-addr = ":26660"
+
+#######################################################################
+###                             X-Chain                             ###
+#######################################################################
+
+[xchain]
+
+# Cross-chain EVM RPC endpoints to use for voting; only required for validators. One per supported EVM is required.
+# It is strongly advised to operate fullnodes for each chain and NOT to use free public RPCs.
+[xchain.evm-rpc-endpoints]
+# ethereum = "http://my-ethreum-node:8545"
+# optimism = "https://my-op-node.com"
+
 
 #######################################################################
 ###                         Logging Options                         ###
@@ -29,11 +45,3 @@ format = "console"
 
 # Logging color if console format is chosen. Options are: auto, force, disable.
 color = "auto"
-
-#######################################################################
-###                         Load Generation                         ###
-#######################################################################
-
-# Note that load generation is only used for testing purposes; ie on devent or staging.
-[loadgen]
-validator-keys = ["path/1", "path/2"]

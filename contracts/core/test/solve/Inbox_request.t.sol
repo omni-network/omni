@@ -6,6 +6,8 @@ import { Inbox } from "src/solve/Inbox.sol";
 import { Solve } from "src/solve/Solve.sol";
 import { Test } from "forge-std/Test.sol";
 
+import { Ownable } from "solady/src/auth/Ownable.sol";
+
 /**
  * @title Inbox_request_Test
  * @notice Test suite for solver Inbox.request(...)
@@ -18,6 +20,7 @@ contract Inbox_request_Test is Test {
     MockToken token2;
 
     address user = makeAddr("user");
+    address solver = makeAddr("solver");
 
     modifier prankUser() {
         vm.startPrank(user);
@@ -27,6 +30,7 @@ contract Inbox_request_Test is Test {
 
     function setUp() public {
         inbox = new Inbox();
+        inbox.initialize(address(this), solver);
         token1 = new MockToken();
         token2 = new MockToken();
     }
@@ -87,7 +91,14 @@ contract Inbox_request_Test is Test {
         assertEq(token1.balanceOf(address(inbox)), deposits[0].amount, "token1.balanceOf(inbox)");
         assertEq(token1.balanceOf(user), 0, "token1.balanceOf(user)");
 
-        assertNewRequest({ id: id, from: user, call: call, deposits: deposits, nativeDeposit: 0 });
+        assertNewRequest({
+            id: id,
+            from: user,
+            status: Solve.Status.Pending,
+            call: call,
+            deposits: deposits,
+            nativeDeposit: 0
+        });
     }
 
     /// @dev Test multiple token deposits
@@ -106,7 +117,14 @@ contract Inbox_request_Test is Test {
         assertEq(token1.balanceOf(user), 0, "token1.balanceOf(user)");
         assertEq(token2.balanceOf(user), 0, "token2.balanceOf(user)");
 
-        assertNewRequest({ id: id, from: user, call: call, deposits: deposits, nativeDeposit: 0 });
+        assertNewRequest({
+            id: id,
+            from: user,
+            status: Solve.Status.Pending,
+            call: call,
+            deposits: deposits,
+            nativeDeposit: 0
+        });
     }
 
     /// @dev Test a single native deposit
@@ -119,7 +137,14 @@ contract Inbox_request_Test is Test {
         bytes32 id = inbox.request{ value: 1 ether }(call, deposits);
         assertEq(address(inbox).balance, 1 ether, "inbox.balance");
 
-        assertNewRequest({ id: id, from: user, call: call, deposits: deposits, nativeDeposit: 1 ether });
+        assertNewRequest({
+            id: id,
+            from: user,
+            status: Solve.Status.Pending,
+            call: call,
+            deposits: deposits,
+            nativeDeposit: 1 ether
+        });
     }
 
     /// @dev Test multiple native deposits
@@ -141,7 +166,14 @@ contract Inbox_request_Test is Test {
         assertEq(token1.balanceOf(user), 0, "token1.balanceOf(user)");
         assertEq(token2.balanceOf(user), 0, "token2.balanceOf(user)");
 
-        assertNewRequest({ id: id, from: user, call: call, deposits: deposits, nativeDeposit: 3 ether });
+        assertNewRequest({
+            id: id,
+            from: user,
+            status: Solve.Status.Pending,
+            call: call,
+            deposits: deposits,
+            nativeDeposit: 3 ether
+        });
     }
 
     /// @dev Test opening two requests
@@ -155,25 +187,42 @@ contract Inbox_request_Test is Test {
         bytes32 id2 = inbox.request{ value: 2 ether }(call, deposits);
 
         assertEq(address(inbox).balance, 3 ether, "address(inbox).balance");
-        assertNewRequest({ id: id1, from: user, call: call, deposits: deposits, nativeDeposit: 1 ether });
-        assertNewRequest({ id: id2, from: user, call: call, deposits: deposits, nativeDeposit: 2 ether });
+        assertNewRequest({
+            id: id1,
+            from: user,
+            status: Solve.Status.Pending,
+            call: call,
+            deposits: deposits,
+            nativeDeposit: 1 ether
+        });
+        assertNewRequest({
+            id: id2,
+            from: user,
+            status: Solve.Status.Pending,
+            call: call,
+            deposits: deposits,
+            nativeDeposit: 2 ether
+        });
     }
 
     /// @dev Test that inbox has the correct state after a request
     function assertNewRequest(
         bytes32 id,
         address from,
+        Solve.Status status,
         Solve.Call memory call,
         Solve.TokenDeposit[] memory deposits,
         uint256 nativeDeposit
     ) internal view {
         Solve.Request memory req = inbox.getRequest(id);
 
-        assertTrue(req.status == Solve.Status.Open, "_assertNewRequest : req.status");
+        assertTrue(req.status == status, "_assertNewRequest : req.status");
 
-        assertEq(req.id, id, "_assertNewRequest : req.id");
+        assertEq(req.id, status == Solve.Status.Invalid ? bytes32(0) : id, "_assertNewRequest : req.id");
         assertEq(req.from, from, "_assertNewRequest : req.from");
-        assertEq(req.updatedAt, block.timestamp, "_assertNewRequest : req.updatedAt"); // assumes no vm.warp()
+        assertEq(
+            req.updatedAt, status == Solve.Status.Invalid ? 0 : block.timestamp, "_assertNewRequest : req.updatedAt"
+        ); // assumes no vm.warp()
         assertEq(req.call.target, call.target, "_assertNewRequest : req.call.target");
         assertEq(req.call.destChainId, call.destChainId, "_assertNewRequest : req.call.destChainId");
         assertEq(req.call.value, call.value, "_assertNewRequest : req.call.value");

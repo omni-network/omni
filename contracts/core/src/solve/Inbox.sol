@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
-import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import { OwnableRoles } from "solady/src/auth/OwnableRoles.sol";
+import { ReentrancyGuard } from "solady/src/utils/ReentrancyGuard.sol";
+import { Initializable } from "solady/src/utils/Initializable.sol";
 import { SafeERC20, IERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Solve } from "./Solve.sol";
 
@@ -9,13 +11,15 @@ import { Solve } from "./Solve.sol";
  * @title Inbox
  * @notice Entrypoint and alt-mempoool for user solve requests.
  */
-contract Inbox is ReentrancyGuardUpgradeable {
+contract Inbox is OwnableRoles, ReentrancyGuard, Initializable {
     using SafeERC20 for IERC20;
 
     error NoDeposits();
     error InvalidCall();
     error InvalidDeposit();
-    error ZeroDeposit();
+    error RequestNotOpen();
+    error TransferFailed();
+    error RequestNotCancelable();
 
     /**
      * @notice Emitted when a request is created.
@@ -27,6 +31,32 @@ contract Inbox is ReentrancyGuardUpgradeable {
     event Requested(bytes32 indexed id, address indexed from, Solve.Call call, Solve.Deposit[] deposits);
 
     /**
+     * @notice Emitted when a request is accepted.
+     * @param id  ID of the request.
+     * @param by  Address of the solver who accepted the request.
+     */
+    event Accepted(bytes32 indexed id, address indexed by);
+
+    /**
+     * @notice Emitted when a request is rejected.
+     * @param id  ID of the request.
+     * @param by  Address of the solver who rejected the request.
+     */
+    event Rejected(bytes32 indexed id, address indexed by);
+
+    /**
+     * @notice Emitted when a request is cancelled.
+     * @param id  ID of the request.
+     */
+    event Reverted(bytes32 indexed id);
+
+    /**
+     * @notice Role for solvers.
+     * @dev _ROLE_0 evaluates to '1'.
+     */
+    uint256 internal constant SOLVER = _ROLE_0;
+
+    /**
      * @dev uint repr of last assigned request ID.
      */
     uint256 internal _lastId;
@@ -36,8 +66,15 @@ contract Inbox is ReentrancyGuardUpgradeable {
      */
     mapping(bytes32 id => Solve.Request) internal _requests;
 
-    function initialize() public initializer {
-        __ReentrancyGuard_init();
+    /**
+     * @notice Initialize the contract's owner and solver.
+     * @dev Used instead of constructor as we want to use the transparent upgradeable proxy pattern.
+     * @param owner_  Address of the owner.
+     * @param solver_ Address of the solver.
+     */
+    function initialize(address owner_, address solver_) external initializer {
+        _initializeOwner(owner_);
+        _grantRoles(solver_, SOLVER);
     }
 
     /**
@@ -72,6 +109,52 @@ contract Inbox is ReentrancyGuardUpgradeable {
     }
 
     /**
+     * @notice Accept an open request.
+     * @dev Only a whitelisted solver can accept.
+     * @param id  ID of the request.
+     */
+    function accept(bytes32 id) external onlyRoles(SOLVER) nonReentrant {
+        Solve.Request storage req = _requests[id];
+        if (req.status != Solve.Status.Pending) revert RequestNotOpen();
+
+        req.updatedAt = uint40(block.timestamp);
+        req.status = Solve.Status.Accepted;
+        req.acceptedBy = msg.sender;
+
+        emit Accepted(id, msg.sender);
+    }
+
+    /**
+     * @notice Reject an open request.
+     * @dev Only a whitelisted solver can reject.
+     * @param id  ID of the request.
+     */
+    function reject(bytes32 id) external onlyRoles(SOLVER) nonReentrant {
+        Solve.Request storage req = _requests[id];
+        if (req.status != Solve.Status.Pending) revert RequestNotOpen();
+
+        req.updatedAt = uint40(block.timestamp);
+        req.status = Solve.Status.Rejected;
+
+        emit Rejected(id, msg.sender);
+    }
+
+    /**
+     * @notice Cancel an open or rejected request and refund deposits.
+     * @dev Only request initiator can cancel.
+     * @param id  ID of the request.
+     */
+    function cancel(bytes32 id) external nonReentrant {
+        Solve.Request storage req = _requests[id];
+        if (req.status != Solve.Status.Pending && req.status != Solve.Status.Rejected) revert RequestNotCancelable();
+        if (req.from != msg.sender) revert Unauthorized();
+
+        _cancelRequest(req);
+
+        emit Reverted(id);
+    }
+
+    /**
      * @dev Open a new request in storage at `id`.
      *      Transfer token deposits from msg.sender to this inbox.
      *      Duplicate token addresses are allowed.
@@ -85,6 +168,7 @@ contract Inbox is ReentrancyGuardUpgradeable {
         req = _requests[id];
         req.id = id;
         req.updatedAt = uint40(block.timestamp);
+        req.status = Solve.Status.Pending;
         req.from = from;
         req.call = call;
 
@@ -101,6 +185,24 @@ contract Inbox is ReentrancyGuardUpgradeable {
             // NOTE: all external methods must be nonReentrant
             // This allows us to transfer while opening the request - saving some gas.
             IERC20(deposits[i].token).safeTransferFrom(msg.sender, address(this), deposits[i].amount);
+        }
+    }
+
+    function _cancelRequest(Solve.Request storage req) internal {
+        // Update state
+        req.updatedAt = uint40(block.timestamp);
+        req.status = Solve.Status.Reverted;
+
+        // Refund deposits
+        uint256 length = req.deposits.length;
+        for (uint256 i = 0; i < length; i++) {
+            Solve.Deposit memory deposit = req.deposits[i];
+            if (deposit.isNative) {
+                (bool success,) = payable(msg.sender).call{ value: deposit.amount }("");
+                if (!success) revert TransferFailed();
+            } else {
+                IERC20(deposit.token).safeTransfer(msg.sender, deposit.amount);
+            }
         }
     }
 

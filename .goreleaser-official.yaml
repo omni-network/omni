@@ -9,7 +9,7 @@ project_name: omni
 # - Only linux/amd/arm docker images required
 # - Tag images with {Tag} and latest
 #
-# relayer, monitor:
+# relayer, monitor, solver:
 # - Internal facing (not external)
 # - Not released as binaries
 # - Only linux/amd docker image required.
@@ -48,6 +48,15 @@ builds:
   - id: monitor
     main: ./monitor
     binary: monitor
+    env: [CGO_ENABLED=0]
+    goos: [linux]
+    goarch: [amd64]
+    ldflags:
+      - -s -w -X github.com/omni-network/omni/lib/buildinfo.version={{.Tag}}
+
+  - id: solver
+    main: ./solver
+    binary: solver
     env: [CGO_ENABLED=0]
     goos: [linux]
     goarch: [amd64]
@@ -112,6 +121,13 @@ dockers:
     dockerfile: ./monitor/Dockerfile
     image_templates:
       - omniops/monitor:{{.Tag}}
+
+  - ids: [solver]
+    goos: linux
+    goarch: amd64
+    dockerfile: ./solver/Dockerfile
+    image_templates:
+      - omniops/solver:{{.Tag}}
 
 docker_manifests:
   - name_template: omniops/halo:{{.Tag}}

@@ -69,9 +69,12 @@ var (
 	}, []string{"chain_version"})
 )
 
-func fetchStepsMetrics(chainName string, lookbackSteps, binarySearchSteps uint64) {
-	fetchLookbackSteps.WithLabelValues(chainName).Observe(float64(lookbackSteps))
-	fetchBinarySearchSteps.WithLabelValues(chainName).Observe(float64(binarySearchSteps))
+func lookbackStepsMetric(chainName string, steps int) {
+	fetchLookbackSteps.WithLabelValues(chainName).Observe(float64(steps))
+}
+
+func binarySearchStepsMetric(chainName string, steps int) {
+	fetchBinarySearchSteps.WithLabelValues(chainName).Observe(float64(steps))
 }
 
 func latency(endpoint string) func() {
