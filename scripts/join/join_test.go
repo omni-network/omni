@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -32,6 +33,7 @@ var (
 	logsFile    = flag.String("logs_file", "join_test.log", "File to write docker logs to")
 	network     = flag.String("network", "omega", "Network to join (default: omega)")
 	integration = flag.Bool("integration", false, "Run integration tests")
+	release     = flag.String("halo_tag", "main", "Halo docker image tag, empty results in `git rev-parse HEAD`")
 )
 
 // TestJoinNetwork starts a local node (using omni operator init-nodes)
@@ -57,16 +59,17 @@ func TestJoinNetwork(t *testing.T) {
 	require.NoError(t, err)
 
 	networkID := netconf.ID(*network)
+	haloTag := haloTag(t)
 	cfg := clicmd.InitConfig{
 		Network: networkID,
 		Home:    home,
 		Moniker: t.Name(),
-		HaloTag: getGitCommit7(t),
+		HaloTag: haloTag,
 	}
 
-	require.NoError(t, ensureHaloImage(cfg.HaloTag))
+	tutil.RequireNoError(t, ensureHaloImage(cfg.HaloTag))
 
-	log.Info(ctx, "Exec: omni operator init-nodes", "network", networkID)
+	log.Info(ctx, "Exec: omni operator init-nodes", "network", networkID, "halo_tag", haloTag)
 	require.NoError(t, clicmd.InitNodes(log.WithNoopLogger(ctx), cfg))
 
 	t0 := time.Now()
@@ -176,6 +179,17 @@ func TestJoinNetwork(t *testing.T) {
 	}
 }
 
+func haloTag(t *testing.T) string {
+	t.Helper()
+
+	haloTag := *release
+	if haloTag == "" {
+		haloTag = getGitCommit7(t)
+	}
+
+	return haloTag
+}
+
 // estimate returns the estimated time until the target height is reached, and blocks per second given
 // current height and time since start.
 func estimate(height uint64, target uint64, since time.Duration) (time.Duration, float64) {
@@ -250,11 +264,24 @@ func haloStatus(ctx context.Context) (string, error) {
 }
 
 func ensureHaloImage(haloTag string) error {
-	out, err := exec.Command("docker", "images", "-q", "omniops/halovisor:"+haloTag).CombinedOutput()
+	if isGitRef, err := regexp.MatchString(`[a-z0-9]{7}`, haloTag); err != nil {
+		return errors.Wrap(err, "regexp match")
+	} else if isGitRef {
+		// For explicit git refs, require locally built images.
+		out, err := exec.Command("docker", "images", "-q", "omniops/halovisor:"+haloTag).CombinedOutput()
+		if err != nil {
+			return errors.Wrap(err, "docker images")
+		} else if strings.TrimSpace(string(out)) == "" {
+			return errors.New("omniops/halovisor:" + haloTag + " image not found locally (make build-docker?)")
+		}
+
+		return errors.New("halo tag must be a git commit hash or branch name, not a version")
+	}
+
+	// For other tags, pull latest version of the image.
+	out, err := exec.Command("docker", "pull", "omniops/halovisor:"+haloTag).CombinedOutput()
 	if err != nil {
-		return errors.Wrap(err, "docker images")
-	} else if strings.TrimSpace(string(out)) == "" {
-		return errors.New("omniops/halovisor:" + haloTag + " image not found locally (make build-docker?)")
+		return errors.Wrap(err, "docker pull (if macOS, use official release or build images)", "output", string(out))
 	}
 
 	return nil

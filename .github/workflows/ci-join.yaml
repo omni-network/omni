@@ -27,19 +27,15 @@ jobs:
         with:
           go-version: 'stable'
 
-      - name: Build binaries
-        uses: goreleaser/goreleaser-action@v5
-        with:
-          version: 2
-          args: release -f .goreleaser-snapshot.yaml --snapshot --clean --skip=archive
-
-      - name: Build halovisor image
-        run: scripts/halovisor/build.sh "${GITHUB_SHA::7}"
-
       - name: Run join test
         run: |
           cd scripts/join
-          sudo go test . -v --integration --logs_file=docker_logs.txt --network="${{github.event.inputs.network || 'mainnet'}}" -timeout 0
+          sudo go test . -v \
+            --integration \
+            --timeout=0 \
+            --logs_file=docker_logs.txt \
+            --halo_tag="main" \
+            --network="${{github.event.inputs.network || 'mainnet'}}"
 
       - name: Upload docker logs
         uses: actions/upload-artifact@v4
