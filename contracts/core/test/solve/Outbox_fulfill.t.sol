@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
+import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { MockToken } from "test/utils/MockToken.sol";
 import { MockVault } from "test/utils/MockVault.sol";
 import { Outbox } from "src/solve/Outbox.sol";
@@ -37,15 +38,18 @@ contract Outbox_fulfill_Test is Base {
         vm.deal(user, 10 ether);
         vm.deal(solver, 10 ether);
 
-        inbox = new Inbox();
-        outbox = new Outbox();
+        address pAdmin = makeAddr("proxy-admin-owner");
+        inbox = Inbox(address(new TransparentUpgradeableProxy(address(new Inbox()), pAdmin, "")));
+        outbox = Outbox(address(new TransparentUpgradeableProxy(address(new Outbox()), pAdmin, "")));
+
+        inbox.initialize(address(this), solver, address(portal), address(outbox));
+        outbox.initialize(address(this), solver, address(chainAPortal), address(inbox));
+
         token1 = new MockToken();
         token2 = new MockToken();
         vault1 = new MockVault(address(token1));
         vault2 = new MockVault(address(token2));
 
-        inbox.initialize(address(this), solver, address(portal), address(outbox));
-        outbox.initialize(address(this), solver, address(chainAPortal), address(inbox));
         outbox.setAllowedCall(address(vault1), MockVault.deposit.selector, true);
         outbox.setAllowedCall(address(vault2), MockVault.deposit.selector, true);
     }
