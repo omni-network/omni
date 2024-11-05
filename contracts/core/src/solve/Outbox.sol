@@ -8,6 +8,7 @@ import { XAppBase } from "../pkg/XAppBase.sol";
 
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { ConfLevel } from "../libraries/ConfLevel.sol";
+import { TypeMax } from "../libraries/TypeMax.sol";
 import { Solve } from "./Solve.sol";
 
 import { IInbox } from "./interfaces/IInbox.sol";
@@ -43,35 +44,16 @@ contract Outbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
     uint256 internal constant SOLVER = _ROLE_0;
 
     /**
-     * @notice Gas limit for the callback.
+     * @notice Gas limit for Inbox.markFulfilled callback.
      */
-    uint64 internal constant CALLBACK_GAS_LIMIT = 200_000;
+    uint64 internal constant MARK_FULFILLED_GAS_LIMIT = 100_000;
 
     /**
-     * @notice Placeholder for request ID.
+     * @notice Stubbed calldata for Inbox.markFulfilled. Used to estimate the gas cost.
+     * @dev Type maxes used to ensure no non-zero bytes in fee estimation.
      */
-    bytes32 internal constant ID_PLACEHOLDER = bytes32(type(uint256).max);
-
-    /**
-     * @notice Placeholder for call hash.
-     */
-    bytes32 internal constant CALLHASH_PLACEHOLDER = bytes32(type(uint256).max);
-
-    /**
-     * @notice Placeholder for solver address.
-     */
-    address internal constant SOLVER_PLACEHOLDER = address(type(uint160).max);
-
-    /**
-     * @notice Signature of the markFulfilled function.
-     */
-    string internal constant MARK_FULFILLED_SIGNATURE = "markFulfilled(bytes32,bytes32,address)";
-
-    /**
-     * @notice Encoded call data for the markFulfilled function.
-     */
-    bytes internal constant MARK_FULFILLED_CALLDATA =
-        abi.encodeWithSignature(MARK_FULFILLED_SIGNATURE, ID_PLACEHOLDER, CALLHASH_PLACEHOLDER, SOLVER_PLACEHOLDER);
+    bytes internal constant MARK_FULFILLED_STUB_CDATA =
+        abi.encodeCall(IInbox.markFulfilled, (TypeMax.Bytes32, TypeMax.Bytes32, TypeMax.Address));
 
     /**
      * @notice Address of the inbox contract.
@@ -111,7 +93,7 @@ contract Outbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
      * @param sourceChainId ID of the source chain.
      */
     function fulfillFee(uint64 sourceChainId) public view returns (uint256) {
-        return feeFor(sourceChainId, MARK_FULFILLED_CALLDATA, CALLBACK_GAS_LIMIT);
+        return feeFor(sourceChainId, MARK_FULFILLED_STUB_CDATA, MARK_FULFILLED_GAS_LIMIT);
     }
 
     /**
@@ -176,7 +158,7 @@ contract Outbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
 
         // Send the fulfillment call to the inbox
         bytes memory data = abi.encodeCall(IInbox.markFulfilled, (reqId, callHash, creditTo));
-        uint256 fee = xcall(sourceChainId, ConfLevel.Finalized, _inbox, data, CALLBACK_GAS_LIMIT);
+        uint256 fee = xcall(sourceChainId, ConfLevel.Finalized, _inbox, data, MARK_FULFILLED_GAS_LIMIT);
         if (msg.value - call.value < fee) revert InsufficientFee();
 
         emit Fulfilled(reqId, callHash, creditTo);
