@@ -15,6 +15,17 @@ import { console } from "forge-std/console.sol";
  * @dev Test exploring gas usage of xsubmit and dependent functions.
  */
 contract OmniPortal_xsubmit_gas_Test is Base {
+    function test_xsubmit_deadCall1_succeeds() public {
+        _testGasSubmitXBlock("deadCall1", 1, _deadCall_xblock({ deadCalls: 1, data: bytes("") }));
+    }
+
+    function test_xsubmit_deadCall1_10validators_succeeds() public {
+        uint64 valSetId = newValSet(10);
+        _silentTestGasSubmitXBlock(1, _addValidatorSet_xblock({ valSetId: 2 }), broadcastChainId);
+        _silentTestGasSubmitXBlock(2, _addValidatorSet_xblock({ valSetId: valSetId }), broadcastChainId);
+        _testGasSubmitXBlock("deadCall1", valSetId, _deadCall_xblock({ deadCalls: 1, data: bytes("") }));
+    }
+
     function test_xsubmit_guzzle1_succeeds() public {
         _testGasSubmitXBlock("guzzle1", 1, _guzzle_xblock({ numGuzzles: 1 }));
     }
@@ -188,6 +199,7 @@ contract OmniPortal_xsubmit_gas_Test is Base {
         console.log("xsubmit - ", name);
         console.log("num signatures: ", xsub.signatures.length);
         console.log("num xmsgs: ", xsub.msgs.length);
+        console.log("total gas used: ", gasUsed);
         console.log("non-xmsg gas used: ", gasUsed - totalXMsgGasLimit);
         console.log("non-xmsg gas per xmsg: ", (gasUsed - totalXMsgGasLimit) / xsub.msgs.length);
 
