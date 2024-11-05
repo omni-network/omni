@@ -89,6 +89,10 @@ contract Outbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
      */
     mapping(bytes32 callHash => bool fulfilled) public fulfilledCalls;
 
+    constructor() {
+        _disableInitializers();
+    }
+
     /**
      * @notice Initialize the contract's owner and solver.
      * @dev Used instead of constructor as we want to use the transparent upgradeable proxy pattern.

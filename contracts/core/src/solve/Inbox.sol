@@ -90,6 +90,10 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, IInbox
      */
     mapping(bytes32 id => Solve.Request) internal _requests;
 
+    constructor() {
+        _disableInitializers();
+    }
+
     /**
      * @notice Initialize the contract's owner and solver.
      * @dev Used instead of constructor as we want to use the transparent upgradeable proxy pattern.
