@@ -230,6 +230,29 @@ contract Fixtures is CommonBase, StdCheats, XSubGen {
         );
     }
 
+    function _deadCall_xblock(uint256 deadCalls, bytes memory data) internal view returns (TestXTypes.Block memory) {
+        uint64 offset = 1;
+        XTypes.Msg[] memory xmsgs = new XTypes.Msg[](deadCalls);
+
+        for (uint256 i = 0; i < deadCalls; i++) {
+            // all dead calls from chain a to this chain
+            xmsgs[i] = _deadCall(thisChainId, offset, data);
+            offset += 1;
+        }
+
+        return TestXTypes.Block(
+            XTypes.BlockHeader({
+                sourceChainId: chainAId,
+                consensusChainId: omniCChainID,
+                offset: 1,
+                confLevel: ConfLevel.Finalized,
+                sourceBlockHeight: 100,
+                sourceBlockHash: keccak256("blockhash")
+            }),
+            xmsgs
+        );
+    }
+
     /// @dev Create a Counter.increment() XMsg from thisChainId to chainAId
     function _outbound_increment() internal view returns (XTypes.Msg memory) {
         return _increment(thisChainId, chainAId, 0);
@@ -298,6 +321,22 @@ contract Fixtures is CommonBase, StdCheats, XSubGen {
             to: address(gasGuzzler),
             data: abi.encodeWithSignature("guzzle()"),
             gasLimit: gasLimit
+        });
+    }
+
+    function _deadCall(uint64 destChainId, uint64 offset, bytes memory data)
+        internal
+        view
+        returns (XTypes.Msg memory)
+    {
+        return XTypes.Msg({
+            destChainId: destChainId,
+            shardId: uint64(ConfLevel.Finalized),
+            offset: offset,
+            sender: address(this),
+            to: address(0xdead),
+            data: data,
+            gasLimit: uint64(21_000 + (16 * data.length))
         });
     }
 
