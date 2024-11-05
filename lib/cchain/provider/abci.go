@@ -382,7 +382,7 @@ func newABCIFetchFunc(attCl atypes.QueryClient, cmtCl cmtservice.ServiceClient, 
 		// Caller has to wait and retry in both cases
 		if !ok || earliestAttestationAtLatestHeight.AttestOffset < fromOffset {
 			// First attestation hasn't happened yet, return empty and set cursor to latest height
-			return []xchain.Attestation{}, earliestAttestationAtLatestHeight.BlockHeight, nil
+			return []xchain.Attestation{}, cursor, nil
 		}
 
 		latestBlockResp, err := cmtCl.GetLatestBlock(ctx, &cmtservice.GetLatestBlockRequest{})
