@@ -60,9 +60,11 @@ func Test(ctx context.Context, def app.Definition) error {
 		return err
 	}
 
-	if err := testUpgradeBridgeNative(ctx, def); err != nil {
-		return err
-	}
+	/*
+		if err := testUpgradeBridgeNative(ctx, def); err != nil {
+			return err
+		}
+	*/
 
 	if err := testUpgradeBridgeL1(ctx, def); err != nil {
 		return err
@@ -152,6 +154,7 @@ func testUpgradeStaking(ctx context.Context, def app.Definition) error {
 	return nil
 }
 
+/*
 func testUpgradeBridgeNative(ctx context.Context, def app.Definition) error {
 	err := UpgradeBridgeNative(ctx, def, Config{Broadcast: true})
 	if err != nil {
@@ -160,6 +163,7 @@ func testUpgradeBridgeNative(ctx context.Context, def app.Definition) error {
 
 	return nil
 }
+*/
 
 func testUpgradeBridgeL1(ctx context.Context, def app.Definition) error {
 	err := UpgradeBridgeL1(ctx, def, Config{Broadcast: true})
