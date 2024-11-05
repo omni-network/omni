@@ -2,7 +2,7 @@
 
 ## Core Network (Cross-rollup messaging + Omni EVM)
 
-<img src="/img/core_architecture.png" width="500px"/>
+<img src="/img/core_architecture.jpg" width="500px"/>
 
 Omni is a network purpose built for fixing fragmentation across the Ethereum ecosystem. This is accomplished by combining a secure messaging protocol for cross-rollup communications with a computational environment (the Omni EVM). Given that Omni is purpose built for solving fragmentation across Ethereum’s rollup ecosystem, it derives its security from Ethereum L1 through the use of re-staking.
 
@@ -10,19 +10,24 @@ To achieve this, Omni was designed with a novel protocol architecture, Octane, t
 
 Omni uses Octane to combine the EVM with the [CometBFT](https://docs.cometbft.com/v0.38/) (formerly Tendermint) consensus engine, providing fast consensus on every rollup network connected with Omni. Within Octane, the Engine API separates the execution environment from the consensus engine, preventing transactions from interfering with blockchain consensus. Octane is the first consensus implementation of the EngineAPI besides Ethereum itself (the Beacon Chain). [ABCI 2.0](https://docs.cometbft.com/v1.0/spec/abci/) complements the Engine API by providing a programmable interface for high-performance consensus engines like CometBFT.
 
-<img src="/img/octane_architecture.png" width="500px"/>
+<img src="/img/octane_architecture.jpg"/>
 
 More information on Octane can be found in the following video:
 
-<video controls width="500px">
-  <!-- TODO replace with actual video -->
-  <source src="/img/omni_1.mp4"/>
-</video>
+<div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden', maxWidth: '100%', }}>
+  <iframe
+    src="https://www.youtube.com/embed/hrGgvypAMvA"
+    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+    frameBorder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+    allowFullScreen
+  ></iframe>
+</div>
 
 
 ## Solver Network
 
-<img src="/img/solver_architecture.png" width="500px"/>
+<img src="/img/solver_architecture.jpg" width="500px"/>
 
 ### The Challenge of Cross-Chain Applications
 
@@ -63,7 +68,7 @@ Here’s how Omni’s solver network makes applications that are only deployed o
     After successful execution on the destination, a cross-rollup message is sent back to the origin rollup via Omni, confirming that the intent was fulfilled. The lockbox contract on the origin then releases the funds to the solver. These funds include a small fee for the solver’s services.
 
 
-<img src="/img/solver_model.png" width="500px"/>
+<img src="/img/solver_model.jpg" width="500px"/>
 
 As a result:
 

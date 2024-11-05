@@ -21,7 +21,7 @@ The foundation of the Omni Network is composed of two core primitives:
 
 On top of this foundation sits the Omni SDK and the Omni solver network. The Omni SDK is the primary interface for applications to interact with the Omni solver network, which carries out cross-chain actions (intents) on behalf of application users on destination chains.
 
-<img src="/img/architecture.png" width="1000px"/>
+<img src="/img/architecture.jpg" width="500px"/>
 
 Here’s a quick breakdown of how these components work together:
 
