@@ -2,13 +2,27 @@
 pragma solidity =0.8.24;
 
 library Solve {
+    /**
+     * @notice Status of a request.
+     */
     enum Status {
         Invalid,
         Pending,
         Accepted,
         Rejected,
         Reverted,
-        Fulfilled
+        Fulfilled,
+        Claimed
+    }
+
+    /**
+     * @notice Reason for rejecting a request.
+     */
+    enum RejectReason {
+        None,
+        DestCallReverts,
+        InsufficientFee,
+        InsufficientInventory
     }
 
     /**
@@ -65,6 +79,19 @@ library Solve {
      */
     struct TokenDeposit {
         address token;
+        uint256 amount;
+    }
+
+    /**
+     * @notice Details of a token pre-requisite for a call.
+     * @dev Not stored, only used in opening a request.
+     * @param token    Address of the token.
+     * @param spender  Address of the spender.
+     * @param amount   Transfer and approval amount.
+     */
+    struct TokenPrereq {
+        address token;
+        address spender;
         uint256 amount;
     }
 }

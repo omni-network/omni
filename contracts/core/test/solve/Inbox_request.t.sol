@@ -6,8 +6,6 @@ import { Inbox } from "src/solve/Inbox.sol";
 import { Solve } from "src/solve/Solve.sol";
 import { Test } from "forge-std/Test.sol";
 
-import { Ownable } from "solady/src/auth/Ownable.sol";
-
 /**
  * @title Inbox_request_Test
  * @notice Test suite for solver Inbox.request(...)
@@ -30,7 +28,8 @@ contract Inbox_request_Test is Test {
 
     function setUp() public {
         inbox = new Inbox();
-        inbox.initialize(address(this), solver);
+        // Omni and outbox addresses not needed for these tests
+        inbox.initialize(address(this), solver, address(0x1234), address(0x5678));
         token1 = new MockToken();
         token2 = new MockToken();
     }

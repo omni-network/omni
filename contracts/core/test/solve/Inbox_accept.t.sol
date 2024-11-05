@@ -24,7 +24,8 @@ contract Inbox_accept_Test is Test {
 
     function setUp() public {
         inbox = new Inbox();
-        inbox.initialize(address(this), solver);
+        // Omni and outbox addresses not needed for these tests
+        inbox.initialize(address(this), solver, address(0x1234), address(0x5678));
         token1 = new MockToken();
         token2 = new MockToken();
     }
@@ -37,7 +38,7 @@ contract Inbox_accept_Test is Test {
 
         // needs open request
         vm.prank(solver);
-        vm.expectRevert(Inbox.RequestNotOpen.selector);
+        vm.expectRevert(Inbox.RequestStateInvalid.selector);
         inbox.accept(bytes32(0));
 
         // create request to be cancelled
@@ -51,7 +52,7 @@ contract Inbox_accept_Test is Test {
         vm.prank(user);
         inbox.cancel(id);
         vm.prank(solver);
-        vm.expectRevert(Inbox.RequestNotOpen.selector);
+        vm.expectRevert(Inbox.RequestStateInvalid.selector);
         inbox.accept(id);
 
         // create request to be rejected
@@ -60,8 +61,8 @@ contract Inbox_accept_Test is Test {
 
         // cannot accept rejected request
         vm.startPrank(solver);
-        inbox.reject(id);
-        vm.expectRevert(Inbox.RequestNotOpen.selector);
+        inbox.reject(id, Solve.RejectReason.None);
+        vm.expectRevert(Inbox.RequestStateInvalid.selector);
         inbox.accept(id);
         vm.stopPrank();
 
@@ -78,7 +79,7 @@ contract Inbox_accept_Test is Test {
 
         // once accepted, solvers cannot accept again
         vm.prank(solver);
-        vm.expectRevert(Inbox.RequestNotOpen.selector);
+        vm.expectRevert(Inbox.RequestStateInvalid.selector);
         inbox.accept(id);
 
         // TODO: complete logic to advance through additional states and then test those

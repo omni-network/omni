@@ -9,11 +9,11 @@ import { Test } from "forge-std/Test.sol";
 import { Ownable } from "solady/src/auth/Ownable.sol";
 
 /**
- * @title Inbox_accept_Test
- * @notice Test suite for solver Inbox.accept(...)
+ * @title Inbox_reject_Test
+ * @notice Test suite for solver Inbox.reject(...)
  * @dev TODO: add fuzz / invariant tests
  */
-contract Inbox_accept_Test is Test {
+contract Inbox_reject_Test is Test {
     Inbox inbox;
 
     MockToken token1;
@@ -24,7 +24,8 @@ contract Inbox_accept_Test is Test {
 
     function setUp() public {
         inbox = new Inbox();
-        inbox.initialize(address(this), solver);
+        // Omni and outbox addresses not needed for these tests
+        inbox.initialize(address(this), solver, address(0x1234), address(0x5678));
         token1 = new MockToken();
         token2 = new MockToken();
     }
@@ -32,12 +33,12 @@ contract Inbox_accept_Test is Test {
     function test_reject_reverts() public {
         // cannot reject non-existent request
         vm.prank(solver);
-        vm.expectRevert(Inbox.RequestNotOpen.selector);
-        inbox.reject(bytes32(0));
+        vm.expectRevert(Inbox.RequestStateInvalid.selector);
+        inbox.reject(bytes32(0), Solve.RejectReason.None);
 
         // needs to have solver role
         vm.expectRevert(Ownable.Unauthorized.selector);
-        inbox.reject(bytes32(0));
+        inbox.reject(bytes32(0), Solve.RejectReason.None);
 
         // create request to cancel before rejecting
         vm.deal(user, 1 ether);
@@ -50,8 +51,8 @@ contract Inbox_accept_Test is Test {
 
         // cannot reject cancelled request
         vm.prank(solver);
-        vm.expectRevert(Inbox.RequestNotOpen.selector);
-        inbox.reject(id);
+        vm.expectRevert(Inbox.RequestStateInvalid.selector);
+        inbox.reject(id, Solve.RejectReason.None);
 
         // create request to accept before rejecting
         vm.deal(user, 1 ether);
@@ -61,8 +62,8 @@ contract Inbox_accept_Test is Test {
         // cannot reject accepted request
         vm.startPrank(solver);
         inbox.accept(id);
-        vm.expectRevert(Inbox.RequestNotOpen.selector);
-        inbox.reject(id);
+        vm.expectRevert(Inbox.RequestStateInvalid.selector);
+        inbox.reject(id, Solve.RejectReason.None);
         vm.stopPrank();
     }
 
@@ -76,7 +77,7 @@ contract Inbox_accept_Test is Test {
 
         // reject request
         vm.prank(solver);
-        inbox.reject(id);
+        inbox.reject(id, Solve.RejectReason.None);
 
         assertEq(address(inbox).balance, 1 ether, "address(inbox).balance");
         assertEq(address(user).balance, 0, "address(user).balance");
@@ -95,8 +96,8 @@ contract Inbox_accept_Test is Test {
 
         // reject both requests
         vm.startPrank(solver);
-        inbox.reject(id1);
-        inbox.reject(id2);
+        inbox.reject(id1, Solve.RejectReason.None);
+        inbox.reject(id2, Solve.RejectReason.None);
         vm.stopPrank();
 
         assertEq(address(inbox).balance, 2 ether, "address(inbox).balance");
@@ -117,7 +118,7 @@ contract Inbox_accept_Test is Test {
 
         // reject oldest request
         vm.startPrank(solver);
-        inbox.reject(id1);
+        inbox.reject(id1, Solve.RejectReason.None);
         vm.stopPrank();
 
         assertEq(address(inbox).balance, 2 ether, "address(inbox).balance");
@@ -140,7 +141,7 @@ contract Inbox_accept_Test is Test {
 
         // reject request
         vm.prank(solver);
-        inbox.reject(id);
+        inbox.reject(id, Solve.RejectReason.None);
 
         assertEq(address(inbox).balance, 1 ether, "address(inbox).balance");
         assertEq(address(user).balance, 0, "address(user).balance");

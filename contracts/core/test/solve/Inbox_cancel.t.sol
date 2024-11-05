@@ -9,11 +9,11 @@ import { Test } from "forge-std/Test.sol";
 import { Ownable } from "solady/src/auth/Ownable.sol";
 
 /**
- * @title Inbox_request_Test
- * @notice Test suite for solver Inbox.request(...)
+ * @title Inbox_cancel_Test
+ * @notice Test suite for solver Inbox.cancel(...)
  * @dev TODO: add fuzz / invariant tests
  */
-contract Inbox_request_Test is Test {
+contract Inbox_cancel_Test is Test {
     Inbox inbox;
 
     MockToken token1;
@@ -24,14 +24,15 @@ contract Inbox_request_Test is Test {
 
     function setUp() public {
         inbox = new Inbox();
-        inbox.initialize(address(this), solver);
+        // Omni and outbox addresses not needed for these tests
+        inbox.initialize(address(this), solver, address(0x1234), address(0x5678));
         token1 = new MockToken();
         token2 = new MockToken();
     }
 
     function test_cancel_reverts() public {
         // cannot cancel non-existent request
-        vm.expectRevert(Inbox.RequestNotCancelable.selector);
+        vm.expectRevert(Inbox.RequestStateInvalid.selector);
         inbox.cancel(bytes32(0));
 
         // create request to be cancelled
@@ -44,7 +45,7 @@ contract Inbox_request_Test is Test {
         // cannot cancel cancelled request
         vm.startPrank(user);
         inbox.cancel(id);
-        vm.expectRevert(Inbox.RequestNotCancelable.selector);
+        vm.expectRevert(Inbox.RequestStateInvalid.selector);
         inbox.cancel(id);
         vm.stopPrank();
 
@@ -54,10 +55,10 @@ contract Inbox_request_Test is Test {
 
         // cannot double cancel rejected request
         vm.prank(solver);
-        inbox.reject(id);
+        inbox.reject(id, Solve.RejectReason.None);
         vm.startPrank(user);
         inbox.cancel(id);
-        vm.expectRevert(Inbox.RequestNotCancelable.selector);
+        vm.expectRevert(Inbox.RequestStateInvalid.selector);
         inbox.cancel(id);
         vm.stopPrank();
 
@@ -72,7 +73,7 @@ contract Inbox_request_Test is Test {
         // cannot cancel accepted request
         vm.prank(solver);
         inbox.accept(id);
-        vm.expectRevert(Inbox.RequestNotCancelable.selector);
+        vm.expectRevert(Inbox.RequestStateInvalid.selector);
         inbox.cancel(id);
 
         // TODO: complete logic to advance through additional states and then test those
@@ -213,7 +214,7 @@ contract Inbox_request_Test is Test {
 
         // reject request
         vm.prank(solver);
-        inbox.reject(id);
+        inbox.reject(id, Solve.RejectReason.None);
 
         // cancel rejected request
         vm.prank(user);
@@ -238,7 +239,7 @@ contract Inbox_request_Test is Test {
 
         // reject request
         vm.prank(solver);
-        inbox.reject(id);
+        inbox.reject(id, Solve.RejectReason.None);
 
         // cancel rejected request
         vm.prank(user);
