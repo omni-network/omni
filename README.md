@@ -6,10 +6,10 @@
 
 <p align="center">
     <a href="https://github.com/omni-network/omni/actions?query=workflow%3Aci-release">
-        <img src="https://img.shields.io/github/actions/workflow/status/omni-network/omni/ci-release.yml?&label=Build&logo=github-actions&logoColor=white&style=flat" alt="Build">
+        <img src="https://img.shields.io/github/actions/workflow/status/omni-network/omni/ci-release.yaml?&label=Build&logo=github-actions&logoColor=white&style=flat" alt="Build">
     </a>
     <a href="https://github.com/omni-network/omni/actions?query=workflow%3Aci-main">
-        <img src="https://img.shields.io/github/actions/workflow/status/omni-network/omni/ci-main.yml?branch=main&label=Tests&logo=github-actions&logoColor=white&style=flat" alt="Tests">
+        <img src="https://img.shields.io/github/actions/workflow/status/omni-network/omni/ci-main.yaml?branch=main&label=Tests&logo=github-actions&logoColor=white&style=flat" alt="Tests">
     </a>
     <a href="https://docs.omni.network/">
         <img src="https://img.shields.io/badge/Docs-docs.omni.network-darkblue.svg?style=flat&logo=read-the-docs&logoColor=white" alt="Documentation">
