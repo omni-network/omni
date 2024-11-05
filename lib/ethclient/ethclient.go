@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/tracer"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -178,4 +179,29 @@ func (w Wrapper) EtherBalanceAt(ctx context.Context, addr common.Address) (float
 	bf, _ := b.Float64()
 
 	return bf / params.Ether, nil
+}
+
+// TxReceipt returns the transaction receipt for the given transaction hash.
+// It includes additional fields not present in the geth ethclient, such as OP L1 fee info.
+func (w Wrapper) TxReceipt(ctx context.Context, txHash common.Hash) (*Receipt, error) {
+	const endpoint = "tx_receipt"
+	defer latency(w.chain, endpoint)()
+
+	ctx, span := tracer.Start(ctx, spanName(endpoint))
+	defer span.End()
+
+	var r *Receipt
+	err := w.cl.Client().CallContext(ctx, &r, "eth_getTransactionReceipt", txHash)
+
+	// mirror geth ethclient behavior
+	if err == nil && r == nil {
+		err = ethereum.NotFound
+	}
+
+	if err != nil {
+		incError(w.chain, endpoint)
+		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
+	}
+
+	return r, err
 }

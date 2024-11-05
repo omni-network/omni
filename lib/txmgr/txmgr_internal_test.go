@@ -302,6 +302,20 @@ func (b *mockBackend) TransactionReceipt(ctx context.Context, txHash common.Hash
 	}, nil
 }
 
+func (b *mockBackend) TxReceipt(ctx context.Context, txHash common.Hash) (*ethclient.Receipt, error) {
+	rec, err := b.TransactionReceipt(ctx, txHash)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ethclient.Receipt{
+		TxHash:            rec.TxHash,
+		GasUsed:           rec.GasUsed,
+		CumulativeGasUsed: rec.CumulativeGasUsed,
+		BlockNumber:       rec.BlockNumber,
+	}, nil
+}
+
 func (b *mockBackend) Close() {
 }
 
@@ -775,6 +789,18 @@ func (b *failingBackend) TransactionReceipt(
 	return &types.Receipt{
 		TxHash:      txHash,
 		BlockNumber: big.NewInt(1),
+	}, nil
+}
+
+func (b *failingBackend) TxReceipt(_ context.Context, txHash common.Hash) (*ethclient.Receipt, error) {
+	rec, err := b.TransactionReceipt(context.Background(), txHash)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ethclient.Receipt{
+		TxHash:      rec.TxHash,
+		BlockNumber: rec.BlockNumber,
 	}, nil
 }
 

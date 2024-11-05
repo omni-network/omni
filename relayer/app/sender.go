@@ -15,7 +15,6 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/txmgr"
-	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum"
@@ -23,11 +22,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 // Sender uses txmgr to send transactions a specific destination chain.
-type onSubmitFunc func(context.Context, *ethtypes.Transaction, *ethtypes.Receipt, xchain.Submission)
+type onSubmitFunc func(context.Context, *ethtypes.Transaction, *ethclient.Receipt, xchain.Submission)
 
 // Sender uses txmgr to send transactions to a specific destination chain.
 type Sender struct {
@@ -178,8 +176,6 @@ func (s Sender) SendAsync(ctx context.Context, sub xchain.Submission) <-chan err
 			"tx_hash", rec.TxHash,
 		}
 
-		spendTotal.WithLabelValues(dstChain, string(s.gasToken)).Add(totalSpendGwei(tx, rec))
-
 		if s.onSubmit != nil {
 			go s.onSubmit(ctx, tx, rec, sub)
 		}
@@ -230,18 +226,4 @@ func callFromTx(from common.Address, tx *ethtypes.Transaction) ethereum.CallMsg 
 	}
 
 	return resp
-}
-
-// totalSpendGwei returns the total amount spent on a transaction in gwei.
-func totalSpendGwei(tx *ethtypes.Transaction, rec *ethtypes.Receipt) float64 {
-	fees := new(big.Int).Mul(rec.EffectiveGasPrice, umath.NewBigInt(rec.GasUsed))
-	total := new(big.Int).Add(tx.Value(), fees)
-
-	return toGwei(total)
-}
-
-// toGwei converts a big.Int to gwei float64.
-func toGwei(b *big.Int) float64 {
-	gwei, _ := new(big.Int).Div(b, umath.NewBigInt(params.GWei)).Float64()
-	return gwei
 }
