@@ -34,15 +34,15 @@ contract OmniBridgeNativeFixtures is Test {
         );
 
         vm.prank(owner);
-        nativebridge.setup(l1ChainId, address(portal), l1bridge);
+        nativebridge.setup(l1ChainId, address(portal), l1bridge, 0);
         vm.deal(address(nativebridge), totalSupply);
     }
 }
 
 /// @dev A wrapper around OmniBridgeNative, with public state setters.
 contract OmniBridgeNativeHarness is OmniBridgeNative {
-    function setL1BridgeBalance(uint256 balance) public {
-        l1BridgeBalance = balance;
+    function setL1Deposits(uint256 balance) public {
+        l1Deposits = balance;
     }
 
     function setClaimable(address claimant, uint256 amount) public {

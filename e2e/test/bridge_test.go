@@ -76,7 +76,7 @@ func TestBridge(t *testing.T) {
 		expectedL1BridgeBalance := new(big.Int).Sub(sumToNative, sumToL1)
 
 		// assert l1 bridge balance tracked on native bridge is expected
-		trackedL1BridgeBalance, err := nativeBridge.L1BridgeBalance(nil)
+		trackedL1BridgeBalance, err := nativeBridge.L1Deposits(nil)
 		require.NoError(t, err)
 		require.Equal(t, expectedL1BridgeBalance, trackedL1BridgeBalance)
 

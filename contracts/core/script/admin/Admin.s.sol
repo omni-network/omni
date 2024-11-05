@@ -271,7 +271,7 @@ contract Admin is Script {
         address omni = address(b.omni());
         address l1Bridge = b.l1Bridge();
         uint64 l1ChainId = b.l1ChainId();
-        uint256 l1BridgeBalance = b.l1BridgeBalance();
+        uint256 l1Deposits = WithL1BridgeBalanceView(address(b)).l1BridgeBalance();
 
         vm.startBroadcast(deployer);
         address impl = address(new OmniBridgeNative());
@@ -283,7 +283,7 @@ contract Admin is Script {
         require(b.owner() == owner, "owner changed");
         require(b.l1ChainId() == l1ChainId, "l1ChainId changed");
         require(address(b.omni()) == omni, "omni changed");
-        require(b.l1BridgeBalance() == l1BridgeBalance, "l1BridgeBalance changed");
+        require(b.l1Deposits() == l1Deposits, "l1Deposits changed");
         require(b.l1Bridge() == l1Bridge, "l1Bridge changed");
 
         new BridgeNativePostUpgradeTest().run();
@@ -356,4 +356,9 @@ contract Admin is Script {
 
         require(EIP1967Helper.getImplementation(proxy) == impl, "upgrade failed");
     }
+}
+
+/// @dev Helper interface for native bridge before l1BridgeBalance -> l1Deposits rename.
+interface WithL1BridgeBalanceView {
+    function l1BridgeBalance() external view returns (uint256);
 }
