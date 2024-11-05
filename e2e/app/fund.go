@@ -21,8 +21,8 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-const saneMaxETH = 112    // Maximum amount of ETH to fund (in ether).
-const saneMaxOmni = 56030 // Maximum amount of OMNI to fund (in ether OMNI).
+const saneMaxETH = 113    // Maximum amount of ETH to fund (in ether).
+const saneMaxOmni = 56630 // Maximum amount of OMNI to fund (in ether OMNI).
 
 // noAnvilDev returns a list of accounts that are not dev anvil accounts.
 func noAnvilDev(accounts []common.Address) []common.Address {

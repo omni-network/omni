@@ -28,13 +28,13 @@ func TestThresholdReference(t *testing.T) {
 		for _, token := range []tokens.Token{tokens.ETH, tokens.OMNI} {
 			resp[network][token] = make(map[eoa.Role]map[string]string)
 			for _, role := range eoa.AllRoles() {
+				if !shouldExist(role, network) {
+					continue
+				}
+
 				resp[network][token][role] = make(map[string]string)
 
 				thresholds, ok := eoa.GetFundThresholds(token, network, role)
-				if network == netconf.Mainnet && role == eoa.RoleTester {
-					require.False(t, ok, "account should not exist: %s %s %s", network, role, token)
-					continue
-				}
 				require.True(t, ok, "thresholds not found: %s %s %s", network, role, token)
 
 				resp[network][token][role]["target"] = etherStr(thresholds.TargetBalance())
@@ -51,26 +51,24 @@ func TestStatic(t *testing.T) {
 	for _, chain := range evmchain.All() {
 		for _, network := range []netconf.ID{netconf.Devnet, netconf.Staging, netconf.Omega, netconf.Mainnet} {
 			for _, role := range eoa.AllRoles() {
-				shouldExist := role != eoa.RoleTester || network != netconf.Mainnet // skip tester on mainnet
+				if !shouldExist(role, network) {
+					continue
+				}
 
 				acc, ok := eoa.AccountForRole(network, role)
-				require.Equal(t, shouldExist, ok, "account not found: %s %s", network, role)
-				if shouldExist {
-					require.NotZero(t, acc.Address)
-					require.True(t, common.IsHexAddress(acc.Address.Hex()))
-				}
+				require.True(t, ok, "account not found: %s %s", network, role)
+				require.NotZero(t, acc.Address)
+				require.True(t, common.IsHexAddress(acc.Address.Hex()))
 
 				thresholds, ok := eoa.GetFundThresholds(chain.NativeToken, network, acc.Role)
-				require.Equal(t, shouldExist, ok, "thresholds not found")
+				require.True(t, ok, "thresholds not found")
 
-				if shouldExist {
-					require.NotPanics(t, func() {
-						mini := thresholds.MinBalance()
-						target := thresholds.TargetBalance()
-						t.Logf("Thresholds: network=%s, role=%s, min=%s, target=%s",
-							network, acc.Role, etherStr(mini), etherStr(target))
-					})
-				}
+				require.NotPanics(t, func() {
+					mini := thresholds.MinBalance()
+					target := thresholds.TargetBalance()
+					t.Logf("Thresholds: network=%s, role=%s, min=%s, target=%s",
+						network, acc.Role, etherStr(mini), etherStr(target))
+				})
 			}
 		}
 	}
@@ -101,4 +99,13 @@ func etherStr(amount *big.Int) string {
 	b /= params.Ether
 
 	return fmt.Sprintf("%.4f", b)
+}
+
+func shouldExist(role eoa.Role, id netconf.ID) bool {
+	switch {
+	case role == eoa.RoleTester && id == netconf.Mainnet: // RoleTester not supported on mainnet
+		return false
+	default:
+		return true
+	}
 }

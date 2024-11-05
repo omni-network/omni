@@ -137,7 +137,7 @@ func verifyKeyNodeType(def app.Definition, cfg key.UploadConfig) error {
 
 		account, ok := eoa.AccountForRole(def.Testnet.Network, eoaRole)
 		if !ok {
-			return errors.New("eoa account not found")
+			return errors.New("eoa account not found add new account with empty string")
 		}
 
 		if account.Type != eoa.TypeSecret {

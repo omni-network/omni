@@ -36,6 +36,12 @@ var (
 		targetGwei: gwei(0.01),
 	}
 
+	// thresholdSmall is used for EOAs which are used sometimes, mostly to make small test transactions per network.
+	thresholdSmall = FundThresholds{
+		minGwei:    gwei(0.02),
+		targetGwei: gwei(.2),
+	}
+
 	// thresholdMedium is used by EOAs that regularly perform actions and need enough balance
 	// to last a weekend without topping up even if fees are spiking.
 	thresholdMedium = FundThresholds{
@@ -58,12 +64,13 @@ var (
 		RoleUpgrader:        thresholdTiny,   // Rarely used
 		RoleDeployer:        thresholdTiny,   // Protected chains are only deployed once
 		RoleTester:          thresholdLarge,  // Tester funds pingpongs, validator updates, etc, on non-mainnet.
+		RoleXCaller:         thresholdSmall,  // XCaller funds used for sending xmsgs across networks.
 	}
 
 	dynamicThresholdsByRole = map[Role]dynamicThreshold{
 		RoleHot: {
 			Multiplier: hotDynamicMultiplier,
-			Roles:      []Role{RoleRelayer, RoleMonitor, RoleCreate3Deployer, RoleManager, RoleUpgrader, RoleDeployer, RoleTester},
+			Roles:      []Role{RoleRelayer, RoleMonitor, RoleCreate3Deployer, RoleManager, RoleUpgrader, RoleDeployer, RoleTester, RoleXCaller},
 		},
 		RoleCold: {
 			Multiplier: coldDynamicMultiplier,
