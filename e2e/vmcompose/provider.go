@@ -96,6 +96,7 @@ func (p *Provider) Setup() error {
 			Anvils:         anvilChains,
 			Relayer:        services["relayer"],
 			Monitor:        services["monitor"],
+			Solver:         services["solver"],
 			Prometheus:     p.Testnet.Prometheus,
 			GethVerbosity:  gethVerbosity,
 		}
@@ -194,6 +195,8 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.ServiceConfig) error {
 	addFile("relayer", "privatekey")
 	addFile("monitor", "monitor.toml")
 	addFile("monitor", "privatekey")
+	addFile("solver", "solver.toml")
+	addFile("solver", "privatekey")
 
 	addFile("prometheus", "prometheus.yaml") // Prometheus isn't a "service", so not actually copied
 

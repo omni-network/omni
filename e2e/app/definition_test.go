@@ -29,7 +29,7 @@ func TestManifestServiceReference(t *testing.T) {
 		require.NoError(t, err)
 
 		services := keys(infraData.Instances)
-		services = append(services, "relayer", "monitor")
+		services = append(services, "relayer", "monitor", "solver")
 		sort.Strings(services)
 		ref[manifest.Network] = services
 	}

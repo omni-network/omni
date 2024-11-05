@@ -65,7 +65,7 @@ func TestPromGen(t *testing.T) {
 			nodes:        []string{"validator01", "validator02", "fullnode03"},
 			hostname:     "vm",
 			newNodes:     []string{"fullnode04"},
-			newServices:  []string{"relayer", "monitor"},
+			newServices:  []string{"relayer", "monitor", "solver"},
 			agentSecrets: true,
 		},
 	}

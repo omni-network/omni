@@ -127,6 +127,22 @@ services:
         {{ if $.Network }}ipv4_address: 10.186.73.201{{ end }}
 {{ end }}
 
+{{- if .Solver }}
+  solver:
+    labels:
+      e2e: true
+    container_name: solver
+    image: omniops/solver:{{or .SolverTag "main"}}
+    restart: unless-stopped
+    ports:
+      - 26660 # Prometheus and pprof
+    volumes:
+      - ./solver:/solver
+    networks:
+      {{ $.NetworkName }}:
+        {{ if $.Network }}ipv4_address: 10.186.73.203{{ end }}
+{{ end }}
+
 {{- if .Prometheus }}
   prometheus:
     labels:
