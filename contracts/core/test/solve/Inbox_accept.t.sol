@@ -61,7 +61,7 @@ contract Inbox_accept_Test is Test {
 
         // cannot accept rejected request
         vm.startPrank(solver);
-        inbox.reject(id);
+        inbox.reject(id, Solve.RejectReason.None);
         vm.expectRevert(Inbox.RequestStateInvalid.selector);
         inbox.accept(id);
         vm.stopPrank();

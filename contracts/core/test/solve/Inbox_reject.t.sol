@@ -34,11 +34,11 @@ contract Inbox_reject_Test is Test {
         // cannot reject non-existent request
         vm.prank(solver);
         vm.expectRevert(Inbox.RequestStateInvalid.selector);
-        inbox.reject(bytes32(0));
+        inbox.reject(bytes32(0), Solve.RejectReason.None);
 
         // needs to have solver role
         vm.expectRevert(Ownable.Unauthorized.selector);
-        inbox.reject(bytes32(0));
+        inbox.reject(bytes32(0), Solve.RejectReason.None);
 
         // create request to cancel before rejecting
         vm.deal(user, 1 ether);
@@ -52,7 +52,7 @@ contract Inbox_reject_Test is Test {
         // cannot reject cancelled request
         vm.prank(solver);
         vm.expectRevert(Inbox.RequestStateInvalid.selector);
-        inbox.reject(id);
+        inbox.reject(id, Solve.RejectReason.None);
 
         // create request to accept before rejecting
         vm.deal(user, 1 ether);
@@ -63,7 +63,7 @@ contract Inbox_reject_Test is Test {
         vm.startPrank(solver);
         inbox.accept(id);
         vm.expectRevert(Inbox.RequestStateInvalid.selector);
-        inbox.reject(id);
+        inbox.reject(id, Solve.RejectReason.None);
         vm.stopPrank();
     }
 
@@ -77,7 +77,7 @@ contract Inbox_reject_Test is Test {
 
         // reject request
         vm.prank(solver);
-        inbox.reject(id);
+        inbox.reject(id, Solve.RejectReason.None);
 
         assertEq(address(inbox).balance, 1 ether, "address(inbox).balance");
         assertEq(address(user).balance, 0, "address(user).balance");
@@ -96,8 +96,8 @@ contract Inbox_reject_Test is Test {
 
         // reject both requests
         vm.startPrank(solver);
-        inbox.reject(id1);
-        inbox.reject(id2);
+        inbox.reject(id1, Solve.RejectReason.None);
+        inbox.reject(id2, Solve.RejectReason.None);
         vm.stopPrank();
 
         assertEq(address(inbox).balance, 2 ether, "address(inbox).balance");
@@ -118,7 +118,7 @@ contract Inbox_reject_Test is Test {
 
         // reject oldest request
         vm.startPrank(solver);
-        inbox.reject(id1);
+        inbox.reject(id1, Solve.RejectReason.None);
         vm.stopPrank();
 
         assertEq(address(inbox).balance, 2 ether, "address(inbox).balance");
@@ -141,7 +141,7 @@ contract Inbox_reject_Test is Test {
 
         // reject request
         vm.prank(solver);
-        inbox.reject(id);
+        inbox.reject(id, Solve.RejectReason.None);
 
         assertEq(address(inbox).balance, 1 ether, "address(inbox).balance");
         assertEq(address(user).balance, 0, "address(user).balance");

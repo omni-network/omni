@@ -5,6 +5,8 @@ import { OwnableRoles } from "solady/src/auth/OwnableRoles.sol";
 import { ReentrancyGuard } from "solady/src/utils/ReentrancyGuard.sol";
 import { Initializable } from "solady/src/utils/Initializable.sol";
 import { XAppBase } from "../pkg/XAppBase.sol";
+import { IInbox } from "./interfaces/IInbox.sol";
+
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { IConversionRateOracle } from "../interfaces/IConversionRateOracle.sol";
 import { Solve } from "./Solve.sol";
@@ -13,7 +15,7 @@ import { Solve } from "./Solve.sol";
  * @title Inbox
  * @notice Entrypoint and alt-mempoool for user solve requests.
  */
-contract Inbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
+contract Inbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, IInbox {
     using SafeTransferLib for address;
 
     error NoDeposits();
@@ -41,10 +43,11 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
 
     /**
      * @notice Emitted when a request is rejected.
-     * @param id  ID of the request.
-     * @param by  Address of the solver who rejected the request.
+     * @param id      ID of the request.
+     * @param by      Address of the solver who rejected the request.
+     * @param reason  Reason for rejecting the request.
      */
-    event Rejected(bytes32 indexed id, address indexed by);
+    event Rejected(bytes32 indexed id, address indexed by, Solve.RejectReason indexed reason);
 
     /**
      * @notice Emitted when a request is cancelled.
@@ -54,11 +57,17 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
 
     /**
      * @notice Emitted when a request is fulfilled.
-     * @param guid        ID of the request.
+     * @param id          ID of the request.
      * @param callHash    Hash of the call executed on another chain.
      * @param creditedTo  Address of the recipient credited the funds by the solver.
      */
-    event Fulfilled(bytes32 indexed guid, bytes32 indexed callHash, address indexed creditedTo);
+    event Fulfilled(bytes32 indexed id, bytes32 indexed callHash, address indexed creditedTo);
+
+    /**
+     * @notice Emitted when a request is claimed.
+     * @param id  ID of the request.
+     */
+    event Claimed(bytes32 indexed id);
 
     /**
      * @notice Role for solvers.
@@ -105,7 +114,7 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
      * @notice Suggest the amount of native currency to send with a request.
      * @param call        Details of the call to be executed on another chain.
      * @param gasLimit    Maximum gas limit for the call.
-     * @param gasPrice    Gas price in wei.
+     * @param gasPrice    Destination chain gas price in wei.
      * @param fulfillFee  Fee for the fulfill call, retrieved from the destination outbox.
      */
     function suggestNativePayment(Solve.Call calldata call, uint64 gasLimit, uint64 gasPrice, uint256 fulfillFee)
@@ -168,14 +177,14 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
      * @dev Only a whitelisted solver can reject.
      * @param id  ID of the request.
      */
-    function reject(bytes32 id) external onlyRoles(SOLVER) nonReentrant {
+    function reject(bytes32 id, Solve.RejectReason reason) external onlyRoles(SOLVER) nonReentrant {
         Solve.Request storage req = _requests[id];
         if (req.status != Solve.Status.Pending) revert RequestStateInvalid();
 
         req.updatedAt = uint40(block.timestamp);
         req.status = Solve.Status.Rejected;
 
-        emit Rejected(id, msg.sender);
+        emit Rejected(id, msg.sender, reason);
     }
 
     /**
@@ -188,7 +197,10 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
         if (req.status != Solve.Status.Pending && req.status != Solve.Status.Rejected) revert RequestStateInvalid();
         if (req.from != msg.sender) revert Unauthorized();
 
-        _cancelRequest(req);
+        req.updatedAt = uint40(block.timestamp);
+        req.status = Solve.Status.Reverted;
+
+        _transferDeposits(req.from, req.deposits);
 
         emit Reverted(id);
     }
@@ -197,34 +209,54 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
      * @notice Fulfill a request.
      * @dev Only callable by the outbox.
      */
-    function markFulfilled(bytes32 guid, bytes32 callHash, address creditTo) external xrecv nonReentrant {
+    function markFulfilled(bytes32 id, bytes32 callHash, address creditTo) external xrecv nonReentrant {
         // Validate request state and fulfillment context
-        Solve.Request storage req = _requests[guid];
+        Solve.Request storage req = _requests[id];
         if (req.status != Solve.Status.Accepted) revert RequestStateInvalid();
         if (req.call.destChainId != xmsg.sourceChainId) revert IncorrectChain();
         if (xmsg.sender != _outbox) revert Unauthorized();
         // No need to check if msg.sender is OmniPortal as we use xrecv for source validation
 
         // Validate call hash, ensuring the correct action is being fulfilled
-        bytes32 _callHash = keccak256(abi.encode(guid, req.call));
+        bytes32 _callHash = keccak256(abi.encode(id, block.chainid, req.call));
         if (_callHash != callHash) revert InvalidCall();
 
         // Update request state
         req.updatedAt = uint40(block.timestamp);
         req.status = Solve.Status.Fulfilled;
+        req.acceptedBy = creditTo;
 
-        // Transfer deposits to solver
-        Solve.Deposit[] memory deposits = req.deposits;
+        emit Fulfilled(id, callHash, creditTo);
+    }
+
+    /**
+     * @notice Claim a fulfilled request.
+     * @param id  ID of the request.
+     */
+    function claim(bytes32 id) external nonReentrant {
+        Solve.Request storage req = _requests[id];
+        if (req.status != Solve.Status.Fulfilled) revert RequestStateInvalid();
+
+        req.updatedAt = uint40(block.timestamp);
+        req.status = Solve.Status.Claimed;
+
+        _transferDeposits(req.acceptedBy, req.deposits);
+
+        emit Claimed(id);
+    }
+
+    /**
+     * @dev Transfer deposits to recipient. Used regardless of refund or claim.
+     */
+    function _transferDeposits(address recipient, Solve.Deposit[] memory deposits) internal {
         for (uint256 i; i < deposits.length; ++i) {
             if (deposits[i].isNative) {
-                (bool success,) = payable(creditTo).call{ value: deposits[i].amount }("");
+                (bool success,) = payable(recipient).call{ value: deposits[i].amount }("");
                 if (!success) revert TransferFailed();
             } else {
-                deposits[i].token.safeTransfer(creditTo, deposits[i].amount);
+                deposits[i].token.safeTransfer(recipient, deposits[i].amount);
             }
         }
-
-        emit Fulfilled(guid, callHash, creditTo);
     }
 
     /**
@@ -258,24 +290,6 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
             // NOTE: all external methods must be nonReentrant
             // This allows us to transfer while opening the request - saving some gas.
             deposits[i].token.safeTransferFrom(msg.sender, address(this), deposits[i].amount);
-        }
-    }
-
-    function _cancelRequest(Solve.Request storage req) internal {
-        // Update state
-        req.updatedAt = uint40(block.timestamp);
-        req.status = Solve.Status.Reverted;
-
-        // Refund deposits
-        uint256 length = req.deposits.length;
-        for (uint256 i = 0; i < length; i++) {
-            Solve.Deposit memory deposit = req.deposits[i];
-            if (deposit.isNative) {
-                (bool success,) = payable(msg.sender).call{ value: deposit.amount }("");
-                if (!success) revert TransferFailed();
-            } else {
-                deposit.token.safeTransfer(msg.sender, deposit.amount);
-            }
         }
     }
 

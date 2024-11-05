@@ -2,13 +2,27 @@
 pragma solidity =0.8.24;
 
 library Solve {
+    /**
+     * @notice Status of a request.
+     */
     enum Status {
         Invalid,
         Pending,
         Accepted,
         Rejected,
         Reverted,
-        Fulfilled
+        Fulfilled,
+        Claimed
+    }
+
+    /**
+     * @notice Reason for rejecting a request.
+     */
+    enum RejectReason {
+        None,
+        DestCallReverts,
+        InsufficientFee,
+        InsufficientInventory
     }
 
     /**

@@ -70,7 +70,7 @@ contract Outbox_fulfill_Test is Base {
         uint256 fee = outbox.fulfillFee(thisChainId);
 
         // Ensure fulfill call is executed properly
-        bytes32 callHash = _getCallHash(bytes32(uint256(1)), call);
+        bytes32 callHash = _getCallHash(bytes32(uint256(1)), thisChainId, call);
         vm.expectCall(call.target, call.data);
         vm.expectEmit(address(outbox));
         emit Outbox.Fulfilled(bytes32(uint256(1)), callHash, solver);
@@ -191,19 +191,25 @@ contract Outbox_fulfill_Test is Base {
     }
 
     /// @dev Hash of the call to be included in the xmsg
-    function _getCallHash(bytes32 guid, Solve.Call memory call) internal pure returns (bytes32) {
-        return keccak256(abi.encode(guid, call));
+    function _getCallHash(bytes32 id, uint64 sourceChainId, Solve.Call memory call) internal pure returns (bytes32) {
+        return keccak256(abi.encode(id, sourceChainId, call));
     }
 
     /// @dev Create an xmsg to deliver the markFulfilled callback
-    function _getXMsg(bytes32 guid, uint64 offset, Solve.Call memory call) internal view returns (XTypes.Msg memory) {
+    function _getXMsg(bytes32 id, uint64 sourceChainId, uint64 offset, Solve.Call memory call)
+        internal
+        view
+        returns (XTypes.Msg memory)
+    {
         return XTypes.Msg({
             destChainId: thisChainId,
             shardId: ConfLevel.Finalized,
             offset: offset,
             sender: address(outbox),
             to: address(inbox),
-            data: abi.encodeWithSignature("markFulfilled(bytes32,bytes32,address)", guid, _getCallHash(guid, call), solver),
+            data: abi.encodeWithSignature(
+                "markFulfilled(bytes32,bytes32,address)", id, _getCallHash(id, sourceChainId, call), solver
+            ),
             gasLimit: 200_000
         });
     }
@@ -235,18 +241,17 @@ contract Outbox_fulfill_Test is Base {
         _mintAndApprove(token, depositAmount);
         Solve.TokenPrereq[] memory prereqs = new Solve.TokenPrereq[](1);
         prereqs[0] = Solve.TokenPrereq({ token: token, spender: call.target, amount: depositAmount });
-        uint256 fee = outbox.fulfillFee(thisChainId);
-        outbox.fulfill{ value: fee }(id, thisChainId, solver, call, prereqs);
+        outbox.fulfill{ value: outbox.fulfillFee(thisChainId) }(id, thisChainId, solver, call, prereqs);
         vm.stopPrank();
 
         // Build and perform XSubmission to deliver markFulfilled callback
         vm.chainId(thisChainId);
         XTypes.Msg[] memory xmsgs = new XTypes.Msg[](1);
-        xmsgs[0] = _getXMsg(id, uint64(1), call);
+        xmsgs[0] = _getXMsg(id, thisChainId, uint64(1), call);
         TestXTypes.Block memory xblock = _xblock(chainAId, ConfLevel.Finalized, uint64(1), xmsgs);
         XTypes.Submission memory xsub =
             makeXSub(1, xblock.blockHeader, xblock.msgs, msgFlagsForDest(xblock.msgs, thisChainId));
-        bytes32 callHash = _getCallHash(bytes32(uint256(1)), call);
+        bytes32 callHash = _getCallHash(bytes32(uint256(1)), thisChainId, call);
 
         // Perform and validate XSubmission
         vm.prank(relayer);
@@ -256,5 +261,9 @@ contract Outbox_fulfill_Test is Base {
         vm.expectEmit(true, true, true, false, address(portal));
         emit IOmniPortal.XReceipt(chainAId, ConfLevel.Finalized, uint64(1), 0, relayer, true, bytes(""));
         portal.xsubmit(xsub);
+
+        // Claim the request as the solver
+        vm.prank(solver);
+        inbox.claim(id);
     }
 }
