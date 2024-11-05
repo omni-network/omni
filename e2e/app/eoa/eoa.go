@@ -41,7 +41,7 @@ const (
 	RoleUpgrader Role = "upgrader"
 	// RoleTester is used for general tasks and testing in non-mainnet networks.
 	RoleTester Role = "tester"
-	// RoleXCaller is used for sending xmgs on a network.
+	// RoleXCaller is used for testing xcalls on a network.
 	RoleXCaller Role = "xcaller"
 )
 
