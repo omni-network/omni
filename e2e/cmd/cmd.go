@@ -268,10 +268,6 @@ func newDeployBridgeCmd(def *app.Definition) *cobra.Command {
 		Use:   "deploy-bridge",
 		Short: "Deploys l1 bridge, setups native bridge.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if def.Testnet.Network.IsEphemeral() {
-				return errors.New("only permanent networks")
-			}
-
 			return app.DeployBridge(cmd.Context(), *def)
 		},
 	}
