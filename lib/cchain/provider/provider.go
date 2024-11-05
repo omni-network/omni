@@ -195,10 +195,10 @@ func (p Provider) stream(
 	deps := stream.Deps[xchain.Attestation]{
 		FetchBatch: func(ctx context.Context, offset uint64) ([]xchain.Attestation, error) {
 			atts, cursor, err := p.fetch(ctx, chainVer, offset, fetchCursor)
-			fetchCursor = cursor // always set cursor, in case of an error is set to 0, safer for retry
 			if err != nil {
 				return nil, err
 			}
+			fetchCursor = cursor
 
 			return atts, nil
 		},
