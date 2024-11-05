@@ -38,8 +38,8 @@ var (
 
 	// thresholdSmall is used for EOAs which are used sometimes, mostly to make small test transactions per network.
 	thresholdSmall = FundThresholds{
-		minGwei:    gwei(0.35),
-		targetGwei: gwei(.6),
+		minGwei:    gwei(0.02),
+		targetGwei: gwei(.2),
 	}
 
 	// thresholdMedium is used by EOAs that regularly perform actions and need enough balance
