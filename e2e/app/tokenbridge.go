@@ -21,13 +21,8 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
-// setupTokenBridge deploys the OmniBridgeL1 & OmniToken contracts (if necessary), and configures the OmniBridgeNative predeploy.
-func setupTokenBridge(ctx context.Context, def Definition) error {
-	if def.Testnet.Network == netconf.Mainnet {
-		// mainnet bridge will be setup post network deployment
-		return nil
-	}
-
+// DeployBridge deploys the OmniBridgeL1 & OmniToken contracts (if necessary), and configures the OmniBridgeNative predeploy.
+func DeployBridge(ctx context.Context, def Definition) error {
 	networkID := def.Testnet.Network
 	l1, ok := def.Testnet.EthereumChain()
 	if !ok {
@@ -57,17 +52,18 @@ func setupTokenBridge(ctx context.Context, def Definition) error {
 		return errors.Wrap(err, "omni backend")
 	}
 
-	// Deploy the token
+	// Only deploy the token for non-mainnet
+	if networkID != netconf.Mainnet {
+		_, receipt, err := omnitoken.DeployIfNeeded(ctx, networkID, l1Backend)
+		if err != nil {
+			return errors.Wrap(err, "deploy omni token")
+		}
 
-	tokenAddr, receipt, err := omnitoken.DeployIfNeeded(ctx, networkID, l1Backend)
-	if err != nil {
-		return errors.Wrap(err, "deploy omni token")
-	}
-
-	if receipt != nil {
-		log.Info(ctx, "Deployed Omni Token", "chain", l1.Name, "addr", tokenAddr.Hex(), "block", receipt.BlockNumber)
-	} else if tokenAddr != networkID.Static().TokenAddress {
-		log.Warn(ctx, "Omni token already deployed, but not in network static", errors.New("missing static token addr"), "addr", tokenAddr.Hex())
+		if receipt != nil {
+			log.Info(ctx, "Deployed Omni Token", "chain", l1.Name, "addr", addrs.Token.Hex(), "block", receipt.BlockNumber)
+		} else if addrs.Token != networkID.Static().TokenAddress {
+			log.Warn(ctx, "Omni token already deployed, but not in network static", errors.New("missing static token addr"), "addr", addrs.Token.Hex())
+		}
 	}
 
 	// Deploy the bridge

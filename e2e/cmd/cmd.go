@@ -82,6 +82,7 @@ func New() *cobra.Command {
 		newAdminCmd(&def),
 		newERC20FaucetCmd(&def),
 		newDeployGasAppCmd(&def),
+		newDeployBridgeCmd(&def),
 		fundAccounts(&def),
 	)
 
@@ -256,6 +257,22 @@ func newDeployGasAppCmd(def *app.Definition) *cobra.Command {
 			}
 
 			return app.DeployGasApp(cmd.Context(), *def)
+		},
+	}
+
+	return cmd
+}
+
+func newDeployBridgeCmd(def *app.Definition) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "deploy-bridge",
+		Short: "Deploys l1 bridge, setups native bridge.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if def.Testnet.Network.IsEphemeral() {
+				return errors.New("only permanent networks")
+			}
+
+			return app.DeployBridge(cmd.Context(), *def)
 		},
 	}
 
