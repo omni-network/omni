@@ -18,22 +18,6 @@ mode = "seed"
 mode = "full"
 [node.fullnode02]
 mode = "full"
-[node.fullnode03]
-mode = "full"
-[node.fullnode04]
-mode = "full"
-[node.fullnode05]
-mode = "full"
-[node.fullnode06]
-mode = "full"
-[node.fullnode07]
-mode = "full"
-[node.fullnode08]
-mode = "full"
-[node.fullnode09]
-mode = "full"
-[node.fullnode10]
-mode = "full"
 
 [node.archive01]
 mode = "archive"
@@ -91,35 +75,3 @@ p2p_execution = "0xa22ae699EE8b08FF30F6dE68dAAF73Ed97A77F59"
 p2p_consensus = "15EB1CD69EFA8260F613C8D0F59CBEE7A109DBB9"
 [keys.fullnode02_evm]
 p2p_execution = "0x82C7b4316cB494548CDe0bdaAEC530E0bdEb85Ab"
-[keys.fullnode03]
-p2p_consensus = "A57CE25D5CBFA7F6BF94C58D5132C98E4EA5245B"
-[keys.fullnode03_evm]
-p2p_execution = "0x71FfDaa6F0a74bAAc3e6Ca57AE655C99B7203a6c"
-[keys.fullnode04]
-p2p_consensus = "F832F960730B88303F027840586E26EA2474DB13"
-[keys.fullnode04_evm]
-p2p_execution = "0xc1DD19F1CD5fFEf6c7631B2B25448d09160A8Cbe"
-[keys.fullnode05]
-p2p_consensus = "10C19EBA0D8D200C740070F3FA4817CA315C3693"
-[keys.fullnode05_evm]
-p2p_execution = "0xBB5980C75B4C1982886b07b80dC05cf2a91fB4d4"
-[keys.fullnode06]
-p2p_consensus = "BCA38CD010A9D33D8DF0FA434867BADA7DF451FF"
-[keys.fullnode06_evm]
-p2p_execution = "0xB10354108150a3b74B394f5F9d3f4EA9222cdE14"
-[keys.fullnode07]
-p2p_consensus = "9711E6A26E56E0F5E1E55AF23460F686D104F4B6"
-[keys.fullnode07_evm]
-p2p_execution = "0x2feEac31C7212fa7f128B0579BccD30553cCa759"
-[keys.fullnode08]
-p2p_consensus = "1A765F6D460F7C5DF3E3D308D56206991002013D"
-[keys.fullnode08_evm]
-p2p_execution = "0x2706B03F3eB9a11Cf242aB7a73Ab568b2DBcf5A5"
-[keys.fullnode09]
-p2p_consensus = "876E7F362D7D3D43EB8AC669631A44A60B612E47"
-[keys.fullnode09_evm]
-p2p_execution = "0xcE19ebB4196Ab6F7a1aDf54860DB57F6bd687e5b"
-[keys.fullnode10]
-p2p_consensus = "AC937CE7B60DA2800BA791BB35721E9AFA925EDB"
-[keys.fullnode10_evm]
-p2p_execution = "0xA8B13740D33cfF1330f224125fCa289Fbe2cA5Cb"
