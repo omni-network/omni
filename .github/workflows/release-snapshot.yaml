@@ -52,6 +52,11 @@ jobs:
           docker push omniops/monitor:${GITHUB_SHA::7}
           docker push omniops/monitor:main
 
+      - name: Push Solver to Dockerhub
+        run: |
+          docker push omniops/solver:${GITHUB_SHA::7}
+          docker push omniops/solver:main
+
       - name: Push AnvilProxy to Dockerhub
         run: |
           docker push omniops/anvilproxy:${GITHUB_SHA::7}
