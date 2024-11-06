@@ -245,6 +245,20 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.ServiceConfig) error {
 				}
 			}
 
+			log.Debug(ctx, "Copying prometheus.yaml", "vm", vmName)
+			agentFile := vmAgentFile(instance.IPAddress.String())
+			localAgentPath := filepath.Join(p.Testnet.Dir, agentFile)
+			remoteAgentPath := filepath.Join("/omni", p.Testnet.Name, agentFile)
+			if err := copyFileToVM(ctx, vmName, localAgentPath, remoteAgentPath); err != nil {
+				return errors.Wrap(err, "copy prometheus config", "vm", vmName)
+			}
+			go func(localPath string, remotePath string) {
+				err := copyFileToGCP(ctx, localPath, remotePath, identifier)
+				if err != nil {
+					log.Warn(ctx, "Failed to copy file to GCP", err, "local", localPath, "remote", remotePath)
+				}
+			}(localAgentPath, remoteAgentPath)
+
 			log.Debug(ctx, "Copying docker-compose.yaml", "vm", vmName)
 			composeFile := vmComposeFile(instance.IPAddress.String())
 			localComposePath := filepath.Join(p.Testnet.Dir, composeFile)
@@ -277,11 +291,12 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.ServiceConfig) error {
 
 			startCmd := fmt.Sprintf("cd /omni/%s && "+
 				"sudo mv %s docker-compose.yaml && "+
+				"sudo mv %s prometheus/prometheus.yaml && "+
 				"sudo docker compose pull && "+
 				"sudo docker compose down && "+
 				"sudo docker compose up -d &&"+
 				"sudo docker system prune -a -f", // Prune old images
-				p.Testnet.Name, composeFile)
+				p.Testnet.Name, composeFile, agentFile)
 
 			log.Debug(ctx, "Executing docker-compose up", "vm", vmName)
 			if err := execOnVM(ctx, vmName, startCmd); err != nil {
