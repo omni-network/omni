@@ -1,35 +1,12 @@
 <h1 align="center">Omni Monorepo</h1>
 
-<p align="center">
-    <strong>Monorepo for Omni node, contracts and other related tools.</strong>
-</p>
+<p align="center"><a href="https://docs.omni.network/"><img src="https://img.shields.io/badge/Docs-docs.omni.network-blue.svg"></a>
+<a href="https://github.com/omni-network/omni/releases/"><img src="https://img.shields.io/github/release/omni-network/omni.svg"></a>
+<a href="https://goreportcard.com/report/github.com/omni-network/omni"><img src="https://goreportcard.com/badge/github.com/omni-network/omni"></a>
+<a href="https://github.com/omni-network/omni/actions?query=workflow%3Aci-main"><img src="https://img.shields.io/github/actions/workflow/status/omni-network/omni/ci-main.yaml?label=Tests&logoColor=white" alt="Tests"></a>
+<a href="https://x.com/OmniFDN"><img src="https://img.shields.io/twitter/follow/OmniFDN.svg?label=Follow"></a></p>
 
-<p align="center">
-    <a href="https://github.com/omni-network/omni/actions?query=workflow%3Aci-release">
-        <img src="https://img.shields.io/github/actions/workflow/status/omni-network/omni/ci-release.yaml?&label=Build&logo=github-actions&logoColor=white&style=flat" alt="Build">
-    </a>
-    <a href="https://github.com/omni-network/omni/actions?query=workflow%3Aci-main">
-        <img src="https://img.shields.io/github/actions/workflow/status/omni-network/omni/ci-main.yaml?branch=main&label=Tests&logo=github-actions&logoColor=white&style=flat" alt="Tests">
-    </a>
-    <a href="https://docs.omni.network/">
-        <img src="https://img.shields.io/badge/Docs-docs.omni.network-darkblue.svg?style=flat&logo=read-the-docs&logoColor=white" alt="Documentation">
-    </a>
-    <a href="https://discord.com/invite/bKNXmaX9VD">
-        <img src="https://img.shields.io/discord/850218821398822922.svg?label=Discord&logo=discord&colorB=7289DA&style=flat" alt="Discord">
-    </a>
-    <a href="https://t.me/OmniFDN">
-        <img src="https://img.shields.io/badge/Telegram-Join%20Chat-blue.svg?style=flat&logo=telegram" alt="Telegram">
-    </a>
-    <a href="https://x.com/OmniFDN">
-        <img src="https://img.shields.io/twitter/follow/OmniFDN.svg?style=social&label=Follow" alt="Twitter Follow">
-    </a>
-</p>
-
-<p align="center">
-    <a href="https://omni.network/">
-        <img src="static/omni_banner.png" alt="Logo">
-    </a>
-</p>
+<div align="center"><img src="static/omni_banner.png" alt="Logo"></div>
 
 ## About Omni
 
