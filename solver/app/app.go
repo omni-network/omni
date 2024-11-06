@@ -1,3 +1,4 @@
+//nolint:unused // It will be used in PRs.
 package solver
 
 import (
@@ -11,6 +12,8 @@ import (
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
@@ -117,4 +120,77 @@ func initializeEthClients(chains []netconf.Chain, endpoints xchain.RPCEndpoints)
 	}
 
 	return rpcClientPerChain, nil
+}
+
+func startEventStreams(
+	ctx context.Context,
+	network netconf.Network,
+	xprov xchain.Provider,
+	backends ethbackend.Backends,
+	def Definition,
+	solverAddr common.Address,
+) error {
+	inboxContracts := make(map[uint64]*bindings.SolveInbox)
+	outboxContracts := make(map[uint64]*bindings.SolveOutbox)
+	for _, chain := range network.EVMChains() {
+		backend, err := backends.Backend(chain.ID)
+		if err != nil {
+			return err
+		}
+
+		inbox, err := bindings.NewSolveInbox(def.InboxAddress, backend)
+		if err != nil {
+			return errors.Wrap(err, "create inbox contract", "chain_id", chain.ID)
+		}
+
+		outbox, err := bindings.NewSolveOutbox(def.OutboxAddress, backend)
+		if err != nil {
+			return errors.Wrap(err, "create outbox contract", "chain_id", chain.ID)
+		}
+
+		inboxContracts[chain.ID] = inbox
+		outboxContracts[chain.ID] = outbox
+	}
+
+	deps := procDeps{
+		ParseID:      newIDParser(inboxContracts),
+		GetRequest:   newRequestGetter(inboxContracts),
+		ShouldReject: newRequestValidator(def),
+		Accept:       newAcceptor(inboxContracts, backends, solverAddr),
+		Reject:       newRejector(inboxContracts, backends, solverAddr),
+		Fulfill:      newFulfiller(outboxContracts, backends, solverAddr),
+		Claim:        newClaimer(inboxContracts, backends, solverAddr),
+	}
+
+	for _, chain := range network.EVMChains() {
+		go streamEventsForever(ctx, chain.ID, xprov, deps, def)
+	}
+
+	return nil
+}
+
+func streamEventsForever(
+	ctx context.Context,
+	chainID uint64,
+	xprov xchain.Provider,
+	deps procDeps,
+	def Definition,
+) {
+	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second*5))
+	for {
+		req := xchain.EventLogsReq{
+			ChainID:       chainID,
+			Height:        0, // TODO(corver): Persist heights in DB.
+			ConfLevel:     xchain.ConfLatest,
+			FilterAddress: def.InboxAddress,
+			FilterTopics:  allEventTopics,
+		}
+		err := xprov.StreamEventLogs(ctx, req, newEventProcessor(deps, chainID))
+		if ctx.Err() != nil {
+			return
+		}
+
+		log.Warn(ctx, "Failure streaming inbox events (will retry)", err)
+		backoff()
+	}
 }
