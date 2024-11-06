@@ -55,7 +55,7 @@ func monitorPublicRPCForever(
 func publicRPCEndpoint(network netconf.Network, chain netconf.Chain, ethClients map[uint64]ethclient.Client) (ethclient.Client, error) {
 	urls := map[netconf.ID]string{
 		netconf.Staging: "https://staging.omni.network",
-		netconf.Omega:   "https://quicknode.omega.omni.network", // TODO: delete quicknode subdomain
+		netconf.Omega:   "https://omega.omni.network",
 		netconf.Mainnet: "https://mainnet.omni.network",
 	}
 
