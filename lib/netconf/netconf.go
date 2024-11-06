@@ -126,6 +126,8 @@ func IsEthereumChain(network ID, chainID uint64) bool {
 		return chainID == evmchain.IDEthereum
 	case Omega:
 		return chainID == evmchain.IDHolesky
+	case Staging:
+		return chainID == evmchain.IDHolesky
 	default:
 		return chainID == evmchain.IDMockL1
 	}
