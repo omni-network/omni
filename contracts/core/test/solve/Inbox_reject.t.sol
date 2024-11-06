@@ -2,20 +2,20 @@
 pragma solidity =0.8.24;
 
 import { Ownable } from "solady/src/auth/Ownable.sol";
-import { Inbox } from "src/solve/Inbox.sol";
+import { SolveInbox } from "src/solve/SolveInbox.sol";
 import { Solve } from "src/solve/Solve.sol";
 import { InboxBase } from "./InboxBase.sol";
 
 /**
- * @title Inbox_reject_Test
- * @notice Test suite for solver Inbox.reject(...)
+ * @title SolveInbox_reject_Test
+ * @notice Test suite for solver SolveInbox.reject(...)
  * @dev TODO: add fuzz / invariant tests
  */
-contract Inbox_reject_Test is InboxBase {
+contract SolveInbox_reject_Test is InboxBase {
     function test_reject_reverts() public {
         // cannot reject non-existent request
         vm.prank(solver);
-        vm.expectRevert(Inbox.RequestStateInvalid.selector);
+        vm.expectRevert(SolveInbox.RequestStateInvalid.selector);
         inbox.reject(bytes32(0), Solve.RejectReason.None);
 
         // needs to have solver role
@@ -33,7 +33,7 @@ contract Inbox_reject_Test is InboxBase {
 
         // cannot reject cancelled request
         vm.prank(solver);
-        vm.expectRevert(Inbox.RequestStateInvalid.selector);
+        vm.expectRevert(SolveInbox.RequestStateInvalid.selector);
         inbox.reject(id, Solve.RejectReason.None);
 
         // create request to accept before rejecting
@@ -44,7 +44,7 @@ contract Inbox_reject_Test is InboxBase {
         // cannot reject accepted request
         vm.startPrank(solver);
         inbox.accept(id);
-        vm.expectRevert(Inbox.RequestStateInvalid.selector);
+        vm.expectRevert(SolveInbox.RequestStateInvalid.selector);
         inbox.reject(id, Solve.RejectReason.None);
         vm.stopPrank();
     }

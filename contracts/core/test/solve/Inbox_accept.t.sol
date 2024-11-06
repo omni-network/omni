@@ -2,17 +2,17 @@
 pragma solidity =0.8.24;
 
 import { Ownable } from "solady/src/auth/Ownable.sol";
-import { Inbox } from "src/solve/Inbox.sol";
+import { SolveInbox } from "src/solve/SolveInbox.sol";
 import { Solve } from "src/solve/Solve.sol";
 import { InboxBase } from "./InboxBase.sol";
 
 /**
- * @title Inbox_accept_Test
- * @notice Test suite for solver Inbox.accept(...)
+ * @title SolveInbox_accept_Test
+ * @notice Test suite for solver SolveInbox.accept(...)
  * @dev TODO: add fuzz / invariant tests
  */
-contract Inbox_accept_Test is InboxBase {
-    /// @dev Test all revert conditions for Inbox.accept(...)
+contract SolveInbox_accept_Test is InboxBase {
+    /// @dev Test all revert conditions for SolveInbox.accept(...)
     function test_accept_reverts() public {
         // needs to have solver role
         vm.expectRevert(Ownable.Unauthorized.selector);
@@ -20,7 +20,7 @@ contract Inbox_accept_Test is InboxBase {
 
         // needs open request
         vm.prank(solver);
-        vm.expectRevert(Inbox.RequestStateInvalid.selector);
+        vm.expectRevert(SolveInbox.RequestStateInvalid.selector);
         inbox.accept(bytes32(0));
 
         // create request to be cancelled
@@ -34,7 +34,7 @@ contract Inbox_accept_Test is InboxBase {
         vm.prank(user);
         inbox.cancel(id);
         vm.prank(solver);
-        vm.expectRevert(Inbox.RequestStateInvalid.selector);
+        vm.expectRevert(SolveInbox.RequestStateInvalid.selector);
         inbox.accept(id);
 
         // create request to be rejected
@@ -44,7 +44,7 @@ contract Inbox_accept_Test is InboxBase {
         // cannot accept rejected request
         vm.startPrank(solver);
         inbox.reject(id, Solve.RejectReason.None);
-        vm.expectRevert(Inbox.RequestStateInvalid.selector);
+        vm.expectRevert(SolveInbox.RequestStateInvalid.selector);
         inbox.accept(id);
         vm.stopPrank();
 
@@ -61,7 +61,7 @@ contract Inbox_accept_Test is InboxBase {
 
         // once accepted, solvers cannot accept again
         vm.prank(solver);
-        vm.expectRevert(Inbox.RequestStateInvalid.selector);
+        vm.expectRevert(SolveInbox.RequestStateInvalid.selector);
         inbox.accept(id);
 
         // TODO: complete logic to advance through additional states and then test those

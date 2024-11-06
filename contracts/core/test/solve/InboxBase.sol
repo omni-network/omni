@@ -4,7 +4,7 @@ pragma solidity =0.8.24;
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { Ownable } from "solady/src/auth/Ownable.sol";
 import { MockToken } from "test/utils/MockToken.sol";
-import { Inbox } from "src/solve/Inbox.sol";
+import { SolveInbox } from "src/solve/SolveInbox.sol";
 import { Solve } from "src/solve/Solve.sol";
 import { Test } from "forge-std/Test.sol";
 
@@ -13,7 +13,7 @@ import { Test } from "forge-std/Test.sol";
  * @dev Shared test solve utils / fixtures.
  */
 contract InboxBase is Test {
-    Inbox inbox;
+    SolveInbox inbox;
 
     address user = makeAddr("user");
     address solver = makeAddr("solver");
@@ -28,7 +28,7 @@ contract InboxBase is Test {
     }
 
     function setUp() public {
-        inbox = deployInbox();
+        inbox = deploySolveInbox();
         token1 = new MockToken();
         token2 = new MockToken();
     }
@@ -50,14 +50,16 @@ contract InboxBase is Test {
         }
     }
 
-    function deployInbox() internal returns (Inbox) {
-        address impl = address(new Inbox());
-        return Inbox(
+    function deploySolveInbox() internal returns (SolveInbox) {
+        address impl = address(new SolveInbox());
+        return SolveInbox(
             address(
                 new TransparentUpgradeableProxy(
                     impl,
                     makeAddr("proxy-admin-owner"),
-                    abi.encodeCall(Inbox.initialize, (address(this), solver, makeAddr("portal"), makeAddr("outbox")))
+                    abi.encodeCall(
+                        SolveInbox.initialize, (address(this), solver, makeAddr("portal"), makeAddr("outbox"))
+                    )
                 )
             )
         );

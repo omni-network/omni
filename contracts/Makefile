@@ -34,7 +34,7 @@ all: install-deps build bindings allocs ## Build contracts, generate bindings an
 CORE_CONTRACTS := OmniPortal FeeOracleV1 Create3 TransparentUpgradeableProxy \
 			Staking Slashing OmniBridgeL1 OmniBridgeNative Omni WOmni \
 			PortalRegistry AllocPredeploys PingPong ProxyAdmin Admin \
-			OmniGasPump OmniGasStation
+			OmniGasPump OmniGasStation SolveInbox SolveOutbox
 
 AVS_CONTRACTS := OmniAVS DelegationManager StrategyManager StrategyBase AVSDirectory \
 			test/common/MockERC20.sol:MockERC20
@@ -44,6 +44,7 @@ bindings: check-abigen-version build ## Generate golang contract bindings.
 	ROOT=./core ./bindings/scripts/gen.sh $(CORE_CONTRACTS)
 	ROOT=./avs ./bindings/scripts/gen.sh $(AVS_CONTRACTS)
 	go run ./bindings/scripts/commenttypes.go -- bindings/strategymanager.go IStrategyManagerDeprecatedStructQueuedWithdrawal IStrategyManagerDeprecatedStructWithdrawerAndNonce
+	go run ./bindings/scripts/commenttypes.go -- bindings/solveoutbox.go SolveCall
 	go run ./bindings/scripts/commenttypes.go -- bindings/avsdirectory.go ISignatureUtilsSignatureWithSaltAndExpiry
 
 .PHONY: allocs
