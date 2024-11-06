@@ -5,7 +5,7 @@ import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/trans
 import { MockToken } from "test/utils/MockToken.sol";
 import { MockVault } from "test/utils/MockVault.sol";
 import { Outbox } from "src/solve/Outbox.sol";
-import { Inbox } from "src/solve/Inbox.sol";
+import { Inbox, IInbox } from "src/solve/Inbox.sol";
 import { Solve } from "src/solve/Solve.sol";
 
 import "test/xchain/common/Base.sol";
@@ -261,7 +261,7 @@ contract Outbox_fulfill_Test is Base {
         vm.prank(relayer);
         expectCalls(xsub.msgs);
         vm.expectEmit(true, true, true, true, address(inbox));
-        emit Inbox.Fulfilled(bytes32(uint256(1)), callHash, solver);
+        emit IInbox.Fulfilled(bytes32(uint256(1)), callHash, solver);
         vm.expectEmit(true, true, true, false, address(portal));
         emit IOmniPortal.XReceipt(chainAId, ConfLevel.Finalized, uint64(1), 0, relayer, true, bytes(""));
         portal.xsubmit(xsub);

@@ -4,11 +4,10 @@ pragma solidity =0.8.24;
 import { OwnableRoles } from "solady/src/auth/OwnableRoles.sol";
 import { ReentrancyGuard } from "solady/src/utils/ReentrancyGuard.sol";
 import { Initializable } from "solady/src/utils/Initializable.sol";
-import { XAppBase } from "../pkg/XAppBase.sol";
-import { IInbox } from "./interfaces/IInbox.sol";
-
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
-import { IConversionRateOracle } from "../interfaces/IConversionRateOracle.sol";
+import { IConversionRateOracle } from "src/interfaces/IConversionRateOracle.sol";
+import { XAppBase } from "src/pkg/XAppBase.sol";
+import { IInbox } from "./interfaces/IInbox.sol";
 import { Solve } from "./Solve.sol";
 
 /**
@@ -24,50 +23,6 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, IInbox
     error InvalidDeposit();
     error TransferFailed();
     error RequestStateInvalid();
-
-    /**
-     * @notice Emitted when a request is created.
-     * @param id        ID of the request.
-     * @param from      Address of the user who created the request.
-     * @param call      Details of the call to be executed on another chain.
-     * @param deposits  Array of deposits backing the request.
-     */
-    event Requested(bytes32 indexed id, address indexed from, Solve.Call call, Solve.Deposit[] deposits);
-
-    /**
-     * @notice Emitted when a request is accepted.
-     * @param id  ID of the request.
-     * @param by  Address of the solver who accepted the request.
-     */
-    event Accepted(bytes32 indexed id, address indexed by);
-
-    /**
-     * @notice Emitted when a request is rejected.
-     * @param id      ID of the request.
-     * @param by      Address of the solver who rejected the request.
-     * @param reason  Reason for rejecting the request.
-     */
-    event Rejected(bytes32 indexed id, address indexed by, Solve.RejectReason indexed reason);
-
-    /**
-     * @notice Emitted when a request is cancelled.
-     * @param id  ID of the request.
-     */
-    event Reverted(bytes32 indexed id);
-
-    /**
-     * @notice Emitted when a request is fulfilled.
-     * @param id          ID of the request.
-     * @param callHash    Hash of the call executed on another chain.
-     * @param creditedTo  Address of the recipient credited the funds by the solver.
-     */
-    event Fulfilled(bytes32 indexed id, bytes32 indexed callHash, address indexed creditedTo);
-
-    /**
-     * @notice Emitted when a request is claimed.
-     * @param id  ID of the request.
-     */
-    event Claimed(bytes32 indexed id);
 
     /**
      * @notice Role for solvers.
@@ -112,28 +67,6 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, IInbox
      */
     function getRequest(bytes32 id) external view returns (Solve.Request memory) {
         return _requests[id];
-    }
-
-    /**
-     * @notice Suggest the amount of native currency to send with a request.
-     * @param call        Details of the call to be executed on another chain.
-     * @param gasLimit    Maximum gas limit for the call.
-     * @param gasPrice    Destination chain gas price in wei.
-     * @param fulfillFee  Fee for the fulfill call, retrieved from the destination outbox.
-     */
-    function suggestNativePayment(Solve.Call calldata call, uint64 gasLimit, uint64 gasPrice, uint256 fulfillFee)
-        external
-        view
-        returns (uint256)
-    {
-        IConversionRateOracle oracle = IConversionRateOracle(omni.feeOracle());
-
-        uint256 nativeValue = call.value * oracle.toNativeRate(call.destChainId) / oracle.CONVERSION_RATE_DENOM();
-        uint256 executionFee = omni.feeFor(call.destChainId, call.data, gasLimit);
-        uint256 acceptFee = 55_000 * gasPrice;
-        uint256 solveFee = 100_000 gwei; // TODO: determine solve fee
-
-        return nativeValue + executionFee + acceptFee + solveFee + fulfillFee;
     }
 
     /**
@@ -247,6 +180,28 @@ contract Inbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, IInbox
         _transferDeposits(req.acceptedBy, req.deposits);
 
         emit Claimed(id);
+    }
+
+    /**
+     * @notice Suggest the amount of native currency to send with a request.
+     * @param call        Details of the call to be executed on another chain.
+     * @param gasLimit    Maximum gas limit for the call.
+     * @param gasPrice    Destination chain gas price in wei.
+     * @param fulfillFee  Fee for the fulfill call, retrieved from the destination outbox.
+     */
+    function suggestNativePayment(Solve.Call calldata call, uint64 gasLimit, uint64 gasPrice, uint256 fulfillFee)
+        external
+        view
+        returns (uint256)
+    {
+        IConversionRateOracle oracle = IConversionRateOracle(omni.feeOracle());
+
+        uint256 nativeValue = call.value * oracle.toNativeRate(call.destChainId) / oracle.CONVERSION_RATE_DENOM();
+        uint256 executionFee = omni.feeFor(call.destChainId, call.data, gasLimit);
+        uint256 acceptFee = 55_000 * gasPrice;
+        uint256 solveFee = 100_000 gwei; // TODO: determine solve fee
+
+        return nativeValue + executionFee + acceptFee + solveFee + fulfillFee;
     }
 
     /**
