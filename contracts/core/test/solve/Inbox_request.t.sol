@@ -2,48 +2,48 @@
 pragma solidity =0.8.24;
 
 import { Ownable } from "solady/src/auth/Ownable.sol";
-import { Inbox } from "src/solve/Inbox.sol";
+import { SolveInbox } from "src/solve/SolveInbox.sol";
 import { Solve } from "src/solve/Solve.sol";
 import { InboxBase } from "./InboxBase.sol";
 
 /**
- * @title Inbox_request_Test
- * @notice Test suite for solver Inbox.request(...)
+ * @title SolveInbox_request_Test
+ * @notice Test suite for solver SolveInbox.request(...)
  * @dev TODO: add fuzz / invariant tests
  */
-contract Inbox_request_Test is InboxBase {
-    /// @dev Test all revert conditions for Inbox.request(...)
+contract SolveInbox_request_Test is InboxBase {
+    /// @dev Test all revert conditions for SolveInbox.request(...)
     function test_request_reverts() public prankUser {
         Solve.Call memory call = Solve.Call({ destChainId: 0, value: 0, target: address(0), data: bytes("") });
         Solve.TokenDeposit[] memory deposits = new Solve.TokenDeposit[](0);
 
         // needs call.target
-        vm.expectRevert(Inbox.InvalidCall.selector);
+        vm.expectRevert(SolveInbox.InvalidCall.selector);
         inbox.request(call, deposits);
         call.target = address(1);
 
         // needs destChainId
-        vm.expectRevert(Inbox.InvalidCall.selector);
+        vm.expectRevert(SolveInbox.InvalidCall.selector);
         inbox.request(call, deposits);
         call.destChainId = 1;
 
         // needs data
-        vm.expectRevert(Inbox.InvalidCall.selector);
+        vm.expectRevert(SolveInbox.InvalidCall.selector);
         inbox.request(call, deposits);
         call.data = bytes("data");
 
         // needs deposits
-        vm.expectRevert(Inbox.NoDeposits.selector);
+        vm.expectRevert(SolveInbox.NoDeposits.selector);
         inbox.request(call, deposits);
         deposits = new Solve.TokenDeposit[](1);
 
         // needs non-zero amount
-        vm.expectRevert(Inbox.InvalidDeposit.selector);
+        vm.expectRevert(SolveInbox.InvalidDeposit.selector);
         inbox.request(call, deposits);
         deposits[0].amount = 1 ether;
 
         // needs non-zero token
-        vm.expectRevert(Inbox.InvalidDeposit.selector);
+        vm.expectRevert(SolveInbox.InvalidDeposit.selector);
         inbox.request(call, deposits);
         deposits[0].token = address(token1);
 

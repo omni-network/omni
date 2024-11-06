@@ -4,8 +4,8 @@ pragma solidity =0.8.24;
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { MockToken } from "test/utils/MockToken.sol";
 import { MockVault } from "test/utils/MockVault.sol";
-import { Outbox } from "src/solve/Outbox.sol";
-import { Inbox, IInbox } from "src/solve/Inbox.sol";
+import { SolveOutbox } from "src/solve/SolveOutbox.sol";
+import { SolveInbox, ISolveInbox } from "src/solve/SolveInbox.sol";
 import { Solve } from "src/solve/Solve.sol";
 
 import "test/xchain/common/Base.sol";
@@ -16,13 +16,13 @@ import { TestXTypes } from "test/xchain/common/TestXTypes.sol";
 import { Ownable } from "solady/src/auth/Ownable.sol";
 
 /**
- * @title Outbox_fulfill_Test
- * @notice Test suite for solver Outbox.fulfill(...) and Inbox.markFulfilled(...) callback
+ * @title SolveOutbox_fulfill_Test
+ * @notice Test suite for solver SolveOutbox.fulfill(...) and SolveInbox.markFulfilled(...) callback
  * @dev TODO: add fuzz / invariant tests
  */
-contract Outbox_fulfill_Test is Base {
-    Inbox inbox;
-    Outbox outbox;
+contract SolveOutbox_fulfill_Test is Base {
+    SolveInbox inbox;
+    SolveOutbox outbox;
 
     MockToken token1;
     MockToken token2;
@@ -39,8 +39,8 @@ contract Outbox_fulfill_Test is Base {
         vm.deal(solver, 10 ether);
 
         address pAdmin = makeAddr("proxy-admin-owner");
-        inbox = Inbox(address(new TransparentUpgradeableProxy(address(new Inbox()), pAdmin, "")));
-        outbox = Outbox(address(new TransparentUpgradeableProxy(address(new Outbox()), pAdmin, "")));
+        inbox = SolveInbox(address(new TransparentUpgradeableProxy(address(new SolveInbox()), pAdmin, "")));
+        outbox = SolveOutbox(address(new TransparentUpgradeableProxy(address(new SolveOutbox()), pAdmin, "")));
 
         inbox.initialize(address(this), solver, address(portal), address(outbox));
         outbox.initialize(address(this), solver, address(chainAPortal), address(inbox));
@@ -77,7 +77,7 @@ contract Outbox_fulfill_Test is Base {
         bytes32 callHash = _getCallHash(bytes32(uint256(1)), thisChainId, call);
         vm.expectCall(call.target, call.data);
         vm.expectEmit(address(outbox));
-        emit Outbox.Fulfilled(bytes32(uint256(1)), callHash, solver);
+        emit SolveOutbox.Fulfilled(bytes32(uint256(1)), callHash, solver);
         outbox.fulfill{ value: fee }(bytes32(uint256(1)), thisChainId, solver, call, prereqs);
         vm.stopPrank();
 
@@ -261,7 +261,7 @@ contract Outbox_fulfill_Test is Base {
         vm.prank(relayer);
         expectCalls(xsub.msgs);
         vm.expectEmit(true, true, true, true, address(inbox));
-        emit IInbox.Fulfilled(bytes32(uint256(1)), callHash, solver);
+        emit ISolveInbox.Fulfilled(bytes32(uint256(1)), callHash, solver);
         vm.expectEmit(true, true, true, false, address(portal));
         emit IOmniPortal.XReceipt(chainAId, ConfLevel.Finalized, uint64(1), 0, relayer, true, bytes(""));
         portal.xsubmit(xsub);

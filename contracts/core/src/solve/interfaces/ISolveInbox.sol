@@ -3,7 +3,7 @@ pragma solidity =0.8.24;
 
 import { Solve } from "../Solve.sol";
 
-interface IInbox {
+interface ISolveInbox {
     /**
      * @notice Emitted when a request is created.
      * @param id        ID of the request.

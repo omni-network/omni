@@ -2,19 +2,19 @@
 pragma solidity =0.8.24;
 
 import { Ownable } from "solady/src/auth/Ownable.sol";
-import { Inbox } from "src/solve/Inbox.sol";
+import { SolveInbox } from "src/solve/SolveInbox.sol";
 import { Solve } from "src/solve/Solve.sol";
 import { InboxBase } from "./InboxBase.sol";
 
 /**
- * @title Inbox_cancel_Test
- * @notice Test suite for solver Inbox.cancel(...)
+ * @title SolveInbox_cancel_Test
+ * @notice Test suite for solver SolveInbox.cancel(...)
  * @dev TODO: add fuzz / invariant tests
  */
-contract Inbox_cancel_Test is InboxBase {
+contract SolveInbox_cancel_Test is InboxBase {
     function test_cancel_reverts() public {
         // cannot cancel non-existent request
-        vm.expectRevert(Inbox.RequestStateInvalid.selector);
+        vm.expectRevert(SolveInbox.RequestStateInvalid.selector);
         inbox.cancel(bytes32(0));
 
         // create request to be cancelled
@@ -27,7 +27,7 @@ contract Inbox_cancel_Test is InboxBase {
         // cannot cancel cancelled request
         vm.startPrank(user);
         inbox.cancel(id);
-        vm.expectRevert(Inbox.RequestStateInvalid.selector);
+        vm.expectRevert(SolveInbox.RequestStateInvalid.selector);
         inbox.cancel(id);
         vm.stopPrank();
 
@@ -40,7 +40,7 @@ contract Inbox_cancel_Test is InboxBase {
         inbox.reject(id, Solve.RejectReason.None);
         vm.startPrank(user);
         inbox.cancel(id);
-        vm.expectRevert(Inbox.RequestStateInvalid.selector);
+        vm.expectRevert(SolveInbox.RequestStateInvalid.selector);
         inbox.cancel(id);
         vm.stopPrank();
 
@@ -55,7 +55,7 @@ contract Inbox_cancel_Test is InboxBase {
         // cannot cancel accepted request
         vm.prank(solver);
         inbox.accept(id);
-        vm.expectRevert(Inbox.RequestStateInvalid.selector);
+        vm.expectRevert(SolveInbox.RequestStateInvalid.selector);
         inbox.cancel(id);
 
         // TODO: complete logic to advance through additional states and then test those

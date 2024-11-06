@@ -7,14 +7,14 @@ import { Initializable } from "solady/src/utils/Initializable.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { IConversionRateOracle } from "src/interfaces/IConversionRateOracle.sol";
 import { XAppBase } from "src/pkg/XAppBase.sol";
-import { IInbox } from "./interfaces/IInbox.sol";
+import { ISolveInbox } from "./interfaces/ISolveInbox.sol";
 import { Solve } from "./Solve.sol";
 
 /**
- * @title Inbox
+ * @title SolveInbox
  * @notice Entrypoint and alt-mempoool for user solve requests.
  */
-contract Inbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, IInbox {
+contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, ISolveInbox {
     using SafeTransferLib for address;
 
     error NoDeposits();

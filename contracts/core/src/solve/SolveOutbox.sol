@@ -11,13 +11,13 @@ import { ConfLevel } from "../libraries/ConfLevel.sol";
 import { TypeMax } from "../libraries/TypeMax.sol";
 import { Solve } from "./Solve.sol";
 
-import { IInbox } from "./interfaces/IInbox.sol";
+import { ISolveInbox } from "./interfaces/ISolveInbox.sol";
 
 /**
- * @title Outbox
+ * @title SolveOutbox
  * @notice Entrypoint for fulfillments of user solve requests.
  */
-contract Outbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
+contract SolveOutbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
     using SafeTransferLib for address;
 
     error CallFailed();
@@ -44,16 +44,16 @@ contract Outbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
     uint256 internal constant SOLVER = _ROLE_0;
 
     /**
-     * @notice Gas limit for Inbox.markFulfilled callback.
+     * @notice Gas limit for SolveInbox.markFulfilled callback.
      */
     uint64 internal constant MARK_FULFILLED_GAS_LIMIT = 100_000;
 
     /**
-     * @notice Stubbed calldata for Inbox.markFulfilled. Used to estimate the gas cost.
+     * @notice Stubbed calldata for SolveInbox.markFulfilled. Used to estimate the gas cost.
      * @dev Type maxes used to ensure no non-zero bytes in fee estimation.
      */
     bytes internal constant MARK_FULFILLED_STUB_CDATA =
-        abi.encodeCall(IInbox.markFulfilled, (TypeMax.Bytes32, TypeMax.Bytes32, TypeMax.Address));
+        abi.encodeCall(ISolveInbox.markFulfilled, (TypeMax.Bytes32, TypeMax.Bytes32, TypeMax.Address));
 
     /**
      * @notice Address of the inbox contract.
@@ -157,7 +157,7 @@ contract Outbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
         }
 
         // Send the fulfillment call to the inbox
-        bytes memory data = abi.encodeCall(IInbox.markFulfilled, (reqId, callHash, creditTo));
+        bytes memory data = abi.encodeCall(ISolveInbox.markFulfilled, (reqId, callHash, creditTo));
         uint256 fee = xcall(sourceChainId, ConfLevel.Finalized, _inbox, data, MARK_FULFILLED_GAS_LIMIT);
         if (msg.value - call.value < fee) revert InsufficientFee();
 
