@@ -8,7 +8,7 @@ Omni is a network purpose built for fixing fragmentation across the Ethereum eco
 
 To achieve this, Omni was designed with a novel protocol architecture, Octane, that runs a consensus and execution engine in parallel. While Octane was developed specifically for Omni’s use case, it is open sourced and is being used by protocols that have raised over $150M, such as [Story Protocol](https://www.story.foundation/).
 
-Omni uses Octane to combine the EVM with the [CometBFT](https://docs.cometbft.com/v0.38/) (formerly Tendermint) consensus engine, providing fast consensus on every rollup network connected with Omni. Within Octane, the Engine API separates the execution environment from the consensus engine, preventing transactions from interfering with blockchain consensus. Octane is the first consensus implementation of the EngineAPI besides Ethereum itself (the Beacon Chain). [ABCI 2.0](https://docs.cometbft.com/v1.0/spec/abci/) complements the Engine API by providing a programmable interface for high-performance consensus engines like CometBFT.
+Omni uses Octane to combine the EVM with the [CometBFT](https://docs.cometbft.com/v0.38/) (formerly Tendermint) consensus engine, creating a scalable, high performance network with fast transaction finality at scale. Within Octane, the Engine API separates the execution environment from the consensus engine, preventing transactions from interfering with blockchain consensus. Octane is the first consensus implementation of the EngineAPI besides Ethereum itself (the Beacon Chain). [ABCI 2.0](https://docs.cometbft.com/v1.0/spec/abci/) complements the Engine API by providing a programmable interface for high-performance consensus engines like CometBFT.
 
 <img src="/img/octane_architecture.jpg"/>
 
