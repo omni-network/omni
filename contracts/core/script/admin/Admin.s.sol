@@ -267,6 +267,7 @@ contract Admin is Script {
         OmniBridgeNative b = OmniBridgeNative(Predeploys.OmniBridgeNative);
 
         // retrieve pause states
+        bool allPaused = b.isPaused(b.KeyPauseAll());
         bool bridgePaused = b.isPaused(b.ACTION_BRIDGE());
         bool withdrawPaused = b.isPaused(b.ACTION_WITHDRAW());
 
@@ -292,6 +293,7 @@ contract Admin is Script {
         require(address(b.omni()) == omni, "omni changed");
         require(b.l1Deposits() == l1Deposits, "l1Deposits changed");
         require(b.l1Bridge() == l1Bridge, "l1Bridge changed");
+        require(b.isPaused(b.KeyPauseAll()) == allPaused, "all paused state changed");
         require(b.isPaused(b.ACTION_BRIDGE()) == bridgePaused, "bridge paused state changed");
         require(b.isPaused(b.ACTION_WITHDRAW()) == withdrawPaused, "withdraw paused state changed");
 
@@ -308,6 +310,7 @@ contract Admin is Script {
         OmniBridgeL1 b = OmniBridgeL1(proxy);
 
         // retrieve pause states
+        bool allPaused = b.isPaused(b.KeyPauseAll());
         bool bridgePaused = b.isPaused(b.ACTION_BRIDGE());
         bool withdrawPaused = b.isPaused(b.ACTION_WITHDRAW());
 
@@ -329,6 +332,7 @@ contract Admin is Script {
         require(b.owner() == owner, "owner changed");
         require(address(b.token()) == token, "token changed");
         require(address(b.omni()) == omni, "omni changed");
+        require(b.isPaused(b.KeyPauseAll()) == allPaused, "all paused state changed");
         require(b.isPaused(b.ACTION_BRIDGE()) == bridgePaused, "bridge paused state changed");
         require(b.isPaused(b.ACTION_WITHDRAW()) == withdrawPaused, "withdraw paused state changed");
 
