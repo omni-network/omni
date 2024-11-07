@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -190,15 +189,13 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.ServiceConfig) error {
 		addFile(omniEVM.InstanceName, "geth", "nodekey")
 	}
 
-	// Also relayer and monitor
+	// Also relayer and monitor and solver
 	addFile("relayer", "relayer.toml")
 	addFile("relayer", "privatekey")
 	addFile("monitor", "monitor.toml")
 	addFile("monitor", "privatekey")
 	addFile("solver", "solver.toml")
 	addFile("solver", "privatekey")
-
-	addFile("prometheus", "prometheus.yaml") // Prometheus isn't a "service", so not actually copied
 
 	// Do initial sequential ssh to each VM, ensure we can connect.
 	for vmName, instance := range p.Data.VMs {
@@ -213,6 +210,9 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.ServiceConfig) error {
 		}
 	}
 
+	// Backup files to GCP, e.g.: gs://e2e-configs/omega/UPGRADE2024-09-19T16:27:55Z/
+	gcpBucket := fmt.Sprintf("gs://e2e-configs/%s/UPGRADE%s/", p.Testnet.Name, time.Now().Format(time.RFC3339))
+
 	// Then upgrade VMs in parallel
 	eg, ctx := errgroup.WithContext(ctx)
 
@@ -223,65 +223,40 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.ServiceConfig) error {
 		}
 
 		eg.Go(func() error {
-			log.Debug(ctx, "Copying artifacts", "vm", vmName, "count", len(filesByService))
-			timestampDir := time.Now()
-			identifier := fmt.Sprintf("UPGRADE%s", timestampDir.Format(time.RFC3339))
+			filesToCopy := map[string]string{ // Local to remote files to copy.
+				vmInitFile(instance.IPAddress.String()):    "evm-init.sh",
+				vmComposeFile(instance.IPAddress.String()): "docker-compose.yaml",
+				vmAgentFile(instance.IPAddress.String()):   "prometheus/prometheus.yaml",
+			}
 			for service, filePaths := range filesByService {
 				if !services[service] {
 					continue
 				}
 				for _, filePath := range filePaths {
-					localPath := filepath.Join(p.Testnet.Dir, service, filePath)
-					remotePath := filepath.Join("/omni", p.Testnet.Name, service, filePath)
-					if err := copyFileToVM(ctx, vmName, localPath, remotePath); err != nil {
-						return errors.Wrap(err, "copy file to VM", "vm", vmName, "service", service, "file", filePath)
-					}
-					go func(localPath string, remotePath string) {
-						err := copyFileToGCP(ctx, localPath, remotePath, identifier)
-						if err != nil {
-							log.Warn(ctx, "Failed to copy file to GCP", err, "local", localPath, "remote", remotePath)
-						}
-					}(localPath, remotePath)
+					serviceFile := filepath.Join(service, filePath)
+					filesToCopy[serviceFile] = serviceFile
 				}
 			}
 
-			log.Debug(ctx, "Copying docker-compose.yaml", "vm", vmName)
-			composeFile := vmComposeFile(instance.IPAddress.String())
-			localComposePath := filepath.Join(p.Testnet.Dir, composeFile)
-			remoteComposePath := filepath.Join("/omni", p.Testnet.Name, composeFile)
-			if err := copyFileToVM(ctx, vmName, localComposePath, remoteComposePath); err != nil {
-				return errors.Wrap(err, "copy docker compose", "vm", vmName)
-			}
-			go func(localPath string, remotePath string) {
-				err := copyFileToGCP(ctx, localPath, remotePath, identifier)
-				if err != nil {
-					log.Warn(ctx, "Failed to copy file to GCP", err, "local", localPath, "remote", remotePath)
-				}
-			}(localComposePath, remoteComposePath)
+			log.Debug(ctx, "Copying artifacts", "vm", vmName, "count", len(filesToCopy))
 
-			log.Debug(ctx, "Copying evm-init.sh", "vm", vmName)
-			initFile := vmInitFile(instance.IPAddress.String())
-			localInitPath := filepath.Join(p.Testnet.Dir, initFile)
-			remoteInitPath := filepath.Join("/omni", p.Testnet.Name, initFile)
-			if err := copyFileToVM(ctx, vmName, localInitPath, remoteInitPath); err != nil {
-				return errors.Wrap(err, "copy evm init", "vm", vmName)
-			}
-			go func(localPath string, remotePath string) {
-				err := copyFileToGCP(ctx, localPath, remotePath, identifier)
-				if err != nil {
-					log.Warn(ctx, "Failed to copy file to GCP", err, "local", localPath, "remote", remotePath)
+			for local, remote := range filesToCopy {
+				localPath := filepath.Join(p.Testnet.Dir, local)
+				remotePath := filepath.Join("/omni", p.Testnet.Name, remote)
+				if err := copyFileToVM(ctx, vmName, localPath, remotePath); err != nil {
+					return errors.Wrap(err, "copy file to VM", "vm", vmName, "local", local, "remote", remotePath)
 				}
-			}(localInitPath, remoteInitPath)
+				go backupToGCP(ctx, localPath, filepath.Join(gcpBucket, local)) // Best-effort backup
+			}
 
 			// TODO(corver): Once evm-init.sh is idempotent, call it here.
 
 			startCmd := fmt.Sprintf("cd /omni/%s && "+
-				"sudo mv %s docker-compose.yaml && "+
 				"sudo docker compose pull && "+
 				"sudo docker compose down && "+
 				"sudo docker compose up -d &&"+
 				"sudo docker system prune -a -f", // Prune old images
-				p.Testnet.Name, composeFile)
+				p.Testnet.Name)
 
 			log.Debug(ctx, "Executing docker-compose up", "vm", vmName)
 			if err := execOnVM(ctx, vmName, startCmd); err != nil {
@@ -451,18 +426,17 @@ func copyFileToVM(ctx context.Context, vmName string, localPath string, remotePa
 	return nil
 }
 
-func copyFileToGCP(ctx context.Context, localPath string, remotePath string, identifier string) error {
-	// Remap filesystem path to be compatible with our destination bucket format
-	newpath := slices.Insert(strings.Split(remotePath, "/")[2:], 1, identifier)
-	cpgcp := fmt.Sprintf("gcloud storage cp %s gs://e2e-configs/%s", filepath.Base(localPath), strings.Join(newpath, "/"))
-
-	cmd := exec.CommandContext(ctx, "bash", "-c", cpgcp)
-	cmd.Dir = filepath.Dir(localPath)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return errors.Wrap(err, "copy file to GCP error", "output", string(out), "cmd", cpgcp)
+func backupToGCP(ctx context.Context, localPath string, bucket string) {
+	cmd := fmt.Sprintf("gcloud storage cp %s %s", localPath, bucket)
+	out, err := exec.CommandContext(ctx, "bash", "-c", cmd).CombinedOutput()
+	if err != nil {
+		log.Warn(ctx, "Backup to GCP failed", err,
+			"cmd", cmd,
+			"path", localPath,
+			"bucket", bucket,
+			"output", string(out),
+		)
 	}
-
-	return nil
 }
 
 func vmAgentFile(internalIP string) string {
