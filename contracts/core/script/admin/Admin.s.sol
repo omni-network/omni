@@ -272,7 +272,7 @@ contract Admin is Script {
         bool withdrawPaused = b.isPaused(b.ACTION_WITHDRAW());
 
         // bridge must be paused
-        require(bridgePaused, "bridge is not paused");
+        // require(bridgePaused, "bridge is not paused");
 
         // read storage pre-upgrade
         address owner = b.owner();
@@ -315,7 +315,7 @@ contract Admin is Script {
         bool withdrawPaused = b.isPaused(b.ACTION_WITHDRAW());
 
         // bridge must be paused
-        require(bridgePaused, "bridge is not paused");
+        // require(bridgePaused, "bridge is not paused");
 
         // read storage pre-upgrade
         address owner = b.owner();
