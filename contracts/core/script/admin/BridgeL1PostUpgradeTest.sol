@@ -41,6 +41,12 @@ contract BridgeL1PostUpgradeTest is Test {
         // OmniBridgeL1 portal at slot 0, no admin setters
         portal = new MockPortal();
         vm.store(addr, bytes32(0), bytes32(uint256(uint160(address(portal)))));
+
+        // ensure bridge is fully unpaused prior to tests
+        vm.startPrank(owner);
+        if (b.isPaused(b.ACTION_BRIDGE())) b.unpause(b.ACTION_BRIDGE());
+        if (b.isPaused(b.ACTION_WITHDRAW())) b.unpause(b.ACTION_WITHDRAW());
+        vm.stopPrank();
     }
 
     function _testBridge() internal {

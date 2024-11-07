@@ -44,8 +44,13 @@ contract BridgeNativePostUpgradeTest is Test {
         uint256 l1Deposits = b.l1Deposits();
 
         // change portal to mock portal
-        vm.prank(owner);
+        vm.startPrank(owner);
         b.setup(l1ChainId, address(portal), l1Bridge, l1Deposits);
+
+        // ensure bridge is fully unpaused prior to tests
+        if (b.isPaused(b.ACTION_BRIDGE())) b.unpause(b.ACTION_BRIDGE());
+        if (b.isPaused(b.ACTION_WITHDRAW())) b.unpause(b.ACTION_WITHDRAW());
+        vm.stopPrank();
     }
 
     function _testWithdraw() internal {

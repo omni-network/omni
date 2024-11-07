@@ -18,10 +18,22 @@ import (
 // bridgeSpec defines the bridge spec for each network.
 // To update bridge spec, update this map.
 // Then run `ensure-bridge-spec` to apply the changes.
+// TODO(zodomo): revert to DefaultBridgeSpec() after upgrade.
 var bridgeSpec = map[netconf.ID]NetworkBridgeSpec{
 	netconf.Devnet:  DefaultBridgeSpec(),
 	netconf.Staging: DefaultBridgeSpec(),
-	netconf.Omega:   DefaultBridgeSpec(),
+	netconf.Omega: {
+		Native: BridgeSpec{
+			PauseAll:      false,
+			PauseWithdraw: false,
+			PauseBridge:   true,
+		},
+		L1: BridgeSpec{
+			PauseAll:      false,
+			PauseWithdraw: false,
+			PauseBridge:   true,
+		},
+	},
 	netconf.Mainnet: DefaultBridgeSpec(),
 }
 

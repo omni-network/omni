@@ -266,6 +266,9 @@ contract Admin is Script {
     function upgradeBridgeNative(address admin, address deployer, bytes calldata data) public {
         OmniBridgeNative b = OmniBridgeNative(Predeploys.OmniBridgeNative);
 
+        // bridge must be paused
+        require(b.isPaused(b.ACTION_BRIDGE()), "bridge is not paused");
+
         // read storage pre-upgrade
         address owner = b.owner();
         address omni = address(b.omni());
@@ -297,6 +300,9 @@ contract Admin is Script {
      */
     function upgradeBridgeL1(address admin, address deployer, address proxy, bytes calldata data) public {
         OmniBridgeL1 b = OmniBridgeL1(proxy);
+
+        // bridge must be paused
+        require(b.isPaused(b.ACTION_BRIDGE()), "bridge is not paused");
 
         // read storage pre-upgrade
         address owner = b.owner();
