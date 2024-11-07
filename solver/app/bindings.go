@@ -1,4 +1,4 @@
-package solver
+package app
 
 import (
 	"github.com/omni-network/omni/contracts/bindings"

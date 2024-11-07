@@ -21,6 +21,10 @@ import (
 // ChainVersionHeight returns the latest height for the provided chain version.
 func (p *Provider) ChainVersionHeight(ctx context.Context, chainVer xchain.ChainVersion) (uint64, error) {
 	if chainVer.ID == p.cChainID {
+		if p.cProvider == nil {
+			return 0, errors.New("consensus provider not set")
+		}
+
 		// Consensus chain versions all reduce to `latest`.
 		xblock, ok, err := p.cProvider.XBlock(ctx, 0, true)
 		if err != nil {
@@ -62,6 +66,10 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, str
 	}
 
 	if stream.SourceChainID == p.cChainID {
+		if p.cProvider == nil {
+			return xchain.EmitCursor{}, false, errors.New("consensus provider not set")
+		}
+
 		// Consensus xblocks only has a single stream/shard for now, so just query the latest block.
 		// Once we add multiple streams, we need to query portal module offset table using latest or historical blocks.
 		block, err := getConsXBlock(ctx, ref, p.cProvider)
@@ -165,7 +173,12 @@ func (p *Provider) GetBlock(ctx context.Context, req xchain.ProviderRequest) (xc
 	ctx, span := tracer.Start(ctx, spanName("get_block"))
 	defer span.End()
 
+	//nolint:nestif // Not so bad
 	if req.ChainID == p.cChainID {
+		if p.cProvider == nil {
+			return xchain.Block{}, false, errors.New("consensus provider not set")
+		}
+
 		b, ok, err := p.cProvider.XBlock(ctx, req.Height, false)
 		if err != nil {
 			return xchain.Block{}, false, errors.Wrap(err, "fetch consensus xblock")
