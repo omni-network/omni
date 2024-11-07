@@ -1,5 +1,5 @@
 //nolint:unused // It will be used in PRs.
-package solver
+package app
 
 import (
 	"context"
@@ -17,11 +17,19 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
+	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+// confLevel of solver streamers.
+const confLevel = xchain.ConfLatest
+
+func chainVerFromID(id uint64) xchain.ChainVersion {
+	return xchain.ChainVersion{ID: id, ConfLevel: confLevel}
+}
 
 // Run starts the solver service.
 func Run(ctx context.Context, cfg Config) error {
@@ -42,10 +50,17 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	_, err = initializeEthClients(network.EVMChains(), cfg.RPCEndpoints)
+	ethClients, err := initializeEthClients(network.EVMChains(), cfg.RPCEndpoints)
 	if err != nil {
 		return err
 	}
+
+	_, err = newSolverDB(cfg.DBDir)
+	if err != nil {
+		return err
+	}
+
+	_ = xprovider.New(network, ethClients, nil)
 
 	select {
 	case <-ctx.Done():
@@ -129,10 +144,26 @@ func startEventStreams(
 	backends ethbackend.Backends,
 	def Definition,
 	solverAddr common.Address,
+	cursors *cursors,
 ) error {
 	inboxContracts := make(map[uint64]*bindings.SolveInbox)
 	outboxContracts := make(map[uint64]*bindings.SolveOutbox)
 	for _, chain := range network.EVMChains() {
+		// Maybe init cursor store with deploy heights
+		chainVer := chainVerFromID(chain.ID)
+		if _, ok, err := cursors.Get(ctx, chainVer); err != nil {
+			return errors.Wrap(err, "get cursor", "chain_id", chain.ID)
+		} else if !ok {
+			height, ok := def.InboxDeployHeights[chain.ID]
+			if !ok {
+				return errors.New("missing inbox deploy height", "chain_id", chain.ID)
+			}
+			err := cursors.Set(ctx, chainVer, height)
+			if err != nil {
+				return err
+			}
+		}
+
 		backend, err := backends.Backend(chain.ID)
 		if err != nil {
 			return err
@@ -152,6 +183,10 @@ func startEventStreams(
 		outboxContracts[chain.ID] = outbox
 	}
 
+	cursorSetter := func(ctx context.Context, chainID uint64, height uint64) error {
+		return cursors.Set(ctx, chainVerFromID(chainID), height)
+	}
+
 	deps := procDeps{
 		ParseID:      newIDParser(inboxContracts),
 		GetRequest:   newRequestGetter(inboxContracts),
@@ -160,10 +195,11 @@ func startEventStreams(
 		Reject:       newRejector(inboxContracts, backends, solverAddr),
 		Fulfill:      newFulfiller(outboxContracts, backends, solverAddr),
 		Claim:        newClaimer(inboxContracts, backends, solverAddr),
+		SetCursor:    cursorSetter,
 	}
 
 	for _, chain := range network.EVMChains() {
-		go streamEventsForever(ctx, chain.ID, xprov, deps, def)
+		go streamEventsForever(ctx, chain.ID, xprov, deps, def, cursors)
 	}
 
 	return nil
@@ -175,17 +211,26 @@ func streamEventsForever(
 	xprov xchain.Provider,
 	deps procDeps,
 	def Definition,
+	cursors *cursors,
 ) {
 	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second*5))
 	for {
+		from, ok, err := cursors.Get(ctx, xchain.ChainVersion{ID: chainID, ConfLevel: confLevel})
+		if !ok || err != nil {
+			log.Warn(ctx, "Failed reading cursor (will retry)", err)
+			backoff()
+
+			continue
+		}
+
 		req := xchain.EventLogsReq{
 			ChainID:       chainID,
-			Height:        0, // TODO(corver): Persist heights in DB.
-			ConfLevel:     xchain.ConfLatest,
+			Height:        from,
+			ConfLevel:     confLevel,
 			FilterAddress: def.InboxAddress,
 			FilterTopics:  allEventTopics,
 		}
-		err := xprov.StreamEventLogs(ctx, req, newEventProcessor(deps, chainID))
+		err = xprov.StreamEventLogs(ctx, req, newEventProcessor(deps, chainID))
 		if ctx.Err() != nil {
 			return
 		}

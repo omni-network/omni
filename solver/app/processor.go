@@ -1,4 +1,4 @@
-package solver
+package app
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 // newEventProcessor returns a callback provided to xchain.Provider::StreamEventLogs processing
 // all inbox contract events and driving request lifecycle.
 func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
-	return func(ctx context.Context, _ uint64, elogs []types.Log) error {
+	return func(ctx context.Context, height uint64, elogs []types.Log) error {
 		for _, elog := range elogs {
 			event, ok := eventsByTopic[elog.Topics[0]]
 			if !ok {
@@ -38,18 +38,25 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 
 			switch event.Status {
 			case statusPending:
-				reason, reject, err := deps.ShouldReject(ctx, chainID, req)
-				if err != nil {
+				if reason, reject, err := deps.ShouldReject(ctx, chainID, req); err != nil {
 					return errors.Wrap(err, "should reject")
 				} else if reject {
-					return deps.Reject(ctx, chainID, req, reason)
+					if err := deps.Reject(ctx, chainID, req, reason); err != nil {
+						return errors.Wrap(err, "reject request")
+					}
+				} else {
+					if err := deps.Accept(ctx, chainID, req); err != nil {
+						return errors.Wrap(err, "accept request")
+					}
 				}
-
-				return deps.Accept(ctx, chainID, req)
 			case statusAccepted:
-				return deps.Fulfill(ctx, chainID, req)
+				if err := deps.Fulfill(ctx, chainID, req); err != nil {
+					return errors.Wrap(err, "fulfill request")
+				}
 			case statusFulfilled:
-				return deps.Claim(ctx, chainID, req)
+				if err := deps.Claim(ctx, chainID, req); err != nil {
+					return errors.Wrap(err, "claim request")
+				}
 			case statusRejected, statusReverted, statusClaimed:
 			// Ignore for now
 			default:
@@ -57,6 +64,6 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 			}
 		}
 
-		return nil
+		return deps.SetCursor(ctx, chainID, height)
 	}
 }

@@ -1,4 +1,4 @@
-package solver
+package app
 
 import (
 	"context"
@@ -91,6 +91,9 @@ func TestEventProcessor(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
+
+			const chainID = 321
+			const height = 123
 			reqID := tutil.RandomHash()
 			actual := ignored
 
@@ -136,10 +139,14 @@ func TestEventProcessor(t *testing.T) {
 
 					return nil
 				},
+				SetCursor: func(ctx context.Context, c uint64, h uint64) error {
+					require.EqualValues(t, chainID, c)
+					require.EqualValues(t, height, h)
+
+					return nil
+				},
 			}
 
-			const chainID = 321
-			const height = 123
 			processor := newEventProcessor(deps, chainID)
 
 			err := processor(context.Background(), height, []types.Log{{Topics: []common.Hash{test.event, reqID}}})

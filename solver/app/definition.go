@@ -1,4 +1,4 @@
-package solver
+package app
 
 import (
 	"context"
@@ -11,8 +11,9 @@ import (
 
 // Definition defines the solver rules and addresses and config per network.
 type Definition struct {
-	InboxAddress  common.Address
-	OutboxAddress common.Address
+	InboxAddress       common.Address
+	OutboxAddress      common.Address
+	InboxDeployHeights map[uint64]uint64
 }
 
 //nolint:unused // False positive.

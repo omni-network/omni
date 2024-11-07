@@ -1,5 +1,5 @@
 //nolint:dupl,unused // It's okay to have similar code for different events
-package solver
+package app
 
 import (
 	"context"
@@ -19,6 +19,7 @@ type procDeps struct {
 	ParseID      func(chainID uint64, log types.Log) ([32]byte, error)
 	GetRequest   func(ctx context.Context, chainID uint64, id [32]byte) (bindings.SolveRequest, bool, error)
 	ShouldReject func(ctx context.Context, chainID uint64, req bindings.SolveRequest) (uint8, bool, error)
+	SetCursor    func(ctx context.Context, chainID uint64, height uint64) error
 
 	Accept  func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error
 	Reject  func(ctx context.Context, chainID uint64, req bindings.SolveRequest, reason uint8) error

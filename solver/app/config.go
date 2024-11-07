@@ -1,4 +1,4 @@
-package solver
+package app
 
 import (
 	"bytes"
