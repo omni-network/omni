@@ -12,7 +12,6 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -221,7 +220,8 @@ func (f *testFetcher) Fetch(
 	}
 
 	// we use count as consensus block height
-	assert.Equal(f.t, uint64(f.count), cursor, "search start height invalid")
+	// assert.Equal(f.t, uint64(f.count), cursor, "search start height invalid")
+	require.Empty(f.t, cursor, "cursor not disabled")
 
 	toReturn := f.count
 	f.count++
