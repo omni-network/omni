@@ -266,6 +266,14 @@ contract Admin is Script {
     function upgradeBridgeNative(address admin, address deployer, bytes calldata data) public {
         OmniBridgeNative b = OmniBridgeNative(Predeploys.OmniBridgeNative);
 
+        // retrieve pause states
+        bool allPaused = b.isPaused(b.KeyPauseAll());
+        bool bridgePaused = b.isPaused(b.ACTION_BRIDGE());
+        bool withdrawPaused = b.isPaused(b.ACTION_WITHDRAW());
+
+        // bridge must be paused
+        require(bridgePaused, "bridge is not paused");
+
         // read storage pre-upgrade
         address owner = b.owner();
         address omni = address(b.omni());
@@ -285,6 +293,9 @@ contract Admin is Script {
         require(address(b.omni()) == omni, "omni changed");
         require(b.l1Deposits() == l1Deposits, "l1Deposits changed");
         require(b.l1Bridge() == l1Bridge, "l1Bridge changed");
+        require(b.isPaused(b.KeyPauseAll()) == allPaused, "all paused state changed");
+        require(b.isPaused(b.ACTION_BRIDGE()) == bridgePaused, "bridge paused state changed");
+        require(b.isPaused(b.ACTION_WITHDRAW()) == withdrawPaused, "withdraw paused state changed");
 
         new BridgeNativePostUpgradeTest().run();
     }
@@ -297,6 +308,14 @@ contract Admin is Script {
      */
     function upgradeBridgeL1(address admin, address deployer, address proxy, bytes calldata data) public {
         OmniBridgeL1 b = OmniBridgeL1(proxy);
+
+        // retrieve pause states
+        bool allPaused = b.isPaused(b.KeyPauseAll());
+        bool bridgePaused = b.isPaused(b.ACTION_BRIDGE());
+        bool withdrawPaused = b.isPaused(b.ACTION_WITHDRAW());
+
+        // bridge must be paused
+        require(bridgePaused, "bridge is not paused");
 
         // read storage pre-upgrade
         address owner = b.owner();
@@ -313,6 +332,9 @@ contract Admin is Script {
         require(b.owner() == owner, "owner changed");
         require(address(b.token()) == token, "token changed");
         require(address(b.omni()) == omni, "omni changed");
+        require(b.isPaused(b.KeyPauseAll()) == allPaused, "all paused state changed");
+        require(b.isPaused(b.ACTION_BRIDGE()) == bridgePaused, "bridge paused state changed");
+        require(b.isPaused(b.ACTION_WITHDRAW()) == withdrawPaused, "withdraw paused state changed");
 
         new BridgeL1PostUpgradeTest().run(proxy);
     }
