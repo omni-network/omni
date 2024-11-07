@@ -1,4 +1,5 @@
-FROM --platform=linux/amd64 ghcr.io/foundry-rs/foundry:latest
+ARG FOUNDRY_VERSION
+FROM --platform=linux/amd64 ghcr.io/foundry-rs/foundry:${FOUNDRY_VERSION}
 
 # Copy anvilproxy binary and rename to /app
 COPY anvilproxy /app

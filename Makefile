@@ -6,12 +6,13 @@ help:  ## Display this help message
 ###############################################################################
 
 ARCH := $(shell arch | sed 's/x86_64/amd64/')
+FOUNDRY_VERSION := $(shell cat scripts/foundry_version.txt)
 
 .PHONY: build-docker
 build-docker: ensure-go-releaser ## Builds the docker images using local arch.
 	@git config --local core.abbrev 7
 	@sed "s/amd64/$(ARCH)/g" .goreleaser-snapshot.yaml > .goreleaser-local.yaml
-	@goreleaser release -f .goreleaser-local.yaml --snapshot --clean --skip=archive
+	@FOUNDRY_VERSION=$(FOUNDRY_VERSION) goreleaser release -f .goreleaser-local.yaml --snapshot --clean --skip=archive
 	@rm .goreleaser-local.yaml
 	@scripts/halovisor/build.sh
 
@@ -49,6 +50,10 @@ install-pre-commit: ## Installs the pre-commit tool as the git pre-commit hook f
 .PHONY: install-go-tools
 install-go-tools: ## Installs the go-dev-tools, like buf.
 	@go generate scripts/tools.go
+
+.PHONY: install-foundry
+install-foundry: ## Installs the foundry tool.
+	@FORCE=true ./scripts/install_foundry.sh
 
 .PHONY: lint
 lint: ## Runs linters via pre-commit.

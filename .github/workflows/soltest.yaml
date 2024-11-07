@@ -12,7 +12,7 @@ jobs:
         working-directory: contracts/core
     steps:
       - uses: actions/checkout@v4
-      - uses: foundry-rs/foundry-toolchain@v1
+      - uses: ./.github/actions/setup-foundry
       - name: Install pnpm
         run: make install-pnpm
         working-directory: contracts
@@ -34,7 +34,7 @@ jobs:
         working-directory: contracts/avs
     steps:
       - uses: actions/checkout@v4
-      - uses: foundry-rs/foundry-toolchain@v1
+      - uses: ./.github/actions/setup-foundry
       - name: Install pnpm
         run: make install-pnpm
         working-directory: contracts

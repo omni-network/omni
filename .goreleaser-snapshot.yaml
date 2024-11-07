@@ -93,6 +93,9 @@ dockers:
     dockerfile: ./e2e/anvilproxy/Dockerfile
     goos: linux
     goarch: amd64
+    build_flag_templates:
+      - "--build-arg=FOUNDRY_VERSION={{ .Env.FOUNDRY_VERSION }}"
+
     image_templates:
      - omniops/anvilproxy:{{ .ShortCommit }}
      - omniops/anvilproxy:main

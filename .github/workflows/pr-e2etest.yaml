@@ -14,11 +14,8 @@ jobs:
         with:
           go-version: 'stable'
 
-      - name: Build binaries
-        uses: goreleaser/goreleaser-action@v5
-        with:
-          version: 2
-          args: release -f .goreleaser-snapshot.yaml --snapshot --clean --skip=archive
+      - name: Go releaser snapshot
+        uses: ./.github/actions/goreleaser-snapshot
 
       - name: Build halovisor image
         run: scripts/halovisor/build.sh "${GITHUB_SHA::7}"
