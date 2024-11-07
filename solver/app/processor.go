@@ -3,25 +3,12 @@ package solver
 import (
 	"context"
 
-	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/core/types"
 )
-
-// procDeps abstracts dependencies for the event processor allowed simplified testing.
-type procDeps struct {
-	ParseID      func(log types.Log) ([32]byte, error)
-	GetRequest   func(ctx context.Context, chainID uint64, id [32]byte) (bindings.SolveRequest, bool, error)
-	ShouldReject func(ctx context.Context, chainID uint64, req bindings.SolveRequest) (string, bool, error)
-
-	Accept  func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error
-	Reject  func(ctx context.Context, chainID uint64, req bindings.SolveRequest, reason string) error
-	Fulfill func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error
-	Claim   func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error
-}
 
 // newEventProcessor returns a callback provided to xchain.Provider::StreamEventLogs processing
 // all inbox contract events and driving request lifecycle.
@@ -33,7 +20,7 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 				return errors.New("unknown event [BUG]")
 			}
 
-			reqID, err := deps.ParseID(elog)
+			reqID, err := deps.ParseID(chainID, elog)
 			if err != nil {
 				return errors.Wrap(err, "parse id")
 			}
@@ -44,6 +31,7 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 			if err != nil {
 				return errors.Wrap(err, "current status")
 			} else if event.Status != req.Status {
+				// TODO(corver): Detect unexpected on-chain status.
 				log.Info(ctx, "Ignoring mismatching old event", "actual", statusString(req.Status), "event", statusString(event.Status))
 				continue
 			}

@@ -28,21 +28,21 @@ func TestEventProcessor(t *testing.T) {
 		name         string
 		event        common.Hash
 		getStatus    uint8
-		rejectReason string
+		rejectReason uint8
 		expect       string
 	}{
 		{
 			name:         "accept",
 			event:        topicRequested,
 			getStatus:    statusPending,
-			rejectReason: "",
+			rejectReason: 0,
 			expect:       accept,
 		},
 		{
 			name:         "reject",
 			event:        topicRequested,
 			getStatus:    statusPending,
-			rejectReason: "something",
+			rejectReason: 1,
 			expect:       reject,
 		},
 		{
@@ -95,26 +95,26 @@ func TestEventProcessor(t *testing.T) {
 			actual := ignored
 
 			deps := procDeps{
-				ParseID: func(log types.Log) ([32]byte, error) {
+				ParseID: func(_ uint64, log types.Log) ([32]byte, error) {
 					return log.Topics[1], nil // Return second topic as req ID
 				},
-				GetRequest: func(ctx context.Context, chainID uint64, id [32]byte) (bindings.SolveRequest, bool, error) {
+				GetRequest: func(ctx context.Context, _ uint64, id [32]byte) (bindings.SolveRequest, bool, error) {
 					return bindings.SolveRequest{
 						Id:     id,
 						Status: test.getStatus,
 					}, true, nil
 				},
-				ShouldReject: func(ctx context.Context, chainID uint64, req bindings.SolveRequest) (string, bool, error) {
-					return test.rejectReason, test.rejectReason != "", nil
+				ShouldReject: func(ctx context.Context, _ uint64, req bindings.SolveRequest) (uint8, bool, error) {
+					return test.rejectReason, test.rejectReason != 0, nil
 				},
-				Accept: func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error {
+				Accept: func(ctx context.Context, _ uint64, req bindings.SolveRequest) error {
 					actual = accept
 					require.Equal(t, test.getStatus, req.Status)
 					require.EqualValues(t, reqID, req.Id)
 
 					return nil
 				},
-				Reject: func(ctx context.Context, chainID uint64, req bindings.SolveRequest, reason string) error {
+				Reject: func(ctx context.Context, _ uint64, req bindings.SolveRequest, reason uint8) error {
 					actual = reject
 					require.Equal(t, test.getStatus, req.Status)
 					require.Equal(t, test.rejectReason, reason)
@@ -122,14 +122,14 @@ func TestEventProcessor(t *testing.T) {
 
 					return nil
 				},
-				Fulfill: func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error {
+				Fulfill: func(ctx context.Context, _ uint64, req bindings.SolveRequest) error {
 					actual = fulfill
 					require.Equal(t, test.getStatus, req.Status)
 					require.EqualValues(t, reqID, req.Id)
 
 					return nil
 				},
-				Claim: func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error {
+				Claim: func(ctx context.Context, _ uint64, req bindings.SolveRequest) error {
 					actual = claim
 					require.Equal(t, test.getStatus, req.Status)
 					require.EqualValues(t, reqID, req.Id)

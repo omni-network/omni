@@ -82,6 +82,16 @@ var (
 
 		return resp
 	}()
+
+	//nolint:unused // False positive
+	allEventTopics = func() []common.Hash {
+		resp := make([]common.Hash, 0, len(allEvents))
+		for _, e := range allEvents {
+			resp = append(resp, e.Topic)
+		}
+
+		return resp
+	}()
 )
 
 func statusString(status uint8) string {
