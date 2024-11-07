@@ -210,8 +210,8 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.ServiceConfig) error {
 		}
 	}
 
-	// Backup files to GCP, e.g.: gs://e2e-configs/omega/UPGRADE2024-09-19T16:27:55Z/
-	gcpBucket := fmt.Sprintf("gs://e2e-configs/%s/UPGRADE%s/", p.Testnet.Name, time.Now().Format(time.RFC3339))
+	// Backup files to GCP, e.g.: e2e-configs/omega/UPGRADE2024-09-19T16:27:55Z/...
+	gcpBucket := fmt.Sprintf("e2e-configs/%s/UPGRADE%s/", p.Testnet.Name, time.Now().Format(time.RFC3339))
 
 	// Then upgrade VMs in parallel
 	eg, ctx := errgroup.WithContext(ctx)
@@ -427,7 +427,7 @@ func copyFileToVM(ctx context.Context, vmName string, localPath string, remotePa
 }
 
 func backupToGCP(ctx context.Context, localPath string, bucket string) {
-	cmd := fmt.Sprintf("gcloud storage cp %s %s", localPath, bucket)
+	cmd := fmt.Sprintf("gcloud storage cp %s gs://%s", localPath, bucket)
 	out, err := exec.CommandContext(ctx, "bash", "-c", cmd).CombinedOutput()
 	if err != nil {
 		log.Warn(ctx, "Backup to GCP failed", err,
