@@ -7,8 +7,10 @@ import (
 
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tutil"
+	"github.com/omni-network/omni/lib/xchain"
 	monitor "github.com/omni-network/omni/monitor/app"
 	"github.com/omni-network/omni/monitor/loadgen"
+	"github.com/omni-network/omni/monitor/xfeemngr"
 
 	"github.com/stretchr/testify/require"
 )
@@ -22,6 +24,10 @@ func TestDefaultConfigReference(t *testing.T) {
 	cfg := monitor.DefaultConfig()
 	cfg.LoadGen = loadgen.Config{
 		ValidatorKeysGlob: "path/*/1",
+	}
+	cfg.XFeeMngr = xfeemngr.Config{
+		RPCEndpoints:    xchain.RPCEndpoints{"test_chain": "http://localhost:8545"},
+		CoinGeckoAPIKey: "secret",
 	}
 
 	path := filepath.Join(tempDir, "monitor.toml")

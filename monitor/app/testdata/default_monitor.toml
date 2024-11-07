@@ -41,12 +41,11 @@ halo-url = ""
 [xfeemngr]
 
 # The CoinGecko API key to use for fetching token prices.
-coingecko-apikey = ""
+coingecko-apikey = "secret"
 
 # EVM RPC endpoints to use in xfeemngr. This may include out-of-network rpcs.
 [xfeemngr.rpc-endpoints]
-# ethereum = "http://my-ethreum-node:8545"
-# optimism = "https://my-op-node.com"
+test_chain = "http://localhost:8545"
 
 
 
