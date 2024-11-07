@@ -25,5 +25,5 @@ func bindLoadGenFlags(flags *pflag.FlagSet, cfg *loadgen.Config) {
 
 func bindXFeeMngrFlags(flags *pflag.FlagSet, cfg *xfeemngr.Config) {
 	flags.StringToStringVar((*map[string]string)(&cfg.RPCEndpoints), "xfeemngr-rpc-endpoints", cfg.RPCEndpoints, "Cross-chain EVM RPC endpoints. e.g. \"ethereum=http://geth:8545,optimism=https://optimism.io\"")
-	flags.StringVar(&cfg.CoinGeckoAPIKey, "coingecko-apikey", cfg.CoinGeckoAPIKey, "The CoinGecko API key to use for fetching token prices")
+	flags.StringVar(&cfg.CoinGeckoAPIKey, "xfeemngr-coingecko-apikey", cfg.CoinGeckoAPIKey, "The CoinGecko API key to use for fetching token prices")
 }
