@@ -94,6 +94,21 @@ func (w *Worker) runOnce(ctx context.Context) error {
 		return err
 	}
 
+	// TODO(corver): Remove this bootstrap workaround.
+	for chainVer, offset := range attestOffsets {
+		bootstrapOffset, ok := getBootstrapOffset(w.network, w.destChain, chainVer)
+		if !ok {
+			continue
+		} else if bootstrapOffset > offset {
+			log.Info(ctx, "Worker using bootstrap attest offset",
+				"chain_version", w.network.ChainVersionName(chainVer),
+				"prev", offset,
+				"bootstrap", bootstrapOffset,
+			)
+			attestOffsets[chainVer] = bootstrapOffset
+		}
+	}
+
 	msgFilter, err := newMsgOffsetFilter(cursors)
 	if err != nil {
 		return err
