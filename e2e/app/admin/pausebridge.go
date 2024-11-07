@@ -23,7 +23,7 @@ func pauseBridge(ctx context.Context, s shared, c chain, addr common.Address, ac
 		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}
 
-	log.Info(ctx, "Bridge paused ✅", "chain", c.Name, "action", actionLabel, "addr", c.PortalAddress, "out", out)
+	log.Info(ctx, "Bridge paused ✅", "chain", c.Name, "action", actionLabel, "addr", addr, "out", out)
 
 	return nil
 }
@@ -42,7 +42,7 @@ func unpauseBridge(ctx context.Context, s shared, c chain, addr common.Address, 
 		return errors.Wrap(err, "run forge", "out", out, "chain", c.Name)
 	}
 
-	log.Info(ctx, "Bridge unpaused ✅", "chain", c.Name, "action", actionLabel, "addr", c.PortalAddress, "out", out)
+	log.Info(ctx, "Bridge unpaused ✅", "chain", c.Name, "action", actionLabel, "addr", addr, "out", out)
 
 	return nil
 }
