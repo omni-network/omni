@@ -4,11 +4,11 @@ pragma solidity =0.8.24;
 import { OwnableRoles } from "solady/src/auth/OwnableRoles.sol";
 import { ReentrancyGuard } from "solady/src/utils/ReentrancyGuard.sol";
 import { Initializable } from "solady/src/utils/Initializable.sol";
-import { XAppBase } from "../pkg/XAppBase.sol";
+import { XAppBase } from "core/src/pkg/XAppBase.sol";
 
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
-import { ConfLevel } from "../libraries/ConfLevel.sol";
-import { TypeMax } from "../libraries/TypeMax.sol";
+import { ConfLevel } from "core/src/libraries/ConfLevel.sol";
+import { TypeMax } from "core/src/libraries/TypeMax.sol";
 import { Solve } from "./Solve.sol";
 
 import { ISolveInbox } from "./interfaces/ISolveInbox.sol";
