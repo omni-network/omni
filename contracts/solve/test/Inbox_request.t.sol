@@ -2,13 +2,13 @@
 pragma solidity =0.8.24;
 
 import { Ownable } from "solady/src/auth/Ownable.sol";
-import { SolveInbox } from "src/solve/SolveInbox.sol";
-import { Solve } from "src/solve/Solve.sol";
+import { SolveInbox } from "src/SolveInbox.sol";
+import { Solve } from "src/Solve.sol";
 import { InboxBase } from "./InboxBase.sol";
 
 /**
  * @title SolveInbox_request_Test
- * @notice Test suite for solver SolveInbox.request(...)
+ * @notice Test suite for SolveInbox.request(...)
  * @dev TODO: add fuzz / invariant tests
  */
 contract SolveInbox_request_Test is InboxBase {
