@@ -6,6 +6,11 @@ import "cosmos/orm/v1/orm.proto";
 
 option go_package = "relayer/app";
 
+enum Status {
+  Unconfirmed  = 0;
+  Confirmed    = 1;
+}
+
 message Cursor {
   option (cosmos.orm.v1.table) = {
     id: 1;
