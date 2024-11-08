@@ -26,6 +26,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// empty triggers an empty propose/commit.
+const empty uint64 = 0
+
 func TestAbort(t *testing.T) {
 	t.Parallel()
 
@@ -334,6 +337,20 @@ func TestVoter(t *testing.T) {
 	v.Available(t, 1, 1, false)
 	v.Available(t, 1, 2, true)
 
+	// Propose 2 again
+	v.Propose(t, 1, 2)
+	v.Available(t, 1, 2, false)
+	// Empty propose (resets 2)
+	v.Propose(t, 1, empty)
+	v.Available(t, 1, 2, true)
+
+	// Propose 2 again
+	v.Propose(t, 1, 2)
+	v.Available(t, 1, 2, false)
+	// Empty commit (resets 2)
+	v.Commit(t, 1, empty)
+	v.Available(t, 1, 2, true)
+
 	// Reload
 	v = reloadVoter(t, 4, 2)
 
@@ -421,6 +438,13 @@ func (w *wrappedVoter) Add(t *testing.T, chainID, offset uint64) {
 func (w *wrappedVoter) Propose(t *testing.T, chainID, offset uint64) {
 	t.Helper()
 
+	if offset == empty {
+		err := w.v.SetProposed(nil)
+		require.NoError(t, err)
+
+		return
+	}
+
 	header := &types.AttestHeader{
 		SourceChainId:    chainID,
 		ConsensusChainId: w.consensusChainID,
@@ -434,6 +458,13 @@ func (w *wrappedVoter) Propose(t *testing.T, chainID, offset uint64) {
 
 func (w *wrappedVoter) Commit(t *testing.T, chainID, offset uint64) {
 	t.Helper()
+
+	if offset == empty {
+		err := w.v.SetProposed(nil)
+		require.NoError(t, err)
+
+		return
+	}
 
 	header := &types.AttestHeader{
 		SourceChainId:    chainID,

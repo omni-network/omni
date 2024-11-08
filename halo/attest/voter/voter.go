@@ -438,11 +438,6 @@ func (v *Voter) GetAvailable() []*types.Vote {
 // SetProposed sets the votes as proposed.
 func (v *Voter) SetProposed(headers []*types.AttestHeader) error {
 	proposedPerBlock.Observe(float64(len(headers)))
-
-	if len(headers) == 0 {
-		return nil
-	}
-
 	proposed := headerMap(headers)
 
 	v.mu.Lock()
@@ -470,11 +465,6 @@ func (v *Voter) SetProposed(headers []*types.AttestHeader) error {
 // SetCommitted sets the votes as committed. Persisting the result to disk.
 func (v *Voter) SetCommitted(headers []*types.AttestHeader) error {
 	committedPerBlock.Observe(float64(len(headers)))
-
-	if len(headers) == 0 {
-		return nil
-	}
-
 	committed := headerMap(headers)
 
 	v.mu.Lock()
