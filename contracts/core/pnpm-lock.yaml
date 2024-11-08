@@ -26,6 +26,9 @@ importers:
       eigenlayer-middleware:
         specifier: github:Layr-Labs/eigenlayer-middleware
         version: https://codeload.github.com/Layr-Labs/eigenlayer-middleware/tar.gz/7d49b5181b09198ed275783453aa082bb3766990
+      elliptic-curve-solidity:
+        specifier: github:witnet/elliptic-curve-solidity
+        version: https://codeload.github.com/witnet/elliptic-curve-solidity/tar.gz/347547890840fd501809dfe0b855206407136ec0
       solady:
         specifier: ^0.0.261
         version: 0.0.261
@@ -556,6 +559,10 @@ packages:
   eigenlayer-middleware@https://codeload.github.com/Layr-Labs/eigenlayer-middleware/tar.gz/7d49b5181b09198ed275783453aa082bb3766990:
     resolution: {tarball: https://codeload.github.com/Layr-Labs/eigenlayer-middleware/tar.gz/7d49b5181b09198ed275783453aa082bb3766990}
     version: 0.0.0
+
+  elliptic-curve-solidity@https://codeload.github.com/witnet/elliptic-curve-solidity/tar.gz/347547890840fd501809dfe0b855206407136ec0:
+    resolution: {tarball: https://codeload.github.com/witnet/elliptic-curve-solidity/tar.gz/347547890840fd501809dfe0b855206407136ec0}
+    version: 0.2.5
 
   elliptic@6.5.4:
     resolution: {integrity: sha512-iLhC6ULemrljPZb+QutR5TQGB+pdW6KGD5RSegS+8sorOZT+rdQFbsQFJgvN3eRqNALqJer4oQ16YvJHlU8hzQ==}
@@ -2023,6 +2030,8 @@ snapshots:
       - hardhat
 
   eigenlayer-middleware@https://codeload.github.com/Layr-Labs/eigenlayer-middleware/tar.gz/7d49b5181b09198ed275783453aa082bb3766990: {}
+
+  elliptic-curve-solidity@https://codeload.github.com/witnet/elliptic-curve-solidity/tar.gz/347547890840fd501809dfe0b855206407136ec0: {}
 
   elliptic@6.5.4:
     dependencies:

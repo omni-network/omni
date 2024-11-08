@@ -27,7 +27,7 @@ contract Staking_Test is Test {
         address validator = makeAddr("validator");
         address[] memory validators = new address[](1);
         validators[0] = validator;
-        bytes memory pubkey = abi.encodePacked(hex"03", keccak256("pubkey"));
+        bytes memory pubkey = abi.encodePacked(hex"03440d290e4394cd9832cc7025769be18ab7975e34e4514c31c07da3d370fe0b05");
         vm.deal(validator, staking.MinDeposit());
 
         // allowlist is disabled
@@ -61,6 +61,18 @@ contract Staking_Test is Test {
         vm.expectRevert("Staking: invalid pubkey length");
         vm.prank(validator);
         staking.createValidator{ value: deposit }(pubkey32);
+
+        // requires valid pubkey prefix
+        bytes memory invalidPubkey = abi.encodePacked(hex"01", pubkey32);
+        vm.expectRevert("Staking: invalid pubkey prefix");
+        vm.prank(validator);
+        staking.createValidator{ value: deposit }(invalidPubkey);
+
+        // requires a valid pubkey on the secp256k1 curve
+        invalidPubkey = abi.encodePacked(hex"03", pubkey32);
+        vm.expectRevert("Staking: invalid pubkey");
+        vm.prank(validator);
+        staking.createValidator{ value: deposit }(invalidPubkey);
 
         // succeeds with valid deposit and pubkey
         vm.expectEmit();
