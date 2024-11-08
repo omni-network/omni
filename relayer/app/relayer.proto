@@ -11,7 +11,6 @@ message Cursor {
     id: 1;
     primary_key: { fields: "src_chain_id,conf_level,dst_chain_id,attest_offset" }
     index: { id: 1, fields: "confirmed" }
-    index: { id: 2, fields: "confirmed,empty" }
   };
 
   uint64 src_chain_id   = 1; // Chain ID as per https://chainlist.org
