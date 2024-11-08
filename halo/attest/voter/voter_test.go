@@ -553,7 +553,7 @@ func (stubProvider) GetSubmittedCursor(context.Context, xchain.StreamID) (xchain
 	panic("unexpected")
 }
 
-func (stubProvider) GetEmittedCursor(context.Context, xchain.EmitRef, xchain.StreamID) (xchain.EmitCursor, bool, error) {
+func (stubProvider) GetEmittedCursor(context.Context, xchain.Ref, xchain.StreamID) (xchain.EmitCursor, bool, error) {
 	panic("unexpected")
 }
 

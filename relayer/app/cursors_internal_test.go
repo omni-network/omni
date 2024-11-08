@@ -97,7 +97,7 @@ var (
 type mockXChainClient struct {
 	GetBlockFn           func(context.Context, xchain.ProviderRequest) (xchain.Block, bool, error)
 	GetSubmittedCursorFn func(context.Context, xchain.StreamID) (xchain.SubmitCursor, bool, error)
-	GetEmittedCursorFn   func(context.Context, xchain.EmitRef, xchain.StreamID) (xchain.EmitCursor, bool, error)
+	GetEmittedCursorFn   func(context.Context, xchain.Ref, xchain.StreamID) (xchain.EmitCursor, bool, error)
 }
 
 func (*mockXChainClient) GetSubmission(context.Context, uint64, common.Hash) (xchain.Submission, error) {
@@ -129,7 +129,7 @@ func (m *mockXChainClient) GetSubmittedCursor(ctx context.Context, stream xchain
 	return m.GetSubmittedCursorFn(ctx, stream)
 }
 
-func (m *mockXChainClient) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, stream xchain.StreamID,
+func (m *mockXChainClient) GetEmittedCursor(ctx context.Context, ref xchain.Ref, stream xchain.StreamID,
 ) (xchain.EmitCursor, bool, error) {
 	return m.GetEmittedCursorFn(ctx, ref, stream)
 }

@@ -80,7 +80,7 @@ type Provider interface {
 	//
 	// Note that the AttestOffset field is not populated for emit cursors, since it isn't stored on-chain
 	// but tracked off-chain.
-	GetEmittedCursor(ctx context.Context, ref EmitRef, stream StreamID) (EmitCursor, bool, error)
+	GetEmittedCursor(ctx context.Context, ref Ref, stream StreamID) (EmitCursor, bool, error)
 
 	// ChainVersionHeight returns the height for the provided chain version.
 	ChainVersionHeight(ctx context.Context, chainVer ChainVersion) (uint64, error)
@@ -89,33 +89,33 @@ type Provider interface {
 	GetSubmission(ctx context.Context, chainID uint64, txHash common.Hash) (Submission, error)
 }
 
-// EmitRef specifies which block to query for emit cursors.
-type EmitRef struct {
+// Ref specifies which block to query for cursors.
+type Ref struct {
 	// Height specifies an absolute height to query; if non-nil.
 	Height *uint64
 	// ConfLevel specifies a relative-to-head block to query; if non-nil.
 	ConfLevel *ConfLevel
 }
 
-func (r EmitRef) Valid() bool {
+func (r Ref) Valid() bool {
 	return r.Height != nil || r.ConfLevel != nil
 }
 
-// ConfEmitRef returns a EmitRef with the provided confirmation level.
-func ConfEmitRef(level ConfLevel) EmitRef {
-	return EmitRef{
+// ConfRef returns a Ref with the provided confirmation level.
+func ConfRef(level ConfLevel) Ref {
+	return Ref{
 		ConfLevel: &level,
 	}
 }
 
-// HeightEmitRef returns a EmitRef with the provided confirmation level.
-func HeightEmitRef(height uint64) EmitRef {
-	return EmitRef{
+// HeightRef returns a Ref with the provided confirmation level.
+func HeightRef(height uint64) Ref {
+	return Ref{
 		Height: &height,
 	}
 }
 
-// LatestEmitRef returns a EmitRef with the latest confirmation level.
-func LatestEmitRef() EmitRef {
-	return ConfEmitRef(ConfLatest)
+// LatestRef returns a Ref with the latest confirmation level.
+func LatestRef() Ref {
+	return ConfRef(ConfLatest)
 }

@@ -59,7 +59,7 @@ func (p *Provider) ChainVersionHeight(ctx context.Context, chainVer xchain.Chain
 //
 // Note that the AttestOffset field is not populated for emit cursors, since it isn't stored on-chain
 // but tracked off-chain.
-func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, stream xchain.StreamID,
+func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.Ref, stream xchain.StreamID,
 ) (xchain.EmitCursor, bool, error) {
 	if !ref.Valid() {
 		return xchain.EmitCursor{}, false, errors.New("invalid emit ref")
@@ -443,7 +443,7 @@ func parseXReceipt(filterer *bindings.OmniPortalFilterer, event types.Log, chain
 	}, nil
 }
 
-func getConsXBlock(ctx context.Context, ref xchain.EmitRef, cprov cchain.Provider) (xchain.Block, error) {
+func getConsXBlock(ctx context.Context, ref xchain.Ref, cprov cchain.Provider) (xchain.Block, error) {
 	var height uint64
 	var latest bool
 	if ref.Height != nil {
