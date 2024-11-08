@@ -6,20 +6,18 @@ import "cosmos/orm/v1/orm.proto";
 
 option go_package = "relayer/app";
 
-enum Status {
-  Unconfirmed  = 0;
-  Confirmed    = 1;
-}
-
 message Cursor {
   option (cosmos.orm.v1.table) = {
     id: 1;
-    primary_key: { fields: "chain_id,conf_level,status" }
-    index: { id: 1, fields: "status" }
+    primary_key: { fields: "src_chain_id,conf_level,dst_chain_id,confirmed" }
+    index: { id: 1, fields: "confirmed" }
+    index: { id: 2, fields: "confirmed,empty" }
   };
 
-  uint64 chain_id      = 1; // Chain ID as per https://chainlist.org
-  uint32 conf_level    = 2; // Confirmation level of the cross-chain block
-  uint64 attest_offset = 3; // Offset of the cross-chain block
-  uint32 status        = 4; // Status of the cursor (unconfirmed = 0, confirmed = 1)
+  uint64 src_chain_id   = 1; // Chain ID as per https://chainlist.org
+  uint64 dst_chain_id   = 2; // Chain ID as per https://chainlist.org
+  uint32 conf_level     = 3; // Confirmation level of the cross-chain block
+  uint64 attest_offset  = 4; // Offset of the cross-chain block
+  bool confirmed        = 5; // Is the cursor confirmed
+  bool empty            = 6; // Is the cursor for an empty attestation
 }
