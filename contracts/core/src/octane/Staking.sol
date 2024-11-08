@@ -2,7 +2,7 @@
 pragma solidity =0.8.24;
 
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import { EllipticCurve } from "elliptic-curve-solidity/contracts/EllipticCurve.sol";
+import { Secp256k1 } from "../libraries/Secp256k1.sol";
 
 /**
  * @title Staking
@@ -54,21 +54,6 @@ contract Staking is OwnableUpgradeable {
     event AllowlistDisabled();
 
     /**
-     * @notice Curve parameter a
-     */
-    uint256 public constant AA = 0;
-
-    /**
-     * @notice Curve parameter b
-     */
-    uint256 public constant BB = 7;
-
-    /**
-     * @notice Prime field modulus
-     */
-    uint256 public constant PP = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F;
-
-    /**
      * @notice The minimum deposit required to create a validator
      */
     uint256 public constant MinDeposit = 100 ether;
@@ -105,7 +90,7 @@ contract Staking is OwnableUpgradeable {
     function createValidator(bytes calldata pubkey) external payable {
         require(!isAllowlistEnabled || isAllowedValidator[msg.sender], "Staking: not allowed");
         require(msg.value >= MinDeposit, "Staking: insufficient deposit");
-        require(_validatePubkey(pubkey), "Staking: invalid pubkey");
+        require(Secp256k1.validatePubkey(pubkey), "Staking: invalid pubkey");
 
         emit CreateValidator(msg.sender, pubkey, msg.value);
     }
@@ -164,32 +149,5 @@ contract Staking is OwnableUpgradeable {
             isAllowedValidator[validators[i]] = false;
             emit ValidatorDisallowed(validators[i]);
         }
-    }
-
-    //////////////////////////////////////////////////////////////////////////////
-    //                                 Internal                                 //
-    //////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * @notice Validate a compressed secp256k1 public key
-     * @param compressedPubKey The compressed public key to validate
-     * @return True if the public key is valid, false otherwise
-     */
-    function _validatePubkey(bytes calldata compressedPubKey) internal pure returns (bool) {
-        require(compressedPubKey.length == 33, "Staking: invalid pubkey length");
-        require(compressedPubKey[0] == 0x02 || compressedPubKey[0] == 0x03, "Staking: invalid pubkey prefix");
-
-        // Extract x coordinate
-        uint256 x;
-        assembly {
-            let ptr := add(compressedPubKey.offset, 1)
-            x := calldataload(ptr)
-        }
-
-        // Derive y coordinate
-        uint256 y = EllipticCurve.deriveY(uint8(compressedPubKey[0]), x, AA, BB, PP);
-
-        // Verify the derived point lies on the curve
-        return EllipticCurve.isOnCurve(x, y, AA, BB, PP);
     }
 }
