@@ -1,0 +1,14 @@
+name: Setup Foundry
+description: Install the foundry toolchain
+runs:
+  using: composite
+  steps:
+    - name: Get foundry version
+      id: foundry_version
+      shell: bash
+      run: echo "version=$(cat scripts/foundry_version.txt)" >> $GITHUB_OUTPUT
+
+    - name: Install toolchain
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: ${{ steps.foundry_version.outputs.version }}

@@ -23,18 +23,15 @@ jobs:
       run: docker --version
 
     - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
+      uses: ./.github/actions/setup-foundry
 
     - name: Install Go
       uses: actions/setup-go@v5
       with:
         go-version: 'stable'
 
-    - name: Build binaries
-      uses: goreleaser/goreleaser-action@v5
-      with:
-        version: 2
-        args: release -f .goreleaser-snapshot.yaml --snapshot --clean --skip=archive
+    - name: Go releaser snapshot
+      uses: ./.github/actions/goreleaser-snapshot
 
     - name: Build halovisor image
       run: scripts/halovisor/build.sh "${GITHUB_SHA::7}"
@@ -82,7 +79,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
+        uses: ./.github/actions/setup-foundry
 
       - name: Install Go
         uses: actions/setup-go@v5

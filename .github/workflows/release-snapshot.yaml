@@ -25,13 +25,8 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build docker images
-        uses: goreleaser/goreleaser-action@v5
-        with:
-          version: 2
-          args: release -f .goreleaser-snapshot.yaml --snapshot --clean --skip=archive
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Go releaser snapshot
+        uses: ./.github/actions/goreleaser-snapshot
 
       - name: Calculate git short sha
         id: git_ref

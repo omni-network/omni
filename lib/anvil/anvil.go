@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/scripts"
 
 	_ "embed"
 )
@@ -35,7 +36,7 @@ func Start(ctx context.Context, dir string, chainID uint64) (ethclient.Client, s
 		return nil, "", nil, errors.Wrap(err, "get available port")
 	}
 
-	if err := writeComposeFile(dir, chainID, port); err != nil {
+	if err := writeComposeFile(dir, chainID, port, scripts.FoundryVersion()); err != nil {
 		return nil, "", nil, errors.Wrap(err, "write compose file")
 	}
 
@@ -132,7 +133,7 @@ func writeAnvilState(dir string) error {
 //go:embed compose.yaml.tmpl
 var composeTpl []byte
 
-func writeComposeFile(dir string, chainID uint64, port string) error {
+func writeComposeFile(dir string, chainID uint64, port, foundryVer string) error {
 	tpl, err := template.New("").Parse(string(composeTpl))
 	if err != nil {
 		return errors.Wrap(err, "parse compose template")
@@ -142,9 +143,11 @@ func writeComposeFile(dir string, chainID uint64, port string) error {
 	err = tpl.Execute(&buf, struct {
 		ChainID uint64
 		Port    string
+		Version string
 	}{
 		ChainID: chainID,
 		Port:    port,
+		Version: foundryVer,
 	})
 	if err != nil {
 		return errors.Wrap(err, "execute compose template")
