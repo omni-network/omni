@@ -72,7 +72,7 @@ type Provider interface {
 	// or false if not available, or an error.
 	// Calls the destination chain portal InXStreamOffset method.
 	// Note this is only supported for EVM chains, no the consensus chain.
-	GetSubmittedCursor(ctx context.Context, stream StreamID) (SubmitCursor, bool, error)
+	GetSubmittedCursor(ctx context.Context, ref Ref, stream StreamID) (SubmitCursor, bool, error)
 
 	// GetEmittedCursor returns the emitted cursor for the provided stream,
 	// or false if not available, or an error.
@@ -115,7 +115,9 @@ func HeightRef(height uint64) Ref {
 	}
 }
 
-// LatestRef returns a Ref with the latest confirmation level.
-func LatestRef() Ref {
-	return ConfRef(ConfLatest)
-}
+var (
+	// LatestRef references the latest confirmation level.
+	LatestRef = ConfRef(ConfLatest)
+	// FinalizedRef references the latest confirmation level.
+	FinalizedRef = ConfRef(ConfFinalized)
+)

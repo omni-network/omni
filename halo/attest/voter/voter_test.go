@@ -549,7 +549,7 @@ func (stubProvider) GetBlock(context.Context, xchain.ProviderRequest) (xchain.Bl
 	panic("unexpected")
 }
 
-func (stubProvider) GetSubmittedCursor(context.Context, xchain.StreamID) (xchain.SubmitCursor, bool, error) {
+func (stubProvider) GetSubmittedCursor(context.Context, xchain.Ref, xchain.StreamID) (xchain.SubmitCursor, bool, error) {
 	panic("unexpected")
 }
 

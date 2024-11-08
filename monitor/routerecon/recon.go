@@ -64,7 +64,7 @@ func reconStreamOnce(
 	ethCls map[uint64]ethclient.Client,
 	stream xchain.StreamID,
 ) error {
-	cursor, ok, err := xprov.GetSubmittedCursor(ctx, stream)
+	cursor, ok, err := xprov.GetSubmittedCursor(ctx, xchain.LatestRef, stream)
 	if err != nil {
 		return err
 	} else if !ok {

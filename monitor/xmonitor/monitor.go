@@ -96,7 +96,7 @@ func monitorConsOffsetOnce(ctx context.Context, network netconf.Network, xprovid
 		streamName := network.StreamName(stream)
 		emitMsgOffset.WithLabelValues(streamName).Set(float64(emitted.MsgOffset))
 
-		submitted, ok, err := xprovider.GetSubmittedCursor(ctx, stream)
+		submitted, ok, err := xprovider.GetSubmittedCursor(ctx, xchain.LatestRef, stream)
 		if err != nil {
 			return errors.Wrap(err, "get submit cursor", "stream", network.StreamName(stream))
 		} else if !ok {
@@ -273,7 +273,7 @@ func monitorOffsetsOnce(
 			continue
 		}
 
-		submitted, _, err := xprovider.GetSubmittedCursor(ctx, stream)
+		submitted, _, err := xprovider.GetSubmittedCursor(ctx, xchain.LatestRef, stream)
 		if err != nil {
 			lastErr = errors.Wrap(err, "get submit cursor", "stream", network.StreamName(stream), "height", height)
 			continue

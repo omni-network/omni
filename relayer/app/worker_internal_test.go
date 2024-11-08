@@ -60,7 +60,7 @@ func TestWorker_Run(t *testing.T) {
 				},
 			}, true, nil
 		},
-		GetSubmittedCursorFn: func(_ context.Context, stream xchain.StreamID) (xchain.SubmitCursor, bool, error) {
+		GetSubmittedCursorFn: func(_ context.Context, ref xchain.Ref, stream xchain.StreamID) (xchain.SubmitCursor, bool, error) {
 			resp, ok := cursors[stream]
 			return resp, ok, nil
 		},
