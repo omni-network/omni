@@ -7,7 +7,7 @@ require (
 	cosmossdk.io/core v0.11.2 // Pegged to v0.11.0 for cosmos-sdk v0.50.3
 	cosmossdk.io/depinject v1.0.0
 	cosmossdk.io/errors v1.0.1
-	cosmossdk.io/log v1.4.1
+	cosmossdk.io/log v1.5.0
 	cosmossdk.io/math v1.3.0
 	cosmossdk.io/orm v1.0.0-beta.3
 	cosmossdk.io/store v1.1.1
@@ -299,6 +299,10 @@ require (
 	buf.build/go/protoyaml v0.2.0 // indirect
 	buf.build/go/spdx v0.2.0 // indirect
 	github.com/Microsoft/hcsshim v0.12.7 // indirect
+	github.com/bytedance/sonic v1.12.3 // indirect
+	github.com/bytedance/sonic/loader v0.2.0 // indirect
+	github.com/cloudwego/base64x v0.1.4 // indirect
+	github.com/cloudwego/iasm v0.2.0 // indirect
 	github.com/containerd/cgroups/v3 v3.0.3 // indirect
 	github.com/containerd/containerd v1.7.23 // indirect
 	github.com/containerd/continuity v0.4.3 // indirect
@@ -311,6 +315,7 @@ require (
 	github.com/garslo/gogen v0.0.0-20170306192744-1d203ffc1f61 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/google/flatbuffers v1.12.1 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.6 // indirect
 	github.com/moby/locker v1.0.1 // indirect
 	github.com/moby/patternmatcher v0.6.0 // indirect
 	github.com/moby/sys/mount v0.3.4 // indirect
@@ -325,11 +330,13 @@ require (
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/segmentio/encoding v0.4.0 // indirect
 	github.com/tetratelabs/wazero v1.8.1 // indirect
+	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	go.lsp.dev/jsonrpc2 v0.10.0 // indirect
 	go.lsp.dev/pkg v0.0.0-20210717090340-384b27a52fb2 // indirect
 	go.lsp.dev/protocol v0.12.0 // indirect
 	go.lsp.dev/uri v0.3.0 // indirect
 	go.uber.org/zap/exp v0.3.0 // indirect
+	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
 	pluginrpc.com/pluginrpc v0.5.0 // indirect
 )
 
