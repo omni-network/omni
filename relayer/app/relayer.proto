@@ -9,7 +9,7 @@ option go_package = "relayer/app";
 message Cursor {
   option (cosmos.orm.v1.table) = {
     id: 1;
-    primary_key: { fields: "src_chain_id,conf_level,dst_chain_id,confirmed" }
+    primary_key: { fields: "src_chain_id,conf_level,dst_chain_id,attest_offset" }
     index: { id: 1, fields: "confirmed" }
     index: { id: 2, fields: "confirmed,empty" }
   };
