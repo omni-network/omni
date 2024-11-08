@@ -1,4 +1,4 @@
-package relayer_test
+package app_test
 
 import (
 	"os"

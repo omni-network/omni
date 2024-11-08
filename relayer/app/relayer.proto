@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package relayer.app;
+
+import "cosmos/orm/v1/orm.proto";
+
+option go_package = "relayer/app";
+
+message Cursor {
+  option (cosmos.orm.v1.table) = {
+    id: 1;
+    primary_key: { fields: "chain_id,conf_level,status" }
+    index: { id: 1, fields: "status" }
+  };
+
+  uint64 chain_id      = 1; // Chain ID as per https://chainlist.org
+  uint32 conf_level    = 2; // Confirmation level of the cross-chain block
+  uint64 attest_offset = 3; // Offset of the cross-chain block
+  uint32 status        = 4; // Status of the cursor (unconfirmed = 0, confirmed = 1)
+}
