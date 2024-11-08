@@ -25,7 +25,7 @@
   "Address": "0.0.0.0:9090"
  },
  "Comet": {
-  "Version": "0.38.12",
+  "Version": "0.38.15",
   "RootDir": "foo",
   "ProxyApp": "",
   "Moniker": "testmoniker",

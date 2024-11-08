@@ -28,7 +28,7 @@
   "Address": "grpc/toml"
  },
  "Comet": {
-  "Version": "0.38.12",
+  "Version": "0.38.15",
   "RootDir": "testinput/input1",
   "ProxyApp": "",
   "Moniker": "config.toml",
