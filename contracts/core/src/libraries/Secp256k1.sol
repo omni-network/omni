@@ -78,7 +78,7 @@ library Secp256k1 {
      * @param y The y coordinate of the public key
      * @return The Ethereum address corresponding to the public key
      */
-    function publicKeyToAddress(bytes32 x, bytes32 y) internal pure returns (address) {
+    function pubkeyToAddress(bytes32 x, bytes32 y) internal pure returns (address) {
         bytes memory pubKey = new bytes(64);
         assembly {
             // Store x and y coordinates

@@ -112,7 +112,7 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
      * @param y The y coordinate of the validators consensus public key
      * @return Digest hash to be signed by the validators public key
      */
-    function getValidatorDigest(bytes32 x, bytes32 y) external view returns (bytes32) {
+    function getValidatorPubkeyDigest(bytes32 x, bytes32 y) external view returns (bytes32) {
         return _hashTypedDataV4(keccak256(abi.encode(_EIP712_TYPEHASH, x, y)));
     }
 
@@ -202,7 +202,7 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
     function _verifySignature(bytes32 x, bytes32 y, bytes calldata signature) internal view returns (bool) {
         bytes32 digest = _hashTypedDataV4(keccak256(abi.encode(_EIP712_TYPEHASH, x, y)));
         (address recovered,,) = ECDSA.tryRecover(digest, signature);
-        address pubKeyAddress = Secp256k1.publicKeyToAddress(x, y);
+        address pubKeyAddress = Secp256k1.pubkeyToAddress(x, y);
         return recovered == pubKeyAddress;
     }
 }
