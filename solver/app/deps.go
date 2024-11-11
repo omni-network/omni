@@ -90,7 +90,7 @@ func newFulfiller(
 		// TODO(corver): Convert req.Deposits into TokenPreReqs
 		var prereqs []bindings.SolveTokenPrereq
 
-		tx, err := outbox.Fulfill(txOpts, req.Id, chainID, solverAddr, req.Call, prereqs)
+		tx, err := outbox.Fulfill(txOpts, req.Id, chainID, req.Call, prereqs)
 		if err != nil {
 			return errors.Wrap(err, "fulfill request")
 		} else if _, err := backend.WaitMined(ctx, tx); err != nil {

@@ -9,12 +9,11 @@ import { InboxBase } from "./InboxBase.sol";
 /**
  * @title SolveInbox_cancel_Test
  * @notice Test suite for SolveInbox.cancel(...)
- * @dev TODO: add fuzz / invariant tests
  */
 contract SolveInbox_cancel_Test is InboxBase {
     function test_cancel_reverts() public {
         // cannot cancel non-existent request
-        vm.expectRevert(SolveInbox.RequestStateInvalid.selector);
+        vm.expectRevert(SolveInbox.NotPendingOrRejected.selector);
         inbox.cancel(bytes32(0));
 
         // create request to be cancelled
@@ -27,7 +26,7 @@ contract SolveInbox_cancel_Test is InboxBase {
         // cannot cancel cancelled request
         vm.startPrank(user);
         inbox.cancel(id);
-        vm.expectRevert(SolveInbox.RequestStateInvalid.selector);
+        vm.expectRevert(SolveInbox.NotPendingOrRejected.selector);
         inbox.cancel(id);
         vm.stopPrank();
 
@@ -40,7 +39,7 @@ contract SolveInbox_cancel_Test is InboxBase {
         inbox.reject(id, Solve.RejectReason.None);
         vm.startPrank(user);
         inbox.cancel(id);
-        vm.expectRevert(SolveInbox.RequestStateInvalid.selector);
+        vm.expectRevert(SolveInbox.NotPendingOrRejected.selector);
         inbox.cancel(id);
         vm.stopPrank();
 
@@ -55,7 +54,7 @@ contract SolveInbox_cancel_Test is InboxBase {
         // cannot cancel accepted request
         vm.prank(solver);
         inbox.accept(id);
-        vm.expectRevert(SolveInbox.RequestStateInvalid.selector);
+        vm.expectRevert(SolveInbox.NotPendingOrRejected.selector);
         inbox.cancel(id);
 
         // TODO: complete logic to advance through additional states and then test those

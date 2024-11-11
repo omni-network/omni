@@ -9,7 +9,6 @@ import { InboxBase } from "./InboxBase.sol";
 /**
  * @title SolveInbox_accept_Test
  * @notice Test suite for SolveInbox.accept(...)
- * @dev TODO: add fuzz / invariant tests
  */
 contract SolveInbox_accept_Test is InboxBase {
     /// @dev Test all revert conditions for SolveInbox.accept(...)
@@ -20,7 +19,7 @@ contract SolveInbox_accept_Test is InboxBase {
 
         // needs open request
         vm.prank(solver);
-        vm.expectRevert(SolveInbox.RequestStateInvalid.selector);
+        vm.expectRevert(SolveInbox.NotPending.selector);
         inbox.accept(bytes32(0));
 
         // create request to be cancelled
@@ -34,7 +33,7 @@ contract SolveInbox_accept_Test is InboxBase {
         vm.prank(user);
         inbox.cancel(id);
         vm.prank(solver);
-        vm.expectRevert(SolveInbox.RequestStateInvalid.selector);
+        vm.expectRevert(SolveInbox.NotPending.selector);
         inbox.accept(id);
 
         // create request to be rejected
@@ -44,7 +43,7 @@ contract SolveInbox_accept_Test is InboxBase {
         // cannot accept rejected request
         vm.startPrank(solver);
         inbox.reject(id, Solve.RejectReason.None);
-        vm.expectRevert(SolveInbox.RequestStateInvalid.selector);
+        vm.expectRevert(SolveInbox.NotPending.selector);
         inbox.accept(id);
         vm.stopPrank();
 
@@ -61,7 +60,7 @@ contract SolveInbox_accept_Test is InboxBase {
 
         // once accepted, solvers cannot accept again
         vm.prank(solver);
-        vm.expectRevert(SolveInbox.RequestStateInvalid.selector);
+        vm.expectRevert(SolveInbox.NotPending.selector);
         inbox.accept(id);
 
         // TODO: complete logic to advance through additional states and then test those

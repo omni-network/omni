@@ -82,7 +82,29 @@ contract MockPortal is IOmniPortal, OmniPortalConstants {
     //                              Portal Mocks                                //
     //////////////////////////////////////////////////////////////////////////////
 
-    /// @dev Execute a mock xcall, custom gas limit. Passes the revert for call fails or too low gas limit
+    /// @dev Execute a mock xcall, no gas limit. Forwards revert on call fails
+    function mockXCall(uint64 sourceChainId, address sender, address to, bytes calldata data)
+        public
+        returns (uint256 gasUsed)
+    {
+        _xmsg = XTypes.MsgContext({ sourceChainId: sourceChainId, sender: sender });
+
+        gasUsed = gasleft();
+        (bool success, bytes memory returnData) = to.call(data);
+        gasUsed = gasUsed - gasleft();
+
+        delete _xmsg;
+
+        if (!success) {
+            assembly {
+                revert(add(returnData, 32), mload(returnData))
+            }
+        }
+
+        return gasUsed;
+    }
+
+    /// @dev Execute a mock xcall, custom gas limit. Forwards revert on call fails. Reverts on out of gas.
     function mockXCall(uint64 sourceChainId, address sender, address to, bytes calldata data, uint64 gasLimit)
         public
         returns (uint256 gasUsed)
