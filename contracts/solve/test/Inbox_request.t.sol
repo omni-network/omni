@@ -9,7 +9,6 @@ import { InboxBase } from "./InboxBase.sol";
 /**
  * @title SolveInbox_request_Test
  * @notice Test suite for SolveInbox.request(...)
- * @dev TODO: add fuzz / invariant tests
  */
 contract SolveInbox_request_Test is InboxBase {
     /// @dev Test all revert conditions for SolveInbox.request(...)

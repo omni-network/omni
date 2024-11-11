@@ -102,7 +102,7 @@ interface ISolveInbox {
      * @notice Fulfill a request.
      * @dev Only callable by the outbox.
      */
-    function markFulfilled(bytes32 id, bytes32 callHash, address creditTo) external;
+    function markFulfilled(bytes32 id, bytes32 callHash) external;
 
     /**
      * @notice Claim a fulfilled request.
