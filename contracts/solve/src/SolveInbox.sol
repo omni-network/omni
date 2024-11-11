@@ -33,8 +33,9 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
     error WrongCallHash();
     error WrongSourceChain();
 
-    // General errors
+    // Transfer errors
     error TransferFailed();
+    error InvalidRecipient();
 
     /**
      * @notice Role for solvers.
@@ -176,17 +177,19 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
     /**
      * @notice Claim a fulfilled request.
      * @param id  ID of the request.
+     * @param to  Address to send deposits to.
      */
-    function claim(bytes32 id) external nonReentrant {
+    function claim(bytes32 id, address to) external nonReentrant {
         Solve.Request storage req = _requests[id];
         if (req.status != Solve.Status.Fulfilled) revert NotFulfilled();
+        if (req.acceptedBy != msg.sender) revert Unauthorized();
 
         req.updatedAt = uint40(block.timestamp);
         req.status = Solve.Status.Claimed;
 
-        _transferDeposits(req.acceptedBy, req.deposits);
+        _transferDeposits(to, req.deposits);
 
-        emit Claimed(id);
+        emit Claimed(id, msg.sender, to, req.deposits);
     }
 
     /**
@@ -215,6 +218,8 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
      * @dev Transfer deposits to recipient. Used regardless of refund or claim.
      */
     function _transferDeposits(address recipient, Solve.Deposit[] memory deposits) internal {
+        if (recipient == address(0)) revert InvalidRecipient();
+
         for (uint256 i; i < deposits.length; ++i) {
             if (deposits[i].isNative) {
                 (bool success,) = payable(recipient).call{ value: deposits[i].amount }("");
