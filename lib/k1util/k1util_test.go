@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/omni-network/omni/lib/k1util"
@@ -115,6 +116,18 @@ func TestCometBFT(t *testing.T) {
 
 	require.Equal(t, votePB1.Signature, votePB2.Signature)
 	require.Equal(t, votePB1.ExtensionSignature, votePB2.ExtensionSignature)
+}
+
+func TestPubKeyBytesToCosmos(t *testing.T) {
+	t.Parallel()
+
+	invalid := fromHex(t, strings.ReplaceAll(pubKey1, "c9c7d50d", "00112233"))
+
+	_, err := k1util.PubKeyBytesToCosmos(invalid)
+	require.Error(t, err)
+
+	_, err = k1util.PBPubKeyFromBytes(invalid)
+	require.Error(t, err)
 }
 
 func TestPubkey64(t *testing.T) {
