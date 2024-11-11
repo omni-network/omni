@@ -152,12 +152,12 @@ func (m *Mock) GetBlock(_ context.Context, req xchain.ProviderRequest) (xchain.B
 	return block, ok, nil
 }
 
-func (*Mock) GetSubmittedCursor(_ context.Context, stream xchain.StreamID,
+func (*Mock) GetSubmittedCursor(_ context.Context, _ xchain.Ref, stream xchain.StreamID,
 ) (xchain.SubmitCursor, bool, error) {
 	return xchain.SubmitCursor{StreamID: stream}, true, nil
 }
 
-func (*Mock) GetEmittedCursor(_ context.Context, _ xchain.EmitRef, stream xchain.StreamID,
+func (*Mock) GetEmittedCursor(_ context.Context, _ xchain.Ref, stream xchain.StreamID,
 ) (xchain.EmitCursor, bool, error) {
 	return xchain.EmitCursor{StreamID: stream}, true, nil
 }

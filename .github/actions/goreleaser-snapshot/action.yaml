@@ -1,0 +1,17 @@
+name: Go releaser snapshot
+description: Run goreleaser snapshot release
+runs:
+  using: composite
+  steps:
+    - name: Get foundry version
+      id: foundry_version
+      shell: bash
+      run: echo "version=$(cat scripts/foundry_version.txt)" >> $GITHUB_OUTPUT
+
+    - name: Build docker images
+      uses: goreleaser/goreleaser-action@v5
+      with:
+        version: 2
+        args: release -f .goreleaser-snapshot.yaml --snapshot --clean --skip=archive
+      env:
+        FOUNDRY_VERSION: ${{ steps.foundry_version.outputs.version }} # required for anvilproxy build

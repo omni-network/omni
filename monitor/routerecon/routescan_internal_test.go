@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/lib/xchain/connect"
 
 	"github.com/stretchr/testify/require"
@@ -36,7 +37,7 @@ func TestReconLag(t *testing.T) {
 
 		streamName := conn.Network.StreamName(stream)
 
-		cursor, ok, err := conn.XProvider.GetSubmittedCursor(ctx, stream)
+		cursor, ok, err := conn.XProvider.GetSubmittedCursor(ctx, xchain.LatestRef, stream)
 		require.NoError(t, err, streamName)
 		if !ok {
 			// Skip streams without submissions

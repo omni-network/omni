@@ -20,7 +20,7 @@ func getSubmittedCursors(ctx context.Context, network netconf.Network, dstChainI
 ) ([]xchain.SubmitCursor, error) {
 	var cursors []xchain.SubmitCursor //nolint:prealloc // Not worth it.
 	for _, stream := range network.StreamsTo(dstChainID) {
-		cursor, ok, err := xClient.GetSubmittedCursor(ctx, stream)
+		cursor, ok, err := xClient.GetSubmittedCursor(ctx, xchain.FinalizedRef, stream)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get submitted cursors", "src_chain", stream.SourceChainID)
 		} else if !ok {

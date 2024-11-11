@@ -2,6 +2,7 @@
 pragma solidity =0.8.24;
 
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { Secp256k1 } from "../libraries/Secp256k1.sol";
 
 /**
  * @title Staking
@@ -88,8 +89,8 @@ contract Staking is OwnableUpgradeable {
      */
     function createValidator(bytes calldata pubkey) external payable {
         require(!isAllowlistEnabled || isAllowedValidator[msg.sender], "Staking: not allowed");
-        require(pubkey.length == 33, "Staking: invalid pubkey length");
         require(msg.value >= MinDeposit, "Staking: insufficient deposit");
+        require(Secp256k1.validatePubkey(pubkey), "Staking: invalid pubkey");
 
         emit CreateValidator(msg.sender, pubkey, msg.value);
     }

@@ -19,6 +19,7 @@ install-pnpm:
 install-deps: check-pnpm-version ## Install dependencies.
 	(cd avs && pnpm install --frozen-lockfile)
 	(cd core && pnpm install --frozen-lockfile)
+	(cd solve && pnpm install --frozen-lockfile)
 	go install github.com/ethereum/go-ethereum/cmd/abigen@v1.14.8
 
 .PHONY: build
@@ -34,7 +35,9 @@ all: install-deps build bindings allocs ## Build contracts, generate bindings an
 CORE_CONTRACTS := OmniPortal FeeOracleV1 Create3 TransparentUpgradeableProxy \
 			Staking Slashing OmniBridgeL1 OmniBridgeNative Omni WOmni \
 			PortalRegistry AllocPredeploys PingPong ProxyAdmin Admin \
-			OmniGasPump OmniGasStation SolveInbox SolveOutbox
+			OmniGasPump OmniGasStation
+
+SOLVE_CONTRACTS := SolveInbox SolveOutbox
 
 AVS_CONTRACTS := OmniAVS DelegationManager StrategyManager StrategyBase AVSDirectory \
 			test/common/MockERC20.sol:MockERC20
@@ -43,6 +46,7 @@ AVS_CONTRACTS := OmniAVS DelegationManager StrategyManager StrategyBase AVSDirec
 bindings: check-abigen-version build ## Generate golang contract bindings.
 	ROOT=./core ./bindings/scripts/gen.sh $(CORE_CONTRACTS)
 	ROOT=./avs ./bindings/scripts/gen.sh $(AVS_CONTRACTS)
+	ROOT=./solve ./bindings/scripts/gen.sh $(SOLVE_CONTRACTS)
 	go run ./bindings/scripts/commenttypes.go -- bindings/strategymanager.go IStrategyManagerDeprecatedStructQueuedWithdrawal IStrategyManagerDeprecatedStructWithdrawerAndNonce
 	go run ./bindings/scripts/commenttypes.go -- bindings/solveoutbox.go SolveCall
 	go run ./bindings/scripts/commenttypes.go -- bindings/avsdirectory.go ISignatureUtilsSignatureWithSaltAndExpiry

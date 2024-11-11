@@ -2,13 +2,13 @@
 pragma solidity =0.8.24;
 
 import { Ownable } from "solady/src/auth/Ownable.sol";
-import { SolveInbox } from "src/solve/SolveInbox.sol";
-import { Solve } from "src/solve/Solve.sol";
+import { SolveInbox } from "src/SolveInbox.sol";
+import { Solve } from "src/Solve.sol";
 import { InboxBase } from "./InboxBase.sol";
 
 /**
  * @title SolveInbox_cancel_Test
- * @notice Test suite for solver SolveInbox.cancel(...)
+ * @notice Test suite for SolveInbox.cancel(...)
  * @dev TODO: add fuzz / invariant tests
  */
 contract SolveInbox_cancel_Test is InboxBase {

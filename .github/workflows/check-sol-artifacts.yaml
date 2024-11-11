@@ -17,10 +17,7 @@ jobs:
         with:
           go-version: 'stable'
       - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version:
-            nightly-9dbfb2f1115466b28f2697e158131f90df6b2590
+        uses: ./.github/actions/setup-foundry
       - name: Install pnpm
         run: make install-pnpm
       - name: Build artifacts

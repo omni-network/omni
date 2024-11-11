@@ -12,7 +12,7 @@ jobs:
         working-directory: contracts/core
     steps:
       - uses: actions/checkout@v4
-      - uses: foundry-rs/foundry-toolchain@v1
+      - uses: ./.github/actions/setup-foundry
       - name: Install pnpm
         run: make install-pnpm
         working-directory: contracts
@@ -34,7 +34,7 @@ jobs:
         working-directory: contracts/avs
     steps:
       - uses: actions/checkout@v4
-      - uses: foundry-rs/foundry-toolchain@v1
+      - uses: ./.github/actions/setup-foundry
       - name: Install pnpm
         run: make install-pnpm
         working-directory: contracts
@@ -46,5 +46,27 @@ jobs:
       - name: Check snapshot
         # fuzz tests snapshots are different in CI, so we ignore them
         run: forge snapshot --check --tolerance 5 --no-match-test testFuzz_syncWithOmni
+        env:
+            FOUNDRY_FUZZ_SEED: "0x6eed"
+
+  sol_solve_tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: contracts/solve
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: Install pnpm
+        run: make install-pnpm
+        working-directory: contracts
+      - run: pnpm install
+      - name: Check fmt
+        run: forge fmt --check
+      - name: Run tests
+        run: forge test -vv
+      - name: Check snapshot
+        # fuzz tests snapshots are different in CI, so we ignore them
+        run: forge snapshot --check --tolerance 5
         env:
             FOUNDRY_FUZZ_SEED: "0x6eed"

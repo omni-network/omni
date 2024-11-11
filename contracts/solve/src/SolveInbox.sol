@@ -5,8 +5,8 @@ import { OwnableRoles } from "solady/src/auth/OwnableRoles.sol";
 import { ReentrancyGuard } from "solady/src/utils/ReentrancyGuard.sol";
 import { Initializable } from "solady/src/utils/Initializable.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
-import { IConversionRateOracle } from "src/interfaces/IConversionRateOracle.sol";
-import { XAppBase } from "src/pkg/XAppBase.sol";
+import { IConversionRateOracle } from "core/src/interfaces/IConversionRateOracle.sol";
+import { XAppBase } from "core/src/pkg/XAppBase.sol";
 import { ISolveInbox } from "./interfaces/ISolveInbox.sol";
 import { Solve } from "./Solve.sol";
 

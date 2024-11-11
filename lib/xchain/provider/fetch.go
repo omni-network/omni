@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"math/big"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -59,7 +60,7 @@ func (p *Provider) ChainVersionHeight(ctx context.Context, chainVer xchain.Chain
 //
 // Note that the AttestOffset field is not populated for emit cursors, since it isn't stored on-chain
 // but tracked off-chain.
-func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, stream xchain.StreamID,
+func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.Ref, stream xchain.StreamID,
 ) (xchain.EmitCursor, bool, error) {
 	if !ref.Valid() {
 		return xchain.EmitCursor{}, false, errors.New("invalid emit ref")
@@ -95,20 +96,12 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, str
 		return xchain.EmitCursor{}, false, errors.Wrap(err, "new caller")
 	}
 
-	opts := &bind.CallOpts{Context: ctx}
-	if ref.Height != nil {
-		opts.BlockNumber = umath.NewBigInt(*ref.Height)
-	} else if head, ok := headTypeFromConfLevel(*ref.ConfLevel); !ok {
-		return xchain.EmitCursor{}, false, errors.New("invalid conf level")
-	} else {
-		// Populate an explicit block number if not querying latest head.
-		header, err := rpcClient.HeaderByType(ctx, head)
-		if err != nil {
-			return xchain.EmitCursor{}, false, err
-		}
-
-		opts.BlockNumber = header.Number
+	height, err := heightForRef(ctx, rpcClient, ref)
+	if err != nil {
+		return xchain.EmitCursor{}, false, err
 	}
+
+	opts := &bind.CallOpts{Context: ctx, BlockNumber: height}
 
 	offset, err := caller.OutXMsgOffset(opts, stream.DestChainID, uint64(stream.ShardID))
 	if err != nil {
@@ -127,7 +120,10 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.EmitRef, str
 
 // GetSubmittedCursor returns the submitted cursor for the source chain on the destination chain,
 // or false if not available, or an error. Calls the destination chain portal InXStreamOffset method.
-func (p *Provider) GetSubmittedCursor(ctx context.Context, stream xchain.StreamID,
+func (p *Provider) GetSubmittedCursor(
+	ctx context.Context,
+	ref xchain.Ref,
+	stream xchain.StreamID,
 ) (xchain.SubmitCursor, bool, error) {
 	chain, rpcClient, err := p.getEVMChain(stream.DestChainID)
 	if err != nil {
@@ -139,12 +135,12 @@ func (p *Provider) GetSubmittedCursor(ctx context.Context, stream xchain.StreamI
 		return xchain.SubmitCursor{}, false, errors.Wrap(err, "new caller")
 	}
 
-	height, err := rpcClient.BlockNumber(ctx)
+	height, err := heightForRef(ctx, rpcClient, ref)
 	if err != nil {
 		return xchain.SubmitCursor{}, false, err
 	}
 
-	callOpts := &bind.CallOpts{Context: ctx, BlockNumber: umath.NewBigInt(height)}
+	callOpts := &bind.CallOpts{Context: ctx, BlockNumber: height}
 
 	msgOffset, err := caller.InXMsgOffset(callOpts, stream.SourceChainID, uint64(stream.ShardID))
 	if err != nil {
@@ -443,7 +439,7 @@ func parseXReceipt(filterer *bindings.OmniPortalFilterer, event types.Log, chain
 	}, nil
 }
 
-func getConsXBlock(ctx context.Context, ref xchain.EmitRef, cprov cchain.Provider) (xchain.Block, error) {
+func getConsXBlock(ctx context.Context, ref xchain.Ref, cprov cchain.Provider) (xchain.Block, error) {
 	var height uint64
 	var latest bool
 	if ref.Height != nil {
@@ -505,4 +501,28 @@ func getEventLogs(ctx context.Context, rpcClient ethclient.Client, contractAddr 
 	}
 
 	return logs, nil
+}
+
+// heightForRef returns block height from a valid ref.
+// It uses the provided client to fetch on-chain header.
+func heightForRef(ctx context.Context, client ethclient.Client, ref xchain.Ref) (*big.Int, error) {
+	if !ref.Valid() {
+		return nil, errors.New("invalid ref")
+	}
+
+	if ref.Height != nil {
+		return umath.NewBigInt(*ref.Height), nil
+	}
+
+	head, ok := headTypeFromConfLevel(*ref.ConfLevel)
+	if !ok {
+		return nil, errors.New("invalid conf level")
+	}
+
+	header, err := client.HeaderByType(ctx, head)
+	if err != nil {
+		return nil, err
+	}
+
+	return header.Number, nil
 }
