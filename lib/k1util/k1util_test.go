@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"math/big"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -53,6 +54,39 @@ func TestK1Util(t *testing.T) {
 	ok, err := k1util.Verify(addr, [32]byte(digest), sig)
 	require.NoError(t, err)
 	require.True(t, ok)
+}
+
+func TestECDSAMalleability(t *testing.T) {
+	t.Parallel()
+
+	key := k1.PrivKey(fromHex(t, privKey1))
+	digest := fromHex(t, digest1)
+
+	sig, err := k1util.Sign(key, [32]byte(digest))
+	require.NoError(t, err)
+	require.EqualValues(t, fromHex(t, sig1), sig[:])
+
+	addr, err := k1util.PubKeyToAddress(key.PubKey())
+	require.NoError(t, err)
+	require.Equal(t, addr1, addr.Hex())
+
+	// Negate S
+	sBytes := sig[32:64]
+	s := new(big.Int).SetBytes(sBytes)
+	s = new(big.Int).Sub(crypto.S256().Params().N, s)
+	copy(sig[32:64], s.Bytes())
+
+	// Adjust V
+	v := sig[64]
+	vNew := byte(27)
+	if v == vNew {
+		vNew = 28
+	}
+	sig[64] = vNew
+
+	ok, err := k1util.Verify(addr, [32]byte(digest), sig)
+	require.Error(t, err)
+	require.False(t, ok)
 }
 
 func TestRandom(t *testing.T) {
