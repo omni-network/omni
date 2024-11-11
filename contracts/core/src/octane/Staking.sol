@@ -84,11 +84,26 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
         _disableInitializers();
     }
 
+    /**
+     * @notice Initialize the contract, used for fresh deployment
+     */
     function initialize(address owner_, bool isAllowlistEnabled_) public initializer {
+        __Ownable_init(owner_);
+        __EIP712_init("Staking", "1");
+        isAllowlistEnabled = isAllowlistEnabled_;
+    }
+
+    /**
+     * @notice Original initializer when first deployed publicly
+     */
+    function initializeV1(address owner_, bool isAllowlistEnabled_) public initializer {
         __Ownable_init(owner_);
         isAllowlistEnabled = isAllowlistEnabled_;
     }
 
+    /**
+     * @notice Initializer for upgrade deployment, unnecessary for fresh deployment
+     */
     function initializeV2() public reinitializer(2) {
         __EIP712_init("Staking", "1");
     }
