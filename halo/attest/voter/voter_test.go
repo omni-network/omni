@@ -31,6 +31,7 @@ const empty uint64 = 0
 
 func TestAbort(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
 
 	dir := filepath.Join(t.TempDir(), "deleteme")
 	err := os.MkdirAll(dir, 0o755)
@@ -86,8 +87,8 @@ func TestAbort(t *testing.T) {
 	// Assert that voter aborted
 	require.Empty(t, v.GetAvailable())
 	require.ErrorContains(t, v.Vote(att2, block, true), errAborted)
-	require.ErrorContains(t, v.SetProposed(header1), errAborted)
-	require.ErrorContains(t, v.SetCommitted(header1), errAborted)
+	require.ErrorContains(t, v.SetProposed(ctx, header1), errAborted)
+	require.ErrorContains(t, v.SetCommitted(ctx, header1), errAborted)
 	require.ErrorContains(t, v.UpdateValidatorSet(nil), errAborted)
 	require.Empty(t, v.AvailableCount())
 }
@@ -437,9 +438,10 @@ func (w *wrappedVoter) Add(t *testing.T, chainID, offset uint64) {
 
 func (w *wrappedVoter) Propose(t *testing.T, chainID, offset uint64) {
 	t.Helper()
+	ctx := context.Background()
 
 	if offset == empty {
-		err := w.v.SetProposed(nil)
+		err := w.v.SetProposed(ctx, nil)
 		require.NoError(t, err)
 
 		return
@@ -452,15 +454,16 @@ func (w *wrappedVoter) Propose(t *testing.T, chainID, offset uint64) {
 		AttestOffset:     offset,
 	}
 
-	err := w.v.SetProposed([]*types.AttestHeader{header})
+	err := w.v.SetProposed(ctx, []*types.AttestHeader{header})
 	require.NoError(t, err)
 }
 
 func (w *wrappedVoter) Commit(t *testing.T, chainID, offset uint64) {
 	t.Helper()
+	ctx := context.Background()
 
 	if offset == empty {
-		err := w.v.SetProposed(nil)
+		err := w.v.SetProposed(ctx, nil)
 		require.NoError(t, err)
 
 		return
@@ -473,7 +476,7 @@ func (w *wrappedVoter) Commit(t *testing.T, chainID, offset uint64) {
 		AttestOffset:     offset,
 	}
 
-	err := w.v.SetCommitted([]*types.AttestHeader{header})
+	err := w.v.SetCommitted(ctx, []*types.AttestHeader{header})
 	require.NoError(t, err)
 }
 

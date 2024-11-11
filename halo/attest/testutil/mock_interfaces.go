@@ -26,6 +26,7 @@ import (
 type MockStakingKeeper struct {
 	ctrl     *gomock.Controller
 	recorder *MockStakingKeeperMockRecorder
+	isgomock struct{}
 }
 
 // MockStakingKeeperMockRecorder is the mock recorder for MockStakingKeeper.
@@ -64,6 +65,7 @@ func (mr *MockStakingKeeperMockRecorder) GetPubKeyByConsAddr(arg0, arg1 any) *go
 type MockVoter struct {
 	ctrl     *gomock.Controller
 	recorder *MockVoterMockRecorder
+	isgomock struct{}
 }
 
 // MockVoterMockRecorder is the mock recorder for MockVoter.
@@ -112,31 +114,31 @@ func (mr *MockVoterMockRecorder) LocalAddress() *gomock.Call {
 }
 
 // SetCommitted mocks base method.
-func (m *MockVoter) SetCommitted(headers []*types0.AttestHeader) error {
+func (m *MockVoter) SetCommitted(ctx context.Context, headers []*types0.AttestHeader) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetCommitted", headers)
+	ret := m.ctrl.Call(m, "SetCommitted", ctx, headers)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SetCommitted indicates an expected call of SetCommitted.
-func (mr *MockVoterMockRecorder) SetCommitted(headers any) *gomock.Call {
+func (mr *MockVoterMockRecorder) SetCommitted(ctx, headers any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCommitted", reflect.TypeOf((*MockVoter)(nil).SetCommitted), headers)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCommitted", reflect.TypeOf((*MockVoter)(nil).SetCommitted), ctx, headers)
 }
 
 // SetProposed mocks base method.
-func (m *MockVoter) SetProposed(headers []*types0.AttestHeader) error {
+func (m *MockVoter) SetProposed(ctx context.Context, headers []*types0.AttestHeader) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetProposed", headers)
+	ret := m.ctrl.Call(m, "SetProposed", ctx, headers)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SetProposed indicates an expected call of SetProposed.
-func (mr *MockVoterMockRecorder) SetProposed(headers any) *gomock.Call {
+func (mr *MockVoterMockRecorder) SetProposed(ctx, headers any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetProposed", reflect.TypeOf((*MockVoter)(nil).SetProposed), headers)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetProposed", reflect.TypeOf((*MockVoter)(nil).SetProposed), ctx, headers)
 }
 
 // TrimBehind mocks base method.
@@ -171,6 +173,7 @@ func (mr *MockVoterMockRecorder) UpdateValidatorSet(set any) *gomock.Call {
 type MockValProvider struct {
 	ctrl     *gomock.Controller
 	recorder *MockValProviderMockRecorder
+	isgomock struct{}
 }
 
 // MockValProviderMockRecorder is the mock recorder for MockValProvider.
@@ -224,6 +227,7 @@ func (mr *MockValProviderMockRecorder) ValidatorSet(ctx, req any) *gomock.Call {
 type MockChainNamer struct {
 	ctrl     *gomock.Controller
 	recorder *MockChainNamerMockRecorder
+	isgomock struct{}
 }
 
 // MockChainNamerMockRecorder is the mock recorder for MockChainNamer.
@@ -261,6 +265,7 @@ func (mr *MockChainNamerMockRecorder) ChainName(chainVer any) *gomock.Call {
 type MockRegistry struct {
 	ctrl     *gomock.Controller
 	recorder *MockRegistryMockRecorder
+	isgomock struct{}
 }
 
 // MockRegistryMockRecorder is the mock recorder for MockRegistry.

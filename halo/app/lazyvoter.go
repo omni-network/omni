@@ -166,10 +166,10 @@ func (l *voterLoader) LazyLoad(
 	defer l.mu.Unlock()
 
 	// Process all cached values
-	if err := v.SetProposed(l.proposed); err != nil {
+	if err := v.SetProposed(ctx, l.proposed); err != nil {
 		return errors.Wrap(err, "set cached proposed")
 	}
-	if err := v.SetCommitted(l.committed); err != nil {
+	if err := v.SetCommitted(ctx, l.committed); err != nil {
 		return errors.Wrap(err, "set cached committed")
 	}
 	if l.lastValSet != nil {
@@ -212,9 +212,9 @@ func (l *voterLoader) GetAvailable() []*atypes.Vote {
 	return nil // Return empty list if voter not available yet.
 }
 
-func (l *voterLoader) SetProposed(headers []*atypes.AttestHeader) error {
+func (l *voterLoader) SetProposed(ctx context.Context, headers []*atypes.AttestHeader) error {
 	if v, ok := l.getVoter(); ok {
-		return v.SetProposed(headers)
+		return v.SetProposed(ctx, headers)
 	}
 
 	// Cache these headers to provider to voter once available.
@@ -226,9 +226,9 @@ func (l *voterLoader) SetProposed(headers []*atypes.AttestHeader) error {
 	return nil
 }
 
-func (l *voterLoader) SetCommitted(headers []*atypes.AttestHeader) error {
+func (l *voterLoader) SetCommitted(ctx context.Context, headers []*atypes.AttestHeader) error {
 	if v, ok := l.getVoter(); ok {
-		return v.SetCommitted(headers)
+		return v.SetCommitted(ctx, headers)
 	}
 
 	// Cache these headers to provider to voter once available.

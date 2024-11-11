@@ -24,14 +24,14 @@ type Voter interface {
 	// i.e., they were included by a proposer in a new proposed block.
 	// All other existing "proposed" votes are reset to "available", i.e. they were
 	// proposed previously by another proposer, but that block was never finalized/committed.
-	SetProposed(headers []*AttestHeader) error
+	SetProposed(ctx context.Context, headers []*AttestHeader) error
 
 	// SetCommitted updates the status of the provided votes to "committed",
 	// i.e., they were included in a finalized consensus block and is now part of the consensus chain.
 	// All other existing "proposed" votes are reset to "available", i.e. we probably
 	// missed the proposal step and only learnt of the finalized block post-fact.
 	// All but the latest "confirmed" attestation for each source chain can be safely deleted from disk.
-	SetCommitted(headers []*AttestHeader) error
+	SetCommitted(ctx context.Context, headers []*AttestHeader) error
 
 	// LocalAddress returns the local validator's ethereum address.
 	LocalAddress() common.Address

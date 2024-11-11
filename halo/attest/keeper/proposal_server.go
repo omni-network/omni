@@ -33,8 +33,7 @@ func (s proposalServer) AddVotes(ctx context.Context, msg *types.MsgAddVotes,
 	}
 
 	localHeaders := headersByAddress(msg.Votes, s.voter.LocalAddress())
-	logLocalVotes(ctx, localHeaders, "proposed")
-	if err := s.voter.SetProposed(localHeaders); err != nil {
+	if err := s.voter.SetProposed(ctx, localHeaders); err != nil {
 		return nil, errors.Wrap(err, "set committed")
 	}
 

@@ -436,9 +436,13 @@ func (v *Voter) GetAvailable() []*types.Vote {
 }
 
 // SetProposed sets the votes as proposed.
-func (v *Voter) SetProposed(headers []*types.AttestHeader) error {
+func (v *Voter) SetProposed(ctx context.Context, headers []*types.AttestHeader) error {
 	proposedPerBlock.Observe(float64(len(headers)))
 	proposed := headerMap(headers)
+	if len(headers) != len(proposed) {
+		// Sanity check
+		log.Warn(ctx, "Unexpected duplicate proposed headers [BUG]", nil, "total", len(headers), "unique", len(proposed))
+	}
 
 	v.mu.Lock()
 	defer v.mu.Unlock()
@@ -456,6 +460,12 @@ func (v *Voter) SetProposed(headers []*types.AttestHeader) error {
 		}
 	}
 
+	if len(headers) > 0 || len(newProposed) != len(v.proposed) || len(newAvailable) != len(v.available) {
+		log.Debug(ctx, "Voter proposed headers", types.AttLogs(headers)...)
+		log.Debug(ctx, "Voter proposed new available", types.VoteLogs(newAvailable)...)
+		log.Debug(ctx, "Voter proposed new proposed", types.VoteLogs(newProposed)...)
+	}
+
 	v.available = newAvailable
 	v.proposed = newProposed
 
@@ -463,9 +473,12 @@ func (v *Voter) SetProposed(headers []*types.AttestHeader) error {
 }
 
 // SetCommitted sets the votes as committed. Persisting the result to disk.
-func (v *Voter) SetCommitted(headers []*types.AttestHeader) error {
+func (v *Voter) SetCommitted(ctx context.Context, headers []*types.AttestHeader) error {
 	committedPerBlock.Observe(float64(len(headers)))
 	committed := headerMap(headers)
+	if len(headers) != len(committed) { // Sanity check
+		log.Warn(ctx, "Unexpected duplicate committed headers [BUG]", nil, "total", len(headers), "unique", len(committed))
+	}
 
 	v.mu.Lock()
 	defer v.mu.Unlock()
@@ -483,6 +496,12 @@ func (v *Voter) SetCommitted(headers []*types.AttestHeader) error {
 		} else { // Otherwise, keep/move it back to available.
 			newAvailable = append(newAvailable, vote)
 		}
+	}
+
+	if len(headers) > 0 || len(newAvailable) != len(v.available) || len(v.proposed) != 0 {
+		log.Debug(ctx, "Voter committed headers", types.AttLogs(headers)...)
+		log.Debug(ctx, "Voter committed new available", types.VoteLogs(newAvailable)...)
+		log.Debug(ctx, "Voter committed old proposed", types.VoteLogs(v.proposed)...)
 	}
 
 	v.available = newAvailable
