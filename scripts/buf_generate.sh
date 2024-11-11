@@ -40,7 +40,7 @@ do
 done
 
 echo "Generating orm protos for cosmos keeper orm"
-for DIR in halo/*/keeper/ octane/*/keeper/ monitor/xmonitor/* solver/app relayer/app
+for DIR in halo/*/keeper/ octane/*/keeper/ monitor/xmonitor/* solver/app relayer/app/cursors
 do
   bufgen orm "${DIR}"
 done
