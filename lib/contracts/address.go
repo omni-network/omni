@@ -84,15 +84,19 @@ type Addresses struct {
 	L1Bridge       common.Address
 	Portal         common.Address
 	Token          common.Address
+	SolveOutbox    common.Address
+	SolveInbox     common.Address
 }
 
 type Salts struct {
-	AVS        string
-	GasPump    string
-	GasStation string
-	L1Bridge   string
-	Portal     string
-	Token      string
+	AVS         string
+	GasPump     string
+	GasStation  string
+	L1Bridge    string
+	Portal      string
+	Token       string
+	SolveOutbox string
+	SolveInbox  string
 }
 
 type cache[T any] struct {
@@ -135,6 +139,8 @@ func GetAddresses(ctx context.Context, network netconf.ID) (Addresses, error) {
 		Token:          token(network, ver),
 		GasPump:        gasPump(network, ver),
 		GasStation:     gasStation(network, ver),
+		SolveInbox:     solveInbox(network, ver),
+		SolveOutbox:    solveOutbox(network, ver),
 	}
 
 	addrsCache.cache[network] = addrs
@@ -158,12 +164,14 @@ func GetSalts(ctx context.Context, network netconf.ID) (Salts, error) {
 	}
 
 	salts = Salts{
-		AVS:        avsSalt(network),
-		Portal:     portalSalt(network, ver),
-		L1Bridge:   l1BridgeSalt(network, ver),
-		Token:      tokenSalt(network, ver),
-		GasPump:    gasPumpSalt(network, ver),
-		GasStation: gasStationSalt(network, ver),
+		AVS:         avsSalt(network),
+		Portal:      portalSalt(network, ver),
+		L1Bridge:    l1BridgeSalt(network, ver),
+		Token:       tokenSalt(network, ver),
+		GasPump:     gasPumpSalt(network, ver),
+		GasStation:  gasStationSalt(network, ver),
+		SolveInbox:  solveInboxSalt(network, ver),
+		SolveOutbox: solveOutboxSalt(network, ver),
 	}
 
 	saltsCache.cache[network] = salts
@@ -216,6 +224,14 @@ func gasStation(network netconf.ID, version string) common.Address {
 	return create3.Address(create3Factory(network), gasStationSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
 }
 
+func solveInbox(network netconf.ID, version string) common.Address {
+	return create3.Address(create3Factory(network), solveInboxSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
+}
+
+func solveOutbox(network netconf.ID, version string) common.Address {
+	return create3.Address(create3Factory(network), solveOutboxSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
+}
+
 //
 // Salts.
 //
@@ -243,6 +259,14 @@ func gasPumpSalt(network netconf.ID, version string) string {
 
 func gasStationSalt(network netconf.ID, version string) string {
 	return salt(network, "gas-station-"+version)
+}
+
+func solveInboxSalt(network netconf.ID, version string) string {
+	return salt(network, "solve-inbox-"+version)
+}
+
+func solveOutboxSalt(network netconf.ID, version string) string {
+	return salt(network, "solve-outbox-"+version)
 }
 
 //

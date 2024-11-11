@@ -91,6 +91,9 @@ type Manifest struct {
 	// PingPongN defines the number of ping pong messages to send. Defaults 3 if 0.
 	PingPongN uint64 `toml:"pingpong_n"`
 
+	// DeploySolve defines whether to deploy the solve contracts
+	DeploySolve bool `toml:"deploy_solve"`
+
 	// Keys contains long-lived private keys (address by type) by node name.
 	Keys map[string]map[key.Type]string `toml:"keys"`
 

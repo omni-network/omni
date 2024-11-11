@@ -6,6 +6,8 @@
   "gasstation": "0x87d948ada3fef75236adc0961044b57add66e7a8",
   "l1bridge": "0x96183c6b4ce669007d0de43f1e7eb9a4494271d8",
   "portal": "0xb835dc695c6bfc8373c0d56973b5d9e9b083e97b",
+  "solveinbox": "0x283fa39ae3d1cd8f778bd0e3965be15ba4005ac0",
+  "solveoutbox": "0x23a4a314320ec6e23526c07cf42dfb35050ea952",
   "token": "0xac5e38c77804058a1c7df7e8363af1be2132276a"
  },
  "mainnet": {
@@ -15,6 +17,8 @@
   "gasstation": "0x5a19272100949f9e8a4ad9d98f8c1070232de626",
   "l1bridge": "0xbbb3f5bcb1c8b0ee932efaba2fdee566b83053a5",
   "portal": "0x5e9a8aa213c912bf54c86bf64adb8ed6a79c04d1",
+  "solveinbox": "0x1bf09c6414d1f581070eddfaf317e566543e0199",
+  "solveoutbox": "0xf26f33188de6d8efe1fd791de2a95408a5113864",
   "token": "0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4"
  },
  "omega": {
@@ -24,6 +28,8 @@
   "gasstation": "0x3266c030c1e302264063cf44f6df8bbaaf3d9767",
   "l1bridge": "0x084ef227534a6ad2de4c4e54db19f1c457a57a27",
   "portal": "0xcb60a0451831e4865bc49f41f9c67665fc9b75c3",
+  "solveinbox": "0x57f3e823041a27809ae5f6e98cfa062d18da613c",
+  "solveoutbox": "0x3fdd17daa9fac84e5d2d965be38eb9136209d1a2",
   "token": "0xd036c60f46ff51dd7fbf6a819b5b171c8a076b07"
  }
 }

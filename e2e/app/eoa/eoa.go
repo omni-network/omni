@@ -43,6 +43,8 @@ const (
 	RoleTester Role = "tester"
 	// RoleXCaller is used for testing xcalls on a network.
 	RoleXCaller Role = "xcaller"
+	// RolveSolver is the allowed solver for solve inbox / outboxes.
+	RoleSolver Role = "solver"
 )
 
 func AllRoles() []Role {
@@ -57,6 +59,7 @@ func AllRoles() []Role {
 		RoleUpgrader,
 		RoleTester,
 		RoleXCaller,
+		// RoleSolver TODO: omitting solver for now. It is just used in devnet and not set for other networks.
 	}
 }
 
