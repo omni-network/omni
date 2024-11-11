@@ -21,6 +21,8 @@ services:
     - 6060 # Pprof
     volumes:
     - ./fullnode01:/halo
+    logging:
+      driver: local
     networks:
       test:
         
@@ -56,6 +58,8 @@ services:
       retries: 30
     volumes:
       - ./fullnode01_evm:/geth
+    logging:
+      driver: local
     networks:
       test:
         
