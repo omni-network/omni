@@ -117,6 +117,10 @@ func PubKeyBytesToCosmos(pubkey []byte) (cosmoscrypto.PubKey, error) {
 		return nil, errors.New("invalid pubkey length", "length", len(pubkey))
 	}
 
+	if _, err := ethcrypto.DecompressPubkey(pubkey); err != nil {
+		return nil, errors.Wrap(err, "invalid pubkey")
+	}
+
 	return &cosmosk1.PubKey{
 		Key: pubkey,
 	}, nil
@@ -125,6 +129,10 @@ func PubKeyBytesToCosmos(pubkey []byte) (cosmoscrypto.PubKey, error) {
 func PBPubKeyFromBytes(pubkey []byte) (cryptopb.PublicKey, error) {
 	if len(pubkey) != pubkeyCompressedLen {
 		return cryptopb.PublicKey{}, errors.New("invalid pubkey length", "length", len(pubkey))
+	}
+
+	if _, err := ethcrypto.DecompressPubkey(pubkey); err != nil {
+		return cryptopb.PublicKey{}, errors.Wrap(err, "invalid pubkey")
 	}
 
 	return cryptopb.PublicKey{Sum: &cryptopb.PublicKey_Secp256K1{Secp256K1: pubkey}}, nil
