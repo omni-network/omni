@@ -3,9 +3,6 @@ package keeper
 import (
 	"bytes"
 	"context"
-	"fmt"
-	"log/slog"
-	"strconv"
 
 	"github.com/omni-network/omni/halo/attest/types"
 	rtypes "github.com/omni-network/omni/halo/registry/types"
@@ -713,29 +710,7 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 		votesExtended.WithLabelValues(k.namer(chainVer)).Observe(float64(count))
 	}
 
-	// Make nice logs
-	const limit = 5
-	offsets := make(map[xchain.ChainVersion][]string)
-	for _, vote := range filtered {
-		offset := offsets[vote.AttestHeader.XChainVersion()]
-		if len(offset) < limit {
-			offset = append(offset, strconv.FormatUint(vote.AttestHeader.AttestOffset, 10))
-		} else if len(offset) == limit {
-			offset = append(offset, "...")
-		} else {
-			continue
-		}
-		offsets[vote.AttestHeader.XChainVersion()] = offset
-	}
-	attrs := []any{slog.Int("votes", len(offsets))}
-	for chainVer, offset := range offsets {
-		attrs = append(attrs, slog.String(
-			fmt.Sprintf("%d-%d", chainVer.ID, chainVer.ConfLevel),
-			fmt.Sprint(offset),
-		))
-	}
-
-	log.Info(ctx, "Voted for rollup blocks", attrs...)
+	log.Info(ctx, "Voter voting", types.VoteLogs(filtered)...)
 
 	return &abci.ResponseExtendVote{
 		VoteExtension: bz,
@@ -780,20 +755,31 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 		return respReject, nil
 	}
 
-	duplicate := make(map[xchain.AttestHeader]bool)
+	duplicate := make(map[common.Hash]bool)          // Detect identical duplicate votes (same AttestationRoot)
+	doubleSign := make(map[xchain.AttestHeader]bool) // Detect double sign votes (same AttestHeader)
 	for _, vote := range votes.Votes {
 		if err := vote.Verify(); err != nil {
 			log.Warn(ctx, "Rejecting invalid vote", err)
 			return respReject, nil
 		}
 
-		if duplicate[vote.AttestHeader.ToXChain()] {
+		attRoot, err := vote.AttestationRoot()
+		if err != nil {
+			return nil, errors.Wrap(err, "att root [BUG]") // Should error in Verify
+		}
+		if duplicate[attRoot] {
+			log.Warn(ctx, "Rejecting duplicate identical vote", nil)
+			return respReject, nil
+		}
+		duplicate[attRoot] = true
+
+		if doubleSign[vote.AttestHeader.ToXChain()] {
 			doubleSignCounter.WithLabelValues(ethAddr.Hex()).Inc()
 			log.Warn(ctx, "Rejecting duplicate slashable vote", err)
 
 			return respReject, nil
 		}
-		duplicate[vote.AttestHeader.ToXChain()] = true
+		doubleSign[vote.AttestHeader.ToXChain()] = true
 
 		// Ensure the votes are from the requesting validator itself.
 		if !bytes.Equal(vote.Signature.ValidatorAddress, ethAddr[:]) {
@@ -880,6 +866,7 @@ func (k *Keeper) windowCompare(ctx context.Context, chainVer xchain.ChainVersion
 // - Ensure all aggregation is valid; no duplicate aggregate votes.
 // - Ensure the vote extension limit is not exceeded per validator.
 // - Ensure all votes are from validators in the provided set.
+// - Ensure all votes are unique per validator.
 // - Ensure the vote block header is in the vote window.
 func (k *Keeper) verifyAggVotes(
 	ctx context.Context,
@@ -911,11 +898,17 @@ func (k *Keeper) verifyAggVotes(
 		duplicate[attRoot] = true
 
 		// Ensure all votes are from unique validators in the set
+		duplicateSig := make(map[common.Address]bool) // Enforce vote extension limit.
 		for _, sig := range agg.Signatures {
 			addr, err := sig.ValidatorEthAddress()
 			if err != nil {
 				return err
 			}
+
+			if duplicateSig[addr] {
+				return errors.New("duplicate validator vote", append(errAttrs, "validator", addr)...)
+			}
+			duplicateSig[addr] = true
 
 			if !valset.Contains(addr) {
 				return errors.New("vote from unknown validator", append(errAttrs, "validator", addr)...)
