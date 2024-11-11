@@ -85,7 +85,7 @@ func monitorConsOffsetOnce(ctx context.Context, network netconf.Network, xprovid
 
 	// Consensus chain messages are broadcast, so query for each EVM chain.
 	for _, stream := range network.StreamsFrom(cChain.ID) {
-		ref := xchain.Ref{ConfLevel: ptr(stream.ConfLevel())}
+		ref := xchain.ConfRef(stream.ConfLevel())
 		emitted, ok, err := xprovider.GetEmittedCursor(ctx, ref, stream)
 		if err != nil {
 			return errors.Wrap(err, "get emit cursor", "stream", network.StreamName(stream))
@@ -172,7 +172,7 @@ func monitorAttestedForever(
 
 				streamName := network.StreamName(stream)
 
-				cursor, _, err := xprovider.GetEmittedCursor(ctx, xchain.Ref{Height: &att.BlockHeight}, stream)
+				cursor, _, err := xprovider.GetEmittedCursor(ctx, xchain.HeightRef(att.BlockHeight), stream)
 				if err != nil {
 					log.Warn(ctx, "Attest offset monitor failed getting emit cursor", err, "stream", streamName)
 					continue
@@ -267,7 +267,7 @@ func monitorOffsetsOnce(
 		}
 
 		confLevel := stream.ConfLevel()
-		emitted, _, err := xprovider.GetEmittedCursor(ctx, xchain.Ref{ConfLevel: &confLevel}, stream)
+		emitted, _, err := xprovider.GetEmittedCursor(ctx, xchain.ConfRef(confLevel), stream)
 		if err != nil {
 			lastErr = errors.Wrap(err, "get emit cursor", "stream", stream)
 			continue
@@ -286,8 +286,4 @@ func monitorOffsetsOnce(
 	}
 
 	return lastErr
-}
-
-func ptr[T any](t T) *T {
-	return &t
 }
