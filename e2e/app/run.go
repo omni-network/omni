@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/netman"
 	"github.com/omni-network/omni/e2e/netman/pingpong"
+	"github.com/omni-network/omni/e2e/solve"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/contracts"
@@ -119,6 +120,12 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 
 	if err := FundValidatorsForTesting(ctx, def); err != nil {
 		return nil, err
+	}
+
+	if def.Manifest.DeploySolve {
+		if err := solve.DeployContracts(ctx, NetworkFromDef(def), def.Backends()); err != nil {
+			return nil, errors.Wrap(err, "deploy solve contracts")
+		}
 	}
 
 	err = waitForSupportedChains(ctx, def)
