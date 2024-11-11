@@ -21,6 +21,8 @@ services:
     - 6060 # Pprof
     volumes:
     - ./validator02:/halo
+    logging:
+      driver: local
     networks:
       test:
         
@@ -56,6 +58,8 @@ services:
       retries: 30
     volumes:
       - ./validator02_evm:/geth
+    logging:
+      driver: local
     networks:
       test:
         

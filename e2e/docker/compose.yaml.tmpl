@@ -31,6 +31,8 @@ services:
     - 6060 # Pprof
     volumes:
     - ./{{ .Name }}:/halo
+    logging:
+      driver: local
     networks:
       {{ $.NetworkName }}:
         {{ if $.Network }}ipv4_address: {{ .InternalIP }}{{ end }}
@@ -56,6 +58,8 @@ services:
     {{ if .LoadState }}
     volumes:
       - {{ .LoadState }}:/anvil/state.json
+    logging:
+      driver: local
     {{ end }}
 {{- end}}
 
@@ -90,6 +94,8 @@ services:
       retries: 30
     volumes:
       - ./{{ .InstanceName }}:/geth
+    logging:
+      driver: local
     networks:
       {{ $.NetworkName }}:
         {{ if $.Network }}ipv4_address: {{ .AdvertisedIP }}{{ end }}
@@ -106,6 +112,8 @@ services:
       - 26660 # Prometheus and pprof
     volumes:
       - ./relayer:/relayer
+    logging:
+      driver: local
     networks:
       {{ $.NetworkName }}:
         {{ if $.Network }}ipv4_address: 10.186.73.200{{ end }}
@@ -122,6 +130,8 @@ services:
       - 26660 # Prometheus and pprof
     volumes:
       - ./monitor:/monitor
+    logging:
+      driver: local
     networks:
       {{ $.NetworkName }}:
         {{ if $.Network }}ipv4_address: 10.186.73.201{{ end }}
@@ -138,6 +148,8 @@ services:
       - 26660 # Prometheus and pprof
     volumes:
       - ./solver:/solver
+    logging:
+      driver: local
     networks:
       {{ $.NetworkName }}:
         {{ if $.Network }}ipv4_address: 10.186.73.203{{ end }}
@@ -158,6 +170,8 @@ services:
     restart: unless-stopped
     volumes:
       - ./prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
+    logging:
+      driver: local
     networks:
       {{ $.NetworkName }}:
         {{ if $.Network }}ipv4_address: 10.186.73.202{{ end }}

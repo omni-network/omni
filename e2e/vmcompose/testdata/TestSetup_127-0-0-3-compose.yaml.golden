@@ -25,6 +25,8 @@ services:
     
     volumes:
       - ./anvil/state.json:/anvil/state.json
+    logging:
+      driver: local
     
 
   # Use geth as the omni EVMs.
@@ -38,6 +40,8 @@ services:
       - 26660 # Prometheus and pprof
     volumes:
       - ./relayer:/relayer
+    logging:
+      driver: local
     networks:
       test:
         
