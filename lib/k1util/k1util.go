@@ -3,6 +3,7 @@ package k1util
 
 import (
 	stdecdsa "crypto/ecdsa"
+	"math/big"
 
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
@@ -38,10 +39,19 @@ func Sign(key crypto.PrivKey, input [32]byte) ([65]byte, error) {
 		return [65]byte{}, errors.New("invalid private key length")
 	}
 
-	sig := ecdsa.SignCompact(secp256k1.PrivKeyFromBytes(bz), input[:], false)
+	compact := ecdsa.SignCompact(secp256k1.PrivKeyFromBytes(bz), input[:], false)
 
 	// Convert signature from "compact" into "Ethereum R S V" format.
-	return cast.Array65(append(sig[1:], sig[0]))
+	sig, err := cast.Array65(append(compact[1:], compact[0]))
+	if err != nil {
+		return [65]byte{}, err
+	}
+
+	if err := verifySigValues(sig); err != nil { // Sanity check
+		return [65]byte{}, errors.Wrap(err, "verify signature values [BUG]")
+	}
+
+	return sig, nil
 }
 
 // Verify returns whether the 65 byte signature is valid for the provided hash
@@ -49,6 +59,10 @@ func Sign(key crypto.PrivKey, input [32]byte) ([65]byte, error) {
 //
 // Note the signature MUST be 65 bytes in the Ethereum [R || S || V] format.
 func Verify(address common.Address, hash [32]byte, sig [65]byte) (bool, error) {
+	if err := verifySigValues(sig); err != nil {
+		return false, errors.Wrap(err, "verify signature values")
+	}
+
 	// Adjust V from Ethereum 27/28 to secp256k1 0/1
 	const vIdx = 64
 	if v := sig[vIdx]; v != 27 && v != 28 {
@@ -170,4 +184,27 @@ func PubKeyFromBytes64(pubkey []byte) (*stdecdsa.PublicKey, error) {
 	}
 
 	return resp, nil
+}
+
+// verifySigValues returns an error if the signature values are invalid with
+// the given chain rules. The v value is assumed to be either 27 or 28.
+func verifySigValues(sig [65]byte) error {
+	// Convert V to 0/1
+	var v byte
+	if sig[64] == 27 {
+		v = 0
+	} else if sig[64] == 28 {
+		v = 1
+	} else {
+		return errors.New("invalid recovery id (V) format, must be 27 or 28")
+	}
+
+	r := new(big.Int).SetBytes(sig[:32])
+	s := new(big.Int).SetBytes(sig[32:64])
+
+	if !ethcrypto.ValidateSignatureValues(v, r, s, true) {
+		return errors.New("invalid signature values")
+	}
+
+	return nil
 }
