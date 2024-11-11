@@ -3,6 +3,7 @@ pragma solidity =0.8.24;
 
 import { Staking } from "src/octane/Staking.sol";
 import { Test, Vm } from "forge-std/Test.sol";
+import { Secp256k1 } from "src/libraries/Secp256k1.sol";
 
 /**
  * @title Staking_Test
@@ -27,7 +28,11 @@ contract Staking_Test is Test {
         address validator = makeAddr("validator");
         address[] memory validators = new address[](1);
         validators[0] = validator;
-        bytes memory pubkey = abi.encodePacked(hex"03440d290e4394cd9832cc7025769be18ab7975e34e4514c31c07da3d370fe0b05");
+        bytes32 x = 0x991aec2da95415fd61dff26eb1439618d659e5a5f07f114554217b4265031012;
+        bytes32 y = 0x418b0e8b020e76744e231152dada6ab80b4cdf39e55d273510302e8d135bdcbc;
+        bytes memory pubkey = Secp256k1.compressPublicKey(x, y);
+        bytes memory signature =
+            hex"8ac5fe19a8bf5a3c8acd9b9ba0a7f06cb3b162aab01772988e2d179b454badb32f1db3170a117c7e681ef592ea90950d7a85e7278afb8f46dce02cdf26710a2700";
         vm.deal(validator, staking.MinDeposit());
 
         // allowlist is disabled
@@ -40,7 +45,7 @@ contract Staking_Test is Test {
 
         // must be in allowlist
         vm.expectRevert("Staking: not allowed");
-        staking.createValidator(pubkey);
+        staking.createValidator(x, y, signature);
 
         // add to allowlist
         vm.prank(owner);
@@ -52,34 +57,29 @@ contract Staking_Test is Test {
 
         vm.expectRevert("Staking: insufficient deposit");
         vm.prank(validator);
-        staking.createValidator{ value: insufficientDeposit }(pubkey);
+        staking.createValidator{ value: insufficientDeposit }(x, y, signature);
 
-        // requires 33 byte
         uint256 deposit = staking.MinDeposit();
-        bytes memory pubkey32 = abi.encodePacked(keccak256("pubkey"));
-
-        vm.expectRevert("Staking: invalid pubkey length");
-        vm.prank(validator);
-        staking.createValidator{ value: deposit }(pubkey32);
-
-        // requires valid pubkey prefix
-        bytes memory invalidPubkey = abi.encodePacked(hex"01", pubkey32);
-        vm.expectRevert("Staking: invalid pubkey prefix");
-        vm.prank(validator);
-        staking.createValidator{ value: deposit }(invalidPubkey);
 
         // requires a valid pubkey on the secp256k1 curve
-        invalidPubkey = abi.encodePacked(hex"03", pubkey32);
+        bytes32 badY = bytes32(uint256(y) + 1);
         vm.expectRevert("Staking: invalid pubkey");
         vm.prank(validator);
-        staking.createValidator{ value: deposit }(invalidPubkey);
+        staking.createValidator{ value: deposit }(x, badY, signature);
+
+        // requires a valid signature
+        bytes memory badSignature = abi.encodePacked(signature);
+        badSignature[0] = bytes1(uint8(badSignature[0]) + 1);
+        vm.expectRevert("Staking: invalid signature");
+        vm.prank(validator);
+        staking.createValidator{ value: deposit }(x, y, badSignature);
 
         // succeeds with valid deposit and pubkey
         vm.expectEmit();
         emit CreateValidator(validator, pubkey, deposit);
 
         vm.prank(validator);
-        staking.createValidator{ value: deposit }(pubkey);
+        staking.createValidator{ value: deposit }(x, y, signature);
 
         // remove from allowlist
         vm.prank(owner);
@@ -90,7 +90,7 @@ contract Staking_Test is Test {
         vm.expectRevert("Staking: not allowed");
         vm.deal(validator, deposit);
         vm.prank(validator);
-        staking.createValidator{ value: deposit }(pubkey);
+        staking.createValidator{ value: deposit }(x, y, signature);
 
         // disable allowlist
         vm.prank(owner);
@@ -102,7 +102,7 @@ contract Staking_Test is Test {
         emit CreateValidator(validator, pubkey, deposit);
 
         vm.prank(validator);
-        staking.createValidator{ value: deposit }(pubkey);
+        staking.createValidator{ value: deposit }(x, y, signature);
     }
 
     function test_delegate() public {

@@ -90,8 +90,25 @@ contract Staking is OwnableUpgradeable {
     function createValidator(bytes calldata pubkey) external payable {
         require(!isAllowlistEnabled || isAllowedValidator[msg.sender], "Staking: not allowed");
         require(msg.value >= MinDeposit, "Staking: insufficient deposit");
-        require(Secp256k1.validatePubkey(pubkey), "Staking: invalid pubkey");
+        require(Secp256k1.verifyPubkey(pubkey), "Staking: invalid pubkey");
 
+        emit CreateValidator(msg.sender, pubkey, msg.value);
+    }
+
+    /**
+     * @notice Create a new validator
+     * @param x The x coordinate of the validators consensus public key
+     * @param y The y coordinate of the validators consensus public key
+     * @param signature The signature of the validators consensus public key
+     * @dev Proxies x/staking.MsgCreateValidator
+     */
+    function createValidator(bytes32 x, bytes32 y, bytes calldata signature) external payable {
+        require(!isAllowlistEnabled || isAllowedValidator[msg.sender], "Staking: not allowed");
+        require(msg.value >= MinDeposit, "Staking: insufficient deposit");
+        require(Secp256k1.verifyPubkey(x, y), "Staking: invalid pubkey");
+        require(Secp256k1.verifySignature(x, y, signature), "Staking: invalid signature");
+
+        bytes memory pubkey = Secp256k1.compressPublicKey(x, y);
         emit CreateValidator(msg.sender, pubkey, msg.value);
     }
 
