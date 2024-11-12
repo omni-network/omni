@@ -22,9 +22,9 @@ func VoteLogs(votes []*Vote) []any {
 
 // AttLogs returns the headers as opinionated human-readable logging attributes.
 func AttLogs(headers []*AttestHeader) []any {
-	offsets := make(map[xchain.ChainVersion][]string)
+	offsetsByChainVer := make(map[xchain.ChainVersion][]string)
 	for _, header := range headers {
-		offset := offsets[header.XChainVersion()]
+		offset := offsetsByChainVer[header.XChainVersion()]
 		if len(offset) < logLimit {
 			offset = append(offset, strconv.FormatUint(header.AttestOffset, 10))
 		} else if len(offset) == logLimit {
@@ -32,14 +32,14 @@ func AttLogs(headers []*AttestHeader) []any {
 		} else {
 			continue
 		}
-		offsets[header.XChainVersion()] = offset
+		offsetsByChainVer[header.XChainVersion()] = offset
 	}
 
-	attrs := []any{slog.Int("count", len(offsets))}
-	for chainVer, offsets := range offsets {
+	attrs := []any{slog.Int("count", len(offsetsByChainVer))}
+	for _, header := range headers {
 		attrs = append(attrs, slog.String(
-			fmt.Sprintf("%d-%d", chainVer.ID, chainVer.ConfLevel),
-			fmt.Sprint(offsets),
+			fmt.Sprintf("%d-%d", header.SourceChainId, header.ConfLevel),
+			fmt.Sprint(offsetsByChainVer[header.XChainVersion()]),
 		))
 	}
 

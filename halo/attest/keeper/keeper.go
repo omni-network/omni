@@ -658,6 +658,8 @@ func (k *Keeper) EndBlock(ctx context.Context) error {
 
 // ExtendVote extends a vote with application-injected data (vote extensions).
 func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
+	ctx = ctx.WithContext(log.WithCtx(ctx.Context(), "height", ctx.BlockHeight()))
+
 	cChainID, err := netconf.ConsensusChainIDStr2Uint64(ctx.ChainID())
 	if err != nil {
 		return nil, errors.Wrap(err, "parse chain id")
@@ -710,7 +712,7 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 		votesExtended.WithLabelValues(k.namer(chainVer)).Observe(float64(count))
 	}
 
-	log.Info(ctx, "Voter voting", types.VoteLogs(filtered)...)
+	log.Info(ctx, "Voter extending vote", types.VoteLogs(filtered)...)
 
 	return &abci.ResponseExtendVote{
 		VoteExtension: bz,
