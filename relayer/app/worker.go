@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
+	"github.com/omni-network/omni/relayer/app/cursor"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
@@ -29,12 +30,19 @@ type Worker struct {
 	creator      CreateFunc
 	sendProvider func() (SendAsync, error)
 	awaitValSet  awaitValSet
+	cursors      *cursor.Cursors
 }
 
 // NewWorker creates a new worker for a single destination chain.
-func NewWorker(destChain netconf.Chain, network netconf.Network, cProvider cchain.Provider,
-	xProvider xchain.Provider, creator CreateFunc, sendProvider func() (SendAsync, error),
+func NewWorker(
+	destChain netconf.Chain,
+	network netconf.Network,
+	cProvider cchain.Provider,
+	xProvider xchain.Provider,
+	creator CreateFunc,
+	sendProvider func() (SendAsync, error),
 	awaitValSet awaitValSet,
+	cursors *cursor.Cursors,
 ) *Worker {
 	return &Worker{
 		destChain:    destChain,
@@ -44,6 +52,7 @@ func NewWorker(destChain netconf.Chain, network netconf.Network, cProvider cchai
 		creator:      creator,
 		sendProvider: sendProvider,
 		awaitValSet:  awaitValSet,
+		cursors:      cursors,
 	}
 }
 
@@ -69,16 +78,22 @@ func (w *Worker) runOnce(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	cursors, err := getSubmittedCursors(ctx, w.network, w.destChain.ID, w.xProvider)
+	cursors, err := w.cursors.Confirmed(ctx, w.destChain.ID)
 	if err != nil {
 		return err
 	}
 
-	for _, cursor := range cursors {
+	// todo what should we do with these submitted cursors, maybe good idea to replace the ones we are missing from storage for cold start
+	// cursors, err := getSubmittedCursors(ctx, w.network, w.destChain.ID, w.xProvider)
+	// if err != nil {
+	//	return err
+	// }
+
+	for _, c := range cursors {
 		log.Info(ctx, "Worker fetched submitted cursor",
-			"stream", w.network.StreamName(cursor.StreamID),
-			"attest_offset", cursor.AttestOffset,
-			"msg_offset", cursor.MsgOffset,
+			"stream", w.network.StreamName(c.StreamID),
+			"attest_offset", c.AttestOffset,
+			"msg_offset", c.MsgOffset,
 		)
 	}
 
@@ -249,7 +264,13 @@ func (w *Worker) newCallback(
 			msgs, err = filterMsgs(ctx, streamID, w.network.StreamName, msgs, msgFilter)
 			if err != nil {
 				return err
-			} else if len(msgs) == 0 {
+			}
+
+			if err := w.cursors.Add(ctx, streamID, att.AttestOffset, msgs); err != nil {
+				return err
+			}
+
+			if len(msgs) == 0 {
 				continue
 			}
 

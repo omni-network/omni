@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package relayer.app.cursors;
+package relayer.app.cursor;
 
 import "cosmos/orm/v1/orm.proto";
 
@@ -10,15 +10,12 @@ message Cursor {
   option (cosmos.orm.v1.table) = {
     id: 1;
     primary_key: { fields: "src_chain_id,conf_level,dst_chain_id,attest_offset" }
-    index: { id: 1, fields: "confirmed" }
-    index: { id: 2, fields: "src_chain_id,conf_level,dst_chain_id" }
   };
 
   uint64 src_chain_id       = 1; // Chain ID as per https://chainlist.org
   uint64 dst_chain_id       = 2; // Chain ID as per https://chainlist.org
   uint32 conf_level         = 3; // Confirmation level of the cross-chain block
   uint64 attest_offset      = 4; // Offset of the cross-chain block
-  uint64 first_xmsg_offset  = 5; // Offset of the first cross-chain message
-  uint64 last_xmsg_offset   = 6; // Offset of the last cross-chain message
-  bool confirmed            = 7; // Is the cursor confirmed
+  uint64 last_xmsg_offset   = 5; // Last cross-chain message offset
+  bool confirmed            = 6; // Is the cursor confirmed
 }

@@ -8,30 +8,11 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 )
 
 // initialAttestOffset defines the first AttestOffset for all chains, it starts at 1, not 0.
 const initialAttestOffset = 1
-
-// getSubmittedCursors returns the last submitted cursor for each source chain on the destination chain.
-func getSubmittedCursors(ctx context.Context, network netconf.Network, dstChainID uint64, xClient xchain.Provider,
-) ([]xchain.SubmitCursor, error) {
-	var cursors []xchain.SubmitCursor //nolint:prealloc // Not worth it.
-	for _, stream := range network.StreamsTo(dstChainID) {
-		cursor, ok, err := xClient.GetSubmittedCursor(ctx, xchain.FinalizedRef, stream)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get submitted cursors", "src_chain", stream.SourceChainID)
-		} else if !ok {
-			continue
-		}
-
-		cursors = append(cursors, cursor)
-	}
-
-	return cursors, nil
-}
 
 // filterMsgs filters messages based on offsets for a specific stream.
 // It takes a slice of messages, offsets indexed by stream ID, and the target stream ID,
