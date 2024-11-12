@@ -13,10 +13,7 @@ import (
 	db "github.com/cosmos/cosmos-db"
 )
 
-// todo mind the query limit on db
-// add logging
-// add metrics
-
+// Cursors implements operations on the persisted cursors for network.
 type Cursors struct {
 	network         netconf.Network
 	cursors         CursorTable
@@ -24,7 +21,12 @@ type Cursors struct {
 	confirmInterval time.Duration
 }
 
-func NewCursors(network netconf.Network, db db.DB, xProvider xchain.Provider, confirmInterval time.Duration) (*Cursors, error) {
+func NewCursors(
+	network netconf.Network,
+	db db.DB,
+	xProvider xchain.Provider,
+	confirmInterval time.Duration,
+) (*Cursors, error) {
 	cursors, err := NewCursorsTable(db)
 	if err != nil {
 		return nil, err
@@ -45,7 +47,6 @@ func (c *Cursors) Confirmed(ctx context.Context, destChainID uint64) ([]xchain.S
 	var cursors []xchain.SubmitCursor
 
 	for _, stream := range c.streams {
-		// todo improve
 		var streamsDest bool
 		for _, s := range c.network.StreamsTo(destChainID) {
 			if s == stream.stream {

@@ -1,4 +1,4 @@
-package cursor_test
+package cursor
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/lib/xchain"
-	"github.com/omni-network/omni/relayer/app/cursor"
 
 	"cosmossdk.io/orm/types/ormerrors"
 	db "github.com/cosmos/cosmos-db"
@@ -25,23 +24,23 @@ func Test_StreamConfirmation(t *testing.T) {
 		ShardID:       0,
 	}
 
-	c := func(offset uint64, lastMsg uint64, confirmed bool) *cursor.Cursor {
+	c := func(offset uint64, lastMsg uint64, confirmed bool) *Cursor {
 		return buildCursor(offset, lastMsg, confirmed, stream)
 	}
 
 	tests := []struct {
 		desc       string
-		cursors    []*cursor.Cursor     // db cursors
+		cursors    []*Cursor            // db cursors
 		final      *xchain.SubmitCursor // on-chain submitted cursor result
 		confOffset uint64               // offset up to which cursors should be confirmed
 	}{{
 		desc:       "single non-empty attestation",
-		cursors:    []*cursor.Cursor{c(1, 2, false)},
+		cursors:    []*Cursor{c(1, 2, false)},
 		final:      &xchain.SubmitCursor{StreamID: stream, MsgOffset: 2, AttestOffset: 1},
 		confOffset: 1,
 	}, {
 		desc: "non-empty attestation followed by empty",
-		cursors: []*cursor.Cursor{
+		cursors: []*Cursor{
 			c(1, 2, false),
 			c(2, 0, false),
 			c(3, 0, false),
@@ -50,7 +49,7 @@ func Test_StreamConfirmation(t *testing.T) {
 		confOffset: 3,
 	}, {
 		desc: "non-empty attestation followed by empty, followed by non-empty but non-confirmed, followed by empty",
-		cursors: []*cursor.Cursor{
+		cursors: []*Cursor{
 			c(1, 2, false),
 			c(2, 0, false),
 			c(3, 0, false),
@@ -62,7 +61,7 @@ func Test_StreamConfirmation(t *testing.T) {
 		confOffset: 3,
 	}, {
 		desc: "empty confirmed followed by empty non-confirmed",
-		cursors: []*cursor.Cursor{
+		cursors: []*Cursor{
 			c(1, 0, true),
 			c(2, 0, false),
 			c(3, 0, false),
@@ -70,7 +69,7 @@ func Test_StreamConfirmation(t *testing.T) {
 		confOffset: 3,
 	}, {
 		desc: "empty confirmed followed by empty non-confirmed, followed by non-empty",
-		cursors: []*cursor.Cursor{
+		cursors: []*Cursor{
 			c(1, 0, true),
 			c(2, 0, false),
 			c(3, 0, false),
@@ -80,7 +79,7 @@ func Test_StreamConfirmation(t *testing.T) {
 		confOffset: 3,
 	}, {
 		desc: "all empty and non-confirmed",
-		cursors: []*cursor.Cursor{
+		cursors: []*Cursor{
 			c(1, 0, false),
 			c(2, 0, false),
 			c(3, 0, false),
@@ -93,9 +92,9 @@ func Test_StreamConfirmation(t *testing.T) {
 			t.Parallel()
 
 			provider := &mockProvider{}
-			cursorsDB, err := cursor.NewCursorsTable(db.NewMemDB())
+			cursorsDB, err := NewCursorsTable(db.NewMemDB())
 			require.NoError(t, err)
-			cursors := cursor.NewStreamCursors(stream, cursorsDB, provider)
+			cursors := newStreamCursors(stream, cursorsDB, provider)
 
 			for _, c := range test.cursors {
 				require.NoError(t, cursorsDB.Insert(ctx, c))
@@ -147,21 +146,21 @@ func Test_StreamTrimming(t *testing.T) {
 		ShardID:       0,
 	}
 
-	c := func(offset uint64, lastMsg uint64, confirmed bool) *cursor.Cursor {
+	c := func(offset uint64, lastMsg uint64, confirmed bool) *Cursor {
 		return buildCursor(offset, lastMsg, confirmed, stream)
 	}
 
 	tests := []struct {
 		desc         string
-		cursors      []*cursor.Cursor // db cursors
-		deleteOffset uint64           // offset up to which the cursors were deleted
+		cursors      []*Cursor // db cursors
+		deleteOffset uint64    // offset up to which the cursors were deleted
 	}{{
 		desc:         "single non-empty attestation",
-		cursors:      []*cursor.Cursor{c(1, 2, true)},
+		cursors:      []*Cursor{c(1, 2, true)},
 		deleteOffset: 0,
 	}, {
 		desc: "multiple confirmed",
-		cursors: []*cursor.Cursor{
+		cursors: []*Cursor{
 			c(1, 2, true),
 			c(2, 0, true),
 			c(3, 0, true),
@@ -169,7 +168,7 @@ func Test_StreamTrimming(t *testing.T) {
 		deleteOffset: 2,
 	}, {
 		desc: "multiple confirmed, followed by non-confirmed",
-		cursors: []*cursor.Cursor{
+		cursors: []*Cursor{
 			c(1, 2, true),
 			c(2, 0, true),
 			c(3, 0, true),
@@ -179,7 +178,7 @@ func Test_StreamTrimming(t *testing.T) {
 		deleteOffset: 2,
 	}, {
 		desc: "multiple empty non-confirmed, followed by non-empty confirmed",
-		cursors: []*cursor.Cursor{
+		cursors: []*Cursor{
 			c(1, 0, false),
 			c(2, 0, false),
 			c(3, 2, true),
@@ -188,7 +187,7 @@ func Test_StreamTrimming(t *testing.T) {
 		deleteOffset: 2,
 	}, {
 		desc: "multiple empty non-confirmed",
-		cursors: []*cursor.Cursor{
+		cursors: []*Cursor{
 			c(1, 0, false),
 			c(2, 0, false),
 			c(3, 0, false),
@@ -201,9 +200,9 @@ func Test_StreamTrimming(t *testing.T) {
 			t.Parallel()
 
 			provider := &mockProvider{}
-			cursorsDB, err := cursor.NewCursorsTable(db.NewMemDB())
+			cursorsDB, err := NewCursorsTable(db.NewMemDB())
 			require.NoError(t, err)
-			cursors := cursor.NewStreamCursors(stream, cursorsDB, provider)
+			cursors := newStreamCursors(stream, cursorsDB, provider)
 
 			for _, c := range test.cursors {
 				require.NoError(t, cursorsDB.Insert(ctx, c))
@@ -244,8 +243,8 @@ func buildCursor(
 	lastMsg uint64,
 	confirmed bool,
 	stream xchain.StreamID,
-) *cursor.Cursor {
-	return &cursor.Cursor{
+) *Cursor {
+	return &Cursor{
 		SrcChainId:     stream.SourceChainID,
 		DstChainId:     stream.DestChainID,
 		ConfLevel:      uint32(stream.ShardID),

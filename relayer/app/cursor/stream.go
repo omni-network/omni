@@ -18,7 +18,7 @@ type StreamCursors struct {
 	stream   xchain.StreamID
 }
 
-func NewStreamCursors(stream xchain.StreamID, cursors CursorTable, provider xchain.Provider) *StreamCursors {
+func newStreamCursors(stream xchain.StreamID, cursors CursorTable, provider xchain.Provider) *StreamCursors {
 	return &StreamCursors{
 		cursors:  cursors,
 		provider: provider,
@@ -30,7 +30,7 @@ func newNetworkCursors(network netconf.Network, cursors CursorTable, provider xc
 	var streams []*StreamCursors
 	for _, chain := range network.EVMChains() {
 		for _, stream := range network.StreamsTo(chain.ID) {
-			streams = append(streams, NewStreamCursors(stream, cursors, provider))
+			streams = append(streams, newStreamCursors(stream, cursors, provider))
 		}
 	}
 
