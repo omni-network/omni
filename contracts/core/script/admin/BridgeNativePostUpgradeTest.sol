@@ -38,7 +38,7 @@ contract BridgeNativePostUpgradeTest is Test {
     function _setup() internal {
         b = OmniBridgeNative(Predeploys.OmniBridgeNative);
         l1Bridge = b.l1Bridge();
-        l1ChainId = b.l1ChainId();
+        l1ChainId = b.l1ChainId() == 0 ? 1 : b.l1ChainId();
         owner = b.owner();
         portal = new MockPortal();
         uint256 l1Deposits = b.l1Deposits();
