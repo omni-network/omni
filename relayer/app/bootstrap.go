@@ -1,4 +1,4 @@
-package app
+package relayer
 
 import (
 	"github.com/omni-network/omni/lib/netconf"

@@ -1,4 +1,4 @@
-package app_test
+package relayer_test
 
 import (
 	"math/rand"
