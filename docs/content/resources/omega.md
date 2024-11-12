@@ -2,7 +2,7 @@
 
 ## Which chains does Omni’s testnet support?
 
-Omni’s testnet deployment, **Omega** (chaid id [164](https://chainlist.org/chain/164)), supports Ethereum Holesky, Arbitrum Sepolia, Optimism Sepolia, and Base Sepolia. More chains will be added over time.
+Omni’s testnet deployment, **Omega** (chain id [164](https://chainlist.org/chain/164)), supports Ethereum Holesky, Arbitrum Sepolia, Optimism Sepolia, and Base Sepolia. More chains will be added over time.
 
 
 
