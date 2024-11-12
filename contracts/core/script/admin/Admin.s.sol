@@ -20,6 +20,7 @@ import { Script } from "forge-std/Script.sol";
 
 import { BridgeL1PostUpgradeTest } from "./BridgeL1PostUpgradeTest.sol";
 import { BridgeNativePostUpgradeTest } from "./BridgeNativePostUpgradeTest.sol";
+import { StakingPostUpgradeTest } from "./StakingPostUpgradeTest.sol";
 
 /**
  * @title Admin
@@ -234,13 +235,23 @@ contract Admin is Script {
      * @param deployer  The address of the account that will deploy the new implementation.
      */
     function upgradeStaking(address admin, address deployer, bytes calldata data) public {
+        Staking staking = Staking(Predeploys.Staking);
+
+        // read storage pre-upgrade
+        address owner = staking.owner();
+        bool isAllowlistEnabled = staking.isAllowlistEnabled();
+
         vm.startBroadcast(deployer);
         address impl = address(new Staking());
         vm.stopBroadcast();
 
         _upgradeProxy(admin, Predeploys.Staking, impl, data);
 
-        // TODO: add post upgrade tests
+        // assert storage unchanged
+        require(staking.owner() == owner, "owner changed");
+        require(staking.isAllowlistEnabled() == isAllowlistEnabled, "isAllowlistEnabled changed");
+
+        new StakingPostUpgradeTest().run();
     }
 
     /**

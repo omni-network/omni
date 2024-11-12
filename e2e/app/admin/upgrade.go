@@ -229,8 +229,12 @@ func ugpradeSlashing(ctx context.Context, s shared, c chain) error {
 }
 
 func upgradeStaking(ctx context.Context, s shared, c chain) error {
-	// TODO: replace if re-initialization is required
-	initializer := []byte{}
+	// Staking.sol's initializeV2() is called after upgrade
+	stakingABI := mustGetABI(bindings.StakingMetaData)
+	initializer, err := stakingABI.Pack("initializeV2")
+	if err != nil {
+		return errors.Wrap(err, "pack initializer")
+	}
 
 	calldata, err := adminABI.Pack("upgradeStaking", s.upgrader, s.deployer, initializer)
 	if err != nil {
