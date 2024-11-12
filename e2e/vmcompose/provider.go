@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -277,12 +276,8 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.ServiceConfig) error {
 // matchAny returns true if the pattern matches any of the services in the services map.
 // An empty pattern returns true, matching anything.
 func matchAny(cfg types.ServiceConfig, services map[string]bool) bool {
-	if cfg.Regexp == "" {
-		return true
-	}
-
 	for service := range services {
-		matched, _ := regexp.MatchString(cfg.Regexp, service)
+		matched := cfg.MatchService(service)
 		if matched {
 			return true
 		}
