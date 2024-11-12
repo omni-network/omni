@@ -17,6 +17,16 @@
 - Note that setting up cosmovisor is strongly advised to support smooth network upgrades. See our [halovisor build scripts](https://github.com/omni-network/omni/tree/main/scripts/halovisor) for inspiration.
 - Note that before starting geth, it must first be initialised with the relevant `execution-genesis.json` file via `geth init` (see [omega](https://github.com/omni-network/omni/tree/main/lib/netconf/omega) and [mainnet](https://github.com/omni-network/omni/tree/main/lib/netconf/mainnet)).
 
+### How long does syncing take?
+
+The time it takes for a validator to sync from genesis depends largely on your disk write throughput.
+Syncing speed is directly proportional to write performance.
+We observed the following numbers in practice:
+- 200 MB/s disk write speed achieves approximately 40 blocks per second.
+- 1.5 GB/s disk write speed achieves around 460 blocks per second.
+
+To estimate your full sync time, check the current chain height and divide this number by your blocks-per-second rate to get a rough duration in seconds.
+
 ### How to check if the validator is ready?
 A node is considered ready when it is healthy and functions as intended.
 This means both the consensus and execution chains are fully synchronized, there are execution and consensus P2P peers connected, and new blocks are being produced.
