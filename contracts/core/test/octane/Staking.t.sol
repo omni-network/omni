@@ -17,22 +17,25 @@ contract Staking_Test is Test {
     event Delegate(address indexed delegator, address indexed validator, uint256 amount);
 
     address owner;
+    address validator;
     StakingHarness staking;
 
     function setUp() public {
         owner = makeAddr("owner");
+        validator = makeAddr("validator");
         staking = new StakingHarness(owner);
     }
 
     function test_createValidator() public {
-        address validator = makeAddr("validator");
         address[] memory validators = new address[](1);
         validators[0] = validator;
+        bytes32 privkey = 0x5aae8cd28d4456aba1d24542558bc2fac787e2fdc2210c20f2f3375e82174205;
         bytes32 x = 0x534d719d4f56544f42e22cab20886dd64fb713a5c72b31f929d856654a11dc0c;
         bytes32 y = 0x5609e3c7f55c46a197ead4a96caa63eeade00b4a775e7709f6e673157a724d6c;
         bytes memory pubkey = Secp256k1.compressPublicKey(x, y);
-        bytes memory signature =
-            hex"e847a133d1925786238a920c00e38ceb5fd5c2ffaba0bcfb63858d3724f40b370767f30ad1cc1a1130d9a199b5c0322b860fce2144147f993db48af4fd4ec2af1b";
+        bytes32 validatorPubkeyDigest = staking.getValidatorPubkeyDigest(x, y);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(uint256(privkey), validatorPubkeyDigest);
+        bytes memory signature = abi.encodePacked(r, s, v);
         vm.deal(validator, staking.MinDeposit());
 
         // allowlist is disabled
