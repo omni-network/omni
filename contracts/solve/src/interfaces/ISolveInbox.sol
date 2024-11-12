@@ -44,9 +44,12 @@ interface ISolveInbox {
 
     /**
      * @notice Emitted when a request is claimed.
-     * @param id  ID of the request.
+     * @param id        ID of the request.
+     * @param by        The solver address that claimed the request.
+     * @param to        The recipient of claimed deposits.
+     * @param deposits  Array of deposits claimed
      */
-    event Claimed(bytes32 indexed id);
+    event Claimed(bytes32 indexed id, address indexed by, address indexed to, Solve.Deposit[] deposits);
 
     /**
      * /**
@@ -102,11 +105,12 @@ interface ISolveInbox {
      * @notice Fulfill a request.
      * @dev Only callable by the outbox.
      */
-    function markFulfilled(bytes32 id, bytes32 callHash, address creditTo) external;
+    function markFulfilled(bytes32 id, bytes32 callHash) external;
 
     /**
      * @notice Claim a fulfilled request.
      * @param id  ID of the request.
+     * @param to  Address to send deposits to.
      */
-    function claim(bytes32 id) external;
+    function claim(bytes32 id, address to) external;
 }

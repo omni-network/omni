@@ -9,13 +9,12 @@ import { InboxBase } from "./InboxBase.sol";
 /**
  * @title SolveInbox_reject_Test
  * @notice Test suite for SolveInbox.reject(...)
- * @dev TODO: add fuzz / invariant tests
  */
 contract SolveInbox_reject_Test is InboxBase {
     function test_reject_reverts() public {
         // cannot reject non-existent request
         vm.prank(solver);
-        vm.expectRevert(SolveInbox.RequestStateInvalid.selector);
+        vm.expectRevert(SolveInbox.NotPending.selector);
         inbox.reject(bytes32(0), Solve.RejectReason.None);
 
         // needs to have solver role
@@ -33,7 +32,7 @@ contract SolveInbox_reject_Test is InboxBase {
 
         // cannot reject cancelled request
         vm.prank(solver);
-        vm.expectRevert(SolveInbox.RequestStateInvalid.selector);
+        vm.expectRevert(SolveInbox.NotPending.selector);
         inbox.reject(id, Solve.RejectReason.None);
 
         // create request to accept before rejecting
@@ -44,7 +43,7 @@ contract SolveInbox_reject_Test is InboxBase {
         // cannot reject accepted request
         vm.startPrank(solver);
         inbox.accept(id);
-        vm.expectRevert(SolveInbox.RequestStateInvalid.selector);
+        vm.expectRevert(SolveInbox.NotPending.selector);
         inbox.reject(id, Solve.RejectReason.None);
         vm.stopPrank();
     }

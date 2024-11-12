@@ -1,4 +1,4 @@
-# Resources
+# Additional info
 
 Below is a list of resources that may be helpful as you explore Omni:
 

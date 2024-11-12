@@ -1,4 +1,4 @@
-//nolint:dupl,unused // It's okay to have similar code for different events
+//nolint:unused // Some functions are unused but are kept for future use
 package app
 
 import (
@@ -48,7 +48,9 @@ func newClaimer(
 			return err
 		}
 
-		tx, err := inbox.Claim(txOpts, req.Id)
+		// Claim to solver address for now
+		// TODO: consider claiming to hot / cold funding wallet
+		tx, err := inbox.Claim(txOpts, req.Id, solverAddr)
 		if err != nil {
 			return errors.Wrap(err, "claim request")
 		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
@@ -90,7 +92,7 @@ func newFulfiller(
 		// TODO(corver): Convert req.Deposits into TokenPreReqs
 		var prereqs []bindings.SolveTokenPrereq
 
-		tx, err := outbox.Fulfill(txOpts, req.Id, chainID, solverAddr, req.Call, prereqs)
+		tx, err := outbox.Fulfill(txOpts, req.Id, chainID, req.Call, prereqs)
 		if err != nil {
 			return errors.Wrap(err, "fulfill request")
 		} else if _, err := backend.WaitMined(ctx, tx); err != nil {

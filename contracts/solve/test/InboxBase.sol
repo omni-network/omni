@@ -67,4 +67,12 @@ contract InboxBase is Test {
             )
         );
     }
+
+    function callHash(bytes32 id, Solve.Call memory call) internal view returns (bytes32) {
+        return callHash(id, uint64(block.chainid), call);
+    }
+
+    function callHash(bytes32 id, uint64 sourceChainId, Solve.Call memory call) internal pure returns (bytes32) {
+        return keccak256(abi.encode(id, sourceChainId, call));
+    }
 }

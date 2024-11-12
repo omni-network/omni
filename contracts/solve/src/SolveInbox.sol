@@ -17,12 +17,25 @@ import { Solve } from "./Solve.sol";
 contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, ISolveInbox {
     using SafeTransferLib for address;
 
+    // Request creation errors
     error NoDeposits();
     error InvalidCall();
-    error IncorrectChain();
     error InvalidDeposit();
+
+    // Request state transition errors
+    error NotPending();
+    error NotPendingOrRejected();
+    error NotAccepted();
+    error NotFulfilled();
+
+    // Request fulfillment errors
+    error NotOutbox();
+    error WrongCallHash();
+    error WrongSourceChain();
+
+    // Transfer errors
     error TransferFailed();
-    error RequestStateInvalid();
+    error InvalidRecipient();
 
     /**
      * @notice Role for solvers.
@@ -100,7 +113,7 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
      */
     function accept(bytes32 id) external onlyRoles(SOLVER) nonReentrant {
         Solve.Request storage req = _requests[id];
-        if (req.status != Solve.Status.Pending) revert RequestStateInvalid();
+        if (req.status != Solve.Status.Pending) revert NotPending();
 
         req.updatedAt = uint40(block.timestamp);
         req.status = Solve.Status.Accepted;
@@ -116,7 +129,7 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
      */
     function reject(bytes32 id, Solve.RejectReason reason) external onlyRoles(SOLVER) nonReentrant {
         Solve.Request storage req = _requests[id];
-        if (req.status != Solve.Status.Pending) revert RequestStateInvalid();
+        if (req.status != Solve.Status.Pending) revert NotPending();
 
         req.updatedAt = uint40(block.timestamp);
         req.status = Solve.Status.Rejected;
@@ -131,7 +144,7 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
      */
     function cancel(bytes32 id) external nonReentrant {
         Solve.Request storage req = _requests[id];
-        if (req.status != Solve.Status.Pending && req.status != Solve.Status.Rejected) revert RequestStateInvalid();
+        if (req.status != Solve.Status.Pending && req.status != Solve.Status.Rejected) revert NotPendingOrRejected();
         if (req.from != msg.sender) revert Unauthorized();
 
         req.updatedAt = uint40(block.timestamp);
@@ -146,40 +159,37 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
      * @notice Fulfill a request.
      * @dev Only callable by the outbox.
      */
-    function markFulfilled(bytes32 id, bytes32 callHash, address creditTo) external xrecv nonReentrant {
-        // Validate request state and fulfillment context
+    function markFulfilled(bytes32 id, bytes32 callHash) external xrecv nonReentrant {
         Solve.Request storage req = _requests[id];
-        if (req.status != Solve.Status.Accepted) revert RequestStateInvalid();
-        if (req.call.destChainId != xmsg.sourceChainId) revert IncorrectChain();
-        if (xmsg.sender != _outbox) revert Unauthorized();
-        // No need to check if msg.sender is OmniPortal as we use xrecv for source validation
+        if (req.status != Solve.Status.Accepted) revert NotAccepted();
+        if (xmsg.sender != _outbox) revert NotOutbox();
+        if (xmsg.sourceChainId != req.call.destChainId) revert WrongSourceChain();
 
-        // Validate call hash, ensuring the correct action is being fulfilled
-        bytes32 _callHash = keccak256(abi.encode(id, block.chainid, req.call));
-        if (_callHash != callHash) revert InvalidCall();
+        // Ensure reported call hash matches requested call hash
+        if (callHash != _callHash(id, uint64(block.chainid), req.call)) revert WrongCallHash();
 
-        // Update request state
         req.updatedAt = uint40(block.timestamp);
         req.status = Solve.Status.Fulfilled;
-        req.acceptedBy = creditTo;
 
-        emit Fulfilled(id, callHash, creditTo);
+        emit Fulfilled(id, callHash, req.acceptedBy);
     }
 
     /**
      * @notice Claim a fulfilled request.
      * @param id  ID of the request.
+     * @param to  Address to send deposits to.
      */
-    function claim(bytes32 id) external nonReentrant {
+    function claim(bytes32 id, address to) external nonReentrant {
         Solve.Request storage req = _requests[id];
-        if (req.status != Solve.Status.Fulfilled) revert RequestStateInvalid();
+        if (req.status != Solve.Status.Fulfilled) revert NotFulfilled();
+        if (req.acceptedBy != msg.sender) revert Unauthorized();
 
         req.updatedAt = uint40(block.timestamp);
         req.status = Solve.Status.Claimed;
 
-        _transferDeposits(req.acceptedBy, req.deposits);
+        _transferDeposits(to, req.deposits);
 
-        emit Claimed(id);
+        emit Claimed(id, msg.sender, to, req.deposits);
     }
 
     /**
@@ -208,6 +218,8 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
      * @dev Transfer deposits to recipient. Used regardless of refund or claim.
      */
     function _transferDeposits(address recipient, Solve.Deposit[] memory deposits) internal {
+        if (recipient == address(0)) revert InvalidRecipient();
+
         for (uint256 i; i < deposits.length; ++i) {
             if (deposits[i].isNative) {
                 (bool success,) = payable(recipient).call{ value: deposits[i].amount }("");
@@ -247,7 +259,7 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
             req.deposits.push(Solve.Deposit({ isNative: false, token: deposits[i].token, amount: deposits[i].amount }));
 
             // NOTE: all external methods must be nonReentrant
-            // This allows us to transfer while opening the request - saving some gas.
+            // This allows us to transfer while opening the request
             deposits[i].token.safeTransferFrom(msg.sender, address(this), deposits[i].amount);
         }
     }
@@ -258,5 +270,12 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
     function _nextId() internal returns (bytes32) {
         _lastId++;
         return bytes32(_lastId);
+    }
+
+    /**
+     * @dev Returns call hash. Used to discern fullfilment.
+     */
+    function _callHash(bytes32 id, uint64 sourceChainId, Solve.Call storage call) internal pure returns (bytes32) {
+        return keccak256(abi.encode(id, sourceChainId, call));
     }
 }
