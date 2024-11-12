@@ -38,10 +38,16 @@ contract BridgeNativePostUpgradeTest is Test {
     function _setup() internal {
         b = OmniBridgeNative(Predeploys.OmniBridgeNative);
         l1Bridge = b.l1Bridge();
-        l1ChainId = b.l1ChainId() == 0 ? 1 : b.l1ChainId();
+        l1ChainId = b.l1ChainId();
         owner = b.owner();
         portal = new MockPortal();
         uint256 l1Deposits = b.l1Deposits();
+
+        // manually setting for eth mainnet, to support upgrade of bridge pre "setup"
+        if (block.chainid == 166) {
+            l1ChainId = 1;
+            l1Bridge = 0xBBB3f5BcB1c8B0Ee932EfAba2fDEE566b83053A5;
+        }
 
         // change portal to mock portal
         vm.startPrank(owner);
