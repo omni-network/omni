@@ -83,12 +83,6 @@ func (w *Worker) runOnce(ctx context.Context) error {
 		return err
 	}
 
-	// todo what should we do with these submitted cursors, maybe good idea to replace the ones we are missing from storage for cold start
-	// cursors, err := getSubmittedCursors(ctx, w.network, w.destChain.ID, w.xProvider)
-	// if err != nil {
-	//	return err
-	// }
-
 	for _, c := range cursors {
 		log.Info(ctx, "Worker fetched submitted cursor",
 			"stream", w.network.StreamName(c.StreamID),

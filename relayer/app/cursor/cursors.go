@@ -99,6 +99,12 @@ func (c *Cursors) Add(
 		return errors.Wrap(err, "insert cursor")
 	}
 
+	log.Info(ctx, "New cursor persisted",
+		"stream", c.network.StreamName(stream),
+		"attest_offset", attestationOffset,
+		"msg_offset", last,
+	)
+
 	return nil
 }
 
