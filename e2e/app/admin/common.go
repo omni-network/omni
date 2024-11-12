@@ -216,8 +216,8 @@ func runForge(ctx context.Context, rpc string, input []byte, broadcast bool, sen
 		args = append(args, "--private-keys", strings.Join(dedup(anvilPks), ","))
 	} else {
 		// else, we use --unlocked flag, to send unsigned eth_sendTransaction requests
-		// with 5 minute timeout, to allow for fireblocks signing.
-		args = append(args, "--timeout", "300", "--unlocked")
+		// with 15 minute timeout, to allow for fireblocks signing.
+		args = append(args, "--timeout", "900", "--unlocked")
 	}
 
 	return execCmd(ctx, dir, "forge", args...)

@@ -117,7 +117,7 @@ func newHTTPServer(ctx context.Context, cfg Config) (*http.Server, error) {
 	return &http.Server{
 		ReadHeaderTimeout: 30 * time.Second,
 		IdleTimeout:       30 * time.Second,
-		WriteTimeout:      5 * time.Minute, // large timeout, to allow for fb tx mpc signing.
+		WriteTimeout:      15 * time.Minute, // large timeout, to allow for fb tx mpc signing.
 		Handler:           http.HandlerFunc(proxy.Proxy),
 	}, nil
 }
