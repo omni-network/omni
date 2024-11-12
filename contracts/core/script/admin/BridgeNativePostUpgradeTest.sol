@@ -43,6 +43,12 @@ contract BridgeNativePostUpgradeTest is Test {
         portal = new MockPortal();
         uint256 l1Deposits = b.l1Deposits();
 
+        // manually setting for eth mainnet, to support upgrade of bridge pre "setup"
+        if (block.chainid == 166) {
+            l1ChainId = 1;
+            l1Bridge = 0xBBB3f5BcB1c8B0Ee932EfAba2fDEE566b83053A5;
+        }
+
         // change portal to mock portal
         vm.startPrank(owner);
         b.setup(l1ChainId, address(portal), l1Bridge, l1Deposits);
