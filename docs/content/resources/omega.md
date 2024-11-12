@@ -1,22 +1,17 @@
 # Testnet
 
-The current testnet network is called **Omega** (chain id [164](https://chainlist.org/chain/164)).
+## Which chains does Omni’s testnet support?
 
-### Have Questions?
-
-Join our developer Telegram channel [here](https://t.me/omnidevsupport)!
-
-### Overview
-
-This document lays out relevant developer resources for the Omni Omega testnet. Please read below for necessary RPC URLs, Explorers, Tools, Libraries and Documentation.
+Omni’s testnet deployment, **Omega** (chain id [164](https://chainlist.org/chain/164)), supports Ethereum Holesky, Arbitrum Sepolia, Optimism Sepolia, and Base Sepolia. More chains will be added over time.
 
 
-### General Information
+
+## General Information
 
 Contracts can be deployed on the Omni EVM using the RPC below. To get started, you can request $OMNI tokens via our [faucet](https://faucet.omni.network/).
 
 
-### RPC URLs
+## RPC URLs
 
 | **Chain Name** | **Chain ID** | RPC URL |
 | --- | --- | --- |
@@ -26,7 +21,7 @@ Contracts can be deployed on the Omni EVM using the RPC below. To get started, y
 | Optimism Sepolia | 11155420 | [See on ChainList](https://chainlist.org/chain/11155420) |
 | Base Sepolia | 84532 | [See on ChainList](https://chainlist.org/chain/84532) |
 
-### Resources
+## Resources
 
 | **Resource** | **Address** |
 | --- | --- |
@@ -36,8 +31,12 @@ Contracts can be deployed on the Omni EVM using the RPC below. To get started, y
 | Omni status page | [https://status.omni.network](https://status.omni.network/) |
 
 
-### Contract addresses
+## Contract addresses
 
 | Contract | Address | Note |
 | --- | --- | --- |
 | OmniPortal | `0xcB60A0451831E4865bC49f41F9C67665Fc9b75C3` | Our portal contracts have the same address on all chains. |
+
+## Have questions?
+
+Join our developer Telegram channel [here](https://t.me/omnidevsupport)!

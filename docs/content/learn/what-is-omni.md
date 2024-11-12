@@ -1,3 +1,7 @@
+---
+slug: /
+---
+
 # Overview
 
 ## Why does Omni exist?

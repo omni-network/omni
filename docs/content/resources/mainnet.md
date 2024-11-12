@@ -2,20 +2,12 @@
 
 **🚧 COMING SOON**
 
+## Which chains does Omni’s mainnet support?
 
-### Have Questions?
-
-Join our developer Telegram channel [here](https://t.me/omnidevsupport)!
-
-### Overview
-
-This document lays out relevant developer resources for the Omni mainnet. Please read below for necessary RPC URLs, Explorers, Tools, Libraries and Documentation.
+Omni’s mainnet deployment supports Ethereum L1, Arbitrum One, Optimism, and Base. More chains will be added over time.
 
 
-### General Information
-
-
-### RPC URLs
+## RPC URLs
 
 | **Chain Name** | **Chain ID** | RPC URL |
 | --- | --- | --- |
@@ -25,7 +17,7 @@ This document lays out relevant developer resources for the Omni mainnet. Please
 | Optimism | 10 | [See on ChainList](https://chainlist.org/chain/10) |
 | Base | 8453 | [See on ChainList](https://chainlist.org/chain/8453) |
 
-### Resources
+## Resources
 
 | **Resource** | **Address** |
 | --- | --- |
@@ -34,8 +26,13 @@ This document lays out relevant developer resources for the Omni mainnet. Please
 | Omni status page | [https://status.omni.network](https://status.omni.network/) |
 
 
-### Contract addresses
+## Contract addresses
 
 | Contract | Address | Note |
 | --- | --- | --- |
 | OmniPortal | TBD | Our portal contracts have the same address on all chains. |
+
+
+## Have questions?
+
+Join our developer Telegram channel [here](https://t.me/omnidevsupport)!

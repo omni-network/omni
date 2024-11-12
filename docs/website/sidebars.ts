@@ -18,18 +18,6 @@ const sidebars: SidebarsConfig = {
   tutorialSidebar: [
     {
       type: 'category',
-      label: 'Build',
-      items: [
-        'build/quickstart',
-        'build/walkthrough',
-        'build/mainnet',
-        'build/omega',
-        'build/faq',
-      ],
-      collapsed: true,
-    },
-    {
-      type: 'category',
       label: 'Learn',
       items: [
         'learn/what-is-omni',
@@ -49,6 +37,15 @@ const sidebars: SidebarsConfig = {
         'operate/validator',
         'operate/roadmap',
         'operate/faq',
+      ],
+      collapsed: true,
+    },
+    {
+      type: 'category',
+      label: 'Resources',
+      items: [
+        'resources/mainnet',
+        'resources/omega',
       ],
       collapsed: true,
     },
