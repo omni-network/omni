@@ -15,14 +15,12 @@ import (
 
 // Cursors implements operations on the persisted cursors for network.
 type Cursors struct {
-	network         netconf.Network
 	cursors         CursorTable
 	confirmInterval time.Duration
 	xProvider       xchain.Provider
 }
 
 func NewCursors(
-	network netconf.Network,
 	db db.DB,
 	xProvider xchain.Provider,
 	confirmInterval time.Duration,
@@ -33,7 +31,6 @@ func NewCursors(
 	}
 
 	return &Cursors{
-		network:         network,
 		cursors:         cursors,
 		confirmInterval: confirmInterval,
 		xProvider:       xProvider,
@@ -83,12 +80,12 @@ func (c *Cursors) Save(
 	return nil
 }
 
-// MonitorNetwork all existing cursors for the network in the storage and
+// Monitor all existing cursors for the network in the storage and
 // confirm them once the submission is finalized.
-func (c *Cursors) MonitorNetwork(ctx context.Context) {
+func (c *Cursors) Monitor(ctx context.Context, network netconf.Network) {
 	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second))
 	for ctx.Err() == nil {
-		if err := c.runOnce(ctx); err != nil {
+		if err := c.runOnce(ctx, network); err != nil {
 			log.Error(ctx, "Cursor worker failed, resetting", err)
 		}
 
@@ -100,12 +97,12 @@ func (c *Cursors) MonitorNetwork(ctx context.Context) {
 	}
 }
 
-func (c *Cursors) runOnce(ctx context.Context) error {
+func (c *Cursors) runOnce(ctx context.Context, network netconf.Network) error {
 	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(c.confirmInterval))
 
 	var streams []*StreamCursors
-	for _, chain := range c.network.EVMChains() {
-		for _, streamID := range c.network.StreamsTo(chain.ID) {
+	for _, chain := range network.EVMChains() {
+		for _, streamID := range network.StreamsTo(chain.ID) {
 			streamCursors := newStreamCursors(streamID.SourceChainID, streamID.DestChainID, streamID.ConfLevel(), c.cursors, c.xProvider)
 			streams = append(streams, streamCursors)
 		}

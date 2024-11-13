@@ -68,11 +68,11 @@ func Run(ctx context.Context, cfg Config) error {
 	pricer := newTokenPricer(ctx)
 	pnl := newPnlLogger(network.ID, pricer)
 
-	cursors, err := cursor.NewCursors(network, db, xprov, cfg.ConfirmInterval)
+	cursors, err := cursor.NewCursors(db, xprov, cfg.ConfirmInterval)
 	if err != nil {
 		return err
 	}
-	go cursors.MonitorNetwork(ctx)
+	go cursors.Monitor(ctx, network)
 
 	for _, destChain := range network.EVMChains() {
 		// Setup send provider
