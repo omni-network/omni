@@ -5,7 +5,7 @@ import { OmniPortalFixtures } from "test/templates/fixtures/OmniPortalFixtures.s
 import { OmniPortal } from "src/xchain/OmniPortal.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
-import { console2 } from "forge-std/console2.sol";
+import { console2 as console } from "forge-std/console2.sol";
 
 /**
  * @title OmniPortal_sys_Test
@@ -64,6 +64,33 @@ contract OmniPortal_sys_Test is OmniPortalFixtures {
         for (uint256 i = 0; i < chain2Shards.length; i++) {
             assertFalse(portal.isSupportedShard(chain2Shards[i]));
         }
+    }
+
+    /// @dev Test that adding a valset of max size is below reasonable gas limits
+    function test_addValidatorSet_maxGas() public {
+        uint256 maxVals = 30; // matches the max validators in the OmniPortal contract
+        uint64 power = 100;
+
+        XTypes.Validator[] memory validators = new XTypes.Validator[](maxVals);
+        for (uint256 i = 1; i < validators.length + 1; i++) {
+            validators[i - 1] = XTypes.Validator({ addr: address(uint160(i)), power: power });
+        }
+
+        XTypes.BlockHeader memory xheader = xsubgen.makeXHeader(omniCChainID, ConfLevel.Finalized);
+        XTypes.Msg[] memory msgs = new XTypes.Msg[](1);
+        msgs[0] = _sysXMsg(abi.encodeCall(OmniPortal.addValidatorSet, (2, validators)));
+
+        XTypes.Submission memory xsub =
+            xsubgen.makeXSub(1, xheader, msgs, xsubgen.msgFlagsForDest(msgs, broadcastChainId));
+
+        vm.chainId(1);
+        uint256 gasBefore = gasleft();
+        portal.xsubmit(xsub);
+        uint256 gasUsed = gasBefore - gasleft();
+        console.log("Gas used: ", gasUsed);
+
+        assertLt(gasUsed, 1_000_000); // assert under 1M gas, well below block gas limits
+        assertEq(portal.valSetTotalPower(2), power * maxVals);
     }
 
     /// @dev Test syscalls (xcalls to VirtualPortalAddress) are properly authorized

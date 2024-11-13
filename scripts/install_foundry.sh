@@ -3,7 +3,7 @@
 
 
 # If already forge installed, exit. (we do not care about cast or anvil
-if [ "${FORCE}" != "true" ] which forge 1>/dev/null; then
+if [ "${FORCE}" != "true" ] && which forge 1>/dev/null; then
   echo "Foundry already installed: $(forge --version)."
   echo "Run 'foundryup' to update."
   return
