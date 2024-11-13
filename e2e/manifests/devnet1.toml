@@ -10,5 +10,3 @@ prometheus = true
 
 [node.fullnode01]
 mode="archive"
-
-PingPongN = 5
