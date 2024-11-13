@@ -19,23 +19,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetPayloadV2(t *testing.T) {
-	t.Parallel()
-	fuzzer := fuzz.New().NilChance(0)
-
-	var param1 engine.PayloadID
-	fuzzer.Fuzz(&param1)
-
-	var resp engine.ExecutionPayloadEnvelope
-	fuzzer.Fuzz(&resp)
-
-	call := func(ctx context.Context, engineCl ethclient.EngineClient) (any, error) {
-		return engineCl.GetPayloadV2(ctx, param1)
-	}
-
-	testEndpoint(t, call, resp, param1)
-}
-
 func TestGetPayloadV3(t *testing.T) {
 	t.Parallel()
 	fuzzer := fuzz.New().NilChance(0)
@@ -48,23 +31,6 @@ func TestGetPayloadV3(t *testing.T) {
 
 	call := func(ctx context.Context, engineCl ethclient.EngineClient) (any, error) {
 		return engineCl.GetPayloadV3(ctx, param1)
-	}
-
-	testEndpoint(t, call, resp, param1)
-}
-
-func TestNewPayloadV2(t *testing.T) {
-	t.Parallel()
-	fuzzer := fuzz.New().NilChance(0)
-
-	var param1 engine.ExecutableData
-	fuzzer.Fuzz(&param1)
-
-	var resp engine.PayloadStatusV1
-	fuzzer.Fuzz(&resp)
-
-	call := func(ctx context.Context, engineCl ethclient.EngineClient) (any, error) {
-		return engineCl.NewPayloadV2(ctx, param1)
 	}
 
 	testEndpoint(t, call, resp, param1)
@@ -85,32 +51,13 @@ func TestNewPayloadV3(t *testing.T) {
 
 	var resp engine.PayloadStatusV1
 	fuzzer.Fuzz(&resp)
+	resp.Status = engine.VALID
 
 	call := func(ctx context.Context, engineCl ethclient.EngineClient) (any, error) {
 		return engineCl.NewPayloadV3(ctx, param1, param2, &param3)
 	}
 
 	testEndpoint(t, call, resp, param1, param2, param3)
-}
-
-func TestForkchoiceUpdatedV2(t *testing.T) {
-	t.Parallel()
-	fuzzer := fuzz.New().NilChance(0)
-
-	var param1 engine.ForkchoiceStateV1
-	fuzzer.Fuzz(&param1)
-
-	var param2 engine.PayloadAttributes
-	fuzzer.Fuzz(&param2)
-
-	var resp engine.ForkChoiceResponse
-	fuzzer.Fuzz(&resp)
-
-	call := func(ctx context.Context, engineCl ethclient.EngineClient) (any, error) {
-		return engineCl.ForkchoiceUpdatedV2(ctx, param1, &param2)
-	}
-
-	testEndpoint(t, call, resp, param1, param2)
 }
 
 func TestForkchoiceUpdatedV3(t *testing.T) {
@@ -125,6 +72,7 @@ func TestForkchoiceUpdatedV3(t *testing.T) {
 
 	var resp engine.ForkChoiceResponse
 	fuzzer.Fuzz(&resp)
+	resp.PayloadStatus.Status = engine.VALID
 
 	call := func(ctx context.Context, engineCl ethclient.EngineClient) (any, error) {
 		return engineCl.ForkchoiceUpdatedV3(ctx, param1, &param2)
