@@ -26,57 +26,50 @@ func TestBufferStream(t *testing.T) {
 	tick := ticker.NewMock()
 	ctx := context.Background()
 
-	b := tokenprice.NewBuffer(pricer, tokens.OMNI, tokens.ETH, tokenprice.WithThresholdPct(thresh), tokenprice.WithTicker(tick))
+	b := tokenprice.NewBuffer(pricer, []tokens.Token{tokens.OMNI, tokens.ETH}, thresh, tick)
 
 	b.Stream(ctx)
+
+	// tick once
 	tick.Tick()
 
-	// buffered price should be initial
+	// buffered price should be initial live
 	for token, price := range initial {
-		require.InEpsilon(t, price, b.Price(token), 0.01, "initial")
+		require.InEpsilon(t, price, b.Price(token), 0.001, "initial")
 	}
 
-	// just increase a little, but not above threshold
-	for token, price := range initial {
-		pricer.SetPrice(token, price+(price*thresh)-1)
-	}
+	// 10 steps
+	buffed := make(map[tokens.Token]float64)
+	for i := 0; i < 10; i++ {
+		for token := range initial {
+			buffed[token] = b.Price(token)
+			pricer.SetPrice(token, randPrice())
+		}
 
-	tick.Tick()
+		tick.Tick()
 
-	// buffered price should still be initial
-	for token, price := range initial {
-		require.InEpsilon(t, price, b.Price(token), 0.01, "within threshold")
-	}
-
-	// increase above threshold
-	for token, price := range initial {
-		pricer.SetPrice(token, price+(price*thresh)*2)
-	}
-
-	tick.Tick()
-
-	// buffered price should be updated
-	for token := range initial {
-		prices, err := pricer.Price(ctx, token)
+		live, err := pricer.Price(ctx, tokens.OMNI, tokens.ETH)
 		require.NoError(t, err)
-		price := prices[token]
-		require.InEpsilon(t, price, b.Price(token), 0.01, "outside threshold")
-	}
 
-	// reset back to initial
-	for token, price := range initial {
-		pricer.SetPrice(token, price)
-	}
-
-	tick.Tick()
-
-	// buffered price should be initial
-	for token, price := range initial {
-		require.InEpsilon(t, price, b.Price(token), 0.01, "reset")
+		for token, price := range live {
+			if inThreshold(price, buffed[token], thresh) {
+				require.InEpsilon(t, buffed[token], b.Price(token), 0.001, "should not update")
+			} else {
+				require.InEpsilon(t, price, b.Price(token), 0.001, "should update")
+			}
+		}
 	}
 }
 
 // randPrice generates a random, reasonable token price.
 func randPrice() float64 {
 	return float64(rand.Intn(5000)) + rand.Float64()
+}
+
+// inThreshold returns true if a greater or less than b by pct.
+func inThreshold(a, b, pct float64) bool {
+	gt := a > b+(b*pct)
+	lt := a < b-(b*pct)
+
+	return !gt && !lt
 }

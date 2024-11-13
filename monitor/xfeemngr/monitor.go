@@ -13,7 +13,7 @@ import (
 
 // startMonitoring starts the monitoring goroutines.
 func startMonitoring(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client) {
-	tick := ticker.New(ticker.WithInterval(30 * time.Second))
+	tick := ticker.New(30 * time.Second)
 
 	for _, chain := range network.EVMChains() {
 		once := func(ctx context.Context) {

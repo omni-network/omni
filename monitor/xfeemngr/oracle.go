@@ -22,14 +22,14 @@ type feeOracle struct {
 	chain  evmchain.Metadata   // source chain
 	tick   ticker.Ticker       // ticker to sync fee oracle
 	toSync []evmchain.Metadata // chains to sync on fee oracle
-	gprice *gasprice.Buffer    // gas price buffer
-	tprice *tokenprice.Buffer  // token price buffer
+	gprice gasprice.Buffer     // gas price buffer
+	tprice tokenprice.Buffer   // token price buffer
 
 	getContract func(context.Context) (contract.FeeOracleV1, error)
 }
 
 func makeOracle(chain netconf.Chain, toSync []evmchain.Metadata, ethCl ethclient.Client,
-	pk *ecdsa.PrivateKey, gprice *gasprice.Buffer, tprice *tokenprice.Buffer) (feeOracle, error) {
+	pk *ecdsa.PrivateKey, gprice gasprice.Buffer, tprice tokenprice.Buffer) (feeOracle, error) {
 	chainmeta, ok := evmchain.MetadataByID(chain.ID)
 	if !ok {
 		return feeOracle{}, errors.New("chain metadata not found", "chain", chain.ID)
@@ -62,7 +62,7 @@ func makeOracle(chain netconf.Chain, toSync []evmchain.Metadata, ethCl ethclient
 
 	return feeOracle{
 		chain:       chainmeta,
-		tick:        ticker.New(ticker.WithInterval(syncInterval)),
+		tick:        ticker.New(syncInterval),
 		toSync:      toSync,
 		gprice:      gprice,
 		tprice:      tprice,
@@ -119,30 +119,28 @@ func (o feeOracle) syncGasPrice(ctx context.Context, dest evmchain.Metadata) err
 		return errors.Wrap(err, "get contract")
 	}
 
-	onChain, err := c.GasPriceOn(ctx, dest.ChainID)
+	onChainB, err := c.GasPriceOn(ctx, dest.ChainID)
 	if err != nil {
 		return errors.Wrap(err, "gas price on")
 	}
+	onChain := onChainB.Uint64()
 
-	guageGasPrice(o.chain, dest, onChain.Uint64())
+	guageGasPrice(o.chain, dest, onChain)
 
-	shielded := withGasPriceShield(buffered)
+	log.Info(ctx, "Syncing gas price", "buffered", buffered, "on_chain", onChain, "dest_chain", onChain)
 
-	log.Info(ctx, "Syncing gas price", "buffered", buffered, "shielded", shielded, "dest_chain", onChain.Uint64())
-
-	// if on chain gas price is within epsilon of buffered + GasPriceShield, do nothing
-	// The shield helps keep on-chain gas prices higher than live gas prices
-	if inEpsilon(float64(onChain.Uint64()), float64(shielded), 0.001) {
+	// if on chain gas price is correct, do nothing
+	if buffered == onChain {
 		return nil
 	}
 
-	err = c.SetGasPriceOn(ctx, dest.ChainID, new(big.Int).SetUint64(shielded))
+	err = c.SetGasPriceOn(ctx, dest.ChainID, new(big.Int).SetUint64(buffered))
 	if err != nil {
 		return errors.Wrap(err, "set gas price on")
 	}
 
 	// if on chain update successful, update gauge
-	guageGasPrice(o.chain, dest, shielded)
+	guageGasPrice(o.chain, dest, buffered)
 
 	return nil
 }
@@ -301,10 +299,4 @@ func inEpsilon(a, b, epsilon float64) bool {
 	diff := a - b
 
 	return diff < epsilon && diff > -epsilon
-}
-
-// withGasPriceShield returns the gas price with an added GasPriceShield pct offset.
-func withGasPriceShield(gasPrice uint64) uint64 {
-	gasPriceF := float64(gasPrice)
-	return uint64(gasPriceF + gasPriceF*GasPriceShield)
 }
