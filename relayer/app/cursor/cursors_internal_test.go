@@ -94,7 +94,7 @@ func Test_StreamConfirmation(t *testing.T) {
 			provider := &mockProvider{}
 			cursorsDB, err := NewCursorsTable(db.NewMemDB())
 			require.NoError(t, err)
-			cursors := newStreamCursors(stream.SourceChainID, stream.DestChainID, stream.ConfLevel(), cursorsDB, provider)
+			cursors := newStreamCursors(stream.SourceChainID, stream.DestChainID, stream.ConfLevel(), cursorsDB, provider, "", "")
 
 			for _, c := range test.cursors {
 				require.NoError(t, cursorsDB.Insert(ctx, c))
@@ -202,7 +202,7 @@ func Test_StreamTrimming(t *testing.T) {
 			provider := &mockProvider{}
 			cursorsDB, err := NewCursorsTable(db.NewMemDB())
 			require.NoError(t, err)
-			cursors := newStreamCursors(stream.SourceChainID, stream.DestChainID, stream.ShardID.ConfLevel(), cursorsDB, provider)
+			cursors := newStreamCursors(stream.SourceChainID, stream.DestChainID, stream.ShardID.ConfLevel(), cursorsDB, provider, "", "")
 
 			for _, c := range test.cursors {
 				require.NoError(t, cursorsDB.Insert(ctx, c))

@@ -19,6 +19,8 @@ type StreamCursors struct {
 	sourceChainID uint64
 	destChainID   uint64
 	confLevel     xchain.ConfLevel
+	sourceName    string
+	destName      string
 }
 
 func newStreamCursors(
@@ -27,6 +29,8 @@ func newStreamCursors(
 	confLevel xchain.ConfLevel,
 	cursors CursorTable,
 	provider xchain.Provider,
+	sourceName string,
+	destName string,
 ) *StreamCursors {
 	return &StreamCursors{
 		cursors:       cursors,
@@ -34,6 +38,8 @@ func newStreamCursors(
 		sourceChainID: sourceChainID,
 		destChainID:   destChainID,
 		confLevel:     confLevel,
+		sourceName:    sourceName,
+		destName:      destName,
 	}
 }
 
@@ -117,6 +123,8 @@ func (s *StreamCursors) Confirm(ctx context.Context) error {
 		if err := s.cursors.Update(ctx, cursor); err != nil {
 			return errors.Wrap(err, "cursor update")
 		}
+
+		confirmedOffset.WithLabelValues(s.sourceName, s.destName).Set(float64(cursor.GetAttestOffset()))
 	}
 
 	return nil

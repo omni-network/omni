@@ -44,7 +44,7 @@ func (c *Cursors) ConfirmedOffset(
 	chainVer xchain.ChainVersion,
 	destChainID uint64,
 ) (uint64, bool, error) {
-	return newStreamCursors(chainVer.ID, destChainID, chainVer.ConfLevel, c.cursors, c.xProvider).
+	return newStreamCursors(chainVer.ID, destChainID, chainVer.ConfLevel, c.cursors, c.xProvider, "", "").
 		GetConfirmed(ctx)
 }
 
@@ -103,7 +103,16 @@ func (c *Cursors) runOnce(ctx context.Context, network netconf.Network) error {
 	var streams []*StreamCursors
 	for _, chain := range network.EVMChains() {
 		for _, streamID := range network.StreamsTo(chain.ID) {
-			streamCursors := newStreamCursors(streamID.SourceChainID, streamID.DestChainID, streamID.ConfLevel(), c.cursors, c.xProvider)
+			streamCursors := newStreamCursors(
+				streamID.SourceChainID,
+				streamID.DestChainID,
+				streamID.ConfLevel(),
+				c.cursors,
+				c.xProvider,
+				network.ChainVersionName(streamID.ChainVersion()),
+				network.ChainName(streamID.DestChainID),
+			)
+
 			streams = append(streams, streamCursors)
 		}
 	}
