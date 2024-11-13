@@ -17,5 +17,5 @@ message Cursor {
   uint32 conf_level         = 3; // Confirmation level of the cross-chain block
   uint64 attest_offset      = 4; // Offset of the cross-chain block
   bool confirmed            = 5; // Is the cursor confirmed
-  bool empty                = 6; // Does the attestation offset contain cross-chain messages.
+  bool empty                = 6; // Does the attestation offset contain cross-chain messages to destination chain
 }

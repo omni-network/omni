@@ -12,11 +12,11 @@ import (
 	db "github.com/cosmos/cosmos-db"
 )
 
-func (c *Cursor) StreamID() xchain.StreamID {
+func (c *Cursor) StreamID(shardID xchain.ShardID) xchain.StreamID {
 	return xchain.StreamID{
 		SourceChainID: c.GetSrcChainId(),
 		DestChainID:   c.GetDstChainId(),
-		ShardID:       xchain.ShardID(c.GetConfLevel()),
+		ShardID:       shardID,
 	}
 }
 

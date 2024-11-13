@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"cosmossdk.io/orm/types/ormerrors"
@@ -12,20 +13,31 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var streamID = xchain.StreamID{
+	SourceChainID: 1,
+	DestChainID:   2,
+	ShardID:       xchain.ShardFinalized0,
+}
+
+var network = netconf.Network{Chains: []netconf.Chain{
+	{ID: streamID.SourceChainID, Name: "source", Shards: []xchain.ShardID{streamID.ShardID}},
+	{ID: streamID.DestChainID, Name: "mock_l1"},
+}}
+
 // Test_StreamConfirmation tests how cursors are being confirmed.
 func Test_StreamConfirmation(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
 
-	stream := xchain.StreamID{
-		SourceChainID: 1,
-		DestChainID:   2,
-		ShardID:       0,
+	stream := stream{
+		SrcVersion: streamID.ChainVersion(),
+		DestChain:  netconf.Chain{ID: streamID.DestChainID},
+		Network:    network,
 	}
 
 	c := func(offset uint64, empty bool, confirmed bool) *Cursor {
-		return buildCursor(offset, empty, confirmed, stream)
+		return buildCursor(offset, empty, confirmed, streamID)
 	}
 
 	tests := []struct {
@@ -36,7 +48,7 @@ func Test_StreamConfirmation(t *testing.T) {
 	}{{
 		desc:       "single non-empty attestation",
 		cursors:    []*Cursor{c(1, false, false)},
-		final:      &xchain.SubmitCursor{StreamID: stream, MsgOffset: 2, AttestOffset: 1},
+		final:      &xchain.SubmitCursor{StreamID: streamID, MsgOffset: 2, AttestOffset: 1},
 		confOffset: 1,
 	}, {
 		desc: "non-empty attestation followed by empty",
@@ -45,7 +57,7 @@ func Test_StreamConfirmation(t *testing.T) {
 			c(2, true, false),
 			c(3, true, false),
 		},
-		final:      &xchain.SubmitCursor{StreamID: stream, MsgOffset: 2, AttestOffset: 1},
+		final:      &xchain.SubmitCursor{StreamID: streamID, MsgOffset: 2, AttestOffset: 1},
 		confOffset: 3,
 	}, {
 		desc: "non-empty attestation followed by empty, followed by non-empty but non-confirmed, followed by empty",
@@ -57,7 +69,7 @@ func Test_StreamConfirmation(t *testing.T) {
 			c(5, true, false),
 			c(6, true, false),
 		},
-		final:      &xchain.SubmitCursor{StreamID: stream, MsgOffset: 2, AttestOffset: 1}, // only first non-empty confirmed
+		final:      &xchain.SubmitCursor{StreamID: streamID, MsgOffset: 2, AttestOffset: 1}, // only first non-empty confirmed
 		confOffset: 3,
 	}, {
 		desc: "empty confirmed followed by empty non-confirmed",
@@ -75,7 +87,7 @@ func Test_StreamConfirmation(t *testing.T) {
 			c(3, true, false),
 			c(4, false, false),
 		},
-		final:      &xchain.SubmitCursor{StreamID: stream, MsgOffset: 3, AttestOffset: 3},
+		final:      &xchain.SubmitCursor{StreamID: streamID, MsgOffset: 3, AttestOffset: 3},
 		confOffset: 3,
 	}, {
 		desc: "all empty and non-confirmed",
@@ -94,7 +106,6 @@ func Test_StreamConfirmation(t *testing.T) {
 			provider := &mockProvider{}
 			cursorsDB, err := NewCursorsTable(db.NewMemDB())
 			require.NoError(t, err)
-			cursors := newStreamCursors(stream.SourceChainID, stream.DestChainID, stream.ConfLevel(), cursorsDB, provider, "", "")
 
 			for _, c := range test.cursors {
 				require.NoError(t, cursorsDB.Insert(ctx, c))
@@ -110,14 +121,14 @@ func Test_StreamConfirmation(t *testing.T) {
 					s xchain.StreamID,
 				) (xchain.SubmitCursor, bool, error) {
 					require.Equal(t, xchain.FinalizedRef, ref)
-					require.Equal(t, stream, s)
+					require.Equal(t, streamID, s)
 					getSubmittedCalled++
 
 					return *test.final, true, nil
 				}
 			}
 
-			err = cursors.Confirm(ctx)
+			err = ConfirmStream(ctx, cursorsDB, network, provider, stream)
 			require.NoError(t, err)
 			// make sure we only call it once to optimize resource use,
 			// and only if we do have non-empty attestation
@@ -140,14 +151,14 @@ func Test_StreamTrimming(t *testing.T) {
 
 	ctx := context.Background()
 
-	stream := xchain.StreamID{
-		SourceChainID: 1,
-		DestChainID:   2,
-		ShardID:       0,
+	stream := stream{
+		SrcVersion: streamID.ChainVersion(),
+		DestChain:  netconf.Chain{ID: streamID.DestChainID},
+		Network:    network,
 	}
 
 	c := func(offset uint64, empty bool, confirmed bool) *Cursor {
-		return buildCursor(offset, empty, confirmed, stream)
+		return buildCursor(offset, empty, confirmed, streamID)
 	}
 
 	tests := []struct {
@@ -199,16 +210,14 @@ func Test_StreamTrimming(t *testing.T) {
 		t.Run(test.desc, func(t *testing.T) {
 			t.Parallel()
 
-			provider := &mockProvider{}
 			cursorsDB, err := NewCursorsTable(db.NewMemDB())
 			require.NoError(t, err)
-			cursors := newStreamCursors(stream.SourceChainID, stream.DestChainID, stream.ShardID.ConfLevel(), cursorsDB, provider, "", "")
 
 			for _, c := range test.cursors {
 				require.NoError(t, cursorsDB.Insert(ctx, c))
 			}
 
-			err = cursors.Trim(ctx)
+			err = TrimStream(ctx, cursorsDB, stream)
 			require.NoError(t, err)
 
 			for _, c := range test.cursors {

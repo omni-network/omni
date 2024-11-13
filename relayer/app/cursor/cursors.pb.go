@@ -31,7 +31,7 @@ type Cursor struct {
 	ConfLevel    uint32 `protobuf:"varint,3,opt,name=conf_level,json=confLevel,proto3" json:"conf_level,omitempty"`          // Confirmation level of the cross-chain block
 	AttestOffset uint64 `protobuf:"varint,4,opt,name=attest_offset,json=attestOffset,proto3" json:"attest_offset,omitempty"` // Offset of the cross-chain block
 	Confirmed    bool   `protobuf:"varint,5,opt,name=confirmed,proto3" json:"confirmed,omitempty"`                           // Is the cursor confirmed
-	Empty        bool   `protobuf:"varint,6,opt,name=empty,proto3" json:"empty,omitempty"`                                   // Does the attestation offset contain cross-chain messages.
+	Empty        bool   `protobuf:"varint,6,opt,name=empty,proto3" json:"empty,omitempty"`                                   // Does the attestation offset contain cross-chain messages to destination chain
 }
 
 func (x *Cursor) Reset() {

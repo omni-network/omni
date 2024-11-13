@@ -2,74 +2,29 @@ package cursor
 
 import (
 	"context"
+	"math"
 	"slices"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 )
 
-// StreamCursors provides operations on cursors that share same source chain,
-// destination chain and confirmation level.
-//
-// Most importantly it provides operations to confirm and trim cursors
-// persisted in the storage.
-type StreamCursors struct {
-	cursors       CursorTable
-	provider      xchain.Provider
-	sourceChainID uint64
-	destChainID   uint64
-	confLevel     xchain.ConfLevel
-	sourceName    string
-	destName      string
+type stream struct {
+	SrcVersion xchain.ChainVersion
+	DestChain  netconf.Chain
+	Network    netconf.Network
 }
 
-func newStreamCursors(
-	sourceChainID uint64,
-	destChainID uint64,
-	confLevel xchain.ConfLevel,
-	cursors CursorTable,
-	provider xchain.Provider,
-	sourceName string,
-	destName string,
-) *StreamCursors {
-	return &StreamCursors{
-		cursors:       cursors,
-		provider:      provider,
-		sourceChainID: sourceChainID,
-		destChainID:   destChainID,
-		confLevel:     confLevel,
-		sourceName:    sourceName,
-		destName:      destName,
-	}
-}
-
-// GetConfirmed returns the latest confirmed cursor attestation offset for the stream.
-// If no cursors have yet been confirmed or stored nil, false is returned.
-func (s *StreamCursors) GetConfirmed(ctx context.Context) (uint64, bool, error) {
-	cursors, err := s.getAllCursors(ctx)
-	if err != nil {
-		return 0, false, err
-	}
-
-	slices.Reverse(cursors)
-	for _, c := range cursors {
-		if c.GetConfirmed() {
-			return c.GetAttestOffset(), true, nil
-		}
-	}
-
-	return 0, false, nil
-}
-
-// getAllCursors returns all cursors from the storage.
+// getAllStreamCursors returns all cursors from the storage.
 //
 // Cursors are ordered by source chain ID, confirmation level and destination chain ID in ascending order.
-func (s *StreamCursors) getAllCursors(ctx context.Context) ([]*Cursor, error) {
-	iterator, err := s.cursors.List(ctx,
+func getAllStreamCursors(ctx context.Context, db CursorTable, stream stream) ([]*Cursor, error) {
+	iterator, err := db.List(ctx,
 		CursorPrimaryKey{}.WithSrcChainIdConfLevelDstChainId(
-			s.sourceChainID,
-			uint32(s.confLevel),
-			s.destChainID,
+			stream.SrcVersion.ID,
+			uint32(stream.SrcVersion.ConfLevel),
+			stream.DestChain.ID,
 		))
 
 	if err != nil {
@@ -89,12 +44,12 @@ func (s *StreamCursors) getAllCursors(ctx context.Context) ([]*Cursor, error) {
 	return cursors, nil
 }
 
-// Confirm checks all stream cursors and confirms them according to the rules:
+// ConfirmStream checks all stream cursors and confirms them according to the rules:
 //   - if a cursor is not empty fetch finalized cursor from the network and confirm only if finalized
 //     message offset is higher to the cursor last message offset
 //   - if a cursor is empty, confirm it if the previous cursor was confirmed
-func (s *StreamCursors) Confirm(ctx context.Context) error {
-	cursors, err := s.getAllCursors(ctx)
+func ConfirmStream(ctx context.Context, db CursorTable, network netconf.Network, xProvider xchain.Provider, stream stream) error {
+	cursors, err := getAllStreamCursors(ctx, db, stream)
 	if err != nil {
 		return err
 	}
@@ -110,7 +65,7 @@ func (s *StreamCursors) Confirm(ctx context.Context) error {
 	for _, cursor := range cursors {
 		// if cursor not empty, confirm it comparing to the network finalized cursor
 		if !cursor.GetEmpty() && !cursor.GetConfirmed() {
-			confirmed, err := s.isFinalized(ctx, cursor)
+			confirmed, err := isFinalized(ctx, network, xProvider, cursor)
 			if err != nil {
 				return err
 			} else if !confirmed {
@@ -120,20 +75,22 @@ func (s *StreamCursors) Confirm(ctx context.Context) error {
 		}
 
 		cursor.Confirmed = true
-		if err := s.cursors.Update(ctx, cursor); err != nil {
+		if err := db.Update(ctx, cursor); err != nil {
 			return errors.Wrap(err, "cursor update")
 		}
 
-		confirmedOffset.WithLabelValues(s.sourceName, s.destName).Set(float64(cursor.GetAttestOffset()))
+		confirmedOffset.
+			WithLabelValues(network.ChainVersionName(stream.SrcVersion), stream.DestChain.Name).
+			Set(float64(cursor.GetAttestOffset()))
 	}
 
 	return nil
 }
 
-// Trim iterates over all stored stream cursors in reverse order and when it finds the first
+// TrimStream iterates over all stored stream cursors in reverse order and when it finds the first
 // confirmed it leaves it but deletes all previous cursors as they are confirmed.
-func (s *StreamCursors) Trim(ctx context.Context) error {
-	cursors, err := s.getAllCursors(ctx)
+func TrimStream(ctx context.Context, db CursorTable, stream stream) error {
+	cursors, err := getAllStreamCursors(ctx, db, stream)
 	if err != nil {
 		return err
 	}
@@ -147,7 +104,7 @@ func (s *StreamCursors) Trim(ctx context.Context) error {
 			continue
 		}
 
-		if err := s.cursors.Delete(ctx, c); err != nil {
+		if err := db.Delete(ctx, c); err != nil {
 			return errors.Wrap(err, "delete cursor")
 		}
 	}
@@ -156,13 +113,25 @@ func (s *StreamCursors) Trim(ctx context.Context) error {
 }
 
 // isFinalized checks if the cursor is finalized on the network.
-func (s *StreamCursors) isFinalized(ctx context.Context, cursor *Cursor) (bool, error) {
-	final, ok, err := s.provider.GetSubmittedCursor(ctx, xchain.FinalizedRef, cursor.StreamID())
-	if err != nil {
-		return false, errors.Wrap(err, "submitted cursor")
-	} else if !ok { // no cursors available yet skip
-		return false, nil
+func isFinalized(ctx context.Context, network netconf.Network, xProvider xchain.Provider, cursor *Cursor) (bool, error) {
+	chain, ok := network.Chain(cursor.GetSrcChainId())
+	if !ok {
+		return false, errors.New("invalid dest chain id [BUG]")
 	}
 
-	return final.MsgOffset >= cursor.GetAttestOffset(), nil
+	lowestOffset := uint64(math.MaxUint64)
+	for _, shard := range chain.Shards {
+		final, ok, err := xProvider.GetSubmittedCursor(ctx, xchain.FinalizedRef, cursor.StreamID(shard))
+		if err != nil {
+			return false, errors.Wrap(err, "submitted cursor")
+		} else if !ok { // no cursors available yet skip
+			return false, nil
+		}
+
+		if final.AttestOffset < lowestOffset {
+			lowestOffset = final.AttestOffset
+		}
+	}
+
+	return lowestOffset >= cursor.GetAttestOffset(), nil
 }

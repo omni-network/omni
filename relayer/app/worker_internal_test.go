@@ -157,7 +157,7 @@ func TestWorker_Run(t *testing.T) {
 	cursorsDB, err := cursor.NewCursorsTable(memDB)
 	require.NoError(t, err)
 
-	cursors, err := cursor.NewCursors(memDB, mockXClient, time.Millisecond*5)
+	cursors, err := cursor.NewCursors(memDB, mockXClient, time.Second, network)
 	require.NoError(t, err)
 
 	// make sure stored cursors match the ones from network

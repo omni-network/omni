@@ -120,7 +120,7 @@ func (w *Worker) runOnce(ctx context.Context) error {
 
 	// TODO(sideninja) remove the bootstrap after storage cursors are persisted
 	for chainVer, offset := range attestOffsets {
-		storedOffset, ok, err := w.cursors.ConfirmedOffset(ctx, chainVer, w.destChain.ID)
+		storedOffset, ok, err := w.cursors.ConfirmedOffset(ctx, chainVer, w.destChain)
 		if err != nil {
 			return err
 		} else if !ok {
@@ -272,19 +272,25 @@ func (w *Worker) newCallback(
 				return errors.Wrap(err, "await validator set")
 			}
 
-			// Filter out any previously submitted message offsets
-			msgs, err = filterMsgs(ctx, streamID, w.network.StreamName, msgs, msgFilter)
+			empty := len(msgs) == 0
+			err := w.cursors.Save(
+				ctx,
+				streamID.ChainVersion(),
+				w.destChain.ID,
+				att.AttestOffset,
+				empty,
+				w.network.StreamName(streamID),
+				w.network.ChainName(w.destChain.ID),
+			)
 			if err != nil {
 				return err
 			}
 
-			empty := len(msgs) == 0
-
-			if err := w.cursors.Save(ctx, streamID.ChainVersion(), w.destChain.ID, att.AttestOffset, empty); err != nil {
+			// Filter out any previously submitted message offsets
+			msgs, err = filterMsgs(ctx, streamID, w.network.StreamName, msgs, msgFilter)
+			if err != nil {
 				return err
-			}
-
-			if empty {
+			} else if len(msgs) == 0 {
 				continue
 			}
 

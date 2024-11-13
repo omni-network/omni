@@ -2,6 +2,7 @@ package cursor
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -15,25 +16,44 @@ import (
 
 // Cursors implements operations on the persisted cursors for network.
 type Cursors struct {
-	cursors         CursorTable
+	db              CursorTable
 	confirmInterval time.Duration
 	xProvider       xchain.Provider
+	streams         []stream
+	network         netconf.Network
 }
 
 func NewCursors(
 	db db.DB,
 	xProvider xchain.Provider,
 	confirmInterval time.Duration,
+	network netconf.Network,
 ) (*Cursors, error) {
-	cursors, err := NewCursorsTable(db)
+	cursorsTable, err := NewCursorsTable(db)
 	if err != nil {
 		return nil, err
 	}
 
+	var streams []stream
+	for _, chain := range network.EVMChains() {
+		for _, streamID := range network.StreamsTo(chain.ID) {
+			streams = append(streams, stream{
+				SrcVersion: xchain.ChainVersion{
+					ID:        streamID.SourceChainID,
+					ConfLevel: streamID.ConfLevel(),
+				},
+				DestChain: chain,
+				Network:   network,
+			})
+		}
+	}
+
 	return &Cursors{
-		cursors:         cursors,
+		db:              cursorsTable,
 		confirmInterval: confirmInterval,
 		xProvider:       xProvider,
+		streams:         streams,
+		network:         network,
 	}, nil
 }
 
@@ -41,11 +61,22 @@ func NewCursors(
 // If a cursor doesn't exist a 0, false is returned.
 func (c *Cursors) ConfirmedOffset(
 	ctx context.Context,
-	chainVer xchain.ChainVersion,
-	destChainID uint64,
+	srcVersion xchain.ChainVersion,
+	destChain netconf.Chain,
 ) (uint64, bool, error) {
-	return newStreamCursors(chainVer.ID, destChainID, chainVer.ConfLevel, c.cursors, c.xProvider, "", "").
-		GetConfirmed(ctx)
+	cursors, err := getAllStreamCursors(ctx, c.db, stream{srcVersion, destChain, c.network})
+	if err != nil {
+		return 0, false, err
+	}
+
+	slices.Reverse(cursors)
+	for _, c := range cursors {
+		if c.GetConfirmed() {
+			return c.GetAttestOffset(), true, nil
+		}
+	}
+
+	return 0, false, nil
 }
 
 // Save a cursor to the storage.
@@ -56,6 +87,8 @@ func (c *Cursors) Save(
 	destChainID uint64,
 	attestationOffset uint64,
 	empty bool,
+	chainVerName string,
+	destChainName string,
 ) error {
 	cursor := &Cursor{
 		SrcChainId:   chainVer.ID,
@@ -66,27 +99,29 @@ func (c *Cursors) Save(
 		Empty:        empty,
 	}
 
-	err := c.cursors.Save(ctx, cursor)
+	err := c.db.Save(ctx, cursor)
 	if err != nil {
 		return errors.Wrap(err, "insert cursor")
 	}
 
-	log.Info(ctx, "New cursor saved",
+	log.Debug(ctx, "New cursor saved",
 		"src_chain", chainVer.ID,
 		"conf_level", chainVer.ConfLevel,
 		"attest_offset", attestationOffset,
 	)
+
+	latestOffset.WithLabelValues(chainVerName, destChainName).Set(float64(cursor.GetAttestOffset()))
 
 	return nil
 }
 
 // Monitor all existing cursors for the network in the storage and
 // confirm them once the submission is finalized.
-func (c *Cursors) Monitor(ctx context.Context, network netconf.Network) {
+func (c *Cursors) Monitor(ctx context.Context) {
 	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second))
 	for ctx.Err() == nil {
-		if err := c.runOnce(ctx, network); err != nil {
-			log.Error(ctx, "Cursor worker failed, resetting", err)
+		if err := c.runOnce(ctx); err != nil {
+			log.Error(ctx, "Cursor worker failed, will retry", err)
 		}
 
 		if ctx.Err() != nil {
@@ -97,37 +132,24 @@ func (c *Cursors) Monitor(ctx context.Context, network netconf.Network) {
 	}
 }
 
-func (c *Cursors) runOnce(ctx context.Context, network netconf.Network) error {
-	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(c.confirmInterval))
-
-	var streams []*StreamCursors
-	for _, chain := range network.EVMChains() {
-		for _, streamID := range network.StreamsTo(chain.ID) {
-			streamCursors := newStreamCursors(
-				streamID.SourceChainID,
-				streamID.DestChainID,
-				streamID.ConfLevel(),
-				c.cursors,
-				c.xProvider,
-				network.ChainVersionName(streamID.ChainVersion()),
-				network.ChainName(streamID.DestChainID),
-			)
-
-			streams = append(streams, streamCursors)
-		}
-	}
+func (c *Cursors) runOnce(ctx context.Context) error {
+	ticker := time.NewTicker(c.confirmInterval)
+	defer ticker.Stop()
 
 	for {
-		for _, stream := range streams {
-			if err := stream.Confirm(ctx); err != nil {
-				return err
-			}
+		select {
+		case <-ctx.Done():
+			return errors.Wrap(ctx.Err(), "context canceled")
+		case <-ticker.C:
+			for _, s := range c.streams {
+				if err := ConfirmStream(ctx, c.db, c.network, c.xProvider, s); err != nil {
+					return err
+				}
 
-			if err := stream.Trim(ctx); err != nil {
-				return err
+				if err := TrimStream(ctx, c.db, s); err != nil {
+					return err
+				}
 			}
 		}
-
-		backoff()
 	}
 }

@@ -11,5 +11,12 @@ var (
 		Subsystem: "cursors",
 		Name:      "confirmed_offset",
 		Help:      "Confirmed cursor offset",
-	}, []string{"src_chain", "dst_chain"})
+	}, []string{"src_chain_version", "dst_chain"})
+
+	latestOffset = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "relayer",
+		Subsystem: "cursors",
+		Name:      "latest_offset",
+		Help:      "Latest cursor offset",
+	}, []string{"src_chain_version", "dst_chain"})
 )
