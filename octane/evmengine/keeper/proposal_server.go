@@ -26,10 +26,9 @@ func (s proposalServer) ExecutionPayload(ctx context.Context, msg *types.MsgExec
 	// Push the payload to the EVM.
 	err = retryForever(ctx, func(ctx context.Context) (bool, error) {
 		status, err := pushPayload(ctx, s.engineCl, payload)
-		if err != nil || isUnknown(status) {
+		if err != nil {
 			// We need to retry forever on networking errors, but can't easily identify them, so retry all errors.
-			log.Warn(ctx, "Verifying proposal failed: push new payload to evm (will retry)", err,
-				"status", status.Status)
+			log.Warn(ctx, "Verifying proposal failed: push new payload to evm (will retry)", err)
 
 			return false, nil // Retry
 		} else if invalid, err := isInvalid(status); invalid {
@@ -38,7 +37,7 @@ func (s proposalServer) ExecutionPayload(ctx context.Context, msg *types.MsgExec
 			// If this is initial sync, we need to continue and set a target head to sync to, so don't retry.
 			log.Warn(ctx, "Can't properly verifying proposal: evm syncing", err,
 				"payload_height", payload.Number)
-		}
+		} /* else isValid(status) */
 
 		return true, nil // Done
 	})

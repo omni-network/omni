@@ -84,7 +84,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 				wantErr: true,
 			},
 			{
-				name: "forkchoiceUpdateV2  not valid",
+				name: "forkchoiceUpdateV3  not valid",
 				mockEngine: mockEngineAPI{
 					headerByTypeFunc: func(context.Context, ethclient.HeadType) (*types.Header, error) {
 						fuzzer := ethclient.NewFuzzer(0)
@@ -502,10 +502,6 @@ func (m *mockEngineAPI) HeaderByType(ctx context.Context, typ ethclient.HeadType
 	return m.mock.HeaderByType(ctx, typ)
 }
 
-func (m *mockEngineAPI) NewPayloadV2(ctx context.Context, params eengine.ExecutableData) (eengine.PayloadStatusV1, error) {
-	return m.mock.NewPayloadV2(ctx, params)
-}
-
 //nolint:nonamedreturns // Required for defer
 func (m *mockEngineAPI) NewPayloadV3(ctx context.Context, params eengine.ExecutableData, versionedHashes []common.Hash, beaconRoot *common.Hash) (resp eengine.PayloadStatusV1, err error) {
 	if status, ok := m.maybeSync(); ok {
@@ -540,7 +536,7 @@ func (m *mockEngineAPI) GetPayloadV3(ctx context.Context, payloadID eengine.Payl
 	return m.mock.GetPayloadV3(ctx, payloadID)
 }
 
-// pushPayload - invokes the ForkchoiceUpdatedV2 method on the mock engine and returns the payload ID.
+// pushPayload - invokes the ForkchoiceUpdatedV3 method on the mock engine and returns the payload ID.
 func (m *mockEngineAPI) pushPayload(t *testing.T, ctx context.Context, feeRecipient common.Address, blockHash common.Hash, ts time.Time, appHash common.Hash) *eengine.PayloadID {
 	t.Helper()
 	state := eengine.ForkchoiceStateV1{
