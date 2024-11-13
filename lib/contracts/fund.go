@@ -20,12 +20,6 @@ type WithFundThreshold struct {
 }
 
 func ToFund(ctx context.Context, network netconf.ID) ([]WithFundThreshold, error) {
-	// GasStation will not deployed initially on mainnet
-	// TODO: remove this when mainnet GasStation
-	if network == netconf.Mainnet {
-		return []WithFundThreshold{}, nil
-	}
-
 	addrs, err := GetAddresses(ctx, network)
 	if err != nil {
 		return nil, err
@@ -36,7 +30,7 @@ func ToFund(ctx context.Context, network netconf.ID) ([]WithFundThreshold, error
 			Name:        "gas-station",
 			Address:     addrs.GasStation,
 			OnlyOmniEVM: true,
-			Thresholds:  FundThresholds{minEther: 200, targetEther: 1000}, // GasStation funds user GasPump requests, and needs a large OMNI balance.
+			Thresholds:  FundThresholds{minEther: 20, targetEther: 100}, // GasStation funds user GasPump requests, and needs a large OMNI balance.
 		},
 	}, nil
 }
