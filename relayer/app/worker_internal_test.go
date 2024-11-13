@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/netconf"
@@ -153,25 +152,8 @@ func TestWorker_Run(t *testing.T) {
 
 	noAwait := func(context.Context, uint64) error { return nil }
 
-	memDB := db.NewMemDB()
-	cursorsDB, err := cursor.NewCursorsTable(memDB)
+	cursors, err := cursor.New(db.NewMemDB(), mockXClient.GetSubmittedCursor, network)
 	require.NoError(t, err)
-
-	cursors, err := cursor.NewCursors(memDB, mockXClient, time.Second, network)
-	require.NoError(t, err)
-
-	// make sure stored cursors match the ones from network
-	for _, c := range submittedCursors {
-		err := cursorsDB.Insert(ctx, &cursor.Cursor{
-			SrcChainId:   c.SourceChainID,
-			DstChainId:   c.DestChainID,
-			ConfLevel:    uint32(c.ConfLevel()),
-			AttestOffset: c.AttestOffset,
-			Empty:        false,
-			Confirmed:    true,
-		})
-		require.NoError(t, err)
-	}
 
 	for _, chain := range network.Chains {
 		w := NewWorker(

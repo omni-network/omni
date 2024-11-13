@@ -30,7 +30,7 @@ type Worker struct {
 	creator      CreateFunc
 	sendProvider func() (SendAsync, error)
 	awaitValSet  awaitValSet
-	cursors      *cursor.Cursors
+	cursors      *cursor.Store
 }
 
 // NewWorker creates a new worker for a single destination chain.
@@ -42,7 +42,7 @@ func NewWorker(
 	creator CreateFunc,
 	sendProvider func() (SendAsync, error),
 	awaitValSet awaitValSet,
-	cursors *cursor.Cursors,
+	cursors *cursor.Store,
 ) *Worker {
 	return &Worker{
 		destChain:    destChain,
@@ -118,21 +118,19 @@ func (w *Worker) runOnce(ctx context.Context) error {
 		}
 	}
 
-	// TODO(sideninja) remove the bootstrap after storage cursors are persisted
+	// Update offsets if any stored cursor is higher
+	stored, err := w.cursors.WorkerOffsets(ctx, w.destChain.ID)
+	if err != nil {
+		return err
+	}
 	for chainVer, offset := range attestOffsets {
-		storedOffset, ok, err := w.cursors.ConfirmedOffset(ctx, chainVer, w.destChain)
-		if err != nil {
-			return err
-		} else if !ok {
-			continue
-		} else if storedOffset > offset {
+		if stored[chainVer] > offset {
 			log.Info(ctx, "Worker using stored attest offset",
 				"chain_version", w.network.ChainVersionName(chainVer),
 				"prev", offset,
-				"stored", storedOffset,
+				"bootstrap", stored[chainVer],
 			)
-
-			attestOffsets[chainVer] = storedOffset
+			attestOffsets[chainVer] = stored[chainVer]
 		}
 	}
 
@@ -236,13 +234,18 @@ func (w *Worker) newCallback(
 	var cachedValSet []cchain.PortalValidator
 
 	return func(ctx context.Context, att xchain.Attestation) error {
+		saveCursors := func(streamMsgs map[xchain.StreamID][]xchain.Msg) error {
+			return w.cursors.Save(ctx, att.ChainVersion, w.destChain.ID, att.AttestOffset, streamMsgs)
+		}
+
 		block, ok, err := fetchXBlock(ctx, w.xProvider, att)
 		if err != nil {
 			return err
 		} else if !ok {
 			return nil // Mismatching fuzzy attestation, skip.
 		} else if len(block.Msgs) == 0 {
-			return nil // No messages, nothing to do.
+			// No messages, nothing to do, just update cursors
+			return saveCursors(nil)
 		}
 
 		msgTree, err := xchain.NewMsgTree(block.Msgs)
@@ -260,6 +263,8 @@ func (w *Worker) newCallback(
 			}
 		}
 
+		submitted := make(map[xchain.StreamID][]xchain.Msg)
+
 		// Split into streams
 		for streamID, msgs := range msgStreamMapper(block.Msgs) {
 			if streamID.DestChainID != w.destChain.ID {
@@ -270,20 +275,6 @@ func (w *Worker) newCallback(
 
 			if err := w.awaitValSet(ctx, att.ValidatorSetID); err != nil {
 				return errors.Wrap(err, "await validator set")
-			}
-
-			empty := len(msgs) == 0
-			err := w.cursors.Save(
-				ctx,
-				streamID.ChainVersion(),
-				w.destChain.ID,
-				att.AttestOffset,
-				empty,
-				w.network.StreamName(streamID),
-				w.network.ChainName(w.destChain.ID),
-			)
-			if err != nil {
-				return err
 			}
 
 			// Filter out any previously submitted message offsets
@@ -312,9 +303,11 @@ func (w *Worker) newCallback(
 					return err
 				}
 			}
+
+			submitted[streamID] = msgs
 		}
 
-		return nil
+		return saveCursors(submitted)
 	}
 }
 
