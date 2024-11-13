@@ -149,7 +149,7 @@ func (s *StreamCursors) Trim(ctx context.Context) error {
 
 // isFinalized checks if the cursor is finalized on the network.
 func (s *StreamCursors) isFinalized(ctx context.Context, cursor *Cursor) (bool, error) {
-	final, ok, err := s.provider.GetSubmittedCursor(ctx, xchain.FinalizedRef, cursor.StreamID()) // todo check
+	final, ok, err := s.provider.GetSubmittedCursor(ctx, xchain.FinalizedRef, cursor.StreamID())
 	if err != nil {
 		return false, errors.Wrap(err, "submitted cursor")
 	} else if !ok { // no cursors available yet skip

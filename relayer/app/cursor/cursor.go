@@ -16,7 +16,7 @@ func (c *Cursor) StreamID() xchain.StreamID {
 	return xchain.StreamID{
 		SourceChainID: c.GetSrcChainId(),
 		DestChainID:   c.GetDstChainId(),
-		ShardID:       xchain.ShardID(c.GetConfLevel()), // todo check
+		ShardID:       xchain.ShardID(c.GetConfLevel()),
 	}
 }
 
