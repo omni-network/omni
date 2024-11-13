@@ -129,6 +129,7 @@ func (o feeOracle) syncGasPrice(ctx context.Context, dest evmchain.Metadata) err
 	shielded := withGasPriceShield(buffered)
 
 	log.Info(ctx, "Syncing gas price", "buffered", buffered, "shielded", shielded, "dest_chain", onChain.Uint64())
+
 	// if on chain gas price is within epsilon of buffered + GasPriceShield, do nothing
 	// The shield helps keep on-chain gas prices higher than live gas prices
 	if inEpsilon(float64(onChain.Uint64()), float64(shielded), 0.001) {
@@ -141,7 +142,7 @@ func (o feeOracle) syncGasPrice(ctx context.Context, dest evmchain.Metadata) err
 	}
 
 	// if on chain update successful, update gauge
-	guageGasPrice(o.chain, dest, buffered)
+	guageGasPrice(o.chain, dest, shielded)
 
 	return nil
 }
