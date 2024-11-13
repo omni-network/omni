@@ -37,7 +37,7 @@ CORE_CONTRACTS := OmniPortal FeeOracleV1 Create3 TransparentUpgradeableProxy \
 			PortalRegistry AllocPredeploys PingPong ProxyAdmin Admin \
 			OmniGasPump OmniGasStation
 
-SOLVE_CONTRACTS := SolveInbox SolveOutbox
+SOLVE_CONTRACTS := SolveInbox SolveOutbox MockToken MockVault
 
 AVS_CONTRACTS := OmniAVS DelegationManager StrategyManager StrategyBase AVSDirectory \
 			test/common/MockERC20.sol:MockERC20

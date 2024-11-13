@@ -132,7 +132,7 @@ func GetAddresses(ctx context.Context, network netconf.ID) (Addresses, error) {
 	}
 
 	addrs = Addresses{
-		Create3Factory: create3Factory(network),
+		Create3Factory: Create3Factory(network),
 		AVS:            avs(network),
 		Portal:         portal(network, ver),
 		L1Bridge:       l1Bridge(network, ver),
@@ -187,22 +187,22 @@ func avs(network netconf.ID) common.Address {
 		return common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
 	}
 
-	return create3.Address(create3Factory(network), avsSalt(network), eoa.MustAddress(network, eoa.RoleDeployer))
+	return create3.Address(Create3Factory(network), avsSalt(network), eoa.MustAddress(network, eoa.RoleDeployer))
 }
 
-// create3Factory returns the Create3 factory address for the given network.
-func create3Factory(network netconf.ID) common.Address {
+// Create3Factory returns the Create3 factory address for the given network.
+func Create3Factory(network netconf.ID) common.Address {
 	return crypto.CreateAddress(eoa.MustAddress(network, eoa.RoleCreate3Deployer), 0)
 }
 
 // portal returns the Portal contract address for the given network.
 func portal(network netconf.ID, saltVersion string) common.Address {
-	return create3.Address(create3Factory(network), portalSalt(network, saltVersion), eoa.MustAddress(network, eoa.RoleDeployer))
+	return create3.Address(Create3Factory(network), portalSalt(network, saltVersion), eoa.MustAddress(network, eoa.RoleDeployer))
 }
 
 // l1Bridge returns the L1Bridge contract address for the given network.
 func l1Bridge(network netconf.ID, version string) common.Address {
-	return create3.Address(create3Factory(network), l1BridgeSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
+	return create3.Address(Create3Factory(network), l1BridgeSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
 }
 
 // token returns the Token contract address for the given network.
@@ -211,25 +211,25 @@ func token(network netconf.ID, version string) common.Address {
 		return common.HexToAddress("0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4")
 	}
 
-	return create3.Address(create3Factory(network), tokenSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
+	return create3.Address(Create3Factory(network), tokenSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
 }
 
 // gasPump returns the GasPump contract address for the given network.
 func gasPump(network netconf.ID, version string) common.Address {
-	return create3.Address(create3Factory(network), gasPumpSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
+	return create3.Address(Create3Factory(network), gasPumpSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
 }
 
 // gasStation returns the GasStation contract address for the given network.
 func gasStation(network netconf.ID, version string) common.Address {
-	return create3.Address(create3Factory(network), gasStationSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
+	return create3.Address(Create3Factory(network), gasStationSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
 }
 
 func solveInbox(network netconf.ID, version string) common.Address {
-	return create3.Address(create3Factory(network), solveInboxSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
+	return create3.Address(Create3Factory(network), solveInboxSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
 }
 
 func solveOutbox(network netconf.ID, version string) common.Address {
-	return create3.Address(create3Factory(network), solveOutboxSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
+	return create3.Address(Create3Factory(network), solveOutboxSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
 }
 
 //
