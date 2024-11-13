@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts/gasstation"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -30,8 +31,10 @@ func DeployGasApp(ctx context.Context, def Definition) error {
 		return errors.Wrap(err, "deploy gas station")
 	}
 
-	if err := fundGasStation(ctx, def); err != nil {
-		return errors.Wrap(err, "fund gas station")
+	if def.Testnet.Network != netconf.Mainnet {
+		if err := fundGasStation(ctx, def); err != nil {
+			return errors.Wrap(err, "fund gas station")
+		}
 	}
 
 	return nil
