@@ -3,6 +3,7 @@ package solve
 import (
 	"context"
 
+	"github.com/omni-network/omni/e2e/solve/devapp"
 	"github.com/omni-network/omni/lib/contracts/solveinbox"
 	"github.com/omni-network/omni/lib/contracts/solveoutbox"
 	"github.com/omni-network/omni/lib/errors"
@@ -11,7 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 )
 
-// DeployContracts deploys solve inbox / outbox contracts.
+// DeployContracts deploys solve inbox / outbox contracts, and devnet app (if devnet).
 func DeployContracts(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
 	if network.ID != netconf.Devnet {
 		log.Warn(ctx, "Skipping solve deploy", nil)
@@ -20,6 +21,19 @@ func DeployContracts(ctx context.Context, network netconf.Network, backends ethb
 
 	log.Info(ctx, "Deploying solve contracts")
 
+	if err := deployBoxes(ctx, network, backends); err != nil {
+		return errors.Wrap(err, "deploy boxes")
+	}
+
+	if err := devapp.Deploy(ctx, network, backends); err != nil {
+		return errors.Wrap(err, "deploy devapp")
+	}
+
+	return nil
+}
+
+// DeployContracts deploys solve inbox / outbox contracts.
+func deployBoxes(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
 	for _, chain := range network.EVMChains() {
 		backend, err := backends.Backend(chain.ID)
 		if err != nil {
