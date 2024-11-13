@@ -12,24 +12,12 @@ import (
 	db "github.com/cosmos/cosmos-db"
 )
 
-func (c *Cursor) ToSubmitCursor() *xchain.SubmitCursor {
-	return &xchain.SubmitCursor{
-		StreamID:     c.StreamID(),
-		MsgOffset:    c.GetLastXmsgOffset(),
-		AttestOffset: c.GetAttestOffset(),
-	}
-}
-
 func (c *Cursor) StreamID() xchain.StreamID {
 	return xchain.StreamID{
 		SourceChainID: c.GetSrcChainId(),
 		DestChainID:   c.GetDstChainId(),
 		ShardID:       xchain.ShardID(c.GetConfLevel()), // todo check
 	}
-}
-
-func (c *Cursor) Empty() bool {
-	return c.GetLastXmsgOffset() == 0
 }
 
 func NewCursorsTable(db db.DB) (CursorTable, error) {

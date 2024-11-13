@@ -78,7 +78,7 @@ func (w *Worker) runOnce(ctx context.Context) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	cursors, err := w.cursors.Confirmed(ctx, w.destChain.ID)
+	cursors, err := getSubmittedCursors(ctx, w.network, w.destChain.ID, w.xProvider)
 	if err != nil {
 		return err
 	}
@@ -115,6 +115,24 @@ func (w *Worker) runOnce(ctx context.Context) error {
 				"bootstrap", bootstrapOffset,
 			)
 			attestOffsets[chainVer] = bootstrapOffset
+		}
+	}
+
+	// TODO(sideninja) remove the bootstrap after storage cursors are persisted
+	for chainVer, offset := range attestOffsets {
+		storedOffset, ok, err := w.cursors.ConfirmedOffset(ctx, chainVer, w.destChain.ID)
+		if err != nil {
+			return err
+		} else if !ok {
+			continue
+		} else if storedOffset > offset {
+			log.Info(ctx, "Worker using stored attest offset",
+				"chain_version", w.network.ChainVersionName(chainVer),
+				"prev", offset,
+				"stored", storedOffset,
+			)
+
+			attestOffsets[chainVer] = storedOffset
 		}
 	}
 
@@ -260,11 +278,13 @@ func (w *Worker) newCallback(
 				return err
 			}
 
-			if err := w.cursors.Add(ctx, streamID, att.AttestOffset, msgs); err != nil {
+			empty := len(msgs) == 0
+
+			if err := w.cursors.Add(ctx, streamID.ChainVersion(), w.destChain.ID, att.AttestOffset, empty); err != nil {
 				return err
 			}
 
-			if len(msgs) == 0 {
+			if empty {
 				continue
 			}
 

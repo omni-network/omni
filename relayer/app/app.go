@@ -72,7 +72,7 @@ func Run(ctx context.Context, cfg Config) error {
 	if err != nil {
 		return err
 	}
-	go cursors.Monitor(ctx)
+	go cursors.MonitorNetwork(ctx)
 
 	for _, destChain := range network.EVMChains() {
 		// Setup send provider

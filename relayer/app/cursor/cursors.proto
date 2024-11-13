@@ -16,6 +16,6 @@ message Cursor {
   uint64 dst_chain_id       = 2; // Chain ID as per https://chainlist.org
   uint32 conf_level         = 3; // Confirmation level of the cross-chain block
   uint64 attest_offset      = 4; // Offset of the cross-chain block
-  uint64 last_xmsg_offset   = 5; // Last cross-chain message offset
-  bool confirmed            = 6; // Is the cursor confirmed
+  bool confirmed            = 5; // Is the cursor confirmed
+  bool empty                = 6; // Does the attestation offset contain cross-chain messages.
 }

@@ -163,12 +163,12 @@ func TestWorker_Run(t *testing.T) {
 	// make sure stored cursors match the ones from network
 	for _, c := range submittedCursors {
 		err := cursorsDB.Insert(ctx, &cursor.Cursor{
-			SrcChainId:     c.SourceChainID,
-			DstChainId:     c.DestChainID,
-			ConfLevel:      uint32(c.ConfLevel()),
-			AttestOffset:   c.AttestOffset,
-			LastXmsgOffset: c.MsgOffset,
-			Confirmed:      true,
+			SrcChainId:   c.SourceChainID,
+			DstChainId:   c.DestChainID,
+			ConfLevel:    uint32(c.ConfLevel()),
+			AttestOffset: c.AttestOffset,
+			Empty:        false,
+			Confirmed:    true,
 		})
 		require.NoError(t, err)
 	}

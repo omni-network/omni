@@ -5,54 +5,54 @@ import (
 	"slices"
 
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 )
 
-// StreamCursors provides operations on cursors that share same chain StreamID
+// StreamCursors provides operations on cursors that share same source chain,
+// destination chain and confirmation level.
+//
 // Most importantly it provides operations to confirm and trim cursors
 // persisted in the storage.
 type StreamCursors struct {
-	cursors  CursorTable
-	provider xchain.Provider
-	stream   xchain.StreamID
+	cursors       CursorTable
+	provider      xchain.Provider
+	sourceChainID uint64
+	destChainID   uint64
+	confLevel     xchain.ConfLevel
 }
 
-func newStreamCursors(stream xchain.StreamID, cursors CursorTable, provider xchain.Provider) *StreamCursors {
+func newStreamCursors(
+	sourceChainID uint64,
+	destChainID uint64,
+	confLevel xchain.ConfLevel,
+	cursors CursorTable,
+	provider xchain.Provider,
+) *StreamCursors {
 	return &StreamCursors{
-		cursors:  cursors,
-		provider: provider,
-		stream:   stream,
+		cursors:       cursors,
+		provider:      provider,
+		sourceChainID: sourceChainID,
+		destChainID:   destChainID,
+		confLevel:     confLevel,
 	}
 }
 
-func newNetworkCursors(network netconf.Network, cursors CursorTable, provider xchain.Provider) []*StreamCursors {
-	var streams []*StreamCursors
-	for _, chain := range network.EVMChains() {
-		for _, stream := range network.StreamsTo(chain.ID) {
-			streams = append(streams, newStreamCursors(stream, cursors, provider))
-		}
-	}
-
-	return streams
-}
-
-// GetConfirmed returns the latest confirmed cursor for the stream.
+// GetConfirmed returns the latest confirmed cursor attestation offset for the stream.
 // If no cursors have yet been confirmed or stored nil, false is returned.
-func (s *StreamCursors) GetConfirmed(ctx context.Context) (*xchain.SubmitCursor, bool, error) {
+func (s *StreamCursors) GetConfirmed(ctx context.Context) (uint64, bool, error) {
 	cursors, err := s.getAllCursors(ctx)
 	if err != nil {
-		return nil, false, err
+		return 0, false, err
 	}
 
 	slices.Reverse(cursors)
 	for _, c := range cursors {
 		if c.GetConfirmed() {
-			return c.ToSubmitCursor(), true, nil
+			return c.GetAttestOffset(), true, nil
 		}
 	}
 
-	return nil, false, nil
+	return 0, false, nil
 }
 
 // getAllCursors returns all cursors from the storage.
@@ -61,9 +61,9 @@ func (s *StreamCursors) GetConfirmed(ctx context.Context) (*xchain.SubmitCursor,
 func (s *StreamCursors) getAllCursors(ctx context.Context) ([]*Cursor, error) {
 	iterator, err := s.cursors.List(ctx,
 		CursorPrimaryKey{}.WithSrcChainIdConfLevelDstChainId(
-			s.stream.SourceChainID,
-			uint32(s.stream.ConfLevel()), // todo validate
-			s.stream.DestChainID,
+			s.sourceChainID,
+			uint32(s.confLevel),
+			s.destChainID,
 		))
 
 	if err != nil {
@@ -93,25 +93,30 @@ func (s *StreamCursors) Confirm(ctx context.Context) error {
 		return err
 	}
 
-	var prevConfirmed bool
+	// if we only have empty and not confirmed skip as there's nothing to do
+	nonEmptyOrConfirmed := slices.ContainsFunc(cursors, func(c *Cursor) bool {
+		return !c.GetEmpty() || c.GetConfirmed()
+	})
+	if !nonEmptyOrConfirmed {
+		return nil
+	}
+
 	for _, cursor := range cursors {
 		// if cursor not empty, confirm it comparing to the network finalized cursor
-		if !cursor.Empty() && !cursor.GetConfirmed() {
-			cursor.Confirmed, err = s.isFinalized(ctx, cursor)
+		if !cursor.GetEmpty() && !cursor.GetConfirmed() {
+			confirmed, err := s.isFinalized(ctx, cursor)
 			if err != nil {
 				return err
-			}
-			// we reached latest confirmed break until next cycle
-			if !cursor.GetConfirmed() {
+			} else if !confirmed {
+				// we reached latest confirmed
 				break
 			}
 		}
 
-		cursor.Confirmed = cursor.GetConfirmed() || prevConfirmed
+		cursor.Confirmed = true
 		if err := s.cursors.Update(ctx, cursor); err != nil {
 			return errors.Wrap(err, "cursor update")
 		}
-		prevConfirmed = cursor.GetConfirmed()
 	}
 
 	return nil
@@ -144,7 +149,7 @@ func (s *StreamCursors) Trim(ctx context.Context) error {
 
 // isFinalized checks if the cursor is finalized on the network.
 func (s *StreamCursors) isFinalized(ctx context.Context, cursor *Cursor) (bool, error) {
-	final, ok, err := s.provider.GetSubmittedCursor(ctx, xchain.FinalizedRef, s.stream)
+	final, ok, err := s.provider.GetSubmittedCursor(ctx, xchain.FinalizedRef, cursor.StreamID()) // todo check
 	if err != nil {
 		return false, errors.Wrap(err, "submitted cursor")
 	} else if !ok { // no cursors available yet skip
