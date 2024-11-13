@@ -51,10 +51,9 @@ func (c *Cursors) ConfirmedOffset(
 		GetConfirmed(ctx)
 }
 
-// Add a cursor to the storage constructed from the stream, attestation and messages
-//
+// Save a cursor to the storage.
 // If a cursor already exists it is updated with the provided data.
-func (c *Cursors) Add(
+func (c *Cursors) Save(
 	ctx context.Context,
 	chainVer xchain.ChainVersion,
 	destChainID uint64,
@@ -75,7 +74,7 @@ func (c *Cursors) Add(
 		return errors.Wrap(err, "insert cursor")
 	}
 
-	log.Info(ctx, "New cursor persisted",
+	log.Info(ctx, "New cursor saved",
 		"src_chain", chainVer.ID,
 		"conf_level", chainVer.ConfLevel,
 		"attest_offset", attestationOffset,

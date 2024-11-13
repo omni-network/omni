@@ -280,7 +280,7 @@ func (w *Worker) newCallback(
 
 			empty := len(msgs) == 0
 
-			if err := w.cursors.Add(ctx, streamID.ChainVersion(), w.destChain.ID, att.AttestOffset, empty); err != nil {
+			if err := w.cursors.Save(ctx, streamID.ChainVersion(), w.destChain.ID, att.AttestOffset, empty); err != nil {
 				return err
 			}
 
