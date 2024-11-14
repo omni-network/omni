@@ -44,3 +44,35 @@ func (m *MockPricer) Price() uint64 {
 
 	return m.price
 }
+
+type MockBuffer struct {
+	mu     sync.RWMutex
+	prices map[uint64]uint64
+}
+
+var _ Buffer = (*MockBuffer)(nil)
+
+func NewMockBuffer() *MockBuffer {
+	return &MockBuffer{
+		mu:     sync.RWMutex{},
+		prices: make(map[uint64]uint64),
+	}
+}
+
+func (b *MockBuffer) SetGasPrice(chainID uint64, price uint64) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	b.prices[chainID] = price
+}
+
+func (b *MockBuffer) GasPrice(chainID uint64) uint64 {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+
+	return b.prices[chainID]
+}
+
+func (*MockBuffer) Stream(context.Context) {
+	// no-op
+}

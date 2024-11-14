@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/lib/tokens/coingecko"
 	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
+	"github.com/omni-network/omni/monitor/xfeemngr/ticker"
 	"github.com/omni-network/omni/monitor/xfeemngr/tokenprice"
 
 	"github.com/ethereum/go-ethereum"
@@ -21,8 +22,8 @@ import (
 )
 
 type Manager struct {
-	gprice  *gasprice.Buffer
-	tprice  *tokenprice.Buffer
+	gprice  gasprice.Buffer
+	tprice  tokenprice.Buffer
 	oracles map[uint64]feeOracle
 }
 
@@ -32,26 +33,26 @@ type Config struct {
 }
 
 const (
-	// feeOracleSyncInterval is the interval at which fee oracles syncs buffered gas and token prices with FeeOracle deployments.
+	// Interval at which to sync buffers with on-chain.
 	feeOracleSyncInterval = 20 * time.Minute
 
-	// tokenPriceBufferThreshold is the pct threshold at which a new token price is buffered.
+	// Update token price if live price is 10% different on-chain.
 	tokenPriceBufferThreshold = 0.1
 
-	// gasPriceBufferThreshold is the pct threshold at which a new gas price is buffered.
-	gasPriceBufferThreshold = 0.2
+	// Check live token prices every 30 seconds.
+	tokenPriceBufferSyncInterval = 30 * time.Second
 
-	// GasPriceShield is the pct offset above the buffered gas price the oracle sets on chain
-	// Setting shield == buffer threshold ensures that on chain gas price is always at least as high as the live gas price.
-	GasPriceShield = 0.2
+	// Buffer on-chain gas price by 50% of live price.
+	GasPriceBufferOffset = 0.5
 
-	// maxSaneGasPrice is the maximum sane gas price in gwei to post for any destination chain. Set to 500 gwei.
-	maxSaneGasPrice = uint64(500_000_000_000)
+	// Only reduce on-chain gas price if live price is 50% of on-chain price.
+	gasPriceBufferTolerance = 0.5
 
-	// maxSaneOmniPerEth is the maximum sane conversion rate of omni to eth.
+	// Check live gas prices every 30 seconds.
+	gasPriceBufferSyncInterval = 30 * time.Second
+
+	maxSaneGasPrice   = uint64(500_000_000_000)
 	maxSaneOmniPerEth = float64(1_000_000)
-
-	// maxSaneEthPerOmni is the maximum sane conversion rate of eth to omni.
 	maxSaneEthPerOmni = float64(1)
 )
 
@@ -83,8 +84,19 @@ func Start(ctx context.Context, network netconf.Network, cfg Config, privKeyPath
 
 	cgCl := coingecko.New(coingecko.WithAPIKey(cfg.CoinGeckoAPIKey))
 
-	gprice := gasprice.NewBuffer(makeGasPricers(ethClients), gasprice.WithThresholdPct(gasPriceBufferThreshold))
-	tprice := tokenprice.NewBuffer(cgCl, tokens.OMNI, tokens.ETH, tokenprice.WithThresholdPct(tokenPriceBufferThreshold))
+	gprice, err := gasprice.NewBuffer(
+		makeGasPricers(ethClients),
+		GasPriceBufferOffset,
+		gasPriceBufferTolerance,
+		ticker.New(gasPriceBufferSyncInterval))
+	if err != nil {
+		return errors.Wrap(err, "new gas price buffer")
+	}
+
+	tprice := tokenprice.NewBuffer(cgCl,
+		[]tokens.Token{tokens.OMNI, tokens.ETH},
+		tokenPriceBufferThreshold,
+		ticker.New(tokenPriceBufferSyncInterval))
 
 	oracles, err := makeOracles(network, toSync, ethClients, privKey, gprice, tprice)
 	if err != nil {
@@ -130,7 +142,7 @@ func makeGasPricers(ethClients map[uint64]ethclient.Client) map[uint64]ethereum.
 
 // makeOracles makes a map chainID to feeOracle for each chain in the network.
 func makeOracles(network netconf.Network, toSync []evmchain.Metadata, ethClients map[uint64]ethclient.Client,
-	pk *ecdsa.PrivateKey, gprice *gasprice.Buffer, tprice *tokenprice.Buffer) (map[uint64]feeOracle, error) {
+	pk *ecdsa.PrivateKey, gprice gasprice.Buffer, tprice tokenprice.Buffer) (map[uint64]feeOracle, error) {
 	oracles := make(map[uint64]feeOracle)
 
 	for _, chain := range network.EVMChains() {

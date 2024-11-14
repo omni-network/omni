@@ -86,7 +86,7 @@ func destFeeParams(ctx context.Context, srcChain evmchain.Metadata, destChain ev
 		ChainId:      destChain.ChainID,
 		PostsTo:      postsTo,
 		ToNativeRate: rateToNumerator(toNativeRate),
-		GasPrice:     withGasPriceShield(gasPrice),
+		GasPrice:     withGasPriceOffset(gasPrice),
 	}, nil
 }
 
@@ -132,10 +132,10 @@ func rateToNumerator(r float64) *big.Int {
 	return norm
 }
 
-// withGasPriceShield returns the gas price with an added xfeemngr.GasPriceShield pct offset.
-func withGasPriceShield(gasPrice *big.Int) *big.Int {
+// withGasPriceOffset returns the gas price with an added xfeemngr.GasPriceShield pct offset.
+func withGasPriceOffset(gasPrice *big.Int) *big.Int {
 	gasPriceF := float64(gasPrice.Uint64())
-	return new(big.Int).SetUint64(uint64(gasPriceF + (xfeemngr.GasPriceShield * gasPriceF)))
+	return new(big.Int).SetUint64(uint64(gasPriceF + (xfeemngr.GasPriceBufferOffset * gasPriceF)))
 }
 
 func contains(params []bindings.IFeeOracleV1ChainFeeParams, chainID uint64) bool {

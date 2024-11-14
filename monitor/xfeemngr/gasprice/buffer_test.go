@@ -5,7 +5,6 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
 	"github.com/omni-network/omni/monitor/xfeemngr/ticker"
 
@@ -25,58 +24,53 @@ func TestBufferStream(t *testing.T) {
 	// mock gas pricers per chain
 	mocks := makeMockPricers(initials)
 
-	thresh := 0.1
+	offset := 0.3    // 30% offset
+	tolerance := 0.5 // 50% tolerance
 	tick := ticker.NewMock()
 	ctx := context.Background()
 
-	b := gasprice.NewBuffer(toEthGasPricers(mocks), gasprice.WithThresholdPct(thresh), gasprice.WithTicker(tick))
+	withOffset := func(price uint64) uint64 {
+		return uint64(float64(price) * (1 + offset))
+	}
 
-	// start streaming gas prices
+	atTolerance := func(price uint64) uint64 {
+		return uint64(float64(price) * (1 - tolerance))
+	}
+
+	b, err := gasprice.NewBuffer(toEthGasPricers(mocks), offset, tolerance, tick)
+	require.NoError(t, err)
+
 	b.Stream(ctx)
 
-	// tick once - initial prices should get buffered
+	// tick once
 	tick.Tick()
 
-	// buffered price should be initial
+	// buffered price should be initial live + offset
 	for chainID, price := range initials {
-		require.Equal(t, price, b.GasPrice(chainID), "initial")
+		require.Equal(t, withOffset(price), b.GasPrice(chainID), "initial")
 	}
 
-	// just increase a little, but not above threshold
-	for chainID, price := range initials {
-		delta := umath.SubtractOrZero(uint64(float64(price)*thresh), 1)
-		mocks[chainID].SetPrice(price + delta)
-	}
+	// 10 steps
+	buffed := make(map[uint64]uint64)
+	for i := 0; i < 10; i++ {
+		for chainID, mock := range mocks {
+			buffed[chainID] = b.GasPrice(chainID)
+			mock.SetPrice(randGasPrice())
+		}
 
-	tick.Tick()
+		tick.Tick()
 
-	// buffered price should still be initial
-	for chainID, price := range initials {
-		require.Equal(t, price, b.GasPrice(chainID), "within threshold")
-	}
+		// for each step, we check if buffer properly updates (or doesn't)
+		for chainID, mock := range mocks {
+			tooLow := mock.Price() > buffed[chainID]
+			tooHigh := mock.Price() < atTolerance(buffed[chainID])
 
-	// increase above threshold
-	for chainID, price := range initials {
-		mocks[chainID].SetPrice(price + uint64(float64(price)*thresh)*2)
-	}
-
-	tick.Tick()
-
-	// buffered price should be updated
-	for chainID, mock := range mocks {
-		require.Equal(t, mock.Price(), b.GasPrice(chainID), "outside threshold")
-	}
-
-	// reset back to initial
-	for chainID, price := range initials {
-		mocks[chainID].SetPrice(price)
-	}
-
-	tick.Tick()
-
-	// buffered price should be initial
-	for chainID, price := range initials {
-		require.Equal(t, price, b.GasPrice(chainID), "reset")
+			if tooHigh || tooLow {
+				require.Equal(t, withOffset(mock.Price()), b.GasPrice(chainID), 0.01, "should change")
+			} else {
+				require.Equal(t, buffed[chainID], b.GasPrice(chainID), 0.01, "should not change")
+			}
+		}
 	}
 }
 

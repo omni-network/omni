@@ -6,55 +6,52 @@ import (
 
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/monitor/xfeemngr/ticker"
 )
 
-type Buffer struct {
-	mu     sync.RWMutex
-	once   sync.Once
-	buffer map[tokens.Token]float64 // map token to price
-	pricer tokens.Pricer
-	tokens []tokens.Token
-	opts   *Opts
+type buffer struct {
+	mu        sync.RWMutex
+	once      sync.Once
+	buffer    map[tokens.Token]float64 // map token to price
+	pricer    tokens.Pricer
+	tokens    []tokens.Token
+	threshold float64
+	tick      ticker.Ticker
 }
+
+type Buffer interface {
+	Price(token tokens.Token) float64
+	Stream(ctx context.Context)
+}
+
+var _ Buffer = (*buffer)(nil)
 
 // NewBuffer creates a new token price buffer.
 //
 // A token price buffer maintains a buffered view of token prices for multiple
 // tokens. Buffered token prices are not updated unless they are outside the
 // threshold percentage. Start steaming token prices with Buffer.Stream(ctx).
-func NewBuffer(price tokens.Pricer, optOrTokens ...any) *Buffer {
-	opts := defaultOpts()
-	tkns := make([]tokens.Token, 0)
-
-	for _, optOrToken := range optOrTokens {
-		if o, ok := optOrToken.(func(*Opts)); ok {
-			o(opts)
-		}
-
-		if token, ok := optOrToken.(tokens.Token); ok {
-			tkns = append(tkns, token)
-		}
-	}
-
-	return &Buffer{
-		mu:     sync.RWMutex{},
-		buffer: make(map[tokens.Token]float64),
-		pricer: price,
-		tokens: tkns,
-		opts:   opts,
+func NewBuffer(price tokens.Pricer, tkns []tokens.Token, threshold float64, ticker ticker.Ticker) Buffer {
+	return &buffer{
+		mu:        sync.RWMutex{},
+		buffer:    make(map[tokens.Token]float64),
+		pricer:    price,
+		tokens:    tkns,
+		threshold: threshold,
+		tick:      ticker,
 	}
 }
 
 // Price returns the buffered price for the given token.
 // If the price is not known, returns 0.
-func (b *Buffer) Price(token tokens.Token) float64 {
+func (b *buffer) Price(token tokens.Token) float64 {
 	p, _ := b.price(token)
 
 	return p
 }
 
 // Stream starts streaming prices for all tokens into the buffer.
-func (b *Buffer) Stream(ctx context.Context) {
+func (b *buffer) Stream(ctx context.Context) {
 	b.once.Do(func() {
 		ctx = log.WithCtx(ctx, "component", "tokenprice.Buffer")
 		log.Info(ctx, "Streaming token prices into buffer")
@@ -64,9 +61,7 @@ func (b *Buffer) Stream(ctx context.Context) {
 }
 
 // stream starts streaming prices for all tokens into the buffer.
-func (b *Buffer) stream(ctx context.Context) {
-	tick := b.opts.ticker
-
+func (b *buffer) stream(ctx context.Context) {
 	callback := func(ctx context.Context) {
 		prices, err := b.pricer.Price(ctx, b.tokens...)
 		if err != nil {
@@ -81,7 +76,7 @@ func (b *Buffer) stream(ctx context.Context) {
 			buffed, ok := b.price(token)
 
 			// if price is buffered, and is within threshold, skip
-			if ok && inThreshold(price, buffed, b.opts.thresholdPct) {
+			if ok && inThreshold(price, buffed, b.threshold) {
 				continue
 			}
 
@@ -91,7 +86,7 @@ func (b *Buffer) stream(ctx context.Context) {
 		b.gaugeBuffered()
 	}
 
-	tick.Go(ctx, callback)
+	b.tick.Go(ctx, callback)
 }
 
 // guageLive updates "live" guages for token prices and conversion rates.
@@ -117,7 +112,7 @@ func guageLive(prices map[tokens.Token]float64) {
 }
 
 // gaugeBuffered updates "buffered" gauges for token prices and conversion rates.
-func (b *Buffer) gaugeBuffered() {
+func (b *buffer) gaugeBuffered() {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 	for token, price := range b.buffer {
@@ -142,7 +137,7 @@ func (b *Buffer) gaugeBuffered() {
 
 // price returns the buffered price for the given token.
 // If the price is not known, returns 0 and false.
-func (b *Buffer) price(token tokens.Token) (float64, bool) {
+func (b *buffer) price(token tokens.Token) (float64, bool) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
@@ -152,7 +147,7 @@ func (b *Buffer) price(token tokens.Token) (float64, bool) {
 }
 
 // setPrice sets the buffered price for the given token.
-func (b *Buffer) setPrice(token tokens.Token, price float64) {
+func (b *buffer) setPrice(token tokens.Token, price float64) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
