@@ -191,7 +191,7 @@ func startEventStreams(
 		ParseID:      newIDParser(inboxContracts),
 		GetRequest:   newRequestGetter(inboxContracts),
 		ShouldReject: newRequestValidator(def),
-		Accept:       newAcceptor(inboxContracts, backends, solverAddr),
+		Accept:       newAcceptor(network.ID, inboxContracts, backends, solverAddr),
 		Reject:       newRejector(inboxContracts, backends, solverAddr),
 		Fulfill:      newFulfiller(outboxContracts, backends, solverAddr),
 		Claim:        newClaimer(inboxContracts, backends, solverAddr),

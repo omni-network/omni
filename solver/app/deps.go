@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -136,11 +137,23 @@ func newRejector(
 }
 
 func newAcceptor(
+	network netconf.ID,
 	inboxContracts map[uint64]*bindings.SolveInbox,
 	backends ethbackend.Backends,
 	solverAddr common.Address,
 ) func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error {
 	return func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error {
+		target, err := targetFor(network, req.Call)
+		if err != nil {
+			log.Debug(ctx, "No target found for call", "call", req.Call)
+			return errors.Wrap(err, "get target")
+		}
+
+		if err := target.Verify(chainID, req.Call, req.Deposits); err != nil {
+			log.Debug(ctx, "Call rejected by target", "call", req.Call, "err", err)
+			return errors.Wrap(err, "verify target")
+		}
+
 		inbox, ok := inboxContracts[chainID]
 		if !ok {
 			return errors.New("unknown chain")

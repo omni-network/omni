@@ -6,7 +6,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
-	solver "github.com/omni-network/omni/solver/app"
+	solver "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -26,7 +26,7 @@ func (t App) Address() common.Address {
 	return t.L1Vault
 }
 
-func (t App) IsAllowedCall(call *bindings.SolveCall) bool {
+func (t App) IsAllowedCall(call bindings.SolveCall) bool {
 	if call.DestChainId != t.ChainID() {
 		return false
 	}
@@ -40,7 +40,7 @@ func (t App) IsAllowedCall(call *bindings.SolveCall) bool {
 	return err == nil
 }
 
-func (t App) TokenPrereqs(call *bindings.SolveCall) ([]*bindings.SolveTokenPrereq, error) {
+func (t App) TokenPrereqs(call bindings.SolveCall) ([]bindings.SolveTokenPrereq, error) {
 	if !t.IsAllowedCall(call) {
 		return nil, errors.New("call not allowed")
 	}
@@ -50,7 +50,7 @@ func (t App) TokenPrereqs(call *bindings.SolveCall) ([]*bindings.SolveTokenPrere
 		return nil, errors.Wrap(err, "unpack deposit")
 	}
 
-	return []*bindings.SolveTokenPrereq{
+	return []bindings.SolveTokenPrereq{
 		{
 			Token:  t.L1Token,
 			Amount: args.Amount,
@@ -58,7 +58,7 @@ func (t App) TokenPrereqs(call *bindings.SolveCall) ([]*bindings.SolveTokenPrere
 	}, nil
 }
 
-func (t App) Verify(srcChainID uint64, call *bindings.SolveCall, deposits []*bindings.SolveDeposit) error {
+func (t App) Verify(srcChainID uint64, call bindings.SolveCall, deposits []bindings.SolveDeposit) error {
 	// we only accept deposits from mock L2
 	if srcChainID != evmchain.IDMockL2 {
 		return errors.New("source chain not supported", "src", srcChainID)
@@ -77,7 +77,7 @@ func (t App) Verify(srcChainID uint64, call *bindings.SolveCall, deposits []*bin
 
 	for _, deposit := range deposits {
 		if deposit.Token == t.L2Token {
-			l2token = deposit
+			l2token = &deposit
 		}
 	}
 
