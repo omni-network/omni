@@ -83,6 +83,7 @@ func New() *cobra.Command {
 		newERC20FaucetCmd(&def),
 		newDeployGasAppCmd(&def),
 		newDeployBridgeCmd(&def),
+		newDeployFeeOracleV2Cmd(&def),
 		fundAccounts(&def),
 	)
 
@@ -269,6 +270,18 @@ func newDeployBridgeCmd(def *app.Definition) *cobra.Command {
 		Short: "Deploys l1 bridge, setups native bridge.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return app.DeployBridge(cmd.Context(), *def)
+		},
+	}
+
+	return cmd
+}
+
+func newDeployFeeOracleV2Cmd(def *app.Definition) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "deploy-feeoraclev2",
+		Short: "Deploys the FeeOracleV2 contract",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return app.DeployFeeOracleV2(cmd.Context(), *def)
 		},
 	}
 

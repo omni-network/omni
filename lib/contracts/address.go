@@ -86,6 +86,7 @@ type Addresses struct {
 	Token          common.Address
 	SolveOutbox    common.Address
 	SolveInbox     common.Address
+	FeeOracleV2    common.Address
 }
 
 type Salts struct {
@@ -97,6 +98,7 @@ type Salts struct {
 	Token       string
 	SolveOutbox string
 	SolveInbox  string
+	FeeOracleV2 string
 }
 
 type cache[T any] struct {
@@ -141,6 +143,7 @@ func GetAddresses(ctx context.Context, network netconf.ID) (Addresses, error) {
 		GasStation:     gasStation(network, ver),
 		SolveInbox:     solveInbox(network, ver),
 		SolveOutbox:    solveOutbox(network, ver),
+		FeeOracleV2:    feeOracleV2(network, ver),
 	}
 
 	addrsCache.cache[network] = addrs
@@ -232,6 +235,10 @@ func solveOutbox(network netconf.ID, version string) common.Address {
 	return create3.Address(Create3Factory(network), solveOutboxSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
 }
 
+func feeOracleV2(network netconf.ID, version string) common.Address {
+	return create3.Address(Create3Factory(network), feeOracleV2Salt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
+}
+
 //
 // Salts.
 //
@@ -267,6 +274,10 @@ func solveInboxSalt(network netconf.ID, version string) string {
 
 func solveOutboxSalt(network netconf.ID, version string) string {
 	return salt(network, "solve-outbox-"+version)
+}
+
+func feeOracleV2Salt(network netconf.ID, version string) string {
+	return salt(network, "fee-oracle-v2-"+version)
 }
 
 //
