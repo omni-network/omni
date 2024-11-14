@@ -209,3 +209,10 @@ figcaption {
 .table-of-contents__link:hover {
   color: var(--ifm-color-primary-light);
 }
+
+/* Center all images in docs */
+.markdown img {
+  display: block;
+  margin: 0 auto;
+  margin-bottom: 1em;
+}

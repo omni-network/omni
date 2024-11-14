@@ -1,4 +1,4 @@
-# Operator FAQ
+# FAQ
 
 ### Does Omni provide official docker images?
 - Yes, see [omniops/halovisor](https://hub.docker.com/r/omniops/halovisor/tags?page_size=&ordering=&name=latest) and [ethereum/client-go](https://hub.docker.com/r/ethereum/client-go/tags?page_size=&ordering=&name=latest)
