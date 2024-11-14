@@ -121,7 +121,7 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 	}
 
 	// First, collect all vote extension msgs from the vote provider.
-	voteMsgs, err := k.voteProvider.PrepareVotes(ctx, req.LocalLastCommit)
+	voteMsgs, err := k.voteProvider.PrepareVotes(ctx, req.LocalLastCommit, uint64(req.Height-1))
 	if err != nil {
 		return nil, errors.Wrap(err, "prepare votes")
 	}

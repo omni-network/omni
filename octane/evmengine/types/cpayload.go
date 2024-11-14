@@ -17,7 +17,7 @@ import (
 // EVMEngine calls this during PreparePayload to collect all vote extensions msgs to include in
 // the consensus block.
 type VoteExtensionProvider interface {
-	PrepareVotes(ctx context.Context, commit abci.ExtendedCommitInfo) ([]sdk.Msg, error)
+	PrepareVotes(ctx context.Context, commit abci.ExtendedCommitInfo, commitHeight uint64) ([]sdk.Msg, error)
 }
 
 // EvmEventProcessor abstracts logic that processes EVM log events of the

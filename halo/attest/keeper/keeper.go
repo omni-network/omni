@@ -732,77 +732,98 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 		Status: abci.ResponseVerifyVoteExtension_REJECT,
 	}
 
+	_, ok, err := k.parseAndVerifyVoteExtension(ctx, req.ValidatorAddress, req.VoteExtension, uint64(req.Height))
+	if err != nil {
+		log.Warn(ctx, "Rejecting vote extension", err, log.Hex7("validator", req.ValidatorAddress))
+		return respAccept, nil
+	} else if !ok {
+		log.Warn(ctx, "Rejecting vote extension containing vote behind window", nil, log.Hex7("validator", req.ValidatorAddress))
+		return respReject, nil
+	}
+
+	return respAccept, nil
+}
+
+// parseAndVerifyVoteExtension returns a list of valid vote extensions and true if all votes are valid,
+// or an error if any validation failed (except "vote-behind-window").
+//
+// vote-behind-window:
+// - is not valid,
+// - but is not always considered an error (as it is expected in PrepareProposal).
+// - false is returned in this case,
+// - to indicate that not all votes are valid (nor returned).
+func (k *Keeper) parseAndVerifyVoteExtension(
+	ctx sdk.Context,
+	valAddr []byte,
+	voteExt []byte,
+	voteHeight uint64,
+) ([]*types.Vote, bool, error) {
 	cChainID, err := netconf.ConsensusChainIDStr2Uint64(ctx.ChainID())
 	if err != nil {
-		return nil, errors.Wrap(err, "parse chain id")
+		return nil, false, errors.Wrap(err, "parse chain id")
 	}
 
 	// Get the ethereum address of the validator
-	ethAddr, err := k.getValEthAddr(ctx, req.ValidatorAddress)
+	ethAddr, err := k.getValEthAddr(ctx, valAddr, voteHeight)
 	if err != nil {
-		return nil, err // This error should never occur
+		return nil, false, err // This error should never occur
 	}
 
-	// Adding logging attributes to sdk context is a bit tricky
-	ctx = ctx.WithContext(log.WithCtx(ctx, log.Hex7("validator", req.ValidatorAddress)))
-
-	votes, ok, err := votesFromExtension(req.VoteExtension)
+	votes, ok, err := votesFromExtension(voteExt)
 	if err != nil {
-		log.Warn(ctx, "Rejecting invalid vote extension", err)
-		return respReject, nil
+		return nil, false, errors.Wrap(err, "votes from extension")
 	} else if !ok {
-		return respAccept, nil
+		return nil, true, nil // Empty vote extension is fine
 	} else if umath.Len(votes.Votes) > k.voteExtLimit {
-		log.Warn(ctx, "Rejecting vote extension exceeding limit", nil, "count", len(votes.Votes), "limit", k.voteExtLimit)
-		return respReject, nil
+		return nil, false, errors.New("vote extension limit exceeded", "count", len(votes.Votes), "limit", k.voteExtLimit)
 	}
 
 	duplicate := make(map[common.Hash]bool)          // Detect identical duplicate votes (same AttestationRoot)
 	doubleSign := make(map[xchain.AttestHeader]bool) // Detect double sign votes (same AttestHeader)
+	var resp []*types.Vote
 	for _, vote := range votes.Votes {
 		if err := vote.Verify(); err != nil {
-			log.Warn(ctx, "Rejecting invalid vote", err)
-			return respReject, nil
+			return nil, false, errors.Wrap(err, "verify vote")
 		}
 
 		attRoot, err := vote.AttestationRoot()
 		if err != nil {
-			return nil, errors.Wrap(err, "att root [BUG]") // Should error in Verify
+			return nil, false, errors.Wrap(err, "att root")
 		}
 		if duplicate[attRoot] {
-			log.Warn(ctx, "Rejecting duplicate identical vote", nil)
-			return respReject, nil
+			return nil, false, errors.New("duplicate identical vote")
 		}
 		duplicate[attRoot] = true
 
 		if doubleSign[vote.AttestHeader.ToXChain()] {
 			doubleSignCounter.WithLabelValues(ethAddr.Hex()).Inc()
-			log.Warn(ctx, "Rejecting duplicate slashable vote", err)
 
-			return respReject, nil
+			return nil, false, errors.New("duplicate slashable vote")
 		}
 		doubleSign[vote.AttestHeader.ToXChain()] = true
 
 		// Ensure the votes are from the requesting validator itself.
 		if !bytes.Equal(vote.Signature.ValidatorAddress, ethAddr[:]) {
-			log.Warn(ctx, "Rejecting mismatching vote and req validator address", nil, "vote", ethAddr, "req", req.ValidatorAddress)
-			return respReject, nil
+			return nil, false, errors.New("mismatching vote and req validator address", "vote", ethAddr, "req", vote.Signature.ValidatorAddress)
 		}
 
 		if err := verifyHeaderChains(ctx, cChainID, k.portalRegistry, vote.AttestHeader, vote.BlockHeader); err != nil {
-			log.Warn(ctx, "Rejecting vote for invalid header chains", err, "chain", k.namer(vote.AttestHeader.XChainVersion()))
-			return respReject, nil
+			return nil, false, errors.Wrap(err, "verify chain headers", "chain", k.namer(vote.AttestHeader.XChainVersion()))
 		}
 
 		if cmp, err := k.windowCompare(ctx, vote.AttestHeader.XChainVersion(), vote.AttestHeader.AttestOffset); err != nil {
-			return nil, errors.Wrap(err, "windower")
-		} else if cmp != 0 {
-			log.Warn(ctx, "Rejecting out-of-window vote", nil, "cmp", cmp)
-			return respReject, nil
+			return nil, false, errors.Wrap(err, "window compare")
+		} else if cmp > 0 {
+			return nil, false, errors.New("vote ahead of window")
+		} else if cmp < 0 {
+			// Vote-behind-window is expected in PrepareProposal, just don't add to response.
+			continue
 		}
+
+		resp = append(resp, vote)
 	}
 
-	return respAccept, nil
+	return resp, len(votes.Votes) == len(resp), nil
 }
 
 type ValSet struct {
@@ -875,7 +896,7 @@ func (k *Keeper) verifyAggVotes(
 	cChainID uint64,
 	valset ValSet,
 	aggs []*types.AggVote,
-	windowCompareFunc windowCompareFunc, // Aliased for testing
+	windowCompareFunc func(context.Context, xchain.ChainVersion, uint64) (int, error), // Aliased for testing
 ) error {
 	duplicate := make(map[common.Hash]bool)         // Detects duplicate aggregate votes.
 	countsPerVal := make(map[common.Address]uint64) // Enforce vote extension limit.
