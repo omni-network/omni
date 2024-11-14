@@ -13,6 +13,13 @@ var (
 		Help:      "Live gas price",
 	}, []string{"chain"})
 
+	bufferUpdates = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "monitor",
+		Subsystem: "xfeemngr",
+		Name:      "buffer_updates_total",
+		Help:      "The total number of buffer updates",
+	}, []string{"chain"})
+
 	bufferedGasPrice = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "monitor",
 		Subsystem: "xfeemngr",

@@ -154,6 +154,7 @@ func guageLive(chainID uint64, price uint64) {
 // guageBuffered updates "buffered" guages for a chain's gas price.
 func guageBuffered(chainID uint64, price uint64) {
 	bufferedGasPrice.WithLabelValues(chainName(chainID)).Set(float64(price))
+	bufferUpdates.WithLabelValues(chainName(chainID)).Inc()
 }
 
 // setPrice sets the buffered gas price for the given chainID.
