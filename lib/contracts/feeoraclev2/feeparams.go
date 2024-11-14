@@ -38,16 +38,6 @@ func feeParams(ctx context.Context, srcChainID uint64, destChainIDs []uint64, ba
 		}
 
 		resp = append(resp, ps)
-
-		// Add postsTo rates if not already present
-		if destChain.PostsTo != 0 && !contains(resp, destChain.PostsTo) {
-			resp = append(resp, bindings.IFeeOracleV2FeeParams{
-				ChainId:      destChain.PostsTo,
-				ExecGasPrice: uint64(params.GWei),
-				DataGasPrice: uint64(params.GWei),
-				ToNativeRate: rateToNumerator(1), // Stub native rates for now
-			})
-		}
 	}
 
 	return resp, nil
@@ -56,11 +46,6 @@ func feeParams(ctx context.Context, srcChainID uint64, destChainIDs []uint64, ba
 // feeParams returns the fee parameters for the given source token and destination chains.
 func destFeeParams(ctx context.Context, srcChain evmchain.Metadata, destChain evmchain.Metadata, backends ethbackend.Backends, pricer tokens.Pricer,
 ) (bindings.IFeeOracleV2FeeParams, error) {
-	backend, err := backends.Backend(destChain.ChainID)
-	if err != nil {
-		return bindings.IFeeOracleV2FeeParams{}, errors.Wrap(err, "get backend", "dest_chain", destChain.Name)
-	}
-
 	// conversion rate from "dest token" to "src token"
 	// ex if dest chain is ETH, and src chain is OMNI, we need to know the rate of ETH to OMNI.
 	toNativeRate, err := conversionRate(ctx, pricer, destChain.NativeToken, srcChain.NativeToken)
@@ -69,16 +54,32 @@ func destFeeParams(ctx context.Context, srcChain evmchain.Metadata, destChain ev
 		toNativeRate = 1
 	}
 
-	gasPrice, err := backend.SuggestGasPrice(ctx)
+	localBackend, err := backends.Backend(destChain.ChainID)
 	if err != nil {
-		log.Warn(ctx, "Failed fetching gas price, using default 1 Gwei", err, "dest_chain", destChain.Name)
-		gasPrice = big.NewInt(params.GWei)
+		return bindings.IFeeOracleV2FeeParams{}, errors.Wrap(err, "get local backend", "dest_chain", destChain.Name)
+	}
+
+	remoteBackend, err := backends.Backend(destChain.PostsTo)
+	if err != nil {
+		return bindings.IFeeOracleV2FeeParams{}, errors.Wrap(err, "get remote backend", "dest_chain", destChain.Name)
+	}
+
+	execGasPrice, err := localBackend.SuggestGasPrice(ctx)
+	if err != nil {
+		log.Warn(ctx, "Failed fetching exec gas price, using default 1 Gwei", err, "dest_chain", destChain.Name)
+		execGasPrice = big.NewInt(params.GWei)
+	}
+
+	dataGasPrice, err := remoteBackend.SuggestGasPrice(ctx)
+	if err != nil {
+		log.Warn(ctx, "Failed fetching data gas price, using default 1 Gwei", err, "dest_chain", destChain.Name)
+		dataGasPrice = big.NewInt(params.GWei)
 	}
 
 	return bindings.IFeeOracleV2FeeParams{
 		ChainId:      destChain.ChainID,
-		ExecGasPrice: withGasPriceShield(float64(gasPrice.Uint64())),
-		DataGasPrice: withGasPriceShield(float64(gasPrice.Uint64())),
+		ExecGasPrice: withGasPriceShield(float64(execGasPrice.Uint64())),
+		DataGasPrice: withGasPriceShield(float64(dataGasPrice.Uint64())),
 		ToNativeRate: rateToNumerator(toNativeRate),
 	}, nil
 }
@@ -109,14 +110,14 @@ func conversionRate(ctx context.Context, pricer tokens.Pricer, from, to tokens.T
 	return prices[from] / prices[to], nil
 }
 
-// conversionRateDenom matches the CONVERSION_RATE_DENOM on the FeeOracleV1 contract.
+// conversionRateDenom matches the CONVERSION_RATE_DENOM on the FeeOracleV2 contract.
 // This denominator helps convert between token amounts in solidity, in which there are no floating point numbers.
 //
 //	ex. (amt A) * (rate R) / CONVERSION_RATE_DENOM = (amt B)
 var conversionRateDenom = big.NewInt(1_000_000)
 
 // rateToNumerator translates a float rate (ex 0.1) to numerator / CONVERSION_RATE_DENOM (ex 100_000).
-// This rate-as-numerator representation is used in FeeOracleV1 contracts.
+// This rate-as-numerator representation is used in FeeOracleV2 contracts.
 func rateToNumerator(r float64) uint64 {
 	denom := new(big.Float).SetInt64(conversionRateDenom.Int64())
 	numer := new(big.Float).SetFloat64(r)
@@ -128,14 +129,4 @@ func rateToNumerator(r float64) uint64 {
 // withGasPriceShield returns the gas price with an added xfeemngr.GasPriceShield pct offset.
 func withGasPriceShield(gasPrice float64) uint64 {
 	return uint64(gasPrice + (xfeemngr.GasPriceShield * gasPrice))
-}
-
-func contains(params []bindings.IFeeOracleV2FeeParams, chainID uint64) bool {
-	for _, param := range params {
-		if param.ChainId == chainID {
-			return true
-		}
-	}
-
-	return false
 }

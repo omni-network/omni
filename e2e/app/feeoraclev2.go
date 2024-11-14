@@ -8,32 +8,19 @@ import (
 	"github.com/omni-network/omni/lib/log"
 )
 
+// DeployFeeOracleV2 deploys fee oracle v2.
 func DeployFeeOracleV2(ctx context.Context, def Definition) error {
-	if err := deployFeeOracleV2(ctx, def); err != nil {
-		return errors.Wrap(err, "deploy fee oracle v2")
-	}
-
-	return nil
-}
-
-func deployFeeOracleV2(ctx context.Context, def Definition) error {
 	_, ok := def.Testnet.OmniEVMChain()
 	if !ok {
 		return errors.New("no omni evm chain")
 	}
 
 	allChains := def.Testnet.EVMChains()
+	chainIDs := getChainIDs(def)
+	backends := def.Backends()
+
 	for _, chain := range allChains {
-		backends := def.Backends()
-
-		destChainIDs := make([]uint64, 0, len(allChains)-1)
-		for _, destChain := range allChains {
-			if destChain.ChainID != chain.ChainID {
-				destChainIDs = append(destChainIDs, destChain.ChainID)
-			}
-		}
-
-		addr, receipt, err := feeoraclev2.DeployIfNeeded(ctx, def.Testnet.Network, chain.ChainID, destChainIDs, backends)
+		addr, receipt, err := feeoraclev2.DeployIfNeeded(ctx, def.Testnet.Network, chain.ChainID, chainIDs, backends)
 		if err != nil {
 			return errors.Wrap(err, "deploy", "chain", chain.Name, "tx", maybeTxHash(receipt))
 		}
@@ -42,4 +29,15 @@ func deployFeeOracleV2(ctx context.Context, def Definition) error {
 	}
 
 	return nil
+}
+
+func getChainIDs(def Definition) []uint64 {
+	allChains := def.Testnet.EVMChains()
+
+	chainIDs := make([]uint64, 0, len(allChains))
+	for _, chain := range allChains {
+		chainIDs = append(chainIDs, chain.ChainID)
+	}
+
+	return chainIDs
 }

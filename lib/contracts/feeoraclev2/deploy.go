@@ -125,7 +125,7 @@ func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainID
 		Owner:           eoa.MustAddress(network, eoa.RoleManager),
 		Deployer:        eoa.MustAddress(network, eoa.RoleDeployer),
 		Manager:         eoa.MustAddress(network, eoa.RoleMonitor), // NOTE: monitor is owner of fee oracle contracts, because monitor manages on chain gas prices / conversion rates
-		BaseGasLimit:    50_000,
+		BaseGasLimit:    100_000,
 		ProtocolFee:     big.NewInt(0),
 	}
 
