@@ -78,8 +78,8 @@ func destFeeParams(ctx context.Context, srcChain evmchain.Metadata, destChain ev
 
 	return bindings.IFeeOracleV2FeeParams{
 		ChainId:      destChain.ChainID,
-		ExecGasPrice: withGasPriceShield(float64(execGasPrice.Uint64())),
-		DataGasPrice: withGasPriceShield(float64(dataGasPrice.Uint64())),
+		ExecGasPrice: withGasPriceOffset(execGasPrice.Uint64()),
+		DataGasPrice: withGasPriceOffset(dataGasPrice.Uint64()),
 		ToNativeRate: rateToNumerator(toNativeRate),
 	}, nil
 }
@@ -126,7 +126,8 @@ func rateToNumerator(r float64) uint64 {
 	return norm
 }
 
-// withGasPriceShield returns the gas price with an added xfeemngr.GasPriceShield pct offset.
-func withGasPriceShield(gasPrice float64) uint64 {
-	return uint64(gasPrice + (xfeemngr.GasPriceShield * gasPrice))
+// withGasPriceOffset returns the gas price with an added xfeemngr.GasPriceShield pct offset.
+func withGasPriceOffset(gasPrice uint64) uint64 {
+	gasPriceF := float64(gasPrice)
+	return uint64(gasPriceF + (xfeemngr.GasPriceBufferOffset * gasPriceF))
 }
