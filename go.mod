@@ -17,7 +17,7 @@ require (
 	github.com/BurntSushi/toml v1.4.0
 	github.com/Layr-Labs/eigenlayer-cli v0.10.7
 	github.com/Layr-Labs/eigensdk-go v0.1.13-0.20240927005004-ed4b05c87610
-	github.com/bufbuild/buf v1.46.0
+	github.com/bufbuild/buf v1.47.2
 	github.com/charmbracelet/log v0.4.0
 	github.com/cometbft/cometbft v0.38.15
 	github.com/cosmos/cosmos-db v1.0.2
@@ -148,10 +148,10 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
 	github.com/google/btree v1.1.3 // indirect
-	github.com/google/cel-go v0.21.0 // indirect
+	github.com/google/cel-go v0.22.0 // indirect
 	github.com/google/go-containerregistry v0.20.2 // indirect
 	github.com/google/orderedcode v0.0.1 // indirect
-	github.com/google/pprof v0.0.0-20241017200806-017d972448fc // indirect
+	github.com/google/pprof v0.0.0-20241101162523-b92577c0c142 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.3 // indirect
@@ -259,18 +259,17 @@ require (
 	go.etcd.io/bbolt v1.4.0-alpha.0.0.20240404170359-43604f3112c5 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.49.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.56.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.57.0 // indirect
 	go.opentelemetry.io/otel v1.32.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.32.0 // indirect
 	go.opentelemetry.io/otel/metric v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.32.0
 	go.opentelemetry.io/otel/trace v1.32.0
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
-	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.29.0 // indirect
-	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
+	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f
 	golang.org/x/mod v0.22.0 // indirect
 	golang.org/x/net v0.31.0 // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
@@ -293,20 +292,22 @@ require (
 )
 
 require (
-	buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go v1.35.1-20241023225133-42bdb4b67625.1 // indirect
+	buf.build/gen/go/bufbuild/bufplugin/protocolbuffers/go v1.35.1-20241031151143-70f632351282.1 // indirect
 	buf.build/gen/go/pluginrpc/pluginrpc/protocolbuffers/go v1.35.1-20241007202033-cf42259fcbfc.1 // indirect
 	buf.build/go/bufplugin v0.6.0 // indirect
 	buf.build/go/protoyaml v0.2.0 // indirect
 	buf.build/go/spdx v0.2.0 // indirect
-	github.com/Microsoft/hcsshim v0.12.7 // indirect
+	cel.dev/expr v0.18.0 // indirect
+	github.com/Microsoft/hcsshim v0.12.9 // indirect
 	github.com/containerd/cgroups/v3 v3.0.3 // indirect
 	github.com/containerd/containerd v1.7.23 // indirect
-	github.com/containerd/continuity v0.4.3 // indirect
-	github.com/containerd/errdefs v0.3.0 // indirect
+	github.com/containerd/continuity v0.4.4 // indirect
+	github.com/containerd/errdefs v1.0.0 // indirect
+	github.com/containerd/errdefs/pkg v0.3.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/platforms v0.2.1 // indirect
-	github.com/containerd/ttrpc v1.2.5 // indirect
-	github.com/containerd/typeurl/v2 v2.2.0 // indirect
+	github.com/containerd/ttrpc v1.2.6 // indirect
+	github.com/containerd/typeurl/v2 v2.2.3 // indirect
 	github.com/dgraph-io/badger/v4 v4.2.0 // indirect
 	github.com/garslo/gogen v0.0.0-20170306192744-1d203ffc1f61 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
@@ -318,7 +319,7 @@ require (
 	github.com/moby/sys/sequential v0.6.0 // indirect
 	github.com/moby/sys/user v0.3.0 // indirect
 	github.com/moby/sys/userns v0.1.0 // indirect
-	github.com/onsi/ginkgo/v2 v2.20.2 // indirect
+	github.com/onsi/ginkgo/v2 v2.21.0 // indirect
 	github.com/opencontainers/runtime-spec v1.2.0 // indirect
 	github.com/quic-go/qpack v0.5.1 // indirect
 	github.com/quic-go/quic-go v0.48.1 // indirect
