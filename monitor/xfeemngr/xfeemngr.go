@@ -42,12 +42,6 @@ const (
 	// Check live token prices every 30 seconds.
 	tokenPriceBufferSyncInterval = 30 * time.Second
 
-	// Buffer on-chain gas price by 50% of live price.
-	GasPriceBufferOffset = 0.5
-
-	// Only reduce on-chain gas price if live price is 50% of on-chain price.
-	gasPriceBufferTolerance = 0.5
-
 	// Check live gas prices every 30 seconds.
 	gasPriceBufferSyncInterval = 30 * time.Second
 
@@ -86,8 +80,6 @@ func Start(ctx context.Context, network netconf.Network, cfg Config, privKeyPath
 
 	gprice, err := gasprice.NewBuffer(
 		makeGasPricers(ethClients),
-		GasPriceBufferOffset,
-		gasPriceBufferTolerance,
 		ticker.New(gasPriceBufferSyncInterval))
 	if err != nil {
 		return errors.Wrap(err, "new gas price buffer")
