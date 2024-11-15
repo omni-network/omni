@@ -2,6 +2,7 @@
  "devnet": {
   "avs": "0xc8b1fd61db088d45f9b30f76f6cef6d55b7b036b",
   "create3": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
+  "feeoraclev2": "0xe06bad64e1399c6eba65f4c86029d7577948e8d9",
   "gaspump": "0x8d0e4bc3d9409f2aa001671efb08a0455859b456",
   "gasstation": "0x87d948ada3fef75236adc0961044b57add66e7a8",
   "l1bridge": "0x96183c6b4ce669007d0de43f1e7eb9a4494271d8",
@@ -13,6 +14,7 @@
  "mainnet": {
   "avs": "0xed2f4d90b073128ae6769a9a8d51547b1df766c8",
   "create3": "0xe58e1002b51bc5ddf941de3b900d7179e4ea97bc",
+  "feeoraclev2": "0xf5949dea8f2f4b8b093af61150a28c0a3f87dc1e",
   "gaspump": "0x3cdf44dc0548fdd9304a4020624a5e216d8a861f",
   "gasstation": "0x5a19272100949f9e8a4ad9d98f8c1070232de626",
   "l1bridge": "0xbbb3f5bcb1c8b0ee932efaba2fdee566b83053a5",
@@ -24,6 +26,7 @@
  "omega": {
   "avs": "0xa7b2e7830c51728832d33421670dbbe30299fd92",
   "create3": "0x4bf2e538446b3faa2c439a4f8867a9052db8f1d0",
+  "feeoraclev2": "0x4f7d3789345040c74e7cc93d82bcb0f0876a5ba8",
   "gaspump": "0x75d3358d7df0c6e004aec4c26c459f211c97cb77",
   "gasstation": "0x3266c030c1e302264063cf44f6df8bbaaf3d9767",
   "l1bridge": "0x084ef227534a6ad2de4c4e54db19f1c457a57a27",

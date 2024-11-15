@@ -41,6 +41,7 @@ func TestContractAddressReference(t *testing.T) {
 			"gasstation":  addrs.GasStation,
 			"solveinbox":  addrs.SolveInbox,
 			"solveoutbox": addrs.SolveOutbox,
+			"feeoraclev2": addrs.FeeOracleV2,
 		}
 
 		for name, addr := range addrsJSON {
