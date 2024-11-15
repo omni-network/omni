@@ -7,7 +7,7 @@ import (
 
 	"github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/xchain"
+	"github.com/omni-network/omni/lib/log"
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -26,85 +26,28 @@ var _ evmenginetypes.VoteExtensionProvider = (*Keeper)(nil)
 // PrepareVotes returns the cosmosSDK transaction MsgAddVotes that will include all the validator votes included
 // in the previous block's vote extensions into the attest module.
 //
-// Note that the commit is trusted to be valid and only contains valid VEs from the previous block as
-// provided by a trusted cometBFT.
-func (k *Keeper) PrepareVotes(ctx context.Context, commit abci.ExtendedCommitInfo) ([]sdk.Msg, error) {
+// Note that the commit is assumed to be valid and only contains valid VEs from the previous block as
+// provided by a trusted cometBFT. Some votes (contained inside VE) may however be invalid, they are discarded.
+func (k *Keeper) PrepareVotes(ctx context.Context, commit abci.ExtendedCommitInfo, commitHeight uint64) ([]sdk.Msg, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	if err := baseapp.ValidateVoteExtensions(sdkCtx, k.skeeper, sdkCtx.BlockHeight(), sdkCtx.ChainID(), commit); err != nil {
+	// The VEs in LastLocalCommit is expected to be valid
+	if err := baseapp.ValidateVoteExtensions(sdkCtx, k.skeeper, 0, "", commit); err != nil {
 		return nil, errors.Wrap(err, "validate extensions [BUG]")
 	}
 
-	// Adapt portal registry to the supportedChainFunc signature.
-	supportedChainFunc := func(ctx context.Context, chainVersion xchain.ChainVersion) (bool, error) {
-		chainVersions, err := k.portalRegistry.ConfLevels(ctx)
-		if err != nil {
-			return false, err
-		}
-
-		for _, confLevel := range chainVersions[chainVersion.ID] {
-			if confLevel == chainVersion.ConfLevel {
-				return true, nil
-			}
-		}
-
-		return false, nil
-	}
-
-	msg, err := votesFromLastCommit(
-		ctx,
-		k.windowCompare,
-		supportedChainFunc,
-		commit,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return []sdk.Msg{msg}, nil
-}
-
-type windowCompareFunc func(context.Context, xchain.ChainVersion, uint64) (int, error)
-type supportedChainFunc func(context.Context, xchain.ChainVersion) (bool, error)
-
-// votesFromLastCommit returns the aggregated votes contained in vote extensions
-// of the last local commit.
-func votesFromLastCommit(
-	ctx context.Context,
-	windowCompare windowCompareFunc,
-	supportedChain supportedChainFunc,
-	info abci.ExtendedCommitInfo,
-
-) (*types.MsgAddVotes, error) {
+	// Verify and discard invalid votes.
+	// Votes inside the VEs are NOT guaranteed to be valid, since
+	// VerifyVoteExtension isn't called after quorum is reached.
 	var allVotes []*types.Vote
-	for _, vote := range info.Votes {
+	for _, vote := range commit.Votes {
 		if vote.BlockIdFlag != cmtproto.BlockIDFlagCommit {
-			continue // Skip non block votes
+			continue // Skip non-committed votes
 		}
-		votes, ok, err := votesFromExtension(vote.VoteExtension)
+
+		selected, _, err := k.parseAndVerifyVoteExtension(sdkCtx, vote.Validator.Address, vote.VoteExtension, commitHeight) //nolint:contextcheck // sdkCtx passed
 		if err != nil {
-			return nil, err
-		} else if !ok {
+			log.Warn(ctx, "Discarding invalid vote extension", err, log.Hex7("validator", vote.Validator.Address))
 			continue
-		}
-
-		var selected []*types.Vote
-		for _, v := range votes.Votes {
-			if ok, err := supportedChain(ctx, v.AttestHeader.XChainVersion()); err != nil {
-				return nil, err
-			} else if !ok {
-				// Skip votes for unsupported chains.
-				continue
-			}
-
-			cmp, err := windowCompare(ctx, v.AttestHeader.XChainVersion(), v.AttestHeader.AttestOffset)
-			if err != nil {
-				return nil, err
-			} else if cmp != 0 {
-				// Skip votes that are not in the current window anymore.
-				continue
-			}
-
-			selected = append(selected, v)
 		}
 
 		allVotes = append(allVotes, selected...)
@@ -115,10 +58,10 @@ func votesFromLastCommit(
 		return nil, err
 	}
 
-	return &types.MsgAddVotes{
+	return []sdk.Msg{&types.MsgAddVotes{
 		Authority: authtypes.NewModuleAddress(types.ModuleName).String(),
 		Votes:     votes,
-	}, nil
+	}}, nil
 }
 
 // aggregateVotes aggregates the provided attestations by block header.

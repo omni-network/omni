@@ -11,8 +11,6 @@ import (
 	"github.com/cometbft/cometbft/crypto"
 
 	"github.com/ethereum/go-ethereum/common"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // valAddrCache is a simple read-through cache for validator comet-to-eth address lookups.
@@ -63,8 +61,8 @@ func (c *valAddrCache) SetAll(vals []vtypes.Validator) error {
 
 // getValEthAddr returns the validator's ethereum address via reverse lookup using the provided validator cometBFT address.
 // It uses the validator read-through-cache to avoid querying the underlying validator set provider.
-// Note it assumes the provided validator is inside the current set. It doesn't ensure this.
-func (k *Keeper) getValEthAddr(ctx context.Context, cmtAddr []byte) (common.Address, error) {
+// Note it assumes the provided validator is inside the provided set. It doesn't ensure this.
+func (k *Keeper) getValEthAddr(ctx context.Context, cmtAddr []byte, setHeight uint64) (common.Address, error) {
 	addr, err := cast.Array20(cmtAddr)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "invalid comet address length [BUG]")
@@ -76,8 +74,7 @@ func (k *Keeper) getValEthAddr(ctx context.Context, cmtAddr []byte) (common.Addr
 	}
 
 	// Cache is stale, rehydrate it.
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	valset, err := k.valProvider.ActiveSetByHeight(ctx, uint64(sdkCtx.BlockHeight()))
+	valset, err := k.valProvider.ActiveSetByHeight(ctx, setHeight)
 	if err != nil {
 		return common.Address{}, errors.Wrap(err, "get active set")
 	}
