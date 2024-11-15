@@ -175,6 +175,7 @@ func GetSalts(ctx context.Context, network netconf.ID) (Salts, error) {
 		GasStation:  gasStationSalt(network, ver),
 		SolveInbox:  solveInboxSalt(network, ver),
 		SolveOutbox: solveOutboxSalt(network, ver),
+		FeeOracleV2: feeOracleV2Salt(network, ver),
 	}
 
 	saltsCache.cache[network] = salts
