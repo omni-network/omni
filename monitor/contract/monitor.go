@@ -34,47 +34,41 @@ func StartMonitoring(ctx context.Context, network netconf.Network, endpoints xch
 		contracts.UseStagingOmniRPC(omniEVMRPC)
 	}
 
-	toFund, err := contracts.ToFund(ctx, network.ID)
+	fundContracts, err := contracts.ToFund(ctx, network.ID)
 	if err != nil {
 		log.Error(ctx, "Failed to get contract addreses to monitor for funding - skipping monitoring", err)
 		return nil
 	}
 
-	toWithdraw, err := contracts.ToWithdraw(ctx, network.ID)
+	withdrawContracts, err := contracts.ToWithdraw(ctx, network.ID)
 	if err != nil {
 		log.Error(ctx, "Failed to get contract addreses to monitor for withdrawals - skipping monitoring", err)
 		return nil
 	}
 
+	// Combine funding and withdraw contracts
+	//nolint:gocritic // Intentionally creating new slice
+	allContracts := append(fundContracts, withdrawContracts...)
+
 	for _, chain := range network.EVMChains() {
 		isOmniEVM := chain.ID == network.ID.Static().OmniExecutionChainID
 
-		// Monitor funding contracts
-		for _, contract := range toFund {
+		for _, contract := range allContracts {
 			if (contract.OnlyOmniEVM && !isOmniEVM) || (contract.NotOmniEVM && isOmniEVM) {
 				continue
 			}
 
-			go monitorFundingContractForever(ctx, contract, chain.Name, rpcClients[chain.ID])
-		}
-
-		// Monitor withdraw contracts
-		for _, contract := range toWithdraw {
-			if (contract.OnlyOmniEVM && !isOmniEVM) || (contract.NotOmniEVM && isOmniEVM) {
-				continue
-			}
-
-			go monitorWithdrawContractForever(ctx, contract, chain.Name, rpcClients[chain.ID])
+			go monitorContractForever(ctx, contract, chain.Name, rpcClients[chain.ID])
 		}
 	}
 
 	return nil
 }
 
-// monitorFundingContractForever blocks and periodically monitors funding the contract for the given chain.
-func monitorFundingContractForever(
+// monitorContractForever blocks and periodically monitors the contract for the given chain.
+func monitorContractForever(
 	ctx context.Context,
-	contract contracts.WithFundThreshold,
+	contract contracts.Contract,
 	chainName string,
 	client ethclient.Client,
 ) {
@@ -84,7 +78,7 @@ func monitorFundingContractForever(
 		"address", contract.Address,
 	)
 
-	log.Info(ctx, "Monitoring account for funding")
+	log.Info(ctx, "Monitoring contract")
 
 	ticker := time.NewTicker(time.Second * 30)
 	defer ticker.Stop()
@@ -94,22 +88,21 @@ func monitorFundingContractForever(
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			err := monitorFundingContractOnce(ctx, contract, chainName, client)
+			err := monitorContractOnce(ctx, contract, chainName, client)
 			if ctx.Err() != nil {
 				return
 			} else if err != nil {
-				log.Warn(ctx, "Monitoring contract for funding failed (will retry)", err)
-
+				log.Warn(ctx, "Monitoring contract failed (will retry)", err)
 				continue
 			}
 		}
 	}
 }
 
-// monitorFundingContractOnce monitors funding the contract for the given chain.
-func monitorFundingContractOnce(
+// monitorContractOnce monitors the contract for the given chain.
+func monitorContractOnce(
 	ctx context.Context,
-	contract contracts.WithFundThreshold,
+	contract contracts.Contract,
 	chainName string,
 	client ethclient.Client,
 ) error {
@@ -122,76 +115,28 @@ func monitorFundingContractOnce(
 	bf, _ := balance.Float64()
 	balanceEth := bf / params.Ether
 
+	// Always set the balance metric
 	contractBalance.WithLabelValues(chainName, contract.Name).Set(balanceEth)
 
-	var isLow float64
-	if balance.Cmp(contract.Thresholds.MinBalance()) <= 0 {
-		isLow = 1
-	}
-
-	contractBalanceLow.WithLabelValues(chainName, contract.Name).Set(isLow)
-
-	return nil
-}
-
-// monitorWithdrawContractForever blocks and periodically monitors the contract for withdrawal needs.
-func monitorWithdrawContractForever(
-	ctx context.Context,
-	contract contracts.WithWithdrawThreshold,
-	chainName string,
-	client ethclient.Client,
-) {
-	ctx = log.WithCtx(ctx,
-		"chain", chainName,
-		"name", contract.Name,
-		"address", contract.Address,
-	)
-
-	log.Info(ctx, "Monitoring account for withdrawal")
-
-	ticker := time.NewTicker(time.Second * 30)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			err := monitorWithdrawContractOnce(ctx, contract, chainName, client)
-			if ctx.Err() != nil {
-				return
-			} else if err != nil {
-				log.Warn(ctx, "Monitoring contract for withdrawal failed (will retry)", err)
-				continue
-			}
+	// Handle funding threshold checks, if any
+	if contract.FundThresholds != nil {
+		var isLow float64
+		if balance.Cmp(contract.FundThresholds.MinBalance()) <= 0 {
+			isLow = 1
 		}
-	}
-}
 
-// monitorWithdrawContractOnce monitors contract for withdrawal needs.
-func monitorWithdrawContractOnce(
-	ctx context.Context,
-	contract contracts.WithWithdrawThreshold,
-	chainName string,
-	client ethclient.Client,
-) error {
-	balance, err := client.BalanceAt(ctx, contract.Address, nil)
-	if err != nil {
-		return err
+		contractBalanceLow.WithLabelValues(chainName, contract.Name).Set(isLow)
 	}
 
-	// Convert to ether units
-	bf, _ := balance.Float64()
-	balanceEth := bf / params.Ether
+	// Handle withdrawal threshold checks, if any
+	if contract.WithdrawThresholds != nil {
+		var isHigh float64
+		if balance.Cmp(contract.WithdrawThresholds.MaxBalance()) >= 0 {
+			isHigh = 1
+		}
 
-	contractBalance.WithLabelValues(chainName, contract.Name).Set(balanceEth)
-
-	var isHigh float64
-	if balance.Cmp(contract.Thresholds.MinBalance()) >= 0 {
-		isHigh = 1
+		contractBalanceHigh.WithLabelValues(chainName, contract.Name).Set(isHigh)
 	}
-
-	contractBalanceHigh.WithLabelValues(chainName, contract.Name).Set(isHigh)
 
 	return nil
 }
