@@ -35,6 +35,7 @@ func bindRunFlags(cmd *cobra.Command, cfg *halocfg.Config) {
 	flags.DurationVar(&cfg.EVMBuildDelay, "evm-build-delay", cfg.EVMBuildDelay, "Minimum delay between triggering and fetching a EVM payload build")
 	flags.BoolVar(&cfg.EVMBuildOptimistic, "evm-build-optimistic", cfg.EVMBuildOptimistic, "Enables optimistic building of EVM payloads on previous block finalize")
 	flags.IntSliceVar(&cfg.UnsafeSkipUpgrades, sdkserver.FlagUnsafeSkipUpgrades, cfg.UnsafeSkipUpgrades, "Skip a set of upgrade heights to continue the old binary")
+	flags.BoolVar(&cfg.DevnetChaos, "devnet-chaos-test", cfg.DevnetChaos, "Enable chaos testing (only applicable to devnet)")
 }
 
 func bindRollbackFlags(flags *pflag.FlagSet, cfg *app.RollbackConfig) {

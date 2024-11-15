@@ -86,6 +86,7 @@ type Config struct {
 	UnsafeSkipUpgrades []int
 	SDKAPI             RPCConfig `mapstructure:"api"`
 	SDKGRPC            RPCConfig `mapstructure:"grpc"`
+	DevnetChaos        bool
 }
 
 // RPCConfig is an abridged version of CosmosSDK srvconfig.API/GRPCConfig.

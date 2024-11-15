@@ -145,6 +145,7 @@ func TestTomlConfig(t *testing.T) {
 	var expect halocfg.Config
 	fuzzer.Fuzz(&expect)
 	expect.HomeDir = dir
+	expect.DevnetChaos = false // Chaos not included in toml
 
 	// The Toml library converts map keys to lower case. So do this so expect==actual.
 	for k := range expect.RPCEndpoints {

@@ -56,6 +56,11 @@ type Config struct {
 	Comet cmtcfg.Config
 }
 
+// ChaosTest returns true if the devnet chaos test is enabled.
+func (c Config) ChaosTest() bool {
+	return c.Network == netconf.Devnet && c.DevnetChaos
+}
+
 // BackendType returns the halo config backend type
 // or the comet backend type otherwise.
 func (c Config) BackendType() dbm.BackendType {
@@ -166,7 +171,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 	app.EVMEngKeeper.SetBuildDelay(cfg.EVMBuildDelay)
 	app.EVMEngKeeper.SetBuildOptimistic(cfg.EVMBuildOptimistic)
 
-	cmtNode, err := newCometNode(ctx, &cfg.Comet, app, privVal)
+	cmtNode, err := newCometNode(ctx, cfg, app, privVal)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "create comet node")
 	}
@@ -294,16 +299,25 @@ func startRPCServers(
 	return nil
 }
 
-func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App, privVal cmttypes.PrivValidator) (
-	*node.Node, error) {
-	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
+func newCometNode(
+	ctx context.Context,
+	cfg Config,
+	app *App,
+	privVal cmttypes.PrivValidator,
+) (*node.Node, error) {
+	cmtCfg := &cfg.Comet
+	nodeKey, err := p2p.LoadOrGenNodeKey(cmtCfg.NodeKeyFile())
 	if err != nil {
-		return nil, errors.Wrap(err, "load or gen node key", "key_file", cfg.NodeKeyFile())
+		return nil, errors.Wrap(err, "load or gen node key", "key_file", cmtCfg.NodeKeyFile())
 	}
 
-	cmtLog, err := NewCmtLogger(ctx, cfg.LogLevel)
+	cmtLog, err := NewCmtLogger(ctx, cmtCfg.LogLevel)
 	if err != nil {
 		return nil, err
+	}
+
+	if cfg.ChaosTest() {
+		log.Warn(ctx, "😱 Chaos testing enabled!", nil)
 	}
 
 	wrapper := newABCIWrapper(
@@ -312,21 +326,22 @@ func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App, privVal cmt
 		func() storetypes.CacheMultiStore {
 			return app.CommitMultiStore().CacheMultiStore()
 		},
+		cfg.ChaosTest(),
 	)
 
 	// Configure CometBFT prometheus metrics as per provided config
 	metrics := node.DefaultMetricsProvider(&cmtcfg.InstrumentationConfig{
-		Prometheus: cfg.Instrumentation.Prometheus,
-		Namespace:  cfg.Instrumentation.Namespace,
+		Prometheus: cmtCfg.Instrumentation.Prometheus,
+		Namespace:  cmtCfg.Instrumentation.Namespace,
 	})
 	// But don't instantiate the CometBFT prometheus server, we do it startMonitoringAPI.
-	cfg.Instrumentation.Prometheus = false
+	cmtCfg.Instrumentation.Prometheus = false
 
-	cmtNode, err := node.NewNode(cfg,
+	cmtNode, err := node.NewNode(cmtCfg,
 		privVal,
 		nodeKey,
 		proxy.NewLocalClientCreator(wrapper),
-		node.DefaultGenesisDocProviderFunc(cfg),
+		node.DefaultGenesisDocProviderFunc(cmtCfg),
 		cmtcfg.DefaultDBProvider,
 		metrics,
 		cmtLog,

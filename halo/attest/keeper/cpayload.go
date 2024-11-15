@@ -18,7 +18,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/cosmos/gogoproto/proto"
 )
 
 var _ evmenginetypes.VoteExtensionProvider = (*Keeper)(nil)
@@ -26,8 +25,8 @@ var _ evmenginetypes.VoteExtensionProvider = (*Keeper)(nil)
 // PrepareVotes returns the cosmosSDK transaction MsgAddVotes that will include all the validator votes included
 // in the previous block's vote extensions into the attest module.
 //
-// Note that the commit is assumed to be valid and only contains valid VEs from the previous block as
-// provided by a trusted cometBFT. Some votes (contained inside VE) may however be invalid, they are discarded.
+// Note that the commit is expected to be valid and only contains valid VEs from the previous block as
+// provided by a trusted cometBFT. Some votes (contained inside VEs) may however be invalid, they are discarded.
 func (k *Keeper) PrepareVotes(ctx context.Context, commit abci.ExtendedCommitInfo, commitHeight uint64) ([]sdk.Msg, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	// The VEs in LastLocalCommit is expected to be valid
@@ -113,18 +112,4 @@ func sortAggregates(aggs []*types.AggVote) []*types.AggVote {
 	})
 
 	return aggs
-}
-
-// votesFromExtension returns the attestations contained in the vote extension, or false if none or an error.
-func votesFromExtension(voteExtension []byte) (*types.Votes, bool, error) {
-	if len(voteExtension) == 0 {
-		return nil, false, nil
-	}
-
-	resp := new(types.Votes)
-	if err := proto.Unmarshal(voteExtension, resp); err != nil {
-		return nil, false, errors.Wrap(err, "decode vote extension")
-	}
-
-	return resp, true, nil
 }

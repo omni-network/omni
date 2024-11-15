@@ -5,7 +5,10 @@ import (
 	"log/slog"
 	"strconv"
 
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
+
+	"github.com/cosmos/gogoproto/proto"
 )
 
 const logLimit = 5
@@ -44,4 +47,18 @@ func AttLogs(headers []*AttestHeader) []any {
 	}
 
 	return attrs
+}
+
+// VotesFromExtension returns the attestations contained in the vote extension, or false if none or an error.
+func VotesFromExtension(voteExtension []byte) (*Votes, bool, error) {
+	if len(voteExtension) == 0 {
+		return nil, false, nil
+	}
+
+	resp := new(Votes)
+	if err := proto.Unmarshal(voteExtension, resp); err != nil {
+		return nil, false, errors.Wrap(err, "decode vote extension")
+	}
+
+	return resp, true, nil
 }

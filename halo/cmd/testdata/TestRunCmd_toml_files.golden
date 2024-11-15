@@ -27,6 +27,7 @@
   "Enable": true,
   "Address": "grpc/toml"
  },
+ "DevnetChaos": false,
  "Comet": {
   "Version": "0.38.15",
   "RootDir": "testinput/input1",

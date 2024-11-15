@@ -4,6 +4,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/omni-network/omni/lib/log"
 
@@ -21,17 +22,25 @@ type abciWrapper struct {
 	abci.Application
 	postFinalize       postFinalizeCallback
 	multiStoreProvider multiStoreProvider
+	maybeChaos         chaosFunc
 }
 
 func newABCIWrapper(
 	app abci.Application,
 	finaliseCallback postFinalizeCallback,
 	multiStoreProvider multiStoreProvider,
+	chaosTest bool,
 ) *abciWrapper {
+	chaos := noopChaos
+	if chaosTest {
+		chaos = newChaosSlasher()
+	}
+
 	return &abciWrapper{
 		Application:        app,
 		postFinalize:       finaliseCallback,
 		multiStoreProvider: multiStoreProvider,
+		maybeChaos:         chaos,
 	}
 }
 
@@ -91,6 +100,8 @@ func (l abciWrapper) ProcessProposal(ctx context.Context, proposal *abci.Request
 }
 
 func (l abciWrapper) FinalizeBlock(ctx context.Context, req *abci.RequestFinalizeBlock) (*abci.ResponseFinalizeBlock, error) {
+	l.maybeChaos(ctx, req)
+
 	ctx = log.WithCtx(ctx, "height", req.Height)
 	resp, err := l.Application.FinalizeBlock(ctx, req)
 	if err != nil {
@@ -178,4 +189,46 @@ func (l abciWrapper) LoadSnapshotChunk(ctx context.Context, chunk *abci.RequestL
 func (l abciWrapper) ApplySnapshotChunk(ctx context.Context, chunk *abci.RequestApplySnapshotChunk) (*abci.ResponseApplySnapshotChunk, error) {
 	log.Debug(ctx, "👾 ABCI call: ApplySnapshotChunk")
 	return l.Application.ApplySnapshotChunk(ctx, chunk)
+}
+
+// chaos abstracts a source of chaos testing.
+type chaosFunc func(ctx context.Context, req *abci.RequestFinalizeBlock)
+
+// noopChaos is a no-op chaos implementation.
+// This is used in production to disable chaos testing.
+var noopChaos = func(context.Context, *abci.RequestFinalizeBlock) {}
+
+const chaosSlashMinHeight = 10
+
+// newChaosSlasher return a chaosFunc that slashes a validator once.
+func newChaosSlasher() chaosFunc {
+	var done bool
+	return func(ctx context.Context, req *abci.RequestFinalizeBlock) {
+		if done || req.Height < chaosSlashMinHeight {
+			return
+		}
+
+		// Wait for all validators to be online
+		var totalPower int64
+		var lastVal abci.Validator
+		for _, vote := range req.DecidedLastCommit.Votes {
+			if vote.BlockIdFlag != cmtproto.BlockIDFlagCommit {
+				return
+			}
+
+			totalPower += vote.Validator.Power
+			lastVal = vote.Validator
+		}
+
+		req.Misbehavior = append(req.Misbehavior, abci.Misbehavior{
+			Type:             abci.MisbehaviorType_DUPLICATE_VOTE,
+			Validator:        lastVal,
+			Height:           req.Height - 1,
+			Time:             req.Time.Add(-time.Second),
+			TotalVotingPower: totalPower,
+		})
+
+		done = true
+		log.Warn(ctx, "😱 Chaos slashing validator", nil, log.Hex7("val", lastVal.Address), "height", req.Height)
+	}
 }

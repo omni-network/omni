@@ -769,7 +769,7 @@ func (k *Keeper) parseAndVerifyVoteExtension(
 		return nil, false, err // This error should never occur
 	}
 
-	votes, ok, err := votesFromExtension(voteExt)
+	votes, ok, err := types.VotesFromExtension(voteExt)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "votes from extension")
 	} else if !ok {

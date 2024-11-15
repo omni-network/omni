@@ -163,6 +163,7 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 			node.Mode,
 			omniEVM.InstanceName,
 			endpoints,
+			def.Testnet.Manifest.HaloChaos,
 		); err != nil {
 			return err
 		}
@@ -396,6 +397,7 @@ func writeHaloConfig(
 	mode e2e.Mode,
 	evmInstance string,
 	endpoints xchain.RPCEndpoints,
+	devnetChaos bool,
 ) error {
 	cfg := halocfg.DefaultConfig()
 
@@ -412,6 +414,7 @@ func writeHaloConfig(
 	cfg.EngineJWTFile = "/halo/config/jwtsecret"                    // Absolute path inside docker container
 	cfg.Tracer.Endpoint = defCfg.TracingEndpoint
 	cfg.Tracer.Headers = defCfg.TracingHeaders
+	cfg.DevnetChaos = devnetChaos
 
 	if testCfg {
 		cfg.SnapshotInterval = 1   // Write snapshots each block in e2e tests
