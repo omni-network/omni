@@ -36,27 +36,43 @@ func StartMonitoring(ctx context.Context, network netconf.Network, endpoints xch
 
 	toFund, err := contracts.ToFund(ctx, network.ID)
 	if err != nil {
-		log.Error(ctx, "Failed to get contract addreses to monitor - skipping monitoring", err)
+		log.Error(ctx, "Failed to get contract addreses to monitor for funding - skipping monitoring", err)
+		return nil
+	}
+
+	toWithdraw, err := contracts.ToWithdraw(ctx, network.ID)
+	if err != nil {
+		log.Error(ctx, "Failed to get contract addreses to monitor for withdrawals - skipping monitoring", err)
 		return nil
 	}
 
 	for _, chain := range network.EVMChains() {
 		isOmniEVM := chain.ID == network.ID.Static().OmniExecutionChainID
 
+		// Monitor funding contracts
 		for _, contract := range toFund {
-			if contract.OnlyOmniEVM && !isOmniEVM {
+			if (contract.OnlyOmniEVM && !isOmniEVM) || (contract.NotOmniEVM && isOmniEVM) {
 				continue
 			}
 
-			go monitorContractForever(ctx, contract, chain.Name, rpcClients[chain.ID])
+			go monitorFundingContractForever(ctx, contract, chain.Name, rpcClients[chain.ID])
+		}
+
+		// Monitor withdraw contracts
+		for _, contract := range toWithdraw {
+			if (contract.OnlyOmniEVM && !isOmniEVM) || (contract.NotOmniEVM && isOmniEVM) {
+				continue
+			}
+
+			go monitorWithdrawContractForever(ctx, contract, chain.Name, rpcClients[chain.ID])
 		}
 	}
 
 	return nil
 }
 
-// monitorContractForever blocks and periodically monitors the contract for the given chain.
-func monitorContractForever(
+// monitorFundingContractForever blocks and periodically monitors funding the contract for the given chain.
+func monitorFundingContractForever(
 	ctx context.Context,
 	contract contracts.WithFundThreshold,
 	chainName string,
@@ -68,7 +84,7 @@ func monitorContractForever(
 		"address", contract.Address,
 	)
 
-	log.Info(ctx, "Monitoring account")
+	log.Info(ctx, "Monitoring account for funding")
 
 	ticker := time.NewTicker(time.Second * 30)
 	defer ticker.Stop()
@@ -78,11 +94,11 @@ func monitorContractForever(
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			err := monitorContractOnce(ctx, contract, chainName, client)
+			err := monitorFundingContractOnce(ctx, contract, chainName, client)
 			if ctx.Err() != nil {
 				return
 			} else if err != nil {
-				log.Warn(ctx, "Monitoring contract failed (will retry)", err)
+				log.Warn(ctx, "Monitoring contract for funding failed (will retry)", err)
 
 				continue
 			}
@@ -90,8 +106,8 @@ func monitorContractForever(
 	}
 }
 
-// monitorContractOnce monitors contract for the given chain.
-func monitorContractOnce(
+// monitorFundingContractOnce monitors funding the contract for the given chain.
+func monitorFundingContractOnce(
 	ctx context.Context,
 	contract contracts.WithFundThreshold,
 	chainName string,
@@ -114,6 +130,68 @@ func monitorContractOnce(
 	}
 
 	contractBalanceLow.WithLabelValues(chainName, contract.Name).Set(isLow)
+
+	return nil
+}
+
+// monitorWithdrawContractForever blocks and periodically monitors the contract for withdrawal needs.
+func monitorWithdrawContractForever(
+	ctx context.Context,
+	contract contracts.WithWithdrawThreshold,
+	chainName string,
+	client ethclient.Client,
+) {
+	ctx = log.WithCtx(ctx,
+		"chain", chainName,
+		"name", contract.Name,
+		"address", contract.Address,
+	)
+
+	log.Info(ctx, "Monitoring account for withdrawal")
+
+	ticker := time.NewTicker(time.Second * 30)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			err := monitorWithdrawContractOnce(ctx, contract, chainName, client)
+			if ctx.Err() != nil {
+				return
+			} else if err != nil {
+				log.Warn(ctx, "Monitoring contract for withdrawal failed (will retry)", err)
+				continue
+			}
+		}
+	}
+}
+
+// monitorWithdrawContractOnce monitors contract for withdrawal needs.
+func monitorWithdrawContractOnce(
+	ctx context.Context,
+	contract contracts.WithWithdrawThreshold,
+	chainName string,
+	client ethclient.Client,
+) error {
+	balance, err := client.BalanceAt(ctx, contract.Address, nil)
+	if err != nil {
+		return err
+	}
+
+	// Convert to ether units
+	bf, _ := balance.Float64()
+	balanceEth := bf / params.Ether
+
+	contractBalance.WithLabelValues(chainName, contract.Name).Set(balanceEth)
+
+	var isHigh float64
+	if balance.Cmp(contract.Thresholds.MinBalance()) >= 0 {
+		isHigh = 1
+	}
+
+	contractBalanceHigh.WithLabelValues(chainName, contract.Name).Set(isHigh)
 
 	return nil
 }

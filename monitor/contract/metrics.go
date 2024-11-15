@@ -19,4 +19,11 @@ var (
 		Name:      "balance_low",
 		Help:      "Constant gauge indicating whether the contract balance is below the minimum threshold (1=true,0=false)",
 	}, []string{"chain", "name"})
+
+	contractBalanceHigh = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "monitor",
+		Subsystem: "contract",
+		Name:      "balance_high",
+		Help:      "Constant gauge indicating whether the contract balance is above the maximum threshold (1=true,0=false)",
+	}, []string{"chain", "name"})
 )

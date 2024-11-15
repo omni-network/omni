@@ -15,6 +15,7 @@ import (
 type WithFundThreshold struct {
 	Name        string
 	OnlyOmniEVM bool
+	NotOmniEVM  bool
 	Address     common.Address
 	Thresholds  FundThresholds
 }
@@ -29,6 +30,7 @@ func ToFund(ctx context.Context, network netconf.ID) ([]WithFundThreshold, error
 		{
 			Name:        "gas-station",
 			Address:     addrs.GasStation,
+			NotOmniEVM:  false,
 			OnlyOmniEVM: true,
 			Thresholds:  FundThresholds{minEther: 20, targetEther: 100}, // GasStation funds user GasPump requests, and needs a large OMNI balance.
 		},
