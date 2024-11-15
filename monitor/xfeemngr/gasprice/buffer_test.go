@@ -24,20 +24,10 @@ func TestBufferStream(t *testing.T) {
 	// mock gas pricers per chain
 	mocks := makeMockPricers(initials)
 
-	offset := 0.3    // 30% offset
-	tolerance := 0.5 // 50% tolerance
 	tick := ticker.NewMock()
 	ctx := context.Background()
 
-	withOffset := func(price uint64) uint64 {
-		return uint64(float64(price) * (1 + offset))
-	}
-
-	atTolerance := func(price uint64) uint64 {
-		return uint64(float64(price) * (1 - tolerance))
-	}
-
-	b, err := gasprice.NewBuffer(toEthGasPricers(mocks), offset, tolerance, tick)
+	b, err := gasprice.NewBuffer(toEthGasPricers(mocks), tick)
 	require.NoError(t, err)
 
 	b.Stream(ctx)
@@ -47,29 +37,24 @@ func TestBufferStream(t *testing.T) {
 
 	// buffered price should be initial live + offset
 	for chainID, price := range initials {
-		require.Equal(t, withOffset(price), b.GasPrice(chainID), "initial")
+		require.Equal(t, gasprice.Tier(price), b.GasPrice(chainID), "initial")
 	}
 
 	// 10 steps
-	buffed := make(map[uint64]uint64)
+	live := make(map[uint64]uint64)
 	for i := 0; i < 10; i++ {
 		for chainID, mock := range mocks {
-			buffed[chainID] = b.GasPrice(chainID)
-			mock.SetPrice(randGasPrice())
+			live[chainID] = randGasPrice()
+			mock.SetPrice(live[chainID])
 		}
 
 		tick.Tick()
 
 		// for each step, we check if buffer properly updates (or doesn't)
 		for chainID, mock := range mocks {
-			tooLow := mock.Price() > buffed[chainID]
-			tooHigh := mock.Price() < atTolerance(buffed[chainID])
-
-			if tooHigh || tooLow {
-				require.Equal(t, withOffset(mock.Price()), b.GasPrice(chainID), 0.01, "should change")
-			} else {
-				require.Equal(t, buffed[chainID], b.GasPrice(chainID), 0.01, "should not change")
-			}
+			tier := gasprice.Tier(mock.Price())
+			require.GreaterOrEqual(t, tier, live[chainID], "tier greater than live")
+			require.Equal(t, tier, b.GasPrice(chainID), "buffer equal to tier")
 		}
 	}
 }

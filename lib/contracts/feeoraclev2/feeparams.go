@@ -10,7 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tokens"
-	"github.com/omni-network/omni/monitor/xfeemngr"
+	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
 
 	"github.com/ethereum/go-ethereum/params"
 )
@@ -78,8 +78,8 @@ func destFeeParams(ctx context.Context, srcChain evmchain.Metadata, destChain ev
 
 	return bindings.IFeeOracleV2FeeParams{
 		ChainId:      destChain.ChainID,
-		ExecGasPrice: withGasPriceOffset(execGasPrice.Uint64()),
-		DataGasPrice: withGasPriceOffset(dataGasPrice.Uint64()),
+		ExecGasPrice: gasprice.Tier(execGasPrice.Uint64()),
+		DataGasPrice: gasprice.Tier(dataGasPrice.Uint64()),
 		ToNativeRate: rateToNumerator(toNativeRate),
 	}, nil
 }
@@ -124,10 +124,4 @@ func rateToNumerator(r float64) uint64 {
 	norm, _ := new(big.Float).Mul(numer, denom).Uint64()
 
 	return norm
-}
-
-// withGasPriceOffset returns the gas price with an added xfeemngr.GasPriceShield pct offset.
-func withGasPriceOffset(gasPrice uint64) uint64 {
-	gasPriceF := float64(gasPrice)
-	return uint64(gasPriceF + (xfeemngr.GasPriceBufferOffset * gasPriceF))
 }

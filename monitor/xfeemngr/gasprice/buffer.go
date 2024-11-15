@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/monitor/xfeemngr/ticker"
@@ -23,15 +22,6 @@ type buffer struct {
 
 	// map chainID to provider
 	pricers map[uint64]ethereum.GasPricer
-
-	// pct to offset live -> buffer
-	// ex. with offset 0.5, live=100, buffered=150 (50% higher)
-	// if live increases above 150, offset buffer will update to 225 (50% higher)
-	offset float64
-
-	// pct below the buffer the live value be to trigger a buffer decrease
-	// ex. with tolerance 0.5, buffered=150, live must be below 75 to decrease buffer
-	tolerance float64
 }
 
 type Buffer interface {
@@ -42,31 +32,13 @@ type Buffer interface {
 var _ Buffer = (*buffer)(nil)
 
 // NewBuffer creates a new gas price buffer.
-//
-// A gas price buffer maintains a buffered view of gas prices for multiple
-// chains. Buffered gas prices exceed live prices by an offset. They decrease
-// if live prices fall below tolerance.
-func NewBuffer(pricers map[uint64]ethereum.GasPricer, offset, tolerance float64, ticker ticker.Ticker) (Buffer, error) {
-	if offset < 0 {
-		return nil, errors.New("offset must be >= 0")
-	}
-
-	if tolerance < 0 {
-		return nil, errors.New("tolerance must be >= 0")
-	}
-
-	if (1+offset)*(1-tolerance) >= 1 {
-		return nil, errors.New("applying offset would trigger tolerance")
-	}
-
+func NewBuffer(pricers map[uint64]ethereum.GasPricer, ticker ticker.Ticker) (Buffer, error) {
 	return &buffer{
-		mu:        sync.RWMutex{},
-		once:      sync.Once{},
-		buffer:    make(map[uint64]uint64),
-		pricers:   pricers,
-		offset:    offset,
-		tolerance: tolerance,
-		ticker:    ticker,
+		mu:      sync.RWMutex{},
+		once:    sync.Once{},
+		buffer:  make(map[uint64]uint64),
+		pricers: pricers,
+		ticker:  ticker,
 	}, nil
 }
 
@@ -112,35 +84,15 @@ func (b *buffer) streamOne(ctx context.Context, chainID uint64) {
 		live := liveBn.Uint64()
 		guageLive(chainID, live)
 
+		tiered := Tier(live)
 		buffed := b.GasPrice(chainID)
-		tooLow := live > buffed
-		tooHigh := live < uint64(float64(buffed)*(1-b.tolerance))
 
-		log.Debug(ctx, "Checking buffer",
-			"live", live,
-			"buffered", buffed,
-			"too_low", tooLow,
-			"too_high", tooHigh,
-			"offset", b.offset,
-			"tolerance", b.tolerance,
-		)
-
-		// do nothing
-		if !tooLow && !tooHigh {
-			log.Debug(ctx, "No update needed")
+		if tiered == buffed {
 			return
 		}
 
-		log.Info(ctx, "Updating buffer",
-			"live", live,
-			"buffered", buffed,
-			"too_low", tooLow,
-			"too_high", tooHigh,
-		)
-
-		corrected := uint64(float64(live) * (1 + b.offset))
-		b.setPrice(chainID, corrected)
-		guageBuffered(chainID, corrected)
+		b.setPrice(chainID, tiered)
+		guageBuffered(chainID, tiered)
 	}
 
 	tick.Go(ctx, callback)
