@@ -21,6 +21,12 @@ type WithWithdrawThreshold struct {
 }
 
 func ToWithdraw(ctx context.Context, network netconf.ID) ([]WithWithdrawThreshold, error) {
+	// GasPumps will not deployed initially on mainnet
+	// TODO: remove this when mainnet GasPumps
+	if network == netconf.Mainnet {
+		return []WithWithdrawThreshold{}, nil
+	}
+
 	addrs, err := GetAddresses(ctx, network)
 	if err != nil {
 		return nil, err
