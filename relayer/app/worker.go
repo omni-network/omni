@@ -145,7 +145,12 @@ func (w *Worker) runOnce(ctx context.Context) error {
 			return errors.New("unexpected chain version [BUG]")
 		}
 
-		callback := w.newCallback(msgFilter, buf.AddInput, newMsgStreamMapper(w.network))
+		callback := w.newCallback(
+			msgFilter,
+			buf.AddInput,
+			newMsgStreamMapper(w.network),
+			chainVer,
+		)
 
 		w.cProvider.StreamAsync(ctx, chainVer, fromOffset, w.destChain.Name, callback)
 
@@ -229,13 +234,14 @@ func (w *Worker) newCallback(
 	msgFilter *msgCursorFilter,
 	sendBuffer func(context.Context, xchain.Submission) error,
 	msgStreamMapper msgStreamMapper,
+	streamerChainVer xchain.ChainVersion, // Use streamer chain version for cursors since fuzzy overrides otherwise store latest streamed offsets to finalized streamer.
 ) cchain.ProviderCallback {
 	var cachedValSetID uint64
 	var cachedValSet []cchain.PortalValidator
 
 	return func(ctx context.Context, att xchain.Attestation) error {
 		saveCursors := func(streamMsgs map[xchain.StreamID][]xchain.Msg) error {
-			return w.cursors.Save(ctx, att.ChainVersion, w.destChain.ID, att.AttestOffset, streamMsgs)
+			return w.cursors.Save(ctx, streamerChainVer, w.destChain.ID, att.AttestOffset, streamMsgs)
 		}
 
 		block, ok, err := fetchXBlock(ctx, w.xProvider, att)
@@ -270,7 +276,7 @@ func (w *Worker) newCallback(
 			if streamID.DestChainID != w.destChain.ID {
 				continue // Skip streams not destined for this worker.
 			} else if !attestationForShard(att, streamID.ShardID) {
-				continue // Skip streams not applicable to this attestation.
+				continue // Skip streams not applicable to this attestation conf level.
 			}
 
 			if err := w.awaitValSet(ctx, att.ValidatorSetID); err != nil {

@@ -11,7 +11,7 @@ import (
 	db "github.com/cosmos/cosmos-db"
 )
 
-// listAll returns all cursors by prefix.
+// listAll returns all cursors in the table.
 // Results are ordered by primary key ascending: SrcChainId-ConfLevel-DstChainId-AttestOffset.
 func listAll(ctx context.Context, db CursorTable) ([]*Cursor, error) {
 	iterator, err := db.List(ctx, CursorPrimaryKey{})
