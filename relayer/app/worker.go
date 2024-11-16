@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
+	"github.com/omni-network/omni/relayer/app/cursor"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
@@ -29,12 +30,19 @@ type Worker struct {
 	creator      CreateFunc
 	sendProvider func() (SendAsync, error)
 	awaitValSet  awaitValSet
+	cursors      *cursor.Store
 }
 
 // NewWorker creates a new worker for a single destination chain.
-func NewWorker(destChain netconf.Chain, network netconf.Network, cProvider cchain.Provider,
-	xProvider xchain.Provider, creator CreateFunc, sendProvider func() (SendAsync, error),
+func NewWorker(
+	destChain netconf.Chain,
+	network netconf.Network,
+	cProvider cchain.Provider,
+	xProvider xchain.Provider,
+	creator CreateFunc,
+	sendProvider func() (SendAsync, error),
 	awaitValSet awaitValSet,
+	cursors *cursor.Store,
 ) *Worker {
 	return &Worker{
 		destChain:    destChain,
@@ -44,6 +52,7 @@ func NewWorker(destChain netconf.Chain, network netconf.Network, cProvider cchai
 		creator:      creator,
 		sendProvider: sendProvider,
 		awaitValSet:  awaitValSet,
+		cursors:      cursors,
 	}
 }
 
@@ -74,11 +83,11 @@ func (w *Worker) runOnce(ctx context.Context) error {
 		return err
 	}
 
-	for _, cursor := range cursors {
+	for _, c := range cursors {
 		log.Info(ctx, "Worker fetched submitted cursor",
-			"stream", w.network.StreamName(cursor.StreamID),
-			"attest_offset", cursor.AttestOffset,
-			"msg_offset", cursor.MsgOffset,
+			"stream", w.network.StreamName(c.StreamID),
+			"attest_offset", c.AttestOffset,
+			"msg_offset", c.MsgOffset,
 		)
 	}
 
@@ -106,6 +115,22 @@ func (w *Worker) runOnce(ctx context.Context) error {
 				"bootstrap", bootstrapOffset,
 			)
 			attestOffsets[chainVer] = bootstrapOffset
+		}
+	}
+
+	// Update offsets if any stored cursor is higher
+	stored, err := w.cursors.WorkerOffsets(ctx, w.destChain.ID)
+	if err != nil {
+		return err
+	}
+	for chainVer, offset := range attestOffsets {
+		if stored[chainVer] > offset {
+			log.Info(ctx, "Worker using stored attest offset",
+				"chain_version", w.network.ChainVersionName(chainVer),
+				"prev", offset,
+				"bootstrap", stored[chainVer],
+			)
+			attestOffsets[chainVer] = stored[chainVer]
 		}
 	}
 
@@ -209,13 +234,18 @@ func (w *Worker) newCallback(
 	var cachedValSet []cchain.PortalValidator
 
 	return func(ctx context.Context, att xchain.Attestation) error {
+		saveCursors := func(streamMsgs map[xchain.StreamID][]xchain.Msg) error {
+			return w.cursors.Save(ctx, att.ChainVersion, w.destChain.ID, att.AttestOffset, streamMsgs)
+		}
+
 		block, ok, err := fetchXBlock(ctx, w.xProvider, att)
 		if err != nil {
 			return err
 		} else if !ok {
 			return nil // Mismatching fuzzy attestation, skip.
 		} else if len(block.Msgs) == 0 {
-			return nil // No messages, nothing to do.
+			// No messages, nothing to do, just update cursors
+			return saveCursors(nil)
 		}
 
 		msgTree, err := xchain.NewMsgTree(block.Msgs)
@@ -232,6 +262,8 @@ func (w *Worker) newCallback(
 				return errors.New("validator set not found [BUG]", "valset", att.ValidatorSetID)
 			}
 		}
+
+		submitted := make(map[xchain.StreamID][]xchain.Msg)
 
 		// Split into streams
 		for streamID, msgs := range msgStreamMapper(block.Msgs) {
@@ -271,9 +303,11 @@ func (w *Worker) newCallback(
 					return err
 				}
 			}
+
+			submitted[streamID] = msgs
 		}
 
-		return nil
+		return saveCursors(submitted)
 	}
 }
 

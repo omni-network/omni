@@ -3,6 +3,7 @@ package relayer
 import (
 	"bytes"
 	"text/template"
+	"time"
 
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
@@ -16,19 +17,23 @@ import (
 )
 
 type Config struct {
-	RPCEndpoints   xchain.RPCEndpoints
-	PrivateKey     string
-	HaloURL        string
-	Network        netconf.ID
-	MonitoringAddr string
+	RPCEndpoints    xchain.RPCEndpoints
+	PrivateKey      string
+	HaloURL         string
+	Network         netconf.ID
+	MonitoringAddr  string
+	DBDir           string
+	ConfirmInterval time.Duration
 }
 
 func DefaultConfig() Config {
 	return Config{
-		PrivateKey:     "relayer.key",
-		HaloURL:        "localhost:26657",
-		Network:        "",
-		MonitoringAddr: ":26660",
+		PrivateKey:      "relayer.key",
+		HaloURL:         "localhost:26657",
+		Network:         "",
+		MonitoringAddr:  ":26660",
+		DBDir:           "./db",
+		ConfirmInterval: 30 * time.Second,
 	}
 }
 

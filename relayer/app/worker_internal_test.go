@@ -8,7 +8,9 @@ import (
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
+	"github.com/omni-network/omni/relayer/app/cursor"
 
+	db "github.com/cosmos/cosmos-db"
 	"github.com/stretchr/testify/require"
 )
 
@@ -38,7 +40,7 @@ func TestWorker_Run(t *testing.T) {
 		DestChainID:   destChainB,
 		ShardID:       xchain.ShardLatest0,
 	}
-	cursors := map[xchain.StreamID]xchain.SubmitCursor{
+	submittedCursors := map[xchain.StreamID]xchain.SubmitCursor{
 		streamA: {StreamID: streamA, MsgOffset: destChainACursor, AttestOffset: destChainACursor},
 		streamB: {StreamID: streamB, MsgOffset: destChainBCursor, AttestOffset: destChainBCursor},
 	}
@@ -61,7 +63,7 @@ func TestWorker_Run(t *testing.T) {
 			}, true, nil
 		},
 		GetSubmittedCursorFn: func(_ context.Context, ref xchain.Ref, stream xchain.StreamID) (xchain.SubmitCursor, bool, error) {
-			resp, ok := cursors[stream]
+			resp, ok := submittedCursors[stream]
 			return resp, ok, nil
 		},
 	}
@@ -150,6 +152,9 @@ func TestWorker_Run(t *testing.T) {
 
 	noAwait := func(context.Context, uint64) error { return nil }
 
+	cursors, err := cursor.New(db.NewMemDB(), mockXClient.GetSubmittedCursor, network)
+	require.NoError(t, err)
+
 	for _, chain := range network.Chains {
 		w := NewWorker(
 			chain,
@@ -158,7 +163,8 @@ func TestWorker_Run(t *testing.T) {
 			mockXClient,
 			mockCreateFunc,
 			func() (SendAsync, error) { return mockSender.SendTransaction, nil },
-			noAwait)
+			noAwait,
+			cursors)
 		go w.Run(ctx)
 	}
 
