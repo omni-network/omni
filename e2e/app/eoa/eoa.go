@@ -58,7 +58,7 @@ func AllRoles() []Role {
 		RoleManager,
 		RoleUpgrader,
 		RoleTester,
-		RoleXCaller,
+		// RoleXCaller, TODO: omitting until decision on funding thresholds
 		// RoleSolver TODO: omitting solver for now. It is just used in devnet and not set for other networks.
 	}
 }
