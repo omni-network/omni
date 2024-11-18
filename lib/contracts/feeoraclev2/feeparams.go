@@ -32,16 +32,7 @@ func feeParams(ctx context.Context, srcChainID uint64, destChainIDs []uint64, ba
 			return nil, errors.New("meta by chain id", "dest_chain", destChain.Name)
 		}
 
-		ps, err := destFeeParams(ctx, srcChain, destChain, backends, pricer)
-		if err != nil {
-			log.Warn(ctx, "Failed getting fee params, defaulting to 1 gwei gas prices", err, "src_chain", srcChain.Name, "dest_chain", destChain.Name)
-			ps = bindings.IFeeOracleV2FeeParams{
-				ChainId:      destChain.ChainID,
-				ExecGasPrice: params.GWei,
-				DataGasPrice: params.GWei,
-				ToNativeRate: 1_000_000,
-			}
-		}
+		ps := destFeeParams(ctx, srcChain, destChain, backends, pricer)
 
 		resp = append(resp, ps)
 	}
@@ -51,7 +42,7 @@ func feeParams(ctx context.Context, srcChainID uint64, destChainIDs []uint64, ba
 
 // feeParams returns the fee parameters for the given source token and destination chains.
 func destFeeParams(ctx context.Context, srcChain evmchain.Metadata, destChain evmchain.Metadata, backends ethbackend.Backends, pricer tokens.Pricer,
-) (bindings.IFeeOracleV2FeeParams, error) {
+) bindings.IFeeOracleV2FeeParams {
 	// conversion rate from "dest token" to "src token"
 	// ex if dest chain is ETH, and src chain is OMNI, we need to know the rate of ETH to OMNI.
 	toNativeRate, err := conversionRate(ctx, pricer, destChain.NativeToken, srcChain.NativeToken)
@@ -60,26 +51,34 @@ func destFeeParams(ctx context.Context, srcChain evmchain.Metadata, destChain ev
 		toNativeRate = 1
 	}
 
-	localBackend, err := backends.Backend(destChain.ChainID)
+	// Get execution gas price, defaulting to 1 Gwei if any error occurs.
+	var execBackend *ethbackend.Backend
+	var execGasPrice *big.Int
+	execBackend, err = backends.Backend(destChain.ChainID)
 	if err != nil {
-		return bindings.IFeeOracleV2FeeParams{}, errors.Wrap(err, "get local backend", "dest_chain", destChain.Name)
-	}
-
-	remoteBackend, err := backends.Backend(destChain.PostsTo)
-	if err != nil {
-		return bindings.IFeeOracleV2FeeParams{}, errors.Wrap(err, "get remote backend", "dest_chain", destChain.Name)
-	}
-
-	execGasPrice, err := localBackend.SuggestGasPrice(ctx)
-	if err != nil {
-		log.Warn(ctx, "Failed fetching exec gas price, using default 1 Gwei", err, "dest_chain", destChain.Name)
+		log.Warn(ctx, "Failed getting exec backend, using default 1 Gwei", err, "dest_chain", destChain.Name)
 		execGasPrice = big.NewInt(params.GWei)
+	} else {
+		execGasPrice, err = execBackend.SuggestGasPrice(ctx)
+		if err != nil {
+			log.Warn(ctx, "Failed fetching exec gas price, using default 1 Gwei", err, "dest_chain", destChain.Name)
+			execGasPrice = big.NewInt(params.GWei)
+		}
 	}
 
-	dataGasPrice, err := remoteBackend.SuggestGasPrice(ctx)
+	// Get data gas price, defaulting to 1 Gwei if any error occurs.
+	var dataBackend *ethbackend.Backend
+	var dataGasPrice *big.Int
+	dataBackend, err = backends.Backend(destChain.PostsTo)
 	if err != nil {
-		log.Warn(ctx, "Failed fetching data gas price, using default 1 Gwei", err, "dest_chain", destChain.Name)
+		log.Warn(ctx, "Failed getting data backend, using default 1 Gwei", err, "dest_chain", destChain.Name)
 		dataGasPrice = big.NewInt(params.GWei)
+	} else {
+		dataGasPrice, err = dataBackend.SuggestGasPrice(ctx)
+		if err != nil {
+			log.Warn(ctx, "Failed fetching data gas price, using default 1 Gwei", err, "dest_chain", destChain.Name)
+			dataGasPrice = big.NewInt(params.GWei)
+		}
 	}
 
 	return bindings.IFeeOracleV2FeeParams{
@@ -87,7 +86,7 @@ func destFeeParams(ctx context.Context, srcChain evmchain.Metadata, destChain ev
 		ExecGasPrice: gasprice.Tier(execGasPrice.Uint64()),
 		DataGasPrice: gasprice.Tier(dataGasPrice.Uint64()),
 		ToNativeRate: rateToNumerator(toNativeRate),
-	}, nil
+	}
 }
 
 // conversionRate returns the conversion rate C from token F to token T, where C = price(F) / price(T).
