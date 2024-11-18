@@ -468,6 +468,7 @@ func (m *engineMock) GetPayloadV3(ctx context.Context, payloadID engine.PayloadI
 
 	return &engine.ExecutionPayloadEnvelope{
 		ExecutionPayload: &args.params,
+		BlobsBundle:      &engine.BlobsBundleV1{}, // Empty blobs
 	}, nil
 }
 

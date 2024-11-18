@@ -35,7 +35,7 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 	}
 
 	err = retryForever(ctx, func(ctx context.Context) (bool, error) {
-		status, err := pushPayload(ctx, s.engineCl, payload)
+		status, err := pushPayload(ctx, s.engineCl, payload, msg.BlobCommitments)
 		if err != nil {
 			// We need to retry forever on networking errors, but can't easily identify them, so retry all errors.
 			log.Warn(ctx, "Processing finalized payload failed: push new payload to evm (will retry)", err)
@@ -158,7 +158,7 @@ func (s msgServer) deliverEvents(ctx context.Context, height uint64, blockHash c
 
 // pushPayload pushes the provided execution data as a possible new head to the execution client.
 // It returns the engine payload status or an error.
-func pushPayload(ctx context.Context, engineCl ethclient.EngineClient, payload engine.ExecutableData) (engine.PayloadStatusV1, error) {
+func pushPayload(ctx context.Context, engineCl ethclient.EngineClient, payload engine.ExecutableData, blobCommitments [][]byte) (engine.PayloadStatusV1, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	appHash, err := cast.EthHash(sdkCtx.BlockHeader().AppHash)
 	if err != nil {
@@ -167,10 +167,13 @@ func pushPayload(ctx context.Context, engineCl ethclient.EngineClient, payload e
 		return engine.PayloadStatusV1{}, errors.New("app hash is empty")
 	}
 
-	emptyVersionHashes := make([]common.Hash, 0) // Cannot use nil.
+	blobHashes, err := blobHashes(blobCommitments)
+	if err != nil {
+		return engine.PayloadStatusV1{}, errors.Wrap(err, "blob hashes")
+	}
 
 	// Push it back to the execution client (mark it as possible new head).
-	status, err := engineCl.NewPayloadV3(ctx, payload, emptyVersionHashes, &appHash)
+	status, err := engineCl.NewPayloadV3(ctx, payload, blobHashes, &appHash)
 	if err != nil {
 		return engine.PayloadStatusV1{}, errors.Wrap(err, "new payload")
 	}

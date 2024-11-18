@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"encoding/json"
+	"math/rand"
 	"reflect"
 	"testing"
 	"time"
@@ -130,6 +131,13 @@ func populateGenesisHead(ctx context.Context, t *testing.T, keeper *Keeper) {
 func Test_pushPayload(t *testing.T) {
 	t.Parallel()
 
+	var commitments [][]byte
+	for i := 0; i < rand.Intn(5); i++ {
+		commitments = append(commitments, tutil.RandomBytes(48))
+	}
+	versionedHashes, err := blobHashes(commitments)
+	require.NoError(t, err)
+
 	newPayload := func(ctx context.Context, mockEngine mockEngineAPI, address common.Address) (engine.ExecutableData, engine.PayloadID) {
 		// get latest block to build on top
 		latestBlock, err := mockEngine.HeaderByType(ctx, ethclient.HeadLatest)
@@ -148,6 +156,7 @@ func Test_pushPayload(t *testing.T) {
 	type args struct {
 		transformPayload func(*engine.ExecutableData)
 		newPayloadV3Func func(context.Context, engine.ExecutableData, []common.Hash, *common.Hash) (engine.PayloadStatusV1, error)
+		blobsCommitments [][]byte
 	}
 	tests := []struct {
 		name       string
@@ -210,7 +219,10 @@ func Test_pushPayload(t *testing.T) {
 		{
 			name: "new payload accepted",
 			args: args{
-				newPayloadV3Func: func(context.Context, engine.ExecutableData, []common.Hash, *common.Hash) (engine.PayloadStatusV1, error) {
+				newPayloadV3Func: func(_ context.Context, _ engine.ExecutableData, hashes []common.Hash, _ *common.Hash) (engine.PayloadStatusV1, error) {
+					require.NotNil(t, hashes)
+					require.Empty(t, hashes)
+
 					return engine.PayloadStatusV1{
 						Status:          engine.ACCEPTED,
 						LatestValidHash: nil,
@@ -227,6 +239,18 @@ func Test_pushPayload(t *testing.T) {
 			wantErr:    false,
 			wantStatus: engine.VALID,
 		},
+		{
+			name: "blobs",
+			args: args{
+				blobsCommitments: commitments,
+				newPayloadV3Func: func(_ context.Context, _ engine.ExecutableData, hashes []common.Hash, _ *common.Hash) (engine.PayloadStatusV1, error) {
+					require.Equal(t, versionedHashes, hashes)
+					return engine.PayloadStatusV1{Status: engine.SYNCING}, nil
+				},
+			},
+			wantErr:    false,
+			wantStatus: engine.SYNCING,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -242,9 +266,9 @@ func Test_pushPayload(t *testing.T) {
 				tt.args.transformPayload(&payload)
 			}
 
-			status, err := pushPayload(ctx, &mockEngine, payload)
+			status, err := pushPayload(ctx, &mockEngine, payload, tt.args.blobsCommitments)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("pushPayload() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("startMockBuild() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			require.Equal(t, tt.wantStatus, status.Status)
@@ -253,7 +277,7 @@ func Test_pushPayload(t *testing.T) {
 				want, err := mockEngine.GetPayloadV3(ctx, payloadID)
 				require.NoError(t, err)
 				if !reflect.DeepEqual(payload, *want.ExecutionPayload) {
-					t.Errorf("pushPayload() got = %v, want %v", payload, want)
+					t.Errorf("startMockBuild() got = %v, want %v", payload, want)
 				}
 			}
 		})

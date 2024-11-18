@@ -16,6 +16,15 @@ func Array65[A any](slice []A) ([65]A, error) {
 	return [65]A{}, errors.New("slice length not 65", "len", len(slice))
 }
 
+// Array48 casts a slice to an array of length 48.
+func Array48[A any](slice []A) ([48]A, error) {
+	if len(slice) == 48 {
+		return [48]A(slice), nil
+	}
+
+	return [48]A{}, errors.New("slice length not 48", "len", len(slice))
+}
+
 // Must32 casts a slice to an array of length 32.
 func Must32[A any](slice []A) [32]A {
 	arr, err := Array32(slice)

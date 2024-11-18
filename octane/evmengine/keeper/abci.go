@@ -120,6 +120,12 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 		return nil, errors.Wrap(err, "encode")
 	}
 
+	// Convert blobs bundle.
+	blobCommitments := unwrapHexBytes(payloadResp.BlobsBundle.Commitments)
+	if _, err := blobHashes(blobCommitments); err != nil { // Sanity check blobs are valid.
+		return nil, errors.Wrap(err, "invalid blobs [BUG]")
+	}
+
 	// First, collect all vote extension msgs from the vote provider.
 	voteMsgs, err := k.voteProvider.PrepareVotes(ctx, req.LocalLastCommit, uint64(req.Height-1))
 	if err != nil {
@@ -137,6 +143,7 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 		Authority:         authtypes.NewModuleAddress(types.ModuleName).String(),
 		ExecutionPayload:  payloadData,
 		PrevPayloadEvents: evmEvents,
+		BlobCommitments:   blobCommitments,
 	}
 
 	// Combine all the votes messages and the payload message into a single transaction.

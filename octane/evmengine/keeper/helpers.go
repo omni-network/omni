@@ -2,18 +2,27 @@ package keeper
 
 import (
 	"context"
+	"crypto/sha256"
 	"sync"
 	"time"
 
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/expbackoff"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto/kzg4844"
 )
 
-// backoffFunc aliased for testing.
 var (
 	retryTimeout  = time.Minute // Just prevent blocking forever
 	backoffFuncMu sync.RWMutex
-	backoffFunc   = expbackoff.New
+	backoffFunc   = expbackoff.New // backoffFunc aliased for testing.
+
+	// maxBlobsPerBlock is the maximum number of blobs per block.
+	// Copied from https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/beacon-chain.md#execution-1.
+	maxBlobsPerBlock = 6
 )
 
 // retryForever retries the given function forever until it returns true or an error.
@@ -40,4 +49,33 @@ func retryForever(ctx context.Context, fn func(ctx context.Context) (bool, error
 
 		return nil
 	}
+}
+
+func unwrapHexBytes(in []hexutil.Bytes) [][]byte {
+	var out [][]byte
+	for _, i := range in {
+		out = append(out, i)
+	}
+
+	return out
+}
+
+// blobHashes returns the blob hashes from provided commitments.
+func blobHashes(commitments [][]byte) ([]common.Hash, error) {
+	if len(commitments) > maxBlobsPerBlock {
+		return nil, errors.New("too many blobs", "max", maxBlobsPerBlock, "actual", len(commitments))
+	}
+
+	hasher := sha256.New()
+	resp := make([]common.Hash, 0, len(commitments)) // Default to zero len slice, not nil.
+	for _, commitment := range commitments {
+		commitment48, err := cast.Array48(commitment)
+		if err != nil {
+			return nil, err
+		}
+
+		resp = append(resp, kzg4844.CalcBlobHashV1(hasher, (*kzg4844.Commitment)(&commitment48)))
+	}
+
+	return resp, nil
 }
