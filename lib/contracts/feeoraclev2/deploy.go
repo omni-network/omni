@@ -130,10 +130,10 @@ func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainID
 		ProtocolFee:     big.NewInt(0),
 	}
 
-	return deploy(ctx, network, chainID, destChainIDs, cfg, backend, backends)
+	return deploy(ctx, chainID, destChainIDs, cfg, backend, backends)
 }
 
-func deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainIDs []uint64, cfg DeploymentConfig, backend *ethbackend.Backend, backends ethbackend.Backends) (common.Address, *ethtypes.Receipt, error) {
+func deploy(ctx context.Context, chainID uint64, destChainIDs []uint64, cfg DeploymentConfig, backend *ethbackend.Backend, backends ethbackend.Backends) (common.Address, *ethtypes.Receipt, error) {
 	if err := cfg.Validate(); err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "validate config")
 	}
@@ -167,7 +167,7 @@ func deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainID
 		return common.Address{}, nil, errors.Wrap(err, "wait mined implementation")
 	}
 
-	initCode, err := packInitCode(ctx, network, chainID, destChainIDs, cfg, backends, impl)
+	initCode, err := packInitCode(ctx, chainID, destChainIDs, cfg, backends, impl)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "pack init code")
 	}
@@ -185,7 +185,7 @@ func deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainID
 	return addr, receipt, nil
 }
 
-func packInitCode(ctx context.Context, network netconf.ID, chainID uint64, destChainIDs []uint64, cfg DeploymentConfig, backends ethbackend.Backends, impl common.Address) ([]byte, error) {
+func packInitCode(ctx context.Context, chainID uint64, destChainIDs []uint64, cfg DeploymentConfig, backends ethbackend.Backends, impl common.Address) ([]byte, error) {
 	feeOracleAbi, err := bindings.FeeOracleV2MetaData.GetAbi()
 	if err != nil {
 		return nil, errors.Wrap(err, "get fee oracle abi")
@@ -196,7 +196,7 @@ func packInitCode(ctx context.Context, network netconf.ID, chainID uint64, destC
 		return nil, errors.Wrap(err, "get proxy abi")
 	}
 
-	feeparams, err := feeParams(ctx, network, chainID, destChainIDs, backends, coingecko.New())
+	feeparams, err := feeParams(ctx, chainID, destChainIDs, backends, coingecko.New())
 	if err != nil {
 		return nil, errors.Wrap(err, "fee params")
 	}
