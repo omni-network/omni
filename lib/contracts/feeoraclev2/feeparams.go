@@ -9,13 +9,14 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
 
 	"github.com/ethereum/go-ethereum/params"
 )
 
-func feeParams(ctx context.Context, srcChainID uint64, destChainIDs []uint64, backends ethbackend.Backends, pricer tokens.Pricer,
+func feeParams(ctx context.Context, network netconf.ID, srcChainID uint64, destChainIDs []uint64, backends ethbackend.Backends, pricer tokens.Pricer,
 ) ([]bindings.IFeeOracleV2FeeParams, error) {
 	// used cached pricer, to avoid multiple price requests for same token
 	pricer = tokens.NewCachedPricer(pricer)
@@ -32,9 +33,20 @@ func feeParams(ctx context.Context, srcChainID uint64, destChainIDs []uint64, ba
 			return nil, errors.New("meta by chain id", "dest_chain", destChain.Name)
 		}
 
-		ps, err := destFeeParams(ctx, srcChain, destChain, backends, pricer)
-		if err != nil {
-			return nil, err
+		var ps bindings.IFeeOracleV2FeeParams
+		if network == netconf.Mainnet {
+			var err error
+			ps, err = destFeeParams(ctx, srcChain, destChain, backends, pricer)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			ps = bindings.IFeeOracleV2FeeParams{
+				ChainId:      destChain.ChainID,
+				ExecGasPrice: params.GWei,
+				DataGasPrice: params.GWei,
+				ToNativeRate: 1_000_000,
+			}
 		}
 
 		resp = append(resp, ps)
