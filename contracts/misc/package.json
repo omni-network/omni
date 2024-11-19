@@ -1,0 +1,12 @@
+{
+  "license": "GPL-3.0-only",
+  "packageManager": "pnpm@9.12.1",
+  "repository": "https://github.com/omni-network/omni/tree/main/contracts/misc",
+  "scripts": {
+    "test": "forge test"
+  },
+  "devDependencies": {
+    "ds-test": "github:dapphub/ds-test",
+    "forge-std": "github:foundry-rs/forge-std"
+  }
+}
