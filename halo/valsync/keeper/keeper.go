@@ -38,7 +38,7 @@ type Keeper struct {
 	valsetTable       ValidatorSetTable
 	valTable          ValidatorTable
 	subscriber        types.ValSetSubscriber
-	emilPortal        ptypes.EmitPortal
+	emitPortal        ptypes.EmitPortal
 	subscriberInitted bool
 
 	ethCl           ethclient.Client
@@ -80,7 +80,7 @@ func NewKeeper(
 		sKeeper:         sKeeper,
 		aKeeper:         aKeeper,
 		subscriber:      subscriber,
-		emilPortal:      portal,
+		emitPortal:      portal,
 		ethCl:           ethCl,
 		portalRegAdress: address,
 		portalRegistry:  protalReg,
@@ -214,7 +214,7 @@ func (k *Keeper) insertValidatorSet(ctx context.Context, vals []*Validator, isGe
 	}
 
 	// Emit this validator set message to portals, updating the resulting attest offset/height/id.
-	valset.AttestOffset, err = k.emilPortal.EmitMsg(
+	valset.AttestOffset, err = k.emitPortal.EmitMsg(
 		sdkCtx,
 		ptypes.MsgTypeValSet,
 		valset.GetId(),

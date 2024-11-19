@@ -20,7 +20,7 @@ import (
 )
 
 type Keeper struct {
-	emilPortal      ptypes.EmitPortal
+	emitPortal      ptypes.EmitPortal
 	networkTable    NetworkTable
 	ethCl           ethclient.Client
 	portalRegAdress common.Address
@@ -31,7 +31,7 @@ type Keeper struct {
 }
 
 func NewKeeper(
-	emilPortal ptypes.EmitPortal,
+	emitPortal ptypes.EmitPortal,
 	storeService store.KVStoreService,
 	ethCl ethclient.Client,
 	namer types.ChainNameFunc,
@@ -57,7 +57,7 @@ func NewKeeper(
 	}
 
 	return Keeper{
-		emilPortal:      emilPortal,
+		emitPortal:      emitPortal,
 		networkTable:    registryStore.NetworkTable(),
 		ethCl:           ethCl,
 		portalRegAdress: address,
@@ -105,7 +105,7 @@ func (k Keeper) getOrCreateNetwork(ctx context.Context) (*Network, error) {
 
 	k.latestCache.Set(network)
 
-	_, err = k.emilPortal.EmitMsg(
+	_, err = k.emitPortal.EmitMsg(
 		sdkCtx,
 		ptypes.MsgTypeNetwork,
 		network.GetId(),
