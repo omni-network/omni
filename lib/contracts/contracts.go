@@ -24,7 +24,7 @@ type Contract struct {
 }
 
 // All returns all contracts for the given network relevant to the monitor.
-func All(ctx context.Context, network netconf.ID) ([]Contract, error) {
+func ToMonitor(ctx context.Context, network netconf.ID) ([]Contract, error) {
 	addrs, err := GetAddresses(ctx, network)
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ func ToFund(ctx context.Context, network netconf.ID) ([]Contract, error) {
 		return []Contract{}, nil
 	}
 
-	contracts, err := All(ctx, network)
+	contracts, err := ToMonitor(ctx, network)
 	if err != nil {
 		return nil, err
 	}

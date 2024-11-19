@@ -34,7 +34,7 @@ func StartMonitoring(ctx context.Context, network netconf.Network, endpoints xch
 		contracts.UseStagingOmniRPC(omniEVMRPC)
 	}
 
-	allContracts, err := contracts.All(ctx, network.ID)
+	allContracts, err := contracts.ToMonitor(ctx, network.ID)
 	if err != nil {
 		log.Error(ctx, "Failed to get contract addreses to monitor - skipping monitoring", err)
 		return nil
