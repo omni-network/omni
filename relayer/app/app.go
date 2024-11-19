@@ -27,11 +27,6 @@ import (
 func Run(ctx context.Context, cfg Config) error {
 	log.Info(ctx, "Starting relayer")
 
-	db, err := initializeDB(ctx, cfg)
-	if err != nil {
-		return err
-	}
-
 	buildinfo.Instrument(ctx)
 
 	// Start metrics first, so app is "up"
@@ -68,6 +63,10 @@ func Run(ctx context.Context, cfg Config) error {
 	pricer := newTokenPricer(ctx)
 	pnl := newPnlLogger(network.ID, pricer)
 
+	db, err := initializeDB(ctx, cfg)
+	if err != nil {
+		return err
+	}
 	cursors, err := cursor.New(db, xprov.GetSubmittedCursor, network)
 	if err != nil {
 		return err
@@ -150,13 +149,12 @@ func initializeRPCClients(chains []netconf.Chain, endpoints xchain.RPCEndpoints)
 }
 
 func initializeDB(ctx context.Context, cfg Config) (dbm.DB, error) {
-	var db dbm.DB
 	if cfg.DBDir == "" {
 		log.Warn(ctx, "No --db-dir provided, using in-memory DB", nil)
 		return dbm.NewMemDB(), nil
 	}
-	var err error
-	db, err = dbm.NewGoLevelDB("indexer", cfg.DBDir, nil)
+
+	db, err := dbm.NewGoLevelDB("app", cfg.DBDir, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "new golevel db")
 	}

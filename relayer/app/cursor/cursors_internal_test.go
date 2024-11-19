@@ -86,7 +86,7 @@ func TestStore(t *testing.T) {
 	assertCount := func(t *testing.T, stream1Count, stream2Count uint64) {
 		t.Helper()
 
-		counts, err := store.CountCursors(ctx, destChainID)
+		counts, err := store.CountCursors(ctx)
 		require.NoError(t, err)
 		require.Equal(t, stream1Count, counts[streamID1.ChainVersion()])
 		require.Equal(t, stream2Count, counts[streamID2.ChainVersion()])
@@ -170,7 +170,6 @@ func (s *Store) LatestOffsets(
 
 func (s *Store) CountCursors(
 	ctx context.Context,
-	destChain uint64,
 ) (map[xchain.ChainVersion]uint64, error) {
 	all, err := listAll(ctx, s.db)
 	if err != nil {

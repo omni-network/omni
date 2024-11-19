@@ -1,3 +1,19 @@
+// Package cursor provides a persisted attestation streamer cursor store.
+// The goal of this package is to persist and identify
+// safe/finalized bootstrap cursors per streamer.
+//
+// Problems it solves:
+// - Relayer source of truth is submitted (and finalized) xmsg offsets on destination portals.
+// - An attestation is only "fully relayed" when all xmsgs are submitted AND finalized.
+// - Empty attestations are not submitted, so no proof exists that is has been processed.
+// - While submissions are not finalized, they can technically reorg, and need to be resubmitted.
+//
+// Solution:
+// - Persist attestations (cursors) immediately once submitted, but don't mark as "confirmed".
+// - Monitor finalized submit cursors on destination portals.
+// - Mark any cursor lower than on-chain finalized offsets as confirmed.
+// - Empty cursors are confirmed once previous non-empty cursor is confirmed.
+// - On worker bootstrap, use latest confirmed cursors if higher than on-chain offset.
 package cursor
 
 import (
@@ -13,18 +29,33 @@ import (
 	db "github.com/cosmos/cosmos-db"
 )
 
-type getSubmitCursorFunc func(ctx context.Context, ref xchain.Ref, stream xchain.StreamID) (xchain.SubmitCursor, bool, error)
+// streamer represents a process calling to xchain.Provider.StreamAttestations
+// by a worker. The goal of this package is to persist and identify
+// safe/finalized bootstrap cursors per streamer.
+type streamer struct {
+	SrcChainID   uint64
+	SrcConfLevel uint32
+	DstChainID   uint64
+}
+
+func (s streamer) ChainVersion() xchain.ChainVersion {
+	return xchain.ChainVersion{ID: s.SrcChainID, ConfLevel: xchain.ConfLevel(s.SrcConfLevel)}
+}
+
+// submitCursorFunc abstracts xchain.Provider.GetSubmitCursor method for testing purposes.
+type submitCursorFunc func(ctx context.Context, ref xchain.Ref, stream xchain.StreamID) (xchain.SubmitCursor, bool, error)
 
 // Store provides a persisted attestation streamer cursor store.
 type Store struct {
-	db                  CursorTable
-	getSubmitCursorFunc getSubmitCursorFunc
-	network             netconf.Network
+	db               CursorTable
+	submitCursorFunc submitCursorFunc
+	network          netconf.Network
 }
 
+// New returns a new cursor store.
 func New(
 	db db.DB,
-	getSubmitCursorFunc getSubmitCursorFunc,
+	submitCursorFunc submitCursorFunc,
 	network netconf.Network,
 ) (*Store, error) {
 	cursorsTable, err := newCursorsTable(db)
@@ -33,9 +64,9 @@ func New(
 	}
 
 	return &Store{
-		db:                  cursorsTable,
-		getSubmitCursorFunc: getSubmitCursorFunc,
-		network:             network,
+		db:               cursorsTable,
+		submitCursorFunc: submitCursorFunc,
+		network:          network,
 	}, nil
 }
 
@@ -69,18 +100,18 @@ func (s *Store) WorkerOffsets(
 	return resp, nil
 }
 
-// Save an attest offset for the provided streamer.
-// Existing cursors' stream offsets are updated and confirmed is reset to false.
+// Save cursor for the provided streamer.
+// Existing cursors' stream offsets are replaced and confirmed is reset to false.
 func (s *Store) Save(
 	ctx context.Context,
 	srcVersion xchain.ChainVersion,
 	destChain uint64,
 	attestOffset uint64,
-	streamMsgs map[xchain.StreamID][]xchain.Msg,
+	submittedMsgs map[xchain.StreamID][]xchain.Msg,
 ) error {
-	// Get highest stream offset for each shard
+	// Get the highest stream offset for each shard
 	offsetsByShard := make(map[uint64]uint64)
-	for streamID, msgs := range streamMsgs {
+	for streamID, msgs := range submittedMsgs {
 		if len(msgs) == 0 {
 			continue
 		}
@@ -115,6 +146,7 @@ func (s *Store) StartLoops(ctx context.Context) {
 	go s.confirmForever(ctx)
 }
 
+// confirmForever blocks until the context is closed and periodically confirms cursors.
 func (s *Store) confirmForever(ctx context.Context) {
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
@@ -149,9 +181,9 @@ func (s *Store) confirmOnce(ctx context.Context) error {
 			var unconfirmed bool
 			for shardID, offset := range c.GetStreamOffsetsByShard() {
 				stream := xchain.StreamID{SourceChainID: c.GetSrcChainId(), DestChainID: c.GetDstChainId(), ShardID: xchain.ShardID(shardID)}
-				submitted, ok, err := s.getSubmitCursorFunc(ctx, xchain.FinalizedRef, stream)
+				submitted, ok, err := s.submitCursorFunc(ctx, xchain.FinalizedRef, stream)
 				if err != nil {
-					log.Warn(ctx, "Get submit cursor failed while confirming", err, "stream", s.network.StreamName(stream))
+					log.Warn(ctx, "Get submit cursor failed while confirming (will retry)", err, "stream", s.network.StreamName(stream))
 					unconfirmed = true
 
 					break
@@ -180,6 +212,7 @@ func (s *Store) confirmOnce(ctx context.Context) error {
 	return nil
 }
 
+// trimForever blocks until the context is closed and periodically trims cursors.
 func (s *Store) trimForever(ctx context.Context) {
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
@@ -190,7 +223,7 @@ func (s *Store) trimForever(ctx context.Context) {
 			return
 		case <-ticker.C:
 			if err := s.trimOnce(ctx); err != nil {
-				log.Error(ctx, "Trimming cursor stored failed (will retry))", err)
+				log.Warn(ctx, "Trimming cursor store failed (will retry)", err)
 			}
 		}
 	}
@@ -226,16 +259,7 @@ func (s *Store) trimOnce(ctx context.Context) error {
 	return nil
 }
 
-type streamer struct {
-	SrcChainID   uint64
-	SrcConfLevel uint32
-	DstChainID   uint64
-}
-
-func (s streamer) ChainVersion() xchain.ChainVersion {
-	return xchain.ChainVersion{ID: s.SrcChainID, ConfLevel: xchain.ConfLevel(s.SrcConfLevel)}
-}
-
+// splitByStreamer groups cursors by streamer.
 func splitByStreamer(all []*Cursor) map[streamer][]*Cursor {
 	resp := make(map[streamer][]*Cursor)
 	for _, c := range all {
