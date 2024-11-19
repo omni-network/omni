@@ -23,7 +23,7 @@ type Contract struct {
 	WithdrawThresholds *WithdrawThresholds
 }
 
-// All returns all contracts for the given network relevant to the monitor.
+// ToMonitor returns all contracts for the given network relevant to the monitor.
 func ToMonitor(ctx context.Context, network netconf.ID) ([]Contract, error) {
 	addrs, err := GetAddresses(ctx, network)
 	if err != nil {
