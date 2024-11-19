@@ -184,7 +184,10 @@ func (k *Keeper) PostFinalize(ctx sdk.Context) error {
 	// Maybe start building the next block if we are the next proposer.
 	isNext, err := k.isNextProposer(ctx, proposer, height)
 	if err != nil {
-		return errors.Wrap(err, "next proposer")
+		// IsNextProposer does non-deterministic cometBFT queries, don't stall node due to errors.
+		log.Warn(ctx, "Next proposer failed, skipping optimistic EVM payload build", err)
+
+		return nil
 	} else if !isNext {
 		return nil // Nothing to do if we are not next proposer.
 	}
