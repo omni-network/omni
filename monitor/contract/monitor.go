@@ -34,21 +34,11 @@ func StartMonitoring(ctx context.Context, network netconf.Network, endpoints xch
 		contracts.UseStagingOmniRPC(omniEVMRPC)
 	}
 
-	fundContracts, err := contracts.ToFund(ctx, network.ID)
+	allContracts, err := contracts.All(ctx, network.ID)
 	if err != nil {
-		log.Error(ctx, "Failed to get contract addreses to monitor for funding - skipping monitoring", err)
+		log.Error(ctx, "Failed to get contract addreses to monitor - skipping monitoring", err)
 		return nil
 	}
-
-	withdrawContracts, err := contracts.ToWithdraw(ctx, network.ID)
-	if err != nil {
-		log.Error(ctx, "Failed to get contract addreses to monitor for withdrawals - skipping monitoring", err)
-		return nil
-	}
-
-	// Combine funding and withdraw contracts
-	//nolint:gocritic // Intentionally creating new slice
-	allContracts := append(fundContracts, withdrawContracts...)
 
 	for _, chain := range network.EVMChains() {
 		isOmniEVM := chain.ID == network.ID.Static().OmniExecutionChainID

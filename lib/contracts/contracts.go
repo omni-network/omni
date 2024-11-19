@@ -13,28 +13,18 @@ import (
 	"cosmossdk.io/math"
 )
 
-// ActionType defines the type of action to perform on a contract.
-type ActionType uint8
-
-const (
-	Fund ActionType = iota
-	Withdraw
-	Monitor
-)
-
 // Contract defines a contract to monitor.
 type Contract struct {
 	Name               string
 	Address            common.Address
 	OnlyOmniEVM        bool
 	NotOmniEVM         bool
-	ActionType         ActionType
 	FundThresholds     *FundThresholds
 	WithdrawThresholds *WithdrawThresholds
 }
 
-// AllContracts returns all contracts for the given network relevant to the monitor.
-func AllContracts(ctx context.Context, network netconf.ID) ([]Contract, error) {
+// All returns all contracts for the given network relevant to the monitor.
+func All(ctx context.Context, network netconf.ID) ([]Contract, error) {
 	addrs, err := GetAddresses(ctx, network)
 	if err != nil {
 		return nil, err
@@ -47,7 +37,6 @@ func AllContracts(ctx context.Context, network netconf.ID) ([]Contract, error) {
 			Address:        addrs.GasStation,
 			OnlyOmniEVM:    true,
 			NotOmniEVM:     false,
-			ActionType:     Fund,
 			FundThresholds: &FundThresholds{minEther: 200, targetEther: 1000}, // GasStation funds user GasPump requests, and needs a large OMNI balance.
 		},
 		// Withdrawal contracts
@@ -56,7 +45,6 @@ func AllContracts(ctx context.Context, network netconf.ID) ([]Contract, error) {
 			Address:            addrs.GasPump,
 			OnlyOmniEVM:        false,
 			NotOmniEVM:         true,
-			ActionType:         Withdraw,
 			WithdrawThresholds: &WithdrawThresholds{maxEther: 10},
 		},
 		// Monitoring contracts
@@ -65,14 +53,12 @@ func AllContracts(ctx context.Context, network netconf.ID) ([]Contract, error) {
 			Address:     common.HexToAddress(predeploys.Staking),
 			OnlyOmniEVM: true,
 			NotOmniEVM:  false,
-			ActionType:  Monitor,
 		},
 		{
 			Name:        "nativeBridge",
 			Address:     common.HexToAddress(predeploys.OmniBridgeNative),
 			OnlyOmniEVM: true,
 			NotOmniEVM:  false,
-			ActionType:  Monitor,
 		},
 	}, nil
 }
@@ -85,59 +71,19 @@ func ToFund(ctx context.Context, network netconf.ID) ([]Contract, error) {
 		return []Contract{}, nil
 	}
 
-	contracts, err := AllContracts(ctx, network)
+	contracts, err := All(ctx, network)
 	if err != nil {
 		return nil, err
 	}
 
 	var fundContracts []Contract
 	for _, contract := range contracts {
-		if contract.ActionType == Fund {
+		if contract.FundThresholds != nil {
 			fundContracts = append(fundContracts, contract)
 		}
 	}
 
 	return fundContracts, nil
-}
-
-// ToWithdraw returns all withdrawable contracts for the given network.
-func ToWithdraw(ctx context.Context, network netconf.ID) ([]Contract, error) {
-	// GasPumps will not deployed initially on mainnet
-	// TODO: remove this when mainnet GasPumps
-	if network == netconf.Mainnet {
-		return []Contract{}, nil
-	}
-
-	contracts, err := AllContracts(ctx, network)
-	if err != nil {
-		return nil, err
-	}
-
-	var withdrawContracts []Contract
-	for _, contract := range contracts {
-		if contract.ActionType == Withdraw {
-			withdrawContracts = append(withdrawContracts, contract)
-		}
-	}
-
-	return withdrawContracts, nil
-}
-
-// ToMonitor returns all monitorable contracts for the given network.
-func ToMonitor(ctx context.Context, network netconf.ID) ([]Contract, error) {
-	contracts, err := AllContracts(ctx, network)
-	if err != nil {
-		return nil, err
-	}
-
-	var monitorContracts []Contract
-	for _, contract := range contracts {
-		if contract.ActionType == Monitor {
-			monitorContracts = append(monitorContracts, contract)
-		}
-	}
-
-	return monitorContracts, nil
 }
 
 // FundThresholds defines the thresholds for funding a contract.
