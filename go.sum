@@ -250,10 +250,10 @@ github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3
 github.com/DataDog/zstd v1.5.5 h1:oWf5W7GtOLgp6bciQYDmhHHjdhYkALu6S/5Ni9ZgSvQ=
 github.com/DataDog/zstd v1.5.5/go.mod h1:g4AWEaM3yOg3HYfnJ3YIawPnVdXJh9QME85blwSAmyw=
 github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
-github.com/Layr-Labs/eigenlayer-cli v0.10.7 h1:khovBd5a7Bk6ets/tQmCyTguHgbjwDN1fBkrc9/oiAw=
-github.com/Layr-Labs/eigenlayer-cli v0.10.7/go.mod h1:lbzBxmEWmoRIwgxFZAQrgnHDmohnkGRVXzm2afXIjgw=
-github.com/Layr-Labs/eigensdk-go v0.1.13-0.20240927005004-ed4b05c87610 h1:lGy4uSImJyOiaM8vSx0CEbsL3rbVfw0uEIuhGey/ubc=
-github.com/Layr-Labs/eigensdk-go v0.1.13-0.20240927005004-ed4b05c87610/go.mod h1:bA21qMfmUFZcUe+a1RsDeOGm25xZO802Kfll2GlS8Us=
+github.com/Layr-Labs/eigenlayer-cli v0.10.9 h1:pqzMp2VX3QqIcjNdQbkfD9sLzsdgkSgcCg1/acnQvGE=
+github.com/Layr-Labs/eigenlayer-cli v0.10.9/go.mod h1:uj5Hx4bMU6tPY3i6ZgyhPgAOZv5+KTSDHbVc+fv/y8Y=
+github.com/Layr-Labs/eigensdk-go v0.1.13-0.20241023200243-565bb4438918 h1:Itl141PoMFzq58ZTo4Nu/CyH+x8f4BH6OmBNhZ6Z2/I=
+github.com/Layr-Labs/eigensdk-go v0.1.13-0.20241023200243-565bb4438918/go.mod h1:aYdNURUhaqeYOS+Cq12TfSdPbjFfiLaHkxPdR4Exq/s=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
 github.com/Microsoft/hcsshim v0.12.9 h1:2zJy5KA+l0loz1HzEGqyNnjd3fyZA31ZBCGKacp6lLg=
