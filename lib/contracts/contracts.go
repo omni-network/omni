@@ -65,12 +65,6 @@ func ToMonitor(ctx context.Context, network netconf.ID) ([]Contract, error) {
 
 // ToFund returns all fundable contracts for the given network.
 func ToFund(ctx context.Context, network netconf.ID) ([]Contract, error) {
-	// GasStation will not deployed initially on mainnet
-	// TODO: remove this when mainnet GasStation
-	if network == netconf.Mainnet {
-		return []Contract{}, nil
-	}
-
 	contracts, err := ToMonitor(ctx, network)
 	if err != nil {
 		return nil, err
