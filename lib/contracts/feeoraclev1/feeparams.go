@@ -65,8 +65,14 @@ func destFeeParams(ctx context.Context, srcChain evmchain.Metadata, destChain ev
 	// ex if dest chain is ETH, and src chain is OMNI, we need to know the rate of ETH to OMNI.
 	toNativeRate, err := conversionRate(ctx, pricer, destChain.NativeToken, srcChain.NativeToken)
 	if err != nil {
-		log.Warn(ctx, "Failed fetching conversion rate, using default 1", err, "dest_chain", destChain.Name, "src_chain", srcChain.Name)
-		toNativeRate = 1
+		if srcChain.NativeToken == destChain.NativeToken {
+			toNativeRate = 1 // 1 ETH = 1 ETH || 1 OMNI = 1 OMNI
+		} else if destChain.NativeToken == tokens.OMNI {
+			toNativeRate = 0.0025 // 1 OMNI = 0.0025 ETH
+		} else {
+			toNativeRate = 400 // 1 ETH = 400 OMNI
+		}
+		log.Warn(ctx, "Failed fetching conversion rate, using default", err, "dest_chain", destChain.Name, "src_chain", srcChain.Name, "to_native_rate", toNativeRate)
 	}
 
 	gasPrice, err := backend.SuggestGasPrice(ctx)
