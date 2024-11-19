@@ -2,7 +2,8 @@ package gasprice
 
 // buffer will be the lowest tier that is higher than the live gas price.
 var tiers = []uint64{
-	gwei(0.001),
+	gwei(0.0015), // op stack chains generally maintain 0.001+epsilon.
+	gwei(0.05),   // arb generally maintains 0.01 - 0.05.
 	gwei(0.1),
 	gwei(0.5),
 	gwei(1),
