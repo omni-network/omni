@@ -34,7 +34,7 @@ func StartMonitoring(ctx context.Context, network netconf.Network, endpoints xch
 		contracts.UseStagingOmniRPC(omniEVMRPC)
 	}
 
-	toFund, err := contracts.ToFund(ctx, network.ID)
+	allContracts, err := contracts.ToMonitor(ctx, network.ID)
 	if err != nil {
 		log.Error(ctx, "Failed to get contract addreses to monitor - skipping monitoring", err)
 		return nil
@@ -43,8 +43,8 @@ func StartMonitoring(ctx context.Context, network netconf.Network, endpoints xch
 	for _, chain := range network.EVMChains() {
 		isOmniEVM := chain.ID == network.ID.Static().OmniExecutionChainID
 
-		for _, contract := range toFund {
-			if contract.OnlyOmniEVM && !isOmniEVM {
+		for _, contract := range allContracts {
+			if (contract.OnlyOmniEVM && !isOmniEVM) || (contract.NotOmniEVM && isOmniEVM) {
 				continue
 			}
 
@@ -58,7 +58,7 @@ func StartMonitoring(ctx context.Context, network netconf.Network, endpoints xch
 // monitorContractForever blocks and periodically monitors the contract for the given chain.
 func monitorContractForever(
 	ctx context.Context,
-	contract contracts.WithFundThreshold,
+	contract contracts.Contract,
 	chainName string,
 	client ethclient.Client,
 ) {
@@ -68,7 +68,7 @@ func monitorContractForever(
 		"address", contract.Address,
 	)
 
-	log.Info(ctx, "Monitoring account")
+	log.Info(ctx, "Monitoring contract")
 
 	ticker := time.NewTicker(time.Second * 30)
 	defer ticker.Stop()
@@ -83,17 +83,16 @@ func monitorContractForever(
 				return
 			} else if err != nil {
 				log.Warn(ctx, "Monitoring contract failed (will retry)", err)
-
 				continue
 			}
 		}
 	}
 }
 
-// monitorContractOnce monitors contract for the given chain.
+// monitorContractOnce monitors the contract for the given chain.
 func monitorContractOnce(
 	ctx context.Context,
-	contract contracts.WithFundThreshold,
+	contract contracts.Contract,
 	chainName string,
 	client ethclient.Client,
 ) error {
@@ -106,14 +105,28 @@ func monitorContractOnce(
 	bf, _ := balance.Float64()
 	balanceEth := bf / params.Ether
 
+	// Always set the balance metric
 	contractBalance.WithLabelValues(chainName, contract.Name).Set(balanceEth)
 
-	var isLow float64
-	if balance.Cmp(contract.Thresholds.MinBalance()) <= 0 {
-		isLow = 1
+	// Handle funding threshold checks, if any
+	if contract.FundThresholds != nil {
+		var isLow float64
+		if balance.Cmp(contract.FundThresholds.MinBalance()) <= 0 {
+			isLow = 1
+		}
+
+		contractBalanceLow.WithLabelValues(chainName, contract.Name).Set(isLow)
 	}
 
-	contractBalanceLow.WithLabelValues(chainName, contract.Name).Set(isLow)
+	// Handle withdrawal threshold checks, if any
+	if contract.WithdrawThresholds != nil {
+		var isHigh float64
+		if balance.Cmp(contract.WithdrawThresholds.MaxBalance()) >= 0 {
+			isHigh = 1
+		}
+
+		contractBalanceHigh.WithLabelValues(chainName, contract.Name).Set(isHigh)
+	}
 
 	return nil
 }

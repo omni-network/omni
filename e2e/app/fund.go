@@ -162,8 +162,8 @@ func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool
 			if err := fund(ctrCtx, fundParams{
 				backend:       backend,
 				account:       contract.Address,
-				minBalance:    contract.Thresholds.MinBalance(),
-				targetBalance: contract.Thresholds.TargetBalance(),
+				minBalance:    contract.FundThresholds.MinBalance(),
+				targetBalance: contract.FundThresholds.TargetBalance(),
 				saneMax:       saneMax(chain.NativeToken),
 				dryRun:        dryRun,
 				funder:        funderAddr,
