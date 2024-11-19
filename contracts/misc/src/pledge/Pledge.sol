@@ -32,7 +32,7 @@ contract Pledge is XAppBase {
      * @notice Initiates a user's pledge to Ethereum.
      * @dev Only the OmniPortal can call this function, user cannot call it directly.
      */
-    function pledge() external xrecv {
+    function pledge_jwkilcxtschdbaaa() external xrecv {
         // only accept xcalls
         if (!isXCall()) revert NotXCall();
         // emit pledge event, frontend will contextualize

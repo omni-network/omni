@@ -23,7 +23,7 @@ contract PledgeTest is Test {
         vm.deal(user, 1 ether);
         vm.prank(user);
         vm.expectRevert(abi.encodeWithSelector(Pledge.NotXCall.selector));
-        pledge.pledge();
+        pledge.pledge_jwkilcxtschdbaaa();
     }
 
     /**
@@ -35,7 +35,7 @@ contract PledgeTest is Test {
         portal.mockXCall({
             sourceChainId: 100,
             sender: user,
-            data: abi.encodeCall(pledge.pledge, ()),
+            data: abi.encodeCall(pledge.pledge_jwkilcxtschdbaaa, ()),
             to: address(pledge)
         });
     }
