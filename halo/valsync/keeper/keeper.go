@@ -195,6 +195,7 @@ func (k *Keeper) InsertGenesisSet(ctx context.Context) error {
 }
 
 // insertValidatorSet inserts the current validator set into the database.
+// Returns the id of the new validator set.
 func (k *Keeper) insertValidatorSet(ctx context.Context, vals []*Validator, isGenesis bool) (uint64, error) {
 	var err error
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
