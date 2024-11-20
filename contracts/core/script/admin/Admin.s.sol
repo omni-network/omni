@@ -383,6 +383,25 @@ contract Admin is Script {
     }
 
     /**
+     * @notice Upgrade the OmniPortal's fee oracle to a new FeeOracleV2 contract.
+     * @param admin         The address of the admin account, owner of the OmniPortal contract.
+     * @param portal        The address of the OmniPortal contract.
+     * @param newFeeOracle  The address of the new FeeOracleV2 contract.
+     */
+    function upgradePortalFeeOracle(address admin, address portal, address newFeeOracle) public {
+        address oldFeeOracle = OmniPortal(portal).feeOracle();
+        require(oldFeeOracle != newFeeOracle, "new fee oracle is the same as the old one");
+
+        vm.startBroadcast(admin);
+        OmniPortal(portal).setFeeOracle(newFeeOracle);
+        vm.stopBroadcast();
+
+        require(OmniPortal(portal).feeOracle() == newFeeOracle, "portal fee oracle assignment failed");
+        require(FeeOracleV2(newFeeOracle).manager() != address(0), "new fee oracle is not initialized");
+        require(FeeOracleV2(newFeeOracle).version() == 2, "new fee oracle is not FeeOracleV2");
+    }
+
+    /**
      * @notice Upgrade a proxy contract.
      * @param admin     The address of the admin account, owner of the proxy admin
      * @param proxy     The address of the proxy to upgrade.

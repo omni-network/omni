@@ -632,6 +632,27 @@ func (_Admin *AdminTransactorSession) UpgradePortal(admin common.Address, deploy
 	return _Admin.Contract.UpgradePortal(&_Admin.TransactOpts, admin, deployer, portal, data)
 }
 
+// UpgradePortalFeeOracle is a paid mutator transaction binding the contract method 0xf57f73b9.
+//
+// Solidity: function upgradePortalFeeOracle(address admin, address portal, address newFeeOracle) returns()
+func (_Admin *AdminTransactor) UpgradePortalFeeOracle(opts *bind.TransactOpts, admin common.Address, portal common.Address, newFeeOracle common.Address) (*types.Transaction, error) {
+	return _Admin.contract.Transact(opts, "upgradePortalFeeOracle", admin, portal, newFeeOracle)
+}
+
+// UpgradePortalFeeOracle is a paid mutator transaction binding the contract method 0xf57f73b9.
+//
+// Solidity: function upgradePortalFeeOracle(address admin, address portal, address newFeeOracle) returns()
+func (_Admin *AdminSession) UpgradePortalFeeOracle(admin common.Address, portal common.Address, newFeeOracle common.Address) (*types.Transaction, error) {
+	return _Admin.Contract.UpgradePortalFeeOracle(&_Admin.TransactOpts, admin, portal, newFeeOracle)
+}
+
+// UpgradePortalFeeOracle is a paid mutator transaction binding the contract method 0xf57f73b9.
+//
+// Solidity: function upgradePortalFeeOracle(address admin, address portal, address newFeeOracle) returns()
+func (_Admin *AdminTransactorSession) UpgradePortalFeeOracle(admin common.Address, portal common.Address, newFeeOracle common.Address) (*types.Transaction, error) {
+	return _Admin.Contract.UpgradePortalFeeOracle(&_Admin.TransactOpts, admin, portal, newFeeOracle)
+}
+
 // UpgradePortalRegistry is a paid mutator transaction binding the contract method 0x7924b9b3.
 //
 // Solidity: function upgradePortalRegistry(address admin, address deployer, bytes data) returns()
