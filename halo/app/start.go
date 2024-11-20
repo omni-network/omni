@@ -14,6 +14,7 @@ import (
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tracer"
@@ -101,6 +102,8 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 	}
 
 	buildinfo.Instrument(ctx)
+
+	ctx = feature.WithFlags(ctx, cfg.FeatureFlags)
 
 	tracerIDs := tracer.Identifiers{Network: cfg.Network, Service: "halo", Instance: cfg.Comet.Moniker}
 	stopTracer, err := tracer.Init(ctx, tracerIDs, cfg.Tracer)

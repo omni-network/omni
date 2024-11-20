@@ -10,6 +10,7 @@ import (
 
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tracer"
@@ -65,6 +66,7 @@ func DefaultConfig() Config {
 		Tracer:             tracer.DefaultConfig(),
 		SDKAPI:             RPCConfig{Enable: defaultAPIEnable, Address: defaultAPIAddress},
 		SDKGRPC:            RPCConfig{Enable: defaultGRPCEnable, Address: defaultGRPCAddress},
+		FeatureFlags:       feature.Flags{}, // Zero enabled flags by default (note not nil).
 	}
 }
 
@@ -86,6 +88,7 @@ type Config struct {
 	UnsafeSkipUpgrades []int
 	SDKAPI             RPCConfig `mapstructure:"api"`
 	SDKGRPC            RPCConfig `mapstructure:"grpc"`
+	FeatureFlags       feature.Flags
 }
 
 // RPCConfig is an abridged version of CosmosSDK srvconfig.API/GRPCConfig.

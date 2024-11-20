@@ -27,6 +27,10 @@
   "Enable": true,
   "Address": "grpc/toml"
  },
+ "FeatureFlags": [
+  "a",
+  "b"
+ ],
  "Comet": {
   "Version": "0.38.15",
   "RootDir": "testinput/input1",

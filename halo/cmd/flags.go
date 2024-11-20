@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/halo/app"
 	halocfg "github.com/omni-network/omni/halo/config"
 	libcmd "github.com/omni-network/omni/lib/cmd"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/xchain"
@@ -23,6 +24,7 @@ func bindRunFlags(cmd *cobra.Command, cfg *halocfg.Config) {
 	tracer.BindFlags(flags, &cfg.Tracer)
 	xchain.BindFlags(flags, &cfg.RPCEndpoints)
 	netconf.BindFlag(flags, &cfg.Network)
+	feature.BindFlag(flags, &cfg.FeatureFlags)
 	bindRPCFlags(flags, "api", &cfg.SDKAPI)
 	bindRPCFlags(flags, "grpc", &cfg.SDKGRPC)
 	flags.StringVar(&cfg.EngineEndpoint, "engine-endpoint", cfg.EngineEndpoint, "An EVM execution client Engine API http endpoint")

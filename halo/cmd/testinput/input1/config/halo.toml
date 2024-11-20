@@ -1,6 +1,6 @@
 engine-jwt-file="jwt.toml"
 
-
+feature-flags=["a","b"]
 
 snapshot-interval=999
 

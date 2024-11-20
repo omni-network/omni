@@ -24,6 +24,7 @@
   "Enable": true,
   "Address": "0.0.0.0:9090"
  },
+ "FeatureFlags": [],
  "Comet": {
   "Version": "0.38.15",
   "RootDir": "foo",
