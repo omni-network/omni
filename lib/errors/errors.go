@@ -4,16 +4,38 @@
 package errors
 
 import (
+	stderrors "errors"
+
 	pkgerrors "github.com/pkg/errors"
 )
 
 // New returns an error that formats as the given text and
-// contains the structured (slog) attributes.
+// contains the structured (slog) attributes and stack trace.
 func New(msg string, attrs ...any) error {
 	return structured{
 		err:   pkgerrors.New(msg),
 		attrs: attrs,
 	}
+}
+
+// NewSentinel returns a new error that formats as the given text.
+// It doesn't contain a stack trace.
+// This can be used to support error checking with proper runtime stack traces.
+//
+//	// ErrNotFound is a sentinel error, it doesn't have a stack trace.
+//	var ErrNotFound = errors.NewSentinel("not found")
+//
+//	// Foo returns a sentinel error with runtime stack trace of this function
+//	// instead of the stack trace of ErrNotFound initialization.
+//	func Foo() error {
+//	  return errors.Wrap(ErrNotFound, "foo failed")
+//	}
+//
+//	// Usage
+//	if errors.Is(Foo(), ErrNotFound) {
+//	  // Handle ErrNotFound or log it with proper runtime stack traces.
+func NewSentinel(msg string) error {
+	return stderrors.New(msg) //nolint:wrapcheck // This is explicitly not wrapped.
 }
 
 // Wrap returns a new error wrapping the provided with additional

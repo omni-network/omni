@@ -3,6 +3,7 @@ package relayer
 import (
 	"context"
 
+	"github.com/omni-network/omni/lib/chaos"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -75,6 +76,11 @@ func (b *activeBuffer) Run(ctx context.Context) error {
 				mempoolLen.WithLabelValues(b.chainName).Dec()
 				sema.Release(1)
 			}()
+
+			// Chaos test this worker with random errors.
+			if err := chaos.MaybeError(ctx); err != nil {
+				return err
+			}
 		}
 	}
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/cchain"
+	"github.com/omni-network/omni/lib/chaos"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
@@ -63,9 +64,11 @@ func (w *Worker) Run(ctx context.Context) {
 		err := w.runOnce(ctx)
 		if ctx.Err() != nil {
 			return
+		} else if errors.Is(err, chaos.ErrChaos) {
+			log.Info(ctx, "Worker failed due to chaos testing, resetting", err)
+		} else {
+			log.Warn(ctx, "Worker failed, resetting", err)
 		}
-
-		log.Error(ctx, "Worker failed, resetting", err)
 
 		workerResets.WithLabelValues(w.destChain.Name).Inc()
 		backoff()
