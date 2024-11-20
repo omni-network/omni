@@ -27,6 +27,7 @@ message MsgExecutionPayload {
   string            authority           = 1;
   bytes             execution_payload   = 2;
   repeated EVMEvent prev_payload_events = 3 [(gogoproto.nullable) = false];
+  repeated bytes    blob_commitments    = 4; // Array of blob tx KZGCommitments, 48 bytes each.
 }
 
 message ExecutionPayloadResponse {}

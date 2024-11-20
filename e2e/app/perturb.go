@@ -128,7 +128,7 @@ func perturbNode(ctx context.Context, node *e2e.Node, perturbation e2e.Perturbat
 
 	case e2e.PerturbationUpgrade:
 		log.Info(ctx, "Perturb node: upgrade", "from", node.Version, "to", testnet.UpgradeVersion)
-		if err := docker.ExecCompose(ctx, testnet.Dir, "stop", name); err != nil {
+		if err := docker.ExecCompose(ctx, testnet.Dir, "down", name); err != nil {
 			return nil, errors.Wrap(err, "stop service")
 		}
 
@@ -136,7 +136,7 @@ func perturbNode(ctx context.Context, node *e2e.Node, perturbation e2e.Perturbat
 			return nil, errors.Wrap(err, "upgrade service")
 		}
 
-		if err := docker.ExecCompose(ctx, testnet.Dir, "start", name); err != nil {
+		if err := docker.ExecCompose(ctx, testnet.Dir, "up", "-d", name); err != nil {
 			return nil, errors.Wrap(err, "start service")
 		}
 

@@ -23,6 +23,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	eengine "github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/trie"
 
@@ -200,7 +201,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 
 		for _, msg := range tx.GetMsgs() {
 			if _, ok := msg.(*etypes.MsgExecutionPayload); ok {
-				assertExecutablePayload(t, msg, ts.Unix(), nextBlock.Hash(), frp, uint64(req.Height))
+				assertExecutablePayload(t, msg, ts.Unix(), nextBlock.Hash(), frp, uint64(req.Height), 0)
 			}
 		}
 	})
@@ -249,7 +250,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		// assert that the message is an executable payload
 		for _, msg := range tx.GetMsgs() {
 			if _, ok := msg.(*etypes.MsgExecutionPayload); ok {
-				assertExecutablePayload(t, msg, req.Time.Unix(), headHash, frp, head.GetBlockHeight()+1)
+				assertExecutablePayload(t, msg, req.Time.Unix(), headHash, frp, head.GetBlockHeight()+1, 0)
 			}
 			if msgDelegate, ok := msg.(*stypes.MsgDelegate); ok {
 				require.Equal(t, msgDelegate.Amount, sdk.NewInt64Coin("stake", 100))
@@ -258,6 +259,78 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		}
 		// make sure all msg.Delegate are present
 		require.Equal(t, 1, actualDelCount)
+	})
+
+	t.Run("TestBlobCommitments", func(t *testing.T) {
+		t.Parallel()
+		// setup dependencies
+		ctx, storeService := setupCtxStore(t, nil)
+		cdc := getCodec(t)
+		txConfig := authtx.NewTxConfig(cdc, nil)
+
+		commitment1 := tutil.RandomBytes(48)
+		commitment2 := tutil.RandomBytes(48)
+
+		mockEngine, err := newMockEngineAPI(0)
+		require.NoError(t, err)
+		mockEngine.getPayloadV3Func = func(ctx context.Context, payloadID eengine.PayloadID) (*eengine.ExecutionPayloadEnvelope, error) {
+			resp, err := mockEngine.mock.GetPayloadV3(ctx, payloadID)
+			if err != nil {
+				return nil, err
+			}
+
+			resp.BlobsBundle.Commitments = []hexutil.Bytes{
+				commitment1,
+				commitment2,
+			}
+
+			return resp, nil
+		}
+
+		ap := mockAddressProvider{
+			address: common.BytesToAddress([]byte("test")),
+		}
+		frp := newRandomFeeRecipientProvider()
+		keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, mockLogProvider{})
+		require.NoError(t, err)
+		keeper.SetVoteProvider(mockVEProvider{})
+		populateGenesisHead(ctx, t, keeper)
+
+		// Get the parent block we will build on top of
+		head, err := keeper.getExecutionHead(ctx)
+		require.NoError(t, err)
+		headHash, err := head.Hash()
+		require.NoError(t, err)
+
+		req := &abci.RequestPrepareProposal{
+			Txs:        nil,
+			Height:     int64(2),
+			Time:       time.Now(),
+			MaxTxBytes: cmttypes.MaxBlockSizeBytes,
+		}
+
+		resp, err := keeper.PrepareProposal(withRandomErrs(t, ctx), req)
+		tutil.RequireNoError(t, err)
+		require.NotNil(t, resp)
+
+		// decode the txn and get the messages
+		tx, err := txConfig.TxDecoder()(resp.Txs[0])
+		require.NoError(t, err)
+
+		// assert that the message is an executable payload
+		var found bool
+		for _, msg := range tx.GetMsgs() {
+			payload, ok := msg.(*etypes.MsgExecutionPayload)
+			if !ok {
+				continue
+			}
+
+			found = true
+			expected := [][]byte{commitment1, commitment2}
+			require.EqualValues(t, expected, payload.BlobCommitments)
+			assertExecutablePayload(t, msg, req.Time.Unix(), headHash, frp, head.GetBlockHeight()+1, len(expected))
+		}
+		require.True(t, found)
 	})
 }
 
@@ -330,6 +403,7 @@ func assertExecutablePayload(
 	blockHash common.Hash,
 	frp etypes.FeeRecipientProvider,
 	height uint64,
+	blobs int,
 ) {
 	t.Helper()
 	executionPayload, ok := msg.(*etypes.MsgExecutionPayload)
@@ -348,6 +422,8 @@ func assertExecutablePayload(
 	require.Len(t, executionPayload.PrevPayloadEvents, 1)
 	evmLog := executionPayload.PrevPayloadEvents[0]
 	require.Equal(t, evmLog.Address, zeroAddr.Bytes())
+
+	require.Len(t, executionPayload.BlobCommitments, blobs)
 }
 
 func ctxWithAppHash(t *testing.T, appHash common.Hash) context.Context {
@@ -409,6 +485,7 @@ type mockEngineAPI struct {
 	headerByTypeFunc        func(context.Context, ethclient.HeadType) (*types.Header, error)
 	forkchoiceUpdatedV3Func func(context.Context, eengine.ForkchoiceStateV1, *eengine.PayloadAttributes) (eengine.ForkChoiceResponse, error)
 	newPayloadV3Func        func(context.Context, eengine.ExecutableData, []common.Hash, *common.Hash) (eengine.PayloadStatusV1, error)
+	getPayloadV3Func        func(ctx context.Context, payloadID eengine.PayloadID) (*eengine.ExecutionPayloadEnvelope, error)
 }
 
 // newMockEngineAPI returns a new mock engine API with a fuzzer and a mock engine client.
@@ -533,6 +610,10 @@ func (m *mockEngineAPI) ForkchoiceUpdatedV3(ctx context.Context, update eengine.
 }
 
 func (m *mockEngineAPI) GetPayloadV3(ctx context.Context, payloadID eengine.PayloadID) (*eengine.ExecutionPayloadEnvelope, error) {
+	if m.getPayloadV3Func != nil {
+		return m.getPayloadV3Func(ctx, payloadID)
+	}
+
 	return m.mock.GetPayloadV3(ctx, payloadID)
 }
 
