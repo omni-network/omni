@@ -176,7 +176,8 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 	// Get existing attestation (by unique key) or insert new one.
 	var attID uint64
 	existing, err := k.attTable.GetByAttestationRoot(ctx, attRoot[:])
-	if ormerrors.IsNotFound(err) {
+	insertAtt := ormerrors.IsNotFound(err)
+	if insertAtt {
 		// Insert new attestation
 		attID, err = k.attTable.InsertReturningId(ctx, &Attestation{
 			ChainId:         agg.AttestHeader.SourceChainId,
@@ -222,6 +223,7 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 	}
 
 	// Insert signatures
+	var insertSig bool
 	for _, sig := range agg.Signatures {
 		sigTup, err := sig.ToXChain()
 		if err != nil {
@@ -254,6 +256,15 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 			)
 		} else if err != nil {
 			return errors.Wrap(err, "insert signature")
+		} else {
+			insertSig = true
+		}
+	}
+
+	if insertAtt && !insertSig {
+		// Revert insertion of new attestations without valid signatures.
+		if err = k.attTable.DeleteBy(ctx, AttestationPrimaryKey{}.WithId(attID)); err != nil {
+			return errors.Wrap(err, "delete attestation")
 		}
 	}
 
