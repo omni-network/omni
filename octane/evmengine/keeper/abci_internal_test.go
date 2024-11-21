@@ -347,19 +347,17 @@ func TestOptimistic(t *testing.T) {
 	mockEngine, err := newMockEngineAPI(0)
 	require.NoError(t, err)
 
-	vals, ok, err := cmtAPI.Validators(ctx, height)
-	require.NoError(t, err)
-	require.True(t, ok)
-
-	// Proposer is val0
-	val0 := vals.Validators[0].Address
-	// Optimistic build will trigger if we are next proposer; ie. val1
-	val1, err := k1util.PubKeyToAddress(vals.Validators[1].PubKey)
+	vals, err := cmtAPI.Validators(ctx, height)
 	require.NoError(t, err)
 
+	// Optimistic build will trigger if we are next proposer
+	nextProposer := vals.CopyIncrementProposerPriority(1).Proposer
+	localAddr, err := k1util.PubKeyToAddress(nextProposer.PubKey)
+	require.NoError(t, err)
 	ap := mockAddressProvider{
-		address: val1,
+		address: localAddr,
 	}
+
 	frp := newRandomFeeRecipientProvider()
 	keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, mockLogProvider{})
 	require.NoError(t, err)
@@ -370,7 +368,6 @@ func TestOptimistic(t *testing.T) {
 
 	timestamp := time.Now()
 	ctx = ctx.
-		WithProposer(val0.Bytes()).
 		WithBlockHeight(height).
 		WithBlockTime(timestamp)
 

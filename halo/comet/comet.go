@@ -4,118 +4,52 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/tracer"
 
+	lightprovider "github.com/cometbft/cometbft/light/provider"
+	lighthttp "github.com/cometbft/cometbft/light/provider/http"
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	cmttypes "github.com/cometbft/cometbft/types"
-
-	"github.com/ethereum/go-ethereum/common"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
-const perPageConst = 100
-
 var _ API = adapter{}
 
 type API interface {
-	// Validators returns the cometBFT validators at the given height or false if not
-	// available (probably due to snapshot sync after height).
-	Validators(ctx context.Context, height int64) (*cmttypes.ValidatorSet, bool, error)
-
-	// IsValidator returns true if the given address is a validator at the latest height.
-	// It is best-effort, so returns false on any error.
-	IsValidator(ctx context.Context, valAddress common.Address) bool
+	// Validators returns the cometBFT validators at the given height.
+	Validators(ctx context.Context, height int64) (*cmttypes.ValidatorSet, error)
 }
 
-func NewAPI(cl rpcclient.Client) API {
-	return adapter{cl: cl}
+func NewAPI(cl rpcclient.Client, chainID string) API {
+	return adapter{
+		cl: lighthttp.NewWithClient(chainID, remoteCl{cl}),
+	}
 }
 
 type adapter struct {
-	cl rpcclient.Client
+	cl lightprovider.Provider
 }
 
-// IsValidator returns true if the given address is a validator at the latest height.
-// It is best-effort, so returns false on any error.
-func (a adapter) IsValidator(ctx context.Context, valAddress common.Address) bool {
-	ctx, span := tracer.Start(ctx, "comet/is_validator")
-	defer span.End()
-
-	status, err := a.cl.Status(ctx)
-	if err != nil || status.SyncInfo.CatchingUp {
-		return false // Best effort
-	}
-
-	valset, ok, err := a.Validators(ctx, status.SyncInfo.LatestBlockHeight)
-	if !ok || err != nil {
-		return false // Best effort
-	}
-
-	for _, val := range valset.Validators {
-		addr, err := k1util.PubKeyToAddress(val.PubKey)
-		if err != nil {
-			continue // Best effort
-		}
-
-		if addr == valAddress {
-			return true
-		}
-	}
-
-	return false
-}
-
-// Validators returns the cometBFT validators at the given height or false if not
-// available (probably due to snapshot sync after height).
-func (a adapter) Validators(ctx context.Context, height int64) (*cmttypes.ValidatorSet, bool, error) {
+// Validators returns the cometBFT validators at the given height.
+func (a adapter) Validators(ctx context.Context, height int64) (*cmttypes.ValidatorSet, error) {
 	ctx, span := tracer.Start(ctx, "comet/validators", trace.WithAttributes(attribute.Int64("height", height)))
 	defer span.End()
 
-	perPage := perPageConst // Can't take a pointer to a const directly.
-
-	var vals []*cmttypes.Validator
-	for page := 1; ; page++ { // Pages are 1-indexed.
-		if page > 10 { // Sanity check.
-			return nil, false, errors.New("too many validators [BUG]")
-		}
-
-		status, err := a.cl.Status(ctx)
-		if err != nil {
-			return nil, false, errors.Wrap(err, "fetch status")
-		} else if height < status.SyncInfo.EarliestBlockHeight {
-			// This can happen if height is before snapshot restore.
-			return nil, false, nil
-		}
-
-		valResp, err := a.cl.Validators(ctx, &height, &page, &perPage)
-		if err != nil {
-			return nil, false, errors.Wrap(err, "fetch validators")
-		}
-
-		for _, v := range valResp.Validators {
-			vals = append(vals, cmttypes.NewValidator(v.PubKey, v.VotingPower))
-		}
-
-		if len(vals) == valResp.Total {
-			break
-		}
+	block, err := a.cl.LightBlock(ctx, height) // LightBlock does all the heavy lifting to query the validator set.
+	if err != nil {
+		return nil, errors.Wrap(err, "fetch light block")
 	}
 
-	// cmttypes.NewValidatorSet() panics on error, so manually construct it for proper error handling.
-	valset := new(cmttypes.ValidatorSet)
-	if err := valset.UpdateWithChangeSet(vals); err != nil {
-		return nil, false, errors.Wrap(err, "update with change set")
-	}
-	if len(vals) > 0 {
-		valset.IncrementProposerPriority(1) // See cmttypes.NewValidatorSet
-	}
+	return block.ValidatorSet, nil
+}
 
-	if err := valset.ValidateBasic(); err != nil {
-		return nil, false, errors.Wrap(err, "validate basic")
-	}
+// remoteCl is a wrapper around rpcclient.Client to implement rpcclient.RemoteClient.
+type remoteCl struct {
+	rpcclient.Client
+}
 
-	return valset, true, nil
+func (remoteCl) Remote() string {
+	return ""
 }

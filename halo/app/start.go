@@ -175,7 +175,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 	}
 
 	rpcClient := rpclocal.New(cmtNode)
-	cmtAPI := comet.NewAPI(rpcClient)
+	cmtAPI := comet.NewAPI(rpcClient, cfg.Network.Static().OmniConsensusChainIDStr())
 	app.SetCometAPI(cmtAPI)
 
 	clientCtx := app.ClientContext(ctx).WithClient(rpcClient).WithHomeDir(cfg.HomeDir)

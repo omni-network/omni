@@ -165,29 +165,21 @@ func (k *Keeper) parseAndVerifyProposedPayload(ctx context.Context, msg *types.M
 }
 
 // isNextProposer returns true if the local node is the proposer
-// for the next block. It also returns the next block height.
+// for the next block.
 //
 // Note that the validator set can change, so this is an optimistic check.
-func (k *Keeper) isNextProposer(ctx context.Context, currentProposer []byte, currentHeight int64) (bool, error) {
+func (k *Keeper) isNextProposer(ctx context.Context, currentHeight int64) (bool, error) {
 	// cometAPI is lazily set and may be nil on startup (e.g. rollbacks).
 	if k.cmtAPI == nil {
 		return false, nil
 	}
 
-	valset, ok, err := k.cmtAPI.Validators(ctx, currentHeight)
+	valset, err := k.cmtAPI.Validators(ctx, currentHeight)
 	if err != nil {
 		return false, err
-	} else if !ok || len(valset.Validators) == 0 {
-		return false, errors.New("validators not available")
 	}
 
-	idx, _ := valset.GetByAddress(currentProposer)
-	if idx < 0 {
-		return false, errors.New("proposer not in validator set")
-	}
-
-	nextIdx := int(idx+1) % len(valset.Validators)
-	nextProposer := valset.Validators[nextIdx]
+	nextProposer := valset.CopyIncrementProposerPriority(1).Proposer
 	nextAddr, err := k1util.PubKeyToAddress(nextProposer.PubKey)
 	if err != nil {
 		return false, err

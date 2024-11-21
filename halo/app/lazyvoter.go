@@ -245,7 +245,7 @@ func (l *voterLoader) LocalAddress() common.Address {
 		return v.LocalAddress()
 	}
 
-	return common.Address{}
+	return l.localAddr
 }
 
 func (l *voterLoader) TrimBehind(minsByChain map[xchain.ChainVersion]uint64) int {
