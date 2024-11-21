@@ -52,7 +52,7 @@ func Deploy(ctx context.Context, network netconf.Network, backends ethbackend.Ba
 		return errors.Wrap(err, "backend mock l2")
 	}
 
-	if err := deployToken(ctx, mockl1Backend, l1VaultSalt); err != nil {
+	if err := deployToken(ctx, mockl1Backend, l1TokenSalt); err != nil {
 		return errors.Wrap(err, "deploy l1 token")
 	}
 
