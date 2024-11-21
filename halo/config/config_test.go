@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	halocfg "github.com/omni-network/omni/halo/config"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
@@ -37,6 +38,7 @@ func TestDefaultConfigReference(t *testing.T) {
 					"mock": "http://mock_rpc:8545",
 				}
 				cfg.UnsafeSkipUpgrades = []int{1, 2, 3}
+				cfg.FeatureFlags = feature.Flags{"a", "b"}
 
 				return cfg
 			},

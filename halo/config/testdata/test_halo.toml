@@ -8,6 +8,7 @@ version = "main"
 # Omni network to participate in: mainnet, testnet, or devnet.
 network = "omega"
 
+feature-flags = ["a","b"]
 #######################################################################
 ###                       Halo Octane Options                       ###
 #######################################################################

@@ -1,4 +1,5 @@
 // Package evmstaking monitors the Staking pre-deploy contract and converts
+// Package evmstaking monitors the Staking pre-deploy contract and converts
 // its log events to cosmosSDK x/staking logic.
 package evmstaking
 

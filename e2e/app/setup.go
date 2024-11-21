@@ -155,9 +155,8 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 		omniEVM := omniEVMByPrefix(def.Testnet, node.Name)
 
 		if err := writeHaloConfig(
-			def.Testnet.Network,
+			def,
 			nodeDir,
-			def.Cfg,
 			logCfg,
 			depCfg.testConfig,
 			node.Mode,
@@ -388,9 +387,8 @@ func writeHaloAddressBook(network netconf.ID, path string, node *e2e.Node) error
 
 // writeHaloConfig generates an halo application config for a node and writes it to disk.
 func writeHaloConfig(
-	network netconf.ID,
+	def Definition,
 	nodeDir string,
-	defCfg DefinitionConfig,
 	logCfg log.Config,
 	testCfg bool,
 	mode e2e.Mode,
@@ -405,20 +403,21 @@ func writeHaloConfig(
 		cfg.MinRetainBlocks = 0
 	}
 
-	cfg.Network = network
+	cfg.Network = def.Testnet.Network
 	cfg.HomeDir = nodeDir
 	cfg.RPCEndpoints = endpoints
 	cfg.EngineEndpoint = fmt.Sprintf("http://%s:8551", evmInstance) //nolint:nosprintfhostport // net.JoinHostPort doesn't prefix http.
 	cfg.EngineJWTFile = "/halo/config/jwtsecret"                    // Absolute path inside docker container
-	cfg.Tracer.Endpoint = defCfg.TracingEndpoint
-	cfg.Tracer.Headers = defCfg.TracingHeaders
+	cfg.Tracer.Endpoint = def.Cfg.TracingEndpoint
+	cfg.Tracer.Headers = def.Cfg.TracingHeaders
+	cfg.FeatureFlags = def.Manifest.FeatureFlags
 
 	if testCfg {
 		cfg.SnapshotInterval = 1   // Write snapshots each block in e2e tests
 		cfg.SnapshotKeepRecent = 0 // Keep all snapshots in e2e tests
 	}
 
-	if network == netconf.Staging {
+	if def.Testnet.Network == netconf.Staging {
 		logCfg.Level = log.LevelDebug // Debug log levels on staging
 	}
 

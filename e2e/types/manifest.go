@@ -2,6 +2,7 @@ package types
 
 import (
 	"github.com/omni-network/omni/e2e/app/key"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/netconf"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -118,6 +119,9 @@ type Manifest struct {
 	// NetworkUpgradeHeight defines the network upgrade height, default is genesis, negative is disabled.
 	// Note that it might be scheduled at a later height.
 	NetworkUpgradeHeight int64 `toml:"network_upgrade_height"`
+
+	// FeatureFlags defines the feature flags to enable.
+	FeatureFlags feature.Flags `toml:"feature_flags"`
 }
 
 // Seeds returns a map of seed nodes by name.
