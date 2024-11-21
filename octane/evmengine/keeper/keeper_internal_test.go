@@ -22,88 +22,49 @@ func TestKeeper_isNextProposer(t *testing.T) {
 	t.Parallel()
 	type args struct {
 		height         int64
-		validatorsFunc func(context.Context, int64) (*cmttypes.ValidatorSet, bool, error)
-		current        int
-		next           int
-		header         func(height int64, address []byte) cmtproto.Header
+		validatorsFunc func(context.Context, int64) (*cmttypes.ValidatorSet, error)
+		incMoreTimes   int32
+		header         func(height int64) cmtproto.Header
 	}
 	height := int64(1)
 	tests := []struct {
-		name       string
-		args       args
-		want       bool
-		wantHeight uint64
-		wantErr    bool
+		name    string
+		args    args
+		want    bool
+		wantErr bool
 	}{
 		{
-			name: "is next proposer",
+			name: "not proposer",
 			args: args{
-				height:  height,
-				current: 0,
-				next:    1,
-				header: func(height int64, address []byte) cmtproto.Header {
-					return cmtproto.Header{Height: height, ProposerAddress: address}
+				height:       height,
+				incMoreTimes: 9,
+				header: func(height int64) cmtproto.Header {
+					return cmtproto.Header{Height: height}
 				},
 			},
-			want:       true,
-			wantHeight: 2,
-			wantErr:    false,
+			want:    false,
+			wantErr: false,
 		},
 		{
-			name: "proposer false",
+			name: "next proposer",
 			args: args{
-				height:  height,
-				current: 0,
-				next:    2,
-				header: func(height int64, address []byte) cmtproto.Header {
-					return cmtproto.Header{Height: height, ProposerAddress: address}
+				height: height,
+				header: func(height int64) cmtproto.Header {
+					return cmtproto.Header{Height: height}
 				},
 			},
-			want:       false,
-			wantHeight: 2,
-			wantErr:    false,
+			want:    true,
+			wantErr: false,
 		},
 		{
 			name: "validatorsFunc error",
 			args: args{
-				height:  height,
-				current: 0,
-				next:    1,
-				validatorsFunc: func(ctx context.Context, i int64) (*cmttypes.ValidatorSet, bool, error) {
-					return nil, false, errors.New("error")
+				height: height,
+				validatorsFunc: func(ctx context.Context, i int64) (*cmttypes.ValidatorSet, error) {
+					return nil, errors.New("error")
 				},
-				header: func(height int64, address []byte) cmtproto.Header {
-					return cmtproto.Header{Height: height, ProposerAddress: address}
-				},
-			},
-			want:    false,
-			wantErr: true,
-		},
-		{
-			name: "validatorsFunc not ok",
-			args: args{
-				height:  height,
-				current: 0,
-				next:    1,
-				validatorsFunc: func(ctx context.Context, i int64) (*cmttypes.ValidatorSet, bool, error) {
-					return nil, false, nil
-				},
-				header: func(height int64, address []byte) cmtproto.Header {
-					return cmtproto.Header{Height: height, ProposerAddress: address}
-				},
-			},
-			want:    false,
-			wantErr: true,
-		},
-		{
-			name: "invalid val index",
-			args: args{
-				height:  height,
-				current: 0,
-				next:    1,
-
-				header: func(height int64, address []byte) cmtproto.Header {
-					return cmtproto.Header{Height: height, ProposerAddress: []byte("invalid")}
+				header: func(height int64) cmtproto.Header {
+					return cmtproto.Header{Height: height}
 				},
 			},
 			want:    false,
@@ -120,9 +81,9 @@ func TestKeeper_isNextProposer(t *testing.T) {
 			require.NoError(t, err)
 
 			cmtAPI := newMockCometAPI(t, tt.args.validatorsFunc)
-			header := tt.args.header(height, cmtAPI.validatorSet.Validators[tt.args.current].Address)
+			header := tt.args.header(height)
 
-			nxtAddr, err := k1util.PubKeyToAddress(cmtAPI.validatorSet.Validators[tt.args.next].PubKey)
+			nxtAddr, err := k1util.PubKeyToAddress(cmtAPI.validatorSet.CopyIncrementProposerPriority(1 + tt.args.incMoreTimes).Proposer.PubKey)
 			require.NoError(t, err)
 
 			ctx, storeService := setupCtxStore(t, &header)
@@ -136,7 +97,7 @@ func TestKeeper_isNextProposer(t *testing.T) {
 			keeper.SetCometAPI(cmtAPI)
 			populateGenesisHead(ctx, t, keeper)
 
-			got, err := keeper.isNextProposer(ctx, ctx.BlockHeader().ProposerAddress, ctx.BlockHeader().Height)
+			got, err := keeper.isNextProposer(ctx, ctx.BlockHeader().Height)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("isNextProposer() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -156,11 +117,11 @@ type mockCometAPI struct {
 	comet.API
 	fuzzer         *fuzz.Fuzzer
 	validatorSet   *cmttypes.ValidatorSet
-	validatorsFunc func(context.Context, int64) (*cmttypes.ValidatorSet, bool, error)
+	validatorsFunc func(context.Context, int64) (*cmttypes.ValidatorSet, error)
 	height         int64
 }
 
-func newMockCometAPI(t *testing.T, valFun func(context.Context, int64) (*cmttypes.ValidatorSet, bool, error)) *mockCometAPI {
+func newMockCometAPI(t *testing.T, valFun func(context.Context, int64) (*cmttypes.ValidatorSet, error)) *mockCometAPI {
 	t.Helper()
 	fuzzer := newFuzzer(0)
 	valSet := fuzzValidators(t, fuzzer)
@@ -178,20 +139,19 @@ func fuzzValidators(t *testing.T, fuzzer *fuzz.Fuzzer) *cmttypes.ValidatorSet {
 
 	fuzzer.NilChance(0).NumElements(3, 7).Fuzz(&validators)
 
-	valSet := new(cmttypes.ValidatorSet)
-	err := valSet.UpdateWithChangeSet(validators)
+	valSet, err := cmttypes.ValidatorSetFromExistingValidators(validators)
 	require.NoError(t, err)
 
 	return valSet
 }
 
-func (m *mockCometAPI) Validators(ctx context.Context, height int64) (*cmttypes.ValidatorSet, bool, error) {
+func (m *mockCometAPI) Validators(ctx context.Context, height int64) (*cmttypes.ValidatorSet, error) {
 	m.height = height
 	if m.validatorsFunc != nil {
 		return m.validatorsFunc(ctx, height)
 	}
 
-	return m.validatorSet, true, nil
+	return m.validatorSet, nil
 }
 
 // newFuzzer - create a new custom cmttypes.Validator fuzzer.
