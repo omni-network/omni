@@ -127,7 +127,7 @@ func TestTomlConfig(t *testing.T) {
 	}
 
 	// Create a fuzzer with small uint64s and ansi strings (toml struggles with large numbers and UTF8).
-	fuzzer := fuzz.New().NumElements(1, 8).Funcs(
+	fuzzer := fuzz.New().NilChance(0).NumElements(1, 8).Funcs(
 		func(i *uint64, c fuzz.Continue) {
 			*i = uint64(rand.Intn(1_000_000))
 		},
