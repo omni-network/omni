@@ -92,7 +92,6 @@ interface IFeeOracleV2 is IFeeOracle, IConversionRateOracleV2 {
         uint64 execPostsTo;
         uint64 execGasPrice;
         uint64 execToNativeRate;
-        uint64 dataChainId;
         uint64 dataSizeBuffer;
         uint64 dataGasPrice;
         uint64 dataToNativeRate;

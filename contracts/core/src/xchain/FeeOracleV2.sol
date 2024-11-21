@@ -101,7 +101,6 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
             execPostsTo: execParams.postsTo,
             execGasPrice: execParams.execGasPrice,
             execToNativeRate: execParams.toNativeRate,
-            dataChainId: execParams.postsTo,
             dataSizeBuffer: dataParams.sizeBuffer,
             dataGasPrice: dataParams.dataGasPrice,
             dataToNativeRate: dataParams.toNativeRate
