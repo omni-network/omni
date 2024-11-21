@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package halo.evmstaking2.keeper;
+
+import "cosmos/orm/v1/orm.proto";
+import "octane/evmengine/types/tx.proto";
+
+option go_package = "halo/evmstaking2/keeper";
+
+// EVMEvents is a list of unparsed EVM events.
+message EVMEvents {
+  option (cosmos.orm.v1.table) = {
+    id: 1;
+    primary_key: { fields: "id", auto_increment: true }
+  };
+
+  uint64 id                              = 1;
+  octane.evmengine.types.EVMEvent  event = 2;
+}
