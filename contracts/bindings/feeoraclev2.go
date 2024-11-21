@@ -29,18 +29,38 @@ var (
 	_ = abi.ConvertType
 )
 
-// IFeeOracleV2FeeParams is an auto generated low-level Go binding around an user-defined struct.
-type IFeeOracleV2FeeParams struct {
+// IFeeOracleV2DataFeeParams is an auto generated low-level Go binding around an user-defined struct.
+type IFeeOracleV2DataFeeParams struct {
 	ChainId      uint64
-	ExecGasPrice uint64
+	SizeBuffer   uint64
 	DataGasPrice uint64
 	ToNativeRate uint64
 }
 
+// IFeeOracleV2ExecFeeParams is an auto generated low-level Go binding around an user-defined struct.
+type IFeeOracleV2ExecFeeParams struct {
+	ChainId      uint64
+	PostsTo      uint64
+	ExecGasPrice uint64
+	ToNativeRate uint64
+}
+
+// IFeeOracleV2FeeParams is an auto generated low-level Go binding around an user-defined struct.
+type IFeeOracleV2FeeParams struct {
+	ExecChainId      uint64
+	ExecPostsTo      uint64
+	ExecGasPrice     uint64
+	ExecToNativeRate uint64
+	DataChainId      uint64
+	DataSizeBuffer   uint64
+	DataGasPrice     uint64
+	DataToNativeRate uint64
+}
+
 // FeeOracleV2MetaData contains all meta data concerning the FeeOracleV2 contract.
 var FeeOracleV2MetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"constructor\",\"inputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"CONVERSION_RATE_DENOM\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"baseGasLimit\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint24\",\"internalType\":\"uint24\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"bulkSetFeeParams\",\"inputs\":[{\"name\":\"params\",\"type\":\"tuple[]\",\"internalType\":\"structIFeeOracleV2.FeeParams[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"execGasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"dataGasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"toNativeRate\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"dataGasPrice\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"execGasPrice\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"feeFor\",\"inputs\":[{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"gasLimit\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"feeParams\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIFeeOracleV2.FeeParams\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"execGasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"dataGasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"toNativeRate\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"owner_\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"manager_\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"baseGasLimit_\",\"type\":\"uint24\",\"internalType\":\"uint24\"},{\"name\":\"protocolFee_\",\"type\":\"uint72\",\"internalType\":\"uint72\"},{\"name\":\"params\",\"type\":\"tuple[]\",\"internalType\":\"structIFeeOracleV2.FeeParams[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"execGasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"dataGasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"toNativeRate\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"manager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"protocolFee\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint72\",\"internalType\":\"uint72\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setBaseGasLimit\",\"inputs\":[{\"name\":\"gasLimit\",\"type\":\"uint24\",\"internalType\":\"uint24\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setDataGasPrice\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setExecGasPrice\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setManager\",\"inputs\":[{\"name\":\"manager_\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setProtocolFee\",\"inputs\":[{\"name\":\"fee\",\"type\":\"uint72\",\"internalType\":\"uint72\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setToNativeRate\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"rate\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"toNativeRate\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"version\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"pure\"},{\"type\":\"event\",\"name\":\"BaseGasLimitSet\",\"inputs\":[{\"name\":\"baseGasLimit\",\"type\":\"uint24\",\"indexed\":false,\"internalType\":\"uint24\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DataGasPriceSet\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ExecGasPriceSet\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"FeeParamsSet\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"execGasPrice\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"dataGasPrice\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"toNativeRate\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ManagerSet\",\"inputs\":[{\"name\":\"manager\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ProtocolFeeSet\",\"inputs\":[{\"name\":\"protocolFee\",\"type\":\"uint72\",\"indexed\":false,\"internalType\":\"uint72\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ToNativeRateSet\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"toNativeRate\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"InvalidInitialization\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotInitializing\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OwnableInvalidOwner\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"OwnableUnauthorizedAccount\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}]}]",
-	Bin: "0x608060405234801561001057600080fd5b5061001961001e565b6100d0565b7ff0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a00805468010000000000000000900460ff161561006e5760405163f92ee8a960e01b815260040160405180910390fd5b80546001600160401b03908116146100cd5780546001600160401b0319166001600160401b0390811782556040519081527fc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d29060200160405180910390a15b50565b6114a2806100df6000396000f3fe608060405234801561001057600080fd5b50600436106101375760003560e01c80638df66e34116100b8578063c1af080b1161007c578063c1af080b146103d4578063d0ebdbe7146103e7578063e21497b9146103fa578063f16fd2871461042d578063f2fde38b14610440578063fcb1deb11461045357600080fd5b80638df66e341461034b5780638f9d6ace14610375578063a8d8216f1461037f578063b0e21e8a14610392578063b9923e1c146103c157600080fd5b80635e837ee7116100ff5780635e837ee7146102ac578063715018a6146102bf5780638b7bfd70146102c75780638da5cb5b146103085780638dd9523c1461033857600080fd5b80632d4634a41461013c578063415070af14610213578063481c6a751461025e57806354fd4d50146102905780635d3acee214610297575b600080fd5b6101c761014a366004610fe0565b60408051608080820183526000808352602080840182905283850182905260609384018290526001600160401b039586168252600181529084902084519283018552548086168352600160401b8104861691830191909152600160801b8104851693820193909352600160c01b9092049092169181019190915290565b60405161020a919081516001600160401b039081168252602080840151821690830152604080840151821690830152606092830151169181019190915260800190565b60405180910390f35b610246610221366004610fe0565b6001600160401b03908116600090815260016020526040902054600160801b90041690565b6040516001600160401b03909116815260200161020a565b60005461027890600160601b90046001600160a01b031681565b6040516001600160a01b03909116815260200161020a565b6002610246565b6102aa6102a5366004611002565b610466565b005b6102aa6102ba366004611002565b6104ae565b6102aa6104e9565b6102fa6102d5366004610fe0565b6001600160401b03908116600090815260016020526040902054600160c01b90041690565b60405190815260200161020a565b7f9016d09d72d40fdae2fd8ceac6b6234c7706214fd39c1cd1e609a0528c199300546001600160a01b0316610278565b6102fa610346366004611035565b6104fd565b60005461036190600160481b900462ffffff1681565b60405162ffffff909116815260200161020a565b6102fa620f424081565b6102aa61038d3660046110db565b6106ad565b6000546103a79068ffffffffffffffffff1681565b60405168ffffffffffffffffff909116815260200161020a565b6102aa6103cf366004611002565b6106c1565b6102aa6103e2366004611141565b6106fc565b6102aa6103f5366004611199565b610737565b610246610408366004610fe0565b6001600160401b03908116600090815260016020526040902054600160401b90041690565b6102aa61043b3660046111cd565b61079e565b6102aa61044e366004611199565b6108d6565b6102aa610461366004611252565b610911565b600054600160601b90046001600160a01b031633146104a05760405162461bcd60e51b81526004016104979061126d565b60405180910390fd5b6104aa8282610922565b5050565b600054600160601b90046001600160a01b031633146104df5760405162461bcd60e51b81526004016104979061126d565b6104aa82826109ea565b6104f1610ad1565b6104fb6000610b2c565b565b6001600160401b0380851660009081526001602052604081208054919290918391620f42409161053e91600160c01b8204811691600160401b9004166112ba565b6001600160401b031661055191906112e5565b8254909150600090620f424090610581906001600160401b03600160c01b8204811691600160801b9004166112ba565b6001600160401b031661059491906112e5565b9050600082116105e65760405162461bcd60e51b815260206004820152601a60248201527f4665654f7261636c6556323a206e6f2066656520706172616d730000000000006044820152606401610497565b600081116106365760405162461bcd60e51b815260206004820152601a60248201527f4665654f7261636c6556323a206e6f2066656520706172616d730000000000006044820152606401610497565b6000610643876010611307565b905061064f8282611307565b600054849061066b908990600160481b900462ffffff16611324565b6001600160401b031661067e9190611307565b600054610696919068ffffffffffffffffff1661134b565b6106a0919061134b565b9998505050505050505050565b6106b5610ad1565b6106be81610b9d565b50565b600054600160601b90046001600160a01b031633146106f25760405162461bcd60e51b81526004016104979061126d565b6104aa8282610bfc565b600054600160601b90046001600160a01b0316331461072d5760405162461bcd60e51b81526004016104979061126d565b6104aa8282610cc1565b61073f610ad1565b6001600160a01b0381166107955760405162461bcd60e51b815260206004820152601c60248201527f4665654f7261636c6556323a206e6f207a65726f206d616e61676572000000006044820152606401610497565b6106be81610eb5565b7ff0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a008054600160401b810460ff1615906001600160401b03166000811580156107e35750825b90506000826001600160401b031660011480156107ff5750303b155b90508115801561080d575080155b1561082b5760405163f92ee8a960e01b815260040160405180910390fd5b845467ffffffffffffffff19166001178555831561085557845460ff60401b1916600160401b1785555b61085e8b610f10565b6108678a610eb5565b61087089610b9d565b61087988610f21565b6108838787610cc1565b83156108c957845460ff60401b19168555604051600181527fc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d29060200160405180910390a15b5050505050505050505050565b6108de610ad1565b6001600160a01b03811661090857604051631e4fbdf760e01b815260006004820152602401610497565b6106be81610b2c565b610919610ad1565b6106be81610f21565b6000816001600160401b03161161094b5760405162461bcd60e51b81526004016104979061135e565b816001600160401b03166000036109745760405162461bcd60e51b815260040161049790611395565b6001600160401b03828116600081815260016020908152604091829020805467ffffffffffffffff60801b1916600160801b95871695860217905581519283528201929092527fd7d8dd5a956a8bd500e02d52d0a9dd8a0e2955ec48771a8c9da485e6706c66fb91015b60405180910390a15050565b6000816001600160401b031611610a3f5760405162461bcd60e51b81526020600482015260196024820152784665654f7261636c6556323a206e6f207a65726f207261746560381b6044820152606401610497565b816001600160401b0316600003610a685760405162461bcd60e51b815260040161049790611395565b6001600160401b0382811660008181526001602090815260409182902080546001600160c01b0316600160c01b95871695860217905581519283528201929092527fb4eba3689ad3ae3c17af326b345f7ac3d1f996301aab3598d7dd6cece2666e4d91016109de565b33610b037f9016d09d72d40fdae2fd8ceac6b6234c7706214fd39c1cd1e609a0528c199300546001600160a01b031690565b6001600160a01b0316146104fb5760405163118cdaa760e01b8152336004820152602401610497565b7f9016d09d72d40fdae2fd8ceac6b6234c7706214fd39c1cd1e609a0528c19930080546001600160a01b031981166001600160a01b03848116918217845560405192169182907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e090600090a3505050565b600080546bffffff0000000000000000001916600160481b62ffffff8416908102919091179091556040519081527fb2497d19702e6a33eb2a5487a9ad5977a0284bfe1ccad332e31b8a81a8c5ebaf906020015b60405180910390a150565b6000816001600160401b031611610c255760405162461bcd60e51b81526004016104979061135e565b816001600160401b0316600003610c4e5760405162461bcd60e51b815260040161049790611395565b6001600160401b0382811660008181526001602090815260409182902080546fffffffffffffffff00000000000000001916600160401b95871695860217905581519283528201929092527fe0e5abb8929e27a69d77f47a4e3f9575411a5be1fa596e5b55078d7850f358db91016109de565b60005b81811015610eb0576000838383818110610ce057610ce06113cc565b905060800201803603810190610cf691906113e2565b9050600081602001516001600160401b031611610d255760405162461bcd60e51b81526004016104979061135e565b600081604001516001600160401b031611610d525760405162461bcd60e51b81526004016104979061135e565b600081606001516001600160401b031611610dab5760405162461bcd60e51b81526020600482015260196024820152784665654f7261636c6556323a206e6f207a65726f207261746560381b6044820152606401610497565b80516001600160401b0316600003610dd55760405162461bcd60e51b815260040161049790611395565b80516001600160401b039081166000908152600160209081526040918290208451815483870151858801516060808a01519489166fffffffffffffffffffffffffffffffff199094168417600160401b938a16938402176fffffffffffffffffffffffffffffffff16600160801b928a169283026001600160c01b031617600160c01b959099169485029890981790945585519182529381019390935292820152918201527fe71d0f9609b0d14693633a9bdbc9c8b24a957f4141779d70de5c51913ce2d53d9060800160405180910390a150600101610cc4565b505050565b600080546bffffffffffffffffffffffff16600160601b6001600160a01b038416908102919091179091556040519081527f60a0f5b9f9e81e98216071b85826681c796256fe3d1354ecb675580fba64fa6990602001610bf1565b610f18610f73565b6106be81610fbc565b6000805468ffffffffffffffffff191668ffffffffffffffffff83169081179091556040519081527f92c98513056b0d0d263b0f7153c99e1651791a983e75fc558b424b3aa0b623f790602001610bf1565b7ff0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a0054600160401b900460ff166104fb57604051631afcd79f60e31b815260040160405180910390fd5b6108de610f73565b80356001600160401b0381168114610fdb57600080fd5b919050565b600060208284031215610ff257600080fd5b610ffb82610fc4565b9392505050565b6000806040838503121561101557600080fd5b61101e83610fc4565b915061102c60208401610fc4565b90509250929050565b6000806000806060858703121561104b57600080fd5b61105485610fc4565b935060208501356001600160401b038082111561107057600080fd5b818701915087601f83011261108457600080fd5b81358181111561109357600080fd5b8860208285010111156110a557600080fd5b6020830195508094505050506110bd60408601610fc4565b905092959194509250565b803562ffffff81168114610fdb57600080fd5b6000602082840312156110ed57600080fd5b610ffb826110c8565b60008083601f84011261110857600080fd5b5081356001600160401b0381111561111f57600080fd5b6020830191508360208260071b850101111561113a57600080fd5b9250929050565b6000806020838503121561115457600080fd5b82356001600160401b0381111561116a57600080fd5b611176858286016110f6565b90969095509350505050565b80356001600160a01b0381168114610fdb57600080fd5b6000602082840312156111ab57600080fd5b610ffb82611182565b803568ffffffffffffffffff81168114610fdb57600080fd5b60008060008060008060a087890312156111e657600080fd5b6111ef87611182565b95506111fd60208801611182565b945061120b604088016110c8565b9350611219606088016111b4565b925060808701356001600160401b0381111561123457600080fd5b61124089828a016110f6565b979a9699509497509295939492505050565b60006020828403121561126457600080fd5b610ffb826111b4565b60208082526018908201527f4665654f7261636c6556323a206e6f74206d616e616765720000000000000000604082015260600190565b634e487b7160e01b600052601160045260246000fd5b6001600160401b038181168382160280821691908281146112dd576112dd6112a4565b505092915050565b60008261130257634e487b7160e01b600052601260045260246000fd5b500490565b808202811582820484141761131e5761131e6112a4565b92915050565b6001600160401b03818116838216019080821115611344576113446112a4565b5092915050565b8082018082111561131e5761131e6112a4565b6020808252601e908201527f4665654f7261636c6556323a206e6f207a65726f206761732070726963650000604082015260600190565b6020808252601d908201527f4665654f7261636c6556323a206e6f207a65726f20636861696e206964000000604082015260600190565b634e487b7160e01b600052603260045260246000fd5b6000608082840312156113f457600080fd5b604051608081018181106001600160401b038211171561142457634e487b7160e01b600052604160045260246000fd5b60405261143083610fc4565b815261143e60208401610fc4565b602082015261144f60408401610fc4565b604082015261146060608401610fc4565b6060820152939250505056fea2646970667358221220e06b55f5ef6f57c1a669387c37c882339abf517a641005f9f4d25c615022ee7764736f6c63430008180033",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"CONVERSION_RATE_DENOM\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"baseGasLimit\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint24\",\"internalType\":\"uint24\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"bulkSetDataFeeParams\",\"inputs\":[{\"name\":\"params\",\"type\":\"tuple[]\",\"internalType\":\"structIFeeOracleV2.DataFeeParams[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"sizeBuffer\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"dataGasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"toNativeRate\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"bulkSetExecFeeParams\",\"inputs\":[{\"name\":\"params\",\"type\":\"tuple[]\",\"internalType\":\"structIFeeOracleV2.ExecFeeParams[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"postsTo\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"execGasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"toNativeRate\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"dataGasPrice\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"dataSizeBuffer\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"dataToNativeRate\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"execGasPrice\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"execPostsTo\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"execToNativeRate\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"feeFor\",\"inputs\":[{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"gasLimit\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"feeParams\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIFeeOracleV2.FeeParams\",\"components\":[{\"name\":\"execChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"execPostsTo\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"execGasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"execToNativeRate\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"dataChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"dataSizeBuffer\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"dataGasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"dataToNativeRate\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"owner_\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"manager_\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"baseGasLimit_\",\"type\":\"uint24\",\"internalType\":\"uint24\"},{\"name\":\"protocolFee_\",\"type\":\"uint72\",\"internalType\":\"uint72\"},{\"name\":\"execParams\",\"type\":\"tuple[]\",\"internalType\":\"structIFeeOracleV2.ExecFeeParams[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"postsTo\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"execGasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"toNativeRate\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"dataParams\",\"type\":\"tuple[]\",\"internalType\":\"structIFeeOracleV2.DataFeeParams[]\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"sizeBuffer\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"dataGasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"toNativeRate\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"manager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"protocolFee\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint72\",\"internalType\":\"uint72\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setBaseGasLimit\",\"inputs\":[{\"name\":\"gasLimit\",\"type\":\"uint24\",\"internalType\":\"uint24\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setDataGasPrice\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setDataSizeBuffer\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"sizeBuffer\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setDataToNativeRate\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"rate\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setExecGasPrice\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setExecPostsTo\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"postsTo\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setExecToNativeRate\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"rate\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setManager\",\"inputs\":[{\"name\":\"manager_\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setProtocolFee\",\"inputs\":[{\"name\":\"fee\",\"type\":\"uint72\",\"internalType\":\"uint72\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"version\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"pure\"},{\"type\":\"event\",\"name\":\"BaseGasLimitSet\",\"inputs\":[{\"name\":\"baseGasLimit\",\"type\":\"uint24\",\"indexed\":false,\"internalType\":\"uint24\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DataFeeParamsSet\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"sizeBuffer\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"dataGasPrice\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"toNativeRate\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DataGasPriceSet\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DataSizeBufferSet\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"sizeBuffer\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DataToNativeRateSet\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"toNativeRate\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ExecFeeParamsSet\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"postsTo\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"execGasPrice\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"toNativeRate\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ExecGasPriceSet\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ExecPostsToSet\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"postsTo\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ExecToNativeRateSet\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"toNativeRate\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ManagerSet\",\"inputs\":[{\"name\":\"manager\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ProtocolFeeSet\",\"inputs\":[{\"name\":\"protocolFee\",\"type\":\"uint72\",\"indexed\":false,\"internalType\":\"uint72\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"InvalidInitialization\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotInitializing\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OwnableInvalidOwner\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"OwnableUnauthorizedAccount\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}]}]",
+	Bin: "0x608060405234801561001057600080fd5b5061001961001e565b6100d0565b7ff0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a00805468010000000000000000900460ff161561006e5760405163f92ee8a960e01b815260040160405180910390fd5b80546001600160401b03908116146100cd5780546001600160401b0319166001600160401b0390811782556040519081527fc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d29060200160405180910390a15b50565b611bf2806100df6000396000f3fe608060405234801561001057600080fd5b50600436106101c45760003560e01c8063944de210116100f9578063e21497b911610097578063f2fde38b11610071578063f2fde38b14610608578063f35eecbd1461061b578063f3ccd5001461062e578063fcb1deb11461064157600080fd5b8063e21497b91461056f578063e476d475146105a2578063f263980e146105d557600080fd5b8063b0e21e8a116100d3578063b0e21e8a14610507578063b9923e1c14610536578063d0ebdbe714610549578063dc8d7b2c1461055c57600080fd5b8063944de210146104ae5780639d1d335d146104c1578063a8d8216f146104f457600080fd5b806365c6850d116101665780638da5cb5b116101405780638da5cb5b146104295780638dd9523c146104595780638df66e341461047a5780638f9d6ace146104a457600080fd5b806365c6850d146103fb578063715018a61461040e57806379b1f0e91461041657600080fd5b8063481c6a75116101a2578063481c6a751461037c57806354fd4d50146103ae57806355bd7c10146103b55780635d3acee2146103e857600080fd5b80630a8041f4146101c95780632d4634a4146101de578063415070af14610331575b600080fd5b6101dc6101d736600461169c565b610654565b005b61031b6101ec366004611764565b6040805161010081018252600080825260208201819052918101829052606081018290526080810182905260a0810182905260c0810182905260e0810191909152506001600160401b03908116600081815260016020908152604080832081516080808201845291548088168252600160401b8082048916838701818152600160801b8085048c16868901908152600160c01b958690048d166060978801908152938b5260028a529988902088518089018a529054808e1682529485048d16818b019081529185048d16818a01908152959094048c169386019384528751610100810189529a8b5281518c16988b019890985297518a1695890195909552935188169187019190915293518616908501529051841660a08401529051831660c08301525190911660e082015290565b6040516103289190611786565b60405180910390f35b61036461033f366004611764565b6001600160401b03908116600090815260026020526040902054600160801b90041690565b6040516001600160401b039091168152602001610328565b60005461039690600160601b90046001600160a01b031681565b6040516001600160a01b039091168152602001610328565b6002610364565b6103646103c3366004611764565b6001600160401b03908116600090815260016020526040902054600160c01b90041690565b6101dc6103f6366004611816565b610798565b6101dc610409366004611816565b6107e0565b6101dc61081b565b6101dc610424366004611816565b61082f565b7f9016d09d72d40fdae2fd8ceac6b6234c7706214fd39c1cd1e609a0528c199300546001600160a01b0316610396565b61046c610467366004611849565b61086a565b604051908152602001610328565b60005461049090600160481b900462ffffff1681565b60405162ffffff9091168152602001610328565b61046c620f424081565b6101dc6104bc3660046118dc565b610a52565b6103646104cf366004611764565b6001600160401b03908116600090815260016020526040902054600160401b90041690565b6101dc61050236600461191d565b610a8d565b60005461051c9068ffffffffffffffffff1681565b60405168ffffffffffffffffff9091168152602001610328565b6101dc610544366004611816565b610aa1565b6101dc610557366004611938565b610adc565b6101dc61056a3660046118dc565b610b43565b61036461057d366004611764565b6001600160401b03908116600090815260016020526040902054600160801b90041690565b6103646105b0366004611764565b6001600160401b03908116600090815260026020526040902054600160401b90041690565b6103646105e3366004611764565b6001600160401b03908116600090815260026020526040902054600160c01b90041690565b6101dc610616366004611938565b610b7e565b6101dc610629366004611816565b610bb9565b6101dc61063c366004611816565b610bf4565b6101dc61064f366004611953565b610c2f565b7ff0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a008054600160401b810460ff1615906001600160401b03166000811580156106995750825b90506000826001600160401b031660011480156106b55750303b155b9050811580156106c3575080155b156106e15760405163f92ee8a960e01b815260040160405180910390fd5b845467ffffffffffffffff19166001178555831561070b57845460ff60401b1916600160401b1785555b6107148d610c40565b61071d8c610c51565b6107268b610cb3565b61072f8a610d0b565b6107398989610d5d565b6107438787610f13565b831561078957845460ff60401b19168555604051600181527fc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d29060200160405180910390a15b50505050505050505050505050565b600054600160601b90046001600160a01b031633146107d25760405162461bcd60e51b81526004016107c99061196e565b60405180910390fd5b6107dc8282611097565b5050565b600054600160601b90046001600160a01b031633146108115760405162461bcd60e51b81526004016107c99061196e565b6107dc828261115f565b61082361121a565b61082d6000611275565b565b600054600160601b90046001600160a01b031633146108605760405162461bcd60e51b81526004016107c99061196e565b6107dc82826112e6565b6001600160401b0380851660009081526001602090815260408083208054600160401b810486168552600290935290832092939092918491620f4240916108c291600160c01b8204811691600160801b9004166119bb565b6001600160401b03166108d591906119e6565b8254909150600090620f424090610905906001600160401b03600160c01b8204811691600160801b9004166119bb565b6001600160401b031661091891906119e6565b90506000821161096a5760405162461bcd60e51b815260206004820152601f60248201527f4665654f7261636c6556323a206e6f20657865632066656520706172616d730060448201526064016107c9565b600081116109ba5760405162461bcd60e51b815260206004820152601f60248201527f4665654f7261636c6556323a206e6f20646174612066656520706172616d730060448201526064016107c9565b60006109c7886010611a08565b845490915082906109e9908390600160401b90046001600160401b0316611a25565b6109f39190611a08565b6000548490610a0f908a90600160481b900462ffffff16611a38565b6001600160401b0316610a229190611a08565b600054610a3a919068ffffffffffffffffff16611a25565b610a449190611a25565b9a9950505050505050505050565b600054600160601b90046001600160a01b03163314610a835760405162461bcd60e51b81526004016107c99061196e565b6107dc8282610f13565b610a9561121a565b610a9e81610cb3565b50565b600054600160601b90046001600160a01b03163314610ad25760405162461bcd60e51b81526004016107c99061196e565b6107dc828261137d565b610ae461121a565b6001600160a01b038116610b3a5760405162461bcd60e51b815260206004820152601c60248201527f4665654f7261636c6556323a206e6f207a65726f206d616e616765720000000060448201526064016107c9565b610a9e81610c51565b600054600160601b90046001600160a01b03163314610b745760405162461bcd60e51b81526004016107c99061196e565b6107dc8282610d5d565b610b8661121a565b6001600160a01b038116610bb057604051631e4fbdf760e01b8152600060048201526024016107c9565b610a9e81611275565b600054600160601b90046001600160a01b03163314610bea5760405162461bcd60e51b81526004016107c99061196e565b6107dc828261143d565b600054600160601b90046001600160a01b03163314610c255760405162461bcd60e51b81526004016107c99061196e565b6107dc82826114fd565b610c3761121a565b610a9e81610d0b565b610c486115b8565b610a9e81611601565b600080546bffffffffffffffffffffffff16600160601b6001600160a01b038416908102919091179091556040519081527f60a0f5b9f9e81e98216071b85826681c796256fe3d1354ecb675580fba64fa69906020015b60405180910390a150565b600080546bffffff0000000000000000001916600160481b62ffffff8416908102919091179091556040519081527fb2497d19702e6a33eb2a5487a9ad5977a0284bfe1ccad332e31b8a81a8c5ebaf90602001610ca8565b6000805468ffffffffffffffffff191668ffffffffffffffffff83169081179091556040519081527f92c98513056b0d0d263b0f7153c99e1651791a983e75fc558b424b3aa0b623f790602001610ca8565b60005b81811015610f0e576000838383818110610d7c57610d7c611a58565b905060800201803603810190610d929190611afb565b9050600081604001516001600160401b031611610dc15760405162461bcd60e51b81526004016107c990611b17565b600081602001516001600160401b031611610dee5760405162461bcd60e51b81526004016107c990611b4e565b600081606001516001600160401b031611610e1b5760405162461bcd60e51b81526004016107c990611b85565b80516001600160401b0316600003610e455760405162461bcd60e51b81526004016107c990611b4e565b80516001600160401b039081166000908152600160209081526040918290208451815483870151858801516060808a01519489166001600160801b03199094168417600160401b938a16938402176001600160801b0316600160801b928a169283026001600160c01b031617600160c01b959099169485029890981790945585519182529381019390935292820152918201527f0a05333d850372b39fcfc14c6eed42ebc766b01f516add8c20240696552c44649060800160405180910390a150600101610d60565b505050565b60005b81811015610f0e576000838383818110610f3257610f32611a58565b905060800201803603810190610f489190611afb565b9050600081604001516001600160401b031611610f775760405162461bcd60e51b81526004016107c990611b17565b600081606001516001600160401b031611610fa45760405162461bcd60e51b81526004016107c990611b85565b80516001600160401b0316600003610fce5760405162461bcd60e51b81526004016107c990611b4e565b80516001600160401b039081166000908152600260209081526040918290208451815483870151858801516060808a01519489166001600160801b03199094168417600160401b938a16938402176001600160801b0316600160801b928a169283026001600160c01b031617600160c01b959099169485029890981790945585519182529381019390935292820152918201527fd0b18837916cfd80f0f320486a107794cf007ff14ddafb4483a62c3fb5ec05a39060800160405180910390a150600101610f16565b6000816001600160401b0316116110c05760405162461bcd60e51b81526004016107c990611b17565b816001600160401b03166000036110e95760405162461bcd60e51b81526004016107c990611b4e565b6001600160401b03828116600081815260026020908152604091829020805467ffffffffffffffff60801b1916600160801b95871695860217905581519283528201929092527fd7d8dd5a956a8bd500e02d52d0a9dd8a0e2955ec48771a8c9da485e6706c66fb91015b60405180910390a15050565b6000816001600160401b0316116111885760405162461bcd60e51b81526004016107c990611b85565b816001600160401b03166000036111b15760405162461bcd60e51b81526004016107c990611b4e565b6001600160401b0382811660008181526001602090815260409182902080546001600160c01b0316600160c01b95871695860217905581519283528201929092527f5728e411b1606c4a6fd53e10049ebe42400b3617c09e478e10239a913ab3493b9101611153565b3361124c7f9016d09d72d40fdae2fd8ceac6b6234c7706214fd39c1cd1e609a0528c199300546001600160a01b031690565b6001600160a01b03161461082d5760405163118cdaa760e01b81523360048201526024016107c9565b7f9016d09d72d40fdae2fd8ceac6b6234c7706214fd39c1cd1e609a0528c19930080546001600160a01b031981166001600160a01b03848116918217845560405192169182907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e090600090a3505050565b816001600160401b031660000361130f5760405162461bcd60e51b81526004016107c990611b4e565b6001600160401b03828116600081815260026020908152604091829020805467ffffffffffffffff60401b1916600160401b95871695860217905581519283528201929092527f0b1d18b6fe29df95e0bd90abbbf45e65e4a14f3ef2126bfcfb7f2a08112669989101611153565b6000816001600160401b0316116113a65760405162461bcd60e51b81526004016107c990611b17565b816001600160401b03166000036113cf5760405162461bcd60e51b81526004016107c990611b4e565b6001600160401b03828116600081815260016020908152604091829020805467ffffffffffffffff60801b1916600160801b95871695860217905581519283528201929092527fe0e5abb8929e27a69d77f47a4e3f9575411a5be1fa596e5b55078d7850f358db9101611153565b806001600160401b03166000036114665760405162461bcd60e51b81526004016107c990611b4e565b816001600160401b031660000361148f5760405162461bcd60e51b81526004016107c990611b4e565b6001600160401b03828116600081815260016020908152604091829020805467ffffffffffffffff60401b1916600160401b95871695860217905581519283528201929092527f62f13d8522c451be7798aa5f1e258a7780ef5296115067b8e632436d4548a11d9101611153565b6000816001600160401b0316116115265760405162461bcd60e51b81526004016107c990611b85565b816001600160401b031660000361154f5760405162461bcd60e51b81526004016107c990611b4e565b6001600160401b0382811660008181526002602090815260409182902080546001600160c01b0316600160c01b95871695860217905581519283528201929092527f1e87d1bd7c559f1a6fcee0e50d1f7d7df76cee0bafc691051b174dc2a83139219101611153565b7ff0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a0054600160401b900460ff1661082d57604051631afcd79f60e31b815260040160405180910390fd5b610b866115b8565b80356001600160a01b038116811461162057600080fd5b919050565b803562ffffff8116811461162057600080fd5b803568ffffffffffffffffff8116811461162057600080fd5b60008083601f84011261166357600080fd5b5081356001600160401b0381111561167a57600080fd5b6020830191508360208260071b850101111561169557600080fd5b9250929050565b60008060008060008060008060c0898b0312156116b857600080fd5b6116c189611609565b97506116cf60208a01611609565b96506116dd60408a01611625565b95506116eb60608a01611638565b945060808901356001600160401b038082111561170757600080fd5b6117138c838d01611651565b909650945060a08b013591508082111561172c57600080fd5b506117398b828c01611651565b999c989b5096995094979396929594505050565b80356001600160401b038116811461162057600080fd5b60006020828403121561177657600080fd5b61177f8261174d565b9392505050565b6000610100820190506001600160401b038084511683528060208501511660208401528060408501511660408401528060608501511660608401528060808501511660808401528060a08501511660a08401525060c08301516117f460c08401826001600160401b03169052565b5060e083015161180f60e08401826001600160401b03169052565b5092915050565b6000806040838503121561182957600080fd5b6118328361174d565b91506118406020840161174d565b90509250929050565b6000806000806060858703121561185f57600080fd5b6118688561174d565b935060208501356001600160401b038082111561188457600080fd5b818701915087601f83011261189857600080fd5b8135818111156118a757600080fd5b8860208285010111156118b957600080fd5b6020830195508094505050506118d16040860161174d565b905092959194509250565b600080602083850312156118ef57600080fd5b82356001600160401b0381111561190557600080fd5b61191185828601611651565b90969095509350505050565b60006020828403121561192f57600080fd5b61177f82611625565b60006020828403121561194a57600080fd5b61177f82611609565b60006020828403121561196557600080fd5b61177f82611638565b60208082526018908201527f4665654f7261636c6556323a206e6f74206d616e616765720000000000000000604082015260600190565b634e487b7160e01b600052601160045260246000fd5b6001600160401b038181168382160280821691908281146119de576119de6119a5565b505092915050565b600082611a0357634e487b7160e01b600052601260045260246000fd5b500490565b8082028115828204841417611a1f57611a1f6119a5565b92915050565b80820180821115611a1f57611a1f6119a5565b6001600160401b0381811683821601908082111561180f5761180f6119a5565b634e487b7160e01b600052603260045260246000fd5b600060808284031215611a8057600080fd5b604051608081018181106001600160401b0382111715611ab057634e487b7160e01b600052604160045260246000fd5b604052905080611abf8361174d565b8152611acd6020840161174d565b6020820152611ade6040840161174d565b6040820152611aef6060840161174d565b60608201525092915050565b600060808284031215611b0d57600080fd5b61177f8383611a6e565b6020808252601e908201527f4665654f7261636c6556323a206e6f207a65726f206761732070726963650000604082015260600190565b6020808252601d908201527f4665654f7261636c6556323a206e6f207a65726f20636861696e206964000000604082015260600190565b60208082526019908201527f4665654f7261636c6556323a206e6f207a65726f20726174650000000000000060408201526060019056fea2646970667358221220be7739c13e913ff724cc43977f5aedf48b723bf4869c8136354ada3b3ab37f2764736f6c63430008180033",
 }
 
 // FeeOracleV2ABI is the input ABI used to generate the binding from.
@@ -303,6 +323,68 @@ func (_FeeOracleV2 *FeeOracleV2CallerSession) DataGasPrice(chainId uint64) (uint
 	return _FeeOracleV2.Contract.DataGasPrice(&_FeeOracleV2.CallOpts, chainId)
 }
 
+// DataSizeBuffer is a free data retrieval call binding the contract method 0xe476d475.
+//
+// Solidity: function dataSizeBuffer(uint64 chainId) view returns(uint64)
+func (_FeeOracleV2 *FeeOracleV2Caller) DataSizeBuffer(opts *bind.CallOpts, chainId uint64) (uint64, error) {
+	var out []interface{}
+	err := _FeeOracleV2.contract.Call(opts, &out, "dataSizeBuffer", chainId)
+
+	if err != nil {
+		return *new(uint64), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint64)).(*uint64)
+
+	return out0, err
+
+}
+
+// DataSizeBuffer is a free data retrieval call binding the contract method 0xe476d475.
+//
+// Solidity: function dataSizeBuffer(uint64 chainId) view returns(uint64)
+func (_FeeOracleV2 *FeeOracleV2Session) DataSizeBuffer(chainId uint64) (uint64, error) {
+	return _FeeOracleV2.Contract.DataSizeBuffer(&_FeeOracleV2.CallOpts, chainId)
+}
+
+// DataSizeBuffer is a free data retrieval call binding the contract method 0xe476d475.
+//
+// Solidity: function dataSizeBuffer(uint64 chainId) view returns(uint64)
+func (_FeeOracleV2 *FeeOracleV2CallerSession) DataSizeBuffer(chainId uint64) (uint64, error) {
+	return _FeeOracleV2.Contract.DataSizeBuffer(&_FeeOracleV2.CallOpts, chainId)
+}
+
+// DataToNativeRate is a free data retrieval call binding the contract method 0xf263980e.
+//
+// Solidity: function dataToNativeRate(uint64 chainId) view returns(uint64)
+func (_FeeOracleV2 *FeeOracleV2Caller) DataToNativeRate(opts *bind.CallOpts, chainId uint64) (uint64, error) {
+	var out []interface{}
+	err := _FeeOracleV2.contract.Call(opts, &out, "dataToNativeRate", chainId)
+
+	if err != nil {
+		return *new(uint64), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint64)).(*uint64)
+
+	return out0, err
+
+}
+
+// DataToNativeRate is a free data retrieval call binding the contract method 0xf263980e.
+//
+// Solidity: function dataToNativeRate(uint64 chainId) view returns(uint64)
+func (_FeeOracleV2 *FeeOracleV2Session) DataToNativeRate(chainId uint64) (uint64, error) {
+	return _FeeOracleV2.Contract.DataToNativeRate(&_FeeOracleV2.CallOpts, chainId)
+}
+
+// DataToNativeRate is a free data retrieval call binding the contract method 0xf263980e.
+//
+// Solidity: function dataToNativeRate(uint64 chainId) view returns(uint64)
+func (_FeeOracleV2 *FeeOracleV2CallerSession) DataToNativeRate(chainId uint64) (uint64, error) {
+	return _FeeOracleV2.Contract.DataToNativeRate(&_FeeOracleV2.CallOpts, chainId)
+}
+
 // ExecGasPrice is a free data retrieval call binding the contract method 0xe21497b9.
 //
 // Solidity: function execGasPrice(uint64 chainId) view returns(uint64)
@@ -332,6 +414,68 @@ func (_FeeOracleV2 *FeeOracleV2Session) ExecGasPrice(chainId uint64) (uint64, er
 // Solidity: function execGasPrice(uint64 chainId) view returns(uint64)
 func (_FeeOracleV2 *FeeOracleV2CallerSession) ExecGasPrice(chainId uint64) (uint64, error) {
 	return _FeeOracleV2.Contract.ExecGasPrice(&_FeeOracleV2.CallOpts, chainId)
+}
+
+// ExecPostsTo is a free data retrieval call binding the contract method 0x9d1d335d.
+//
+// Solidity: function execPostsTo(uint64 chainId) view returns(uint64)
+func (_FeeOracleV2 *FeeOracleV2Caller) ExecPostsTo(opts *bind.CallOpts, chainId uint64) (uint64, error) {
+	var out []interface{}
+	err := _FeeOracleV2.contract.Call(opts, &out, "execPostsTo", chainId)
+
+	if err != nil {
+		return *new(uint64), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint64)).(*uint64)
+
+	return out0, err
+
+}
+
+// ExecPostsTo is a free data retrieval call binding the contract method 0x9d1d335d.
+//
+// Solidity: function execPostsTo(uint64 chainId) view returns(uint64)
+func (_FeeOracleV2 *FeeOracleV2Session) ExecPostsTo(chainId uint64) (uint64, error) {
+	return _FeeOracleV2.Contract.ExecPostsTo(&_FeeOracleV2.CallOpts, chainId)
+}
+
+// ExecPostsTo is a free data retrieval call binding the contract method 0x9d1d335d.
+//
+// Solidity: function execPostsTo(uint64 chainId) view returns(uint64)
+func (_FeeOracleV2 *FeeOracleV2CallerSession) ExecPostsTo(chainId uint64) (uint64, error) {
+	return _FeeOracleV2.Contract.ExecPostsTo(&_FeeOracleV2.CallOpts, chainId)
+}
+
+// ExecToNativeRate is a free data retrieval call binding the contract method 0x55bd7c10.
+//
+// Solidity: function execToNativeRate(uint64 chainId) view returns(uint64)
+func (_FeeOracleV2 *FeeOracleV2Caller) ExecToNativeRate(opts *bind.CallOpts, chainId uint64) (uint64, error) {
+	var out []interface{}
+	err := _FeeOracleV2.contract.Call(opts, &out, "execToNativeRate", chainId)
+
+	if err != nil {
+		return *new(uint64), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(uint64)).(*uint64)
+
+	return out0, err
+
+}
+
+// ExecToNativeRate is a free data retrieval call binding the contract method 0x55bd7c10.
+//
+// Solidity: function execToNativeRate(uint64 chainId) view returns(uint64)
+func (_FeeOracleV2 *FeeOracleV2Session) ExecToNativeRate(chainId uint64) (uint64, error) {
+	return _FeeOracleV2.Contract.ExecToNativeRate(&_FeeOracleV2.CallOpts, chainId)
+}
+
+// ExecToNativeRate is a free data retrieval call binding the contract method 0x55bd7c10.
+//
+// Solidity: function execToNativeRate(uint64 chainId) view returns(uint64)
+func (_FeeOracleV2 *FeeOracleV2CallerSession) ExecToNativeRate(chainId uint64) (uint64, error) {
+	return _FeeOracleV2.Contract.ExecToNativeRate(&_FeeOracleV2.CallOpts, chainId)
 }
 
 // FeeFor is a free data retrieval call binding the contract method 0x8dd9523c.
@@ -367,7 +511,7 @@ func (_FeeOracleV2 *FeeOracleV2CallerSession) FeeFor(destChainId uint64, data []
 
 // FeeParams is a free data retrieval call binding the contract method 0x2d4634a4.
 //
-// Solidity: function feeParams(uint64 chainId) view returns((uint64,uint64,uint64,uint64))
+// Solidity: function feeParams(uint64 chainId) view returns((uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64))
 func (_FeeOracleV2 *FeeOracleV2Caller) FeeParams(opts *bind.CallOpts, chainId uint64) (IFeeOracleV2FeeParams, error) {
 	var out []interface{}
 	err := _FeeOracleV2.contract.Call(opts, &out, "feeParams", chainId)
@@ -384,14 +528,14 @@ func (_FeeOracleV2 *FeeOracleV2Caller) FeeParams(opts *bind.CallOpts, chainId ui
 
 // FeeParams is a free data retrieval call binding the contract method 0x2d4634a4.
 //
-// Solidity: function feeParams(uint64 chainId) view returns((uint64,uint64,uint64,uint64))
+// Solidity: function feeParams(uint64 chainId) view returns((uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64))
 func (_FeeOracleV2 *FeeOracleV2Session) FeeParams(chainId uint64) (IFeeOracleV2FeeParams, error) {
 	return _FeeOracleV2.Contract.FeeParams(&_FeeOracleV2.CallOpts, chainId)
 }
 
 // FeeParams is a free data retrieval call binding the contract method 0x2d4634a4.
 //
-// Solidity: function feeParams(uint64 chainId) view returns((uint64,uint64,uint64,uint64))
+// Solidity: function feeParams(uint64 chainId) view returns((uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64))
 func (_FeeOracleV2 *FeeOracleV2CallerSession) FeeParams(chainId uint64) (IFeeOracleV2FeeParams, error) {
 	return _FeeOracleV2.Contract.FeeParams(&_FeeOracleV2.CallOpts, chainId)
 }
@@ -489,37 +633,6 @@ func (_FeeOracleV2 *FeeOracleV2CallerSession) ProtocolFee() (*big.Int, error) {
 	return _FeeOracleV2.Contract.ProtocolFee(&_FeeOracleV2.CallOpts)
 }
 
-// ToNativeRate is a free data retrieval call binding the contract method 0x8b7bfd70.
-//
-// Solidity: function toNativeRate(uint64 chainId) view returns(uint256)
-func (_FeeOracleV2 *FeeOracleV2Caller) ToNativeRate(opts *bind.CallOpts, chainId uint64) (*big.Int, error) {
-	var out []interface{}
-	err := _FeeOracleV2.contract.Call(opts, &out, "toNativeRate", chainId)
-
-	if err != nil {
-		return *new(*big.Int), err
-	}
-
-	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-
-	return out0, err
-
-}
-
-// ToNativeRate is a free data retrieval call binding the contract method 0x8b7bfd70.
-//
-// Solidity: function toNativeRate(uint64 chainId) view returns(uint256)
-func (_FeeOracleV2 *FeeOracleV2Session) ToNativeRate(chainId uint64) (*big.Int, error) {
-	return _FeeOracleV2.Contract.ToNativeRate(&_FeeOracleV2.CallOpts, chainId)
-}
-
-// ToNativeRate is a free data retrieval call binding the contract method 0x8b7bfd70.
-//
-// Solidity: function toNativeRate(uint64 chainId) view returns(uint256)
-func (_FeeOracleV2 *FeeOracleV2CallerSession) ToNativeRate(chainId uint64) (*big.Int, error) {
-	return _FeeOracleV2.Contract.ToNativeRate(&_FeeOracleV2.CallOpts, chainId)
-}
-
 // Version is a free data retrieval call binding the contract method 0x54fd4d50.
 //
 // Solidity: function version() pure returns(uint64)
@@ -551,46 +664,67 @@ func (_FeeOracleV2 *FeeOracleV2CallerSession) Version() (uint64, error) {
 	return _FeeOracleV2.Contract.Version(&_FeeOracleV2.CallOpts)
 }
 
-// BulkSetFeeParams is a paid mutator transaction binding the contract method 0xc1af080b.
+// BulkSetDataFeeParams is a paid mutator transaction binding the contract method 0x944de210.
 //
-// Solidity: function bulkSetFeeParams((uint64,uint64,uint64,uint64)[] params) returns()
-func (_FeeOracleV2 *FeeOracleV2Transactor) BulkSetFeeParams(opts *bind.TransactOpts, params []IFeeOracleV2FeeParams) (*types.Transaction, error) {
-	return _FeeOracleV2.contract.Transact(opts, "bulkSetFeeParams", params)
+// Solidity: function bulkSetDataFeeParams((uint64,uint64,uint64,uint64)[] params) returns()
+func (_FeeOracleV2 *FeeOracleV2Transactor) BulkSetDataFeeParams(opts *bind.TransactOpts, params []IFeeOracleV2DataFeeParams) (*types.Transaction, error) {
+	return _FeeOracleV2.contract.Transact(opts, "bulkSetDataFeeParams", params)
 }
 
-// BulkSetFeeParams is a paid mutator transaction binding the contract method 0xc1af080b.
+// BulkSetDataFeeParams is a paid mutator transaction binding the contract method 0x944de210.
 //
-// Solidity: function bulkSetFeeParams((uint64,uint64,uint64,uint64)[] params) returns()
-func (_FeeOracleV2 *FeeOracleV2Session) BulkSetFeeParams(params []IFeeOracleV2FeeParams) (*types.Transaction, error) {
-	return _FeeOracleV2.Contract.BulkSetFeeParams(&_FeeOracleV2.TransactOpts, params)
+// Solidity: function bulkSetDataFeeParams((uint64,uint64,uint64,uint64)[] params) returns()
+func (_FeeOracleV2 *FeeOracleV2Session) BulkSetDataFeeParams(params []IFeeOracleV2DataFeeParams) (*types.Transaction, error) {
+	return _FeeOracleV2.Contract.BulkSetDataFeeParams(&_FeeOracleV2.TransactOpts, params)
 }
 
-// BulkSetFeeParams is a paid mutator transaction binding the contract method 0xc1af080b.
+// BulkSetDataFeeParams is a paid mutator transaction binding the contract method 0x944de210.
 //
-// Solidity: function bulkSetFeeParams((uint64,uint64,uint64,uint64)[] params) returns()
-func (_FeeOracleV2 *FeeOracleV2TransactorSession) BulkSetFeeParams(params []IFeeOracleV2FeeParams) (*types.Transaction, error) {
-	return _FeeOracleV2.Contract.BulkSetFeeParams(&_FeeOracleV2.TransactOpts, params)
+// Solidity: function bulkSetDataFeeParams((uint64,uint64,uint64,uint64)[] params) returns()
+func (_FeeOracleV2 *FeeOracleV2TransactorSession) BulkSetDataFeeParams(params []IFeeOracleV2DataFeeParams) (*types.Transaction, error) {
+	return _FeeOracleV2.Contract.BulkSetDataFeeParams(&_FeeOracleV2.TransactOpts, params)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0xf16fd287.
+// BulkSetExecFeeParams is a paid mutator transaction binding the contract method 0xdc8d7b2c.
 //
-// Solidity: function initialize(address owner_, address manager_, uint24 baseGasLimit_, uint72 protocolFee_, (uint64,uint64,uint64,uint64)[] params) returns()
-func (_FeeOracleV2 *FeeOracleV2Transactor) Initialize(opts *bind.TransactOpts, owner_ common.Address, manager_ common.Address, baseGasLimit_ *big.Int, protocolFee_ *big.Int, params []IFeeOracleV2FeeParams) (*types.Transaction, error) {
-	return _FeeOracleV2.contract.Transact(opts, "initialize", owner_, manager_, baseGasLimit_, protocolFee_, params)
+// Solidity: function bulkSetExecFeeParams((uint64,uint64,uint64,uint64)[] params) returns()
+func (_FeeOracleV2 *FeeOracleV2Transactor) BulkSetExecFeeParams(opts *bind.TransactOpts, params []IFeeOracleV2ExecFeeParams) (*types.Transaction, error) {
+	return _FeeOracleV2.contract.Transact(opts, "bulkSetExecFeeParams", params)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0xf16fd287.
+// BulkSetExecFeeParams is a paid mutator transaction binding the contract method 0xdc8d7b2c.
 //
-// Solidity: function initialize(address owner_, address manager_, uint24 baseGasLimit_, uint72 protocolFee_, (uint64,uint64,uint64,uint64)[] params) returns()
-func (_FeeOracleV2 *FeeOracleV2Session) Initialize(owner_ common.Address, manager_ common.Address, baseGasLimit_ *big.Int, protocolFee_ *big.Int, params []IFeeOracleV2FeeParams) (*types.Transaction, error) {
-	return _FeeOracleV2.Contract.Initialize(&_FeeOracleV2.TransactOpts, owner_, manager_, baseGasLimit_, protocolFee_, params)
+// Solidity: function bulkSetExecFeeParams((uint64,uint64,uint64,uint64)[] params) returns()
+func (_FeeOracleV2 *FeeOracleV2Session) BulkSetExecFeeParams(params []IFeeOracleV2ExecFeeParams) (*types.Transaction, error) {
+	return _FeeOracleV2.Contract.BulkSetExecFeeParams(&_FeeOracleV2.TransactOpts, params)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0xf16fd287.
+// BulkSetExecFeeParams is a paid mutator transaction binding the contract method 0xdc8d7b2c.
 //
-// Solidity: function initialize(address owner_, address manager_, uint24 baseGasLimit_, uint72 protocolFee_, (uint64,uint64,uint64,uint64)[] params) returns()
-func (_FeeOracleV2 *FeeOracleV2TransactorSession) Initialize(owner_ common.Address, manager_ common.Address, baseGasLimit_ *big.Int, protocolFee_ *big.Int, params []IFeeOracleV2FeeParams) (*types.Transaction, error) {
-	return _FeeOracleV2.Contract.Initialize(&_FeeOracleV2.TransactOpts, owner_, manager_, baseGasLimit_, protocolFee_, params)
+// Solidity: function bulkSetExecFeeParams((uint64,uint64,uint64,uint64)[] params) returns()
+func (_FeeOracleV2 *FeeOracleV2TransactorSession) BulkSetExecFeeParams(params []IFeeOracleV2ExecFeeParams) (*types.Transaction, error) {
+	return _FeeOracleV2.Contract.BulkSetExecFeeParams(&_FeeOracleV2.TransactOpts, params)
+}
+
+// Initialize is a paid mutator transaction binding the contract method 0x0a8041f4.
+//
+// Solidity: function initialize(address owner_, address manager_, uint24 baseGasLimit_, uint72 protocolFee_, (uint64,uint64,uint64,uint64)[] execParams, (uint64,uint64,uint64,uint64)[] dataParams) returns()
+func (_FeeOracleV2 *FeeOracleV2Transactor) Initialize(opts *bind.TransactOpts, owner_ common.Address, manager_ common.Address, baseGasLimit_ *big.Int, protocolFee_ *big.Int, execParams []IFeeOracleV2ExecFeeParams, dataParams []IFeeOracleV2DataFeeParams) (*types.Transaction, error) {
+	return _FeeOracleV2.contract.Transact(opts, "initialize", owner_, manager_, baseGasLimit_, protocolFee_, execParams, dataParams)
+}
+
+// Initialize is a paid mutator transaction binding the contract method 0x0a8041f4.
+//
+// Solidity: function initialize(address owner_, address manager_, uint24 baseGasLimit_, uint72 protocolFee_, (uint64,uint64,uint64,uint64)[] execParams, (uint64,uint64,uint64,uint64)[] dataParams) returns()
+func (_FeeOracleV2 *FeeOracleV2Session) Initialize(owner_ common.Address, manager_ common.Address, baseGasLimit_ *big.Int, protocolFee_ *big.Int, execParams []IFeeOracleV2ExecFeeParams, dataParams []IFeeOracleV2DataFeeParams) (*types.Transaction, error) {
+	return _FeeOracleV2.Contract.Initialize(&_FeeOracleV2.TransactOpts, owner_, manager_, baseGasLimit_, protocolFee_, execParams, dataParams)
+}
+
+// Initialize is a paid mutator transaction binding the contract method 0x0a8041f4.
+//
+// Solidity: function initialize(address owner_, address manager_, uint24 baseGasLimit_, uint72 protocolFee_, (uint64,uint64,uint64,uint64)[] execParams, (uint64,uint64,uint64,uint64)[] dataParams) returns()
+func (_FeeOracleV2 *FeeOracleV2TransactorSession) Initialize(owner_ common.Address, manager_ common.Address, baseGasLimit_ *big.Int, protocolFee_ *big.Int, execParams []IFeeOracleV2ExecFeeParams, dataParams []IFeeOracleV2DataFeeParams) (*types.Transaction, error) {
+	return _FeeOracleV2.Contract.Initialize(&_FeeOracleV2.TransactOpts, owner_, manager_, baseGasLimit_, protocolFee_, execParams, dataParams)
 }
 
 // RenounceOwnership is a paid mutator transaction binding the contract method 0x715018a6.
@@ -656,6 +790,48 @@ func (_FeeOracleV2 *FeeOracleV2TransactorSession) SetDataGasPrice(chainId uint64
 	return _FeeOracleV2.Contract.SetDataGasPrice(&_FeeOracleV2.TransactOpts, chainId, gasPrice)
 }
 
+// SetDataSizeBuffer is a paid mutator transaction binding the contract method 0x79b1f0e9.
+//
+// Solidity: function setDataSizeBuffer(uint64 chainId, uint64 sizeBuffer) returns()
+func (_FeeOracleV2 *FeeOracleV2Transactor) SetDataSizeBuffer(opts *bind.TransactOpts, chainId uint64, sizeBuffer uint64) (*types.Transaction, error) {
+	return _FeeOracleV2.contract.Transact(opts, "setDataSizeBuffer", chainId, sizeBuffer)
+}
+
+// SetDataSizeBuffer is a paid mutator transaction binding the contract method 0x79b1f0e9.
+//
+// Solidity: function setDataSizeBuffer(uint64 chainId, uint64 sizeBuffer) returns()
+func (_FeeOracleV2 *FeeOracleV2Session) SetDataSizeBuffer(chainId uint64, sizeBuffer uint64) (*types.Transaction, error) {
+	return _FeeOracleV2.Contract.SetDataSizeBuffer(&_FeeOracleV2.TransactOpts, chainId, sizeBuffer)
+}
+
+// SetDataSizeBuffer is a paid mutator transaction binding the contract method 0x79b1f0e9.
+//
+// Solidity: function setDataSizeBuffer(uint64 chainId, uint64 sizeBuffer) returns()
+func (_FeeOracleV2 *FeeOracleV2TransactorSession) SetDataSizeBuffer(chainId uint64, sizeBuffer uint64) (*types.Transaction, error) {
+	return _FeeOracleV2.Contract.SetDataSizeBuffer(&_FeeOracleV2.TransactOpts, chainId, sizeBuffer)
+}
+
+// SetDataToNativeRate is a paid mutator transaction binding the contract method 0xf3ccd500.
+//
+// Solidity: function setDataToNativeRate(uint64 chainId, uint64 rate) returns()
+func (_FeeOracleV2 *FeeOracleV2Transactor) SetDataToNativeRate(opts *bind.TransactOpts, chainId uint64, rate uint64) (*types.Transaction, error) {
+	return _FeeOracleV2.contract.Transact(opts, "setDataToNativeRate", chainId, rate)
+}
+
+// SetDataToNativeRate is a paid mutator transaction binding the contract method 0xf3ccd500.
+//
+// Solidity: function setDataToNativeRate(uint64 chainId, uint64 rate) returns()
+func (_FeeOracleV2 *FeeOracleV2Session) SetDataToNativeRate(chainId uint64, rate uint64) (*types.Transaction, error) {
+	return _FeeOracleV2.Contract.SetDataToNativeRate(&_FeeOracleV2.TransactOpts, chainId, rate)
+}
+
+// SetDataToNativeRate is a paid mutator transaction binding the contract method 0xf3ccd500.
+//
+// Solidity: function setDataToNativeRate(uint64 chainId, uint64 rate) returns()
+func (_FeeOracleV2 *FeeOracleV2TransactorSession) SetDataToNativeRate(chainId uint64, rate uint64) (*types.Transaction, error) {
+	return _FeeOracleV2.Contract.SetDataToNativeRate(&_FeeOracleV2.TransactOpts, chainId, rate)
+}
+
 // SetExecGasPrice is a paid mutator transaction binding the contract method 0xb9923e1c.
 //
 // Solidity: function setExecGasPrice(uint64 chainId, uint64 gasPrice) returns()
@@ -675,6 +851,48 @@ func (_FeeOracleV2 *FeeOracleV2Session) SetExecGasPrice(chainId uint64, gasPrice
 // Solidity: function setExecGasPrice(uint64 chainId, uint64 gasPrice) returns()
 func (_FeeOracleV2 *FeeOracleV2TransactorSession) SetExecGasPrice(chainId uint64, gasPrice uint64) (*types.Transaction, error) {
 	return _FeeOracleV2.Contract.SetExecGasPrice(&_FeeOracleV2.TransactOpts, chainId, gasPrice)
+}
+
+// SetExecPostsTo is a paid mutator transaction binding the contract method 0xf35eecbd.
+//
+// Solidity: function setExecPostsTo(uint64 chainId, uint64 postsTo) returns()
+func (_FeeOracleV2 *FeeOracleV2Transactor) SetExecPostsTo(opts *bind.TransactOpts, chainId uint64, postsTo uint64) (*types.Transaction, error) {
+	return _FeeOracleV2.contract.Transact(opts, "setExecPostsTo", chainId, postsTo)
+}
+
+// SetExecPostsTo is a paid mutator transaction binding the contract method 0xf35eecbd.
+//
+// Solidity: function setExecPostsTo(uint64 chainId, uint64 postsTo) returns()
+func (_FeeOracleV2 *FeeOracleV2Session) SetExecPostsTo(chainId uint64, postsTo uint64) (*types.Transaction, error) {
+	return _FeeOracleV2.Contract.SetExecPostsTo(&_FeeOracleV2.TransactOpts, chainId, postsTo)
+}
+
+// SetExecPostsTo is a paid mutator transaction binding the contract method 0xf35eecbd.
+//
+// Solidity: function setExecPostsTo(uint64 chainId, uint64 postsTo) returns()
+func (_FeeOracleV2 *FeeOracleV2TransactorSession) SetExecPostsTo(chainId uint64, postsTo uint64) (*types.Transaction, error) {
+	return _FeeOracleV2.Contract.SetExecPostsTo(&_FeeOracleV2.TransactOpts, chainId, postsTo)
+}
+
+// SetExecToNativeRate is a paid mutator transaction binding the contract method 0x65c6850d.
+//
+// Solidity: function setExecToNativeRate(uint64 chainId, uint64 rate) returns()
+func (_FeeOracleV2 *FeeOracleV2Transactor) SetExecToNativeRate(opts *bind.TransactOpts, chainId uint64, rate uint64) (*types.Transaction, error) {
+	return _FeeOracleV2.contract.Transact(opts, "setExecToNativeRate", chainId, rate)
+}
+
+// SetExecToNativeRate is a paid mutator transaction binding the contract method 0x65c6850d.
+//
+// Solidity: function setExecToNativeRate(uint64 chainId, uint64 rate) returns()
+func (_FeeOracleV2 *FeeOracleV2Session) SetExecToNativeRate(chainId uint64, rate uint64) (*types.Transaction, error) {
+	return _FeeOracleV2.Contract.SetExecToNativeRate(&_FeeOracleV2.TransactOpts, chainId, rate)
+}
+
+// SetExecToNativeRate is a paid mutator transaction binding the contract method 0x65c6850d.
+//
+// Solidity: function setExecToNativeRate(uint64 chainId, uint64 rate) returns()
+func (_FeeOracleV2 *FeeOracleV2TransactorSession) SetExecToNativeRate(chainId uint64, rate uint64) (*types.Transaction, error) {
+	return _FeeOracleV2.Contract.SetExecToNativeRate(&_FeeOracleV2.TransactOpts, chainId, rate)
 }
 
 // SetManager is a paid mutator transaction binding the contract method 0xd0ebdbe7.
@@ -717,27 +935,6 @@ func (_FeeOracleV2 *FeeOracleV2Session) SetProtocolFee(fee *big.Int) (*types.Tra
 // Solidity: function setProtocolFee(uint72 fee) returns()
 func (_FeeOracleV2 *FeeOracleV2TransactorSession) SetProtocolFee(fee *big.Int) (*types.Transaction, error) {
 	return _FeeOracleV2.Contract.SetProtocolFee(&_FeeOracleV2.TransactOpts, fee)
-}
-
-// SetToNativeRate is a paid mutator transaction binding the contract method 0x5e837ee7.
-//
-// Solidity: function setToNativeRate(uint64 chainId, uint64 rate) returns()
-func (_FeeOracleV2 *FeeOracleV2Transactor) SetToNativeRate(opts *bind.TransactOpts, chainId uint64, rate uint64) (*types.Transaction, error) {
-	return _FeeOracleV2.contract.Transact(opts, "setToNativeRate", chainId, rate)
-}
-
-// SetToNativeRate is a paid mutator transaction binding the contract method 0x5e837ee7.
-//
-// Solidity: function setToNativeRate(uint64 chainId, uint64 rate) returns()
-func (_FeeOracleV2 *FeeOracleV2Session) SetToNativeRate(chainId uint64, rate uint64) (*types.Transaction, error) {
-	return _FeeOracleV2.Contract.SetToNativeRate(&_FeeOracleV2.TransactOpts, chainId, rate)
-}
-
-// SetToNativeRate is a paid mutator transaction binding the contract method 0x5e837ee7.
-//
-// Solidity: function setToNativeRate(uint64 chainId, uint64 rate) returns()
-func (_FeeOracleV2 *FeeOracleV2TransactorSession) SetToNativeRate(chainId uint64, rate uint64) (*types.Transaction, error) {
-	return _FeeOracleV2.Contract.SetToNativeRate(&_FeeOracleV2.TransactOpts, chainId, rate)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
@@ -895,6 +1092,143 @@ func (_FeeOracleV2 *FeeOracleV2Filterer) ParseBaseGasLimitSet(log types.Log) (*F
 	return event, nil
 }
 
+// FeeOracleV2DataFeeParamsSetIterator is returned from FilterDataFeeParamsSet and is used to iterate over the raw logs and unpacked data for DataFeeParamsSet events raised by the FeeOracleV2 contract.
+type FeeOracleV2DataFeeParamsSetIterator struct {
+	Event *FeeOracleV2DataFeeParamsSet // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *FeeOracleV2DataFeeParamsSetIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(FeeOracleV2DataFeeParamsSet)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(FeeOracleV2DataFeeParamsSet)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *FeeOracleV2DataFeeParamsSetIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *FeeOracleV2DataFeeParamsSetIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// FeeOracleV2DataFeeParamsSet represents a DataFeeParamsSet event raised by the FeeOracleV2 contract.
+type FeeOracleV2DataFeeParamsSet struct {
+	ChainId      uint64
+	SizeBuffer   uint64
+	DataGasPrice uint64
+	ToNativeRate uint64
+	Raw          types.Log // Blockchain specific contextual infos
+}
+
+// FilterDataFeeParamsSet is a free log retrieval operation binding the contract event 0xd0b18837916cfd80f0f320486a107794cf007ff14ddafb4483a62c3fb5ec05a3.
+//
+// Solidity: event DataFeeParamsSet(uint64 chainId, uint64 sizeBuffer, uint64 dataGasPrice, uint64 toNativeRate)
+func (_FeeOracleV2 *FeeOracleV2Filterer) FilterDataFeeParamsSet(opts *bind.FilterOpts) (*FeeOracleV2DataFeeParamsSetIterator, error) {
+
+	logs, sub, err := _FeeOracleV2.contract.FilterLogs(opts, "DataFeeParamsSet")
+	if err != nil {
+		return nil, err
+	}
+	return &FeeOracleV2DataFeeParamsSetIterator{contract: _FeeOracleV2.contract, event: "DataFeeParamsSet", logs: logs, sub: sub}, nil
+}
+
+// WatchDataFeeParamsSet is a free log subscription operation binding the contract event 0xd0b18837916cfd80f0f320486a107794cf007ff14ddafb4483a62c3fb5ec05a3.
+//
+// Solidity: event DataFeeParamsSet(uint64 chainId, uint64 sizeBuffer, uint64 dataGasPrice, uint64 toNativeRate)
+func (_FeeOracleV2 *FeeOracleV2Filterer) WatchDataFeeParamsSet(opts *bind.WatchOpts, sink chan<- *FeeOracleV2DataFeeParamsSet) (event.Subscription, error) {
+
+	logs, sub, err := _FeeOracleV2.contract.WatchLogs(opts, "DataFeeParamsSet")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(FeeOracleV2DataFeeParamsSet)
+				if err := _FeeOracleV2.contract.UnpackLog(event, "DataFeeParamsSet", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseDataFeeParamsSet is a log parse operation binding the contract event 0xd0b18837916cfd80f0f320486a107794cf007ff14ddafb4483a62c3fb5ec05a3.
+//
+// Solidity: event DataFeeParamsSet(uint64 chainId, uint64 sizeBuffer, uint64 dataGasPrice, uint64 toNativeRate)
+func (_FeeOracleV2 *FeeOracleV2Filterer) ParseDataFeeParamsSet(log types.Log) (*FeeOracleV2DataFeeParamsSet, error) {
+	event := new(FeeOracleV2DataFeeParamsSet)
+	if err := _FeeOracleV2.contract.UnpackLog(event, "DataFeeParamsSet", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
 // FeeOracleV2DataGasPriceSetIterator is returned from FilterDataGasPriceSet and is used to iterate over the raw logs and unpacked data for DataGasPriceSet events raised by the FeeOracleV2 contract.
 type FeeOracleV2DataGasPriceSetIterator struct {
 	Event *FeeOracleV2DataGasPriceSet // Event containing the contract specifics and raw log
@@ -1024,6 +1358,413 @@ func (_FeeOracleV2 *FeeOracleV2Filterer) WatchDataGasPriceSet(opts *bind.WatchOp
 func (_FeeOracleV2 *FeeOracleV2Filterer) ParseDataGasPriceSet(log types.Log) (*FeeOracleV2DataGasPriceSet, error) {
 	event := new(FeeOracleV2DataGasPriceSet)
 	if err := _FeeOracleV2.contract.UnpackLog(event, "DataGasPriceSet", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// FeeOracleV2DataSizeBufferSetIterator is returned from FilterDataSizeBufferSet and is used to iterate over the raw logs and unpacked data for DataSizeBufferSet events raised by the FeeOracleV2 contract.
+type FeeOracleV2DataSizeBufferSetIterator struct {
+	Event *FeeOracleV2DataSizeBufferSet // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *FeeOracleV2DataSizeBufferSetIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(FeeOracleV2DataSizeBufferSet)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(FeeOracleV2DataSizeBufferSet)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *FeeOracleV2DataSizeBufferSetIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *FeeOracleV2DataSizeBufferSetIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// FeeOracleV2DataSizeBufferSet represents a DataSizeBufferSet event raised by the FeeOracleV2 contract.
+type FeeOracleV2DataSizeBufferSet struct {
+	ChainId    uint64
+	SizeBuffer uint64
+	Raw        types.Log // Blockchain specific contextual infos
+}
+
+// FilterDataSizeBufferSet is a free log retrieval operation binding the contract event 0x0b1d18b6fe29df95e0bd90abbbf45e65e4a14f3ef2126bfcfb7f2a0811266998.
+//
+// Solidity: event DataSizeBufferSet(uint64 chainId, uint64 sizeBuffer)
+func (_FeeOracleV2 *FeeOracleV2Filterer) FilterDataSizeBufferSet(opts *bind.FilterOpts) (*FeeOracleV2DataSizeBufferSetIterator, error) {
+
+	logs, sub, err := _FeeOracleV2.contract.FilterLogs(opts, "DataSizeBufferSet")
+	if err != nil {
+		return nil, err
+	}
+	return &FeeOracleV2DataSizeBufferSetIterator{contract: _FeeOracleV2.contract, event: "DataSizeBufferSet", logs: logs, sub: sub}, nil
+}
+
+// WatchDataSizeBufferSet is a free log subscription operation binding the contract event 0x0b1d18b6fe29df95e0bd90abbbf45e65e4a14f3ef2126bfcfb7f2a0811266998.
+//
+// Solidity: event DataSizeBufferSet(uint64 chainId, uint64 sizeBuffer)
+func (_FeeOracleV2 *FeeOracleV2Filterer) WatchDataSizeBufferSet(opts *bind.WatchOpts, sink chan<- *FeeOracleV2DataSizeBufferSet) (event.Subscription, error) {
+
+	logs, sub, err := _FeeOracleV2.contract.WatchLogs(opts, "DataSizeBufferSet")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(FeeOracleV2DataSizeBufferSet)
+				if err := _FeeOracleV2.contract.UnpackLog(event, "DataSizeBufferSet", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseDataSizeBufferSet is a log parse operation binding the contract event 0x0b1d18b6fe29df95e0bd90abbbf45e65e4a14f3ef2126bfcfb7f2a0811266998.
+//
+// Solidity: event DataSizeBufferSet(uint64 chainId, uint64 sizeBuffer)
+func (_FeeOracleV2 *FeeOracleV2Filterer) ParseDataSizeBufferSet(log types.Log) (*FeeOracleV2DataSizeBufferSet, error) {
+	event := new(FeeOracleV2DataSizeBufferSet)
+	if err := _FeeOracleV2.contract.UnpackLog(event, "DataSizeBufferSet", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// FeeOracleV2DataToNativeRateSetIterator is returned from FilterDataToNativeRateSet and is used to iterate over the raw logs and unpacked data for DataToNativeRateSet events raised by the FeeOracleV2 contract.
+type FeeOracleV2DataToNativeRateSetIterator struct {
+	Event *FeeOracleV2DataToNativeRateSet // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *FeeOracleV2DataToNativeRateSetIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(FeeOracleV2DataToNativeRateSet)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(FeeOracleV2DataToNativeRateSet)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *FeeOracleV2DataToNativeRateSetIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *FeeOracleV2DataToNativeRateSetIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// FeeOracleV2DataToNativeRateSet represents a DataToNativeRateSet event raised by the FeeOracleV2 contract.
+type FeeOracleV2DataToNativeRateSet struct {
+	ChainId      uint64
+	ToNativeRate uint64
+	Raw          types.Log // Blockchain specific contextual infos
+}
+
+// FilterDataToNativeRateSet is a free log retrieval operation binding the contract event 0x1e87d1bd7c559f1a6fcee0e50d1f7d7df76cee0bafc691051b174dc2a8313921.
+//
+// Solidity: event DataToNativeRateSet(uint64 chainId, uint64 toNativeRate)
+func (_FeeOracleV2 *FeeOracleV2Filterer) FilterDataToNativeRateSet(opts *bind.FilterOpts) (*FeeOracleV2DataToNativeRateSetIterator, error) {
+
+	logs, sub, err := _FeeOracleV2.contract.FilterLogs(opts, "DataToNativeRateSet")
+	if err != nil {
+		return nil, err
+	}
+	return &FeeOracleV2DataToNativeRateSetIterator{contract: _FeeOracleV2.contract, event: "DataToNativeRateSet", logs: logs, sub: sub}, nil
+}
+
+// WatchDataToNativeRateSet is a free log subscription operation binding the contract event 0x1e87d1bd7c559f1a6fcee0e50d1f7d7df76cee0bafc691051b174dc2a8313921.
+//
+// Solidity: event DataToNativeRateSet(uint64 chainId, uint64 toNativeRate)
+func (_FeeOracleV2 *FeeOracleV2Filterer) WatchDataToNativeRateSet(opts *bind.WatchOpts, sink chan<- *FeeOracleV2DataToNativeRateSet) (event.Subscription, error) {
+
+	logs, sub, err := _FeeOracleV2.contract.WatchLogs(opts, "DataToNativeRateSet")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(FeeOracleV2DataToNativeRateSet)
+				if err := _FeeOracleV2.contract.UnpackLog(event, "DataToNativeRateSet", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseDataToNativeRateSet is a log parse operation binding the contract event 0x1e87d1bd7c559f1a6fcee0e50d1f7d7df76cee0bafc691051b174dc2a8313921.
+//
+// Solidity: event DataToNativeRateSet(uint64 chainId, uint64 toNativeRate)
+func (_FeeOracleV2 *FeeOracleV2Filterer) ParseDataToNativeRateSet(log types.Log) (*FeeOracleV2DataToNativeRateSet, error) {
+	event := new(FeeOracleV2DataToNativeRateSet)
+	if err := _FeeOracleV2.contract.UnpackLog(event, "DataToNativeRateSet", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// FeeOracleV2ExecFeeParamsSetIterator is returned from FilterExecFeeParamsSet and is used to iterate over the raw logs and unpacked data for ExecFeeParamsSet events raised by the FeeOracleV2 contract.
+type FeeOracleV2ExecFeeParamsSetIterator struct {
+	Event *FeeOracleV2ExecFeeParamsSet // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *FeeOracleV2ExecFeeParamsSetIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(FeeOracleV2ExecFeeParamsSet)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(FeeOracleV2ExecFeeParamsSet)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *FeeOracleV2ExecFeeParamsSetIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *FeeOracleV2ExecFeeParamsSetIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// FeeOracleV2ExecFeeParamsSet represents a ExecFeeParamsSet event raised by the FeeOracleV2 contract.
+type FeeOracleV2ExecFeeParamsSet struct {
+	ChainId      uint64
+	PostsTo      uint64
+	ExecGasPrice uint64
+	ToNativeRate uint64
+	Raw          types.Log // Blockchain specific contextual infos
+}
+
+// FilterExecFeeParamsSet is a free log retrieval operation binding the contract event 0x0a05333d850372b39fcfc14c6eed42ebc766b01f516add8c20240696552c4464.
+//
+// Solidity: event ExecFeeParamsSet(uint64 chainId, uint64 postsTo, uint64 execGasPrice, uint64 toNativeRate)
+func (_FeeOracleV2 *FeeOracleV2Filterer) FilterExecFeeParamsSet(opts *bind.FilterOpts) (*FeeOracleV2ExecFeeParamsSetIterator, error) {
+
+	logs, sub, err := _FeeOracleV2.contract.FilterLogs(opts, "ExecFeeParamsSet")
+	if err != nil {
+		return nil, err
+	}
+	return &FeeOracleV2ExecFeeParamsSetIterator{contract: _FeeOracleV2.contract, event: "ExecFeeParamsSet", logs: logs, sub: sub}, nil
+}
+
+// WatchExecFeeParamsSet is a free log subscription operation binding the contract event 0x0a05333d850372b39fcfc14c6eed42ebc766b01f516add8c20240696552c4464.
+//
+// Solidity: event ExecFeeParamsSet(uint64 chainId, uint64 postsTo, uint64 execGasPrice, uint64 toNativeRate)
+func (_FeeOracleV2 *FeeOracleV2Filterer) WatchExecFeeParamsSet(opts *bind.WatchOpts, sink chan<- *FeeOracleV2ExecFeeParamsSet) (event.Subscription, error) {
+
+	logs, sub, err := _FeeOracleV2.contract.WatchLogs(opts, "ExecFeeParamsSet")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(FeeOracleV2ExecFeeParamsSet)
+				if err := _FeeOracleV2.contract.UnpackLog(event, "ExecFeeParamsSet", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseExecFeeParamsSet is a log parse operation binding the contract event 0x0a05333d850372b39fcfc14c6eed42ebc766b01f516add8c20240696552c4464.
+//
+// Solidity: event ExecFeeParamsSet(uint64 chainId, uint64 postsTo, uint64 execGasPrice, uint64 toNativeRate)
+func (_FeeOracleV2 *FeeOracleV2Filterer) ParseExecFeeParamsSet(log types.Log) (*FeeOracleV2ExecFeeParamsSet, error) {
+	event := new(FeeOracleV2ExecFeeParamsSet)
+	if err := _FeeOracleV2.contract.UnpackLog(event, "ExecFeeParamsSet", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -1165,9 +1906,9 @@ func (_FeeOracleV2 *FeeOracleV2Filterer) ParseExecGasPriceSet(log types.Log) (*F
 	return event, nil
 }
 
-// FeeOracleV2FeeParamsSetIterator is returned from FilterFeeParamsSet and is used to iterate over the raw logs and unpacked data for FeeParamsSet events raised by the FeeOracleV2 contract.
-type FeeOracleV2FeeParamsSetIterator struct {
-	Event *FeeOracleV2FeeParamsSet // Event containing the contract specifics and raw log
+// FeeOracleV2ExecPostsToSetIterator is returned from FilterExecPostsToSet and is used to iterate over the raw logs and unpacked data for ExecPostsToSet events raised by the FeeOracleV2 contract.
+type FeeOracleV2ExecPostsToSetIterator struct {
+	Event *FeeOracleV2ExecPostsToSet // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -1181,7 +1922,7 @@ type FeeOracleV2FeeParamsSetIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *FeeOracleV2FeeParamsSetIterator) Next() bool {
+func (it *FeeOracleV2ExecPostsToSetIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -1190,7 +1931,7 @@ func (it *FeeOracleV2FeeParamsSetIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(FeeOracleV2FeeParamsSet)
+			it.Event = new(FeeOracleV2ExecPostsToSet)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -1205,7 +1946,7 @@ func (it *FeeOracleV2FeeParamsSetIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(FeeOracleV2FeeParamsSet)
+		it.Event = new(FeeOracleV2ExecPostsToSet)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -1221,44 +1962,42 @@ func (it *FeeOracleV2FeeParamsSetIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *FeeOracleV2FeeParamsSetIterator) Error() error {
+func (it *FeeOracleV2ExecPostsToSetIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *FeeOracleV2FeeParamsSetIterator) Close() error {
+func (it *FeeOracleV2ExecPostsToSetIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// FeeOracleV2FeeParamsSet represents a FeeParamsSet event raised by the FeeOracleV2 contract.
-type FeeOracleV2FeeParamsSet struct {
-	ChainId      uint64
-	ExecGasPrice uint64
-	DataGasPrice uint64
-	ToNativeRate uint64
-	Raw          types.Log // Blockchain specific contextual infos
+// FeeOracleV2ExecPostsToSet represents a ExecPostsToSet event raised by the FeeOracleV2 contract.
+type FeeOracleV2ExecPostsToSet struct {
+	ChainId uint64
+	PostsTo uint64
+	Raw     types.Log // Blockchain specific contextual infos
 }
 
-// FilterFeeParamsSet is a free log retrieval operation binding the contract event 0xe71d0f9609b0d14693633a9bdbc9c8b24a957f4141779d70de5c51913ce2d53d.
+// FilterExecPostsToSet is a free log retrieval operation binding the contract event 0x62f13d8522c451be7798aa5f1e258a7780ef5296115067b8e632436d4548a11d.
 //
-// Solidity: event FeeParamsSet(uint64 chainId, uint64 execGasPrice, uint64 dataGasPrice, uint64 toNativeRate)
-func (_FeeOracleV2 *FeeOracleV2Filterer) FilterFeeParamsSet(opts *bind.FilterOpts) (*FeeOracleV2FeeParamsSetIterator, error) {
+// Solidity: event ExecPostsToSet(uint64 chainId, uint64 postsTo)
+func (_FeeOracleV2 *FeeOracleV2Filterer) FilterExecPostsToSet(opts *bind.FilterOpts) (*FeeOracleV2ExecPostsToSetIterator, error) {
 
-	logs, sub, err := _FeeOracleV2.contract.FilterLogs(opts, "FeeParamsSet")
+	logs, sub, err := _FeeOracleV2.contract.FilterLogs(opts, "ExecPostsToSet")
 	if err != nil {
 		return nil, err
 	}
-	return &FeeOracleV2FeeParamsSetIterator{contract: _FeeOracleV2.contract, event: "FeeParamsSet", logs: logs, sub: sub}, nil
+	return &FeeOracleV2ExecPostsToSetIterator{contract: _FeeOracleV2.contract, event: "ExecPostsToSet", logs: logs, sub: sub}, nil
 }
 
-// WatchFeeParamsSet is a free log subscription operation binding the contract event 0xe71d0f9609b0d14693633a9bdbc9c8b24a957f4141779d70de5c51913ce2d53d.
+// WatchExecPostsToSet is a free log subscription operation binding the contract event 0x62f13d8522c451be7798aa5f1e258a7780ef5296115067b8e632436d4548a11d.
 //
-// Solidity: event FeeParamsSet(uint64 chainId, uint64 execGasPrice, uint64 dataGasPrice, uint64 toNativeRate)
-func (_FeeOracleV2 *FeeOracleV2Filterer) WatchFeeParamsSet(opts *bind.WatchOpts, sink chan<- *FeeOracleV2FeeParamsSet) (event.Subscription, error) {
+// Solidity: event ExecPostsToSet(uint64 chainId, uint64 postsTo)
+func (_FeeOracleV2 *FeeOracleV2Filterer) WatchExecPostsToSet(opts *bind.WatchOpts, sink chan<- *FeeOracleV2ExecPostsToSet) (event.Subscription, error) {
 
-	logs, sub, err := _FeeOracleV2.contract.WatchLogs(opts, "FeeParamsSet")
+	logs, sub, err := _FeeOracleV2.contract.WatchLogs(opts, "ExecPostsToSet")
 	if err != nil {
 		return nil, err
 	}
@@ -1268,8 +2007,8 @@ func (_FeeOracleV2 *FeeOracleV2Filterer) WatchFeeParamsSet(opts *bind.WatchOpts,
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(FeeOracleV2FeeParamsSet)
-				if err := _FeeOracleV2.contract.UnpackLog(event, "FeeParamsSet", log); err != nil {
+				event := new(FeeOracleV2ExecPostsToSet)
+				if err := _FeeOracleV2.contract.UnpackLog(event, "ExecPostsToSet", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -1290,12 +2029,147 @@ func (_FeeOracleV2 *FeeOracleV2Filterer) WatchFeeParamsSet(opts *bind.WatchOpts,
 	}), nil
 }
 
-// ParseFeeParamsSet is a log parse operation binding the contract event 0xe71d0f9609b0d14693633a9bdbc9c8b24a957f4141779d70de5c51913ce2d53d.
+// ParseExecPostsToSet is a log parse operation binding the contract event 0x62f13d8522c451be7798aa5f1e258a7780ef5296115067b8e632436d4548a11d.
 //
-// Solidity: event FeeParamsSet(uint64 chainId, uint64 execGasPrice, uint64 dataGasPrice, uint64 toNativeRate)
-func (_FeeOracleV2 *FeeOracleV2Filterer) ParseFeeParamsSet(log types.Log) (*FeeOracleV2FeeParamsSet, error) {
-	event := new(FeeOracleV2FeeParamsSet)
-	if err := _FeeOracleV2.contract.UnpackLog(event, "FeeParamsSet", log); err != nil {
+// Solidity: event ExecPostsToSet(uint64 chainId, uint64 postsTo)
+func (_FeeOracleV2 *FeeOracleV2Filterer) ParseExecPostsToSet(log types.Log) (*FeeOracleV2ExecPostsToSet, error) {
+	event := new(FeeOracleV2ExecPostsToSet)
+	if err := _FeeOracleV2.contract.UnpackLog(event, "ExecPostsToSet", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// FeeOracleV2ExecToNativeRateSetIterator is returned from FilterExecToNativeRateSet and is used to iterate over the raw logs and unpacked data for ExecToNativeRateSet events raised by the FeeOracleV2 contract.
+type FeeOracleV2ExecToNativeRateSetIterator struct {
+	Event *FeeOracleV2ExecToNativeRateSet // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *FeeOracleV2ExecToNativeRateSetIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(FeeOracleV2ExecToNativeRateSet)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(FeeOracleV2ExecToNativeRateSet)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *FeeOracleV2ExecToNativeRateSetIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *FeeOracleV2ExecToNativeRateSetIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// FeeOracleV2ExecToNativeRateSet represents a ExecToNativeRateSet event raised by the FeeOracleV2 contract.
+type FeeOracleV2ExecToNativeRateSet struct {
+	ChainId      uint64
+	ToNativeRate uint64
+	Raw          types.Log // Blockchain specific contextual infos
+}
+
+// FilterExecToNativeRateSet is a free log retrieval operation binding the contract event 0x5728e411b1606c4a6fd53e10049ebe42400b3617c09e478e10239a913ab3493b.
+//
+// Solidity: event ExecToNativeRateSet(uint64 chainId, uint64 toNativeRate)
+func (_FeeOracleV2 *FeeOracleV2Filterer) FilterExecToNativeRateSet(opts *bind.FilterOpts) (*FeeOracleV2ExecToNativeRateSetIterator, error) {
+
+	logs, sub, err := _FeeOracleV2.contract.FilterLogs(opts, "ExecToNativeRateSet")
+	if err != nil {
+		return nil, err
+	}
+	return &FeeOracleV2ExecToNativeRateSetIterator{contract: _FeeOracleV2.contract, event: "ExecToNativeRateSet", logs: logs, sub: sub}, nil
+}
+
+// WatchExecToNativeRateSet is a free log subscription operation binding the contract event 0x5728e411b1606c4a6fd53e10049ebe42400b3617c09e478e10239a913ab3493b.
+//
+// Solidity: event ExecToNativeRateSet(uint64 chainId, uint64 toNativeRate)
+func (_FeeOracleV2 *FeeOracleV2Filterer) WatchExecToNativeRateSet(opts *bind.WatchOpts, sink chan<- *FeeOracleV2ExecToNativeRateSet) (event.Subscription, error) {
+
+	logs, sub, err := _FeeOracleV2.contract.WatchLogs(opts, "ExecToNativeRateSet")
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(FeeOracleV2ExecToNativeRateSet)
+				if err := _FeeOracleV2.contract.UnpackLog(event, "ExecToNativeRateSet", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseExecToNativeRateSet is a log parse operation binding the contract event 0x5728e411b1606c4a6fd53e10049ebe42400b3617c09e478e10239a913ab3493b.
+//
+// Solidity: event ExecToNativeRateSet(uint64 chainId, uint64 toNativeRate)
+func (_FeeOracleV2 *FeeOracleV2Filterer) ParseExecToNativeRateSet(log types.Log) (*FeeOracleV2ExecToNativeRateSet, error) {
+	event := new(FeeOracleV2ExecToNativeRateSet)
+	if err := _FeeOracleV2.contract.UnpackLog(event, "ExecToNativeRateSet", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
@@ -1851,141 +2725,6 @@ func (_FeeOracleV2 *FeeOracleV2Filterer) WatchProtocolFeeSet(opts *bind.WatchOpt
 func (_FeeOracleV2 *FeeOracleV2Filterer) ParseProtocolFeeSet(log types.Log) (*FeeOracleV2ProtocolFeeSet, error) {
 	event := new(FeeOracleV2ProtocolFeeSet)
 	if err := _FeeOracleV2.contract.UnpackLog(event, "ProtocolFeeSet", log); err != nil {
-		return nil, err
-	}
-	event.Raw = log
-	return event, nil
-}
-
-// FeeOracleV2ToNativeRateSetIterator is returned from FilterToNativeRateSet and is used to iterate over the raw logs and unpacked data for ToNativeRateSet events raised by the FeeOracleV2 contract.
-type FeeOracleV2ToNativeRateSetIterator struct {
-	Event *FeeOracleV2ToNativeRateSet // Event containing the contract specifics and raw log
-
-	contract *bind.BoundContract // Generic contract to use for unpacking event data
-	event    string              // Event name to use for unpacking event data
-
-	logs chan types.Log        // Log channel receiving the found contract events
-	sub  ethereum.Subscription // Subscription for errors, completion and termination
-	done bool                  // Whether the subscription completed delivering logs
-	fail error                 // Occurred error to stop iteration
-}
-
-// Next advances the iterator to the subsequent event, returning whether there
-// are any more events found. In case of a retrieval or parsing error, false is
-// returned and Error() can be queried for the exact failure.
-func (it *FeeOracleV2ToNativeRateSetIterator) Next() bool {
-	// If the iterator failed, stop iterating
-	if it.fail != nil {
-		return false
-	}
-	// If the iterator completed, deliver directly whatever's available
-	if it.done {
-		select {
-		case log := <-it.logs:
-			it.Event = new(FeeOracleV2ToNativeRateSet)
-			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-				it.fail = err
-				return false
-			}
-			it.Event.Raw = log
-			return true
-
-		default:
-			return false
-		}
-	}
-	// Iterator still in progress, wait for either a data or an error event
-	select {
-	case log := <-it.logs:
-		it.Event = new(FeeOracleV2ToNativeRateSet)
-		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
-			it.fail = err
-			return false
-		}
-		it.Event.Raw = log
-		return true
-
-	case err := <-it.sub.Err():
-		it.done = true
-		it.fail = err
-		return it.Next()
-	}
-}
-
-// Error returns any retrieval or parsing error occurred during filtering.
-func (it *FeeOracleV2ToNativeRateSetIterator) Error() error {
-	return it.fail
-}
-
-// Close terminates the iteration process, releasing any pending underlying
-// resources.
-func (it *FeeOracleV2ToNativeRateSetIterator) Close() error {
-	it.sub.Unsubscribe()
-	return nil
-}
-
-// FeeOracleV2ToNativeRateSet represents a ToNativeRateSet event raised by the FeeOracleV2 contract.
-type FeeOracleV2ToNativeRateSet struct {
-	ChainId      uint64
-	ToNativeRate uint64
-	Raw          types.Log // Blockchain specific contextual infos
-}
-
-// FilterToNativeRateSet is a free log retrieval operation binding the contract event 0xb4eba3689ad3ae3c17af326b345f7ac3d1f996301aab3598d7dd6cece2666e4d.
-//
-// Solidity: event ToNativeRateSet(uint64 chainId, uint64 toNativeRate)
-func (_FeeOracleV2 *FeeOracleV2Filterer) FilterToNativeRateSet(opts *bind.FilterOpts) (*FeeOracleV2ToNativeRateSetIterator, error) {
-
-	logs, sub, err := _FeeOracleV2.contract.FilterLogs(opts, "ToNativeRateSet")
-	if err != nil {
-		return nil, err
-	}
-	return &FeeOracleV2ToNativeRateSetIterator{contract: _FeeOracleV2.contract, event: "ToNativeRateSet", logs: logs, sub: sub}, nil
-}
-
-// WatchToNativeRateSet is a free log subscription operation binding the contract event 0xb4eba3689ad3ae3c17af326b345f7ac3d1f996301aab3598d7dd6cece2666e4d.
-//
-// Solidity: event ToNativeRateSet(uint64 chainId, uint64 toNativeRate)
-func (_FeeOracleV2 *FeeOracleV2Filterer) WatchToNativeRateSet(opts *bind.WatchOpts, sink chan<- *FeeOracleV2ToNativeRateSet) (event.Subscription, error) {
-
-	logs, sub, err := _FeeOracleV2.contract.WatchLogs(opts, "ToNativeRateSet")
-	if err != nil {
-		return nil, err
-	}
-	return event.NewSubscription(func(quit <-chan struct{}) error {
-		defer sub.Unsubscribe()
-		for {
-			select {
-			case log := <-logs:
-				// New log arrived, parse the event and forward to the user
-				event := new(FeeOracleV2ToNativeRateSet)
-				if err := _FeeOracleV2.contract.UnpackLog(event, "ToNativeRateSet", log); err != nil {
-					return err
-				}
-				event.Raw = log
-
-				select {
-				case sink <- event:
-				case err := <-sub.Err():
-					return err
-				case <-quit:
-					return nil
-				}
-			case err := <-sub.Err():
-				return err
-			case <-quit:
-				return nil
-			}
-		}
-	}), nil
-}
-
-// ParseToNativeRateSet is a log parse operation binding the contract event 0xb4eba3689ad3ae3c17af326b345f7ac3d1f996301aab3598d7dd6cece2666e4d.
-//
-// Solidity: event ToNativeRateSet(uint64 chainId, uint64 toNativeRate)
-func (_FeeOracleV2 *FeeOracleV2Filterer) ParseToNativeRateSet(log types.Log) (*FeeOracleV2ToNativeRateSet, error) {
-	event := new(FeeOracleV2ToNativeRateSet)
-	if err := _FeeOracleV2.contract.UnpackLog(event, "ToNativeRateSet", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

@@ -7,6 +7,7 @@ import { InitializableHelper } from "script/utils/InitializableHelper.sol";
 import { EIP1967Helper } from "script/utils/EIP1967Helper.sol";
 import { OmniPortal } from "src/xchain/OmniPortal.sol";
 import { FeeOracleV1 } from "src/xchain/FeeOracleV1.sol";
+import { FeeOracleV2 } from "src/xchain/FeeOracleV2.sol";
 import { PortalRegistry } from "src/xchain/PortalRegistry.sol";
 import { OmniGasPump } from "src/token/OmniGasPump.sol";
 import { OmniGasStation } from "src/token/OmniGasStation.sol";
@@ -190,6 +191,22 @@ contract Admin is Script {
     function upgradeFeeOracleV1(address admin, address deployer, address proxy, bytes calldata data) public {
         vm.startBroadcast(deployer);
         address impl = address(new FeeOracleV1());
+        vm.stopBroadcast();
+
+        _upgradeProxy(admin, proxy, impl, data);
+
+        // TODO: add post upgrade tests
+    }
+
+    /**
+     * @notice Upgrade a FeeOracleV2 contract.
+     * @param admin     The address of the admin account, owner of the proxy admin
+     * @param deployer  The address of the account that will deploy the new implementation.
+     * @param proxy     The address of the proxy to upgrade.
+     */
+    function upgradeFeeOracleV2(address admin, address deployer, address proxy, bytes calldata data) public {
+        vm.startBroadcast(deployer);
+        address impl = address(new FeeOracleV2());
         vm.stopBroadcast();
 
         _upgradeProxy(admin, proxy, impl, data);
