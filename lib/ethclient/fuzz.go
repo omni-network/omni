@@ -28,6 +28,7 @@ func NewFuzzer(seed int64) *fuzz.Fuzzer {
 			h.WithdrawalsHash = nil
 			h.ParentBeaconRoot = nil
 			h.Nonce = types.BlockNonce{}
+			h.RequestsHash = nil
 		},
 		func(b *types.Block, c fuzz.Continue) {
 			var header types.Header
@@ -41,7 +42,7 @@ func NewFuzzer(seed int64) *fuzz.Fuzzer {
 			block := new(types.Block)
 			c.Fuzz(block)
 
-			env := engine.BlockToExecutableData(block, big.NewInt(0), nil)
+			env := engine.BlockToExecutableData(block, big.NewInt(0), nil, nil)
 
 			*b = *env.ExecutionPayload
 		},

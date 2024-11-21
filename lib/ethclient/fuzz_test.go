@@ -18,6 +18,6 @@ func TestFuzzer(t *testing.T) {
 	f.Fuzz(&payload)
 
 	// Ensure the fuzzed payload is valid by converting it to a block.
-	_, err := engine.ExecutableDataToBlock(payload, nil, nil)
+	_, err := engine.ExecutableDataToBlock(payload, nil, nil, nil)
 	require.NoError(t, err)
 }
