@@ -26,7 +26,7 @@ var (
 	mockL1       = mustChainMeta(evmchain.IDMockL1)
 	mockL2       = mustChainMeta(evmchain.IDMockL2)
 
-	// static is the static devnt app instance.
+	// static is the static devnet app instance.
 	static = App{
 		L1Vault: create3.Address(create3Factory, l1VaultSalt, deployer),
 		L1Token: create3.Address(create3Factory, l1TokenSalt, deployer),

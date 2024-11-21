@@ -112,7 +112,7 @@ func NewBackends(ctx context.Context, testnet types.Testnet, deployKeyFile strin
 
 		// dev omni evm uses same dev accounts as anvil
 		// TODO: do not use dev anvil backend for prod omni evms
-		backend, err := NewAnvilBackend(chain.Chain.Name, chain.Chain.ChainID, chain.Chain.BlockPeriod, ethCl)
+		backend, err := NewDevBackend(chain.Chain.Name, chain.Chain.ChainID, chain.Chain.BlockPeriod, ethCl)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "new omni Backend")
 		}
@@ -127,7 +127,7 @@ func NewBackends(ctx context.Context, testnet types.Testnet, deployKeyFile strin
 			return Backends{}, errors.Wrap(err, "dial")
 		}
 
-		backend, err := NewAnvilBackend(chain.Chain.Name, chain.Chain.ChainID, chain.Chain.BlockPeriod, ethCl)
+		backend, err := NewDevBackend(chain.Chain.Name, chain.Chain.ChainID, chain.Chain.BlockPeriod, ethCl)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "new anvil Backend")
 		}

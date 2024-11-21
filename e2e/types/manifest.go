@@ -2,6 +2,7 @@ package types
 
 import (
 	"github.com/omni-network/omni/e2e/app/key"
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/netconf"
 
@@ -95,6 +96,9 @@ type Manifest struct {
 	// DeploySolve defines whether to deploy the solve contracts
 	DeploySolve bool `toml:"deploy_solve"`
 
+	// Forks maps devnet chain name to name of public chain to fork from.
+	Forks map[string]string
+
 	// Keys contains long-lived private keys (address by type) by node name.
 	Keys map[string]map[key.Type]string `toml:"keys"`
 
@@ -134,6 +138,31 @@ func (m Manifest) Seeds() map[string]bool {
 	}
 
 	return resp
+}
+
+func (m Manifest) Validate() error {
+	hasAnvilChain := func(name string) bool {
+		for _, chain := range m.AnvilChains {
+			if chain == name {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	for name, fork := range m.Forks {
+		if !hasAnvilChain(name) {
+			return errors.New("cannot fork non-anvil chain " + name)
+		}
+
+		_, err := PublicChainByName(fork)
+		if err != nil {
+			return errors.Wrap(err, "cannot fork from unknown chain "+fork)
+		}
+	}
+
+	return nil
 }
 
 // OmniEVMs returns a map of omni evm instances names by mode to deploy.

@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -72,9 +73,9 @@ func NewFireBackend(ctx context.Context, chainName string, chainID uint64, block
 	}, nil
 }
 
-// NewAnvilBackend returns a backend with all pre-funded anvil dev accounts.
-func NewAnvilBackend(chainName string, chainID uint64, blockPeriod time.Duration, ethCl ethclient.Client) (*Backend, error) {
-	return NewBackend(chainName, chainID, blockPeriod, ethCl, anvil.DevPrivateKeys()...)
+// NewDevBackend returns a backend with all pre-funded anvil dev accounts.
+func NewDevBackend(chainName string, chainID uint64, blockPeriod time.Duration, ethCl ethclient.Client) (*Backend, error) {
+	return NewBackend(chainName, chainID, blockPeriod, ethCl, append(eoa.DevPrivateKeys(), anvil.DevPrivateKeys()...)...)
 }
 
 // NewBackend returns a new backend backed by in-memory private keys.

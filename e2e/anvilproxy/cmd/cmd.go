@@ -46,4 +46,5 @@ func bindFlags(flags *pflag.FlagSet, cfg *app.Config) {
 	flags.Uint64Var(&cfg.BlockTimeSecs, "block-time", cfg.BlockTimeSecs, "Block time in seconds for interval mining")
 	flags.BoolVar(&cfg.Silent, "silent", cfg.Silent, "Don't print anything on startup and don't print logs")
 	flags.Uint64Var(&cfg.SlotsInEpoch, "slots-in-an-epoch", cfg.SlotsInEpoch, "Slots in an epoch")
+	flags.StringVar(&cfg.ForkURL, "fork-url", cfg.ForkURL, "URL to fork from")
 }

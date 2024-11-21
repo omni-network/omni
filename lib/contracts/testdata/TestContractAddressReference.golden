@@ -1,15 +1,15 @@
 {
  "devnet": {
-  "avs": "0xc8b1fd61db088d45f9b30f76f6cef6d55b7b036b",
-  "create3": "0x5fbdb2315678afecb367f032d93f642f64180aa3",
-  "feeoraclev2": "0xe06bad64e1399c6eba65f4c86029d7577948e8d9",
-  "gaspump": "0x8d0e4bc3d9409f2aa001671efb08a0455859b456",
-  "gasstation": "0x87d948ada3fef75236adc0961044b57add66e7a8",
-  "l1bridge": "0x96183c6b4ce669007d0de43f1e7eb9a4494271d8",
-  "portal": "0xb835dc695c6bfc8373c0d56973b5d9e9b083e97b",
-  "solveinbox": "0x283fa39ae3d1cd8f778bd0e3965be15ba4005ac0",
-  "solveoutbox": "0x23a4a314320ec6e23526c07cf42dfb35050ea952",
-  "token": "0xac5e38c77804058a1c7df7e8363af1be2132276a"
+  "avs": "0x80c85eea2f03153ed7fa64dd3d415cd6601939f0",
+  "create3": "0xbee8f3af97c432965ac19fa289499cf3d9075e02",
+  "feeoraclev2": "0x4cd32d9c19bb69a358f734ab28292ad88cf9a298",
+  "gaspump": "0x6ba822af710a958b8150274e9024bde303af462d",
+  "gasstation": "0x6168fbde2544c7d5124e24ce5d7905289d87c352",
+  "l1bridge": "0xa999cb18d226085aab1c8425f0163c23e57653de",
+  "portal": "0xc16282f0a26d042672bc4502bfe3c5fbbff4d21c",
+  "solveinbox": "0x66ab85bdff90c3bc800f352a42a4417a4a287d3d",
+  "solveoutbox": "0xfdf592f72a4e315714a63c92c57b36d0e74d4db6",
+  "token": "0xe3321df104e400ad4352cd3e89afe5db9db630a3"
  },
  "mainnet": {
   "avs": "0xed2f4d90b073128ae6769a9a8d51547b1df766c8",

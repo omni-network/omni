@@ -257,6 +257,10 @@ func LoadManifest(path string) (types.Manifest, error) {
 		return manifest, errors.Wrap(err, "decode manifest")
 	}
 
+	if err := manifest.Validate(); err != nil {
+		return manifest, errors.Wrap(err, "validate manifest")
+	}
+
 	return manifest, nil
 }
 
@@ -327,6 +331,21 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 		return types.Testnet{}, err
 	}
 
+	// return fork rpc for chain name. empty string if none
+	forkRPC := func(name string) string {
+		fork, ok := manifest.Forks[name]
+		if !ok {
+			return ""
+		}
+
+		rpc, ok := cfg.RPCOverrides[fork]
+		if ok {
+			return rpc
+		}
+
+		return types.PublicRPCByName(fork)
+	}
+
 	var anvils []types.AnvilChain
 	for _, chain := range anvilEVMs {
 		inst, ok := infd.Instances[chain.Name]
@@ -338,7 +357,6 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 		if infd.Provider == docker.ProviderName {
 			internalIP = chain.Name // For docker, we use container names
 		}
-
 		anvils = append(anvils, types.AnvilChain{
 			Chain:       chain,
 			InternalIP:  inst.IPAddress,
@@ -346,6 +364,7 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 			LoadState:   "./anvil/state.json",
 			InternalRPC: fmt.Sprintf("http://%s:8545", internalIP),
 			ExternalRPC: fmt.Sprintf("http://%s:%d", inst.ExtIPAddress.String(), inst.Port),
+			ForkRPC:     forkRPC(chain.Name),
 		})
 	}
 

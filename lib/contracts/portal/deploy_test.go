@@ -35,7 +35,7 @@ func TestDeployDevnet(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(stop)
 
-	backend, err := ethbackend.NewAnvilBackend(chainName, chainID, blockPeriod, client)
+	backend, err := ethbackend.NewDevBackend(chainName, chainID, blockPeriod, client)
 	require.NoError(t, err)
 
 	addrs, err := contracts.GetAddresses(ctx, network)

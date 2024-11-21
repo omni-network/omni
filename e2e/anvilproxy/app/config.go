@@ -7,6 +7,7 @@ type Config struct {
 	BlockTimeSecs uint64
 	Silent        bool
 	SlotsInEpoch  uint64
+	ForkURL       string
 }
 
 func DefaultConfig() Config {
@@ -17,5 +18,6 @@ func DefaultConfig() Config {
 		Silent:        true,
 		BlockTimeSecs: 1,
 		SlotsInEpoch:  32,
+		ForkURL:       "",
 	}
 }

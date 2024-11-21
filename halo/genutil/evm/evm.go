@@ -108,17 +108,16 @@ func PrefundAlloc(network netconf.ID) (types.GenesisAlloc, error) {
 func ephemeralPrefundAlloc() types.GenesisAlloc {
 	allocs := types.GenesisAlloc{
 		// anvil pre-funded accounts
-		anvil.DevAccount0():  {Balance: eth1m},
-		anvil.DevAccount1():  {Balance: eth1m},
-		anvil.DevAccount2():  {Balance: eth1m},
-		anvil.DevAccount3():  {Balance: eth1m},
-		anvil.DevAccount4():  {Balance: eth1m},
-		anvil.DevAccount5():  {Balance: eth1m},
-		anvil.DevAccount6():  {Balance: eth1m},
-		anvil.DevAccount7():  {Balance: eth1m},
-		anvil.DevAccount8():  {Balance: eth1m},
-		anvil.DevAccount9():  {Balance: eth1m},
-		anvil.DevAccount10(): {Balance: eth1m},
+		anvil.DevAccount0(): {Balance: eth1m},
+		anvil.DevAccount1(): {Balance: eth1m},
+		anvil.DevAccount2(): {Balance: eth1m},
+		anvil.DevAccount3(): {Balance: eth1m},
+		anvil.DevAccount4(): {Balance: eth1m},
+		anvil.DevAccount5(): {Balance: eth1m},
+		anvil.DevAccount6(): {Balance: eth1m},
+		anvil.DevAccount7(): {Balance: eth1m},
+		anvil.DevAccount8(): {Balance: eth1m},
+		anvil.DevAccount9(): {Balance: eth1m},
 
 		// team ops accounts
 		common.HexToAddress("0xfE921e06Ed0a22c035b4aCFF0A5D3a434A330c96"): {Balance: eth1m}, // dev relayer (local)

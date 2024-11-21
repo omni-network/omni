@@ -83,7 +83,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 
 	contracts.UseStagingOmniRPC(def.Testnet.BroadcastOmniEVM().ExternalRPC)
 
-	if err := fundAnvilAccounts(ctx, def); err != nil {
+	if err := fundAnvil(ctx, def); err != nil {
 		return nil, err
 	}
 

@@ -85,7 +85,7 @@ func deployVault(ctx context.Context, backend *ethbackend.Backend, salt string, 
 
 	tx, err := factory.DeployWithRetry(txOpts, create3.HashSalt(salt), initCode) //nolint:contextcheck // Context is txOpts
 	if err != nil {
-		return errors.Wrap(err, "deploy proxy")
+		return errors.Wrap(err, "deploy")
 	}
 
 	_, err = backend.WaitMined(ctx, tx)
