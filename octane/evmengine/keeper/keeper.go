@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"sync"
@@ -112,14 +113,20 @@ func (k *Keeper) RegisterProposalService(server grpc1.Server) {
 // if comparing it against the latest execution block succeeds.
 func (k *Keeper) parseAndVerifyProposedPayload(ctx context.Context, msg *types.MsgExecutionPayload) (engine.ExecutableData, error) {
 	// Parse the payload.
-	var payload engine.ExecutableData
-	if err := json.Unmarshal(msg.ExecutionPayload, &payload); err != nil {
+	decoder := json.NewDecoder(bytes.NewReader(msg.ExecutionPayload))
+	decoder.DisallowUnknownFields()
+	var payload executableDataBackwards
+	if err := decoder.Decode(&payload); err != nil {
 		return engine.ExecutableData{}, errors.Wrap(err, "unmarshal payload")
 	}
 
 	// Ensure no withdrawals are included in the payload.
 	if len(payload.Withdrawals) > 0 {
 		return engine.ExecutableData{}, errors.New("withdrawals not allowed in payload")
+	}
+
+	if payload.Deposits != nil {
+		return engine.ExecutableData{}, errors.New("deposits not null")
 	}
 
 	// Ensure fee recipient using provider
@@ -161,7 +168,7 @@ func (k *Keeper) parseAndVerifyProposedPayload(ctx context.Context, msg *types.M
 		return engine.ExecutableData{}, errors.New("invalid payload random", "proposed", payload.Random, "latest", headHash)
 	}
 
-	return payload, nil
+	return payload.ExecutableData, nil
 }
 
 // isNextProposer returns true if the local node is the proposer

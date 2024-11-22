@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/expbackoff"
 
+	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto/kzg4844"
@@ -78,4 +79,11 @@ func blobHashes(commitments [][]byte) ([]common.Hash, error) {
 	}
 
 	return resp, nil
+}
+
+// executableDataFromPayload extends latest type with legacy fields.
+// This allows using DisallowUnknownFields when decoding to prevent unknown field injection.
+type executableDataBackwards struct {
+	engine.ExecutableData           // Extend the latest struct.
+	Deposits              *struct{} `json:"deposits,omitempty"` // Geth 1.14.2 remove deposits, but previous supported versions still include it (but is MUST be "null").
 }
