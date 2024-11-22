@@ -23,6 +23,7 @@ func TestMakeEVMGenesis(t *testing.T) {
 
 	t.Run("backwards", func(t *testing.T) {
 		t.Parallel()
+		genesis.Alloc = nil // Clear allocs since it is HUGE and not important for this test.
 		backwards, err := evm.MarshallBackwardsCompatible(genesis)
 		require.NoError(t, err)
 		tutil.RequireGoldenBytes(t, backwards)
