@@ -122,11 +122,6 @@ func (k *Keeper) parseAndVerifyProposedPayload(ctx context.Context, msg *types.M
 		return engine.ExecutableData{}, errors.New("withdrawals not allowed in payload")
 	}
 
-	// Ensure no deposits are included in the payload.
-	if len(payload.Deposits) > 0 {
-		return engine.ExecutableData{}, errors.New("deposits not allowed in payload")
-	}
-
 	// Ensure fee recipient using provider
 	if err := k.feeRecProvider.VerifyFeeRecipient(payload.FeeRecipient); err != nil {
 		return engine.ExecutableData{}, errors.Wrap(err, "verify proposed fee recipient")
