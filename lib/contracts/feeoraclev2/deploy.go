@@ -3,6 +3,7 @@ package feeoraclev2
 import (
 	"context"
 	"math/big"
+	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
@@ -166,6 +167,8 @@ func deploy(ctx context.Context, chainID uint64, destChainIDs []uint64, cfg Depl
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "wait mined implementation")
 	}
+
+	time.Sleep(time.Second * 3)
 
 	initCode, err := packInitCode(ctx, chainID, destChainIDs, cfg, backends, impl)
 	if err != nil {

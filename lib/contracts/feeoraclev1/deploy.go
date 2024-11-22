@@ -3,6 +3,7 @@ package feeoraclev1
 import (
 	"context"
 	"math/big"
+	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
@@ -94,6 +95,8 @@ func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainID
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "wait mined")
 	}
+
+	time.Sleep(time.Second * 3)
 
 	proxy, tx, _, err := bindings.DeployTransparentUpgradeableProxy(txOpts, backend, impl, cfg.ProxyAdminOwner, initializer)
 	if err != nil {
