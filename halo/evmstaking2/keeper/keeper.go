@@ -23,7 +23,7 @@ type Keeper struct {
 
 func NewKeeper(storeService store.KVStoreService) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
-		{Id: 1, ProtoFileName: File_halo_evmstaking2_keeper_evmstaking2_proto.Path()},
+		{Id: 1, ProtoFileName: File_halo_evmstaking2_keeper_evmstaking_proto.Path()},
 	}}
 
 	modDB, err := ormdb.NewModuleDB(schema, ormdb.ModuleDBOptions{KVStoreService: storeService})
@@ -31,7 +31,7 @@ func NewKeeper(storeService store.KVStoreService) (*Keeper, error) {
 		return nil, errors.Wrap(err, "create module db")
 	}
 
-	evmstakingStore, err := NewEvmstaking2Store(modDB)
+	evmstakingStore, err := NewEvmstakingStore(modDB)
 	if err != nil {
 		return nil, errors.Wrap(err, "create valsync store")
 	}

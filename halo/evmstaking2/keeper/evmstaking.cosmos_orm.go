@@ -133,31 +133,31 @@ func NewEVMEventTable(db ormtable.Schema) (EVMEventTable, error) {
 	return evmeventTable{table.(ormtable.AutoIncrementTable)}, nil
 }
 
-type Evmstaking2Store interface {
+type EvmstakingStore interface {
 	EVMEventTable() EVMEventTable
 
 	doNotImplement()
 }
 
-type evmstaking2Store struct {
+type evmstakingStore struct {
 	evmevent EVMEventTable
 }
 
-func (x evmstaking2Store) EVMEventTable() EVMEventTable {
+func (x evmstakingStore) EVMEventTable() EVMEventTable {
 	return x.evmevent
 }
 
-func (evmstaking2Store) doNotImplement() {}
+func (evmstakingStore) doNotImplement() {}
 
-var _ Evmstaking2Store = evmstaking2Store{}
+var _ EvmstakingStore = evmstakingStore{}
 
-func NewEvmstaking2Store(db ormtable.Schema) (Evmstaking2Store, error) {
+func NewEvmstakingStore(db ormtable.Schema) (EvmstakingStore, error) {
 	evmeventTable, err := NewEVMEventTable(db)
 	if err != nil {
 		return nil, err
 	}
 
-	return evmstaking2Store{
+	return evmstakingStore{
 		evmeventTable,
 	}, nil
 }
