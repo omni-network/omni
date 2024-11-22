@@ -17,6 +17,8 @@ services:
       - ANVILPROXY_BLOCK_TIME=1
       - ANVILPROXY_SLOTS_IN_AN_EPOCH=4 # Finality in 4*2*BlockPeriod
       - FORKPROXY_LOAD_STATE=/anvil/state.json
+      
+      
     ports:
       - 8545:8545
     networks:

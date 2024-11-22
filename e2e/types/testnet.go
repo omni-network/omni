@@ -257,6 +257,7 @@ type AnvilChain struct {
 	ProxyPort   uint32   // For binding
 	InternalRPC string   // For JSON-RPC queries from halo/relayer
 	ExternalRPC string   // For JSON-RPC queries from e2e app.
+	ForkRPC     string   // JSON-RPC to fork from
 	LoadState   string   // File path to load anvil state from
 }
 

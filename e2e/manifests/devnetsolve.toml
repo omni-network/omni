@@ -5,6 +5,9 @@ deploy_solve = true
 
 prometheus = true
 
+[forks]
+mock_l1 = "holesky"
+
 [node.validator01]
 
 [node.fullnode01]
