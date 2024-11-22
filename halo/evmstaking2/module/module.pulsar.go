@@ -14,14 +14,16 @@ import (
 )
 
 var (
-	md_Module           protoreflect.MessageDescriptor
-	fd_Module_authority protoreflect.FieldDescriptor
+	md_Module                             protoreflect.MessageDescriptor
+	fd_Module_authority                   protoreflect.FieldDescriptor
+	fd_Module_valset_updates_delay_blocks protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_halo_evmstaking2_module_module_proto_init()
 	md_Module = File_halo_evmstaking2_module_module_proto.Messages().ByName("Module")
 	fd_Module_authority = md_Module.Fields().ByName("authority")
+	fd_Module_valset_updates_delay_blocks = md_Module.Fields().ByName("valset_updates_delay_blocks")
 }
 
 var _ protoreflect.Message = (*fastReflection_Module)(nil)
@@ -95,6 +97,12 @@ func (x *fastReflection_Module) Range(f func(protoreflect.FieldDescriptor, proto
 			return
 		}
 	}
+	if x.ValsetUpdatesDelayBlocks != int64(0) {
+		value := protoreflect.ValueOfInt64(x.ValsetUpdatesDelayBlocks)
+		if !f(fd_Module_valset_updates_delay_blocks, value) {
+			return
+		}
+	}
 }
 
 // Has reports whether a field is populated.
@@ -112,6 +120,8 @@ func (x *fastReflection_Module) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
 	case "halo.evmstaking2.module.Module.authority":
 		return x.Authority != ""
+	case "halo.evmstaking2.module.Module.valset_updates_delay_blocks":
+		return x.ValsetUpdatesDelayBlocks != int64(0)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: halo.evmstaking2.module.Module"))
@@ -130,6 +140,8 @@ func (x *fastReflection_Module) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
 	case "halo.evmstaking2.module.Module.authority":
 		x.Authority = ""
+	case "halo.evmstaking2.module.Module.valset_updates_delay_blocks":
+		x.ValsetUpdatesDelayBlocks = int64(0)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: halo.evmstaking2.module.Module"))
@@ -149,6 +161,9 @@ func (x *fastReflection_Module) Get(descriptor protoreflect.FieldDescriptor) pro
 	case "halo.evmstaking2.module.Module.authority":
 		value := x.Authority
 		return protoreflect.ValueOfString(value)
+	case "halo.evmstaking2.module.Module.valset_updates_delay_blocks":
+		value := x.ValsetUpdatesDelayBlocks
+		return protoreflect.ValueOfInt64(value)
 	default:
 		if descriptor.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: halo.evmstaking2.module.Module"))
@@ -171,6 +186,8 @@ func (x *fastReflection_Module) Set(fd protoreflect.FieldDescriptor, value proto
 	switch fd.FullName() {
 	case "halo.evmstaking2.module.Module.authority":
 		x.Authority = value.Interface().(string)
+	case "halo.evmstaking2.module.Module.valset_updates_delay_blocks":
+		x.ValsetUpdatesDelayBlocks = value.Int()
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: halo.evmstaking2.module.Module"))
@@ -193,6 +210,8 @@ func (x *fastReflection_Module) Mutable(fd protoreflect.FieldDescriptor) protore
 	switch fd.FullName() {
 	case "halo.evmstaking2.module.Module.authority":
 		panic(fmt.Errorf("field authority of message halo.evmstaking2.module.Module is not mutable"))
+	case "halo.evmstaking2.module.Module.valset_updates_delay_blocks":
+		panic(fmt.Errorf("field valset_updates_delay_blocks of message halo.evmstaking2.module.Module is not mutable"))
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: halo.evmstaking2.module.Module"))
@@ -208,6 +227,8 @@ func (x *fastReflection_Module) NewField(fd protoreflect.FieldDescriptor) protor
 	switch fd.FullName() {
 	case "halo.evmstaking2.module.Module.authority":
 		return protoreflect.ValueOfString("")
+	case "halo.evmstaking2.module.Module.valset_updates_delay_blocks":
+		return protoreflect.ValueOfInt64(int64(0))
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: halo.evmstaking2.module.Module"))
@@ -281,6 +302,9 @@ func (x *fastReflection_Module) ProtoMethods() *protoiface.Methods {
 		if l > 0 {
 			n += 1 + l + runtime.Sov(uint64(l))
 		}
+		if x.ValsetUpdatesDelayBlocks != 0 {
+			n += 1 + runtime.Sov(uint64(x.ValsetUpdatesDelayBlocks))
+		}
 		if x.unknownFields != nil {
 			n += len(x.unknownFields)
 		}
@@ -309,6 +333,11 @@ func (x *fastReflection_Module) ProtoMethods() *protoiface.Methods {
 		if x.unknownFields != nil {
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
+		}
+		if x.ValsetUpdatesDelayBlocks != 0 {
+			i = runtime.EncodeVarint(dAtA, i, uint64(x.ValsetUpdatesDelayBlocks))
+			i--
+			dAtA[i] = 0x10
 		}
 		if len(x.Authority) > 0 {
 			i -= len(x.Authority)
@@ -398,6 +427,25 @@ func (x *fastReflection_Module) ProtoMethods() *protoiface.Methods {
 				}
 				x.Authority = string(dAtA[iNdEx:postIndex])
 				iNdEx = postIndex
+			case 2:
+				if wireType != 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field ValsetUpdatesDelayBlocks", wireType)
+				}
+				x.ValsetUpdatesDelayBlocks = 0
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					x.ValsetUpdatesDelayBlocks |= int64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
 			default:
 				iNdEx = preIndex
 				skippy, err := runtime.Skip(dAtA[iNdEx:])
@@ -454,6 +502,8 @@ type Module struct {
 
 	// authority defines the custom module authority. If not set, defaults to the governance module.
 	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
+	// valset_updates_delay_blocks defines the delay between processing of valset-related events.
+	ValsetUpdatesDelayBlocks int64 `protobuf:"varint,2,opt,name=valset_updates_delay_blocks,json=valsetUpdatesDelayBlocks,proto3" json:"valset_updates_delay_blocks,omitempty"`
 }
 
 func (x *Module) Reset() {
@@ -483,6 +533,13 @@ func (x *Module) GetAuthority() string {
 	return ""
 }
 
+func (x *Module) GetValsetUpdatesDelayBlocks() int64 {
+	if x != nil {
+		return x.ValsetUpdatesDelayBlocks
+	}
+	return 0
+}
+
 var File_halo_evmstaking2_module_module_proto protoreflect.FileDescriptor
 
 var file_halo_evmstaking2_module_module_proto_rawDesc = []byte{
@@ -492,9 +549,13 @@ var file_halo_evmstaking2_module_module_proto_rawDesc = []byte{
 	0x73, 0x74, 0x61, 0x6b, 0x69, 0x6e, 0x67, 0x32, 0x2e, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x1a,
 	0x20, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x61, 0x70, 0x70, 0x2f, 0x76, 0x31, 0x61, 0x6c,
 	0x70, 0x68, 0x61, 0x31, 0x2f, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x22, 0x5d, 0x0a, 0x06, 0x4d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x12, 0x1c, 0x0a, 0x09, 0x61,
-	0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09,
-	0x61, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x3a, 0x35, 0xba, 0xc0, 0x96, 0xda, 0x01,
+	0x6f, 0x22, 0x9c, 0x01, 0x0a, 0x06, 0x4d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x12, 0x1c, 0x0a, 0x09,
+	0x61, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x09, 0x61, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x12, 0x3d, 0x0a, 0x1b, 0x76, 0x61,
+	0x6c, 0x73, 0x65, 0x74, 0x5f, 0x75, 0x70, 0x64, 0x61, 0x74, 0x65, 0x73, 0x5f, 0x64, 0x65, 0x6c,
+	0x61, 0x79, 0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03, 0x52,
+	0x18, 0x76, 0x61, 0x6c, 0x73, 0x65, 0x74, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x73, 0x44, 0x65,
+	0x6c, 0x61, 0x79, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x73, 0x3a, 0x35, 0xba, 0xc0, 0x96, 0xda, 0x01,
 	0x2f, 0x0a, 0x2d, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x6f, 0x6d,
 	0x6e, 0x69, 0x2d, 0x6e, 0x65, 0x74, 0x77, 0x6f, 0x72, 0x6b, 0x2f, 0x6f, 0x6d, 0x6e, 0x69, 0x2f,
 	0x68, 0x61, 0x6c, 0x6f, 0x2f, 0x65, 0x76, 0x6d, 0x73, 0x74, 0x61, 0x6b, 0x69, 0x6e, 0x67, 0x32,

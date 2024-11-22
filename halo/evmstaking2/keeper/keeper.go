@@ -7,21 +7,24 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-
 	"github.com/ethereum/go-ethereum/common"
 
 	ormv1alpha1 "cosmossdk.io/api/cosmos/orm/v1alpha1"
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/orm/model/ormdb"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // Keeper also implements the evmenginetypes.EvmEventProcessor interface.
 type Keeper struct {
-	eventsTable EVMEventTable
+	eventsTable     EVMEventTable
+	submissionDelay int64
 }
 
-func NewKeeper(storeService store.KVStoreService) (*Keeper, error) {
+func NewKeeper(
+	storeService store.KVStoreService,
+	submissionDelay int64,
+) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
 		{Id: 1, ProtoFileName: File_halo_evmstaking2_keeper_evmstaking_proto.Path()},
 	}}
@@ -37,12 +40,38 @@ func NewKeeper(storeService store.KVStoreService) (*Keeper, error) {
 	}
 
 	return &Keeper{
-		eventsTable: evmstakingStore.EVMEventTable(),
+		eventsTable:     evmstakingStore.EVMEventTable(),
+		submissionDelay: submissionDelay,
 	}, nil
 }
 
-func (*Keeper) EndBlock(context.Context) ([]abci.ValidatorUpdate, error) {
-	return nil, nil
+// EndBlock delivers all pending EVM events on every `k.submissionDelay`'th block.
+func (k *Keeper) EndBlock(ctx context.Context) error {
+	blockHeight := sdk.UnwrapSDKContext(ctx).BlockHeight()
+
+	if blockHeight%k.submissionDelay != 0 {
+		return nil
+	}
+
+	eventIter, err := k.eventsTable.List(ctx, EVMEventIdIndexKey{})
+	if err != nil {
+		return errors.Wrap(err, "fetch evm events")
+	}
+	defer eventIter.Close()
+
+	for eventIter.Next() {
+		val, err := eventIter.Value()
+		if err != nil {
+			return errors.Wrap(err, "get event")
+		}
+		parseAndDeliver(ctx, val.GetEvent())
+		err = k.eventsTable.Delete(ctx, val)
+		if err != nil {
+			return errors.Wrap(err, "delete evm event")
+		}
+	}
+
+	return nil
 }
 
 // Prepare returns all omni stake contract EVM event logs from the provided block hash.
@@ -74,3 +103,7 @@ func (k Keeper) Deliver(ctx context.Context, _ common.Hash, elog evmenginetypes.
 
 	return nil
 }
+
+// parseAndDeliver parses the provided event and tries to deliver it on a state branch.
+// If the delivery fails, the error will be logged and the state branch will be discarded.
+func parseAndDeliver(context.Context, *evmenginetypes.EVMEvent) {}

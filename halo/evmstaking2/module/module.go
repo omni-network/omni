@@ -6,8 +6,6 @@ import (
 	"github.com/omni-network/omni/halo/evmstaking2/keeper"
 	"github.com/omni-network/omni/halo/evmstaking2/types"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/depinject"
@@ -23,9 +21,9 @@ const (
 )
 
 var (
-	_ module.AppModuleBasic  = (*AppModule)(nil)
-	_ module.HasABCIEndBlock = (*AppModule)(nil)
-	_ appmodule.AppModule    = (*AppModule)(nil)
+	_ module.AppModuleBasic   = (*AppModule)(nil)
+	_ appmodule.AppModule     = (*AppModule)(nil)
+	_ appmodule.HasEndBlocker = (*AppModule)(nil)
 )
 
 // ----------------------------------------------------------------------------
@@ -72,7 +70,7 @@ type AppModule struct {
 	keeper *keeper.Keeper
 }
 
-func (m AppModule) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error) {
+func (m AppModule) EndBlock(ctx context.Context) error {
 	return m.keeper.EndBlock(ctx)
 }
 
@@ -127,6 +125,7 @@ type ModuleOutputs struct {
 func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 	k, err := keeper.NewKeeper(
 		in.StoreService,
+		in.Config.GetValsetUpdatesDelayBlocks(),
 	)
 	if err != nil {
 		return ModuleOutputs{}, err

@@ -41,23 +41,50 @@ func TestInsertEVMEvents(t *testing.T) {
 		},
 	}
 
-	keeper, sdkCtx := setupKeeper(t)
+	submissionDelay := int64(5)
+
+	keeper, ctx := setupKeeper(t, submissionDelay)
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			sdkCtx = sdkCtx.WithBlockHeight(test.height)
+			ctx = ctx.WithBlockHeight(test.height)
 
-			err := keeper.Deliver(sdkCtx, common.Hash{}, test.event)
+			err := keeper.Deliver(ctx, common.Hash{}, test.event)
 			require.NoError(t, err)
 
-			event, err := keeper.eventsTable.Get(sdkCtx, test.insertedID)
+			event, err := keeper.eventsTable.Get(ctx, test.insertedID)
 			require.NoError(t, err)
 			require.Equal(t, test.event.Address, event.GetEvent().Address)
 		})
 	}
+
+	// Make sure no submission happens for heights in the range 2 to 4
+	for h := int64(2); h <= 4; h++ {
+		ctx = ctx.WithBlockHeight(h)
+		err := keeper.EndBlock(ctx)
+		require.NoError(t, err)
+	}
+
+	// All events are present because we did not deliver them.
+	for _, test := range tests {
+		found, err := keeper.eventsTable.Has(ctx, test.insertedID)
+		require.NoError(t, err)
+		require.True(t, found)
+	}
+
+	// Now "execute" block number `submissionDelay`
+	err := keeper.EndBlock(ctx.WithBlockHeight(submissionDelay))
+	require.NoError(t, err)
+
+	// All events are deleted now
+	for _, test := range tests {
+		found, err := keeper.eventsTable.Has(ctx, test.insertedID)
+		require.NoError(t, err)
+		require.False(t, found)
+	}
 }
 
-func setupKeeper(t *testing.T) (*Keeper, sdk.Context) {
+func setupKeeper(t *testing.T, submissionDelay int64) (*Keeper, sdk.Context) {
 	t.Helper()
 
 	key := storetypes.NewKVStoreKey(types.ModuleName)
@@ -66,7 +93,7 @@ func setupKeeper(t *testing.T) (*Keeper, sdk.Context) {
 	ctx = ctx.WithBlockHeight(1)
 	ctx = ctx.WithChainID(netconf.Simnet.Static().OmniConsensusChainIDStr())
 
-	k, err := NewKeeper(storeSvc)
+	k, err := NewKeeper(storeSvc, submissionDelay)
 	require.NoError(t, err, "new keeper")
 
 	return k, ctx
