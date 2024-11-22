@@ -94,7 +94,7 @@ func PrecompilesAlloc() types.GenesisAlloc {
 
 func PrefundAlloc(network netconf.ID) (types.GenesisAlloc, error) {
 	if network.IsEphemeral() {
-		return ephemeralPrefundAlloc(), nil
+		return ephemeralPrefundAlloc(network), nil
 	} else if network == netconf.Omega {
 		return omegaPrefundAlloc(), nil
 	} else if network == netconf.Mainnet {
@@ -104,34 +104,30 @@ func PrefundAlloc(network netconf.ID) (types.GenesisAlloc, error) {
 	return nil, errors.New("unsupported network", "network", network.String())
 }
 
-// ephemeralPrefundAlloc returns allocs for pre-funded geth accounts.
-func ephemeralPrefundAlloc() types.GenesisAlloc {
-	allocs := types.GenesisAlloc{
-		// anvil pre-funded accounts
-		anvil.DevAccount0():  {Balance: eth1m},
-		anvil.DevAccount1():  {Balance: eth1m},
-		anvil.DevAccount2():  {Balance: eth1m},
-		anvil.DevAccount3():  {Balance: eth1m},
-		anvil.DevAccount4():  {Balance: eth1m},
-		anvil.DevAccount5():  {Balance: eth1m},
-		anvil.DevAccount6():  {Balance: eth1m},
-		anvil.DevAccount7():  {Balance: eth1m},
-		anvil.DevAccount8():  {Balance: eth1m},
-		anvil.DevAccount9():  {Balance: eth1m},
-		anvil.DevAccount10(): {Balance: eth1m},
-
-		// team ops accounts
-		common.HexToAddress("0xfE921e06Ed0a22c035b4aCFF0A5D3a434A330c96"): {Balance: eth1m}, // dev relayer (local)
-		common.HexToAddress("0xfC9D554D69DdCfC0A731b2DC64550177b0723bE5"): {Balance: eth1m}, // dev deployer (local)
-		common.HexToAddress("0x7a6cF389082dc698285474976d7C75CAdE08ab7e"): {Balance: eth1m}, // fb: dev
-		common.HexToAddress("0xC8103859Ac7CB547d70307EdeF1A2319FC305fdC"): {Balance: eth1m}, // fb: create3-deployer
-	}
+func ephemeralPrefundAlloc(network netconf.ID) types.GenesisAlloc {
+	allocs := anvilPrefundAlloc()
 
 	for _, role := range eoa.AllRoles() {
-		allocs[eoa.MustAddress(netconf.Staging, role)] = types.Account{Balance: eth1m}
+		allocs[eoa.MustAddress(network, role)] = types.Account{Balance: eth1m}
 	}
 
 	return allocs
+}
+
+func anvilPrefundAlloc() types.GenesisAlloc {
+	return types.GenesisAlloc{
+		// anvil pre-funded accounts
+		anvil.DevAccount0(): {Balance: eth1m},
+		anvil.DevAccount1(): {Balance: eth1m},
+		anvil.DevAccount2(): {Balance: eth1m},
+		anvil.DevAccount3(): {Balance: eth1m},
+		anvil.DevAccount4(): {Balance: eth1m},
+		anvil.DevAccount5(): {Balance: eth1m},
+		anvil.DevAccount6(): {Balance: eth1m},
+		anvil.DevAccount7(): {Balance: eth1m},
+		anvil.DevAccount8(): {Balance: eth1m},
+		anvil.DevAccount9(): {Balance: eth1m},
+	}
 }
 
 func omegaPrefundAlloc() types.GenesisAlloc {

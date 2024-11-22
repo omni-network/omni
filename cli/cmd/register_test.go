@@ -76,7 +76,7 @@ func setup(t *testing.T) (context.Context, *ethbackend.Backend, Contracts, EOAS)
 	require.NoError(t, err)
 	t.Cleanup(stop)
 
-	backend, err := ethbackend.NewAnvilBackend(chainName, chainID, blockPeriod, ethCl)
+	backend, err := ethbackend.NewDevBackend(chainName, chainID, blockPeriod, ethCl)
 	require.NoError(t, err)
 
 	eoas := makeEOAS(t, backend)
