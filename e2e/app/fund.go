@@ -6,12 +6,10 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
-	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/txmgr"
 
@@ -22,42 +20,6 @@ import (
 
 const saneMaxETH = 113    // Maximum amount of ETH to fund (in ether).
 const saneMaxOmni = 56630 // Maximum amount of OMNI to fund (in ether OMNI).
-
-// noAnvilDev returns a list of accounts that are not dev anvil accounts.
-func noAnvilDev(accounts []common.Address) []common.Address {
-	var nonDevAccounts []common.Address
-	for _, account := range accounts {
-		if !anvil.IsDevAccount(account) {
-			nonDevAccounts = append(nonDevAccounts, account)
-		}
-	}
-
-	return nonDevAccounts
-}
-
-// accountsToFund returns a list of accounts to fund on anvil chains, based on the network.
-func accountsToFund(network netconf.ID) []common.Address {
-	switch network {
-	case netconf.Staging:
-		return eoa.MustAddresses(netconf.Staging, eoa.AllRoles()...)
-	case netconf.Devnet:
-		return eoa.MustAddresses(netconf.Devnet, eoa.AllRoles()...)
-	default:
-		return []common.Address{}
-	}
-}
-
-// fundAnvilAccounts funds the EOAs on anvil that need funding.
-func fundAnvilAccounts(ctx context.Context, def Definition) error {
-	accounts := accountsToFund(def.Testnet.Network)
-	for _, chain := range def.Testnet.AnvilChains {
-		if err := anvil.FundAccounts(ctx, chain.ExternalRPC, saneMax(tokens.ETH), noAnvilDev(accounts)...); err != nil {
-			return errors.Wrap(err, "fund anvil account")
-		}
-	}
-
-	return nil
-}
 
 // FundAccounts funds the EOAs and contracts that need funding to their target balance.
 func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool) error {

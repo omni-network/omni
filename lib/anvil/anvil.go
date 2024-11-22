@@ -10,11 +10,14 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/app/static"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/scripts"
+
+	"cosmossdk.io/math"
 
 	_ "embed"
 )
@@ -85,6 +88,13 @@ func Start(ctx context.Context, dir string, chainID uint64) (ethclient.Client, s
 		}
 
 		log.Warn(ctx, "Anvil: waiting for RPC to be available", err)
+	}
+
+	// always fund dev accounts
+	eth1m := math.NewInt(1000000).MulRaw(1e18).BigInt() // 1M ETH
+	if err := FundAccounts(ctx, endpoint, eth1m, eoa.DevAccounts()...); err != nil {
+		stop()
+		return nil, "", nil, errors.Wrap(err, "fund accounts")
 	}
 
 	log.Info(ctx, "Anvil: RPC is available", "addr", endpoint)

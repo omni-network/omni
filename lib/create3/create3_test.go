@@ -28,9 +28,7 @@ func TestHashSalt(t *testing.T) {
 func TestAddress(t *testing.T) {
 	t.Parallel()
 
-	// test case is Devent proxy admin deployment
-
 	factory := common.HexToAddress("0x5FbDB2315678afecb367f032d93F642f64180aa3")
-	expected := common.HexToAddress("0xd8dc3f2817F4d87200443FBaEdE5ab8D5d742465")
+	expected := common.HexToAddress("0x88C1422a445c2f314a37a0cF08ba038b0471bC7f")
 	require.Equal(t, expected, create3.Address(factory, "devnet-proxy-admin", eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer)))
 }
