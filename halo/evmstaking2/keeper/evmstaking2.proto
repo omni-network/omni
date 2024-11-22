@@ -7,8 +7,8 @@ import "octane/evmengine/types/tx.proto";
 
 option go_package = "halo/evmstaking2/keeper";
 
-// EVMEvents is a list of unparsed EVM events.
-message EVMEvents {
+// EVMEvent is an unparsed EVM event.
+message EVMEvent {
   option (cosmos.orm.v1.table) = {
     id: 1;
     primary_key: { fields: "id", auto_increment: true }

@@ -9,142 +9,142 @@ import (
 	ormerrors "cosmossdk.io/orm/types/ormerrors"
 )
 
-type EVMEventsTable interface {
-	Insert(ctx context.Context, evmevents *EVMEvents) error
-	InsertReturningId(ctx context.Context, evmevents *EVMEvents) (uint64, error)
+type EVMEventTable interface {
+	Insert(ctx context.Context, evmevent *EVMEvent) error
+	InsertReturningId(ctx context.Context, evmevent *EVMEvent) (uint64, error)
 	LastInsertedSequence(ctx context.Context) (uint64, error)
-	Update(ctx context.Context, evmevents *EVMEvents) error
-	Save(ctx context.Context, evmevents *EVMEvents) error
-	Delete(ctx context.Context, evmevents *EVMEvents) error
+	Update(ctx context.Context, evmevent *EVMEvent) error
+	Save(ctx context.Context, evmevent *EVMEvent) error
+	Delete(ctx context.Context, evmevent *EVMEvent) error
 	Has(ctx context.Context, id uint64) (found bool, err error)
 	// Get returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
-	Get(ctx context.Context, id uint64) (*EVMEvents, error)
-	List(ctx context.Context, prefixKey EVMEventsIndexKey, opts ...ormlist.Option) (EVMEventsIterator, error)
-	ListRange(ctx context.Context, from, to EVMEventsIndexKey, opts ...ormlist.Option) (EVMEventsIterator, error)
-	DeleteBy(ctx context.Context, prefixKey EVMEventsIndexKey) error
-	DeleteRange(ctx context.Context, from, to EVMEventsIndexKey) error
+	Get(ctx context.Context, id uint64) (*EVMEvent, error)
+	List(ctx context.Context, prefixKey EVMEventIndexKey, opts ...ormlist.Option) (EVMEventIterator, error)
+	ListRange(ctx context.Context, from, to EVMEventIndexKey, opts ...ormlist.Option) (EVMEventIterator, error)
+	DeleteBy(ctx context.Context, prefixKey EVMEventIndexKey) error
+	DeleteRange(ctx context.Context, from, to EVMEventIndexKey) error
 
 	doNotImplement()
 }
 
-type EVMEventsIterator struct {
+type EVMEventIterator struct {
 	ormtable.Iterator
 }
 
-func (i EVMEventsIterator) Value() (*EVMEvents, error) {
-	var evmevents EVMEvents
-	err := i.UnmarshalMessage(&evmevents)
-	return &evmevents, err
+func (i EVMEventIterator) Value() (*EVMEvent, error) {
+	var evmevent EVMEvent
+	err := i.UnmarshalMessage(&evmevent)
+	return &evmevent, err
 }
 
-type EVMEventsIndexKey interface {
+type EVMEventIndexKey interface {
 	id() uint32
 	values() []interface{}
-	evmeventsIndexKey()
+	evmeventIndexKey()
 }
 
 // primary key starting index..
-type EVMEventsPrimaryKey = EVMEventsIdIndexKey
+type EVMEventPrimaryKey = EVMEventIdIndexKey
 
-type EVMEventsIdIndexKey struct {
+type EVMEventIdIndexKey struct {
 	vs []interface{}
 }
 
-func (x EVMEventsIdIndexKey) id() uint32            { return 0 }
-func (x EVMEventsIdIndexKey) values() []interface{} { return x.vs }
-func (x EVMEventsIdIndexKey) evmeventsIndexKey()    {}
+func (x EVMEventIdIndexKey) id() uint32            { return 0 }
+func (x EVMEventIdIndexKey) values() []interface{} { return x.vs }
+func (x EVMEventIdIndexKey) evmeventIndexKey()     {}
 
-func (this EVMEventsIdIndexKey) WithId(id uint64) EVMEventsIdIndexKey {
+func (this EVMEventIdIndexKey) WithId(id uint64) EVMEventIdIndexKey {
 	this.vs = []interface{}{id}
 	return this
 }
 
-type evmeventsTable struct {
+type evmeventTable struct {
 	table ormtable.AutoIncrementTable
 }
 
-func (this evmeventsTable) Insert(ctx context.Context, evmevents *EVMEvents) error {
-	return this.table.Insert(ctx, evmevents)
+func (this evmeventTable) Insert(ctx context.Context, evmevent *EVMEvent) error {
+	return this.table.Insert(ctx, evmevent)
 }
 
-func (this evmeventsTable) Update(ctx context.Context, evmevents *EVMEvents) error {
-	return this.table.Update(ctx, evmevents)
+func (this evmeventTable) Update(ctx context.Context, evmevent *EVMEvent) error {
+	return this.table.Update(ctx, evmevent)
 }
 
-func (this evmeventsTable) Save(ctx context.Context, evmevents *EVMEvents) error {
-	return this.table.Save(ctx, evmevents)
+func (this evmeventTable) Save(ctx context.Context, evmevent *EVMEvent) error {
+	return this.table.Save(ctx, evmevent)
 }
 
-func (this evmeventsTable) Delete(ctx context.Context, evmevents *EVMEvents) error {
-	return this.table.Delete(ctx, evmevents)
+func (this evmeventTable) Delete(ctx context.Context, evmevent *EVMEvent) error {
+	return this.table.Delete(ctx, evmevent)
 }
 
-func (this evmeventsTable) InsertReturningId(ctx context.Context, evmevents *EVMEvents) (uint64, error) {
-	return this.table.InsertReturningPKey(ctx, evmevents)
+func (this evmeventTable) InsertReturningId(ctx context.Context, evmevent *EVMEvent) (uint64, error) {
+	return this.table.InsertReturningPKey(ctx, evmevent)
 }
 
-func (this evmeventsTable) LastInsertedSequence(ctx context.Context) (uint64, error) {
+func (this evmeventTable) LastInsertedSequence(ctx context.Context) (uint64, error) {
 	return this.table.LastInsertedSequence(ctx)
 }
 
-func (this evmeventsTable) Has(ctx context.Context, id uint64) (found bool, err error) {
+func (this evmeventTable) Has(ctx context.Context, id uint64) (found bool, err error) {
 	return this.table.PrimaryKey().Has(ctx, id)
 }
 
-func (this evmeventsTable) Get(ctx context.Context, id uint64) (*EVMEvents, error) {
-	var evmevents EVMEvents
-	found, err := this.table.PrimaryKey().Get(ctx, &evmevents, id)
+func (this evmeventTable) Get(ctx context.Context, id uint64) (*EVMEvent, error) {
+	var evmevent EVMEvent
+	found, err := this.table.PrimaryKey().Get(ctx, &evmevent, id)
 	if err != nil {
 		return nil, err
 	}
 	if !found {
 		return nil, ormerrors.NotFound
 	}
-	return &evmevents, nil
+	return &evmevent, nil
 }
 
-func (this evmeventsTable) List(ctx context.Context, prefixKey EVMEventsIndexKey, opts ...ormlist.Option) (EVMEventsIterator, error) {
+func (this evmeventTable) List(ctx context.Context, prefixKey EVMEventIndexKey, opts ...ormlist.Option) (EVMEventIterator, error) {
 	it, err := this.table.GetIndexByID(prefixKey.id()).List(ctx, prefixKey.values(), opts...)
-	return EVMEventsIterator{it}, err
+	return EVMEventIterator{it}, err
 }
 
-func (this evmeventsTable) ListRange(ctx context.Context, from, to EVMEventsIndexKey, opts ...ormlist.Option) (EVMEventsIterator, error) {
+func (this evmeventTable) ListRange(ctx context.Context, from, to EVMEventIndexKey, opts ...ormlist.Option) (EVMEventIterator, error) {
 	it, err := this.table.GetIndexByID(from.id()).ListRange(ctx, from.values(), to.values(), opts...)
-	return EVMEventsIterator{it}, err
+	return EVMEventIterator{it}, err
 }
 
-func (this evmeventsTable) DeleteBy(ctx context.Context, prefixKey EVMEventsIndexKey) error {
+func (this evmeventTable) DeleteBy(ctx context.Context, prefixKey EVMEventIndexKey) error {
 	return this.table.GetIndexByID(prefixKey.id()).DeleteBy(ctx, prefixKey.values()...)
 }
 
-func (this evmeventsTable) DeleteRange(ctx context.Context, from, to EVMEventsIndexKey) error {
+func (this evmeventTable) DeleteRange(ctx context.Context, from, to EVMEventIndexKey) error {
 	return this.table.GetIndexByID(from.id()).DeleteRange(ctx, from.values(), to.values())
 }
 
-func (this evmeventsTable) doNotImplement() {}
+func (this evmeventTable) doNotImplement() {}
 
-var _ EVMEventsTable = evmeventsTable{}
+var _ EVMEventTable = evmeventTable{}
 
-func NewEVMEventsTable(db ormtable.Schema) (EVMEventsTable, error) {
-	table := db.GetTable(&EVMEvents{})
+func NewEVMEventTable(db ormtable.Schema) (EVMEventTable, error) {
+	table := db.GetTable(&EVMEvent{})
 	if table == nil {
-		return nil, ormerrors.TableNotFound.Wrap(string((&EVMEvents{}).ProtoReflect().Descriptor().FullName()))
+		return nil, ormerrors.TableNotFound.Wrap(string((&EVMEvent{}).ProtoReflect().Descriptor().FullName()))
 	}
-	return evmeventsTable{table.(ormtable.AutoIncrementTable)}, nil
+	return evmeventTable{table.(ormtable.AutoIncrementTable)}, nil
 }
 
 type Evmstaking2Store interface {
-	EVMEventsTable() EVMEventsTable
+	EVMEventTable() EVMEventTable
 
 	doNotImplement()
 }
 
 type evmstaking2Store struct {
-	evmevents EVMEventsTable
+	evmevent EVMEventTable
 }
 
-func (x evmstaking2Store) EVMEventsTable() EVMEventsTable {
-	return x.evmevents
+func (x evmstaking2Store) EVMEventTable() EVMEventTable {
+	return x.evmevent
 }
 
 func (evmstaking2Store) doNotImplement() {}
@@ -152,12 +152,12 @@ func (evmstaking2Store) doNotImplement() {}
 var _ Evmstaking2Store = evmstaking2Store{}
 
 func NewEvmstaking2Store(db ormtable.Schema) (Evmstaking2Store, error) {
-	evmeventsTable, err := NewEVMEventsTable(db)
+	evmeventTable, err := NewEVMEventTable(db)
 	if err != nil {
 		return nil, err
 	}
 
 	return evmstaking2Store{
-		evmeventsTable,
+		evmeventTable,
 	}, nil
 }
