@@ -38,6 +38,11 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
     error InvalidRecipient();
 
     /**
+     * @notice Block number at which the contract was deployed.
+     */
+    uint256 public immutable deployedAt;
+
+    /**
      * @notice Role for solvers.
      * @dev _ROLE_0 evaluates to '1'.
      */
@@ -59,6 +64,7 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
     mapping(bytes32 id => Solve.Request) internal _requests;
 
     constructor() {
+        deployedAt = block.number;
         _disableInitializers();
     }
 

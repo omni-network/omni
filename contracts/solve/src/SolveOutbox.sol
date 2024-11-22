@@ -38,6 +38,11 @@ contract SolveOutbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
     event Fulfilled(bytes32 indexed reqId, bytes32 indexed callHash, address indexed solvedBy);
 
     /**
+     * @notice Block number at which the contract was deployed.
+     */
+    uint256 public immutable deployedAt;
+
+    /**
      * @notice Role for solvers.
      * @dev _ROLE_0 evaluates to '1'.
      */
@@ -72,6 +77,7 @@ contract SolveOutbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
     mapping(bytes32 callHash => bool fulfilled) public fulfilledCalls;
 
     constructor() {
+        deployedAt = block.number;
         _disableInitializers();
     }
 
