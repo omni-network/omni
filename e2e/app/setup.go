@@ -73,7 +73,7 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	if err != nil {
 		return errors.Wrap(err, "make genesis")
 	}
-	gethGenesisBz, err := json.MarshalIndent(gethGenesis, "", "  ")
+	gethGenesisBz, err := evmgenutil.MarshallBackwardsCompatible(gethGenesis)
 	if err != nil {
 		return errors.Wrap(err, "marshal genesis")
 	}

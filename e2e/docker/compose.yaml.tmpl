@@ -64,12 +64,12 @@ services:
 {{- end}}
 
   # Use geth as the omni EVMs.
-{{- range .OmniEVMs }}
+{{- range $i, $v := .OmniEVMs }}
   {{ .InstanceName }}:
     labels:
       e2e: true
     container_name: {{ .InstanceName }}
-    image: "ethereum/client-go:{{ $.GethTag }}"
+    image: ethereum/client-go:{{ $.InitialGethTag $i }}{{if $.UpgradeGeth $i}} # Upgrade {{ .InstanceName }}:ethereum/client-go:{{ $.UpgradeGethTag }}{{end}}
     restart: unless-stopped
     command:
       - --config=/geth/config.toml

@@ -15,3 +15,9 @@ perturb = ["upgrade"]
 [node.validator04]
 version="omniops/halovisor:v0.9.0"
 perturb = ["upgrade"]
+
+[perturb]
+validator01_evm = ["upgrade"]
+validator02_evm = ["upgrade"]
+validator03_evm = ["upgrade"]
+validator04_evm = ["upgrade"]

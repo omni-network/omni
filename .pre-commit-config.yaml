@@ -4,7 +4,7 @@ repos:
     rev: v4.6.0
     hooks:
       - id: check-added-large-files # No large files
-        exclude: "(lib/netconf/.*/.*|contracts/allocs/.*)"
+        exclude: "(lib/netconf/.*/.*|contracts/allocs/.*|halo/genutil/evm/testdata/.*)"
       - id: trailing-whitespace # trims trailing whitespace
         exclude: "testdata"
       - id: end-of-file-fixer # ensures that a file is either empty, or ends with one newline

@@ -20,4 +20,11 @@ func TestMakeEVMGenesis(t *testing.T) {
 	genesis, err := evm.MakeGenesis(netconf.Staging)
 	require.NoError(t, err)
 	tutil.RequireGoldenJSON(t, genesis)
+
+	t.Run("backwards", func(t *testing.T) {
+		t.Parallel()
+		backwards, err := evm.MarshallBackwardsCompatible(genesis)
+		require.NoError(t, err)
+		tutil.RequireGoldenBytes(t, backwards)
+	})
 }
