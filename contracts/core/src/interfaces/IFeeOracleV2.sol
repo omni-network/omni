@@ -61,7 +61,7 @@ interface IFeeOracleV2 is IFeeOracle, IConversionRateOracle {
     event GasPerByteSet(uint64 dataCostId, uint64 gasPerByte);
 
     /// @notice Emitted when the to-native conversion rate for a gas token is set.
-    event ToNativeRateSet(uint8 gasToken, uint64 rate);
+    event ToNativeRateSet(uint8 gasToken, uint256 nativeRate);
 
     /// @notice Emitted when the base protocol fee is set.
     event ProtocolFeeSet(uint128 protocolFee);
@@ -71,12 +71,11 @@ interface IFeeOracleV2 is IFeeOracle, IConversionRateOracle {
 
     /**
      * @notice Fee parameters for a specific chain.
+     * @custom:field gasToken       The gas token ID.
+     * @custom:field baseGasLimit   The base gas limit for that chain.
      * @custom:field chainId        The chain ID.
-     * @custom:field execGasPrice   The execution gas price on that chain (denominated in chains native token).
-     * @custom:field dataGasPrice   The data gas price on that chain (denominated in chains native token).
-     *                              ex. for Optimism, dataGasPrice is Ethereum L1's blob gas price.
-     * @custom:field toNativeRate   The conversion rate from the chains native token to this chain's
-     *                              native token. Rate is numerator over CONVERSION_RATE_DENOM.
+     * @custom:field gasPrice       The execution gas price on that chain (denominated in chains native token).
+     * @custom:field dataCostId     The data cost ID for that chain.
      */
     struct FeeParams {
         uint8 gasToken;
@@ -86,12 +85,30 @@ interface IFeeOracleV2 is IFeeOracle, IConversionRateOracle {
         uint64 dataCostId;
     }
 
+    /**
+     * @notice Data cost parameters for a data cost ID.
+     * @custom:field gasToken       The gas token ID.
+     * @custom:field baseDataBuffer The base data buffer for that data cost ID.
+     * @custom:field dataCostId     The data cost ID.
+     * @custom:field gasPrice       The data gas price for that data cost ID (denominated in chains native token).
+     * @custom:field gasPerByte     The gas per byte for that data cost ID.
+     */
     struct DataCostParams {
         uint8 gasToken;
         uint32 baseDataBuffer;
         uint64 dataCostId;
         uint64 gasPrice;
         uint64 gasPerByte;
+    }
+
+    /**
+     * @notice Parameters for a gas token's to-native conversion rate.
+     * @custom:field gasToken       The gas token ID.
+     * @custom:field nativeRate     The to-native conversion rate for that gas token.
+     */
+    struct NativeRateParams {
+        uint8 gasToken;
+        uint256 nativeRate;
     }
 
     /// @notice Returns the protocol fee.
@@ -145,6 +162,9 @@ interface IFeeOracleV2 is IFeeOracle, IConversionRateOracle {
     /// @notice Set the data cost parameters for a list of data cost IDs.
     function bulkSetDataCostParams(DataCostParams[] calldata params) external;
 
+    /// @notice Set the to-native conversion rate for a list of gas tokens.
+    function bulkSetToNativeRate(NativeRateParams[] calldata params) external;
+
     /// @notice Set the execution gas price for a destination chain.
     function setExecGasPrice(uint64 chainId, uint64 gasPrice) external;
 
@@ -164,7 +184,7 @@ interface IFeeOracleV2 is IFeeOracle, IConversionRateOracle {
     function setGasPerByte(uint64 dataCostId, uint64 gasPerByte) external;
 
     /// @notice Set the to native conversion rate for a gas token.
-    function setToNativeRate(uint8 gasToken, uint64 nativeRate) external;
+    function setToNativeRate(uint8 gasToken, uint256 nativeRate) external;
 
     /// @notice Set the base protocol fee for each xmsg.
     function setProtocolFee(uint128 fee) external;

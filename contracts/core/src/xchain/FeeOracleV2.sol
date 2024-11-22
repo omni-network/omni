@@ -55,7 +55,8 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
         address manager_,
         uint128 protocolFee_,
         FeeParams[] calldata feeParams_,
-        DataCostParams[] calldata dataCostParams_
+        DataCostParams[] calldata dataCostParams_,
+        NativeRateParams[] calldata nativeRateParams_
     ) public initializer {
         __Ownable_init(owner_);
 
@@ -63,6 +64,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
         _setProtocolFee(protocolFee_);
         _bulkSetFeeParams(feeParams_);
         _bulkSetDataCostParams(dataCostParams_);
+        _bulkSetToNativeRate(nativeRateParams_);
     }
 
     /// @inheritdoc IFeeOracle
@@ -186,6 +188,13 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     }
 
     /**
+     * @notice Set the to-native conversion rate for a list of gas tokens.
+     */
+    function bulkSetToNativeRate(NativeRateParams[] calldata params) external onlyManager {
+        _bulkSetToNativeRate(params);
+    }
+
+    /**
      * @notice Set the execution gas price for a destination chain.
      */
     function setExecGasPrice(uint64 chainId, uint64 gasPrice) external onlyManager {
@@ -230,7 +239,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     /**
      * @notice Set the to native conversion rate for a gas token.
      */
-    function setToNativeRate(uint8 gasToken, uint64 nativeRate) external onlyManager {
+    function setToNativeRate(uint8 gasToken, uint256 nativeRate) external onlyManager {
         _setToNativeRate(gasToken, nativeRate);
     }
 
@@ -282,6 +291,22 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
             _dataCostParams[d.dataCostId] = d;
 
             emit DataCostParamsSet(d.gasToken, d.dataCostId, d.gasPrice, d.gasPerByte);
+        }
+    }
+
+    /**
+     * @notice Set the to-native conversion rate for a list of gas tokens.
+     */
+    function _bulkSetToNativeRate(NativeRateParams[] calldata params) internal {
+        for (uint256 i = 0; i < params.length; i++) {
+            NativeRateParams memory n = params[i];
+
+            if (n.gasToken == 0) revert IFeeOracleV2.ZeroGasToken();
+            if (n.nativeRate == 0) revert IFeeOracleV2.ZeroNativeRate();
+
+            tokenToNativeRate[n.gasToken] = n.nativeRate;
+
+            emit ToNativeRateSet(n.gasToken, n.nativeRate);
         }
     }
 
@@ -352,7 +377,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     /**
      * @notice Set the to-native conversion rate for a gas token.
      */
-    function _setToNativeRate(uint8 gasToken, uint64 nativeRate) internal {
+    function _setToNativeRate(uint8 gasToken, uint256 nativeRate) internal {
         if (nativeRate == 0) revert IFeeOracleV2.ZeroNativeRate();
         if (gasToken == 0) revert IFeeOracleV2.ZeroGasToken();
 
