@@ -18,6 +18,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+//go:generate go test -run=TestKeeper_isNextProposer -count=100 -failfast
+
 func TestKeeper_isNextProposer(t *testing.T) {
 	t.Parallel()
 	type args struct {
@@ -37,7 +39,7 @@ func TestKeeper_isNextProposer(t *testing.T) {
 			name: "not proposer",
 			args: args{
 				height:       height,
-				incMoreTimes: 9,
+				incMoreTimes: 1,
 				header: func(height int64) cmtproto.Header {
 					return cmtproto.Header{Height: height}
 				},
