@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens/coingecko"
 
@@ -84,6 +85,7 @@ func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainID
 	}
 
 	impl, tx, _, err := bindings.DeployFeeOracleV1(txOpts, backend)
+	log.Info(ctx, "Fee oracle impl", "addr", impl.Hex(), "tx", tx.Hash().Hex(), "chain_id", chainID)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "deploy fee oracle")
 	}
@@ -94,6 +96,7 @@ func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainID
 	}
 
 	proxy, tx, _, err := bindings.DeployTransparentUpgradeableProxy(txOpts, backend, impl, cfg.ProxyAdminOwner, initializer)
+	log.Info(ctx, "Fee oracle proxy", "addr", proxy.Hex(), "tx", tx.Hash().Hex(), "chain_id", chainID)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "deploy proxy")
 	}
