@@ -452,7 +452,7 @@ func (m *simple) waitMined(ctx context.Context, tx *types.Transaction,
 			return nil, errors.Wrap(ctx.Err(), "context canceled")
 		case <-queryTicker.C:
 			receipt, ok, err := m.queryReceipt(ctx, txHash, sendState)
-			if netutil.IsTemporaryError(err) || isNetworkError(err) {
+			if netutil.IsTemporaryError(err) || isNetworkError(err) || isEOF(err) {
 				// Treat all network errors as temporary, since we know we submitted the tx already.
 				// Network issues might resolve, and the tx might still be mined, don't give up.
 				log.Warn(ctx, "Temporary network error querying receipt (will retry)", err, "attempt", attempt)
@@ -714,6 +714,16 @@ func maybeSetTimeout(ctx context.Context, timeout time.Duration) (context.Contex
 	}
 
 	return context.WithTimeout(ctx, timeout)
+}
+
+// isEOF returns true if the underlying client returned an EOF.
+// This occurs on geth shutdown. It can be treated like a network error (hopefully?!)
+func isEOF(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	return strings.Contains(err.Error(), "EOF")
 }
 
 // isNetworkError returns true if the error is a network error.
