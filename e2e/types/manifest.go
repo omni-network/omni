@@ -59,7 +59,8 @@ const (
 	PerturbStopStart Perturb = "stopstart"
 	// PerturbRollback defines a perturbation that stops a halo node, performs a rollback, then starts it again.
 	PerturbRollback Perturb = "rollback"
-	// PerturbUpgrade defines a perturbation that upgrades a halo node to the latest image tag.
+	// PerturbUpgrade defines a perturbation that upgrades a geth node to the latest version.
+	// Note that halo upgrades are handled by CometBFT perturbations.
 	PerturbUpgrade Perturb = "upgrade"
 
 	// PerturbFuzzyHeadDropBlocks defines a perturbation that enables fuzzyhead dropping xblock for a while.

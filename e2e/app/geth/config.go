@@ -2,12 +2,12 @@ package geth
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/omni-network/omni/e2e/types"
+	evmgenutil "github.com/omni-network/omni/halo/genutil/evm"
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/core"
@@ -22,7 +22,7 @@ const snapshotCacheMB = 1024
 
 // WriteAllConfig writes all the geth config files for all omniEVMs.
 func WriteAllConfig(testnet types.Testnet, genesis core.Genesis) error {
-	gethGenesisBz, err := json.MarshalIndent(genesis, "", "  ")
+	gethGenesisBz, err := evmgenutil.MarshallBackwardsCompatible(genesis)
 	if err != nil {
 		return errors.Wrap(err, "marshal genesis")
 	}

@@ -56,6 +56,7 @@ func TestComposeTemplate(t *testing.T) {
 			en := enode.NewV4(&key.PublicKey, ipNet.IP, 30303, 30303)
 
 			const node0 = "node0"
+			const evm0 = "omni_evm_0"
 			dir := t.TempDir()
 			testnet := types.Testnet{
 				Manifest: types.Manifest{
@@ -78,7 +79,7 @@ func TestComposeTemplate(t *testing.T) {
 				OmniEVMs: []types.OmniEVM{
 					{
 						Chain:        types.OmniEVMByNetwork(netconf.Simnet),
-						InstanceName: "omni_evm_0",
+						InstanceName: evm0,
 						AdvertisedIP: ipNet.IP,
 						ProxyPort:    8000,
 						NodeKey:      key,
@@ -116,6 +117,7 @@ func TestComposeTemplate(t *testing.T) {
 
 			if test.upgrade != "" {
 				testnet.UpgradeVersion = test.upgrade
+				testnet.Manifest.Perturb = map[string][]types.Perturb{evm0: {types.PerturbUpgrade}}
 			}
 
 			p := docker.NewProvider(testnet, types.InfrastructureData{}, test.tag)
@@ -136,6 +138,8 @@ func TestComposeTemplate(t *testing.T) {
 					return
 				}
 				require.NoError(t, err)
+
+				require.NoError(t, docker.ReplaceUpgradeImage(dir, evm0))
 
 				bz, err := os.ReadFile(filepath.Join(dir, "docker-compose.yaml"))
 				require.NoError(t, err)

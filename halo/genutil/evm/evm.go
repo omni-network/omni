@@ -1,6 +1,7 @@
 package evm
 
 import (
+	"encoding/json"
 	"math/big"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
@@ -47,6 +48,46 @@ func MakeGenesis(network netconf.ID) (core.Genesis, error) {
 		Difficulty: big.NewInt(0),
 		Alloc:      mergeAllocs(PrecompilesAlloc(), predeps, prefunds),
 	}, nil
+}
+
+// MarshallBackwardsCompatible marshals a genesis into a backwards compatible JSON format.
+func MarshallBackwardsCompatible(genesis core.Genesis) ([]byte, error) {
+	// Geth version 1.14.12 removed TerminalTotalDifficultyPassed,
+	// but this is still required by older v1.14.* versions.
+	backwardsConfig := struct {
+		*params.ChainConfig                // Extend latest chain config
+		TerminalTotalDifficultyPassed bool `json:"terminalTotalDifficultyPassed"`
+	}{
+		ChainConfig:                   genesis.Config,
+		TerminalTotalDifficultyPassed: true,
+	}
+	configBz, err := json.MarshalIndent(backwardsConfig, "", "  ")
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal backwards compatible config")
+	}
+
+	// Marshal new genesis
+	bz, err := json.MarshalIndent(genesis, "", "  ")
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal genesis")
+	}
+
+	// Unmarshal into generic map
+	temp1 := make(map[string]json.RawMessage)
+	if err := json.Unmarshal(bz, &temp1); err != nil {
+		return nil, errors.Wrap(err, "unmarshal genesis")
+	}
+
+	// Replace config with backwards compatible config
+	temp1["config"] = configBz
+
+	// Marshal backwards compatible genesis
+	bz, err = json.MarshalIndent(temp1, "", "  ")
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal backwards compatible genesis")
+	}
+
+	return bz, nil
 }
 
 // defaultChainConfig returns the default chain config for a network.

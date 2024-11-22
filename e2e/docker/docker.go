@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"slices"
 	"sync"
 	"text/template"
 
@@ -77,6 +78,14 @@ func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag st
 // Setup generates the docker-compose file and write it to disk, erroring if
 // any of these operations fail.
 func (p *Provider) Setup() error {
+	// Determine any geth upgrades based on configured perturbations.
+	gethInitTags := make(map[int]string)
+	for i, omniEVM := range p.testnet.OmniEVMs {
+		if slices.Contains(p.testnet.Manifest.Perturb[omniEVM.InstanceName], types.PerturbUpgrade) {
+			gethInitTags[i] = geth.SupportedVersions[i%len(geth.SupportedVersions)]
+		}
+	}
+
 	def := ComposeDef{
 		Network:        true,
 		NetworkName:    p.testnet.Name,
@@ -91,6 +100,7 @@ func (p *Provider) Setup() error {
 		Monitor:        true,
 		Solver:         true,
 		GethVerbosity:  3, // Info
+		GethInitTags:   gethInitTags,
 	}
 	def = SetImageTags(def, p.testnet.Manifest, p.omniTag)
 
@@ -174,8 +184,9 @@ type ComposeDef struct {
 	NetworkName    string
 	NetworkCIDR    string
 	BindAll        bool
-	UpgradeVersion string
-	GethVerbosity  int // # Geth log level (1=error,2=warn,3=info(default),4=debug,5=trace)
+	UpgradeVersion string         // Halo target upgrade version
+	GethVerbosity  int            // Geth log level (1=error,2=warn,3=info(default),4=debug,5=trace)
+	GethInitTags   map[int]string // Optional geth initial tags. Defaults to latest if empty.
 
 	Nodes    []*e2e.Node
 	OmniEVMs []types.OmniEVM
@@ -192,8 +203,24 @@ type ComposeDef struct {
 	AnvilProxyTag string
 }
 
-func (ComposeDef) GethTag() string {
+// UpgradeGeth returns true if the geth nodes should be upgraded.
+func (c ComposeDef) UpgradeGeth(index int) bool {
+	return c.InitialGethTag(index) != c.UpgradeGethTag()
+}
+
+// UpgradeGethTag returns the geth docker image tag to upgrade to.
+func (ComposeDef) UpgradeGethTag() string {
 	return geth.Version
+}
+
+// InitialGethTag return the geth docker image tag to initially deploy.
+func (c ComposeDef) InitialGethTag(index int) string {
+	tag, ok := c.GethInitTags[index]
+	if !ok {
+		return geth.Version
+	}
+
+	return tag
 }
 
 // NodeOmniEVMs returns a map of node name to OmniEVM instance name; map[node_name]omni_evm.

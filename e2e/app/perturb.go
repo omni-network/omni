@@ -73,6 +73,16 @@ func perturbService(ctx context.Context, service string, testnetDir string, pert
 		if err := docker.ExecCompose(ctx, testnetDir, "exec", service, "wget", "-O-", "localhost:8545/fuzzy_disable"); err != nil {
 			return errors.Wrap(err, "disable fuzzy head")
 		}
+	case types.PerturbUpgrade:
+		if err := docker.ExecCompose(ctx, testnetDir, "down", service); err != nil {
+			return errors.Wrap(err, "down service")
+		}
+		if err := docker.ReplaceUpgradeImage(testnetDir, service); err != nil {
+			return errors.Wrap(err, "upgrade service")
+		}
+		if err := docker.ExecCompose(ctx, testnetDir, "up", "-d", service); err != nil {
+			return errors.Wrap(err, "up service")
+		}
 	default:
 		return errors.New("unknown service perturbation")
 	}
