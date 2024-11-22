@@ -43,19 +43,27 @@ func makeProcessProposalHandler(router *baseapp.MsgServiceRouter, txConfig clien
 		defer timeoutCancel()
 		ctx = ctx.WithContext(timeoutCtx)
 
-		// Ensure the proposal includes quorum vote extensions (unless first block).
-		if req.Height > 1 {
-			var totalPower, votedPower int64
-			for _, vote := range req.ProposedLastCommit.Votes {
-				totalPower += vote.Validator.Power
-				if vote.BlockIdFlag != cmttypes.BlockIDFlagCommit {
-					continue
-				}
-				votedPower += vote.Validator.Power
+		if req.Height == 1 {
+			if len(req.Txs) > 0 { // First proposal must be empty.
+				return rejectProposal(ctx, errors.New("first proposal not empty"))
 			}
-			if totalPower*2/3 >= votedPower {
-				return rejectProposal(ctx, errors.New("proposed doesn't include quorum votes extensions"))
+
+			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
+		} else if len(req.Txs) > 1 {
+			return rejectProposal(ctx, errors.New("unexpected transactions in proposal"))
+		}
+
+		// Ensure the proposal includes quorum votes.
+		var totalPower, votedPower int64
+		for _, vote := range req.ProposedLastCommit.Votes {
+			totalPower += vote.Validator.Power
+			if vote.BlockIdFlag != cmttypes.BlockIDFlagCommit {
+				continue
 			}
+			votedPower += vote.Validator.Power
+		}
+		if totalPower*2/3 >= votedPower {
+			return rejectProposal(ctx, errors.New("proposed doesn't include quorum votes extensions"))
 		}
 
 		// Ensure only expected messages types are included the expected number of times.
