@@ -10,7 +10,6 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	fbproxy "github.com/omni-network/omni/e2e/fbproxy/app"
 	"github.com/omni-network/omni/e2e/types"
-	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
@@ -187,15 +186,15 @@ func runForge(ctx context.Context, rpc string, input []byte, broadcast bool, sen
 	const script = "Admin"
 	// assumes running from root
 	dir := "./contracts/core"
-	anvilPks := make([]string, 0, len(senders))
+	pks := make([]string, 0, len(senders))
 	for _, sender := range senders {
-		pk, ok := anvil.PrivateKey(sender)
+		pk, ok := eoa.DevPrivateKey(sender)
 		if !ok {
 			continue
 		}
-		anvilPks = append(anvilPks, hexutil.EncodeBig(pk.D))
+		pks = append(pks, hexutil.EncodeBig(pk.D))
 	}
-	if len(anvilPks) > 0 && len(anvilPks) != len(senders) {
+	if len(pks) > 0 && len(pks) != len(senders) {
 		return "", errors.New("cannot mix anvil and non-anvil accounts")
 	}
 
@@ -211,9 +210,9 @@ func runForge(ctx context.Context, rpc string, input []byte, broadcast bool, sen
 		args = append(args, "--broadcast")
 	}
 
-	if len(anvilPks) > 0 {
+	if len(pks) > 0 {
 		// for dev anvil accounts, we sign with privates key directly
-		args = append(args, "--private-keys", strings.Join(dedup(anvilPks), ","))
+		args = append(args, "--private-keys", strings.Join(dedup(pks), ","))
 	} else {
 		// else, we use --unlocked flag, to send unsigned eth_sendTransaction requests
 		// with 15 minute timeout, to allow for fireblocks signing.
