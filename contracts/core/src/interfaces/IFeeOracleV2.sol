@@ -2,160 +2,172 @@
 pragma solidity ^0.8.12;
 
 import { IFeeOracle } from "./IFeeOracle.sol";
-import { IConversionRateOracleV2 } from "./IConversionRateOracleV2.sol";
+import { IConversionRateOracle } from "./IConversionRateOracle.sol";
 
 /**
  * @title IFeeOracleV2
  * @notice Extends IFeeOracle with FeeOracleV2 methods
  */
-interface IFeeOracleV2 is IFeeOracle, IConversionRateOracleV2 {
-    /// @notice Emitted when fee parameters for a chain are set.
-    event ExecFeeParamsSet(uint64 chainId, uint64 postsTo, uint64 execGasPrice, uint64 toNativeRate);
+interface IFeeOracleV2 is IFeeOracle, IConversionRateOracle {
+    /// @notice Thrown when the caller is not the manager.
+    error NotManager();
+
+    /// @notice Thrown when there are no fee parameters for a chain or data cost ID.
+    error NoFeeParams();
+
+    /// @notice Thrown when the address is zero.
+    error ZeroAddress();
+
+    /// @notice Thrown when the chain ID is zero.
+    error ZeroChainId();
+
+    /// @notice Thrown when the gas price is zero.
+    error ZeroGasPrice();
+
+    /// @notice Thrown when the gas token is zero.
+    error ZeroGasToken();
+
+    /// @notice Thrown when the data cost ID is zero.
+    error ZeroDataCostId();
+
+    /// @notice Thrown when the gas per byte is zero.
+    error ZeroGasPerByte();
+
+    /// @notice Thrown when the native rate is zero.
+    error ZeroNativeRate();
 
     /// @notice Emitted when fee parameters for a chain are set.
-    event DataFeeParamsSet(uint64 chainId, uint64 sizeBuffer, uint64 dataGasPrice, uint64 toNativeRate);
+    event FeeParamsSet(uint8 gasToken, uint64 chainId, uint64 gasPrice, uint64 dataCostId);
 
-    /// @notice Emitted when the chain ID to which this chain posts tx calldata is set.
-    event ExecPostsToSet(uint64 chainId, uint64 postsTo);
-
-    /// @notice Emitted when the size buffer for a destination chain is set.
-    event DataSizeBufferSet(uint64 chainId, uint64 sizeBuffer);
+    /// @notice Emitted when data cost parameters for a data cost ID are set.
+    event DataCostParamsSet(uint8 gasToken, uint64 dataCostId, uint64 gasPrice, uint64 gasPerByte);
 
     /// @notice Emitted when the gas price for a destination chain is set.
     event ExecGasPriceSet(uint64 chainId, uint64 gasPrice);
 
-    /// @notice Emitted when the data gas price for a destination chain is set.
-    event DataGasPriceSet(uint64 chainId, uint64 gasPrice);
+    /// @notice Emitted when the data gas price for a data cost ID is set.
+    event DataGasPriceSet(uint64 dataCostId, uint64 gasPrice);
 
-    /// @notice Emitted when the to-native conversion rate for an execution chain is set.
-    event ExecToNativeRateSet(uint64 chainId, uint64 toNativeRate);
+    /// @notice Emitted when the base gas limit for a destination chain is set.
+    event BaseGasLimitSet(uint64 chainId, uint32 baseGasLimit);
 
-    /// @notice Emitted when the to-native conversion rate for a data inclusion chain is set.
-    event DataToNativeRateSet(uint64 chainId, uint64 toNativeRate);
+    /// @notice Emitted when the base data buffer for a data cost ID is set.
+    event BaseDataBufferSet(uint64 dataCostId, uint32 baseDataBuffer);
+
+    /// @notice Emitted when the data cost ID for a destination chain is set.
+    event DataCostIdSet(uint64 chainId, uint64 dataCostId);
+
+    /// @notice Emitted when the gas per byte for a data cost ID is set.
+    event GasPerByteSet(uint64 dataCostId, uint64 gasPerByte);
+
+    /// @notice Emitted when the to-native conversion rate for a gas token is set.
+    event ToNativeRateSet(uint8 gasToken, uint64 rate);
 
     /// @notice Emitted when the base protocol fee is set.
-    event ProtocolFeeSet(uint72 protocolFee);
-
-    /// @notice Emitted when the base gas limit is set.
-    event BaseGasLimitSet(uint24 baseGasLimit);
+    event ProtocolFeeSet(uint128 protocolFee);
 
     /// @notice Emitted when the manager is changed.
     event ManagerSet(address manager);
 
     /**
-     * @notice Execution fee parameters for a specific chain.
+     * @notice Fee parameters for a specific chain.
      * @custom:field chainId        The chain ID.
-     * @custom:field postsTo        The chain ID to which this chain posts tx calldata.
      * @custom:field execGasPrice   The execution gas price on that chain (denominated in chains native token).
-     * @custom:field toNativeRate   The conversion rate from the chains native token to this chain's
-     *                              native token. Rate is numerator over CONVERSION_RATE_DENOM.
-     */
-    struct ExecFeeParams {
-        uint64 chainId;
-        uint64 postsTo;
-        uint64 execGasPrice;
-        uint64 toNativeRate;
-    }
-
-    /**
-     * @notice Data inclusion fee parameters for a specific chain.
-     * @custom:field chainId        The chain ID.
-     * @custom:field sizeBuffer     The size buffer for data inclusion on that chain.
      * @custom:field dataGasPrice   The data gas price on that chain (denominated in chains native token).
      *                              ex. for Optimism, dataGasPrice is Ethereum L1's blob gas price.
      * @custom:field toNativeRate   The conversion rate from the chains native token to this chain's
      *                              native token. Rate is numerator over CONVERSION_RATE_DENOM.
      */
-    struct DataFeeParams {
+    struct FeeParams {
+        uint8 gasToken;
+        uint32 baseGasLimit;
         uint64 chainId;
-        uint64 sizeBuffer;
-        uint64 dataGasPrice;
-        uint64 toNativeRate;
+        uint64 gasPrice;
+        uint64 dataCostId;
     }
 
-    /**
-     * @notice Fee parameters for a specific chain.
-     * @custom:field execChainId       The execution chain ID.
-     * @custom:field execPostsTo       The chain ID to which the execution chain posts tx calldata.
-     * @custom:field execGasPrice      The execution gas price on the execution chain (denominated in chains native token).
-     * @custom:field execToNativeRate  The conversion rate from the execution chain's native token to this chain's
-     *                                 native token. Rate is numerator over CONVERSION_RATE_DENOM.
-     * @custom:field dataChainId       The data inclusion chain ID.
-     * @custom:field dataSizeBuffer    The size buffer for data inclusion on the data inclusion chain.
-     * @custom:field dataGasPrice      The data gas price on the data inclusion chain (denominated in chains native token).
-     *                                 ex. for Optimism, dataGasPrice is Ethereum L1's blob gas price.
-     * @custom:field dataToNativeRate  The conversion rate from the data inclusion chain's native token to this chain's
-     *                                 native token. Rate is numerator over CONVERSION_RATE_DENOM.
-     */
-    struct FeeParams {
-        uint64 execChainId;
-        uint64 execPostsTo;
-        uint64 execGasPrice;
-        uint64 execToNativeRate;
-        uint64 dataSizeBuffer;
-        uint64 dataGasPrice;
-        uint64 dataToNativeRate;
+    struct DataCostParams {
+        uint8 gasToken;
+        uint32 baseDataBuffer;
+        uint64 dataCostId;
+        uint64 gasPrice;
+        uint64 gasPerByte;
     }
 
     /// @notice Returns the protocol fee.
-    function protocolFee() external view returns (uint72);
-
-    /// @notice Returns the base gas limit.
-    function baseGasLimit() external view returns (uint24);
+    function protocolFee() external view returns (uint128);
 
     /// @notice Returns the manager's address.
     function manager() external view returns (address);
 
-    /// @notice Returns all of the fee parameters for a destination chain.
+    /// @notice Returns the conversion rate from this chain's gas token to another native token, by gas token ID.
+    function tokenToNativeRate(uint8 gasToken) external view returns (uint256);
+
+    /// @notice Returns the fee parameters for a destination chain.
     function feeParams(uint64 chainId) external view returns (FeeParams memory);
 
-    /// @notice Returns the chain ID to which an execution chain posts tx calldata.
-    function execPostsTo(uint64 chainId) external view returns (uint64);
-
-    /// @notice Returns the size buffer for a chain performing data inclusion.
-    function dataSizeBuffer(uint64 chainId) external view returns (uint64);
+    /// @notice Returns the data cost parameters for a data cost ID.
+    function dataCostParams(uint64 dataCostId) external view returns (DataCostParams memory);
 
     /// @notice Returns the execution gas price for a destination chain.
     function execGasPrice(uint64 chainId) external view returns (uint64);
 
-    /// @notice Returns the data inclusion gas price for a destination chain.
-    function dataGasPrice(uint64 chainId) external view returns (uint64);
+    /// @notice Returns the data gas price for a data cost ID.
+    function dataGasPrice(uint64 dataCostId) external view returns (uint64);
 
-    /// @notice Returns the to-native conversion rate for a chain performing execution.
-    function execToNativeRate(uint64 chainId) external view returns (uint64);
+    /// @notice Returns the base gas limit for a destination chain.
+    function baseGasLimit(uint64 chainId) external view returns (uint32);
 
-    /// @notice Returns the to-native conversion rate for a chain performing data inclusion.
-    function dataToNativeRate(uint64 chainId) external view returns (uint64);
+    /// @notice Returns the base data buffer for a data cost ID.
+    function baseDataBuffer(uint64 dataCostId) external view returns (uint32);
 
-    /// @notice Set the execution fee parameters for a list of destination chains.
-    function bulkSetExecFeeParams(ExecFeeParams[] calldata params) external;
+    /// @notice Returns the gas token for a destination chain.
+    function execGasToken(uint64 chainId) external view returns (uint8);
 
-    /// @notice Set the data inclusion fee parameters for a list of chains.
-    function bulkSetDataFeeParams(DataFeeParams[] calldata params) external;
+    /// @notice Returns the gas token for a data cost ID.
+    function dataGasToken(uint64 dataCostId) external view returns (uint8);
 
-    /// @notice Set the chain ID to which an execution chain posts tx calldata.
-    function setExecPostsTo(uint64 chainId, uint64 postsTo) external;
+    /// @notice Returns the data cost ID for a destination chain.
+    function execDataCostId(uint64 chainId) external view returns (uint64);
 
-    /// @notice Set the size buffer for a chain performing data inclusion.
-    function setDataSizeBuffer(uint64 chainId, uint64 sizeBuffer) external;
+    /// @notice Returns the gas per byte for a data cost ID.
+    function dataGasPerByte(uint64 dataCostId) external view returns (uint64);
+
+    /// @notice Returns the to-native conversion rate for a destination chain.
+    function toNativeRate(uint64 chainId) external view returns (uint256);
+
+    /// @notice Returns the to-native conversion rate for a data cost ID.
+    function toNativeRateData(uint64 dataCostId) external view returns (uint256);
+
+    /// @notice Set the fee parameters for a list of destination chains.
+    function bulkSetFeeParams(FeeParams[] calldata params) external;
+
+    /// @notice Set the data cost parameters for a list of data cost IDs.
+    function bulkSetDataCostParams(DataCostParams[] calldata params) external;
 
     /// @notice Set the execution gas price for a destination chain.
-    function setExecGasPrice(uint64 chainId, uint64 execGasPrice) external;
+    function setExecGasPrice(uint64 chainId, uint64 gasPrice) external;
 
-    /// @notice Set the data inclusion gas price for a chain.
-    function setDataGasPrice(uint64 chainId, uint64 dataGasPrice) external;
+    /// @notice Set the data gas price for a data cost ID.
+    function setDataGasPrice(uint64 dataCostId, uint64 gasPrice) external;
 
-    /// @notice Set the to-native conversion rate for an execution chain.
-    function setExecToNativeRate(uint64 chainId, uint64 toNativeRate) external;
+    /// @notice Set the base gas limit for a destination chain.
+    function setBaseGasLimit(uint64 chainId, uint32 newBaseGasLimit) external;
 
-    /// @notice Set the to-native conversion rate for a data inclusion chain.
-    function setDataToNativeRate(uint64 chainId, uint64 toNativeRate) external;
+    /// @notice Set the base data buffer for a data cost ID.
+    function setBaseDataBuffer(uint64 dataCostId, uint32 newBaseDataBuffer) external;
+
+    /// @notice Set the data cost ID for a destination chain.
+    function setDataCostId(uint64 chainId, uint64 dataCostId) external;
+
+    /// @notice Set the gas per byte for a data cost ID.
+    function setGasPerByte(uint64 dataCostId, uint64 gasPerByte) external;
+
+    /// @notice Set the to native conversion rate for a gas token.
+    function setToNativeRate(uint8 gasToken, uint64 nativeRate) external;
 
     /// @notice Set the base protocol fee for each xmsg.
-    function setProtocolFee(uint72 fee) external;
-
-    /// @notice Set the base gas limit for each xmsg.
-    function setBaseGasLimit(uint24 gasLimit) external;
+    function setProtocolFee(uint128 fee) external;
 
     /// @notice Set the manager admin account.
     function setManager(address manager) external;
