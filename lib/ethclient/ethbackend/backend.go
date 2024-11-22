@@ -177,6 +177,12 @@ func (b *Backend) WaitMined(ctx context.Context, tx *ethtypes.Transaction) (*eth
 		return rec, errors.New("receipt status unsuccessful", "status", rec.Status, "tx", tx.Hash())
 	}
 
+	// If b.chainID == holesky, wait a little longer for the tx to be indexed.
+	if b.chainID == 17000 {
+		log.Debug(ctx, "Waiting extra 12 seconds (~1 block) for tx to be indexed on Holesky")
+		time.Sleep(time.Second * 12)
+	}
+
 	return rec, nil
 }
 
