@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/fireblocks"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
@@ -178,7 +179,7 @@ func (b *Backend) WaitMined(ctx context.Context, tx *ethtypes.Transaction) (*eth
 	}
 
 	// If b.chainID == holesky, wait a little longer for the tx to be indexed.
-	if b.chainID == 17000 {
+	if b.chainID == evmchain.IDHolesky {
 		log.Debug(ctx, "Waiting extra 12 seconds (~1 block) for tx to be indexed on Holesky")
 		time.Sleep(time.Second * 12)
 	}
