@@ -85,10 +85,10 @@ func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainID
 	}
 
 	impl, tx, _, err := bindings.DeployFeeOracleV1(txOpts, backend)
-	log.Info(ctx, "Fee oracle impl", "addr", impl.Hex(), "tx", tx.Hash().Hex(), "chain_id", chainID)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "deploy fee oracle")
 	}
+	log.Debug(ctx, "Fee oracle impl", "addr", impl.Hex(), "tx", tx.Hash().Hex(), "chain_id", chainID)
 
 	_, err = backend.WaitMined(ctx, tx)
 	if err != nil {
@@ -96,10 +96,10 @@ func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainID
 	}
 
 	proxy, tx, _, err := bindings.DeployTransparentUpgradeableProxy(txOpts, backend, impl, cfg.ProxyAdminOwner, initializer)
-	log.Info(ctx, "Fee oracle proxy", "addr", proxy.Hex(), "tx", tx.Hash().Hex(), "chain_id", chainID)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "deploy proxy")
 	}
+	log.Debug(ctx, "Fee oracle proxy", "addr", proxy.Hex(), "tx", tx.Hash().Hex(), "chain_id", chainID)
 
 	receipt, err := backend.WaitMined(ctx, tx)
 	if err != nil {
