@@ -189,7 +189,7 @@ func startAddingMockPortals(ctx context.Context, def Definition) func() error {
 			return
 		}
 
-		ticker := time.NewTicker(time.Second)
+		ticker := time.NewTicker(time.Second * 10)
 		defer ticker.Stop()
 
 		chainID := uint64(999000)

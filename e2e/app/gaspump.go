@@ -21,8 +21,12 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-// DeployGasApp deploys OmniGasPump and OmniGasStation contracts.
-func DeployGasApp(ctx context.Context, def Definition) error {
+// DeployEphemeralGasApp deploys OmniGasPump and OmniGasStation contracts to ephemeral networks.
+func DeployEphemeralGasApp(ctx context.Context, def Definition) error {
+	if !def.Testnet.Network.IsEphemeral() {
+		return nil
+	}
+
 	if err := deployGasPumps(ctx, def); err != nil {
 		return errors.Wrap(err, "deploy gas pumps")
 	}
