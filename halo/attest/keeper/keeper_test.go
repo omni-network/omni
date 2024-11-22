@@ -196,12 +196,7 @@ func TestKeeper_Add(t *testing.T) {
 			want: want{
 				atts: []*keeper.Attestation{
 					expectPendingAtt(1, defaultOffset, 1), // Default agg vote resulting in pending attestation.
-					update( // Update agg vote resulting in second att with different root
-						expectPendingAtt(2, defaultOffset, 1),
-						func(att *keeper.Attestation) {
-							att.MsgRoot = common.BytesToHash([]byte("different root")).Bytes()
-						},
-					),
+					// Second att not added, since no valid sigs added
 				},
 				sigs: []*keeper.Signature{
 					expectValSig(1, 1, val1, defaultOffset),
