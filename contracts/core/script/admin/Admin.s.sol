@@ -22,6 +22,7 @@ import { Script } from "forge-std/Script.sol";
 import { BridgeL1PostUpgradeTest } from "./BridgeL1PostUpgradeTest.sol";
 import { BridgeNativePostUpgradeTest } from "./BridgeNativePostUpgradeTest.sol";
 import { StakingPostUpgradeTest } from "./StakingPostUpgradeTest.sol";
+// import { FeeOraclePostUpdateTest } from "./FeeOraclePostUpdateTest.sol";
 
 /**
  * @title Admin
@@ -383,22 +384,24 @@ contract Admin is Script {
     }
 
     /**
-     * @notice Upgrade the OmniPortal's fee oracle to a new FeeOracleV2 contract.
+     * @notice Sets the OmniPortal's fee oracle to the new FeeOracleV2 contract.
      * @param admin         The address of the admin account, owner of the OmniPortal contract.
      * @param portal        The address of the OmniPortal contract.
      * @param newFeeOracle  The address of the new FeeOracleV2 contract.
      */
-    function upgradePortalFeeOracle(address admin, address portal, address newFeeOracle) public {
+    function setPortalFeeOracle(address admin, address portal, address newFeeOracle) public {
         address oldFeeOracle = OmniPortal(portal).feeOracle();
-        require(oldFeeOracle != newFeeOracle, "new fee oracle is the same as the old one");
+        require(oldFeeOracle != newFeeOracle, "new fee oracle required");
 
         vm.startBroadcast(admin);
         OmniPortal(portal).setFeeOracle(newFeeOracle);
         vm.stopBroadcast();
 
-        require(OmniPortal(portal).feeOracle() == newFeeOracle, "portal fee oracle assignment failed");
-        require(FeeOracleV2(newFeeOracle).manager() != address(0), "new fee oracle is not initialized");
-        require(FeeOracleV2(newFeeOracle).version() == 2, "new fee oracle is not FeeOracleV2");
+        require(OmniPortal(portal).feeOracle() == newFeeOracle, "portal assignment failed");
+        require(FeeOracleV2(newFeeOracle).manager() != address(0), "fee oracle not initialized");
+        require(FeeOracleV2(newFeeOracle).version() == 2, "fee oracle not FeeOracleV2");
+
+        // new FeeOraclePostUpdateTest().run(newFeeOracle);
     }
 
     /**
