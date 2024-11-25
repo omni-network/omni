@@ -32,6 +32,7 @@ func WithErrProbability(ctx context.Context, network netconf.ID) context.Context
 func MaybeError(ctx context.Context) error {
 	if prob, ok := ctx.Value(key{}).(float64); ok && prob > 0 {
 		if rand.Float64() < prob { //nolint:gosec // Weak randomness isn't a problem here.
+			chaosErrorCount.Inc()
 			return errors.Wrap(ErrChaos, "maybe error") // Wrap error for proper stack traces.
 		}
 	}

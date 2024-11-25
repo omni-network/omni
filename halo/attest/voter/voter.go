@@ -461,10 +461,7 @@ func (v *Voter) SetProposed(ctx context.Context, headers []*types.AttestHeader) 
 	}
 
 	if len(headers) > 0 || len(newProposed) != len(v.proposed) || len(newAvailable) != len(v.available) {
-		// TODO(corver): Remove once investigated.
 		log.Debug(ctx, "Voter proposed headers", types.AttLogs(headers)...)
-		log.Debug(ctx, "Voter proposed new available", types.VoteLogs(newAvailable)...)
-		log.Debug(ctx, "Voter proposed new proposed", types.VoteLogs(newProposed)...)
 	}
 
 	v.available = newAvailable
@@ -500,10 +497,7 @@ func (v *Voter) SetCommitted(ctx context.Context, headers []*types.AttestHeader)
 	}
 
 	if len(headers) > 0 || len(newAvailable) != len(v.available) || len(v.proposed) != 0 {
-		// TODO(corver): Remove once investigated.
 		log.Debug(ctx, "Voter committed headers", types.AttLogs(headers)...)
-		log.Debug(ctx, "Voter committed new available", types.VoteLogs(newAvailable)...)
-		log.Debug(ctx, "Voter committed old proposed", types.VoteLogs(v.proposed)...)
 	}
 
 	v.available = newAvailable
