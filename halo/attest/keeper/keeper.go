@@ -240,20 +240,16 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 		})
 
 		if errors.Is(err, ormerrors.UniqueKeyViolation) {
-			msg := "Ignoring duplicate vote"
+			attrs := []any{"agg_id", attID, "chain", k.namer(header.XChainVersion()), "attest_offset", header.AttestOffset, log.Hex7("validator", sig.ValidatorAddress)}
 			if ok, err := k.isDoubleSign(ctx, attID, agg, sig); err != nil {
 				return err
 			} else if ok {
 				doubleSignCounter.WithLabelValues(sigTup.ValidatorAddress.Hex()).Inc()
-				msg = "🚨 Ignoring duplicate slashable vote"
+				log.Warn(ctx, "🚨 Ignoring duplicate slashable vote", nil, attrs...)
+			} else {
+				// Ignore identical duplicate. See https://github.com/omni-network/omni/issues/2286.
+				log.Debug(ctx, "Ignoring duplicate vote", attrs...)
 			}
-
-			log.Warn(ctx, msg, nil,
-				"agg_id", attID,
-				"chain", k.namer(header.XChainVersion()),
-				"attest_offset", header.AttestOffset,
-				log.Hex7("validator", sig.ValidatorAddress),
-			)
 		} else if err != nil {
 			return errors.Wrap(err, "insert signature")
 		} else {

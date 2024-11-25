@@ -20,6 +20,7 @@ import (
 // processTimeout is the maximum time to process a proposal.
 // Timeout results in rejecting the proposal, which could negatively affect liveness.
 // But it avoids blocking forever, which also negatively affects liveness.
+// This mitigates against malicious proposals that take forever to process (e.g. due to retryForever).
 const processTimeout = time.Minute
 
 // makeProcessProposalRouter creates a new process proposal router that only routes
@@ -38,7 +39,6 @@ func makeProcessProposalRouter(app *App) *baseapp.MsgServiceRouter {
 // It also updates some external state.
 func makeProcessProposalHandler(router *baseapp.MsgServiceRouter, txConfig client.TxConfig) sdk.ProcessProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
-		// Only allow 10s to process a proposal. Reject proposal otherwise.
 		timeoutCtx, timeoutCancel := context.WithTimeout(ctx.Context(), processTimeout)
 		defer timeoutCancel()
 		ctx = ctx.WithContext(timeoutCtx)
