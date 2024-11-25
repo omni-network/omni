@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/log"
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/ethereum/go-ethereum"
@@ -17,6 +18,10 @@ import (
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/orm/model/ormdb"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	akeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	bkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	skeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
+	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 var (
@@ -30,12 +35,19 @@ type Keeper struct {
 	eventsTable     EVMEventTable
 	ethCl           ethclient.Client
 	address         common.Address
+	contract        *bindings.Staking
+	aKeeper         akeeper.AccountKeeperI
+	bKeeper         bkeeper.Keeper
+	sKeeper         *skeeper.Keeper
 	submissionDelay int64
 }
 
 func NewKeeper(
 	storeService store.KVStoreService,
 	ethCl ethclient.Client,
+	aKeeper akeeper.AccountKeeperI,
+	bKeeper bkeeper.Keeper,
+	sKeeper *skeeper.Keeper,
 	submissionDelay int64,
 ) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
@@ -53,11 +65,19 @@ func NewKeeper(
 	}
 
 	address := common.HexToAddress(predeploys.Staking)
+	contract, err := bindings.NewStaking(address, ethCl)
+	if err != nil {
+		return &Keeper{}, errors.Wrap(err, "new staking")
+	}
 
 	return &Keeper{
 		eventsTable:     evmstakingStore.EVMEventTable(),
 		ethCl:           ethCl,
+		aKeeper:         aKeeper,
+		bKeeper:         bKeeper,
+		sKeeper:         sKeeper,
 		address:         address,
+		contract:        contract,
 		submissionDelay: submissionDelay,
 	}, nil
 }
@@ -81,7 +101,7 @@ func (k *Keeper) EndBlock(ctx context.Context) error {
 		if err != nil {
 			return errors.Wrap(err, "get event")
 		}
-		parseAndDeliver(ctx, val.GetEvent())
+		k.processBufferedEvent(ctx, val.GetEvent())
 		err = k.eventsTable.Delete(ctx, val)
 		if err != nil {
 			return errors.Wrap(err, "delete evm event")
@@ -143,6 +163,119 @@ func (k Keeper) Deliver(ctx context.Context, _ common.Hash, elog evmenginetypes.
 	return nil
 }
 
+// processBufferedEvent branches the multi-store, parses the EVM event and tries to deliver it.
+// If the delivery succeeds, the multi store branch is committed; if it fails, the corresponding error is logged.
+// Panics are intercepted and logged.
+//
+//nolint:contextcheck // False positive wrt ctx
+func (k Keeper) processBufferedEvent(ctx context.Context, elog *evmenginetypes.EVMEvent) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Warn(ctx, "Recovered from panic", errors.New("evm log delivery", r))
+		}
+	}()
+
+	// Branch the store in case processing fails.
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	branchMS := sdkCtx.MultiStore().CacheMultiStore()
+	branchCtx := sdkCtx.WithMultiStore(branchMS)
+
+	if err := k.parseAndDeliver(branchCtx, elog); err != nil {
+		log.Info(ctx, "Delivering EVM log event failed", err,
+			"name", k.Name(),
+			"height", branchCtx.BlockHeight(),
+		)
+
+		return
+	}
+
+	branchMS.Write()
+}
+
 // parseAndDeliver parses the provided event and tries to deliver it on a state branch.
 // If the delivery fails, the error will be logged and the state branch will be discarded.
-func parseAndDeliver(context.Context, *evmenginetypes.EVMEvent) {}
+func (k Keeper) parseAndDeliver(ctx context.Context, elog *evmenginetypes.EVMEvent) error {
+	ethlog, err := elog.ToEthLog()
+	if err != nil {
+		return err
+	}
+
+	switch ethlog.Topics[0] {
+	case createValidatorEvent.ID:
+		/* TODO: enable
+		ev, err := k.contract.ParseCreateValidator(ethlog)
+		if err != nil {
+			return errors.Wrap(err, "parse create validator")
+		}
+
+		if err := k.deliverCreateValidator(ctx, ev); err != nil {
+			return errors.Wrap(err, "create validator")
+		}
+		*/
+	case delegateEvent.ID:
+		ev, err := k.contract.ParseDelegate(ethlog)
+		if err != nil {
+			return errors.Wrap(err, "parse delegate")
+		}
+
+		if err := k.deliverDelegate(ctx, ev); err != nil {
+			return errors.Wrap(err, "delegate")
+		}
+	default:
+		return errors.New("unknown event")
+	}
+
+	return nil
+}
+
+// deliverDelegate processes a Delegate event, and delegates to an existing validator.
+// - Mint the corresponding amount of $STAKE coins.
+// - Send the minted coins to the delegator's account.
+// - Delegate the minted coins to the validator.
+//
+// NOTE: if we error, the deposit is lost (on EVM). consider recovery methods.
+func (k Keeper) deliverDelegate(ctx context.Context, ev *bindings.StakingDelegate) error {
+	if ev.Delegator != ev.Validator {
+		return errors.New("only self delegation")
+	}
+
+	delAddr := sdk.AccAddress(ev.Delegator.Bytes())
+	valAddr := sdk.ValAddress(ev.Validator.Bytes())
+
+	if _, err := k.sKeeper.GetValidator(ctx, valAddr); err != nil {
+		return errors.New("validator does not exist", "validator", valAddr.String())
+	}
+
+	amountCoin, amountCoins := omniToBondCoin(ev.Amount)
+
+	k.createAccIfNone(ctx, delAddr)
+
+	if err := k.bKeeper.MintCoins(ctx, k.Name(), amountCoins); err != nil {
+		return errors.Wrap(err, "mint coins")
+	}
+
+	if err := k.bKeeper.SendCoinsFromModuleToAccount(ctx, k.Name(), delAddr, amountCoins); err != nil {
+		return errors.Wrap(err, "send coins")
+	}
+
+	log.Info(ctx, "EVM staking delegation detected, delegating",
+		"delegator", ev.Delegator.Hex(),
+		"validator", ev.Validator.Hex(),
+		"amount", ev.Amount.String())
+
+	// Validator already exists, add deposit to self delegation
+	msg := stypes.NewMsgDelegate(delAddr.String(), valAddr.String(), amountCoin)
+	_, err := skeeper.NewMsgServerImpl(k.sKeeper).Delegate(ctx, msg)
+	if err != nil {
+		return errors.Wrap(err, "delegate")
+	}
+
+	return nil
+}
+
+func (k Keeper) createAccIfNone(ctx context.Context, addr sdk.AccAddress) {
+	if !k.aKeeper.HasAccount(ctx, addr) {
+		acc := k.aKeeper.NewAccountWithAddress(ctx, addr)
+		k.aKeeper.SetAccount(ctx, acc)
+	}
+}
