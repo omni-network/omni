@@ -257,7 +257,7 @@ func newDeployGasAppCmd(def *app.Definition) *cobra.Command {
 				return errors.New("only permanent networks")
 			}
 
-			return app.DeployGasApp(cmd.Context(), *def)
+			return app.DeployEphemeralGasApp(cmd.Context(), *def)
 		},
 	}
 

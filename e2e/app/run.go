@@ -21,6 +21,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -83,49 +85,34 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 
 	contracts.UseStagingOmniRPC(def.Testnet.BroadcastOmniEVM().ExternalRPC)
 
-	if err := fundAnvil(ctx, def); err != nil {
-		return nil, err
+	// Prep for deploying contracts.
+	var eg1 errgroup.Group
+	eg1.Go(func() error { return fundAnvil(ctx, def) })
+	eg1.Go(func() error { return deployAllCreate3(ctx, def) })
+	if err := eg1.Wait(); err != nil {
+		return nil, errors.Wrap(err, "deploy prep")
 	}
 
-	if err := deployAllCreate3(ctx, def); err != nil {
-		return nil, err
-	}
-
+	// Deploy portals
 	if err := def.Netman().DeployPortals(ctx, genesisValSetID, genesisVals); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "deploy portals")
 	}
+
 	logRPCs(ctx, def)
 
-	if err := initPortalRegistry(ctx, def); err != nil {
-		return nil, err
-	}
-
-	if err := allowStagingValidators(ctx, def); err != nil {
-		return nil, err
-	}
-
-	if def.Testnet.Network.IsEphemeral() {
-		if err := DeployGasApp(ctx, def); err != nil {
-			return nil, err
-		}
-	}
-
-	if err := DeployBridge(ctx, def); err != nil {
-		return nil, errors.Wrap(err, "setup token bridge")
-	}
-
-	if err := maybeSubmitNetworkUpgrade(ctx, def); err != nil {
-		return nil, err
-	}
-
-	if err := FundValidatorsForTesting(ctx, def); err != nil {
-		return nil, err
-	}
-
+	// Deploy other contracts (and other on-chain setup)
+	var eg2 errgroup.Group
+	eg2.Go(func() error { return initPortalRegistry(ctx, def) })
+	eg2.Go(func() error { return allowStagingValidators(ctx, def) })
+	eg2.Go(func() error { return DeployEphemeralGasApp(ctx, def) })
+	eg2.Go(func() error { return DeployBridge(ctx, def) })
+	eg2.Go(func() error { return maybeSubmitNetworkUpgrade(ctx, def) })
+	eg2.Go(func() error { return FundValidatorsForTesting(ctx, def) })
 	if def.Manifest.DeploySolve {
-		if err := solve.DeployContracts(ctx, NetworkFromDef(def), def.Backends()); err != nil {
-			return nil, errors.Wrap(err, "deploy solve contracts")
-		}
+		eg2.Go(func() error { return solve.DeployContracts(ctx, NetworkFromDef(def), def.Backends()) })
+	}
+	if err := eg2.Wait(); err != nil {
+		return nil, errors.Wrap(err, "deploy other contracts")
 	}
 
 	err = waitForSupportedChains(ctx, def)
@@ -181,12 +168,11 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 		return err
 	}
 
-	if err := testGasPumps(ctx, def); err != nil {
-		return errors.Wrap(err, "test gas app")
-	}
-
-	if err := testBridge(ctx, def); err != nil {
-		return errors.Wrap(err, "test bridge")
+	var eg errgroup.Group
+	eg.Go(func() error { return testGasPumps(ctx, def) })
+	eg.Go(func() error { return testBridge(ctx, def) })
+	if err := eg.Wait(); err != nil {
+		return errors.Wrap(err, "test xdapps")
 	}
 
 	stopReceiptMonitor := StartMonitoringReceipts(ctx, def)
@@ -213,7 +199,14 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 	}
 
 	if def.Testnet.Evidence > 0 {
-		return errors.New("evidence injection not supported yet")
+		valAddr, err := injectEvidence(ctx, def.Testnet)
+		if err != nil {
+			return errors.Wrap(err, "inject evidence")
+		}
+
+		if err := awaitSlashed(ctx, def, valAddr); err != nil {
+			return errors.Wrap(err, "await slashed")
+		}
 	}
 
 	// Wait for:
