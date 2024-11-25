@@ -37,8 +37,6 @@ func RequestDeposits(ctx context.Context, endpoints xchain.RPCEndpoints, backend
 		return nil, err
 	}
 
-	backend = backend.Clone()
-
 	const numDeposits = 10
 
 	depositors, err := makeDepositors(numDeposits, backend)
