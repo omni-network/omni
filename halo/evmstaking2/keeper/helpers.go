@@ -3,6 +3,8 @@ package keeper
 import (
 	"math/big"
 
+	"github.com/omni-network/omni/lib/errors"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
@@ -37,4 +39,15 @@ func mustGetEvent(abi *abi.ABI, name string) abi.Event {
 func omniToBondCoin(amount *big.Int) (sdk.Coin, sdk.Coins) {
 	coin := sdk.NewCoin(sdk.DefaultBondDenom, math.NewIntFromBigInt(amount))
 	return coin, sdk.NewCoins(coin)
+}
+
+// catch executes the function, returning an error if it panics.
+func catch(fn func() error) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New("recovered", "panic", r)
+		}
+	}()
+
+	return fn()
 }

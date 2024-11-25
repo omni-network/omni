@@ -166,21 +166,15 @@ func (k Keeper) Deliver(ctx context.Context, _ common.Hash, elog evmenginetypes.
 // processBufferedEvent branches the multi-store, parses the EVM event and tries to deliver it.
 // If the delivery succeeds, the multi store branch is committed; if it fails, the corresponding error is logged.
 // Panics are intercepted and logged.
-//
-//nolint:contextcheck // False positive wrt ctx
 func (k Keeper) processBufferedEvent(ctx context.Context, elog *evmenginetypes.EVMEvent) {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Warn(ctx, "Recovered from panic", errors.New("evm log delivery", r))
-		}
-	}()
-
 	// Branch the store in case processing fails.
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	branchMS := sdkCtx.MultiStore().CacheMultiStore()
 	branchCtx := sdkCtx.WithMultiStore(branchMS)
 
-	if err := k.parseAndDeliver(branchCtx, elog); err != nil {
+	if err := catch(func() error { //nolint:contextcheck // False positive wrt ctx
+		return k.parseAndDeliver(branchCtx, elog)
+	}); err != nil {
 		log.Info(ctx, "Delivering EVM log event failed", err,
 			"name", k.Name(),
 			"height", branchCtx.BlockHeight(),
