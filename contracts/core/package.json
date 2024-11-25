@@ -25,7 +25,7 @@
     "eigenlayer-contracts": "github:Layr-Labs/eigenlayer-contracts",
     "eigenlayer-middleware": "github:Layr-Labs/eigenlayer-middleware",
     "elliptic-curve-solidity": "github:witnet/elliptic-curve-solidity",
-    "solady": "^0.0.261",
+    "solady": "^0.0.271",
     "solmate": "^6.2.0"
   }
 }
