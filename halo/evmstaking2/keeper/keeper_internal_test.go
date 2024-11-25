@@ -12,11 +12,14 @@ import (
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdktestutil "github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	akeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	bkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	skeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	"github.com/stretchr/testify/require"
 )
 
 //nolint:paralleltest // Asserting insertion ids of sequential writes
-func TestInsertEVMEvents(t *testing.T) {
+func TestInsertAndDeleteEVMEvents(t *testing.T) {
 	tests := []struct {
 		name       string
 		event      types.EVMEvent
@@ -43,7 +46,7 @@ func TestInsertEVMEvents(t *testing.T) {
 
 	submissionDelay := int64(5)
 
-	keeper, ctx := setupKeeper(t, submissionDelay)
+	keeper, ctx := setupKeeper(t, submissionDelay, nil, nil, nil)
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -84,7 +87,13 @@ func TestInsertEVMEvents(t *testing.T) {
 	}
 }
 
-func setupKeeper(t *testing.T, submissionDelay int64) (*Keeper, sdk.Context) {
+func setupKeeper(
+	t *testing.T,
+	submissionDelay int64,
+	aKeeper akeeper.AccountKeeperI,
+	bKeeper bkeeper.Keeper,
+	sKeeper *skeeper.Keeper,
+) (*Keeper, sdk.Context) {
 	t.Helper()
 
 	key := storetypes.NewKVStoreKey(types.ModuleName)
@@ -96,9 +105,9 @@ func setupKeeper(t *testing.T, submissionDelay int64) (*Keeper, sdk.Context) {
 	k, err := NewKeeper(
 		storeSvc,
 		nil,
-		nil,
-		nil,
-		nil,
+		aKeeper,
+		bKeeper,
+		sKeeper,
 		submissionDelay,
 	)
 	require.NoError(t, err, "new keeper")
