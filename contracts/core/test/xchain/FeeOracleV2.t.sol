@@ -16,7 +16,7 @@ contract FeeOracleV2_Test is Test {
     address manager;
     address owner;
 
-    uint128 protocolFee = 1 gwei;
+    uint96 protocolFee = 1 gwei;
 
     uint8 gasTokenA = 1;
     uint8 gasTokenB = 2;
@@ -491,7 +491,7 @@ contract FeeOracleV2_Test is Test {
     }
 
     function test_setProtocolFee() public {
-        uint128 newProtocolFee = feeOracle.protocolFee() + 1 gwei;
+        uint96 newProtocolFee = feeOracle.protocolFee() + 1 gwei;
 
         // only owner can set protocol fee
         address notOwner = address(0x456);

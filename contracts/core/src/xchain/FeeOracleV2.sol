@@ -14,7 +14,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     /**
      * @notice Base protocol fee for each xmsg.
      */
-    uint128 public protocolFee;
+    uint96 public protocolFee;
 
     /**
      * @notice Address allowed to set gas prices and to-native conversion rates.
@@ -53,7 +53,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     function initialize(
         address owner_,
         address manager_,
-        uint128 protocolFee_,
+        uint96 protocolFee_,
         FeeParams[] calldata feeParams_,
         DataCostParams[] calldata dataCostParams_,
         NativeRateParams[] calldata nativeRateParams_
@@ -246,7 +246,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     /**
      * @notice Set the base protocol fee for each xmsg.
      */
-    function setProtocolFee(uint128 fee) external onlyOwner {
+    function setProtocolFee(uint96 fee) external onlyOwner {
         _setProtocolFee(fee);
     }
 
@@ -388,7 +388,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     /**
      * @notice Set the base protocol fee for each xmsg.
      */
-    function _setProtocolFee(uint128 fee) internal {
+    function _setProtocolFee(uint96 fee) internal {
         protocolFee = fee;
         emit ProtocolFeeSet(fee);
     }

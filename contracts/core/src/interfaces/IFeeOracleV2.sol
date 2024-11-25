@@ -64,7 +64,7 @@ interface IFeeOracleV2 is IFeeOracle, IConversionRateOracle {
     event ToNativeRateSet(uint8 gasToken, uint256 nativeRate);
 
     /// @notice Emitted when the base protocol fee is set.
-    event ProtocolFeeSet(uint128 protocolFee);
+    event ProtocolFeeSet(uint96 protocolFee);
 
     /// @notice Emitted when the manager is changed.
     event ManagerSet(address manager);
@@ -112,7 +112,7 @@ interface IFeeOracleV2 is IFeeOracle, IConversionRateOracle {
     }
 
     /// @notice Returns the protocol fee.
-    function protocolFee() external view returns (uint128);
+    function protocolFee() external view returns (uint96);
 
     /// @notice Returns the manager's address.
     function manager() external view returns (address);
@@ -187,7 +187,7 @@ interface IFeeOracleV2 is IFeeOracle, IConversionRateOracle {
     function setToNativeRate(uint8 gasToken, uint256 nativeRate) external;
 
     /// @notice Set the base protocol fee for each xmsg.
-    function setProtocolFee(uint128 fee) external;
+    function setProtocolFee(uint96 fee) external;
 
     /// @notice Set the manager admin account.
     function setManager(address manager) external;

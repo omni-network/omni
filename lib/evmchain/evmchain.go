@@ -42,6 +42,26 @@ const (
 	omniEVMBlockPeriod = time.Second * 2
 )
 
+var (
+	dataCostIDs = map[uint64]uint64{
+		// Mainnets.
+		IDOmniMainnet: 166,
+		IDEthereum:    1,
+
+		// Testnets.
+		IDOmniOmega: 164,
+		IDSepolia:   11155111,
+
+		// Ephemeral.
+		IDOmniStaging: 1650,
+		IDOmniDevnet:  1651,
+		IDMockL1:      1652,
+		IDMockL2:      1654,
+		IDMockOp:      1655,
+		IDMockArb:     1656,
+	}
+)
+
 type Metadata struct {
 	ChainID     uint64
 	PostsTo     uint64 // chain id to which tx data is posted
@@ -67,6 +87,11 @@ func MetadataByName(name string) (Metadata, bool) {
 
 func IsOmniEVM(name string) bool {
 	return name == omniEVMName
+}
+
+func DataCostID(chainID uint64) (uint64, bool) {
+	id, ok := dataCostIDs[chainID]
+	return id, ok
 }
 
 // All returns all evmchain metadatas ordered by chain ID.
