@@ -18,11 +18,11 @@ import (
 type procDeps struct {
 	ParseID      func(chainID uint64, log types.Log) ([32]byte, error)
 	GetRequest   func(ctx context.Context, chainID uint64, id [32]byte) (bindings.SolveRequest, bool, error)
-	ShouldReject func(ctx context.Context, chainID uint64, req bindings.SolveRequest) (uint8, bool, error)
+	ShouldReject func(ctx context.Context, chainID uint64, req bindings.SolveRequest) (rejectReason, bool, error)
 	SetCursor    func(ctx context.Context, chainID uint64, height uint64) error
 
 	Accept  func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error
-	Reject  func(ctx context.Context, chainID uint64, req bindings.SolveRequest, reason uint8) error
+	Reject  func(ctx context.Context, chainID uint64, req bindings.SolveRequest, reason rejectReason) error
 	Fulfill func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error
 	Claim   func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error
 }
@@ -62,6 +62,7 @@ func newClaimer(
 }
 
 func newFulfiller(
+	network netconf.ID,
 	outboxContracts map[uint64]*bindings.SolveOutbox,
 	backends ethbackend.Backends,
 	solverAddr common.Address,
@@ -89,8 +90,15 @@ func newFulfiller(
 			return nil
 		}
 
-		// TODO(corver): Convert req.Deposits into TokenPreReqs
-		var prereqs []bindings.SolveTokenPrereq
+		target, err := getTarget(network, req.Call)
+		if err != nil {
+			return errors.Wrap(err, "get target [BUG]")
+		}
+
+		prereqs, err := target.TokenPrereqs(req.Call)
+		if err != nil {
+			return errors.Wrap(err, "get token prereqs")
+		}
 
 		tx, err := outbox.Fulfill(txOpts, req.Id, chainID, req.Call, prereqs)
 		if err != nil {
@@ -107,8 +115,8 @@ func newRejector(
 	inboxContracts map[uint64]*bindings.SolveInbox,
 	backends ethbackend.Backends,
 	solverAddr common.Address,
-) func(ctx context.Context, chainID uint64, req bindings.SolveRequest, reason uint8) error {
-	return func(ctx context.Context, chainID uint64, req bindings.SolveRequest, reason uint8) error {
+) func(ctx context.Context, chainID uint64, req bindings.SolveRequest, reason rejectReason) error {
+	return func(ctx context.Context, chainID uint64, req bindings.SolveRequest, reason rejectReason) error {
 		inbox, ok := inboxContracts[chainID]
 		if !ok {
 			return errors.New("unknown chain")
@@ -124,7 +132,7 @@ func newRejector(
 			return err
 		}
 
-		tx, err := inbox.Reject(txOpts, req.Id, reason)
+		tx, err := inbox.Reject(txOpts, req.Id, uint8(reason))
 		if err != nil {
 			return errors.Wrap(err, "reject request")
 		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
@@ -136,23 +144,11 @@ func newRejector(
 }
 
 func newAcceptor(
-	network netconf.ID,
 	inboxContracts map[uint64]*bindings.SolveInbox,
 	backends ethbackend.Backends,
 	solverAddr common.Address,
 ) func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error {
 	return func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error {
-		target, err := targetFor(network, req.Call)
-		if err != nil {
-			log.Debug(ctx, "No target found for call", "call", req.Call)
-			return errors.Wrap(err, "get target")
-		}
-
-		if err := target.Verify(chainID, req.Call, req.Deposits); err != nil {
-			log.Debug(ctx, "Call rejected by target", "call", req.Call, "err", err)
-			return errors.Wrap(err, "verify target")
-		}
-
 		inbox, ok := inboxContracts[chainID]
 		if !ok {
 			return errors.New("unknown chain")

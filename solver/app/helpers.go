@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"encoding/hex"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -30,4 +31,10 @@ func detectContractChains(ctx context.Context, network netconf.Network, backends
 	}
 
 	return resp, nil
+}
+
+// fmtReqID returns the least-significant 7 hex chars of the provided request ID.
+// ReqIDs are monotonically incrementing numbers, not hashes.
+func fmtReqID(reqID [32]byte) string {
+	return hex.EncodeToString(reqID[:])[:7]
 }
