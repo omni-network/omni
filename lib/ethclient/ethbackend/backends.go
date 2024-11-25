@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/fireblocks"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -75,6 +76,30 @@ func NewFireBackends(ctx context.Context, testnet types.Testnet, fireCl firebloc
 		}
 
 		inner[chain.Chain().ChainID] = backend
+	}
+
+	return Backends{
+		backends: inner,
+	}, nil
+}
+
+func BackendsFromNetwork(network netconf.Network, endpoints xchain.RPCEndpoints, privKeys ...*ecdsa.PrivateKey) (Backends, error) {
+	inner := make(map[uint64]*Backend)
+	for _, chain := range network.EVMChains() {
+		endpoint, err := endpoints.ByNameOrID(chain.Name, chain.ID)
+		if err != nil {
+			return Backends{}, err
+		}
+
+		ethCl, err := ethclient.Dial(chain.Name, endpoint)
+		if err != nil {
+			return Backends{}, errors.Wrap(err, "dial")
+		}
+
+		inner[chain.ID], err = NewBackend(chain.Name, chain.ID, chain.BlockPeriod, ethCl, privKeys...)
+		if err != nil {
+			return Backends{}, errors.Wrap(err, "new backend")
+		}
 	}
 
 	return Backends{
@@ -162,6 +187,15 @@ func NewBackends(ctx context.Context, testnet types.Testnet, deployKeyFile strin
 
 func (b Backends) All() map[uint64]*Backend {
 	return b.backends
+}
+
+func (b Backends) Clients() map[uint64]ethclient.Client {
+	clients := make(map[uint64]ethclient.Client)
+	for chainID, backend := range b.backends {
+		clients[chainID] = backend.Client
+	}
+
+	return clients
 }
 
 func (b Backends) Backend(sourceChainID uint64) (*Backend, error) {

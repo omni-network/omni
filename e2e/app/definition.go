@@ -188,8 +188,6 @@ func newBackends(ctx context.Context, cfg DefinitionConfig, testnet types.Testne
 		return ethbackend.Backends{}, errors.Wrap(err, "new fireblocks")
 	}
 
-	// TODO(corver): Fireblocks keys need to be funded on private/internal chains we deploy.
-
 	return ethbackend.NewFireBackends(ctx, testnet, fireCl)
 }
 

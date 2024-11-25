@@ -498,7 +498,7 @@ func writeRelayerConfig(ctx context.Context, def Definition, logCfg log.Config) 
 	return nil
 }
 
-func writeSolverConfig(_ context.Context, def Definition, logCfg log.Config) error {
+func writeSolverConfig(ctx context.Context, def Definition, logCfg log.Config) error {
 	confRoot := filepath.Join(def.Testnet.Dir, "solver")
 
 	const (
@@ -516,10 +516,10 @@ func writeSolverConfig(_ context.Context, def Definition, logCfg log.Config) err
 		endpoints = ExternalEndpoints(def)
 	}
 
-	// TODO(corver): save proper private key
-	privKey, err := ethcrypto.GenerateKey()
+	// Save private key
+	privKey, err := eoa.PrivateKey(ctx, def.Testnet.Network, eoa.RoleSolver)
 	if err != nil {
-		return errors.Wrap(err, "generate private key")
+		return errors.Wrap(err, "get relayer key")
 	}
 	if err := ethcrypto.SaveECDSA(filepath.Join(confRoot, privKeyFile), privKey); err != nil {
 		return errors.Wrap(err, "write private key")
