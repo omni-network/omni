@@ -1,8 +1,15 @@
 package keeper
 
 import (
+	"math/big"
+
+	"github.com/omni-network/omni/lib/errors"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+
+	"cosmossdk.io/math"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // mustGetABI returns the metadata's ABI as an abi.ABI type.
@@ -25,4 +32,22 @@ func mustGetEvent(abi *abi.ABI, name string) abi.Event {
 	}
 
 	return event
+}
+
+// omniToBondCoin converts the $OMNI amount into a $STAKE coin.
+// TODO(corver): At this point, it is 1-to1, but this might change in the future.
+func omniToBondCoin(amount *big.Int) (sdk.Coin, sdk.Coins) {
+	coin := sdk.NewCoin(sdk.DefaultBondDenom, math.NewIntFromBigInt(amount))
+	return coin, sdk.NewCoins(coin)
+}
+
+// catch executes the function, returning an error if it panics.
+func catch(fn func() error) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New("recovered", "panic", r)
+		}
+	}()
+
+	return fn()
 }
