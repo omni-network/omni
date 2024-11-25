@@ -26,6 +26,12 @@ func (r *readinessStatus) ready() bool {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
+	return r.readyUnsafe()
+}
+
+// readyUnsafe is the same as ready but without locking.
+// It is unsafe since it assumes the lock is held.
+func (r *readinessStatus) readyUnsafe() bool {
 	return r.ConsensusSynced &&
 		r.ConsensusP2PPeers > 0 &&
 		r.ConsensusHeight > 0 &&
@@ -46,7 +52,7 @@ func (r *readinessStatus) serialize(w io.Writer) (bool, error) {
 		return false, errors.Wrap(err, "readiness status serialization")
 	}
 
-	return r.ready(), nil
+	return r.readyUnsafe(), nil
 }
 
 // setConsensusSynced sets the flag indicating the consensus is synced.
