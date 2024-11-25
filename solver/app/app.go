@@ -1,4 +1,3 @@
-//nolint:unused // It will be used in PRs.
 package app
 
 import (
@@ -10,6 +9,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/buildinfo"
+	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -19,7 +19,9 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -50,17 +52,37 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	ethClients, err := initializeEthClients(network.EVMChains(), cfg.RPCEndpoints)
+	if cfg.PrivateKey == "" {
+		return errors.New("private key not set")
+	}
+	privKey, err := ethcrypto.LoadECDSA(cfg.PrivateKey)
+	if err != nil {
+		return errors.Wrap(err, "load private key")
+	}
+	solverAddr := ethcrypto.PubkeyToAddress(privKey.PublicKey)
+	log.Debug(ctx, "Using solver address", "address", solverAddr.Hex())
+
+	backends, err := ethbackend.BackendsFromNetwork(network, cfg.RPCEndpoints, privKey)
 	if err != nil {
 		return err
 	}
 
-	_, err = newSolverDB(cfg.DBDir)
+	xprov := xprovider.New(network, backends.Clients(), nil)
+
+	db, err := newSolverDB(cfg.DBDir)
 	if err != nil {
 		return err
 	}
 
-	_ = xprovider.New(network, ethClients, nil)
+	cursors, err := newCursors(db)
+	if err != nil {
+		return errors.Wrap(err, "create cursor store")
+	}
+
+	err = startEventStreams(ctx, network, xprov, backends, solverAddr, cursors)
+	if err != nil {
+		return errors.Wrap(err, "start event streams")
+	}
 
 	select {
 	case <-ctx.Done():
@@ -119,68 +141,82 @@ func makePortalRegistry(network netconf.ID, endpoints xchain.RPCEndpoints) (*bin
 	return resp, nil
 }
 
-// initializeEthClients initializes the RPC clients for the given chains.
-func initializeEthClients(chains []netconf.Chain, endpoints xchain.RPCEndpoints) (map[uint64]ethclient.Client, error) {
-	rpcClientPerChain := make(map[uint64]ethclient.Client)
-	for _, chain := range chains {
-		rpc, err := endpoints.ByNameOrID(chain.Name, chain.ID)
-		if err != nil {
-			return nil, err
-		}
-		c, err := ethclient.Dial(chain.Name, rpc)
-		if err != nil {
-			return nil, errors.Wrap(err, "dial rpc", "chain_name", chain.Name, "chain_id", chain.ID, "rpc_url", rpc)
-		}
-		rpcClientPerChain[chain.ID] = c
-	}
-
-	return rpcClientPerChain, nil
-}
-
+// startEventStreams starts the event streams for the solver.
+// TODO(corver): Make this robust against chains not be available on startup.
 func startEventStreams(
 	ctx context.Context,
 	network netconf.Network,
 	xprov xchain.Provider,
 	backends ethbackend.Backends,
-	def Definition,
 	solverAddr common.Address,
 	cursors *cursors,
 ) error {
-	inboxContracts := make(map[uint64]*bindings.SolveInbox)
-	outboxContracts := make(map[uint64]*bindings.SolveOutbox)
-	for _, chain := range network.EVMChains() {
-		// Maybe init cursor store with deploy heights
-		chainVer := chainVerFromID(chain.ID)
-		if _, ok, err := cursors.Get(ctx, chainVer); err != nil {
-			return errors.Wrap(err, "get cursor", "chain_id", chain.ID)
-		} else if !ok {
-			height, ok := def.InboxDeployHeights[chain.ID]
-			if !ok {
-				return errors.New("missing inbox deploy height", "chain_id", chain.ID)
-			}
-			err := cursors.Set(ctx, chainVer, height)
-			if err != nil {
-				return err
-			}
-		}
+	addrs, err := contracts.GetAddresses(ctx, network.ID)
+	if err != nil {
+		return errors.Wrap(err, "get contract addresses")
+	}
 
-		backend, err := backends.Backend(chain.ID)
+	inboxChains, err := detectContractChains(ctx, network, backends, addrs.SolveInbox)
+	if err != nil {
+		return errors.Wrap(err, "detect inbox chains")
+	}
+
+	inboxContracts := make(map[uint64]*bindings.SolveInbox)
+	for _, chain := range inboxChains {
+		name := network.ChainName(chain)
+		chainVer := chainVerFromID(chain)
+		log.Debug(ctx, "Using inbox contract", "chain", name, "address", addrs.SolveInbox.Hex())
+
+		backend, err := backends.Backend(chain)
 		if err != nil {
 			return err
 		}
 
-		inbox, err := bindings.NewSolveInbox(def.InboxAddress, backend)
+		inbox, err := bindings.NewSolveInbox(addrs.SolveInbox, backend)
 		if err != nil {
-			return errors.Wrap(err, "create inbox contract", "chain_id", chain.ID)
+			return errors.Wrap(err, "create inbox contract", "chain", name)
+		}
+		inboxContracts[chain] = inbox
+
+		// Check if cursor store should be initialized with deploy height
+		if _, ok, err := cursors.Get(ctx, chainVer); err != nil {
+			return errors.Wrap(err, "get cursor", "chain", name)
+		} else if ok { // Cursor already set, skip
+			continue
 		}
 
-		outbox, err := bindings.NewSolveOutbox(def.OutboxAddress, backend)
+		height, err := inbox.DeployedAt(&bind.CallOpts{Context: ctx})
 		if err != nil {
-			return errors.Wrap(err, "create outbox contract", "chain_id", chain.ID)
+			return errors.New("get inbox deploy height", "chain", name)
 		}
 
-		inboxContracts[chain.ID] = inbox
-		outboxContracts[chain.ID] = outbox
+		log.Info(ctx, "Initializing inbox cursor", "chain", name, "deployed_at", height)
+
+		if err := cursors.Set(ctx, chainVer, height.Uint64()); err != nil {
+			return err
+		}
+	}
+
+	outboxChains, err := detectContractChains(ctx, network, backends, addrs.SolveOutbox)
+	if err != nil {
+		return errors.Wrap(err, "detect outbox chains")
+	}
+
+	outboxContracts := make(map[uint64]*bindings.SolveOutbox)
+	for _, chain := range outboxChains {
+		name := network.ChainName(chain)
+		log.Debug(ctx, "Using outbox contract", "chain", name, "address", addrs.SolveInbox.Hex())
+
+		backend, err := backends.Backend(chain)
+		if err != nil {
+			return err
+		}
+
+		outbox, err := bindings.NewSolveOutbox(addrs.SolveOutbox, backend)
+		if err != nil {
+			return errors.Wrap(err, "create outbox contract", "chain", name)
+		}
+		outboxContracts[chain] = outbox
 	}
 
 	cursorSetter := func(ctx context.Context, chainID uint64, height uint64) error {
@@ -190,7 +226,7 @@ func startEventStreams(
 	deps := procDeps{
 		ParseID:      newIDParser(inboxContracts),
 		GetRequest:   newRequestGetter(inboxContracts),
-		ShouldReject: newRequestValidator(def),
+		ShouldReject: newRequestValidator(),
 		Accept:       newAcceptor(network.ID, inboxContracts, backends, solverAddr),
 		Reject:       newRejector(inboxContracts, backends, solverAddr),
 		Fulfill:      newFulfiller(outboxContracts, backends, solverAddr),
@@ -198,20 +234,22 @@ func startEventStreams(
 		SetCursor:    cursorSetter,
 	}
 
-	for _, chain := range network.EVMChains() {
-		go streamEventsForever(ctx, chain.ID, xprov, deps, def, cursors)
+	for _, chain := range inboxChains {
+		log.Info(ctx, "Starting inbox event stream", "chain", network.ChainName(chain))
+		go streamEventsForever(ctx, chain, xprov, deps, cursors, addrs.SolveInbox)
 	}
 
 	return nil
 }
 
+// streamEventsForever streams events from the inbox contract on the given chain.
 func streamEventsForever(
 	ctx context.Context,
 	chainID uint64,
 	xprov xchain.Provider,
 	deps procDeps,
-	def Definition,
 	cursors *cursors,
+	inboxAddr common.Address,
 ) {
 	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second*5))
 	for {
@@ -227,7 +265,7 @@ func streamEventsForever(
 			ChainID:       chainID,
 			Height:        from,
 			ConfLevel:     confLevel,
-			FilterAddress: def.InboxAddress,
+			FilterAddress: inboxAddr,
 			FilterTopics:  allEventTopics,
 		}
 		err = xprov.StreamEventLogs(ctx, req, newEventProcessor(deps, chainID))

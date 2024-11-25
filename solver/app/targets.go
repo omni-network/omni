@@ -1,4 +1,3 @@
-//nolint:unused // Some functions are unused but are kept for future use
 package app
 
 import (
