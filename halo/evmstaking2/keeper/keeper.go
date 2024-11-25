@@ -3,10 +3,14 @@ package keeper
 import (
 	"context"
 
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/evmstaking2/types"
+	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 
 	ormv1alpha1 "cosmossdk.io/api/cosmos/orm/v1alpha1"
@@ -15,14 +19,23 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+var (
+	stakingABI           = mustGetABI(bindings.StakingMetaData)
+	createValidatorEvent = mustGetEvent(stakingABI, "CreateValidator")
+	delegateEvent        = mustGetEvent(stakingABI, "Delegate")
+)
+
 // Keeper also implements the evmenginetypes.EvmEventProcessor interface.
 type Keeper struct {
 	eventsTable     EVMEventTable
+	ethCl           ethclient.Client
+	address         common.Address
 	submissionDelay int64
 }
 
 func NewKeeper(
 	storeService store.KVStoreService,
+	ethCl ethclient.Client,
 	submissionDelay int64,
 ) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
@@ -39,8 +52,12 @@ func NewKeeper(
 		return nil, errors.Wrap(err, "create valsync store")
 	}
 
+	address := common.HexToAddress(predeploys.Staking)
+
 	return &Keeper{
 		eventsTable:     evmstakingStore.EVMEventTable(),
+		ethCl:           ethCl,
+		address:         address,
 		submissionDelay: submissionDelay,
 	}, nil
 }
@@ -75,16 +92,38 @@ func (k *Keeper) EndBlock(ctx context.Context) error {
 }
 
 // Prepare returns all omni stake contract EVM event logs from the provided block hash.
-func (Keeper) Prepare(context.Context, common.Hash) ([]evmenginetypes.EVMEvent, error) {
-	return nil, nil
+func (k Keeper) Prepare(ctx context.Context, blockHash common.Hash) ([]evmenginetypes.EVMEvent, error) {
+	logs, err := k.ethCl.FilterLogs(ctx, ethereum.FilterQuery{
+		BlockHash: &blockHash,
+		Addresses: k.Addresses(),
+		Topics:    [][]common.Hash{{createValidatorEvent.ID, delegateEvent.ID}},
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "filter logs")
+	}
+
+	resp := make([]evmenginetypes.EVMEvent, 0, len(logs))
+	for _, l := range logs {
+		topics := make([][]byte, 0, len(l.Topics))
+		for _, t := range l.Topics {
+			topics = append(topics, t.Bytes())
+		}
+		resp = append(resp, evmenginetypes.EVMEvent{
+			Address: l.Address.Bytes(),
+			Topics:  topics,
+			Data:    l.Data,
+		})
+	}
+
+	return resp, nil
 }
 
 func (Keeper) Name() string {
 	return types.ModuleName
 }
 
-func (Keeper) Addresses() []common.Address {
-	return nil
+func (k Keeper) Addresses() []common.Address {
+	return []common.Address{k.address}
 }
 
 // Deliver processes a omni deposit log event, which must be one of:
