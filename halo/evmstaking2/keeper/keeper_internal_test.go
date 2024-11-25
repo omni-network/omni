@@ -59,7 +59,7 @@ func TestInsertEVMEvents(t *testing.T) {
 	}
 
 	// Make sure no submission happens for heights in the range 2 to 4
-	for h := int64(2); h <= 4; h++ {
+	for h := int64(2); h < keeper.submissionDelay; h++ {
 		ctx = ctx.WithBlockHeight(h)
 		err := keeper.EndBlock(ctx)
 		require.NoError(t, err)

@@ -53,14 +53,14 @@ func (k *Keeper) EndBlock(ctx context.Context) error {
 		return nil
 	}
 
-	eventIter, err := k.eventsTable.List(ctx, EVMEventIdIndexKey{})
+	iter, err := k.eventsTable.List(ctx, EVMEventIdIndexKey{})
 	if err != nil {
 		return errors.Wrap(err, "fetch evm events")
 	}
-	defer eventIter.Close()
+	defer iter.Close()
 
-	for eventIter.Next() {
-		val, err := eventIter.Value()
+	for iter.Next() {
+		val, err := iter.Value()
 		if err != nil {
 			return errors.Wrap(err, "get event")
 		}

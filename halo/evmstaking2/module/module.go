@@ -125,7 +125,7 @@ type ModuleOutputs struct {
 func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 	k, err := keeper.NewKeeper(
 		in.StoreService,
-		in.Config.GetValsetUpdatesDelayBlocks(),
+		in.Config.GetDeliverInterval(),
 	)
 	if err != nil {
 		return ModuleOutputs{}, err
