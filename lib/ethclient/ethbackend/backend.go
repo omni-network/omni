@@ -123,16 +123,6 @@ func (b *Backend) AddAccount(privkey *ecdsa.PrivateKey) (common.Address, error) 
 	return addr, nil
 }
 
-func (b *Backend) Clone() *Backend {
-	clone := *b
-	clone.accounts = make(map[common.Address]account)
-	for addr, acc := range b.accounts {
-		clone.accounts[addr] = acc
-	}
-
-	return &clone
-}
-
 func (b *Backend) Chain() (string, uint64) {
 	return b.chainName, b.chainID
 }
