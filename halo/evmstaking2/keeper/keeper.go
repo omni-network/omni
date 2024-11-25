@@ -11,8 +11,6 @@ import (
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
 	ormv1alpha1 "cosmossdk.io/api/cosmos/orm/v1alpha1"
@@ -148,25 +146,3 @@ func (k Keeper) Deliver(ctx context.Context, _ common.Hash, elog evmenginetypes.
 // parseAndDeliver parses the provided event and tries to deliver it on a state branch.
 // If the delivery fails, the error will be logged and the state branch will be discarded.
 func parseAndDeliver(context.Context, *evmenginetypes.EVMEvent) {}
-
-// mustGetABI returns the metadata's ABI as an abi.ABI type.
-// It panics on error.
-func mustGetABI(metadata *bind.MetaData) *abi.ABI {
-	abi, err := metadata.GetAbi()
-	if err != nil {
-		panic(err)
-	}
-
-	return abi
-}
-
-// mustGetEvent returns the event with the given name from the ABI.
-// It panics if the event is not found.
-func mustGetEvent(abi *abi.ABI, name string) abi.Event {
-	event, ok := abi.Events[name]
-	if !ok {
-		panic("event not found")
-	}
-
-	return event
-}
