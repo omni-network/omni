@@ -5,6 +5,7 @@ import (
 
 	"github.com/omni-network/omni/halo/evmstaking2/keeper"
 	"github.com/omni-network/omni/halo/evmstaking2/types"
+	"github.com/omni-network/omni/lib/ethclient"
 
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/core/store"
@@ -111,6 +112,7 @@ type ModuleInputs struct {
 	depinject.In
 
 	StoreService store.KVStoreService
+	EthCl        ethclient.Client
 	Cdc          codec.Codec
 	Config       *Module
 }
@@ -125,6 +127,7 @@ type ModuleOutputs struct {
 func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 	k, err := keeper.NewKeeper(
 		in.StoreService,
+		in.EthCl,
 		in.Config.GetDeliverInterval(),
 	)
 	if err != nil {

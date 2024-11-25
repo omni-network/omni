@@ -93,7 +93,7 @@ func setupKeeper(t *testing.T, submissionDelay int64) (*Keeper, sdk.Context) {
 	ctx = ctx.WithBlockHeight(1)
 	ctx = ctx.WithChainID(netconf.Simnet.Static().OmniConsensusChainIDStr())
 
-	k, err := NewKeeper(storeSvc, submissionDelay)
+	k, err := NewKeeper(storeSvc, nil, submissionDelay)
 	require.NoError(t, err, "new keeper")
 
 	return k, ctx
