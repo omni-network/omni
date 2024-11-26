@@ -113,6 +113,13 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgrade
     }
 
     /**
+     * @notice Deregister an operator from the AVS. Forwards a call to EigenLayer's AVSDirectory.
+     */
+    function deregisterOperator() external whenNotPaused {
+        _deregisterOperator(msg.sender);
+    }
+
+    /**
      * @notice Returns true if the operator is in the allowlist.
      * @param operator The operator to check
      */

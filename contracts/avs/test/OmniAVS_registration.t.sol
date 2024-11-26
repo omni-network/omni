@@ -57,4 +57,27 @@ contract OmniAVS_allowlist_Test is Base {
         vm.prank(operator);
         omniAVS.registerOperator(pubkey, emptySig);
     }
+
+    /// @dev Test that an operator can deregister
+    function test_deregisterOperator_succeeds() public {
+        address operator = _operator(0);
+
+        _addToAllowlist(operator);
+        _registerAsOperator(operator);
+        _depositIntoSupportedStrategy(operator, minOperatorStake);
+        _registerOperatorWithAVS(operator);
+        _deregisterOperatorFromAVS(operator);
+
+        IOmniAVS.Operator[] memory operators = omniAVS.operators();
+        assertEq(operators.length, 0);
+    }
+
+    /// @dev Test that an invalid operator cannot deregister
+    function test_deregisterOperator_invalidOperator_reverts() public {
+        address operator = _operator(0);
+
+        vm.expectRevert("OmniAVS: not an operator");
+        vm.prank(operator);
+        omniAVS.deregisterOperator();
+    }
 }
