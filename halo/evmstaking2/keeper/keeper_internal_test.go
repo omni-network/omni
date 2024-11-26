@@ -143,6 +143,7 @@ func TestDeliverDelegate(t *testing.T) {
 	require.True(t, strings.HasPrefix(msg.ValidatorAddress, "cosmosvaloper"), msg.ValidatorAddress)
 	oneEth := sdk.NewInt64Coin("stake", ethStake*1000000000000000000)
 	require.Equal(t, msg.Amount, oneEth)
+	require.Len(t, sServer.delegateMsgBuffer, 1)
 }
 
 func setupKeeper(
