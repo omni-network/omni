@@ -79,6 +79,7 @@ func WriteConfigTOML(conf Config, path string) error {
 // MakeGethConfig returns the full omni geth config for the provided custom config.
 func MakeGethConfig(conf Config) FullConfig {
 	cfg := defaultGethConfig()
+	cfg.Eth.RPCTxFeeCap = 100 // 100 OMNI
 	cfg.Eth.NetworkId = conf.ChainID
 	cfg.Node.DataDir = "/geth" // Mount inside docker container
 	cfg.Node.IPCPath = "/geth/geth.ipc"

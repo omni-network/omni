@@ -21,7 +21,7 @@ VMTrace = ""
 VMTraceJsonConfig = ""
 RPCGasCap = 50000000
 RPCEVMTimeout = 5000000000
-RPCTxFeeCap = 1e+00
+RPCTxFeeCap = 1e+02
 
 [Eth.Miner]
 GasCeil = 30000000
