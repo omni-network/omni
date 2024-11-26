@@ -78,6 +78,11 @@ interface IOmniAVS {
     ) external;
 
     /**
+     * @notice Deregister an operator from the AVS. Forwards a call to EigenLayer's AVSDirectory.
+     */
+    function deregisterOperator() external;
+
+    /**
      * @notice Check if an operator can register to the AVS.
      *         Returns true, with no reason, if the operator can register to the AVS.
      *         Returns false, with a reason, if the operator cannot register to the AVS.
