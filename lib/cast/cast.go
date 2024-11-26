@@ -83,11 +83,20 @@ func Array20[A any](slice []A) ([20]A, error) {
 	return [20]A{}, errors.New("slice length not 20", "len", len(slice))
 }
 
-// Array8 casts a slice to an array of length 2.
+// Array8 casts a slice to an array of length 8.
 func Array8[A any](slice []A) ([8]A, error) {
 	if len(slice) == 8 {
 		return [8]A(slice), nil
 	}
 
 	return [8]A{}, errors.New("slice length not 8", "len", len(slice))
+}
+
+// Array4 casts a slice to an array of length 4.
+func Array4[A any](slice []A) ([4]A, error) {
+	if len(slice) == 4 {
+		return [4]A(slice), nil
+	}
+
+	return [4]A{}, errors.New("slice length not 4", "len", len(slice))
 }

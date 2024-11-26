@@ -2,12 +2,16 @@ package app
 
 import (
 	"context"
+	"math/big"
+	"strings"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -23,7 +27,7 @@ type procDeps struct {
 
 	Accept  func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error
 	Reject  func(ctx context.Context, chainID uint64, req bindings.SolveRequest, reason rejectReason) error
-	Fulfill func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error
+	Fulfill func(ctx context.Context, req bindings.SolveRequest) error
 	Claim   func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error
 }
 
@@ -65,9 +69,10 @@ func newFulfiller(
 	network netconf.ID,
 	outboxContracts map[uint64]*bindings.SolveOutbox,
 	backends ethbackend.Backends,
-	solverAddr common.Address,
-) func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error {
-	return func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error {
+	solverAddr, outboxAddr common.Address,
+) func(ctx context.Context, req bindings.SolveRequest) error {
+	return func(ctx context.Context, req bindings.SolveRequest) error {
+		chainID := req.Call.DestChainId // Fulfilling happens on destination chain
 		outbox, ok := outboxContracts[chainID]
 		if !ok {
 			return errors.New("unknown chain")
@@ -78,12 +83,13 @@ func newFulfiller(
 			return err
 		}
 
+		callOpts := &bind.CallOpts{Context: ctx}
 		txOpts, err := backend.BindOpts(ctx, solverAddr)
 		if err != nil {
 			return err
 		}
 
-		if ok, err := outbox.DidFulfill(&bind.CallOpts{Context: ctx}, req.Id, chainID, req.Call); err != nil {
+		if ok, err := outbox.DidFulfill(callOpts, req.Id, chainID, req.Call); err != nil {
 			return errors.Wrap(err, "did fulfill")
 		} else if ok {
 			log.Info(ctx, "Skipping already fulfilled request", "req_id", req.Id)
@@ -100,15 +106,117 @@ func newFulfiller(
 			return errors.Wrap(err, "get token prereqs")
 		}
 
+		for _, prereq := range prereqs {
+			if err := approveOutboxSpend(ctx, prereq, backend, solverAddr, outboxAddr); err != nil {
+				return errors.Wrap(err, "approve outbox spend")
+			}
+			if err := checkAllowedCall(ctx, outbox, req.Call); err != nil {
+				return errors.Wrap(err, "check allowed call")
+			}
+		}
+
 		tx, err := outbox.Fulfill(txOpts, req.Id, chainID, req.Call, prereqs)
 		if err != nil {
-			return errors.Wrap(err, "fulfill request")
+			return errors.Wrap(err, "fulfill request", "custom", detectCustomError(err))
 		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
 			return errors.Wrap(err, "wait mined")
 		}
 
+		if ok, err := outbox.DidFulfill(callOpts, req.Id, chainID, req.Call); err != nil {
+			return errors.Wrap(err, "did fulfill")
+		} else if !ok {
+			return errors.New("fulfill failed [BUG]")
+		}
+
 		return nil
 	}
+}
+
+func detectCustomError(custom error) string {
+	contracts := map[string]*bind.MetaData{
+		"inbox":      bindings.SolveInboxMetaData,
+		"outbox":     bindings.SolveOutboxMetaData,
+		"mock_vault": bindings.MockVaultMetaData,
+		"mock_token": bindings.MockTokenMetaData,
+	}
+
+	for name, contract := range contracts {
+		abi, err := contract.GetAbi()
+		if err != nil {
+			return "BUG"
+		}
+		for n, e := range abi.Errors {
+			if strings.Contains(custom.Error(), e.ID.Hex()[:10]) {
+				return name + "::" + n
+			}
+		}
+	}
+
+	return "unknown"
+}
+
+func checkAllowedCall(ctx context.Context, outbox *bindings.SolveOutbox, call bindings.SolveCall) error {
+	callOpts := &bind.CallOpts{Context: ctx}
+
+	if len(call.Data) < 4 {
+		return errors.New("invalid call data")
+	}
+
+	callMethodID, err := cast.Array4(call.Data[:4])
+	if err != nil {
+		return err
+	}
+
+	allowed, err := outbox.AllowedCalls(callOpts, call.Target, callMethodID)
+	if err != nil {
+		return errors.Wrap(err, "get allowed calls")
+	} else if !allowed {
+		return errors.New("call not allowed")
+	}
+
+	return nil
+}
+
+func approveOutboxSpend(ctx context.Context, prereq bindings.SolveTokenPrereq, backend *ethbackend.Backend, solverAddr, outboxAddr common.Address) error {
+	token, err := bindings.NewMockToken(prereq.Token, backend)
+	if err != nil {
+		return errors.Wrap(err, "new token")
+	}
+
+	isApproved := func() (bool, error) {
+		allowance, err := token.Allowance(&bind.CallOpts{Context: ctx}, solverAddr, outboxAddr)
+		if err != nil {
+			return false, errors.Wrap(err, "get allowance")
+		}
+
+		return new(big.Int).Sub(allowance, prereq.Amount).Sign() >= 0, nil
+	}
+
+	if approved, err := isApproved(); err != nil {
+		return err
+	} else if approved {
+		return nil
+	}
+
+	txOpts, err := backend.BindOpts(ctx, solverAddr)
+	if err != nil {
+		return err
+	}
+
+	tx, err := token.Approve(txOpts, outboxAddr, umath.MaxUint256)
+	if err != nil {
+		return errors.Wrap(err, "approve token")
+	} else if _, err := backend.WaitMined(ctx, tx); err != nil {
+		return errors.Wrap(err, "wait mined")
+	}
+
+	if approved, err := isApproved(); err != nil {
+		return err
+	} else if !approved {
+		return errors.New("approve failed")
+	}
+
+	return nil
 }
 
 func newRejector(

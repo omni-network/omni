@@ -229,7 +229,7 @@ func startEventStreams(
 		ShouldReject: newShouldRejector(network.ID),
 		Accept:       newAcceptor(inboxContracts, backends, solverAddr),
 		Reject:       newRejector(inboxContracts, backends, solverAddr),
-		Fulfill:      newFulfiller(network.ID, outboxContracts, backends, solverAddr),
+		Fulfill:      newFulfiller(network.ID, outboxContracts, backends, solverAddr, addrs.SolveOutbox),
 		Claim:        newClaimer(inboxContracts, backends, solverAddr),
 		SetCursor:    cursorSetter,
 	}
@@ -263,7 +263,7 @@ func streamEventsForever(
 
 		req := xchain.EventLogsReq{
 			ChainID:       chainID,
-			Height:        from,
+			Height:        from, // Note the previous height is re-processed (idempotency FTW)
 			ConfLevel:     confLevel,
 			FilterAddress: inboxAddr,
 			FilterTopics:  allEventTopics,

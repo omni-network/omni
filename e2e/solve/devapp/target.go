@@ -1,6 +1,7 @@
 package devapp
 
 import (
+	"bytes"
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -79,7 +80,12 @@ func (a App) Verify(srcChainID uint64, call bindings.SolveCall, deposits []bindi
 }
 
 func unpackDeposit(data []byte) (DepositArgs, error) {
-	unpacked, err := vaultDeposit.Inputs.Unpack(data)
+	trimmed := bytes.TrimPrefix(data, vaultDeposit.ID)
+	if bytes.Equal(trimmed, data) {
+		return DepositArgs{}, errors.New("data not prefixed with deposit method id")
+	}
+
+	unpacked, err := vaultDeposit.Inputs.Unpack(trimmed)
 	if err != nil {
 		return DepositArgs{}, errors.Wrap(err, "unpack data")
 	}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/create3"
 	"github.com/omni-network/omni/lib/errors"
@@ -24,6 +25,7 @@ const (
 var (
 	create3Factory = contracts.Create3Factory(netconf.Devnet)
 	deployer       = eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer)
+	manager        = eoa.MustAddress(netconf.Devnet, eoa.RoleManager)
 )
 
 // Deploy deploys the mock tokens and vaults to devnet.
@@ -62,6 +64,61 @@ func Deploy(ctx context.Context, network netconf.Network, backends ethbackend.Ba
 
 	if err := deployToken(ctx, mockl2Backend, l2TokenSalt); err != nil {
 		return errors.Wrap(err, "deploy l2 token")
+	}
+
+	return nil
+}
+
+// AllowOutboxCalls allows the outbox to call the L1 vault deposit method.
+func AllowOutboxCalls(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
+	if network.ID != netconf.Devnet {
+		return errors.New("onl devnet")
+	}
+
+	addrs, err := contracts.GetAddresses(ctx, network.ID)
+	if err != nil {
+		return errors.Wrap(err, "get addresses")
+	}
+
+	mockl1, ok := network.Chain(evmchain.IDMockL1)
+	if !ok {
+		return errors.New("no mock l1")
+	}
+
+	mockl1Backend, err := backends.Backend(mockl1.ID)
+	if err != nil {
+		return errors.Wrap(err, "backend mock l1")
+	}
+
+	if err := allowCalls(ctx, mockl1Backend, addrs.SolveOutbox); err != nil {
+		return errors.Wrap(err, "allow calls")
+	}
+
+	return nil
+}
+
+// allowCalls allows the outbox to call the L1 vault deposit method.
+func allowCalls(ctx context.Context, backend *ethbackend.Backend, outboxAddr common.Address) error {
+	outbox, err := bindings.NewSolveOutbox(outboxAddr, backend)
+	if err != nil {
+		return errors.Wrap(err, "new solve outbox")
+	}
+
+	txOpts, err := backend.BindOpts(ctx, manager)
+	if err != nil {
+		return errors.Wrap(err, "bind opts")
+	}
+
+	vaultDepositID, err := cast.Array4(vaultDeposit.ID[:4])
+	if err != nil {
+		return err
+	}
+
+	tx, err := outbox.SetAllowedCall(txOpts, static.L1Vault, vaultDepositID, true)
+	if err != nil {
+		return errors.Wrap(err, "set allowed call")
+	} else if _, err := backend.WaitMined(ctx, tx); err != nil {
+		return errors.Wrap(err, "wait mined")
 	}
 
 	return nil

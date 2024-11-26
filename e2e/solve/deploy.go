@@ -26,7 +26,11 @@ func DeployContracts(ctx context.Context, network netconf.Network, backends ethb
 	var eg errgroup.Group
 
 	eg.Go(func() error {
-		return deployBoxes(ctx, network, backends)
+		if err := deployBoxes(ctx, network, backends); err != nil {
+			return errors.Wrap(err, "deploy boxes")
+		}
+
+		return devapp.AllowOutboxCalls(ctx, network, backends)
 	})
 	eg.Go(func() error {
 		return devapp.Deploy(ctx, network, backends)

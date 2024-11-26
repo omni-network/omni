@@ -125,7 +125,7 @@ func TestEventProcessor(t *testing.T) {
 
 					return nil
 				},
-				Fulfill: func(ctx context.Context, _ uint64, req bindings.SolveRequest) error {
+				Fulfill: func(ctx context.Context, req bindings.SolveRequest) error {
 					actual = fulfill
 					require.Equal(t, test.getStatus, req.Status)
 					require.EqualValues(t, reqID, req.Id)
