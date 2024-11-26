@@ -83,7 +83,7 @@ func (m CLIConfig) Check() error {
 	}
 	if m.MinBaseFeeGwei < m.MinTipCapGwei {
 		return errors.New("minBaseFee smaller than minTipCap",
-			m.MinBaseFeeGwei, m.MinTipCapGwei)
+			"base", m.MinBaseFeeGwei, "min", m.MinTipCapGwei)
 	}
 	if m.ResubmissionTimeout == 0 {
 		return errors.New("must provide ResubmissionTimeout")
@@ -231,7 +231,7 @@ func NewConfig(cfg CLIConfig, privateKey *ecdsa.PrivateKey, client ethclient.Cli
 
 func newConfig(cfg CLIConfig, signer SignerFn, from common.Address, client ethclient.Client) (Config, error) {
 	if err := cfg.Check(); err != nil {
-		return Config{}, errors.New("invalid config", err)
+		return Config{}, errors.Wrap(err, "invalid config")
 	}
 
 	feeLimitThreshold, err := GweiToWei(cfg.FeeLimitThresholdGwei)
@@ -283,7 +283,7 @@ func (m Config) Check() error {
 	}
 	if m.MinBaseFee != nil && m.MinTipCap != nil && m.MinBaseFee.Cmp(m.MinTipCap) == -1 {
 		return errors.New("minBaseFee smaller than minTipCap",
-			m.MinBaseFee, m.MinTipCap)
+			"base", m.MinBaseFee, "min", m.MinTipCap)
 	}
 	if m.ResubmissionTimeout == 0 {
 		return errors.New("must provide ResubmissionTimeout")

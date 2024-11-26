@@ -24,8 +24,6 @@ func monitorPublicRPCForever(
 		return
 	}
 
-	log.Info(ctx, "Setting up monitoring of a public RPC for %v", network.ID)
-
 	publicRPC, err := publicRPCEndpoint(network, omniChain, ethClients)
 	if err != nil {
 		log.Error(ctx, "Failed to dial into public RPC", err)
@@ -33,6 +31,8 @@ func monitorPublicRPCForever(
 	}
 
 	omniNodeRPC := ethClients[omniChain.ID]
+
+	log.Info(ctx, "Monitoring public RPC", "public", publicRPC, "local", omniNodeRPC)
 
 	ticker := time.NewTicker(time.Second * 30)
 	defer ticker.Stop()

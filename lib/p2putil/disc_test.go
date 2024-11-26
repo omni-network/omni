@@ -66,7 +66,7 @@ func TestDiscv4(t *testing.T) {
 			}
 		}
 
-		log.Info("discovered nodes", "count", len(ips), "ips", ips)
+		t.Log("discovered nodes", "count", len(ips), "ips", ips)
 		time.Sleep(time.Second * 2)
 	}
 }

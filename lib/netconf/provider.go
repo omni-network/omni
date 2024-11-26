@@ -50,7 +50,7 @@ func AwaitOnExecutionChain(ctx context.Context, netID ID, portalRegistry *bindin
 		}
 
 		if !containsAll(network, expected) {
-			log.Info(ctx, "Execution registry doesn't contain all expected chains (will retry)", ""+
+			log.Info(ctx, "Execution registry doesn't contain all expected chains (will retry)",
 				"expected", expected, "actual", network.ChainNamesByIDs())
 			backoff()
 
@@ -101,7 +101,7 @@ func AwaitOnConsensusChain(ctx context.Context, netID ID, cprov cchain.Provider,
 		}
 
 		if !containsAll(network, expected) {
-			log.Info(ctx, "Consensus registry doesn't contain all expected chains (will retry)", ""+
+			log.Info(ctx, "Consensus registry doesn't contain all expected chains (will retry)",
 				"expected", expected, "actual", network.ChainNamesByIDs())
 			backoff()
 
