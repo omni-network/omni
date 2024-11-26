@@ -40,9 +40,10 @@ type payloadArgs struct {
 
 //nolint:gochecknoglobals // This is a static mapping.
 var (
-	delegateEvent    = mustGetABI(bindings.StakingMetaData).Events["Delegate"]
-	portalRegEvent   = mustGetABI(bindings.PortalRegistryMetaData).Events["PortalRegistered"]
-	planUpgradeEvent = mustGetABI(bindings.UpgradeMetaData).Events["PlanUpgrade"]
+	delegateEvent        = mustGetABI(bindings.StakingMetaData).Events["Delegate"]
+	portalRegEvent       = mustGetABI(bindings.PortalRegistryMetaData).Events["PortalRegistered"]
+	planUpgradeEvent     = mustGetABI(bindings.UpgradeMetaData).Events["PlanUpgrade"]
+	createValidatorEvent = mustGetABI(bindings.StakingMetaData).Events["CreateValidator"]
 )
 
 var _ EngineClient = (*engineMock)(nil)
@@ -58,6 +59,37 @@ type engineMock struct {
 	pendingLogs map[common.Address][]types.Log
 	logs        map[common.Hash][]types.Log
 	payloads    map[engine.PayloadID]payloadArgs
+}
+
+// ValidatorCreation returns an option to add a validator creation event to the mock.
+func WithMockValidatorCreation(pubkey crypto.PubKey) func(*engineMock) {
+	return func(mock *engineMock) {
+		mock.mu.Lock()
+		defer mock.mu.Unlock()
+
+		valAddr, err := k1util.PubKeyToAddress(pubkey)
+		if err != nil {
+			panic(errors.Wrap(err, "pubkey to address"))
+		}
+
+		wei := new(big.Int).Mul(big.NewInt(1), big.NewInt(params.Ether))
+		data, err := createValidatorEvent.Inputs.NonIndexed().Pack(pubkey.Bytes(), wei)
+		if err != nil {
+			panic(errors.Wrap(err, "pack create validator"))
+		}
+
+		contractAddr := common.HexToAddress(predeploys.Staking)
+		eventLog := types.Log{
+			Address: contractAddr,
+			Topics: []common.Hash{
+				createValidatorEvent.ID,
+				common.HexToHash(valAddr.Hex()), // validator
+			},
+			Data: data,
+		}
+
+		mock.pendingLogs[contractAddr] = append(mock.pendingLogs[contractAddr], eventLog)
+	}
 }
 
 // WithMockSelfDelegation returns an option to add a self-delegation Delegate event to the mock.
@@ -89,7 +121,7 @@ func WithMockSelfDelegation(pubkey crypto.PubKey, ether int64) func(*engineMock)
 			Data: data,
 		}
 
-		mock.pendingLogs[contractAddr] = []types.Log{eventLog}
+		mock.pendingLogs[contractAddr] = append(mock.pendingLogs[contractAddr], eventLog)
 	}
 }
 

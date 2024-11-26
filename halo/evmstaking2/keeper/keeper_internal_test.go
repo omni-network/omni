@@ -2,6 +2,7 @@ package keeper
 
 import (
 	context "context"
+	"errors"
 	"strings"
 	"testing"
 
@@ -91,7 +92,7 @@ func TestInsertAndDeleteEVMEvents(t *testing.T) {
 	}
 }
 
-func TestDeliverDelegate(t *testing.T) {
+func TestDelivery(t *testing.T) {
 	t.Parallel()
 
 	deliverInterval := int64(3)
@@ -100,6 +101,7 @@ func TestDeliverDelegate(t *testing.T) {
 	ethClientMock, err := ethclient.NewEngineMock(
 		ethclient.WithPortalRegister(netconf.SimnetNetwork()),
 		ethclient.WithMockSelfDelegation(k1.GenPrivKey().PubKey(), ethStake),
+		ethclient.WithMockValidatorCreation(k1.GenPrivKey().PubKey()),
 	)
 	require.NoError(t, err)
 
@@ -111,27 +113,30 @@ func TestDeliverDelegate(t *testing.T) {
 	events, err := keeper.Prepare(ctx, hash)
 	require.NoError(t, err)
 
-	require.Len(t, events, 1)
+	require.Len(t, events, 2)
 
 	for _, event := range events {
 		err := keeper.Deliver(ctx, hash, event)
 		require.NoError(t, err)
 	}
 
-	// Make sure the event was persisted.
-	insertedID := uint64(1)
-	found, err := keeper.eventsTable.Has(ctx, insertedID)
-	require.NoError(t, err)
-	require.True(t, found)
+	// Make sure the events were persisted.
+	for id := uint64(1); id < 3; id++ {
+		found, err := keeper.eventsTable.Has(ctx, id)
+		require.NoError(t, err)
+		require.True(t, found)
+	}
 
 	ctx = ctx.WithBlockHeight(deliverInterval)
 	err = keeper.EndBlock(ctx)
 	require.NoError(t, err)
 
-	// Make sure the event was deleted.
-	found, err = keeper.eventsTable.Has(ctx, insertedID)
-	require.NoError(t, err)
-	require.False(t, found)
+	// Make sure the events were deleted.
+	for id := uint64(1); id < 3; id++ {
+		found, err := keeper.eventsTable.Has(ctx, id)
+		require.NoError(t, err)
+		require.False(t, found)
+	}
 
 	// Assert that the message was delivered to the msg server.
 	require.Len(t, sServer.delegateMsgBuffer, 1)
@@ -144,6 +149,8 @@ func TestDeliverDelegate(t *testing.T) {
 	oneEth := sdk.NewInt64Coin("stake", ethStake*1000000000000000000)
 	require.Equal(t, msg.Amount, oneEth)
 	require.Len(t, sServer.delegateMsgBuffer, 1)
+
+	require.Len(t, sServer.createValidatorMsgBuffer, 1)
 }
 
 func setupKeeper(
@@ -177,10 +184,22 @@ func setupKeeper(
 	return k, ctx
 }
 
-type stakingKeeperStub struct{}
+type stakingKeeperStub struct {
+	// calls is the number of calls to GetValidator
+	calls uint32
+}
 
-func (stakingKeeperStub) GetValidator(context.Context, sdk.ValAddress) (stypes.Validator, error) {
-	return stypes.Validator{}, nil
+// GetValidator returns no errors on the first call, because it is called on delegation
+// event delivery for the first time and the validator should be available.
+// Second time it is called on a validator creation event and it should return an error
+// on the pubkey of the new validator.
+func (m *stakingKeeperStub) GetValidator(context.Context, sdk.ValAddress) (stypes.Validator, error) {
+	if m.calls == 0 {
+		m.calls++
+		return stypes.Validator{}, nil
+	}
+
+	return stypes.Validator{}, errors.New("validator exists")
 }
 
 type authKeeperStub struct{}
