@@ -516,11 +516,18 @@ func writeSolverConfig(ctx context.Context, def Definition, logCfg log.Config) e
 		endpoints = ExternalEndpoints(def)
 	}
 
-	// Save private key
-	privKey, err := eoa.PrivateKey(ctx, def.Testnet.Network, eoa.RoleSolver)
+	// Save private key (use random keys for non-devnet)
+	// TODO(corver): Switch to proper keys once ready.
+	privKey, err := ethcrypto.GenerateKey()
 	if err != nil {
-		return errors.Wrap(err, "get relayer key")
+		return errors.Wrap(err, "generate private key")
+	} else if def.Testnet.Network == netconf.Devnet {
+		privKey, err = eoa.PrivateKey(ctx, def.Testnet.Network, eoa.RoleSolver)
+		if err != nil {
+			return errors.Wrap(err, "get solver key")
+		}
 	}
+
 	if err := ethcrypto.SaveECDSA(filepath.Join(confRoot, privKeyFile), privKey); err != nil {
 		return errors.Wrap(err, "write private key")
 	}
