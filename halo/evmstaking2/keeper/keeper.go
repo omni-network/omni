@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
@@ -16,6 +17,7 @@ import (
 
 	ormv1alpha1 "cosmossdk.io/api/cosmos/orm/v1alpha1"
 	"cosmossdk.io/core/store"
+	"cosmossdk.io/math"
 	"cosmossdk.io/orm/model/ormdb"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	akeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
@@ -175,7 +177,7 @@ func (k Keeper) processBufferedEvent(ctx context.Context, elog *evmenginetypes.E
 	if err := catch(func() error { //nolint:contextcheck // False positive wrt ctx
 		return k.parseAndDeliver(branchCtx, elog)
 	}); err != nil {
-		log.Info(ctx, "Delivering EVM log event failed", err,
+		log.Info(ctx, "Delivering EVM log event failed", "error", err,
 			"name", k.Name(),
 			"height", branchCtx.BlockHeight(),
 		)
@@ -196,7 +198,6 @@ func (k Keeper) parseAndDeliver(ctx context.Context, elog *evmenginetypes.EVMEve
 
 	switch ethlog.Topics[0] {
 	case createValidatorEvent.ID:
-		/* TODO: enable
 		ev, err := k.contract.ParseCreateValidator(ethlog)
 		if err != nil {
 			return errors.Wrap(err, "parse create validator")
@@ -205,7 +206,6 @@ func (k Keeper) parseAndDeliver(ctx context.Context, elog *evmenginetypes.EVMEve
 		if err := k.deliverCreateValidator(ctx, ev); err != nil {
 			return errors.Wrap(err, "create validator")
 		}
-		*/
 	case delegateEvent.ID:
 		ev, err := k.contract.ParseDelegate(ethlog)
 		if err != nil {
@@ -272,4 +272,58 @@ func (k Keeper) createAccIfNone(ctx context.Context, addr sdk.AccAddress) {
 		acc := k.aKeeper.NewAccountWithAddress(ctx, addr)
 		k.aKeeper.SetAccount(ctx, acc)
 	}
+}
+
+// deliverCreateValidator processes a CreateValidator event, and creates a new validator.
+// - Mint the corresponding amount of $STAKE coins.
+// - Send the minted coins to the depositor's account.
+// - Create a new validator with the depositor's account.
+//
+// NOTE: if we error, the deposit is lost (on EVM). consider recovery methods.
+func (k Keeper) deliverCreateValidator(ctx context.Context, ev *bindings.StakingCreateValidator) error {
+	pubkey, err := k1util.PubKeyBytesToCosmos(ev.Pubkey)
+	if err != nil {
+		return errors.Wrap(err, "pubkey to cosmos")
+	}
+
+	accAddr := sdk.AccAddress(ev.Validator.Bytes())
+	valAddr := sdk.ValAddress(ev.Validator.Bytes())
+
+	amountCoin, amountCoins := omniToBondCoin(ev.Deposit)
+
+	if _, err := k.sKeeper.GetValidator(ctx, valAddr); err == nil {
+		return errors.New("validator already exists")
+	}
+
+	k.createAccIfNone(ctx, accAddr)
+
+	if err := k.bKeeper.MintCoins(ctx, k.Name(), amountCoins); err != nil {
+		return errors.Wrap(err, "mint coins")
+	}
+
+	if err := k.bKeeper.SendCoinsFromModuleToAccount(ctx, k.Name(), accAddr, amountCoins); err != nil {
+		return errors.Wrap(err, "send coins")
+	}
+
+	log.Info(ctx, "EVM staking deposit detected, adding new validator",
+		"depositor", ev.Validator.Hex(),
+		"amount", ev.Deposit.String())
+
+	msg, err := stypes.NewMsgCreateValidator(
+		valAddr.String(),
+		pubkey,
+		amountCoin,
+		stypes.Description{Moniker: ev.Validator.Hex()},
+		stypes.NewCommissionRates(math.LegacyZeroDec(), math.LegacyZeroDec(), math.LegacyZeroDec()),
+		math.NewInt(1)) // Stub out minimum self delegation for now, just use 1.
+	if err != nil {
+		return errors.Wrap(err, "create validator message")
+	}
+
+	_, err = skeeper.NewMsgServerImpl(k.sKeeper).CreateValidator(ctx, msg)
+	if err != nil {
+		return errors.Wrap(err, "create validator")
+	}
+
+	return nil
 }
