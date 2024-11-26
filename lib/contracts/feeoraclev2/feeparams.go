@@ -39,7 +39,7 @@ func feeParams(ctx context.Context, destChainIDs []uint64, backends ethbackend.B
 // destFeeParams returns the fee parameters for the given destination chain.
 func destFeeParams(ctx context.Context, destChain evmchain.Metadata, backends ethbackend.Backends,
 ) (bindings.IFeeOracleV2FeeParams, error) {
-	gasToken, ok := destChain.NativeToken.GasTokenID()
+	gasToken, ok := GasTokenID(destChain.NativeToken)
 	if !ok {
 		return bindings.IFeeOracleV2FeeParams{}, errors.New("dest chain gas token", "dest_chain", destChain.Name, "token", destChain.NativeToken)
 	}
@@ -64,28 +64,39 @@ func destFeeParams(ctx context.Context, destChain evmchain.Metadata, backends et
 		chainForDataCost = destChain.PostsTo
 	}
 
-	dataCostID, ok := evmchain.DataCostID(chainForDataCost)
+	cfg, ok := GetConfig(destChain.ChainID)
 	if !ok {
-		return bindings.IFeeOracleV2FeeParams{}, errors.New("data cost id", "dest_chain", destChain.Name, "posts_to", destChain.PostsTo)
+		return bindings.IFeeOracleV2FeeParams{}, errors.New("config", "dest_chain", destChain.Name)
 	}
 
 	return bindings.IFeeOracleV2FeeParams{
 		GasToken:     gasToken,
-		BaseGasLimit: 100_000,
+		BaseGasLimit: cfg.BaseGasLimit,
 		ChainId:      destChain.ChainID,
 		GasPrice:     gasprice.Tier(gasPrice.Uint64()),
-		DataCostId:   dataCostID,
+		DataCostId:   chainForDataCost,
 	}, nil
 }
 
 // dataCostParams returns the data cost parameters for the given destination chains.
 func dataCostParams(ctx context.Context, destChainIDs []uint64, backends ethbackend.Backends,
 ) ([]bindings.IFeeOracleV2DataCostParams, error) {
-	var resp []bindings.IFeeOracleV2DataCostParams
+	paramsMap := make(map[uint64]bindings.IFeeOracleV2DataCostParams)
+
 	for _, destChainID := range destChainIDs {
 		destChain, ok := evmchain.MetadataByID(destChainID)
 		if !ok {
 			return nil, errors.New("meta by chain id", "dest_chain", destChain.Name)
+		}
+
+		// Skip if either destChain or its PostsTo chain is already configured.
+		_, ok = paramsMap[destChain.ChainID]
+		if ok {
+			continue
+		}
+		_, ok = paramsMap[destChain.PostsTo]
+		if ok {
+			continue
 		}
 
 		ps, err := destDataCostParams(ctx, destChain, backends)
@@ -93,7 +104,12 @@ func dataCostParams(ctx context.Context, destChainIDs []uint64, backends ethback
 			return nil, err
 		}
 
-		resp = append(resp, ps)
+		paramsMap[ps.DataCostId] = ps
+	}
+
+	var resp []bindings.IFeeOracleV2DataCostParams
+	for _, params := range paramsMap {
+		resp = append(resp, params)
 	}
 
 	return resp, nil
@@ -113,7 +129,7 @@ func destDataCostParams(ctx context.Context, destChain evmchain.Metadata, backen
 		return bindings.IFeeOracleV2DataCostParams{}, errors.New("posts to metadata", "dest_chain", destChain.Name, "posts_to", destChain.PostsTo)
 	}
 
-	gasToken, ok := postsToMetadata.NativeToken.GasTokenID()
+	gasToken, ok := GasTokenID(postsToMetadata.NativeToken)
 	if !ok {
 		return bindings.IFeeOracleV2DataCostParams{}, errors.New("posts to gas token", "posts_to", destChain.PostsTo, "token", postsToMetadata.NativeToken)
 	}
@@ -132,17 +148,17 @@ func destDataCostParams(ctx context.Context, destChain evmchain.Metadata, backen
 		}
 	}
 
-	dataCostID, ok := evmchain.DataCostID(chainForDataCost)
+	cfg, ok := GetConfig(chainForDataCost)
 	if !ok {
-		return bindings.IFeeOracleV2DataCostParams{}, errors.New("data cost id", "dest_chain", destChain.Name, "posts_to", destChain.PostsTo)
+		return bindings.IFeeOracleV2DataCostParams{}, errors.New("config", "dest_chain", destChain.Name, "posts_to", destChain.PostsTo)
 	}
 
 	return bindings.IFeeOracleV2DataCostParams{
 		GasToken:       gasToken,
-		BaseDataBuffer: 100,
-		DataCostId:     dataCostID,
+		BaseDataBuffer: cfg.BaseDataBuffer,
+		DataCostId:     chainForDataCost,
 		GasPrice:       gasprice.Tier(gasPrice.Uint64()),
-		GasPerByte:     16,
+		GasPerByte:     cfg.GasPerByte,
 	}, nil
 }
 
@@ -157,7 +173,7 @@ func nativeRateParams(ctx context.Context, pricer tokens.Pricer, srcChainID uint
 	}
 
 	var resp []bindings.IFeeOracleV2NativeRateParams
-	for token := range tokens.GasTokenIDs() {
+	for token := range GasTokenIDs() {
 		ps, err := destNativeRateParams(ctx, pricer, srcChain, token)
 		if err != nil {
 			return nil, err
@@ -186,7 +202,7 @@ func destNativeRateParams(ctx context.Context, pricer tokens.Pricer, srcChain ev
 		log.Warn(ctx, "Failed fetching conversion rate, using default", err, "src_chain", srcChain.Name, "src_token", srcChain.NativeToken, "dest_token", destToken, "to_native_rate", toNativeRate)
 	}
 
-	gasTokenID, ok := destToken.GasTokenID()
+	gasTokenID, ok := GasTokenID(destToken)
 	if !ok {
 		return bindings.IFeeOracleV2NativeRateParams{}, errors.New("dest token gas token id", "dest_token", destToken)
 	}
