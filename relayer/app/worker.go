@@ -65,7 +65,7 @@ func (w *Worker) Run(ctx context.Context) {
 		if ctx.Err() != nil {
 			return
 		} else if errors.Is(err, chaos.ErrChaos) {
-			log.Info(ctx, "Worker failed due to chaos testing, resetting", err)
+			log.InfoErr(ctx, "Worker failed due to chaos testing, resetting", err)
 		} else {
 			log.Warn(ctx, "Worker failed, resetting", err)
 		}

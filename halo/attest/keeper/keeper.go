@@ -198,7 +198,7 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 	} else if err != nil {
 		return errors.Wrap(err, "by att unique key")
 	} else if existing.GetFinalizedAttId() != 0 {
-		log.Debug(ctx, "Ignoring vote for attestation with finalized override", nil,
+		log.Debug(ctx, "Ignoring vote for attestation with finalized override",
 			"agg_id", attID,
 			"chain", k.namer(header.XChainVersion()),
 			"attest_offset", header.AttestOffset,

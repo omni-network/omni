@@ -353,7 +353,7 @@ func (m *simple) publishTx(ctx context.Context, tx *types.Transaction, sendState
 		if bumpFeesImmediately {
 			newTx, err := m.increaseGasPrice(ctx, tx)
 			if err != nil {
-				log.Info(ctx, "Unable to increase gas", err)
+				log.Warn(ctx, "Unable to increase gas", err)
 				return tx, false
 			}
 			tx = newTx
@@ -630,7 +630,7 @@ func (m *simple) checkLimits(tip, baseFee, bumpedTip, bumpedFee *big.Int) error 
 		}
 		// if the value is over the max, add an error message
 		if v.Cmp(max) > 0 {
-			errs = errors.New("bumped cap is over multiple of the suggested value", name, v, limit)
+			errs = errors.New("bumped cap is over multiple of the suggested value", name, v, "limit", limit)
 		}
 	}
 	check(bumpedTip, maxTip, "tip")

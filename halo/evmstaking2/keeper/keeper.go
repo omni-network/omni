@@ -177,7 +177,7 @@ func (k Keeper) processBufferedEvent(ctx context.Context, elog *evmenginetypes.E
 	if err := catch(func() error { //nolint:contextcheck // False positive wrt ctx
 		return k.parseAndDeliver(branchCtx, elog)
 	}); err != nil {
-		log.Info(ctx, "Delivering EVM log event failed", "error", err,
+		log.InfoErr(ctx, "Delivering EVM log event failed", err,
 			"name", k.Name(),
 			"height", branchCtx.BlockHeight(),
 		)

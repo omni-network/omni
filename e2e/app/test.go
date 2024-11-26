@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -74,11 +75,11 @@ func Test(ctx context.Context, def Definition, verbose bool) error {
 	}
 
 	log.Debug(ctx, "Env files",
-		EnvE2EManifest, manifestFile,
-		EnvInfraType, infd.Provider,
-		EnvInfraFile, infd.Path,
-		EnvE2EDeployInfo, deployInfoFile,
-		EnvE2ERPCEndpoints, endpointsFile,
+		strings.ToLower(EnvE2EManifest), manifestFile,
+		strings.ToLower(EnvInfraType), infd.Provider,
+		strings.ToLower(EnvInfraFile), infd.Path,
+		strings.ToLower(EnvE2EDeployInfo), deployInfoFile,
+		strings.ToLower(EnvE2ERPCEndpoints), endpointsFile,
 	)
 
 	args := []string{"go", "test", "-timeout", "60s", "-count", "1"}

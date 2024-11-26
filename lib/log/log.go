@@ -32,8 +32,30 @@ func Debug(ctx context.Context, msg string, attrs ...any) {
 	log(ctx, slog.LevelDebug, msg, mergeAttrs(ctx, attrs)...)
 }
 
+// DebugErr logs the message and error and attributes at debug level.
+// If err is nil, it will not be logged, but rather use Debug in that case.
+func DebugErr(ctx context.Context, msg string, err error, attrs ...any) {
+	if err != nil {
+		attrs = append(attrs, slog.String("err", err.Error()))
+		attrs = append(attrs, errAttrs(err)...)
+	}
+
+	log(ctx, slog.LevelDebug, msg, mergeAttrs(ctx, attrs)...)
+}
+
 // Info logs the message and attributes at info level.
 func Info(ctx context.Context, msg string, attrs ...any) {
+	log(ctx, slog.LevelInfo, msg, mergeAttrs(ctx, attrs)...)
+}
+
+// InfoErr logs the message and error and attributes at info level.
+// If err is nil, it will not be logged, but rather use Info in that case.
+func InfoErr(ctx context.Context, msg string, err error, attrs ...any) {
+	if err != nil {
+		attrs = append(attrs, slog.String("err", err.Error()))
+		attrs = append(attrs, errAttrs(err)...)
+	}
+
 	log(ctx, slog.LevelInfo, msg, mergeAttrs(ctx, attrs)...)
 }
 

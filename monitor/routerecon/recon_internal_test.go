@@ -112,7 +112,7 @@ func TestBasicHistorical(t *testing.T) {
 		log.Info(ctx, "Max routescan offset", "stream", streamName, "offset", maxOffset, "src_timestamp", fmtTime(maxCrossTx.SrcTimestamp), "dst_timestamp", fmtTime(maxCrossTx.DstTimestamp))
 
 		sub, ok, err := conn.XProvider.GetSubmittedCursor(ctx, xchain.LatestRef, streamID)
-		log.Info(ctx, "Max onchain offset", "stream", streamName, "offset", sub.MsgOffset, "ok", ok, "err", err)
+		log.InfoErr(ctx, "Max onchain offset", err, "stream", streamName, "offset", sub.MsgOffset, "ok", ok)
 		log.Info(ctx, "Missing routescan offsets", "stream", streamName, "indexed", len(offsets), "indexed_gaps", gaps, "unindexed", umath.SubtractOrZero(sub.MsgOffset, maxOffset))
 	}
 }

@@ -113,7 +113,7 @@ func TestJoinNetwork(t *testing.T) {
 			case <-ctx.Done():
 				return nil
 			case <-timeoutCtx.Done():
-				return errors.New("timed out waiting for sync", "duration", "duration", time.Since(t0).Truncate(time.Second))
+				return errors.New("timed out waiting for sync", "duration", time.Since(t0).Truncate(time.Second))
 			case <-ticker.C:
 				haloStatus, err := retry(ctx, haloStatus)
 				require.NoError(t, err)

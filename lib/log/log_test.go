@@ -46,6 +46,11 @@ func TestSimpleLogs(t *testing.T) {
 			err = pkgerrors.Wrap(err, "pkg wrap")
 			log.Warn(ctx, "Pkg wrapped error", err)
 		}
+		{ // InfoErr/DebugErr
+			err := errors.New("new", "new", "new")
+			log.DebugErr(ctx, "debug with error", err, "1", 1, "2", "two")
+			log.InfoErr(ctx, "info with error", err, "3", 3, "4", "four")
+		}
 	})
 }
 
