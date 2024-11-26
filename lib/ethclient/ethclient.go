@@ -205,3 +205,17 @@ func (w Wrapper) TxReceipt(ctx context.Context, txHash common.Hash) (*Receipt, e
 
 	return r, err
 }
+
+//nolint:revive // interface{} required by upstream.
+func (w Wrapper) CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error {
+	const endpoint = "raw_call"
+	defer latency(w.chain, endpoint)()
+
+	err := w.cl.Client().CallContext(ctx, result, method, args...)
+	if err != nil {
+		incError(w.chain, endpoint)
+		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
+	}
+
+	return err
+}

@@ -226,10 +226,10 @@ func startEventStreams(
 	deps := procDeps{
 		ParseID:      newIDParser(inboxContracts),
 		GetRequest:   newRequestGetter(inboxContracts),
-		ShouldReject: newRequestValidator(),
-		Accept:       newAcceptor(network.ID, inboxContracts, backends, solverAddr),
+		ShouldReject: newShouldRejector(network.ID),
+		Accept:       newAcceptor(inboxContracts, backends, solverAddr),
 		Reject:       newRejector(inboxContracts, backends, solverAddr),
-		Fulfill:      newFulfiller(outboxContracts, backends, solverAddr),
+		Fulfill:      newFulfiller(network.ID, outboxContracts, backends, solverAddr),
 		Claim:        newClaimer(inboxContracts, backends, solverAddr),
 		SetCursor:    cursorSetter,
 	}

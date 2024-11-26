@@ -4,6 +4,7 @@ anvil_chains = ["mock_l1", "mock_l2"]
 
 multi_omni_evms = true
 prometheus = true
+deploy_solve = true
 
 [node.validator01]
 [node.validator02]

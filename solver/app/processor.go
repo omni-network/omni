@@ -25,14 +25,16 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 				return errors.Wrap(err, "parse id")
 			}
 
-			ctx := log.WithCtx(ctx, log.Hex7("req_id", reqID[:]))
+			ctx := log.WithCtx(ctx, "status", statusString(event.Status), "req_id", fmtReqID(reqID))
+
+			log.Debug(ctx, "Processing event")
 
 			req, _, err := deps.GetRequest(ctx, chainID, reqID)
 			if err != nil {
 				return errors.Wrap(err, "current status")
 			} else if event.Status != req.Status {
 				// TODO(corver): Detect unexpected on-chain status.
-				log.Info(ctx, "Ignoring mismatching old event", "actual", statusString(req.Status), "event", statusString(event.Status))
+				log.Info(ctx, "Ignoring mismatching old event", "actual", statusString(req.Status))
 				continue
 			}
 

@@ -17,11 +17,16 @@ func fundAnvil(ctx context.Context, def Definition) error {
 		return nil
 	}
 
-	toFund := eoa.MustAddresses(netconf.Devnet, eoa.AllRoles()...)
+	toFund := eoa.MustAddresses(netconf.Devnet, eoa.AllRolesWithSolver()...)
 	amt := math.NewInt(1000000).MulRaw(1e18).BigInt() // 1M ETH
 
 	for _, chain := range def.Testnet.AnvilChains {
-		if err := anvil.FundAccounts(ctx, chain.ExternalRPC, amt, toFund...); err != nil {
+		backend, err := def.Backends().Backend(chain.Chain.ChainID)
+		if err != nil {
+			return errors.Wrap(err, "get backend")
+		}
+
+		if err := anvil.FundAccounts(ctx, backend.Client, amt, toFund...); err != nil {
 			return errors.Wrap(err, "fund anvil account")
 		}
 	}

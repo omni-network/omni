@@ -31,7 +31,7 @@ func TestDeployDevnet(t *testing.T) {
 	network := netconf.Devnet
 	ctx := context.Background()
 
-	client, _, stop, err := anvil.Start(ctx, tutil.TempDir(t), chainID)
+	client, stop, err := anvil.Start(ctx, tutil.TempDir(t), chainID)
 	require.NoError(t, err)
 	t.Cleanup(stop)
 

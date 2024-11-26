@@ -72,7 +72,7 @@ func setup(t *testing.T) (context.Context, *ethbackend.Backend, Contracts, EOAS)
 
 	ctx := context.Background()
 
-	ethCl, _, stop, err := anvil.Start(ctx, tutil.TempDir(t), chainID)
+	ethCl, stop, err := anvil.Start(ctx, tutil.TempDir(t), chainID)
 	require.NoError(t, err)
 	t.Cleanup(stop)
 

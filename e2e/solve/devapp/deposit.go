@@ -10,7 +10,6 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -24,7 +23,7 @@ type DepositReq struct {
 	Deposit DepositArgs    // deposit args
 }
 
-func RequestDeposits(ctx context.Context, endpoints xchain.RPCEndpoints, backends ethbackend.Backends) ([]DepositReq, error) {
+func RequestDeposits(ctx context.Context, backends ethbackend.Backends) ([]DepositReq, error) {
 	app := GetApp()
 
 	backend, err := backends.Backend(app.L2.ChainID)
@@ -32,20 +31,15 @@ func RequestDeposits(ctx context.Context, endpoints xchain.RPCEndpoints, backend
 		return nil, err
 	}
 
-	rpc, err := endpoints.ByNameOrID(app.L2.Name, app.L2.ChainID)
-	if err != nil {
-		return nil, err
-	}
+	const numDeposits = 3
 
-	const numDeposits = 10
-
-	depositors, err := makeDepositors(numDeposits, backend)
+	depositors, err := addRandomDepositors(numDeposits, backend)
 	if err != nil {
 		return nil, errors.Wrap(err, "make depositors")
 	}
 
 	// fund for gas
-	if err := anvil.FundAccounts(ctx, rpc, big.NewInt(1e18), depositors...); err != nil {
+	if err := anvil.FundAccounts(ctx, backend, big.NewInt(1e18), depositors...); err != nil {
 		return nil, errors.Wrap(err, "fund accounts")
 	}
 
@@ -62,43 +56,36 @@ func RequestDeposits(ctx context.Context, endpoints xchain.RPCEndpoints, backend
 	return reqs, nil
 }
 
-func CheckDeposits(ctx context.Context, backends ethbackend.Backends, reqs []DepositReq) error {
+func IsDeposited(ctx context.Context, backends ethbackend.Backends, req DepositReq) (bool, error) {
 	app := GetApp()
 
 	backend, err := backends.Backend(app.L1.ChainID)
 	if err != nil {
-		return errors.Wrap(err, "backend")
+		return false, errors.Wrap(err, "backend")
 	}
 
 	vault, err := bindings.NewMockVault(app.L1Vault, backend)
 	if err != nil {
-		return errors.Wrap(err, "new mock vault")
+		return false, errors.Wrap(err, "new mock vault")
 	}
 
 	callOpts := &bind.CallOpts{Context: ctx}
 
-	for _, req := range reqs {
-		balance, err := vault.Balances(callOpts, req.Deposit.OnBehalfOf)
-		if err != nil {
-			return errors.Wrap(err, "get balance")
-		}
-
-		// assumes balance(onBehalfOf) was zero before deposit request
-		// assumes one deposit per test case onBehalfOf addr
-		if balance.Cmp(req.Deposit.Amount) != 0 {
-			return errors.New("missing deposit",
-				"requester", req.Deposit.OnBehalfOf,
-				"expected", req.Deposit.Amount,
-				"actual", balance)
-		}
+	balance, err := vault.Balances(callOpts, req.Deposit.OnBehalfOf)
+	if err != nil {
+		return false, errors.Wrap(err, "get balance")
 	}
 
-	return nil
+	// assumes balance(onBehalfOf) was zero before deposit request
+	// assumes one deposit per test case onBehalfOf addr
+	return balance.Cmp(req.Deposit.Amount) != 0, nil
 }
 
-func makeDepositors(n int, backend *ethbackend.Backend) ([]common.Address, error) {
-	depositors := make([]common.Address, n)
-	for i := 0; i < n; i++ {
+// addRandomDepositors adds n random depositors privkeys to the backend.
+// It returns the addresses of the added depositors.
+func addRandomDepositors(n int, backend *ethbackend.Backend) ([]common.Address, error) {
+	var depositors []common.Address
+	for range n {
 		pk, err := crypto.GenerateKey()
 		if err != nil {
 			return nil, errors.Wrap(err, "generate key")
@@ -109,17 +96,15 @@ func makeDepositors(n int, backend *ethbackend.Backend) ([]common.Address, error
 			return nil, errors.Wrap(err, "add account")
 		}
 
-		depositors[i] = depositor
+		depositors = append(depositors, depositor)
 	}
 
 	return depositors, nil
 }
 
 func requestDeposits(ctx context.Context, backend *ethbackend.Backend, inbox common.Address, depositors []common.Address) ([]DepositReq, error) {
-	reqs := make([]DepositReq, 0, len(depositors))
-	for i := 0; i < len(depositors); i++ {
-		depositor := depositors[i]
-
+	var reqs []DepositReq
+	for _, depositor := range depositors {
 		deposit := DepositArgs{
 			OnBehalfOf: depositor,
 			Amount:     big.NewInt(1e18),
@@ -162,6 +147,7 @@ func requestAtInbox(ctx context.Context, backend *ethbackend.Backend, addr commo
 		bindings.SolveCall{
 			DestChainId: app.L1.ChainID,
 			Target:      app.L1Vault,
+			Value:       new(big.Int), // 0 native
 			Data:        data,
 		},
 		[]bindings.SolveTokenDeposit{{
@@ -238,9 +224,9 @@ func parseReqID(inbox bindings.SolveInboxFilterer, logs []*types.Log) ([32]byte,
 }
 
 func packDeposit(args DepositArgs) ([]byte, error) {
-	data, err := vaultDeposit.Inputs.Pack(args)
+	data, err := vaultDeposit.Inputs.Pack(args.OnBehalfOf, args.Amount)
 	if err != nil {
-		return nil, errors.Wrap(err, "unpack data")
+		return nil, errors.Wrap(err, "pack data")
 	}
 
 	return data, nil

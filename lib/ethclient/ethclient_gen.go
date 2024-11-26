@@ -33,6 +33,7 @@ type Client interface {
 	PeerCount(ctx context.Context) (uint64, error)
 	SetHead(ctx context.Context, height uint64) error
 	ProgressIfSyncing(ctx context.Context) (*ethereum.SyncProgress, bool, error)
+	CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error
 	Address() string
 	Close()
 }

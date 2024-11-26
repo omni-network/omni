@@ -55,6 +55,7 @@ type testFunc struct {
 	TestPortal  func(*testing.T, netconf.Network, Portal, []Portal)
 	TestOmniEVM func(*testing.T, ethclient.Client)
 	TestNetwork func(*testing.T, netconf.Network, xchain.RPCEndpoints)
+	skipFunc    func(types.Manifest) bool
 }
 
 func testNode(t *testing.T, fn func(*testing.T, netconf.Network, *e2e.Node, []Portal)) {
@@ -77,6 +78,15 @@ func testNetwork(t *testing.T, fn func(*testing.T, netconf.Network, xchain.RPCEn
 	test(t, testFunc{TestNetwork: fn})
 }
 
+func maybeTestNetwork(
+	t *testing.T,
+	skipFunc func(types.Manifest) bool,
+	fn func(*testing.T, netconf.Network, xchain.RPCEndpoints),
+) {
+	t.Helper()
+	test(t, testFunc{TestNetwork: fn, skipFunc: skipFunc})
+}
+
 // test runs tests for testnet nodes. The callback functions are respectively given a
 // single node to test, and a single portal to test, running as a subtest in parallel with other subtests.
 //
@@ -89,6 +99,11 @@ func test(t *testing.T, testFunc testFunc) {
 
 	testnet, network, _, endpoints := loadEnv(t)
 	nodes := testnet.Nodes
+
+	if testFunc.skipFunc != nil && testFunc.skipFunc(testnet.Manifest) {
+		t.Skip("Skipping test")
+		return
+	}
 
 	if name := os.Getenv(app.EnvE2ENode); name != "" {
 		node := testnet.LookupNode(name)

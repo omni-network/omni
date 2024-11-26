@@ -28,7 +28,7 @@ func TestEventProcessor(t *testing.T) {
 		name         string
 		event        common.Hash
 		getStatus    uint8
-		rejectReason uint8
+		rejectReason rejectReason
 		expect       string
 	}{
 		{
@@ -107,7 +107,7 @@ func TestEventProcessor(t *testing.T) {
 						Status: test.getStatus,
 					}, true, nil
 				},
-				ShouldReject: func(ctx context.Context, _ uint64, req bindings.SolveRequest) (uint8, bool, error) {
+				ShouldReject: func(ctx context.Context, _ uint64, req bindings.SolveRequest) (rejectReason, bool, error) {
 					return test.rejectReason, test.rejectReason != 0, nil
 				},
 				Accept: func(ctx context.Context, _ uint64, req bindings.SolveRequest) error {
@@ -117,7 +117,7 @@ func TestEventProcessor(t *testing.T) {
 
 					return nil
 				},
-				Reject: func(ctx context.Context, _ uint64, req bindings.SolveRequest, reason uint8) error {
+				Reject: func(ctx context.Context, _ uint64, req bindings.SolveRequest, reason rejectReason) error {
 					actual = reject
 					require.Equal(t, test.getStatus, req.Status)
 					require.Equal(t, test.rejectReason, reason)

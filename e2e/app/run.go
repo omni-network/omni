@@ -82,6 +82,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 	if err := waitForEVMs(ctx, def.Testnet.EVMChains(), def.Backends()); err != nil {
 		return nil, err
 	}
+	logRPCs(ctx, def)
 
 	contracts.UseStagingOmniRPC(def.Testnet.BroadcastOmniEVM().ExternalRPC)
 
@@ -98,7 +99,12 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, errors.Wrap(err, "deploy portals")
 	}
 
-	logRPCs(ctx, def)
+	if def.Manifest.DeploySolve {
+		// Deploy solver before initPortalRegistry, so solver detects boxes after netconf.Await
+		if err := solve.DeployContracts(ctx, NetworkFromDef(def), def.Backends()); err != nil {
+			return nil, errors.Wrap(err, "deploy solve")
+		}
+	}
 
 	// Deploy other contracts (and other on-chain setup)
 	var eg2 errgroup.Group
@@ -108,9 +114,6 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 	eg2.Go(func() error { return DeployBridge(ctx, def) })
 	eg2.Go(func() error { return maybeSubmitNetworkUpgrade(ctx, def) })
 	eg2.Go(func() error { return FundValidatorsForTesting(ctx, def) })
-	if def.Manifest.DeploySolve {
-		eg2.Go(func() error { return solve.DeployContracts(ctx, NetworkFromDef(def), def.Backends()) })
-	}
 	if err := eg2.Wait(); err != nil {
 		return nil, errors.Wrap(err, "deploy other contracts")
 	}
