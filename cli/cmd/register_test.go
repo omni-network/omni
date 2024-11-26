@@ -66,6 +66,21 @@ func TestRegister(t *testing.T) {
 	}
 }
 
+//nolint:paralleltest // Parallel tests not supported since we start docker containers.
+func TestDeregister(t *testing.T) {
+	ctx, backend, contracts, eoas := setup(t)
+
+	for _, operator := range eoas.operators() {
+		delegateWETH(t, ctx, contracts, backend, operator, toWei(100))
+		registerOperator(t, ctx, contracts, backend, eoas.operatorKey(operator))
+		assertOperatorRegistered(t, ctx, contracts, operator)
+	}
+
+	for _, operator := range eoas.operators() {
+		deregisterOperator(t, ctx, contracts, backend, eoas.operatorKey(operator))
+	}
+}
+
 // setup deploys the omni avs contract, using an anvil instance with pre-loaded eigen deployments.
 func setup(t *testing.T) (context.Context, *ethbackend.Backend, Contracts, EOAS) {
 	t.Helper()
@@ -498,6 +513,64 @@ func registerOperator(t *testing.T, ctx context.Context, contracts Contracts, b 
 	}
 
 	err = clicmd.Register(ctx, regCfg, testOpts)
+	tutil.RequireNoError(t, err)
+}
+
+func deregisterOperator(t *testing.T, ctx context.Context, contracts Contracts, b *ethbackend.Backend, key *ecdsa.PrivateKey) {
+	t.Helper()
+
+	addr := crypto.PubkeyToAddress(key.PublicKey)
+	dir := filepath.Join(t.TempDir(), addr.Hex())
+	keystoreFile := filepath.Join(dir, "keystore.json")
+	configFile := filepath.Join(dir, "config.yaml")
+
+	_, chainID := b.Chain()
+
+	const password = "12345678"
+
+	err := eigenecdsa.WriteKey(keystoreFile, key, password)
+	require.NoError(t, err)
+
+	cfg := eigentypes.OperatorConfig{
+		Operator: eigensdktypes.Operator{
+			Address:                   addr.Hex(),
+			DelegationApproverAddress: eigensdktypes.ZeroAddress,
+			StakerOptOutWindowBlocks:  0,
+		},
+		ELDelegationManagerAddress: contracts.DelegationManagerAddr.Hex(),
+		EthRPCUrl:                  b.Address(),
+		SignerConfig: eigentypes.SignerConfig{
+			PrivateKeyStorePath: keystoreFile,
+			SignerType:          eigentypes.LocalKeystoreSigner,
+		},
+		ChainId: *big.NewInt(int64(chainID)),
+	}
+
+	cfgYAML, err := cfg.MarshalYAML() // Convert into custom yaml struct first
+	require.NoError(t, err)
+	bz, err := yaml.Marshal(cfgYAML)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(configFile, bz, 0644))
+
+	require.NoError(t, yaml.Unmarshal(bz, new(eigentypes.OperatorConfig))) // Ensure unmarshalling works
+
+	// Override register options for testing.
+	testOpts := func(deps *clicmd.RegDeps) {
+		deps.Prompter = stubPrompter{password: password}
+		deps.NewBackendFunc = func(_ string, _ uint64, _ time.Duration, _ ethclient.Client, _ ...*ecdsa.PrivateKey) (*ethbackend.Backend, error) {
+			return b, nil // Have to provide the test backend for nonce management
+		}
+		deps.VerifyFunc = func(eigensdktypes.Operator) error {
+			return nil // Skip operator verification since it requires non-localhost urls.
+		}
+	}
+
+	regCfg := clicmd.RegConfig{
+		ConfigFile: configFile,
+		AVSAddr:    contracts.OmniAVSAddr.Hex(),
+	}
+
+	err = clicmd.Deregister(ctx, regCfg, testOpts)
 	tutil.RequireNoError(t, err)
 }
 

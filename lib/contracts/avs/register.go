@@ -98,3 +98,27 @@ func verifyRegisterOperator(ctx context.Context, avs *bindings.OmniAVS, operator
 
 	return nil
 }
+
+func DeregisterOperatorFromAVS(ctx context.Context, addr common.Address, backend *ethbackend.Backend, operator common.Address) error {
+	avs, err := bindings.NewOmniAVS(addr, backend)
+	if err != nil {
+		return errors.Wrap(err, "new avs")
+	}
+
+	txOpts, err := backend.BindOpts(ctx, operator)
+	if err != nil {
+		return err
+	}
+
+	tx, err := avs.DeregisterOperator(txOpts)
+	if err != nil {
+		return errors.Wrap(err, "deregister operator")
+	}
+
+	_, err = backend.WaitMined(ctx, tx)
+	if err != nil {
+		return errors.Wrap(err, "wait mined")
+	}
+
+	return nil
+}

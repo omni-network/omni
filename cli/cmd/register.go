@@ -137,6 +137,76 @@ func Register(ctx context.Context, cfg RegConfig, opts ...regOpt) error {
 	return nil
 }
 
+// Deregister deregisters the operator from the omni AVS contract.
+func Deregister(ctx context.Context, cfg RegConfig, opts ...regOpt) error {
+	// Default dependencies.
+	deps := RegDeps{
+		Prompter:       eigenutils.NewPrompter(),
+		NewBackendFunc: ethbackend.NewBackend,
+		VerifyFunc: func(op eigensdktypes.Operator) error {
+			return op.Validate()
+		},
+	}
+	for _, opt := range opts {
+		opt(&deps)
+	}
+
+	eigenCfg, err := readConfig(cfg.ConfigFile)
+	if err != nil {
+		return err
+	} else if err := deps.VerifyFunc(eigenCfg.Operator); err != nil {
+		return errors.Wrap(err, "config validation failed")
+	}
+
+	password, err := deps.Prompter.InputHiddenString("Enter password to decrypt the ecdsa private key:", "",
+		func(string) error {
+			return nil
+		},
+	)
+	if err != nil {
+		return errors.Wrap(err, "read input")
+	}
+
+	privKey, err := eigenecdsa.ReadKey(eigenCfg.SignerConfig.PrivateKeyStorePath, password)
+	if err != nil {
+		return errors.Wrap(err, "read private key", "path", eigenCfg.SignerConfig.PrivateKeyStorePath)
+	}
+
+	ethCl, err := ethclient.Dial(chainNameFromID(eigenCfg.ChainId), eigenCfg.EthRPCUrl)
+	if err != nil {
+		return errors.Wrap(err, "dial eth client", "url", eigenCfg.EthRPCUrl)
+	}
+
+	avsAddress, err := avsAddressOrDefault(cfg.AVSAddr, &eigenCfg.ChainId)
+	if err != nil {
+		return err
+	}
+
+	backend, err := deps.NewBackendFunc(chainNameFromID(eigenCfg.ChainId), eigenCfg.ChainId.Uint64(), l1BlockPeriod, ethCl)
+	if err != nil {
+		return errors.Wrap(err, "create backend")
+	}
+
+	operator, err := backend.AddAccount(privKey)
+	if err != nil {
+		return errors.Wrap(err, "add account")
+	}
+
+	err = avs.DeregisterOperatorFromAVS(ctx, avsAddress, backend, operator)
+	if err != nil {
+		switch err.Error() {
+		case "not an operator":
+			return &CliError{Msg: "operator not registered with AVS"}
+		default:
+			return err
+		}
+	}
+
+	log.Info(ctx, "✅ Deregistration successful", "operator", operator.Hex())
+
+	return nil
+}
+
 // readConfig returns the eigen-layer operator configuration from the given file.
 func readConfig(file string) (eigentypes.OperatorConfig, error) {
 	if _, err := os.Stat(file); os.IsNotExist(err) {
