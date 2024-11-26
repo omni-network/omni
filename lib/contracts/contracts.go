@@ -37,7 +37,7 @@ func ToMonitor(ctx context.Context, network netconf.ID) ([]Contract, error) {
 			Address:        addrs.GasStation,
 			OnlyOmniEVM:    true,
 			NotOmniEVM:     false,
-			FundThresholds: &FundThresholds{minEther: 200, targetEther: 1000}, // GasStation funds user GasPump requests, and needs a large OMNI balance.
+			FundThresholds: &FundThresholds{minEther: 10, targetEther: 100}, // GasStation funds user GasPump requests, and needs a large OMNI balance.
 		},
 		// Withdrawal contracts
 		{
