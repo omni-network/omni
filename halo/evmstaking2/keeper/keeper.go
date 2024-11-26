@@ -20,9 +20,6 @@ import (
 	"cosmossdk.io/math"
 	"cosmossdk.io/orm/model/ormdb"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	akeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
-	bkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
-	skeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
@@ -35,21 +32,23 @@ var (
 // Keeper also implements the evmenginetypes.EvmEventProcessor interface.
 type Keeper struct {
 	eventsTable     EVMEventTable
-	ethCl           ethclient.Client
+	ethCl           ethclient.EngineClient
 	address         common.Address
 	contract        *bindings.Staking
-	aKeeper         akeeper.AccountKeeperI
-	bKeeper         bkeeper.Keeper
-	sKeeper         *skeeper.Keeper
+	aKeeper         types.AuthKeeper
+	bKeeper         types.BankKeeper
+	sKeeper         types.StakingKeeper
+	msgServer       types.StakingMsgServer
 	submissionDelay int64
 }
 
 func NewKeeper(
 	storeService store.KVStoreService,
-	ethCl ethclient.Client,
-	aKeeper akeeper.AccountKeeperI,
-	bKeeper bkeeper.Keeper,
-	sKeeper *skeeper.Keeper,
+	ethCl ethclient.EngineClient,
+	aKeeper types.AuthKeeper,
+	bKeeper types.BankKeeper,
+	sKeeper types.StakingKeeper,
+	msgServer types.StakingMsgServer,
 	submissionDelay int64,
 ) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
@@ -78,6 +77,7 @@ func NewKeeper(
 		aKeeper:         aKeeper,
 		bKeeper:         bKeeper,
 		sKeeper:         sKeeper,
+		msgServer:       msgServer,
 		address:         address,
 		contract:        contract,
 		submissionDelay: submissionDelay,
@@ -259,7 +259,7 @@ func (k Keeper) deliverDelegate(ctx context.Context, ev *bindings.StakingDelegat
 
 	// Validator already exists, add deposit to self delegation
 	msg := stypes.NewMsgDelegate(delAddr.String(), valAddr.String(), amountCoin)
-	_, err := skeeper.NewMsgServerImpl(k.sKeeper).Delegate(ctx, msg)
+	_, err := k.msgServer.Delegate(ctx, msg)
 	if err != nil {
 		return errors.Wrap(err, "delegate")
 	}
@@ -320,7 +320,7 @@ func (k Keeper) deliverCreateValidator(ctx context.Context, ev *bindings.Staking
 		return errors.Wrap(err, "create validator message")
 	}
 
-	_, err = skeeper.NewMsgServerImpl(k.sKeeper).CreateValidator(ctx, msg)
+	_, err = k.msgServer.CreateValidator(ctx, msg)
 	if err != nil {
 		return errors.Wrap(err, "create validator")
 	}
