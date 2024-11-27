@@ -37,6 +37,6 @@ Explore the [Learn](/learn/why) section to dive into Omni’s purpose, architect
 - [What is the Omni Orderflow Engine?](/learn/what) Learn how Omni Core and SolverNet work together.
 - [Omni Core and SolverNet](/learn/core) Discover the details of Omni’s two primary components.
 
-From there, move into the [Build with Core](/core/start), [Build with SolverNet](/solvernet/intro), or [Operate](/operate/run-full-node) sections for practical guides on using Omni.
+From there, move into the [Build with Core](/core/intro), [Build with SolverNet](/solvernet/intro), or [Operate](/operate/run-full-node) sections for practical guides on using Omni.
 
 We’re excited to have you here as we redefine what’s possible in Ethereum’s rollup-centric future.
