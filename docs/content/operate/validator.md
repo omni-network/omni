@@ -137,7 +137,7 @@ This creates the `./operator-private-key-{ADDRESS}` file containing the hex-enco
 
 ### 4. Fund the operator address
 
-When registering a validator, the operator address must self-delegate `100 native OMNI`. It therefore needs to funded with slightly more than `100 OMNI` to pay for gas. This applies for both testnet and mainnet.
+When registering a validator, the operator address must self-delegate `100 native OMNI`. It therefore needs to funded with slightly more than `100 OMNI` to pay for gas. This applies to both testnet and mainnet.
 
 Please reach out to the Omni team on Slack and share your **operator address**.
 
