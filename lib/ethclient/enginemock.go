@@ -72,8 +72,8 @@ func WithMockValidatorCreation(pubkey crypto.PubKey) func(*engineMock) {
 			panic(errors.Wrap(err, "pubkey to address"))
 		}
 
-		wei := new(big.Int).Mul(big.NewInt(1), big.NewInt(params.Ether))
-		data, err := createValidatorEvent.Inputs.NonIndexed().Pack(pubkey.Bytes(), wei)
+		oneEth := new(big.Int).Mul(big.NewInt(1), big.NewInt(params.Ether))
+		data, err := createValidatorEvent.Inputs.NonIndexed().Pack(pubkey.Bytes(), oneEth)
 		if err != nil {
 			panic(errors.Wrap(err, "pack create validator"))
 		}
