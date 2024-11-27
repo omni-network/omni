@@ -20,11 +20,35 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Learn',
       items: [
-        'learn/what-is-omni',
-        'learn/architecture',
+        'learn/welcome',
+        'learn/why',
+        'learn/what',
+        'learn/core',
+        'learn/solvernet',
         'learn/token',
         'learn/whitepaper',
-        'learn/resources',
+        'learn/vision',
+      ],
+      collapsed: true,
+    },
+    {
+      type: 'category',
+      label: 'Build with Core',
+      items: [
+        'core/intro',
+        'core/start',
+        'core/xchain',
+        'core/evm',
+        'core/omega',
+        'core/mainnet',
+      ],
+      collapsed: true,
+    },
+    {
+      type: 'category',
+      label: 'Build with SolverNet',
+      items: [
+        'solvernet/intro',
       ],
       collapsed: true,
     },
@@ -40,15 +64,7 @@ const sidebars: SidebarsConfig = {
       ],
       collapsed: true,
     },
-    {
-      type: 'category',
-      label: 'Resources',
-      items: [
-        'resources/mainnet',
-        'resources/omega',
-      ],
-      collapsed: true,
-    },
+    'faq'
   ],
 };
 
