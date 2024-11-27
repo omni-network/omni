@@ -272,7 +272,8 @@ func (w *Worker) newCallback(
 			}
 		}
 
-		submitted := make(map[xchain.StreamID][]xchain.Msg)
+		// Add all conf-level applicable messages to cursor store
+		applicable := make(map[xchain.StreamID][]xchain.Msg)
 
 		// Split into streams
 		for streamID, msgs := range msgStreamMapper(block.Msgs) {
@@ -281,6 +282,8 @@ func (w *Worker) newCallback(
 			} else if !attestationForShard(att, streamID.ShardID) {
 				continue // Skip streams not applicable to this attestation conf level.
 			}
+
+			applicable[streamID] = msgs
 
 			if err := w.awaitValSet(ctx, att.ValidatorSetID); err != nil {
 				return errors.Wrap(err, "await validator set")
@@ -312,11 +315,9 @@ func (w *Worker) newCallback(
 					return err
 				}
 			}
-
-			submitted[streamID] = msgs
 		}
 
-		return saveCursors(submitted)
+		return saveCursors(applicable)
 	}
 }
 
