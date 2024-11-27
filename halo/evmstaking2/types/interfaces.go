@@ -8,21 +8,21 @@ import (
 )
 
 type AuthKeeper interface {
-	HasAccount(_ context.Context, _ sdk.AccAddress) bool
-	NewAccountWithAddress(_ context.Context, _ sdk.AccAddress) sdk.AccountI
-	SetAccount(_ context.Context, _ sdk.AccountI)
+	HasAccount(ctx context.Context, addr sdk.AccAddress) bool
+	NewAccountWithAddress(ctx context.Context, addr sdk.AccAddress) sdk.AccountI
+	SetAccount(ctx context.Context, acc sdk.AccountI)
 }
 
 type BankKeeper interface {
-	MintCoins(_ context.Context, _ string, _ sdk.Coins) error
-	SendCoinsFromModuleToAccount(_ context.Context, _ string, _ sdk.AccAddress, _ sdk.Coins) error
+	MintCoins(ctx context.Context, moduleName string, amt sdk.Coins) error
+	SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
 }
 
 type StakingKeeper interface {
-	GetValidator(_ context.Context, _ sdk.ValAddress) (stypes.Validator, error)
+	GetValidator(ctx context.Context, addr sdk.ValAddress) (stypes.Validator, error)
 }
 
 type StakingMsgServer interface {
-	CreateValidator(_ context.Context, _ *stypes.MsgCreateValidator) (*stypes.MsgCreateValidatorResponse, error)
-	Delegate(_ context.Context, _ *stypes.MsgDelegate) (*stypes.MsgDelegateResponse, error)
+	CreateValidator(ctx context.Context, msg *stypes.MsgCreateValidator) (*stypes.MsgCreateValidatorResponse, error)
+	Delegate(ctx context.Context, msg *stypes.MsgDelegate) (*stypes.MsgDelegateResponse, error)
 }

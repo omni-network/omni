@@ -32,24 +32,24 @@ var (
 // Keeper also implements the evmenginetypes.EvmEventProcessor interface.
 type Keeper struct {
 	eventsTable     EVMEventTable
-	ethCl           ethclient.EngineClient
+	ethCl           ethclient.Client
 	address         common.Address
 	contract        *bindings.Staking
 	aKeeper         types.AuthKeeper
 	bKeeper         types.BankKeeper
 	sKeeper         types.StakingKeeper
-	msgServer       types.StakingMsgServer
-	submissionDelay int64
+	sServer         types.StakingMsgServer
+	deliverInterval int64
 }
 
 func NewKeeper(
 	storeService store.KVStoreService,
-	ethCl ethclient.EngineClient,
+	ethCl ethclient.Client,
 	aKeeper types.AuthKeeper,
 	bKeeper types.BankKeeper,
 	sKeeper types.StakingKeeper,
-	msgServer types.StakingMsgServer,
-	submissionDelay int64,
+	sServer types.StakingMsgServer,
+	deliverInterval int64,
 ) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
 		{Id: 1, ProtoFileName: File_halo_evmstaking2_keeper_evmstaking_proto.Path()},
@@ -77,18 +77,18 @@ func NewKeeper(
 		aKeeper:         aKeeper,
 		bKeeper:         bKeeper,
 		sKeeper:         sKeeper,
-		msgServer:       msgServer,
+		sServer:         sServer,
 		address:         address,
 		contract:        contract,
-		submissionDelay: submissionDelay,
+		deliverInterval: deliverInterval,
 	}, nil
 }
 
-// EndBlock delivers all pending EVM events on every `k.submissionDelay`'th block.
+// EndBlock delivers all pending EVM events on every `k.deliverInterval`'th block.
 func (k *Keeper) EndBlock(ctx context.Context) error {
 	blockHeight := sdk.UnwrapSDKContext(ctx).BlockHeight()
 
-	if blockHeight%k.submissionDelay != 0 {
+	if blockHeight%k.deliverInterval != 0 {
 		return nil
 	}
 
@@ -259,7 +259,7 @@ func (k Keeper) deliverDelegate(ctx context.Context, ev *bindings.StakingDelegat
 
 	// Validator already exists, add deposit to self delegation
 	msg := stypes.NewMsgDelegate(delAddr.String(), valAddr.String(), amountCoin)
-	_, err := k.msgServer.Delegate(ctx, msg)
+	_, err := k.sServer.Delegate(ctx, msg)
 	if err != nil {
 		return errors.Wrap(err, "delegate")
 	}
@@ -320,7 +320,7 @@ func (k Keeper) deliverCreateValidator(ctx context.Context, ev *bindings.Staking
 		return errors.Wrap(err, "create validator message")
 	}
 
-	_, err = k.msgServer.CreateValidator(ctx, msg)
+	_, err = k.sServer.CreateValidator(ctx, msg)
 	if err != nil {
 		return errors.Wrap(err, "create validator")
 	}

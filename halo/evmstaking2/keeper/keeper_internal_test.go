@@ -2,12 +2,13 @@ package keeper
 
 import (
 	context "context"
+	"strings"
 	"testing"
 
 	"github.com/omni-network/omni/halo/evmstaking2/types"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
-	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
+	etypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 
@@ -25,13 +26,13 @@ import (
 func TestInsertAndDeleteEVMEvents(t *testing.T) {
 	tests := []struct {
 		name       string
-		event      evmenginetypes.EVMEvent
+		event      etypes.EVMEvent
 		insertedID uint64
 		height     int64
 	}{
 		{
 			name: "Insert event with address [1,2,3]",
-			event: evmenginetypes.EVMEvent{
+			event: etypes.EVMEvent{
 				Address: []byte{1, 2, 3},
 			},
 			insertedID: 1,
@@ -39,7 +40,7 @@ func TestInsertAndDeleteEVMEvents(t *testing.T) {
 		},
 		{
 			name: "Insert event with address [2,3,4]",
-			event: evmenginetypes.EVMEvent{
+			event: etypes.EVMEvent{
 				Address: []byte{2, 3, 4},
 			},
 			insertedID: 2,
@@ -47,9 +48,9 @@ func TestInsertAndDeleteEVMEvents(t *testing.T) {
 		},
 	}
 
-	submissionDelay := int64(5)
+	deliverInterval := int64(5)
 
-	keeper, ctx := setupKeeper(t, submissionDelay, nil, nil, nil, nil, nil)
+	keeper, ctx := setupKeeper(t, deliverInterval, nil, nil, nil, nil, nil)
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -65,7 +66,7 @@ func TestInsertAndDeleteEVMEvents(t *testing.T) {
 	}
 
 	// Make sure no submission happens for heights in the range 2 to 4
-	for h := int64(2); h < keeper.submissionDelay; h++ {
+	for h := int64(2); h < keeper.deliverInterval; h++ {
 		ctx = ctx.WithBlockHeight(h)
 		err := keeper.EndBlock(ctx)
 		require.NoError(t, err)
@@ -78,8 +79,8 @@ func TestInsertAndDeleteEVMEvents(t *testing.T) {
 		require.True(t, found)
 	}
 
-	// Now "execute" block number `submissionDelay`
-	err := keeper.EndBlock(ctx.WithBlockHeight(submissionDelay))
+	// Now "execute" block number `deliverInterval`
+	err := keeper.EndBlock(ctx.WithBlockHeight(deliverInterval))
 	require.NoError(t, err)
 
 	// All events are deleted now
@@ -93,16 +94,18 @@ func TestInsertAndDeleteEVMEvents(t *testing.T) {
 func TestDeliverDelegate(t *testing.T) {
 	t.Parallel()
 
-	submissionDelay := int64(3)
+	deliverInterval := int64(3)
+	ethStake := int64(7)
+
 	ethClientMock, err := ethclient.NewEngineMock(
 		ethclient.WithPortalRegister(netconf.SimnetNetwork()),
-		ethclient.WithMockSelfDelegation(k1.GenPrivKey().PubKey(), 1),
+		ethclient.WithMockSelfDelegation(k1.GenPrivKey().PubKey(), ethStake),
 	)
 	require.NoError(t, err)
 
-	msgServer := &msgServerMock{}
+	sServer := new(msgServerStub)
 
-	keeper, ctx := setupKeeper(t, submissionDelay, ethClientMock, authKeeperMock{}, bankKeeperMock{}, stakingKeeperMock{}, msgServer)
+	keeper, ctx := setupKeeper(t, deliverInterval, ethClientMock, new(authKeeperStub), new(bankKeeperStub), new(stakingKeeperStub), sServer)
 
 	var hash common.Hash
 	events, err := keeper.Prepare(ctx, hash)
@@ -121,7 +124,7 @@ func TestDeliverDelegate(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, found)
 
-	ctx = ctx.WithBlockHeight(submissionDelay)
+	ctx = ctx.WithBlockHeight(deliverInterval)
 	err = keeper.EndBlock(ctx)
 	require.NoError(t, err)
 
@@ -131,17 +134,25 @@ func TestDeliverDelegate(t *testing.T) {
 	require.False(t, found)
 
 	// Assert that the message was delivered to the msg server.
-	require.Len(t, msgServer.delegateMsgBuffer, 1)
+	require.Len(t, sServer.delegateMsgBuffer, 1)
+	msg := sServer.delegateMsgBuffer[0]
+	// Sanity check of addresses
+	require.Len(t, msg.DelegatorAddress, 45)
+	require.Len(t, msg.ValidatorAddress, 52)
+	require.True(t, strings.HasPrefix(msg.DelegatorAddress, "cosmos"), msg.DelegatorAddress)
+	require.True(t, strings.HasPrefix(msg.ValidatorAddress, "cosmosvaloper"), msg.ValidatorAddress)
+	oneEth := sdk.NewInt64Coin("stake", ethStake*1000000000000000000)
+	require.Equal(t, msg.Amount, oneEth)
 }
 
 func setupKeeper(
 	t *testing.T,
-	submissionDelay int64,
+	deliverInterval int64,
 	ethCl ethclient.EngineClient,
 	aKeeper types.AuthKeeper,
 	bKeeper types.BankKeeper,
 	sKeeper types.StakingKeeper,
-	msgServer types.StakingMsgServer,
+	sServer types.StakingMsgServer,
 ) (*Keeper, sdk.Context) {
 	t.Helper()
 
@@ -157,53 +168,53 @@ func setupKeeper(
 		aKeeper,
 		bKeeper,
 		sKeeper,
-		msgServer,
-		submissionDelay,
+		sServer,
+		deliverInterval,
 	)
 	require.NoError(t, err, "new keeper")
 
 	return k, ctx
 }
 
-type stakingKeeperMock struct{}
+type stakingKeeperStub struct{}
 
-func (stakingKeeperMock) GetValidator(context.Context, sdk.ValAddress) (stypes.Validator, error) {
+func (stakingKeeperStub) GetValidator(context.Context, sdk.ValAddress) (stypes.Validator, error) {
 	return stypes.Validator{}, nil
 }
 
-type authKeeperMock struct{}
+type authKeeperStub struct{}
 
-func (authKeeperMock) HasAccount(context.Context, sdk.AccAddress) bool {
+func (authKeeperStub) HasAccount(context.Context, sdk.AccAddress) bool {
 	return true
 }
 
-func (authKeeperMock) NewAccountWithAddress(context.Context, sdk.AccAddress) sdk.AccountI {
+func (authKeeperStub) NewAccountWithAddress(context.Context, sdk.AccAddress) sdk.AccountI {
 	return nil
 }
 
-func (authKeeperMock) SetAccount(context.Context, sdk.AccountI) {}
+func (authKeeperStub) SetAccount(context.Context, sdk.AccountI) {}
 
-type bankKeeperMock struct{}
+type bankKeeperStub struct{}
 
-func (bankKeeperMock) MintCoins(context.Context, string, sdk.Coins) error {
+func (bankKeeperStub) MintCoins(context.Context, string, sdk.Coins) error {
 	return nil
 }
 
-func (bankKeeperMock) SendCoinsFromModuleToAccount(context.Context, string, sdk.AccAddress, sdk.Coins) error {
+func (bankKeeperStub) SendCoinsFromModuleToAccount(context.Context, string, sdk.AccAddress, sdk.Coins) error {
 	return nil
 }
 
-type msgServerMock struct {
+type msgServerStub struct {
 	createValidatorMsgBuffer []*stypes.MsgCreateValidator
 	delegateMsgBuffer        []*stypes.MsgDelegate
 }
 
-func (srv *msgServerMock) CreateValidator(_ context.Context, msg *stypes.MsgCreateValidator) (*stypes.MsgCreateValidatorResponse, error) {
-	srv.createValidatorMsgBuffer = append(srv.createValidatorMsgBuffer, msg)
-	return nil, nil //nolint:nilnil // API requires nil-nil return
+func (s *msgServerStub) CreateValidator(_ context.Context, msg *stypes.MsgCreateValidator) (*stypes.MsgCreateValidatorResponse, error) {
+	s.createValidatorMsgBuffer = append(s.createValidatorMsgBuffer, msg)
+	return new(stypes.MsgCreateValidatorResponse), nil
 }
 
-func (srv *msgServerMock) Delegate(_ context.Context, msg *stypes.MsgDelegate) (*stypes.MsgDelegateResponse, error) {
-	srv.delegateMsgBuffer = append(srv.delegateMsgBuffer, msg)
-	return nil, nil //nolint:nilnil // API requires nil-nil return
+func (s *msgServerStub) Delegate(_ context.Context, msg *stypes.MsgDelegate) (*stypes.MsgDelegateResponse, error) {
+	s.delegateMsgBuffer = append(s.delegateMsgBuffer, msg)
+	return new(stypes.MsgDelegateResponse), nil
 }

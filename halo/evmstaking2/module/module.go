@@ -113,7 +113,7 @@ type ModuleInputs struct {
 	depinject.In
 
 	StoreService store.KVStoreService
-	EthCl        ethclient.EngineClient
+	EthCl        ethclient.Client
 	AKeeper      types.AuthKeeper
 	BKeeper      types.BankKeeper
 	SKeeper      *stakingkeeper.Keeper
