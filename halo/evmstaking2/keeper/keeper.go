@@ -20,9 +20,6 @@ import (
 	"cosmossdk.io/math"
 	"cosmossdk.io/orm/model/ormdb"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	akeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
-	bkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
-	skeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
@@ -38,19 +35,21 @@ type Keeper struct {
 	ethCl           ethclient.Client
 	address         common.Address
 	contract        *bindings.Staking
-	aKeeper         akeeper.AccountKeeperI
-	bKeeper         bkeeper.Keeper
-	sKeeper         *skeeper.Keeper
-	submissionDelay int64
+	aKeeper         types.AuthKeeper
+	bKeeper         types.BankKeeper
+	sKeeper         types.StakingKeeper
+	sServer         types.StakingMsgServer
+	deliverInterval int64
 }
 
 func NewKeeper(
 	storeService store.KVStoreService,
 	ethCl ethclient.Client,
-	aKeeper akeeper.AccountKeeperI,
-	bKeeper bkeeper.Keeper,
-	sKeeper *skeeper.Keeper,
-	submissionDelay int64,
+	aKeeper types.AuthKeeper,
+	bKeeper types.BankKeeper,
+	sKeeper types.StakingKeeper,
+	sServer types.StakingMsgServer,
+	deliverInterval int64,
 ) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
 		{Id: 1, ProtoFileName: File_halo_evmstaking2_keeper_evmstaking_proto.Path()},
@@ -78,17 +77,18 @@ func NewKeeper(
 		aKeeper:         aKeeper,
 		bKeeper:         bKeeper,
 		sKeeper:         sKeeper,
+		sServer:         sServer,
 		address:         address,
 		contract:        contract,
-		submissionDelay: submissionDelay,
+		deliverInterval: deliverInterval,
 	}, nil
 }
 
-// EndBlock delivers all pending EVM events on every `k.submissionDelay`'th block.
+// EndBlock delivers all pending EVM events on every `k.deliverInterval`'th block.
 func (k *Keeper) EndBlock(ctx context.Context) error {
 	blockHeight := sdk.UnwrapSDKContext(ctx).BlockHeight()
 
-	if blockHeight%k.submissionDelay != 0 {
+	if blockHeight%k.deliverInterval != 0 {
 		return nil
 	}
 
@@ -259,7 +259,7 @@ func (k Keeper) deliverDelegate(ctx context.Context, ev *bindings.StakingDelegat
 
 	// Validator already exists, add deposit to self delegation
 	msg := stypes.NewMsgDelegate(delAddr.String(), valAddr.String(), amountCoin)
-	_, err := skeeper.NewMsgServerImpl(k.sKeeper).Delegate(ctx, msg)
+	_, err := k.sServer.Delegate(ctx, msg)
 	if err != nil {
 		return errors.Wrap(err, "delegate")
 	}
@@ -320,7 +320,7 @@ func (k Keeper) deliverCreateValidator(ctx context.Context, ev *bindings.Staking
 		return errors.Wrap(err, "create validator message")
 	}
 
-	_, err = skeeper.NewMsgServerImpl(k.sKeeper).CreateValidator(ctx, msg)
+	_, err = k.sServer.CreateValidator(ctx, msg)
 	if err != nil {
 		return errors.Wrap(err, "create validator")
 	}

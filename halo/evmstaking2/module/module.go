@@ -14,8 +14,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	accountkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 )
@@ -116,8 +114,8 @@ type ModuleInputs struct {
 
 	StoreService store.KVStoreService
 	EthCl        ethclient.Client
-	AKeeper      accountkeeper.AccountKeeperI
-	BKeeper      bankkeeper.Keeper
+	AKeeper      types.AuthKeeper
+	BKeeper      types.BankKeeper
 	SKeeper      *stakingkeeper.Keeper
 	Cdc          codec.Codec
 	Config       *Module
@@ -137,6 +135,7 @@ func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 		in.AKeeper,
 		in.BKeeper,
 		in.SKeeper,
+		stakingkeeper.NewMsgServerImpl(in.SKeeper),
 		in.Config.GetDeliverInterval(),
 	)
 	if err != nil {
