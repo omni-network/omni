@@ -21,7 +21,7 @@ VMTrace = ""
 VMTraceJsonConfig = ""
 RPCGasCap = 50000000
 RPCEVMTimeout = 5000000000
-RPCTxFeeCap = 1e+02
+RPCTxFeeCap = 1e+00
 
 [Eth.Miner]
 GasCeil = 30000000
@@ -51,7 +51,7 @@ Blocks = 20
 Percentile = 60
 MaxHeaderHistory = 1024
 MaxBlockHistory = 1024
-MaxPrice = 500000000000
+MaxPrice = 1000000000
 IgnorePrice = 2
 
 [Node]
