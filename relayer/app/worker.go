@@ -134,6 +134,8 @@ func (w *Worker) runOnce(ctx context.Context) error {
 				"bootstrap", stored[chainVer],
 			)
 			attestOffsets[chainVer] = stored[chainVer]
+			// Note that technically, we could start streaming from storedOffset+1,
+			// Since confirmed cursors are fully finalized, so no need to reprocess partial submissions.
 		}
 	}
 
@@ -244,7 +246,7 @@ func (w *Worker) newCallback(
 
 	return func(ctx context.Context, att xchain.Attestation) error {
 		saveCursors := func(streamMsgs map[xchain.StreamID][]xchain.Msg) error {
-			return w.cursors.Save(ctx, streamerChainVer, w.destChain.ID, att.AttestOffset, streamMsgs)
+			return w.cursors.Insert(ctx, streamerChainVer, w.destChain.ID, att.AttestOffset, streamMsgs)
 		}
 
 		block, ok, err := fetchXBlock(ctx, w.xProvider, att)
