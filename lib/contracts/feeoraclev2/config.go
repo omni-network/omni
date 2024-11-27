@@ -19,7 +19,7 @@ type dataCostConfig struct {
 	ID         uint64
 	BaseBytes  uint32
 	GasPerByte uint64
-	GasToken   uint8
+	GasToken   uint16
 }
 
 var (

@@ -31,7 +31,7 @@ var (
 
 // IFeeOracleV2DataCostParams is an auto generated low-level Go binding around an user-defined struct.
 type IFeeOracleV2DataCostParams struct {
-	GasToken   uint8
+	GasToken   uint16
 	BaseBytes  uint32
 	Id         uint64
 	GasPrice   uint64
@@ -40,7 +40,7 @@ type IFeeOracleV2DataCostParams struct {
 
 // IFeeOracleV2FeeParams is an auto generated low-level Go binding around an user-defined struct.
 type IFeeOracleV2FeeParams struct {
-	GasToken     uint8
+	GasToken     uint16
 	BaseGasLimit uint32
 	ChainId      uint64
 	GasPrice     uint64
@@ -49,14 +49,14 @@ type IFeeOracleV2FeeParams struct {
 
 // IFeeOracleV2ToNativeRateParams is an auto generated low-level Go binding around an user-defined struct.
 type IFeeOracleV2ToNativeRateParams struct {
-	GasToken   uint8
+	GasToken   uint16
 	NativeRate *big.Int
 }
 
 // FeeOracleV2MetaData contains all meta data concerning the FeeOracleV2 contract.
 var FeeOracleV2MetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"constructor\",\"inputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"CONVERSION_RATE_DENOM\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"baseBytes\",\"inputs\":[{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"baseGasLimit\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"bulkSetDataCostParams\",\"inputs\":[{\"name\":\"params\",\"type\":\"tuple[]\",\"internalType\":\"structIFeeOracleV2.DataCostParams[]\",\"components\":[{\"name\":\"gasToken\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"baseBytes\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"id\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPerByte\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"bulkSetFeeParams\",\"inputs\":[{\"name\":\"params\",\"type\":\"tuple[]\",\"internalType\":\"structIFeeOracleV2.FeeParams[]\",\"components\":[{\"name\":\"gasToken\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"baseGasLimit\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"bulkSetToNativeRate\",\"inputs\":[{\"name\":\"params\",\"type\":\"tuple[]\",\"internalType\":\"structIFeeOracleV2.ToNativeRateParams[]\",\"components\":[{\"name\":\"gasToken\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"nativeRate\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"dataCostParams\",\"inputs\":[{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIFeeOracleV2.DataCostParams\",\"components\":[{\"name\":\"gasToken\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"baseBytes\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"id\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPerByte\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"dataGasPerByte\",\"inputs\":[{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"dataGasPrice\",\"inputs\":[{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"dataGasToken\",\"inputs\":[{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"execDataCostId\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"execGasPrice\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"execGasToken\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"feeFor\",\"inputs\":[{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"gasLimit\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"feeParams\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIFeeOracleV2.FeeParams\",\"components\":[{\"name\":\"gasToken\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"baseGasLimit\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"owner_\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"manager_\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"protocolFee_\",\"type\":\"uint96\",\"internalType\":\"uint96\"},{\"name\":\"feeParams_\",\"type\":\"tuple[]\",\"internalType\":\"structIFeeOracleV2.FeeParams[]\",\"components\":[{\"name\":\"gasToken\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"baseGasLimit\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"dataCostParams_\",\"type\":\"tuple[]\",\"internalType\":\"structIFeeOracleV2.DataCostParams[]\",\"components\":[{\"name\":\"gasToken\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"baseBytes\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"id\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPerByte\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"toNativeRateParams_\",\"type\":\"tuple[]\",\"internalType\":\"structIFeeOracleV2.ToNativeRateParams[]\",\"components\":[{\"name\":\"gasToken\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"nativeRate\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"manager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"protocolFee\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setBaseBytes\",\"inputs\":[{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"newBaseBytes\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setBaseGasLimit\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"newBaseGasLimit\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setDataCostId\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setDataGasPrice\",\"inputs\":[{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setExecGasPrice\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setGasPerByte\",\"inputs\":[{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPerByte\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setManager\",\"inputs\":[{\"name\":\"manager_\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setProtocolFee\",\"inputs\":[{\"name\":\"fee\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setToNativeRate\",\"inputs\":[{\"name\":\"gasToken\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"nativeRate\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"toNativeRate\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"tokenToNativeRate\",\"inputs\":[{\"name\":\"gasToken\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"version\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"pure\"},{\"type\":\"event\",\"name\":\"BaseBytesSet\",\"inputs\":[{\"name\":\"dataCostId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"baseBytes\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"BaseGasLimitSet\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"baseGasLimit\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DataCostIdSet\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"dataCostId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DataCostParamsSet\",\"inputs\":[{\"name\":\"gasToken\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"},{\"name\":\"baseBytes\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"id\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"gasPerByte\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DataGasPriceSet\",\"inputs\":[{\"name\":\"dataCostId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ExecGasPriceSet\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"FeeParamsSet\",\"inputs\":[{\"name\":\"gasToken\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"},{\"name\":\"baseGasLimit\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"dataCostId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GasPerByteSet\",\"inputs\":[{\"name\":\"dataCostId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"gasPerByte\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ManagerSet\",\"inputs\":[{\"name\":\"manager\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ProtocolFeeSet\",\"inputs\":[{\"name\":\"protocolFee\",\"type\":\"uint96\",\"indexed\":false,\"internalType\":\"uint96\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ToNativeRateSet\",\"inputs\":[{\"name\":\"gasToken\",\"type\":\"uint8\",\"indexed\":false,\"internalType\":\"uint8\"},{\"name\":\"nativeRate\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"InvalidInitialization\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NoFeeParams\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotInitializing\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotManager\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OwnableInvalidOwner\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"OwnableUnauthorizedAccount\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"ZeroAddress\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroChainId\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroDataCostId\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroGasPerByte\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroGasPrice\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroGasToken\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroNativeRate\",\"inputs\":[]}]",
-	Bin: "0x608060405234801561001057600080fd5b5061001961001e565b6100d0565b7ff0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a00805468010000000000000000900460ff161561006e5760405163f92ee8a960e01b815260040160405180910390fd5b80546001600160401b03908116146100cd5780546001600160401b0319166001600160401b0390811782556040519081527fc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d29060200160405180910390a15b50565b611e0d806100df6000396000f3fe608060405234801561001057600080fd5b50600436106101fb5760003560e01c80638f9d6ace1161011a578063bc51bf37116100ad578063db0018e81161007c578063db0018e8146106b3578063e21497b9146106e6578063e5737f6214610719578063f2fde38b1461072c578063fee86f691461073f57600080fd5b8063bc51bf37146105b8578063bfc71416146105cb578063d0ebdbe714610674578063d32b68ad1461068757600080fd5b8063b0e21e8a116100e9578063b0e21e8a14610529578063b15268b014610554578063b984cc0b14610567578063b9923e1c146105a557600080fd5b80638f9d6ace146104c65780638ff83049146104d05780639a5551c3146104e35780639c742ced1461051657600080fd5b806356bce45911610192578063715018a611610161578063715018a6146104345780638b7bfd701461043c5780638da5cb5b146104835780638dd9523c146104b357600080fd5b806356bce459146103c75780635d3acee2146103da578063653c356e146103ed5780636b6dccfe1461042157600080fd5b8063415070af116101ce578063415070af146102fa578063481c6a751461034557806350b815391461037757806354fd4d50146103c057600080fd5b806304e53a15146102005780630baaa6aa14610215578063176c73e3146102285780632d4634a41461023b575b600080fd5b61021361020e36600461183e565b61075f565b005b610213610223366004611895565b61079f565b610213610236366004611931565b6107db565b6102e4610249366004611a15565b6040805160a081018252600080825260208201819052918101829052606081018290526080810191909152506001600160401b03908116600090815260026020908152604091829020825160a081018452905460ff8116825263ffffffff61010082041692820192909252600160281b8204841692810192909252600160681b810483166060830152600160a81b9004909116608082015290565b6040516102f19190611a37565b60405180910390f35b61032d610308366004611a15565b6001600160401b03908116600090815260036020526040902054600160681b90041690565b6040516001600160401b0390911681526020016102f1565b60005461035f90600160601b90046001600160a01b031681565b6040516001600160a01b0390911681526020016102f1565b6103ab610385366004611a15565b6001600160401b0316600090815260026020526040902054610100900463ffffffff1690565b60405163ffffffff90911681526020016102f1565b600261032d565b6102136103d5366004611a90565b610921565b6102136103e8366004611a90565b61095d565b6103ab6103fb366004611a15565b6001600160401b0316600090815260036020526040902054610100900463ffffffff1690565b61021361042f366004611ac3565b610999565b6102136109ad565b61047561044a366004611a15565b6001600160401b031660009081526002602090815260408083205460ff168352600190915290205490565b6040519081526020016102f1565b7f9016d09d72d40fdae2fd8ceac6b6234c7706214fd39c1cd1e609a0528c199300546001600160a01b031661035f565b6104756104c1366004611ade565b6109c1565b610475620f424081565b6102136104de366004611b71565b610b4a565b61032d6104f1366004611a15565b6001600160401b03908116600090815260026020526040902054600160a81b90041690565b610213610524366004611bba565b610b86565b60005461053c906001600160601b031681565b6040516001600160601b0390911681526020016102f1565b61021361056236600461183e565b610bc2565b610593610575366004611a15565b6001600160401b031660009081526002602052604090205460ff1690565b60405160ff90911681526020016102f1565b6102136105b3366004611a90565b610bfe565b6102136105c6366004611a90565b610c3a565b6102e46105d9366004611a15565b6040805160a081018252600080825260208201819052918101829052606081018290526080810191909152506001600160401b03908116600090815260036020908152604091829020825160a081018452905460ff8116825263ffffffff61010082041692820192909252600160281b8204841692810192909252600160681b810483166060830152600160a81b9004909116608082015290565b610213610682366004611be4565b610c76565b610593610695366004611a15565b6001600160401b031660009081526003602052604090205460ff1690565b61032d6106c1366004611a15565b6001600160401b03908116600090815260036020526040902054600160a81b90041690565b61032d6106f4366004611a15565b6001600160401b03908116600090815260026020526040902054600160681b90041690565b610213610727366004611bba565b610cae565b61021361073a366004611be4565b610cea565b61047561074d366004611bff565b60016020526000908152604090205481565b600054600160601b90046001600160a01b031633146107915760405163607e454560e11b815260040160405180910390fd5b61079b8282610d2a565b5050565b600054600160601b90046001600160a01b031633146107d15760405163607e454560e11b815260040160405180910390fd5b61079b8282610f14565b7ff0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a008054600160401b810460ff1615906001600160401b03166000811580156108205750825b90506000826001600160401b0316600114801561083c5750303b155b90508115801561084a575080155b156108685760405163f92ee8a960e01b815260040160405180910390fd5b845467ffffffffffffffff19166001178555831561089257845460ff60401b1916600160401b1785555b61089b8e610fac565b6108a48d610fbd565b6108ad8c61101a565b6108b78b8b61106d565b6108c18989610d2a565b6108cb8787611252565b831561091157845460ff60401b19168555604051600181527fc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d29060200160405180910390a15b5050505050505050505050505050565b600054600160601b90046001600160a01b031633146109535760405163607e454560e11b815260040160405180910390fd5b61079b82826112a4565b600054600160601b90046001600160a01b0316331461098f5760405163607e454560e11b815260040160405180910390fd5b61079b8282611366565b6109a1611428565b6109aa8161101a565b50565b6109b5611428565b6109bf6000611483565b565b6001600160401b0380851660009081526002602090815260408083208054600160a81b8104861685526003845282852060ff82168652600190945291842054939490938592620f424092610a1d9291600160681b900416611c30565b610a279190611c47565b825460ff811660009081526001602052604081205492935091620f424091610a5f9190600160681b90046001600160401b0316611c30565b610a699190611c47565b905081600003610a8c57604051633532119760e11b815260040160405180910390fd5b80600003610aad57604051633532119760e11b815260040160405180910390fd5b8254600090600160a81b81046001600160401b031690610ad9908a90610100900463ffffffff16611c69565b610ae39190611c30565b9050610aef8282611c30565b85548490610b09908a90610100900463ffffffff16611c7c565b6001600160401b0316610b1c9190611c30565b600054610b3291906001600160601b0316611c69565b610b3c9190611c69565b9a9950505050505050505050565b600054600160601b90046001600160a01b03163314610b7c5760405163607e454560e11b815260040160405180910390fd5b61079b8282611252565b600054600160601b90046001600160a01b03163314610bb85760405163607e454560e11b815260040160405180910390fd5b61079b82826114f4565b600054600160601b90046001600160a01b03163314610bf45760405163607e454560e11b815260040160405180910390fd5b61079b828261106d565b600054600160601b90046001600160a01b03163314610c305760405163607e454560e11b815260040160405180910390fd5b61079b8282611589565b600054600160601b90046001600160a01b03163314610c6c5760405163607e454560e11b815260040160405180910390fd5b61079b828261164b565b610c7e611428565b6001600160a01b038116610ca55760405163d92e233d60e01b815260040160405180910390fd5b6109aa81610fbd565b600054600160601b90046001600160a01b03163314610ce05760405163607e454560e11b815260040160405180910390fd5b61079b828261170d565b610cf2611428565b6001600160a01b038116610d2157604051631e4fbdf760e01b8152600060048201526024015b60405180910390fd5b6109aa81611483565b60005b81811015610f0f576000838383818110610d4957610d49611ca3565b905060a00201803603810190610d5f9190611d57565b805190915060ff16600003610d87576040516350614df960e01b815260040160405180910390fd5b80604001516001600160401b0316600003610db557604051630c26851b60e11b815260040160405180910390fd5b80606001516001600160401b0316600003610de357604051630e661aed60e41b815260040160405180910390fd5b80608001516001600160401b0316600003610e11576040516348cfc33560e11b815260040160405180910390fd5b604081810180516001600160401b0390811660009081526003602090815290849020855181548388015195516060808a01516080808c015160ff90961664ffffffffff19909516851761010063ffffffff909b169a8b021765010000000000600160a81b031916600160281b948a1694850267ffffffffffffffff60681b191617600160681b928a169283021767ffffffffffffffff60a81b1916600160a81b969099169586029890981790955588519283529482019690965295860194909452908401528201527f9bfb42e15a99403ee60c360d57a11090df1c6cdc5a61208f68cee1927cf626e89060a00160405180910390a150600101610d2d565b505050565b80600003610f355760405163fa90419960e01b815260040160405180910390fd5b8160ff16600003610f59576040516350614df960e01b815260040160405180910390fd5b60ff8216600081815260016020908152604091829020849055815192835282018390527fd665ed89605ad8a805fa330621c3a15c9e6de67d51dbc52a478a868e1ed616e491015b60405180910390a15050565b610fb46117a2565b6109aa816117eb565b600080546001600160601b0316600160601b6001600160a01b038416908102919091179091556040519081527f60a0f5b9f9e81e98216071b85826681c796256fe3d1354ecb675580fba64fa69906020015b60405180910390a150565b600080546bffffffffffffffffffffffff19166001600160601b0383169081179091556040519081527fd91752439e358587fc0828ed743df5939f16a918de501834bd954d03be15c9599060200161100f565b60005b81811015610f0f57600083838381811061108c5761108c611ca3565b905060a002018036038101906110a29190611d57565b805190915060ff166000036110ca576040516350614df960e01b815260040160405180910390fd5b80604001516001600160401b03166000036110f857604051633212217560e21b815260040160405180910390fd5b80606001516001600160401b031660000361112657604051630e661aed60e41b815260040160405180910390fd5b80608001516001600160401b031660000361115457604051630c26851b60e11b815260040160405180910390fd5b604081810180516001600160401b0390811660009081526002602090815290849020855181548388015195516060808a01516080808c015160ff90961664ffffffffff19909516851761010063ffffffff909b169a8b021765010000000000600160a81b031916600160281b948a1694850267ffffffffffffffff60681b191617600160681b928a169283021767ffffffffffffffff60a81b1916600160a81b969099169586029890981790955588519283529482019690965295860194909452908401528201527fea9053881f09b9823800b45f3ddc0a515613e3b55b2fe2ad35bdfdf3d1272a709060a00160405180910390a150600101611070565b60005b81811015610f0f57600083838381811061127157611271611ca3565b9050604002018036038101906112879190611d73565b905061129b81600001518260200151610f14565b50600101611255565b816001600160401b03166000036112ce57604051630c26851b60e11b815260040160405180910390fd5b806001600160401b03166000036112f8576040516348cfc33560e11b815260040160405180910390fd5b6001600160401b03828116600081815260036020908152604091829020805467ffffffffffffffff60a81b1916600160a81b95871695860217905581519283528201929092527f9e8c8606adb2b50f48cb69ccb1c3e349e6046ed63765e5931c01f4fe6aacd5e99101610fa0565b806001600160401b031660000361139057604051630e661aed60e41b815260040160405180910390fd5b816001600160401b03166000036113ba57604051630c26851b60e11b815260040160405180910390fd5b6001600160401b03828116600081815260036020908152604091829020805467ffffffffffffffff60681b1916600160681b95871695860217905581519283528201929092527fd7d8dd5a956a8bd500e02d52d0a9dd8a0e2955ec48771a8c9da485e6706c66fb9101610fa0565b3361145a7f9016d09d72d40fdae2fd8ceac6b6234c7706214fd39c1cd1e609a0528c199300546001600160a01b031690565b6001600160a01b0316146109bf5760405163118cdaa760e01b8152336004820152602401610d18565b7f9016d09d72d40fdae2fd8ceac6b6234c7706214fd39c1cd1e609a0528c19930080546001600160a01b031981166001600160a01b03848116918217845560405192169182907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e090600090a3505050565b816001600160401b031660000361151e57604051630c26851b60e11b815260040160405180910390fd5b6001600160401b038216600081815260036020908152604091829020805464ffffffff00191661010063ffffffff8716908102919091179091558251938452908301527f406ba3ab8c23e58f883620734592e662ac0018177590c1f9f27afc58a4b7b5839101610fa0565b806001600160401b03166000036115b357604051630e661aed60e41b815260040160405180910390fd5b816001600160401b03166000036115dd57604051633212217560e21b815260040160405180910390fd5b6001600160401b03828116600081815260026020908152604091829020805467ffffffffffffffff60681b1916600160681b95871695860217905581519283528201929092527fe0e5abb8929e27a69d77f47a4e3f9575411a5be1fa596e5b55078d7850f358db9101610fa0565b816001600160401b031660000361167557604051633212217560e21b815260040160405180910390fd5b806001600160401b031660000361169f57604051630c26851b60e11b815260040160405180910390fd5b6001600160401b03828116600081815260026020908152604091829020805467ffffffffffffffff60a81b1916600160a81b95871695860217905581519283528201929092527f0a5853014cbdb5103840fd3b7fcd886e7a93ef446d8c8707a5269d25ed32b4fe9101610fa0565b816001600160401b031660000361173757604051633212217560e21b815260040160405180910390fd5b6001600160401b038216600081815260026020908152604091829020805464ffffffff00191661010063ffffffff8716908102919091179091558251938452908301527f525a2cd9c1093178959cb9c72fe00c6be026fc953e93c9bc789d2176da98c4059101610fa0565b7ff0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a0054600160401b900460ff166109bf57604051631afcd79f60e31b815260040160405180910390fd5b610cf26117a2565b60008083601f84011261180557600080fd5b5081356001600160401b0381111561181c57600080fd5b60208301915083602060a08302850101111561183757600080fd5b9250929050565b6000806020838503121561185157600080fd5b82356001600160401b0381111561186757600080fd5b611873858286016117f3565b90969095509350505050565b803560ff8116811461189057600080fd5b919050565b600080604083850312156118a857600080fd5b6118b18361187f565b946020939093013593505050565b80356001600160a01b038116811461189057600080fd5b80356001600160601b038116811461189057600080fd5b60008083601f8401126118ff57600080fd5b5081356001600160401b0381111561191657600080fd5b6020830191508360208260061b850101111561183757600080fd5b600080600080600080600080600060c08a8c03121561194f57600080fd5b6119588a6118bf565b985061196660208b016118bf565b975061197460408b016118d6565b965060608a01356001600160401b038082111561199057600080fd5b61199c8d838e016117f3565b909850965060808c01359150808211156119b557600080fd5b6119c18d838e016117f3565b909650945060a08c01359150808211156119da57600080fd5b506119e78c828d016118ed565b915080935050809150509295985092959850929598565b80356001600160401b038116811461189057600080fd5b600060208284031215611a2757600080fd5b611a30826119fe565b9392505050565b60a08101611a8a828460ff815116825263ffffffff602082015116602083015260408101516001600160401b03808216604085015280606084015116606085015280608084015116608085015250505050565b92915050565b60008060408385031215611aa357600080fd5b611aac836119fe565b9150611aba602084016119fe565b90509250929050565b600060208284031215611ad557600080fd5b611a30826118d6565b60008060008060608587031215611af457600080fd5b611afd856119fe565b935060208501356001600160401b0380821115611b1957600080fd5b818701915087601f830112611b2d57600080fd5b813581811115611b3c57600080fd5b886020828501011115611b4e57600080fd5b602083019550809450505050611b66604086016119fe565b905092959194509250565b60008060208385031215611b8457600080fd5b82356001600160401b03811115611b9a57600080fd5b611873858286016118ed565b803563ffffffff8116811461189057600080fd5b60008060408385031215611bcd57600080fd5b611bd6836119fe565b9150611aba60208401611ba6565b600060208284031215611bf657600080fd5b611a30826118bf565b600060208284031215611c1157600080fd5b611a308261187f565b634e487b7160e01b600052601160045260246000fd5b8082028115828204841417611a8a57611a8a611c1a565b600082611c6457634e487b7160e01b600052601260045260246000fd5b500490565b80820180821115611a8a57611a8a611c1a565b6001600160401b03818116838216019080821115611c9c57611c9c611c1a565b5092915050565b634e487b7160e01b600052603260045260246000fd5b600060a08284031215611ccb57600080fd5b60405160a081018181106001600160401b0382111715611cfb57634e487b7160e01b600052604160045260246000fd5b604052905080611d0a8361187f565b8152611d1860208401611ba6565b6020820152611d29604084016119fe565b6040820152611d3a606084016119fe565b6060820152611d4b608084016119fe565b60808201525092915050565b600060a08284031215611d6957600080fd5b611a308383611cb9565b600060408284031215611d8557600080fd5b604051604081018181106001600160401b0382111715611db557634e487b7160e01b600052604160045260246000fd5b604052611dc18361187f565b815260208301356020820152809150509291505056fea2646970667358221220f11728899cc5d34a494b6c7cb9a7773c22053fcc7f52ef9d50d303ed1fc6155264736f6c63430008180033",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"CONVERSION_RATE_DENOM\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"baseBytes\",\"inputs\":[{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"baseGasLimit\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"bulkSetDataCostParams\",\"inputs\":[{\"name\":\"params\",\"type\":\"tuple[]\",\"internalType\":\"structIFeeOracleV2.DataCostParams[]\",\"components\":[{\"name\":\"gasToken\",\"type\":\"uint16\",\"internalType\":\"uint16\"},{\"name\":\"baseBytes\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"id\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPerByte\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"bulkSetFeeParams\",\"inputs\":[{\"name\":\"params\",\"type\":\"tuple[]\",\"internalType\":\"structIFeeOracleV2.FeeParams[]\",\"components\":[{\"name\":\"gasToken\",\"type\":\"uint16\",\"internalType\":\"uint16\"},{\"name\":\"baseGasLimit\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"bulkSetToNativeRate\",\"inputs\":[{\"name\":\"params\",\"type\":\"tuple[]\",\"internalType\":\"structIFeeOracleV2.ToNativeRateParams[]\",\"components\":[{\"name\":\"gasToken\",\"type\":\"uint16\",\"internalType\":\"uint16\"},{\"name\":\"nativeRate\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"dataCostParams\",\"inputs\":[{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIFeeOracleV2.DataCostParams\",\"components\":[{\"name\":\"gasToken\",\"type\":\"uint16\",\"internalType\":\"uint16\"},{\"name\":\"baseBytes\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"id\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPerByte\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"dataGasPerByte\",\"inputs\":[{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"dataGasPrice\",\"inputs\":[{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"dataGasToken\",\"inputs\":[{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"execDataCostId\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"execGasPrice\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"execGasToken\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"feeFor\",\"inputs\":[{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"gasLimit\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"feeParams\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIFeeOracleV2.FeeParams\",\"components\":[{\"name\":\"gasToken\",\"type\":\"uint16\",\"internalType\":\"uint16\"},{\"name\":\"baseGasLimit\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"owner_\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"manager_\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"protocolFee_\",\"type\":\"uint96\",\"internalType\":\"uint96\"},{\"name\":\"feeParams_\",\"type\":\"tuple[]\",\"internalType\":\"structIFeeOracleV2.FeeParams[]\",\"components\":[{\"name\":\"gasToken\",\"type\":\"uint16\",\"internalType\":\"uint16\"},{\"name\":\"baseGasLimit\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"dataCostParams_\",\"type\":\"tuple[]\",\"internalType\":\"structIFeeOracleV2.DataCostParams[]\",\"components\":[{\"name\":\"gasToken\",\"type\":\"uint16\",\"internalType\":\"uint16\"},{\"name\":\"baseBytes\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"id\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPerByte\",\"type\":\"uint64\",\"internalType\":\"uint64\"}]},{\"name\":\"toNativeRateParams_\",\"type\":\"tuple[]\",\"internalType\":\"structIFeeOracleV2.ToNativeRateParams[]\",\"components\":[{\"name\":\"gasToken\",\"type\":\"uint16\",\"internalType\":\"uint16\"},{\"name\":\"nativeRate\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"manager\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"protocolFee\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setBaseBytes\",\"inputs\":[{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"newBaseBytes\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setBaseGasLimit\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"newBaseGasLimit\",\"type\":\"uint32\",\"internalType\":\"uint32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setDataCostId\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setDataGasPrice\",\"inputs\":[{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setExecGasPrice\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setGasPerByte\",\"inputs\":[{\"name\":\"dataCostId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"gasPerByte\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setManager\",\"inputs\":[{\"name\":\"manager_\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setProtocolFee\",\"inputs\":[{\"name\":\"fee\",\"type\":\"uint96\",\"internalType\":\"uint96\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setToNativeRate\",\"inputs\":[{\"name\":\"gasToken\",\"type\":\"uint16\",\"internalType\":\"uint16\"},{\"name\":\"nativeRate\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"toNativeRate\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"tokenToNativeRate\",\"inputs\":[{\"name\":\"gasToken\",\"type\":\"uint16\",\"internalType\":\"uint16\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"version\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint64\",\"internalType\":\"uint64\"}],\"stateMutability\":\"pure\"},{\"type\":\"event\",\"name\":\"BaseBytesSet\",\"inputs\":[{\"name\":\"dataCostId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"baseBytes\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"BaseGasLimitSet\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"baseGasLimit\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DataCostIdSet\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"dataCostId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DataCostParamsSet\",\"inputs\":[{\"name\":\"gasToken\",\"type\":\"uint16\",\"indexed\":false,\"internalType\":\"uint16\"},{\"name\":\"baseBytes\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"id\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"gasPerByte\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"DataGasPriceSet\",\"inputs\":[{\"name\":\"dataCostId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ExecGasPriceSet\",\"inputs\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"FeeParamsSet\",\"inputs\":[{\"name\":\"gasToken\",\"type\":\"uint16\",\"indexed\":false,\"internalType\":\"uint16\"},{\"name\":\"baseGasLimit\",\"type\":\"uint32\",\"indexed\":false,\"internalType\":\"uint32\"},{\"name\":\"chainId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"gasPrice\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"dataCostId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"GasPerByteSet\",\"inputs\":[{\"name\":\"dataCostId\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"},{\"name\":\"gasPerByte\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Initialized\",\"inputs\":[{\"name\":\"version\",\"type\":\"uint64\",\"indexed\":false,\"internalType\":\"uint64\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ManagerSet\",\"inputs\":[{\"name\":\"manager\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ProtocolFeeSet\",\"inputs\":[{\"name\":\"protocolFee\",\"type\":\"uint96\",\"indexed\":false,\"internalType\":\"uint96\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"ToNativeRateSet\",\"inputs\":[{\"name\":\"gasToken\",\"type\":\"uint16\",\"indexed\":false,\"internalType\":\"uint16\"},{\"name\":\"nativeRate\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"InvalidInitialization\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NoFeeParams\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotInitializing\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"NotManager\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"OwnableInvalidOwner\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"OwnableUnauthorizedAccount\",\"inputs\":[{\"name\":\"account\",\"type\":\"address\",\"internalType\":\"address\"}]},{\"type\":\"error\",\"name\":\"ZeroAddress\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroChainId\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroDataCostId\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroGasPerByte\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroGasPrice\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroGasToken\",\"inputs\":[]},{\"type\":\"error\",\"name\":\"ZeroNativeRate\",\"inputs\":[]}]",
+	Bin: "0x608060405234801561001057600080fd5b5061001961001e565b6100d0565b7ff0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a00805468010000000000000000900460ff161561006e5760405163f92ee8a960e01b815260040160405180910390fd5b80546001600160401b03908116146100cd5780546001600160401b0319166001600160401b0390811782556040519081527fc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d29060200160405180910390a15b50565b611e2d806100df6000396000f3fe608060405234801561001057600080fd5b50600436106101fb5760003560e01c80639a5551c31161011a578063bfc71416116100ad578063db847a591161007c578063db847a59146106ea578063e21497b9146106fd578063e5737f6214610730578063f2fde38b14610743578063f364f6871461075657600080fd5b8063bfc71416146105cc578063d0ebdbe714610677578063d32b68ad1461068a578063db0018e8146106b757600080fd5b8063b17db68a116100e9578063b17db68a14610546578063b984cc0b14610566578063b9923e1c146105a6578063bc51bf37146105b957600080fd5b80639a5551c3146104c25780639c742ced146104f5578063a12f2c5814610508578063b0e21e8a1461051b57600080fd5b80635d3acee2116101925780638b7bfd70116101615780638b7bfd701461042d5780638da5cb5b146104755780638dd9523c146104a55780638f9d6ace146104b857600080fd5b80635d3acee2146103ca578063653c356e146103dd5780636b6dccfe14610412578063715018a61461042557600080fd5b8063481c6a75116101ce578063481c6a751461033457806350b815391461036657806354fd4d50146103b057806356bce459146103b757600080fd5b80632105b75514610200578063223aacf8146102155780632d4634a414610228578063415070af146102e9575b600080fd5b61021361020e36600461185c565b610769565b005b610213610223366004611914565b6107a9565b6102d36102363660046119f8565b6040805160a081018252600080825260208201819052918101829052606081018290526080810191909152506001600160401b03908116600090815260026020908152604091829020825160a081018452905461ffff8116825263ffffffff6201000082041692820192909252600160301b8204841692810192909252600160701b810483166060830152600160b01b9004909116608082015290565b6040516102e09190611a1a565b60405180910390f35b61031c6102f73660046119f8565b6001600160401b03908116600090815260036020526040902054600160701b90041690565b6040516001600160401b0390911681526020016102e0565b60005461034e90600160601b90046001600160a01b031681565b6040516001600160a01b0390911681526020016102e0565b61039b6103743660046119f8565b6001600160401b031660009081526002602052604090205462010000900463ffffffff1690565b60405163ffffffff90911681526020016102e0565b600261031c565b6102136103c5366004611a74565b6108ef565b6102136103d8366004611a74565b61092b565b61039b6103eb3660046119f8565b6001600160401b031660009081526003602052604090205462010000900463ffffffff1690565b610213610420366004611aa7565b610967565b61021361097b565b61046761043b3660046119f8565b6001600160401b031660009081526002602090815260408083205461ffff168352600190915290205490565b6040519081526020016102e0565b7f9016d09d72d40fdae2fd8ceac6b6234c7706214fd39c1cd1e609a0528c199300546001600160a01b031661034e565b6104676104b3366004611ac2565b61098f565b610467620f424081565b61031c6104d03660046119f8565b6001600160401b03908116600090815260026020526040902054600160b01b90041690565b610213610503366004611b69565b610b1c565b610213610516366004611ba5565b610b58565b60005461052e906001600160601b031681565b6040516001600160601b0390911681526020016102e0565b610467610554366004611bcf565b60016020526000908152604090205481565b6105936105743660046119f8565b6001600160401b031660009081526002602052604090205461ffff1690565b60405161ffff90911681526020016102e0565b6102136105b4366004611a74565b610b94565b6102136105c7366004611a74565b610bd0565b6102d36105da3660046119f8565b6040805160a081018252600080825260208201819052918101829052606081018290526080810191909152506001600160401b03908116600090815260036020908152604091829020825160a081018452905461ffff8116825263ffffffff6201000082041692820192909252600160301b8204841692810192909252600160701b810483166060830152600160b01b9004909116608082015290565b610213610685366004611bea565b610c0c565b6105936106983660046119f8565b6001600160401b031660009081526003602052604090205461ffff1690565b61031c6106c53660046119f8565b6001600160401b03908116600090815260036020526040902054600160b01b90041690565b6102136106f836600461185c565b610c44565b61031c61070b3660046119f8565b6001600160401b03908116600090815260026020526040902054600160701b90041690565b61021361073e366004611b69565b610c80565b610213610751366004611bea565b610cbc565b610213610764366004611c05565b610cfc565b600054600160601b90046001600160a01b0316331461079b5760405163607e454560e11b815260040160405180910390fd5b6107a58282610d38565b5050565b7ff0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a008054600160401b810460ff1615906001600160401b03166000811580156107ee5750825b90506000826001600160401b0316600114801561080a5750303b155b905081158015610818575080155b156108365760405163f92ee8a960e01b815260040160405180910390fd5b845467ffffffffffffffff19166001178555831561086057845460ff60401b1916600160401b1785555b6108698e610f27565b6108728d610f38565b61087b8c610f95565b6108858b8b610fe8565b61088f8989610d38565b61089987876111d2565b83156108df57845460ff60401b19168555604051600181527fc7f505b2f371ae2175ee4913f4499e1f2633a7b5936321eed1cdaeb6115181d29060200160405180910390a15b5050505050505050505050505050565b600054600160601b90046001600160a01b031633146109215760405163607e454560e11b815260040160405180910390fd5b6107a58282611224565b600054600160601b90046001600160a01b0316331461095d5760405163607e454560e11b815260040160405180910390fd5b6107a582826112ee565b61096f6113b0565b61097881610f95565b50565b6109836113b0565b61098d600061140b565b565b6001600160401b0380851660009081526002602090815260408083208054600160b01b8104861685526003845282852061ffff82168652600190945291842054939490938592620f4240926109ec9291600160701b900416611c50565b6109f69190611c67565b825461ffff811660009081526001602052604081205492935091620f424091610a2f9190600160701b90046001600160401b0316611c50565b610a399190611c67565b905081600003610a5c57604051633532119760e11b815260040160405180910390fd5b80600003610a7d57604051633532119760e11b815260040160405180910390fd5b8254600090600160b01b81046001600160401b031690610aaa908a9062010000900463ffffffff16611c89565b610ab49190611c50565b9050610ac08282611c50565b85548490610adb908a9062010000900463ffffffff16611c9c565b6001600160401b0316610aee9190611c50565b600054610b0491906001600160601b0316611c89565b610b0e9190611c89565b9a9950505050505050505050565b600054600160601b90046001600160a01b03163314610b4e5760405163607e454560e11b815260040160405180910390fd5b6107a5828261147c565b600054600160601b90046001600160a01b03163314610b8a5760405163607e454560e11b815260040160405180910390fd5b6107a58282611513565b600054600160601b90046001600160a01b03163314610bc65760405163607e454560e11b815260040160405180910390fd5b6107a582826115a5565b600054600160601b90046001600160a01b03163314610c025760405163607e454560e11b815260040160405180910390fd5b6107a58282611667565b610c146113b0565b6001600160a01b038116610c3b5760405163d92e233d60e01b815260040160405180910390fd5b61097881610f38565b600054600160601b90046001600160a01b03163314610c765760405163607e454560e11b815260040160405180910390fd5b6107a58282610fe8565b600054600160601b90046001600160a01b03163314610cb25760405163607e454560e11b815260040160405180910390fd5b6107a58282611729565b610cc46113b0565b6001600160a01b038116610cf357604051631e4fbdf760e01b8152600060048201526024015b60405180910390fd5b6109788161140b565b600054600160601b90046001600160a01b03163314610d2e5760405163607e454560e11b815260040160405180910390fd5b6107a582826111d2565b60005b81811015610f22576000838383818110610d5757610d57611cc3565b905060a00201803603810190610d6d9190611d77565b805190915061ffff16600003610d96576040516350614df960e01b815260040160405180910390fd5b80604001516001600160401b0316600003610dc457604051630c26851b60e11b815260040160405180910390fd5b80606001516001600160401b0316600003610df257604051630e661aed60e41b815260040160405180910390fd5b80608001516001600160401b0316600003610e20576040516348cfc33560e11b815260040160405180910390fd5b604081810180516001600160401b0390811660009081526003602090815290849020855181548388015195516060808a01516080808c015161ffff90961665ffffffffffff1990951685176201000063ffffffff909b169a8b02176601000000000000600160b01b031916600160301b948a1694850267ffffffffffffffff60701b191617600160701b928a169283021767ffffffffffffffff60b01b1916600160b01b969099169586029890981790955588519283529482019690965295860194909452908401528201527fd143a0934cc5e5337dca3eb0afa1e7f86680796ca6f132bfe7e0828b7155bd409060a00160405180910390a150600101610d3b565b505050565b610f2f6117c0565b61097881611809565b600080546001600160601b0316600160601b6001600160a01b038416908102919091179091556040519081527f60a0f5b9f9e81e98216071b85826681c796256fe3d1354ecb675580fba64fa69906020015b60405180910390a150565b600080546bffffffffffffffffffffffff19166001600160601b0383169081179091556040519081527fd91752439e358587fc0828ed743df5939f16a918de501834bd954d03be15c95990602001610f8a565b60005b81811015610f2257600083838381811061100757611007611cc3565b905060a0020180360381019061101d9190611d77565b805190915061ffff16600003611046576040516350614df960e01b815260040160405180910390fd5b80604001516001600160401b031660000361107457604051633212217560e21b815260040160405180910390fd5b80606001516001600160401b03166000036110a257604051630e661aed60e41b815260040160405180910390fd5b80608001516001600160401b03166000036110d057604051630c26851b60e11b815260040160405180910390fd5b604081810180516001600160401b0390811660009081526002602090815290849020855181548388015195516060808a01516080808c015161ffff90961665ffffffffffff1990951685176201000063ffffffff909b169a8b02176601000000000000600160b01b031916600160301b948a1694850267ffffffffffffffff60701b191617600160701b928a169283021767ffffffffffffffff60b01b1916600160b01b969099169586029890981790955588519283529482019690965295860194909452908401528201527f600e7ff14e74285e17debda1fee2df93741c6518e12ba908ba4417c0610974a99060a00160405180910390a150600101610feb565b60005b81811015610f225760008383838181106111f1576111f1611cc3565b9050604002018036038101906112079190611d93565b905061121b81600001518260200151611513565b506001016111d5565b816001600160401b031660000361124e57604051630c26851b60e11b815260040160405180910390fd5b806001600160401b0316600003611278576040516348cfc33560e11b815260040160405180910390fd5b6001600160401b03828116600081815260036020908152604091829020805467ffffffffffffffff60b01b1916600160b01b95871695860217905581519283528201929092527f9e8c8606adb2b50f48cb69ccb1c3e349e6046ed63765e5931c01f4fe6aacd5e991015b60405180910390a15050565b806001600160401b031660000361131857604051630e661aed60e41b815260040160405180910390fd5b816001600160401b031660000361134257604051630c26851b60e11b815260040160405180910390fd5b6001600160401b03828116600081815260036020908152604091829020805467ffffffffffffffff60701b1916600160701b95871695860217905581519283528201929092527fd7d8dd5a956a8bd500e02d52d0a9dd8a0e2955ec48771a8c9da485e6706c66fb91016112e2565b336113e27f9016d09d72d40fdae2fd8ceac6b6234c7706214fd39c1cd1e609a0528c199300546001600160a01b031690565b6001600160a01b03161461098d5760405163118cdaa760e01b8152336004820152602401610cea565b7f9016d09d72d40fdae2fd8ceac6b6234c7706214fd39c1cd1e609a0528c19930080546001600160a01b031981166001600160a01b03848116918217845560405192169182907f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e090600090a3505050565b816001600160401b03166000036114a657604051630c26851b60e11b815260040160405180910390fd5b6001600160401b038216600081815260036020908152604091829020805465ffffffff000019166201000063ffffffff8716908102919091179091558251938452908301527f406ba3ab8c23e58f883620734592e662ac0018177590c1f9f27afc58a4b7b58391016112e2565b806000036115345760405163fa90419960e01b815260040160405180910390fd5b8161ffff16600003611559576040516350614df960e01b815260040160405180910390fd5b61ffff8216600081815260016020908152604091829020849055815192835282018390527f770404c81b5a366795e9a06ff3969e3fb2eb0515b7282e986f261c180b97623d91016112e2565b806001600160401b03166000036115cf57604051630e661aed60e41b815260040160405180910390fd5b816001600160401b03166000036115f957604051633212217560e21b815260040160405180910390fd5b6001600160401b03828116600081815260026020908152604091829020805467ffffffffffffffff60701b1916600160701b95871695860217905581519283528201929092527fe0e5abb8929e27a69d77f47a4e3f9575411a5be1fa596e5b55078d7850f358db91016112e2565b816001600160401b031660000361169157604051633212217560e21b815260040160405180910390fd5b806001600160401b03166000036116bb57604051630c26851b60e11b815260040160405180910390fd5b6001600160401b03828116600081815260026020908152604091829020805467ffffffffffffffff60b01b1916600160b01b95871695860217905581519283528201929092527f0a5853014cbdb5103840fd3b7fcd886e7a93ef446d8c8707a5269d25ed32b4fe91016112e2565b816001600160401b031660000361175357604051633212217560e21b815260040160405180910390fd5b6001600160401b038216600081815260026020908152604091829020805465ffffffff000019166201000063ffffffff8716908102919091179091558251938452908301527f525a2cd9c1093178959cb9c72fe00c6be026fc953e93c9bc789d2176da98c40591016112e2565b7ff0c57e16840df040f15088dc2f81fe391c3923bec73e23a9662efc9c229c6a0054600160401b900460ff1661098d57604051631afcd79f60e31b815260040160405180910390fd5b610cc46117c0565b60008083601f84011261182357600080fd5b5081356001600160401b0381111561183a57600080fd5b60208301915083602060a08302850101111561185557600080fd5b9250929050565b6000806020838503121561186f57600080fd5b82356001600160401b0381111561188557600080fd5b61189185828601611811565b90969095509350505050565b80356001600160a01b03811681146118b457600080fd5b919050565b80356001600160601b03811681146118b457600080fd5b60008083601f8401126118e257600080fd5b5081356001600160401b038111156118f957600080fd5b6020830191508360208260061b850101111561185557600080fd5b600080600080600080600080600060c08a8c03121561193257600080fd5b61193b8a61189d565b985061194960208b0161189d565b975061195760408b016118b9565b965060608a01356001600160401b038082111561197357600080fd5b61197f8d838e01611811565b909850965060808c013591508082111561199857600080fd5b6119a48d838e01611811565b909650945060a08c01359150808211156119bd57600080fd5b506119ca8c828d016118d0565b915080935050809150509295985092959850929598565b80356001600160401b03811681146118b457600080fd5b600060208284031215611a0a57600080fd5b611a13826119e1565b9392505050565b60a08101611a6e828461ffff815116825263ffffffff602082015116602083015260408101516001600160401b03808216604085015280606084015116606085015280608084015116608085015250505050565b92915050565b60008060408385031215611a8757600080fd5b611a90836119e1565b9150611a9e602084016119e1565b90509250929050565b600060208284031215611ab957600080fd5b611a13826118b9565b60008060008060608587031215611ad857600080fd5b611ae1856119e1565b935060208501356001600160401b0380821115611afd57600080fd5b818701915087601f830112611b1157600080fd5b813581811115611b2057600080fd5b886020828501011115611b3257600080fd5b602083019550809450505050611b4a604086016119e1565b905092959194509250565b803563ffffffff811681146118b457600080fd5b60008060408385031215611b7c57600080fd5b611b85836119e1565b9150611a9e60208401611b55565b803561ffff811681146118b457600080fd5b60008060408385031215611bb857600080fd5b611bc183611b93565b946020939093013593505050565b600060208284031215611be157600080fd5b611a1382611b93565b600060208284031215611bfc57600080fd5b611a138261189d565b60008060208385031215611c1857600080fd5b82356001600160401b03811115611c2e57600080fd5b611891858286016118d0565b634e487b7160e01b600052601160045260246000fd5b8082028115828204841417611a6e57611a6e611c3a565b600082611c8457634e487b7160e01b600052601260045260246000fd5b500490565b80820180821115611a6e57611a6e611c3a565b6001600160401b03818116838216019080821115611cbc57611cbc611c3a565b5092915050565b634e487b7160e01b600052603260045260246000fd5b600060a08284031215611ceb57600080fd5b60405160a081018181106001600160401b0382111715611d1b57634e487b7160e01b600052604160045260246000fd5b604052905080611d2a83611b93565b8152611d3860208401611b55565b6020820152611d49604084016119e1565b6040820152611d5a606084016119e1565b6060820152611d6b608084016119e1565b60808201525092915050565b600060a08284031215611d8957600080fd5b611a138383611cd9565b600060408284031215611da557600080fd5b604051604081018181106001600160401b0382111715611dd557634e487b7160e01b600052604160045260246000fd5b604052611de183611b93565b815260208301356020820152809150509291505056fea2646970667358221220b5b4525f7807b54ac9f4b5ba2a123a4c45a47c4391c1f9b589427c3ed79fee3c64736f6c63430008180033",
 }
 
 // FeeOracleV2ABI is the input ABI used to generate the binding from.
@@ -321,7 +321,7 @@ func (_FeeOracleV2 *FeeOracleV2CallerSession) BaseGasLimit(chainId uint64) (uint
 
 // DataCostParams is a free data retrieval call binding the contract method 0xbfc71416.
 //
-// Solidity: function dataCostParams(uint64 dataCostId) view returns((uint8,uint32,uint64,uint64,uint64))
+// Solidity: function dataCostParams(uint64 dataCostId) view returns((uint16,uint32,uint64,uint64,uint64))
 func (_FeeOracleV2 *FeeOracleV2Caller) DataCostParams(opts *bind.CallOpts, dataCostId uint64) (IFeeOracleV2DataCostParams, error) {
 	var out []interface{}
 	err := _FeeOracleV2.contract.Call(opts, &out, "dataCostParams", dataCostId)
@@ -338,14 +338,14 @@ func (_FeeOracleV2 *FeeOracleV2Caller) DataCostParams(opts *bind.CallOpts, dataC
 
 // DataCostParams is a free data retrieval call binding the contract method 0xbfc71416.
 //
-// Solidity: function dataCostParams(uint64 dataCostId) view returns((uint8,uint32,uint64,uint64,uint64))
+// Solidity: function dataCostParams(uint64 dataCostId) view returns((uint16,uint32,uint64,uint64,uint64))
 func (_FeeOracleV2 *FeeOracleV2Session) DataCostParams(dataCostId uint64) (IFeeOracleV2DataCostParams, error) {
 	return _FeeOracleV2.Contract.DataCostParams(&_FeeOracleV2.CallOpts, dataCostId)
 }
 
 // DataCostParams is a free data retrieval call binding the contract method 0xbfc71416.
 //
-// Solidity: function dataCostParams(uint64 dataCostId) view returns((uint8,uint32,uint64,uint64,uint64))
+// Solidity: function dataCostParams(uint64 dataCostId) view returns((uint16,uint32,uint64,uint64,uint64))
 func (_FeeOracleV2 *FeeOracleV2CallerSession) DataCostParams(dataCostId uint64) (IFeeOracleV2DataCostParams, error) {
 	return _FeeOracleV2.Contract.DataCostParams(&_FeeOracleV2.CallOpts, dataCostId)
 }
@@ -414,16 +414,16 @@ func (_FeeOracleV2 *FeeOracleV2CallerSession) DataGasPrice(dataCostId uint64) (u
 
 // DataGasToken is a free data retrieval call binding the contract method 0xd32b68ad.
 //
-// Solidity: function dataGasToken(uint64 dataCostId) view returns(uint8)
-func (_FeeOracleV2 *FeeOracleV2Caller) DataGasToken(opts *bind.CallOpts, dataCostId uint64) (uint8, error) {
+// Solidity: function dataGasToken(uint64 dataCostId) view returns(uint16)
+func (_FeeOracleV2 *FeeOracleV2Caller) DataGasToken(opts *bind.CallOpts, dataCostId uint64) (uint16, error) {
 	var out []interface{}
 	err := _FeeOracleV2.contract.Call(opts, &out, "dataGasToken", dataCostId)
 
 	if err != nil {
-		return *new(uint8), err
+		return *new(uint16), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(uint8)).(*uint8)
+	out0 := *abi.ConvertType(out[0], new(uint16)).(*uint16)
 
 	return out0, err
 
@@ -431,15 +431,15 @@ func (_FeeOracleV2 *FeeOracleV2Caller) DataGasToken(opts *bind.CallOpts, dataCos
 
 // DataGasToken is a free data retrieval call binding the contract method 0xd32b68ad.
 //
-// Solidity: function dataGasToken(uint64 dataCostId) view returns(uint8)
-func (_FeeOracleV2 *FeeOracleV2Session) DataGasToken(dataCostId uint64) (uint8, error) {
+// Solidity: function dataGasToken(uint64 dataCostId) view returns(uint16)
+func (_FeeOracleV2 *FeeOracleV2Session) DataGasToken(dataCostId uint64) (uint16, error) {
 	return _FeeOracleV2.Contract.DataGasToken(&_FeeOracleV2.CallOpts, dataCostId)
 }
 
 // DataGasToken is a free data retrieval call binding the contract method 0xd32b68ad.
 //
-// Solidity: function dataGasToken(uint64 dataCostId) view returns(uint8)
-func (_FeeOracleV2 *FeeOracleV2CallerSession) DataGasToken(dataCostId uint64) (uint8, error) {
+// Solidity: function dataGasToken(uint64 dataCostId) view returns(uint16)
+func (_FeeOracleV2 *FeeOracleV2CallerSession) DataGasToken(dataCostId uint64) (uint16, error) {
 	return _FeeOracleV2.Contract.DataGasToken(&_FeeOracleV2.CallOpts, dataCostId)
 }
 
@@ -507,16 +507,16 @@ func (_FeeOracleV2 *FeeOracleV2CallerSession) ExecGasPrice(chainId uint64) (uint
 
 // ExecGasToken is a free data retrieval call binding the contract method 0xb984cc0b.
 //
-// Solidity: function execGasToken(uint64 chainId) view returns(uint8)
-func (_FeeOracleV2 *FeeOracleV2Caller) ExecGasToken(opts *bind.CallOpts, chainId uint64) (uint8, error) {
+// Solidity: function execGasToken(uint64 chainId) view returns(uint16)
+func (_FeeOracleV2 *FeeOracleV2Caller) ExecGasToken(opts *bind.CallOpts, chainId uint64) (uint16, error) {
 	var out []interface{}
 	err := _FeeOracleV2.contract.Call(opts, &out, "execGasToken", chainId)
 
 	if err != nil {
-		return *new(uint8), err
+		return *new(uint16), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(uint8)).(*uint8)
+	out0 := *abi.ConvertType(out[0], new(uint16)).(*uint16)
 
 	return out0, err
 
@@ -524,15 +524,15 @@ func (_FeeOracleV2 *FeeOracleV2Caller) ExecGasToken(opts *bind.CallOpts, chainId
 
 // ExecGasToken is a free data retrieval call binding the contract method 0xb984cc0b.
 //
-// Solidity: function execGasToken(uint64 chainId) view returns(uint8)
-func (_FeeOracleV2 *FeeOracleV2Session) ExecGasToken(chainId uint64) (uint8, error) {
+// Solidity: function execGasToken(uint64 chainId) view returns(uint16)
+func (_FeeOracleV2 *FeeOracleV2Session) ExecGasToken(chainId uint64) (uint16, error) {
 	return _FeeOracleV2.Contract.ExecGasToken(&_FeeOracleV2.CallOpts, chainId)
 }
 
 // ExecGasToken is a free data retrieval call binding the contract method 0xb984cc0b.
 //
-// Solidity: function execGasToken(uint64 chainId) view returns(uint8)
-func (_FeeOracleV2 *FeeOracleV2CallerSession) ExecGasToken(chainId uint64) (uint8, error) {
+// Solidity: function execGasToken(uint64 chainId) view returns(uint16)
+func (_FeeOracleV2 *FeeOracleV2CallerSession) ExecGasToken(chainId uint64) (uint16, error) {
 	return _FeeOracleV2.Contract.ExecGasToken(&_FeeOracleV2.CallOpts, chainId)
 }
 
@@ -569,7 +569,7 @@ func (_FeeOracleV2 *FeeOracleV2CallerSession) FeeFor(destChainId uint64, data []
 
 // FeeParams is a free data retrieval call binding the contract method 0x2d4634a4.
 //
-// Solidity: function feeParams(uint64 chainId) view returns((uint8,uint32,uint64,uint64,uint64))
+// Solidity: function feeParams(uint64 chainId) view returns((uint16,uint32,uint64,uint64,uint64))
 func (_FeeOracleV2 *FeeOracleV2Caller) FeeParams(opts *bind.CallOpts, chainId uint64) (IFeeOracleV2FeeParams, error) {
 	var out []interface{}
 	err := _FeeOracleV2.contract.Call(opts, &out, "feeParams", chainId)
@@ -586,14 +586,14 @@ func (_FeeOracleV2 *FeeOracleV2Caller) FeeParams(opts *bind.CallOpts, chainId ui
 
 // FeeParams is a free data retrieval call binding the contract method 0x2d4634a4.
 //
-// Solidity: function feeParams(uint64 chainId) view returns((uint8,uint32,uint64,uint64,uint64))
+// Solidity: function feeParams(uint64 chainId) view returns((uint16,uint32,uint64,uint64,uint64))
 func (_FeeOracleV2 *FeeOracleV2Session) FeeParams(chainId uint64) (IFeeOracleV2FeeParams, error) {
 	return _FeeOracleV2.Contract.FeeParams(&_FeeOracleV2.CallOpts, chainId)
 }
 
 // FeeParams is a free data retrieval call binding the contract method 0x2d4634a4.
 //
-// Solidity: function feeParams(uint64 chainId) view returns((uint8,uint32,uint64,uint64,uint64))
+// Solidity: function feeParams(uint64 chainId) view returns((uint16,uint32,uint64,uint64,uint64))
 func (_FeeOracleV2 *FeeOracleV2CallerSession) FeeParams(chainId uint64) (IFeeOracleV2FeeParams, error) {
 	return _FeeOracleV2.Contract.FeeParams(&_FeeOracleV2.CallOpts, chainId)
 }
@@ -722,10 +722,10 @@ func (_FeeOracleV2 *FeeOracleV2CallerSession) ToNativeRate(chainId uint64) (*big
 	return _FeeOracleV2.Contract.ToNativeRate(&_FeeOracleV2.CallOpts, chainId)
 }
 
-// TokenToNativeRate is a free data retrieval call binding the contract method 0xfee86f69.
+// TokenToNativeRate is a free data retrieval call binding the contract method 0xb17db68a.
 //
-// Solidity: function tokenToNativeRate(uint8 gasToken) view returns(uint256)
-func (_FeeOracleV2 *FeeOracleV2Caller) TokenToNativeRate(opts *bind.CallOpts, gasToken uint8) (*big.Int, error) {
+// Solidity: function tokenToNativeRate(uint16 gasToken) view returns(uint256)
+func (_FeeOracleV2 *FeeOracleV2Caller) TokenToNativeRate(opts *bind.CallOpts, gasToken uint16) (*big.Int, error) {
 	var out []interface{}
 	err := _FeeOracleV2.contract.Call(opts, &out, "tokenToNativeRate", gasToken)
 
@@ -739,17 +739,17 @@ func (_FeeOracleV2 *FeeOracleV2Caller) TokenToNativeRate(opts *bind.CallOpts, ga
 
 }
 
-// TokenToNativeRate is a free data retrieval call binding the contract method 0xfee86f69.
+// TokenToNativeRate is a free data retrieval call binding the contract method 0xb17db68a.
 //
-// Solidity: function tokenToNativeRate(uint8 gasToken) view returns(uint256)
-func (_FeeOracleV2 *FeeOracleV2Session) TokenToNativeRate(gasToken uint8) (*big.Int, error) {
+// Solidity: function tokenToNativeRate(uint16 gasToken) view returns(uint256)
+func (_FeeOracleV2 *FeeOracleV2Session) TokenToNativeRate(gasToken uint16) (*big.Int, error) {
 	return _FeeOracleV2.Contract.TokenToNativeRate(&_FeeOracleV2.CallOpts, gasToken)
 }
 
-// TokenToNativeRate is a free data retrieval call binding the contract method 0xfee86f69.
+// TokenToNativeRate is a free data retrieval call binding the contract method 0xb17db68a.
 //
-// Solidity: function tokenToNativeRate(uint8 gasToken) view returns(uint256)
-func (_FeeOracleV2 *FeeOracleV2CallerSession) TokenToNativeRate(gasToken uint8) (*big.Int, error) {
+// Solidity: function tokenToNativeRate(uint16 gasToken) view returns(uint256)
+func (_FeeOracleV2 *FeeOracleV2CallerSession) TokenToNativeRate(gasToken uint16) (*big.Int, error) {
 	return _FeeOracleV2.Contract.TokenToNativeRate(&_FeeOracleV2.CallOpts, gasToken)
 }
 
@@ -784,86 +784,86 @@ func (_FeeOracleV2 *FeeOracleV2CallerSession) Version() (uint64, error) {
 	return _FeeOracleV2.Contract.Version(&_FeeOracleV2.CallOpts)
 }
 
-// BulkSetDataCostParams is a paid mutator transaction binding the contract method 0x04e53a15.
+// BulkSetDataCostParams is a paid mutator transaction binding the contract method 0x2105b755.
 //
-// Solidity: function bulkSetDataCostParams((uint8,uint32,uint64,uint64,uint64)[] params) returns()
+// Solidity: function bulkSetDataCostParams((uint16,uint32,uint64,uint64,uint64)[] params) returns()
 func (_FeeOracleV2 *FeeOracleV2Transactor) BulkSetDataCostParams(opts *bind.TransactOpts, params []IFeeOracleV2DataCostParams) (*types.Transaction, error) {
 	return _FeeOracleV2.contract.Transact(opts, "bulkSetDataCostParams", params)
 }
 
-// BulkSetDataCostParams is a paid mutator transaction binding the contract method 0x04e53a15.
+// BulkSetDataCostParams is a paid mutator transaction binding the contract method 0x2105b755.
 //
-// Solidity: function bulkSetDataCostParams((uint8,uint32,uint64,uint64,uint64)[] params) returns()
+// Solidity: function bulkSetDataCostParams((uint16,uint32,uint64,uint64,uint64)[] params) returns()
 func (_FeeOracleV2 *FeeOracleV2Session) BulkSetDataCostParams(params []IFeeOracleV2DataCostParams) (*types.Transaction, error) {
 	return _FeeOracleV2.Contract.BulkSetDataCostParams(&_FeeOracleV2.TransactOpts, params)
 }
 
-// BulkSetDataCostParams is a paid mutator transaction binding the contract method 0x04e53a15.
+// BulkSetDataCostParams is a paid mutator transaction binding the contract method 0x2105b755.
 //
-// Solidity: function bulkSetDataCostParams((uint8,uint32,uint64,uint64,uint64)[] params) returns()
+// Solidity: function bulkSetDataCostParams((uint16,uint32,uint64,uint64,uint64)[] params) returns()
 func (_FeeOracleV2 *FeeOracleV2TransactorSession) BulkSetDataCostParams(params []IFeeOracleV2DataCostParams) (*types.Transaction, error) {
 	return _FeeOracleV2.Contract.BulkSetDataCostParams(&_FeeOracleV2.TransactOpts, params)
 }
 
-// BulkSetFeeParams is a paid mutator transaction binding the contract method 0xb15268b0.
+// BulkSetFeeParams is a paid mutator transaction binding the contract method 0xdb847a59.
 //
-// Solidity: function bulkSetFeeParams((uint8,uint32,uint64,uint64,uint64)[] params) returns()
+// Solidity: function bulkSetFeeParams((uint16,uint32,uint64,uint64,uint64)[] params) returns()
 func (_FeeOracleV2 *FeeOracleV2Transactor) BulkSetFeeParams(opts *bind.TransactOpts, params []IFeeOracleV2FeeParams) (*types.Transaction, error) {
 	return _FeeOracleV2.contract.Transact(opts, "bulkSetFeeParams", params)
 }
 
-// BulkSetFeeParams is a paid mutator transaction binding the contract method 0xb15268b0.
+// BulkSetFeeParams is a paid mutator transaction binding the contract method 0xdb847a59.
 //
-// Solidity: function bulkSetFeeParams((uint8,uint32,uint64,uint64,uint64)[] params) returns()
+// Solidity: function bulkSetFeeParams((uint16,uint32,uint64,uint64,uint64)[] params) returns()
 func (_FeeOracleV2 *FeeOracleV2Session) BulkSetFeeParams(params []IFeeOracleV2FeeParams) (*types.Transaction, error) {
 	return _FeeOracleV2.Contract.BulkSetFeeParams(&_FeeOracleV2.TransactOpts, params)
 }
 
-// BulkSetFeeParams is a paid mutator transaction binding the contract method 0xb15268b0.
+// BulkSetFeeParams is a paid mutator transaction binding the contract method 0xdb847a59.
 //
-// Solidity: function bulkSetFeeParams((uint8,uint32,uint64,uint64,uint64)[] params) returns()
+// Solidity: function bulkSetFeeParams((uint16,uint32,uint64,uint64,uint64)[] params) returns()
 func (_FeeOracleV2 *FeeOracleV2TransactorSession) BulkSetFeeParams(params []IFeeOracleV2FeeParams) (*types.Transaction, error) {
 	return _FeeOracleV2.Contract.BulkSetFeeParams(&_FeeOracleV2.TransactOpts, params)
 }
 
-// BulkSetToNativeRate is a paid mutator transaction binding the contract method 0x8ff83049.
+// BulkSetToNativeRate is a paid mutator transaction binding the contract method 0xf364f687.
 //
-// Solidity: function bulkSetToNativeRate((uint8,uint256)[] params) returns()
+// Solidity: function bulkSetToNativeRate((uint16,uint256)[] params) returns()
 func (_FeeOracleV2 *FeeOracleV2Transactor) BulkSetToNativeRate(opts *bind.TransactOpts, params []IFeeOracleV2ToNativeRateParams) (*types.Transaction, error) {
 	return _FeeOracleV2.contract.Transact(opts, "bulkSetToNativeRate", params)
 }
 
-// BulkSetToNativeRate is a paid mutator transaction binding the contract method 0x8ff83049.
+// BulkSetToNativeRate is a paid mutator transaction binding the contract method 0xf364f687.
 //
-// Solidity: function bulkSetToNativeRate((uint8,uint256)[] params) returns()
+// Solidity: function bulkSetToNativeRate((uint16,uint256)[] params) returns()
 func (_FeeOracleV2 *FeeOracleV2Session) BulkSetToNativeRate(params []IFeeOracleV2ToNativeRateParams) (*types.Transaction, error) {
 	return _FeeOracleV2.Contract.BulkSetToNativeRate(&_FeeOracleV2.TransactOpts, params)
 }
 
-// BulkSetToNativeRate is a paid mutator transaction binding the contract method 0x8ff83049.
+// BulkSetToNativeRate is a paid mutator transaction binding the contract method 0xf364f687.
 //
-// Solidity: function bulkSetToNativeRate((uint8,uint256)[] params) returns()
+// Solidity: function bulkSetToNativeRate((uint16,uint256)[] params) returns()
 func (_FeeOracleV2 *FeeOracleV2TransactorSession) BulkSetToNativeRate(params []IFeeOracleV2ToNativeRateParams) (*types.Transaction, error) {
 	return _FeeOracleV2.Contract.BulkSetToNativeRate(&_FeeOracleV2.TransactOpts, params)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0x176c73e3.
+// Initialize is a paid mutator transaction binding the contract method 0x223aacf8.
 //
-// Solidity: function initialize(address owner_, address manager_, uint96 protocolFee_, (uint8,uint32,uint64,uint64,uint64)[] feeParams_, (uint8,uint32,uint64,uint64,uint64)[] dataCostParams_, (uint8,uint256)[] toNativeRateParams_) returns()
+// Solidity: function initialize(address owner_, address manager_, uint96 protocolFee_, (uint16,uint32,uint64,uint64,uint64)[] feeParams_, (uint16,uint32,uint64,uint64,uint64)[] dataCostParams_, (uint16,uint256)[] toNativeRateParams_) returns()
 func (_FeeOracleV2 *FeeOracleV2Transactor) Initialize(opts *bind.TransactOpts, owner_ common.Address, manager_ common.Address, protocolFee_ *big.Int, feeParams_ []IFeeOracleV2FeeParams, dataCostParams_ []IFeeOracleV2DataCostParams, toNativeRateParams_ []IFeeOracleV2ToNativeRateParams) (*types.Transaction, error) {
 	return _FeeOracleV2.contract.Transact(opts, "initialize", owner_, manager_, protocolFee_, feeParams_, dataCostParams_, toNativeRateParams_)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0x176c73e3.
+// Initialize is a paid mutator transaction binding the contract method 0x223aacf8.
 //
-// Solidity: function initialize(address owner_, address manager_, uint96 protocolFee_, (uint8,uint32,uint64,uint64,uint64)[] feeParams_, (uint8,uint32,uint64,uint64,uint64)[] dataCostParams_, (uint8,uint256)[] toNativeRateParams_) returns()
+// Solidity: function initialize(address owner_, address manager_, uint96 protocolFee_, (uint16,uint32,uint64,uint64,uint64)[] feeParams_, (uint16,uint32,uint64,uint64,uint64)[] dataCostParams_, (uint16,uint256)[] toNativeRateParams_) returns()
 func (_FeeOracleV2 *FeeOracleV2Session) Initialize(owner_ common.Address, manager_ common.Address, protocolFee_ *big.Int, feeParams_ []IFeeOracleV2FeeParams, dataCostParams_ []IFeeOracleV2DataCostParams, toNativeRateParams_ []IFeeOracleV2ToNativeRateParams) (*types.Transaction, error) {
 	return _FeeOracleV2.Contract.Initialize(&_FeeOracleV2.TransactOpts, owner_, manager_, protocolFee_, feeParams_, dataCostParams_, toNativeRateParams_)
 }
 
-// Initialize is a paid mutator transaction binding the contract method 0x176c73e3.
+// Initialize is a paid mutator transaction binding the contract method 0x223aacf8.
 //
-// Solidity: function initialize(address owner_, address manager_, uint96 protocolFee_, (uint8,uint32,uint64,uint64,uint64)[] feeParams_, (uint8,uint32,uint64,uint64,uint64)[] dataCostParams_, (uint8,uint256)[] toNativeRateParams_) returns()
+// Solidity: function initialize(address owner_, address manager_, uint96 protocolFee_, (uint16,uint32,uint64,uint64,uint64)[] feeParams_, (uint16,uint32,uint64,uint64,uint64)[] dataCostParams_, (uint16,uint256)[] toNativeRateParams_) returns()
 func (_FeeOracleV2 *FeeOracleV2TransactorSession) Initialize(owner_ common.Address, manager_ common.Address, protocolFee_ *big.Int, feeParams_ []IFeeOracleV2FeeParams, dataCostParams_ []IFeeOracleV2DataCostParams, toNativeRateParams_ []IFeeOracleV2ToNativeRateParams) (*types.Transaction, error) {
 	return _FeeOracleV2.Contract.Initialize(&_FeeOracleV2.TransactOpts, owner_, manager_, protocolFee_, feeParams_, dataCostParams_, toNativeRateParams_)
 }
@@ -1057,24 +1057,24 @@ func (_FeeOracleV2 *FeeOracleV2TransactorSession) SetProtocolFee(fee *big.Int) (
 	return _FeeOracleV2.Contract.SetProtocolFee(&_FeeOracleV2.TransactOpts, fee)
 }
 
-// SetToNativeRate is a paid mutator transaction binding the contract method 0x0baaa6aa.
+// SetToNativeRate is a paid mutator transaction binding the contract method 0xa12f2c58.
 //
-// Solidity: function setToNativeRate(uint8 gasToken, uint256 nativeRate) returns()
-func (_FeeOracleV2 *FeeOracleV2Transactor) SetToNativeRate(opts *bind.TransactOpts, gasToken uint8, nativeRate *big.Int) (*types.Transaction, error) {
+// Solidity: function setToNativeRate(uint16 gasToken, uint256 nativeRate) returns()
+func (_FeeOracleV2 *FeeOracleV2Transactor) SetToNativeRate(opts *bind.TransactOpts, gasToken uint16, nativeRate *big.Int) (*types.Transaction, error) {
 	return _FeeOracleV2.contract.Transact(opts, "setToNativeRate", gasToken, nativeRate)
 }
 
-// SetToNativeRate is a paid mutator transaction binding the contract method 0x0baaa6aa.
+// SetToNativeRate is a paid mutator transaction binding the contract method 0xa12f2c58.
 //
-// Solidity: function setToNativeRate(uint8 gasToken, uint256 nativeRate) returns()
-func (_FeeOracleV2 *FeeOracleV2Session) SetToNativeRate(gasToken uint8, nativeRate *big.Int) (*types.Transaction, error) {
+// Solidity: function setToNativeRate(uint16 gasToken, uint256 nativeRate) returns()
+func (_FeeOracleV2 *FeeOracleV2Session) SetToNativeRate(gasToken uint16, nativeRate *big.Int) (*types.Transaction, error) {
 	return _FeeOracleV2.Contract.SetToNativeRate(&_FeeOracleV2.TransactOpts, gasToken, nativeRate)
 }
 
-// SetToNativeRate is a paid mutator transaction binding the contract method 0x0baaa6aa.
+// SetToNativeRate is a paid mutator transaction binding the contract method 0xa12f2c58.
 //
-// Solidity: function setToNativeRate(uint8 gasToken, uint256 nativeRate) returns()
-func (_FeeOracleV2 *FeeOracleV2TransactorSession) SetToNativeRate(gasToken uint8, nativeRate *big.Int) (*types.Transaction, error) {
+// Solidity: function setToNativeRate(uint16 gasToken, uint256 nativeRate) returns()
+func (_FeeOracleV2 *FeeOracleV2TransactorSession) SetToNativeRate(gasToken uint16, nativeRate *big.Int) (*types.Transaction, error) {
 	return _FeeOracleV2.Contract.SetToNativeRate(&_FeeOracleV2.TransactOpts, gasToken, nativeRate)
 }
 
@@ -1573,7 +1573,7 @@ func (it *FeeOracleV2DataCostParamsSetIterator) Close() error {
 
 // FeeOracleV2DataCostParamsSet represents a DataCostParamsSet event raised by the FeeOracleV2 contract.
 type FeeOracleV2DataCostParamsSet struct {
-	GasToken   uint8
+	GasToken   uint16
 	BaseBytes  uint32
 	Id         uint64
 	GasPrice   uint64
@@ -1581,9 +1581,9 @@ type FeeOracleV2DataCostParamsSet struct {
 	Raw        types.Log // Blockchain specific contextual infos
 }
 
-// FilterDataCostParamsSet is a free log retrieval operation binding the contract event 0x9bfb42e15a99403ee60c360d57a11090df1c6cdc5a61208f68cee1927cf626e8.
+// FilterDataCostParamsSet is a free log retrieval operation binding the contract event 0xd143a0934cc5e5337dca3eb0afa1e7f86680796ca6f132bfe7e0828b7155bd40.
 //
-// Solidity: event DataCostParamsSet(uint8 gasToken, uint32 baseBytes, uint64 id, uint64 gasPrice, uint64 gasPerByte)
+// Solidity: event DataCostParamsSet(uint16 gasToken, uint32 baseBytes, uint64 id, uint64 gasPrice, uint64 gasPerByte)
 func (_FeeOracleV2 *FeeOracleV2Filterer) FilterDataCostParamsSet(opts *bind.FilterOpts) (*FeeOracleV2DataCostParamsSetIterator, error) {
 
 	logs, sub, err := _FeeOracleV2.contract.FilterLogs(opts, "DataCostParamsSet")
@@ -1593,9 +1593,9 @@ func (_FeeOracleV2 *FeeOracleV2Filterer) FilterDataCostParamsSet(opts *bind.Filt
 	return &FeeOracleV2DataCostParamsSetIterator{contract: _FeeOracleV2.contract, event: "DataCostParamsSet", logs: logs, sub: sub}, nil
 }
 
-// WatchDataCostParamsSet is a free log subscription operation binding the contract event 0x9bfb42e15a99403ee60c360d57a11090df1c6cdc5a61208f68cee1927cf626e8.
+// WatchDataCostParamsSet is a free log subscription operation binding the contract event 0xd143a0934cc5e5337dca3eb0afa1e7f86680796ca6f132bfe7e0828b7155bd40.
 //
-// Solidity: event DataCostParamsSet(uint8 gasToken, uint32 baseBytes, uint64 id, uint64 gasPrice, uint64 gasPerByte)
+// Solidity: event DataCostParamsSet(uint16 gasToken, uint32 baseBytes, uint64 id, uint64 gasPrice, uint64 gasPerByte)
 func (_FeeOracleV2 *FeeOracleV2Filterer) WatchDataCostParamsSet(opts *bind.WatchOpts, sink chan<- *FeeOracleV2DataCostParamsSet) (event.Subscription, error) {
 
 	logs, sub, err := _FeeOracleV2.contract.WatchLogs(opts, "DataCostParamsSet")
@@ -1630,9 +1630,9 @@ func (_FeeOracleV2 *FeeOracleV2Filterer) WatchDataCostParamsSet(opts *bind.Watch
 	}), nil
 }
 
-// ParseDataCostParamsSet is a log parse operation binding the contract event 0x9bfb42e15a99403ee60c360d57a11090df1c6cdc5a61208f68cee1927cf626e8.
+// ParseDataCostParamsSet is a log parse operation binding the contract event 0xd143a0934cc5e5337dca3eb0afa1e7f86680796ca6f132bfe7e0828b7155bd40.
 //
-// Solidity: event DataCostParamsSet(uint8 gasToken, uint32 baseBytes, uint64 id, uint64 gasPrice, uint64 gasPerByte)
+// Solidity: event DataCostParamsSet(uint16 gasToken, uint32 baseBytes, uint64 id, uint64 gasPrice, uint64 gasPerByte)
 func (_FeeOracleV2 *FeeOracleV2Filterer) ParseDataCostParamsSet(log types.Log) (*FeeOracleV2DataCostParamsSet, error) {
 	event := new(FeeOracleV2DataCostParamsSet)
 	if err := _FeeOracleV2.contract.UnpackLog(event, "DataCostParamsSet", log); err != nil {
@@ -1981,7 +1981,7 @@ func (it *FeeOracleV2FeeParamsSetIterator) Close() error {
 
 // FeeOracleV2FeeParamsSet represents a FeeParamsSet event raised by the FeeOracleV2 contract.
 type FeeOracleV2FeeParamsSet struct {
-	GasToken     uint8
+	GasToken     uint16
 	BaseGasLimit uint32
 	ChainId      uint64
 	GasPrice     uint64
@@ -1989,9 +1989,9 @@ type FeeOracleV2FeeParamsSet struct {
 	Raw          types.Log // Blockchain specific contextual infos
 }
 
-// FilterFeeParamsSet is a free log retrieval operation binding the contract event 0xea9053881f09b9823800b45f3ddc0a515613e3b55b2fe2ad35bdfdf3d1272a70.
+// FilterFeeParamsSet is a free log retrieval operation binding the contract event 0x600e7ff14e74285e17debda1fee2df93741c6518e12ba908ba4417c0610974a9.
 //
-// Solidity: event FeeParamsSet(uint8 gasToken, uint32 baseGasLimit, uint64 chainId, uint64 gasPrice, uint64 dataCostId)
+// Solidity: event FeeParamsSet(uint16 gasToken, uint32 baseGasLimit, uint64 chainId, uint64 gasPrice, uint64 dataCostId)
 func (_FeeOracleV2 *FeeOracleV2Filterer) FilterFeeParamsSet(opts *bind.FilterOpts) (*FeeOracleV2FeeParamsSetIterator, error) {
 
 	logs, sub, err := _FeeOracleV2.contract.FilterLogs(opts, "FeeParamsSet")
@@ -2001,9 +2001,9 @@ func (_FeeOracleV2 *FeeOracleV2Filterer) FilterFeeParamsSet(opts *bind.FilterOpt
 	return &FeeOracleV2FeeParamsSetIterator{contract: _FeeOracleV2.contract, event: "FeeParamsSet", logs: logs, sub: sub}, nil
 }
 
-// WatchFeeParamsSet is a free log subscription operation binding the contract event 0xea9053881f09b9823800b45f3ddc0a515613e3b55b2fe2ad35bdfdf3d1272a70.
+// WatchFeeParamsSet is a free log subscription operation binding the contract event 0x600e7ff14e74285e17debda1fee2df93741c6518e12ba908ba4417c0610974a9.
 //
-// Solidity: event FeeParamsSet(uint8 gasToken, uint32 baseGasLimit, uint64 chainId, uint64 gasPrice, uint64 dataCostId)
+// Solidity: event FeeParamsSet(uint16 gasToken, uint32 baseGasLimit, uint64 chainId, uint64 gasPrice, uint64 dataCostId)
 func (_FeeOracleV2 *FeeOracleV2Filterer) WatchFeeParamsSet(opts *bind.WatchOpts, sink chan<- *FeeOracleV2FeeParamsSet) (event.Subscription, error) {
 
 	logs, sub, err := _FeeOracleV2.contract.WatchLogs(opts, "FeeParamsSet")
@@ -2038,9 +2038,9 @@ func (_FeeOracleV2 *FeeOracleV2Filterer) WatchFeeParamsSet(opts *bind.WatchOpts,
 	}), nil
 }
 
-// ParseFeeParamsSet is a log parse operation binding the contract event 0xea9053881f09b9823800b45f3ddc0a515613e3b55b2fe2ad35bdfdf3d1272a70.
+// ParseFeeParamsSet is a log parse operation binding the contract event 0x600e7ff14e74285e17debda1fee2df93741c6518e12ba908ba4417c0610974a9.
 //
-// Solidity: event FeeParamsSet(uint8 gasToken, uint32 baseGasLimit, uint64 chainId, uint64 gasPrice, uint64 dataCostId)
+// Solidity: event FeeParamsSet(uint16 gasToken, uint32 baseGasLimit, uint64 chainId, uint64 gasPrice, uint64 dataCostId)
 func (_FeeOracleV2 *FeeOracleV2Filterer) ParseFeeParamsSet(log types.Log) (*FeeOracleV2FeeParamsSet, error) {
 	event := new(FeeOracleV2FeeParamsSet)
 	if err := _FeeOracleV2.contract.UnpackLog(event, "FeeParamsSet", log); err != nil {
@@ -2809,14 +2809,14 @@ func (it *FeeOracleV2ToNativeRateSetIterator) Close() error {
 
 // FeeOracleV2ToNativeRateSet represents a ToNativeRateSet event raised by the FeeOracleV2 contract.
 type FeeOracleV2ToNativeRateSet struct {
-	GasToken   uint8
+	GasToken   uint16
 	NativeRate *big.Int
 	Raw        types.Log // Blockchain specific contextual infos
 }
 
-// FilterToNativeRateSet is a free log retrieval operation binding the contract event 0xd665ed89605ad8a805fa330621c3a15c9e6de67d51dbc52a478a868e1ed616e4.
+// FilterToNativeRateSet is a free log retrieval operation binding the contract event 0x770404c81b5a366795e9a06ff3969e3fb2eb0515b7282e986f261c180b97623d.
 //
-// Solidity: event ToNativeRateSet(uint8 gasToken, uint256 nativeRate)
+// Solidity: event ToNativeRateSet(uint16 gasToken, uint256 nativeRate)
 func (_FeeOracleV2 *FeeOracleV2Filterer) FilterToNativeRateSet(opts *bind.FilterOpts) (*FeeOracleV2ToNativeRateSetIterator, error) {
 
 	logs, sub, err := _FeeOracleV2.contract.FilterLogs(opts, "ToNativeRateSet")
@@ -2826,9 +2826,9 @@ func (_FeeOracleV2 *FeeOracleV2Filterer) FilterToNativeRateSet(opts *bind.Filter
 	return &FeeOracleV2ToNativeRateSetIterator{contract: _FeeOracleV2.contract, event: "ToNativeRateSet", logs: logs, sub: sub}, nil
 }
 
-// WatchToNativeRateSet is a free log subscription operation binding the contract event 0xd665ed89605ad8a805fa330621c3a15c9e6de67d51dbc52a478a868e1ed616e4.
+// WatchToNativeRateSet is a free log subscription operation binding the contract event 0x770404c81b5a366795e9a06ff3969e3fb2eb0515b7282e986f261c180b97623d.
 //
-// Solidity: event ToNativeRateSet(uint8 gasToken, uint256 nativeRate)
+// Solidity: event ToNativeRateSet(uint16 gasToken, uint256 nativeRate)
 func (_FeeOracleV2 *FeeOracleV2Filterer) WatchToNativeRateSet(opts *bind.WatchOpts, sink chan<- *FeeOracleV2ToNativeRateSet) (event.Subscription, error) {
 
 	logs, sub, err := _FeeOracleV2.contract.WatchLogs(opts, "ToNativeRateSet")
@@ -2863,9 +2863,9 @@ func (_FeeOracleV2 *FeeOracleV2Filterer) WatchToNativeRateSet(opts *bind.WatchOp
 	}), nil
 }
 
-// ParseToNativeRateSet is a log parse operation binding the contract event 0xd665ed89605ad8a805fa330621c3a15c9e6de67d51dbc52a478a868e1ed616e4.
+// ParseToNativeRateSet is a log parse operation binding the contract event 0x770404c81b5a366795e9a06ff3969e3fb2eb0515b7282e986f261c180b97623d.
 //
-// Solidity: event ToNativeRateSet(uint8 gasToken, uint256 nativeRate)
+// Solidity: event ToNativeRateSet(uint16 gasToken, uint256 nativeRate)
 func (_FeeOracleV2 *FeeOracleV2Filterer) ParseToNativeRateSet(log types.Log) (*FeeOracleV2ToNativeRateSet, error) {
 	event := new(FeeOracleV2ToNativeRateSet)
 	if err := _FeeOracleV2.contract.UnpackLog(event, "ToNativeRateSet", log); err != nil {

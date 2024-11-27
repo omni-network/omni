@@ -18,8 +18,8 @@ contract FeeOracleV2_Test is Test {
 
     uint96 protocolFee = 1 gwei;
 
-    uint8 gasTokenA = 1;
-    uint8 gasTokenB = 2;
+    uint16 gasTokenA = 1;
+    uint16 gasTokenB = 2;
 
     uint64 chainAId = 1;
     uint64 chainBId = 2;
@@ -101,8 +101,8 @@ contract FeeOracleV2_Test is Test {
     function test_feeFor() public {
         uint64 dataCostId = feeOracle.execDataCostId(chainBId);
 
-        uint8 execGasToken = feeOracle.execGasToken(chainBId);
-        uint8 dataGasToken = feeOracle.dataGasToken(dataCostId);
+        uint16 execGasToken = feeOracle.execGasToken(chainBId);
+        uint16 dataGasToken = feeOracle.dataGasToken(dataCostId);
 
         vm.startPrank(manager);
 
@@ -467,7 +467,7 @@ contract FeeOracleV2_Test is Test {
     }
 
     function test_setToNativeRate() public {
-        uint8 gasToken = gasTokenB;
+        uint16 gasToken = gasTokenB;
         uint256 newToNativeRate = feeOracle.tokenToNativeRate(gasToken) + 1e6;
 
         // only manager can set to native rate

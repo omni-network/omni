@@ -24,7 +24,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     /**
      * @notice Conversion rate from `gasToken` to this chain's native token (normalized by CONVERSION_RATE_DENOM)
      */
-    mapping(uint8 gasToken => uint256) public tokenToNativeRate;
+    mapping(uint16 gasToken => uint256) public tokenToNativeRate;
 
     /**
      * @notice Fee parameters for a specific chain, by chain ID.
@@ -134,14 +134,14 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     /**
      * @notice Returns the gas token for a destination chain.
      */
-    function execGasToken(uint64 chainId) external view returns (uint8) {
+    function execGasToken(uint64 chainId) external view returns (uint16) {
         return _feeParams[chainId].gasToken;
     }
 
     /**
      * @notice Returns the gas token for a data cost ID.
      */
-    function dataGasToken(uint64 dataCostId) external view returns (uint8) {
+    function dataGasToken(uint64 dataCostId) external view returns (uint16) {
         return _dataCostParams[dataCostId].gasToken;
     }
 
@@ -232,7 +232,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     /**
      * @notice Set the to native conversion rate for a gas token.
      */
-    function setToNativeRate(uint8 gasToken, uint256 nativeRate) external onlyManager {
+    function setToNativeRate(uint16 gasToken, uint256 nativeRate) external onlyManager {
         _setToNativeRate(gasToken, nativeRate);
     }
 
@@ -364,7 +364,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     /**
      * @notice Set the to-native conversion rate for a gas token.
      */
-    function _setToNativeRate(uint8 gasToken, uint256 nativeRate) internal {
+    function _setToNativeRate(uint16 gasToken, uint256 nativeRate) internal {
         if (nativeRate == 0) revert IFeeOracleV2.ZeroNativeRate();
         if (gasToken == 0) revert IFeeOracleV2.ZeroGasToken();
 
