@@ -18,6 +18,7 @@ package cursor
 
 import (
 	"context"
+	"maps"
 	"slices"
 	"time"
 
@@ -26,6 +27,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
+	"cosmossdk.io/orm/types/ormerrors"
 	db "github.com/cosmos/cosmos-db"
 )
 
@@ -100,9 +102,8 @@ func (s *Store) WorkerOffsets(
 	return resp, nil
 }
 
-// Save cursor for the provided streamer.
-// Existing cursors' stream offsets are replaced and confirmed is reset to false.
-func (s *Store) Save(
+// Insert cursor for the provided streamer if it doesn't exist, otherwise ignore (keep existing).
+func (s *Store) Insert(
 	ctx context.Context,
 	srcVersion xchain.ChainVersion,
 	destChain uint64,
@@ -127,9 +128,25 @@ func (s *Store) Save(
 		StreamOffsetsByShard: offsetsByShard,
 	}
 
-	err := s.db.Save(ctx, c)
-	if err != nil {
-		return errors.Wrap(err, "save cursor")
+	err := s.db.Insert(ctx, c)
+	if errors.Is(err, ormerrors.AlreadyExists) {
+		// Cursor already exists, verify that offsets are identical
+		existing, err := s.db.Get(ctx, srcVersion.ID, uint32(srcVersion.ConfLevel), destChain, attestOffset)
+		if err != nil {
+			return errors.Wrap(err, "get cursor")
+		} else if !maps.Equal(offsetsByShard, existing.GetStreamOffsetsByShard()) { // For now just log a bug if this happens.
+			log.Error(ctx, "Unexpected existing cursor offset mismatch [BUG]", nil,
+				"src_chain_version", s.network.ChainVersionName(srcVersion),
+				"dest_chain", s.network.ChainName(destChain),
+				"attest_offset", attestOffset,
+				"existing", existing.GetStreamOffsetsByShard(),
+				"new", offsetsByShard,
+			)
+		}
+
+		return nil // Don't update latest metric (since existing may be confirmed).
+	} else if err != nil {
+		return errors.Wrap(err, "insert cursor")
 	}
 
 	latestOffset.

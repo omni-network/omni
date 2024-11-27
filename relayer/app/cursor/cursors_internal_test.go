@@ -65,9 +65,13 @@ func TestStore(t *testing.T) {
 		if msgOffset != 0 {
 			msgs = append(msgs, xchain.Msg{MsgID: xchain.MsgID{StreamID: stream, StreamOffset: msgOffset}})
 		}
-		err := store.Save(ctx, stream.ChainVersion(), stream.DestChainID, attOffset, map[xchain.StreamID][]xchain.Msg{
+		err := store.Insert(ctx, stream.ChainVersion(), stream.DestChainID, attOffset, map[xchain.StreamID][]xchain.Msg{
 			stream: msgs,
 		})
+		require.NoError(t, err)
+
+		// Subsequent insert should be no-op
+		err = store.Insert(ctx, stream.ChainVersion(), stream.DestChainID, attOffset, map[xchain.StreamID][]xchain.Msg{})
 		require.NoError(t, err)
 	}
 
