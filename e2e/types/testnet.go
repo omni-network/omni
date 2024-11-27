@@ -110,14 +110,13 @@ func (t Testnet) BroadcastNode() *e2e.Node {
 // ArchiveNode returns the last node running in ModeArchive.
 // Note that this is different from the CometBFT Testnet.ArchiveNodes() method.
 func (t Testnet) ArchiveNode() (*e2e.Node, bool) {
-	var last *e2e.Node
 	for _, node := range t.Nodes {
 		if node.Mode == ModeArchive {
-			last = node
+			return node, true
 		}
 	}
 
-	return last, last != nil
+	return nil, false
 }
 
 // HasPerturbations returns whether the network has any perturbations.
