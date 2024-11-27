@@ -1,20 +1,14 @@
 # SolverNet
 
-SolverNet is Omni’s solution to the challenges of cross-chain application development and user experience. By leveraging an intent-based architecture and a competitive solver network, SolverNet simplifies cross-rollup execution while maintaining security and scalability.
-
-<img src="/img/solver_architecture.jpg" width="500px"/>
+SolverNet is Omni’s solution to the challenges of cross-chain application development and user experience. SolverNet establishes an intent-based architecture that leverages a competitve solver network alongside Omni Core for settlement.
 
 ## The Challenge of Cross-Chain Applications
 
 The rapid expansion of rollups in the Ethereum ecosystem has made it increasingly difficult for developers to easily access users and liquidity across these chains. While cross-chain applications have often been viewed as the solution, the industry still faces major adoption obstacles, despite significant investments in interoperability infrastructure. Our discussions with hundreds of developers have revealed two primary challenges:
 
-1. **Extended Development Timelines**
+1. **Extended Development Timelines**: Building a cross-chain application is resource-intensive, requiring up to four months for design, implementation, and security audits. In a fast-evolving industry where most applications are still pursuing product-market fit, this long development cycle is impractical.
 
-    Building a cross-chain application is resource-intensive, requiring up to four months for design, implementation, and security audits. In a fast-evolving industry where most applications are still pursuing product-market fit, this long development cycle is impractical.
-
-2. **Higher Security Risks**
-
-    Cross-chain implementations introduce complex smart contracts, increasing vulnerability to hacks. If an interoperability protocol is compromised, all applications relying on it are at risk. This heightened risk has discouraged widespread adoption of cross-chain applications.
+2. **Higher Security Risks**: Cross-chain implementations introduce complex smart contracts, increasing vulnerability to hacks. If an interoperability protocol is compromised, all applications relying on it are at risk. This heightened risk has discouraged widespread adoption of cross-chain applications.
 
 These challenges have stagnated cross-chain application adoption and left the fragmentation issue unresolved.
 
@@ -22,26 +16,21 @@ These challenges have stagnated cross-chain application adoption and left the fr
 
 Omni SolverNet leverages intent-based interactions and solver networks to offer developers a simpler, more secure alternative to traditional cross-chain applications. Our architecture enables:
 
-- **Easy Integration:**: Developers can access users and liquidity across rollups through a single frontend SDK without modifying their smart contracts. Integration timelines shrink from months to days.
-- **Seamless User Experience:** Users interact with applications on different rollups without needing to bridge assets, change wallets, or worry about gas fees across networks. This architecture is fully compatible with existing wallet setups.
+- **Easy Integration**: Developers can access users and liquidity across rollups through a single frontend SDK without modifying their smart contracts. Integration timelines shrink from months to days.
+- **Seamless User Experience**: Users interact with applications on different rollups without needing to bridge assets, change wallets, or worry about gas fees across networks. This architecture is fully compatible with existing wallet setups.
 
 By delegating cross-chain execution to solvers, Omni lets both developers and users operate without the usual complexities of bridging and multi-rollup deployments.
 
 Here’s how Omni’s solver network makes applications that are only deployed on one rollup available to users across all rollups:
 
-1. **Intent Submission**
-
-    A user deposits tokens into a smart contract on their rollup of choice (e.g., Arbitrum) and includes a payload specifying the action they want to execute on a destination rollup (e.g., Ethereum). This payload is emitted as an event.
-
-2. **Solver Action**
-
-    Solvers monitor intent events in real time. Upon detecting an executable intent, they simulate the transaction to ensure validity and then execute the specified function on the target rollup using the required tokens.
-
-3. **Completion Acknowledgment**
-
-    Once the execution is complete, the solver sends a cross-rollup message via Omni Core, confirming that the intent has been fulfilled. The origin rollup’s lockbox contract releases the user’s deposited funds to the solver, along with a small execution fee.
-
 <img src="/img/solver_model.jpg" width="500px"/>
+
+1. **Intent Submission**: A user deposits tokens into a smart contract on their rollup of choice (e.g., Arbitrum) and includes a payload specifying the action they want to execute on a destination rollup (e.g., Ethereum). This payload is emitted as an event.
+
+2. **Solver Execution**: Solvers monitor intent events in real time. Upon detecting an executable intent, they simulate the transaction to ensure validity and then execute the specified function on the target rollup using the required tokens.
+
+3. **Settlement**: Once the execution is complete, the solver sends a cross-rollup message via Omni Core, confirming that the intent has been fulfilled. The origin rollup’s lockbox contract releases the user’s deposited funds to the solver, along with a small execution fee.
+
 
 ### Results of a Successful Intent
 

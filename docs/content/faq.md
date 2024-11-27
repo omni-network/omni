@@ -1,9 +1,11 @@
-What chains does Omni support?
+# FAQ
 
-What is cross chain and chain abstraction?
+### What chains does Omni support?
 
-How does Omni compare to other cross chain or chain abstraction platforms?
+### What is cross chain and chain abstraction?
 
-What is the timeline for Core and SolverNet?
+### How does Omni compare to other cross chain or chain abstraction platforms?
 
-Is Omni a Layer 1?
+### What is the timeline for Core and SolverNet?
+
+### Is Omni a Layer 1 Blockchain?
