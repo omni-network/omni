@@ -22,7 +22,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     address public manager;
 
     /**
-     * @notice Conversion rate from this chain's gas token to another native token, by gas token ID.
+     * @notice Conversion rate from `gasToken` to this chain's native token (normalized by CONVERSION_RATE_DENOM)
      */
     mapping(uint8 gasToken => uint256) public tokenToNativeRate;
 
@@ -56,7 +56,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
         uint96 protocolFee_,
         FeeParams[] calldata feeParams_,
         DataCostParams[] calldata dataCostParams_,
-        NativeRateParams[] calldata nativeRateParams_
+        ToNativeRateParams[] calldata toNativeRateParams_
     ) public initializer {
         __Ownable_init(owner_);
 
@@ -64,7 +64,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
         _setProtocolFee(protocolFee_);
         _bulkSetFeeParams(feeParams_);
         _bulkSetDataCostParams(dataCostParams_);
-        _bulkSetToNativeRate(nativeRateParams_);
+        _bulkSetToNativeRate(toNativeRateParams_);
     }
 
     /// @inheritdoc IFeeOracle
@@ -84,7 +84,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
         if (_dataGasPrice == 0) revert IFeeOracleV2.NoFeeParams();
 
         // 16 gas per non-zero byte, assume non-zero bytes
-        uint256 dataGas = (d.baseDataBuffer + data.length) * d.gasPerByte;
+        uint256 dataGas = (d.baseBytes + data.length) * d.gasPerByte;
 
         return protocolFee + (p.baseGasLimit + gasLimit) * _execGasPrice + (dataGas * _dataGasPrice);
     }
@@ -125,10 +125,10 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     }
 
     /**
-     * @notice Returns the base data buffer for a data cost ID.
+     * @notice Returns the base bytes buffer for a data cost ID.
      */
-    function baseDataBuffer(uint64 dataCostId) external view returns (uint32) {
-        return _dataCostParams[dataCostId].baseDataBuffer;
+    function baseBytes(uint64 dataCostId) external view returns (uint32) {
+        return _dataCostParams[dataCostId].baseBytes;
     }
 
     /**
@@ -167,13 +167,6 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     }
 
     /**
-     * @notice Returns the to-native conversion rate for a data cost ID.
-     */
-    function toNativeRateData(uint64 dataCostId) external view returns (uint256) {
-        return tokenToNativeRate[_dataCostParams[dataCostId].gasToken];
-    }
-
-    /**
      * @notice Set the fee parameters for a list of destination chains.
      */
     function bulkSetFeeParams(FeeParams[] calldata params) external onlyManager {
@@ -190,7 +183,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     /**
      * @notice Set the to-native conversion rate for a list of gas tokens.
      */
-    function bulkSetToNativeRate(NativeRateParams[] calldata params) external onlyManager {
+    function bulkSetToNativeRate(ToNativeRateParams[] calldata params) external onlyManager {
         _bulkSetToNativeRate(params);
     }
 
@@ -216,10 +209,10 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     }
 
     /**
-     * @notice Set the base data buffer for a data cost ID.
+     * @notice Set the base bytes buffer for a data cost ID.
      */
-    function setBaseDataBuffer(uint64 dataCostId, uint32 newBaseDataBuffer) external onlyManager {
-        _setBaseDataBuffer(dataCostId, newBaseDataBuffer);
+    function setBaseBytes(uint64 dataCostId, uint32 newBaseBytes) external onlyManager {
+        _setBaseBytes(dataCostId, newBaseBytes);
     }
 
     /**
@@ -272,7 +265,7 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
 
             _feeParams[p.chainId] = p;
 
-            emit FeeParamsSet(p.gasToken, p.chainId, p.gasPrice, p.dataCostId);
+            emit FeeParamsSet(p.gasToken, p.baseGasLimit, p.chainId, p.gasPrice, p.dataCostId);
         }
     }
 
@@ -284,29 +277,23 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
             DataCostParams memory d = params[i];
 
             if (d.gasToken == 0) revert IFeeOracleV2.ZeroGasToken();
-            if (d.dataCostId == 0) revert IFeeOracleV2.ZeroDataCostId();
+            if (d.id == 0) revert IFeeOracleV2.ZeroDataCostId();
             if (d.gasPrice == 0) revert IFeeOracleV2.ZeroGasPrice();
             if (d.gasPerByte == 0) revert IFeeOracleV2.ZeroGasPerByte();
 
-            _dataCostParams[d.dataCostId] = d;
+            _dataCostParams[d.id] = d;
 
-            emit DataCostParamsSet(d.gasToken, d.dataCostId, d.gasPrice, d.gasPerByte);
+            emit DataCostParamsSet(d.gasToken, d.baseBytes, d.id, d.gasPrice, d.gasPerByte);
         }
     }
 
     /**
      * @notice Set the to-native conversion rate for a list of gas tokens.
      */
-    function _bulkSetToNativeRate(NativeRateParams[] calldata params) internal {
+    function _bulkSetToNativeRate(ToNativeRateParams[] calldata params) internal {
         for (uint256 i = 0; i < params.length; i++) {
-            NativeRateParams memory n = params[i];
-
-            if (n.gasToken == 0) revert IFeeOracleV2.ZeroGasToken();
-            if (n.nativeRate == 0) revert IFeeOracleV2.ZeroNativeRate();
-
-            tokenToNativeRate[n.gasToken] = n.nativeRate;
-
-            emit ToNativeRateSet(n.gasToken, n.nativeRate);
+            ToNativeRateParams memory n = params[i];
+            _setToNativeRate(n.gasToken, n.nativeRate);
         }
     }
 
@@ -343,13 +330,13 @@ contract FeeOracleV2 is IFeeOracle, IFeeOracleV2, OwnableUpgradeable {
     }
 
     /**
-     * @notice Set the base data buffer for a data cost ID.
+     * @notice Set the base bytes buffer for a data cost ID.
      */
-    function _setBaseDataBuffer(uint64 dataCostId, uint32 newBaseDataBuffer) internal {
+    function _setBaseBytes(uint64 dataCostId, uint32 newBaseBytes) internal {
         if (dataCostId == 0) revert IFeeOracleV2.ZeroDataCostId();
 
-        _dataCostParams[dataCostId].baseDataBuffer = newBaseDataBuffer;
-        emit BaseDataBufferSet(dataCostId, newBaseDataBuffer);
+        _dataCostParams[dataCostId].baseBytes = newBaseBytes;
+        emit BaseBytesSet(dataCostId, newBaseBytes);
     }
 
     /**

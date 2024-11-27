@@ -61,22 +61,22 @@ contract FeeOracleV2_Test is Test {
         IFeeOracleV2.DataCostParams[] memory dataCostParams = new IFeeOracleV2.DataCostParams[](2);
         dataCostParams[0] = IFeeOracleV2.DataCostParams({
             gasToken: gasTokenA,
-            baseDataBuffer: 100,
-            dataCostId: dataCostAId,
+            baseBytes: 100,
+            id: dataCostAId,
             gasPrice: 1 gwei,
             gasPerByte: 1e2
         });
         dataCostParams[1] = IFeeOracleV2.DataCostParams({
             gasToken: gasTokenB,
-            baseDataBuffer: 200,
-            dataCostId: dataCostBId,
+            baseBytes: 200,
+            id: dataCostBId,
             gasPrice: 2 gwei,
             gasPerByte: 2e2
         });
 
-        IFeeOracleV2.NativeRateParams[] memory nativeRateParams = new IFeeOracleV2.NativeRateParams[](2);
-        nativeRateParams[0] = IFeeOracleV2.NativeRateParams({ gasToken: gasTokenA, nativeRate: 1e18 });
-        nativeRateParams[1] = IFeeOracleV2.NativeRateParams({ gasToken: gasTokenB, nativeRate: 2e18 });
+        IFeeOracleV2.ToNativeRateParams[] memory toNativeRateParams = new IFeeOracleV2.ToNativeRateParams[](2);
+        toNativeRateParams[0] = IFeeOracleV2.ToNativeRateParams({ gasToken: gasTokenA, nativeRate: 1e18 });
+        toNativeRateParams[1] = IFeeOracleV2.ToNativeRateParams({ gasToken: gasTokenB, nativeRate: 2e18 });
 
         address impl = address(new FeeOracleV2());
         feeOracle = FeeOracleV2(
@@ -91,7 +91,7 @@ contract FeeOracleV2_Test is Test {
                         protocolFee,
                         feeParams,
                         dataCostParams,
-                        nativeRateParams
+                        toNativeRateParams
                     )
                 )
             )
@@ -147,16 +147,16 @@ contract FeeOracleV2_Test is Test {
 
         feeOracle.setBaseGasLimit(chainBId, baseGasLimit); // reset
 
-        // change base data buffer
-        uint32 baseDataBuffer = feeOracle.baseDataBuffer(dataCostId);
+        // change base data bytes buffer
+        uint32 baseBytes = feeOracle.baseBytes(dataCostId);
 
-        feeOracle.setBaseDataBuffer(dataCostId, baseDataBuffer * 2);
+        feeOracle.setBaseBytes(dataCostId, baseBytes * 2);
         assertEq(fee < feeOracle.feeFor(chainBId, data, gasLimit), true); // should be higher
 
-        feeOracle.setBaseDataBuffer(dataCostId, baseDataBuffer / 2);
+        feeOracle.setBaseBytes(dataCostId, baseBytes / 2);
         assertEq(fee > feeOracle.feeFor(chainBId, data, gasLimit), true); // should be lower
 
-        feeOracle.setBaseDataBuffer(dataCostId, baseDataBuffer); // reset
+        feeOracle.setBaseBytes(dataCostId, baseBytes); // reset
 
         // change exec to native rate
         uint256 execToNativeRate = feeOracle.toNativeRate(chainBId);
@@ -170,7 +170,7 @@ contract FeeOracleV2_Test is Test {
         feeOracle.setToNativeRate(execGasToken, execToNativeRate); // reset
 
         // change data to native rate
-        uint256 dataToNativeRate = feeOracle.toNativeRateData(dataCostId);
+        uint256 dataToNativeRate = feeOracle.tokenToNativeRate(dataGasToken);
 
         feeOracle.setToNativeRate(dataGasToken, dataToNativeRate * 2);
         assertEq(fee < feeOracle.feeFor(chainBId, data, gasLimit), true); // should be higher
@@ -264,24 +264,24 @@ contract FeeOracleV2_Test is Test {
 
         feeParams[0] = IFeeOracleV2.DataCostParams({
             gasToken: gasTokenA,
-            baseDataBuffer: feeOracle.baseDataBuffer(dataCostAId) + 1,
-            dataCostId: dataCostAId,
+            baseBytes: feeOracle.baseBytes(dataCostAId) + 1,
+            id: dataCostAId,
             gasPrice: feeOracle.dataGasPrice(dataCostAId) + 1 gwei,
             gasPerByte: 1e2
         });
 
         feeParams[1] = IFeeOracleV2.DataCostParams({
             gasToken: gasTokenB,
-            baseDataBuffer: feeOracle.baseDataBuffer(dataCostBId) + 2,
-            dataCostId: dataCostBId,
+            baseBytes: feeOracle.baseBytes(dataCostBId) + 2,
+            id: dataCostBId,
             gasPrice: feeOracle.dataGasPrice(dataCostBId) + 2 gwei,
             gasPerByte: 2e2
         });
 
         feeParams[2] = IFeeOracleV2.DataCostParams({
             gasToken: gasTokenA,
-            baseDataBuffer: 123,
-            dataCostId: 123_456, // new data cost id
+            baseBytes: 123,
+            id: 123_456, // new data cost id
             gasPrice: 123 gwei,
             gasPerByte: 3e2
         });
@@ -296,38 +296,38 @@ contract FeeOracleV2_Test is Test {
 
         for (uint256 i = 0; i < feeParams.length; i++) {
             IFeeOracleV2.DataCostParams memory p = feeParams[i];
-            assertEq(feeOracle.dataGasToken(p.dataCostId), p.gasToken);
-            assertEq(feeOracle.baseDataBuffer(p.dataCostId), p.baseDataBuffer);
-            assertEq(feeOracle.dataGasPrice(p.dataCostId), p.gasPrice);
-            assertEq(feeOracle.dataGasPerByte(p.dataCostId), p.gasPerByte);
+            assertEq(feeOracle.dataGasToken(p.id), p.gasToken);
+            assertEq(feeOracle.baseBytes(p.id), p.baseBytes);
+            assertEq(feeOracle.dataGasPrice(p.id), p.gasPrice);
+            assertEq(feeOracle.dataGasPerByte(p.id), p.gasPerByte);
         }
     }
 
     function test_bulkSetToNativeRate() public {
-        IFeeOracleV2.NativeRateParams[] memory nativeRateParams = new IFeeOracleV2.NativeRateParams[](3);
+        IFeeOracleV2.ToNativeRateParams[] memory toNativeRateParams = new IFeeOracleV2.ToNativeRateParams[](3);
 
-        nativeRateParams[0] = IFeeOracleV2.NativeRateParams({
+        toNativeRateParams[0] = IFeeOracleV2.ToNativeRateParams({
             gasToken: gasTokenA,
             nativeRate: feeOracle.tokenToNativeRate(gasTokenA) + 1
         });
 
-        nativeRateParams[1] = IFeeOracleV2.NativeRateParams({
+        toNativeRateParams[1] = IFeeOracleV2.ToNativeRateParams({
             gasToken: gasTokenB,
             nativeRate: feeOracle.tokenToNativeRate(gasTokenB) + 2
         });
 
-        nativeRateParams[2] = IFeeOracleV2.NativeRateParams({ gasToken: 3, nativeRate: 3e18 });
+        toNativeRateParams[2] = IFeeOracleV2.ToNativeRateParams({ gasToken: 3, nativeRate: 3e18 });
 
         // only manager can set bulk to native rate
         vm.expectRevert(IFeeOracleV2.NotManager.selector);
-        feeOracle.bulkSetToNativeRate(nativeRateParams);
+        feeOracle.bulkSetToNativeRate(toNativeRateParams);
 
-        // set bulk native rate params
+        // set bulk to native rate params
         vm.prank(manager);
-        feeOracle.bulkSetToNativeRate(nativeRateParams);
+        feeOracle.bulkSetToNativeRate(toNativeRateParams);
 
-        for (uint256 i = 0; i < nativeRateParams.length; i++) {
-            IFeeOracleV2.NativeRateParams memory p = nativeRateParams[i];
+        for (uint256 i = 0; i < toNativeRateParams.length; i++) {
+            IFeeOracleV2.ToNativeRateParams memory p = toNativeRateParams[i];
             assertEq(feeOracle.tokenToNativeRate(p.gasToken), p.nativeRate);
         }
     }
@@ -399,23 +399,23 @@ contract FeeOracleV2_Test is Test {
         assertEq(feeOracle.baseGasLimit(destChainId), newBaseGasLimit);
     }
 
-    function test_setBaseDataBuffer() public {
+    function test_setBaseBytes() public {
         uint64 dataCostId = dataCostBId;
-        uint32 newBaseDataBuffer = feeOracle.baseDataBuffer(dataCostId) + 100;
+        uint32 newBaseBytes = feeOracle.baseBytes(dataCostId) + 100;
 
         // only manager can set data size buffer
         vm.expectRevert(IFeeOracleV2.NotManager.selector);
-        feeOracle.setBaseDataBuffer(dataCostId, newBaseDataBuffer);
+        feeOracle.setBaseBytes(dataCostId, newBaseBytes);
 
         // no zero chain id
         vm.expectRevert(IFeeOracleV2.ZeroDataCostId.selector);
         vm.prank(manager);
-        feeOracle.setBaseDataBuffer(0, newBaseDataBuffer);
+        feeOracle.setBaseBytes(0, newBaseBytes);
 
         // set data size buffer
         vm.prank(manager);
-        feeOracle.setBaseDataBuffer(dataCostId, newBaseDataBuffer);
-        assertEq(feeOracle.baseDataBuffer(dataCostId), newBaseDataBuffer);
+        feeOracle.setBaseBytes(dataCostId, newBaseBytes);
+        assertEq(feeOracle.baseBytes(dataCostId), newBaseBytes);
     }
 
     function test_setDataCostId() public {

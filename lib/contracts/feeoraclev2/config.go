@@ -1,66 +1,202 @@
 package feeoraclev2
 
 import (
-	"sort"
-
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/tokens"
 )
 
-const defaultBaseGasLimit = 100_000
-const defaultBaseDataBuffer = 100
-const defaultGasPerByte = 16
+const defaultBaseGasLimitGwei = 100_000
+const defaultBaseBytes = 100
+const defaultGasPerByteGwei = 16
 
-const (
-	// Mainnets.
-	IDEthereum uint64 = 1
-
-	// Testnets.
-	IDSepolia uint64 = 11155111
-)
-
-type Config struct {
-	ID             uint64
-	BaseGasLimit   uint32
-	BaseDataBuffer uint32
-	GasPerByte     uint64
+type feeConfig struct {
+	ChainID      uint64
+	DataCostID   uint64
+	BaseGasLimit uint32
 }
 
-func initStatic() map[uint64]Config {
-	configs := make(map[uint64]Config, len(evmchain.All()))
-	for _, metadata := range evmchain.All() {
-		config := Config{
-			ID:           metadata.ChainID,
-			BaseGasLimit: defaultBaseGasLimit,
-		}
+type dataCostConfig struct {
+	ID         uint64
+	BaseBytes  uint32
+	GasPerByte uint64
+	GasToken   uint8
+}
 
-		// If the chain doesn't post data to another chain, add data cost configs
-		if metadata.PostsTo == 0 {
-			config.BaseDataBuffer = defaultBaseDataBuffer
-			config.GasPerByte = defaultGasPerByte
-		}
+var (
+	feeConfigs = map[uint64]feeConfig{
+		// Mainnets.
+		evmchain.IDEthereum: {
+			ChainID:      evmchain.IDEthereum,
+			DataCostID:   evmchain.IDEthereum,
+			BaseGasLimit: defaultBaseGasLimitGwei,
+		},
+		evmchain.IDOmniMainnet: {
+			ChainID:      evmchain.IDOmniMainnet,
+			DataCostID:   evmchain.IDOmniMainnet,
+			BaseGasLimit: defaultBaseGasLimitGwei,
+		},
+		evmchain.IDArbitrumOne: {
+			ChainID:      evmchain.IDArbitrumOne,
+			DataCostID:   evmchain.IDEthereum,
+			BaseGasLimit: defaultBaseGasLimitGwei,
+		},
+		evmchain.IDOptimism: {
+			ChainID:      evmchain.IDOptimism,
+			DataCostID:   evmchain.IDEthereum,
+			BaseGasLimit: defaultBaseGasLimitGwei,
+		},
+		evmchain.IDBase: {
+			ChainID:      evmchain.IDBase,
+			DataCostID:   evmchain.IDEthereum,
+			BaseGasLimit: defaultBaseGasLimitGwei,
+		},
 
-		configs[metadata.ChainID] = config
+		// Testnets.
+		evmchain.IDOmniStaging: {
+			ChainID:      evmchain.IDOmniStaging,
+			DataCostID:   evmchain.IDOmniStaging,
+			BaseGasLimit: defaultBaseGasLimitGwei,
+		},
+		evmchain.IDOmniOmega: {
+			ChainID:      evmchain.IDOmniOmega,
+			DataCostID:   evmchain.IDOmniOmega,
+			BaseGasLimit: defaultBaseGasLimitGwei,
+		},
+		evmchain.IDHolesky: {
+			ChainID:      evmchain.IDHolesky,
+			DataCostID:   evmchain.IDHolesky,
+			BaseGasLimit: defaultBaseGasLimitGwei,
+		},
+		evmchain.IDSepolia: {
+			ChainID:      evmchain.IDSepolia,
+			DataCostID:   evmchain.IDSepolia,
+			BaseGasLimit: defaultBaseGasLimitGwei,
+		},
+		evmchain.IDArbSepolia: {
+			ChainID:      evmchain.IDArbSepolia,
+			DataCostID:   evmchain.IDSepolia,
+			BaseGasLimit: defaultBaseGasLimitGwei,
+		},
+		evmchain.IDOpSepolia: {
+			ChainID:      evmchain.IDOpSepolia,
+			DataCostID:   evmchain.IDSepolia,
+			BaseGasLimit: defaultBaseGasLimitGwei,
+		},
+		evmchain.IDBaseSepolia: {
+			ChainID:      evmchain.IDBaseSepolia,
+			DataCostID:   evmchain.IDSepolia,
+			BaseGasLimit: defaultBaseGasLimitGwei,
+		},
+
+		// Ephemeral chains.
+		evmchain.IDOmniDevnet: {
+			ChainID:      evmchain.IDOmniDevnet,
+			DataCostID:   evmchain.IDOmniDevnet,
+			BaseGasLimit: defaultBaseGasLimitGwei,
+		},
+		evmchain.IDMockL1: {
+			ChainID:      evmchain.IDMockL1,
+			DataCostID:   evmchain.IDMockL1,
+			BaseGasLimit: defaultBaseGasLimitGwei,
+		},
+		evmchain.IDMockL2: {
+			ChainID:      evmchain.IDMockL2,
+			DataCostID:   evmchain.IDMockL2,
+			BaseGasLimit: defaultBaseGasLimitGwei,
+		},
+		evmchain.IDMockOp: {
+			ChainID:      evmchain.IDMockOp,
+			DataCostID:   evmchain.IDMockOp,
+			BaseGasLimit: defaultBaseGasLimitGwei,
+		},
+		evmchain.IDMockArb: {
+			ChainID:      evmchain.IDMockArb,
+			DataCostID:   evmchain.IDMockArb,
+			BaseGasLimit: defaultBaseGasLimitGwei,
+		},
 	}
 
-	return configs
-}
+	dataCostConfigs = map[uint64]dataCostConfig{
+		// Mainnets.
+		evmchain.IDEthereum: {
+			ID:         evmchain.IDEthereum,
+			BaseBytes:  defaultBaseBytes,
+			GasPerByte: defaultGasPerByteGwei,
+			GasToken:   gasTokenIDs[tokens.ETH],
+		},
+		evmchain.IDOmniMainnet: {
+			ID:         evmchain.IDOmniMainnet,
+			BaseBytes:  defaultBaseBytes,
+			GasPerByte: defaultGasPerByteGwei,
+			GasToken:   gasTokenIDs[tokens.OMNI],
+		},
 
-func GetConfig(chainID uint64) (Config, bool) {
-	cfg, ok := static[chainID]
+		// Testnets.
+		evmchain.IDOmniStaging: {
+			ID:         evmchain.IDOmniStaging,
+			BaseBytes:  defaultBaseBytes,
+			GasPerByte: defaultGasPerByteGwei,
+			GasToken:   gasTokenIDs[tokens.OMNI],
+		},
+		evmchain.IDOmniOmega: {
+			ID:         evmchain.IDOmniOmega,
+			BaseBytes:  defaultBaseBytes,
+			GasPerByte: defaultGasPerByteGwei,
+			GasToken:   gasTokenIDs[tokens.OMNI],
+		},
+		evmchain.IDHolesky: {
+			ID:         evmchain.IDHolesky,
+			BaseBytes:  defaultBaseBytes,
+			GasPerByte: defaultGasPerByteGwei,
+			GasToken:   gasTokenIDs[tokens.ETH],
+		},
+		evmchain.IDSepolia: {
+			ID:         evmchain.IDSepolia,
+			BaseBytes:  defaultBaseBytes,
+			GasPerByte: defaultGasPerByteGwei,
+			GasToken:   gasTokenIDs[tokens.ETH],
+		},
+
+		// Ephemeral chains.
+		evmchain.IDOmniDevnet: {
+			ID:         evmchain.IDOmniDevnet,
+			BaseBytes:  defaultBaseBytes,
+			GasPerByte: defaultGasPerByteGwei,
+			GasToken:   gasTokenIDs[tokens.OMNI],
+		},
+		evmchain.IDMockL1: {
+			ID:         evmchain.IDMockL1,
+			BaseBytes:  defaultBaseBytes,
+			GasPerByte: defaultGasPerByteGwei,
+			GasToken:   gasTokenIDs[tokens.ETH],
+		},
+		evmchain.IDMockL2: {
+			ID:         evmchain.IDMockL2,
+			BaseBytes:  defaultBaseBytes,
+			GasPerByte: defaultGasPerByteGwei,
+			GasToken:   gasTokenIDs[tokens.ETH],
+		},
+		evmchain.IDMockOp: {
+			ID:         evmchain.IDMockOp,
+			BaseBytes:  defaultBaseBytes,
+			GasPerByte: defaultGasPerByteGwei,
+			GasToken:   gasTokenIDs[tokens.ETH],
+		},
+		evmchain.IDMockArb: {
+			ID:         evmchain.IDMockArb,
+			BaseBytes:  defaultBaseBytes,
+			GasPerByte: defaultGasPerByteGwei,
+			GasToken:   gasTokenIDs[tokens.ETH],
+		},
+	}
+)
+
+func getFeeConfig(chainID uint64) (feeConfig, bool) {
+	cfg, ok := feeConfigs[chainID]
 	return cfg, ok
 }
 
-func AllConfigs() []Config {
-	var resp []Config
-	for _, cfg := range static {
-		resp = append(resp, cfg)
-	}
-
-	sort.Slice(resp, func(i, j int) bool {
-		return resp[i].ID < resp[j].ID
-	})
-
-	return resp
+func getDataCostConfig(chainID uint64) (dataCostConfig, bool) {
+	cfg, ok := dataCostConfigs[chainID]
+	return cfg, ok
 }
-
-var static = initStatic()

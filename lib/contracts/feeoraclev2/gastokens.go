@@ -11,26 +11,16 @@ var (
 	}
 )
 
-func GasTokenID(t tokens.Token) (uint8, bool) {
+func gasTokenID(t tokens.Token) (uint8, bool) {
 	id, ok := gasTokenIDs[t]
 	return id, ok
 }
 
-func GasTokenIDs() map[tokens.Token]uint8 {
+func allGasTokens() map[tokens.Token]uint8 {
 	result := make(map[tokens.Token]uint8, len(gasTokenIDs))
 	for k, v := range gasTokenIDs {
 		result[k] = v
 	}
 
 	return result
-}
-
-func FromGasTokenID(id uint8) (tokens.Token, bool) {
-	for t, i := range gasTokenIDs {
-		if i == id {
-			return t, true
-		}
-	}
-
-	return "", false
 }
