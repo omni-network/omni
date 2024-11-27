@@ -137,9 +137,9 @@ This creates the `./operator-private-key-{ADDRESS}` file containing the hex-enco
 
 ### 4. Fund the operator address
 
-When registering a validator, the operator address must self-delegate `100 OMNI` on the [Omni Omega](https://chainlist.org/chain/164) chain. It therefore needs to funded with slightly more than `100 OMNI` to pay for gas.
+When registering a validator, the operator address must self-delegate `100 native OMNI`. It therefore needs to funded with slightly more than `100 OMNI` to pay for gas. This applies for both testnet and mainnet.
 
-The [omega faucet](https://faucet.omni.network/) only provides a few OMNI at a time, so please reach out to the Omni team on Slack, providing your **operator address** and we will fund it with `200 OMNI`.
+Please reach out to the Omni team on Slack and share your **operator address**.
 
 ### 5. Add the operator address to Omni staking allow list
 
