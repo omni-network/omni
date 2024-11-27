@@ -1,3 +1,8 @@
+---
+slug: /
+---
+
+
 # Welcome
 
 Welcome to the Omni documentation! Omni is a technology designed to make the Ethereum ecosystem feel like a single chain for users and developers.

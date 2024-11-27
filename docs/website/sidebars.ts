@@ -36,7 +36,6 @@ const sidebars: SidebarsConfig = {
       label: 'Build with Core',
       items: [
         'core/intro',
-        'core/start',
         'core/xchain',
         'core/evm',
         'core/omega',
@@ -64,7 +63,6 @@ const sidebars: SidebarsConfig = {
       ],
       collapsed: true,
     },
-    'faq'
   ],
 };
 
