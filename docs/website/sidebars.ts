@@ -27,7 +27,6 @@ const sidebars: SidebarsConfig = {
         'learn/solvernet',
         'learn/token',
         'learn/whitepaper',
-        'learn/vision',
       ],
       collapsed: true,
     },

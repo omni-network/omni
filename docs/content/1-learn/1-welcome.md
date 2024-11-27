@@ -23,6 +23,12 @@ Omni is built around two primary components:
 
 Together, they form the **Omni Orderflow Engine**, infrastructure for coordinating and settling all cross-chain actions.
 
+## The Vision: An Open Orderflow Execution Engine
+
+Traditional finance relies on exclusive systems like Robinhood’s Payment for Order Flow (PFoF) deals with market makers like Citadel. These opaque agreements centralize power and concentrate benefits among a select few.
+
+Omni is building the open alternative: a permissionless orderflow execution engine. Anyone can participate in routing and executing cross-chain intents, ensuring users always get the best execution with full transparency. This infrastructure empowers developers, solvers, and users to build on equitable and open rails, setting the foundation for an equitable global financial system.
+
 ## Getting Started
 
 Explore the [Learn](/learn/why) section to dive into Omni’s purpose, architecture, and key components:
