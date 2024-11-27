@@ -9,7 +9,7 @@ This guide describes the process to configure and register a validator on **main
 ## Pre-requisites
 
 - Synced Omni full node (`halo`+ `geth` ) on the [latest release](https://github.com/omni-network/omni/releases/latest). Otherwise follow the [Run a Full Node](./run-full-node.md) guide first.
-- Ethereum L1 and multiple L2 RPC endpoints, required for cross-chain validation duties. See [Mainnet](../2-core/6-mainnet.md) and [Omega Testnet](../2-core/5-omega.md) for more details.
+- Ethereum L1 and multiple L2 RPC endpoints, required for cross-chain validation duties. See [Mainnet](/core/mainnet.md) and [Omega Testnet](/core/omega.md) for more details.
 
 ## Summary
 
