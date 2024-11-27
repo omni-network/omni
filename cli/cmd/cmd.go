@@ -29,6 +29,7 @@ func newOperatorCmds() *cobra.Command {
 
 	cmd.AddCommand(
 		newRegisterCmd(),
+		newDeregisterCmd(),
 		newInitCmd(),
 		newCreateValCmd(),
 		newCreateOperatorKeyCmd(),
@@ -55,6 +56,32 @@ Note the operator must already be registered with Eigen-Layer.`,
 			err := Register(cmd.Context(), cfg)
 			if err != nil {
 				return errors.Wrap(err, "registration failed")
+			}
+
+			return nil
+		},
+	}
+
+	bindRegConfig(cmd, &cfg)
+
+	return cmd
+}
+
+func newDeregisterCmd() *cobra.Command {
+	var cfg RegConfig
+
+	cmd := &cobra.Command{
+		Use:   "deregister",
+		Short: "Deregister an operator from the Omni AVS contract",
+		Long: `Deregister command expects a EigenLayer yaml config file as an argument
+to successfully deregister an operator from the Omni AVS contract.
+
+Note the operator must already be registered on the Omni AVS contract.`,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			err := Deregister(cmd.Context(), cfg)
+			if err != nil {
+				return errors.Wrap(err, "deregistration failed")
 			}
 
 			return nil
