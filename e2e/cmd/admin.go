@@ -30,7 +30,7 @@ func newAdminCmd(def *app.Definition) *cobra.Command {
 		newUpgradeBridgeNativeCmd(def, &cfg),
 		newUpgradeBridgeL1(def, &cfg),
 		newUpgradePortalRegistryCmd(def, &cfg),
-		newUpgradePortalFeeOracleCmd(def, &cfg),
+		newSetPortalFeeOracleV2Cmd(def, &cfg),
 		newAllowValidatorsCmd(def, &cfg),
 		newPlanUpgradeCmd(def, &cfg),
 		newAdminTestCmd(def),
@@ -195,12 +195,12 @@ func newUpgradePortalRegistryCmd(def *app.Definition, cfg *admin.Config) *cobra.
 	return cmd
 }
 
-func newUpgradePortalFeeOracleCmd(def *app.Definition, cfg *admin.Config) *cobra.Command {
+func newSetPortalFeeOracleV2Cmd(def *app.Definition, cfg *admin.Config) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "upgrade-portal-fee-oracle",
-		Short: "Upgrade OmniPortal's FeeOracle to the FeeOracleV2 contract.",
+		Use:   "set-portal-fee-oracle-v2",
+		Short: "Sets OmniPortal's FeeOracle to the FeeOracleV2 contract.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return admin.UpgradePortalFeeOracle(cmd.Context(), *def, *cfg)
+			return admin.SetPortalFeeOracleV2(cmd.Context(), *def, *cfg)
 		},
 	}
 

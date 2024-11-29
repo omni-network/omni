@@ -22,7 +22,7 @@ import { Script } from "forge-std/Script.sol";
 import { BridgeL1PostUpgradeTest } from "./BridgeL1PostUpgradeTest.sol";
 import { BridgeNativePostUpgradeTest } from "./BridgeNativePostUpgradeTest.sol";
 import { StakingPostUpgradeTest } from "./StakingPostUpgradeTest.sol";
-// import { FeeOraclePostUpdateTest } from "./FeeOraclePostUpdateTest.sol";
+import { FeeOracleV2PostUpdateTest } from "./FeeOracleV2PostUpdateTest.sol";
 
 /**
  * @title Admin
@@ -389,7 +389,7 @@ contract Admin is Script {
      * @param portal        The address of the OmniPortal contract.
      * @param newFeeOracle  The address of the new FeeOracleV2 contract.
      */
-    function setPortalFeeOracle(address admin, address portal, address newFeeOracle) public {
+    function setPortalFeeOracleV2(address admin, address portal, address newFeeOracle) public {
         address oldFeeOracle = OmniPortal(portal).feeOracle();
         require(oldFeeOracle != newFeeOracle, "new fee oracle required");
 
@@ -401,7 +401,7 @@ contract Admin is Script {
         require(FeeOracleV2(newFeeOracle).manager() != address(0), "fee oracle not initialized");
         require(FeeOracleV2(newFeeOracle).version() == 2, "fee oracle not FeeOracleV2");
 
-        // new FeeOraclePostUpdateTest().run(newFeeOracle);
+        new FeeOracleV2PostUpdateTest().run(newFeeOracle);
     }
 
     /**

@@ -105,9 +105,9 @@ func UpgradePortalRegistry(ctx context.Context, def app.Definition, cfg Config) 
 	return upgradePortalRegistry(ctx, s, c)
 }
 
-// UpgradePortalFeeOracle upgrades the OmniPortal's FeeOracle to the FeeOracleV2 contract.
-func UpgradePortalFeeOracle(ctx context.Context, def app.Definition, cfg Config) error {
-	return setup(def, cfg).run(ctx, upgradePortalFeeOracle)
+// SetPortalFeeOracleV2 upgrades the OmniPortal's FeeOracle to the FeeOracleV2 contract.
+func SetPortalFeeOracleV2(ctx context.Context, def app.Definition, cfg Config) error {
+	return setup(def, cfg).run(ctx, setPortalFeeOracleV2)
 }
 
 func upgradePortal(ctx context.Context, s shared, c chain) error {
@@ -319,13 +319,13 @@ func upgradePortalRegistry(ctx context.Context, s shared, c chain) error {
 	return nil
 }
 
-func upgradePortalFeeOracle(ctx context.Context, s shared, c chain) error {
+func setPortalFeeOracleV2(ctx context.Context, s shared, c chain) error {
 	addrs, err := contracts.GetAddresses(ctx, s.testnet.Network)
 	if err != nil {
 		return errors.Wrap(err, "get addresses")
 	}
 
-	calldata, err := adminABI.Pack("upgradePortalFeeOracle", s.manager, addrs.Portal, addrs.FeeOracleV2)
+	calldata, err := adminABI.Pack("setPortalFeeOracleV2", s.manager, addrs.Portal, addrs.FeeOracleV2)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
@@ -335,7 +335,7 @@ func upgradePortalFeeOracle(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "run forge", "out", out)
 	}
 
-	log.Info(ctx, "OmniPortal's FeeOracle upgraded ✅", "chain", c.Name, "addr", addrs.FeeOracleV2, "out", out)
+	log.Info(ctx, "OmniPortal's FeeOracle upgraded to V2 ✅", "chain", c.Name, "addr", addrs.FeeOracleV2, "out", out)
 
 	return nil
 }
