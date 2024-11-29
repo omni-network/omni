@@ -240,6 +240,10 @@ func (k Keeper) deliverDelegate(ctx context.Context, ev *bindings.StakingDelegat
 		return errors.New("validator does not exist", "validator", valAddr.String())
 	}
 
+	if ev.Amount == nil {
+		return errors.New("stake amount missing")
+	}
+
 	amountCoin, amountCoins := omniToBondCoin(ev.Amount)
 
 	k.createAccIfNone(ctx, delAddr)

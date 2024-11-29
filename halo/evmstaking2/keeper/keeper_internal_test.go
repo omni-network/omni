@@ -97,8 +97,8 @@ func TestDeliveryWithBrokenServer(t *testing.T) {
 
 	ethClientMock, err := ethclient.NewEngineMock(
 		ethclient.WithPortalRegister(netconf.SimnetNetwork()),
-		ethclient.WithMockSelfDelegation(privKey.PubKey(), ethStake),
 		ethclient.WithMockValidatorCreation(privKey.PubKey()),
+		ethclient.WithMockSelfDelegation(privKey.PubKey(), ethStake),
 	)
 	require.NoError(t, err)
 	sServer := brokenMsgServerStub{errors.New("unconditional error")}
@@ -121,6 +121,67 @@ func TestDeliveryWithBrokenServer(t *testing.T) {
 	}
 }
 
+func TestDeliveryOfInvalidEvents(t *testing.T) {
+	t.Parallel()
+
+	deliverInterval := int64(3)
+	ethStake := int64(7)
+	privKey := k1.GenPrivKey()
+
+	ethClientMock, err := ethclient.NewEngineMock(
+		ethclient.WithPortalRegister(netconf.SimnetNetwork()),
+		ethclient.WithMockValidatorCreation(privKey.PubKey()),
+		ethclient.WithMockSelfDelegation(privKey.PubKey(), ethStake),
+	)
+	require.NoError(t, err)
+
+	keeper, ctx := setupKeeper(t, deliverInterval, ethClientMock, new(authKeeperStub), new(bankKeeperStub), new(stakingKeeperStub), new(msgServerStub))
+
+	var hash common.Hash
+	events, err := keeper.Prepare(ctx, hash)
+	require.NoError(t, err)
+
+	expectDelegates := 1
+	expectCreates := 1
+	expectTotalEvents := expectDelegates + expectCreates
+
+	require.Len(t, events, expectTotalEvents)
+
+	// Break the address for both events and make sure parsing fails
+	for _, event := range events {
+		event.Address = []byte{}
+		err := keeper.parseAndDeliver(ctx, &event)
+		require.True(t, strings.Contains(err.Error(), "invalid address length"))
+	}
+
+	// Break the topics for both events and make sure parsing fails
+	for _, event := range events {
+		event.Topics = [][]byte{}
+		err := keeper.parseAndDeliver(ctx, &event)
+		require.True(t, strings.Contains(err.Error(), "empty topics"))
+	}
+
+	createValEvent := events[0]
+	// Break the data for the create validator event
+	createValEvent.Data = []byte{}
+	err = keeper.parseAndDeliver(ctx, &createValEvent)
+	require.True(t, strings.Contains(err.Error(), "create validator: pubkey to cosmos"))
+
+	// Deliver the event so that we can test delegation
+	err = keeper.parseAndDeliver(ctx, &events[0])
+	require.NoError(t, err)
+
+	// Can't add same validator twice (this relies on sKeeper stub working correctly)
+	err = keeper.parseAndDeliver(ctx, &events[0])
+	require.True(t, strings.Contains(err.Error(), "create validator: validator already exists"))
+
+	delegateEvent := events[1]
+	// Break the data for the delegate event
+	delegateEvent.Data = []byte{}
+	err = keeper.parseAndDeliver(ctx, &delegateEvent)
+	require.True(t, strings.Contains(err.Error(), "stake amount missing"))
+}
+
 func TestHappyPathDelivery(t *testing.T) {
 	t.Parallel()
 
@@ -131,8 +192,8 @@ func TestHappyPathDelivery(t *testing.T) {
 
 	ethClientMock, err := ethclient.NewEngineMock(
 		ethclient.WithPortalRegister(netconf.SimnetNetwork()),
-		ethclient.WithMockSelfDelegation(privKey.PubKey(), ethStake),
 		ethclient.WithMockValidatorCreation(privKey.PubKey()),
+		ethclient.WithMockSelfDelegation(privKey.PubKey(), ethStake),
 	)
 	require.NoError(t, err)
 
@@ -235,19 +296,21 @@ func setupKeeper(
 }
 
 type stakingKeeperStub struct {
-	// calls is the number of calls to GetValidator
-	calls uint32
+	validators map[string]bool
 }
 
-// GetValidator returns no errors on the first call, because it is called on delegation
-// event delivery for the first time and the validator should be available.
-// Second time it is called on a validator creation event and it should return an error
-// on the pubkey of the new validator.
-func (m *stakingKeeperStub) GetValidator(context.Context, sdk.ValAddress) (stypes.Validator, error) {
-	m.calls++
-	if m.calls == 1 {
+// GetValidator memorizes all addresses and returns an error for calls it never seen before.
+func (m *stakingKeeperStub) GetValidator(ctx context.Context, addr sdk.ValAddress) (stypes.Validator, error) {
+	if m.validators == nil {
+		m.validators = make(map[string]bool)
+	}
+
+	hexAddr := string(addr)
+
+	if _, found := m.validators[hexAddr]; found {
 		return stypes.Validator{}, nil
 	}
+	m.validators[hexAddr] = true
 
 	return stypes.Validator{}, errors.New("validator does not exist")
 }
