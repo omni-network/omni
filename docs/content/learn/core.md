@@ -1,4 +1,4 @@
-# Omni Core
+# Core
 
 Omni Core is the building blocks layer of the Omni Orderflow Engine, purpose-built for fast, secure cross-rollup communicaiton and computation. It combines secure cross-rollup messaging with the Omni EVM.
 

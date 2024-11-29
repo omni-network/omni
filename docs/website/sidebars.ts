@@ -47,6 +47,7 @@ const sidebars: SidebarsConfig = {
       label: 'Build with SolverNet',
       items: [
         'solvernet/intro',
+        'solvernet/how',
       ],
       collapsed: true,
     },

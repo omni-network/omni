@@ -9,5 +9,6 @@ If your team would like to be considered as an early build partner as we iterate
 We are building SolverNet in the open.
 
 You can follow along, and even contribute, to our progresse here:
+
 - [open source solver](https://github.com/omni-network/omni/tree/main/solver)
 - [solvernet contracts](https://github.com/omni-network/omni/tree/main/contracts/solve)
