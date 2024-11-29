@@ -2,6 +2,7 @@ package geth
 
 import (
 	"encoding/hex"
+	"math/big"
 	"os"
 	"path/filepath"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/eth/downloader"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 // snapshotCacheMB increases the default snapshot cache size of 102MB.
@@ -79,7 +81,7 @@ func WriteConfigTOML(conf Config, path string) error {
 // MakeGethConfig returns the full omni geth config for the provided custom config.
 func MakeGethConfig(conf Config) FullConfig {
 	cfg := defaultGethConfig()
-	cfg.Eth.RPCTxFeeCap = 100 // 100 OMNI
+	cfg.Eth.GPO.MaxPrice = big.NewInt(params.GWei) // Very low gas tip cap (1gwei), blocks are far from half full.
 	cfg.Eth.NetworkId = conf.ChainID
 	cfg.Node.DataDir = "/geth" // Mount inside docker container
 	cfg.Node.IPCPath = "/geth/geth.ipc"
