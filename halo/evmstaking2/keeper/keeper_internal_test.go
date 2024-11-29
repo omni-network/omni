@@ -88,6 +88,39 @@ func TestInsertAndDeleteEVMEvents(t *testing.T) {
 	}
 }
 
+func TestDeliveryWithBrokenServer(t *testing.T) {
+	t.Parallel()
+
+	deliverInterval := int64(3)
+	ethStake := int64(7)
+	privKey := k1.GenPrivKey()
+
+	ethClientMock, err := ethclient.NewEngineMock(
+		ethclient.WithPortalRegister(netconf.SimnetNetwork()),
+		ethclient.WithMockSelfDelegation(privKey.PubKey(), ethStake),
+		ethclient.WithMockValidatorCreation(privKey.PubKey()),
+	)
+	require.NoError(t, err)
+	sServer := brokenMsgServerStub{errors.New("unconditional error")}
+
+	keeper, ctx := setupKeeper(t, deliverInterval, ethClientMock, new(authKeeperStub), new(bankKeeperStub), new(stakingKeeperStub), &sServer)
+
+	var hash common.Hash
+	events, err := keeper.Prepare(ctx, hash)
+	require.NoError(t, err)
+
+	expectDelegates := 1
+	expectCreates := 1
+	expectTotalEvents := expectDelegates + expectCreates
+
+	require.Len(t, events, expectTotalEvents)
+
+	for _, event := range events {
+		err := keeper.parseAndDeliver(ctx, &event)
+		require.True(t, strings.Contains(err.Error(), sServer.err.Error()))
+	}
+}
+
 func TestHappyPathDelivery(t *testing.T) {
 	t.Parallel()
 
@@ -246,12 +279,24 @@ type msgServerStub struct {
 	delegateMsgBuffer        []*stypes.MsgDelegate
 }
 
-func (s *msgServerStub) CreateValidator(_ context.Context, msg *stypes.MsgCreateValidator) (*stypes.MsgCreateValidatorResponse, error) {
+func (s *msgServerStub) CreateValidator(ctx context.Context, msg *stypes.MsgCreateValidator) (*stypes.MsgCreateValidatorResponse, error) {
 	s.createValidatorMsgBuffer = append(s.createValidatorMsgBuffer, msg)
 	return new(stypes.MsgCreateValidatorResponse), nil
 }
 
-func (s *msgServerStub) Delegate(_ context.Context, msg *stypes.MsgDelegate) (*stypes.MsgDelegateResponse, error) {
+func (s *msgServerStub) Delegate(ctx context.Context, msg *stypes.MsgDelegate) (*stypes.MsgDelegateResponse, error) {
 	s.delegateMsgBuffer = append(s.delegateMsgBuffer, msg)
 	return new(stypes.MsgDelegateResponse), nil
+}
+
+type brokenMsgServerStub struct {
+	err error
+}
+
+func (s *brokenMsgServerStub) CreateValidator(ctx context.Context, msg *stypes.MsgCreateValidator) (*stypes.MsgCreateValidatorResponse, error) {
+	return nil, s.err
+}
+
+func (s *brokenMsgServerStub) Delegate(ctx context.Context, msg *stypes.MsgDelegate) (*stypes.MsgDelegateResponse, error) {
+	return nil, s.err
 }
