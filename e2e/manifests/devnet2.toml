@@ -1,0 +1,15 @@
+# Devnet2 is the simple multi-validator devnet. It contains 2 validators and has evm-staking-module feature enabled.
+network = "devnet"
+anvil_chains = ["mock_l1", "mock_l2"]
+
+multi_omni_evms = true
+prometheus = true
+deploy_solve = true
+
+feature_flags = ["evm-staking-module"]
+
+[node.validator01]
+[node.validator02]
+
+[node.fullnode01]
+mode="archive"

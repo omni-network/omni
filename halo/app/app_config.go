@@ -1,10 +1,14 @@
 package app
 
 import (
+	"context"
+
 	attestmodule "github.com/omni-network/omni/halo/attest/module"
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/evmslashing"
 	"github.com/omni-network/omni/halo/evmstaking"
+	evmstaking2module "github.com/omni-network/omni/halo/evmstaking2/module"
+	evmstaking2types "github.com/omni-network/omni/halo/evmstaking2/types"
 	"github.com/omni-network/omni/halo/evmupgrade"
 	portalmodule "github.com/omni-network/omni/halo/portal/module"
 	portaltypes "github.com/omni-network/omni/halo/portal/types"
@@ -13,6 +17,7 @@ import (
 	"github.com/omni-network/omni/halo/sdk"
 	valsyncmodule "github.com/omni-network/omni/halo/valsync/module"
 	valsynctypes "github.com/omni-network/omni/halo/valsync/types"
+	"github.com/omni-network/omni/lib/feature"
 	engevmmodule "github.com/omni-network/omni/octane/evmengine/module"
 	engevmtypes "github.com/omni-network/omni/octane/evmengine/types"
 
@@ -86,6 +91,7 @@ var (
 		distrtypes.ModuleName,
 		stakingtypes.BondedPoolName,
 		stakingtypes.NotBondedPoolName,
+		// TODO(christian): rename package, the rest can stay because names are the same
 		evmstaking.ModuleName,
 	}
 
@@ -94,106 +100,119 @@ var (
 		{Account: distrtypes.ModuleName},
 		{Account: stakingtypes.BondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
 		{Account: stakingtypes.NotBondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
+		// TODO(christian): rename package, the rest can stay because names are the same
 		{Account: evmstaking.ModuleName, Permissions: []string{authtypes.Burner, authtypes.Minter}},
 	}
 
 	// appConfig application configuration (used by depinject).
 	appConfig = func() depinject.Config {
 		return appconfig.Compose(&appv1alpha1.Config{
-			Modules: []*appv1alpha1.ModuleConfig{
-				{
-					Name: runtime.ModuleName,
-					Config: appconfig.WrapAny(&runtimev1alpha1.Module{
-						AppName:       Name,
-						BeginBlockers: beginBlockers,
-						PreBlockers:   []string{upgradetypes.ModuleName},
-						// Setting endblockers in newApp since valsync replaces staking endblocker.
-						InitGenesis: genesisModuleOrder,
-						OverrideStoreKeys: []*runtimev1alpha1.StoreKeyConfig{
-							{
-								ModuleName: authtypes.ModuleName,
-								KvStoreKey: "acc",
+			Modules: func() []*appv1alpha1.ModuleConfig {
+				configs := []*appv1alpha1.ModuleConfig{
+					{
+						Name: runtime.ModuleName,
+						Config: appconfig.WrapAny(&runtimev1alpha1.Module{
+							AppName:       Name,
+							BeginBlockers: beginBlockers,
+							PreBlockers:   []string{upgradetypes.ModuleName},
+							// Setting endblockers in newApp since valsync replaces staking endblocker.
+							InitGenesis: genesisModuleOrder,
+							OverrideStoreKeys: []*runtimev1alpha1.StoreKeyConfig{
+								{
+									ModuleName: authtypes.ModuleName,
+									KvStoreKey: "acc",
+								},
 							},
-						},
-					}),
-				},
-				{
-					Name: authtypes.ModuleName,
-					Config: appconfig.WrapAny(&authmodulev1.Module{
-						ModuleAccountPermissions: moduleAccPerms,
-						Bech32Prefix:             sdk.Bech32HRP,
-					}),
-				},
-				{
-					Name: "tx",
-					Config: appconfig.WrapAny(&txconfigv1.Config{
-						SkipAnteHandler: true, // Disable ante handler (since we don't have proper txs).
-						SkipPostHandler: true,
-					}),
-				},
-				{
-					Name: banktypes.ModuleName,
-					Config: appconfig.WrapAny(&bankmodulev1.Module{
-						BlockedModuleAccountsOverride: blockAccAddrs,
-					}),
-				},
-				{
-					Name:   consensustypes.ModuleName,
-					Config: appconfig.WrapAny(&consensusmodulev1.Module{}),
-				},
-				{
-					Name:   distrtypes.ModuleName,
-					Config: appconfig.WrapAny(&distrmodulev1.Module{}),
-				},
-				{
-					Name:   genutiltypes.ModuleName,
-					Config: appconfig.WrapAny(&genutilmodulev1.Module{}),
-				},
-				{
-					Name:   stakingtypes.ModuleName,
-					Config: appconfig.WrapAny(&stakingmodulev1.Module{}),
-				},
-				{
-					Name:   slashingtypes.ModuleName,
-					Config: appconfig.WrapAny(&slashingmodulev1.Module{}),
-				},
-				{
-					Name:   evidencetypes.ModuleName,
-					Config: appconfig.WrapAny(&evidencemodulev1.Module{}),
-				},
-				{
-					Name: upgradetypes.ModuleName,
-					Config: appconfig.WrapAny(&upgrademodulev1.Module{
-						Authority: evmupgrade.ModuleName,
-					}),
-				},
-				{
-					Name:   engevmtypes.ModuleName,
-					Config: appconfig.WrapAny(&engevmmodule.Module{}),
-				},
-				{
-					Name: attesttypes.ModuleName,
-					Config: appconfig.WrapAny(&attestmodule.Module{
-						VoteWindowUp:       genesisVoteWindowUp,
-						VoteWindowDown:     genesisVoteWindowDown,
-						VoteExtensionLimit: genesisVoteExtLimit,
-						TrimLag:            genesisTrimLag,
-						ConsensusTrimLag:   genesisCTrimLag,
-					}),
-				},
-				{
-					Name:   valsynctypes.ModuleName,
-					Config: appconfig.WrapAny(&valsyncmodule.Module{}),
-				},
-				{
-					Name:   portaltypes.ModuleName,
-					Config: appconfig.WrapAny(&portalmodule.Module{}),
-				},
-				{
-					Name:   registrytypes.ModuleName,
-					Config: appconfig.WrapAny(&registrymodule.Module{}),
-				},
-			},
+						}),
+					},
+					{
+						Name: authtypes.ModuleName,
+						Config: appconfig.WrapAny(&authmodulev1.Module{
+							ModuleAccountPermissions: moduleAccPerms,
+							Bech32Prefix:             sdk.Bech32HRP,
+						}),
+					},
+					{
+						Name: "tx",
+						Config: appconfig.WrapAny(&txconfigv1.Config{
+							SkipAnteHandler: true, // Disable ante handler (since we don't have proper txs).
+							SkipPostHandler: true,
+						}),
+					},
+					{
+						Name: banktypes.ModuleName,
+						Config: appconfig.WrapAny(&bankmodulev1.Module{
+							BlockedModuleAccountsOverride: blockAccAddrs,
+						}),
+					},
+					{
+						Name:   consensustypes.ModuleName,
+						Config: appconfig.WrapAny(&consensusmodulev1.Module{}),
+					},
+					{
+						Name:   distrtypes.ModuleName,
+						Config: appconfig.WrapAny(&distrmodulev1.Module{}),
+					},
+					{
+						Name:   genutiltypes.ModuleName,
+						Config: appconfig.WrapAny(&genutilmodulev1.Module{}),
+					},
+					{
+						Name:   stakingtypes.ModuleName,
+						Config: appconfig.WrapAny(&stakingmodulev1.Module{}),
+					},
+					{
+						Name:   slashingtypes.ModuleName,
+						Config: appconfig.WrapAny(&slashingmodulev1.Module{}),
+					},
+					{
+						Name:   evidencetypes.ModuleName,
+						Config: appconfig.WrapAny(&evidencemodulev1.Module{}),
+					},
+					{
+						Name: upgradetypes.ModuleName,
+						Config: appconfig.WrapAny(&upgrademodulev1.Module{
+							Authority: evmupgrade.ModuleName,
+						}),
+					},
+					{
+						Name:   engevmtypes.ModuleName,
+						Config: appconfig.WrapAny(&engevmmodule.Module{}),
+					},
+					{
+						Name: attesttypes.ModuleName,
+						Config: appconfig.WrapAny(&attestmodule.Module{
+							VoteWindowUp:       genesisVoteWindowUp,
+							VoteWindowDown:     genesisVoteWindowDown,
+							VoteExtensionLimit: genesisVoteExtLimit,
+							TrimLag:            genesisTrimLag,
+							ConsensusTrimLag:   genesisCTrimLag,
+						}),
+					},
+					{
+						Name:   valsynctypes.ModuleName,
+						Config: appconfig.WrapAny(&valsyncmodule.Module{}),
+					},
+					{
+						Name:   portaltypes.ModuleName,
+						Config: appconfig.WrapAny(&portalmodule.Module{}),
+					},
+					{
+						Name:   registrytypes.ModuleName,
+						Config: appconfig.WrapAny(&registrymodule.Module{}),
+					},
+				}
+
+				// TODO(christian): integrate into the list above
+				if feature.FlagEVMStakingModule.Enabled(context.Background()) {
+					configs = append(configs, &appv1alpha1.ModuleConfig{
+						Name:   evmstaking2types.ModuleName,
+						Config: appconfig.WrapAny(&evmstaking2module.Module{}),
+					})
+				}
+
+				return configs
+			}(),
 		})
 	}
 
@@ -201,6 +220,7 @@ var (
 	// These are non-cosmos module constructors used in halo's app wiring.
 	diProviders = []any{
 		evmslashing.DIProvide,
+		// TODO(christian): remove later, but seems like it can stay here even if feature is enabled
 		evmstaking.DIProvide,
 		evmupgrade.DIProvide,
 	}
