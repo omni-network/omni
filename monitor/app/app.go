@@ -104,6 +104,7 @@ func Run(ctx context.Context, cfg Config) error {
 	go routerecon.ReconForever(ctx, network, xprov, ethClients)
 	go validator.MonitorForever(ctx, cprov)
 	go monitorPublicRPCForever(ctx, network, ethClients)
+	go monitorOmniEVMGasTipForever(ctx, network, ethClients)
 
 	select {
 	case <-ctx.Done():
