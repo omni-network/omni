@@ -43,4 +43,11 @@ var (
 		Name:      "sync_diff",
 		Help:      "Sync difference (highest blocks) betweent public RPC and omni node",
 	})
+
+	gasTipCap = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: "monitor",
+		Subsystem: "omni_evm",
+		Name:      "gas_tip_cap_gwei",
+		Help:      "Suggested OmniEVM gas tip cap in gwei",
+	})
 )
