@@ -1,4 +1,4 @@
-# How SolverNet Works
+# How It Works
 
 ## An Intent-Based Architecture
 
