@@ -112,3 +112,8 @@ e2e-clean: ## Deletes all running containers from previously ran e2e.
 .PHONY: unittest-run
 unittest-run:
 	go test -timeout=5m -race ./...
+
+.PHONY: generate-mocks
+generate-mocks: ## installs mockery generator and generates mocks for packages
+	@go install github.com/vektra/mockery/v2@v2.49.1
+	@PATH=$(shell go env GOPATH)/bin:$$PATH mockery --name='.*' --dir=./halo/evmstaking2/types --case=underscore --output=./halo/evmstaking2/types/mocks --outpkg=mocks
