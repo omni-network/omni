@@ -1,11 +1,14 @@
 package devapp
 
 import (
+	"bytes"
+	"context"
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/log"
 	solver "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -78,8 +81,28 @@ func (a App) Verify(srcChainID uint64, call bindings.SolveCall, deposits []bindi
 	return nil
 }
 
+func (a App) DebugCall(ctx context.Context, call bindings.SolveCall) error {
+	args, err := unpackDeposit(call.Data)
+	if err != nil {
+		return errors.Wrap(err, "unpack deposit")
+	}
+
+	if call.Target != a.L1Vault {
+		return errors.New("unexpected target", "expected", a.L1Vault, "actual", call.Target)
+	}
+
+	log.Debug(ctx, "MockVault.Deposit", "on_behalf_of", args.OnBehalfOf, "amount", args.Amount, "target", call.Target)
+
+	return nil
+}
+
 func unpackDeposit(data []byte) (DepositArgs, error) {
-	unpacked, err := vaultDeposit.Inputs.Unpack(data)
+	trimmed := bytes.TrimPrefix(data, vaultDeposit.ID)
+	if bytes.Equal(trimmed, data) {
+		return DepositArgs{}, errors.New("data not prefixed with deposit method id")
+	}
+
+	unpacked, err := vaultDeposit.Inputs.Unpack(trimmed)
 	if err != nil {
 		return DepositArgs{}, errors.Wrap(err, "unpack data")
 	}

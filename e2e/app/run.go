@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/e2e/netman"
 	"github.com/omni-network/omni/e2e/netman/pingpong"
 	"github.com/omni-network/omni/e2e/solve"
+	"github.com/omni-network/omni/e2e/solve/devapp"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/contracts"
@@ -169,6 +170,13 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 	pingpong, err := Deploy(ctx, def, depCfg)
 	if err != nil {
 		return err
+	}
+
+	if def.Manifest.DeploySolve {
+		// TODO(corver): Remove this
+		if err := devapp.TestFlow(ctx, NetworkFromDef(def), ExternalEndpoints(def)); err != nil {
+			return err
+		}
 	}
 
 	var eg errgroup.Group

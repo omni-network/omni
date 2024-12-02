@@ -1,6 +1,8 @@
 package types
 
 import (
+	"context"
+
 	"github.com/omni-network/omni/contracts/bindings"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -20,4 +22,7 @@ type Target interface {
 	// Verify returns an error if the call should not be fulfilled.
 	// TODO(corver): Return reject reason.
 	Verify(srcChainID uint64, call bindings.SolveCall, deposits []bindings.SolveDeposit) error
+
+	// DebugCall logs the call for debugging purposes.
+	DebugCall(ctx context.Context, call bindings.SolveCall) error
 }

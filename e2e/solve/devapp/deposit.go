@@ -3,13 +3,16 @@ package devapp
 import (
 	"context"
 	"math/big"
+	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -78,7 +81,107 @@ func IsDeposited(ctx context.Context, backends ethbackend.Backends, req DepositR
 
 	// assumes balance(onBehalfOf) was zero before deposit request
 	// assumes one deposit per test case onBehalfOf addr
-	return balance.Cmp(req.Deposit.Amount) != 0, nil
+	return balance.Cmp(req.Deposit.Amount) == 0, nil
+}
+
+// TestFlow submits deposit requests to the solve inbox and waits for them to be processed.
+func TestFlow(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints) error {
+	backends, err := ethbackend.BackendsFromNetwork(network, endpoints)
+	if err != nil {
+		return err
+	}
+
+	deposits, err := RequestDeposits(ctx, backends)
+	if err != nil {
+		return err
+	}
+
+	timeout, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
+
+	// Wait for all deposits to be completed on dest chain by solver/outbox
+	toCheck := toSet(deposits)
+	for {
+		if timeout.Err() != nil {
+			return errors.New("timeout waiting for deposits")
+		}
+
+		for deposit := range toCheck {
+			ok, err := IsDeposited(ctx, backends, deposit)
+			if err != nil {
+				return err
+			} else if ok {
+				log.Debug(ctx, "Deposit complete", "remaining", len(toCheck)-1)
+				delete(toCheck, deposit)
+			}
+		}
+
+		if len(toCheck) == 0 {
+			break
+		}
+
+		time.Sleep(time.Second)
+	}
+
+	log.Debug(ctx, "All deposits fulfilled")
+
+	// Wait for requests to be claimed by solver
+	toCheck = toSet(deposits)
+	for {
+		if timeout.Err() != nil {
+			return errors.New("timeout waiting for claims")
+		}
+
+		const statusClaimed = 6
+
+		for deposit := range toCheck {
+			status, err := GetDepositStatus(ctx, backends, deposit)
+			if err != nil {
+				return err
+			} else if status == statusClaimed {
+				log.Debug(ctx, "Deposit claimed", "remaining", len(toCheck)-1)
+				delete(toCheck, deposit)
+			}
+		}
+
+		if len(toCheck) == 0 {
+			break
+		}
+
+		time.Sleep(time.Second)
+	}
+
+	log.Debug(ctx, "All deposits claimed")
+
+	return nil
+}
+
+func GetDepositStatus(ctx context.Context, backends ethbackend.Backends, deposit DepositReq) (uint8, error) {
+	app := GetApp()
+
+	backend, err := backends.Backend(app.L2.ChainID)
+	if err != nil {
+		return 0, errors.Wrap(err, "backend")
+	}
+
+	addrs, err := contracts.GetAddresses(ctx, netconf.Devnet)
+	if err != nil {
+		return 0, errors.Wrap(err, "get addresses")
+	}
+
+	inbox, err := bindings.NewSolveInbox(addrs.SolveInbox, backend)
+	if err != nil {
+		return 0, errors.Wrap(err, "new mock vault")
+	}
+
+	callOpts := &bind.CallOpts{Context: ctx}
+
+	req, err := inbox.GetRequest(callOpts, deposit.ID)
+	if err != nil {
+		return 0, errors.Wrap(err, "get balance")
+	}
+
+	return req.Status, nil
 }
 
 // addRandomDepositors adds n random depositors privkeys to the backend.
@@ -224,10 +327,19 @@ func parseReqID(inbox bindings.SolveInboxFilterer, logs []*types.Log) ([32]byte,
 }
 
 func packDeposit(args DepositArgs) ([]byte, error) {
-	data, err := vaultDeposit.Inputs.Pack(args.OnBehalfOf, args.Amount)
+	calldata, err := vaultABI.Pack("deposit", args.OnBehalfOf, args.Amount)
 	if err != nil {
-		return nil, errors.Wrap(err, "pack data")
+		return nil, errors.Wrap(err, "pack deposit call data")
 	}
 
-	return data, nil
+	return calldata, nil
+}
+
+func toSet[T comparable](slice []T) map[T]bool {
+	set := make(map[T]bool)
+	for _, v := range slice {
+		set[v] = true
+	}
+
+	return set
 }

@@ -36,5 +36,5 @@ func detectContractChains(ctx context.Context, network netconf.Network, backends
 // fmtReqID returns the least-significant 7 hex chars of the provided request ID.
 // ReqIDs are monotonically incrementing numbers, not hashes.
 func fmtReqID(reqID [32]byte) string {
-	return hex.EncodeToString(reqID[:])[:7]
+	return hex.EncodeToString(reqID[:])[64-7:]
 }

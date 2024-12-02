@@ -12,6 +12,18 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
+// MaxUint256 is the maximum value that can be represented by a uint256.
+var MaxUint256 = func() *big.Int {
+	// Copied from uint256 package.
+	const twoPow256Sub1 = "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+	maxUint256, ok := new(big.Int).SetString(twoPow256Sub1, 10)
+	if !ok {
+		panic("invalid max uint256")
+	}
+
+	return maxUint256
+}()
+
 // Subtract returns a - b and true if a >= b, otherwise 0 and false.
 func Subtract(a, b uint64) (uint64, bool) {
 	if a < b {

@@ -26,6 +26,7 @@ install-deps: check-pnpm-version ## Install dependencies.
 build: version ## Build contracts.
 	forge build --force --root core
 	forge build --force --root avs
+	forge build --force --root solve
 
 
 .PHONY: all
