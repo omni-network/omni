@@ -299,7 +299,7 @@ type stakingKeeperStub struct {
 	validators map[string]bool
 }
 
-// GetValidator memorizes all addresses and returns an error for calls it never seen before.
+// GetValidator tracks accessed addresses, returning an error for unseen addresses.
 func (m *stakingKeeperStub) GetValidator(ctx context.Context, addr sdk.ValAddress) (stypes.Validator, error) {
 	if m.validators == nil {
 		m.validators = make(map[string]bool)
