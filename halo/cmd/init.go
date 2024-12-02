@@ -45,6 +45,7 @@ type InitConfig struct {
 	Clean          bool
 	ExecutionHash  common.Hash
 	GenesisUpgrade string // Zero value omits network upgrade genesis tx
+	RPCServerURL   string
 }
 
 func (c InitConfig) Verify() error {
@@ -208,8 +209,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 	}
 
 	// Connect to RPC server
-	rpcServer := network.Static().ConsensusRPC()
-	rpcCl, err := rpchttp.New(rpcServer, "/websocket")
+	rpcCl, err := rpchttp.New(initCfg.RPCServerURL, "/websocket")
 	if err != nil {
 		return errors.Wrap(err, "create rpc client")
 	}
@@ -223,9 +223,9 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 
 		peers, err := getPeers(ctx, rpcCl, maxPeers)
 		if err != nil {
-			return errors.Wrap(err, "get peers", "rpc", rpcServer)
+			return errors.Wrap(err, "get peers", "rpc", initCfg.RPCServerURL)
 		} else if len(peers) == 0 {
-			return errors.New("no routable public peers found", "rpc", rpcServer)
+			return errors.New("no routable public peers found", "rpc", initCfg.RPCServerURL)
 		}
 
 		addrBook := pex.NewAddrBook(addrBookPath, true)
@@ -236,7 +236,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 		}
 		addrBook.Save()
 
-		log.Info(ctx, "Populated cometBFT address book", "path", addrBookPath, "peers", len(peers), "rpc_endpoint", rpcServer)
+		log.Info(ctx, "Populated cometBFT address book", "path", addrBookPath, "peers", len(peers), "rpc_endpoint", initCfg.RPCServerURL)
 	}
 
 	// Setup comet config

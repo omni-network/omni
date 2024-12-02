@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	_ "embed"
 	"encoding/hex"
 	"os"
 	"os/exec"
@@ -27,8 +28,6 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/enode"
 
 	"github.com/spf13/cobra"
-
-	_ "embed"
 )
 
 const (
@@ -37,13 +36,14 @@ const (
 )
 
 type InitConfig struct {
-	Network netconf.ID
-	Home    string
-	Moniker string
-	Clean   bool
-	Archive bool
-	Debug   bool
-	HaloTag string
+	Network      netconf.ID
+	Home         string
+	Moniker      string
+	Clean        bool
+	Archive      bool
+	Debug        bool
+	HaloTag      string
+	RPCServerURL string
 }
 
 func (c InitConfig) Verify() error {
@@ -87,6 +87,11 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 		return errors.New("required flag --moniker not set")
 	}
 
+	// use static RPC if one is not configured
+	if cfg.RPCServerURL == "" {
+		cfg.RPCServerURL = cfg.Network.Static().ConsensusRPC()
+	}
+
 	if !filepath.IsAbs(cfg.Home) {
 		absPath, err := filepath.Abs(cfg.Home)
 		if err != nil {
@@ -110,7 +115,7 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 		}
 	}
 
-	if err := maybeDownloadGenesis(ctx, cfg.Network); err != nil {
+	if err := maybeDownloadGenesis(ctx, cfg.Network, cfg.RPCServerURL); err != nil {
 		return errors.Wrap(err, "download genesis")
 	}
 
@@ -167,12 +172,11 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 }
 
 // maybeDownloadGenesis downloads the genesis files via cprovider the network if they are not already set.
-func maybeDownloadGenesis(ctx context.Context, network netconf.ID) error {
+func maybeDownloadGenesis(ctx context.Context, network netconf.ID, rpcServer string) error {
 	if network.IsProtected() {
 		return nil // No need to download genesis for protected networks
 	}
 
-	rpcServer := network.Static().ConsensusRPC()
 	rpcCl, err := rpchttp.New(rpcServer, "/websocket")
 	if err != nil {
 		return errors.Wrap(err, "create rpc client")
