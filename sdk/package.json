@@ -8,16 +8,15 @@
   "scripts": {
     "clean": "rm -rf dist",
     "build": "tsc -p tsconfig.build.json",
-    "build:clean": "pnpm clean && pnpm build"
+    "build:clean": "pnpm clean && pnpm build",
+    "precommit": "biome check --write"
   },
-  "files": [
-    "src/*",
-    "dist/*"
-  ],
+  "files": ["src/*", "dist/*"],
   "engines": {
     "node": "22.x"
   },
   "devDependencies": {
+    "@biomejs/biome": "1.9.4",
     "typescript": "5.7.2"
   }
 }

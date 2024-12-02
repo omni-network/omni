@@ -90,3 +90,11 @@ repos:
         entry: .pre-commit/run_solhint.sh
         types: [ file, solidity ]
         require_serial: true
+
+      - id: run-sdk-checks
+        name: run-sdk-checks
+        language: script
+        entry: .pre-commit/run_sdk_checks.sh
+        files: ^sdk/.*\.(ts|tsx)$
+        types: [ file, ts ]
+        pass_filenames: true
