@@ -2,21 +2,29 @@
     "include": ["src/**/*"],
     "exclude" : ["node_modules"],
     "compilerOptions": {
-        "strict": true,
+        // incremental builds - NOTE: Enabling incremental builds speeds up `tsc`
         "incremental": true,
-        "noFallthroughCasesInSwitch": true,
-        "noImplicitReturns": true,
-        "noImplicitOverride": true,
-        "noUnusedLocals": true,
-        "noUnusedParameters": true,
-        "strictNullChecks": true,
-        "exactOptionalPropertyTypes": true,
+        
+        // type checking
+        "strict": true,
+        "noFallthroughCasesInSwitch": true, // not enabled by default in strict
+        "noImplicitReturns": true, // not enabled by default in strict
+        "noImplicitOverride": true, // not enabled by default in strict
+        "noUnusedLocals": true, // not enabled by default in strict
+        "noUnusedParameters": true, // not enabled by default in strict
+        "exactOptionalPropertyTypes": true, // not enabled by default in strict
+
+        // JS support
         "allowJs": false,
         "checkJs": false,
+
+        // skip type checking for node_modules
         "skipLibCheck": true,
+
+        // language / env
         "moduleResolution": "nodenext",
         "module": "nodenext",
-        "target": "ES2021",
-        "lib": ["ES2022"]
+        "target": "ES2021", // setting to es2021 enables native support for node v16+, we may want to evaluate this
+        "lib": ["ES2022"] // enables modern language features, we may want to evalute this
     }
 }
