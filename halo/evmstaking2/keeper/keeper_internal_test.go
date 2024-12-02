@@ -300,7 +300,7 @@ type stakingKeeperStub struct {
 }
 
 // GetValidator tracks accessed addresses, returning an error for unseen addresses.
-func (m *stakingKeeperStub) GetValidator(ctx context.Context, addr sdk.ValAddress) (stypes.Validator, error) {
+func (m *stakingKeeperStub) GetValidator(_ context.Context, addr sdk.ValAddress) (stypes.Validator, error) {
 	if m.validators == nil {
 		m.validators = make(map[string]bool)
 	}
