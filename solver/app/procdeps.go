@@ -27,7 +27,7 @@ type procDeps struct {
 
 	Accept  func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error
 	Reject  func(ctx context.Context, chainID uint64, req bindings.SolveRequest, reason rejectReason) error
-	Fulfill func(ctx context.Context, req bindings.SolveRequest) error
+	Fulfill func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error
 	Claim   func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error
 }
 
@@ -70,15 +70,15 @@ func newFulfiller(
 	outboxContracts map[uint64]*bindings.SolveOutbox,
 	backends ethbackend.Backends,
 	solverAddr, outboxAddr common.Address,
-) func(ctx context.Context, req bindings.SolveRequest) error {
-	return func(ctx context.Context, req bindings.SolveRequest) error {
-		chainID := req.Call.DestChainId // Fulfilling happens on destination chain
-		outbox, ok := outboxContracts[chainID]
+) func(ctx context.Context, srcChainID uint64, req bindings.SolveRequest) error {
+	return func(ctx context.Context, srcChainID uint64, req bindings.SolveRequest) error {
+		destChainID := req.Call.DestChainId // Fulfilling happens on destination chain
+		outbox, ok := outboxContracts[destChainID]
 		if !ok {
 			return errors.New("unknown chain")
 		}
 
-		backend, err := backends.Backend(chainID)
+		backend, err := backends.Backend(destChainID)
 		if err != nil {
 			return err
 		}
@@ -89,7 +89,7 @@ func newFulfiller(
 			return err
 		}
 
-		if ok, err := outbox.DidFulfill(callOpts, req.Id, chainID, req.Call); err != nil {
+		if ok, err := outbox.DidFulfill(callOpts, req.Id, srcChainID, req.Call); err != nil {
 			return errors.Wrap(err, "did fulfill")
 		} else if ok {
 			log.Info(ctx, "Skipping already fulfilled request", "req_id", req.Id)
@@ -110,19 +110,31 @@ func newFulfiller(
 			if err := approveOutboxSpend(ctx, prereq, backend, solverAddr, outboxAddr); err != nil {
 				return errors.Wrap(err, "approve outbox spend")
 			}
+
 			if err := checkAllowedCall(ctx, outbox, req.Call); err != nil {
 				return errors.Wrap(err, "check allowed call")
 			}
 		}
 
-		tx, err := outbox.Fulfill(txOpts, req.Id, chainID, req.Call, prereqs)
+		if err := target.DebugCall(ctx, req.Call); err != nil {
+			return errors.Wrap(err, "debug call")
+		}
+
+		// xcall fee
+		fee, err := outbox.FulfillFee(callOpts, srcChainID)
+		if err != nil {
+			return errors.Wrap(err, "get fulfill fee")
+		}
+
+		txOpts.Value = fee
+		tx, err := outbox.Fulfill(txOpts, req.Id, srcChainID, req.Call, prereqs)
 		if err != nil {
 			return errors.Wrap(err, "fulfill request", "custom", detectCustomError(err))
 		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
 			return errors.Wrap(err, "wait mined")
 		}
 
-		if ok, err := outbox.DidFulfill(callOpts, req.Id, chainID, req.Call); err != nil {
+		if ok, err := outbox.DidFulfill(callOpts, req.Id, srcChainID, req.Call); err != nil {
 			return errors.Wrap(err, "did fulfill")
 		} else if !ok {
 			return errors.New("fulfill failed [BUG]")
@@ -178,6 +190,7 @@ func checkAllowedCall(ctx context.Context, outbox *bindings.SolveOutbox, call bi
 }
 
 func approveOutboxSpend(ctx context.Context, prereq bindings.SolveTokenPrereq, backend *ethbackend.Backend, solverAddr, outboxAddr common.Address) error {
+	// TODO(kevin): make erc20 bindings and use here
 	token, err := bindings.NewMockToken(prereq.Token, backend)
 	if err != nil {
 		return errors.Wrap(err, "new token")

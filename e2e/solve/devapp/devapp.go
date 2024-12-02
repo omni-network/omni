@@ -2,9 +2,12 @@ package devapp
 
 import (
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/create3"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -26,7 +29,10 @@ var (
 	mockL1       = mustChainMeta(evmchain.IDMockL1)
 	mockL2       = mustChainMeta(evmchain.IDMockL2)
 
-	// static is the static devnt app instance.
+	create3Factory = contracts.Create3Factory(netconf.Devnet)
+	deployer       = eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer)
+	manager        = eoa.MustAddress(netconf.Devnet, eoa.RoleManager)
+
 	static = App{
 		L1Vault: create3.Address(create3Factory, l1VaultSalt, deployer),
 		L1Token: create3.Address(create3Factory, l1TokenSalt, deployer),

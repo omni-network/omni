@@ -172,9 +172,11 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 		return err
 	}
 
-	// TODO(corver): Remove this
-	if err := devapp.TestFlow(ctx, NetworkFromDef(def), ExternalEndpoints(def)); err != nil {
-		return err
+	if def.Manifest.DeploySolve {
+		// TODO(corver): Remove this
+		if err := devapp.TestFlow(ctx, NetworkFromDef(def), ExternalEndpoints(def)); err != nil {
+			return err
+		}
 	}
 
 	var eg errgroup.Group

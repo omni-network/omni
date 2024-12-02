@@ -132,7 +132,7 @@ func TestFlow(ctx context.Context, network netconf.Network, endpoints xchain.RPC
 			return errors.New("timeout waiting for claims")
 		}
 
-		const statusClaimed = 8
+		const statusClaimed = 6
 
 		for deposit := range toCheck {
 			status, err := GetDepositStatus(ctx, backends, deposit)

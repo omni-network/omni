@@ -52,7 +52,7 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 					}
 				}
 			case statusAccepted:
-				if err := deps.Fulfill(ctx, req); err != nil {
+				if err := deps.Fulfill(ctx, chainID, req); err != nil {
 					return errors.Wrap(err, "fulfill request")
 				}
 			case statusFulfilled:
