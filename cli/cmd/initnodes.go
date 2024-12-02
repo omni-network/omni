@@ -130,11 +130,12 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 	}
 
 	err = halocmd.InitFiles(ctx, halocmd.InitConfig{
-		HomeDir:     filepath.Join(cfg.Home, "halo"),
-		Moniker:     cfg.Moniker,
-		Network:     cfg.Network,
-		TrustedSync: !cfg.Archive, // Don't state sync if archive
-		AddrBook:    true,
+		HomeDir:      filepath.Join(cfg.Home, "halo"),
+		Moniker:      cfg.Moniker,
+		Network:      cfg.Network,
+		RPCServerURL: cfg.RPCServerURL,
+		TrustedSync:  !cfg.Archive, // Don't state sync if archive
+		AddrBook:     true,
 		HaloCfgFunc: func(haloCfg *halocfg.Config) {
 			haloCfg.EngineEndpoint = "http://omni_evm:8551"
 			haloCfg.EngineJWTFile = "/geth/jwtsecret"
