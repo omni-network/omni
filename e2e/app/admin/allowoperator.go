@@ -39,7 +39,7 @@ var mainnetOperators = []common.Address{
 // Note it only adds any of the operators that are missing, it doesn't remove any ever.
 func AllowOperators(ctx context.Context, def app.Definition, cfg Config) error {
 	network := def.Testnet.Network
-	if network.Static().Network != netconf.Omega || network.Static().Network != netconf.Mainnet {
+	if network.Static().Network != netconf.Omega && network.Static().Network != netconf.Mainnet {
 		return errors.New("allow operator only supported on omega or mainnet", "network", network.Static().Network.String())
 	}
 
