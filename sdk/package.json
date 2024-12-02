@@ -9,8 +9,7 @@
     "clean": "rm -rf dist",
     "build": "tsc -p tsconfig.build.json",
     "build:clean": "pnpm clean && pnpm build",
-    "precommit": "biome check --write",
-    "precommit:dry": "biome check --write --dry"
+    "precommit": "biome check --write"
   },
   "files": ["src/*", "dist/*"],
   "engines": {
