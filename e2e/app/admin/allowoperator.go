@@ -31,8 +31,15 @@ var omegaOperators = []common.Address{
 
 // mainnetOperators are the operators that are allowed to be validators on the Mainnet network.
 var mainnetOperators = []common.Address{
-	common.HexToAddress("0x85bD563C4636a6006BCFB3fd367757676e2Dd269"), // RHINO
 	common.HexToAddress("0xc6A510df0F6d2D8CEbD6112FB3132aba4bAc23d1"), // A41
+	// common.HexToAddress(""), // BlockDaemon
+	common.HexToAddress("0x85bD563C4636a6006BCFB3fd367757676e2Dd269"), // RHINO
+	common.HexToAddress("0x7E634AC3186E9ef6fd36C1207bb87445Fd5CAA7d"), // Kingnodes
+	// common.HexToAddress(""), // Galaxy
+	// common.HexToAddress(""), // Chorusone
+	common.HexToAddress("0xd456Db9730a346211797D42de2272f2406936194"), // P-OPS
+	// common.HexToAddress(""), // DAIC
+	common.HexToAddress("0x231a7A2872208A3e3EF75Ae6580a16308D60706b"), // Finoa
 }
 
 // AllowOperators ensures that all operators hard-coded in this package is allowed as validators.
