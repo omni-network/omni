@@ -198,21 +198,21 @@ func (k Keeper) parseAndDeliver(ctx context.Context, elog *evmenginetypes.EVMEve
 
 	switch ethlog.Topics[0] {
 	case createValidatorEvent.ID:
-		ev, err := k.contract.ParseCreateValidator(ethlog)
+		delegate, err := k.contract.ParseCreateValidator(ethlog)
 		if err != nil {
 			return errors.Wrap(err, "parse create validator")
 		}
 
-		if err := k.deliverCreateValidator(ctx, ev); err != nil {
+		if err := k.deliverCreateValidator(ctx, delegate); err != nil {
 			return errors.Wrap(err, "create validator")
 		}
 	case delegateEvent.ID:
-		ev, err := k.contract.ParseDelegate(ethlog)
+		delegate, err := k.contract.ParseDelegate(ethlog)
 		if err != nil {
 			return errors.Wrap(err, "parse delegate")
 		}
 
-		if err := k.deliverDelegate(ctx, ev); err != nil {
+		if err := k.deliverDelegate(ctx, delegate); err != nil {
 			return errors.Wrap(err, "delegate")
 		}
 	default:
@@ -280,16 +280,16 @@ func (k Keeper) createAccIfNone(ctx context.Context, addr sdk.AccAddress) {
 // - Create a new validator with the depositor's account.
 //
 // NOTE: if we error, the deposit is lost (on EVM). consider recovery methods.
-func (k Keeper) deliverCreateValidator(ctx context.Context, ev *bindings.StakingCreateValidator) error {
-	pubkey, err := k1util.PubKeyBytesToCosmos(ev.Pubkey)
+func (k Keeper) deliverCreateValidator(ctx context.Context, createValidator *bindings.StakingCreateValidator) error {
+	pubkey, err := k1util.PubKeyBytesToCosmos(createValidator.Pubkey)
 	if err != nil {
 		return errors.Wrap(err, "pubkey to cosmos")
 	}
 
-	accAddr := sdk.AccAddress(ev.Validator.Bytes())
-	valAddr := sdk.ValAddress(ev.Validator.Bytes())
+	accAddr := sdk.AccAddress(createValidator.Validator.Bytes())
+	valAddr := sdk.ValAddress(createValidator.Validator.Bytes())
 
-	amountCoin, amountCoins := omniToBondCoin(ev.Deposit)
+	amountCoin, amountCoins := omniToBondCoin(createValidator.Deposit)
 
 	if _, err := k.sKeeper.GetValidator(ctx, valAddr); err == nil {
 		return errors.New("validator already exists")
@@ -306,14 +306,14 @@ func (k Keeper) deliverCreateValidator(ctx context.Context, ev *bindings.Staking
 	}
 
 	log.Info(ctx, "EVM staking deposit detected, adding new validator",
-		"depositor", ev.Validator.Hex(),
-		"amount", ev.Deposit.String())
+		"depositor", createValidator.Validator.Hex(),
+		"amount", createValidator.Deposit.String())
 
 	msg, err := stypes.NewMsgCreateValidator(
 		valAddr.String(),
 		pubkey,
 		amountCoin,
-		stypes.Description{Moniker: ev.Validator.Hex()},
+		stypes.Description{Moniker: createValidator.Validator.Hex()},
 		stypes.NewCommissionRates(math.LegacyZeroDec(), math.LegacyZeroDec(), math.LegacyZeroDec()),
 		math.NewInt(1)) // Stub out minimum self delegation for now, just use 1.
 	if err != nil {
@@ -328,12 +328,12 @@ func (k Keeper) deliverCreateValidator(ctx context.Context, ev *bindings.Staking
 	return nil
 }
 
-func verifyStakingDelegate(ev *bindings.StakingDelegate) error {
-	if ev.Delegator != ev.Validator {
+func verifyStakingDelegate(delegate *bindings.StakingDelegate) error {
+	if delegate.Delegator != delegate.Validator {
 		return errors.New("only self delegation")
 	}
 
-	if ev.Amount == nil {
+	if delegate.Amount == nil {
 		return errors.New("stake amount missing")
 	}
 
