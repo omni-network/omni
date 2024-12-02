@@ -3,6 +3,7 @@ package xfeemngr
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"math/rand"
 	"testing"
 	"time"
@@ -69,6 +70,15 @@ func TestStart(t *testing.T) {
 
 				// check toNativeRate
 				rate := tprices[dest.NativeToken] / tprices[src.NativeToken]
+
+				// handle maximum rate case
+				if src.NativeToken == tokens.OMNI && src.NativeToken != dest.NativeToken && rate > maxSaneOmniPerEth {
+					rate = maxSaneOmniPerEth
+				}
+				if src.NativeToken == tokens.ETH && src.NativeToken != dest.NativeToken && rate > maxSaneEthPerOmni {
+					rate = maxSaneEthPerOmni
+				}
+
 				numer := rateToNumerator(rate)
 
 				if src.NativeToken == dest.NativeToken {
@@ -76,9 +86,17 @@ func TestStart(t *testing.T) {
 					require.Equal(t, rate, float64(1), "expect 1:1 rate for same tokens")
 				}
 
+				// handle minimum rate case
+				if rate < 1.0/float64(rateDenom) {
+					numer = big.NewInt(1) // Use minimum representable rate
+				}
+
 				onChainNumer, err := mustGetContract(t, oracle).ToNativeRate(ctx, dest.ChainID)
 				require.NoError(t, err)
-				require.Equal(t, numer.Uint64(), onChainNumer.Uint64(), "onversion rate")
+
+				// allow variance of +-1 due to floating point rounding errors
+				numerDiff := new(big.Int).Sub(numer, onChainNumer).Int64()
+				require.True(t, numerDiff >= -1 && numerDiff <= 1, "conversion rate")
 			}
 		}
 	}
