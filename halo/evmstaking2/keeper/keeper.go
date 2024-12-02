@@ -229,8 +229,8 @@ func (k Keeper) parseAndDeliver(ctx context.Context, elog *evmenginetypes.EVMEve
 //
 // NOTE: if we error, the deposit is lost (on EVM). consider recovery methods.
 func (k Keeper) deliverDelegate(ctx context.Context, ev *bindings.StakingDelegate) error {
-	if ev.Delegator != ev.Validator {
-		return errors.New("only self delegation")
+	if err := verifyStakingDelegate(ev); err != nil {
+		return err
 	}
 
 	delAddr := sdk.AccAddress(ev.Delegator.Bytes())
@@ -238,10 +238,6 @@ func (k Keeper) deliverDelegate(ctx context.Context, ev *bindings.StakingDelegat
 
 	if _, err := k.sKeeper.GetValidator(ctx, valAddr); err != nil {
 		return errors.New("validator does not exist", "validator", valAddr.String())
-	}
-
-	if ev.Amount == nil {
-		return errors.New("stake amount missing")
 	}
 
 	amountCoin, amountCoins := omniToBondCoin(ev.Amount)
@@ -327,6 +323,18 @@ func (k Keeper) deliverCreateValidator(ctx context.Context, ev *bindings.Staking
 	_, err = k.sServer.CreateValidator(ctx, msg)
 	if err != nil {
 		return errors.Wrap(err, "create validator")
+	}
+
+	return nil
+}
+
+func verifyStakingDelegate(ev *bindings.StakingDelegate) error {
+	if ev.Delegator != ev.Validator {
+		return errors.New("only self delegation")
+	}
+
+	if ev.Amount == nil {
+		return errors.New("stake amount missing")
 	}
 
 	return nil

@@ -117,7 +117,7 @@ func TestDeliveryWithBrokenServer(t *testing.T) {
 
 	for _, event := range events {
 		err := keeper.parseAndDeliver(ctx, &event)
-		require.True(t, strings.Contains(err.Error(), sServer.err.Error()))
+		require.Contains(t, err.Error(), sServer.err.Error())
 	}
 }
 
@@ -151,21 +151,21 @@ func TestDeliveryOfInvalidEvents(t *testing.T) {
 	for _, event := range events {
 		event.Address = []byte{}
 		err := keeper.parseAndDeliver(ctx, &event)
-		require.True(t, strings.Contains(err.Error(), "invalid address length"))
+		require.Contains(t, err.Error(), "invalid address length")
 	}
 
 	// Break the topics for both events and make sure parsing fails
 	for _, event := range events {
 		event.Topics = [][]byte{}
 		err := keeper.parseAndDeliver(ctx, &event)
-		require.True(t, strings.Contains(err.Error(), "empty topics"))
+		require.Contains(t, err.Error(), "empty topics")
 	}
 
 	createValEvent := events[0]
 	// Break the data for the create validator event
 	createValEvent.Data = []byte{}
 	err = keeper.parseAndDeliver(ctx, &createValEvent)
-	require.True(t, strings.Contains(err.Error(), "create validator: pubkey to cosmos"))
+	require.Contains(t, err.Error(), "create validator: pubkey to cosmos")
 
 	// Deliver the event so that we can test delegation
 	err = keeper.parseAndDeliver(ctx, &events[0])
@@ -173,13 +173,13 @@ func TestDeliveryOfInvalidEvents(t *testing.T) {
 
 	// Can't add same validator twice (this relies on sKeeper stub working correctly)
 	err = keeper.parseAndDeliver(ctx, &events[0])
-	require.True(t, strings.Contains(err.Error(), "create validator: validator already exists"))
+	require.Contains(t, err.Error(), "create validator: validator already exists")
 
 	delegateEvent := events[1]
 	// Break the data for the delegate event
 	delegateEvent.Data = []byte{}
 	err = keeper.parseAndDeliver(ctx, &delegateEvent)
-	require.True(t, strings.Contains(err.Error(), "stake amount missing"))
+	require.Contains(t, err.Error(), "stake amount missing")
 }
 
 func TestHappyPathDelivery(t *testing.T) {
