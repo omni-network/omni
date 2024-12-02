@@ -29,12 +29,18 @@ var omegaOperators = []common.Address{
 	common.HexToAddress("0x44Fb4c265E551139e4D3956Aba6fe2DEa27AE4De"), // Finoa
 }
 
+// mainnetOperators are the operators that are allowed to be validators on the Omega network.
+var mainnetOperators = []common.Address{
+	common.HexToAddress("0x85bD563C4636a6006BCFB3fd367757676e2Dd269"), // RHINO
+	common.HexToAddress("0xc6A510df0F6d2D8CEbD6112FB3132aba4bAc23d1"), // A41
+}
+
 // AllowOperators ensures that all operators hard-coded in this package is allowed as validators.
 // Note it only adds any of the operators that are missing, it doesn't remove any ever.
 func AllowOperators(ctx context.Context, def app.Definition, cfg Config) error {
 	network := def.Testnet.Network
-	if network.Static().Network != netconf.Omega {
-		return errors.New("allow operator only supported on omega", "network", network.Static().Network.String())
+	if network.Static().Network != netconf.Omega || network.Static().Network != netconf.Mainnet {
+		return errors.New("allow operator only supported on omega or mainnet", "network", network.Static().Network.String())
 	}
 
 	backend, err := def.Backends().Backend(network.Static().OmniExecutionChainID)
@@ -47,8 +53,16 @@ func AllowOperators(ctx context.Context, def app.Definition, cfg Config) error {
 		return errors.Wrap(err, "new staking contract")
 	}
 
+	var operatorsRange []common.Address
+	if network.Static().Network == netconf.Omega {
+		operatorsRange = omegaOperators
+	} else {
+		// Mainnet
+		operatorsRange = mainnetOperators
+	}
+	
 	var toAllow []common.Address
-	for _, operator := range omegaOperators {
+	for _, operator := range operatorsRange {
 		if ok, err := contract.IsAllowedValidator(&bind.CallOpts{}, operator); err != nil {
 			return errors.Wrap(err, "call is allowed validator")
 		} else if ok {
@@ -61,7 +75,7 @@ func AllowOperators(ctx context.Context, def app.Definition, cfg Config) error {
 	}
 
 	if len(toAllow) == 0 {
-		log.Info(ctx, "All operators already allowed to be validators", "count", len(omegaOperators))
+		log.Info(ctx, "All operators already allowed to be validators", "count", len(operatorsRange))
 		return nil
 	}
 
@@ -84,7 +98,14 @@ func AllowOperators(ctx context.Context, def app.Definition, cfg Config) error {
 		return errors.Wrap(err, "wait minded")
 	}
 
-	link := fmt.Sprintf("https://%s.omniscan.network/tx/%s", network, tx.Hash().Hex())
+	var link string
+	if network.Static().Network == netconf.Omega {
+		link = fmt.Sprintf("https://%s.omniscan.network/tx/%s", network, tx.Hash().Hex())
+	} else {
+		// Mainnet
+		link = fmt.Sprintf("https://omniscan.network/tx/%s", tx.Hash().Hex())
+	}
+	
 	log.Info(ctx, "🎉 Successfully allowed operators as validators",
 		"count", len(toAllow),
 		"link", link,
