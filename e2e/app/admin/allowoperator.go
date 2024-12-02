@@ -29,7 +29,7 @@ var omegaOperators = []common.Address{
 	common.HexToAddress("0x44Fb4c265E551139e4D3956Aba6fe2DEa27AE4De"), // Finoa
 }
 
-// mainnetOperators are the operators that are allowed to be validators on the Omega network.
+// mainnetOperators are the operators that are allowed to be validators on the Mainnet network.
 var mainnetOperators = []common.Address{
 	common.HexToAddress("0x85bD563C4636a6006BCFB3fd367757676e2Dd269"), // RHINO
 	common.HexToAddress("0xc6A510df0F6d2D8CEbD6112FB3132aba4bAc23d1"), // A41
