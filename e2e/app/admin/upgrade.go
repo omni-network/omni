@@ -105,6 +105,11 @@ func UpgradePortalRegistry(ctx context.Context, def app.Definition, cfg Config) 
 	return upgradePortalRegistry(ctx, s, c)
 }
 
+// SetPortalFeeOracleV2 upgrades the OmniPortal's FeeOracle to the FeeOracleV2 contract.
+func SetPortalFeeOracleV2(ctx context.Context, def app.Definition, cfg Config) error {
+	return setup(def, cfg).run(ctx, setPortalFeeOracleV2)
+}
+
 func upgradePortal(ctx context.Context, s shared, c chain) error {
 	// TODO: replace if re-initialization is required
 	initializer := []byte{}
@@ -310,6 +315,27 @@ func upgradePortalRegistry(ctx context.Context, s shared, c chain) error {
 	}
 
 	log.Info(ctx, "PortalRegistry upgraded ✅", "chain", c.Name, "out", out)
+
+	return nil
+}
+
+func setPortalFeeOracleV2(ctx context.Context, s shared, c chain) error {
+	addrs, err := contracts.GetAddresses(ctx, s.testnet.Network)
+	if err != nil {
+		return errors.Wrap(err, "get addresses")
+	}
+
+	calldata, err := adminABI.Pack("setPortalFeeOracleV2", s.manager, addrs.Portal, addrs.FeeOracleV2)
+	if err != nil {
+		return errors.Wrap(err, "pack calldata")
+	}
+
+	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.manager)
+	if err != nil {
+		return errors.Wrap(err, "run forge", "out", out)
+	}
+
+	log.Info(ctx, "OmniPortal's FeeOracle upgraded to V2 ✅", "chain", c.Name, "addr", addrs.FeeOracleV2, "out", out)
 
 	return nil
 }
