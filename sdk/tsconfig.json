@@ -4,7 +4,7 @@
     "compilerOptions": {
         // incremental builds - NOTE: Enabling incremental builds speeds up `tsc`
         "incremental": true,
-        
+
         // type checking
         "strict": true,
         "noFallthroughCasesInSwitch": true, // not enabled by default in strict
