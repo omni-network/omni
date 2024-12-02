@@ -1,0 +1,7 @@
+.DS_Store
+cache
+node_modules
+tsconfig.build.tsbuildinfo
+
+# compiled output
+/lib

@@ -1,0 +1,22 @@
+{
+    "include": ["src/**/*"],
+    "exclude" : ["node_modules"],
+    "compilerOptions": {
+        "strict": true,
+        "incremental": true,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitReturns": true,
+        "noImplicitOverride": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "strictNullChecks": true,
+        "exactOptionalPropertyTypes": true,
+        "allowJs": false,
+        "checkJs": false,
+        "skipLibCheck": true,
+        "moduleResolution": "nodenext",
+        "module": "nodenext",
+        "target": "ES2021",
+        "lib": ["ES2022"]
+    }
+}
