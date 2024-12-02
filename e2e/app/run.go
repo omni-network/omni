@@ -86,12 +86,12 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 
 	contracts.UseStagingOmniRPC(def.Testnet.BroadcastOmniEVM().ExternalRPC)
 
-	// Prep for deploying contracts.
-	var eg1 errgroup.Group
-	eg1.Go(func() error { return fundAnvil(ctx, def) })
-	eg1.Go(func() error { return deployAllCreate3(ctx, def) })
-	if err := eg1.Wait(); err != nil {
-		return nil, errors.Wrap(err, "deploy prep")
+	if err = fundAnvil(ctx, def); err != nil {
+		return nil, errors.Wrap(err, "fund anvil")
+	}
+
+	if err = deployAllCreate3(ctx, def); err != nil {
+		return nil, errors.Wrap(err, "deploy create3")
 	}
 
 	// Deploy portals
