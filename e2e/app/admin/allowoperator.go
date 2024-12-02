@@ -60,7 +60,7 @@ func AllowOperators(ctx context.Context, def app.Definition, cfg Config) error {
 		// Mainnet
 		operatorsRange = mainnetOperators
 	}
-	
+
 	var toAllow []common.Address
 	for _, operator := range operatorsRange {
 		if ok, err := contract.IsAllowedValidator(&bind.CallOpts{}, operator); err != nil {
@@ -105,7 +105,7 @@ func AllowOperators(ctx context.Context, def app.Definition, cfg Config) error {
 		// Mainnet
 		link = fmt.Sprintf("https://omniscan.network/tx/%s", tx.Hash().Hex())
 	}
-	
+
 	log.Info(ctx, "🎉 Successfully allowed operators as validators",
 		"count", len(toAllow),
 		"link", link,
