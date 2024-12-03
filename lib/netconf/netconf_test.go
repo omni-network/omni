@@ -24,6 +24,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestStaticNetwork(t *testing.T) {
+	t.Parallel()
+	for _, chain := range netconf.All() {
+		static := chain.Static()
+		require.Equal(t, chain, static.Network)
+	}
+}
+
 //go:generate go test -golden -run=TestGenConsSeeds
 
 // TestGenConsSeeds generates <network>/consensus-seeds.txt by loading e2e manifests and parsing seed* p2p_consensus keys.
