@@ -16,24 +16,67 @@ contract FeeOracleV2_Test is Test {
     address manager;
     address owner;
 
-    uint256 baseGasLimit = 100_000;
-    uint256 protocolFee = 1 gwei;
+    uint96 protocolFee = 1 gwei;
+
+    uint16 gasTokenA = 1;
+    uint16 gasTokenB = 2;
 
     uint64 chainAId = 1;
     uint64 chainBId = 2;
     uint64 chainCId = 3;
+
+    uint64 dataCostAId = 1;
+    uint64 dataCostBId = 2;
+
+    uint64 gasLimit = 200_000;
+    bytes data = abi.encodeWithSignature("test()");
 
     function setUp() public {
         manager = makeAddr("manager");
         owner = makeAddr("owner");
 
         IFeeOracleV2.FeeParams[] memory feeParams = new IFeeOracleV2.FeeParams[](3);
-        feeParams[0] =
-            IFeeOracleV2.FeeParams({ chainId: chainAId, execGasPrice: 1 gwei, dataGasPrice: 2 gwei, toNativeRate: 1e6 });
-        feeParams[1] =
-            IFeeOracleV2.FeeParams({ chainId: chainBId, execGasPrice: 2 gwei, dataGasPrice: 3 gwei, toNativeRate: 2e6 });
-        feeParams[2] =
-            IFeeOracleV2.FeeParams({ chainId: chainCId, execGasPrice: 3 gwei, dataGasPrice: 4 gwei, toNativeRate: 5e3 });
+        feeParams[0] = IFeeOracleV2.FeeParams({
+            gasToken: gasTokenA,
+            baseGasLimit: 100_000,
+            chainId: chainAId,
+            gasPrice: 2 gwei,
+            dataCostId: dataCostAId
+        });
+        feeParams[1] = IFeeOracleV2.FeeParams({
+            gasToken: gasTokenB,
+            baseGasLimit: 100_000,
+            chainId: chainBId,
+            gasPrice: 4 gwei,
+            dataCostId: dataCostBId
+        });
+        feeParams[2] = IFeeOracleV2.FeeParams({
+            gasToken: gasTokenA,
+            baseGasLimit: 100_000,
+            chainId: chainCId,
+            gasPrice: 6 gwei,
+            dataCostId: dataCostBId
+        });
+
+        IFeeOracleV2.DataCostParams[] memory dataCostParams = new IFeeOracleV2.DataCostParams[](2);
+        dataCostParams[0] = IFeeOracleV2.DataCostParams({
+            gasToken: gasTokenA,
+            baseBytes: 100,
+            id: dataCostAId,
+            gasPrice: 1 gwei,
+            gasPerByte: 1e2
+        });
+        dataCostParams[1] = IFeeOracleV2.DataCostParams({
+            gasToken: gasTokenB,
+            baseBytes: 200,
+            id: dataCostBId,
+            gasPrice: 2 gwei,
+            gasPerByte: 2e2
+        });
+
+        IFeeOracleV2.ToNativeRateParams[] memory toNativeRateParams = new IFeeOracleV2.ToNativeRateParams[](2);
+        toNativeRateParams[0] = IFeeOracleV2.ToNativeRateParams({ gasToken: gasTokenA, nativeRate: 1e18 });
+        toNativeRateParams[1] = IFeeOracleV2.ToNativeRateParams({ gasToken: gasTokenB, nativeRate: 2e18 });
 
         address impl = address(new FeeOracleV2());
         feeOracle = FeeOracleV2(
@@ -42,7 +85,13 @@ contract FeeOracleV2_Test is Test {
                     address(impl),
                     owner,
                     abi.encodeWithSelector(
-                        FeeOracleV2.initialize.selector, owner, manager, baseGasLimit, protocolFee, feeParams
+                        FeeOracleV2.initialize.selector,
+                        owner,
+                        manager,
+                        protocolFee,
+                        feeParams,
+                        dataCostParams,
+                        toNativeRateParams
                     )
                 )
             )
@@ -50,9 +99,10 @@ contract FeeOracleV2_Test is Test {
     }
 
     function test_feeFor() public {
-        uint64 destChainId = chainBId;
-        uint64 gasLimit = 200_000;
-        bytes memory data = abi.encodeWithSignature("test()");
+        uint64 dataCostId = feeOracle.execDataCostId(chainBId);
+
+        uint16 execGasToken = feeOracle.execGasToken(chainBId);
+        uint16 dataGasToken = feeOracle.dataGasToken(dataCostId);
 
         vm.startPrank(manager);
 
@@ -60,71 +110,226 @@ contract FeeOracleV2_Test is Test {
         // we do not duplicate feeFor logic here, rather we test that the fee is
         // reasonable, the function does not revert, and changes when fee params change
 
-        uint256 fee = feeOracle.feeFor(destChainId, data, gasLimit);
-        assertEq(fee > feeOracle.execGasPrice(destChainId) * gasLimit, true); // should be higher thatn just gas price
-        assertEq(fee, feeOracle.feeFor(destChainId, data, gasLimit)); // should be stable
+        uint256 fee = feeOracle.feeFor(chainBId, data, gasLimit);
+        assertEq(fee > feeOracle.execGasPrice(chainBId) * gasLimit, true); // should be higher than just gas price
+        assertEq(fee, feeOracle.feeFor(chainBId, data, gasLimit)); // should be stable
 
         // change exec gas price
-        uint64 gasPrice = feeOracle.execGasPrice(destChainId);
+        uint64 execGasPrice = feeOracle.execGasPrice(chainBId);
 
-        feeOracle.setExecGasPrice(destChainId, gasPrice * 2);
-        assertEq(fee < feeOracle.feeFor(destChainId, data, gasLimit), true); // should be higher now
+        feeOracle.setExecGasPrice(chainBId, execGasPrice * 2);
+        assertEq(fee < feeOracle.feeFor(chainBId, data, gasLimit), true); // should be higher now
 
-        feeOracle.setExecGasPrice(destChainId, gasPrice / 2);
-        assertEq(fee > feeOracle.feeFor(destChainId, data, gasLimit), true); // should be lower now
+        feeOracle.setExecGasPrice(chainBId, execGasPrice / 2);
+        assertEq(fee > feeOracle.feeFor(chainBId, data, gasLimit), true); // should be lower now
 
-        feeOracle.setExecGasPrice(destChainId, gasPrice); // reset
-
-        // change to native rate
-        uint64 toNativeRate = uint64(feeOracle.toNativeRate(destChainId));
-
-        feeOracle.setToNativeRate(destChainId, toNativeRate * 2);
-        assertEq(fee < feeOracle.feeFor(destChainId, data, gasLimit), true); // should be higher
-
-        feeOracle.setToNativeRate(destChainId, toNativeRate / 2);
-        assertEq(fee > feeOracle.feeFor(destChainId, data, gasLimit), true); // should be lower
-
-        feeOracle.setToNativeRate(destChainId, toNativeRate); // reset
+        feeOracle.setExecGasPrice(chainBId, execGasPrice); // reset
 
         // change data gas price
+        uint64 dataGasPrice = feeOracle.dataGasPrice(dataCostId);
 
-        uint64 dataGasPrice = feeOracle.dataGasPrice(destChainId);
+        feeOracle.setDataGasPrice(dataCostId, dataGasPrice * 2);
+        assertEq(fee < feeOracle.feeFor(chainBId, data, gasLimit), true); // should be higher
 
-        feeOracle.setDataGasPrice(destChainId, dataGasPrice * 2);
-        assertEq(fee < feeOracle.feeFor(destChainId, data, gasLimit), true); // should be higher
+        feeOracle.setDataGasPrice(dataCostId, dataGasPrice / 2);
+        assertEq(fee > feeOracle.feeFor(chainBId, data, gasLimit), true); // should be lower
 
-        feeOracle.setDataGasPrice(destChainId, dataGasPrice / 2);
-        assertEq(fee > feeOracle.feeFor(destChainId, data, gasLimit), true); // should be lower
+        feeOracle.setDataGasPrice(dataCostId, dataGasPrice); // reset
+
+        // change base gas limit
+        uint32 baseGasLimit = feeOracle.baseGasLimit(chainBId);
+
+        feeOracle.setBaseGasLimit(chainBId, baseGasLimit * 2);
+        assertEq(fee < feeOracle.feeFor(chainBId, data, gasLimit), true); // should be higher
+
+        feeOracle.setBaseGasLimit(chainBId, baseGasLimit / 2);
+        assertEq(fee > feeOracle.feeFor(chainBId, data, gasLimit), true); // should be lower
+
+        feeOracle.setBaseGasLimit(chainBId, baseGasLimit); // reset
+
+        // change base data bytes buffer
+        uint32 baseBytes = feeOracle.baseBytes(dataCostId);
+
+        feeOracle.setBaseBytes(dataCostId, baseBytes * 2);
+        assertEq(fee < feeOracle.feeFor(chainBId, data, gasLimit), true); // should be higher
+
+        feeOracle.setBaseBytes(dataCostId, baseBytes / 2);
+        assertEq(fee > feeOracle.feeFor(chainBId, data, gasLimit), true); // should be lower
+
+        feeOracle.setBaseBytes(dataCostId, baseBytes); // reset
+
+        // change exec to native rate
+        uint256 execToNativeRate = feeOracle.toNativeRate(chainBId);
+
+        feeOracle.setToNativeRate(execGasToken, execToNativeRate * 2);
+        assertEq(fee < feeOracle.feeFor(chainBId, data, gasLimit), true); // should be higher
+
+        feeOracle.setToNativeRate(execGasToken, execToNativeRate / 2);
+        assertEq(fee > feeOracle.feeFor(chainBId, data, gasLimit), true); // should be lower
+
+        feeOracle.setToNativeRate(execGasToken, execToNativeRate); // reset
+
+        // change data to native rate
+        uint256 dataToNativeRate = feeOracle.tokenToNativeRate(dataGasToken);
+
+        feeOracle.setToNativeRate(dataGasToken, dataToNativeRate * 2);
+        assertEq(fee < feeOracle.feeFor(chainBId, data, gasLimit), true); // should be higher
+
+        feeOracle.setToNativeRate(dataGasToken, dataToNativeRate / 2);
+        assertEq(fee > feeOracle.feeFor(chainBId, data, gasLimit), true); // should be lower
+
+        feeOracle.setToNativeRate(dataGasToken, dataToNativeRate); // reset
+
+        // change gas per byte
+        uint64 gasPerByte = feeOracle.dataGasPerByte(dataCostId);
+
+        feeOracle.setGasPerByte(dataCostId, gasPerByte * 2);
+        assertEq(fee < feeOracle.feeFor(chainBId, data, gasLimit), true); // should be higher
+
+        feeOracle.setGasPerByte(dataCostId, gasPerByte / 2);
+        assertEq(fee > feeOracle.feeFor(chainBId, data, gasLimit), true); // should be lower
+
+        feeOracle.setGasPerByte(dataCostId, gasPerByte); // reset
 
         // increaes with calldata length
         bytes memory data2 = abi.encodeWithSignature("test(uint256)", 123);
-        assertEq(feeOracle.feeFor(destChainId, data2, gasLimit) > fee, true); // should be higher
+        assertEq(feeOracle.feeFor(chainBId, data2, gasLimit) > fee, true); // should be higher
 
-        // reverts for unsupported chain
-        vm.expectRevert("FeeOracleV2: no fee params");
+        // reverts for unsupported exec chain
+        vm.expectRevert(IFeeOracleV2.NoFeeParams.selector);
         feeOracle.feeFor(123_456, data, gasLimit);
+
+        // reverts for unsupported data chain
+        feeOracle.setDataCostId(chainBId, 123_456);
+        vm.expectRevert(IFeeOracleV2.NoFeeParams.selector);
+        feeOracle.feeFor(chainBId, data, gasLimit);
 
         vm.stopPrank();
     }
 
-    function test_setManager() public {
-        address newManager = makeAddr("newManager");
+    function test_bulkSetExecFeeParams() public {
+        IFeeOracleV2.FeeParams[] memory feeParams = new IFeeOracleV2.FeeParams[](4);
 
-        // only owner can set manager
-        address notOwner = address(0x456);
-        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, notOwner));
-        vm.prank(notOwner);
-        feeOracle.setManager(newManager);
+        feeParams[0] = IFeeOracleV2.FeeParams({
+            gasToken: gasTokenA,
+            baseGasLimit: 100_000,
+            chainId: chainAId,
+            gasPrice: feeOracle.execGasPrice(chainAId) + 1 gwei,
+            dataCostId: dataCostAId
+        });
 
-        // cannot set zero manager
-        vm.expectRevert("FeeOracleV2: no zero manager");
-        vm.prank(owner);
-        feeOracle.setManager(address(0));
+        feeParams[1] = IFeeOracleV2.FeeParams({
+            gasToken: gasTokenB,
+            baseGasLimit: 100_000,
+            chainId: chainBId,
+            gasPrice: feeOracle.execGasPrice(chainBId) + 2 gwei,
+            dataCostId: dataCostBId
+        });
 
-        // set manager
-        vm.prank(owner);
-        feeOracle.setManager(newManager);
-        assertEq(feeOracle.manager(), newManager);
+        feeParams[2] = IFeeOracleV2.FeeParams({
+            gasToken: gasTokenA,
+            baseGasLimit: 100_000,
+            chainId: chainCId,
+            gasPrice: feeOracle.execGasPrice(chainCId) + 3 gwei,
+            dataCostId: dataCostBId
+        });
+
+        feeParams[3] = IFeeOracleV2.FeeParams({
+            gasToken: gasTokenB,
+            baseGasLimit: 100_000,
+            chainId: 123_456, // new chain id
+            gasPrice: 123 gwei,
+            dataCostId: dataCostBId
+        });
+
+        // only manager can set bulk exec fee params
+        vm.expectRevert(IFeeOracleV2.NotManager.selector);
+        feeOracle.bulkSetFeeParams(feeParams);
+
+        // set bulk exec fee params
+        vm.prank(manager);
+        feeOracle.bulkSetFeeParams(feeParams);
+
+        for (uint256 i = 0; i < feeParams.length; i++) {
+            IFeeOracleV2.FeeParams memory p = feeParams[i];
+            assertEq(feeOracle.execGasToken(p.chainId), p.gasToken);
+            assertEq(feeOracle.baseGasLimit(p.chainId), p.baseGasLimit);
+            assertEq(feeOracle.execGasPrice(p.chainId), p.gasPrice);
+            assertEq(feeOracle.execDataCostId(p.chainId), p.dataCostId);
+        }
+    }
+
+    function test_bulkSetDataCostParams() public {
+        IFeeOracleV2.DataCostParams[] memory feeParams = new IFeeOracleV2.DataCostParams[](3);
+
+        feeParams[0] = IFeeOracleV2.DataCostParams({
+            gasToken: gasTokenA,
+            baseBytes: feeOracle.baseBytes(dataCostAId) + 1,
+            id: dataCostAId,
+            gasPrice: feeOracle.dataGasPrice(dataCostAId) + 1 gwei,
+            gasPerByte: 1e2
+        });
+
+        feeParams[1] = IFeeOracleV2.DataCostParams({
+            gasToken: gasTokenB,
+            baseBytes: feeOracle.baseBytes(dataCostBId) + 2,
+            id: dataCostBId,
+            gasPrice: feeOracle.dataGasPrice(dataCostBId) + 2 gwei,
+            gasPerByte: 2e2
+        });
+
+        feeParams[2] = IFeeOracleV2.DataCostParams({
+            gasToken: gasTokenA,
+            baseBytes: 123,
+            id: 123_456, // new data cost id
+            gasPrice: 123 gwei,
+            gasPerByte: 3e2
+        });
+
+        // only manager can set bulk data fee params
+        vm.expectRevert(IFeeOracleV2.NotManager.selector);
+        feeOracle.bulkSetDataCostParams(feeParams);
+
+        // set bulk data fee params
+        vm.prank(manager);
+        feeOracle.bulkSetDataCostParams(feeParams);
+
+        for (uint256 i = 0; i < feeParams.length; i++) {
+            IFeeOracleV2.DataCostParams memory p = feeParams[i];
+            assertEq(feeOracle.dataGasToken(p.id), p.gasToken);
+            assertEq(feeOracle.baseBytes(p.id), p.baseBytes);
+            assertEq(feeOracle.dataGasPrice(p.id), p.gasPrice);
+            assertEq(feeOracle.dataGasPerByte(p.id), p.gasPerByte);
+        }
+    }
+
+    function test_bulkSetToNativeRate() public {
+        IFeeOracleV2.ToNativeRateParams[] memory toNativeRateParams = new IFeeOracleV2.ToNativeRateParams[](3);
+
+        toNativeRateParams[0] = IFeeOracleV2.ToNativeRateParams({
+            gasToken: gasTokenA,
+            nativeRate: feeOracle.tokenToNativeRate(gasTokenA) + 1
+        });
+
+        toNativeRateParams[1] = IFeeOracleV2.ToNativeRateParams({
+            gasToken: gasTokenB,
+            nativeRate: feeOracle.tokenToNativeRate(gasTokenB) + 2
+        });
+
+        toNativeRateParams[2] = IFeeOracleV2.ToNativeRateParams({ gasToken: 3, nativeRate: 3e18 });
+
+        // only manager can set bulk to native rate
+        vm.expectRevert(IFeeOracleV2.NotManager.selector);
+        feeOracle.bulkSetToNativeRate(toNativeRateParams);
+
+        // set bulk to native rate params
+        vm.prank(manager);
+        feeOracle.bulkSetToNativeRate(toNativeRateParams);
+
+        for (uint256 i = 0; i < toNativeRateParams.length; i++) {
+            IFeeOracleV2.ToNativeRateParams memory p = toNativeRateParams[i];
+            assertEq(feeOracle.tokenToNativeRate(p.gasToken), p.nativeRate);
+        }
     }
 
     function test_setExecGasPrice() public {
@@ -132,16 +337,16 @@ contract FeeOracleV2_Test is Test {
         uint64 newGasPrice = feeOracle.execGasPrice(destChainId) + 1 gwei;
 
         // only manager can set gas price
-        vm.expectRevert("FeeOracleV2: not manager");
+        vm.expectRevert(IFeeOracleV2.NotManager.selector);
         feeOracle.setExecGasPrice(destChainId, newGasPrice);
 
         // no zero gas price
-        vm.expectRevert("FeeOracleV2: no zero gas price");
+        vm.expectRevert(IFeeOracleV2.ZeroGasPrice.selector);
         vm.prank(manager);
         feeOracle.setExecGasPrice(destChainId, 0);
 
         // no zero chain id
-        vm.expectRevert("FeeOracleV2: no zero chain id");
+        vm.expectRevert(IFeeOracleV2.ZeroChainId.selector);
         vm.prank(manager);
         feeOracle.setExecGasPrice(0, newGasPrice);
 
@@ -152,31 +357,141 @@ contract FeeOracleV2_Test is Test {
     }
 
     function test_setDataGasPrice() public {
-        uint64 destChainId = chainAId;
-        uint64 newGasPrice = feeOracle.dataGasPrice(destChainId) + 1 gwei;
+        uint64 dataCostId = dataCostAId;
+        uint64 newGasPrice = feeOracle.dataGasPrice(dataCostId) + 1 gwei;
 
         // only manager can set gas price
-        vm.expectRevert("FeeOracleV2: not manager");
-        feeOracle.setDataGasPrice(destChainId, newGasPrice);
+        vm.expectRevert(IFeeOracleV2.NotManager.selector);
+        feeOracle.setDataGasPrice(dataCostId, newGasPrice);
 
         // no zero gas price
-        vm.expectRevert("FeeOracleV2: no zero gas price");
+        vm.expectRevert(IFeeOracleV2.ZeroGasPrice.selector);
         vm.prank(manager);
-        feeOracle.setDataGasPrice(destChainId, 0);
+        feeOracle.setDataGasPrice(dataCostId, 0);
 
         // no zero chain id
-        vm.expectRevert("FeeOracleV2: no zero chain id");
+        vm.expectRevert(IFeeOracleV2.ZeroDataCostId.selector);
         vm.prank(manager);
         feeOracle.setDataGasPrice(0, newGasPrice);
 
         // set gas price
         vm.prank(manager);
-        feeOracle.setDataGasPrice(destChainId, newGasPrice);
-        assertEq(feeOracle.dataGasPrice(destChainId), newGasPrice);
+        feeOracle.setDataGasPrice(dataCostId, newGasPrice);
+        assertEq(feeOracle.dataGasPrice(dataCostId), newGasPrice);
+    }
+
+    function test_setBaseGasLimit() public {
+        uint64 destChainId = chainCId;
+        uint32 newBaseGasLimit = feeOracle.baseGasLimit(destChainId) + 10_000;
+
+        // only manager can set gas price
+        vm.expectRevert(IFeeOracleV2.NotManager.selector);
+        feeOracle.setBaseGasLimit(destChainId, newBaseGasLimit);
+
+        // no zero chain id
+        vm.expectRevert(IFeeOracleV2.ZeroChainId.selector);
+        vm.prank(manager);
+        feeOracle.setBaseGasLimit(0, newBaseGasLimit);
+
+        // set base gas limit
+        vm.prank(manager);
+        feeOracle.setBaseGasLimit(destChainId, newBaseGasLimit);
+        assertEq(feeOracle.baseGasLimit(destChainId), newBaseGasLimit);
+    }
+
+    function test_setBaseBytes() public {
+        uint64 dataCostId = dataCostBId;
+        uint32 newBaseBytes = feeOracle.baseBytes(dataCostId) + 100;
+
+        // only manager can set data size buffer
+        vm.expectRevert(IFeeOracleV2.NotManager.selector);
+        feeOracle.setBaseBytes(dataCostId, newBaseBytes);
+
+        // no zero chain id
+        vm.expectRevert(IFeeOracleV2.ZeroDataCostId.selector);
+        vm.prank(manager);
+        feeOracle.setBaseBytes(0, newBaseBytes);
+
+        // set data size buffer
+        vm.prank(manager);
+        feeOracle.setBaseBytes(dataCostId, newBaseBytes);
+        assertEq(feeOracle.baseBytes(dataCostId), newBaseBytes);
+    }
+
+    function test_setDataCostId() public {
+        uint64 destChainId = chainAId;
+        uint64 newDataCostId = dataCostBId;
+
+        // only manager can set data cost id
+        vm.expectRevert(IFeeOracleV2.NotManager.selector);
+        feeOracle.setDataCostId(destChainId, newDataCostId);
+
+        // no zero chain id
+        vm.expectRevert(IFeeOracleV2.ZeroChainId.selector);
+        vm.prank(manager);
+        feeOracle.setDataCostId(0, newDataCostId);
+
+        // no zero data cost id
+        vm.expectRevert(IFeeOracleV2.ZeroDataCostId.selector);
+        vm.prank(manager);
+        feeOracle.setDataCostId(destChainId, 0);
+
+        // set data cost id
+        vm.prank(manager);
+        feeOracle.setDataCostId(destChainId, newDataCostId);
+        assertEq(feeOracle.execDataCostId(destChainId), newDataCostId);
+    }
+
+    function test_setGasPerByte() public {
+        uint64 dataCostId = dataCostAId;
+        uint64 newGasPerByte = feeOracle.dataGasPerByte(dataCostId) + 16;
+
+        // only manager can set gas per byte
+        vm.expectRevert(IFeeOracleV2.NotManager.selector);
+        feeOracle.setGasPerByte(dataCostId, newGasPerByte);
+
+        // no zero data cost id
+        vm.expectRevert(IFeeOracleV2.ZeroDataCostId.selector);
+        vm.prank(manager);
+        feeOracle.setGasPerByte(0, newGasPerByte);
+
+        // no zero gas per byte
+        vm.expectRevert(IFeeOracleV2.ZeroGasPerByte.selector);
+        vm.prank(manager);
+        feeOracle.setGasPerByte(dataCostId, 0);
+
+        // set gas per byte
+        vm.prank(manager);
+        feeOracle.setGasPerByte(dataCostId, newGasPerByte);
+        assertEq(feeOracle.dataGasPerByte(dataCostId), newGasPerByte);
+    }
+
+    function test_setToNativeRate() public {
+        uint16 gasToken = gasTokenB;
+        uint256 newToNativeRate = feeOracle.tokenToNativeRate(gasToken) + 1e6;
+
+        // only manager can set to native rate
+        vm.expectRevert(IFeeOracleV2.NotManager.selector);
+        feeOracle.setToNativeRate(gasToken, newToNativeRate);
+
+        // no zero rate
+        vm.expectRevert(IFeeOracleV2.ZeroNativeRate.selector);
+        vm.prank(manager);
+        feeOracle.setToNativeRate(gasToken, 0);
+
+        // no zero chain id
+        vm.expectRevert(IFeeOracleV2.ZeroGasToken.selector);
+        vm.prank(manager);
+        feeOracle.setToNativeRate(0, newToNativeRate);
+
+        // set to native rate
+        vm.prank(manager);
+        feeOracle.setToNativeRate(gasToken, newToNativeRate);
+        assertEq(feeOracle.tokenToNativeRate(gasToken), newToNativeRate);
     }
 
     function test_setProtocolFee() public {
-        uint72 newProtocolFee = feeOracle.protocolFee() + 1 gwei;
+        uint96 newProtocolFee = feeOracle.protocolFee() + 1 gwei;
 
         // only owner can set protocol fee
         address notOwner = address(0x456);
@@ -190,89 +505,23 @@ contract FeeOracleV2_Test is Test {
         assertEq(feeOracle.protocolFee(), newProtocolFee);
     }
 
-    function test_setBaseGasLimit() public {
-        uint24 newBaseGasLimit = feeOracle.baseGasLimit() + 10_000;
+    function test_setManager() public {
+        address newManager = makeAddr("newManager");
 
-        // only owner can set base gas limit
+        // only owner can set manager
         address notOwner = address(0x456);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, notOwner));
         vm.prank(notOwner);
-        feeOracle.setBaseGasLimit(newBaseGasLimit);
+        feeOracle.setManager(newManager);
 
-        // set base gas limit
+        // cannot set zero manager
+        vm.expectRevert(IFeeOracleV2.ZeroAddress.selector);
         vm.prank(owner);
-        feeOracle.setBaseGasLimit(newBaseGasLimit);
-        assertEq(feeOracle.baseGasLimit(), newBaseGasLimit);
-    }
+        feeOracle.setManager(address(0));
 
-    function test_setToNativeRate() public {
-        uint64 destChainId = chainAId;
-        uint64 newToNativeRate = uint64(feeOracle.toNativeRate(destChainId) + 1);
-
-        // only manager can set to native rate
-        vm.expectRevert("FeeOracleV2: not manager");
-        feeOracle.setToNativeRate(destChainId, newToNativeRate);
-
-        // no zero rate
-        vm.expectRevert("FeeOracleV2: no zero rate");
-        vm.prank(manager);
-        feeOracle.setToNativeRate(destChainId, 0);
-
-        // no zero chain id
-        vm.expectRevert("FeeOracleV2: no zero chain id");
-        vm.prank(manager);
-        feeOracle.setToNativeRate(0, newToNativeRate);
-
-        // set to native rate
-        vm.prank(manager);
-        feeOracle.setToNativeRate(destChainId, newToNativeRate);
-        assertEq(feeOracle.toNativeRate(destChainId), newToNativeRate);
-    }
-
-    function test_bulkSetFeeParams() public {
-        IFeeOracleV2.FeeParams[] memory feeParams = new IFeeOracleV2.FeeParams[](4);
-
-        feeParams[0] = IFeeOracleV2.FeeParams({
-            chainId: chainAId,
-            execGasPrice: feeOracle.execGasPrice(chainAId) + 1 gwei,
-            dataGasPrice: feeOracle.dataGasPrice(chainAId) + 2 gwei,
-            toNativeRate: uint64(feeOracle.toNativeRate(chainAId) + 1)
-        });
-
-        feeParams[1] = IFeeOracleV2.FeeParams({
-            chainId: chainBId,
-            execGasPrice: feeOracle.execGasPrice(chainBId) + 2 gwei,
-            dataGasPrice: feeOracle.dataGasPrice(chainBId) + 3 gwei,
-            toNativeRate: uint64(feeOracle.toNativeRate(chainBId) + 2)
-        });
-
-        feeParams[2] = IFeeOracleV2.FeeParams({
-            chainId: chainCId,
-            execGasPrice: feeOracle.execGasPrice(chainCId) + 3 gwei,
-            dataGasPrice: feeOracle.dataGasPrice(chainCId) + 4 gwei,
-            toNativeRate: uint64(feeOracle.toNativeRate(chainCId) + 3)
-        });
-
-        feeParams[3] = IFeeOracleV2.FeeParams({
-            chainId: 123_456, // new chain id
-            execGasPrice: 123 gwei,
-            dataGasPrice: 456 gwei,
-            toNativeRate: 2e18
-        });
-
-        // only manager can set bulk fee params
-        vm.expectRevert("FeeOracleV2: not manager");
-        feeOracle.bulkSetFeeParams(feeParams);
-
-        // set bulk fee params
-        vm.prank(manager);
-        feeOracle.bulkSetFeeParams(feeParams);
-
-        for (uint256 i = 0; i < feeParams.length; i++) {
-            IFeeOracleV2.FeeParams memory p = feeParams[i];
-            assertEq(feeOracle.execGasPrice(p.chainId), p.execGasPrice);
-            assertEq(feeOracle.dataGasPrice(p.chainId), p.dataGasPrice);
-            assertEq(feeOracle.toNativeRate(p.chainId), p.toNativeRate);
-        }
+        // set manager
+        vm.prank(owner);
+        feeOracle.setManager(newManager);
+        assertEq(feeOracle.manager(), newManager);
     }
 }

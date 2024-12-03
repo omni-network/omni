@@ -224,8 +224,10 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 		return errors.Wrap(err, "wait mined")
 	}
 
-	link := fmt.Sprintf("https://%s.omniscan.network/tx/%s", cfg.Network, tx.Hash().Hex())
-	log.Info(ctx, "🎉 Create-validator transaction sent and included on-chain", "link", link, "block", rec.BlockNumber.Uint64())
+	log.Info(ctx, "🎉 Create-validator transaction sent and included on-chain",
+		"link", cfg.Network.Static().OmniScanTXURL(tx.Hash()),
+		"block", rec.BlockNumber.Uint64(),
+	)
 
 	return nil
 }
@@ -328,8 +330,10 @@ func delegate(ctx context.Context, cfg delegateConfig) error {
 		return errors.Wrap(err, "wait mined")
 	}
 
-	link := fmt.Sprintf("https://%s.omniscan.network/tx/%s", cfg.Network, tx.Hash().Hex())
-	log.Info(ctx, "🎉 Delegate transaction sent and included on-chain", "link", link, "block", rec.BlockNumber.Uint64())
+	log.Info(ctx, "🎉 Delegate transaction sent and included on-chain",
+		"link", cfg.Network.Static().OmniScanTXURL(tx.Hash()),
+		"block", rec.BlockNumber.Uint64(),
+	)
 
 	return nil
 }
@@ -419,8 +423,10 @@ func unjailValidator(ctx context.Context, cfg eoaConfig) error {
 		return errors.Wrap(err, "wait mined")
 	}
 
-	link := fmt.Sprintf("https://%s.omniscan.network/tx/%s", cfg.Network, rec.TxHash.Hex())
-	log.Info(ctx, "🎉 Unjail transaction sent and included on-chain", "link", link, "block", rec.BlockNumber.Uint64())
+	log.Info(ctx, "🎉 Unjail transaction sent and included on-chain",
+		"link", cfg.Network.Static().OmniScanTXURL(tx.Hash()),
+		"block", rec.BlockNumber.Uint64(),
+	)
 
 	return nil
 }

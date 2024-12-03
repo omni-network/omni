@@ -7,6 +7,7 @@ import { InitializableHelper } from "script/utils/InitializableHelper.sol";
 import { EIP1967Helper } from "script/utils/EIP1967Helper.sol";
 import { OmniPortal } from "src/xchain/OmniPortal.sol";
 import { FeeOracleV1 } from "src/xchain/FeeOracleV1.sol";
+import { FeeOracleV2 } from "src/xchain/FeeOracleV2.sol";
 import { PortalRegistry } from "src/xchain/PortalRegistry.sol";
 import { OmniGasPump } from "src/token/OmniGasPump.sol";
 import { OmniGasStation } from "src/token/OmniGasStation.sol";
@@ -21,6 +22,7 @@ import { Script } from "forge-std/Script.sol";
 import { BridgeL1PostUpgradeTest } from "./BridgeL1PostUpgradeTest.sol";
 import { BridgeNativePostUpgradeTest } from "./BridgeNativePostUpgradeTest.sol";
 import { StakingPostUpgradeTest } from "./StakingPostUpgradeTest.sol";
+import { FeeOracleV2PostUpdateTest } from "./FeeOracleV2PostUpdateTest.sol";
 
 /**
  * @title Admin
@@ -198,6 +200,22 @@ contract Admin is Script {
     }
 
     /**
+     * @notice Upgrade a FeeOracleV2 contract.
+     * @param admin     The address of the admin account, owner of the proxy admin
+     * @param deployer  The address of the account that will deploy the new implementation.
+     * @param proxy     The address of the proxy to upgrade.
+     */
+    function upgradeFeeOracleV2(address admin, address deployer, address proxy, bytes calldata data) public {
+        vm.startBroadcast(deployer);
+        address impl = address(new FeeOracleV2());
+        vm.stopBroadcast();
+
+        _upgradeProxy(admin, proxy, impl, data);
+
+        // TODO: add post upgrade tests
+    }
+
+    /**
      * @notice Upgrade an OmniGasPump contract.
      * @param admin     The address of the admin account, owner of the proxy admin
      * @param deployer  The address of the account that will deploy the new implementation.
@@ -363,6 +381,27 @@ contract Admin is Script {
         _upgradeProxy(admin, Predeploys.PortalRegistry, impl, data);
 
         // TODO: add post upgrade tests
+    }
+
+    /**
+     * @notice Sets the OmniPortal's fee oracle to the new FeeOracleV2 contract.
+     * @param admin         The address of the admin account, owner of the OmniPortal contract.
+     * @param portal        The address of the OmniPortal contract.
+     * @param newFeeOracle  The address of the new FeeOracleV2 contract.
+     */
+    function setPortalFeeOracleV2(address admin, address portal, address newFeeOracle) public {
+        address oldFeeOracle = OmniPortal(portal).feeOracle();
+        require(oldFeeOracle != newFeeOracle, "new fee oracle required");
+
+        vm.startBroadcast(admin);
+        OmniPortal(portal).setFeeOracle(newFeeOracle);
+        vm.stopBroadcast();
+
+        require(OmniPortal(portal).feeOracle() == newFeeOracle, "portal assignment failed");
+        require(FeeOracleV2(newFeeOracle).manager() != address(0), "fee oracle not initialized");
+        require(FeeOracleV2(newFeeOracle).version() == 2, "fee oracle not FeeOracleV2");
+
+        new FeeOracleV2PostUpdateTest().run(newFeeOracle);
     }
 
     /**

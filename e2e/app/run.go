@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/e2e/netman"
 	"github.com/omni-network/omni/e2e/netman/pingpong"
 	"github.com/omni-network/omni/e2e/solve"
+	"github.com/omni-network/omni/e2e/solve/devapp"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/contracts"
@@ -86,12 +87,12 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 
 	contracts.UseStagingOmniRPC(def.Testnet.BroadcastOmniEVM().ExternalRPC)
 
-	// Prep for deploying contracts.
-	var eg1 errgroup.Group
-	eg1.Go(func() error { return fundAnvil(ctx, def) })
-	eg1.Go(func() error { return deployAllCreate3(ctx, def) })
-	if err := eg1.Wait(); err != nil {
-		return nil, errors.Wrap(err, "deploy prep")
+	if err = fundAnvil(ctx, def); err != nil {
+		return nil, errors.Wrap(err, "fund anvil")
+	}
+
+	if err = deployAllCreate3(ctx, def); err != nil {
+		return nil, errors.Wrap(err, "deploy create3")
 	}
 
 	// Deploy portals
@@ -171,6 +172,13 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 		return err
 	}
 
+	if def.Manifest.DeploySolve {
+		// TODO(corver): Remove this
+		if err := devapp.TestFlow(ctx, NetworkFromDef(def), ExternalEndpoints(def)); err != nil {
+			return err
+		}
+	}
+
 	var eg errgroup.Group
 	eg.Go(func() error { return testGasPumps(ctx, def) })
 	eg.Go(func() error { return testBridge(ctx, def) })
@@ -193,6 +201,11 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 
 	if err := Wait(ctx, def.Testnet.Testnet, 5); err != nil { // allow some txs to go through
 		return err
+	}
+
+	// Stop before perturbations, since they cause portal txs to fail and e2e tests to flap.
+	if err := stopAddingPortals(); err != nil {
+		return errors.Wrap(err, "stop adding portals")
 	}
 
 	if def.Testnet.HasPerturbations() {
@@ -226,10 +239,6 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 		if err != nil {
 			return err
 		}
-	}
-
-	if err := stopAddingPortals(); err != nil {
-		return errors.Wrap(err, "stop adding portals")
 	}
 
 	network := NetworkFromDef(def) // Safe to call NetworkFromDef since this after netman.DeployContracts

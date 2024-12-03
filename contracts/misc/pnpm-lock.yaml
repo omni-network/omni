@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      createx:
+        specifier: github:pcaversaccio/createx
+        version: https://codeload.github.com/pcaversaccio/createx/tar.gz/ff43c668db7381216ce4e0059ff44ac0d119bfd6
     devDependencies:
       ds-test:
         specifier: github:dapphub/ds-test
@@ -17,6 +21,10 @@ importers:
 
 packages:
 
+  createx@https://codeload.github.com/pcaversaccio/createx/tar.gz/ff43c668db7381216ce4e0059ff44ac0d119bfd6:
+    resolution: {tarball: https://codeload.github.com/pcaversaccio/createx/tar.gz/ff43c668db7381216ce4e0059ff44ac0d119bfd6}
+    version: 1.0.0
+
   ds-test@https://codeload.github.com/dapphub/ds-test/tar.gz/e282159d5170298eb2455a6c05280ab5a73a4ef0:
     resolution: {tarball: https://codeload.github.com/dapphub/ds-test/tar.gz/e282159d5170298eb2455a6c05280ab5a73a4ef0}
     version: 1.0.0
@@ -26,6 +34,8 @@ packages:
     version: 1.9.4
 
 snapshots:
+
+  createx@https://codeload.github.com/pcaversaccio/createx/tar.gz/ff43c668db7381216ce4e0059ff44ac0d119bfd6: {}
 
   ds-test@https://codeload.github.com/dapphub/ds-test/tar.gz/e282159d5170298eb2455a6c05280ab5a73a4ef0: {}
 

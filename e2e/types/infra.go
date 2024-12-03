@@ -14,6 +14,8 @@ const (
 	regexpCanary = "canary"
 	// regexpNonCanary is a convenient way to specify non-canary upgrades.
 	regexpNonCanary = "non-canary"
+	// regexpHalo is a convenient way to specify all halo nodes (excluding relayer/monitor/solver etc).
+	regexpHalo = "halo"
 )
 
 // canaries define services included in canary upgrades
@@ -45,9 +47,25 @@ func (c ServiceConfig) MatchService(service string) bool {
 		return true
 	}
 
+	// isCanary returns true if the service is a canary node.
 	isCanary := func() bool {
 		for canary := range canaries {
 			if strings.HasPrefix(service, canary) {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	// isHalo returns true if the service is a halo node.
+	isHalo := func() bool {
+		if strings.HasSuffix(service, "_evm") {
+			return false
+		}
+
+		for _, prefix := range []string{"validator", "full", "seed", "archive"} {
+			if strings.HasPrefix(service, prefix) {
 				return true
 			}
 		}
@@ -59,6 +77,8 @@ func (c ServiceConfig) MatchService(service string) bool {
 		return isCanary()
 	} else if c.Regexp == regexpNonCanary {
 		return !isCanary()
+	} else if c.Regexp == regexpHalo {
+		return isHalo()
 	}
 
 	ok, _ := regexp.MatchString(c.Regexp, service) // Nothing matches invalid regex

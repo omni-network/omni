@@ -2,7 +2,6 @@ package admin
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app"
@@ -75,12 +74,11 @@ func PlanUpgrade(ctx context.Context, def app.Definition, cfg Config) error {
 		return errors.Wrap(err, "wait minded")
 	}
 
-	link := fmt.Sprintf("https://%s.omniscan.network/tx/%s", network, tx.Hash().Hex())
 	log.Info(ctx, "🎉 Successfully planned network upgrade",
 		"upgrade", plan.Name,
 		"height", plan.Height,
 		"network", network,
-		"link", link,
+		"link", network.Static().OmniScanTXURL(tx.Hash()),
 	)
 
 	return nil

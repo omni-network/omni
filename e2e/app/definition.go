@@ -219,11 +219,6 @@ func adaptNode(ctx context.Context, manifest types.Manifest, node *e2e.Node, tag
 		return nil, err
 	}
 
-	// Pinned tag overrides the cli --omni-image-tag flag.
-	if manifest.PinnedHaloTag != "" {
-		tag = manifest.PinnedHaloTag
-	}
-
 	// Override default comet version with our own, see github.com/cometbft/cometbft@v0.38.11/test/e2e/pkg/testnet.go:36
 	const cometLocalVersion = "cometbft/e2e-node:local-version"
 	if node.Version == cometLocalVersion {

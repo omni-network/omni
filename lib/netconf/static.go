@@ -33,6 +33,7 @@ type Static struct {
 	ConsensusArchiveTXT  []byte
 	ExecutionGenesisJSON []byte
 	ExecutionSeedTXT     []byte
+	OmniScanBaseURL      string
 }
 
 type Deployment struct {
@@ -136,6 +137,10 @@ func (s Static) ConsensusRPC() string {
 	return fmt.Sprintf("https://consensus.%s.omni.network", s.Network)
 }
 
+func (s Static) OmniScanTXURL(tx common.Hash) string {
+	return fmt.Sprintf("%s/tx/%s", s.OmniScanBaseURL, tx.Hex())
+}
+
 //nolint:gochecknoglobals // Static addresses
 var (
 	omegaAVS      = common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
@@ -225,6 +230,7 @@ var statics = map[ID]Static{
 		ConsensusArchiveTXT:  omegaConsensusArchivesTXT,
 		ExecutionGenesisJSON: omegaExecutionGenesisJSON,
 		ExecutionSeedTXT:     omegaExecutionSeedsTXT,
+		OmniScanBaseURL:      "https://omega.omniscan.network",
 	},
 	Mainnet: {
 		Network:              Mainnet,
@@ -245,6 +251,7 @@ var statics = map[ID]Static{
 		ConsensusSeedTXT:     mainnetConsensusSeedsTXT,
 		ConsensusArchiveTXT:  mainnetConsusensusArchivesTXT,
 		ExecutionSeedTXT:     mainnetExecutionSeedsTXT,
+		OmniScanBaseURL:      "https://omniscan.network",
 	},
 }
 

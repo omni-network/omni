@@ -3,12 +3,24 @@ package umath_test
 import (
 	"fmt"
 	"math"
+	"math/big"
 	"testing"
 
 	"github.com/omni-network/omni/lib/umath"
 
+	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/require"
 )
+
+func TestMaxUint256(t *testing.T) {
+	t.Parallel()
+	_, overflow := uint256.FromBig(umath.MaxUint256)
+	require.False(t, overflow, "don't expect overflow")
+
+	maxPlus1 := new(big.Int).Add(umath.MaxUint256, big.NewInt(1))
+	_, overflow = uint256.FromBig(maxPlus1)
+	require.True(t, overflow, "expect overflow")
+}
 
 func TestUintTo(t *testing.T) {
 	t.Parallel()

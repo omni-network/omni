@@ -25,16 +25,14 @@ type DeploymentConfig struct {
 	Owner           common.Address
 	Deployer        common.Address
 	Manager         common.Address // manager is the address that can set fee parameters (gas price, conversion rates)
-	BaseGasLimit    *big.Int       // must fit in uint24 (max: 16,777,215)
-	ProtocolFee     *big.Int       // must fit in uint72 (max: 4,722,366,482,869,645,213,695)
+	ProtocolFee     *big.Int       // must fit in uint96
 }
 
 func isEmpty(addr common.Address) bool {
 	return addr == common.Address{}
 }
 
-var maxUint24 = new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 24), big.NewInt(1))
-var maxUint72 = new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 72), big.NewInt(1))
+var maxUint96 = new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 96), big.NewInt(1))
 
 func (cfg DeploymentConfig) Validate() error {
 	if cfg.Create3Salt == "" {
@@ -58,10 +56,7 @@ func (cfg DeploymentConfig) Validate() error {
 	if isEmpty(cfg.Manager) {
 		return errors.New("manager is zero")
 	}
-	if cfg.BaseGasLimit.Cmp(maxUint24) > 0 {
-		return errors.New("base gas limit too high")
-	}
-	if cfg.ProtocolFee.Cmp(maxUint72) > 0 {
+	if cfg.ProtocolFee.Cmp(maxUint96) > 0 {
 		return errors.New("protocol fee too high")
 	}
 
@@ -126,7 +121,6 @@ func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainID
 		Owner:           eoa.MustAddress(network, eoa.RoleManager),
 		Deployer:        eoa.MustAddress(network, eoa.RoleDeployer),
 		Manager:         eoa.MustAddress(network, eoa.RoleMonitor), // NOTE: monitor is owner of fee oracle contracts, because monitor manages on chain gas prices / conversion rates
-		BaseGasLimit:    big.NewInt(100_000),
 		ProtocolFee:     big.NewInt(0),
 	}
 
@@ -196,12 +190,22 @@ func packInitCode(ctx context.Context, chainID uint64, destChainIDs []uint64, cf
 		return nil, errors.Wrap(err, "get proxy abi")
 	}
 
-	feeparams, err := feeParams(ctx, chainID, destChainIDs, backends, coingecko.New())
+	feeParams, err := feeParams(ctx, destChainIDs, backends)
 	if err != nil {
 		return nil, errors.Wrap(err, "fee params")
 	}
 
-	initializer, err := feeOracleAbi.Pack("initialize", cfg.Owner, cfg.Manager, cfg.BaseGasLimit, cfg.ProtocolFee, feeparams)
+	dataCostParams, err := dataCostParams(ctx, destChainIDs, backends)
+	if err != nil {
+		return nil, errors.Wrap(err, "data cost params")
+	}
+
+	nativeRateParams, err := nativeRateParams(ctx, coingecko.New(), chainID)
+	if err != nil {
+		return nil, errors.Wrap(err, "native rate params")
+	}
+
+	initializer, err := feeOracleAbi.Pack("initialize", cfg.Owner, cfg.Manager, cfg.ProtocolFee, feeParams, dataCostParams, nativeRateParams)
 	if err != nil {
 		return nil, errors.Wrap(err, "pack initialize")
 	}
