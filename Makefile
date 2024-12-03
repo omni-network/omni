@@ -28,6 +28,14 @@ contract-bindings: ## Generate golang contract bindings.
 ###                                Utils                                 	###
 ###############################################################################
 
+.PHONY: generate-mocks
+generate-mocks:
+	mockgen -source halo/evmstaking2/types/interfaces.go -package testutil -destination halo/evmstaking2/testutil/mock_interfaces.go
+	mockgen -source halo/valsync/testutil/expected_interfaces.go -package testutil -destination halo/valsync/testutil/mock_interfaces.go
+	mockgen -source halo/portal/testutil/expected_interfaces.go -package testutil -destination halo/portal/testutil/mock_interfaces.go
+	mockgen -source halo/attest/testutil/expected_interfaces.go -package testutil -destination halo/attest/testutil/mock_interfaces.go
+	mockgen -source lib/ethclient/ethclient_gen.go -package mock -destination lib/ethclient/mock/mock_interfaces.go
+
 .PHONY: setup
 setup: install-go-tools install-pre-commit
 	@git config --local core.abbrev 7
