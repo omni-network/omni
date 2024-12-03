@@ -1,3 +1,4 @@
+//go:generate mockgen -source ./interfaces.go -package testutil -destination ../testutil/mock_interfaces.go
 package types
 
 import (

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/omni-network/omni/halo/evmstaking2/testutil"
 	"github.com/omni-network/omni/halo/evmstaking2/types"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
@@ -21,6 +22,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 //nolint:paralleltest // Asserting insertion ids of sequential writes
@@ -51,7 +53,7 @@ func TestInsertAndDeleteEVMEvents(t *testing.T) {
 
 	deliverInterval := int64(5)
 
-	keeper, ctx := setupKeeper(t, deliverInterval, nil, nil, nil, nil, nil)
+	keeper, ctx := setupKeeper(t, deliverInterval, nil, nil)
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -88,6 +90,110 @@ func TestInsertAndDeleteEVMEvents(t *testing.T) {
 	}
 }
 
+func TestDeliveryWithBrokenServer(t *testing.T) {
+	t.Parallel()
+
+	deliverInterval := int64(3)
+	ethStake := int64(7)
+	privKey := k1.GenPrivKey()
+
+	ethClientMock, err := ethclient.NewEngineMock(
+		ethclient.WithPortalRegister(netconf.SimnetNetwork()),
+		ethclient.WithMockValidatorCreation(privKey.PubKey()),
+		ethclient.WithMockSelfDelegation(privKey.PubKey(), ethStake),
+	)
+	require.NoError(t, err)
+
+	ctrl := gomock.NewController(t)
+	sServerMock := testutil.NewMockStakingMsgServer(ctrl)
+	err = errors.New("unconditional error")
+	sServerMock.EXPECT().CreateValidator(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, err)
+	sServerMock.EXPECT().Delegate(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, err)
+
+	keeper, ctx := setupKeeper(t, deliverInterval, ethClientMock, sServerMock)
+
+	var hash common.Hash
+	events, err := keeper.Prepare(ctx, hash)
+	require.NoError(t, err)
+
+	expectDelegates := 1
+	expectCreates := 1
+	expectTotalEvents := expectDelegates + expectCreates
+
+	require.Len(t, events, expectTotalEvents)
+
+	for _, event := range events {
+		err := keeper.parseAndDeliver(ctx, &event)
+		require.Contains(t, err.Error(), "unconditional error")
+	}
+}
+
+func TestDeliveryOfInvalidEvents(t *testing.T) {
+	t.Parallel()
+
+	deliverInterval := int64(3)
+	ethStake := int64(7)
+	privKey := k1.GenPrivKey()
+
+	ethClientMock, err := ethclient.NewEngineMock(
+		ethclient.WithPortalRegister(netconf.SimnetNetwork()),
+		ethclient.WithMockValidatorCreation(privKey.PubKey()),
+		ethclient.WithMockSelfDelegation(privKey.PubKey(), ethStake),
+	)
+	require.NoError(t, err)
+
+	ctrl := gomock.NewController(t)
+	sServerMock := testutil.NewMockStakingMsgServer(ctrl)
+	sServerMock.EXPECT().CreateValidator(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+	sServerMock.EXPECT().Delegate(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+
+	keeper, ctx := setupKeeper(t, deliverInterval, ethClientMock, sServerMock)
+
+	var hash common.Hash
+	events, err := keeper.Prepare(ctx, hash)
+	require.NoError(t, err)
+
+	expectDelegates := 1
+	expectCreates := 1
+	expectTotalEvents := expectDelegates + expectCreates
+
+	require.Len(t, events, expectTotalEvents)
+
+	// Break the address for both events and make sure parsing fails
+	for _, event := range events {
+		event.Address = []byte{}
+		err := keeper.parseAndDeliver(ctx, &event)
+		require.Contains(t, err.Error(), "invalid address length")
+	}
+
+	// Break the topics for both events and make sure parsing fails
+	for _, event := range events {
+		event.Topics = [][]byte{}
+		err := keeper.parseAndDeliver(ctx, &event)
+		require.Contains(t, err.Error(), "empty topics")
+	}
+
+	createValEvent := events[0]
+	// Break the data for the create validator event
+	createValEvent.Data = []byte{}
+	err = keeper.parseAndDeliver(ctx, &createValEvent)
+	require.Contains(t, err.Error(), "create validator: pubkey to cosmos")
+
+	// Deliver the event so that we can test delegation
+	err = keeper.parseAndDeliver(ctx, &events[0])
+	require.NoError(t, err)
+
+	// Can't add same validator twice (this relies on sKeeper stub working correctly)
+	err = keeper.parseAndDeliver(ctx, &events[0])
+	require.Contains(t, err.Error(), "create validator: validator already exists")
+
+	delegateEvent := events[1]
+	// Break the data for the delegate event
+	delegateEvent.Data = []byte{}
+	err = keeper.parseAndDeliver(ctx, &delegateEvent)
+	require.Contains(t, err.Error(), "stake amount missing")
+}
+
 func TestHappyPathDelivery(t *testing.T) {
 	t.Parallel()
 
@@ -98,14 +204,30 @@ func TestHappyPathDelivery(t *testing.T) {
 
 	ethClientMock, err := ethclient.NewEngineMock(
 		ethclient.WithPortalRegister(netconf.SimnetNetwork()),
-		ethclient.WithMockSelfDelegation(privKey.PubKey(), ethStake),
 		ethclient.WithMockValidatorCreation(privKey.PubKey()),
+		ethclient.WithMockSelfDelegation(privKey.PubKey(), ethStake),
 	)
 	require.NoError(t, err)
 
-	sServer := new(msgServerStub)
+	var delegateMsgBuffer []*stypes.MsgDelegate
+	var createValidatorMsgBuffer []*stypes.MsgCreateValidator
 
-	keeper, ctx := setupKeeper(t, deliverInterval, ethClientMock, new(authKeeperStub), new(bankKeeperStub), new(stakingKeeperStub), sServer)
+	ctrl := gomock.NewController(t)
+	sServerMock := testutil.NewMockStakingMsgServer(ctrl)
+	sServerMock.EXPECT().
+		CreateValidator(gomock.Any(), gomock.Any()).
+		AnyTimes().Do(func(ctx context.Context, msg *stypes.MsgCreateValidator) {
+		createValidatorMsgBuffer = append(createValidatorMsgBuffer, msg)
+	}).
+		Return(new(stypes.MsgCreateValidatorResponse), nil)
+	sServerMock.EXPECT().
+		Delegate(gomock.Any(), gomock.Any()).
+		AnyTimes().Do(func(ctx context.Context, msg *stypes.MsgDelegate) {
+		delegateMsgBuffer = append(delegateMsgBuffer, msg)
+	}).
+		Return(new(stypes.MsgDelegateResponse), nil)
+
+	keeper, ctx := setupKeeper(t, deliverInterval, ethClientMock, sServerMock)
 
 	var hash common.Hash
 	events, err := keeper.Prepare(ctx, hash)
@@ -137,8 +259,8 @@ func TestHappyPathDelivery(t *testing.T) {
 	}
 
 	// Assert that the message was delivered to the msg server.
-	require.Len(t, sServer.delegateMsgBuffer, 1)
-	msg := sServer.delegateMsgBuffer[0]
+	require.Len(t, delegateMsgBuffer, 1)
+	msg := delegateMsgBuffer[0]
 	// Sanity check of addresses
 	require.Len(t, msg.DelegatorAddress, 45)
 	require.Len(t, msg.ValidatorAddress, 52)
@@ -147,8 +269,8 @@ func TestHappyPathDelivery(t *testing.T) {
 	stake := sdk.NewInt64Coin("stake", ethStake*1000000000000000000)
 	require.Equal(t, msg.Amount, stake)
 
-	require.Len(t, sServer.createValidatorMsgBuffer, 1)
-	msg2 := sServer.createValidatorMsgBuffer[0]
+	require.Len(t, createValidatorMsgBuffer, 1)
+	msg2 := createValidatorMsgBuffer[0]
 	// Sanity check of addresses
 	require.Len(t, msg2.ValidatorAddress, 52)
 	require.True(t, strings.HasPrefix(msg2.ValidatorAddress, "cosmosvaloper"), msg.ValidatorAddress)
@@ -174,9 +296,6 @@ func setupKeeper(
 	t *testing.T,
 	deliverInterval int64,
 	ethCl ethclient.EngineClient,
-	aKeeper types.AuthKeeper,
-	bKeeper types.BankKeeper,
-	sKeeper types.StakingKeeper,
 	sServer types.StakingMsgServer,
 ) (*Keeper, sdk.Context) {
 	t.Helper()
@@ -187,71 +306,44 @@ func setupKeeper(
 	ctx = ctx.WithBlockHeight(1)
 	ctx = ctx.WithChainID(netconf.Simnet.Static().OmniConsensusChainIDStr())
 
+	ctrl := gomock.NewController(t)
+
+	authKeeperMock := testutil.NewMockAuthKeeper(ctrl)
+	authKeeperMock.EXPECT().HasAccount(gomock.Any(), gomock.Any()).AnyTimes().Return(true)
+	authKeeperMock.EXPECT().NewAccountWithAddress(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+
+	bKeeperMock := testutil.NewMockBankKeeper(ctrl)
+	bKeeperMock.EXPECT().MintCoins(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+	bKeeperMock.EXPECT().SendCoinsFromModuleToAccount(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+
+	sKeeperMock := testutil.NewMockStakingKeeper(ctrl)
+	var seenValidators map[string]bool
+	sKeeperMock.EXPECT().GetValidator(gomock.Any(), gomock.Any()).AnyTimes().
+		DoAndReturn(func(_ context.Context, addr sdk.ValAddress) (stypes.Validator, error) {
+			if seenValidators == nil {
+				seenValidators = make(map[string]bool)
+			}
+
+			hexAddr := string(addr)
+
+			if _, found := seenValidators[hexAddr]; found {
+				return stypes.Validator{}, nil
+			}
+			seenValidators[hexAddr] = true
+
+			return stypes.Validator{}, errors.New("validator does not exist")
+		})
+
 	k, err := NewKeeper(
 		storeSvc,
 		ethCl,
-		aKeeper,
-		bKeeper,
-		sKeeper,
+		authKeeperMock,
+		bKeeperMock,
+		sKeeperMock,
 		sServer,
 		deliverInterval,
 	)
 	require.NoError(t, err, "new keeper")
 
 	return k, ctx
-}
-
-type stakingKeeperStub struct {
-	// calls is the number of calls to GetValidator
-	calls uint32
-}
-
-// GetValidator returns no errors on the first call, because it is called on delegation
-// event delivery for the first time and the validator should be available.
-// Second time it is called on a validator creation event and it should return an error
-// on the pubkey of the new validator.
-func (m *stakingKeeperStub) GetValidator(context.Context, sdk.ValAddress) (stypes.Validator, error) {
-	m.calls++
-	if m.calls == 1 {
-		return stypes.Validator{}, nil
-	}
-
-	return stypes.Validator{}, errors.New("validator does not exist")
-}
-
-type authKeeperStub struct{}
-
-func (authKeeperStub) HasAccount(context.Context, sdk.AccAddress) bool {
-	return true
-}
-
-func (authKeeperStub) NewAccountWithAddress(context.Context, sdk.AccAddress) sdk.AccountI {
-	return nil
-}
-
-func (authKeeperStub) SetAccount(context.Context, sdk.AccountI) {}
-
-type bankKeeperStub struct{}
-
-func (bankKeeperStub) MintCoins(context.Context, string, sdk.Coins) error {
-	return nil
-}
-
-func (bankKeeperStub) SendCoinsFromModuleToAccount(context.Context, string, sdk.AccAddress, sdk.Coins) error {
-	return nil
-}
-
-type msgServerStub struct {
-	createValidatorMsgBuffer []*stypes.MsgCreateValidator
-	delegateMsgBuffer        []*stypes.MsgDelegate
-}
-
-func (s *msgServerStub) CreateValidator(_ context.Context, msg *stypes.MsgCreateValidator) (*stypes.MsgCreateValidatorResponse, error) {
-	s.createValidatorMsgBuffer = append(s.createValidatorMsgBuffer, msg)
-	return new(stypes.MsgCreateValidatorResponse), nil
-}
-
-func (s *msgServerStub) Delegate(_ context.Context, msg *stypes.MsgDelegate) (*stypes.MsgDelegateResponse, error) {
-	s.delegateMsgBuffer = append(s.delegateMsgBuffer, msg)
-	return new(stypes.MsgDelegateResponse), nil
 }
