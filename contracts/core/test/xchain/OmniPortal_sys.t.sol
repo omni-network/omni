@@ -93,6 +93,63 @@ contract OmniPortal_sys_Test is OmniPortalFixtures {
         assertEq(portal.valSetTotalPower(2), power * maxVals);
     }
 
+    function test_UpdateValidatorSet() public {
+        /// ADD
+        address val1 = address(5551);
+        address val2 = address(5552);
+        address val3 = address(5553);
+
+        uint64 power1 = 100;
+        uint64 power2 = 200;
+        uint64 power3 = 300;
+
+        XTypes.Validator[] memory validators = new XTypes.Validator[](3);
+        validators[0] = XTypes.Validator({ addr: val1, power: power1 });
+        validators[1] = XTypes.Validator({ addr: val2, power: power2 });
+        validators[2] = XTypes.Validator({ addr: val3, power: power3 });
+
+        XTypes.BlockHeader memory xheader = xsubgen.makeXHeader(omniCChainID, ConfLevel.Finalized);
+        XTypes.Msg[] memory msgs = new XTypes.Msg[](1);
+        msgs[0] = _sysXMsg(abi.encodeCall(OmniPortal.addValidatorSet, (2, validators)));
+
+        XTypes.Submission memory xsub =
+            xsubgen.makeXSub(1, xheader, msgs, xsubgen.msgFlagsForDest(msgs, broadcastChainId));
+
+        vm.chainId(1);
+        portal.xsubmit(xsub);
+
+        assertEq(portal.valSetTotalPower(2), power1 + power2 + power3);
+        assertEq(portal.valSet(2, val1), power1);
+        assertEq(portal.valSet(2, val2), power2);
+        assertEq(portal.valSet(2, val3), power3);
+
+        // UPDATE
+        address val4 = address(5554);
+
+        power1 = 300;
+        power2 = 100;
+        uint64 power4 = 200;
+
+        validators = new XTypes.Validator[](3);
+        validators[0] = XTypes.Validator({ addr: val1, power: power1 });
+        validators[1] = XTypes.Validator({ addr: val2, power: power2 });
+        validators[2] = XTypes.Validator({ addr: val4, power: power4 });
+
+        xheader.offset++; // note: this isn't required but let's assume it's a new xblock
+        msgs = new XTypes.Msg[](1);
+        msgs[0] = _sysXMsg(abi.encodeCall(OmniPortal.updateValidatorSet, (2, validators)), 3);
+
+        xsub = xsubgen.makeXSub(1, xheader, msgs, xsubgen.msgFlagsForDest(msgs, broadcastChainId));
+
+        portal.xsubmit(xsub);
+
+        assertEq(portal.valSetTotalPower(2), power1 + power2 + power3 + power4);
+        assertEq(portal.valSet(2, val1), power1);
+        assertEq(portal.valSet(2, val2), power2);
+        assertEq(portal.valSet(2, val3), power3);
+        assertEq(portal.valSet(2, val4), power4);
+    }
+
     /// @dev Test syscalls (xcalls to VirtualPortalAddress) are properly authorized
     function test_syscall_auth() public {
         uint64 destChainId = 1;

@@ -282,7 +282,11 @@ contract OmniPortal is
                 xheader.sourceChainId == omniCChainId && xmsg_.sender == CChainSender
                     && xmsg_.destChainId == BroadcastChainId
                     && xmsg_.shardId == ConfLevel.toBroadcastShard(ConfLevel.Finalized)
-                    && (selector == this.addValidatorSet.selector || selector == this.setNetwork.selector),
+                    && (
+                        selector == this.addValidatorSet.selector || 
+                        selector == this.setNetwork.selector || 
+                        selector == this.updateValidatorSet.selector
+                    ),
                 "OmniPortal: invalid syscall"
             );
         } else {
@@ -414,6 +418,41 @@ contract OmniPortal is
         if (valSetId > latestValSetId) latestValSetId = valSetId;
 
         emit ValidatorSetAdded(valSetId);
+    }
+
+    /**
+     * @notice Update an existing validator set.
+     * @dev Only callable via xcall from Omni's consensus chain
+     * @param valSetId Validator set id
+     * @param validators Validator set
+     */
+    function updateValidatorSet(uint64 valSetId, XTypes.Validator[] calldata validators) external {
+        require(msg.sender == address(this), "OmniPortal: only self");
+        require(_xmsg.sourceChainId == omniCChainId, "OmniPortal: only cchain");
+        require(_xmsg.sender == CChainSender, "OmniPortal: only cchain sender");
+        _updateValidatorSet(valSetId, validators);
+    }
+
+    /**
+     * @notice Add a new validator set.
+     * @param valSetId      Validator set id
+     * @param validators    Validator set
+     */
+    function _updateValidatorSet(uint64 valSetId, XTypes.Validator[] calldata validators) internal {
+        uint256 numVals = validators.length;
+        require(numVals > 0, "OmniPortal: no validators");
+
+        XTypes.Validator memory val; int64 powerDelta;
+        for (uint256 i; i < numVals; i++) {
+            val = validators[i];
+
+            require(val.addr != address(0), "OmniPortal: no zero validator");
+
+            powerDelta += int64(val.power) - int64(valSet[valSetId][val.addr]);
+            valSet[valSetId][val.addr] = val.power;
+        }
+
+        valSetTotalPower[valSetId] = uint64(int64(valSetTotalPower[valSetId]) + powerDelta);
     }
 
     /**
