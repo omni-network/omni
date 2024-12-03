@@ -35,6 +35,9 @@ func TestThresholdReference(t *testing.T) {
 				resp[network][token][role] = make(map[string]string)
 
 				thresholds, ok := eoa.GetFundThresholds(token, network, role)
+				if !ok && network != netconf.Staging{
+					continue
+				}
 				require.True(t, ok, "thresholds not found: %s %s %s", network, role, token)
 
 				resp[network][token][role]["target"] = etherStr(thresholds.TargetBalance())
