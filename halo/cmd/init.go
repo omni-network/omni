@@ -10,8 +10,8 @@ import (
 
 	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
 
+	"github.com/omni-network/omni/cli/cmd/peerinfo"
 	"github.com/omni-network/omni/halo/attest/voter"
-	"github.com/omni-network/omni/halo/cmd/peerinfo"
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/halo/genutil"
 	libcmd "github.com/omni-network/omni/lib/cmd"
