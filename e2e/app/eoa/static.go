@@ -27,6 +27,7 @@ var statics = map[netconf.ID][]Account{
 		secret("0xfE921e06Ed0a22c035b4aCFF0A5D3a434A330c96", RoleRelayer),
 		secret("0x0De553555Fa19d787Af4273B18bDB77282D618c4", RoleMonitor),
 		secret("0xbC0F36A57B666922CF7C01003a01a613D44e993C", RoleXCaller),
+		secret("0xa2C64d844c177C814b6F0423b41D8644539f5F58", RoleSolver),
 	),
 	netconf.Omega: flatten(
 		remote("0x64Bf40F5E6C4DE0dfe8fE6837F6339455657A2F5", RoleCold),     // we use shared-cold
