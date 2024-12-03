@@ -63,11 +63,6 @@ func AllRoles() []Role {
 	}
 }
 
-// TODO(corver): Remove this once solver added above.
-func AllRolesWithSolver() []Role {
-	return append(AllRoles(), RoleSolver)
-}
-
 func (r Role) Verify() error {
 	for _, role := range AllRoles() {
 		if r == role {
