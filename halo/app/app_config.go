@@ -105,7 +105,7 @@ var (
 	}
 
 	// appConfig application configuration (used by depinject).
-	appConfig = func() depinject.Config {
+	appConfig = func(ctx context.Context) depinject.Config {
 		return appconfig.Compose(&appv1alpha1.Config{
 			Modules: func() []*appv1alpha1.ModuleConfig {
 				configs := []*appv1alpha1.ModuleConfig{
@@ -204,7 +204,7 @@ var (
 				}
 
 				// TODO(christian): integrate into the list above
-				if feature.FlagEVMStakingModule.Enabled(context.Background()) {
+				if feature.FlagEVMStakingModule.Enabled(ctx) {
 					configs = append(configs, &appv1alpha1.ModuleConfig{
 						Name:   evmstaking2types.ModuleName,
 						Config: appconfig.WrapAny(&evmstaking2module.Module{}),

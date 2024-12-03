@@ -51,8 +51,8 @@ func Rollback(ctx context.Context, cfg Config, rCfg RollbackConfig) error {
 		return errors.Wrap(err, "new voter loader")
 	}
 
-	//nolint:contextcheck // False positive.
 	app, err := newApp(
+		ctx,
 		newSDKLogger(ctx),
 		db,
 		engineCl,

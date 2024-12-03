@@ -89,6 +89,7 @@ type App struct {
 
 // newApp returns a reference to an initialized App.
 func newApp(
+	ctx context.Context,
 	logger sdklog.Logger,
 	db dbm.DB,
 	engineCl ethclient.EngineClient,
@@ -101,7 +102,7 @@ func newApp(
 	baseAppOpts ...func(*baseapp.BaseApp),
 ) (*App, error) {
 	depCfg := depinject.Configs(
-		appConfig(),
+		appConfig(ctx),
 		depinject.Provide(diProviders...),
 		depinject.Supply(
 			logger,
@@ -147,7 +148,7 @@ func newApp(
 	app.AttestKeeper.SetValidatorProvider(app.ValSyncKeeper)
 	app.AttestKeeper.SetPortalRegistry(app.RegistryKeeper)
 
-	baseAppOpts = append(baseAppOpts, func(bapp *baseapp.BaseApp) {
+	baseAppOpts = append(baseAppOpts, func(bapp *baseapp.BaseApp) { //nolint:contextcheck // False positive wrt ctx
 		// Use evm engine to create block proposals.
 		// Note that we do not check MaxTxBytes since all EngineEVM transaction MUST be included since we cannot
 		// postpone them to the next block. Nit: we could drop some vote extensions though...?
@@ -170,7 +171,7 @@ func newApp(
 		app.SetEndBlocker(app.EndBlocker)
 
 		// Wrap upgrade module preblocker and do immediate shutdown if upgrade is needed.
-		app.SetPreBlocker(func(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+		app.SetPreBlocker(func(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) { //nolint:contextcheck // False positive wrt ctx
 			resp, err := app.PreBlocker(ctx, req)
 			if upgrade, ok := isErrOldBinary(err); ok {
 				// Dump last applied upgrade info to disk so cosmovisor can auto upgrade.
