@@ -26,24 +26,47 @@ var (
 	vaultABI     = mustGetABI(bindings.MockVaultMetaData)
 	tokenABI     = mustGetABI(bindings.MockTokenMetaData)
 	vaultDeposit = mustGetMethod(vaultABI, "deposit")
-	mockL1       = mustChainMeta(evmchain.IDMockL1)
-	mockL2       = mustChainMeta(evmchain.IDMockL2)
 
-	create3Factory = contracts.Create3Factory(netconf.Devnet)
-	deployer       = eoa.MustAddress(netconf.Devnet, eoa.RoleDeployer)
-	manager        = eoa.MustAddress(netconf.Devnet, eoa.RoleManager)
+	mockL1      = mustChainMeta(evmchain.IDMockL1)
+	mockL2      = mustChainMeta(evmchain.IDMockL2)
+	holesky     = mustChainMeta(evmchain.IDHolesky)
+	baseSepolia = mustChainMeta(evmchain.IDBaseSepolia)
+)
 
-	static = App{
+func GetApp(network netconf.ID) (App, error) {
+	if !network.IsEphemeral() {
+		return App{}, errors.New("only ephemeral networks")
+	}
+
+	deployer := eoa.MustAddress(network, eoa.RoleDeployer)
+	create3Factory := contracts.Create3Factory(network)
+
+	app := App{
 		L1Vault: create3.Address(create3Factory, l1VaultSalt, deployer),
 		L1Token: create3.Address(create3Factory, l1TokenSalt, deployer),
 		L2Token: create3.Address(create3Factory, l2TokenSalt, deployer),
-		L1:      mockL1,
-		L2:      mockL2,
 	}
-)
 
-func GetApp() App {
-	return static
+	if network == netconf.Devnet {
+		app.L1 = mockL1
+		app.L2 = mockL2
+	}
+
+	if network == netconf.Staging {
+		app.L1 = holesky
+		app.L2 = baseSepolia
+	}
+
+	return app, nil
+}
+
+func MustGetApp(network netconf.ID) App {
+	app, err := GetApp(network)
+	if err != nil {
+		panic(err)
+	}
+
+	return app
 }
 
 func mustGetABI(metadata *bind.MetaData) *abi.ABI {
