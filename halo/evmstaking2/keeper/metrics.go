@@ -10,7 +10,7 @@ var (
 		Namespace: "halo",
 		Subsystem: "evmstaking",
 		Name:      "event_delivery_height",
-		Help:      "The height at which all scheduled staking were delivered",
+		Help:      "The height at which all scheduled staking events were delivered",
 	})
 
 	scheduledEvents = promauto.NewGauge(prometheus.GaugeOpts{
