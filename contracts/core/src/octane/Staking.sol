@@ -9,11 +9,11 @@ import { Secp256k1 } from "../libraries/Secp256k1.sol";
 /**
  * @title Staking
  * @notice The EVM interface to the consensus chain's x/staking module.
- *         Calls are proxied, and not executed syncronously. Their execution is left to
+ *         Calls are proxied, and not executed synchronously. Their execution is left to
  *         the consensus chain, and they may fail.
  * @dev This contract is predeployed, and requires storage slots to be set in genesis.
- *      initialize(...) is called pre-deployment, in sctips/genesis/AllocPredeploys.s.sol
- *      iniitializers on the implementation are disabled via manual storage updates, rather than in a constructor.
+ *      initialize(...) is called pre-deployment, in script/genesis/AllocPredeploys.s.sol
+ *      Initializers on the implementation are disabled via manual storage updates, rather than in a constructor.
  *      If an new implementation is required, a constructor should be added.
  */
 contract Staking is OwnableUpgradeable, EIP712Upgradeable {

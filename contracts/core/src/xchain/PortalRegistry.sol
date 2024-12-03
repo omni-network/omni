@@ -8,8 +8,8 @@ import { ConfLevel } from "../libraries/ConfLevel.sol";
  * @title PortalRegistry
  * @notice Registry for OmniPortal deployments. Predeployed on Omni's EVM.
  * @dev This contract is predeployed, and requires storage slots to be set in genesis.
- *      initialize(...) is called pre-deployment, in sctips/genesis/AllocPredeploys.s.sol
- *      iniitializers on the implementation are disabled via manual storage updates, rather than in a constructor.
+ *      initialize(...) is called pre-deployment, in script/genesis/AllocPredeploys.s.sol
+ *      Initializers on the implementation are disabled via manual storage updates, rather than in a constructor.
  *      If an new implementation is required, a constructor should be added.
  */
 contract PortalRegistry is OwnableUpgradeable {

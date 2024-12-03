@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 /**
  * @title IWOmni
- * @notice Interface for WOMNI, modifed interface of WETH9
+ * @notice Interface for WOMNI, modified interface of WETH9
  * @dev Changes: Renamed "WETH" to "WOmni"
  * @custom:attribution https://github.com/ethereum-optimism/optimism/blob/develop/packages/contracts-bedrock/src/dispute/interfaces/IWETH.sol
  */
