@@ -9,12 +9,14 @@ import (
 	"github.com/omni-network/omni/halo/comet"
 	"github.com/omni-network/omni/halo/evmslashing"
 	"github.com/omni-network/omni/halo/evmstaking"
+	evmstaking2 "github.com/omni-network/omni/halo/evmstaking2/keeper"
 	"github.com/omni-network/omni/halo/evmupgrade"
 	registrykeeper "github.com/omni-network/omni/halo/registry/keeper"
 	rtypes "github.com/omni-network/omni/halo/registry/types"
 	valsynckeeper "github.com/omni-network/omni/halo/valsync/keeper"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	evmengkeeper "github.com/omni-network/omni/octane/evmengine/keeper"
@@ -79,6 +81,7 @@ type App struct {
 	EVMEngKeeper          *evmengkeeper.Keeper
 	AttestKeeper          *attestkeeper.Keeper
 	ValSyncKeeper         *valsynckeeper.Keeper
+	StakingEventKeeper    *evmstaking2.Keeper
 	RegistryKeeper        registrykeeper.Keeper
 	EvidenceKeeper        evidencekeeper.Keeper
 	UpgradeKeeper         *upgradekeeper.Keeper
@@ -121,7 +124,7 @@ func newApp(
 		app        = new(App)
 		appBuilder = new(runtime.AppBuilder)
 	)
-	if err := depinject.Inject(depCfg,
+	dependencies := []any{
 		&appBuilder,
 		&app.appCodec,
 		&app.txConfig,
@@ -139,9 +142,16 @@ func newApp(
 		&app.EvidenceKeeper,
 		&app.UpgradeKeeper,
 		&app.SlashingEventProc,
-		&app.StakingEventProc,
 		&app.UpgradeEventProc,
-	); err != nil {
+	}
+
+	if feature.FlagEVMStakingModule.Enabled(ctx) {
+		dependencies = append(dependencies, app.StakingEventKeeper)
+	} else {
+		dependencies = append(dependencies, &app.StakingEventProc)
+	}
+
+	if err := depinject.Inject(depCfg, dependencies...); err != nil {
 		return nil, errors.Wrap(err, "dep inject")
 	}
 
