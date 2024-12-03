@@ -203,6 +203,11 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 		return err
 	}
 
+	// Stop before perturbations, since they cause portal txs to fail and e2e tests to flap.
+	if err := stopAddingPortals(); err != nil {
+		return errors.Wrap(err, "stop adding portals")
+	}
+
 	if def.Testnet.HasPerturbations() {
 		if err := perturb(ctx, def.Testnet); err != nil {
 			return err
@@ -234,10 +239,6 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 		if err != nil {
 			return err
 		}
-	}
-
-	if err := stopAddingPortals(); err != nil {
-		return errors.Wrap(err, "stop adding portals")
 	}
 
 	network := NetworkFromDef(def) // Safe to call NetworkFromDef since this after netman.DeployContracts
