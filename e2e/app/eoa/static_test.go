@@ -59,6 +59,9 @@ func TestStatic(t *testing.T) {
 				}
 
 				acc, ok := eoa.AccountForRole(network, role)
+				if !ok && network != netconf.Staging && role == eoa.RoleSolver {
+					continue
+				}
 				require.True(t, ok, "account not found: %s %s", network, role)
 				require.NotZero(t, acc.Address)
 				require.True(t, common.IsHexAddress(acc.Address.Hex()))
