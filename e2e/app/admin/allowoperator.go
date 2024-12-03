@@ -33,7 +33,7 @@ var allowedOperators = map[netconf.ID][]common.Address{
 		common.HexToAddress("0x85bD563C4636a6006BCFB3fd367757676e2Dd269"), // RHINO
 		common.HexToAddress("0x7E634AC3186E9ef6fd36C1207bb87445Fd5CAA7d"), // Kingnodes
 		// common.HexToAddress(""), // Galaxy
-		// common.HexToAddress(""), // Chorusone
+		common.HexToAddress("0x3848BEa0cd7D6b521E8CBF74310C8Ab797003537"), // Chorusone
 		common.HexToAddress("0xd456Db9730a346211797D42de2272f2406936194"), // P-OPS
 		common.HexToAddress("0xd2eC4b16426CaE96a1720d20Bd141dd0DA0b6C9f"), // DAIC
 		common.HexToAddress("0x231a7A2872208A3e3EF75Ae6580a16308D60706b"), // Finoa
