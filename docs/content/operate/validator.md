@@ -33,7 +33,8 @@ The config below is for the **Omega** testnet network. Adjust accordingly for th
 #### 1.1 Configure RPC endpoints for supported chains
 Halo nodes running as validators require RPC endpoints for L1 and L2 cross chain validation duties.
 This must to be configured in under `[xchain.evm-rpc-endpoints]` in the halo config file `~/.omni/omega/halo/config/halo.toml`.
-The chains currently required are: `arb_sepolia, base_sepolia, holesky, op_sepolia`.
+The chains currently required for Omega are: `arb_sepolia, base_sepolia, holesky, op_sepolia`.
+For Mainnet, they are: `arbitrum_one, base, ethereum, optimism`.
 
 ```
 #######################################################################
