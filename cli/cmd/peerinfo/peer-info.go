@@ -37,7 +37,7 @@ func MainnetNetInfo() (*coretypes.ResultNetInfo, error) {
 	var mainnet coretypes.ResultNetInfo
 	mainnetResp := &types.RPCResponse{}
 	if err := json.Unmarshal(mainnetNetInfo, mainnetResp); err != nil {
-		return nil, errors.New("Failed to Unmarshal mainnet-net-info.json: %v", err)
+		return nil, errors.New("failed to Unmarshal mainnet-net-info.json: %v", err)
 	}
 
 	if err := cmtjson.Unmarshal(mainnetResp.Result, &mainnet); err != nil {
