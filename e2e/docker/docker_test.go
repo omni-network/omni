@@ -59,10 +59,6 @@ func TestComposeTemplate(t *testing.T) {
 			const evm0 = "omni_evm_0"
 			dir := t.TempDir()
 			testnet := types.Testnet{
-				Manifest: types.Manifest{
-					PinnedRelayerTag: "v2",
-					PinnedMonitorTag: "v3",
-				},
 				Testnet: &e2e.Testnet{
 					Name:       "test",
 					IP:         ipNet,
