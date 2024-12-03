@@ -18,18 +18,24 @@ contract OmniPortal_xcall_Test is Base {
 
         uint256 fee = portal.feeFor(xmsg.destChainId, xmsg.data, xmsg.gasLimit);
         uint64 offset = 1;
+        uint256 refundedFee = 50000;
 
         // check XMsg event is emitted
         vm.expectEmit();
         emit XMsg(xmsg.destChainId, uint64(conf), offset, xcaller, xmsg.to, xmsg.data, xmsg.gasLimit, fee);
 
+        uint256 xCallerBalBefore = address(xcaller).balance;
+
         // make xcall
         vm.prank(xcaller);
         vm.chainId(thisChainId);
-        portal.xcall{ value: fee }(xmsg.destChainId, conf, xmsg.to, xmsg.data, xmsg.gasLimit);
+        portal.xcall{ value: fee + refundedFee }(xmsg.destChainId, conf, xmsg.to, xmsg.data, xmsg.gasLimit);
 
         // check outXMsgOffset is incremented
         assertEq(portal.outXMsgOffset(xmsg.destChainId, xmsg.shardId), 1);
+
+        // check xcaller fee overpayment is refunded
+        assertEq(xCallerBalBefore - address(xcaller).balance, fee);
     }
 
     /// @dev Test that xcall with insufficient fee revert

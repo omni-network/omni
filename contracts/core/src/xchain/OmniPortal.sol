@@ -146,9 +146,11 @@ contract OmniPortal is
         uint256 fee = feeFor(destChainId, data, gasLimit);
         require(msg.value >= fee, "OmniPortal: insufficient fee");
 
-        outXMsgOffset[destChainId][shardId] += 1;
+        uint256 refund = msg.value - fee;
 
-        emit XMsg(destChainId, shardId, outXMsgOffset[destChainId][shardId], msg.sender, to, data, gasLimit, fee);
+        emit XMsg(destChainId, shardId, ++outXMsgOffset[destChainId][shardId], msg.sender, to, data, gasLimit, fee);
+
+        if (refund > 0) msg.sender.call{ value: refund }("");
     }
 
     /**
