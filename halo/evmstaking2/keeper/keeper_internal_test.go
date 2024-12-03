@@ -69,7 +69,7 @@ func TestInsertAndDeleteEVMEvents(t *testing.T) {
 	}
 
 	// Make sure no submission happens for heights in the range 2 to 4
-	for h := int64(2); h < keeper.deliverInterval; h++ {
+	for h := int64(2); h < keeper.deliveryInterval; h++ {
 		ctx = ctx.WithBlockHeight(h)
 		err := keeper.EndBlock(ctx)
 		require.NoError(t, err)

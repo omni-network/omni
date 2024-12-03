@@ -18,6 +18,7 @@ import (
 	valsyncmodule "github.com/omni-network/omni/halo/valsync/module"
 	valsynctypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/feature"
+	"github.com/omni-network/omni/lib/netconf"
 	engevmmodule "github.com/omni-network/omni/octane/evmengine/module"
 	engevmtypes "github.com/omni-network/omni/octane/evmengine/types"
 
@@ -58,6 +59,12 @@ const (
 
 //nolint:gochecknoglobals // Cosmos-style
 var (
+	stakingLogsDeliveryInterval = map[netconf.ID]int64{
+		netconf.Mainnet: 21_600, // roughly ~12h assumping 0.5bps finalization rate
+		netconf.Omega:   21_600,
+		netconf.Devnet:  2,
+	}
+
 	genesisModuleOrder = []string{
 		authtypes.ModuleName,
 		banktypes.ModuleName,
@@ -105,7 +112,7 @@ var (
 	}
 
 	// appConfig application configuration (used by depinject).
-	appConfig = func(ctx context.Context) depinject.Config {
+	appConfig = func(ctx context.Context, network netconf.ID) depinject.Config {
 		return appconfig.Compose(&appv1alpha1.Config{
 			Modules: func() []*appv1alpha1.ModuleConfig {
 				configs := []*appv1alpha1.ModuleConfig{
@@ -205,9 +212,16 @@ var (
 
 				// TODO(christian): integrate into the list above
 				if feature.FlagEVMStakingModule.Enabled(ctx) {
+					deliveryInterval, found := stakingLogsDeliveryInterval[network]
+					if !found {
+						deliveryInterval = stakingLogsDeliveryInterval[netconf.Devnet]
+					}
+
 					configs = append(configs, &appv1alpha1.ModuleConfig{
-						Name:   evmstaking2types.ModuleName,
-						Config: appconfig.WrapAny(&evmstaking2module.Module{}),
+						Name: evmstaking2types.ModuleName,
+						Config: appconfig.WrapAny(&evmstaking2module.Module{
+							DeliveryInterval: deliveryInterval,
+						}),
 					})
 				}
 

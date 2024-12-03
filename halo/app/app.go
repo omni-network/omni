@@ -16,6 +16,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	evmengkeeper "github.com/omni-network/omni/octane/evmengine/keeper"
 	etypes "github.com/omni-network/omni/octane/evmengine/types"
 
@@ -90,6 +91,7 @@ type App struct {
 // newApp returns a reference to an initialized App.
 func newApp(
 	ctx context.Context,
+	network netconf.ID,
 	logger sdklog.Logger,
 	db dbm.DB,
 	engineCl ethclient.EngineClient,
@@ -102,7 +104,7 @@ func newApp(
 	baseAppOpts ...func(*baseapp.BaseApp),
 ) (*App, error) {
 	depCfg := depinject.Configs(
-		appConfig(ctx),
+		appConfig(ctx, network),
 		depinject.Provide(diProviders...),
 		depinject.Supply(
 			logger,

@@ -53,6 +53,7 @@ func Rollback(ctx context.Context, cfg Config, rCfg RollbackConfig) error {
 
 	app, err := newApp(
 		ctx,
+		cfg.Network,
 		newSDKLogger(ctx),
 		db,
 		engineCl,

@@ -147,6 +147,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 
 	app, err := newApp(
 		ctx,
+		cfg.Network,
 		sdkLogger,
 		db,
 		engineCl,
