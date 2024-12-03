@@ -129,6 +129,8 @@ func MakeGethConfig(conf Config) FullConfig {
 	if conf.IsArchive {
 		cfg.Node.HTTPModules = append(cfg.Node.HTTPModules, "debug")
 		cfg.Node.WSModules = append(cfg.Node.WSModules, "debug")
+	} else {
+		cfg.Node.WSHost = "" // Disable websockets for non-archive nodes.
 	}
 
 	// Allow all incoming connections.
