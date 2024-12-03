@@ -3,13 +3,14 @@ package app
 import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/solve/devapp"
+	"github.com/omni-network/omni/e2e/solve/symbiotic"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/solver/types"
 )
 
 var targetsByNetwork = map[netconf.ID][]types.Target{
-	netconf.Devnet: {devapp.GetApp()},
+	netconf.Devnet: {devapp.GetApp(), symbiotic.MustGetApp(netconf.Devnet)},
 }
 
 // getTarget returns the target for the given network and call.

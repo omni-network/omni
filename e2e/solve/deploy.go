@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/e2e/solve/devapp"
+	"github.com/omni-network/omni/e2e/solve/symbiotic"
 	"github.com/omni-network/omni/lib/contracts/solveinbox"
 	"github.com/omni-network/omni/lib/contracts/solveoutbox"
 	"github.com/omni-network/omni/lib/errors"
@@ -22,22 +23,17 @@ func DeployContracts(ctx context.Context, network netconf.Network, backends ethb
 	}
 
 	log.Info(ctx, "Deploying solve contracts")
+	if err := deployBoxes(ctx, network, backends); err != nil {
+		return errors.Wrap(err, "deploy boxes")
+	}
 
 	var eg errgroup.Group
-
-	eg.Go(func() error {
-		if err := deployBoxes(ctx, network, backends); err != nil {
-			return errors.Wrap(err, "deploy boxes")
-		}
-
-		return devapp.AllowOutboxCalls(ctx, network, backends)
-	})
-	eg.Go(func() error {
-		return devapp.Deploy(ctx, network, backends)
-	})
-
+	eg.Go(func() error { return devapp.AllowOutboxCalls(ctx, network, backends) })
+	eg.Go(func() error { return devapp.Deploy(ctx, network, backends) })
+	eg.Go(func() error { return symbiotic.FundSolver(ctx, network.ID, backends) })
+	eg.Go(func() error { return symbiotic.AllowOutboxCalls(ctx, network, backends) })
 	if err := eg.Wait(); err != nil {
-		return errors.Wrap(err, "deploy solver contracts")
+		return errors.Wrap(err, "setup solver devnet")
 	}
 
 	return nil
