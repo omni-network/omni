@@ -8,7 +8,10 @@ import (
 	"strings"
 	"time"
 
+	rpctypes "github.com/cometbft/cometbft/rpc/core/types"
+
 	"github.com/omni-network/omni/halo/attest/voter"
+	"github.com/omni-network/omni/halo/cmd/peerinfo"
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/halo/genutil"
 	libcmd "github.com/omni-network/omni/lib/cmd"
@@ -221,7 +224,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 		// Populate address book with random public peers from the connected node.
 		// This aids in bootstrapping the P2P network. Seed nodes don't work well on their pwn for some reason.
 
-		peers, err := getPeers(ctx, rpcCl, maxPeers)
+		peers, err := getPeers(ctx, initCfg.Network, rpcCl, maxPeers)
 		if err != nil {
 			return errors.Wrap(err, "get peers", "rpc", rpcServer)
 		} else if len(peers) == 0 {
@@ -352,10 +355,10 @@ func setTrustedSync(ctx context.Context, rpcCl *rpchttp.HTTP, cfg *cmtconfig.Con
 }
 
 // getPeers returns up to max random public peer addresses of the connected node.
-func getPeers(ctx context.Context, cl *rpchttp.HTTP, max int) ([]*p2p.NetAddress, error) {
-	info, err := cl.NetInfo(ctx)
+func getPeers(ctx context.Context, network netconf.ID, cl *rpchttp.HTTP, max int) ([]*p2p.NetAddress, error) {
+	info, err := getPeerInfo(ctx, network, cl)
 	if err != nil {
-		return nil, errors.Wrap(err, "get net info")
+		return nil, err
 	}
 
 	// Shuffle to pick random list of max peers.
@@ -385,6 +388,30 @@ func getPeers(ctx context.Context, cl *rpchttp.HTTP, max int) ([]*p2p.NetAddress
 	}
 
 	return resp, nil
+}
+
+func getPeerInfo(ctx context.Context, network netconf.ID, cl *rpchttp.HTTP) (*rpctypes.ResultNetInfo, error) {
+	switch network {
+	case netconf.Omega:
+		info, err := peerinfo.OmegaNetInfo()
+		if err != nil {
+			return nil, errors.Wrap(err, "get net info")
+		}
+		return info, nil
+	case netconf.Mainnet:
+		info, err := peerinfo.MainnetNetInfo()
+		if err != nil {
+			return nil, errors.Wrap(err, "get net info")
+		}
+		return info, nil
+	default:
+		info, err := cl.NetInfo(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "get net info")
+		}
+		return info, nil
+	}
+
 }
 
 func getTrustHeightAndHash(ctx context.Context, cl *rpchttp.HTTP) (int64, string, error) {
