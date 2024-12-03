@@ -28,7 +28,7 @@ const (
 // Deploy deploys the mock tokens and vaults to devnet.
 func Deploy(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
 	if network.ID != netconf.Devnet {
-		return errors.New("onl devnet")
+		return errors.New("only devnet")
 	}
 
 	l1Backend, err := backends.Backend(static.L1.ChainID)
@@ -91,7 +91,7 @@ func fundSolver(ctx context.Context, backend *ethbackend.Backend, tokenAddr comm
 // AllowOutboxCalls allows the outbox to call the L1 vault deposit method.
 func AllowOutboxCalls(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
 	if network.ID != netconf.Devnet {
-		return errors.New("onl devnet")
+		return errors.New("only devnet")
 	}
 
 	addrs, err := contracts.GetAddresses(ctx, network.ID)
