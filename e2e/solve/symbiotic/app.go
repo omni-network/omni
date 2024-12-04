@@ -97,7 +97,7 @@ func AllowOutboxCalls(ctx context.Context, network netconf.ID, backends ethbacke
 		return errors.Wrap(err, "backend mock l1")
 	}
 
-	if err := allowCalls(ctx, app, l1Backend, addrs.SolveOutbox); err != nil {
+	if err := allowCalls(ctx, app, network, l1Backend, addrs.SolveOutbox); err != nil {
 		return errors.Wrap(err, "allow calls")
 	}
 
@@ -105,13 +105,13 @@ func AllowOutboxCalls(ctx context.Context, network netconf.ID, backends ethbacke
 }
 
 // allowCalls allows the outbox to call the L1 wstETH collateral deposit method.
-func allowCalls(ctx context.Context, app App, backend *ethbackend.Backend, outboxAddr common.Address) error {
+func allowCalls(ctx context.Context, app App, network netconf.ID, backend *ethbackend.Backend, outboxAddr common.Address) error {
 	outbox, err := bindings.NewSolveOutbox(outboxAddr, backend)
 	if err != nil {
 		return errors.Wrap(err, "new solve outbox")
 	}
 
-	manager := eoa.MustAddress(netconf.Devnet, eoa.RoleManager)
+	manager := eoa.MustAddress(network, eoa.RoleManager)
 
 	txOpts, err := backend.BindOpts(ctx, manager)
 	if err != nil {
