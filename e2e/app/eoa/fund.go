@@ -65,6 +65,7 @@ var (
 		RoleDeployer:        thresholdTiny,   // Protected chains are only deployed once
 		RoleTester:          thresholdLarge,  // Tester funds pingpongs, validator updates, etc, on non-mainnet.
 		RoleXCaller:         thresholdSmall,  // XCaller funds used for sending xmsgs across networks.
+		RoleSolver:          thresholdLarge,  // XCaller funds used for sending xmsgs across networks.
 	}
 
 	dynamicThresholdsByRole = map[Role]dynamicThreshold{
