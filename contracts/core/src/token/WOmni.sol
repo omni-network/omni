@@ -23,7 +23,7 @@ import { IWOmni } from "src/interfaces/IWOmni.sol";
 
 /**
  * @title WOmni
- * @notice WOmni is a modifed version of WETH98, is a version of WETH9 upgraded for Solidity 0.8.x.
+ * @notice WOmni is a modified version of WETH98, is a version of WETH9 upgraded for Solidity 0.8.x.
  * @dev Changes: Renamed "WETH" to "WOmni", compiler version bumped to 0.8.24, remove redundant override keywords.
  * @custom:attribution https://github.com/ethereum-optimism/optimism/blob/develop/packages/contracts-bedrock/src/dispute/weth/WETH98.sol
  */

@@ -13,7 +13,7 @@ interface IOmniPortalAdmin {
     event FeeOracleSet(address oracle);
 
     /**
-     * @notice Emited when fees are collected
+     * @notice Emitted when fees are collected
      * @param to        The address the fees are collected to
      * @param amount    The amount of fees collected
      */

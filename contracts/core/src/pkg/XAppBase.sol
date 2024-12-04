@@ -53,7 +53,7 @@ abstract contract XAppBase {
     }
 
     /**
-     * @notice Retruns the fee for calling a contract on another chain, with the specified gas limit
+     * @notice Returns the fee for calling a contract on another chain, with the specified gas limit
      */
     function feeFor(uint64 destChainId, bytes memory data, uint64 gasLimit) internal view returns (uint256) {
         return omni.feeFor(destChainId, data, gasLimit);

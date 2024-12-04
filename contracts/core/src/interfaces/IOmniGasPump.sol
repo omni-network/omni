@@ -28,7 +28,7 @@ interface IOmniGasPump {
     /**
      * @notice Swaps msg.value ETH for OMNI and sends it to `recipient` on Omni.
      *
-     *      Takes an xcall fee and a pct cut. Cut taken to disencentivize spamming.
+     *      Takes an xcall fee and a pct cut. Cut taken to disincentivize spamming.
      *      Returns the amount of OMNI swapped for.
      *
      *      To retry (if OmniGasStation transfer fails), call swap() again with the

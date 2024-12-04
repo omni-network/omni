@@ -52,7 +52,7 @@ contract OmniBridgeL1 is OmniBridgeCommon {
     }
 
     /**
-     * @notice Withdraw `amount` L1 OMNI to `to`. Onyl callable via xcall from OmniBridgeNative.
+     * @notice Withdraw `amount` L1 OMNI to `to`. Only callable via xcall from OmniBridgeNative.
      * @dev Omni native <> L1 bridge accounting rules ensure that this contract will always
      *     have enough balance to cover the withdrawal.
      */
