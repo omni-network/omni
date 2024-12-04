@@ -47,7 +47,7 @@ func GetApp(network netconf.ID) (App, error) {
 		// holesky wsETH
 		L1wstETH: common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d"),
 		// use mintable devapp mintable mock token, base sepolia has no canonical wsETH
-		L2wstETH: devapp.GetApp().L2Token,
+		L2wstETH: devapp.MustGetApp(network).L2Token,
 	}
 
 	if network == netconf.Devnet {
@@ -77,13 +77,17 @@ func MustGetApp(network netconf.ID) App {
 }
 
 // AllowOutboxCalls allows the outbox to call the L1 wstETH collateral contract.
-func AllowOutboxCalls(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
-	app, err := GetApp(network.ID)
+func AllowOutboxCalls(ctx context.Context, network netconf.ID, backends ethbackend.Backends) error {
+	if !network.IsEphemeral() {
+		return errors.New("only ephemeral networks")
+	}
+
+	app, err := GetApp(network)
 	if err != nil {
 		return errors.Wrap(err, "get app")
 	}
 
-	addrs, err := contracts.GetAddresses(ctx, network.ID)
+	addrs, err := contracts.GetAddresses(ctx, network)
 	if err != nil {
 		return errors.Wrap(err, "get addresses")
 	}

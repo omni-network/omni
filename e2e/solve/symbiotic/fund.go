@@ -14,10 +14,10 @@ import (
 	"cosmossdk.io/math"
 )
 
-func FundSolver(ctx context.Context, network netconf.ID, backends ethbackend.Backends) error {
+func MaybeFundSolver(ctx context.Context, network netconf.ID, backends ethbackend.Backends) error {
 	// funding solver with l1 wsETH uses anvil_setStorageAt util, which is only available on devnet
 	if network != netconf.Devnet {
-		return errors.New("only devnet")
+		return nil
 	}
 
 	app := MustGetApp(network)

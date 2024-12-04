@@ -17,7 +17,7 @@ import (
 
 // DeployContracts deploys solve inbox / outbox contracts, and devnet app (if devnet).
 func DeployContracts(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
-	if network.ID != netconf.Devnet {
+	if !network.ID.IsEphemeral() {
 		log.Warn(ctx, "Skipping solve deploy", nil)
 		return nil
 	}
@@ -27,13 +27,14 @@ func DeployContracts(ctx context.Context, network netconf.Network, backends ethb
 		return errors.Wrap(err, "deploy boxes")
 	}
 
+	// TODO(kevin): idempotent outbox allow calls
 	var eg errgroup.Group
-	eg.Go(func() error { return devapp.AllowOutboxCalls(ctx, network, backends) })
-	eg.Go(func() error { return devapp.Deploy(ctx, network, backends) })
-	eg.Go(func() error { return symbiotic.FundSolver(ctx, network.ID, backends) })
-	eg.Go(func() error { return symbiotic.AllowOutboxCalls(ctx, network, backends) })
+	eg.Go(func() error { return devapp.MaybeDeploy(ctx, network.ID, backends) })
+	eg.Go(func() error { return devapp.AllowOutboxCalls(ctx, network.ID, backends) })
+	eg.Go(func() error { return symbiotic.MaybeFundSolver(ctx, network.ID, backends) })
+	eg.Go(func() error { return symbiotic.AllowOutboxCalls(ctx, network.ID, backends) })
 	if err := eg.Wait(); err != nil {
-		return errors.Wrap(err, "setup solver devnet")
+		return errors.Wrap(err, "setup targets")
 	}
 
 	return nil

@@ -26,8 +26,84 @@ type DepositReq struct {
 	Deposit DepositArgs    // deposit args
 }
 
-func RequestDeposits(ctx context.Context, backends ethbackend.Backends) ([]DepositReq, error) {
-	app := GetApp()
+// TestFlow submits deposit requests to the solve inbox and waits for them to be processed.
+func TestFlow(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints) error {
+	if network.ID != netconf.Devnet {
+		return errors.New("only devnet")
+	}
+
+	backends, err := ethbackend.BackendsFromNetwork(network, endpoints)
+	if err != nil {
+		return err
+	}
+
+	deposits, err := makeTestDeposits(ctx, backends)
+	if err != nil {
+		return err
+	}
+
+	timeout, cancel := context.WithTimeout(ctx, time.Minute)
+	defer cancel()
+
+	// Wait for all deposits to be completed on dest chain by solver/outbox
+	toCheck := toSet(deposits)
+	for {
+		if timeout.Err() != nil {
+			return errors.New("timeout waiting for deposits")
+		}
+
+		for deposit := range toCheck {
+			ok, err := isDeposited(ctx, backends, deposit)
+			if err != nil {
+				return err
+			} else if ok {
+				log.Debug(ctx, "Deposit complete", "remaining", len(toCheck)-1)
+				delete(toCheck, deposit)
+			}
+		}
+
+		if len(toCheck) == 0 {
+			break
+		}
+
+		time.Sleep(time.Second)
+	}
+
+	log.Debug(ctx, "All deposits fulfilled")
+
+	// Wait for requests to be claimed by solver
+	toCheck = toSet(deposits)
+	for {
+		if timeout.Err() != nil {
+			return errors.New("timeout waiting for claims")
+		}
+
+		const statusClaimed = 6
+
+		for deposit := range toCheck {
+			status, err := getDepositStatus(ctx, backends, deposit)
+			if err != nil {
+				return err
+			} else if status == statusClaimed {
+				log.Debug(ctx, "Deposit claimed", "remaining", len(toCheck)-1)
+				delete(toCheck, deposit)
+			}
+		}
+
+		if len(toCheck) == 0 {
+			break
+		}
+
+		time.Sleep(time.Second)
+	}
+
+	log.Debug(ctx, "All deposits claimed")
+
+	return nil
+}
+
+func makeTestDeposits(ctx context.Context, backends ethbackend.Backends) ([]DepositReq, error) {
+	app := MustGetApp(netconf.Devnet)
 
 	backend, err := backends.Backend(app.L2.ChainID)
 	if err != nil {
@@ -59,8 +135,8 @@ func RequestDeposits(ctx context.Context, backends ethbackend.Backends) ([]Depos
 	return reqs, nil
 }
 
-func IsDeposited(ctx context.Context, backends ethbackend.Backends, req DepositReq) (bool, error) {
-	app := GetApp()
+func isDeposited(ctx context.Context, backends ethbackend.Backends, req DepositReq) (bool, error) {
+	app := MustGetApp(netconf.Devnet)
 
 	backend, err := backends.Backend(app.L1.ChainID)
 	if err != nil {
@@ -84,80 +160,8 @@ func IsDeposited(ctx context.Context, backends ethbackend.Backends, req DepositR
 	return balance.Cmp(req.Deposit.Amount) == 0, nil
 }
 
-// TestFlow submits deposit requests to the solve inbox and waits for them to be processed.
-func TestFlow(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints) error {
-	backends, err := ethbackend.BackendsFromNetwork(network, endpoints)
-	if err != nil {
-		return err
-	}
-
-	deposits, err := RequestDeposits(ctx, backends)
-	if err != nil {
-		return err
-	}
-
-	timeout, cancel := context.WithTimeout(ctx, time.Minute)
-	defer cancel()
-
-	// Wait for all deposits to be completed on dest chain by solver/outbox
-	toCheck := toSet(deposits)
-	for {
-		if timeout.Err() != nil {
-			return errors.New("timeout waiting for deposits")
-		}
-
-		for deposit := range toCheck {
-			ok, err := IsDeposited(ctx, backends, deposit)
-			if err != nil {
-				return err
-			} else if ok {
-				log.Debug(ctx, "Deposit complete", "remaining", len(toCheck)-1)
-				delete(toCheck, deposit)
-			}
-		}
-
-		if len(toCheck) == 0 {
-			break
-		}
-
-		time.Sleep(time.Second)
-	}
-
-	log.Debug(ctx, "All deposits fulfilled")
-
-	// Wait for requests to be claimed by solver
-	toCheck = toSet(deposits)
-	for {
-		if timeout.Err() != nil {
-			return errors.New("timeout waiting for claims")
-		}
-
-		const statusClaimed = 6
-
-		for deposit := range toCheck {
-			status, err := GetDepositStatus(ctx, backends, deposit)
-			if err != nil {
-				return err
-			} else if status == statusClaimed {
-				log.Debug(ctx, "Deposit claimed", "remaining", len(toCheck)-1)
-				delete(toCheck, deposit)
-			}
-		}
-
-		if len(toCheck) == 0 {
-			break
-		}
-
-		time.Sleep(time.Second)
-	}
-
-	log.Debug(ctx, "All deposits claimed")
-
-	return nil
-}
-
-func GetDepositStatus(ctx context.Context, backends ethbackend.Backends, deposit DepositReq) (uint8, error) {
-	app := GetApp()
+func getDepositStatus(ctx context.Context, backends ethbackend.Backends, deposit DepositReq) (uint8, error) {
+	app := MustGetApp(netconf.Devnet)
 
 	backend, err := backends.Backend(app.L2.ChainID)
 	if err != nil {
@@ -229,7 +233,7 @@ func requestDeposits(ctx context.Context, backend *ethbackend.Backend, inbox com
 }
 
 func requestAtInbox(ctx context.Context, backend *ethbackend.Backend, addr common.Address, deposit DepositArgs) (DepositReq, error) {
-	app := GetApp()
+	app := MustGetApp(netconf.Devnet)
 
 	inbox, err := bindings.NewSolveInbox(addr, backend)
 	if err != nil {
@@ -280,7 +284,7 @@ func requestAtInbox(ctx context.Context, backend *ethbackend.Backend, addr commo
 }
 
 func mintAndApprove(ctx context.Context, backend *ethbackend.Backend, inbox common.Address, deposit DepositArgs) error {
-	app := GetApp()
+	app := MustGetApp(netconf.Devnet)
 
 	txOpts, err := backend.BindOpts(ctx, deposit.OnBehalfOf)
 	if err != nil {
