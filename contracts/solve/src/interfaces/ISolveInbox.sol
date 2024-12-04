@@ -52,22 +52,9 @@ interface ISolveInbox {
     event Claimed(bytes32 indexed id, address indexed by, address indexed to, Solve.Deposit[] deposits);
 
     /**
-     * /**
      * @notice Returns the request with the given ID.
      */
     function getRequest(bytes32 id) external view returns (Solve.Request memory);
-
-    /**
-     * @notice Suggest the amount of native currency to send with a request.
-     * @param call        Details of the call to be executed on another chain.
-     * @param gasLimit    Maximum gas limit for the call.
-     * @param gasPrice    Destination chain gas price in wei.
-     * @param fulfillFee  Fee for the fulfill call, retrieved from the destination outbox.
-     */
-    function suggestNativePayment(Solve.Call calldata call, uint64 gasLimit, uint64 gasPrice, uint256 fulfillFee)
-        external
-        view
-        returns (uint256);
 
     /**
      * @notice Open a request to execute a call on another chain, backed by deposits.
