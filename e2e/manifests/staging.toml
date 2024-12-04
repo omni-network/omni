@@ -2,6 +2,7 @@ network = "staging"
 public_chains = ["op_sepolia","base_sepolia","arb_sepolia","holesky"]
 multi_omni_evms = true
 prometheus = true
+deploy_solve = true
 
 [node.validator01]
 [node.validator02]
