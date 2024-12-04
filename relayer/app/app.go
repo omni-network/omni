@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/buildinfo"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
+	"github.com/omni-network/omni/lib/chaos"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
@@ -28,6 +29,7 @@ func Run(ctx context.Context, cfg Config) error {
 	log.Info(ctx, "Starting relayer")
 
 	buildinfo.Instrument(ctx)
+	ctx = chaos.WithErrProbability(ctx, cfg.Network)
 
 	// Start metrics first, so app is "up"
 	monitorChan := serveMonitoring(cfg.MonitoringAddr)
