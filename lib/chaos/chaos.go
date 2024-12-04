@@ -11,7 +11,7 @@ import (
 
 var (
 	networkErrorProb = map[netconf.ID]float64{
-		netconf.Devnet:  0.001,  // 0.1% error rate in devnet (1 in 1_000)
+		netconf.Devnet:  0.05,   // 5% error rate in devnet (5 in 100)
 		netconf.Staging: 0.001,  // 0.1% error rate in staging (1 in 1_000)
 		netconf.Omega:   0.0001, // 0.01% error rate in omega (1 in 10_000)
 		netconf.Mainnet: 0.00,   // No chaos errors in mainnet

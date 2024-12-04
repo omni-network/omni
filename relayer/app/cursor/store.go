@@ -119,6 +119,13 @@ func (s *Store) Insert(
 		offsetsByShard[uint64(streamID.ShardID)] = msgs[len(msgs)-1].StreamOffset
 	}
 
+	ctx = log.WithCtx(ctx,
+		"src_chain_version", s.network.ChainVersionName(srcVersion),
+		"dest_chain", s.network.ChainName(destChain),
+		"attest_offset", attestOffset,
+		"stream_offsets", offsetsByShard,
+	)
+
 	c := &Cursor{
 		SrcChainId:           srcVersion.ID,
 		ConfLevel:            uint32(srcVersion.ConfLevel),
@@ -134,13 +141,9 @@ func (s *Store) Insert(
 		existing, err := s.db.Get(ctx, srcVersion.ID, uint32(srcVersion.ConfLevel), destChain, attestOffset)
 		if err != nil {
 			return errors.Wrap(err, "get cursor")
-		} else if !maps.Equal(offsetsByShard, existing.GetStreamOffsetsByShard()) { // For now just log a bug if this happens.
-			log.Error(ctx, "Unexpected existing cursor offset mismatch [BUG]", nil,
-				"src_chain_version", s.network.ChainVersionName(srcVersion),
-				"dest_chain", s.network.ChainName(destChain),
-				"attest_offset", attestOffset,
+		} else if !maps.Equal(offsetsByShard, existing.GetStreamOffsetsByShard()) { // For now just log an error if this happens.
+			log.Error(ctx, "Unexpected existing cursor offset mismatch", nil,
 				"existing", existing.GetStreamOffsetsByShard(),
-				"new", offsetsByShard,
 			)
 		}
 

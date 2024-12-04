@@ -28,6 +28,9 @@ type Config struct {
 	Jitter float64
 	// MaxDelay is the upper bound of backoff delay.
 	MaxDelay time.Duration
+
+	// retryCount defines the number of retries. Note this is only applicable to Retry.
+	retryCount int
 }
 
 // DefaultConfig is a backoff configuration with the default values specified
@@ -42,6 +45,7 @@ var DefaultConfig = Config{
 	Multiplier: 1.6,
 	Jitter:     0.2,
 	MaxDelay:   120 * time.Second,
+	retryCount: defaultRetries,
 }
 
 // FastConfig is a common configuration for fast backoff.

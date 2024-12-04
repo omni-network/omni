@@ -9,6 +9,7 @@ import (
 
 	"github.com/omni-network/omni/e2e/docker"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 )
 
@@ -55,10 +56,8 @@ func CleanupDir(ctx context.Context, dir string) error {
 		}
 	}
 
-	err = os.RemoveAll(dir)
-	if err != nil {
-		return errors.Wrap(err, "remove dir")
-	}
-
-	return nil
+	// Retry remove all since it sometimes fails due to temp file locks.
+	return expbackoff.Retry(ctx, func() error {
+		return os.RemoveAll(dir)
+	})
 }
