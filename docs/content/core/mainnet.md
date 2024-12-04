@@ -28,7 +28,7 @@ Omni’s mainnet deployment supports Ethereum L1, Arbitrum One, Optimism, and Ba
 
 | Contract | Address | Note |
 | --- | --- | --- |
-| OmniPortal | 0x709e7db90d1960F3B000FEAC67F397a329327E8a | Our portal contracts have the same address on all chains. |
+| OmniPortal | 0x5e9a8aa213c912bf54c86bf64adb8ed6a79c04d1 | Our portal contracts have the same address on all chains. |
 
 
 ## Have questions?
