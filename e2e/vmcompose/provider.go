@@ -97,11 +97,8 @@ func (p *Provider) Setup() error {
 			Solver:         services["solver"],
 			Prometheus:     p.Testnet.Prometheus,
 			GethVerbosity:  gethVerbosity,
-			AnvilProxyTag:  p.omniTag,
-			MonitorTag:     p.omniTag,
-			RelayerTag:     p.omniTag,
-			SolverTag:      p.omniTag,
 		}
+		def = docker.SetImageTags(def, p.Testnet.Manifest, p.omniTag)
 
 		compose, err := docker.GenerateComposeFile(def)
 		if err != nil {
