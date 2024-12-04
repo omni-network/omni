@@ -5,7 +5,6 @@ import { OwnableRoles } from "solady/src/auth/OwnableRoles.sol";
 import { ReentrancyGuard } from "solady/src/utils/ReentrancyGuard.sol";
 import { Initializable } from "solady/src/utils/Initializable.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
-import { IConversionRateOracle } from "core/src/interfaces/IConversionRateOracle.sol";
 import { XAppBase } from "core/src/pkg/XAppBase.sol";
 import { ISolveInbox } from "./interfaces/ISolveInbox.sol";
 import { Solve } from "./Solve.sol";
@@ -196,28 +195,6 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
         _transferDeposits(to, req.deposits);
 
         emit Claimed(id, msg.sender, to, req.deposits);
-    }
-
-    /**
-     * @notice Suggest the amount of native currency to send with a request.
-     * @param call        Details of the call to be executed on another chain.
-     * @param gasLimit    Maximum gas limit for the call.
-     * @param gasPrice    Destination chain gas price in wei.
-     * @param fulfillFee  Fee for the fulfill call, retrieved from the destination outbox.
-     */
-    function suggestNativePayment(Solve.Call calldata call, uint64 gasLimit, uint64 gasPrice, uint256 fulfillFee)
-        external
-        view
-        returns (uint256)
-    {
-        IConversionRateOracle oracle = IConversionRateOracle(omni.feeOracle());
-
-        uint256 nativeValue = call.value * oracle.toNativeRate(call.destChainId) / oracle.CONVERSION_RATE_DENOM();
-        uint256 executionFee = omni.feeFor(call.destChainId, call.data, gasLimit);
-        uint256 acceptFee = 55_000 * gasPrice;
-        uint256 solveFee = 100_000 gwei; // TODO: determine solve fee
-
-        return nativeValue + executionFee + acceptFee + solveFee + fulfillFee;
     }
 
     /**
