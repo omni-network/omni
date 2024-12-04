@@ -49,7 +49,10 @@ func (p *Provider) Setup() error {
 		var halos []string
 		for _, node := range p.Testnet.Nodes {
 			if node.Version != p.Testnet.UpgradeVersion {
-				return errors.New("upgrades not supported for vmcompose")
+				return errors.New("node upgrades not supported for vmcompose",
+					"node_version", node.Version,
+					"upgrade_version", p.Testnet.UpgradeVersion,
+				)
 			}
 
 			if services[node.Name] {
