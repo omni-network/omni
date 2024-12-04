@@ -4,6 +4,10 @@ public_chains = ["ethereum","arbitrum_one","base","optimism"]
 multi_omni_evms = true
 prometheus   = true
 
+pinned_halo_tag = "v0.11.0"
+pinned_relayer_tag = "dffc7bf"
+pinned_monitor_tag = "dffc7bf"
+
 [node.validator01]
 [node.validator02]
 

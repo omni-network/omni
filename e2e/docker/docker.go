@@ -242,7 +242,6 @@ func (c ComposeDef) NodeOmniEVMs() map[string]string {
 func SetImageTags(def ComposeDef, manifest types.Manifest, omniImgTag string) ComposeDef {
 	anvilProxyTag := omniImgTag
 
-	// TODO(corver): Remove pinned tags since they are not used.
 	monitorTag := omniImgTag
 	if manifest.PinnedMonitorTag != "" {
 		monitorTag = manifest.PinnedMonitorTag
