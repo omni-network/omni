@@ -1,7 +1,5 @@
 # Mainnet
 
-**🚧 COMING SOON**
-
 ## Which chains does Omni’s mainnet support?
 
 Omni’s mainnet deployment supports Ethereum L1, Arbitrum One, Optimism, and Base. More chains will be added over time.
@@ -22,7 +20,7 @@ Omni’s mainnet deployment supports Ethereum L1, Arbitrum One, Optimism, and Ba
 | **Resource** | **Address** |
 | --- | --- |
 | Archive Node(s) RPC | Available upon request |
-| Omni EVM Explorer | TBD |
+| Omni EVM Explorer | https://omniscan.network/ |
 | Omni status page | [https://status.omni.network](https://status.omni.network/) |
 
 
@@ -30,7 +28,7 @@ Omni’s mainnet deployment supports Ethereum L1, Arbitrum One, Optimism, and Ba
 
 | Contract | Address | Note |
 | --- | --- | --- |
-| OmniPortal | TBD | Our portal contracts have the same address on all chains. |
+| OmniPortal | 0x709e7db90d1960F3B000FEAC67F397a329327E8a | Our portal contracts have the same address on all chains. |
 
 
 ## Have questions?
