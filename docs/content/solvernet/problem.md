@@ -11,9 +11,9 @@ In particular, cross chain app development introduces challenges like:
 3. **Extended Development Timelines**: Building cross chain applications simply takes way longer than building on a single chain. In a fast-evolving industry where most applications are still pursuing product-market fit, this long development cycle is impractical.
 4. **Platform Risk**: App developers need to bet the success of their protocol on the success of a cross-chain messaging protocol, in addition to each of the chains they're built on.
 
-_**SolverNet fixes this.**_
+_**SolverNet fixes exactly these problems.**_
 
-1. Build applications on a single chain.
-2. Don't worry about finality, solvers do that.
-3. Build on a single chain.
-4. Omni brings users and capital to you, without you needing to integrate it into your smart contracts (just your frontend!).
+1. You don't need to worry about cross chain complexity, because you can build your application on a single chain.
+2. You don't need to consider finality risk or reorgs, because solvers take on that risk, not you.
+3. You don't need to rearchitect your smart contracts, since you can build them on a single chain.
+4. You don't need to risk the success of your protocol on an xchain messaging protocol. You only need to integrate Omni into your frontend!
