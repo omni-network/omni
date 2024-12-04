@@ -115,7 +115,7 @@ services:
     labels:
       e2e: true
     container_name: relayer
-    image: omniops/relayer:main
+    image: omniops/relayer:v2
     restart: unless-stopped
     ports:
       - 26660 # Prometheus and pprof
@@ -131,7 +131,7 @@ services:
     labels:
       e2e: true
     container_name: monitor
-    image: omniops/monitor:main
+    image: omniops/monitor:v3
     restart: unless-stopped
     ports:
       - 26660 # Prometheus and pprof

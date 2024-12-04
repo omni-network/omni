@@ -106,6 +106,21 @@ type Manifest struct {
 	// Perturb defines additional (non-cometBFT) perturbations by service name.
 	Perturb map[string][]Perturb `json:"perturb"`
 
+	// PinnedHaloTag defines the pinned halo docker image tag.
+	// This allows source code defined versions for protected networks.
+	// This overrides the --omni-image-tag if non-empty.
+	PinnedHaloTag string `toml:"pinned_halo_tag"`
+
+	// PinnedMonitorTag defines the pinned monitor docker image tag.
+	// This allows source code defined versions for protected networks.
+	// This overrides the --omni-image-tag if non-empty.
+	PinnedMonitorTag string `toml:"pinned_monitor_tag"`
+
+	// PinnedRelayerTag defines the pinned relayer docker image tag.
+	// This allows source code defined versions for protected networks.
+	// This overrides the --omni-image-tag if non-empty.
+	PinnedRelayerTag string `toml:"pinned_relayer_tag"`
+
 	// NetworkUpgradeHeight defines the network upgrade height, default is genesis, negative is disabled.
 	// Note that it might be scheduled at a later height.
 	NetworkUpgradeHeight int64 `toml:"network_upgrade_height"`
