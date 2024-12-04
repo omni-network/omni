@@ -196,6 +196,9 @@ func adaptCometTestnet(ctx context.Context, manifest types.Manifest, testnet *e2
 	testnet.Dir = runsDir(testnet.File)
 	testnet.VoteExtensionsEnableHeight = 1
 	testnet.UpgradeVersion = "omniops/halovisor:" + imgTag // Currently only support upgrading to "latest" version
+	if manifest.PinnedHaloTag != "" {
+		testnet.UpgradeVersion = "omniops/halovisor:" + manifest.PinnedHaloTag // Pinned tag overrides the cli --omni-image-tag flag.
+	}
 
 	for i := range testnet.Nodes {
 		var err error
