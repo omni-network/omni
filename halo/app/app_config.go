@@ -59,10 +59,12 @@ const (
 
 //nolint:gochecknoglobals // Cosmos-style
 var (
-	stakingLogsDeliveryInterval = map[netconf.ID]int64{
-		netconf.Mainnet: 21_600, // roughly ~12h assumping 0.5bps finalization rate
-		netconf.Omega:   21_600,
-		netconf.Devnet:  2,
+	deliveryInterval = func(network netconf.ID) int64 {
+		if network.IsProtected() {
+			return 20_000 // roughly ~12h assumping 0.5bps finalization rate
+		}
+
+		return 2
 	}
 
 	genesisModuleOrder = []string{
@@ -212,15 +214,10 @@ var (
 
 				// TODO(christian): integrate into the list above
 				if feature.FlagEVMStakingModule.Enabled(ctx) {
-					deliveryInterval, found := stakingLogsDeliveryInterval[network]
-					if !found {
-						deliveryInterval = stakingLogsDeliveryInterval[netconf.Devnet]
-					}
-
 					configs = append(configs, &appv1alpha1.ModuleConfig{
 						Name: evmstaking2types.ModuleName,
 						Config: appconfig.WrapAny(&evmstaking2module.Module{
-							DeliveryInterval: deliveryInterval,
+							DeliveryInterval: deliveryInterval(network),
 						}),
 					})
 				}
