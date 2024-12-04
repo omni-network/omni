@@ -35,9 +35,6 @@ func TestThresholdReference(t *testing.T) {
 				resp[network][token][role] = make(map[string]string)
 
 				thresholds, ok := eoa.GetFundThresholds(token, network, role)
-				if !ok && network != netconf.Staging && role == eoa.RoleSolver {
-					continue
-				}
 				require.True(t, ok, "thresholds not found: %s %s %s", network, role, token)
 
 				resp[network][token][role]["target"] = etherStr(thresholds.TargetBalance())
@@ -59,9 +56,6 @@ func TestStatic(t *testing.T) {
 				}
 
 				acc, ok := eoa.AccountForRole(network, role)
-				if !ok && network != netconf.Staging && role == eoa.RoleSolver {
-					continue
-				}
 				require.True(t, ok, "account not found: %s %s", network, role)
 				require.NotZero(t, acc.Address)
 				require.True(t, common.IsHexAddress(acc.Address.Hex()))
@@ -111,6 +105,12 @@ func shouldExist(role eoa.Role, id netconf.ID) bool {
 	switch {
 	case role == eoa.RoleTester && id == netconf.Mainnet: // RoleTester not supported on mainnet
 		return false
+	case role == eoa.RoleSolver:
+		if id == netconf.Omega || id == netconf.Mainnet {
+			return false
+		}
+
+		return true
 	default:
 		return true
 	}
