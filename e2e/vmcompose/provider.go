@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/e2e/docker"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -416,12 +417,22 @@ func copyToGCP(ctx context.Context, vmName string, path string, network string, 
 func copyFileToVM(ctx context.Context, vmName string, localPath string, remotePath string) error {
 	scp := fmt.Sprintf("gcloud compute scp --zone=us-east1-c --quiet %s %s:%s", localPath, vmName, remotePath)
 
-	cmd := exec.CommandContext(ctx, "bash", "-c", scp)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return errors.Wrap(err, "copy to VM", "output", string(out), "cmd", scp)
+	// Scp sporadically fails with "Permission denied" on GCP, retry a few times.
+	check := func(err error) bool {
+		return strings.Contains(err.Error(), "Permission denied")
 	}
 
-	return nil
+	do := func() error {
+		cmd := exec.CommandContext(ctx, "bash", "-c", scp)
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			return errors.Wrap(err, "copy to VM", "output", string(out), "cmd", scp)
+		}
+
+		return nil
+	}
+
+	return expbackoff.Retry(ctx, do, expbackoff.WithRetryCheck(check))
 }
 
 func backupToGCP(ctx context.Context, localPath string, bucket string) {

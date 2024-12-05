@@ -29,8 +29,8 @@ type Config struct {
 	// MaxDelay is the upper bound of backoff delay.
 	MaxDelay time.Duration
 
-	// retryCount defines the number of retries. Note this is only applicable to Retry.
-	retryCount int
+	// retryConfig only applicable to Retry.
+	retryConfig retryConfig
 }
 
 // DefaultConfig is a backoff configuration with the default values specified
@@ -41,19 +41,20 @@ type Config struct {
 //
 // Copied from google.golang.org/grpc@v1.48.0/backoff/backoff.go.
 var DefaultConfig = Config{
-	BaseDelay:  1.0 * time.Second,
-	Multiplier: 1.6,
-	Jitter:     0.2,
-	MaxDelay:   120 * time.Second,
-	retryCount: defaultRetries,
+	BaseDelay:   1.0 * time.Second,
+	Multiplier:  1.6,
+	Jitter:      0.2,
+	MaxDelay:    120 * time.Second,
+	retryConfig: defaultRetryConfig(),
 }
 
 // FastConfig is a common configuration for fast backoff.
 var FastConfig = Config{
-	BaseDelay:  100 * time.Millisecond,
-	Multiplier: 1.6,
-	Jitter:     0.2,
-	MaxDelay:   5 * time.Second,
+	BaseDelay:   100 * time.Millisecond,
+	Multiplier:  1.6,
+	Jitter:      0.2,
+	MaxDelay:    5 * time.Second,
+	retryConfig: defaultRetryConfig(),
 }
 
 // WithPeriodicConfig configures the backoff with periodic backoff.
