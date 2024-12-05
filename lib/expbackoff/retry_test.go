@@ -57,4 +57,18 @@ func Test(t *testing.T) {
 		require.ErrorIs(t, err, context.Canceled)
 		require.Equal(t, 1, count) // No retries
 	})
+
+	t.Run("check", func(t *testing.T) {
+		const expect = 2
+		var count int
+		check := func(err error) bool {
+			return count < expect
+		}
+		err := expbackoff.Retry(ctx, func() error {
+			count++
+			return io.EOF
+		}, expbackoff.WithRetryCheck(check))
+		require.ErrorIs(t, err, io.EOF)
+		require.Equal(t, expect, count) // Not 3 retries
+	})
 }
