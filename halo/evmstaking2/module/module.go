@@ -138,7 +138,7 @@ func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 		in.BKeeper,
 		in.SKeeper,
 		stakingkeeper.NewMsgServerImpl(in.SKeeper),
-		in.Config.GetDeliveryInterval(),
+		in.Config.GetDeliverInterval(),
 	)
 	if err != nil {
 		return ModuleOutputs{}, err

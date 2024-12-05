@@ -31,15 +31,15 @@ var (
 
 // Keeper also implements the evmenginetypes.EvmEventProcessor interface.
 type Keeper struct {
-	eventsTable      EVMEventTable
-	ethCl            ethclient.Client
-	address          common.Address
-	contract         *bindings.Staking
-	aKeeper          types.AuthKeeper
-	bKeeper          types.BankKeeper
-	sKeeper          types.StakingKeeper
-	sServer          types.StakingMsgServer
-	deliveryInterval int64
+	eventsTable     EVMEventTable
+	ethCl           ethclient.Client
+	address         common.Address
+	contract        *bindings.Staking
+	aKeeper         types.AuthKeeper
+	bKeeper         types.BankKeeper
+	sKeeper         types.StakingKeeper
+	sServer         types.StakingMsgServer
+	deliverInterval int64
 }
 
 func NewKeeper(
@@ -49,7 +49,7 @@ func NewKeeper(
 	bKeeper types.BankKeeper,
 	sKeeper types.StakingKeeper,
 	sServer types.StakingMsgServer,
-	deliveryInterval int64,
+	deliverInterval int64,
 ) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
 		{Id: 1, ProtoFileName: File_halo_evmstaking2_keeper_evmstaking_proto.Path()},
@@ -72,27 +72,27 @@ func NewKeeper(
 	}
 
 	return &Keeper{
-		eventsTable:      evmstakingStore.EVMEventTable(),
-		ethCl:            ethCl,
-		aKeeper:          aKeeper,
-		bKeeper:          bKeeper,
-		sKeeper:          sKeeper,
-		sServer:          sServer,
-		address:          address,
-		contract:         contract,
-		deliveryInterval: deliveryInterval,
+		eventsTable:     evmstakingStore.EVMEventTable(),
+		ethCl:           ethCl,
+		aKeeper:         aKeeper,
+		bKeeper:         bKeeper,
+		sKeeper:         sKeeper,
+		sServer:         sServer,
+		address:         address,
+		contract:        contract,
+		deliverInterval: deliverInterval,
 	}, nil
 }
 
-// EndBlock delivers all pending EVM events on every `k.deliveryInterval`'th block.
+// EndBlock delivers all pending EVM events on every `k.deliverInterval`'th block.
 func (k *Keeper) EndBlock(ctx context.Context) error {
 	blockHeight := sdk.UnwrapSDKContext(ctx).BlockHeight()
 
-	if blockHeight%k.deliveryInterval != 0 {
+	if blockHeight%k.deliverInterval != 0 {
 		return nil
 	}
 
-	log.Info(ctx, "Delivering scheduled staking events")
+	log.Debug(ctx, "Delivering scheduled staking events")
 	iter, err := k.eventsTable.List(ctx, EVMEventIdIndexKey{})
 	if err != nil {
 		return errors.Wrap(err, "fetch evm events")
@@ -110,8 +110,8 @@ func (k *Keeper) EndBlock(ctx context.Context) error {
 			return errors.Wrap(err, "delete evm event")
 		}
 	}
-	eventDeliveryHeight.Set(float64(blockHeight))
-	scheduledEvents.Set(0)
+	eventDeliveries.Inc()
+	bufferedEvents.Set(0)
 
 	return nil
 }
@@ -166,7 +166,7 @@ func (k Keeper) Deliver(ctx context.Context, _ common.Hash, elog evmenginetypes.
 	}
 
 	log.Debug(ctx, "Scheduled a new staking event")
-	scheduledEvents.Inc()
+	bufferedEvents.Inc()
 
 	return nil
 }

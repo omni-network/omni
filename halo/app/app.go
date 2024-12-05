@@ -81,7 +81,7 @@ type App struct {
 	EVMEngKeeper          *evmengkeeper.Keeper
 	AttestKeeper          *attestkeeper.Keeper
 	ValSyncKeeper         *valsynckeeper.Keeper
-	StakingEventKeeper    *evmstaking2.Keeper
+	EVMStakingKeeper      *evmstaking2.Keeper
 	RegistryKeeper        registrykeeper.Keeper
 	EvidenceKeeper        evidencekeeper.Keeper
 	UpgradeKeeper         *upgradekeeper.Keeper
@@ -145,8 +145,9 @@ func newApp(
 		&app.UpgradeEventProc,
 	}
 
+	// TODO (christian): remove feature check with logs
 	if feature.FlagEVMStakingModule.Enabled(ctx) {
-		dependencies = append(dependencies, app.StakingEventKeeper)
+		dependencies = append(dependencies, &app.EVMStakingKeeper)
 	} else {
 		dependencies = append(dependencies, &app.StakingEventProc)
 	}
@@ -179,7 +180,7 @@ func newApp(
 	// Blocker overrides
 	{
 		// Workaround for official endblockers since valsync replaces staking endblocker, but cosmos panics if it's not there.
-		app.ModuleManager.OrderEndBlockers = endBlockers
+		app.ModuleManager.OrderEndBlockers = endBlockers(ctx)
 		app.SetEndBlocker(app.EndBlocker)
 
 		// Wrap upgrade module preblocker and do immediate shutdown if upgrade is needed.

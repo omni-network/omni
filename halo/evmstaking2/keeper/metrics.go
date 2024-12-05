@@ -6,18 +6,18 @@ import (
 )
 
 var (
-	eventDeliveryHeight = promauto.NewGauge(prometheus.GaugeOpts{
+	eventDeliveries = promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: "halo",
 		Subsystem: "evmstaking",
 		Name:      "event_delivery_height",
-		Help:      "The height at which all scheduled staking events were delivered",
+		Help:      "The number of deliveries of buffered staking events",
 	})
 
-	scheduledEvents = promauto.NewGauge(prometheus.GaugeOpts{
+	bufferedEvents = promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: "halo",
 		Subsystem: "evmstaking",
-		Name:      "pending_events",
-		Help:      "The number of pending staking events to be delivered",
+		Name:      "buffered_events",
+		Help:      "The number of buffered staking events to be delivered",
 	})
 
 	failedEvents = promauto.NewGauge(prometheus.GaugeOpts{

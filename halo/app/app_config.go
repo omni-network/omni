@@ -48,6 +48,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
+// Note that these constants form part of consensus logic and can only be changed during network upgrades.
 const (
 	// TODO(corver): Maybe move these to genesis itself.
 	genesisVoteWindowUp   uint64 = 64 // Allow early votes for <latest attestation - 64>
@@ -55,18 +56,13 @@ const (
 	genesisVoteExtLimit   uint64 = 256
 	genesisTrimLag        uint64 = 1      // Allow deleting attestations in block after approval.
 	genesisCTrimLag       uint64 = 72_000 // Delete consensus attestations state after +-1 day (given a period of 1.2s).
+
+	deliverIntervalProtected = 20_000 // Roughly ~12h assumping 0.5bps
+	deliverIntervalEphemeral = 2      // Fast updates while testing
 )
 
 //nolint:gochecknoglobals // Cosmos-style
 var (
-	deliveryInterval = func(network netconf.ID) int64 {
-		if network.IsProtected() {
-			return 20_000 // roughly ~12h assumping 0.5bps finalization rate
-		}
-
-		return 2
-	}
-
 	genesisModuleOrder = []string{
 		authtypes.ModuleName,
 		banktypes.ModuleName,
@@ -88,10 +84,21 @@ var (
 		attesttypes.ModuleName,
 	}
 
-	endBlockers = []string{
-		attesttypes.ModuleName,
-		valsynctypes.ModuleName, // Wraps staking module end blocker (must come after attest module)
-		upgradetypes.ModuleName,
+	endBlockers = func(ctx context.Context) []string {
+		if feature.FlagEVMStakingModule.Enabled(ctx) {
+			return []string{
+				attesttypes.ModuleName,
+				evmstaking2types.ModuleName,
+				valsynctypes.ModuleName, // Wraps staking module end blocker (must come after attest module)
+				upgradetypes.ModuleName,
+			}
+		}
+
+		return []string{
+			attesttypes.ModuleName,
+			valsynctypes.ModuleName, // Wraps staking module end blocker (must come after attest module)
+			upgradetypes.ModuleName,
+		}
 	}
 
 	// blocked account addresses.
@@ -217,7 +224,7 @@ var (
 					configs = append(configs, &appv1alpha1.ModuleConfig{
 						Name: evmstaking2types.ModuleName,
 						Config: appconfig.WrapAny(&evmstaking2module.Module{
-							DeliveryInterval: deliveryInterval(network),
+							DeliverInterval: deliverInterval(network),
 						}),
 					})
 				}
@@ -236,3 +243,11 @@ var (
 		evmupgrade.DIProvide,
 	}
 )
+
+func deliverInterval(network netconf.ID) int64 {
+	if network.IsProtected() {
+		return deliverIntervalProtected
+	}
+
+	return deliverIntervalEphemeral
+}
