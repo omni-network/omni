@@ -51,25 +51,23 @@ func (p *Provider) StreamEventLogs(ctx context.Context, req xchain.EventLogsReq,
 				FilterTopics:  req.FilterTopics,
 			}
 
-			var lastErr error
-			const retryCount = 5
-			backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Millisecond*100))
-			for i := 0; i < retryCount; i++ {
-				logs, exists, err := p.GetEventLogs(ctx, fetchReq)
-				if err != nil {
-					lastErr = err
-					backoff()
-				} else if !exists {
-					return nil, nil
-				} else {
-					return []events{{
-						Height: height,
-						Events: logs,
-					}}, nil
-				}
+			// Retry fetching logs a few times, since RPC providers load balance requests and some servers may lag a bit.
+			var logs []types.Log
+			var exists bool
+			err := expbackoff.Retry(ctx, func() (err error) { //nolint:nonamedreturns // Succinctness FTW
+				logs, exists, err = p.GetEventLogs(ctx, fetchReq)
+				return err
+			})
+			if err != nil {
+				return nil, err
+			} else if !exists {
+				return nil, nil
 			}
 
-			return nil, lastErr
+			return []events{{
+				Height: height,
+				Events: logs,
+			}}, nil
 		},
 		Backoff:       p.backoffFunc,
 		ElemLabel:     "events",

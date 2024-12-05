@@ -160,22 +160,20 @@ func (p *Provider) stream(
 				ConfLevel: req.ConfLevel,
 			}
 
-			var lastErr error
-			const retryCount = 5
-			backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Millisecond*100))
-			for i := 0; i < retryCount; i++ {
-				xBlock, exists, err := p.GetBlock(ctx, fetchReq)
-				if err != nil {
-					lastErr = err
-					backoff()
-				} else if !exists {
-					return nil, nil
-				} else {
-					return []xchain.Block{xBlock}, nil
-				}
+			// Retry fetching blocks a few times, since RPC providers load balance requests and some servers may lag a bit.
+			var block xchain.Block
+			var exists bool
+			err := expbackoff.Retry(ctx, func() (err error) { //nolint:nonamedreturns // Succinctness FTW
+				block, exists, err = p.GetBlock(ctx, fetchReq)
+				return err
+			})
+			if err != nil {
+				return nil, err
+			} else if !exists {
+				return nil, nil
 			}
 
-			return nil, lastErr
+			return []xchain.Block{block}, nil
 		},
 		Backoff:       p.backoffFunc,
 		ElemLabel:     "block",

@@ -2,7 +2,6 @@ package netman
 
 import (
 	"context"
-	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/types"
@@ -10,6 +9,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts/portal"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/forkjoin"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -157,18 +157,13 @@ func (m *manager) deployIfNeeded(ctx context.Context, chain types.EVMChain, back
 	}
 
 	// Deploying fee oracle sporadically fails during gas estimation. Just retry a few times.
-	const retry = 3
 	var feeOracle common.Address
-	for i := 1; ; i++ {
+	err = expbackoff.Retry(ctx, func() error {
 		feeOracle, _, err = feeoraclev1.Deploy(ctx, m.network, chain.ChainID, m.chainIDs(), m.backends)
-		if err == nil {
-			break
-		} else if i >= retry {
-			return common.Address{}, 0, errors.Wrap(err, "deploy fee oracle", "chain", chain.Name, "attempt", i)
-		}
-
-		log.Warn(ctx, "Failed deploying fee oracle (will retry)", err, "chain", chain.Name, "attempt", i)
-		time.Sleep(time.Second)
+		return err
+	})
+	if err != nil {
+		return common.Address{}, 0, errors.Wrap(err, "deploy fee oracle", "chain", chain.Name)
 	}
 
 	// at this point, we need to deploy the portal
