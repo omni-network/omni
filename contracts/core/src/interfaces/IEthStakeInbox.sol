@@ -6,7 +6,7 @@ import { IOmniAVS } from "avs/interfaces/IOmniAVS.sol";
 /**
  * @title IEthStakeInbox
  * @dev Interface for EthStakeInbox predeployed contract, that receives operator stake updates from OmniAVS
- *      TOOD: implement EthStakeInbox (name TBD)
+ *      TODO: implement EthStakeInbox (name TBD)
  */
 interface IEthStakeInbox {
     /// @dev Syncs operator state with OmniAVS. Only callable by XMsg from OmniAVS

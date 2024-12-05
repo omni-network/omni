@@ -75,7 +75,7 @@ contract OmniGasPump is IOmniGasPump, XAppUpgradeable, OwnableUpgradeable, Pausa
     /**
      * @notice Swaps msg.value ETH for OMNI and sends it to `recipient` on Omni.
      *
-     *      Takes an xcall fee and a pct cut. Cut taken to disencentivize spamming.
+     *      Takes an xcall fee and a pct cut. Cut taken to disincentivize spamming.
      *      Returns the amount of OMNI swapped for.
      *
      *      To retry (if OmniGasStation transfer fails), call swap() again with the
@@ -139,7 +139,7 @@ contract OmniGasPump is IOmniGasPump, XAppUpgradeable, OwnableUpgradeable, Pausa
 
     /// @notice Returns the xcall fee required for fillUp(). Does not include `pctCut`.
     function xfee() public view returns (uint256) {
-        // Use max addrs & amount to use no zero byte calldata to ensure max fee
+        // Use max address & amount to use no zero byte calldata to ensure max fee
         address recipient = address(type(uint160).max);
         uint256 amt = type(uint256).max;
 

@@ -13,8 +13,8 @@ import { XTypes } from "../libraries/XTypes.sol";
  *         This contract is predeployed to Omni's EVM, prefunded with native OMNI tokens to match totalL1Supply, such
  *         that each L1 token has a "sibling" native token on Omni.
  * @dev This contract is predeployed, and requires storage slots to be set in genesis.
- *      initialize(...) is called pre-deployment, in sctips/genesis/AllocPredeploys.s.sol
- *      iniitializers on the implementation are disabled via manual storage updates, rather than in a constructor.
+ *      initialize(...) is called pre-deployment, in script/genesis/AllocPredeploys.s.sol
+ *      Initializers on the implementation are disabled via manual storage updates, rather than in a constructor.
  *      If an new implementation is required, a constructor should be added.
  */
 contract OmniBridgeNative is OmniBridgeCommon {
@@ -179,7 +179,7 @@ contract OmniBridgeNative is OmniBridgeCommon {
      * @param l1ChainId_    The chain id of the L1 network.
      * @param omni_         The address of the OmniPortal contract.
      * @param l1Bridge_     The address of the L1 OmniBridge contract.
-     * @param l1Deposits_   The number of tokens deposied to L1 bridge contract at setup
+     * @param l1Deposits_   The number of tokens deposited to L1 bridge contract at setup
      *                      (to account for genesis prefunds)
      */
     function setup(uint64 l1ChainId_, address omni_, address l1Bridge_, uint256 l1Deposits_) external onlyOwner {

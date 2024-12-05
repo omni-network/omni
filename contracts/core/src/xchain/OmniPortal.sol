@@ -99,7 +99,7 @@ contract OmniPortal is
         omniChainId = p.omniChainId;
         omniCChainId = p.omniCChainId;
 
-        // omni consensus chain uses Finalised+Broadcast shard
+        // omni consensus chain uses Finalized+Broadcast shard
         uint64 omniCShard = ConfLevel.toBroadcastShard(ConfLevel.Finalized);
         _setInXMsgOffset(p.omniCChainId, omniCShard, p.cChainXMsgOffset);
         _setInXBlockOffset(p.omniCChainId, omniCShard, p.cChainXBlockOffset);
@@ -557,7 +557,7 @@ contract OmniPortal is
     }
 
     /**
-     * @notice Pause xcalls and xsubissions from all chains
+     * @notice Pause xcalls and xsubmissions from all chains
      */
     function pause() external onlyOwner {
         _pauseAll();
@@ -565,7 +565,7 @@ contract OmniPortal is
     }
 
     /**
-     * @notice Unpause xcalls and xsubissions from all chains
+     * @notice Unpause xcalls and xsubmissions from all chains
      */
     function unpause() external onlyOwner {
         _unpauseAll();
@@ -662,7 +662,7 @@ contract OmniPortal is
     }
 
     /**
-     * @notice An action id with a qualifiying chain id, used as pause keys.
+     * @notice An action id with a qualifying chain id, used as pause keys.
      */
     function _chainActionId(bytes32 actionId, uint64 chainId_) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(actionId, chainId_));

@@ -4,10 +4,10 @@ pragma solidity =0.8.24;
 /**
  * @title Slashing
  * @notice The EVM interface to the consensus chain's x/slashing module.
- *         Calls are proxied, and not executed syncronously. Their execution is left to
+ *         Calls are proxied, and not executed synchronously. Their execution is left to
  *         the consensus chain, and they may fail.
  * @dev This contract is predeployed as an upgradable proxy, though currently has no storage.
- *      It therefoes does not need to be Initializeable. Initializeable should be added when
+ *      It therefor does not need to be Initializable. Initializable should be added when
  *      initialization logic is required.
  */
 contract Slashing {

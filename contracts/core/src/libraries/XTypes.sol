@@ -89,7 +89,7 @@ library XTypes {
     }
 
     /**
-     * @notice An Omni validator, specified by their etheruem address and voting power.
+     * @notice An Omni validator, specified by their ethereum address and voting power.
      * @custom:field addr   Validator ethereum address
      * @custom:field power  Validator voting power
      */

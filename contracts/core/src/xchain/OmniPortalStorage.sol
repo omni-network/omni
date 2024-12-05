@@ -16,7 +16,7 @@ abstract contract OmniPortalStorage is IOmniPortal, IOmniPortalAdmin {
     uint8 public xsubValsetCutoff;
 
     /**
-     * @notice Maxium number of bytes allowed in xreceipt result
+     * @notice Maximum number of bytes allowed in xreceipt result
      */
     uint16 public xreceiptMaxErrorSize;
 

@@ -67,7 +67,7 @@ interface IOmniPortal {
     function xmsgMaxDataSize() external view returns (uint16);
 
     /**
-     * @notice Maxium number of bytes allowed in xreceipt result
+     * @notice Maximum number of bytes allowed in xreceipt result
      */
     function xreceiptMaxErrorSize() external view returns (uint16);
 
@@ -147,7 +147,7 @@ interface IOmniPortal {
 
     /**
      * @notice Submit a batch of XMsgs to be executed on this chain
-     * @param xsub  An xchain submisison, including an attestation root w/ validator signatures,
+     * @param xsub  An xchain submission, including an attestation root w/ validator signatures,
      *              and a block header and message batch, proven against the attestation root.
      */
     function xsubmit(XTypes.Submission calldata xsub) external;
