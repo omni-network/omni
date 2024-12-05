@@ -5,12 +5,15 @@ import { Ownable } from "solady/src/auth/Ownable.sol";
 import { SolveInbox, ISolveInbox } from "src/SolveInbox.sol";
 import { Solve } from "src/Solve.sol";
 import { InboxBase } from "./InboxBase.sol";
+import { AddressUtils } from "core/src/libraries/AddressUtils.sol";
 
 /**
  * @title SolveInbox_claim_Test
  * @notice Test suite for SolveInbox.claim(...)
  */
 contract SolveInbox_claim_Test is InboxBase {
+    using AddressUtils for address;
+
     address claimTo = makeAddr("claim-to");
 
     function test_claim_reverts() public {
@@ -40,9 +43,9 @@ contract SolveInbox_claim_Test is InboxBase {
         // mark fulfilled
         portal.mockXCall({
             sourceChainId: call.destChainId,
-            sender: address(outbox),
+            sender: address(outbox).toBytes32(),
             data: abi.encodeCall(inbox.markFulfilled, (id, callHash(id, call))),
-            to: address(inbox)
+            to: address(inbox).toBytes32()
         });
 
         // not acceptedBy
@@ -134,9 +137,9 @@ contract SolveInbox_claim_Test is InboxBase {
         // mark fulfilled
         portal.mockXCall({
             sourceChainId: call.destChainId,
-            sender: address(outbox),
+            sender: address(outbox).toBytes32(),
             data: abi.encodeCall(inbox.markFulfilled, (id, callHash(id, call))),
-            to: address(inbox)
+            to: address(inbox).toBytes32()
         });
     }
 }

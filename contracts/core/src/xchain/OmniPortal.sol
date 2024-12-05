@@ -13,6 +13,7 @@ import { XBlockMerkleProof } from "../libraries/XBlockMerkleProof.sol";
 import { XTypes } from "../libraries/XTypes.sol";
 import { Quorum } from "../libraries/Quorum.sol";
 import { ConfLevel } from "../libraries/ConfLevel.sol";
+import { AddressUtils } from "../libraries/AddressUtils.sol";
 import { PausableUpgradeable } from "../utils/PausableUpgradeable.sol";
 
 import { OmniPortalConstants } from "./OmniPortalConstants.sol";
@@ -29,6 +30,8 @@ contract OmniPortal is
     OmniPortalStorage
 {
     using ExcessivelySafeCall for address;
+    using AddressUtils for address;
+    using AddressUtils for bytes32;
 
     /**
      * @notice Modifier that requires an action is not paused. An action is paused if:
@@ -128,7 +131,7 @@ contract OmniPortal is
      * @param data          ABI Encoded function calldata
      * @param gasLimit      Execution gas limit, enforced on destination chain
      */
-    function xcall(uint64 destChainId, uint8 conf, address to, bytes calldata data, uint64 gasLimit)
+    function xcall(uint64 destChainId, uint8 conf, bytes32 to, bytes calldata data, uint64 gasLimit)
         external
         payable
         whenNotPaused(ActionXCall, destChainId)
@@ -148,7 +151,9 @@ contract OmniPortal is
 
         outXMsgOffset[destChainId][shardId] += 1;
 
-        emit XMsg(destChainId, shardId, outXMsgOffset[destChainId][shardId], msg.sender, to, data, gasLimit, fee);
+        emit XMsg(
+            destChainId, shardId, outXMsgOffset[destChainId][shardId], msg.sender.toBytes32(), to, data, gasLimit, fee
+        );
     }
 
     /**
@@ -257,7 +262,7 @@ contract OmniPortal is
 
         // do not allow user xcalls to the portal
         // only sys xcalls (to _VIRTUAL_PORTAL_ADDRESS) are allowed to be executed on the portal
-        if (xmsg_.to == address(this)) {
+        if (xmsg_.to == address(this).toBytes32()) {
             emit XReceipt(
                 sourceChainId,
                 shardId,
@@ -299,7 +304,7 @@ contract OmniPortal is
         _xmsg = XTypes.MsgContext(sourceChainId, xmsg_.sender);
 
         (bool success, bytes memory result, uint256 gasUsed) =
-            isSysCall ? _syscall(xmsg_.data) : _call(xmsg_.to, xmsg_.gasLimit, xmsg_.data);
+            isSysCall ? _syscall(xmsg_.data) : _call(xmsg_.to.toAddress(), xmsg_.gasLimit, xmsg_.data);
 
         // reset xmsg to zero
         delete _xmsg;

@@ -8,6 +8,7 @@ import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/P
 import { XAppUpgradeable } from "src/pkg/XAppUpgradeable.sol";
 import { IConversionRateOracle } from "src/interfaces/IConversionRateOracle.sol";
 import { IOmniGasPump } from "src/interfaces/IOmniGasPump.sol";
+import { AddressUtils } from "src/libraries/AddressUtils.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
 import { OmniGasStation } from "./OmniGasStation.sol";
 
@@ -16,6 +17,8 @@ import { OmniGasStation } from "./OmniGasStation.sol";
  * @notice A unidirectional cross-chain gas exchange, allowing users to swap native ETH for native OMNI.
  */
 contract OmniGasPump is IOmniGasPump, XAppUpgradeable, OwnableUpgradeable, PausableUpgradeable {
+    using AddressUtils for address;
+
     /// @notice Emitted when the max swap is set
     event MaxSwapSet(uint256 max);
 
@@ -106,7 +109,7 @@ contract OmniGasPump is IOmniGasPump, XAppUpgradeable, OwnableUpgradeable, Pausa
         // settle up with the gas station
         xcall({
             destChainId: omniChainId(),
-            to: gasStation,
+            to: gasStation.toBytes32(),
             conf: ConfLevel.Latest,
             data: abi.encodeCall(OmniGasStation.settleUp, (recipient, owed[recipient])),
             gasLimit: SETTLE_GAS

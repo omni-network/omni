@@ -7,6 +7,7 @@ import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/trans
 import { MockPortal } from "test/utils/MockPortal.sol";
 import { OmniGasStation } from "src/token/OmniGasStation.sol";
 import { OmniGasPump } from "src/token/OmniGasPump.sol";
+import { AddressUtils } from "src/libraries/AddressUtils.sol";
 import { Test } from "forge-std/Test.sol";
 
 /**
@@ -14,6 +15,8 @@ import { Test } from "forge-std/Test.sol";
  * @notice Test suite for OmniGasStation
  */
 contract OmniGasStation_Test is Test {
+    using AddressUtils for address;
+
     OmniGasStation station;
     MockPortal portal;
     address owner;
@@ -43,8 +46,8 @@ contract OmniGasStation_Test is Test {
         address recipient = makeAddr("recipient");
         uint256 owed = 10 ether;
         uint64 chainId = 1;
-        address pump = makeAddr("pump");
-        uint64 gasLimit = 100_000; // TODO: test and trim if possible
+        bytes32 pump = makeAddr("pump").toBytes32();
+        uint64 gasLimit = 103_750;
 
         // only xcall
         vm.expectRevert("GasStation: unauthorized");
@@ -56,7 +59,7 @@ contract OmniGasStation_Test is Test {
             sourceChainId: chainId,
             sender: pump,
             data: abi.encodeCall(OmniGasStation.settleUp, (recipient, owed)),
-            to: address(station),
+            to: address(station).toBytes32(),
             gasLimit: gasLimit
         });
 
@@ -69,7 +72,7 @@ contract OmniGasStation_Test is Test {
             sourceChainId: chainId,
             sender: pump,
             data: abi.encodeCall(OmniGasStation.settleUp, (recipient, owed)),
-            to: address(station),
+            to: address(station).toBytes32(),
             gasLimit: gasLimit
         });
         assertEq(station.fueled(recipient, chainId), 0);
@@ -84,7 +87,7 @@ contract OmniGasStation_Test is Test {
             sourceChainId: chainId,
             sender: pump,
             data: abi.encodeCall(OmniGasStation.settleUp, (recipient, owed)),
-            to: address(station),
+            to: address(station).toBytes32(),
             gasLimit: gasLimit
         });
 
@@ -99,7 +102,7 @@ contract OmniGasStation_Test is Test {
             sourceChainId: chainId,
             sender: pump,
             data: abi.encodeCall(OmniGasStation.settleUp, (recipient, owed)),
-            to: address(station),
+            to: address(station).toBytes32(),
             gasLimit: gasLimit
         });
 
@@ -110,7 +113,7 @@ contract OmniGasStation_Test is Test {
             sourceChainId: chainId,
             sender: pump,
             data: abi.encodeCall(OmniGasStation.settleUp, (recipient, owed)),
-            to: address(station),
+            to: address(station).toBytes32(),
             gasLimit: gasLimit
         });
 
@@ -122,7 +125,7 @@ contract OmniGasStation_Test is Test {
 
     function test_setPump() public {
         uint64 chainId = 1;
-        address pump = makeAddr("pump");
+        bytes32 pump = makeAddr("pump").toBytes32();
 
         // only owner
         address notOwner = address(0x456);
@@ -133,7 +136,7 @@ contract OmniGasStation_Test is Test {
         // no zero addr
         vm.prank(owner);
         vm.expectRevert("GasStation: zero addr");
-        station.setPump(chainId, address(0));
+        station.setPump(chainId, address(0).toBytes32());
 
         // no zero chainID
         vm.prank(owner);
@@ -151,7 +154,7 @@ contract OmniGasStation_Test is Test {
         assertEq(station.isPump(chainId + 1, pump), false);
 
         // isPump false for other pump
-        assertEq(station.isPump(chainId, makeAddr("other")), false);
+        assertEq(station.isPump(chainId, makeAddr("other").toBytes32()), false);
     }
 
     function test_pause() public {

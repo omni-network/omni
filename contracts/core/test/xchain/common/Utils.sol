@@ -4,6 +4,7 @@ pragma solidity =0.8.24;
 import { Test } from "forge-std/Test.sol";
 import { Vm } from "forge-std/Vm.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
+import { AddressUtils } from "src/libraries/AddressUtils.sol";
 import { Events } from "./Events.sol";
 import { TestXTypes } from "./TestXTypes.sol";
 import { Fixtures } from "./Fixtures.sol";
@@ -13,8 +14,11 @@ import { Fixtures } from "./Fixtures.sol";
  * @dev Defines test utilities.
  */
 contract Utils is Test, Events, Fixtures {
+    using AddressUtils for address;
+    using AddressUtils for bytes32;
+
     /// @dev Parse an XReceipt log
-    function parseReceipt(Vm.Log memory log) internal returns (TestXTypes.Receipt memory) {
+    function parseReceipt(Vm.Log memory log) internal pure returns (TestXTypes.Receipt memory) {
         assertEq(log.topics.length, 4);
         assertEq(log.topics[0], XReceipt.selector);
 
@@ -33,7 +37,7 @@ contract Utils is Test, Events, Fixtures {
     }
 
     /// _dev Assert that the logs are XReceipt events with the correct fields.
-    function assertReceipts(Vm.Log[] memory logs, XTypes.Msg[] memory xmsgs, uint64 sourceChainId) internal {
+    function assertReceipts(Vm.Log[] memory logs, XTypes.Msg[] memory xmsgs, uint64 sourceChainId) internal view {
         assertEq(logs.length, xmsgs.length);
         for (uint256 i = 0; i < logs.length; i++) {
             assertReceipt(logs[i], xmsgs[i], sourceChainId);
@@ -42,7 +46,7 @@ contract Utils is Test, Events, Fixtures {
 
     /// @dev Assert that the log is an XReceipt event with the correct fields.
     ///      We use this helper rather than vm.expectEmit(), because gasUsed is difficult to predict.
-    function assertReceipt(Vm.Log memory log, XTypes.Msg memory xmsg, uint64 sourceChainId) internal {
+    function assertReceipt(Vm.Log memory log, XTypes.Msg memory xmsg, uint64 sourceChainId) internal view {
         TestXTypes.Receipt memory receipt = parseReceipt(log);
 
         assertEq(receipt.sourceChainId, sourceChainId);
@@ -52,7 +56,7 @@ contract Utils is Test, Events, Fixtures {
             receipt.success,
             // little hacky, but deriving receipts from messages helps
             // readability and this let's us do that
-            xmsg.to == _reverters[xmsg.destChainId] ? false : true
+            xmsg.to == _reverters[xmsg.destChainId].toBytes32() ? false : true
         );
 
         // error should be empty if success is true
@@ -62,7 +66,7 @@ contract Utils is Test, Events, Fixtures {
     /// @dev vm.expectCall() for multiple XMsgs
     function expectCalls(XTypes.Msg[] memory xmsgs) internal {
         for (uint256 i = 0; i < xmsgs.length; i++) {
-            vm.expectCall(xmsgs[i].to, xmsgs[i].data);
+            vm.expectCall(xmsgs[i].to.toAddress(), xmsgs[i].data);
         }
     }
 
@@ -72,7 +76,7 @@ contract Utils is Test, Events, Fixtures {
         uint256 count = 0;
 
         for (uint256 i = 0; i < xmsgs.length; i++) {
-            if (xmsgs[i].to == _counters[xmsgs[i].destChainId] && keccak256(xmsgs[i].data) == incrHash) {
+            if (xmsgs[i].to == _counters[xmsgs[i].destChainId].toBytes32() && keccak256(xmsgs[i].data) == incrHash) {
                 count++;
             }
         }

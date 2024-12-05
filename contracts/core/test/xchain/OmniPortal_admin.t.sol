@@ -5,6 +5,7 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 import { Base } from "./common/Base.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
 import { TestXTypes } from "./common/TestXTypes.sol";
+import { AddressUtils } from "src/libraries/AddressUtils.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
 
 /**
@@ -12,6 +13,8 @@ import { ConfLevel } from "src/libraries/ConfLevel.sol";
  * @dev Test of OmniPortal admin controls
  */
 contract OmniPortal_admin_Test is Base {
+    using AddressUtils for address;
+
     function test_setFeeOracle() public {
         address newFeeOracle = address(0x123);
 
@@ -38,7 +41,7 @@ contract OmniPortal_admin_Test is Base {
 
         // xcall params
         uint8 conf = ConfLevel.Finalized;
-        address to = address(0x1234);
+        bytes32 to = address(0x1234).toBytes32();
         bytes memory data = abi.encodeWithSignature("test()");
         uint64 gasLimit = 100_000;
 
@@ -81,7 +84,7 @@ contract OmniPortal_admin_Test is Base {
 
         // xcall params
         uint8 conf = ConfLevel.Finalized;
-        address to = address(0x1234);
+        bytes32 to = address(0x1234).toBytes32();
         bytes memory data = abi.encodeWithSignature("test()");
         uint64 gasLimit = 100_000;
 

@@ -103,7 +103,7 @@ contract OmniAVS_admin_Test is Base {
     }
 
     /// @dev Test that avsDirectory() returns the correct address
-    function test_avsDirectory_succeeds() public {
+    function test_avsDirectory_succeeds() public view {
         assertEq(omniAVS.avsDirectory(), address(avsDirectory));
     }
 

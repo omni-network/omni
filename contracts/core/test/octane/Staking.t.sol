@@ -110,7 +110,7 @@ contract Staking_Test is Test {
 
     function test_delegate() public {
         // requires min delegation
-        address validator = makeAddr("validator");
+        validator = makeAddr("validator");
         uint256 minDelegation = staking.MinDelegation();
 
         vm.deal(validator, minDelegation);

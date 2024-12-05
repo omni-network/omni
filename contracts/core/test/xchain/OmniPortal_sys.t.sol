@@ -4,6 +4,7 @@ pragma solidity =0.8.24;
 import { OmniPortalFixtures } from "test/templates/fixtures/OmniPortalFixtures.sol";
 import { OmniPortal } from "src/xchain/OmniPortal.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
+import { AddressUtils } from "src/libraries/AddressUtils.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
 import { console2 as console } from "forge-std/console2.sol";
 
@@ -12,6 +13,8 @@ import { console2 as console } from "forge-std/console2.sol";
  * @dev Test of OmniPortal sys calls
  */
 contract OmniPortal_sys_Test is OmniPortalFixtures {
+    using AddressUtils for address;
+
     function test_setNetwork() public {
         uint64[] memory chain1Shards = new uint64[](2);
         chain1Shards[0] = 3;
@@ -131,7 +134,7 @@ contract OmniPortal_sys_Test is OmniPortalFixtures {
         xmsgs[0].destChainId = broadcastChainId;
 
         // sender must be cChainSender
-        xmsgs[0].sender = address(1234);
+        xmsgs[0].sender = address(1234).toBytes32();
         xsub = xsubgen.makeXSub(1, xheader, xmsgs, xsubgen.msgFlagsForDest(xmsgs, broadcastChainId));
         vm.expectRevert("OmniPortal: invalid syscall");
         portal.xsubmit(xsub);
@@ -144,7 +147,7 @@ contract OmniPortal_sys_Test is OmniPortalFixtures {
         portal.xsubmit(xsub);
 
         // if xmsg.to != VirtualPortalAddress, the xmsg must not have been broadcast from the cchain
-        xmsgs[0].to = address(1234);
+        xmsgs[0].to = address(1234).toBytes32();
         xsub = xsubgen.makeXSub(1, xheader, xmsgs, xsubgen.msgFlagsForDest(xmsgs, broadcastChainId));
         vm.expectRevert("OmniPortal: invalid xcall");
         portal.xsubmit(xsub);
@@ -169,7 +172,7 @@ contract OmniPortal_sys_Test is OmniPortalFixtures {
         portal.xsubmit(xsub);
 
         // changing source chain, dest chain / shard and sender is enough
-        xmsgs[0].sender = address(1234);
+        xmsgs[0].sender = address(1234).toBytes32();
         xsub = xsubgen.makeXSub(1, xheader, xmsgs, xsubgen.msgFlagsForDest(xmsgs, destChainId));
         portal.xsubmit(xsub);
     }

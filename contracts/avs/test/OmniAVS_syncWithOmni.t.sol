@@ -3,15 +3,19 @@ pragma solidity =0.8.12;
 
 import { IOmniAVS } from "src/interfaces/IOmniAVS.sol";
 import { IEthStakeInbox } from "core/interfaces/IEthStakeInbox.sol";
+import { AddressUtils } from "core/libraries/AddressUtils.sol";
 import { ConfLevel } from "core/libraries/ConfLevel.sol";
 
 import { Base } from "./common/Base.sol";
+import { console2 } from "forge-std/console2.sol";
 
 /**
  * @title OmniAVS_syncWithOmni_Test
  * @dev Test suite for OmniAVS.syncWithOmni(), and by extension, OmniAVS.operators()
  */
 contract OmniAVS_syncWithOmni_Test is Base {
+    using AddressUtils for address;
+
     uint32 numOperators;
     uint32 numDelegatorsPerOp;
     address[] operators;
@@ -342,10 +346,10 @@ contract OmniAVS_syncWithOmni_Test is Base {
             address(portal),
             syncFee,
             abi.encodeWithSignature(
-                "xcall(uint64,uint8,address,bytes,uint64)",
+                "xcall(uint64,uint8,bytes32,bytes,uint64)",
                 omniChainId,
                 ConfLevel.Finalized,
-                ethStakeInbox,
+                ethStakeInbox.toBytes32(),
                 data,
                 gasLimit
             )

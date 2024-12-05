@@ -104,7 +104,7 @@ contract OmniAVS_initialize_Test is Base {
         assertFalse(avs.paused());
     }
 
-    function _assertMetadataURIUpdated(Vm.Log[] memory logs, string memory metadataURI, address avs) internal {
+    function _assertMetadataURIUpdated(Vm.Log[] memory logs, string memory metadataURI, address avs) internal view {
         bool sawMetadataURIUpdated = false;
         for (uint256 i = 0; i < logs.length; i++) {
             Vm.Log memory log = logs[i];

@@ -3,6 +3,7 @@ pragma solidity 0.8.24;
 
 import { OmniPortalFixtures } from "./fixtures/OmniPortalFixtures.sol";
 import { Counter } from "test/xchain/common/Counter.sol";
+import { AddressUtils } from "src/libraries/AddressUtils.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
 
@@ -18,6 +19,8 @@ import { XTypes } from "src/libraries/XTypes.sol";
  * See test_example() for an example test case using XSubGen.
  */
 contract OmniPortal_Test is OmniPortalFixtures {
+    using AddressUtils for address;
+
     /**
      * @notice Example test case for OmniPortal contract.
      * @dev This test case shows how to use xsubgen (XSubGen) to create a submission
@@ -29,7 +32,7 @@ contract OmniPortal_Test is OmniPortalFixtures {
         uint64 valSetId = 1; // use genesis valset for the xsubmission
         uint64 thisChainId = uint64(block.chainid); // destChainId for each xmsg
         uint64 shardId = uint64(ConfLevel.Finalized); // shardId for each xmsg (shard == conf level)
-        address sender = makeAddr("sender"); // xmsg sender
+        bytes32 sender = makeAddr("sender").toBytes32(); // xmsg sender
 
         // mock block header
         XTypes.BlockHeader memory xheader = xsubgen.makeXHeader(srcChainId, ConfLevel.Finalized);
@@ -41,7 +44,7 @@ contract OmniPortal_Test is OmniPortalFixtures {
             shardId: shardId,
             offset: 1,
             sender: sender,
-            to: address(counter),
+            to: address(counter).toBytes32(),
             data: abi.encodeCall(Counter.increment, ()),
             gasLimit: 100_000
         });
@@ -50,7 +53,7 @@ contract OmniPortal_Test is OmniPortalFixtures {
             shardId: uint64(ConfLevel.Finalized),
             offset: 2,
             sender: sender,
-            to: address(counter),
+            to: address(counter).toBytes32(),
             data: abi.encodeCall(Counter.increment, ()),
             gasLimit: 100_000
         });
@@ -59,7 +62,7 @@ contract OmniPortal_Test is OmniPortalFixtures {
             shardId: shardId,
             offset: 1,
             sender: sender,
-            to: address(counter),
+            to: address(counter).toBytes32(),
             data: abi.encodeCall(Counter.increment, ()),
             gasLimit: 100_000
         });

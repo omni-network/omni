@@ -6,6 +6,7 @@ import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/P
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { FeeOracleV1, IFeeOracleV1 } from "src/xchain/FeeOracleV1.sol";
 import { MockPortal, IOmniPortal } from "test/utils/MockPortal.sol";
+import { AddressUtils } from "src/libraries/AddressUtils.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
 import { OmniGasStation } from "src/token/OmniGasStation.sol";
 import { OmniGasPump } from "src/token/OmniGasPump.sol";
@@ -16,6 +17,8 @@ import { Test } from "forge-std/Test.sol";
  * @notice Test suite for OmniGasPump
  */
 contract OmniGasPump_Test is Test {
+    using AddressUtils for address;
+
     OmniGasPump pump;
     MockPortal portal;
     FeeOracleV1 feeOracle;
@@ -123,7 +126,7 @@ contract OmniGasPump_Test is Test {
                 (
                     omniChainId,
                     ConfLevel.Latest,
-                    gasStation,
+                    gasStation.toBytes32(),
                     abi.encodeWithSelector(OmniGasStation.settleUp.selector, recipient, expectedOwedOMNI),
                     pump.SETTLE_GAS()
                 )
@@ -150,7 +153,7 @@ contract OmniGasPump_Test is Test {
                 (
                     omniChainId,
                     ConfLevel.Latest,
-                    gasStation,
+                    gasStation.toBytes32(),
                     abi.encodeWithSelector(OmniGasStation.settleUp.selector, recipient, expectedOwedOMNI),
                     pump.SETTLE_GAS()
                 )

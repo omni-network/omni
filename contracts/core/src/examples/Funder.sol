@@ -4,12 +4,15 @@ pragma solidity 0.8.24;
 import { XApp } from "src/pkg/XApp.sol";
 import { XGasPump } from "src/pkg/XGasPump.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
+import { AddressUtils } from "src/libraries/AddressUtils.sol";
 
 /**
  * @title Funder
  * @notice Example contract that shows how to use XGasPump
  */
 contract Funder is XApp, XGasPump {
+    using AddressUtils for address;
+
     address public thingDoer;
 
     constructor(address portal, address pump) XApp(portal, ConfLevel.Latest) XGasPump(pump) { }
@@ -28,7 +31,7 @@ contract Funder is XApp, XGasPump {
     function doThingAndMaybeGetOMNI() external payable {
         uint256 fee = xcall({
             destChainId: omniChainId(),
-            to: thingDoer,
+            to: thingDoer.toBytes32(),
             data: abi.encodeWithSignature("doThing()"),
             gasLimit: 100_000
         });

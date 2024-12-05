@@ -6,14 +6,17 @@ import { PortalRegistry } from "src/xchain/PortalRegistry.sol";
 import { MockPortal } from "test/utils/MockPortal.sol";
 import { Predeploys } from "src/libraries/Predeploys.sol";
 import { OmniPortal } from "src/xchain/OmniPortal.sol";
+import { AddressUtils } from "src/libraries/AddressUtils.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
 import { Test } from "forge-std/Test.sol";
 
 contract PortalRegistry_Test is Test {
+    using AddressUtils for address;
+
     // copied from PortalRegistry.sol
     event PortalRegistered(
         uint64 indexed chainId,
-        address indexed addr,
+        bytes32 indexed addr,
         uint64 deployHeight,
         uint64 attestInterval,
         uint64 blockPeriod,
@@ -44,7 +47,7 @@ contract PortalRegistry_Test is Test {
         reg.register(dep);
 
         // no zero chain ID
-        dep.addr = makeAddr("addr");
+        dep.addr = makeAddr("addr").toBytes32();
         vm.expectRevert("PortalRegistry: zero chain ID");
         vm.prank(owner);
         reg.register(dep);
@@ -133,7 +136,7 @@ contract PortalRegistry_Test is Test {
     function _deployment(uint64 chainId) internal returns (PortalRegistry.Deployment memory) {
         PortalRegistry.Deployment memory dep = PortalRegistry.Deployment({
             chainId: chainId,
-            addr: makeAddr(string(abi.encodePacked("portal", chainId))),
+            addr: makeAddr(string(abi.encodePacked("portal", chainId))).toBytes32(),
             deployHeight: chainId * 1234,
             name: string(abi.encodePacked("omni_evm_", chainId)),
             attestInterval: chainId * 60 * 60 * 1000,

@@ -7,6 +7,7 @@ import { Initializable } from "solady/src/utils/Initializable.sol";
 import { XAppBase } from "core/src/pkg/XAppBase.sol";
 
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
+import { AddressUtils } from "core/src/libraries/AddressUtils.sol";
 import { ConfLevel } from "core/src/libraries/ConfLevel.sol";
 import { TypeMax } from "core/src/libraries/TypeMax.sol";
 import { Solve } from "./Solve.sol";
@@ -19,6 +20,7 @@ import { ISolveInbox } from "./interfaces/ISolveInbox.sol";
  */
 contract SolveOutbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
     using SafeTransferLib for address;
+    using AddressUtils for address;
 
     error CallFailed();
     error CallNotAllowed();
@@ -163,7 +165,7 @@ contract SolveOutbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
 
         // Mark the call as fulfilled on inbox
         bytes memory xcalldata = abi.encodeCall(ISolveInbox.markFulfilled, (srcReqId, callHash));
-        uint256 fee = xcall(srcChainId, ConfLevel.Finalized, _inbox, xcalldata, MARK_FULFILLED_GAS_LIMIT);
+        uint256 fee = xcall(srcChainId, ConfLevel.Finalized, _inbox.toBytes32(), xcalldata, MARK_FULFILLED_GAS_LIMIT);
         if (msg.value - call.value < fee) revert InsufficientFee();
 
         emit Fulfilled(srcReqId, callHash, msg.sender);

@@ -11,8 +11,8 @@ contract Events {
         uint64 indexed destChainId,
         uint64 indexed shardId,
         uint64 indexed offset,
-        address sender,
-        address to,
+        bytes32 sender,
+        bytes32 to,
         bytes data,
         uint64 gasLimit,
         uint256 fees

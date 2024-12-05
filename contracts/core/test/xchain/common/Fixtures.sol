@@ -5,6 +5,7 @@ import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import { XTypes } from "src/libraries/XTypes.sol";
+import { AddressUtils } from "src/libraries/AddressUtils.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
 import { FeeOracleV1 } from "src/xchain/FeeOracleV1.sol";
 import { IFeeOracleV1 } from "src/interfaces/IFeeOracleV1.sol";
@@ -26,6 +27,8 @@ import { XSubGen } from "test/utils/XSubGen.sol";
  *      utilites for generating XMsgs and XSubmissions between them.
  */
 contract Fixtures is CommonBase, StdCheats, XSubGen {
+    using AddressUtils for address;
+
     // We introduce three "chains", this chain, chain a, and chain b. We deploy
     // portals and contracts for each chain. Obviously, they all live in the
     // test EVM state. But it's useful to semantically group contracts by
@@ -182,8 +185,8 @@ contract Fixtures is CommonBase, StdCheats, XSubGen {
             destChainId: broadcastChainId,
             shardId: ConfLevel.toBroadcastShard(ConfLevel.Finalized),
             offset: valSetId,
-            sender: address(0), // Portal._CCHAIN_SENDER
-            to: address(0), // Portal._VIRTUAL_PORTAL_ADDRRESS
+            sender: bytes32(0), // Portal._CCHAIN_SENDER
+            to: bytes32(0), // Portal._VIRTUAL_PORTAL_ADDRRESS
             data: abi.encodeWithSelector(OmniPortal.addValidatorSet.selector, valSetId, getVals(valSetId)),
             gasLimit: 0
         });
@@ -230,8 +233,8 @@ contract Fixtures is CommonBase, StdCheats, XSubGen {
             destChainId: thisChainId,
             shardId: uint64(ConfLevel.Finalized),
             offset: 1,
-            sender: address(xsubmitter),
-            to: address(xsubmitter),
+            sender: address(xsubmitter).toBytes32(),
+            to: address(xsubmitter).toBytes32(),
             data: abi.encodeWithSelector(XSubmitter.tryXSubmit.selector),
             gasLimit: 100_000
         });
@@ -297,8 +300,8 @@ contract Fixtures is CommonBase, StdCheats, XSubGen {
             destChainId: destChainId,
             shardId: uint64(ConfLevel.Finalized),
             offset: offset,
-            sender: _counters[sourceChainId],
-            to: _counters[destChainId],
+            sender: _counters[sourceChainId].toBytes32(),
+            to: _counters[destChainId].toBytes32(),
             data: abi.encodeWithSignature("increment()"),
             gasLimit: 100_000
         });
@@ -323,8 +326,8 @@ contract Fixtures is CommonBase, StdCheats, XSubGen {
             destChainId: destChainId,
             shardId: uint64(ConfLevel.Finalized),
             offset: offset,
-            sender: _reverters[sourceChainId],
-            to: _reverters[destChainId],
+            sender: _reverters[sourceChainId].toBytes32(),
+            to: _reverters[destChainId].toBytes32(),
             data: data,
             gasLimit: 200_000
         });
@@ -336,8 +339,8 @@ contract Fixtures is CommonBase, StdCheats, XSubGen {
             destChainId: destChainId,
             shardId: uint64(ConfLevel.Finalized),
             offset: offset,
-            sender: address(gasGuzzler),
-            to: address(gasGuzzler),
+            sender: address(gasGuzzler).toBytes32(),
+            to: address(gasGuzzler).toBytes32(),
             data: abi.encodeWithSignature("guzzle()"),
             gasLimit: gasLimit
         });
@@ -352,8 +355,8 @@ contract Fixtures is CommonBase, StdCheats, XSubGen {
             destChainId: destChainId,
             shardId: uint64(ConfLevel.Finalized),
             offset: offset,
-            sender: address(this),
-            to: address(0xdead),
+            sender: address(this).toBytes32(),
+            to: address(0xdead).toBytes32(),
             data: data,
             gasLimit: uint64(21_000 + (16 * data.length))
         });

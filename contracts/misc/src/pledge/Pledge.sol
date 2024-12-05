@@ -19,7 +19,7 @@ contract Pledge is XAppBase {
      * @param chainId The chain ID of the source chain.
      * @param timestamp The timestamp the pledge was received.
      */
-    event Pledged(address indexed from, uint256 indexed chainId, uint256 indexed timestamp);
+    event Pledged(bytes32 indexed from, uint256 indexed chainId, uint256 indexed timestamp);
 
     /**
      * @param omni_ The address of the OmniPortal.

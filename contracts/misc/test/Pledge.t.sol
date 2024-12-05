@@ -3,9 +3,12 @@ pragma solidity =0.8.24;
 
 import { MockPortal } from "core/test/utils/MockPortal.sol";
 import { Pledge } from "src/pledge/Pledge.sol";
+import { AddressUtils } from "core/src/libraries/AddressUtils.sol";
 import { Test } from "forge-std/Test.sol";
 
 contract PledgeTest is Test {
+    using AddressUtils for address;
+
     MockPortal portal;
     Pledge pledge;
 
@@ -31,12 +34,12 @@ contract PledgeTest is Test {
      */
     function test_pledge_success() public {
         vm.expectEmit(address(pledge));
-        emit Pledge.Pledged(user, 100, block.timestamp);
+        emit Pledge.Pledged(user.toBytes32(), 100, block.timestamp);
         portal.mockXCall({
             sourceChainId: 100,
-            sender: user,
+            sender: user.toBytes32(),
             data: abi.encodeCall(pledge.pledge_jwkilcxtschdbaaa, ()),
-            to: address(pledge)
+            to: address(pledge).toBytes32()
         });
     }
 }

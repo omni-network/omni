@@ -23,10 +23,10 @@ library XTypes {
         uint64 destChainId;
         uint64 shardId;
         uint64 offset;
-        address sender;
-        address to;
-        bytes data;
         uint64 gasLimit;
+        bytes32 sender;
+        bytes32 to;
+        bytes data;
     }
 
     /**
@@ -36,7 +36,7 @@ library XTypes {
      */
     struct MsgContext {
         uint64 sourceChainId;
-        address sender;
+        bytes32 sender;
     }
 
     /**

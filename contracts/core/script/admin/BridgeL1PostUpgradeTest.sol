@@ -3,6 +3,7 @@ pragma solidity 0.8.24;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
+import { AddressUtils } from "src/libraries/AddressUtils.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
 import { OmniBridgeNative } from "src/token/OmniBridgeNative.sol";
 import { OmniBridgeL1 } from "src/token/OmniBridgeL1.sol";
@@ -18,6 +19,8 @@ import { VmSafe } from "forge-std/Vm.sol";
  * @dev Test OmniBridgeL1 post-upgrade functionality
  */
 contract BridgeL1PostUpgradeTest is Test {
+    using AddressUtils for address;
+
     OmniBridgeL1 b;
     MockPortal portal;
     IERC20 token;
@@ -64,7 +67,7 @@ contract BridgeL1PostUpgradeTest is Test {
                 (
                     portal.omniChainId(),
                     ConfLevel.Finalized,
-                    Predeploys.OmniBridgeNative,
+                    Predeploys.OmniBridgeNative.toBytes32(),
                     abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount)),
                     b.XCALL_WITHDRAW_GAS_LIMIT()
                 )
@@ -90,8 +93,8 @@ contract BridgeL1PostUpgradeTest is Test {
         vm.expectCall(address(token), abi.encodeCall(token.transfer, (to, amount)));
         portal.mockXCall({
             sourceChainId: portal.omniChainId(),
-            sender: Predeploys.OmniBridgeNative,
-            to: address(b),
+            sender: Predeploys.OmniBridgeNative.toBytes32(),
+            to: address(b).toBytes32(),
             data: abi.encodeCall(OmniBridgeL1.withdraw, (to, amount)),
             gasLimit: 100_000
         });
