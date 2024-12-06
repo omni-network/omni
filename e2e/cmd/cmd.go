@@ -84,6 +84,7 @@ func New() *cobra.Command {
 		newDeployGasAppCmd(&def),
 		newDeployBridgeCmd(&def),
 		newDeployFeeOracleV2Cmd(&def),
+		newDeployOmniAVSImplCmd(&def),
 		fundAccounts(&def),
 	)
 
@@ -283,6 +284,18 @@ func newDeployFeeOracleV2Cmd(def *app.Definition) *cobra.Command {
 		Short: "Deploys the FeeOracleV2 contract",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return app.DeployFeeOracleV2(cmd.Context(), *def)
+		},
+	}
+
+	return cmd
+}
+
+func newDeployOmniAVSImplCmd(def *app.Definition) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "deploy-omniavsimpl",
+		Short: "Deploys the Omni AVS implementation contract",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return app.DeployOmniAVSImpl(cmd.Context(), *def)
 		},
 	}
 
