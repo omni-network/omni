@@ -9,6 +9,7 @@ pragma solidity =0.8.12;
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { IAVSDirectory } from "eigenlayer-contracts/src/contracts/interfaces/IAVSDirectory.sol";
 import { IDelegationManager } from "src/ext/IDelegationManager.sol";
+import { ICreateX } from "createx/src/ICreateX.sol";
 
 import { OmniAVS } from "src/OmniAVS.sol";
 import { EigenM2Deployments } from "./EigenM2Deployments.sol";
@@ -38,6 +39,10 @@ contract DeployAVS is Script {
     bytes _implConstructorArgs;
     address _proxy;
     bytes _proxyConstructorArgs;
+
+    ICreateX createX = ICreateX(0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed);
+    bytes32 salt = 0xa779fc675db318dab004ab8d538cb320d0013f420081339a3e863be501407ce3;
+    address expectedAddr = 0x00000000001d2f69b87684287b4Cd996ac95C159;
 
     function run() public {
         require(block.chainid == 1, "only mainnet deployment");
@@ -117,5 +122,36 @@ contract DeployAVS is Script {
         );
 
         return OmniAVS(address(proxy));
+    }
+
+    function manualDeployImpl() public returns (address) {
+        require(block.chainid == 1, "only mainnet deployment");
+
+        bytes memory bytecode = type(OmniAVS).creationCode;
+        bytes memory initCode = abi.encodePacked(
+            bytecode,
+            abi.encode(
+                IDelegationManager(EigenM2Deployments.DelegationManager), IAVSDirectory(EigenM2Deployments.AVSDirectory)
+            )
+        );
+
+        vm.startBroadcast();
+        address avs = createX.deployCreate2(salt, initCode);
+        vm.stopBroadcast();
+
+        require(avs == expectedAddr, "expected address mismatch");
+
+        return avs;
+    }
+
+    function getInitCodeHash() public pure returns (bytes32) {
+        bytes memory bytecode = type(OmniAVS).creationCode;
+        bytes memory initCode = abi.encodePacked(
+            bytecode,
+            abi.encode(
+                IDelegationManager(EigenM2Deployments.DelegationManager), IAVSDirectory(EigenM2Deployments.AVSDirectory)
+            )
+        );
+        return keccak256(initCode);
     }
 }
