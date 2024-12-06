@@ -3,7 +3,6 @@ network = "devnet"
 anvil_chains = ["mock_l1", "mock_l2"]
 
 multi_omni_evms = true
-feature_flags = ["evm-staking-module"]
 
 [node.validator01]
 [node.validator02]

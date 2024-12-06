@@ -6,10 +6,10 @@ import (
 )
 
 var (
-	eventDeliveries = promauto.NewGauge(prometheus.GaugeOpts{
+	eventDeliveries = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: "halo",
 		Subsystem: "evmstaking",
-		Name:      "event_delivery_height",
+		Name:      "deliveries_total",
 		Help:      "The number of deliveries of buffered staking events",
 	})
 
@@ -20,10 +20,10 @@ var (
 		Help:      "The number of buffered staking events to be delivered",
 	})
 
-	failedEvents = promauto.NewGauge(prometheus.GaugeOpts{
+	failedEvents = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: "halo",
 		Subsystem: "evmstaking",
-		Name:      "failed_events",
+		Name:      "failed_events_total",
 		Help:      "The number of staking events that could not be delivered",
 	})
 )
