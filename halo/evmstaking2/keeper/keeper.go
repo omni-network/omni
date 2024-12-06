@@ -109,6 +109,8 @@ func (k *Keeper) EndBlock(ctx context.Context) error {
 			return errors.Wrap(err, "delete evm event")
 		}
 	}
+	eventDeliveries.Inc()
+	bufferedEvents.Set(0)
 
 	return nil
 }
@@ -162,6 +164,8 @@ func (k Keeper) Deliver(ctx context.Context, _ common.Hash, elog evmenginetypes.
 		return errors.Wrap(err, "insert evm event")
 	}
 
+	bufferedEvents.Inc()
+
 	return nil
 }
 
@@ -181,6 +185,7 @@ func (k Keeper) processBufferedEvent(ctx context.Context, elog *evmenginetypes.E
 			"name", k.Name(),
 			"height", branchCtx.BlockHeight(),
 		)
+		failedEvents.Inc()
 
 		return
 	}

@@ -9,13 +9,16 @@ import (
 	"github.com/omni-network/omni/halo/comet"
 	"github.com/omni-network/omni/halo/evmslashing"
 	"github.com/omni-network/omni/halo/evmstaking"
+	evmstaking2 "github.com/omni-network/omni/halo/evmstaking2/keeper"
 	"github.com/omni-network/omni/halo/evmupgrade"
 	registrykeeper "github.com/omni-network/omni/halo/registry/keeper"
 	rtypes "github.com/omni-network/omni/halo/registry/types"
 	valsynckeeper "github.com/omni-network/omni/halo/valsync/keeper"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	evmengkeeper "github.com/omni-network/omni/octane/evmengine/keeper"
 	etypes "github.com/omni-network/omni/octane/evmengine/types"
 
@@ -78,6 +81,7 @@ type App struct {
 	EVMEngKeeper          *evmengkeeper.Keeper
 	AttestKeeper          *attestkeeper.Keeper
 	ValSyncKeeper         *valsynckeeper.Keeper
+	EVMStakingKeeper      *evmstaking2.Keeper
 	RegistryKeeper        registrykeeper.Keeper
 	EvidenceKeeper        evidencekeeper.Keeper
 	UpgradeKeeper         *upgradekeeper.Keeper
@@ -89,6 +93,8 @@ type App struct {
 
 // newApp returns a reference to an initialized App.
 func newApp(
+	ctx context.Context,
+	network netconf.ID,
 	logger sdklog.Logger,
 	db dbm.DB,
 	engineCl ethclient.EngineClient,
@@ -101,7 +107,7 @@ func newApp(
 	baseAppOpts ...func(*baseapp.BaseApp),
 ) (*App, error) {
 	depCfg := depinject.Configs(
-		appConfig(),
+		appConfig(ctx, network),
 		depinject.Provide(diProviders...),
 		depinject.Supply(
 			logger,
@@ -118,7 +124,7 @@ func newApp(
 		app        = new(App)
 		appBuilder = new(runtime.AppBuilder)
 	)
-	if err := depinject.Inject(depCfg,
+	dependencies := []any{
 		&appBuilder,
 		&app.appCodec,
 		&app.txConfig,
@@ -136,9 +142,17 @@ func newApp(
 		&app.EvidenceKeeper,
 		&app.UpgradeKeeper,
 		&app.SlashingEventProc,
-		&app.StakingEventProc,
 		&app.UpgradeEventProc,
-	); err != nil {
+	}
+
+	// TODO (christian): remove feature check with logs
+	if feature.FlagEVMStakingModule.Enabled(ctx) {
+		dependencies = append(dependencies, &app.EVMStakingKeeper)
+	} else {
+		dependencies = append(dependencies, &app.StakingEventProc)
+	}
+
+	if err := depinject.Inject(depCfg, dependencies...); err != nil {
 		return nil, errors.Wrap(err, "dep inject")
 	}
 
@@ -147,7 +161,7 @@ func newApp(
 	app.AttestKeeper.SetValidatorProvider(app.ValSyncKeeper)
 	app.AttestKeeper.SetPortalRegistry(app.RegistryKeeper)
 
-	baseAppOpts = append(baseAppOpts, func(bapp *baseapp.BaseApp) {
+	baseAppOpts = append(baseAppOpts, func(bapp *baseapp.BaseApp) { //nolint:contextcheck // False positive wrt ctx
 		// Use evm engine to create block proposals.
 		// Note that we do not check MaxTxBytes since all EngineEVM transaction MUST be included since we cannot
 		// postpone them to the next block. Nit: we could drop some vote extensions though...?
@@ -166,11 +180,11 @@ func newApp(
 	// Blocker overrides
 	{
 		// Workaround for official endblockers since valsync replaces staking endblocker, but cosmos panics if it's not there.
-		app.ModuleManager.OrderEndBlockers = endBlockers
+		app.ModuleManager.OrderEndBlockers = endBlockers(ctx)
 		app.SetEndBlocker(app.EndBlocker)
 
 		// Wrap upgrade module preblocker and do immediate shutdown if upgrade is needed.
-		app.SetPreBlocker(func(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+		app.SetPreBlocker(func(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) { //nolint:contextcheck // False positive wrt ctx
 			resp, err := app.PreBlocker(ctx, req)
 			if upgrade, ok := isErrOldBinary(err); ok {
 				// Dump last applied upgrade info to disk so cosmovisor can auto upgrade.

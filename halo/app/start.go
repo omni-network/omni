@@ -145,8 +145,9 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 	sdkLogger := newSDKLogger(ctx)
 	asyncAbort := make(chan error, 1) // Allows async processes to abort the app
 
-	//nolint:contextcheck // False positive
 	app, err := newApp(
+		ctx,
+		cfg.Network,
 		sdkLogger,
 		db,
 		engineCl,
