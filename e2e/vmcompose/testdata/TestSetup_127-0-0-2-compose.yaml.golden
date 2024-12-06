@@ -21,6 +21,7 @@ services:
     - 6060 # Pprof
     volumes:
     - ./validator02:/halo
+    environment: []
     logging:
       driver: local
     networks:

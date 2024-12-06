@@ -113,6 +113,7 @@ func TestComposeTemplate(t *testing.T) {
 			// If the network is empheral, we use the devnet configuration.
 			if test.isEmpheral {
 				testnet.Network = netconf.Devnet
+				testnet.Manifest.EphemeralGenesisBinary = "ephemeral_upgrade_99"
 			}
 
 			if test.upgrade != "" {
