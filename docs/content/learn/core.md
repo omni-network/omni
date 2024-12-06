@@ -1,14 +1,14 @@
 # Core
 
-Omni Core is the building blocks layer of the Omni Orderflow Engine, purpose-built for fast, secure cross-rollup communicaiton and computation. It combines secure cross-rollup messaging with the Omni EVM.
+Omni Core is the building blocks layer of the Omni Orderflow Engine, purpose-built for fast, secure cross-rollup communication and computation. It combines secure cross-rollup messaging with the Omni EVM.
 
 ## Key Features of Omni Core
 
 ### Cross Chain Messaging
 
-Omni Core implements a secure, decentralized, and low-latency protocol for cross-rollup communication build on the `XMsg` primitive.
+Omni Core implements a secure, decentralized, and low-latency protocol for cross-rollup communication built on Omni's `XMsg` primitive.
 
-- Users initiate cross-rollup function calls via Omni’s Portal contract.
+- Users initiate cross-rollup function calls via Omni’s Portal contracts.
 - Validators securely process and attest to cross chain blocks (`XBlocks`) using CometBFT consensus.
 - Relayers deliver validated messages to the destination rollup, where they are processed and executed.
 
