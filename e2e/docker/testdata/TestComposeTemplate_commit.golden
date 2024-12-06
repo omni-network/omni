@@ -25,6 +25,7 @@ services:
     - 6060 # Pprof
     volumes:
     - ./node0:/halo
+    environment: []
     logging:
       driver: local
     networks:

@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/e2e/netman/pingpong"
 	"github.com/omni-network/omni/e2e/solve"
 	"github.com/omni-network/omni/e2e/types"
+	haloapp "github.com/omni-network/omni/halo/app"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
@@ -403,10 +404,14 @@ func maybeSubmitNetworkUpgrade(ctx context.Context, def Definition) error {
 		height = uint64(def.Manifest.NetworkUpgradeHeight)
 	}
 
-	log.Info(ctx, "Planning upgrade", "height", height, "name", latestUpgrade)
+	upgrade, err := haloapp.NextUpgrade(def.Manifest.EphemeralGenesisBinary)
+	if err != nil {
+		return err
+	}
+	log.Info(ctx, "Planning upgrade", "height", height, "name", upgrade)
 
 	tx, err := contract.PlanUpgrade(txOpts, bindings.UpgradePlan{
-		Name:   latestUpgrade,
+		Name:   upgrade,
 		Height: height,
 		Info:   "e2e triggered upgrade",
 	})

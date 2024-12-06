@@ -25,6 +25,7 @@ services:
     - 6060 # Pprof
     volumes:
     - ./node0:/halo
+    environment: [COSMOVISOR_CUSTOM_GENESIS=ephemeral_upgrade_99]
     logging:
       driver: local
     networks:
