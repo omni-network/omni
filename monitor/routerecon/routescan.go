@@ -11,21 +11,31 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/netconf"
 )
 
 const (
 	baseURL    = "https://api.routescan.io"
-	crossTxURL = "/v2/network/testnet/evm/cross-transactions"
+	crossTxURL = "/v2/network/%s/evm/cross-transactions"
 )
 
-func paginateLatestCrossTx(ctx context.Context, filter filter) (crossTxJSON, error) {
+func getCrossTxURL(network netconf.ID) string {
+	net := "mainnet"
+	if network == netconf.Omega {
+		net = "testnet"
+	}
+
+	return fmt.Sprintf(crossTxURL, net)
+}
+
+func paginateLatestCrossTx(ctx context.Context, network netconf.ID, filter filter) (crossTxJSON, error) {
 	var (
 		resp crossTxJSON
 		next string
 		err  error
 	)
 	for {
-		resp, next, err = queryLatestCrossTx(ctx, filter, next)
+		resp, next, err = queryLatestCrossTx(ctx, network, filter, next)
 		if err != nil {
 			return crossTxJSON{}, errors.Wrap(err, "query latest cross tx")
 		} else if next != "" {
@@ -44,11 +54,11 @@ type filter interface {
 	Match(tx crossTxJSON) (bool, error)
 }
 
-func queryLatestCrossTx(ctx context.Context, filter filter, next string) (crossTxJSON, string, error) {
+func queryLatestCrossTx(ctx context.Context, network netconf.ID, filter filter, next string) (crossTxJSON, string, error) {
 	url := baseURL + next
 	if next == "" {
 		// Build initial path
-		url += crossTxURL
+		url += getCrossTxURL(network)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)

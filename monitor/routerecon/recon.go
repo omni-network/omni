@@ -9,7 +9,6 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
@@ -19,7 +18,7 @@ import (
 )
 
 func ReconForever(ctx context.Context, network netconf.Network, xprov xchain.Provider, ethCls map[uint64]ethclient.Client) {
-	if network.ID != netconf.Omega {
+	if network.ID.IsEphemeral() {
 		return
 	}
 
@@ -32,10 +31,6 @@ func ReconForever(ctx context.Context, network netconf.Network, xprov xchain.Pro
 			return
 		case <-ticker.C:
 			for _, stream := range network.EVMStreams() {
-				if stream.DestChainID == evmchain.IDArbSepolia || stream.SourceChainID == evmchain.IDArbSepolia {
-					continue // TODO(corver): Remove when routescan adds support for arb_sepolia.
-				}
-
 				err := reconStreamOnce(ctx, network, xprov, ethCls, stream)
 				if err != nil {
 					reconFailure.Inc()
@@ -71,7 +66,7 @@ func reconStreamOnce(
 		return nil // Skip recon for empty streams
 	}
 
-	crossTx, err := paginateLatestCrossTx(ctx, queryFilter{Stream: stream})
+	crossTx, err := paginateLatestCrossTx(ctx, network.ID, queryFilter{Stream: stream})
 	if err != nil {
 		return errors.Wrap(err, "fetch latest cross tx")
 	}

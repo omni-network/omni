@@ -25,8 +25,9 @@ func TestReconLag(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
+	network := netconf.Omega
 	ctx := context.Background()
-	conn, err := connect.New(ctx, netconf.Omega)
+	conn, err := connect.New(ctx, network)
 	require.NoError(t, err)
 
 	for _, stream := range conn.Network.EVMStreams() {
@@ -44,7 +45,7 @@ func TestReconLag(t *testing.T) {
 			continue
 		}
 
-		crossTx, err := paginateLatestCrossTx(ctx, queryFilter{Stream: stream})
+		crossTx, err := paginateLatestCrossTx(ctx, network, queryFilter{Stream: stream})
 		require.NoError(t, err, streamName)
 
 		lag := float64(cursor.MsgOffset) - float64(crossTx.Data.Offset)
@@ -59,7 +60,7 @@ func TestQueryLatestXChain(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	resp, err := paginateLatestCrossTx(ctx, queryFilter{})
+	resp, err := paginateLatestCrossTx(ctx, netconf.Mainnet, queryFilter{})
 	require.NoError(t, err)
 	require.NotEmpty(t, resp.ID)
 

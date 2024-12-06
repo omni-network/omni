@@ -47,8 +47,10 @@ func TestBasicHistorical(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
+	network := netconf.Omega
+
 	ctx := context.Background()
-	conn, err := xconnect.New(ctx, netconf.Omega)
+	conn, err := xconnect.New(ctx, network)
 	require.NoError(t, err)
 
 	offsetsByStream := make(map[xchain.StreamID]map[uint64]crossTxJSON)
@@ -75,7 +77,7 @@ func TestBasicHistorical(t *testing.T) {
 		return nil
 	}
 
-	_, err = paginateLatestCrossTx(ctx, allCallback(callback))
+	_, err = paginateLatestCrossTx(ctx, network, allCallback(callback))
 	require.ErrorContains(t, err, "empty response") // Final pagination fails
 
 	for _, streamID := range conn.Network.EVMStreams() {
