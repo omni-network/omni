@@ -92,7 +92,7 @@ func (k *Keeper) EndBlock(ctx context.Context) error {
 		return nil
 	}
 
-	log.Debug(ctx, "Delivering scheduled staking events")
+	log.Debug(ctx, "Delivering buffered staking events")
 	iter, err := k.eventsTable.List(ctx, EVMEventIdIndexKey{})
 	if err != nil {
 		return errors.Wrap(err, "fetch evm events")
@@ -165,7 +165,7 @@ func (k Keeper) Deliver(ctx context.Context, _ common.Hash, elog evmenginetypes.
 		return errors.Wrap(err, "insert evm event")
 	}
 
-	log.Debug(ctx, "Scheduled a new staking event")
+	log.Debug(ctx, "Buffered a new staking event")
 	bufferedEvents.Inc()
 
 	return nil
