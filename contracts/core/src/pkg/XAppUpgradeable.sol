@@ -23,5 +23,5 @@ abstract contract XAppUpgradeable is Initializable, XAppBase {
      * access to `xmsg` storage variable without invoking a function. So we users can
      * use the following syntax: `xmsg.sender`, or `xmsg.sourceChainId`.
      */
-    uint256[48] private __gap;
+    uint256[47] private __gap;
 }

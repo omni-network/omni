@@ -21,7 +21,7 @@ contract PingPong is XApp {
      * @param to            The address the PingPong contract on the destination chain
      * @param times         The number of pingpong loops completed
      */
-    event Done(string id, uint64 destChainID, address to, uint64 times);
+    event Done(string id, uint64 destChainID, bytes32 to, uint64 times);
 
     /**
      * @notice Emitted when a ping is received
@@ -30,7 +30,7 @@ contract PingPong is XApp {
      * @param from          The address of the sender of the ping
      * @param n             The number of xcalls left to make
      */
-    event Ping(string id, uint64 srcChainID, address from, uint64 n);
+    event Ping(string id, uint64 srcChainID, bytes32 from, uint64 n);
 
     constructor(address portal) XApp(portal, ConfLevel.Latest) { }
 
@@ -42,7 +42,7 @@ contract PingPong is XApp {
      * @param to            The address the PingPong contract on the destination chain
      * @param times         The number of times to pingpong (times == 1 means once there and back)
      */
-    function start(string calldata id, uint64 destChainID, uint8 conf, address to, uint64 times) external {
+    function start(string calldata id, uint64 destChainID, uint8 conf, bytes32 to, uint64 times) external {
         require(times > 0, "PingPong: times must be > 0");
         _xpingpong(id, destChainID, conf, to, times, times * 2 - 1);
     }
@@ -67,7 +67,7 @@ contract PingPong is XApp {
         _xpingpong(id, xmsg.sourceChainId, conf, xmsg.sender, times, n - 1);
     }
 
-    function _xpingpong(string calldata id, uint64 destChainID, uint8 conf, address to, uint64 times, uint64 n)
+    function _xpingpong(string calldata id, uint64 destChainID, uint8 conf, bytes32 to, uint64 times, uint64 n)
         internal
     {
         xcall(destChainID, conf, to, abi.encodeWithSelector(this.pingpong.selector, id, conf, times, n), GAS_LIMIT);

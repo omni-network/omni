@@ -7,6 +7,7 @@ import { NoReceive } from "test/utils/NoReceive.sol";
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { OmniBridgeNative } from "src/token/OmniBridgeNative.sol";
 import { OmniBridgeL1 } from "src/token/OmniBridgeL1.sol";
+import { AddressUtils } from "src/libraries/AddressUtils.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
 import { Test } from "forge-std/Test.sol";
 import { console } from "forge-std/console.sol";
@@ -16,6 +17,8 @@ import { console } from "forge-std/console.sol";
  * @notice Test suite for OmniBridgeNative contract.
  */
 contract OmniBridgeNative_Test is Test {
+    using AddressUtils for address;
+
     // Events copied from OmniBridgeNative.sol
     event Bridge(address indexed payor, address indexed to, uint256 amount);
     event Withdraw(address indexed payor, address indexed to, uint256 amount, bool success);
@@ -95,7 +98,7 @@ contract OmniBridgeNative_Test is Test {
                 (
                     l1ChainId,
                     ConfLevel.Finalized,
-                    address(l1Bridge),
+                    address(l1Bridge).toBytes32(),
                     abi.encodeCall(OmniBridgeL1.withdraw, (to, amount)),
                     b.XCALL_WITHDRAW_GAS_LIMIT()
                 )
@@ -123,8 +126,8 @@ contract OmniBridgeNative_Test is Test {
         vm.expectRevert("OmniBridge: not bridge");
         portal.mockXCall({
             sourceChainId: l1ChainId,
-            sender: address(1234), // wrong
-            to: address(b),
+            sender: address(1234).toBytes32(), // wrong
+            to: address(b).toBytes32(),
             data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount)),
             gasLimit: gasLimit
         });
@@ -133,8 +136,8 @@ contract OmniBridgeNative_Test is Test {
         vm.expectRevert("OmniBridge: not L1");
         portal.mockXCall({
             sourceChainId: l1ChainId + 1, // wrong
-            sender: address(l1Bridge),
-            to: address(b),
+            sender: address(l1Bridge).toBytes32(),
+            to: address(b).toBytes32(),
             data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount)),
             gasLimit: gasLimit
         });
@@ -149,8 +152,8 @@ contract OmniBridgeNative_Test is Test {
         vm.expectCall(to, amount, "");
         uint256 gasUsed = portal.mockXCall({
             sourceChainId: l1ChainId,
-            sender: address(l1Bridge),
-            to: address(b),
+            sender: address(l1Bridge).toBytes32(),
+            to: address(b).toBytes32(),
             data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount)),
             gasLimit: gasLimit
         });
@@ -176,8 +179,8 @@ contract OmniBridgeNative_Test is Test {
         vm.expectCall(noReceiver, amount, "");
         gasUsed = portal.mockXCall({
             sourceChainId: l1ChainId,
-            sender: address(l1Bridge),
-            to: address(b),
+            sender: address(l1Bridge).toBytes32(),
+            to: address(b).toBytes32(),
             data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, noReceiver, amount)),
             gasLimit: gasLimit
         });
@@ -200,8 +203,8 @@ contract OmniBridgeNative_Test is Test {
         vm.expectRevert("OmniBridge: not L1");
         portal.mockXCall({
             sourceChainId: l1ChainId + 1, // wrong
-            sender: claimant,
-            to: address(b),
+            sender: claimant.toBytes32(),
+            to: address(b).toBytes32(),
             data: abi.encodeCall(OmniBridgeNative.claim, to),
             gasLimit: 100_000
         });
@@ -210,8 +213,8 @@ contract OmniBridgeNative_Test is Test {
         vm.expectRevert("OmniBridge: no claim to zero");
         portal.mockXCall({
             sourceChainId: l1ChainId,
-            sender: claimant,
-            to: address(b),
+            sender: claimant.toBytes32(),
+            to: address(b).toBytes32(),
             data: abi.encodeCall(OmniBridgeNative.claim, address(0)),
             gasLimit: 100_000
         });
@@ -220,8 +223,8 @@ contract OmniBridgeNative_Test is Test {
         vm.expectRevert("OmniBridge: nothing to claim");
         portal.mockXCall({
             sourceChainId: l1ChainId,
-            sender: claimant,
-            to: address(b),
+            sender: claimant.toBytes32(),
+            to: address(b).toBytes32(),
             data: abi.encodeCall(OmniBridgeNative.claim, to),
             gasLimit: 100_000
         });
@@ -236,8 +239,8 @@ contract OmniBridgeNative_Test is Test {
         vm.expectRevert("OmniBridge: transfer failed");
         portal.mockXCall({
             sourceChainId: l1ChainId,
-            sender: claimant,
-            to: address(b),
+            sender: claimant.toBytes32(),
+            to: address(b).toBytes32(),
             data: abi.encodeCall(OmniBridgeNative.claim, noReceiver),
             gasLimit: 100_000
         });
@@ -253,8 +256,8 @@ contract OmniBridgeNative_Test is Test {
         vm.expectCall(to, amount, "");
         portal.mockXCall({
             sourceChainId: l1ChainId,
-            sender: claimant,
-            to: address(b),
+            sender: claimant.toBytes32(),
+            to: address(b).toBytes32(),
             data: abi.encodeCall(OmniBridgeNative.claim, to),
             gasLimit: 100_000
         });

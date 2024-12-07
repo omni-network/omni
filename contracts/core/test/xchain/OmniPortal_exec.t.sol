@@ -2,6 +2,7 @@
 pragma solidity =0.8.24;
 
 import { XTypes } from "src/libraries/XTypes.sol";
+import { AddressUtils } from "src/libraries/AddressUtils.sol";
 import { OmniPortal } from "src/xchain/OmniPortal.sol";
 import { Base } from "./common/Base.sol";
 import { TestXTypes } from "./common/TestXTypes.sol";
@@ -15,6 +16,9 @@ import { console } from "forge-std/console.sol";
  * @dev Test of OmniPortal._exec, an internal function made public for testing
  */
 contract OmniPortal_exec_Test is Base {
+    using AddressUtils for address;
+    using AddressUtils for bytes32;
+
     /// @dev Test that exec of a valid XMsg succeeds, and emits the correct XReceipt
     function test_exec_xmsg_succeeds() public {
         XTypes.Msg memory xmsg = _inbound_increment(1);
@@ -24,7 +28,7 @@ contract OmniPortal_exec_Test is Base {
         uint256 countForChain = counter.countByChainId(xheader.sourceChainId);
 
         vm.prank(relayer);
-        vm.expectCall(xmsg.to, xmsg.data);
+        vm.expectCall(xmsg.to.toAddress(), xmsg.data);
         vm.recordLogs();
         vm.chainId(xmsg.destChainId);
         portal.exec(xheader, xmsg);
@@ -41,7 +45,7 @@ contract OmniPortal_exec_Test is Base {
         XTypes.BlockHeader memory xheader = _xheader(xmsg);
 
         vm.prank(relayer);
-        vm.expectCall(xmsg.to, xmsg.data);
+        vm.expectCall(xmsg.to.toAddress(), xmsg.data);
         vm.recordLogs();
         vm.chainId(xmsg.destChainId);
         portal.exec(xheader, xmsg);

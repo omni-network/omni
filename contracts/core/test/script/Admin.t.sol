@@ -3,6 +3,7 @@ pragma solidity =0.8.24;
 
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import { AddressUtils } from "src/libraries/AddressUtils.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
 import { XTypes } from "src/libraries/XTypes.sol";
 import { OmniPortal } from "src/xchain/OmniPortal.sol";
@@ -18,6 +19,8 @@ import { Test } from "forge-std/Test.sol";
  * @notice Test suite for Admin script.
  */
 contract Admin_Test is Test {
+    using AddressUtils for address;
+
     // test chain Ids, used to set network and make test xcalls
     uint64 constant thisChainId = 1;
     uint64 constant thatChainId = 2;
@@ -215,7 +218,7 @@ contract Admin_Test is Test {
         vm.deal(address(this), 1 gwei);
 
         uint8 conf = ConfLevel.Finalized;
-        address to = address(0x1234);
+        bytes32 to = address(0x1234).toBytes32();
         bytes memory data = abi.encodeWithSignature("test()");
         uint64 gasLimit = 100_000;
 

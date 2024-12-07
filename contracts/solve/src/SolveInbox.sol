@@ -6,6 +6,7 @@ import { ReentrancyGuard } from "solady/src/utils/ReentrancyGuard.sol";
 import { Initializable } from "solady/src/utils/Initializable.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { XAppBase } from "core/src/pkg/XAppBase.sol";
+import { AddressUtils } from "core/src/libraries/AddressUtils.sol";
 import { ISolveInbox } from "./interfaces/ISolveInbox.sol";
 import { Solve } from "./Solve.sol";
 
@@ -15,6 +16,7 @@ import { Solve } from "./Solve.sol";
  */
 contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, ISolveInbox {
     using SafeTransferLib for address;
+    using AddressUtils for address;
 
     // Request creation errors
     error NoDeposits();
@@ -167,7 +169,7 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
     function markFulfilled(bytes32 id, bytes32 callHash) external xrecv nonReentrant {
         Solve.Request storage req = _requests[id];
         if (req.status != Solve.Status.Accepted) revert NotAccepted();
-        if (xmsg.sender != _outbox) revert NotOutbox();
+        if (xmsg.sender != _outbox.toBytes32()) revert NotOutbox();
         if (xmsg.sourceChainId != req.call.destChainId) revert WrongSourceChain();
 
         // Ensure reported call hash matches requested call hash

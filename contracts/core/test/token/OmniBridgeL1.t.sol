@@ -5,6 +5,7 @@ import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/trans
 import { MockPortal } from "test/utils/MockPortal.sol";
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { Predeploys } from "src/libraries/Predeploys.sol";
+import { AddressUtils } from "src/libraries/AddressUtils.sol";
 import { Omni } from "src/token/Omni.sol";
 import { OmniBridgeNative } from "src/token/OmniBridgeNative.sol";
 import { OmniBridgeL1 } from "src/token/OmniBridgeL1.sol";
@@ -17,6 +18,8 @@ import { console } from "forge-std/console.sol";
  * @notice Test suite for OmniBridgeNative contract.
  */
 contract OmniBridgeL1_Test is Test {
+    using AddressUtils for address;
+
     // events copied from OmniBridgeL1.sol
     event Bridge(address indexed payor, address indexed to, uint256 amount);
     event Withdraw(address indexed to, uint256 amount);
@@ -103,7 +106,7 @@ contract OmniBridgeL1_Test is Test {
                 (
                     portal.omniChainId(),
                     ConfLevel.Finalized,
-                    Predeploys.OmniBridgeNative,
+                    Predeploys.OmniBridgeNative.toBytes32(),
                     abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount)),
                     b.XCALL_WITHDRAW_GAS_LIMIT()
                 )
@@ -130,8 +133,8 @@ contract OmniBridgeL1_Test is Test {
         vm.expectRevert("OmniBridge: not bridge");
         portal.mockXCall({
             sourceChainId: omniChainId,
-            sender: address(1234), // wrong
-            to: address(b),
+            sender: address(1234).toBytes32(), // wrong
+            to: address(b).toBytes32(),
             data: abi.encodeCall(OmniBridgeL1.withdraw, (to, amount)),
             gasLimit: gasLimit
         });
@@ -140,8 +143,8 @@ contract OmniBridgeL1_Test is Test {
         vm.expectRevert("OmniBridge: not omni");
         portal.mockXCall({
             sourceChainId: omniChainId + 1, // wrong
-            sender: Predeploys.OmniBridgeNative,
-            to: address(b),
+            sender: Predeploys.OmniBridgeNative.toBytes32(),
+            to: address(b).toBytes32(),
             data: abi.encodeCall(OmniBridgeL1.withdraw, (to, amount)),
             gasLimit: gasLimit
         });
@@ -160,8 +163,8 @@ contract OmniBridgeL1_Test is Test {
         vm.expectCall(address(token), abi.encodeCall(token.transfer, (to, amount)));
         uint256 gasUsed = portal.mockXCall({
             sourceChainId: portal.omniChainId(),
-            sender: Predeploys.OmniBridgeNative,
-            to: address(b),
+            sender: Predeploys.OmniBridgeNative.toBytes32(),
+            to: address(b).toBytes32(),
             data: abi.encodeCall(OmniBridgeL1.withdraw, (to, amount)),
             gasLimit: gasLimit
         });

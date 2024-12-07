@@ -1,2 +1,2 @@
-PledgeTest:test_pledge_reverts() (gas: 22501)
-PledgeTest:test_pledge_success() (gas: 51984)
+PledgeTest:test_pledge_reverts() (gas: 26683)
+PledgeTest:test_pledge_success() (gas: 87308)
