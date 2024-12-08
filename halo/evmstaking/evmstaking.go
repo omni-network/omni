@@ -71,32 +71,48 @@ func New(
 	}, nil
 }
 
+func convertTopics(topics []common.Hash) [][]byte {
+    res := make([][]byte, len(topics))
+    for i, t := range topics {
+        res[i] = t.Bytes()
+    }
+    return res
+}
+
 // Prepare returns all omni stake contract EVM event logs from the provided block hash.
 func (p EventProcessor) Prepare(ctx context.Context, blockHash common.Hash) ([]evmenginetypes.EVMEvent, error) {
-	logs, err := p.ethCl.FilterLogs(ctx, ethereum.FilterQuery{
-		BlockHash: &blockHash,
-		Addresses: p.Addresses(),
-		Topics:    [][]common.Hash{{createValidatorEvent.ID, delegateEvent.ID}},
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "filter logs")
-	}
+    logs, err := p.ethCl.FilterLogs(ctx, ethereum.FilterQuery{
+        BlockHash: &blockHash,
+        Addresses: p.Addresses(),
+        Topics:    [][]common.Hash{{createValidatorEvent.ID, delegateEvent.ID}},
+    })
+    if err != nil {
+        return nil, errors.Wrap(err, "filter logs")
+    }
 
-	resp := make([]evmenginetypes.EVMEvent, 0, len(logs))
-	for _, l := range logs {
-		topics := make([][]byte, 0, len(l.Topics))
-		for _, t := range l.Topics {
-			topics = append(topics, t.Bytes())
-		}
-		resp = append(resp, evmenginetypes.EVMEvent{
-			Address: l.Address.Bytes(),
-			Topics:  topics,
-			Data:    l.Data,
-		})
-	}
+    resp := make([]evmenginetypes.EVMEvent, 0, len(logs))
+    for _, l := range logs {
+        resp = append(resp, evmenginetypes.EVMEvent{
+            Address: l.Address.Bytes(),
+            Topics:  convertTopics(l.Topics),
+            Data:    l.Data,
+        })
+    }
 
-	return resp, nil
+    return resp, nil
 }
+
+
+func (p EventProcessor) mintAndSendCoins(ctx context.Context, module string, toAddr sdk.AccAddress, amount sdk.Coins) error {
+    // Mint coins and send coins to the target account
+    if err := p.mintAndSendCoins(ctx, ModuleName, delAddr, amountCoins); err != nil {
+	    return err
+	}
+
+
+    return nil
+}
+
 
 func (EventProcessor) Name() string {
 	return ModuleName
@@ -164,13 +180,10 @@ func (p EventProcessor) deliverCreateValidator(ctx context.Context, ev *bindings
 
 	p.createAccIfNone(ctx, accAddr)
 
-	if err := p.bKeeper.MintCoins(ctx, ModuleName, amountCoins); err != nil {
-		return errors.Wrap(err, "mint coins")
+	if err := p.mintAndSendCoins(ctx, ModuleName, accAddr, amountCoins); err != nil {
+	    return err
 	}
 
-	if err := p.bKeeper.SendCoinsFromModuleToAccount(ctx, ModuleName, accAddr, amountCoins); err != nil {
-		return errors.Wrap(err, "send coins")
-	}
 
 	log.Info(ctx, "EVM staking deposit detected, adding new validator",
 		"depositor", ev.Validator.Hex(),
