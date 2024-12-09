@@ -14,6 +14,9 @@ importers:
       '@openzeppelin/contracts-upgradeable':
         specifier: 4.9.6
         version: 4.9.6
+      createx:
+        specifier: github:pcaversaccio/createx
+        version: https://codeload.github.com/pcaversaccio/createx/tar.gz/45b42065082c3ff8a8d8db91e5c6952614b57ddb
       eigenlayer-contracts:
         specifier: github:Layr-Labs/eigenlayer-contracts
         version: https://codeload.github.com/Layr-Labs/eigenlayer-contracts/tar.gz/b6a3a91e1c0c126981de409b00b5fba178503447(hardhat@2.22.10)
@@ -438,6 +441,10 @@ packages:
   create-hmac@1.1.7:
     resolution: {integrity: sha512-MJG9liiZ+ogc4TzUwuvbER1JRdgvUFSB5+VR/g5h82fGaIRWMWddtKBHi7/sVhfjQZ6SehlyhvQYrcYkaUIpLg==}
 
+  createx@https://codeload.github.com/pcaversaccio/createx/tar.gz/45b42065082c3ff8a8d8db91e5c6952614b57ddb:
+    resolution: {tarball: https://codeload.github.com/pcaversaccio/createx/tar.gz/45b42065082c3ff8a8d8db91e5c6952614b57ddb}
+    version: 1.0.0
+
   debug@4.3.7:
     resolution: {integrity: sha512-Er2nc/H7RrMXZBFCEim6TCmMk02Z8vLC2Rbi1KEBggpo0fS6l0S1nnapwmIi3yW/+GOJap1Krg4w0Hg80oCqgQ==}
     engines: {node: '>=6.0'}
@@ -535,6 +542,7 @@ packages:
 
   ethereumjs-abi@0.6.8:
     resolution: {integrity: sha512-Tx0r/iXI6r+lRsdvkFDlut0N08jWMnKRZ6Gkq+Nmw75lZe4e6o3EkSnkaBP5NF6+m5PTGAr9JP43N3LyeoglsA==}
+    deprecated: This library has been deprecated and usage is discouraged.
 
   ethereumjs-util@6.2.1:
     resolution: {integrity: sha512-W2Ktez4L01Vexijrm5EB6w7dg4n/TgpoYU4avuT5T3Vmnw/eCRtiBrJfQYS/DCSvDIOLn2k57GcHdeBcgVxAqw==}
@@ -1780,6 +1788,8 @@ snapshots:
       ripemd160: 2.0.2
       safe-buffer: 5.2.1
       sha.js: 2.4.11
+
+  createx@https://codeload.github.com/pcaversaccio/createx/tar.gz/45b42065082c3ff8a8d8db91e5c6952614b57ddb: {}
 
   debug@4.3.7(supports-color@8.1.1):
     dependencies:
