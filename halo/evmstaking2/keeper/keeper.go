@@ -98,6 +98,7 @@ func (k *Keeper) EndBlock(ctx context.Context) error {
 	}
 	defer iter.Close()
 
+	delivered := false
 	for iter.Next() {
 		val, err := iter.Value()
 		if err != nil {
@@ -108,8 +109,12 @@ func (k *Keeper) EndBlock(ctx context.Context) error {
 		if err != nil {
 			return errors.Wrap(err, "delete evm event")
 		}
+		delivered = true
 	}
-	eventDeliveries.Inc()
+	if delivered {
+		eventDeliveries.Inc()
+	}
+
 	bufferedEvents.Set(0)
 
 	return nil
