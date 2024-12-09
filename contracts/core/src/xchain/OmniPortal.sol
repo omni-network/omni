@@ -457,8 +457,9 @@ contract OmniPortal is
      * @notice Clear the network of supported chains & shards
      */
     function _clearNetwork() private {
-        XTypes.Chain storage c;
-        for (uint256 i = 0; i < _network.length; i++) {
+        XTypes.Chain storage c; uint256 totalShards;
+        uint256 totalNetworks = _network.length;
+        for (uint256 i = 0; i < totalNetworks; i++) {
             c = _network[i];
 
             // if not this chain, mark as unsupported dest
@@ -467,8 +468,9 @@ contract OmniPortal is
                 continue;
             }
 
+            totalShards = c.shards.length;
             // if this chain, mark shards as unsupported
-            for (uint256 j = 0; j < c.shards.length; j++) {
+            for (uint256 j = 0; j < totalShards; j++) {
                 isSupportedShard[c.shards[j]] = false;
             }
         }
