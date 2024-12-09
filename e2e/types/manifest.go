@@ -121,9 +121,14 @@ type Manifest struct {
 	// This overrides the --omni-image-tag if non-empty.
 	PinnedRelayerTag string `toml:"pinned_relayer_tag"`
 
-	// NetworkUpgradeHeight defines the network upgrade height, default is genesis, negative is disabled.
+	// NetworkUpgradeHeight defines the network upgrade height, default=0, negative is disabled.
 	// Note that it might be scheduled at a later height.
 	NetworkUpgradeHeight int64 `toml:"network_upgrade_height"`
+
+	// EphemeralGenesisBinary defines halovisor binary (network upgrade) to use from genesis onwards.
+	// The subsequent network upgrade will be planned at NetworkUpgradeHeight.
+	// This is only applicable to ephemeral networks.
+	EphemeralGenesisBinary string `toml:"ephemeral_genesis_binary"`
 
 	// FeatureFlags defines the feature flags to enable.
 	FeatureFlags feature.Flags `toml:"feature_flags"`

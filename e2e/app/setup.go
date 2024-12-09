@@ -18,7 +18,7 @@ import (
 	"github.com/omni-network/omni/e2e/app/static"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/e2e/vmcompose"
-	uluwatu1 "github.com/omni-network/omni/halo/app/upgrades/uluwatu"
+	haloapp "github.com/omni-network/omni/halo/app"
 	halocmd "github.com/omni-network/omni/halo/cmd"
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/halo/genutil"
@@ -50,8 +50,6 @@ const (
 
 	PrivvalKeyFile   = "config/priv_validator_key.json"
 	PrivvalStateFile = "data/priv_validator_state.json"
-
-	latestUpgrade = uluwatu1.UpgradeName
 )
 
 // Setup sets up the testnet configuration.
@@ -89,9 +87,13 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 		valPrivKeys = append(valPrivKeys, val.PrivvalKey)
 	}
 
+	// Network upgrade to include in genesis (applied at height=1)
 	var upgrade string
 	if def.Manifest.NetworkUpgradeHeight == 0 {
-		upgrade = latestUpgrade // Genesis upgrade.
+		upgrade, err = haloapp.NextUpgrade(def.Manifest.EphemeralGenesisBinary)
+		if err != nil {
+			return err
+		}
 	}
 
 	cosmosGenesis, err := genutil.MakeGenesis(
