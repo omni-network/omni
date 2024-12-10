@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
+	"github.com/ethereum/go-ethereum/common"
 
 	ormv1alpha1 "cosmossdk.io/api/cosmos/orm/v1alpha1"
 	"cosmossdk.io/core/store"
@@ -69,6 +70,22 @@ func NewKeeper(
 	dbStore, err := NewEvmengineStore(modDB)
 	if err != nil {
 		return nil, errors.Wrap(err, "create evmengine store")
+	}
+
+	names := make(map[string]bool)
+	addresses := make(map[common.Address]bool)
+	for _, proc := range eventProcs {
+		for _, address := range proc.Addresses() {
+			if found := addresses[address]; found {
+				return nil, errors.New("duplicate event processors", "address", address)
+			}
+			addresses[address] = true
+		}
+		name := proc.Name()
+		if found := names[name]; found {
+			return nil, errors.New("duplicate event processors", "name", name)
+		}
+		names[name] = true
 	}
 
 	return &Keeper{
