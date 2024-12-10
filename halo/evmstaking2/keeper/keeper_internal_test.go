@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/halo/evmstaking2/testutil"
 	"github.com/omni-network/omni/halo/evmstaking2/types"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/netconf"
 	etypes "github.com/omni-network/omni/octane/evmengine/types"
 
@@ -302,7 +303,8 @@ func setupKeeper(
 
 	key := storetypes.NewKVStoreKey(types.ModuleName)
 	storeSvc := runtime.NewKVStoreService(key)
-	ctx := sdktestutil.DefaultContext(key, storetypes.NewTransientStoreKey("test_key"))
+	ctx := sdktestutil.DefaultContext(key, storetypes.NewTransientStoreKey("test_key")).
+		WithContext(feature.WithFlag(context.Background(), feature.FlagEVMStakingModule))
 	ctx = ctx.WithBlockHeight(1)
 	ctx = ctx.WithChainID(netconf.Simnet.Static().OmniConsensusChainIDStr())
 
