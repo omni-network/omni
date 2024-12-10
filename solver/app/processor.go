@@ -65,6 +65,8 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 			default:
 				return errors.New("unknown status [BUG]")
 			}
+
+			processedEvents.WithLabelValues(deps.ChainName(chainID), statusString(event.Status)).Inc()
 		}
 
 		return deps.SetCursor(ctx, chainID, height)
