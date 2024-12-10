@@ -72,20 +72,8 @@ func NewKeeper(
 		return nil, errors.Wrap(err, "create evmengine store")
 	}
 
-	names := make(map[string]bool)
-	addresses := make(map[common.Address]bool)
-	for _, proc := range eventProcs {
-		for _, address := range proc.Addresses() {
-			if found := addresses[address]; found {
-				return nil, errors.New("duplicate event processors", "address", address)
-			}
-			addresses[address] = true
-		}
-		name := proc.Name()
-		if found := names[name]; found {
-			return nil, errors.New("duplicate event processors", "name", name)
-		}
-		names[name] = true
+	if err := verifyProcs(eventProcs); err != nil {
+		return nil, err
 	}
 
 	return &Keeper{
@@ -98,6 +86,29 @@ func NewKeeper(
 		feeRecProvider: feeRecProvider,
 		eventProcs:     eventProcs,
 	}, nil
+}
+
+// verifyProcs ensures that all event processors have distinct names and addresses.
+// If it's not the case an error is returned.
+// This is needed to prevent duplicate event processing on name or address conflicts.
+func verifyProcs(eventProcs []types.EvmEventProcessor) error {
+	names := make(map[string]bool)
+	addresses := make(map[common.Address]bool)
+	for _, proc := range eventProcs {
+		for _, address := range proc.Addresses() {
+			if addresses[address] {
+				return errors.New("duplicate event processors", "address", address)
+			}
+			addresses[address] = true
+		}
+		name := proc.Name()
+		if names[name] {
+			return errors.New("duplicate event processors", "name", name)
+		}
+		names[name] = true
+	}
+
+	return nil
 }
 
 func (k *Keeper) SetVoteProvider(p types.VoteExtensionProvider) {
