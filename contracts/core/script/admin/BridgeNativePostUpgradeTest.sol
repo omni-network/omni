@@ -2,6 +2,7 @@
 pragma solidity 0.8.24;
 
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
+import { AddressUtils } from "src/libraries/AddressUtils.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
 import { OmniBridgeNative } from "src/token/OmniBridgeNative.sol";
 import { OmniBridgeL1 } from "src/token/OmniBridgeL1.sol";
@@ -18,6 +19,8 @@ import { VmSafe } from "forge-std/Vm.sol";
  * @dev Test OmniBridgeNative post-upgrade functionality
  */
 contract BridgeNativePostUpgradeTest is Test {
+    using AddressUtils for address;
+
     OmniBridgeNative b;
     MockPortal portal;
     address l1Bridge;
@@ -69,8 +72,8 @@ contract BridgeNativePostUpgradeTest is Test {
 
         portal.mockXCall({
             sourceChainId: l1ChainId,
-            sender: address(l1Bridge),
-            to: address(b),
+            sender: address(l1Bridge).toBytes32(),
+            to: address(b).toBytes32(),
             data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, to, amount)),
             gasLimit: 100_000
         });
@@ -91,7 +94,7 @@ contract BridgeNativePostUpgradeTest is Test {
                 (
                     l1ChainId,
                     ConfLevel.Finalized,
-                    address(l1Bridge),
+                    address(l1Bridge).toBytes32(),
                     abi.encodeCall(OmniBridgeL1.withdraw, (to, amount)),
                     b.XCALL_WITHDRAW_GAS_LIMIT()
                 )
@@ -114,8 +117,8 @@ contract BridgeNativePostUpgradeTest is Test {
         vm.expectCall(noReceiver, amount, "");
         portal.mockXCall({
             sourceChainId: l1ChainId,
-            sender: address(l1Bridge),
-            to: address(b),
+            sender: address(l1Bridge).toBytes32(),
+            to: address(b).toBytes32(),
             data: abi.encodeCall(OmniBridgeNative.withdraw, (payor, noReceiver, amount)),
             gasLimit: 100_000
         });
@@ -126,8 +129,8 @@ contract BridgeNativePostUpgradeTest is Test {
         vm.expectCall(to, amount, "");
         portal.mockXCall({
             sourceChainId: l1ChainId,
-            sender: payor,
-            to: address(b),
+            sender: payor.toBytes32(),
+            to: address(b).toBytes32(),
             data: abi.encodeCall(OmniBridgeNative.claim, to),
             gasLimit: 100_000
         });

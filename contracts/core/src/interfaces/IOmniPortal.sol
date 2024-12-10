@@ -23,8 +23,8 @@ interface IOmniPortal {
         uint64 indexed destChainId,
         uint64 indexed shardId,
         uint64 indexed offset,
-        address sender,
-        address to,
+        bytes32 sender,
+        bytes32 to,
         bytes data,
         uint64 gasLimit,
         uint256 fees
@@ -40,6 +40,8 @@ interface IOmniPortal {
      * @param success       Whether the execution succeeded
      * @param err           Result of XMsg execution, if success == false. Limited to
      *                      xreceiptMaxErrorBytes(). Empty if success == true.
+     *
+     * @custom:note Should `relayer` be bytes32? Do we want to unify this event across VMs?
      */
     event XReceipt(
         uint64 indexed sourceChainId,
@@ -143,7 +145,7 @@ interface IOmniPortal {
      * @param data          ABI Encoded function calldata
      * @param gasLimit      Execution gas limit, enforced on destination chain
      */
-    function xcall(uint64 destChainId, uint8 conf, address to, bytes calldata data, uint64 gasLimit) external payable;
+    function xcall(uint64 destChainId, uint8 conf, bytes32 to, bytes calldata data, uint64 gasLimit) external payable;
 
     /**
      * @notice Submit a batch of XMsgs to be executed on this chain

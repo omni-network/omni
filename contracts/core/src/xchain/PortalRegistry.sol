@@ -18,7 +18,7 @@ contract PortalRegistry is OwnableUpgradeable {
      */
     event PortalRegistered(
         uint64 indexed chainId,
-        address indexed addr,
+        bytes32 indexed addr,
         uint64 deployHeight,
         uint64 attestInterval,
         uint64 blockPeriodNs,
@@ -47,7 +47,7 @@ contract PortalRegistry is OwnableUpgradeable {
      * @custom:field name               The name of the chain deployed to (ex "omni_evm", "ethereum")
      */
     struct Deployment {
-        address addr;
+        bytes32 addr;
         uint64 chainId;
         uint64 deployHeight;
         uint64 attestInterval;
@@ -105,7 +105,7 @@ contract PortalRegistry is OwnableUpgradeable {
      *      TODO: require non-zero height when e2e flow is updated to reflect real deploy heights.
      */
     function _register(Deployment calldata dep) internal {
-        require(dep.addr != address(0), "PortalRegistry: zero addr");
+        require(dep.addr != bytes32(0), "PortalRegistry: zero addr");
         require(dep.chainId > 0, "PortalRegistry: zero chain ID");
         require(dep.attestInterval > 0, "PortalRegistry: zero interval");
         require(dep.blockPeriodNs <= uint64(type(int64).max), "PortalRegistry: period too large");
@@ -113,8 +113,8 @@ contract PortalRegistry is OwnableUpgradeable {
         require(bytes(dep.name).length > 0, "PortalRegistry: no name");
         require(dep.shards.length > 0, "PortalRegistry: no shards");
 
-        // TODO: allow multiple deployments per chain?
-        require(deployments[dep.chainId].addr == address(0), "PortalRegistry: already set");
+        // TODO: allow multiple deployments per chain? maybe add a version reference?
+        require(deployments[dep.chainId].addr == bytes32(0), "PortalRegistry: already set");
 
         // only allow ConfLevel shards
         for (uint64 i = 0; i < dep.shards.length; i++) {

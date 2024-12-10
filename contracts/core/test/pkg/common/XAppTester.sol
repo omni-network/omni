@@ -15,19 +15,19 @@ import { Test } from "forge-std/Test.sol";
  */
 abstract contract XAppTesterBase is XAppBase {
     /// @dev Call xcall, default conf
-    function doXCall(uint64 destChainId, address to, bytes calldata data, uint64 gasLimit) public payable {
+    function doXCall(uint64 destChainId, bytes32 to, bytes calldata data, uint64 gasLimit) public payable {
         xcall(destChainId, to, data, gasLimit);
     }
 
     /// @dev Call xcall, custom conf
-    function doXCall(uint64 destChainId, uint8 conf, address to, bytes calldata data, uint64 gasLimit) public payable {
+    function doXCall(uint64 destChainId, uint8 conf, bytes32 to, bytes calldata data, uint64 gasLimit) public payable {
         xcall(destChainId, conf, to, data, gasLimit);
     }
 
     XTypes.MsgContext internal _expectXMsg;
 
     /// @dev Set an expected xmsg, checked in then next checkXRecv
-    function expectXMsg(uint64 sourceChainId, address sender) public {
+    function expectXMsg(uint64 sourceChainId, bytes32 sender) public {
         _expectXMsg = XTypes.MsgContext(sourceChainId, sender);
     }
 

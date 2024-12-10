@@ -7,6 +7,7 @@ import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { XTypes } from "../libraries/XTypes.sol";
 import { ConfLevel } from "../libraries/ConfLevel.sol";
 import { Predeploys } from "../libraries/Predeploys.sol";
+import { AddressUtils } from "../libraries/AddressUtils.sol";
 import { OmniBridgeNative } from "./OmniBridgeNative.sol";
 
 /**
@@ -15,6 +16,8 @@ import { OmniBridgeNative } from "./OmniBridgeNative.sol";
  *         deployed to Omni's EVM.
  */
 contract OmniBridgeL1 is OmniBridgeCommon {
+    using AddressUtils for address;
+
     /**
      * @notice Emitted when an account deposits OMNI, bridging it to Ethereum.
      */
@@ -60,7 +63,7 @@ contract OmniBridgeL1 is OmniBridgeCommon {
         XTypes.MsgContext memory xmsg = omni.xmsg();
 
         require(msg.sender == address(omni), "OmniBridge: not xcall");
-        require(xmsg.sender == Predeploys.OmniBridgeNative, "OmniBridge: not bridge");
+        require(xmsg.sender == Predeploys.OmniBridgeNative.toBytes32(), "OmniBridge: not bridge");
         require(xmsg.sourceChainId == omni.omniChainId(), "OmniBridge: not omni");
 
         token.transfer(to, amount);
@@ -91,7 +94,11 @@ contract OmniBridgeL1 is OmniBridgeCommon {
         require(token.transferFrom(payor, address(this), amount), "OmniBridge: transfer failed");
 
         omni.xcall{ value: msg.value }(
-            omniChainId, ConfLevel.Finalized, Predeploys.OmniBridgeNative, xcalldata, XCALL_WITHDRAW_GAS_LIMIT
+            omniChainId,
+            ConfLevel.Finalized,
+            Predeploys.OmniBridgeNative.toBytes32(),
+            xcalldata,
+            XCALL_WITHDRAW_GAS_LIMIT
         );
 
         emit Bridge(payor, to, amount);

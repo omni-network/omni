@@ -4,6 +4,7 @@ pragma solidity =0.8.24;
 import { XTypes } from "src/libraries/XTypes.sol";
 import { Base } from "./common/Base.sol";
 import { Vm } from "forge-std/Vm.sol";
+import { AddressUtils } from "src/libraries/AddressUtils.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
 
 /**
@@ -11,6 +12,8 @@ import { ConfLevel } from "src/libraries/ConfLevel.sol";
  * @dev Tests of OmniPortal.xcall
  */
 contract OmniPortal_xcall_Test is Base {
+    using AddressUtils for address;
+
     /// @dev Test that xcall emits XMsg event and increments outXMsgOffset
     function test_xcall_succeeds() public {
         XTypes.Msg memory xmsg = _outbound_increment();
@@ -21,7 +24,7 @@ contract OmniPortal_xcall_Test is Base {
 
         // check XMsg event is emitted
         vm.expectEmit();
-        emit XMsg(xmsg.destChainId, uint64(conf), offset, xcaller, xmsg.to, xmsg.data, xmsg.gasLimit, fee);
+        emit XMsg(xmsg.destChainId, uint64(conf), offset, xcaller.toBytes32(), xmsg.to, xmsg.data, xmsg.gasLimit, fee);
 
         // make xcall
         vm.prank(xcaller);

@@ -10,6 +10,7 @@ import { ISolveInbox } from "src/SolveInbox.sol";
 import { Solve } from "src/Solve.sol";
 
 import { IOmniPortal } from "core/src/interfaces/IOmniPortal.sol";
+import { AddressUtils } from "core/src/libraries/AddressUtils.sol";
 import { ConfLevel } from "core/src/libraries/ConfLevel.sol";
 import { MockPortal } from "core/test/utils/MockPortal.sol";
 import { Ownable } from "solady/src/auth/Ownable.sol";
@@ -20,6 +21,8 @@ import { Test } from "forge-std/Test.sol";
  * @notice Test suite for SolveOutbox.fulfill(...) callback
  */
 contract SolveOutbox_fulfill_test is Test {
+    using AddressUtils for address;
+
     OutboxHarness outbox;
 
     MockToken token1;
@@ -168,7 +171,7 @@ contract SolveOutbox_fulfill_test is Test {
             (
                 srcChainId,
                 ConfLevel.Finalized,
-                inbox,
+                inbox.toBytes32(),
                 abi.encodeCall(ISolveInbox.markFulfilled, (srcReqId, callHash)),
                 100_000
             )

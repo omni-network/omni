@@ -22,8 +22,8 @@ contract OmniPortalFixtures is Test {
     uint64 constant genesisValsetId = 1;
 
     uint64 constant broadcastChainId = 0;
-    address constant cChainSender = address(0);
-    address constant virtualPortalAddress = address(0);
+    bytes32 constant cChainSender = bytes32(0);
+    bytes32 constant virtualPortalAddress = bytes32(0);
 
     address owner = makeAddr("owner");
     PortalHarness portal;

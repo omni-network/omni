@@ -80,7 +80,7 @@ abstract contract XAppBase {
      * @param data          ABI Encoded function calldata
      * @param gasLimit      Execution gas limit, enforced on destination chain
      */
-    function xcall(uint64 destChainId, address to, bytes memory data, uint64 gasLimit) internal returns (uint256) {
+    function xcall(uint64 destChainId, bytes32 to, bytes memory data, uint64 gasLimit) internal returns (uint256) {
         uint256 fee = omni.feeFor(destChainId, data, gasLimit);
         require(address(this).balance >= fee, "XApp: insufficient funds");
         omni.xcall{ value: fee }(destChainId, defaultConfLevel, to, data, gasLimit);
@@ -102,7 +102,7 @@ abstract contract XAppBase {
      * @param data          ABI Encoded function calldata
      * @param gasLimit      Execution gas limit, enforced on destination chain
      */
-    function xcall(uint64 destChainId, uint8 conf, address to, bytes memory data, uint64 gasLimit)
+    function xcall(uint64 destChainId, uint8 conf, bytes32 to, bytes memory data, uint64 gasLimit)
         internal
         returns (uint256)
     {

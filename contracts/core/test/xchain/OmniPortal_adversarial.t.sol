@@ -3,6 +3,7 @@ pragma solidity =0.8.24;
 
 import { XTypes } from "src/libraries/XTypes.sol";
 import { OmniPortal } from "src/xchain/OmniPortal.sol";
+import { AddressUtils } from "src/libraries/AddressUtils.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
 
 import { TestXTypes } from "./common/TestXTypes.sol";
@@ -15,14 +16,16 @@ import { Vm } from "forge-std/Vm.sol";
  * @dev Test cases for adversarial scenarios.
  */
 contract OmniPortal_adversarial is Base {
+    using AddressUtils for address;
+
     /// @dev Test than an xcall to the portal address fails
     function test_xcallToPortal__fails() public {
         XTypes.Msg memory xmsg = XTypes.Msg({
             destChainId: thisChainId,
             shardId: uint64(ConfLevel.Finalized),
             offset: 1,
-            sender: address(1234),
-            to: address(portal),
+            sender: address(1234).toBytes32(),
+            to: address(portal).toBytes32(),
             data: "", // doesn't matter, should fail before execution
             gasLimit: 100_000
         });

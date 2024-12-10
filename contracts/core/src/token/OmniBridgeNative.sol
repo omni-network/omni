@@ -4,6 +4,7 @@ pragma solidity 0.8.24;
 import { OmniBridgeCommon } from "./OmniBridgeCommon.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { OmniBridgeL1 } from "./OmniBridgeL1.sol";
+import { AddressUtils } from "../libraries/AddressUtils.sol";
 import { ConfLevel } from "../libraries/ConfLevel.sol";
 import { XTypes } from "../libraries/XTypes.sol";
 
@@ -18,6 +19,9 @@ import { XTypes } from "../libraries/XTypes.sol";
  *      If an new implementation is required, a constructor should be added.
  */
 contract OmniBridgeNative is OmniBridgeCommon {
+    using AddressUtils for address;
+    using AddressUtils for bytes32;
+
     /**
      * @notice Emitted when an account deposits OMNI, bridging it to Ethereum.
      */
@@ -95,7 +99,7 @@ contract OmniBridgeNative is OmniBridgeCommon {
         XTypes.MsgContext memory xmsg = omni.xmsg();
 
         require(msg.sender == address(omni), "OmniBridge: not xcall"); // this protects against reentrancy
-        require(xmsg.sender == l1Bridge, "OmniBridge: not bridge");
+        require(xmsg.sender == l1Bridge.toBytes32(), "OmniBridge: not bridge");
         require(xmsg.sourceChainId == l1ChainId, "OmniBridge: not L1");
 
         l1Deposits += amount;
@@ -130,7 +134,7 @@ contract OmniBridgeNative is OmniBridgeCommon {
         omni.xcall{ value: msg.value - amount }(
             l1ChainId,
             ConfLevel.Finalized,
-            l1Bridge,
+            l1Bridge.toBytes32(),
             abi.encodeCall(OmniBridgeL1.withdraw, (to, amount)),
             XCALL_WITHDRAW_GAS_LIMIT
         );
@@ -158,7 +162,7 @@ contract OmniBridgeNative is OmniBridgeCommon {
         require(xmsg.sourceChainId == l1ChainId, "OmniBridge: not L1");
         require(to != address(0), "OmniBridge: no claim to zero");
 
-        address claimant = xmsg.sender;
+        address claimant = xmsg.sender.toAddress();
         require(claimable[claimant] > 0, "OmniBridge: nothing to claim");
 
         uint256 amount = claimable[claimant];

@@ -15,6 +15,7 @@ import { IDelegationManager } from "./ext/IDelegationManager.sol";
 
 import { IEthStakeInbox } from "core/interfaces/IEthStakeInbox.sol";
 import { IOmniPortal } from "core/interfaces/IOmniPortal.sol";
+import { AddressUtils } from "core/libraries/AddressUtils.sol";
 import { ConfLevel } from "core/libraries/ConfLevel.sol";
 
 import { OmniAVSStorage } from "./OmniAVSStorage.sol";
@@ -25,6 +26,8 @@ import { OmniAVSStorage } from "./OmniAVSStorage.sol";
  *         EigenLayer operators, and for syncing operator delegations with the Omni chain.
  */
 contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgradeable, OmniAVSStorage {
+    using AddressUtils for address;
+
     /// @notice Constant used as a divisor in calculating weights
     uint256 internal constant STRATEGY_WEIGHTING_DIVISOR = 1e18;
 
@@ -148,7 +151,7 @@ contract OmniAVS is IOmniAVS, IOmniAVSAdmin, OwnableUpgradeable, PausableUpgrade
         omni.xcall{ value: msg.value }(
             omniChainId,
             ConfLevel.Finalized,
-            ethStakeInbox,
+            ethStakeInbox.toBytes32(),
             abi.encodeWithSelector(IEthStakeInbox.sync.selector, ops),
             _xcallGasLimitFor(ops.length)
         );

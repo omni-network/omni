@@ -4,6 +4,7 @@ pragma solidity =0.8.24;
 import { XTypes } from "src/libraries/XTypes.sol";
 import { XAppTesterBase, IsXCallProxy } from "./XAppTester.sol";
 import { ConfLevel } from "src/libraries/ConfLevel.sol";
+import { AddressUtils } from "src/libraries/AddressUtils.sol";
 import { XApp } from "src/pkg/XApp.sol";
 import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { MockPortal } from "test/utils/MockPortal.sol";
@@ -14,6 +15,8 @@ import { Test } from "forge-std/Test.sol";
  * @dev Shared tests for XApp_Test and XAppUpgradeable_Test
  */
 abstract contract XAppTests is Test {
+    using AddressUtils for address;
+
     MockPortal portal;
     XAppTesterBase xapp;
     uint8 defaultConfLevel;
@@ -26,7 +29,7 @@ abstract contract XAppTests is Test {
     function test_xcall() public {
         uint64 destChainId = 1;
         bytes memory data = abi.encodeWithSignature("test()");
-        address to = makeAddr("to");
+        bytes32 to = makeAddr("to").toBytes32();
         uint64 gasLimit = 100_000;
 
         // requires fees
@@ -57,11 +60,13 @@ abstract contract XAppTests is Test {
 
     function test_xrecv() public {
         uint64 sourceChainId = 1;
-        address sender = makeAddr("sender");
+        bytes32 sender = makeAddr("sender").toBytes32();
 
         // xrecv sets xmsg
         xapp.expectXMsg(sourceChainId, sender);
-        portal.mockXCall(sourceChainId, sender, address(xapp), abi.encodeWithSignature("checkXRecv()"), 100_000);
+        portal.mockXCall(
+            sourceChainId, sender, address(xapp).toBytes32(), abi.encodeWithSignature("checkXRecv()"), 100_000
+        );
 
         // xrecv sets zero values when not an xcall
         xapp.checkXRecv();
@@ -69,11 +74,13 @@ abstract contract XAppTests is Test {
 
     function test_isXCall() public {
         uint64 sourceChainId = 1;
-        address sender = makeAddr("sender");
+        bytes32 sender = makeAddr("sender").toBytes32();
 
         // isXCall is true when xmsg.sourceChainId is set
         xapp.expectIsXCall(true);
-        portal.mockXCall(sourceChainId, sender, address(xapp), abi.encodeWithSignature("checkIsXCall()"), 100_000);
+        portal.mockXCall(
+            sourceChainId, sender, address(xapp).toBytes32(), abi.encodeWithSignature("checkIsXCall()"), 100_000
+        );
 
         // isXCall is false when xmsg.sourceChainId is not set
         xapp.expectIsXCall(false);
@@ -82,7 +89,9 @@ abstract contract XAppTests is Test {
         // isXCall is false when msg.sender is not the portal
         IsXCallProxy proxy = new IsXCallProxy(address(xapp));
         xapp.expectIsXCall(false);
-        portal.mockXCall(sourceChainId, sender, address(proxy), abi.encodeWithSignature("checkIsXCall()"), 100_000);
+        portal.mockXCall(
+            sourceChainId, sender, address(proxy).toBytes32(), abi.encodeWithSignature("checkIsXCall()"), 100_000
+        );
     }
 
     function test_setDefaultConfLevel() public {
@@ -103,7 +112,7 @@ abstract contract XAppTests is Test {
     }
 
     /// @dev Helper function to expect an xcall to the portal
-    function _expectXCall(uint64 destChainId, uint8 conf, address to, bytes memory data, uint64 gasLimit, uint256 fee)
+    function _expectXCall(uint64 destChainId, uint8 conf, bytes32 to, bytes memory data, uint64 gasLimit, uint256 fee)
         internal
     {
         vm.expectCall(address(portal), fee, abi.encodeCall(IOmniPortal.xcall, (destChainId, conf, to, data, gasLimit)));

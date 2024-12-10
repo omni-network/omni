@@ -3,6 +3,7 @@ pragma solidity ^0.8.12;
 
 import { XTypes } from "../../src/libraries/XTypes.sol";
 import { ConfLevel } from "../../src/libraries/ConfLevel.sol";
+import { AddressUtils } from "../../src/libraries/AddressUtils.sol";
 import { OmniPortalConstants } from "../../src/xchain/OmniPortalConstants.sol";
 import { IFeeOracle } from "../../src/interfaces/IFeeOracle.sol";
 import { IOmniPortal } from "../../src/interfaces/IOmniPortal.sol";
@@ -17,6 +18,9 @@ import { MockFeeOracle } from "./MockFeeOracle.sol";
  *         - Provides a mockXCall function for testing xcall execution.
  */
 contract MockPortal is IOmniPortal, OmniPortalConstants {
+    using AddressUtils for address;
+    using AddressUtils for bytes32;
+
     uint64 public immutable chainId;
     uint64 public immutable omniChainId;
 
@@ -45,7 +49,7 @@ contract MockPortal is IOmniPortal, OmniPortalConstants {
     //                      Standard Portal Functions                           //
     //////////////////////////////////////////////////////////////////////////////
 
-    function xcall(uint64 destChainId, uint8 conf, address to, bytes calldata data, uint64 gasLimit) external payable {
+    function xcall(uint64 destChainId, uint8 conf, bytes32 to, bytes calldata data, uint64 gasLimit) external payable {
         require(gasLimit <= xmsgMaxGasLimit, "OmniPortal: gasLimit too high");
         require(gasLimit >= xmsgMinGasLimit, "OmniPortal: gasLimit too low");
         require(destChainId != chainId, "OmniPortal: unsupported dest");
@@ -58,7 +62,9 @@ contract MockPortal is IOmniPortal, OmniPortalConstants {
         uint64 shardId = uint64(conf);
         outXMsgOffset[destChainId][shardId] += 1;
 
-        emit XMsg(destChainId, shardId, outXMsgOffset[destChainId][shardId], msg.sender, to, data, gasLimit, fee);
+        emit XMsg(
+            destChainId, shardId, outXMsgOffset[destChainId][shardId], msg.sender.toBytes32(), to, data, gasLimit, fee
+        );
     }
 
     function feeFor(uint64 destChainId, bytes calldata data, uint64 gasLimit) public view returns (uint256) {
@@ -83,14 +89,14 @@ contract MockPortal is IOmniPortal, OmniPortalConstants {
     //////////////////////////////////////////////////////////////////////////////
 
     /// @dev Execute a mock xcall, no gas limit. Forwards revert on call fails
-    function mockXCall(uint64 sourceChainId, address sender, address to, bytes calldata data)
+    function mockXCall(uint64 sourceChainId, bytes32 sender, bytes32 to, bytes calldata data)
         public
         returns (uint256 gasUsed)
     {
         _xmsg = XTypes.MsgContext({ sourceChainId: sourceChainId, sender: sender });
 
         gasUsed = gasleft();
-        (bool success, bytes memory returnData) = to.call(data);
+        (bool success, bytes memory returnData) = to.toAddress().call(data);
         gasUsed = gasUsed - gasleft();
 
         delete _xmsg;
@@ -105,7 +111,7 @@ contract MockPortal is IOmniPortal, OmniPortalConstants {
     }
 
     /// @dev Execute a mock xcall, custom gas limit. Forwards revert on call fails. Reverts on out of gas.
-    function mockXCall(uint64 sourceChainId, address sender, address to, bytes calldata data, uint64 gasLimit)
+    function mockXCall(uint64 sourceChainId, bytes32 sender, bytes32 to, bytes calldata data, uint64 gasLimit)
         public
         returns (uint256 gasUsed)
     {
@@ -115,7 +121,7 @@ contract MockPortal is IOmniPortal, OmniPortalConstants {
         _xmsg = XTypes.MsgContext({ sourceChainId: sourceChainId, sender: sender });
 
         gasUsed = gasleft();
-        (bool success, bytes memory returnData) = to.call{ gas: gasLimit }(data);
+        (bool success, bytes memory returnData) = to.toAddress().call{ gas: gasLimit }(data);
         gasUsed = gasUsed - gasleft();
 
         delete _xmsg;

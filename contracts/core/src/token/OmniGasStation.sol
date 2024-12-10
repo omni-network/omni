@@ -22,10 +22,10 @@ contract OmniGasStation is XAppUpgradeable, OwnableUpgradeable, PausableUpgradea
     event SettledUp(address indexed recipient, uint64 indexed chainID, uint256 owed, uint256 fueled, bool success);
 
     /// @notice Emitted when a OmniGasPump is set for a chain
-    event GasPumpAdded(uint64 indexed chainID, address addr);
+    event GasPumpAdded(uint64 indexed chainID, bytes32 addr);
 
     //// @notice Map chainID to addr to true, if authorized to withdraw
-    mapping(uint64 => address) public pumps;
+    mapping(uint64 => bytes32) public pumps;
 
     /// @notice Map recipient to chainID to total fueled
     mapping(address => mapping(uint64 => uint256)) public fueled;
@@ -37,7 +37,7 @@ contract OmniGasStation is XAppUpgradeable, OwnableUpgradeable, PausableUpgradea
     /// @dev GasPump struct, just used in initialize params
     struct GasPump {
         uint64 chainID;
-        address addr;
+        bytes32 addr;
     }
 
     function initialize(address portal, address owner, GasPump[] calldata pumps_) external initializer {
@@ -72,13 +72,13 @@ contract OmniGasStation is XAppUpgradeable, OwnableUpgradeable, PausableUpgradea
     }
 
     /// @notice Set the pump addr for a chain
-    function setPump(uint64 chainId, address addr) external onlyOwner {
+    function setPump(uint64 chainId, bytes32 addr) external onlyOwner {
         _setPump(chainId, addr);
     }
 
     /// @notice Return true if `chainID` has a registered pump at `addr`
-    function isPump(uint64 chainID, address addr) public view returns (bool) {
-        return addr != address(0) && addr == pumps[chainID];
+    function isPump(uint64 chainID, bytes32 addr) public view returns (bool) {
+        return addr != bytes32(0) && addr == pumps[chainID];
     }
 
     /// @notice Pause withdrawals
@@ -91,8 +91,8 @@ contract OmniGasStation is XAppUpgradeable, OwnableUpgradeable, PausableUpgradea
         _unpause();
     }
 
-    function _setPump(uint64 chainId, address addr) internal {
-        require(addr != address(0), "GasStation: zero addr");
+    function _setPump(uint64 chainId, bytes32 addr) internal {
+        require(addr != bytes32(0), "GasStation: zero addr");
         require(chainId != 0, "GasStation: zero chainId");
 
         pumps[chainId] = addr;

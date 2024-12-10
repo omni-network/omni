@@ -5,12 +5,15 @@ import { SolveInbox, ISolveInbox } from "src/SolveInbox.sol";
 import { Solve } from "src/Solve.sol";
 import { Ownable } from "solady/src/auth/Ownable.sol";
 import { InboxBase } from "./InboxBase.sol";
+import { AddressUtils } from "core/src/libraries/AddressUtils.sol";
 
 /**
  * @title SolveInbox_markFulfilled_Test
  * @notice Test suite for SolveInbox.markFulfilled(...)
  */
 contract SolveInbox_markFulfilled_Test is InboxBase {
+    using AddressUtils for address;
+
     function test_markFulfilled_reverts() public {
         Solve.Call memory call = randCall();
         Solve.TokenDeposit[] memory deposits = new Solve.TokenDeposit[](0);
@@ -30,27 +33,27 @@ contract SolveInbox_markFulfilled_Test is InboxBase {
         vm.expectRevert(SolveInbox.NotOutbox.selector);
         portal.mockXCall({
             sourceChainId: call.destChainId,
-            sender: address(1234), // not outbox
+            sender: address(1234).toBytes32(), // not outbox
             data: abi.encodeCall(inbox.markFulfilled, (id, callHash(id, call))),
-            to: address(inbox)
+            to: address(inbox).toBytes32()
         });
 
         // must be xcall from call.destChainId
         vm.expectRevert(SolveInbox.WrongSourceChain.selector);
         portal.mockXCall({
             sourceChainId: 1234, // not call.destChainId
-            sender: address(outbox),
+            sender: address(outbox).toBytes32(),
             data: abi.encodeCall(inbox.markFulfilled, (id, callHash(id, call))),
-            to: address(inbox)
+            to: address(inbox).toBytes32()
         });
 
         // must have correct call hash
         vm.expectRevert(SolveInbox.WrongCallHash.selector);
         portal.mockXCall({
             sourceChainId: call.destChainId,
-            sender: address(outbox),
+            sender: address(outbox).toBytes32(),
             data: abi.encodeCall(inbox.markFulfilled, (id, bytes32(uint256(1234)))), // not correct call hash
-            to: address(inbox)
+            to: address(inbox).toBytes32()
         });
     }
 
@@ -73,9 +76,9 @@ contract SolveInbox_markFulfilled_Test is InboxBase {
         emit ISolveInbox.Fulfilled(id, callHash(id, call), solver);
         portal.mockXCall({
             sourceChainId: call.destChainId,
-            sender: address(outbox),
+            sender: address(outbox).toBytes32(),
             data: abi.encodeCall(inbox.markFulfilled, (id, callHash(id, call))),
-            to: address(inbox)
+            to: address(inbox).toBytes32()
         });
 
         Solve.Request memory req = inbox.getRequest(id);
