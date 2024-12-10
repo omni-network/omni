@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
+	"github.com/ethereum/go-ethereum/common"
 
 	ormv1alpha1 "cosmossdk.io/api/cosmos/orm/v1alpha1"
 	"cosmossdk.io/core/store"
@@ -71,6 +72,10 @@ func NewKeeper(
 		return nil, errors.Wrap(err, "create evmengine store")
 	}
 
+	if err := verifyProcs(eventProcs); err != nil {
+		return nil, err
+	}
+
 	return &Keeper{
 		cdc:            cdc,
 		storeService:   storeService,
@@ -81,6 +86,29 @@ func NewKeeper(
 		feeRecProvider: feeRecProvider,
 		eventProcs:     eventProcs,
 	}, nil
+}
+
+// verifyProcs ensures that all event processors have distinct names and addresses.
+// If it's not the case an error is returned.
+// This is needed to prevent duplicate event processing on name or address conflicts.
+func verifyProcs(eventProcs []types.EvmEventProcessor) error {
+	names := make(map[string]bool)
+	addresses := make(map[common.Address]bool)
+	for _, proc := range eventProcs {
+		for _, address := range proc.Addresses() {
+			if addresses[address] {
+				return errors.New("duplicate event processors", "address", address)
+			}
+			addresses[address] = true
+		}
+		name := proc.Name()
+		if names[name] {
+			return errors.New("duplicate event processors", "name", name)
+		}
+		names[name] = true
+	}
+
+	return nil
 }
 
 func (k *Keeper) SetVoteProvider(p types.VoteExtensionProvider) {
