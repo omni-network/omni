@@ -29,6 +29,8 @@ type procDeps struct {
 	Reject  func(ctx context.Context, chainID uint64, req bindings.SolveRequest, reason rejectReason) error
 	Fulfill func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error
 	Claim   func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error
+
+	ChainName func(chainID uint64) string
 }
 
 func newClaimer(

@@ -25,8 +25,9 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 				return errors.Wrap(err, "parse id")
 			}
 
-			ctx := log.WithCtx(ctx, "status", statusString(event.Status), "req_id", fmtReqID(reqID))
-
+			offset := reqIDOffset(reqID)
+			statusOffset.WithLabelValues(deps.ChainName(chainID), statusString(event.Status)).Set(float64(offset))
+			ctx := log.WithCtx(ctx, "status", statusString(event.Status), "req_id", offset)
 			log.Debug(ctx, "Processing event")
 
 			req, _, err := deps.GetRequest(ctx, chainID, reqID)

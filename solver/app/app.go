@@ -205,7 +205,7 @@ func startEventStreams(
 	outboxContracts := make(map[uint64]*bindings.SolveOutbox)
 	for _, chain := range outboxChains {
 		name := network.ChainName(chain)
-		log.Debug(ctx, "Using outbox contract", "chain", name, "address", addrs.SolveInbox.Hex())
+		log.Debug(ctx, "Using outbox contract", "chain", name, "address", addrs.SolveOutbox.Hex())
 
 		backend, err := backends.Backend(chain)
 		if err != nil {
@@ -232,6 +232,7 @@ func startEventStreams(
 		Fulfill:      newFulfiller(network.ID, outboxContracts, backends, solverAddr, addrs.SolveOutbox),
 		Claim:        newClaimer(inboxContracts, backends, solverAddr),
 		SetCursor:    cursorSetter,
+		ChainName:    network.ChainName,
 	}
 
 	for _, chain := range inboxChains {

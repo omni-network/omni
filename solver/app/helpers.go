@@ -2,7 +2,7 @@ package app
 
 import (
 	"context"
-	"encoding/hex"
+	"encoding/binary"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -33,8 +33,7 @@ func detectContractChains(ctx context.Context, network netconf.Network, backends
 	return resp, nil
 }
 
-// fmtReqID returns the least-significant 7 hex chars of the provided request ID.
-// ReqIDs are monotonically incrementing numbers, not hashes.
-func fmtReqID(reqID [32]byte) string {
-	return hex.EncodeToString(reqID[:])[64-7:]
+// reqIDOffset returns the req ID as a uint64 offset (monotonically incrementing number).
+func reqIDOffset(reqID [32]byte) uint64 {
+	return binary.BigEndian.Uint64(reqID[32-8:])
 }

@@ -145,6 +145,7 @@ func TestEventProcessor(t *testing.T) {
 
 					return nil
 				},
+				ChainName: func(uint64) string { return "" },
 			}
 
 			processor := newEventProcessor(deps, chainID)
