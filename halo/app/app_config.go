@@ -238,11 +238,19 @@ var (
 
 	// diProviders defines a list of depinject provider functions.
 	// These are non-cosmos module constructors used in halo's app wiring.
-	diProviders = []any{
-		evmslashing.DIProvide,
-		// TODO(christian): remove later, but seems like it can stay here even if feature is enabled
-		evmstaking.DIProvide,
-		evmupgrade.DIProvide,
+	diProviders = func(ctx context.Context) []any {
+		if feature.FlagEVMStakingModule.Enabled(ctx) {
+			return []any{
+				evmslashing.DIProvide,
+				evmupgrade.DIProvide,
+			}
+		}
+
+		return []any{
+			evmslashing.DIProvide,
+			evmstaking.DIProvide,
+			evmupgrade.DIProvide,
+		}
 	}
 )
 

@@ -108,7 +108,7 @@ func newApp(
 ) (*App, error) {
 	depCfg := depinject.Configs(
 		appConfig(ctx, network),
-		depinject.Provide(diProviders...),
+		depinject.Provide(diProviders(ctx)...),
 		depinject.Supply(
 			logger,
 			engineCl,
