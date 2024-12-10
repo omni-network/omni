@@ -7,6 +7,7 @@ import { Initializable } from "solady/src/utils/Initializable.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { XAppBase } from "core/src/pkg/XAppBase.sol";
 import { ISolveInbox } from "./interfaces/ISolveInbox.sol";
+import { IArbSys } from "./interfaces/IArbSys.sol";
 import { Solve } from "./Solve.sol";
 
 /**
@@ -48,6 +49,12 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
     uint256 internal constant SOLVER = _ROLE_0;
 
     /**
+     * @notice Arbitrum's ArbSys precompile (0x0000000000000000000000000000000000000064)
+     * @dev Used to get Arbitrum block number.
+     */
+    address internal constant ARB_SYS = 0x0000000000000000000000000000000000000064;
+
+    /**
      * @dev uint repr of last assigned request ID.
      */
     uint256 internal _lastId;
@@ -63,7 +70,10 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
     mapping(bytes32 id => Solve.Request) internal _requests;
 
     constructor() {
-        deployedAt = block.number;
+        // Must get Arbitrum block number from ArbSys precompile, block.number returns L1 block number on Arbitrum.
+        // This is a temporary fix, we need a robust way of properly setting this value when on any Arbitrum chain.
+        if (block.chainid != 42_161 && block.chainid != 421_614) deployedAt = block.number;
+        else deployedAt = IArbSys(ARB_SYS).arbBlockNumber();
         _disableInitializers();
     }
 
