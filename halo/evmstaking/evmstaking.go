@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
@@ -73,6 +74,9 @@ func New(
 
 // Prepare returns all omni stake contract EVM event logs from the provided block hash.
 func (p EventProcessor) Prepare(ctx context.Context, blockHash common.Hash) ([]evmenginetypes.EVMEvent, error) {
+	if feature.FlagEVMStakingModule.Enabled(ctx) {
+		return nil, errors.New("unexpected code path [BUG]")
+	}
 	logs, err := p.ethCl.FilterLogs(ctx, ethereum.FilterQuery{
 		BlockHash: &blockHash,
 		Addresses: p.Addresses(),
@@ -110,6 +114,9 @@ func (p EventProcessor) Addresses() []common.Address {
 // - CreateValidator
 // - Delegate.
 func (p EventProcessor) Deliver(ctx context.Context, _ common.Hash, elog evmenginetypes.EVMEvent) error {
+	if feature.FlagEVMStakingModule.Enabled(ctx) {
+		return errors.New("unexpected code path [BUG]")
+	}
 	ethlog, err := elog.ToEthLog()
 	if err != nil {
 		return err
