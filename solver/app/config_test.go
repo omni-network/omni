@@ -19,6 +19,7 @@ func TestDefaultConfigReference(t *testing.T) {
 	tempDir := t.TempDir()
 
 	cfg := solver.DefaultConfig()
+	cfg.LoadGenPrivKey = "loadgen.key"
 
 	path := filepath.Join(tempDir, "solver.toml")
 

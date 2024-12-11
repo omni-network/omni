@@ -145,7 +145,8 @@ func TestEventProcessor(t *testing.T) {
 
 					return nil
 				},
-				ChainName: func(uint64) string { return "" },
+				ChainName:  func(uint64) string { return "" },
+				TargetName: func(bindings.SolveRequest) string { return "" },
 			}
 
 			processor := newEventProcessor(deps, chainID)

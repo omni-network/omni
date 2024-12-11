@@ -19,13 +19,14 @@ type Config struct {
 	RPCEndpoints   xchain.RPCEndpoints
 	Network        netconf.ID
 	MonitoringAddr string
-	PrivateKey     string
+	SolverPrivKey  string
+	LoadGenPrivKey string
 	DBDir          string
 }
 
 func DefaultConfig() Config {
 	return Config{
-		PrivateKey:     "solver.key",
+		SolverPrivKey:  "solver.key",
 		MonitoringAddr: ":26660",
 		DBDir:          "./db",
 	}

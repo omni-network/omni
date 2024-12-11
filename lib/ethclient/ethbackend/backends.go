@@ -189,6 +189,21 @@ func (b Backends) All() map[uint64]*Backend {
 	return b.backends
 }
 
+// AddAccount adds a in-memory private key account to all backends.
+// Note this can be called even if other accounts are fireblocks based.
+func (b Backends) AddAccount(privkey *ecdsa.PrivateKey) (common.Address, error) {
+	var addr common.Address
+	for _, backend := range b.backends {
+		var err error
+		addr, err = backend.AddAccount(privkey)
+		if err != nil {
+			return common.Address{}, err
+		}
+	}
+
+	return addr, nil
+}
+
 func (b Backends) Clients() map[uint64]ethclient.Client {
 	clients := make(map[uint64]ethclient.Client)
 	for chainID, backend := range b.backends {

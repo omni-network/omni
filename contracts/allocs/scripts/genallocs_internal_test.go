@@ -30,8 +30,8 @@ func TestBridgeBalance(t *testing.T) {
 		mp = add(mp, th.TargetBalance())
 	}
 
-	mp = add(mp, ether(100)) // 100 OMNI: genesis validator 1
-	mp = add(mp, ether(100)) // 100 OMNI: genesis validator 2
+	mp = add(mp, ether(1000)) // 1000 OMNI: genesis validator 1
+	mp = add(mp, ether(1000)) // 1000 OMNI: genesis validator 2
 
 	tests := []struct {
 		name     string

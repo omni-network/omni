@@ -27,7 +27,10 @@ import (
 )
 
 // confLevel of solver streamers.
-const confLevel = xchain.ConfLatest
+const (
+	confLevel = xchain.ConfLatest
+	unknown   = "unknown"
+)
 
 func chainVerFromID(id uint64) xchain.ChainVersion {
 	return xchain.ChainVersion{ID: id, ConfLevel: confLevel}
@@ -52,10 +55,10 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	if cfg.PrivateKey == "" {
+	if cfg.SolverPrivKey == "" {
 		return errors.New("private key not set")
 	}
-	privKey, err := ethcrypto.LoadECDSA(cfg.PrivateKey)
+	privKey, err := ethcrypto.LoadECDSA(cfg.SolverPrivKey)
 	if err != nil {
 		return errors.Wrap(err, "load private key")
 	}
@@ -64,6 +67,10 @@ func Run(ctx context.Context, cfg Config) error {
 
 	backends, err := ethbackend.BackendsFromNetwork(network, cfg.RPCEndpoints, privKey)
 	if err != nil {
+		return err
+	}
+
+	if err := maybeStartLoadGen(ctx, cfg, network, backends); err != nil {
 		return err
 	}
 
@@ -223,6 +230,15 @@ func startEventStreams(
 		return cursors.Set(ctx, chainVerFromID(chainID), height)
 	}
 
+	targetNamer := func(req bindings.SolveRequest) string {
+		target, err := getTarget(network.ID, req.Call)
+		if err != nil {
+			return unknown
+		}
+
+		return target.Name()
+	}
+
 	deps := procDeps{
 		ParseID:      newIDParser(inboxContracts),
 		GetRequest:   newRequestGetter(inboxContracts),
@@ -233,6 +249,7 @@ func startEventStreams(
 		Claim:        newClaimer(inboxContracts, backends, solverAddr),
 		SetCursor:    cursorSetter,
 		ChainName:    network.ChainName,
+		TargetName:   targetNamer,
 	}
 
 	for _, chain := range inboxChains {

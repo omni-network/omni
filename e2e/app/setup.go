@@ -504,8 +504,9 @@ func writeSolverConfig(ctx context.Context, def Definition, logCfg log.Config) e
 	confRoot := filepath.Join(def.Testnet.Dir, "solver")
 
 	const (
-		privKeyFile = "privatekey"
-		configFile  = "solver.toml"
+		privKeyFile    = "privatekey"
+		loadGenKeyFile = "loadgenkey"
+		configFile     = "solver.toml"
 	)
 
 	if err := os.MkdirAll(confRoot, 0o755); err != nil {
@@ -518,24 +519,38 @@ func writeSolverConfig(ctx context.Context, def Definition, logCfg log.Config) e
 		endpoints = ExternalEndpoints(def)
 	}
 
-	// Save private key (use random keys for non-ephemeral)
+	// Save solver private key (use random keys for non-ephemeral)
 	// TODO(corver): Switch to proper keys once ready.
-	privKey, err := ethcrypto.GenerateKey()
+	solverPrivKey, err := ethcrypto.GenerateKey()
 	if err != nil {
 		return errors.Wrap(err, "generate private key")
 	} else if def.Testnet.Network.IsEphemeral() {
-		privKey, err = eoa.PrivateKey(ctx, def.Testnet.Network, eoa.RoleSolver)
+		solverPrivKey, err = eoa.PrivateKey(ctx, def.Testnet.Network, eoa.RoleSolver)
 		if err != nil {
 			return errors.Wrap(err, "get solver key")
 		}
 	}
+	if err := ethcrypto.SaveECDSA(filepath.Join(confRoot, privKeyFile), solverPrivKey); err != nil {
+		return errors.Wrap(err, "write private key")
+	}
 
-	if err := ethcrypto.SaveECDSA(filepath.Join(confRoot, privKeyFile), privKey); err != nil {
+	// Save loadgen private key (use random keys for non-ephemeral)
+	loadGenPrivKey, err := ethcrypto.GenerateKey()
+	if err != nil {
+		return errors.Wrap(err, "generate loadgen private key")
+	} else if def.Testnet.Network.IsEphemeral() {
+		loadGenPrivKey, err = eoa.PrivateKey(ctx, def.Testnet.Network, eoa.RoleXCaller)
+		if err != nil {
+			return errors.Wrap(err, "get loadgen key")
+		}
+	}
+	if err := ethcrypto.SaveECDSA(filepath.Join(confRoot, loadGenKeyFile), loadGenPrivKey); err != nil {
 		return errors.Wrap(err, "write private key")
 	}
 
 	solverCfg := solverapp.DefaultConfig()
-	solverCfg.PrivateKey = privKeyFile
+	solverCfg.SolverPrivKey = privKeyFile
+	solverCfg.LoadGenPrivKey = loadGenKeyFile
 	solverCfg.Network = def.Testnet.Network
 	solverCfg.RPCEndpoints = endpoints
 

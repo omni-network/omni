@@ -110,7 +110,7 @@ func statusString(status uint8) string {
 	case statusClaimed:
 		return "claimed"
 	default:
-		return "unknown"
+		return unknown
 	}
 }
 

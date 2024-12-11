@@ -46,8 +46,8 @@ import (
 // since Omni block period (+-1s) is very fast, roughly 10x normal period of 10s.
 const slashingBlocksWindow = 1000
 
-// ValidatorPower is the default power assigned to genesis validators.
-const ValidatorPower = 100
+// ValidatorPower is the default power assigned to ephemeral genesis validators.
+const ValidatorPower = 1000
 
 func MakeGenesis(
 	network netconf.ID,
