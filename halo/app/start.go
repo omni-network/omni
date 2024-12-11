@@ -103,6 +103,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 
 	buildinfo.Instrument(ctx)
 
+	feature.SetGlobals(cfg.FeatureFlags)
 	ctx = feature.WithFlags(ctx, cfg.FeatureFlags)
 
 	tracerIDs := tracer.Identifiers{Network: cfg.Network, Service: "halo", Instance: cfg.Comet.Moniker}
