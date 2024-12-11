@@ -86,12 +86,6 @@ contract SolveInbox_accept_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Accepted).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Accepted)"
         );
-        assertEq(
-            uint8(inbox.getRequestUpdateHistory(id)[1].status),
-            uint8(Solve.Status.Accepted),
-            "inbox.getRequestUpdateHistory(id)[1].status"
-        );
-        assertEq(inbox.getRequestUpdateHistory(id).length, 2, "inbox.getRequestUpdateHistory(id).length");
     }
 
     /// @dev Test accepting two requests
@@ -120,18 +114,6 @@ contract SolveInbox_accept_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Accepted).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Accepted)"
         );
-        assertEq(
-            uint8(inbox.getRequestUpdateHistory(id1)[1].status),
-            uint8(Solve.Status.Accepted),
-            "inbox.getRequestUpdateHistory(id1)[1].status"
-        );
-        assertEq(
-            uint8(inbox.getRequestUpdateHistory(id2)[1].status),
-            uint8(Solve.Status.Accepted),
-            "inbox.getRequestUpdateHistory(id2)[1].status"
-        );
-        assertEq(inbox.getRequestUpdateHistory(id1).length, 2, "inbox.getRequestUpdateHistory(id1).length");
-        assertEq(inbox.getRequestUpdateHistory(id2).length, 2, "inbox.getRequestUpdateHistory(id2).length");
     }
 
     /// @dev Test accepting requests out of order
@@ -159,17 +141,5 @@ contract SolveInbox_accept_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Accepted).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Accepted)"
         );
-        assertEq(
-            uint8(inbox.getRequestUpdateHistory(id1)[0].status),
-            uint8(Solve.Status.Pending),
-            "inbox.getRequestUpdateHistory(id1)[0].status"
-        );
-        assertEq(
-            uint8(inbox.getRequestUpdateHistory(id2)[1].status),
-            uint8(Solve.Status.Accepted),
-            "inbox.getRequestUpdateHistory(id2)[1].status"
-        );
-        assertEq(inbox.getRequestUpdateHistory(id1).length, 1, "inbox.getRequestUpdateHistory(id1).length");
-        assertEq(inbox.getRequestUpdateHistory(id2).length, 2, "inbox.getRequestUpdateHistory(id2).length");
     }
 }

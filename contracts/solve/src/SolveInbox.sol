@@ -110,13 +110,6 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
     }
 
     /**
-     * @notice Returns the update history for the request with the given ID.
-     */
-    function getRequestUpdateHistory(bytes32 id) external view returns (Solve.StatusUpdate[] memory) {
-        return _requests[id].updateHistory;
-    }
-
-    /**
      * @notice Returns the latest request with the given status.
      */
     function getLatestRequestByStatus(Solve.Status status) external view returns (Solve.Request memory) {
@@ -156,13 +149,9 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
         Solve.Request storage req = _requests[id];
         if (req.status != Solve.Status.Pending) revert NotPending();
 
-        Solve.StatusUpdate memory update =
-            Solve.StatusUpdate({ status: Solve.Status.Accepted, timestamp: uint40(block.timestamp) });
-
-        req.updatedAt = update.timestamp;
-        req.status = update.status;
+        req.updatedAt = uint40(block.timestamp);
+        req.status = Solve.Status.Accepted;
         req.acceptedBy = msg.sender;
-        req.updateHistory.push(update);
 
         _latestReqByStatus[Solve.Status.Accepted] = id;
 
@@ -178,12 +167,8 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
         Solve.Request storage req = _requests[id];
         if (req.status != Solve.Status.Pending) revert NotPending();
 
-        Solve.StatusUpdate memory update =
-            Solve.StatusUpdate({ status: Solve.Status.Rejected, timestamp: uint40(block.timestamp) });
-
-        req.updatedAt = update.timestamp;
-        req.status = update.status;
-        req.updateHistory.push(update);
+        req.updatedAt = uint40(block.timestamp);
+        req.status = Solve.Status.Rejected;
 
         _latestReqByStatus[Solve.Status.Rejected] = id;
 
@@ -200,12 +185,8 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
         if (req.status != Solve.Status.Pending && req.status != Solve.Status.Rejected) revert NotPendingOrRejected();
         if (req.from != msg.sender) revert Unauthorized();
 
-        Solve.StatusUpdate memory update =
-            Solve.StatusUpdate({ status: Solve.Status.Reverted, timestamp: uint40(block.timestamp) });
-
-        req.updatedAt = update.timestamp;
-        req.status = update.status;
-        req.updateHistory.push(update);
+        req.updatedAt = uint40(block.timestamp);
+        req.status = Solve.Status.Reverted;
 
         _latestReqByStatus[Solve.Status.Reverted] = id;
 
@@ -227,12 +208,8 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
         // Ensure reported call hash matches requested call hash
         if (callHash != _callHash(id, uint64(block.chainid), req.call)) revert WrongCallHash();
 
-        Solve.StatusUpdate memory update =
-            Solve.StatusUpdate({ status: Solve.Status.Fulfilled, timestamp: uint40(block.timestamp) });
-
-        req.updatedAt = update.timestamp;
-        req.status = update.status;
-        req.updateHistory.push(update);
+        req.updatedAt = uint40(block.timestamp);
+        req.status = Solve.Status.Fulfilled;
 
         _latestReqByStatus[Solve.Status.Fulfilled] = id;
 
@@ -249,12 +226,8 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
         if (req.status != Solve.Status.Fulfilled) revert NotFulfilled();
         if (req.acceptedBy != msg.sender) revert Unauthorized();
 
-        Solve.StatusUpdate memory update =
-            Solve.StatusUpdate({ status: Solve.Status.Claimed, timestamp: uint40(block.timestamp) });
-
-        req.updatedAt = update.timestamp;
-        req.status = update.status;
-        req.updateHistory.push(update);
+        req.updatedAt = uint40(block.timestamp);
+        req.status = Solve.Status.Claimed;
 
         _latestReqByStatus[Solve.Status.Claimed] = id;
 
@@ -290,16 +263,12 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
     {
         bytes32 id = _nextId();
 
-        Solve.StatusUpdate memory update =
-            Solve.StatusUpdate({ status: Solve.Status.Pending, timestamp: uint40(block.timestamp) });
-
         req = _requests[id];
         req.id = id;
-        req.updatedAt = update.timestamp;
-        req.status = update.status;
+        req.updatedAt = uint40(block.timestamp);
+        req.status = Solve.Status.Pending;
         req.from = from;
         req.call = call;
-        req.updateHistory.push(update);
 
         _latestReqByStatus[Solve.Status.Pending] = id;
 

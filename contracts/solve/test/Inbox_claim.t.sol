@@ -77,12 +77,6 @@ contract SolveInbox_claim_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Claimed).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Claimed)"
         );
-        assertEq(
-            uint8(inbox.getRequestUpdateHistory(id)[3].status),
-            uint8(Solve.Status.Claimed),
-            "inbox.getRequestUpdateHistory(id)[3].status"
-        );
-        assertEq(inbox.getRequestUpdateHistory(id).length, 4, "inbox.getRequestUpdateHistory(id).length");
     }
 
     function test_claim_singleToken() public {
@@ -107,12 +101,6 @@ contract SolveInbox_claim_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Claimed).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Claimed)"
         );
-        assertEq(
-            uint8(inbox.getRequestUpdateHistory(id)[3].status),
-            uint8(Solve.Status.Claimed),
-            "inbox.getRequestUpdateHistory(id)[3].status"
-        );
-        assertEq(inbox.getRequestUpdateHistory(id).length, 4, "inbox.getRequestUpdateHistory(id).length");
     }
 
     function test_claim_multiDeposit() public {
@@ -140,12 +128,6 @@ contract SolveInbox_claim_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Claimed).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Claimed)"
         );
-        assertEq(
-            uint8(inbox.getRequestUpdateHistory(id)[3].status),
-            uint8(Solve.Status.Claimed),
-            "inbox.getRequestUpdateHistory(id)[3].status"
-        );
-        assertEq(inbox.getRequestUpdateHistory(id).length, 4, "inbox.getRequestUpdateHistory(id).length");
     }
 
     /// @dev Open a request, accept it, mark it as fulfilled, and return the request ID.

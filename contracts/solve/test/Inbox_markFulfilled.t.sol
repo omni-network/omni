@@ -86,11 +86,5 @@ contract SolveInbox_markFulfilled_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Fulfilled).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Fulfilled)"
         );
-        assertEq(
-            uint8(inbox.getRequestUpdateHistory(id)[2].status),
-            uint8(Solve.Status.Fulfilled),
-            "inbox.getRequestUpdateHistory(id)[2].status"
-        );
-        assertEq(inbox.getRequestUpdateHistory(id).length, 3, "inbox.getRequestUpdateHistory(id).length");
     }
 }

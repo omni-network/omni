@@ -246,12 +246,5 @@ contract SolveInbox_request_Test is InboxBase {
             assertEq(req.deposits[i].token, deposits[i - start].token, "_assertNewRequest : req.deposits[i].token");
             assertEq(req.deposits[i].amount, deposits[i - start].amount, "_assertNewRequest : req.deposits[i].amount");
         }
-
-        assertEq(
-            uint8(inbox.getRequestUpdateHistory(id)[0].status),
-            uint8(Solve.Status.Pending),
-            "inbox.getRequestUpdateHistory(id)[0].status"
-        );
-        assertEq(inbox.getRequestUpdateHistory(id).length, 1, "inbox.getRequestUpdateHistory(id).length");
     }
 }

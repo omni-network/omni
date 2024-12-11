@@ -80,12 +80,6 @@ contract SolveInbox_cancel_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Reverted).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Reverted)"
         );
-        assertEq(
-            uint8(inbox.getRequestUpdateHistory(id)[1].status),
-            uint8(Solve.Status.Reverted),
-            "inbox.getRequestUpdateHistory(id)[1].status"
-        );
-        assertEq(inbox.getRequestUpdateHistory(id).length, 2, "inbox.getRequestUpdateHistory(id).length");
     }
 
     function test_cancel_two_requests() public {
@@ -113,18 +107,6 @@ contract SolveInbox_cancel_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Reverted).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Reverted)"
         );
-        assertEq(
-            uint8(inbox.getRequestUpdateHistory(id1)[1].status),
-            uint8(Solve.Status.Reverted),
-            "inbox.getRequestUpdateHistory(id1)[1].status"
-        );
-        assertEq(
-            uint8(inbox.getRequestUpdateHistory(id2)[1].status),
-            uint8(Solve.Status.Reverted),
-            "inbox.getRequestUpdateHistory(id2)[1].status"
-        );
-        assertEq(inbox.getRequestUpdateHistory(id1).length, 2, "inbox.getRequestUpdateHistory(id1).length");
-        assertEq(inbox.getRequestUpdateHistory(id2).length, 2, "inbox.getRequestUpdateHistory(id2).length");
     }
 
     function test_cancel_oldest_request() public {
@@ -155,18 +137,6 @@ contract SolveInbox_cancel_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Pending).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Pending)"
         );
-        assertEq(
-            uint8(inbox.getRequestUpdateHistory(id1)[1].status),
-            uint8(Solve.Status.Reverted),
-            "inbox.getRequestUpdateHistory(id1)[1].status"
-        );
-        assertEq(
-            uint8(inbox.getRequestUpdateHistory(id2)[0].status),
-            uint8(Solve.Status.Pending),
-            "inbox.getRequestUpdateHistory(id2)[0].status"
-        );
-        assertEq(inbox.getRequestUpdateHistory(id1).length, 2, "inbox.getRequestUpdateHistory(id1).length");
-        assertEq(inbox.getRequestUpdateHistory(id2).length, 1, "inbox.getRequestUpdateHistory(id2).length");
     }
 
     function test_cancel_singleToken() public {
@@ -191,12 +161,6 @@ contract SolveInbox_cancel_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Reverted).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Reverted)"
         );
-        assertEq(
-            uint8(inbox.getRequestUpdateHistory(id)[1].status),
-            uint8(Solve.Status.Reverted),
-            "inbox.getRequestUpdateHistory(id)[1].status"
-        );
-        assertEq(inbox.getRequestUpdateHistory(id).length, 2, "inbox.getRequestUpdateHistory(id).length");
     }
 
     function test_cancel_multiToken() public {
@@ -224,12 +188,6 @@ contract SolveInbox_cancel_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Reverted).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Reverted)"
         );
-        assertEq(
-            uint8(inbox.getRequestUpdateHistory(id)[1].status),
-            uint8(Solve.Status.Reverted),
-            "inbox.getRequestUpdateHistory(id)[1].status"
-        );
-        assertEq(inbox.getRequestUpdateHistory(id).length, 2, "inbox.getRequestUpdateHistory(id).length");
     }
 
     function test_cancel_nativeMultiToken() public {
@@ -260,12 +218,6 @@ contract SolveInbox_cancel_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Reverted).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Reverted)"
         );
-        assertEq(
-            uint8(inbox.getRequestUpdateHistory(id)[1].status),
-            uint8(Solve.Status.Reverted),
-            "inbox.getRequestUpdateHistory(id)[1].status"
-        );
-        assertEq(inbox.getRequestUpdateHistory(id).length, 2, "inbox.getRequestUpdateHistory(id).length");
     }
 
     function test_cancel_rejected_nativeToken_request() public {
@@ -297,17 +249,6 @@ contract SolveInbox_cancel_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Reverted).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Reverted)"
         );
-        assertEq(
-            uint8(inbox.getRequestUpdateHistory(id)[1].status),
-            uint8(Solve.Status.Rejected),
-            "inbox.getRequestUpdateHistory(id)[1].status"
-        );
-        assertEq(
-            uint8(inbox.getRequestUpdateHistory(id)[2].status),
-            uint8(Solve.Status.Reverted),
-            "inbox.getRequestUpdateHistory(id)[2].status"
-        );
-        assertEq(inbox.getRequestUpdateHistory(id).length, 3, "inbox.getRequestUpdateHistory(id).length");
     }
 
     function test_cancel_rejected_nativeMultiToken_request() public {
@@ -347,16 +288,5 @@ contract SolveInbox_cancel_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Reverted).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Reverted)"
         );
-        assertEq(
-            uint8(inbox.getRequestUpdateHistory(id)[1].status),
-            uint8(Solve.Status.Rejected),
-            "inbox.getRequestUpdateHistory(id)[1].status"
-        );
-        assertEq(
-            uint8(inbox.getRequestUpdateHistory(id)[2].status),
-            uint8(Solve.Status.Reverted),
-            "inbox.getRequestUpdateHistory(id)[2].status"
-        );
-        assertEq(inbox.getRequestUpdateHistory(id).length, 3, "inbox.getRequestUpdateHistory(id).length");
     }
 }

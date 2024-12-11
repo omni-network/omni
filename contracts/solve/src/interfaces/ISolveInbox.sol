@@ -57,11 +57,6 @@ interface ISolveInbox {
     function getRequest(bytes32 id) external view returns (Solve.Request memory);
 
     /**
-     * @notice Returns the update history for the request with the given ID.
-     */
-    function getRequestUpdateHistory(bytes32 id) external view returns (Solve.StatusUpdate[] memory);
-
-    /**
      * @notice Returns the latest request with the given status.
      */
     function getLatestRequestByStatus(Solve.Status status) external view returns (Solve.Request memory);

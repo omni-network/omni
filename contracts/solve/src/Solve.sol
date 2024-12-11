@@ -15,11 +15,6 @@ library Solve {
         Claimed
     }
 
-    struct StatusUpdate {
-        Status status;
-        uint40 timestamp;
-    }
-
     /**
      * @notice Reason for rejecting a request.
      */
@@ -49,7 +44,6 @@ library Solve {
         address acceptedBy;
         Call call;
         Deposit[] deposits;
-        StatusUpdate[] updateHistory;
     }
 
     /**
