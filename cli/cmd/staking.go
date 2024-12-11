@@ -277,7 +277,12 @@ func newDelegateCmd() *cobra.Command {
 	return cmd
 }
 
+<<<<<<< HEAD
 func Delegate(ctx context.Context, cfg DelegateConfig) error {
+=======
+// Note(zodomo): This still needs to be updated to support non-self delegation.
+func delegate(ctx context.Context, cfg delegateConfig) error {
+>>>>>>> b893b3e (implemented user stake delegation, cli still only supports validator self-delegation)
 	delegatorPriv, err := cfg.privateKey()
 	if err != nil {
 		return err

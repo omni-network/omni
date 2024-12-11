@@ -150,18 +150,13 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
 
     /**
      * @notice Increase your validators self delegation.
-     *         NOTE: Only self delegations to existing validators are currently supported.
-     *         If msg.sender is not a validator, the delegation will be lost.
      * @dev Proxies x/staking.MsgDelegate
      */
-    function delegate(address validator) external payable {
+    function delegate(address delegator, address validator) external payable {
         require(!isAllowlistEnabled || isAllowedValidator[validator], "Staking: not allowed val");
         require(msg.value >= MinDelegation, "Staking: insufficient deposit");
 
-        // only support self delegation for now
-        require(msg.sender == validator, "Staking: only self delegation");
-
-        emit Delegate(msg.sender, validator, msg.value);
+        emit Delegate(delegator, validator, msg.value);
     }
 
     //////////////////////////////////////////////////////////////////////////////

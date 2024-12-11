@@ -110,18 +110,12 @@ contract Staking_Test is Test {
 
     function test_delegate() public {
         // requires min delegation
-        address validator = makeAddr("validator");
         uint256 minDelegation = staking.MinDelegation();
 
         vm.deal(validator, minDelegation);
 
         vm.expectRevert("Staking: insufficient deposit");
-        staking.delegate{ value: minDelegation - 1 }(validator);
-
-        // requires self-delegation
-        vm.expectRevert("Staking: only self delegation");
-        vm.prank(validator);
-        staking.delegate{ value: minDelegation }(makeAddr("someone else"));
+        staking.delegate{ value: minDelegation - 1 }(validator, validator);
 
         // if allowlist enabled, must be in allowlist
         vm.prank(owner);
@@ -129,7 +123,7 @@ contract Staking_Test is Test {
 
         vm.expectRevert("Staking: not allowed val");
         vm.prank(validator);
-        staking.delegate{ value: minDelegation }(validator);
+        staking.delegate{ value: minDelegation }(validator, validator);
 
         // succeeds
         address[] memory validators = new address[](1);
@@ -141,7 +135,7 @@ contract Staking_Test is Test {
         emit Delegate(validator, validator, minDelegation);
 
         vm.prank(validator);
-        staking.delegate{ value: minDelegation }(validator);
+        staking.delegate{ value: minDelegation }(validator, validator);
     }
 }
 

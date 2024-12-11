@@ -91,6 +91,6 @@ contract StakingPostUpgradeTest is Test {
         vm.expectEmit();
         emit Staking.Delegate(validator, validator, deposit);
         vm.prank(validator);
-        staking.delegate{ value: deposit }(validator);
+        staking.delegate{ value: deposit }(validator, validator);
     }
 }
