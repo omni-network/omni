@@ -66,6 +66,11 @@ contract SolveInbox_request_Test is InboxBase {
         bytes32 id = inbox.request(call, deposits);
         assertEq(token1.balanceOf(address(inbox)), deposits[0].amount, "token1.balanceOf(inbox)");
         assertEq(token1.balanceOf(user), 0, "token1.balanceOf(user)");
+        assertEq(
+            id,
+            inbox.getLatestRequestByStatus(Solve.Status.Pending).id,
+            "inbox.getLatestRequestByStatus(Solve.Status.Pending)"
+        );
 
         assertNewRequest({
             id: id,
@@ -92,6 +97,11 @@ contract SolveInbox_request_Test is InboxBase {
         assertEq(token2.balanceOf(address(inbox)), deposits[1].amount, "token2.balanceOf(inbox)");
         assertEq(token1.balanceOf(user), 0, "token1.balanceOf(user)");
         assertEq(token2.balanceOf(user), 0, "token2.balanceOf(user)");
+        assertEq(
+            id,
+            inbox.getLatestRequestByStatus(Solve.Status.Pending).id,
+            "inbox.getLatestRequestByStatus(Solve.Status.Pending)"
+        );
 
         assertNewRequest({
             id: id,
@@ -112,6 +122,11 @@ contract SolveInbox_request_Test is InboxBase {
 
         bytes32 id = inbox.request{ value: 1 ether }(call, deposits);
         assertEq(address(inbox).balance, 1 ether, "inbox.balance");
+        assertEq(
+            id,
+            inbox.getLatestRequestByStatus(Solve.Status.Pending).id,
+            "inbox.getLatestRequestByStatus(Solve.Status.Pending)"
+        );
 
         assertNewRequest({
             id: id,
@@ -141,6 +156,11 @@ contract SolveInbox_request_Test is InboxBase {
         assertEq(token2.balanceOf(address(inbox)), deposits[1].amount, "token2.balanceOf(inbox)");
         assertEq(token1.balanceOf(user), 0, "token1.balanceOf(user)");
         assertEq(token2.balanceOf(user), 0, "token2.balanceOf(user)");
+        assertEq(
+            id,
+            inbox.getLatestRequestByStatus(Solve.Status.Pending).id,
+            "inbox.getLatestRequestByStatus(Solve.Status.Pending)"
+        );
 
         assertNewRequest({
             id: id,
@@ -163,6 +183,12 @@ contract SolveInbox_request_Test is InboxBase {
         bytes32 id2 = inbox.request{ value: 2 ether }(call, deposits);
 
         assertEq(address(inbox).balance, 3 ether, "address(inbox).balance");
+        assertEq(
+            id2,
+            inbox.getLatestRequestByStatus(Solve.Status.Pending).id,
+            "inbox.getLatestRequestByStatus(Solve.Status.Pending)"
+        );
+
         assertNewRequest({
             id: id1,
             from: user,

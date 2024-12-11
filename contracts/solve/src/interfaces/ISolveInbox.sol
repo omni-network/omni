@@ -57,6 +57,11 @@ interface ISolveInbox {
     function getRequest(bytes32 id) external view returns (Solve.Request memory);
 
     /**
+     * @notice Returns the latest request with the given status.
+     */
+    function getLatestRequestByStatus(Solve.Status status) external view returns (Solve.Request memory);
+
+    /**
      * @notice Open a request to execute a call on another chain, backed by deposits.
      *  Token deposits are transferred from msg.sender to this inbox.
      * @param call      Details of the call to be executed on another chain.

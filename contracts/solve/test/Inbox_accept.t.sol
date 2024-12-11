@@ -81,6 +81,11 @@ contract SolveInbox_accept_Test is InboxBase {
 
         assertEq(inbox.getRequest(id).acceptedBy, solver, "inbox.getRequest(id).acceptedBy");
         assertEq(uint8(inbox.getRequest(id).status), uint8(Solve.Status.Accepted), "inbox.getRequest(id).status");
+        assertEq(
+            id,
+            inbox.getLatestRequestByStatus(Solve.Status.Accepted).id,
+            "inbox.getLatestRequestByStatus(Solve.Status.Accepted)"
+        );
     }
 
     /// @dev Test accepting two requests
@@ -104,6 +109,11 @@ contract SolveInbox_accept_Test is InboxBase {
         assertEq(inbox.getRequest(id2).acceptedBy, solver, "inbox.getRequest(id2).acceptedBy");
         assertEq(uint8(inbox.getRequest(id1).status), uint8(Solve.Status.Accepted), "inbox.getRequest(id1).status");
         assertEq(uint8(inbox.getRequest(id2).status), uint8(Solve.Status.Accepted), "inbox.getRequest(id2).status");
+        assertEq(
+            id2,
+            inbox.getLatestRequestByStatus(Solve.Status.Accepted).id,
+            "inbox.getLatestRequestByStatus(Solve.Status.Accepted)"
+        );
     }
 
     /// @dev Test accepting requests out of order
@@ -126,5 +136,10 @@ contract SolveInbox_accept_Test is InboxBase {
         assertEq(inbox.getRequest(id2).acceptedBy, solver, "inbox.getRequest(id2).acceptedBy");
         assertEq(uint8(inbox.getRequest(id1).status), uint8(Solve.Status.Pending), "inbox.getRequest(id1).status");
         assertEq(uint8(inbox.getRequest(id2).status), uint8(Solve.Status.Accepted), "inbox.getRequest(id2).status");
+        assertEq(
+            id2,
+            inbox.getLatestRequestByStatus(Solve.Status.Accepted).id,
+            "inbox.getLatestRequestByStatus(Solve.Status.Accepted)"
+        );
     }
 }

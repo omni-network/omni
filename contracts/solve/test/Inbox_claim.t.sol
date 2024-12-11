@@ -72,6 +72,11 @@ contract SolveInbox_claim_Test is InboxBase {
         Solve.Request memory req = inbox.getRequest(id);
         assertEq(uint8(req.status), uint8(Solve.Status.Claimed), "req.status");
         assertEq(claimTo.balance, 1 ether, "claimTo.balance");
+        assertEq(
+            id,
+            inbox.getLatestRequestByStatus(Solve.Status.Claimed).id,
+            "inbox.getLatestRequestByStatus(Solve.Status.Claimed)"
+        );
     }
 
     function test_claim_singleToken() public {
@@ -91,6 +96,11 @@ contract SolveInbox_claim_Test is InboxBase {
         Solve.Request memory req = inbox.getRequest(id);
         assertEq(uint8(req.status), uint8(Solve.Status.Claimed), "req.status");
         assertEq(token1.balanceOf(claimTo), 1 ether, "token.balanceOf(claimTo)");
+        assertEq(
+            id,
+            inbox.getLatestRequestByStatus(Solve.Status.Claimed).id,
+            "inbox.getLatestRequestByStatus(Solve.Status.Claimed)"
+        );
     }
 
     function test_claim_multiDeposit() public {
@@ -113,6 +123,11 @@ contract SolveInbox_claim_Test is InboxBase {
         assertEq(claimTo.balance, 3 ether, "claimTo.balance");
         assertEq(token1.balanceOf(claimTo), 1 ether, "token1.balanceOf(claimTo)");
         assertEq(token2.balanceOf(claimTo), 2 ether, "token2.balanceOf(claimTo)");
+        assertEq(
+            id,
+            inbox.getLatestRequestByStatus(Solve.Status.Claimed).id,
+            "inbox.getLatestRequestByStatus(Solve.Status.Claimed)"
+        );
     }
 
     /// @dev Open a request, accept it, mark it as fulfilled, and return the request ID.

@@ -63,6 +63,11 @@ contract SolveInbox_reject_Test is InboxBase {
         assertEq(address(inbox).balance, 1 ether, "address(inbox).balance");
         assertEq(address(user).balance, 0, "address(user).balance");
         assertEq(uint8(inbox.getRequest(id).status), uint8(Solve.Status.Rejected), "inbox.getRequest(id).status");
+        assertEq(
+            id,
+            inbox.getLatestRequestByStatus(Solve.Status.Rejected).id,
+            "inbox.getLatestRequestByStatus(Solve.Status.Rejected)"
+        );
     }
 
     function test_reject_two_requests() public {
@@ -85,6 +90,11 @@ contract SolveInbox_reject_Test is InboxBase {
         assertEq(address(user).balance, 0, "address(user).balance");
         assertEq(uint8(inbox.getRequest(id1).status), uint8(Solve.Status.Rejected), "inbox.getRequest(id1).status");
         assertEq(uint8(inbox.getRequest(id2).status), uint8(Solve.Status.Rejected), "inbox.getRequest(id2).status");
+        assertEq(
+            id2,
+            inbox.getLatestRequestByStatus(Solve.Status.Rejected).id,
+            "inbox.getLatestRequestByStatus(Solve.Status.Rejected)"
+        );
     }
 
     function test_reject_oldest_request() public {
@@ -106,6 +116,16 @@ contract SolveInbox_reject_Test is InboxBase {
         assertEq(address(user).balance, 0, "address(user).balance");
         assertEq(uint8(inbox.getRequest(id1).status), uint8(Solve.Status.Rejected), "inbox.getRequest(id1).status");
         assertEq(uint8(inbox.getRequest(id2).status), uint8(Solve.Status.Pending), "inbox.getRequest(id2).status");
+        assertEq(
+            id1,
+            inbox.getLatestRequestByStatus(Solve.Status.Rejected).id,
+            "inbox.getLatestRequestByStatus(Solve.Status.Rejected)"
+        );
+        assertEq(
+            id2,
+            inbox.getLatestRequestByStatus(Solve.Status.Pending).id,
+            "inbox.getLatestRequestByStatus(Solve.Status.Pending)"
+        );
     }
 
     function test_reject_nativeMultiToken() public {
@@ -131,5 +151,10 @@ contract SolveInbox_reject_Test is InboxBase {
         assertEq(token1.balanceOf(user), 0, "token1.balanceOf(user)");
         assertEq(token2.balanceOf(user), 0, "token2.balanceOf(user)");
         assertEq(uint8(inbox.getRequest(id).status), uint8(Solve.Status.Rejected), "inbox.getRequest(id).status");
+        assertEq(
+            id,
+            inbox.getLatestRequestByStatus(Solve.Status.Rejected).id,
+            "inbox.getLatestRequestByStatus(Solve.Status.Rejected)"
+        );
     }
 }
