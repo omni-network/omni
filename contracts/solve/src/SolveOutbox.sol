@@ -85,9 +85,16 @@ contract SolveOutbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
 
     constructor() {
         // Must get Arbitrum block number from ArbSys precompile, block.number returns L1 block number on Arbitrum.
-        // This is a temporary fix, we need a robust way of properly setting this value when on any Arbitrum chain.
-        if (block.chainid != 42_161 && block.chainid != 421_614) deployedAt = block.number;
-        else deployedAt = IArbSys(ARB_SYS).arbBlockNumber();
+        if (_isContract(ARB_SYS)) {
+            try IArbSys(ARB_SYS).arbBlockNumber() returns (uint256 arbBlockNumber) {
+                deployedAt = arbBlockNumber;
+            } catch {
+                deployedAt = block.number;
+            }
+        } else {
+            deployedAt = block.number;
+        }
+
         _disableInitializers();
     }
 
@@ -184,5 +191,16 @@ contract SolveOutbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
      */
     function _callHash(bytes32 srcReqId, uint64 srcChainId, Solve.Call calldata call) internal pure returns (bytes32) {
         return keccak256(abi.encode(srcReqId, srcChainId, call));
+    }
+
+    /**
+     * @dev Returns true if the address is a contract.
+     */
+    function _isContract(address addr) internal view returns (bool) {
+        uint32 size;
+        assembly {
+            size := extcodesize(addr)
+        }
+        return (size > 0);
     }
 }
