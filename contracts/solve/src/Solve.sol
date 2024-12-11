@@ -15,6 +15,11 @@ library Solve {
         Claimed
     }
 
+    struct StatusUpdate {
+        Status status;
+        uint40 timestamp;
+    }
+
     /**
      * @notice Reason for rejecting a request.
      */
@@ -34,6 +39,7 @@ library Solve {
      * @param status        Request status (open, accepted, cancelled, rejected, fulfilled, paid).
      * @param call          Details of the call to be executed on another chain.
      * @param deposits      Array of deposits backing the request.
+     * @param updateHistory Array of status updates including timestamps.
      */
     struct Request {
         bytes32 id;
@@ -43,6 +49,7 @@ library Solve {
         address acceptedBy;
         Call call;
         Deposit[] deposits;
+        StatusUpdate[] updateHistory;
     }
 
     /**

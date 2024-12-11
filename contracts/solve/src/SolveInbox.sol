@@ -69,11 +69,23 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
      */
     mapping(bytes32 id => Solve.Request) internal _requests;
 
+    /**
+     * @notice Map status to latest request ID.
+     */
+    mapping(Solve.Status => bytes32 id) internal _latestReqByStatus;
+
     constructor() {
         // Must get Arbitrum block number from ArbSys precompile, block.number returns L1 block number on Arbitrum.
-        // This is a temporary fix, we need a robust way of properly setting this value when on any Arbitrum chain.
-        if (block.chainid != 42_161 && block.chainid != 421_614) deployedAt = block.number;
-        else deployedAt = IArbSys(ARB_SYS).arbBlockNumber();
+        if (_isContract(ARB_SYS)) {
+            try IArbSys(ARB_SYS).arbBlockNumber() returns (uint256 arbBlockNumber) {
+                deployedAt = arbBlockNumber;
+            } catch {
+                deployedAt = block.number;
+            }
+        } else {
+            deployedAt = block.number;
+        }
+
         _disableInitializers();
     }
 
@@ -95,6 +107,20 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
      */
     function getRequest(bytes32 id) external view returns (Solve.Request memory) {
         return _requests[id];
+    }
+
+    /**
+     * @notice Returns the update history for the request with the given ID.
+     */
+    function getRequestUpdateHistory(bytes32 id) external view returns (Solve.StatusUpdate[] memory) {
+        return _requests[id].updateHistory;
+    }
+
+    /**
+     * @notice Returns the latest request with the given status.
+     */
+    function getLatestRequestByStatus(Solve.Status status) external view returns (Solve.Request memory) {
+        return _requests[_latestReqByStatus[status]];
     }
 
     /**
@@ -130,9 +156,15 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
         Solve.Request storage req = _requests[id];
         if (req.status != Solve.Status.Pending) revert NotPending();
 
-        req.updatedAt = uint40(block.timestamp);
-        req.status = Solve.Status.Accepted;
+        Solve.StatusUpdate memory update =
+            Solve.StatusUpdate({ status: Solve.Status.Accepted, timestamp: uint40(block.timestamp) });
+
+        req.updatedAt = update.timestamp;
+        req.status = update.status;
         req.acceptedBy = msg.sender;
+        req.updateHistory.push(update);
+
+        _latestReqByStatus[Solve.Status.Accepted] = id;
 
         emit Accepted(id, msg.sender);
     }
@@ -146,8 +178,14 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
         Solve.Request storage req = _requests[id];
         if (req.status != Solve.Status.Pending) revert NotPending();
 
-        req.updatedAt = uint40(block.timestamp);
-        req.status = Solve.Status.Rejected;
+        Solve.StatusUpdate memory update =
+            Solve.StatusUpdate({ status: Solve.Status.Rejected, timestamp: uint40(block.timestamp) });
+
+        req.updatedAt = update.timestamp;
+        req.status = update.status;
+        req.updateHistory.push(update);
+
+        _latestReqByStatus[Solve.Status.Rejected] = id;
 
         emit Rejected(id, msg.sender, reason);
     }
@@ -162,8 +200,14 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
         if (req.status != Solve.Status.Pending && req.status != Solve.Status.Rejected) revert NotPendingOrRejected();
         if (req.from != msg.sender) revert Unauthorized();
 
-        req.updatedAt = uint40(block.timestamp);
-        req.status = Solve.Status.Reverted;
+        Solve.StatusUpdate memory update =
+            Solve.StatusUpdate({ status: Solve.Status.Reverted, timestamp: uint40(block.timestamp) });
+
+        req.updatedAt = update.timestamp;
+        req.status = update.status;
+        req.updateHistory.push(update);
+
+        _latestReqByStatus[Solve.Status.Reverted] = id;
 
         _transferDeposits(req.from, req.deposits);
 
@@ -183,8 +227,14 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
         // Ensure reported call hash matches requested call hash
         if (callHash != _callHash(id, uint64(block.chainid), req.call)) revert WrongCallHash();
 
-        req.updatedAt = uint40(block.timestamp);
-        req.status = Solve.Status.Fulfilled;
+        Solve.StatusUpdate memory update =
+            Solve.StatusUpdate({ status: Solve.Status.Fulfilled, timestamp: uint40(block.timestamp) });
+
+        req.updatedAt = update.timestamp;
+        req.status = update.status;
+        req.updateHistory.push(update);
+
+        _latestReqByStatus[Solve.Status.Fulfilled] = id;
 
         emit Fulfilled(id, callHash, req.acceptedBy);
     }
@@ -199,8 +249,14 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
         if (req.status != Solve.Status.Fulfilled) revert NotFulfilled();
         if (req.acceptedBy != msg.sender) revert Unauthorized();
 
-        req.updatedAt = uint40(block.timestamp);
-        req.status = Solve.Status.Claimed;
+        Solve.StatusUpdate memory update =
+            Solve.StatusUpdate({ status: Solve.Status.Claimed, timestamp: uint40(block.timestamp) });
+
+        req.updatedAt = update.timestamp;
+        req.status = update.status;
+        req.updateHistory.push(update);
+
+        _latestReqByStatus[Solve.Status.Claimed] = id;
 
         _transferDeposits(to, req.deposits);
 
@@ -234,12 +290,18 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
     {
         bytes32 id = _nextId();
 
+        Solve.StatusUpdate memory update =
+            Solve.StatusUpdate({ status: Solve.Status.Pending, timestamp: uint40(block.timestamp) });
+
         req = _requests[id];
         req.id = id;
-        req.updatedAt = uint40(block.timestamp);
-        req.status = Solve.Status.Pending;
+        req.updatedAt = update.timestamp;
+        req.status = update.status;
         req.from = from;
         req.call = call;
+        req.updateHistory.push(update);
+
+        _latestReqByStatus[Solve.Status.Pending] = id;
 
         if (msg.value > 0) {
             req.deposits.push(Solve.Deposit({ isNative: true, token: address(0), amount: msg.value }));
@@ -270,5 +332,16 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
      */
     function _callHash(bytes32 id, uint64 sourceChainId, Solve.Call storage call) internal pure returns (bytes32) {
         return keccak256(abi.encode(id, sourceChainId, call));
+    }
+
+    /**
+     * @dev Returns true if the address is a contract.
+     */
+    function _isContract(address addr) internal view returns (bool) {
+        uint32 size;
+        assembly {
+            size := extcodesize(addr)
+        }
+        return (size > 0);
     }
 }

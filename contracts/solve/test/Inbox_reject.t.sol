@@ -63,6 +63,17 @@ contract SolveInbox_reject_Test is InboxBase {
         assertEq(address(inbox).balance, 1 ether, "address(inbox).balance");
         assertEq(address(user).balance, 0, "address(user).balance");
         assertEq(uint8(inbox.getRequest(id).status), uint8(Solve.Status.Rejected), "inbox.getRequest(id).status");
+        assertEq(
+            id,
+            inbox.getLatestRequestByStatus(Solve.Status.Rejected).id,
+            "inbox.getLatestRequestByStatus(Solve.Status.Rejected)"
+        );
+        assertEq(
+            uint8(inbox.getRequestUpdateHistory(id)[1].status),
+            uint8(Solve.Status.Rejected),
+            "inbox.getRequestUpdateHistory(id)[1].status"
+        );
+        assertEq(inbox.getRequestUpdateHistory(id).length, 2, "inbox.getRequestUpdateHistory(id).length");
     }
 
     function test_reject_two_requests() public {
@@ -85,6 +96,23 @@ contract SolveInbox_reject_Test is InboxBase {
         assertEq(address(user).balance, 0, "address(user).balance");
         assertEq(uint8(inbox.getRequest(id1).status), uint8(Solve.Status.Rejected), "inbox.getRequest(id1).status");
         assertEq(uint8(inbox.getRequest(id2).status), uint8(Solve.Status.Rejected), "inbox.getRequest(id2).status");
+        assertEq(
+            id2,
+            inbox.getLatestRequestByStatus(Solve.Status.Rejected).id,
+            "inbox.getLatestRequestByStatus(Solve.Status.Rejected)"
+        );
+        assertEq(
+            uint8(inbox.getRequestUpdateHistory(id1)[1].status),
+            uint8(Solve.Status.Rejected),
+            "inbox.getRequestUpdateHistory(id1)[1].status"
+        );
+        assertEq(
+            uint8(inbox.getRequestUpdateHistory(id2)[1].status),
+            uint8(Solve.Status.Rejected),
+            "inbox.getRequestUpdateHistory(id2)[1].status"
+        );
+        assertEq(inbox.getRequestUpdateHistory(id1).length, 2, "inbox.getRequestUpdateHistory(id1).length");
+        assertEq(inbox.getRequestUpdateHistory(id2).length, 2, "inbox.getRequestUpdateHistory(id2).length");
     }
 
     function test_reject_oldest_request() public {
@@ -106,6 +134,28 @@ contract SolveInbox_reject_Test is InboxBase {
         assertEq(address(user).balance, 0, "address(user).balance");
         assertEq(uint8(inbox.getRequest(id1).status), uint8(Solve.Status.Rejected), "inbox.getRequest(id1).status");
         assertEq(uint8(inbox.getRequest(id2).status), uint8(Solve.Status.Pending), "inbox.getRequest(id2).status");
+        assertEq(
+            id1,
+            inbox.getLatestRequestByStatus(Solve.Status.Rejected).id,
+            "inbox.getLatestRequestByStatus(Solve.Status.Rejected)"
+        );
+        assertEq(
+            id2,
+            inbox.getLatestRequestByStatus(Solve.Status.Pending).id,
+            "inbox.getLatestRequestByStatus(Solve.Status.Pending)"
+        );
+        assertEq(
+            uint8(inbox.getRequestUpdateHistory(id1)[1].status),
+            uint8(Solve.Status.Rejected),
+            "inbox.getRequestUpdateHistory(id1)[1].status"
+        );
+        assertEq(
+            uint8(inbox.getRequestUpdateHistory(id2)[0].status),
+            uint8(Solve.Status.Pending),
+            "inbox.getRequestUpdateHistory(id2)[0].status"
+        );
+        assertEq(inbox.getRequestUpdateHistory(id1).length, 2, "inbox.getRequestUpdateHistory(id1).length");
+        assertEq(inbox.getRequestUpdateHistory(id2).length, 1, "inbox.getRequestUpdateHistory(id2).length");
     }
 
     function test_reject_nativeMultiToken() public {
@@ -131,5 +181,16 @@ contract SolveInbox_reject_Test is InboxBase {
         assertEq(token1.balanceOf(user), 0, "token1.balanceOf(user)");
         assertEq(token2.balanceOf(user), 0, "token2.balanceOf(user)");
         assertEq(uint8(inbox.getRequest(id).status), uint8(Solve.Status.Rejected), "inbox.getRequest(id).status");
+        assertEq(
+            id,
+            inbox.getLatestRequestByStatus(Solve.Status.Rejected).id,
+            "inbox.getLatestRequestByStatus(Solve.Status.Rejected)"
+        );
+        assertEq(
+            uint8(inbox.getRequestUpdateHistory(id)[1].status),
+            uint8(Solve.Status.Rejected),
+            "inbox.getRequestUpdateHistory(id)[1].status"
+        );
+        assertEq(inbox.getRequestUpdateHistory(id).length, 2, "inbox.getRequestUpdateHistory(id).length");
     }
 }
