@@ -75,7 +75,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	if err := maybeStartLoadGen(ctx, cfg, network, backends); err != nil {
+	if err := maybeStartLoadGen(ctx, cfg, network.ID, backends); err != nil {
 		return err
 	}
 
