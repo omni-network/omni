@@ -7,7 +7,6 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	solver "github.com/omni-network/omni/solver/types"
 
@@ -25,8 +24,8 @@ func (App) Name() string {
 	return "devapp"
 }
 
-func (App) ChainID() uint64 {
-	return evmchain.IDMockL1
+func (a App) ChainID() uint64 {
+	return a.L1.ChainID
 }
 
 func (a App) Address() common.Address {
@@ -61,7 +60,7 @@ func (a App) TokenPrereqs(call bindings.SolveCall) ([]bindings.SolveTokenPrereq,
 
 func (a App) Verify(srcChainID uint64, call bindings.SolveCall, deposits []bindings.SolveDeposit) error {
 	// we only accept deposits from mock L2
-	if srcChainID != evmchain.IDMockL2 {
+	if srcChainID != a.L2.ChainID {
 		return errors.New("source chain not supported", "src", srcChainID)
 	}
 
