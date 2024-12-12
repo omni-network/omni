@@ -15,6 +15,9 @@ var tiers = []uint64{
 	gwei(75),
 	gwei(100),
 	gwei(200),
+	gwei(300),
+	gwei(400),
+	gwei(500),
 }
 
 func Tiers() []uint64 {
