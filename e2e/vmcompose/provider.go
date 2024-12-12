@@ -199,6 +199,7 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.ServiceConfig) error {
 	addFile("monitor", "privatekey")
 	addFile("solver", "solver.toml")
 	addFile("solver", "privatekey")
+	addFile("solver", "loadgenkey")
 
 	// Do initial sequential ssh to each VM, ensure we can connect.
 	for vmName, instance := range p.Data.VMs {
