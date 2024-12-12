@@ -20,6 +20,10 @@ type DepositArgs struct {
 	Amount    *big.Int
 }
 
+func (App) Name() string {
+	return "symbiotic"
+}
+
 func (t App) ChainID() uint64 {
 	return t.L1.ChainID
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 type DepositReq struct {
@@ -53,7 +54,7 @@ func TestFlow(ctx context.Context, network netconf.Network, endpoints xchain.RPC
 		}
 
 		for deposit := range toCheck {
-			ok, err := isDeposited(ctx, backends, deposit)
+			ok, err := IsDeposited(ctx, backends, deposit)
 			if err != nil {
 				return err
 			} else if ok {
@@ -117,8 +118,11 @@ func makeTestDeposits(ctx context.Context, backends ethbackend.Backends) ([]Depo
 		return nil, errors.Wrap(err, "make depositors")
 	}
 
+	depositAmount := big.NewInt(1e18)
+	fundAmount := new(big.Int).Add(depositAmount, big.NewInt(params.GWei)) // Add gas
+
 	// fund for gas
-	if err := anvil.FundAccounts(ctx, backend, big.NewInt(1e18), depositors...); err != nil {
+	if err := anvil.FundAccounts(ctx, backend, fundAmount, depositors...); err != nil {
 		return nil, errors.Wrap(err, "fund accounts")
 	}
 
@@ -127,7 +131,15 @@ func makeTestDeposits(ctx context.Context, backends ethbackend.Backends) ([]Depo
 		return nil, errors.Wrap(err, "get addresses")
 	}
 
-	reqs, err := requestDeposits(ctx, backend, addrs.SolveInbox, depositors)
+	var deposits []DepositArgs
+	for _, depositor := range depositors {
+		deposits = append(deposits, DepositArgs{
+			OnBehalfOf: depositor,
+			Amount:     depositAmount,
+		})
+	}
+
+	reqs, err := RequestDeposits(ctx, backend, addrs.SolveInbox, deposits...)
 	if err != nil {
 		return nil, errors.Wrap(err, "request deposits")
 	}
@@ -135,7 +147,7 @@ func makeTestDeposits(ctx context.Context, backends ethbackend.Backends) ([]Depo
 	return reqs, nil
 }
 
-func isDeposited(ctx context.Context, backends ethbackend.Backends, req DepositReq) (bool, error) {
+func IsDeposited(ctx context.Context, backends ethbackend.Backends, req DepositReq) (bool, error) {
 	app := MustGetApp(netconf.Devnet)
 
 	backend, err := backends.Backend(app.L1.ChainID)
@@ -209,14 +221,9 @@ func addRandomDepositors(n int, backend *ethbackend.Backend) ([]common.Address, 
 	return depositors, nil
 }
 
-func requestDeposits(ctx context.Context, backend *ethbackend.Backend, inbox common.Address, depositors []common.Address) ([]DepositReq, error) {
-	var reqs []DepositReq
-	for _, depositor := range depositors {
-		deposit := DepositArgs{
-			OnBehalfOf: depositor,
-			Amount:     big.NewInt(1e18),
-		}
-
+func RequestDeposits(ctx context.Context, backend *ethbackend.Backend, inbox common.Address, deposits ...DepositArgs) ([]DepositReq, error) {
+	var resp []DepositReq
+	for _, deposit := range deposits {
 		if err := mintAndApprove(ctx, backend, inbox, deposit); err != nil {
 			return nil, errors.Wrap(err, "mint and approve")
 		}
@@ -226,10 +233,10 @@ func requestDeposits(ctx context.Context, backend *ethbackend.Backend, inbox com
 			return nil, errors.Wrap(err, "request at inbox")
 		}
 
-		reqs = append(reqs, req)
+		resp = append(resp, req)
 	}
 
-	return reqs, nil
+	return resp, nil
 }
 
 func requestAtInbox(ctx context.Context, backend *ethbackend.Backend, addr common.Address, deposit DepositArgs) (DepositReq, error) {

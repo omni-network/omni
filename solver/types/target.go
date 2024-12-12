@@ -10,6 +10,9 @@ import (
 
 // Target is the interface for a target contract the solver can interact with.
 type Target interface {
+	// Name of the target
+	Name() string
+
 	// ChainID returns the chain ID of the target contract.
 	ChainID() uint64
 

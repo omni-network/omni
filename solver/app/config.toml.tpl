@@ -12,8 +12,11 @@ network = "{{ .Network }}"
 ###                         Solver Options                          ###
 #######################################################################
 
-# Path to the ethereum private key used to sign avs omni sync transactions.
-private-key = "{{ .PrivateKey }}"
+# Path to the ethereum private key used to for inbox and outbox request state transitions.
+private-key = "{{ .SolverPrivKey }}"
+
+# Path to the ethereum private key used to generate deposit load on ephemeral networks only.
+loadgen-key = "{{ .LoadGenPrivKey }}"
 
 # The address that the solver listens for metric scrape requests.
 monitoring-addr = "{{ .MonitoringAddr }}"

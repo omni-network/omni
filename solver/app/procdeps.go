@@ -30,7 +30,9 @@ type procDeps struct {
 	Fulfill func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error
 	Claim   func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error
 
-	ChainName func(chainID uint64) string
+	// Monitoring helpers
+	TargetName func(bindings.SolveRequest) string
+	ChainName  func(chainID uint64) string
 }
 
 func newClaimer(
@@ -166,7 +168,7 @@ func detectCustomError(custom error) string {
 		}
 	}
 
-	return "unknown"
+	return unknown
 }
 
 func checkAllowedCall(ctx context.Context, outbox *bindings.SolveOutbox, call bindings.SolveCall) error {

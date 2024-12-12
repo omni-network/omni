@@ -21,6 +21,10 @@ type DepositArgs struct {
 	Amount     *big.Int
 }
 
+func (App) Name() string {
+	return "devapp"
+}
+
 func (App) ChainID() uint64 {
 	return evmchain.IDMockL1
 }

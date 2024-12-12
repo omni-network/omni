@@ -28,7 +28,6 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 			offset := reqIDOffset(reqID)
 			statusOffset.WithLabelValues(deps.ChainName(chainID), statusString(event.Status)).Set(float64(offset))
 			ctx := log.WithCtx(ctx, "status", statusString(event.Status), "req_id", offset)
-			log.Debug(ctx, "Processing event")
 
 			req, _, err := deps.GetRequest(ctx, chainID, reqID)
 			if err != nil {
@@ -39,24 +38,31 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 				continue
 			}
 
+			ctx = log.WithCtx(ctx, "target", deps.TargetName(req))
+			log.Debug(ctx, "Processing request event")
+
 			switch event.Status {
 			case statusPending:
 				if reason, reject, err := deps.ShouldReject(ctx, chainID, req); err != nil {
 					return errors.Wrap(err, "should reject")
 				} else if reject {
+					log.Info(ctx, "Rejecting request", "reason", reason)
 					if err := deps.Reject(ctx, chainID, req, reason); err != nil {
 						return errors.Wrap(err, "reject request")
 					}
 				} else {
+					log.Info(ctx, "Accepting request", "reason", reason)
 					if err := deps.Accept(ctx, chainID, req); err != nil {
 						return errors.Wrap(err, "accept request")
 					}
 				}
 			case statusAccepted:
+				log.Info(ctx, "Accepting request")
 				if err := deps.Fulfill(ctx, chainID, req); err != nil {
 					return errors.Wrap(err, "fulfill request")
 				}
 			case statusFulfilled:
+				log.Info(ctx, "Claiming request")
 				if err := deps.Claim(ctx, chainID, req); err != nil {
 					return errors.Wrap(err, "claim request")
 				}
