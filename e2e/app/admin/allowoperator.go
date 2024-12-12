@@ -41,6 +41,8 @@ var allowedOperators = map[netconf.ID][]common.Address{
 		common.HexToAddress("0xd456Db9730a346211797D42de2272f2406936194"), // P-OPS
 		common.HexToAddress("0xd2eC4b16426CaE96a1720d20Bd141dd0DA0b6C9f"), // DAIC
 		common.HexToAddress("0x231a7A2872208A3e3EF75Ae6580a16308D60706b"), // Finoa
+		common.HexToAddress("0x58D2A4e3880635B7682A1BB7Ed8a43F5ac6cFD3d"), // validator01
+		common.HexToAddress("0x19a4Cb685af95A96BEd67C764b6dB137978a5B17"), // validator02
 	},
 }
 
