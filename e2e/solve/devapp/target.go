@@ -33,6 +33,17 @@ func (a App) Address() common.Address {
 	return a.L1Vault
 }
 
+func (a App) LogMetadata(ctx context.Context) {
+	log.Info(ctx, "Target app",
+		"name", a.Name(),
+		"l1_chain", a.L1.Name,
+		"l1_token", a.L1Token,
+		"l1_vault", a.L1Vault,
+		"l2_chain", a.L2.Name,
+		"l2_token", a.L2Token,
+	)
+}
+
 func (a App) TokenPrereqs(call bindings.SolveCall) ([]bindings.SolveTokenPrereq, error) {
 	args, err := unpackDeposit(call.Data)
 	if err != nil {

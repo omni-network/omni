@@ -55,6 +55,11 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
+	// Log target apps
+	for _, app := range targetsByNetwork[network.ID] {
+		app.LogMetadata(ctx)
+	}
+
 	if cfg.SolverPrivKey == "" {
 		return errors.New("private key not set")
 	}

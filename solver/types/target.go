@@ -28,4 +28,7 @@ type Target interface {
 
 	// DebugCall logs the call for debugging purposes.
 	DebugCall(ctx context.Context, call bindings.SolveCall) error
+
+	// LogMetadata logs target metadata.
+	LogMetadata(ctx context.Context)
 }
