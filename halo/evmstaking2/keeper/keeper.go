@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
@@ -86,6 +87,10 @@ func NewKeeper(
 
 // EndBlock delivers all pending EVM events on every `k.deliverInterval`'th block.
 func (k *Keeper) EndBlock(ctx context.Context) error {
+	if !feature.FlagEVMStakingModule.Enabled(ctx) {
+		return errors.New("unexpected code path [BUG]")
+	}
+
 	blockHeight := sdk.UnwrapSDKContext(ctx).BlockHeight()
 
 	if blockHeight%k.deliverInterval != 0 {
@@ -122,6 +127,9 @@ func (k *Keeper) EndBlock(ctx context.Context) error {
 
 // Prepare returns all omni stake contract EVM event logs from the provided block hash.
 func (k Keeper) Prepare(ctx context.Context, blockHash common.Hash) ([]evmenginetypes.EVMEvent, error) {
+	if !feature.FlagEVMStakingModule.Enabled(ctx) {
+		return nil, errors.New("unexpected code path [BUG]")
+	}
 	logs, err := k.ethCl.FilterLogs(ctx, ethereum.FilterQuery{
 		BlockHash: &blockHash,
 		Addresses: k.Addresses(),
@@ -162,6 +170,9 @@ func (k Keeper) Addresses() []common.Address {
 // first stored in keeper's state. Then all stored events are periodically delivered
 // from `EndBlock` at once.
 func (k Keeper) Deliver(ctx context.Context, _ common.Hash, elog evmenginetypes.EVMEvent) error {
+	if !feature.FlagEVMStakingModule.Enabled(ctx) {
+		return errors.New("unexpected code path [BUG]")
+	}
 	err := k.eventsTable.Insert(ctx, &EVMEvent{
 		Event: &elog,
 	})

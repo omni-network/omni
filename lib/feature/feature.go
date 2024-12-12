@@ -2,6 +2,7 @@ package feature
 
 import (
 	"context"
+	"sync"
 
 	"github.com/omni-network/omni/lib/log"
 )
@@ -11,6 +12,12 @@ const (
 	FlagEVMStakingModule Flag = "evm-staking-module"
 )
 
+// enabledFlags holds all globally enabled feature flags. The reason for having it is that
+// we want to use feature flags across the entire code base. However, CometBFT doesn't allow
+// specifying a root context, and the Cosmos SDK doesn't actually use the context provided in ABCI,
+// so that feature flags cannot be shared with modules via context.
+var enabledFlags sync.Map
+
 var allFlags = map[Flag]bool{
 	FlagEVMStakingModule: true,
 }
@@ -18,7 +25,7 @@ var allFlags = map[Flag]bool{
 // Flag is a feature flag.
 type Flag string
 
-// Enabled returns true if the flag is enabled in the context.
+// Enabled returns true if the flag is enabled in the context or globally.
 func (f Flag) Enabled(ctx context.Context) bool {
 	return enabled(ctx, f)
 }
@@ -53,8 +60,19 @@ func WithFlag(ctx context.Context, flag Flag) context.Context {
 	return WithFlags(ctx, Flags{string(flag)})
 }
 
-// enabled returns true if the given flag is enabled in the context.
+// SetGlobals enables all given flags globally.
+func SetGlobals(flags Flags) {
+	for _, flag := range flags {
+		enabledFlags.Store(Flag(flag), true)
+	}
+}
+
+// enabled returns true if the given flag is enabled globally or in the context.
 func enabled(ctx context.Context, flag Flag) bool {
+	if _, ok := enabledFlags.Load(flag); ok {
+		return true
+	}
+
 	flags, ok := ctx.Value(key{}).([]Flag)
 	if !ok {
 		return false
