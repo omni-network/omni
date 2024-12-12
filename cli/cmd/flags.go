@@ -63,7 +63,7 @@ func bindRPCURL(cmd *cobra.Command, rpcURL *string) {
 	_ = cmd.MarkFlagRequired(flagRPCURL)
 }
 
-func bindEOAConfig(cmd *cobra.Command, cfg *eoaConfig) {
+func bindEOAConfig(cmd *cobra.Command, cfg *EOAConfig) {
 	bindPrivateKeyFile(cmd, &cfg.PrivateKeyFile)
 	netconf.BindFlag(cmd.Flags(), &cfg.Network)
 
@@ -73,8 +73,8 @@ func bindEOAConfig(cmd *cobra.Command, cfg *eoaConfig) {
 	_ = cmd.MarkFlagRequired(flagNetwork)
 }
 
-func bindDelegateConfig(cmd *cobra.Command, cfg *delegateConfig) {
-	bindEOAConfig(cmd, &cfg.eoaConfig)
+func bindDelegateConfig(cmd *cobra.Command, cfg *DelegateConfig) {
+	bindEOAConfig(cmd, &cfg.EOAConfig)
 	const flagSelf = "self"
 	cmd.Flags().Uint64Var(&cfg.Amount, flagDelegationAmount, cfg.Amount, "Delegation amount in OMNI (minimum 1 OMNI)")
 	cmd.Flags().BoolVar(&cfg.Self, flagSelf, false, "Enables self-delegation setting target validator address to provided private key")
@@ -85,7 +85,7 @@ func bindDelegateConfig(cmd *cobra.Command, cfg *delegateConfig) {
 }
 
 func bindCreateValConfig(cmd *cobra.Command, cfg *createValConfig) {
-	bindEOAConfig(cmd, &cfg.eoaConfig)
+	bindEOAConfig(cmd, &cfg.EOAConfig)
 
 	cmd.Flags().StringVar(&cfg.ConsensusPubKeyHex, flagConsPubKeyHex, cfg.ConsensusPubKeyHex, "Hex-encoded validator consensus public key")
 	cmd.Flags().Uint64Var(&cfg.SelfDelegation, flagSelfDelegation, cfg.SelfDelegation, "Self-delegation amount in OMNI (minimum 100 OMNI)")

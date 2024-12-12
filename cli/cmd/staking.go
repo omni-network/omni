@@ -63,15 +63,15 @@ func newCreateValCmd() *cobra.Command {
 	return cmd
 }
 
-// eoaConfig defines the required data to sign and submit evm transactions.
-type eoaConfig struct {
+// EOAConfig defines the required data to sign and submit evm transactions.
+type EOAConfig struct {
 	Network        netconf.ID
 	ExecutionRPC   string
 	ConsensusRPC   string
 	PrivateKeyFile string
 }
 
-func (v eoaConfig) privateKey() (*ecdsa.PrivateKey, error) {
+func (v EOAConfig) privateKey() (*ecdsa.PrivateKey, error) {
 	if v.PrivateKeyFile == "" {
 		return nil, errors.New("required flag --private-key-file not set")
 	}
@@ -84,7 +84,7 @@ func (v eoaConfig) privateKey() (*ecdsa.PrivateKey, error) {
 	return opPrivKey, nil
 }
 
-func (v eoaConfig) validate() error {
+func (v EOAConfig) validate() error {
 	if _, err := v.privateKey(); err != nil {
 		return errors.Wrap(err, "verify --private-key-file flag")
 	}
@@ -109,7 +109,7 @@ func (v eoaConfig) validate() error {
 }
 
 type createValConfig struct {
-	eoaConfig
+	EOAConfig
 	ConsensusPubKeyHex string
 	SelfDelegation     uint64
 }
@@ -133,7 +133,7 @@ func (c createValConfig) consensusPublicKey() (*ecdsa.PublicKey, error) {
 }
 
 func (c createValConfig) validate() error {
-	if err := c.eoaConfig.validate(); err != nil {
+	if err := c.EOAConfig.validate(); err != nil {
 		return err
 	}
 
@@ -159,7 +159,7 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 	}
 	opAddr := crypto.PubkeyToAddress(operatorPriv.PublicKey)
 
-	eth, cprov, backend, err := setupClients(cfg.eoaConfig, operatorPriv)
+	eth, cprov, backend, err := setupClients(cfg.EOAConfig, operatorPriv)
 	if err != nil {
 		return err
 	}
@@ -232,13 +232,13 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 	return nil
 }
 
-type delegateConfig struct {
-	eoaConfig
+type DelegateConfig struct {
+	EOAConfig
 	Amount uint64
 	Self   bool
 }
 
-func (d delegateConfig) validate() error {
+func (d DelegateConfig) validate() error {
 	if !d.Self {
 		return errors.New("required --self", "required_value", "true")
 	}
@@ -247,11 +247,11 @@ func (d delegateConfig) validate() error {
 		return errors.New("insufficient --amount", "minimum", minDelegation, "amount", d.Amount)
 	}
 
-	return d.eoaConfig.validate()
+	return d.EOAConfig.validate()
 }
 
 func newDelegateCmd() *cobra.Command {
-	var cfg delegateConfig
+	var cfg DelegateConfig
 
 	cmd := &cobra.Command{
 		Use:   "delegate",
@@ -263,7 +263,7 @@ func newDelegateCmd() *cobra.Command {
 				return errors.Wrap(err, "verify flags")
 			}
 
-			err := delegate(cmd.Context(), cfg)
+			err := Delegate(cmd.Context(), cfg)
 			if err != nil {
 				return errors.Wrap(err, "delegate")
 			}
@@ -277,14 +277,14 @@ func newDelegateCmd() *cobra.Command {
 	return cmd
 }
 
-func delegate(ctx context.Context, cfg delegateConfig) error {
+func Delegate(ctx context.Context, cfg DelegateConfig) error {
 	delegatorPriv, err := cfg.privateKey()
 	if err != nil {
 		return err
 	}
 	delegatorAddr := crypto.PubkeyToAddress(delegatorPriv.PublicKey)
 
-	eth, cprov, backend, err := setupClients(cfg.eoaConfig, delegatorPriv)
+	eth, cprov, backend, err := setupClients(cfg.EOAConfig, delegatorPriv)
 	if err != nil {
 		return err
 	}
@@ -320,6 +320,19 @@ func delegate(ctx context.Context, cfg delegateConfig) error {
 	}
 	txOpts.Value = new(big.Int).Mul(umath.NewBigInt(cfg.Amount), big.NewInt(params.Ether)) // Send self-delegation
 
+	callOpts := &bind.CallOpts{Context: ctx}
+	ok, err := contract.IsAllowlistEnabled(callOpts)
+	if err != nil {
+		return errors.Wrap(err, "check allowlist enabled")
+	} else if ok {
+		ok, err := contract.IsAllowedValidator(&bind.CallOpts{Context: ctx}, delegatorAddr)
+		if err != nil {
+			return err
+		} else if !ok {
+			return errors.New("active validator not in allowed list [BUG]")
+		}
+	}
+
 	tx, err := contract.Delegate(txOpts, delegatorAddr)
 	if err != nil {
 		return errors.Wrap(err, "create validator")
@@ -339,7 +352,7 @@ func delegate(ctx context.Context, cfg delegateConfig) error {
 }
 
 func newUnjailCmd() *cobra.Command {
-	var cfg eoaConfig
+	var cfg EOAConfig
 
 	cmd := &cobra.Command{
 		Use:   "unjail",
@@ -366,7 +379,7 @@ func newUnjailCmd() *cobra.Command {
 	return cmd
 }
 
-func unjailValidator(ctx context.Context, cfg eoaConfig) error {
+func unjailValidator(ctx context.Context, cfg EOAConfig) error {
 	opPrivKey, err := crypto.LoadECDSA(cfg.PrivateKeyFile)
 	if err != nil {
 		return errors.Wrap(err, "load private key")
@@ -469,7 +482,7 @@ func checkUnjailPeriod(ctx context.Context, cprov cchain.Provider, val cchain.SD
 // setupClients is a helper that creates the omni evm client,
 // omni consensus client and a backend set with the operator private key.
 func setupClients(
-	conf eoaConfig,
+	conf EOAConfig,
 	operatorPriv *ecdsa.PrivateKey,
 ) (ethclient.Client, cchain.Provider, *ethbackend.Backend, error) {
 	static := conf.Network.Static()
