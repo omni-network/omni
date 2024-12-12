@@ -26,6 +26,10 @@ var allowedOperators = map[netconf.ID][]common.Address{
 		common.HexToAddress("0xcf8EB4Ee3cb3C9c14a4b290bD902dC06d2926ec1"), // P-OPS
 		common.HexToAddress("0x27eA917d14d637797FDeb3f9A9824395e7744941"), // DAIC
 		common.HexToAddress("0x44Fb4c265E551139e4D3956Aba6fe2DEa27AE4De"), // Finoa
+		common.HexToAddress("0xCE624ce5C5717b63CED36AfB76857183E0a8a6eb"), // validator01
+		common.HexToAddress("0x98Eb13371c095905985cddE937018881d4D7f229"), // validator02
+		common.HexToAddress("0xe96cF9Ad91cD6dc911817603Dfb3c65d5f532B95"), // validator03
+		common.HexToAddress("0xdBd26a685DB4475b6c58ADEC0DE06c6eE387EAa8"), // validator04
 	},
 	netconf.Mainnet: {
 		common.HexToAddress("0xc6A510df0F6d2D8CEbD6112FB3132aba4bAc23d1"), // A41
@@ -37,6 +41,8 @@ var allowedOperators = map[netconf.ID][]common.Address{
 		common.HexToAddress("0xd456Db9730a346211797D42de2272f2406936194"), // P-OPS
 		common.HexToAddress("0xd2eC4b16426CaE96a1720d20Bd141dd0DA0b6C9f"), // DAIC
 		common.HexToAddress("0x231a7A2872208A3e3EF75Ae6580a16308D60706b"), // Finoa
+		common.HexToAddress("0x58D2A4e3880635B7682A1BB7Ed8a43F5ac6cFD3d"), // validator01
+		common.HexToAddress("0x19a4Cb685af95A96BEd67C764b6dB137978a5B17"), // validator02
 	},
 }
 
