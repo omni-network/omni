@@ -24,16 +24,27 @@ func (App) Name() string {
 	return "symbiotic"
 }
 
-func (t App) ChainID() uint64 {
-	return t.L1.ChainID
+func (a App) ChainID() uint64 {
+	return a.L1.ChainID
 }
 
-func (t App) Address() common.Address {
+func (a App) Address() common.Address {
 	// Live ymbiotic deposits are for erc20 "collateral" wrappers, not vaults.
-	return t.L1wstETHCollateral
+	return a.L1wstETHCollateral
 }
 
-func (t App) TokenPrereqs(call bindings.SolveCall) ([]bindings.SolveTokenPrereq, error) {
+func (a App) LogMetadata(ctx context.Context) {
+	log.Info(ctx, "Target app",
+		"name", a.Name(),
+		"l1_chain", a.L1.Name,
+		"l1_collateral", a.L1wstETHCollateral,
+		"l1_token", a.L1wstETH,
+		"l2_chain", a.L2.Name,
+		"l2_token", a.L2wstETH,
+	)
+}
+
+func (a App) TokenPrereqs(call bindings.SolveCall) ([]bindings.SolveTokenPrereq, error) {
 	args, err := unpackDeposit(call.Data)
 	if err != nil {
 		return nil, errors.Wrap(err, "unpack deposit")
@@ -41,16 +52,16 @@ func (t App) TokenPrereqs(call bindings.SolveCall) ([]bindings.SolveTokenPrereq,
 
 	return []bindings.SolveTokenPrereq{
 		{
-			Token:   t.L1wstETH,
-			Spender: t.L1wstETHCollateral,
+			Token:   a.L1wstETH,
+			Spender: a.L1wstETHCollateral,
 			Amount:  args.Amount,
 		},
 	}, nil
 }
 
-func (t App) Verify(srcChainID uint64, call bindings.SolveCall, deposits []bindings.SolveDeposit) error {
+func (a App) Verify(srcChainID uint64, call bindings.SolveCall, deposits []bindings.SolveDeposit) error {
 	// for now, we only accept deposits from a single, explicit l2
-	if srcChainID != t.L2.ChainID {
+	if srcChainID != a.L2.ChainID {
 		return errors.New("source chain not supported", "src", srcChainID)
 	}
 
@@ -59,13 +70,13 @@ func (t App) Verify(srcChainID uint64, call bindings.SolveCall, deposits []bindi
 		return errors.Wrap(err, "invalid deposit")
 	}
 
-	if _, err := t.TokenPrereqs(call); err != nil {
+	if _, err := a.TokenPrereqs(call); err != nil {
 		return errors.Wrap(err, "token prereqs")
 	}
 
 	var l2Deposit *bindings.SolveDeposit
 	for _, deposit := range deposits {
-		if deposit.Token == t.L2wstETH {
+		if deposit.Token == a.L2wstETH {
 			l2Deposit = &deposit
 		}
 	}
