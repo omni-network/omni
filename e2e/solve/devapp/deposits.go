@@ -38,7 +38,7 @@ func TestFlow(ctx context.Context, network netconf.Network, endpoints xchain.RPC
 		return err
 	}
 
-	deposits, err := makeTestDeposits(ctx, backends)
+	deposits, err := makeDevnetDeposits(ctx, network.ID, backends)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func TestFlow(ctx context.Context, network netconf.Network, endpoints xchain.RPC
 		}
 
 		for deposit := range toCheck {
-			ok, err := IsDeposited(ctx, backends, deposit)
+			ok, err := IsDeposited(ctx, network.ID, backends, deposit)
 			if err != nil {
 				return err
 			} else if ok {
@@ -82,7 +82,7 @@ func TestFlow(ctx context.Context, network netconf.Network, endpoints xchain.RPC
 		const statusClaimed = 6
 
 		for deposit := range toCheck {
-			status, err := getDepositStatus(ctx, backends, deposit)
+			status, err := getDepositStatus(ctx, network.ID, backends, deposit)
 			if err != nil {
 				return err
 			} else if status == statusClaimed {
@@ -103,8 +103,12 @@ func TestFlow(ctx context.Context, network netconf.Network, endpoints xchain.RPC
 	return nil
 }
 
-func makeTestDeposits(ctx context.Context, backends ethbackend.Backends) ([]DepositReq, error) {
-	app := MustGetApp(netconf.Devnet)
+func makeDevnetDeposits(ctx context.Context, network netconf.ID, backends ethbackend.Backends) ([]DepositReq, error) {
+	if network != netconf.Devnet {
+		return nil, errors.New("only devnet supported")
+	}
+
+	app := MustGetApp(network)
 
 	backend, err := backends.Backend(app.L2.ChainID)
 	if err != nil {
@@ -139,7 +143,7 @@ func makeTestDeposits(ctx context.Context, backends ethbackend.Backends) ([]Depo
 		})
 	}
 
-	reqs, err := RequestDeposits(ctx, backend, addrs.SolveInbox, deposits...)
+	reqs, err := RequestDeposits(ctx, network, backends, addrs.SolveInbox, deposits...)
 	if err != nil {
 		return nil, errors.Wrap(err, "request deposits")
 	}
@@ -147,8 +151,8 @@ func makeTestDeposits(ctx context.Context, backends ethbackend.Backends) ([]Depo
 	return reqs, nil
 }
 
-func IsDeposited(ctx context.Context, backends ethbackend.Backends, req DepositReq) (bool, error) {
-	app := MustGetApp(netconf.Devnet)
+func IsDeposited(ctx context.Context, network netconf.ID, backends ethbackend.Backends, req DepositReq) (bool, error) {
+	app := MustGetApp(network)
 
 	backend, err := backends.Backend(app.L1.ChainID)
 	if err != nil {
@@ -172,15 +176,15 @@ func IsDeposited(ctx context.Context, backends ethbackend.Backends, req DepositR
 	return balance.Cmp(req.Deposit.Amount) == 0, nil
 }
 
-func getDepositStatus(ctx context.Context, backends ethbackend.Backends, deposit DepositReq) (uint8, error) {
-	app := MustGetApp(netconf.Devnet)
+func getDepositStatus(ctx context.Context, network netconf.ID, backends ethbackend.Backends, deposit DepositReq) (uint8, error) {
+	app := MustGetApp(network)
 
 	backend, err := backends.Backend(app.L2.ChainID)
 	if err != nil {
 		return 0, errors.Wrap(err, "backend")
 	}
 
-	addrs, err := contracts.GetAddresses(ctx, netconf.Devnet)
+	addrs, err := contracts.GetAddresses(ctx, network)
 	if err != nil {
 		return 0, errors.Wrap(err, "get addresses")
 	}
@@ -221,14 +225,20 @@ func addRandomDepositors(n int, backend *ethbackend.Backend) ([]common.Address, 
 	return depositors, nil
 }
 
-func RequestDeposits(ctx context.Context, backend *ethbackend.Backend, inbox common.Address, deposits ...DepositArgs) ([]DepositReq, error) {
+func RequestDeposits(ctx context.Context, network netconf.ID, backends ethbackend.Backends, inbox common.Address, deposits ...DepositArgs) ([]DepositReq, error) {
+	app := MustGetApp(network)
+	backend, err := backends.Backend(app.L2.ChainID)
+	if err != nil {
+		return nil, errors.Wrap(err, "l2 backend")
+	}
+
 	var resp []DepositReq
 	for _, deposit := range deposits {
-		if err := mintAndApprove(ctx, backend, inbox, deposit); err != nil {
+		if err := mintAndApprove(ctx, app, backend, inbox, deposit); err != nil {
 			return nil, errors.Wrap(err, "mint and approve")
 		}
 
-		req, err := requestAtInbox(ctx, backend, inbox, deposit)
+		req, err := requestAtInbox(ctx, app, backend, inbox, deposit)
 		if err != nil {
 			return nil, errors.Wrap(err, "request at inbox")
 		}
@@ -239,9 +249,7 @@ func RequestDeposits(ctx context.Context, backend *ethbackend.Backend, inbox com
 	return resp, nil
 }
 
-func requestAtInbox(ctx context.Context, backend *ethbackend.Backend, addr common.Address, deposit DepositArgs) (DepositReq, error) {
-	app := MustGetApp(netconf.Devnet)
-
+func requestAtInbox(ctx context.Context, app App, backend *ethbackend.Backend, addr common.Address, deposit DepositArgs) (DepositReq, error) {
 	inbox, err := bindings.NewSolveInbox(addr, backend)
 	if err != nil {
 		return DepositReq{}, errors.Wrap(err, "new solve inbox")
@@ -290,9 +298,7 @@ func requestAtInbox(ctx context.Context, backend *ethbackend.Backend, addr commo
 	}, nil
 }
 
-func mintAndApprove(ctx context.Context, backend *ethbackend.Backend, inbox common.Address, deposit DepositArgs) error {
-	app := MustGetApp(netconf.Devnet)
-
+func mintAndApprove(ctx context.Context, app App, backend *ethbackend.Backend, inbox common.Address, deposit DepositArgs) error {
 	txOpts, err := backend.BindOpts(ctx, deposit.OnBehalfOf)
 	if err != nil {
 		return errors.Wrap(err, "bind opts")

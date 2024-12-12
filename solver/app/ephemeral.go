@@ -18,8 +18,8 @@ import (
 )
 
 // maybeStartLoadGen starts the load generator on ephemeral networks.
-func maybeStartLoadGen(ctx context.Context, cfg Config, network netconf.Network, backends ethbackend.Backends) error {
-	if !network.ID.IsEphemeral() || cfg.LoadGenPrivKey == "" {
+func maybeStartLoadGen(ctx context.Context, cfg Config, network netconf.ID, backends ethbackend.Backends) error {
+	if !network.IsEphemeral() || cfg.LoadGenPrivKey == "" {
 		return nil
 	}
 
@@ -42,7 +42,7 @@ func maybeStartLoadGen(ctx context.Context, cfg Config, network netconf.Network,
 
 func ephemeralLoadGenForever(
 	ctx context.Context,
-	network netconf.Network,
+	network netconf.ID,
 	backends ethbackend.Backends,
 	depositor common.Address,
 ) {
@@ -65,16 +65,16 @@ func ephemeralLoadGenForever(
 
 func depositDevAppOnce(
 	ctx context.Context,
-	network netconf.Network,
+	network netconf.ID,
 	backends ethbackend.Backends,
 	depositor common.Address,
 ) error {
-	app, err := devapp.GetApp(network.ID)
+	app, err := devapp.GetApp(network)
 	if err != nil {
 		return err
 	}
 
-	addrs, err := contracts.GetAddresses(ctx, network.ID)
+	addrs, err := contracts.GetAddresses(ctx, network)
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func depositDevAppOnce(
 		return errors.New("depositor balance too low", "balance", bal, "required", depositAmount)
 	}
 
-	reqs, err := devapp.RequestDeposits(ctx, backend, addrs.SolveInbox, devapp.DepositArgs{
+	reqs, err := devapp.RequestDeposits(ctx, network, backends, addrs.SolveInbox, devapp.DepositArgs{
 		OnBehalfOf: depositor,
 		Amount:     depositAmount,
 	})
@@ -112,7 +112,7 @@ func depositDevAppOnce(
 
 	t0 := time.Now()
 	for {
-		if ok, err := devapp.IsDeposited(ctx, backends, req); err != nil {
+		if ok, err := devapp.IsDeposited(ctx, network, backends, req); err != nil {
 			return err
 		} else if ok {
 			log.Debug(ctx, "Loadgen deposit to devapp complete", "duration", time.Since(t0))

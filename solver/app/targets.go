@@ -11,7 +11,7 @@ import (
 
 var targetsByNetwork = map[netconf.ID][]types.Target{
 	netconf.Devnet:  {devapp.MustGetApp(netconf.Devnet), symbiotic.MustGetApp(netconf.Devnet)},
-	netconf.Staging: {symbiotic.MustGetApp(netconf.Staging)},
+	netconf.Staging: {devapp.MustGetApp(netconf.Devnet), symbiotic.MustGetApp(netconf.Staging)},
 }
 
 // getTarget returns the target for the given network and call.
