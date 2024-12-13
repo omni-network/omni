@@ -16,6 +16,7 @@ import (
 	"github.com/omni-network/omni/lib/buildinfo"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 
@@ -37,13 +38,14 @@ const (
 )
 
 type InitConfig struct {
-	Network netconf.ID
-	Home    string
-	Moniker string
-	Clean   bool
-	Archive bool
-	Debug   bool
-	HaloTag string
+	Network          netconf.ID
+	Home             string
+	Moniker          string
+	Clean            bool
+	Archive          bool
+	Debug            bool
+	HaloTag          string
+	HaloFeatureFlags feature.Flags
 }
 
 func (c InitConfig) Verify() error {
@@ -131,6 +133,7 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 		TrustedSync: !cfg.Archive, // Don't state sync if archive
 		AddrBook:    true,
 		HaloCfgFunc: func(haloCfg *halocfg.Config) {
+			haloCfg.FeatureFlags = cfg.HaloFeatureFlags
 			haloCfg.EngineEndpoint = "http://omni_evm:8551"
 			haloCfg.EngineJWTFile = "/geth/jwtsecret"
 			if cfg.Archive {
