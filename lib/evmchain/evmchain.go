@@ -83,6 +83,54 @@ func All() []Metadata {
 	return resp
 }
 
+// Mainnets returns all mainnet evmchain metadatas ordered by chain ID.
+func Mainnets() []Metadata {
+	var resp []Metadata
+
+	mainnets := []uint64{IDEthereum, IDOmniMainnet, IDArbitrumOne, IDBase, IDOptimism}
+	for _, id := range mainnets {
+		resp = append(resp, static[id])
+	}
+
+	sort.Slice(resp, func(i, j int) bool {
+		return resp[i].ChainID < resp[j].ChainID
+	})
+
+	return resp
+}
+
+// Testnets returns all testnet evmchain metadatas ordered by chain ID.
+func Testnets() []Metadata {
+	var resp []Metadata
+
+	testnets := []uint64{IDOmniOmega, IDHolesky, IDSepolia, IDArbSepolia, IDOpSepolia, IDBaseSepolia}
+	for _, id := range testnets {
+		resp = append(resp, static[id])
+	}
+
+	sort.Slice(resp, func(i, j int) bool {
+		return resp[i].ChainID < resp[j].ChainID
+	})
+
+	return resp
+}
+
+// Ephemerals returns all ephemeral evmchain metadatas ordered by chain ID.
+func Ephemerals() []Metadata {
+	var resp []Metadata
+
+	ephemerals := []uint64{IDOmniStaging, IDOmniDevnet, IDMockL1, IDMockL2, IDMockOp, IDMockArb}
+	for _, id := range ephemerals {
+		resp = append(resp, static[id])
+	}
+
+	sort.Slice(resp, func(i, j int) bool {
+		return resp[i].ChainID < resp[j].ChainID
+	})
+
+	return resp
+}
+
 var static = map[uint64]Metadata{
 	IDEthereum: {
 		ChainID:     IDEthereum,
