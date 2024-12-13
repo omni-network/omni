@@ -33,6 +33,7 @@ func bindInitConfig(cmd *cobra.Command, cfg *InitConfig) {
 	cmd.Flags().BoolVar(&cfg.Clean, "clean", cfg.Clean, "Delete contents of home directory")
 	cmd.Flags().BoolVar(&cfg.Archive, "archive", cfg.Archive, "Enable archive mode. Note this requires more disk space")
 	cmd.Flags().BoolVar(&cfg.Debug, "debug", cfg.Debug, "Configure nodes with debug log level")
+	cmd.Flags().StringVar(&cfg.HaloTag, "halo-tag", cfg.HaloTag, "Configure halo tag to use for node")
 }
 
 func bindAVSAddress(cmd *cobra.Command, addr *string) {
