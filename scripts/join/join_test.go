@@ -16,8 +16,11 @@ import (
 	"time"
 
 	clicmd "github.com/omni-network/omni/cli/cmd"
+	"github.com/omni-network/omni/e2e/manifests"
+	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
@@ -25,16 +28,16 @@ import (
 
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 
+	"github.com/naoina/toml"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
 )
 
 var (
-	logsFile     = flag.String("logs_file", "join_test.log", "File to write docker logs to")
-	network      = flag.String("network", "omega", "Network to join (default: omega)")
-	integration  = flag.Bool("integration", false, "Run integration tests")
-	release      = flag.String("halo_tag", "main", "Halo docker image tag, empty results in `git rev-parse HEAD`")
-	featureFlags = flag.String("feature_flags", "", "Halo feature flags (comma-separated)")
+	logsFile    = flag.String("logs_file", "join_test.log", "File to write docker logs to")
+	network     = flag.String("network", "omega", "Network to join (default: omega)")
+	integration = flag.Bool("integration", false, "Run integration tests")
+	release     = flag.String("halo_tag", "main", "Halo docker image tag, empty results in `git rev-parse HEAD`")
 )
 
 // TestJoinNetwork starts a local node (using omni operator init-nodes)
@@ -66,7 +69,7 @@ func TestJoinNetwork(t *testing.T) {
 		Home:             home,
 		Moniker:          t.Name(),
 		HaloTag:          haloTag,
-		HaloFeatureFlags: strings.Split(*featureFlags, ","),
+		HaloFeatureFlags: maybeGetFeatureFlags(ctx, networkID),
 	}
 
 	tutil.RequireNoError(t, ensureHaloImage(cfg.HaloTag))
@@ -349,4 +352,21 @@ func getContainerStats(ctx context.Context) (stats, error) {
 	}
 
 	return resp, nil
+}
+
+func maybeGetFeatureFlags(ctx context.Context, network netconf.ID) feature.Flags {
+	if network.IsProtected() {
+		return make([]string, 0) // Protected networks never have feature flags
+	} else if network == netconf.Devnet {
+		panic("cannot join devnet")
+	}
+
+	var manifest types.Manifest
+	err := toml.Unmarshal(manifests.Staging(), &manifest)
+	if err != nil {
+		log.Error(ctx, "failed to parse the manifest", err)
+		return make([]string, 0)
+	}
+
+	return manifest.FeatureFlags
 }
