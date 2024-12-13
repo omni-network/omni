@@ -28,7 +28,7 @@ import (
 
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 
-	"github.com/naoina/toml"
+	"github.com/BurntSushi/toml"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
 )
@@ -362,7 +362,7 @@ func maybeGetFeatureFlags(ctx context.Context, network netconf.ID) feature.Flags
 	}
 
 	var manifest types.Manifest
-	err := toml.Unmarshal(manifests.Staging(), &manifest)
+	_, err := toml.Decode(string(manifests.Staging()), &manifest)
 	if err != nil {
 		log.Error(ctx, "failed to parse the manifest", err)
 		return make([]string, 0)
