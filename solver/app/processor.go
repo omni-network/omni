@@ -25,33 +25,33 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 				return errors.Wrap(err, "parse id")
 			}
 
-			offset := reqIDOffset(reqID)
-			statusOffset.WithLabelValues(deps.ChainName(chainID), statusString(event.Status)).Set(float64(offset))
-			ctx := log.WithCtx(ctx, "status", statusString(event.Status), "req_id", offset)
-
 			req, _, err := deps.GetRequest(ctx, chainID, reqID)
 			if err != nil {
 				return errors.Wrap(err, "current status")
-			} else if event.Status != req.Status {
+			}
+
+			target := deps.TargetName(req)
+			statusOffset.WithLabelValues(deps.ChainName(chainID), target, statusString(event.Status)).Set(float64(reqID.Uint64()))
+			ctx := log.WithCtx(ctx, "target", target, "status", statusString(event.Status), "req_id", reqID)
+			log.Debug(ctx, "Processing request event")
+
+			if event.Status != req.Status {
 				// TODO(corver): Detect unexpected on-chain status.
 				log.Info(ctx, "Ignoring mismatching old event", "actual", statusString(req.Status))
 				continue
 			}
-
-			ctx = log.WithCtx(ctx, "target", deps.TargetName(req))
-			log.Debug(ctx, "Processing request event")
 
 			switch event.Status {
 			case statusPending:
 				if reason, reject, err := deps.ShouldReject(ctx, chainID, req); err != nil {
 					return errors.Wrap(err, "should reject")
 				} else if reject {
-					log.Info(ctx, "Rejecting request", "reason", reason)
+					// ShouldReject does reject logging since it has more information.
 					if err := deps.Reject(ctx, chainID, req, reason); err != nil {
 						return errors.Wrap(err, "reject request")
 					}
 				} else {
-					log.Info(ctx, "Accepting request", "reason", reason)
+					log.Info(ctx, "Accepting request")
 					if err := deps.Accept(ctx, chainID, req); err != nil {
 						return errors.Wrap(err, "accept request")
 					}
@@ -72,7 +72,7 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 				return errors.New("unknown status [BUG]")
 			}
 
-			processedEvents.WithLabelValues(deps.ChainName(chainID), statusString(event.Status)).Inc()
+			processedEvents.WithLabelValues(deps.ChainName(chainID), target, statusString(event.Status)).Inc()
 		}
 
 		return deps.SetCursor(ctx, chainID, height)

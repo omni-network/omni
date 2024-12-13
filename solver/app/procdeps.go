@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/umath"
+	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -20,8 +21,8 @@ import (
 
 // procDeps abstracts dependencies for the event processor allowed simplified testing.
 type procDeps struct {
-	ParseID      func(chainID uint64, log types.Log) ([32]byte, error)
-	GetRequest   func(ctx context.Context, chainID uint64, id [32]byte) (bindings.SolveRequest, bool, error)
+	ParseID      func(chainID uint64, log types.Log) (stypes.ReqID, error)
+	GetRequest   func(ctx context.Context, chainID uint64, id stypes.ReqID) (bindings.SolveRequest, bool, error)
 	ShouldReject func(ctx context.Context, chainID uint64, req bindings.SolveRequest) (rejectReason, bool, error)
 	SetCursor    func(ctx context.Context, chainID uint64, height uint64) error
 
@@ -120,7 +121,7 @@ func newFulfiller(
 			}
 		}
 
-		if err := target.DebugCall(ctx, req.Call); err != nil {
+		if err := target.LogCall(ctx, req.Call); err != nil {
 			return errors.Wrap(err, "debug call")
 		}
 
@@ -252,6 +253,13 @@ func newRejector(
 			return err
 		}
 
+		// Ensure latest on-chain request is still pending
+		if latest, err := inbox.GetRequest(&bind.CallOpts{Context: ctx}, req.Id); err != nil {
+			return errors.Wrap(err, "get request")
+		} else if latest.Status != statusPending {
+			return errors.New("request status not pending anymore")
+		}
+
 		txOpts, err := backend.BindOpts(ctx, solverAddr)
 		if err != nil {
 			return err
@@ -300,24 +308,24 @@ func newAcceptor(
 	}
 }
 
-func newIDParser(inboxContracts map[uint64]*bindings.SolveInbox) func(chainID uint64, log types.Log) ([32]byte, error) {
-	return func(chainID uint64, log types.Log) ([32]byte, error) {
+func newIDParser(inboxContracts map[uint64]*bindings.SolveInbox) func(chainID uint64, log types.Log) (stypes.ReqID, error) {
+	return func(chainID uint64, log types.Log) (stypes.ReqID, error) {
 		inbox, ok := inboxContracts[chainID]
 		if !ok {
-			return [32]byte{}, errors.New("unknown chain")
+			return stypes.ReqID{}, errors.New("unknown chain")
 		}
 
 		event, ok := eventsByTopic[log.Topics[0]]
 		if !ok {
-			return [32]byte{}, errors.New("unknown event")
+			return stypes.ReqID{}, errors.New("unknown event")
 		}
 
 		return event.ParseID(inbox.SolveInboxFilterer, log)
 	}
 }
 
-func newRequestGetter(inboxContracts map[uint64]*bindings.SolveInbox) func(ctx context.Context, chainID uint64, id [32]byte) (bindings.SolveRequest, bool, error) {
-	return func(ctx context.Context, chainID uint64, id [32]byte) (bindings.SolveRequest, bool, error) {
+func newRequestGetter(inboxContracts map[uint64]*bindings.SolveInbox) func(ctx context.Context, chainID uint64, id stypes.ReqID) (bindings.SolveRequest, bool, error) {
+	return func(ctx context.Context, chainID uint64, id stypes.ReqID) (bindings.SolveRequest, bool, error) {
 		inbox, ok := inboxContracts[chainID]
 		if !ok {
 			return bindings.SolveRequest{}, false, errors.New("unknown chain")

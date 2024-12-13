@@ -2,11 +2,26 @@ package types
 
 import (
 	"context"
+	"encoding/binary"
+	"strconv"
 
 	"github.com/omni-network/omni/contracts/bindings"
 
 	"github.com/ethereum/go-ethereum/common"
 )
+
+// ReqID is a inbox request ID.
+type ReqID [32]byte
+
+// Uint64 returns the req ID as a BigEndian uint64 (monotonically incrementing number).
+func (r ReqID) Uint64() uint64 {
+	return binary.BigEndian.Uint64(r[32-8:])
+}
+
+// String returns the Uint64 representation of the req ID as a string.
+func (r ReqID) String() string {
+	return strconv.FormatUint(r.Uint64(), 10)
+}
 
 // Target is the interface for a target contract the solver can interact with.
 type Target interface {
@@ -26,8 +41,8 @@ type Target interface {
 	// TODO(corver): Return reject reason.
 	Verify(srcChainID uint64, call bindings.SolveCall, deposits []bindings.SolveDeposit) error
 
-	// DebugCall logs the call for debugging purposes.
-	DebugCall(ctx context.Context, call bindings.SolveCall) error
+	// LogCall logs the call for debugging purposes.
+	LogCall(ctx context.Context, call bindings.SolveCall) error
 
 	// LogMetadata logs target metadata.
 	LogMetadata(ctx context.Context)

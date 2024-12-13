@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"encoding/binary"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -31,9 +30,4 @@ func detectContractChains(ctx context.Context, network netconf.Network, backends
 	}
 
 	return resp, nil
-}
-
-// reqIDOffset returns the req ID as a uint64 offset (monotonically incrementing number).
-func reqIDOffset(reqID [32]byte) uint64 {
-	return binary.BigEndian.Uint64(reqID[32-8:])
 }

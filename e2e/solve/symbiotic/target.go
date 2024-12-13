@@ -99,13 +99,13 @@ func (a App) Verify(srcChainID uint64, call bindings.SolveCall, deposits []bindi
 	return nil
 }
 
-func (App) DebugCall(ctx context.Context, call bindings.SolveCall) error {
+func (App) LogCall(ctx context.Context, call bindings.SolveCall) error {
 	dep, err := unpackDeposit(call.Data)
 	if err != nil {
 		return errors.Wrap(err, "unpack deposit")
 	}
 
-	log.Debug(ctx, "DevSymbiotic", "method", "wstETH_collateral.deposit",
+	log.Debug(ctx, "Symbiotic deposit", "method", "wstETH_collateral.deposit",
 		"recipient", dep.Recipient, "amount", dep.Amount)
 
 	return nil
