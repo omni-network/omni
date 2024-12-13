@@ -162,9 +162,15 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 		return errors.Wrap(err, "init halo")
 	}
 
-	upgrade, err := detectCurrentUpgrade(ctx, cfg.Network)
-	if err != nil {
-		return errors.Wrap(err, "detect upgrade")
+	var upgrade string
+	// For non-archive nodes, we want to detect the latest upgrade and start
+	// the local node with this binary, so that the consensus snapshot pulled
+	// from the network is compatible with the local binary.
+	if !cfg.Archive {
+		upgrade, err = detectCurrentUpgrade(ctx, cfg.Network)
+		if err != nil {
+			return errors.Wrap(err, "detect upgrade")
+		}
 	}
 
 	err = writeComposeFile(ctx, cfg, upgrade)
