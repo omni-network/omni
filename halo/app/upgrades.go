@@ -25,6 +25,16 @@ var upgrades = []Upgrade{
 	},
 }
 
+// AllUpgrades returns the names of all known upgrades.
+func AllUpgrades() []string {
+	var resp []string
+	for _, u := range upgrades {
+		resp = append(resp, u.Name)
+	}
+
+	return resp
+}
+
 // NextUpgrade returns the next upgrade name after the provided previous upgrade..
 func NextUpgrade(prev string) (string, error) {
 	if prev == "" { // Return the first upgrade
