@@ -4,6 +4,7 @@ services:
     container_name: halo
     image: omniops/halovisor:{{.HaloTag}}
     restart: unless-stopped
+    environment: [{{ if .GenesisBinary}}COSMOVISOR_CUSTOM_GENESIS={{.GenesisBinary}}{{ end }}]
     ports:
       - 26656:26656   # CometBFT Consensus P2P
       - 26657:26657   # CometBFT Consensus RPC

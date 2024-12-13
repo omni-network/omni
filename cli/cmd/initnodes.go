@@ -11,11 +11,13 @@ import (
 	"text/template"
 
 	"github.com/omni-network/omni/e2e/app/geth"
+	haloapp "github.com/omni-network/omni/halo/app"
 	halocmd "github.com/omni-network/omni/halo/cmd"
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/lib/buildinfo"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 
@@ -37,13 +39,14 @@ const (
 )
 
 type InitConfig struct {
-	Network netconf.ID
-	Home    string
-	Moniker string
-	Clean   bool
-	Archive bool
-	Debug   bool
-	HaloTag string
+	Network          netconf.ID
+	Home             string
+	Moniker          string
+	Clean            bool
+	Archive          bool
+	Debug            bool
+	HaloTag          string
+	HaloFeatureFlags feature.Flags
 }
 
 func (c InitConfig) Verify() error {
@@ -131,6 +134,7 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 		TrustedSync: !cfg.Archive, // Don't state sync if archive
 		AddrBook:    true,
 		HaloCfgFunc: func(haloCfg *halocfg.Config) {
+			haloCfg.FeatureFlags = cfg.HaloFeatureFlags
 			haloCfg.EngineEndpoint = "http://omni_evm:8551"
 			haloCfg.EngineJWTFile = "/geth/jwtsecret"
 			if cfg.Archive {
@@ -158,12 +162,60 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 		return errors.Wrap(err, "init halo")
 	}
 
-	err = writeComposeFile(ctx, cfg)
+	var upgrade string
+	// For non-archive nodes, we want to detect the latest upgrade and start
+	// the local node with this binary, so that the consensus snapshot pulled
+	// from the network is compatible with the local binary.
+	if !cfg.Archive {
+		upgrade, err = detectCurrentUpgrade(ctx, cfg.Network)
+		if err != nil {
+			return errors.Wrap(err, "detect upgrade")
+		}
+	}
+
+	err = writeComposeFile(ctx, cfg, upgrade)
 	if err != nil {
 		return errors.Wrap(err, "write compose file")
 	}
 
 	return nil
+}
+
+// detectCurrentUpgrade detects the current upgrade applied on the network.
+// Note it only detects known upgrades. It return empty string if no known upgrade is applied.
+func detectCurrentUpgrade(ctx context.Context, network netconf.ID) (string, error) {
+	rpcServer := network.Static().ConsensusRPC()
+	rpcCl, err := rpchttp.New(rpcServer, "/websocket")
+	if err != nil {
+		return "", errors.Wrap(err, "create rpc client")
+	}
+	cprov := cprovider.NewABCI(rpcCl, network)
+
+	// Cosmos doesn't provide an API to simply query current applied upgrade.
+	// So we iterate through knowns and check which is active.
+	for _, upgrade := range haloapp.AllUpgrades() {
+		plan, ok, err := cprov.AppliedPlan(ctx, upgrade)
+		if err != nil {
+			return "", errors.Wrap(err, "fetching applied plan")
+		} else if !ok {
+			continue
+		} else if upgrade != plan.Name {
+			return "", errors.New("unexpected upgrade plan name", "expected", upgrade, "actual", plan.Name)
+		}
+
+		log.Info(ctx, "Detected activated network upgrade", "upgrade_name", plan.Name, "upgrade_height", plan.Height)
+
+		return upgrade, nil
+	}
+
+	// No known upgrade detected.
+	if network != netconf.Devnet { // This is only expected for devnet
+		return "", errors.New("failed to detect known network upgrade (use latest cli version)")
+	}
+
+	log.Info(ctx, "No known network upgrade detected")
+
+	return "", nil
 }
 
 // maybeDownloadGenesis downloads the genesis files via cprovider the network if they are not already set.
@@ -191,7 +243,7 @@ func maybeDownloadGenesis(ctx context.Context, network netconf.ID) error {
 	return netconf.SetEphemeralGenesis(network, execution, consensus)
 }
 
-func writeComposeFile(ctx context.Context, cfg InitConfig) error {
+func writeComposeFile(ctx context.Context, cfg InitConfig, upgrade string) error {
 	composeFile := filepath.Join(cfg.Home, "compose.yaml")
 
 	if cmtos.FileExists(composeFile) {
@@ -223,11 +275,13 @@ func writeComposeFile(ctx context.Context, cfg InitConfig) error {
 		GethTag       string
 		GethVerbosity int
 		GethArchive   bool
+		GenesisBinary string
 	}{
 		HaloTag:       cfg.HaloTag,
 		GethTag:       geth.Version,
 		GethVerbosity: verbosity,
 		GethArchive:   cfg.Archive,
+		GenesisBinary: upgrade,
 	})
 	if err != nil {
 		return errors.Wrap(err, "execute template")
