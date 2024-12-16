@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/spf13/cobra"
@@ -28,11 +29,13 @@ func bindRegConfig(cmd *cobra.Command, cfg *RegConfig) {
 
 func bindInitConfig(cmd *cobra.Command, cfg *InitConfig) {
 	netconf.BindFlag(cmd.Flags(), &cfg.Network)
+	feature.BindFlag(cmd.Flags(), &cfg.HaloFeatureFlags)
 	cmd.Flags().StringVar(&cfg.Moniker, "moniker", "", "Human-readable node name used in p2p networking")
 	cmd.Flags().StringVar(&cfg.Home, "home", "", "Home directory. If empty, defaults to: $HOME/.omni/<network>/")
 	cmd.Flags().BoolVar(&cfg.Clean, "clean", cfg.Clean, "Delete contents of home directory")
 	cmd.Flags().BoolVar(&cfg.Archive, "archive", cfg.Archive, "Enable archive mode. Note this requires more disk space")
 	cmd.Flags().BoolVar(&cfg.Debug, "debug", cfg.Debug, "Configure nodes with debug log level")
+	cmd.Flags().StringVar(&cfg.HaloTag, "halo-tag", cfg.HaloTag, "Configure halo tag to use for node")
 }
 
 func bindAVSAddress(cmd *cobra.Command, addr *string) {
