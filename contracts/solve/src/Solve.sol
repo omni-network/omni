@@ -16,17 +16,6 @@ library Solve {
     }
 
     /**
-     * @notice Reason for rejecting a request.
-     */
-    enum RejectReason {
-        None,
-        DestCallReverts,
-        InsufficientFee,
-        InsufficientInventory,
-        InvalidTarget
-    }
-
-    /**
      * @notice A request to execute a call on another chain, backed by a deposit.
      * @param id            ID for the request, globally unique per inbox.
      * @param updatedAt     Timestamp request status was last updated.

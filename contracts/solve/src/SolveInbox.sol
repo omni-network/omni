@@ -162,8 +162,9 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
      * @notice Reject an open request.
      * @dev Only a whitelisted solver can reject.
      * @param id  ID of the request.
+     * @param reason  Reason code for rejecting the request (see solver/app/reject.go for current codes)
      */
-    function reject(bytes32 id, Solve.RejectReason reason) external onlyRoles(SOLVER) nonReentrant {
+    function reject(bytes32 id, uint8 reason) external onlyRoles(SOLVER) nonReentrant {
         Solve.Request storage req = _requests[id];
         if (req.status != Solve.Status.Pending) revert NotPending();
 

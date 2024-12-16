@@ -42,7 +42,7 @@ contract SolveInbox_accept_Test is InboxBase {
 
         // cannot accept rejected request
         vm.startPrank(solver);
-        inbox.reject(id, Solve.RejectReason.None);
+        inbox.reject({ id: id, reason: 0 });
         vm.expectRevert(SolveInbox.NotPending.selector);
         inbox.accept(id);
         vm.stopPrank();
