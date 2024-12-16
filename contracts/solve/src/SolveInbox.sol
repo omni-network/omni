@@ -117,6 +117,13 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
     }
 
     /**
+     * @notice Returns the update history for a request.
+     */
+    function getUpdateHistory(bytes32 id) external view returns (Solve.StatusUpdate[] memory) {
+        return _requests[id].updateHistory;
+    }
+
+    /**
      * @notice Open a request to execute a call on another chain, backed by deposits.
      *  Token deposits are transferred from msg.sender to this inbox.
      * @param call      Details of the call to be executed on another chain.
@@ -152,6 +159,9 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
         req.updatedAt = uint40(block.timestamp);
         req.status = Solve.Status.Accepted;
         req.acceptedBy = msg.sender;
+        req.updateHistory.push(
+            Solve.StatusUpdate({ status: Solve.Status.Accepted, timestamp: uint40(block.timestamp) })
+        );
 
         _latestReqByStatus[Solve.Status.Accepted] = id;
 
@@ -170,6 +180,9 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
 
         req.updatedAt = uint40(block.timestamp);
         req.status = Solve.Status.Rejected;
+        req.updateHistory.push(
+            Solve.StatusUpdate({ status: Solve.Status.Rejected, timestamp: uint40(block.timestamp) })
+        );
 
         _latestReqByStatus[Solve.Status.Rejected] = id;
 
@@ -188,6 +201,9 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
 
         req.updatedAt = uint40(block.timestamp);
         req.status = Solve.Status.Reverted;
+        req.updateHistory.push(
+            Solve.StatusUpdate({ status: Solve.Status.Reverted, timestamp: uint40(block.timestamp) })
+        );
 
         _latestReqByStatus[Solve.Status.Reverted] = id;
 
@@ -211,6 +227,9 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
 
         req.updatedAt = uint40(block.timestamp);
         req.status = Solve.Status.Fulfilled;
+        req.updateHistory.push(
+            Solve.StatusUpdate({ status: Solve.Status.Fulfilled, timestamp: uint40(block.timestamp) })
+        );
 
         _latestReqByStatus[Solve.Status.Fulfilled] = id;
 
@@ -229,6 +248,7 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
 
         req.updatedAt = uint40(block.timestamp);
         req.status = Solve.Status.Claimed;
+        req.updateHistory.push(Solve.StatusUpdate({ status: Solve.Status.Claimed, timestamp: uint40(block.timestamp) }));
 
         _latestReqByStatus[Solve.Status.Claimed] = id;
 
@@ -270,6 +290,7 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
         req.status = Solve.Status.Pending;
         req.from = from;
         req.call = call;
+        req.updateHistory.push(Solve.StatusUpdate({ status: Solve.Status.Pending, timestamp: uint40(block.timestamp) }));
 
         _latestReqByStatus[Solve.Status.Pending] = id;
 

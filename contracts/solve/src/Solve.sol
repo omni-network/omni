@@ -16,6 +16,16 @@ library Solve {
     }
 
     /**
+     * @notice Details of a status update.
+     * @param status    Status of the request.
+     * @param timestamp Timestamp of the status update.
+     */
+    struct StatusUpdate {
+        Status status;
+        uint40 timestamp;
+    }
+
+    /**
      * @notice A request to execute a call on another chain, backed by a deposit.
      * @param id            ID for the request, globally unique per inbox.
      * @param updatedAt     Timestamp request status was last updated.
@@ -34,6 +44,7 @@ library Solve {
         address acceptedBy;
         Call call;
         Deposit[] deposits;
+        StatusUpdate[] updateHistory;
     }
 
     /**
