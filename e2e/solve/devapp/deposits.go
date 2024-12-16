@@ -47,7 +47,7 @@ func TestFlow(ctx context.Context, network netconf.Network, endpoints xchain.RPC
 	}
 
 	// Also do invalid deposits
-	const numInvalid = 0 // TODO(corver): Figure out why rejects are failing, then set this to 2.
+	const numInvalid = 2
 	invalids, err := makeDevnetDeposits(ctx, network.ID, backends, numInvalid, WithInvalidCall())
 	if err != nil {
 		return err
