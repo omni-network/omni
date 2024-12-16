@@ -16,20 +16,25 @@ const (
 	rejectDestCallReverts       rejectReason = 1
 	rejectInsufficientFee       rejectReason = 2
 	rejectInsufficientInventory rejectReason = 3
-	rejectNoTarget              rejectReason = 4
+	rejectInvalidTarget         rejectReason = 4
 )
 
 // newShouldRejector returns as ShouldReject function for the given network.
+//
+// ShouldReject returns true and a reason if the request should be rejected.
+// It returns false if the request should be accepted.
+// Errors are unexpected and refer to internal server problems.
 func newShouldRejector(network netconf.ID) func(ctx context.Context, chainID uint64, req bindings.SolveRequest) (rejectReason, bool, error) {
 	return func(ctx context.Context, srcChainID uint64, req bindings.SolveRequest) (rejectReason, bool, error) {
+		// reject swallows the error (only logging it) and returns true and the reject reason.
 		reject := func(reason rejectReason, err error) (rejectReason, bool, error) {
-			log.Warn(ctx, "Rejecting request", err, "reason", reason, "call", req.Call)
-			return reason, true, err
+			log.InfoErr(ctx, "Rejecting request", err, "reason", reason)
+			return reason, true, nil
 		}
 
 		target, err := getTarget(network, req.Call)
 		if err != nil {
-			return reject(rejectNoTarget, err)
+			return reject(rejectInvalidTarget, err)
 		}
 
 		if err := target.Verify(srcChainID, req.Call, req.Deposits); err != nil {

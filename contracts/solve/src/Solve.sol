@@ -22,7 +22,8 @@ library Solve {
         None,
         DestCallReverts,
         InsufficientFee,
-        InsufficientInventory
+        InsufficientInventory,
+        InvalidTarget
     }
 
     /**

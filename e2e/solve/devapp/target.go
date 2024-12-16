@@ -95,7 +95,7 @@ func (a App) Verify(srcChainID uint64, call bindings.SolveCall, deposits []bindi
 	return nil
 }
 
-func (a App) DebugCall(ctx context.Context, call bindings.SolveCall) error {
+func (a App) LogCall(ctx context.Context, call bindings.SolveCall) error {
 	args, err := unpackDeposit(call.Data)
 	if err != nil {
 		return errors.Wrap(err, "unpack deposit")
@@ -105,7 +105,7 @@ func (a App) DebugCall(ctx context.Context, call bindings.SolveCall) error {
 		return errors.New("unexpected target", "expected", a.L1Vault, "actual", call.Target)
 	}
 
-	log.Debug(ctx, "MockVault.Deposit", "on_behalf_of", args.OnBehalfOf, "amount", args.Amount, "target", call.Target)
+	log.Debug(ctx, "Devapp mock vault deposit", "on_behalf_of", args.OnBehalfOf, "amount", args.Amount, "target", call.Target)
 
 	return nil
 }

@@ -93,35 +93,61 @@ func depositDevAppOnce(
 		return errors.New("depositor balance too low", "balance", bal, "required", depositAmount)
 	}
 
-	reqs, err := devapp.RequestDeposits(ctx, network, backends, addrs.SolveInbox, devapp.DepositArgs{
+	// Get target vault balance before deposit
+	startBal, err := devapp.DepositedBalance(ctx, network, backends, depositor)
+	if err != nil {
+		return err
+	}
+	expectedBal := new(big.Int).Add(startBal, depositAmount)
+
+	req, err := devapp.RequestDeposit(ctx, network, backends, addrs.SolveInbox, devapp.DepositArgs{
 		OnBehalfOf: depositor,
 		Amount:     depositAmount,
 	})
 	if err != nil {
 		return errors.Wrap(err, "request deposits")
-	} else if len(reqs) != 1 {
-		return errors.New("expected 1 deposit request", "got", len(reqs))
 	}
-	req := reqs[0]
-	ctx = log.WithCtx(ctx, "req_id", reqIDOffset(req.ID))
+
+	ctx = log.WithCtx(ctx, "req_id", req.ID)
 	log.Debug(ctx, "Loadgen requested deposit to devapp")
 
-	// Wait up to 1min for deposit to complete
-	ctx, cancel := context.WithTimeout(ctx, time.Minute)
+	// Wait up to 1 hour for deposit to complete and claimed (fulfill xmsg uses ConfFinalized)
+	ctx, cancel := context.WithTimeout(ctx, time.Hour)
 	defer cancel()
 
 	t0 := time.Now()
 	for {
-		if ok, err := devapp.IsDeposited(ctx, network, backends, req); err != nil {
+		actualBal, err := devapp.DepositedBalance(ctx, network, backends, req.Deposit.OnBehalfOf)
+		if err != nil {
 			return err
-		} else if ok {
+		} else if actualBal.Cmp(expectedBal) == 0 {
 			log.Debug(ctx, "Loadgen deposit to devapp complete", "duration", time.Since(t0))
 			break
 		}
 
 		time.Sleep(time.Second)
 		if ctx.Err() != nil {
-			return errors.New("timeout waiting for deposit")
+			return errors.New("timeout waiting for deposit",
+				"req_id", req.ID,
+				"start_bal", startBal,
+				"expected_bal", expectedBal,
+				"actual_bal", actualBal,
+			)
+		}
+	}
+
+	for {
+		status, err := devapp.RequestStatus(ctx, network, backends, req.ID)
+		if err != nil {
+			return err
+		} else if status == statusClaimed {
+			log.Debug(ctx, "Loadgen deposit to devapp claimed", "duration", time.Since(t0))
+			break
+		}
+
+		time.Sleep(time.Second * 5)
+		if ctx.Err() != nil {
+			return errors.New("timeout waiting for deposit", "req_id", req.ID)
 		}
 	}
 

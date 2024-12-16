@@ -6,6 +6,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/tutil"
+	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -98,10 +99,10 @@ func TestEventProcessor(t *testing.T) {
 			actual := ignored
 
 			deps := procDeps{
-				ParseID: func(_ uint64, log types.Log) ([32]byte, error) {
-					return log.Topics[1], nil // Return second topic as req ID
+				ParseID: func(_ uint64, log types.Log) (stypes.ReqID, error) {
+					return stypes.ReqID(log.Topics[1]), nil // Return second topic as req ID
 				},
-				GetRequest: func(ctx context.Context, _ uint64, id [32]byte) (bindings.SolveRequest, bool, error) {
+				GetRequest: func(ctx context.Context, _ uint64, id stypes.ReqID) (bindings.SolveRequest, bool, error) {
 					return bindings.SolveRequest{
 						Id:     id,
 						Status: test.getStatus,

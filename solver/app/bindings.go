@@ -3,6 +3,7 @@ package app
 import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
+	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -36,7 +37,7 @@ var (
 type eventMeta struct {
 	Topic   common.Hash
 	Status  uint8
-	ParseID func(contract bindings.SolveInboxFilterer, log types.Log) ([32]byte, error)
+	ParseID func(contract bindings.SolveInboxFilterer, log types.Log) (stypes.ReqID, error)
 }
 
 var (
@@ -114,55 +115,55 @@ func statusString(status uint8) string {
 	}
 }
 
-func parseRequested(contract bindings.SolveInboxFilterer, log types.Log) ([32]byte, error) {
+func parseRequested(contract bindings.SolveInboxFilterer, log types.Log) (stypes.ReqID, error) {
 	e, err := contract.ParseRequested(log)
 	if err != nil {
-		return [32]byte{}, errors.Wrap(err, "parse requested")
+		return stypes.ReqID{}, errors.Wrap(err, "parse requested")
 	}
 
 	return e.Id, nil
 }
 
-func parseAccepted(contract bindings.SolveInboxFilterer, log types.Log) ([32]byte, error) {
+func parseAccepted(contract bindings.SolveInboxFilterer, log types.Log) (stypes.ReqID, error) {
 	e, err := contract.ParseAccepted(log)
 	if err != nil {
-		return [32]byte{}, errors.Wrap(err, "parse accepted")
+		return stypes.ReqID{}, errors.Wrap(err, "parse accepted")
 	}
 
 	return e.Id, nil
 }
 
-func parseRejected(contract bindings.SolveInboxFilterer, log types.Log) ([32]byte, error) {
+func parseRejected(contract bindings.SolveInboxFilterer, log types.Log) (stypes.ReqID, error) {
 	e, err := contract.ParseRejected(log)
 	if err != nil {
-		return [32]byte{}, errors.Wrap(err, "parse rejected")
+		return stypes.ReqID{}, errors.Wrap(err, "parse rejected")
 	}
 
 	return e.Id, nil
 }
 
-func parseReverted(contract bindings.SolveInboxFilterer, log types.Log) ([32]byte, error) {
+func parseReverted(contract bindings.SolveInboxFilterer, log types.Log) (stypes.ReqID, error) {
 	e, err := contract.ParseReverted(log)
 	if err != nil {
-		return [32]byte{}, errors.Wrap(err, "parse reverted")
+		return stypes.ReqID{}, errors.Wrap(err, "parse reverted")
 	}
 
 	return e.Id, nil
 }
 
-func parseFulfilled(contract bindings.SolveInboxFilterer, log types.Log) ([32]byte, error) {
+func parseFulfilled(contract bindings.SolveInboxFilterer, log types.Log) (stypes.ReqID, error) {
 	e, err := contract.ParseFulfilled(log)
 	if err != nil {
-		return [32]byte{}, errors.Wrap(err, "parse fulfilled")
+		return stypes.ReqID{}, errors.Wrap(err, "parse fulfilled")
 	}
 
 	return e.Id, nil
 }
 
-func parseClaimed(contract bindings.SolveInboxFilterer, log types.Log) ([32]byte, error) {
+func parseClaimed(contract bindings.SolveInboxFilterer, log types.Log) (stypes.ReqID, error) {
 	e, err := contract.ParseClaimed(log)
 	if err != nil {
-		return [32]byte{}, errors.Wrap(err, "parse claimed")
+		return stypes.ReqID{}, errors.Wrap(err, "parse claimed")
 	}
 
 	return e.Id, nil
