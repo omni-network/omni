@@ -4,8 +4,8 @@ pragma solidity =0.8.24;
 import { OwnableRoles } from "solady/src/auth/OwnableRoles.sol";
 import { ReentrancyGuard } from "solady/src/utils/ReentrancyGuard.sol";
 import { Initializable } from "solady/src/utils/Initializable.sol";
-import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { XAppBase } from "core/src/pkg/XAppBase.sol";
+import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { ISolverNetInbox } from "./interfaces/ISolverNetInbox.sol";
 import { IArbSys } from "../interfaces/IArbSys.sol";
 
@@ -32,6 +32,13 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBas
      * @dev Used to get Arbitrum block number.
      */
     address internal constant ARB_SYS = 0x0000000000000000000000000000000000000064;
+
+    /**
+     * @notice Typehash for the order data.
+     */
+    bytes32 internal constant ORDER_DATA_TYPEHASH = keccak256(
+        "OrderData(uint64 destChainId,TokenDeposit[] deposits,TokenPrereq[] prereqs,Call[] calls)TokenDeposit(address token,uint256 amount)TokenPrereq(bytes32 token,uint256 amount,bytes32 spender)Call(bytes32 target,uint256 amount,bytes data)"
+    ); // Not really needed until we support more than one order type
 
     /**
      * @dev uint repr of last assigned order ID.
@@ -106,7 +113,9 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBas
      * @dev Validate the onchain order.
      */
     function validateOnchainOrder(OnchainCrossChainOrder calldata order) external view returns (bool) {
-        _validateOnchainOrder(order);
+        OrderData memory orderData = _validateOnchainOrder(order);
+        _validateTokenPrereqs(orderData.prereqs);
+        _validateCalls(orderData.calls);
         return true;
     }
 
@@ -290,7 +299,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBas
      */
     function _validateOnchainOrder(OnchainCrossChainOrder calldata order) internal view returns (OrderData memory) {
         if (order.fillDeadline < block.timestamp) revert InvalidFillDeadline();
-        // TODO: validate orderDataType
+        if (order.orderDataType != ORDER_DATA_TYPEHASH) revert InvalidOrderDataTypehash();
         if (order.orderData.length == 0) revert InvalidOrderData();
 
         OrderData memory orderData = abi.decode(order.orderData, (OrderData));

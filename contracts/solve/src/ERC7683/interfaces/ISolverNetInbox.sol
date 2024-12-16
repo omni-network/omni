@@ -23,6 +23,7 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
     error InvalidFillDeadline();
     error InvalidNativeDeposit();
     error NotPendingOrRejected();
+    error InvalidOrderDataTypehash();
 
     /**
      * @notice Emitted when a request is accepted.
