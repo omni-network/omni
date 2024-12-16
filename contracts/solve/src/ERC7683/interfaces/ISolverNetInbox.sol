@@ -7,6 +7,7 @@ import { ISolverNet } from "./ISolverNet.sol";
 interface ISolverNetInbox is IOriginSettler, ISolverNet {
     error NoCalls();
     error NotOutbox();
+    error NoSpender();
     error NoDeposits();
     error NotPending();
     error ZeroAmount();
@@ -15,16 +16,14 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
     error NotFulfilled();
     error InvalidChain();
     error WrongCallHash();
-    error InvalidDeposit();
     error NoTokenPrereqs();
     error WrongSourceChain();
     error InvalidRecipient();
     error InvalidOrderData();
-    error InvalidTokenPrereq();
     error InvalidFillDeadline();
     error InvalidNativeDeposit();
     error NotPendingOrRejected();
-    
+
     /**
      * @notice Emitted when a request is accepted.
      * @param id  ID of the request.
@@ -87,16 +86,27 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
     }
 
     /**
+     * @notice Details of a token deposit backing a request.
+     * @dev Not stored, only used in opening a request.
+     * @param token  Address of the token.
+     * @param amount Deposit amount.
+     */
+    struct TokenDeposit {
+        address token;
+        uint256 amount;
+    }
+
+    /**
      * @notice Order data for a request.
      * @param destChainId  ID of the destination chain.
      * @param deposits     Array of deposits backing the request.
-     * @param tokenPrereqs Array of token pre-requisites for the destination calls.
+     * @param prereqs      Array of token pre-requisites for the destination calls.
      * @param calls        Array of calls to be executed on the destination chain.
      */
     struct OrderData {
         uint64 destChainId;
-        Output[] deposits;
-        Output[] tokenPrereqs;
+        TokenDeposit[] deposits;
+        TokenPrereq[] prereqs;
         Call[] calls;
     }
 
@@ -132,6 +142,16 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
     function getRequest(bytes32 id) external view returns (Request memory);
 
     /**
+     * @notice Returns the latest request with the given status.
+     */
+    function getLatestRequestByStatus(Status status) external view returns (Request memory);
+
+    /**
+     * @notice Returns the update history for a request.
+     */
+    function getUpdateHistory(bytes32 id) external view returns (StatusUpdate[] memory);
+
+    /**
      * @dev Validate the onchain order.
      */
     function validateOnchainOrder(OnchainCrossChainOrder calldata order) external view returns (bool);
@@ -140,13 +160,6 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
      * @dev Resolve the onchain order.
      */
     function resolve(OnchainCrossChainOrder calldata order) external view returns (ResolvedCrossChainOrder memory);
-
-    /**
-     * @notice Open a request to execute a call on another chain, backed by deposits.
-     * @dev Token deposits are transferred from msg.sender to this inbox.
-     * @param order OnchainCrossChainOrder to open.
-     */
-    function open(OnchainCrossChainOrder calldata order) external;
 
     /**
      * @notice Accept an open request.

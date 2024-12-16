@@ -16,10 +16,16 @@ interface ISolverNet is IERC7683 {
         bytes callData;
     }
 
+    struct TokenPrereq {
+        bytes32 token;
+        bytes32 spender;
+        uint256 amount;
+    }
+
     struct FillOriginData {
         uint64 srcChainId;
         uint64 destChainId;
         Call[] calls;
-        Output[] prereqs;
+        TokenPrereq[] prereqs;
     }
 }

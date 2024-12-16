@@ -50,7 +50,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBa
     bytes internal constant MARK_FULFILLED_STUB_CDATA =
         abi.encodeCall(ISolverNetInbox.markFulfilled, (TypeMax.Bytes32, TypeMax.Bytes32));
 
-        /**
+    /**
      * @notice Address of the inbox contract.
      */
     address internal _inbox;
@@ -108,7 +108,11 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBa
      * @param srcChainId        ID of the source chain.
      * @param fillOriginData    Data emitted on the origin to parameterize the fill
      */
-    function didFulfill(bytes32 srcReqId, uint64 srcChainId, bytes calldata fillOriginData) external view returns (bool) {
+    function didFulfill(bytes32 srcReqId, uint64 srcChainId, bytes calldata fillOriginData)
+        external
+        view
+        returns (bool)
+    {
         return fulfilledCalls[_callHash(srcReqId, srcChainId, fillOriginData)];
     }
 
@@ -129,14 +133,15 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBa
      * @param originData  Data emitted on the origin to parameterize the fill
      * @dev fillerData (currently unused): Data provided by the filler to inform the fill or express their preferences
      */
-    function fill(bytes32 orderId, bytes calldata originData, bytes calldata) external onlyRoles(SOLVER) nonReentrant {
+    function fill(bytes32 orderId, bytes calldata originData, bytes calldata)
+        external
+        payable
+        onlyRoles(SOLVER)
+        nonReentrant
+    {
         FillOriginData memory requestData = abi.decode(originData, (FillOriginData));
 
         if (requestData.destChainId != block.chainid) revert WrongDestChain();
-        for (uint256 i; i < requestData.calls.length; ++i) {
-            Call memory call = requestData.calls[i];
-            if (!allowedCalls[_bytes32ToAddress(call.target)][bytes4(call.callData)]) revert CallNotAllowed();
-        }
 
         // If the call has already been fulfilled, revert. Else, mark fulfilled
         bytes32 callHash = _callHash(orderId, requestData.srcChainId, originData);
@@ -144,25 +149,10 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBa
         fulfilledCalls[callHash] = true;
 
         // Process token pre-requisites. Record pre-call balances (checked against post-call balances)
-        uint256[] memory prereqBalances = new uint256[](requestData.prereqs.length);
-        for (uint256 i; i < requestData.prereqs.length; ++i) {
-            address token = _bytes32ToAddress(requestData.prereqs[i].token);
-            address spender = _bytes32ToAddress(requestData.prereqs[i].recipient);
-
-            prereqBalances[i] = token.balanceOf(address(this));
-            token.safeTransferFrom(msg.sender, address(this), requestData.prereqs[i].amount);
-            token.safeApprove(spender, requestData.prereqs[i].amount);
-        }
+        uint256[] memory prereqBalances = _processTokenPrereqs(requestData);
 
         // Execute the calls
-        uint256 nativeAmount = 0;
-        for (uint256 i; i < requestData.calls.length; ++i) {
-            Call memory call = requestData.calls[i];
-            address target = _bytes32ToAddress(call.target);
-            (bool success,) = payable(target).call{ value: call.value }(call.callData);
-            if (!success) revert CallFailed();
-            nativeAmount += call.value;
-        }
+        uint256 nativeAmount = _executeCalls(requestData);
 
         // Require post-call balances matches pre-call. Ensures prequisites match call transfers.
         for (uint256 i; i < requestData.prereqs.length; ++i) {
@@ -172,16 +162,65 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBa
 
         // Mark the call as fulfilled on inbox
         bytes memory xcalldata = abi.encodeCall(ISolverNetInbox.markFulfilled, (orderId, callHash));
-        uint256 fee = xcall(uint64(requestData.srcChainId), ConfLevel.Finalized, _inbox, xcalldata, MARK_FULFILLED_GAS_LIMIT);
+        uint256 fee =
+            xcall(uint64(requestData.srcChainId), ConfLevel.Finalized, _inbox, xcalldata, MARK_FULFILLED_GAS_LIMIT);
         if (msg.value - nativeAmount < fee) revert InsufficientFee();
+
+        // Refund any overpayment in native currency
+        uint256 refund = msg.value - nativeAmount - fee;
+        if (refund > 0) msg.sender.safeTransferETH(refund);
 
         emit Fulfilled(orderId, callHash, msg.sender);
     }
 
     /**
+     * @dev Process token pre-requisites. Record pre-call balances (checked against post-call balances)
+     * @param requestData Data emitted on the origin to parameterize the fill
+     */
+    function _processTokenPrereqs(FillOriginData memory requestData)
+        internal
+        returns (uint256[] memory prereqBalances)
+    {
+        prereqBalances = new uint256[](requestData.prereqs.length);
+
+        for (uint256 i; i < requestData.prereqs.length; ++i) {
+            address token = _bytes32ToAddress(requestData.prereqs[i].token);
+            address spender = _bytes32ToAddress(requestData.prereqs[i].spender);
+            if (token == address(0)) revert IncorrectPrereqs(); // Native payments do not go in prereqs
+
+            prereqBalances[i] = token.balanceOf(address(this));
+            token.safeTransferFrom(msg.sender, address(this), requestData.prereqs[i].amount);
+            token.safeApprove(spender, requestData.prereqs[i].amount);
+        }
+
+        return prereqBalances;
+    }
+
+    /**
+     * @dev Execute the calls.
+     * @param requestData Data emitted on the origin to parameterize the fill
+     */
+    function _executeCalls(FillOriginData memory requestData) internal returns (uint256 nativeAmount) {
+        for (uint256 i; i < requestData.calls.length; ++i) {
+            Call memory call = requestData.calls[i];
+            address target = _bytes32ToAddress(call.target);
+
+            (bool success,) = payable(target).call{ value: call.value }(call.callData);
+            if (!success) revert CallFailed();
+            nativeAmount += call.value;
+        }
+
+        return nativeAmount;
+    }
+
+    /**
      * @dev Returns call hash. Used to discern fullfilment.
      */
-    function _callHash(bytes32 srcReqId, uint64 srcChainId, bytes memory fillOriginData) internal pure returns (bytes32) {
+    function _callHash(bytes32 srcReqId, uint64 srcChainId, bytes memory fillOriginData)
+        internal
+        pure
+        returns (bytes32)
+    {
         return keccak256(abi.encode(srcReqId, srcChainId, fillOriginData));
     }
 

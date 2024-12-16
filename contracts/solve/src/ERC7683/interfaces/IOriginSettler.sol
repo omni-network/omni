@@ -19,7 +19,7 @@ interface IOriginSettler is IERC7683 {
     /// @dev To be called by the user
     /// @dev This method must emit the Open event
     /// @param order The OnchainCrossChainOrder definition
-    function open(OnchainCrossChainOrder calldata order) external;
+    function open(OnchainCrossChainOrder calldata order) external payable;
 
     /// @notice Resolves a specific GaslessCrossChainOrder into a generic ResolvedCrossChainOrder
     /// @dev Intended to improve standardized integration of various order types and settlement contracts
