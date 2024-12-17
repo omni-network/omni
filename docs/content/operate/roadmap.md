@@ -6,7 +6,7 @@
 
 ## ✅ Public Omega Testnet + Whitelisted Validators
 
-- Operators have been onboarded on Omega testnet. See [public dashbboard](https://omniops.grafana.net/d/ddycpqfje3pxcb/validator-dash-public)
+- Operators have been onboarded on Omega testnet. See [public dashboard](https://omniops.grafana.net/d/ddycpqfje3pxcb/validator-dash-public)
 - Operators have applied the [Uluwatu](uluwatu.md) network upgrade.
 
 ## ⏳ Mainnet - Beta
@@ -29,7 +29,7 @@ After Mainnet Beta is live and stable, we will turn our sites to several staking
 
 We plan to batch release these in 3-4 network upgrades.
 
-💡 Please note that the current Omni AVS contract is deployed to mainnet, but will require an upgrade in order to support separation of validator & operator keys (in addition to a few other updrades). This will require you to re-register your operator.
+💡 Please note that the current Omni AVS contract is deployed to mainnet, but will require an upgrade in order to support separation of validator & operator keys (in addition to a few other upgrades). This will require you to re-register your operator.
 
 ## 🗺️ Mainnet++
 
