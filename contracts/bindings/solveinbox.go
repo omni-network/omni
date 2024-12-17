@@ -46,14 +46,13 @@ type SolveDeposit struct {
 
 // SolveRequest is an auto generated low-level Go binding around an user-defined struct.
 type SolveRequest struct {
-	Id            [32]byte
-	UpdatedAt     *big.Int
-	Status        uint8
-	From          common.Address
-	AcceptedBy    common.Address
-	Call          SolveCall
-	Deposits      []SolveDeposit
-	UpdateHistory []SolveStatusUpdate
+	Id         [32]byte
+	Status     uint8
+	From       common.Address
+	AcceptedBy common.Address
+	Call       SolveCall
+	Deposits   []SolveDeposit
+	History    []SolveStatusUpdate
 }
 
 // SolveStatusUpdate is an auto generated low-level Go binding around an user-defined struct.
@@ -305,7 +304,7 @@ func (_SolveInbox *SolveInboxCallerSession) DeployedAt() (*big.Int, error) {
 
 // GetLatestRequestByStatus is a free data retrieval call binding the contract method 0x7667fd69.
 //
-// Solidity: function getLatestRequestByStatus(uint8 status) view returns((bytes32,uint40,uint8,address,address,(uint64,address,uint256,bytes),(bool,address,uint256)[],(uint8,uint40)[]))
+// Solidity: function getLatestRequestByStatus(uint8 status) view returns((bytes32,uint8,address,address,(uint64,address,uint256,bytes),(bool,address,uint256)[],(uint8,uint40)[]))
 func (_SolveInbox *SolveInboxCaller) GetLatestRequestByStatus(opts *bind.CallOpts, status uint8) (SolveRequest, error) {
 	var out []interface{}
 	err := _SolveInbox.contract.Call(opts, &out, "getLatestRequestByStatus", status)
@@ -322,21 +321,21 @@ func (_SolveInbox *SolveInboxCaller) GetLatestRequestByStatus(opts *bind.CallOpt
 
 // GetLatestRequestByStatus is a free data retrieval call binding the contract method 0x7667fd69.
 //
-// Solidity: function getLatestRequestByStatus(uint8 status) view returns((bytes32,uint40,uint8,address,address,(uint64,address,uint256,bytes),(bool,address,uint256)[],(uint8,uint40)[]))
+// Solidity: function getLatestRequestByStatus(uint8 status) view returns((bytes32,uint8,address,address,(uint64,address,uint256,bytes),(bool,address,uint256)[],(uint8,uint40)[]))
 func (_SolveInbox *SolveInboxSession) GetLatestRequestByStatus(status uint8) (SolveRequest, error) {
 	return _SolveInbox.Contract.GetLatestRequestByStatus(&_SolveInbox.CallOpts, status)
 }
 
 // GetLatestRequestByStatus is a free data retrieval call binding the contract method 0x7667fd69.
 //
-// Solidity: function getLatestRequestByStatus(uint8 status) view returns((bytes32,uint40,uint8,address,address,(uint64,address,uint256,bytes),(bool,address,uint256)[],(uint8,uint40)[]))
+// Solidity: function getLatestRequestByStatus(uint8 status) view returns((bytes32,uint8,address,address,(uint64,address,uint256,bytes),(bool,address,uint256)[],(uint8,uint40)[]))
 func (_SolveInbox *SolveInboxCallerSession) GetLatestRequestByStatus(status uint8) (SolveRequest, error) {
 	return _SolveInbox.Contract.GetLatestRequestByStatus(&_SolveInbox.CallOpts, status)
 }
 
 // GetRequest is a free data retrieval call binding the contract method 0xfb1e61ca.
 //
-// Solidity: function getRequest(bytes32 id) view returns((bytes32,uint40,uint8,address,address,(uint64,address,uint256,bytes),(bool,address,uint256)[],(uint8,uint40)[]))
+// Solidity: function getRequest(bytes32 id) view returns((bytes32,uint8,address,address,(uint64,address,uint256,bytes),(bool,address,uint256)[],(uint8,uint40)[]))
 func (_SolveInbox *SolveInboxCaller) GetRequest(opts *bind.CallOpts, id [32]byte) (SolveRequest, error) {
 	var out []interface{}
 	err := _SolveInbox.contract.Call(opts, &out, "getRequest", id)
@@ -353,14 +352,14 @@ func (_SolveInbox *SolveInboxCaller) GetRequest(opts *bind.CallOpts, id [32]byte
 
 // GetRequest is a free data retrieval call binding the contract method 0xfb1e61ca.
 //
-// Solidity: function getRequest(bytes32 id) view returns((bytes32,uint40,uint8,address,address,(uint64,address,uint256,bytes),(bool,address,uint256)[],(uint8,uint40)[]))
+// Solidity: function getRequest(bytes32 id) view returns((bytes32,uint8,address,address,(uint64,address,uint256,bytes),(bool,address,uint256)[],(uint8,uint40)[]))
 func (_SolveInbox *SolveInboxSession) GetRequest(id [32]byte) (SolveRequest, error) {
 	return _SolveInbox.Contract.GetRequest(&_SolveInbox.CallOpts, id)
 }
 
 // GetRequest is a free data retrieval call binding the contract method 0xfb1e61ca.
 //
-// Solidity: function getRequest(bytes32 id) view returns((bytes32,uint40,uint8,address,address,(uint64,address,uint256,bytes),(bool,address,uint256)[],(uint8,uint40)[]))
+// Solidity: function getRequest(bytes32 id) view returns((bytes32,uint8,address,address,(uint64,address,uint256,bytes),(bool,address,uint256)[],(uint8,uint40)[]))
 func (_SolveInbox *SolveInboxCallerSession) GetRequest(id [32]byte) (SolveRequest, error) {
 	return _SolveInbox.Contract.GetRequest(&_SolveInbox.CallOpts, id)
 }

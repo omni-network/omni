@@ -79,6 +79,8 @@ contract SolveInbox_accept_Test is InboxBase {
         vm.prank(solver);
         inbox.accept(id);
 
+        Solve.StatusUpdate[] memory history = inbox.getUpdateHistory(id);
+
         assertEq(inbox.getRequest(id).acceptedBy, solver, "inbox.getRequest(id).acceptedBy");
         assertEq(uint8(inbox.getRequest(id).status), uint8(Solve.Status.Accepted), "inbox.getRequest(id).status");
         assertEq(
@@ -86,6 +88,9 @@ contract SolveInbox_accept_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Accepted).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Accepted)"
         );
+        assertEq(history.length, 2, "history.length");
+        assertEq(uint8(history[1].status), uint8(Solve.Status.Accepted), "history[1].status");
+        assertEq(history[1].timestamp, block.timestamp, "history[1].timestamp");
     }
 
     /// @dev Test accepting two requests
@@ -105,6 +110,9 @@ contract SolveInbox_accept_Test is InboxBase {
         inbox.accept(id2);
         vm.stopPrank();
 
+        Solve.StatusUpdate[] memory history1 = inbox.getUpdateHistory(id1);
+        Solve.StatusUpdate[] memory history2 = inbox.getUpdateHistory(id2);
+
         assertEq(inbox.getRequest(id1).acceptedBy, solver, "inbox.getRequest(id1).acceptedBy");
         assertEq(inbox.getRequest(id2).acceptedBy, solver, "inbox.getRequest(id2).acceptedBy");
         assertEq(uint8(inbox.getRequest(id1).status), uint8(Solve.Status.Accepted), "inbox.getRequest(id1).status");
@@ -114,6 +122,12 @@ contract SolveInbox_accept_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Accepted).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Accepted)"
         );
+        assertEq(history1.length, 2, "history1.length");
+        assertEq(history2.length, 2, "history2.length");
+        assertEq(uint8(history1[1].status), uint8(Solve.Status.Accepted), "history1[1].status");
+        assertEq(uint8(history2[1].status), uint8(Solve.Status.Accepted), "history2[1].status");
+        assertEq(history1[1].timestamp, block.timestamp, "history1[1].timestamp");
+        assertEq(history2[1].timestamp, block.timestamp, "history2[1].timestamp");
     }
 
     /// @dev Test accepting requests out of order
@@ -132,6 +146,9 @@ contract SolveInbox_accept_Test is InboxBase {
         inbox.accept(id2);
         vm.stopPrank();
 
+        Solve.StatusUpdate[] memory history1 = inbox.getUpdateHistory(id1);
+        Solve.StatusUpdate[] memory history2 = inbox.getUpdateHistory(id2);
+
         assertEq(inbox.getRequest(id1).acceptedBy, address(0), "inbox.getRequest(id1).acceptedBy");
         assertEq(inbox.getRequest(id2).acceptedBy, solver, "inbox.getRequest(id2).acceptedBy");
         assertEq(uint8(inbox.getRequest(id1).status), uint8(Solve.Status.Pending), "inbox.getRequest(id1).status");
@@ -141,5 +158,11 @@ contract SolveInbox_accept_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Accepted).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Accepted)"
         );
+        assertEq(history1.length, 1, "history1.length");
+        assertEq(history2.length, 2, "history2.length");
+        assertEq(uint8(history1[0].status), uint8(Solve.Status.Pending), "history1[0].status");
+        assertEq(uint8(history2[1].status), uint8(Solve.Status.Accepted), "history2[1].status");
+        assertEq(history1[0].timestamp, block.timestamp, "history1[0].timestamp");
+        assertEq(history2[1].timestamp, block.timestamp, "history2[1].timestamp");
     }
 }

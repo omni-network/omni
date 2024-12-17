@@ -64,6 +64,7 @@ contract SolveInbox_request_Test is InboxBase {
         mintAndApprove(deposits);
 
         bytes32 id = inbox.request(call, deposits);
+
         assertEq(token1.balanceOf(address(inbox)), deposits[0].amount, "token1.balanceOf(inbox)");
         assertEq(token1.balanceOf(user), 0, "token1.balanceOf(user)");
         assertEq(
@@ -222,9 +223,6 @@ contract SolveInbox_request_Test is InboxBase {
 
         assertEq(req.id, status == Solve.Status.Invalid ? bytes32(0) : id, "_assertNewRequest : req.id");
         assertEq(req.from, from, "_assertNewRequest : req.from");
-        assertEq(
-            req.updatedAt, status == Solve.Status.Invalid ? 0 : block.timestamp, "_assertNewRequest : req.updatedAt"
-        ); // assumes no vm.warp()
         assertEq(req.call.target, call.target, "_assertNewRequest : req.call.target");
         assertEq(req.call.destChainId, call.destChainId, "_assertNewRequest : req.call.destChainId");
         assertEq(req.call.value, call.value, "_assertNewRequest : req.call.value");
@@ -246,5 +244,10 @@ contract SolveInbox_request_Test is InboxBase {
             assertEq(req.deposits[i].token, deposits[i - start].token, "_assertNewRequest : req.deposits[i].token");
             assertEq(req.deposits[i].amount, deposits[i - start].amount, "_assertNewRequest : req.deposits[i].amount");
         }
+
+        Solve.StatusUpdate[] memory history = inbox.getUpdateHistory(id);
+        assertEq(history.length, 1, "history.length");
+        assertEq(uint8(history[0].status), uint8(status), "history[0].status");
+        assertEq(history[0].timestamp, block.timestamp, "history[0].timestamp");
     }
 }
