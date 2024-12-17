@@ -24,6 +24,7 @@ import (
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -34,6 +35,7 @@ type Connector struct {
 	CProvider  cchain.Provider
 	EthClients map[uint64]ethclient.Client
 	CmtCl      rpcclient.Client
+	network    netconf.Network
 }
 
 // Backend returns an ethbackend for the given chainID.
@@ -49,6 +51,21 @@ func (c Connector) Backend(chainID uint64) (*ethbackend.Backend, error) {
 	}
 
 	return ethbackend.NewBackend(chain.Name, chainID, chain.BlockPeriod, cl)
+}
+
+// GetPortal returns an OmniPortal binding for the portal at the provided address.
+func (c Connector) GetPortal(chainID uint64, backend bind.ContractBackend) (*bindings.OmniPortal, error) {
+	chain, ok := c.network.Chain(chainID)
+	if !ok {
+		return nil, errors.New("failed to get chain from network", "chain", chainID)
+	}
+
+	portal, err := bindings.NewOmniPortal(chain.PortalAddress, backend)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get portal")
+	}
+
+	return portal, nil
 }
 
 type option func(xchain.RPCEndpoints) error
@@ -188,6 +205,7 @@ func New(ctx context.Context, netID netconf.ID, opts ...option) (Connector, erro
 		CProvider:  cprov,
 		EthClients: ethClients,
 		CmtCl:      cometCl,
+		network:    network,
 	}, nil
 }
 
