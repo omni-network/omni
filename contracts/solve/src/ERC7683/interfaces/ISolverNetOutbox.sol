@@ -6,11 +6,11 @@ import { ISolverNet } from "./ISolverNet.sol";
 
 interface ISolverNetOutbox is IDestinationSettler, ISolverNet {
     error CallFailed();
+    error InvalidPrereq();
     error WrongDestChain();
     error CallNotAllowed();
     error InsufficientFee();
     error AlreadyFulfilled();
-    error IncorrectPrereqs();
 
     /**
      * @notice Emitted when a call is allowed.
@@ -21,10 +21,10 @@ interface ISolverNetOutbox is IDestinationSettler, ISolverNet {
     event AllowedCallSet(address indexed target, bytes4 indexed selector, bool allowed);
 
     /**
-     * @notice Emitted when a request is fulfilled.
-     * @param orderId     ID of the order.
-     * @param callHash    Hash of the call executed.
-     * @param solvedBy    Address of the solver.
+     * @notice Emitted when a cross-chain request is fulfilled on the destination chain
+     * @param orderId     ID of the order on the source chain
+     * @param callHash    Hash of the executed call and its parameters
+     * @param solvedBy    Address of the solver that executed the fulfillment
      */
     event Fulfilled(bytes32 indexed orderId, bytes32 indexed callHash, address indexed solvedBy);
 
@@ -44,23 +44,19 @@ interface ISolverNetOutbox is IDestinationSettler, ISolverNet {
     function fulfilledCalls(bytes32 callHash) external view returns (bool);
 
     /**
-     * @notice Returns the fee for a fulfill call.
+     * @notice Returns the message passing fee required to mark a request as fulfilled on the source chain
      * @param srcChainId  ID of the source chain.
-     * @return            Fee for the fulfill call.
+     * @return            Fee amount in native currency.
      */
     function fulfillFee(uint64 srcChainId) external view returns (uint256);
 
     /**
      * @notice Returns whether a call has been fulfilled.
-     * @param srcReqId          ID of the on the source inbox.
-     * @param srcChainId        ID of the source chain.
-     * @param fillOriginData    Data emitted on the origin to parameterize the fill
-     * @return                  Whether the call has been fulfilled.
+     * @param srcReqId    ID of the on the source inbox.
+     * @param originData  Data emitted on the origin to parameterize the fill
+     * @return            Whether the call has been fulfilled.
      */
-    function didFulfill(bytes32 srcReqId, uint64 srcChainId, bytes calldata fillOriginData)
-        external
-        view
-        returns (bool);
+    function didFulfill(bytes32 srcReqId, bytes calldata originData) external view returns (bool);
 
     /**
      * @notice Sets an allowed call.
