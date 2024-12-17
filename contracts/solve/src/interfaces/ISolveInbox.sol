@@ -24,9 +24,9 @@ interface ISolveInbox {
      * @notice Emitted when a request is rejected.
      * @param id      ID of the request.
      * @param by      Address of the solver who rejected the request.
-     * @param reason  Reason for rejecting the request.
+     * @param reason  Reason code for rejecting the request (see solver/app/reject.go for current codes)
      */
-    event Rejected(bytes32 indexed id, address indexed by, Solve.RejectReason indexed reason);
+    event Rejected(bytes32 indexed id, address indexed by, uint8 indexed reason);
 
     /**
      * @notice Emitted when a request is cancelled.
@@ -83,8 +83,9 @@ interface ISolveInbox {
      * @notice Reject an open request.
      * @dev Only a whitelisted solver can reject.
      * @param id  ID of the request.
+     * @param reason  Reason code for rejecting the request (see solver/app/reject.go for current codes)
      */
-    function reject(bytes32 id, Solve.RejectReason reason) external;
+    function reject(bytes32 id, uint8 reason) external;
 
     /**
      * @notice Cancel an open or rejected request and refund deposits.

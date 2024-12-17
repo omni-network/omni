@@ -15,11 +15,11 @@ contract SolveInbox_reject_Test is InboxBase {
         // cannot reject non-existent request
         vm.prank(solver);
         vm.expectRevert(SolveInbox.NotPending.selector);
-        inbox.reject(bytes32(0), Solve.RejectReason.None);
+        inbox.reject({ id: bytes32(0), reason: 0 });
 
         // needs to have solver role
         vm.expectRevert(Ownable.Unauthorized.selector);
-        inbox.reject(bytes32(0), Solve.RejectReason.None);
+        inbox.reject({ id: bytes32(0), reason: 0 });
 
         // create request to cancel before rejecting
         vm.deal(user, 1 ether);
@@ -33,7 +33,7 @@ contract SolveInbox_reject_Test is InboxBase {
         // cannot reject cancelled request
         vm.prank(solver);
         vm.expectRevert(SolveInbox.NotPending.selector);
-        inbox.reject(id, Solve.RejectReason.None);
+        inbox.reject({ id: id, reason: 0 });
 
         // create request to accept before rejecting
         vm.deal(user, 1 ether);
@@ -44,7 +44,7 @@ contract SolveInbox_reject_Test is InboxBase {
         vm.startPrank(solver);
         inbox.accept(id);
         vm.expectRevert(SolveInbox.NotPending.selector);
-        inbox.reject(id, Solve.RejectReason.None);
+        inbox.reject({ id: id, reason: 0 });
         vm.stopPrank();
     }
 
@@ -58,7 +58,7 @@ contract SolveInbox_reject_Test is InboxBase {
 
         // reject request
         vm.prank(solver);
-        inbox.reject(id, Solve.RejectReason.None);
+        inbox.reject({ id: id, reason: 0 });
 
         assertEq(address(inbox).balance, 1 ether, "address(inbox).balance");
         assertEq(address(user).balance, 0, "address(user).balance");
@@ -82,8 +82,8 @@ contract SolveInbox_reject_Test is InboxBase {
 
         // reject both requests
         vm.startPrank(solver);
-        inbox.reject(id1, Solve.RejectReason.None);
-        inbox.reject(id2, Solve.RejectReason.None);
+        inbox.reject({ id: id1, reason: 0 });
+        inbox.reject({ id: id2, reason: 0 });
         vm.stopPrank();
 
         assertEq(address(inbox).balance, 2 ether, "address(inbox).balance");
@@ -109,7 +109,7 @@ contract SolveInbox_reject_Test is InboxBase {
 
         // reject oldest request
         vm.startPrank(solver);
-        inbox.reject(id1, Solve.RejectReason.None);
+        inbox.reject({ id: id1, reason: 0 });
         vm.stopPrank();
 
         assertEq(address(inbox).balance, 2 ether, "address(inbox).balance");
@@ -142,7 +142,7 @@ contract SolveInbox_reject_Test is InboxBase {
 
         // reject request
         vm.prank(solver);
-        inbox.reject(id, Solve.RejectReason.None);
+        inbox.reject({ id: id, reason: 0 });
 
         assertEq(address(inbox).balance, 1 ether, "address(inbox).balance");
         assertEq(address(user).balance, 0, "address(user).balance");

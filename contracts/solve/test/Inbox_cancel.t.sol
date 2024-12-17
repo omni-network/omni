@@ -36,7 +36,7 @@ contract SolveInbox_cancel_Test is InboxBase {
 
         // cannot double cancel rejected request
         vm.prank(solver);
-        inbox.reject(id, Solve.RejectReason.None);
+        inbox.reject({ id: id, reason: 0 });
         vm.startPrank(user);
         inbox.cancel(id);
         vm.expectRevert(SolveInbox.NotPendingOrRejected.selector);
@@ -230,7 +230,7 @@ contract SolveInbox_cancel_Test is InboxBase {
 
         // reject request
         vm.prank(solver);
-        inbox.reject(id, Solve.RejectReason.None);
+        inbox.reject({ id: id, reason: 0 });
 
         // cancel rejected request
         vm.prank(user);
@@ -265,7 +265,7 @@ contract SolveInbox_cancel_Test is InboxBase {
 
         // reject request
         vm.prank(solver);
-        inbox.reject(id, Solve.RejectReason.None);
+        inbox.reject({ id: id, reason: 0 });
 
         // cancel rejected request
         vm.prank(user);
