@@ -22,7 +22,7 @@ Omni’s mainnet deployment supports Ethereum L1, Arbitrum One, Optimism, and Ba
 | Omni EVM RPC | https://mainnet.omni.network |
 | Omni EVM Explorer | https://omniscan.network |
 | Omni status page | https://status.omni.network |
-| $OMNI Bridge | https://bridge.omni.network/ |
+| $OMNI Bridge | https://bridge.omni.network |
 
 ## Contract addresses
 
