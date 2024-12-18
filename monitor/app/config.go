@@ -25,7 +25,7 @@ type Config struct {
 	HaloURL        string
 	LoadGen        loadgen.Config
 	XFeeMngr       xfeemngr.Config
-	XCallerLoadGen loadgen.XCallerConfig
+	XCaller        loadgen.XCallerConfig
 	DBDir          string
 }
 

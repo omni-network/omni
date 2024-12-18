@@ -166,7 +166,7 @@ func serveMonitoring(address string) <-chan error {
 }
 
 func startLoadGen(ctx context.Context, cfg Config, network netconf.Network, ethClients map[uint64]ethclient.Client) error {
-	if err := loadgen.Start(ctx, network, ethClients, cfg.LoadGen, cfg.XCallerLoadGen); err != nil {
+	if err := loadgen.Start(ctx, network, ethClients, cfg.LoadGen, cfg.XCaller); err != nil {
 		return errors.Wrap(err, "start load generator")
 	}
 
