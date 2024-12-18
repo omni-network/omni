@@ -72,3 +72,8 @@ color = "auto"
 [loadgen]
 # Validator keys glob defines the validator keys to use for self-delegation.
 validator-keys-glob = "path/*/1"
+
+[xcallerloadgen]
+# Validator keys glob defines the validator keys to use for self-delegation.
+enabled = "false"
+chainids = "map[]"

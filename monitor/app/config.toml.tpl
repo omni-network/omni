@@ -81,3 +81,8 @@ color = "{{ .Log.Color }}"
 [loadgen]
 # Validator keys glob defines the validator keys to use for self-delegation.
 validator-keys-glob = "{{ .LoadGen.ValidatorKeysGlob }}"
+
+[xcallerloadgen]
+# Validator keys glob defines the validator keys to use for self-delegation.
+enabled = "{{ .XCallerLoadGen.Enabled }}"
+chainids = "{{ .XCallerLoadGen.ChainIDs }}"
