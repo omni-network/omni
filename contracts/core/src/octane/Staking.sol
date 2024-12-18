@@ -154,10 +154,7 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
      * @param validator The address of the validator to delegate to
      */
     function delegate(address validator) external payable {
-        require(!isAllowlistEnabled || isAllowedValidator[validator], "Staking: not allowed val");
-        require(msg.value >= MinDelegation, "Staking: insufficient deposit");
-
-        emit Delegate(msg.sender, validator, msg.value);
+        _delegate(msg.sender, validator);
     }
 
     /**
@@ -166,10 +163,7 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
      * @param validator The address of the validator to delegate to
      */
     function delegateFor(address delegator, address validator) external payable {
-        require(!isAllowlistEnabled || isAllowedValidator[validator], "Staking: not allowed val");
-        require(msg.value >= MinDelegation, "Staking: insufficient deposit");
-
-        emit Delegate(delegator, validator, msg.value);
+        _delegate(delegator, validator);
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -227,5 +221,17 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
         (address recovered,,) = ECDSA.tryRecover(digest, signature);
         address pubKeyAddress = Secp256k1.pubkeyToAddress(x, y);
         return recovered == pubKeyAddress;
+    }
+
+    /**
+     * @notice Delegate tokens to a validator
+     * @param delegator The address of the delegator
+     * @param validator The address of the validator to delegate to
+     */
+    function _delegate(address delegator, address validator) internal {
+        require(!isAllowlistEnabled || isAllowedValidator[validator], "Staking: not allowed val");
+        require(msg.value >= MinDelegation, "Staking: insufficient deposit");
+
+        emit Delegate(delegator, validator, msg.value);
     }
 }
