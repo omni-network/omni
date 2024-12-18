@@ -64,7 +64,7 @@ func selfDelegateOnce(ctx context.Context, contract *bindings.Staking, backend *
 	}
 	txOpts.Value = big.NewInt(params.Ether) // 1 ETH (in wei)
 
-	tx, err := contract.Delegate(txOpts, validator, validator)
+	tx, err := contract.Delegate(txOpts, validator)
 	if err != nil {
 		return errors.Wrap(err, "deposit")
 	}

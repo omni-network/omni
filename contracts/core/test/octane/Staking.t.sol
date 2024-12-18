@@ -115,7 +115,7 @@ contract Staking_Test is Test {
         vm.deal(validator, minDelegation);
 
         vm.expectRevert("Staking: insufficient deposit");
-        staking.delegate{ value: minDelegation - 1 }(validator, validator);
+        staking.delegate{ value: minDelegation - 1 }(validator);
 
         // if allowlist enabled, must be in allowlist
         vm.prank(owner);
@@ -123,7 +123,7 @@ contract Staking_Test is Test {
 
         vm.expectRevert("Staking: not allowed val");
         vm.prank(validator);
-        staking.delegate{ value: minDelegation }(validator, validator);
+        staking.delegate{ value: minDelegation }(validator);
 
         // succeeds
         address[] memory validators = new address[](1);
@@ -135,7 +135,7 @@ contract Staking_Test is Test {
         emit Delegate(validator, validator, minDelegation);
 
         vm.prank(validator);
-        staking.delegate{ value: minDelegation }(validator, validator);
+        staking.delegate{ value: minDelegation }(validator);
     }
 }
 
