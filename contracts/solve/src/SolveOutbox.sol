@@ -4,21 +4,19 @@ pragma solidity =0.8.24;
 import { OwnableRoles } from "solady/src/auth/OwnableRoles.sol";
 import { ReentrancyGuard } from "solady/src/utils/ReentrancyGuard.sol";
 import { Initializable } from "solady/src/utils/Initializable.sol";
-import { XAppBase } from "core/src/pkg/XAppBase.sol";
-
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
+import { XAppBase } from "core/src/pkg/XAppBase.sol";
 import { ConfLevel } from "core/src/libraries/ConfLevel.sol";
 import { TypeMax } from "core/src/libraries/TypeMax.sol";
+import { DeployedAt } from "./util/DeployedAt.sol";
 import { Solve } from "./Solve.sol";
-
 import { ISolveInbox } from "./interfaces/ISolveInbox.sol";
-import { IArbSys } from "./interfaces/IArbSys.sol";
 
 /**
  * @title SolveOutbox
  * @notice Entrypoint for fulfillments of user solve requests.
  */
-contract SolveOutbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
+contract SolveOutbox is OwnableRoles, ReentrancyGuard, Initializable, DeployedAt, XAppBase {
     using SafeTransferLib for address;
 
     error CallFailed();
@@ -39,21 +37,10 @@ contract SolveOutbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
     event Fulfilled(bytes32 indexed reqId, bytes32 indexed callHash, address indexed solvedBy);
 
     /**
-     * @notice Block number at which the contract was deployed.
-     */
-    uint256 public immutable deployedAt;
-
-    /**
      * @notice Role for solvers.
      * @dev _ROLE_0 evaluates to '1'.
      */
     uint256 internal constant SOLVER = _ROLE_0;
-
-    /**
-     * @notice Arbitrum's ArbSys precompile (0x0000000000000000000000000000000000000064)
-     * @dev Used to get Arbitrum block number.
-     */
-    address internal constant ARB_SYS = 0x0000000000000000000000000000000000000064;
 
     /**
      * @notice Gas limit for SolveInbox.markFulfilled callback.
@@ -84,17 +71,6 @@ contract SolveOutbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
     mapping(bytes32 callHash => bool fulfilled) public fulfilledCalls;
 
     constructor() {
-        // Must get Arbitrum block number from ArbSys precompile, block.number returns L1 block number on Arbitrum.
-        if (_isContract(ARB_SYS)) {
-            try IArbSys(ARB_SYS).arbBlockNumber() returns (uint256 arbBlockNumber) {
-                deployedAt = arbBlockNumber;
-            } catch {
-                deployedAt = block.number;
-            }
-        } else {
-            deployedAt = block.number;
-        }
-
         _disableInitializers();
     }
 
@@ -191,16 +167,5 @@ contract SolveOutbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
      */
     function _callHash(bytes32 srcReqId, uint64 srcChainId, Solve.Call calldata call) internal pure returns (bytes32) {
         return keccak256(abi.encode(srcReqId, srcChainId, call));
-    }
-
-    /**
-     * @dev Returns true if the address is a contract.
-     */
-    function _isContract(address addr) internal view returns (bool) {
-        uint32 size;
-        assembly {
-            size := extcodesize(addr)
-        }
-        return (size > 0);
     }
 }

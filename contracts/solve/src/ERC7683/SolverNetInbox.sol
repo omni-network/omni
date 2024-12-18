@@ -6,33 +6,21 @@ import { ReentrancyGuard } from "solady/src/utils/ReentrancyGuard.sol";
 import { Initializable } from "solady/src/utils/Initializable.sol";
 import { XAppBase } from "core/src/pkg/XAppBase.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
+import { DeployedAt } from "src/util/DeployedAt.sol";
 import { ISolverNetInbox } from "./interfaces/ISolverNetInbox.sol";
-import { IArbSys } from "../interfaces/IArbSys.sol";
 
 /**
  * @title SolverNetInbox
  * @notice Entrypoint and alt-mempoool for user solve orders.
  */
-contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, ISolverNetInbox {
+contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, DeployedAt, XAppBase, ISolverNetInbox {
     using SafeTransferLib for address;
-
-    /**
-     * @notice Block number at which the contract was deployed.
-     * @dev Uses L2 block number on Arbitrum, L1 block number elsewhere
-     */
-    uint256 public immutable deployedAt;
 
     /**
      * @notice Role for solvers.
      * @dev _ROLE_0 evaluates to '1'.
      */
     uint256 internal constant SOLVER = _ROLE_0;
-
-    /**
-     * @notice Arbitrum's ArbSys precompile (0x0000000000000000000000000000000000000064)
-     * @dev Used to get Arbitrum block number.
-     */
-    address internal constant ARB_SYS = 0x0000000000000000000000000000000000000064;
 
     /**
      * @notice Typehash for the order data.
@@ -72,17 +60,6 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBas
     mapping(Status => bytes32 id) internal _latestOrderIdByStatus;
 
     constructor() {
-        // Must get Arbitrum block number from ArbSys precompile, block.number returns L1 block number on Arbitrum.
-        if (_isContract(ARB_SYS)) {
-            try IArbSys(ARB_SYS).arbBlockNumber() returns (uint256 arbBlockNumber) {
-                deployedAt = arbBlockNumber;
-            } catch {
-                deployedAt = block.number;
-            }
-        } else {
-            deployedAt = block.number;
-        }
-
         _disableInitializers();
     }
 
@@ -462,18 +439,6 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBas
      */
     function _callHash(bytes32 id, uint64 srcChainId, bytes memory orderData) internal pure returns (bytes32) {
         return keccak256(abi.encode(id, srcChainId, orderData));
-    }
-
-    /**
-     * @dev Returns true if the address is a contract.
-     * @param addr  Address to check.
-     */
-    function _isContract(address addr) internal view returns (bool) {
-        uint32 size;
-        assembly {
-            size := extcodesize(addr)
-        }
-        return (size > 0);
     }
 
     /**
