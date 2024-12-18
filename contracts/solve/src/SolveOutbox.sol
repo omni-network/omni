@@ -58,7 +58,7 @@ contract SolveOutbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase {
     /**
      * @notice Gas limit for SolveInbox.markFulfilled callback.
      */
-    uint64 internal constant MARK_FULFILLED_GAS_LIMIT = 100_000;
+    uint64 internal constant MARK_FULFILLED_GAS_LIMIT = 125_000;
 
     /**
      * @notice Stubbed calldata for SolveInbox.markFulfilled. Used to estimate the gas cost.
