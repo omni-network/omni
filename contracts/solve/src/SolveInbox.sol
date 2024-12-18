@@ -7,14 +7,14 @@ import { Initializable } from "solady/src/utils/Initializable.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { XAppBase } from "core/src/pkg/XAppBase.sol";
 import { ISolveInbox } from "./interfaces/ISolveInbox.sol";
-import { IArbSys } from "./interfaces/IArbSys.sol";
+import { DeployedAt } from "./util/DeployedAt.sol";
 import { Solve } from "./Solve.sol";
 
 /**
  * @title SolveInbox
  * @notice Entrypoint and alt-mempoool for user solve requests.
  */
-contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, ISolveInbox {
+contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, DeployedAt, XAppBase, ISolveInbox {
     using SafeTransferLib for address;
 
     // Request creation errors
@@ -38,21 +38,10 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
     error InvalidRecipient();
 
     /**
-     * @notice Block number at which the contract was deployed.
-     */
-    uint256 public immutable deployedAt;
-
-    /**
      * @notice Role for solvers.
      * @dev _ROLE_0 evaluates to '1'.
      */
     uint256 internal constant SOLVER = _ROLE_0;
-
-    /**
-     * @notice Arbitrum's ArbSys precompile (0x0000000000000000000000000000000000000064)
-     * @dev Used to get Arbitrum block number.
-     */
-    address internal constant ARB_SYS = 0x0000000000000000000000000000000000000064;
 
     /**
      * @dev uint repr of last assigned request ID.
@@ -75,17 +64,6 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
     mapping(Solve.Status => bytes32 id) internal _latestReqByStatus;
 
     constructor() {
-        // Must get Arbitrum block number from ArbSys precompile, block.number returns L1 block number on Arbitrum.
-        if (_isContract(ARB_SYS)) {
-            try IArbSys(ARB_SYS).arbBlockNumber() returns (uint256 arbBlockNumber) {
-                deployedAt = arbBlockNumber;
-            } catch {
-                deployedAt = block.number;
-            }
-        } else {
-            deployedAt = block.number;
-        }
-
         _disableInitializers();
     }
 
@@ -309,16 +287,5 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, XAppBase, I
      */
     function _callHash(bytes32 id, uint64 sourceChainId, Solve.Call storage call) internal pure returns (bytes32) {
         return keccak256(abi.encode(id, sourceChainId, call));
-    }
-
-    /**
-     * @dev Returns true if the address is a contract.
-     */
-    function _isContract(address addr) internal view returns (bool) {
-        uint32 size;
-        assembly {
-            size := extcodesize(addr)
-        }
-        return (size > 0);
     }
 }
