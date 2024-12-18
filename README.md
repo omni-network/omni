@@ -58,7 +58,7 @@ _If any of above commands fail, see the [troubleshooting section](./e2e/README.m
 
 ## Contributing
 
-We are open to contributions, but don't currently have a formal process for contributors. If you are interested, browse through [open issues](https://github.com/omni-network/omni/issues), read our [code of conduct](./CODE_OF_CONDUCT.md), or chat with the team.
+We are open to contributions, but don't currently have a formal process for contributors. If you are interested, browse through [open issues](https://github.com/omni-network/omni/issues) or reach out to chat with the team.
 
 Follow these steps to set up a functional development environment:
 
@@ -72,4 +72,4 @@ Follow these steps to set up a functional development environment:
 
 ## Security
 
-Please refer to [SECURITY.md](./SECURITY.md).
+We are currently setting up a Bug Bounty program via Immunefi. Until then, you can report security issues to us via email at security at omni dot network.
