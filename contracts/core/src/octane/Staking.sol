@@ -149,19 +149,21 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
     }
 
     /**
-     * @notice Increase your validators self delegation.
-     *         NOTE: Only self delegations to existing validators are currently supported.
-     *         If msg.sender is not a validator, the delegation will be lost.
+     * @notice Delegate tokens to a validator
      * @dev Proxies x/staking.MsgDelegate
+     * @param validator The address of the validator to delegate to
      */
     function delegate(address validator) external payable {
-        require(!isAllowlistEnabled || isAllowedValidator[validator], "Staking: not allowed val");
-        require(msg.value >= MinDelegation, "Staking: insufficient deposit");
+        _delegate(msg.sender, validator);
+    }
 
-        // only support self delegation for now
-        require(msg.sender == validator, "Staking: only self delegation");
-
-        emit Delegate(msg.sender, validator, msg.value);
+    /**
+     * @notice Delegate tokens to a validator for another address
+     * @param delegator The address of the delegator
+     * @param validator The address of the validator to delegate to
+     */
+    function delegateFor(address delegator, address validator) external payable {
+        _delegate(delegator, validator);
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -219,5 +221,17 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
         (address recovered,,) = ECDSA.tryRecover(digest, signature);
         address pubKeyAddress = Secp256k1.pubkeyToAddress(x, y);
         return recovered == pubKeyAddress;
+    }
+
+    /**
+     * @notice Delegate tokens to a validator
+     * @param delegator The address of the delegator
+     * @param validator The address of the validator to delegate to
+     */
+    function _delegate(address delegator, address validator) internal {
+        require(!isAllowlistEnabled || isAllowedValidator[validator], "Staking: not allowed val");
+        require(msg.value >= MinDelegation, "Staking: insufficient deposit");
+
+        emit Delegate(delegator, validator, msg.value);
     }
 }
