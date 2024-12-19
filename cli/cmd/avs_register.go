@@ -39,11 +39,11 @@ type RegDeps struct {
 
 type regOpt func(*RegDeps)
 
-// Register registers the operator with the omni AVS contract.
+// AVSRegister registers the operator with the omni AVS contract.
 //
 // It assumes that the operator is already registered with the Eigen-Layer
 // and that the eigen-layer configuration file (and ecdsa keystore) is present on disk.
-func Register(ctx context.Context, cfg RegConfig, opts ...regOpt) error {
+func AVSRegister(ctx context.Context, cfg RegConfig, opts ...regOpt) error {
 	// Default dependencies.
 	deps := RegDeps{
 		Prompter:       eigenutils.NewPrompter(),
@@ -137,8 +137,8 @@ func Register(ctx context.Context, cfg RegConfig, opts ...regOpt) error {
 	return nil
 }
 
-// Deregister deregisters the operator from the omni AVS contract.
-func Deregister(ctx context.Context, cfg RegConfig, opts ...regOpt) error {
+// AVSDeregister deregisters the operator from the omni AVS contract.
+func AVSDeregister(ctx context.Context, cfg RegConfig, opts ...regOpt) error {
 	// Default dependencies.
 	deps := RegDeps{
 		Prompter:       eigenutils.NewPrompter(),
