@@ -5,27 +5,37 @@ import { IOriginSettler } from "./IOriginSettler.sol";
 import { ISolverNet } from "./ISolverNet.sol";
 
 interface ISolverNetInbox is IOriginSettler, ISolverNet {
-    error NoCalls();
+    // markFilled authorization
     error NotOutbox();
-    error NoSpender();
-    error NoCalldata();
-    error NoDeposits();
-    error NotPending();
-    error ZeroAmount();
-    error ZeroAddress();
-    error NotAccepted();
-    error NotFilled();
     error WrongCallHash();
-    error NoTokenPrereqs();
-    error InvalidSrcChain();
-    error InvalidDestChain();
     error WrongSourceChain();
-    error InvalidRecipient();
+
+    // OnchainCrossChainOrder validation errors
     error InvalidOrderData();
-    error InvalidFillDeadline();
-    error InvalidNativeDeposit();
-    error NotPendingOrRejected();
     error InvalidOrderDataTypehash();
+    error InvalidFillDeadline();
+
+    // deposit validation errors
+    error NoDeposits();
+    error NoDepositAmount();
+    error DuplicateNativeDeposit();
+    error InvalidNativeDeposit();
+
+    // call validation errors
+    error NoCallData();
+    error NoCallTarget();
+    error NoExpenseToken();
+    error NoExpenseSender();
+    error NoExpenseAmount();
+
+    // order state transition errors
+    error OrderNotPending();
+    error OrderNotPendingOrRejected();
+    error OrderNotAccepted();
+    error OrderNotFilled();
+
+    // transfer errors
+    error InvalidRecipient();
 
     /**
      * @notice Emitted when an order is accepted.
@@ -76,27 +86,6 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
         Reverted,
         Filled,
         Claimed
-    }
-
-    /**
-     * @notice Details of a token deposit backing an order.
-     * @dev Not stored, only used in opening an order.
-     * @param token  Address of the token.
-     * @param amount Deposit amount.
-     */
-    struct TokenDeposit {
-        address token;
-        uint256 amount;
-    }
-
-    /**
-     * @notice Data for a cross-chain order.
-     * @param intent    Intent for the order, contains chain IDs, token pre-requisites, and the call to be executed.
-     * @param deposits  Array of deposits backing the order.
-     */
-    struct SolverNetOrderData {
-        SolverNetIntent intent;
-        TokenDeposit[] deposits;
     }
 
     /**
