@@ -101,45 +101,44 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @param order  OnchainCrossChainOrder to validate.
      */
     function validateOrder(OnchainCrossChainOrder calldata order) external view returns (bool) {
-        _validateOrder(order);
+        _parseOrder(order);
         return true;
     }
 
     /**
-     * @dev Resolve the onchain order.
+     * @notice Resolve the onchain order.
      * @param order  OnchainCrossChainOrder to resolve.
      */
     function resolve(OnchainCrossChainOrder calldata order) public view returns (ResolvedCrossChainOrder memory) {
-        SolverNetOrderData memory orderData = abi.decode(order.orderData, (SolverNetOrderData));
-        SolverNetIntent memory intent = orderData.intent;
-        TokenPrereq[] memory prereqs = intent.tokenPrereqs;
-        TokenDeposit[] memory deposits = orderData.deposits;
+        OrderData memory orderData = abi.decode(order.orderData, (OrderData));
+        Call memory call = orderData.call;
+        Deposit[] memory deposits = orderData.deposits;
 
-        Output[] memory maxSpent = new Output[](prereqs.length);
-        for (uint256 i; i < prereqs.length; ++i) {
+        Output[] memory maxSpent = new Output[](call.expenses.length);
+        for (uint256 i; i < call.expenses.length; ++i) {
             maxSpent[i] = Output({
-                token: prereqs[i].token,
-                amount: prereqs[i].amount,
-                recipient: _addressToBytes32(_outbox),
-                chainId: intent.destChainId
+                token: call.expenses[i].token,
+                amount: call.expenses[i].amount,
+                recipient: _addressToBytes32(_outbox), // for solver, recipient is always outbox
+                chainId: call.destChainId
             });
         }
 
         Output[] memory minReceived = new Output[](deposits.length);
         for (uint256 i; i < deposits.length; ++i) {
             minReceived[i] = Output({
-                token: _addressToBytes32(deposits[i].token),
+                token: deposits[i].token,
                 amount: deposits[i].amount,
-                recipient: bytes32(0),
+                recipient: bytes32(0), // recipient is solver, which is only known on acceptance
                 chainId: block.chainid
             });
         }
 
         FillInstruction[] memory fillInstructions = new FillInstruction[](1);
         fillInstructions[0] = FillInstruction({
-            destinationChainId: intent.destChainId,
+            destinationChainId: call.destChainId,
             destinationSettler: _addressToBytes32(_outbox),
-            originData: abi.encode(intent)
+            originData: abi.encode(FillOriginData({ srcChainId: uint64(block.chainid), call: call }))
         });
 
         return ResolvedCrossChainOrder({
@@ -147,7 +146,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             originChainId: block.chainid,
             openDeadline: uint32(block.timestamp),
             fillDeadline: order.fillDeadline,
-            orderId: _nextId(),
+            orderId: _nextId(), // use next id for view, may not be id when opened
             maxSpent: maxSpent,
             minReceived: minReceived,
             fillInstructions: fillInstructions
@@ -160,7 +159,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @param order OnchainCrossChainOrder to open.
      */
     function open(OnchainCrossChainOrder calldata order) external payable nonReentrant {
-        SolverNetOrderData memory orderData = _validateOrder(order);
+        OrderData memory orderData = _parseOrder(order);
 
         _processDeposits(orderData.deposits);
 
@@ -176,7 +175,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      */
     function accept(bytes32 id) external onlyRoles(SOLVER) nonReentrant {
         OrderState memory state = _orderState[id];
-        if (state.status != Status.Pending) revert NotPending();
+        if (state.status != Status.Pending) revert OrderNotPending();
 
         state.status = Status.Accepted;
         state.acceptedBy = msg.sender;
@@ -193,7 +192,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      */
     function reject(bytes32 id, uint8 reason) external onlyRoles(SOLVER) nonReentrant {
         OrderState memory state = _orderState[id];
-        if (state.status != Status.Pending) revert NotPending();
+        if (state.status != Status.Pending) revert OrderNotPending();
 
         state.status = Status.Rejected;
         _upsertOrder(id, state);
@@ -210,7 +209,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         ResolvedCrossChainOrder memory order = _orders[id];
         OrderState memory state = _orderState[id];
         if (state.status != Status.Pending && state.status != Status.Rejected) {
-            revert NotPendingOrRejected();
+            revert OrderNotPendingOrRejected();
         }
         if (order.user != msg.sender) revert Unauthorized();
 
@@ -230,7 +229,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     function markFilled(bytes32 id, bytes32 fillHash) external xrecv nonReentrant {
         ResolvedCrossChainOrder memory order = _orders[id];
         OrderState memory state = _orderState[id];
-        if (state.status != Status.Accepted) revert NotAccepted();
+        if (state.status != Status.Accepted) revert OrderNotAccepted();
         if (xmsg.sender != _outbox) revert NotOutbox();
         if (xmsg.sourceChainId != order.fillInstructions[0].destinationChainId) revert WrongSourceChain();
 
@@ -253,7 +252,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     function claim(bytes32 id, address to) external nonReentrant {
         ResolvedCrossChainOrder memory order = _orders[id];
         OrderState memory state = _orderState[id];
-        if (state.status != Status.Filled) revert NotFilled();
+        if (state.status != Status.Filled) revert OrderNotFilled();
         if (state.acceptedBy != msg.sender) revert Unauthorized();
 
         state.status = Status.Claimed;
@@ -265,55 +264,61 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     }
 
     /**
-     * @dev Validate all order fields.
-     * @param order  OnchainCrossChainOrder to validate.
+     * @dev Parse and return order data, validate correctness.
+     * @param order  OnchainCrossChainOrder to parse
      */
-    function _validateOrder(OnchainCrossChainOrder calldata order) internal view returns (SolverNetOrderData memory) {
+    function _parseOrder(OnchainCrossChainOrder calldata order) internal view returns (OrderData memory) {
         if (order.fillDeadline < block.timestamp) revert InvalidFillDeadline();
         if (order.orderDataType != ORDER_DATA_TYPEHASH) revert InvalidOrderDataTypehash();
         if (order.orderData.length == 0) revert InvalidOrderData();
 
-        SolverNetOrderData memory orderData = abi.decode(order.orderData, (SolverNetOrderData));
-        SolverNetIntent memory intent = orderData.intent;
+        OrderData memory orderData = abi.decode(order.orderData, (OrderData));
+        Call memory call = orderData.call;
+        Deposit[] memory deposits = orderData.deposits;
 
-        if (intent.srcChainId != block.chainid) revert InvalidSrcChain();
-        // We should perform a chainId => outbox address lookup here in the future to validate the route
-        if (intent.destChainId == 0 || intent.destChainId == block.chainid) revert InvalidDestChain();
-        if (intent.call.target == bytes32(0)) revert ZeroAddress();
-        if (intent.call.callData.length == 0) revert NoCalldata();
-        if (orderData.deposits.length == 0) revert NoDeposits(); // Should we prevent requests without deposits?
-        for (uint256 i; i < intent.tokenPrereqs.length; ++i) {
-            TokenPrereq memory prereq = intent.tokenPrereqs[i];
-            if (prereq.token != bytes32(0) && prereq.spender == bytes32(0)) revert NoSpender();
-            if (prereq.amount == 0) revert ZeroAmount();
+        if (call.target == bytes32(0)) revert NoCallTarget();
+        if (call.data.length == 0) revert NoCallData();
+        if (deposits.length == 0) revert NoDeposits();
+
+        for (uint256 i; i < call.expenses.length; ++i) {
+            TokenExpense memory expense = call.expenses[i];
+            if (expense.token == bytes32(0)) revert NoExpenseToken();
+            if (expense.spender == bytes32(0)) revert NoExpenseSender();
+            if (expense.amount == 0) revert NoExpenseAmount();
         }
 
         return orderData;
     }
 
     /**
-     * @dev Process and validate all deposits.
-     * @dev Native deposit is validated by checking msg.value against deposit amount, and must be included in array.
-     * @param deposits  Array of TokenDeposit to process.
+     * @notice Validate and intake all deposits.
+     * @dev If msg.value > 0, exactly one corresponding native deposit (address == 0x0) is expected.
+     * @param deposits  Deposits to intake.
      */
-    function _processDeposits(TokenDeposit[] memory deposits) internal {
-        bool nativeDepositValidated = msg.value > 0 ? false : true;
+    function _processDeposits(Deposit[] memory deposits) internal {
+        bool hasNative = msg.value > 0;
+        bool processedNative = false;
+
         for (uint256 i; i < deposits.length; ++i) {
-            TokenDeposit memory deposit = deposits[i];
+            Deposit memory deposit = deposits[i];
+
             // Handle native deposit
-            if (deposit.token == address(0)) {
-                if (nativeDepositValidated) revert InvalidNativeDeposit();
+            if (deposit.token == bytes32(0)) {
+                if (!hasNative) revert InvalidNativeDeposit();
                 if (deposit.amount != msg.value) revert InvalidNativeDeposit();
-                nativeDepositValidated = true;
+                if (processedNative) revert DuplicateNativeDeposit();
+                processedNative = true;
             }
+
             // Handle ERC20 deposit
-            if (deposit.token != address(0)) {
-                if (deposit.amount == 0) revert ZeroAmount();
-                deposit.token.safeTransferFrom(msg.sender, address(this), deposit.amount);
+            if (deposit.token != bytes32(0)) {
+                if (deposit.amount == 0) revert NoDepositAmount();
+                address token = _bytes32ToAddress(deposit.token);
+                token.safeTransferFrom(msg.sender, address(this), deposit.amount);
             }
         }
-        // Validate frontend properly processed native deposit
-        if (!nativeDepositValidated) revert InvalidNativeDeposit();
+
+        if (hasNative && !processedNative) revert InvalidNativeDeposit();
     }
 
     /**
@@ -325,9 +330,9 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         internal
         returns (ResolvedCrossChainOrder storage resolved)
     {
-        bytes32 id = _incrementId();
-
         ResolvedCrossChainOrder memory _resolved = resolve(order);
+
+        bytes32 id = _incrementId();
         resolved = _orders[id];
         resolved.user = _resolved.user;
         resolved.originChainId = _resolved.originChainId;
