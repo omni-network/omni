@@ -110,43 +110,23 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
     }
 
     /**
-     * @notice Parameters for an order.
+     * @notice State of an order.
      * @param status      Order status.
-     * @param updatedAt   Timestamp order status was last updated.
      * @param acceptedBy  Address of the solver that accepted the order.
      */
-    struct SolverNetOrderParams {
+    struct OrderState {
         Status status;
-        uint40 updatedAt;
         address acceptedBy;
     }
 
     /**
-     * @notice Order with parameters and history.
-     * @param order     The order to be executed.
-     * @param params    Order parameters.
-     * @param history   Array of status updates including timestamps.
+     * @notice Returns resolved cross-chain order with current state and history.
+     * @param id  Order ID.j:w
      */
-    struct SolverNetOrder {
-        ResolvedCrossChainOrder order;
-        SolverNetOrderParams params;
-        StatusUpdate[] history;
-    }
-
-    /**
-     * @notice Returns the order with the given ID.
-     */
-    function getOrder(bytes32 id) external view returns (SolverNetOrder memory);
-
-    /**
-     * @notice Returns the order parameters for the given order ID.
-     */
-    function getOrderParams(bytes32 id) external view returns (SolverNetOrderParams memory);
-
-    /**
-     * @notice Returns the update history for an order.
-     */
-    function getOrderHistory(bytes32 id) external view returns (StatusUpdate[] memory);
+    function getOrder(bytes32 id)
+        external
+        view
+        returns (ResolvedCrossChainOrder memory order, OrderState memory state, StatusUpdate[] memory history);
 
     /**
      * @notice Returns the latest order ID with the given status.
@@ -157,11 +137,6 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
      * @dev Validate the onchain order.
      */
     function validateOrder(OnchainCrossChainOrder calldata order) external view returns (bool);
-
-    /**
-     * @dev Resolve the onchain order.
-     */
-    function resolve(OnchainCrossChainOrder calldata order) external view returns (ResolvedCrossChainOrder memory);
 
     /**
      * @notice Accept an open order.

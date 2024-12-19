@@ -47,7 +47,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     /**
      * @notice Map order ID to order parameters.
      */
-    mapping(bytes32 id => SolverNetOrderParams) internal _orderParams;
+    mapping(bytes32 id => OrderState) internal _orderState;
 
     /**
      * @notice Map order ID to order history.
@@ -80,24 +80,12 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @notice Returns the order with the given ID.
      * @param id  ID of the order.
      */
-    function getOrder(bytes32 id) external view returns (SolverNetOrder memory) {
-        return SolverNetOrder({ order: _orders[id], params: _orderParams[id], history: _orderHistory[id] });
-    }
-
-    /**
-     * @notice Returns the order parameters for the given order ID.
-     * @param id  ID of the order.
-     */
-    function getOrderParams(bytes32 id) external view returns (SolverNetOrderParams memory) {
-        return _orderParams[id];
-    }
-
-    /**
-     * @notice Returns the order history for the given order ID.
-     * @param id  ID of the order.
-     */
-    function getOrderHistory(bytes32 id) external view returns (StatusUpdate[] memory) {
-        return _orderHistory[id];
+    function getOrder(bytes32 id)
+        external
+        view
+        returns (ResolvedCrossChainOrder memory order, OrderState memory state, StatusUpdate[] memory history)
+    {
+        return (_orders[id], _orderState[id], _orderHistory[id]);
     }
 
     /**
@@ -154,7 +142,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             originData: abi.encode(intent)
         });
 
-        ResolvedCrossChainOrder memory resolvedOrder = ResolvedCrossChainOrder({
+        return ResolvedCrossChainOrder({
             user: msg.sender,
             originChainId: block.chainid,
             openDeadline: uint32(block.timestamp),
@@ -164,8 +152,6 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             minReceived: minReceived,
             fillInstructions: fillInstructions
         });
-
-        return resolvedOrder;
     }
 
     /**
@@ -178,9 +164,9 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
 
         _processDeposits(orderData.deposits);
 
-        ResolvedCrossChainOrder storage resolvedOrder = _openOrder(order);
+        ResolvedCrossChainOrder storage resolved = _openOrder(order);
 
-        emit Open(resolvedOrder.orderId, resolvedOrder);
+        emit Open(resolved.orderId, resolved);
     }
 
     /**
@@ -189,17 +175,12 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @param id  ID of the order.
      */
     function accept(bytes32 id) external onlyRoles(SOLVER) nonReentrant {
-        SolverNetOrderParams memory orderParams = _orderParams[id];
-        if (orderParams.status != Status.Pending) revert NotPending();
+        OrderState memory state = _orderState[id];
+        if (state.status != Status.Pending) revert NotPending();
 
-        orderParams.status = Status.Accepted;
-        orderParams.updatedAt = uint40(block.timestamp);
-        orderParams.acceptedBy = msg.sender;
-        StatusUpdate memory statusUpdate = StatusUpdate({ status: Status.Accepted, timestamp: uint40(block.timestamp) });
-
-        _orderParams[id] = orderParams;
-        _orderHistory[id].push(statusUpdate);
-        _latestOrderIdByStatus[Status.Accepted] = id;
+        state.status = Status.Accepted;
+        state.acceptedBy = msg.sender;
+        _upsertOrder(id, state);
 
         emit Accepted(id, msg.sender);
     }
@@ -211,16 +192,11 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @param reason  Reason code for rejection.
      */
     function reject(bytes32 id, uint8 reason) external onlyRoles(SOLVER) nonReentrant {
-        SolverNetOrderParams memory orderParams = _orderParams[id];
-        if (orderParams.status != Status.Pending) revert NotPending();
+        OrderState memory state = _orderState[id];
+        if (state.status != Status.Pending) revert NotPending();
 
-        orderParams.status = Status.Rejected;
-        orderParams.updatedAt = uint40(block.timestamp);
-        StatusUpdate memory statusUpdate = StatusUpdate({ status: Status.Rejected, timestamp: uint40(block.timestamp) });
-
-        _orderParams[id] = orderParams;
-        _orderHistory[id].push(statusUpdate);
-        _latestOrderIdByStatus[Status.Rejected] = id;
+        state.status = Status.Rejected;
+        _upsertOrder(id, state);
 
         emit Rejected(id, msg.sender, reason);
     }
@@ -232,20 +208,14 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      */
     function cancel(bytes32 id) external nonReentrant {
         ResolvedCrossChainOrder memory order = _orders[id];
-        SolverNetOrderParams memory orderParams = _orderParams[id];
-        if (orderParams.status != Status.Pending && orderParams.status != Status.Rejected) {
+        OrderState memory state = _orderState[id];
+        if (state.status != Status.Pending && state.status != Status.Rejected) {
             revert NotPendingOrRejected();
         }
         if (order.user != msg.sender) revert Unauthorized();
 
-        orderParams.status = Status.Reverted;
-        orderParams.updatedAt = uint40(block.timestamp);
-        StatusUpdate memory statusUpdate = StatusUpdate({ status: Status.Reverted, timestamp: uint40(block.timestamp) });
-
-        _orderParams[id] = orderParams;
-        _orderHistory[id].push(statusUpdate);
-        _latestOrderIdByStatus[Status.Reverted] = id;
-
+        state.status = Status.Reverted;
+        _upsertOrder(id, state);
         _transferDeposits(order.user, order.minReceived);
 
         emit Reverted(id);
@@ -259,8 +229,8 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      */
     function markFulfilled(bytes32 id, bytes32 callHash) external xrecv nonReentrant {
         ResolvedCrossChainOrder memory order = _orders[id];
-        SolverNetOrderParams memory orderParams = _orderParams[id];
-        if (orderParams.status != Status.Accepted) revert NotAccepted();
+        OrderState memory state = _orderState[id];
+        if (state.status != Status.Accepted) revert NotAccepted();
         if (xmsg.sender != _outbox) revert NotOutbox();
         if (xmsg.sourceChainId != order.fillInstructions[0].destinationChainId) revert WrongSourceChain();
 
@@ -269,16 +239,10 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             revert WrongCallHash();
         }
 
-        orderParams.status = Status.Fulfilled;
-        orderParams.updatedAt = uint40(block.timestamp);
-        StatusUpdate memory statusUpdate =
-            StatusUpdate({ status: Status.Fulfilled, timestamp: uint40(block.timestamp) });
+        state.status = Status.Fulfilled;
+        _upsertOrder(id, state);
 
-        _orderParams[id] = orderParams;
-        _orderHistory[id].push(statusUpdate);
-        _latestOrderIdByStatus[Status.Fulfilled] = id;
-
-        emit Fulfilled(id, callHash, orderParams.acceptedBy);
+        emit Fulfilled(id, callHash, state.acceptedBy);
     }
 
     /**
@@ -288,18 +252,13 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      */
     function claim(bytes32 id, address to) external nonReentrant {
         ResolvedCrossChainOrder memory order = _orders[id];
-        SolverNetOrderParams memory orderParams = _orderParams[id];
-        if (orderParams.status != Status.Fulfilled) revert NotFulfilled();
-        if (orderParams.acceptedBy != msg.sender) revert Unauthorized();
+        OrderState memory state = _orderState[id];
+        if (state.status != Status.Fulfilled) revert NotFulfilled();
+        if (state.acceptedBy != msg.sender) revert Unauthorized();
 
-        orderParams.status = Status.Claimed;
-        orderParams.updatedAt = uint40(block.timestamp);
-        StatusUpdate memory statusUpdate = StatusUpdate({ status: Status.Claimed, timestamp: uint40(block.timestamp) });
+        state.status = Status.Claimed;
 
-        _orderParams[id] = orderParams;
-        _orderHistory[id].push(statusUpdate);
-        _latestOrderIdByStatus[Status.Claimed] = id;
-
+        _upsertOrder(id, state);
         _transferDeposits(to, order.minReceived);
 
         emit Claimed(id, msg.sender, to, order.minReceived);
@@ -360,42 +319,37 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     /**
      * @dev Opens a new order and initializes its state.
      * @param order The cross-chain order to open.
-     * @return resolvedOrder The storage reference to the newly created order.
+     * @return resolved The storage reference to the newly created order.
      */
     function _openOrder(OnchainCrossChainOrder calldata order)
         internal
-        returns (ResolvedCrossChainOrder storage resolvedOrder)
+        returns (ResolvedCrossChainOrder storage resolved)
     {
-        ResolvedCrossChainOrder memory _resolvedOrder = resolve(order);
-        bytes32 orderId = _incrementId();
-        resolvedOrder = _orders[orderId];
+        bytes32 id = _incrementId();
 
-        resolvedOrder.user = _resolvedOrder.user;
-        resolvedOrder.originChainId = _resolvedOrder.originChainId;
-        resolvedOrder.openDeadline = _resolvedOrder.openDeadline;
-        resolvedOrder.fillDeadline = _resolvedOrder.fillDeadline;
-        resolvedOrder.orderId = orderId;
+        ResolvedCrossChainOrder memory _resolved = resolve(order);
+        resolved = _orders[id];
+        resolved.user = _resolved.user;
+        resolved.originChainId = _resolved.originChainId;
+        resolved.openDeadline = _resolved.openDeadline;
+        resolved.fillDeadline = _resolved.fillDeadline;
+        resolved.orderId = id;
 
-        for (uint256 i; i < resolvedOrder.maxSpent.length; ++i) {
-            resolvedOrder.maxSpent.push(_resolvedOrder.maxSpent[i]);
+        for (uint256 i; i < _resolved.maxSpent.length; ++i) {
+            resolved.maxSpent.push(_resolved.maxSpent[i]);
         }
 
-        for (uint256 i; i < resolvedOrder.minReceived.length; ++i) {
-            resolvedOrder.minReceived.push(_resolvedOrder.minReceived[i]);
+        for (uint256 i; i < _resolved.minReceived.length; ++i) {
+            resolved.minReceived.push(_resolved.minReceived[i]);
         }
 
-        for (uint256 i; i < resolvedOrder.fillInstructions.length; ++i) {
-            resolvedOrder.fillInstructions.push(_resolvedOrder.fillInstructions[i]);
+        for (uint256 i; i < _resolved.fillInstructions.length; ++i) {
+            resolved.fillInstructions.push(_resolved.fillInstructions[i]);
         }
 
-        _orderParams[orderId] =
-            SolverNetOrderParams({ status: Status.Pending, updatedAt: uint40(block.timestamp), acceptedBy: address(0) });
+        _upsertOrder(id, OrderState({ status: Status.Pending, acceptedBy: address(0) }));
 
-        _orderHistory[orderId].push(StatusUpdate({ status: Status.Pending, timestamp: uint40(block.timestamp) }));
-
-        _latestOrderIdByStatus[Status.Pending] = orderId;
-
-        return resolvedOrder;
+        return resolved;
     }
 
     /**
@@ -455,5 +409,14 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      */
     function _bytes32ToAddress(bytes32 b) internal pure returns (address) {
         return address(uint160(uint256(b)));
+    }
+
+    /**
+     * @dev Update or insert order state by id.
+     */
+    function _upsertOrder(bytes32 id, OrderState memory state) internal {
+        _orderState[id] = state;
+        _orderHistory[id].push(StatusUpdate({ status: state.status, timestamp: uint40(block.timestamp) }));
+        _latestOrderIdByStatus[state.status] = id;
     }
 }
