@@ -6,7 +6,7 @@ import { ISolverNet } from "./ISolverNet.sol";
 
 interface ISolverNetOutbox is IDestinationSettler, ISolverNet {
     error CallFailed();
-    error InvalidPrereq();
+    error InvalidExpenses();
     error WrongDestChain();
     error CallNotAllowed();
     error InsufficientFee();

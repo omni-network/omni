@@ -3,40 +3,61 @@ pragma solidity =0.8.24;
 
 interface ISolverNet {
     /**
-     * @notice ERC20 pre-requisite for an order to be filled on another chain.
-     * @param token    Address of the token.
-     * @param spender  Address authorized to spend the token on the destination chain.
-     * @param amount   Amount of the token to be approved.
+     * @notice Deposit backing an order.
+     * @param token   Token address, 0x0 for native.
+     * @param amount  Token amount.
      */
-    struct TokenPrereq {
+    struct Deposit {
+        bytes32 token;
+        uint256 amount;
+    }
+
+    /**
+     * @notice Token expense required to fill an order.
+     * @param token    Token address
+     * @param spender  Address spending the token.
+     * @param amount   Token amount.
+     */
+    struct TokenExpense {
         bytes32 token;
         bytes32 spender;
         uint256 amount;
     }
 
     /**
-     * @notice Details of a call to be executed on another chain.
-     * @param target      Address of the target contract on the destination chain.
-     * @param value       Amount of native currency to send with the call.
-     * @param callData    Encoded data to be sent with the call.
+     * @notice Call to execute on a destination chain.
+     * @param destChainId  Destination chain ID.
+     * @param target       Target contract address.
+     * @param value        Value to send.
+     * @param data         Calldata.
+     * @param expenses     Expenses required to fund the call.
      */
     struct Call {
+        uint64 destChainId;
         bytes32 target;
         uint256 value;
-        bytes callData;
+        bytes data;
+        TokenExpense[] expenses;
     }
 
     /**
-     * @notice Data to be sent to the destination chain to parameterize a fill.
-     * @param srcChainId    ID of the source chain.
-     * @param destChainId   ID of the destination chain.
-     * @param tokenPrereqs  Array of token pre-requisites (including natives) for the request to be filled on the destination chain.
-     * @param call          Call to be executed by the outbox on the destination chain.
+     * @notice SolverNet ERC-7683 order data.
+     *         Restricted to single call on a destination chain.
+     * @param call      Call to execute on.
+     * @param deposits  Deposits payed by user, locked on source chain. Awarded to solver on fill.
      */
-    struct SolverNetIntent {
+    struct OrderData {
+        Call call;
+        Deposit[] deposits;
+    }
+
+    /**
+     * @notice SolverNet ERC-7683 fill instruction origin data.
+     * @param srcChainId  Chain ID on which the order was opened.
+     * @param call        Call to execute
+     */
+    struct FillOriginData {
         uint64 srcChainId;
-        uint64 destChainId;
-        TokenPrereq[] tokenPrereqs;
         Call call;
     }
 }
