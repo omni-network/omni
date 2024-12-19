@@ -14,7 +14,7 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
     error ZeroAmount();
     error ZeroAddress();
     error NotAccepted();
-    error NotFulfilled();
+    error NotFilled();
     error WrongCallHash();
     error NoTokenPrereqs();
     error InvalidSrcChain();
@@ -49,12 +49,12 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
     event Reverted(bytes32 indexed id);
 
     /**
-     * @notice Emitted when an order is fulfilled.
+     * @notice Emitted when an order is filled.
      * @param id          ID of the order.
      * @param callHash    Hash of the call executed on another chain.
      * @param creditedTo  Address of the recipient credited the funds by the solver.
      */
-    event Fulfilled(bytes32 indexed id, bytes32 indexed callHash, address indexed creditedTo);
+    event Filled(bytes32 indexed id, bytes32 indexed callHash, address indexed creditedTo);
 
     /**
      * @notice Emitted when an order is claimed.
@@ -74,7 +74,7 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
         Accepted,
         Rejected,
         Reverted,
-        Fulfilled,
+        Filled,
         Claimed
     }
 
@@ -161,15 +161,15 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
     function cancel(bytes32 id) external;
 
     /**
-     * @notice Fulfill an order.
+     * @notice Fill an order.
      * @dev Only callable by the outbox.
      * @param id        ID of the order.
      * @param callHash  Hash of the calls for this order executed on another chain.
      */
-    function markFulfilled(bytes32 id, bytes32 callHash) external;
+    function markFilled(bytes32 id, bytes32 callHash) external;
 
     /**
-     * @notice Claim a fulfilled order.
+     * @notice Claim a filled order.
      * @param id  ID of the order.
      * @param to  Address to send deposits to.
      */

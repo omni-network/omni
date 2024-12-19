@@ -14,7 +14,7 @@ import { ISolverNetOutbox } from "./interfaces/ISolverNetOutbox.sol";
 
 /**
  * @title SolverNetOutbox
- * @notice Entrypoint for fulfillments of user solve requests.
+ * @notice Entrypoint for fillments of user solve requests.
  */
 contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, DeployedAt, XAppBase, ISolverNetOutbox {
     using SafeTransferLib for address;
@@ -26,16 +26,16 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
     uint256 internal constant SOLVER = _ROLE_0;
 
     /**
-     * @notice Gas limit for SolveInbox.markFulfilled callback.
+     * @notice Gas limit for SolveInbox.markFilled callback.
      */
-    uint64 internal constant MARK_FULFILLED_GAS_LIMIT = 100_000;
+    uint64 internal constant MARK_FILLED_GAS_LIMIT = 100_000;
 
     /**
-     * @notice Stubbed calldata for SolveInbox.markFulfilled. Used to estimate the gas cost.
+     * @notice Stubbed calldata for SolveInbox.markFilled. Used to estimate the gas cost.
      * @dev Type maxes used to ensure no non-zero bytes in fee estimation.
      */
-    bytes internal constant MARK_FULFILLED_STUB_CDATA =
-        abi.encodeCall(ISolverNetInbox.markFulfilled, (TypeMax.Bytes32, TypeMax.Bytes32));
+    bytes internal constant MARK_FILLED_STUB_CDATA =
+        abi.encodeCall(ISolverNetInbox.markFilled, (TypeMax.Bytes32, TypeMax.Bytes32));
 
     /**
      * @notice Address of the inbox contract.
@@ -43,15 +43,15 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
     address internal _inbox;
 
     /**
+     * @notice Maps fillHash (hash of fill instruction origin data) to true, if filled.
+     * @dev Used to prevent duplicate fillment.
+     */
+    mapping(bytes32 fillHash => bool filled) internal _filled;
+
+    /**
      * @notice Mapping of allowed calls per contract.
      */
     mapping(address target => mapping(bytes4 selector => bool)) public allowedCalls;
-
-    /**
-     * @notice Mapping of fulfilled calls.
-     * @dev callHash used to prevent duplicate fulfillment.
-     */
-    mapping(bytes32 callHash => bool fulfilled) public fulfilledCalls;
 
     constructor() {
         _disableInitializers();
@@ -71,21 +71,21 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
     }
 
     /**
-     * @notice Returns the message passing fee required to mark a request as fulfilled on the source chain
-     * @param srcChainId  ID of the source chain.
+     * @notice Returns the xcall fee required to mark an order filled on the source inbox
+     * @param srcChainId  Chain ID on which the order was opened.
      * @return            Fee amount in native currency.
      */
-    function fulfillFee(uint64 srcChainId) public view returns (uint256) {
-        return feeFor(srcChainId, MARK_FULFILLED_STUB_CDATA, MARK_FULFILLED_GAS_LIMIT);
+    function fillFee(uint64 srcChainId) public view returns (uint256) {
+        return feeFor(srcChainId, MARK_FILLED_STUB_CDATA, MARK_FILLED_GAS_LIMIT);
     }
 
     /**
-     * @notice Check if a call has been fulfilled.
-     * @param srcReqId    ID of the on the source inbox.
+     * @notice Returns true if the order has been filled.
+     * @param orderId     ID of the order the source inbox.
      * @param originData  Data emitted on the origin to parameterize the fill
      */
-    function didFulfill(bytes32 srcReqId, bytes calldata originData) external view returns (bool) {
-        return fulfilledCalls[_callHash(srcReqId, originData)];
+    function didFill(bytes32 orderId, bytes calldata originData) external view returns (bool) {
+        return _filled[_fillHash(orderId, originData)];
     }
 
     /**
@@ -116,10 +116,10 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         // Check that the destination chain is the current chain
         if (intent.destChainId != block.chainid) revert WrongDestChain();
 
-        // If the call has already been fulfilled, revert. Else, mark fulfilled
-        bytes32 callHash = _callHash(orderId, originData);
-        if (fulfilledCalls[callHash]) revert AlreadyFulfilled();
-        fulfilledCalls[callHash] = true;
+        // If the order has already been filled, revert. Else, mark filled
+        bytes32 fillHash = _fillHash(orderId, originData);
+        if (_filled[fillHash]) revert AlreadyFilled();
+        _filled[fillHash] = true;
 
         // Determine tokens required, record pre-call balances, retrieve tokens from solver, and sign approvals
         (address[] memory tokens, uint256[] memory preBalances) = _prepareIntent(intent);
@@ -135,16 +135,16 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
             }
         }
 
-        // Mark the call as fulfilled on inbox
-        bytes memory xcalldata = abi.encodeCall(ISolverNetInbox.markFulfilled, (orderId, callHash));
-        uint256 fee = xcall(uint64(intent.srcChainId), ConfLevel.Finalized, _inbox, xcalldata, MARK_FULFILLED_GAS_LIMIT);
+        // Mark the call as filled on inbox
+        bytes memory xcalldata = abi.encodeCall(ISolverNetInbox.markFilled, (orderId, fillHash));
+        uint256 fee = xcall(uint64(intent.srcChainId), ConfLevel.Finalized, _inbox, xcalldata, MARK_FILLED_GAS_LIMIT);
         if (msg.value - nativeAmountRequired < fee) revert InsufficientFee();
 
         // Refund any overpayment in native currency
         uint256 refund = msg.value - nativeAmountRequired - fee;
         if (refund > 0) msg.sender.safeTransferETH(refund);
 
-        emit Fulfilled(orderId, callHash, msg.sender);
+        emit Filled(orderId, fillHash, msg.sender);
     }
 
     function _prepareIntent(SolverNetIntent memory intent)
@@ -190,7 +190,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
     /**
      * @dev Returns call hash. Used to discern fullfilment.
      */
-    function _callHash(bytes32 srcReqId, bytes memory originData) internal pure returns (bytes32) {
+    function _fillHash(bytes32 srcReqId, bytes memory originData) internal pure returns (bytes32) {
         return keccak256(abi.encode(srcReqId, originData));
     }
 

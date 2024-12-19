@@ -222,38 +222,38 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     }
 
     /**
-     * @notice Fulfill an order.
+     * @notice Fill an order.
      * @dev Only callable by the outbox.
      * @param id        ID of the order.
-     * @param callHash  Hash of the calls for this order executed on another chain.
+     * @param fillHash  Hash of fill instructions origin data.
      */
-    function markFulfilled(bytes32 id, bytes32 callHash) external xrecv nonReentrant {
+    function markFilled(bytes32 id, bytes32 fillHash) external xrecv nonReentrant {
         ResolvedCrossChainOrder memory order = _orders[id];
         OrderState memory state = _orderState[id];
         if (state.status != Status.Accepted) revert NotAccepted();
         if (xmsg.sender != _outbox) revert NotOutbox();
         if (xmsg.sourceChainId != order.fillInstructions[0].destinationChainId) revert WrongSourceChain();
 
-        // Ensure reported call hash matches requested call hash
-        if (callHash != _callHash(id, uint64(block.chainid), order.fillInstructions[0].originData)) {
+        // Ensure reported fill hash matches origin data
+        if (fillHash != _fillHash(id, order.fillInstructions[0].originData)) {
             revert WrongCallHash();
         }
 
-        state.status = Status.Fulfilled;
+        state.status = Status.Filled;
         _upsertOrder(id, state);
 
-        emit Fulfilled(id, callHash, state.acceptedBy);
+        emit Filled(id, fillHash, state.acceptedBy);
     }
 
     /**
-     * @notice Claim a fulfilled order.
+     * @notice Claim a filled order.
      * @param id  ID of the order.
      * @param to  Address to send deposits to.
      */
     function claim(bytes32 id, address to) external nonReentrant {
         ResolvedCrossChainOrder memory order = _orders[id];
         OrderState memory state = _orderState[id];
-        if (state.status != Status.Fulfilled) revert NotFulfilled();
+        if (state.status != Status.Filled) revert NotFilled();
         if (state.acceptedBy != msg.sender) revert Unauthorized();
 
         state.status = Status.Claimed;
@@ -387,12 +387,11 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
 
     /**
      * @dev Returns call hash. Used to discern fullfilment.
-     * @param id          ID of the order.
-     * @param srcChainId  Chain ID of the source chain.
-     * @param orderData   Encoded order data.
+     * @param orderId      ID of the order.
+     * @param originData   Encoded fill instruction origin data.
      */
-    function _callHash(bytes32 id, uint64 srcChainId, bytes memory orderData) internal pure returns (bytes32) {
-        return keccak256(abi.encode(id, srcChainId, orderData));
+    function _fillHash(bytes32 orderId, bytes memory originData) internal pure returns (bytes32) {
+        return keccak256(abi.encode(orderId, originData));
     }
 
     /**
