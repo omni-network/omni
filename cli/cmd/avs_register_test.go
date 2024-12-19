@@ -512,7 +512,7 @@ func registerOperator(t *testing.T, ctx context.Context, contracts Contracts, b 
 		AVSAddr:    contracts.OmniAVSAddr.Hex(),
 	}
 
-	err = clicmd.Register(ctx, regCfg, testOpts)
+	err = clicmd.AVSRegister(ctx, regCfg, testOpts)
 	tutil.RequireNoError(t, err)
 }
 
@@ -570,7 +570,7 @@ func deregisterOperator(t *testing.T, ctx context.Context, contracts Contracts, 
 		AVSAddr:    contracts.OmniAVSAddr.Hex(),
 	}
 
-	err = clicmd.Deregister(ctx, regCfg, testOpts)
+	err = clicmd.AVSDeregister(ctx, regCfg, testOpts)
 	tutil.RequireNoError(t, err)
 }
 

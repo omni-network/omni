@@ -28,8 +28,8 @@ func newOperatorCmds() *cobra.Command {
 	}
 
 	cmd.AddCommand(
-		newRegisterCmd(),
-		newDeregisterCmd(),
+		newAVSRegisterCmd(),
+		newAVSDeregisterCmd(),
 		newInitCmd(),
 		newCreateValCmd(),
 		newCreateOperatorKeyCmd(),
@@ -41,11 +41,11 @@ func newOperatorCmds() *cobra.Command {
 	return cmd
 }
 
-func newRegisterCmd() *cobra.Command {
+func newAVSRegisterCmd() *cobra.Command {
 	var cfg RegConfig
 
 	cmd := &cobra.Command{
-		Use:   "register",
+		Use:   "avs-register",
 		Short: "Register an operator with the Omni AVS contract",
 		Long: `Register command expects a Eigen-Layer yaml config file as an argument
 to successfully register an operator address with the Omni AVS contract.
@@ -53,7 +53,7 @@ to successfully register an operator address with the Omni AVS contract.
 Note the operator must already be registered with Eigen-Layer.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			err := Register(cmd.Context(), cfg)
+			err := AVSRegister(cmd.Context(), cfg)
 			if err != nil {
 				return errors.Wrap(err, "registration failed")
 			}
@@ -67,11 +67,11 @@ Note the operator must already be registered with Eigen-Layer.`,
 	return cmd
 }
 
-func newDeregisterCmd() *cobra.Command {
+func newAVSDeregisterCmd() *cobra.Command {
 	var cfg RegConfig
 
 	cmd := &cobra.Command{
-		Use:   "deregister",
+		Use:   "avs-deregister",
 		Short: "Deregister an operator from the Omni AVS contract",
 		Long: `Deregister command expects a EigenLayer yaml config file as an argument
 to successfully deregister an operator from the Omni AVS contract.
@@ -79,7 +79,7 @@ to successfully deregister an operator from the Omni AVS contract.
 Note the operator must already be registered on the Omni AVS contract.`,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			err := Deregister(cmd.Context(), cfg)
+			err := AVSDeregister(cmd.Context(), cfg)
 			if err != nil {
 				return errors.Wrap(err, "deregistration failed")
 			}
