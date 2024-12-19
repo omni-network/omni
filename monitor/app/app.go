@@ -82,7 +82,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "monitor contracts")
 	}
 
-	if err := startLoadGen(ctx, cfg, network, ethClients); err != nil {
+	if err := startLoadGen(ctx, cfg, network, ethClients, cfg.RPCEndpoints); err != nil {
 		return errors.Wrap(err, "start load generator")
 	}
 
@@ -165,8 +165,8 @@ func serveMonitoring(address string) <-chan error {
 	return errChan
 }
 
-func startLoadGen(ctx context.Context, cfg Config, network netconf.Network, ethClients map[uint64]ethclient.Client) error {
-	if err := loadgen.Start(ctx, network, ethClients, cfg.LoadGen, cfg.XCaller); err != nil {
+func startLoadGen(ctx context.Context, cfg Config, network netconf.Network, ethClients map[uint64]ethclient.Client, endpoints xchain.RPCEndpoints) error {
+	if err := loadgen.Start(ctx, network, ethClients, cfg.LoadGen, cfg.XCaller, endpoints); err != nil {
 		return errors.Wrap(err, "start load generator")
 	}
 

@@ -2,16 +2,14 @@ package loadgen
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"fmt"
 	"math/rand/v2"
 	"time"
 
-	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/lib/xchain/connect"
 
@@ -23,46 +21,24 @@ const (
 	dead = "0x000000000000000000000000000000000000dead"
 )
 
-type XCaller struct {
-	network   netconf.ID
-	connector connect.Connector
-	period    time.Duration
-	chainIDs  map[string]string
-}
-
 type XCallerConfig struct {
 	Enabled  bool
 	ChainIDs map[string]string
 }
 
-func NewXCaller(network netconf.ID, connector connect.Connector, period time.Duration, chainIDs map[string]string) *XCaller {
-	return &XCaller{
-		network:   network,
-		connector: connector,
-		period:    period,
-		chainIDs:  chainIDs,
-	}
-}
-
-func (caller *XCaller) XCallForever(ctx context.Context) {
-	log.Info(ctx, "Starting periodic xcalls", "period", caller.period)
-
-	pk, err := eoa.PrivateKey(ctx, caller.network, eoa.RoleXCaller)
-	if err != nil {
-		log.Error(ctx, "Failed to get RoleXCaller priv key exiting xcall loadgen", err)
-		return
-	}
+func xCallForever(ctx context.Context, xCallerAddr common.Address, period time.Duration, chainIDs map[string]string, backends ethbackend.Backends, connector connect.Connector) {
+	log.Info(ctx, "Starting periodic xcalls", "period", period)
 
 	nextPeriod := func() time.Duration {
-		jitter := time.Duration(float64(caller.period) * rand.Float64() * loadgenJitter) //nolint:gosec // Weak random ok for load tests.
-		return caller.period + jitter
+		jitter := time.Duration(float64(period) * rand.Float64() * loadgenJitter) //nolint:gosec // Weak random ok for load tests.
+		return period + jitter
 	}
 
 	timer := time.NewTimer(nextPeriod())
 	defer timer.Stop()
 
 	// tick immediately
-	if err = caller.xCallOnce(ctx, pk); err != nil {
+	if err := xCallOnce(ctx, xCallerAddr, chainIDs, backends, connector); err != nil {
 		log.Warn(ctx, "Failed to xcall (will retry)", err)
 	}
 
@@ -71,7 +47,7 @@ func (caller *XCaller) XCallForever(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-timer.C:
-			if err = caller.xCallOnce(ctx, pk); err != nil {
+			if err := xCallOnce(ctx, xCallerAddr, chainIDs, backends, connector); err != nil {
 				log.Warn(ctx, "Failed to xcall (will retry)", err)
 			}
 			timer.Reset(nextPeriod())
@@ -79,8 +55,8 @@ func (caller *XCaller) XCallForever(ctx context.Context) {
 	}
 }
 
-func (caller *XCaller) xCallOnce(ctx context.Context, pk *ecdsa.PrivateKey) error {
-	for from, to := range caller.chainIDs {
+func xCallOnce(ctx context.Context, xCallerAddr common.Address, chainIDs map[string]string, backends ethbackend.Backends, connector connect.Connector) error {
+	for from, to := range chainIDs {
 		fromChain, ok := evmchain.MetadataByName(from)
 		if !ok {
 			return errors.New("unknown source chain name", from)
@@ -91,17 +67,12 @@ func (caller *XCaller) xCallOnce(ctx context.Context, pk *ecdsa.PrivateKey) erro
 			return errors.New("unknown destination chain name", from)
 		}
 
-		backend, err := caller.connector.Backend(fromChain.ChainID)
+		backend, err := backends.Backend(fromChain.ChainID)
 		if err != nil {
 			return err
 		}
 
-		xCallerAddr, err := backend.AddAccount(pk)
-		if err != nil {
-			return err
-		}
-
-		fromPortal, err := caller.connector.GetPortal(fromChain.ChainID, backend)
+		fromPortal, err := connector.GetPortal(fromChain.ChainID, backend)
 		if err != nil {
 			return err
 		}

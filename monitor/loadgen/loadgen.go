@@ -7,11 +7,13 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/lib/xchain/connect"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -26,7 +28,7 @@ type Config struct {
 // Start starts the validator self delegation load generator.
 // It does:
 // - Validator self-delegation on periodic basis.
-func Start(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client, cfg Config, xCallerCfg XCallerConfig) error {
+func Start(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client, cfg Config, xCallerCfg XCallerConfig, endpoints xchain.RPCEndpoints) error {
 	// Only generate load in ephemeral networks, devnet and staging.
 	if !network.ID.IsEphemeral() {
 		return nil
@@ -84,12 +86,22 @@ func Start(ctx context.Context, network netconf.Network, ethClients map[uint64]e
 			return errors.New("xcaller enabled but no chain id pairs specified")
 		}
 
+		xCallerPK, err := eoa.PrivateKey(ctx, network.ID, eoa.RoleXCaller)
+		if err != nil {
+			return errors.Wrap(err, "failed to get RoleXCaller priv key exiting xcall loadgen")
+		}
+
+		backends, err := ethbackend.BackendsFromNetwork(network, endpoints, xCallerPK)
+		if err != nil {
+			return err
+		}
+
 		connector, err := connect.New(ctx, network.ID)
 		if err != nil {
 			return err
 		}
-		xcaller := NewXCaller(network.ID, connector, 2*time.Hour, xCallerCfg.ChainIDs)
-		go xcaller.XCallForever(ctx)
+		xCallerAddr := eoa.MustAddress(network.ID, eoa.RoleXCaller)
+		go xCallForever(ctx, xCallerAddr, period, xCallerCfg.ChainIDs, backends, connector)
 	}
 
 	return nil
