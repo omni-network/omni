@@ -5,27 +5,37 @@ import { IOriginSettler } from "./IOriginSettler.sol";
 import { ISolverNet } from "./ISolverNet.sol";
 
 interface ISolverNetInbox is IOriginSettler, ISolverNet {
-    error NoCalls();
+    // markFilled authorization
     error NotOutbox();
-    error NoSpender();
-    error NoCalldata();
-    error NoDeposits();
-    error NotPending();
-    error ZeroAmount();
-    error ZeroAddress();
-    error NotAccepted();
-    error NotFulfilled();
     error WrongCallHash();
-    error NoTokenPrereqs();
-    error InvalidSrcChain();
-    error InvalidDestChain();
     error WrongSourceChain();
-    error InvalidRecipient();
+
+    // OnchainCrossChainOrder validation errors
     error InvalidOrderData();
-    error InvalidFillDeadline();
-    error InvalidNativeDeposit();
-    error NotPendingOrRejected();
     error InvalidOrderDataTypehash();
+    error InvalidFillDeadline();
+
+    // deposit validation errors
+    error NoDeposits();
+    error NoDepositAmount();
+    error DuplicateNativeDeposit();
+    error InvalidNativeDeposit();
+
+    // call validation errors
+    error NoCallData();
+    error NoCallTarget();
+    error NoExpenseToken();
+    error NoExpenseSender();
+    error NoExpenseAmount();
+
+    // order state transition errors
+    error OrderNotPending();
+    error OrderNotPendingOrRejected();
+    error OrderNotAccepted();
+    error OrderNotFilled();
+
+    // transfer errors
+    error InvalidRecipient();
 
     /**
      * @notice Emitted when an order is accepted.
@@ -49,12 +59,12 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
     event Reverted(bytes32 indexed id);
 
     /**
-     * @notice Emitted when an order is fulfilled.
+     * @notice Emitted when an order is filled.
      * @param id          ID of the order.
      * @param callHash    Hash of the call executed on another chain.
      * @param creditedTo  Address of the recipient credited the funds by the solver.
      */
-    event Fulfilled(bytes32 indexed id, bytes32 indexed callHash, address indexed creditedTo);
+    event Filled(bytes32 indexed id, bytes32 indexed callHash, address indexed creditedTo);
 
     /**
      * @notice Emitted when an order is claimed.
@@ -74,29 +84,8 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
         Accepted,
         Rejected,
         Reverted,
-        Fulfilled,
+        Filled,
         Claimed
-    }
-
-    /**
-     * @notice Details of a token deposit backing an order.
-     * @dev Not stored, only used in opening an order.
-     * @param token  Address of the token.
-     * @param amount Deposit amount.
-     */
-    struct TokenDeposit {
-        address token;
-        uint256 amount;
-    }
-
-    /**
-     * @notice Data for a cross-chain order.
-     * @param intent    Intent for the order, contains chain IDs, token pre-requisites, and the call to be executed.
-     * @param deposits  Array of deposits backing the order.
-     */
-    struct SolverNetOrderData {
-        SolverNetIntent intent;
-        TokenDeposit[] deposits;
     }
 
     /**
@@ -164,12 +153,12 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
      * @notice Fulfill an order.
      * @dev Only callable by the outbox.
      * @param id        ID of the order.
-     * @param callHash  Hash of the calls for this order executed on another chain.
+     * @param fillHash  Hash of fill data, verifies fill matches order.
      */
-    function markFulfilled(bytes32 id, bytes32 callHash) external;
+    function markFilled(bytes32 id, bytes32 fillHash) external;
 
     /**
-     * @notice Claim a fulfilled order.
+     * @notice Claim a filled order.
      * @param id  ID of the order.
      * @param to  Address to send deposits to.
      */

@@ -26,16 +26,16 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
     uint256 internal constant SOLVER = _ROLE_0;
 
     /**
-     * @notice Gas limit for SolveInbox.markFulfilled callback.
+     * @notice Gas limit for SolveInbox.markFilled callback.
      */
-    uint64 internal constant MARK_FULFILLED_GAS_LIMIT = 100_000;
+    uint64 internal constant MARK_FILLED_GAS_LIMIT = 100_000;
 
     /**
-     * @notice Stubbed calldata for SolveInbox.markFulfilled. Used to estimate the gas cost.
+     * @notice Stubbed calldata for SolveInbox.markFilled. Used to estimate the gas cost.
      * @dev Type maxes used to ensure no non-zero bytes in fee estimation.
      */
-    bytes internal constant MARK_FULFILLED_STUB_CDATA =
-        abi.encodeCall(ISolverNetInbox.markFulfilled, (TypeMax.Bytes32, TypeMax.Bytes32));
+    bytes internal constant MARK_FILLED_STUB_CDATA =
+        abi.encodeCall(ISolverNetInbox.markFilled, (TypeMax.Bytes32, TypeMax.Bytes32));
 
     /**
      * @notice Address of the inbox contract.
@@ -48,10 +48,10 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
     mapping(address target => mapping(bytes4 selector => bool)) public allowedCalls;
 
     /**
-     * @notice Mapping of fulfilled calls.
-     * @dev callHash used to prevent duplicate fulfillment.
+     * @notice Mapping of fill hash to true, if filled.
+     * @dev fillHash used to prevent duplicate fulfillment.
      */
-    mapping(bytes32 callHash => bool fulfilled) public fulfilledCalls;
+    mapping(bytes32 fillHash => bool filled) public filled;
 
     constructor() {
         _disableInitializers();
@@ -71,21 +71,21 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
     }
 
     /**
-     * @notice Returns the message passing fee required to mark a request as fulfilled on the source chain
+     * @notice Returns the message passing fee required to mark a request as filled on the source chain
      * @param srcChainId  ID of the source chain.
      * @return            Fee amount in native currency.
      */
-    function fulfillFee(uint64 srcChainId) public view returns (uint256) {
-        return feeFor(srcChainId, MARK_FULFILLED_STUB_CDATA, MARK_FULFILLED_GAS_LIMIT);
+    function fillFee(uint64 srcChainId) public view returns (uint256) {
+        return feeFor(srcChainId, MARK_FILLED_STUB_CDATA, MARK_FILLED_GAS_LIMIT);
     }
 
     /**
-     * @notice Check if a call has been fulfilled.
-     * @param srcReqId    ID of the on the source inbox.
+     * @notice Check if a call has been filled.
+     * @param orderId     ID of the on the source inbox.
      * @param originData  Data emitted on the origin to parameterize the fill
      */
-    function didFulfill(bytes32 srcReqId, bytes calldata originData) external view returns (bool) {
-        return fulfilledCalls[_callHash(srcReqId, originData)];
+    function didFill(bytes32 orderId, bytes calldata originData) external view returns (bool) {
+        return filled[_fillHash(orderId, originData)];
     }
 
     /**
@@ -101,7 +101,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
 
     /**
      * @notice Fills a particular order on the destination chain
-     * @param orderId     Unique order identifier for this order
+     * @param orderId     Unique order identifir for this order
      * @param originData  Data emitted on the origin to parameterize the fill
      * @dev fillerData (currently unused): Data provided by the filler to inform the fill or express their preferences
      */
@@ -111,87 +111,89 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         onlyRoles(SOLVER)
         nonReentrant
     {
-        SolverNetIntent memory intent = abi.decode(originData, (SolverNetIntent));
+        FillOriginData memory fillData = abi.decode(originData, (FillOriginData));
+        Call memory call = fillData.call;
 
-        // Check that the destination chain is the current chain
-        if (intent.destChainId != block.chainid) revert WrongDestChain();
-
-        // If the call has already been fulfilled, revert. Else, mark fulfilled
-        bytes32 callHash = _callHash(orderId, originData);
-        if (fulfilledCalls[callHash]) revert AlreadyFulfilled();
-        fulfilledCalls[callHash] = true;
-
-        // Determine tokens required, record pre-call balances, retrieve tokens from solver, and sign approvals
-        (address[] memory tokens, uint256[] memory preBalances) = _prepareIntent(intent);
-
-        // Execute the calls
-        uint256 nativeAmountRequired = _executeIntent(intent);
-
-        // Require post-call balance matches pre-call. Ensures prerequisites match call transfers.
-        // Native balance is validated after xcall
-        for (uint256 i; i < tokens.length; ++i) {
-            if (tokens[i] != address(0)) {
-                if (tokens[i].balanceOf(address(this)) != preBalances[i]) revert InvalidPrereq();
-            }
-        }
-
-        // Mark the call as fulfilled on inbox
-        bytes memory xcalldata = abi.encodeCall(ISolverNetInbox.markFulfilled, (orderId, callHash));
-        uint256 fee = xcall(uint64(intent.srcChainId), ConfLevel.Finalized, _inbox, xcalldata, MARK_FULFILLED_GAS_LIMIT);
-        if (msg.value - nativeAmountRequired < fee) revert InsufficientFee();
-
-        // Refund any overpayment in native currency
-        uint256 refund = msg.value - nativeAmountRequired - fee;
-        if (refund > 0) msg.sender.safeTransferETH(refund);
-
-        emit Fulfilled(orderId, callHash, msg.sender);
-    }
-
-    function _prepareIntent(SolverNetIntent memory intent)
-        internal
-        returns (address[] memory tokens, uint256[] memory preBalances)
-    {
-        TokenPrereq[] memory prereqs = intent.tokenPrereqs;
-        tokens = new address[](prereqs.length);
-        preBalances = new uint256[](prereqs.length);
-
-        for (uint256 i; i < prereqs.length; ++i) {
-            TokenPrereq memory prereq = prereqs[i];
-            address token = _bytes32ToAddress(prereq.token);
-            tokens[i] = token;
-
-            if (token == address(0)) {
-                if (prereq.amount >= msg.value || prereq.amount != intent.call.value) revert InvalidPrereq();
-                preBalances[i] = address(this).balance - msg.value;
-            } else {
-                preBalances[i] = token.balanceOf(address(this));
-                address spender = _bytes32ToAddress(prereq.spender);
-
-                token.safeTransferFrom(msg.sender, address(this), prereq.amount);
-                token.safeApprove(spender, prereq.amount);
-            }
-        }
-
-        return (tokens, preBalances);
-    }
-
-    function _executeIntent(SolverNetIntent memory intent) internal returns (uint256 nativeAmountRequired) {
-        Call memory call = intent.call;
-        address target = _bytes32ToAddress(call.target);
-
-        if (!allowedCalls[target][bytes4(call.callData)]) revert CallNotAllowed();
-
-        (bool success,) = payable(target).call{ value: call.value }(call.callData);
-        if (!success) revert CallFailed();
-
-        return call.value;
+        _executeCall(call);
+        _markFilled(orderId, fillData.srcChainId, call, _fillHash(orderId, originData));
     }
 
     /**
-     * @dev Returns call hash. Used to discern fullfilment.
+     * @notice Wrap a call with approved / enforced expenses.
+     *  Approve required spenders. Verify post-call balances match pre-call.
      */
-    function _callHash(bytes32 srcReqId, bytes memory originData) internal pure returns (bytes32) {
-        return keccak256(abi.encode(srcReqId, originData));
+    modifier withExpenses(TokenExpense[] memory expenses) {
+        address[] memory tokens = new address[](expenses.length);
+        uint256[] memory preBalances = new uint256[](expenses.length);
+
+        for (uint256 i; i < expenses.length; ++i) {
+            TokenExpense memory expense = expenses[i];
+            address token = _bytes32ToAddress(expense.token);
+
+            tokens[i] = token;
+            preBalances[i] = token.balanceOf(address(this));
+
+            address spender = _bytes32ToAddress(expense.spender);
+            token.safeTransferFrom(msg.sender, address(this), expense.amount);
+            token.safeApprove(spender, expense.amount);
+        }
+
+        _;
+
+        for (uint256 i; i < tokens.length; ++i) {
+            if (tokens[i].balanceOf(address(this)) != preBalances[i]) revert InvalidPrereq();
+        }
+    }
+
+    /**
+     * @notice Verifiy and execute a call. Expenses are processed and enforced.
+     * @param call  Call to execute.
+     */
+    function _executeCall(Call memory call) internal withExpenses(call.expenses) {
+        if (call.destChainId != block.chainid) revert WrongDestChain();
+
+        address target = _bytes32ToAddress(call.target);
+
+        if (!allowedCalls[target][bytes4(call.data)]) revert CallNotAllowed();
+
+        (bool success,) = payable(target).call{ value: call.value }(call.data);
+        if (!success) revert CallFailed();
+    }
+
+    /**
+     * @notice Mark an order as filled.
+     * @param orderId     ID of the order.
+     * @param srcChainId  Chain ID on which the order was opened.
+     * @param call        Call executed.
+     * @param fillHash    Hash of fill data, verifies fill matches order.
+     */
+    function _markFilled(bytes32 orderId, uint64 srcChainId, Call memory call, bytes32 fillHash) internal {
+        // mark filled on outbox (here)
+        if (filled[fillHash]) revert AlreadyFilled();
+        filled[fillHash] = true;
+
+        // mark filled on inbox
+        uint256 fee = xcall({
+            destChainId: srcChainId,
+            conf: ConfLevel.Finalized,
+            to: _inbox,
+            data: abi.encodeCall(ISolverNetInbox.markFilled, (orderId, fillHash)),
+            gasLimit: MARK_FILLED_GAS_LIMIT
+        });
+        if (msg.value - call.value < fee) revert InsufficientFee();
+
+        // refund any overpayment in native currency
+        uint256 refund = msg.value - call.value - fee;
+        if (refund > 0) msg.sender.safeTransferETH(refund);
+
+        emit Filled(orderId, fillHash, msg.sender);
+    }
+
+    /**
+     * @dev Returns fill hash. Used to discern fullfilment.
+     */
+    function _fillHash(bytes32 orderId, bytes memory originData) internal pure returns (bytes32) {
+        return keccak256(abi.encode(orderId, originData));
     }
 
     /**
