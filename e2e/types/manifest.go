@@ -132,6 +132,12 @@ type Manifest struct {
 
 	// FeatureFlags defines the feature flags to enable.
 	FeatureFlags feature.Flags `toml:"feature_flags"`
+
+	// XCallerEnabled defines whether to enable the xcaller load generator for the monitor app.
+	XCallerEnabled bool `toml:"xcaller_enabled"`
+
+	// XCallerChainIDPairs maps chan ID pairs to make xcalls from -> to for the monitor xcall loadgen.
+	XCallerChainIDPairs map[string]string `toml:"xcaller_chainid_pairs"`
 }
 
 // Seeds returns a map of seed nodes by name.

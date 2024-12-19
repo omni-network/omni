@@ -61,12 +61,17 @@ func (caller *XCaller) XCallForever(ctx context.Context) {
 	timer := time.NewTimer(nextPeriod())
 	defer timer.Stop()
 
+	// tick immediately
+	if err = caller.xCallOnce(ctx, pk); err != nil {
+		log.Warn(ctx, "Failed to xcall (will retry)", err)
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-timer.C:
-			if err := caller.xCallOnce(ctx, pk); err != nil {
+			if err = caller.xCallOnce(ctx, pk); err != nil {
 				log.Warn(ctx, "Failed to xcall (will retry)", err)
 			}
 			timer.Reset(nextPeriod())

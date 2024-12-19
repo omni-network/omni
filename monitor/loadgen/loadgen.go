@@ -80,6 +80,10 @@ func Start(ctx context.Context, network netconf.Network, ethClients map[uint64]e
 	}
 
 	if xCallerCfg.Enabled {
+		if len(xCallerCfg.ChainIDs) == 0 {
+			return errors.New("xcaller enabled but no chain id pairs specified")
+		}
+
 		connector, err := connect.New(ctx, network.ID)
 		if err != nil {
 			return err

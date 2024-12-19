@@ -83,9 +83,10 @@ color = "{{ .Log.Color }}"
 validator-keys-glob = "{{ .LoadGen.ValidatorKeysGlob }}"
 
 [xcaller]
-# Chain ID pairs, where each pair specifies a 'from' and 'to' chain for sending xCalls.
 enabled = "{{ .XCaller.Enabled }}"
-[xcaller.chainids]
+
+# Chain ID pairs, where each pair specifies a 'from' and 'to' chain for sending xCalls.
+[xcaller.chainid-pairs]
 {{- if not .XCaller.ChainIDs }}
 # arbitrum_one = "optimism"
 # base = "arbitrum_one"
