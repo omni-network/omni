@@ -106,8 +106,14 @@ contract Tag is ERC721, XAppBase, Ownable {
         return _getAux(minter) & ((1 << 183) - 1);
     }
 
-    function getTagCount(uint256 tokenId) public view returns (uint96) {
-        return _getExtraData(tokenId);
+    function getTagCount(uint256 tokenId) public view returns (uint72) {
+        // Mask off the top 24 bits (cursor) to get just the count
+        return uint72(_getExtraData(tokenId) & ((1 << 72) - 1));
+    }
+
+    function getTagCursor(uint256 tokenId) public view returns (uint24) {
+        // Shift right by 72 bits to get just the cursor
+        return uint24(_getExtraData(tokenId) >> 72);
     }
 
     function crosschainTransferFee(uint64 destChainId) public view returns (uint256) {
@@ -174,7 +180,7 @@ contract Tag is ERC721, XAppBase, Ownable {
         if (balanceOf(msg.sender) == 0) revert NotAHolder();
         if (_getLastTagTimestamp(msg.sender) + tagCooldown > block.timestamp) revert TagCooldown();
 
-        PendingTag memory pendingTag = PendingTag({ timestamp: uint40(block.timestamp), tagger: msg.sender });
+        PendingTag memory pendingTag = PendingTag({ timestamp: 0, tagger: msg.sender });
 
         bytes memory data = abi.encodeCall(this.processCrosschainTag, (tokenId, pendingTag));
         uint256 fee = xcall(destChainId, ConfLevel.Latest, address(this), data, 100_000);
@@ -188,11 +194,15 @@ contract Tag is ERC721, XAppBase, Ownable {
     function crosschainTransfer(uint64 destChainId, address to, uint256 tokenId) public payable {
         _burn(msg.sender, tokenId);
 
+        // Only send the tag count portion, strip the cursor
         uint96 extraData = _getExtraData(tokenId);
-        bytes memory data = abi.encodeCall(this.processCrosschainTransfer, (msg.sender, to, tokenId, extraData));
+        uint72 tagCount = uint72(extraData & ((1 << 72) - 1));
+        uint96 preservedCursor = extraData & (~uint96((1 << 72) - 1));
+
+        bytes memory data = abi.encodeCall(this.processCrosschainTransfer, (msg.sender, to, tokenId, tagCount));
         uint256 fee = xcall(destChainId, ConfLevel.Latest, address(this), data, 100_000);
-        _setExtraData(tokenId, 0);
-        delete tagQueue[tokenId];
+
+        _setExtraData(tokenId, preservedCursor);
 
         if (msg.value < fee) revert InsufficientPayment();
         if (msg.value > fee) payable(msg.sender).transfer(msg.value - fee);
@@ -204,10 +214,11 @@ contract Tag is ERC721, XAppBase, Ownable {
     /*                      PORTAL FUNCTIONS                      */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function processCrosschainTag(uint256 tokenId, PendingTag calldata pendingTag) public xrecv {
+    function processCrosschainTag(uint256 tokenId, PendingTag memory pendingTag) public xrecv {
         if (xmsg.sender != address(this)) revert Unauthorized();
 
         if (_exists(tokenId)) {
+            pendingTag.timestamp = uint40(block.timestamp);
             tagQueue[tokenId].push(pendingTag);
             emit TagInitiated(xmsg.sourceChainId, pendingTag.tagger, tokenId, pendingTag.timestamp);
         } else {
@@ -218,7 +229,12 @@ contract Tag is ERC721, XAppBase, Ownable {
     function processCrosschainTransfer(address from, address to, uint256 tokenId, uint96 extraData) public xrecv {
         if (xmsg.sender != address(this)) revert Unauthorized();
 
-        _setExtraData(tokenId, extraData);
+        // Get our local extraData to preserve the cursor
+        uint96 localExtraData = _getExtraData(tokenId);
+        uint96 preservedCursor = localExtraData & (~uint96((1 << 72) - 1));
+
+        // Apply the incoming tag count while preserving our local cursor
+        _setExtraData(tokenId, preservedCursor | extraData);
         _mint(to, tokenId);
 
         emit CrosschainReceive(xmsg.sourceChainId, from, to, tokenId);
@@ -323,35 +339,27 @@ contract Tag is ERC721, XAppBase, Ownable {
     }
 
     function _processTagQueue(uint256 tokenId) private {
-        uint96 tagCount;
-        uint256 length = tagQueue[tokenId].length;
-        uint256 processedCount;
+        uint96 extraData = _getExtraData(tokenId);
+        uint72 tagCount = uint72(extraData & ((1 << 72) - 1));
+        uint24 cursor = uint24(extraData >> 72);
 
-        for (uint256 i; i < length; ++i) {
+        uint256 length = tagQueue[tokenId].length;
+        uint24 newCursor = cursor;
+
+        for (uint256 i = cursor; i < length; ++i) {
             PendingTag memory pendingTag = tagQueue[tokenId][i];
             if (pendingTag.timestamp + tagDelay < block.timestamp) {
                 unchecked {
                     ++tagCount;
-                    ++processedCount;
+                    ++newCursor;
                 }
                 emit TagProcessed(pendingTag.tagger, tokenId, pendingTag.timestamp);
             } else {
-                // Move unprocessed tag to front of array
-                if (i != processedCount) {
-                    tagQueue[tokenId][processedCount] = pendingTag;
-                }
-                unchecked {
-                    ++processedCount;
-                }
+                break; // Stop processing when we hit a pending tag
             }
         }
 
-        // Resize array to remove processed tags
-        while (tagQueue[tokenId].length > processedCount) {
-            tagQueue[tokenId].pop();
-        }
-
-        _setExtraData(tokenId, _getExtraData(tokenId) + tagCount);
+        _setExtraData(tokenId, (uint96(newCursor) << 72) | tagCount);
     }
 
     function _beforeTokenTransfer(address, address, uint256 tokenId) internal override {
