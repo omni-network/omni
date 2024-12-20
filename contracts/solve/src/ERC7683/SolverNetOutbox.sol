@@ -111,80 +111,82 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         onlyRoles(SOLVER)
         nonReentrant
     {
-        SolverNetIntent memory intent = abi.decode(originData, (SolverNetIntent));
+        FillOriginData memory fillData = abi.decode(originData, (FillOriginData));
+        Call memory call = fillData.call;
 
-        // Check that the destination chain is the current chain
-        if (intent.destChainId != block.chainid) revert WrongDestChain();
+        _executeCall(call);
+        _markFilled(orderId, fillData.srcChainId, call, _fillHash(orderId, originData));
+    }
 
-        // If the order has already been filled, revert. Else, mark filled
-        bytes32 fillHash = _fillHash(orderId, originData);
+    /**
+     * @notice Wrap a call with approved / enforced expenses.
+     *  Approve spenders. Verify post-call balances match pre-call.
+     */
+    modifier withExpenses(TokenExpense[] memory expenses) {
+        address[] memory tokens = new address[](expenses.length);
+        uint256[] memory preBalances = new uint256[](expenses.length);
+
+        for (uint256 i; i < expenses.length; ++i) {
+            TokenExpense memory expense = expenses[i];
+            address token = _bytes32ToAddress(expense.token);
+
+            tokens[i] = token;
+            preBalances[i] = token.balanceOf(address(this));
+
+            address spender = _bytes32ToAddress(expense.spender);
+            token.safeTransferFrom(msg.sender, address(this), expense.amount);
+            token.safeApprove(spender, expense.amount);
+        }
+
+        _;
+
+        for (uint256 i; i < tokens.length; ++i) {
+            if (tokens[i].balanceOf(address(this)) != preBalances[i]) revert InvalidExpenses();
+        }
+    }
+
+    /**
+     * @notice Verifiy and execute a call. Expenses are processed and enforced.
+     * @param call  Call to execute.
+     */
+    function _executeCall(Call memory call) internal withExpenses(call.expenses) {
+        if (call.destChainId != block.chainid) revert WrongDestChain();
+
+        address target = _bytes32ToAddress(call.target);
+
+        if (!allowedCalls[target][bytes4(call.data)]) revert CallNotAllowed();
+
+        (bool success,) = payable(target).call{ value: call.value }(call.data);
+        if (!success) revert CallFailed();
+    }
+
+    /**
+     * @notice Mark an order as filled. Require sufficient native payment, refund excess.
+     * @param orderId     ID of the order.
+     * @param srcChainId  Chain ID on which the order was opened.
+     * @param call        Call executed.
+     * @param fillHash    Hash of fill data, verifies fill matches order.
+     */
+    function _markFilled(bytes32 orderId, uint64 srcChainId, Call memory call, bytes32 fillHash) internal {
+        // mark filled on outbox (here)
         if (_filled[fillHash]) revert AlreadyFilled();
         _filled[fillHash] = true;
 
-        // Determine tokens required, record pre-call balances, retrieve tokens from solver, and sign approvals
-        (address[] memory tokens, uint256[] memory preBalances) = _prepareIntent(intent);
+        // mark filled on inbox
+        uint256 fee = xcall({
+            destChainId: srcChainId,
+            conf: ConfLevel.Finalized,
+            to: _inbox,
+            data: abi.encodeCall(ISolverNetInbox.markFilled, (orderId, fillHash)),
+            gasLimit: MARK_FILLED_GAS_LIMIT
+        });
+        if (msg.value - call.value < fee) revert InsufficientFee();
 
-        // Execute the calls
-        uint256 nativeAmountRequired = _executeIntent(intent);
-
-        // Require post-call balance matches pre-call. Ensures prerequisites match call transfers.
-        // Native balance is validated after xcall
-        for (uint256 i; i < tokens.length; ++i) {
-            if (tokens[i] != address(0)) {
-                if (tokens[i].balanceOf(address(this)) != preBalances[i]) revert InvalidPrereq();
-            }
-        }
-
-        // Mark the call as filled on inbox
-        bytes memory xcalldata = abi.encodeCall(ISolverNetInbox.markFilled, (orderId, fillHash));
-        uint256 fee = xcall(uint64(intent.srcChainId), ConfLevel.Finalized, _inbox, xcalldata, MARK_FILLED_GAS_LIMIT);
-        if (msg.value - nativeAmountRequired < fee) revert InsufficientFee();
-
-        // Refund any overpayment in native currency
-        uint256 refund = msg.value - nativeAmountRequired - fee;
+        // refund any overpayment in native currency
+        uint256 refund = msg.value - call.value - fee;
         if (refund > 0) msg.sender.safeTransferETH(refund);
 
         emit Filled(orderId, fillHash, msg.sender);
-    }
-
-    function _prepareIntent(SolverNetIntent memory intent)
-        internal
-        returns (address[] memory tokens, uint256[] memory preBalances)
-    {
-        TokenPrereq[] memory prereqs = intent.tokenPrereqs;
-        tokens = new address[](prereqs.length);
-        preBalances = new uint256[](prereqs.length);
-
-        for (uint256 i; i < prereqs.length; ++i) {
-            TokenPrereq memory prereq = prereqs[i];
-            address token = _bytes32ToAddress(prereq.token);
-            tokens[i] = token;
-
-            if (token == address(0)) {
-                if (prereq.amount >= msg.value || prereq.amount != intent.call.value) revert InvalidPrereq();
-                preBalances[i] = address(this).balance - msg.value;
-            } else {
-                preBalances[i] = token.balanceOf(address(this));
-                address spender = _bytes32ToAddress(prereq.spender);
-
-                token.safeTransferFrom(msg.sender, address(this), prereq.amount);
-                token.safeApprove(spender, prereq.amount);
-            }
-        }
-
-        return (tokens, preBalances);
-    }
-
-    function _executeIntent(SolverNetIntent memory intent) internal returns (uint256 nativeAmountRequired) {
-        Call memory call = intent.call;
-        address target = _bytes32ToAddress(call.target);
-
-        if (!allowedCalls[target][bytes4(call.callData)]) revert CallNotAllowed();
-
-        (bool success,) = payable(target).call{ value: call.value }(call.callData);
-        if (!success) revert CallFailed();
-
-        return call.value;
     }
 
     /**
