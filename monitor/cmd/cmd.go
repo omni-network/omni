@@ -19,8 +19,8 @@ func New() *cobra.Command {
 	cfg := monitor.DefaultConfig()
 	bindRunFlags(cmd.Flags(), &cfg)
 	bindLoadGenFlags(cmd.Flags(), &cfg.LoadGen)
+	bindXCallerFlags(cmd.Flags(), &cfg.XCaller)
 	bindXFeeMngrFlags(cmd.Flags(), &cfg.XFeeMngr)
-
 	logCfg := log.DefaultConfig()
 	log.BindFlags(cmd.Flags(), &logCfg)
 

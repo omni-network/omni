@@ -7,11 +7,14 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
+	"github.com/omni-network/omni/lib/xchain/connect"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
@@ -19,14 +22,13 @@ import (
 
 // Config is the configuration for the load generator.
 type Config struct {
-	// ValidatorKeysGlob defines the paths to the validator keys used for self-delegation.
 	ValidatorKeysGlob string
 }
 
 // Start starts the validator self delegation load generator.
 // It does:
 // - Validator self-delegation on periodic basis.
-func Start(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client, cfg Config) error {
+func Start(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client, cfg Config, xCallerCfg XCallerConfig, endpoints xchain.RPCEndpoints) error {
 	// Only generate load in ephemeral networks, devnet and staging.
 	if !network.ID.IsEphemeral() {
 		return nil
@@ -77,6 +79,29 @@ func Start(ctx context.Context, network netconf.Network, ethClients map[uint64]e
 	for _, key := range keys {
 		val := ethcrypto.PubkeyToAddress(key.PublicKey)
 		go selfDelegateForever(ctx, contract, backend, val, period)
+	}
+
+	if xCallerCfg.Enabled {
+		if len(xCallerCfg.ChainIDs) == 0 {
+			return errors.New("xcaller enabled but no chain id pairs specified")
+		}
+
+		xCallerPK, err := eoa.PrivateKey(ctx, network.ID, eoa.RoleXCaller)
+		if err != nil {
+			return errors.Wrap(err, "failed to get RoleXCaller priv key exiting xcall loadgen")
+		}
+
+		backends, err := ethbackend.BackendsFromNetwork(network, endpoints, xCallerPK)
+		if err != nil {
+			return err
+		}
+
+		connector, err := connect.New(ctx, network.ID)
+		if err != nil {
+			return err
+		}
+		xCallerAddr := eoa.MustAddress(network.ID, eoa.RoleXCaller)
+		go xCallForever(ctx, xCallerAddr, period, xCallerCfg.ChainIDs, backends, connector)
 	}
 
 	return nil
