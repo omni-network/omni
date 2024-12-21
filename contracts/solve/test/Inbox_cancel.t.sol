@@ -36,7 +36,7 @@ contract SolveInbox_cancel_Test is InboxBase {
 
         // cannot double cancel rejected request
         vm.prank(solver);
-        inbox.reject(id, Solve.RejectReason.None);
+        inbox.reject({ id: id, reason: 0 });
         vm.startPrank(user);
         inbox.cancel(id);
         vm.expectRevert(SolveInbox.NotPendingOrRejected.selector);
@@ -72,6 +72,8 @@ contract SolveInbox_cancel_Test is InboxBase {
         vm.prank(user);
         inbox.cancel(id);
 
+        Solve.StatusUpdate[] memory history = inbox.getUpdateHistory(id);
+
         assertEq(address(inbox).balance, 0, "address(inbox).balance");
         assertEq(address(user).balance, 1 ether, "address(user).balance");
         assertEq(uint8(inbox.getRequest(id).status), uint8(Solve.Status.Reverted), "inbox.getRequest(id).status");
@@ -80,6 +82,9 @@ contract SolveInbox_cancel_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Reverted).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Reverted)"
         );
+        assertEq(history.length, 2, "history.length");
+        assertEq(uint8(history[1].status), uint8(Solve.Status.Reverted), "history[1].status");
+        assertEq(history[1].timestamp, block.timestamp, "history[1].timestamp");
     }
 
     function test_cancel_two_requests() public {
@@ -98,6 +103,9 @@ contract SolveInbox_cancel_Test is InboxBase {
         inbox.cancel(id2);
         vm.stopPrank();
 
+        Solve.StatusUpdate[] memory history1 = inbox.getUpdateHistory(id1);
+        Solve.StatusUpdate[] memory history2 = inbox.getUpdateHistory(id2);
+
         assertEq(address(inbox).balance, 0, "address(inbox).balance");
         assertEq(address(user).balance, 2 ether, "address(user).balance");
         assertEq(uint8(inbox.getRequest(id1).status), uint8(Solve.Status.Reverted), "inbox.getRequest(id1).status");
@@ -107,6 +115,12 @@ contract SolveInbox_cancel_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Reverted).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Reverted)"
         );
+        assertEq(history1.length, 2, "history1.length");
+        assertEq(history2.length, 2, "history2.length");
+        assertEq(uint8(history1[1].status), uint8(Solve.Status.Reverted), "history1[1].status");
+        assertEq(uint8(history2[1].status), uint8(Solve.Status.Reverted), "history2[1].status");
+        assertEq(history1[1].timestamp, block.timestamp, "history1[1].timestamp");
+        assertEq(history2[1].timestamp, block.timestamp, "history2[1].timestamp");
     }
 
     function test_cancel_oldest_request() public {
@@ -123,6 +137,9 @@ contract SolveInbox_cancel_Test is InboxBase {
         vm.prank(user);
         inbox.cancel(id1);
 
+        Solve.StatusUpdate[] memory history1 = inbox.getUpdateHistory(id1);
+        Solve.StatusUpdate[] memory history2 = inbox.getUpdateHistory(id2);
+
         assertEq(address(inbox).balance, 1 ether, "address(inbox).balance");
         assertEq(address(user).balance, 1 ether, "address(user).balance");
         assertEq(uint8(inbox.getRequest(id1).status), uint8(Solve.Status.Reverted), "inbox.getRequest(id1).status");
@@ -137,6 +154,12 @@ contract SolveInbox_cancel_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Pending).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Pending)"
         );
+        assertEq(history1.length, 2, "history1.length");
+        assertEq(history2.length, 1, "history2.length");
+        assertEq(uint8(history1[1].status), uint8(Solve.Status.Reverted), "history1[1].status");
+        assertEq(uint8(history2[0].status), uint8(Solve.Status.Pending), "history2[0].status");
+        assertEq(history1[1].timestamp, block.timestamp, "history1[1].timestamp");
+        assertEq(history2[0].timestamp, block.timestamp, "history2[0].timestamp");
     }
 
     function test_cancel_singleToken() public {
@@ -153,6 +176,8 @@ contract SolveInbox_cancel_Test is InboxBase {
         inbox.cancel(id);
         vm.stopPrank();
 
+        Solve.StatusUpdate[] memory history = inbox.getUpdateHistory(id);
+
         assertEq(token1.balanceOf(address(inbox)), 0, "token1.balanceOf(inbox)");
         assertEq(token1.balanceOf(user), 1 ether, "token1.balanceOf(user)");
         assertEq(uint8(inbox.getRequest(id).status), uint8(Solve.Status.Reverted), "inbox.getRequest(id).status");
@@ -161,6 +186,9 @@ contract SolveInbox_cancel_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Reverted).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Reverted)"
         );
+        assertEq(history.length, 2, "history.length");
+        assertEq(uint8(history[1].status), uint8(Solve.Status.Reverted), "history[1].status");
+        assertEq(history[1].timestamp, block.timestamp, "history[1].timestamp");
     }
 
     function test_cancel_multiToken() public {
@@ -178,6 +206,8 @@ contract SolveInbox_cancel_Test is InboxBase {
         inbox.cancel(id);
         vm.stopPrank();
 
+        Solve.StatusUpdate[] memory history = inbox.getUpdateHistory(id);
+
         assertEq(token1.balanceOf(address(inbox)), 0, "token1.balanceOf(inbox)");
         assertEq(token2.balanceOf(address(inbox)), 0, "token2.balanceOf(inbox)");
         assertEq(token1.balanceOf(user), 1 ether, "token1.balanceOf(user)");
@@ -188,6 +218,9 @@ contract SolveInbox_cancel_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Reverted).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Reverted)"
         );
+        assertEq(history.length, 2, "history.length");
+        assertEq(uint8(history[1].status), uint8(Solve.Status.Reverted), "history[1].status");
+        assertEq(history[1].timestamp, block.timestamp, "history[1].timestamp");
     }
 
     function test_cancel_nativeMultiToken() public {
@@ -206,6 +239,8 @@ contract SolveInbox_cancel_Test is InboxBase {
         inbox.cancel(id);
         vm.stopPrank();
 
+        Solve.StatusUpdate[] memory history = inbox.getUpdateHistory(id);
+
         assertEq(address(inbox).balance, 0, "address(inbox).balance");
         assertEq(address(user).balance, 1 ether, "address(user).balance");
         assertEq(token1.balanceOf(address(inbox)), 0, "token1.balanceOf(inbox)");
@@ -218,6 +253,9 @@ contract SolveInbox_cancel_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Reverted).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Reverted)"
         );
+        assertEq(history.length, 2, "history.length");
+        assertEq(uint8(history[1].status), uint8(Solve.Status.Reverted), "history[1].status");
+        assertEq(history[1].timestamp, block.timestamp, "history[1].timestamp");
     }
 
     function test_cancel_rejected_nativeToken_request() public {
@@ -230,11 +268,13 @@ contract SolveInbox_cancel_Test is InboxBase {
 
         // reject request
         vm.prank(solver);
-        inbox.reject(id, Solve.RejectReason.None);
+        inbox.reject({ id: id, reason: 0 });
 
         // cancel rejected request
         vm.prank(user);
         inbox.cancel(id);
+
+        Solve.StatusUpdate[] memory history = inbox.getUpdateHistory(id);
 
         assertEq(address(inbox).balance, 0, "address(inbox).balance");
         assertEq(address(user).balance, 1 ether, "address(user).balance");
@@ -249,6 +289,9 @@ contract SolveInbox_cancel_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Reverted).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Reverted)"
         );
+        assertEq(history.length, 3, "history.length");
+        assertEq(uint8(history[2].status), uint8(Solve.Status.Reverted), "history[2].status");
+        assertEq(history[2].timestamp, block.timestamp, "history[2].timestamp");
     }
 
     function test_cancel_rejected_nativeMultiToken_request() public {
@@ -265,11 +308,13 @@ contract SolveInbox_cancel_Test is InboxBase {
 
         // reject request
         vm.prank(solver);
-        inbox.reject(id, Solve.RejectReason.None);
+        inbox.reject({ id: id, reason: 0 });
 
         // cancel rejected request
         vm.prank(user);
         inbox.cancel(id);
+
+        Solve.StatusUpdate[] memory history = inbox.getUpdateHistory(id);
 
         assertEq(address(inbox).balance, 0, "address(inbox).balance");
         assertEq(address(user).balance, 1 ether, "address(user).balance");
@@ -288,5 +333,8 @@ contract SolveInbox_cancel_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Reverted).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Reverted)"
         );
+        assertEq(history.length, 3, "history.length");
+        assertEq(uint8(history[2].status), uint8(Solve.Status.Reverted), "history[2].status");
+        assertEq(history[2].timestamp, block.timestamp, "history[2].timestamp");
     }
 }

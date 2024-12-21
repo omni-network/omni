@@ -78,13 +78,17 @@ contract SolveInbox_markFulfilled_Test is InboxBase {
             to: address(inbox)
         });
 
+        Solve.StatusUpdate[] memory history = inbox.getUpdateHistory(id);
+
         Solve.Request memory req = inbox.getRequest(id);
         assertEq(uint8(req.status), uint8(Solve.Status.Fulfilled), "req.status");
-        assertEq(req.updatedAt, block.timestamp, "req.updatedAt");
         assertEq(
             id,
             inbox.getLatestRequestByStatus(Solve.Status.Fulfilled).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Fulfilled)"
         );
+        assertEq(history.length, 3, "history.length");
+        assertEq(uint8(history[2].status), uint8(Solve.Status.Fulfilled), "history[2].status");
+        assertEq(history[2].timestamp, block.timestamp, "history[2].timestamp");
     }
 }

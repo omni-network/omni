@@ -25,14 +25,14 @@ func getTarget(network netconf.ID, call bindings.SolveCall) (types.Target, error
 	for _, target := range targets {
 		if target.ChainID() == call.DestChainId && target.Address() == call.Target {
 			if resp != nil {
-				return nil, errors.New("multiple targets found")
+				return nil, errors.New("multiple targets found [BUG]")
 			}
 			resp = &target
 		}
 	}
 
 	if resp == nil {
-		return nil, errors.New("no target found")
+		return nil, errors.New("no target found", "dest_chain_id", call.DestChainId, "target_address", call.Target)
 	}
 
 	return *resp, nil

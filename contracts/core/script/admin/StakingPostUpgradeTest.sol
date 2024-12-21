@@ -86,11 +86,16 @@ contract StakingPostUpgradeTest is Test {
 
     function _testDelegate() internal {
         uint256 deposit = staking.MinDelegation();
-        vm.deal(validator, deposit);
+        vm.deal(validator, deposit * 2);
 
         vm.expectEmit();
         emit Staking.Delegate(validator, validator, deposit);
         vm.prank(validator);
         staking.delegate{ value: deposit }(validator);
+
+        vm.expectEmit();
+        emit Staking.Delegate(validator, validator, deposit);
+        vm.prank(validator);
+        staking.delegateFor{ value: deposit }(validator, validator);
     }
 }

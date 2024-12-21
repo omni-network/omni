@@ -7,6 +7,7 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/expbackoff"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/stream"
 	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/umath"
@@ -39,6 +40,7 @@ func (p *Provider) StreamEventLogs(ctx context.Context, req xchain.EventLogsReq,
 	}
 
 	chainVersionName := p.network.ChainVersionName(req.ChainVersion())
+	ctx = log.WithCtx(ctx, "chain", chainVersionName)
 
 	deps := stream.Deps[events]{
 		FetchWorkers: workers,

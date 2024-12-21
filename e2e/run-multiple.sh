@@ -19,6 +19,7 @@ echo "🌊==> Running e2e tests:" "$@"
 
 for MANIFEST in "$@"; do
 	START=$SECONDS
+	printf "\n\n\n\n🌊🌊🌊🌊🌊🌊🌊🌊\n\n\n\n\n"
 	echo "🌊==> Running manifest: $MANIFEST"
 
 	if ! e2e -f "$MANIFEST"; then
@@ -28,9 +29,6 @@ for MANIFEST in "$@"; do
 		echo "🌊==> Dumping failed container logs to failed-logs.txt..."
 		e2e -f "$MANIFEST" logs > failed-logs.txt
 
-		echo "🌊==> Displaying failed container error and warn logs..."
-		grep -iE "(panic|erro|warn)" failed-logs.txt || echo "No errors or warns found"
-
 		echo "🌊==> Cleaning up failed manifest $MANIFEST..."
 		e2e -f "$MANIFEST" clean
 
@@ -39,7 +37,6 @@ for MANIFEST in "$@"; do
 	fi
 
 	echo "🌊==> ✅ Completed manifest $MANIFEST in $(( SECONDS - START ))s"
-	echo ""
 done
 
 echo "🌊==> 🎉 All manifests successful "

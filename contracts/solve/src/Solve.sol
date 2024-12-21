@@ -16,34 +16,34 @@ library Solve {
     }
 
     /**
-     * @notice Reason for rejecting a request.
+     * @notice Details of a status update.
+     * @param status    Status of the request.
+     * @param timestamp Timestamp of the status update.
      */
-    enum RejectReason {
-        None,
-        DestCallReverts,
-        InsufficientFee,
-        InsufficientInventory
+    struct StatusUpdate {
+        Status status;
+        uint40 timestamp;
     }
 
     /**
      * @notice A request to execute a call on another chain, backed by a deposit.
-     * @param id            ID for the request, globally unique per inbox.
-     * @param updatedAt     Timestamp request status was last updated.
-     * @param from          Address of the user who created the request.
-     * @param acceptedBy    Address of the solver that accepted the request.
-     * @param status        Request status (open, accepted, cancelled, rejected, fulfilled, paid).
-     * @param call          Details of the call to be executed on another chain.
-     * @param deposits      Array of deposits backing the request.
-     * @param updateHistory Array of status updates including timestamps.
+     * @param id          ID for the request, globally unique per inbox.
+     * @param updatedAt   Timestamp request status was last updated.
+     * @param from        Address of the user who created the request.
+     * @param acceptedBy  Address of the solver that accepted the request.
+     * @param status      Request status (open, accepted, cancelled, rejected, fulfilled, paid).
+     * @param call        Details of the call to be executed on another chain.
+     * @param deposits    Array of deposits backing the request.
+     * @param history     Array of status updates including timestamps.
      */
     struct Request {
         bytes32 id;
-        uint40 updatedAt;
         Status status;
         address from;
         address acceptedBy;
         Call call;
         Deposit[] deposits;
+        StatusUpdate[] history;
     }
 
     /**

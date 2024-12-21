@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
+	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -22,12 +23,13 @@ import (
 )
 
 type DepositReq struct {
-	ID      [32]byte       // id in inbox
+	ID      stypes.ReqID   // id in inbox
 	Token   common.Address // token address
 	Deposit DepositArgs    // deposit args
 }
 
 // TestFlow submits deposit requests to the solve inbox and waits for them to be processed.
+// It also includes a few invalid deposits, which should be rejected.
 func TestFlow(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints) error {
 	if network.ID != netconf.Devnet {
 		return errors.New("only devnet")
@@ -38,7 +40,15 @@ func TestFlow(ctx context.Context, network netconf.Network, endpoints xchain.RPC
 		return err
 	}
 
-	deposits, err := makeDevnetDeposits(ctx, network.ID, backends)
+	const numDeposits = 3
+	deposits, err := makeDevnetDeposits(ctx, network.ID, backends, numDeposits)
+	if err != nil {
+		return err
+	}
+
+	// Also do invalid deposits
+	const numInvalid = 2
+	invalids, err := makeDevnetDeposits(ctx, network.ID, backends, numInvalid, WithInvalidCall())
 	if err != nil {
 		return err
 	}
@@ -50,15 +60,19 @@ func TestFlow(ctx context.Context, network netconf.Network, endpoints xchain.RPC
 	toCheck := toSet(deposits)
 	for {
 		if timeout.Err() != nil {
-			return errors.New("timeout waiting for deposits")
+			return errors.New("timeout waiting for deposits", "remaining", toCheck)
 		}
 
 		for deposit := range toCheck {
-			ok, err := IsDeposited(ctx, network.ID, backends, deposit)
+			bal, err := DepositedBalance(ctx, network.ID, backends, deposit.Deposit.OnBehalfOf)
 			if err != nil {
 				return err
-			} else if ok {
-				log.Debug(ctx, "Deposit complete", "remaining", len(toCheck)-1)
+			}
+
+			// Assumes balance(onBehalfOf) was zero before deposit request
+			// Assumes one deposit per test case onBehalfOf addr
+			if bal.Cmp(deposit.Deposit.Amount) == 0 {
+				log.Debug(ctx, "Deposit complete", "req_id", deposit.ID, "remaining", len(toCheck)-1)
 				delete(toCheck, deposit)
 			}
 		}
@@ -76,17 +90,17 @@ func TestFlow(ctx context.Context, network netconf.Network, endpoints xchain.RPC
 	toCheck = toSet(deposits)
 	for {
 		if timeout.Err() != nil {
-			return errors.New("timeout waiting for claims")
+			return errors.New("timeout waiting for claims", "remaining", toCheck)
 		}
 
 		const statusClaimed = 6
 
 		for deposit := range toCheck {
-			status, err := getDepositStatus(ctx, network.ID, backends, deposit)
+			status, err := RequestStatus(ctx, network.ID, backends, deposit.ID)
 			if err != nil {
 				return err
 			} else if status == statusClaimed {
-				log.Debug(ctx, "Deposit claimed", "remaining", len(toCheck)-1)
+				log.Debug(ctx, "Deposit claimed", "req_id", deposit.ID, "remaining", len(toCheck)-1)
 				delete(toCheck, deposit)
 			}
 		}
@@ -100,10 +114,36 @@ func TestFlow(ctx context.Context, network netconf.Network, endpoints xchain.RPC
 
 	log.Debug(ctx, "All deposits claimed")
 
+	// Wait for invalid to be rejected
+	toCheck = toSet(invalids)
+	for {
+		if timeout.Err() != nil {
+			return errors.New("timeout waiting for invalid deposit rejections", "remaining", toCheck)
+		}
+
+		const statusRejected uint8 = 3
+
+		for deposit := range toCheck {
+			status, err := RequestStatus(ctx, network.ID, backends, deposit.ID)
+			if err != nil {
+				return err
+			} else if status == statusRejected {
+				log.Debug(ctx, "Invalid deposit rejected", "req_id", deposit.ID, "remaining", len(toCheck)-1)
+				delete(toCheck, deposit)
+			}
+		}
+
+		if len(toCheck) == 0 {
+			break
+		}
+
+		time.Sleep(time.Second)
+	}
+
 	return nil
 }
 
-func makeDevnetDeposits(ctx context.Context, network netconf.ID, backends ethbackend.Backends) ([]DepositReq, error) {
+func makeDevnetDeposits(ctx context.Context, network netconf.ID, backends ethbackend.Backends, count int, opts ...CallOption) ([]DepositReq, error) {
 	if network != netconf.Devnet {
 		return nil, errors.New("only devnet supported")
 	}
@@ -115,9 +155,7 @@ func makeDevnetDeposits(ctx context.Context, network netconf.ID, backends ethbac
 		return nil, err
 	}
 
-	const numDeposits = 3
-
-	depositors, err := addRandomDepositors(numDeposits, backend)
+	depositors, err := addRandomDepositors(count, backend)
 	if err != nil {
 		return nil, errors.Wrap(err, "make depositors")
 	}
@@ -135,48 +173,53 @@ func makeDevnetDeposits(ctx context.Context, network netconf.ID, backends ethbac
 		return nil, errors.Wrap(err, "get addresses")
 	}
 
-	var deposits []DepositArgs
+	var reqs []DepositReq
 	for _, depositor := range depositors {
-		deposits = append(deposits, DepositArgs{
+		args := DepositArgs{
 			OnBehalfOf: depositor,
 			Amount:     depositAmount,
-		})
-	}
+		}
+		req, err := RequestDeposit(ctx, network, backends, addrs.SolveInbox, args, opts...)
+		if err != nil {
+			return nil, errors.Wrap(err, "request deposit")
+		}
 
-	reqs, err := RequestDeposits(ctx, network, backends, addrs.SolveInbox, deposits...)
-	if err != nil {
-		return nil, errors.Wrap(err, "request deposits")
+		log.Error(ctx, "Deposit requested", nil,
+			"req_id", req.ID, "on_behalf_of", depositor, "amount", depositAmount,
+			"target", req.Token)
+
+		reqs = append(reqs, req)
 	}
 
 	return reqs, nil
 }
 
-func IsDeposited(ctx context.Context, network netconf.ID, backends ethbackend.Backends, req DepositReq) (bool, error) {
+// DepositedBalance returns the balance of onBehalfOf in the vault.
+func DepositedBalance(ctx context.Context, network netconf.ID, backends ethbackend.Backends, onBehalfOf common.Address) (*big.Int, error) {
 	app := MustGetApp(network)
 
 	backend, err := backends.Backend(app.L1.ChainID)
 	if err != nil {
-		return false, errors.Wrap(err, "backend")
+		return nil, errors.Wrap(err, "backend")
 	}
 
 	vault, err := bindings.NewMockVault(app.L1Vault, backend)
 	if err != nil {
-		return false, errors.Wrap(err, "new mock vault")
+		return nil, errors.Wrap(err, "new mock vault")
 	}
 
 	callOpts := &bind.CallOpts{Context: ctx}
 
-	balance, err := vault.Balances(callOpts, req.Deposit.OnBehalfOf)
+	balance, err := vault.Balances(callOpts, onBehalfOf)
 	if err != nil {
-		return false, errors.Wrap(err, "get balance")
+		return nil, errors.Wrap(err, "get balance")
 	}
 
-	// assumes balance(onBehalfOf) was zero before deposit request
-	// assumes one deposit per test case onBehalfOf addr
-	return balance.Cmp(req.Deposit.Amount) == 0, nil
+	return balance, nil
 }
 
-func getDepositStatus(ctx context.Context, network netconf.ID, backends ethbackend.Backends, deposit DepositReq) (uint8, error) {
+// RequestStatus returns the status of a request in the inbox.
+func RequestStatus(ctx context.Context, network netconf.ID, backends ethbackend.Backends, reqID [32]byte) (uint8, error) {
 	app := MustGetApp(network)
 
 	backend, err := backends.Backend(app.L2.ChainID)
@@ -196,7 +239,7 @@ func getDepositStatus(ctx context.Context, network netconf.ID, backends ethbacke
 
 	callOpts := &bind.CallOpts{Context: ctx}
 
-	req, err := inbox.GetRequest(callOpts, deposit.ID)
+	req, err := inbox.GetRequest(callOpts, reqID)
 	if err != nil {
 		return 0, errors.Wrap(err, "get balance")
 	}
@@ -225,31 +268,35 @@ func addRandomDepositors(n int, backend *ethbackend.Backend) ([]common.Address, 
 	return depositors, nil
 }
 
-func RequestDeposits(ctx context.Context, network netconf.ID, backends ethbackend.Backends, inbox common.Address, deposits ...DepositArgs) ([]DepositReq, error) {
+func RequestDeposit(ctx context.Context, network netconf.ID, backends ethbackend.Backends, inbox common.Address, deposit DepositArgs, opts ...CallOption) (DepositReq, error) {
 	app := MustGetApp(network)
 	backend, err := backends.Backend(app.L2.ChainID)
 	if err != nil {
-		return nil, errors.Wrap(err, "l2 backend")
+		return DepositReq{}, errors.Wrap(err, "l2 backend")
 	}
 
-	var resp []DepositReq
-	for _, deposit := range deposits {
-		if err := mintAndApprove(ctx, app, backend, inbox, deposit); err != nil {
-			return nil, errors.Wrap(err, "mint and approve")
-		}
-
-		req, err := requestAtInbox(ctx, app, backend, inbox, deposit)
-		if err != nil {
-			return nil, errors.Wrap(err, "request at inbox")
-		}
-
-		resp = append(resp, req)
+	if err := mintAndApprove(ctx, app, backend, inbox, deposit); err != nil {
+		return DepositReq{}, errors.Wrap(err, "mint and approve")
 	}
 
-	return resp, nil
+	req, err := requestAtInbox(ctx, app, backend, inbox, deposit, opts...)
+	if err != nil {
+		return DepositReq{}, errors.Wrap(err, "request at inbox")
+	}
+
+	return req, nil
 }
 
-func requestAtInbox(ctx context.Context, app App, backend *ethbackend.Backend, addr common.Address, deposit DepositArgs) (DepositReq, error) {
+type CallOption func(*bindings.SolveCall)
+
+// WithInvalidCall returns an option that sets the call target to an invalid address.
+func WithInvalidCall() CallOption {
+	return func(call *bindings.SolveCall) {
+		call.Target = common.Address{1}
+	}
+}
+
+func requestAtInbox(ctx context.Context, app App, backend *ethbackend.Backend, addr common.Address, deposit DepositArgs, opts ...CallOption) (DepositReq, error) {
 	inbox, err := bindings.NewSolveInbox(addr, backend)
 	if err != nil {
 		return DepositReq{}, errors.Wrap(err, "new solve inbox")
@@ -265,13 +312,18 @@ func requestAtInbox(ctx context.Context, app App, backend *ethbackend.Backend, a
 		return DepositReq{}, errors.Wrap(err, "pack deposit")
 	}
 
-	tx, err := inbox.Request(txOpts,
-		bindings.SolveCall{
-			DestChainId: app.L1.ChainID,
-			Target:      app.L1Vault,
-			Value:       new(big.Int), // 0 native
-			Data:        data,
-		},
+	call := bindings.SolveCall{
+		DestChainId: app.L1.ChainID,
+		Target:      app.L1Vault,
+		Value:       new(big.Int), // 0 native
+		Data:        data,
+	}
+
+	for _, opt := range opts {
+		opt(&call)
+	}
+
+	tx, err := inbox.Request(txOpts, call,
 		[]bindings.SolveTokenDeposit{{
 			Token:  app.L2Token,
 			Amount: deposit.Amount,
@@ -332,7 +384,7 @@ func mintAndApprove(ctx context.Context, app App, backend *ethbackend.Backend, i
 	return nil
 }
 
-func parseReqID(inbox bindings.SolveInboxFilterer, logs []*types.Log) ([32]byte, bool) {
+func parseReqID(inbox bindings.SolveInboxFilterer, logs []*types.Log) (stypes.ReqID, bool) {
 	for _, log := range logs {
 		e, err := inbox.ParseRequested(*log)
 		if err == nil {

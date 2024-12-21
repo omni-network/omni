@@ -170,7 +170,7 @@ contract SolveOutbox_fulfill_test is Test {
                 ConfLevel.Finalized,
                 inbox,
                 abi.encodeCall(ISolveInbox.markFulfilled, (srcReqId, callHash)),
-                100_000
+                125_000
             )
         );
     }

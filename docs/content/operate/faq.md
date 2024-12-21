@@ -93,7 +93,8 @@ Note pure `halo` command is just `rollback`. But when running via `halovisor` on
 
 Operators can still register with Omni's Eigenlayer AVS contract following Eigenlayer's instructions [here](https://docs.eigenlayer.xyz/eigenlayer/operator-guides/operator-installation) to register operator key with their contracts and then run the following command to register within the Omni AVS contract:
 ```bash
-omni operator register --config-file ~/path/to/operator.yaml
+omni operator avs-register --config-file ~/path/to/operator.yaml
+# previously `omni operator register` (v0.11.0 or earlier)
 ```
 
 <aside>

@@ -15,11 +15,11 @@ contract SolveInbox_reject_Test is InboxBase {
         // cannot reject non-existent request
         vm.prank(solver);
         vm.expectRevert(SolveInbox.NotPending.selector);
-        inbox.reject(bytes32(0), Solve.RejectReason.None);
+        inbox.reject({ id: bytes32(0), reason: 0 });
 
         // needs to have solver role
         vm.expectRevert(Ownable.Unauthorized.selector);
-        inbox.reject(bytes32(0), Solve.RejectReason.None);
+        inbox.reject({ id: bytes32(0), reason: 0 });
 
         // create request to cancel before rejecting
         vm.deal(user, 1 ether);
@@ -33,7 +33,7 @@ contract SolveInbox_reject_Test is InboxBase {
         // cannot reject cancelled request
         vm.prank(solver);
         vm.expectRevert(SolveInbox.NotPending.selector);
-        inbox.reject(id, Solve.RejectReason.None);
+        inbox.reject({ id: id, reason: 0 });
 
         // create request to accept before rejecting
         vm.deal(user, 1 ether);
@@ -44,7 +44,7 @@ contract SolveInbox_reject_Test is InboxBase {
         vm.startPrank(solver);
         inbox.accept(id);
         vm.expectRevert(SolveInbox.NotPending.selector);
-        inbox.reject(id, Solve.RejectReason.None);
+        inbox.reject({ id: id, reason: 0 });
         vm.stopPrank();
     }
 
@@ -58,7 +58,9 @@ contract SolveInbox_reject_Test is InboxBase {
 
         // reject request
         vm.prank(solver);
-        inbox.reject(id, Solve.RejectReason.None);
+        inbox.reject({ id: id, reason: 0 });
+
+        Solve.StatusUpdate[] memory history = inbox.getUpdateHistory(id);
 
         assertEq(address(inbox).balance, 1 ether, "address(inbox).balance");
         assertEq(address(user).balance, 0, "address(user).balance");
@@ -68,6 +70,9 @@ contract SolveInbox_reject_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Rejected).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Rejected)"
         );
+        assertEq(history.length, 2, "history.length");
+        assertEq(uint8(history[1].status), uint8(Solve.Status.Rejected), "history[1].status");
+        assertEq(history[1].timestamp, block.timestamp, "history[1].timestamp");
     }
 
     function test_reject_two_requests() public {
@@ -82,9 +87,12 @@ contract SolveInbox_reject_Test is InboxBase {
 
         // reject both requests
         vm.startPrank(solver);
-        inbox.reject(id1, Solve.RejectReason.None);
-        inbox.reject(id2, Solve.RejectReason.None);
+        inbox.reject({ id: id1, reason: 0 });
+        inbox.reject({ id: id2, reason: 0 });
         vm.stopPrank();
+
+        Solve.StatusUpdate[] memory history1 = inbox.getUpdateHistory(id1);
+        Solve.StatusUpdate[] memory history2 = inbox.getUpdateHistory(id2);
 
         assertEq(address(inbox).balance, 2 ether, "address(inbox).balance");
         assertEq(address(user).balance, 0, "address(user).balance");
@@ -95,6 +103,12 @@ contract SolveInbox_reject_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Rejected).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Rejected)"
         );
+        assertEq(history1.length, 2, "history1.length");
+        assertEq(history2.length, 2, "history2.length");
+        assertEq(uint8(history1[1].status), uint8(Solve.Status.Rejected), "history1[1].status");
+        assertEq(uint8(history2[1].status), uint8(Solve.Status.Rejected), "history2[1].status");
+        assertEq(history1[1].timestamp, block.timestamp, "history1[1].timestamp");
+        assertEq(history2[1].timestamp, block.timestamp, "history2[1].timestamp");
     }
 
     function test_reject_oldest_request() public {
@@ -109,8 +123,11 @@ contract SolveInbox_reject_Test is InboxBase {
 
         // reject oldest request
         vm.startPrank(solver);
-        inbox.reject(id1, Solve.RejectReason.None);
+        inbox.reject({ id: id1, reason: 0 });
         vm.stopPrank();
+
+        Solve.StatusUpdate[] memory history1 = inbox.getUpdateHistory(id1);
+        Solve.StatusUpdate[] memory history2 = inbox.getUpdateHistory(id2);
 
         assertEq(address(inbox).balance, 2 ether, "address(inbox).balance");
         assertEq(address(user).balance, 0, "address(user).balance");
@@ -126,6 +143,12 @@ contract SolveInbox_reject_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Pending).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Pending)"
         );
+        assertEq(history1.length, 2, "history1.length");
+        assertEq(history2.length, 1, "history2.length");
+        assertEq(uint8(history1[1].status), uint8(Solve.Status.Rejected), "history1[1].status");
+        assertEq(uint8(history2[0].status), uint8(Solve.Status.Pending), "history2[0].status");
+        assertEq(history1[1].timestamp, block.timestamp, "history1[1].timestamp");
+        assertEq(history2[0].timestamp, block.timestamp, "history2[0].timestamp");
     }
 
     function test_reject_nativeMultiToken() public {
@@ -142,7 +165,9 @@ contract SolveInbox_reject_Test is InboxBase {
 
         // reject request
         vm.prank(solver);
-        inbox.reject(id, Solve.RejectReason.None);
+        inbox.reject({ id: id, reason: 0 });
+
+        Solve.StatusUpdate[] memory history = inbox.getUpdateHistory(id);
 
         assertEq(address(inbox).balance, 1 ether, "address(inbox).balance");
         assertEq(address(user).balance, 0, "address(user).balance");
@@ -156,5 +181,8 @@ contract SolveInbox_reject_Test is InboxBase {
             inbox.getLatestRequestByStatus(Solve.Status.Rejected).id,
             "inbox.getLatestRequestByStatus(Solve.Status.Rejected)"
         );
+        assertEq(history.length, 2, "history.length");
+        assertEq(uint8(history[1].status), uint8(Solve.Status.Rejected), "history[1].status");
+        assertEq(history[1].timestamp, block.timestamp, "history[1].timestamp");
     }
 }

@@ -18,6 +18,12 @@ var tiers = []uint64{
 	gwei(300),
 	gwei(400),
 	gwei(500),
+	gwei(1000), // sepolia gas prices sometimes get this high
+	gwei(1500),
+	gwei(2000),
+	gwei(2500),
+	gwei(3000),
+	gwei(5000),
 }
 
 func Tiers() []uint64 {

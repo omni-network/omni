@@ -12,12 +12,12 @@ func _() {
 	_ = x[rejectDestCallReverts-1]
 	_ = x[rejectInsufficientFee-2]
 	_ = x[rejectInsufficientInventory-3]
-	_ = x[rejectNoTarget-4]
+	_ = x[rejectInvalidTarget-4]
 }
 
-const _rejectReason_name = "NoneDestCallRevertsInsufficientFeeInsufficientInventoryNoTarget"
+const _rejectReason_name = "NoneDestCallRevertsInsufficientFeeInsufficientInventoryInvalidTarget"
 
-var _rejectReason_index = [...]uint8{0, 4, 19, 34, 55, 63}
+var _rejectReason_index = [...]uint8{0, 4, 19, 34, 55, 68}
 
 func (i rejectReason) String() string {
 	if i >= rejectReason(len(_rejectReason_index)-1) {

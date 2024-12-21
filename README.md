@@ -1,12 +1,12 @@
 <h1 align="center">Omni Monorepo</h1>
 
-<p align="center"><a href="https://docs.omni.network/"><img src="https://img.shields.io/badge/Docs-docs.omni.network-blue.svg"></a>
-<a href="https://github.com/omni-network/omni/releases/"><img src="https://img.shields.io/github/release/omni-network/omni.svg"></a>
+<p align="center"><a href="https://docs.omni.network/"><img src="https://img.shields.io/badge/Docs-docs.omni.network-176CFF.svg"></a>
+<a href="https://github.com/omni-network/omni/releases/"><img src="https://img.shields.io/github/release/omni-network/omni.svg?color=176CFF"></a>
 <a href="https://goreportcard.com/report/github.com/omni-network/omni"><img src="https://goreportcard.com/badge/github.com/omni-network/omni"></a>
 <a href="https://github.com/omni-network/omni/actions?query=workflow%3Aci-main"><img src="https://img.shields.io/github/actions/workflow/status/omni-network/omni/ci-main.yaml?label=Tests&logoColor=white" alt="Tests"></a>
 <a href="https://x.com/OmniFDN"><img src="https://img.shields.io/twitter/follow/OmniFDN.svg?label=Follow"></a></p>
 
-<div align="center"><img src="static/omni_banner.png" alt="Logo"></div>
+<div align="center"><img src="docs/website/static/img/omni-banner.png" alt="Logo"></div>
 
 ## About Omni
 
@@ -58,7 +58,7 @@ _If any of above commands fail, see the [troubleshooting section](./e2e/README.m
 
 ## Contributing
 
-We are open to contributions, but don't currently have a formal process for contributors. If you are interested, browse through [open issues](https://github.com/omni-network/omni/issues), read our [code of conduct](./CODE_OF_CONDUCT.md), or chat with the team.
+We are open to contributions, but don't currently have a formal process for contributors. If you are interested, browse through [open issues](https://github.com/omni-network/omni/issues) or reach out to chat with the team.
 
 Follow these steps to set up a functional development environment:
 
@@ -72,4 +72,4 @@ Follow these steps to set up a functional development environment:
 
 ## Security
 
-Please refer to [SECURITY.md](./SECURITY.md).
+We are currently setting up a Bug Bounty program via Immunefi. Until then, you can report security issues to us via email at security at omni dot network.
