@@ -10,6 +10,7 @@
     "forge-std": "github:foundry-rs/forge-std"
   },
   "dependencies": {
-    "createx": "github:pcaversaccio/createx"
+    "createx": "github:pcaversaccio/createx",
+    "solady": "^0.0.286"
   }
 }
