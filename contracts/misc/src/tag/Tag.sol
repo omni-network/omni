@@ -243,9 +243,7 @@ contract Tag is ERC721, XAppBase, Ownable {
     }
 
     function crosschainMint(address to, uint256 amount, address refundTo, bool addGas) public payable {
-        if (block.chainid == OMNI_CHAIN_ID) revert CrosschainOnly();
-        if (to == address(0) || refundTo == address(0)) revert ZeroAddress();
-        if (amount == 0) revert ZeroAmount();
+        _validateCrosschainMint(to, amount, refundTo);
 
         // Handle gas pump fill first
         uint256 requiredEth = omniGasPump.quote((price * amount) + (addGas ? 0.01 ether : 0));
@@ -258,11 +256,7 @@ contract Tag is ERC721, XAppBase, Ownable {
 
         // Refund if necessary
         uint256 totalRequired = requiredEth + pumpFee + fee;
-        if (msg.value < totalRequired) revert InsufficientPayment();
-        if (msg.value > totalRequired) {
-            (bool success,) = payable(msg.sender).call{ value: msg.value - totalRequired }("");
-            if (!success) revert TransferFailed();
-        }
+        _refundNative(msg.sender, totalRequired, msg.value);
     }
 
     function crosschainMintWhitelist(
@@ -272,9 +266,9 @@ contract Tag is ERC721, XAppBase, Ownable {
         address refundTo,
         bool addGas
     ) public payable {
-        if (block.chainid == OMNI_CHAIN_ID) revert CrosschainOnly();
-        if (to == address(0) || refundTo == address(0)) revert ZeroAddress();
-        if (amount == 0) revert ZeroAmount();
+        _validateCrosschainMint(to, amount, refundTo);
+        _validateWhitelist(msg.sender, proof, false);
+        _setWhitelistClaimed(msg.sender);
 
         uint256 totalRequired;
         if (amount > 1) {
@@ -295,11 +289,7 @@ contract Tag is ERC721, XAppBase, Ownable {
         unchecked {
             totalRequired = totalRequired + fee;
         }
-        if (msg.value < totalRequired) revert InsufficientPayment();
-        if (msg.value > totalRequired) {
-            (bool success,) = payable(msg.sender).call{ value: msg.value - totalRequired }("");
-            if (!success) revert TransferFailed();
-        }
+        _refundNative(msg.sender, totalRequired, msg.value);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -342,11 +332,8 @@ contract Tag is ERC721, XAppBase, Ownable {
 
         _setLastTagTimestamp(fromTokenId);
 
-        if (msg.value < fee) revert InsufficientPayment();
-        if (msg.value > fee) {
-            (bool success,) = payable(msg.sender).call{ value: msg.value - fee }("");
-            if (!success) revert TransferFailed();
-        }
+        // Refund if necessary
+        _refundNative(msg.sender, fee, msg.value);
 
         emit TagBroadcasted(destChainId, msg.sender, toTokenId, uint32(block.timestamp));
     }
@@ -365,11 +352,8 @@ contract Tag is ERC721, XAppBase, Ownable {
         // Reset everything except the cursor
         _setExtraData(tokenId, preservedCursor);
 
-        if (msg.value < fee) revert InsufficientPayment();
-        if (msg.value > fee) {
-            (bool success,) = payable(msg.sender).call{ value: msg.value - fee }("");
-            if (!success) revert TransferFailed();
-        }
+        // Refund if necessary
+        _refundNative(msg.sender, fee, msg.value);
 
         emit CrosschainSend(destChainId, msg.sender, to, tokenId);
     }
@@ -382,29 +366,17 @@ contract Tag is ERC721, XAppBase, Ownable {
         if (xmsg.sender != address(this)) revert Unauthorized();
 
         // Determine how many NFTs can be minted
-        uint256 validAmount;
-        bool validMint;
-        for (uint256 i; i < amount; ++i) {
-            validMint = _validateMint(to, amount - i, false, true);
-            if (validMint) {
-                validAmount = amount - i;
-                break;
-            }
-        }
+        (uint256 validAmount, bool validMint) = _calculateValidMintAmount(to, amount, false);
 
         if (!validMint) {
             // Refund if no NFTs can be minted
             uint256 refundAmount = amount * price;
-            (bool success,) = payable(refundTo).call{ value: refundAmount }("");
-            if (!success) revert TransferFailed();
-
+            _refundNative(refundTo, 0, refundAmount);
             emit CrosschainMintFailRefund(refundTo, refundAmount);
         } else if (validAmount < amount) {
             // Refund for NFTs that couldn't be minted
             uint256 refundAmount = (amount - validAmount) * price;
-            (bool success,) = payable(refundTo).call{ value: refundAmount }("");
-            if (!success) revert TransferFailed();
-
+            _refundNative(refundTo, 0, refundAmount);
             emit CrosschainMintPartialFailRefund(refundTo, refundAmount);
         }
 
@@ -412,10 +384,7 @@ contract Tag is ERC721, XAppBase, Ownable {
         if (validMint) _processMint(to, validAmount, false);
 
         // Pay gas if requested
-        if (payGas) {
-            (bool success,) = payable(to).call{ value: 0.01 ether }("");
-            if (!success) revert TransferFailed();
-        }
+        if (payGas) _sendGas(to);
     }
 
     function processCrosschainMintWhitelist(
@@ -435,31 +404,19 @@ contract Tag is ERC721, XAppBase, Ownable {
         }
 
         // Determine how many NFTs can be minted
-        uint256 validAmount;
-        bool validMint;
-        for (uint256 i; i < amount; ++i) {
-            validMint = _validateMint(to, amount - i, true, true);
-            if (validMint) {
-                validAmount = amount - i;
-                break;
-            }
-        }
+        (uint256 validAmount, bool validMint) = _calculateValidMintAmount(to, amount, true);
 
         if (!validMint) {
             // Refund if no paid for NFTs can be minted
             if (amount > 1) {
                 uint256 refundAmount = (amount - 1) * price;
-                (bool success,) = payable(refundTo).call{ value: refundAmount }("");
-                if (!success) revert TransferFailed();
-
+                _refundNative(refundTo, 0, refundAmount);
                 emit CrosschainMintFailRefund(refundTo, refundAmount);
             }
         } else if (validAmount < amount && validAmount > 1) {
             // Refund for NFTs that couldn't be minted
             uint256 refundAmount = (amount - validAmount - 1) * price;
-            (bool success,) = payable(refundTo).call{ value: refundAmount }("");
-            if (!success) revert TransferFailed();
-
+            _refundNative(refundTo, 0, refundAmount);
             emit CrosschainMintPartialFailRefund(refundTo, refundAmount);
         }
 
@@ -467,10 +424,7 @@ contract Tag is ERC721, XAppBase, Ownable {
         if (validMint) _processMint(to, validAmount, true);
 
         // Pay gas if requested
-        if (payGas) {
-            (bool success,) = payable(to).call{ value: 0.01 ether }("");
-            if (!success) revert TransferFailed();
-        }
+        if (payGas) _sendGas(to);
     }
 
     function processCrosschainTag(uint256 tokenId, PendingTag memory pendingTag) public xrecv {
@@ -648,6 +602,27 @@ contract Tag is ERC721, XAppBase, Ownable {
         return true;
     }
 
+    function _validateCrosschainMint(address to, uint256 amount, address refundTo) private view {
+        if (block.chainid == OMNI_CHAIN_ID) revert CrosschainOnly();
+        if (to == address(0) || refundTo == address(0)) revert ZeroAddress();
+        if (amount == 0) revert ZeroAmount();
+    }
+
+    function _calculateValidMintAmount(address to, uint256 amount, bool whitelistClaimed)
+        private
+        view
+        returns (uint256 validAmount, bool validMint)
+    {
+        for (uint256 i; i < amount; ++i) {
+            validMint = _validateMint(to, amount - i, whitelistClaimed, true);
+            if (validMint) {
+                validAmount = amount - i;
+                break;
+            }
+        }
+        return (validAmount, validMint);
+    }
+
     function _processMint(address to, uint256 amount, bool whitelistClaimed) private {
         uint256 tokenId = _totalSupply;
         uint224 auxData = _getAux(msg.sender);
@@ -740,6 +715,20 @@ contract Tag is ERC721, XAppBase, Ownable {
 
     function _beforeTokenTransfer(address, address, uint256 tokenId) internal override {
         _processTagQueue(tokenId, 0);
+    }
+
+    function _refundNative(address to, uint256 expected, uint256 spent) private {
+        if (spent == expected) return;
+        if (spent < expected) revert InsufficientPayment();
+        if (spent > expected) {
+            (bool success,) = payable(to).call{ value: spent - expected }("");
+            if (!success) revert TransferFailed();
+        }
+    }
+
+    function _sendGas(address to) private {
+        (bool success,) = payable(to).call{ value: 0.01 ether }("");
+        if (!success) revert TransferFailed();
     }
 
     receive() external payable { }
