@@ -33,8 +33,8 @@ importers:
         specifier: github:witnet/elliptic-curve-solidity
         version: https://codeload.github.com/witnet/elliptic-curve-solidity/tar.gz/347547890840fd501809dfe0b855206407136ec0
       solady:
-        specifier: ^0.0.261
-        version: 0.0.261
+        specifier: ^0.0.287
+        version: 0.0.287
       solmate:
         specifier: ^6.2.0
         version: 6.2.0
@@ -1168,8 +1168,8 @@ packages:
     resolution: {integrity: sha512-fDW/EZ6Q9RiO8eFG8Hj+7u/oW+XrPTIChwCOM2+th2A6OblDtYYIpve9m+KvI9Z4C9qSEXlaGR6bTEYHReuglA==}
     engines: {node: '>= 0.4'}
 
-  solady@0.0.261:
-    resolution: {integrity: sha512-eCy1mfi5Yp/B3ODOh+qqZtTb+Imp+FrkXtWTjk2T55rqK0d0J2zddaW0QXoYpg9xo2PFAoR+/04kmVKxMfFB5A==}
+  solady@0.0.287:
+    resolution: {integrity: sha512-Cti/U83eqIB0e3UNxZvmkwrFrQCT9YLY1vhVguaWnOVLKzv/OU5tQbKLGpamUzMtcLSxaBjBdhaTlmiciGfhHg==}
 
   solc@0.8.26:
     resolution: {integrity: sha512-yiPQNVf5rBFHwN6SIf3TUUvVAFKcQqmSUFeq+fb6pNRCo0ZCgpYOZDi3BVoezCPIAcKrVYd/qXlBLUP9wVrZ9g==}
@@ -2786,7 +2786,7 @@ snapshots:
       get-intrinsic: 1.2.4
       object-inspect: 1.13.2
 
-  solady@0.0.261: {}
+  solady@0.0.287: {}
 
   solc@0.8.26(debug@4.3.7):
     dependencies:
