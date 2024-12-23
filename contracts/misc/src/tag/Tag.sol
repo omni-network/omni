@@ -45,6 +45,8 @@ contract Tag is ERC721, XAppBase, Ownable {
     event TagBroadcasted(uint64 indexed destChainId, address indexed tagger, uint256 indexed tokenId, uint32 timestamp);
     event CrosschainSend(uint64 indexed destChainId, address indexed from, address to, uint256 indexed tokenId);
     event CrosschainReceive(uint64 indexed srcChainId, address from, address indexed to, uint256 indexed tokenId);
+    event CrosschainMintFailRefund(address indexed to, uint256 amount);
+    event CrosschainMintPartialFailRefund(address indexed to, uint256 amount);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
@@ -178,21 +180,26 @@ contract Tag is ERC721, XAppBase, Ownable {
         return tagQueue[tokenId].length - cursor;
     }
 
-    function feeForCrosschainMint(uint256 amount) public view returns (uint256) {
-        uint256 requiredEth = omniGasPump.quote(price * amount);
+    function feeForCrosschainMint(uint256 amount, bool addGas) public view returns (uint256) {
+        uint256 requiredEth = omniGasPump.quote((price * amount) + (addGas ? 0.01 ether : 0));
         uint256 pumpFee = omniGasPump.xfee();
         bytes memory data = abi.encodeCall(
-            this.processCrosschainMint, (address(type(uint160).max), type(uint256).max, address(type(uint160).max))
+            this.processCrosschainMint,
+            (address(type(uint160).max), type(uint256).max, address(type(uint160).max), addGas)
         );
         return requiredEth + pumpFee + feeFor(OMNI_CHAIN_ID, data, MINT_GAS_LIMIT);
     }
 
-    function feeForCrosschainMintWhitelist(uint256 amount, bytes32[] calldata proof) public view returns (uint256) {
-        uint256 requiredEth = omniGasPump.quote(price * (amount - 1));
+    function feeForCrosschainMintWhitelist(uint256 amount, bytes32[] calldata proof, bool addGas)
+        public
+        view
+        returns (uint256)
+    {
+        uint256 requiredEth = omniGasPump.quote((price * (amount - 1)) + (addGas ? 0.01 ether : 0));
         uint256 pumpFee = omniGasPump.xfee();
         bytes memory data = abi.encodeCall(
             this.processCrosschainMintWhitelist,
-            (address(type(uint160).max), type(uint256).max, proof, address(type(uint160).max))
+            (address(type(uint160).max), type(uint256).max, proof, address(type(uint160).max), addGas)
         );
         return requiredEth + pumpFee + feeFor(OMNI_CHAIN_ID, data, WHITELIST_MINT_GAS_LIMIT);
     }
@@ -235,18 +242,18 @@ contract Tag is ERC721, XAppBase, Ownable {
         _processMint(to, amount, true);
     }
 
-    function crosschainMint(address to, uint256 amount, address refundTo) public payable {
+    function crosschainMint(address to, uint256 amount, address refundTo, bool addGas) public payable {
         if (block.chainid == OMNI_CHAIN_ID) revert CrosschainOnly();
         if (to == address(0) || refundTo == address(0)) revert ZeroAddress();
         if (amount == 0) revert ZeroAmount();
 
         // Handle gas pump fill first
-        uint256 requiredEth = omniGasPump.quote(price * amount);
+        uint256 requiredEth = omniGasPump.quote((price * amount) + (addGas ? 0.01 ether : 0));
         uint256 pumpFee = omniGasPump.xfee();
         omniGasPump.fillUp{ value: requiredEth + pumpFee }(address(this));
 
         // Process the mint afterwards to ensure contract can refund if needed
-        bytes memory data = abi.encodeCall(this.processCrosschainMint, (to, amount, refundTo));
+        bytes memory data = abi.encodeCall(this.processCrosschainMint, (to, amount, refundTo, addGas));
         uint256 fee = xcall(OMNI_CHAIN_ID, ConfLevel.Latest, address(this), data, MINT_GAS_LIMIT);
 
         // Refund if necessary
@@ -258,10 +265,13 @@ contract Tag is ERC721, XAppBase, Ownable {
         }
     }
 
-    function crosschainMintWhitelist(address to, uint256 amount, bytes32[] calldata proof, address refundTo)
-        public
-        payable
-    {
+    function crosschainMintWhitelist(
+        address to,
+        uint256 amount,
+        bytes32[] calldata proof,
+        address refundTo,
+        bool addGas
+    ) public payable {
         if (block.chainid == OMNI_CHAIN_ID) revert CrosschainOnly();
         if (to == address(0) || refundTo == address(0)) revert ZeroAddress();
         if (amount == 0) revert ZeroAmount();
@@ -269,7 +279,7 @@ contract Tag is ERC721, XAppBase, Ownable {
         uint256 totalRequired;
         if (amount > 1) {
             // Handle gas pump fill first
-            uint256 requiredEth = omniGasPump.quote(price * (amount - 1));
+            uint256 requiredEth = omniGasPump.quote((price * (amount - 1)) + (addGas ? 0.01 ether : 0));
             uint256 pumpFee = omniGasPump.xfee();
             omniGasPump.fillUp{ value: requiredEth + pumpFee }(address(this));
 
@@ -278,7 +288,7 @@ contract Tag is ERC721, XAppBase, Ownable {
             }
         }
 
-        bytes memory data = abi.encodeCall(this.processCrosschainMintWhitelist, (to, amount, proof, refundTo));
+        bytes memory data = abi.encodeCall(this.processCrosschainMintWhitelist, (to, amount, proof, refundTo, addGas));
         uint256 fee = xcall(OMNI_CHAIN_ID, ConfLevel.Latest, address(this), data, WHITELIST_MINT_GAS_LIMIT);
 
         // Refund if necessary
@@ -368,7 +378,7 @@ contract Tag is ERC721, XAppBase, Ownable {
     /*                      PORTAL FUNCTIONS                      */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function processCrosschainMint(address to, uint256 amount, address refundTo) public xrecv {
+    function processCrosschainMint(address to, uint256 amount, address refundTo, bool payGas) public xrecv {
         if (xmsg.sender != address(this)) revert Unauthorized();
 
         // Determine how many NFTs can be minted
@@ -384,28 +394,43 @@ contract Tag is ERC721, XAppBase, Ownable {
 
         if (!validMint) {
             // Refund if no NFTs can be minted
-            (bool success,) = payable(refundTo).call{ value: amount * price }("");
+            uint256 refundAmount = amount * price;
+            (bool success,) = payable(refundTo).call{ value: refundAmount }("");
             if (!success) revert TransferFailed();
+
+            emit CrosschainMintFailRefund(refundTo, refundAmount);
         } else if (validAmount < amount) {
             // Refund for NFTs that couldn't be minted
-            (bool success,) = payable(refundTo).call{ value: (amount - validAmount) * price }("");
+            uint256 refundAmount = (amount - validAmount) * price;
+            (bool success,) = payable(refundTo).call{ value: refundAmount }("");
             if (!success) revert TransferFailed();
+
+            emit CrosschainMintPartialFailRefund(refundTo, refundAmount);
         }
 
         // Only mint the valid amount
         if (validMint) _processMint(to, validAmount, false);
+
+        // Pay gas if requested
+        if (payGas) {
+            (bool success,) = payable(to).call{ value: 0.01 ether }("");
+            if (!success) revert TransferFailed();
+        }
     }
 
-    function processCrosschainMintWhitelist(address to, uint256 amount, bytes32[] calldata proof, address refundTo)
-        public
-        xrecv
-    {
+    function processCrosschainMintWhitelist(
+        address to,
+        uint256 amount,
+        bytes32[] calldata proof,
+        address refundTo,
+        bool payGas
+    ) public xrecv {
         if (xmsg.sender != address(this)) revert Unauthorized();
 
         bool whitelistAvailable = _validateWhitelist(msg.sender, proof, true);
         if (!whitelistAvailable) {
             // If whitelist claim isn't available, process as normal mint
-            processCrosschainMint(to, amount - 1, refundTo);
+            processCrosschainMint(to, amount - 1, refundTo, payGas);
             return;
         }
 
@@ -423,17 +448,29 @@ contract Tag is ERC721, XAppBase, Ownable {
         if (!validMint) {
             // Refund if no paid for NFTs can be minted
             if (amount > 1) {
-                (bool success,) = payable(refundTo).call{ value: (amount - 1) * price }("");
+                uint256 refundAmount = (amount - 1) * price;
+                (bool success,) = payable(refundTo).call{ value: refundAmount }("");
                 if (!success) revert TransferFailed();
+
+                emit CrosschainMintFailRefund(refundTo, refundAmount);
             }
         } else if (validAmount < amount && validAmount > 1) {
             // Refund for NFTs that couldn't be minted
-            (bool success,) = payable(refundTo).call{ value: (amount - validAmount - 1) * price }("");
+            uint256 refundAmount = (amount - validAmount - 1) * price;
+            (bool success,) = payable(refundTo).call{ value: refundAmount }("");
             if (!success) revert TransferFailed();
+
+            emit CrosschainMintPartialFailRefund(refundTo, refundAmount);
         }
 
         // Only mint the valid amount
         if (validMint) _processMint(to, validAmount, true);
+
+        // Pay gas if requested
+        if (payGas) {
+            (bool success,) = payable(to).call{ value: 0.01 ether }("");
+            if (!success) revert TransferFailed();
+        }
     }
 
     function processCrosschainTag(uint256 tokenId, PendingTag memory pendingTag) public xrecv {
