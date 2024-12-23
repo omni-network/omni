@@ -7,6 +7,7 @@ import { XAppBase } from "core/src/pkg/XAppBase.sol";
 
 import { MerkleProofLib } from "solady/src/utils/MerkleProofLib.sol";
 import { ConfLevel } from "core/src/libraries/ConfLevel.sol";
+import { IOmniGasPump } from "core/src/interfaces/IOmniGasPump.sol";
 
 contract Tag is ERC721, XAppBase, Ownable {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -22,6 +23,7 @@ contract Tag is ERC721, XAppBase, Ownable {
     error InvalidProof();
     error TooManyMints();
     error DisabledMint();
+    error CrosschainOnly();
     error AlreadyClaimed();
     error TransferFailed();
     error InsufficientPayment();
@@ -54,6 +56,14 @@ contract Tag is ERC721, XAppBase, Ownable {
         address tagger;
     }
 
+    uint64 private constant OMNI_CHAIN_ID = 166;
+    uint64 private constant TAG_GAS_LIMIT = 100_000;
+    uint64 private constant MINT_GAS_LIMIT = 100_000;
+    uint64 private constant TRANSFER_GAS_LIMIT = 100_000;
+    uint64 private constant WHITELIST_MINT_GAS_LIMIT = 100_000;
+
+    IOmniGasPump public immutable omniGasPump;
+
     string private _name;
     string private _symbol;
 
@@ -74,11 +84,14 @@ contract Tag is ERC721, XAppBase, Ownable {
     /*                        CONSTRUCTOR                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    constructor(address owner_, address omni_, string memory name_, string memory symbol_) payable {
-        if (owner_ == address(0) || omni_ == address(0)) revert ZeroAddress();
+    constructor(address owner_, address omni_, address omniGasPump_, string memory name_, string memory symbol_)
+        payable
+    {
+        if (owner_ == address(0) || omni_ == address(0) || omniGasPump_ == address(0)) revert ZeroAddress();
 
         _initializeOwner(owner_);
         _setOmniPortal(omni_);
+        omniGasPump = IOmniGasPump(omniGasPump_);
 
         _name = name_;
         _symbol = symbol_;
@@ -88,7 +101,7 @@ contract Tag is ERC721, XAppBase, Ownable {
         tagCooldown = 1 minutes;
         price = 1 ether;
 
-        if (block.chainid != 166) {
+        if (block.chainid != OMNI_CHAIN_ID) {
             mintFinalized = true;
             emit MintFinalized();
         }
@@ -114,7 +127,7 @@ contract Tag is ERC721, XAppBase, Ownable {
         return _totalSupply;
     }
 
-    function hasClaimedWhitelist(address minter) public view returns (bool) {
+    function getWhitelistClaimStatus(address minter) public view returns (bool) {
         return _hasClaimedWhitelist(minter);
     }
 
@@ -160,15 +173,39 @@ contract Tag is ERC721, XAppBase, Ownable {
         tagCount = uint32(extraData & ((1 << 32) - 1));
     }
 
-    function crosschainTransferFee(uint64 destChainId) public view returns (uint256) {
+    function getPendingTagQueueLength(uint256 tokenId) public view returns (uint256) {
+        uint96 cursor = uint16(_getExtraData(tokenId) >> 80);
+        return tagQueue[tokenId].length - cursor;
+    }
+
+    function feeForCrosschainMint(uint256 amount) public view returns (uint256) {
+        uint256 requiredEth = omniGasPump.quote(price * amount);
+        uint256 pumpFee = omniGasPump.xfee();
+        bytes memory data = abi.encodeCall(
+            this.processCrosschainMint, (address(type(uint160).max), type(uint256).max, address(type(uint160).max))
+        );
+        return requiredEth + pumpFee + feeFor(OMNI_CHAIN_ID, data, MINT_GAS_LIMIT);
+    }
+
+    function feeForCrosschainMintWhitelist(uint256 amount, bytes32[] calldata proof) public view returns (uint256) {
+        uint256 requiredEth = omniGasPump.quote(price * (amount - 1));
+        uint256 pumpFee = omniGasPump.xfee();
+        bytes memory data = abi.encodeCall(
+            this.processCrosschainMintWhitelist,
+            (address(type(uint160).max), type(uint256).max, proof, address(type(uint160).max))
+        );
+        return requiredEth + pumpFee + feeFor(OMNI_CHAIN_ID, data, WHITELIST_MINT_GAS_LIMIT);
+    }
+
+    function feeForCrosschainTransfer(uint64 destChainId) public view returns (uint256) {
         bytes memory data = abi.encodeCall(
             this.processCrosschainTransfer,
             (address(type(uint160).max), address(type(uint160).max), type(uint256).max, type(uint96).max)
         );
-        return feeFor(destChainId, data, 100_000);
+        return feeFor(destChainId, data, TRANSFER_GAS_LIMIT);
     }
 
-    function crosschainTagFee(uint64 destChainId) public view returns (uint256) {
+    function feeForCrosschainTag(uint64 destChainId) public view returns (uint256) {
         bytes memory data = abi.encodeCall(
             this.processCrosschainTag,
             (
@@ -180,7 +217,7 @@ contract Tag is ERC721, XAppBase, Ownable {
                 })
             )
         );
-        return feeFor(destChainId, data, 100_000);
+        return feeFor(destChainId, data, TAG_GAS_LIMIT);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -188,20 +225,71 @@ contract Tag is ERC721, XAppBase, Ownable {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function mint(address to, uint256 amount) public payable {
-        _validateMint(to, amount, false);
+        _validateMint(to, amount, false, false);
         _processMint(to, amount, false);
     }
 
-    function mintWhitelist(address to, bytes32[] calldata proof) public {
-        _validateWhitelist(msg.sender, proof);
-        _validateMint(to, 1, true);
-        _processMint(to, 1, true);
+    function mintWhitelist(address to, uint256 amount, bytes32[] calldata proof) public {
+        _validateWhitelist(msg.sender, proof, false);
+        _validateMint(to, amount, true, false);
+        _processMint(to, amount, true);
     }
 
-    function mintWhitelistWithExtra(address to, uint256 amount, bytes32[] calldata proof) public {
-        _validateWhitelist(msg.sender, proof);
-        _validateMint(to, amount, true);
-        _processMint(to, amount, true);
+    function crosschainMint(address to, uint256 amount, address refundTo) public payable {
+        if (block.chainid == OMNI_CHAIN_ID) revert CrosschainOnly();
+        if (to == address(0) || refundTo == address(0)) revert ZeroAddress();
+        if (amount == 0) revert ZeroAmount();
+
+        // Handle gas pump fill first
+        uint256 requiredEth = omniGasPump.quote(price * amount);
+        uint256 pumpFee = omniGasPump.xfee();
+        omniGasPump.fillUp{ value: requiredEth + pumpFee }(address(this));
+
+        // Process the mint afterwards to ensure contract can refund if needed
+        bytes memory data = abi.encodeCall(this.processCrosschainMint, (to, amount, refundTo));
+        uint256 fee = xcall(OMNI_CHAIN_ID, ConfLevel.Latest, address(this), data, MINT_GAS_LIMIT);
+
+        // Refund if necessary
+        uint256 totalRequired = requiredEth + pumpFee + fee;
+        if (msg.value < totalRequired) revert InsufficientPayment();
+        if (msg.value > totalRequired) {
+            (bool success,) = payable(msg.sender).call{ value: msg.value - totalRequired }("");
+            if (!success) revert TransferFailed();
+        }
+    }
+
+    function crosschainMintWhitelist(address to, uint256 amount, bytes32[] calldata proof, address refundTo)
+        public
+        payable
+    {
+        if (block.chainid == OMNI_CHAIN_ID) revert CrosschainOnly();
+        if (to == address(0) || refundTo == address(0)) revert ZeroAddress();
+        if (amount == 0) revert ZeroAmount();
+
+        uint256 totalRequired;
+        if (amount > 1) {
+            // Handle gas pump fill first
+            uint256 requiredEth = omniGasPump.quote(price * (amount - 1));
+            uint256 pumpFee = omniGasPump.xfee();
+            omniGasPump.fillUp{ value: requiredEth + pumpFee }(address(this));
+
+            unchecked {
+                totalRequired += requiredEth + pumpFee;
+            }
+        }
+
+        bytes memory data = abi.encodeCall(this.processCrosschainMintWhitelist, (to, amount, proof, refundTo));
+        uint256 fee = xcall(OMNI_CHAIN_ID, ConfLevel.Latest, address(this), data, WHITELIST_MINT_GAS_LIMIT);
+
+        // Refund if necessary
+        unchecked {
+            totalRequired = totalRequired + fee;
+        }
+        if (msg.value < totalRequired) revert InsufficientPayment();
+        if (msg.value > totalRequired) {
+            (bool success,) = payable(msg.sender).call{ value: msg.value - totalRequired }("");
+            if (!success) revert TransferFailed();
+        }
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -240,12 +328,15 @@ contract Tag is ERC721, XAppBase, Ownable {
             PendingTag({ fromTokenId: uint32(fromTokenId), timestamp: uint32(block.timestamp), tagger: msg.sender });
 
         bytes memory data = abi.encodeCall(this.processCrosschainTag, (toTokenId, pendingTag));
-        uint256 fee = xcall(destChainId, ConfLevel.Latest, address(this), data, 100_000);
+        uint256 fee = xcall(destChainId, ConfLevel.Latest, address(this), data, TAG_GAS_LIMIT);
 
         _setLastTagTimestamp(fromTokenId);
 
         if (msg.value < fee) revert InsufficientPayment();
-        if (msg.value > fee) payable(msg.sender).transfer(msg.value - fee);
+        if (msg.value > fee) {
+            (bool success,) = payable(msg.sender).call{ value: msg.value - fee }("");
+            if (!success) revert TransferFailed();
+        }
 
         emit TagBroadcasted(destChainId, msg.sender, toTokenId, uint32(block.timestamp));
     }
@@ -259,13 +350,16 @@ contract Tag is ERC721, XAppBase, Ownable {
         uint96 transferData = extraData & ((1 << 80) - 1); // Send everything else (timestamp, points, count)
 
         bytes memory data = abi.encodeCall(this.processCrosschainTransfer, (msg.sender, to, tokenId, transferData));
-        uint256 fee = xcall(destChainId, ConfLevel.Latest, address(this), data, 100_000);
+        uint256 fee = xcall(destChainId, ConfLevel.Latest, address(this), data, TRANSFER_GAS_LIMIT);
 
         // Reset everything except the cursor
         _setExtraData(tokenId, preservedCursor);
 
         if (msg.value < fee) revert InsufficientPayment();
-        if (msg.value > fee) payable(msg.sender).transfer(msg.value - fee);
+        if (msg.value > fee) {
+            (bool success,) = payable(msg.sender).call{ value: msg.value - fee }("");
+            if (!success) revert TransferFailed();
+        }
 
         emit CrosschainSend(destChainId, msg.sender, to, tokenId);
     }
@@ -273,6 +367,74 @@ contract Tag is ERC721, XAppBase, Ownable {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      PORTAL FUNCTIONS                      */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    function processCrosschainMint(address to, uint256 amount, address refundTo) public xrecv {
+        if (xmsg.sender != address(this)) revert Unauthorized();
+
+        // Determine how many NFTs can be minted
+        uint256 validAmount;
+        bool validMint;
+        for (uint256 i; i < amount; ++i) {
+            validMint = _validateMint(to, amount - i, false, true);
+            if (validMint) {
+                validAmount = amount - i;
+                break;
+            }
+        }
+
+        if (!validMint) {
+            // Refund if no NFTs can be minted
+            (bool success,) = payable(refundTo).call{ value: amount * price }("");
+            if (!success) revert TransferFailed();
+        } else if (validAmount < amount) {
+            // Refund for NFTs that couldn't be minted
+            (bool success,) = payable(refundTo).call{ value: (amount - validAmount) * price }("");
+            if (!success) revert TransferFailed();
+        }
+
+        // Only mint the valid amount
+        if (validMint) _processMint(to, validAmount, false);
+    }
+
+    function processCrosschainMintWhitelist(address to, uint256 amount, bytes32[] calldata proof, address refundTo)
+        public
+        xrecv
+    {
+        if (xmsg.sender != address(this)) revert Unauthorized();
+
+        bool whitelistAvailable = _validateWhitelist(msg.sender, proof, true);
+        if (!whitelistAvailable) {
+            // If whitelist claim isn't available, process as normal mint
+            processCrosschainMint(to, amount - 1, refundTo);
+            return;
+        }
+
+        // Determine how many NFTs can be minted
+        uint256 validAmount;
+        bool validMint;
+        for (uint256 i; i < amount; ++i) {
+            validMint = _validateMint(to, amount - i, true, true);
+            if (validMint) {
+                validAmount = amount - i;
+                break;
+            }
+        }
+
+        if (!validMint) {
+            // Refund if no paid for NFTs can be minted
+            if (amount > 1) {
+                (bool success,) = payable(refundTo).call{ value: (amount - 1) * price }("");
+                if (!success) revert TransferFailed();
+            }
+        } else if (validAmount < amount && validAmount > 1) {
+            // Refund for NFTs that couldn't be minted
+            (bool success,) = payable(refundTo).call{ value: (amount - validAmount - 1) * price }("");
+            if (!success) revert TransferFailed();
+        }
+
+        // Only mint the valid amount
+        if (validMint) _processMint(to, validAmount, true);
+    }
 
     function processCrosschainTag(uint256 tokenId, PendingTag memory pendingTag) public xrecv {
         if (xmsg.sender != address(this)) revert Unauthorized();
@@ -411,22 +573,42 @@ contract Tag is ERC721, XAppBase, Ownable {
         return uint32(_getExtraData(tokenId) & ((1 << 32) - 1));
     }
 
-    function _validateWhitelist(address minter, bytes32[] calldata proof) private view {
+    function _validateWhitelist(address minter, bytes32[] calldata proof, bool softFail) private view returns (bool) {
         bytes32 leaf = keccak256(abi.encode(minter));
 
-        if (_hasClaimedWhitelist(minter)) revert AlreadyClaimed();
-        if (!MerkleProofLib.verifyCalldata(proof, root, leaf)) revert InvalidProof();
+        if (softFail) {
+            if (_hasClaimedWhitelist(minter)) return false;
+            if (!MerkleProofLib.verifyCalldata(proof, root, leaf)) return false;
+        } else {
+            if (_hasClaimedWhitelist(minter)) revert AlreadyClaimed();
+            if (!MerkleProofLib.verifyCalldata(proof, root, leaf)) revert InvalidProof();
+        }
+        return true;
     }
 
-    function _validateMint(address to, uint256 amount, bool whitelistClaimed) private view {
+    function _validateMint(address to, uint256 amount, bool whitelistClaimed, bool softFail)
+        private
+        view
+        returns (bool)
+    {
         uint224 mintCount = getMintCount(msg.sender);
 
-        if (!mintEnabled || mintFinalized) revert DisabledMint();
-        if (to == address(0)) revert ZeroAddress();
-        if (amount == 0) revert ZeroAmount();
-        if (mintCount + amount > maxMintsPerWallet) revert TooManyMints();
-        if (whitelistClaimed) --amount;
-        if (msg.value < price * amount) revert InsufficientPayment();
+        if (softFail) {
+            if (!mintEnabled || mintFinalized) return false;
+            if (to == address(0)) return false;
+            if (amount == 0) return false;
+            if (mintCount + amount > maxMintsPerWallet) return false;
+            if (whitelistClaimed) --amount;
+            if (msg.value < price * amount) return false;
+        } else {
+            if (!mintEnabled || mintFinalized) revert DisabledMint();
+            if (to == address(0)) revert ZeroAddress();
+            if (amount == 0) revert ZeroAmount();
+            if (mintCount + amount > maxMintsPerWallet) revert TooManyMints();
+            if (whitelistClaimed) --amount;
+            if (msg.value < price * amount) revert InsufficientPayment();
+        }
+        return true;
     }
 
     function _processMint(address to, uint256 amount, bool whitelistClaimed) private {
@@ -522,4 +704,6 @@ contract Tag is ERC721, XAppBase, Ownable {
     function _beforeTokenTransfer(address, address, uint256 tokenId) internal override {
         _processTagQueue(tokenId, 0);
     }
+
+    receive() external payable { }
 }
