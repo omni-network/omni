@@ -13,6 +13,7 @@ contract Tag is ERC721, XAppBase, Ownable {
     /*                           ERRORS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    error NoSelfTag();
     error NotAHolder();
     error ZeroAmount();
     error ZeroAddress();
@@ -22,16 +23,20 @@ contract Tag is ERC721, XAppBase, Ownable {
     error TooManyMints();
     error DisabledMint();
     error AlreadyClaimed();
+    error TransferFailed();
     error InsufficientPayment();
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           EVENTS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
+    event GameEnded();
     event RootUpdated(bytes32 root);
     event MintEnabled();
     event MintDisabled();
     event MintFinalized();
+    event TagDelaySet(uint16 newDelay);
+    event TagCooldownSet(uint16 newCooldown);
 
     event TagInitiated(uint64 indexed srcChainId, address indexed tagger, uint256 indexed tokenId, uint32 timestamp);
     event TagProcessed(address indexed tagger, uint256 indexed tokenId, uint32 timestamp);
@@ -70,6 +75,8 @@ contract Tag is ERC721, XAppBase, Ownable {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     constructor(address owner_, address omni_, string memory name_, string memory symbol_) payable {
+        if (owner_ == address(0) || omni_ == address(0)) revert ZeroAddress();
+
         _initializeOwner(owner_);
         _setOmniPortal(omni_);
 
@@ -132,6 +139,8 @@ contract Tag is ERC721, XAppBase, Ownable {
     }
 
     function getAuxData(address addr) public view returns (bool whitelistClaimed, uint224 mintCount) {
+        // Current layout (224 bits total):
+        // [whitelistClaimed (1 bit)][mintCount (223 bits)]
         uint224 auxData = _getAux(addr);
         whitelistClaimed = (auxData & (1 << 223)) != 0;
         mintCount = uint224(auxData & ((1 << 223) - 1));
@@ -142,6 +151,8 @@ contract Tag is ERC721, XAppBase, Ownable {
         view
         returns (uint16 cursor, uint32 timestamp, uint16 tagPoints, uint32 tagCount)
     {
+        // Current layout (96 bits total):
+        // [cursor (16 bits)][timestamp (32 bits)][tagPoints (16 bits)][tagCount (32 bits)]
         uint96 extraData = _getExtraData(tokenId);
         cursor = uint16(extraData >> 80);
         timestamp = uint32((extraData >> 48) & ((1 << 32) - 1));
@@ -197,10 +208,9 @@ contract Tag is ERC721, XAppBase, Ownable {
     /*                   INTERACTIVE FUNCTIONS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function updateStats(uint256[] calldata tokenIds) public {
-        if (!tagEnabled) revert TagDisabled();
+    function updateStats(uint256[] calldata tokenIds, uint256 iterations) public {
         for (uint256 i; i < tokenIds.length; ++i) {
-            _processTagQueue(tokenIds[i]);
+            _processTagQueue(tokenIds[i], iterations);
         }
     }
 
@@ -208,6 +218,7 @@ contract Tag is ERC721, XAppBase, Ownable {
         if (!tagEnabled) revert TagDisabled();
         if (_ownerOf(fromTokenId) != msg.sender) revert Unauthorized();
         if (!_exists(toTokenId)) revert TokenDoesNotExist();
+        if (fromTokenId == toTokenId) revert NoSelfTag();
         if (_getLastTagTimestamp(fromTokenId) + tagCooldown > block.timestamp) revert TagCooldown();
 
         PendingTag memory pendingTag =
@@ -222,6 +233,7 @@ contract Tag is ERC721, XAppBase, Ownable {
     function crosschainTag(uint256 fromTokenId, uint256 toTokenId, uint64 destChainId) public payable {
         if (!tagEnabled) revert TagDisabled();
         if (_ownerOf(fromTokenId) != msg.sender) revert Unauthorized();
+        if (fromTokenId == toTokenId) revert NoSelfTag();
         if (_getLastTagTimestamp(fromTokenId) + tagCooldown > block.timestamp) revert TagCooldown();
 
         PendingTag memory pendingTag =
@@ -307,6 +319,26 @@ contract Tag is ERC721, XAppBase, Ownable {
     function updateRoot(bytes32 newRoot) public onlyOwner {
         root = newRoot;
         emit RootUpdated(newRoot);
+    }
+
+    function setTagCooldown(uint16 newCooldown) public onlyOwner {
+        tagCooldown = newCooldown;
+        emit TagCooldownSet(newCooldown);
+    }
+
+    function setTagDelay(uint16 newDelay) public onlyOwner {
+        tagDelay = newDelay;
+        emit TagDelaySet(newDelay);
+    }
+
+    function endGame() public onlyOwner {
+        tagEnabled = false;
+        emit GameEnded();
+    }
+
+    function withdraw(address to) public onlyOwner {
+        (bool success,) = to.call{ value: address(this).balance }("");
+        if (!success) revert TransferFailed();
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -419,9 +451,15 @@ contract Tag is ERC721, XAppBase, Ownable {
         if (whitelistClaimed) {
             _setWhitelistClaimed(msg.sender);
         }
+
+        uint256 billableAmount = price * (whitelistClaimed ? amount - 1 : amount);
+        if (msg.value > billableAmount) {
+            (bool success,) = payable(msg.sender).call{ value: msg.value - billableAmount }("");
+            if (!success) revert TransferFailed();
+        }
     }
 
-    function _processTagQueue(uint256 tokenId) private {
+    function _processTagQueue(uint256 tokenId, uint256 iterations) private {
         uint96 extraData = _getExtraData(tokenId);
         uint32 tagCount = uint32(extraData & ((1 << 32) - 1));
         uint16 tagPoints = uint16((extraData >> 32) & ((1 << 16) - 1));
@@ -430,10 +468,16 @@ contract Tag is ERC721, XAppBase, Ownable {
 
         if (cursor == type(uint16).max) return;
 
-        uint256 length = tagQueue[tokenId].length;
+        // Decide how many we want to process
+        uint256 batchSize = iterations == 0 ? 100 : iterations;
+        uint256 end = cursor + batchSize;
+        uint256 totalLength = tagQueue[tokenId].length;
         uint16 newCursor = cursor;
 
-        for (uint256 i = cursor; i < length; ++i) {
+        // Make sure 'end' does not exceed queue length
+        if (end > totalLength) end = totalLength;
+
+        for (uint256 i = cursor; i < end; ++i) {
             PendingTag memory pendingTag = tagQueue[tokenId][i];
             if (pendingTag.timestamp + tagDelay < block.timestamp) {
                 unchecked {
@@ -476,6 +520,6 @@ contract Tag is ERC721, XAppBase, Ownable {
     }
 
     function _beforeTokenTransfer(address, address, uint256 tokenId) internal override {
-        if (tagEnabled) _processTagQueue(tokenId);
+        _processTagQueue(tokenId, 0);
     }
 }
