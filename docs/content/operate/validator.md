@@ -122,7 +122,7 @@ Consensus public key: 02e47138b658317e8a9ce3fd59c4c41ede153cf2051de3bf9926bd6cfe
 
 At this point, it is only possible to register a validator using the `omni` CLI which only supports insecure hex-encoded private key files.
 
-To generate such a operator private key, run the following `omni` CLI command:
+To generate such an operator private key, run the following `omni` CLI command:
 
 `$ omni operator create-operator-key`
 
