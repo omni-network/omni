@@ -357,7 +357,7 @@ func newUnjailCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "unjail",
 		Short: "Unjail a validator",
-		Long: "Sign and broadcast a unjail transaction that unjails a jailed validator. " +
+		Long: "Sign and broadcast an unjail transaction that unjails a jailed validator. " +
 			"This transaction must be sent by the operator address and costs 0.1 OMNI.",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
