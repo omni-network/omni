@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -11,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/params"
 )
 
@@ -41,14 +43,12 @@ func StartMonitoring(ctx context.Context, network netconf.Network, endpoints xch
 	}
 
 	for _, chain := range network.EVMChains() {
-		isOmniEVM := chain.ID == network.ID.Static().OmniExecutionChainID
-
 		for _, contract := range allContracts {
-			if (contract.OnlyOmniEVM && !isOmniEVM) || (contract.NotOmniEVM && isOmniEVM) {
+			if !contract.IsDeployedOn(chain.ID, network.ID) {
 				continue
 			}
 
-			go monitorContractForever(ctx, contract, chain.Name, rpcClients[chain.ID])
+			go monitorContractForever(ctx, contract, chain, network.ID, rpcClients[chain.ID])
 		}
 	}
 
@@ -59,11 +59,12 @@ func StartMonitoring(ctx context.Context, network netconf.Network, endpoints xch
 func monitorContractForever(
 	ctx context.Context,
 	contract contracts.Contract,
-	chainName string,
+	chain netconf.Chain,
+	network netconf.ID,
 	client ethclient.Client,
 ) {
 	ctx = log.WithCtx(ctx,
-		"chain", chainName,
+		"chain", chain.Name,
 		"name", contract.Name,
 		"address", contract.Address,
 	)
@@ -78,7 +79,7 @@ func monitorContractForever(
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			err := monitorContractOnce(ctx, contract, chainName, client)
+			err := monitorContractOnce(ctx, contract, chain, network, client)
 			if ctx.Err() != nil {
 				return
 			} else if err != nil {
@@ -93,7 +94,8 @@ func monitorContractForever(
 func monitorContractOnce(
 	ctx context.Context,
 	contract contracts.Contract,
-	chainName string,
+	chain netconf.Chain,
+	network netconf.ID,
 	client ethclient.Client,
 ) error {
 	balance, err := client.BalanceAt(ctx, contract.Address, nil)
@@ -106,7 +108,7 @@ func monitorContractOnce(
 	balanceEth := bf / params.Ether
 
 	// Always set the balance metric
-	contractBalance.WithLabelValues(chainName, contract.Name).Set(balanceEth)
+	contractBalance.WithLabelValues(chain.Name, contract.Name).Set(balanceEth)
 
 	// Handle funding threshold checks, if any
 	if contract.FundThresholds != nil {
@@ -115,7 +117,7 @@ func monitorContractOnce(
 			isLow = 1
 		}
 
-		contractBalanceLow.WithLabelValues(chainName, contract.Name).Set(isLow)
+		contractBalanceLow.WithLabelValues(chain.Name, contract.Name).Set(isLow)
 	}
 
 	// Handle withdrawal threshold checks, if any
@@ -125,7 +127,26 @@ func monitorContractOnce(
 			isHigh = 1
 		}
 
-		contractBalanceHigh.WithLabelValues(chainName, contract.Name).Set(isHigh)
+		contractBalanceHigh.WithLabelValues(chain.Name, contract.Name).Set(isHigh)
+	}
+
+	// Monitor token balances, if any
+	if contract.Tokens != nil {
+		for _, t := range contract.Tokens(chain.ID, network) {
+			token, err := bindings.NewIERC20(t.Address, client)
+			if err != nil {
+				return err
+			}
+
+			balance, err := token.BalanceOf(&bind.CallOpts{Context: ctx}, contract.Address)
+			if err != nil {
+				return err
+			}
+
+			bf, _ := balance.Float64()
+			balanceEth := bf / params.Ether
+			contractTokenBalance.WithLabelValues(chain.Name, contract.Name, t.Symbol, t.Address.Hex()).Set(balanceEth)
+		}
 	}
 
 	return nil
