@@ -32,7 +32,7 @@
     "@docusaurus/module-type-aliases": "3.6.3",
     "@docusaurus/theme-classic": "3.7.0",
     "@docusaurus/tsconfig": "3.6.3",
-    "@docusaurus/types": "3.6.3",
+    "@docusaurus/types": "3.7.0",
     "@types/node": "^22.10.2",
     "typescript": "~5.7.2"
   },
