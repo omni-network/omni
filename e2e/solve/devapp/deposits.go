@@ -313,10 +313,10 @@ func requestAtInbox(ctx context.Context, app App, backend *ethbackend.Backend, a
 	}
 
 	call := bindings.SolveCall{
-		DestChainId: app.L1.ChainID,
-		Target:      app.L1Vault,
-		Value:       new(big.Int), // 0 native
-		Data:        data,
+		ChainId: app.L1.ChainID,
+		Target:  app.L1Vault,
+		Value:   new(big.Int), // 0 native
+		Data:    data,
 	}
 
 	for _, opt := range opts {

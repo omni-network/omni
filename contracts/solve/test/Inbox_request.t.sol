@@ -13,7 +13,7 @@ import { InboxBase } from "./InboxBase.sol";
 contract SolveInbox_request_Test is InboxBase {
     /// @dev Test all revert conditions for SolveInbox.request(...)
     function test_request_reverts() public prankUser {
-        Solve.Call memory call = Solve.Call({ destChainId: 0, value: 0, target: address(0), data: bytes("") });
+        Solve.Call memory call = Solve.Call({ chainId: 0, value: 0, target: address(0), data: bytes("") });
         Solve.TokenDeposit[] memory deposits = new Solve.TokenDeposit[](0);
 
         // needs call.target
@@ -21,10 +21,10 @@ contract SolveInbox_request_Test is InboxBase {
         inbox.request(call, deposits);
         call.target = address(1);
 
-        // needs destChainId
+        // needs chainId
         vm.expectRevert(SolveInbox.InvalidCall.selector);
         inbox.request(call, deposits);
-        call.destChainId = 1;
+        call.chainId = 1;
 
         // needs data
         vm.expectRevert(SolveInbox.InvalidCall.selector);
@@ -224,7 +224,7 @@ contract SolveInbox_request_Test is InboxBase {
         assertEq(req.id, status == Solve.Status.Invalid ? bytes32(0) : id, "_assertNewRequest : req.id");
         assertEq(req.from, from, "_assertNewRequest : req.from");
         assertEq(req.call.target, call.target, "_assertNewRequest : req.call.target");
-        assertEq(req.call.destChainId, call.destChainId, "_assertNewRequest : req.call.destChainId");
+        assertEq(req.call.chainId, call.chainId, "_assertNewRequest : req.call.chainId");
         assertEq(req.call.value, call.value, "_assertNewRequest : req.call.value");
         assertEq(req.call.data, call.data, "_assertNewRequest : req.call.data");
 

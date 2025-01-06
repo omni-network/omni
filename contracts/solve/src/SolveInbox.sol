@@ -114,7 +114,7 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, DeployedAt,
         returns (bytes32 id)
     {
         if (call.target == address(0)) revert InvalidCall();
-        if (call.destChainId == 0) revert InvalidCall();
+        if (call.chainId == 0) revert InvalidCall();
         if (call.data.length == 0) revert InvalidCall();
         if (deposits.length == 0 && msg.value == 0) revert NoDeposits();
 
@@ -189,7 +189,7 @@ contract SolveInbox is OwnableRoles, ReentrancyGuard, Initializable, DeployedAt,
         Solve.Request storage req = _requests[id];
         if (req.status != Solve.Status.Accepted) revert NotAccepted();
         if (xmsg.sender != _outbox) revert NotOutbox();
-        if (xmsg.sourceChainId != req.call.destChainId) revert WrongSourceChain();
+        if (xmsg.sourceChainId != req.call.chainId) revert WrongSourceChain();
 
         // Ensure reported call hash matches requested call hash
         if (callHash != _callHash(id, uint64(block.chainid), req.call)) revert WrongCallHash();

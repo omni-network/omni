@@ -48,13 +48,13 @@ library Solve {
 
     /**
      * @notice Details of a call to be executed on another chain.
-     * @param destChainId  ID of the destination chain.
-     * @param value        Amount of native currency to send with the call.
-     * @param target       Address of the target contract on the destination chain.
-     * @param data         Encoded data to be sent with the call.
+     * @param chainId   ID of chain on which the call should be executed.
+     * @param value     Amount of native currency to send with the call.
+     * @param target    Address of the target contract on the destination chain.
+     * @param data      Encoded data to be sent with the call.
      */
     struct Call {
-        uint64 destChainId;
+        uint64 chainId;
         address target;
         uint256 value;
         bytes data;

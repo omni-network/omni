@@ -23,7 +23,7 @@ func getTarget(network netconf.ID, call bindings.SolveCall) (types.Target, error
 
 	var resp *types.Target
 	for _, target := range targets {
-		if target.ChainID() == call.DestChainId && target.Address() == call.Target {
+		if target.ChainID() == call.ChainId && target.Address() == call.Target {
 			if resp != nil {
 				return nil, errors.New("multiple targets found [BUG]")
 			}
@@ -32,7 +32,7 @@ func getTarget(network netconf.ID, call bindings.SolveCall) (types.Target, error
 	}
 
 	if resp == nil {
-		return nil, errors.New("no target found", "dest_chain_id", call.DestChainId, "target_address", call.Target)
+		return nil, errors.New("no target found", "chain_id", call.ChainId, "target_address", call.Target)
 	}
 
 	return *resp, nil

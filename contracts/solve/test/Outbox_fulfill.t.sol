@@ -74,10 +74,10 @@ contract SolveOutbox_fulfill_test is Test {
         vm.startPrank(solver);
 
         // only correct dest chain
-        vm.chainId(call.destChainId + 1);
+        vm.chainId(call.chainId + 1);
         vm.expectRevert(SolveOutbox.WrongDestChain.selector);
         outbox.fulfill(srcReqId, srcChainId, call, new Solve.TokenPrereq[](0));
-        vm.chainId(call.destChainId);
+        vm.chainId(call.chainId);
 
         // only allowed calls
         Solve.Call memory notAllowed = randCall();
@@ -154,7 +154,7 @@ contract SolveOutbox_fulfill_test is Test {
     /// @dev Returns a call to deposit into a vault.
     function vaultCall(address vault, address onBehalfOf, uint256 amount) internal view returns (Solve.Call memory) {
         bytes memory data = abi.encodeCall(MockVault.deposit, (onBehalfOf, amount));
-        return Solve.Call({ destChainId: uint64(block.chainid), target: vault, value: 0, data: data });
+        return Solve.Call({ chainId: uint64(block.chainid), target: vault, value: 0, data: data });
     }
 
     /// @dev Returns expected OmniPortal.xcall Inbox.markFulfilled calldata
@@ -179,7 +179,7 @@ contract SolveOutbox_fulfill_test is Test {
     function randCall() internal returns (Solve.Call memory) {
         uint256 rand = vm.randomUint(1, 1000);
         return Solve.Call({
-            destChainId: uint64(block.chainid),
+            chainId: uint64(block.chainid),
             value: rand * 1 ether,
             target: address(uint160(rand)),
             data: abi.encode("data", rand)

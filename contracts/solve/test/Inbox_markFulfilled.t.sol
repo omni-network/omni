@@ -29,16 +29,16 @@ contract SolveInbox_markFulfilled_Test is InboxBase {
         // must be xcall from outbox
         vm.expectRevert(SolveInbox.NotOutbox.selector);
         portal.mockXCall({
-            sourceChainId: call.destChainId,
+            sourceChainId: call.chainId,
             sender: address(1234), // not outbox
             data: abi.encodeCall(inbox.markFulfilled, (id, callHash(id, call))),
             to: address(inbox)
         });
 
-        // must be xcall from call.destChainId
+        // must be xcall from call.chainId
         vm.expectRevert(SolveInbox.WrongSourceChain.selector);
         portal.mockXCall({
-            sourceChainId: 1234, // not call.destChainId
+            sourceChainId: 1234, // not call.chainId
             sender: address(outbox),
             data: abi.encodeCall(inbox.markFulfilled, (id, callHash(id, call))),
             to: address(inbox)
@@ -47,7 +47,7 @@ contract SolveInbox_markFulfilled_Test is InboxBase {
         // must have correct call hash
         vm.expectRevert(SolveInbox.WrongCallHash.selector);
         portal.mockXCall({
-            sourceChainId: call.destChainId,
+            sourceChainId: call.chainId,
             sender: address(outbox),
             data: abi.encodeCall(inbox.markFulfilled, (id, bytes32(uint256(1234)))), // not correct call hash
             to: address(inbox)
@@ -72,7 +72,7 @@ contract SolveInbox_markFulfilled_Test is InboxBase {
         vm.expectEmit(address(inbox));
         emit ISolveInbox.Fulfilled(id, callHash(id, call), solver);
         portal.mockXCall({
-            sourceChainId: call.destChainId,
+            sourceChainId: call.chainId,
             sender: address(outbox),
             data: abi.encodeCall(inbox.markFulfilled, (id, callHash(id, call))),
             to: address(inbox)

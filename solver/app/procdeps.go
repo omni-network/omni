@@ -77,7 +77,7 @@ func newFulfiller(
 	solverAddr, outboxAddr common.Address,
 ) func(ctx context.Context, srcChainID uint64, req bindings.SolveRequest) error {
 	return func(ctx context.Context, srcChainID uint64, req bindings.SolveRequest) error {
-		destChainID := req.Call.DestChainId // Fulfilling happens on destination chain
+		destChainID := req.Call.ChainId // Fulfilling happens on destination chain
 		outbox, ok := outboxContracts[destChainID]
 		if !ok {
 			return errors.New("unknown chain")
