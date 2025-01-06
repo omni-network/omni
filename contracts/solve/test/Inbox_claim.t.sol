@@ -39,7 +39,7 @@ contract SolveInbox_claim_Test is InboxBase {
 
         // mark fulfilled
         portal.mockXCall({
-            sourceChainId: call.destChainId,
+            sourceChainId: call.chainId,
             sender: address(outbox),
             data: abi.encodeCall(inbox.markFulfilled, (id, callHash(id, call))),
             to: address(inbox)
@@ -163,7 +163,7 @@ contract SolveInbox_claim_Test is InboxBase {
 
         // mark fulfilled
         portal.mockXCall({
-            sourceChainId: call.destChainId,
+            sourceChainId: call.chainId,
             sender: address(outbox),
             data: abi.encodeCall(inbox.markFulfilled, (id, callHash(id, call))),
             to: address(inbox)

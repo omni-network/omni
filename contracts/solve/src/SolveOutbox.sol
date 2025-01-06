@@ -129,7 +129,7 @@ contract SolveOutbox is OwnableRoles, ReentrancyGuard, Initializable, DeployedAt
         Solve.Call calldata call,
         Solve.TokenPrereq[] calldata prereqs
     ) external payable onlyRoles(SOLVER) nonReentrant {
-        if (call.destChainId != block.chainid) revert WrongDestChain();
+        if (call.chainId != block.chainid) revert WrongDestChain();
         if (!allowedCalls[call.target][bytes4(call.data)]) revert CallNotAllowed();
 
         // If the call has already been fulfilled, revert. Else, mark fulfilled

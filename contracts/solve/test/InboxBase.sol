@@ -41,7 +41,7 @@ contract InboxBase is Test {
     function randCall() internal returns (Solve.Call memory) {
         uint256 rand = vm.randomUint(1, 1000);
         return Solve.Call({
-            destChainId: uint64(rand),
+            chainId: uint64(rand),
             value: rand * 1 ether,
             target: address(uint160(rand)),
             data: abi.encode("data", rand)
