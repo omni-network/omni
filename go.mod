@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	cosmossdk.io/api v0.7.6
-	cosmossdk.io/core v0.11.2 // Pegged to v0.11.0 for cosmos-sdk v0.50.3
+	cosmossdk.io/core v1.0.0 // Pegged to v0.11.0 for cosmos-sdk v0.50.3
 	cosmossdk.io/depinject v1.1.0
 	cosmossdk.io/errors v1.0.1
 	cosmossdk.io/log v1.4.1
@@ -297,6 +297,7 @@ require (
 	buf.build/go/protoyaml v0.2.0 // indirect
 	buf.build/go/spdx v0.2.0 // indirect
 	cel.dev/expr v0.18.0 // indirect
+	cosmossdk.io/schema v1.0.0 // indirect
 	github.com/Microsoft/hcsshim v0.12.9 // indirect
 	github.com/containerd/cgroups/v3 v3.0.3 // indirect
 	github.com/containerd/containerd v1.7.23 // indirect
