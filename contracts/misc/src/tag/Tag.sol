@@ -259,16 +259,15 @@ contract Tag is ERC721, XAppBase, Ownable {
         _validateCrosschainMint(to, amount, refundTo);
 
         // Handle gas pump fill first
-        uint256 requiredEth = omniGasPump.quote((price * amount) + (addGas ? 0.01 ether : 0));
-        uint256 pumpFee = omniGasPump.xfee();
-        omniGasPump.fillUp{ value: requiredEth + pumpFee }(address(this));
+        uint256 pumpFee = omniGasPump.quote((price * amount) + (addGas ? 0.01 ether : 0));
+        omniGasPump.fillUp{ value: pumpFee }(address(this));
 
         // Process the mint afterwards to ensure contract can refund if needed
         bytes memory data = abi.encodeCall(this.processCrosschainMint, (msg.sender, to, amount, refundTo, addGas));
-        uint256 fee = xcall(OMNI_CHAIN_ID, ConfLevel.Latest, address(this), data, MINT_GAS_LIMIT);
+        uint256 xcallFee = xcall(OMNI_CHAIN_ID, ConfLevel.Latest, address(this), data, MINT_GAS_LIMIT);
 
         // Refund if necessary
-        uint256 totalRequired = requiredEth + pumpFee + fee;
+        uint256 totalRequired = pumpFee + xcallFee;
         _refundNative(msg.sender, totalRequired, msg.value);
     }
 
@@ -286,22 +285,21 @@ contract Tag is ERC721, XAppBase, Ownable {
         uint256 totalRequired;
         if (amount > 1) {
             // Handle gas pump fill first
-            uint256 requiredEth = omniGasPump.quote((price * (amount - 1)) + (addGas ? 0.01 ether : 0));
-            uint256 pumpFee = omniGasPump.xfee();
-            omniGasPump.fillUp{ value: requiredEth + pumpFee }(address(this));
+            uint256 pumpFee = omniGasPump.quote((price * (amount - 1)) + (addGas ? 0.01 ether : 0));
+            omniGasPump.fillUp{ value: pumpFee }(address(this));
 
             unchecked {
-                totalRequired += requiredEth + pumpFee;
+                totalRequired += pumpFee;
             }
         }
 
         bytes memory data =
             abi.encodeCall(this.processCrosschainMintWhitelist, (msg.sender, to, amount, proof, refundTo, addGas));
-        uint256 fee = xcall(OMNI_CHAIN_ID, ConfLevel.Latest, address(this), data, WHITELIST_MINT_GAS_LIMIT);
+        uint256 xcallFee = xcall(OMNI_CHAIN_ID, ConfLevel.Latest, address(this), data, WHITELIST_MINT_GAS_LIMIT);
 
         // Refund if necessary
         unchecked {
-            totalRequired = totalRequired + fee;
+            totalRequired += xcallFee;
         }
         _refundNative(msg.sender, totalRequired, msg.value);
     }
