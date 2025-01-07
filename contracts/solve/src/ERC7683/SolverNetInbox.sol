@@ -26,7 +26,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @notice Typehash for the order data.
      */
     bytes32 internal constant ORDER_DATA_TYPEHASH = keccak256(
-        "SolverNetIntent(uint64 srcChainId,uint64 destChainId,TokenPrereq[] tokenPrereqs,Call call)TokenPrereq(bytes32 token,bytes32 spender,uint256 amount)Call(bytes32 target,uint256 value,bytes data)"
+        "OrderData(Call call,Deposit[] deposits)Call(uint64 destChainId,bytes32 target,uint256 value,bytes data,TokenExpense[] expenses)TokenExpense(bytes32 token,bytes32 spender,uint256 amount)Deposit(bytes32 token,uint256 amount)"
     ); // Not really needed until we support more than one order type or gasless orders
 
     /**
@@ -371,7 +371,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
                 to.safeTransferETH(deposit.amount);
             } else {
                 address token = _bytes32ToAddress(deposit.token);
-                token.safeTransferFrom(address(this), to, deposit.amount);
+                token.safeTransfer(to, deposit.amount);
             }
         }
     }
