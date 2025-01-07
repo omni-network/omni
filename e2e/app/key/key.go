@@ -40,7 +40,7 @@ func (t Type) String() string {
 	return string(t)
 }
 
-// Key wraps a cometBFT private key adding custom an address function.
+// Key wraps a cometBFT private key adding custom address function.
 type Key struct {
 	crypto.PrivKey
 }
