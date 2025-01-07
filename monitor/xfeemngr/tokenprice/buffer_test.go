@@ -51,11 +51,22 @@ func TestBufferStream(t *testing.T) {
 		live, err := pricer.Price(ctx, tokens.OMNI, tokens.ETH)
 		require.NoError(t, err)
 
+		// check if any live price is outside threshold
+		shouldRefresh := false
 		for token, price := range live {
 			if inThreshold(price, buffed[token], thresh) {
-				require.InEpsilon(t, buffed[token], b.Price(token), 0.001, "should not update")
-			} else {
+				continue
+			}
+
+			shouldRefresh = true
+		}
+
+		// if any price is outside threshold, all prices should be updated
+		for token, price := range live {
+			if shouldRefresh {
 				require.InEpsilon(t, price, b.Price(token), 0.001, "should update")
+			} else {
+				require.InEpsilon(t, buffed[token], b.Price(token), 0.001, "should not update")
 			}
 		}
 	}

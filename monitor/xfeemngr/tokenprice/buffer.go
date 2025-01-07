@@ -71,16 +71,23 @@ func (b *buffer) stream(ctx context.Context) {
 
 		guageLive(prices)
 
-		// update buffered prices, if necessary
+		// check if any prices have changed by more than the threshold
+		refresh := false
 		for token, price := range prices {
 			buffed, ok := b.price(token)
 
-			// if price is buffered, and is within threshold, skip
 			if ok && inThreshold(price, buffed, b.threshold) {
 				continue
 			}
 
-			b.setPrice(token, price)
+			refresh = true
+		}
+
+		// if any outside threshold, update all
+		if refresh {
+			for token, price := range prices {
+				b.setPrice(token, price)
+			}
 		}
 
 		b.gaugeBuffered()
