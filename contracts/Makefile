@@ -36,7 +36,8 @@ all: install-deps build bindings allocs ## Build contracts, generate bindings an
 CORE_CONTRACTS := OmniPortal FeeOracleV1 Create3 TransparentUpgradeableProxy \
 			Staking Slashing OmniBridgeL1 OmniBridgeNative Omni WOmni \
 			PortalRegistry AllocPredeploys PingPong ProxyAdmin Admin \
-			OmniGasPump OmniGasStation FeeOracleV2
+			OmniGasPump OmniGasStation FeeOracleV2 IERC20 \
+			node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol:IERC20
 
 SOLVE_CONTRACTS := SolveInbox SolveOutbox MockToken MockVault
 

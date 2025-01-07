@@ -114,10 +114,8 @@ func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool
 				"address", contract.Address,
 			)
 
-			isOmniEVM := chain.ChainID == def.Testnet.Network.Static().OmniExecutionChainID
-
-			if contract.OnlyOmniEVM && !isOmniEVM {
-				log.Info(ctrCtx, "Skipping non-OmniEVM chain", "chain", chain.ChainID)
+			if !contract.IsDeployedOn(chain.ChainID, def.Testnet.Network) {
+				log.Info(ctrCtx, "Skipping chain without deplyment", "chain", chain.ChainID, "contract", contract.Name)
 				continue
 			}
 

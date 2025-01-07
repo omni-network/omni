@@ -13,6 +13,13 @@ var (
 		Help:      "The balance of the contract on a specific chain in ether. Alert if low or high.",
 	}, []string{"chain", "name"})
 
+	contractTokenBalance = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "monitor",
+		Subsystem: "contract",
+		Name:      "balance_token",
+		Help:      "The balance of the contract of specific ERC20 tokens on a specific chain.",
+	}, []string{"chain", "name", "token_symbol", "token_address"})
+
 	contractBalanceLow = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "monitor",
 		Subsystem: "contract",

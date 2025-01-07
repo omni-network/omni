@@ -17,10 +17,15 @@ import (
 type Contract struct {
 	Name               string
 	Address            common.Address
-	OnlyOmniEVM        bool
-	NotOmniEVM         bool
 	FundThresholds     *FundThresholds
 	WithdrawThresholds *WithdrawThresholds
+	IsDeployedOn       func(chainID uint64, network netconf.ID) bool
+	Tokens             func(chainID uint64, network netconf.ID) []Token
+}
+
+type Token struct {
+	Symbol  string
+	Address common.Address
 }
 
 // ToMonitor returns all contracts for the given network relevant to the monitor.
@@ -30,37 +35,69 @@ func ToMonitor(ctx context.Context, network netconf.ID) ([]Contract, error) {
 		return nil, err
 	}
 
+	// GasStation funds user GasPump requests, and needs a large OMNI balance. It is only deployed on OmniEVM.
+	gasStation := Contract{
+		Name:           "gas-station",
+		Address:        addrs.GasStation,
+		FundThresholds: &FundThresholds{minEther: 10, targetEther: 100},
+		IsDeployedOn:   isOmni,
+	}
+
+	// GasPump is collects ETH from users. It is only deployed on ETH chains.
+	gasPump := Contract{
+		Name:               "gas-pump",
+		Address:            addrs.GasPump,
+		WithdrawThresholds: &WithdrawThresholds{maxEther: 10},
+		IsDeployedOn:       isNotOmni,
+	}
+
+	// Staking contract collects validator deposits. It is only deployed on OmniEVM.
+	staking := Contract{
+		Name:         "staking",
+		Address:      common.HexToAddress(predeploys.Staking),
+		IsDeployedOn: isOmni,
+	}
+
+	// NativeBridge collects & spends native OMNI. It is only deployed on OmniEVM.
+	nativeBridge := Contract{
+		Name:         "native-bridge",
+		Address:      common.HexToAddress(predeploys.OmniBridgeNative),
+		IsDeployedOn: isOmni,
+	}
+
+	// L1Bridge collects & spends OMNI ERC20 on Ethereum. It is only deployed on Ethereum.
+	l1Bridge := Contract{
+		Name:         "l1-bridge",
+		Address:      addrs.L1Bridge,
+		IsDeployedOn: isEthereum,
+		Tokens: func(chainID uint64, network netconf.ID) []Token {
+			if !netconf.IsEthereumChain(network, chainID) {
+				return nil
+			}
+
+			return []Token{{Symbol: "OMNI", Address: addrs.Token}}
+		},
+	}
+
 	return []Contract{
-		// Funded contracts
-		{
-			Name:           "gas-station",
-			Address:        addrs.GasStation,
-			OnlyOmniEVM:    true,
-			NotOmniEVM:     false,
-			FundThresholds: &FundThresholds{minEther: 10, targetEther: 100}, // GasStation funds user GasPump requests, and needs a large OMNI balance.
-		},
-		// Withdrawal contracts
-		{
-			Name:               "gas-pump",
-			Address:            addrs.GasPump,
-			OnlyOmniEVM:        false,
-			NotOmniEVM:         true,
-			WithdrawThresholds: &WithdrawThresholds{maxEther: 10},
-		},
-		// Monitoring contracts
-		{
-			Name:        "staking",
-			Address:     common.HexToAddress(predeploys.Staking),
-			OnlyOmniEVM: true,
-			NotOmniEVM:  false,
-		},
-		{
-			Name:        "nativeBridge",
-			Address:     common.HexToAddress(predeploys.OmniBridgeNative),
-			OnlyOmniEVM: true,
-			NotOmniEVM:  false,
-		},
+		gasStation,
+		gasPump,
+		staking,
+		nativeBridge,
+		l1Bridge,
 	}, nil
+}
+
+func isOmni(chainID uint64, network netconf.ID) bool {
+	return chainID == network.Static().OmniExecutionChainID
+}
+
+func isNotOmni(chainID uint64, network netconf.ID) bool {
+	return chainID != network.Static().OmniExecutionChainID && chainID != network.Static().OmniConsensusChainIDUint64()
+}
+
+func isEthereum(chainID uint64, network netconf.ID) bool {
+	return netconf.IsEthereumChain(network, chainID)
 }
 
 // ToFund returns all fundable contracts for the given network.
