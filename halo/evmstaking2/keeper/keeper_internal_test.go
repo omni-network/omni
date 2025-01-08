@@ -114,8 +114,7 @@ func TestDeliveryWithBrokenServer(t *testing.T) {
 
 	keeper, ctx := setupKeeper(t, deliverInterval, sServerMock)
 
-	var hash common.Hash
-	events, err := evmengkeeper.FetchProcEvents(ctx, ethClientMock, keeper, hash)
+	events, err := getStakingEvents(ctx, ethClientMock, keeper)
 	require.NoError(t, err)
 
 	expectDelegates := 1
@@ -151,8 +150,7 @@ func TestDeliveryOfInvalidEvents(t *testing.T) {
 
 	keeper, ctx := setupKeeper(t, deliverInterval, sServerMock)
 
-	var hash common.Hash
-	events, err := evmengkeeper.FetchProcEvents(ctx, ethClientMock, keeper, hash)
+	events, err := getStakingEvents(ctx, ethClientMock, keeper)
 	require.NoError(t, err)
 
 	expectDelegates := 1
@@ -231,8 +229,7 @@ func TestHappyPathDelivery(t *testing.T) {
 
 	keeper, ctx := setupKeeper(t, deliverInterval, sServerMock)
 
-	var hash common.Hash
-	events, err := evmengkeeper.FetchProcEvents(ctx, ethClientMock, keeper, hash)
+	events, err := getStakingEvents(ctx, ethClientMock, keeper)
 	require.NoError(t, err)
 
 	expectDelegates := 1
@@ -242,7 +239,7 @@ func TestHappyPathDelivery(t *testing.T) {
 	require.Len(t, events, expectTotalEvents)
 
 	for _, event := range events {
-		err := keeper.Deliver(ctx, hash, event)
+		err := keeper.Deliver(ctx, common.Hash{}, event)
 		require.NoError(t, err)
 	}
 
@@ -347,4 +344,12 @@ func setupKeeper(
 	require.NoError(t, err, "new keeper")
 
 	return k, ctx
+}
+
+// getStakingEvents returns the staking events from the mock engine client.
+func getStakingEvents(ctx context.Context, cl ethclient.EngineClient, keeper *Keeper) ([]etypes.EVMEvent, error) {
+	// Enable simple staking to ensure events are in correct order, since FetchProcEvents sorts either by index or address>topic>data.
+	ctx = feature.WithFlag(ctx, feature.FlagSimpleEVMEvents)
+
+	return evmengkeeper.FetchProcEvents(ctx, cl, common.Hash{}, keeper)
 }

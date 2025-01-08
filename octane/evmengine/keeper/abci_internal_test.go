@@ -11,6 +11,7 @@ import (
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/tutil"
 	etypes "github.com/omni-network/omni/octane/evmengine/types"
@@ -202,7 +203,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 
 		for _, msg := range tx.GetMsgs() {
 			if _, ok := msg.(*etypes.MsgExecutionPayload); ok {
-				assertExecutablePayload(t, msg, ts.Unix(), nextBlock.Hash(), frp, uint64(req.Height), 0)
+				assertExecutablePayload(t, msg, ts.Unix(), nextBlock.Hash(), frp, uint64(req.Height), 0, 1)
 			}
 		}
 	})
@@ -251,7 +252,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		// assert that the message is an executable payload
 		for _, msg := range tx.GetMsgs() {
 			if _, ok := msg.(*etypes.MsgExecutionPayload); ok {
-				assertExecutablePayload(t, msg, req.Time.Unix(), headHash, frp, head.GetBlockHeight()+1, 0)
+				assertExecutablePayload(t, msg, req.Time.Unix(), headHash, frp, head.GetBlockHeight()+1, 0, 1)
 			}
 			if msgDelegate, ok := msg.(*stypes.MsgDelegate); ok {
 				require.Equal(t, msgDelegate.Amount, sdk.NewInt64Coin("stake", 100))
@@ -329,9 +330,58 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			found = true
 			expected := [][]byte{commitment1, commitment2}
 			require.EqualValues(t, expected, payload.BlobCommitments)
-			assertExecutablePayload(t, msg, req.Time.Unix(), headHash, frp, head.GetBlockHeight()+1, len(expected))
+			assertExecutablePayload(t, msg, req.Time.Unix(), headHash, frp, head.GetBlockHeight()+1, len(expected), 1)
 		}
 		require.True(t, found)
+	})
+
+	t.Run("TestSimpleEvmEvents", func(t *testing.T) {
+		t.Parallel()
+		// setup dependencies
+		ctx, storeService := setupCtxStore(t, nil)
+		ctx = ctx.WithContext(feature.WithFlag(ctx, feature.FlagSimpleEVMEvents))
+
+		cdc := getCodec(t)
+		txConfig := authtx.NewTxConfig(cdc, nil)
+
+		mockEngine, err := newMockEngineAPI(0)
+		require.NoError(t, err)
+
+		ap := mockAddressProvider{
+			address: common.BytesToAddress([]byte("test")),
+		}
+		frp := newRandomFeeRecipientProvider()
+		keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, mockEventProc{})
+		require.NoError(t, err)
+		keeper.SetVoteProvider(mockVEProvider{})
+		populateGenesisHead(ctx, t, keeper)
+
+		// Get the parent block we will build on top of
+		head, err := keeper.getExecutionHead(ctx)
+		require.NoError(t, err)
+		headHash, err := head.Hash()
+		require.NoError(t, err)
+
+		req := &abci.RequestPrepareProposal{
+			Txs:        nil,
+			Height:     int64(2),
+			Time:       time.Now(),
+			MaxTxBytes: cmttypes.MaxBlockSizeBytes,
+		}
+
+		resp, err := keeper.PrepareProposal(withRandomErrs(t, ctx), req)
+		tutil.RequireNoError(t, err)
+		require.NotNil(t, resp)
+
+		// decode the txn and get the messages
+		tx, err := txConfig.TxDecoder()(resp.Txs[0])
+		require.NoError(t, err)
+
+		for _, msg := range tx.GetMsgs() {
+			if _, ok := msg.(*etypes.MsgExecutionPayload); ok {
+				assertExecutablePayload(t, msg, req.Time.Unix(), headHash, frp, head.GetBlockHeight()+1, 0, 0)
+			}
+		}
 	})
 }
 
@@ -402,6 +452,7 @@ func assertExecutablePayload(
 	frp etypes.FeeRecipientProvider,
 	height uint64,
 	blobs int,
+	events int,
 ) {
 	t.Helper()
 	executionPayload, ok := msg.(*etypes.MsgExecutionPayload)
@@ -417,9 +468,11 @@ func assertExecutablePayload(
 	require.Empty(t, payload.Withdrawals)
 	require.Equal(t, payload.Number, height)
 
-	require.Len(t, executionPayload.PrevPayloadEvents, 1)
-	evmLog := executionPayload.PrevPayloadEvents[0]
-	require.Equal(t, evmLog.Address, zeroAddr.Bytes())
+	require.Len(t, executionPayload.PrevPayloadEvents, events)
+	if events > 0 {
+		evmLog := executionPayload.PrevPayloadEvents[0]
+		require.Equal(t, evmLog.Address, zeroAddr.Bytes())
+	}
 
 	require.Len(t, executionPayload.BlobCommitments, blobs)
 }

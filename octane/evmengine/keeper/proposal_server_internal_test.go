@@ -7,6 +7,7 @@ import (
 
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/expbackoff"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
@@ -85,6 +86,10 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 	}
 
 	newPayload(sdkCtx)
+	assertExecutionPayload(sdkCtx)
+
+	// Again, but with simple events
+	sdkCtx = sdkCtx.WithContext(feature.WithFlag(sdkCtx, feature.FlagSimpleEVMEvents))
 	assertExecutionPayload(sdkCtx)
 }
 

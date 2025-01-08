@@ -6,6 +6,7 @@ import (
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/octane/evmengine/types"
@@ -89,13 +90,29 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 		return nil, err
 	}
 
-	parentHeight, ok := umath.Subtract(payload.Number, 1)
-	if !ok { // payload.Number == 0
-		return nil, errors.New("invalid zero payload number")
+	var events []types.EVMEvent
+	var eventsHeight uint64
+	var eventsBlockHash common.Hash
+
+	if feature.FlagSimpleEVMEvents.Enabled(ctx) {
+		eventsHeight = payload.Number
+		eventsBlockHash = payload.BlockHash
+		events, err = s.evmEvents(ctx, payload.BlockHash)
+		if err != nil {
+			return nil, errors.Wrap(err, "fetch evm event logs")
+		}
+	} else {
+		parentHeight, ok := umath.Subtract(payload.Number, 1)
+		if !ok { // payload.Number == 0
+			return nil, errors.New("invalid zero payload number")
+		}
+
+		eventsHeight = parentHeight
+		eventsBlockHash = payload.ParentHash
+		events = msg.PrevPayloadEvents
 	}
 
-	// Deliver all the previous payload log events
-	if err := s.deliverEvents(ctx, parentHeight, payload.ParentHash, msg.PrevPayloadEvents); err != nil {
+	if err := s.deliverEvents(ctx, eventsHeight, eventsBlockHash, events); err != nil {
 		return nil, errors.Wrap(err, "deliver event logs")
 	}
 

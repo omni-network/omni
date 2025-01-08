@@ -10,6 +10,7 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/octane/evmengine/types"
@@ -91,6 +92,10 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 		events, err := keeper.evmEvents(ctx, block.Hash())
 		require.NoError(t, err)
 
+		if feature.FlagSimpleEVMEvents.Enabled(ctx) {
+			events = nil
+		}
+
 		resp, err := msgSrv.ExecutionPayload(ctx, &types.MsgExecutionPayload{
 			Authority:         authtypes.NewModuleAddress(types.ModuleName).String(),
 			ExecutionPayload:  payloadData,
@@ -111,11 +116,11 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 	newPayload(ctx)
 	assertExecutionPayload(ctx)
 
-	// now lets run optimistic flow
+	// Again, but with simple events
+	ctx = ctx.WithContext(feature.WithFlag(ctx, feature.FlagSimpleEVMEvents))
 	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Second))
 
 	newPayload(ctx)
-	keeper.SetBuildOptimistic(true)
 	assertExecutionPayload(ctx)
 }
 
