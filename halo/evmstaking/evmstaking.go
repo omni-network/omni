@@ -224,7 +224,7 @@ func (p EventProcessor) deliverDelegate(ctx context.Context, ev *bindings.Stakin
 
 	p.createAccIfNone(ctx, delAddr)
 
-	if err := p.bKeeper.MintCoins(ctx, ModuleName, amountCoins); err != nil {
+	if err := p.bKeeper.BurnCoins(ctx, ModuleName, amountCoins); err != nil {
 		return errors.Wrap(err, "mint coins")
 	}
 
