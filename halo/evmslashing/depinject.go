@@ -2,7 +2,6 @@ package evmslashing
 
 import (
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/ethclient"
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"cosmossdk.io/depinject"
@@ -11,7 +10,6 @@ import (
 
 type DIInputs struct {
 	depinject.In
-	EthCl          ethclient.Client
 	SlashingKeeper slashingkeeper.Keeper
 }
 
@@ -23,7 +21,6 @@ type DIOutputs struct {
 
 func DIProvide(input DIInputs) (DIOutputs, error) {
 	proc, err := New(
-		input.EthCl,
 		input.SlashingKeeper,
 	)
 	if err != nil {

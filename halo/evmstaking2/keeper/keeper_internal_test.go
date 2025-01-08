@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/netconf"
+	evmengkeeper "github.com/omni-network/omni/octane/evmengine/keeper"
 	etypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
@@ -54,7 +55,7 @@ func TestInsertAndDeleteEVMEvents(t *testing.T) {
 
 	deliverInterval := int64(5)
 
-	keeper, ctx := setupKeeper(t, deliverInterval, nil, nil)
+	keeper, ctx := setupKeeper(t, deliverInterval, nil)
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -111,10 +112,10 @@ func TestDeliveryWithBrokenServer(t *testing.T) {
 	sServerMock.EXPECT().CreateValidator(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, err)
 	sServerMock.EXPECT().Delegate(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, err)
 
-	keeper, ctx := setupKeeper(t, deliverInterval, ethClientMock, sServerMock)
+	keeper, ctx := setupKeeper(t, deliverInterval, sServerMock)
 
 	var hash common.Hash
-	events, err := keeper.Prepare(ctx, hash)
+	events, err := evmengkeeper.FetchProcEvents(ctx, ethClientMock, keeper, hash)
 	require.NoError(t, err)
 
 	expectDelegates := 1
@@ -148,10 +149,10 @@ func TestDeliveryOfInvalidEvents(t *testing.T) {
 	sServerMock.EXPECT().CreateValidator(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 	sServerMock.EXPECT().Delegate(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 
-	keeper, ctx := setupKeeper(t, deliverInterval, ethClientMock, sServerMock)
+	keeper, ctx := setupKeeper(t, deliverInterval, sServerMock)
 
 	var hash common.Hash
-	events, err := keeper.Prepare(ctx, hash)
+	events, err := evmengkeeper.FetchProcEvents(ctx, ethClientMock, keeper, hash)
 	require.NoError(t, err)
 
 	expectDelegates := 1
@@ -228,10 +229,10 @@ func TestHappyPathDelivery(t *testing.T) {
 	}).
 		Return(new(stypes.MsgDelegateResponse), nil)
 
-	keeper, ctx := setupKeeper(t, deliverInterval, ethClientMock, sServerMock)
+	keeper, ctx := setupKeeper(t, deliverInterval, sServerMock)
 
 	var hash common.Hash
-	events, err := keeper.Prepare(ctx, hash)
+	events, err := evmengkeeper.FetchProcEvents(ctx, ethClientMock, keeper, hash)
 	require.NoError(t, err)
 
 	expectDelegates := 1
@@ -296,7 +297,6 @@ func assertNotContains(t *testing.T, ctx context.Context, keeper *Keeper, eventI
 func setupKeeper(
 	t *testing.T,
 	deliverInterval int64,
-	ethCl ethclient.EngineClient,
 	sServer types.StakingMsgServer,
 ) (*Keeper, sdk.Context) {
 	t.Helper()
@@ -338,7 +338,6 @@ func setupKeeper(
 
 	k, err := NewKeeper(
 		storeSvc,
-		ethCl,
 		authKeeperMock,
 		bKeeperMock,
 		sKeeperMock,

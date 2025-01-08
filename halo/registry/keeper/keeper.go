@@ -8,7 +8,6 @@ import (
 	ptypes "github.com/omni-network/omni/halo/portal/types"
 	"github.com/omni-network/omni/halo/registry/types"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -22,7 +21,6 @@ import (
 type Keeper struct {
 	emitPortal      ptypes.EmitPortal
 	networkTable    NetworkTable
-	ethCl           ethclient.Client
 	portalRegAdress common.Address
 	portalRegistry  *bindings.PortalRegistryFilterer
 	chainNamer      types.ChainNameFunc
@@ -33,7 +31,6 @@ type Keeper struct {
 func NewKeeper(
 	emitPortal ptypes.EmitPortal,
 	storeService store.KVStoreService,
-	ethCl ethclient.Client,
 	namer types.ChainNameFunc,
 ) (Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
@@ -51,7 +48,7 @@ func NewKeeper(
 	}
 
 	address := common.HexToAddress(predeploys.PortalRegistry)
-	protalReg, err := bindings.NewPortalRegistryFilterer(address, ethCl)
+	protalReg, err := bindings.NewPortalRegistryFilterer(address, nil) // Passing nil backend if safe since only Parse functions are used.
 	if err != nil {
 		return Keeper{}, errors.Wrap(err, "new portal registry")
 	}
@@ -59,7 +56,6 @@ func NewKeeper(
 	return Keeper{
 		emitPortal:      emitPortal,
 		networkTable:    registryStore.NetworkTable(),
-		ethCl:           ethCl,
 		portalRegAdress: address,
 		portalRegistry:  protalReg,
 		chainNamer:      namer,

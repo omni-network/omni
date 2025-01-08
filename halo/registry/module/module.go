@@ -4,7 +4,6 @@ import (
 	ptypes "github.com/omni-network/omni/halo/portal/types"
 	"github.com/omni-network/omni/halo/registry/keeper"
 	"github.com/omni-network/omni/halo/registry/types"
-	"github.com/omni-network/omni/lib/ethclient"
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"cosmossdk.io/core/appmodule"
@@ -109,7 +108,6 @@ type ModuleInputs struct {
 	Cdc          codec.Codec
 	EmitPortal   ptypes.EmitPortal
 	StoreService store.KVStoreService
-	EthCl        ethclient.Client
 	ChainNamer   types.ChainNameFunc
 	Config       *Module
 }
@@ -126,7 +124,6 @@ func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 	k, err := keeper.NewKeeper(
 		in.EmitPortal,
 		in.StoreService,
-		in.EthCl,
 		in.ChainNamer,
 	)
 	if err != nil {

@@ -48,6 +48,7 @@ import (
 )
 
 var zeroAddr common.Address
+var zeroHash common.Hash
 
 func TestKeeper_PrepareProposal(t *testing.T) {
 	t.Parallel()
@@ -157,7 +158,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			address: common.BytesToAddress([]byte("test")),
 		}
 		frp := newRandomFeeRecipientProvider()
-		keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, mockLogProvider{})
+		keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, mockEventProc{})
 		require.NoError(t, err)
 		keeper.SetVoteProvider(mockVEProvider{})
 		populateGenesisHead(ctx, t, keeper)
@@ -220,7 +221,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			address: common.BytesToAddress([]byte("test")),
 		}
 		frp := newRandomFeeRecipientProvider()
-		keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, mockLogProvider{})
+		keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, mockEventProc{})
 		require.NoError(t, err)
 		keeper.SetVoteProvider(mockVEProvider{})
 		populateGenesisHead(ctx, t, keeper)
@@ -291,7 +292,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			address: common.BytesToAddress([]byte("test")),
 		}
 		frp := newRandomFeeRecipientProvider()
-		keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, mockLogProvider{})
+		keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, mockEventProc{})
 		require.NoError(t, err)
 		keeper.SetVoteProvider(mockVEProvider{})
 		populateGenesisHead(ctx, t, keeper)
@@ -359,7 +360,7 @@ func TestOptimistic(t *testing.T) {
 	}
 
 	frp := newRandomFeeRecipientProvider()
-	keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, mockLogProvider{})
+	keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, mockEventProc{})
 	require.NoError(t, err)
 	keeper.SetVoteProvider(mockVEProvider{})
 	keeper.SetCometAPI(cmtAPI)
@@ -471,7 +472,7 @@ func getCodec(t *testing.T) codec.Codec {
 
 var _ ethclient.EngineClient = (*mockEngineAPI)(nil)
 var _ etypes.AddressProvider = (*mockAddressProvider)(nil)
-var _ etypes.EvmEventProcessor = (*mockLogProvider)(nil)
+var _ etypes.EvmEventProcessor = (*mockEventProc)(nil)
 var _ etypes.VoteExtensionProvider = (*mockVEProvider)(nil)
 
 type mockEngineAPI struct {
@@ -517,33 +518,33 @@ func (mockVEProvider) PrepareVotes(context.Context, abci.ExtendedCommitInfo, uin
 	return []sdk.Msg{msg}, nil
 }
 
-type mockLogProvider struct {
+type mockEventProc struct {
 	deliverErr error
 }
 
-func (m mockLogProvider) Name() string {
+func (mockEventProc) Name() string {
 	return "mock"
 }
 
-func (m mockLogProvider) Prepare(_ context.Context, blockHash common.Hash) ([]etypes.EVMEvent, error) {
-	f := fuzz.NewWithSeed(int64(blockHash[0]))
-
-	var topic common.Hash
-	f.Fuzz(&topic)
-
-	return []etypes.EVMEvent{{
-		Address: zeroAddr.Bytes(),
-		Topics:  [][]byte{topic[:]},
-	}}, nil
+func (mockEventProc) FilterParams() ([]common.Address, [][]common.Hash) {
+	return []common.Address{zeroAddr}, [][]common.Hash{{zeroHash}}
 }
 
-func (m mockLogProvider) Addresses() []common.Address {
-	return []common.Address{zeroAddr}
-}
-
-func (m mockLogProvider) Deliver(_ context.Context, _ common.Hash, log etypes.EVMEvent) error {
+func (m mockEventProc) Deliver(_ context.Context, _ common.Hash, log etypes.EVMEvent) error {
 	if !bytes.Equal(log.Address, zeroAddr.Bytes()) {
 		panic("unexpected evm log address")
+	}
+
+	if len(log.Topics) != 1 {
+		panic("unexpected evm log topics")
+	}
+
+	if !bytes.Equal(log.Topics[0], zeroHash.Bytes()) {
+		panic("unexpected evm log topic")
+	}
+
+	if len(log.Data) != 0 {
+		panic("unexpected evm log data")
 	}
 
 	return m.deliverErr
@@ -564,8 +565,12 @@ func (m mockEngineAPI) maybeSync() (eengine.PayloadStatusV1, bool) {
 	}
 }
 
-func (mockEngineAPI) FilterLogs(context.Context, ethereum.FilterQuery) ([]types.Log, error) {
-	return nil, nil
+func (mockEngineAPI) FilterLogs(_ context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
+	return []types.Log{{
+		BlockHash: *q.BlockHash,
+		Address:   q.Addresses[0],
+		Topics:    q.Topics[0],
+	}}, nil
 }
 
 func (m *mockEngineAPI) HeaderByType(ctx context.Context, typ ethclient.HeadType) (*types.Header, error) {

@@ -10,13 +10,11 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -42,7 +40,6 @@ var (
 // EventProcessor implements the evmenginetypes.EvmEventProcessor interface.
 type EventProcessor struct {
 	contract *bindings.Staking
-	ethCl    ethclient.Client
 	address  common.Address
 	sKeeper  *skeeper.Keeper
 	bKeeper  bkeeper.Keeper
@@ -51,20 +48,18 @@ type EventProcessor struct {
 
 // New returns a new EventProcessor.
 func New(
-	ethCl ethclient.Client,
 	sKeeper *skeeper.Keeper,
 	bKeeper bkeeper.Keeper,
 	aKeeper akeeper.AccountKeeper,
 ) (EventProcessor, error) {
 	address := common.HexToAddress(predeploys.Staking)
-	contract, err := bindings.NewStaking(address, ethCl)
+	contract, err := bindings.NewStaking(address, nil) // Passing nil backend if safe since only Parse functions are used.
 	if err != nil {
 		return EventProcessor{}, errors.Wrap(err, "new staking")
 	}
 
 	return EventProcessor{
 		contract: contract,
-		ethCl:    ethCl,
 		address:  address,
 		sKeeper:  sKeeper,
 		bKeeper:  bKeeper,
@@ -72,42 +67,14 @@ func New(
 	}, nil
 }
 
-// Prepare returns all omni stake contract EVM event logs from the provided block hash.
-func (p EventProcessor) Prepare(ctx context.Context, blockHash common.Hash) ([]evmenginetypes.EVMEvent, error) {
-	if feature.FlagEVMStakingModule.Enabled(ctx) {
-		return nil, errors.New("unexpected code path [BUG]")
-	}
-	logs, err := p.ethCl.FilterLogs(ctx, ethereum.FilterQuery{
-		BlockHash: &blockHash,
-		Addresses: p.Addresses(),
-		Topics:    [][]common.Hash{{createValidatorEvent.ID, delegateEvent.ID}},
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "filter logs")
-	}
-
-	resp := make([]evmenginetypes.EVMEvent, 0, len(logs))
-	for _, l := range logs {
-		topics := make([][]byte, 0, len(l.Topics))
-		for _, t := range l.Topics {
-			topics = append(topics, t.Bytes())
-		}
-		resp = append(resp, evmenginetypes.EVMEvent{
-			Address: l.Address.Bytes(),
-			Topics:  topics,
-			Data:    l.Data,
-		})
-	}
-
-	return resp, nil
-}
-
+// Name returns the name of the EventProcessor.
 func (EventProcessor) Name() string {
 	return ModuleName
 }
 
-func (p EventProcessor) Addresses() []common.Address {
-	return []common.Address{p.address}
+// FilterParams defines the matching EVM log events, see github.com/ethereum/go-ethereum#FilterQuery.
+func (p EventProcessor) FilterParams() ([]common.Address, [][]common.Hash) {
+	return []common.Address{p.address}, [][]common.Hash{{createValidatorEvent.ID, delegateEvent.ID}}
 }
 
 // Deliver processes a omni deposit log event, which must be one of:

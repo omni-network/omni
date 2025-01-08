@@ -122,7 +122,7 @@ func setupKeeper(t *testing.T) (sdk.Context, Keeper, *testEmitPortal) {
 	ctx = ctx.WithChainID(netconf.Simnet.Static().OmniConsensusChainIDStr())
 
 	emitPortal := new(testEmitPortal)
-	k, err := NewKeeper(emitPortal, storeSvc, nil, netconf.ChainNamer(netconf.Simnet))
+	k, err := NewKeeper(emitPortal, storeSvc, netconf.ChainNamer(netconf.Simnet))
 	require.NoError(t, err, "new keeper")
 
 	return ctx, k, emitPortal
