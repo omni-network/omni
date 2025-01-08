@@ -12,7 +12,7 @@ require (
 	cosmossdk.io/orm v1.0.0-beta.3
 	cosmossdk.io/store v1.1.1
 	cosmossdk.io/x/evidence v0.1.1
-	cosmossdk.io/x/tx v0.13.7
+	cosmossdk.io/x/tx v1.0.0
 	cosmossdk.io/x/upgrade v0.1.4
 	github.com/BurntSushi/toml v1.4.0
 	github.com/Layr-Labs/eigenlayer-cli v0.10.7
@@ -48,7 +48,7 @@ require (
 	golang.org/x/tools v0.29.0
 	google.golang.org/grpc v1.69.2
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.5.1
-	google.golang.org/protobuf v1.35.2
+	google.golang.org/protobuf v1.36.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
