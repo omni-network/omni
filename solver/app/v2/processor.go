@@ -11,7 +11,7 @@ import (
 )
 
 // newEventProcessor returns a callback provided to xchain.Provider::StreamEventLogs processing
-// all inbox contract events and driving request lifecycle.
+// all inbox contract events and driving order lifecycle.
 func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 	return func(ctx context.Context, height uint64, elogs []types.Log) error {
 		for _, elog := range elogs {
@@ -20,51 +20,52 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 				return errors.New("unknown event [BUG]")
 			}
 
-			reqID, err := deps.ParseID(chainID, elog)
+			orderID, err := deps.ParseID(chainID, elog)
 			if err != nil {
 				return errors.Wrap(err, "parse id")
 			}
 
-			req, _, err := deps.GetRequest(ctx, chainID, reqID)
+			order, _, err := deps.GetOrder(ctx, chainID, orderID)
 			if err != nil {
 				return errors.Wrap(err, "current status")
 			}
 
-			target := deps.TargetName(req)
-			statusOffset.WithLabelValues(deps.ChainName(chainID), target, statusString(event.Status)).Set(float64(reqID.Uint64()))
-			ctx := log.WithCtx(ctx, "target", target, "status", statusString(event.Status), "req_id", reqID)
-			log.Debug(ctx, "Processing request event")
+			target := deps.TargetName(order)
+			statusOffset.WithLabelValues(deps.ChainName(chainID), target, statusString(event.Status)).Set(float64(orderID.Uint64()))
+			ctx := log.WithCtx(ctx, "target", target, "status", statusString(event.Status), "order_id", orderID)
 
-			if event.Status != req.Status {
+			log.Debug(ctx, "Processing order event")
+
+			if event.Status != order.Status {
 				// TODO(corver): Detect unexpected on-chain status.
-				log.Info(ctx, "Ignoring mismatching old event", "actual", statusString(req.Status))
+				log.Info(ctx, "Ignoring mismatching old event", "actual", statusString(order.Status))
 				continue
 			}
 
 			switch event.Status {
 			case statusPending:
-				if reason, reject, err := deps.ShouldReject(ctx, chainID, req); err != nil {
+				if reason, reject, err := deps.ShouldReject(ctx, chainID, order); err != nil {
 					return errors.Wrap(err, "should reject")
 				} else if reject {
 					// ShouldReject does reject logging since it has more information.
-					if err := deps.Reject(ctx, chainID, req, reason); err != nil {
-						return errors.Wrap(err, "reject request")
+					if err := deps.Reject(ctx, chainID, order, reason); err != nil {
+						return errors.Wrap(err, "reject order")
 					}
 				} else {
-					log.Info(ctx, "Accepting request")
-					if err := deps.Accept(ctx, chainID, req); err != nil {
-						return errors.Wrap(err, "accept request")
+					log.Info(ctx, "Accepting order")
+					if err := deps.Accept(ctx, chainID, order); err != nil {
+						return errors.Wrap(err, "accept order")
 					}
 				}
 			case statusAccepted:
-				log.Info(ctx, "Accepting request")
-				if err := deps.Fulfill(ctx, chainID, req); err != nil {
-					return errors.Wrap(err, "fulfill request")
+				log.Info(ctx, "Filling order")
+				if err := deps.Fill(ctx, chainID, order); err != nil {
+					return errors.Wrap(err, "fill order")
 				}
-			case statusFulfilled:
-				log.Info(ctx, "Claiming request")
-				if err := deps.Claim(ctx, chainID, req); err != nil {
-					return errors.Wrap(err, "claim request")
+			case statusFilled:
+				log.Info(ctx, "Claiming order")
+				if err := deps.Claim(ctx, chainID, order); err != nil {
+					return errors.Wrap(err, "claim order")
 				}
 			case statusRejected, statusReverted, statusClaimed:
 			// Ignore for now

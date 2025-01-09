@@ -83,7 +83,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     function getOrder(bytes32 id)
         external
         view
-        returns (ResolvedCrossChainOrder memory order, OrderState memory state, StatusUpdate[] memory history)
+        returns (ResolvedCrossChainOrder memory resolved, OrderState memory state, StatusUpdate[] memory history)
     {
         return (_orders[id], _orderState[id], _orderHistory[id]);
     }

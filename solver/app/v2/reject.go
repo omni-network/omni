@@ -3,8 +3,6 @@ package appv2
 import (
 	"context"
 
-	"github.com/omni-network/omni/contracts/bindings"
-	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 )
 
@@ -19,28 +17,9 @@ const (
 	rejectInvalidTarget         rejectReason = 4
 )
 
-// newShouldRejector returns as ShouldReject function for the given network.
-//
-// ShouldReject returns true and a reason if the request should be rejected.
-// It returns false if the request should be accepted.
-// Errors are unexpected and refer to internal server problems.
-func newShouldRejector(network netconf.ID) func(ctx context.Context, chainID uint64, req bindings.SolveRequest) (rejectReason, bool, error) {
-	return func(ctx context.Context, srcChainID uint64, req bindings.SolveRequest) (rejectReason, bool, error) {
-		// reject swallows the error (only logging it) and returns true and the reject reason.
-		reject := func(reason rejectReason, err error) (rejectReason, bool, error) {
-			log.InfoErr(ctx, "Rejecting request", err, "reason", reason)
-			return reason, true, nil
-		}
-
-		target, err := getTarget(network, req.Call)
-		if err != nil {
-			return reject(rejectInvalidTarget, err)
-		}
-
-		if err := target.Verify(srcChainID, req.Call, req.Deposits); err != nil {
-			return reject(rejectInsufficientInventory, err) // TODO(corver): Fix reason
-		}
-
+func newShouldRejector(_ netconf.ID) func(ctx context.Context, chainID uint64, order Order) (rejectReason, bool, error) {
+	return func(_ context.Context, _ uint64, _ Order) (rejectReason, bool, error) {
+		// TODO: check liquidity, reject
 		return rejectNone, false, nil
 	}
 }

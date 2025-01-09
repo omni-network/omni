@@ -4,9 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/tutil"
-	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -17,7 +15,7 @@ import (
 const (
 	accept  = "accept"
 	reject  = "reject"
-	fulfill = "fulfill"
+	fill    = "fill"
 	claim   = "claim"
 	ignored = ""
 )
@@ -34,14 +32,14 @@ func TestEventProcessor(t *testing.T) {
 	}{
 		{
 			name:         "accept",
-			event:        topicRequested,
+			event:        topicOpened,
 			getStatus:    statusPending,
 			rejectReason: 0,
 			expect:       accept,
 		},
 		{
 			name:         "reject",
-			event:        topicRequested,
+			event:        topicOpened,
 			getStatus:    statusPending,
 			rejectReason: 1,
 			expect:       reject,
@@ -50,12 +48,12 @@ func TestEventProcessor(t *testing.T) {
 			name:      "fulfill",
 			event:     topicAccepted,
 			getStatus: statusAccepted,
-			expect:    fulfill,
+			expect:    fill,
 		},
 		{
 			name:      "claim",
-			event:     topicFulfilled,
-			getStatus: statusFulfilled,
+			event:     topicFilled,
+			getStatus: statusFilled,
 			expect:    claim,
 		},
 		{
@@ -78,14 +76,14 @@ func TestEventProcessor(t *testing.T) {
 		},
 		{
 			name:      "ignore mismatch 1",
-			event:     topicRequested,
+			event:     topicOpened,
 			getStatus: statusAccepted,
 			expect:    ignored,
 		},
 		{
 			name:      "ignore mismatch 2",
 			event:     topicAccepted,
-			getStatus: statusFulfilled,
+			getStatus: statusFilled,
 			expect:    ignored,
 		},
 	}
@@ -95,48 +93,48 @@ func TestEventProcessor(t *testing.T) {
 
 			const chainID = 321
 			const height = 123
-			reqID := tutil.RandomHash()
+			orderID := tutil.RandomHash()
 			actual := ignored
 
 			deps := procDeps{
-				ParseID: func(_ uint64, log types.Log) (stypes.ReqID, error) {
-					return stypes.ReqID(log.Topics[1]), nil // Return second topic as req ID
+				ParseID: func(_ uint64, log types.Log) (OrderID, error) {
+					return OrderID(log.Topics[1]), nil // Return second topic as order ID
 				},
-				GetRequest: func(ctx context.Context, _ uint64, id stypes.ReqID) (bindings.SolveRequest, bool, error) {
-					return bindings.SolveRequest{
-						Id:     id,
+				GetOrder: func(ctx context.Context, chainID uint64, id OrderID) (Order, bool, error) {
+					return Order{
+						ID:     id,
 						Status: test.getStatus,
 					}, true, nil
 				},
-				ShouldReject: func(ctx context.Context, _ uint64, req bindings.SolveRequest) (rejectReason, bool, error) {
+				ShouldReject: func(ctx context.Context, _ uint64, order Order) (rejectReason, bool, error) {
 					return test.rejectReason, test.rejectReason != 0, nil
 				},
-				Accept: func(ctx context.Context, _ uint64, req bindings.SolveRequest) error {
+				Accept: func(ctx context.Context, _ uint64, order Order) error {
 					actual = accept
-					require.Equal(t, test.getStatus, req.Status)
-					require.EqualValues(t, reqID, req.Id)
+					require.Equal(t, test.getStatus, order.Status)
+					require.EqualValues(t, orderID, order.ID)
 
 					return nil
 				},
-				Reject: func(ctx context.Context, _ uint64, req bindings.SolveRequest, reason rejectReason) error {
+				Reject: func(ctx context.Context, _ uint64, order Order, reason rejectReason) error {
 					actual = reject
-					require.Equal(t, test.getStatus, req.Status)
+					require.Equal(t, test.getStatus, order.Status)
 					require.Equal(t, test.rejectReason, reason)
-					require.EqualValues(t, reqID, req.Id)
+					require.EqualValues(t, orderID, order.ID)
 
 					return nil
 				},
-				Fulfill: func(ctx context.Context, _ uint64, req bindings.SolveRequest) error {
-					actual = fulfill
-					require.Equal(t, test.getStatus, req.Status)
-					require.EqualValues(t, reqID, req.Id)
+				Fill: func(ctx context.Context, _ uint64, order Order) error {
+					actual = fill
+					require.Equal(t, test.getStatus, order.Status)
+					require.EqualValues(t, orderID, order.ID)
 
 					return nil
 				},
-				Claim: func(ctx context.Context, _ uint64, req bindings.SolveRequest) error {
+				Claim: func(ctx context.Context, _ uint64, order Order) error {
 					actual = claim
-					require.Equal(t, test.getStatus, req.Status)
-					require.EqualValues(t, reqID, req.Id)
+					require.Equal(t, test.getStatus, order.Status)
+					require.EqualValues(t, orderID, order.ID)
 
 					return nil
 				},
@@ -147,12 +145,12 @@ func TestEventProcessor(t *testing.T) {
 					return nil
 				},
 				ChainName:  func(uint64) string { return "" },
-				TargetName: func(bindings.SolveRequest) string { return "" },
+				TargetName: func(Order) string { return "" },
 			}
 
 			processor := newEventProcessor(deps, chainID)
 
-			err := processor(context.Background(), height, []types.Log{{Topics: []common.Hash{test.event, reqID}}})
+			err := processor(context.Background(), height, []types.Log{{Topics: []common.Hash{test.event, orderID}}})
 			require.NoError(t, err)
 			require.Equal(t, test.expect, actual)
 		})
