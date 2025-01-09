@@ -150,7 +150,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
      * @param call  Call to execute.
      */
     function _executeCall(Call memory call) internal withExpenses(call.expenses) {
-        if (call.destChainId != block.chainid) revert WrongDestChain();
+        if (call.chainId != block.chainid) revert WrongDestChain();
 
         address target = _bytes32ToAddress(call.target);
 

@@ -26,7 +26,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @notice Typehash for the order data.
      */
     bytes32 internal constant ORDER_DATA_TYPEHASH = keccak256(
-        "OrderData(Call call,Deposit[] deposits)Call(uint64 destChainId,bytes32 target,uint256 value,bytes data,TokenExpense[] expenses)TokenExpense(bytes32 token,bytes32 spender,uint256 amount)Deposit(bytes32 token,uint256 amount)"
+        "OrderData(Call call,Deposit[] deposits)Call(uint64 chainId,bytes32 target,uint256 value,bytes data,TokenExpense[] expenses)TokenExpense(bytes32 token,bytes32 spender,uint256 amount)Deposit(bytes32 token,uint256 amount)"
     ); // Not really needed until we support more than one order type or gasless orders
 
     /**
@@ -120,7 +120,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
                 token: call.expenses[i].token,
                 amount: call.expenses[i].amount,
                 recipient: _addressToBytes32(_outbox), // for solver, recipient is always outbox
-                chainId: call.destChainId
+                chainId: call.chainId
             });
         }
 
@@ -136,7 +136,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
 
         FillInstruction[] memory fillInstructions = new FillInstruction[](1);
         fillInstructions[0] = FillInstruction({
-            destinationChainId: call.destChainId,
+            destinationChainId: call.chainId,
             destinationSettler: _addressToBytes32(_outbox),
             originData: abi.encode(FillOriginData({ srcChainId: uint64(block.chainid), call: call }))
         });
@@ -208,9 +208,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     function cancel(bytes32 id) external nonReentrant {
         ResolvedCrossChainOrder memory order = _orders[id];
         OrderState memory state = _orderState[id];
-        if (state.status != Status.Pending && state.status != Status.Rejected) {
-            revert OrderNotPendingOrRejected();
-        }
+        if (state.status != Status.Pending && state.status != Status.Rejected) revert OrderNotPendingOrRejected();
         if (order.user != msg.sender) revert Unauthorized();
 
         state.status = Status.Reverted;

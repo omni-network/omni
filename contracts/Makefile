@@ -36,10 +36,10 @@ all: install-deps build bindings allocs ## Build contracts, generate bindings an
 CORE_CONTRACTS := OmniPortal FeeOracleV1 Create3 TransparentUpgradeableProxy \
 			Staking Slashing OmniBridgeL1 OmniBridgeNative Omni WOmni \
 			PortalRegistry AllocPredeploys PingPong ProxyAdmin Admin \
-			OmniGasPump OmniGasStation FeeOracleV2 IERC20 \
+			OmniGasPump OmniGasStation FeeOracleV2 \
 			node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol:IERC20
 
-SOLVE_CONTRACTS := SolveInbox SolveOutbox MockToken MockVault
+SOLVE_CONTRACTS := SolveInbox SolveOutbox ISolverNetBindings SolverNetInbox SolverNetOutbox MockToken MockVault
 
 AVS_CONTRACTS := OmniAVS DelegationManager StrategyManager StrategyBase AVSDirectory \
 			test/common/MockERC20.sol:MockERC20
@@ -52,6 +52,7 @@ bindings: check-abigen-version build ## Generate golang contract bindings.
 	go run ./bindings/scripts/commenttypes.go -- bindings/strategymanager.go IStrategyManagerDeprecatedStructQueuedWithdrawal IStrategyManagerDeprecatedStructWithdrawerAndNonce
 	go run ./bindings/scripts/commenttypes.go -- bindings/solveoutbox.go SolveCall
 	go run ./bindings/scripts/commenttypes.go -- bindings/avsdirectory.go ISignatureUtilsSignatureWithSaltAndExpiry
+	go run ./bindings/scripts/commenttypes.go -- bindings/solvernetoutbox.go IERC7683FillInstruction IERC7683Output IERC7683ResolvedCrossChainOrder
 
 .PHONY: allocs
 allocs: bindings ## Generate predeploy allocations.

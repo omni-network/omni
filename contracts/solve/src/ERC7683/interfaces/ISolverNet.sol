@@ -26,14 +26,14 @@ interface ISolverNet {
 
     /**
      * @notice Call to execute on a destination chain.
-     * @param destChainId  Destination chain ID.
-     * @param target       Target contract address.
-     * @param value        Value to send.
-     * @param data         Calldata.
-     * @param expenses     Expenses required to fund the call.
+     * @param chainId   The ID of the chain on which the call should be executed.
+     * @param target    Target contract address.
+     * @param value     Value to send to the target.
+     * @param data      Calldata to send to the target.
+     * @param expenses  Expenses required to fund the call.
      */
     struct Call {
-        uint64 destChainId;
+        uint64 chainId;
         bytes32 target;
         uint256 value;
         bytes data;
