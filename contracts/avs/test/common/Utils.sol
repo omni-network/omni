@@ -189,7 +189,7 @@ contract Utils is Fixtures {
         vm.startPrank(sender);
         string memory emptyStringForMetadataURI;
         delegation.registerAsOperator(operatorDetails, emptyStringForMetadataURI);
-        assertTrue(delegation.isOperator(sender), "testRegisterAsOperator: sender is not a operator");
+        assertTrue(delegation.isOperator(sender), "testRegisterAsOperator: sender is not an operator");
 
         assertTrue(
             keccak256(abi.encode(delegation.operatorDetails(sender))) == keccak256(abi.encode(operatorDetails)),

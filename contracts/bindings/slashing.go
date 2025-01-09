@@ -321,7 +321,7 @@ func (it *SlashingUnjailIterator) Close() error {
 	return nil
 }
 
-// SlashingUnjail represents a Unjail event raised by the Slashing contract.
+// SlashingUnjail represents an Unjail event raised by the Slashing contract.
 type SlashingUnjail struct {
 	Validator common.Address
 	Raw       types.Log // Blockchain specific contextual infos

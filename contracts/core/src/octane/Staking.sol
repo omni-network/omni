@@ -14,7 +14,7 @@ import { Secp256k1 } from "../libraries/Secp256k1.sol";
  * @dev This contract is predeployed, and requires storage slots to be set in genesis.
  *      initialize(...) is called pre-deployment, in script/genesis/AllocPredeploys.s.sol
  *      Initializers on the implementation are disabled via manual storage updates, rather than in a constructor.
- *      If an new implementation is required, a constructor should be added.
+ *      If a new implementation is required, a constructor should be added.
  */
 contract Staking is OwnableUpgradeable, EIP712Upgradeable {
     /**
