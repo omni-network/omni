@@ -27,9 +27,11 @@ type VoteExtensionProvider interface {
 // EVMEngine calls this during PreparePayload to collect all EVM-log-events to include in
 // the consensus block. It is also called during ProcessPayload to verify the proposed EVM events.
 type EvmEventProcessor interface {
+	// Name of the event processor (used for logs and metrics).
 	Name() string
-	Prepare(ctx context.Context, blockHash common.Hash) ([]EVMEvent, error)
-	Addresses() []common.Address
+	// FilterParams defines the matching EVM log events, see github.com/ethereum/go-ethereum#FilterQuery.
+	FilterParams() (addresses []common.Address, topics [][]common.Hash)
+	// Deliver is called during ProcessPayload to process events.
 	Deliver(ctx context.Context, blockHash common.Hash, log EVMEvent) error
 }
 

@@ -13,7 +13,6 @@ import (
 	"github.com/omni-network/omni/lib/umath"
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -57,39 +56,13 @@ func New(ethCl ethclient.Client, uKeeper *ukeeper.Keeper) (EventProcessor, error
 	}, nil
 }
 
-// Prepare returns all omni stake contract EVM event logs from the provided block hash.
-func (p EventProcessor) Prepare(ctx context.Context, blockHash common.Hash) ([]evmenginetypes.EVMEvent, error) {
-	logs, err := p.ethCl.FilterLogs(ctx, ethereum.FilterQuery{
-		BlockHash: &blockHash,
-		Addresses: p.Addresses(),
-		Topics:    [][]common.Hash{{planUpgradeEvent.ID, cancelUpgradeEvent.ID}},
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "filter logs")
-	}
-
-	resp := make([]evmenginetypes.EVMEvent, 0, len(logs))
-	for _, l := range logs {
-		topics := make([][]byte, 0, len(l.Topics))
-		for _, t := range l.Topics {
-			topics = append(topics, t.Bytes())
-		}
-		resp = append(resp, evmenginetypes.EVMEvent{
-			Address: l.Address.Bytes(),
-			Topics:  topics,
-			Data:    l.Data,
-		})
-	}
-
-	return resp, nil
-}
-
 func (EventProcessor) Name() string {
 	return ModuleName
 }
 
-func (p EventProcessor) Addresses() []common.Address {
-	return []common.Address{p.address}
+// FilterParams defines the matching EVM log events, see github.com/ethereum/go-ethereum#FilterQuery.
+func (p EventProcessor) FilterParams() ([]common.Address, [][]common.Hash) {
+	return []common.Address{p.address}, [][]common.Hash{{planUpgradeEvent.ID, cancelUpgradeEvent.ID}}
 }
 
 // Deliver processes a upgrade log event, which must be one of:

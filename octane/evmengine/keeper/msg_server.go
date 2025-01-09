@@ -108,27 +108,28 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 
 // deliverEvents delivers the given logs to the registered log providers.
 // TODO(corver): Return log event results to properly manage failures.
-func (s msgServer) deliverEvents(ctx context.Context, height uint64, blockHash common.Hash, logs []types.EVMEvent) error {
+func (s msgServer) deliverEvents(ctx context.Context, height uint64, blockHash common.Hash, events []types.EVMEvent) error {
 	procs := make(map[common.Address]types.EvmEventProcessor)
 	for _, proc := range s.eventProcs {
-		for _, addr := range proc.Addresses() {
+		addrs, _ := proc.FilterParams()
+		for _, addr := range addrs {
 			procs[addr] = proc
 		}
 	}
 
-	for _, evmLog := range logs {
-		if err := evmLog.Verify(); err != nil {
+	for _, event := range events {
+		if err := event.Verify(); err != nil {
 			return errors.Wrap(err, "verify log [BUG]") // This shouldn't happen
 		}
 
-		elog, err := evmLog.ToEthLog()
+		elog, err := event.ToEthLog()
 		if err != nil {
 			return err
 		}
 
 		proc, ok := procs[elog.Address]
 		if !ok {
-			return errors.New("unknown log address [BUG]", log.Hex7("address", evmLog.Address))
+			return errors.New("unknown log address [BUG]", log.Hex7("address", event.Address))
 		}
 
 		// Branch the store in case processing fails.
@@ -138,7 +139,7 @@ func (s msgServer) deliverEvents(ctx context.Context, height uint64, blockHash c
 
 		// Deliver the event inside the catch function that converts panics into errors; similar to CosmosSDK BaseApp.runTx
 		if err := catch(func() error { //nolint:contextcheck // False positive wrt ctx
-			return proc.Deliver(branchCtx, blockHash, evmLog)
+			return proc.Deliver(branchCtx, blockHash, event)
 		}); err != nil {
 			log.Warn(ctx, "Delivering EVM log event failed", err,
 				"name", proc.Name(),
@@ -151,7 +152,7 @@ func (s msgServer) deliverEvents(ctx context.Context, height uint64, blockHash c
 		branchMS.Write()
 	}
 
-	log.Debug(ctx, "Delivered evm logs", "height", height, "count", len(logs))
+	log.Debug(ctx, "Delivered evm events", "height", height, "count", len(events))
 
 	return nil
 }

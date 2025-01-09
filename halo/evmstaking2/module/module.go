@@ -5,7 +5,6 @@ import (
 
 	"github.com/omni-network/omni/halo/evmstaking2/keeper"
 	"github.com/omni-network/omni/halo/evmstaking2/types"
-	"github.com/omni-network/omni/lib/ethclient"
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"cosmossdk.io/core/appmodule"
@@ -114,7 +113,6 @@ type ModuleInputs struct {
 	depinject.In
 
 	StoreService store.KVStoreService
-	EthCl        ethclient.Client
 	AKeeper      types.AuthKeeper
 	BKeeper      types.BankKeeper
 	SKeeper      *stakingkeeper.Keeper
@@ -133,7 +131,6 @@ type ModuleOutputs struct {
 func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 	k, err := keeper.NewKeeper(
 		in.StoreService,
-		in.EthCl,
 		in.AKeeper,
 		in.BKeeper,
 		in.SKeeper,

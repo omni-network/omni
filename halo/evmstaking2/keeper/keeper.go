@@ -7,13 +7,11 @@ import (
 	"github.com/omni-network/omni/halo/evmstaking2/types"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 
 	ormv1alpha1 "cosmossdk.io/api/cosmos/orm/v1alpha1"
@@ -33,7 +31,6 @@ var (
 // Keeper also implements the evmenginetypes.EvmEventProcessor interface.
 type Keeper struct {
 	eventsTable     EVMEventTable
-	ethCl           ethclient.Client
 	address         common.Address
 	contract        *bindings.Staking
 	aKeeper         types.AuthKeeper
@@ -45,7 +42,6 @@ type Keeper struct {
 
 func NewKeeper(
 	storeService store.KVStoreService,
-	ethCl ethclient.Client,
 	aKeeper types.AuthKeeper,
 	bKeeper types.BankKeeper,
 	sKeeper types.StakingKeeper,
@@ -67,14 +63,13 @@ func NewKeeper(
 	}
 
 	address := common.HexToAddress(predeploys.Staking)
-	contract, err := bindings.NewStaking(address, ethCl)
+	contract, err := bindings.NewStaking(address, nil) // Passing nil backend if safe since only Parse functions are used.
 	if err != nil {
 		return &Keeper{}, errors.Wrap(err, "new staking")
 	}
 
 	return &Keeper{
 		eventsTable:     evmstakingStore.EVMEventTable(),
-		ethCl:           ethCl,
 		aKeeper:         aKeeper,
 		bKeeper:         bKeeper,
 		sKeeper:         sKeeper,
@@ -86,7 +81,7 @@ func NewKeeper(
 }
 
 // EndBlock delivers all pending EVM events on every `k.deliverInterval`'th block.
-func (k *Keeper) EndBlock(ctx context.Context) error {
+func (k Keeper) EndBlock(ctx context.Context) error {
 	if !feature.FlagEVMStakingModule.Enabled(ctx) {
 		return errors.New("unexpected code path [BUG]")
 	}
@@ -125,42 +120,13 @@ func (k *Keeper) EndBlock(ctx context.Context) error {
 	return nil
 }
 
-// Prepare returns all omni stake contract EVM event logs from the provided block hash.
-func (k Keeper) Prepare(ctx context.Context, blockHash common.Hash) ([]evmenginetypes.EVMEvent, error) {
-	if !feature.FlagEVMStakingModule.Enabled(ctx) {
-		return nil, errors.New("unexpected code path [BUG]")
-	}
-	logs, err := k.ethCl.FilterLogs(ctx, ethereum.FilterQuery{
-		BlockHash: &blockHash,
-		Addresses: k.Addresses(),
-		Topics:    [][]common.Hash{{createValidatorEvent.ID, delegateEvent.ID}},
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "filter logs")
-	}
-
-	resp := make([]evmenginetypes.EVMEvent, 0, len(logs))
-	for _, l := range logs {
-		topics := make([][]byte, 0, len(l.Topics))
-		for _, t := range l.Topics {
-			topics = append(topics, t.Bytes())
-		}
-		resp = append(resp, evmenginetypes.EVMEvent{
-			Address: l.Address.Bytes(),
-			Topics:  topics,
-			Data:    l.Data,
-		})
-	}
-
-	return resp, nil
-}
-
 func (Keeper) Name() string {
 	return types.ModuleName
 }
 
-func (k Keeper) Addresses() []common.Address {
-	return []common.Address{k.address}
+// FilterParams defines the matching EVM log events, see github.com/ethereum/go-ethereum#FilterQuery.
+func (k Keeper) FilterParams() ([]common.Address, [][]common.Hash) {
+	return []common.Address{k.address}, [][]common.Hash{{createValidatorEvent.ID, delegateEvent.ID}}
 }
 
 // Deliver processes a omni deposit log event, which must be one of:

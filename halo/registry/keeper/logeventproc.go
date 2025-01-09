@@ -10,7 +10,6 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -29,35 +28,9 @@ func (Keeper) Name() string {
 	return types.ModuleName
 }
 
-func (k Keeper) Addresses() []common.Address {
-	return []common.Address{k.portalRegAdress}
-}
-
-// Prepare returns all omni portal registry contract EVM event logs from the provided block hash.
-func (k Keeper) Prepare(ctx context.Context, blockHash common.Hash) ([]evmenginetypes.EVMEvent, error) {
-	logs, err := k.ethCl.FilterLogs(ctx, ethereum.FilterQuery{
-		BlockHash: &blockHash,
-		Addresses: k.Addresses(),
-		Topics:    [][]common.Hash{{portalRegEvent.ID}},
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "filter logs")
-	}
-
-	resp := make([]evmenginetypes.EVMEvent, 0, len(logs))
-	for _, l := range logs {
-		topics := make([][]byte, 0, len(l.Topics))
-		for _, t := range l.Topics {
-			topics = append(topics, t.Bytes())
-		}
-		resp = append(resp, evmenginetypes.EVMEvent{
-			Address: l.Address.Bytes(),
-			Topics:  topics,
-			Data:    l.Data,
-		})
-	}
-
-	return resp, nil
+// FilterParams defines the matching EVM log events, see github.com/ethereum/go-ethereum#FilterQuery.
+func (k Keeper) FilterParams() ([]common.Address, [][]common.Hash) {
+	return []common.Address{k.portalRegAdress}, [][]common.Hash{{portalRegEvent.ID}}
 }
 
 // Deliver processes a omni portal registry events.

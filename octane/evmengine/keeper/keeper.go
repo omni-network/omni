@@ -95,7 +95,8 @@ func verifyProcs(eventProcs []types.EvmEventProcessor) error {
 	names := make(map[string]bool)
 	addresses := make(map[common.Address]bool)
 	for _, proc := range eventProcs {
-		for _, address := range proc.Addresses() {
+		addrs, _ := proc.FilterParams()
+		for _, address := range addrs {
 			if addresses[address] {
 				return errors.New("duplicate event processors", "address", address)
 			}

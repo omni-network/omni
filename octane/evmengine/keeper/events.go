@@ -7,9 +7,11 @@ import (
 	"sort"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/octane/evmengine/types"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -19,13 +21,13 @@ func (k *Keeper) evmEvents(ctx context.Context, blockHash common.Hash) ([]types.
 	for _, proc := range k.eventProcs {
 		// Fetching evm events over the network is unreliable, retry forever.
 		err := retryForever(ctx, func(ctx context.Context) (bool, error) {
-			ll, err := proc.Prepare(ctx, blockHash)
+			eventList, err := FetchProcEvents(ctx, k.engineCl, proc, blockHash)
 			if err != nil {
 				log.Warn(ctx, "Failed fetching evm events (will retry)", err, "proc", proc.Name())
 				return false, nil // Retry
 			}
 
-			events = append(events, ll...)
+			events = append(events, eventList...)
 
 			return true, nil // Done
 		})
@@ -59,4 +61,32 @@ func (k *Keeper) evmEvents(ctx context.Context, blockHash common.Hash) ([]types.
 	})
 
 	return events, nil
+}
+
+// FetchProcEvents fetches all EVM events for the given processor from the given block hash.
+func FetchProcEvents(ctx context.Context, cl ethclient.EngineClient, proc types.EvmEventProcessor, blockHash common.Hash) ([]types.EVMEvent, error) {
+	addresses, topics := proc.FilterParams()
+	logs, err := cl.FilterLogs(ctx, ethereum.FilterQuery{
+		BlockHash: &blockHash,
+		Addresses: addresses,
+		Topics:    topics,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "filter logs")
+	}
+
+	resp := make([]types.EVMEvent, 0, len(logs))
+	for _, l := range logs {
+		topics := make([][]byte, 0, len(l.Topics))
+		for _, t := range l.Topics {
+			topics = append(topics, t.Bytes())
+		}
+		resp = append(resp, types.EVMEvent{
+			Address: l.Address.Bytes(),
+			Topics:  topics,
+			Data:    l.Data,
+		})
+	}
+
+	return resp, nil
 }
