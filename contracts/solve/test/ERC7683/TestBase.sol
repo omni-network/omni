@@ -35,7 +35,7 @@ contract TestBase is Test {
     address proxyAdmin = makeAddr("proxy-admin-owner");
 
     bytes32 internal constant ORDER_DATA_TYPEHASH = keccak256(
-        "OrderData(Call call,Deposit[] deposits)Call(uint64 destChainId,bytes32 target,uint256 value,bytes data,TokenExpense[] expenses)TokenExpense(bytes32 token,bytes32 spender,uint256 amount)Deposit(bytes32 token,uint256 amount)"
+        "OrderData(Call call,Deposit[] deposits)Call(uint64 chainId,bytes32 target,uint256 value,bytes data,TokenExpense[] expenses)TokenExpense(bytes32 token,bytes32 spender,uint256 amount)Deposit(bytes32 token,uint256 amount)"
     );
 
     modifier prankUser() {
@@ -72,7 +72,7 @@ contract TestBase is Test {
         });
 
         ISolverNet.Call memory call = ISolverNet.Call({
-            destChainId: destChainId,
+            chainId: destChainId,
             target: addressToBytes32(address(vault)),
             value: 0,
             data: abi.encodeCall(MockVault.deposit, (user, rand * 1 ether)),
