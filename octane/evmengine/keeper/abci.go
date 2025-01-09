@@ -9,6 +9,7 @@ import (
 
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/octane/evmengine/types"
 
@@ -133,10 +134,13 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 		return nil, errors.Wrap(err, "prepare votes")
 	}
 
-	// Next, collect all prev payload evm event logs.
-	evmEvents, err := k.evmEvents(ctx, payloadResp.ExecutionPayload.ParentHash)
-	if err != nil {
-		return nil, errors.Wrap(err, "prepare evm event logs")
+	// Next, collect all prev payload evm event logs (only if simple-evm-events feature not enabled).
+	var evmEvents []types.EVMEvent
+	if !feature.FlagSimpleEVMEvents.Enabled(ctx) {
+		evmEvents, err = k.evmEvents(ctx, payloadResp.ExecutionPayload.ParentHash)
+		if err != nil {
+			return nil, errors.Wrap(err, "prepare evm event logs")
+		}
 	}
 
 	// Then construct the execution payload message.

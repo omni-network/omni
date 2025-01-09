@@ -10,6 +10,8 @@ import (
 const (
 	// FlagEVMStakingModule enables the wip EVM Staking Module feature.
 	FlagEVMStakingModule Flag = "evm-staking-module"
+	// FlagSimpleEVMEvents enables the simplified EVM events refactor.
+	FlagSimpleEVMEvents Flag = "simple-evm-events"
 )
 
 // enabledFlags holds all globally enabled feature flags. The reason for having it is that
@@ -20,6 +22,7 @@ var enabledFlags sync.Map
 
 var allFlags = map[Flag]bool{
 	FlagEVMStakingModule: true,
+	FlagSimpleEVMEvents:  true,
 }
 
 // Flag is a feature flag.

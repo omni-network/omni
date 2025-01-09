@@ -165,9 +165,12 @@ func testCProvider(t *testing.T, ctx context.Context, cprov cprovider.Provider) 
 	xblock, ok, err := cprov.XBlock(ctx, 0, true)
 	tutil.RequireNoError(t, err)
 	require.True(t, ok)
-	require.Len(t, xblock.Msgs, 1)
-	require.Equal(t, xchain.ShardBroadcast0, xblock.Msgs[0].ShardID)
-	require.Equal(t, xchain.BroadcastChainID, xblock.Msgs[0].DestChainID)
+	require.Len(t, xblock.Msgs, 2)
+	for i, msg := range xblock.Msgs {
+		require.Equal(t, xchain.ShardBroadcast0, msg.ShardID)
+		require.Equal(t, xchain.BroadcastChainID, msg.DestChainID)
+		require.EqualValues(t, i, msg.LogIndex)
+	}
 
 	// Ensure getting latest xblock.
 	xblock2, ok, err := cprov.XBlock(ctx, xblock.BlockHeight, false)

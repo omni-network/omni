@@ -48,6 +48,11 @@ var (
 
 var _ EngineClient = (*engineMock)(nil)
 
+type filterQueryKey struct {
+	BlockHash common.Hash
+	Address   common.Address
+}
+
 // engineMock mocks the Engine API for testing purposes.
 type engineMock struct {
 	Client
@@ -57,7 +62,7 @@ type engineMock struct {
 	mu          sync.Mutex
 	head        *types.Block
 	pendingLogs map[common.Address][]types.Log
-	logs        map[common.Hash][]types.Log
+	logs        map[filterQueryKey][]types.Log
 	payloads    map[engine.PayloadID]payloadArgs
 }
 
@@ -85,7 +90,8 @@ func WithMockValidatorCreation(pubkey crypto.PubKey) func(*engineMock) {
 				createValidatorEvent.ID,
 				common.HexToHash(valAddr.Hex()), // validator
 			},
-			Data: data,
+			Data:  data,
+			Index: 100,
 		}
 
 		mock.pendingLogs[contractAddr] = append(mock.pendingLogs[contractAddr], eventLog)
@@ -118,7 +124,8 @@ func WithMockSelfDelegation(pubkey crypto.PubKey, ether int64) func(*engineMock)
 				common.HexToHash(valAddr.Hex()), // delegator
 				common.HexToHash(valAddr.Hex()), // validator
 			},
-			Data: data,
+			Data:  data,
+			Index: 300,
 		}
 
 		mock.pendingLogs[contractAddr] = append(mock.pendingLogs[contractAddr], eventLog)
@@ -133,7 +140,7 @@ func WithPortalRegister(network netconf.Network) func(*engineMock) {
 		contractAddr := common.HexToAddress(predeploys.PortalRegistry)
 
 		var eventLogs []types.Log
-		for _, chain := range network.EVMChains() {
+		for i, chain := range network.EVMChains() {
 			data, err := portalRegEvent.Inputs.NonIndexed().Pack(
 				chain.DeployHeight,
 				chain.AttestInterval,
@@ -157,7 +164,8 @@ func WithPortalRegister(network netconf.Network) func(*engineMock) {
 					topicChainID,
 					common.BytesToHash(chain.PortalAddress.Bytes()), //nolint:forbidigo // Explicit left padded
 				},
-				Data: data,
+				Data:  data,
+				Index: 200 + uint(i),
 			}
 
 			eventLogs = append(eventLogs, eventLog)
@@ -246,7 +254,7 @@ func NewEngineMock(opts ...func(mock *engineMock)) (EngineClient, error) {
 		head:        genesisBlock,
 		pendingLogs: make(map[common.Address][]types.Log),
 		payloads:    make(map[engine.PayloadID]payloadArgs),
-		logs:        make(map[common.Hash][]types.Log),
+		logs:        make(map[filterQueryKey][]types.Log),
 	}
 
 	for _, opt := range opts {
@@ -285,17 +293,13 @@ func (m *engineMock) FilterLogs(_ context.Context, q ethereum.FilterQuery) ([]ty
 	}
 
 	addr := q.Addresses[0]
-
-	// Ensure we returns the same logs for the same query.
-	if eventLogs, ok := m.logs[*q.BlockHash]; ok {
-		var resp []types.Log
-		for _, eventLog := range eventLogs {
-			if eventLog.Address == addr {
-				resp = append(resp, eventLog)
-			}
-		}
-
-		return resp, nil
+	key := filterQueryKey{
+		BlockHash: *q.BlockHash,
+		Address:   addr,
+	}
+	// Ensure we return the same logs for the same query.
+	if eventLogs, ok := m.logs[key]; ok {
+		return eventLogs, nil
 	}
 
 	eventLogs, ok := m.pendingLogs[addr]
@@ -303,7 +307,7 @@ func (m *engineMock) FilterLogs(_ context.Context, q ethereum.FilterQuery) ([]ty
 		return nil, nil
 	}
 
-	m.logs[*q.BlockHash] = eventLogs
+	m.logs[key] = eventLogs
 	delete(m.pendingLogs, addr)
 
 	return eventLogs, nil
