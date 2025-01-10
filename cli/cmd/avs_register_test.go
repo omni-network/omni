@@ -55,7 +55,7 @@ var (
 )
 
 //nolint:paralleltest // Parallel tests not supported since we start docker containers.
-func TestRegister(t *testing.T) {
+func TestRegisterDeregister(t *testing.T) {
 	ctx, backend, contracts, eoas := setup(t)
 
 	// Register operators to omni AVS with a stake more than minimum stake
@@ -64,18 +64,8 @@ func TestRegister(t *testing.T) {
 		registerOperator(t, ctx, contracts, backend, eoas.operatorKey(operator))
 		assertOperatorRegistered(t, ctx, contracts, operator)
 	}
-}
 
-//nolint:paralleltest // Parallel tests not supported since we start docker containers.
-func TestDeregister(t *testing.T) {
-	ctx, backend, contracts, eoas := setup(t)
-
-	for _, operator := range eoas.operators() {
-		delegateWETH(t, ctx, contracts, backend, operator, toWei(100))
-		registerOperator(t, ctx, contracts, backend, eoas.operatorKey(operator))
-		assertOperatorRegistered(t, ctx, contracts, operator)
-	}
-
+	// Deregister operators from omni AVS
 	for _, operator := range eoas.operators() {
 		deregisterOperator(t, ctx, contracts, backend, eoas.operatorKey(operator))
 	}
