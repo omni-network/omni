@@ -12,7 +12,7 @@ network = "{{ .Network }}"
 ###                         Solver Options                          ###
 #######################################################################
 
-# Path to the ethereum private key used to for inbox and outbox request state transitions.
+# Path to the ethereum private key used to for inbox and outbox order state transitions.
 private-key = "{{ .SolverPrivKey }}"
 
 # Path to the ethereum private key used to generate deposit load on ephemeral networks only.

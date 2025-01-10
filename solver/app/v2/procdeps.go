@@ -1,3 +1,4 @@
+//nolint:unused // This package is a work in progress.
 package appv2
 
 import (
@@ -9,10 +10,8 @@ import (
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
-	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/umath"
-	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -21,27 +20,27 @@ import (
 
 // procDeps abstracts dependencies for the event processor allowed simplified testing.
 type procDeps struct {
-	ParseID      func(chainID uint64, log types.Log) (stypes.ReqID, error)
-	GetRequest   func(ctx context.Context, chainID uint64, id stypes.ReqID) (bindings.SolveRequest, bool, error)
-	ShouldReject func(ctx context.Context, chainID uint64, req bindings.SolveRequest) (rejectReason, bool, error)
+	ParseID      func(chainID uint64, log types.Log) (OrderID, error)
+	GetOrder     func(ctx context.Context, chainID uint64, id OrderID) (Order, bool, error)
+	ShouldReject func(ctx context.Context, chainID uint64, order Order) (rejectReason, bool, error)
 	SetCursor    func(ctx context.Context, chainID uint64, height uint64) error
 
-	Accept  func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error
-	Reject  func(ctx context.Context, chainID uint64, req bindings.SolveRequest, reason rejectReason) error
-	Fulfill func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error
-	Claim   func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error
+	Accept func(ctx context.Context, chainID uint64, order Order) error
+	Reject func(ctx context.Context, chainID uint64, order Order, reason rejectReason) error
+	Fill   func(ctx context.Context, chainID uint64, order Order) error
+	Claim  func(ctx context.Context, chainID uint64, order Order) error
 
 	// Monitoring helpers
-	TargetName func(bindings.SolveRequest) string
+	TargetName func(Order) string
 	ChainName  func(chainID uint64) string
 }
 
 func newClaimer(
-	inboxContracts map[uint64]*bindings.SolveInbox,
+	inboxContracts map[uint64]*bindings.SolverNetInbox,
 	backends ethbackend.Backends,
 	solverAddr common.Address,
-) func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error {
-	return func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error {
+) func(ctx context.Context, chainID uint64, order Order) error {
+	return func(ctx context.Context, chainID uint64, order Order) error {
 		inbox, ok := inboxContracts[chainID]
 		if !ok {
 			return errors.New("unknown chain")
@@ -59,9 +58,9 @@ func newClaimer(
 
 		// Claim to solver address for now
 		// TODO: consider claiming to hot / cold funding wallet
-		tx, err := inbox.Claim(txOpts, req.Id, solverAddr)
+		tx, err := inbox.Claim(txOpts, order.ID, solverAddr)
 		if err != nil {
-			return errors.Wrap(err, "claim request")
+			return errors.Wrap(err, "claim order")
 		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
 			return errors.Wrap(err, "wait mined")
 		}
@@ -70,81 +69,14 @@ func newClaimer(
 	}
 }
 
-func newFulfiller(
-	network netconf.ID,
-	outboxContracts map[uint64]*bindings.SolveOutbox,
-	backends ethbackend.Backends,
-	solverAddr, outboxAddr common.Address,
-) func(ctx context.Context, srcChainID uint64, req bindings.SolveRequest) error {
-	return func(ctx context.Context, srcChainID uint64, req bindings.SolveRequest) error {
-		destChainID := req.Call.ChainId // Fulfilling happens on destination chain
-		outbox, ok := outboxContracts[destChainID]
-		if !ok {
-			return errors.New("unknown chain")
-		}
-
-		backend, err := backends.Backend(destChainID)
-		if err != nil {
-			return err
-		}
-
-		callOpts := &bind.CallOpts{Context: ctx}
-		txOpts, err := backend.BindOpts(ctx, solverAddr)
-		if err != nil {
-			return err
-		}
-
-		if ok, err := outbox.DidFulfill(callOpts, req.Id, srcChainID, req.Call); err != nil {
-			return errors.Wrap(err, "did fulfill")
-		} else if ok {
-			log.Info(ctx, "Skipping already fulfilled request", "req_id", req.Id)
-			return nil
-		}
-
-		target, err := getTarget(network, req.Call)
-		if err != nil {
-			return errors.Wrap(err, "get target [BUG]")
-		}
-
-		prereqs, err := target.TokenPrereqs(req.Call)
-		if err != nil {
-			return errors.Wrap(err, "get token prereqs")
-		}
-
-		for _, prereq := range prereqs {
-			if err := approveOutboxSpend(ctx, prereq, backend, solverAddr, outboxAddr); err != nil {
-				return errors.Wrap(err, "approve outbox spend")
-			}
-
-			if err := checkAllowedCall(ctx, outbox, req.Call); err != nil {
-				return errors.Wrap(err, "check allowed call")
-			}
-		}
-
-		if err := target.LogCall(ctx, req.Call); err != nil {
-			return errors.Wrap(err, "debug call")
-		}
-
-		// xcall fee
-		fee, err := outbox.FulfillFee(callOpts, srcChainID)
-		if err != nil {
-			return errors.Wrap(err, "get fulfill fee")
-		}
-
-		txOpts.Value = fee
-		tx, err := outbox.Fulfill(txOpts, req.Id, srcChainID, req.Call, prereqs)
-		if err != nil {
-			return errors.Wrap(err, "fulfill request", "custom", detectCustomError(err))
-		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
-			return errors.Wrap(err, "wait mined")
-		}
-
-		if ok, err := outbox.DidFulfill(callOpts, req.Id, srcChainID, req.Call); err != nil {
-			return errors.Wrap(err, "did fulfill")
-		} else if !ok {
-			return errors.New("fulfill failed [BUG]")
-		}
-
+func newFiller(
+	_ netconf.ID,
+	_ map[uint64]*bindings.SolveOutbox,
+	_ ethbackend.Backends,
+	_, _ common.Address,
+) func(ctx context.Context, srcChainID uint64, order Order) error {
+	return func(_ context.Context, _ uint64, _ Order) error {
+		// TODO
 		return nil
 	}
 }
@@ -194,9 +126,13 @@ func checkAllowedCall(ctx context.Context, outbox *bindings.SolveOutbox, call bi
 	return nil
 }
 
-func approveOutboxSpend(ctx context.Context, prereq bindings.SolveTokenPrereq, backend *ethbackend.Backend, solverAddr, outboxAddr common.Address) error {
-	// TODO(kevin): make erc20 bindings and use here
-	token, err := bindings.NewMockToken(prereq.Token, backend)
+func approveOutboxSpend(ctx context.Context, expense bindings.ISolverNetTokenExpense, backend *ethbackend.Backend, solverAddr, outboxAddr common.Address) error {
+	addr, err := cast.EthAddress(expense.Token[:])
+	if err != nil {
+		return errors.Wrap(err, "cast token address")
+	}
+
+	token, err := bindings.NewIERC20(addr, backend)
 	if err != nil {
 		return errors.Wrap(err, "new token")
 	}
@@ -207,7 +143,7 @@ func approveOutboxSpend(ctx context.Context, prereq bindings.SolveTokenPrereq, b
 			return false, errors.Wrap(err, "get allowance")
 		}
 
-		return new(big.Int).Sub(allowance, prereq.Amount).Sign() >= 0, nil
+		return new(big.Int).Sub(allowance, expense.Amount).Sign() >= 0, nil
 	}
 
 	if approved, err := isApproved(); err != nil {
@@ -238,11 +174,11 @@ func approveOutboxSpend(ctx context.Context, prereq bindings.SolveTokenPrereq, b
 }
 
 func newRejector(
-	inboxContracts map[uint64]*bindings.SolveInbox,
+	inboxContracts map[uint64]*bindings.SolverNetInbox,
 	backends ethbackend.Backends,
 	solverAddr common.Address,
-) func(ctx context.Context, chainID uint64, req bindings.SolveRequest, reason rejectReason) error {
-	return func(ctx context.Context, chainID uint64, req bindings.SolveRequest, reason rejectReason) error {
+) func(ctx context.Context, chainID uint64, order Order, reason rejectReason) error {
+	return func(ctx context.Context, chainID uint64, order Order, reason rejectReason) error {
 		inbox, ok := inboxContracts[chainID]
 		if !ok {
 			return errors.New("unknown chain")
@@ -253,11 +189,11 @@ func newRejector(
 			return err
 		}
 
-		// Ensure latest on-chain request is still pending
-		if latest, err := inbox.GetRequest(&bind.CallOpts{Context: ctx}, req.Id); err != nil {
-			return errors.Wrap(err, "get request")
-		} else if latest.Status != statusPending {
-			return errors.New("request status not pending anymore")
+		// Ensure latest on-chain order is still pending
+		if latest, err := inbox.GetOrder(&bind.CallOpts{Context: ctx}, order.ID); err != nil {
+			return errors.Wrap(err, "get order")
+		} else if latest.State.Status != statusPending {
+			return errors.New("order status not pending anymore")
 		}
 
 		txOpts, err := backend.BindOpts(ctx, solverAddr)
@@ -265,9 +201,9 @@ func newRejector(
 			return err
 		}
 
-		tx, err := inbox.Reject(txOpts, req.Id, uint8(reason))
+		tx, err := inbox.Reject(txOpts, order.ID, uint8(reason))
 		if err != nil {
-			return errors.Wrap(err, "reject request")
+			return errors.Wrap(err, "reject order")
 		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
 			return errors.Wrap(err, "wait mined")
 		}
@@ -277,11 +213,11 @@ func newRejector(
 }
 
 func newAcceptor(
-	inboxContracts map[uint64]*bindings.SolveInbox,
+	inboxContracts map[uint64]*bindings.SolverNetInbox,
 	backends ethbackend.Backends,
 	solverAddr common.Address,
-) func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error {
-	return func(ctx context.Context, chainID uint64, req bindings.SolveRequest) error {
+) func(ctx context.Context, chainID uint64, order Order) error {
+	return func(ctx context.Context, chainID uint64, order Order) error {
 		inbox, ok := inboxContracts[chainID]
 		if !ok {
 			return errors.New("unknown chain")
@@ -297,9 +233,9 @@ func newAcceptor(
 			return err
 		}
 
-		tx, err := inbox.Accept(txOpts, req.Id)
+		tx, err := inbox.Accept(txOpts, order.ID)
 		if err != nil {
-			return errors.Wrap(err, "accept request")
+			return errors.Wrap(err, "accept order")
 		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
 			return errors.Wrap(err, "wait mined")
 		}
@@ -308,35 +244,45 @@ func newAcceptor(
 	}
 }
 
-func newIDParser(inboxContracts map[uint64]*bindings.SolveInbox) func(chainID uint64, log types.Log) (stypes.ReqID, error) {
-	return func(chainID uint64, log types.Log) (stypes.ReqID, error) {
+func newIDParser(inboxContracts map[uint64]*bindings.SolverNetInbox) func(chainID uint64, log types.Log) (OrderID, error) {
+	return func(chainID uint64, log types.Log) (OrderID, error) {
 		inbox, ok := inboxContracts[chainID]
 		if !ok {
-			return stypes.ReqID{}, errors.New("unknown chain")
+			return OrderID{}, errors.New("unknown chain")
 		}
 
 		event, ok := eventsByTopic[log.Topics[0]]
 		if !ok {
-			return stypes.ReqID{}, errors.New("unknown event")
+			return OrderID{}, errors.New("unknown event")
 		}
 
-		return event.ParseID(inbox.SolveInboxFilterer, log)
+		return event.ParseID(inbox.SolverNetInboxFilterer, log)
 	}
 }
 
-func newRequestGetter(inboxContracts map[uint64]*bindings.SolveInbox) func(ctx context.Context, chainID uint64, id stypes.ReqID) (bindings.SolveRequest, bool, error) {
-	return func(ctx context.Context, chainID uint64, id stypes.ReqID) (bindings.SolveRequest, bool, error) {
+func newOrderGetter(inboxContracts map[uint64]*bindings.SolverNetInbox) func(ctx context.Context, chainID uint64, id OrderID) (Order, bool, error) {
+	return func(ctx context.Context, chainID uint64, id OrderID) (Order, bool, error) {
 		inbox, ok := inboxContracts[chainID]
 		if !ok {
-			return bindings.SolveRequest{}, false, errors.New("unknown chain")
+			return Order{}, false, errors.New("unknown chain")
 		}
 
-		req, err := inbox.GetRequest(&bind.CallOpts{Context: ctx}, id)
-		// TODO(corver): Detect not found
+		o, err := inbox.GetOrder(&bind.CallOpts{Context: ctx}, id)
 		if err != nil {
-			return bindings.SolveRequest{}, false, errors.Wrap(err, "get request")
+			return Order{}, false, errors.Wrap(err, "get order")
 		}
 
-		return req, true, nil
+		// not found
+		if o.Resolved.OrderId == [32]byte{} {
+			return Order{}, false, nil
+		}
+
+		return Order{
+			ID:         o.Resolved.OrderId,
+			Resolved:   o.Resolved,
+			Status:     o.State.Status,
+			AcceptedBy: o.State.AcceptedBy,
+			History:    o.History,
+		}, true, nil
 	}
 }

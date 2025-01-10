@@ -1,3 +1,4 @@
+//nolint:unused // This package is a work in progress.
 package appv2
 
 import (

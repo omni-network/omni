@@ -55,10 +55,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	// Log target apps
-	for _, app := range targetsByNetwork[network.ID] {
-		app.LogMetadata(ctx)
-	}
+	// TODO: log supported tokens / balances
 
 	if cfg.SolverPrivKey == "" {
 		return errors.New("private key not set")
@@ -75,9 +72,10 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	if err := maybeStartLoadGen(ctx, cfg, network.ID, backends); err != nil {
-		return err
-	}
+	// This starts devapp loadgen, currently written for v1 inbox / outbox.
+	// if err := maybeStartLoadGen(ctx, cfg, network.ID, backends); err != nil {
+	// 	return err
+	// }
 
 	xprov := xprovider.New(network, backends.Clients(), nil)
 
@@ -173,7 +171,7 @@ func startEventStreams(
 		return errors.Wrap(err, "detect inbox chains")
 	}
 
-	inboxContracts := make(map[uint64]*bindings.SolveInbox)
+	inboxContracts := make(map[uint64]*bindings.SolverNetInbox)
 	for _, chain := range inboxChains {
 		name := network.ChainName(chain)
 		chainVer := chainVerFromID(chain)
@@ -184,7 +182,7 @@ func startEventStreams(
 			return err
 		}
 
-		inbox, err := bindings.NewSolveInbox(addrs.SolveInbox, backend)
+		inbox, err := bindings.NewSolverNetInbox(addrs.SolveInbox, backend)
 		if err != nil {
 			return errors.Wrap(err, "create inbox contract", "chain", name)
 		}
@@ -235,22 +233,18 @@ func startEventStreams(
 		return cursors.Set(ctx, chainVerFromID(chainID), height)
 	}
 
-	targetNamer := func(req bindings.SolveRequest) string {
-		target, err := getTarget(network.ID, req.Call)
-		if err != nil {
-			return unknown
-		}
-
-		return target.Name()
+	targetNamer := func(_ Order) string {
+		// TODO: Return name for known targets.
+		return unknown
 	}
 
 	deps := procDeps{
 		ParseID:      newIDParser(inboxContracts),
-		GetRequest:   newRequestGetter(inboxContracts),
+		GetOrder:     newOrderGetter(inboxContracts),
 		ShouldReject: newShouldRejector(network.ID),
 		Accept:       newAcceptor(inboxContracts, backends, solverAddr),
 		Reject:       newRejector(inboxContracts, backends, solverAddr),
-		Fulfill:      newFulfiller(network.ID, outboxContracts, backends, solverAddr, addrs.SolveOutbox),
+		Fill:         newFiller(network.ID, outboxContracts, backends, solverAddr, addrs.SolveOutbox),
 		Claim:        newClaimer(inboxContracts, backends, solverAddr),
 		SetCursor:    cursorSetter,
 		ChainName:    network.ChainName,
