@@ -3,6 +3,7 @@ package connect
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"fmt"
 	"os"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/cchain"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	libcmd "github.com/omni-network/omni/lib/cmd"
+	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -33,35 +35,51 @@ type Connector struct {
 	XProvider  xchain.Provider
 	CProvider  cchain.Provider
 	EthClients map[uint64]ethclient.Client
+	Backends   ethbackend.Backends
 	CmtCl      rpcclient.Client
 }
 
 // Backend returns an ethbackend for the given chainID.
 func (c Connector) Backend(chainID uint64) (*ethbackend.Backend, error) {
-	chain, ok := c.Network.Chain(chainID)
-	if !ok {
-		return nil, errors.New("chain not found")
-	}
-
-	cl, ok := c.EthClients[chainID]
-	if !ok {
-		return nil, errors.New("ethclient not confired for chain")
-	}
-
-	return ethbackend.NewBackend(chain.Name, chainID, chain.BlockPeriod, cl)
+	return c.Backends.Backend(chainID)
 }
 
-type option func(xchain.RPCEndpoints) error
+// Portal returns an OmniPortal contract.
+func (c Connector) Portal(ctx context.Context, chainID uint64) (*bindings.OmniPortal, error) {
+	backend, err := c.Backends.Backend(chainID)
+	if err != nil {
+		return nil, err
+	}
+
+	addrs, err := contracts.GetAddresses(ctx, c.Network.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	contract, err := bindings.NewOmniPortal(addrs.Portal, backend)
+	if err != nil {
+		return nil, err
+	}
+
+	return contract, nil
+}
+
+type options struct {
+	Endpoints xchain.RPCEndpoints
+	PrivKeys  []*ecdsa.PrivateKey
+}
+
+type option func(*options) error
 
 // WithPublicRPCs returns an option using well known public free RPCs for all xchains.
 // This is used be default if no other option is provided.
 func WithPublicRPCs() option {
-	return func(endpoints xchain.RPCEndpoints) error {
-		for name, rpc := range endpoints {
+	return func(o *options) error {
+		for name, rpc := range o.Endpoints {
 			if rpc != "" {
 				continue
 			}
-			endpoints[name] = types.PublicRPCByName(name)
+			o.Endpoints[name] = types.PublicRPCByName(name)
 		}
 
 		return nil
@@ -70,8 +88,17 @@ func WithPublicRPCs() option {
 
 // WithEndpoint returns an option to set the RPC endpoint for the given chain name or chain ID.
 func WithEndpoint(chainName string, rpc string) option {
-	return func(endpoints xchain.RPCEndpoints) error {
-		endpoints[chainName] = rpc
+	return func(o *options) error {
+		o.Endpoints[chainName] = rpc
+
+		return nil
+	}
+}
+
+// WithPrivKey returns an option to add the privkey to underlying backends.
+func WithPrivKey(privkeys *ecdsa.PrivateKey) option {
+	return func(o *options) error {
+		o.PrivKeys = append(o.PrivKeys, privkeys)
 
 		return nil
 	}
@@ -79,7 +106,7 @@ func WithEndpoint(chainName string, rpc string) option {
 
 // WithInfuraENV returns an option using the provided ENV VAR as infura API key for all xchains.
 func WithInfuraENV(keyVar string) option {
-	return func(endpoints xchain.RPCEndpoints) error {
+	return func(o *options) error {
 		infuraNames := map[string]string{
 			"ethreum":      "mainnet",
 			"holesky":      "holesky",
@@ -96,9 +123,9 @@ func WithInfuraENV(keyVar string) option {
 			return errors.New("infura key not found in env", "key", keyVar)
 		}
 
-		for name, rpc := range endpoints {
+		for name, rpc := range o.Endpoints {
 			if infuraNames[name] != "" && rpc == "" {
-				endpoints[name] = fmt.Sprintf("https://%s.infura.io/v3/%s", infuraNames[name], key)
+				o.Endpoints[name] = fmt.Sprintf("https://%s.infura.io/v3/%s", infuraNames[name], key)
 			}
 		}
 
@@ -125,8 +152,9 @@ func New(ctx context.Context, netID netconf.ID, opts ...option) (Connector, erro
 	endpoints[omniCons.Name] = netID.Static().ConsensusRPC()
 
 	// Apply any custom endpoint options.
+	o := options{Endpoints: endpoints}
 	for _, opt := range opts {
-		if err := opt(endpoints); err != nil {
+		if err := opt(&o); err != nil {
 			return Connector{}, err
 		}
 	}
@@ -151,7 +179,7 @@ func New(ctx context.Context, netID netconf.ID, opts ...option) (Connector, erro
 
 	// Apply option again, since we now know the network.
 	for _, opt := range opts {
-		if err := opt(endpoints); err != nil {
+		if err := opt(&o); err != nil {
 			return Connector{}, err
 		}
 	}
@@ -182,11 +210,17 @@ func New(ctx context.Context, netID netconf.ID, opts ...option) (Connector, erro
 
 	xprov := xprovider.New(network, ethClients, cprov)
 
+	backends, err := ethbackend.BackendsFromNetwork(network, o.Endpoints, o.PrivKeys...)
+	if err != nil {
+		return Connector{}, errors.Wrap(err, "eth backends")
+	}
+
 	return Connector{
 		Network:    network,
 		XProvider:  xprov,
 		CProvider:  cprov,
 		EthClients: ethClients,
+		Backends:   backends,
 		CmtCl:      cometCl,
 	}, nil
 }
