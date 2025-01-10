@@ -214,7 +214,7 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 		return err
 	}
 
-	tx, err := contract.CreateValidator(txOpts, crypto.CompressPubkey(consPubkey))
+	tx, err := contract.CreateValidator0(txOpts, crypto.CompressPubkey(consPubkey))
 	if err != nil {
 		return errors.Wrap(err, "create validator")
 	}

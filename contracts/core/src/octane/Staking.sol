@@ -110,41 +110,40 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
 
     /**
      * @notice Create a new validator
-     * @param pubkey The validators consensus public key. 33 bytes compressed secp256k1 public key
+     * @param pubkey The validators consensus public key. 33 byte compressed secp256k1 public key
      * @dev Proxies x/staking.MsgCreateValidator
      * @dev NOTE: This function needs to be removed once Go codebase is migrated to the new functions below
      */
     function createValidator(bytes calldata pubkey) external payable {
         require(!isAllowlistEnabled || isAllowedValidator[msg.sender], "Staking: not allowed");
         require(msg.value >= MinDeposit, "Staking: insufficient deposit");
-        require(Secp256k1.verifyPubkey(pubkey), "Staking: invalid pubkey");
+        Secp256k1.verify(pubkey);
 
         emit CreateValidator(msg.sender, pubkey, msg.value);
     }
 
     /**
-     * @param x The x coordinate of the validators consensus public key
-     * @param y The y coordinate of the validators consensus public key
-     * @return Digest hash to be signed by the validators public key
+     * @param validator The validator address (msg.sender in createValidator)
+     * @return Digest hash to be signed by the validators consesnsus public key,
+     *         authorizing the validator to use that consensus key.
      */
-    function getValidatorPubkeyDigest(bytes32 x, bytes32 y) external view returns (bytes32) {
-        return _hashTypedDataV4(keccak256(abi.encode(_EIP712_TYPEHASH, x, y)));
+    function getConsPubkeyDigest(address validator) public view returns (bytes32) {
+        return _hashTypedDataV4(keccak256(abi.encode(_EIP712_TYPEHASH, validator)));
     }
 
     /**
      * @notice Create a new validator
-     * @param x The x coordinate of the validators consensus public key
-     * @param y The y coordinate of the validators consensus public key
-     * @param signature The signature of the validators consensus public key
+     * @param pubkey    The validators consensus public key. 33 byte compressed secp256k1 public key
+     * @param signature Signature of getConsPubkeyDigest(validator) by pubkey
      * @dev Proxies x/staking.MsgCreateValidator
      */
-    function createValidator(bytes32 x, bytes32 y, bytes calldata signature) external payable {
+    function createValidator(bytes calldata pubkey, bytes calldata signature) external payable {
         require(!isAllowlistEnabled || isAllowedValidator[msg.sender], "Staking: not allowed");
         require(msg.value >= MinDeposit, "Staking: insufficient deposit");
-        require(Secp256k1.verifyPubkey(x, y), "Staking: invalid pubkey");
-        require(_verifySignature(x, y, signature), "Staking: invalid signature");
 
-        bytes memory pubkey = Secp256k1.compressPublicKey(x, y);
+        (uint256 x, uint256 y) = Secp256k1.decompress(pubkey);
+        _verifySignature(x, y, msg.sender, signature);
+
         emit CreateValidator(msg.sender, pubkey, msg.value);
     }
 
@@ -211,16 +210,16 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
     //////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @notice Verify a signature matches a secp256k1 public key
-     * @param x The x coordinate of the validators consensus public key
-     * @param y The y coordinate of the validators consensus public key
-     * @param signature The signature of the validators consensus public key
+     * @notice Verifies signature is getConsPubkeyDigest(validator) signed by x,y pubkey
+     *         Revokes the signature if invalid
+     * @param x         The x coordinate of the validators consensus public key
+     * @param y         The y coordinate of the validators consensus public key
+     * @param validator The validator address signed by the consensus key
+     * @param signature The signature of the validator adddress, by the consensus public key
      */
-    function _verifySignature(bytes32 x, bytes32 y, bytes calldata signature) internal view returns (bool) {
-        bytes32 digest = _hashTypedDataV4(keccak256(abi.encode(_EIP712_TYPEHASH, x, y)));
-        (address recovered,,) = ECDSA.tryRecover(digest, signature);
-        address pubKeyAddress = Secp256k1.pubkeyToAddress(x, y);
-        return recovered == pubKeyAddress;
+    function _verifySignature(uint256 x, uint256 y, address validator, bytes calldata signature) internal view {
+        (address recovered,,) = ECDSA.tryRecover(getConsPubkeyDigest(validator), signature);
+        require(recovered == Secp256k1.pubkeyToAddress(x, y), "Staking: invalid signature");
     }
 
     /**

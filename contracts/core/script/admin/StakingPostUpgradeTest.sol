@@ -69,10 +69,10 @@ contract StakingPostUpgradeTest is Test {
 
     function _testCreateValidator() internal {
         bytes32 privkey = 0xf0e1605dd50ce33553290b778b0f53b2cde5e47a8794c0e7d2815e456e6da3b9;
-        bytes32 x = 0x3b12d750493ed6b12b390447f6dd38f587af12ed04ab8d6858e818cf0c63607c;
-        bytes32 y = 0x044e0321a3e57de51e95f2b230b9e4ffed2318578baab1a80652234fe0115d13;
-        bytes memory pubkey = Secp256k1.compressPublicKey(x, y);
-        bytes32 digest = staking.getValidatorPubkeyDigest(x, y);
+        uint256 x = 0x3b12d750493ed6b12b390447f6dd38f587af12ed04ab8d6858e818cf0c63607c;
+        uint256 y = 0x044e0321a3e57de51e95f2b230b9e4ffed2318578baab1a80652234fe0115d13;
+        bytes memory pubkey = Secp256k1.compress(x, y);
+        bytes32 digest = staking.getConsPubkeyDigest(validator);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(uint256(privkey), digest);
         bytes memory signature = abi.encodePacked(r, s, v);
         uint256 deposit = staking.MinDeposit();
@@ -81,7 +81,7 @@ contract StakingPostUpgradeTest is Test {
         vm.expectEmit();
         emit Staking.CreateValidator(validator, pubkey, deposit);
         vm.prank(validator);
-        staking.createValidator{ value: deposit }(x, y, signature);
+        staking.createValidator{ value: deposit }(pubkey, signature);
     }
 
     function _testDelegate() internal {
