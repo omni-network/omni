@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/omni-network/omni/e2e/app/geth"
 	haloapp "github.com/omni-network/omni/halo/app"
@@ -34,19 +36,24 @@ import (
 )
 
 const (
-	gethVerbosityInfo  = 3 // Geth log level (1=error,2=warn,3=info,4=debug,5=trace)
-	gethVerbosityDebug = 4
+	gethVerbosityInfo     = 3 // Geth log level (1=error,2=warn,3=info,4=debug,5=trace)
+	gethVerbosityDebug    = 4
+	gethClientName        = "geth"
+	haloClientName        = "halo"
+	gethJWTSecretFileName = "jwtsecret"
+	gethNodekeyFileName   = "nodekey"
 )
 
 type InitConfig struct {
-	Network          netconf.ID
-	Home             string
-	Moniker          string
-	Clean            bool
-	Archive          bool
-	Debug            bool
-	HaloTag          string
-	HaloFeatureFlags feature.Flags
+	Network            netconf.ID
+	Home               string
+	Moniker            string
+	Clean              bool
+	Archive            bool
+	Debug              bool
+	FromLatestSnapshot bool
+	HaloTag            string
+	HaloFeatureFlags   feature.Flags
 }
 
 func (c InitConfig) Verify() error {
@@ -136,7 +143,7 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 		HaloCfgFunc: func(haloCfg *halocfg.Config) {
 			haloCfg.FeatureFlags = cfg.HaloFeatureFlags
 			haloCfg.EngineEndpoint = "http://omni_evm:8551"
-			haloCfg.EngineJWTFile = "/geth/jwtsecret"
+			haloCfg.EngineJWTFile = "/geth/" + gethJWTSecretFileName
 			if cfg.Archive {
 				haloCfg.PruningOption = "nothing"
 				// Setting this to 0 retains all blocks
@@ -160,6 +167,24 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 	})
 	if err != nil {
 		return errors.Wrap(err, "init halo")
+	}
+
+	if cfg.FromLatestSnapshot {
+		if err := downloadLatestSnapshot(ctx, cfg.Network.String(), gethClientName, cfg.Home); err != nil {
+			return err
+		}
+
+		if err := restoreSnapshotData(ctx, cfg.Home, gethClientName); err != nil {
+			return err
+		}
+
+		if err := downloadLatestSnapshot(ctx, cfg.Network.String(), haloClientName, cfg.Home); err != nil {
+			return err
+		}
+
+		if err := restoreSnapshotData(ctx, cfg.Home, haloClientName); err != nil {
+			return err
+		}
 	}
 
 	var upgrade string
@@ -397,4 +422,85 @@ func gethInit(ctx context.Context, cfg InitConfig, dir string) error {
 	}
 
 	return nil
+}
+
+func restoreSnapshotData(ctx context.Context, homeDir string, clientName string) error {
+	log.Info(ctx, "Restoring latest chain snapshot...", "client", clientName)
+
+	clientStorageDir, err := getClientStorageDir(clientName)
+	if err != nil {
+		return err
+	}
+
+	absClientStorageDir := filepath.Join(homeDir, clientStorageDir)
+	origAbsClientStorageDir := fmt.Sprintf("%s_orig_%d", absClientStorageDir, time.Now().Unix())
+
+	// Add _orig_<unix_timestamp> suffix to client storage dir to keep it as a backup.
+	if err := os.Rename(absClientStorageDir, origAbsClientStorageDir); err != nil {
+		return errors.Wrap(err, "rename original client storage error")
+	}
+
+	// Decompress backup snapshot archive file.
+	snapshotArchive := getSnapshotBackupArchive(clientName)
+	absSnapshotOutputDir := filepath.Join(homeDir, clientName)
+	if err := decompressTarLz4(ctx, snapshotArchive, absSnapshotOutputDir); err != nil {
+		return errors.Wrap(err, "restore snapshot error", "client", clientName)
+	}
+
+	// Cleanup backup snapshot archive file.
+	if err := os.Remove(snapshotArchive); err != nil {
+		return errors.Wrap(err, "remove snapshot archive error ", "archive_name", snapshotArchive)
+	}
+
+	if clientName == gethClientName {
+		// copyFile the newly generated jwtsecret file from the renamed geth home path to the actual geth home path with the newly restored snapshot data.
+		jwtSecretSrcFilePath := origAbsClientStorageDir + "/" + gethJWTSecretFileName
+		jwtSecretDestFilePath := absClientStorageDir + "/" + gethJWTSecretFileName
+		if err := copyFile(jwtSecretSrcFilePath, jwtSecretDestFilePath); err != nil {
+			return errors.Wrap(err, "copy error: jwtsecret", "source", origAbsClientStorageDir, "dest", absSnapshotOutputDir)
+		}
+
+		// copyFile the newly generated nodekey file from the renamed geth home path to the actual geth home path with the newly restored snapshot data.
+		nodekeyFileSrcPath := origAbsClientStorageDir + "/" + gethNodekeyFileName
+		nodekeyFileDestPath := absClientStorageDir + "/" + gethNodekeyFileName
+		if err := copyFile(nodekeyFileSrcPath, nodekeyFileDestPath); err != nil {
+			return errors.Wrap(err, "copy error: nodekey", "source", origAbsClientStorageDir, "dest", absSnapshotOutputDir)
+		}
+	}
+
+	// Cleanup temp client storage backup.
+	if err := os.RemoveAll(origAbsClientStorageDir); err != nil {
+		return errors.Wrap(err, "remove temp client storage backup error", "storage_dir", origAbsClientStorageDir)
+	}
+
+	return nil
+}
+
+func downloadLatestSnapshot(ctx context.Context, network string, clientName string, outputDir string) error {
+	snapshotArchive := getSnapshotBackupArchive(clientName)
+	bucketName := fmt.Sprintf("omni-%s-snapshots", network)
+	gcpCloudStorageURL := fmt.Sprintf("https://storage.googleapis.com/%s/%s", bucketName, snapshotArchive)
+	outputFilePath := filepath.Join(outputDir, snapshotArchive)
+
+	log.Info(ctx, "Downloading latest snapshot...", "network", network, "client", clientName)
+	if err := downloadFile(ctx, gcpCloudStorageURL, outputFilePath); err != nil {
+		return errors.Wrap(err, "download error", "network", network, "client", clientName)
+	}
+
+	return nil
+}
+
+func getSnapshotBackupArchive(clientName string) string {
+	return clientName + "_data.tar.lz4"
+}
+
+func getClientStorageDir(clientName string) (string, error) {
+	switch clientName {
+	case gethClientName:
+		return "geth/geth", nil
+	case haloClientName:
+		return "halo/data", nil
+	default:
+		return "", errors.New("invalid client")
+	}
 }
