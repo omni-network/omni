@@ -8,7 +8,7 @@ require (
 	cosmossdk.io/depinject v1.1.0
 	cosmossdk.io/errors v1.0.1
 	cosmossdk.io/log v1.4.1
-	cosmossdk.io/math v1.4.0
+	cosmossdk.io/math v1.5.0
 	cosmossdk.io/orm v1.0.0-beta.3
 	cosmossdk.io/store v1.1.1
 	cosmossdk.io/x/evidence v0.1.1
@@ -330,6 +330,8 @@ require (
 	rsc.io/tmplfunc v0.0.3 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
+
+require github.com/cockroachdb/apd/v3 v3.2.1 // indirect
 
 // See https://github.com/cosmos/cosmos-sdk/pull/14952
 // Also https://github.com/cosmos/cosmos-db/blob/main/go.mod#L11-L12
