@@ -53,7 +53,6 @@ contract TestBase is Test {
         outbox = deploySolverNetOutbox();
         initializeInbox();
         initializeOutbox();
-        allowCall(address(vault), vault.deposit.selector);
     }
 
     /**
@@ -125,10 +124,6 @@ contract TestBase is Test {
     // Seperate initialization functions are necessary as proxy addresses must be known prior.
     function initializeOutbox() internal {
         outbox.initialize(address(this), solver, address(portal), address(inbox));
-    }
-
-    function allowCall(address target, bytes4 selector) internal {
-        outbox.setAllowedCall(target, selector, true);
     }
 
     function fillHash(bytes32 orderId, bytes memory originData) internal pure returns (bytes32) {
