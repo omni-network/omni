@@ -17,7 +17,6 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 	"github.com/omni-network/omni/monitor/account"
-	"github.com/omni-network/omni/monitor/avs"
 	"github.com/omni-network/omni/monitor/contract"
 	"github.com/omni-network/omni/monitor/loadgen"
 	"github.com/omni-network/omni/monitor/routerecon"
@@ -71,10 +70,6 @@ func Run(ctx context.Context, cfg Config) error {
 	cprov := cprovider.NewABCI(tmClient, network.ID)
 
 	xprov := xprovider.New(network, ethClients, cprov)
-
-	if err := avs.StartMonitor(ctx, network, ethClients); err != nil {
-		return errors.Wrap(err, "monitor AVS")
-	}
 
 	account.StartMonitoring(ctx, network, ethClients)
 
