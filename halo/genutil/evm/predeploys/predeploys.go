@@ -8,9 +8,6 @@ import (
 )
 
 const (
-	// ProxyAdmin for all namespaces.
-	ProxyAdmin = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-
 	// Omni Predeploys.
 	PortalRegistry   = "0x121E240000000000000000000000000000000001"
 	OmniBridgeNative = "0x121E240000000000000000000000000000000002"
