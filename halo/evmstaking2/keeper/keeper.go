@@ -244,7 +244,6 @@ func (k Keeper) deliverDelegate(ctx context.Context, ev *bindings.StakingDelegat
 		"validator", ev.Validator.Hex(),
 		"amount", ev.Amount.String())
 
-	// Validator already exists, add deposit to self delegation
 	msg := stypes.NewMsgDelegate(delAddr.String(), valAddr.String(), amountCoin)
 	_, err := k.sServer.Delegate(ctx, msg)
 	if err != nil {
@@ -316,10 +315,6 @@ func (k Keeper) deliverCreateValidator(ctx context.Context, createValidator *bin
 }
 
 func verifyStakingDelegate(delegate *bindings.StakingDelegate) error {
-	if delegate.Delegator != delegate.Validator {
-		return errors.New("only self delegation")
-	}
-
 	if delegate.Amount == nil {
 		return errors.New("stake amount missing")
 	}
