@@ -34,7 +34,6 @@ type Connector struct {
 	CProvider  cchain.Provider
 	EthClients map[uint64]ethclient.Client
 	CmtCl      rpcclient.Client
-	network    netconf.Network
 }
 
 // Backend returns an ethbackend for the given chainID.
@@ -189,7 +188,6 @@ func New(ctx context.Context, netID netconf.ID, opts ...option) (Connector, erro
 		CProvider:  cprov,
 		EthClients: ethClients,
 		CmtCl:      cometCl,
-		network:    network,
 	}, nil
 }
 

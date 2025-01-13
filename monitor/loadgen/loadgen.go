@@ -21,6 +21,7 @@ import (
 
 // Config is the configuration for the load generator.
 type Config struct {
+	// ValidatorKeysGlob defines the paths to the validator keys used for self-delegation.
 	ValidatorKeysGlob string
 }
 
