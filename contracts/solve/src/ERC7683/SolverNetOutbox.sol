@@ -5,10 +5,12 @@ import { OwnableRoles } from "solady/src/auth/OwnableRoles.sol";
 import { ReentrancyGuard } from "solady/src/utils/ReentrancyGuard.sol";
 import { Initializable } from "solady/src/utils/Initializable.sol";
 import { XAppBase } from "core/src/pkg/XAppBase.sol";
+import { SolverNetExecutor } from "./SolverNetExecutor.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { ConfLevel } from "core/src/libraries/ConfLevel.sol";
 import { TypeMax } from "core/src/libraries/TypeMax.sol";
 import { DeployedAt } from "src/util/DeployedAt.sol";
+import { AddrUtils } from "src/ERC7683/lib/AddrUtils.sol";
 import { ISolverNetInbox } from "./interfaces/ISolverNetInbox.sol";
 import { ISolverNetOutbox } from "./interfaces/ISolverNetOutbox.sol";
 
@@ -43,6 +45,12 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
     address internal _inbox;
 
     /**
+     * @notice Executor contract handling calls.
+     * @dev An executor is used so infinite approvals from solvers cannot be abused.
+     */
+    SolverNetExecutor internal _executor;
+
+    /**
      * @notice Maps fillHash (hash of fill instruction origin data) to true, if filled.
      * @dev Used to prevent duplicate fillment.
      */
@@ -63,6 +71,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         _grantRoles(solver_, SOLVER);
         _setOmniPortal(omni_);
         _inbox = inbox_;
+        _executor = new SolverNetExecutor(address(this));
     }
 
     /**
@@ -110,9 +119,12 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         // transfer from solver, approve spenders
         for (uint256 i; i < expenses.length; ++i) {
             TokenExpense memory expense = expenses[i];
-            address token = _bytes32ToAddress(expense.token);
-            token.safeTransferFrom(msg.sender, address(this), expense.amount);
-            token.safeApprove(_bytes32ToAddress(expense.spender), expense.amount);
+            address token = AddrUtils.bytes32ToAddress(expense.token);
+            address spender = AddrUtils.bytes32ToAddress(expense.spender);
+
+            token.safeTransferFrom(msg.sender, address(_executor), expense.amount);
+            // We remotely set token approvals on executor so we don't need to reprocess Call expenses there.
+            _executor.tokenApproval(token, spender, expense.amount);
         }
 
         _;
@@ -125,12 +137,17 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         // This includes the call target.
         for (uint256 i; i < expenses.length; ++i) {
             TokenExpense memory expense = expenses[i];
-            address token = _bytes32ToAddress(expense.token);
-            uint256 balance = token.balanceOf(address(this));
+            address token = AddrUtils.bytes32ToAddress(expense.token);
+            uint256 balance = token.balanceOf(address(_executor));
 
-            if (balance > 0) token.safeTransfer(msg.sender, balance);
-            token.safeApprove(_bytes32ToAddress(expense.spender), 0);
+            if (balance > 0) {
+                _executor.refundExcess(token, AddrUtils.bytes32ToAddress(expense.spender), msg.sender, balance);
+            }
         }
+
+        // send any potential native refund sent to executor back to solver
+        uint256 refund = address(_executor).balance;
+        if (refund > 0) _executor.refundNative(msg.sender);
     }
 
     /**
@@ -140,10 +157,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
     function _executeCall(Call memory call) internal withExpenses(call.expenses) {
         if (call.chainId != block.chainid) revert WrongDestChain();
 
-        address target = _bytes32ToAddress(call.target);
-
-        (bool success,) = payable(target).call{ value: call.value }(call.data);
-        if (!success) revert CallFailed();
+        _executor.executeCall{ value: call.value }(call);
     }
 
     /**
@@ -180,12 +194,5 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
      */
     function _fillHash(bytes32 srcReqId, bytes memory originData) internal pure returns (bytes32) {
         return keccak256(abi.encode(srcReqId, originData));
-    }
-
-    /**
-     * @dev Convert bytes32 to address.
-     */
-    function _bytes32ToAddress(bytes32 b) internal pure returns (address) {
-        return address(uint160(uint256(b)));
     }
 }
