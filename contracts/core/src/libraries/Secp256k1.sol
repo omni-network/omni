@@ -24,52 +24,58 @@ library Secp256k1 {
     uint256 public constant PP = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F;
 
     /**
-     * @notice Compress a public key
+     * @notice Returns 33 byte compressed public key for the given x, y coordinates
      * @param x The x coordinate of the public key
      * @param y The y coordinate of the public key
-     * @return compressedPubKey The compressed public key
      */
-    function compressPublicKey(bytes32 x, bytes32 y) internal pure returns (bytes memory) {
+    function compress(uint256 x, uint256 y) internal pure returns (bytes memory) {
+        bytes32 _y = bytes32(y);
+
         // Set prefix based on y coordinate's parity
         // 0x02 for even y, 0x03 for odd y
-        uint8 prefix = uint8(y[31] & 0x01) + 0x02;
+        uint8 prefix = uint8(_y[31] & 0x01) + 0x02;
 
         // Concatenate prefix and x coordinate
-        bytes memory compressedPubKey = abi.encodePacked(bytes1(prefix), x);
-        return compressedPubKey;
+        return abi.encodePacked(bytes1(prefix), x);
     }
 
     /**
-     * @notice Verify a secp256k1 public key is on the curve
-     * @param x The x coordinate of the public key
-     * @param y The y coordinate of the public key
-     * @return True if the public key is valid, false otherwise
+     * @notice Returns x,y coordinates of an compressed public key
+     *         Reverts if the public key is invalid
+     * @param pubkey The 33 byte compressed public key
      */
-    function verifyPubkey(bytes32 x, bytes32 y) internal pure returns (bool) {
-        return EllipticCurve.isOnCurve(uint256(x), uint256(y), AA, BB, PP);
-    }
-
-    /**
-     * @notice Validate a compressed secp256k1 public key
-     * @param compressedPubKey The compressed public key to validate
-     * @return True if the public key is valid, false otherwise
-     */
-    function verifyPubkey(bytes calldata compressedPubKey) internal pure returns (bool) {
-        require(compressedPubKey.length == 33, "Staking: invalid pubkey length");
-        require(compressedPubKey[0] == 0x02 || compressedPubKey[0] == 0x03, "Staking: invalid pubkey prefix");
+    function decompress(bytes calldata pubkey) internal pure returns (uint256, uint256) {
+        require(pubkey.length == 33, "Secp256k1: pubkey not 33 bytes");
+        require(pubkey[0] == 0x02 || pubkey[0] == 0x03, "Secp256k1: invalid pubkey prefix");
 
         // Extract x coordinate
         uint256 x;
         assembly {
-            let ptr := add(compressedPubKey.offset, 1)
+            let ptr := add(pubkey.offset, 1)
             x := calldataload(ptr)
         }
 
         // Derive y coordinate
-        uint256 y = EllipticCurve.deriveY(uint8(compressedPubKey[0]), x, AA, BB, PP);
+        uint256 y = EllipticCurve.deriveY(uint8(pubkey[0]), x, AA, BB, PP);
 
-        // Verify the derived point lies on the curve
+        require(onCurve(x, y), "Secp256k1: pubkey not on curve");
+
+        return (x, y);
+    }
+
+    /**
+     * @notice Return true if x, y are on the secp256k1 curve
+     */
+    function onCurve(uint256 x, uint256 y) internal pure returns (bool) {
         return EllipticCurve.isOnCurve(x, y, AA, BB, PP);
+    }
+
+    /**
+     * @notice Revert if the public key is invalid
+     * @param pubkey The compressed public key to validate
+     */
+    function verify(bytes calldata pubkey) internal pure {
+        decompress(pubkey);
     }
 
     /**
@@ -78,7 +84,7 @@ library Secp256k1 {
      * @param y The y coordinate of the public key
      * @return The Ethereum address corresponding to the public key
      */
-    function pubkeyToAddress(bytes32 x, bytes32 y) internal pure returns (address) {
+    function pubkeyToAddress(uint256 x, uint256 y) internal pure returns (address) {
         bytes memory pubKey = new bytes(64);
         assembly {
             // Store x and y coordinates

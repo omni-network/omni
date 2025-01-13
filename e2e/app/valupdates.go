@@ -201,7 +201,7 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 				// NOTE: We can use CreateValidator here, rather than Delegate (self-delegation)
 				// because current e2e manifest validator_udpates are only used to create a new validator,
 				// and not to self-delegate an existing one.
-				tx, err := staking.CreateValidator(txOpts, pubkey.Bytes())
+				tx, err := staking.CreateValidator0(txOpts, pubkey.Bytes())
 				if err != nil {
 					returnErr(errors.Wrap(err, "deposit", "node", node.Name, "addr", addr.Hex()))
 					return
