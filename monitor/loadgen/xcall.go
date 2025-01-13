@@ -38,7 +38,8 @@ func xCallForever(ctx context.Context, cfg xCallConfig) {
 		return cfg.Period + jitter
 	}
 
-	timer := time.NewTimer(nextPeriod())
+	// timer will tick immediately
+	timer := time.NewTimer(0)
 	defer timer.Stop()
 
 	// returns random chain pair
@@ -50,11 +51,6 @@ func xCallForever(ctx context.Context, cfg xCallConfig) {
 		}
 
 		return cfg.Chains[i], cfg.Chains[j]
-	}
-
-	// tick immediately
-	if err := xCall(ctx, cfg, getChainPair); err != nil {
-		log.Warn(ctx, "Failed to xcall (will retry)", err)
 	}
 
 	for {
