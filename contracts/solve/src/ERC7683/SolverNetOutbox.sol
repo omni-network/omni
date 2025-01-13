@@ -48,11 +48,6 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
      */
     mapping(bytes32 fillHash => bool filled) internal _filled;
 
-    /**
-     * @notice Mapping of allowed calls per contract.
-     */
-    mapping(address target => mapping(bytes4 selector => bool)) public allowedCalls;
-
     constructor() {
         _disableInitializers();
     }
@@ -89,17 +84,6 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
     }
 
     /**
-     * @notice Set an allowed call for a target contract.
-     * @param target    Address of the target contract.
-     * @param selector  4-byte selector of the function to allow.
-     * @param allowed   Whether the call is allowed.
-     */
-    function setAllowedCall(address target, bytes4 selector, bool allowed) external onlyOwner {
-        allowedCalls[target][selector] = allowed;
-        emit AllowedCallSet(target, selector, allowed);
-    }
-
-    /**
      * @notice Fills a particular order on the destination chain
      * @param orderId     Unique order identifier for this order
      * @param originData  Data emitted on the origin to parameterize the fill
@@ -123,25 +107,29 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
      *  Approve spenders. Verify post-call balances match pre-call.
      */
     modifier withExpenses(TokenExpense[] memory expenses) {
-        address[] memory tokens = new address[](expenses.length);
-        uint256[] memory preBalances = new uint256[](expenses.length);
-
+        // transfer from solver, approve spenders
         for (uint256 i; i < expenses.length; ++i) {
             TokenExpense memory expense = expenses[i];
             address token = _bytes32ToAddress(expense.token);
-
-            tokens[i] = token;
-            preBalances[i] = token.balanceOf(address(this));
-
-            address spender = _bytes32ToAddress(expense.spender);
             token.safeTransferFrom(msg.sender, address(this), expense.amount);
-            token.safeApprove(spender, expense.amount);
+            token.safeApprove(_bytes32ToAddress(expense.spender), expense.amount);
         }
 
         _;
 
-        for (uint256 i; i < tokens.length; ++i) {
-            if (tokens[i].balanceOf(address(this)) != preBalances[i]) revert InvalidExpenses();
+        // refund excess, revoke approvals
+        //
+        // NOTE: If anyone transfers this token to this outbox outside
+        // SolverNetOutbox.fill(...), the next solver to fill a call with
+        // that token as an expense will get the balance.
+        // This includes the call target.
+        for (uint256 i; i < expenses.length; ++i) {
+            TokenExpense memory expense = expenses[i];
+            address token = _bytes32ToAddress(expense.token);
+            uint256 balance = token.balanceOf(address(this));
+
+            if (balance > 0) token.safeTransfer(msg.sender, balance);
+            token.safeApprove(_bytes32ToAddress(expense.spender), 0);
         }
     }
 
@@ -153,8 +141,6 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         if (call.chainId != block.chainid) revert WrongDestChain();
 
         address target = _bytes32ToAddress(call.target);
-
-        if (!allowedCalls[target][bytes4(call.data)]) revert CallNotAllowed();
 
         (bool success,) = payable(target).call{ value: call.value }(call.data);
         if (!success) revert CallFailed();
