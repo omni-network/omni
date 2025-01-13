@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	dead = "0x000000000000000000000000000000000000dead"
+	deadAddr = "0x000000000000000000000000000000000000dead"
 )
 
 type xCallConfig struct {
@@ -69,7 +69,7 @@ func xCall(ctx context.Context, cfg xCallConfig) error {
 	}
 
 	var data []byte
-	to := common.HexToAddress(dead)
+	to := common.HexToAddress(deadAddr)
 	fee, err := fromPortal.FeeFor(&bind.CallOpts{Context: ctx}, dstChain.ID, data, portal.XMsgMinGasLimit)
 	if err != nil {
 		return errors.Wrap(err, "feeFor",
