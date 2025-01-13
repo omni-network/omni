@@ -2,7 +2,6 @@ package loadgen
 
 import (
 	"context"
-	"fmt"
 	"math/rand/v2"
 	"time"
 
@@ -91,7 +90,8 @@ func xCall(ctx context.Context, cfg xCallConfig) error {
 			"dst_chain_id", dstChain.ID,
 		)
 	}
-	log.Debug(ctx, fmt.Sprintf("xcall made %s -> %s %s", srcChain.Name, dstChain.Name, tx.Hash()))
+
+	log.Debug(ctx, "Xcall made", "src_chain", srcChain.Name, "dst_chain", dstChain.Name, "tx_hash", tx.Hash())
 
 	return nil
 }
