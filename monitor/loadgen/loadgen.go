@@ -28,7 +28,22 @@ type Config struct {
 // Start starts the validator self delegation load generator.
 // It does:
 // - Validator self-delegation on periodic basis.
+// - Makes XCalls from -> to random EVM portals on periodic basis.
 func Start(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client, cfg Config, rpcEndpoints xchain.RPCEndpoints) error {
+	err := startSelfDelegationLoadgen(ctx, network, ethClients, cfg)
+	if err != nil {
+		return errors.Wrap(err, "failed to start self delegation loadgen")
+	}
+
+	err = startXCallLoadgen(ctx, network, rpcEndpoints)
+	if err != nil {
+		return errors.Wrap(err, "failed to start xcall loadgen")
+	}
+
+	return nil
+}
+
+func startSelfDelegationLoadgen(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client, cfg Config) error {
 	// Only generate load in ephemeral networks, devnet and staging.
 	if !network.ID.IsEphemeral() {
 		return nil
@@ -81,6 +96,10 @@ func Start(ctx context.Context, network netconf.Network, ethClients map[uint64]e
 		go selfDelegateForever(ctx, contract, backend, val, period)
 	}
 
+	return nil
+}
+
+func startXCallLoadgen(ctx context.Context, network netconf.Network, rpcEndpoints xchain.RPCEndpoints) error {
 	xCallerPK, err := eoa.PrivateKey(ctx, network.ID, eoa.RoleXCaller)
 	if err != nil {
 		return errors.Wrap(err, "failed to get RoleXCaller priv key exiting xcall loadgen")
