@@ -42,23 +42,12 @@ func xCallForever(ctx context.Context, cfg xCallConfig) {
 	timer := time.NewTimer(0)
 	defer timer.Stop()
 
-	// returns random chain pair
-	getChainPair := func() (netconf.Chain, netconf.Chain) {
-		i := rand.IntN(len(cfg.Chains)) //nolint:gosec // Weak random ok for load tests.
-		j := rand.IntN(len(cfg.Chains)) //nolint:gosec // Weak random ok for load tests.
-		for i == j {
-			j = rand.IntN(len(cfg.Chains)) //nolint:gosec // Weak random ok for load tests.
-		}
-
-		return cfg.Chains[i], cfg.Chains[j]
-	}
-
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-timer.C:
-			if err := xCall(ctx, cfg, getChainPair); err != nil {
+			if err := xCall(ctx, cfg); err != nil {
 				log.Warn(ctx, "Failed to xcall (will retry)", err)
 			}
 			timer.Reset(nextPeriod())
@@ -66,8 +55,8 @@ func xCallForever(ctx context.Context, cfg xCallConfig) {
 	}
 }
 
-func xCall(ctx context.Context, cfg xCallConfig, getChainPair func() (from netconf.Chain, to netconf.Chain)) error {
-	fromChain, dstChain := getChainPair()
+func xCall(ctx context.Context, cfg xCallConfig) error {
+	fromChain, dstChain := getChainPair(cfg.Chains)
 	backend, err := cfg.Backends.Backend(fromChain.ID)
 	if err != nil {
 		return err
@@ -124,4 +113,14 @@ func getPortal(ctx context.Context, networkID netconf.ID, chainID uint64, backen
 	}
 
 	return contract, nil
+}
+
+func getChainPair(chains []netconf.Chain) (netconf.Chain, netconf.Chain) {
+	i := rand.IntN(len(chains)) //nolint:gosec // Weak random ok for load tests.
+	j := rand.IntN(len(chains)) //nolint:gosec // Weak random ok for load tests.
+	for i == j {
+		j = rand.IntN(len(chains)) //nolint:gosec // Weak random ok for load tests.
+	}
+
+	return chains[i], chains[j]
 }
