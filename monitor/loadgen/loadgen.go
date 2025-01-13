@@ -32,12 +32,12 @@ type Config struct {
 func Start(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client, cfg Config, rpcEndpoints xchain.RPCEndpoints) error {
 	err := startSelfDelegation(ctx, network, ethClients, cfg)
 	if err != nil {
-		return errors.Wrap(err, "failed to start self delegation loadgen")
+		return errors.Wrap(err, "start self delegation")
 	}
 
 	err = startXCaller(ctx, network, rpcEndpoints)
 	if err != nil {
-		return errors.Wrap(err, "failed to start xcall loadgen")
+		return errors.Wrap(err, "start xcaller")
 	}
 
 	return nil
