@@ -91,6 +91,10 @@ func xCall(ctx context.Context, cfg xCallConfig) error {
 		)
 	}
 
+	if _, err = backend.WaitMined(ctx, tx); err != nil {
+		return errors.Wrap(err, "wait mined")
+	}
+
 	log.Debug(ctx, "Xcall made", "src_chain", srcChain.Name, "dst_chain", dstChain.Name, "tx_hash", tx.Hash())
 
 	return nil
