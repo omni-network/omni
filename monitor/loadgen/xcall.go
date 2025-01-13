@@ -22,7 +22,7 @@ const (
 	dead = "0x000000000000000000000000000000000000dead"
 )
 
-type XCallConfig struct {
+type xCallConfig struct {
 	NetworkID   netconf.ID
 	XCallerAddr common.Address
 	Period      time.Duration
@@ -30,7 +30,7 @@ type XCallConfig struct {
 	Chains      []netconf.Chain
 }
 
-func xCallForever(ctx context.Context, cfg *XCallConfig) {
+func xCallForever(ctx context.Context, cfg *xCallConfig) {
 	log.Info(ctx, "Starting periodic xcalls", "period", cfg.Period)
 
 	nextPeriod := func() time.Duration {
@@ -70,7 +70,7 @@ func xCallForever(ctx context.Context, cfg *XCallConfig) {
 	}
 }
 
-func xCall(ctx context.Context, cfg *XCallConfig, getChainPair func() (from netconf.Chain, to netconf.Chain)) error {
+func xCall(ctx context.Context, cfg *xCallConfig, getChainPair func() (from netconf.Chain, to netconf.Chain)) error {
 	fromChain, dstChain := getChainPair()
 	backend, err := cfg.Backends.Backend(fromChain.ID)
 	if err != nil {

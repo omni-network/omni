@@ -123,7 +123,7 @@ func startXCaller(ctx context.Context, network netconf.Network, rpcEndpoints xch
 	if network.ID == netconf.Devnet {
 		period = xCallerPeriodDevnet
 	}
-	xCallCfg := &XCallConfig{
+	xCallCfg := &xCallConfig{
 		NetworkID:   network.ID,
 		XCallerAddr: xCallerAddr,
 		Period:      period,
