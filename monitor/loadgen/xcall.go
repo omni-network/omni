@@ -57,13 +57,13 @@ func xCallForever(ctx context.Context, cfg xCallConfig) {
 }
 
 func xCall(ctx context.Context, cfg xCallConfig) error {
-	fromChain, dstChain := getChainPair(cfg.Chains)
-	backend, err := cfg.Backends.Backend(fromChain.ID)
+	srcChain, dstChain := getChainPair(cfg.Chains)
+	backend, err := cfg.Backends.Backend(srcChain.ID)
 	if err != nil {
 		return err
 	}
 
-	fromPortal, err := getPortal(ctx, cfg.NetworkID, fromChain.ID, cfg.Backends)
+	fromPortal, err := getPortal(ctx, cfg.NetworkID, srcChain.ID, cfg.Backends)
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func xCall(ctx context.Context, cfg xCallConfig) error {
 	fee, err := fromPortal.FeeFor(&bind.CallOpts{Context: ctx}, dstChain.ID, nilData, portal.XMsgMinGasLimit)
 	if err != nil {
 		return errors.Wrap(err, "feeFor",
-			"src_chain", fromChain.ID,
+			"src_chain", srcChain.ID,
 			"dst_chain_id", dstChain.ID,
 		)
 	}
@@ -87,11 +87,11 @@ func xCall(ctx context.Context, cfg xCallConfig) error {
 	tx, err := fromPortal.Xcall(txOpts, dstChain.ID, uint8(xchain.ConfLatest), to, nilData, portal.XMsgMinGasLimit)
 	if err != nil {
 		return errors.Wrap(err, "xcall",
-			"src_chain", fromChain.ID,
+			"src_chain", srcChain.ID,
 			"dst_chain_id", dstChain.ID,
 		)
 	}
-	log.Debug(ctx, fmt.Sprintf("xcall made %s -> %s %s", fromChain.Name, dstChain.Name, tx.Hash()))
+	log.Debug(ctx, fmt.Sprintf("xcall made %s -> %s %s", srcChain.Name, dstChain.Name, tx.Hash()))
 
 	return nil
 }
