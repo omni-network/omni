@@ -1,4 +1,3 @@
-//nolint:unused // This package is a work in progress.
 package appv2
 
 import (
@@ -10,7 +9,7 @@ import (
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
-	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -70,13 +69,92 @@ func newClaimer(
 }
 
 func newFiller(
-	_ netconf.ID,
-	_ map[uint64]*bindings.SolveOutbox,
-	_ ethbackend.Backends,
-	_, _ common.Address,
+	outboxContracts map[uint64]*bindings.SolverNetOutbox,
+	backends ethbackend.Backends,
+	solverAddr, outboxAddr common.Address,
 ) func(ctx context.Context, srcChainID uint64, order Order) error {
-	return func(_ context.Context, _ uint64, _ Order) error {
-		// TODO
+	return func(ctx context.Context, srcChainID uint64, order Order) error {
+		if order.SourceChainID() != srcChainID {
+			return errors.New("[BUG] source chain mismatch")
+		}
+
+		settler, err := order.DestinationSettler()
+		if err != nil {
+			return err
+		} else if settler != outboxAddr {
+			return errors.New("[BUG] destination settler mismatch")
+		}
+
+		destChainID := order.DestinationChainID()
+		outbox, ok := outboxContracts[destChainID]
+		if !ok {
+			return errors.New("unknown chain")
+		}
+
+		backend, err := backends.Backend(destChainID)
+		if err != nil {
+			return err
+		}
+
+		callOpts := &bind.CallOpts{Context: ctx}
+		txOpts, err := backend.BindOpts(ctx, solverAddr)
+		if err != nil {
+			return err
+		}
+
+		ctx = log.WithCtx(ctx, order.LogAttrs(ctx)...)
+		log.Info(ctx, "Filling order")
+
+		if ok, err := outbox.DidFill(callOpts, order.ID, order.FillOriginData()); err != nil {
+			return errors.Wrap(err, "did fill")
+		} else if ok {
+			log.Info(ctx, "Skipping already filled order", "order_id", order.ID)
+			return nil
+		}
+
+		nativeValue := big.NewInt(0)
+		for _, output := range order.Resolved.MaxSpent {
+			if output.ChainId.Uint64() != destChainID {
+				// We error on this case for now, as our contracts only allow single dest chain orders
+				// ERC7683 allows for orders with multiple destination chains, so continue-ing here
+				// would also be appropriate.
+				return errors.New("[BUG] destination chain mismatch")
+			}
+
+			// zero token address means native token
+			if output.Token == [32]byte{} {
+				nativeValue.Add(nativeValue, output.Amount)
+				continue
+			}
+
+			if err := approveOutboxSpend(ctx, output, backend, solverAddr, outboxAddr); err != nil {
+				return errors.Wrap(err, "approve outbox spend")
+			}
+		}
+
+		// xcall fee
+		fee, err := outbox.FillFee(callOpts, srcChainID)
+		if err != nil {
+			return errors.Wrap(err, "get fulfill fee")
+		}
+
+		txOpts.Value = new(big.Int).Add(nativeValue, fee)
+		fillerData := []byte{} // fillerData is optional ERC7683 custom filler specific data, unused in our contracts
+		tx, err := outbox.Fill(txOpts, order.ID, order.FillOriginData(), fillerData)
+		if err != nil {
+			return errors.Wrap(err, "fill order", "custom", detectCustomError(err))
+		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
+			return errors.Wrap(err, "wait mined")
+		}
+
+		if ok, err := outbox.DidFill(callOpts, order.ID, order.FillOriginData()); err != nil {
+			return errors.Wrap(err, "did fill")
+		} else if !ok {
+			return errors.New("fill failed [BUG]")
+		}
+
+		log.Info(ctx, "Order filled")
+
 		return nil
 	}
 }
@@ -104,30 +182,22 @@ func detectCustomError(custom error) string {
 	return unknown
 }
 
-func checkAllowedCall(ctx context.Context, outbox *bindings.SolveOutbox, call bindings.SolveCall) error {
-	callOpts := &bind.CallOpts{Context: ctx}
-
-	if len(call.Data) < 4 {
-		return errors.New("invalid call data")
+func approveOutboxSpend(ctx context.Context, output bindings.IERC7683Output, backend *ethbackend.Backend, solverAddr, outboxAddr common.Address) error {
+	if output.Token == [32]byte{} {
+		return errors.New("cannot approve native token")
 	}
 
-	callMethodID, err := cast.Array4(call.Data[:4])
+	spender, err := cast.EthAddress(output.Token[:])
 	if err != nil {
-		return err
+		return errors.Wrap(err, "cast spender address")
 	}
 
-	allowed, err := outbox.AllowedCalls(callOpts, call.Target, callMethodID)
-	if err != nil {
-		return errors.Wrap(err, "get allowed calls")
-	} else if !allowed {
-		return errors.New("call not allowed")
+	if spender != outboxAddr {
+		// in our contracts, spender should always be outbox
+		return errors.New("[BUG] spender should be outbox")
 	}
 
-	return nil
-}
-
-func approveOutboxSpend(ctx context.Context, expense bindings.ISolverNetTokenExpense, backend *ethbackend.Backend, solverAddr, outboxAddr common.Address) error {
-	addr, err := cast.EthAddress(expense.Token[:])
+	addr, err := cast.EthAddress(output.Token[:])
 	if err != nil {
 		return errors.Wrap(err, "cast token address")
 	}
@@ -143,7 +213,7 @@ func approveOutboxSpend(ctx context.Context, expense bindings.ISolverNetTokenExp
 			return false, errors.Wrap(err, "get allowance")
 		}
 
-		return new(big.Int).Sub(allowance, expense.Amount).Sign() >= 0, nil
+		return new(big.Int).Sub(allowance, output.Amount).Sign() >= 0, nil
 	}
 
 	if approved, err := isApproved(); err != nil {
@@ -169,6 +239,8 @@ func approveOutboxSpend(ctx context.Context, expense bindings.ISolverNetTokenExp
 	} else if !approved {
 		return errors.New("approve failed")
 	}
+
+	log.Debug(ctx, "Approved token spend", "token", addr.Hex(), "amount", output.Amount)
 
 	return nil
 }
