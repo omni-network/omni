@@ -72,12 +72,3 @@ color = "auto"
 [loadgen]
 # Validator keys glob defines the validator keys to use for self-delegation.
 validator-keys-glob = "path/*/1"
-
-[xcaller]
-enabled = "false"
-
-# Chain ID pairs, where each pair specifies a 'from' and 'to' chain for sending xCalls.
-[xcaller.chainid-pairs]
-# arbitrum_one = "optimism"
-# base = "arbitrum_one"
-

@@ -27,8 +27,3 @@ func bindXFeeMngrFlags(flags *pflag.FlagSet, cfg *xfeemngr.Config) {
 	flags.StringToStringVar((*map[string]string)(&cfg.RPCEndpoints), "xfeemngr-rpc-endpoints", cfg.RPCEndpoints, "Cross-chain EVM RPC endpoints. e.g. \"ethereum=http://geth:8545,optimism=https://optimism.io\"")
 	flags.StringVar(&cfg.CoinGeckoAPIKey, "xfeemngr-coingecko-apikey", cfg.CoinGeckoAPIKey, "The CoinGecko API key to use for fetching token prices")
 }
-
-func bindXCallerFlags(flags *pflag.FlagSet, cfg *loadgen.XCallerConfig) {
-	flags.StringToStringVar(&cfg.ChainIDs, "xcaller-chainid-pairs", cfg.ChainIDs, "Chan ID pairs to make xcalls from -> to. e.g. \"arbitrum_one=optimism,optimism=base,base=arbitrum_one\"")
-	flags.BoolVar(&cfg.Enabled, "xcaller-enabled", false, "Enable or disable xcall loadgen from the monitor app")
-}

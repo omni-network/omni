@@ -81,16 +81,3 @@ color = "{{ .Log.Color }}"
 [loadgen]
 # Validator keys glob defines the validator keys to use for self-delegation.
 validator-keys-glob = "{{ .LoadGen.ValidatorKeysGlob }}"
-
-[xcaller]
-enabled = "{{ .XCaller.Enabled }}"
-
-# Chain ID pairs, where each pair specifies a 'from' and 'to' chain for sending xCalls.
-[xcaller.chainid-pairs]
-{{- if not .XCaller.ChainIDs }}
-# arbitrum_one = "optimism"
-# base = "arbitrum_one"
-{{ end -}}
-{{- range $key, $value := .XCaller.ChainIDs }}
-{{ $key }} = "{{ $value }}"
-{{ end }}

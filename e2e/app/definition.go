@@ -435,7 +435,7 @@ func internalEndpoints(def Definition, nodePrefix string) xchain.RPCEndpoints {
 	endpoints[omniEVM.Chain.Name] = omniEVM.InternalRPC
 
 	node := nodeByPrefix(def.Testnet, nodePrefix)
-	endpoints[def.Testnet.Network.Static().OmniConsensusChain().Name] = node.AddressRPC()
+	endpoints[def.Testnet.Network.Static().OmniConsensusChain().Name] = fmt.Sprintf("http://%s", node.AddressRPC())
 
 	// Add all anvil chains
 	for _, anvil := range def.Testnet.AnvilChains {

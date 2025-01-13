@@ -635,8 +635,6 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 	cfg.RPCEndpoints = endpoints
 	cfg.XFeeMngr.RPCEndpoints = xfeemngrEndpoints
 	cfg.XFeeMngr.CoinGeckoAPIKey = def.Cfg.CoinGeckoAPIKey
-	cfg.XCaller.Enabled = def.Manifest.XCallerEnabled
-	cfg.XCaller.ChainIDs = def.Manifest.XCallerChainIDPairs
 
 	if err := monapp.WriteConfigTOML(cfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write monitor config")
