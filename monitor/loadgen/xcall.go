@@ -68,9 +68,9 @@ func xCall(ctx context.Context, cfg xCallConfig) error {
 		return err
 	}
 
-	var data []byte
+	var nilData []byte
 	to := common.HexToAddress(deadAddr)
-	fee, err := fromPortal.FeeFor(&bind.CallOpts{Context: ctx}, dstChain.ID, data, portal.XMsgMinGasLimit)
+	fee, err := fromPortal.FeeFor(&bind.CallOpts{Context: ctx}, dstChain.ID, nilData, portal.XMsgMinGasLimit)
 	if err != nil {
 		return errors.Wrap(err, "feeFor",
 			"src_chain", fromChain.ID,
@@ -84,7 +84,7 @@ func xCall(ctx context.Context, cfg xCallConfig) error {
 	}
 
 	txOpts.Value = fee
-	tx, err := fromPortal.Xcall(txOpts, dstChain.ID, uint8(xchain.ConfLatest), to, data, portal.XMsgMinGasLimit)
+	tx, err := fromPortal.Xcall(txOpts, dstChain.ID, uint8(xchain.ConfLatest), to, nilData, portal.XMsgMinGasLimit)
 	if err != nil {
 		return errors.Wrap(err, "xcall",
 			"src_chain", fromChain.ID,
