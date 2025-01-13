@@ -7,6 +7,7 @@ import { AddrUtils } from "./lib/AddrUtils.sol";
 
 contract SolverNetExecutor is ISolverNetExecutor {
     using SafeTransferLib for address;
+    using AddrUtils for bytes32;
 
     /**
      * @notice Address of the outbox.
@@ -27,37 +28,36 @@ contract SolverNetExecutor is ISolverNetExecutor {
     }
 
     /**
-     * @notice Approves a spender (usually call target) to spend a token.
-     * @dev Called prior to `executeCall` in order to ensure tokens can be spent.
+     * @notice Approves a spender (usually call target) to spend a token held by the executor.
+     * @dev Called prior to `execute` in order to ensure tokens can be spent and after to purge excess approvals.
      */
-    function tokenApproval(address token, address spender, uint256 amount) external onlyOutbox {
+    function approve(address token, address spender, uint256 amount) external onlyOutbox {
         token.safeApprove(spender, amount);
     }
 
     /**
      * @notice Executes a call.
      */
-    function executeCall(ISolverNet.Call memory call) external payable onlyOutbox {
-        address target = AddrUtils.bytes32ToAddress(call.target);
+    function execute(ISolverNet.Call memory call) external payable onlyOutbox {
+        address target = call.target.toAddress();
         (bool success,) = payable(target).call{ value: call.value }(call.data);
         if (!success) revert CallFailed();
     }
 
     /**
-     * @notice Refunds excess tokens.
-     * @dev Called after `executeCall` in order to refund any excess or returned tokens.
+     * @notice Transfers a token to a recipient.
+     * @dev Called after `execute` in order to refund any excess or returned tokens.
      */
-    function refundExcess(address token, address spender, address to, uint256 amount) external onlyOutbox {
-        token.safeApprove(spender, 0);
+    function transfer(address token, address to, uint256 amount) external onlyOutbox {
         token.safeTransfer(to, amount);
     }
 
     /**
-     * @notice Refunds native currency.
-     * @dev Called after `executeCall` in order to refund any native currency sent back to the executor.
+     * @notice Transfers native currency to a recipient.
+     * @dev Called after `execute` in order to refund any native currency sent back to the executor.
      */
-    function refundNative(address to) external onlyOutbox {
-        to.safeTransferETH(address(this).balance);
+    function transferNative(address to, uint256 amount) external onlyOutbox {
+        to.safeTransferETH(amount);
     }
 
     /**

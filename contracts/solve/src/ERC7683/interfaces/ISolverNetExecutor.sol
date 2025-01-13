@@ -20,25 +20,25 @@ interface ISolverNetExecutor {
     function outbox() external view returns (address);
 
     /**
-     * @notice Approves a spender (usually call target) to spend a token.
-     * @dev Called prior to `executeCall` in order to ensure tokens can be spent.
+     * @notice Approves a spender (usually call target) to spend a token held by the executor.
+     * @dev Called prior to `execute` in order to ensure tokens can be spent and after to purge excess approvals.
      */
-    function tokenApproval(address token, address spender, uint256 amount) external;
+    function approve(address token, address spender, uint256 amount) external;
 
     /**
      * @notice Executes a call.
      */
-    function executeCall(ISolverNet.Call memory call) external payable;
+    function execute(ISolverNet.Call memory call) external payable;
 
     /**
-     * @notice Refunds excess tokens.
-     * @dev Called after `executeCall` in order to refund any excess or returned tokens.
+     * @notice Transfers a token to a recipient.
+     * @dev Called after `execute` in order to refund any excess or returned tokens.
      */
-    function refundExcess(address token, address spender, address to, uint256 amount) external;
+    function transfer(address token, address to, uint256 amount) external;
 
     /**
-     * @notice Refunds native currency.
-     * @dev Called after `executeCall` in order to refund any native currency sent back to the executor.
+     * @notice Transfers native currency to a recipient.
+     * @dev Called after `execute` in order to refund any native currency sent back to the executor.
      */
-    function refundNative(address to) external;
+    function transferNative(address to, uint256 amount) external;
 }

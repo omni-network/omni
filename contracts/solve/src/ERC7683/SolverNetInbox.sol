@@ -16,6 +16,8 @@ import { ISolverNetInbox } from "./interfaces/ISolverNetInbox.sol";
  */
 contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, DeployedAt, XAppBase, ISolverNetInbox {
     using SafeTransferLib for address;
+    using AddrUtils for address;
+    using AddrUtils for bytes32;
 
     /**
      * @notice Role for solvers.
@@ -120,7 +122,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             maxSpent[i] = Output({
                 token: call.expenses[i].token,
                 amount: call.expenses[i].amount,
-                recipient: AddrUtils.addressToBytes32(_outbox), // for solver, recipient is always outbox
+                recipient: _outbox.toBytes32(), // for solver, recipient is always outbox
                 chainId: call.chainId
             });
         }
@@ -138,7 +140,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         FillInstruction[] memory fillInstructions = new FillInstruction[](1);
         fillInstructions[0] = FillInstruction({
             destinationChainId: call.chainId,
-            destinationSettler: AddrUtils.addressToBytes32(_outbox),
+            destinationSettler: _outbox.toBytes32(),
             originData: abi.encode(FillOriginData({ srcChainId: uint64(block.chainid), call: call }))
         });
 
@@ -312,7 +314,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             // Handle ERC20 deposit
             if (deposit.token != bytes32(0)) {
                 if (deposit.amount == 0) revert NoDepositAmount();
-                address token = AddrUtils.bytes32ToAddress(deposit.token);
+                address token = deposit.token.toAddress();
                 token.safeTransferFrom(msg.sender, address(this), deposit.amount);
             }
         }
@@ -369,7 +371,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             if (deposit.token == bytes32(0)) {
                 to.safeTransferETH(deposit.amount);
             } else {
-                address token = AddrUtils.bytes32ToAddress(deposit.token);
+                address token = deposit.token.toAddress();
                 token.safeTransfer(to, deposit.amount);
             }
         }

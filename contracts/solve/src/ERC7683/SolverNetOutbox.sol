@@ -20,6 +20,7 @@ import { ISolverNetOutbox } from "./interfaces/ISolverNetOutbox.sol";
  */
 contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, DeployedAt, XAppBase, ISolverNetOutbox {
     using SafeTransferLib for address;
+    using AddrUtils for bytes32;
 
     /**
      * @notice Role for solvers.
@@ -119,12 +120,12 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         // transfer from solver, approve spenders
         for (uint256 i; i < expenses.length; ++i) {
             TokenExpense memory expense = expenses[i];
-            address token = AddrUtils.bytes32ToAddress(expense.token);
-            address spender = AddrUtils.bytes32ToAddress(expense.spender);
+            address token = expense.token.toAddress();
+            address spender = expense.spender.toAddress();
 
             token.safeTransferFrom(msg.sender, address(_executor), expense.amount);
             // We remotely set token approvals on executor so we don't need to reprocess Call expenses there.
-            _executor.tokenApproval(token, spender, expense.amount);
+            _executor.approve(token, spender, expense.amount);
         }
 
         _;
@@ -137,17 +138,18 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         // This includes the call target.
         for (uint256 i; i < expenses.length; ++i) {
             TokenExpense memory expense = expenses[i];
-            address token = AddrUtils.bytes32ToAddress(expense.token);
-            uint256 balance = token.balanceOf(address(_executor));
+            address token = expense.token.toAddress();
+            uint256 tokenBalance = token.balanceOf(address(_executor));
 
-            if (balance > 0) {
-                _executor.refundExcess(token, AddrUtils.bytes32ToAddress(expense.spender), msg.sender, balance);
+            if (tokenBalance > 0) {
+                _executor.approve(token, expense.spender.toAddress(), 0);
+                _executor.transfer(token, msg.sender, tokenBalance);
             }
         }
 
         // send any potential native refund sent to executor back to solver
-        uint256 refund = address(_executor).balance;
-        if (refund > 0) _executor.refundNative(msg.sender);
+        uint256 nativeBalance = address(_executor).balance;
+        if (nativeBalance > 0) _executor.transferNative(msg.sender, nativeBalance);
     }
 
     /**
@@ -157,7 +159,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
     function _executeCall(Call memory call) internal withExpenses(call.expenses) {
         if (call.chainId != block.chainid) revert WrongDestChain();
 
-        _executor.executeCall{ value: call.value }(call);
+        _executor.execute{ value: call.value }(call);
     }
 
     /**
