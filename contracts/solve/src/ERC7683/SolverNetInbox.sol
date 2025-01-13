@@ -7,6 +7,7 @@ import { Initializable } from "solady/src/utils/Initializable.sol";
 import { XAppBase } from "core/src/pkg/XAppBase.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { DeployedAt } from "src/util/DeployedAt.sol";
+import { AddrUtils } from "src/ERC7683/lib/AddrUtils.sol";
 import { ISolverNetInbox } from "./interfaces/ISolverNetInbox.sol";
 
 /**
@@ -15,6 +16,8 @@ import { ISolverNetInbox } from "./interfaces/ISolverNetInbox.sol";
  */
 contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, DeployedAt, XAppBase, ISolverNetInbox {
     using SafeTransferLib for address;
+    using AddrUtils for address;
+    using AddrUtils for bytes32;
 
     /**
      * @notice Role for solvers.
@@ -119,7 +122,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             maxSpent[i] = Output({
                 token: call.expenses[i].token,
                 amount: call.expenses[i].amount,
-                recipient: _addressToBytes32(_outbox), // for solver, recipient is always outbox
+                recipient: _outbox.toBytes32(), // for solver, recipient is always outbox
                 chainId: call.chainId
             });
         }
@@ -137,7 +140,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         FillInstruction[] memory fillInstructions = new FillInstruction[](1);
         fillInstructions[0] = FillInstruction({
             destinationChainId: call.chainId,
-            destinationSettler: _addressToBytes32(_outbox),
+            destinationSettler: _outbox.toBytes32(),
             originData: abi.encode(FillOriginData({ srcChainId: uint64(block.chainid), call: call }))
         });
 
@@ -311,7 +314,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             // Handle ERC20 deposit
             if (deposit.token != bytes32(0)) {
                 if (deposit.amount == 0) revert NoDepositAmount();
-                address token = _bytes32ToAddress(deposit.token);
+                address token = deposit.token.toAddress();
                 token.safeTransferFrom(msg.sender, address(this), deposit.amount);
             }
         }
@@ -368,7 +371,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             if (deposit.token == bytes32(0)) {
                 to.safeTransferETH(deposit.amount);
             } else {
-                address token = _bytes32ToAddress(deposit.token);
+                address token = deposit.token.toAddress();
                 token.safeTransfer(to, deposit.amount);
             }
         }
@@ -395,22 +398,6 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      */
     function _fillHash(bytes32 orderId, bytes memory originData) internal pure returns (bytes32) {
         return keccak256(abi.encode(orderId, originData));
-    }
-
-    /**
-     * @dev Convert address to bytes32.
-     * @param addr  Address to convert.
-     */
-    function _addressToBytes32(address addr) internal pure returns (bytes32) {
-        return bytes32(uint256(uint160(addr)));
-    }
-
-    /**
-     * @dev Convert bytes32 to address.
-     * @param b  Bytes32 to convert.
-     */
-    function _bytes32ToAddress(bytes32 b) internal pure returns (address) {
-        return address(uint160(uint256(b)));
     }
 
     /**
