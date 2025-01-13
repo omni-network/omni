@@ -70,7 +70,7 @@ func xCall(ctx context.Context, cfg xCallConfig) error {
 
 	var data []byte
 	to := common.HexToAddress(dead)
-	fee, err := fromPortal.FeeFor(&bind.CallOpts{}, dstChain.ID, data, portal.XMsgMinGasLimit)
+	fee, err := fromPortal.FeeFor(&bind.CallOpts{Context: ctx}, dstChain.ID, data, portal.XMsgMinGasLimit)
 	if err != nil {
 		return errors.Wrap(err, "feeFor",
 			"src_chain", fromChain.ID,
