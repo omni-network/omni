@@ -30,7 +30,7 @@ type xCallConfig struct {
 	Chains      []netconf.Chain
 }
 
-func xCallForever(ctx context.Context, cfg *xCallConfig) {
+func xCallForever(ctx context.Context, cfg xCallConfig) {
 	log.Info(ctx, "Starting periodic xcalls", "period", cfg.Period)
 
 	nextPeriod := func() time.Duration {
@@ -70,7 +70,7 @@ func xCallForever(ctx context.Context, cfg *xCallConfig) {
 	}
 }
 
-func xCall(ctx context.Context, cfg *xCallConfig, getChainPair func() (from netconf.Chain, to netconf.Chain)) error {
+func xCall(ctx context.Context, cfg xCallConfig, getChainPair func() (from netconf.Chain, to netconf.Chain)) error {
 	fromChain, dstChain := getChainPair()
 	backend, err := cfg.Backends.Backend(fromChain.ID)
 	if err != nil {
