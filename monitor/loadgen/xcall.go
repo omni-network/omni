@@ -8,6 +8,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/contracts"
+	"github.com/omni-network/omni/lib/contracts/portal"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
@@ -69,8 +70,7 @@ func xCall(ctx context.Context, cfg xCallConfig) error {
 
 	var data []byte
 	to := common.HexToAddress(dead)
-	gasLimit := uint64(100_000)
-	fee, err := fromPortal.FeeFor(&bind.CallOpts{}, dstChain.ID, data, gasLimit)
+	fee, err := fromPortal.FeeFor(&bind.CallOpts{}, dstChain.ID, data, portal.XMsgMinGasLimit)
 	if err != nil {
 		return errors.Wrap(err, "feeFor",
 			"src_chain", fromChain.ID,
@@ -84,7 +84,7 @@ func xCall(ctx context.Context, cfg xCallConfig) error {
 	}
 
 	txOpts.Value = fee
-	tx, err := fromPortal.Xcall(txOpts, dstChain.ID, uint8(xchain.ConfLatest), to, data, gasLimit)
+	tx, err := fromPortal.Xcall(txOpts, dstChain.ID, uint8(xchain.ConfLatest), to, data, portal.XMsgMinGasLimit)
 	if err != nil {
 		return errors.Wrap(err, "xcall",
 			"src_chain", fromChain.ID,
