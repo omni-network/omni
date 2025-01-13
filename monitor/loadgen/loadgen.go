@@ -19,6 +19,13 @@ import (
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 )
 
+const (
+	selfDelegationPeriod       = time.Hour * 6
+	selfDelegationPeriodDevnet = time.Second * 5
+	xCallerPeriod              = time.Hour * 2
+	xCallerPeriodDevnet        = time.Second * 30
+)
+
 // Config is the configuration for the load generator.
 type Config struct {
 	// ValidatorKeysGlob defines the paths to the validator keys used for self-delegation.
@@ -86,9 +93,9 @@ func startSelfDelegation(ctx context.Context, network netconf.Network, ethClient
 		return errors.Wrap(err, "new omni stake")
 	}
 
-	var period = time.Hour * 6
+	period := selfDelegationPeriod
 	if network.ID == netconf.Devnet {
-		period = time.Second * 5
+		period = selfDelegationPeriodDevnet
 	}
 
 	for _, key := range keys {
@@ -112,14 +119,14 @@ func startXCaller(ctx context.Context, network netconf.Network, rpcEndpoints xch
 
 	xCallerAddr := eoa.MustAddress(network.ID, eoa.RoleXCaller)
 
-	var xCallPeriod = time.Hour * 2
+	period := xCallerPeriod
 	if network.ID == netconf.Devnet {
-		xCallPeriod = time.Second * 30
+		period = xCallerPeriodDevnet
 	}
 	xCallCfg := &XCallConfig{
 		NetworkID:   network.ID,
 		XCallerAddr: xCallerAddr,
-		Period:      xCallPeriod,
+		Period:      period,
 		Backends:    backends,
 		Chains:      network.EVMChains(),
 	}
