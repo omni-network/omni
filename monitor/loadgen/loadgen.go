@@ -30,6 +30,8 @@ const (
 type Config struct {
 	// ValidatorKeysGlob defines the paths to the validator keys used for self-delegation.
 	ValidatorKeysGlob string
+	// XCallerKey path to the xcaller private key.
+	XCallerKey string
 }
 
 // Start starts the validator self delegation load generator.
@@ -42,7 +44,7 @@ func Start(ctx context.Context, network netconf.Network, ethClients map[uint64]e
 		return errors.Wrap(err, "start self delegation")
 	}
 
-	err = startXCaller(ctx, network, rpcEndpoints)
+	err = startXCaller(ctx, network, rpcEndpoints, cfg.XCallerKey)
 	if err != nil {
 		return errors.Wrap(err, "start xcaller")
 	}
@@ -106,13 +108,18 @@ func startSelfDelegation(ctx context.Context, network netconf.Network, ethClient
 	return nil
 }
 
-func startXCaller(ctx context.Context, network netconf.Network, rpcEndpoints xchain.RPCEndpoints) error {
-	xCallerPK, err := eoa.PrivateKey(ctx, network.ID, eoa.RoleXCaller)
-	if err != nil {
-		return errors.Wrap(err, "failed to get RoleXCaller priv key exiting xcall loadgen")
+func startXCaller(ctx context.Context, network netconf.Network, rpcEndpoints xchain.RPCEndpoints, keyPath string) error {
+	if keyPath == "" {
+		// Skip if no key is provided.
+		return nil
 	}
 
-	backends, err := ethbackend.BackendsFromNetwork(network, rpcEndpoints, xCallerPK)
+	privKey, err := ethcrypto.LoadECDSA(keyPath)
+	if err != nil {
+		return errors.Wrap(err, "load xcaller key", "path", keyPath)
+	}
+
+	backends, err := ethbackend.BackendsFromNetwork(network, rpcEndpoints, privKey)
 	if err != nil {
 		return err
 	}

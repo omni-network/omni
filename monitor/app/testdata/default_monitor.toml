@@ -72,3 +72,4 @@ color = "auto"
 [loadgen]
 # Validator keys glob defines the validator keys to use for self-delegation.
 validator-keys-glob = "path/*/1"
+xcaller-key = "path/xcaller_privatekey"

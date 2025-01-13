@@ -21,6 +21,7 @@ func bindRunFlags(flags *pflag.FlagSet, cfg *monitor.Config) {
 
 func bindLoadGenFlags(flags *pflag.FlagSet, cfg *loadgen.Config) {
 	flags.StringVar(&cfg.ValidatorKeysGlob, "loadgen-validator-keys-glob", cfg.ValidatorKeysGlob, "Glob path to the validator keys used for self-delegation load generation. Only applicable to devnet and staging")
+	flags.StringVar(&cfg.XCallerKey, "loadgen-xcaller-key", cfg.XCallerKey, "Path to the xcaller key used for xcall loadgen")
 }
 
 func bindXFeeMngrFlags(flags *pflag.FlagSet, cfg *xfeemngr.Config) {
