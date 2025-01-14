@@ -12,6 +12,8 @@ import (
 	"text/template"
 
 	"github.com/omni-network/omni/e2e/app/geth"
+	"github.com/omni-network/omni/e2e/manifests"
+	"github.com/omni-network/omni/e2e/types"
 	haloapp "github.com/omni-network/omni/halo/app"
 	halocmd "github.com/omni-network/omni/halo/cmd"
 	halocfg "github.com/omni-network/omni/halo/config"
@@ -29,6 +31,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/p2p/enode"
 
+	"github.com/BurntSushi/toml"
 	"github.com/spf13/cobra"
 
 	_ "embed"
@@ -117,6 +120,8 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 			return errors.Wrap(err, "clean home")
 		}
 	}
+
+	cfg.HaloFeatureFlags = maybeGetFeatureFlags(ctx, cfg.Network)
 
 	if cfg.FromLatestSnapshot {
 		if err := downloadAndRestoreLatestSnapshot(ctx, cfg.Network.String(), gethClientName); err != nil {
@@ -421,7 +426,7 @@ func downloadAndRestoreLatestSnapshot(ctx context.Context, network string, clien
 
 	log.Info(ctx, "Downloading and restoring latest snapshot...", "network", network, "client", clientName)
 	if err := downloadUntarLz4(ctx, gcpCloudStorageURL, clientName); err != nil {
-		return errors.Wrap(err, "download error", "network", network, "client", clientName)
+		return errors.Wrap(err, "download untar lz4 error", "network", network, "client", clientName)
 	}
 
 	return nil
@@ -429,4 +434,19 @@ func downloadAndRestoreLatestSnapshot(ctx context.Context, network string, clien
 
 func getSnapshotBackupArchive(clientName string) string {
 	return clientName + "_data.tar.lz4"
+}
+
+func maybeGetFeatureFlags(ctx context.Context, network netconf.ID) feature.Flags {
+	if network.IsProtected() {
+		return make([]string, 0) // Protected networks never have feature flags
+	}
+
+	var manifest types.Manifest
+	_, err := toml.Decode(string(manifests.Staging()), &manifest)
+	if err != nil {
+		log.Error(ctx, "Failed to parse the manifest", err)
+		return make([]string, 0)
+	}
+
+	return manifest.FeatureFlags
 }
