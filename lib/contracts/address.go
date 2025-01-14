@@ -138,7 +138,7 @@ func GetAddresses(ctx context.Context, network netconf.ID) (Addresses, error) {
 		AVS:            avs(network),
 		Portal:         portal(network, ver),
 		L1Bridge:       l1Bridge(network, ver),
-		Token:          token(network, ver),
+		Token:          TokenAddr(network),
 		GasPump:        gasPump(network, ver),
 		GasStation:     gasStation(network, ver),
 		SolveInbox:     solveInbox(network, ver),
@@ -170,7 +170,7 @@ func GetSalts(ctx context.Context, network netconf.ID) (Salts, error) {
 		AVS:         avsSalt(network),
 		Portal:      portalSalt(network, ver),
 		L1Bridge:    l1BridgeSalt(network, ver),
-		Token:       tokenSalt(network, ver),
+		Token:       tokenSalt(network),
 		GasPump:     gasPumpSalt(network, ver),
 		GasStation:  gasStationSalt(network, ver),
 		SolveInbox:  solveInboxSalt(network, ver),
@@ -209,13 +209,15 @@ func l1Bridge(network netconf.ID, version string) common.Address {
 	return create3.Address(Create3Factory(network), l1BridgeSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
 }
 
-// token returns the Token contract address for the given network.
-func token(network netconf.ID, version string) common.Address {
+// TokenAddr returns the Omni ERC20 token contract address for the given network.
+func TokenAddr(network netconf.ID) common.Address {
 	if network == netconf.Mainnet {
 		return common.HexToAddress("0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4")
+	} else if network == netconf.Omega {
+		return common.HexToAddress("0xD036C60f46FF51dd7Fbf6a819b5B171c8A076b07")
 	}
 
-	return create3.Address(Create3Factory(network), tokenSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
+	return create3.Address(Create3Factory(network), tokenSalt(network), eoa.MustAddress(network, eoa.RoleDeployer))
 }
 
 // gasPump returns the GasPump contract address for the given network.
@@ -257,8 +259,9 @@ func l1BridgeSalt(network netconf.ID, version string) string {
 	return salt(network, "l1-bridge-"+version)
 }
 
-func tokenSalt(network netconf.ID, version string) string {
-	return salt(network, "token-"+version)
+// token salt is static, as Omni ERC20 contract does not change.
+func tokenSalt(network netconf.ID) string {
+	return salt(network, "token")
 }
 
 func gasPumpSalt(network netconf.ID, version string) string {
