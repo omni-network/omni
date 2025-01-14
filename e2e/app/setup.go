@@ -413,6 +413,7 @@ func writeHaloConfig(
 	cfg.Tracer.Endpoint = def.Cfg.TracingEndpoint
 	cfg.Tracer.Headers = def.Cfg.TracingHeaders
 	cfg.FeatureFlags = def.Manifest.FeatureFlags
+	cfg.SDKGRPC.Address = "0.0.0.0:9999" // VM port 9090 used by grafana-agent, so use 9999 instead.
 
 	if testCfg {
 		cfg.SnapshotInterval = 1   // Write snapshots each block in e2e tests
@@ -490,7 +491,8 @@ func writeRelayerConfig(ctx context.Context, def Definition, logCfg log.Config) 
 	relayCfg := relayapp.DefaultConfig()
 	relayCfg.PrivateKey = privKeyFile
 	relayCfg.Network = def.Testnet.Network
-	relayCfg.HaloURL = archiveNode.AddressRPC()
+	relayCfg.HaloCometURL = archiveNode.AddressRPC()
+	relayCfg.HaloGRPCURL = haloGRPCAddress(archiveNode)
 	relayCfg.RPCEndpoints = endpoints
 
 	if err := relayapp.WriteConfigTOML(relayCfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
@@ -656,4 +658,11 @@ func logConfig(def Definition) log.Config {
 		Level:  slog.LevelDebug.String(),
 		Color:  log.ColorForce,
 	}
+}
+
+// haloGRPCAddress returns the gRPC address for a halo node
+// for access internally within the network.
+// Note that VM port 9090 used by grafana-agent, so gRPC bound to 9999 instead.
+func haloGRPCAddress(node *e2e.Node) string {
+	return fmt.Sprintf("%v:9999", node.InternalIP.String())
 }

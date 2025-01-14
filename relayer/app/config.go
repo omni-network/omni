@@ -18,7 +18,8 @@ import (
 type Config struct {
 	RPCEndpoints   xchain.RPCEndpoints
 	PrivateKey     string
-	HaloURL        string
+	HaloCometURL   string
+	HaloGRPCURL    string
 	Network        netconf.ID
 	MonitoringAddr string
 	DBDir          string
@@ -27,7 +28,8 @@ type Config struct {
 func DefaultConfig() Config {
 	return Config{
 		PrivateKey:     "relayer.key",
-		HaloURL:        "localhost:26657",
+		HaloCometURL:   "localhost:26657",
+		HaloGRPCURL:    "",
 		Network:        "",
 		MonitoringAddr: ":26660",
 		DBDir:          "./db",

@@ -101,6 +101,7 @@ func (p *Provider) Setup() error {
 			Solver:         services["solver"],
 			Prometheus:     p.Testnet.Prometheus,
 			GethVerbosity:  gethVerbosity,
+			AnvilAMD:       docker.AnvilAMD(),
 		}
 		def = docker.SetImageTags(def, p.Testnet.Manifest, p.omniTag)
 

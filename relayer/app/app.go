@@ -6,6 +6,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/buildinfo"
+	"github.com/omni-network/omni/lib/cchain"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/chaos"
 	"github.com/omni-network/omni/lib/errors"
@@ -16,7 +17,6 @@ import (
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 	"github.com/omni-network/omni/relayer/app/cursor"
 
-	"github.com/cometbft/cometbft/rpc/client"
 	"github.com/cometbft/cometbft/rpc/client/http"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -54,12 +54,11 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "failed to load private key")
 	}
 
-	tmClient, err := newClient(cfg.HaloURL)
+	cprov, err := newCProvider(ctx, cfg)
 	if err != nil {
 		return err
 	}
 
-	cprov := cprovider.NewABCI(tmClient, network.ID)
 	xprov := xprovider.New(network, rpcClientPerChain, cprov)
 
 	pricer := newTokenPricer(ctx)
@@ -124,13 +123,23 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 }
 
-func newClient(tmNodeAddr string) (client.Client, error) {
-	c, err := http.New("tcp://"+tmNodeAddr, "/websocket")
+// newCProvider returns a new cchain provider. Either GRPC if enabled since it is faster,
+// otherwise the ABCI provider.
+func newCProvider(ctx context.Context, cfg Config) (cchain.Provider, error) {
+	if cfg.HaloGRPCURL != "" {
+		log.Debug(ctx, "Using grpc cprovider", "url", cfg.HaloGRPCURL)
+
+		return cprovider.NewGRPC(cfg.HaloGRPCURL, cfg.Network)
+	}
+
+	log.Debug(ctx, "Using comet cprovider", "url", cfg.HaloCometURL)
+
+	c, err := http.New("tcp://"+cfg.HaloCometURL, "/websocket")
 	if err != nil {
 		return nil, errors.Wrap(err, "new tendermint client")
 	}
 
-	return c, nil
+	return cprovider.NewABCI(c, cfg.Network), nil
 }
 
 func initializeRPCClients(chains []netconf.Chain, endpoints xchain.RPCEndpoints) (map[uint64]ethclient.Client, error) {

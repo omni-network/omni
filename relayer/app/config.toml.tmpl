@@ -16,7 +16,10 @@ network = "{{ .Network }}"
 private-key = "{{ .PrivateKey }}"
 
 # The URL of the halo node to connect to.
-halo-url = "{{ .HaloURL }}"
+halo-url = "{{ .HaloCometURL }}"
+
+# The gRPC URL of the halo node to connect to.
+halo-grpc-url = "{{ .HaloGRPCURL }}"
 
 #######################################################################
 ###                             X-Chain                             ###

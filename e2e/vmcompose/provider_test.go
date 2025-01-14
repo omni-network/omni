@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/e2e/app"
+	"github.com/omni-network/omni/e2e/docker"
 	"github.com/omni-network/omni/e2e/vmcompose"
 	"github.com/omni-network/omni/lib/tutil"
 
@@ -17,7 +18,8 @@ import (
 //go:generate go test . -golden -clean
 
 func TestSetup(t *testing.T) {
-	t.Parallel()
+	t.Setenv(docker.AnvilAMDENV, "true") // Make tests deterministic, ignore ENV var.
+
 	manifestFile, dataFile := vmcompose.SetupDataFixtures(t)
 
 	def, err := app.MakeDefinition(context.Background(), app.DefinitionConfig{
@@ -39,7 +41,6 @@ func TestSetup(t *testing.T) {
 
 	for _, file := range files {
 		t.Run(filepath.Base(file), func(t *testing.T) {
-			t.Parallel()
 			bz, err := os.ReadFile(file)
 			require.NoError(t, err)
 
