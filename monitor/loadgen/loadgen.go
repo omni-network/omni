@@ -7,26 +7,52 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
+)
+
+const (
+	selfDelegationPeriod       = time.Hour * 6
+	selfDelegationPeriodDevnet = time.Second * 5
+	xCallerPeriod              = time.Hour * 2
+	xCallerPeriodDevnet        = time.Second * 30
 )
 
 // Config is the configuration for the load generator.
 type Config struct {
 	// ValidatorKeysGlob defines the paths to the validator keys used for self-delegation.
 	ValidatorKeysGlob string
+	// XCallerKey path to the xcaller private key.
+	XCallerKey string
 }
 
 // Start starts the validator self delegation load generator.
 // It does:
 // - Validator self-delegation on periodic basis.
-func Start(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client, cfg Config) error {
+// - Makes XCalls from -> to random EVM portals on periodic basis.
+func Start(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client, cfg Config, rpcEndpoints xchain.RPCEndpoints) error {
+	err := startSelfDelegation(ctx, network, ethClients, cfg)
+	if err != nil {
+		return errors.Wrap(err, "start self delegation")
+	}
+
+	err = startXCaller(ctx, network, rpcEndpoints, cfg.XCallerKey)
+	if err != nil {
+		return errors.Wrap(err, "start xcaller")
+	}
+
+	return nil
+}
+
+func startSelfDelegation(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client, cfg Config) error {
 	// Only generate load in ephemeral networks, devnet and staging.
 	if !network.ID.IsEphemeral() {
 		return nil
@@ -69,15 +95,49 @@ func Start(ctx context.Context, network netconf.Network, ethClients map[uint64]e
 		return errors.Wrap(err, "new omni stake")
 	}
 
-	var period = time.Hour * 6
+	period := selfDelegationPeriod
 	if network.ID == netconf.Devnet {
-		period = time.Second * 5
+		period = selfDelegationPeriodDevnet
 	}
 
 	for _, key := range keys {
 		val := ethcrypto.PubkeyToAddress(key.PublicKey)
 		go selfDelegateForever(ctx, contract, backend, val, period)
 	}
+
+	return nil
+}
+
+func startXCaller(ctx context.Context, network netconf.Network, rpcEndpoints xchain.RPCEndpoints, keyPath string) error {
+	if keyPath == "" {
+		// Skip if no key is provided.
+		return nil
+	}
+
+	privKey, err := ethcrypto.LoadECDSA(keyPath)
+	if err != nil {
+		return errors.Wrap(err, "load xcaller key", "path", keyPath)
+	}
+
+	backends, err := ethbackend.BackendsFromNetwork(network, rpcEndpoints, privKey)
+	if err != nil {
+		return err
+	}
+
+	xCallerAddr := eoa.MustAddress(network.ID, eoa.RoleXCaller)
+
+	period := xCallerPeriod
+	if network.ID == netconf.Devnet {
+		period = xCallerPeriodDevnet
+	}
+	xCallCfg := xCallConfig{
+		NetworkID:   network.ID,
+		XCallerAddr: xCallerAddr,
+		Period:      period,
+		Backends:    backends,
+		Chains:      network.EVMChains(),
+	}
+	go xCallForever(ctx, xCallCfg)
 
 	return nil
 }

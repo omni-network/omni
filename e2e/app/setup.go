@@ -565,8 +565,9 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 	confRoot := filepath.Join(def.Testnet.Dir, "monitor")
 
 	const (
-		privKeyFile = "privatekey"
-		configFile  = "monitor.toml"
+		privKeyFile        = "privatekey"
+		xCallerPrivKeyFile = "xcaller_privatekey"
+		configFile         = "monitor.toml"
 	)
 
 	if err := os.MkdirAll(confRoot, 0o755); err != nil {
@@ -605,6 +606,15 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 		return errors.Wrap(err, "write private key")
 	}
 
+	// save xcaller key
+	xCallerPrivKey, err := eoa.PrivateKey(ctx, def.Testnet.Network, eoa.RoleXCaller)
+	if err != nil {
+		return errors.Wrap(err, "get xcaller key")
+	}
+	if err := ethcrypto.SaveECDSA(filepath.Join(confRoot, xCallerPrivKeyFile), xCallerPrivKey); err != nil {
+		return errors.Wrap(err, "write xcaller private key")
+	}
+
 	var validatorKeyGlob string
 	for i, privKey := range valPrivKeys {
 		validatorKeyGlob = "validator_*"
@@ -632,6 +642,7 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 	cfg.Network = def.Testnet.Network
 	cfg.HaloURL = archiveNode.AddressRPC()
 	cfg.LoadGen.ValidatorKeysGlob = validatorKeyGlob
+	cfg.LoadGen.XCallerKey = xCallerPrivKeyFile
 	cfg.RPCEndpoints = endpoints
 	cfg.XFeeMngr.RPCEndpoints = xfeemngrEndpoints
 	cfg.XFeeMngr.CoinGeckoAPIKey = def.Cfg.CoinGeckoAPIKey

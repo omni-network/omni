@@ -24,6 +24,7 @@ func TestDefaultConfigReference(t *testing.T) {
 	cfg := monitor.DefaultConfig()
 	cfg.LoadGen = loadgen.Config{
 		ValidatorKeysGlob: "path/*/1",
+		XCallerKey:        "path/xcaller_privatekey",
 	}
 	cfg.XFeeMngr = xfeemngr.Config{
 		RPCEndpoints:    xchain.RPCEndpoints{"test_chain": "http://localhost:8545"},

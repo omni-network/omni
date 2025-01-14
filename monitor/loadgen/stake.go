@@ -16,13 +16,13 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-const selfDelegateJitter = 0.2 // 20% jitter
+const loadgenJitter = 0.2 // 20% jitter
 
 func selfDelegateForever(ctx context.Context, contract *bindings.Staking, backend *ethbackend.Backend, validator common.Address, period time.Duration) {
 	log.Info(ctx, "Starting periodic self-delegation", "validator", validator.Hex(), "period", period)
 
 	nextPeriod := func() time.Duration {
-		jitter := time.Duration(float64(period) * rand.Float64() * selfDelegateJitter) //nolint:gosec // Weak random ok for load tests.
+		jitter := time.Duration(float64(period) * rand.Float64() * loadgenJitter) //nolint:gosec // Weak random ok for load tests.
 		return period + jitter
 	}
 
