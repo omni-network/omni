@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"net/http"
 	"os"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -13,20 +14,39 @@ import (
 	"github.com/pierrec/lz4/v4"
 )
 
-func decompressTarLz4(ctx context.Context, inputFile string, outputDir string) error {
-	// Open the .tar.lz4 file.
-	file, err := os.Open(inputFile)
+func downloadUntarLz4(ctx context.Context, srcURL string, outputDir string) error {
+	// Build an HTTP GET request with an injected context.
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, srcURL, nil)
 	if err != nil {
-		return errors.Wrap(err, "open file")
+		return errors.Wrap(err, "build GET request")
 	}
-	defer file.Close()
 
+	// Send the request.
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return errors.Wrap(err, "send request")
+	}
+	defer resp.Body.Close()
+
+	// Check if the HTTP status is OK.
+	if resp.StatusCode != http.StatusOK {
+		return errors.Wrap(err, "download file", "status_code", resp.StatusCode)
+	}
+
+	if err := untarLz4(ctx, resp.Body, outputDir); err != nil {
+		return errors.Wrap(err, "decompress tar lz4", "url", srcURL)
+	}
+
+	return nil
+}
+
+func untarLz4(ctx context.Context, stream io.Reader, outputDir string) error {
 	// Create an LZ4 reader.
-	lz4Reader := lz4.NewReader(file)
+	lz4Reader := lz4.NewReader(stream)
 
 	// Decompress into memory or stream directly.
 	var buf bytes.Buffer
-	if _, err = io.Copy(&buf, lz4Reader); err != nil {
+	if _, err := io.Copy(&buf, lz4Reader); err != nil {
 		return errors.Wrap(err, "decompress lz4")
 	}
 

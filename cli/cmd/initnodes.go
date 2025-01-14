@@ -119,19 +119,11 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 	}
 
 	if cfg.FromLatestSnapshot {
-		if err := downloadLatestSnapshot(ctx, cfg.Network.String(), gethClientName, cfg.Home); err != nil {
+		if err := downloadAndRestoreLatestSnapshot(ctx, cfg.Network.String(), gethClientName); err != nil {
 			return err
 		}
 
-		if err := restoreSnapshotData(ctx, cfg.Home, gethClientName); err != nil {
-			return err
-		}
-
-		if err := downloadLatestSnapshot(ctx, cfg.Network.String(), haloClientName, cfg.Home); err != nil {
-			return err
-		}
-
-		if err := restoreSnapshotData(ctx, cfg.Home, haloClientName); err != nil {
+		if err := downloadAndRestoreLatestSnapshot(ctx, cfg.Network.String(), haloClientName); err != nil {
 			return err
 		}
 	}
@@ -422,32 +414,13 @@ func gethInit(ctx context.Context, cfg InitConfig, dir string) error {
 	return nil
 }
 
-func restoreSnapshotData(ctx context.Context, homeDir string, clientName string) error {
-	log.Info(ctx, "Restoring latest chain snapshot...", "client", clientName)
-
-	// Decompress backup snapshot archive file.
-	snapshotArchive := getSnapshotBackupArchive(clientName)
-	absSnapshotOutputDir := filepath.Join(homeDir, clientName)
-	if err := decompressTarLz4(ctx, snapshotArchive, absSnapshotOutputDir); err != nil {
-		return errors.Wrap(err, "restore snapshot error", "client", clientName)
-	}
-
-	// Cleanup backup snapshot archive file.
-	if err := os.Remove(snapshotArchive); err != nil {
-		return errors.Wrap(err, "remove snapshot archive error ", "archive_name", snapshotArchive)
-	}
-
-	return nil
-}
-
-func downloadLatestSnapshot(ctx context.Context, network string, clientName string, outputDir string) error {
+func downloadAndRestoreLatestSnapshot(ctx context.Context, network string, clientName string) error {
 	snapshotArchive := getSnapshotBackupArchive(clientName)
 	bucketName := fmt.Sprintf("omni-%s-snapshots", network)
 	gcpCloudStorageURL := fmt.Sprintf("https://storage.googleapis.com/%s/%s", bucketName, snapshotArchive)
-	outputFilePath := filepath.Join(outputDir, snapshotArchive)
 
-	log.Info(ctx, "Downloading latest snapshot...", "network", network, "client", clientName)
-	if err := downloadFile(ctx, gcpCloudStorageURL, outputFilePath); err != nil {
+	log.Info(ctx, "Downloading and restoring latest snapshot...", "network", network, "client", clientName)
+	if err := downloadUntarLz4(ctx, gcpCloudStorageURL, clientName); err != nil {
 		return errors.Wrap(err, "download error", "network", network, "client", clientName)
 	}
 
