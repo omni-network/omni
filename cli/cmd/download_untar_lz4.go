@@ -2,14 +2,12 @@ package cmd
 
 import (
 	"archive/tar"
-	"bytes"
 	"context"
 	"io"
 	"net/http"
 	"os"
 
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/log"
 
 	"github.com/pierrec/lz4/v4"
 )
@@ -33,29 +31,20 @@ func downloadUntarLz4(ctx context.Context, srcURL string, outputDir string) erro
 		return errors.Wrap(err, "download file", "status_code", resp.StatusCode)
 	}
 
-	if err := untarLz4(ctx, resp.Body, outputDir); err != nil {
+	if err := untarLz4(resp.Body, outputDir); err != nil {
 		return errors.Wrap(err, "decompress tar lz4", "url", srcURL)
 	}
 
 	return nil
 }
 
-func untarLz4(ctx context.Context, stream io.Reader, outputDir string) error {
-	// Create an LZ4 reader.
-	lz4Reader := lz4.NewReader(stream)
-
-	// Decompress into memory or stream directly.
-	var buf bytes.Buffer
-	if _, err := io.Copy(&buf, lz4Reader); err != nil {
-		return errors.Wrap(err, "decompress lz4")
-	}
-
-	// Open the .tar archive.
-	tarReader := tar.NewReader(&buf)
+func untarLz4(stream io.Reader, outputDir string) error {
+	// Open the .tar.lz4 archive.
+	tarLZ4Reader := tar.NewReader(lz4.NewReader(stream))
 
 	// Extract files from the tar archive.
 	for {
-		header, err := tarReader.Next()
+		header, err := tarLZ4Reader.Next()
 		if err == io.EOF {
 			break // End of archive
 		}
@@ -81,7 +70,7 @@ func untarLz4(ctx context.Context, stream io.Reader, outputDir string) error {
 			}
 
 			// Copy the file contents.
-			if _, err := io.CopyN(outFile, tarReader, header.Size); err != nil {
+			if _, err := io.CopyN(outFile, tarLZ4Reader, header.Size); err != nil {
 				return errors.Wrap(err, "write file")
 			}
 
@@ -95,8 +84,7 @@ func untarLz4(ctx context.Context, stream io.Reader, outputDir string) error {
 				return errors.Wrap(err, "set file permissions")
 			}
 		default:
-			// Handle other types (symlinks, etc.) if necessary.
-			log.Error(ctx, "Ignoring unsupported type", errors.New("unsupported type"), "type", header.Typeflag)
+			return errors.New("unsupported type", "type", header.Typeflag)
 		}
 	}
 
