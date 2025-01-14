@@ -164,7 +164,7 @@ func printDevnetInfo(ctx context.Context) error {
 }
 
 func devnetDefinition(ctx context.Context) (app.Definition, error) {
-	manifestFile, err := writeTempFile(manifests.Devnet0())
+	manifestFile, err := writeTempFile(manifests.Devnet0Bytes())
 	if err != nil {
 		return app.Definition{}, err
 	}

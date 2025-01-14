@@ -1,6 +1,11 @@
 package manifests
 
 import (
+	"github.com/omni-network/omni/e2e/types"
+	"github.com/omni-network/omni/lib/errors"
+
+	"github.com/BurntSushi/toml"
+
 	_ "embed"
 )
 
@@ -18,22 +23,37 @@ var (
 	mainnet []byte
 )
 
-// Devnet0 returns the devnet0.toml manifest bytes.
-func Devnet0() []byte {
+// Devnet0Bytes returns the devnet0.toml manifest bytes.
+func Devnet0Bytes() []byte {
 	return devnet0
 }
 
-// Omega returns the omega.toml manifest bytes.
-func Omega() []byte {
-	return omega
+// Devnet0 returns the devnet0.toml manifest.
+func Devnet0() (types.Manifest, error) {
+	return unmarshal(devnet0)
 }
 
-// Staging returns the staging.toml manifest bytes.
-func Staging() []byte {
-	return staging
+// Omega returns the omega.toml manifest.
+func Omega() (types.Manifest, error) {
+	return unmarshal(omega)
 }
 
-// Mainnet returns the mainnet.toml manifest bytes.
-func Mainnet() []byte {
-	return mainnet
+// Staging returns the staging.toml manifest.
+func Staging() (types.Manifest, error) {
+	return unmarshal(staging)
+}
+
+// Mainnet returns the mainnet.toml manifest.
+func Mainnet() (types.Manifest, error) {
+	return unmarshal(mainnet)
+}
+
+func unmarshal(b []byte) (types.Manifest, error) {
+	var manifest types.Manifest
+	_, err := toml.Decode(string(b), &manifest)
+	if err != nil {
+		return types.Manifest{}, errors.Wrap(err, "parse manifest")
+	}
+
+	return manifest, nil
 }

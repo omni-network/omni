@@ -24,8 +24,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/params"
-
-	"github.com/BurntSushi/toml"
 )
 
 var (
@@ -120,7 +118,7 @@ func getNativeBridgeBalance(network netconf.ID) (*big.Int, error) {
 	}
 
 	// subtract genesis validator allocations
-	manifest, err := mainnetManifest()
+	manifest, err := manifests.Mainnet()
 	if err != nil {
 		return nil, errors.Wrap(err, "mainnet manifest")
 	}
@@ -133,15 +131,6 @@ func getNativeBridgeBalance(network netconf.ID) (*big.Int, error) {
 	}
 
 	return nativeBridgeBalance, nil
-}
-
-func mainnetManifest() (e2etypes.Manifest, error) {
-	bz := manifests.Mainnet()
-
-	var manifest e2etypes.Manifest
-	_, err := toml.Decode(string(bz), &manifest)
-
-	return manifest, err
 }
 
 func execCmd(dir string, cmd string, args ...string) (string, error) {
