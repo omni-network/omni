@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/hex"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,6 +12,8 @@ import (
 	"text/template"
 
 	"github.com/omni-network/omni/e2e/app/geth"
+	"github.com/omni-network/omni/e2e/manifests"
+	"github.com/omni-network/omni/e2e/types"
 	haloapp "github.com/omni-network/omni/halo/app"
 	halocmd "github.com/omni-network/omni/halo/cmd"
 	halocfg "github.com/omni-network/omni/halo/config"
@@ -28,25 +31,30 @@ import (
 
 	"github.com/ethereum/go-ethereum/p2p/enode"
 
+	"github.com/BurntSushi/toml"
 	"github.com/spf13/cobra"
 
 	_ "embed"
 )
 
 const (
-	gethVerbosityInfo  = 3 // Geth log level (1=error,2=warn,3=info,4=debug,5=trace)
-	gethVerbosityDebug = 4
+	gethVerbosityInfo     = 3 // Geth log level (1=error,2=warn,3=info,4=debug,5=trace)
+	gethVerbosityDebug    = 4
+	gethClientName        = "geth"
+	haloClientName        = "halo"
+	gethJWTSecretFileName = "jwtsecret"
 )
 
 type InitConfig struct {
-	Network          netconf.ID
-	Home             string
-	Moniker          string
-	Clean            bool
-	Archive          bool
-	Debug            bool
-	HaloTag          string
-	HaloFeatureFlags feature.Flags
+	Network            netconf.ID
+	Home               string
+	Moniker            string
+	Clean              bool
+	Archive            bool
+	Debug              bool
+	FromLatestSnapshot bool
+	HaloTag            string
+	HaloFeatureFlags   feature.Flags
 }
 
 func (c InitConfig) Verify() error {
@@ -113,11 +121,27 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 		}
 	}
 
+	featureFlags, err := maybeGetFeatureFlags(cfg.Network)
+	if err != nil {
+		return err
+	}
+	cfg.HaloFeatureFlags = featureFlags
+
+	if cfg.FromLatestSnapshot {
+		if err := downloadSnapshot(ctx, cfg.Network, gethClientName); err != nil {
+			return err
+		}
+
+		if err := downloadSnapshot(ctx, cfg.Network, haloClientName); err != nil {
+			return err
+		}
+	}
+
 	if err := maybeDownloadGenesis(ctx, cfg.Network); err != nil {
 		return errors.Wrap(err, "download genesis")
 	}
 
-	err := gethInit(ctx, cfg, filepath.Join(cfg.Home, "geth"))
+	err = gethInit(ctx, cfg, filepath.Join(cfg.Home, gethClientName))
 	if err != nil {
 		return errors.Wrap(err, "init geth")
 	}
@@ -128,7 +152,7 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 	}
 
 	err = halocmd.InitFiles(ctx, halocmd.InitConfig{
-		HomeDir:     filepath.Join(cfg.Home, "halo"),
+		HomeDir:     filepath.Join(cfg.Home, haloClientName),
 		Moniker:     cfg.Moniker,
 		Network:     cfg.Network,
 		TrustedSync: !cfg.Archive, // Don't state sync if archive
@@ -136,7 +160,7 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 		HaloCfgFunc: func(haloCfg *halocfg.Config) {
 			haloCfg.FeatureFlags = cfg.HaloFeatureFlags
 			haloCfg.EngineEndpoint = "http://omni_evm:8551"
-			haloCfg.EngineJWTFile = "/geth/jwtsecret"
+			haloCfg.EngineJWTFile = "/geth/" + gethJWTSecretFileName
 			if cfg.Archive {
 				haloCfg.PruningOption = "nothing"
 				// Setting this to 0 retains all blocks
@@ -353,7 +377,7 @@ func gethInit(ctx context.Context, cfg InitConfig, dir string) error {
 
 	// Write jwtsecret file
 	{
-		secretFile := filepath.Join(dir, "geth", "jwtsecret")
+		secretFile := filepath.Join(dir, gethClientName, gethJWTSecretFileName)
 		if cmtos.FileExists(secretFile) {
 			log.Info(ctx, "Found existing geth jwtsecret file", "path", secretFile)
 		} else {
@@ -397,4 +421,29 @@ func gethInit(ctx context.Context, cfg InitConfig, dir string) error {
 	}
 
 	return nil
+}
+
+func downloadSnapshot(ctx context.Context, network netconf.ID, clientName string) error {
+	gcpCloudStorageURL := fmt.Sprintf("https://storage.googleapis.com/omni-%s-snapshots/%s_data.tar.lz4", network, clientName)
+
+	log.Info(ctx, "Downloading and restoring latest snapshot...", "url", gcpCloudStorageURL)
+	if err := downloadUntarLz4(ctx, gcpCloudStorageURL, clientName); err != nil {
+		return errors.Wrap(err, "download untar lz4 error", "client", clientName)
+	}
+
+	return nil
+}
+
+func maybeGetFeatureFlags(network netconf.ID) (feature.Flags, error) {
+	if network != netconf.Staging {
+		return make([]string, 0), nil
+	}
+
+	var manifest types.Manifest
+	_, err := toml.Decode(string(manifests.Staging()), &manifest)
+	if err != nil {
+		return nil, errors.Wrap(err, "parse manifest")
+	}
+
+	return manifest.FeatureFlags, nil
 }
