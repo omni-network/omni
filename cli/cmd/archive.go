@@ -6,7 +6,6 @@ import (
 	"context"
 	"io"
 	"os"
-	"strconv"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -49,9 +48,6 @@ func decompressTarLz4(ctx context.Context, inputFile string, outputDir string) e
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			if header.Mode < 0 || header.Mode > 0o777 {
-				return errors.New("invalid mode for directory: " + strconv.FormatInt(header.Mode, 10))
-			}
 			// Create a directory.
 			// #nosec G115: ignoring potential integer overflow in int64 to uint32 conversion
 			if err := os.MkdirAll(outputPath, os.FileMode(header.Mode)); err != nil {
@@ -64,12 +60,8 @@ func decompressTarLz4(ctx context.Context, inputFile string, outputDir string) e
 				return errors.Wrap(err, "create file")
 			}
 
-			// copyFile the file contents.
+			// Copy the file contents.
 			if _, err := io.CopyN(outFile, tarReader, header.Size); err != nil {
-				if err := outFile.Close(); err != nil {
-					return errors.Wrap(err, "close file")
-				}
-
 				return errors.Wrap(err, "write file")
 			}
 
@@ -77,9 +69,6 @@ func decompressTarLz4(ctx context.Context, inputFile string, outputDir string) e
 				return errors.Wrap(err, "close file")
 			}
 
-			if header.Mode < 0 || header.Mode > 0o777 {
-				return errors.New("invalid mode for file: " + strconv.FormatInt(header.Mode, 10))
-			}
 			// Set permissions.
 			// #nosec G115: ignoring potential integer overflow in int64 to uint32 conversion
 			if err := os.Chmod(outputPath, os.FileMode(header.Mode)); err != nil {
@@ -87,7 +76,7 @@ func decompressTarLz4(ctx context.Context, inputFile string, outputDir string) e
 			}
 		default:
 			// Handle other types (symlinks, etc.) if necessary.
-			log.Info(ctx, "Ignoring unsupported type", "type", header.Typeflag)
+			log.Error(ctx, "Ignoring unsupported type", errors.New("unsupported type"), "type", header.Typeflag)
 		}
 	}
 
