@@ -21,7 +21,8 @@ const (
 )
 
 var (
-	inboxABI = mustGetABI(bindings.SolverNetInboxMetaData)
+	bindingsABI = mustGetABI(bindings.ISolverNetBindingsMetaData)
+	inboxABI    = mustGetABI(bindings.SolverNetInboxMetaData)
 
 	// Event log topics (common.Hash).
 	topicOpened   = mustGetEventTopic(inboxABI, "Open")
@@ -30,6 +31,8 @@ var (
 	topicReverted = mustGetEventTopic(inboxABI, "Reverted")
 	topicFilled   = mustGetEventTopic(inboxABI, "Filled")
 	topicClaimed  = mustGetEventTopic(inboxABI, "Claimed")
+
+	inputsFillOriginData = mustGetInputs(bindingsABI, "fillOriginData")
 )
 
 // eventMeta contains metadata about an event.
@@ -188,4 +191,31 @@ func mustGetEventTopic(abi *abi.ABI, name string) common.Hash {
 	}
 
 	return event.ID
+}
+
+// mustGetInputs returns the inputs for the method with the given name.
+func mustGetInputs(abi *abi.ABI, name string) abi.Arguments {
+	method, ok := abi.Methods[name]
+	if !ok {
+		panic("method not found")
+	}
+
+	return method.Inputs
+}
+
+// parseFillOriginData parses FillOriginData from packed bytes.
+func parseFillOriginData(data []byte) (FillOriginData, error) {
+	unpacked, err := inputsFillOriginData.Unpack(data)
+	if err != nil {
+		return FillOriginData{}, errors.Wrap(err, "unpack fill data")
+	}
+
+	wrap := struct {
+		Data FillOriginData
+	}{}
+	if err := inputsFillOriginData.Copy(&wrap, unpacked); err != nil {
+		return FillOriginData{}, errors.Wrap(err, "copy fill data")
+	}
+
+	return wrap.Data, nil
 }

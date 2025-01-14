@@ -212,7 +212,7 @@ func startEventStreams(
 		return errors.Wrap(err, "detect outbox chains")
 	}
 
-	outboxContracts := make(map[uint64]*bindings.SolveOutbox)
+	outboxContracts := make(map[uint64]*bindings.SolverNetOutbox)
 	for _, chain := range outboxChains {
 		name := network.ChainName(chain)
 		log.Debug(ctx, "Using outbox contract", "chain", name, "address", addrs.SolveOutbox.Hex())
@@ -222,7 +222,7 @@ func startEventStreams(
 			return err
 		}
 
-		outbox, err := bindings.NewSolveOutbox(addrs.SolveOutbox, backend)
+		outbox, err := bindings.NewSolverNetOutbox(addrs.SolveOutbox, backend)
 		if err != nil {
 			return errors.Wrap(err, "create outbox contract", "chain", name)
 		}
@@ -244,7 +244,7 @@ func startEventStreams(
 		ShouldReject: newShouldRejector(network.ID),
 		Accept:       newAcceptor(inboxContracts, backends, solverAddr),
 		Reject:       newRejector(inboxContracts, backends, solverAddr),
-		Fill:         newFiller(network.ID, outboxContracts, backends, solverAddr, addrs.SolveOutbox),
+		Fill:         newFiller(outboxContracts, backends, solverAddr, addrs.SolveOutbox),
 		Claim:        newClaimer(inboxContracts, backends, solverAddr),
 		SetCursor:    cursorSetter,
 		ChainName:    network.ChainName,
