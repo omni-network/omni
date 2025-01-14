@@ -6,10 +6,7 @@
 
 ## ✅ Public Omega Testnet + Whitelisted Validators
 
-- Operators have been onboarded on Omega testnet. See [public dashboard](https://omniops.grafana.net/d/ddycpqfje3pxcb/validator-dash-public)
-- Operators have applied the [Uluwatu](uluwatu.md) network upgrade.
-
-## ⏳ Mainnet - Beta
+## ✅ Mainnet - Beta
 
 - Whitelisted operators will be asked to validate mainnet once ready.
 - You will need to stake a minimum amount of 100 OMNI tokens initially.
@@ -17,13 +14,11 @@
 - Staking rewards, withdrawals, delegations, and ETH restaking will NOT be enabled.
 - You will need to run full nodes for: Ethereum, Arbitrum, Optimism, and Base (if you don’t already). Your Omni validator will need access to RPC endpoints for those chains.
 
-## 🗺️ Mainnet - Staking Network Upgrades
+## ⏳ Mainnet - Staking Network Upgrades
 
-After Mainnet Beta is live and stable, we will turn our sites to several staking features:
-
+- Delegations: receive native $OMNI delegations from the Omni foundation and other users.
 - Rewards: Enable staking rewards so delegators and validators accrue rewards.
 - Withdrawals: withdraw your stake and leave the validator set.
-- Delegations: receive native $OMNI delegations from the Omni foundation and other users.
 - X-Chain attestations: Enable rewards and penalties.
 - ETH restaking: receive $ETH delegations from users via Eigenlayer
 
