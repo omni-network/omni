@@ -420,9 +420,7 @@ func gethInit(ctx context.Context, cfg InitConfig, dir string) error {
 }
 
 func downloadSnapshot(ctx context.Context, network netconf.ID, clientName string) error {
-	snapshotArchive := clientName + "_data.tar.lz4"
-	bucketName := fmt.Sprintf("omni-%s-snapshots", network)
-	gcpCloudStorageURL := fmt.Sprintf("https://storage.googleapis.com/%s/%s", bucketName, snapshotArchive)
+	gcpCloudStorageURL := fmt.Sprintf("https://storage.googleapis.com/omni-%s-snapshots/%s_data.tar.lz4", network, clientName)
 
 	log.Info(ctx, "Downloading and restoring latest snapshot...", "network", network, "client", clientName)
 	if err := downloadUntarLz4(ctx, gcpCloudStorageURL, clientName); err != nil {
