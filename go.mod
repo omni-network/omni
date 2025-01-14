@@ -35,6 +35,7 @@ require (
 	github.com/leodido/go-conventionalcommits v0.12.0
 	github.com/muesli/termenv v0.15.2
 	github.com/naoina/toml v0.1.2-0.20170918210437-9fafd6967416
+	github.com/pierrec/lz4/v4 v4.1.22
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
@@ -330,8 +331,6 @@ require (
 	rsc.io/tmplfunc v0.0.3 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
-
-require github.com/pierrec/lz4/v4 v4.1.22
 
 // See https://github.com/cosmos/cosmos-sdk/pull/14952
 // Also https://github.com/cosmos/cosmos-db/blob/main/go.mod#L11-L12
