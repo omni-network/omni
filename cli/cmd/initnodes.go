@@ -124,11 +124,11 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 	cfg.HaloFeatureFlags = maybeGetFeatureFlags(ctx, cfg.Network)
 
 	if cfg.FromLatestSnapshot {
-		if err := downloadAndRestoreLatestSnapshot(ctx, cfg.Network.String(), gethClientName); err != nil {
+		if err := downloadSnapshot(ctx, cfg.Network, gethClientName); err != nil {
 			return err
 		}
 
-		if err := downloadAndRestoreLatestSnapshot(ctx, cfg.Network.String(), haloClientName); err != nil {
+		if err := downloadSnapshot(ctx, cfg.Network, haloClientName); err != nil {
 			return err
 		}
 	}
@@ -419,7 +419,7 @@ func gethInit(ctx context.Context, cfg InitConfig, dir string) error {
 	return nil
 }
 
-func downloadAndRestoreLatestSnapshot(ctx context.Context, network string, clientName string) error {
+func downloadSnapshot(ctx context.Context, network netconf.ID, clientName string) error {
 	snapshotArchive := getSnapshotBackupArchive(clientName)
 	bucketName := fmt.Sprintf("omni-%s-snapshots", network)
 	gcpCloudStorageURL := fmt.Sprintf("https://storage.googleapis.com/%s/%s", bucketName, snapshotArchive)
