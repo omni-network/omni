@@ -24,6 +24,7 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
     // call validation errors
     error NoCallData();
     error NoCallTarget();
+    error NoCallChainId();
     error NoExpenseToken();
     error NoExpenseSender();
     error NoExpenseAmount();
@@ -118,6 +119,11 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
         returns (ResolvedCrossChainOrder memory order, OrderState memory state, StatusUpdate[] memory history);
 
     /**
+     * @notice Returns the next order ID.
+     */
+    function getNextId() external view returns (bytes32);
+
+    /**
      * @notice Returns the latest order ID with the given status.
      */
     function getLatestOrderIdByStatus(Status status) external view returns (bytes32);
@@ -125,7 +131,7 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
     /**
      * @dev Validate the onchain order.
      */
-    function validateOrder(OnchainCrossChainOrder calldata order) external view returns (bool);
+    function validate(OnchainCrossChainOrder calldata order) external view returns (bool);
 
     /**
      * @notice Accept an open order.
