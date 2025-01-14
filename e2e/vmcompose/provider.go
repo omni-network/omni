@@ -428,6 +428,11 @@ func copyFileToVM(ctx context.Context, vmName string, localPath string, remotePa
 		cmd := exec.CommandContext(ctx, "bash", "-c", scp)
 		out, err := cmd.CombinedOutput()
 		if err != nil && strings.Contains(string(out), "Permission denied") {
+			// First try best-effort deleting remote file, then retry.
+			if err = execOnVM(ctx, vmName, "sudo rm "+remotePath); err != nil {
+				log.Warn(ctx, "Failed to delete remote file as perm issue workaround", err, "path", remotePath)
+			}
+
 			return errors.Wrap(errPermission, "copy to VM", "output", string(out), "cmd", scp)
 		} else if err != nil {
 			return errors.Wrap(err, "copy to VM", "output", string(out), "cmd", scp)
