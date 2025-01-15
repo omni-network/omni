@@ -40,6 +40,9 @@ contract SolverNet_Inbox_Cancel_Test is TestBase {
             ISolverNetInbox.StatusUpdate[] memory history
         ) = inbox.getOrder(expectedOrderId);
 
+        // Verify that stored resolved order aligns with the original order
+        assertResolved(user, order, storedOrder);
+
         // Verify order state is now Reverted
         assertEq(uint8(state.status), uint8(ISolverNetInbox.Status.Reverted), "order state: status");
         assertEq(state.acceptedBy, address(0), "order state: accepted by should be zero");
@@ -50,75 +53,6 @@ contract SolverNet_Inbox_Cancel_Test is TestBase {
         assertEq(history[0].timestamp, uint40(block.timestamp), "order history: initial timestamp");
         assertEq(uint8(history[1].status), uint8(ISolverNetInbox.Status.Reverted), "order history: reverted status");
         assertEq(history[1].timestamp, uint40(block.timestamp), "order history: reverted timestamp");
-
-        // Verify order data matches resolved order
-        assertEq(storedOrder.user, user, "stored order: user");
-        assertEq(storedOrder.originChainId, resolvedOrder.originChainId, "stored order: origin chain id");
-        assertEq(storedOrder.openDeadline, uint32(block.timestamp), "stored order: open deadline");
-        assertEq(storedOrder.fillDeadline, resolvedOrder.fillDeadline, "stored order: fill deadline");
-        assertEq(storedOrder.orderId, resolvedOrder.orderId, "stored order: order id");
-
-        // Verify maxSpent (solver outputs)
-        assertEq(storedOrder.maxSpent.length, resolvedOrder.maxSpent.length, "stored order: max spent length");
-        for (uint256 i = 0; i < storedOrder.maxSpent.length; i++) {
-            assertEq(storedOrder.maxSpent[i].token, resolvedOrder.maxSpent[i].token, "stored order: max spent token");
-            assertEq(storedOrder.maxSpent[i].amount, resolvedOrder.maxSpent[i].amount, "stored order: max spent amount");
-            assertEq(
-                storedOrder.maxSpent[i].recipient,
-                resolvedOrder.maxSpent[i].recipient,
-                "stored order: max spent recipient"
-            );
-            assertEq(
-                storedOrder.maxSpent[i].chainId, resolvedOrder.maxSpent[i].chainId, "stored order: max spent chain id"
-            );
-        }
-
-        // Verify minReceived (user deposits)
-        assertEq(storedOrder.minReceived.length, resolvedOrder.minReceived.length, "stored order: min received length");
-        for (uint256 i = 0; i < storedOrder.minReceived.length; i++) {
-            assertEq(
-                storedOrder.minReceived[i].token, resolvedOrder.minReceived[i].token, "stored order: min received token"
-            );
-            assertEq(
-                storedOrder.minReceived[i].amount,
-                resolvedOrder.minReceived[i].amount,
-                "stored order: min received amount"
-            );
-            assertEq(
-                storedOrder.minReceived[i].recipient,
-                resolvedOrder.minReceived[i].recipient,
-                "stored order: min received recipient"
-            );
-            assertEq(
-                storedOrder.minReceived[i].chainId,
-                resolvedOrder.minReceived[i].chainId,
-                "stored order: min received chain id"
-            );
-        }
-
-        // Verify fill instructions
-        assertEq(
-            storedOrder.fillInstructions.length,
-            resolvedOrder.fillInstructions.length,
-            "stored order: fill instructions length"
-        );
-        for (uint256 i = 0; i < storedOrder.fillInstructions.length; i++) {
-            assertEq(
-                storedOrder.fillInstructions[i].destinationChainId,
-                resolvedOrder.fillInstructions[i].destinationChainId,
-                "stored order: fill instructions chain id"
-            );
-            assertEq(
-                storedOrder.fillInstructions[i].destinationSettler,
-                resolvedOrder.fillInstructions[i].destinationSettler,
-                "stored order: fill instructions destination"
-            );
-            assertEq(
-                keccak256(storedOrder.fillInstructions[i].originData),
-                keccak256(resolvedOrder.fillInstructions[i].originData),
-                "stored order: fill instructions origin data"
-            );
-        }
 
         // Verify latest order ID by status has been updated
         assertEq(
@@ -167,6 +101,9 @@ contract SolverNet_Inbox_Cancel_Test is TestBase {
             ISolverNetInbox.StatusUpdate[] memory history
         ) = inbox.getOrder(expectedOrderId);
 
+        // Verify that stored resolved order aligns with the original order
+        assertResolved(user, order, storedOrder);
+
         // Verify order state is now Reverted
         assertEq(uint8(state.status), uint8(ISolverNetInbox.Status.Reverted), "order state: status");
         assertEq(state.acceptedBy, address(0), "order state: accepted by should be zero");
@@ -179,75 +116,6 @@ contract SolverNet_Inbox_Cancel_Test is TestBase {
         assertEq(history[1].timestamp, uint40(block.timestamp), "order history: rejected timestamp");
         assertEq(uint8(history[2].status), uint8(ISolverNetInbox.Status.Reverted), "order history: reverted status");
         assertEq(history[2].timestamp, uint40(block.timestamp), "order history: reverted timestamp");
-
-        // Verify order data matches resolved order
-        assertEq(storedOrder.user, user, "stored order: user");
-        assertEq(storedOrder.originChainId, resolvedOrder.originChainId, "stored order: origin chain id");
-        assertEq(storedOrder.openDeadline, uint32(block.timestamp), "stored order: open deadline");
-        assertEq(storedOrder.fillDeadline, resolvedOrder.fillDeadline, "stored order: fill deadline");
-        assertEq(storedOrder.orderId, resolvedOrder.orderId, "stored order: order id");
-
-        // Verify maxSpent (solver outputs)
-        assertEq(storedOrder.maxSpent.length, resolvedOrder.maxSpent.length, "stored order: max spent length");
-        for (uint256 i = 0; i < storedOrder.maxSpent.length; i++) {
-            assertEq(storedOrder.maxSpent[i].token, resolvedOrder.maxSpent[i].token, "stored order: max spent token");
-            assertEq(storedOrder.maxSpent[i].amount, resolvedOrder.maxSpent[i].amount, "stored order: max spent amount");
-            assertEq(
-                storedOrder.maxSpent[i].recipient,
-                resolvedOrder.maxSpent[i].recipient,
-                "stored order: max spent recipient"
-            );
-            assertEq(
-                storedOrder.maxSpent[i].chainId, resolvedOrder.maxSpent[i].chainId, "stored order: max spent chain id"
-            );
-        }
-
-        // Verify minReceived (user deposits)
-        assertEq(storedOrder.minReceived.length, resolvedOrder.minReceived.length, "stored order: min received length");
-        for (uint256 i = 0; i < storedOrder.minReceived.length; i++) {
-            assertEq(
-                storedOrder.minReceived[i].token, resolvedOrder.minReceived[i].token, "stored order: min received token"
-            );
-            assertEq(
-                storedOrder.minReceived[i].amount,
-                resolvedOrder.minReceived[i].amount,
-                "stored order: min received amount"
-            );
-            assertEq(
-                storedOrder.minReceived[i].recipient,
-                resolvedOrder.minReceived[i].recipient,
-                "stored order: min received recipient"
-            );
-            assertEq(
-                storedOrder.minReceived[i].chainId,
-                resolvedOrder.minReceived[i].chainId,
-                "stored order: min received chain id"
-            );
-        }
-
-        // Verify fill instructions
-        assertEq(
-            storedOrder.fillInstructions.length,
-            resolvedOrder.fillInstructions.length,
-            "stored order: fill instructions length"
-        );
-        for (uint256 i = 0; i < storedOrder.fillInstructions.length; i++) {
-            assertEq(
-                storedOrder.fillInstructions[i].destinationChainId,
-                resolvedOrder.fillInstructions[i].destinationChainId,
-                "stored order: fill instructions chain id"
-            );
-            assertEq(
-                storedOrder.fillInstructions[i].destinationSettler,
-                resolvedOrder.fillInstructions[i].destinationSettler,
-                "stored order: fill instructions destination"
-            );
-            assertEq(
-                keccak256(storedOrder.fillInstructions[i].originData),
-                keccak256(resolvedOrder.fillInstructions[i].originData),
-                "stored order: fill instructions origin data"
-            );
-        }
 
         // Verify latest order ID by status has been updated
         assertEq(

@@ -75,6 +75,22 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
         // `deposits[0].amount` cannot be 0
         vm.expectRevert(ISolverNetInbox.NoDepositAmount.selector);
         inbox.validate(order);
+        deposits = new ISolverNet.Deposit[](2);
+        deposits[0] = ISolverNet.Deposit({ token: address(0).toBytes32(), amount: rand * 1 ether });
+        deposits[1] = ISolverNet.Deposit({ token: address(0).toBytes32(), amount: rand * 1 wei });
+        order.orderData = getOrderDataBytes(
+            destChainId,
+            address(vault).toBytes32(),
+            0,
+            getVaultCalldata(user, rand * 1 ether),
+            new ISolverNet.TokenExpense[](1),
+            deposits
+        );
+
+        // `deposits` cannot contain more than one native deposit
+        vm.expectRevert(ISolverNetInbox.DuplicateNativeDeposit.selector);
+        inbox.validate(order);
+        deposits = new ISolverNet.Deposit[](1);
         deposits[0].amount = rand * 1 ether;
         order.orderData = getOrderDataBytes(
             destChainId,

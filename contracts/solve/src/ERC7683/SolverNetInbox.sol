@@ -289,9 +289,14 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         if (call.data.length == 0) revert NoCallData();
         if (deposits.length == 0) revert NoDeposits();
 
+        bool nativeDeposite;
         for (uint256 i; i < deposits.length; ++i) {
             Deposit memory deposit = deposits[i];
             if (deposit.amount == 0) revert NoDepositAmount();
+            if (deposit.token == bytes32(0)) {
+                if (nativeDeposite) revert DuplicateNativeDeposit();
+                nativeDeposite = true;
+            }
         }
 
         for (uint256 i; i < call.expenses.length; ++i) {
@@ -316,16 +321,14 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         for (uint256 i; i < deposits.length; ++i) {
             Deposit memory deposit = deposits[i];
 
-            // Handle native deposit
             if (deposit.token == bytes32(0)) {
+                // Handle native deposit
                 if (!hasNative) revert InvalidNativeDeposit();
                 if (deposit.amount != msg.value) revert InvalidNativeDeposit();
                 if (processedNative) revert DuplicateNativeDeposit();
                 processedNative = true;
-            }
-
-            // Handle ERC20 deposit
-            if (deposit.token != bytes32(0)) {
+            } else {
+                // Handle ERC20 deposit
                 address token = deposit.token.toAddress();
                 token.safeTransferFrom(msg.sender, address(this), deposit.amount);
             }

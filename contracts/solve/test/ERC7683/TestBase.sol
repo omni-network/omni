@@ -194,6 +194,74 @@ contract TestBase is Test {
         return keccak256(abi.encode(orderId, originData));
     }
 
+    function assertResolved(
+        address addr,
+        IERC7683.OnchainCrossChainOrder memory order,
+        IERC7683.ResolvedCrossChainOrder memory resolvedOrder
+    ) internal view {
+        ISolverNet.OrderData memory orderData = abi.decode(order.orderData, (ISolverNet.OrderData));
+        ISolverNet.Call memory orderCall = orderData.call;
+        ISolverNet.TokenExpense[] memory orderExpenses = orderCall.expenses;
+        ISolverNet.Deposit[] memory orderDeposits = orderData.deposits;
+        ISolverNet.FillOriginData memory fillOriginData =
+            abi.decode(resolvedOrder.fillInstructions[0].originData, (ISolverNet.FillOriginData));
+
+        assertEq(addr, resolvedOrder.user, "assertResolved: user");
+        assertEq(srcChainId, resolvedOrder.originChainId, "assertResolved: origin chain id");
+        assertEq(uint32(block.timestamp), resolvedOrder.openDeadline, "assertResolved: open deadline");
+        assertEq(order.fillDeadline, resolvedOrder.fillDeadline, "assertResolved: fill deadline");
+        assertGe(uint256(inbox.getNextId()), uint256(resolvedOrder.orderId), "assertResolved: order id");
+
+        assertEq(orderExpenses.length, resolvedOrder.maxSpent.length, "assertResolved: max spent length");
+        assertEq(orderExpenses.length, fillOriginData.call.expenses.length, "assertResolved: call expense length");
+        for (uint256 i; i < orderExpenses.length; ++i) {
+            assertEq(orderExpenses[i].token, resolvedOrder.maxSpent[i].token, "assertResolved: max spent token");
+            assertEq(
+                orderExpenses[i].token, fillOriginData.call.expenses[i].token, "assertResolved: call expense token"
+            );
+            assertEq(
+                orderExpenses[i].spender,
+                fillOriginData.call.expenses[i].spender,
+                "assertResolved: call expense spender"
+            );
+            assertEq(orderExpenses[i].amount, resolvedOrder.maxSpent[i].amount, "assertResolved: max spent amount");
+            assertEq(
+                orderExpenses[i].amount, fillOriginData.call.expenses[i].amount, "assertResolved: call expense amount"
+            );
+            assertEq(
+                address(outbox).toBytes32(), resolvedOrder.maxSpent[i].recipient, "assertResolved: max spent recipient"
+            );
+            assertEq(orderCall.chainId, resolvedOrder.maxSpent[i].chainId, "assertResolved: max spent chain id");
+        }
+
+        assertEq(orderDeposits.length, resolvedOrder.minReceived.length, "assertResolved: min received length");
+        for (uint256 i; i < orderDeposits.length; ++i) {
+            assertEq(orderDeposits[i].token, resolvedOrder.minReceived[i].token, "assertResolved: min received token");
+            assertEq(
+                orderDeposits[i].amount, resolvedOrder.minReceived[i].amount, "assertResolved: min received amount"
+            );
+            assertEq(bytes32(0), resolvedOrder.minReceived[i].recipient, "assertResolved: min received recipient");
+            assertEq(srcChainId, resolvedOrder.minReceived[i].chainId, "assertResolved: min received chain id");
+        }
+
+        assertEq(1, resolvedOrder.fillInstructions.length, "assertResolved: fill instructions length");
+        assertEq(
+            destChainId,
+            resolvedOrder.fillInstructions[0].destinationChainId,
+            "assertResolved: fill instructions chain id"
+        );
+        assertEq(
+            address(outbox).toBytes32(),
+            resolvedOrder.fillInstructions[0].destinationSettler,
+            "assertResolved: fill instructions destination"
+        );
+        assertEq(
+            keccak256(abi.encode(ISolverNet.FillOriginData({ srcChainId: srcChainId, call: orderCall }))),
+            keccak256(resolvedOrder.fillInstructions[0].originData),
+            "assertResolved: fill instructions origin data"
+        );
+    }
+
     function assertNullOrder(bytes32 orderId) internal view {
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder;
         ISolverNetInbox.OrderState memory state;
