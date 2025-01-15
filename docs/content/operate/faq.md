@@ -109,6 +109,16 @@ Validators must stake native **\$OMNI**. Validators can also opt into receiving 
 
 Omni currently has a validator whitelist. The whitelist applies to both native **\$OMNI** staking and **\$ETH** staking via the Omni AVS. A future network upgrade will enable permissionless validator registration.
 
+### How can I deregister from the old AVS contract?
+
+To deregister from the old AVS contract, you must first retrieve a copy of the Omni CLI from GitHub from commit [`ead6061`](https://github.com/omni-network/omni/commit/ead606159fd0724376f1f12a2ab0d34560ab677f) to [`latest`](https://github.com/omni-network/omni) in the main branch. Alternatively, you can wait for release `v0.12.0 (commit: ead6061)` of the Omni CLI, which will support AVS deregistration.
+
+Once you have an updated version of the Omni CLI, you can deregister from the old AVS contract by running the following command:
+
+```bash
+omni operator deregister --config-file ~/path/to/operator.yaml
+```
+
 ### What are the planned staking upgrades?
 
 There will be several network upgrades to enable various validator / staking features. Some of these features include:
