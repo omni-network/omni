@@ -7,7 +7,7 @@ import { ISolverNet } from "./ISolverNet.sol";
 interface ISolverNetInbox is IOriginSettler, ISolverNet {
     // markFilled authorization
     error NotOutbox();
-    error WrongCallHash();
+    error WrongFillHash();
     error WrongSourceChain();
 
     // OnchainCrossChainOrder validation errors

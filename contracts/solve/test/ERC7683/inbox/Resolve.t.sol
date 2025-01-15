@@ -17,13 +17,14 @@ contract SolverNet_Inbox_Resolve_Test is TestBase {
         vm.prank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
 
-        assertResolved(user, order, resolvedOrder);
+        assertResolved(user, resolvedOrder.orderId, order, resolvedOrder);
     }
 
     function test_resolveOrder_native_deposit_succeeds() public {
         IERC7683.OnchainCrossChainOrder memory order = randNativeOrder();
         vm.prank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
-        assertResolved(user, order, resolvedOrder);
+
+        assertResolved(user, resolvedOrder.orderId, order, resolvedOrder);
     }
 }

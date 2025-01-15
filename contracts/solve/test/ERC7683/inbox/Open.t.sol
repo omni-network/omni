@@ -40,7 +40,7 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         ) = inbox.getOrder(expectedOrderId);
 
         // Verify that stored resolved order aligns with the original order
-        assertResolved(user, order, storedOrder);
+        assertResolved(user, resolvedOrder.orderId, order, storedOrder);
 
         // Verify order state
         assertEq(uint8(state.status), uint8(ISolverNetInbox.Status.Pending), "order state: status");

@@ -195,7 +195,8 @@ contract TestBase is Test {
     }
 
     function assertResolved(
-        address addr,
+        address userAddr,
+        bytes32 orderId,
         IERC7683.OnchainCrossChainOrder memory order,
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder
     ) internal view {
@@ -206,13 +207,17 @@ contract TestBase is Test {
         ISolverNet.FillOriginData memory fillOriginData =
             abi.decode(resolvedOrder.fillInstructions[0].originData, (ISolverNet.FillOriginData));
 
-        assertEq(addr, resolvedOrder.user, "assertResolved: user");
+        assertEq(userAddr, resolvedOrder.user, "assertResolved: user");
         assertEq(srcChainId, resolvedOrder.originChainId, "assertResolved: origin chain id");
         assertEq(uint32(block.timestamp), resolvedOrder.openDeadline, "assertResolved: open deadline");
         assertEq(order.fillDeadline, resolvedOrder.fillDeadline, "assertResolved: fill deadline");
-        assertGe(uint256(inbox.getNextId()), uint256(resolvedOrder.orderId), "assertResolved: order id");
+        assertEq(orderId, resolvedOrder.orderId, "assertResolved: order id");
 
-        assertEq(orderExpenses.length, resolvedOrder.maxSpent.length, "assertResolved: max spent length");
+        assertEq(
+            orderCall.value > 0 ? orderExpenses.length + 1 : orderExpenses.length,
+            resolvedOrder.maxSpent.length,
+            "assertResolved: max spent length"
+        );
         assertEq(orderExpenses.length, fillOriginData.call.expenses.length, "assertResolved: call expense length");
         for (uint256 i; i < orderExpenses.length; ++i) {
             assertEq(orderExpenses[i].token, resolvedOrder.maxSpent[i].token, "assertResolved: max spent token");
@@ -233,6 +238,22 @@ contract TestBase is Test {
             );
             assertEq(orderCall.chainId, resolvedOrder.maxSpent[i].chainId, "assertResolved: max spent chain id");
         }
+        if (orderCall.value > 0) {
+            assertEq(bytes32(0), resolvedOrder.maxSpent[orderExpenses.length].token, "assertResolved: max spent token");
+            assertEq(
+                orderCall.value, resolvedOrder.maxSpent[orderExpenses.length].amount, "assertResolved: max spent amount"
+            );
+            assertEq(
+                address(outbox).toBytes32(),
+                resolvedOrder.maxSpent[orderExpenses.length].recipient,
+                "assertResolved: max spent recipient"
+            );
+            assertEq(
+                orderCall.chainId,
+                resolvedOrder.maxSpent[orderExpenses.length].chainId,
+                "assertResolved: max spent chain id"
+            );
+        }
 
         assertEq(orderDeposits.length, resolvedOrder.minReceived.length, "assertResolved: min received length");
         for (uint256 i; i < orderDeposits.length; ++i) {
@@ -246,7 +267,7 @@ contract TestBase is Test {
 
         assertEq(1, resolvedOrder.fillInstructions.length, "assertResolved: fill instructions length");
         assertEq(
-            destChainId,
+            orderCall.chainId,
             resolvedOrder.fillInstructions[0].destinationChainId,
             "assertResolved: fill instructions chain id"
         );

@@ -55,8 +55,8 @@ contract SolverNet_Inbox_Claim_Test is TestBase {
             ISolverNetInbox.StatusUpdate[] memory history
         ) = inbox.getOrder(expectedOrderId);
 
-        // Verify that stored order state aligns with the original order
-        assertResolved(user, order, storedOrder);
+        // Verify that stored resolved order aligns with the original order
+        assertResolved(user, resolvedOrder.orderId, order, storedOrder);
 
         // Verify order state is now Claimed
         assertEq(uint8(state.status), uint8(ISolverNetInbox.Status.Claimed), "order state: status");
@@ -143,7 +143,7 @@ contract SolverNet_Inbox_Claim_Test is TestBase {
         ) = inbox.getOrder(expectedOrderId);
 
         // Verify that stored resolved order aligns with the original order
-        assertResolved(user, order, storedOrder);
+        assertResolved(user, resolvedOrder.orderId, order, storedOrder);
 
         // Verify order state is now Claimed
         assertEq(uint8(state.status), uint8(ISolverNetInbox.Status.Claimed), "order state: status");

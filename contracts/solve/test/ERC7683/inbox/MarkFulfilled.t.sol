@@ -47,7 +47,7 @@ contract SolverNet_Inbox_MarkFulfilled_Test is TestBase {
         ) = inbox.getOrder(expectedOrderId);
 
         // Verify that stored resolved order aligns with the original order
-        assertResolved(user, order, storedOrder);
+        assertResolved(user, resolvedOrder.orderId, order, storedOrder);
 
         // Verify order state is now Filled
         assertEq(uint8(state.status), uint8(ISolverNetInbox.Status.Filled), "order state: status");
@@ -136,7 +136,7 @@ contract SolverNet_Inbox_MarkFulfilled_Test is TestBase {
         );
     }
 
-    function test_mark_fulfilled_reverts_wrong_call_hash() public {
+    function test_mark_fulfilled_reverts_wrong_fill_hash() public {
         // Create and open an order
         IERC7683.OnchainCrossChainOrder memory order = randOrder();
         vm.prank(user);
@@ -155,7 +155,7 @@ contract SolverNet_Inbox_MarkFulfilled_Test is TestBase {
 
         // Mock xcall with wrong fill hash
         bytes32 wrongFillHash = bytes32(uint256(1)); // Some random hash
-        vm.expectRevert(ISolverNetInbox.WrongCallHash.selector);
+        vm.expectRevert(ISolverNetInbox.WrongFillHash.selector);
         portal.mockXCall(
             destChainId,
             address(outbox),

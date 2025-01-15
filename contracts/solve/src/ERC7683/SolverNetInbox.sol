@@ -124,7 +124,8 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         Call memory call = orderData.call;
         Deposit[] memory deposits = orderData.deposits;
 
-        Output[] memory maxSpent = new Output[](call.expenses.length);
+        bool hasNative = call.value > 0;
+        Output[] memory maxSpent = new Output[](hasNative ? call.expenses.length + 1 : call.expenses.length);
         for (uint256 i; i < call.expenses.length; ++i) {
             maxSpent[i] = Output({
                 token: call.expenses[i].token,
@@ -132,6 +133,10 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
                 recipient: _outbox.toBytes32(), // for solver, recipient is always outbox
                 chainId: call.chainId
             });
+        }
+        if (hasNative) {
+            maxSpent[call.expenses.length] =
+                Output({ token: bytes32(0), amount: call.value, recipient: _outbox.toBytes32(), chainId: call.chainId });
         }
 
         Output[] memory minReceived = new Output[](deposits.length);
@@ -243,7 +248,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
 
         // Ensure reported fill hash matches origin data
         if (fillHash != _fillHash(id, order.fillInstructions[0].originData)) {
-            revert WrongCallHash();
+            revert WrongFillHash();
         }
 
         state.status = Status.Filled;
@@ -289,13 +294,13 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         if (call.data.length == 0) revert NoCallData();
         if (deposits.length == 0) revert NoDeposits();
 
-        bool nativeDeposite;
+        bool hasNative;
         for (uint256 i; i < deposits.length; ++i) {
             Deposit memory deposit = deposits[i];
             if (deposit.amount == 0) revert NoDepositAmount();
             if (deposit.token == bytes32(0)) {
-                if (nativeDeposite) revert DuplicateNativeDeposit();
-                nativeDeposite = true;
+                if (hasNative) revert DuplicateNativeDeposit();
+                hasNative = true;
             }
         }
 
