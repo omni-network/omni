@@ -27,20 +27,39 @@ jobs:
         with:
           go-version: 'stable'
 
-      - name: Run join test
+      - name: Run Join Network Test - Full Sync Node
         run: |
           cd scripts/join
           sudo go test . -v \
             --integration \
             --timeout=0 \
-            --logs_file=docker_logs.txt \
+            --logs_file=docker_logs_full_sync.txt \
             --halo_tag="main" \
             --network="${{github.event.inputs.network || 'mainnet'}}"
 
-      - name: Upload docker logs
+      - name: Upload Docker Logs - Full Sync Node
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: docker-logs
-          path: scripts/join/docker_logs.txt
+          path: scripts/join/docker_logs_full_sync.txt
+          retention-days: 3
+
+      - name: Run Join Network Test - Snapshot Sync Node
+        run: |
+          cd scripts/join
+          sudo go test . -v \
+            --integration \
+            --timeout=0 \
+            --logs_file=docker_logs_snapshot_sync.txt \
+            --from_latest_snapshot \
+            --halo_tag="main" \
+            --network="${{github.event.inputs.network || 'mainnet'}}"
+
+      - name: Upload Docker Logs - Snapshot Sync Node
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: docker-logs
+          path: scripts/join/docker_logs_snapshot_sync.txt
           retention-days: 3

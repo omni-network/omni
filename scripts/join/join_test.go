@@ -34,10 +34,11 @@ import (
 )
 
 var (
-	logsFile    = flag.String("logs_file", "join_test.log", "File to write docker logs to")
-	network     = flag.String("network", "omega", "Network to join (default: omega)")
-	integration = flag.Bool("integration", false, "Run integration tests")
-	release     = flag.String("halo_tag", "main", "Halo docker image tag, empty results in `git rev-parse HEAD`")
+	logsFile           = flag.String("logs_file", "join_test.log", "File to write docker logs to")
+	network            = flag.String("network", "omega", "Network to join (default: omega)")
+	integration        = flag.Bool("integration", false, "Run integration tests")
+	fromLatestSnapshot = flag.Bool("from_latest_snapshot", false, "Enable node sync from backup snapshot")
+	release            = flag.String("halo_tag", "main", "Halo docker image tag, empty results in `git rev-parse HEAD`")
 )
 
 // TestJoinNetwork starts a local node (using omni operator init-nodes)
@@ -65,11 +66,12 @@ func TestJoinNetwork(t *testing.T) {
 	networkID := netconf.ID(*network)
 	haloTag := haloTag(t)
 	cfg := clicmd.InitConfig{
-		Network:          networkID,
-		Home:             home,
-		Moniker:          t.Name(),
-		HaloTag:          haloTag,
-		HaloFeatureFlags: maybeGetFeatureFlags(ctx, networkID),
+		Network:            networkID,
+		Home:               home,
+		Moniker:            t.Name(),
+		FromLatestSnapshot: *fromLatestSnapshot,
+		HaloTag:            haloTag,
+		HaloFeatureFlags:   maybeGetFeatureFlags(ctx, networkID),
 	}
 
 	tutil.RequireNoError(t, ensureHaloImage(cfg.HaloTag))
