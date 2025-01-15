@@ -35,7 +35,7 @@ func bindInitConfig(cmd *cobra.Command, cfg *InitConfig) {
 	cmd.Flags().BoolVar(&cfg.Clean, "clean", cfg.Clean, "Delete contents of home directory")
 	cmd.Flags().BoolVar(&cfg.Archive, "archive", cfg.Archive, "Enable archive mode. Note this requires more disk space")
 	cmd.Flags().BoolVar(&cfg.Debug, "debug", cfg.Debug, "Configure nodes with debug log level")
-	cmd.Flags().BoolVar(&cfg.FromLatestSnapshot, "from-latest-snapshot", cfg.FromLatestSnapshot, "Sync node from latest state snapshot available")
+	cmd.Flags().BoolVar(&cfg.NodeSnapshot, "node-snapshot", cfg.NodeSnapshot, "Download and restore latest node snapshot (geth and halo) from Omni")
 	cmd.Flags().StringVar(&cfg.HaloTag, "halo-tag", cfg.HaloTag, "Configure halo tag to use for node")
 }
 

@@ -46,15 +46,15 @@ const (
 )
 
 type InitConfig struct {
-	Network            netconf.ID
-	Home               string
-	Moniker            string
-	Clean              bool
-	Archive            bool
-	Debug              bool
-	FromLatestSnapshot bool
-	HaloTag            string
-	HaloFeatureFlags   feature.Flags
+	Network          netconf.ID
+	Home             string
+	Moniker          string
+	Clean            bool
+	Archive          bool
+	Debug            bool
+	NodeSnapshot     bool
+	HaloTag          string
+	HaloFeatureFlags feature.Flags
 }
 
 func (c InitConfig) Verify() error {
@@ -127,7 +127,7 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 	}
 	cfg.HaloFeatureFlags = featureFlags
 
-	if cfg.FromLatestSnapshot {
+	if cfg.NodeSnapshot {
 		if err := downloadSnapshot(ctx, cfg.Network, gethClientName); err != nil {
 			return err
 		}

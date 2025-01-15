@@ -45,21 +45,21 @@ jobs:
           path: scripts/join/docker_logs_full_sync.txt
           retention-days: 3
 
-      - name: Run Join Network Test - Snapshot Sync Node
+      - name: Run Join Network Test - Node Snapshot
         run: |
           cd scripts/join
           sudo go test . -v \
             --integration \
             --timeout=0 \
-            --logs_file=docker_logs_snapshot_sync.txt \
-            --from_latest_snapshot \
+            --logs_file=docker_logs_node_snapshot.txt \
+            --node_snapshot \
             --halo_tag="main" \
             --network="${{github.event.inputs.network || 'mainnet'}}"
 
-      - name: Upload Docker Logs - Snapshot Sync Node
+      - name: Upload Docker Logs - Node Snapshot
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: docker-logs
-          path: scripts/join/docker_logs_snapshot_sync.txt
+          path: scripts/join/docker_logs_node_snapshot.txt
           retention-days: 3
