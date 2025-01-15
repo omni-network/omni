@@ -7,6 +7,7 @@ import { ISolverNet } from "./ISolverNet.sol";
 interface ISolverNetInbox is IOriginSettler, ISolverNet {
     // markFilled authorization
     error NotOutbox();
+    error OrderExpired();
     error WrongFillHash();
     error WrongSourceChain();
 
@@ -32,6 +33,7 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
     // order state transition errors
     error OrderNotPending();
     error OrderNotAccepted();
+    error OrderNotPendingOrAccepted();
     error OrderNotFilled();
 
     // transfer errors
@@ -74,6 +76,14 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
      * @param deposits  Array of deposits claimed
      */
     event Claimed(bytes32 indexed id, address indexed by, address indexed to, Output[] deposits);
+
+    /**
+     * @notice Emitted when the acceptedBy address is updated.
+     * @dev This should only be emitted when an order is fulfilled before being accepted.
+     * @param id  ID of the order.
+     * @param by  Address of the solver that accepted the order.
+     */
+    event AcceptedByUpdated(bytes32 indexed id, address indexed by);
 
     /**
      * @notice Status of an order.
@@ -158,9 +168,11 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
      * @notice Fill an order.
      * @dev Only callable by the outbox.
      * @param id        ID of the order.
-     * @param callHash  Hash of the calls for this order executed on another chain.
+     * @param fillHash  Hash of fill instructions origin data.
+     * @param timestamp Timestamp of the fill.
+     * @param creditTo  Address given at fulfillment (if any) to credit the funds to.
      */
-    function markFilled(bytes32 id, bytes32 callHash) external;
+    function markFilled(bytes32 id, bytes32 fillHash, uint40 timestamp, bytes32 creditTo) external;
 
     /**
      * @notice Claim a filled order.

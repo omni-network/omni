@@ -26,6 +26,11 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     uint256 internal constant SOLVER = _ROLE_0;
 
     /**
+     * @notice Duration to wait after fill deadline before cancelling an accepted order.
+     */
+    uint256 internal constant WAIT_DURATION = 30 minutes;
+
+    /**
      * @notice Typehash for the order data.
      */
     bytes32 internal constant ORDER_DATA_TYPEHASH = keccak256(
@@ -225,7 +230,11 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     function cancel(bytes32 id) external nonReentrant {
         ResolvedCrossChainOrder memory order = _orders[id];
         OrderState memory state = _orderState[id];
-        if (state.status != Status.Pending) revert OrderNotPending();
+        // After wait duration has elapsed post-fillDeadline, cancel is allowed even if order was accepted
+        if (block.timestamp < order.fillDeadline + WAIT_DURATION) {
+            // NOTE: Should users be allowed to cancel while pending? Do we make them wait it out until the fillDeadline?
+            if (state.status != Status.Pending) revert OrderNotPending();
+        }
         if (order.user != msg.sender) revert Unauthorized();
 
         state.status = Status.Reverted;
@@ -240,17 +249,31 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @dev Only callable by the outbox.
      * @param id        ID of the order.
      * @param fillHash  Hash of fill instructions origin data.
+     * @param timestamp Timestamp of the fill.
+     * @param creditTo  Address given at fulfillment (if any) to credit the funds to.
      */
-    function markFilled(bytes32 id, bytes32 fillHash) external xrecv nonReentrant {
+    function markFilled(bytes32 id, bytes32 fillHash, uint40 timestamp, bytes32 creditTo) external xrecv nonReentrant {
         ResolvedCrossChainOrder memory order = _orders[id];
         OrderState memory state = _orderState[id];
-        if (state.status != Status.Accepted) revert OrderNotAccepted();
+        if (state.status != Status.Pending && state.status != Status.Accepted) revert OrderNotPendingOrAccepted();
+        if (order.fillDeadline < timestamp) revert OrderExpired();
         if (xmsg.sender != _outbox) revert NotOutbox();
         if (xmsg.sourceChainId != order.fillInstructions[0].destinationChainId) revert WrongSourceChain();
 
         // Ensure reported fill hash matches origin data
         if (fillHash != _fillHash(id, order.fillInstructions[0].originData)) {
             revert WrongFillHash();
+        }
+
+        // Ensure fast solvers (that skip `accept`) are properly credited
+        // Deter someone accepting after fulfillment but before it is reported by overriding `acceptedBy`
+        // NOTE: What do we do if the solver provided address(0) for `creditTo`?
+        if (
+            state.status == Status.Pending
+                || (state.status == Status.Accepted && _orderHistory[id][1].timestamp > timestamp)
+        ) {
+            state.acceptedBy = creditTo.toAddress();
+            emit AcceptedByUpdated(id, state.acceptedBy);
         }
 
         state.status = Status.Filled;
@@ -332,7 +355,6 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
                 // Handle native deposit
                 if (!hasNative) revert InvalidNativeDeposit();
                 if (deposit.amount != msg.value) revert InvalidNativeDeposit();
-                if (processedNative) revert DuplicateNativeDeposit();
                 processedNative = true;
             } else {
                 // Handle ERC20 deposit

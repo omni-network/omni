@@ -27,4 +27,15 @@ contract SolverNet_Inbox_Resolve_Test is TestBase {
 
         assertResolved(user, resolvedOrder.orderId, order, resolvedOrder);
     }
+
+    function test_resolveOrder_call_with_value_succeeds() public {
+        IERC7683.OnchainCrossChainOrder memory order = randNativeOrder();
+        ISolverNet.OrderData memory orderData = abi.decode(order.orderData, (ISolverNet.OrderData));
+        orderData.call.value = 1 ether;
+        order.orderData = abi.encode(orderData);
+        vm.prank(user);
+        IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+
+        assertResolved(user, resolvedOrder.orderId, order, resolvedOrder);
+    }
 }

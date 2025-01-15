@@ -52,7 +52,9 @@ contract SolverNet_E2E_Test is TestBase {
             destChainId,
             address(outbox),
             address(inbox),
-            abi.encodeCall(ISolverNetInbox.markFilled, (resolvedOrder.orderId, fillHash)),
+            abi.encodeCall(
+                ISolverNetInbox.markFilled, (resolvedOrder.orderId, fillHash, uint40(block.timestamp), bytes32(0))
+            ),
             100_000
         );
 

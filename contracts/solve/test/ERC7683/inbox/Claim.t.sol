@@ -37,7 +37,7 @@ contract SolverNet_Inbox_Claim_Test is TestBase {
             destChainId,
             address(outbox),
             address(inbox),
-            abi.encodeCall(ISolverNetInbox.markFilled, (expectedOrderId, fillHash)),
+            abi.encodeCall(ISolverNetInbox.markFilled, (expectedOrderId, fillHash, uint40(block.timestamp), bytes32(0))),
             100_000
         );
 
@@ -124,7 +124,7 @@ contract SolverNet_Inbox_Claim_Test is TestBase {
             destChainId,
             address(outbox),
             address(inbox),
-            abi.encodeCall(ISolverNetInbox.markFilled, (expectedOrderId, fillHash)),
+            abi.encodeCall(ISolverNetInbox.markFilled, (expectedOrderId, fillHash, uint40(block.timestamp), bytes32(0))),
             100_000
         );
 
@@ -226,7 +226,7 @@ contract SolverNet_Inbox_Claim_Test is TestBase {
             destChainId,
             address(outbox),
             address(inbox),
-            abi.encodeCall(ISolverNetInbox.markFilled, (orderId, fillHash)),
+            abi.encodeCall(ISolverNetInbox.markFilled, (orderId, fillHash, uint40(block.timestamp), bytes32(0))),
             100_000
         );
 
@@ -259,7 +259,7 @@ contract SolverNet_Inbox_Claim_Test is TestBase {
             destChainId,
             address(outbox),
             address(inbox),
-            abi.encodeCall(ISolverNetInbox.markFilled, (orderId, fillHash)),
+            abi.encodeCall(ISolverNetInbox.markFilled, (orderId, fillHash, uint40(block.timestamp), bytes32(0))),
             100_000
         );
 

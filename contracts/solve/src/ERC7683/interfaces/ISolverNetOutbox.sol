@@ -8,6 +8,7 @@ interface ISolverNetOutbox is IDestinationSettler, ISolverNet {
     error WrongDestChain();
     error InsufficientFee();
     error AlreadyFilled();
+    error InvalidFillerData();
 
     /**
      * @notice Emitted when a cross-chain request is filled on the destination chain

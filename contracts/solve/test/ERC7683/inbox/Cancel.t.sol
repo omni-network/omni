@@ -86,7 +86,7 @@ contract SolverNet_Inbox_Cancel_Test is TestBase {
         inbox.cancel(orderId);
     }
 
-    function test_cancel_reverts_order_not_pending_or_rejected() public {
+    function test_cancel_reverts_order_not_pending() public {
         // Create and open an order
         IERC7683.OnchainCrossChainOrder memory order = randOrder();
         vm.prank(user);

@@ -38,7 +38,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
      * @dev Type maxes used to ensure no non-zero bytes in fee estimation.
      */
     bytes internal constant MARK_FILLED_STUB_CDATA =
-        abi.encodeCall(ISolverNetInbox.markFilled, (TypeMax.Bytes32, TypeMax.Bytes32));
+        abi.encodeCall(ISolverNetInbox.markFilled, (TypeMax.Bytes32, TypeMax.Bytes32, TypeMax.Uint40, TypeMax.Bytes32));
 
     /**
      * @notice Address of the inbox contract.
@@ -104,9 +104,9 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
      * @notice Fills a particular order on the destination chain
      * @param orderId     Unique order identifier for this order
      * @param originData  Data emitted on the origin to parameterize the fill
-     * @dev fillerData (currently unused): Data provided by the filler to inform the fill or express their preferences
+     * @param fillerData  Bytes32 representation of filler address (only to be used if order wasn't accepted prior)
      */
-    function fill(bytes32 orderId, bytes calldata originData, bytes calldata)
+    function fill(bytes32 orderId, bytes calldata originData, bytes calldata fillerData)
         external
         payable
         onlyRoles(SOLVER)
@@ -116,7 +116,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         Call memory call = fillData.call;
 
         _executeCall(call);
-        _markFilled(orderId, fillData.srcChainId, call, _fillHash(orderId, originData));
+        _markFilled(orderId, fillData.srcChainId, call, _fillHash(orderId, originData), fillerData);
     }
 
     /**
@@ -176,17 +176,28 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
      * @param call        Call executed.
      * @param fillHash    Hash of fill data, verifies fill matches order.
      */
-    function _markFilled(bytes32 orderId, uint64 srcChainId, Call memory call, bytes32 fillHash) internal {
+    function _markFilled(
+        bytes32 orderId,
+        uint64 srcChainId,
+        Call memory call,
+        bytes32 fillHash,
+        bytes calldata fillerData
+    ) internal {
         // mark filled on outbox (here)
         if (_filled[fillHash]) revert AlreadyFilled();
         _filled[fillHash] = true;
+
+        // ensure `fillerData` is valid
+        if (fillerData.length != 0 && fillerData.length != 32) revert InvalidFillerData();
 
         // mark filled on inbox
         uint256 fee = xcall({
             destChainId: srcChainId,
             conf: ConfLevel.Finalized,
             to: _inbox,
-            data: abi.encodeCall(ISolverNetInbox.markFilled, (orderId, fillHash)),
+            data: abi.encodeCall(
+                ISolverNetInbox.markFilled, (orderId, fillHash, uint40(block.timestamp), bytes32(fillerData))
+            ),
             gasLimit: MARK_FILLED_GAS_LIMIT
         });
         if (msg.value - call.value < fee) revert InsufficientFee();
