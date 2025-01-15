@@ -10,6 +10,7 @@ import (
 	evmstaking2module "github.com/omni-network/omni/halo/evmstaking2/module"
 	evmstaking2types "github.com/omni-network/omni/halo/evmstaking2/types"
 	"github.com/omni-network/omni/halo/evmupgrade"
+	"github.com/omni-network/omni/halo/mybank"
 	portalmodule "github.com/omni-network/omni/halo/portal/module"
 	portaltypes "github.com/omni-network/omni/halo/portal/types"
 	registrymodule "github.com/omni-network/omni/halo/registry/module"
@@ -243,6 +244,7 @@ var (
 			return []any{
 				evmslashing.DIProvide,
 				evmupgrade.DIProvide,
+				mybank.DIProvide,
 			}
 		}
 
@@ -250,6 +252,7 @@ var (
 			evmslashing.DIProvide,
 			evmstaking.DIProvide,
 			evmupgrade.DIProvide,
+			mybank.DIProvide,
 		}
 	}
 )
