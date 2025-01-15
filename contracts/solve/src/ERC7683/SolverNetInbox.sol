@@ -12,7 +12,7 @@ import { ISolverNetInbox } from "./interfaces/ISolverNetInbox.sol";
 
 /**
  * @title SolverNetInbox
- * @notice Entrypoint and alt-mempoool for user solve orders.
+ * @notice Entrypoint and alt-mempool for user solve orders.
  */
 contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, DeployedAt, XAppBase, ISolverNetInbox {
     using SafeTransferLib for address;
@@ -92,6 +92,13 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     }
 
     /**
+     * @notice Returns the next order ID.
+     */
+    function getNextId() external view returns (bytes32) {
+        return _nextId();
+    }
+
+    /**
      * @notice Returns the latest order with the given status.
      * @param status  Order status to query.
      */
@@ -103,7 +110,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @dev Validate the onchain order.
      * @param order  OnchainCrossChainOrder to validate.
      */
-    function validateOrder(OnchainCrossChainOrder calldata order) external view returns (bool) {
+    function validate(OnchainCrossChainOrder calldata order) external view returns (bool) {
         _parseOrder(order);
         return true;
     }
@@ -113,11 +120,12 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @param order  OnchainCrossChainOrder to resolve.
      */
     function resolve(OnchainCrossChainOrder calldata order) public view returns (ResolvedCrossChainOrder memory) {
-        OrderData memory orderData = abi.decode(order.orderData, (OrderData));
+        OrderData memory orderData = _parseOrder(order);
         Call memory call = orderData.call;
         Deposit[] memory deposits = orderData.deposits;
 
-        Output[] memory maxSpent = new Output[](call.expenses.length);
+        bool hasNative = call.value > 0;
+        Output[] memory maxSpent = new Output[](hasNative ? call.expenses.length + 1 : call.expenses.length);
         for (uint256 i; i < call.expenses.length; ++i) {
             maxSpent[i] = Output({
                 token: call.expenses[i].token,
@@ -125,6 +133,10 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
                 recipient: _outbox.toBytes32(), // for solver, recipient is always outbox
                 chainId: call.chainId
             });
+        }
+        if (hasNative) {
+            maxSpent[call.expenses.length] =
+                Output({ token: bytes32(0), amount: call.value, recipient: _outbox.toBytes32(), chainId: call.chainId });
         }
 
         Output[] memory minReceived = new Output[](deposits.length);
@@ -236,7 +248,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
 
         // Ensure reported fill hash matches origin data
         if (fillHash != _fillHash(id, order.fillInstructions[0].originData)) {
-            revert WrongCallHash();
+            revert WrongFillHash();
         }
 
         state.status = Status.Filled;
@@ -277,9 +289,20 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         Call memory call = orderData.call;
         Deposit[] memory deposits = orderData.deposits;
 
+        if (call.chainId == 0) revert NoCallChainId();
         if (call.target == bytes32(0)) revert NoCallTarget();
         if (call.data.length == 0) revert NoCallData();
         if (deposits.length == 0) revert NoDeposits();
+
+        bool hasNative;
+        for (uint256 i; i < deposits.length; ++i) {
+            Deposit memory deposit = deposits[i];
+            if (deposit.amount == 0) revert NoDepositAmount();
+            if (deposit.token == bytes32(0)) {
+                if (hasNative) revert DuplicateNativeDeposit();
+                hasNative = true;
+            }
+        }
 
         for (uint256 i; i < call.expenses.length; ++i) {
             TokenExpense memory expense = call.expenses[i];
@@ -303,17 +326,14 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         for (uint256 i; i < deposits.length; ++i) {
             Deposit memory deposit = deposits[i];
 
-            // Handle native deposit
             if (deposit.token == bytes32(0)) {
+                // Handle native deposit
                 if (!hasNative) revert InvalidNativeDeposit();
                 if (deposit.amount != msg.value) revert InvalidNativeDeposit();
                 if (processedNative) revert DuplicateNativeDeposit();
                 processedNative = true;
-            }
-
-            // Handle ERC20 deposit
-            if (deposit.token != bytes32(0)) {
-                if (deposit.amount == 0) revert NoDepositAmount();
+            } else {
+                // Handle ERC20 deposit
                 address token = deposit.token.toAddress();
                 token.safeTransferFrom(msg.sender, address(this), deposit.amount);
             }
@@ -392,7 +412,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     }
 
     /**
-     * @dev Returns call hash. Used to discern fullfilment.
+     * @dev Returns call hash. Used to discern fulfillment.
      * @param orderId      ID of the order.
      * @param originData   Encoded fill instruction origin data.
      */

@@ -16,7 +16,7 @@ import { ISolverNetOutbox } from "./interfaces/ISolverNetOutbox.sol";
 
 /**
  * @title SolverNetOutbox
- * @notice Entrypoint for fillments of user solve requests.
+ * @notice Entrypoint for fulfillments of user solve requests.
  */
 contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, DeployedAt, XAppBase, ISolverNetOutbox {
     using SafeTransferLib for address;
@@ -53,7 +53,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
 
     /**
      * @notice Maps fillHash (hash of fill instruction origin data) to true, if filled.
-     * @dev Used to prevent duplicate fillment.
+     * @dev Used to prevent duplicate fulfillment.
      */
     mapping(bytes32 fillHash => bool filled) internal _filled;
 
@@ -73,6 +73,13 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         _setOmniPortal(omni_);
         _inbox = inbox_;
         _executor = new SolverNetExecutor(address(this));
+    }
+
+    /**
+     * @notice Returns the address of the executor contract.
+     */
+    function executor() external view returns (address) {
+        return address(_executor);
     }
 
     /**
@@ -153,7 +160,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
     }
 
     /**
-     * @notice Verifiy and execute a call. Expenses are processed and enforced.
+     * @notice Verify and execute a call. Expenses are processed and enforced.
      * @param call  Call to execute.
      */
     function _executeCall(Call memory call) internal withExpenses(call.expenses) {
@@ -192,7 +199,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
     }
 
     /**
-     * @dev Returns call hash. Used to discern fullfilment.
+     * @dev Returns call hash. Used to discern fulfillment.
      */
     function _fillHash(bytes32 srcReqId, bytes memory originData) internal pure returns (bytes32) {
         return keccak256(abi.encode(srcReqId, originData));

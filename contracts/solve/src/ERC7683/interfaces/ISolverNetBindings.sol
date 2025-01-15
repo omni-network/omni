@@ -6,7 +6,7 @@ import { ISolverNet } from "./ISolverNet.sol";
 /**
  * @title ISolverNetBindings
  * @notice This interface is only used to generate bindings for ISolverNet types.
- *         This is necessary because inbox / oubox abis operate on encoded ISolverNet bytes,
+ *         This is necessary because inbox / outbox abis operate on encoded ISolverNet bytes,
  *         so types are not represented in their ABIs.
  * @dev We use a single function per type so that we can use go-ethereum's
  *      abi[method].Inputs to encode / decode one type at a time.

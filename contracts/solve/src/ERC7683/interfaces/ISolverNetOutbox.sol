@@ -5,8 +5,6 @@ import { IDestinationSettler } from "./IDestinationSettler.sol";
 import { ISolverNet } from "./ISolverNet.sol";
 
 interface ISolverNetOutbox is IDestinationSettler, ISolverNet {
-    error CallFailed();
-    error InvalidExpenses();
     error WrongDestChain();
     error InsufficientFee();
     error AlreadyFilled();
@@ -18,6 +16,11 @@ interface ISolverNetOutbox is IDestinationSettler, ISolverNet {
      * @param filledBy    Address of the solver that filled the oder
      */
     event Filled(bytes32 indexed orderId, bytes32 indexed fillHash, address indexed filledBy);
+
+    /**
+     * @notice Returns the address of the executor contract.
+     */
+    function executor() external view returns (address);
 
     /**
      * @notice Returns the message passing fee required to mark a request as filled on the source chain

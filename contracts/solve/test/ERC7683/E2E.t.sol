@@ -1,19 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
-import { TestBase } from "./TestBase.sol";
-import { IERC7683 } from "src/ERC7683/interfaces/IERC7683.sol";
-import { ISolverNetInbox } from "src/ERC7683/interfaces/ISolverNetInbox.sol";
-import { ISolverNetOutbox } from "src/ERC7683/interfaces/ISolverNetOutbox.sol";
+import "./TestBase.sol";
 
-contract SolverNetE2ETest is TestBase {
+contract SolverNet_E2E_Test is TestBase {
     function test_e2e_complete_order() public {
         // Prep: Set chainId to srcChainId
         vm.chainId(srcChainId);
 
         // 0. Generate order, validate it, resolve it, and prepare deposit tokens
         IERC7683.OnchainCrossChainOrder memory order = randOrder();
-        assertTrue(inbox.validateOrder(order));
+        assertTrue(inbox.validate(order));
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
         mintAndApprove(resolvedOrder.minReceived, resolvedOrder.maxSpent);
 
