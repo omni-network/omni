@@ -34,10 +34,11 @@ import (
 )
 
 var (
-	logsFile    = flag.String("logs_file", "join_test.log", "File to write docker logs to")
-	network     = flag.String("network", "omega", "Network to join (default: omega)")
-	integration = flag.Bool("integration", false, "Run integration tests")
-	release     = flag.String("halo_tag", "main", "Halo docker image tag, empty results in `git rev-parse HEAD`")
+	logsFile     = flag.String("logs_file", "join_test.log", "File to write docker logs to")
+	network      = flag.String("network", "omega", "Network to join (default: omega)")
+	integration  = flag.Bool("integration", false, "Run integration tests")
+	nodeSnapshot = flag.Bool("node_snapshot", false, "Download and restore latest node snapshot (geth and halo)")
+	release      = flag.String("halo_tag", "main", "Halo docker image tag, empty results in `git rev-parse HEAD`")
 )
 
 // TestJoinNetwork starts a local node (using omni operator init-nodes)
@@ -68,6 +69,7 @@ func TestJoinNetwork(t *testing.T) {
 		Network:          networkID,
 		Home:             home,
 		Moniker:          t.Name(),
+		NodeSnapshot:     *nodeSnapshot,
 		HaloTag:          haloTag,
 		HaloFeatureFlags: maybeGetFeatureFlags(ctx, networkID),
 	}

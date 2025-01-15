@@ -1,0 +1,64 @@
+name: Join Network Tests Manual Trigger
+# Manually triggered action that tests joining network as a full node or as a node snapshot.
+
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        type: choice
+        description: Network
+        options:
+          - omega
+          - mainnet
+          - staging
+        default: "staging"
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  join:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: "Run Join Network Test ${{github.event.inputs.network}} - Full Sync Node"
+        run: |
+          cd scripts/join
+          sudo go test . -v \
+            --integration \
+            --timeout=0 \
+            --logs_file=docker_logs_${{github.event.inputs.network}}_full_sync.txt \
+            --halo_tag="main" \
+            --network="${{github.event.inputs.network}}"
+
+      - name: "Upload Docker Logs ${{github.event.inputs.network}} - Full Sync Node"
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: docker-logs
+          path: scripts/join/docker_logs_full_sync.txt
+          retention-days: 3
+
+      - name: "Run Join Network Test ${{github.event.inputs.network}} - Node Snapshot"
+        run: |
+          cd scripts/join
+          sudo go test . -v \
+            --integration \
+            --timeout=0 \
+            --logs_file=docker_logs_${{github.event.inputs.network}}_full_sync.txt \
+            --node_snapshot \
+            --halo_tag="main" \
+            --network="${{github.event.inputs.network}}"
+
+      - name: "Upload Docker Logs ${{github.event.inputs.network}} - Node Snapshot"
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: docker-logs
+          path: "docker_logs_${{github.event.inputs.network}}_full_sync.txt"
+          retention-days: 3
