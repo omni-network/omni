@@ -31,7 +31,6 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
 
     // order state transition errors
     error OrderNotPending();
-    error OrderNotPendingOrRejected();
     error OrderNotAccepted();
     error OrderNotFilled();
 
