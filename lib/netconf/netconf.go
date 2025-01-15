@@ -121,15 +121,20 @@ func (n Network) EthereumChain() (Chain, bool) {
 
 // IsEthereumChain returns true if the chainID is the EthereumChainID for the given network.
 func IsEthereumChain(network ID, chainID uint64) bool {
+	return EthereumChainID(network) == chainID
+}
+
+// EthereumChainID returns the EthereumChainID for the given network.
+func EthereumChainID(network ID) uint64 {
 	switch network {
 	case Mainnet:
-		return chainID == evmchain.IDEthereum
+		return evmchain.IDEthereum
 	case Omega:
-		return chainID == evmchain.IDHolesky
+		return evmchain.IDHolesky
 	case Staging:
-		return chainID == evmchain.IDHolesky
+		return evmchain.IDHolesky
 	default:
-		return chainID == evmchain.IDMockL1
+		return evmchain.IDMockL1
 	}
 }
 

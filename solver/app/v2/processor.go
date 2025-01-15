@@ -14,6 +14,8 @@ import (
 // all inbox contract events and driving order lifecycle.
 func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 	return func(ctx context.Context, height uint64, elogs []types.Log) error {
+		// TODO: do return error on for an error on a single log. this skips potentially valid logs in the same block.
+
 		for _, elog := range elogs {
 			event, ok := eventsByTopic[elog.Topics[0]]
 			if !ok {
@@ -25,14 +27,16 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 				return errors.Wrap(err, "parse id")
 			}
 
-			order, _, err := deps.GetOrder(ctx, chainID, orderID)
+			order, found, err := deps.GetOrder(ctx, chainID, orderID)
 			if err != nil {
-				return errors.Wrap(err, "current status")
+				return errors.Wrap(err, "get order")
+			} else if !found {
+				return errors.New("order not found [BUG]")
 			}
 
 			target := deps.TargetName(order)
 			statusOffset.WithLabelValues(deps.ChainName(chainID), target, statusString(event.Status)).Set(float64(orderID.Uint64()))
-			ctx := log.WithCtx(ctx, "target", target, "status", statusString(event.Status), "order_id", orderID)
+			ctx := log.WithCtx(ctx, order.LogAttrs(ctx)...)
 
 			log.Debug(ctx, "Processing order event")
 

@@ -74,6 +74,16 @@ func EthAddress(b []byte) (common.Address, error) {
 	return resp, nil
 }
 
+// MustEthAddress casts a byte slice to an Ethereum address.
+func MustEthAddress(b []byte) common.Address {
+	addr, err := EthAddress(b)
+	if err != nil {
+		panic(err)
+	}
+
+	return addr
+}
+
 // Array20 casts a slice to an array of length 32.
 func Array20[A any](slice []A) ([20]A, error) {
 	if len(slice) == 20 {

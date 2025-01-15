@@ -107,6 +107,10 @@ func BackendsFromNetwork(network netconf.Network, endpoints xchain.RPCEndpoints,
 	}, nil
 }
 
+func BackendsFrom(backends map[uint64]*Backend) Backends {
+	return Backends{backends: backends}
+}
+
 // NewBackends returns a multi-backends backed by in-memory keys that supports configured all chains.
 func NewBackends(ctx context.Context, testnet types.Testnet, deployKeyFile string) (Backends, error) {
 	var err error

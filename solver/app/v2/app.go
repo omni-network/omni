@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/buildinfo"
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -233,22 +234,27 @@ func startEventStreams(
 		return cursors.Set(ctx, chainVerFromID(chainID), height)
 	}
 
-	targetNamer := func(_ Order) string {
-		// TODO: Return name for known targets.
-		return unknown
+	targetName := func(o Order) string {
+		fill, err := o.ParsedFillOriginData()
+		if err != nil {
+			return unknown
+		}
+
+		// TODO: Give known targets friendly names
+		return cast.MustEthAddress(fill.Call.Target[:20]).Hex()
 	}
 
 	deps := procDeps{
 		ParseID:      newIDParser(inboxContracts),
 		GetOrder:     newOrderGetter(inboxContracts),
-		ShouldReject: newShouldRejector(network.ID),
+		ShouldReject: newShouldRejector(backends, solverAddr, targetName, network.ChainName),
 		Accept:       newAcceptor(inboxContracts, backends, solverAddr),
 		Reject:       newRejector(inboxContracts, backends, solverAddr),
 		Fill:         newFiller(outboxContracts, backends, solverAddr, addrs.SolveOutbox),
 		Claim:        newClaimer(inboxContracts, backends, solverAddr),
 		SetCursor:    cursorSetter,
 		ChainName:    network.ChainName,
-		TargetName:   targetNamer,
+		TargetName:   targetName,
 	}
 
 	for _, chain := range inboxChains {
