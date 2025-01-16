@@ -6,6 +6,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/evmstaking2/types"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
+	"github.com/omni-network/omni/halo/mybank"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/k1util"
@@ -34,7 +35,7 @@ type Keeper struct {
 	address         common.Address
 	contract        *bindings.Staking
 	aKeeper         types.AuthKeeper
-	bKeeper         types.BankKeeper
+	bKeeper         mybank.Keeper
 	sKeeper         types.StakingKeeper
 	sServer         types.StakingMsgServer
 	deliverInterval int64
@@ -43,7 +44,7 @@ type Keeper struct {
 func NewKeeper(
 	storeService store.KVStoreService,
 	aKeeper types.AuthKeeper,
-	bKeeper types.BankKeeper,
+	bKeeper mybank.Keeper,
 	sKeeper types.StakingKeeper,
 	sServer types.StakingMsgServer,
 	deliverInterval int64,
@@ -235,7 +236,7 @@ func (k Keeper) deliverDelegate(ctx context.Context, ev *bindings.StakingDelegat
 		return errors.Wrap(err, "mint coins")
 	}
 
-	if err := k.bKeeper.SendCoinsFromModuleToAccount(ctx, k.Name(), delAddr, amountCoins); err != nil {
+	if err := k.bKeeper.SendCoinsFromModuleToAccountForReal(ctx, k.Name(), delAddr, amountCoins); err != nil {
 		return errors.Wrap(err, "send coins")
 	}
 

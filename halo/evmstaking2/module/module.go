@@ -5,6 +5,7 @@ import (
 
 	"github.com/omni-network/omni/halo/evmstaking2/keeper"
 	"github.com/omni-network/omni/halo/evmstaking2/types"
+	"github.com/omni-network/omni/halo/mybank"
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"cosmossdk.io/core/appmodule"
@@ -114,7 +115,7 @@ type ModuleInputs struct {
 
 	StoreService store.KVStoreService
 	AKeeper      types.AuthKeeper
-	BKeeper      types.BankKeeper
+	BKeeper      mybank.Keeper
 	SKeeper      *stakingkeeper.Keeper
 	Cdc          codec.Codec
 	Config       *Module
