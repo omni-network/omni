@@ -15,8 +15,9 @@ jobs:
         with:
           go-version: 'stable'
 
-      - name: Pull anvil # This can be slow and cause timeouts
-        run: docker pull ghcr.io/foundry-rs/foundry:latest
+      - uses: ./.github/actions/setup-foundry
+        with:
+          docker: "true"
 
       # TODO(corver): add coverage
       - name: Run all tests (with race)

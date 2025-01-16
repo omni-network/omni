@@ -1,5 +1,12 @@
 name: Setup Foundry
 description: Install the foundry toolchain
+
+inputs:
+  docker:
+    description: "Whether or not to pull foundry docker image"
+    required: false
+    default: "false"
+
 runs:
   using: composite
   steps:
@@ -12,3 +19,8 @@ runs:
       uses: foundry-rs/foundry-toolchain@v1
       with:
         version: ${{ steps.foundry_version.outputs.version }}
+
+    - name: Install docker
+      shell: bash
+      if: ${{ inputs.docker == 'true' }}
+      run: docker pull ghcr.io/foundry-rs/foundry:${{ steps.foundry_version.outputs.version}}
