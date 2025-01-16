@@ -5,8 +5,8 @@ multi_omni_evms = true
 prometheus = true
 
 pinned_halo_tag = "ead6061"
-pinned_relayer_tag = "ead6061"
-pinned_monitor_tag = "ead6061"
+pinned_relayer_tag = "cef2aa0"
+pinned_monitor_tag = "cef2aa0"
 
 [node.validator01]
 [node.validator02]
