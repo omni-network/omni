@@ -23,8 +23,15 @@ type FillOriginData = bindings.ISolverNetFillOriginData
 type OrderID [32]byte
 
 type Order struct {
-	ID         OrderID
-	Resolved   OrderResolved
+	ID                 OrderID
+	FillInstruction    bindings.IERC7683FillInstruction
+	FillOriginData     []byte
+	DestinationSettler common.Address
+	DestinationChainID uint64
+	SourceChainID      uint64
+	MaxSpent           []bindings.IERC7683Output
+	MinReceived        []bindings.IERC7683Output
+
 	Status     uint8
 	AcceptedBy common.Address
 	History    OrderHistory
@@ -40,20 +47,53 @@ func (id OrderID) String() string {
 	return strconv.FormatUint(id.Uint64(), 10)
 }
 
-// FillInstruction returns the order fill instruction. SolverNet v1 ERC7683 orders only have one fill instruction.
-func (o Order) FillInstruction() bindings.IERC7683FillInstruction {
-	return o.Resolved.FillInstructions[0]
-}
-
-// DestinationSettler returns the destination settler address.
-func (o Order) DestinationSettler() (common.Address, error) {
-	settler := o.FillInstruction().DestinationSettler
-	addr, err := cast.EthAddress(settler[:])
-	if err != nil {
-		return common.Address{}, errors.Wrap(err, "cast to eth addr")
+func newOrder(resolved OrderResolved, state OrderState, history OrderHistory) (Order, error) {
+	if err := validateResolved(resolved); err != nil {
+		return Order{}, errors.Wrap(err, "validate resolved")
 	}
 
-	return addr, nil
+	fillInstr := resolved.FillInstructions[0]
+	o := Order{
+		FillInstruction:    fillInstr,
+		SourceChainID:      resolved.OriginChainId.Uint64(),
+		DestinationChainID: fillInstr.DestinationChainId,
+		Status:             state.Status,
+		AcceptedBy:         state.AcceptedBy,
+		History:            history,
+	}
+
+	settlerBz := fillInstr.DestinationSettler
+	settler, err := cast.EthAddress(settlerBz[:])
+	if err != nil {
+		return Order{}, errors.Wrap(err, "cast destination settler")
+	}
+	o.DestinationSettler = settler
+
+	return o, nil
+}
+
+func validateResolved(o OrderResolved) error {
+	if o.OrderId == [32]byte{} {
+		return errors.New("order ID is empty")
+	}
+
+	if o.OriginChainId == nil {
+		return errors.New("origin chain ID is nil")
+	}
+
+	if o.FillInstructions == nil {
+		return errors.New("fill instructions are nil")
+	}
+
+	if o.MaxSpent == nil {
+		return errors.New("max spent is nil")
+	}
+
+	if len(o.FillInstructions) != 1 {
+		return errors.New("expected exactly one fill instruction")
+	}
+
+	return nil
 }
 
 // LogAttrs returns a map of order attributes for logging. It tries to extract fil origin data with known format.
@@ -61,12 +101,11 @@ func (o Order) LogAttrs(ctx context.Context) []any {
 	attrs := []any{
 		"id", o.ID.String(),
 		"status", o.Status,
-		"accepted_by", o.AcceptedBy.Hex(),
-		"src_chain_id", o.SourceChainID(),
-		"dst_chain_id", o.DestinationChainID(),
+		"src_chain_id", o.SourceChainID,
+		"dst_chain_id", o.DestinationChainID,
 	}
 
-	fill, err := parseFillOriginData(o.FillInstruction().OriginData)
+	fill, err := parseFillOriginData(o.FillOriginData)
 	if err != nil {
 		log.Warn(ctx, "Failed to parse fill origin data", err, attrs...)
 
@@ -74,7 +113,6 @@ func (o Order) LogAttrs(ctx context.Context) []any {
 			"call_target", unknown,
 			"call_value", unknown,
 			"call_data", unknown,
-			"call_expenses", unknown,
 		)
 	}
 
@@ -82,21 +120,9 @@ func (o Order) LogAttrs(ctx context.Context) []any {
 		"call_target", hexutil.Encode(fill.Call.Target[:]),
 		"call_value", fill.Call.Value.Uint64(),
 		"call_data", hexutil.Encode(fill.Call.Data),
-		"call_expenses", len(fill.Call.Expenses),
 	)
 }
 
-// SourceChainID returns the order's source chain ID.
-func (o Order) SourceChainID() uint64 {
-	return o.Resolved.OriginChainId.Uint64()
-}
-
-// DestinationChainID returns the order's destination chain ID.
-func (o Order) DestinationChainID() uint64 {
-	return o.FillInstruction().DestinationChainId
-}
-
-// FillOriginData returns the order's fill origin data, as packed bytes.
-func (o Order) FillOriginData() []byte {
-	return o.FillInstruction().OriginData
+func (o Order) ParsedFillOriginData() (FillOriginData, error) {
+	return parseFillOriginData(o.FillOriginData)
 }

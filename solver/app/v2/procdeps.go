@@ -74,18 +74,15 @@ func newFiller(
 	solverAddr, outboxAddr common.Address,
 ) func(ctx context.Context, srcChainID uint64, order Order) error {
 	return func(ctx context.Context, srcChainID uint64, order Order) error {
-		if order.SourceChainID() != srcChainID {
+		if order.SourceChainID != srcChainID {
 			return errors.New("[BUG] source chain mismatch")
 		}
 
-		settler, err := order.DestinationSettler()
-		if err != nil {
-			return err
-		} else if settler != outboxAddr {
+		if order.DestinationSettler != outboxAddr {
 			return errors.New("[BUG] destination settler mismatch")
 		}
 
-		destChainID := order.DestinationChainID()
+		destChainID := order.DestinationChainID
 		outbox, ok := outboxContracts[destChainID]
 		if !ok {
 			return errors.New("unknown chain")
@@ -102,10 +99,7 @@ func newFiller(
 			return err
 		}
 
-		ctx = log.WithCtx(ctx, order.LogAttrs(ctx)...)
-		log.Info(ctx, "Filling order")
-
-		if ok, err := outbox.DidFill(callOpts, order.ID, order.FillOriginData()); err != nil {
+		if ok, err := outbox.DidFill(callOpts, order.ID, order.FillOriginData); err != nil {
 			return errors.Wrap(err, "did fill")
 		} else if ok {
 			log.Info(ctx, "Skipping already filled order", "order_id", order.ID)
@@ -113,7 +107,7 @@ func newFiller(
 		}
 
 		nativeValue := big.NewInt(0)
-		for _, output := range order.Resolved.MaxSpent {
+		for _, output := range order.MaxSpent {
 			if output.ChainId.Uint64() != destChainID {
 				// We error on this case for now, as our contracts only allow single dest chain orders
 				// ERC7683 allows for orders with multiple destination chains, so continue-ing here
@@ -140,20 +134,18 @@ func newFiller(
 
 		txOpts.Value = new(big.Int).Add(nativeValue, fee)
 		fillerData := []byte{} // fillerData is optional ERC7683 custom filler specific data, unused in our contracts
-		tx, err := outbox.Fill(txOpts, order.ID, order.FillOriginData(), fillerData)
+		tx, err := outbox.Fill(txOpts, order.ID, order.FillOriginData, fillerData)
 		if err != nil {
 			return errors.Wrap(err, "fill order", "custom", detectCustomError(err))
 		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
 			return errors.Wrap(err, "wait mined")
 		}
 
-		if ok, err := outbox.DidFill(callOpts, order.ID, order.FillOriginData()); err != nil {
+		if ok, err := outbox.DidFill(callOpts, order.ID, order.FillOriginData); err != nil {
 			return errors.Wrap(err, "did fill")
 		} else if !ok {
 			return errors.New("fill failed [BUG]")
 		}
-
-		log.Info(ctx, "Order filled")
 
 		return nil
 	}
@@ -187,21 +179,13 @@ func approveOutboxSpend(ctx context.Context, output bindings.IERC7683Output, bac
 		return errors.New("cannot approve native token")
 	}
 
-	spender, err := cast.EthAddress(output.Token[:])
-	if err != nil {
-		return errors.Wrap(err, "cast spender address")
-	}
-
+	spender := cast.MustEthAddress(output.Token[:20])
 	if spender != outboxAddr {
 		// in our contracts, spender should always be outbox
 		return errors.New("[BUG] spender should be outbox")
 	}
 
-	addr, err := cast.EthAddress(output.Token[:])
-	if err != nil {
-		return errors.Wrap(err, "cast token address")
-	}
-
+	addr := cast.MustEthAddress(output.Token[:20])
 	token, err := bindings.NewIERC20(addr, backend)
 	if err != nil {
 		return errors.Wrap(err, "new token")
@@ -349,12 +333,11 @@ func newOrderGetter(inboxContracts map[uint64]*bindings.SolverNetInbox) func(ctx
 			return Order{}, false, nil
 		}
 
-		return Order{
-			ID:         o.Resolved.OrderId,
-			Resolved:   o.Resolved,
-			Status:     o.State.Status,
-			AcceptedBy: o.State.AcceptedBy,
-			History:    o.History,
-		}, true, nil
+		order, err := newOrder(o.Resolved, o.State, o.History)
+		if err != nil {
+			return Order{}, false, errors.Wrap(err, "new order")
+		}
+
+		return order, true, nil
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -104,6 +105,12 @@ func TestEventProcessor(t *testing.T) {
 					return Order{
 						ID:     id,
 						Status: test.getStatus,
+						FillInstruction: bindings.IERC7683FillInstruction{
+							DestinationSettler: [32]byte{},
+							DestinationChainId: 0,
+							OriginData:         []byte{},
+						},
+						MaxSpent: []bindings.IERC7683Output{},
 					}, true, nil
 				},
 				ShouldReject: func(ctx context.Context, _ uint64, order Order) (rejectReason, bool, error) {
