@@ -9,6 +9,8 @@
   "portal": "0xc16282f0a26d042672bc4502bfe3c5fbbff4d21c",
   "solveinbox": "0x66ab85bdff90c3bc800f352a42a4417a4a287d3d",
   "solveoutbox": "0xfdf592f72a4e315714a63c92c57b36d0e74d4db6",
+  "solvernetinbox": "0x7c7759b801078ecb2c41c9caecc2db13c3079c76",
+  "solvernetoutbox": "0x29d9e8faa760841aacbe79a8632c1f42e0a858e6",
   "token": "0x73cc960fb6705e9a6a3d9eaf4de94a828cfa6d2a"
  },
  "mainnet": {
@@ -21,6 +23,8 @@
   "portal": "0x5e9a8aa213c912bf54c86bf64adb8ed6a79c04d1",
   "solveinbox": "0x1bf09c6414d1f581070eddfaf317e566543e0199",
   "solveoutbox": "0xf26f33188de6d8efe1fd791de2a95408a5113864",
+  "solvernetinbox": "0x8fcfcd0b4fa2cc2965a3c7f27995b0a43f210db8",
+  "solvernetoutbox": "0x084b603269a8fd0d0f7037e591665c025ce3549b",
   "token": "0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4"
  },
  "omega": {
@@ -33,6 +37,8 @@
   "portal": "0xcb60a0451831e4865bc49f41f9c67665fc9b75c3",
   "solveinbox": "0x57f3e823041a27809ae5f6e98cfa062d18da613c",
   "solveoutbox": "0x3fdd17daa9fac84e5d2d965be38eb9136209d1a2",
+  "solvernetinbox": "0x71d48a88600a790fb1e94efdbf6c284fc08f99b8",
+  "solvernetoutbox": "0xd98068374c233e4d4081d24154489551dcd6fdf5",
   "token": "0xd036c60f46ff51dd7fbf6a819b5b171c8a076b07"
  }
 }

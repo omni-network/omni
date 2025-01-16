@@ -32,16 +32,18 @@ func TestContractAddressReference(t *testing.T) {
 		require.NoError(t, err)
 
 		addrsJSON := map[string]common.Address{
-			"create3":     addrs.Create3Factory,
-			"portal":      addrs.Portal,
-			"avs":         addrs.AVS,
-			"l1bridge":    addrs.L1Bridge,
-			"token":       addrs.Token,
-			"gaspump":     addrs.GasPump,
-			"gasstation":  addrs.GasStation,
-			"solveinbox":  addrs.SolveInbox,
-			"solveoutbox": addrs.SolveOutbox,
-			"feeoraclev2": addrs.FeeOracleV2,
+			"create3":         addrs.Create3Factory,
+			"portal":          addrs.Portal,
+			"avs":             addrs.AVS,
+			"l1bridge":        addrs.L1Bridge,
+			"token":           addrs.Token,
+			"gaspump":         addrs.GasPump,
+			"gasstation":      addrs.GasStation,
+			"solveinbox":      addrs.SolveInbox,
+			"solveoutbox":     addrs.SolveOutbox,
+			"solvernetinbox":  addrs.SolverNetInbox,
+			"solvernetoutbox": addrs.SolverNetOutbox,
+			"feeoraclev2":     addrs.FeeOracleV2,
 		}
 
 		for name, addr := range addrsJSON {
