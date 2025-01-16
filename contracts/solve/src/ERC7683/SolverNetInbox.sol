@@ -200,30 +200,32 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     }
 
     /**
-     * @notice Reject an open order.
+     * @notice Reject an open order and refund deposits.
      * @dev Only a whitelisted solver can reject.
      * @param id      ID of the order.
      * @param reason  Reason code for rejection.
      */
     function reject(bytes32 id, uint8 reason) external onlyRoles(SOLVER) nonReentrant {
+        ResolvedCrossChainOrder memory order = _orders[id];
         OrderState memory state = _orderState[id];
         if (state.status != Status.Pending) revert OrderNotPending();
 
         state.status = Status.Rejected;
         _upsertOrder(id, state);
+        _transferDeposits(order.user, order.minReceived);
 
         emit Rejected(id, msg.sender, reason);
     }
 
     /**
-     * @notice Cancel an open or rejected order and refund deposits.
+     * @notice Cancel an open and refund deposits.
      * @dev Only order initiator can cancel.
      * @param id  ID of the order.
      */
     function cancel(bytes32 id) external nonReentrant {
         ResolvedCrossChainOrder memory order = _orders[id];
         OrderState memory state = _orderState[id];
-        if (state.status != Status.Pending && state.status != Status.Rejected) revert OrderNotPendingOrRejected();
+        if (state.status != Status.Pending) revert OrderNotPending();
         if (order.user != msg.sender) revert Unauthorized();
 
         state.status = Status.Reverted;

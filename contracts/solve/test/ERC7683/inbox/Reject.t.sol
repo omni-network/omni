@@ -20,7 +20,6 @@ contract SolverNet_Inbox_Reject_Test is TestBase {
         // Store initial state for comparison
         bytes32 expectedOrderId = inbox.getNextId();
         uint256 initialUserBalance = token1.balanceOf(user);
-        uint256 initialInboxBalance = token1.balanceOf(address(inbox));
 
         // Open the order
         vm.prank(user);
@@ -63,13 +62,70 @@ contract SolverNet_Inbox_Reject_Test is TestBase {
             inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Pending), expectedOrderId, "latest pending order id"
         );
 
-        // Verify token balances haven't changed after rejection
-        assertEq(token1.balanceOf(user), initialUserBalance - resolvedOrder.minReceived[0].amount, "user balance after");
+        // Verify token balances changed after rejection
+        assertEq(token1.balanceOf(user), initialUserBalance, "user balance after");
+        assertEq(token1.balanceOf(address(inbox)), 0, "inbox balance after");
+    }
+
+    function test_reject_native_refund() public {
+        // Create and open an order
+        IERC7683.OnchainCrossChainOrder memory order = randOrder();
+        ISolverNetInbox.OrderData memory orderData = abi.decode(order.orderData, (ISolverNet.OrderData));
+        orderData.deposits[0] = ISolverNet.Deposit({ token: bytes32(0), amount: 1 ether });
+        order.orderData = abi.encode(orderData);
+        vm.deal(user, 1 ether);
+
+        vm.prank(user);
+        IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+
+        // Store initial state for comparison
+        bytes32 expectedOrderId = inbox.getNextId();
+        uint256 initialUserBalance = user.balance;
+
+        // Open the order
+        vm.prank(user);
+        inbox.open{ value: 1 ether }(order);
+
+        // Reject the order as solver with reason code 1
+        uint8 rejectReason = 1;
+        vm.expectEmit(true, true, true, true, address(inbox));
+        emit ISolverNetInbox.Rejected(expectedOrderId, solver, rejectReason);
+
+        vm.prank(solver);
+        inbox.reject(expectedOrderId, rejectReason);
+
+        // Verify order state and history
+        (
+            IERC7683.ResolvedCrossChainOrder memory storedOrder,
+            ISolverNetInbox.OrderState memory state,
+            ISolverNetInbox.StatusUpdate[] memory history
+        ) = inbox.getOrder(expectedOrderId);
+
+        // Verify that stored resolved order aligns with the original order
+        assertResolved(user, resolvedOrder.orderId, order, storedOrder);
+
+        // Verify order state is now Rejected
+        assertEq(uint8(state.status), uint8(ISolverNetInbox.Status.Rejected), "order state: status");
+        assertEq(state.acceptedBy, address(0), "order state: accepted by should be zero");
+
+        // Verify order history
+        assertEq(history.length, 2, "order history: length"); // Should have Open and Reject events
+        assertEq(uint8(history[0].status), uint8(ISolverNetInbox.Status.Pending), "order history: initial status");
+        assertEq(history[0].timestamp, uint40(block.timestamp), "order history: initial timestamp");
+        assertEq(uint8(history[1].status), uint8(ISolverNetInbox.Status.Rejected), "order history: rejected status");
+        assertEq(history[1].timestamp, uint40(block.timestamp), "order history: rejected timestamp");
+
+        // Verify latest order ID by status has been updated
         assertEq(
-            token1.balanceOf(address(inbox)),
-            initialInboxBalance + resolvedOrder.minReceived[0].amount,
-            "inbox balance after"
+            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Rejected), expectedOrderId, "latest rejected order id"
         );
+        assertEq(
+            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Pending), expectedOrderId, "latest pending order id"
+        );
+
+        // Verify native balances changed after rejection
+        assertEq(user.balance, initialUserBalance, "user balance after");
+        assertEq(address(inbox).balance, 0, "inbox balance after");
     }
 
     function test_reject_reverts_not_solver() public {
