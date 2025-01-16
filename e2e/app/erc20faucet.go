@@ -46,7 +46,11 @@ func RunERC20Faucet(ctx context.Context, def Definition, cfg RunERC20FaucetConfi
 
 	account := common.HexToAddress(cfg.AddrToFund)
 	amt := new(big.Int).Mul(umath.NewBigInt(cfg.Amount), big.NewInt(params.Ether))
-	funder := omnitoken.InitialSupplyRecipient(networkID)
+
+	funder, err := omnitoken.InitialSupplyRecipient(networkID)
+	if err != nil {
+		return errors.Wrap(err, "initial supply recipient")
+	}
 
 	chain, ok := def.Testnet.EthereumChain()
 	if !ok {

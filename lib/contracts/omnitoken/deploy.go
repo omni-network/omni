@@ -48,8 +48,12 @@ func (cfg deploymentConfig) validate() error {
 }
 
 // InitialSupplyRecipient returns the address that receives the initial supply of the token.
-func InitialSupplyRecipient(network netconf.ID) common.Address {
-	return eoa.MustAddress(network, eoa.RoleTester)
+func InitialSupplyRecipient(network netconf.ID) (common.Address, error) {
+	if network == netconf.Mainnet {
+		return common.Address{}, errors.New("cannot use mainnet recipient")
+	}
+
+	return eoa.MustAddress(network, eoa.RoleTester), nil
 }
 
 // isDeployed returns true if the token contract is already deployed to its expected address.
@@ -104,18 +108,23 @@ func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend
 		return common.Address{}, nil, errors.Wrap(err, "get salts")
 	}
 
+	recipient, err := InitialSupplyRecipient(network)
+	if err != nil {
+		return common.Address{}, nil, err
+	}
+
 	cfg := deploymentConfig{
 		Create3Factory: addrs.Create3Factory,
 		Create3Salt:    salts.Token,
 		Deployer:       eoa.MustAddress(network, eoa.RoleDeployer),
-		Recipient:      InitialSupplyRecipient(network),
+		Recipient:      recipient,
 		ExpectedAddr:   addrs.Token,
 	}
 
-	return deploy(ctx, cfg, backend)
+	return deploy(ctx, network, cfg, backend)
 }
 
-func deploy(ctx context.Context, cfg deploymentConfig, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func deploy(ctx context.Context, network netconf.ID, cfg deploymentConfig, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
 	if err := cfg.validate(); err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "validate config")
 	}
@@ -139,7 +148,7 @@ func deploy(ctx context.Context, cfg deploymentConfig, backend *ethbackend.Backe
 		return common.Address{}, nil, errors.New("unexpected address", "expected", cfg.ExpectedAddr, "actual", addr)
 	}
 
-	initCode, err := packInitCode(cfg)
+	initCode, err := packInitCode(network, cfg)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "pack init code")
 	}
@@ -154,10 +163,39 @@ func deploy(ctx context.Context, cfg deploymentConfig, backend *ethbackend.Backe
 		return common.Address{}, nil, errors.Wrap(err, "wait mined proxy")
 	}
 
+	// on ephemeral network, mint total supply to recipient, as it is not awarded in MockERC20 constructor
+	// we do this so that use of InitialSupplyRecipient is consistent across devnet/staging/omega
+	if network.IsEphemeral() {
+		token, err := bindings.NewMockERC20(addr, backend)
+		if err != nil {
+			return common.Address{}, nil, errors.Wrap(err, "new mock erc20")
+		}
+
+		tx, err := token.Mint(txOpts, cfg.Recipient, TotalSupply)
+		if err != nil {
+			return common.Address{}, nil, errors.Wrap(err, "mint")
+		}
+
+		receipt, err = backend.WaitMined(ctx, tx)
+		if err != nil {
+			return common.Address{}, nil, errors.Wrap(err, "wait mined mint")
+		}
+	}
+
 	return addr, receipt, nil
 }
 
-func packInitCode(cfg deploymentConfig) ([]byte, error) {
+func packInitCode(network netconf.ID, cfg deploymentConfig) ([]byte, error) {
+	// on ephemeral networks, deploy mintable mock erc20
+	if network.IsEphemeral() {
+		abi, err := bindings.MockERC20MetaData.GetAbi()
+		if err != nil {
+			return nil, errors.Wrap(err, "get abi")
+		}
+
+		return contracts.PackInitCode(abi, bindings.MockERC20Bin, "OMNI", "Omni Network")
+	}
+
 	abi, err := bindings.OmniMetaData.GetAbi()
 	if err != nil {
 		return nil, errors.Wrap(err, "get abi")

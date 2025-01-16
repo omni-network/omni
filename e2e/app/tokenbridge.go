@@ -190,7 +190,10 @@ func bridgeToNative(ctx context.Context, def Definition, toBridge []BridgeTest) 
 	}
 
 	// payor is initial supply recipient, the only account with OMNI on L1 (for non-mainnet networks)
-	payor := omnitoken.InitialSupplyRecipient(networkID)
+	payor, err := omnitoken.InitialSupplyRecipient(networkID)
+	if err != nil {
+		return err
+	}
 
 	addrs, err := contracts.GetAddresses(ctx, networkID)
 	if err != nil {
