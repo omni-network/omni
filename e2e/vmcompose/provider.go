@@ -197,6 +197,7 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.ServiceConfig) error {
 	addFile("relayer", "privatekey")
 	addFile("monitor", "monitor.toml")
 	addFile("monitor", "privatekey")
+	addFile("monitor", "xcaller_privatekey")
 	addFile("solver", "solver.toml")
 	addFile("solver", "privatekey")
 	addFile("solver", "loadgenkey")
