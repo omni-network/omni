@@ -1,3 +1,4 @@
+//nolint:dupl // similar code for different contracts
 package solve
 
 import (
@@ -7,6 +8,8 @@ import (
 	"github.com/omni-network/omni/e2e/solve/symbiotic"
 	"github.com/omni-network/omni/lib/contracts/solveinbox"
 	"github.com/omni-network/omni/lib/contracts/solveoutbox"
+	"github.com/omni-network/omni/lib/contracts/solvernet/inbox"
+	"github.com/omni-network/omni/lib/contracts/solvernet/outbox"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
@@ -27,6 +30,11 @@ func DeployContracts(ctx context.Context, network netconf.Network, backends ethb
 		return errors.Wrap(err, "deploy boxes")
 	}
 
+	log.Info(ctx, "Deploying solve v2 contracts")
+	if err := deployV2Boxes(ctx, network, backends); err != nil {
+		return errors.Wrap(err, "deploy v2 boxes")
+	}
+
 	// TODO(kevin): idempotent outbox allow calls
 	var eg errgroup.Group
 	eg.Go(func() error { return devapp.MaybeDeploy(ctx, network.ID, backends) })
@@ -40,7 +48,6 @@ func DeployContracts(ctx context.Context, network netconf.Network, backends ethb
 	return nil
 }
 
-// DeployContracts deploys solve inbox / outbox contracts.
 func deployBoxes(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
 	var eg errgroup.Group
 	for _, chain := range network.EVMChains() {
@@ -70,6 +77,40 @@ func deployBoxes(ctx context.Context, network netconf.Network, backends ethbacke
 
 	if err := eg.Wait(); err != nil {
 		return errors.Wrap(err, "deploy solver boxes")
+	}
+
+	return nil
+}
+
+func deployV2Boxes(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
+	var eg errgroup.Group
+	for _, chain := range network.EVMChains() {
+		eg.Go(func() error {
+			backend, err := backends.Backend(chain.ID)
+			if err != nil {
+				return errors.Wrap(err, "get backend", "chain", chain.Name)
+			}
+
+			addr, _, err := inbox.DeployIfNeeded(ctx, network.ID, backend)
+			if err != nil {
+				return errors.Wrap(err, "deploy solve inbox")
+			}
+
+			log.Debug(ctx, "SolverNetInbox deployed", "addr", addr.Hex(), "chain", chain.Name)
+
+			addr, _, err = outbox.DeployIfNeeded(ctx, network.ID, backend)
+			if err != nil {
+				return errors.Wrap(err, "deploy solve outbox")
+			}
+
+			log.Debug(ctx, "SolverNetOutbox deployed", "addr", addr.Hex(), "chain", chain.Name)
+
+			return nil
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		return errors.Wrap(err, "deploy solvernet boxes")
 	}
 
 	return nil
