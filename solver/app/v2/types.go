@@ -1,17 +1,14 @@
 package appv2
 
 import (
-	"context"
 	"encoding/binary"
 	"strconv"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 type OrderResolved = bindings.IERC7683ResolvedCrossChainOrder
@@ -94,33 +91,6 @@ func validateResolved(o OrderResolved) error {
 	}
 
 	return nil
-}
-
-// LogAttrs returns a map of order attributes for logging. It tries to extract fil origin data with known format.
-func (o Order) LogAttrs(ctx context.Context) []any {
-	attrs := []any{
-		"id", o.ID.String(),
-		"status", o.Status,
-		"src_chain_id", o.SourceChainID,
-		"dst_chain_id", o.DestinationChainID,
-	}
-
-	fill, err := parseFillOriginData(o.FillOriginData)
-	if err != nil {
-		log.Warn(ctx, "Failed to parse fill origin data", err, attrs...)
-
-		return append(attrs,
-			"call_target", unknown,
-			"call_value", unknown,
-			"call_data", unknown,
-		)
-	}
-
-	return append(attrs,
-		"call_target", hexutil.Encode(fill.Call.Target[:]),
-		"call_value", fill.Call.Value.Uint64(),
-		"call_data", hexutil.Encode(fill.Call.Data),
-	)
 }
 
 func (o Order) ParsedFillOriginData() (FillOriginData, error) {

@@ -1,3 +1,4 @@
+//nolint:unused // This package is a work in progress.
 package appv2
 
 import (
@@ -49,8 +50,8 @@ func sampleBalance(
 	tokenBalance.WithLabelValues(
 		chain,                                // chain
 		solver.Hex(),                         // solver_addr
-		token.address.Hex(),                  // token_addr
-		token.symbol,                         // token_symbol
-		strconv.FormatBool(token.isNative()), // is_native
+		token.Address.Hex(),                  // token_addr
+		token.Symbol,                         // token_symbol
+		strconv.FormatBool(token.IsNative()), // is_native
 	).Set(float64(amount.Uint64()))
 }

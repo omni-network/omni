@@ -55,7 +55,7 @@ func TestShouldReject(t *testing.T) {
 	ctx := context.Background()
 	srcChainID := evmchain.IDBaseSepolia
 	destChainID := evmchain.IDHolesky
-	omniERC20Addr := omniERC20(netconf.Omega).address
+	omniERC20Addr := omniERC20(netconf.Omega).Address
 	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
 	targetName := func(Order) string { return "target" }
 	chainName := func(uint64) string { return "chain" }
