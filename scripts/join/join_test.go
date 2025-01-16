@@ -76,7 +76,7 @@ func TestJoinNetwork(t *testing.T) {
 
 	tutil.RequireNoError(t, ensureHaloImage(cfg.HaloTag))
 
-	log.Info(ctx, "Exec: omni operator init-nodes", "network", networkID, "halo_tag", haloTag)
+	log.Info(ctx, "Exec: omni operator init-nodes", "network", networkID, "halo_tag", haloTag, "node_snapshot", *nodeSnapshot, "feature_flags", cfg.HaloFeatureFlags)
 	require.NoError(t, clicmd.InitNodes(log.WithNoopLogger(ctx), cfg))
 
 	t0 := time.Now()

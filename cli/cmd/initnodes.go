@@ -128,11 +128,11 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 	cfg.HaloFeatureFlags = featureFlags
 
 	if cfg.NodeSnapshot {
-		if err := downloadSnapshot(ctx, cfg.Network, gethClientName); err != nil {
+		if err := downloadSnapshot(ctx, cfg.Network, cfg.Home, gethClientName); err != nil {
 			return err
 		}
 
-		if err := downloadSnapshot(ctx, cfg.Network, haloClientName); err != nil {
+		if err := downloadSnapshot(ctx, cfg.Network, cfg.Home, haloClientName); err != nil {
 			return err
 		}
 	}
@@ -423,11 +423,11 @@ func gethInit(ctx context.Context, cfg InitConfig, dir string) error {
 	return nil
 }
 
-func downloadSnapshot(ctx context.Context, network netconf.ID, clientName string) error {
+func downloadSnapshot(ctx context.Context, network netconf.ID, outputDir string, clientName string) error {
 	gcpCloudStorageURL := fmt.Sprintf("https://storage.googleapis.com/omni-%s-snapshots/%s_data.tar.lz4", network, clientName)
 
 	log.Info(ctx, "Downloading and restoring latest snapshot...", "url", gcpCloudStorageURL)
-	if err := downloadUntarLz4(ctx, gcpCloudStorageURL, clientName); err != nil {
+	if err := downloadUntarLz4(ctx, gcpCloudStorageURL, filepath.Join(outputDir, clientName)); err != nil {
 		return errors.Wrap(err, "download untar lz4 error", "client", clientName)
 	}
 

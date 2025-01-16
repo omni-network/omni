@@ -10,7 +10,34 @@ permissions:
   pull-requests: read
 
 jobs:
-  join:
+  join-tests-mainnet-node-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Run Join Network Test Mainnet - Node Snapshot
+        run: |
+          cd scripts/join
+          sudo go test . -v \
+            --integration \
+            --timeout=0 \
+            --logs_file=docker_logs_mainnet_node_snapshot.txt \
+            --node_snapshot \
+            --halo_tag="main" \
+            --network="mainnet"
+
+      - name: Upload Docker Logs Mainnet - Node Snapshot
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: docker-logs
+          path: scripts/join/docker_logs_mainnet_node_snapshot.txt
+          retention-days: 3
+
+  join-tests-mainnet-full-sync:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,42 +63,13 @@ jobs:
           path: scripts/join/docker_logs_mainnet_full_sync.txt
           retention-days: 3
 
-      - name: Run Join Network Test Mainnet - Node Snapshot
-        run: |
-          cd scripts/join
-          sudo go test . -v \
-            --integration \
-            --timeout=0 \
-            --logs_file=docker_logs_mainnet_node_snapshot.txt \
-            --node_snapshot \
-            --halo_tag="main" \
-            --network="mainnet"
-
-      - name: Upload Docker Logs Mainnet - Node Snapshot
-        uses: actions/upload-artifact@v4
-        if: always()
+  join-tests-omega-node-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          name: docker-logs
-          path: scripts/join/docker_logs_mainnet_node_snapshot.txt
-          retention-days: 3
-
-      - name: Run Join Network Test Omega - Full Sync Node
-        run: |
-          cd scripts/join
-          sudo go test . -v \
-            --integration \
-            --timeout=0 \
-            --logs_file=docker_logs_omega_full_sync.txt \
-            --halo_tag="main" \
-            --network="omega"
-
-      - name: Upload Docker Logs Omega - Full Sync Node
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: docker-logs
-          path: scripts/join/docker_logs_omega_full_sync.txt
-          retention-days: 3
+          go-version: 'stable'
 
       - name: Run Join Network Test Omega - Node Snapshot
         run: |
@@ -90,4 +88,30 @@ jobs:
         with:
           name: docker-logs
           path: scripts/join/docker_logs_omega_node_snapshot.txt
+          retention-days: 3
+
+  join-tests-omega-full-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Run Join Network Test Omega - Full Sync Node
+        run: |
+          cd scripts/join
+          sudo go test . -v \
+            --integration \
+            --timeout=0 \
+            --logs_file=docker_logs_omega_full_sync.txt \
+            --halo_tag="main" \
+            --network="omega"
+
+      - name: Upload Docker Logs Omega - Full Sync Node
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: docker-logs
+          path: scripts/join/docker_logs_omega_full_sync.txt
           retention-days: 3

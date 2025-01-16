@@ -18,7 +18,7 @@ permissions:
   pull-requests: read
 
 jobs:
-  join:
+  join-tests-manual-node-snapshot:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,6 +26,32 @@ jobs:
         with:
           go-version: 'stable'
 
+      - name: "Run Join Network Test ${{github.event.inputs.network}} - Node Snapshot"
+        run: |
+          cd scripts/join
+          sudo go test . -v \
+            --integration \
+            --timeout=0 \
+            --logs_file=docker_logs_${{github.event.inputs.network}}_node_snapshot.txt \
+            --node_snapshot \
+            --halo_tag="main" \
+            --network="${{github.event.inputs.network}}"
+
+      - name: "Upload Docker Logs ${{github.event.inputs.network}} - Node Snapshot"
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: docker-logs
+          path: "docker_logs_${{github.event.inputs.network}}_node_snapshot.txt"
+          retention-days: 3
+
+  join-tests-manual-full-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
       - name: "Run Join Network Test ${{github.event.inputs.network}} - Full Sync Node"
         run: |
           cd scripts/join
@@ -41,24 +67,5 @@ jobs:
         if: always()
         with:
           name: docker-logs
-          path: scripts/join/docker_logs_full_sync.txt
-          retention-days: 3
-
-      - name: "Run Join Network Test ${{github.event.inputs.network}} - Node Snapshot"
-        run: |
-          cd scripts/join
-          sudo go test . -v \
-            --integration \
-            --timeout=0 \
-            --logs_file=docker_logs_${{github.event.inputs.network}}_full_sync.txt \
-            --node_snapshot \
-            --halo_tag="main" \
-            --network="${{github.event.inputs.network}}"
-
-      - name: "Upload Docker Logs ${{github.event.inputs.network}} - Node Snapshot"
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: docker-logs
-          path: "docker_logs_${{github.event.inputs.network}}_full_sync.txt"
+          path: "scripts/join/docker_logs_${{github.event.inputs.network}}_full_sync.txt"
           retention-days: 3
