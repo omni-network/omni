@@ -9,15 +9,15 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// Voter abstracts the validator duty of v∂oting for all
+// Voter abstracts the validator duty of voting for all applicable
 // XBlocks for all source chains.
 //
-// It streams all finalized XBlocks from all source chains.
+// It streams all finalized/latest XBlocks from all source chains.
 // It creates a Vote for each (a signature).
 // It stores these to disk, setting their status as "available".
 type Voter interface {
-	// GetAvailable returns all "available" votes in the vote window.
-	// This basically queries all "available" votes and filters by current vote window.
+	// GetAvailable returns all "available" votes.
+	// Note that returned votes remain in "available" state.
 	GetAvailable() []*Vote
 
 	// SetProposed updates the status of the provided votes to "proposed",

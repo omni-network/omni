@@ -38,8 +38,8 @@ type voteDeps struct {
 type voterLoader struct {
 	mu         sync.Mutex
 	voter      *voter.Voter
-	proposed   []*atypes.AttestHeader
-	committed  []*atypes.AttestHeader
+	proposed   map[xchain.AttestHeader]*atypes.AttestHeader // Dedup cached headers, since cache contains multiple rounds of data.
+	committed  map[xchain.AttestHeader]*atypes.AttestHeader
 	lastValSet *vtypes.ValidatorSetResponse
 	isVal      bool
 	localAddr  common.Address
@@ -53,6 +53,8 @@ func newVoterLoader(privKey crypto.PrivKey) (*voterLoader, error) {
 
 	return &voterLoader{
 		localAddr: localAddr,
+		proposed:  make(map[xchain.AttestHeader]*atypes.AttestHeader),
+		committed: make(map[xchain.AttestHeader]*atypes.AttestHeader),
 	}, nil
 }
 
@@ -166,10 +168,10 @@ func (l *voterLoader) LazyLoad(
 	defer l.mu.Unlock()
 
 	// Process all cached values
-	if err := v.SetProposed(ctx, l.proposed); err != nil {
+	if err := v.SetProposed(ctx, mapValues(l.proposed)); err != nil {
 		return errors.Wrap(err, "set cached proposed")
 	}
-	if err := v.SetCommitted(ctx, l.committed); err != nil {
+	if err := v.SetCommitted(ctx, mapValues(l.committed)); err != nil {
 		return errors.Wrap(err, "set cached committed")
 	}
 	if l.lastValSet != nil {
@@ -217,11 +219,11 @@ func (l *voterLoader) SetProposed(ctx context.Context, headers []*atypes.AttestH
 		return v.SetProposed(ctx, headers)
 	}
 
-	// Cache these headers to provider to voter once available.
+	// Cache (and dedup) these headers to provider to voter once available.
 	// This could be votes we sent right before a restart.
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.proposed = append(l.proposed, headers...)
+	mergeHeaders(l.proposed, headers)
 
 	return nil
 }
@@ -231,11 +233,11 @@ func (l *voterLoader) SetCommitted(ctx context.Context, headers []*atypes.Attest
 		return v.SetCommitted(ctx, headers)
 	}
 
-	// Cache these headers to provider to voter once available.
+	// Cache (and dedup) these headers to provider to voter once available.
 	// This could be votes we sent right before a restart.
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.committed = append(l.committed, headers...)
+	mergeHeaders(l.committed, headers)
 
 	return nil
 }
@@ -281,4 +283,21 @@ func (l *voterLoader) WaitDone() {
 		v.WaitDone()
 		return
 	}
+}
+
+// mergeHeaders merges the provided headers into the map.
+func mergeHeaders(m map[xchain.AttestHeader]*atypes.AttestHeader, headers []*atypes.AttestHeader) {
+	for _, header := range headers {
+		m[header.ToXChain()] = header
+	}
+}
+
+// mapValues returns the map values (in random order).
+func mapValues[K comparable, V any](m map[K]V) []V {
+	resp := make([]V, 0, len(m))
+	for _, v := range m {
+		resp = append(resp, v)
+	}
+
+	return resp
 }
