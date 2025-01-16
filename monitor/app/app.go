@@ -78,7 +78,7 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 
 	if err := startLoadGen(ctx, cfg, network, ethClients); err != nil {
-		return errors.Wrap(err, "start load generator")
+		log.Error(ctx, "Failed to start monitor loadgen [BUG]", err)
 	}
 
 	if err := xmonitor.Start(ctx, network, xprov, cprov, ethClients); err != nil {
