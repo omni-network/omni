@@ -104,17 +104,15 @@ func newShouldRejector(
 
 		// check liquidty, reject if insufficient
 		for _, expense := range expenses {
-			bal, err := expense.token.balanceOf(ctx, backend, solverAddr)
+			bal, err := balanceOf(ctx, expense.token, backend, solverAddr)
 			if err != nil {
-				return returnErr(errors.Wrap(err, "get balance", "token", expense.token.symbol))
+				return returnErr(errors.Wrap(err, "get balance", "token", expense.token.Symbol))
 			}
-
-			sampleBalance(chainName(destChainID), expense.token, solverAddr, bal)
 
 			// TODO: for native tokens, even if we have enough, we don't want to
 			// spend out whole balance. we'll need to keep some for gas
 			if bal.Cmp(expense.amount) < 0 {
-				return reject(rejectInsufficientInventory, errors.New("insufficient balance", "token", expense.token.symbol))
+				return reject(rejectInsufficientInventory, errors.New("insufficient balance", "token", expense.token.Symbol))
 			}
 		}
 

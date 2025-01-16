@@ -17,11 +17,11 @@ import (
 // TODO: consider moving this to lib/tokens
 
 type Token struct {
-	symbol      string
-	name        string
-	chainID     uint64
-	address     common.Address // empty if native
-	coingeckoID string
+	Symbol      string
+	Name        string
+	ChainID     uint64
+	Address     common.Address // empty if native
+	CoingeckoID string
 }
 
 type Expense struct {
@@ -31,8 +31,8 @@ type Expense struct {
 
 type Tokens []Token
 
-func (t Token) isNative() bool {
-	return t.address == common.Address{}
+func (t Token) IsNative() bool {
+	return t.Address == common.Address{}
 }
 
 var tokens = Tokens{
@@ -55,7 +55,7 @@ var tokens = Tokens{
 
 func (ts Tokens) find(chainID uint64, addr common.Address) (Token, bool) {
 	for _, t := range ts {
-		if t.chainID == chainID && t.address == addr {
+		if t.ChainID == chainID && t.Address == addr {
 			return t, true
 		}
 	}
@@ -65,42 +65,43 @@ func (ts Tokens) find(chainID uint64, addr common.Address) (Token, bool) {
 
 func nativeETH(chainID uint64) Token {
 	return Token{
-		symbol:      "ETH",
-		name:        "Ether",
-		chainID:     chainID,
-		coingeckoID: "ethereum",
+		Symbol:      "ETH",
+		Name:        "Ether",
+		ChainID:     chainID,
+		CoingeckoID: "ethereum",
 	}
 }
 
 func nativeOMNI(chainID uint64) Token {
 	return Token{
-		symbol:      "OMNI",
-		name:        "Omni Network",
-		chainID:     chainID,
-		coingeckoID: "omni-network",
+		Symbol:      "OMNI",
+		Name:        "Omni Network",
+		ChainID:     chainID,
+		CoingeckoID: "omni-network",
 	}
 }
 
 func omniERC20(network netconf.ID) Token {
 	return Token{
-		symbol:      "OMNI",
-		name:        "Omni Network",
-		chainID:     netconf.EthereumChainID(network),
-		address:     contracts.TokenAddr(network),
-		coingeckoID: "omni-network",
+		Symbol:      "OMNI",
+		Name:        "Omni Network",
+		ChainID:     netconf.EthereumChainID(network),
+		Address:     contracts.TokenAddr(network),
+		CoingeckoID: "omni-network",
 	}
 }
 
-func (t Token) balanceOf(
+func balanceOf(
 	ctx context.Context,
+	tkn Token,
 	backend *ethbackend.Backend,
 	addr common.Address,
 ) (*big.Int, error) {
 	switch {
-	case t.isNative():
+	case tkn.IsNative():
 		return backend.BalanceAt(ctx, addr, nil)
 	default:
-		contract, err := bindings.NewIERC20(t.address, backend)
+		contract, err := bindings.NewIERC20(tkn.Address, backend)
 		if err != nil {
 			return nil, err
 		}
