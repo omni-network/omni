@@ -14,10 +14,12 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/expbackoff"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
+	"github.com/omni-network/omni/solver/app/v2"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -38,6 +40,20 @@ func chainVerFromID(id uint64) xchain.ChainVersion {
 
 // Run starts the solver service.
 func Run(ctx context.Context, cfg Config) error {
+	feature.SetGlobals(cfg.FeatureFlags)
+	ctx = feature.WithFlags(ctx, cfg.FeatureFlags)
+
+	if feature.FlagSolverV2.Enabled(ctx) {
+		return appv2.Run(ctx, appv2.Config{
+			RPCEndpoints:   cfg.RPCEndpoints,
+			Network:        cfg.Network,
+			MonitoringAddr: cfg.MonitoringAddr,
+			SolverPrivKey:  cfg.SolverPrivKey,
+			LoadGenPrivKey: cfg.LoadGenPrivKey,
+			DBDir:          cfg.DBDir,
+		})
+	}
+
 	log.Info(ctx, "Starting solver service")
 
 	buildinfo.Instrument(ctx)

@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts/solvernet/outbox"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 
@@ -25,14 +26,27 @@ func DeployContracts(ctx context.Context, network netconf.Network, backends ethb
 		return nil
 	}
 
+	if feature.FlagSolverV2.Enabled(ctx) {
+		log.Info(ctx, "Deploying solve v2 contracts")
+		return deployV2Boxes(ctx, network, backends)
+
+		// TODO: remove below when v2 is fully enabled
+		//
+		// remove devapp
+		// replace symbiotic target with symbiotic tokens in solver/app/v2/tokens.go
+		//
+		// we do use the devapp.L2Token MockERC20 as "wstETH" on base sepolia
+		// for testnet symbiotic solving (because there is no canonical wstETH
+		// contract on base sepolia)
+		//
+		// we can replace that by deploying MockERC20s on all chains here,
+		// tracking them in solver/app/v2/tokens.go, and use them for solver
+		// tests / demos when needed.
+	}
+
 	log.Info(ctx, "Deploying solve contracts")
 	if err := deployBoxes(ctx, network, backends); err != nil {
 		return errors.Wrap(err, "deploy boxes")
-	}
-
-	log.Info(ctx, "Deploying solve v2 contracts")
-	if err := deployV2Boxes(ctx, network, backends); err != nil {
-		return errors.Wrap(err, "deploy v2 boxes")
 	}
 
 	// TODO(kevin): idempotent outbox allow calls

@@ -8,6 +8,9 @@ version = "{{ .Version}}"
 # Omni network to participate in: mainnet, testnet, or devnet.
 network = "{{ .Network }}"
 
+{{ if .FeatureFlags }}feature-flags = {{ .FeatureFlags.FormatToml }}
+{{ end -}}
+
 #######################################################################
 ###                         Solver Options                          ###
 #######################################################################

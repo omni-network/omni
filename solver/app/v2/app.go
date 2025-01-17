@@ -9,7 +9,6 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/buildinfo"
-	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -39,7 +38,7 @@ func chainVerFromID(id uint64) xchain.ChainVersion {
 
 // Run starts the solver service.
 func Run(ctx context.Context, cfg Config) error {
-	log.Info(ctx, "Starting solver service")
+	log.Info(ctx, "Starting solver v2 service")
 
 	buildinfo.Instrument(ctx)
 
@@ -167,7 +166,7 @@ func startEventStreams(
 		return errors.Wrap(err, "get contract addresses")
 	}
 
-	inboxChains, err := detectContractChains(ctx, network, backends, addrs.SolveInbox)
+	inboxChains, err := detectContractChains(ctx, network, backends, addrs.SolverNetInbox)
 	if err != nil {
 		return errors.Wrap(err, "detect inbox chains")
 	}
@@ -176,14 +175,14 @@ func startEventStreams(
 	for _, chain := range inboxChains {
 		name := network.ChainName(chain)
 		chainVer := chainVerFromID(chain)
-		log.Debug(ctx, "Using inbox contract", "chain", name, "address", addrs.SolveInbox.Hex())
+		log.Debug(ctx, "Using inbox contract", "chain", name, "address", addrs.SolverNetInbox.Hex())
 
 		backend, err := backends.Backend(chain)
 		if err != nil {
 			return err
 		}
 
-		inbox, err := bindings.NewSolverNetInbox(addrs.SolveInbox, backend)
+		inbox, err := bindings.NewSolverNetInbox(addrs.SolverNetInbox, backend)
 		if err != nil {
 			return errors.Wrap(err, "create inbox contract", "chain", name)
 		}
@@ -208,7 +207,7 @@ func startEventStreams(
 		}
 	}
 
-	outboxChains, err := detectContractChains(ctx, network, backends, addrs.SolveOutbox)
+	outboxChains, err := detectContractChains(ctx, network, backends, addrs.SolverNetOutbox)
 	if err != nil {
 		return errors.Wrap(err, "detect outbox chains")
 	}
@@ -216,14 +215,14 @@ func startEventStreams(
 	outboxContracts := make(map[uint64]*bindings.SolverNetOutbox)
 	for _, chain := range outboxChains {
 		name := network.ChainName(chain)
-		log.Debug(ctx, "Using outbox contract", "chain", name, "address", addrs.SolveOutbox.Hex())
+		log.Debug(ctx, "Using outbox contract", "chain", name, "address", addrs.SolverNetOutbox.Hex())
 
 		backend, err := backends.Backend(chain)
 		if err != nil {
 			return err
 		}
 
-		outbox, err := bindings.NewSolverNetOutbox(addrs.SolveOutbox, backend)
+		outbox, err := bindings.NewSolverNetOutbox(addrs.SolverNetOutbox, backend)
 		if err != nil {
 			return errors.Wrap(err, "create outbox contract", "chain", name)
 		}
@@ -241,7 +240,7 @@ func startEventStreams(
 		}
 
 		// TODO: Give known targets friendly names
-		return cast.MustEthAddress(fill.Call.Target[:20]).Hex()
+		return toEthAddr(fill.Call.Target).Hex()
 	}
 
 	deps := procDeps{
@@ -250,7 +249,7 @@ func startEventStreams(
 		ShouldReject: newShouldRejector(backends, solverAddr, targetName, network.ChainName),
 		Accept:       newAcceptor(inboxContracts, backends, solverAddr),
 		Reject:       newRejector(inboxContracts, backends, solverAddr),
-		Fill:         newFiller(outboxContracts, backends, solverAddr, addrs.SolveOutbox),
+		Fill:         newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox),
 		Claim:        newClaimer(inboxContracts, backends, solverAddr),
 		SetCursor:    cursorSetter,
 		ChainName:    network.ChainName,
@@ -259,7 +258,7 @@ func startEventStreams(
 
 	for _, chain := range inboxChains {
 		log.Info(ctx, "Starting inbox event stream", "chain", network.ChainName(chain))
-		go streamEventsForever(ctx, chain, xprov, deps, cursors, addrs.SolveInbox)
+		go streamEventsForever(ctx, chain, xprov, deps, cursors, addrs.SolverNetInbox)
 	}
 
 	return nil
