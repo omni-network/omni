@@ -11,7 +11,7 @@ import { IBridgeUpgradeable } from "./interfaces/IBridgeUpgradeable.sol";
 import { ConfLevel } from "core/src/libraries/ConfLevel.sol";
 import { TypeMax } from "core/src/libraries/TypeMax.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
-import { IBridgedTokenUpgradeable } from "./interfaces/IBridgedTokenUpgradeable.sol";
+import { ITokenUpgradeable } from "./interfaces/ITokenUpgradeable.sol";
 import { ILockboxUpgradeable } from "./interfaces/ILockboxUpgradeable.sol";
 
 contract BridgeUpgradeable is
@@ -154,7 +154,7 @@ contract BridgeUpgradeable is
             lockbox.deposit(token, value);
         } else {
             token.safeTransferFrom(msg.sender, address(this), value);
-            IBridgedTokenUpgradeable(token).burn(value);
+            ITokenUpgradeable(token).burn(value);
         }
 
         bytes memory data = abi.encodeCall(BridgeUpgradeable.receiveToken, (destToken, to, value));
@@ -178,7 +178,7 @@ contract BridgeUpgradeable is
         if (isNative) {
             lockbox.withdrawTo(token, to, value);
         } else {
-            IBridgedTokenUpgradeable(token).mint(to, value);
+            ITokenUpgradeable(token).mint(to, value);
         }
 
         emit TokenReceived(xmsg.sourceChainId, token, to, value);

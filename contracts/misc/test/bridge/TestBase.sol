@@ -3,12 +3,12 @@ pragma solidity =0.8.24;
 
 import { LockboxUpgradeable } from "src/bridge/LockboxUpgradeable.sol";
 import { BridgeUpgradeable } from "src/bridge/BridgeUpgradeable.sol";
-import { BridgedTokenUpgradeable } from "src/bridge/BridgedTokenUpgradeable.sol";
+import { TokenUpgradeable } from "src/bridge/TokenUpgradeable.sol";
 import { Proxy } from "src/bridge/Proxy.sol";
 
 import { ILockboxUpgradeable } from "src/bridge/interfaces/ILockboxUpgradeable.sol";
 import { IBridgeUpgradeable } from "src/bridge/interfaces/IBridgeUpgradeable.sol";
-import { IBridgedTokenUpgradeable } from "src/bridge/interfaces/IBridgedTokenUpgradeable.sol";
+import { ITokenUpgradeable } from "src/bridge/interfaces/ITokenUpgradeable.sol";
 
 import { Test } from "forge-std/Test.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
@@ -17,7 +17,7 @@ import { MockPortal } from "core/test/utils/MockPortal.sol";
 contract TestBase is Test {
     LockboxUpgradeable internal lockboxImpl;
     BridgeUpgradeable internal bridgeImpl;
-    BridgedTokenUpgradeable internal tokenImpl;
+    TokenUpgradeable internal tokenImpl;
 
     ILockboxUpgradeable internal lockboxSrc;
     ILockboxUpgradeable internal lockboxA;
@@ -27,9 +27,9 @@ contract TestBase is Test {
     IBridgeUpgradeable internal bridgeA;
     IBridgeUpgradeable internal bridgeB;
 
-    IBridgedTokenUpgradeable internal tokenSrc;
-    IBridgedTokenUpgradeable internal tokenA;
-    IBridgedTokenUpgradeable internal tokenB;
+    ITokenUpgradeable internal tokenSrc;
+    ITokenUpgradeable internal tokenA;
+    ITokenUpgradeable internal tokenB;
 
     MockPortal internal omni;
 
@@ -72,7 +72,7 @@ contract TestBase is Test {
 
         lockboxImpl = new LockboxUpgradeable();
         bridgeImpl = new BridgeUpgradeable();
-        tokenImpl = new BridgedTokenUpgradeable();
+        tokenImpl = new TokenUpgradeable();
 
         lockboxSrc = _deployLockbox();
         lockboxA = _deployLockbox();
@@ -165,15 +165,14 @@ contract TestBase is Test {
 
     function _deployToken(string memory name, string memory symbol, address mintAuthority)
         internal
-        returns (IBridgedTokenUpgradeable)
+        returns (ITokenUpgradeable)
     {
-        return IBridgedTokenUpgradeable(
+        return ITokenUpgradeable(
             address(
                 new Proxy(
                     address(tokenImpl),
                     abi.encodeCall(
-                        BridgedTokenUpgradeable.initialize,
-                        (name, symbol, mintAuthority, admin, upgrader, pauser, clawbacker)
+                        TokenUpgradeable.initialize, (name, symbol, mintAuthority, admin, upgrader, pauser, clawbacker)
                     )
                 )
             )
@@ -182,7 +181,7 @@ contract TestBase is Test {
 
     function _configureBridge(
         IBridgeUpgradeable bridge,
-        IBridgedTokenUpgradeable token,
+        ITokenUpgradeable token,
         uint64[] memory destChainIds,
         address[] memory destBridges,
         address[] memory destTokens
