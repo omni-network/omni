@@ -20,7 +20,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/p2p/enode"
 
-	"github.com/BurntSushi/toml"
 	"github.com/stretchr/testify/require"
 )
 
@@ -39,7 +38,7 @@ func TestGenConsSeeds(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		network      netconf.ID
-		manifestFunc func() []byte
+		manifestFunc func() (types.Manifest, error)
 	}{
 		{
 			network:      netconf.Omega,
@@ -57,8 +56,7 @@ func TestGenConsSeeds(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.network.String(), func(t *testing.T) {
 			t.Parallel()
-			var manifest types.Manifest
-			_, err := toml.Decode(string(test.manifestFunc()), &manifest)
+			manifest, err := test.manifestFunc()
 			require.NoError(t, err)
 
 			var peers []string
@@ -91,7 +89,7 @@ func TestGenConsArchives(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		network      netconf.ID
-		manifestFunc func() []byte
+		manifestFunc func() (types.Manifest, error)
 	}{
 		{
 			network:      netconf.Omega,
@@ -109,8 +107,7 @@ func TestGenConsArchives(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.network.String(), func(t *testing.T) {
 			t.Parallel()
-			var manifest types.Manifest
-			_, err := toml.Decode(string(test.manifestFunc()), &manifest)
+			manifest, err := test.manifestFunc()
 			require.NoError(t, err)
 
 			var peers []string
@@ -149,7 +146,7 @@ func TestGenExecutionSeeds(t *testing.T) {
 
 	tests := []struct {
 		network      netconf.ID
-		manifestFunc func() []byte
+		manifestFunc func() (types.Manifest, error)
 	}{
 		{
 			network:      netconf.Omega,
@@ -168,8 +165,7 @@ func TestGenExecutionSeeds(t *testing.T) {
 		t.Run(test.network.String(), func(t *testing.T) {
 			t.Parallel()
 			ctx := context.Background()
-			var manifest types.Manifest
-			_, err := toml.Decode(string(test.manifestFunc()), &manifest)
+			manifest, err := test.manifestFunc()
 			require.NoError(t, err)
 
 			var peers []string

@@ -13,7 +13,6 @@ import (
 
 	"github.com/omni-network/omni/e2e/app/geth"
 	"github.com/omni-network/omni/e2e/manifests"
-	"github.com/omni-network/omni/e2e/types"
 	haloapp "github.com/omni-network/omni/halo/app"
 	halocmd "github.com/omni-network/omni/halo/cmd"
 	halocfg "github.com/omni-network/omni/halo/config"
@@ -31,7 +30,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/p2p/enode"
 
-	"github.com/BurntSushi/toml"
 	"github.com/spf13/cobra"
 
 	_ "embed"
@@ -439,10 +437,9 @@ func maybeGetFeatureFlags(network netconf.ID) (feature.Flags, error) {
 		return make([]string, 0), nil
 	}
 
-	var manifest types.Manifest
-	_, err := toml.Decode(string(manifests.Staging()), &manifest)
+	manifest, err := manifests.Staging()
 	if err != nil {
-		return nil, errors.Wrap(err, "parse manifest")
+		return nil, err
 	}
 
 	return manifest.FeatureFlags, nil
