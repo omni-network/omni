@@ -1,8 +1,6 @@
 package mybank
 
 import (
-	"fmt"
-
 	"cosmossdk.io/depinject"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 )
@@ -10,7 +8,7 @@ import (
 type DIInputs struct {
 	depinject.In
 
-	bankKeeper *bankkeeper.Keeper
+	BankKeeper *bankkeeper.Keeper
 }
 
 type DIOutputs struct {
@@ -20,9 +18,8 @@ type DIOutputs struct {
 }
 
 func DIProvide(input DIInputs) (DIOutputs, error) {
-	fmt.Println("DEBUQ", input)
 	k := Keeper{
-		Keeper: *input.bankKeeper,
+		Keeper: *input.BankKeeper,
 	}
 
 	return DIOutputs{
