@@ -8,16 +8,16 @@ import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/ac
 import { ERC20PausableUpgradeable } from
     "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import { AccountPausableUpgradeable } from "./libraries/AccountPausableUpgradeable.sol";
-import { IStablecoinUpgradeable } from "./interfaces/IStablecoinUpgradeable.sol";
+import { IBridgedTokenUpgradeable } from "./interfaces/IBridgedTokenUpgradeable.sol";
 
-contract StablecoinUpgradeable is
+contract BridgedTokenUpgradeable is
     Initializable,
     ERC20Upgradeable,
     UUPSUpgradeable,
     AccessControlUpgradeable,
     ERC20PausableUpgradeable,
     AccountPausableUpgradeable,
-    IStablecoinUpgradeable
+    IBridgedTokenUpgradeable
 {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         CONSTANTS                          */

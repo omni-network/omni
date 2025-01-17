@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity =0.8.24;
 
-interface IStablecoinBridgeUpgradeable {
+interface IBridgeUpgradeable {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           ERRORS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -10,6 +10,11 @@ interface IStablecoinBridgeUpgradeable {
      * @dev Error thrown when an unauthorized crosschain or local mint is attempted.
      */
     error Unauthorized(uint64 chainId, address addr);
+
+    /**
+     * @dev Thrown when a destChainId matches the local chainId.
+     */
+    error InvalidChainId();
 
     /**
      * @dev Error thrown when an invalid token route is attempted.

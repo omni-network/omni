@@ -6,14 +6,14 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
-import { IStablecoinLockboxUpgradeable } from "./interfaces/IStablecoinLockboxUpgradeable.sol";
+import { ILockboxUpgradeable } from "./interfaces/ILockboxUpgradeable.sol";
 
-contract StablecoinLockboxUpgradeable is
+contract LockboxUpgradeable is
     Initializable,
     UUPSUpgradeable,
     AccessControlUpgradeable,
     PausableUpgradeable,
-    IStablecoinLockboxUpgradeable
+    ILockboxUpgradeable
 {
     using SafeTransferLib for address;
 

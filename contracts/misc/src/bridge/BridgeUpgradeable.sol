@@ -6,21 +6,21 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import { XAppUpgradeable } from "core/src/pkg/XAppUpgradeable.sol";
-import { IStablecoinBridgeUpgradeable } from "./interfaces/IStablecoinBridgeUpgradeable.sol";
+import { IBridgeUpgradeable } from "./interfaces/IBridgeUpgradeable.sol";
 
 import { ConfLevel } from "core/src/libraries/ConfLevel.sol";
 import { TypeMax } from "core/src/libraries/TypeMax.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
-import { IStablecoinUpgradeable } from "./interfaces/IStablecoinUpgradeable.sol";
-import { IStablecoinLockboxUpgradeable } from "./interfaces/IStablecoinLockboxUpgradeable.sol";
+import { IBridgedTokenUpgradeable } from "./interfaces/IBridgedTokenUpgradeable.sol";
+import { ILockboxUpgradeable } from "./interfaces/ILockboxUpgradeable.sol";
 
-contract StablecoinBridgeUpgradeable is
+contract BridgeUpgradeable is
     Initializable,
     UUPSUpgradeable,
     AccessControlUpgradeable,
     PausableUpgradeable,
     XAppUpgradeable,
-    IStablecoinBridgeUpgradeable
+    IBridgeUpgradeable
 {
     using SafeTransferLib for address;
 
@@ -45,7 +45,7 @@ contract StablecoinBridgeUpgradeable is
     /**
      * @dev The stablecoin lockbox where native tokens are deposited.
      */
-    IStablecoinLockboxUpgradeable public lockbox;
+    ILockboxUpgradeable public lockbox;
 
     /**
      * @dev Mapping of destination chainId to bridge contract.
@@ -108,7 +108,7 @@ contract StablecoinBridgeUpgradeable is
         _grantRole(DEFAULT_ADMIN_ROLE, admin_);
         _grantRole(UPGRADER_ROLE, upgrader_);
         _grantRole(PAUSER_ROLE, pauser_);
-        lockbox = IStablecoinLockboxUpgradeable(lockbox_);
+        lockbox = ILockboxUpgradeable(lockbox_);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -123,9 +123,7 @@ contract StablecoinBridgeUpgradeable is
     function bridgeFee(uint64 destChainId) external view returns (uint256 fee) {
         return feeFor(
             destChainId,
-            abi.encodeCall(
-                StablecoinBridgeUpgradeable.receiveToken, (TypeMax.Address, TypeMax.Address, TypeMax.Uint256)
-            ),
+            abi.encodeCall(BridgeUpgradeable.receiveToken, (TypeMax.Address, TypeMax.Address, TypeMax.Uint256)),
             DEFAULT_GAS_LIMIT
         );
     }
@@ -156,10 +154,10 @@ contract StablecoinBridgeUpgradeable is
             lockbox.deposit(token, value);
         } else {
             token.safeTransferFrom(msg.sender, address(this), value);
-            IStablecoinUpgradeable(token).burn(value);
+            IBridgedTokenUpgradeable(token).burn(value);
         }
 
-        bytes memory data = abi.encodeCall(StablecoinBridgeUpgradeable.receiveToken, (destToken, to, value));
+        bytes memory data = abi.encodeCall(BridgeUpgradeable.receiveToken, (destToken, to, value));
         uint256 fee = xcall(destChainId, bridge, data, DEFAULT_GAS_LIMIT);
 
         if (msg.value < fee) revert InsufficientFunds();
@@ -180,7 +178,7 @@ contract StablecoinBridgeUpgradeable is
         if (isNative) {
             lockbox.withdrawTo(token, to, value);
         } else {
-            IStablecoinUpgradeable(token).mint(to, value);
+            IBridgedTokenUpgradeable(token).mint(to, value);
         }
 
         emit TokenReceived(xmsg.sourceChainId, token, to, value);
@@ -222,8 +220,11 @@ contract StablecoinBridgeUpgradeable is
             revert ArrayLengthMismatch();
         }
         for (uint256 i = 0; i < srcTokens.length; i++) {
+            if (destChainIds[i] == block.chainid) revert InvalidChainId();
+
             tokenRoutes[srcTokens[i]][destChainIds[i]] = destTokens[i];
-            if (isNative[i]) isNativeToken[destTokens[i]] = true;
+            if (isNative[i]) isNativeToken[srcTokens[i]] = true;
+
             emit TokenConfigured(srcTokens[i], destChainIds[i], destTokens[i], isNative[i]);
         }
     }
