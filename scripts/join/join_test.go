@@ -16,10 +16,8 @@ import (
 	"time"
 
 	clicmd "github.com/omni-network/omni/cli/cmd"
-	"github.com/omni-network/omni/e2e/manifests"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
@@ -64,12 +62,11 @@ func TestJoinNetwork(t *testing.T) {
 	networkID := netconf.ID(*network)
 	haloTag := haloTag(t)
 	cfg := clicmd.InitConfig{
-		Network:          networkID,
-		Home:             home,
-		Moniker:          t.Name(),
-		NodeSnapshot:     *nodeSnapshot,
-		HaloTag:          haloTag,
-		HaloFeatureFlags: maybeGetFeatureFlags(networkID),
+		Network:      networkID,
+		Home:         home,
+		Moniker:      t.Name(),
+		NodeSnapshot: *nodeSnapshot,
+		HaloTag:      haloTag,
 	}
 
 	tutil.RequireNoError(t, ensureHaloImage(cfg.HaloTag))
@@ -352,19 +349,4 @@ func getContainerStats(ctx context.Context) (stats, error) {
 	}
 
 	return resp, nil
-}
-
-func maybeGetFeatureFlags(network netconf.ID) feature.Flags {
-	if network.IsProtected() {
-		return make([]string, 0) // Protected networks never have feature flags
-	} else if network == netconf.Devnet {
-		panic("cannot join devnet")
-	}
-
-	manifest, err := manifests.Staging()
-	if err != nil {
-		panic(err)
-	}
-
-	return manifest.FeatureFlags
 }
