@@ -8,7 +8,7 @@ import (
 type DIInputs struct {
 	depinject.In
 
-	BankKeeper *bankkeeper.Keeper
+	BankKeeper bankkeeper.BaseKeeper
 }
 
 type DIOutputs struct {
@@ -19,7 +19,7 @@ type DIOutputs struct {
 
 func DIProvide(input DIInputs) (DIOutputs, error) {
 	k := Keeper{
-		Keeper: *input.BankKeeper,
+		Keeper: input.BankKeeper,
 	}
 
 	return DIOutputs{

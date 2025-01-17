@@ -1,5 +1,4 @@
 // Package evmstaking monitors the Staking pre-deploy contract and converts
-// Package evmstaking monitors the Staking pre-deploy contract and converts
 // its log events to cosmosSDK x/staking logic.
 package evmstaking
 
@@ -195,7 +194,7 @@ func (p EventProcessor) deliverDelegate(ctx context.Context, ev *bindings.Stakin
 		return errors.Wrap(err, "mint coins")
 	}
 
-	if err := p.bKeeper.SendCoinsFromModuleToAccount(ctx, ModuleName, delAddr, amountCoins); err != nil {
+	if err := p.bKeeper.SendCoinsFromModuleToAccountForReal(ctx, ModuleName, delAddr, amountCoins); err != nil {
 		return errors.Wrap(err, "send coins")
 	}
 

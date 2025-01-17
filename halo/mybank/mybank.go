@@ -1,5 +1,7 @@
 // Package evmupgrade monitors the Upgrade pre-deploy contract and converts
 // its log events to cosmosSDK x/upgrade logic.
+//
+//nolint:wrapcheck // Wrapping not needed in this package.
 package mybank
 
 import (
@@ -20,7 +22,7 @@ type Keeper struct {
 func (k Keeper) SendCoinsFromModuleToAccountForReal(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
 	log.Info(ctx, "Wrapped method called")
 
-	return k.SendCoinsFromModuleToAccount(ctx, senderModule, recipientAddr, amt)
+	return k.Keeper.SendCoinsFromModuleToAccount(ctx, senderModule, recipientAddr, amt)
 }
 
 func (Keeper) SendCoinsFromModuleToAccount(context.Context, string, sdk.AccAddress, sdk.Coins) error {
