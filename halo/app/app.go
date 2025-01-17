@@ -111,9 +111,6 @@ func newApp(
 			"github.com/cosmos/cosmos-sdk/x/distribution/types/types.BankKeeper",
 			"github.com/omni-network/omni/halo/mybank/mybank.Keeper"),
 		depinject.BindInterface(
-			"github.com/cosmos/cosmos-sdk/x/auth/types/types.BankKeeper",
-			"github.com/omni-network/omni/halo/mybank/mybank.Keeper"),
-		depinject.BindInterface(
 			"github.com/cosmos/cosmos-sdk/x/slashing/types/types.BankKeeper",
 			"github.com/omni-network/omni/halo/mybank/mybank.Keeper"),
 		depinject.BindInterface(
@@ -122,8 +119,20 @@ func newApp(
 		depinject.BindInterface(
 			"github.com/cosmos/cosmos-sdk/x/staking/types/types.BankKeeper",
 			"github.com/omni-network/omni/halo/mybank/mybank.Keeper"),
-		appConfig(ctx, network),
+		depinject.BindInterface(
+			"github.com/cosmos/cosmos-sdk/x/auth/types/types.BankKeeper",
+			"github.com/omni-network/omni/halo/mybank/mybank.Keeper"),
+		depinject.BindInterface(
+			"github.com/cosmos/cosmos-sdk/x/auth/types/types.BankKeeper",
+			"github.com/omni-network/omni/halo/mybank/mybank.Keeper"),
+		depinject.BindInterface(
+			"github.com/cosmos/cosmos-sdk/x/auth/tx/config/tx.BankKeeper",
+			"github.com/omni-network/omni/halo/mybank/mybank.Keeper"),
+		depinject.BindInterface(
+			"github.com/cosmos/cosmos-sdk/x/bank/keeper/keeper.Keeper",
+			"github.com/cosmos/cosmos-sdk/x/bank/keeper/keeper.BaseKeeper"),
 		depinject.Provide(diProviders(ctx)...),
+		appConfig(ctx, network),
 		depinject.Supply(
 			logger,
 			engineCl,
