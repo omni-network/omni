@@ -1,3 +1,3 @@
-BridgeTest:test_bridge() (gas: 1063664)
+BridgeTest:test_bridge() (gas: 1069584)
 PledgeTest:test_pledge_reverts() (gas: 22501)
 PledgeTest:test_pledge_success() (gas: 51984)

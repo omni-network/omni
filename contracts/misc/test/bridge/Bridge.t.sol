@@ -19,6 +19,7 @@ contract BridgeTest is TestBase {
         assertEq(srcToken.balanceOf(user), 0);
         assertEq(destTokenA.balanceOf(user), 500_000 ether);
         assertEq(destTokenB.balanceOf(user), 500_000 ether);
+        assertEq(srcToken.balanceOf(address(lockboxSrc)), 1_000_000 ether);
 
         // Bridge from A to B and src
         srcToken = address(tokenA);
@@ -32,6 +33,7 @@ contract BridgeTest is TestBase {
         assertEq(srcToken.balanceOf(user), 0);
         assertEq(destTokenA.balanceOf(user), 750_000 ether);
         assertEq(destTokenB.balanceOf(user), 250_000 ether);
+        assertEq(destTokenB.balanceOf(address(lockboxSrc)), 750_000 ether);
 
         // Bridge from B to src and A
         srcToken = address(tokenB);
@@ -45,5 +47,6 @@ contract BridgeTest is TestBase {
         assertEq(srcToken.balanceOf(user), 0);
         assertEq(destTokenA.balanceOf(user), 625_000 ether);
         assertEq(destTokenB.balanceOf(user), 375_000 ether);
+        assertEq(destTokenA.balanceOf(address(lockboxSrc)), 375_000 ether);
     }
 }
