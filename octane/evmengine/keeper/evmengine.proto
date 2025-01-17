@@ -20,3 +20,4 @@ message ExecutionHead {
   bytes  block_hash       = 4; // Execution block hash.
   uint64 block_time       = 5; // Execution block time.
 }
+
