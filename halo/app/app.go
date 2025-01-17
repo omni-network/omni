@@ -108,16 +108,19 @@ func newApp(
 ) (*App, error) {
 	depCfg := depinject.Configs(
 		depinject.BindInterface(
-			"github.com/cosmos/cosmos-sdk/x/slashing/types.BankKeeper",
+			"github.com/cosmos/cosmos-sdk/x/distribution/types/types.BankKeeper",
 			"github.com/omni-network/omni/halo/mybank/mybank.Keeper"),
 		depinject.BindInterface(
-			"github.com/cosmos/cosmos-sdk/x/mint/types.BankKeeper",
+			"github.com/cosmos/cosmos-sdk/x/auth/types/types.BankKeeper",
 			"github.com/omni-network/omni/halo/mybank/mybank.Keeper"),
 		depinject.BindInterface(
-			"github.com/cosmos/cosmos-sdk/x/staking/types.BankKeeper",
+			"github.com/cosmos/cosmos-sdk/x/slashing/types/types.BankKeeper",
 			"github.com/omni-network/omni/halo/mybank/mybank.Keeper"),
 		depinject.BindInterface(
-			"github.com/cosmos/cosmos-sdk/x/distribution/types.BankKeeper",
+			"github.com/cosmos/cosmos-sdk/x/mint/types/types.BankKeeper",
+			"github.com/omni-network/omni/halo/mybank/mybank.Keeper"),
+		depinject.BindInterface(
+			"github.com/cosmos/cosmos-sdk/x/staking/types/types.BankKeeper",
 			"github.com/omni-network/omni/halo/mybank/mybank.Keeper"),
 		appConfig(ctx, network),
 		depinject.Provide(diProviders(ctx)...),
