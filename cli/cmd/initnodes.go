@@ -43,16 +43,35 @@ const (
 	gethJWTSecretFileName = "jwtsecret"
 )
 
+// DefaultInitConfig returns the default configuration for the init command.
+func DefaultInitConfig() InitConfig {
+	// Use proper version if present, else use git commit, else empty string
+	haloTag := buildinfo.Version()
+	if haloTag == "main" {
+		haloTag, _ = buildinfo.GitCommit()
+	}
+
+	return InitConfig{
+		Network:      "", // Require explicit network flag
+		Home:         "", // Default depends on network, so can't provide anything here.
+		Moniker:      "", // Require explicit moniker flag
+		Clean:        false,
+		Archive:      false,
+		Debug:        false,
+		NodeSnapshot: false,
+		HaloTag:      haloTag,
+	}
+}
+
 type InitConfig struct {
-	Network          netconf.ID
-	Home             string
-	Moniker          string
-	Clean            bool
-	Archive          bool
-	Debug            bool
-	NodeSnapshot     bool
-	HaloTag          string
-	HaloFeatureFlags feature.Flags
+	Network      netconf.ID
+	Home         string
+	Moniker      string
+	Clean        bool
+	Archive      bool
+	Debug        bool
+	NodeSnapshot bool
+	HaloTag      string
 }
 
 func (c InitConfig) Verify() error {
@@ -63,7 +82,7 @@ func (c InitConfig) Verify() error {
 var composeTpl []byte
 
 func newInitCmd() *cobra.Command {
-	var cfg InitConfig
+	cfg := DefaultInitConfig()
 
 	cmd := &cobra.Command{
 		Use:   "init-nodes",
@@ -123,7 +142,6 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 	if err != nil {
 		return err
 	}
-	cfg.HaloFeatureFlags = featureFlags
 
 	if cfg.NodeSnapshot {
 		if err := downloadSnapshot(ctx, cfg.Network, cfg.Home, gethClientName); err != nil {
@@ -156,7 +174,7 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 		TrustedSync: !cfg.Archive, // Don't state sync if archive
 		AddrBook:    true,
 		HaloCfgFunc: func(haloCfg *halocfg.Config) {
-			haloCfg.FeatureFlags = cfg.HaloFeatureFlags
+			haloCfg.FeatureFlags = featureFlags
 			haloCfg.EngineEndpoint = "http://omni_evm:8551"
 			haloCfg.EngineJWTFile = "/geth/" + gethJWTSecretFileName
 			if cfg.Archive {
