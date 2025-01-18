@@ -41,6 +41,11 @@ interface IBridgeUpgradeable {
      */
     error ZeroAmount();
 
+    /**
+     * @dev Error thrown when an invalid input is attempted.
+     */
+    error BadInput();
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           EVENTS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -58,9 +63,21 @@ interface IBridgeUpgradeable {
     );
 
     /**
+     * @dev Event emitted when the fast bridge fee is set.
+     */
+    event FastBridgeFeeSet(uint16 fastBridgeFee);
+
+    /**
      * @dev Event emitted when a crosschain token transfer is initiated.
      */
     event TokenSent(
+        uint64 indexed destChainId, address indexed srcToken, address destToken, address indexed to, uint256 value
+    );
+
+    /**
+     * @dev Event emitted when a fast crosschain token transfer is initiated via SolverNet intent.
+     */
+    event TokenSentIntent(
         uint64 indexed destChainId, address indexed srcToken, address destToken, address indexed to, uint256 value
     );
 
@@ -69,9 +86,26 @@ interface IBridgeUpgradeable {
      */
     event TokenReceived(uint64 indexed srcChainId, address indexed destToken, address indexed to, uint256 value);
 
+    /**
+     * @dev Event emitted when a fast crosschain token transfer is received via SolverNet intent.
+     */
+    event TokenReceivedIntent(uint64 indexed srcChainId, address indexed destToken, address indexed to, uint256 value);
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       VIEW FUNCTIONS                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /**
+     * @dev Returns the SolverNetInbox contract.
+     * @return inbox The SolverNetInbox contract.
+     */
+    function solverNetInbox() external view returns (address inbox);
+
+    /**
+     * @dev Returns the SolverNetOutbox contract.
+     * @return outbox The SolverNetOutbox contract.
+     */
+    function solverNetOutbox() external view returns (address outbox);
 
     /**
      * @dev Mapping of destination chainId to bridge contract.
@@ -102,6 +136,13 @@ interface IBridgeUpgradeable {
      */
     function bridgeFee(uint64 destChainId) external view returns (uint256 fee);
 
+    /**
+     * @dev Returns the fee for bridging a token to a destination chain via SolverNet intent.
+     * @param value The amount of tokens to bridge.
+     * @return fee The fee paid to the `OmniPortal` contract.
+     */
+    function bridgeIntentFee(uint256 value) external view returns (uint256 fee);
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      BRIDGE FUNCTIONS                      */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -116,12 +157,32 @@ interface IBridgeUpgradeable {
     function sendToken(uint64 destChainId, address token, address to, uint256 value) external payable;
 
     /**
+     * @dev Initiates a fast crosschain token transfer via SolverNet intent.
+     * @param destChainId The chainId of the destination chain.
+     * @param token The address of the source token.
+     * @param to The address of the recipient.
+     * @param value The amount of tokens to transfer.
+     * @param fillDeadline The deadline for the fill.
+     */
+    function sendTokenIntent(uint64 destChainId, address token, address to, uint256 value, uint32 fillDeadline)
+        external;
+
+    /**
      * @dev Receives a token from a bridge contract and mints it to the recipient.
      * @param token The address of the source token.
      * @param to The address of the recipient.
      * @param value The amount of tokens to mint.
      */
     function receiveToken(address token, address to, uint256 value) external;
+
+    /**
+     * @dev Receives a token from the SolverNetOutbox executor and mints it to the recipient.
+     * @param srcChainId The chainId of the source chain.
+     * @param token The address of the source token.
+     * @param to The address of the recipient.
+     * @param value The amount of tokens to mint.
+     */
+    function receiveTokenIntent(uint64 srcChainId, address token, address to, uint256 value) external;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      ADMIN FUNCTIONS                       */
@@ -147,4 +208,10 @@ interface IBridgeUpgradeable {
         uint64[] calldata destChainIds,
         address[] calldata destTokens
     ) external;
+
+    /**
+     * @dev Sets the fast bridge fee.
+     * @param fastBridgeFee_ The new fast bridge fee.
+     */
+    function setFastBridgeFee(uint16 fastBridgeFee_) external;
 }

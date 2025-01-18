@@ -8,10 +8,11 @@ remappings = [
   "ds-test/=node_modules/ds-test/src",
   "src/=src",
   "test/=test",
-  "core/=../core"
+  "core/=../core",
+  "solve/=../solve"
 ]
 
-allow_paths = ["../core"]
+allow_paths = ["../core", "../solve"]
 
 solc_version = "0.8.24"
 
