@@ -36,24 +36,18 @@ _If any of above commands fail, see the [troubleshooting section](./e2e/README.m
 ## Directory Structure
 
 <pre>
+├── <a href="./cli/">cli</a>: Omni command line interface.
 ├── <a href="./contracts/">contracts</a>: Solidity contracts and related software.
-│ ├── <a href="./contracts/core/">core/</a>: Core protocol smart contracts.
-│ ├── <a href="./contracts/avs/">avs/</a>: Eigen AVS smart contracts.
-│ ├── <a href="./contracts/bindings/">bindings/</a>: Go smart contract bindings.
-│ └── <a href="./contracts/allocs/">allocs/</a>: Predeploy allocations.
-├── <a href="./docs/">docs</a>: Documentation resources, including images and diagrams.
-├── <a href="./halo/">halo</a>: The Halo instance, including application logic and attestation mechanisms.
-│ ├── <a href="./halo/app/">app</a>: Application logic for Halo.
-│ └── <a href="./halo/cmd/">cmd</a>: Command-line tools and utilities.
-├── <a href="./lib/">lib</a>: Core libraries for various protocol functionalities.
-│ ├── <a href="./lib/cchain/">cchain</a>: Consensus chain interaction utilities.
-│ └── <a href="./lib/xchain/">xchain</a>: Cross-chain messaging and utilities.
-├── <a href="./octane/">octane</a>: Octane is a modular framework for the EVM.
-│ └── <a href="./octane/evmengine/">evmengine</a>: The EVMEngine cosmos module.
+├── <a href="./docs/">docs</a>: Resources and website for https://docs.omni.network.
+├── <a href="./e2e/">e2e</a>: Deployments, testing, and live network management.
+├── <a href="./halo/">halo</a>: Omni consensus client.
+├── <a href="./lib/">lib</a>: Core libraries used across the Omni stack.
+├── <a href="./monitor/">monitor</a>: Monitoring service for the network.
+├── <a href="./octane/">octane</a>: Cosmos SDK module for the EVM.
 ├── <a href="./relayer/">relayer</a>: Relayer service for cross-chain messages and transactions.
-│ └── <a href="./relayer/app/">app</a>: Application logic for the relayer service.
 ├── <a href="./scripts/">scripts</a>: Utility scripts for development and operational tasks.
-└── <a href="./e2e/test/">test</a>: Testing suite for end-to-end, smoke, and utility testing.
+├── <a href="./sdk/">sdk</a>: SDK for building applications with Omni.
+├── <a href="./solver/">solver</a>: Reference implementation for SolverNet.
 </pre>
 
 ## Contributing
