@@ -413,7 +413,8 @@ func gethInit(ctx context.Context, cfg InitConfig, dir string) error {
 	{
 		image := "ethereum/client-go:" + geth.Version
 		stateScheme := "path"
-		if cfg.Archive {
+		if cfg.Archive || cfg.NodeSnapshot {
+			// Backup snapshots that are triggered with the --node-snapshot option are stored with hash state scheme.
 			stateScheme = "hash"
 		}
 		dockerArgs := []string{"run",
@@ -430,7 +431,7 @@ func gethInit(ctx context.Context, cfg InitConfig, dir string) error {
 
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			return errors.Wrap(err, "docker run geth init", "output", string(out))
+			return errors.Wrap(err, "docker run geth init", "args", dockerArgs, "output", string(out))
 		}
 
 		log.Info(ctx, "Initialized geth chain data")
