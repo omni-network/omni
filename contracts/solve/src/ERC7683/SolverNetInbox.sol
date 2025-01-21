@@ -285,7 +285,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @param order  OnchainCrossChainOrder to parse
      */
     function _parseOrder(OnchainCrossChainOrder calldata order) internal view returns (OrderData memory) {
-        if (order.fillDeadline < block.timestamp) revert InvalidFillDeadline();
+        if (order.fillDeadline < block.timestamp && order.fillDeadline != 0) revert InvalidFillDeadline();
         if (order.orderDataType != ORDER_DATA_TYPEHASH) revert InvalidOrderDataTypehash();
         if (order.orderData.length == 0) revert InvalidOrderData();
 

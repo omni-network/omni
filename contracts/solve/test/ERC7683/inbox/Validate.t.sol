@@ -10,10 +10,14 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
         IERC7683.OnchainCrossChainOrder memory order;
         uint256 rand = vm.randomUint(1, 1000);
 
-        // `fillDeadline` cannot be in the past
+        // `fillDeadline` cannot be in the past unless it is 0
+        uint256 timestamp = block.timestamp;
+        vm.warp(timestamp + 1);
+        order.fillDeadline = uint32(timestamp);
         vm.expectRevert(ISolverNetInbox.InvalidFillDeadline.selector);
         inbox.validate(order);
-        order.fillDeadline = uint32(block.timestamp + 1);
+        order.fillDeadline = 0;
+        vm.warp(timestamp);
 
         // `orderDataType` must be `ORDER_DATA_TYPEHASH`
         vm.expectRevert(ISolverNetInbox.InvalidOrderDataTypehash.selector);

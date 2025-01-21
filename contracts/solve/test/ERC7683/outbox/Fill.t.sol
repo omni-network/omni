@@ -169,6 +169,30 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         assertEq(solver.balance, initialSolverBalance - fillFee, "solver should be refunded excess ETH");
     }
 
+    function test_fill_no_fill_deadline() public {
+        // Create and resolve an order on source chain
+        IERC7683.OnchainCrossChainOrder memory order = randOrder();
+        order.fillDeadline = 0;
+        vm.prank(user);
+        IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+        mintAndApprove(resolvedOrder.minReceived, resolvedOrder.maxSpent);
+
+        bytes32 orderId = inbox.getNextId();
+
+        // Calculate the fill fee
+        uint256 fillFee = outbox.fillFee(srcChainId);
+        vm.deal(solver, fillFee);
+
+        // Fill the order as solver
+        vm.prank(solver);
+        outbox.fill{ value: fillFee }(orderId, resolvedOrder.fillInstructions[0].originData, "");
+
+        // Verify the order is marked as filled
+        assertTrue(
+            outbox.didFill(orderId, resolvedOrder.fillInstructions[0].originData), "order should be marked as filled"
+        );
+    }
+
     function test_fill_reverts_insufficient_fee() public {
         // Create and resolve an order on source chain
         IERC7683.OnchainCrossChainOrder memory order = randOrder();
