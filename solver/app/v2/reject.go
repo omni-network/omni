@@ -1,10 +1,8 @@
 package appv2
 
 import (
-	"bytes"
 	"context"
 
-	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
@@ -82,11 +80,7 @@ func newShouldRejector(
 				return returnErr(errors.New("max spent chain id mismatch [BUG]", "got", chainID, "expected", destChainID))
 			}
 
-			addr, err := cast.EthAddress(output.Token[:20])
-			if err != nil {
-				return returnErr(errors.Wrap(err, "cast token address"))
-			}
-
+			addr := toEthAddr(output.Token)
 			if !cmpAddrs(addr, output.Token) {
 				return reject(rejectUnsupportedToken, errors.New("non-eth addressed token", "addr", hexutil.Encode(output.Token[:])))
 			}
@@ -118,13 +112,4 @@ func newShouldRejector(
 
 		return rejectNone, false, nil
 	}
-}
-
-// cmpAddrs returns true if the eth address is equal to the 32-byte address.
-func cmpAddrs(addr common.Address, bz [32]byte) bool {
-	addrBz := addr.Bytes()
-	var addrBz32 [32]byte
-	copy(addrBz32[:], addrBz)
-
-	return bytes.Equal(addrBz32[:], bz[:])
 }
