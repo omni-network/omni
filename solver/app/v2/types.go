@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/omni-network/omni/contracts/bindings"
-	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -49,22 +48,19 @@ func newOrder(resolved OrderResolved, state OrderState, history OrderHistory) (O
 		return Order{}, errors.Wrap(err, "validate resolved")
 	}
 
-	fillInstr := resolved.FillInstructions[0]
 	o := Order{
-		FillInstruction:    fillInstr,
-		SourceChainID:      resolved.OriginChainId.Uint64(),
-		DestinationChainID: fillInstr.DestinationChainId,
+		ID:                 resolved.OrderId,
 		Status:             state.Status,
 		AcceptedBy:         state.AcceptedBy,
 		History:            history,
+		FillInstruction:    resolved.FillInstructions[0],
+		FillOriginData:     resolved.FillInstructions[0].OriginData,
+		DestinationChainID: resolved.FillInstructions[0].DestinationChainId,
+		DestinationSettler: toEthAddr(resolved.FillInstructions[0].DestinationSettler),
+		SourceChainID:      resolved.OriginChainId.Uint64(),
+		MaxSpent:           resolved.MaxSpent,
+		MinReceived:        resolved.MinReceived,
 	}
-
-	settlerBz := fillInstr.DestinationSettler
-	settler, err := cast.EthAddress(settlerBz[:])
-	if err != nil {
-		return Order{}, errors.Wrap(err, "cast destination settler")
-	}
-	o.DestinationSettler = settler
 
 	return o, nil
 }

@@ -9,14 +9,12 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
-	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/ethclient/mock"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -27,23 +25,20 @@ func TestCmdAddrs(t *testing.T) {
 
 	// zero addr
 	var bz [32]byte
-	addr, err := cast.EthAddress(bz[:20])
-	require.NoError(t, err)
+	addr := toEthAddr(bz)
 	require.True(t, cmpAddrs(addr, bz))
 
 	// within 20 bytes
-	_, err = rand.Read(bz[:20])
+	_, err := rand.Read(bz[12:])
 	require.NoError(t, err)
-	addr, err = cast.EthAddress(bz[:20])
-	require.NoError(t, err)
+	addr = toEthAddr(bz)
 	require.True(t, cmpAddrs(addr, bz))
 
 	// not within 20 bytes
 	_, err = rand.Read(bz[:32])
 	bz[31] = 0x01 // just make sure it's not all zeros
 	require.NoError(t, err)
-	addr, err = cast.EthAddress(bz[:20])
-	require.NoError(t, err)
+	addr = toEthAddr(bz)
 	require.False(t, cmpAddrs(addr, bz))
 }
 
@@ -191,11 +186,4 @@ func abiEncodeBig(t *testing.T, n *big.Int) []byte {
 	require.NoError(t, err)
 
 	return data
-}
-
-func toBz32(addr common.Address) [32]byte {
-	var bz [32]byte
-	copy(bz[:], addr.Bytes())
-
-	return bz
 }
