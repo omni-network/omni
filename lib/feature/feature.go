@@ -16,6 +16,8 @@ const (
 	FlagProtoEVMPayload Flag = "proto-evm-payload"
 	// FlagSolverV2 enables the new solver v2.
 	FlagSolverV2 Flag = "solver-v2"
+	// FlagDelegations enables delegation for non-validators.
+	FlagDelegations Flag = "delegations"
 )
 
 // enabledFlags holds all globally enabled feature flags. The reason for having it is that
