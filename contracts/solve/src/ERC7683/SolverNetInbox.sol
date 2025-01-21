@@ -293,7 +293,6 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
 
         if (call.chainId == 0) revert NoCallChainId();
         if (call.target == bytes32(0)) revert NoCallTarget();
-        if (call.data.length == 0) revert NoCallData();
         if (deposits.length == 0) revert NoDeposits();
 
         bool hasNative;
