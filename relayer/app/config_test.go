@@ -19,7 +19,7 @@ func TestDefaultConfigReference(t *testing.T) {
 	tempDir := t.TempDir()
 
 	cfg := relayer.DefaultConfig()
-
+	cfg.HaloGRPCURL = "localhost:9"
 	path := filepath.Join(tempDir, "relayer.toml")
 
 	require.NoError(t, os.MkdirAll(tempDir, 0o755))

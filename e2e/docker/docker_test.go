@@ -24,7 +24,7 @@ import (
 //go:generate go test . -golden -clean
 
 func TestComposeTemplate(t *testing.T) {
-	t.Parallel()
+	t.Setenv(docker.AnvilAMDENV, "true") // Make tests deterministic, ignore ENV var.
 
 	tests := []struct {
 		name       string
@@ -47,7 +47,6 @@ func TestComposeTemplate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			_, ipNet, err := net.ParseCIDR("10.186.73.0/24")
 			require.NoError(t, err)
 
@@ -132,7 +131,6 @@ func TestComposeTemplate(t *testing.T) {
 			tutil.RequireGoldenBytes(t, bz)
 
 			t.Run("upgrade", func(t *testing.T) {
-				t.Parallel()
 				err := docker.ReplaceUpgradeImage(dir, node0)
 				if test.upgrade == "" {
 					require.Error(t, err)
