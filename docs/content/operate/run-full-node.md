@@ -9,31 +9,22 @@ The simplest way to run a full node is with the following commands:
    # install the omni cli (or download https://github.com/omni-network/omni/releases/latest)
    curl -sSfL https://raw.githubusercontent.com/omni-network/omni/main/scripts/install_omni_cli.sh | bash -s
    ```
-2. Initialize `halo` and `geth` via Node Snapshot Mode or Full Sync Mode:
-   1. Node Snapshot Mode (recommended)
-      ```bash
-      # init halo and geth and start syncing from a latest backed up snapshots for both halo and geth
-      omni operator init-nodes --network=omega --node-snapshot --moniker=foo
-      ```
-   2. Full Sync Mode
-      ```bash
-      # init halo and geth and start syncing full nodes from scratch for both halo and geth
-      omni operator init-nodes --network=omega --moniker=foo
-      ```
+2. Initialize `halo` and `geth`:
+   ```bash
+   # init halo and geth and start syncing from a latest backed up snapshots for both halo and geth
+   omni operator init-nodes --network=omega --node-snapshot --moniker=foo
+   ```
 
----
-**NOTE**
-> _Node Snapshot Mode_ saves time when syncing your full node, because it downloads latest node snapshots for both `halo` and `geth` provided by Omni.
+> **NOTE**
 >
-> If you still prefer syncing your own node from scratch then use the regular _Full Sync Mode_.
----
+> _`--node-snapshot` saves time when syncing your full node, because it downloads latest node snapshots for both `halo` and `geth` provided by Omni.
+> Please make sure you fulfill in particular the [SSD Hard Disk Requirements](#hardware-requirements) for optimal performance using this option._
 
-
-```bash
-# start halo and geth
-cd ~/.omni/omega
-docker compose up
-```
+3. Start `halo` and `geth`:
+   ```bash
+   cd ~/.omni/omega
+   docker compose up
+   ```
 
 Congrats, you're running a full node!
 

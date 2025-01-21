@@ -28,6 +28,14 @@ We observed the following numbers in practice:
 To estimate your full sync time, check the current chain height (see [omniscan.network](https://omniscan.network)) and divide this number by your blocks-per-second rate to get a rough duration in seconds.
 You can estimate your blocks-per-second rate by monitoring the Geth logs: the log line starting with `Imported new potential chain segment` contains the `number` parameter denoting the last imported block height.
 
+### What is the difference between fullsync and node snapshot?
+
+When running `omni init-nodes` to initialize you new full node, we recommend using the `--node-snapshot` option (if omitted, it defaults to standard fullsync from genesis to latest block):
+- `--node-snapshot` saves time when syncing your full node in comparison to standard fullsync, because it downloads latest node snapshots for both `halo` and `geth` provided by Omni.
+- It will start syncing from the latest block of the particular snapshot.
+- It will use a bit more disc space than a standard fullsync, so please make sure you fulfill in particular the required [Hardware Requirements](run-full-node.md#hardware-requirements) for optimal performance using this option.
+- fullsync will start syncing from genesis to latest block and will take considerably more time to achieve that.
+
 ### How to check if the validator is ready?
 A node is considered ready when it is healthy and functions as intended.
 This means both the consensus and execution chains are fully synchronized, there are execution and consensus P2P peers connected, and new blocks are being produced.
