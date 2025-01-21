@@ -42,7 +42,7 @@ require (
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.34.0
-	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.33.0
+	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.34.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/mock v0.5.0
 	golang.org/x/sync v0.10.0
