@@ -7,6 +7,7 @@ import { SolverNetOutbox } from "src/ERC7683/SolverNetOutbox.sol";
 
 import { MockToken } from "test/utils/MockToken.sol";
 import { MockVault } from "test/utils/MockVault.sol";
+import { MockMultiTokenVault } from "test/utils/MockMultiTokenVault.sol";
 import { MockPortal } from "core/test/utils/MockPortal.sol";
 
 import { IERC7683 } from "src/ERC7683/interfaces/IERC7683.sol";
@@ -14,7 +15,7 @@ import { ISolverNet } from "src/ERC7683/interfaces/ISolverNet.sol";
 import { ISolverNetInbox } from "src/ERC7683/interfaces/ISolverNetInbox.sol";
 import { ISolverNetOutbox } from "src/ERC7683/interfaces/ISolverNetOutbox.sol";
 
-import { Test } from "forge-std/Test.sol";
+import { Test, console2 } from "forge-std/Test.sol";
 import { AddrUtils } from "src/ERC7683/lib/AddrUtils.sol";
 
 /**
@@ -30,7 +31,12 @@ contract TestBase is Test {
 
     MockToken token1;
     MockToken token2;
+    MockToken token3;
+    MockToken token4;
+
     MockVault vault;
+    MockMultiTokenVault multiTokenVault;
+
     MockPortal portal;
 
     uint64 srcChainId = 1;
@@ -53,8 +59,13 @@ contract TestBase is Test {
     function setUp() public virtual {
         token1 = new MockToken();
         token2 = new MockToken();
+        token3 = new MockToken();
+        token4 = new MockToken();
+
         vault = new MockVault(address(token2));
+        multiTokenVault = new MockMultiTokenVault();
         portal = new MockPortal();
+
         inbox = deploySolverNetInbox();
         outbox = deploySolverNetOutbox();
         initializeInbox();
@@ -63,6 +74,27 @@ contract TestBase is Test {
 
     function getVaultCalldata(address addr, uint256 amount) internal pure returns (bytes memory) {
         return abi.encodeCall(MockVault.deposit, (addr, amount));
+    }
+
+    function getMultiTokenVaultCalldata(address addr, ISolverNet.TokenExpense[] memory expenses, uint256 nativeAmount)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        address[] memory tokens = new address[](nativeAmount > 0 ? expenses.length + 1 : expenses.length);
+        uint256[] memory amounts = new uint256[](nativeAmount > 0 ? expenses.length + 1 : expenses.length);
+
+        for (uint256 i; i < expenses.length; ++i) {
+            tokens[i] = expenses[i].token.toAddress();
+            amounts[i] = expenses[i].amount;
+        }
+
+        if (nativeAmount > 0) {
+            tokens[tokens.length - 1] = address(0);
+            amounts[amounts.length - 1] = nativeAmount;
+        }
+
+        return abi.encodeCall(MockMultiTokenVault.deposit, (addr, tokens, amounts));
     }
 
     function getOrderDataBytes(
@@ -86,6 +118,9 @@ contract TestBase is Test {
     function randOrder() internal returns (IERC7683.OnchainCrossChainOrder memory) {
         uint256 rand = vm.randomUint(1, 1000);
 
+        ISolverNet.Deposit[] memory deposits = new ISolverNet.Deposit[](1);
+        deposits[0] = ISolverNet.Deposit({ token: address(token1).toBytes32(), amount: rand * 1 ether });
+
         ISolverNet.TokenExpense[] memory expenses = new ISolverNet.TokenExpense[](1);
         expenses[0] = ISolverNet.TokenExpense({
             token: address(token2).toBytes32(),
@@ -100,9 +135,6 @@ contract TestBase is Test {
             data: getVaultCalldata(user, rand * 1 ether),
             expenses: expenses
         });
-
-        ISolverNet.Deposit[] memory deposits = new ISolverNet.Deposit[](1);
-        deposits[0] = ISolverNet.Deposit({ token: address(token1).toBytes32(), amount: rand * 1 ether });
 
         ISolverNet.OrderData memory orderData = ISolverNet.OrderData({ call: call, deposits: deposits });
 
@@ -121,6 +153,9 @@ contract TestBase is Test {
     function randNativeOrder() internal returns (IERC7683.OnchainCrossChainOrder memory) {
         uint256 rand = vm.randomUint(1, 1000);
 
+        ISolverNet.Deposit[] memory deposits = new ISolverNet.Deposit[](1);
+        deposits[0] = ISolverNet.Deposit({ token: bytes32(0), amount: rand * 1 ether });
+
         ISolverNet.TokenExpense[] memory expenses = new ISolverNet.TokenExpense[](1);
         expenses[0] = ISolverNet.TokenExpense({
             token: address(token2).toBytes32(),
@@ -136,8 +171,56 @@ contract TestBase is Test {
             expenses: expenses
         });
 
-        ISolverNet.Deposit[] memory deposits = new ISolverNet.Deposit[](1);
-        deposits[0] = ISolverNet.Deposit({ token: bytes32(0), amount: rand * 1 ether });
+        ISolverNet.OrderData memory orderData = ISolverNet.OrderData({ call: call, deposits: deposits });
+
+        return IERC7683.OnchainCrossChainOrder({
+            fillDeadline: uint32(block.timestamp + 1 minutes),
+            orderDataType: ORDER_DATA_TYPEHASH,
+            orderData: abi.encode(orderData)
+        });
+    }
+
+    function randMultiTokenOrder(address[] memory srcDeposits, address[] memory destDeposits)
+        internal
+        returns (IERC7683.OnchainCrossChainOrder memory)
+    {
+        uint256 nativeExpense;
+        for (uint256 i; i < destDeposits.length; ++i) {
+            if (destDeposits[i] == address(0)) {
+                nativeExpense = vm.randomUint(1, 1000) * 1 ether;
+                break;
+            }
+        }
+
+        ISolverNet.Deposit[] memory deposits = new ISolverNet.Deposit[](srcDeposits.length);
+        for (uint256 i; i < srcDeposits.length; ++i) {
+            uint256 rand = vm.randomUint(1, 1000);
+            deposits[i] = ISolverNet.Deposit({ token: address(srcDeposits[i]).toBytes32(), amount: rand * 1 ether });
+        }
+
+        ISolverNet.TokenExpense[] memory expenses =
+            new ISolverNet.TokenExpense[](nativeExpense > 0 ? destDeposits.length - 1 : destDeposits.length);
+        bool nativeProcessed;
+        for (uint256 i; i < destDeposits.length; ++i) {
+            if (destDeposits[i] == address(0)) {
+                nativeProcessed = true;
+                continue;
+            }
+            uint256 rand = vm.randomUint(1, 1000);
+            expenses[nativeProcessed ? i - 1 : i] = ISolverNet.TokenExpense({
+                token: address(destDeposits[i]).toBytes32(),
+                spender: address(multiTokenVault).toBytes32(),
+                amount: rand * 1 ether
+            });
+        }
+
+        ISolverNet.Call memory call = ISolverNet.Call({
+            chainId: destChainId,
+            target: address(multiTokenVault).toBytes32(),
+            value: nativeExpense,
+            data: getMultiTokenVaultCalldata(user, expenses, nativeExpense),
+            expenses: expenses
+        });
 
         ISolverNet.OrderData memory orderData = ISolverNet.OrderData({ call: call, deposits: deposits });
 
@@ -148,26 +231,39 @@ contract TestBase is Test {
         });
     }
 
-    function mintAndApprove(IERC7683.Output[] memory deposits, IERC7683.Output[] memory expenses) internal {
+    function fundUser(IERC7683.Output[] memory deposits) internal {
+        vm.chainId(srcChainId);
         for (uint256 i; i < deposits.length; ++i) {
             address token = deposits[i].token.toAddress();
-            if (token == address(0)) continue;
+            if (token == address(0)) {
+                vm.deal(user, deposits[i].amount);
+                continue;
+            }
 
             vm.startPrank(user);
             MockToken(token).approve(address(inbox), deposits[i].amount);
             MockToken(token).mint(user, deposits[i].amount);
             vm.stopPrank();
         }
+    }
 
+    function fundSolver(IERC7683.Output[] memory expenses) internal {
+        vm.chainId(destChainId);
         for (uint256 i; i < expenses.length; ++i) {
             address token = expenses[i].token.toAddress();
-            if (token == address(0)) continue;
+            if (token == address(0)) {
+                vm.deal(solver, expenses[i].amount);
+                continue;
+            }
 
             vm.startPrank(solver);
             MockToken(token).approve(address(outbox), expenses[i].amount);
             MockToken(token).mint(solver, expenses[i].amount);
             vm.stopPrank();
         }
+
+        uint256 fillFee = outbox.fillFee(srcChainId);
+        vm.deal(solver, address(solver).balance + fillFee);
     }
 
     function deploySolverNetInbox() internal returns (SolverNetInbox) {
