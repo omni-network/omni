@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
-import { IArbSys } from "../ext/IArbSys.sol";
+import { IArbSys } from "src/ext/IArbSys.sol";
 
 /**
  * @title DeployedAt

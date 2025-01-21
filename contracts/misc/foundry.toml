@@ -14,7 +14,7 @@ remappings = [
 
 allow_paths = ["../core", "../solve"]
 
-solc_version = "0.8.24"
+solc_version = "0.8.26"
 
 [fmt]
 bracket_spacing = true

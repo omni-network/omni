@@ -6,8 +6,8 @@ import { ReentrancyGuard } from "solady/src/utils/ReentrancyGuard.sol";
 import { Initializable } from "solady/src/utils/Initializable.sol";
 import { XAppBase } from "core/src/pkg/XAppBase.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
-import { DeployedAt } from "../util/DeployedAt.sol";
-import { AddrUtils } from "./lib/AddrUtils.sol";
+import { DeployedAt } from "src/util/DeployedAt.sol";
+import { AddrUtils } from "src/ERC7683/lib/AddrUtils.sol";
 import { ISolverNetInbox } from "./interfaces/ISolverNetInbox.sol";
 
 /**

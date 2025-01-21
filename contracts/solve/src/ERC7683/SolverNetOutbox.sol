@@ -9,8 +9,8 @@ import { SolverNetExecutor } from "./SolverNetExecutor.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { ConfLevel } from "core/src/libraries/ConfLevel.sol";
 import { TypeMax } from "core/src/libraries/TypeMax.sol";
-import { DeployedAt } from "../util/DeployedAt.sol";
-import { AddrUtils } from "./lib/AddrUtils.sol";
+import { DeployedAt } from "src/util/DeployedAt.sol";
+import { AddrUtils } from "src/ERC7683/lib/AddrUtils.sol";
 import { ISolverNetInbox } from "./interfaces/ISolverNetInbox.sol";
 import { ISolverNetOutbox } from "./interfaces/ISolverNetOutbox.sol";
 

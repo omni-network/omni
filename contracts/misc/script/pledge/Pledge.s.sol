@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity =0.8.24;
+pragma solidity 0.8.26;
 
 import { Pledge } from "../../src/pledge/Pledge.sol";
 import { Script, console2 } from "forge-std/Script.sol";
