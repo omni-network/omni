@@ -15,7 +15,7 @@ contract SolverNet_Inbox_Reject_Test is TestBase {
         IERC7683.OnchainCrossChainOrder memory order = randOrder();
         vm.prank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
-        mintAndApprove(resolvedOrder.minReceived, resolvedOrder.maxSpent);
+        fundUser(resolvedOrder.minReceived);
 
         // Store initial state for comparison
         bytes32 expectedOrderId = inbox.getNextId();
@@ -133,7 +133,7 @@ contract SolverNet_Inbox_Reject_Test is TestBase {
         IERC7683.OnchainCrossChainOrder memory order = randOrder();
         vm.prank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
-        mintAndApprove(resolvedOrder.minReceived, resolvedOrder.maxSpent);
+        fundUser(resolvedOrder.minReceived);
 
         // Open the order
         vm.prank(user);
@@ -152,7 +152,7 @@ contract SolverNet_Inbox_Reject_Test is TestBase {
         IERC7683.OnchainCrossChainOrder memory order = randOrder();
         vm.prank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
-        mintAndApprove(resolvedOrder.minReceived, resolvedOrder.maxSpent);
+        fundUser(resolvedOrder.minReceived);
 
         // Open the order
         vm.prank(user);

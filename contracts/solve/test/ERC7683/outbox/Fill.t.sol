@@ -22,7 +22,8 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         IERC7683.OnchainCrossChainOrder memory order = randOrder();
         vm.prank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
-        mintAndApprove(resolvedOrder.minReceived, resolvedOrder.maxSpent);
+        fundSolver(resolvedOrder.maxSpent);
+        (resolvedOrder.minReceived, resolvedOrder.maxSpent);
 
         bytes32 orderId = inbox.getNextId();
 
@@ -148,7 +149,8 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         IERC7683.OnchainCrossChainOrder memory order = randOrder();
         vm.prank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
-        mintAndApprove(resolvedOrder.minReceived, resolvedOrder.maxSpent);
+        fundSolver(resolvedOrder.maxSpent);
+        (resolvedOrder.minReceived, resolvedOrder.maxSpent);
 
         bytes32 orderId = inbox.getNextId();
 
@@ -174,7 +176,8 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         IERC7683.OnchainCrossChainOrder memory order = randOrder();
         vm.prank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
-        mintAndApprove(resolvedOrder.minReceived, resolvedOrder.maxSpent);
+        fundSolver(resolvedOrder.maxSpent);
+        (resolvedOrder.minReceived, resolvedOrder.maxSpent);
 
         // Tamper with order to ensure insufficient ETH is provided
         ISolverNet.FillOriginData memory fillData =
@@ -201,7 +204,8 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         vm.prank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
         resolvedOrder.maxSpent[0].amount = resolvedOrder.maxSpent[0].amount * 2;
-        mintAndApprove(resolvedOrder.minReceived, resolvedOrder.maxSpent);
+        fundSolver(resolvedOrder.maxSpent);
+        (resolvedOrder.minReceived, resolvedOrder.maxSpent);
 
         bytes32 orderId = inbox.getNextId();
 
@@ -237,7 +241,7 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         IERC7683.OnchainCrossChainOrder memory order = randOrder();
         vm.prank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
-        mintAndApprove(resolvedOrder.minReceived, resolvedOrder.maxSpent);
+        fundSolver(resolvedOrder.maxSpent);
 
         bytes32 orderId = inbox.getNextId();
 
