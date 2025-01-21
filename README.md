@@ -66,4 +66,4 @@ Follow these steps to set up a functional development environment:
 
 ## Security
 
-We are currently setting up a Bug Bounty program via Immunefi. Until then, you can report security issues to us via email at security at omni dot network.
+Omni has a bug bounty program via Immunefi. You can find more information [here](https://immunefi.com/bug-bounty/omni-network/information/).
