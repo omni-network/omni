@@ -153,7 +153,9 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         fillInstructions[0] = FillInstruction({
             destinationChainId: call.chainId,
             destinationSettler: _outbox.toBytes32(),
-            originData: abi.encode(FillOriginData({ srcChainId: uint64(block.chainid), call: call }))
+            originData: abi.encode(
+                FillOriginData({ srcChainId: uint64(block.chainid), fillDeadline: order.fillDeadline, call: call })
+            )
         });
 
         return ResolvedCrossChainOrder({

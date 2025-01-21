@@ -53,11 +53,13 @@ interface ISolverNet {
 
     /**
      * @notice SolverNet ERC-7683 fill instruction origin data.
-     * @param srcChainId  Chain ID on which the order was opened.
-     * @param call        Call to execute
+     * @param srcChainId    Chain ID on which the order was opened.
+     * @param fillDeadline  Deadline for the fill.
+     * @param call          Call to execute
      */
     struct FillOriginData {
         uint64 srcChainId;
+        uint40 fillDeadline;
         Call call;
     }
 }

@@ -253,4 +253,28 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         vm.expectRevert(ISolverNetOutbox.WrongDestChain.selector);
         outbox.fill{ value: fillFee }(orderId, resolvedOrder.fillInstructions[0].originData, "");
     }
+
+    function test_fill_reverts_fill_deadline_passed() public {
+        // Create and resolve an order on source chain
+        IERC7683.OnchainCrossChainOrder memory order = randOrder();
+        vm.prank(user);
+        IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+        mintAndApprove(resolvedOrder.minReceived, resolvedOrder.maxSpent);
+
+        bytes32 orderId = inbox.getNextId();
+
+        // Calculate the fill fee
+        uint256 fillFee = outbox.fillFee(srcChainId);
+        vm.deal(solver, fillFee);
+
+        // Get the fill data from the order
+        ISolverNet.FillOriginData memory fillData =
+            abi.decode(resolvedOrder.fillInstructions[0].originData, (ISolverNet.FillOriginData));
+        vm.warp(fillData.fillDeadline + 1);
+
+        // Try to fill
+        vm.prank(solver);
+        vm.expectRevert(ISolverNetOutbox.FillDeadlinePassed.selector);
+        outbox.fill{ value: fillFee }(orderId, resolvedOrder.fillInstructions[0].originData, "");
+    }
 }
