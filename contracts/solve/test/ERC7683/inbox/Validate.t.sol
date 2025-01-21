@@ -46,18 +46,6 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
             new ISolverNet.Deposit[](0)
         );
 
-        // `call.data` cannot be empty
-        vm.expectRevert(ISolverNetInbox.NoCallData.selector);
-        inbox.validate(order);
-        order.orderData = getOrderDataBytes(
-            destChainId,
-            address(vault).toBytes32(),
-            0,
-            getVaultCalldata(user, rand * 1 ether),
-            new ISolverNet.TokenExpense[](0),
-            new ISolverNet.Deposit[](0)
-        );
-
         // `deposits` cannot be empty
         vm.expectRevert(ISolverNetInbox.NoDeposits.selector);
         inbox.validate(order);

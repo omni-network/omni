@@ -22,7 +22,6 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
     error InvalidNativeDeposit();
 
     // call validation errors
-    error NoCallData();
     error NoCallTarget();
     error NoCallChainId();
     error NoExpenseToken();
