@@ -642,7 +642,8 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 	cfg := monapp.DefaultConfig()
 	cfg.PrivateKey = privKeyFile
 	cfg.Network = def.Testnet.Network
-	cfg.HaloURL = archiveNode.AddressRPC()
+	cfg.HaloCometURL = archiveNode.AddressRPC()
+	cfg.HaloGRPCURL = haloGRPCAddress(archiveNode)
 	cfg.LoadGen.ValidatorKeysGlob = validatorKeyGlob
 	cfg.LoadGen.XCallerKey = xCallerPrivKeyFile
 	cfg.RPCEndpoints = endpoints
