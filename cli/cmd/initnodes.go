@@ -157,9 +157,12 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 		return errors.Wrap(err, "download genesis")
 	}
 
-	err = gethInit(ctx, cfg, filepath.Join(cfg.Home, gethClientName))
-	if err != nil {
-		return errors.Wrap(err, "init geth")
+	if !cfg.NodeSnapshot {
+		// Run Geth initialization only when doing full sync, because the downloaded node snapshot will already have Geth's DB initialized.
+		err = gethInit(ctx, cfg, filepath.Join(cfg.Home, gethClientName))
+		if err != nil {
+			return errors.Wrap(err, "init geth")
+		}
 	}
 
 	logLevel := log.LevelInfo
