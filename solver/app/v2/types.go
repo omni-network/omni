@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -90,5 +91,5 @@ func validateResolved(o OrderResolved) error {
 }
 
 func (o Order) ParsedFillOriginData() (FillOriginData, error) {
-	return parseFillOriginData(o.FillOriginData)
+	return solvernet.ParseFillOriginData(o.FillOriginData)
 }

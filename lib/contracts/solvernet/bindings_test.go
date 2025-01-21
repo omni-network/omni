@@ -1,8 +1,11 @@
-package appv2
+package solvernet_test
 
 import (
 	"math/big"
 	"testing"
+
+	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
@@ -20,13 +23,13 @@ func TestParseFillOriginData(t *testing.T) {
 		bi.SetUint64(val)
 	})
 
-	var data FillOriginData
+	var data bindings.ISolverNetFillOriginData
 	f.Fuzz(&data)
 
-	packed, err := inputsFillOriginData.Pack(data)
+	packed, err := solvernet.PackFillOriginData(data)
 	require.NoError(t, err)
 
-	parsed, err := parseFillOriginData(packed)
+	parsed, err := solvernet.ParseFillOriginData(packed)
 	require.NoError(t, err)
 
 	require.Equal(t, data, parsed)
