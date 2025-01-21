@@ -14,6 +14,8 @@ const (
 	FlagSimpleEVMEvents Flag = "simple-evm-events"
 	// FlagProtoEVMPayload enables the protobuf encoded execution payload.
 	FlagProtoEVMPayload Flag = "proto-evm-payload"
+	// FlagSolverV2 enables the new solver v2.
+	FlagSolverV2 Flag = "solver-v2"
 )
 
 // enabledFlags holds all globally enabled feature flags. The reason for having it is that
@@ -26,6 +28,7 @@ var allFlags = map[Flag]bool{
 	FlagEVMStakingModule: true,
 	FlagSimpleEVMEvents:  true,
 	FlagProtoEVMPayload:  true,
+	FlagSolverV2:         true,
 }
 
 // Flag is a feature flag.
