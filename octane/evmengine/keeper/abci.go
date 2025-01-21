@@ -117,9 +117,18 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 	}
 
 	// Create execution payload message
-	payloadData, err := json.Marshal(payloadResp.ExecutionPayload)
-	if err != nil {
-		return nil, errors.Wrap(err, "encode")
+	var payloadData []byte
+	var payloadProto *types.ExecutionPayloadDeneb
+	if feature.FlagProtoEVMPayload.Enabled(ctx) {
+		payloadProto, err = types.PayloadToProto(payloadResp.ExecutionPayload)
+		if err != nil {
+			return nil, errors.Wrap(err, "encode")
+		}
+	} else {
+		payloadData, err = json.Marshal(payloadResp.ExecutionPayload)
+		if err != nil {
+			return nil, errors.Wrap(err, "encode")
+		}
 	}
 
 	// Convert blobs bundle.
@@ -145,10 +154,11 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 
 	// Then construct the execution payload message.
 	payloadMsg := &types.MsgExecutionPayload{
-		Authority:         authtypes.NewModuleAddress(types.ModuleName).String(),
-		ExecutionPayload:  payloadData,
-		PrevPayloadEvents: evmEvents,
-		BlobCommitments:   blobCommitments,
+		Authority:             authtypes.NewModuleAddress(types.ModuleName).String(),
+		ExecutionPayload:      payloadData,
+		PrevPayloadEvents:     evmEvents,
+		BlobCommitments:       blobCommitments,
+		ExecutionPayloadDeneb: payloadProto,
 	}
 
 	// Combine all the votes messages and the payload message into a single transaction.
