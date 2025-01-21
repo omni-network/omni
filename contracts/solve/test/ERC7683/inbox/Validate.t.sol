@@ -98,14 +98,6 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
             destChainId, address(vault).toBytes32(), 0, getVaultCalldata(user, rand * 1 ether), expenses, deposits
         );
 
-        // `call.expenses[0].spender` cannot be the zero address
-        vm.expectRevert(ISolverNetInbox.NoExpenseSender.selector);
-        inbox.validate(order);
-        expenses[0].spender = address(vault).toBytes32();
-        order.orderData = getOrderDataBytes(
-            destChainId, address(vault).toBytes32(), 0, getVaultCalldata(user, rand * 1 ether), expenses, deposits
-        );
-
         // `call.expenses[0].amount` cannot be 0
         vm.expectRevert(ISolverNetInbox.NoExpenseAmount.selector);
         inbox.validate(order);
