@@ -111,12 +111,14 @@ Omni currently has a validator whitelist. The whitelist applies to both native *
 
 ### How can I deregister from the old AVS contract?
 
-To deregister from the old AVS contract, you must first retrieve a copy of the Omni CLI from GitHub from commit [`ead6061`](https://github.com/omni-network/omni/commit/ead606159fd0724376f1f12a2ab0d34560ab677f) to [`latest`](https://github.com/omni-network/omni) in the main branch. Alternatively, you can wait for release `v0.12.0 (commit: ead6061)` of the Omni CLI, which will support AVS deregistration.
-
-Once you have an updated version of the Omni CLI, you can deregister from the old AVS contract by running the following command:
+To deregister from the old AVS contract, you need to build the CLI from source using `main`. Alternatively, you can wait for release `v0.12.0 (commit: ead6061)` of the Omni CLI, which will support AVS deregistration.
 
 ```bash
-omni operator deregister --config-file ~/path/to/operator.yaml
+git clone https://github.com/omni-network/omni.git
+cd omni
+make setup
+make install-cli
+omni operator avs-deregister --config-file ~/path/to/operator.yaml
 ```
 
 ### What are the planned staking upgrades?
