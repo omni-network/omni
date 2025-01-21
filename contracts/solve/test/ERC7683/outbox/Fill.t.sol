@@ -242,7 +242,6 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         vm.prank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
         fundSolver(resolvedOrder.maxSpent);
-        (resolvedOrder.minReceived, resolvedOrder.maxSpent);
 
         bytes32 orderId = inbox.getNextId();
 

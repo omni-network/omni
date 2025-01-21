@@ -29,6 +29,7 @@ contract SolverNet_E2E_Test is TestBase {
         assertAcceptedOrder(resolvedOrder.orderId);
 
         // Prep: Set chainId to destChainId and give solver some funds
+        vm.chainId(destChainId);
         fundSolver(resolvedOrder.maxSpent);
 
         // 3. Fill order on destChain
@@ -36,7 +37,6 @@ contract SolverNet_E2E_Test is TestBase {
         bytes32 fillHash = fillHash(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData);
         vm.expectEmit(true, true, true, true);
         emit ISolverNetOutbox.Filled(resolvedOrder.orderId, fillHash, solver);
-        // Solver token mint and approval is taken care of in step 0 `mintAndApprove` helper call
         vm.prank(solver);
         outbox.fill{ value: fillFee }(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, bytes(""));
 
@@ -106,6 +106,7 @@ contract SolverNet_E2E_Test is TestBase {
         inbox.accept(resolvedOrder.orderId);
 
         // Prep: Set chainId to destChainId and give solver some funds
+        vm.chainId(destChainId);
         fundSolver(resolvedOrder.maxSpent);
 
         // 3. Fill order on destChain
@@ -113,7 +114,6 @@ contract SolverNet_E2E_Test is TestBase {
         bytes32 fillHash = fillHash(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData);
         vm.expectEmit(true, true, true, true);
         emit ISolverNetOutbox.Filled(resolvedOrder.orderId, fillHash, solver);
-        // Solver token mint and approval is taken care of in step 0 `mintAndApprove` helper call
         vm.prank(solver);
         outbox.fill{ value: fillFee }(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, bytes(""));
 
@@ -207,6 +207,7 @@ contract SolverNet_E2E_Test is TestBase {
         inbox.accept(resolvedOrder.orderId);
 
         // Prep: Set chainId to destChainId and give solver some funds
+        vm.chainId(destChainId);
         fundSolver(resolvedOrder.maxSpent);
 
         // 3. Fill order on destChain
@@ -214,7 +215,6 @@ contract SolverNet_E2E_Test is TestBase {
         bytes32 fillHash = fillHash(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData);
         vm.expectEmit(true, true, true, true);
         emit ISolverNetOutbox.Filled(resolvedOrder.orderId, fillHash, solver);
-        // Solver token mint and approval is taken care of in step 0 `mintAndApprove` helper call
         vm.prank(solver);
         outbox.fill{ value: fillFee + resolvedOrder.maxSpent[1].amount }(
             resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, bytes("")

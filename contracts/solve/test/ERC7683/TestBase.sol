@@ -232,7 +232,6 @@ contract TestBase is Test {
     }
 
     function fundUser(IERC7683.Output[] memory deposits) internal {
-        vm.chainId(srcChainId);
         for (uint256 i; i < deposits.length; ++i) {
             address token = deposits[i].token.toAddress();
             if (token == address(0)) {
@@ -248,7 +247,6 @@ contract TestBase is Test {
     }
 
     function fundSolver(IERC7683.Output[] memory expenses) internal {
-        vm.chainId(destChainId);
         for (uint256 i; i < expenses.length; ++i) {
             address token = expenses[i].token.toAddress();
             if (token == address(0)) {
