@@ -52,9 +52,22 @@ func TestGasEstimator(t *testing.T) {
 			gas: properGasEstimation,
 		},
 		{
-			name:      "arb destination",
+			name:      "arb sepolia destination",
 			network:   netconf.Mainnet,
 			destChain: evmchain.IDArbSepolia,
+			msgs: []xchain.Msg{
+				{
+					MsgID: xchain.MsgID{
+						StreamID: xchain.StreamID{},
+					},
+				},
+			},
+			gas: properGasEstimation,
+		},
+		{
+			name:      "arb mainnet destination",
+			network:   netconf.Mainnet,
+			destChain: evmchain.IDArbitrumOne,
 			msgs: []xchain.Msg{
 				{
 					MsgID: xchain.MsgID{
