@@ -22,7 +22,8 @@ type Config struct {
 	Network        netconf.ID
 	MonitoringAddr string
 	PrivateKey     string
-	HaloURL        string
+	HaloCometURL   string
+	HaloGRPCURL    string
 	LoadGen        loadgen.Config
 	XFeeMngr       xfeemngr.Config
 	DBDir          string

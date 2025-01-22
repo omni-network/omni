@@ -19,7 +19,10 @@ private-key = "{{ .PrivateKey }}"
 monitoring-addr = "{{ .MonitoringAddr }}"
 
 # The URL of the halo node to connect to.
-halo-url = "{{ .HaloURL }}"
+halo-url = "{{ .HaloCometURL }}"
+
+# The gRPC URL of the halo node to connect to.
+halo-grpc-url = "{{ .HaloGRPCURL }}"
 
 #######################################################################
 ###                             X-Chain                             ###
