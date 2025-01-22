@@ -132,7 +132,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
 
             token.safeTransferFrom(msg.sender, address(_executor), expense.amount);
             // We remotely set token approvals on executor so we don't need to reprocess Call expenses there.
-            _executor.approve(token, spender, expense.amount);
+            if (spender != address(0)) _executor.approve(token, spender, expense.amount);
         }
 
         _;
@@ -149,7 +149,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
             uint256 tokenBalance = token.balanceOf(address(_executor));
 
             if (tokenBalance > 0) {
-                _executor.approve(token, expense.spender.toAddress(), 0);
+                if (expense.spender != bytes32(0)) _executor.approve(token, expense.spender.toAddress(), 0);
                 _executor.transfer(token, msg.sender, tokenBalance);
             }
         }

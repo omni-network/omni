@@ -308,7 +308,6 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         for (uint256 i; i < call.expenses.length; ++i) {
             TokenExpense memory expense = call.expenses[i];
             if (expense.token == bytes32(0)) revert NoExpenseToken();
-            if (expense.spender == bytes32(0)) revert NoExpenseSender();
             if (expense.amount == 0) revert NoExpenseAmount();
         }
 
