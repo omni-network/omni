@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"math/rand/v2"
 	"strings"
 	"time"
 
@@ -116,6 +117,8 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 		return nil, err
 	}
 
+	payloadResp = maybeFuzzPayload(ctx, payloadResp)
+
 	// Create execution payload message
 	var payloadData []byte
 	var payloadProto *types.ExecutionPayloadDeneb
@@ -181,6 +184,35 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 	)
 
 	return &abci.ResponsePrepareProposal{Txs: [][]byte{tx}}, nil
+}
+
+// maybeFuzzPayload applies a random mutation to the payload for fuzz testing if enabled.
+func maybeFuzzPayload(ctx sdk.Context, resp *engine.ExecutionPayloadEnvelope) *engine.ExecutionPayloadEnvelope {
+	if !feature.FlagFuzzOctane.Enabled(ctx) {
+		return resp
+	}
+
+	switch rand.IntN(4) { //nolint:gosec // Weak RNG is fine for fuzz testing.
+	case 0:
+		log.Warn(ctx, "Fuzzing proposed octane payload: invalid parent hash", nil)
+		resp.ExecutionPayload.BlockHash = resp.ExecutionPayload.ParentHash
+	case 1:
+		log.Warn(ctx, "Fuzzing proposed octane payload: invalid withdrawal", nil)
+		resp.ExecutionPayload.Withdrawals = append(resp.ExecutionPayload.Withdrawals, &etypes.Withdrawal{
+			Index:     1,
+			Validator: 2,
+			Amount:    3,
+		})
+	case 2:
+		log.Warn(ctx, "Fuzzing proposed octane payload: nil blob gas", nil)
+		resp.ExecutionPayload.ExcessBlobGas = nil
+		resp.ExecutionPayload.BlobGasUsed = nil
+	case 3:
+		log.Warn(ctx, "Fuzzing proposed octane payload: invalid tx", nil)
+		resp.ExecutionPayload.Transactions = append(resp.ExecutionPayload.Transactions, []byte("invalid tx"))
+	}
+
+	return resp
 }
 
 // PostFinalize is called by our custom ABCI wrapper after a block is finalized.

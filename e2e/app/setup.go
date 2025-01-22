@@ -165,7 +165,7 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 			nodeDir,
 			logCfg,
 			depCfg.testConfig,
-			node.Mode,
+			node,
 			omniEVM.InstanceName,
 			endpoints,
 		); err != nil {
@@ -397,13 +397,13 @@ func writeHaloConfig(
 	nodeDir string,
 	logCfg log.Config,
 	testCfg bool,
-	mode e2e.Mode,
+	node *e2e.Node,
 	evmInstance string,
 	endpoints xchain.RPCEndpoints,
 ) error {
 	cfg := halocfg.DefaultConfig()
 
-	if mode == types.ModeArchive {
+	if node.Mode == types.ModeArchive {
 		cfg.PruningOption = "nothing"
 		// Setting this to 0 retains all blocks
 		cfg.MinRetainBlocks = 0
@@ -416,7 +416,7 @@ func writeHaloConfig(
 	cfg.EngineJWTFile = "/halo/config/jwtsecret"                    // Absolute path inside docker container
 	cfg.Tracer.Endpoint = def.Cfg.TracingEndpoint
 	cfg.Tracer.Headers = def.Cfg.TracingHeaders
-	cfg.FeatureFlags = def.Manifest.FeatureFlags
+	cfg.FeatureFlags = filterFeatureFlags(node, def.Manifest.FeatureFlags)
 	cfg.SDKGRPC.Address = "0.0.0.0:9999" // VM port 9090 used by grafana-agent, so use 9999 instead.
 
 	if testCfg {
@@ -682,4 +682,18 @@ func logConfig(def Definition) log.Config {
 // Note that VM port 9090 used by grafana-agent, so gRPC bound to 9999 instead.
 func haloGRPCAddress(node *e2e.Node) string {
 	return fmt.Sprintf("%v:9999", node.InternalIP.String())
+}
+
+// filterFeatureFlags removes some manifest provided flags from being provided to the node.
+// E.g. FlagFuzzOctane should only be applied to the validator01.
+func filterFeatureFlags(node *e2e.Node, flags feature.Flags) feature.Flags {
+	var resp feature.Flags
+	for _, flag := range flags {
+		if flag == string(feature.FlagFuzzOctane) && node.Name != "validator01" {
+			continue
+		}
+		resp = append(resp, flag)
+	}
+
+	return resp
 }

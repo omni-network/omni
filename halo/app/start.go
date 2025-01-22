@@ -103,8 +103,11 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 
 	buildinfo.Instrument(ctx)
 
-	feature.SetGlobals(cfg.FeatureFlags)
-	ctx = feature.WithFlags(ctx, cfg.FeatureFlags)
+	if cfg.Network.IsEphemeral() {
+		// Feature flags only applicable to ephemeral networks.
+		feature.SetGlobals(cfg.FeatureFlags)
+		ctx = feature.WithFlags(ctx, cfg.FeatureFlags)
+	}
 
 	tracerIDs := tracer.Identifiers{Network: cfg.Network, Service: "halo", Instance: cfg.Comet.Moniker}
 	stopTracer, err := tracer.Init(ctx, tracerIDs, cfg.Tracer)
