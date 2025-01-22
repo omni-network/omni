@@ -1,7 +1,7 @@
 # Configure a Full Node
 
 This document provides a detailed step-by-step process describing how to manually setup and configure an Omni node.
-It reproduces what the `omni operators init-nodes` command does automatically.
+It reproduces what the `omni operator init-nodes` command does automatically.
 See [Run a Full Node](run-full-node.md) docs for the automated process.
 
 The resulting `~/.omni/<network>` folder has the following structure:
