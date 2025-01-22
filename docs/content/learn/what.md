@@ -46,7 +46,7 @@ Here's a quick breakdown of how the Omni Orderflow Engine works.
 
 2. **Solver Execution:** Solvers detect the intent, bid to execute it on the destination, and provide "just in time" liquidity to the destination rollup by depositing funds on behalf of the user.
 
-3. **Cross-Rollup Settlement:** Using Omni Core, the solvers provide proff of execution of the user's intent, allowing the escrow contract on the origin rollup to release the users deposited funds.
+3. **Cross-Rollup Settlement:** Using Omni Core, the solvers provide proof of execution of the user's intent, allowing the escrow contract on the origin rollup to release the users deposited funds.
 
 ## Why the Omni Orderflow Engine Matters
 
