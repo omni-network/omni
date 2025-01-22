@@ -20,6 +20,12 @@ The supported `<network>` are:
 
 Note that validator nodes require additional config as specified in the [Run a Validator](validator.md).
 
+## Restoring Node Snapshots
+As mentioned in the [FAQ](faq.md#what-syncing-options-are-supported), Omni supports different ways to sync a node.
+The fastest and preferred way is to download node snapshots provided by Omni.
+
+TBD: explain process to download and restore node snapshots.
+
 ## Configure halo
 
 Halo is a CosmosSDK application. Configuring it is therefore very similar to any
