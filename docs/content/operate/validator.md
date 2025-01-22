@@ -87,14 +87,14 @@ timeout_commit = "1s"
 > The “halo consensus key” (also known in Cosmos chains as the “[Tendermint/CometBFT consensus key](https://tutorials.cosmos.network/tutorials/9-path-to-prod/3-keys.html#what-validator-keys)”) is used to sign CometBFT blocks on an ongoing basis.
 >
 
-The `omni operators init-nodes` command generates a consensus private key in `~/.omni/omega/halo/config/priv_validator_key.json` .
+The `omni operator init-nodes` command generates a consensus private key in `~/.omni/omega/halo/config/priv_validator_key.json` .
 
 When registering a validator, the associated public key must be provided which will enable this node as a validator.
 
 The public key can be obtained via either of the following commands
 
 ```bash
-# docker compose command in `~/.omni/omega` if `omni init-nodes` was used
+# docker compose command in `~/.omni/omega` if `omni operator init-nodes` was used
 ❯ docker compose run halo run consensus-pubkey
 
 # or
@@ -110,7 +110,7 @@ INF running app args=["consensus-pubkey"] module=cosmovisor path=/halo/cosmoviso
 Consensus public key: 02e47138b658317e8a9ce3fd59c4c41ede153cf2051de3bf9926bd6cfe839512f5
 ```
 
-> Note the `omni operator create-consesus-key` CLI command can also be used to generate a new consensus key and state files.
+> Note the `omni operator create-consensus-key` CLI command can also be used to generate a new consensus key and state files.
 >
 
 **Remember to backup this consensus private key** if you haven’t already.
