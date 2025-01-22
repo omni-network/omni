@@ -12,13 +12,8 @@ The simplest way to run a full node is with the following commands:
 2. Initialize `halo` and `geth`:
    ```bash
    # init halo and geth and start syncing from a latest backed up snapshots for both halo and geth
-   omni operator init-nodes --network=omega --node-snapshot --moniker=foo
+   omni operator init-nodes --network=mainnet --node-snapshot --moniker=foo
    ```
-
-> **NOTE**
->
-> _`--node-snapshot` saves time when syncing your full node, because it downloads latest node snapshots for both `halo` and `geth` provided by Omni.
-> Please make sure you fulfill in particular the [SSD Hard Disk Requirements](#hardware-requirements) for optimal performance using this option._
 
 3. Start `halo` and `geth`:
    ```bash
@@ -27,8 +22,6 @@ The simplest way to run a full node is with the following commands:
    ```
 
 Congrats, you're running a full node!
-
-For the upcoming mainnet, replace the `omega` network with `mainnet`.
 
 ## Details
 
