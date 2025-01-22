@@ -3,9 +3,9 @@ package appv2
 import (
 	"context"
 	"math/big"
-	"strings"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
@@ -135,7 +135,7 @@ func newFiller(
 		fillerData := []byte{} // fillerData is optional ERC7683 custom filler specific data, unused in our contracts
 		tx, err := outbox.Fill(txOpts, order.ID, order.FillOriginData, fillerData)
 		if err != nil {
-			return errors.Wrap(err, "fill order", "custom", detectCustomError(err))
+			return errors.Wrap(err, "fill order", "custom", solvernet.DetectCustomError(err))
 		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
 			return errors.Wrap(err, "wait mined")
 		}
@@ -148,29 +148,6 @@ func newFiller(
 
 		return nil
 	}
-}
-
-func detectCustomError(custom error) string {
-	contracts := map[string]*bind.MetaData{
-		"inbox":      bindings.SolveInboxMetaData,
-		"outbox":     bindings.SolveOutboxMetaData,
-		"mock_vault": bindings.MockVaultMetaData,
-		"mock_token": bindings.MockTokenMetaData,
-	}
-
-	for name, contract := range contracts {
-		abi, err := contract.GetAbi()
-		if err != nil {
-			return "BUG"
-		}
-		for n, e := range abi.Errors {
-			if strings.Contains(custom.Error(), e.ID.Hex()[:10]) {
-				return name + "::" + n
-			}
-		}
-	}
-
-	return unknown
 }
 
 func approveOutboxSpend(ctx context.Context, output bindings.IERC7683Output, backend *ethbackend.Backend, solverAddr, outboxAddr common.Address) error {
@@ -258,7 +235,7 @@ func newRejector(
 
 		tx, err := inbox.Reject(txOpts, order.ID, uint8(reason))
 		if err != nil {
-			return errors.Wrap(err, "reject order", "custom", detectCustomError(err))
+			return errors.Wrap(err, "reject order", "custom", solvernet.DetectCustomError(err))
 		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
 			return errors.Wrap(err, "wait mined")
 		}
@@ -290,7 +267,7 @@ func newAcceptor(
 
 		tx, err := inbox.Accept(txOpts, order.ID)
 		if err != nil {
-			return errors.Wrap(err, "accept order", "custom", detectCustomError(err))
+			return errors.Wrap(err, "accept order", "custom", solvernet.DetectCustomError(err))
 		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
 			return errors.Wrap(err, "wait mined")
 		}
