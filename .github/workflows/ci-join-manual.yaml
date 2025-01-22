@@ -50,7 +50,7 @@ jobs:
           sudo go test . -v \
             --integration \
             --timeout=0 \
-            --logs_file=docker_logs_${{github.event.inputs.network}}_full_sync.txt \
+            --logs_file=docker_logs_${{github.event.inputs.network}}_node_snapshot.txt \
             --node_snapshot \
             --halo_tag="main" \
             --network="${{github.event.inputs.network}}"
@@ -60,5 +60,5 @@ jobs:
         if: always()
         with:
           name: docker-logs
-          path: "docker_logs_${{github.event.inputs.network}}_full_sync.txt"
+          path: "docker_logs_${{github.event.inputs.network}}_node_snapshot.txt"
           retention-days: 3
