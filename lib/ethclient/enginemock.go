@@ -98,15 +98,20 @@ func WithMockValidatorCreation(pubkey crypto.PubKey) func(*engineMock) {
 	}
 }
 
-// WithMockSelfDelegation returns an option to add a self-delegation Delegate event to the mock.
-func WithMockSelfDelegation(pubkey crypto.PubKey, ether int64) func(*engineMock) {
+// WithMockDelegation returns an option to add a delegation event to the mock from the specified address.
+func WithMockDelegation(validatorPubkey crypto.PubKey, delegatorPukey crypto.PubKey, ether int64) func(*engineMock) {
 	return func(mock *engineMock) {
 		mock.mu.Lock()
 		defer mock.mu.Unlock()
 
 		wei := new(big.Int).Mul(big.NewInt(ether), big.NewInt(params.Ether))
 
-		valAddr, err := k1util.PubKeyToAddress(pubkey)
+		valAddr, err := k1util.PubKeyToAddress(validatorPubkey)
+		if err != nil {
+			panic(errors.Wrap(err, "pubkey to address"))
+		}
+
+		delegatorAddr, err := k1util.PubKeyToAddress(delegatorPukey)
 		if err != nil {
 			panic(errors.Wrap(err, "pubkey to address"))
 		}
@@ -121,8 +126,8 @@ func WithMockSelfDelegation(pubkey crypto.PubKey, ether int64) func(*engineMock)
 			Address: contractAddr,
 			Topics: []common.Hash{
 				delegateEvent.ID,
-				common.HexToHash(valAddr.Hex()), // delegator
-				common.HexToHash(valAddr.Hex()), // validator
+				common.HexToHash(delegatorAddr.Hex()), // delegator
+				common.HexToHash(valAddr.Hex()),       // validator
 			},
 			Data:  data,
 			Index: 300,
@@ -130,6 +135,11 @@ func WithMockSelfDelegation(pubkey crypto.PubKey, ether int64) func(*engineMock)
 
 		mock.pendingLogs[contractAddr] = append(mock.pendingLogs[contractAddr], eventLog)
 	}
+}
+
+// WithMockSelfDelegation returns an option to add a self-delegation Delegate event to the mock.
+func WithMockSelfDelegation(pubkey crypto.PubKey, ether int64) func(*engineMock) {
+	return WithMockDelegation(pubkey, pubkey, ether)
 }
 
 func WithPortalRegister(network netconf.Network) func(*engineMock) {

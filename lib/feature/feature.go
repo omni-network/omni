@@ -31,6 +31,7 @@ var allFlags = map[Flag]bool{
 	FlagSimpleEVMEvents:  true,
 	FlagProtoEVMPayload:  true,
 	FlagSolverV2:         true,
+	FlagDelegations:      true,
 }
 
 // Flag is a feature flag.
