@@ -130,3 +130,8 @@ There will be several network upgrades to enable various validator / staking fea
 - X-chain rewards and penalties
 - **\$ETH** Restaking: validators can opt into receiving restaked **\$ETH** delegations, pending Eigenlayer slashing.
 - Permissionless validator registration: anyone can register, and collect delegations to be included in the active set.
+
+### Does Halo support HSMs, TKMS or Horcrux?
+As mentioned [above](#what-are-the-validation-duties-of-a-validator), Halo validators have two duties to perform. The interface used by external signer services like HSMs, TKMS or Horcrux only supports standard CometBFT signatures, it doesn't support Omni XChain votes and attestations.
+
+Halo therefore only supports simple `priv_validator_key.json` private key files for signing both CometBFT and XChain votes.
