@@ -17,8 +17,33 @@
 - Note that setting up cosmovisor is strongly advised to support smooth network upgrades. See our [halovisor build scripts](https://github.com/omni-network/omni/tree/main/scripts/halovisor) for inspiration.
 - Note that before starting geth, it must first be initialised with the relevant `execution-genesis.json` file via `geth init` (see [omega](https://github.com/omni-network/omni/tree/main/lib/netconf/omega) and [mainnet](https://github.com/omni-network/omni/tree/main/lib/netconf/mainnet)).
 
-### How long does syncing take?
+### What syncing options are supported?
+Omni has a 2 chain architecture, similar to ethereum PoS.
+This means that both the execution chain (geth) and the consensus chain (halo) has to be synced.
+Each chain however supports different syncing protocols of which not all are supported by Omni yet.
 
+Halo (via CometBFT) supports ["comet fast sync" and "comet state sync"](https://docs.cometbft.com/v0.34/core/state-sync).
+Although Geth technically supports ["ethereum full sync" and "ethereum snap sync"](https://geth.ethereum.org/docs/fundamentals/sync-modes), only "full sync" is supported by Omni ("snap sync" is not supported).
+
+The following three options are currently supported:
+1. Halo "fast sync" + Geth "full sync"
+- Syncs both chains from genesis.
+- This is the slowest option.
+
+2. Halo "state sync" + Geth "full sync"
+- CometBFT state sync protocol is configured which syncs the consensus chain from a recent snapshot.
+- This provides a "full sync" target to Geth, which then performs a full sync from genesis.
+- This is faster than option 1.
+- See mode details [here](config.md#configure-cometbft-state-sync).
+
+3. Restoring Node Snapshots
+- Omni provides node snapshot (tarballs) which are disk backups of both halo and geth data directories.
+- These node snapshots are taken daily from Omni's archive nodes.
+- The nodes will replay blocks from the snapshot to the current block height.
+- This is the fastest option.
+- See more details [here](config.md#restoring-node-snapshots).
+
+### How long does Geth fullsync take?
 The time it takes for Geth to do a fullsync (snapsync is not supported yet) depends largely on your disk write throughput.
 Syncing speed is directly proportional to write performance.
 We observed the following numbers in practice:
