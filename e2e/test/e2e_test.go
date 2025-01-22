@@ -17,6 +17,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
@@ -226,6 +227,7 @@ func loadEnv(t *testing.T) (types.Testnet, netconf.Network, types.DeployInfos, x
 	}
 	m, err := app.LoadManifest(manifestFile)
 	require.NoError(t, err)
+	feature.SetGlobals(m.FeatureFlags)
 
 	var ifd types.InfrastructureData
 	switch ifdType {

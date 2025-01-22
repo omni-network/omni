@@ -24,6 +24,7 @@ import (
 	"github.com/omni-network/omni/halo/genutil"
 	evmgenutil "github.com/omni-network/omni/halo/genutil/evm"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -65,6 +66,9 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	if err := os.MkdirAll(def.Testnet.Dir, os.ModePerm); err != nil {
 		return errors.Wrap(err, "mkdir")
 	}
+
+	// set global feature flags, as they might inform setup / tests
+	feature.SetGlobals(def.Manifest.FeatureFlags)
 
 	// Setup geth execution genesis
 	gethGenesis, err := evmgenutil.MakeGenesis(def.Manifest.Network)
@@ -555,6 +559,7 @@ func writeSolverConfig(ctx context.Context, def Definition, logCfg log.Config) e
 	solverCfg.LoadGenPrivKey = loadGenKeyFile
 	solverCfg.Network = def.Testnet.Network
 	solverCfg.RPCEndpoints = endpoints
+	solverCfg.FeatureFlags = def.Manifest.FeatureFlags
 
 	if err := solverapp.WriteConfigTOML(solverCfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write solver config")
