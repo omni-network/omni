@@ -2,6 +2,7 @@ package ethclient
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -84,6 +85,7 @@ func (c engineClient) NewPayloadV3(ctx context.Context, params engine.Executable
 	}
 
 	var resp engine.PayloadStatusV1
+	var rpcErr rpc.Error
 	err := c.cl.Client().CallContext(ctx, &resp, newPayloadV3, params, versionedHashes, beaconRoot)
 	if isStatusOk(resp) {
 		// Swallow errors when geth returns errors along with proper responses (but at least log it).
@@ -92,6 +94,20 @@ func (c engineClient) NewPayloadV3(ctx context.Context, params engine.Executable
 		}
 
 		return resp, nil
+	} else if errors.As(err, &rpcErr) {
+		// Swallow geth RPC errors, treat them as application errors, ie, invalid payload.
+		// Geth server mostly returns status invalid with RPC errors, but the geth client doesn't
+		// return errors AND status, it only returns errors OR status.
+		log.Warn(ctx, "Converting new_payload_v3 engine rpc.Error to invalid response", err, "code", rpcErr.ErrorCode())
+		valErr := err.Error()
+		if data := errData(err); data != "" {
+			valErr = data
+		}
+
+		return engine.PayloadStatusV1{
+			Status:          engine.INVALID,
+			ValidationError: &valErr,
+		}, nil
 	} else if err != nil {
 		incError(c.chain, endpoint)
 		return engine.PayloadStatusV1{}, errors.Wrap(err, "rpc new payload")
@@ -151,4 +167,14 @@ func (c engineClient) GetPayloadV3(ctx context.Context, payloadID engine.Payload
 	}
 
 	return &resp, nil
+}
+
+// errData returns the error data if the error is a rpc.DataError.
+func errData(err error) string {
+	var dataErr rpc.DataError
+	if errors.As(err, &dataErr) {
+		return fmt.Sprint(dataErr.ErrorData())
+	}
+
+	return ""
 }

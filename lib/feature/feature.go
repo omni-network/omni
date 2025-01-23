@@ -14,6 +14,8 @@ const (
 	FlagSimpleEVMEvents Flag = "simple-evm-events"
 	// FlagProtoEVMPayload enables the protobuf encoded execution payload.
 	FlagProtoEVMPayload Flag = "proto-evm-payload"
+	// FlagFuzzOctane enables fuzz testing of octane.
+	FlagFuzzOctane Flag = "fuzz-octane"
 	// FlagSolverV2 enables the new solver v2.
 	FlagSolverV2 Flag = "solver-v2"
 )
@@ -28,6 +30,7 @@ var allFlags = map[Flag]bool{
 	FlagEVMStakingModule: true,
 	FlagSimpleEVMEvents:  true,
 	FlagProtoEVMPayload:  true,
+	FlagFuzzOctane:       true,
 	FlagSolverV2:         true,
 }
 
