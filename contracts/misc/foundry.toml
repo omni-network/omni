@@ -8,12 +8,12 @@ remappings = [
   "ds-test/=node_modules/ds-test/src",
   "src/=src",
   "test/=test",
-  "core/=../core"
+  "core/=../core",
 ]
 
 allow_paths = ["../core"]
 
-solc_version = "0.8.24"
+solc_version = "0.8.26"
 
 [fmt]
 bracket_spacing = true

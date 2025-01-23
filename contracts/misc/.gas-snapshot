@@ -1,2 +1,4 @@
+BridgeTest:test_bridge_empty_lockbox() (gas: 744299)
+BridgeTest:test_bridge_success() (gas: 670627)
 PledgeTest:test_pledge_reverts() (gas: 22501)
 PledgeTest:test_pledge_success() (gas: 51984)
