@@ -5,21 +5,15 @@ import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/I
 import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import { XAppUpgradeable } from "core/src/pkg/XAppUpgradeable.sol";
-import { IBridgeUpgradeable } from "./interfaces/IBridgeUpgradeable.sol";
+import { IBridge } from "./interfaces/IBridge.sol";
 
 import { ConfLevel } from "core/src/libraries/ConfLevel.sol";
 import { TypeMax } from "core/src/libraries/TypeMax.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
-import { IMintBurn } from "./interfaces/IMintBurn.sol";
-import { ILockboxUpgradeable } from "./interfaces/ILockboxUpgradeable.sol";
+import { ITokenOps } from "./interfaces/ITokenOps.sol";
+import { ILockbox } from "./interfaces/ILockbox.sol";
 
-contract BridgeUpgradeable is
-    Initializable,
-    AccessControlUpgradeable,
-    PausableUpgradeable,
-    XAppUpgradeable,
-    IBridgeUpgradeable
-{
+contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable, XAppUpgradeable, IBridge {
     using SafeTransferLib for address;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -39,17 +33,12 @@ contract BridgeUpgradeable is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /**
-     * @dev Address of the token being wrapped.
+     * @dev Address of the token being bridged.
      */
     address public token;
 
     /**
-     * @dev Address of the token wrapper being bridged.
-     */
-    address public wrapper;
-
-    /**
-     * @dev Lockbox (if assigned) indicating where the wrapper's original tokens are stored.
+     * @dev Lockbox (if assigned) indicating where the token is wrapped.
      */
     address public lockbox;
 
@@ -86,25 +75,15 @@ contract BridgeUpgradeable is
     /*                        INITIALIZER                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function initialize(
-        address admin_,
-        address pauser_,
-        address omni_,
-        address wrapper_,
-        address token_,
-        address lockbox_
-    ) external initializer {
+    function initialize(address admin_, address pauser_, address omni_, address token_, address lockbox_)
+        external
+        initializer
+    {
         // Validate required inputs are not zero addresses.
         if (admin_ == address(0)) revert ZeroAddress();
         if (pauser_ == address(0)) revert ZeroAddress();
         if (omni_ == address(0)) revert ZeroAddress();
-        if (wrapper_ == address(0)) revert ZeroAddress();
-
-        // If either token or lockbox is set, both must be set.
-        if (token_ != address(0) || lockbox_ != address(0)) {
-            if (token_ == address(0)) revert BadInput();
-            if (lockbox_ == address(0)) revert BadInput();
-        }
+        if (token_ == address(0)) revert ZeroAddress();
 
         // Initialize everything and grant roles.
         __AccessControl_init();
@@ -114,14 +93,13 @@ contract BridgeUpgradeable is
         _grantRole(PAUSER_ROLE, pauser_);
 
         // Set configured values.
-        wrapper = wrapper_;
-        if (token_ != address(0)) token = token_;
+        token = token_;
         if (lockbox_ != address(0)) lockbox = lockbox_;
 
         // Give lockbox relevant approvals to handle deposits and withdrawals if necessary.
         if (lockbox_ != address(0)) {
+            ILockbox(lockbox_).token().safeApproveWithRetry(lockbox_, type(uint256).max);
             token_.safeApproveWithRetry(lockbox_, type(uint256).max);
-            wrapper_.safeApproveWithRetry(lockbox_, type(uint256).max);
         }
     }
 
@@ -145,9 +123,7 @@ contract BridgeUpgradeable is
      */
     function bridgeFee(uint64 destChainId) external view returns (uint256 fee) {
         return feeFor(
-            destChainId,
-            abi.encodeCall(BridgeUpgradeable.receiveToken, (TypeMax.Address, TypeMax.Uint256)),
-            DEFAULT_GAS_LIMIT
+            destChainId, abi.encodeCall(Bridge.receiveToken, (TypeMax.Address, TypeMax.Uint256)), DEFAULT_GAS_LIMIT
         );
     }
 
@@ -157,14 +133,14 @@ contract BridgeUpgradeable is
 
     /**
      * @dev Bridges a token to a destination chain.
-     * @param wrap        Whether to wrap the token first.
      * @param destChainId The chainId of the destination chain.
      * @param to          The address of the recipient.
      * @param value       The amount of tokens to bridge.
+     * @param wrap        Whether to wrap the token first.
      */
-    function sendToken(bool wrap, uint64 destChainId, address to, uint256 value) external payable whenNotPaused {
-        _validateSend(wrap, destChainId, to, value);
-        _sendToken(wrap, destChainId, to, value);
+    function sendToken(uint64 destChainId, address to, uint256 value, bool wrap) external payable whenNotPaused {
+        _validateSend(destChainId, to, value, wrap);
+        _sendToken(destChainId, to, value, wrap);
     }
 
     /**
@@ -181,11 +157,11 @@ contract BridgeUpgradeable is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /**
-     * @dev Configures bridges for given chainIds.
+     * @dev Sets bridge routes for given chainIds.
      * @param chainIds    The chainIds to configure.
      * @param bridgeAddrs The bridges addresses to configure.
      */
-    function configureBridges(uint64[] calldata chainIds, address[] calldata bridgeAddrs)
+    function setRoutes(uint64[] calldata chainIds, address[] calldata bridgeAddrs)
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
@@ -216,38 +192,40 @@ contract BridgeUpgradeable is
 
     /**
      * @dev Validates the outbound transfer of tokens.
-     * @param wrap        Whether the token is being wrapped.
      * @param destChainId The chainId of the destination chain.
      * @param to          The address of the recipient.
      * @param value       The amount of tokens to transfer.
+     * @param wrap        Whether the token is being wrapped.
      */
-    function _validateSend(bool wrap, uint64 destChainId, address to, uint256 value) internal view {
-        if (wrap && token == address(0)) revert CannotWrap();
+    function _validateSend(uint64 destChainId, address to, uint256 value, bool wrap) internal view {
         if (_routes[destChainId] == address(0)) revert InvalidRoute(destChainId);
         if (to == address(0)) revert ZeroAddress();
         if (value == 0) revert ZeroAmount();
+        if (wrap && lockbox == address(0)) revert CannotWrap();
     }
 
     /**
      * @dev Handles retrieving tokens from the sender and prepares for crosschain transfer.
-     * @param wrap        Whether the token is being wrapped.
      * @param destChainId The chainId of the destination chain.
      * @param to          The address of the recipient.
      * @param value       The amount of tokens to transfer.
+     * @param wrap        Whether the token is being wrapped.
      */
-    function _sendToken(bool wrap, uint64 destChainId, address to, uint256 value) internal {
-        address _wrapper = wrapper; // Cache address for gas optimization.
+    function _sendToken(uint64 destChainId, address to, uint256 value, bool wrap) internal {
+        // Cache addresses for gas optimization.
+        address _token = token;
+        address _lockbox = lockbox;
 
         // Retrieve tokens from the sender, and deposit them into the lockbox for wrapping if necessary.
         if (wrap) {
-            token.safeTransferFrom(msg.sender, address(this), value);
-            ILockboxUpgradeable(lockbox).deposit(value);
+            ILockbox(_lockbox).token().safeTransferFrom(msg.sender, address(this), value);
+            ILockbox(_lockbox).deposit(value);
         } else {
-            _wrapper.safeTransferFrom(msg.sender, address(this), value);
+            _token.safeTransferFrom(msg.sender, address(this), value);
         }
 
-        // Burn the wrapped tokens.
-        IMintBurn(_wrapper).burn(value);
+        // Burn the tokens.
+        ITokenOps(_token).burn(value);
 
         // Send the tokens to the destination chain.
         _omniTransfer(destChainId, to, value);
@@ -260,13 +238,13 @@ contract BridgeUpgradeable is
      * @param value       The amount of tokens to transfer.
      */
     function _omniTransfer(uint64 destChainId, address to, uint256 value) internal {
-        bytes memory data = abi.encodeCall(BridgeUpgradeable.receiveToken, (to, value));
+        bytes memory data = abi.encodeCall(Bridge.receiveToken, (to, value));
         uint256 fee = xcall(destChainId, _routes[destChainId], data, DEFAULT_GAS_LIMIT);
 
         if (msg.value < fee) revert InsufficientPayment();
         if (msg.value > fee) msg.sender.safeTransferETH(msg.value - fee);
 
-        emit CrosschainTransfer(destChainId, msg.sender, to, value);
+        emit TokenSent(destChainId, msg.sender, to, value);
     }
 
     /**
@@ -276,24 +254,24 @@ contract BridgeUpgradeable is
      */
     function _receiveToken(address to, uint256 value) internal {
         // Cache addresses for gas optimization.
+        address _token = token;
         address _lockbox = lockbox;
-        address _wrapper = wrapper;
 
         if (_lockbox == address(0)) {
             // If no lockbox is set, just mint the wrapped tokens to the recipient.
-            IMintBurn(_wrapper).mint(to, value);
+            ITokenOps(_token).mint(to, value);
         } else {
             // If a lockbox is set, mint the wrapped tokens to the bridge contract.
-            IMintBurn(_wrapper).mint(address(this), value);
+            ITokenOps(_token).mint(address(this), value);
 
             // Attempt withdrawal from the lockbox, but transfer the wrapped tokens to the recipient if it fails.
-            try ILockboxUpgradeable(_lockbox).withdrawTo(to, value) { }
+            try ILockbox(_lockbox).withdrawTo(to, value) { }
             catch {
-                _wrapper.safeTransfer(to, value);
+                _token.safeTransfer(to, value);
                 emit LockboxWithdrawalFailed(_lockbox, to, value);
             }
         }
 
-        emit CrosschainReceive(xmsg.sourceChainId, to, value);
+        emit TokenReceived(xmsg.sourceChainId, to, value);
     }
 }

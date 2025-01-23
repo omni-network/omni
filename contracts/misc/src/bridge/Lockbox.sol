@@ -4,12 +4,12 @@ pragma solidity 0.8.26;
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-import { ILockboxUpgradeable } from "./interfaces/ILockboxUpgradeable.sol";
+import { ILockbox } from "./interfaces/ILockbox.sol";
 
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
-import { IMintBurn } from "./interfaces/IMintBurn.sol";
+import { ITokenOps } from "./interfaces/ITokenOps.sol";
 
-contract LockboxUpgradeable is Initializable, AccessControlUpgradeable, PausableUpgradeable, ILockboxUpgradeable {
+contract Lockbox is Initializable, AccessControlUpgradeable, PausableUpgradeable, ILockbox {
     using SafeTransferLib for address;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -31,7 +31,7 @@ contract LockboxUpgradeable is Initializable, AccessControlUpgradeable, Pausable
     /**
      * @dev Address of the bridgeable wrapper contract for `token`.
      */
-    address public wrapper;
+    address public wrapped;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                        CONSTRUCTOR                         */
@@ -45,14 +45,22 @@ contract LockboxUpgradeable is Initializable, AccessControlUpgradeable, Pausable
     /*                        INITIALIZER                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function initialize(address admin_, address pauser_, address token_, address wrapper_) external initializer {
+    function initialize(address admin_, address pauser_, address token_, address wrapped_) external initializer {
+        // Validate required inputs are not zero addresses.
+        if (admin_ == address(0)) revert ZeroAddress();
+        if (pauser_ == address(0)) revert ZeroAddress();
+        if (token_ == address(0)) revert ZeroAddress();
+        if (wrapped_ == address(0)) revert ZeroAddress();
+
+        // Initialize everything and grant roles.
         __AccessControl_init();
         __Pausable_init();
         _grantRole(DEFAULT_ADMIN_ROLE, admin_);
         _grantRole(PAUSER_ROLE, pauser_);
 
+        // Set configured values.
         token = token_;
-        wrapper = wrapper_;
+        wrapped = wrapped_;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -123,8 +131,7 @@ contract LockboxUpgradeable is Initializable, AccessControlUpgradeable, Pausable
      */
     function _deposit(address from, address to, uint256 value) internal {
         token.safeTransferFrom(from, address(this), value);
-
-        IMintBurn(wrapper).mint(to, value);
+        ITokenOps(wrapped).mint(to, value);
     }
 
     /**
@@ -134,12 +141,7 @@ contract LockboxUpgradeable is Initializable, AccessControlUpgradeable, Pausable
      * @param value The amount of tokens to withdraw.
      */
     function _withdraw(address from, address to, uint256 value) internal {
-        address _wrapper = wrapper; // Cache address for gas optimization.
-
-        _wrapper.safeTransferFrom(from, address(this), value);
-
-        IMintBurn(_wrapper).burn(value);
-
+        ITokenOps(wrapped).clawback(from, value);
         token.safeTransfer(to, value);
     }
 }

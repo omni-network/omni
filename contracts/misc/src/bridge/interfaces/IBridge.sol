@@ -1,15 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-interface IBridgeUpgradeable {
+interface IBridge {
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                           ERRORS                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    /**
-     * @dev Error thrown when the input is invalid.
-     */
-    error BadInput();
 
     /**
      * @dev Error thrown when no token and lockbox are set.
@@ -58,12 +53,12 @@ interface IBridgeUpgradeable {
     /**
      * @dev Event emitted when a crosschain token transfer is initiated.
      */
-    event CrosschainTransfer(uint64 indexed destChainId, address indexed from, address indexed to, uint256 value);
+    event TokenSent(uint64 indexed destChainId, address indexed from, address indexed to, uint256 value);
 
     /**
      * @dev Event emitted when a crosschain token transfer is received.
      */
-    event CrosschainReceive(uint64 indexed srcChainId, address indexed to, uint256 value);
+    event TokenReceived(uint64 indexed srcChainId, address indexed to, uint256 value);
 
     /**
      * @dev Event emitted when a lockbox withdrawal fails.
@@ -75,17 +70,12 @@ interface IBridgeUpgradeable {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /**
-     * @dev The address of the token being wrapped.
+     * @dev Address of the token being bridged.
      */
     function token() external view returns (address);
 
     /**
-     * @dev The address of the token wrapper being bridged.
-     */
-    function wrapper() external view returns (address);
-
-    /**
-     * @dev The address of the lockbox where the wrapper's original tokens are stored.
+     * @dev Lockbox (if assigned) indicating where the token is wrapped.
      */
     function lockbox() external view returns (address);
 
@@ -113,12 +103,12 @@ interface IBridgeUpgradeable {
 
     /**
      * @dev Bridges a token to a destination chain.
-     * @param wrap        Whether to wrap the token first.
      * @param destChainId The chainId of the destination chain.
      * @param to          The address of the recipient.
      * @param value       The amount of tokens to bridge.
+     * @param wrap        Whether to wrap the token first.
      */
-    function sendToken(bool wrap, uint64 destChainId, address to, uint256 value) external payable;
+    function sendToken(uint64 destChainId, address to, uint256 value, bool wrap) external payable;
 
     /**
      * @dev Receives a token from a bridge contract and mints/unwraps it to the recipient.
@@ -132,9 +122,9 @@ interface IBridgeUpgradeable {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /**
-     * @dev Configures bridges for given chainIds.
+     * @dev Sets bridge routes for given chainIds.
      * @param chainIds    The chainIds to configure.
      * @param bridgeAddrs The bridges addresses to configure.
      */
-    function configureBridges(uint64[] calldata chainIds, address[] calldata bridgeAddrs) external;
+    function setRoutes(uint64[] calldata chainIds, address[] calldata bridgeAddrs) external;
 }

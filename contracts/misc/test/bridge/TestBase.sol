@@ -4,8 +4,8 @@ pragma solidity 0.8.26;
 import { StablecoinUpgradeable } from "rlusd/contracts/StablecoinUpgradeable.sol";
 import { StablecoinProxy } from "rlusd/contracts/StablecoinProxy.sol";
 
-import { LockboxUpgradeable } from "src/bridge/LockboxUpgradeable.sol";
-import { BridgeUpgradeable, IBridgeUpgradeable } from "src/bridge/BridgeUpgradeable.sol";
+import { Lockbox } from "src/bridge/Lockbox.sol";
+import { Bridge, IBridge } from "src/bridge/Bridge.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import { Test } from "forge-std/Test.sol";
@@ -17,9 +17,9 @@ contract TestBase is Test {
     StablecoinUpgradeable internal srcWrapper;
     StablecoinUpgradeable internal destWrapper;
 
-    LockboxUpgradeable internal srcLockbox;
-    BridgeUpgradeable internal srcBridge;
-    BridgeUpgradeable internal destBridge;
+    Lockbox internal srcLockbox;
+    Bridge internal srcBridge;
+    Bridge internal destBridge;
 
     MockPortal internal omni;
 
@@ -55,7 +55,7 @@ contract TestBase is Test {
     }
 
     function mockBridge(
-        BridgeUpgradeable origin,
+        Bridge origin,
         uint64 srcChainId,
         uint64 destChainId,
         bool wrap,
@@ -65,17 +65,17 @@ contract TestBase is Test {
     ) internal {
         address destination = origin.routes(destChainId);
         uint256 fee = origin.bridgeFee(destChainId);
-        bytes memory data = abi.encodeCall(BridgeUpgradeable.receiveToken, (to, value));
+        bytes memory data = abi.encodeCall(Bridge.receiveToken, (to, value));
 
         vm.chainId(srcChainId);
         vm.prank(from);
         vm.expectEmit(true, true, true, true);
-        emit IBridgeUpgradeable.CrosschainTransfer(destChainId, from, to, value);
-        origin.sendToken{ value: fee }(wrap, destChainId, to, value);
+        emit IBridge.TokenSent(destChainId, from, to, value);
+        origin.sendToken{ value: fee }(destChainId, to, value, wrap);
 
         vm.chainId(destChainId);
         vm.expectEmit(true, true, true, true);
-        emit IBridgeUpgradeable.CrosschainReceive(srcChainId, to, value);
+        emit IBridge.TokenReceived(srcChainId, to, value);
         omni.mockXCall(srcChainId, address(origin), destination, data, DEFAULT_GAS_LIMIT);
 
         vm.chainId(srcChainId);
@@ -89,8 +89,8 @@ contract TestBase is Test {
 
     function _deployInfra() internal {
         srcLockbox = _deployLockbox(address(originalToken), address(srcWrapper));
-        srcBridge = _deployBridge(address(srcWrapper), address(originalToken), address(srcLockbox));
-        destBridge = _deployBridge(address(destWrapper), address(0), address(0));
+        srcBridge = _deployBridge(address(srcWrapper), address(srcLockbox));
+        destBridge = _deployBridge(address(destWrapper), address(0));
     }
 
     function _deployToken(string memory name, string memory symbol) internal returns (StablecoinUpgradeable) {
@@ -103,21 +103,20 @@ contract TestBase is Test {
         return StablecoinUpgradeable(proxy);
     }
 
-    function _deployLockbox(address token, address wrapper) internal returns (LockboxUpgradeable) {
-        address impl = address(new LockboxUpgradeable());
-        bytes memory data = abi.encodeCall(LockboxUpgradeable.initialize, (admin, pauser, token, wrapper));
+    function _deployLockbox(address token, address wrapper) internal returns (Lockbox) {
+        address impl = address(new Lockbox());
+        bytes memory data = abi.encodeCall(Lockbox.initialize, (admin, pauser, token, wrapper));
 
         address proxy = address(new TransparentUpgradeableProxy(impl, admin, data));
-        return LockboxUpgradeable(proxy);
+        return Lockbox(proxy);
     }
 
-    function _deployBridge(address wrapper, address token, address lockbox) internal returns (BridgeUpgradeable) {
-        bytes memory data =
-            abi.encodeCall(BridgeUpgradeable.initialize, (admin, pauser, address(omni), wrapper, token, lockbox));
-        address impl = address(new BridgeUpgradeable());
+    function _deployBridge(address token, address lockbox) internal returns (Bridge) {
+        bytes memory data = abi.encodeCall(Bridge.initialize, (admin, pauser, address(omni), token, lockbox));
+        address impl = address(new Bridge());
 
         address proxy = address(new TransparentUpgradeableProxy(impl, admin, data));
-        return BridgeUpgradeable(proxy);
+        return Bridge(proxy);
     }
 
     function _fundUser() internal {
@@ -150,11 +149,11 @@ contract TestBase is Test {
 
         chainIds[0] = DEST_CHAIN_ID;
         bridges[0] = address(destBridge);
-        srcBridge.configureBridges(chainIds, bridges);
+        srcBridge.setRoutes(chainIds, bridges);
 
         chainIds[0] = SRC_CHAIN_ID;
         bridges[0] = address(srcBridge);
-        destBridge.configureBridges(chainIds, bridges);
+        destBridge.setRoutes(chainIds, bridges);
 
         vm.stopPrank();
     }
@@ -163,7 +162,7 @@ contract TestBase is Test {
         vm.startPrank(admin);
 
         srcWrapper.grantRole(srcWrapper.MINTER_ROLE(), address(srcLockbox));
-        srcWrapper.grantRole(srcWrapper.BURNER_ROLE(), address(srcLockbox));
+        srcWrapper.grantRole(srcWrapper.CLAWBACKER_ROLE(), address(srcLockbox));
 
         srcWrapper.revokeRole(srcWrapper.MINTER_ROLE(), admin); // Assigned at initialization, unnecessary.
         srcWrapper.grantRole(srcWrapper.MINTER_ROLE(), address(srcBridge));

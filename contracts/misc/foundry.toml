@@ -9,7 +9,6 @@ remappings = [
   "src/=src",
   "test/=test",
   "core/=../core",
-  "solve/=../solve"
 ]
 
 allow_paths = ["../core"]
