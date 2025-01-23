@@ -99,7 +99,7 @@ func WithMockValidatorCreation(pubkey crypto.PubKey) func(*engineMock) {
 }
 
 // WithMockDelegation returns an option to add a delegation event to the mock from the specified address.
-func WithMockDelegation(validatorPubkey crypto.PubKey, delegatorPukey crypto.PubKey, ether int64) func(*engineMock) {
+func WithMockDelegation(validatorPubkey crypto.PubKey, delegatorAddr common.Address, ether int64) func(*engineMock) {
 	return func(mock *engineMock) {
 		mock.mu.Lock()
 		defer mock.mu.Unlock()
@@ -107,11 +107,6 @@ func WithMockDelegation(validatorPubkey crypto.PubKey, delegatorPukey crypto.Pub
 		wei := new(big.Int).Mul(big.NewInt(ether), big.NewInt(params.Ether))
 
 		valAddr, err := k1util.PubKeyToAddress(validatorPubkey)
-		if err != nil {
-			panic(errors.Wrap(err, "pubkey to address"))
-		}
-
-		delegatorAddr, err := k1util.PubKeyToAddress(delegatorPukey)
 		if err != nil {
 			panic(errors.Wrap(err, "pubkey to address"))
 		}
@@ -139,7 +134,12 @@ func WithMockDelegation(validatorPubkey crypto.PubKey, delegatorPukey crypto.Pub
 
 // WithMockSelfDelegation returns an option to add a self-delegation Delegate event to the mock.
 func WithMockSelfDelegation(pubkey crypto.PubKey, ether int64) func(*engineMock) {
-	return WithMockDelegation(pubkey, pubkey, ether)
+	delegatorAddr, err := k1util.PubKeyToAddress(pubkey)
+	if err != nil {
+		panic(errors.Wrap(err, "pubkey to address"))
+	}
+
+	return WithMockDelegation(pubkey, delegatorAddr, ether)
 }
 
 func WithPortalRegister(network netconf.Network) func(*engineMock) {

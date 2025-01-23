@@ -2,14 +2,15 @@ package keeper
 
 import (
 	context "context"
-	"errors"
 	"strings"
 	"testing"
 
 	"github.com/omni-network/omni/halo/evmstaking2/testutil"
 	"github.com/omni-network/omni/halo/evmstaking2/types"
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/feature"
+	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/netconf"
 	evmengkeeper "github.com/omni-network/omni/octane/evmengine/keeper"
 	etypes "github.com/omni-network/omni/octane/evmengine/types"
@@ -285,12 +286,15 @@ func TestNonSelfDelegationEventDelivery(t *testing.T) {
 
 	privKey := k1.GenPrivKey()
 	delegatorPrivKey := k1.GenPrivKey()
-	delegatorPubkey := delegatorPrivKey.PubKey()
+	delegatorAddr, err := k1util.PubKeyToAddress(delegatorPrivKey.PubKey())
+	if err != nil {
+		panic(errors.Wrap(err, "pubkey to address"))
+	}
 
 	ethClientMock, err := ethclient.NewEngineMock(
 		ethclient.WithPortalRegister(netconf.SimnetNetwork()),
 		ethclient.WithMockValidatorCreation(privKey.PubKey()),
-		ethclient.WithMockDelegation(privKey.PubKey(), delegatorPubkey, ethStake),
+		ethclient.WithMockDelegation(privKey.PubKey(), delegatorAddr, ethStake),
 	)
 	require.NoError(t, err)
 
