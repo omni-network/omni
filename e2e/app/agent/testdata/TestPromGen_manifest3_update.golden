@@ -1,6 +1,6 @@
 global:
-  scrape_interval: 30s # Set the scrape interval to every 30 seconds.
-  evaluation_interval: 30s # Evaluate rules every 30 seconds.
+  scrape_interval: 1m # Set the scrape interval to 1m (default).
+  evaluation_interval: 1m # Evaluate rules every 1m (default).
 
 scrape_configs:
   - job_name: "halo"
