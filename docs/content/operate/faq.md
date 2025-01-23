@@ -27,21 +27,23 @@ Although Geth technically supports ["ethereum full sync" and "ethereum snap sync
 
 The following three options are currently supported:
 1. Halo "fast sync" + Geth "full sync"
-- Syncs both chains from genesis.
-- This is the slowest option.
+   - Syncs both chains from genesis.
+   - This is the slowest option.
 
 2. Halo "state sync" + Geth "full sync"
-- CometBFT state sync protocol is configured which syncs the consensus chain from a recent snapshot.
-- This provides a "full sync" target to Geth, which then performs a full sync from genesis.
-- This is faster than option 1.
-- See mode details [here](config.md#configure-cometbft-state-sync).
+   - CometBFT state sync protocol is configured which syncs the consensus chain from a recent snapshot.
+   - This provides a "full sync" target to Geth, which then performs a full sync from genesis.
+   - This is faster than option 1.
+   - See mode details [here](config.md#configure-cometbft-state-sync).
 
 3. Restoring Node Snapshots
-- Omni provides node snapshot (tarballs) which are disk backups of both halo and geth data directories.
-- These node snapshots are taken daily from Omni's archive nodes.
-- The nodes will replay blocks from the snapshot to the current block height.
-- This is the fastest option.
-- See more details [here](config.md#restoring-node-snapshots).
+   - Omni provides node snapshot (tarballs) which are disk backups of both `halo` and `geth` data directories.
+   - These node snapshots are taken daily from Omni's archive nodes and have a larger memory footprint (see [Hardware Requirements](run-full-node.md#hardware-requirements)).
+   - This results in the `geth` snapshots utilizing the legacy `hash` state scheme instead of the newer and more memory efficient `path` state scheme.
+   - When spinning up a full node pruning of the archive data (intermediate historical states) is to be expected.
+   - The nodes will replay blocks from the snapshot to the current block height.
+   - This is the fastest option.
+   - See more details [here](config.md#restoring-node-snapshots).
 
 ### How long does Geth fullsync take?
 The time it takes for Geth to do a fullsync (snapsync is not supported yet) depends largely on your disk write throughput.
