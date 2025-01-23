@@ -29,7 +29,7 @@ The fastest and preferred way is to download node snapshots provided by Omni.
    mkdir -p ~/.omni/<network>
    cd ~/.omni/<network>
    ```
-2. Download and extract node snapshots for `geth` and `halo`:
+2. Download and extract latest node snapshots for `geth` and `halo`:
    ```bash
    # Create output directories.
    mkdir geth halo
@@ -38,13 +38,18 @@ The fastest and preferred way is to download node snapshots provided by Omni.
    # Download and extract halo snapshot.
    curl -L https://storage.googleapis.com/omni-staging-snapshots/halo_data.tar.lz4 | tar --use-compress-program=lz4 -xvf - -C ./halo
    ```
-   > **NOTE**: If you are using macOS there are some additional steps in order make the above commands work correctly.
+   > **NOTE**
+   >
+   > If you are using macOS there are some additional steps in order make the above commands work correctly.
    > ```bash
    > # Install gnu-tar and lz4
    > brew install gnu-tar lz4
    > # Set an alias for tar, otherwise you have to use gtar instead of tar.
    > alias tar=gtar
    > ```
+
+**IMPORTANT**: [CometBFT State Sync](#configure-cometbft-state-sync) should not be configured when restoring node snapshots.
+
 
 ## Configure halo
 
