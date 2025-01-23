@@ -51,10 +51,10 @@ type appliedUpgradeFunc func(ctx context.Context, name string) (upgradetypes.Pla
 type signingFunc func(ctx context.Context) ([]cchain.SDKSigningInfo, error)
 
 type valSetResponse struct {
-	ValSetID      uint64
-	Validators    []cchain.PortalValidator
-	CreatedHeight uint64
-	activedHeight uint64
+	ValSetID        uint64
+	Validators      []cchain.PortalValidator
+	CreatedHeight   uint64
+	activatedHeight uint64
 }
 
 // Provider implements cchain.Provider.

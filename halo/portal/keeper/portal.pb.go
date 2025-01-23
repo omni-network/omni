@@ -21,11 +21,11 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Block groups a set of Msgs adding height and offset.
+// Block groups a set of Msgs.
 type Block struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            uint64                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`                                            // Auto-incremented ID (BlockHeight, AttestOffset)
-	CreatedHeight uint64                 `protobuf:"varint,2,opt,name=created_height,json=createdHeight,proto3" json:"created_height,omitempty"` // Height this block was created at.
+	Id            uint64                 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`                                            // Auto-incremented ID (also used as BlockHeight and AttestOffset)
+	CreatedHeight uint64                 `protobuf:"varint,2,opt,name=created_height,json=createdHeight,proto3" json:"created_height,omitempty"` // Consensus height this block was created at.
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

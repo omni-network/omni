@@ -41,9 +41,9 @@ type Keeper struct {
 	emitPortal        ptypes.EmitPortal
 	subscriberInitted bool
 
-	ethCl           ethclient.Client
-	portalRegAdress common.Address
-	portalRegistry  *bindings.PortalRegistryFilterer
+	ethCl            ethclient.Client
+	portalRegAddress common.Address
+	portalRegistry   *bindings.PortalRegistryFilterer
 }
 
 func NewKeeper(
@@ -69,21 +69,21 @@ func NewKeeper(
 	}
 
 	address := common.HexToAddress(predeploys.PortalRegistry)
-	protalReg, err := bindings.NewPortalRegistryFilterer(address, ethCl)
+	portalReg, err := bindings.NewPortalRegistryFilterer(address, ethCl)
 	if err != nil {
 		return nil, errors.Wrap(err, "new portal registry")
 	}
 
 	return &Keeper{
-		valsetTable:     valSyncStore.ValidatorSetTable(),
-		valTable:        valSyncStore.ValidatorTable(),
-		sKeeper:         sKeeper,
-		aKeeper:         aKeeper,
-		subscriber:      subscriber,
-		emitPortal:      portal,
-		ethCl:           ethCl,
-		portalRegAdress: address,
-		portalRegistry:  protalReg,
+		valsetTable:      valSyncStore.ValidatorSetTable(),
+		valTable:         valSyncStore.ValidatorTable(),
+		sKeeper:          sKeeper,
+		aKeeper:          aKeeper,
+		subscriber:       subscriber,
+		emitPortal:       portal,
+		ethCl:            ethCl,
+		portalRegAddress: address,
+		portalRegistry:   portalReg,
 	}, nil
 }
 

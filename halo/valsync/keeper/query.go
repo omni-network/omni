@@ -87,14 +87,14 @@ func (k *Keeper) ValidatorSet(ctx context.Context, req *types.ValidatorSetReques
 		}
 	}
 
-	vatset, err := k.valsetTable.Get(ctx, valsetID)
+	valset, err := k.valsetTable.Get(ctx, valsetID)
 	if errors.Is(err, ormerrors.NotFound) {
 		return nil, status.Error(codes.NotFound, "no validator set found for id")
 	} else if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	valIter, err := k.valTable.List(ctx, ValidatorValsetIdIndexKey{}.WithValsetId(vatset.GetId()))
+	valIter, err := k.valTable.List(ctx, ValidatorValsetIdIndexKey{}.WithValsetId(valset.GetId()))
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -118,9 +118,9 @@ func (k *Keeper) ValidatorSet(ctx context.Context, req *types.ValidatorSetReques
 	}
 
 	return &types.ValidatorSetResponse{
-		Id:              vatset.GetId(),
-		CreatedHeight:   vatset.GetCreatedHeight(),
-		ActivatedHeight: vatset.GetActivatedHeight(),
+		Id:              valset.GetId(),
+		CreatedHeight:   valset.GetCreatedHeight(),
+		ActivatedHeight: valset.GetActivatedHeight(),
 		Validators:      vals,
 	}, nil
 }

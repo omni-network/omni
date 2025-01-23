@@ -20,7 +20,7 @@ service MsgService {
   rpc ExecutionPayload (MsgExecutionPayload) returns (ExecutionPayloadResponse);
 }
 
-// MsgExecutionPayload defines the  next EVM execution payload and the
+// MsgExecutionPayload defines the next EVM execution payload and the
 // logs from previous execution payload.
 message MsgExecutionPayload {
   option (cosmos.msg.v1.signer) = "authority";

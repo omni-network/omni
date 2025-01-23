@@ -30,7 +30,7 @@ func (Keeper) Name() string {
 
 // FilterParams defines the matching EVM log events, see github.com/ethereum/go-ethereum#FilterQuery.
 func (k Keeper) FilterParams() ([]common.Address, [][]common.Hash) {
-	return []common.Address{k.portalRegAdress}, [][]common.Hash{{portalRegEvent.ID}}
+	return []common.Address{k.portalRegAddress}, [][]common.Hash{{portalRegEvent.ID}}
 }
 
 // Deliver processes a omni portal registry events.
@@ -101,7 +101,7 @@ func mergePortal(existing []*Portal, portal *Portal) ([]*Portal, error) {
 			continue
 		}
 
-		// Merge new shads with an existing portal
+		// Merge new shards with an existing portal
 		if !bytes.Equal(e.GetAddress(), portal.GetAddress()) {
 			return nil, errors.New("cannot merge existing portal with mismatching address",
 				"existing", e.GetAddress(), "new", portal.GetAddress())

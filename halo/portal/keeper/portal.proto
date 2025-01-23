@@ -6,7 +6,7 @@ import "cosmos/orm/v1/orm.proto";
 
 option go_package = "halo/portal/keeper";
 
-// Block groups a set of Msgs adding height and offset.
+// Block groups a set of Msgs.
 message Block {
   option (cosmos.orm.v1.table) = {
     id: 1;
@@ -14,8 +14,8 @@ message Block {
     index: {id: 2, fields: "created_height", unique: true} // Allow querying by created_height.
   };
 
-  uint64 id               = 1; // Auto-incremented ID (BlockHeight, AttestOffset)
-  uint64 created_height   = 2; // Height this block was created at.
+  uint64 id               = 1; // Auto-incremented ID (also used as BlockHeight and AttestOffset)
+  uint64 created_height   = 2; // Consensus height this block was created at.
 }
 
 // Msg represents a single cross-chain message emitted by the consensus chain portal.

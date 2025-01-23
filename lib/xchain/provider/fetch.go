@@ -105,7 +105,7 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.Ref, stream 
 
 	offset, err := caller.OutXMsgOffset(opts, stream.DestChainID, uint64(stream.ShardID))
 	if err != nil {
-		return xchain.EmitCursor{}, false, errors.Wrap(err, "call OutXMgsOffset")
+		return xchain.EmitCursor{}, false, errors.Wrap(err, "call OutXMsgOffset")
 	}
 
 	if offset == 0 {

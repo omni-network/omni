@@ -29,7 +29,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// Connector provider a simple abstraction to connect to the Omni network.
+// Connector provides a simple abstraction to connect to the Omni network.
 type Connector struct {
 	Network    netconf.Network
 	XProvider  xchain.Provider

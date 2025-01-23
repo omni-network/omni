@@ -316,10 +316,10 @@ func newABCIValsetFunc(cl vtypes.QueryClient) valsetFunc {
 		}
 
 		return valSetResponse{
-			ValSetID:      resp.Id,
-			Validators:    vals,
-			CreatedHeight: resp.CreatedHeight,
-			activedHeight: resp.ActivatedHeight,
+			ValSetID:        resp.Id,
+			Validators:      vals,
+			CreatedHeight:   resp.CreatedHeight,
+			activatedHeight: resp.ActivatedHeight,
 		}, true, nil
 	}
 }

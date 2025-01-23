@@ -52,7 +52,7 @@ func PlanUpgrade(ctx context.Context, def app.Definition, cfg Config) error {
 
 	contract, err := bindings.NewUpgrade(common.HexToAddress(predeploys.Upgrade), backend)
 	if err != nil {
-		return errors.Wrap(err, "new staking contract")
+		return errors.Wrap(err, "new upgrade contract")
 	}
 
 	txOpts, err := backend.BindOpts(ctx, eoa.MustAddress(network, eoa.RoleUpgrader))

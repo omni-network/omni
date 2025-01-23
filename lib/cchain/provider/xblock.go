@@ -111,7 +111,7 @@ func (p Provider) msgNetworkData(ctx context.Context, msg ptypes.Msg) ([]byte, e
 
 	data, err := portalABI.Pack("setNetwork", toPortalChains(network.Portals))
 	if err != nil {
-		return nil, errors.Wrap(err, "pack validators")
+		return nil, errors.Wrap(err, "pack network")
 	}
 
 	return data, nil

@@ -36,7 +36,7 @@ const (
 	DefaultHomeDir            = "./halo" // Defaults to "halo" in current directory
 	defaultSnapshotInterval   = 100      // Can't be too large, must overlap with geth snapshotcache.
 	defaultSnapshotKeepRecent = 2
-	defaultMinRetainBlocks    = 1 // Prune all blocks by default, Cosmsos will still respect other needs like snapshots
+	defaultMinRetainBlocks    = 1 // Prune all blocks by default, Cosmos will still respect other needs like snapshots
 
 	defaultPruningOption      = pruningtypes.PruningOptionDefault // Note that Halo interprets this to be PruningEverything
 	defaultDBBackend          = db.GoLevelDBBackend
