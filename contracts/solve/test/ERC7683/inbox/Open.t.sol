@@ -65,6 +65,61 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         );
     }
 
+    function test_open_empty_user_address_succeeds() public {
+        IERC7683.OnchainCrossChainOrder memory order = randOrder();
+        ISolverNet.OrderData memory orderData = abi.decode(order.orderData, (ISolverNet.OrderData));
+        orderData.user = address(0);
+        order.orderData = abi.encode(orderData);
+
+        vm.prank(user);
+        IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+        fundUser(resolvedOrder.minReceived);
+
+        // Store initial state for comparison
+        bytes32 expectedOrderId = inbox.getNextId();
+        uint256 initialUserBalance = token1.balanceOf(user);
+        uint256 initialInboxBalance = token1.balanceOf(address(inbox));
+
+        // Expect the event with the correct namespace and data
+        vm.expectEmit(true, true, true, true, address(inbox));
+        emit IERC7683.Open(expectedOrderId, resolvedOrder);
+
+        vm.prank(user);
+        inbox.open(order);
+
+        // Verify order state and history
+        (
+            IERC7683.ResolvedCrossChainOrder memory storedOrder,
+            ISolverNetInbox.OrderState memory state,
+            ISolverNetInbox.StatusUpdate[] memory history
+        ) = inbox.getOrder(expectedOrderId);
+
+        // Verify that stored resolved order aligns with the original order
+        assertResolved(user, resolvedOrder.orderId, order, storedOrder);
+
+        // Verify order state
+        assertEq(uint8(state.status), uint8(ISolverNetInbox.Status.Pending), "order state: status");
+        assertEq(state.acceptedBy, address(0), "order state: accepted by");
+
+        // Verify order history
+        assertEq(history.length, 1, "order history: length");
+        assertEq(uint8(history[0].status), uint8(ISolverNetInbox.Status.Pending), "order history: status");
+        assertEq(history[0].timestamp, uint40(block.timestamp), "order history: timestamp");
+
+        // Verify latest order ID by status
+        assertEq(
+            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Pending), expectedOrderId, "latest pending order id"
+        );
+
+        // Verify token transfers
+        assertEq(token1.balanceOf(user), initialUserBalance - resolvedOrder.minReceived[0].amount, "user balance after");
+        assertEq(
+            token1.balanceOf(address(inbox)),
+            initialInboxBalance + resolvedOrder.minReceived[0].amount,
+            "inbox balance after"
+        );
+    }
+
     function test_open_reverts_native_deposit_without_value() public {
         // Create order with native deposit but don't send value
         ISolverNet.TokenExpense[] memory expenses = new ISolverNet.TokenExpense[](1);
@@ -88,7 +143,7 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 1 days),
             orderDataType: ORDER_DATA_TYPEHASH,
-            orderData: abi.encode(ISolverNet.OrderData({ call: call, deposits: deposits }))
+            orderData: abi.encode(ISolverNet.OrderData({ user: user, call: call, deposits: deposits }))
         });
 
         vm.prank(user);
@@ -119,7 +174,7 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 1 days),
             orderDataType: ORDER_DATA_TYPEHASH,
-            orderData: abi.encode(ISolverNet.OrderData({ call: call, deposits: deposits }))
+            orderData: abi.encode(ISolverNet.OrderData({ user: user, call: call, deposits: deposits }))
         });
 
         vm.prank(user);
@@ -151,7 +206,7 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 1 days),
             orderDataType: ORDER_DATA_TYPEHASH,
-            orderData: abi.encode(ISolverNet.OrderData({ call: call, deposits: deposits }))
+            orderData: abi.encode(ISolverNet.OrderData({ user: user, call: call, deposits: deposits }))
         });
 
         vm.prank(user);
@@ -182,7 +237,7 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 1 days),
             orderDataType: ORDER_DATA_TYPEHASH,
-            orderData: abi.encode(ISolverNet.OrderData({ call: call, deposits: deposits }))
+            orderData: abi.encode(ISolverNet.OrderData({ user: user, call: call, deposits: deposits }))
         });
 
         // Mint and approve tokens for the ERC20 deposit
@@ -218,7 +273,7 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 1 days),
             orderDataType: ORDER_DATA_TYPEHASH,
-            orderData: abi.encode(ISolverNet.OrderData({ call: call, deposits: deposits }))
+            orderData: abi.encode(ISolverNet.OrderData({ user: user, call: call, deposits: deposits }))
         });
 
         vm.prank(user);
@@ -249,7 +304,7 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 1 days),
             orderDataType: ORDER_DATA_TYPEHASH,
-            orderData: abi.encode(ISolverNet.OrderData({ call: call, deposits: deposits }))
+            orderData: abi.encode(ISolverNet.OrderData({ user: user, call: call, deposits: deposits }))
         });
 
         // Mint tokens but don't approve

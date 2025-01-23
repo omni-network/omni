@@ -157,7 +157,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         });
 
         return ResolvedCrossChainOrder({
-            user: msg.sender,
+            user: orderData.user != address(0) ? orderData.user : msg.sender,
             originChainId: block.chainid,
             openDeadline: uint32(block.timestamp),
             fillDeadline: order.fillDeadline,

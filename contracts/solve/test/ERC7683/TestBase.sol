@@ -105,9 +105,13 @@ contract TestBase is Test {
         bytes memory data,
         ISolverNet.TokenExpense[] memory expenses,
         ISolverNet.Deposit[] memory deposits
-    ) internal pure returns (bytes memory) {
+    ) internal view returns (bytes memory) {
         return abi.encode(
-            ISolverNet.OrderData({ call: ISolverNet.Call(chainId, target, value, data, expenses), deposits: deposits })
+            ISolverNet.OrderData({
+                user: user,
+                call: ISolverNet.Call(chainId, target, value, data, expenses),
+                deposits: deposits
+            })
         );
     }
 
@@ -137,7 +141,7 @@ contract TestBase is Test {
             expenses: expenses
         });
 
-        ISolverNet.OrderData memory orderData = ISolverNet.OrderData({ call: call, deposits: deposits });
+        ISolverNet.OrderData memory orderData = ISolverNet.OrderData({ user: user, call: call, deposits: deposits });
 
         return IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 1 minutes),
@@ -172,7 +176,7 @@ contract TestBase is Test {
             expenses: expenses
         });
 
-        ISolverNet.OrderData memory orderData = ISolverNet.OrderData({ call: call, deposits: deposits });
+        ISolverNet.OrderData memory orderData = ISolverNet.OrderData({ user: user, call: call, deposits: deposits });
 
         return IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 1 minutes),
@@ -223,7 +227,7 @@ contract TestBase is Test {
             expenses: expenses
         });
 
-        ISolverNet.OrderData memory orderData = ISolverNet.OrderData({ call: call, deposits: deposits });
+        ISolverNet.OrderData memory orderData = ISolverNet.OrderData({ user: user, call: call, deposits: deposits });
 
         return IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 1 minutes),
