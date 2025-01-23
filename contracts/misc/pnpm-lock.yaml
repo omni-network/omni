@@ -14,12 +14,12 @@ importers:
       '@openzeppelin/contracts-upgradeable':
         specifier: ^5.2.0
         version: 5.2.0(@openzeppelin/contracts@5.2.0)
-      RLUSD-Implementation:
-        specifier: github:ripple/RLUSD-Implementation
-        version: https://codeload.github.com/ripple/RLUSD-Implementation/tar.gz/07a27d74863a22f6ad403b5a9f8bb3aea76e05eb
       createx:
         specifier: github:pcaversaccio/createx
         version: https://codeload.github.com/pcaversaccio/createx/tar.gz/ff43c668db7381216ce4e0059ff44ac0d119bfd6
+      rlusd:
+        specifier: github:ripple/RLUSD-Implementation
+        version: RLUSD-Implementation@https://codeload.github.com/ripple/RLUSD-Implementation/tar.gz/07a27d74863a22f6ad403b5a9f8bb3aea76e05eb
       solady:
         specifier: ^0.0.295
         version: 0.0.295

@@ -2,7 +2,6 @@
 pragma solidity 0.8.26;
 
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import { XAppUpgradeable } from "core/src/pkg/XAppUpgradeable.sol";
@@ -11,13 +10,11 @@ import { IBridgeUpgradeable } from "./interfaces/IBridgeUpgradeable.sol";
 import { ConfLevel } from "core/src/libraries/ConfLevel.sol";
 import { TypeMax } from "core/src/libraries/TypeMax.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
-
 import { IMintBurn } from "./interfaces/IMintBurn.sol";
 import { ILockboxUpgradeable } from "./interfaces/ILockboxUpgradeable.sol";
 
 contract BridgeUpgradeable is
     Initializable,
-    UUPSUpgradeable,
     AccessControlUpgradeable,
     PausableUpgradeable,
     XAppUpgradeable,
@@ -29,39 +26,37 @@ contract BridgeUpgradeable is
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    //keccak256("UPGRADER")
-    bytes32 public constant UPGRADER_ROLE = 0xa615a8afb6fffcb8c6809ac0997b5c9c12b8cc97651150f14c8f6203168cff4c;
-    //keccak256("PAUSER")
+    // keccak256("PAUSER")
     bytes32 public constant PAUSER_ROLE = 0x539440820030c4994db4e31b6b800deafd503688728f932addfe7a410515c14c;
 
     /**
      * @dev Default gas limit for xcalls.
      */
-    uint64 internal constant DEFAULT_GAS_LIMIT = 105_000;
+    uint64 internal constant DEFAULT_GAS_LIMIT = 140_000;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /**
-     * @dev The stablecoin lockbox where native tokens are deposited.
+     * @dev Address of the token being wrapped.
      */
-    ILockboxUpgradeable public lockbox;
+    address public token;
+
+    /**
+     * @dev Address of the token wrapper being bridged.
+     */
+    address public wrapper;
+
+    /**
+     * @dev Lockbox (if assigned) indicating where the wrapper's original tokens are stored.
+     */
+    address public lockbox;
 
     /**
      * @dev Mapping of destination chainId to bridge contract.
      */
-    mapping(uint64 chainId => address bridge) public bridgeRoutes;
-
-    /**
-     * @dev Mapping of token to whether it is the native representation of an ERC20 token.
-     */
-    mapping(address token => bool) public isNativeToken;
-
-    /**
-     * @dev Mapping of source token to destination chainId to destination token.
-     */
-    mapping(address srcToken => mapping(uint64 destChainId => address destToken)) public tokenRoutes;
+    mapping(uint64 chainId => address bridge) private _routes;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         MODIFIERS                          */
@@ -72,7 +67,7 @@ contract BridgeUpgradeable is
      */
     modifier onlyBridge() {
         if (msg.sender == address(omni)) {
-            if (bridgeRoutes[xmsg.sourceChainId] != xmsg.sender) revert Unauthorized(xmsg.sourceChainId, xmsg.sender);
+            if (_routes[xmsg.sourceChainId] != xmsg.sender) revert Unauthorized(xmsg.sourceChainId, xmsg.sender);
         } else {
             revert Unauthorized(uint64(block.chainid), msg.sender);
         }
@@ -83,7 +78,6 @@ contract BridgeUpgradeable is
     /*                        CONSTRUCTOR                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
@@ -92,30 +86,43 @@ contract BridgeUpgradeable is
     /*                        INITIALIZER                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /**
-     * @dev This method is used to initialize the contract with values that we want to use to bootstrap and run things.
-     * The modifier initializer here helps us block initialization in the constructor so that we initialize value only
-     * when deploying the proxy and not the contract itself. The initializer also tracks how many times this method is
-     * called and it can only be called once.
-     */
-    function initialize(address omni_, address lockbox_, address admin_, address upgrader_, address pauser_)
-        external
-        initializer
-    {
-        if (omni_ == address(0)) revert ZeroAddress();
-        if (lockbox_ == address(0)) revert ZeroAddress();
+    function initialize(
+        address admin_,
+        address pauser_,
+        address omni_,
+        address wrapper_,
+        address token_,
+        address lockbox_
+    ) external initializer {
+        // Validate required inputs are not zero addresses.
         if (admin_ == address(0)) revert ZeroAddress();
-        if (upgrader_ == address(0)) revert ZeroAddress();
         if (pauser_ == address(0)) revert ZeroAddress();
+        if (omni_ == address(0)) revert ZeroAddress();
+        if (wrapper_ == address(0)) revert ZeroAddress();
 
-        __UUPSUpgradeable_init();
+        // If either token or lockbox is set, both must be set.
+        if (token_ != address(0) || lockbox_ != address(0)) {
+            if (token_ == address(0)) revert BadInput();
+            if (lockbox_ == address(0)) revert BadInput();
+        }
+
+        // Initialize everything and grant roles.
         __AccessControl_init();
         __Pausable_init();
         __XApp_init(omni_, ConfLevel.Finalized);
         _grantRole(DEFAULT_ADMIN_ROLE, admin_);
-        _grantRole(UPGRADER_ROLE, upgrader_);
         _grantRole(PAUSER_ROLE, pauser_);
-        lockbox = ILockboxUpgradeable(lockbox_);
+
+        // Set configured values.
+        wrapper = wrapper_;
+        if (token_ != address(0)) token = token_;
+        if (lockbox_ != address(0)) lockbox = lockbox_;
+
+        // Give lockbox relevant approvals to handle deposits and withdrawals if necessary.
+        if (lockbox_ != address(0)) {
+            token_.safeApproveWithRetry(lockbox_, type(uint256).max);
+            wrapper_.safeApproveWithRetry(lockbox_, type(uint256).max);
+        }
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -123,14 +130,23 @@ contract BridgeUpgradeable is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /**
+     * @dev Returns the bridge address for a given destination chainId.
+     * @param destChainId The chainId of the destination chain.
+     * @return bridge     The bridge address.
+     */
+    function routes(uint64 destChainId) external view returns (address bridge) {
+        return _routes[destChainId];
+    }
+
+    /**
      * @dev Returns the fee for bridging a token to a destination chain.
      * @param destChainId The chainId of the destination chain.
-     * @return fee The fee paid to the `OmniPortal` contract.
+     * @return fee        The fee paid to the `OmniPortal` contract.
      */
     function bridgeFee(uint64 destChainId) external view returns (uint256 fee) {
         return feeFor(
             destChainId,
-            abi.encodeCall(BridgeUpgradeable.receiveToken, (TypeMax.Address, TypeMax.Address, TypeMax.Uint256)),
+            abi.encodeCall(BridgeUpgradeable.receiveToken, (TypeMax.Address, TypeMax.Uint256)),
             DEFAULT_GAS_LIMIT
         );
     }
@@ -141,35 +157,23 @@ contract BridgeUpgradeable is
 
     /**
      * @dev Bridges a token to a destination chain.
+     * @param wrap        Whether to wrap the token first.
      * @param destChainId The chainId of the destination chain.
-     * @param token The address of the source token.
-     * @param to The address of the recipient.
-     * @param value The amount of tokens to bridge.
+     * @param to          The address of the recipient.
+     * @param value       The amount of tokens to bridge.
      */
-    function sendToken(uint64 destChainId, address token, address to, uint256 value) external payable whenNotPaused {
-        (bool isNative, address bridge, address destToken) = _getTransferInfo(token, destChainId);
-
-        _validateTransfer(bridge, destToken, destChainId, to, value);
-        _handleSend(token, value, isNative);
-
-        bytes memory data = abi.encodeCall(BridgeUpgradeable.receiveToken, (destToken, to, value));
-        uint256 fee = xcall(destChainId, bridge, data, DEFAULT_GAS_LIMIT);
-
-        if (msg.value < fee) revert InsufficientFunds();
-        if (msg.value > fee) msg.sender.safeTransferETH(msg.value - fee);
-
-        emit TokenSent(destChainId, token, destToken, to, value);
+    function sendToken(bool wrap, uint64 destChainId, address to, uint256 value) external payable whenNotPaused {
+        _validateSend(wrap, destChainId, to, value);
+        _sendToken(wrap, destChainId, to, value);
     }
 
     /**
-     * @dev Receives a token from a bridge contract and mints it to the recipient.
-     * @param token The address of the source token.
-     * @param to The address of the recipient.
-     * @param value The amount of tokens to mint.
+     * @dev Receives a token from a bridge contract and mints/unwraps it to the recipient.
+     * @param to    The address of the recipient.
+     * @param value The amount of tokens to mint/unwrap.
      */
-    function receiveToken(address token, address to, uint256 value) external xrecv onlyBridge {
-        _handleReceive(token, to, value);
-        emit TokenReceived(xmsg.sourceChainId, token, to, value);
+    function receiveToken(address to, uint256 value) external xrecv onlyBridge {
+        _receiveToken(to, value);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -177,42 +181,33 @@ contract BridgeUpgradeable is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /**
-     * @dev Configures bridges for a given chainId.
-     * @param chainIds The chainIds to configure.
-     * @param bridges The bridges to configure.
+     * @dev Configures bridges for given chainIds.
+     * @param chainIds    The chainIds to configure.
+     * @param bridgeAddrs The bridges addresses to configure.
      */
-    function configureBridges(uint64[] calldata chainIds, address[] calldata bridges)
+    function configureBridges(uint64[] calldata chainIds, address[] calldata bridgeAddrs)
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
-        if (chainIds.length != bridges.length) revert ArrayLengthMismatch();
+        if (chainIds.length != bridgeAddrs.length) revert ArrayLengthMismatch();
         for (uint256 i = 0; i < chainIds.length; i++) {
-            bridgeRoutes[chainIds[i]] = bridges[i];
-            emit BridgeConfigured(chainIds[i], bridges[i]);
+            _routes[chainIds[i]] = bridgeAddrs[i];
+            emit BridgeConfigured(chainIds[i], bridgeAddrs[i]);
         }
     }
 
     /**
-     * @dev Configures token routes for a given source token and destination chainId.
-     * @param srcToken The source token to configure.
-     * @param isNative Whether the source token is the native representation of an ERC20 token.
-     * @param destChainIds The destination chainIds to configure routes for.
-     * @param destTokens The destination token addresses for the source token on each destination chainId.
+     * @dev Pauses performing crosschain transfers.
      */
-    function configureToken(
-        address srcToken,
-        bool isNative,
-        uint64[] calldata destChainIds,
-        address[] calldata destTokens
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (destChainIds.length != destTokens.length) revert ArrayLengthMismatch();
+    function pause() external onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
 
-        if (isNative) isNativeToken[srcToken] = true;
-
-        for (uint256 i; i < destChainIds.length; ++i) {
-            tokenRoutes[srcToken][destChainIds[i]] = destTokens[i];
-            emit TokenConfigured(srcToken, isNative, destChainIds[i], destTokens[i]);
-        }
+    /**
+     * @dev Unpauses performing crosschain transfers.
+     */
+    function unpause() external onlyRole(PAUSER_ROLE) {
+        _unpause();
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -220,80 +215,85 @@ contract BridgeUpgradeable is
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /**
-     * @dev Retrieves the transfer information for a given token and destination chainId.
-     * @param token The address of the source token.
+     * @dev Validates the outbound transfer of tokens.
+     * @param wrap        Whether the token is being wrapped.
      * @param destChainId The chainId of the destination chain.
-     * @return isNative Whether the token is the native representation of an ERC20 token.
-     * @return bridge The address of the bridge.
-     * @return destToken The address of the destination token.
+     * @param to          The address of the recipient.
+     * @param value       The amount of tokens to transfer.
      */
-    function _getTransferInfo(address token, uint64 destChainId)
-        internal
-        view
-        returns (bool isNative, address bridge, address destToken)
-    {
-        isNative = isNativeToken[token];
-        bridge = bridgeRoutes[destChainId];
-        destToken = tokenRoutes[token][destChainId];
-    }
-
-    /**
-     * @dev Validates the transfer of tokens.
-     * @param bridge The address of the bridge.
-     * @param destToken The address of the destination token.
-     * @param destChainId The chainId of the destination chain.
-     * @param to The address of the recipient.
-     * @param value The amount of tokens to transfer.
-     */
-    function _validateTransfer(address bridge, address destToken, uint64 destChainId, address to, uint256 value)
-        internal
-        pure
-    {
-        if (bridge == address(0) || destToken == address(0)) revert InvalidTokenRoute(destToken, destChainId);
+    function _validateSend(bool wrap, uint64 destChainId, address to, uint256 value) internal view {
+        if (wrap && token == address(0)) revert CannotWrap();
+        if (_routes[destChainId] == address(0)) revert InvalidRoute(destChainId);
         if (to == address(0)) revert ZeroAddress();
         if (value == 0) revert ZeroAmount();
     }
 
     /**
-     * @dev Handles the transfer/burn of tokens from the sender through the bridge.
-     * @param token The address of the source token.
-     * @param value The amount of tokens to transfer.
-     * @param isNative Whether the token is the native representation of an ERC20 token.
+     * @dev Handles retrieving tokens from the sender and prepares for crosschain transfer.
+     * @param wrap        Whether the token is being wrapped.
+     * @param destChainId The chainId of the destination chain.
+     * @param to          The address of the recipient.
+     * @param value       The amount of tokens to transfer.
      */
-    function _handleSend(address token, uint256 value, bool isNative) internal {
-        if (isNative) {
+    function _sendToken(bool wrap, uint64 destChainId, address to, uint256 value) internal {
+        address _wrapper = wrapper; // Cache address for gas optimization.
+
+        // Retrieve tokens from the sender, and deposit them into the lockbox for wrapping if necessary.
+        if (wrap) {
             token.safeTransferFrom(msg.sender, address(this), value);
-            token.safeApproveWithRetry(address(lockbox), value);
-            lockbox.deposit(token, value);
+            ILockboxUpgradeable(lockbox).deposit(value);
         } else {
-            token.safeTransferFrom(msg.sender, address(this), value);
-            IMintBurn(token).burn(value);
+            _wrapper.safeTransferFrom(msg.sender, address(this), value);
         }
+
+        // Burn the wrapped tokens.
+        IMintBurn(_wrapper).burn(value);
+
+        // Send the tokens to the destination chain.
+        _omniTransfer(destChainId, to, value);
     }
 
     /**
-     * @dev Handles the withdrawal/mint of tokens through the bridge to the recipient.
-     * @param token The address of the source token.
-     * @param to The address of the recipient.
-     * @param value The amount of tokens to withdraw.
+     * @dev Handles the crosschain transfer of tokens.
+     * @param destChainId The chainId of the destination chain.
+     * @param to          The address of the recipient.
+     * @param value       The amount of tokens to transfer.
      */
-    function _handleReceive(address token, address to, uint256 value) internal {
-        bool isNative = isNativeToken[token];
+    function _omniTransfer(uint64 destChainId, address to, uint256 value) internal {
+        bytes memory data = abi.encodeCall(BridgeUpgradeable.receiveToken, (to, value));
+        uint256 fee = xcall(destChainId, _routes[destChainId], data, DEFAULT_GAS_LIMIT);
 
-        if (isNative) {
-            lockbox.withdrawTo(token, to, value);
-        } else {
-            IMintBurn(token).mint(to, value);
-        }
+        if (msg.value < fee) revert InsufficientPayment();
+        if (msg.value > fee) msg.sender.safeTransferETH(msg.value - fee);
+
+        emit CrosschainTransfer(destChainId, msg.sender, to, value);
     }
 
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                    OVERRIDDEN FUNCTIONS                    */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
     /**
-     * An overridden method from {UUPSUpgradeable} which defines the permissions for authorizing an upgrade to a
-     * new implementation.
+     * @dev Handles the receipt of tokens from the source chain.
+     * @param to    The address of the recipient.
+     * @param value The amount of tokens to receive.
      */
-    function _authorizeUpgrade(address newImplementation) internal virtual override onlyRole(UPGRADER_ROLE) { }
+    function _receiveToken(address to, uint256 value) internal {
+        // Cache addresses for gas optimization.
+        address _lockbox = lockbox;
+        address _wrapper = wrapper;
+
+        if (_lockbox == address(0)) {
+            // If no lockbox is set, just mint the wrapped tokens to the recipient.
+            IMintBurn(_wrapper).mint(to, value);
+        } else {
+            // If a lockbox is set, mint the wrapped tokens to the bridge contract.
+            IMintBurn(_wrapper).mint(address(this), value);
+
+            // Attempt withdrawal from the lockbox, but transfer the wrapped tokens to the recipient if it fails.
+            try ILockboxUpgradeable(_lockbox).withdrawTo(to, value) { }
+            catch {
+                _wrapper.safeTransfer(to, value);
+                emit LockboxWithdrawalFailed(_lockbox, to, value);
+            }
+        }
+
+        emit CrosschainReceive(xmsg.sourceChainId, to, value);
+    }
 }

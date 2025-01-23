@@ -12,7 +12,7 @@ remappings = [
   "solve/=../solve"
 ]
 
-allow_paths = ["../core", "../solve"]
+allow_paths = ["../core"]
 
 solc_version = "0.8.26"
 

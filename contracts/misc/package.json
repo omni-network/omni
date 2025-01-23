@@ -12,7 +12,7 @@
   "dependencies": {
     "@openzeppelin/contracts": "^5.2.0",
     "@openzeppelin/contracts-upgradeable": "^5.2.0",
-    "RLUSD-Implementation": "github:ripple/RLUSD-Implementation",
+    "rlusd": "github:ripple/RLUSD-Implementation",
     "createx": "github:pcaversaccio/createx",
     "solady": "^0.0.295"
   }

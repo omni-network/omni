@@ -1,199 +1,178 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.26;
 
-import { StablecoinUpgradeable } from "RLUSD-Implementation/contracts/StablecoinUpgradeable.sol";
-import { LockboxUpgradeable } from "src/bridge/LockboxUpgradeable.sol";
-import { BridgeUpgradeable } from "src/bridge/BridgeUpgradeable.sol";
-import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import { Proxy } from "src/bridge/Proxy.sol";
+import { StablecoinUpgradeable } from "rlusd/contracts/StablecoinUpgradeable.sol";
+import { StablecoinProxy } from "rlusd/contracts/StablecoinProxy.sol";
 
-import { ILockboxUpgradeable } from "src/bridge/interfaces/ILockboxUpgradeable.sol";
-import { IBridgeUpgradeable } from "src/bridge/interfaces/IBridgeUpgradeable.sol";
+import { LockboxUpgradeable } from "src/bridge/LockboxUpgradeable.sol";
+import { BridgeUpgradeable, IBridgeUpgradeable } from "src/bridge/BridgeUpgradeable.sol";
+import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import { Test } from "forge-std/Test.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { MockPortal } from "core/test/utils/MockPortal.sol";
 
 contract TestBase is Test {
-    LockboxUpgradeable internal lockboxImpl;
-    BridgeUpgradeable internal bridgeImpl;
-    StablecoinUpgradeable internal tokenImpl;
+    StablecoinUpgradeable internal originalToken;
+    StablecoinUpgradeable internal srcWrapper;
+    StablecoinUpgradeable internal destWrapper;
 
-    ILockboxUpgradeable internal lockboxSrc;
-    ILockboxUpgradeable internal lockboxA;
-    ILockboxUpgradeable internal lockboxB;
-
-    IBridgeUpgradeable internal bridgeSrc;
-    IBridgeUpgradeable internal bridgeA;
-    IBridgeUpgradeable internal bridgeB;
-
-    StablecoinUpgradeable internal tokenSrc;
-    StablecoinUpgradeable internal tokenA;
-    StablecoinUpgradeable internal tokenB;
+    LockboxUpgradeable internal srcLockbox;
+    BridgeUpgradeable internal srcBridge;
+    BridgeUpgradeable internal destBridge;
 
     MockPortal internal omni;
 
-    uint64 internal constant DEFAULT_GAS_LIMIT = 105_000;
+    uint64 internal constant SRC_CHAIN_ID = 1;
+    uint64 internal constant DEST_CHAIN_ID = 2;
+    uint64 internal constant DEFAULT_GAS_LIMIT = 140_000;
     uint256 internal constant INITIAL_USER_BALANCE = 1_000_000 ether;
 
-    uint64 internal constant srcChainId = 1;
-    uint64 internal constant destChainIdA = 2;
-    uint64 internal constant destChainIdB = 3;
-
     address internal user = makeAddr("user");
-    address internal solver = makeAddr("solver");
     address internal admin = makeAddr("admin");
-    address internal upgrader = makeAddr("upgrader");
+    address internal minter = makeAddr("minter");
     address internal pauser = makeAddr("pauser");
+    address internal upgrader = makeAddr("upgrader");
     address internal clawbacker = makeAddr("clawbacker");
-
-    modifier prankUser(address addr) {
-        vm.startPrank(addr);
-        _;
-        vm.stopPrank();
-    }
 
     function setUp() public {
         deploy();
-        configureBridges();
-
-        vm.deal(user, 1 ether);
-        vm.deal(solver, 1 ether);
-
-        vm.prank(admin);
-        tokenSrc.mint(user, INITIAL_USER_BALANCE);
+        configure();
+        vm.chainId(SRC_CHAIN_ID);
     }
 
     function deploy() internal {
         omni = new MockPortal();
-
-        lockboxImpl = new LockboxUpgradeable();
-        bridgeImpl = new BridgeUpgradeable();
-        tokenImpl = new StablecoinUpgradeable();
-
-        lockboxSrc = _deployLockbox();
-        lockboxA = _deployLockbox();
-        lockboxB = _deployLockbox();
-
-        bridgeSrc = _deployBridge(address(lockboxSrc));
-        bridgeA = _deployBridge(address(lockboxA));
-        bridgeB = _deployBridge(address(lockboxB));
-
-        tokenSrc = _deployToken("Ripple USD", "RLUSD", admin);
-        tokenA = _deployToken("Bridged RLUSD (Omni)", "RLUSD.e", address(bridgeA));
-        tokenB = _deployToken("Bridged RLUSD (Omni)", "RLUSD.e", address(bridgeB));
-
-        vm.startPrank(admin);
-        tokenA.grantRole(tokenA.BURNER_ROLE(), address(bridgeA));
-        tokenB.grantRole(tokenB.BURNER_ROLE(), address(bridgeB));
-        vm.stopPrank();
+        _deployTokens();
+        _deployInfra();
     }
 
-    function configureBridges() internal prankUser(admin) {
-        uint64[] memory destChainIds = new uint64[](2);
-        address[] memory destTokens = new address[](2);
-        address[] memory destBridges = new address[](2);
-
-        destChainIds[0] = destChainIdA;
-        destTokens[0] = address(tokenA);
-        destBridges[0] = address(bridgeA);
-
-        destChainIds[1] = destChainIdB;
-        destTokens[1] = address(tokenB);
-        destBridges[1] = address(bridgeB);
-
-        _configureBridge(bridgeSrc, tokenSrc, destChainIds, destTokens, destBridges);
-
-        destChainIds[0] = destChainIdB;
-        destTokens[0] = address(tokenB);
-        destBridges[0] = address(bridgeB);
-
-        destChainIds[1] = srcChainId;
-        destTokens[1] = address(tokenSrc);
-        destBridges[1] = address(bridgeSrc);
-
-        _configureBridge(bridgeA, tokenA, destChainIds, destTokens, destBridges);
-
-        destChainIds[0] = srcChainId;
-        destTokens[0] = address(tokenSrc);
-        destBridges[0] = address(bridgeSrc);
-
-        destChainIds[1] = destChainIdA;
-        destTokens[1] = address(tokenA);
-        destBridges[1] = address(bridgeA);
-
-        _configureBridge(bridgeB, tokenB, destChainIds, destTokens, destBridges);
+    function configure() internal {
+        _fundUser();
+        _configureApprovals();
+        _configureRoutes();
+        _configurePermissions();
     }
 
     function mockBridge(
-        IBridgeUpgradeable srcBridge,
-        uint64 sourceChainId,
+        BridgeUpgradeable origin,
+        uint64 srcChainId,
         uint64 destChainId,
-        address srcToken,
+        bool wrap,
+        address from,
         address to,
         uint256 value
     ) internal {
-        address destBridge = srcBridge.bridgeRoutes(destChainId);
-        address destToken = srcBridge.tokenRoutes(srcToken, destChainId);
-        uint256 fee = srcBridge.bridgeFee(destChainId);
-        bytes memory data = abi.encodeCall(BridgeUpgradeable.receiveToken, (destToken, to, value));
+        address destination = origin.routes(destChainId);
+        uint256 fee = origin.bridgeFee(destChainId);
+        bytes memory data = abi.encodeCall(BridgeUpgradeable.receiveToken, (to, value));
 
-        vm.chainId(sourceChainId);
-        srcBridge.sendToken{ value: fee }(destChainId, srcToken, to, value);
+        vm.chainId(srcChainId);
+        vm.prank(from);
+        vm.expectEmit(true, true, true, true);
+        emit IBridgeUpgradeable.CrosschainTransfer(destChainId, from, to, value);
+        origin.sendToken{ value: fee }(wrap, destChainId, to, value);
 
         vm.chainId(destChainId);
-        omni.mockXCall(sourceChainId, address(srcBridge), destBridge, data, DEFAULT_GAS_LIMIT);
+        vm.expectEmit(true, true, true, true);
+        emit IBridgeUpgradeable.CrosschainReceive(srcChainId, to, value);
+        omni.mockXCall(srcChainId, address(origin), destination, data, DEFAULT_GAS_LIMIT);
+
+        vm.chainId(srcChainId);
     }
 
-    function _deployLockbox() internal returns (ILockboxUpgradeable) {
-        return ILockboxUpgradeable(
-            address(
-                new Proxy(
-                    address(lockboxImpl), abi.encodeCall(LockboxUpgradeable.initialize, (admin, upgrader, pauser))
-                )
-            )
+    function _deployTokens() internal {
+        originalToken = _deployToken("Ripple USD", "RLUSD");
+        srcWrapper = _deployToken("Bridged RLUSD (Omni)", "RLUSD.e");
+        destWrapper = _deployToken("Bridged RLUSD (Omni)", "RLUSD.e");
+    }
+
+    function _deployInfra() internal {
+        srcLockbox = _deployLockbox(address(originalToken), address(srcWrapper));
+        srcBridge = _deployBridge(address(srcWrapper), address(originalToken), address(srcLockbox));
+        destBridge = _deployBridge(address(destWrapper), address(0), address(0));
+    }
+
+    function _deployToken(string memory name, string memory symbol) internal returns (StablecoinUpgradeable) {
+        address impl = address(new StablecoinUpgradeable());
+        bytes memory data = abi.encodeCall(
+            StablecoinUpgradeable.initialize, (name, symbol, minter, admin, upgrader, pauser, clawbacker)
         );
+
+        address proxy = address(new StablecoinProxy(impl, data));
+        return StablecoinUpgradeable(proxy);
     }
 
-    function _deployBridge(address lockbox) internal returns (IBridgeUpgradeable) {
-        return IBridgeUpgradeable(
-            address(
-                new Proxy(
-                    address(bridgeImpl),
-                    abi.encodeCall(
-                        BridgeUpgradeable.initialize, (address(omni), address(lockbox), admin, upgrader, pauser)
-                    )
-                )
-            )
-        );
+    function _deployLockbox(address token, address wrapper) internal returns (LockboxUpgradeable) {
+        address impl = address(new LockboxUpgradeable());
+        bytes memory data = abi.encodeCall(LockboxUpgradeable.initialize, (admin, pauser, token, wrapper));
+
+        address proxy = address(new TransparentUpgradeableProxy(impl, admin, data));
+        return LockboxUpgradeable(proxy);
     }
 
-    function _deployToken(string memory name, string memory symbol, address mintAuthority)
-        internal
-        returns (StablecoinUpgradeable)
-    {
-        return StablecoinUpgradeable(
-            address(
-                new Proxy(
-                    address(tokenImpl),
-                    abi.encodeCall(
-                        StablecoinUpgradeable.initialize,
-                        (name, symbol, mintAuthority, admin, upgrader, pauser, clawbacker)
-                    )
-                )
-            )
-        );
+    function _deployBridge(address wrapper, address token, address lockbox) internal returns (BridgeUpgradeable) {
+        bytes memory data =
+            abi.encodeCall(BridgeUpgradeable.initialize, (admin, pauser, address(omni), wrapper, token, lockbox));
+        address impl = address(new BridgeUpgradeable());
+
+        address proxy = address(new TransparentUpgradeableProxy(impl, admin, data));
+        return BridgeUpgradeable(proxy);
     }
 
-    function _configureBridge(
-        IBridgeUpgradeable bridge,
-        StablecoinUpgradeable token,
-        uint64[] memory destChainIds,
-        address[] memory destTokens,
-        address[] memory destBridges
-    ) internal {
-        bool isNative = bridge == bridgeSrc ? true : false;
-        bridge.configureBridges(destChainIds, destBridges);
-        bridge.configureToken(address(token), isNative, destChainIds, destTokens);
+    function _fundUser() internal {
+        vm.deal(user, 1 ether);
+        vm.prank(minter);
+        originalToken.mint(user, INITIAL_USER_BALANCE);
+    }
+
+    function _configureApprovals() internal {
+        vm.startPrank(user);
+
+        // Approve source lockbox to wrap original tokens.
+        originalToken.approve(address(srcLockbox), type(uint256).max);
+
+        // Approve source bridge to transfer original tokens.
+        originalToken.approve(address(srcBridge), type(uint256).max);
+
+        // Approve both bridges to transfer wrapped tokens.
+        srcWrapper.approve(address(srcBridge), type(uint256).max);
+        destWrapper.approve(address(destBridge), type(uint256).max);
+
+        vm.stopPrank();
+    }
+
+    function _configureRoutes() internal {
+        uint64[] memory chainIds = new uint64[](1);
+        address[] memory bridges = new address[](1);
+
+        vm.startPrank(admin);
+
+        chainIds[0] = DEST_CHAIN_ID;
+        bridges[0] = address(destBridge);
+        srcBridge.configureBridges(chainIds, bridges);
+
+        chainIds[0] = SRC_CHAIN_ID;
+        bridges[0] = address(srcBridge);
+        destBridge.configureBridges(chainIds, bridges);
+
+        vm.stopPrank();
+    }
+
+    function _configurePermissions() internal {
+        vm.startPrank(admin);
+
+        srcWrapper.grantRole(srcWrapper.MINTER_ROLE(), address(srcLockbox));
+        srcWrapper.grantRole(srcWrapper.BURNER_ROLE(), address(srcLockbox));
+
+        srcWrapper.revokeRole(srcWrapper.MINTER_ROLE(), admin); // Assigned at initialization, unnecessary.
+        srcWrapper.grantRole(srcWrapper.MINTER_ROLE(), address(srcBridge));
+        srcWrapper.grantRole(srcWrapper.BURNER_ROLE(), address(srcBridge));
+
+        destWrapper.revokeRole(destWrapper.MINTER_ROLE(), admin); // Assigned at initialization, unnecessary.
+        destWrapper.grantRole(destWrapper.MINTER_ROLE(), address(destBridge));
+        destWrapper.grantRole(destWrapper.BURNER_ROLE(), address(destBridge));
+
+        vm.stopPrank();
     }
 }
