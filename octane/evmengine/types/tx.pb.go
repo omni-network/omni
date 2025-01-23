@@ -74,7 +74,7 @@ func (m *GenesisState) GetExecutionBlockHash() []byte {
 	return nil
 }
 
-// MsgExecutionPayload defines the  next EVM execution payload and the
+// MsgExecutionPayload defines the next EVM execution payload and the
 // logs from previous execution payload.
 type MsgExecutionPayload struct {
 	Authority             string                 `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`

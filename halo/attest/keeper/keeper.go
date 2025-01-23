@@ -79,7 +79,7 @@ func New(
 		return nil, errors.Wrap(err, "create module db")
 	}
 
-	attstore, err := NewAttestationStore(modDB)
+	attStore, err := NewAttestationStore(modDB)
 	if err != nil {
 		return nil, errors.Wrap(err, "create attestation store")
 	}
@@ -89,8 +89,8 @@ func New(
 	}
 
 	k := &Keeper{
-		attTable:       attstore.AttestationTable(),
-		sigTable:       attstore.SignatureTable(),
+		attTable:       attStore.AttestationTable(),
+		sigTable:       attStore.SignatureTable(),
 		cdc:            cdc,
 		storeService:   storeSvc,
 		skeeper:        skeeper,
@@ -674,7 +674,7 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 
 	votes := k.voter.GetAvailable()
 
-	// Filter by vote window and if limited exceeded.
+	// Filter by vote window and if limit exceeded.
 	countsByChainVer := make(map[xchain.ChainVersion]int)
 	duplicate := make(map[xchain.AttestHeader]bool)
 	var filtered []*types.Vote
@@ -697,7 +697,7 @@ func (k *Keeper) ExtendVote(ctx sdk.Context, _ *abci.RequestExtendVote) (*abci.R
 		if cmp, err := k.windowCompare(ctx, vote.AttestHeader.XChainVersion(), vote.AttestHeader.AttestOffset); err != nil {
 			return nil, errors.Wrap(err, "windower")
 		} else if cmp != 0 {
-			// Skip votes no in the window
+			// Skip votes not in the window
 			continue
 		}
 		countsByChainVer[vote.AttestHeader.XChainVersion()]++

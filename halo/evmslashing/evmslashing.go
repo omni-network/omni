@@ -41,7 +41,7 @@ func New(sKeeper skeeper.Keeper) (EventProcessor, error) {
 	address := common.HexToAddress(predeploys.Slashing)
 	contract, err := bindings.NewSlashing(address, nil) // Passing nil backend if safe since only Parse functions are used.
 	if err != nil {
-		return EventProcessor{}, errors.Wrap(err, "new staking")
+		return EventProcessor{}, errors.Wrap(err, "new slashing")
 	}
 
 	return EventProcessor{

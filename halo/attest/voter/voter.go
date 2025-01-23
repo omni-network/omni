@@ -516,7 +516,7 @@ func (v *Voter) LocalAddress() common.Address {
 	return v.address
 }
 
-// availableAndProposed returns all the available and proposed votes.
+// availableAndProposedUnsafe returns all the available and proposed votes.
 // It is unsafe since it assumes the lock is held.
 func (v *Voter) availableAndProposedUnsafe() []*types.Vote {
 	var resp []*types.Vote
@@ -537,13 +537,13 @@ func (v *Voter) latestByChain(chainVer xchain.ChainVersion) (*types.Vote, bool) 
 
 // saveUnsafe saves the state to disk. It is unsafe since it assumes the lock is held.
 func (v *Voter) saveUnsafe() error {
-	sortVotes := func(atts []*types.Vote) {
-		sort.Slice(atts, func(i, j int) bool {
-			if atts[i].BlockHeader.ChainId != atts[j].BlockHeader.ChainId {
-				return atts[i].BlockHeader.ChainId < atts[j].BlockHeader.ChainId
+	sortVotes := func(votes []*types.Vote) {
+		sort.Slice(votes, func(i, j int) bool {
+			if votes[i].BlockHeader.ChainId != votes[j].BlockHeader.ChainId {
+				return votes[i].BlockHeader.ChainId < votes[j].BlockHeader.ChainId
 			}
 
-			return atts[i].AttestHeader.AttestOffset < atts[j].AttestHeader.AttestOffset
+			return votes[i].AttestHeader.AttestOffset < votes[j].AttestHeader.AttestOffset
 		})
 	}
 	sortVotes(v.available)
@@ -581,9 +581,9 @@ func (v *Voter) saveUnsafe() error {
 
 // instrumentUnsafe updates metrics. It is unsafe since it assumes the lock is held.
 func (v *Voter) instrumentUnsafe() {
-	count := func(atts []*types.Vote, gaugeVec *prometheus.GaugeVec) {
+	count := func(votes []*types.Vote, gaugeVec *prometheus.GaugeVec) {
 		counts := make(map[xchain.ChainVersion]int)
-		for _, vote := range atts {
+		for _, vote := range votes {
 			counts[vote.AttestHeader.XChainVersion()]++
 		}
 
@@ -682,9 +682,9 @@ func headerMap(headers []*types.AttestHeader) map[xchain.AttestHeader]bool {
 }
 
 // pruneLatestPerChain returns only the latest attestation per chain.
-func pruneLatestPerChain(atts []*types.Vote) []*types.Vote {
+func pruneLatestPerChain(votes []*types.Vote) []*types.Vote {
 	latest := make(map[uint64]*types.Vote)
-	for _, vote := range atts {
+	for _, vote := range votes {
 		latestAtt, ok := latest[vote.BlockHeader.ChainId]
 		if ok && latestAtt.AttestHeader.AttestOffset >= vote.AttestHeader.AttestOffset {
 			continue
