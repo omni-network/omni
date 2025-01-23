@@ -144,20 +144,16 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 		return err
 	}
 
-	if cfg.NodeSnapshot {
-		if err = downloadSnapshots(ctx, cfg); err != nil {
-			return err
-		}
+	if err = maybeDownloadSnapshots(ctx, cfg); err != nil {
+		return err
 	}
 
 	if err = maybeDownloadGenesis(ctx, cfg.Network); err != nil {
 		return errors.Wrap(err, "download genesis")
 	}
 
-	if !cfg.NodeSnapshot {
-		if err = gethInit(ctx, cfg, filepath.Join(cfg.Home, gethClientName)); err != nil {
-			return errors.Wrap(err, "init geth")
-		}
+	if err = maybeGethInit(ctx, cfg, filepath.Join(cfg.Home, gethClientName)); err != nil {
+		return errors.Wrap(err, "init geth")
 	}
 
 	logLevel := log.LevelInfo
@@ -334,7 +330,11 @@ func writeComposeFile(ctx context.Context, cfg InitConfig, upgrade string) error
 	return nil
 }
 
-func gethInit(ctx context.Context, cfg InitConfig, dir string) error {
+func maybeGethInit(ctx context.Context, cfg InitConfig, dir string) error {
+	if cfg.NodeSnapshot {
+		return nil
+	}
+
 	log.Info(ctx, "Initializing geth", "path", dir)
 
 	// Create the dir, ensuring it doesn't already exist
@@ -412,7 +412,7 @@ func gethInit(ctx context.Context, cfg InitConfig, dir string) error {
 		image := "ethereum/client-go:" + geth.Version
 		stateScheme := "path"
 		if cfg.NodeSnapshot {
-			stateScheme = cfg.Network.NodeSnapshotGethStateScheme()
+			stateScheme = nodeSnapshotGethStateScheme(cfg.Network)
 		}
 
 		if cfg.Archive {
@@ -442,24 +442,26 @@ func gethInit(ctx context.Context, cfg InitConfig, dir string) error {
 	return nil
 }
 
-func downloadSnapshots(ctx context.Context, cfg InitConfig) error {
-	if cfg.NodeSnapshot {
-		g, ctx := errgroup.WithContext(ctx)
+func maybeDownloadSnapshots(ctx context.Context, cfg InitConfig) error {
+	if !cfg.NodeSnapshot {
+		return nil
+	}
 
-		// Start parallel downloads.
-		g.Go(func() error {
-			return downloadSnapshot(ctx, cfg.Network, cfg.Home, gethClientName)
-		})
+	g, ctx := errgroup.WithContext(ctx)
 
-		g.Go(func() error {
-			return downloadSnapshot(ctx, cfg.Network, cfg.Home, haloClientName)
-		})
+	// Start parallel downloads.
+	g.Go(func() error {
+		return downloadSnapshot(ctx, cfg.Network, cfg.Home, gethClientName)
+	})
 
-		// Wait for all downloads to complete.
-		if err := g.Wait(); err != nil {
-			// Returns the first non-nil error encountered.
-			return errors.Wrap(err, "download snapshots")
-		}
+	g.Go(func() error {
+		return downloadSnapshot(ctx, cfg.Network, cfg.Home, haloClientName)
+	})
+
+	// Wait for all downloads to complete.
+	if err := g.Wait(); err != nil {
+		// Returns the first non-nil error encountered.
+		return errors.Wrap(err, "download snapshots")
 	}
 
 	return nil
@@ -487,4 +489,15 @@ func maybeGetFeatureFlags(network netconf.ID) (feature.Flags, error) {
 	}
 
 	return manifest.FeatureFlags, nil
+}
+
+func nodeSnapshotGethStateScheme(network netconf.ID) string {
+	// Omega and Mainnet currently store their daily node snapshots on GCP with the `hash` state scheme which makes
+	// them suitable for restoring full and archive nodes. This might change in the future once Geth deprecates `hash`
+	// state scheme in a future release.
+	if network.IsProtected() {
+		return "hash"
+	}
+
+	return "path"
 }
