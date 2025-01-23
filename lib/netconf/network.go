@@ -12,6 +12,18 @@ func (i ID) IsEphemeral() bool {
 	return i == Simnet || i == Devnet || i == Staging
 }
 
+// NodeSnapshotGethStateScheme returns the supported Geth node snapshot state scheme for the given network.
+func (i ID) NodeSnapshotGethStateScheme() string {
+	// Omega and Mainnet currently store their daily node snapshots on GCP with the `hash` state scheme which makes
+	// them suitable for restoring full and archive nodes. This might change in the future once Geth deprecates `hash`
+	// state scheme in a future release.
+	if i.IsProtected() {
+		return "hash"
+	}
+
+	return "path"
+}
+
 // IsProtected returns true if the network is long-lived, therefore protected.
 func (i ID) IsProtected() bool {
 	return !i.IsEphemeral()
