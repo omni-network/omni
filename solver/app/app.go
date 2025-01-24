@@ -48,6 +48,7 @@ func Run(ctx context.Context, cfg Config) error {
 			RPCEndpoints:   cfg.RPCEndpoints,
 			Network:        cfg.Network,
 			MonitoringAddr: cfg.MonitoringAddr,
+			APIAddr:        cfg.APIAddr,
 			SolverPrivKey:  cfg.SolverPrivKey,
 			LoadGenPrivKey: cfg.LoadGenPrivKey,
 			DBDir:          cfg.DBDir,

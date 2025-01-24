@@ -18,6 +18,9 @@ private-key = "solver.key"
 # Path to the ethereum private key used to generate deposit load on ephemeral networks only.
 loadgen-key = "loadgen.key"
 
+# The address that the solver listens for API requests.
+api-addr = ":26661"
+
 # The address that the solver listens for metric scrape requests.
 monitoring-addr = ":26660"
 

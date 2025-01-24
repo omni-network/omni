@@ -39,6 +39,20 @@ var (
 		Name:      "token_balance",
 		Help:      "Token balance of solver",
 	}, []string{"chain", "solver_addr", "token_addr", "token_symbol", "is_native"})
+
+	apiLatency = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: "solver_v2",
+		Subsystem: "api",
+		Name:      "latency",
+		Help:      "API server request latency in seconds per endpoint",
+	}, []string{"endpoint"})
+
+	apiErrors = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "solver_v2",
+		Subsystem: "api",
+		Name:      "errors_total",
+		Help:      "Total errors (non-200s) returned by API server per endpoint",
+	}, []string{"endpoint"})
 )
 
 func sampleBalance(
