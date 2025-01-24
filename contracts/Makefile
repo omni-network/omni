@@ -39,10 +39,10 @@ CORE_CONTRACTS := OmniPortal FeeOracleV1 Create3 TransparentUpgradeableProxy \
 			OmniGasPump OmniGasStation FeeOracleV2 \
 			node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol:IERC20
 
-SOLVE_CONTRACTS := SolveInbox SolveOutbox ISolverNetBindings SolverNetInbox SolverNetOutbox MockToken MockVault
+SOLVE_CONTRACTS := SolveInbox SolveOutbox ISolverNetBindings SolverNetInbox SolverNetOutbox MockVault \
+				   test/utils/MockERC20.sol:MockERC20
 
-AVS_CONTRACTS := OmniAVS DelegationManager StrategyManager StrategyBase AVSDirectory \
-			test/common/MockERC20.sol:MockERC20
+AVS_CONTRACTS := OmniAVS DelegationManager StrategyManager StrategyBase AVSDirectory
 
 .PHONY: bindings
 bindings: check-abigen-version build ## Generate golang contract bindings.

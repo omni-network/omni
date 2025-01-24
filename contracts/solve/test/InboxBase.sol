@@ -3,7 +3,7 @@ pragma solidity =0.8.24;
 
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { Ownable } from "solady/src/auth/Ownable.sol";
-import { MockToken } from "test/utils/MockToken.sol";
+import { MockERC20 } from "test/utils/MockERC20.sol";
 import { SolveInbox } from "src/SolveInbox.sol";
 import { Solve } from "src/Solve.sol";
 import { Test } from "forge-std/Test.sol";
@@ -20,8 +20,8 @@ contract InboxBase is Test {
     address solver = makeAddr("solver");
     address outbox = makeAddr("outbox");
 
-    MockToken token1;
-    MockToken token2;
+    MockERC20 token1;
+    MockERC20 token2;
 
     MockPortal portal;
 
@@ -32,8 +32,8 @@ contract InboxBase is Test {
     }
 
     function setUp() public {
-        token1 = new MockToken();
-        token2 = new MockToken();
+        token1 = new MockERC20("Token 1", "TKN1");
+        token2 = new MockERC20("Token 2", "TKN2");
         portal = new MockPortal();
         inbox = deploySolveInbox();
     }
@@ -50,8 +50,8 @@ contract InboxBase is Test {
 
     function mintAndApprove(Solve.TokenDeposit[] memory deposits) internal {
         for (uint256 i = 0; i < deposits.length; i++) {
-            MockToken(deposits[i].token).approve(address(inbox), deposits[i].amount);
-            MockToken(deposits[i].token).mint(user, deposits[i].amount);
+            MockERC20(deposits[i].token).approve(address(inbox), deposits[i].amount);
+            MockERC20(deposits[i].token).mint(user, deposits[i].amount);
         }
     }
 
