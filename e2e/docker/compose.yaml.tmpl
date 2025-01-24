@@ -149,6 +149,7 @@ services:
     restart: unless-stopped
     ports:
       - 26660 # Prometheus and pprof
+      - 26661:26661 # Solver REST API
     volumes:
       - ./solver:/solver
     logging:

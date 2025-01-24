@@ -16,5 +16,6 @@ func bindRunFlags(flags *pflag.FlagSet, cfg *solver.Config) {
 	flags.StringVar(&cfg.SolverPrivKey, "private-key", cfg.SolverPrivKey, "The path to the solver private key e.g path/private.key")
 	flags.StringVar(&cfg.LoadGenPrivKey, "loadgen-key", cfg.LoadGenPrivKey, "The path to the loadgen private key e.g path/loadgen.key (not applicable to protected networks)")
 	flags.StringVar(&cfg.MonitoringAddr, "monitoring-addr", cfg.MonitoringAddr, "The address to bind the monitoring server")
+	flags.StringVar(&cfg.APIAddr, "api-addr", cfg.APIAddr, "The address to bind the API server")
 	flags.StringVar(&cfg.DBDir, "db-dir", cfg.DBDir, "The path to the database directory")
 }

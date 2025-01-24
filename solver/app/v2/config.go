@@ -19,6 +19,7 @@ type Config struct {
 	RPCEndpoints   xchain.RPCEndpoints
 	Network        netconf.ID
 	MonitoringAddr string
+	APIAddr        string
 	SolverPrivKey  string
 	LoadGenPrivKey string
 	DBDir          string

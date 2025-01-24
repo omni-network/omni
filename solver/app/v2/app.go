@@ -94,11 +94,16 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "start event streams")
 	}
 
+	log.Info(ctx, "Serving API", "address", cfg.APIAddr)
+	apiChan := serveAPI(cfg.APIAddr, make(map[string]http.Handler)) // TODO(corver): Implement handler.
+
 	select {
 	case <-ctx.Done():
 		log.Info(ctx, "Shutdown detected, stopping...")
 		return nil
 	case err := <-monitorChan:
+		return err
+	case err := <-apiChan:
 		return err
 	}
 }
