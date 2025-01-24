@@ -3,6 +3,10 @@ package cchain
 import (
 	"crypto/ecdsa"
 
+	atypes "github.com/omni-network/omni/halo/attest/types"
+	ptypes "github.com/omni-network/omni/halo/portal/types"
+	rtypes "github.com/omni-network/omni/halo/registry/types"
+	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/umath"
@@ -13,12 +17,26 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
+	utypes "cosmossdk.io/x/upgrade/types"
 	cosmosk1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	dtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	sltypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/gogoproto/proto"
 )
+
+// QueryClients is a collection of cosmos module gRPC query clients.
+type QueryClients struct {
+	Attest       atypes.QueryClient
+	Portal       ptypes.QueryClient
+	Registry     rtypes.QueryClient
+	ValSync      vtypes.QueryClient
+	Staking      stypes.QueryClient
+	Slashing     sltypes.QueryClient
+	Upgrade      utypes.QueryClient
+	Distribution dtypes.QueryClient
+}
 
 // PortalValidator is a consensus chain validator in a validator set emitted/submitted by/tp portals .
 type PortalValidator struct {

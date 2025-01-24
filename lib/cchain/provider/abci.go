@@ -112,6 +112,16 @@ func newProvider(cc gogogrpc.ClientConn, network netconf.ID, opts ...func(*Provi
 		backoffFunc: backoffFunc,
 		chainNamer:  namer,
 		network:     network,
+		queryClients: cchain.QueryClients{
+			Attest:       acl,
+			Portal:       pcl,
+			Registry:     rcl,
+			ValSync:      vcl,
+			Staking:      scl,
+			Slashing:     slcl,
+			Upgrade:      ucl,
+			Distribution: dcl,
+		},
 	}
 
 	for _, opt := range opts {
