@@ -47,10 +47,10 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
             address token = expense.token.toAddress();
 
             tokens[i] = token;
-            solverBalances[i] = MockToken(token).balanceOf(solver);
-            outboxBalances[i] = MockToken(token).balanceOf(address(outbox));
-            executorBalances[i] = MockToken(token).balanceOf(address(outbox.executor()));
-            vaultBalances[i] = MockToken(token).balanceOf(address(vault));
+            solverBalances[i] = MockERC20(token).balanceOf(solver);
+            outboxBalances[i] = MockERC20(token).balanceOf(address(outbox));
+            executorBalances[i] = MockERC20(token).balanceOf(address(outbox.executor()));
+            vaultBalances[i] = MockERC20(token).balanceOf(address(vault));
         }
 
         // Get the fill data from the order
@@ -81,16 +81,16 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
 
             // Verify token balances
             assertEq(
-                MockToken(token).balanceOf(solver), solverBalances[i] - expense.amount, "solver token balance after"
+                MockERC20(token).balanceOf(solver), solverBalances[i] - expense.amount, "solver token balance after"
             );
-            assertEq(MockToken(token).balanceOf(address(outbox)), outboxBalances[i], "outbox token balance after");
+            assertEq(MockERC20(token).balanceOf(address(outbox)), outboxBalances[i], "outbox token balance after");
             assertEq(
-                MockToken(token).balanceOf(address(outbox.executor())),
+                MockERC20(token).balanceOf(address(outbox.executor())),
                 executorBalances[i],
                 "executor token balance after"
             );
             assertEq(
-                MockToken(token).balanceOf(address(vault)),
+                MockERC20(token).balanceOf(address(vault)),
                 vaultBalances[i] + expense.amount,
                 "vault token balance after"
             );
@@ -101,7 +101,7 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
                 ISolverNet.TokenExpense memory tokenExpense = fillData.call.expenses[j];
                 if (tokenExpense.token.toAddress() == token) {
                     assertEq(
-                        MockToken(token).allowance(address(outbox.executor()), tokenExpense.spender.toAddress()),
+                        MockERC20(token).allowance(address(outbox.executor()), tokenExpense.spender.toAddress()),
                         0,
                         "executor allowance after"
                     );

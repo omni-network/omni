@@ -24,7 +24,7 @@ type App struct {
 
 var (
 	vaultABI     = mustGetABI(bindings.MockVaultMetaData)
-	tokenABI     = mustGetABI(bindings.MockTokenMetaData)
+	tokenABI     = mustGetABI(bindings.MockERC20MetaData)
 	vaultDeposit = mustGetMethod(vaultABI, "deposit")
 
 	mockL1      = mustChainMeta(evmchain.IDMockL1)

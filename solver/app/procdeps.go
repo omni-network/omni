@@ -154,7 +154,7 @@ func detectCustomError(custom error) string {
 		"inbox":      bindings.SolveInboxMetaData,
 		"outbox":     bindings.SolveOutboxMetaData,
 		"mock_vault": bindings.MockVaultMetaData,
-		"mock_token": bindings.MockTokenMetaData,
+		"mock_erc20": bindings.MockERC20MetaData,
 	}
 
 	for name, contract := range contracts {
@@ -195,8 +195,7 @@ func checkAllowedCall(ctx context.Context, outbox *bindings.SolveOutbox, call bi
 }
 
 func approveOutboxSpend(ctx context.Context, prereq bindings.SolveTokenPrereq, backend *ethbackend.Backend, solverAddr, outboxAddr common.Address) error {
-	// TODO(kevin): make erc20 bindings and use here
-	token, err := bindings.NewMockToken(prereq.Token, backend)
+	token, err := bindings.NewIERC20(prereq.Token, backend)
 	if err != nil {
 		return errors.Wrap(err, "new token")
 	}

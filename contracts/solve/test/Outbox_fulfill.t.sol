@@ -3,7 +3,7 @@ pragma solidity =0.8.24;
 
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
-import { MockToken } from "test/utils/MockToken.sol";
+import { MockERC20 } from "test/utils/MockERC20.sol";
 import { MockVault } from "test/utils/MockVault.sol";
 import { SolveOutbox } from "src/SolveOutbox.sol";
 import { ISolveInbox } from "src/SolveInbox.sol";
@@ -22,8 +22,8 @@ import { Test } from "forge-std/Test.sol";
 contract SolveOutbox_fulfill_test is Test {
     OutboxHarness outbox;
 
-    MockToken token1;
-    MockToken token2;
+    MockERC20 token1;
+    MockERC20 token2;
     MockVault vault1;
     MockVault vault2;
 
@@ -37,8 +37,8 @@ contract SolveOutbox_fulfill_test is Test {
         vm.deal(user, 10 ether);
         vm.deal(solver, 10 ether);
 
-        token1 = new MockToken();
-        token2 = new MockToken();
+        token1 = new MockERC20("Token 1", "TKN1");
+        token2 = new MockERC20("Token 2", "TKN2");
         vault1 = new MockVault(address(token1));
         vault2 = new MockVault(address(token2));
         portal = new MockPortal();
@@ -191,8 +191,8 @@ contract SolveOutbox_fulfill_test is Test {
         for (uint256 i = 0; i < prereqs.length; i++) {
             address token = prereqs[i].token;
             uint256 amount = prereqs[i].amount;
-            MockToken(token).approve(address(outbox), amount);
-            MockToken(token).mint(solver, amount);
+            MockERC20(token).approve(address(outbox), amount);
+            MockERC20(token).mint(solver, amount);
         }
     }
 

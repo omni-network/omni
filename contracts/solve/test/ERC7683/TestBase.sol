@@ -6,7 +6,7 @@ import { SolverNetInbox } from "src/ERC7683/SolverNetInbox.sol";
 import { SolverNetOutbox } from "src/ERC7683/SolverNetOutbox.sol";
 
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import { MockToken } from "test/utils/MockToken.sol";
+import { MockERC20 } from "test/utils/MockERC20.sol";
 import { MockVault } from "test/utils/MockVault.sol";
 import { MockMultiTokenVault } from "test/utils/MockMultiTokenVault.sol";
 import { MockPortal } from "core/test/utils/MockPortal.sol";
@@ -30,10 +30,10 @@ contract TestBase is Test {
     SolverNetInbox inbox;
     SolverNetOutbox outbox;
 
-    MockToken token1;
-    MockToken token2;
-    MockToken token3;
-    MockToken token4;
+    MockERC20 token1;
+    MockERC20 token2;
+    MockERC20 token3;
+    MockERC20 token4;
 
     MockVault vault;
     MockMultiTokenVault multiTokenVault;
@@ -58,10 +58,10 @@ contract TestBase is Test {
     }
 
     function setUp() public virtual {
-        token1 = new MockToken();
-        token2 = new MockToken();
-        token3 = new MockToken();
-        token4 = new MockToken();
+        token1 = new MockERC20("Token 1", "TKN1");
+        token2 = new MockERC20("Token 2", "TKN2");
+        token3 = new MockERC20("Token 3", "TKN3");
+        token4 = new MockERC20("Token 4", "TKN4");
 
         vault = new MockVault(address(token2));
         multiTokenVault = new MockMultiTokenVault();
@@ -241,8 +241,8 @@ contract TestBase is Test {
             }
 
             vm.startPrank(user);
-            MockToken(token).approve(address(inbox), deposits[i].amount);
-            MockToken(token).mint(user, deposits[i].amount);
+            MockERC20(token).approve(address(inbox), deposits[i].amount);
+            MockERC20(token).mint(user, deposits[i].amount);
             vm.stopPrank();
         }
     }
@@ -256,8 +256,8 @@ contract TestBase is Test {
             }
 
             vm.startPrank(solver);
-            MockToken(token).approve(address(outbox), expenses[i].amount);
-            MockToken(token).mint(solver, expenses[i].amount);
+            MockERC20(token).approve(address(outbox), expenses[i].amount);
+            MockERC20(token).mint(solver, expenses[i].amount);
             vm.stopPrank();
         }
 

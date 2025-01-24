@@ -13,7 +13,7 @@ func DetectCustomError(custom error) string {
 		"inbox":      bindings.SolverNetInboxMetaData,
 		"outbox":     bindings.SolverNetOutboxMetaData,
 		"mock_vault": bindings.MockVaultMetaData,
-		"mock_token": bindings.MockTokenMetaData,
+		"mock_erc20": bindings.MockERC20MetaData,
 	}
 
 	errMsg := custom.Error()

@@ -193,7 +193,7 @@ func packInitCode(network netconf.ID, cfg deploymentConfig) ([]byte, error) {
 			return nil, errors.Wrap(err, "get abi")
 		}
 
-		return contracts.PackInitCode(abi, bindings.MockERC20Bin, "OMNI", "Omni Network")
+		return contracts.PackInitCode(abi, bindings.MockERC20Bin, "Omni Network", "OMNI")
 	}
 
 	abi, err := bindings.OmniMetaData.GetAbi()

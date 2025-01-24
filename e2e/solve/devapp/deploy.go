@@ -67,7 +67,7 @@ func maybeFundSolver(ctx context.Context, network netconf.ID, backend *ethbacken
 	funder := eoa.MustAddress(network, eoa.RoleHot)
 	solver := eoa.MustAddress(network, eoa.RoleSolver)
 
-	token, err := bindings.NewMockToken(tokenAddr, backend)
+	token, err := bindings.NewMockERC20(tokenAddr, backend)
 	if err != nil {
 		return errors.Wrap(err, "new mock token")
 	}
@@ -224,7 +224,7 @@ func maybeDeployToken(ctx context.Context, network netconf.ID, backend *ethbacke
 		return nil
 	}
 
-	initCode, err := contracts.PackInitCode(tokenABI, bindings.MockTokenBin)
+	initCode, err := contracts.PackInitCode(tokenABI, bindings.MockERC20Bin, "Mock Token", "MTK")
 	if err != nil {
 		return errors.Wrap(err, "pack init code")
 	}

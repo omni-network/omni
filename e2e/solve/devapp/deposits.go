@@ -356,7 +356,7 @@ func mintAndApprove(ctx context.Context, app App, backend *ethbackend.Backend, i
 		return errors.Wrap(err, "bind opts")
 	}
 
-	token, err := bindings.NewMockToken(app.L2Token, backend)
+	token, err := bindings.NewMockERC20(app.L2Token, backend)
 	if err != nil {
 		return errors.Wrap(err, "new mock token")
 	}
