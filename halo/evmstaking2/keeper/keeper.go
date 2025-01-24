@@ -216,7 +216,7 @@ func (k Keeper) parseAndDeliver(ctx context.Context, elog *evmenginetypes.EVMEve
 //
 // NOTE: if we error, the deposit is lost (on EVM). consider recovery methods.
 func (k Keeper) deliverDelegate(ctx context.Context, ev *bindings.StakingDelegate) error {
-	if err := verifyStakingDelegate(ev); err != nil {
+	if err := verifyStakingDelegate(ctx, ev); err != nil {
 		return err
 	}
 
@@ -244,7 +244,6 @@ func (k Keeper) deliverDelegate(ctx context.Context, ev *bindings.StakingDelegat
 		"validator", ev.Validator.Hex(),
 		"amount", ev.Amount.String())
 
-	// Validator already exists, add deposit to self delegation
 	msg := stypes.NewMsgDelegate(delAddr.String(), valAddr.String(), amountCoin)
 	_, err := k.sServer.Delegate(ctx, msg)
 	if err != nil {
@@ -315,8 +314,8 @@ func (k Keeper) deliverCreateValidator(ctx context.Context, createValidator *bin
 	return nil
 }
 
-func verifyStakingDelegate(delegate *bindings.StakingDelegate) error {
-	if delegate.Delegator != delegate.Validator {
+func verifyStakingDelegate(ctx context.Context, delegate *bindings.StakingDelegate) error {
+	if !feature.FlagDelegations.Enabled(ctx) && delegate.Delegator != delegate.Validator {
 		return errors.New("only self delegation")
 	}
 

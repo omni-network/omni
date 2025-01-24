@@ -18,6 +18,8 @@ const (
 	FlagFuzzOctane Flag = "fuzz-octane"
 	// FlagSolverV2 enables the new solver v2.
 	FlagSolverV2 Flag = "solver-v2"
+	// FlagDelegations enables delegation for non-validators.
+	FlagDelegations Flag = "delegations"
 )
 
 // enabledFlags holds all globally enabled feature flags. The reason for having it is that
@@ -32,6 +34,7 @@ var allFlags = map[Flag]bool{
 	FlagProtoEVMPayload:  true,
 	FlagFuzzOctane:       true,
 	FlagSolverV2:         true,
+	FlagDelegations:      true,
 }
 
 // Flag is a feature flag.
