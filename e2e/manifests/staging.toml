@@ -16,7 +16,6 @@ mode = "seed"
 mode = "archive" # Used by relayer, so must be archive.
 
 [keys.validator01]
-mode = "archive" # Used for node snapshots, so must be archive.
 validator = "0xD6CD71dF91a6886f69761826A9C4D123178A8d9D"
 p2p_consensus = "324F0A865DB7EAFBF53A387FC74E58169EDFA6C4"
 
