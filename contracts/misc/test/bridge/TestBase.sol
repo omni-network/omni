@@ -4,9 +4,12 @@ pragma solidity 0.8.26;
 import { StablecoinUpgradeable } from "rlusd/contracts/StablecoinUpgradeable.sol";
 import { StablecoinProxy } from "rlusd/contracts/StablecoinProxy.sol";
 
-import { Lockbox } from "src/bridge/Lockbox.sol";
+import { Lockbox, ILockbox } from "src/bridge/Lockbox.sol";
 import { Bridge, IBridge } from "src/bridge/Bridge.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+
+import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import { IAccessControl } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 import { Test } from "forge-std/Test.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
@@ -25,15 +28,22 @@ contract TestBase is Test {
 
     uint64 internal constant SRC_CHAIN_ID = 1;
     uint64 internal constant DEST_CHAIN_ID = 2;
-    uint64 internal constant DEFAULT_GAS_LIMIT = 140_000;
+    uint64 internal constant DEFAULT_GAS_LIMIT = 182_500; // See `ReceiveTokenTest` for higher limit explanation.
     uint256 internal constant INITIAL_USER_BALANCE = 1_000_000 ether;
 
     address internal user = makeAddr("user");
+    address internal other = makeAddr("other");
     address internal admin = makeAddr("admin");
     address internal minter = makeAddr("minter");
     address internal pauser = makeAddr("pauser");
     address internal upgrader = makeAddr("upgrader");
     address internal clawbacker = makeAddr("clawbacker");
+
+    modifier prank(address addr) {
+        vm.startPrank(addr);
+        _;
+        vm.stopPrank();
+    }
 
     function setUp() public {
         deploy();
@@ -48,10 +58,42 @@ contract TestBase is Test {
     }
 
     function configure() internal {
-        _fundUser();
+        _fundAddr(user);
         _configureApprovals();
         _configureRoutes();
         _configurePermissions();
+    }
+
+    function mockBridgeSend(
+        Bridge origin,
+        uint64 srcChainId,
+        uint64 destChainId,
+        bool wrap,
+        address from,
+        address to,
+        uint256 value
+    ) internal {
+        uint256 fee = origin.bridgeFee(destChainId);
+
+        vm.chainId(srcChainId);
+        vm.prank(from);
+        vm.expectEmit(true, true, true, true);
+        emit IBridge.TokenSent(destChainId, from, to, value);
+        origin.sendToken{ value: fee }(destChainId, to, value, wrap);
+    }
+
+    function mockBridgeReceive(Bridge origin, uint64 srcChainId, uint64 destChainId, address to, uint256 value)
+        internal
+    {
+        address destination = origin.routes(destChainId);
+        bytes memory data = abi.encodeCall(Bridge.receiveToken, (to, value));
+
+        vm.chainId(destChainId);
+        vm.expectEmit(true, true, true, true);
+        emit IBridge.TokenReceived(srcChainId, to, value);
+        omni.mockXCall(srcChainId, address(origin), destination, data, DEFAULT_GAS_LIMIT);
+
+        vm.chainId(srcChainId);
     }
 
     function mockBridge(
@@ -63,20 +105,8 @@ contract TestBase is Test {
         address to,
         uint256 value
     ) internal {
-        address destination = origin.routes(destChainId);
-        uint256 fee = origin.bridgeFee(destChainId);
-        bytes memory data = abi.encodeCall(Bridge.receiveToken, (to, value));
-
-        vm.chainId(srcChainId);
-        vm.prank(from);
-        vm.expectEmit(true, true, true, true);
-        emit IBridge.TokenSent(destChainId, from, to, value);
-        origin.sendToken{ value: fee }(destChainId, to, value, wrap);
-
-        vm.chainId(destChainId);
-        vm.expectEmit(true, true, true, true);
-        emit IBridge.TokenReceived(srcChainId, to, value);
-        omni.mockXCall(srcChainId, address(origin), destination, data, DEFAULT_GAS_LIMIT);
+        mockBridgeSend(origin, srcChainId, destChainId, wrap, from, to, value);
+        mockBridgeReceive(origin, srcChainId, destChainId, to, value);
 
         vm.chainId(srcChainId);
     }
@@ -119,10 +149,10 @@ contract TestBase is Test {
         return Bridge(proxy);
     }
 
-    function _fundUser() internal {
-        vm.deal(user, 1 ether);
+    function _fundAddr(address addr) internal {
+        vm.deal(addr, 1 ether);
         vm.prank(minter);
-        originalToken.mint(user, INITIAL_USER_BALANCE);
+        originalToken.mint(addr, INITIAL_USER_BALANCE);
     }
 
     function _configureApprovals() internal {
@@ -173,5 +203,18 @@ contract TestBase is Test {
         destWrapper.grantRole(destWrapper.BURNER_ROLE(), address(destBridge));
 
         vm.stopPrank();
+    }
+
+    function _assertBalances(
+        address addr,
+        uint256 tokenUserBal,
+        uint256 tokenLockboxBal,
+        uint256 srcWrapperUserBal,
+        uint256 destWrapperUserBal
+    ) internal view {
+        assertEq(originalToken.balanceOf(addr), tokenUserBal, "INIT: Original token balance mismatch");
+        assertEq(originalToken.balanceOf(address(srcLockbox)), tokenLockboxBal, "INIT: Source lockbox balance mismatch");
+        assertEq(srcWrapper.balanceOf(addr), srcWrapperUserBal, "INIT: Source wrapped token balance mismatch");
+        assertEq(destWrapper.balanceOf(addr), destWrapperUserBal, "INIT: Destination wrapped token balance mismatch");
     }
 }

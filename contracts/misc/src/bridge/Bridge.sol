@@ -167,6 +167,7 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
     {
         if (chainIds.length != bridgeAddrs.length) revert ArrayLengthMismatch();
         for (uint256 i = 0; i < chainIds.length; i++) {
+            if (bridgeAddrs[i] == address(0)) revert ZeroAddress();
             _routes[chainIds[i]] = bridgeAddrs[i];
             emit BridgeConfigured(chainIds[i], bridgeAddrs[i]);
         }

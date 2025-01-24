@@ -1,0 +1,30 @@
+// SPDX-License-Identifier: GPL-3.0-only
+pragma solidity 0.8.26;
+
+import "../TestBase.sol";
+
+contract GeneralLockboxest is TestBase {
+    function test_initialize_reverts_zero_address() public {
+        address impl = address(new Lockbox());
+        srcLockbox = Lockbox(address(new TransparentUpgradeableProxy(impl, admin, "")));
+
+        // `admin` cannot be zero address.
+        vm.expectRevert(ILockbox.ZeroAddress.selector);
+        srcLockbox.initialize(address(0), address(0), address(0), address(0));
+
+        // `pauser` cannot be zero address.
+        vm.expectRevert(ILockbox.ZeroAddress.selector);
+        srcLockbox.initialize(admin, address(0), address(0), address(0));
+
+        // `token` cannot be zero address.
+        vm.expectRevert(ILockbox.ZeroAddress.selector);
+        srcLockbox.initialize(admin, pauser, address(0), address(0));
+
+        // `wrapped` cannot be zero address.
+        vm.expectRevert(ILockbox.ZeroAddress.selector);
+        srcLockbox.initialize(admin, pauser, address(originalToken), address(0));
+
+        // Initializes when all inputs are valid.
+        srcLockbox.initialize(admin, pauser, address(originalToken), address(srcWrapper));
+    }
+}
