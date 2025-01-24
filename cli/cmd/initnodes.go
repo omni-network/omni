@@ -144,15 +144,15 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 		return err
 	}
 
-	if err = maybeDownloadSnapshots(ctx, cfg); err != nil {
-		return err
+	if err := maybeDownloadSnapshots(ctx, cfg); err != nil {
+		return errors.Wrap(err, "download snapshots")
 	}
 
-	if err = maybeDownloadGenesis(ctx, cfg.Network); err != nil {
+	if err := maybeDownloadGenesis(ctx, cfg.Network); err != nil {
 		return errors.Wrap(err, "download genesis")
 	}
 
-	if err = maybeGethInit(ctx, cfg, filepath.Join(cfg.Home, gethClientName)); err != nil {
+	if err := gethInit(ctx, cfg, filepath.Join(cfg.Home, gethClientName)); err != nil {
 		return errors.Wrap(err, "init geth")
 	}
 
@@ -330,11 +330,7 @@ func writeComposeFile(ctx context.Context, cfg InitConfig, upgrade string) error
 	return nil
 }
 
-func maybeGethInit(ctx context.Context, cfg InitConfig, dir string) error {
-	if cfg.NodeSnapshot {
-		return nil
-	}
-
+func gethInit(ctx context.Context, cfg InitConfig, dir string) error {
 	log.Info(ctx, "Initializing geth", "path", dir)
 
 	// Create the dir, ensuring it doesn't already exist
@@ -410,12 +406,9 @@ func maybeGethInit(ctx context.Context, cfg InitConfig, dir string) error {
 	// Run geth init via docker
 	{
 		image := "ethereum/client-go:" + geth.Version
-		stateScheme := "path"
-		if cfg.NodeSnapshot {
-			stateScheme = nodeSnapshotGethStateScheme(cfg.Network)
-		}
 
-		if cfg.Archive {
+		stateScheme := "path"
+		if cfg.NodeSnapshot || cfg.Archive {
 			stateScheme = "hash"
 		}
 
@@ -459,12 +452,7 @@ func maybeDownloadSnapshots(ctx context.Context, cfg InitConfig) error {
 	})
 
 	// Wait for all downloads to complete.
-	if err := g.Wait(); err != nil {
-		// Returns the first non-nil error encountered.
-		return errors.Wrap(err, "download snapshots")
-	}
-
-	return nil
+	return errors.Wrap(g.Wait(), "parallel download snapshots")
 }
 
 func downloadSnapshot(ctx context.Context, network netconf.ID, outputDir string, clientName string) error {
@@ -489,15 +477,4 @@ func maybeGetFeatureFlags(network netconf.ID) (feature.Flags, error) {
 	}
 
 	return manifest.FeatureFlags, nil
-}
-
-func nodeSnapshotGethStateScheme(network netconf.ID) string {
-	// Omega and Mainnet currently store their daily node snapshots on GCP with the `hash` state scheme which makes
-	// them suitable for restoring full and archive nodes. This might change in the future once Geth deprecates `hash`
-	// state scheme in a future release.
-	if network.IsProtected() {
-		return "hash"
-	}
-
-	return "path"
 }
