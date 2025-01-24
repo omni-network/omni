@@ -63,7 +63,7 @@ func (l pnlLogger) logE(ctx context.Context, tx *ethtypes.Transaction, receipt *
 	}
 
 	spendGwei := totalSpendGwei(tx, receipt)
-	spendTotal.WithLabelValues(dest.Name, string(dest.NativeToken)).Add(spendGwei)
+	spendTotal.WithLabelValues(dest.Name, dest.NativeToken.Symbol).Add(spendGwei)
 
 	prices, err := l.pricer.Price(ctx, tokens.OMNI, tokens.ETH)
 	if err != nil {

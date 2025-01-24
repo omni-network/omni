@@ -1,33 +1,53 @@
 package tokens
 
-type Token string
-
-const (
-	OMNI Token = "OMNI"
-	ETH  Token = "ETH"
-)
-
-var (
-	coingeckoIDs = map[Token]string{
-		OMNI: "omni-network",
-		ETH:  "ethereum",
-	}
-)
-
-func (t Token) String() string {
-	return string(t)
+type Token struct {
+	Symbol      string
+	Name        string
+	CoingeckoID string
 }
 
-func (t Token) CoingeckoID() string {
-	return coingeckoIDs[t]
+var (
+	OMNI = Token{
+		Symbol:      "OMNI",
+		Name:        "Omni Network",
+		CoingeckoID: "omni-network",
+	}
+
+	ETH = Token{
+		Symbol:      "ETH",
+		Name:        "Ether",
+		CoingeckoID: "ethereum",
+	}
+
+	STETH = Token{
+		Symbol:      "stETH",
+		Name:        "Lido Staked Ether",
+		CoingeckoID: "lido-staked-ether",
+	}
+
+	WSTETH = Token{
+		Symbol:      "wstETH",
+		Name:        "Wrapped Staked Ether",
+		CoingeckoID: "wrapped-steth",
+	}
+
+	all = []Token{OMNI, ETH, STETH, WSTETH}
+)
+
+func All() []Token {
+	return all
+}
+
+func (t Token) String() string {
+	return t.Symbol
 }
 
 func FromCoingeckoID(id string) (Token, bool) {
-	for t, i := range coingeckoIDs {
-		if i == id {
+	for _, t := range all {
+		if t.CoingeckoID == id {
 			return t, true
 		}
 	}
 
-	return "", false
+	return Token{}, false
 }

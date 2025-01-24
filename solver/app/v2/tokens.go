@@ -9,19 +9,16 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
+	tokenslib "github.com/omni-network/omni/lib/tokens"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// TODO: consider moving this to lib/tokens
-
 type Token struct {
-	Symbol      string
-	Name        string
-	ChainID     uint64
-	Address     common.Address // empty if native
-	CoingeckoID string
+	tokenslib.Token
+	ChainID uint64
+	Address common.Address // empty if native
 }
 
 type Expense struct {
@@ -36,6 +33,7 @@ func (t Token) IsNative() bool {
 }
 
 var tokens = Tokens{
+	// Native ETH
 	nativeETH(evmchain.IDHolesky),
 	nativeETH(evmchain.IDArbSepolia),
 	nativeETH(evmchain.IDBaseSepolia),
@@ -43,14 +41,22 @@ var tokens = Tokens{
 	nativeETH(evmchain.IDMockL1),
 	nativeETH(evmchain.IDMockL2),
 
+	// Native OMNI
 	nativeOMNI(evmchain.IDOmniOmega),
 	nativeOMNI(evmchain.IDOmniStaging),
 	nativeOMNI(evmchain.IDOmniDevnet),
 
+	// ERC20 OMNI
 	omniERC20(netconf.Mainnet),
 	omniERC20(netconf.Omega),
 	omniERC20(netconf.Staging),
 	omniERC20(netconf.Devnet),
+
+	// wtSETH
+	wstETH(evmchain.IDHolesky, common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")),
+
+	// stETH
+	stETH(evmchain.IDHolesky, common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")),
 }
 
 func (ts Tokens) find(chainID uint64, addr common.Address) (Token, bool) {
@@ -65,29 +71,39 @@ func (ts Tokens) find(chainID uint64, addr common.Address) (Token, bool) {
 
 func nativeETH(chainID uint64) Token {
 	return Token{
-		Symbol:      "ETH",
-		Name:        "Ether",
-		ChainID:     chainID,
-		CoingeckoID: "ethereum",
+		Token:   tokenslib.ETH,
+		ChainID: chainID,
 	}
 }
 
 func nativeOMNI(chainID uint64) Token {
 	return Token{
-		Symbol:      "OMNI",
-		Name:        "Omni Network",
-		ChainID:     chainID,
-		CoingeckoID: "omni-network",
+		Token:   tokenslib.OMNI,
+		ChainID: chainID,
 	}
 }
 
 func omniERC20(network netconf.ID) Token {
 	return Token{
-		Symbol:      "OMNI",
-		Name:        "Omni Network",
-		ChainID:     netconf.EthereumChainID(network),
-		Address:     contracts.TokenAddr(network),
-		CoingeckoID: "omni-network",
+		Token:   tokenslib.OMNI,
+		ChainID: netconf.EthereumChainID(network),
+		Address: contracts.TokenAddr(network),
+	}
+}
+
+func stETH(chainID uint64, addr common.Address) Token {
+	return Token{
+		Token:   tokenslib.STETH,
+		ChainID: chainID,
+		Address: addr,
+	}
+}
+
+func wstETH(chainID uint64, addr common.Address) Token {
+	return Token{
+		Token:   tokenslib.WSTETH,
+		ChainID: chainID,
+		Address: addr,
 	}
 }
 

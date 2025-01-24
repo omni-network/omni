@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/txmgr"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -36,7 +37,7 @@ func TestSendAsync(t *testing.T) {
 		gasEstimator: mockGasEstimator,
 		abi:          nil,
 		chain:        netconf.Chain{},
-		gasToken:     "",
+		gasToken:     tokens.Token{},
 		chainNames:   nil,
 		ethCl:        nil,
 	}

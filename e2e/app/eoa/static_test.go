@@ -22,23 +22,23 @@ import (
 func TestThresholdReference(t *testing.T) {
 	t.Parallel()
 
-	resp := make(map[netconf.ID]map[tokens.Token]map[eoa.Role]map[string]string)
+	resp := make(map[netconf.ID]map[string]map[eoa.Role]map[string]string)
 	for _, network := range []netconf.ID{netconf.Staging, netconf.Omega, netconf.Mainnet} {
-		resp[network] = make(map[tokens.Token]map[eoa.Role]map[string]string)
+		resp[network] = make(map[string]map[eoa.Role]map[string]string)
 		for _, token := range []tokens.Token{tokens.ETH, tokens.OMNI} {
-			resp[network][token] = make(map[eoa.Role]map[string]string)
+			resp[network][token.Symbol] = make(map[eoa.Role]map[string]string)
 			for _, role := range eoa.AllRoles() {
 				if !shouldExist(role, network) {
 					continue
 				}
 
-				resp[network][token][role] = make(map[string]string)
+				resp[network][token.Symbol][role] = make(map[string]string)
 
 				thresholds, ok := eoa.GetFundThresholds(token, network, role)
 				require.True(t, ok, "thresholds not found: %s %s %s", network, role, token)
 
-				resp[network][token][role]["target"] = etherStr(thresholds.TargetBalance())
-				resp[network][token][role]["min"] = etherStr(thresholds.MinBalance())
+				resp[network][token.Symbol][role]["target"] = etherStr(thresholds.TargetBalance())
+				resp[network][token.Symbol][role]["min"] = etherStr(thresholds.MinBalance())
 			}
 		}
 	}

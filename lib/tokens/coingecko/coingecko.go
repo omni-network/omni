@@ -51,7 +51,7 @@ type simplePriceResponse map[string]map[string]float64
 func (c Client) getPrice(ctx context.Context, currency string, tkns ...tokens.Token) (map[tokens.Token]float64, error) {
 	ids := make([]string, len(tkns))
 	for i, t := range tkns {
-		ids[i] = t.CoingeckoID()
+		ids[i] = t.CoingeckoID
 	}
 
 	params := url.Values{
@@ -67,7 +67,7 @@ func (c Client) getPrice(ctx context.Context, currency string, tkns ...tokens.To
 	prices := make(map[tokens.Token]float64)
 
 	for _, tkn := range tkns {
-		priceByCurrency, ok := resp[tkn.CoingeckoID()]
+		priceByCurrency, ok := resp[tkn.CoingeckoID]
 		if !ok {
 			return nil, errors.New("missing token in response", "token", tkn)
 		}
