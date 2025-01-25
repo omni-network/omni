@@ -43,12 +43,12 @@ interface ISolverNet {
     /**
      * @notice SolverNet ERC-7683 order data.
      *         Restricted to single call on a destination chain.
-     * @param user      User who the order is for.
+     * @param owner     Address allowed to cancel the order. address(0) for msg.sender of inbox.open(...)
      * @param call      Call to execute on.
      * @param deposits  Deposits payed by user, locked on source chain. Awarded to solver on fill.
      */
     struct OrderData {
-        address user;
+        address owner;
         Call call;
         Deposit[] deposits;
     }

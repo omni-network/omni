@@ -90,7 +90,7 @@ contract SolverNet_E2E_Test is TestBase {
             expenses: expense
         });
 
-        ISolverNet.OrderData memory orderData = ISolverNet.OrderData({ user: user, call: call, deposits: deposit });
+        ISolverNet.OrderData memory orderData = ISolverNet.OrderData({ owner: user, call: call, deposits: deposit });
 
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 1 minutes),

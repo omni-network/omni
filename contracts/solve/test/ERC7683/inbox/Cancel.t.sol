@@ -70,7 +70,7 @@ contract SolverNet_Inbox_Cancel_Test is TestBase {
     function test_cancel_empty_user_address_succeeds() public {
         IERC7683.OnchainCrossChainOrder memory order = randOrder();
         ISolverNet.OrderData memory orderData = abi.decode(order.orderData, (ISolverNet.OrderData));
-        orderData.user = address(0);
+        orderData.owner = address(0);
         order.orderData = abi.encode(orderData);
 
         vm.prank(user);
