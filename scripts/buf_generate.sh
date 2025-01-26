@@ -21,7 +21,7 @@ function bufgen() {
       --path="${DIR}"
 }
 
-# Ensure we are in the root of the repo, so  ${pwd}/go.mod must exit
+# Ensure we are in the root of the repo, so ${pwd}/go.mod must exist
 if [ ! -f go.mod ]; then
   echo "Please run this script from the root of the repository"
   exit 1
