@@ -27,7 +27,7 @@ func StartMonitoring(ctx context.Context, network netconf.Network, rpcClients ma
 	}
 }
 
-// monitorAccountsForever blocks and periodically monitors the account for the given chain.
+// monitorAccountForever blocks and periodically monitors the account for the given chain.
 func monitorAccountForever(
 	ctx context.Context,
 	network netconf.ID,
