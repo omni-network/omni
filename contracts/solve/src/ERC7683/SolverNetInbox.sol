@@ -29,7 +29,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @notice Typehash for the order data.
      */
     bytes32 internal constant ORDER_DATA_TYPEHASH = keccak256(
-        "OrderData(Call call,Deposit[] deposits)Call(uint64 chainId,bytes32 target,uint256 value,bytes data,TokenExpense[] expenses)TokenExpense(bytes32 token,bytes32 spender,uint256 amount)Deposit(bytes32 token,uint256 amount)"
+        "OrderData(address owner,Call call,Deposit[] deposits)Call(uint64 chainId,bytes32 target,uint256 value,bytes data,TokenExpense[] expenses)TokenExpense(bytes32 token,bytes32 spender,uint256 amount)Deposit(bytes32 token,uint256 amount)"
     ); // Not really needed until we support more than one order type or gasless orders
 
     /**
@@ -157,7 +157,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         });
 
         return ResolvedCrossChainOrder({
-            user: msg.sender,
+            user: orderData.owner != address(0) ? orderData.owner : msg.sender,
             originChainId: block.chainid,
             openDeadline: uint32(block.timestamp),
             fillDeadline: order.fillDeadline,

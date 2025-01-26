@@ -34,3 +34,27 @@ func TestParseFillOriginData(t *testing.T) {
 
 	require.Equal(t, data, parsed)
 }
+
+func TestParseOrderData(t *testing.T) {
+	t.Parallel()
+
+	f := fuzz.New().NilChance(0)
+
+	// big.Ints don't fuzz well, so we provide a custom fuzzer
+	f.Funcs(func(bi *big.Int, c fuzz.Continue) {
+		var val uint64
+		c.Fuzz(&val)
+		bi.SetUint64(val)
+	})
+
+	var data bindings.ISolverNetOrderData
+	f.Fuzz(&data)
+
+	packed, err := solvernet.PackOrderData(data)
+	require.NoError(t, err)
+
+	parsed, err := solvernet.ParseOrderData(packed)
+	require.NoError(t, err)
+
+	require.Equal(t, data, parsed)
+}

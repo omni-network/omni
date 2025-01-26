@@ -18,8 +18,8 @@ import (
 
 var (
 	// SolverNetInbox.ORDER_DATA_TYPEHASH
-	// keccak256("OrderData(Call call,Deposit[] deposits)Call(uint64 chainId,bytes32 target,uint256 value,bytes data,TokenExpense[] expenses)TokenExpense(bytes32 token,bytes32 spender,uint256 amount)Deposit(bytes32 token,uint256 amount)").
-	orderDataTypeHash = cast.Must32(hexutil.MustDecode("0xe5be6bd381a38cd250f9aa1a05935cbcd261fe0e77e9ef6f6d07bf3b7e5d22e2"))
+	// keccak256("OrderData(address owner,Call call,Deposit[] deposits)Call(uint64 chainId,bytes32 target,uint256 value,bytes data,TokenExpense[] expenses)TokenExpense(bytes32 token,bytes32 spender,uint256 amount)Deposit(bytes32 token,uint256 amount)").
+	orderDataTypeHash = cast.Must32(hexutil.MustDecode("0x58f59d339fe725ebad5ad882b2d31606bcf694410c425f001056bb89c68d91a3"))
 )
 
 type OpenOpts struct {

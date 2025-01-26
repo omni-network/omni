@@ -48,7 +48,7 @@ contract TestBase is Test {
     address proxyAdmin = makeAddr("proxy-admin-owner");
 
     bytes32 internal constant ORDER_DATA_TYPEHASH = keccak256(
-        "OrderData(Call call,Deposit[] deposits)Call(uint64 chainId,bytes32 target,uint256 value,bytes data,TokenExpense[] expenses)TokenExpense(bytes32 token,bytes32 spender,uint256 amount)Deposit(bytes32 token,uint256 amount)"
+        "OrderData(address owner,Call call,Deposit[] deposits)Call(uint64 chainId,bytes32 target,uint256 value,bytes data,TokenExpense[] expenses)TokenExpense(bytes32 token,bytes32 spender,uint256 amount)Deposit(bytes32 token,uint256 amount)"
     );
 
     modifier prankUser() {
@@ -105,9 +105,13 @@ contract TestBase is Test {
         bytes memory data,
         ISolverNet.TokenExpense[] memory expenses,
         ISolverNet.Deposit[] memory deposits
-    ) internal pure returns (bytes memory) {
+    ) internal view returns (bytes memory) {
         return abi.encode(
-            ISolverNet.OrderData({ call: ISolverNet.Call(chainId, target, value, data, expenses), deposits: deposits })
+            ISolverNet.OrderData({
+                owner: user,
+                call: ISolverNet.Call(chainId, target, value, data, expenses),
+                deposits: deposits
+            })
         );
     }
 
@@ -137,7 +141,7 @@ contract TestBase is Test {
             expenses: expenses
         });
 
-        ISolverNet.OrderData memory orderData = ISolverNet.OrderData({ call: call, deposits: deposits });
+        ISolverNet.OrderData memory orderData = ISolverNet.OrderData({ owner: user, call: call, deposits: deposits });
 
         return IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 1 minutes),
@@ -172,7 +176,7 @@ contract TestBase is Test {
             expenses: expenses
         });
 
-        ISolverNet.OrderData memory orderData = ISolverNet.OrderData({ call: call, deposits: deposits });
+        ISolverNet.OrderData memory orderData = ISolverNet.OrderData({ owner: user, call: call, deposits: deposits });
 
         return IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 1 minutes),
@@ -223,7 +227,7 @@ contract TestBase is Test {
             expenses: expenses
         });
 
-        ISolverNet.OrderData memory orderData = ISolverNet.OrderData({ call: call, deposits: deposits });
+        ISolverNet.OrderData memory orderData = ISolverNet.OrderData({ owner: user, call: call, deposits: deposits });
 
         return IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 1 minutes),
