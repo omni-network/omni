@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	e2e "github.com/omni-network/omni/e2e/solve"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
@@ -19,6 +20,7 @@ type Token struct {
 	tokenslib.Token
 	ChainID uint64
 	Address common.Address // empty if native
+	IsMock  bool
 }
 
 type Expense struct {
@@ -32,7 +34,7 @@ func (t Token) IsNative() bool {
 	return t.Address == common.Address{}
 }
 
-var tokens = Tokens{
+var tokens = append(Tokens{
 	// Native ETH
 	nativeETH(evmchain.IDHolesky),
 	nativeETH(evmchain.IDArbSepolia),
@@ -57,7 +59,7 @@ var tokens = Tokens{
 
 	// stETH
 	stETH(evmchain.IDHolesky, common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")),
-}
+}, mocks()...)
 
 func (ts Tokens) find(chainID uint64, addr common.Address) (Token, bool) {
 	for _, t := range ts {
@@ -105,6 +107,22 @@ func wstETH(chainID uint64, addr common.Address) Token {
 		ChainID: chainID,
 		Address: addr,
 	}
+}
+
+// mocks returns MockTokens deployed in e2e for testing purposes.
+func mocks() []Token {
+	var tkns []Token
+
+	for _, mock := range e2e.MockTokens() {
+		tkns = append(tkns, Token{
+			Token:   mock.Token,
+			Address: mock.Address(),
+			ChainID: mock.ChainID,
+			IsMock:  true,
+		})
+	}
+
+	return tkns
 }
 
 func balanceOf(

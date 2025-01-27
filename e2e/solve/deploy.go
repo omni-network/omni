@@ -28,7 +28,13 @@ func DeployContracts(ctx context.Context, network netconf.Network, backends ethb
 
 	if feature.FlagSolverV2.Enabled(ctx) {
 		log.Info(ctx, "Deploying solve v2 contracts")
-		return deployV2Boxes(ctx, network, backends)
+
+		var eg errgroup.Group
+		eg.Go(func() error { return deployV2Boxes(ctx, network, backends) })
+		eg.Go(func() error { return maybeDeployMockTokens(ctx, network, backends) })
+		if err := eg.Wait(); err != nil {
+			return errors.Wrap(err, "deploy v2")
+		}
 
 		// TODO: remove below when v2 is fully enabled
 		//
