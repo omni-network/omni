@@ -115,6 +115,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 	eg2.Go(func() error { return DeployBridge(ctx, def) })
 	eg2.Go(func() error { return maybeSubmitNetworkUpgrade(ctx, def) })
 	eg2.Go(func() error { return FundValidatorsForTesting(ctx, def) })
+	eg2.Go(func() error { return DeployEphemeralXBridge(ctx, def) })
 	if err := eg2.Wait(); err != nil {
 		return nil, errors.Wrap(err, "deploy other contracts")
 	}
