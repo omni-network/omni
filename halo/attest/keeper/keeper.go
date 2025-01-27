@@ -742,7 +742,7 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 	_, ok, err := k.parseAndVerifyVoteExtension(ctx, req.ValidatorAddress, req.VoteExtension, uint64(req.Height))
 	if err != nil {
 		log.Warn(ctx, "Rejecting vote extension", err, log.Hex7("validator", req.ValidatorAddress))
-		return respAccept, nil
+		return respReject, nil
 	} else if !ok {
 		log.Warn(ctx, "Rejecting vote extension containing vote behind window", nil, log.Hex7("validator", req.ValidatorAddress))
 		return respReject, nil
