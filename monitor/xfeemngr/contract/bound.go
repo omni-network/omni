@@ -100,7 +100,7 @@ func (c BoundFeeOracleV1) SetGasPriceOn(ctx context.Context, destChainID uint64,
 		return errors.Wrap(err, "wait mined", "tx", tx.Hash().Hex())
 	}
 
-	spendTotal.WithLabelValues(c.chain.Name, string(c.chain.NativeToken), methodSetGasPriceOn).Add(totalSpentGwei(tx, rec))
+	spendTotal.WithLabelValues(c.chain.Name, c.chain.NativeToken.Symbol, methodSetGasPriceOn).Add(totalSpentGwei(tx, rec))
 
 	return nil
 }
@@ -123,7 +123,7 @@ func (c BoundFeeOracleV1) SetToNativeRate(ctx context.Context, destChainID uint6
 		return errors.Wrap(err, "wait mined", "tx", tx.Hash().Hex())
 	}
 
-	spendTotal.WithLabelValues(c.chain.Name, string(c.chain.NativeToken), methodSetToNativeRate).Add(totalSpentGwei(tx, rec))
+	spendTotal.WithLabelValues(c.chain.Name, c.chain.NativeToken.Symbol, methodSetToNativeRate).Add(totalSpentGwei(tx, rec))
 
 	return nil
 }
@@ -159,7 +159,7 @@ func (c BoundFeeOracleV1) BulkSetFeeParams(ctx context.Context, params []binding
 		return errors.Wrap(err, "wait mined", "tx", tx.Hash().Hex())
 	}
 
-	spendTotal.WithLabelValues(c.chain.Name, string(c.chain.NativeToken), methodBulkSetFeeParams).Add(totalSpentGwei(tx, rec))
+	spendTotal.WithLabelValues(c.chain.Name, c.chain.NativeToken.Symbol, methodBulkSetFeeParams).Add(totalSpentGwei(tx, rec))
 
 	return nil
 }
