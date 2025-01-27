@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
-import { IERC7683 } from "./interfaces/IERC7683.sol";
 import { ISolverNet, ISolverNetExecutor } from "./interfaces/ISolverNetExecutor.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { AddrUtils } from "./lib/AddrUtils.sol";
