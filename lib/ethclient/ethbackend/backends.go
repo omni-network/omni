@@ -5,7 +5,6 @@ import (
 	"crypto/ecdsa"
 	"time"
 
-	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/fireblocks"
@@ -15,7 +14,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 )
 
 const (
@@ -28,59 +26,6 @@ const (
 // See Backends godoc for more information.
 type Backends struct {
 	backends map[uint64]*Backend
-}
-
-// NewFireBackends returns a multi-backends backed by fireblocks keys that supports configured all chains.
-func NewFireBackends(ctx context.Context, testnet types.Testnet, fireCl fireblocks.Client) (Backends, error) {
-	inner := make(map[uint64]*Backend)
-
-	// Configure omni EVM Backend
-	if testnet.HasOmniEVM() {
-		chain := testnet.BroadcastOmniEVM()
-		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.ExternalRPC)
-		if err != nil {
-			return Backends{}, errors.Wrap(err, "dial")
-		}
-
-		inner[chain.Chain.ChainID], err = NewFireBackend(ctx, chain.Chain.Name, chain.Chain.ChainID, chain.Chain.BlockPeriod, ethCl, fireCl)
-		if err != nil {
-			return Backends{}, errors.Wrap(err, "new omni Backend")
-		}
-	}
-
-	// Configure anvil EVM Backends
-	for _, chain := range testnet.AnvilChains {
-		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.ExternalRPC)
-		if err != nil {
-			return Backends{}, errors.Wrap(err, "dial")
-		}
-
-		inner[chain.Chain.ChainID], err = NewFireBackend(ctx, chain.Chain.Name, chain.Chain.ChainID, chain.Chain.BlockPeriod, ethCl, fireCl)
-		if err != nil {
-			return Backends{}, errors.Wrap(err, "new anvil Backend")
-		}
-	}
-
-	// Configure public EVM Backends
-	for _, chain := range testnet.PublicChains {
-		ethCl, err := ethclient.Dial(chain.Chain().Name, chain.NextRPCAddress())
-		if err != nil {
-			return Backends{}, errors.Wrap(err, "dial")
-		}
-
-		backend, err := NewFireBackend(ctx, chain.Chain().Name, chain.Chain().ChainID, chain.Chain().BlockPeriod, ethCl, fireCl)
-		if err != nil {
-			return Backends{}, errors.Wrap(err, "new public Backend")
-		} else if err := backend.EnsureSynced(ctx); err != nil {
-			return Backends{}, errors.Wrap(err, "ensure public chain synced", "chain", chain.Chain().Name)
-		}
-
-		inner[chain.Chain().ChainID] = backend
-	}
-
-	return Backends{
-		backends: inner,
-	}, nil
 }
 
 func BackendsFromNetwork(network netconf.Network, endpoints xchain.RPCEndpoints, privKeys ...*ecdsa.PrivateKey) (Backends, error) {
@@ -109,84 +54,6 @@ func BackendsFromNetwork(network netconf.Network, endpoints xchain.RPCEndpoints,
 
 func BackendsFrom(backends map[uint64]*Backend) Backends {
 	return Backends{backends: backends}
-}
-
-// NewBackends returns a multi-backends backed by in-memory keys that supports configured all chains.
-func NewBackends(ctx context.Context, testnet types.Testnet, deployKeyFile string) (Backends, error) {
-	var err error
-
-	var publicDeployKey *ecdsa.PrivateKey
-	if testnet.Network == netconf.Devnet {
-		if deployKeyFile != "" {
-			return Backends{}, errors.New("deploy key not supported in devnet")
-		}
-	} else if testnet.Network == netconf.Staging {
-		publicDeployKey, err = crypto.LoadECDSA(deployKeyFile)
-	} else {
-		return Backends{}, errors.New("unknown network")
-	}
-	if err != nil {
-		return Backends{}, errors.Wrap(err, "load deploy key")
-	}
-
-	inner := make(map[uint64]*Backend)
-
-	// Configure omni EVM Backend
-	{
-		chain := testnet.BroadcastOmniEVM()
-		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.ExternalRPC)
-		if err != nil {
-			return Backends{}, errors.Wrap(err, "dial")
-		}
-
-		// dev omni evm uses same dev accounts as anvil
-		// TODO: do not use dev anvil backend for prod omni evms
-		backend, err := NewDevBackend(chain.Chain.Name, chain.Chain.ChainID, chain.Chain.BlockPeriod, ethCl)
-		if err != nil {
-			return Backends{}, errors.Wrap(err, "new omni Backend")
-		}
-
-		inner[chain.Chain.ChainID] = backend
-	}
-
-	// Configure anvil EVM Backends
-	for _, chain := range testnet.AnvilChains {
-		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.ExternalRPC)
-		if err != nil {
-			return Backends{}, errors.Wrap(err, "dial")
-		}
-
-		backend, err := NewDevBackend(chain.Chain.Name, chain.Chain.ChainID, chain.Chain.BlockPeriod, ethCl)
-		if err != nil {
-			return Backends{}, errors.Wrap(err, "new anvil Backend")
-		}
-
-		inner[chain.Chain.ChainID] = backend
-	}
-
-	// Configure public EVM Backends
-	for _, chain := range testnet.PublicChains {
-		if publicDeployKey == nil {
-			return Backends{}, errors.New("public deploy key required")
-		}
-		ethCl, err := ethclient.Dial(chain.Chain().Name, chain.NextRPCAddress())
-		if err != nil {
-			return Backends{}, errors.Wrap(err, "dial")
-		}
-
-		backend, err := NewBackend(chain.Chain().Name, chain.Chain().ChainID, chain.Chain().BlockPeriod, ethCl, publicDeployKey)
-		if err != nil {
-			return Backends{}, errors.Wrap(err, "new public Backend")
-		} else if err := backend.EnsureSynced(ctx); err != nil {
-			return Backends{}, errors.Wrap(err, "ensure public chain synced", "chain", chain.Chain().Name)
-		}
-
-		inner[chain.Chain().ChainID] = backend
-	}
-
-	return Backends{
-		backends: inner,
-	}, nil
 }
 
 func (b Backends) All() map[uint64]*Backend {

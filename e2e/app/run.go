@@ -6,6 +6,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/e2e/ext"
 	"github.com/omni-network/omni/e2e/netman"
 	"github.com/omni-network/omni/e2e/netman/pingpong"
 	"github.com/omni-network/omni/e2e/solve"
@@ -104,6 +105,18 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		// Deploy solver before initPortalRegistry, so solver detects boxes after netconf.Await
 		if err := solve.DeployContracts(ctx, NetworkFromDef(def), def.Backends()); err != nil {
 			return nil, errors.Wrap(err, "deploy solve")
+		}
+	}
+
+	// example usage of extensions
+	exts, err := ext.FromRegex(def.Manifest.Extensions)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, e := range exts {
+		if err := e.Deploy(ctx, NetworkFromDef(def), ExternalEndpoints(def), def.Backends()); err != nil {
+			return nil, errors.Wrap(err, "deploy extension", "name", e.Name())
 		}
 	}
 

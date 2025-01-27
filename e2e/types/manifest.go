@@ -2,6 +2,7 @@ package types
 
 import (
 	"github.com/omni-network/omni/e2e/app/key"
+	ext "github.com/omni-network/omni/e2e/ext/flags"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/netconf"
@@ -132,6 +133,9 @@ type Manifest struct {
 
 	// FeatureFlags defines the feature flags to enable.
 	FeatureFlags feature.Flags `toml:"feature_flags"`
+
+	// Extensions defines the extensions to enable.
+	Extensions ext.Regex `toml:"extensions"`
 }
 
 // Seeds returns a map of seed nodes by name.

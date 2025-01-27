@@ -15,6 +15,7 @@ import (
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/e2e/vmcompose"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/fireblocks"
 	"github.com/omni-network/omni/lib/netconf"
@@ -169,9 +170,14 @@ func MakeDefinition(ctx context.Context, cfg DefinitionConfig, commandName strin
 }
 
 func newBackends(ctx context.Context, cfg DefinitionConfig, testnet types.Testnet, commandName string) (ethbackend.Backends, error) {
-	// If no fireblocks API key, use in-memory keys.
+	// If no fireblocks API key, use in-memory dev keys.
 	if cfg.FireAPIKey == "" {
-		return ethbackend.NewBackends(ctx, testnet, cfg.DeployKeyFile)
+		backends, err := newDevBackends(testnet)
+		if err != nil {
+			return ethbackend.Backends{}, errors.Wrap(err, "new dev backends")
+		}
+
+		return backends, nil
 	}
 
 	key, err := fireblocks.LoadKey(cfg.FireKeyPath)
@@ -188,7 +194,105 @@ func newBackends(ctx context.Context, cfg DefinitionConfig, testnet types.Testne
 		return ethbackend.Backends{}, errors.Wrap(err, "new fireblocks")
 	}
 
-	return ethbackend.NewFireBackends(ctx, testnet, fireCl)
+	return newFireBackends(ctx, testnet, fireCl)
+}
+
+// NewBackends returns a multi-backends backed by in-memory dev keys that supports configured all chains.
+func newDevBackends(testnet types.Testnet) (ethbackend.Backends, error) {
+	if !testnet.Network.IsEphemeral() {
+		return ethbackend.Backends{}, errors.New("only ephemeral networks")
+	}
+
+	if len(testnet.PublicChains) > 0 {
+		return ethbackend.Backends{}, errors.New("public chains not supported")
+	}
+
+	inner := make(map[uint64]*ethbackend.Backend)
+
+	// Configure omni EVM Backend
+	{
+		chain := testnet.BroadcastOmniEVM()
+		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.ExternalRPC)
+		if err != nil {
+			return ethbackend.Backends{}, errors.Wrap(err, "dial")
+		}
+
+		// dev omni evm uses same dev accounts as anvil
+		backend, err := ethbackend.NewDevBackend(chain.Chain.Name, chain.Chain.ChainID, chain.Chain.BlockPeriod, ethCl)
+		if err != nil {
+			return ethbackend.Backends{}, errors.Wrap(err, "new omni Backend")
+		}
+
+		inner[chain.Chain.ChainID] = backend
+	}
+
+	// Configure anvil EVM Backends
+	for _, chain := range testnet.AnvilChains {
+		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.ExternalRPC)
+		if err != nil {
+			return ethbackend.Backends{}, errors.Wrap(err, "dial")
+		}
+
+		backend, err := ethbackend.NewDevBackend(chain.Chain.Name, chain.Chain.ChainID, chain.Chain.BlockPeriod, ethCl)
+		if err != nil {
+			return ethbackend.Backends{}, errors.Wrap(err, "new anvil Backend")
+		}
+
+		inner[chain.Chain.ChainID] = backend
+	}
+
+	return ethbackend.BackendsFrom(inner), nil
+}
+
+// newFireBackends returns a multi-backends backed by fireblocks keys that supports configured all chains.
+func newFireBackends(ctx context.Context, testnet types.Testnet, fireCl fireblocks.Client) (ethbackend.Backends, error) {
+	inner := make(map[uint64]*ethbackend.Backend)
+
+	// Configure omni EVM Backend
+	if testnet.HasOmniEVM() {
+		chain := testnet.BroadcastOmniEVM()
+		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.ExternalRPC)
+		if err != nil {
+			return ethbackend.Backends{}, errors.Wrap(err, "dial")
+		}
+
+		inner[chain.Chain.ChainID], err = ethbackend.NewFireBackend(ctx, chain.Chain.Name, chain.Chain.ChainID, chain.Chain.BlockPeriod, ethCl, fireCl)
+		if err != nil {
+			return ethbackend.Backends{}, errors.Wrap(err, "new omni Backend")
+		}
+	}
+
+	// Configure anvil EVM Backends
+	for _, chain := range testnet.AnvilChains {
+		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.ExternalRPC)
+		if err != nil {
+			return ethbackend.Backends{}, errors.Wrap(err, "dial")
+		}
+
+		inner[chain.Chain.ChainID], err = ethbackend.NewFireBackend(ctx, chain.Chain.Name, chain.Chain.ChainID, chain.Chain.BlockPeriod, ethCl, fireCl)
+		if err != nil {
+			return ethbackend.Backends{}, errors.Wrap(err, "new anvil Backend")
+		}
+	}
+
+	// Configure public EVM Backends
+	for _, chain := range testnet.PublicChains {
+		ethCl, err := ethclient.Dial(chain.Chain().Name, chain.NextRPCAddress())
+		if err != nil {
+			return ethbackend.Backends{}, errors.Wrap(err, "dial")
+		}
+
+		backend, err := ethbackend.NewFireBackend(ctx, chain.Chain().Name, chain.Chain().ChainID, chain.Chain().BlockPeriod, ethCl, fireCl)
+		if err != nil {
+			return ethbackend.Backends{}, errors.Wrap(err, "new public Backend")
+		} else if err := backend.EnsureSynced(ctx); err != nil {
+			return ethbackend.Backends{}, errors.Wrap(err, "ensure public chain synced", "chain", chain.Chain().Name)
+		}
+
+		inner[chain.Chain().ChainID] = backend
+	}
+
+	return ethbackend.BackendsFrom(inner), nil
 }
 
 // adaptCometTestnet adapts the default comet testnet for omni specific changes and custom config.
