@@ -34,26 +34,11 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
     event Delegate(address indexed delegator, address indexed validator, uint256 amount);
 
     /**
-     * @notice Emitted when a delegation is made to a validator
-     * @param validator        (MsgEditValidator.validator_addr) The address of the validator to edit
-     * @param moniker          (Description.moniker) Human-readable name for the validator
-     * @param identity          (Description.identity) Optional identity signature (ex. UPort or Keybase)
-     * @param website          (Description.website) Optional optional website link
-     * @param security_contact (Description.security_contact) Optional optional email for security contact
-     * @param details          (Description.details) Optional other details
-     * @param commission_rate_percentage (MsgEditValidator.commission_rate_percentage) The percentage of delegate rewards to take as commission [0,100]
-     * @param min_self_delegation        (MsgEditValidator.min_self_delegation) The minimum self delegation required (in wei).
+     * @notice Emitted when a validator is edited
+     * @param validator The validator address
+     * @param params The parameters for the editValidator function
      */
-    event EditValidator(
-        address indexed validator,
-        string moniker,
-        string identity,
-        string website,
-        string security_contact,
-        string details,
-        uint32 commission_rate_percentage,
-        uint256 min_self_delegation
-    );
+    event EditValidator(address indexed validator, EditValidatorParams params);
 
     /**
      * @notice Emitted when a validator is allowed to create a validator
@@ -76,6 +61,26 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
      * @notice Emitted when the allowlist is disabled
      */
     event AllowlistDisabled();
+
+    /**
+     * @notice Parameters for the editValidator function
+     * @param moniker                    Human-readable name for the validator              (70 chars max)
+     * @param identity                   Optional identity signature (ex. UPort or Keybase) (3000 chars max)
+     * @param website                    Optional optional website link                     (140 chars max)
+     * @param security_contact           Optional optional email for security contact       (140 chars max)
+     * @param details                    Optional other details                             (280 chars max)
+     * @param commission_rate_percentage The percentage of delegate rewards to take as commission [0,100]
+     * @param min_self_delegation        The minimum self delegation required (in wei). (not zero)
+     */
+    struct EditValidatorParams {
+        string moniker;
+        string identity;
+        string website;
+        string security_contact;
+        string details;
+        uint32 commission_rate_percentage;
+        uint128 min_self_delegation;
+    }
 
     /**
      * @notice The minimum deposit required to create a validator
@@ -182,44 +187,21 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
 
     /**
      * @notice Edit an existing validator
-     * @param moniker          Human-readable name for the validator              (70 chars max)
-     * @param identity         Optional identity signature (ex. UPort or Keybase) (3000 chars max)
-     * @param website          Optional optional website link                     (140 chars max)
-     * @param security_contact Optional optional email for security contact       (140 chars max)
-     * @param details          Optional other details                             (280 chars max)
-     * @param commission_rate_percentage The percentage of delegate rewards to take as commission [0,100]
-     * @param min_self_delegation        The minimum self delegation required (in wei). (not zero)
+     * @param params The parameters for the editValidator function
      * @dev Proxies x/staking.MsgEditValidator
      */
-    function editValidator(
-        string calldata moniker,
-        string calldata identity,
-        string calldata website,
-        string calldata security_contact,
-        string calldata details,
-        uint32 commission_rate_percentage,
-        uint256 min_self_delegation
-    ) external payable {
+    function editValidator(EditValidatorParams calldata params) external payable {
         require(!isAllowlistEnabled || isAllowedValidator[msg.sender], "Staking: not allowed");
-        require(commission_rate_percentage <= 100, "Staking: invalid commission rate");
-        require(min_self_delegation > 0, "Staking: invalid min self delegation");
-        require(bytes(moniker).length <= 70, "Staking: moniker too long");
-        require(bytes(identity).length <= 3000, "Staking: identity too long");
-        require(bytes(website).length <= 140, "Staking: website too long");
-        require(bytes(security_contact).length <= 140, "Staking: security contact too long");
-        require(bytes(details).length <= 280, "Staking: details too long");
+        require(params.commission_rate_percentage <= 100, "Staking: invalid commission rate");
+        require(params.min_self_delegation > 0, "Staking: invalid min self delegation");
+        require(bytes(params.moniker).length <= 70, "Staking: moniker too long");
+        require(bytes(params.identity).length <= 3000, "Staking: identity too long");
+        require(bytes(params.website).length <= 140, "Staking: website too long");
+        require(bytes(params.security_contact).length <= 140, "Staking: security contact too long");
+        require(bytes(params.details).length <= 280, "Staking: details too long");
 
         _burnFee();
-        emit EditValidator(
-            msg.sender,
-            moniker,
-            identity,
-            website,
-            security_contact,
-            details,
-            commission_rate_percentage,
-            min_self_delegation
-        );
+        emit EditValidator(msg.sender, params);
     }
 
     /**
