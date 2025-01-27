@@ -9,7 +9,14 @@ import (
 )
 
 func DeployEphemeralXBridge(ctx context.Context, def Definition) error {
+	// Restrict deployment to ephemeral networks
 	if !def.Testnet.Network.IsEphemeral() {
+		return nil
+	}
+
+	// Skip deployment if no Ethereum-labeled chain is available
+	_, ok := def.Testnet.EthereumChain()
+	if !ok {
 		return nil
 	}
 
@@ -42,7 +49,7 @@ func deployTokens(ctx context.Context, def Definition) error {
 	}
 
 	for _, chain := range def.Testnet.EVMChains() {
-		// XBridge not deployed on OmniEVM
+		// Token contracts are not deployed on OmniEVM
 		if chain.ChainID == omniEVM.ChainID {
 			continue
 		}
@@ -73,22 +80,23 @@ func deployTokens(ctx context.Context, def Definition) error {
 }
 
 func deployLockbox(ctx context.Context, def Definition) error {
-	chain, ok := def.Testnet.EthereumChain()
+	// Lockbox is only deployed to Ethereum chains where RLUSD is deployed
+	ethMainnet, ok := def.Testnet.EthereumChain()
 	if !ok {
 		return errors.New("no ethereum chain")
 	}
 
-	backend, err := def.Backends().Backend(chain.ChainID)
+	backend, err := def.Backends().Backend(ethMainnet.ChainID)
 	if err != nil {
-		return errors.Wrap(err, "backend", "chain", chain.Name)
+		return errors.Wrap(err, "backend", "chain", ethMainnet.Name)
 	}
 
 	addr, receipt, err := xbridge.DeployLockboxIfNeeded(ctx, def.Testnet.Network, backend)
 	if err != nil {
-		return errors.Wrap(err, "deploy", "chain", chain.Name, "tx", maybeTxHash(receipt))
+		return errors.Wrap(err, "deploy", "chain", ethMainnet.Name, "tx", maybeTxHash(receipt))
 	}
 
-	log.Info(ctx, "Lockbox deployed", "chain", chain.Name, "address", addr.Hex(), "tx", maybeTxHash(receipt))
+	log.Info(ctx, "Lockbox deployed", "chain", ethMainnet.Name, "address", addr.Hex(), "tx", maybeTxHash(receipt))
 
 	return nil
 }
@@ -105,6 +113,7 @@ func deployBridge(ctx context.Context, def Definition) error {
 	}
 
 	for _, chain := range def.Testnet.EVMChains() {
+		// Bridge contracts are not deployed on OmniEVM
 		if chain.ChainID == omniEVM.ChainID {
 			continue
 		}
