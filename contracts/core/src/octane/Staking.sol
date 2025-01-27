@@ -95,7 +95,7 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
     /**
      * @notice EIP-712 typehash
      */
-    bytes32 private constant _EIP712_TYPEHASH = keccak256("ValidatorPublicKey(bytes32 x,bytes32 y)");
+    bytes32 private constant _EIP712_TYPEHASH = keccak256("ValidatorAddress(address validator)");
 
     /**
      * @notice The address to burn fees to
