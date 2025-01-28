@@ -75,9 +75,11 @@ var tokens = append(Tokens{
 
 	// wtSETH
 	wstETH(evmchain.IDHolesky, common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")),
+	wstETH(evmchain.IDMockL1, common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")), // copy of holesky wstETH (for e2e fork testing)
 
 	// stETH
 	stETH(evmchain.IDHolesky, common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")),
+	stETH(evmchain.IDMockL1, common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")), // copy of holesky stETH (for e2e fork testing)
 }, mocks()...)
 
 func (ts Tokens) find(chainID uint64, addr common.Address) (Token, bool) {
