@@ -1,34 +1,35 @@
-package app
+package xbridge
 
 import (
 	"context"
 
-	"github.com/omni-network/omni/e2e/xbridge"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 )
 
-func DeployEphemeralXBridge(ctx context.Context, def Definition) error {
+func DeployEphemeralXBridge(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
 	// Restrict deployment to ephemeral networks
-	if !def.Testnet.Network.IsEphemeral() {
+	if !network.ID.IsEphemeral() {
 		return nil
 	}
 
 	// Skip deployment if no Ethereum-labeled chain is available
-	_, ok := def.Testnet.EthereumChain()
+	_, ok := network.EthereumChain()
 	if !ok {
 		return nil
 	}
 
-	if err := deployTokens(ctx, def); err != nil {
+	if err := deployXBridgeTokens(ctx, network, backends); err != nil {
 		return errors.Wrap(err, "deploy token")
 	}
 
-	if err := deployLockbox(ctx, def); err != nil {
+	if err := deployXBridgeLockbox(ctx, network, backends); err != nil {
 		return errors.Wrap(err, "deploy lockbox")
 	}
 
-	if err := deployBridge(ctx, def); err != nil {
+	if err := deployXBridge(ctx, network, backends); err != nil {
 		return errors.Wrap(err, "deploy xbridge")
 	}
 
@@ -37,30 +38,30 @@ func DeployEphemeralXBridge(ctx context.Context, def Definition) error {
 	return nil
 }
 
-func deployTokens(ctx context.Context, def Definition) error {
-	omniEVM, ok := def.Testnet.OmniEVMChain()
+func deployXBridgeTokens(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
+	omniEVM, ok := network.OmniEVMChain()
 	if !ok {
 		return errors.New("no omni evm chain")
 	}
 
-	ethMainnet, ok := def.Testnet.EthereumChain()
+	ethMainnet, ok := network.EthereumChain()
 	if !ok {
 		return errors.New("no ethereum chain")
 	}
 
-	for _, chain := range def.Testnet.EVMChains() {
+	for _, chain := range network.EVMChains() {
 		// Token contracts are not deployed on OmniEVM
-		if chain.ChainID == omniEVM.ChainID {
+		if chain.ID == omniEVM.ID {
 			continue
 		}
 
-		backend, err := def.Backends().Backend(chain.ChainID)
+		backend, err := backends.Backend(chain.ID)
 		if err != nil {
 			return errors.Wrap(err, "backend", "chain", chain.Name)
 		}
 
-		if chain.ChainID == ethMainnet.ChainID {
-			addr, receipt, err := xbridge.DeployTokenIfNeeded(ctx, def.Testnet.Network, backend, false)
+		if chain.ID == ethMainnet.ID {
+			addr, receipt, err := DeployTokenIfNeeded(ctx, network.ID, backend, false)
 			if err != nil {
 				return errors.Wrap(err, "deploy", "type", "RLUSD", "chain", chain.Name, "tx", maybeTxHash(receipt))
 			}
@@ -68,7 +69,7 @@ func deployTokens(ctx context.Context, def Definition) error {
 			log.Info(ctx, "RLUSD deployed", "chain", chain.Name, "address", addr.Hex(), "tx", maybeTxHash(receipt))
 		}
 
-		addr, receipt, err := xbridge.DeployTokenIfNeeded(ctx, def.Testnet.Network, backend, true)
+		addr, receipt, err := DeployTokenIfNeeded(ctx, network.ID, backend, true)
 		if err != nil {
 			return errors.Wrap(err, "deploy", "type", "RLUSDe", "chain", chain.Name, "tx", maybeTxHash(receipt))
 		}
@@ -79,19 +80,19 @@ func deployTokens(ctx context.Context, def Definition) error {
 	return nil
 }
 
-func deployLockbox(ctx context.Context, def Definition) error {
+func deployXBridgeLockbox(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
 	// Lockbox is only deployed to Ethereum chains where RLUSD is deployed
-	ethMainnet, ok := def.Testnet.EthereumChain()
+	ethMainnet, ok := network.EthereumChain()
 	if !ok {
 		return errors.New("no ethereum chain")
 	}
 
-	backend, err := def.Backends().Backend(ethMainnet.ChainID)
+	backend, err := backends.Backend(ethMainnet.ID)
 	if err != nil {
 		return errors.Wrap(err, "backend", "chain", ethMainnet.Name)
 	}
 
-	addr, receipt, err := xbridge.DeployLockboxIfNeeded(ctx, def.Testnet.Network, backend)
+	addr, receipt, err := DeployLockboxIfNeeded(ctx, network.ID, backend)
 	if err != nil {
 		return errors.Wrap(err, "deploy", "chain", ethMainnet.Name, "tx", maybeTxHash(receipt))
 	}
@@ -101,35 +102,35 @@ func deployLockbox(ctx context.Context, def Definition) error {
 	return nil
 }
 
-func deployBridge(ctx context.Context, def Definition) error {
-	omniEVM, ok := def.Testnet.OmniEVMChain()
+func deployXBridge(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
+	omniEVM, ok := network.OmniEVMChain()
 	if !ok {
 		return errors.New("no omni evm chain")
 	}
 
-	ethMainnet, ok := def.Testnet.EthereumChain()
+	ethMainnet, ok := network.EthereumChain()
 	if !ok {
 		return errors.New("no ethereum chain")
 	}
 
-	for _, chain := range def.Testnet.EVMChains() {
+	for _, chain := range network.EVMChains() {
 		// Bridge contracts are not deployed on OmniEVM
-		if chain.ChainID == omniEVM.ChainID {
+		if chain.ID == omniEVM.ID {
 			continue
 		}
 
-		backend, err := def.Backends().Backend(chain.ChainID)
+		backend, err := backends.Backend(chain.ID)
 		if err != nil {
 			return errors.Wrap(err, "backend", "chain", chain.Name)
 		}
 
 		// Lockbox is only deployed to Ethereum chains where RLUSD is deployed
 		lockbox := false
-		if chain.ChainID == ethMainnet.ChainID {
+		if chain.ID == ethMainnet.ID {
 			lockbox = true
 		}
 
-		addr, receipt, err := xbridge.DeployBridgeIfNeeded(ctx, def.Testnet.Network, backend, lockbox)
+		addr, receipt, err := DeployBridgeIfNeeded(ctx, network.ID, backend, lockbox)
 		if err != nil {
 			return errors.Wrap(err, "deploy", "chain", chain.Name, "tx", maybeTxHash(receipt))
 		}

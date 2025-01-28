@@ -51,6 +51,14 @@ func isEmpty(addr common.Address) bool {
 	return addr == common.Address{}
 }
 
+func maybeTxHash(receipt *ethtypes.Receipt) string {
+	if receipt != nil {
+		return receipt.TxHash.Hex()
+	}
+
+	return "nil"
+}
+
 // isDeployed returns true if the rlusd contract is already deployed to its expected address.
 func isDeployed(ctx context.Context, backend *ethbackend.Backend, expectedAddr common.Address) (bool, common.Address, error) {
 	code, err := backend.CodeAt(ctx, expectedAddr, nil)
