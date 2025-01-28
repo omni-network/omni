@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"math/big"
 	"testing"
-	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
@@ -15,6 +14,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -48,61 +48,55 @@ func TestShouldReject(t *testing.T) {
 
 	// static setup
 	ctx := context.Background()
-	srcChainID := evmchain.IDBaseSepolia
-	destChainID := evmchain.IDHolesky
-	omniERC20Addr := omniERC20(netconf.Omega).Address
 	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
-	targetName := func(Order) string { return "target" }
-	chainName := func(uint64) string { return "chain" }
 
-	// mock backend, to manipulate balances
-	ctrl := gomock.NewController(t)
-	mockEthCl := mock.NewMockClient(ctrl)
-	mockBackend, err := ethbackend.NewDevBackend("mock", destChainID, time.Minute, mockEthCl)
-	require.NoError(t, err)
-	mockBackends := ethbackend.BackendsFrom(map[uint64]*ethbackend.Backend{destChainID: mockBackend})
+	// mock backends, to manipulate balances
+	backends, clients := makeMockBackends(t,
+		// mock omega chains for tests
+		evmchain.IDOmniOmega,
+		evmchain.IDHolesky,
+		evmchain.IDBaseSepolia,
 
-	shouldReject := newShouldRejector(mockBackends, solver, targetName, chainName)
+		// add one mainnet chain, to make sure testnet ETH cannot be used for mainnet ETH
+		evmchain.IDOptimism,
+	)
 
-	makeOrder := func(maxSpent ...bindings.IERC7683Output) Order {
-		return Order{
-			ID:                 [32]byte{0x01},
-			SourceChainID:      srcChainID,
-			DestinationChainID: destChainID,
-			MaxSpent:           maxSpent,
+	client := func(chainID uint64) *mock.MockClient {
+		c, ok := clients[chainID]
+		require.True(t, ok, "client for chainID %d not found", chainID)
+
+		return c
+	}
+
+	shouldReject := newShouldRejector(backends, solver, targetName, chainName)
+
+	mockNativeBalance := func(chainID uint64, balance *big.Int) func() {
+		return func() {
+			client(chainID).EXPECT().BalanceAt(ctx, solver, nil).Return(balance, nil)
 		}
 	}
 
-	mockNativeBalance := func(b *big.Int) func() {
+	mockERC20Balance := func(chainID uint64, balance *big.Int) func() {
 		return func() {
-			mockEthCl.EXPECT().BalanceAt(ctx, solver, nil).Return(b, nil)
-		}
-	}
-
-	mockERC20Balance := func(b *big.Int) func() {
-		return func() {
-			// we don't go through the trouble of matching eth msg param to IERC20(addr).balanceOf call
+			// TODO: match eth msg param to IERC20(addr).balanceOf call
 			ctx := gomock.Any()
 			msg := gomock.Any()
-			mockEthCl.EXPECT().CallContract(ctx, msg, nil).Return(abiEncodeBig(t, b), nil)
+			client(chainID).EXPECT().CallContract(ctx, msg, nil).Return(abiEncodeBig(t, balance), nil)
 		}
 	}
 
-	nativeOutput := func(amount *big.Int) bindings.IERC7683Output {
-		return bindings.IERC7683Output{
-			Amount:  amount,
-			Token:   [32]byte{}, // native
-			ChainId: new(big.Int).SetUint64(destChainID),
-		}
-	}
+	makeOutputs := func(payments ...Payment) []bindings.IERC7683Output {
+		var outputs []bindings.IERC7683Output
 
-	erc20Output := func(amount *big.Int) bindings.IERC7683Output {
-		// we need to use omniERC20Addr, because that's the only ERC20 supported in tokens.go
-		return bindings.IERC7683Output{
-			Amount:  amount,
-			Token:   toBz32(omniERC20Addr),
-			ChainId: new(big.Int).SetUint64(destChainID),
+		for _, p := range payments {
+			outputs = append(outputs, bindings.IERC7683Output{
+				Amount:  p.Amount,
+				Token:   toBz32(p.Token.Address),
+				ChainId: new(big.Int).SetUint64(p.Token.ChainID),
+			})
 		}
+
+		return outputs
 	}
 
 	tests := []struct {
@@ -110,70 +104,218 @@ func TestShouldReject(t *testing.T) {
 		reason rejectReason
 		reject bool
 		mock   func()
-		order  func() Order
+		order  Order
 	}{
 		{
 			name:   "insufficient native balance",
 			reason: rejectInsufficientInventory,
 			reject: true,
-			mock:   mockNativeBalance(big.NewInt(0)),
-			order:  func() Order { return makeOrder(nativeOutput(big.NewInt(1))) },
+			mock:   mockNativeBalance(evmchain.IDOmniOmega, big.NewInt(0)),
+			order: Order{
+				// request 1 native OMNI for 1 erc20 OMNI on omega
+				ID:                 [32]byte{0x01},
+				SourceChainID:      evmchain.IDHolesky,
+				DestinationChainID: evmchain.IDOmniOmega,
+				MinReceived:        makeOutputs(Payment{Amount: big.NewInt(1), Token: omniERC20(netconf.Omega)}),
+				MaxSpent:           makeOutputs(Payment{Amount: big.NewInt(1), Token: nativeOMNI(evmchain.IDOmniOmega)}),
+			},
 		},
 		{
 			name:   "sufficient native balance",
 			reason: rejectNone,
 			reject: false,
-			mock:   mockNativeBalance(big.NewInt(1)),
-			order:  func() Order { return makeOrder(nativeOutput(big.NewInt(1))) },
+			mock:   mockNativeBalance(evmchain.IDOmniOmega, big.NewInt(1)),
+			order: Order{
+				// request 1 native OMNI for 1 erc20 OMNI on omega
+				ID:                 [32]byte{0x01},
+				SourceChainID:      evmchain.IDHolesky,
+				DestinationChainID: evmchain.IDOmniOmega,
+				MinReceived:        makeOutputs(Payment{Amount: big.NewInt(1), Token: omniERC20(netconf.Omega)}),
+				MaxSpent:           makeOutputs(Payment{Amount: big.NewInt(1), Token: nativeOMNI(evmchain.IDOmniOmega)}),
+			},
 		},
 		{
 			name:   "insufficient ERC20 balance",
 			reason: rejectInsufficientInventory,
 			reject: true,
-			mock:   mockERC20Balance(big.NewInt(0)),
-			order:  func() Order { return makeOrder(erc20Output(big.NewInt(1))) },
+			mock:   mockERC20Balance(evmchain.IDHolesky, big.NewInt(0)),
+			order: Order{
+				// request 1 erc20 OMNI for 1 native OMNI on omega
+				ID:                 [32]byte{0x01},
+				SourceChainID:      evmchain.IDOmniOmega,
+				DestinationChainID: evmchain.IDHolesky,
+				MinReceived:        makeOutputs(Payment{Amount: big.NewInt(1), Token: nativeOMNI(evmchain.IDOmniOmega)}),
+				MaxSpent:           makeOutputs(Payment{Amount: big.NewInt(1), Token: omniERC20(netconf.Omega)}),
+			},
 		},
 		{
 			name:   "sufficient ERC20 balance",
 			reason: rejectNone,
 			reject: false,
-			mock:   mockERC20Balance(big.NewInt(1)),
-			order:  func() Order { return makeOrder(erc20Output(big.NewInt(1))) },
+			mock:   mockERC20Balance(evmchain.IDHolesky, big.NewInt(1)),
+			order: Order{
+				// request 1 erc20 OMNI for 1 native OMNI on omega
+				ID:                 [32]byte{0x01},
+				SourceChainID:      evmchain.IDOmniOmega,
+				DestinationChainID: evmchain.IDHolesky,
+				MinReceived:        makeOutputs(Payment{Amount: big.NewInt(1), Token: nativeOMNI(evmchain.IDOmniOmega)}),
+				MaxSpent:           makeOutputs(Payment{Amount: big.NewInt(1), Token: omniERC20(netconf.Omega)}),
+			},
 		},
 		{
-			name:   "unsupported token",
-			reason: rejectUnsupportedToken,
+			name:   "unsupported expense token",
+			reason: rejectUnsupportedExpense,
 			reject: true,
-			mock:   func() {},
-			order: func() Order {
-				unknownTkn := [32]byte{0x01}
-				return makeOrder(bindings.IERC7683Output{Token: unknownTkn, ChainId: new(big.Int).SetUint64(destChainID)})
+			order: Order{
+				// request unsupported erc20 for 1 native OMNI on omega
+				ID:                 [32]byte{0x01},
+				SourceChainID:      evmchain.IDOmniOmega,
+				DestinationChainID: evmchain.IDHolesky,
+				MinReceived:        makeOutputs(Payment{Amount: big.NewInt(1), Token: nativeOMNI(evmchain.IDOmniOmega)}),
+				MaxSpent: makeOutputs(Payment{
+					Amount: big.NewInt(1),
+					Token: Token{
+						ChainID: evmchain.IDHolesky,
+						Address: common.HexToAddress("0x01"), // unsupported token
+					},
+				}),
 			},
 		},
 		{
 			name:   "unsupported dest chain",
 			reason: rejectUnsupportedDestChain,
 			reject: true,
-			mock:   func() {},
-			order: func() Order {
-				badDestChainID := destChainID + 1
-				order := makeOrder(bindings.IERC7683Output{Token: [32]byte{}, ChainId: new(big.Int).SetUint64(0x01)})
-				order.DestinationChainID = badDestChainID
-
-				return order
+			order: Order{
+				ID:                 [32]byte{0x01},
+				SourceChainID:      evmchain.IDOmniOmega,
+				DestinationChainID: 1234567, // unsupported chain
+			},
+		},
+		{
+			name:   "invalid deposit (token mismatch)",
+			reason: rejectInvalidDeposit,
+			reject: true,
+			order: Order{
+				// deposit native ETH for native OMNi
+				ID:                 [32]byte{0x01},
+				SourceChainID:      evmchain.IDHolesky,
+				DestinationChainID: evmchain.IDOmniOmega,
+				MinReceived:        makeOutputs(Payment{Amount: big.NewInt(1), Token: nativeETH(evmchain.IDHolesky)}),
+				MaxSpent:           makeOutputs(Payment{Amount: big.NewInt(1), Token: nativeOMNI(evmchain.IDOmniOmega)}),
+			},
+		},
+		{
+			name:   "invalid deposit (multiple tokens)",
+			reason: rejectInvalidDeposit,
+			reject: true,
+			order: Order{
+				// multiple deposits are not supported
+				ID:                 [32]byte{0x01},
+				SourceChainID:      evmchain.IDHolesky,
+				DestinationChainID: evmchain.IDOmniOmega,
+				MinReceived: makeOutputs(
+					Payment{Amount: big.NewInt(1), Token: omniERC20(netconf.Omega)},
+					Payment{Amount: big.NewInt(1), Token: nativeETH(evmchain.IDHolesky)},
+				),
+				MaxSpent: makeOutputs(Payment{Amount: big.NewInt(1), Token: nativeOMNI(evmchain.IDOmniOmega)}),
+			},
+		},
+		{
+			name:   "invalid deposit (mismatch chain class)",
+			reason: rejectInvalidDeposit,
+			reject: true,
+			order: Order{
+				// deposit native testnet ETH for mainnet ETH
+				ID:                 [32]byte{0x01},
+				SourceChainID:      evmchain.IDHolesky,  // testnet chain
+				DestinationChainID: evmchain.IDOptimism, // mainnet chain
+				MinReceived:        makeOutputs(Payment{Amount: big.NewInt(1), Token: nativeETH(evmchain.IDHolesky)}),
+				MaxSpent:           makeOutputs(Payment{Amount: big.NewInt(1), Token: nativeETH(evmchain.IDOptimism)}),
+			},
+		},
+		{
+			name:   "invalid expense",
+			reason: rejectInvalidExpense,
+			reject: true,
+			order: Order{
+				// multiple expenses are not supported
+				ID:                 [32]byte{0x01},
+				SourceChainID:      evmchain.IDBaseSepolia,
+				DestinationChainID: evmchain.IDHolesky,
+				MinReceived:        makeOutputs(Payment{Amount: big.NewInt(1), Token: nativeETH(evmchain.IDBaseSepolia)}),
+				MaxSpent: makeOutputs(
+					Payment{Amount: big.NewInt(1), Token: nativeETH(evmchain.IDHolesky)},
+					Payment{Amount: big.NewInt(1), Token: omniERC20(netconf.Omega)},
+				),
+			},
+		},
+		{
+			name:   "insufficient deposit",
+			reason: rejectInsufficientDeposit,
+			reject: true,
+			order: Order{
+				// request 2 holesky ETH for 1 base sepolia ETH
+				ID:                 [32]byte{0x01},
+				SourceChainID:      evmchain.IDBaseSepolia,
+				DestinationChainID: evmchain.IDHolesky,
+				MinReceived:        makeOutputs(Payment{Amount: big.NewInt(1), Token: nativeETH(evmchain.IDBaseSepolia)}),
+				MaxSpent:           makeOutputs(Payment{Amount: big.NewInt(2), Token: nativeETH(evmchain.IDHolesky)}),
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.mock()
-			reason, reject, err := shouldReject(ctx, srcChainID, tt.order())
+			if tt.mock != nil {
+				tt.mock()
+			}
+			reason, reject, err := shouldReject(ctx, tt.order.SourceChainID, tt.order)
 			require.NoError(t, err)
-			require.Equal(t, tt.reject, reject)
-			require.Equal(t, tt.reason, reason)
+			require.Equal(t, tt.reject, reject, "expected reject reason %s, got %s", tt.reason, reason)
+			require.Equal(t, tt.reason, reason, "expected reject reason %s, got %s", tt.reason, reason)
 		})
 	}
+}
+
+func makeMockBackends(t *testing.T, chainIDs ...uint64) (ethbackend.Backends, map[uint64]*mock.MockClient) {
+	t.Helper()
+
+	clients := make(map[uint64]*mock.MockClient)
+	backends := make(map[uint64]*ethbackend.Backend)
+
+	for _, chainID := range chainIDs {
+		chain, ok := evmchain.MetadataByID(chainID)
+		require.True(t, ok)
+
+		ctrl := gomock.NewController(t)
+		ethcl := mock.NewMockClient(ctrl)
+		clients[chainID] = ethcl
+
+		backend, err := ethbackend.NewDevBackend(chain.Name, chain.ChainID, chain.BlockPeriod, ethcl)
+		require.NoError(t, err)
+
+		backends[chainID] = backend
+	}
+
+	return ethbackend.BackendsFrom(backends), clients
+}
+
+func targetName(o Order) string {
+	fill, err := o.ParsedFillOriginData()
+	if err != nil {
+		return unknown
+	}
+
+	return toEthAddr(fill.Call.Target).Hex()
+}
+
+func chainName(chainID uint64) string {
+	metadata, ok := evmchain.MetadataByID(chainID)
+	if !ok {
+		return unknown
+	}
+
+	return metadata.Name
 }
 
 func abiEncodeBig(t *testing.T, n *big.Int) []byte {
