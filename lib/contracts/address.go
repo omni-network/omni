@@ -87,10 +87,6 @@ type Addresses struct {
 	SolverNetInbox  common.Address
 	SolverNetOutbox common.Address
 	FeeOracleV2     common.Address
-	RLUSD           common.Address
-	RLUSDe          common.Address
-	Lockbox         common.Address
-	Bridge          common.Address
 }
 
 type Salts struct {
@@ -103,10 +99,6 @@ type Salts struct {
 	SolverNetInbox  string
 	SolverNetOutbox string
 	FeeOracleV2     string
-	RLUSD           string
-	RLUSDe          string
-	Lockbox         string
-	Bridge          string
 }
 
 type cache[T any] struct {
@@ -152,10 +144,6 @@ func GetAddresses(ctx context.Context, network netconf.ID) (Addresses, error) {
 		SolverNetInbox:  solverNetInbox(network, ver),
 		SolverNetOutbox: solverNetOutbox(network, ver),
 		FeeOracleV2:     feeOracleV2(network, ver),
-		RLUSD:           rlusd(network, ver),
-		RLUSDe:          rlusde(network, ver),
-		Lockbox:         lockbox(network, ver),
-		Bridge:          bridge(network, ver),
 	}
 
 	addrsCache.cache[network] = addrs
@@ -188,10 +176,6 @@ func GetSalts(ctx context.Context, network netconf.ID) (Salts, error) {
 		SolverNetInbox:  solverNetInboxSalt(network, ver),
 		SolverNetOutbox: solverNetOutboxSalt(network, ver),
 		FeeOracleV2:     feeOracleV2Salt(network, ver),
-		RLUSD:           rlusdSalt(network, ver),
-		RLUSDe:          rlusdeSalt(network, ver),
-		Lockbox:         lockboxSalt(network, ver),
-		Bridge:          bridgeSalt(network, ver),
 	}
 
 	saltsCache.cache[network] = salts
@@ -213,6 +197,24 @@ func avs(network netconf.ID) common.Address {
 // Create3Factory returns the Create3 factory address for the given network.
 func Create3Factory(network netconf.ID) common.Address {
 	return crypto.CreateAddress(eoa.MustAddress(network, eoa.RoleCreate3Deployer), 0)
+}
+
+func Create3Address(ctx context.Context, network netconf.ID, saltPrefix string) (common.Address, error) {
+	ver, err := version(ctx, network)
+	if err != nil {
+		return common.Address{}, err
+	}
+
+	return create3.Address(Create3Factory(network), salt(network, saltPrefix+"-"+ver), eoa.MustAddress(network, eoa.RoleDeployer)), nil
+}
+
+func Create3Salt(ctx context.Context, network netconf.ID, saltPrefix string) (string, error) {
+	ver, err := version(ctx, network)
+	if err != nil {
+		return "", err
+	}
+
+	return salt(network, saltPrefix+"-"+ver), nil
 }
 
 // portal returns the Portal contract address for the given network.
@@ -258,22 +260,6 @@ func feeOracleV2(network netconf.ID, version string) common.Address {
 	return create3.Address(Create3Factory(network), feeOracleV2Salt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
 }
 
-func rlusd(network netconf.ID, version string) common.Address {
-	return create3.Address(Create3Factory(network), rlusdSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
-}
-
-func rlusde(network netconf.ID, version string) common.Address {
-	return create3.Address(Create3Factory(network), rlusdeSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
-}
-
-func lockbox(network netconf.ID, version string) common.Address {
-	return create3.Address(Create3Factory(network), lockboxSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
-}
-
-func bridge(network netconf.ID, version string) common.Address {
-	return create3.Address(Create3Factory(network), bridgeSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
-}
-
 //
 // Salts.
 //
@@ -314,22 +300,6 @@ func solverNetOutboxSalt(network netconf.ID, version string) string {
 
 func feeOracleV2Salt(network netconf.ID, version string) string {
 	return salt(network, "fee-oracle-v2-"+version)
-}
-
-func rlusdSalt(network netconf.ID, version string) string {
-	return salt(network, "rlusd-"+version)
-}
-
-func rlusdeSalt(network netconf.ID, version string) string {
-	return salt(network, "rlusde-"+version)
-}
-
-func lockboxSalt(network netconf.ID, version string) string {
-	return salt(network, "lockbox-"+version)
-}
-
-func bridgeSalt(network netconf.ID, version string) string {
-	return salt(network, "bridge-"+version)
 }
 
 //

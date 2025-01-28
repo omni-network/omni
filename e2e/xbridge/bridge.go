@@ -48,15 +48,20 @@ func (cfg bridgeDeploymentConfig) validateBridgeConfig() error {
 	return nil
 }
 
+// bridgeAddress returns the Bridge contract address for the given network.
+func bridgeAddress(ctx context.Context, network netconf.ID) (common.Address, error) {
+	return contracts.Create3Address(ctx, network, "bridge")
+}
+
 // deployBridgeIfNeeded deploys a new bridge contract if it is not already deployed.
 // If the contract is already deployed, the receipt is nil.
 func DeployBridgeIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, lockbox bool) (common.Address, *ethtypes.Receipt, error) {
-	addrs, err := contracts.GetAddresses(ctx, network)
+	bridgeAddr, err := bridgeAddress(ctx, network)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get addrs")
+		return common.Address{}, nil, errors.Wrap(err, "bridge address")
 	}
 
-	deployed, addr, err := isDeployed(ctx, backend, addrs.Bridge)
+	deployed, addr, err := isDeployed(ctx, backend, bridgeAddr)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "is deployed")
 	}
@@ -74,20 +79,34 @@ func deployBridge(ctx context.Context, network netconf.ID, backend *ethbackend.B
 		return common.Address{}, nil, errors.Wrap(err, "get addrs")
 	}
 
-	salts, err := contracts.GetSalts(ctx, network)
+	wrapper := true
+	tokenAddr, err := tokenAddress(ctx, network, wrapper)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get salts")
+		return common.Address{}, nil, errors.Wrap(err, "token address")
 	}
 
 	lockboxAddr := common.Address{}
 	if lockbox {
-		lockboxAddr = addrs.Lockbox
+		lockboxAddr, err = lockboxAddress(ctx, network)
+		if err != nil {
+			return common.Address{}, nil, errors.Wrap(err, "lockbox address")
+		}
+	}
+
+	bridgeAddr, err := bridgeAddress(ctx, network)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "bridge address")
+	}
+
+	bridgeSalt, err := contracts.Create3Salt(ctx, network, "bridge")
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "bridge salt")
 	}
 
 	deployCfg := deploymentConfig{
-		Create3Salt:    salts.Bridge,
+		Create3Salt:    bridgeSalt,
 		Create3Factory: addrs.Create3Factory,
-		ExpectedAddr:   addrs.Bridge,
+		ExpectedAddr:   bridgeAddr,
 		Deployer:       eoa.MustAddress(network, eoa.RoleDeployer),
 	}
 
@@ -97,7 +116,7 @@ func deployBridge(ctx context.Context, network netconf.ID, backend *ethbackend.B
 		Admin:           eoa.MustAddress(network, eoa.RoleManager),
 		Pauser:          eoa.MustAddress(network, eoa.RoleManager),
 		OmniPortal:      addrs.Portal,
-		Token:           addrs.RLUSDe,
+		Token:           tokenAddr,
 		Lockbox:         lockboxAddr,
 	}
 

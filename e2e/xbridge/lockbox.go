@@ -46,15 +46,20 @@ func (cfg lockboxDeploymentConfig) validateLockboxConfig() error {
 	return nil
 }
 
+// lockboxAddress returns the Lockbox contract address for the given network.
+func lockboxAddress(ctx context.Context, network netconf.ID) (common.Address, error) {
+	return contracts.Create3Address(ctx, network, "lockbox")
+}
+
 // deployLockboxIfNeeded deploys a new lockbox contract if it is not already deployed.
 // If the contract is already deployed, the receipt is nil.
 func DeployLockboxIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
-	addrs, err := contracts.GetAddresses(ctx, network)
+	lockboxAddr, err := lockboxAddress(ctx, network)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get addrs")
+		return common.Address{}, nil, errors.Wrap(err, "lockbox address")
 	}
 
-	deployed, addr, err := isDeployed(ctx, backend, addrs.Lockbox)
+	deployed, addr, err := isDeployed(ctx, backend, lockboxAddr)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "is deployed")
 	}
@@ -72,15 +77,32 @@ func deployLockbox(ctx context.Context, network netconf.ID, backend *ethbackend.
 		return common.Address{}, nil, errors.Wrap(err, "get addrs")
 	}
 
-	salts, err := contracts.GetSalts(ctx, network)
+	wrapper := false
+	tokenAddr, err := tokenAddress(ctx, network, wrapper)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get salts")
+		return common.Address{}, nil, errors.Wrap(err, "token address")
+	}
+
+	wrapper = true
+	wrappedAddr, err := tokenAddress(ctx, network, wrapper)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "wrapper address")
+	}
+
+	lockboxAddr, err := lockboxAddress(ctx, network)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "lockbox address")
+	}
+
+	lockboxSalt, err := contracts.Create3Salt(ctx, network, "lockbox")
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "lockbox salt")
 	}
 
 	deployCfg := deploymentConfig{
-		Create3Salt:    salts.Lockbox,
+		Create3Salt:    lockboxSalt,
 		Create3Factory: addrs.Create3Factory,
-		ExpectedAddr:   addrs.Lockbox,
+		ExpectedAddr:   lockboxAddr,
 		Deployer:       eoa.MustAddress(network, eoa.RoleDeployer),
 	}
 
@@ -89,8 +111,8 @@ func deployLockbox(ctx context.Context, network netconf.ID, backend *ethbackend.
 		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleUpgrader),
 		Admin:           eoa.MustAddress(network, eoa.RoleManager),
 		Pauser:          eoa.MustAddress(network, eoa.RoleManager),
-		Token:           addrs.RLUSD,
-		Wrapped:         addrs.RLUSDe,
+		Token:           tokenAddr,
+		Wrapped:         wrappedAddr,
 	}
 
 	return performLockboxDeployment(ctx, network, backend, cfg)
