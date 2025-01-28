@@ -6,11 +6,11 @@ import "../TestBase.sol";
 contract GeneralBridgeTest is TestBase {
     function test_initialize_reverts() public {
         address impl = address(new Bridge());
-        srcBridge = Bridge(address(new TransparentUpgradeableProxy(impl, admin, "")));
+        bridgeWithLockbox = Bridge(address(new TransparentUpgradeableProxy(impl, admin, "")));
 
         // `admin` cannot be zero address.
         vm.expectRevert(IBridge.ZeroAddress.selector);
-        srcBridge.initialize({
+        bridgeWithLockbox.initialize({
             admin_: address(0),
             pauser_: address(0),
             omni_: address(0),
@@ -20,7 +20,7 @@ contract GeneralBridgeTest is TestBase {
 
         // `pauser` cannot be zero address.
         vm.expectRevert(IBridge.ZeroAddress.selector);
-        srcBridge.initialize({
+        bridgeWithLockbox.initialize({
             admin_: admin,
             pauser_: address(0),
             omni_: address(0),
@@ -30,7 +30,7 @@ contract GeneralBridgeTest is TestBase {
 
         // `omni` cannot be zero address.
         vm.expectRevert(IBridge.ZeroAddress.selector);
-        srcBridge.initialize({
+        bridgeWithLockbox.initialize({
             admin_: admin,
             pauser_: pauser,
             omni_: address(0),
@@ -40,7 +40,7 @@ contract GeneralBridgeTest is TestBase {
 
         // `token` cannot be zero address.
         vm.expectRevert(IBridge.ZeroAddress.selector);
-        srcBridge.initialize({
+        bridgeWithLockbox.initialize({
             admin_: admin,
             pauser_: pauser,
             omni_: address(omni),
@@ -49,21 +49,21 @@ contract GeneralBridgeTest is TestBase {
         });
 
         // Initialization works with all fields populated.
-        srcBridge.initialize({
+        bridgeWithLockbox.initialize({
             admin_: admin,
             pauser_: pauser,
             omni_: address(omni),
-            token_: address(originalToken),
-            lockbox_: address(srcLockbox)
+            token_: address(token),
+            lockbox_: address(lockbox)
         });
 
         // Initialization can also occur without a `lockbox` if none is present.
-        srcBridge = Bridge(address(new TransparentUpgradeableProxy(impl, admin, "")));
-        srcBridge.initialize({
+        bridgeNoLockbox = Bridge(address(new TransparentUpgradeableProxy(impl, admin, "")));
+        bridgeNoLockbox.initialize({
             admin_: admin,
             pauser_: pauser,
             omni_: address(omni),
-            token_: address(originalToken),
+            token_: address(token),
             lockbox_: address(0)
         });
     }
@@ -74,15 +74,15 @@ contract GeneralBridgeTest is TestBase {
         address[] memory bridgeAddrs;
 
         vm.expectRevert(IBridge.ArrayLengthMismatch.selector);
-        srcBridge.setRoutes(chainIds, bridgeAddrs);
+        bridgeWithLockbox.setRoutes(chainIds, bridgeAddrs);
         bridgeAddrs = new address[](1);
 
         vm.expectRevert(IBridge.ZeroAddress.selector);
-        srcBridge.setRoutes(chainIds, bridgeAddrs);
+        bridgeWithLockbox.setRoutes(chainIds, bridgeAddrs);
         bridgeAddrs[0] = makeAddr("newBridge");
 
         // Configuration successful with valid inputs.
-        srcBridge.setRoutes(chainIds, bridgeAddrs);
+        bridgeWithLockbox.setRoutes(chainIds, bridgeAddrs);
     }
 
     function test_setRoutes_succeeds() public prank(admin) {
@@ -91,6 +91,6 @@ contract GeneralBridgeTest is TestBase {
         address[] memory bridgeAddrs = new address[](1);
         bridgeAddrs[0] = makeAddr("newBridge");
 
-        srcBridge.setRoutes(chainIds, bridgeAddrs);
+        bridgeWithLockbox.setRoutes(chainIds, bridgeAddrs);
     }
 }

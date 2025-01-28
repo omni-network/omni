@@ -5,67 +5,67 @@ import "../TestBase.sol";
 
 contract DepositTest is TestBase {
     function test_deposits_reverts() public {
-        bytes32 minterRole = srcWrapper.MINTER_ROLE();
+        bytes32 minterRole = wrapper.MINTER_ROLE();
 
         // Cannot deposit if paused
         vm.prank(pauser);
-        srcLockbox.pause();
+        lockbox.pause();
 
         vm.startPrank(user);
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
-        srcLockbox.deposit(INITIAL_USER_BALANCE);
+        lockbox.deposit(INITIAL_USER_BALANCE);
 
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
-        srcLockbox.depositTo(other, INITIAL_USER_BALANCE);
+        lockbox.depositTo(other, INITIAL_USER_BALANCE);
         vm.stopPrank();
 
         vm.prank(pauser);
-        srcLockbox.unpause();
+        lockbox.unpause();
 
         // Cannot deposit if wrapper does not have minter role
         vm.prank(admin);
-        srcWrapper.revokeRole(minterRole, address(srcLockbox));
+        wrapper.revokeRole(minterRole, address(lockbox));
 
         vm.startPrank(user);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, address(srcLockbox), minterRole
+                IAccessControl.AccessControlUnauthorizedAccount.selector, address(lockbox), minterRole
             )
         );
-        srcLockbox.deposit(INITIAL_USER_BALANCE);
+        lockbox.deposit(INITIAL_USER_BALANCE);
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, address(srcLockbox), minterRole
+                IAccessControl.AccessControlUnauthorizedAccount.selector, address(lockbox), minterRole
             )
         );
-        srcLockbox.depositTo(other, INITIAL_USER_BALANCE);
+        lockbox.depositTo(other, INITIAL_USER_BALANCE);
         vm.stopPrank();
     }
 
     function test_deposit_succeeds() public prank(user) {
-        srcLockbox.deposit(INITIAL_USER_BALANCE);
+        lockbox.deposit(INITIAL_USER_BALANCE);
 
-        assertEq(originalToken.balanceOf(user), 0, "Original token balance mismatch");
-        assertEq(originalToken.balanceOf(address(srcLockbox)), INITIAL_USER_BALANCE, "Source lockbox balance mismatch");
-        assertEq(srcWrapper.balanceOf(user), INITIAL_USER_BALANCE, "Source wrapped token balance mismatch");
+        assertEq(token.balanceOf(user), 0, "User token balance mismatch");
+        assertEq(token.balanceOf(address(lockbox)), INITIAL_USER_BALANCE, "Lockbox token balance mismatch");
+        assertEq(wrapper.balanceOf(user), INITIAL_USER_BALANCE, "User wrapper balance mismatch");
     }
 
     function test_depositTo_self_succeeds() public prank(user) {
-        srcLockbox.depositTo(user, INITIAL_USER_BALANCE);
+        lockbox.depositTo(user, INITIAL_USER_BALANCE);
 
-        assertEq(originalToken.balanceOf(user), 0, "Original token balance mismatch");
-        assertEq(originalToken.balanceOf(address(srcLockbox)), INITIAL_USER_BALANCE, "Source lockbox balance mismatch");
-        assertEq(srcWrapper.balanceOf(user), INITIAL_USER_BALANCE, "Source wrapped token balance mismatch");
+        assertEq(token.balanceOf(user), 0, "User token balance mismatch");
+        assertEq(token.balanceOf(address(lockbox)), INITIAL_USER_BALANCE, "Lockbox token balance mismatch");
+        assertEq(wrapper.balanceOf(user), INITIAL_USER_BALANCE, "User wrapper balance mismatch");
     }
 
     function test_depositTo_other_succeeds() public prank(user) {
-        srcLockbox.depositTo(other, INITIAL_USER_BALANCE);
+        lockbox.depositTo(other, INITIAL_USER_BALANCE);
 
-        assertEq(originalToken.balanceOf(user), 0, "Original token sender balance mismatch");
-        assertEq(originalToken.balanceOf(other), 0, "Original token recipient balance mismatch");
-        assertEq(originalToken.balanceOf(address(srcLockbox)), INITIAL_USER_BALANCE, "Source lockbox balance mismatch");
-        assertEq(srcWrapper.balanceOf(user), 0, "Source wrapped token sender balance mismatch");
-        assertEq(srcWrapper.balanceOf(other), INITIAL_USER_BALANCE, "Source wrapped token recipient balance mismatch");
+        assertEq(token.balanceOf(user), 0, "User token balance mismatch");
+        assertEq(token.balanceOf(other), 0, "Other token balance mismatch");
+        assertEq(token.balanceOf(address(lockbox)), INITIAL_USER_BALANCE, "Lockbox token balance mismatch");
+        assertEq(wrapper.balanceOf(user), 0, "User wrapper balance mismatch");
+        assertEq(wrapper.balanceOf(other), INITIAL_USER_BALANCE, "Other wrapper balance mismatch");
     }
 }

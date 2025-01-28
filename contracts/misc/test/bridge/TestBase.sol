@@ -16,19 +16,18 @@ import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { MockPortal } from "core/test/utils/MockPortal.sol";
 
 contract TestBase is Test {
-    StablecoinUpgradeable internal originalToken;
-    StablecoinUpgradeable internal srcWrapper;
-    StablecoinUpgradeable internal destWrapper;
+    StablecoinUpgradeable internal token;
+    StablecoinUpgradeable internal wrapper;
 
-    Lockbox internal srcLockbox;
-    Bridge internal srcBridge;
-    Bridge internal destBridge;
+    Lockbox internal lockbox;
+    Bridge internal bridgeWithLockbox;
+    Bridge internal bridgeNoLockbox;
 
     MockPortal internal omni;
 
     uint64 internal constant SRC_CHAIN_ID = 1;
     uint64 internal constant DEST_CHAIN_ID = 2;
-    uint64 internal constant DEFAULT_GAS_LIMIT = 182_500; // See `ReceiveTokenTest` for higher limit explanation.
+    uint64 internal constant DEFAULT_GAS_LIMIT = 200_000; // See `ReceiveTokenTest` for higher limit explanation.
     uint256 internal constant INITIAL_USER_BALANCE = 1_000_000 ether;
 
     address internal user = makeAddr("user");
@@ -65,7 +64,7 @@ contract TestBase is Test {
     }
 
     function mockBridgeSend(
-        Bridge origin,
+        Bridge bridge,
         uint64 srcChainId,
         uint64 destChainId,
         bool wrap,
@@ -73,19 +72,19 @@ contract TestBase is Test {
         address to,
         uint256 value
     ) internal {
-        uint256 fee = origin.bridgeFee(destChainId);
+        uint256 fee = bridge.bridgeFee(destChainId);
 
         vm.chainId(srcChainId);
         vm.prank(from);
         vm.expectEmit(true, true, true, true);
         emit IBridge.TokenSent(destChainId, from, to, value);
-        origin.sendToken{ value: fee }(destChainId, to, value, wrap);
+        bridge.sendToken{ value: fee }(destChainId, to, value, wrap);
     }
 
-    function mockBridgeReceive(Bridge origin, uint64 srcChainId, uint64 destChainId, address to, uint256 value)
+    function mockBridgeReceive(Bridge bridge, uint64 srcChainId, uint64 destChainId, address to, uint256 value)
         internal
     {
-        address destination = origin.routes(destChainId);
+        address destination = bridge.routes(destChainId);
         bytes memory data = abi.encodeCall(Bridge.receiveToken, (to, value));
 
         vm.chainId(destChainId);
@@ -93,17 +92,15 @@ contract TestBase is Test {
         emit IBridge.TokenReceived(srcChainId, to, value);
         omni.mockXCall({
             sourceChainId: srcChainId,
-            sender: address(origin),
+            sender: address(bridge),
             to: destination,
             data: data,
             gasLimit: DEFAULT_GAS_LIMIT
         });
-
-        vm.chainId(srcChainId);
     }
 
     function mockBridge(
-        Bridge origin,
+        Bridge bridge,
         uint64 srcChainId,
         uint64 destChainId,
         bool wrap,
@@ -111,22 +108,21 @@ contract TestBase is Test {
         address to,
         uint256 value
     ) internal {
-        mockBridgeSend(origin, srcChainId, destChainId, wrap, from, to, value);
-        mockBridgeReceive(origin, srcChainId, destChainId, to, value);
+        mockBridgeSend(bridge, srcChainId, destChainId, wrap, from, to, value);
+        mockBridgeReceive(bridge, srcChainId, destChainId, to, value);
 
         vm.chainId(srcChainId);
     }
 
     function _deployTokens() internal {
-        originalToken = _deployToken("Ripple USD", "RLUSD");
-        srcWrapper = _deployToken("Bridged RLUSD (Omni)", "RLUSD.e");
-        destWrapper = _deployToken("Bridged RLUSD (Omni)", "RLUSD.e");
+        token = _deployToken("Ripple USD", "RLUSD");
+        wrapper = _deployToken("Bridged RLUSD (Omni)", "RLUSD.e");
     }
 
     function _deployInfra() internal {
-        srcLockbox = _deployLockbox(address(originalToken), address(srcWrapper));
-        srcBridge = _deployBridge(address(srcWrapper), address(srcLockbox));
-        destBridge = _deployBridge(address(destWrapper), address(0));
+        lockbox = _deployLockbox(address(token), address(wrapper));
+        bridgeWithLockbox = _deployBridge(address(wrapper), address(lockbox));
+        bridgeNoLockbox = _deployBridge(address(wrapper), address(0));
     }
 
     function _deployToken(string memory name, string memory symbol) internal returns (StablecoinUpgradeable) {
@@ -139,16 +135,16 @@ contract TestBase is Test {
         return StablecoinUpgradeable(proxy);
     }
 
-    function _deployLockbox(address token, address wrapper) internal returns (Lockbox) {
+    function _deployLockbox(address token_, address wrapper_) internal returns (Lockbox) {
         address impl = address(new Lockbox());
-        bytes memory data = abi.encodeCall(Lockbox.initialize, (admin, pauser, token, wrapper));
+        bytes memory data = abi.encodeCall(Lockbox.initialize, (admin, pauser, token_, wrapper_));
 
         address proxy = address(new TransparentUpgradeableProxy(impl, admin, data));
         return Lockbox(proxy);
     }
 
-    function _deployBridge(address token, address lockbox) internal returns (Bridge) {
-        bytes memory data = abi.encodeCall(Bridge.initialize, (admin, pauser, address(omni), token, lockbox));
+    function _deployBridge(address token_, address lockbox_) internal returns (Bridge) {
+        bytes memory data = abi.encodeCall(Bridge.initialize, (admin, pauser, address(omni), token_, lockbox_));
         address impl = address(new Bridge());
 
         address proxy = address(new TransparentUpgradeableProxy(impl, admin, data));
@@ -158,21 +154,21 @@ contract TestBase is Test {
     function _fundAddr(address addr) internal {
         vm.deal(addr, 1 ether);
         vm.prank(minter);
-        originalToken.mint(addr, INITIAL_USER_BALANCE);
+        token.mint(addr, INITIAL_USER_BALANCE);
     }
 
     function _configureApprovals() internal {
         vm.startPrank(user);
 
         // Approve source lockbox to wrap original tokens.
-        originalToken.approve(address(srcLockbox), type(uint256).max);
+        token.approve(address(lockbox), type(uint256).max);
 
         // Approve source bridge to transfer original tokens.
-        originalToken.approve(address(srcBridge), type(uint256).max);
+        token.approve(address(bridgeWithLockbox), type(uint256).max);
 
-        // Approve both bridges to transfer wrapped tokens.
-        srcWrapper.approve(address(srcBridge), type(uint256).max);
-        destWrapper.approve(address(destBridge), type(uint256).max);
+        // Approve both bridge types to transfer wrapped tokens.
+        wrapper.approve(address(bridgeWithLockbox), type(uint256).max);
+        wrapper.approve(address(bridgeNoLockbox), type(uint256).max);
 
         vm.stopPrank();
     }
@@ -184,12 +180,12 @@ contract TestBase is Test {
         vm.startPrank(admin);
 
         chainIds[0] = DEST_CHAIN_ID;
-        bridges[0] = address(destBridge);
-        srcBridge.setRoutes(chainIds, bridges);
+        bridges[0] = address(bridgeNoLockbox);
+        bridgeWithLockbox.setRoutes(chainIds, bridges);
 
         chainIds[0] = SRC_CHAIN_ID;
-        bridges[0] = address(srcBridge);
-        destBridge.setRoutes(chainIds, bridges);
+        bridges[0] = address(bridgeWithLockbox);
+        bridgeNoLockbox.setRoutes(chainIds, bridges);
 
         vm.stopPrank();
     }
@@ -197,30 +193,24 @@ contract TestBase is Test {
     function _configurePermissions() internal {
         vm.startPrank(admin);
 
-        srcWrapper.grantRole(srcWrapper.MINTER_ROLE(), address(srcLockbox));
-        srcWrapper.grantRole(srcWrapper.CLAWBACKER_ROLE(), address(srcLockbox));
+        wrapper.grantRole(wrapper.MINTER_ROLE(), address(lockbox));
+        wrapper.grantRole(wrapper.CLAWBACKER_ROLE(), address(lockbox));
 
-        srcWrapper.revokeRole(srcWrapper.MINTER_ROLE(), admin); // Assigned at initialization, unnecessary.
-        srcWrapper.grantRole(srcWrapper.MINTER_ROLE(), address(srcBridge));
-        srcWrapper.grantRole(srcWrapper.BURNER_ROLE(), address(srcBridge));
+        wrapper.grantRole(wrapper.MINTER_ROLE(), address(bridgeWithLockbox));
+        wrapper.grantRole(wrapper.BURNER_ROLE(), address(bridgeWithLockbox));
 
-        destWrapper.revokeRole(destWrapper.MINTER_ROLE(), admin); // Assigned at initialization, unnecessary.
-        destWrapper.grantRole(destWrapper.MINTER_ROLE(), address(destBridge));
-        destWrapper.grantRole(destWrapper.BURNER_ROLE(), address(destBridge));
+        wrapper.grantRole(wrapper.MINTER_ROLE(), address(bridgeNoLockbox));
+        wrapper.grantRole(wrapper.BURNER_ROLE(), address(bridgeNoLockbox));
 
         vm.stopPrank();
     }
 
-    function _assertBalances(
-        address addr,
-        uint256 tokenUserBal,
-        uint256 tokenLockboxBal,
-        uint256 srcWrapperUserBal,
-        uint256 destWrapperUserBal
-    ) internal view {
-        assertEq(originalToken.balanceOf(addr), tokenUserBal, "INIT: Original token balance mismatch");
-        assertEq(originalToken.balanceOf(address(srcLockbox)), tokenLockboxBal, "INIT: Source lockbox balance mismatch");
-        assertEq(srcWrapper.balanceOf(addr), srcWrapperUserBal, "INIT: Source wrapped token balance mismatch");
-        assertEq(destWrapper.balanceOf(addr), destWrapperUserBal, "INIT: Destination wrapped token balance mismatch");
+    function _assertBalances(address addr, uint256 tokenUserBal, uint256 tokenLockboxBal, uint256 wrapperUserBal)
+        internal
+        view
+    {
+        assertEq(token.balanceOf(addr), tokenUserBal, "INIT: Token balance mismatch");
+        assertEq(token.balanceOf(address(lockbox)), tokenLockboxBal, "INIT: Lockbox balance mismatch");
+        assertEq(wrapper.balanceOf(addr), wrapperUserBal, "INIT: Wrapper balance mismatch");
     }
 }
