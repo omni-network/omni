@@ -10,15 +10,18 @@ func _() {
 	var x [1]struct{}
 	_ = x[rejectNone-0]
 	_ = x[rejectDestCallReverts-1]
-	_ = x[rejectInsufficientFee-2]
-	_ = x[rejectInsufficientInventory-3]
-	_ = x[rejectUnsupportedToken-4]
-	_ = x[rejectUnsupportedDestChain-5]
+	_ = x[rejectInvalidDeposit-2]
+	_ = x[rejectInvalidExpense-3]
+	_ = x[rejectInsufficientDeposit-4]
+	_ = x[rejectInsufficientInventory-5]
+	_ = x[rejectUnsupportedDeposit-6]
+	_ = x[rejectUnsupportedExpense-7]
+	_ = x[rejectUnsupportedDestChain-8]
 }
 
-const _rejectReason_name = "NoneDestCallRevertsInsufficientFeeInsufficientInventoryUnsupportedTokenUnsupportedDestChain"
+const _rejectReason_name = "NoneDestCallRevertsInvalidDepositInvalidExpenseInsufficientDepositInsufficientInventoryUnsupportedDepositUnsupportedExpenseUnsupportedDestChain"
 
-var _rejectReason_index = [...]uint8{0, 4, 19, 34, 55, 71, 91}
+var _rejectReason_index = [...]uint8{0, 4, 19, 33, 47, 66, 87, 105, 123, 143}
 
 func (i rejectReason) String() string {
 	if i >= rejectReason(len(_rejectReason_index)-1) {

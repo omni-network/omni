@@ -1,6 +1,38 @@
 [
  {
   "address": "0x0000000000000000000000000000000000000000",
+  "chainId": 1,
+  "coingeckoId": "ethereum",
+  "isMock": false,
+  "name": "Ether",
+  "symbol": "ETH"
+ },
+ {
+  "address": "0x0000000000000000000000000000000000000000",
+  "chainId": 42161,
+  "coingeckoId": "ethereum",
+  "isMock": false,
+  "name": "Ether",
+  "symbol": "ETH"
+ },
+ {
+  "address": "0x0000000000000000000000000000000000000000",
+  "chainId": 8453,
+  "coingeckoId": "ethereum",
+  "isMock": false,
+  "name": "Ether",
+  "symbol": "ETH"
+ },
+ {
+  "address": "0x0000000000000000000000000000000000000000",
+  "chainId": 10,
+  "coingeckoId": "ethereum",
+  "isMock": false,
+  "name": "Ether",
+  "symbol": "ETH"
+ },
+ {
+  "address": "0x0000000000000000000000000000000000000000",
   "chainId": 17000,
   "coingeckoId": "ethereum",
   "isMock": false,
@@ -46,6 +78,14 @@
   "isMock": false,
   "name": "Ether",
   "symbol": "ETH"
+ },
+ {
+  "address": "0x0000000000000000000000000000000000000000",
+  "chainId": 166,
+  "coingeckoId": "omni-network",
+  "isMock": false,
+  "name": "Omni Network",
+  "symbol": "OMNI"
  },
  {
   "address": "0x0000000000000000000000000000000000000000",
