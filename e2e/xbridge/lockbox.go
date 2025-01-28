@@ -47,56 +47,59 @@ func (cfg lockboxDeploymentConfig) validateLockboxConfig() error {
 }
 
 // lockboxAddress returns the Lockbox contract address for the given network.
-func lockboxAddress(ctx context.Context, network netconf.ID) (common.Address, error) {
-	return contracts.Create3Address(ctx, network, "lockbox")
+func lockboxAddress(ctx context.Context, network netconf.ID, deployment tokenDescriptors) (common.Address, error) {
+	return contracts.Create3Address(ctx, network, deployment.symbol+"lockbox")
+}
+
+// lockboxSalt returns the salt for the lockbox contract for the given network.
+func lockboxSalt(ctx context.Context, network netconf.ID, deployment tokenDescriptors) (string, error) {
+	return contracts.Create3Salt(ctx, network, deployment.symbol+"lockbox")
 }
 
 // deployLockboxIfNeeded deploys a new lockbox contract if it is not already deployed.
 // If the contract is already deployed, the receipt is nil.
-func DeployLockboxIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
-	lockboxAddr, err := lockboxAddress(ctx, network)
+func DeployLockboxIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, deployment xBridgeDeployment) (common.Address, *ethtypes.Receipt, error) {
+	lockboxAddr, err := lockboxAddress(ctx, network, deployment.token)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "lockbox address")
+		return common.Address{}, nil, errors.Wrap(err, "lockbox address", "deployment", deployment)
 	}
 
 	deployed, addr, err := isDeployed(ctx, backend, lockboxAddr)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "is deployed")
+		return common.Address{}, nil, errors.Wrap(err, "is deployed", "deployment", deployment)
 	}
 	if deployed {
 		return addr, nil, nil
 	}
 
-	return deployLockbox(ctx, network, backend)
+	return deployLockbox(ctx, network, backend, deployment)
 }
 
 // deployLockbox deploys a new lockbox contract and returns the address and receipt.
-func deployLockbox(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func deployLockbox(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, deployment xBridgeDeployment) (common.Address, *ethtypes.Receipt, error) {
 	addrs, err := contracts.GetAddresses(ctx, network)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get addrs")
+		return common.Address{}, nil, errors.Wrap(err, "get addrs", "deployment", deployment)
 	}
 
-	wrapper := false
-	tokenAddr, err := tokenAddress(ctx, network, wrapper)
+	tokenAddr, err := tokenAddress(ctx, network, deployment.token)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "token address")
+		return common.Address{}, nil, errors.Wrap(err, "token address", "deployment", deployment)
 	}
 
-	wrapper = true
-	wrappedAddr, err := tokenAddress(ctx, network, wrapper)
+	wrappedAddr, err := tokenAddress(ctx, network, deployment.wrapped)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "wrapper address")
+		return common.Address{}, nil, errors.Wrap(err, "wrapped address", "deployment", deployment)
 	}
 
-	lockboxAddr, err := lockboxAddress(ctx, network)
+	lockboxAddr, err := lockboxAddress(ctx, network, deployment.token)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "lockbox address")
+		return common.Address{}, nil, errors.Wrap(err, "lockbox address", "deployment", deployment)
 	}
 
-	lockboxSalt, err := contracts.Create3Salt(ctx, network, "lockbox")
+	lockboxSalt, err := lockboxSalt(ctx, network, deployment.token)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "lockbox salt")
+		return common.Address{}, nil, errors.Wrap(err, "lockbox salt", "deployment", deployment)
 	}
 
 	deployCfg := deploymentConfig{

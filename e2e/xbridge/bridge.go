@@ -49,58 +49,62 @@ func (cfg bridgeDeploymentConfig) validateBridgeConfig() error {
 }
 
 // bridgeAddress returns the Bridge contract address for the given network.
-func bridgeAddress(ctx context.Context, network netconf.ID) (common.Address, error) {
-	return contracts.Create3Address(ctx, network, "bridge")
+func bridgeAddress(ctx context.Context, network netconf.ID, deployment tokenDescriptors) (common.Address, error) {
+	return contracts.Create3Address(ctx, network, deployment.symbol+"bridge")
+}
+
+// bridgeSalt returns the salt for the bridge contract for the given network.
+func bridgeSalt(ctx context.Context, network netconf.ID, deployment tokenDescriptors) (string, error) {
+	return contracts.Create3Salt(ctx, network, deployment.symbol+"bridge")
 }
 
 // deployBridgeIfNeeded deploys a new bridge contract if it is not already deployed.
 // If the contract is already deployed, the receipt is nil.
-func DeployBridgeIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, lockbox bool) (common.Address, *ethtypes.Receipt, error) {
-	bridgeAddr, err := bridgeAddress(ctx, network)
+func DeployBridgeIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, lockbox bool, deployment xBridgeDeployment) (common.Address, *ethtypes.Receipt, error) {
+	bridgeAddr, err := bridgeAddress(ctx, network, deployment.wrapped)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "bridge address")
+		return common.Address{}, nil, errors.Wrap(err, "bridge address", "deployment", deployment)
 	}
 
 	deployed, addr, err := isDeployed(ctx, backend, bridgeAddr)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "is deployed")
+		return common.Address{}, nil, errors.Wrap(err, "is deployed", "deployment", deployment)
 	}
 	if deployed {
 		return addr, nil, nil
 	}
 
-	return deployBridge(ctx, network, backend, lockbox)
+	return deployBridge(ctx, network, backend, lockbox, deployment)
 }
 
 // deployBridge deploys a new bridge contract and returns the address and receipt.
-func deployBridge(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, lockbox bool) (common.Address, *ethtypes.Receipt, error) {
+func deployBridge(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, lockbox bool, deployment xBridgeDeployment) (common.Address, *ethtypes.Receipt, error) {
 	addrs, err := contracts.GetAddresses(ctx, network)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get addrs")
+		return common.Address{}, nil, errors.Wrap(err, "get addrs", "deployment", deployment)
 	}
 
-	wrapper := true
-	tokenAddr, err := tokenAddress(ctx, network, wrapper)
+	tokenAddr, err := tokenAddress(ctx, network, deployment.wrapped)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "token address")
+		return common.Address{}, nil, errors.Wrap(err, "token address", "deployment", deployment)
 	}
 
 	lockboxAddr := common.Address{}
 	if lockbox {
-		lockboxAddr, err = lockboxAddress(ctx, network)
+		lockboxAddr, err = lockboxAddress(ctx, network, deployment.token)
 		if err != nil {
-			return common.Address{}, nil, errors.Wrap(err, "lockbox address")
+			return common.Address{}, nil, errors.Wrap(err, "lockbox address", "deployment", deployment)
 		}
 	}
 
-	bridgeAddr, err := bridgeAddress(ctx, network)
+	bridgeAddr, err := bridgeAddress(ctx, network, deployment.wrapped)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "bridge address")
+		return common.Address{}, nil, errors.Wrap(err, "bridge address", "deployment", deployment)
 	}
 
-	bridgeSalt, err := contracts.Create3Salt(ctx, network, "bridge")
+	bridgeSalt, err := bridgeSalt(ctx, network, deployment.wrapped)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "bridge salt")
+		return common.Address{}, nil, errors.Wrap(err, "bridge salt", "deployment", deployment)
 	}
 
 	deployCfg := deploymentConfig{

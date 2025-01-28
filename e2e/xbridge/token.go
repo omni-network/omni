@@ -15,11 +15,6 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
-const (
-	rlusdTokenSymbol   = "RLUSD"
-	rlusdWrapperSymbol = "RLUSDe"
-)
-
 type tokenDeploymentConfig struct {
 	Config     deploymentConfig
 	Name       string
@@ -61,67 +56,69 @@ func (cfg tokenDeploymentConfig) validateTokenConfig() error {
 }
 
 // tokenAddress returns the token contract address for the given network.
-func tokenAddress(ctx context.Context, network netconf.ID, wrapper bool) (common.Address, error) {
-	saltPrefix := rlusdTokenSymbol
-	if wrapper {
-		saltPrefix = rlusdWrapperSymbol
-	}
+func tokenAddress(ctx context.Context, network netconf.ID, deployment tokenDescriptors) (common.Address, error) {
+	return contracts.Create3Address(ctx, network, deployment.symbol)
+}
 
-	return contracts.Create3Address(ctx, network, saltPrefix)
+// tokenSalt returns the salt for the token contract for the given network.
+func tokenSalt(ctx context.Context, network netconf.ID, deployment tokenDescriptors) (string, error) {
+	return contracts.Create3Salt(ctx, network, deployment.symbol)
 }
 
 // deployTokenIfNeeded deploys a new rlusd contract if it is not already deployed.
 // If the contract is already deployed, the receipt is nil.
-func DeployTokenIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, wrapper bool) (common.Address, *ethtypes.Receipt, error) {
-	tokenAddr, err := tokenAddress(ctx, network, wrapper)
+func DeployTokenIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, wrapper bool, deployment xBridgeDeployment) (common.Address, *ethtypes.Receipt, error) {
+	targetDeployment := deployment.token
+	if wrapper {
+		targetDeployment = deployment.wrapped
+	}
+
+	tokenAddr, err := tokenAddress(ctx, network, targetDeployment)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "token address")
+		return common.Address{}, nil, errors.Wrap(err, "token address", "deployment", targetDeployment)
 	}
 
 	deployed, addr, err := isDeployed(ctx, backend, tokenAddr)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "is deployed")
+		return common.Address{}, nil, errors.Wrap(err, "is deployed", "deployment", targetDeployment)
 	}
 	if deployed {
 		return addr, nil, nil
 	}
 
-	return deployToken(ctx, network, backend, wrapper)
+	return deployToken(ctx, network, backend, wrapper, deployment)
 }
 
 // deployRLUSD deploys a new rlusd contract and returns the address and receipt.
-func deployToken(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, wrapper bool) (common.Address, *ethtypes.Receipt, error) {
+func deployToken(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, wrapper bool, deployment xBridgeDeployment) (common.Address, *ethtypes.Receipt, error) {
+	targetDeployment := deployment.token
+	if wrapper {
+		targetDeployment = deployment.wrapped
+	}
+
 	addrs, err := contracts.GetAddresses(ctx, network)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get addrs")
+		return common.Address{}, nil, errors.Wrap(err, "get addrs", "deployment", deployment)
 	}
 
-	bridgeAddr, err := bridgeAddress(ctx, network)
+	bridgeAddr, err := bridgeAddress(ctx, network, deployment.wrapped)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "bridge address")
+		return common.Address{}, nil, errors.Wrap(err, "bridge address", "deployment", deployment)
 	}
 
-	tokenAddr, err := tokenAddress(ctx, network, wrapper)
+	tokenAddr, err := tokenAddress(ctx, network, targetDeployment)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "token address")
+		return common.Address{}, nil, errors.Wrap(err, "token address", "deployment", targetDeployment)
 	}
 
-	saltPrefix := rlusdTokenSymbol
-	if wrapper {
-		saltPrefix = rlusdWrapperSymbol
-	}
-	tokenSalt, err := contracts.Create3Salt(ctx, network, saltPrefix)
+	tokenSalt, err := tokenSalt(ctx, network, targetDeployment)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "token salt")
+		return common.Address{}, nil, errors.Wrap(err, "token salt", "deployment", targetDeployment)
 	}
 
-	// as we reuse the same token template for both RLUSD and RLUSDe, we need to set values accordingly
-	name := "Ripple USD"
-	symbol := rlusdTokenSymbol
+	// If deploying the wrapper, assign bridge address as minter
 	minter := eoa.MustAddress(network, eoa.RoleManager)
 	if wrapper {
-		name = "Bridged RLUSD (Omni)"
-		symbol = rlusdWrapperSymbol
 		minter = bridgeAddr
 	}
 
@@ -134,8 +131,8 @@ func deployToken(ctx context.Context, network netconf.ID, backend *ethbackend.Ba
 
 	cfg := tokenDeploymentConfig{
 		Config:     deployCfg,
-		Name:       name,
-		Symbol:     symbol,
+		Name:       targetDeployment.name,
+		Symbol:     targetDeployment.symbol,
 		Minter:     minter,
 		Admin:      eoa.MustAddress(network, eoa.RoleManager),
 		Upgrader:   eoa.MustAddress(network, eoa.RoleUpgrader),
