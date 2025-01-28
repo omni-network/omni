@@ -4,32 +4,68 @@ pragma solidity 0.8.26;
 import "../TestBase.sol";
 
 contract GeneralBridgeTest is TestBase {
-    function test_initialize_reverts_zero_address() public {
+    function test_initialize_reverts() public {
         address impl = address(new Bridge());
         srcBridge = Bridge(address(new TransparentUpgradeableProxy(impl, admin, "")));
 
         // `admin` cannot be zero address.
         vm.expectRevert(IBridge.ZeroAddress.selector);
-        srcBridge.initialize(address(0), address(0), address(0), address(0), address(0));
+        srcBridge.initialize({
+            admin_: address(0),
+            pauser_: address(0),
+            omni_: address(0),
+            token_: address(0),
+            lockbox_: address(0)
+        });
 
         // `pauser` cannot be zero address.
         vm.expectRevert(IBridge.ZeroAddress.selector);
-        srcBridge.initialize(admin, address(0), address(0), address(0), address(0));
+        srcBridge.initialize({
+            admin_: admin,
+            pauser_: address(0),
+            omni_: address(0),
+            token_: address(0),
+            lockbox_: address(0)
+        });
 
         // `omni` cannot be zero address.
         vm.expectRevert(IBridge.ZeroAddress.selector);
-        srcBridge.initialize(admin, pauser, address(0), address(0), address(0));
+        srcBridge.initialize({
+            admin_: admin,
+            pauser_: pauser,
+            omni_: address(0),
+            token_: address(0),
+            lockbox_: address(0)
+        });
 
         // `token` cannot be zero address.
         vm.expectRevert(IBridge.ZeroAddress.selector);
-        srcBridge.initialize(admin, pauser, address(omni), address(0), address(0));
+        srcBridge.initialize({
+            admin_: admin,
+            pauser_: pauser,
+            omni_: address(omni),
+            token_: address(0),
+            lockbox_: address(0)
+        });
 
         // Initialization works with all fields populated.
-        srcBridge.initialize(admin, pauser, address(omni), address(originalToken), address(srcLockbox));
+        srcBridge.initialize({
+            admin_: admin,
+            pauser_: pauser,
+            omni_: address(omni),
+            token_: address(originalToken),
+            lockbox_: address(srcLockbox)
+        });
 
         // Initialization can also occur without a `lockbox` if none is present.
         srcBridge = Bridge(address(new TransparentUpgradeableProxy(impl, admin, "")));
-        srcBridge.initialize(admin, pauser, address(omni), address(originalToken), address(0));
+        srcBridge.initialize({
+            admin_: admin,
+            pauser_: pauser,
+            omni_: address(omni),
+            token_: address(originalToken),
+            lockbox_: address(0)
+        });
     }
 
     function test_setRoutes_reverts() public prank(admin) {

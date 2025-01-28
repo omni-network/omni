@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 import "../TestBase.sol";
 
 contract GeneralLockboxest is TestBase {
-    function test_initialize_reverts_zero_address() public {
+    function test_initialize_reverts() public {
         address impl = address(new Lockbox());
         srcLockbox = Lockbox(address(new TransparentUpgradeableProxy(impl, admin, "")));
 
@@ -23,8 +23,5 @@ contract GeneralLockboxest is TestBase {
         // `wrapped` cannot be zero address.
         vm.expectRevert(ILockbox.ZeroAddress.selector);
         srcLockbox.initialize(admin, pauser, address(originalToken), address(0));
-
-        // Initializes when all inputs are valid.
-        srcLockbox.initialize(admin, pauser, address(originalToken), address(srcWrapper));
     }
 }

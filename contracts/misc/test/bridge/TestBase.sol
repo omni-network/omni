@@ -91,7 +91,13 @@ contract TestBase is Test {
         vm.chainId(destChainId);
         vm.expectEmit(true, true, true, true);
         emit IBridge.TokenReceived(srcChainId, to, value);
-        omni.mockXCall(srcChainId, address(origin), destination, data, DEFAULT_GAS_LIMIT);
+        omni.mockXCall({
+            sourceChainId: srcChainId,
+            sender: address(origin),
+            to: destination,
+            data: data,
+            gasLimit: DEFAULT_GAS_LIMIT
+        });
 
         vm.chainId(srcChainId);
     }

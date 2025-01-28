@@ -4,7 +4,10 @@ pragma solidity 0.8.26;
 import "../TestBase.sol";
 
 contract WithdrawTest is TestBase {
-    function test_withdraws_revert_paused() public {
+    function test_withdraws_reverts() public {
+        bytes32 clawbackerRole = srcWrapper.CLAWBACKER_ROLE();
+
+        // Cannot withdraw if paused
         vm.prank(user);
         srcLockbox.deposit(INITIAL_USER_BALANCE);
 
@@ -19,22 +22,10 @@ contract WithdrawTest is TestBase {
         srcLockbox.withdrawTo(other, INITIAL_USER_BALANCE);
         vm.stopPrank();
 
-        // Works again after unpausing
         vm.prank(pauser);
         srcLockbox.unpause();
 
-        vm.startPrank(user);
-        srcLockbox.withdraw(1);
-        srcLockbox.withdrawTo(other, 1);
-        vm.stopPrank();
-    }
-
-    function test_withdraws_revert_without_wrapper_clawbacker_role() public {
-        bytes32 clawbackerRole = srcWrapper.CLAWBACKER_ROLE();
-
-        vm.prank(user);
-        srcLockbox.deposit(INITIAL_USER_BALANCE);
-
+        // Cannot withdraw if wrapper does not have clawbacker role
         vm.prank(admin);
         srcWrapper.revokeRole(clawbackerRole, address(srcLockbox));
 

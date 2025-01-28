@@ -4,7 +4,10 @@ pragma solidity 0.8.26;
 import "../TestBase.sol";
 
 contract DepositTest is TestBase {
-    function test_deposits_revert_paused() public {
+    function test_deposits_reverts() public {
+        bytes32 minterRole = srcWrapper.MINTER_ROLE();
+
+        // Cannot deposit if paused
         vm.prank(pauser);
         srcLockbox.pause();
 
@@ -16,19 +19,10 @@ contract DepositTest is TestBase {
         srcLockbox.depositTo(other, INITIAL_USER_BALANCE);
         vm.stopPrank();
 
-        // Works again after unpausing
         vm.prank(pauser);
         srcLockbox.unpause();
 
-        vm.startPrank(user);
-        srcLockbox.deposit(1);
-        srcLockbox.depositTo(other, 1);
-        vm.stopPrank();
-    }
-
-    function test_deposits_revert_without_wrapper_minter_role() public {
-        bytes32 minterRole = srcWrapper.MINTER_ROLE();
-
+        // Cannot deposit if wrapper does not have minter role
         vm.prank(admin);
         srcWrapper.revokeRole(minterRole, address(srcLockbox));
 

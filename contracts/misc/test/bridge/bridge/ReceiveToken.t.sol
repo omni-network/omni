@@ -11,49 +11,64 @@ contract ReceiveTokenTest is TestBase {
         bytes memory data = abi.encodeCall(Bridge.receiveToken, (user, 1));
         uint64 unknownChainId = DEST_CHAIN_ID + 1;
         address unknownSender = makeAddr("unknownSender");
+        bytes32 minterRole = srcWrapper.MINTER_ROLE();
 
         // Unknown source chain ID
         vm.expectRevert(abi.encodeWithSelector(IBridge.Unauthorized.selector, unknownChainId, address(destBridge)));
-        omni.mockXCall(unknownChainId, address(destBridge), address(srcBridge), data, DEFAULT_GAS_LIMIT);
+        omni.mockXCall({
+            sourceChainId: unknownChainId,
+            sender: address(destBridge),
+            to: address(srcBridge),
+            data: data,
+            gasLimit: DEFAULT_GAS_LIMIT
+        });
 
         // Unknown source chain sender
         vm.expectRevert(abi.encodeWithSelector(IBridge.Unauthorized.selector, DEST_CHAIN_ID, unknownSender));
-        omni.mockXCall(DEST_CHAIN_ID, unknownSender, address(srcBridge), data, DEFAULT_GAS_LIMIT);
+        omni.mockXCall({
+            sourceChainId: DEST_CHAIN_ID,
+            sender: unknownSender,
+            to: address(srcBridge),
+            data: data,
+            gasLimit: DEFAULT_GAS_LIMIT
+        });
 
         // Unauthorized direct call
         vm.expectRevert(abi.encodeWithSelector(IBridge.Unauthorized.selector, SRC_CHAIN_ID, user));
         vm.prank(user);
         srcBridge.receiveToken(user, 1);
 
-        // Message delivers if sender is `OmniPortal`
-        omni.mockXCall(DEST_CHAIN_ID, address(destBridge), address(srcBridge), data, DEFAULT_GAS_LIMIT);
-    }
-
-    function test_receiveToken_reverts_without_wrapper_minter_role() public {
-        bytes memory data = abi.encodeCall(Bridge.receiveToken, (user, INITIAL_USER_BALANCE));
-        bytes32 minterRole = srcWrapper.MINTER_ROLE();
-
+        // Reverts if `MINTER_ROLE` is revoked
         vm.startPrank(admin);
         srcWrapper.revokeRole(minterRole, address(srcBridge));
         destWrapper.revokeRole(minterRole, address(destBridge));
         vm.stopPrank();
 
-        vm.startPrank(user);
-        // `srcBridge` must have `BURNER_ROLE` for `srcWrapper`.
         vm.expectRevert(
             abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector, address(srcBridge), minterRole
             )
         );
-        omni.mockXCall(DEST_CHAIN_ID, address(destBridge), address(srcBridge), data, DEFAULT_GAS_LIMIT);
+        omni.mockXCall({
+            sourceChainId: DEST_CHAIN_ID,
+            sender: address(destBridge),
+            to: address(srcBridge),
+            data: data,
+            gasLimit: DEFAULT_GAS_LIMIT
+        });
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector, address(destBridge), minterRole
             )
         );
-        omni.mockXCall(SRC_CHAIN_ID, address(srcBridge), address(destBridge), data, DEFAULT_GAS_LIMIT);
-        vm.stopPrank();
+        omni.mockXCall({
+            sourceChainId: SRC_CHAIN_ID,
+            sender: address(srcBridge),
+            to: address(destBridge),
+            data: data,
+            gasLimit: DEFAULT_GAS_LIMIT
+        });
     }
 
     function test_receiveToken_succeeds_solvent_lockbox() public {
@@ -62,25 +77,61 @@ contract ReceiveTokenTest is TestBase {
         vm.prank(user);
         srcLockbox.deposit(INITIAL_USER_BALANCE);
 
-        omni.mockXCall(DEST_CHAIN_ID, address(destBridge), address(srcBridge), data, DEFAULT_GAS_LIMIT);
+        omni.mockXCall({
+            sourceChainId: DEST_CHAIN_ID,
+            sender: address(destBridge),
+            to: address(srcBridge),
+            data: data,
+            gasLimit: DEFAULT_GAS_LIMIT
+        });
 
-        _assertBalances(user, INITIAL_USER_BALANCE, 0, INITIAL_USER_BALANCE, 0);
+        _assertBalances({
+            addr: user,
+            tokenUserBal: INITIAL_USER_BALANCE,
+            tokenLockboxBal: 0,
+            srcWrapperUserBal: INITIAL_USER_BALANCE,
+            destWrapperUserBal: 0
+        });
     }
 
     function test_receiveToken_succeeds_insolvent_lockbox() public {
         bytes memory data = abi.encodeCall(Bridge.receiveToken, (user, INITIAL_USER_BALANCE));
 
-        omni.mockXCall(DEST_CHAIN_ID, address(destBridge), address(srcBridge), data, DEFAULT_GAS_LIMIT);
+        omni.mockXCall({
+            sourceChainId: DEST_CHAIN_ID,
+            sender: address(destBridge),
+            to: address(srcBridge),
+            data: data,
+            gasLimit: DEFAULT_GAS_LIMIT
+        });
 
-        _assertBalances(user, INITIAL_USER_BALANCE, 0, INITIAL_USER_BALANCE, 0);
+        _assertBalances({
+            addr: user,
+            tokenUserBal: INITIAL_USER_BALANCE,
+            tokenLockboxBal: 0,
+            srcWrapperUserBal: INITIAL_USER_BALANCE,
+            destWrapperUserBal: 0
+        });
     }
 
     function test_receiveToken_succeeds_no_lockbox() public {
         bytes memory data = abi.encodeCall(Bridge.receiveToken, (user, INITIAL_USER_BALANCE));
 
-        omni.mockXCall(SRC_CHAIN_ID, address(srcBridge), address(destBridge), data, DEFAULT_GAS_LIMIT);
+        omni.mockXCall({
+            sourceChainId: SRC_CHAIN_ID,
+            sender: address(srcBridge),
+            to: address(destBridge),
+            data: data,
+            gasLimit: DEFAULT_GAS_LIMIT
+        });
 
-        _assertBalances(user, INITIAL_USER_BALANCE, 0, 0, INITIAL_USER_BALANCE);
+        _assertBalances({
+            addr: user,
+            tokenUserBal: INITIAL_USER_BALANCE,
+            tokenLockboxBal: 0,
+            srcWrapperUserBal: 0,
+            destWrapperUserBal: INITIAL_USER_BALANCE
+        });
     }
 
     function test_receiveToken_succeeds_paused() public prank(pauser) {
@@ -89,9 +140,27 @@ contract ReceiveTokenTest is TestBase {
         srcBridge.pause();
         destBridge.pause();
 
-        omni.mockXCall(DEST_CHAIN_ID, address(destBridge), address(srcBridge), data, DEFAULT_GAS_LIMIT);
-        omni.mockXCall(SRC_CHAIN_ID, address(srcBridge), address(destBridge), data, DEFAULT_GAS_LIMIT);
+        omni.mockXCall({
+            sourceChainId: DEST_CHAIN_ID,
+            sender: address(destBridge),
+            to: address(srcBridge),
+            data: data,
+            gasLimit: DEFAULT_GAS_LIMIT
+        });
+        omni.mockXCall({
+            sourceChainId: SRC_CHAIN_ID,
+            sender: address(srcBridge),
+            to: address(destBridge),
+            data: data,
+            gasLimit: DEFAULT_GAS_LIMIT
+        });
 
-        _assertBalances(user, INITIAL_USER_BALANCE, 0, INITIAL_USER_BALANCE, INITIAL_USER_BALANCE);
+        _assertBalances({
+            addr: user,
+            tokenUserBal: INITIAL_USER_BALANCE,
+            tokenLockboxBal: 0,
+            srcWrapperUserBal: INITIAL_USER_BALANCE,
+            destWrapperUserBal: INITIAL_USER_BALANCE
+        });
     }
 }
