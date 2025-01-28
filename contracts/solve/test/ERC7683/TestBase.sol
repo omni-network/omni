@@ -376,7 +376,15 @@ contract TestBase is Test {
             "assertResolved: fill instructions destination"
         );
         assertEq(
-            keccak256(abi.encode(ISolverNet.FillOriginData({ srcChainId: srcChainId, call: orderCall }))),
+            keccak256(
+                abi.encode(
+                    ISolverNet.FillOriginData({
+                        srcChainId: srcChainId,
+                        fillDeadline: order.fillDeadline,
+                        call: orderCall
+                    })
+                )
+            ),
             keccak256(resolvedOrder.fillInstructions[0].originData),
             "assertResolved: fill instructions origin data"
         );

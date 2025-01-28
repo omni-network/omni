@@ -153,7 +153,9 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         fillInstructions[0] = FillInstruction({
             destinationChainId: call.chainId,
             destinationSettler: _outbox.toBytes32(),
-            originData: abi.encode(FillOriginData({ srcChainId: uint64(block.chainid), call: call }))
+            originData: abi.encode(
+                FillOriginData({ srcChainId: uint64(block.chainid), fillDeadline: order.fillDeadline, call: call })
+            )
         });
 
         return ResolvedCrossChainOrder({
@@ -191,6 +193,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     function accept(bytes32 id) external onlyRoles(SOLVER) nonReentrant {
         OrderState memory state = _orderState[id];
         if (state.status != Status.Pending) revert OrderNotPending();
+        if (_orders[id].fillDeadline < block.timestamp && _orders[id].fillDeadline != 0) revert FillDeadlinePassed();
 
         state.status = Status.Accepted;
         state.acceptedBy = msg.sender;
@@ -208,7 +211,13 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     function reject(bytes32 id, uint8 reason) external onlyRoles(SOLVER) nonReentrant {
         ResolvedCrossChainOrder memory order = _orders[id];
         OrderState memory state = _orderState[id];
-        if (state.status != Status.Pending) revert OrderNotPending();
+        if (state.status != Status.Pending) {
+            if (state.status == Status.Accepted) {
+                if (state.acceptedBy != msg.sender) revert Unauthorized();
+            } else {
+                revert OrderNotPending();
+            }
+        }
 
         state.status = Status.Rejected;
         _upsertOrder(id, state);
@@ -283,7 +292,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @param order  OnchainCrossChainOrder to parse
      */
     function _parseOrder(OnchainCrossChainOrder calldata order) internal view returns (OrderData memory) {
-        if (order.fillDeadline < block.timestamp) revert InvalidFillDeadline();
+        if (order.fillDeadline < block.timestamp && order.fillDeadline != 0) revert InvalidFillDeadline();
         if (order.orderDataType != ORDER_DATA_TYPEHASH) revert InvalidOrderDataTypehash();
         if (order.orderData.length == 0) revert InvalidOrderData();
 

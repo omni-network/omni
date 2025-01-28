@@ -32,6 +32,7 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
     error OrderNotPending();
     error OrderNotAccepted();
     error OrderNotFilled();
+    error FillDeadlinePassed();
 
     // transfer errors
     error InvalidRecipient();
