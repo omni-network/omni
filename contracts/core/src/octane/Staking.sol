@@ -193,20 +193,18 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
      */
     function editValidator(EditValidatorParams calldata params) external payable {
         require(!isAllowlistEnabled || isAllowedValidator[msg.sender], "Staking: not allowed");
-        if (params.min_self_delegation != -1) {
-            require(
-                params.commission_rate_percentage <= 100 && params.commission_rate_percentage >= 0,
-                "Staking: invalid commission rate"
-            );
-        }
-        if (params.min_self_delegation != -1) {
-            require(params.min_self_delegation > 0, "Staking: invalid min self delegation");
-        }
         require(bytes(params.moniker).length <= 70, "Staking: moniker too long");
         require(bytes(params.identity).length <= 3000, "Staking: identity too long");
         require(bytes(params.website).length <= 140, "Staking: website too long");
         require(bytes(params.security_contact).length <= 140, "Staking: security contact too long");
         require(bytes(params.details).length <= 280, "Staking: details too long");
+        if (params.min_self_delegation != -1) {
+            require(params.min_self_delegation > 0, "Staking: invalid min self delegation");
+            require(
+                params.commission_rate_percentage <= 100 && params.commission_rate_percentage >= 0,
+                "Staking: invalid commission rate"
+            );
+        }
 
         _burnFee();
         emit EditValidator(msg.sender, params);
