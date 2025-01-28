@@ -31,6 +31,7 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/enode"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 
 	_ "embed"
 )
@@ -143,26 +144,16 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 		return err
 	}
 
-	if cfg.NodeSnapshot {
-		if err := downloadSnapshot(ctx, cfg.Network, cfg.Home, gethClientName); err != nil {
-			return err
-		}
-
-		if err := downloadSnapshot(ctx, cfg.Network, cfg.Home, haloClientName); err != nil {
-			return err
-		}
+	if err := maybeDownloadSnapshots(ctx, cfg); err != nil {
+		return errors.Wrap(err, "download snapshots")
 	}
 
 	if err := maybeDownloadGenesis(ctx, cfg.Network); err != nil {
 		return errors.Wrap(err, "download genesis")
 	}
 
-	if !cfg.NodeSnapshot {
-		// Run Geth initialization only when doing full sync, because the downloaded node snapshot will already have Geth's DB initialized.
-		err = gethInit(ctx, cfg, filepath.Join(cfg.Home, gethClientName))
-		if err != nil {
-			return errors.Wrap(err, "init geth")
-		}
+	if err := gethInit(ctx, cfg, filepath.Join(cfg.Home, gethClientName)); err != nil {
+		return errors.Wrap(err, "init geth")
 	}
 
 	logLevel := log.LevelInfo
@@ -415,10 +406,12 @@ func gethInit(ctx context.Context, cfg InitConfig, dir string) error {
 	// Run geth init via docker
 	{
 		image := "ethereum/client-go:" + geth.Version
+
 		stateScheme := "path"
-		if cfg.Archive {
+		if cfg.NodeSnapshot || cfg.Archive {
 			stateScheme = "hash"
 		}
+
 		dockerArgs := []string{"run",
 			"-v", dir + ":/geth",
 			image, "--",
@@ -437,6 +430,30 @@ func gethInit(ctx context.Context, cfg InitConfig, dir string) error {
 		}
 
 		log.Info(ctx, "Initialized geth chain data")
+	}
+
+	return nil
+}
+
+func maybeDownloadSnapshots(ctx context.Context, cfg InitConfig) error {
+	if !cfg.NodeSnapshot {
+		return nil
+	}
+
+	g, ctx := errgroup.WithContext(ctx)
+
+	// Start parallel downloads.
+	g.Go(func() error {
+		return downloadSnapshot(ctx, cfg.Network, cfg.Home, gethClientName)
+	})
+
+	g.Go(func() error {
+		return downloadSnapshot(ctx, cfg.Network, cfg.Home, haloClientName)
+	})
+
+	// Wait for all downloads to complete.
+	if err := g.Wait(); err != nil {
+		return errors.Wrap(err, "parallel download snapshots")
 	}
 
 	return nil
