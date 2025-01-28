@@ -452,7 +452,11 @@ func maybeDownloadSnapshots(ctx context.Context, cfg InitConfig) error {
 	})
 
 	// Wait for all downloads to complete.
-	return errors.Wrap(g.Wait(), "parallel download snapshots")
+	if err := g.Wait(); err != nil {
+		return errors.Wrap(err, "parallel download snapshots")
+	}
+
+	return nil
 }
 
 func downloadSnapshot(ctx context.Context, network netconf.ID, outputDir string, clientName string) error {
