@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/umath"
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -26,6 +27,7 @@ var (
 	stakingABI           = mustGetABI(bindings.StakingMetaData)
 	createValidatorEvent = mustGetEvent(stakingABI, "CreateValidator")
 	delegateEvent        = mustGetEvent(stakingABI, "Delegate")
+	editValidatorEvent   = mustGetEvent(stakingABI, "EditValidator")
 )
 
 // Keeper also implements the evmenginetypes.EvmEventProcessor interface.
@@ -126,7 +128,7 @@ func (Keeper) Name() string {
 
 // FilterParams defines the matching EVM log events, see github.com/ethereum/go-ethereum#FilterQuery.
 func (k Keeper) FilterParams() ([]common.Address, [][]common.Hash) {
-	return []common.Address{k.address}, [][]common.Hash{{createValidatorEvent.ID, delegateEvent.ID}}
+	return []common.Address{k.address}, [][]common.Hash{{createValidatorEvent.ID, delegateEvent.ID, editValidatorEvent.ID}}
 }
 
 // Deliver processes a omni deposit log event, which must be one of:
@@ -185,12 +187,12 @@ func (k Keeper) parseAndDeliver(ctx context.Context, elog *evmenginetypes.EVMEve
 
 	switch ethlog.Topics[0] {
 	case createValidatorEvent.ID:
-		delegate, err := k.contract.ParseCreateValidator(ethlog)
+		createVal, err := k.contract.ParseCreateValidator(ethlog)
 		if err != nil {
 			return errors.Wrap(err, "parse create validator")
 		}
 
-		if err := k.deliverCreateValidator(ctx, delegate); err != nil {
+		if err := k.deliverCreateValidator(ctx, createVal); err != nil {
 			return errors.Wrap(err, "create validator")
 		}
 	case delegateEvent.ID:
@@ -201,6 +203,15 @@ func (k Keeper) parseAndDeliver(ctx context.Context, elog *evmenginetypes.EVMEve
 
 		if err := k.deliverDelegate(ctx, delegate); err != nil {
 			return errors.Wrap(err, "delegate")
+		}
+	case editValidatorEvent.ID:
+		editVal, err := k.contract.ParseEditValidator(ethlog)
+		if err != nil {
+			return errors.Wrap(err, "parse edit validator")
+		}
+
+		if err := k.deliverEditValidator(ctx, editVal); err != nil {
+			return errors.Wrap(err, "edit validator")
 		}
 	default:
 		return errors.New("unknown event")
@@ -248,6 +259,41 @@ func (k Keeper) deliverDelegate(ctx context.Context, ev *bindings.StakingDelegat
 	_, err := k.sServer.Delegate(ctx, msg)
 	if err != nil {
 		return errors.Wrap(err, "delegate")
+	}
+
+	return nil
+}
+
+func (k Keeper) deliverEditValidator(ctx context.Context, ev *bindings.StakingEditValidator) error {
+	valAddr := sdk.ValAddress(ev.Validator.Bytes())
+
+	p := ev.Params
+	description := stypes.Description{
+		Moniker:         p.Moniker,
+		Identity:        p.Identity,
+		Website:         p.Website,
+		SecurityContact: p.SecurityContact,
+		Details:         p.Details,
+	}
+
+	rateI64, err := umath.ToInt64(p.CommissionRatePercentage)
+	if err != nil {
+		return errors.Wrap(err, "convert commission rate")
+	}
+	rate := math.LegacyNewDec(rateI64)
+
+	minSelf := math.NewIntFromBigInt(p.MinSelfDelegation)
+
+	log.Info(ctx, "EVM staking editing validator",
+		"validator", ev.Validator.Hex(),
+		"moniker", description.Moniker,
+		"rate", p.CommissionRatePercentage,
+		"min_self", p.MinSelfDelegation,
+	)
+
+	msg := stypes.NewMsgEditValidator(valAddr.String(), description, &rate, &minSelf)
+	if _, err := k.sServer.EditValidator(ctx, msg); err != nil {
+		return errors.Wrap(err, "edit validator")
 	}
 
 	return nil

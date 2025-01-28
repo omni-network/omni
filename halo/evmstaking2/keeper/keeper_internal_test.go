@@ -1,10 +1,11 @@
 package keeper
 
 import (
-	context "context"
+	"context"
 	"strings"
 	"testing"
 
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/evmstaking2/testutil"
 	"github.com/omni-network/omni/halo/evmstaking2/types"
 	"github.com/omni-network/omni/lib/errors"
@@ -12,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 	evmengkeeper "github.com/omni-network/omni/octane/evmengine/keeper"
 	etypes "github.com/omni-network/omni/octane/evmengine/types"
 
@@ -356,6 +358,69 @@ func TestNonSelfDelegationEventDelivery(t *testing.T) {
 	require.True(t, strings.HasPrefix(msg.ValidatorAddress, "cosmosvaloper"), msg.ValidatorAddress)
 	stake := sdk.NewInt64Coin("stake", ethStake*1000000000000000000)
 	require.Equal(t, msg.Amount, stake)
+}
+
+func TestEditValidator(t *testing.T) {
+	t.Parallel()
+
+	privKey := k1.GenPrivKey()
+	valAddr, err := k1util.PubKeyToAddress(privKey.PubKey())
+	require.NoError(t, err)
+
+	params := &bindings.StakingEditValidatorParams{
+		Moniker:                  "moniker",
+		Identity:                 "identity",
+		Website:                  "https://website",
+		SecurityContact:          "https://contract",
+		Details:                  "details",
+		CommissionRatePercentage: 99,
+		MinSelfDelegation:        umath.NewBigInt(11),
+	}
+	ethClientMock, err := ethclient.NewEngineMock(
+		ethclient.WithMockEditValidator(privKey.PubKey(), params),
+	)
+	require.NoError(t, err)
+
+	var msgBuffer []*stypes.MsgEditValidator
+
+	ctrl := gomock.NewController(t)
+	sServerMock := testutil.NewMockStakingMsgServer(ctrl)
+	sServerMock.EXPECT().
+		EditValidator(gomock.Any(), gomock.Any()).
+		Times(1).
+		DoAndReturn(
+			func(ctx context.Context, msg *stypes.MsgEditValidator) (*stypes.MsgEditValidatorResponse, error) {
+				msgBuffer = append(msgBuffer, msg)
+				return new(stypes.MsgEditValidatorResponse), nil
+			},
+		)
+
+	keeper, ctx := setupKeeper(t, 1, sServerMock)
+
+	events, err := getStakingEvents(ctx, ethClientMock, keeper)
+	require.NoError(t, err)
+	require.Len(t, events, 1)
+
+	for _, event := range events {
+		err := keeper.Deliver(ctx, common.Hash{}, event)
+		require.NoError(t, err)
+	}
+
+	ctx = ctx.WithBlockHeight(1)
+	err = keeper.EndBlock(ctx)
+	require.NoError(t, err)
+
+	require.Len(t, msgBuffer, 1)
+	msg := msgBuffer[0]
+
+	require.Equal(t, msg.ValidatorAddress, sdk.ValAddress(valAddr.Bytes()).String())
+	require.Equal(t, msg.Description.Moniker, params.Moniker)
+	require.Equal(t, msg.Description.Identity, params.Identity)
+	require.Equal(t, msg.Description.Website, params.Website)
+	require.Equal(t, msg.Description.SecurityContact, params.SecurityContact)
+	require.Equal(t, msg.Description.Details, params.Details)
+	require.Equal(t, msg.MinSelfDelegation.String(), params.MinSelfDelegation.String())
+	require.Equal(t, msg.CommissionRate.TruncateInt64(), int64(params.CommissionRatePercentage))
 }
 
 func assertContains(t *testing.T, ctx context.Context, keeper *Keeper, eventID uint64) {

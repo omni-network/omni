@@ -40,10 +40,11 @@ type payloadArgs struct {
 
 //nolint:gochecknoglobals // This is a static mapping.
 var (
-	delegateEvent        = mustGetABI(bindings.StakingMetaData).Events["Delegate"]
-	portalRegEvent       = mustGetABI(bindings.PortalRegistryMetaData).Events["PortalRegistered"]
-	planUpgradeEvent     = mustGetABI(bindings.UpgradeMetaData).Events["PlanUpgrade"]
-	createValidatorEvent = mustGetABI(bindings.StakingMetaData).Events["CreateValidator"]
+	delegateEvent    = mustGetABI(bindings.StakingMetaData).Events["Delegate"]
+	portalRegEvent   = mustGetABI(bindings.PortalRegistryMetaData).Events["PortalRegistered"]
+	planUpgradeEvent = mustGetABI(bindings.UpgradeMetaData).Events["PlanUpgrade"]
+	createValEvent   = mustGetABI(bindings.StakingMetaData).Events["CreateValidator"]
+	editValEvent     = mustGetABI(bindings.StakingMetaData).Events["EditValidator"]
 )
 
 var _ EngineClient = (*engineMock)(nil)
@@ -66,7 +67,7 @@ type engineMock struct {
 	payloads    map[engine.PayloadID]payloadArgs
 }
 
-// ValidatorCreation returns an option to add a validator creation event to the mock.
+// WithMockValidatorCreation returns an option to add a validator creation event to the mock.
 func WithMockValidatorCreation(pubkey crypto.PubKey) func(*engineMock) {
 	return func(mock *engineMock) {
 		mock.mu.Lock()
@@ -78,7 +79,7 @@ func WithMockValidatorCreation(pubkey crypto.PubKey) func(*engineMock) {
 		}
 
 		oneEth := new(big.Int).Mul(big.NewInt(1), big.NewInt(params.Ether))
-		data, err := createValidatorEvent.Inputs.NonIndexed().Pack(pubkey.Bytes(), oneEth)
+		data, err := createValEvent.Inputs.NonIndexed().Pack(pubkey.Bytes(), oneEth)
 		if err != nil {
 			panic(errors.Wrap(err, "pack create validator"))
 		}
@@ -87,11 +88,42 @@ func WithMockValidatorCreation(pubkey crypto.PubKey) func(*engineMock) {
 		eventLog := types.Log{
 			Address: contractAddr,
 			Topics: []common.Hash{
-				createValidatorEvent.ID,
+				createValEvent.ID,
 				common.HexToHash(valAddr.Hex()), // validator
 			},
 			Data:  data,
 			Index: 100,
+		}
+
+		mock.pendingLogs[contractAddr] = append(mock.pendingLogs[contractAddr], eventLog)
+	}
+}
+
+// WithMockEditValidator returns an option to add an edit validator event to the mock.
+func WithMockEditValidator(pubkey crypto.PubKey, params *bindings.StakingEditValidatorParams) func(*engineMock) {
+	return func(mock *engineMock) {
+		mock.mu.Lock()
+		defer mock.mu.Unlock()
+
+		valAddr, err := k1util.PubKeyToAddress(pubkey)
+		if err != nil {
+			panic(errors.Wrap(err, "pubkey to address"))
+		}
+
+		data, err := editValEvent.Inputs.NonIndexed().Pack(params)
+		if err != nil {
+			panic(errors.Wrap(err, "pack edit validator params"))
+		}
+
+		contractAddr := common.HexToAddress(predeploys.Staking)
+		eventLog := types.Log{
+			Address: contractAddr,
+			Topics: []common.Hash{
+				editValEvent.ID,
+				common.HexToHash(valAddr.Hex()), // validator
+			},
+			Data:  data,
+			Index: 101,
 		}
 
 		mock.pendingLogs[contractAddr] = append(mock.pendingLogs[contractAddr], eventLog)
