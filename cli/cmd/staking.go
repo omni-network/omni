@@ -234,13 +234,18 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 
 type DelegateConfig struct {
 	EOAConfig
-	Amount uint64
-	Self   bool
+	Amount           uint64
+	Self             bool
+	ValidatorAddress string
 }
 
 func (d DelegateConfig) validate() error {
-	if !d.Self {
-		return errors.New("required --self", "required_value", "true")
+	if !d.Self && d.ValidatorAddress == "" || d.Self && d.ValidatorAddress != "" {
+		return errors.New("required either --self or --validator-address flags", "required_value", "true")
+	}
+
+	if d.ValidatorAddress != "" && !common.IsHexAddress(d.ValidatorAddress) {
+		return errors.New("invalid --validator-address")
 	}
 
 	if d.Amount < minDelegation {
@@ -256,7 +261,7 @@ func newDelegateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delegate",
 		Short: "Delegate Omni tokens to a validator",
-		Long:  `Delegate an amount of Omni tokens to a validator from your wallet. Only self-delegation by validators supported at the moment.`,
+		Long:  `Delegate an amount of Omni tokens to a validator from your wallet.`,
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := cfg.validate(); err != nil {
@@ -289,13 +294,18 @@ func Delegate(ctx context.Context, cfg DelegateConfig) error {
 		return err
 	}
 
+	validatorAddr := delegatorAddr
+	if cfg.ValidatorAddress != "" {
+		validatorAddr = common.HexToAddress(cfg.ValidatorAddress)
+	}
+
 	// check if we already have an existing validator
-	if _, ok, err := cprov.SDKValidator(ctx, delegatorAddr); err != nil {
+	if _, ok, err := cprov.SDKValidator(ctx, validatorAddr); err != nil {
 		return err
 	} else if !ok {
 		return &CliError{
-			Msg:     "Operator address is not a validator: " + delegatorAddr.Hex(),
-			Suggest: "Ensure operator is already created as validator, see create-validator command",
+			Msg:     "Not a validator address: " + validatorAddr.Hex(),
+			Suggest: "Ensure the validator exists (if you're operator, see create-validator command)",
 		}
 	}
 
@@ -310,7 +320,7 @@ func Delegate(ctx context.Context, cfg DelegateConfig) error {
 	} else if bal <= float64(cfg.Amount) {
 		return &CliError{
 			Msg:     fmt.Sprintf("Delegator address has insufficient balance=%.2f OMNI, address=%s", bal, delegatorAddr),
-			Suggest: "Fund the delegator address with sufficient OMNI for self-delegation and gas",
+			Suggest: "Fund the delegator address with sufficient OMNI for (self-)delegation and gas",
 		}
 	}
 
@@ -318,14 +328,14 @@ func Delegate(ctx context.Context, cfg DelegateConfig) error {
 	if err != nil {
 		return err
 	}
-	txOpts.Value = new(big.Int).Mul(umath.NewBigInt(cfg.Amount), big.NewInt(params.Ether)) // Send self-delegation
+	txOpts.Value = new(big.Int).Mul(umath.NewBigInt(cfg.Amount), big.NewInt(params.Ether)) // Send delegation
 
 	callOpts := &bind.CallOpts{Context: ctx}
 	ok, err := contract.IsAllowlistEnabled(callOpts)
 	if err != nil {
 		return errors.Wrap(err, "check allowlist enabled")
 	} else if ok {
-		ok, err := contract.IsAllowedValidator(&bind.CallOpts{Context: ctx}, delegatorAddr)
+		ok, err := contract.IsAllowedValidator(&bind.CallOpts{Context: ctx}, validatorAddr)
 		if err != nil {
 			return err
 		} else if !ok {
@@ -333,9 +343,9 @@ func Delegate(ctx context.Context, cfg DelegateConfig) error {
 		}
 	}
 
-	tx, err := contract.Delegate(txOpts, delegatorAddr)
+	tx, err := contract.Delegate(txOpts, validatorAddr)
 	if err != nil {
-		return errors.Wrap(err, "create validator")
+		return errors.Wrap(err, "delegate")
 	}
 
 	rec, err := backend.WaitMined(ctx, tx)

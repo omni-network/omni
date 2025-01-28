@@ -80,10 +80,10 @@ func bindDelegateConfig(cmd *cobra.Command, cfg *DelegateConfig) {
 	const flagSelf = "self"
 	cmd.Flags().Uint64Var(&cfg.Amount, flagDelegationAmount, cfg.Amount, "Delegation amount in OMNI (minimum 1 OMNI)")
 	cmd.Flags().BoolVar(&cfg.Self, flagSelf, false, "Enables self-delegation setting target validator address to provided private key")
+	cmd.Flags().StringVar(&cfg.ValidatorAddress, "validator-address", cfg.ValidatorAddress, "Target validator address")
 
 	_ = cmd.MarkFlagRequired(flagConsPubKeyHex)
 	_ = cmd.MarkFlagRequired(flagDelegationAmount)
-	_ = cmd.MarkFlagRequired(flagSelf)
 }
 
 func bindCreateValConfig(cmd *cobra.Command, cfg *createValConfig) {
