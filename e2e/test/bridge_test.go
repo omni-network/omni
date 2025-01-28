@@ -21,9 +21,8 @@ import (
 // TestBridge ensures that bridge tests cases defined in e2e/app/tokenbridge.go were successful.
 func TestBridge(t *testing.T) {
 	t.Parallel()
-	testNetwork(t, func(t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
+	testNetwork(t, func(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
 		t.Helper()
-		ctx := context.Background()
 
 		if _, ok := network.EthereumChain(); !ok {
 			t.Skip("no ethereum chain")

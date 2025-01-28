@@ -276,13 +276,23 @@ func (k Keeper) deliverEditValidator(ctx context.Context, ev *bindings.StakingEd
 		Details:         p.Details,
 	}
 
-	rateI64, err := umath.ToInt64(p.CommissionRatePercentage)
-	if err != nil {
-		return errors.Wrap(err, "convert commission rate")
+	var rateOptional *math.LegacyDec
+	if p.CommissionRatePercentage != -1 {
+		rateI64, err := umath.ToInt64(p.CommissionRatePercentage)
+		if err != nil {
+			return errors.Wrap(err, "convert commission rate")
+		}
+		rateDec := math.LegacyNewDec(rateI64)
+		rateOptional = &rateDec
 	}
-	rate := math.LegacyNewDec(rateI64)
 
-	minSelf := math.NewIntFromBigInt(p.MinSelfDelegation)
+	var minSelfOptional *math.Int
+	if p.MinSelfDelegation == nil {
+		return errors.New("min self delegation missing")
+	} else if p.MinSelfDelegation.Int64() != -1 {
+		minSelfInt := math.NewIntFromBigInt(p.MinSelfDelegation)
+		minSelfOptional = &minSelfInt
+	}
 
 	log.Info(ctx, "EVM staking editing validator",
 		"validator", ev.Validator.Hex(),
@@ -291,7 +301,7 @@ func (k Keeper) deliverEditValidator(ctx context.Context, ev *bindings.StakingEd
 		"min_self", p.MinSelfDelegation,
 	)
 
-	msg := stypes.NewMsgEditValidator(valAddr.String(), description, &rate, &minSelf)
+	msg := stypes.NewMsgEditValidator(valAddr.String(), description, rateOptional, minSelfOptional)
 	if _, err := k.sServer.EditValidator(ctx, msg); err != nil {
 		return errors.Wrap(err, "edit validator")
 	}

@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -24,8 +25,8 @@ import (
 )
 
 // execCLI will execute provided command with the arguments and return an error in case
-// execution fails, or command output as string in case of success.
-func execCLI(ctx context.Context, args ...string) (string, error) {
+// execution fails. It always returns stdOut and stdErr as well.
+func execCLI(ctx context.Context, args ...string) (string, string, error) {
 	outBuf := new(bytes.Buffer)
 	errBuf := new(bytes.Buffer)
 
@@ -35,10 +36,10 @@ func execCLI(ctx context.Context, args ...string) (string, error) {
 
 	root.SetArgs(args)
 	if err := root.ExecuteContext(ctx); err != nil {
-		return "", errors.Wrap(err, "executing CLI", "args", args)
+		return outBuf.String(), errBuf.String(), errors.Wrap(err, "executing CLI", "args", args)
 	}
 
-	return outBuf.String(), nil
+	return outBuf.String(), errBuf.String(), nil
 }
 
 // TestCLIOperator test the omni operator cli subcommands.
@@ -50,11 +51,16 @@ func execCLI(ctx context.Context, args ...string) (string, error) {
 func TestCLIOperator(t *testing.T) {
 	t.Parallel()
 
-	testNetwork(t, func(t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
+	testNetwork(t, func(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
 		t.Helper()
-		testnet, _, _, _ := loadEnv(t)
 
-		ctx := context.Background()
+		t.Run("subtest_1", func(t *testing.T) {
+			t.Parallel()
+		})
+		t.Run("subtest_2", func(t *testing.T) {
+			t.Parallel()
+		})
+
 		e, ok := network.OmniEVMChain()
 		require.True(t, ok)
 		executionRPC, err := endpoints.ByNameOrID(e.Name, e.ID)
@@ -74,9 +80,9 @@ func TestCLIOperator(t *testing.T) {
 
 		// operator create-validator test
 		const selfDelegation = uint64(100)
-		res, err := execCLI(
+		stdOut, _, err := execCLI(
 			ctx, "operator", "create-validator",
-			"--network", "devnet",
+			"--network", netconf.Devnet.String(),
 			"--private-key-file", privKeyFile,
 			"--consensus-pubkey-hex", hex.EncodeToString(validatorPubBz),
 			// we use minimum stake so the new validator doesn't affect the network too much
@@ -84,9 +90,9 @@ func TestCLIOperator(t *testing.T) {
 			"--execution-rpc", executionRPC,
 		)
 		require.NoError(t, err)
-		require.Empty(t, res)
+		require.Empty(t, stdOut)
 
-		cl, err := http.New(testnet.Network.Static().ConsensusRPC(), "/websocket")
+		cl, err := http.New(network.ID.Static().ConsensusRPC(), "/websocket")
 		require.NoError(t, err)
 
 		cprov := provider.NewABCI(cl, network.ID)
@@ -111,16 +117,16 @@ func TestCLIOperator(t *testing.T) {
 		// delegate more stake for the validator, since we are using an anvil account
 		// it is already sufficiently funded
 		const delegation = uint64(1)
-		res, err = execCLI(
+		stdOut, _, err = execCLI(
 			ctx, "operator", "delegate",
-			"--network", "devnet",
+			"--network", netconf.Devnet.String(),
 			"--private-key-file", privKeyFile,
 			"--amount", fmt.Sprintf("%d", delegation),
 			"--execution-rpc", executionRPC,
 			"--self",
 		)
 		require.NoError(t, err)
-		require.Empty(t, res)
+		require.Empty(t, stdOut)
 
 		// make sure the validator power is actually increased
 		require.Eventuallyf(t, func() bool {
@@ -131,5 +137,30 @@ func TestCLIOperator(t *testing.T) {
 
 			return newPower > power
 		}, valChangeWait, 500*time.Millisecond, "failed to create validator")
+
+		if !feature.FlagEVMStakingModule.Enabled(ctx) {
+			t.Log("Skipping evmstaking2 tests")
+		}
+
+		// Edit validator moniker
+		const moniker = "new-moniker"
+		stdOut, stdErr, err := execCLI(
+			ctx, "operator", "edit-validator",
+			"--network", netconf.Devnet.String(),
+			"--private-key-file", privKeyFile,
+			"--execution-rpc", executionRPC,
+			"--moniker", moniker,
+		)
+		require.NoError(t, err)
+		require.Empty(t, stdOut)
+		t.Log(stdErr)
+
+		// make sure the validator moniker is actually increased
+		require.Eventuallyf(t, func() bool {
+			val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
+			require.True(t, ok)
+
+			return val.GetMoniker() == moniker
+		}, valChangeWait, 500*time.Millisecond, "failed to edit validator")
 	})
 }

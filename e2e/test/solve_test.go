@@ -21,10 +21,8 @@ func TestSolver(t *testing.T) {
 	skipFunc := func(manifest types.Manifest) bool {
 		return !manifest.DeploySolve
 	}
-	maybeTestNetwork(t, skipFunc, func(t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
+	maybeTestNetwork(t, skipFunc, func(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
 		t.Helper()
-
-		ctx := context.Background()
 
 		if feature.FlagSolverV2.Enabled(ctx) {
 			ensureSolverAPILive(t)
