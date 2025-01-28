@@ -26,4 +26,5 @@ type StakingKeeper interface {
 type StakingMsgServer interface {
 	CreateValidator(ctx context.Context, msg *stypes.MsgCreateValidator) (*stypes.MsgCreateValidatorResponse, error)
 	Delegate(ctx context.Context, msg *stypes.MsgDelegate) (*stypes.MsgDelegateResponse, error)
+	EditValidator(ctx context.Context, msg *stypes.MsgEditValidator) (*stypes.MsgEditValidatorResponse, error)
 }

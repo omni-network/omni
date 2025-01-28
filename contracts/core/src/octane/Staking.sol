@@ -295,7 +295,7 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
      * @notice Burn the fee, requiring it be sent with the call
      */
     function _burnFee() internal {
-        require(msg.value >= Fee, "Slashing: insufficient fee");
+        require(msg.value >= Fee, "Staking: insufficient fee");
         payable(BurnAddr).transfer(msg.value);
     }
 }
