@@ -63,14 +63,15 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
     event AllowlistDisabled();
 
     /**
-     * @notice Parameters for the editValidator function
+     * @notice Parameters for the editValidator function.
+     *         Note that '[do-not-modify]' and -1 can respectively be used to indicate that a field should not be modified.
      * @param moniker                    Human-readable name for the validator              (70 chars max)
      * @param identity                   Optional identity signature (ex. UPort or Keybase) (3000 chars max)
      * @param website                    Optional optional website link                     (140 chars max)
      * @param security_contact           Optional optional email for security contact       (140 chars max)
      * @param details                    Optional other details                             (280 chars max)
      * @param commission_rate_percentage The percentage of delegate rewards to take as commission [0,100]
-     * @param min_self_delegation        The minimum self delegation required (in wei). (not zero)
+     * @param min_self_delegation        The minimum self delegation required (in wei). (positive)
      */
     struct EditValidatorParams {
         string moniker;
@@ -78,8 +79,8 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
         string website;
         string security_contact;
         string details;
-        uint32 commission_rate_percentage;
-        uint128 min_self_delegation;
+        int32 commission_rate_percentage;
+        int128 min_self_delegation;
     }
 
     /**
@@ -192,13 +193,20 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
      */
     function editValidator(EditValidatorParams calldata params) external payable {
         require(!isAllowlistEnabled || isAllowedValidator[msg.sender], "Staking: not allowed");
-        require(params.commission_rate_percentage <= 100, "Staking: invalid commission rate");
-        require(params.min_self_delegation > 0, "Staking: invalid min self delegation");
         require(bytes(params.moniker).length <= 70, "Staking: moniker too long");
         require(bytes(params.identity).length <= 3000, "Staking: identity too long");
         require(bytes(params.website).length <= 140, "Staking: website too long");
         require(bytes(params.security_contact).length <= 140, "Staking: security contact too long");
         require(bytes(params.details).length <= 280, "Staking: details too long");
+        if (params.min_self_delegation != -1) {
+            require(params.min_self_delegation > 0, "Staking: invalid min self delegation");
+        }
+        if (params.commission_rate_percentage != -1) {
+            require(
+                params.commission_rate_percentage <= 100 && params.commission_rate_percentage >= 0,
+                "Staking: invalid commission rate"
+            );
+        }
 
         _burnFee();
         emit EditValidator(msg.sender, params);

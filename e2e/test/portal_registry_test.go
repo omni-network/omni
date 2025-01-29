@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -16,7 +17,7 @@ import (
 
 func TestPortalRegistry(t *testing.T) {
 	t.Parallel()
-	testNetwork(t, func(t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
+	testNetwork(t, func(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
 		t.Helper()
 
 		omniEVM, ok := network.OmniEVMChain()
