@@ -200,6 +200,8 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
         require(bytes(params.details).length <= 280, "Staking: details too long");
         if (params.min_self_delegation != -1) {
             require(params.min_self_delegation > 0, "Staking: invalid min self delegation");
+        }
+        if (params.commission_rate_percentage != -1) {
             require(
                 params.commission_rate_percentage <= 100 && params.commission_rate_percentage >= 0,
                 "Staking: invalid commission rate"

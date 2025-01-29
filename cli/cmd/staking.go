@@ -31,6 +31,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 
+	"cosmossdk.io/math"
 	"github.com/spf13/cobra"
 )
 
@@ -578,7 +579,7 @@ func newEditValCmd() *cobra.Command {
 
 			err := EditVal(cmd.Context(), cfg)
 			if err != nil {
-				return errors.Wrap(err, "delegate")
+				return errors.Wrap(err, "edit validator")
 			}
 
 			return nil
@@ -603,7 +604,7 @@ func EditVal(ctx context.Context, cfg EditValConfig) error {
 	}
 
 	// check if we already have an existing validator
-	_, ok, err := cprov.SDKValidator(ctx, valAddr)
+	val, ok, err := cprov.SDKValidator(ctx, valAddr)
 	if err != nil {
 		return err
 	} else if !ok {
@@ -652,9 +653,16 @@ func EditVal(ctx context.Context, cfg EditValConfig) error {
 		}
 	}
 
-	minSelfWei := big.NewInt(-1)
+	minSelfWei := math.NewInt(-1)
 	if cfg.MinSelfDelegationEther != -1 {
-		minSelfWei = new(big.Int).Mul(big.NewInt(cfg.MinSelfDelegationEther), big.NewInt(params.Ether))
+		// CLI flag min-self-delegation is in OMNI, convert to wei
+		minSelfWei = math.NewInt(cfg.MinSelfDelegationEther).MulRaw(params.Ether)
+		if val.MinSelfDelegation.GTE(minSelfWei) {
+			return &CliError{
+				Msg:     "--min-self-delegation too low",
+				Suggest: "Provide a higher value than existing min-self-delegation=" + val.MinSelfDelegation.QuoRaw(params.Ether).String(),
+			}
+		}
 	}
 
 	tx, err := contract.EditValidator(txOpts, bindings.StakingEditValidatorParams{
@@ -664,10 +672,10 @@ func EditVal(ctx context.Context, cfg EditValConfig) error {
 		SecurityContact:          cfg.SecurityContact,
 		Details:                  cfg.Details,
 		CommissionRatePercentage: cfg.CommissionRatePercentage,
-		MinSelfDelegation:        minSelfWei,
+		MinSelfDelegation:        minSelfWei.BigInt(),
 	})
 	if err != nil {
-		return errors.Wrap(err, "create validator")
+		return errors.Wrap(err, "edit validator")
 	}
 
 	rec, err := backend.WaitMined(ctx, tx)

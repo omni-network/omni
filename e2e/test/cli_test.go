@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -20,7 +21,9 @@ import (
 	"github.com/cometbft/cometbft/rpc/client/http"
 
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/params"
 
+	"cosmossdk.io/math"
 	"github.com/stretchr/testify/require"
 )
 
@@ -53,13 +56,6 @@ func TestCLIOperator(t *testing.T) {
 
 	testNetwork(t, func(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
 		t.Helper()
-
-		t.Run("subtest_1", func(t *testing.T) {
-			t.Parallel()
-		})
-		t.Run("subtest_2", func(t *testing.T) {
-			t.Parallel()
-		})
 
 		e, ok := network.OmniEVMChain()
 		require.True(t, ok)
@@ -139,28 +135,32 @@ func TestCLIOperator(t *testing.T) {
 		}, valChangeWait, 500*time.Millisecond, "failed to create validator")
 
 		if !feature.FlagEVMStakingModule.Enabled(ctx) {
-			t.Log("Skipping evmstaking2 tests")
+			t.Skip("Skipping evmstaking2 tests")
 		}
 
 		// Edit validator moniker
 		const moniker = "new-moniker"
+		const minSelf = 2 // TODO(corver): Also here
 		stdOut, stdErr, err := execCLI(
 			ctx, "operator", "edit-validator",
 			"--network", netconf.Devnet.String(),
 			"--private-key-file", privKeyFile,
 			"--execution-rpc", executionRPC,
 			"--moniker", moniker,
+			"--min-self-delegation", strconv.FormatInt(minSelf, 10),
 		)
 		require.NoError(t, err)
 		require.Empty(t, stdOut)
 		t.Log(stdErr)
 
-		// make sure the validator moniker is actually increased
+		minSelfWei := math.NewInt(minSelf).MulRaw(params.Ether)
+
+		// make sure the validator moniker and min-self-delegation is actually increased
 		require.Eventuallyf(t, func() bool {
 			val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
 			require.True(t, ok)
 
-			return val.GetMoniker() == moniker
+			return val.GetMoniker() == moniker && val.MinSelfDelegation.Equal(minSelfWei)
 		}, valChangeWait, 500*time.Millisecond, "failed to edit validator")
 	})
 }
