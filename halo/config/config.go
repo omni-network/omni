@@ -109,6 +109,11 @@ func (c Config) SDKRPCConfig() srvconfig.Config {
 	api := cfg.API
 	api.Enable = c.SDKAPI.Enable
 	api.Address = c.SDKAPI.Address
+	if c.Network.IsEphemeral() {
+		// Enable CORS by default on ephemeral networks.
+		// TODO(corver): Expose all config options rather.
+		api.EnableUnsafeCORS = true
+	}
 
 	grpc := cfg.GRPC
 	grpc.Enable = c.SDKGRPC.Enable
