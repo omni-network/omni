@@ -32,6 +32,7 @@ func DeployContracts(ctx context.Context, network netconf.Network, backends ethb
 		var eg errgroup.Group
 		eg.Go(func() error { return deployV2Boxes(ctx, network, backends) })
 		eg.Go(func() error { return maybeDeployMockTokens(ctx, network, backends) })
+		eg.Go(func() error { return maybeFundSolver(ctx, network.ID, backends) })
 		if err := eg.Wait(); err != nil {
 			return errors.Wrap(err, "deploy v2")
 		}
