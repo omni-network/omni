@@ -39,8 +39,6 @@ func TestContractAddressReference(t *testing.T) {
 			"token":           addrs.Token,
 			"gaspump":         addrs.GasPump,
 			"gasstation":      addrs.GasStation,
-			"solveinbox":      addrs.SolveInbox,
-			"solveoutbox":     addrs.SolveOutbox,
 			"solvernetinbox":  addrs.SolverNetInbox,
 			"solvernetoutbox": addrs.SolverNetOutbox,
 			"feeoraclev2":     addrs.FeeOracleV2,

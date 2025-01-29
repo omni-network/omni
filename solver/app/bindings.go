@@ -3,7 +3,6 @@ package app
 import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
-	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -12,40 +11,40 @@ import (
 )
 
 const (
-	statusInvalid   uint8 = 0
-	statusPending   uint8 = 1
-	statusAccepted  uint8 = 2
-	statusRejected  uint8 = 3
-	statusReverted  uint8 = 4
-	statusFulfilled uint8 = 5
-	statusClaimed   uint8 = 6
+	statusInvalid  uint8 = 0
+	statusPending  uint8 = 1
+	statusAccepted uint8 = 2
+	statusRejected uint8 = 3
+	statusReverted uint8 = 4
+	statusFilled   uint8 = 5
+	statusClaimed  uint8 = 6
 )
 
 var (
-	inboxABI = mustGetABI(bindings.SolveInboxMetaData)
+	inboxABI = mustGetABI(bindings.SolverNetInboxMetaData)
 
 	// Event log topics (common.Hash).
-	topicRequested = mustGetEventTopic(inboxABI, "Requested")
-	topicAccepted  = mustGetEventTopic(inboxABI, "Accepted")
-	topicRejected  = mustGetEventTopic(inboxABI, "Rejected")
-	topicReverted  = mustGetEventTopic(inboxABI, "Reverted")
-	topicFulfilled = mustGetEventTopic(inboxABI, "Fulfilled")
-	topicClaimed   = mustGetEventTopic(inboxABI, "Claimed")
+	topicOpened   = mustGetEventTopic(inboxABI, "Open")
+	topicAccepted = mustGetEventTopic(inboxABI, "Accepted")
+	topicRejected = mustGetEventTopic(inboxABI, "Rejected")
+	topicReverted = mustGetEventTopic(inboxABI, "Reverted")
+	topicFilled   = mustGetEventTopic(inboxABI, "Filled")
+	topicClaimed  = mustGetEventTopic(inboxABI, "Claimed")
 )
 
 // eventMeta contains metadata about an event.
 type eventMeta struct {
 	Topic   common.Hash
 	Status  uint8
-	ParseID func(contract bindings.SolveInboxFilterer, log types.Log) (stypes.ReqID, error)
+	ParseID func(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error)
 }
 
 var (
 	allEvents = []eventMeta{
 		{
-			Topic:   topicRequested,
+			Topic:   topicOpened,
 			Status:  statusPending,
-			ParseID: parseRequested,
+			ParseID: parseOpened,
 		},
 		{
 			Topic:   topicAccepted,
@@ -63,9 +62,9 @@ var (
 			ParseID: parseReverted,
 		},
 		{
-			Topic:   topicFulfilled,
-			Status:  statusFulfilled,
-			ParseID: parseFulfilled,
+			Topic:   topicFilled,
+			Status:  statusFilled,
+			ParseID: parseFilled,
 		},
 		{
 			Topic:   topicClaimed,
@@ -106,8 +105,8 @@ func statusString(status uint8) string {
 		return "rejected"
 	case statusReverted:
 		return "reverted"
-	case statusFulfilled:
-		return "fulfilled"
+	case statusFilled:
+		return "filled"
 	case statusClaimed:
 		return "claimed"
 	default:
@@ -115,55 +114,55 @@ func statusString(status uint8) string {
 	}
 }
 
-func parseRequested(contract bindings.SolveInboxFilterer, log types.Log) (stypes.ReqID, error) {
-	e, err := contract.ParseRequested(log)
+func parseOpened(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error) {
+	e, err := contract.ParseOpen(log)
 	if err != nil {
-		return stypes.ReqID{}, errors.Wrap(err, "parse requested")
+		return OrderID{}, errors.Wrap(err, "parse opened")
 	}
 
-	return e.Id, nil
+	return e.OrderId, nil
 }
 
-func parseAccepted(contract bindings.SolveInboxFilterer, log types.Log) (stypes.ReqID, error) {
+func parseAccepted(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error) {
 	e, err := contract.ParseAccepted(log)
 	if err != nil {
-		return stypes.ReqID{}, errors.Wrap(err, "parse accepted")
+		return OrderID{}, errors.Wrap(err, "parse accepted")
 	}
 
 	return e.Id, nil
 }
 
-func parseRejected(contract bindings.SolveInboxFilterer, log types.Log) (stypes.ReqID, error) {
+func parseRejected(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error) {
 	e, err := contract.ParseRejected(log)
 	if err != nil {
-		return stypes.ReqID{}, errors.Wrap(err, "parse rejected")
+		return OrderID{}, errors.Wrap(err, "parse rejected")
 	}
 
 	return e.Id, nil
 }
 
-func parseReverted(contract bindings.SolveInboxFilterer, log types.Log) (stypes.ReqID, error) {
+func parseReverted(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error) {
 	e, err := contract.ParseReverted(log)
 	if err != nil {
-		return stypes.ReqID{}, errors.Wrap(err, "parse reverted")
+		return OrderID{}, errors.Wrap(err, "parse reverted")
 	}
 
 	return e.Id, nil
 }
 
-func parseFulfilled(contract bindings.SolveInboxFilterer, log types.Log) (stypes.ReqID, error) {
-	e, err := contract.ParseFulfilled(log)
+func parseFilled(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error) {
+	e, err := contract.ParseFilled(log)
 	if err != nil {
-		return stypes.ReqID{}, errors.Wrap(err, "parse fulfilled")
+		return OrderID{}, errors.Wrap(err, "parse filled")
 	}
 
 	return e.Id, nil
 }
 
-func parseClaimed(contract bindings.SolveInboxFilterer, log types.Log) (stypes.ReqID, error) {
+func parseClaimed(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error) {
 	e, err := contract.ParseClaimed(log)
 	if err != nil {
-		return stypes.ReqID{}, errors.Wrap(err, "parse claimed")
+		return OrderID{}, errors.Wrap(err, "parse claimed")
 	}
 
 	return e.Id, nil

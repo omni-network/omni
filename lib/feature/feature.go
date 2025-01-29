@@ -16,8 +16,6 @@ const (
 	FlagProtoEVMPayload Flag = "proto-evm-payload"
 	// FlagFuzzOctane enables fuzz testing of octane.
 	FlagFuzzOctane Flag = "fuzz-octane"
-	// FlagSolverV2 enables the new solver v2.
-	FlagSolverV2 Flag = "solver-v2"
 	// FlagDelegations enables delegation for non-validators.
 	FlagDelegations Flag = "delegations"
 )
@@ -33,7 +31,6 @@ var allFlags = map[Flag]bool{
 	FlagSimpleEVMEvents:  true,
 	FlagProtoEVMPayload:  true,
 	FlagFuzzOctane:       true,
-	FlagSolverV2:         true,
 	FlagDelegations:      true,
 }
 

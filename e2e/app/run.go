@@ -102,7 +102,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 
 	if def.Manifest.DeploySolve {
 		// Deploy solver before initPortalRegistry, so solver detects boxes after netconf.Await
-		if err := solve.DeployContracts(ctx, NetworkFromDef(def), def.Backends()); err != nil {
+		if err := solve.Deploy(ctx, NetworkFromDef(def), def.Backends()); err != nil {
 			return nil, errors.Wrap(err, "deploy solve")
 		}
 	}

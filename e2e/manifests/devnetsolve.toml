@@ -3,8 +3,6 @@ network = "devnet"
 anvil_chains = ["mock_l1", "mock_l2"]
 deploy_solve = true
 
-feature_flags =["solver-v2"]
-
 prometheus = true
 
 [forks]
