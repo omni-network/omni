@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/lib/errors"
+	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -50,4 +51,21 @@ func catch(fn func() error) (err error) {
 	}()
 
 	return fn()
+}
+
+// eventName returns the name of the EVM event log or "unknown".
+func eventName(elog *evmenginetypes.EVMEvent) string {
+	const unknown = "unknown"
+
+	ethlog, err := elog.ToEthLog()
+	if err != nil {
+		return unknown
+	}
+
+	event, ok := eventsByID[ethlog.Topics[0]]
+	if !ok {
+		return unknown
+	}
+
+	return event.Name
 }

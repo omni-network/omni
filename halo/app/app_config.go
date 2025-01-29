@@ -58,9 +58,7 @@ const (
 	genesisCTrimLag       uint64 = 72_000 // Delete consensus attestations state after +-1 day (given a period of 1.2s).
 
 	deliverIntervalProtected = 20_000 // Roughly ~12h assuming 0.5bps
-	// TODO(christian): remove after testing.
-	deliverIntervalStaging   = 300 // Roughly ~10m assuming 0.5bps
-	deliverIntervalEphemeral = 2   // Fast updates while testing
+	deliverIntervalEphemeral = 2      // Fast updates while testing
 )
 
 //nolint:gochecknoglobals // Cosmos-style
@@ -255,10 +253,6 @@ var (
 )
 
 func deliverInterval(network netconf.ID) int64 {
-	if network == netconf.Staging {
-		return deliverIntervalStaging
-	}
-
 	if network.IsProtected() {
 		return deliverIntervalProtected
 	}

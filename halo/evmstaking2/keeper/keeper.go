@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/umath"
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 
 	ormv1alpha1 "cosmossdk.io/api/cosmos/orm/v1alpha1"
@@ -28,6 +29,12 @@ var (
 	createValidatorEvent = mustGetEvent(stakingABI, "CreateValidator")
 	delegateEvent        = mustGetEvent(stakingABI, "Delegate")
 	editValidatorEvent   = mustGetEvent(stakingABI, "EditValidator")
+
+	eventsByID = map[common.Hash]abi.Event{
+		createValidatorEvent.ID: createValidatorEvent,
+		delegateEvent.ID:        delegateEvent,
+		editValidatorEvent.ID:   editValidatorEvent,
+	}
 )
 
 // Keeper also implements the evmenginetypes.EvmEventProcessor interface.
@@ -82,15 +89,32 @@ func NewKeeper(
 	}, nil
 }
 
+// nextDeliverHeight returns the next deliver height for the EVM events.
+// It returns the current block height if the current block height is divisible by `k.deliverInterval`.
+// Else it returns the next block height that is divisible by `k.deliverInterval`.
+func (k Keeper) nextDeliverHeight(ctx context.Context) int64 {
+	blockHeight := sdk.UnwrapSDKContext(ctx).BlockHeight()
+	offset := blockHeight % k.deliverInterval
+	if offset == 0 {
+		return blockHeight
+	}
+
+	// Else return next deliver height.
+	return blockHeight - offset + k.deliverInterval
+}
+
+// shouldDeliver returns true if the EVM events should be delivered on the current block.
+func (k Keeper) shouldDeliver(ctx context.Context) bool {
+	return k.nextDeliverHeight(ctx) == sdk.UnwrapSDKContext(ctx).BlockHeight()
+}
+
 // EndBlock delivers all pending EVM events on every `k.deliverInterval`'th block.
 func (k Keeper) EndBlock(ctx context.Context) error {
 	if !feature.FlagEVMStakingModule.Enabled(ctx) {
 		return errors.New("unexpected code path [BUG]")
 	}
 
-	blockHeight := sdk.UnwrapSDKContext(ctx).BlockHeight()
-
-	if blockHeight%k.deliverInterval != 0 {
+	if !k.shouldDeliver(ctx) {
 		return nil
 	}
 
@@ -141,6 +165,12 @@ func (k Keeper) Deliver(ctx context.Context, _ common.Hash, elog evmenginetypes.
 	if !feature.FlagEVMStakingModule.Enabled(ctx) {
 		return errors.New("unexpected code path [BUG]")
 	}
+
+	log.Debug(ctx, "Buffering EVM staking event",
+		"name", eventName(&elog),
+		"deliver_height", k.nextDeliverHeight(ctx),
+	)
+
 	err := k.eventsTable.Insert(ctx, &EVMEvent{
 		Event: &elog,
 	})
@@ -165,8 +195,8 @@ func (k Keeper) processBufferedEvent(ctx context.Context, elog *evmenginetypes.E
 	if err := catch(func() error { //nolint:contextcheck // False positive wrt ctx
 		return k.parseAndDeliver(branchCtx, elog)
 	}); err != nil {
-		log.InfoErr(ctx, "Delivering EVM log event failed", err,
-			"name", k.Name(),
+		log.InfoErr(ctx, "Delivering EVM staking event failed", err,
+			"name", eventName(elog),
 			"height", branchCtx.BlockHeight(),
 		)
 		failedEvents.Inc()
