@@ -129,13 +129,9 @@ contract SolverNet_Inbox_Open_Test is TestBase {
             amount: 1 ether
         });
 
-        ISolverNet.Call memory call = ISolverNet.Call({
-            chainId: destChainId,
-            target: address(vault).toBytes32(),
-            value: 0,
-            data: getVaultCalldata(user, 1 ether),
-            expenses: expenses
-        });
+        ISolverNet.Call[] memory calls = new ISolverNet.Call[](1);
+        calls[0] =
+            ISolverNet.Call({ target: address(vault).toBytes32(), value: 0, data: getVaultCalldata(user, 1 ether) });
 
         ISolverNet.Deposit[] memory deposits = new ISolverNet.Deposit[](1);
         deposits[0] = ISolverNet.Deposit({ token: bytes32(0), amount: 1 ether });
@@ -143,7 +139,15 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 1 days),
             orderDataType: ORDER_DATA_TYPEHASH,
-            orderData: abi.encode(ISolverNet.OrderData({ owner: user, call: call, deposits: deposits }))
+            orderData: abi.encode(
+                ISolverNet.OrderData({
+                    owner: user,
+                    destChainId: destChainId,
+                    calls: calls,
+                    deposits: deposits,
+                    expenses: expenses
+                })
+            )
         });
 
         vm.prank(user);
@@ -160,13 +164,9 @@ contract SolverNet_Inbox_Open_Test is TestBase {
             amount: 1 ether
         });
 
-        ISolverNet.Call memory call = ISolverNet.Call({
-            chainId: destChainId,
-            target: address(vault).toBytes32(),
-            value: 0,
-            data: getVaultCalldata(user, 1 ether),
-            expenses: expenses
-        });
+        ISolverNet.Call[] memory calls = new ISolverNet.Call[](1);
+        calls[0] =
+            ISolverNet.Call({ target: address(vault).toBytes32(), value: 0, data: getVaultCalldata(user, 1 ether) });
 
         ISolverNet.Deposit[] memory deposits = new ISolverNet.Deposit[](1);
         deposits[0] = ISolverNet.Deposit({ token: bytes32(0), amount: 1 ether });
@@ -174,7 +174,15 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 1 days),
             orderDataType: ORDER_DATA_TYPEHASH,
-            orderData: abi.encode(ISolverNet.OrderData({ owner: user, call: call, deposits: deposits }))
+            orderData: abi.encode(
+                ISolverNet.OrderData({
+                    owner: user,
+                    destChainId: destChainId,
+                    calls: calls,
+                    deposits: deposits,
+                    expenses: expenses
+                })
+            )
         });
 
         vm.prank(user);
@@ -191,13 +199,9 @@ contract SolverNet_Inbox_Open_Test is TestBase {
             amount: 1 ether
         });
 
-        ISolverNet.Call memory call = ISolverNet.Call({
-            chainId: destChainId,
-            target: address(vault).toBytes32(),
-            value: 0,
-            data: getVaultCalldata(user, 1 ether),
-            expenses: expenses
-        });
+        ISolverNet.Call[] memory calls = new ISolverNet.Call[](1);
+        calls[0] =
+            ISolverNet.Call({ target: address(vault).toBytes32(), value: 0, data: getVaultCalldata(user, 1 ether) });
 
         ISolverNet.Deposit[] memory deposits = new ISolverNet.Deposit[](2);
         deposits[0] = ISolverNet.Deposit({ token: bytes32(0), amount: 1 ether });
@@ -206,7 +210,15 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 1 days),
             orderDataType: ORDER_DATA_TYPEHASH,
-            orderData: abi.encode(ISolverNet.OrderData({ owner: user, call: call, deposits: deposits }))
+            orderData: abi.encode(
+                ISolverNet.OrderData({
+                    owner: user,
+                    destChainId: destChainId,
+                    calls: calls,
+                    deposits: deposits,
+                    expenses: expenses
+                })
+            )
         });
 
         vm.prank(user);
@@ -223,13 +235,9 @@ contract SolverNet_Inbox_Open_Test is TestBase {
             amount: 1 ether
         });
 
-        ISolverNet.Call memory call = ISolverNet.Call({
-            chainId: destChainId,
-            target: address(vault).toBytes32(),
-            value: 0,
-            data: getVaultCalldata(user, 1 ether),
-            expenses: expenses
-        });
+        ISolverNet.Call[] memory calls = new ISolverNet.Call[](1);
+        calls[0] =
+            ISolverNet.Call({ target: address(vault).toBytes32(), value: 0, data: getVaultCalldata(user, 1 ether) });
 
         ISolverNet.Deposit[] memory deposits = new ISolverNet.Deposit[](1);
         deposits[0] = ISolverNet.Deposit({ token: address(token1).toBytes32(), amount: 1 ether });
@@ -237,7 +245,15 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 1 days),
             orderDataType: ORDER_DATA_TYPEHASH,
-            orderData: abi.encode(ISolverNet.OrderData({ owner: user, call: call, deposits: deposits }))
+            orderData: abi.encode(
+                ISolverNet.OrderData({
+                    owner: user,
+                    destChainId: destChainId,
+                    calls: calls,
+                    deposits: deposits,
+                    expenses: expenses
+                })
+            )
         });
 
         // Mint and approve tokens for the ERC20 deposit
@@ -259,13 +275,9 @@ contract SolverNet_Inbox_Open_Test is TestBase {
             amount: 1 ether
         });
 
-        ISolverNet.Call memory call = ISolverNet.Call({
-            chainId: destChainId,
-            target: address(vault).toBytes32(),
-            value: 0,
-            data: getVaultCalldata(user, 1 ether),
-            expenses: expenses
-        });
+        ISolverNet.Call[] memory calls = new ISolverNet.Call[](1);
+        calls[0] =
+            ISolverNet.Call({ target: address(vault).toBytes32(), value: 0, data: getVaultCalldata(user, 1 ether) });
 
         ISolverNet.Deposit[] memory deposits = new ISolverNet.Deposit[](1);
         deposits[0] = ISolverNet.Deposit({ token: address(token1).toBytes32(), amount: 0 });
@@ -273,7 +285,15 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 1 days),
             orderDataType: ORDER_DATA_TYPEHASH,
-            orderData: abi.encode(ISolverNet.OrderData({ owner: user, call: call, deposits: deposits }))
+            orderData: abi.encode(
+                ISolverNet.OrderData({
+                    owner: user,
+                    destChainId: destChainId,
+                    calls: calls,
+                    deposits: deposits,
+                    expenses: expenses
+                })
+            )
         });
 
         vm.prank(user);
@@ -290,13 +310,9 @@ contract SolverNet_Inbox_Open_Test is TestBase {
             amount: 1 ether
         });
 
-        ISolverNet.Call memory call = ISolverNet.Call({
-            chainId: destChainId,
-            target: address(vault).toBytes32(),
-            value: 0,
-            data: getVaultCalldata(user, 1 ether),
-            expenses: expenses
-        });
+        ISolverNet.Call[] memory calls = new ISolverNet.Call[](1);
+        calls[0] =
+            ISolverNet.Call({ target: address(vault).toBytes32(), value: 0, data: getVaultCalldata(user, 1 ether) });
 
         ISolverNet.Deposit[] memory deposits = new ISolverNet.Deposit[](1);
         deposits[0] = ISolverNet.Deposit({ token: address(token1).toBytes32(), amount: 1 ether });
@@ -304,7 +320,15 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 1 days),
             orderDataType: ORDER_DATA_TYPEHASH,
-            orderData: abi.encode(ISolverNet.OrderData({ owner: user, call: call, deposits: deposits }))
+            orderData: abi.encode(
+                ISolverNet.OrderData({
+                    owner: user,
+                    destChainId: destChainId,
+                    calls: calls,
+                    deposits: deposits,
+                    expenses: expenses
+                })
+            )
         });
 
         // Mint tokens but don't approve

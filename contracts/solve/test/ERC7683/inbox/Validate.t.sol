@@ -28,17 +28,31 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
         vm.expectRevert(ISolverNetInbox.InvalidOrderData.selector);
         inbox.validate(order);
         order.orderData = getOrderDataBytes(
-            0, bytes32(0), 0, bytes(""), new ISolverNet.TokenExpense[](0), new ISolverNet.Deposit[](0)
+            0, bytes32(0), 0, bytes(""), new ISolverNet.Deposit[](0), new ISolverNet.TokenExpense[](0)
         );
 
-        // `call.chainId` cannot be 0
-        vm.expectRevert(ISolverNetInbox.NoCallChainId.selector);
+        // `orderData.destChainId` cannot be 0
+        vm.expectRevert(ISolverNetInbox.InvalidDestChainId.selector);
+        inbox.validate(order);
+        ISolverNet.Call[] memory calls = new ISolverNet.Call[](0);
+        order.orderData = abi.encode(
+            ISolverNet.OrderData({
+                owner: user,
+                destChainId: destChainId,
+                calls: calls,
+                deposits: new ISolverNet.Deposit[](0),
+                expenses: new ISolverNet.TokenExpense[](0)
+            })
+        );
+
+        // `orderData.calls.length` must be greater than 0
+        vm.expectRevert(ISolverNetInbox.NoCalls.selector);
         inbox.validate(order);
         order.orderData = getOrderDataBytes(
-            destChainId, bytes32(0), 0, bytes(""), new ISolverNet.TokenExpense[](0), new ISolverNet.Deposit[](0)
+            destChainId, bytes32(0), 0, bytes(""), new ISolverNet.Deposit[](0), new ISolverNet.TokenExpense[](0)
         );
 
-        // `call.target` cannot be the zero address
+        // `orderData.calls[0].target` cannot be the zero address
         vm.expectRevert(ISolverNetInbox.NoCallTarget.selector);
         inbox.validate(order);
         order.orderData = getOrderDataBytes(
@@ -46,8 +60,20 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
             address(vault).toBytes32(),
             0,
             bytes(""),
-            new ISolverNet.TokenExpense[](0),
-            new ISolverNet.Deposit[](0)
+            new ISolverNet.Deposit[](0),
+            new ISolverNet.TokenExpense[](0)
+        );
+
+        // `orderData.calls[0].data` cannot be empty if value is zero
+        vm.expectRevert(ISolverNetInbox.NoCalldata.selector);
+        inbox.validate(order);
+        order.orderData = getOrderDataBytes(
+            destChainId,
+            address(vault).toBytes32(),
+            0,
+            getVaultCalldata(user, rand * 1 ether),
+            new ISolverNet.Deposit[](0),
+            new ISolverNet.TokenExpense[](0)
         );
 
         // `deposits` cannot be empty
@@ -60,8 +86,8 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
             address(vault).toBytes32(),
             0,
             getVaultCalldata(user, rand * 1 ether),
-            new ISolverNet.TokenExpense[](0),
-            deposits
+            deposits,
+            new ISolverNet.TokenExpense[](0)
         );
 
         // `deposits[0].amount` cannot be 0
@@ -75,8 +101,8 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
             address(vault).toBytes32(),
             0,
             getVaultCalldata(user, rand * 1 ether),
-            new ISolverNet.TokenExpense[](1),
-            deposits
+            deposits,
+            new ISolverNet.TokenExpense[](1)
         );
 
         // `deposits` cannot contain more than one native deposit
@@ -89,25 +115,44 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
             address(vault).toBytes32(),
             0,
             getVaultCalldata(user, rand * 1 ether),
-            new ISolverNet.TokenExpense[](1),
-            deposits
+            deposits,
+            new ISolverNet.TokenExpense[](1)
         );
 
-        // `call.expenses[0].token` cannot be the zero address
-        vm.expectRevert(ISolverNetInbox.NoExpenseToken.selector);
-        inbox.validate(order);
-        ISolverNet.TokenExpense[] memory expenses = new ISolverNet.TokenExpense[](1);
-        expenses[0].token = address(token2).toBytes32();
-        order.orderData = getOrderDataBytes(
-            destChainId, address(vault).toBytes32(), 0, getVaultCalldata(user, rand * 1 ether), expenses, deposits
-        );
-
-        // `call.expenses[0].amount` cannot be 0
+        // `expenses[0].amount` cannot be 0
         vm.expectRevert(ISolverNetInbox.NoExpenseAmount.selector);
         inbox.validate(order);
+        ISolverNet.TokenExpense[] memory expenses = new ISolverNet.TokenExpense[](1);
         expenses[0].amount = rand * 1 ether;
         order.orderData = getOrderDataBytes(
-            destChainId, address(vault).toBytes32(), 0, getVaultCalldata(user, rand * 1 ether), expenses, deposits
+            destChainId, address(vault).toBytes32(), 0, getVaultCalldata(user, rand * 1 ether), deposits, expenses
+        );
+
+        // If `expenses[0].token` is the zero address, `expenses[0].amount` must match total native value of all calls
+        vm.expectRevert(ISolverNetInbox.InvalidNativeExpense.selector);
+        inbox.validate(order);
+        expenses = new ISolverNet.TokenExpense[](2);
+        expenses[0].amount = rand * 1 ether;
+        expenses[1].amount = rand * 1 ether;
+        order.orderData = getOrderDataBytes(
+            destChainId,
+            address(vault).toBytes32(),
+            rand * 1 ether,
+            getVaultCalldata(user, rand * 1 ether),
+            deposits,
+            expenses
+        );
+
+        // `expenses` cannot contain more than one native expense
+        vm.expectRevert(ISolverNetInbox.DuplicateNativeExpense.selector);
+        inbox.validate(order);
+        expenses = new ISolverNet.TokenExpense[](1);
+        expenses[0].amount = rand * 1 ether;
+
+        // Reset value param and properly set expense token address
+        expenses[0].token = address(token2).toBytes32();
+        order.orderData = getOrderDataBytes(
+            destChainId, address(vault).toBytes32(), 0, getVaultCalldata(user, rand * 1 ether), deposits, expenses
         );
 
         assertTrue(inbox.validate(order));

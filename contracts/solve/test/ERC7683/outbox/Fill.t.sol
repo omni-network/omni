@@ -12,7 +12,7 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
 
     function setUp() public override {
         super.setUp();
-        vm.chainId(destChainId);
+        vm.chainId(srcChainId);
 
         refunder = new Refunder();
     }
@@ -23,7 +23,6 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         vm.prank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
         fundSolver(resolvedOrder.maxSpent);
-        (resolvedOrder.minReceived, resolvedOrder.maxSpent);
 
         bytes32 orderId = inbox.getNextId();
 
@@ -42,7 +41,7 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         uint256[] memory executorBalances = new uint256[](resolvedOrder.maxSpent.length);
         uint256[] memory vaultBalances = new uint256[](resolvedOrder.maxSpent.length);
 
-        for (uint256 i = 0; i < resolvedOrder.maxSpent.length; i++) {
+        for (uint256 i; i < resolvedOrder.maxSpent.length; ++i) {
             IERC7683.Output memory expense = resolvedOrder.maxSpent[i];
             address token = expense.token.toAddress();
 
@@ -62,6 +61,7 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         emit ISolverNetOutbox.Filled(orderId, fillHash(orderId, resolvedOrder.fillInstructions[0].originData), solver);
 
         // Fill the order as solver
+        vm.chainId(destChainId);
         vm.prank(solver);
         outbox.fill{ value: fillFee }(orderId, resolvedOrder.fillInstructions[0].originData, "");
 
@@ -75,7 +75,7 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         assertEq(address(outbox.executor()).balance, initialExecutorNativeBalance, "executor native balance after");
 
         // Verify token balances after fill
-        for (uint256 i = 0; i < resolvedOrder.maxSpent.length; i++) {
+        for (uint256 i; i < resolvedOrder.maxSpent.length; ++i) {
             IERC7683.Output memory expense = resolvedOrder.maxSpent[i];
             address token = tokens[i];
 
@@ -97,8 +97,8 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
             assertEq(vault.balances(user), expense.amount, "vault user balance after");
 
             // Verify allowances were reset for each spender in fillData
-            for (uint256 j = 0; j < fillData.call.expenses.length; j++) {
-                ISolverNet.TokenExpense memory tokenExpense = fillData.call.expenses[j];
+            for (uint256 j; j < fillData.expenses.length; ++j) {
+                ISolverNet.TokenExpense memory tokenExpense = fillData.expenses[j];
                 if (tokenExpense.token.toAddress() == token) {
                     assertEq(
                         MockERC20(token).allowance(address(outbox.executor()), tokenExpense.spender.toAddress()),
@@ -119,9 +119,9 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         // Tamper with order to send ETH to Refunder
         ISolverNet.FillOriginData memory fillData =
             abi.decode(resolvedOrder.fillInstructions[0].originData, (ISolverNet.FillOriginData));
-        fillData.call.expenses = new ISolverNet.TokenExpense[](0);
-        fillData.call.target = address(refunder).toBytes32();
-        fillData.call.value = 1 wei;
+        fillData.expenses = new ISolverNet.TokenExpense[](0);
+        fillData.calls[0].target = address(refunder).toBytes32();
+        fillData.calls[0].value = 1 wei;
 
         bytes32 orderId = inbox.getNextId();
 
@@ -132,6 +132,7 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         uint256 solverBalance = solver.balance;
 
         // Fill the order as solver and expect refund
+        vm.chainId(destChainId);
         vm.prank(solver);
         outbox.fill{ value: fillFee + 1 wei }(orderId, abi.encode(fillData), "");
 
@@ -150,7 +151,6 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         vm.prank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
         fundSolver(resolvedOrder.maxSpent);
-        (resolvedOrder.minReceived, resolvedOrder.maxSpent);
 
         bytes32 orderId = inbox.getNextId();
 
@@ -162,6 +162,7 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         uint256 initialSolverBalance = solver.balance;
 
         // Fill with overpayment
+        vm.chainId(destChainId);
         vm.prank(solver);
         outbox.fill{ value: fillFee + extraEth }(orderId, resolvedOrder.fillInstructions[0].originData, "");
 
@@ -186,6 +187,7 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         vm.deal(solver, fillFee);
 
         // Fill the order as solver
+        vm.chainId(destChainId);
         vm.prank(solver);
         outbox.fill{ value: fillFee }(orderId, resolvedOrder.fillInstructions[0].originData, "");
 
@@ -201,13 +203,12 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         vm.prank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
         fundSolver(resolvedOrder.maxSpent);
-        (resolvedOrder.minReceived, resolvedOrder.maxSpent);
 
         // Tamper with order to ensure insufficient ETH is provided
         ISolverNet.FillOriginData memory fillData =
             abi.decode(resolvedOrder.fillInstructions[0].originData, (ISolverNet.FillOriginData));
-        fillData.call.target = bytes32(0);
-        fillData.call.value = 1 wei;
+        fillData.calls[0].target = bytes32(0);
+        fillData.calls[0].value = 1 wei;
         vm.deal(address(outbox), 1 wei);
 
         bytes32 orderId = inbox.getNextId();
@@ -217,6 +218,7 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         vm.deal(solver, fillFee);
 
         // Try to fill with insufficient fee
+        vm.chainId(destChainId);
         vm.prank(solver);
         vm.expectRevert(ISolverNetOutbox.InsufficientFee.selector);
         outbox.fill{ value: fillFee }(orderId, abi.encode(fillData), "");
@@ -229,7 +231,6 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
         resolvedOrder.maxSpent[0].amount = resolvedOrder.maxSpent[0].amount * 2;
         fundSolver(resolvedOrder.maxSpent);
-        (resolvedOrder.minReceived, resolvedOrder.maxSpent);
 
         bytes32 orderId = inbox.getNextId();
 
@@ -238,6 +239,7 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         vm.deal(solver, fillFee * 2);
 
         // Fill the order first time
+        vm.chainId(destChainId);
         vm.prank(solver);
         outbox.fill{ value: fillFee }(orderId, resolvedOrder.fillInstructions[0].originData, "");
 
@@ -255,6 +257,7 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
 
         // Try to fill with invalid origin data
         vm.deal(solver, fillFee);
+        vm.chainId(destChainId);
         vm.prank(solver);
         vm.expectRevert(); // Will revert on decoding invalid origin data
         outbox.fill{ value: fillFee }(orderId, "invalid origin data", "");
@@ -301,6 +304,7 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         vm.warp(fillData.fillDeadline + 1);
 
         // Try to fill
+        vm.chainId(destChainId);
         vm.prank(solver);
         vm.expectRevert(ISolverNetOutbox.FillDeadlinePassed.selector);
         outbox.fill{ value: fillFee }(orderId, resolvedOrder.fillInstructions[0].originData, "");

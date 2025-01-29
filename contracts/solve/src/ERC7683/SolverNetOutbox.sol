@@ -11,6 +11,7 @@ import { ConfLevel } from "core/src/libraries/ConfLevel.sol";
 import { TypeMax } from "core/src/libraries/TypeMax.sol";
 import { DeployedAt } from "src/util/DeployedAt.sol";
 import { AddrUtils } from "src/ERC7683/lib/AddrUtils.sol";
+import { IERC20 } from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import { ISolverNetInbox } from "./interfaces/ISolverNetInbox.sol";
 import { ISolverNetOutbox } from "./interfaces/ISolverNetOutbox.sol";
 
@@ -113,12 +114,14 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         nonReentrant
     {
         FillOriginData memory fillData = abi.decode(originData, (FillOriginData));
-        Call memory call = fillData.call;
+        Call[] memory calls = fillData.calls;
+        TokenExpense[] memory expenses = fillData.expenses;
 
+        if (fillData.destChainId != block.chainid) revert WrongDestChain();
         if (fillData.fillDeadline < block.timestamp && fillData.fillDeadline != 0) revert FillDeadlinePassed();
 
-        _executeCall(call);
-        _markFilled(orderId, fillData.srcChainId, call, _fillHash(orderId, originData));
+        _executeCalls(calls, expenses);
+        _markFilled(orderId, fillData.srcChainId, calls, _fillHash(orderId, originData));
     }
 
     /**
@@ -130,11 +133,13 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         for (uint256 i; i < expenses.length; ++i) {
             TokenExpense memory expense = expenses[i];
             address token = expense.token.toAddress();
-            address spender = expense.spender.toAddress();
 
-            token.safeTransferFrom(msg.sender, address(_executor), expense.amount);
-            // We remotely set token approvals on executor so we don't need to reprocess Call expenses there.
-            if (spender != address(0)) _executor.approve(token, spender, expense.amount);
+            if (token != address(0)) {
+                address spender = expense.spender.toAddress();
+                token.safeTransferFrom(msg.sender, address(_executor), expense.amount);
+                // We remotely set token approvals on executor so we don't need to reprocess Call expenses there.
+                if (spender != address(0)) _executor.approve(token, spender, expense.amount);
+            }
         }
 
         _;
@@ -148,11 +153,20 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         for (uint256 i; i < expenses.length; ++i) {
             TokenExpense memory expense = expenses[i];
             address token = expense.token.toAddress();
-            uint256 tokenBalance = token.balanceOf(address(_executor));
 
-            if (tokenBalance > 0) {
-                if (expense.spender != bytes32(0)) _executor.approve(token, expense.spender.toAddress(), 0);
-                _executor.transfer(token, msg.sender, tokenBalance);
+            if (token != address(0)) {
+                address spender = expense.spender.toAddress();
+                uint256 tokenBalance = token.balanceOf(address(_executor));
+
+                if (spender != address(0)) {
+                    if (IERC20(token).allowance(address(_executor), spender) > 0) {
+                        _executor.approve(token, spender, 0);
+                    }
+                }
+
+                if (tokenBalance > 0) {
+                    _executor.transfer(token, msg.sender, tokenBalance);
+                }
             }
         }
 
@@ -162,26 +176,35 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
     }
 
     /**
-     * @notice Verify and execute a call. Expenses are processed and enforced.
-     * @param call  Call to execute.
+     * @notice Verify and execute calls. Expenses are processed and enforced.
+     * @param calls    Calls to execute.
+     * @param expenses Expenses required to fund the calls.
      */
-    function _executeCall(Call memory call) internal withExpenses(call.expenses) {
-        if (call.chainId != block.chainid) revert WrongDestChain();
-
-        _executor.execute{ value: call.value }(call);
+    function _executeCalls(Call[] memory calls, TokenExpense[] memory expenses) internal withExpenses(expenses) {
+        for (uint256 i; i < calls.length; ++i) {
+            Call memory call = calls[i];
+            _executor.execute{ value: call.value }(call);
+        }
     }
 
     /**
      * @notice Mark an order as filled. Require sufficient native payment, refund excess.
      * @param orderId     ID of the order.
      * @param srcChainId  Chain ID on which the order was opened.
-     * @param call        Call executed.
+     * @param calls       Calls executed.
      * @param fillHash    Hash of fill data, verifies fill matches order.
      */
-    function _markFilled(bytes32 orderId, uint64 srcChainId, Call memory call, bytes32 fillHash) internal {
+    function _markFilled(bytes32 orderId, uint64 srcChainId, Call[] memory calls, bytes32 fillHash) internal {
         // mark filled on outbox (here)
         if (_filled[fillHash]) revert AlreadyFilled();
         _filled[fillHash] = true;
+
+        uint256 totalCallValue;
+        for (uint256 i; i < calls.length; ++i) {
+            unchecked {
+                totalCallValue += calls[i].value;
+            }
+        }
 
         // mark filled on inbox
         uint256 fee = xcall({
@@ -191,10 +214,10 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
             data: abi.encodeCall(ISolverNetInbox.markFilled, (orderId, fillHash)),
             gasLimit: MARK_FILLED_GAS_LIMIT
         });
-        if (msg.value - call.value < fee) revert InsufficientFee();
+        if (msg.value - totalCallValue < fee) revert InsufficientFee();
 
         // refund any overpayment in native currency
-        uint256 refund = msg.value - call.value - fee;
+        uint256 refund = msg.value - totalCallValue - fee;
         if (refund > 0) msg.sender.safeTransferETH(refund);
 
         emit Filled(orderId, fillHash, msg.sender);

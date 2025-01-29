@@ -29,7 +29,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @notice Typehash for the order data.
      */
     bytes32 internal constant ORDER_DATA_TYPEHASH = keccak256(
-        "OrderData(address owner,Call call,Deposit[] deposits)Call(uint64 chainId,bytes32 target,uint256 value,bytes data,TokenExpense[] expenses)TokenExpense(bytes32 token,bytes32 spender,uint256 amount)Deposit(bytes32 token,uint256 amount)"
+        "OrderData(address owner,Call[] calls,Deposit[] deposits,TokenExpense[] expenses)Call(uint64 chainId,bytes32 target,uint256 value,bytes data)Deposit(bytes32 token,uint256 amount)TokenExpense(bytes32 token,bytes32 spender,uint256 amount)"
     ); // Not really needed until we support more than one order type or gasless orders
 
     /**
@@ -121,29 +121,27 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      */
     function resolve(OnchainCrossChainOrder calldata order) public view returns (ResolvedCrossChainOrder memory) {
         OrderData memory orderData = _parseOrder(order);
-        Call memory call = orderData.call;
+        Call[] memory calls = orderData.calls;
         Deposit[] memory deposits = orderData.deposits;
+        TokenExpense[] memory expenses = orderData.expenses;
 
-        bool hasNative = call.value > 0;
-        Output[] memory maxSpent = new Output[](hasNative ? call.expenses.length + 1 : call.expenses.length);
-        for (uint256 i; i < call.expenses.length; ++i) {
+        Output[] memory maxSpent = new Output[](expenses.length);
+        for (uint256 i; i < expenses.length; ++i) {
+            TokenExpense memory expense = expenses[i];
             maxSpent[i] = Output({
-                token: call.expenses[i].token,
-                amount: call.expenses[i].amount,
+                token: expense.token,
+                amount: expense.amount,
                 recipient: _outbox.toBytes32(), // for solver, recipient is always outbox
-                chainId: call.chainId
+                chainId: orderData.destChainId
             });
-        }
-        if (hasNative) {
-            maxSpent[call.expenses.length] =
-                Output({ token: bytes32(0), amount: call.value, recipient: _outbox.toBytes32(), chainId: call.chainId });
         }
 
         Output[] memory minReceived = new Output[](deposits.length);
         for (uint256 i; i < deposits.length; ++i) {
+            Deposit memory deposit = deposits[i];
             minReceived[i] = Output({
-                token: deposits[i].token,
-                amount: deposits[i].amount,
+                token: deposit.token,
+                amount: deposit.amount,
                 recipient: bytes32(0), // recipient is solver, which is only known on acceptance
                 chainId: block.chainid
             });
@@ -151,10 +149,16 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
 
         FillInstruction[] memory fillInstructions = new FillInstruction[](1);
         fillInstructions[0] = FillInstruction({
-            destinationChainId: call.chainId,
+            destinationChainId: orderData.destChainId,
             destinationSettler: _outbox.toBytes32(),
             originData: abi.encode(
-                FillOriginData({ srcChainId: uint64(block.chainid), fillDeadline: order.fillDeadline, call: call })
+                FillOriginData({
+                    srcChainId: uint64(block.chainid),
+                    destChainId: orderData.destChainId,
+                    fillDeadline: order.fillDeadline,
+                    calls: calls,
+                    expenses: expenses
+                })
             )
         });
 
@@ -297,28 +301,50 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         if (order.orderData.length == 0) revert InvalidOrderData();
 
         OrderData memory orderData = abi.decode(order.orderData, (OrderData));
-        Call memory call = orderData.call;
+        Call[] memory calls = orderData.calls;
         Deposit[] memory deposits = orderData.deposits;
+        TokenExpense[] memory expenses = orderData.expenses;
 
-        if (call.chainId == 0) revert NoCallChainId();
-        if (call.target == bytes32(0)) revert NoCallTarget();
+        if (orderData.destChainId == 0 || orderData.destChainId == block.chainid) revert InvalidDestChainId();
+
+        uint256 callNativeValue;
+        if (calls.length == 0) revert NoCalls();
+        for (uint256 i; i < calls.length; ++i) {
+            Call memory call = calls[i];
+            if (call.target == bytes32(0)) revert NoCallTarget();
+            if (call.value == 0 && call.data.length == 0) revert NoCalldata();
+
+            unchecked {
+                if (call.value > 0) callNativeValue += call.value;
+            }
+        }
+
+        bool hasNativeDeposit;
         if (deposits.length == 0) revert NoDeposits();
-
-        bool hasNative;
         for (uint256 i; i < deposits.length; ++i) {
             Deposit memory deposit = deposits[i];
             if (deposit.amount == 0) revert NoDepositAmount();
             if (deposit.token == bytes32(0)) {
-                if (hasNative) revert DuplicateNativeDeposit();
-                hasNative = true;
+                if (hasNativeDeposit) revert DuplicateNativeDeposit();
+                hasNativeDeposit = true;
             }
         }
 
-        for (uint256 i; i < call.expenses.length; ++i) {
-            TokenExpense memory expense = call.expenses[i];
-            if (expense.token == bytes32(0)) revert NoExpenseToken();
+        bool hasNativeExpense;
+        uint256 expenseNativeValue;
+        for (uint256 i; i < expenses.length; ++i) {
+            TokenExpense memory expense = expenses[i];
             if (expense.amount == 0) revert NoExpenseAmount();
+            if (expense.token == bytes32(0)) {
+                if (hasNativeExpense) revert DuplicateNativeExpense();
+                hasNativeExpense = true;
+
+                unchecked {
+                    expenseNativeValue += expense.amount;
+                }
+            }
         }
+        if (expenseNativeValue != callNativeValue) revert InvalidNativeExpense();
 
         return orderData;
     }
@@ -339,7 +365,6 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
                 // Handle native deposit
                 if (!hasNative) revert InvalidNativeDeposit();
                 if (deposit.amount != msg.value) revert InvalidNativeDeposit();
-                if (processedNative) revert DuplicateNativeDeposit();
                 processedNative = true;
             } else {
                 // Handle ERC20 deposit

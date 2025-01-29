@@ -42,13 +42,14 @@ contract TestBase is Test {
 
     uint64 srcChainId = 1;
     uint64 destChainId = 2;
+    uint64 defaultGasLimit = 100_000;
 
     address user = makeAddr("user");
     address solver = makeAddr("solver");
     address proxyAdmin = makeAddr("proxy-admin-owner");
 
     bytes32 internal constant ORDER_DATA_TYPEHASH = keccak256(
-        "OrderData(address owner,Call call,Deposit[] deposits)Call(uint64 chainId,bytes32 target,uint256 value,bytes data,TokenExpense[] expenses)TokenExpense(bytes32 token,bytes32 spender,uint256 amount)Deposit(bytes32 token,uint256 amount)"
+        "OrderData(address owner,Call[] calls,Deposit[] deposits,TokenExpense[] expenses)Call(uint64 chainId,bytes32 target,uint256 value,bytes data)Deposit(bytes32 token,uint256 amount)TokenExpense(bytes32 token,bytes32 spender,uint256 amount)"
     );
 
     modifier prankUser() {
@@ -77,22 +78,17 @@ contract TestBase is Test {
         return abi.encodeCall(MockVault.deposit, (addr, amount));
     }
 
-    function getMultiTokenVaultCalldata(address addr, ISolverNet.TokenExpense[] memory expenses, uint256 nativeAmount)
+    function getMultiTokenVaultCalldata(address addr, ISolverNet.TokenExpense[] memory expenses)
         internal
         pure
         returns (bytes memory)
     {
-        address[] memory tokens = new address[](nativeAmount > 0 ? expenses.length + 1 : expenses.length);
-        uint256[] memory amounts = new uint256[](nativeAmount > 0 ? expenses.length + 1 : expenses.length);
+        address[] memory tokens = new address[](expenses.length);
+        uint256[] memory amounts = new uint256[](expenses.length);
 
         for (uint256 i; i < expenses.length; ++i) {
             tokens[i] = expenses[i].token.toAddress();
             amounts[i] = expenses[i].amount;
-        }
-
-        if (nativeAmount > 0) {
-            tokens[tokens.length - 1] = address(0);
-            amounts[amounts.length - 1] = nativeAmount;
         }
 
         return abi.encodeCall(MockMultiTokenVault.deposit, (addr, tokens, amounts));
@@ -103,14 +99,18 @@ contract TestBase is Test {
         bytes32 target,
         uint256 value,
         bytes memory data,
-        ISolverNet.TokenExpense[] memory expenses,
-        ISolverNet.Deposit[] memory deposits
+        ISolverNet.Deposit[] memory deposits,
+        ISolverNet.TokenExpense[] memory expenses
     ) internal view returns (bytes memory) {
+        ISolverNet.Call[] memory calls = new ISolverNet.Call[](1);
+        calls[0] = ISolverNet.Call({ target: target, value: value, data: data });
         return abi.encode(
             ISolverNet.OrderData({
                 owner: user,
-                call: ISolverNet.Call(chainId, target, value, data, expenses),
-                deposits: deposits
+                destChainId: chainId,
+                calls: calls,
+                deposits: deposits,
+                expenses: expenses
             })
         );
     }
@@ -133,15 +133,20 @@ contract TestBase is Test {
             amount: rand * 1 ether
         });
 
-        ISolverNet.Call memory call = ISolverNet.Call({
-            chainId: destChainId,
+        ISolverNet.Call[] memory calls = new ISolverNet.Call[](1);
+        calls[0] = ISolverNet.Call({
             target: address(vault).toBytes32(),
             value: 0,
-            data: getVaultCalldata(user, rand * 1 ether),
-            expenses: expenses
+            data: getVaultCalldata(user, rand * 1 ether)
         });
 
-        ISolverNet.OrderData memory orderData = ISolverNet.OrderData({ owner: user, call: call, deposits: deposits });
+        ISolverNet.OrderData memory orderData = ISolverNet.OrderData({
+            owner: user,
+            destChainId: destChainId,
+            calls: calls,
+            deposits: deposits,
+            expenses: expenses
+        });
 
         return IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 1 minutes),
@@ -168,15 +173,20 @@ contract TestBase is Test {
             amount: rand * 1 ether
         });
 
-        ISolverNet.Call memory call = ISolverNet.Call({
-            chainId: destChainId,
+        ISolverNet.Call[] memory calls = new ISolverNet.Call[](1);
+        calls[0] = ISolverNet.Call({
             target: address(vault).toBytes32(),
             value: 0,
-            data: getVaultCalldata(user, rand * 1 ether),
-            expenses: expenses
+            data: getVaultCalldata(user, rand * 1 ether)
         });
 
-        ISolverNet.OrderData memory orderData = ISolverNet.OrderData({ owner: user, call: call, deposits: deposits });
+        ISolverNet.OrderData memory orderData = ISolverNet.OrderData({
+            owner: user,
+            destChainId: destChainId,
+            calls: calls,
+            deposits: deposits,
+            expenses: expenses
+        });
 
         return IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 1 minutes),
@@ -185,49 +195,58 @@ contract TestBase is Test {
         });
     }
 
-    function randMultiTokenOrder(address[] memory srcDeposits, address[] memory destDeposits)
+    function randMultiTokenOrder(address[] memory srcDeposits, address[] memory destExpenses)
         internal
         returns (IERC7683.OnchainCrossChainOrder memory)
     {
-        uint256 nativeExpense;
-        for (uint256 i; i < destDeposits.length; ++i) {
-            if (destDeposits[i] == address(0)) {
-                nativeExpense = vm.randomUint(1, 1000) * 1 ether;
-                break;
+        bool hasNative;
+        for (uint256 i; i < srcDeposits.length; ++i) {
+            if (srcDeposits[i] == address(0)) {
+                if (hasNative) revert("randMultiTokenOrder: multiple native token deposits");
+                hasNative = true;
+            }
+        }
+
+        if (hasNative) hasNative = false;
+        for (uint256 i; i < destExpenses.length; ++i) {
+            if (destExpenses[i] == address(0)) {
+                if (hasNative) revert("randMultiTokenOrder: multiple native token expenses");
+                hasNative = true;
             }
         }
 
         ISolverNet.Deposit[] memory deposits = new ISolverNet.Deposit[](srcDeposits.length);
         for (uint256 i; i < srcDeposits.length; ++i) {
-            uint256 rand = vm.randomUint(1, 1000);
-            deposits[i] = ISolverNet.Deposit({ token: address(srcDeposits[i]).toBytes32(), amount: rand * 1 ether });
+            uint256 rand = vm.randomUint(1, 1000) * 1 ether;
+            deposits[i] = ISolverNet.Deposit({ token: address(srcDeposits[i]).toBytes32(), amount: rand });
         }
 
-        ISolverNet.TokenExpense[] memory expenses =
-            new ISolverNet.TokenExpense[](nativeExpense > 0 ? destDeposits.length - 1 : destDeposits.length);
-        bool nativeProcessed;
-        for (uint256 i; i < destDeposits.length; ++i) {
-            if (destDeposits[i] == address(0)) {
-                nativeProcessed = true;
-                continue;
-            }
-            uint256 rand = vm.randomUint(1, 1000);
-            expenses[nativeProcessed ? i - 1 : i] = ISolverNet.TokenExpense({
-                token: address(destDeposits[i]).toBytes32(),
+        uint256 nativeExpense;
+        ISolverNet.TokenExpense[] memory expenses = new ISolverNet.TokenExpense[](destExpenses.length);
+        for (uint256 i; i < destExpenses.length; ++i) {
+            uint256 rand = vm.randomUint(1, 1000) * 1 ether;
+            expenses[i] = ISolverNet.TokenExpense({
+                token: address(destExpenses[i]).toBytes32(),
                 spender: address(multiTokenVault).toBytes32(),
-                amount: rand * 1 ether
+                amount: rand
             });
+            if (destExpenses[i] == address(0)) nativeExpense = rand;
         }
 
-        ISolverNet.Call memory call = ISolverNet.Call({
-            chainId: destChainId,
+        ISolverNet.Call[] memory calls = new ISolverNet.Call[](1);
+        calls[0] = ISolverNet.Call({
             target: address(multiTokenVault).toBytes32(),
             value: nativeExpense,
-            data: getMultiTokenVaultCalldata(user, expenses, nativeExpense),
-            expenses: expenses
+            data: getMultiTokenVaultCalldata(user, expenses)
         });
 
-        ISolverNet.OrderData memory orderData = ISolverNet.OrderData({ owner: user, call: call, deposits: deposits });
+        ISolverNet.OrderData memory orderData = ISolverNet.OrderData({
+            owner: user,
+            destChainId: destChainId,
+            calls: calls,
+            deposits: deposits,
+            expenses: expenses
+        });
 
         return IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 1 minutes),
@@ -252,10 +271,11 @@ contract TestBase is Test {
     }
 
     function fundSolver(IERC7683.Output[] memory expenses) internal {
+        uint256 fillFee = outbox.fillFee(srcChainId);
         for (uint256 i; i < expenses.length; ++i) {
             address token = expenses[i].token.toAddress();
             if (token == address(0)) {
-                vm.deal(solver, expenses[i].amount);
+                vm.deal(solver, expenses[i].amount + fillFee);
                 continue;
             }
 
@@ -265,8 +285,7 @@ contract TestBase is Test {
             vm.stopPrank();
         }
 
-        uint256 fillFee = outbox.fillFee(srcChainId);
-        vm.deal(solver, address(solver).balance + fillFee);
+        if (solver.balance == 0) vm.deal(solver, fillFee);
     }
 
     function deploySolverNetInbox() internal returns (SolverNetInbox) {
@@ -300,58 +319,33 @@ contract TestBase is Test {
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder
     ) internal view {
         ISolverNet.OrderData memory orderData = abi.decode(order.orderData, (ISolverNet.OrderData));
-        ISolverNet.Call memory orderCall = orderData.call;
-        ISolverNet.TokenExpense[] memory orderExpenses = orderCall.expenses;
+        ISolverNet.Call[] memory orderCalls = orderData.calls;
         ISolverNet.Deposit[] memory orderDeposits = orderData.deposits;
+        ISolverNet.TokenExpense[] memory orderExpenses = orderData.expenses;
         ISolverNet.FillOriginData memory fillOriginData =
             abi.decode(resolvedOrder.fillInstructions[0].originData, (ISolverNet.FillOriginData));
 
         assertEq(userAddr, resolvedOrder.user, "assertResolved: user");
         assertEq(srcChainId, resolvedOrder.originChainId, "assertResolved: origin chain id");
+        assertEq(destChainId, fillOriginData.destChainId, "assertResolved: dest chain id");
         assertEq(uint32(block.timestamp), resolvedOrder.openDeadline, "assertResolved: open deadline");
         assertEq(order.fillDeadline, resolvedOrder.fillDeadline, "assertResolved: fill deadline");
         assertEq(orderId, resolvedOrder.orderId, "assertResolved: order id");
 
-        assertEq(
-            orderCall.value > 0 ? orderExpenses.length + 1 : orderExpenses.length,
-            resolvedOrder.maxSpent.length,
-            "assertResolved: max spent length"
-        );
-        assertEq(orderExpenses.length, fillOriginData.call.expenses.length, "assertResolved: call expense length");
+        assertEq(orderExpenses.length, resolvedOrder.maxSpent.length, "assertResolved: max spent length");
+        assertEq(orderExpenses.length, fillOriginData.expenses.length, "assertResolved: call expense length");
         for (uint256 i; i < orderExpenses.length; ++i) {
             assertEq(orderExpenses[i].token, resolvedOrder.maxSpent[i].token, "assertResolved: max spent token");
+            assertEq(orderExpenses[i].token, fillOriginData.expenses[i].token, "assertResolved: call expense token");
             assertEq(
-                orderExpenses[i].token, fillOriginData.call.expenses[i].token, "assertResolved: call expense token"
-            );
-            assertEq(
-                orderExpenses[i].spender,
-                fillOriginData.call.expenses[i].spender,
-                "assertResolved: call expense spender"
+                orderExpenses[i].spender, fillOriginData.expenses[i].spender, "assertResolved: call expense spender"
             );
             assertEq(orderExpenses[i].amount, resolvedOrder.maxSpent[i].amount, "assertResolved: max spent amount");
-            assertEq(
-                orderExpenses[i].amount, fillOriginData.call.expenses[i].amount, "assertResolved: call expense amount"
-            );
+            assertEq(orderExpenses[i].amount, fillOriginData.expenses[i].amount, "assertResolved: call expense amount");
             assertEq(
                 address(outbox).toBytes32(), resolvedOrder.maxSpent[i].recipient, "assertResolved: max spent recipient"
             );
-            assertEq(orderCall.chainId, resolvedOrder.maxSpent[i].chainId, "assertResolved: max spent chain id");
-        }
-        if (orderCall.value > 0) {
-            assertEq(bytes32(0), resolvedOrder.maxSpent[orderExpenses.length].token, "assertResolved: max spent token");
-            assertEq(
-                orderCall.value, resolvedOrder.maxSpent[orderExpenses.length].amount, "assertResolved: max spent amount"
-            );
-            assertEq(
-                address(outbox).toBytes32(),
-                resolvedOrder.maxSpent[orderExpenses.length].recipient,
-                "assertResolved: max spent recipient"
-            );
-            assertEq(
-                orderCall.chainId,
-                resolvedOrder.maxSpent[orderExpenses.length].chainId,
-                "assertResolved: max spent chain id"
-            );
+            assertEq(destChainId, resolvedOrder.maxSpent[i].chainId, "assertResolved: max spent chain id");
         }
 
         assertEq(orderDeposits.length, resolvedOrder.minReceived.length, "assertResolved: min received length");
@@ -366,7 +360,7 @@ contract TestBase is Test {
 
         assertEq(1, resolvedOrder.fillInstructions.length, "assertResolved: fill instructions length");
         assertEq(
-            orderCall.chainId,
+            destChainId,
             resolvedOrder.fillInstructions[0].destinationChainId,
             "assertResolved: fill instructions chain id"
         );
@@ -380,8 +374,10 @@ contract TestBase is Test {
                 abi.encode(
                     ISolverNet.FillOriginData({
                         srcChainId: srcChainId,
+                        destChainId: destChainId,
                         fillDeadline: order.fillDeadline,
-                        call: orderCall
+                        calls: orderCalls,
+                        expenses: orderExpenses
                     })
                 )
             ),
