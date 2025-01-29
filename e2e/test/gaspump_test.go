@@ -18,9 +18,8 @@ import (
 // TestGasPumps ensures that bridge tests cases defined in e2e/app/gaspump.go were successful.
 func TestGasPumps(t *testing.T) {
 	t.Parallel()
-	testNetwork(t, func(t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
+	testNetwork(t, func(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
 		t.Helper()
-		ctx := context.Background()
 
 		omniEVM, ok := network.OmniEVMChain()
 		require.True(t, ok)

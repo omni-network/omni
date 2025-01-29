@@ -36,6 +36,7 @@ func newOperatorCmds() *cobra.Command {
 		newCreateConsensusKeyCmd(),
 		newUnjailCmd(),
 		newDelegateCmd(),
+		newEditValCmd(),
 	)
 
 	return cmd
