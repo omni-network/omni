@@ -25,7 +25,7 @@ type bridgeDeploymentConfig struct {
 	Lockbox         common.Address
 }
 
-func (cfg bridgeDeploymentConfig) validateBridgeConfig() error {
+func (cfg bridgeDeploymentConfig) validate() error {
 	if err := cfg.Config.validateDeploymentConfig(); err != nil {
 		return errors.Wrap(err, "validate config")
 	}
@@ -131,7 +131,7 @@ func deployBridge(ctx context.Context, network netconf.ID, backend *ethbackend.B
 func performBridgeDeployment(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, cfg bridgeDeploymentConfig) (common.Address, *ethtypes.Receipt, error) {
 	params := deploymentParams{
 		Config:         cfg.Config,
-		ValidateConfig: cfg.validateBridgeConfig,
+		ValidateConfig: cfg.validate,
 		DeployImpl: func(txOpts *bind.TransactOpts, backend *ethbackend.Backend) (common.Address, *ethtypes.Transaction, error) {
 			addr, tx, _, err := bindings.DeployBridge(txOpts, backend)
 			return addr, tx, err

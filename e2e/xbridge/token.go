@@ -26,7 +26,7 @@ type tokenDeploymentConfig struct {
 	Clawbacker common.Address
 }
 
-func (cfg tokenDeploymentConfig) validateTokenConfig() error {
+func (cfg tokenDeploymentConfig) validate() error {
 	if err := cfg.Config.validateDeploymentConfig(); err != nil {
 		return errors.Wrap(err, "validate config")
 	}
@@ -147,7 +147,7 @@ func deployToken(ctx context.Context, network netconf.ID, backend *ethbackend.Ba
 func performTokenDeployment(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, cfg tokenDeploymentConfig) (common.Address, *ethtypes.Receipt, error) {
 	params := deploymentParams{
 		Config:         cfg.Config,
-		ValidateConfig: cfg.validateTokenConfig,
+		ValidateConfig: cfg.validate,
 		DeployImpl: func(txOpts *bind.TransactOpts, backend *ethbackend.Backend) (common.Address, *ethtypes.Transaction, error) {
 			addr, tx, _, err := bindings.DeployStablecoinUpgradeable(txOpts, backend)
 			return addr, tx, err

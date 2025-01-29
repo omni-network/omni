@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
@@ -23,7 +24,7 @@ type lockboxDeploymentConfig struct {
 	Wrapped         common.Address
 }
 
-func (cfg lockboxDeploymentConfig) validateLockboxConfig() error {
+func (cfg lockboxDeploymentConfig) validate() error {
 	if err := cfg.Config.validateDeploymentConfig(); err != nil {
 		return errors.Wrap(err, "validate config")
 	}
@@ -123,41 +124,19 @@ func deployLockbox(ctx context.Context, network netconf.ID, backend *ethbackend.
 
 // performLockboxDeployment handles the common deployment flow for the lockbox contract.
 func performLockboxDeployment(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, cfg lockboxDeploymentConfig) (common.Address, *ethtypes.Receipt, error) {
-	if err := cfg.validateLockboxConfig(); err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "validate config")
+	params := deploymentParams{
+		Config:         cfg.Config,
+		ValidateConfig: cfg.validate,
+		DeployImpl: func(txOpts *bind.TransactOpts, backend *ethbackend.Backend) (common.Address, *ethtypes.Transaction, error) {
+			addr, tx, _, err := bindings.DeployLockbox(txOpts, backend)
+			return addr, tx, err
+		},
+		PackInitCode: func(impl common.Address) ([]byte, error) {
+			return packLockboxInitCode(cfg, impl)
+		},
 	}
 
-	factory, addr, salt, txOpts, err := deployPrep(ctx, network, backend, cfg.Config)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "deploy prep")
-	}
-
-	impl, tx, _, err := bindings.DeployLockbox(txOpts, backend)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "deploy impl")
-	}
-
-	_, err = backend.WaitMined(ctx, tx)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "wait mined impl")
-	}
-
-	initCode, err := packLockboxInitCode(cfg, impl)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "pack init code")
-	}
-
-	tx, err = factory.DeployWithRetry(txOpts, salt, initCode) //nolint:contextcheck // Context is txOpts
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "deploy proxy")
-	}
-
-	receipt, err := backend.WaitMined(ctx, tx)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "wait mined proxy")
-	}
-
-	return addr, receipt, nil
+	return performDeployment(ctx, network, backend, params)
 }
 
 // packLockboxInitCode packs the initialization code for the lockbox contract proxy.
