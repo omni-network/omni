@@ -143,6 +143,10 @@ func TestCLIOperator(t *testing.T) {
 
 		// delegate from a new account
 		t.Run("delegation", func(t *testing.T) {
+			if !feature.FlagDelegations.Enabled(ctx) {
+				t.Skip("Skipping delegation tests")
+			}
+
 			// user's keys
 			privKey, pubKey := anvil.DevPrivateKey5(), anvil.DevAccount5()
 			userCosmosAddr := sdk.AccAddress(pubKey.Bytes()).String()
