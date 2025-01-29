@@ -11,9 +11,10 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
     error WrongSourceChain();
 
     // OnchainCrossChainOrder validation errors
-    error InvalidOrderData();
-    error InvalidOrderDataTypehash();
+    error InvalidDestChainId();
     error InvalidFillDeadline();
+    error InvalidOrderDataTypehash();
+    error InvalidOrderData();
 
     // deposit validation errors
     error NoDeposits();
@@ -22,11 +23,15 @@ interface ISolverNetInbox is IOriginSettler, ISolverNet {
     error InvalidNativeDeposit();
 
     // call validation errors
+    error NoCalls();
+    error NoCalldata();
     error NoCallTarget();
-    error NoCallChainId();
-    error NoExpenseToken();
+
+    // expense validation errors
     error NoExpenseSender();
     error NoExpenseAmount();
+    error DuplicateNativeExpense();
+    error InvalidNativeExpense();
 
     // order state transition errors
     error OrderNotPending();

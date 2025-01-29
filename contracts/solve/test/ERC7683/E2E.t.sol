@@ -57,7 +57,7 @@ contract SolverNet_E2E_Test is TestBase {
             address(outbox),
             address(inbox),
             abi.encodeCall(ISolverNetInbox.markFilled, (resolvedOrder.orderId, fillHash)),
-            100_000
+            defaultGasLimit
         );
 
         assertFulfilledOrder(resolvedOrder.orderId);
@@ -82,15 +82,20 @@ contract SolverNet_E2E_Test is TestBase {
         expense[0] =
             ISolverNet.TokenExpense({ token: address(token2).toBytes32(), spender: bytes32(0), amount: rand * 1 ether });
 
-        ISolverNet.Call memory call = ISolverNet.Call({
-            chainId: destChainId,
+        ISolverNet.Call[] memory calls = new ISolverNet.Call[](1);
+        calls[0] = ISolverNet.Call({
             target: address(token2).toBytes32(),
             value: 0,
-            data: abi.encodeCall(ERC20.transfer, (user, rand * 1 ether)),
-            expenses: expense
+            data: abi.encodeCall(ERC20.transfer, (user, rand * 1 ether))
         });
 
-        ISolverNet.OrderData memory orderData = ISolverNet.OrderData({ owner: user, call: call, deposits: deposit });
+        ISolverNet.OrderData memory orderData = ISolverNet.OrderData({
+            owner: user,
+            destChainId: destChainId,
+            calls: calls,
+            deposits: deposit,
+            expenses: expense
+        });
 
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 1 minutes),
@@ -148,7 +153,7 @@ contract SolverNet_E2E_Test is TestBase {
             address(outbox),
             address(inbox),
             abi.encodeCall(ISolverNetInbox.markFilled, (resolvedOrder.orderId, fillHash)),
-            100_000
+            defaultGasLimit
         );
 
         // 5. Claim order deposits on srcChain as solver
@@ -176,11 +181,11 @@ contract SolverNet_E2E_Test is TestBase {
         address[] memory srcDeposits = new address[](2);
         srcDeposits[0] = address(token1);
         srcDeposits[1] = address(token2);
-        address[] memory destDeposits = new address[](2);
-        destDeposits[0] = address(token3);
-        destDeposits[1] = address(token4);
+        address[] memory destExpenses = new address[](2);
+        destExpenses[0] = address(token3);
+        destExpenses[1] = address(token4);
 
-        IERC7683.OnchainCrossChainOrder memory order = randMultiTokenOrder(srcDeposits, destDeposits);
+        IERC7683.OnchainCrossChainOrder memory order = randMultiTokenOrder(srcDeposits, destExpenses);
         assertTrue(inbox.validate(order));
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
         fundUser(resolvedOrder.minReceived);
@@ -235,7 +240,7 @@ contract SolverNet_E2E_Test is TestBase {
             address(outbox),
             address(inbox),
             abi.encodeCall(ISolverNetInbox.markFilled, (resolvedOrder.orderId, fillHash)),
-            100_000
+            defaultGasLimit
         );
 
         // 5. Claim order deposits on srcChain as solver
@@ -277,11 +282,11 @@ contract SolverNet_E2E_Test is TestBase {
         address[] memory srcDeposits = new address[](2);
         srcDeposits[0] = address(token1);
         srcDeposits[1] = address(0);
-        address[] memory destDeposits = new address[](2);
-        destDeposits[0] = address(0);
-        destDeposits[1] = address(token4);
+        address[] memory destExpenses = new address[](2);
+        destExpenses[0] = address(0);
+        destExpenses[1] = address(token4);
 
-        IERC7683.OnchainCrossChainOrder memory order = randMultiTokenOrder(srcDeposits, destDeposits);
+        IERC7683.OnchainCrossChainOrder memory order = randMultiTokenOrder(srcDeposits, destExpenses);
         assertTrue(inbox.validate(order));
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
         fundUser(resolvedOrder.minReceived);
@@ -320,7 +325,7 @@ contract SolverNet_E2E_Test is TestBase {
         vm.expectEmit(true, true, true, true);
         emit ISolverNetOutbox.Filled(resolvedOrder.orderId, fillHash, solver);
         vm.prank(solver);
-        outbox.fill{ value: fillFee + resolvedOrder.maxSpent[1].amount }(
+        outbox.fill{ value: fillFee + resolvedOrder.maxSpent[0].amount }(
             resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, bytes("")
         );
 
@@ -338,7 +343,7 @@ contract SolverNet_E2E_Test is TestBase {
             address(outbox),
             address(inbox),
             abi.encodeCall(ISolverNetInbox.markFilled, (resolvedOrder.orderId, fillHash)),
-            100_000
+            defaultGasLimit
         );
 
         // 5. Claim order deposits on srcChain as solver
@@ -364,12 +369,12 @@ contract SolverNet_E2E_Test is TestBase {
         );
         assertEq(
             multiTokenVault.balances(address(user), address(0)),
-            resolvedOrder.maxSpent[1].amount,
+            resolvedOrder.maxSpent[0].amount,
             "claim: native token should be deposited into vault"
         );
         assertEq(
             multiTokenVault.balances(address(user), address(token4)),
-            resolvedOrder.maxSpent[0].amount,
+            resolvedOrder.maxSpent[1].amount,
             "claim: token4 should be deposited into vault"
         );
         assertEq(token4.balanceOf(address(solver)), 0, "claim: token4 should be deposited by solver");

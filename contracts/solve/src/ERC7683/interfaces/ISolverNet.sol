@@ -26,42 +26,46 @@ interface ISolverNet {
 
     /**
      * @notice Call to execute on a destination chain.
-     * @param chainId   The ID of the chain on which the call should be executed.
      * @param target    Target contract address.
      * @param value     Value to send to the target.
      * @param data      Calldata to send to the target.
-     * @param expenses  Expenses required to fund the call.
      */
     struct Call {
-        uint64 chainId;
         bytes32 target;
         uint256 value;
         bytes data;
-        TokenExpense[] expenses;
     }
 
     /**
      * @notice SolverNet ERC-7683 order data.
      *         Restricted to single call on a destination chain.
-     * @param owner     Address allowed to cancel the order. address(0) for msg.sender of inbox.open(...)
-     * @param call      Call to execute on.
-     * @param deposits  Deposits payed by user, locked on source chain. Awarded to solver on fill.
+     * @param owner         Address allowed to cancel the order. address(0) for msg.sender of inbox.open(...)
+     * @param destChainId   Chain ID on which the order needs to be filled.
+     * @param calls         Calls to execute on.
+     * @param deposits      Deposits payed by user, locked on source chain. Awarded to solver on fill.
+     * @param expenses      Expenses required to fund the calls.
      */
     struct OrderData {
         address owner;
-        Call call;
+        uint64 destChainId;
+        Call[] calls;
         Deposit[] deposits;
+        TokenExpense[] expenses;
     }
 
     /**
      * @notice SolverNet ERC-7683 fill instruction origin data.
      * @param srcChainId    Chain ID on which the order was opened.
+     * @param destChainId   Chain ID on which the order needs to be filled.
      * @param fillDeadline  Deadline for the fill.
-     * @param call          Call to execute
+     * @param calls         Calls to execute.
+     * @param expenses      Expenses required to fund the calls.
      */
     struct FillOriginData {
         uint64 srcChainId;
+        uint64 destChainId;
         uint40 fillDeadline;
-        Call call;
+        Call[] calls;
+        TokenExpense[] expenses;
     }
 }
