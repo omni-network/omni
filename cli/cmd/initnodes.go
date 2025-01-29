@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/omni-network/omni/e2e/app/geth"
 	"github.com/omni-network/omni/e2e/manifests"
@@ -31,6 +32,7 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/enode"
 
 	"github.com/spf13/cobra"
+	"github.com/vbauerster/mpb/v8"
 	"golang.org/x/sync/errgroup"
 
 	_ "embed"
@@ -440,15 +442,21 @@ func maybeDownloadSnapshots(ctx context.Context, cfg InitConfig) error {
 		return nil
 	}
 
+	// Create a shared progress container.
+	progress := mpb.New(
+		mpb.WithWidth(60),
+		mpb.WithRefreshRate(100*time.Millisecond),
+	)
+
 	g, ctx := errgroup.WithContext(ctx)
 
 	// Start parallel downloads.
 	g.Go(func() error {
-		return downloadSnapshot(ctx, cfg.Network, cfg.Home, gethClientName)
+		return downloadSnapshot(ctx, cfg.Network, cfg.Home, gethClientName, progress)
 	})
 
 	g.Go(func() error {
-		return downloadSnapshot(ctx, cfg.Network, cfg.Home, haloClientName)
+		return downloadSnapshot(ctx, cfg.Network, cfg.Home, haloClientName, progress)
 	})
 
 	// Wait for all downloads to complete.
@@ -456,14 +464,16 @@ func maybeDownloadSnapshots(ctx context.Context, cfg InitConfig) error {
 		return errors.Wrap(err, "parallel download snapshots")
 	}
 
+	progress.Shutdown()
+
 	return nil
 }
 
-func downloadSnapshot(ctx context.Context, network netconf.ID, outputDir string, clientName string) error {
+func downloadSnapshot(ctx context.Context, network netconf.ID, outputDir string, clientName string, progress *mpb.Progress) error {
 	gcpCloudStorageURL := fmt.Sprintf("https://storage.googleapis.com/omni-%s-snapshots/%s_data.tar.lz4", network, clientName)
 
 	log.Info(ctx, "Downloading and restoring latest snapshot...", "url", gcpCloudStorageURL)
-	if err := downloadUntarLz4(ctx, gcpCloudStorageURL, filepath.Join(outputDir, clientName)); err != nil {
+	if err := downloadUntarLz4(ctx, gcpCloudStorageURL, filepath.Join(outputDir, clientName), progress, clientName); err != nil {
 		return errors.Wrap(err, "download untar lz4 error", "client", clientName)
 	}
 

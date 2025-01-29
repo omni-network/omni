@@ -3,16 +3,19 @@ package cmd
 import (
 	"archive/tar"
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 
 	"github.com/omni-network/omni/lib/errors"
 
-	"github.com/pierrec/lz4/v4"
+	"github.com/pierrec/lz4"
+	"github.com/vbauerster/mpb/v8"
+	"github.com/vbauerster/mpb/v8/decor"
 )
 
-func downloadUntarLz4(ctx context.Context, srcURL string, outputDir string) error {
+func downloadUntarLz4(ctx context.Context, srcURL string, outputDir string, progress *mpb.Progress, clientName string) error {
 	// Build an HTTP GET request with an injected context.
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, srcURL, nil)
 	if err != nil {
@@ -31,9 +34,42 @@ func downloadUntarLz4(ctx context.Context, srcURL string, outputDir string) erro
 		return errors.Wrap(err, "download file", "status_code", resp.StatusCode)
 	}
 
-	if err := untarLz4(resp.Body, outputDir); err != nil {
+	// Get the content length for the progress bar.
+	contentLength := resp.ContentLength
+	if contentLength <= 0 {
+		return errors.New("unknown content length for progress bar")
+	}
+
+	// Create a progress bar.
+	bar := progress.New(
+		contentLength,
+		mpb.BarStyle().Lbound("╢").Filler("▌").Tip("▌").Padding("░").Rbound("╟"),
+		mpb.PrependDecorators(
+			decor.Name(fmt.Sprintf("Downloading %s snapshot: ", clientName)),
+			decor.Counters(decor.SizeB1024(0), "% .1f / % .1f"),
+			decor.Name(" Elapsed: "),
+			decor.Elapsed(decor.ET_STYLE_GO),
+		),
+		mpb.AppendDecorators(
+			decor.Percentage(decor.WCSyncWidth),
+			decor.Name(" ETA: "),
+			decor.AverageETA(decor.ET_STYLE_GO),
+			decor.Name(" at "),
+			decor.EwmaSpeed(decor.SizeB1024(0), "% .1f", 30),
+		),
+	)
+
+	// Wrap the response body with the progress bar reader.
+	progressReader := bar.ProxyReader(resp.Body)
+	// Defer cleanup of the progress bar to avoid it being re-rendered.
+	defer progressReader.Close()
+
+	if err := untarLz4(progressReader, outputDir); err != nil {
 		return errors.Wrap(err, "decompress tar lz4", "url", srcURL)
 	}
+
+	// Mark the progress bar as complete.
+	bar.SetCurrent(contentLength)
 
 	return nil
 }
