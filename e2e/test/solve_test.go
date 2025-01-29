@@ -6,9 +6,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/e2e/solve"
-	"github.com/omni-network/omni/e2e/solve/devapp"
 	"github.com/omni-network/omni/e2e/types"
-	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -24,17 +22,8 @@ func TestSolver(t *testing.T) {
 	maybeTestNetwork(t, skipFunc, func(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
 		t.Helper()
 
-		if feature.FlagSolverV2.Enabled(ctx) {
-			ensureSolverAPILive(t)
-			t.Log("Testing solver V2")
-			err := solve.TestV2(ctx, network, endpoints)
-			require.NoError(t, err)
-
-			return
-		}
-
-		// TODO: remove devapp when v2 is fully enabled
-		err := devapp.TestFlow(context.Background(), network, endpoints)
+		ensureSolverAPILive(t)
+		err := solve.TestV2(ctx, network, endpoints)
 		require.NoError(t, err)
 	})
 }

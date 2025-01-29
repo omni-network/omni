@@ -12,7 +12,6 @@ func DetectCustomError(custom error) string {
 	contracts := map[string]*bind.MetaData{
 		"inbox":      bindings.SolverNetInboxMetaData,
 		"outbox":     bindings.SolverNetOutboxMetaData,
-		"mock_vault": bindings.MockVaultMetaData,
 		"mock_erc20": bindings.MockERC20MetaData,
 	}
 
