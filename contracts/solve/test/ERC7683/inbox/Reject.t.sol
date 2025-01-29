@@ -128,6 +128,54 @@ contract SolverNet_Inbox_Reject_Test is TestBase {
         assertEq(address(inbox).balance, 0, "inbox balance after");
     }
 
+    function test_reject_after_accept() public {
+        // Create and open an order
+        IERC7683.OnchainCrossChainOrder memory order = randOrder();
+        vm.prank(user);
+        IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+        fundUser(resolvedOrder.minReceived);
+
+        uint256 initialUserBalance = token1.balanceOf(user);
+
+        // Open the order
+        vm.prank(user);
+        inbox.open(order);
+
+        bytes32 orderId = inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Pending);
+
+        // Accept then reject the order
+        vm.startPrank(solver);
+        inbox.accept(orderId);
+        inbox.reject(orderId, 1);
+        vm.stopPrank();
+
+        // Verify order state and history
+        (, ISolverNetInbox.OrderState memory state, ISolverNetInbox.StatusUpdate[] memory history) =
+            inbox.getOrder(orderId);
+
+        // Verify order state is now Rejected
+        assertEq(uint8(state.status), uint8(ISolverNetInbox.Status.Rejected), "order state: status");
+        assertEq(state.acceptedBy, solver, "order state: accepted by should be solver");
+
+        // Verify order history
+        assertEq(history.length, 3, "order history: length"); // Should have Open and Reject events
+        assertEq(uint8(history[0].status), uint8(ISolverNetInbox.Status.Pending), "order history: initial status");
+        assertEq(history[0].timestamp, uint40(block.timestamp), "order history: initial timestamp");
+        assertEq(uint8(history[1].status), uint8(ISolverNetInbox.Status.Accepted), "order history: accepted status");
+        assertEq(history[1].timestamp, uint40(block.timestamp), "order history: accepted timestamp");
+        assertEq(uint8(history[2].status), uint8(ISolverNetInbox.Status.Rejected), "order history: rejected status");
+        assertEq(history[2].timestamp, uint40(block.timestamp), "order history: rejected timestamp");
+
+        // Verify latest order ID by status has been updated
+        assertEq(inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Rejected), orderId, "latest rejected order id");
+        assertEq(inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Accepted), orderId, "latest accepted order id");
+        assertEq(inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Pending), orderId, "latest pending order id");
+
+        // Verify token balances are back to initials after rejection
+        assertEq(token1.balanceOf(user), initialUserBalance, "user balance after");
+        assertEq(token1.balanceOf(address(inbox)), 0, "inbox balance after");
+    }
+
     function test_reject_reverts_not_solver() public {
         // Create and open an order
         IERC7683.OnchainCrossChainOrder memory order = randOrder();
@@ -140,6 +188,29 @@ contract SolverNet_Inbox_Reject_Test is TestBase {
         inbox.open(order);
 
         bytes32 orderId = inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Pending);
+
+        // Try to reject as non-solver
+        vm.prank(user);
+        vm.expectRevert(Ownable.Unauthorized.selector);
+        inbox.reject(orderId, 1);
+    }
+
+    function test_reject_reverts_not_solver_accepted() public {
+        // Create and open an order
+        IERC7683.OnchainCrossChainOrder memory order = randOrder();
+        vm.prank(user);
+        IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+        fundUser(resolvedOrder.minReceived);
+
+        // Open the order
+        vm.prank(user);
+        inbox.open(order);
+
+        bytes32 orderId = inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Pending);
+
+        // Accept the order
+        vm.prank(solver);
+        inbox.accept(orderId);
 
         // Try to reject as non-solver
         vm.prank(user);

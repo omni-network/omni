@@ -5,9 +5,10 @@ import { IDestinationSettler } from "./IDestinationSettler.sol";
 import { ISolverNet } from "./ISolverNet.sol";
 
 interface ISolverNetOutbox is IDestinationSettler, ISolverNet {
+    error AlreadyFilled();
     error WrongDestChain();
     error InsufficientFee();
-    error AlreadyFilled();
+    error FillDeadlinePassed();
 
     /**
      * @notice Emitted when a cross-chain request is filled on the destination chain

@@ -112,4 +112,24 @@ contract SolverNet_Inbox_Accept_Test is TestBase {
         vm.expectRevert(ISolverNetInbox.OrderNotPending.selector);
         inbox.accept(orderId);
     }
+
+    function test_accept_reverts_fill_deadline_passed() public {
+        // Create and resolve an order on source chain
+        IERC7683.OnchainCrossChainOrder memory order = randOrder();
+        vm.prank(user);
+        IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+        fundUser(resolvedOrder.minReceived);
+
+        // Open the order
+        vm.prank(user);
+        inbox.open(order);
+
+        bytes32 orderId = inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Pending);
+
+        // Accept the order
+        vm.warp(order.fillDeadline + 1);
+        vm.prank(solver);
+        vm.expectRevert(ISolverNetInbox.FillDeadlinePassed.selector);
+        inbox.accept(orderId);
+    }
 }

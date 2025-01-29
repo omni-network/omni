@@ -171,6 +171,30 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         assertEq(solver.balance, initialSolverBalance - fillFee, "solver should be refunded excess ETH");
     }
 
+    function test_fill_no_fill_deadline() public {
+        // Create and resolve an order on source chain
+        IERC7683.OnchainCrossChainOrder memory order = randOrder();
+        order.fillDeadline = 0;
+        vm.prank(user);
+        IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+        fundSolver(resolvedOrder.maxSpent);
+
+        bytes32 orderId = inbox.getNextId();
+
+        // Calculate the fill fee
+        uint256 fillFee = outbox.fillFee(srcChainId);
+        vm.deal(solver, fillFee);
+
+        // Fill the order as solver
+        vm.prank(solver);
+        outbox.fill{ value: fillFee }(orderId, resolvedOrder.fillInstructions[0].originData, "");
+
+        // Verify the order is marked as filled
+        assertTrue(
+            outbox.didFill(orderId, resolvedOrder.fillInstructions[0].originData), "order should be marked as filled"
+        );
+    }
+
     function test_fill_reverts_insufficient_fee() public {
         // Create and resolve an order on source chain
         IERC7683.OnchainCrossChainOrder memory order = randOrder();
@@ -255,6 +279,30 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         // Try to fill on wrong chain
         vm.prank(solver);
         vm.expectRevert(ISolverNetOutbox.WrongDestChain.selector);
+        outbox.fill{ value: fillFee }(orderId, resolvedOrder.fillInstructions[0].originData, "");
+    }
+
+    function test_fill_reverts_fill_deadline_passed() public {
+        // Create and resolve an order on source chain
+        IERC7683.OnchainCrossChainOrder memory order = randOrder();
+        vm.prank(user);
+        IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+        fundSolver(resolvedOrder.maxSpent);
+
+        bytes32 orderId = inbox.getNextId();
+
+        // Calculate the fill fee
+        uint256 fillFee = outbox.fillFee(srcChainId);
+        vm.deal(solver, fillFee);
+
+        // Get the fill data from the order
+        ISolverNet.FillOriginData memory fillData =
+            abi.decode(resolvedOrder.fillInstructions[0].originData, (ISolverNet.FillOriginData));
+        vm.warp(fillData.fillDeadline + 1);
+
+        // Try to fill
+        vm.prank(solver);
+        vm.expectRevert(ISolverNetOutbox.FillDeadlinePassed.selector);
         outbox.fill{ value: fillFee }(orderId, resolvedOrder.fillInstructions[0].originData, "");
     }
 }

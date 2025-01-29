@@ -115,6 +115,8 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         FillOriginData memory fillData = abi.decode(originData, (FillOriginData));
         Call memory call = fillData.call;
 
+        if (fillData.fillDeadline < block.timestamp && fillData.fillDeadline != 0) revert FillDeadlinePassed();
+
         _executeCall(call);
         _markFilled(orderId, fillData.srcChainId, call, _fillHash(orderId, originData));
     }
