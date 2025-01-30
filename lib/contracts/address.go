@@ -199,6 +199,24 @@ func Create3Factory(network netconf.ID) common.Address {
 	return crypto.CreateAddress(eoa.MustAddress(network, eoa.RoleCreate3Deployer), 0)
 }
 
+func Create3Address(ctx context.Context, network netconf.ID, saltPrefix string) (common.Address, error) {
+	ver, err := version(ctx, network)
+	if err != nil {
+		return common.Address{}, err
+	}
+
+	return create3.Address(Create3Factory(network), salt(network, saltPrefix+"-"+ver), eoa.MustAddress(network, eoa.RoleDeployer)), nil
+}
+
+func Create3Salt(ctx context.Context, network netconf.ID, saltPrefix string) (string, error) {
+	ver, err := version(ctx, network)
+	if err != nil {
+		return "", err
+	}
+
+	return salt(network, saltPrefix+"-"+ver), nil
+}
+
 // portal returns the Portal contract address for the given network.
 func portal(network netconf.ID, saltVersion string) common.Address {
 	return create3.Address(Create3Factory(network), portalSalt(network, saltVersion), eoa.MustAddress(network, eoa.RoleDeployer))
