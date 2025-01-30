@@ -6,6 +6,7 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 )
 
 // Upgrade defines a network upgrade.
@@ -20,6 +21,13 @@ var upgrades = []Upgrade{
 		Name: uluwatu1.UpgradeName,
 		HandlerFunc: func(a App) upgradetypes.UpgradeHandler {
 			return uluwatu1.CreateUpgradeHandler(a.ModuleManager, a.Configurator(), a.SlashingKeeper)
+		},
+		Store: uluwatu1.StoreUpgrades,
+	},
+	{
+		Name: uluwatu1.UpgradeName,
+		HandlerFunc: func(a App) upgradetypes.UpgradeHandler {
+			return uluwatu1.CreateUpgradeHandler2(a.ModuleManager, a.Configurator(), &a.MintKeeper, &a.AccountKeeper)
 		},
 		Store: uluwatu1.StoreUpgrades,
 	},
@@ -65,6 +73,12 @@ func (a App) setUpgradeHandlers() error {
 	} else if upgradeInfo.Name == "" {
 		return nil // No upgrade info found
 	}
+
+	// initialize the state of the new mint module
+	storeUpgrades := &storetypes.StoreUpgrades{
+		Added: []string{string(minttypes.MinterKey), string(minttypes.ParamsKey), string(minttypes.StoreKey)},
+	}
+	a.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, storeUpgrades))
 
 	for _, u := range upgrades {
 		if u.Name != upgradeInfo.Name {

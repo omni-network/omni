@@ -42,6 +42,7 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	consensuskeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
+	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
 	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 
@@ -85,6 +86,7 @@ type App struct {
 	RegistryKeeper        registrykeeper.Keeper
 	EvidenceKeeper        evidencekeeper.Keeper
 	UpgradeKeeper         *upgradekeeper.Keeper
+	MintKeeper            mintkeeper.Keeper
 
 	SlashingEventProc evmslashing.EventProcessor
 	StakingEventProc  evmstaking.EventProcessor
@@ -148,6 +150,7 @@ func newApp(
 	// TODO (christian): remove feature check with logs
 	if feature.FlagEVMStakingModule.Enabled(ctx) {
 		dependencies = append(dependencies, &app.EVMStakingKeeper)
+		dependencies = append(dependencies, &app.MintKeeper)
 	} else {
 		dependencies = append(dependencies, &app.StakingEventProc)
 	}
