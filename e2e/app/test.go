@@ -33,9 +33,9 @@ func Test(ctx context.Context, def Definition, verbose bool) error {
 	}
 
 	endpointsFile := filepath.Join(networkDir, "endpoints.json")
-	if endopintsBytes, err := json.Marshal(endpoints); err != nil {
+	if endpointsBytes, err := json.Marshal(endpoints); err != nil {
 		return errors.Wrap(err, "marshaling endpoints")
-	} else if err := os.WriteFile(endpointsFile, endopintsBytes, 0644); err != nil {
+	} else if err := os.WriteFile(endpointsFile, endpointsBytes, 0644); err != nil {
 		return errors.Wrap(err, "writing endpoints")
 	} else if err = os.Setenv(EnvE2ERPCEndpoints, endpointsFile); err != nil {
 		return errors.Wrap(err, "setting env ar")
