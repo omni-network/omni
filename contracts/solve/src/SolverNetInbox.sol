@@ -45,7 +45,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     /**
      * @notice Map order ID to resolved onchain order.
      */
-    mapping(bytes32 id => ResolvedCrossChainOrder) internal _orders;
+    mapping(bytes32 id => OnchainCrossChainOrder) internal _orders;
 
     /**
      * @notice Map order ID to order parameters.
@@ -88,7 +88,14 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         view
         returns (ResolvedCrossChainOrder memory resolved, OrderState memory state, StatusUpdate[] memory history)
     {
-        return (_orders[id], _orderState[id], _orderHistory[id]);
+        OnchainCrossChainOrder memory order = _orders[id];
+
+        if (order.orderData.length > 0) {
+            OrderData memory orderData = abi.decode(order.orderData, (OrderData));
+            resolved = _resolve(orderData, order.fillDeadline);
+        }
+
+        return (resolved, _orderState[id], _orderHistory[id]);
     }
 
     /**
@@ -111,7 +118,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @param order  OnchainCrossChainOrder to validate.
      */
     function validate(OnchainCrossChainOrder calldata order) external view returns (bool) {
-        _parseOrder(order);
+        _validate(order);
         return true;
     }
 
@@ -120,7 +127,182 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @param order  OnchainCrossChainOrder to resolve.
      */
     function resolve(OnchainCrossChainOrder calldata order) public view returns (ResolvedCrossChainOrder memory) {
-        OrderData memory orderData = _parseOrder(order);
+        return _resolve(order);
+    }
+
+    /**
+     * @notice Open an order to execute a call on another chain, backed by deposits.
+     * @dev Token deposits are transferred from msg.sender to this inbox.
+     * @param order OnchainCrossChainOrder to open.
+     */
+    function open(OnchainCrossChainOrder calldata order) external payable nonReentrant {
+        OrderData memory orderData = abi.decode(order.orderData, (OrderData));
+
+        _processDeposits(orderData.deposits);
+
+        ResolvedCrossChainOrder memory resolved = _openOrder(order);
+
+        emit Open(resolved.orderId, resolved);
+    }
+
+    /**
+     * @notice Accept an open order.
+     * @dev Only a whitelisted solver can accept.
+     * @param id  ID of the order.
+     */
+    function accept(bytes32 id) external onlyRoles(SOLVER) nonReentrant {
+        OnchainCrossChainOrder memory order = _orders[id];
+        OrderState memory state = _orderState[id];
+
+        if (state.status != Status.Pending) revert OrderNotPending();
+        if (order.fillDeadline < block.timestamp && order.fillDeadline != 0) revert FillDeadlinePassed();
+
+        state.status = Status.Accepted;
+        state.acceptedBy = msg.sender;
+        _upsertOrder(id, state);
+
+        emit Accepted(id, msg.sender);
+    }
+
+    /**
+     * @notice Reject an open order and refund deposits.
+     * @dev Only a whitelisted solver can reject.
+     * @param id      ID of the order.
+     * @param reason  Reason code for rejection.
+     */
+    function reject(bytes32 id, uint8 reason) external onlyRoles(SOLVER) nonReentrant {
+        OnchainCrossChainOrder memory order = _orders[id];
+        OrderData memory orderData = abi.decode(order.orderData, (OrderData));
+        ResolvedCrossChainOrder memory resolved = _resolve(orderData, order.fillDeadline);
+        OrderState memory state = _orderState[id];
+
+        if (state.status != Status.Pending) {
+            if (state.status == Status.Accepted) {
+                if (state.acceptedBy != msg.sender) revert Unauthorized();
+            } else {
+                revert OrderNotPending();
+            }
+        }
+
+        state.status = Status.Rejected;
+        _upsertOrder(id, state);
+        _transferDeposits(resolved.user, resolved.minReceived);
+
+        emit Rejected(id, msg.sender, reason);
+    }
+
+    /**
+     * @notice Cancel an open and refund deposits.
+     * @dev Only order initiator can cancel.
+     * @param id  ID of the order.
+     */
+    function cancel(bytes32 id) external nonReentrant {
+        OnchainCrossChainOrder memory order = _orders[id];
+        OrderData memory orderData = abi.decode(order.orderData, (OrderData));
+        ResolvedCrossChainOrder memory resolved = _resolve(orderData, order.fillDeadline);
+        OrderState memory state = _orderState[id];
+
+        if (state.status != Status.Pending) revert OrderNotPending();
+        if (resolved.user != msg.sender) revert Unauthorized();
+
+        state.status = Status.Reverted;
+        _upsertOrder(id, state);
+        _transferDeposits(resolved.user, resolved.minReceived);
+
+        emit Reverted(id);
+    }
+
+    /**
+     * @notice Fill an order.
+     * @dev Only callable by the outbox.
+     * @param id        ID of the order.
+     * @param fillHash  Hash of fill instructions origin data.
+     */
+    function markFilled(bytes32 id, bytes32 fillHash) external xrecv nonReentrant {
+        OnchainCrossChainOrder memory order = _orders[id];
+        OrderData memory orderData = abi.decode(order.orderData, (OrderData));
+        ResolvedCrossChainOrder memory resolved = _resolve(orderData, order.fillDeadline);
+        OrderState memory state = _orderState[id];
+
+        if (state.status != Status.Accepted) revert OrderNotAccepted();
+        if (xmsg.sender != _outbox) revert NotOutbox();
+        if (xmsg.sourceChainId != resolved.fillInstructions[0].destinationChainId) revert WrongSourceChain();
+
+        // Ensure reported fill hash matches origin data
+        if (fillHash != _fillHash(id, resolved.fillInstructions[0].originData)) {
+            revert WrongFillHash();
+        }
+
+        state.status = Status.Filled;
+        _upsertOrder(id, state);
+
+        emit Filled(id, fillHash, state.acceptedBy);
+    }
+
+    /**
+     * @notice Claim a filled order.
+     * @param id  ID of the order.
+     * @param to  Address to send deposits to.
+     */
+    function claim(bytes32 id, address to) external nonReentrant {
+        OnchainCrossChainOrder memory order = _orders[id];
+        OrderData memory orderData = abi.decode(order.orderData, (OrderData));
+        ResolvedCrossChainOrder memory resolved = _resolve(orderData, order.fillDeadline);
+        OrderState memory state = _orderState[id];
+
+        if (state.status != Status.Filled) revert OrderNotFilled();
+        if (state.acceptedBy != msg.sender) revert Unauthorized();
+
+        state.status = Status.Claimed;
+
+        _upsertOrder(id, state);
+        _transferDeposits(to, resolved.minReceived);
+
+        emit Claimed(id, msg.sender, to, resolved.minReceived);
+    }
+
+    /**
+     * @dev Parse and return order data, validate correctness.
+     * @param order  OnchainCrossChainOrder to parse
+     */
+    function _validate(OnchainCrossChainOrder calldata order) internal view returns (OrderData memory) {
+        if (order.fillDeadline < block.timestamp && order.fillDeadline != 0) revert InvalidFillDeadline();
+        if (order.orderDataType != ORDER_DATA_TYPEHASH) revert InvalidOrderDataTypehash();
+        if (order.orderData.length == 0) revert InvalidOrderData();
+
+        OrderData memory orderData = abi.decode(order.orderData, (OrderData));
+        Call memory call = orderData.call;
+        Deposit[] memory deposits = orderData.deposits;
+
+        if (call.chainId == 0) revert NoCallChainId();
+        if (call.target == bytes32(0)) revert NoCallTarget();
+        if (deposits.length == 0) revert NoDeposits();
+
+        bool hasNative;
+        for (uint256 i; i < deposits.length; ++i) {
+            Deposit memory deposit = deposits[i];
+            if (deposit.amount == 0) revert NoDepositAmount();
+            if (deposit.token == bytes32(0)) {
+                if (hasNative) revert DuplicateNativeDeposit();
+                hasNative = true;
+            }
+        }
+
+        for (uint256 i; i < call.expenses.length; ++i) {
+            TokenExpense memory expense = call.expenses[i];
+            if (expense.token == bytes32(0)) revert NoExpenseToken();
+            if (expense.amount == 0) revert NoExpenseAmount();
+        }
+
+        return orderData;
+    }
+
+    /**
+     * @dev Resolve the order after validating it
+     * @param order  OnchainCrossChainOrder to resolve.
+     */
+    function _resolve(OnchainCrossChainOrder calldata order) internal view returns (ResolvedCrossChainOrder memory) {
+        OrderData memory orderData = _validate(order);
         Call memory call = orderData.call;
         Deposit[] memory deposits = orderData.deposits;
 
@@ -159,7 +341,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         });
 
         return ResolvedCrossChainOrder({
-            user: orderData.owner != address(0) ? orderData.owner : msg.sender,
+            user: orderData.owner,
             originChainId: block.chainid,
             openDeadline: uint32(block.timestamp),
             fillDeadline: order.fillDeadline,
@@ -171,156 +353,61 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     }
 
     /**
-     * @notice Open an order to execute a call on another chain, backed by deposits.
-     * @dev Token deposits are transferred from msg.sender to this inbox.
-     * @param order OnchainCrossChainOrder to open.
+     * @dev Resolve the orderData stored onchain without validating it
+     * @param orderData  OrderData to resolve.
      */
-    function open(OnchainCrossChainOrder calldata order) external payable nonReentrant {
-        OrderData memory orderData = _parseOrder(order);
-
-        _processDeposits(orderData.deposits);
-
-        ResolvedCrossChainOrder storage resolved = _openOrder(order);
-
-        emit Open(resolved.orderId, resolved);
-    }
-
-    /**
-     * @notice Accept an open order.
-     * @dev Only a whitelisted solver can accept.
-     * @param id  ID of the order.
-     */
-    function accept(bytes32 id) external onlyRoles(SOLVER) nonReentrant {
-        OrderState memory state = _orderState[id];
-        if (state.status != Status.Pending) revert OrderNotPending();
-        if (_orders[id].fillDeadline < block.timestamp && _orders[id].fillDeadline != 0) revert FillDeadlinePassed();
-
-        state.status = Status.Accepted;
-        state.acceptedBy = msg.sender;
-        _upsertOrder(id, state);
-
-        emit Accepted(id, msg.sender);
-    }
-
-    /**
-     * @notice Reject an open order and refund deposits.
-     * @dev Only a whitelisted solver can reject.
-     * @param id      ID of the order.
-     * @param reason  Reason code for rejection.
-     */
-    function reject(bytes32 id, uint8 reason) external onlyRoles(SOLVER) nonReentrant {
-        ResolvedCrossChainOrder memory order = _orders[id];
-        OrderState memory state = _orderState[id];
-        if (state.status != Status.Pending) {
-            if (state.status == Status.Accepted) {
-                if (state.acceptedBy != msg.sender) revert Unauthorized();
-            } else {
-                revert OrderNotPending();
-            }
-        }
-
-        state.status = Status.Rejected;
-        _upsertOrder(id, state);
-        _transferDeposits(order.user, order.minReceived);
-
-        emit Rejected(id, msg.sender, reason);
-    }
-
-    /**
-     * @notice Cancel an open and refund deposits.
-     * @dev Only order initiator can cancel.
-     * @param id  ID of the order.
-     */
-    function cancel(bytes32 id) external nonReentrant {
-        ResolvedCrossChainOrder memory order = _orders[id];
-        OrderState memory state = _orderState[id];
-        if (state.status != Status.Pending) revert OrderNotPending();
-        if (order.user != msg.sender) revert Unauthorized();
-
-        state.status = Status.Reverted;
-        _upsertOrder(id, state);
-        _transferDeposits(order.user, order.minReceived);
-
-        emit Reverted(id);
-    }
-
-    /**
-     * @notice Fill an order.
-     * @dev Only callable by the outbox.
-     * @param id        ID of the order.
-     * @param fillHash  Hash of fill instructions origin data.
-     */
-    function markFilled(bytes32 id, bytes32 fillHash) external xrecv nonReentrant {
-        ResolvedCrossChainOrder memory order = _orders[id];
-        OrderState memory state = _orderState[id];
-        if (state.status != Status.Accepted) revert OrderNotAccepted();
-        if (xmsg.sender != _outbox) revert NotOutbox();
-        if (xmsg.sourceChainId != order.fillInstructions[0].destinationChainId) revert WrongSourceChain();
-
-        // Ensure reported fill hash matches origin data
-        if (fillHash != _fillHash(id, order.fillInstructions[0].originData)) {
-            revert WrongFillHash();
-        }
-
-        state.status = Status.Filled;
-        _upsertOrder(id, state);
-
-        emit Filled(id, fillHash, state.acceptedBy);
-    }
-
-    /**
-     * @notice Claim a filled order.
-     * @param id  ID of the order.
-     * @param to  Address to send deposits to.
-     */
-    function claim(bytes32 id, address to) external nonReentrant {
-        ResolvedCrossChainOrder memory order = _orders[id];
-        OrderState memory state = _orderState[id];
-        if (state.status != Status.Filled) revert OrderNotFilled();
-        if (state.acceptedBy != msg.sender) revert Unauthorized();
-
-        state.status = Status.Claimed;
-
-        _upsertOrder(id, state);
-        _transferDeposits(to, order.minReceived);
-
-        emit Claimed(id, msg.sender, to, order.minReceived);
-    }
-
-    /**
-     * @dev Parse and return order data, validate correctness.
-     * @param order  OnchainCrossChainOrder to parse
-     */
-    function _parseOrder(OnchainCrossChainOrder calldata order) internal view returns (OrderData memory) {
-        if (order.fillDeadline < block.timestamp && order.fillDeadline != 0) revert InvalidFillDeadline();
-        if (order.orderDataType != ORDER_DATA_TYPEHASH) revert InvalidOrderDataTypehash();
-        if (order.orderData.length == 0) revert InvalidOrderData();
-
-        OrderData memory orderData = abi.decode(order.orderData, (OrderData));
+    function _resolve(OrderData memory orderData, uint40 fillDeadline)
+        internal
+        view
+        returns (ResolvedCrossChainOrder memory)
+    {
         Call memory call = orderData.call;
         Deposit[] memory deposits = orderData.deposits;
 
-        if (call.chainId == 0) revert NoCallChainId();
-        if (call.target == bytes32(0)) revert NoCallTarget();
-        if (deposits.length == 0) revert NoDeposits();
-
-        bool hasNative;
-        for (uint256 i; i < deposits.length; ++i) {
-            Deposit memory deposit = deposits[i];
-            if (deposit.amount == 0) revert NoDepositAmount();
-            if (deposit.token == bytes32(0)) {
-                if (hasNative) revert DuplicateNativeDeposit();
-                hasNative = true;
-            }
-        }
-
+        bool hasNative = call.value > 0;
+        Output[] memory maxSpent = new Output[](hasNative ? call.expenses.length + 1 : call.expenses.length);
         for (uint256 i; i < call.expenses.length; ++i) {
-            TokenExpense memory expense = call.expenses[i];
-            if (expense.token == bytes32(0)) revert NoExpenseToken();
-            if (expense.amount == 0) revert NoExpenseAmount();
+            maxSpent[i] = Output({
+                token: call.expenses[i].token,
+                amount: call.expenses[i].amount,
+                recipient: _outbox.toBytes32(), // for solver, recipient is always outbox
+                chainId: call.chainId
+            });
+        }
+        if (hasNative) {
+            maxSpent[call.expenses.length] =
+                Output({ token: bytes32(0), amount: call.value, recipient: _outbox.toBytes32(), chainId: call.chainId });
         }
 
-        return orderData;
+        Output[] memory minReceived = new Output[](deposits.length);
+        for (uint256 i; i < deposits.length; ++i) {
+            minReceived[i] = Output({
+                token: deposits[i].token,
+                amount: deposits[i].amount,
+                recipient: bytes32(0), // recipient is solver, which is only known on acceptance
+                chainId: block.chainid
+            });
+        }
+
+        FillInstruction[] memory fillInstructions = new FillInstruction[](1);
+        fillInstructions[0] = FillInstruction({
+            destinationChainId: call.chainId,
+            destinationSettler: _outbox.toBytes32(),
+            originData: abi.encode(
+                FillOriginData({ srcChainId: uint64(block.chainid), fillDeadline: fillDeadline, call: call })
+            )
+        });
+
+        return ResolvedCrossChainOrder({
+            user: orderData.owner,
+            originChainId: block.chainid,
+            openDeadline: uint32(block.timestamp),
+            fillDeadline: uint32(fillDeadline),
+            orderId: _nextId(), // use next id for view, may not be id when opened
+            maxSpent: maxSpent,
+            minReceived: minReceived,
+            fillInstructions: fillInstructions
+        });
     }
 
     /**
@@ -353,36 +440,23 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
 
     /**
      * @dev Opens a new order and initializes its state.
-     * @param order The cross-chain order to open.
+     * @param order The order to open.
      * @return resolved The storage reference to the newly created order.
      */
     function _openOrder(OnchainCrossChainOrder calldata order)
         internal
-        returns (ResolvedCrossChainOrder storage resolved)
+        returns (ResolvedCrossChainOrder memory resolved)
     {
-        ResolvedCrossChainOrder memory _resolved = resolve(order);
-
-        bytes32 id = _incrementId();
-        resolved = _orders[id];
-        resolved.user = _resolved.user;
-        resolved.originChainId = _resolved.originChainId;
-        resolved.openDeadline = _resolved.openDeadline;
-        resolved.fillDeadline = _resolved.fillDeadline;
-        resolved.orderId = id;
-
-        for (uint256 i; i < _resolved.maxSpent.length; ++i) {
-            resolved.maxSpent.push(_resolved.maxSpent[i]);
+        OnchainCrossChainOrder memory _order = order;
+        OrderData memory _orderData = abi.decode(_order.orderData, (OrderData));
+        if (_orderData.owner == address(0)) {
+            _orderData.owner = msg.sender;
+            _order.orderData = abi.encode(_orderData);
         }
 
-        for (uint256 i; i < _resolved.minReceived.length; ++i) {
-            resolved.minReceived.push(_resolved.minReceived[i]);
-        }
-
-        for (uint256 i; i < _resolved.fillInstructions.length; ++i) {
-            resolved.fillInstructions.push(_resolved.fillInstructions[i]);
-        }
-
-        _upsertOrder(id, OrderState({ status: Status.Pending, acceptedBy: address(0) }));
+        resolved = _resolve(order);
+        _orders[resolved.orderId] = _order;
+        _upsertOrder(resolved.orderId, OrderState({ status: Status.Pending, acceptedBy: address(0) }));
 
         return resolved;
     }
