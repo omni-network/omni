@@ -147,24 +147,24 @@ func TestCLIOperator(t *testing.T) {
 				t.Skip("Skipping delegation tests")
 			}
 
-			// user's keys
+			// delegator's keys
 			privKey, pubKey := anvil.DevPrivateKey5(), anvil.DevAccount5()
-			userCosmosAddr := sdk.AccAddress(pubKey.Bytes()).String()
-			delegatorPrivKeyFile := filepath.Join(tmpDir, "usr_privkey")
+			delegatorCosmosAddr := sdk.AccAddress(pubKey.Bytes()).String()
+			delegatorPrivKeyFile := filepath.Join(tmpDir, "delegator_privkey")
 			require.NoError(
 				t,
 				ethcrypto.SaveECDSA(delegatorPrivKeyFile, privKey),
 				"failed to save new validator private key to temp file",
 			)
 
-			// user delegate test
-			const userDelegation = uint64(700)
+			// delegator delegate test
+			const delegatorDelegation = uint64(700)
 			stdOut, _, err := execCLI(
 				ctx, "operator", "delegate",
 				"--network", "devnet",
 				"--validator-address", validatorAddr.Hex(),
 				"--private-key-file", delegatorPrivKeyFile,
-				"--amount", fmt.Sprintf("%d", userDelegation),
+				"--amount", fmt.Sprintf("%d", delegatorDelegation),
 				"--execution-rpc", executionRPC,
 			)
 			require.NoError(t, err)
@@ -177,8 +177,15 @@ func TestCLIOperator(t *testing.T) {
 				newPower, err := val.Power()
 				require.NoError(t, err)
 
-				return newPower == opInitDelegation+opSelfDelegation+userDelegation &&
-					delegationFound(t, ctx, cprov, val.OperatorAddress, userCosmosAddr)
+				if newPower != opInitDelegation+opSelfDelegation+delegatorDelegation {
+					return false
+				}
+
+				if !delegationFound(t, ctx, cprov, val.OperatorAddress, delegatorCosmosAddr) {
+					return false
+				}
+
+				return true
 			}, valChangeWait, 500*time.Millisecond, "failed to delegate")
 		})
 
