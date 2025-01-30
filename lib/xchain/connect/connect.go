@@ -108,7 +108,7 @@ func WithPrivKey(privkeys *ecdsa.PrivateKey) option {
 func WithInfuraENV(keyVar string) option {
 	return func(o *options) error {
 		infuraNames := map[string]string{
-			"ethreum":      "mainnet",
+			"ethereum":     "mainnet",
 			"holesky":      "holesky",
 			"base":         "base-mainnet",
 			"base_sepolia": "base-sepolia",
