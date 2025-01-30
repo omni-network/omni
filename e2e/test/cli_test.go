@@ -143,7 +143,7 @@ func TestCLIOperator(t *testing.T) {
 
 		// delegate from a new account
 		t.Run("delegation", func(t *testing.T) {
-			if !feature.FlagDelegations.Enabled(ctx) {
+			if !feature.FlagEVMStakingModule.Enabled(ctx) {
 				t.Skip("Skipping delegation tests")
 			}
 
