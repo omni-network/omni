@@ -30,6 +30,7 @@ import (
 	distrmodulev1 "cosmossdk.io/api/cosmos/distribution/module/v1"
 	evidencemodulev1 "cosmossdk.io/api/cosmos/evidence/module/v1"
 	genutilmodulev1 "cosmossdk.io/api/cosmos/genutil/module/v1"
+	mintmodulev1 "cosmossdk.io/api/cosmos/mint/module/v1"
 	slashingmodulev1 "cosmossdk.io/api/cosmos/slashing/module/v1"
 	stakingmodulev1 "cosmossdk.io/api/cosmos/staking/module/v1"
 	txconfigv1 "cosmossdk.io/api/cosmos/tx/config/v1"
@@ -44,6 +45,7 @@ import (
 	consensustypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
@@ -69,6 +71,7 @@ var (
 		distrtypes.ModuleName,
 		stakingtypes.ModuleName,
 		slashingtypes.ModuleName,
+		minttypes.ModuleName,
 		genutiltypes.ModuleName,
 		evidencetypes.ModuleName,
 		upgradetypes.ModuleName,
@@ -76,12 +79,20 @@ var (
 		engevmtypes.ModuleName,
 	}
 
-	beginBlockers = []string{
-		distrtypes.ModuleName, // Note: slashing happens after distr.BeginBlocker
-		slashingtypes.ModuleName,
-		stakingtypes.ModuleName, // Note: staking module is required if HistoricalEntries param > 0
-		evidencetypes.ModuleName,
-		attesttypes.ModuleName,
+	beginBlockers = func(ctx context.Context) []string {
+		modules := []string{
+			distrtypes.ModuleName, // Note: slashing happens after distr.BeginBlocker
+			slashingtypes.ModuleName,
+			stakingtypes.ModuleName, // Note: staking module is required if HistoricalEntries param > 0
+			evidencetypes.ModuleName,
+			attesttypes.ModuleName,
+		}
+
+		if feature.FlagEVMStakingModule.Enabled(ctx) {
+			modules = append([]string{minttypes.ModuleName}, modules...)
+		}
+
+		return modules
 	}
 
 	endBlockers = func(ctx context.Context) []string {
@@ -109,6 +120,7 @@ var (
 		stakingtypes.NotBondedPoolName,
 		// TODO(christian): rename package, the rest can stay because names are the same
 		evmstaking.ModuleName,
+		minttypes.ModuleName,
 	}
 
 	moduleAccPerms = []*authmodulev1.ModuleAccountPermission{
@@ -118,6 +130,7 @@ var (
 		{Account: stakingtypes.NotBondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
 		// TODO(christian): rename package, the rest can stay because names are the same
 		{Account: evmstaking.ModuleName, Permissions: []string{authtypes.Burner, authtypes.Minter}},
+		{Account: minttypes.ModuleName, Permissions: []string{authtypes.Minter}},
 	}
 
 	// appConfig application configuration (used by depinject).
@@ -129,7 +142,7 @@ var (
 						Name: runtime.ModuleName,
 						Config: appconfig.WrapAny(&runtimev1alpha1.Module{
 							AppName:       Name,
-							BeginBlockers: beginBlockers,
+							BeginBlockers: beginBlockers(ctx),
 							PreBlockers:   []string{upgradetypes.ModuleName},
 							// Setting endblockers in newApp since valsync replaces staking endblocker.
 							InitGenesis: genesisModuleOrder,
@@ -226,6 +239,10 @@ var (
 						Config: appconfig.WrapAny(&evmstaking2module.Module{
 							DeliverInterval: deliverInterval(network),
 						}),
+					})
+					configs = append(configs, &appv1alpha1.ModuleConfig{
+						Name:   minttypes.ModuleName,
+						Config: appconfig.WrapAny(&mintmodulev1.Module{}),
 					})
 				}
 
