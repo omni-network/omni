@@ -447,7 +447,7 @@ func setupKeeper(
 	key := storetypes.NewKVStoreKey(types.ModuleName)
 	storeSvc := runtime.NewKVStoreService(key)
 	ctx := sdktestutil.DefaultContext(key, storetypes.NewTransientStoreKey("test_key")).
-		WithContext(feature.WithFlags(context.Background(), feature.Flags{string(feature.FlagEVMStakingModule), string(feature.FlagDelegations)}))
+		WithContext(feature.WithFlags(context.Background(), feature.Flags{string(feature.FlagEVMStakingModule)}))
 	ctx = ctx.WithBlockHeight(1)
 	ctx = ctx.WithChainID(netconf.Simnet.Static().OmniConsensusChainIDStr())
 

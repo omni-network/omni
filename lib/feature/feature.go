@@ -16,8 +16,6 @@ const (
 	FlagProtoEVMPayload Flag = "proto-evm-payload"
 	// FlagFuzzOctane enables fuzz testing of octane.
 	FlagFuzzOctane Flag = "fuzz-octane"
-	// FlagDelegations enables delegation for non-validators.
-	FlagDelegations Flag = "delegations"
 )
 
 // enabledFlags holds all globally enabled feature flags. The reason for having it is that
@@ -31,7 +29,6 @@ var allFlags = map[Flag]bool{
 	FlagSimpleEVMEvents:  true,
 	FlagProtoEVMPayload:  true,
 	FlagFuzzOctane:       true,
-	FlagDelegations:      true,
 }
 
 // Flag is a feature flag.

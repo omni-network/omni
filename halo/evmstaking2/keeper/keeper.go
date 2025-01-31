@@ -401,7 +401,7 @@ func (k Keeper) deliverCreateValidator(ctx context.Context, createValidator *bin
 }
 
 func verifyStakingDelegate(ctx context.Context, delegate *bindings.StakingDelegate) error {
-	if !feature.FlagDelegations.Enabled(ctx) && delegate.Delegator != delegate.Validator {
+	if !feature.FlagEVMStakingModule.Enabled(ctx) && delegate.Delegator != delegate.Validator {
 		return errors.New("only self delegation")
 	}
 
