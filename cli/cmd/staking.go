@@ -230,6 +230,7 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 		"link", cfg.Network.Static().OmniScanTXURL(tx.Hash()),
 		"block", rec.BlockNumber.Uint64(),
 	)
+	log.Info(ctx, "🤔 Note that staking events are buffered in the Omni consensus chain. It can take up to 12 hours for the changes to be applied")
 
 	return nil
 }
@@ -359,6 +360,7 @@ func Delegate(ctx context.Context, cfg DelegateConfig) error {
 		"link", cfg.Network.Static().OmniScanTXURL(tx.Hash()),
 		"block", rec.BlockNumber.Uint64(),
 	)
+	log.Info(ctx, "🤔 Note that staking events are buffered in the Omni consensus chain. It can take up to 12 hours for the changes to be applied")
 
 	return nil
 }
@@ -697,6 +699,7 @@ func EditVal(ctx context.Context, cfg EditValConfig) error {
 		"link", cfg.Network.Static().OmniScanTXURL(tx.Hash()),
 		"block", rec.BlockNumber.Uint64(),
 	)
+	log.Info(ctx, "🤔 Note that staking events are buffered in the Omni consensus chain. It can take up to 12 hours for the changes to be applied")
 
 	return nil
 }
