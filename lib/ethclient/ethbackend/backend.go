@@ -164,7 +164,7 @@ func (b *Backend) WaitMined(ctx context.Context, tx *ethtypes.Transaction) (*eth
 	if err != nil {
 		return nil, errors.Wrap(err, "wait mined", "chain", b.chainName)
 	} else if rec.Status != ethtypes.ReceiptStatusSuccessful {
-		return rec, errors.New("receipt status unsuccessful", "status", rec.Status, "tx", tx.Hash())
+		return rec, errors.New("receipt status unsuccessful", "status", rec.Status, "tx", tx.Hash(), "chain", b.chainName)
 	}
 
 	return rec, nil
