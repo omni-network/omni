@@ -16,7 +16,7 @@ type AuthKeeper interface {
 
 type BankKeeper interface {
 	MintCoins(ctx context.Context, moduleName string, amt sdk.Coins) error
-	SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
+	SendCoinsFromModuleToAccountForReal(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
 }
 
 type StakingKeeper interface {
