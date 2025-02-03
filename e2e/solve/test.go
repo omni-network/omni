@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
@@ -18,6 +19,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
 
@@ -36,7 +38,7 @@ func TestV2(ctx context.Context, network netconf.Network, endpoints xchain.RPCEn
 		return errors.New("only devnet")
 	}
 
-	log.Info(ctx, "Running solver v2 test")
+	log.Info(ctx, "Running solver tests")
 
 	// use anvil.DevAccounts instead of eoa.DevAccounts, because eoa.DevAccounts
 	// are used frequently elsewhere in e2e / e2e tests, and nonce issues get annoying
@@ -60,9 +62,56 @@ func TestV2(ctx context.Context, network netconf.Network, endpoints xchain.RPCEn
 		return errors.Wrap(err, "wait native")
 	}
 
-	log.Info(ctx, "Solver v2 test success")
+	if err := waitClaimAll(ctx, backends, orders); err != nil {
+		return errors.Wrap(err, "wait claim")
+	}
+
+	log.Info(ctx, "Solver test success")
 
 	return nil
+}
+
+func waitClaimAll(ctx context.Context, backends ethbackend.Backends, orders []BridgeOrder) error {
+	// solver claims erc20 OMNI on devnet L1
+	backend, err := backends.Backend(evmchain.IDMockL1)
+	if err != nil {
+		return errors.Wrap(err, "backend")
+	}
+
+	token, err := bindings.NewIERC20(contracts.TokenAddr(netconf.Devnet), backend)
+	if err != nil {
+		return errors.Wrap(err, "bind token")
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	total := big.NewInt(0)
+	for _, order := range orders {
+		total.Add(total, order.Amount)
+	}
+
+	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return errors.Wrap(ctx.Err(), "timeout")
+		case <-ticker.C:
+			balance, err := token.BalanceOf(&bind.CallOpts{Context: ctx}, solver)
+			if err != nil {
+				return errors.Wrap(err, "balance of")
+			}
+
+			if balance.Cmp(total) == 0 {
+				log.Debug(ctx, "All claims complete")
+				return nil
+			}
+		}
+	}
 }
 
 func makeOrders() []BridgeOrder {
@@ -87,7 +136,7 @@ func makeOrders() []BridgeOrder {
 }
 
 func waitNativeAll(ctx context.Context, backends ethbackend.Backends, orders []BridgeOrder) error {
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	backend, err := backends.Backend(evmchain.IDOmniDevnet)
