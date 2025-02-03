@@ -31,7 +31,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
     /**
      * @notice Gas limit for SolveInbox.markFilled callback.
      */
-    uint64 internal constant MARK_FILLED_GAS_LIMIT = 100_000;
+    uint64 internal constant MARK_FILLED_GAS_LIMIT = 175_000;
 
     /**
      * @notice Stubbed calldata for SolveInbox.markFilled. Used to estimate the gas cost.
