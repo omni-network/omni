@@ -31,11 +31,6 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
     uint256 internal constant SOLVER = _ROLE_0;
 
     /**
-     * @notice Gas limit for SolveInbox.markFilled callback.
-     */
-    uint64 internal constant MARK_FILLED_GAS_LIMIT = 100_000;
-
-    /**
      * @notice Stubbed calldata for SolveInbox.markFilled. Used to estimate the gas cost.
      * @dev Type maxes used to ensure no non-zero bytes in fee estimation.
      */
@@ -231,7 +226,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
             conf: ConfLevel.Finalized,
             to: _inboxes[fillData.srcChainId],
             data: abi.encodeCall(ISolverNetInbox.markFilled, (orderId, fillHash, block.timestamp, acceptedBy)),
-            gasLimit: MARK_FILLED_GAS_LIMIT
+            gasLimit: uint64(_fillGasLimit(fillData))
         });
         uint256 totalSpent = totalNativeValue + fee;
         if (msg.value < totalSpent) revert InsufficientFee();
@@ -276,6 +271,6 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
             expensesGas += fillData.expenses.length * 5000;
         }
 
-        return metadataGas + callsGas + expensesGas + MARK_FILLED_GAS_LIMIT;
+        return metadataGas + callsGas + expensesGas + 100_000; // 100k base gas limit
     }
 }

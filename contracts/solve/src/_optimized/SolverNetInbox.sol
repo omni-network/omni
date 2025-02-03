@@ -30,7 +30,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @notice Typehash for the OrderData struct.
      */
     bytes32 internal constant ORDERDATA_TYPEHASH = keccak256(
-        "OrderData(Metadata metadata,Deposit deposit,Call[] calls,Expense[] expenses)Metadata(address owner,uint64 chainId,uint32 fillDeadline)Call(address target,bytes4 selector,uint256 value,bytes params)Deposit(address token,uint96 amount)Expense(address spender,address token,uint96 amount)"
+        "OrderData(Header header,Deposit deposit,Call[] calls,Expense[] expenses)Header(address owner,uint64 destChainId,uint32 fillDeadline)Call(address target,bytes4 selector,uint256 value,bytes params)Deposit(address token,uint96 amount)Expense(address spender,address token,uint96 amount)"
     );
 
     /**
@@ -44,10 +44,10 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     mapping(uint64 chainId => address outbox) internal _outboxes;
 
     /**
-     * @notice Map order ID to metadata parameters.
-     * @dev (owner, openDeadline, fillDeadline)
+     * @notice Map order ID to header parameters.
+     * @dev (owner, destChainId, fillDeadline)
      */
-    mapping(bytes32 id => SolverNet.Metadata) internal _orderMetadata;
+    mapping(bytes32 id => SolverNet.Header) internal _orderHeader;
 
     /**
      * @notice Map order ID to deposit parameters.
@@ -57,7 +57,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
 
     /**
      * @notice Map order ID to call parameters.
-     * @dev (chainId, target, selector, value, params)
+     * @dev (target, selector, value, params)
      */
     mapping(bytes32 id => SolverNet.Call[]) internal _orderCalls;
 
@@ -171,11 +171,11 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @param id ID of the order.
      */
     function accept(bytes32 id) external onlyRoles(SOLVER) nonReentrant {
-        SolverNet.Metadata memory metadata = _orderMetadata[id];
+        SolverNet.Header memory header = _orderHeader[id];
         OrderState memory state = _orderState[id];
 
         if (state.latest.status != Status.Pending) revert OrderNotPending();
-        if (metadata.fillDeadline < block.timestamp && metadata.fillDeadline != 0) revert FillDeadlinePassed();
+        if (header.fillDeadline < block.timestamp && header.fillDeadline != 0) revert FillDeadlinePassed();
 
         StatusUpdate memory statusUpdate = StatusUpdate({ status: Status.Accepted, timestamp: uint32(block.timestamp) });
         _upsertOrder(id, statusUpdate, msg.sender);
@@ -193,16 +193,13 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         OrderState memory state = _orderState[id];
 
         if (state.latest.status != Status.Pending) {
-            if (state.latest.status == Status.Accepted) {
-                if (state.acceptedBy != msg.sender) revert Unauthorized();
-            } else {
-                revert OrderNotPending();
-            }
+            if (state.latest.status != Status.Accepted) revert Unauthorized();
+            if (state.acceptedBy != msg.sender) revert Unauthorized();
         }
 
         StatusUpdate memory statusUpdate = StatusUpdate({ status: Status.Rejected, timestamp: uint32(block.timestamp) });
         _upsertOrder(id, statusUpdate, address(0));
-        _transferDeposit(id, _orderMetadata[id].owner);
+        _transferDeposit(id, _orderHeader[id].owner);
 
         emit Rejected(id, msg.sender, reason);
     }
@@ -214,7 +211,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      */
     function cancel(bytes32 id) external nonReentrant {
         OrderState memory state = _orderState[id];
-        address user = _orderMetadata[id].owner;
+        address user = _orderHeader[id].owner;
 
         if (state.latest.status != Status.Pending) revert OrderNotPending();
         if (user != msg.sender) revert Unauthorized();
@@ -239,14 +236,14 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         xrecv
         nonReentrant
     {
-        SolverNet.Metadata memory metadata = _orderMetadata[id];
+        SolverNet.Header memory header = _orderHeader[id];
         OrderState memory state = _orderState[id];
 
         if (state.latest.status != Status.Pending && state.latest.status != Status.Accepted) {
             revert OrderNotPendingOrAccepted();
         }
         if (xmsg.sender != _outboxes[xmsg.sourceChainId]) revert Unauthorized();
-        if (xmsg.sourceChainId != metadata.chainId) revert WrongSourceChain();
+        if (xmsg.sourceChainId != header.destChainId) revert WrongSourceChain();
 
         // Ensure reported fill hash matches origin data
         if (fillHash != _fillHash(id)) {
@@ -282,7 +279,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      */
     function _getOrderData(bytes32 id) internal view returns (SolverNet.OrderData memory) {
         return SolverNet.OrderData({
-            metadata: _orderMetadata[id],
+            header: _orderHeader[id],
             calls: _orderCalls[id],
             deposit: _orderDeposit[id],
             expenses: _orderExpenses[id]
@@ -301,11 +298,11 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
 
         SolverNet.OrderData memory orderData = abi.decode(order.orderData, (SolverNet.OrderData));
 
-        // Validate SolverNet.OrderData.Metadata
-        SolverNet.Metadata memory metadata = orderData.metadata;
-        if (metadata.owner == address(0)) metadata.owner = msg.sender;
-        if (metadata.chainId == 0 || metadata.chainId == block.chainid) revert InvalidChainId();
-        if (metadata.fillDeadline != order.fillDeadline) revert InvalidFillDeadline();
+        // Validate SolverNet.OrderData.Header
+        SolverNet.Header memory header = orderData.header;
+        if (header.owner == address(0)) header.owner = msg.sender;
+        if (header.destChainId == 0 || header.destChainId == block.chainid) revert InvalidChainId();
+        if (header.fillDeadline != order.fillDeadline) revert InvalidFillDeadline();
 
         // Validate SolverNet.OrderData.Call
         SolverNet.Call[] memory calls = orderData.calls;
@@ -329,7 +326,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @param orderData Order data to derive from.
      */
     function _deriveMaxSpent(SolverNet.OrderData memory orderData) internal view returns (IERC7683.Output[] memory) {
-        SolverNet.Metadata memory metadata = orderData.metadata;
+        SolverNet.Header memory header = orderData.header;
         SolverNet.Call[] memory calls = orderData.calls;
         SolverNet.Expense[] memory expenses = orderData.expenses;
 
@@ -344,16 +341,16 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             maxSpent[i] = IERC7683.Output({
                 token: expenses[i].token.toBytes32(),
                 amount: expenses[i].amount,
-                recipient: _outboxes[metadata.chainId].toBytes32(),
-                chainId: metadata.chainId
+                recipient: _outboxes[header.destChainId].toBytes32(),
+                chainId: header.destChainId
             });
         }
         if (totalNativeValue > 0) {
             maxSpent[expenses.length] = IERC7683.Output({
                 token: bytes32(0),
                 amount: totalNativeValue,
-                recipient: _outboxes[metadata.chainId].toBytes32(),
-                chainId: metadata.chainId
+                recipient: _outboxes[header.destChainId].toBytes32(),
+                chainId: header.destChainId
             });
         }
 
@@ -393,19 +390,19 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         view
         returns (IERC7683.FillInstruction[] memory)
     {
-        SolverNet.Metadata memory metadata = orderData.metadata;
+        SolverNet.Header memory header = orderData.header;
         SolverNet.Call[] memory calls = orderData.calls;
         SolverNet.Expense[] memory expenses = orderData.expenses;
 
         IERC7683.FillInstruction[] memory fillInstructions = new IERC7683.FillInstruction[](1);
         fillInstructions[0] = IERC7683.FillInstruction({
-            destinationChainId: metadata.chainId,
-            destinationSettler: _outboxes[metadata.chainId].toBytes32(),
+            destinationChainId: header.destChainId,
+            destinationSettler: _outboxes[header.destChainId].toBytes32(),
             originData: abi.encode(
                 SolverNet.FillOriginData({
                     srcChainId: uint64(block.chainid),
-                    destChainId: metadata.chainId,
-                    fillDeadline: metadata.fillDeadline,
+                    destChainId: header.destChainId,
+                    fillDeadline: header.fillDeadline,
                     calls: calls,
                     expenses: expenses
                 })
@@ -420,17 +417,17 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @param orderData Order data to resolve.
      */
     function _resolve(SolverNet.OrderData memory orderData) internal view returns (ResolvedCrossChainOrder memory) {
-        SolverNet.Metadata memory metadata = orderData.metadata;
+        SolverNet.Header memory header = orderData.header;
 
         IERC7683.Output[] memory maxSpent = _deriveMaxSpent(orderData);
         IERC7683.Output[] memory minReceived = _deriveMinReceived(orderData);
         IERC7683.FillInstruction[] memory fillInstructions = _deriveFillInstructions(orderData);
 
         return ResolvedCrossChainOrder({
-            user: metadata.owner,
+            user: header.owner,
             originChainId: block.chainid,
             openDeadline: 0,
-            fillDeadline: metadata.fillDeadline,
+            fillDeadline: header.fillDeadline,
             orderId: _nextId(),
             maxSpent: maxSpent,
             minReceived: minReceived,
@@ -461,7 +458,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         resolved = _resolve(orderData);
         bytes32 id = _incrementId();
 
-        _orderMetadata[id] = orderData.metadata;
+        _orderHeader[id] = orderData.header;
         _orderDeposit[id] = orderData.deposit;
         for (uint256 i; i < orderData.calls.length; ++i) {
             _orderCalls[id].push(orderData.calls[i]);
@@ -483,6 +480,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      */
     function _transferDeposit(bytes32 id, address to) internal {
         SolverNet.Deposit memory deposit = _orderDeposit[id];
+
         if (deposit.amount > 0) {
             if (deposit.token == address(0)) to.safeTransferETH(deposit.amount);
             else deposit.token.safeTransfer(to, deposit.amount);
@@ -491,31 +489,31 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
 
     /**
      * @dev Update or insert order state by id.
-     * @param id           ID of the order.
-     * @param statusUpdate Status update to upsert.
-     * @param acceptedBy   Address of the solver who accepted the order, if applicable.
+     * @param id         ID of the order.
+     * @param update     Status update to upsert.
+     * @param acceptedBy Address of the solver who accepted the order, if applicable.
      */
-    function _upsertOrder(bytes32 id, StatusUpdate memory statusUpdate, address acceptedBy) internal {
+    function _upsertOrder(bytes32 id, StatusUpdate memory update, address acceptedBy) internal {
         OrderState memory state = _orderState[id];
 
         // Apply most recent status update
-        state.latest = statusUpdate;
+        state.latest = update;
 
-        // If statusUpdate is accepted, update accepted status
-        if (statusUpdate.status == Status.Accepted) {
-            state.accepted = statusUpdate;
+        // If update is accepted, update accepted status
+        if (update.status == Status.Accepted) {
+            state.accepted = update;
             state.acceptedBy = acceptedBy;
         }
 
         // If statusUpdate is filled, update acceptedBy if it was filled before being accepted
-        if (statusUpdate.status == Status.Filled) {
-            if (state.accepted.timestamp > statusUpdate.timestamp) {
+        if (update.status == Status.Filled) {
+            if (state.accepted.timestamp > update.timestamp) {
                 state.acceptedBy = acceptedBy;
             }
         }
 
         _orderState[id] = state;
-        _latestOrderIdByStatus[statusUpdate.status] = id;
+        _latestOrderIdByStatus[update.status] = id;
     }
 
     /**
@@ -537,14 +535,14 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @param orderId ID of the order.
      */
     function _fillHash(bytes32 orderId) internal view returns (bytes32) {
-        SolverNet.Metadata memory metadata = _orderMetadata[orderId];
+        SolverNet.Header memory header = _orderHeader[orderId];
         SolverNet.Call[] memory calls = _orderCalls[orderId];
         SolverNet.Expense[] memory expenses = _orderExpenses[orderId];
 
         SolverNet.FillOriginData memory fillOriginData = SolverNet.FillOriginData({
             srcChainId: uint64(block.chainid),
-            destChainId: metadata.chainId,
-            fillDeadline: metadata.fillDeadline,
+            destChainId: header.destChainId,
+            fillDeadline: header.fillDeadline,
             calls: calls,
             expenses: expenses
         });

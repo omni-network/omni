@@ -3,15 +3,15 @@ pragma solidity =0.8.24;
 
 library SolverNet {
     struct OrderData {
-        Metadata metadata;
+        Header header;
         Deposit deposit;
         Call[] calls;
         Expense[] expenses;
     }
 
-    struct Metadata {
+    struct Header {
         address owner;
-        uint64 chainId;
+        uint64 destChainId;
         uint32 fillDeadline;
     }
 
