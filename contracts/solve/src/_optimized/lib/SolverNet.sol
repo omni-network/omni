@@ -1,27 +1,25 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
-interface ISolverNet {
+library SolverNet {
     struct OrderData {
-        address owner;
-        Call call;
-        Values values;
+        Metadata metadata;
         Deposit deposit;
+        Call[] calls;
         Expense[] expenses;
     }
 
-    struct Call {
+    struct Metadata {
+        address owner;
         uint64 chainId;
-        address target;
-        bytes4 selector;
-        bytes callParams;
+        uint32 fillDeadline;
     }
 
-    struct Values {
-        uint96 nativeTip;
-        uint96 callValue;
-        uint32 openDeadline;
-        uint32 fillDeadline;
+    struct Call {
+        address target;
+        bytes4 selector;
+        uint256 value;
+        bytes params;
     }
 
     struct Deposit {
@@ -39,9 +37,7 @@ interface ISolverNet {
         uint64 srcChainId;
         uint64 destChainId;
         uint32 fillDeadline;
-        uint96 callValue;
-        address target;
-        bytes callData;
+        Call[] calls;
         Expense[] expenses;
     }
 }

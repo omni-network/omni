@@ -9,8 +9,10 @@ import { XAppBase } from "core/src/pkg/XAppBase.sol";
 import { ISolverNetOutbox } from "./interfaces/ISolverNetOutbox.sol";
 import { SolverNetExecutor } from "./SolverNetExecutor.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
+import { FixedPointMathLib } from "solady/src/utils/FixedPointMathLib.sol";
 import { ConfLevel } from "core/src/libraries/ConfLevel.sol";
 import { TypeMax } from "core/src/libraries/TypeMax.sol";
+import { SolverNet } from "./lib/SolverNet.sol";
 import { AddrUtils } from "../lib/AddrUtils.sol";
 import { ISolverNetInbox } from "./interfaces/ISolverNetInbox.sol";
 
@@ -96,11 +98,12 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
 
     /**
      * @notice Returns the xcall fee required to mark an order filled on the source inbox.
-     * @param srcChainId Chain ID on which the order was opened.
+     * @param originData Data emitted on the origin to parameterize the fill.
      * @return           Fee amount in native currency.
      */
-    function fillFee(uint64 srcChainId) public view returns (uint256) {
-        return feeFor(srcChainId, MARK_FILLED_STUB_CDATA, MARK_FILLED_GAS_LIMIT);
+    function fillFee(bytes calldata originData) public view returns (uint256) {
+        SolverNet.FillOriginData memory fillData = abi.decode(originData, (SolverNet.FillOriginData));
+        return feeFor(fillData.srcChainId, MARK_FILLED_STUB_CDATA, uint64(_fillGasLimit(fillData)));
     }
 
     /**
@@ -124,7 +127,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         onlyRoles(SOLVER)
         nonReentrant
     {
-        FillOriginData memory fillData = abi.decode(originData, (FillOriginData));
+        SolverNet.FillOriginData memory fillData = abi.decode(originData, (SolverNet.FillOriginData));
         address acceptedBy;
 
         if (fillData.destChainId != block.chainid) revert WrongDestChain();
@@ -132,8 +135,8 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         if (fillerData.length != 0 && fillerData.length != 32) revert BadFillerData();
         if (fillerData.length == 32) acceptedBy = abi.decode(fillerData, (address));
 
-        _executeCall(fillData);
-        _markFilled(orderId, fillData, acceptedBy);
+        uint256 totalNativeValue = _executeCalls(fillData);
+        _markFilled(orderId, fillData, acceptedBy, totalNativeValue);
     }
 
     /**
@@ -141,10 +144,10 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
      * Approve spenders. Verify post-call balances match pre-call.
      * @dev Expenses doesn't contain native tokens sent alongside the call.
      */
-    modifier withExpenses(Expense[] memory expenses) {
+    modifier withExpenses(SolverNet.Expense[] memory expenses) {
         // transfer from solver, approve spenders
         for (uint256 i; i < expenses.length; ++i) {
-            Expense memory expense = expenses[i];
+            SolverNet.Expense memory expense = expenses[i];
             address spender = expense.spender;
             address token = expense.token;
             uint256 amount = expense.amount;
@@ -163,7 +166,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         // that token as an expense will get the balance.
         // This includes the call target.
         for (uint256 i; i < expenses.length; ++i) {
-            Expense memory expense = expenses[i];
+            SolverNet.Expense memory expense = expenses[i];
             address token = expense.token;
             uint256 tokenBalance = token.balanceOf(address(_executor));
 
@@ -182,9 +185,26 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
     /**
      * @notice Verify and execute a call. Expenses are processed and enforced.
      * @param fillData ABI decoded fill originData.
+     * @return totalNativeValue total native value of the calls.
      */
-    function _executeCall(FillOriginData memory fillData) internal withExpenses(fillData.expenses) {
-        _executor.execute{ value: fillData.callValue }(fillData.target, fillData.callValue, fillData.callData);
+    function _executeCalls(SolverNet.FillOriginData memory fillData)
+        internal
+        withExpenses(fillData.expenses)
+        returns (uint256)
+    {
+        uint256 totalNativeValue;
+
+        for (uint256 i; i < fillData.calls.length; ++i) {
+            SolverNet.Call memory call = fillData.calls[i];
+            _executor.execute{ value: call.value }(
+                call.target, call.value, abi.encodePacked(call.selector, call.params)
+            );
+            unchecked {
+                totalNativeValue += call.value;
+            }
+        }
+
+        return totalNativeValue;
     }
 
     /**
@@ -192,8 +212,14 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
      * @param orderId    ID of the order.
      * @param fillData   ABI decoded fill originData.
      * @param acceptedBy acceptedBy address to use if the order wasn't accepted before the fill.
+     * @param totalNativeValue total native value of the calls.
      */
-    function _markFilled(bytes32 orderId, FillOriginData memory fillData, address acceptedBy) internal {
+    function _markFilled(
+        bytes32 orderId,
+        SolverNet.FillOriginData memory fillData,
+        address acceptedBy,
+        uint256 totalNativeValue
+    ) internal {
         // mark filled on outbox (here)
         bytes32 fillHash = _fillHash(orderId, abi.encode(fillData));
         if (_filled[fillHash]) revert AlreadyFilled();
@@ -207,7 +233,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
             data: abi.encodeCall(ISolverNetInbox.markFilled, (orderId, fillHash, block.timestamp, acceptedBy)),
             gasLimit: MARK_FILLED_GAS_LIMIT
         });
-        uint256 totalSpent = fillData.callValue + fee;
+        uint256 totalSpent = totalNativeValue + fee;
         if (msg.value < totalSpent) revert InsufficientFee();
 
         // refund any overpayment in native currency
@@ -222,5 +248,34 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
      */
     function _fillHash(bytes32 srcReqId, bytes memory originData) internal pure returns (bytes32) {
         return keccak256(abi.encode(srcReqId, originData));
+    }
+
+    /**
+     * @notice Returns the gas limit required to mark an order as filled on the source inbox.
+     * @param fillData ABI decoded fill originData.
+     * @return gasLimit Gas limit for the fill.
+     */
+    function _fillGasLimit(SolverNet.FillOriginData memory fillData) internal pure returns (uint256) {
+        // 2500 gas for the Metadata struct SLOAD.
+        uint256 metadataGas = 2500;
+
+        // 2500 gas for Call array length SLOAD + dynamic cost of reading each call.
+        uint256 callsGas = 2500;
+        for (uint256 i; i < fillData.calls.length; ++i) {
+            SolverNet.Call memory call = fillData.calls[i];
+            unchecked {
+                // 5000 gas for the two slots that hold target, selector, and value.
+                // 2500 gas per params slot (1 per function argument) used (minimum of 1 slot).
+                callsGas += 5000 + (FixedPointMathLib.divUp(call.params.length + 32, 32) * 2500);
+            }
+        }
+
+        // 2500 gas for Expense array length SLOAD + cost of reading each expense.
+        uint256 expensesGas = 2500;
+        unchecked {
+            expensesGas += fillData.expenses.length * 5000;
+        }
+
+        return metadataGas + callsGas + expensesGas + MARK_FILLED_GAS_LIMIT;
     }
 }

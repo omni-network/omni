@@ -2,9 +2,8 @@
 pragma solidity =0.8.24;
 
 import { IDestinationSettler } from "../../erc7683/IDestinationSettler.sol";
-import { ISolverNet } from "./ISolverNet.sol";
 
-interface ISolverNetOutbox is IDestinationSettler, ISolverNet {
+interface ISolverNetOutbox is IDestinationSettler {
     error BadFillerData();
     error AlreadyFilled();
     error WrongDestChain();
@@ -40,10 +39,10 @@ interface ISolverNetOutbox is IDestinationSettler, ISolverNet {
 
     /**
      * @notice Returns the xcall fee required to mark an order filled on the source inbox.
-     * @param srcChainId ID of the source chain.
+     * @param originData Data emitted on the origin to parameterize the fill.
      * @return           Fee amount in native currency.
      */
-    function fillFee(uint64 srcChainId) external view returns (uint256);
+    function fillFee(bytes calldata originData) external view returns (uint256);
 
     /**
      * @notice Returns whether a call has been filled.

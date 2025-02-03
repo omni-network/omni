@@ -2,22 +2,19 @@
 pragma solidity =0.8.24;
 
 import { IOriginSettler } from "../../erc7683/IOriginSettler.sol";
-import { ISolverNet } from "./ISolverNet.sol";
 
-interface ISolverNetInbox is IOriginSettler, ISolverNet {
+interface ISolverNetInbox is IOriginSettler {
     // Validation errors
     error InvalidOrderTypehash();
     error InvalidOrderData();
-    error InvalidCallChainId();
-    error InvalidCallTarget();
-    error InvalidOpenDeadline();
+    error InvalidChainId();
     error InvalidFillDeadline();
-    error InvalidDepositAmount();
+    error InvalidCallTarget();
     error InvalidExpenseToken();
     error InvalidExpenseAmount();
 
     // Open order errors
-    error InvalidNativeTip();
+    error InvalidNativeDeposit();
 
     // Order accept/reject/cancel errors
     error OrderNotPending();

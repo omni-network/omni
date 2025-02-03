@@ -9,6 +9,7 @@ import { XAppBase } from "core/src/pkg/XAppBase.sol";
 import { IERC7683 } from "../erc7683/IERC7683.sol";
 import { ISolverNetInbox } from "./interfaces/ISolverNetInbox.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
+import { SolverNet } from "./lib/SolverNet.sol";
 import { AddrUtils } from "../lib/AddrUtils.sol";
 
 /**
@@ -26,10 +27,10 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     uint256 internal constant SOLVER = _ROLE_0;
 
     /**
-     * @notice Typehash for the Order struct.
+     * @notice Typehash for the OrderData struct.
      */
-    bytes32 internal constant ORDER_TYPEHASH = keccak256(
-        "Order(address owner,Call call,Values values,Deposit deposit,Expense[] expenses)Call(uint64 chainId,address target,bytes4 selector,bytes callParams)Values(uint96 nativeTip,uint96 callValue,uint32 openDeadline,uint32 fillDeadline)Deposit(address token,uint96 amount)Expense(address spender,address token,uint96 amount)"
+    bytes32 internal constant ORDERDATA_TYPEHASH = keccak256(
+        "OrderData(Metadata metadata,Deposit deposit,Call[] calls,Expense[] expenses)Metadata(address owner,uint64 chainId,uint32 fillDeadline)Call(address target,bytes4 selector,uint256 value,bytes params)Deposit(address token,uint96 amount)Expense(address spender,address token,uint96 amount)"
     );
 
     /**
@@ -43,33 +44,28 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     mapping(uint64 chainId => address outbox) internal _outboxes;
 
     /**
-     * @notice Map order ID to owner.
+     * @notice Map order ID to metadata parameters.
+     * @dev (owner, openDeadline, fillDeadline)
      */
-    mapping(bytes32 id => address owner) internal _orderOwners;
-
-    /**
-     * @notice Map order ID to call parameters.
-     * @dev (chainId, target, selector, callParams)
-     */
-    mapping(bytes32 id => Call) internal _orderCalls;
-
-    /**
-     * @notice Map order ID to order values.
-     * @dev (nativeTip, callValue, openDeadline, fillDeadline)
-     */
-    mapping(bytes32 id => Values) internal _orderValues;
+    mapping(bytes32 id => SolverNet.Metadata) internal _orderMetadata;
 
     /**
      * @notice Map order ID to deposit parameters.
      * @dev (token, amount)
      */
-    mapping(bytes32 id => Deposit) internal _orderDeposits;
+    mapping(bytes32 id => SolverNet.Deposit) internal _orderDeposit;
+
+    /**
+     * @notice Map order ID to call parameters.
+     * @dev (chainId, target, selector, value, params)
+     */
+    mapping(bytes32 id => SolverNet.Call[]) internal _orderCalls;
 
     /**
      * @notice Map order ID to expense parameters.
      * @dev (spender, token, amount)
      */
-    mapping(bytes32 id => Expense[]) internal _orderExpenses;
+    mapping(bytes32 id => SolverNet.Expense[]) internal _orderExpenses;
 
     /**
      * @notice Map order ID to order parameters.
@@ -119,7 +115,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         view
         returns (ResolvedCrossChainOrder memory resolved, OrderState memory state)
     {
-        OrderData memory orderData = _getOrderData(id);
+        SolverNet.OrderData memory orderData = _getOrderData(id);
         return (_resolve(orderData), _orderState[id]);
     }
 
@@ -152,7 +148,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @param order OnchainCrossChainOrder to resolve.
      */
     function resolve(OnchainCrossChainOrder calldata order) public view returns (ResolvedCrossChainOrder memory) {
-        OrderData memory orderData = _validate(order);
+        SolverNet.OrderData memory orderData = _validate(order);
         return _resolve(orderData);
     }
 
@@ -162,8 +158,8 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @param order OnchainCrossChainOrder to open.
      */
     function open(OnchainCrossChainOrder calldata order) external payable nonReentrant {
-        OrderData memory orderData = _validate(order);
-        _processDeposits(orderData);
+        SolverNet.OrderData memory orderData = _validate(order);
+        _processDeposit(orderData.deposit);
         ResolvedCrossChainOrder memory resolved = _openOrder(orderData);
 
         emit Open(resolved.orderId, resolved);
@@ -175,11 +171,11 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @param id ID of the order.
      */
     function accept(bytes32 id) external onlyRoles(SOLVER) nonReentrant {
-        Values memory values = _orderValues[id];
+        SolverNet.Metadata memory metadata = _orderMetadata[id];
         OrderState memory state = _orderState[id];
 
         if (state.latest.status != Status.Pending) revert OrderNotPending();
-        if (values.fillDeadline < block.timestamp && values.fillDeadline != 0) revert FillDeadlinePassed();
+        if (metadata.fillDeadline < block.timestamp && metadata.fillDeadline != 0) revert FillDeadlinePassed();
 
         StatusUpdate memory statusUpdate = StatusUpdate({ status: Status.Accepted, timestamp: uint32(block.timestamp) });
         _upsertOrder(id, statusUpdate, msg.sender);
@@ -206,7 +202,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
 
         StatusUpdate memory statusUpdate = StatusUpdate({ status: Status.Rejected, timestamp: uint32(block.timestamp) });
         _upsertOrder(id, statusUpdate, address(0));
-        _transferDeposits(id, _orderOwners[id]);
+        _transferDeposit(id, _orderMetadata[id].owner);
 
         emit Rejected(id, msg.sender, reason);
     }
@@ -218,14 +214,14 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      */
     function cancel(bytes32 id) external nonReentrant {
         OrderState memory state = _orderState[id];
-        address user = _orderOwners[id];
+        address user = _orderMetadata[id].owner;
 
         if (state.latest.status != Status.Pending) revert OrderNotPending();
         if (user != msg.sender) revert Unauthorized();
 
         StatusUpdate memory statusUpdate = StatusUpdate({ status: Status.Reverted, timestamp: uint32(block.timestamp) });
         _upsertOrder(id, statusUpdate, address(0));
-        _transferDeposits(id, user);
+        _transferDeposit(id, user);
 
         emit Reverted(id);
     }
@@ -243,14 +239,14 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         xrecv
         nonReentrant
     {
-        Call memory call = _orderCalls[id];
+        SolverNet.Metadata memory metadata = _orderMetadata[id];
         OrderState memory state = _orderState[id];
 
         if (state.latest.status != Status.Pending && state.latest.status != Status.Accepted) {
             revert OrderNotPendingOrAccepted();
         }
         if (xmsg.sender != _outboxes[xmsg.sourceChainId]) revert Unauthorized();
-        if (xmsg.sourceChainId != call.chainId) revert WrongSourceChain();
+        if (xmsg.sourceChainId != metadata.chainId) revert WrongSourceChain();
 
         // Ensure reported fill hash matches origin data
         if (fillHash != _fillHash(id)) {
@@ -275,7 +271,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
 
         StatusUpdate memory statusUpdate = StatusUpdate({ status: Status.Claimed, timestamp: uint32(block.timestamp) });
         _upsertOrder(id, statusUpdate, address(0));
-        _transferDeposits(id, to);
+        _transferDeposit(id, to);
 
         emit Claimed(id, msg.sender, to);
     }
@@ -284,12 +280,11 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @dev Return the order data for the given ID.
      * @param id ID of the order.
      */
-    function _getOrderData(bytes32 id) internal view returns (OrderData memory) {
-        return OrderData({
-            owner: _orderOwners[id],
-            call: _orderCalls[id],
-            values: _orderValues[id],
-            deposit: _orderDeposits[id],
+    function _getOrderData(bytes32 id) internal view returns (SolverNet.OrderData memory) {
+        return SolverNet.OrderData({
+            metadata: _orderMetadata[id],
+            calls: _orderCalls[id],
+            deposit: _orderDeposit[id],
             expenses: _orderExpenses[id]
         });
     }
@@ -298,26 +293,29 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @dev Parse and return order data, validate correctness.
      * @param order OnchainCrossChainOrder to parse
      */
-    function _validate(OnchainCrossChainOrder calldata order) internal view returns (OrderData memory) {
+    function _validate(OnchainCrossChainOrder calldata order) internal view returns (SolverNet.OrderData memory) {
+        // Validate OnchainCrossChainOrder
         if (order.fillDeadline < block.timestamp && order.fillDeadline != 0) revert InvalidFillDeadline();
-        if (order.orderDataType != ORDER_TYPEHASH) revert InvalidOrderTypehash();
+        if (order.orderDataType != ORDERDATA_TYPEHASH) revert InvalidOrderTypehash();
         if (order.orderData.length == 0) revert InvalidOrderData();
 
-        OrderData memory orderData = abi.decode(order.orderData, (OrderData));
-        Call memory call = orderData.call;
-        Values memory values = orderData.values;
-        Deposit memory deposit = orderData.deposit;
-        Expense[] memory expenses = orderData.expenses;
+        SolverNet.OrderData memory orderData = abi.decode(order.orderData, (SolverNet.OrderData));
 
-        if (orderData.owner == address(0)) orderData.owner = msg.sender;
-        if (call.chainId == 0 || call.chainId == block.chainid) revert InvalidCallChainId();
-        if (call.target == address(0)) revert InvalidCallTarget();
-        if (values.openDeadline < block.timestamp) revert InvalidOpenDeadline();
-        if (values.fillDeadline <= values.openDeadline || order.fillDeadline != values.fillDeadline) {
-            revert InvalidFillDeadline();
+        // Validate SolverNet.OrderData.Metadata
+        SolverNet.Metadata memory metadata = orderData.metadata;
+        if (metadata.owner == address(0)) metadata.owner = msg.sender;
+        if (metadata.chainId == 0 || metadata.chainId == block.chainid) revert InvalidChainId();
+        if (metadata.fillDeadline != order.fillDeadline) revert InvalidFillDeadline();
+
+        // Validate SolverNet.OrderData.Call
+        SolverNet.Call[] memory calls = orderData.calls;
+        for (uint256 i; i < calls.length; ++i) {
+            SolverNet.Call memory call = calls[i];
+            if (call.target == address(0)) revert InvalidCallTarget();
         }
-        if (deposit.token == address(0) && deposit.amount != 0) revert InvalidDepositAmount();
-        if (deposit.token != address(0) && deposit.amount == 0) revert InvalidDepositAmount();
+
+        // Validate SolverNet.OrderData.Expenses
+        SolverNet.Expense[] memory expenses = orderData.expenses;
         for (uint256 i; i < expenses.length; ++i) {
             if (expenses[i].token == address(0)) revert InvalidExpenseToken();
             if (expenses[i].amount == 0) revert InvalidExpenseAmount();
@@ -330,27 +328,32 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @dev Derive the maxSpent Output for the order.
      * @param orderData Order data to derive from.
      */
-    function _deriveMaxSpent(OrderData memory orderData) internal view returns (IERC7683.Output[] memory) {
-        Call memory call = orderData.call;
-        Values memory values = orderData.values;
-        Expense[] memory expenses = orderData.expenses;
+    function _deriveMaxSpent(SolverNet.OrderData memory orderData) internal view returns (IERC7683.Output[] memory) {
+        SolverNet.Metadata memory metadata = orderData.metadata;
+        SolverNet.Call[] memory calls = orderData.calls;
+        SolverNet.Expense[] memory expenses = orderData.expenses;
+
+        uint256 totalNativeValue;
+        for (uint256 i; i < calls.length; ++i) {
+            if (calls[i].value > 0) totalNativeValue += calls[i].value;
+        }
 
         IERC7683.Output[] memory maxSpent =
-            new IERC7683.Output[](values.callValue > 0 ? expenses.length + 1 : expenses.length);
+            new IERC7683.Output[](totalNativeValue > 0 ? expenses.length + 1 : expenses.length);
         for (uint256 i; i < expenses.length; ++i) {
             maxSpent[i] = IERC7683.Output({
                 token: expenses[i].token.toBytes32(),
                 amount: expenses[i].amount,
-                recipient: _outboxes[call.chainId].toBytes32(),
-                chainId: call.chainId
+                recipient: _outboxes[metadata.chainId].toBytes32(),
+                chainId: metadata.chainId
             });
         }
-        if (values.callValue > 0) {
+        if (totalNativeValue > 0) {
             maxSpent[expenses.length] = IERC7683.Output({
                 token: bytes32(0),
-                amount: values.callValue,
-                recipient: _outboxes[call.chainId].toBytes32(),
-                chainId: call.chainId
+                amount: totalNativeValue,
+                recipient: _outboxes[metadata.chainId].toBytes32(),
+                chainId: metadata.chainId
             });
         }
 
@@ -361,31 +364,18 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @dev Derive the minReceived Output for the order.
      * @param orderData Order data to derive from.
      */
-    function _deriveMinReceived(OrderData memory orderData) internal view returns (IERC7683.Output[] memory) {
-        Values memory values = orderData.values;
-        Deposit memory deposit = orderData.deposit;
+    function _deriveMinReceived(SolverNet.OrderData memory orderData)
+        internal
+        view
+        returns (IERC7683.Output[] memory)
+    {
+        SolverNet.Deposit memory deposit = orderData.deposit;
 
-        uint8 deposits;
-        bool erc20Deposit = deposit.token != address(0);
-        bool nativeDeposit = values.nativeTip > 0;
-        unchecked {
-            if (erc20Deposit) ++deposits;
-            if (nativeDeposit) ++deposits;
-        }
-
-        IERC7683.Output[] memory minReceived = new IERC7683.Output[](deposits);
-        if (erc20Deposit) {
+        IERC7683.Output[] memory minReceived = new IERC7683.Output[](deposit.amount > 0 ? 1 : 0);
+        if (deposit.amount > 0) {
             minReceived[0] = IERC7683.Output({
                 token: deposit.token.toBytes32(),
                 amount: deposit.amount,
-                recipient: bytes32(0),
-                chainId: block.chainid
-            });
-        }
-        if (nativeDeposit) {
-            minReceived[deposits - 1] = IERC7683.Output({
-                token: bytes32(0),
-                amount: values.nativeTip,
                 recipient: bytes32(0),
                 chainId: block.chainid
             });
@@ -398,27 +388,25 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @dev Derive the fillInstructions for the order.
      * @param orderData Order data to derive from.
      */
-    function _deriveFillInstructions(OrderData memory orderData)
+    function _deriveFillInstructions(SolverNet.OrderData memory orderData)
         internal
         view
         returns (IERC7683.FillInstruction[] memory)
     {
-        Call memory call = orderData.call;
-        Values memory values = orderData.values;
-        Expense[] memory expenses = orderData.expenses;
+        SolverNet.Metadata memory metadata = orderData.metadata;
+        SolverNet.Call[] memory calls = orderData.calls;
+        SolverNet.Expense[] memory expenses = orderData.expenses;
 
         IERC7683.FillInstruction[] memory fillInstructions = new IERC7683.FillInstruction[](1);
         fillInstructions[0] = IERC7683.FillInstruction({
-            destinationChainId: call.chainId,
-            destinationSettler: _outboxes[call.chainId].toBytes32(),
+            destinationChainId: metadata.chainId,
+            destinationSettler: _outboxes[metadata.chainId].toBytes32(),
             originData: abi.encode(
-                FillOriginData({
+                SolverNet.FillOriginData({
                     srcChainId: uint64(block.chainid),
-                    destChainId: call.chainId,
-                    fillDeadline: values.fillDeadline,
-                    callValue: values.callValue,
-                    target: call.target,
-                    callData: abi.encodePacked(call.selector, call.callParams),
+                    destChainId: metadata.chainId,
+                    fillDeadline: metadata.fillDeadline,
+                    calls: calls,
                     expenses: expenses
                 })
             )
@@ -431,18 +419,18 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @dev Resolve the order without validation.
      * @param orderData Order data to resolve.
      */
-    function _resolve(OrderData memory orderData) internal view returns (ResolvedCrossChainOrder memory) {
-        Values memory values = orderData.values;
+    function _resolve(SolverNet.OrderData memory orderData) internal view returns (ResolvedCrossChainOrder memory) {
+        SolverNet.Metadata memory metadata = orderData.metadata;
 
         IERC7683.Output[] memory maxSpent = _deriveMaxSpent(orderData);
         IERC7683.Output[] memory minReceived = _deriveMinReceived(orderData);
         IERC7683.FillInstruction[] memory fillInstructions = _deriveFillInstructions(orderData);
 
         return ResolvedCrossChainOrder({
-            user: orderData.owner,
+            user: metadata.owner,
             originChainId: block.chainid,
-            openDeadline: values.openDeadline,
-            fillDeadline: values.fillDeadline,
+            openDeadline: 0,
+            fillDeadline: metadata.fillDeadline,
             orderId: _nextId(),
             maxSpent: maxSpent,
             minReceived: minReceived,
@@ -451,15 +439,13 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     }
 
     /**
-     * @notice Validate and intake ERC20 and/or native deposits.
-     * @param orderData  Order data to process.
+     * @notice Validate and intake an ERC20 or native deposit.
+     * @param deposit Deposit to process.
      */
-    function _processDeposits(OrderData memory orderData) internal {
-        Values memory values = orderData.values;
-        Deposit memory deposit = orderData.deposit;
-
-        if (msg.value != values.nativeTip) revert InvalidNativeTip();
-        if (deposit.token != address(0)) {
+    function _processDeposit(SolverNet.Deposit memory deposit) internal {
+        if (deposit.token == address(0)) {
+            if (msg.value != deposit.amount) revert InvalidNativeDeposit();
+        } else {
             deposit.token.safeTransferFrom(msg.sender, address(this), deposit.amount);
         }
     }
@@ -468,14 +454,18 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @dev Opens a new order by initializing its state.
      * @param orderData Order data to open.
      */
-    function _openOrder(OrderData memory orderData) internal returns (ResolvedCrossChainOrder memory resolved) {
+    function _openOrder(SolverNet.OrderData memory orderData)
+        internal
+        returns (ResolvedCrossChainOrder memory resolved)
+    {
         resolved = _resolve(orderData);
         bytes32 id = _incrementId();
 
-        _orderOwners[id] = orderData.owner;
-        _orderCalls[id] = orderData.call;
-        _orderValues[id] = orderData.values;
-        _orderDeposits[id] = orderData.deposit;
+        _orderMetadata[id] = orderData.metadata;
+        _orderDeposit[id] = orderData.deposit;
+        for (uint256 i; i < orderData.calls.length; ++i) {
+            _orderCalls[id].push(orderData.calls[i]);
+        }
         for (uint256 i; i < orderData.expenses.length; ++i) {
             _orderExpenses[id].push(orderData.expenses[i]);
         }
@@ -487,19 +477,15 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     }
 
     /**
-     * @dev Transfer deposits to recipient. Used for both refunds and claims.
+     * @dev Transfer deposit to recipient. Used for both refunds and claims.
      * @param id ID of the order.
      * @param to Address to send deposits to.
      */
-    function _transferDeposits(bytes32 id, address to) internal {
-        Values memory values = _orderValues[id];
-        Deposit memory deposit = _orderDeposits[id];
-
-        if (values.nativeTip > 0) {
-            to.safeTransferETH(values.nativeTip);
-        }
-        if (deposit.token != address(0)) {
-            deposit.token.safeTransfer(to, deposit.amount);
+    function _transferDeposit(bytes32 id, address to) internal {
+        SolverNet.Deposit memory deposit = _orderDeposit[id];
+        if (deposit.amount > 0) {
+            if (deposit.token == address(0)) to.safeTransferETH(deposit.amount);
+            else deposit.token.safeTransfer(to, deposit.amount);
         }
     }
 
@@ -551,17 +537,15 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @param orderId ID of the order.
      */
     function _fillHash(bytes32 orderId) internal view returns (bytes32) {
-        Call memory call = _orderCalls[orderId];
-        Values memory values = _orderValues[orderId];
-        Expense[] memory expenses = _orderExpenses[orderId];
+        SolverNet.Metadata memory metadata = _orderMetadata[orderId];
+        SolverNet.Call[] memory calls = _orderCalls[orderId];
+        SolverNet.Expense[] memory expenses = _orderExpenses[orderId];
 
-        FillOriginData memory fillOriginData = FillOriginData({
+        SolverNet.FillOriginData memory fillOriginData = SolverNet.FillOriginData({
             srcChainId: uint64(block.chainid),
-            destChainId: call.chainId,
-            fillDeadline: values.fillDeadline,
-            callValue: values.callValue,
-            target: call.target,
-            callData: abi.encodePacked(call.selector, call.callParams),
+            destChainId: metadata.chainId,
+            fillDeadline: metadata.fillDeadline,
+            calls: calls,
             expenses: expenses
         });
 
