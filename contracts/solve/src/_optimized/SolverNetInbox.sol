@@ -174,11 +174,10 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         SolverNet.Header memory header = _orderHeader[id];
         OrderState memory state = _orderState[id];
 
-        if (state.latest.status != Status.Pending) revert OrderNotPending();
+        if (state.status != Status.Pending) revert OrderNotPending();
         if (header.fillDeadline < block.timestamp && header.fillDeadline != 0) revert FillDeadlinePassed();
 
-        StatusUpdate memory statusUpdate = StatusUpdate({ status: Status.Accepted, timestamp: uint32(block.timestamp) });
-        _upsertOrder(id, statusUpdate, msg.sender);
+        _upsertOrder(id, Status.Accepted, msg.sender);
 
         emit Accepted(id, msg.sender);
     }
@@ -192,13 +191,12 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     function reject(bytes32 id, uint8 reason) external onlyRoles(SOLVER) nonReentrant {
         OrderState memory state = _orderState[id];
 
-        if (state.latest.status != Status.Pending) {
-            if (state.latest.status != Status.Accepted) revert Unauthorized();
-            if (state.acceptedBy != msg.sender) revert Unauthorized();
+        if (state.status != Status.Pending) {
+            if (state.status != Status.Accepted) revert Unauthorized();
+            if (state.claimant != msg.sender) revert Unauthorized();
         }
 
-        StatusUpdate memory statusUpdate = StatusUpdate({ status: Status.Rejected, timestamp: uint32(block.timestamp) });
-        _upsertOrder(id, statusUpdate, address(0));
+        _upsertOrder(id, Status.Reverted, msg.sender);
         _transferDeposit(id, _orderHeader[id].owner);
 
         emit Rejected(id, msg.sender, reason);
@@ -213,11 +211,10 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         OrderState memory state = _orderState[id];
         address user = _orderHeader[id].owner;
 
-        if (state.latest.status != Status.Pending) revert OrderNotPending();
+        if (state.status != Status.Pending) revert OrderNotPending();
         if (user != msg.sender) revert Unauthorized();
 
-        StatusUpdate memory statusUpdate = StatusUpdate({ status: Status.Reverted, timestamp: uint32(block.timestamp) });
-        _upsertOrder(id, statusUpdate, address(0));
+        _upsertOrder(id, Status.Reverted, msg.sender);
         _transferDeposit(id, user);
 
         emit Reverted(id);
@@ -226,20 +223,15 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     /**
      * @notice Fill an order.
      * @dev Only callable by the outbox.
-     * @param id         ID of the order.
-     * @param fillHash   Hash of fill instructions origin data.
-     * @param timestamp  Timestamp of the fill.
-     * @param acceptedBy Address of the solver that filled the order if they didnt accept it first.
+     * @param id        ID of the order.
+     * @param fillHash  Hash of fill instructions origin data.
+     * @param claimant  Address to claim the order, provided by the filler.
      */
-    function markFilled(bytes32 id, bytes32 fillHash, uint256 timestamp, address acceptedBy)
-        external
-        xrecv
-        nonReentrant
-    {
+    function markFilled(bytes32 id, bytes32 fillHash, address claimant) external xrecv nonReentrant {
         SolverNet.Header memory header = _orderHeader[id];
         OrderState memory state = _orderState[id];
 
-        if (state.latest.status != Status.Pending && state.latest.status != Status.Accepted) {
+        if (state.status != Status.Pending && state.status != Status.Accepted) {
             revert OrderNotPendingOrAccepted();
         }
         if (xmsg.sender != _outboxes[xmsg.sourceChainId]) revert Unauthorized();
@@ -250,10 +242,8 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             revert WrongFillHash();
         }
 
-        StatusUpdate memory statusUpdate = StatusUpdate({ status: Status.Filled, timestamp: uint32(timestamp) });
-        _upsertOrder(id, statusUpdate, acceptedBy);
-
-        emit Filled(id, fillHash, state.acceptedBy);
+        _upsertOrder(id, Status.Filled, claimant);
+        emit Filled(id, fillHash, claimant);
     }
 
     /**
@@ -263,11 +253,11 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      */
     function claim(bytes32 id, address to) external nonReentrant {
         OrderState memory state = _orderState[id];
-        if (state.latest.status != Status.Filled) revert OrderNotFilled();
-        if (state.acceptedBy != msg.sender) revert Unauthorized();
 
-        StatusUpdate memory statusUpdate = StatusUpdate({ status: Status.Claimed, timestamp: uint32(block.timestamp) });
-        _upsertOrder(id, statusUpdate, address(0));
+        if (state.status != Status.Filled) revert OrderNotFilled();
+        if (state.claimant != msg.sender) revert Unauthorized();
+
+        _upsertOrder(id, Status.Claimed, msg.sender);
         _transferDeposit(id, to);
 
         emit Claimed(id, msg.sender, to);
@@ -467,8 +457,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             _orderExpenses[id].push(orderData.expenses[i]);
         }
 
-        StatusUpdate memory statusUpdate = StatusUpdate({ status: Status.Pending, timestamp: uint32(block.timestamp) });
-        _upsertOrder(id, statusUpdate, address(0));
+        _upsertOrder(id, Status.Pending, msg.sender);
 
         return resolved;
     }
@@ -489,31 +478,20 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
 
     /**
      * @dev Update or insert order state by id.
-     * @param id         ID of the order.
-     * @param update     Status update to upsert.
-     * @param acceptedBy Address of the solver who accepted the order, if applicable.
+     * @param id        ID of the order.
+     * @param status    Status to upsert.
+     * @param updatedBy Address updating the order, only written to state if status is Accepted or Filled.
      */
-    function _upsertOrder(bytes32 id, StatusUpdate memory update, address acceptedBy) internal {
+    function _upsertOrder(bytes32 id, Status status, address updatedBy) internal {
         OrderState memory state = _orderState[id];
 
-        // Apply most recent status update
-        state.latest = update;
-
-        // If update is accepted, update accepted status
-        if (update.status == Status.Accepted) {
-            state.accepted = update;
-            state.acceptedBy = acceptedBy;
-        }
-
-        // If statusUpdate is filled, update acceptedBy if it was filled before being accepted
-        if (update.status == Status.Filled) {
-            if (state.accepted.timestamp > update.timestamp) {
-                state.acceptedBy = acceptedBy;
-            }
-        }
+        state.status = status;
+        state.timestamp = uint32(block.timestamp);
+        if (status == Status.Accepted) state.claimant = updatedBy;
+        if (status == Status.Filled && state.claimant == address(0)) state.claimant = updatedBy;
 
         _orderState[id] = state;
-        _latestOrderIdByStatus[update.status] = id;
+        _latestOrderIdByStatus[status] = id;
     }
 
     /**

@@ -86,25 +86,15 @@ interface ISolverNetInbox is IOriginSettler {
     }
 
     /**
-     * @notice Status update for an order.
-     * @param status    Order status.
-     * @param timestamp Timestamp of the status update.
-     */
-    struct StatusUpdate {
-        Status status;
-        uint32 timestamp;
-    }
-
-    /**
      * @notice State of an order.
-     * @param latest     Latest order status.
-     * @param accepted   Status of the order when it was accepted.
-     * @param acceptedBy Address of the solver that accepted the order.
+     * @param status    Latest order status.
+     * @param timestamp Timestamp of the status update.
+     * @param claimant  Address of the claimant, defined at fill.
      */
     struct OrderState {
-        StatusUpdate latest;
-        StatusUpdate accepted;
-        address acceptedBy;
+        Status status;
+        uint32 timestamp;
+        address claimant;
     }
 
     /**
@@ -165,12 +155,11 @@ interface ISolverNetInbox is IOriginSettler {
     /**
      * @notice Fill an order.
      * @dev Only callable by the outbox.
-     * @param id         ID of the order.
-     * @param fillHash   Hash of fill instructions origin data.
-     * @param timestamp  Timestamp of the fill.
-     * @param acceptedBy Address of the solver that filled the order if they didnt accept it first.
+     * @param id        ID of the order.
+     * @param fillHash  Hash of fill instructions origin data.
+     * @param claimant  Address to claim the order, provided by the filler.
      */
-    function markFilled(bytes32 id, bytes32 fillHash, uint256 timestamp, address acceptedBy) external;
+    function markFilled(bytes32 id, bytes32 fillHash, address claimant) external;
 
     /**
      * @notice Claim a filled order.

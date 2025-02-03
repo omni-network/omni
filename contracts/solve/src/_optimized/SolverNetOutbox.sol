@@ -35,7 +35,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
      * @dev Type maxes used to ensure no non-zero bytes in fee estimation.
      */
     bytes internal constant MARK_FILLED_STUB_CDATA =
-        abi.encodeCall(ISolverNetInbox.markFilled, (TypeMax.Bytes32, TypeMax.Bytes32, TypeMax.Uint256, TypeMax.Address));
+        abi.encodeCall(ISolverNetInbox.markFilled, (TypeMax.Bytes32, TypeMax.Bytes32, TypeMax.Address));
 
     /**
      * @notice Addresses of the inbox contracts.
@@ -114,7 +114,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
      * @notice Fills a particular order on the destination chain.
      * @param orderId    Unique order identifier for this order.
      * @param originData Data emitted on the origin to parameterize the fill.
-     * @param fillerData ABI encoded acceptedBy address to use if the order wasn't accepted before the fill.
+     * @param fillerData ABI encoded address to mark as claimant for the order.
      */
     function fill(bytes32 orderId, bytes calldata originData, bytes calldata fillerData)
         external
@@ -123,15 +123,15 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         nonReentrant
     {
         SolverNet.FillOriginData memory fillData = abi.decode(originData, (SolverNet.FillOriginData));
-        address acceptedBy;
+        address claimant = msg.sender;
 
         if (fillData.destChainId != block.chainid) revert WrongDestChain();
         if (fillData.fillDeadline < block.timestamp && fillData.fillDeadline != 0) revert FillDeadlinePassed();
         if (fillerData.length != 0 && fillerData.length != 32) revert BadFillerData();
-        if (fillerData.length == 32) acceptedBy = abi.decode(fillerData, (address));
+        if (fillerData.length == 32) claimant = abi.decode(fillerData, (address));
 
         uint256 totalNativeValue = _executeCalls(fillData);
-        _markFilled(orderId, fillData, acceptedBy, totalNativeValue);
+        _markFilled(orderId, fillData, claimant, totalNativeValue);
     }
 
     /**
@@ -204,15 +204,15 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
 
     /**
      * @notice Mark an order as filled. Require sufficient native payment, refund excess.
-     * @param orderId    ID of the order.
-     * @param fillData   ABI decoded fill originData.
-     * @param acceptedBy acceptedBy address to use if the order wasn't accepted before the fill.
-     * @param totalNativeValue total native value of the calls.
+     * @param orderId          ID of the order.
+     * @param fillData         ABI decoded fill originData.
+     * @param claimant         Address specified by the filler to claim the order (msg.sender if none specified).
+     * @param totalNativeValue Total native value of the calls.
      */
     function _markFilled(
         bytes32 orderId,
         SolverNet.FillOriginData memory fillData,
-        address acceptedBy,
+        address claimant,
         uint256 totalNativeValue
     ) internal {
         // mark filled on outbox (here)
@@ -225,7 +225,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
             destChainId: fillData.srcChainId,
             conf: ConfLevel.Finalized,
             to: _inboxes[fillData.srcChainId],
-            data: abi.encodeCall(ISolverNetInbox.markFilled, (orderId, fillHash, block.timestamp, acceptedBy)),
+            data: abi.encodeCall(ISolverNetInbox.markFilled, (orderId, fillHash, claimant)),
             gasLimit: uint64(_fillGasLimit(fillData))
         });
         uint256 totalSpent = totalNativeValue + fee;
