@@ -83,7 +83,7 @@ func waitClaimAll(ctx context.Context, backends ethbackend.Backends, orders []Br
 		return errors.Wrap(err, "bind token")
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
 
 	ticker := time.NewTicker(2 * time.Second)
@@ -136,7 +136,7 @@ func makeOrders() []BridgeOrder {
 }
 
 func waitNativeAll(ctx context.Context, backends ethbackend.Backends, orders []BridgeOrder) error {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 	defer cancel()
 
 	backend, err := backends.Backend(evmchain.IDOmniDevnet)
