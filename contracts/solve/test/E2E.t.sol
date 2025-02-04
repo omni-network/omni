@@ -18,8 +18,14 @@ contract SolverNet_E2E_Test is TestBase {
         vm.deal(user, defaultAmount);
         vm.startPrank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
+        vm.expectEmit();
+        emit IERC7683.Open(resolvedOrder.orderId, resolvedOrder);
         inbox.open{ value: defaultAmount }(order);
         vm.stopPrank();
+
+        // check get order
+        (IERC7683.ResolvedCrossChainOrder memory resolved2,) = inbox.getOrder(resolvedOrder.orderId);
+        assertEq(resolvedOrder.orderId, resolved2.orderId);
 
         uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
         bytes32 fillhash = fillHash(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData);

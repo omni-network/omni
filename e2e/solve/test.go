@@ -119,7 +119,7 @@ func makeOrders() []BridgeOrder {
 	amt := math.NewInt(10).MulRaw(params.Ether).BigInt()
 	orders := make([]BridgeOrder, len(users))
 
-	for i, user := range users[:1] {
+	for i, user := range users {
 		// use 0xdead0000ii... to get unique, unused order.To address per bridge order
 		// we bridge to unused addresses to simplify balance checks in waitNativeAll
 		const prefix = "0xdead0000"

@@ -116,7 +116,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         returns (ResolvedCrossChainOrder memory resolved, OrderState memory state)
     {
         SolverNet.Order memory orderData = _getOrder(id);
-        return (_resolve(orderData), _orderState[id]);
+        return (_resolve(orderData, id), _orderState[id]);
     }
 
     /**
@@ -149,7 +149,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      */
     function resolve(OnchainCrossChainOrder calldata order) public view returns (ResolvedCrossChainOrder memory) {
         SolverNet.Order memory orderData = _validate(order);
-        return _resolve(orderData);
+        return _resolve(orderData, _nextId());
     }
 
     /**
@@ -406,7 +406,11 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @dev Resolve the order without validation.
      * @param orderData Order data to resolve.
      */
-    function _resolve(SolverNet.Order memory orderData) internal view returns (ResolvedCrossChainOrder memory) {
+    function _resolve(SolverNet.Order memory orderData, bytes32 id)
+        internal
+        view
+        returns (ResolvedCrossChainOrder memory)
+    {
         SolverNet.Header memory header = orderData.header;
 
         IERC7683.Output[] memory maxSpent = _deriveMaxSpent(orderData);
@@ -418,7 +422,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             originChainId: block.chainid,
             openDeadline: 0,
             fillDeadline: header.fillDeadline,
-            orderId: _nextId(),
+            orderId: id,
             maxSpent: maxSpent,
             minReceived: minReceived,
             fillInstructions: fillInstructions
@@ -442,8 +446,8 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @param orderData Order data to open.
      */
     function _openOrder(SolverNet.Order memory orderData) internal returns (ResolvedCrossChainOrder memory resolved) {
-        resolved = _resolve(orderData);
         bytes32 id = _incrementId();
+        resolved = _resolve(orderData, id);
 
         _orderHeader[id] = orderData.header;
         _orderDeposit[id] = orderData.deposit;
