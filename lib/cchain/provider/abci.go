@@ -27,6 +27,8 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	utypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
@@ -65,8 +67,11 @@ func NewABCI(cmtCl rpcclient.Client, network netconf.ID, opts ...func(*Provider)
 // NewGRPC returns a new provider using the provided gRPC server address.
 // This is preferred to NewABCI as it bypasses CometBFT so is much faster
 // and doesn't affect chain performance.
-func NewGRPC(target string, network netconf.ID, opts ...func(*Provider)) (Provider, error) {
-	grpcClient, err := grpc.NewClient(target, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func NewGRPC(target string, network netconf.ID, ir codectypes.InterfaceRegistry, opts ...func(*Provider)) (Provider, error) {
+	grpcClient, err := grpc.NewClient(target,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultCallOptions(grpc.ForceCodec(codec.NewProtoCodec(ir).GRPCCodec())),
+	)
 	if err != nil {
 		return Provider{}, errors.Wrap(err, "new grpc client")
 	}

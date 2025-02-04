@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"math/rand/v2"
 	"net/http"
 	"net/url"
 	"os"
@@ -20,6 +21,7 @@ import (
 	halocfg "github.com/omni-network/omni/halo/config"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
@@ -36,10 +38,21 @@ func TestSmoke(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	if rand.Float64() < 0.5 {
+		t.Log("Enabling feature flag: " + feature.FlagEVMStakingModule)
+		feature.WithFlag(ctx, feature.FlagEVMStakingModule)
+		feature.SetGlobals(feature.Flags{string(feature.FlagEVMStakingModule)})
+	} else {
+		t.Log("Not enabling any feature flags")
+	}
+
 	ctx, err := log.Init(ctx, log.Config{Color: log.ColorForce, Level: "debug", Format: log.FormatConsole})
 	require.NoError(t, err)
 
 	cfg := setupSimnet(t)
+
+	encConf, err := haloapp.ClientEncodingConfig(ctx, netconf.Simnet)
+	require.NoError(t, err)
 
 	// Start the server async
 	async, stopfunc, err := haloapp.Start(ctx, cfg)
@@ -53,7 +66,7 @@ func TestSmoke(t *testing.T) {
 	require.NoError(t, err)
 
 	cprov := cprovider.NewABCI(cl, netconf.Simnet)
-	cprovGRPC, err := cprovider.NewGRPC(cfg.SDKGRPC.Address, netconf.Simnet)
+	cprovGRPC, err := cprovider.NewGRPC(cfg.SDKGRPC.Address, netconf.Simnet, encConf.InterfaceRegistry)
 	require.NoError(t, err)
 
 	// Wait until we get to block 3.

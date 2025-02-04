@@ -298,7 +298,7 @@ func InitFiles(ctx context.Context, initCfg InitConfig) error {
 			return errors.Wrap(err, "get public key")
 		}
 
-		cosmosGen, err := genutil.MakeGenesis(network, time.Now(), initCfg.ExecutionHash, initCfg.GenesisUpgrade, pubKey)
+		cosmosGen, err := genutil.MakeGenesis(ctx, network, time.Now(), initCfg.ExecutionHash, initCfg.GenesisUpgrade, pubKey)
 		if err != nil {
 			return err
 		}

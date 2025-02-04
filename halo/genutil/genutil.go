@@ -1,12 +1,13 @@
 package genutil
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"sort"
 	"time"
 
-	attesttypes "github.com/omni-network/omni/halo/attest/types"
+	haloapp "github.com/omni-network/omni/halo/app"
 	"github.com/omni-network/omni/halo/evmupgrade"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/buildinfo"
@@ -21,16 +22,11 @@ import (
 
 	"cosmossdk.io/math"
 	etypes "cosmossdk.io/x/evidence/types"
-	"cosmossdk.io/x/tx/signing"
 	utypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cosmosstd "github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
-	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
-	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	atypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	btypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	dtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
@@ -50,17 +46,20 @@ const slashingBlocksWindow = 1000
 const ValidatorPower = 1000
 
 func MakeGenesis(
+	ctx context.Context,
 	network netconf.ID,
 	genesisTime time.Time,
 	executionBlockHash common.Hash,
 	upgradeName string,
 	valPubkeys ...crypto.PubKey,
 ) (*gtypes.AppGenesis, error) {
-	cdc := getCodec()
-	txConfig := authtx.NewTxConfig(cdc, nil)
+	encConf, err := haloapp.ClientEncodingConfig(ctx, network)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal app state")
+	}
 
 	// Step 1: Create the default genesis app state for all modules.
-	appState1 := defaultAppState(network.Static().MaxValidators, executionBlockHash, cdc.MustMarshalJSON)
+	appState1 := defaultAppState(network.Static().MaxValidators, executionBlockHash, encConf.Codec.MustMarshalJSON)
 	appState1Bz, err := json.MarshalIndent(appState1, "", " ")
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal app state")
@@ -89,7 +88,7 @@ func MakeGenesis(
 	// Step 3: Create the genesis validators; genesis account and a MsgCreateValidator.
 	var genTxs []sdk.Tx
 	for _, pubkey := range sortByAddress(valPubkeys) {
-		tx, err := addValidator(txConfig, pubkey, cdc, tempFile.Name())
+		tx, err := addValidator(encConf.TxConfig, pubkey, encConf.Codec, tempFile.Name())
 		if err != nil {
 			return nil, errors.Wrap(err, "add validator")
 		}
@@ -97,7 +96,7 @@ func MakeGenesis(
 	}
 
 	if upgradeName != "" {
-		tx, err := addUpgrade(txConfig, upgradeName)
+		tx, err := addUpgrade(encConf.TxConfig, upgradeName)
 		if err != nil {
 			return nil, errors.Wrap(err, "add upgrade")
 		}
@@ -105,7 +104,7 @@ func MakeGenesis(
 	}
 
 	// Step 4: Collect the MsgCreateValidator txs and update the app state (again).
-	appState2, err := collectGenTxs(cdc, txConfig, tempFile.Name(), genTxs)
+	appState2, err := collectGenTxs(encConf.Codec, encConf.TxConfig, tempFile.Name(), genTxs)
 	if err != nil {
 		return nil, errors.Wrap(err, "collect genesis transactions")
 	}
@@ -119,7 +118,7 @@ func MakeGenesis(
 		return nil, errors.Wrap(err, "validate and complete genesis")
 	}
 
-	return appGen, validateGenesis(cdc, appState2)
+	return appGen, validateGenesis(encConf.Codec, appState2)
 }
 
 func defaultConsensusGenesis() *gtypes.ConsensusGenesis {
@@ -222,7 +221,8 @@ func addValidator(txConfig client.TxConfig, pubkey crypto.PubKey, cdc codec.Code
 		amount,
 		sttypes.Description{Moniker: addr.Hex()},
 		sttypes.NewCommissionRates(zero, zero, zero),
-		sdk.DefaultPowerReduction)
+		sdk.DefaultPowerReduction,
+	)
 	if err != nil {
 		return nil, errors.Wrap(err, "create validator message")
 	}
@@ -281,34 +281,6 @@ func defaultAppState(
 		evmtypes.ModuleName: marshal(evmengGenesis),
 		utypes.ModuleName:   []byte("{}"), // See cosmossdk.io/x/upgrade@v0.1.4/module.go#DefaultGenesis
 	}
-}
-
-func getCodec() *codec.ProtoCodec {
-	// TODO(corver): Use depinject to get all of this.
-	sdkConfig := sdk.GetConfig()
-	reg, err := codectypes.NewInterfaceRegistryWithOptions(codectypes.InterfaceRegistryOptions{
-		ProtoFiles: proto.HybridResolver,
-		SigningOptions: signing.Options{
-			AddressCodec:          authcodec.NewBech32Codec(sdkConfig.GetBech32AccountAddrPrefix()),
-			ValidatorAddressCodec: authcodec.NewBech32Codec(sdkConfig.GetBech32ValidatorAddrPrefix()),
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	cosmosstd.RegisterInterfaces(reg)
-	atypes.RegisterInterfaces(reg)
-	sttypes.RegisterInterfaces(reg)
-	sltypes.RegisterInterfaces(reg)
-	btypes.RegisterInterfaces(reg)
-	dtypes.RegisterInterfaces(reg)
-	etypes.RegisterInterfaces(reg)
-	evmtypes.RegisterInterfaces(reg)
-	attesttypes.RegisterInterfaces(reg)
-	utypes.RegisterInterfaces(reg)
-
-	return codec.NewProtoCodec(reg)
 }
 
 func sortByAddress(pubkeys []crypto.PubKey) []crypto.PubKey {

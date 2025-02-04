@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	haloapp "github.com/omni-network/omni/halo/app"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/cchain"
@@ -129,7 +130,12 @@ func newCProvider(ctx context.Context, cfg Config) (cchain.Provider, error) {
 	if cfg.HaloGRPCURL != "" {
 		log.Debug(ctx, "Using grpc cprovider", "url", cfg.HaloGRPCURL)
 
-		return cprovider.NewGRPC(cfg.HaloGRPCURL, cfg.Network)
+		encConf, err := haloapp.ClientEncodingConfig(ctx, cfg.Network)
+		if err != nil {
+			return nil, errors.Wrap(err, "client encoding config")
+		}
+
+		return cprovider.NewGRPC(cfg.HaloGRPCURL, cfg.Network, encConf.InterfaceRegistry)
 	}
 
 	log.Debug(ctx, "Using comet cprovider", "url", cfg.HaloCometURL)
