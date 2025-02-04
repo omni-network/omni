@@ -184,7 +184,7 @@ contract GenesisStake is IGenesisStake, OwnableUpgradeable, PausableUpgradeable 
      * @return The amount of tokens migrated.
      */
     function migrateStake(address addr) external whenNotPaused returns (uint256) {
-        require(msg.sender == rewardsDistributor, "GenesisStake: only rewards distributor can migrate stake");
+        require(msg.sender == rewardsDistributor, "GenesisStake: only rewardsDistributor can migrate");
 
         uint256 amount = balanceOf[addr];
         if (amount == 0) return amount;
