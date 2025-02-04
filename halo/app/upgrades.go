@@ -1,33 +1,33 @@
 package app
 
 import (
+	"context"
+
 	uluwatu1 "github.com/omni-network/omni/halo/app/upgrades/uluwatu"
 	"github.com/omni-network/omni/lib/errors"
 
 	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 )
 
 // Upgrade defines a network upgrade.
 type Upgrade struct {
 	Name        string
 	HandlerFunc func(App) upgradetypes.UpgradeHandler
-	Store       storetypes.StoreUpgrades
+	Store       func(context.Context) *storetypes.StoreUpgrades
 }
 
 var upgrades = []Upgrade{
 	{
 		Name: uluwatu1.UpgradeName,
 		HandlerFunc: func(a App) upgradetypes.UpgradeHandler {
-			return uluwatu1.CreateUpgradeHandler(a.ModuleManager, a.Configurator(), a.SlashingKeeper)
-		},
-		Store: uluwatu1.StoreUpgrades,
-	},
-	{
-		Name: uluwatu1.UpgradeName,
-		HandlerFunc: func(a App) upgradetypes.UpgradeHandler {
-			return uluwatu1.CreateUpgradeHandler2(a.ModuleManager, a.Configurator(), &a.MintKeeper, &a.AccountKeeper)
+			return uluwatu1.CreateUpgradeHandler(
+				a.ModuleManager,
+				a.Configurator(),
+				a.SlashingKeeper,
+				a.MintKeeper,
+				a.AccountKeeper,
+			)
 		},
 		Store: uluwatu1.StoreUpgrades,
 	},
@@ -62,7 +62,7 @@ func NextUpgrade(prev string) (string, error) {
 	return "", errors.New("prev upgrade not found [BUG]")
 }
 
-func (a App) setUpgradeHandlers() error {
+func (a App) setUpgradeHandlers(ctx context.Context) error {
 	for _, u := range upgrades {
 		a.UpgradeKeeper.SetUpgradeHandler(u.Name, u.HandlerFunc(a))
 	}
@@ -74,18 +74,12 @@ func (a App) setUpgradeHandlers() error {
 		return nil // No upgrade info found
 	}
 
-	// initialize the state of the new mint module
-	storeUpgrades := &storetypes.StoreUpgrades{
-		Added: []string{string(minttypes.MinterKey), string(minttypes.ParamsKey), string(minttypes.StoreKey)},
-	}
-	a.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, storeUpgrades))
-
 	for _, u := range upgrades {
 		if u.Name != upgradeInfo.Name {
 			continue
 		}
 
-		a.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, &u.Store))
+		a.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, u.Store(ctx)))
 
 		return nil
 	}

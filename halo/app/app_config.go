@@ -96,6 +96,7 @@ var (
 		}
 
 		if feature.FlagEVMStakingModule.Enabled(ctx) {
+			// Mint module is generally first
 			modules = append([]string{minttypes.ModuleName}, modules...)
 		}
 

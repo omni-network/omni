@@ -33,6 +33,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
 	dtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	mtypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	sltypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	gogogrpc "github.com/cosmos/gogoproto/grpc"
@@ -75,6 +76,9 @@ func NewGRPC(target string, network netconf.ID, ir codectypes.InterfaceRegistry,
 	if err != nil {
 		return Provider{}, errors.Wrap(err, "new grpc client")
 	}
+	opts = append(opts, func(p *Provider) {
+		p.isGRPC = true
+	})
 
 	return newProvider(grpcClient, network, opts...), nil
 }
@@ -97,6 +101,7 @@ func newProvider(cc gogogrpc.ClientConn, network netconf.ID, opts ...func(*Provi
 	dcl := dtypes.NewQueryClient(cc)
 	slcl := sltypes.NewQueryClient(cc)
 	cmtcl := cmtservice.NewServiceClient(cc)
+	mcl := mtypes.NewQueryClient(cc)
 
 	p := Provider{
 		fetch:       newABCIFetchFunc(acl, cmtcl, namer),
@@ -126,6 +131,7 @@ func newProvider(cc gogogrpc.ClientConn, network netconf.ID, opts ...func(*Provi
 			Slashing:     slcl,
 			Upgrade:      ucl,
 			Distribution: dcl,
+			Mint:         mcl,
 		},
 	}
 
