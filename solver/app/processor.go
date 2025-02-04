@@ -7,7 +7,6 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -39,26 +38,19 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 			statusOffset.WithLabelValues(deps.ChainName(chainID), target, statusString(event.Status)).Set(float64(orderID.Uint64()))
 
 			attrs := []any{
-				"id", order.ID.String(),
+				"order_id", order.ID.String(),
 				"status", order.Status,
 				"src_chain_id", order.SourceChainID,
 				"dst_chain_id", order.DestinationChainID,
 			}
 
+			// TODO: better logging
 			fill, err := order.ParsedFillOriginData()
 			if err != nil {
 				log.Warn(ctx, "Failed to parse fill origin data", err, attrs...)
-				attrs = append(attrs,
-					"call_target", unknown,
-					"call_value", unknown,
-					"call_data", unknown,
-				)
+				attrs = append(attrs, "calls", unknown)
 			} else {
-				attrs = append(attrs,
-					"call_target", hexutil.Encode(fill.Call.Target[:]),
-					"call_value", fill.Call.Value.Uint64(),
-					"call_data", hexutil.Encode(fill.Call.Data),
-				)
+				attrs = append(attrs, "calls", len(fill.Calls))
 			}
 
 			ctx := log.WithCtx(ctx, attrs...)

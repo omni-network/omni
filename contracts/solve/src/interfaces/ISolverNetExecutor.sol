@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
-import { ISolverNet } from "./ISolverNet.sol";
-
 interface ISolverNetExecutor {
     /**
      * @notice Error thrown when the sender is not the outbox.
@@ -27,8 +25,11 @@ interface ISolverNetExecutor {
 
     /**
      * @notice Executes a call.
+     * @param target Address of the contract to call.
+     * @param value  Value to send with the call.
+     * @param data   Data to send with the call.
      */
-    function execute(ISolverNet.Call memory call) external payable;
+    function execute(address target, uint256 value, bytes calldata data) external payable;
 
     /**
      * @notice Transfers a token to a recipient.

@@ -18,8 +18,8 @@ import (
 
 var (
 	// SolverNetInbox.ORDER_DATA_TYPEHASH
-	// keccak256("OrderData(address owner,Call call,Deposit[] deposits)Call(uint64 chainId,bytes32 target,uint256 value,bytes data,TokenExpense[] expenses)TokenExpense(bytes32 token,bytes32 spender,uint256 amount)Deposit(bytes32 token,uint256 amount)").
-	orderDataTypeHash = cast.Must32(hexutil.MustDecode("0x58f59d339fe725ebad5ad882b2d31606bcf694410c425f001056bb89c68d91a3"))
+	// keccak256( "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,Expense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)Expense(address spender,address token,uint96 amount)");.
+	orderDataTypeHash = cast.Must32(hexutil.MustDecode("0xfb2fd076b12750c4bfa77af573b3791b17a5e94805b6300eff13aae1c9ebaeb0"))
 )
 
 type OpenOpts struct {
@@ -46,7 +46,7 @@ func OpenOrder(
 	chainID uint64,
 	backends ethbackend.Backends,
 	user common.Address,
-	orderData bindings.ISolverNetOrderData,
+	orderData bindings.SolverNetOrderData,
 	opts ...func(*OpenOpts),
 ) error {
 	backend, err := backends.Backend(chainID)

@@ -190,18 +190,21 @@ func bridgeToNative(ctx context.Context, backends ethbackend.Backends, order Bri
 	log.Debug(ctx, "Requesting native solvernet bridge", "user", order.From.Hex(), "amt", order.Amount.Uint64())
 
 	// bridge to native requests a user.call{value: amt} on omni, while depositing amt ERC20 omni devnet l1
-	return solvernet.OpenOrder(ctx, netconf.Devnet, evmchain.IDMockL1, backends, order.From, bindings.ISolverNetOrderData{
-		Call: bindings.ISolverNetCall{
-			ChainId:  evmchain.IDOmniDevnet,
-			Value:    order.Amount,
-			Target:   toBz32(order.To),
-			Data:     nil,
-			Expenses: nil,
+	return solvernet.OpenOrder(ctx, netconf.Devnet, evmchain.IDMockL1, backends, order.From, bindings.SolverNetOrderData{
+		DestChainId: evmchain.IDOmniDevnet,
+		Expenses:    nil,
+		Calls: []bindings.SolverNetCall{
+			{
+				Value:    order.Amount,
+				Target:   order.To,
+				Selector: [4]byte{},
+				Params:   nil,
+			},
 		},
-		Deposits: []bindings.ISolverNetDeposit{{
-			Token:  toBz32(contracts.TokenAddr(netconf.Devnet)),
+		Deposit: bindings.SolverNetDeposit{
+			Token:  contracts.TokenAddr(netconf.Devnet),
 			Amount: order.Amount,
-		}},
+		},
 	})
 }
 
@@ -260,11 +263,4 @@ func mintAndApprove(ctx context.Context, backend *ethbackend.Backend, order Brid
 	}
 
 	return nil
-}
-
-func toBz32(addr common.Address) [32]byte {
-	var bz [32]byte
-	copy(bz[12:], addr.Bytes())
-
-	return bz
 }

@@ -14,8 +14,7 @@ import (
 type OrderID [32]byte
 type OrderResolved = bindings.IERC7683ResolvedCrossChainOrder
 type OrderState = bindings.ISolverNetInboxOrderState
-type OrderHistory = []bindings.ISolverNetInboxStatusUpdate
-type FillOriginData = bindings.ISolverNetFillOriginData
+type FillOriginData = bindings.SolverNetFillOriginData
 
 type Order struct {
 	ID                 OrderID
@@ -27,9 +26,8 @@ type Order struct {
 	MaxSpent           []bindings.IERC7683Output
 	MinReceived        []bindings.IERC7683Output
 
-	Status     uint8
-	AcceptedBy common.Address
-	History    OrderHistory
+	Status   uint8
+	Claimant common.Address
 }
 
 // Uint64 returns the order ID as a BigEndian uint64 (monotonically incrementing number).
@@ -42,7 +40,7 @@ func (id OrderID) String() string {
 	return strconv.FormatUint(id.Uint64(), 10)
 }
 
-func newOrder(resolved OrderResolved, state OrderState, history OrderHistory) (Order, error) {
+func newOrder(resolved OrderResolved, state OrderState) (Order, error) {
 	if err := validateResolved(resolved); err != nil {
 		return Order{}, errors.Wrap(err, "validate resolved")
 	}
@@ -50,8 +48,7 @@ func newOrder(resolved OrderResolved, state OrderState, history OrderHistory) (O
 	o := Order{
 		ID:                 resolved.OrderId,
 		Status:             state.Status,
-		AcceptedBy:         state.AcceptedBy,
-		History:            history,
+		Claimant:           state.Claimant,
 		FillInstruction:    resolved.FillInstructions[0],
 		FillOriginData:     resolved.FillInstructions[0].OriginData,
 		DestinationChainID: resolved.FillInstructions[0].DestinationChainId,

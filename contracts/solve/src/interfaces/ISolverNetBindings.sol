@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
-import { ISolverNet } from "./ISolverNet.sol";
+import { SolverNet } from "../lib/SolverNet.sol";
 
 /**
  * @title ISolverNetBindings
@@ -11,10 +11,12 @@ import { ISolverNet } from "./ISolverNet.sol";
  * @dev We use a single function per type so that we can use go-ethereum's
  *      abi[method].Inputs to encode / decode one type at a time.
  */
-interface ISolverNetBindings is ISolverNet {
-    function deposit(Deposit calldata) external view;
-    function tokenExpense(TokenExpense calldata) external view;
-    function call(Call calldata) external view;
-    function orderData(OrderData calldata) external view;
-    function fillOriginData(FillOriginData calldata) external view;
+interface ISolverNetBindings {
+    function orderData(SolverNet.OrderData calldata) external view;
+    function order(SolverNet.Order calldata) external view;
+    function header(SolverNet.Header calldata) external view;
+    function deposit(SolverNet.Deposit calldata) external view;
+    function call(SolverNet.Call calldata) external view;
+    function expense(SolverNet.Expense calldata) external view;
+    function fillOriginData(SolverNet.FillOriginData calldata) external view;
 }

@@ -14,13 +14,15 @@ contract MockVault {
         collateral = newCollateral;
     }
 
-    function deposit(address onBehalfOf, uint256 amount) external {
-        collateral.safeTransferFrom(msg.sender, address(this), amount);
+    function deposit(address onBehalfOf, uint256 amount) external payable {
+        if (collateral != address(0)) collateral.safeTransferFrom(msg.sender, address(this), amount);
+        else require(msg.value == amount, "Invalid collateral");
         balances[onBehalfOf] += amount;
     }
 
     function withdraw(address to, uint256 amount) external {
         balances[msg.sender] -= amount;
-        collateral.safeTransfer(to, amount);
+        if (collateral != address(0)) collateral.safeTransfer(to, amount);
+        else to.safeTransferETH(amount);
     }
 }

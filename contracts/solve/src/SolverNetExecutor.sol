@@ -2,7 +2,7 @@
 pragma solidity =0.8.24;
 
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
-import { ISolverNet, ISolverNetExecutor } from "./interfaces/ISolverNetExecutor.sol";
+import { ISolverNetExecutor } from "./interfaces/ISolverNetExecutor.sol";
 import { AddrUtils } from "./lib/AddrUtils.sol";
 
 contract SolverNetExecutor is ISolverNetExecutor {
@@ -37,10 +37,12 @@ contract SolverNetExecutor is ISolverNetExecutor {
 
     /**
      * @notice Executes a call.
+     * @param target Address of the contract to call.
+     * @param value  Value to send with the call.
+     * @param data   Data to send with the call.
      */
-    function execute(ISolverNet.Call memory call) external payable onlyOutbox {
-        address target = call.target.toAddress();
-        (bool success,) = payable(target).call{ value: call.value }(call.data);
+    function execute(address target, uint256 value, bytes calldata data) external payable onlyOutbox {
+        (bool success,) = payable(target).call{ value: value }(data);
         if (!success) revert CallFailed();
     }
 

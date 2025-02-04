@@ -126,7 +126,7 @@ func newFiller(
 		}
 
 		// xcall fee
-		fee, err := outbox.FillFee(callOpts, srcChainID)
+		fee, err := outbox.FillFee(callOpts, order.FillOriginData)
 		if err != nil {
 			return errors.Wrap(err, "get fulfill fee")
 		}
@@ -309,7 +309,11 @@ func newOrderGetter(inboxContracts map[uint64]*bindings.SolverNetInbox) func(ctx
 			return Order{}, false, nil
 		}
 
-		order, err := newOrder(o.Resolved, o.State, o.History)
+		if o.Resolved.OrderId != id {
+			return Order{}, false, errors.New("[BUG] order ID mismatch")
+		}
+
+		order, err := newOrder(o.Resolved, o.State)
 		if err != nil {
 			return Order{}, false, errors.Wrap(err, "new order")
 		}

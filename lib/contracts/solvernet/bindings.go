@@ -32,39 +32,39 @@ func mustGetInputs(abi *abi.ABI, name string) abi.Arguments {
 	return method.Inputs
 }
 
-func ParseFillOriginData(data []byte) (bindings.ISolverNetFillOriginData, error) {
+func ParseFillOriginData(data []byte) (bindings.SolverNetFillOriginData, error) {
 	unpacked, err := inputsFillOriginData.Unpack(data)
 	if err != nil {
-		return bindings.ISolverNetFillOriginData{}, errors.Wrap(err, "unpack fill data")
+		return bindings.SolverNetFillOriginData{}, errors.Wrap(err, "unpack fill data")
 	}
 
 	wrap := struct {
-		Data bindings.ISolverNetFillOriginData
+		Data bindings.SolverNetFillOriginData
 	}{}
 	if err := inputsFillOriginData.Copy(&wrap, unpacked); err != nil {
-		return bindings.ISolverNetFillOriginData{}, errors.Wrap(err, "copy fill data")
+		return bindings.SolverNetFillOriginData{}, errors.Wrap(err, "copy fill data")
 	}
 
 	return wrap.Data, nil
 }
 
-func ParseOrderData(data []byte) (bindings.ISolverNetOrderData, error) {
+func ParseOrderData(data []byte) (bindings.SolverNetOrderData, error) {
 	unpacked, err := inputsOrderData.Unpack(data)
 	if err != nil {
-		return bindings.ISolverNetOrderData{}, errors.Wrap(err, "unpack fill data")
+		return bindings.SolverNetOrderData{}, errors.Wrap(err, "unpack fill data")
 	}
 
 	wrap := struct {
-		Data bindings.ISolverNetOrderData
+		Data bindings.SolverNetOrderData
 	}{}
 	if err := inputsOrderData.Copy(&wrap, unpacked); err != nil {
-		return bindings.ISolverNetOrderData{}, errors.Wrap(err, "copy fill data")
+		return bindings.SolverNetOrderData{}, errors.Wrap(err, "copy fill data")
 	}
 
 	return wrap.Data, nil
 }
 
-func PackOrderData(data bindings.ISolverNetOrderData) ([]byte, error) {
+func PackOrderData(data bindings.SolverNetOrderData) ([]byte, error) {
 	packed, err := inputsOrderData.Pack(data)
 	if err != nil {
 		return nil, errors.Wrap(err, "pack fill data")
@@ -73,7 +73,7 @@ func PackOrderData(data bindings.ISolverNetOrderData) ([]byte, error) {
 	return packed, nil
 }
 
-func PackFillOriginData(data bindings.ISolverNetFillOriginData) ([]byte, error) {
+func PackFillOriginData(data bindings.SolverNetFillOriginData) ([]byte, error) {
 	packed, err := inputsFillOriginData.Pack(data)
 	if err != nil {
 		return nil, errors.Wrap(err, "pack fill data")
