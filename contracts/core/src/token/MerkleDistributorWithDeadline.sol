@@ -16,6 +16,7 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable {
     using SafeTransferLib for address;
 
     error EndTimeInPast();
+    error NothingToMigrate();
     error ClaimWindowFinished();
     error NoWithdrawDuringClaim();
 
@@ -87,6 +88,9 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable {
             }
         }
 
+        // Cannot migrate if user has no stake to migrate
+        if (stake == 0) revert NothingToMigrate();
+
         // Generate and send the order
         IERC7683.OnchainCrossChainOrder memory order = _generateOrder(msg.sender, stake);
         solvernetInbox.open(order);
@@ -121,11 +125,10 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable {
             expenses: new SolverNet.Expense[](0)
         });
 
-        IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
+        return IERC7683.OnchainCrossChainOrder({
             fillDeadline: 0,
             orderDataType: ORDERDATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });
-        return order;
     }
 }
