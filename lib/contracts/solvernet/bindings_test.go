@@ -23,7 +23,7 @@ func TestParseFillOriginData(t *testing.T) {
 		bi.SetUint64(val)
 	})
 
-	var data bindings.ISolverNetFillOriginData
+	var data bindings.SolverNetFillOriginData
 	f.Fuzz(&data)
 
 	packed, err := solvernet.PackFillOriginData(data)
@@ -47,7 +47,7 @@ func TestParseOrderData(t *testing.T) {
 		bi.SetUint64(val)
 	})
 
-	var data bindings.ISolverNetOrderData
+	var data bindings.SolverNetOrderData
 	f.Fuzz(&data)
 
 	packed, err := solvernet.PackOrderData(data)

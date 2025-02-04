@@ -82,8 +82,8 @@ func isDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Bac
 
 // DeployIfNeeded deploys a new SolverNetOutbox contract if it is not already deployed.
 // If the contract is already deployed, the receipt is nil.
-func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
-	deployed, addr, err := isDeployed(ctx, network, backend)
+func DeployIfNeeded(ctx context.Context, network netconf.Network, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+	deployed, addr, err := isDeployed(ctx, network.ID, backend)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "is deployed")
 	}
@@ -95,13 +95,13 @@ func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend
 }
 
 // Deploy deploys a new SolverNetOutbox contract and returns the address and receipt.
-func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
-	addrs, err := contracts.GetAddresses(ctx, network)
+func Deploy(ctx context.Context, network netconf.Network, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+	addrs, err := contracts.GetAddresses(ctx, network.ID)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "get addresses")
 	}
 
-	salts, err := contracts.GetSalts(ctx, network)
+	salts, err := contracts.GetSalts(ctx, network.ID)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "get salts")
 	}
@@ -109,19 +109,19 @@ func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend
 	cfg := DeploymentConfig{
 		Create3Factory:  addrs.Create3Factory,
 		Create3Salt:     salts.SolverNetOutbox,
-		Owner:           eoa.MustAddress(network, eoa.RoleManager),
-		Deployer:        eoa.MustAddress(network, eoa.RoleDeployer),
-		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleUpgrader),
-		Solver:          eoa.MustAddress(network, eoa.RoleSolver),
+		Owner:           eoa.MustAddress(network.ID, eoa.RoleManager),
+		Deployer:        eoa.MustAddress(network.ID, eoa.RoleDeployer),
+		ProxyAdminOwner: eoa.MustAddress(network.ID, eoa.RoleUpgrader),
+		Solver:          eoa.MustAddress(network.ID, eoa.RoleSolver),
 		Portal:          addrs.Portal,
 		Inbox:           addrs.SolverNetInbox,
 		ExpectedAddr:    addrs.SolverNetOutbox,
 	}
 
-	return deploy(ctx, cfg, backend)
+	return deploy(ctx, cfg, network, backend)
 }
 
-func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func deploy(ctx context.Context, cfg DeploymentConfig, network netconf.Network, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
 	if err := cfg.Validate(); err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "validate config")
 	}
@@ -170,6 +170,44 @@ func deploy(ctx context.Context, cfg DeploymentConfig, backend *ethbackend.Backe
 		return common.Address{}, nil, errors.Wrap(err, "wait mined proxy")
 	}
 
+	chainID, err := backend.ChainID(ctx)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "get chain id")
+	}
+
+	// setInboxes
+	// TODO: put in initializer
+	var chainIDs []uint64
+	var inboxes []common.Address
+	for _, chain := range network.EVMChains() {
+		if chain.ID == chainID.Uint64() {
+			continue
+		}
+
+		chainIDs = append(chainIDs, chain.ID)
+		inboxes = append(inboxes, cfg.Inbox)
+	}
+
+	txOpts, err = backend.BindOpts(ctx, cfg.Owner)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "bind opts")
+	}
+
+	inbox, err := bindings.NewSolverNetOutbox(addr, backend)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "new inbox")
+	}
+
+	tx, err = inbox.SetInboxes(txOpts, chainIDs, inboxes)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "set inboxes")
+	}
+
+	_, err = backend.WaitMined(ctx, tx)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "wait mined set inboxes")
+	}
+
 	return addr, receipt, nil
 }
 
@@ -184,7 +222,7 @@ func packInitCode(cfg DeploymentConfig, impl common.Address) ([]byte, error) {
 		return nil, errors.Wrap(err, "get proxy abi")
 	}
 
-	initializer, err := outboxAbi.Pack("initialize", cfg.Owner, cfg.Solver, cfg.Portal, cfg.Inbox)
+	initializer, err := outboxAbi.Pack("initialize", cfg.Owner, cfg.Solver, cfg.Portal)
 	if err != nil {
 		return nil, errors.Wrap(err, "encode initializer")
 	}

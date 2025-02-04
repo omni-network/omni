@@ -242,7 +242,8 @@ func startEventStreams(
 		}
 
 		// TODO: Give known targets friendly names
-		return toEthAddr(fill.Call.Target).Hex()
+		// use last call target for target name
+		return fill.Calls[len(fill.Calls)-1].Target.Hex()
 	}
 
 	deps := procDeps{

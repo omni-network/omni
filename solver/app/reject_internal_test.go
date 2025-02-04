@@ -306,7 +306,8 @@ func targetName(o Order) string {
 		return unknown
 	}
 
-	return toEthAddr(fill.Call.Target).Hex()
+	// use last call target
+	return fill.Calls[len(fill.Calls)-1].Target.Hex()
 }
 
 func chainName(chainID uint64) string {

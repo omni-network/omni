@@ -40,14 +40,14 @@ func deployBoxes(ctx context.Context, network netconf.Network, backends ethbacke
 				return errors.Wrap(err, "get backend", "chain", chain.Name)
 			}
 
-			addr, _, err := inbox.DeployIfNeeded(ctx, network.ID, backend)
+			addr, _, err := inbox.DeployIfNeeded(ctx, network, backend)
 			if err != nil {
 				return errors.Wrap(err, "deploy solve inbox", "chain", chain.Name)
 			}
 
 			log.Debug(ctx, "SolverNetInbox deployed", "addr", addr.Hex(), "chain", chain.Name)
 
-			addr, _, err = outbox.DeployIfNeeded(ctx, network.ID, backend)
+			addr, _, err = outbox.DeployIfNeeded(ctx, network, backend)
 			if err != nil {
 				return errors.Wrap(err, "deploy solve outbox", "chain", chain.Name)
 			}
