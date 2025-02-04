@@ -15,16 +15,16 @@ library SolverNet {
         uint32 fillDeadline;
     }
 
+    struct Deposit {
+        address token;
+        uint96 amount;
+    }
+
     struct Call {
         address target;
         bytes4 selector;
         uint256 value;
         bytes params;
-    }
-
-    struct Deposit {
-        address token;
-        uint96 amount;
     }
 
     struct Expense {

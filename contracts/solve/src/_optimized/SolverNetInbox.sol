@@ -525,6 +525,6 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             expenses: expenses
         });
 
-        return keccak256(abi.encode(orderId, fillOriginData));
+        return keccak256(abi.encode(orderId, abi.encode(fillOriginData)));
     }
 }
