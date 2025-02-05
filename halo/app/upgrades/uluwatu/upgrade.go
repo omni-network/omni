@@ -44,8 +44,8 @@ var (
 		SlashFractionDowntime:   math.LegacyNewDec(0),            // 0% since mainnet V1 has trusted operators.
 	}
 
-	targetInflation  = math.LegacyNewDecWithPrec(11, 2) // 11%
-	blocksPeriodSecs = 2                                // BlocksPerYear calculated based on 2 second block times
+	targetInflation  = math.LegacyNewDecWithPrec(115789, 6) // 11.5789% so that delegators earn ~11% after deducting of 5% validator rewards
+	blocksPeriodSecs = 2                                    // BlocksPerYear calculated based on 2 second block times
 	mintParams       = minttypes.Params{
 		MintDenom:           sdk.DefaultBondDenom,
 		InflationRateChange: math.LegacyNewDec(0),
