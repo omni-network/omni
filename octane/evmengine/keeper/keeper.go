@@ -29,6 +29,7 @@ type Keeper struct {
 	cdc             codec.BinaryCodec
 	storeService    store.KVStoreService
 	headTable       ExecutionHeadTable
+	withdrawalTable WithdrawalTable
 	engineCl        ethclient.EngineClient
 	txConfig        client.TxConfig
 	voteProvider    types.VoteExtensionProvider
@@ -78,14 +79,15 @@ func NewKeeper(
 	}
 
 	return &Keeper{
-		cdc:            cdc,
-		storeService:   storeService,
-		headTable:      dbStore.ExecutionHeadTable(),
-		engineCl:       engineCl,
-		txConfig:       txConfig,
-		addrProvider:   addrProvider,
-		feeRecProvider: feeRecProvider,
-		eventProcs:     eventProcs,
+		cdc:             cdc,
+		storeService:    storeService,
+		headTable:       dbStore.ExecutionHeadTable(),
+		withdrawalTable: dbStore.WithdrawalTable(),
+		engineCl:        engineCl,
+		txConfig:        txConfig,
+		addrProvider:    addrProvider,
+		feeRecProvider:  feeRecProvider,
+		eventProcs:      eventProcs,
 	}, nil
 }
 
