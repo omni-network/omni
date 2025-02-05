@@ -1,5 +1,4 @@
 // Package evmstaking monitors the Staking pre-deploy contract and converts
-// Package evmstaking monitors the Staking pre-deploy contract and converts
 // its log events to cosmosSDK x/staking logic.
 package evmstaking
 
@@ -9,6 +8,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
+	"github.com/omni-network/omni/halo/mybank"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/k1util"
@@ -22,7 +22,6 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	akeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
-	bkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	skeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
@@ -42,14 +41,14 @@ type EventProcessor struct {
 	contract *bindings.Staking
 	address  common.Address
 	sKeeper  *skeeper.Keeper
-	bKeeper  bkeeper.Keeper
+	bKeeper  mybank.Keeper
 	aKeeper  akeeper.AccountKeeper
 }
 
 // New returns a new EventProcessor.
 func New(
 	sKeeper *skeeper.Keeper,
-	bKeeper bkeeper.Keeper,
+	bKeeper mybank.Keeper,
 	aKeeper akeeper.AccountKeeper,
 ) (EventProcessor, error) {
 	address := common.HexToAddress(predeploys.Staking)
@@ -142,7 +141,7 @@ func (p EventProcessor) deliverCreateValidator(ctx context.Context, ev *bindings
 		return errors.Wrap(err, "mint coins")
 	}
 
-	if err := p.bKeeper.SendCoinsFromModuleToAccount(ctx, ModuleName, accAddr, amountCoins); err != nil {
+	if err := p.bKeeper.SendCoinsFromModuleToAccountForReal(ctx, ModuleName, accAddr, amountCoins); err != nil {
 		return errors.Wrap(err, "send coins")
 	}
 
@@ -195,7 +194,7 @@ func (p EventProcessor) deliverDelegate(ctx context.Context, ev *bindings.Stakin
 		return errors.Wrap(err, "mint coins")
 	}
 
-	if err := p.bKeeper.SendCoinsFromModuleToAccount(ctx, ModuleName, delAddr, amountCoins); err != nil {
+	if err := p.bKeeper.SendCoinsFromModuleToAccountForReal(ctx, ModuleName, delAddr, amountCoins); err != nil {
 		return errors.Wrap(err, "send coins")
 	}
 
