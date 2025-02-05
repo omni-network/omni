@@ -210,10 +210,6 @@ func getQuote(depositTkns []Token, expenses []Payment) ([]Payment, error) {
 
 // coversQuote checks if `deposits` match or exceed a `quote` for expenses.
 func coversQuote(deposits, quote []Payment) error {
-	if len(quote) != len(deposits) {
-		return errors.New("invalid params [BUG]")
-	}
-
 	byTkn := func(ps []Payment) map[Token]*big.Int {
 		res := make(map[Token]*big.Int)
 		for _, p := range ps {
