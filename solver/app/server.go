@@ -14,6 +14,7 @@ func serveAPI(address string, endpoints map[string]http.Handler) <-chan error {
 		mux := http.NewServeMux()
 
 		endpoints["/live"] = newLiveHandler()
+		endpoints["/"] = newLiveHandler() // Also serve live from root for easy health checks
 
 		for endpoint, handler := range endpoints {
 			mux.Handle(endpoint, instrumentHandler(endpoint, handler))

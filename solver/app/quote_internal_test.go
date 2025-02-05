@@ -97,7 +97,7 @@ func TestQuote(t *testing.T) {
 			},
 			res: QuoteResponse{
 				// 1 erc20 OMNI required
-				Deposit: Deposit{
+				Deposit: &Deposit{
 					Amount: big.NewInt(1),
 					Token:  omniERC20(netconf.Omega).Address,
 				},
@@ -131,7 +131,7 @@ func TestQuote(t *testing.T) {
 			},
 			res: QuoteResponse{
 				// 1 native OMNI required
-				Deposit: Deposit{
+				Deposit: &Deposit{
 					Amount: big.NewInt(1),
 					Token:  common.Address{},
 				},
@@ -214,7 +214,7 @@ func TestQuote(t *testing.T) {
 		},
 	}
 
-	handler := newQuoteHandler(backends, solver)
+	handler := newQuoteHandler(newQuoter(backends, solver))
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

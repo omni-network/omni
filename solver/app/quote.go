@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"math/big"
 	"net/http"
@@ -32,11 +33,19 @@ type QuoteRequest struct {
 
 // QuoteResponse is the response json for the /quote endpoint.
 type QuoteResponse struct {
-	Rejected          bool    `json:"rejected"`
-	RejectReason      string  `json:"rejectReason"`
-	RejectDescription string  `json:"rejectDescription"`
-	Deposit           Deposit `json:"deposit"`
-	Error             Error   `json:"error"`
+	Rejected          bool     `json:"rejected,omitempty"`
+	RejectReason      string   `json:"rejectReason,omitempty"`
+	RejectDescription string   `json:"rejectDescription,omitempty"`
+	Deposit           *Deposit `json:"deposit,omitempty"`
+	Error             *Error   `json:"error,omitempty"`
+}
+
+func (r QuoteResponse) StatusCode() int {
+	if r.Error != nil {
+		return r.Error.Code
+	}
+
+	return http.StatusOK
 }
 
 // Expense is a solver expense on the destination (matches bindings.SolverNetExpense).
@@ -67,88 +76,27 @@ type Error struct {
 	Message string `json:"message"`
 }
 
-// newQuoteHandler returns a handler for the /quote endpoint.
-func newQuoteHandler(backends ethbackend.Backends, solverAddr common.Address) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
+type quoteFunc func(context.Context, QuoteRequest) (Deposit, error)
 
-		ctx := r.Context()
-
-		// TODO: better request / response logging
-
-		write := func(res QuoteResponse) {
-			if err := json.NewEncoder(w).Encode(res); err != nil {
-				log.Error(ctx, "[BUG] error writing /quote response", err)
-				w.WriteHeader(http.StatusInternalServerError)
-
-				return
-			}
-
-			status := http.StatusOK
-			if res.Error.Code != 0 {
-				status = res.Error.Code
-			}
-
-			w.WriteHeader(status)
-		}
-
-		writeError := func(statusCode int, err error) {
-			log.DebugErr(ctx, "error handling /quote request", err, "code", statusCode)
-
-			res := QuoteResponse{
-				Error: Error{
-					Code:    statusCode,
-					Status:  http.StatusText(statusCode),
-					Message: err.Error(),
-				},
-			}
-
-			write(res)
-		}
-
-		writeRejectOrErr := func(reject RejectOrErr) {
-			if reject.ShouldError() {
-				writeError(http.StatusInternalServerError, reject.Err)
-				return
-			}
-
-			res := QuoteResponse{
-				Rejected:          true,
-				RejectReason:      reject.Reason.String(),
-				RejectDescription: reject.Err.Error(),
-			}
-
-			write(res)
-		}
-
-		writeReject := func(reason rejectReason, err error) {
-			writeRejectOrErr(RejectOrErr{Reason: reason, Err: err})
-		}
-
-		var req QuoteRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(http.StatusBadRequest, errors.Wrap(err, "decode request"))
-			return
-		}
-
+// newQuoter returns a quoteFunc that can be used to quote deposits for expenses.
+// It is the logic behind the /quote endpoint.
+func newQuoter(backends ethbackend.Backends, solverAddr common.Address) quoteFunc {
+	return func(ctx context.Context, req QuoteRequest) (Deposit, error) {
 		backend, err := backends.Backend(req.DestinationChainID)
 		if err != nil {
-			writeReject(rejectUnsupportedDestChain, err)
-			return
+			return Deposit{}, newRejection(rejectUnsupportedDestChain, err)
 		}
 
 		depositTkn, ok := tokens.find(req.SourceChainID, req.DepositToken)
 		if !ok {
-			writeReject(rejectUnsupportedDeposit, errors.New("unsupported deposit token", "addr", req.DepositToken))
-			return
+			return Deposit{}, newRejection(rejectUnsupportedDeposit, errors.New("unsupported deposit token", "addr", req.DepositToken))
 		}
 
 		var expenses []Payment
 		for _, e := range req.Expenses {
 			tkn, ok := tokens.find(req.DestinationChainID, e.Token)
 			if !ok {
-				writeReject(rejectUnsupportedExpense, errors.New("unsupported expense token", "addr", e.Token))
-				return
+				return Deposit{}, newRejection(rejectUnsupportedExpense, errors.New("unsupported expense token", "addr", e.Token))
 			}
 			expenses = append(expenses, Payment{
 				Token:  tkn,
@@ -156,28 +104,71 @@ func newQuoteHandler(backends ethbackend.Backends, solverAddr common.Address) ht
 			})
 		}
 
-		quote, rejectOrErr := getQuote([]Token{depositTkn}, expenses)
-		if rejectOrErr.ShouldReturn() {
-			writeRejectOrErr(rejectOrErr)
+		quote, err := getQuote([]Token{depositTkn}, expenses)
+		if err != nil {
+			return Deposit{}, err
+		}
+
+		if err := checkLiquidity(ctx, expenses, backend, solverAddr); err != nil {
+			return Deposit{}, err
+		}
+
+		return Deposit{
+			Token:  quote[0].Token.Address,
+			Amount: quote[0].Amount,
+		}, nil
+	}
+}
+
+// newQuoteHandler returns a handler for the /quote endpoint.
+// It is responsible to http request / response handling, and delegates
+// logic to a quoteFunc.
+func newQuoteHandler(quoteFunc quoteFunc) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, rr *http.Request) {
+		ctx := rr.Context()
+
+		w.Header().Set("Content-Type", "application/json")
+
+		// TODO: better request / response logging
+
+		write := func(res QuoteResponse) {
+			// Write response header first, before body.
+			w.WriteHeader(res.StatusCode())
+			if err := json.NewEncoder(w).Encode(res); err != nil {
+				log.Error(ctx, "[BUG] error writing /quote response", err)
+			}
+		}
+
+		writeError := func(statusCode int, err error) {
+			log.DebugErr(ctx, "Error handling /quote request", err)
+
+			write(QuoteResponse{
+				Error: &Error{
+					Code:    statusCode,
+					Status:  http.StatusText(statusCode),
+					Message: err.Error(),
+				},
+			})
+		}
+
+		var req QuoteRequest
+		if err := json.NewDecoder(rr.Body).Decode(&req); err != nil {
+			writeError(http.StatusBadRequest, errors.Wrap(err, "decode request"))
 			return
 		}
 
-		rejectOrErr = checkLiquidity(ctx, expenses, backend, solverAddr)
-		if rejectOrErr.ShouldReturn() {
-			writeRejectOrErr(rejectOrErr)
-			return
+		deposit, err := quoteFunc(ctx, req)
+		if r := new(RejectionError); errors.As(err, &r) { // RejectionError
+			write(QuoteResponse{
+				Rejected:          true,
+				RejectReason:      r.Reason.String(),
+				RejectDescription: r.Err.Error(),
+			})
+		} else if err != nil { // Error
+			writeError(http.StatusInternalServerError, err)
+		} else {
+			write(QuoteResponse{Deposit: &deposit}) // Success
 		}
-
-		w.WriteHeader(http.StatusOK)
-
-		res := QuoteResponse{
-			Deposit: Deposit{
-				Token:  quote[0].Token.Address,
-				Amount: quote[0].Amount,
-			},
-		}
-
-		write(res)
 	})
 }
 
@@ -186,39 +177,27 @@ func newQuoteHandler(backends ethbackend.Backends, solverAddr common.Address) ht
 // For now, this is a simple quote that requires a single expense, paid
 // for by an equal amount of an equivalent deposit token. Token equivalence is
 // determined by symbol (ex arbitrum "ETH" is equivalent to optimism "ETH").
-func getQuote(depositTkns []Token, expenses []Payment) ([]Payment, RejectOrErr) {
+func getQuote(depositTkns []Token, expenses []Payment) ([]Payment, error) {
 	if len(depositTkns) != 1 {
-		return nil, RejectOrErr{
-			Reason: rejectInvalidDeposit,
-			Err:    errors.New("only single deposit token supported"),
-		}
+		return nil, newRejection(rejectInvalidDeposit, errors.New("only single deposit token supported"))
 	}
 
 	if len(expenses) != 1 {
-		return nil, RejectOrErr{
-			Reason: rejectInvalidExpense,
-			Err:    errors.New("only single expense supported"),
-		}
+		return nil, newRejection(rejectInvalidExpense, errors.New("only single expense supported"))
 	}
 
 	expense := expenses[0]
 	depositTkn := depositTkns[0]
 
 	if expense.Token.Symbol != depositTkn.Symbol {
-		return nil, RejectOrErr{
-			Reason: rejectInvalidDeposit,
-			Err:    errors.New("deposit token must match expense token"),
-		}
+		return nil, newRejection(rejectInvalidDeposit, errors.New("deposit token must match expense token"))
 	}
 
 	// make sure chain class (e.g. mainnet, testnet) matches
 	// we should reject with UnsupportedDestChain before this. the solver is
 	// initialized by network, which only includes chains of the same class
 	if expense.Token.ChainClass != depositTkn.ChainClass {
-		return nil, RejectOrErr{
-			Reason: rejectInvalidDeposit,
-			Err:    errors.New("deposit and expense must be of the same chain class (e.g. mainnet, testnet)"),
-		}
+		return nil, newRejection(rejectInvalidDeposit, errors.New("deposit and expense must be of the same chain class (e.g. mainnet, testnet)"))
 	}
 
 	return []Payment{
@@ -226,13 +205,13 @@ func getQuote(depositTkns []Token, expenses []Payment) ([]Payment, RejectOrErr) 
 			Token:  depositTkn,
 			Amount: expense.Amount,
 		},
-	}, RejectOrErr{}
+	}, nil
 }
 
 // coversQuote checks if `deposits` match or exceed a `quote` for expenses.
-func coversQuote(deposits, quote []Payment) RejectOrErr {
+func coversQuote(deposits, quote []Payment) error {
 	if len(quote) != len(deposits) {
-		return RejectOrErr{}
+		return errors.New("invalid params [BUG]")
 	}
 
 	byTkn := func(ps []Payment) map[Token]*big.Int {
@@ -250,19 +229,13 @@ func coversQuote(deposits, quote []Payment) RejectOrErr {
 	for tkn, q := range quoteByTkn {
 		d, ok := depositsByTkn[tkn]
 		if !ok {
-			return RejectOrErr{
-				Reason: rejectInsufficientDeposit,
-				Err:    errors.New("missing deposit", "token", tkn),
-			}
+			return newRejection(rejectInsufficientDeposit, errors.New("missing deposit", "token", tkn))
 		}
 
 		if d.Cmp(q) < 0 {
-			return RejectOrErr{
-				Reason: rejectInsufficientDeposit,
-				Err:    errors.New("insufficient deposit", "token", tkn, "deposit", d, "quote", q),
-			}
+			return newRejection(rejectInsufficientDeposit, errors.New("insufficient deposit", "token", tkn, "deposit", d, "quote", q))
 		}
 	}
 
-	return RejectOrErr{}
+	return nil
 }
