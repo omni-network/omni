@@ -86,9 +86,4 @@ type Provider interface {
 
 	// QueryClients returns the query clients for the various modules.
 	QueryClients() QueryClients
-
-	// NoCustomPrimitives returns true if this provider doesn't support custom GRPC primitives.
-	// E.g. MintModule InflationResponse math.LegacyDec.
-	// See https://github.com/omni-network/omni/issues/2963.
-	NoCustomPrimitives() bool
 }

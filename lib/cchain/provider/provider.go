@@ -78,7 +78,6 @@ type Provider struct {
 	chainNamer   func(xchain.ChainVersion) string
 	network      netconf.ID
 	queryClients cchain.QueryClients
-	isGRPC       bool
 }
 
 // NewProviderForT creates a new provider for testing.
@@ -96,13 +95,6 @@ func NewProviderForT(_ *testing.T, fetch fetchFunc, latest latestFunc, window wi
 
 func (p Provider) QueryClients() cchain.QueryClients {
 	return p.queryClients
-}
-
-// NoCustomPrimitives returns true if this provider doesn't support custom GRPC primitives.
-// E.g. MintModule InflationResponse math.LegacyDec.
-// See https://github.com/omni-network/omni/issues/2963.
-func (p Provider) NoCustomPrimitives() bool {
-	return p.isGRPC
 }
 
 func (p Provider) CurrentPlannedPlan(ctx context.Context) (upgradetypes.Plan, bool, error) {

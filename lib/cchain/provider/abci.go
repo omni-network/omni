@@ -76,9 +76,6 @@ func NewGRPC(target string, network netconf.ID, ir codectypes.InterfaceRegistry,
 	if err != nil {
 		return Provider{}, errors.Wrap(err, "new grpc client")
 	}
-	opts = append(opts, func(p *Provider) {
-		p.isGRPC = true
-	})
 
 	return newProvider(grpcClient, network, opts...), nil
 }
