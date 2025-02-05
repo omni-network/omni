@@ -1,0 +1,16 @@
+version: '2.4'
+
+services:
+  solana:
+    labels:
+      solana: true
+    image:  anzaxyz/agave:{{ if .Version }}{{ .Version }}{{ else }}stable{{ end }}
+    platform: linux/amd64
+    ulimits:
+      nofile:
+        soft: 1000000
+        hard: 1000000
+    ports:
+      - {{ .Port }}:8899
+    volumes:
+      - .:/root/.config/solana/ # Path of generated id.json keypair
