@@ -44,15 +44,15 @@ var (
 		SlashFractionDowntime:   math.LegacyNewDec(0),            // 0% since mainnet V1 has trusted operators.
 	}
 
-	targetInflation  = math.LegacyNewDecWithPrec(11, 0)
-	blocksPeriodSecs = 2 // BlocksPerYear calculated based on 2 second block times
+	targetInflation  = math.LegacyNewDecWithPrec(11, 2) // 11%
+	blocksPeriodSecs = 2                                // BlocksPerYear calculated based on 2 second block times
 	mintParams       = minttypes.Params{
 		MintDenom:           sdk.DefaultBondDenom,
 		InflationRateChange: math.LegacyNewDec(0),
 		InflationMin:        targetInflation,
 		InflationMax:        targetInflation,
-		GoalBonded:          math.LegacyNewDec(60),
-		BlocksPerYear:       uint64(365 * 24 * 60 * 60 / blocksPeriodSecs), // Roughly, one block every 2 seconds
+		GoalBonded:          math.LegacyNewDecWithPrec(60, 2), // 60%
+		BlocksPerYear:       uint64(365 * 24 * 60 * 60 / blocksPeriodSecs),
 	}
 )
 
