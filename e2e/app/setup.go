@@ -101,6 +101,7 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	}
 
 	cosmosGenesis, err := genutil.MakeGenesis(
+		ctx,
 		def.Manifest.Network,
 		time.Now(),
 		gethGenesis.ToBlock().Hash(),

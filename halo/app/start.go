@@ -42,6 +42,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdkflags "github.com/cosmos/cosmos-sdk/client/flags"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdkserver "github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/grpc"
@@ -188,7 +189,7 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 		return nil, nil, err
 	}
 
-	cProvider, err := newCProvider(rpcClient, cfg)
+	cProvider, err := newCProvider(rpcClient, cfg, app.interfaceRegistry)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -253,9 +254,9 @@ func Start(ctx context.Context, cfg Config) (<-chan error, func(context.Context)
 
 // newCProvider returns a new cchain provider. Either GRPC if enabled since it is faster,
 // otherwise the ABCI provider.
-func newCProvider(rpcClient *rpclocal.Local, cfg Config) (cchain.Provider, error) {
+func newCProvider(rpcClient *rpclocal.Local, cfg Config, ir codectypes.InterfaceRegistry) (cchain.Provider, error) {
 	if cfg.SDKGRPC.Enable {
-		return cprovider.NewGRPC(cfg.SDKGRPC.Address, cfg.Network)
+		return cprovider.NewGRPC(cfg.SDKGRPC.Address, cfg.Network, ir)
 	}
 
 	return cprovider.NewABCI(rpcClient, cfg.Network), nil

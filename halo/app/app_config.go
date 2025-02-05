@@ -17,10 +17,14 @@ import (
 	"github.com/omni-network/omni/halo/sdk"
 	valsyncmodule "github.com/omni-network/omni/halo/valsync/module"
 	valsynctypes "github.com/omni-network/omni/halo/valsync/types"
+	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/netconf"
 	engevmmodule "github.com/omni-network/omni/octane/evmengine/module"
 	engevmtypes "github.com/omni-network/omni/octane/evmengine/types"
+
+	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 
 	runtimev1alpha1 "cosmossdk.io/api/cosmos/app/runtime/v1alpha1"
 	appv1alpha1 "cosmossdk.io/api/cosmos/app/v1alpha1"
@@ -38,6 +42,9 @@ import (
 	"cosmossdk.io/depinject"
 	evidencetypes "cosmossdk.io/x/evidence/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -258,4 +265,49 @@ func deliverInterval(network netconf.ID) int64 {
 	}
 
 	return deliverIntervalEphemeral
+}
+
+type EncodingConfig struct {
+	InterfaceRegistry types.InterfaceRegistry
+	Codec             codec.Codec
+	TxConfig          client.TxConfig
+}
+
+// ClientEncodingConfig returns the client encoding configuration for the given network.
+// Note this should not be used by halo itself. It mocks dependencies to load modules
+// only in order to register interfaces and protos for encoding/decoding, not for actual logic/state.
+func ClientEncodingConfig(ctx context.Context, network netconf.ID) (EncodingConfig, error) {
+	noopVoter, err := newVoterLoader(k1.GenPrivKey())
+	if err != nil {
+		return EncodingConfig{}, err
+	}
+
+	engineCl := struct {
+		ethclient.EngineClient
+	}{}
+
+	depCfg := depinject.Configs(
+		appConfig(ctx, network),
+		depinject.Provide(diProviders(ctx)...),
+		depinject.Supply(
+			newSDKLogger(ctx),
+			attesttypes.ChainVerNameFunc(netconf.ChainVersionNamer(network)),
+			registrytypes.ChainNameFunc(netconf.ChainNamer(network)),
+			noopVoter,
+			engineCl,
+			engevmtypes.FeeRecipientProvider(burnEVMFees{}),
+		),
+	)
+
+	var resp EncodingConfig
+
+	if err := depinject.Inject(depCfg, []any{
+		&resp.InterfaceRegistry,
+		&resp.Codec,
+		&resp.TxConfig,
+	}...); err != nil {
+		return EncodingConfig{}, errors.Wrap(err, "dep inject")
+	}
+
+	return resp, nil
 }
