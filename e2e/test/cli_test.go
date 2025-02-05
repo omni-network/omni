@@ -26,6 +26,7 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	dtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
 )
@@ -141,21 +142,21 @@ func TestCLIOperator(t *testing.T) {
 			}, valChangeWait, 500*time.Millisecond, "failed to self-delegate")
 		})
 
+		// delegator's keys
+		privKey, pubKey := anvil.DevPrivateKey5(), anvil.DevAccount5()
+		delegatorCosmosAddr := sdk.AccAddress(pubKey.Bytes()).String()
+		delegatorPrivKeyFile := filepath.Join(tmpDir, "delegator_privkey")
+		require.NoError(
+			t,
+			ethcrypto.SaveECDSA(delegatorPrivKeyFile, privKey),
+			"failed to save new validator private key to temp file",
+		)
+
 		// delegate from a new account
 		t.Run("delegation", func(t *testing.T) {
 			if !feature.FlagEVMStakingModule.Enabled(ctx) {
 				t.Skip("Skipping delegation tests")
 			}
-
-			// delegator's keys
-			privKey, pubKey := anvil.DevPrivateKey5(), anvil.DevAccount5()
-			delegatorCosmosAddr := sdk.AccAddress(pubKey.Bytes()).String()
-			delegatorPrivKeyFile := filepath.Join(tmpDir, "delegator_privkey")
-			require.NoError(
-				t,
-				ethcrypto.SaveECDSA(delegatorPrivKeyFile, privKey),
-				"failed to save new validator private key to temp file",
-			)
 
 			// delegator delegate test
 			const delegatorDelegation = uint64(700)
@@ -219,6 +220,49 @@ func TestCLIOperator(t *testing.T) {
 
 				return val.GetMoniker() == moniker && val.MinSelfDelegation.Equal(minSelfWei)
 			}, valChangeWait, 500*time.Millisecond, "failed to edit validator")
+		})
+
+		// test rewards distribution
+		t.Run("distribution", func(t *testing.T) {
+			if !feature.FlagEVMStakingModule.Enabled(ctx) {
+				t.Skip("Skipping evmstaking2 tests")
+			}
+
+			val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
+			require.True(t, ok)
+
+			// fetch rewards and make sure they are positive
+			resp, err := cprov.QueryClients().Distribution.DelegationRewards(ctx, &dtypes.QueryDelegationRewardsRequest{
+				DelegatorAddress: delegatorCosmosAddr,
+				ValidatorAddress: val.OperatorAddress,
+			})
+			require.NoError(t, err)
+			require.NotEmpty(t, resp.Rewards)
+
+			for _, coin := range resp.Rewards {
+				require.Equal(t, "stake", coin.Denom)
+				require.True(t, coin.Amount.IsPositive())
+			}
+
+			// fetch again and make sure they increased
+			wait := time.Second * 2
+			require.Eventuallyf(t, func() bool {
+				resp2, err := cprov.QueryClients().Distribution.DelegationRewards(ctx, &dtypes.QueryDelegationRewardsRequest{
+					DelegatorAddress: delegatorCosmosAddr,
+					ValidatorAddress: val.OperatorAddress,
+				})
+				require.NoError(t, err)
+				require.NotEmpty(t, resp2.Rewards)
+
+				for i, coin2 := range resp2.Rewards {
+					coin := resp.Rewards[i]
+					if coin2.Amount.GT(coin.Amount) {
+						return true
+					}
+				}
+
+				return false
+			}, wait, 500*time.Millisecond, "no rewards increase")
 		})
 	})
 }
