@@ -212,7 +212,7 @@ func testCProvider(t *testing.T, ctx context.Context, cprov cprovider.Provider) 
 	if feature.FlagEVMStakingModule.Enabled(ctx) && !cprov.NoCustomPrimitives() {
 		resp, err := cprov.QueryClients().Mint.Inflation(ctx, &minttypes.QueryInflationRequest{})
 		require.NoError(t, err)
-		require.EqualValues(t, 11, resp.Inflation.TruncateInt64())
+		require.EqualValues(t, "11.000000000000000000", resp.Inflation.String())
 	}
 }
 
