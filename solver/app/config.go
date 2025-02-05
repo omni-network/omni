@@ -6,6 +6,7 @@ import (
 
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
@@ -19,20 +20,24 @@ type Config struct {
 	RPCEndpoints   xchain.RPCEndpoints
 	Network        netconf.ID
 	MonitoringAddr string
+	APIAddr        string
 	SolverPrivKey  string
 	LoadGenPrivKey string
 	DBDir          string
+	FeatureFlags   feature.Flags
 }
 
 func DefaultConfig() Config {
 	return Config{
 		SolverPrivKey:  "solver.key",
 		MonitoringAddr: ":26660",
+		APIAddr:        ":26661",
 		DBDir:          "./db",
+		FeatureFlags:   feature.Flags{}, // Zero enabled flags by default (note not nil).
 	}
 }
 
-//go:embed config.toml.tpl
+//go:embed config.toml.tmpl
 var tomlTemplate []byte
 
 // WriteConfigTOML writes the toml solver config to disk.

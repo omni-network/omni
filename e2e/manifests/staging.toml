@@ -4,7 +4,7 @@ multi_omni_evms = true
 prometheus = true
 deploy_solve = true
 
-feature_flags = ["evm-staking-module","simple-evm-events"]
+feature_flags = ["evm-staking-module","simple-evm-events","proto-evm-payload"]
 
 [node.validator01]
 [node.validator02]
@@ -13,7 +13,7 @@ feature_flags = ["evm-staking-module","simple-evm-events"]
 mode = "seed"
 
 [node.fullnode01]
-mode = "archive"
+mode = "archive" # Used by relayer, so must be archive.
 
 [keys.validator01]
 validator = "0xD6CD71dF91a6886f69761826A9C4D123178A8d9D"

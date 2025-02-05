@@ -6,6 +6,7 @@ import (
 	"crypto/ecdsa"
 	"encoding/hex"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"net/url"
 	"strings"
@@ -30,6 +31,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 
+	"cosmossdk.io/math"
 	"github.com/spf13/cobra"
 )
 
@@ -234,13 +236,18 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 
 type DelegateConfig struct {
 	EOAConfig
-	Amount uint64
-	Self   bool
+	Amount           uint64
+	Self             bool
+	ValidatorAddress string
 }
 
 func (d DelegateConfig) validate() error {
-	if !d.Self {
-		return errors.New("required --self", "required_value", "true")
+	if !d.Self && d.ValidatorAddress == "" || d.Self && d.ValidatorAddress != "" {
+		return errors.New("required either --self or --validator-address flags", "required_value", "true")
+	}
+
+	if d.ValidatorAddress != "" && !common.IsHexAddress(d.ValidatorAddress) {
+		return errors.New("invalid --validator-address")
 	}
 
 	if d.Amount < minDelegation {
@@ -256,7 +263,7 @@ func newDelegateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delegate",
 		Short: "Delegate Omni tokens to a validator",
-		Long:  `Delegate an amount of Omni tokens to a validator from your wallet. Only self-delegation by validators supported at the moment.`,
+		Long:  `Delegate an amount of Omni tokens to a validator from your wallet.`,
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := cfg.validate(); err != nil {
@@ -289,13 +296,18 @@ func Delegate(ctx context.Context, cfg DelegateConfig) error {
 		return err
 	}
 
+	validatorAddr := delegatorAddr
+	if cfg.ValidatorAddress != "" {
+		validatorAddr = common.HexToAddress(cfg.ValidatorAddress)
+	}
+
 	// check if we already have an existing validator
-	if _, ok, err := cprov.SDKValidator(ctx, delegatorAddr); err != nil {
+	if _, ok, err := cprov.SDKValidator(ctx, validatorAddr); err != nil {
 		return err
 	} else if !ok {
 		return &CliError{
-			Msg:     "Operator address is not a validator: " + delegatorAddr.Hex(),
-			Suggest: "Ensure operator is already created as validator, see create-validator command",
+			Msg:     "Not a validator address: " + validatorAddr.Hex(),
+			Suggest: "Ensure the validator exists (if you're operator, see create-validator command)",
 		}
 	}
 
@@ -310,7 +322,7 @@ func Delegate(ctx context.Context, cfg DelegateConfig) error {
 	} else if bal <= float64(cfg.Amount) {
 		return &CliError{
 			Msg:     fmt.Sprintf("Delegator address has insufficient balance=%.2f OMNI, address=%s", bal, delegatorAddr),
-			Suggest: "Fund the delegator address with sufficient OMNI for self-delegation and gas",
+			Suggest: "Fund the delegator address with sufficient OMNI for (self-)delegation and gas",
 		}
 	}
 
@@ -318,14 +330,14 @@ func Delegate(ctx context.Context, cfg DelegateConfig) error {
 	if err != nil {
 		return err
 	}
-	txOpts.Value = new(big.Int).Mul(umath.NewBigInt(cfg.Amount), big.NewInt(params.Ether)) // Send self-delegation
+	txOpts.Value = new(big.Int).Mul(umath.NewBigInt(cfg.Amount), big.NewInt(params.Ether)) // Send delegation
 
 	callOpts := &bind.CallOpts{Context: ctx}
 	ok, err := contract.IsAllowlistEnabled(callOpts)
 	if err != nil {
 		return errors.Wrap(err, "check allowlist enabled")
 	} else if ok {
-		ok, err := contract.IsAllowedValidator(&bind.CallOpts{Context: ctx}, delegatorAddr)
+		ok, err := contract.IsAllowedValidator(&bind.CallOpts{Context: ctx}, validatorAddr)
 		if err != nil {
 			return err
 		} else if !ok {
@@ -333,9 +345,9 @@ func Delegate(ctx context.Context, cfg DelegateConfig) error {
 		}
 	}
 
-	tx, err := contract.Delegate(txOpts, delegatorAddr)
+	tx, err := contract.Delegate(txOpts, validatorAddr)
 	if err != nil {
-		return errors.Wrap(err, "create validator")
+		return errors.Wrap(err, "delegate")
 	}
 
 	rec, err := backend.WaitMined(ctx, tx)
@@ -475,6 +487,216 @@ func checkUnjailPeriod(ctx context.Context, cprov cchain.Provider, val cchain.SD
 	if !found {
 		return errors.New("missing signing info for validator [BUG]")
 	}
+
+	return nil
+}
+
+// doNotModify is a special CosmosSDK string that indicates the value should not be modified.
+const doNotModify = "[do-not-modify]"
+
+type EditValConfig struct {
+	EOAConfig
+	Moniker                  string
+	Identity                 string
+	Website                  string
+	SecurityContact          string
+	Details                  string
+	CommissionRatePercentage int32
+	MinSelfDelegationEther   int64
+}
+
+// NoopEditValConfig returns a default EditValConfig that will not modify existing values.
+func NoopEditValConfig() EditValConfig {
+	return EditValConfig{
+		Moniker:                  doNotModify,
+		Identity:                 doNotModify,
+		Website:                  doNotModify,
+		SecurityContact:          doNotModify,
+		Details:                  doNotModify,
+		CommissionRatePercentage: -1,
+		MinSelfDelegationEther:   -1,
+	}
+}
+
+func (d EditValConfig) modifiedAttrs() []any {
+	var resp []any
+	if d.Moniker != doNotModify {
+		resp = append(resp, slog.String("moniker", d.Moniker))
+	}
+	if d.Identity != doNotModify {
+		resp = append(resp, slog.String("identity", d.Identity))
+	}
+	if d.Website != doNotModify {
+		resp = append(resp, slog.String("website", d.Website))
+	}
+	if d.SecurityContact != doNotModify {
+		resp = append(resp, slog.String("security-contact", d.SecurityContact))
+	}
+	if d.Details != doNotModify {
+		resp = append(resp, slog.String("details", d.Details))
+	}
+	if d.CommissionRatePercentage != -1 {
+		resp = append(resp, slog.Any("commission-rate", d.CommissionRatePercentage))
+	}
+	if d.MinSelfDelegationEther != -1 {
+		resp = append(resp, slog.Int64("min-self-delegation", d.MinSelfDelegationEther))
+	}
+
+	return resp
+}
+
+func (d EditValConfig) validate() error {
+	if d.CommissionRatePercentage < -1 || d.CommissionRatePercentage > 100 {
+		return errors.New("commission-rate not a valid percentage [0,100]", "maximum", 100, "minimum", 0)
+	}
+	if d.MinSelfDelegationEther == 0 {
+		return errors.New("min-self-delegation in OMNI (not wei) must not be zero", "minimum", 1)
+	}
+	if d.MinSelfDelegationEther < -1 {
+		return errors.New("min-self-delegation in OMNI (not wei) must not be negative")
+	}
+	if len(d.Moniker) > 70 {
+		return errors.New("moniker too long", "maximum", 70, "length", len(d.Moniker))
+	}
+	if len(d.Identity) > 3000 {
+		return errors.New("identity too long", "maximum", 3000, "length", len(d.Identity))
+	}
+	if len(d.Website) > 140 {
+		return errors.New("website too long", "maximum", 140, "length", len(d.Website))
+	}
+	if len(d.SecurityContact) > 140 {
+		return errors.New("security-contact too long", "maximum", 140, "length", len(d.SecurityContact))
+	}
+	if len(d.Details) > 280 {
+		return errors.New("details too long", "maximum", 280, "length", len(d.Details))
+	}
+
+	return d.EOAConfig.validate()
+}
+
+func newEditValCmd() *cobra.Command {
+	cfg := NoopEditValConfig()
+
+	cmd := &cobra.Command{
+		Use:   "edit-validator",
+		Short: "Edit an existing validator metadata",
+		Long:  `Sign and broadcast an edit-validator transaction that updates the metadata of an existing validator with 0.1 OMNI fee.`,
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if err := cfg.validate(); err != nil {
+				return errors.Wrap(err, "verify flags")
+			}
+
+			err := EditVal(cmd.Context(), cfg)
+			if err != nil {
+				return errors.Wrap(err, "edit validator")
+			}
+
+			return nil
+		},
+	}
+
+	bindEditValConfig(cmd, &cfg)
+
+	return cmd
+}
+
+func EditVal(ctx context.Context, cfg EditValConfig) error {
+	valPriv, err := cfg.privateKey()
+	if err != nil {
+		return err
+	}
+	valAddr := crypto.PubkeyToAddress(valPriv.PublicKey)
+
+	_, cprov, backend, err := setupClients(cfg.EOAConfig, valPriv)
+	if err != nil {
+		return err
+	}
+
+	// check if we already have an existing validator
+	val, ok, err := cprov.SDKValidator(ctx, valAddr)
+	if err != nil {
+		return err
+	} else if !ok {
+		return &CliError{
+			Msg:     "Operator address is not a validator: " + valAddr.Hex(),
+			Suggest: "Ensure operator is already created as validator, see create-validator command",
+		}
+	}
+
+	modifiedParams := cfg.modifiedAttrs()
+	if len(modifiedParams) == 0 {
+		return &CliError{
+			Msg:     "All flags are default, no update possible",
+			Suggest: "Provide at least one flag to update",
+		}
+	}
+
+	log.Info(ctx, "Modifying the following parameters", modifiedParams...)
+
+	contract, err := bindings.NewStaking(common.HexToAddress(predeploys.Staking), backend)
+	if err != nil {
+		return err
+	}
+
+	fee, err := contract.Fee(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		return err
+	}
+
+	txOpts, err := backend.BindOpts(ctx, valAddr)
+	if err != nil {
+		return err
+	}
+	txOpts.Value = fee
+
+	callOpts := &bind.CallOpts{Context: ctx}
+	ok, err = contract.IsAllowlistEnabled(callOpts)
+	if err != nil {
+		return errors.Wrap(err, "check allowlist enabled")
+	} else if ok {
+		ok, err := contract.IsAllowedValidator(&bind.CallOpts{Context: ctx}, valAddr)
+		if err != nil {
+			return err
+		} else if !ok {
+			return errors.New("active validator not in allowed list [BUG]")
+		}
+	}
+
+	minSelfWei := math.NewInt(-1)
+	if cfg.MinSelfDelegationEther != -1 {
+		// CLI flag min-self-delegation is in OMNI, convert to wei
+		minSelfWei = math.NewInt(cfg.MinSelfDelegationEther).MulRaw(params.Ether)
+		if val.MinSelfDelegation.GTE(minSelfWei) {
+			return &CliError{
+				Msg:     "--min-self-delegation too low",
+				Suggest: "Provide a higher value than existing min-self-delegation=" + val.MinSelfDelegation.QuoRaw(params.Ether).String(),
+			}
+		}
+	}
+
+	tx, err := contract.EditValidator(txOpts, bindings.StakingEditValidatorParams{
+		Moniker:                  cfg.Moniker,
+		Identity:                 cfg.Identity,
+		Website:                  cfg.Website,
+		SecurityContact:          cfg.SecurityContact,
+		Details:                  cfg.Details,
+		CommissionRatePercentage: cfg.CommissionRatePercentage,
+		MinSelfDelegation:        minSelfWei.BigInt(),
+	})
+	if err != nil {
+		return errors.Wrap(err, "edit validator")
+	}
+
+	rec, err := backend.WaitMined(ctx, tx)
+	if err != nil {
+		return errors.Wrap(err, "wait mined")
+	}
+
+	log.Info(ctx, "🎉 Edit validator transaction sent and included on-chain",
+		"link", cfg.Network.Static().OmniScanTXURL(tx.Hash()),
+		"block", rec.BlockNumber.Uint64(),
+	)
 
 	return nil
 }

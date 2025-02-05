@@ -34,6 +34,13 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
     event Delegate(address indexed delegator, address indexed validator, uint256 amount);
 
     /**
+     * @notice Emitted when a validator is edited
+     * @param validator The validator address
+     * @param params The parameters for the editValidator function
+     */
+    event EditValidator(address indexed validator, EditValidatorParams params);
+
+    /**
      * @notice Emitted when a validator is allowed to create a validator
      * @param validator     The validator address
      */
@@ -56,6 +63,27 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
     event AllowlistDisabled();
 
     /**
+     * @notice Parameters for the editValidator function.
+     *         Note that '[do-not-modify]' and -1 can respectively be used to indicate that a field should not be modified.
+     * @param moniker                    Human-readable name for the validator              (70 chars max)
+     * @param identity                   Optional identity signature (ex. UPort or Keybase) (3000 chars max)
+     * @param website                    Optional optional website link                     (140 chars max)
+     * @param security_contact           Optional optional email for security contact       (140 chars max)
+     * @param details                    Optional other details                             (280 chars max)
+     * @param commission_rate_percentage The percentage of delegate rewards to take as commission [0,100]
+     * @param min_self_delegation        The minimum self delegation required (in wei). (positive)
+     */
+    struct EditValidatorParams {
+        string moniker;
+        string identity;
+        string website;
+        string security_contact;
+        string details;
+        int32 commission_rate_percentage;
+        int128 min_self_delegation;
+    }
+
+    /**
      * @notice The minimum deposit required to create a validator
      */
     uint256 public constant MinDeposit = 100 ether;
@@ -68,7 +96,18 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
     /**
      * @notice EIP-712 typehash
      */
-    bytes32 private constant _EIP712_TYPEHASH = keccak256("ValidatorPublicKey(bytes32 x,bytes32 y)");
+    bytes32 private constant _EIP712_TYPEHASH = keccak256("ValidatorAddress(address validator)");
+
+    /**
+     * @notice The address to burn fees to
+     */
+    address private constant BurnAddr = 0x000000000000000000000000000000000000dEaD;
+
+    /**
+     * @notice Static fee to edit validator or withdraw. Used to prevent spamming of events, which require consensus
+     *         chain work that is not metered by execution chain gas.
+     */
+    uint256 public constant Fee = 0.1 ether;
 
     /**
      * @notice True if the validator allowlist is enabled.
@@ -145,6 +184,32 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
         _verifySignature(x, y, msg.sender, signature);
 
         emit CreateValidator(msg.sender, pubkey, msg.value);
+    }
+
+    /**
+     * @notice Edit an existing validator
+     * @param params The parameters for the editValidator function
+     * @dev Proxies x/staking.MsgEditValidator
+     */
+    function editValidator(EditValidatorParams calldata params) external payable {
+        require(!isAllowlistEnabled || isAllowedValidator[msg.sender], "Staking: not allowed");
+        require(bytes(params.moniker).length <= 70, "Staking: moniker too long");
+        require(bytes(params.identity).length <= 3000, "Staking: identity too long");
+        require(bytes(params.website).length <= 140, "Staking: website too long");
+        require(bytes(params.security_contact).length <= 140, "Staking: security contact too long");
+        require(bytes(params.details).length <= 280, "Staking: details too long");
+        if (params.min_self_delegation != -1) {
+            require(params.min_self_delegation > 0, "Staking: invalid min self delegation");
+        }
+        if (params.commission_rate_percentage != -1) {
+            require(
+                params.commission_rate_percentage <= 100 && params.commission_rate_percentage >= 0,
+                "Staking: invalid commission rate"
+            );
+        }
+
+        _burnFee();
+        emit EditValidator(msg.sender, params);
     }
 
     /**
@@ -232,5 +297,13 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
         require(msg.value >= MinDelegation, "Staking: insufficient deposit");
 
         emit Delegate(delegator, validator, msg.value);
+    }
+
+    /**
+     * @notice Burn the fee, requiring it be sent with the call
+     */
+    function _burnFee() internal {
+        require(msg.value >= Fee, "Staking: insufficient fee");
+        payable(BurnAddr).transfer(msg.value);
     }
 }

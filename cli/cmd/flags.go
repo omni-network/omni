@@ -80,10 +80,10 @@ func bindDelegateConfig(cmd *cobra.Command, cfg *DelegateConfig) {
 	const flagSelf = "self"
 	cmd.Flags().Uint64Var(&cfg.Amount, flagDelegationAmount, cfg.Amount, "Delegation amount in OMNI (minimum 1 OMNI)")
 	cmd.Flags().BoolVar(&cfg.Self, flagSelf, false, "Enables self-delegation setting target validator address to provided private key")
+	cmd.Flags().StringVar(&cfg.ValidatorAddress, "validator-address", cfg.ValidatorAddress, "Target validator address")
 
 	_ = cmd.MarkFlagRequired(flagConsPubKeyHex)
 	_ = cmd.MarkFlagRequired(flagDelegationAmount)
-	_ = cmd.MarkFlagRequired(flagSelf)
 }
 
 func bindCreateValConfig(cmd *cobra.Command, cfg *createValConfig) {
@@ -104,4 +104,16 @@ func bindPrivateKeyFile(cmd *cobra.Command, privateKeyFile *string) {
 func bindCreateKeyConfig(cmd *cobra.Command, cfg *createKeyConfig) {
 	cmd.Flags().StringVar((*string)(&cfg.Type), flagType, string(cfg.Type), "Type of key to create")
 	cmd.Flags().StringVar(&cfg.PrivateKeyFile, "output-file", cfg.PrivateKeyFile, "Path to output private key file. Note that '{ADDRESS}' will be replaced with the address")
+}
+
+func bindEditValConfig(cmd *cobra.Command, cfg *EditValConfig) {
+	bindEOAConfig(cmd, &cfg.EOAConfig)
+
+	cmd.Flags().StringVar(&cfg.Moniker, "moniker", cfg.Moniker, "Validator moniker. Defaults to not modifying existing moniker")
+	cmd.Flags().StringVar(&cfg.Identity, "identity", cfg.Identity, "Validator identity. Defaults to not modifying existing identity")
+	cmd.Flags().StringVar(&cfg.Website, "website", cfg.Website, "Validator website. Defaults to not modifying existing website")
+	cmd.Flags().StringVar(&cfg.SecurityContact, "security-contact", cfg.SecurityContact, "Validator security contact. Defaults to not modifying existing security contact")
+	cmd.Flags().StringVar(&cfg.Details, "details", cfg.Details, "Validator details. Defaults to not modifying existing details")
+	cmd.Flags().Int32Var(&cfg.CommissionRatePercentage, "commission-rate", cfg.CommissionRatePercentage, "Validator commission rate percentage. Defaults to not modifying existing rate")
+	cmd.Flags().Int64Var(&cfg.MinSelfDelegationEther, "min-self-delegation", cfg.MinSelfDelegationEther, "Validator minimum self-delegation in OMNI (not wei). Defaults to not modifying min-self-delegation")
 }

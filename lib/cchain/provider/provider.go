@@ -51,32 +51,33 @@ type appliedUpgradeFunc func(ctx context.Context, name string) (upgradetypes.Pla
 type signingFunc func(ctx context.Context) ([]cchain.SDKSigningInfo, error)
 
 type valSetResponse struct {
-	ValSetID      uint64
-	Validators    []cchain.PortalValidator
-	CreatedHeight uint64
-	activedHeight uint64
+	ValSetID        uint64
+	Validators      []cchain.PortalValidator
+	CreatedHeight   uint64
+	activatedHeight uint64
 }
 
 // Provider implements cchain.Provider.
 type Provider struct {
-	fetch       fetchFunc
-	allAtts     allAttsFunc
-	latest      latestFunc
-	window      windowFunc
-	valset      valsetFunc
-	val         valFunc
-	signing     signingFunc
-	vals        valsFunc
-	rewards     rewardsFunc
-	chainID     chainIDFunc
-	portalBlock portalBlockFunc
-	networkFunc networkFunc
-	genesisFunc genesisFunc
-	plannedFunc planedUpgradeFunc
-	appliedFunc appliedUpgradeFunc
-	backoffFunc func(context.Context) func()
-	chainNamer  func(xchain.ChainVersion) string
-	network     netconf.ID
+	fetch        fetchFunc
+	allAtts      allAttsFunc
+	latest       latestFunc
+	window       windowFunc
+	valset       valsetFunc
+	val          valFunc
+	signing      signingFunc
+	vals         valsFunc
+	rewards      rewardsFunc
+	chainID      chainIDFunc
+	portalBlock  portalBlockFunc
+	networkFunc  networkFunc
+	genesisFunc  genesisFunc
+	plannedFunc  planedUpgradeFunc
+	appliedFunc  appliedUpgradeFunc
+	backoffFunc  func(context.Context) func()
+	chainNamer   func(xchain.ChainVersion) string
+	network      netconf.ID
+	queryClients cchain.QueryClients
 }
 
 // NewProviderForT creates a new provider for testing.
@@ -90,6 +91,10 @@ func NewProviderForT(_ *testing.T, fetch fetchFunc, latest latestFunc, window wi
 		backoffFunc: backoffFunc,
 		chainNamer:  func(xchain.ChainVersion) string { return "" },
 	}
+}
+
+func (p Provider) QueryClients() cchain.QueryClients {
+	return p.queryClients
 }
 
 func (p Provider) CurrentPlannedPlan(ctx context.Context) (upgradetypes.Plan, bool, error) {

@@ -1,6 +1,7 @@
 package genutil_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -27,7 +28,7 @@ func TestMakeGenesis(t *testing.T) {
 
 	executionBlockHash := common.BytesToHash([]byte("blockhash"))
 
-	resp, err := genutil.MakeGenesis(netconf.Simnet, timestamp, executionBlockHash, uluwatu1.UpgradeName, val1, val2)
+	resp, err := genutil.MakeGenesis(context.Background(), netconf.Simnet, timestamp, executionBlockHash, uluwatu1.UpgradeName, val1, val2)
 	tutil.RequireNoError(t, err)
 
 	tutil.RequireGoldenJSON(t, resp)

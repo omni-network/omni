@@ -9,7 +9,7 @@ The simplest way to run a full node is with the following commands:
 curl -sSfL https://raw.githubusercontent.com/omni-network/omni/main/scripts/install_omni_cli.sh | bash -s
 
 # init halo and geth
-omni operator init-nodes --network=omega --moniker=foo
+omni operator init-nodes --network=omega --moniker=foo --node-snapshot
 
 # start halo and geth
 cd ~/.omni/omega
@@ -25,6 +25,7 @@ For the upcoming mainnet, replace the `omega` network with `mainnet`.
 ### What's actually happening here?
 - First, you're installing the `omni` CLI which contains tooling to manage a node.
 - The `omni operator init-nodes` command generates config files, genesis files, and docker compose in `~/.omni/<network>`.
+- The `--node-snapshot` flag downloads the latest node snapshots provided Omni. This speeds up syncing significantly, but uses more disk space. See [here](faq.md#what-syncing-options-are-supported) for more details.
 - `docker compose up -d` spins up the `halovisor` and `geth` containers.
 
 ### What is the Omni Node software stack?

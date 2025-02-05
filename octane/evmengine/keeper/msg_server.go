@@ -169,7 +169,9 @@ func (s msgServer) deliverEvents(ctx context.Context, height uint64, blockHash c
 		branchMS.Write()
 	}
 
-	log.Debug(ctx, "Delivered evm events", "height", height, "count", len(events))
+	if len(events) > 0 {
+		log.Debug(ctx, "Delivered evm events", "height", height, "count", len(events))
+	}
 
 	return nil
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
@@ -54,7 +55,7 @@ type testFunc struct {
 	TestNode    func(*testing.T, netconf.Network, *e2e.Node, []Portal)
 	TestPortal  func(*testing.T, netconf.Network, Portal, []Portal)
 	TestOmniEVM func(*testing.T, ethclient.Client)
-	TestNetwork func(*testing.T, netconf.Network, xchain.RPCEndpoints)
+	TestNetwork func(context.Context, *testing.T, netconf.Network, xchain.RPCEndpoints)
 	skipFunc    func(types.Manifest) bool
 }
 
@@ -73,7 +74,7 @@ func testOmniEVM(t *testing.T, fn func(*testing.T, ethclient.Client)) {
 	test(t, testFunc{TestOmniEVM: fn})
 }
 
-func testNetwork(t *testing.T, fn func(*testing.T, netconf.Network, xchain.RPCEndpoints)) {
+func testNetwork(t *testing.T, fn func(context.Context, *testing.T, netconf.Network, xchain.RPCEndpoints)) {
 	t.Helper()
 	test(t, testFunc{TestNetwork: fn})
 }
@@ -81,7 +82,7 @@ func testNetwork(t *testing.T, fn func(*testing.T, netconf.Network, xchain.RPCEn
 func maybeTestNetwork(
 	t *testing.T,
 	skipFunc func(types.Manifest) bool,
-	fn func(*testing.T, netconf.Network, xchain.RPCEndpoints),
+	fn func(context.Context, *testing.T, netconf.Network, xchain.RPCEndpoints),
 ) {
 	t.Helper()
 	test(t, testFunc{TestNetwork: fn, skipFunc: skipFunc})
@@ -96,6 +97,7 @@ func maybeTestNetwork(
 // otherwise all nodes are tested.
 func test(t *testing.T, testFunc testFunc) {
 	t.Helper()
+	ctx := context.Background()
 
 	testnet, network, _, endpoints := loadEnv(t)
 	nodes := testnet.Nodes
@@ -105,6 +107,8 @@ func test(t *testing.T, testFunc testFunc) {
 		return
 	}
 
+	ctx = feature.WithFlags(ctx, testnet.Manifest.FeatureFlags)
+
 	if name := os.Getenv(app.EnvE2ENode); name != "" {
 		node := testnet.LookupNode(name)
 		require.NotNil(t, node, "node %q not found in testnet %q", name, testnet.Name)
@@ -112,7 +116,7 @@ func test(t *testing.T, testFunc testFunc) {
 	}
 
 	portals := makePortals(t, network, endpoints)
-	log.Info(context.Background(), "Running tests for testnet",
+	log.Info(ctx, "Running tests for testnet",
 		"testnet", testnet.Name,
 		"nodes", len(nodes),
 		"portals", len(portals),
@@ -161,7 +165,7 @@ func test(t *testing.T, testFunc testFunc) {
 	if testFunc.TestNetwork != nil {
 		t.Run("network", func(t *testing.T) {
 			t.Parallel()
-			testFunc.TestNetwork(t, network, endpoints)
+			testFunc.TestNetwork(ctx, t, network, endpoints)
 		})
 	}
 }
@@ -226,6 +230,7 @@ func loadEnv(t *testing.T) (types.Testnet, netconf.Network, types.DeployInfos, x
 	}
 	m, err := app.LoadManifest(manifestFile)
 	require.NoError(t, err)
+	feature.SetGlobals(m.FeatureFlags)
 
 	var ifd types.InfrastructureData
 	switch ifdType {

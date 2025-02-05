@@ -1,0 +1,298 @@
+// SPDX-License-Identifier: GPL-3.0-only
+pragma solidity 0.8.26;
+
+import "../TestBase.sol";
+
+contract SendTokenTest is TestBase {
+    function test_sendToken_reverts() public {
+        uint256 fee = bridgeWithLockbox.bridgeFee(DEST_CHAIN_ID);
+        bytes32 burnerRole = token.BURNER_ROLE();
+
+        mockBridge({
+            bridge: bridgeWithLockbox,
+            srcChainId: SRC_CHAIN_ID,
+            destChainId: DEST_CHAIN_ID,
+            wrap: true,
+            from: user,
+            to: user,
+            value: 1
+        });
+
+        vm.startPrank(user);
+        // `destChainId` must have a configured route.
+        vm.expectRevert(abi.encodeWithSelector(IBridge.InvalidRoute.selector, 0));
+        bridgeWithLockbox.sendToken{ value: fee }(0, address(0), 0, true);
+        vm.expectRevert(abi.encodeWithSelector(IBridge.InvalidRoute.selector, 0));
+        bridgeWithLockbox.sendToken{ value: fee }(0, address(0), 0, false);
+
+        // `to` cannot be zero address.
+        vm.expectRevert(abi.encodeWithSelector(IBridge.ZeroAddress.selector));
+        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, address(0), 0, true);
+        vm.expectRevert(abi.encodeWithSelector(IBridge.ZeroAddress.selector));
+        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, address(0), 0, false);
+
+        // `value` cannot be zero.
+        vm.expectRevert(abi.encodeWithSelector(IBridge.ZeroAmount.selector));
+        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, 0, true);
+        vm.expectRevert(abi.encodeWithSelector(IBridge.ZeroAmount.selector));
+        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, 0, false);
+
+        // `wrap` cannot be true if `lockbox` is not set.
+        vm.expectRevert(abi.encodeWithSelector(IBridge.CannotWrap.selector));
+        bridgeNoLockbox.sendToken{ value: fee }(SRC_CHAIN_ID, user, 1, true);
+
+        // `amount` cannot exceed the user's balance.
+        vm.expectRevert(abi.encodeWithSelector(SafeTransferLib.TransferFromFailed.selector));
+        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, INITIAL_USER_BALANCE + 1, true);
+        vm.expectRevert(abi.encodeWithSelector(SafeTransferLib.TransferFromFailed.selector));
+        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, INITIAL_USER_BALANCE + 1, false);
+
+        // `bridgeFee` must be paid.
+        vm.expectRevert("XApp: insufficient funds");
+        bridgeWithLockbox.sendToken{ value: fee - 1 }(DEST_CHAIN_ID, user, 1, true);
+
+        lockbox.deposit(1);
+        vm.expectRevert("XApp: insufficient funds");
+        bridgeWithLockbox.sendToken{ value: fee - 1 }(DEST_CHAIN_ID, user, 1, false);
+        vm.stopPrank();
+
+        // Reverts if bridge is paused
+        vm.startPrank(pauser);
+        bridgeWithLockbox.pause();
+        bridgeNoLockbox.pause();
+        vm.stopPrank();
+
+        vm.startPrank(user);
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, 1, true);
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, 1, false);
+
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+        bridgeNoLockbox.sendToken{ value: fee }(SRC_CHAIN_ID, user, 1, true);
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+        bridgeNoLockbox.sendToken{ value: fee }(SRC_CHAIN_ID, user, 1, false);
+        vm.stopPrank();
+
+        vm.startPrank(pauser);
+        bridgeWithLockbox.unpause();
+        bridgeNoLockbox.unpause();
+        vm.stopPrank();
+
+        // Reverts if `BURNER_ROLE` is revoked
+        vm.startPrank(admin);
+        wrapper.revokeRole(burnerRole, address(bridgeWithLockbox));
+        wrapper.revokeRole(burnerRole, address(bridgeNoLockbox));
+        vm.stopPrank();
+
+        vm.startPrank(user);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, address(bridgeWithLockbox), burnerRole
+            )
+        );
+        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, 1, true);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, address(bridgeNoLockbox), burnerRole
+            )
+        );
+        bridgeNoLockbox.sendToken{ value: fee }(SRC_CHAIN_ID, user, 1, false);
+        vm.stopPrank();
+    }
+
+    function test_sendToken_withLockbox_token_succeeds() public {
+        mockBridge({
+            bridge: bridgeWithLockbox,
+            srcChainId: SRC_CHAIN_ID,
+            destChainId: DEST_CHAIN_ID,
+            wrap: true,
+            from: user,
+            to: user,
+            value: INITIAL_USER_BALANCE
+        });
+        _assertBalances({
+            addr: user,
+            tokenUserBal: 0,
+            tokenLockboxBal: INITIAL_USER_BALANCE,
+            wrapperUserBal: INITIAL_USER_BALANCE
+        });
+    }
+
+    function test_sendToken_withLockbox_wrapper_succeeds() public {
+        vm.prank(user);
+        lockbox.deposit(INITIAL_USER_BALANCE);
+        _assertBalances({
+            addr: user,
+            tokenUserBal: 0,
+            tokenLockboxBal: INITIAL_USER_BALANCE,
+            wrapperUserBal: INITIAL_USER_BALANCE
+        });
+
+        mockBridge({
+            bridge: bridgeWithLockbox,
+            srcChainId: SRC_CHAIN_ID,
+            destChainId: DEST_CHAIN_ID,
+            wrap: false,
+            from: user,
+            to: user,
+            value: INITIAL_USER_BALANCE
+        });
+        _assertBalances({
+            addr: user,
+            tokenUserBal: 0,
+            tokenLockboxBal: INITIAL_USER_BALANCE,
+            wrapperUserBal: INITIAL_USER_BALANCE
+        });
+    }
+
+    function test_sendToken_withoutLockbox_wrapper_succeeds() public {
+        vm.prank(user);
+        lockbox.deposit(INITIAL_USER_BALANCE);
+        _assertBalances({
+            addr: user,
+            tokenUserBal: 0,
+            tokenLockboxBal: INITIAL_USER_BALANCE,
+            wrapperUserBal: INITIAL_USER_BALANCE
+        });
+
+        mockBridge({
+            bridge: bridgeNoLockbox,
+            srcChainId: DEST_CHAIN_ID,
+            destChainId: SRC_CHAIN_ID,
+            wrap: false,
+            from: user,
+            to: user,
+            value: INITIAL_USER_BALANCE
+        });
+        _assertBalances({ addr: user, tokenUserBal: INITIAL_USER_BALANCE, tokenLockboxBal: 0, wrapperUserBal: 0 });
+    }
+
+    function test_sendToken_empty_lockbox_succeeds() public {
+        mockBridge({
+            bridge: bridgeWithLockbox,
+            srcChainId: SRC_CHAIN_ID,
+            destChainId: DEST_CHAIN_ID,
+            wrap: true,
+            from: user,
+            to: user,
+            value: INITIAL_USER_BALANCE
+        });
+        _assertBalances({
+            addr: user,
+            tokenUserBal: 0,
+            tokenLockboxBal: INITIAL_USER_BALANCE,
+            wrapperUserBal: INITIAL_USER_BALANCE
+        });
+
+        vm.startPrank(admin);
+        wrapper.grantRole(wrapper.MINTER_ROLE(), admin);
+        wrapper.mint(user, INITIAL_USER_BALANCE);
+        _assertBalances({
+            addr: user,
+            tokenUserBal: 0,
+            tokenLockboxBal: INITIAL_USER_BALANCE,
+            wrapperUserBal: INITIAL_USER_BALANCE * 2
+        });
+        vm.stopPrank();
+
+        mockBridge({
+            bridge: bridgeNoLockbox,
+            srcChainId: DEST_CHAIN_ID,
+            destChainId: SRC_CHAIN_ID,
+            wrap: false,
+            from: user,
+            to: user,
+            value: INITIAL_USER_BALANCE
+        });
+        _assertBalances({
+            addr: user,
+            tokenUserBal: INITIAL_USER_BALANCE,
+            tokenLockboxBal: 0,
+            wrapperUserBal: INITIAL_USER_BALANCE
+        });
+
+        mockBridge({
+            bridge: bridgeNoLockbox,
+            srcChainId: DEST_CHAIN_ID,
+            destChainId: SRC_CHAIN_ID,
+            wrap: false,
+            from: user,
+            to: user,
+            value: INITIAL_USER_BALANCE
+        });
+        _assertBalances({
+            addr: user,
+            tokenUserBal: INITIAL_USER_BALANCE,
+            tokenLockboxBal: 0,
+            wrapperUserBal: INITIAL_USER_BALANCE
+        });
+    }
+
+    function test_sendToken_wrapper_overdrafted_lockbox_succeeds() public {
+        mockBridge({
+            bridge: bridgeWithLockbox,
+            srcChainId: SRC_CHAIN_ID,
+            destChainId: DEST_CHAIN_ID,
+            wrap: true,
+            from: user,
+            to: user,
+            value: INITIAL_USER_BALANCE
+        });
+        _assertBalances({
+            addr: user,
+            tokenUserBal: 0,
+            tokenLockboxBal: INITIAL_USER_BALANCE,
+            wrapperUserBal: INITIAL_USER_BALANCE
+        });
+
+        vm.startPrank(admin);
+        wrapper.grantRole(wrapper.MINTER_ROLE(), admin);
+        wrapper.mint(user, INITIAL_USER_BALANCE);
+        _assertBalances({
+            addr: user,
+            tokenUserBal: 0,
+            tokenLockboxBal: INITIAL_USER_BALANCE,
+            wrapperUserBal: INITIAL_USER_BALANCE * 2
+        });
+        vm.stopPrank();
+
+        mockBridge({
+            bridge: bridgeNoLockbox,
+            srcChainId: DEST_CHAIN_ID,
+            destChainId: SRC_CHAIN_ID,
+            wrap: false,
+            from: user,
+            to: user,
+            value: INITIAL_USER_BALANCE * 2
+        });
+        _assertBalances({
+            addr: user,
+            tokenUserBal: 0,
+            tokenLockboxBal: INITIAL_USER_BALANCE,
+            wrapperUserBal: INITIAL_USER_BALANCE * 2
+        });
+    }
+
+    function test_sendToken_fee_overpayment_refunded() public prank(user) {
+        uint256 fee = bridgeWithLockbox.bridgeFee(DEST_CHAIN_ID);
+        uint256 balance = user.balance;
+        bytes memory data = abi.encodeCall(Bridge.receiveToken, (user, 1));
+
+        bridgeWithLockbox.sendToken{ value: fee + 1 }(DEST_CHAIN_ID, user, 1, true);
+        assertEq(user.balance, balance - fee, "Fee overpayment should be refunded");
+
+        omni.mockXCall({
+            sourceChainId: SRC_CHAIN_ID,
+            sender: address(bridgeWithLockbox),
+            to: address(bridgeNoLockbox),
+            data: data,
+            gasLimit: DEFAULT_GAS_LIMIT
+        });
+
+        balance = user.balance;
+        bridgeNoLockbox.sendToken{ value: fee + 1 }(SRC_CHAIN_ID, user, 1, false);
+        assertEq(user.balance, balance - fee, "Fee overpayment should be refunded");
+    }
+}

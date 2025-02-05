@@ -6,7 +6,7 @@ multi_omni_evms = true
 prometheus = true
 deploy_solve = true
 
-feature_flags = ["evm-staking-module","simple-evm-events"]
+feature_flags = ["evm-staking-module", "simple-evm-events", "proto-evm-payload"]
 
 [node.validator01]
 [node.validator02]

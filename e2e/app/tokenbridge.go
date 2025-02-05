@@ -205,12 +205,12 @@ func bridgeToNative(ctx context.Context, def Definition, toBridge []BridgeTest) 
 		return errors.Wrap(err, "bind opts")
 	}
 
-	token, err := bindings.NewOmni(addrs.Token, backend)
+	token, err := bindings.NewIERC20(addrs.Token, backend)
 	if err != nil {
 		return errors.Wrap(err, "token")
 	}
 
-	tx, err := token.IncreaseAllowance(txOpts, addrs.L1Bridge, omnitoken.TotalSupply)
+	tx, err := token.Approve(txOpts, addrs.L1Bridge, omnitoken.TotalSupply)
 	if err != nil {
 		return errors.Wrap(err, "increase allowance")
 	}

@@ -252,7 +252,7 @@ func allowStagingValidators(ctx context.Context, def Definition) error {
 
 	contract, err := bindings.NewStaking(common.HexToAddress(predeploys.Staking), backend)
 	if err != nil {
-		return errors.Wrap(err, "new staking")
+		return errors.Wrap(err, "new portal registry")
 	}
 
 	manager := eoa.MustAddress(def.Testnet.Network, eoa.RoleManager)

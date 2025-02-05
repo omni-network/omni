@@ -19,11 +19,11 @@ import (
 )
 
 type Keeper struct {
-	emitPortal      ptypes.EmitPortal
-	networkTable    NetworkTable
-	portalRegAdress common.Address
-	portalRegistry  *bindings.PortalRegistryFilterer
-	chainNamer      types.ChainNameFunc
+	emitPortal       ptypes.EmitPortal
+	networkTable     NetworkTable
+	portalRegAddress common.Address
+	portalRegistry   *bindings.PortalRegistryFilterer
+	chainNamer       types.ChainNameFunc
 
 	latestCache *cache
 }
@@ -48,22 +48,22 @@ func NewKeeper(
 	}
 
 	address := common.HexToAddress(predeploys.PortalRegistry)
-	protalReg, err := bindings.NewPortalRegistryFilterer(address, nil) // Passing nil backend if safe since only Parse functions are used.
+	portalReg, err := bindings.NewPortalRegistryFilterer(address, nil) // Passing nil backend if safe since only Parse functions are used.
 	if err != nil {
 		return Keeper{}, errors.Wrap(err, "new portal registry")
 	}
 
 	return Keeper{
-		emitPortal:      emitPortal,
-		networkTable:    registryStore.NetworkTable(),
-		portalRegAdress: address,
-		portalRegistry:  protalReg,
-		chainNamer:      namer,
-		latestCache:     new(cache),
+		emitPortal:       emitPortal,
+		networkTable:     registryStore.NetworkTable(),
+		portalRegAddress: address,
+		portalRegistry:   portalReg,
+		chainNamer:       namer,
+		latestCache:      new(cache),
 	}, nil
 }
 
-// getOrCreateEpoch returns a network created in the current height.
+// getOrCreateNetwork returns a network created in the current height.
 // If one already exists, it will be returned.
 // If none already exists, a new one will be created using the previous as base.
 // New networks are emitted as cross chain messages to portals.

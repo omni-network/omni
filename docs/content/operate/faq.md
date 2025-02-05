@@ -17,8 +17,35 @@
 - Note that setting up cosmovisor is strongly advised to support smooth network upgrades. See our [halovisor build scripts](https://github.com/omni-network/omni/tree/main/scripts/halovisor) for inspiration.
 - Note that before starting geth, it must first be initialised with the relevant `execution-genesis.json` file via `geth init` (see [omega](https://github.com/omni-network/omni/tree/main/lib/netconf/omega) and [mainnet](https://github.com/omni-network/omni/tree/main/lib/netconf/mainnet)).
 
-### How long does syncing take?
+### What syncing options are supported?
+Omni has a 2 chain architecture, similar to ethereum PoS.
+This means that both the execution chain (geth) and the consensus chain (halo) has to be synced.
+Each chain however supports different syncing protocols of which not all are supported by Omni yet.
 
+Halo (via CometBFT) supports ["comet fast sync" and "comet state sync"](https://docs.cometbft.com/v0.34/core/state-sync).
+Although Geth technically supports ["ethereum full sync" and "ethereum snap sync"](https://geth.ethereum.org/docs/fundamentals/sync-modes), only "full sync" is supported by Omni ("snap sync" is not supported).
+
+The following three options are currently supported:
+1. Halo "fast sync" + Geth "full sync"
+   - Syncs both chains from genesis.
+   - This is the slowest option.
+
+2. Halo "state sync" + Geth "full sync"
+   - CometBFT state sync protocol is configured which syncs the consensus chain from a recent snapshot.
+   - This provides a "full sync" target to Geth, which then performs a full sync from genesis.
+   - This is faster than option 1.
+   - See mode details [here](config.md#configure-cometbft-state-sync).
+
+3. Restoring Node Snapshots
+   - Omni provides node snapshot (tarballs) which are disk backups of both `halo` and `geth` data directories.
+   - These node snapshots are taken daily from Omni's archive nodes and have a larger memory footprint (see [Hardware Requirements](run-full-node.md#hardware-requirements)).
+   - This results in the `geth` snapshots utilizing the legacy `hash` state scheme instead of the newer and more memory efficient `path` state scheme.
+   - When spinning up a full node pruning of the archive data (intermediate historical states) is to be expected.
+   - The nodes will replay blocks from the snapshot to the current block height.
+   - This is the fastest option.
+   - See more details [here](config.md#restoring-node-snapshots).
+
+### How long does Geth fullsync take?
 The time it takes for Geth to do a fullsync (snapsync is not supported yet) depends largely on your disk write throughput.
 Syncing speed is directly proportional to write performance.
 We observed the following numbers in practice:
@@ -109,6 +136,18 @@ Validators must stake native **\$OMNI**. Validators can also opt into receiving 
 
 Omni currently has a validator whitelist. The whitelist applies to both native **\$OMNI** staking and **\$ETH** staking via the Omni AVS. A future network upgrade will enable permissionless validator registration.
 
+### How can I deregister from the old AVS contract?
+
+To deregister from the old AVS contract, you need to build the CLI from source using `main`. Alternatively, you can wait for release `v0.12.0 (commit: ead6061)` of the Omni CLI, which will support AVS deregistration.
+
+```bash
+git clone https://github.com/omni-network/omni.git
+cd omni
+make setup
+make install-cli
+omni operator avs-deregister --config-file ~/path/to/operator.yaml
+```
+
 ### What are the planned staking upgrades?
 
 There will be several network upgrades to enable various validator / staking features. Some of these features include:
@@ -118,3 +157,8 @@ There will be several network upgrades to enable various validator / staking fea
 - X-chain rewards and penalties
 - **\$ETH** Restaking: validators can opt into receiving restaked **\$ETH** delegations, pending Eigenlayer slashing.
 - Permissionless validator registration: anyone can register, and collect delegations to be included in the active set.
+
+### Does Halo support HSMs, TKMS or Horcrux?
+As mentioned [above](#what-are-the-validation-duties-of-a-validator), Halo validators have two duties to perform. The interface used by external signer services like HSMs, TKMS or Horcrux only supports standard CometBFT signatures, it doesn't support Omni XChain votes and attestations.
+
+Halo therefore only supports simple `priv_validator_key.json` private key files for signing both CometBFT and XChain votes.

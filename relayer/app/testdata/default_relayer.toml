@@ -18,6 +18,9 @@ private-key = "relayer.key"
 # The URL of the halo node to connect to.
 halo-url = "localhost:26657"
 
+# The gRPC URL of the halo node to connect to.
+halo-grpc-url = "localhost:9"
+
 #######################################################################
 ###                             X-Chain                             ###
 #######################################################################

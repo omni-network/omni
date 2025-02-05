@@ -3,6 +3,8 @@ anvil_chains = ["mock_l2", "mock_l1"]
 
 pingpong_n = 6 # Increased ping pong to span forks
 
+feature_flags = ["fuzz-octane"]
+
 [node.validator01]
 [node.validator02]
 [node.validator03]

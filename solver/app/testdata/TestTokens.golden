@@ -1,0 +1,194 @@
+[
+ {
+  "address": "0x0000000000000000000000000000000000000000",
+  "chainId": 1,
+  "coingeckoId": "ethereum",
+  "isMock": false,
+  "name": "Ether",
+  "symbol": "ETH"
+ },
+ {
+  "address": "0x0000000000000000000000000000000000000000",
+  "chainId": 42161,
+  "coingeckoId": "ethereum",
+  "isMock": false,
+  "name": "Ether",
+  "symbol": "ETH"
+ },
+ {
+  "address": "0x0000000000000000000000000000000000000000",
+  "chainId": 8453,
+  "coingeckoId": "ethereum",
+  "isMock": false,
+  "name": "Ether",
+  "symbol": "ETH"
+ },
+ {
+  "address": "0x0000000000000000000000000000000000000000",
+  "chainId": 10,
+  "coingeckoId": "ethereum",
+  "isMock": false,
+  "name": "Ether",
+  "symbol": "ETH"
+ },
+ {
+  "address": "0x0000000000000000000000000000000000000000",
+  "chainId": 17000,
+  "coingeckoId": "ethereum",
+  "isMock": false,
+  "name": "Ether",
+  "symbol": "ETH"
+ },
+ {
+  "address": "0x0000000000000000000000000000000000000000",
+  "chainId": 421614,
+  "coingeckoId": "ethereum",
+  "isMock": false,
+  "name": "Ether",
+  "symbol": "ETH"
+ },
+ {
+  "address": "0x0000000000000000000000000000000000000000",
+  "chainId": 84532,
+  "coingeckoId": "ethereum",
+  "isMock": false,
+  "name": "Ether",
+  "symbol": "ETH"
+ },
+ {
+  "address": "0x0000000000000000000000000000000000000000",
+  "chainId": 11155420,
+  "coingeckoId": "ethereum",
+  "isMock": false,
+  "name": "Ether",
+  "symbol": "ETH"
+ },
+ {
+  "address": "0x0000000000000000000000000000000000000000",
+  "chainId": 1652,
+  "coingeckoId": "ethereum",
+  "isMock": false,
+  "name": "Ether",
+  "symbol": "ETH"
+ },
+ {
+  "address": "0x0000000000000000000000000000000000000000",
+  "chainId": 1654,
+  "coingeckoId": "ethereum",
+  "isMock": false,
+  "name": "Ether",
+  "symbol": "ETH"
+ },
+ {
+  "address": "0x0000000000000000000000000000000000000000",
+  "chainId": 166,
+  "coingeckoId": "omni-network",
+  "isMock": false,
+  "name": "Omni Network",
+  "symbol": "OMNI"
+ },
+ {
+  "address": "0x0000000000000000000000000000000000000000",
+  "chainId": 164,
+  "coingeckoId": "omni-network",
+  "isMock": false,
+  "name": "Omni Network",
+  "symbol": "OMNI"
+ },
+ {
+  "address": "0x0000000000000000000000000000000000000000",
+  "chainId": 1650,
+  "coingeckoId": "omni-network",
+  "isMock": false,
+  "name": "Omni Network",
+  "symbol": "OMNI"
+ },
+ {
+  "address": "0x0000000000000000000000000000000000000000",
+  "chainId": 1651,
+  "coingeckoId": "omni-network",
+  "isMock": false,
+  "name": "Omni Network",
+  "symbol": "OMNI"
+ },
+ {
+  "address": "0x36E66fbBce51e4cD5bd3C62B637Eb411b18949D4",
+  "chainId": 1,
+  "coingeckoId": "omni-network",
+  "isMock": false,
+  "name": "Omni Network",
+  "symbol": "OMNI"
+ },
+ {
+  "address": "0xD036C60f46FF51dd7Fbf6a819b5B171c8A076b07",
+  "chainId": 17000,
+  "coingeckoId": "omni-network",
+  "isMock": false,
+  "name": "Omni Network",
+  "symbol": "OMNI"
+ },
+ {
+  "address": "0xB50029Dc0DF4Db0193F25a8E41DEa207c13D09BB",
+  "chainId": 17000,
+  "coingeckoId": "omni-network",
+  "isMock": false,
+  "name": "Omni Network",
+  "symbol": "OMNI"
+ },
+ {
+  "address": "0x73cC960fb6705e9a6A3d9EAf4De94a828CFa6d2a",
+  "chainId": 1652,
+  "coingeckoId": "omni-network",
+  "isMock": false,
+  "name": "Omni Network",
+  "symbol": "OMNI"
+ },
+ {
+  "address": "0x8d09a4502Cc8Cf1547aD300E066060D043f6982D",
+  "chainId": 17000,
+  "coingeckoId": "wrapped-steth",
+  "isMock": false,
+  "name": "Wrapped Staked Ether",
+  "symbol": "wstETH"
+ },
+ {
+  "address": "0x8d09a4502Cc8Cf1547aD300E066060D043f6982D",
+  "chainId": 1652,
+  "coingeckoId": "wrapped-steth",
+  "isMock": false,
+  "name": "Wrapped Staked Ether",
+  "symbol": "wstETH"
+ },
+ {
+  "address": "0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034",
+  "chainId": 17000,
+  "coingeckoId": "lido-staked-ether",
+  "isMock": false,
+  "name": "Lido Staked Ether",
+  "symbol": "stETH"
+ },
+ {
+  "address": "0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034",
+  "chainId": 1652,
+  "coingeckoId": "lido-staked-ether",
+  "isMock": false,
+  "name": "Lido Staked Ether",
+  "symbol": "stETH"
+ },
+ {
+  "address": "0x6319df7c227e34B967C1903A08a698A3cC43492B",
+  "chainId": 84532,
+  "coingeckoId": "wrapped-steth",
+  "isMock": true,
+  "name": "Wrapped Staked Ether",
+  "symbol": "wstETH"
+ },
+ {
+  "address": "0x86156a9225DCE4781005d8CDC48106e308A0F338",
+  "chainId": 1654,
+  "coingeckoId": "wrapped-steth",
+  "isMock": true,
+  "name": "Wrapped Staked Ether",
+  "symbol": "wstETH"
+ }
+]

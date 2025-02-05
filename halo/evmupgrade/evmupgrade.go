@@ -45,7 +45,7 @@ func New(ethCl ethclient.Client, uKeeper *ukeeper.Keeper) (EventProcessor, error
 	address := common.HexToAddress(predeploys.Upgrade)
 	contract, err := bindings.NewUpgrade(address, ethCl)
 	if err != nil {
-		return EventProcessor{}, errors.Wrap(err, "new staking")
+		return EventProcessor{}, errors.Wrap(err, "new upgrade")
 	}
 
 	return EventProcessor{

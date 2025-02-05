@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"strconv"
 	"sync"
 	"time"
 
@@ -26,8 +27,11 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	utypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
 	dtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	sltypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -36,6 +40,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -62,8 +67,11 @@ func NewABCI(cmtCl rpcclient.Client, network netconf.ID, opts ...func(*Provider)
 // NewGRPC returns a new provider using the provided gRPC server address.
 // This is preferred to NewABCI as it bypasses CometBFT so is much faster
 // and doesn't affect chain performance.
-func NewGRPC(target string, network netconf.ID, opts ...func(*Provider)) (Provider, error) {
-	grpcClient, err := grpc.NewClient(target, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func NewGRPC(target string, network netconf.ID, ir codectypes.InterfaceRegistry, opts ...func(*Provider)) (Provider, error) {
+	grpcClient, err := grpc.NewClient(target,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultCallOptions(grpc.ForceCodec(codec.NewProtoCodec(ir).GRPCCodec())),
+	)
 	if err != nil {
 		return Provider{}, errors.Wrap(err, "new grpc client")
 	}
@@ -109,6 +117,16 @@ func newProvider(cc gogogrpc.ClientConn, network netconf.ID, opts ...func(*Provi
 		backoffFunc: backoffFunc,
 		chainNamer:  namer,
 		network:     network,
+		queryClients: cchain.QueryClients{
+			Attest:       acl,
+			Portal:       pcl,
+			Registry:     rcl,
+			ValSync:      vcl,
+			Staking:      scl,
+			Slashing:     slcl,
+			Upgrade:      ucl,
+			Distribution: dcl,
+		},
 	}
 
 	for _, opt := range opts {
@@ -313,10 +331,10 @@ func newABCIValsetFunc(cl vtypes.QueryClient) valsetFunc {
 		}
 
 		return valSetResponse{
-			ValSetID:      resp.Id,
-			Validators:    vals,
-			CreatedHeight: resp.CreatedHeight,
-			activedHeight: resp.ActivatedHeight,
+			ValSetID:        resp.Id,
+			Validators:      vals,
+			CreatedHeight:   resp.CreatedHeight,
+			activatedHeight: resp.ActivatedHeight,
 		}, true, nil
 	}
 }
@@ -529,18 +547,41 @@ type rpcAdaptor struct {
 	abci rpcclient.ABCIClient
 }
 
-type heightKey struct{}
-
-// withCtxHeight returns a copy of the context with the `heightKey` set to the provided height.
+// withCtxHeight returns a copy of the context with the `x-cosmos-block-height` grpc metadata header
+// set to the provided height.
+//
 // This height will be supplied in ABCIQueryOptions when issuing queries in the rpcAdaptor.
-func withCtxHeight(ctx context.Context, height uint64) context.Context {
-	return context.WithValue(ctx, heightKey{}, height)
+// It will also be added to grpc queries automatically.
+func withCtxHeight(ctx context.Context, height uint64) (context.Context, error) {
+	if _, ok, err := heightFromCtx(ctx); err != nil {
+		return nil, err
+	} else if ok {
+		return nil, errors.New("height already set in context")
+	}
+
+	return metadata.AppendToOutgoingContext(ctx, grpctypes.GRPCBlockHeightHeader, strconv.FormatUint(height, 10)), nil
 }
 
-// heightFromCtx returns the `heightKey` from the supplied context, if found.
-func heightFromCtx(ctx context.Context) (uint64, bool) {
-	v, ok := ctx.Value(heightKey{}).(uint64)
-	return v, ok
+// heightFromCtx returns the `x-cosmos-block-height` grpc metadata header value from the supplied context, if found.
+func heightFromCtx(ctx context.Context) (uint64, bool, error) {
+	md, ok := metadata.FromOutgoingContext(ctx)
+	if !ok {
+		return 0, false, nil
+	}
+
+	heightHeaders := md.Get(grpctypes.GRPCBlockHeightHeader)
+	if len(heightHeaders) == 0 {
+		return 0, false, nil
+	} else if len(heightHeaders) > 1 {
+		return 0, false, errors.New("multiple height headers")
+	}
+
+	height, err := strconv.ParseUint(heightHeaders[0], 10, 64)
+	if err != nil {
+		return 0, false, errors.Wrap(err, "parse height header")
+	}
+
+	return height, true, nil
 }
 
 func (a rpcAdaptor) Invoke(ctx context.Context, method string, req, resp any, _ ...grpc.CallOption) error {
@@ -558,10 +599,10 @@ func (a rpcAdaptor) Invoke(ctx context.Context, method string, req, resp any, _ 
 		return errors.Wrap(err, "marshal approved-from request")
 	}
 
-	// If left as zero value, the latest height will be used
-	var queryHeight uint64
-	if v, ok := heightFromCtx(ctx); ok {
-		queryHeight = v
+	// Zero value for queryHeight will result the latest height
+	queryHeight, _, err := heightFromCtx(ctx)
+	if err != nil {
+		return err
 	}
 
 	queryHeightInt64, err := umath.ToInt64(queryHeight)
@@ -610,7 +651,12 @@ func getEarliestStoreHeight(ctx context.Context, cl atypes.QueryClient, chainVer
 // queryEarliestAttestation returns the earliest approved attestation for the provided chain version
 // at the provided consensus block height, or the latest block height if height is 0.
 func queryEarliestAttestation(ctx context.Context, cl atypes.QueryClient, chainVer xchain.ChainVersion, height uint64) (xchain.Attestation, bool, error) {
-	resp, err := cl.EarliestAttestation(withCtxHeight(ctx, height),
+	ctx, err := withCtxHeight(ctx, height)
+	if err != nil {
+		return xchain.Attestation{}, false, err
+	}
+
+	resp, err := cl.EarliestAttestation(ctx,
 		&atypes.EarliestAttestationRequest{
 			ChainId:   chainVer.ID,
 			ConfLevel: uint32(chainVer.ConfLevel),
@@ -632,7 +678,12 @@ func queryEarliestAttestation(ctx context.Context, cl atypes.QueryClient, chainV
 // queryLatestAttestation returns the latest approved attestation for the provided chain version
 // at the provided consensus block height, or the latest block height if height is 0.
 func queryLatestAttestation(ctx context.Context, cl atypes.QueryClient, chainVer xchain.ChainVersion, height uint64) (xchain.Attestation, bool, error) {
-	resp, err := cl.LatestAttestation(withCtxHeight(ctx, height),
+	ctx, err := withCtxHeight(ctx, height)
+	if err != nil {
+		return xchain.Attestation{}, false, err
+	}
+
+	resp, err := cl.LatestAttestation(ctx,
 		&atypes.LatestAttestationRequest{
 			ChainId:   chainVer.ID,
 			ConfLevel: uint32(chainVer.ConfLevel),
@@ -654,20 +705,25 @@ func queryLatestAttestation(ctx context.Context, cl atypes.QueryClient, chainVer
 // attsFromAtHeight returns approved attestations for the provided chain version
 // at the provided consensus block height, or the latest block height if height is 0.
 func attsFromAtHeight(ctx context.Context, cl atypes.QueryClient, chainVer xchain.ChainVersion, fromOffset, height uint64) ([]xchain.Attestation, bool, error) {
-	resp, err := cl.AttestationsFrom(withCtxHeight(ctx, height), &atypes.AttestationsFromRequest{
+	ctx, err := withCtxHeight(ctx, height)
+	if err != nil {
+		return nil, false, err
+	}
+
+	resp, err := cl.AttestationsFrom(ctx, &atypes.AttestationsFromRequest{
 		ChainId:    chainVer.ID,
 		ConfLevel:  uint32(chainVer.ConfLevel),
 		FromOffset: fromOffset,
 	})
 	if err != nil {
-		return []xchain.Attestation{}, false, errors.Wrap(err, "abci query attestations-from")
+		return nil, false, errors.Wrap(err, "abci query attestations-from")
 	} else if len(resp.Attestations) == 0 {
-		return []xchain.Attestation{}, false, nil
+		return nil, false, nil
 	}
 
 	atts, err := atypes.AttestationsFromProto(resp.Attestations)
 	if err != nil {
-		return []xchain.Attestation{}, false, errors.Wrap(err, "attestations from proto")
+		return nil, false, errors.Wrap(err, "attestations from proto")
 	}
 
 	return atts, true, nil

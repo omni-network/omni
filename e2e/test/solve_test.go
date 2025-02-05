@@ -2,9 +2,10 @@ package e2e_test
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
-	"github.com/omni-network/omni/e2e/solve/devapp"
+	"github.com/omni-network/omni/e2e/solve"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
@@ -18,9 +19,21 @@ func TestSolver(t *testing.T) {
 	skipFunc := func(manifest types.Manifest) bool {
 		return !manifest.DeploySolve
 	}
-	maybeTestNetwork(t, skipFunc, func(t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
+	maybeTestNetwork(t, skipFunc, func(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
 		t.Helper()
-		err := devapp.TestFlow(context.Background(), network, endpoints)
+
+		ensureSolverAPILive(t)
+		err := solve.TestV2(ctx, network, endpoints)
 		require.NoError(t, err)
 	})
+}
+
+//nolint:noctx // Not an issue in tests
+func ensureSolverAPILive(t *testing.T) {
+	t.Helper()
+
+	resp, err := http.Get("http://localhost:26661/live")
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.NoError(t, resp.Body.Close())
 }

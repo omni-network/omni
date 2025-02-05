@@ -65,8 +65,8 @@ func TestGetPrice(t *testing.T) {
 		t.Helper()
 		return (test.invalid ||
 			test.empty ||
-			test.omitToken != "" ||
-			test.renameToken != "" ||
+			test.omitToken != tokens.Token{} ||
+			test.renameToken != tokens.Token{} ||
 			test.omitCurrency != "" ||
 			test.zeros ||
 			test.negatives)
@@ -88,8 +88,8 @@ func TestGetPrice(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			require.InEpsilon(t, prices[tokens.OMNI], servedPrices[tokens.OMNI.CoingeckoID()]["usd"], 0.01)
-			require.InEpsilon(t, prices[tokens.ETH], servedPrices[tokens.ETH.CoingeckoID()]["usd"], 0.01)
+			require.InEpsilon(t, prices[tokens.OMNI], servedPrices[tokens.OMNI.CoingeckoID]["usd"], 0.01)
+			require.InEpsilon(t, prices[tokens.ETH], servedPrices[tokens.ETH.CoingeckoID]["usd"], 0.01)
 		})
 	}
 }
@@ -126,11 +126,11 @@ func makeTestServer(t *testing.T, test testCase) (*httptest.Server, map[string]m
 		currencies := strings.Split(q.Get("vs_currencies"), ",")
 
 		for _, id := range ids {
-			if id == test.omitToken.CoingeckoID() {
+			if id == test.omitToken.CoingeckoID {
 				continue
 			}
 
-			if id == test.renameToken.CoingeckoID() {
+			if id == test.renameToken.CoingeckoID {
 				id = "renamed"
 			}
 

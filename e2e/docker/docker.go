@@ -102,6 +102,7 @@ func (p *Provider) Setup() error {
 		GethVerbosity:          3, // Info
 		GethInitTags:           gethInitTags,
 		EphemeralGenesisBinary: p.testnet.Manifest.EphemeralGenesisBinary,
+		AnvilAMD:               AnvilAMD(),
 	}
 	def = SetImageTags(def, p.testnet.Manifest, p.omniTag)
 
@@ -189,6 +190,7 @@ type ComposeDef struct {
 	GethVerbosity          int            // Geth log level (1=error,2=warn,3=info(default),4=debug,5=trace)
 	GethInitTags           map[int]string // Optional geth initial tags. Defaults to latest if empty.
 	EphemeralGenesisBinary string         // Optional network upgrade to use from genesis
+	AnvilAMD               bool           // Force amd64 for anvil images
 
 	Nodes    []*e2e.Node
 	OmniEVMs []types.OmniEVM
@@ -409,4 +411,18 @@ func ReplaceUpgradeImage(dir, service string) error {
 	}
 
 	return nil
+}
+
+const AnvilAMDENV = "ANVIL_AMD"
+
+// AnvilAMD return whether to force amd64 anvil images.
+// It returns true by default, since this was always the default.
+// Some MacOS however require arm64 images, devs must set ANVIL_AMD=false to use amd64.
+func AnvilAMD() bool {
+	val, ok := os.LookupEnv(AnvilAMDENV)
+	if !ok {
+		return true
+	}
+
+	return val != "false"
 }

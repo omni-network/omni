@@ -20,14 +20,15 @@ service MsgService {
   rpc ExecutionPayload (MsgExecutionPayload) returns (ExecutionPayloadResponse);
 }
 
-// MsgExecutionPayload defines the  next EVM execution payload and the
+// MsgExecutionPayload defines the next EVM execution payload and the
 // logs from previous execution payload.
 message MsgExecutionPayload {
   option (cosmos.msg.v1.signer) = "authority";
-  string            authority           = 1;
-  bytes             execution_payload   = 2;
-  repeated EVMEvent prev_payload_events = 3 [(gogoproto.nullable) = false]; // TODO(corver): Deprecate this once simple-evm-events released.
-  repeated bytes    blob_commitments    = 4; // Array of blob tx KZGCommitments, 48 bytes each.
+  string                authority           = 1;
+  bytes                 execution_payload   = 2;
+  repeated EVMEvent     prev_payload_events = 3 [(gogoproto.nullable) = false]; // TODO(corver): Deprecate this once simple-evm-events released.
+  repeated bytes        blob_commitments    = 4; // Array of blob tx KZGCommitments, 48 bytes each.
+  ExecutionPayloadDeneb execution_payload_deneb = 5;
 }
 
 message ExecutionPayloadResponse {}
@@ -38,4 +39,39 @@ message EVMEvent {
   bytes          address = 1; // Address of the contract that emitted the log event (20 bytes).
   repeated bytes topics  = 2; // List of topics provided by the contract (N * 32 bytes).
   bytes          data    = 3; // Data supplied by the contract, usually ABI-encoded.
+}
+
+// ExecutionPayloadDeneb represents the EVM execution payload.
+// Copied from https://github.com/prysmaticlabs/prysm/blob/develop/proto/engine/v1/execution_engine.proto.
+message ExecutionPayloadDeneb {
+	bytes parent_hash           = 1 [(gogoproto.nullable) = false, (gogoproto.customtype) = "Hash"];
+	bytes fee_recipient         = 2 [(gogoproto.nullable) = false, (gogoproto.customtype) = "Address"];
+	bytes state_root            = 3 [(gogoproto.nullable) = false, (gogoproto.customtype) = "Hash"];
+	bytes receipts_root         = 4 [(gogoproto.nullable) = false, (gogoproto.customtype) = "Hash"];
+	bytes logs_bloom            = 5;
+	bytes prev_randao           = 6 [(gogoproto.nullable) = false, (gogoproto.customtype) = "Hash"];
+	uint64 block_number         = 7;
+	uint64 gas_limit            = 8;
+	uint64 gas_used             = 9;
+	uint64 timestamp            = 10;
+	bytes extra_data            = 11;
+	bytes base_fee_per_gas      = 12;
+	bytes block_hash            = 13 [(gogoproto.nullable) = false, (gogoproto.customtype) = "Hash"];
+	repeated bytes transactions = 14;
+	repeated Withdrawal withdrawals = 15 [(gogoproto.nullable) = false];
+	uint64 blob_gas_used        = 16;
+	uint64 excess_blob_gas      = 17;
+}
+
+// The withdrawal receipt with the recipient address and amount withdrawn.
+// Note that ValidatorIndex isn't used in Octane and is always 0.
+message Withdrawal {
+	// Withdrawal index for accounting purposes
+	uint64 index = 1;
+
+	// The execution address receiving the funds
+	bytes address = 2 [(gogoproto.nullable) = false, (gogoproto.customtype) = "Address"];
+
+	// The withdrawn amount in Gwei
+	uint64 amount_gwei = 3;
 }

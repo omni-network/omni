@@ -29,43 +29,63 @@ var (
 	_ = abi.ConvertType
 )
 
-// ISolverNetCall is an auto generated low-level Go binding around an user-defined struct.
-type ISolverNetCall struct {
-	ChainId  uint64
-	Target   [32]byte
+// SolverNetCall is an auto generated low-level Go binding around an user-defined struct.
+type SolverNetCall struct {
+	Target   common.Address
+	Selector [4]byte
 	Value    *big.Int
-	Data     []byte
-	Expenses []ISolverNetTokenExpense
+	Params   []byte
 }
 
-// ISolverNetDeposit is an auto generated low-level Go binding around an user-defined struct.
-type ISolverNetDeposit struct {
-	Token  [32]byte
+// SolverNetDeposit is an auto generated low-level Go binding around an user-defined struct.
+type SolverNetDeposit struct {
+	Token  common.Address
 	Amount *big.Int
 }
 
-// ISolverNetFillOriginData is an auto generated low-level Go binding around an user-defined struct.
-type ISolverNetFillOriginData struct {
-	SrcChainId uint64
-	Call       ISolverNetCall
-}
-
-// ISolverNetOrderData is an auto generated low-level Go binding around an user-defined struct.
-type ISolverNetOrderData struct {
-	Call     ISolverNetCall
-	Deposits []ISolverNetDeposit
-}
-
-// ISolverNetTokenExpense is an auto generated low-level Go binding around an user-defined struct.
-type ISolverNetTokenExpense struct {
-	Token   [32]byte
-	Spender [32]byte
+// SolverNetExpense is an auto generated low-level Go binding around an user-defined struct.
+type SolverNetExpense struct {
+	Spender common.Address
+	Token   common.Address
 	Amount  *big.Int
+}
+
+// SolverNetFillOriginData is an auto generated low-level Go binding around an user-defined struct.
+type SolverNetFillOriginData struct {
+	SrcChainId   uint64
+	DestChainId  uint64
+	FillDeadline uint32
+	Calls        []SolverNetCall
+	Expenses     []SolverNetExpense
+}
+
+// SolverNetHeader is an auto generated low-level Go binding around an user-defined struct.
+type SolverNetHeader struct {
+	Owner        common.Address
+	DestChainId  uint64
+	FillDeadline uint32
+}
+
+// SolverNetOrder is an auto generated low-level Go binding around an user-defined struct.
+type SolverNetOrder struct {
+	Header   SolverNetHeader
+	Deposit  SolverNetDeposit
+	Calls    []SolverNetCall
+	Expenses []SolverNetExpense
+}
+
+// SolverNetOrderData is an auto generated low-level Go binding around an user-defined struct.
+type SolverNetOrderData struct {
+	Owner       common.Address
+	DestChainId uint64
+	Deposit     SolverNetDeposit
+	Calls       []SolverNetCall
+	Expenses    []SolverNetExpense
 }
 
 // ISolverNetBindingsMetaData contains all meta data concerning the ISolverNetBindings contract.
 var ISolverNetBindingsMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"call\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structISolverNet.Call\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"target\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"expenses\",\"type\":\"tuple[]\",\"internalType\":\"structISolverNet.TokenExpense[]\",\"components\":[{\"name\":\"token\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"spender\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"deposit\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structISolverNet.Deposit\",\"components\":[{\"name\":\"token\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"fillOriginData\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structISolverNet.FillOriginData\",\"components\":[{\"name\":\"srcChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"call\",\"type\":\"tuple\",\"internalType\":\"structISolverNet.Call\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"target\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"expenses\",\"type\":\"tuple[]\",\"internalType\":\"structISolverNet.TokenExpense[]\",\"components\":[{\"name\":\"token\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"spender\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}]}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"orderData\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structISolverNet.OrderData\",\"components\":[{\"name\":\"call\",\"type\":\"tuple\",\"internalType\":\"structISolverNet.Call\",\"components\":[{\"name\":\"chainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"target\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"data\",\"type\":\"bytes\",\"internalType\":\"bytes\"},{\"name\":\"expenses\",\"type\":\"tuple[]\",\"internalType\":\"structISolverNet.TokenExpense[]\",\"components\":[{\"name\":\"token\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"spender\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}]},{\"name\":\"deposits\",\"type\":\"tuple[]\",\"internalType\":\"structISolverNet.Deposit[]\",\"components\":[{\"name\":\"token\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"tokenExpense\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structISolverNet.TokenExpense\",\"components\":[{\"name\":\"token\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"spender\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"outputs\":[],\"stateMutability\":\"view\"}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"call\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.Call\",\"components\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"selector\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"params\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"deposit\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.Deposit\",\"components\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"expense\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.Expense\",\"components\":[{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"fillOriginData\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.FillOriginData\",\"components\":[{\"name\":\"srcChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"fillDeadline\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"calls\",\"type\":\"tuple[]\",\"internalType\":\"structSolverNet.Call[]\",\"components\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"selector\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"params\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"expenses\",\"type\":\"tuple[]\",\"internalType\":\"structSolverNet.Expense[]\",\"components\":[{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"header\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.Header\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"fillDeadline\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"order\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.Order\",\"components\":[{\"name\":\"header\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.Header\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"fillDeadline\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"deposit\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.Deposit\",\"components\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"calls\",\"type\":\"tuple[]\",\"internalType\":\"structSolverNet.Call[]\",\"components\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"selector\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"params\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"expenses\",\"type\":\"tuple[]\",\"internalType\":\"structSolverNet.Expense[]\",\"components\":[{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"orderData\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.OrderData\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"deposit\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.Deposit\",\"components\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"calls\",\"type\":\"tuple[]\",\"internalType\":\"structSolverNet.Call[]\",\"components\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"selector\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"params\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"expenses\",\"type\":\"tuple[]\",\"internalType\":\"structSolverNet.Expense[]\",\"components\":[{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]}]}],\"outputs\":[],\"stateMutability\":\"view\"}]",
 }
 
 // ISolverNetBindingsABI is the input ABI used to generate the binding from.
@@ -214,10 +234,10 @@ func (_ISolverNetBindings *ISolverNetBindingsTransactorRaw) Transact(opts *bind.
 	return _ISolverNetBindings.Contract.contract.Transact(opts, method, params...)
 }
 
-// Call is a free data retrieval call binding the contract method 0xf8b6c506.
+// Call is a free data retrieval call binding the contract method 0x3cda4ed8.
 //
-// Solidity: function call((uint64,bytes32,uint256,bytes,(bytes32,bytes32,uint256)[]) ) view returns()
-func (_ISolverNetBindings *ISolverNetBindingsCaller) Call(opts *bind.CallOpts, arg0 ISolverNetCall) error {
+// Solidity: function call((address,bytes4,uint256,bytes) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsCaller) Call(opts *bind.CallOpts, arg0 SolverNetCall) error {
 	var out []interface{}
 	err := _ISolverNetBindings.contract.Call(opts, &out, "call", arg0)
 
@@ -229,24 +249,24 @@ func (_ISolverNetBindings *ISolverNetBindingsCaller) Call(opts *bind.CallOpts, a
 
 }
 
-// Call is a free data retrieval call binding the contract method 0xf8b6c506.
+// Call is a free data retrieval call binding the contract method 0x3cda4ed8.
 //
-// Solidity: function call((uint64,bytes32,uint256,bytes,(bytes32,bytes32,uint256)[]) ) view returns()
-func (_ISolverNetBindings *ISolverNetBindingsSession) Call(arg0 ISolverNetCall) error {
+// Solidity: function call((address,bytes4,uint256,bytes) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsSession) Call(arg0 SolverNetCall) error {
 	return _ISolverNetBindings.Contract.Call(&_ISolverNetBindings.CallOpts, arg0)
 }
 
-// Call is a free data retrieval call binding the contract method 0xf8b6c506.
+// Call is a free data retrieval call binding the contract method 0x3cda4ed8.
 //
-// Solidity: function call((uint64,bytes32,uint256,bytes,(bytes32,bytes32,uint256)[]) ) view returns()
-func (_ISolverNetBindings *ISolverNetBindingsCallerSession) Call(arg0 ISolverNetCall) error {
+// Solidity: function call((address,bytes4,uint256,bytes) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsCallerSession) Call(arg0 SolverNetCall) error {
 	return _ISolverNetBindings.Contract.Call(&_ISolverNetBindings.CallOpts, arg0)
 }
 
-// Deposit is a free data retrieval call binding the contract method 0x32defc2c.
+// Deposit is a free data retrieval call binding the contract method 0x41b99c8c.
 //
-// Solidity: function deposit((bytes32,uint256) ) view returns()
-func (_ISolverNetBindings *ISolverNetBindingsCaller) Deposit(opts *bind.CallOpts, arg0 ISolverNetDeposit) error {
+// Solidity: function deposit((address,uint96) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsCaller) Deposit(opts *bind.CallOpts, arg0 SolverNetDeposit) error {
 	var out []interface{}
 	err := _ISolverNetBindings.contract.Call(opts, &out, "deposit", arg0)
 
@@ -258,24 +278,53 @@ func (_ISolverNetBindings *ISolverNetBindingsCaller) Deposit(opts *bind.CallOpts
 
 }
 
-// Deposit is a free data retrieval call binding the contract method 0x32defc2c.
+// Deposit is a free data retrieval call binding the contract method 0x41b99c8c.
 //
-// Solidity: function deposit((bytes32,uint256) ) view returns()
-func (_ISolverNetBindings *ISolverNetBindingsSession) Deposit(arg0 ISolverNetDeposit) error {
+// Solidity: function deposit((address,uint96) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsSession) Deposit(arg0 SolverNetDeposit) error {
 	return _ISolverNetBindings.Contract.Deposit(&_ISolverNetBindings.CallOpts, arg0)
 }
 
-// Deposit is a free data retrieval call binding the contract method 0x32defc2c.
+// Deposit is a free data retrieval call binding the contract method 0x41b99c8c.
 //
-// Solidity: function deposit((bytes32,uint256) ) view returns()
-func (_ISolverNetBindings *ISolverNetBindingsCallerSession) Deposit(arg0 ISolverNetDeposit) error {
+// Solidity: function deposit((address,uint96) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsCallerSession) Deposit(arg0 SolverNetDeposit) error {
 	return _ISolverNetBindings.Contract.Deposit(&_ISolverNetBindings.CallOpts, arg0)
 }
 
-// FillOriginData is a free data retrieval call binding the contract method 0xf098e7ce.
+// Expense is a free data retrieval call binding the contract method 0x3cb42289.
 //
-// Solidity: function fillOriginData((uint64,(uint64,bytes32,uint256,bytes,(bytes32,bytes32,uint256)[])) ) view returns()
-func (_ISolverNetBindings *ISolverNetBindingsCaller) FillOriginData(opts *bind.CallOpts, arg0 ISolverNetFillOriginData) error {
+// Solidity: function expense((address,address,uint96) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsCaller) Expense(opts *bind.CallOpts, arg0 SolverNetExpense) error {
+	var out []interface{}
+	err := _ISolverNetBindings.contract.Call(opts, &out, "expense", arg0)
+
+	if err != nil {
+		return err
+	}
+
+	return err
+
+}
+
+// Expense is a free data retrieval call binding the contract method 0x3cb42289.
+//
+// Solidity: function expense((address,address,uint96) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsSession) Expense(arg0 SolverNetExpense) error {
+	return _ISolverNetBindings.Contract.Expense(&_ISolverNetBindings.CallOpts, arg0)
+}
+
+// Expense is a free data retrieval call binding the contract method 0x3cb42289.
+//
+// Solidity: function expense((address,address,uint96) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsCallerSession) Expense(arg0 SolverNetExpense) error {
+	return _ISolverNetBindings.Contract.Expense(&_ISolverNetBindings.CallOpts, arg0)
+}
+
+// FillOriginData is a free data retrieval call binding the contract method 0x85bc698a.
+//
+// Solidity: function fillOriginData((uint64,uint64,uint32,(address,bytes4,uint256,bytes)[],(address,address,uint96)[]) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsCaller) FillOriginData(opts *bind.CallOpts, arg0 SolverNetFillOriginData) error {
 	var out []interface{}
 	err := _ISolverNetBindings.contract.Call(opts, &out, "fillOriginData", arg0)
 
@@ -287,24 +336,82 @@ func (_ISolverNetBindings *ISolverNetBindingsCaller) FillOriginData(opts *bind.C
 
 }
 
-// FillOriginData is a free data retrieval call binding the contract method 0xf098e7ce.
+// FillOriginData is a free data retrieval call binding the contract method 0x85bc698a.
 //
-// Solidity: function fillOriginData((uint64,(uint64,bytes32,uint256,bytes,(bytes32,bytes32,uint256)[])) ) view returns()
-func (_ISolverNetBindings *ISolverNetBindingsSession) FillOriginData(arg0 ISolverNetFillOriginData) error {
+// Solidity: function fillOriginData((uint64,uint64,uint32,(address,bytes4,uint256,bytes)[],(address,address,uint96)[]) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsSession) FillOriginData(arg0 SolverNetFillOriginData) error {
 	return _ISolverNetBindings.Contract.FillOriginData(&_ISolverNetBindings.CallOpts, arg0)
 }
 
-// FillOriginData is a free data retrieval call binding the contract method 0xf098e7ce.
+// FillOriginData is a free data retrieval call binding the contract method 0x85bc698a.
 //
-// Solidity: function fillOriginData((uint64,(uint64,bytes32,uint256,bytes,(bytes32,bytes32,uint256)[])) ) view returns()
-func (_ISolverNetBindings *ISolverNetBindingsCallerSession) FillOriginData(arg0 ISolverNetFillOriginData) error {
+// Solidity: function fillOriginData((uint64,uint64,uint32,(address,bytes4,uint256,bytes)[],(address,address,uint96)[]) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsCallerSession) FillOriginData(arg0 SolverNetFillOriginData) error {
 	return _ISolverNetBindings.Contract.FillOriginData(&_ISolverNetBindings.CallOpts, arg0)
 }
 
-// OrderData is a free data retrieval call binding the contract method 0x0f5c779a.
+// Header is a free data retrieval call binding the contract method 0x6cf0796e.
 //
-// Solidity: function orderData(((uint64,bytes32,uint256,bytes,(bytes32,bytes32,uint256)[]),(bytes32,uint256)[]) ) view returns()
-func (_ISolverNetBindings *ISolverNetBindingsCaller) OrderData(opts *bind.CallOpts, arg0 ISolverNetOrderData) error {
+// Solidity: function header((address,uint64,uint32) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsCaller) Header(opts *bind.CallOpts, arg0 SolverNetHeader) error {
+	var out []interface{}
+	err := _ISolverNetBindings.contract.Call(opts, &out, "header", arg0)
+
+	if err != nil {
+		return err
+	}
+
+	return err
+
+}
+
+// Header is a free data retrieval call binding the contract method 0x6cf0796e.
+//
+// Solidity: function header((address,uint64,uint32) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsSession) Header(arg0 SolverNetHeader) error {
+	return _ISolverNetBindings.Contract.Header(&_ISolverNetBindings.CallOpts, arg0)
+}
+
+// Header is a free data retrieval call binding the contract method 0x6cf0796e.
+//
+// Solidity: function header((address,uint64,uint32) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsCallerSession) Header(arg0 SolverNetHeader) error {
+	return _ISolverNetBindings.Contract.Header(&_ISolverNetBindings.CallOpts, arg0)
+}
+
+// Order is a free data retrieval call binding the contract method 0xc94d30c0.
+//
+// Solidity: function order(((address,uint64,uint32),(address,uint96),(address,bytes4,uint256,bytes)[],(address,address,uint96)[]) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsCaller) Order(opts *bind.CallOpts, arg0 SolverNetOrder) error {
+	var out []interface{}
+	err := _ISolverNetBindings.contract.Call(opts, &out, "order", arg0)
+
+	if err != nil {
+		return err
+	}
+
+	return err
+
+}
+
+// Order is a free data retrieval call binding the contract method 0xc94d30c0.
+//
+// Solidity: function order(((address,uint64,uint32),(address,uint96),(address,bytes4,uint256,bytes)[],(address,address,uint96)[]) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsSession) Order(arg0 SolverNetOrder) error {
+	return _ISolverNetBindings.Contract.Order(&_ISolverNetBindings.CallOpts, arg0)
+}
+
+// Order is a free data retrieval call binding the contract method 0xc94d30c0.
+//
+// Solidity: function order(((address,uint64,uint32),(address,uint96),(address,bytes4,uint256,bytes)[],(address,address,uint96)[]) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsCallerSession) Order(arg0 SolverNetOrder) error {
+	return _ISolverNetBindings.Contract.Order(&_ISolverNetBindings.CallOpts, arg0)
+}
+
+// OrderData is a free data retrieval call binding the contract method 0x4d2c7d11.
+//
+// Solidity: function orderData((address,uint64,(address,uint96),(address,bytes4,uint256,bytes)[],(address,address,uint96)[]) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsCaller) OrderData(opts *bind.CallOpts, arg0 SolverNetOrderData) error {
 	var out []interface{}
 	err := _ISolverNetBindings.contract.Call(opts, &out, "orderData", arg0)
 
@@ -316,45 +423,16 @@ func (_ISolverNetBindings *ISolverNetBindingsCaller) OrderData(opts *bind.CallOp
 
 }
 
-// OrderData is a free data retrieval call binding the contract method 0x0f5c779a.
+// OrderData is a free data retrieval call binding the contract method 0x4d2c7d11.
 //
-// Solidity: function orderData(((uint64,bytes32,uint256,bytes,(bytes32,bytes32,uint256)[]),(bytes32,uint256)[]) ) view returns()
-func (_ISolverNetBindings *ISolverNetBindingsSession) OrderData(arg0 ISolverNetOrderData) error {
+// Solidity: function orderData((address,uint64,(address,uint96),(address,bytes4,uint256,bytes)[],(address,address,uint96)[]) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsSession) OrderData(arg0 SolverNetOrderData) error {
 	return _ISolverNetBindings.Contract.OrderData(&_ISolverNetBindings.CallOpts, arg0)
 }
 
-// OrderData is a free data retrieval call binding the contract method 0x0f5c779a.
+// OrderData is a free data retrieval call binding the contract method 0x4d2c7d11.
 //
-// Solidity: function orderData(((uint64,bytes32,uint256,bytes,(bytes32,bytes32,uint256)[]),(bytes32,uint256)[]) ) view returns()
-func (_ISolverNetBindings *ISolverNetBindingsCallerSession) OrderData(arg0 ISolverNetOrderData) error {
+// Solidity: function orderData((address,uint64,(address,uint96),(address,bytes4,uint256,bytes)[],(address,address,uint96)[]) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsCallerSession) OrderData(arg0 SolverNetOrderData) error {
 	return _ISolverNetBindings.Contract.OrderData(&_ISolverNetBindings.CallOpts, arg0)
-}
-
-// TokenExpense is a free data retrieval call binding the contract method 0xde5e1c62.
-//
-// Solidity: function tokenExpense((bytes32,bytes32,uint256) ) view returns()
-func (_ISolverNetBindings *ISolverNetBindingsCaller) TokenExpense(opts *bind.CallOpts, arg0 ISolverNetTokenExpense) error {
-	var out []interface{}
-	err := _ISolverNetBindings.contract.Call(opts, &out, "tokenExpense", arg0)
-
-	if err != nil {
-		return err
-	}
-
-	return err
-
-}
-
-// TokenExpense is a free data retrieval call binding the contract method 0xde5e1c62.
-//
-// Solidity: function tokenExpense((bytes32,bytes32,uint256) ) view returns()
-func (_ISolverNetBindings *ISolverNetBindingsSession) TokenExpense(arg0 ISolverNetTokenExpense) error {
-	return _ISolverNetBindings.Contract.TokenExpense(&_ISolverNetBindings.CallOpts, arg0)
-}
-
-// TokenExpense is a free data retrieval call binding the contract method 0xde5e1c62.
-//
-// Solidity: function tokenExpense((bytes32,bytes32,uint256) ) view returns()
-func (_ISolverNetBindings *ISolverNetBindingsCallerSession) TokenExpense(arg0 ISolverNetTokenExpense) error {
-	return _ISolverNetBindings.Contract.TokenExpense(&_ISolverNetBindings.CallOpts, arg0)
 }

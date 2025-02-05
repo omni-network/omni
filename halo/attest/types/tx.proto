@@ -52,7 +52,7 @@ message Vote {
   AttestHeader attest_header   = 1; // AttestHeader uniquely identifies an attestation that requires quorum votes.
   BlockHeader  block_header    = 2; // BlockHeader identifies the cross-chain Block
   bytes        msg_root        = 3; // Merkle root of all the messages in the cross-chain Block
-  SigTuple     signature       = 4; // Validator signatures and public keys
+  SigTuple     signature       = 4; // Validator signature and public key
 }
 
 // BlockHeader uniquely identifies a cross chain block.
@@ -65,7 +65,7 @@ message BlockHeader {
 // AttestHeader uniquely identifies an attestation that requires quorum votes.
 // This is used to determine duplicate votes.
 message AttestHeader {
-  uint64 consensus_chain_id = 1; // Omni consensus chain ID this attestation/vote belangs to. Used for replay-protection.
+  uint64 consensus_chain_id = 1; // Omni consensus chain ID this attestation/vote belongs to. Used for replay-protection.
   uint64 source_chain_id    = 2; // Source Chain ID as per https://chainlist.org
   uint32 conf_level         = 3; // Confirmation level (aka version) of the cross-chain block/attestation.
   uint64 attest_offset      = 4; // Monotonically increasing offset of this vote per chain version. 1-indexed.

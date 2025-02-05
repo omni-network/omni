@@ -1,16 +1,19 @@
 package keeper
 
 import (
-	context "context"
-	"errors"
+	"context"
 	"strings"
 	"testing"
 
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/evmstaking2/testutil"
 	"github.com/omni-network/omni/halo/evmstaking2/types"
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/feature"
+	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 	evmengkeeper "github.com/omni-network/omni/octane/evmengine/keeper"
 	etypes "github.com/omni-network/omni/octane/evmengine/types"
 
@@ -277,6 +280,149 @@ func TestHappyPathDelivery(t *testing.T) {
 	require.Equal(t, msg2.Value, oneEth)
 }
 
+func TestNonSelfDelegationEventDelivery(t *testing.T) {
+	t.Parallel()
+
+	deliverInterval := int64(3)
+	ethStake := int64(1)
+
+	privKey := k1.GenPrivKey()
+	delegatorPrivKey := k1.GenPrivKey()
+	delegatorAddr, err := k1util.PubKeyToAddress(delegatorPrivKey.PubKey())
+	if err != nil {
+		panic(errors.Wrap(err, "pubkey to address"))
+	}
+
+	ethClientMock, err := ethclient.NewEngineMock(
+		ethclient.WithPortalRegister(netconf.SimnetNetwork()),
+		ethclient.WithMockValidatorCreation(privKey.PubKey()),
+		ethclient.WithMockDelegation(privKey.PubKey(), delegatorAddr, ethStake),
+	)
+	require.NoError(t, err)
+
+	var delegateMsgBuffer []*stypes.MsgDelegate
+	var createValidatorMsgBuffer []*stypes.MsgCreateValidator
+
+	ctrl := gomock.NewController(t)
+	sServerMock := testutil.NewMockStakingMsgServer(ctrl)
+	sServerMock.EXPECT().
+		CreateValidator(gomock.Any(), gomock.Any()).
+		AnyTimes().Do(func(ctx context.Context, msg *stypes.MsgCreateValidator) {
+		createValidatorMsgBuffer = append(createValidatorMsgBuffer, msg)
+	}).
+		Return(new(stypes.MsgCreateValidatorResponse), nil)
+	sServerMock.EXPECT().
+		Delegate(gomock.Any(), gomock.Any()).
+		AnyTimes().Do(func(ctx context.Context, msg *stypes.MsgDelegate) {
+		delegateMsgBuffer = append(delegateMsgBuffer, msg)
+	}).
+		Return(new(stypes.MsgDelegateResponse), nil)
+
+	keeper, ctx := setupKeeper(t, deliverInterval, sServerMock)
+
+	events, err := getStakingEvents(ctx, ethClientMock, keeper)
+	require.NoError(t, err)
+
+	expectDelegates := 1
+	expectCreates := 1
+	expectTotalEvents := expectDelegates + expectCreates
+
+	require.Len(t, events, expectTotalEvents)
+
+	for _, event := range events {
+		err := keeper.Deliver(ctx, common.Hash{}, event)
+		require.NoError(t, err)
+	}
+
+	// Make sure the events were persisted.
+	for id := 1; id <= expectTotalEvents; id++ {
+		assertContains(t, ctx, keeper, uint64(id))
+	}
+
+	ctx = ctx.WithBlockHeight(deliverInterval)
+	err = keeper.EndBlock(ctx)
+	require.NoError(t, err)
+
+	// Make sure the events were deleted.
+	for id := 1; id <= expectTotalEvents; id++ {
+		assertNotContains(t, ctx, keeper, uint64(id))
+	}
+
+	// Assert that the message was delivered to the msg server.
+	require.Len(t, delegateMsgBuffer, 1)
+	msg := delegateMsgBuffer[0]
+	// Sanity check of addresses
+	require.Len(t, msg.DelegatorAddress, 45)
+	require.Len(t, msg.ValidatorAddress, 52)
+	require.True(t, strings.HasPrefix(msg.DelegatorAddress, "cosmos"), msg.DelegatorAddress)
+	require.True(t, strings.HasPrefix(msg.ValidatorAddress, "cosmosvaloper"), msg.ValidatorAddress)
+	stake := sdk.NewInt64Coin("stake", ethStake*1000000000000000000)
+	require.Equal(t, msg.Amount, stake)
+}
+
+func TestEditValidator(t *testing.T) {
+	t.Parallel()
+
+	privKey := k1.GenPrivKey()
+	valAddr, err := k1util.PubKeyToAddress(privKey.PubKey())
+	require.NoError(t, err)
+
+	params := &bindings.StakingEditValidatorParams{
+		Moniker:                  "moniker",
+		Identity:                 "identity",
+		Website:                  "https://website",
+		SecurityContact:          "https://contract",
+		Details:                  "details",
+		CommissionRatePercentage: 99,
+		MinSelfDelegation:        umath.NewBigInt(11),
+	}
+	ethClientMock, err := ethclient.NewEngineMock(
+		ethclient.WithMockEditValidator(privKey.PubKey(), params),
+	)
+	require.NoError(t, err)
+
+	var msgBuffer []*stypes.MsgEditValidator
+
+	ctrl := gomock.NewController(t)
+	sServerMock := testutil.NewMockStakingMsgServer(ctrl)
+	sServerMock.EXPECT().
+		EditValidator(gomock.Any(), gomock.Any()).
+		Times(1).
+		DoAndReturn(
+			func(ctx context.Context, msg *stypes.MsgEditValidator) (*stypes.MsgEditValidatorResponse, error) {
+				msgBuffer = append(msgBuffer, msg)
+				return new(stypes.MsgEditValidatorResponse), nil
+			},
+		)
+
+	keeper, ctx := setupKeeper(t, 1, sServerMock)
+
+	events, err := getStakingEvents(ctx, ethClientMock, keeper)
+	require.NoError(t, err)
+	require.Len(t, events, 1)
+
+	for _, event := range events {
+		err := keeper.Deliver(ctx, common.Hash{}, event)
+		require.NoError(t, err)
+	}
+
+	ctx = ctx.WithBlockHeight(1)
+	err = keeper.EndBlock(ctx)
+	require.NoError(t, err)
+
+	require.Len(t, msgBuffer, 1)
+	msg := msgBuffer[0]
+
+	require.Equal(t, msg.ValidatorAddress, sdk.ValAddress(valAddr.Bytes()).String())
+	require.Equal(t, msg.Description.Moniker, params.Moniker)
+	require.Equal(t, msg.Description.Identity, params.Identity)
+	require.Equal(t, msg.Description.Website, params.Website)
+	require.Equal(t, msg.Description.SecurityContact, params.SecurityContact)
+	require.Equal(t, msg.Description.Details, params.Details)
+	require.Equal(t, msg.MinSelfDelegation.String(), params.MinSelfDelegation.String())
+	require.Equal(t, msg.CommissionRate.TruncateInt64(), int64(params.CommissionRatePercentage))
+}
+
 func assertContains(t *testing.T, ctx context.Context, keeper *Keeper, eventID uint64) {
 	t.Helper()
 	found, err := keeper.eventsTable.Has(ctx, eventID)
@@ -301,7 +447,7 @@ func setupKeeper(
 	key := storetypes.NewKVStoreKey(types.ModuleName)
 	storeSvc := runtime.NewKVStoreService(key)
 	ctx := sdktestutil.DefaultContext(key, storetypes.NewTransientStoreKey("test_key")).
-		WithContext(feature.WithFlag(context.Background(), feature.FlagEVMStakingModule))
+		WithContext(feature.WithFlags(context.Background(), feature.Flags{string(feature.FlagEVMStakingModule)}))
 	ctx = ctx.WithBlockHeight(1)
 	ctx = ctx.WithChainID(netconf.Simnet.Static().OmniConsensusChainIDStr())
 

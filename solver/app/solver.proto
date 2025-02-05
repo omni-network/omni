@@ -16,5 +16,3 @@ message Cursor {
   uint32 conf_level   = 2;
   uint64 block_height = 3;
 }
-
-

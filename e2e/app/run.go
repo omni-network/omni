@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/e2e/netman/pingpong"
 	"github.com/omni-network/omni/e2e/solve"
 	"github.com/omni-network/omni/e2e/types"
+	"github.com/omni-network/omni/e2e/xbridge"
 	haloapp "github.com/omni-network/omni/halo/app"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/contracts"
@@ -102,7 +103,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 
 	if def.Manifest.DeploySolve {
 		// Deploy solver before initPortalRegistry, so solver detects boxes after netconf.Await
-		if err := solve.DeployContracts(ctx, NetworkFromDef(def), def.Backends()); err != nil {
+		if err := solve.Deploy(ctx, NetworkFromDef(def), def.Backends()); err != nil {
 			return nil, errors.Wrap(err, "deploy solve")
 		}
 	}
@@ -115,6 +116,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 	eg2.Go(func() error { return DeployBridge(ctx, def) })
 	eg2.Go(func() error { return maybeSubmitNetworkUpgrade(ctx, def) })
 	eg2.Go(func() error { return FundValidatorsForTesting(ctx, def) })
+	eg2.Go(func() error { return xbridge.DeployEphemeralXBridge(ctx, NetworkFromDef(def), def.Backends()) })
 	if err := eg2.Wait(); err != nil {
 		return nil, errors.Wrap(err, "deploy other contracts")
 	}

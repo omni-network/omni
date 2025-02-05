@@ -77,14 +77,14 @@ staging-addrs: ## Prints staging address json.
 ###############################################################################
 
 .PHONY: devnet-deploy
-devnet-deploy: ## Deploys devnet1
-	@echo "Creating a docker-compose devnet in ./e2e/run/devnet1"
-	@go run github.com/omni-network/omni/e2e -f e2e/manifests/devnet1.toml deploy
+devnet-deploy: ## Deploys devnet (MANIFEST=devnet1 by default)
+	@echo "Creating a docker-compose devnet in ./e2e/run/$(if $(MANIFEST),$(MANIFEST),devnet1)"
+	@go run github.com/omni-network/omni/e2e -f e2e/manifests/$(if $(MANIFEST),$(MANIFEST),devnet1).toml deploy
 
 .PHONY: devnet-clean
-devnet-clean: ## Deletes devnet1 containers
-	@echo "Stopping the devnet in ./e2e/run/devnet1"
-	@go run github.com/omni-network/omni/e2e -f e2e/manifests/devnet1.toml clean
+devnet-clean: ## Deletes devnet containers (MANIFEST=devnet1 by default)
+	@echo "Stopping the devnet in ./e2e/run/$(if $(MANIFEST),$(MANIFEST),devnet1)"
+	@go run github.com/omni-network/omni/e2e -f e2e/manifests/$(if $(MANIFEST),$(MANIFEST),devnet1).toml clean
 
 .PHONY: e2e-ci
 e2e-ci: ## Runs all e2e CI tests

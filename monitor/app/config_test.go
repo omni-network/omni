@@ -22,6 +22,7 @@ func TestDefaultConfigReference(t *testing.T) {
 	tempDir := t.TempDir()
 
 	cfg := monitor.DefaultConfig()
+	cfg.HaloGRPCURL = "localhost:1111"
 	cfg.LoadGen = loadgen.Config{
 		ValidatorKeysGlob: "path/*/1",
 		XCallerKey:        "path/xcaller_privatekey",

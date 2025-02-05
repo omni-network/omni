@@ -410,7 +410,7 @@ func (i *indexer) instrumentMsg(ctx context.Context, link *MsgLink) error {
 		srcChainName = srcChain.Name
 
 		// for now, fee token is always src chain native token
-		feeToken = string(srcChain.NativeToken)
+		feeToken = srcChain.NativeToken.Symbol
 	}
 
 	// Instrument sample

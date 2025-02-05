@@ -25,7 +25,8 @@ func newGasEstimator(network netconf.ID) gasEstimator {
 
 	// Some destination chains do not need this model and can simply rely on the proper gas estimation.
 	skipModel := map[uint64]bool{
-		evmchain.IDArbSepolia: true, // Arbitrum has non-standard gas usage, and super-fast blocks, so we skip the model.
+		evmchain.IDArbSepolia:  true, // Arbitrum has non-standard gas usage, and super-fast blocks, so we skip the model.
+		evmchain.IDArbitrumOne: true,
 	}
 
 	return func(destChain uint64, msgs []xchain.Msg) uint64 {

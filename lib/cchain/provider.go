@@ -83,4 +83,7 @@ type Provider interface {
 
 	// AppliedPlan returns the applied (activated) upgrade plan by name.
 	AppliedPlan(ctx context.Context, name string) (utypes.Plan, bool, error)
+
+	// QueryClients returns the query clients for the various modules.
+	QueryClients() QueryClients
 }

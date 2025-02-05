@@ -1,7 +1,7 @@
 # Configure a Full Node
 
 This document provides a detailed step-by-step process describing how to manually setup and configure an Omni node.
-It reproduces what the `omni operators init-nodes` command does automatically.
+It reproduces what the `omni operator init-nodes` command does automatically.
 See [Run a Full Node](run-full-node.md) docs for the automated process.
 
 The resulting `~/.omni/<network>` folder has the following structure:
@@ -19,6 +19,37 @@ The supported `<network>` are:
 - `mainnet` (experimental), chain id [166](https://chainlist.org/chain/166)
 
 Note that validator nodes require additional config as specified in the [Run a Validator](validator.md).
+
+## Restore Node Snapshots
+As mentioned in the [FAQ](faq.md#what-syncing-options-are-supported), Omni supports different ways to sync a node.
+The fastest and preferred way is to download node snapshots provided by Omni.
+
+1. Create your node directory:
+   ```bash
+   mkdir -p ~/.omni/<network>
+   cd ~/.omni/<network>
+   ```
+2. Download and extract latest node snapshots for `geth` and `halo`:
+   ```bash
+   # Create output directories.
+   mkdir geth halo
+   # Download and extract geth snapshot.
+   curl -L https://storage.googleapis.com/omni-staging-snapshots/geth_data.tar.lz4 | tar --use-compress-program=lz4 -xvf - -C ./geth
+   # Download and extract halo snapshot.
+   curl -L https://storage.googleapis.com/omni-staging-snapshots/halo_data.tar.lz4 | tar --use-compress-program=lz4 -xvf - -C ./halo
+   ```
+   > **NOTE**
+   >
+   > If you are using macOS there are some additional steps in order make the above commands work correctly.
+   > ```bash
+   > # Install gnu-tar and lz4
+   > brew install gnu-tar lz4
+   > # Set an alias for tar, otherwise you have to use gtar instead of tar.
+   > alias tar=gtar
+   > ```
+
+**IMPORTANT**: [CometBFT State Sync](#configure-cometbft-state-sync) should not be configured when restoring node snapshots.
+
 
 ## Configure halo
 

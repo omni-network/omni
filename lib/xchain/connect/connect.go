@@ -29,7 +29,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// Connector provider a simple abstraction to connect to the Omni network.
+// Connector provides a simple abstraction to connect to the Omni network.
 type Connector struct {
 	Network    netconf.Network
 	XProvider  xchain.Provider
@@ -108,7 +108,7 @@ func WithPrivKey(privkeys *ecdsa.PrivateKey) option {
 func WithInfuraENV(keyVar string) option {
 	return func(o *options) error {
 		infuraNames := map[string]string{
-			"ethreum":      "mainnet",
+			"ethereum":     "mainnet",
 			"holesky":      "holesky",
 			"base":         "base-mainnet",
 			"base_sepolia": "base-sepolia",

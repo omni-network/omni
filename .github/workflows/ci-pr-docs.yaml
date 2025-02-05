@@ -20,13 +20,21 @@ jobs:
           version: 8
       - name: Install Vercel CLI
         run: pnpm install --global vercel@latest
-      - name: Pull Vercel Environment Information
-        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-      - name: Build Project Artifacts
-        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
-      - name: Deploy Project Artifacts to Vercel
+      - name: Check if External PR
+        id: check_external
+        run: |
+          if [ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]; then
+            echo "external=true" >> $GITHUB_ENV
+          else
+            echo "external=false" >> $GITHUB_ENV
+          fi
+      - name: Deploy with Vercel
         id: deploy
-        run: echo "deployment_url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})" >> $GITHUB_OUTPUT
+        if: env.external == 'false'
+        run: |
+          vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+          vercel build --token=${{ secrets.VERCEL_TOKEN }}
+          echo "deployment_url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})" >> $GITHUB_OUTPUT
   comment:
     needs: deploy
     runs-on: ubuntu-latest
@@ -35,18 +43,19 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - name: Comment PR with Deployment URL
+      - name: Comment on PR
         uses: actions/github-script@v7
         with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const deployment_url = '${{ needs.deploy.outputs.url }}';
-            const pr_number = context.payload.pull_request.number;
-            const repository = context.repo.repo;
-            const owner = context.repo.owner;
+            const isExternal = process.env.external === 'true';
+            const deploymentUrl = isExternal ? null : '${{ needs.deploy.outputs.url }}';
+            const message = isExternal
+              ? "Preview deployment skipped for external pull requests."
+              : `Docs preview complete 🚀 see it here: ${deploymentUrl}`;
             github.rest.issues.createComment({
-              owner: owner,
-              repo: repository,
-              issue_number: pr_number,
-              body: `Docs preview complete 🚀 see it here: ${deployment_url}`
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: message,
             });

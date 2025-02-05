@@ -24,6 +24,7 @@ import (
 	"github.com/omni-network/omni/halo/genutil"
 	evmgenutil "github.com/omni-network/omni/halo/genutil/evm"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -66,6 +67,9 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 		return errors.Wrap(err, "mkdir")
 	}
 
+	// set global feature flags, as they might inform setup / tests
+	feature.SetGlobals(def.Manifest.FeatureFlags)
+
 	// Setup geth execution genesis
 	gethGenesis, err := evmgenutil.MakeGenesis(def.Manifest.Network)
 	if err != nil {
@@ -97,6 +101,7 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	}
 
 	cosmosGenesis, err := genutil.MakeGenesis(
+		ctx,
 		def.Manifest.Network,
 		time.Now(),
 		gethGenesis.ToBlock().Hash(),
@@ -161,7 +166,7 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 			nodeDir,
 			logCfg,
 			depCfg.testConfig,
-			node.Mode,
+			node,
 			omniEVM.InstanceName,
 			endpoints,
 		); err != nil {
@@ -393,13 +398,13 @@ func writeHaloConfig(
 	nodeDir string,
 	logCfg log.Config,
 	testCfg bool,
-	mode e2e.Mode,
+	node *e2e.Node,
 	evmInstance string,
 	endpoints xchain.RPCEndpoints,
 ) error {
 	cfg := halocfg.DefaultConfig()
 
-	if mode == types.ModeArchive {
+	if node.Mode == types.ModeArchive {
 		cfg.PruningOption = "nothing"
 		// Setting this to 0 retains all blocks
 		cfg.MinRetainBlocks = 0
@@ -412,7 +417,8 @@ func writeHaloConfig(
 	cfg.EngineJWTFile = "/halo/config/jwtsecret"                    // Absolute path inside docker container
 	cfg.Tracer.Endpoint = def.Cfg.TracingEndpoint
 	cfg.Tracer.Headers = def.Cfg.TracingHeaders
-	cfg.FeatureFlags = def.Manifest.FeatureFlags
+	cfg.FeatureFlags = filterFeatureFlags(node, def.Manifest.FeatureFlags)
+	cfg.SDKGRPC.Address = "0.0.0.0:9999" // VM port 9090 used by grafana-agent, so use 9999 instead.
 
 	if testCfg {
 		cfg.SnapshotInterval = 1   // Write snapshots each block in e2e tests
@@ -490,7 +496,8 @@ func writeRelayerConfig(ctx context.Context, def Definition, logCfg log.Config) 
 	relayCfg := relayapp.DefaultConfig()
 	relayCfg.PrivateKey = privKeyFile
 	relayCfg.Network = def.Testnet.Network
-	relayCfg.HaloURL = archiveNode.AddressRPC()
+	relayCfg.HaloCometURL = archiveNode.AddressRPC()
+	relayCfg.HaloGRPCURL = haloGRPCAddress(archiveNode)
 	relayCfg.RPCEndpoints = endpoints
 
 	if err := relayapp.WriteConfigTOML(relayCfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
@@ -553,6 +560,7 @@ func writeSolverConfig(ctx context.Context, def Definition, logCfg log.Config) e
 	solverCfg.LoadGenPrivKey = loadGenKeyFile
 	solverCfg.Network = def.Testnet.Network
 	solverCfg.RPCEndpoints = endpoints
+	solverCfg.FeatureFlags = def.Manifest.FeatureFlags
 
 	if err := solverapp.WriteConfigTOML(solverCfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write solver config")
@@ -640,7 +648,8 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 	cfg := monapp.DefaultConfig()
 	cfg.PrivateKey = privKeyFile
 	cfg.Network = def.Testnet.Network
-	cfg.HaloURL = archiveNode.AddressRPC()
+	cfg.HaloCometURL = archiveNode.AddressRPC()
+	cfg.HaloGRPCURL = haloGRPCAddress(archiveNode)
 	cfg.LoadGen.ValidatorKeysGlob = validatorKeyGlob
 	cfg.LoadGen.XCallerKey = xCallerPrivKeyFile
 	cfg.RPCEndpoints = endpoints
@@ -667,4 +676,25 @@ func logConfig(def Definition) log.Config {
 		Level:  slog.LevelDebug.String(),
 		Color:  log.ColorForce,
 	}
+}
+
+// haloGRPCAddress returns the gRPC address for a halo node
+// for access internally within the network.
+// Note that VM port 9090 used by grafana-agent, so gRPC bound to 9999 instead.
+func haloGRPCAddress(node *e2e.Node) string {
+	return fmt.Sprintf("%v:9999", node.InternalIP.String())
+}
+
+// filterFeatureFlags removes some manifest provided flags from being provided to the node.
+// E.g. FlagFuzzOctane should only be applied to the validator01.
+func filterFeatureFlags(node *e2e.Node, flags feature.Flags) feature.Flags {
+	var resp feature.Flags
+	for _, flag := range flags {
+		if flag == string(feature.FlagFuzzOctane) && node.Name != "validator01" {
+			continue
+		}
+		resp = append(resp, flag)
+	}
+
+	return resp
 }
