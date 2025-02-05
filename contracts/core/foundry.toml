@@ -9,7 +9,7 @@ remappings = [
   "src/=src",
   "test/=test",
   "avs/=../avs/src",
-  "solve/=../solve/src",
+  "solve/=../solve",
   # remapping for eigenlayers import
   '@openzeppelin-upgrades/contracts/=node_modules/@openzeppelin/contracts-upgradeable',
 ]

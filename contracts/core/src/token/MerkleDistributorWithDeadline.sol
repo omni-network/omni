@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.24;
 
-import { MerkleDistributor } from "../libraries/MerkleDistributor.sol";
+import { MerkleDistributor } from "./MerkleDistributor.sol";
 import { Ownable } from "solady/src/auth/Ownable.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { MerkleProofLib } from "solady/src/utils/MerkleProofLib.sol";
 import { LibBitmap } from "solady/src/utils/LibBitmap.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { IGenesisStake } from "../interfaces/IGenesisStake.sol";
-import { IERC7683, IOriginSettler } from "solve/erc7683/IOriginSettler.sol";
-import { SolverNet } from "solve/lib/SolverNet.sol";
+import { IERC7683, IOriginSettler } from "solve/src/erc7683/IOriginSettler.sol";
+import { SolverNet } from "solve/src/lib/SolverNet.sol";
 
 contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable {
     using LibBitmap for LibBitmap.Bitmap;

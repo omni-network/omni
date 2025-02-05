@@ -2,10 +2,10 @@
 pragma solidity ^0.8.24;
 
 import { ReentrancyGuard } from "solady/src/utils/ReentrancyGuard.sol";
-import { IOriginSettler, IERC7683 } from "solve/erc7683/IOriginSettler.sol";
+import { IOriginSettler, IERC7683 } from "../../src/erc7683/IOriginSettler.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
-import { SolverNet } from "solve/lib/SolverNet.sol";
-import { AddrUtils } from "solve/lib/AddrUtils.sol";
+import { SolverNet } from "../../src/lib/SolverNet.sol";
+import { AddrUtils } from "../../src/lib/AddrUtils.sol";
 
 contract MockSolverNetInbox is ReentrancyGuard, IOriginSettler {
     using SafeTransferLib for address;

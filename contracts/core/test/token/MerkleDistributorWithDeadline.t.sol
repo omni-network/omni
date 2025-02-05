@@ -7,15 +7,15 @@ import { CompleteMerkle } from "murky/src/CompleteMerkle.sol";
 import { Omni } from "src/token/Omni.sol";
 import { Create3 } from "src/deploy/Create3.sol";
 import { MockPortal } from "test/utils/MockPortal.sol";
-import { MockSolverNetInbox } from "test/utils/MockSolverNetInbox.sol";
+import { MockSolverNetInbox } from "solve/test/utils/MockSolverNetInbox.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import { GenesisStake } from "src/token/GenesisStake.sol";
-import { MerkleDistributor } from "src/libraries/MerkleDistributor.sol";
+import { MerkleDistributor } from "src/token/MerkleDistributor.sol";
 import { MerkleDistributorWithDeadline } from "src/token/MerkleDistributorWithDeadline.sol";
 
-import { IERC7683, IOriginSettler } from "solve/erc7683/IOriginSettler.sol";
-import { SolverNet } from "solve/lib/SolverNet.sol";
+import { IERC7683, IOriginSettler } from "solve/src/erc7683/IOriginSettler.sol";
+import { SolverNet } from "solve/src/lib/SolverNet.sol";
 
 contract MerkleDistributorWithDeadline_Test is Test {
     CompleteMerkle m;
