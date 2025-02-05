@@ -31,6 +31,7 @@ import (
 	"github.com/cometbft/cometbft/types"
 
 	db "github.com/cosmos/cosmos-db"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -207,6 +208,12 @@ func testCProvider(t *testing.T, ctx context.Context, cprov cprovider.Provider) 
 
 		return ok
 	}, time.Second*5, time.Millisecond*100)
+
+	if feature.FlagEVMStakingModule.Enabled(ctx) {
+		resp, err := cprov.QueryClients().Mint.Inflation(ctx, &minttypes.QueryInflationRequest{})
+		require.NoError(t, err)
+		require.EqualValues(t, "11.000000000000000000", resp.Inflation.String())
+	}
 }
 
 func setupSimnet(t *testing.T) haloapp.Config {
