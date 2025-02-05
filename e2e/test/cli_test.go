@@ -254,14 +254,15 @@ func TestCLIOperator(t *testing.T) {
 				require.NoError(t, err)
 				require.NotEmpty(t, resp2.Rewards)
 
+				// all fetched values should be strictly larger
 				for i, coin2 := range resp2.Rewards {
 					coin := resp.Rewards[i]
-					if coin2.Amount.GT(coin.Amount) {
-						return true
+					if !coin2.Amount.GT(coin.Amount) {
+						return false
 					}
 				}
 
-				return false
+				return true
 			}, wait, 500*time.Millisecond, "no rewards increase")
 		})
 	})
