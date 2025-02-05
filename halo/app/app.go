@@ -111,25 +111,31 @@ func newApp(
 	depCfg := depinject.Configs(
 		depinject.BindInterface(
 			"github.com/cosmos/cosmos-sdk/x/distribution/types/types.BankKeeper",
-			"github.com/omni-network/omni/halo/mybank/mybank.Keeper"),
+			"github.com/omni-network/omni/halo/bank/bank.Keeper"),
 		depinject.BindInterface(
 			"github.com/cosmos/cosmos-sdk/x/slashing/types/types.BankKeeper",
-			"github.com/omni-network/omni/halo/mybank/mybank.Keeper"),
+			"github.com/omni-network/omni/halo/bank/bank.Keeper"),
 		depinject.BindInterface(
 			"github.com/cosmos/cosmos-sdk/x/mint/types/types.BankKeeper",
-			"github.com/omni-network/omni/halo/mybank/mybank.Keeper"),
+			"github.com/omni-network/omni/halo/bank/bank.Keeper"),
 		depinject.BindInterface(
 			"github.com/cosmos/cosmos-sdk/x/staking/types/types.BankKeeper",
-			"github.com/omni-network/omni/halo/mybank/mybank.Keeper"),
+			"github.com/omni-network/omni/halo/bank/bank.Keeper"),
 		depinject.BindInterface(
 			"github.com/cosmos/cosmos-sdk/x/auth/types/types.BankKeeper",
-			"github.com/omni-network/omni/halo/mybank/mybank.Keeper"),
+			"github.com/omni-network/omni/halo/bank/bank.Keeper"),
 		depinject.BindInterface(
 			"github.com/cosmos/cosmos-sdk/x/auth/types/types.BankKeeper",
-			"github.com/omni-network/omni/halo/mybank/mybank.Keeper"),
+			"github.com/omni-network/omni/halo/bank/bank.Keeper"),
 		depinject.BindInterface(
 			"github.com/cosmos/cosmos-sdk/x/auth/tx/config/tx.BankKeeper",
-			"github.com/omni-network/omni/halo/mybank/mybank.Keeper"),
+			"github.com/omni-network/omni/halo/bank/bank.Keeper"),
+		depinject.BindInterface(
+			"github.com/cosmos/cosmos-sdk/x/mint/types/types.BankKeeper",
+			"github.com/omni-network/omni/halo/bank/bank.Keeper"),
+		depinject.BindInterface(
+			"github.com/omni-network/omni/halo/evmstaking/evmstaking.BankKeeper",
+			"github.com/omni-network/omni/halo/bank/bank.Keeper"),
 		depinject.BindInterface(
 			"github.com/cosmos/cosmos-sdk/x/bank/keeper/keeper.Keeper",
 			"github.com/cosmos/cosmos-sdk/x/bank/keeper/keeper.BaseKeeper"),

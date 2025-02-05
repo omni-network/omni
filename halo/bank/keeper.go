@@ -1,27 +1,23 @@
-// Package evmupgrade monitors the Upgrade pre-deploy contract and converts
-// its log events to cosmosSDK x/upgrade logic.
+// Package bank wraps the x/bank by overriding `SendCoinsFromModuleToAccount` with
+// creation of a new withdrawal request.
 //
 //nolint:wrapcheck // Wrapping not needed in this package.
-package mybank
+package bank
 
 import (
 	"context"
-
-	"github.com/omni-network/omni/lib/log"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 )
 
-const ModuleName = "mybank"
+const ModuleName = "bank"
 
 type Keeper struct {
 	bankkeeper.Keeper
 }
 
-func (k Keeper) SendCoinsFromModuleToAccountForReal(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
-	log.Info(ctx, "Wrapped method called")
-
+func (k Keeper) SendCoinsFromModuleToAccountNoWithdrawal(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
 	return k.Keeper.SendCoinsFromModuleToAccount(ctx, senderModule, recipientAddr, amt)
 }
 

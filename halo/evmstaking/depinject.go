@@ -1,19 +1,19 @@
 package evmstaking
 
 import (
-	"github.com/omni-network/omni/halo/mybank"
 	"github.com/omni-network/omni/lib/errors"
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"cosmossdk.io/depinject"
 	accountkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 )
 
 type DIInputs struct {
 	depinject.In
 	StakingKeeper *stakingkeeper.Keeper
-	BankKeeper    mybank.Keeper
+	BankKeeper    bankkeeper.Keeper
 	AccountKeeper accountkeeper.AccountKeeper
 }
 

@@ -1,4 +1,4 @@
-package mybank
+package bank
 
 import (
 	"cosmossdk.io/depinject"

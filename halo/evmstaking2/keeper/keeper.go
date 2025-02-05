@@ -276,7 +276,7 @@ func (k Keeper) deliverDelegate(ctx context.Context, ev *bindings.StakingDelegat
 		return errors.Wrap(err, "mint coins")
 	}
 
-	if err := k.bKeeper.SendCoinsFromModuleToAccountForReal(ctx, k.Name(), delAddr, amountCoins); err != nil {
+	if err := k.bKeeper.SendCoinsFromModuleToAccountNoWithdrawal(ctx, k.Name(), delAddr, amountCoins); err != nil {
 		return errors.Wrap(err, "send coins")
 	}
 
@@ -373,7 +373,7 @@ func (k Keeper) deliverCreateValidator(ctx context.Context, createValidator *bin
 		return errors.Wrap(err, "mint coins")
 	}
 
-	if err := k.bKeeper.SendCoinsFromModuleToAccountForReal(ctx, k.Name(), accAddr, amountCoins); err != nil {
+	if err := k.bKeeper.SendCoinsFromModuleToAccountNoWithdrawal(ctx, k.Name(), accAddr, amountCoins); err != nil {
 		return errors.Wrap(err, "send coins")
 	}
 
