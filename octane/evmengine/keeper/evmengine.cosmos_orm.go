@@ -133,18 +133,148 @@ func NewExecutionHeadTable(db ormtable.Schema) (ExecutionHeadTable, error) {
 	return executionHeadTable{table.(ormtable.AutoIncrementTable)}, nil
 }
 
+type WithdrawalTable interface {
+	Insert(ctx context.Context, withdrawal *Withdrawal) error
+	InsertReturningId(ctx context.Context, withdrawal *Withdrawal) (uint64, error)
+	LastInsertedSequence(ctx context.Context) (uint64, error)
+	Update(ctx context.Context, withdrawal *Withdrawal) error
+	Save(ctx context.Context, withdrawal *Withdrawal) error
+	Delete(ctx context.Context, withdrawal *Withdrawal) error
+	Has(ctx context.Context, id uint64) (found bool, err error)
+	// Get returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
+	Get(ctx context.Context, id uint64) (*Withdrawal, error)
+	List(ctx context.Context, prefixKey WithdrawalIndexKey, opts ...ormlist.Option) (WithdrawalIterator, error)
+	ListRange(ctx context.Context, from, to WithdrawalIndexKey, opts ...ormlist.Option) (WithdrawalIterator, error)
+	DeleteBy(ctx context.Context, prefixKey WithdrawalIndexKey) error
+	DeleteRange(ctx context.Context, from, to WithdrawalIndexKey) error
+
+	doNotImplement()
+}
+
+type WithdrawalIterator struct {
+	ormtable.Iterator
+}
+
+func (i WithdrawalIterator) Value() (*Withdrawal, error) {
+	var withdrawal Withdrawal
+	err := i.UnmarshalMessage(&withdrawal)
+	return &withdrawal, err
+}
+
+type WithdrawalIndexKey interface {
+	id() uint32
+	values() []interface{}
+	withdrawalIndexKey()
+}
+
+// primary key starting index..
+type WithdrawalPrimaryKey = WithdrawalIdIndexKey
+
+type WithdrawalIdIndexKey struct {
+	vs []interface{}
+}
+
+func (x WithdrawalIdIndexKey) id() uint32            { return 0 }
+func (x WithdrawalIdIndexKey) values() []interface{} { return x.vs }
+func (x WithdrawalIdIndexKey) withdrawalIndexKey()   {}
+
+func (this WithdrawalIdIndexKey) WithId(id uint64) WithdrawalIdIndexKey {
+	this.vs = []interface{}{id}
+	return this
+}
+
+type withdrawalTable struct {
+	table ormtable.AutoIncrementTable
+}
+
+func (this withdrawalTable) Insert(ctx context.Context, withdrawal *Withdrawal) error {
+	return this.table.Insert(ctx, withdrawal)
+}
+
+func (this withdrawalTable) Update(ctx context.Context, withdrawal *Withdrawal) error {
+	return this.table.Update(ctx, withdrawal)
+}
+
+func (this withdrawalTable) Save(ctx context.Context, withdrawal *Withdrawal) error {
+	return this.table.Save(ctx, withdrawal)
+}
+
+func (this withdrawalTable) Delete(ctx context.Context, withdrawal *Withdrawal) error {
+	return this.table.Delete(ctx, withdrawal)
+}
+
+func (this withdrawalTable) InsertReturningId(ctx context.Context, withdrawal *Withdrawal) (uint64, error) {
+	return this.table.InsertReturningPKey(ctx, withdrawal)
+}
+
+func (this withdrawalTable) LastInsertedSequence(ctx context.Context) (uint64, error) {
+	return this.table.LastInsertedSequence(ctx)
+}
+
+func (this withdrawalTable) Has(ctx context.Context, id uint64) (found bool, err error) {
+	return this.table.PrimaryKey().Has(ctx, id)
+}
+
+func (this withdrawalTable) Get(ctx context.Context, id uint64) (*Withdrawal, error) {
+	var withdrawal Withdrawal
+	found, err := this.table.PrimaryKey().Get(ctx, &withdrawal, id)
+	if err != nil {
+		return nil, err
+	}
+	if !found {
+		return nil, ormerrors.NotFound
+	}
+	return &withdrawal, nil
+}
+
+func (this withdrawalTable) List(ctx context.Context, prefixKey WithdrawalIndexKey, opts ...ormlist.Option) (WithdrawalIterator, error) {
+	it, err := this.table.GetIndexByID(prefixKey.id()).List(ctx, prefixKey.values(), opts...)
+	return WithdrawalIterator{it}, err
+}
+
+func (this withdrawalTable) ListRange(ctx context.Context, from, to WithdrawalIndexKey, opts ...ormlist.Option) (WithdrawalIterator, error) {
+	it, err := this.table.GetIndexByID(from.id()).ListRange(ctx, from.values(), to.values(), opts...)
+	return WithdrawalIterator{it}, err
+}
+
+func (this withdrawalTable) DeleteBy(ctx context.Context, prefixKey WithdrawalIndexKey) error {
+	return this.table.GetIndexByID(prefixKey.id()).DeleteBy(ctx, prefixKey.values()...)
+}
+
+func (this withdrawalTable) DeleteRange(ctx context.Context, from, to WithdrawalIndexKey) error {
+	return this.table.GetIndexByID(from.id()).DeleteRange(ctx, from.values(), to.values())
+}
+
+func (this withdrawalTable) doNotImplement() {}
+
+var _ WithdrawalTable = withdrawalTable{}
+
+func NewWithdrawalTable(db ormtable.Schema) (WithdrawalTable, error) {
+	table := db.GetTable(&Withdrawal{})
+	if table == nil {
+		return nil, ormerrors.TableNotFound.Wrap(string((&Withdrawal{}).ProtoReflect().Descriptor().FullName()))
+	}
+	return withdrawalTable{table.(ormtable.AutoIncrementTable)}, nil
+}
+
 type EvmengineStore interface {
 	ExecutionHeadTable() ExecutionHeadTable
+	WithdrawalTable() WithdrawalTable
 
 	doNotImplement()
 }
 
 type evmengineStore struct {
 	executionHead ExecutionHeadTable
+	withdrawal    WithdrawalTable
 }
 
 func (x evmengineStore) ExecutionHeadTable() ExecutionHeadTable {
 	return x.executionHead
+}
+
+func (x evmengineStore) WithdrawalTable() WithdrawalTable {
+	return x.withdrawal
 }
 
 func (evmengineStore) doNotImplement() {}
@@ -157,7 +287,13 @@ func NewEvmengineStore(db ormtable.Schema) (EvmengineStore, error) {
 		return nil, err
 	}
 
+	withdrawalTable, err := NewWithdrawalTable(db)
+	if err != nil {
+		return nil, err
+	}
+
 	return evmengineStore{
 		executionHeadTable,
+		withdrawalTable,
 	}, nil
 }
