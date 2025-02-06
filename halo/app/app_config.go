@@ -142,37 +142,43 @@ var (
 		{Account: minttypes.ModuleName, Permissions: []string{authtypes.Minter}},
 	}
 
-	bankInterfaceBindings = []depinject.Config{
-		depinject.BindInterface(
-			"github.com/cosmos/cosmos-sdk/x/distribution/types/types.BankKeeper",
-			"github.com/omni-network/omni/halo/bank/bank.Keeper"),
-		depinject.BindInterface(
-			"github.com/cosmos/cosmos-sdk/x/slashing/types/types.BankKeeper",
-			"github.com/omni-network/omni/halo/bank/bank.Keeper"),
-		depinject.BindInterface(
-			"github.com/cosmos/cosmos-sdk/x/mint/types/types.BankKeeper",
-			"github.com/omni-network/omni/halo/bank/bank.Keeper"),
-		depinject.BindInterface(
-			"github.com/cosmos/cosmos-sdk/x/staking/types/types.BankKeeper",
-			"github.com/omni-network/omni/halo/bank/bank.Keeper"),
-		depinject.BindInterface(
-			"github.com/cosmos/cosmos-sdk/x/auth/types/types.BankKeeper",
-			"github.com/omni-network/omni/halo/bank/bank.Keeper"),
-		depinject.BindInterface(
-			"github.com/cosmos/cosmos-sdk/x/auth/types/types.BankKeeper",
-			"github.com/omni-network/omni/halo/bank/bank.Keeper"),
-		depinject.BindInterface(
-			"github.com/cosmos/cosmos-sdk/x/auth/tx/config/tx.BankKeeper",
-			"github.com/omni-network/omni/halo/bank/bank.Keeper"),
-		depinject.BindInterface(
-			"github.com/cosmos/cosmos-sdk/x/mint/types/types.BankKeeper",
-			"github.com/omni-network/omni/halo/bank/bank.Keeper"),
-		depinject.BindInterface(
-			"github.com/omni-network/omni/halo/evmstaking/evmstaking.BankKeeper",
-			"github.com/omni-network/omni/halo/bank/bank.Keeper"),
-		depinject.BindInterface(
-			"github.com/cosmos/cosmos-sdk/x/bank/keeper/keeper.Keeper",
-			"github.com/cosmos/cosmos-sdk/x/bank/keeper/keeper.BaseKeeper"),
+	bankInterfaceBindings = func(ctx context.Context) []depinject.Config {
+		if feature.FlagEVMStakingModule.Enabled(ctx) {
+			return []depinject.Config{
+				depinject.BindInterface(
+					"github.com/cosmos/cosmos-sdk/x/distribution/types/types.BankKeeper",
+					"github.com/omni-network/omni/halo/bank/bank.Keeper"),
+				depinject.BindInterface(
+					"github.com/cosmos/cosmos-sdk/x/slashing/types/types.BankKeeper",
+					"github.com/omni-network/omni/halo/bank/bank.Keeper"),
+				depinject.BindInterface(
+					"github.com/cosmos/cosmos-sdk/x/mint/types/types.BankKeeper",
+					"github.com/omni-network/omni/halo/bank/bank.Keeper"),
+				depinject.BindInterface(
+					"github.com/cosmos/cosmos-sdk/x/staking/types/types.BankKeeper",
+					"github.com/omni-network/omni/halo/bank/bank.Keeper"),
+				depinject.BindInterface(
+					"github.com/cosmos/cosmos-sdk/x/auth/types/types.BankKeeper",
+					"github.com/omni-network/omni/halo/bank/bank.Keeper"),
+				depinject.BindInterface(
+					"github.com/cosmos/cosmos-sdk/x/auth/types/types.BankKeeper",
+					"github.com/omni-network/omni/halo/bank/bank.Keeper"),
+				depinject.BindInterface(
+					"github.com/cosmos/cosmos-sdk/x/auth/tx/config/tx.BankKeeper",
+					"github.com/omni-network/omni/halo/bank/bank.Keeper"),
+				depinject.BindInterface(
+					"github.com/cosmos/cosmos-sdk/x/mint/types/types.BankKeeper",
+					"github.com/omni-network/omni/halo/bank/bank.Keeper"),
+				depinject.BindInterface(
+					"github.com/omni-network/omni/halo/evmstaking/evmstaking.BankKeeper",
+					"github.com/omni-network/omni/halo/bank/bank.Keeper"),
+				depinject.BindInterface(
+					"github.com/cosmos/cosmos-sdk/x/bank/keeper/keeper.Keeper",
+					"github.com/cosmos/cosmos-sdk/x/bank/keeper/keeper.BaseKeeper"),
+			}
+		}
+
+		return []depinject.Config{}
 	}
 
 	// appConfig application configuration (used by depinject).
@@ -342,7 +348,7 @@ func ClientEncodingConfig(ctx context.Context, network netconf.ID) (EncodingConf
 	depCfg := depinject.Configs(
 		appConfig(ctx, network),
 		depinject.Provide(diProviders(ctx)...),
-		depinject.Configs(bankInterfaceBindings...),
+		depinject.Configs(bankInterfaceBindings(ctx)...),
 		depinject.Supply(
 			newSDKLogger(ctx),
 			attesttypes.ChainVerNameFunc(netconf.ChainVersionNamer(network)),

@@ -110,7 +110,7 @@ func newApp(
 ) (*App, error) {
 	depCfg := depinject.Configs(
 		depinject.Provide(diProviders(ctx)...),
-		depinject.Configs(bankInterfaceBindings...),
+		depinject.Configs(bankInterfaceBindings(ctx)...),
 		appConfig(ctx, network),
 		depinject.Supply(
 			logger,
