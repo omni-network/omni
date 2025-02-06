@@ -33,6 +33,13 @@ contract GenesisStake is IGenesisStake, OwnableUpgradeable, PausableUpgradeable 
     event Withdrawn(address indexed account, uint256 amount);
 
     /**
+     * @notice Emitted when a user migrates their stake.
+     * @param account   The account that migrated their stake.
+     * @param amount    The amount of tokens migrated.
+     */
+    event Migrated(address indexed account, uint256 amount);
+
+    /**
      * @notice Emitted when the unboding period is changed.
      * @param newDuration   The new unboding period.
      * @param prevDuration  The previous unboding period.
@@ -53,6 +60,12 @@ contract GenesisStake is IGenesisStake, OwnableUpgradeable, PausableUpgradeable 
      * @notice Omni erc20 token.
      */
     IERC20 public immutable token;
+
+    /**
+     * @notice The rewards distributor for the staking contract.
+     * @dev This contract is allowed to withdraw user staking deposits for migration to Omni.
+     */
+    address public immutable rewardsDistributor;
 
     /**
      * @notice Duration (in seconds) that a user must wait to withdraw after unstaking.
@@ -82,8 +95,9 @@ contract GenesisStake is IGenesisStake, OwnableUpgradeable, PausableUpgradeable 
         _;
     }
 
-    constructor(address token_) {
+    constructor(address token_, address rewardsDistributor_) {
         token = IERC20(token_);
+        rewardsDistributor = rewardsDistributor_;
         _disableInitializers();
     }
 
@@ -157,12 +171,31 @@ contract GenesisStake is IGenesisStake, OwnableUpgradeable, PausableUpgradeable 
         uint256 amount = balanceOf[msg.sender];
 
         // reset balance & timestamps
-        balanceOf[msg.sender] = 0;
-        unstakedAt[msg.sender] = 0;
+        _resetValues(msg.sender);
 
         require(token.transfer(msg.sender, amount), "GenesisStake: transfer failed");
 
         emit Withdrawn(msg.sender, amount);
+    }
+
+    /**
+     * @notice Migrate a user's stake to the rewards distributor.
+     * @param addr The address of the user to migrate.
+     * @return The amount of tokens migrated.
+     */
+    function migrateStake(address addr) external whenNotPaused returns (uint256) {
+        require(msg.sender == rewardsDistributor, "GenesisStake: unauthorized");
+
+        uint256 amount = balanceOf[addr];
+        if (amount == 0) return amount;
+
+        // reset balance & timestamps
+        _resetValues(addr);
+
+        require(token.transfer(rewardsDistributor, amount), "GenesisStake: transfer failed");
+
+        emit Migrated(addr, amount);
+        return amount;
     }
 
     /**
@@ -224,6 +257,15 @@ contract GenesisStake is IGenesisStake, OwnableUpgradeable, PausableUpgradeable 
     }
 
     /**
+     * @notice Reset the balance and unstaked timestamp for an address.
+     * @param addr The address to reset.
+     */
+    function _resetValues(address addr) internal {
+        balanceOf[addr] = 0;
+        unstakedAt[addr] = 0;
+    }
+
+    /**
      * @notice Open staking.
      */
     function _open() internal {
@@ -240,4 +282,6 @@ contract GenesisStake is IGenesisStake, OwnableUpgradeable, PausableUpgradeable 
         isOpen = false;
         emit Closed();
     }
+
+    fallback() external { }
 }

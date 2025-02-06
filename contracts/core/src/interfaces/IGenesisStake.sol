@@ -26,6 +26,13 @@ interface IGenesisStake {
     function withdraw() external;
 
     /**
+     * @notice Migrate a user's stake to the rewards distributor.
+     * @param addr The address of the user to migrate.
+     * @return The amount of tokens migrated.
+     */
+    function migrateStake(address addr) external returns (uint256);
+
+    /**
      * @notice Returns timestamp at which `account` can withdraw.
      *         Reverts if the account has not staked & unstaked.
      */
