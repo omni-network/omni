@@ -4,6 +4,7 @@ pragma solidity =0.8.24;
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { SolverNetInbox } from "src/SolverNetInbox.sol";
 import { SolverNetOutbox } from "src/SolverNetOutbox.sol";
+import { SolverNetMiddleman } from "src/SolverNetMiddleman.sol";
 import { ISolverNetInbox } from "src/interfaces/ISolverNetInbox.sol";
 import { ISolverNetOutbox } from "src/interfaces/ISolverNetOutbox.sol";
 
@@ -31,6 +32,7 @@ contract TestBase is Test {
 
     SolverNetInbox inbox;
     SolverNetOutbox outbox;
+    SolverNetMiddleman middleman;
 
     MockERC20 token1;
     MockERC20 token2;
@@ -72,6 +74,7 @@ contract TestBase is Test {
 
         inbox = deploySolverNetInbox();
         outbox = deploySolverNetOutbox();
+        middleman = new SolverNetMiddleman();
         initializeInbox();
         initializeOutbox();
 
