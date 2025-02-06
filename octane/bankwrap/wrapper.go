@@ -19,6 +19,7 @@ func (k Wrapper) SendCoinsFromModuleToAccountNoWithdrawal(ctx context.Context, s
 	return k.Keeper.SendCoinsFromModuleToAccount(ctx, senderModule, recipientAddr, amt)
 }
 
-func (Wrapper) SendCoinsFromModuleToAccount(context.Context, string, sdk.AccAddress, sdk.Coins) error {
-	panic("unreachable")
+func (k Wrapper) SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+	// TODO(christian): add withdrawal request
+	return k.Keeper.SendCoinsFromModuleToAccount(ctx, senderModule, recipientAddr, amt)
 }
