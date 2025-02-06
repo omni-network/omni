@@ -69,6 +69,16 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 		require.Equal(t, in.amount, withdrawals[i].GetAmountGwei())
 		require.Equal(t, in.height, withdrawals[i].GetCreatedHeight())
 	}
+
+	withdrawalsByAddr, err := keeper.getWithdrawalsByAddress(ctx, addr1)
+	require.NoError(t, err)
+	require.Len(t, withdrawalsByAddr, 2)
+	require.Equal(t, addr1.Bytes(), withdrawalsByAddr[0].GetAddress())
+
+	withdrawalsByAddr, err = keeper.getWithdrawalsByAddress(ctx, addr2)
+	require.NoError(t, err)
+	require.Len(t, withdrawalsByAddr, 1)
+	require.Equal(t, addr2.Bytes(), withdrawalsByAddr[0].GetAddress())
 }
 
 // getAllWithdrawals returns all stored withdrawals.

@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package octane.evmengine.types;
+option go_package = "octane/evmengine/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // SumPendingWithdrawalsByAddress returns the amount of rewards (gwei) waiting to be withdrawn.
+  rpc SumPendingWithdrawalsByAddress(SumPendingWithdrawalsByAddressRequest) returns (SumPendingWithdrawalsByAddressResponse) {}
+}
+
+message SumPendingWithdrawalsByAddressRequest {
+    bytes address = 1; // Withdrawal address
+}
+
+message SumPendingWithdrawalsByAddressResponse {
+    uint64 amount = 1; // Rewards amount in Gwei
+}

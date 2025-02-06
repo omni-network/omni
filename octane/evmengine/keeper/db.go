@@ -88,3 +88,24 @@ func (k *Keeper) InsertWithdrawal(ctx context.Context, withdrawalAddr sdk.AccAdd
 
 	return nil
 }
+
+// GetWithdrawalsByAddress returns all stored withdrawals.
+func (k *Keeper) getWithdrawalsByAddress(ctx context.Context, withdrawalAddr sdk.AccAddress) ([]*Withdrawal, error) {
+	iter, err := k.withdrawalTable.List(ctx, WithdrawalAddressIndexKey{}.WithAddress(withdrawalAddr[:]))
+	if err != nil {
+		return nil, errors.Wrap(err, "list withdrawals")
+	}
+	defer iter.Close()
+
+	var withdrawals []*Withdrawal
+
+	for iter.Next() {
+		val, err := iter.Value()
+		if err != nil {
+			return nil, errors.Wrap(err, "get withdrawal")
+		}
+		withdrawals = append(withdrawals, val)
+	}
+
+	return withdrawals, nil
+}

@@ -18,6 +18,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
+	evmengtypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/cometbft/cometbft/rpc/client/http"
 
@@ -147,7 +148,7 @@ func TestCLIOperator(t *testing.T) {
 
 		// delegator's keys
 		privKey, pubKey := anvil.DevPrivateKey5(), anvil.DevAccount5()
-		delegatorCosmosAddr := sdk.AccAddress(pubKey.Bytes()).String()
+		delegatorCosmosAddr := sdk.AccAddress(pubKey.Bytes())
 		delegatorPrivKeyFile := filepath.Join(tmpDir, "delegator_privkey")
 		require.NoError(
 			t,
@@ -185,7 +186,7 @@ func TestCLIOperator(t *testing.T) {
 					return false
 				}
 
-				if !delegationFound(t, ctx, cprov, val.OperatorAddress, delegatorCosmosAddr) {
+				if !delegationFound(t, ctx, cprov, val.OperatorAddress, delegatorCosmosAddr.String()) {
 					return false
 				}
 
@@ -236,7 +237,7 @@ func TestCLIOperator(t *testing.T) {
 
 			// fetch rewards and make sure they are positive
 			resp, err := cprov.QueryClients().Distribution.DelegationRewards(ctx, &dtypes.QueryDelegationRewardsRequest{
-				DelegatorAddress: delegatorCosmosAddr,
+				DelegatorAddress: delegatorCosmosAddr.String(),
 				ValidatorAddress: val.OperatorAddress,
 			})
 			require.NoError(t, err)
@@ -251,7 +252,7 @@ func TestCLIOperator(t *testing.T) {
 			wait := time.Second * 2
 			require.Eventuallyf(t, func() bool {
 				resp2, err := cprov.QueryClients().Distribution.DelegationRewards(ctx, &dtypes.QueryDelegationRewardsRequest{
-					DelegatorAddress: delegatorCosmosAddr,
+					DelegatorAddress: delegatorCosmosAddr.String(),
 					ValidatorAddress: val.OperatorAddress,
 				})
 				require.NoError(t, err)
@@ -267,6 +268,36 @@ func TestCLIOperator(t *testing.T) {
 
 				return true
 			}, wait, 500*time.Millisecond, "no rewards increase")
+		})
+
+		// make sure than an additional delegation triggers a withdrawal eventually
+		t.Run("withdrawals", func(t *testing.T) {
+			if !feature.FlagEVMStakingModule.Enabled(ctx) {
+				t.Skip("Skipping withdrawal test")
+			}
+
+			// make sure no withdrawals are pending
+			amount := pendingWithdrawals(t, ctx, cprov, delegatorCosmosAddr)
+			require.Equal(t, 0, amount)
+
+			const delegatorDelegation = uint64(700)
+			stdOut, _, err := execCLI(
+				ctx, "operator", "delegate",
+				"--network", "devnet",
+				"--validator-address", validatorAddr.Hex(),
+				"--private-key-file", delegatorPrivKeyFile,
+				"--amount", fmt.Sprintf("%d", delegatorDelegation),
+				"--execution-rpc", executionRPC,
+			)
+			require.NoError(t, err)
+			require.Empty(t, stdOut)
+
+			// make sure the validator power is increased and the delegation can be found
+			require.Eventuallyf(t, func() bool {
+				amount := pendingWithdrawals(t, ctx, cprov, delegatorCosmosAddr)
+
+				return amount > 0
+			}, valChangeWait, 500*time.Millisecond, "failed to delegate")
 		})
 	})
 }
@@ -287,4 +318,15 @@ func delegationFound(t *testing.T, ctx context.Context, cprov provider.Provider,
 	}
 
 	return false
+}
+
+func pendingWithdrawals(t *testing.T, ctx context.Context, cprov provider.Provider, addr sdk.AccAddress) uint64 {
+	t.Helper()
+	resp, err := cprov.QueryClients().EvmEngine.SumPendingWithdrawalsByAddress(
+		ctx,
+		&evmengtypes.SumPendingWithdrawalsByAddressRequest{Address: []byte(addr)},
+	)
+	require.NoError(t, err)
+
+	return resp.Amount
 }

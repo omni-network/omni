@@ -26,6 +26,7 @@ message Withdrawal {
   option (cosmos.orm.v1.table) = {
     id: 2;
     primary_key: { fields: "id", auto_increment: true }
+    index: { id: 1, fields: "address" }
   };
 
   uint64  id               = 1; // Auto-incremented ID.

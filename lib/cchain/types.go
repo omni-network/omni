@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/umath"
+	evmengtypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	cmtcrypto "github.com/cometbft/cometbft/crypto"
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
@@ -38,6 +39,7 @@ type QueryClients struct {
 	Upgrade      utypes.QueryClient
 	Distribution dtypes.QueryClient
 	Mint         mtypes.QueryClient
+	EvmEngine    evmengtypes.QueryClient
 }
 
 // PortalValidator is a consensus chain validator in a validator set emitted/submitted by/tp portals .
