@@ -9,6 +9,7 @@ interface ISolverNetInbox is IOriginSettler {
     error InvalidOrderData();
     error InvalidChainId();
     error InvalidFillDeadline();
+    error InvalidMissingCalls();
     error InvalidCallTarget();
     error InvalidExpenseToken();
     error InvalidExpenseAmount();
@@ -59,10 +60,10 @@ interface ISolverNetInbox is IOriginSettler {
     /**
      * @notice Emitted when an order is filled.
      * @param id         ID of the order.
-     * @param callHash   Hash of the call executed on another chain.
+     * @param fillHash   Hash of the fill instructions origin data.
      * @param creditedTo Address of the recipient credited the funds by the solver.
      */
-    event Filled(bytes32 indexed id, bytes32 indexed callHash, address indexed creditedTo);
+    event Filled(bytes32 indexed id, bytes32 indexed fillHash, address indexed creditedTo);
 
     /**
      * @notice Emitted when an order is claimed.
