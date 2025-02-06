@@ -5,7 +5,6 @@ import (
 
 	attestmodule "github.com/omni-network/omni/halo/attest/module"
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
-	"github.com/omni-network/omni/halo/bank"
 	"github.com/omni-network/omni/halo/evmslashing"
 	"github.com/omni-network/omni/halo/evmstaking"
 	evmstaking2module "github.com/omni-network/omni/halo/evmstaking2/module"
@@ -22,6 +21,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/octane/bankwrap"
 	engevmmodule "github.com/omni-network/omni/octane/evmengine/module"
 	engevmtypes "github.com/omni-network/omni/octane/evmengine/types"
 
@@ -143,42 +143,17 @@ var (
 	}
 
 	bankInterfaceBindings = func(ctx context.Context) []depinject.Config {
-		if feature.FlagEVMStakingModule.Enabled(ctx) {
-			return []depinject.Config{
-				depinject.BindInterface(
-					"github.com/cosmos/cosmos-sdk/x/distribution/types/types.BankKeeper",
-					"github.com/omni-network/omni/halo/bank/bank.Keeper"),
-				depinject.BindInterface(
-					"github.com/cosmos/cosmos-sdk/x/slashing/types/types.BankKeeper",
-					"github.com/omni-network/omni/halo/bank/bank.Keeper"),
-				depinject.BindInterface(
-					"github.com/cosmos/cosmos-sdk/x/mint/types/types.BankKeeper",
-					"github.com/omni-network/omni/halo/bank/bank.Keeper"),
-				depinject.BindInterface(
-					"github.com/cosmos/cosmos-sdk/x/staking/types/types.BankKeeper",
-					"github.com/omni-network/omni/halo/bank/bank.Keeper"),
-				depinject.BindInterface(
-					"github.com/cosmos/cosmos-sdk/x/auth/types/types.BankKeeper",
-					"github.com/omni-network/omni/halo/bank/bank.Keeper"),
-				depinject.BindInterface(
-					"github.com/cosmos/cosmos-sdk/x/auth/types/types.BankKeeper",
-					"github.com/omni-network/omni/halo/bank/bank.Keeper"),
-				depinject.BindInterface(
-					"github.com/cosmos/cosmos-sdk/x/auth/tx/config/tx.BankKeeper",
-					"github.com/omni-network/omni/halo/bank/bank.Keeper"),
-				depinject.BindInterface(
-					"github.com/cosmos/cosmos-sdk/x/mint/types/types.BankKeeper",
-					"github.com/omni-network/omni/halo/bank/bank.Keeper"),
-				depinject.BindInterface(
-					"github.com/omni-network/omni/halo/evmstaking/evmstaking.BankKeeper",
-					"github.com/omni-network/omni/halo/bank/bank.Keeper"),
-				depinject.BindInterface(
-					"github.com/cosmos/cosmos-sdk/x/bank/keeper/keeper.Keeper",
-					"github.com/cosmos/cosmos-sdk/x/bank/keeper/keeper.BaseKeeper"),
-			}
+		if !feature.FlagEVMStakingModule.Enabled(ctx) {
+			return nil
 		}
 
-		return []depinject.Config{}
+		configs := bankwrap.SDKBindInterfaces()
+		configs = append(configs, depinject.BindInterface(
+			"github.com/omni-network/omni/halo/evmstaking/evmstaking.BankKeeper",
+			bankwrap.WrapperImpl,
+		))
+
+		return configs
 	}
 
 	// appConfig application configuration (used by depinject).
@@ -306,7 +281,7 @@ var (
 			return []any{
 				evmslashing.DIProvide,
 				evmupgrade.DIProvide,
-				bank.DIProvide,
+				bankwrap.DIProvide,
 			}
 		}
 

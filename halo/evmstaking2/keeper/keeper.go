@@ -43,7 +43,7 @@ type Keeper struct {
 	address         common.Address
 	contract        *bindings.Staking
 	aKeeper         types.AuthKeeper
-	bKeeper         types.BankKeeper
+	bKeeper         types.WrappedBankKeeper
 	sKeeper         types.StakingKeeper
 	sServer         types.StakingMsgServer
 	deliverInterval int64
@@ -52,7 +52,7 @@ type Keeper struct {
 func NewKeeper(
 	storeService store.KVStoreService,
 	aKeeper types.AuthKeeper,
-	bKeeper types.BankKeeper,
+	bKeeper types.WrappedBankKeeper,
 	sKeeper types.StakingKeeper,
 	sServer types.StakingMsgServer,
 	deliverInterval int64,

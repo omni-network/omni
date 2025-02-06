@@ -3,7 +3,6 @@ package module
 import (
 	"context"
 
-	"github.com/omni-network/omni/halo/bank"
 	"github.com/omni-network/omni/halo/evmstaking2/keeper"
 	"github.com/omni-network/omni/halo/evmstaking2/types"
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
@@ -115,7 +114,7 @@ type ModuleInputs struct {
 
 	StoreService store.KVStoreService
 	AKeeper      types.AuthKeeper
-	BKeeper      bank.Keeper
+	BKeeper      types.WrappedBankKeeper
 	SKeeper      *stakingkeeper.Keeper
 	Cdc          codec.Codec
 	Config       *Module
