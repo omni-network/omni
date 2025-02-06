@@ -4,7 +4,10 @@ pragma solidity =0.8.24;
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { SolverNetInbox } from "src/SolverNetInbox.sol";
 import { SolverNetOutbox } from "src/SolverNetOutbox.sol";
+import { ISolverNetInbox } from "src/interfaces/ISolverNetInbox.sol";
+import { ISolverNetOutbox } from "src/interfaces/ISolverNetOutbox.sol";
 
+import { IERC20 } from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import { MockERC20 } from "test/utils/MockERC20.sol";
 import { MockVault } from "test/utils/MockVault.sol";
 import { MockMultiTokenVault } from "test/utils/MockMultiTokenVault.sol";
@@ -14,6 +17,7 @@ import { IERC7683 } from "src/erc7683/IERC7683.sol";
 import { SolverNet } from "src/lib/SolverNet.sol";
 
 import { Test, console2 } from "forge-std/Test.sol";
+import { Ownable } from "solady/src/auth/Ownable.sol";
 import { FixedPointMathLib } from "solady/src/utils/FixedPointMathLib.sol";
 import { AddrUtils } from "src/lib/AddrUtils.sol";
 
@@ -76,8 +80,55 @@ contract TestBase is Test {
 
     // Helper functions
 
+    function assertResolvedEq(
+        IERC7683.ResolvedCrossChainOrder memory resolved1,
+        IERC7683.ResolvedCrossChainOrder memory resolved2
+    ) internal pure {
+        assertEq(keccak256(abi.encode(resolved1)), keccak256(abi.encode(resolved2)), "resolved orders are not equal");
+    }
+
     function fillHash(bytes32 orderId, bytes memory originData) internal pure returns (bytes32) {
         return keccak256(abi.encode(orderId, originData));
+    }
+
+    function fundUser(SolverNet.OrderData memory orderData) internal {
+        SolverNet.Deposit memory deposit = orderData.deposit;
+        address token = deposit.token;
+        uint96 amount = deposit.amount;
+
+        if (amount > 0) {
+            if (token == address(0)) {
+                vm.deal(user, amount);
+            } else {
+                vm.prank(user);
+                MockERC20(token).approve(address(inbox), type(uint256).max);
+                MockERC20(token).mint(user, amount);
+            }
+        }
+    }
+
+    function fundSolver(SolverNet.OrderData memory orderData, uint256 fillFees) internal {
+        SolverNet.Call[] memory calls = orderData.calls;
+        SolverNet.Expense[] memory expenses = orderData.expenses;
+
+        uint256 nativeValue;
+        for (uint256 i; i < calls.length; ++i) {
+            SolverNet.Call memory call = calls[i];
+            if (call.value > 0) nativeValue += call.value;
+        }
+        if (nativeValue + fillFees > 0) vm.deal(solver, nativeValue + fillFees);
+
+        for (uint256 i; i < expenses.length; ++i) {
+            SolverNet.Expense memory expense = expenses[i];
+            address token = expense.token;
+            uint96 amount = expense.amount;
+
+            if (amount > 0) {
+                vm.prank(solver);
+                MockERC20(token).approve(address(outbox), type(uint256).max);
+                MockERC20(token).mint(solver, amount);
+            }
+        }
     }
 
     function getVaultCall(address vault, uint256 callValue, address depositRecipient, uint256 depositAmount)
@@ -101,6 +152,18 @@ contract TestBase is Test {
         return SolverNet.Expense({ spender: spender, token: token, amount: amount });
     }
 
+    function getOrder(uint256 fillDeadline, SolverNet.OrderData memory orderData)
+        internal
+        pure
+        returns (IERC7683.OnchainCrossChainOrder memory)
+    {
+        return IERC7683.OnchainCrossChainOrder({
+            fillDeadline: uint32(fillDeadline),
+            orderDataType: ORDER_DATA_TYPEHASH,
+            orderData: abi.encode(orderData)
+        });
+    }
+
     function getOrder(
         address owner,
         uint64 chainId,
@@ -120,6 +183,130 @@ contract TestBase is Test {
 
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: fillDeadline,
+            orderDataType: ORDER_DATA_TYPEHASH,
+            orderData: abi.encode(orderData)
+        });
+
+        return (orderData, order);
+    }
+
+    function getNativeForNativeVaultOrder(uint256 depositAmount, uint256 expenseAmount)
+        internal
+        view
+        returns (SolverNet.OrderData memory, IERC7683.OnchainCrossChainOrder memory)
+    {
+        SolverNet.Deposit memory deposit = SolverNet.Deposit({ token: address(0), amount: uint96(depositAmount) });
+
+        SolverNet.Call[] memory calls = new SolverNet.Call[](1);
+        calls[0] = SolverNet.Call({
+            target: address(nativeVault),
+            selector: MockVault.deposit.selector,
+            value: depositAmount,
+            params: abi.encode(user, expenseAmount)
+        });
+
+        SolverNet.Expense[] memory expenses = new SolverNet.Expense[](0);
+
+        SolverNet.OrderData memory orderData = SolverNet.OrderData({
+            owner: address(0),
+            destChainId: destChainId,
+            deposit: deposit,
+            calls: calls,
+            expenses: expenses
+        });
+
+        IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
+            fillDeadline: 0,
+            orderDataType: ORDER_DATA_TYPEHASH,
+            orderData: abi.encode(orderData)
+        });
+
+        return (orderData, order);
+    }
+
+    function getErc20ForErc20VaultOrder(uint256 depositAmount, uint256 expenseAmount)
+        internal
+        view
+        returns (SolverNet.OrderData memory, IERC7683.OnchainCrossChainOrder memory)
+    {
+        SolverNet.Deposit memory deposit = SolverNet.Deposit({ token: address(token1), amount: uint96(depositAmount) });
+
+        SolverNet.Call[] memory calls = new SolverNet.Call[](1);
+        calls[0] = SolverNet.Call({
+            target: address(erc20Vault),
+            selector: MockVault.deposit.selector,
+            value: 0,
+            params: abi.encode(user, expenseAmount)
+        });
+
+        SolverNet.Expense[] memory expenses = new SolverNet.Expense[](1);
+        expenses[0] =
+            SolverNet.Expense({ spender: address(erc20Vault), token: address(token2), amount: uint96(expenseAmount) });
+
+        SolverNet.OrderData memory orderData = SolverNet.OrderData({
+            owner: address(0),
+            destChainId: destChainId,
+            deposit: deposit,
+            calls: calls,
+            expenses: expenses
+        });
+
+        IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
+            fillDeadline: 0,
+            orderDataType: ORDER_DATA_TYPEHASH,
+            orderData: abi.encode(orderData)
+        });
+
+        return (orderData, order);
+    }
+
+    function getArbitraryVaultOrder(
+        address depositToken,
+        uint96 depositAmount,
+        address[] memory expenseTokens,
+        uint96[] memory expenseAmounts
+    ) internal view returns (SolverNet.OrderData memory, IERC7683.OnchainCrossChainOrder memory) {
+        require(expenseTokens.length == expenseAmounts.length, "array length mismatch");
+
+        SolverNet.Deposit memory deposit = SolverNet.Deposit({ token: depositToken, amount: depositAmount });
+
+        SolverNet.Call[] memory calls = new SolverNet.Call[](expenseTokens.length);
+        for (uint256 i; i < expenseTokens.length; ++i) {
+            calls[i] = SolverNet.Call({
+                target: expenseTokens[i] == address(0) ? address(nativeVault) : address(erc20Vault),
+                selector: MockVault.deposit.selector,
+                value: expenseTokens[i] == address(0) ? expenseAmounts[i] : 0,
+                params: abi.encode(user, expenseAmounts[i])
+            });
+        }
+
+        uint256 expenseLength;
+        for (uint256 i; i < expenseTokens.length; ++i) {
+            if (expenseTokens[i] != address(0)) ++expenseLength;
+        }
+
+        uint256 bias;
+        SolverNet.Expense[] memory expenses = new SolverNet.Expense[](expenseLength);
+        for (uint256 i; i < expenseTokens.length; ++i) {
+            if (expenseTokens[i] == address(0)) {
+                ++bias;
+                continue;
+            }
+
+            expenses[i - bias] =
+                SolverNet.Expense({ spender: address(erc20Vault), token: expenseTokens[i], amount: expenseAmounts[i] });
+        }
+
+        SolverNet.OrderData memory orderData = SolverNet.OrderData({
+            owner: address(0),
+            destChainId: destChainId,
+            deposit: deposit,
+            calls: calls,
+            expenses: expenses
+        });
+
+        IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
+            fillDeadline: 0,
             orderDataType: ORDER_DATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });

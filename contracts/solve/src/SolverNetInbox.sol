@@ -196,7 +196,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             if (state.claimant != msg.sender) revert Unauthorized();
         }
 
-        _upsertOrder(id, Status.Reverted, msg.sender);
+        _upsertOrder(id, Status.Rejected, msg.sender);
         _transferDeposit(id, _orderHeader[id].owner);
 
         emit Rejected(id, msg.sender, reason);
@@ -234,8 +234,8 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         if (state.status != Status.Pending && state.status != Status.Accepted) {
             revert OrderNotPendingOrAccepted();
         }
-        if (xmsg.sender != _outboxes[xmsg.sourceChainId]) revert Unauthorized();
         if (xmsg.sourceChainId != header.destChainId) revert WrongSourceChain();
+        if (xmsg.sender != _outboxes[xmsg.sourceChainId]) revert Unauthorized();
 
         // Ensure reported fill hash matches origin data
         if (fillHash != _fillHash(id)) {
@@ -282,7 +282,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      */
     function _validate(OnchainCrossChainOrder calldata order) internal view returns (SolverNet.Order memory) {
         // Validate OnchainCrossChainOrder
-        if (order.fillDeadline < block.timestamp && order.fillDeadline != 0) revert InvalidFillDeadline();
+        if (order.fillDeadline <= block.timestamp && order.fillDeadline != 0) revert InvalidFillDeadline();
         if (order.orderDataType != ORDERDATA_TYPEHASH) revert InvalidOrderTypehash();
         if (order.orderData.length == 0) revert InvalidOrderData();
 
@@ -300,6 +300,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
 
         // Validate SolverNet.OrderData.Call
         SolverNet.Call[] memory calls = orderData.calls;
+        if (calls.length == 0) revert InvalidMissingCalls();
         for (uint256 i; i < calls.length; ++i) {
             SolverNet.Call memory call = calls[i];
             if (call.target == address(0)) revert InvalidCallTarget();
