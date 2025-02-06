@@ -26,12 +26,12 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
     /**
      * @dev Gas limit for xcalls to bridges without a lockbox.
      */
-    uint64 internal constant DEFAULT_GAS_LIMIT = 125_000;
+    uint64 internal constant RECEIVE_DEFAULT_GAS_LIMIT = 125_000;
 
     /**
      * @dev Gas limit for xcalls to bridges with a lockbox.
      */
-    uint64 internal constant LOCKBOX_GAS_LIMIT = 180_000;
+    uint64 internal constant RECEIVE_LOCKBOX_GAS_LIMIT = 180_000;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
@@ -133,7 +133,7 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
         return feeFor(
             destChainId,
             abi.encodeCall(Bridge.receiveToken, (TypeMax.Address, TypeMax.Uint256)),
-            route.hasLockbox ? LOCKBOX_GAS_LIMIT : DEFAULT_GAS_LIMIT
+            route.hasLockbox ? RECEIVE_LOCKBOX_GAS_LIMIT : RECEIVE_DEFAULT_GAS_LIMIT
         );
     }
 
@@ -246,7 +246,9 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
     function _omniTransfer(uint64 destChainId, address to, uint256 value) internal {
         Route memory route = _routes[destChainId];
         bytes memory data = abi.encodeCall(Bridge.receiveToken, (to, value));
-        uint256 fee = xcall(destChainId, route.bridge, data, route.hasLockbox ? LOCKBOX_GAS_LIMIT : DEFAULT_GAS_LIMIT);
+        uint256 fee = xcall(
+            destChainId, route.bridge, data, route.hasLockbox ? RECEIVE_LOCKBOX_GAS_LIMIT : RECEIVE_DEFAULT_GAS_LIMIT
+        );
 
         if (msg.value < fee) revert InsufficientPayment();
         if (msg.value > fee) msg.sender.safeTransferETH(msg.value - fee);
