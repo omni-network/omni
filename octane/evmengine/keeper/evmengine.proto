@@ -29,7 +29,7 @@ message Withdrawal {
   };
 
   uint64  id               = 1; // Auto-incremented ID.
-  bytes address            = 2; // Target address of the withdrawal.
+  bytes   address            = 2; // Target address of the withdrawal.
   uint64  created_height   = 3; // Consensus chain height this withdrawal was created in.
   uint64  amount_gwei      = 4; // Value of withdrawal in Gwei.
 }
