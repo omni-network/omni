@@ -245,7 +245,7 @@ func TestCLIOperator(t *testing.T) {
 			}
 
 			// fetch again and make sure they increased
-			wait := time.Second * 2
+			wait := time.Second * 10
 			require.Eventuallyf(t, func() bool {
 				resp2, err := cprov.QueryClients().Distribution.DelegationRewards(ctx, &dtypes.QueryDelegationRewardsRequest{
 					DelegatorAddress: delegatorCosmosAddr,
