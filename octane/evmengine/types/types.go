@@ -24,3 +24,7 @@ type FeeRecipientProvider interface {
 	// VerifyFeeRecipient returns true if the given address is a valid fee recipient
 	VerifyFeeRecipient(proposedFeeRecipient common.Address) error
 }
+
+type WithdrawalsProvider interface {
+	SumPendingWithdrawalsByAddress(ctx context.Context, in *SumPendingWithdrawalsByAddressRequest) (*SumPendingWithdrawalsByAddressResponse, error)
+}

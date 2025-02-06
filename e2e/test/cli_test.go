@@ -235,32 +235,44 @@ func TestCLIOperator(t *testing.T) {
 			val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
 			require.True(t, ok)
 
-			// fetch rewards and make sure they are positive
-			resp, err := cprov.QueryClients().Distribution.DelegationRewards(ctx, &dtypes.QueryDelegationRewardsRequest{
-				DelegatorAddress: delegatorCosmosAddr.String(),
-				ValidatorAddress: val.OperatorAddress,
-			})
-			require.NoError(t, err)
-			require.NotEmpty(t, resp.Rewards)
+			wait := time.Second * 10
 
-			for _, coin := range resp.Rewards {
-				require.Equal(t, "stake", coin.Denom)
-				require.True(t, coin.Amount.IsPositive())
-			}
+			var originalRewards sdk.DecCoins
+
+			// fetch rewards and make sure they are positive
+			require.Eventuallyf(t, func() bool {
+				resp, err := cprov.QueryClients().Distribution.DelegationRewards(ctx, &dtypes.QueryDelegationRewardsRequest{
+					DelegatorAddress: delegatorCosmosAddr.String(),
+					ValidatorAddress: val.OperatorAddress,
+				})
+				require.NoError(t, err)
+				if len(resp.Rewards) == 0 {
+					return false
+				}
+				originalRewards = resp.Rewards
+
+				for _, coin := range originalRewards {
+					require.Equal(t, "stake", coin.Denom)
+					require.True(t, coin.Amount.IsPositive())
+				}
+
+				return true
+			}, wait, 500*time.Millisecond, "no rewards increase")
 
 			// fetch again and make sure they increased
-			wait := time.Second * 2
 			require.Eventuallyf(t, func() bool {
 				resp2, err := cprov.QueryClients().Distribution.DelegationRewards(ctx, &dtypes.QueryDelegationRewardsRequest{
 					DelegatorAddress: delegatorCosmosAddr.String(),
 					ValidatorAddress: val.OperatorAddress,
 				})
 				require.NoError(t, err)
-				require.NotEmpty(t, resp2.Rewards)
+				if len(resp2.Rewards) == 0 {
+					return false
+				}
 
 				// all fetched values should be strictly larger
 				for i, coin2 := range resp2.Rewards {
-					coin := resp.Rewards[i]
+					coin := originalRewards[i]
 					if !coin2.Amount.GT(coin.Amount) {
 						return false
 					}

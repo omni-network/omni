@@ -18,6 +18,7 @@ import (
 	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
+	evmengtypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	"github.com/cometbft/cometbft/rpc/client/http"
@@ -99,6 +100,7 @@ func newProvider(cc gogogrpc.ClientConn, network netconf.ID, opts ...func(*Provi
 	slcl := sltypes.NewQueryClient(cc)
 	cmtcl := cmtservice.NewServiceClient(cc)
 	mcl := mtypes.NewQueryClient(cc)
+	evmengcl := evmengtypes.NewQueryClient(cc)
 
 	p := Provider{
 		fetch:       newABCIFetchFunc(acl, cmtcl, namer),
@@ -129,6 +131,7 @@ func newProvider(cc gogogrpc.ClientConn, network netconf.ID, opts ...func(*Provi
 			Upgrade:      ucl,
 			Distribution: dcl,
 			Mint:         mcl,
+			EvmEngine:    evmengcl,
 		},
 	}
 

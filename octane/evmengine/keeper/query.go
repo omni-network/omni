@@ -9,6 +9,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+var _ types.QueryServer = (*Keeper)(nil)
+var _ types.WithdrawalsProvider = (*Keeper)(nil)
+
 func (k *Keeper) SumPendingWithdrawalsByAddress(
 	ctx context.Context,
 	in *types.SumPendingWithdrawalsByAddressRequest,
