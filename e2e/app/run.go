@@ -116,7 +116,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 	eg2.Go(func() error { return DeployBridge(ctx, def) })
 	eg2.Go(func() error { return maybeSubmitNetworkUpgrade(ctx, def) })
 	eg2.Go(func() error { return FundValidatorsForTesting(ctx, def) })
-	eg2.Go(func() error { return xbridge.DeployEphemeralXBridge(ctx, NetworkFromDef(def), def.Backends()) })
+	eg2.Go(func() error { return xbridge.Deploy(ctx, NetworkFromDef(def), def.Backends()) })
 	if err := eg2.Wait(); err != nil {
 		return nil, errors.Wrap(err, "deploy other contracts")
 	}
@@ -174,14 +174,15 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 		return err
 	}
 
+	stopReceiptMonitor := StartMonitoringReceipts(ctx, def)
+
 	var eg errgroup.Group
 	eg.Go(func() error { return testGasPumps(ctx, def) })
 	eg.Go(func() error { return testBridge(ctx, def) })
+	eg.Go(func() error { return xbridge.Test(ctx, NetworkFromDef(def), ExternalEndpoints(def)) })
 	if err := eg.Wait(); err != nil {
 		return errors.Wrap(err, "test xdapps")
 	}
-
-	stopReceiptMonitor := StartMonitoringReceipts(ctx, def)
 
 	stopValidatorUpdates := StartValidatorUpdates(ctx, def)
 

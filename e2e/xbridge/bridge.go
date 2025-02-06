@@ -5,18 +5,22 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/e2e/xbridge/types"
 	"github.com/omni-network/omni/lib/contracts"
+	"github.com/omni-network/omni/lib/contracts/proxy"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
+
+	"golang.org/x/sync/errgroup"
 )
 
-type bridgeDeploymentConfig struct {
-	Config          deploymentConfig
+type BridgeConfig struct {
 	ProxyAdminOwner common.Address
 	Admin           common.Address
 	Pauser          common.Address
@@ -25,13 +29,7 @@ type bridgeDeploymentConfig struct {
 	Lockbox         common.Address
 }
 
-func (cfg bridgeDeploymentConfig) validate() error {
-	if err := cfg.Config.validateDeploymentConfig(); err != nil {
-		return errors.Wrap(err, "validate config")
-	}
-	if isEmpty(cfg.ProxyAdminOwner) {
-		return errors.New("proxy admin is zero")
-	}
+func (cfg BridgeConfig) Validate() error {
 	if isEmpty(cfg.Admin) {
 		return errors.New("admin is zero")
 	}
@@ -48,104 +46,168 @@ func (cfg bridgeDeploymentConfig) validate() error {
 	return nil
 }
 
-// bridgeAddress returns the Bridge contract address for the given network.
-func bridgeAddress(ctx context.Context, network netconf.ID, deployment tokenDescriptors) (common.Address, error) {
-	return contracts.Create3Address(ctx, network, deployment.symbol+"bridge")
+func BridgeAddr(ctx context.Context, network netconf.ID, xtoken types.XToken) (common.Address, error) {
+	return contracts.Create3Address(ctx, network, xtoken.Symbol()+"bridge")
 }
 
-// bridgeSalt returns the salt for the bridge contract for the given network.
-func bridgeSalt(ctx context.Context, network netconf.ID, deployment tokenDescriptors) (string, error) {
-	return contracts.Create3Salt(ctx, network, deployment.symbol+"bridge")
+func BridgeSalt(ctx context.Context, network netconf.ID, xtoken types.XToken) (string, error) {
+	return contracts.Create3Salt(ctx, network, xtoken.Symbol()+"bridge")
 }
 
-// deployBridgeIfNeeded deploys a new bridge contract if it is not already deployed.
-// If the contract is already deployed, the receipt is nil.
-func DeployBridgeIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, lockbox bool, deployment xBridgeDeployment) (common.Address, *ethtypes.Receipt, error) {
-	bridgeAddr, err := bridgeAddress(ctx, network, deployment.wrapped)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "bridge address", "deployment", deployment)
+func deployBridges(ctx context.Context, network netconf.Network, backends ethbackend.Backends, xtoken types.XToken) error {
+	var eg errgroup.Group
+
+	for _, chain := range network.EVMChains() {
+		eg.Go(func() error {
+			backend, err := backends.Backend(chain.ID)
+			if err != nil {
+				return errors.Wrap(err, "get backend", "chain", chain.Name)
+			}
+
+			err = deployBridge(ctx, network.ID, chain, backend, xtoken)
+			if err != nil {
+				return errors.Wrap(err, "deploy bridge", "chain", chain.Name)
+			}
+
+			err = setRoutes(ctx, network, chain, backend, xtoken)
+			if err != nil {
+				return errors.Wrap(err, "set routes", "chain", chain.Name)
+			}
+
+			return nil
+		})
 	}
 
-	deployed, addr, err := isDeployed(ctx, backend, bridgeAddr)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "is deployed", "deployment", deployment)
-	}
-	if deployed {
-		return addr, nil, nil
+	if err := eg.Wait(); err != nil {
+		return errors.Wrap(err, "deploy all")
 	}
 
-	return deployBridge(ctx, network, backend, lockbox, deployment)
+	return nil
 }
 
 // deployBridge deploys a new bridge contract and returns the address and receipt.
-func deployBridge(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, lockbox bool, deployment xBridgeDeployment) (common.Address, *ethtypes.Receipt, error) {
+func deployBridge(
+	ctx context.Context,
+	network netconf.ID,
+	chain netconf.Chain,
+	backend *ethbackend.Backend,
+	xtoken types.XToken,
+) error {
 	addrs, err := contracts.GetAddresses(ctx, network)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get addrs", "deployment", deployment)
+		return errors.Wrap(err, "get addrs")
 	}
 
-	tokenAddr, err := tokenAddress(ctx, network, deployment.wrapped)
+	token, err := xtoken.Address(ctx, network)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "token address", "deployment", deployment)
+		return errors.Wrap(err, "xtoken address")
 	}
 
-	lockboxAddr := common.Address{}
-	if lockbox {
-		lockboxAddr, err = lockboxAddress(ctx, network, deployment.token)
+	canon, err := xtoken.Canonical(ctx, network)
+	if err != nil {
+		return errors.Wrap(err, "canonical")
+	}
+
+	salt, err := BridgeSalt(ctx, network, xtoken)
+	if err != nil {
+		return errors.Wrap(err, "salt")
+	}
+
+	deploy := func(cfg BridgeConfig) error {
+		addr, receipt, err := proxy.Deploy(ctx, backend, proxy.DeployParams{
+			Network:     network,
+			Create3Salt: salt,
+			DeployImpl: func(txOpts *bind.TransactOpts, backend *ethbackend.Backend) (common.Address, *ethtypes.Transaction, error) {
+				addr, tx, _, err := bindings.DeployBridge(txOpts, backend)
+				return addr, tx, err
+			},
+			PackInitCode: func(impl common.Address) ([]byte, error) {
+				return packBridgeInitCode(cfg, impl)
+			},
+		})
+
 		if err != nil {
-			return common.Address{}, nil, errors.Wrap(err, "lockbox address", "deployment", deployment)
+			return err
 		}
+
+		log.Info(ctx, "Bridge deployed", "addr", addr, "tx", maybeTxHash(receipt), "xtoken", xtoken.Symbol(), "chain", chain.Name)
+
+		return nil
 	}
 
-	bridgeAddr, err := bridgeAddress(ctx, network, deployment.wrapped)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "bridge address", "deployment", deployment)
-	}
-
-	bridgeSalt, err := bridgeSalt(ctx, network, deployment.wrapped)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "bridge salt", "deployment", deployment)
-	}
-
-	deployCfg := deploymentConfig{
-		Create3Salt:    bridgeSalt,
-		Create3Factory: addrs.Create3Factory,
-		ExpectedAddr:   bridgeAddr,
-		Deployer:       eoa.MustAddress(network, eoa.RoleDeployer),
-	}
-
-	cfg := bridgeDeploymentConfig{
-		Config:          deployCfg,
+	cfg := BridgeConfig{
 		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleUpgrader),
 		Admin:           eoa.MustAddress(network, eoa.RoleManager),
 		Pauser:          eoa.MustAddress(network, eoa.RoleManager),
 		OmniPortal:      addrs.Portal,
-		Token:           tokenAddr,
-		Lockbox:         lockboxAddr,
+		Token:           token,
 	}
 
-	return performBridgeDeployment(ctx, network, backend, cfg)
+	// lockbox only required on chain with canonical deployment
+	if canon.ChainID != chain.ID {
+		return deploy(cfg)
+	}
+
+	lockbock, err := LockboxAddr(ctx, network, xtoken)
+	if err != nil {
+		return errors.Wrap(err, "lockbox address")
+	}
+
+	cfg.Lockbox = lockbock
+
+	return deploy(cfg)
 }
 
-// performBridgeDeployment handles the common deployment flow for the bridge contract.
-func performBridgeDeployment(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, cfg bridgeDeploymentConfig) (common.Address, *ethtypes.Receipt, error) {
-	params := deploymentParams{
-		Config:         cfg.Config,
-		ValidateConfig: cfg.validate,
-		DeployImpl: func(txOpts *bind.TransactOpts, backend *ethbackend.Backend) (common.Address, *ethtypes.Transaction, error) {
-			addr, tx, _, err := bindings.DeployBridge(txOpts, backend)
-			return addr, tx, err
-		},
-		PackInitCode: func(impl common.Address) ([]byte, error) {
-			return packBridgeInitCode(cfg, impl)
-		},
+func setRoutes(
+	ctx context.Context,
+	network netconf.Network,
+	chain netconf.Chain,
+	backend *ethbackend.Backend,
+	xtoken types.XToken,
+) error {
+	addr, err := BridgeAddr(ctx, network.ID, xtoken)
+	if err != nil {
+		return errors.Wrap(err, "bridge addr")
 	}
 
-	return performDeployment(ctx, network, backend, params)
+	txOpts, err := backend.BindOpts(ctx, eoa.MustAddress(network.ID, eoa.RoleManager))
+	if err != nil {
+		return errors.Wrap(err, "bind opts")
+	}
+
+	var destChainIDs []uint64
+	var destAddrs []common.Address
+	for _, dest := range network.EVMChains() {
+		if dest.ID == chain.ID {
+			continue
+		}
+
+		destChainIDs = append(destChainIDs, dest.ID)
+		destAddrs = append(destAddrs, addr)
+	}
+
+	bridge, err := bindings.NewBridge(addr, backend)
+	if err != nil {
+		return errors.Wrap(err, "new bridge")
+	}
+
+	tx, err := bridge.SetRoutes(txOpts, destChainIDs, destAddrs)
+	if err != nil {
+		return errors.Wrap(err, "set destinations")
+	}
+
+	receipt, err := backend.WaitMined(ctx, tx)
+	if err != nil {
+		return errors.Wrap(err, "wait mined")
+	}
+
+	log.Info(ctx, "Routes set", "bridge", addr, "xtoken", xtoken.Symbol(), "chain", chain.Name, "bridge", addr, "tx", maybeTxHash(receipt))
+
+	return nil
 }
 
 // packBridgeInitCode packs the initialization code for the bridge contract proxy.
-func packBridgeInitCode(cfg bridgeDeploymentConfig, impl common.Address) ([]byte, error) {
+func packBridgeInitCode(cfg BridgeConfig, impl common.Address) ([]byte, error) {
 	bridgeAbi, err := bindings.BridgeMetaData.GetAbi()
 	if err != nil {
 		return nil, errors.Wrap(err, "get abi")

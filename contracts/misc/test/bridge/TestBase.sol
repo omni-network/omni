@@ -197,10 +197,10 @@ contract TestBase is Test {
         wrapper.grantRole(wrapper.CLAWBACKER_ROLE(), address(lockbox));
 
         wrapper.grantRole(wrapper.MINTER_ROLE(), address(bridgeWithLockbox));
-        wrapper.grantRole(wrapper.BURNER_ROLE(), address(bridgeWithLockbox));
+        wrapper.grantRole(wrapper.CLAWBACKER_ROLE(), address(bridgeWithLockbox));
 
         wrapper.grantRole(wrapper.MINTER_ROLE(), address(bridgeNoLockbox));
-        wrapper.grantRole(wrapper.BURNER_ROLE(), address(bridgeNoLockbox));
+        wrapper.grantRole(wrapper.CLAWBACKER_ROLE(), address(bridgeNoLockbox));
 
         vm.stopPrank();
     }
