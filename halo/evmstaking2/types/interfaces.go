@@ -14,9 +14,9 @@ type AuthKeeper interface {
 	SetAccount(ctx context.Context, acc sdk.AccountI)
 }
 
-type BankKeeper interface {
+type WrappedBankKeeper interface {
 	MintCoins(ctx context.Context, moduleName string, amt sdk.Coins) error
-	SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
+	SendCoinsFromModuleToAccountNoWithdrawal(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
 }
 
 type StakingKeeper interface {

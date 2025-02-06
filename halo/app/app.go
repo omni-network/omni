@@ -109,8 +109,9 @@ func newApp(
 	baseAppOpts ...func(*baseapp.BaseApp),
 ) (*App, error) {
 	depCfg := depinject.Configs(
-		appConfig(ctx, network),
 		depinject.Provide(diProviders(ctx)...),
+		depinject.Configs(bankInterfaceBindings(ctx)...),
+		appConfig(ctx, network),
 		depinject.Supply(
 			logger,
 			engineCl,

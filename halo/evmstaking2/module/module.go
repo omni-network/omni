@@ -114,7 +114,7 @@ type ModuleInputs struct {
 
 	StoreService store.KVStoreService
 	AKeeper      types.AuthKeeper
-	BKeeper      types.BankKeeper
+	BKeeper      types.WrappedBankKeeper
 	SKeeper      *stakingkeeper.Keeper
 	Cdc          codec.Codec
 	Config       *Module

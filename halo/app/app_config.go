@@ -21,6 +21,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/octane/bankwrap"
 	engevmmodule "github.com/omni-network/omni/octane/evmengine/module"
 	engevmtypes "github.com/omni-network/omni/octane/evmengine/types"
 
@@ -139,6 +140,20 @@ var (
 		// TODO(christian): rename package, the rest can stay because names are the same
 		{Account: evmstaking.ModuleName, Permissions: []string{authtypes.Burner, authtypes.Minter}},
 		{Account: minttypes.ModuleName, Permissions: []string{authtypes.Minter}},
+	}
+
+	bankInterfaceBindings = func(ctx context.Context) []depinject.Config {
+		if !feature.FlagEVMStakingModule.Enabled(ctx) {
+			return nil
+		}
+
+		configs := bankwrap.SDKBindInterfaces()
+		configs = append(configs, depinject.BindInterface(
+			"github.com/omni-network/omni/halo/evmstaking/evmstaking.BankKeeper",
+			bankwrap.WrapperImpl,
+		))
+
+		return configs
 	}
 
 	// appConfig application configuration (used by depinject).
@@ -266,6 +281,7 @@ var (
 			return []any{
 				evmslashing.DIProvide,
 				evmupgrade.DIProvide,
+				bankwrap.DIProvide,
 			}
 		}
 
@@ -307,6 +323,7 @@ func ClientEncodingConfig(ctx context.Context, network netconf.ID) (EncodingConf
 	depCfg := depinject.Configs(
 		appConfig(ctx, network),
 		depinject.Provide(diProviders(ctx)...),
+		depinject.Configs(bankInterfaceBindings(ctx)...),
 		depinject.Supply(
 			newSDKLogger(ctx),
 			attesttypes.ChainVerNameFunc(netconf.ChainVersionNamer(network)),

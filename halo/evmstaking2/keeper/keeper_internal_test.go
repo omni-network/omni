@@ -459,7 +459,7 @@ func setupKeeper(
 
 	bKeeperMock := testutil.NewMockBankKeeper(ctrl)
 	bKeeperMock.EXPECT().MintCoins(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
-	bKeeperMock.EXPECT().SendCoinsFromModuleToAccount(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+	bKeeperMock.EXPECT().SendCoinsFromModuleToAccountNoWithdrawal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 
 	sKeeperMock := testutil.NewMockStakingKeeper(ctrl)
 	var seenValidators map[string]bool

@@ -22,7 +22,6 @@ import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	akeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
-	bkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	skeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
@@ -37,19 +36,24 @@ var (
 	delegateEvent        = mustGetEvent(stakingABI, "Delegate")
 )
 
+type BankKeeper interface {
+	MintCoins(ctx context.Context, moduleName string, amt sdk.Coins) error
+	SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error
+}
+
 // EventProcessor implements the evmenginetypes.EvmEventProcessor interface.
 type EventProcessor struct {
 	contract *bindings.Staking
 	address  common.Address
 	sKeeper  *skeeper.Keeper
-	bKeeper  bkeeper.Keeper
+	bKeeper  BankKeeper
 	aKeeper  akeeper.AccountKeeper
 }
 
 // New returns a new EventProcessor.
 func New(
 	sKeeper *skeeper.Keeper,
-	bKeeper bkeeper.Keeper,
+	bKeeper BankKeeper,
 	aKeeper akeeper.AccountKeeper,
 ) (EventProcessor, error) {
 	address := common.HexToAddress(predeploys.Staking)

@@ -43,7 +43,7 @@ type Keeper struct {
 	address         common.Address
 	contract        *bindings.Staking
 	aKeeper         types.AuthKeeper
-	bKeeper         types.BankKeeper
+	bKeeper         types.WrappedBankKeeper
 	sKeeper         types.StakingKeeper
 	sServer         types.StakingMsgServer
 	deliverInterval int64
@@ -52,7 +52,7 @@ type Keeper struct {
 func NewKeeper(
 	storeService store.KVStoreService,
 	aKeeper types.AuthKeeper,
-	bKeeper types.BankKeeper,
+	bKeeper types.WrappedBankKeeper,
 	sKeeper types.StakingKeeper,
 	sServer types.StakingMsgServer,
 	deliverInterval int64,
@@ -276,7 +276,7 @@ func (k Keeper) deliverDelegate(ctx context.Context, ev *bindings.StakingDelegat
 		return errors.Wrap(err, "mint coins")
 	}
 
-	if err := k.bKeeper.SendCoinsFromModuleToAccount(ctx, k.Name(), delAddr, amountCoins); err != nil {
+	if err := k.bKeeper.SendCoinsFromModuleToAccountNoWithdrawal(ctx, k.Name(), delAddr, amountCoins); err != nil {
 		return errors.Wrap(err, "send coins")
 	}
 
@@ -373,7 +373,7 @@ func (k Keeper) deliverCreateValidator(ctx context.Context, createValidator *bin
 		return errors.Wrap(err, "mint coins")
 	}
 
-	if err := k.bKeeper.SendCoinsFromModuleToAccount(ctx, k.Name(), accAddr, amountCoins); err != nil {
+	if err := k.bKeeper.SendCoinsFromModuleToAccountNoWithdrawal(ctx, k.Name(), accAddr, amountCoins); err != nil {
 		return errors.Wrap(err, "send coins")
 	}
 
