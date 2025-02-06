@@ -74,7 +74,7 @@ func (k *Keeper) updateExecutionHead(ctx context.Context, payload engine.Executa
 }
 
 // insertWithdrawal inserts a withdrawal request.
-func (k *Keeper) insertWithdrawal(ctx context.Context, withdrawalAddr common.Address, amountGwei uint64) error {
+func (k *Keeper) InsertWithdrawal(ctx context.Context, withdrawalAddr sdk.AccAddress, amountGwei uint64) error {
 	err := k.withdrawalTable.Insert(ctx, &Withdrawal{
 		Address:       withdrawalAddr[:],
 		CreatedHeight: uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()),

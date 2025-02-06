@@ -121,6 +121,7 @@ func newApp(
 			feeRecProvider,
 			appOpts,
 		),
+		depinject.Invoke(diInvokers(ctx)...),
 	)
 
 	var (

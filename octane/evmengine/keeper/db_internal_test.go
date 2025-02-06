@@ -10,8 +10,6 @@ import (
 
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
-	"github.com/ethereum/go-ethereum/common"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/stretchr/testify/require"
@@ -41,11 +39,11 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 	keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, evmLogProc)
 	require.NoError(t, err)
 
-	addr1 := tutil.RandomAddress()
-	addr2 := tutil.RandomAddress()
+	addr1 := sdk.AccAddress(tutil.RandomAddress().Bytes())
+	addr2 := sdk.AccAddress(tutil.RandomAddress().Bytes())
 
 	inputs := []struct {
-		addr   common.Address
+		addr   sdk.AccAddress
 		height uint64
 		amount uint64
 		expID  uint64
@@ -57,7 +55,7 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 
 	for _, in := range inputs {
 		ctx = ctx.WithBlockHeight(int64(in.height))
-		err := keeper.insertWithdrawal(ctx, in.addr, in.amount)
+		err := keeper.InsertWithdrawal(ctx, in.addr, in.amount)
 		require.NoError(t, err)
 	}
 

@@ -1,6 +1,8 @@
 package bankwrap
 
 import (
+	"github.com/omni-network/omni/octane/evmengine/types"
+
 	"cosmossdk.io/depinject"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 )
@@ -15,6 +17,14 @@ type DIOutputs struct {
 	depinject.Out
 
 	Wrapper Wrapper
+}
+
+func DependencyInjector(wrapper *Wrapper, wk *types.WithdrawalKeeper) {
+	if wrapper == nil || wk == nil {
+		return
+	}
+
+	wrapper.WithdrawalKeeper = *wk
 }
 
 func DIProvide(input DIInputs) (DIOutputs, error) {

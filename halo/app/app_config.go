@@ -274,6 +274,18 @@ var (
 		})
 	}
 
+	// diInvokers defines a list of depinject invoke functions.
+	// These are non-cosmos module constructors used in halo's app wiring.
+	diInvokers = func(ctx context.Context) []any {
+		if !feature.FlagEVMStakingModule.Enabled(ctx) {
+			return nil
+		}
+
+		return []any{
+			// bankwrap.DependencyInjector,
+		}
+	}
+
 	// diProviders defines a list of depinject provider functions.
 	// These are non-cosmos module constructors used in halo's app wiring.
 	diProviders = func(ctx context.Context) []any {
@@ -332,6 +344,7 @@ func ClientEncodingConfig(ctx context.Context, network netconf.ID) (EncodingConf
 			engineCl,
 			engevmtypes.FeeRecipientProvider(burnEVMFees{}),
 		),
+		depinject.Invoke(diInvokers(ctx)...),
 	)
 
 	var resp EncodingConfig

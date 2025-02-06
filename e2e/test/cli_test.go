@@ -53,6 +53,9 @@ func execCLI(ctx context.Context, args ...string) (string, string, error) {
 // The test runs the following commands:
 // - operator create-validator creates a new validator and makes sure the validator is added to the consensus chain
 // - operator delegate increases the newly created validator stake and makes sure its power is increased
+// - delegator delegates stake
+// - delegator makes sure rewards are accruing
+// - delegator delegates more stake and make sure a withdrawals request is persisted
 //
 // Since they rely first on validator being created it must be run as a unit.
 //

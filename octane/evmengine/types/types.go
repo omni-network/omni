@@ -1,6 +1,17 @@
 package types
 
-import "github.com/ethereum/go-ethereum/common"
+import (
+	"context"
+
+	"github.com/ethereum/go-ethereum/common"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+)
+
+type WithdrawalKeeper interface {
+	// InsertWithdrawal creates a new withdrawal request into the local DB.
+	InsertWithdrawal(ctx context.Context, withdrawalAddr sdk.AccAddress, amountGwei uint64) error
+}
 
 type AddressProvider interface {
 	// LocalAddress returns the local validator's ethereum address.
