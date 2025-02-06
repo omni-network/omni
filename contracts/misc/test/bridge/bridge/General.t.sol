@@ -71,26 +71,26 @@ contract GeneralBridgeTest is TestBase {
     function test_setRoutes_reverts() public prank(admin) {
         uint64[] memory chainIds = new uint64[](1);
         chainIds[0] = DEST_CHAIN_ID + 1;
-        address[] memory bridgeAddrs;
+        IBridge.Route[] memory routes;
 
         vm.expectRevert(IBridge.ArrayLengthMismatch.selector);
-        bridgeWithLockbox.setRoutes(chainIds, bridgeAddrs);
-        bridgeAddrs = new address[](1);
+        bridgeWithLockbox.setRoutes(chainIds, routes);
+        routes = new IBridge.Route[](1);
 
         vm.expectRevert(IBridge.ZeroAddress.selector);
-        bridgeWithLockbox.setRoutes(chainIds, bridgeAddrs);
-        bridgeAddrs[0] = makeAddr("newBridge");
+        bridgeWithLockbox.setRoutes(chainIds, routes);
+        routes[0] = IBridge.Route({ bridge: makeAddr("newBridge"), hasLockbox: false });
 
         // Configuration successful with valid inputs.
-        bridgeWithLockbox.setRoutes(chainIds, bridgeAddrs);
+        bridgeWithLockbox.setRoutes(chainIds, routes);
     }
 
     function test_setRoutes_succeeds() public prank(admin) {
         uint64[] memory chainIds = new uint64[](1);
         chainIds[0] = DEST_CHAIN_ID + 1;
-        address[] memory bridgeAddrs = new address[](1);
-        bridgeAddrs[0] = makeAddr("newBridge");
+        IBridge.Route[] memory routes = new IBridge.Route[](1);
+        routes[0] = IBridge.Route({ bridge: makeAddr("newBridge"), hasLockbox: false });
 
-        bridgeWithLockbox.setRoutes(chainIds, bridgeAddrs);
+        bridgeWithLockbox.setRoutes(chainIds, routes);
     }
 }

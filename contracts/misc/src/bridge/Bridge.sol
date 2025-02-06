@@ -24,9 +24,14 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
     bytes32 public constant PAUSER_ROLE = 0x539440820030c4994db4e31b6b800deafd503688728f932addfe7a410515c14c;
 
     /**
-     * @dev Default gas limit for xcalls.
+     * @dev Gas limit for xcalls to bridges without a lockbox.
      */
-    uint64 internal constant DEFAULT_GAS_LIMIT = 200_000;
+    uint64 internal constant RECEIVE_DEFAULT_GAS_LIMIT = 125_000;
+
+    /**
+     * @dev Gas limit for xcalls to bridges with a lockbox.
+     */
+    uint64 internal constant RECEIVE_LOCKBOX_GAS_LIMIT = 180_000;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
@@ -43,9 +48,9 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
     address public lockbox;
 
     /**
-     * @dev Mapping of destination chainId to bridge contract.
+     * @dev Mapping of destination chainId to bridge contract and config.
      */
-    mapping(uint64 chainId => address bridge) private _routes;
+    mapping(uint64 chainId => Route) private _routes;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         MODIFIERS                          */
@@ -56,7 +61,7 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
      */
     modifier onlyBridge() {
         if (msg.sender == address(omni)) {
-            if (_routes[xmsg.sourceChainId] != xmsg.sender) revert Unauthorized(xmsg.sourceChainId, xmsg.sender);
+            if (_routes[xmsg.sourceChainId].bridge != xmsg.sender) revert Unauthorized(xmsg.sourceChainId, xmsg.sender);
         } else {
             revert Unauthorized(uint64(block.chainid), msg.sender);
         }
@@ -108,12 +113,14 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /**
-     * @dev Returns the bridge address for a given destination chainId.
+     * @dev Returns the bridge address and config for a given destination chainId.
      * @param destChainId The chainId of the destination chain.
      * @return bridge     The bridge address.
+     * @return hasLockbox Whether the bridge has a lockbox.
      */
-    function routes(uint64 destChainId) external view returns (address bridge) {
-        return _routes[destChainId];
+    function getRoute(uint64 destChainId) external view returns (address bridge, bool hasLockbox) {
+        Route memory route = _routes[destChainId];
+        return (route.bridge, route.hasLockbox);
     }
 
     /**
@@ -122,8 +129,11 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
      * @return fee        The fee paid to the `OmniPortal` contract.
      */
     function bridgeFee(uint64 destChainId) external view returns (uint256 fee) {
+        Route memory route = _routes[destChainId];
         return feeFor(
-            destChainId, abi.encodeCall(Bridge.receiveToken, (TypeMax.Address, TypeMax.Uint256)), DEFAULT_GAS_LIMIT
+            destChainId,
+            abi.encodeCall(Bridge.receiveToken, (TypeMax.Address, TypeMax.Uint256)),
+            route.hasLockbox ? RECEIVE_LOCKBOX_GAS_LIMIT : RECEIVE_DEFAULT_GAS_LIMIT
         );
     }
 
@@ -158,18 +168,15 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
 
     /**
      * @dev Sets bridge routes for given chainIds.
-     * @param chainIds    The chainIds to configure.
-     * @param bridgeAddrs The bridges addresses to configure.
+     * @param chainIds The chainIds to configure.
+     * @param routes   The bridges addresses and configs to configure.
      */
-    function setRoutes(uint64[] calldata chainIds, address[] calldata bridgeAddrs)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
-        if (chainIds.length != bridgeAddrs.length) revert ArrayLengthMismatch();
+    function setRoutes(uint64[] calldata chainIds, Route[] calldata routes) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        if (chainIds.length != routes.length) revert ArrayLengthMismatch();
         for (uint256 i = 0; i < chainIds.length; i++) {
-            if (bridgeAddrs[i] == address(0)) revert ZeroAddress();
-            _routes[chainIds[i]] = bridgeAddrs[i];
-            emit BridgeConfigured(chainIds[i], bridgeAddrs[i]);
+            if (routes[i].bridge == address(0)) revert ZeroAddress();
+            _routes[chainIds[i]] = routes[i];
+            emit RouteConfigured(chainIds[i], routes[i].bridge, routes[i].hasLockbox);
         }
     }
 
@@ -199,7 +206,7 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
      * @param wrap        Whether the token is being wrapped.
      */
     function _validateSend(uint64 destChainId, address to, uint256 value, bool wrap) internal view {
-        if (_routes[destChainId] == address(0)) revert InvalidRoute(destChainId);
+        if (_routes[destChainId].bridge == address(0)) revert InvalidRoute(destChainId);
         if (to == address(0)) revert ZeroAddress();
         if (value == 0) revert ZeroAmount();
         if (wrap && lockbox == address(0)) revert CannotWrap();
@@ -237,8 +244,11 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
      * @param value       The amount of tokens to transfer.
      */
     function _omniTransfer(uint64 destChainId, address to, uint256 value) internal {
+        Route memory route = _routes[destChainId];
         bytes memory data = abi.encodeCall(Bridge.receiveToken, (to, value));
-        uint256 fee = xcall(destChainId, _routes[destChainId], data, DEFAULT_GAS_LIMIT);
+        uint256 fee = xcall(
+            destChainId, route.bridge, data, route.hasLockbox ? RECEIVE_LOCKBOX_GAS_LIMIT : RECEIVE_DEFAULT_GAS_LIMIT
+        );
 
         if (msg.value < fee) revert InsufficientPayment();
         if (msg.value > fee) msg.sender.safeTransferETH(msg.value - fee);

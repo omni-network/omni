@@ -175,15 +175,23 @@ func setRoutes(
 		return errors.Wrap(err, "bind opts")
 	}
 
+	canon, err := xtoken.Canonical(ctx, network.ID)
+	if err != nil {
+		return errors.Wrap(err, "canonical")
+	}
+
 	var destChainIDs []uint64
-	var destAddrs []common.Address
+	var routes []bindings.IBridgeRoute
 	for _, dest := range network.EVMChains() {
 		if dest.ID == chain.ID {
 			continue
 		}
 
 		destChainIDs = append(destChainIDs, dest.ID)
-		destAddrs = append(destAddrs, addr)
+		routes = append(routes, bindings.IBridgeRoute{
+			Bridge:     addr,
+			HasLockbox: dest.ID == canon.ChainID,
+		})
 	}
 
 	bridge, err := bindings.NewBridge(addr, backend)
@@ -191,7 +199,7 @@ func setRoutes(
 		return errors.Wrap(err, "new bridge")
 	}
 
-	tx, err := bridge.SetRoutes(txOpts, destChainIDs, destAddrs)
+	tx, err := bridge.SetRoutes(txOpts, destChainIDs, routes)
 	if err != nil {
 		return errors.Wrap(err, "set destinations")
 	}

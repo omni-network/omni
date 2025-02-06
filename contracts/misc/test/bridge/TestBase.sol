@@ -84,7 +84,7 @@ contract TestBase is Test {
     function mockBridgeReceive(Bridge bridge, uint64 srcChainId, uint64 destChainId, address to, uint256 value)
         internal
     {
-        address destination = bridge.routes(destChainId);
+        (address destination,) = bridge.getRoute(destChainId);
         bytes memory data = abi.encodeCall(Bridge.receiveToken, (to, value));
 
         vm.chainId(destChainId);
@@ -175,17 +175,17 @@ contract TestBase is Test {
 
     function _configureRoutes() internal {
         uint64[] memory chainIds = new uint64[](1);
-        address[] memory bridges = new address[](1);
+        IBridge.Route[] memory routes = new IBridge.Route[](1);
 
         vm.startPrank(admin);
 
         chainIds[0] = DEST_CHAIN_ID;
-        bridges[0] = address(bridgeNoLockbox);
-        bridgeWithLockbox.setRoutes(chainIds, bridges);
+        routes[0] = IBridge.Route({ bridge: address(bridgeNoLockbox), hasLockbox: false });
+        bridgeWithLockbox.setRoutes(chainIds, routes);
 
         chainIds[0] = SRC_CHAIN_ID;
-        bridges[0] = address(bridgeWithLockbox);
-        bridgeNoLockbox.setRoutes(chainIds, bridges);
+        routes[0] = IBridge.Route({ bridge: address(bridgeWithLockbox), hasLockbox: true });
+        bridgeNoLockbox.setRoutes(chainIds, routes);
 
         vm.stopPrank();
     }
