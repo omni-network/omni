@@ -26,7 +26,7 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
     /**
      * @dev Default gas limit for xcalls.
      */
-    uint64 internal constant DEFAULT_GAS_LIMIT = 140_000;
+    uint64 internal constant DEFAULT_GAS_LIMIT = 200_000;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
@@ -220,13 +220,11 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
         // Retrieve tokens from the sender, and deposit them into the lockbox for wrapping if necessary.
         if (wrap) {
             ILockbox(_lockbox).token().safeTransferFrom(msg.sender, address(this), value);
-            ILockbox(_lockbox).deposit(value);
-        } else {
-            _token.safeTransferFrom(msg.sender, address(this), value);
+            ILockbox(_lockbox).depositTo(msg.sender, value);
         }
 
         // Burn the tokens.
-        ITokenOps(_token).burn(value);
+        ITokenOps(_token).clawback(msg.sender, value);
 
         // Send the tokens to the destination chain.
         _omniTransfer(destChainId, to, value);

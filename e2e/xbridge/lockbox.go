@@ -5,9 +5,13 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/e2e/xbridge/types"
 	"github.com/omni-network/omni/lib/contracts"
+	"github.com/omni-network/omni/lib/contracts/proxy"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -15,19 +19,15 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
-type lockboxDeploymentConfig struct {
-	Config          deploymentConfig
+type LockboxConfig struct {
 	ProxyAdminOwner common.Address
 	Admin           common.Address
 	Pauser          common.Address
+	XToken          common.Address
 	Token           common.Address
-	Wrapped         common.Address
 }
 
-func (cfg lockboxDeploymentConfig) validate() error {
-	if err := cfg.Config.validateDeploymentConfig(); err != nil {
-		return errors.Wrap(err, "validate config")
-	}
+func (cfg LockboxConfig) Validate() error {
 	if isEmpty(cfg.ProxyAdminOwner) {
 		return errors.New("proxy admin is zero")
 	}
@@ -37,96 +37,62 @@ func (cfg lockboxDeploymentConfig) validate() error {
 	if isEmpty(cfg.Pauser) {
 		return errors.New("pauser is zero")
 	}
+	if isEmpty(cfg.XToken) {
+		return errors.New("xtoken is zero")
+	}
 	if isEmpty(cfg.Token) {
 		return errors.New("token is zero")
-	}
-	if isEmpty(cfg.Wrapped) {
-		return errors.New("wrapped is zero")
 	}
 
 	return nil
 }
 
-// lockboxAddress returns the Lockbox contract address for the given network.
-func lockboxAddress(ctx context.Context, network netconf.ID, deployment tokenDescriptors) (common.Address, error) {
-	return contracts.Create3Address(ctx, network, deployment.symbol+"lockbox")
+func LockboxAddr(ctx context.Context, network netconf.ID, xtoken types.XToken) (common.Address, error) {
+	return contracts.Create3Address(ctx, network, xtoken.Symbol()+"lockbox")
 }
 
-// lockboxSalt returns the salt for the lockbox contract for the given network.
-func lockboxSalt(ctx context.Context, network netconf.ID, deployment tokenDescriptors) (string, error) {
-	return contracts.Create3Salt(ctx, network, deployment.symbol+"lockbox")
-}
-
-// deployLockboxIfNeeded deploys a new lockbox contract if it is not already deployed.
-// If the contract is already deployed, the receipt is nil.
-func DeployLockboxIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, deployment xBridgeDeployment) (common.Address, *ethtypes.Receipt, error) {
-	lockboxAddr, err := lockboxAddress(ctx, network, deployment.token)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "lockbox address", "deployment", deployment)
-	}
-
-	deployed, addr, err := isDeployed(ctx, backend, lockboxAddr)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "is deployed", "deployment", deployment)
-	}
-	if deployed {
-		return addr, nil, nil
-	}
-
-	return deployLockbox(ctx, network, backend, deployment)
+func LockboxSalt(ctx context.Context, network netconf.ID, xtoken types.XToken) (string, error) {
+	return contracts.Create3Salt(ctx, network, xtoken.Symbol()+"lockbox")
 }
 
 // deployLockbox deploys a new lockbox contract and returns the address and receipt.
-func deployLockbox(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, deployment xBridgeDeployment) (common.Address, *ethtypes.Receipt, error) {
-	addrs, err := contracts.GetAddresses(ctx, network)
+func deployLockbox(ctx context.Context, network netconf.ID, backends ethbackend.Backends, xtoken types.XToken) error {
+	xtkn, err := xtoken.Address(ctx, network)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get addrs", "deployment", deployment)
+		return errors.Wrap(err, "token address")
 	}
 
-	tokenAddr, err := tokenAddress(ctx, network, deployment.token)
+	canon, err := xtoken.Canonical(ctx, network)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "token address", "deployment", deployment)
+		return errors.Wrap(err, "canonical")
 	}
 
-	wrappedAddr, err := tokenAddress(ctx, network, deployment.wrapped)
+	chain, ok := evmchain.MetadataByID(canon.ChainID)
+	if !ok {
+		return errors.New("chain meata")
+	}
+
+	backend, err := backends.Backend(canon.ChainID)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "wrapped address", "deployment", deployment)
+		return errors.Wrap(err, "get backend")
 	}
 
-	lockboxAddr, err := lockboxAddress(ctx, network, deployment.token)
+	salt, err := LockboxSalt(ctx, network, xtoken)
 	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "lockbox address", "deployment", deployment)
+		return errors.Wrap(err, "lockbox salt")
 	}
 
-	lockboxSalt, err := lockboxSalt(ctx, network, deployment.token)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "lockbox salt", "deployment", deployment)
-	}
-
-	deployCfg := deploymentConfig{
-		Create3Salt:    lockboxSalt,
-		Create3Factory: addrs.Create3Factory,
-		ExpectedAddr:   lockboxAddr,
-		Deployer:       eoa.MustAddress(network, eoa.RoleDeployer),
-	}
-
-	cfg := lockboxDeploymentConfig{
-		Config:          deployCfg,
+	cfg := LockboxConfig{
 		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleUpgrader),
 		Admin:           eoa.MustAddress(network, eoa.RoleManager),
 		Pauser:          eoa.MustAddress(network, eoa.RoleManager),
-		Token:           tokenAddr,
-		Wrapped:         wrappedAddr,
+		XToken:          xtkn,
+		Token:           canon.Address,
 	}
 
-	return performLockboxDeployment(ctx, network, backend, cfg)
-}
-
-// performLockboxDeployment handles the common deployment flow for the lockbox contract.
-func performLockboxDeployment(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, cfg lockboxDeploymentConfig) (common.Address, *ethtypes.Receipt, error) {
-	params := deploymentParams{
-		Config:         cfg.Config,
-		ValidateConfig: cfg.validate,
+	addr, receipt, err := proxy.Deploy(ctx, backend, proxy.DeployParams{
+		Network:     network,
+		Create3Salt: salt,
 		DeployImpl: func(txOpts *bind.TransactOpts, backend *ethbackend.Backend) (common.Address, *ethtypes.Transaction, error) {
 			addr, tx, _, err := bindings.DeployLockbox(txOpts, backend)
 			return addr, tx, err
@@ -134,13 +100,18 @@ func performLockboxDeployment(ctx context.Context, network netconf.ID, backend *
 		PackInitCode: func(impl common.Address) ([]byte, error) {
 			return packLockboxInitCode(cfg, impl)
 		},
+	})
+	if err != nil {
+		return errors.Wrap(err, "deploy")
 	}
 
-	return performDeployment(ctx, network, backend, params)
+	log.Info(ctx, "Lockbox deployed", "addr", addr, "tx", maybeTxHash(receipt), "xtoken", xtoken.Symbol(), "chain", chain.Name)
+
+	return nil
 }
 
 // packLockboxInitCode packs the initialization code for the lockbox contract proxy.
-func packLockboxInitCode(cfg lockboxDeploymentConfig, impl common.Address) ([]byte, error) {
+func packLockboxInitCode(cfg LockboxConfig, impl common.Address) ([]byte, error) {
 	lockboxAbi, err := bindings.LockboxMetaData.GetAbi()
 	if err != nil {
 		return nil, errors.Wrap(err, "get abi")
@@ -151,7 +122,7 @@ func packLockboxInitCode(cfg lockboxDeploymentConfig, impl common.Address) ([]by
 		return nil, errors.Wrap(err, "get proxy abi")
 	}
 
-	initializer, err := lockboxAbi.Pack("initialize", cfg.Admin, cfg.Pauser, cfg.Token, cfg.Wrapped)
+	initializer, err := lockboxAbi.Pack("initialize", cfg.Admin, cfg.Pauser, cfg.Token, cfg.XToken)
 	if err != nil {
 		return nil, errors.Wrap(err, "encode initializer")
 	}

@@ -2,11 +2,12 @@
 pragma solidity 0.8.26;
 
 import "../TestBase.sol";
+import { IERC20Errors } from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 contract SendTokenTest is TestBase {
     function test_sendToken_reverts() public {
         uint256 fee = bridgeWithLockbox.bridgeFee(DEST_CHAIN_ID);
-        bytes32 burnerRole = token.BURNER_ROLE();
+        bytes32 clawbackerRole = token.CLAWBACKER_ROLE();
 
         mockBridge({
             bridge: bridgeWithLockbox,
@@ -42,9 +43,14 @@ contract SendTokenTest is TestBase {
         bridgeNoLockbox.sendToken{ value: fee }(SRC_CHAIN_ID, user, 1, true);
 
         // `amount` cannot exceed the user's balance.
+        // wrap = true reverts with SafeTransferLib.TransferFromFailed (via token.transferFrom(...))
         vm.expectRevert(abi.encodeWithSelector(SafeTransferLib.TransferFromFailed.selector));
         bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, INITIAL_USER_BALANCE + 1, true);
-        vm.expectRevert(abi.encodeWithSelector(SafeTransferLib.TransferFromFailed.selector));
+
+        // wrap = false reverts with ERC20InsufficientBalance (via xtoken.clawback())
+        vm.expectRevert(
+            abi.encodeWithSelector(IERC20Errors.ERC20InsufficientBalance.selector, user, 1, INITIAL_USER_BALANCE + 1)
+        );
         bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, INITIAL_USER_BALANCE + 1, false);
 
         // `bridgeFee` must be paid.
@@ -79,23 +85,23 @@ contract SendTokenTest is TestBase {
         bridgeNoLockbox.unpause();
         vm.stopPrank();
 
-        // Reverts if `BURNER_ROLE` is revoked
+        // Reverts if `CLAWBACKER_ROLE` is revoked
         vm.startPrank(admin);
-        wrapper.revokeRole(burnerRole, address(bridgeWithLockbox));
-        wrapper.revokeRole(burnerRole, address(bridgeNoLockbox));
+        wrapper.revokeRole(clawbackerRole, address(bridgeWithLockbox));
+        wrapper.revokeRole(clawbackerRole, address(bridgeNoLockbox));
         vm.stopPrank();
 
         vm.startPrank(user);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, address(bridgeWithLockbox), burnerRole
+                IAccessControl.AccessControlUnauthorizedAccount.selector, address(bridgeWithLockbox), clawbackerRole
             )
         );
         bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, 1, true);
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, address(bridgeNoLockbox), burnerRole
+                IAccessControl.AccessControlUnauthorizedAccount.selector, address(bridgeNoLockbox), clawbackerRole
             )
         );
         bridgeNoLockbox.sendToken{ value: fee }(SRC_CHAIN_ID, user, 1, false);
