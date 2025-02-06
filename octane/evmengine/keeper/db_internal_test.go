@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"context"
 	"testing"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -40,8 +41,8 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 	keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, evmLogProc)
 	require.NoError(t, err)
 
-	addr1 := common.HexToAddress("0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
-	addr2 := common.HexToAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
+	addr1 := tutil.RandomAddress()
+	addr2 := tutil.RandomAddress()
 
 	inputs := []struct {
 		addr   common.Address
@@ -55,12 +56,12 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 	}
 
 	for _, in := range inputs {
-		id, err := keeper.insertWithdrawal(ctx, in.addr, in.height, in.amount)
+		ctx = ctx.WithBlockHeight(int64(in.height))
+		err := keeper.insertWithdrawal(ctx, in.addr, in.amount)
 		require.NoError(t, err)
-		require.Equal(t, in.expID, id)
 	}
 
-	withdrawals, err := keeper.getWithdrawals(ctx)
+	withdrawals, err := getAllWithdrawals(ctx, keeper)
 	require.NoError(t, err)
 	require.Len(t, withdrawals, 3)
 
@@ -70,4 +71,25 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 		require.Equal(t, in.amount, withdrawals[i].GetAmountGwei())
 		require.Equal(t, in.height, withdrawals[i].GetCreatedHeight())
 	}
+}
+
+// getAllWithdrawals returns all stored withdrawals.
+func getAllWithdrawals(ctx context.Context, k *Keeper) ([]*Withdrawal, error) {
+	iter, err := k.withdrawalTable.List(ctx, WithdrawalIdIndexKey{})
+	if err != nil {
+		return nil, errors.Wrap(err, "list withdrawals")
+	}
+	defer iter.Close()
+
+	var withdrawals []*Withdrawal
+
+	for iter.Next() {
+		val, err := iter.Value()
+		if err != nil {
+			return nil, errors.Wrap(err, "get withdrawal")
+		}
+		withdrawals = append(withdrawals, val)
+	}
+
+	return withdrawals, nil
 }
