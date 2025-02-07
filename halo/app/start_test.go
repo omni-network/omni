@@ -215,8 +215,9 @@ func testCProvider(t *testing.T, ctx context.Context, cprov cprovider.Provider) 
 	if feature.FlagEVMStakingModule.Enabled(ctx) {
 		resp, err := cprov.QueryClients().Mint.Inflation(ctx, &minttypes.QueryInflationRequest{})
 		require.NoError(t, err)
-		require.EqualValues(t, "0.110000000000000000", resp.Inflation.String())
+		require.EqualValues(t, "0.115789000000000000", resp.Inflation.String())
 
+		// make sure that no accounts used in e2e testing have a non-zero balance
 		for _, pubkey := range anvil.DevAccounts() {
 			resp, err := cprov.QueryClients().Bank.AllBalances(ctx, &banktypes.QueryAllBalancesRequest{
 				Address:      sdk.AccAddress(pubkey.Bytes()).String(),
@@ -225,7 +226,7 @@ func testCProvider(t *testing.T, ctx context.Context, cprov cprovider.Provider) 
 			})
 			require.NoError(t, err)
 			for _, balance := range resp.Balances {
-				require.EqualValues(t, 0, balance.Amount.Int64())
+				require.True(t, balance.Amount.IsZero())
 			}
 		}
 	}
