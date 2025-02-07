@@ -19,6 +19,18 @@ const (
 	devnetVersion  = "devnet"
 	omegaVersion   = "v0.1.0"
 	mainnetVersion = "v1.0.0"
+
+	NameAVS                = "avs"
+	NameCreate3Factory     = "create3-factory"
+	NameGasPump            = "gas-pump"
+	NameGasStation         = "gas-station"
+	NameL1Bridge           = "l1-bridge"
+	NamePortal             = "portal"
+	NameToken              = "token"
+	NameSolverNetInbox     = "solvernet-inbox"
+	NameSolverNetOutbox    = "solvernet-outbox"
+	NameSolverNetMiddleman = "solvernet-middleman"
+	NameFeeOracleV2        = "fee-oracle-v2"
 )
 
 // version returns the salt version for a given network. Staging version is block 1 hash.
@@ -77,28 +89,30 @@ func getStagingVersion(ctx context.Context) (string, error) {
 }
 
 type Addresses struct {
-	AVS             common.Address
-	Create3Factory  common.Address
-	GasPump         common.Address
-	GasStation      common.Address
-	L1Bridge        common.Address
-	Portal          common.Address
-	Token           common.Address
-	SolverNetInbox  common.Address
-	SolverNetOutbox common.Address
-	FeeOracleV2     common.Address
+	AVS                common.Address
+	Create3Factory     common.Address
+	GasPump            common.Address
+	GasStation         common.Address
+	L1Bridge           common.Address
+	Portal             common.Address
+	Token              common.Address
+	SolverNetInbox     common.Address
+	SolverNetOutbox    common.Address
+	SolverNetMiddleman common.Address
+	FeeOracleV2        common.Address
 }
 
 type Salts struct {
-	AVS             string
-	GasPump         string
-	GasStation      string
-	L1Bridge        string
-	Portal          string
-	Token           string
-	SolverNetInbox  string
-	SolverNetOutbox string
-	FeeOracleV2     string
+	AVS                string
+	GasPump            string
+	GasStation         string
+	L1Bridge           string
+	Portal             string
+	Token              string
+	SolverNetInbox     string
+	SolverNetOutbox    string
+	SolverNetMiddleman string
+	FeeOracleV2        string
 }
 
 type cache[T any] struct {
@@ -133,17 +147,26 @@ func GetAddresses(ctx context.Context, network netconf.ID) (Addresses, error) {
 		return addrs, nil
 	}
 
+	s := func(name string) string {
+		if !isVersioned(name) {
+			return salt(network, name)
+		}
+
+		return salt(network, versioned(name, ver))
+	}
+
 	addrs = Addresses{
-		Create3Factory:  Create3Factory(network),
-		AVS:             avs(network),
-		Portal:          portal(network, ver),
-		L1Bridge:        l1Bridge(network, ver),
-		Token:           TokenAddr(network),
-		GasPump:         gasPump(network, ver),
-		GasStation:      gasStation(network, ver),
-		SolverNetInbox:  solverNetInbox(network, ver),
-		SolverNetOutbox: solverNetOutbox(network, ver),
-		FeeOracleV2:     feeOracleV2(network, ver),
+		Create3Factory:     Create3Factory(network),
+		AVS:                Avs(network),
+		Token:              TokenAddr(network),
+		Portal:             addr(network, s(NamePortal)),
+		L1Bridge:           addr(network, s(NameL1Bridge)),
+		GasPump:            addr(network, s(NameGasPump)),
+		GasStation:         addr(network, s(NameGasStation)),
+		SolverNetInbox:     addr(network, s(NameSolverNetInbox)),
+		SolverNetOutbox:    addr(network, s(NameSolverNetOutbox)),
+		SolverNetMiddleman: addr(network, s(NameSolverNetMiddleman)),
+		FeeOracleV2:        addr(network, s(NameFeeOracleV2)),
 	}
 
 	addrsCache.cache[network] = addrs
@@ -166,16 +189,25 @@ func GetSalts(ctx context.Context, network netconf.ID) (Salts, error) {
 		return Salts{}, err
 	}
 
+	s := func(name string) string {
+		if !isVersioned(name) {
+			return salt(network, name)
+		}
+
+		return salt(network, versioned(name, ver))
+	}
+
 	salts = Salts{
-		AVS:             avsSalt(network),
-		Portal:          portalSalt(network, ver),
-		L1Bridge:        l1BridgeSalt(network, ver),
-		Token:           tokenSalt(network),
-		GasPump:         gasPumpSalt(network, ver),
-		GasStation:      gasStationSalt(network, ver),
-		SolverNetInbox:  solverNetInboxSalt(network, ver),
-		SolverNetOutbox: solverNetOutboxSalt(network, ver),
-		FeeOracleV2:     feeOracleV2Salt(network, ver),
+		AVS:                s(NameAVS),
+		Portal:             s(NamePortal),
+		L1Bridge:           s(NameL1Bridge),
+		Token:              s(NameToken),
+		GasPump:            s(NameGasPump),
+		GasStation:         s(NameGasStation),
+		SolverNetInbox:     s(NameSolverNetInbox),
+		SolverNetOutbox:    s(NameSolverNetOutbox),
+		SolverNetMiddleman: s(NameSolverNetMiddleman),
+		FeeOracleV2:        s(NameFeeOracleV2),
 	}
 
 	saltsCache.cache[network] = salts
@@ -183,15 +215,26 @@ func GetSalts(ctx context.Context, network netconf.ID) (Salts, error) {
 	return salts, nil
 }
 
-// avs returns the AVS contract address for the given network.
-func avs(network netconf.ID) common.Address {
+// Avs returns the AVS contract address for the given network.
+func Avs(network netconf.ID) common.Address {
 	if network == netconf.Mainnet {
 		return common.HexToAddress("0xed2f4d90b073128ae6769a9A8D51547B1Df766C8")
 	} else if network == netconf.Omega {
 		return common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
 	}
 
-	return create3.Address(Create3Factory(network), avsSalt(network), eoa.MustAddress(network, eoa.RoleDeployer))
+	return addr(network, salt(network, NameAVS))
+}
+
+// TokenAddr returns the Omni ERC20 token contract address for the given network.
+func TokenAddr(network netconf.ID) common.Address {
+	if network == netconf.Mainnet {
+		return common.HexToAddress("0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4")
+	} else if network == netconf.Omega {
+		return common.HexToAddress("0xD036C60f46FF51dd7Fbf6a819b5B171c8A076b07")
+	}
+
+	return addr(network, salt(network, NameToken))
 }
 
 // Create3Factory returns the Create3 factory address for the given network.
@@ -206,7 +249,7 @@ func Create3Address(ctx context.Context, network netconf.ID, saltID string) (com
 		return common.Address{}, err
 	}
 
-	return create3.Address(Create3Factory(network), s, eoa.MustAddress(network, eoa.RoleDeployer)), nil
+	return addr(network, s), nil
 }
 
 // Create3Salt returns the Create3 salt for the given network and salt id.
@@ -216,101 +259,25 @@ func Create3Salt(ctx context.Context, network netconf.ID, saltID string) (string
 		return "", err
 	}
 
-	return salt(network, saltID+"-"+ver), nil
+	return salt(network, versioned(saltID, ver)), nil
 }
 
-// portal returns the Portal contract address for the given network.
-func portal(network netconf.ID, saltVersion string) common.Address {
-	return create3.Address(Create3Factory(network), portalSalt(network, saltVersion), eoa.MustAddress(network, eoa.RoleDeployer))
-}
-
-// l1Bridge returns the L1Bridge contract address for the given network.
-func l1Bridge(network netconf.ID, version string) common.Address {
-	return create3.Address(Create3Factory(network), l1BridgeSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
-}
-
-// TokenAddr returns the Omni ERC20 token contract address for the given network.
-func TokenAddr(network netconf.ID) common.Address {
-	if network == netconf.Mainnet {
-		return common.HexToAddress("0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4")
-	} else if network == netconf.Omega {
-		return common.HexToAddress("0xD036C60f46FF51dd7Fbf6a819b5B171c8A076b07")
-	}
-
-	return create3.Address(Create3Factory(network), tokenSalt(network), eoa.MustAddress(network, eoa.RoleDeployer))
-}
-
-// gasPump returns the GasPump contract address for the given network.
-func gasPump(network netconf.ID, version string) common.Address {
-	return create3.Address(Create3Factory(network), gasPumpSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
-}
-
-// gasStation returns the GasStation contract address for the given network.
-func gasStation(network netconf.ID, version string) common.Address {
-	return create3.Address(Create3Factory(network), gasStationSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
-}
-
-func solverNetInbox(network netconf.ID, version string) common.Address {
-	return create3.Address(Create3Factory(network), solverNetInboxSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
-}
-
-func solverNetOutbox(network netconf.ID, version string) common.Address {
-	return create3.Address(Create3Factory(network), solverNetOutboxSalt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
-}
-
-func feeOracleV2(network netconf.ID, version string) common.Address {
-	return create3.Address(Create3Factory(network), feeOracleV2Salt(network, version), eoa.MustAddress(network, eoa.RoleDeployer))
-}
-
-//
-// Salts.
-//
-
-func portalSalt(network netconf.ID, version string) string {
-	return salt(network, "portal-"+version)
-}
-
-func avsSalt(network netconf.ID) string {
+func isVersioned(contract string) bool {
 	// AVS not versioned, as requiring re-registration per each version is too cumbersome.
-	return salt(network, "avs")
+	// Token salt is static, as Omni ERC20 contract does not change.
+	not := contract == NameAVS || contract == NameToken
+
+	return !not
 }
 
-func l1BridgeSalt(network netconf.ID, version string) string {
-	return salt(network, "l1-bridge-"+version)
+func versioned(contract string, version string) string {
+	return contract + "-" + version
 }
 
-// token salt is static, as Omni ERC20 contract does not change.
-func tokenSalt(network netconf.ID) string {
-	return salt(network, "token")
+func salt(network netconf.ID, suffix string) string {
+	return string(network) + "-" + suffix
 }
 
-func gasPumpSalt(network netconf.ID, version string) string {
-	return salt(network, "gas-pump-"+version)
-}
-
-func gasStationSalt(network netconf.ID, version string) string {
-	return salt(network, "gas-station-"+version)
-}
-
-func solverNetInboxSalt(network netconf.ID, version string) string {
-	return salt(network, "solvernet-inbox-"+version)
-}
-
-func solverNetOutboxSalt(network netconf.ID, version string) string {
-	return salt(network, "solvernet-outbox-"+version)
-}
-
-func feeOracleV2Salt(network netconf.ID, version string) string {
-	return salt(network, "fee-oracle-v2-"+version)
-}
-
-//
-// Utils.
-//
-
-// salt generates a salt for a contract deployment. For ephemeral networks,
-// the salt includes a random per-run suffix. For persistent networks, the
-// sale is static.
-func salt(network netconf.ID, contract string) string {
-	return string(network) + "-" + contract
+func addr(network netconf.ID, salt string) common.Address {
+	return create3.Address(Create3Factory(network), salt, eoa.MustAddress(network, eoa.RoleDeployer))
 }

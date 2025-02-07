@@ -1,7 +1,10 @@
 package contracts
 
 import (
+	"context"
+
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -25,4 +28,17 @@ func PackInitCode(abi *abi.ABI, bytecodeHex string, params ...any) ([]byte, erro
 
 func IsEmptyAddress(addr common.Address) bool {
 	return addr == common.Address{}
+}
+
+func IsDeployed(ctx context.Context, backend *ethbackend.Backend, addr common.Address) (bool, error) {
+	code, err := backend.CodeAt(ctx, addr, nil)
+	if err != nil {
+		return false, errors.Wrap(err, "code at", "address", addr)
+	}
+
+	if len(code) == 0 {
+		return false, nil
+	}
+
+	return true, nil
 }
