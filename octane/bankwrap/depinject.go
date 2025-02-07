@@ -16,20 +16,16 @@ type DIInputs struct {
 type DIOutputs struct {
 	depinject.Out
 
-	Wrapper Wrapper
+	Wrapper *Wrapper
 }
 
-func DependencyInjector(wrapper *Wrapper, wk *types.WithdrawalKeeper) {
-	if wrapper == nil || wk == nil {
-		return
-	}
-
-	wrapper.WithdrawalKeeper = *wk
+func DependencyInjector(wrapper *Wrapper, wk types.WithdrawalKeeper) {
+	wrapper.WithdrawalKeeper = wk
 }
 
 func DIProvide(input DIInputs) (DIOutputs, error) {
 	return DIOutputs{
-		Wrapper: Wrapper{
+		Wrapper: &Wrapper{
 			Keeper: input.BankKeeper,
 		},
 	}, nil
@@ -47,7 +43,7 @@ var sdkOverrides = []string{
 	"github.com/cosmos/cosmos-sdk/x/bank/keeper/keeper.Keeper",
 }
 
-const WrapperImpl = "github.com/omni-network/omni/octane/bankwrap/bankwrap.Wrapper"
+const WrapperImpl = "github.com/omni-network/omni/octane/bankwrap/*bankwrap.Wrapper"
 
 // SDKBindInterfaces returns a list of depinject.Configs that bind the bankwrap.Wrapper
 // to the x/bank Keeper interface.

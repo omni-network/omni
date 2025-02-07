@@ -282,7 +282,7 @@ var (
 		}
 
 		return []any{
-			// bankwrap.DependencyInjector,
+			bankwrap.DependencyInjector,
 		}
 	}
 
