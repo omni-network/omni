@@ -41,7 +41,7 @@ export function encodeOrder(order: Order): Hex {
   const callsTuple = order.calls.map((call) => {
     const callData = encodeFunctionData({
       abi: call.abi,
-      functionName: call.selector,
+      functionName: call.functionName,
       args: call.args,
     })
 
