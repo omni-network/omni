@@ -1,5 +1,0 @@
-export { omniPortalAbi } from "./abi/omniPortal.js"
-export type { Chain } from "./types/chain.js"
-export type { NativeCurrency } from "./types/nativeCurrency.js"
-export type { XMsg } from "./types/xMsg.js"
-export type { XReceipt } from "./types/xReceipt.js"

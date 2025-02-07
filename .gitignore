@@ -9,7 +9,7 @@
 .idea
 
 # VS Code
-.vscode
+.vscode/*
 
 # used by the Makefile
 build

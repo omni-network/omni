@@ -5,3 +5,7 @@ tsconfig.build.tsbuildinfo
 
 # compiled output
 /lib
+
+# ide files
+!.vscode/settings.json
+!.vscode/extensions.json
