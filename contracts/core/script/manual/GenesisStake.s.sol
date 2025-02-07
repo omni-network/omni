@@ -24,9 +24,12 @@ contract GenesisStakeScript is Script {
     GenesisStake internal genesisStake;
     MerkleDistributorWithDeadline internal merkleDistributor;
 
+    uint8 internal deployNum = 1; // Increment each deployment for new salts
+    address internal validator = 0xD6CD71dF91a6886f69761826A9C4D123178A8d9D;
     uint256 internal endTime = block.timestamp + 30 days;
-    uint256 internal depositAmount = 80 ether;
+    uint256 internal depositAmount = 70 ether;
     uint256 internal rewardAmount = 20 ether;
+    uint256 internal userAmount = 10 ether;
     bytes32[] internal leaves = new bytes32[](2);
     bytes32[][] internal proofs = new bytes32[][](2);
     bytes32 internal root;
@@ -58,13 +61,14 @@ contract GenesisStakeScript is Script {
     }
 
     function _deployContracts() internal {
-        address genesisStakeAddr = create3.getDeployed(msg.sender, keccak256("genesisStake"));
-        address merkleDistributorAddr = create3.getDeployed(msg.sender, keccak256("merkleDistributor"));
+        address genesisStakeAddr = create3.getDeployed(msg.sender, keccak256(abi.encode("genesisStake", deployNum)));
+        address merkleDistributorAddr =
+            create3.getDeployed(msg.sender, keccak256(abi.encode("merkleDistributor", deployNum)));
 
         address genesisStakeImpl = address(new GenesisStake(address(omni), merkleDistributorAddr));
         genesisStake = GenesisStake(
             create3.deploy(
-                keccak256("genesisStake"),
+                keccak256(abi.encode("genesisStake", deployNum)),
                 abi.encodePacked(
                     type(TransparentUpgradeableProxy).creationCode,
                     abi.encode(
@@ -75,7 +79,7 @@ contract GenesisStakeScript is Script {
         );
         merkleDistributor = MerkleDistributorWithDeadline(
             create3.deploy(
-                keccak256("merkleDistributor"),
+                keccak256(abi.encode("merkleDistributor", deployNum)),
                 abi.encodePacked(
                     type(MerkleDistributorWithDeadline).creationCode,
                     abi.encode(address(omni), root, endTime, address(portal), genesisStakeAddr, address(inbox))
@@ -89,11 +93,12 @@ contract GenesisStakeScript is Script {
 
     function _approveStakeAndFund() internal {
         omni.approve(address(genesisStake), type(uint256).max);
+        omni.approve(address(merkleDistributor), type(uint256).max);
         genesisStake.stake(depositAmount);
         omni.transfer(address(merkleDistributor), rewardAmount);
     }
 
     function _migrateToOmni() internal {
-        merkleDistributor.migrateToOmni(0, rewardAmount, proofs[0]);
+        merkleDistributor.migrateToOmni(0, rewardAmount, userAmount, proofs[0], validator);
     }
 }

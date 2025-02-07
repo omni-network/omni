@@ -14,6 +14,7 @@ import { GenesisStake } from "src/token/GenesisStake.sol";
 import { MerkleDistributor } from "src/token/MerkleDistributor.sol";
 import { MerkleDistributorWithDeadline } from "src/token/MerkleDistributorWithDeadline.sol";
 
+import { IStaking } from "src/interfaces/IStaking.sol";
 import { IERC7683, IOriginSettler } from "solve/src/erc7683/IOriginSettler.sol";
 import { SolverNet } from "solve/src/lib/SolverNet.sol";
 
@@ -35,6 +36,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
     uint256 initialSupply = 1_000_000 ether;
     uint256 addrCount = 32;
 
+    address internal constant OMNI_STAKING = 0xCCcCcC0000000000000000000000000000000001;
     bytes32 internal constant ORDER_DATA_TYPEHASH = keccak256(
         "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,Expense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)Expense(address spender,address token,uint96 amount)"
     );
@@ -127,6 +129,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
     // Fund stakers and the distributor contract
     function _fundEverything() internal {
         for (uint256 i; i < addrCount; ++i) {
+            if (i % 2 == 0) deal(address(omni), stakers[i], 100 ether);
             omni.transfer(stakers[i], amounts[i]);
         }
 
@@ -144,15 +147,26 @@ contract MerkleDistributorWithDeadline_Test is Test {
     }
 
     // Generate an ERC7683 order to check merkle distributor's call to inbox against
-    function generateERC7683Order(address addr, uint256 amount)
+    function generateERC7683Order(address addr, uint256 claimAmount, uint256 userAmount, address validator)
         public
         view
         returns (IERC7683.OnchainCrossChainOrder memory)
     {
-        SolverNet.Deposit memory deposit = SolverNet.Deposit({ token: address(omni), amount: uint96(amount * 2) });
+        SolverNet.Deposit memory deposit =
+            SolverNet.Deposit({ token: address(omni), amount: uint96((claimAmount * 2) + userAmount) });
 
         SolverNet.Call[] memory call = new SolverNet.Call[](1);
-        call[0] = SolverNet.Call({ target: addr, selector: bytes4(0), value: amount * 2, params: "" });
+        if (validator == address(0)) {
+            call[0] =
+                SolverNet.Call({ target: addr, selector: bytes4(0), value: (claimAmount * 2) + userAmount, params: "" });
+        } else {
+            call[0] = SolverNet.Call({
+                target: OMNI_STAKING,
+                selector: IStaking.delegateFor.selector,
+                value: (claimAmount * 2) + userAmount,
+                params: abi.encode(addr, validator)
+            });
+        }
 
         SolverNet.OrderData memory orderData = SolverNet.OrderData({
             owner: addr,
@@ -174,7 +188,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
         for (uint256 i; i < addrCount; ++i) {
             vm.prank(stakers[i]);
             merkleDistributor.claim(i, stakers[i], amounts[i], proofs[i]);
-            assertEq(omni.balanceOf(stakers[i]), amounts[i]);
+            assertEq(omni.balanceOf(stakers[i]), amounts[i] + (i % 2 == 0 ? 100 ether : 0));
         }
     }
 
@@ -183,7 +197,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
         vm.warp(endTime + 1);
         vm.prank(stakers[0]);
         vm.expectRevert(MerkleDistributorWithDeadline.ClaimWindowFinished.selector);
-        merkleDistributor.migrateToOmni(0, amounts[0], proofs[0]);
+        merkleDistributor.migrateToOmni(0, amounts[0], 0, proofs[0], address(0));
 
         // Cannot migrate if proof is invalid
         bytes32 proof = proofs[0][0];
@@ -191,17 +205,17 @@ contract MerkleDistributorWithDeadline_Test is Test {
         vm.warp(endTime - 1);
         vm.prank(stakers[0]);
         vm.expectRevert(MerkleDistributor.InvalidProof.selector);
-        merkleDistributor.migrateToOmni(0, amounts[0], proofs[0]);
+        merkleDistributor.migrateToOmni(0, amounts[0], 0, proofs[0], address(0));
         proofs[0][0] = proof;
 
         // Fully claim all stake and rewards
         vm.prank(stakers[0]);
-        merkleDistributor.migrateToOmni(0, amounts[0], proofs[0]);
+        merkleDistributor.migrateToOmni(0, amounts[0], 0, proofs[0], address(0));
 
         // Cannot migrate if user has no stake to migrate
         vm.prank(stakers[0]);
         vm.expectRevert(MerkleDistributorWithDeadline.NothingToMigrate.selector);
-        merkleDistributor.migrateToOmni(0, amounts[0], proofs[0]);
+        merkleDistributor.migrateToOmni(0, amounts[0], 0, proofs[0], address(0));
     }
 
     // Fully test migrateToOmni for all members of the merkle tree
@@ -209,21 +223,25 @@ contract MerkleDistributorWithDeadline_Test is Test {
         for (uint256 i; i < addrCount; ++i) {
             vm.startPrank(stakers[i]);
             uint256 inboxBalance = omni.balanceOf(address(inbox));
+            omni.approve(address(merkleDistributor), type(uint256).max);
 
             // Get IERC7683 order and resolved orders
-            IERC7683.OnchainCrossChainOrder memory order = generateERC7683Order(stakers[i], amounts[i]);
+            IERC7683.OnchainCrossChainOrder memory order = generateERC7683Order(
+                stakers[i], amounts[i], i % 2 == 0 ? 100 ether : 0, i % 3 == 0 ? stakers[i] : address(0)
+            );
             IERC7683.ResolvedCrossChainOrder memory resolved = inbox.resolve(order);
 
             // Confirm merkleDistributor is calling the inbox with the order and that the resolved order is emitted
             vm.expectCall(address(inbox), abi.encodeCall(MockSolverNetInbox.open, (order)));
             vm.expectEmit(true, true, true, true);
             emit IERC7683.Open(resolved.orderId, resolved);
-            merkleDistributor.migrateToOmni(i, amounts[i], proofs[i]);
+            merkleDistributor.migrateToOmni(
+                i, amounts[i], i % 2 == 0 ? 100 ether : 0, proofs[i], i % 3 == 0 ? stakers[i] : address(0)
+            );
 
-            // Confirm the inbox balance has increased by the user's staked balance and claim reward
-            assertEq(omni.balanceOf(address(inbox)), inboxBalance + amounts[i] * 2);
+            // Confirm the inbox balance has increased by the user's staked balance, claim reward, and user's additional tokens
+            assertEq(omni.balanceOf(address(inbox)), inboxBalance + amounts[i] * 2 + (i % 2 == 0 ? 100 ether : 0));
             assertEq(omni.balanceOf(stakers[i]), 0);
-
             vm.stopPrank();
         }
     }
