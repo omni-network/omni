@@ -27,6 +27,14 @@ type DeploymentConfig struct {
 	ExpectedAddr    common.Address
 }
 
+type MiddlemanConfig struct {
+	Create3Factory  common.Address
+	Create3Salt     string
+	ProxyAdminOwner common.Address
+	Deployer        common.Address
+	ExpectedAddr    common.Address
+}
+
 func (cfg DeploymentConfig) Validate() error {
 	if (cfg.Create3Factory == common.Address{}) {
 		return errors.New("create3 factory is zero")
@@ -37,10 +45,10 @@ func (cfg DeploymentConfig) Validate() error {
 	if (cfg.ProxyAdminOwner == common.Address{}) {
 		return errors.New("proxy admin is zero")
 	}
-	if contracts.IsEmptyAddress(cfg.Deployer) {
+	if (cfg.Deployer == common.Address{}) {
 		return errors.New("deployer is not set")
 	}
-	if contracts.IsEmptyAddress(cfg.Owner) {
+	if (cfg.Owner == common.Address{}) {
 		return errors.New("owner is not set")
 	}
 	if (cfg.Inbox == common.Address{}) {
@@ -59,46 +67,18 @@ func (cfg DeploymentConfig) Validate() error {
 	return nil
 }
 
-// isDeployed returns true if the SolverNetOutbox contract is already deployed to its expected address.
-func isDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (bool, common.Address, error) {
-	addrs, err := contracts.GetAddresses(ctx, network)
-	if err != nil {
-		return false, common.Address{}, errors.Wrap(err, "get addresses")
-	}
-
-	addr := addrs.SolverNetOutbox
-
-	code, err := backend.CodeAt(ctx, addr, nil)
-	if err != nil {
-		return false, addr, errors.Wrap(err, "code at", "address", addr)
-	}
-
-	if len(code) == 0 {
-		return false, addr, nil
-	}
-
-	return true, addr, nil
-}
-
-// DeployIfNeeded deploys a new SolverNetOutbox contract if it is not already deployed.
-// If the contract is already deployed, the receipt is nil.
-func DeployIfNeeded(ctx context.Context, network netconf.Network, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
-	deployed, addr, err := isDeployed(ctx, network.ID, backend)
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "is deployed")
-	}
-	if deployed {
-		return addr, nil, nil
-	}
-
-	return Deploy(ctx, network, backend)
-}
-
-// Deploy deploys a new SolverNetOutbox contract and returns the address and receipt.
+// Deploy idempotently deploys a new SolverNetOutbox contract and returns the address and receipt.
 func Deploy(ctx context.Context, network netconf.Network, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
 	addrs, err := contracts.GetAddresses(ctx, network.ID)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "get addresses")
+	}
+
+	isDeployed, err := contracts.IsDeployed(ctx, backend, addrs.SolverNetOutbox)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "is deployed")
+	} else if isDeployed {
+		return addrs.SolverNetOutbox, nil, nil
 	}
 
 	salts, err := contracts.GetSalts(ctx, network.ID)

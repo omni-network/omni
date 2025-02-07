@@ -8,6 +8,7 @@
   "l1bridge": "0xa999cb18d226085aab1c8425f0163c23e57653de",
   "portal": "0xc16282f0a26d042672bc4502bfe3c5fbbff4d21c",
   "solvernetinbox": "0x7c7759b801078ecb2c41c9caecc2db13c3079c76",
+  "solvernetmiddleman": "0x1b99e432d5f9e8110102b8d3dce2d0b462a37942",
   "solvernetoutbox": "0x29d9e8faa760841aacbe79a8632c1f42e0a858e6",
   "token": "0x73cc960fb6705e9a6a3d9eaf4de94a828cfa6d2a"
  },
@@ -20,6 +21,7 @@
   "l1bridge": "0xbbb3f5bcb1c8b0ee932efaba2fdee566b83053a5",
   "portal": "0x5e9a8aa213c912bf54c86bf64adb8ed6a79c04d1",
   "solvernetinbox": "0x8fcfcd0b4fa2cc2965a3c7f27995b0a43f210db8",
+  "solvernetmiddleman": "0x08711eb144a394755d88d987dedca4b411b3eebe",
   "solvernetoutbox": "0x084b603269a8fd0d0f7037e591665c025ce3549b",
   "token": "0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4"
  },
@@ -32,6 +34,7 @@
   "l1bridge": "0x084ef227534a6ad2de4c4e54db19f1c457a57a27",
   "portal": "0xcb60a0451831e4865bc49f41f9c67665fc9b75c3",
   "solvernetinbox": "0x71d48a88600a790fb1e94efdbf6c284fc08f99b8",
+  "solvernetmiddleman": "0xf72ea80edec895cabe430f266135dd0267e18cb2",
   "solvernetoutbox": "0xd98068374c233e4d4081d24154489551dcd6fdf5",
   "token": "0xd036c60f46ff51dd7fbf6a819b5b171c8a076b07"
  }

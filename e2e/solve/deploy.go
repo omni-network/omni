@@ -4,11 +4,14 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/lib/contracts/solvernet/inbox"
+	"github.com/omni-network/omni/lib/contracts/solvernet/middleman"
 	"github.com/omni-network/omni/lib/contracts/solvernet/outbox"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -40,19 +43,26 @@ func deployBoxes(ctx context.Context, network netconf.Network, backends ethbacke
 				return errors.Wrap(err, "get backend", "chain", chain.Name)
 			}
 
-			addr, _, err := inbox.DeployIfNeeded(ctx, network, backend)
+			addr, receipt, err := inbox.Deploy(ctx, network, backend)
 			if err != nil {
 				return errors.Wrap(err, "deploy solve inbox", "chain", chain.Name)
 			}
 
-			log.Debug(ctx, "SolverNetInbox deployed", "addr", addr.Hex(), "chain", chain.Name)
+			log.Info(ctx, "SolverNetInbox deployed", "addr", addr.Hex(), "chain", chain.Name, "tx", maybeTxHash(receipt))
 
-			addr, _, err = outbox.DeployIfNeeded(ctx, network, backend)
+			addr, receipt, err = outbox.Deploy(ctx, network, backend)
 			if err != nil {
 				return errors.Wrap(err, "deploy solve outbox", "chain", chain.Name)
 			}
 
-			log.Debug(ctx, "SolverNetOutbox deployed", "addr", addr.Hex(), "chain", chain.Name)
+			log.Info(ctx, "SolverNetOutbox deployed", "addr", addr.Hex(), "chain", chain.Name, "tx", maybeTxHash(receipt))
+
+			addr, receipt, err = middleman.Deploy(ctx, network, backend)
+			if err != nil {
+				return errors.Wrap(err, "deploy solve middleman", "chain", chain.Name)
+			}
+
+			log.Info(ctx, "SolverNetMiddleman deployed", "addr", addr.Hex(), "chain", chain.Name, "tx", maybeTxHash(receipt))
 
 			return nil
 		})
@@ -63,4 +73,12 @@ func deployBoxes(ctx context.Context, network netconf.Network, backends ethbacke
 	}
 
 	return nil
+}
+
+func maybeTxHash(receipt *ethtypes.Receipt) string {
+	if receipt != nil {
+		return receipt.TxHash.Hex()
+	}
+
+	return "nil"
 }
