@@ -6,15 +6,27 @@
   "license": "GPL-3.0-only",
   "packageManager": "pnpm@9.1.0",
   "sideEffects": false,
+  "main": "./dist/esm/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/esm/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "scripts": {
-    "build": "pnpm run clean && tsc -p tsconfig.build.json",
+    "build": "pnpm clean && pnpm build:esm && pnpm build:types",
+    "build:esm": "tsc -p tsconfig.build.json",
+    "build:types": "tsc -p tsconfig.build.json",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "precommit": "biome check --write"
   },
   "files": [
     "dist/**",
+    "src/**",
     "!dist/**/*.tsbuildinfo",
-    "src/**/*.ts",
     "!src/**/*.test.ts",
     "!src/**/*.test-d.ts"
   ],
