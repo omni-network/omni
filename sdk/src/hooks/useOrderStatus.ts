@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { type Log, decodeEventLog } from 'viem'
+import { type Hex, type Log, decodeEventLog } from 'viem'
 import {
   type UseWaitForTransactionReceiptReturnType,
   useReadContract,
@@ -16,8 +16,8 @@ type UseOrderStatusParams = {
 }
 
 type UseDidFillParams = {
-  id?: `0x${string}`
-  originData?: `0x${string}`
+  id?: Hex
+  originData?: Hex
   chainId?: number
   refetchInterval?: number
 }
