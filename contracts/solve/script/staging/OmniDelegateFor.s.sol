@@ -85,7 +85,7 @@ contract OmniDelegateFor is Script {
         SolverNet.Call[] memory call = new SolverNet.Call[](1);
         call[0] = SolverNet.Call({
             target: address(staking),
-            selector: staking.delegateFor.selector,
+            selector: IStaking.delegateFor.selector,
             value: amount,
             params: abi.encode(msg.sender, block.number % 2 == 0 ? validator1 : validator2)
         });
