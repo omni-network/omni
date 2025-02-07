@@ -21,6 +21,7 @@ import (
 	utypes "cosmossdk.io/x/upgrade/types"
 	cosmosk1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	btypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	dtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	mtypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	sltypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -40,6 +41,7 @@ type QueryClients struct {
 	Distribution dtypes.QueryClient
 	Mint         mtypes.QueryClient
 	EvmEngine    evmengtypes.QueryClient
+	Bank         btypes.QueryClient
 }
 
 // PortalValidator is a consensus chain validator in a validator set emitted/submitted by/tp portals .
