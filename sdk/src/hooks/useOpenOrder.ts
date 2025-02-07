@@ -4,12 +4,12 @@ import { type Order, encodeOrder, inbox, typeHash } from '../index.js'
 import { useOrderStatus } from './useOrderStatus.js'
 
 type UseOpenOrderParams = {
-  chainId: number
+  destChainId: number
   originChainId?: number
 }
 
 export function useOpenOrder(params: UseOpenOrderParams) {
-  const { chainId, originChainId } = params
+  const { destChainId, originChainId } = params
   const mutation = useWriteContract()
   const wait = useWaitForTransactionReceipt({
     hash: mutation.data,
@@ -18,8 +18,8 @@ export function useOpenOrder(params: UseOpenOrderParams) {
   const orderStatus = useOrderStatus({
     txStatus: wait.status,
     txLogs: wait.data?.logs,
-    originChainId: originChainId,
-    chainId: chainId,
+    originChainId,
+    destChainId,
     refetchInterval: 1000,
   })
 

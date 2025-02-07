@@ -8,30 +8,30 @@ import { inbox, outbox } from '../index.js'
 import type { OrderStatus } from '../types/orderStatus.js'
 
 type UseOrderStatusParams = {
+  destChainId: number
   txStatus?: UseWaitForTransactionReceiptReturnType['status']
   txLogs?: Log[]
   originChainId?: number
-  chainId?: number
   refetchInterval?: number
 }
 
 type UseDidFillParams = {
+  destChainId: number
   id?: Hex
   originData?: Hex
-  chainId?: number
   refetchInterval?: number
 }
 
 function useDidFill(params: UseDidFillParams) {
-  const { id, originData, chainId, refetchInterval } = params
+  const { id, originData, destChainId, refetchInterval } = params
   const filled = useReadContract({
-    chainId,
+    chainId: destChainId,
     address: outbox.address,
     abi: outbox.abi,
     functionName: 'didFill',
     args: id && originData ? [id, originData] : undefined,
     query: {
-      enabled: !!id && !!originData && !!chainId,
+      enabled: !!id && !!originData,
       refetchInterval: refetchInterval ?? 1000,
     },
   })
