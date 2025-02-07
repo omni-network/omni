@@ -1,8 +1,6 @@
 package bankwrap
 
 import (
-	"github.com/omni-network/omni/octane/evmengine/types"
-
 	"cosmossdk.io/depinject"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 )
@@ -19,7 +17,7 @@ type DIOutputs struct {
 	Wrapper *Wrapper
 }
 
-func DependencyInjector(wrapper *Wrapper, wk types.WithdrawalKeeper) {
+func DependencyInjector(wrapper *Wrapper, wk WithdrawalKeeper) {
 	if wrapper == nil {
 		panic("dependency not found")
 	}

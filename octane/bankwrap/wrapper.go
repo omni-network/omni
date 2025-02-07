@@ -7,8 +7,6 @@ package bankwrap
 import (
 	"context"
 
-	"github.com/omni-network/omni/octane/evmengine/types"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 )
@@ -16,7 +14,7 @@ import (
 type Wrapper struct {
 	bankkeeper.Keeper
 
-	WithdrawalKeeper types.WithdrawalKeeper
+	WithdrawalKeeper WithdrawalKeeper
 }
 
 func (k Wrapper) SendCoinsFromModuleToAccountNoWithdrawal(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {

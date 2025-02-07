@@ -6,20 +6,19 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/octane/evmengine/types"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 var _ types.QueryServer = (*Keeper)(nil)
-var _ types.WithdrawalsProvider = (*Keeper)(nil)
 
 func (k *Keeper) SumPendingWithdrawalsByAddress(
 	ctx context.Context,
-	in *types.SumPendingWithdrawalsByAddressRequest,
+	req *types.SumPendingWithdrawalsByAddressRequest,
 ) (*types.SumPendingWithdrawalsByAddressResponse, error) {
-	if in == nil {
-		return nil, errors.New("no address")
+	if req == nil {
+		return nil, errors.New("nil request")
 	}
-	withdrawals, err := k.getWithdrawalsByAddress(ctx, sdk.AccAddress(in.Address))
+	withdrawals, err := k.getWithdrawalsByAddress(ctx, common.BytesToAddress(req.Address)) //nolint:forbidigo // should be padded
 	if err != nil {
 		return nil, errors.Wrap(err, "get withdrawals")
 	}

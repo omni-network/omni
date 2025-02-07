@@ -196,7 +196,6 @@ func TestCLIOperator(t *testing.T) {
 
 		// edit validator data
 		t.Run("edit validator", func(t *testing.T) {
-			t.Skip("for now")
 			if !feature.FlagEVMStakingModule.Enabled(ctx) {
 				t.Skip("Skipping evmstaking2 tests")
 			}

@@ -74,9 +74,9 @@ func (k *Keeper) updateExecutionHead(ctx context.Context, payload engine.Executa
 }
 
 // insertWithdrawal inserts a withdrawal request.
-func (k *Keeper) InsertWithdrawal(ctx context.Context, withdrawalAddr sdk.AccAddress, amountGwei uint64) error {
+func (k *Keeper) InsertWithdrawal(ctx context.Context, withdrawalAddr common.Address, amountGwei uint64) error {
 	err := k.withdrawalTable.Insert(ctx, &Withdrawal{
-		Address:       withdrawalAddr[:],
+		Address:       withdrawalAddr.Bytes(),
 		CreatedHeight: uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()),
 		AmountGwei:    amountGwei,
 	})
@@ -90,7 +90,7 @@ func (k *Keeper) InsertWithdrawal(ctx context.Context, withdrawalAddr sdk.AccAdd
 }
 
 // GetWithdrawalsByAddress returns all stored withdrawals.
-func (k *Keeper) getWithdrawalsByAddress(ctx context.Context, withdrawalAddr sdk.AccAddress) ([]*Withdrawal, error) {
+func (k *Keeper) getWithdrawalsByAddress(ctx context.Context, withdrawalAddr common.Address) ([]*Withdrawal, error) {
 	iter, err := k.withdrawalTable.List(ctx, WithdrawalAddressIndexKey{}.WithAddress(withdrawalAddr[:]))
 	if err != nil {
 		return nil, errors.Wrap(err, "list withdrawals")

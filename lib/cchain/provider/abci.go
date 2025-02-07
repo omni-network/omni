@@ -33,6 +33,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	grpctypes "github.com/cosmos/cosmos-sdk/types/grpc"
+	btypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	dtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	mtypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	sltypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -101,6 +102,7 @@ func newProvider(cc gogogrpc.ClientConn, network netconf.ID, opts ...func(*Provi
 	cmtcl := cmtservice.NewServiceClient(cc)
 	mcl := mtypes.NewQueryClient(cc)
 	evmengcl := evmengtypes.NewQueryClient(cc)
+	bcl := btypes.NewQueryClient(cc)
 
 	p := Provider{
 		fetch:       newABCIFetchFunc(acl, cmtcl, namer),
@@ -132,6 +134,7 @@ func newProvider(cc gogogrpc.ClientConn, network netconf.ID, opts ...func(*Provi
 			Distribution: dcl,
 			Mint:         mcl,
 			EvmEngine:    evmengcl,
+			Bank:         bcl,
 		},
 	}
 
