@@ -7,6 +7,9 @@ package bankwrap
 import (
 	"context"
 
+	"github.com/ethereum/go-ethereum/common"
+
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 )
@@ -22,10 +25,10 @@ func (k Wrapper) SendCoinsFromModuleToAccountNoWithdrawal(ctx context.Context, s
 }
 
 func (k Wrapper) SendCoinsFromModuleToAccount(ctx context.Context, _ string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
-	var totalAmount uint64
+	totalAmount := math.NewInt(0)
 	for _, coin := range amt {
-		totalAmount += coin.Amount.Uint64()
+		totalAmount = totalAmount.Add(coin.Amount)
 	}
 
-	return k.WithdrawalKeeper.InsertWithdrawal(ctx, recipientAddr, totalAmount)
+	return k.WithdrawalKeeper.InsertWithdrawal(ctx, common.BytesToAddress(recipientAddr), totalAmount) //nolint:forbidigo // should be padded
 }

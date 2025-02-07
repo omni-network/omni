@@ -7,6 +7,8 @@ import (
 	"github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/ethereum/go-ethereum/common"
+
+	"cosmossdk.io/math"
 )
 
 var _ types.QueryServer = (*Keeper)(nil)
@@ -23,11 +25,11 @@ func (k *Keeper) SumPendingWithdrawalsByAddress(
 		return nil, errors.Wrap(err, "get withdrawals")
 	}
 
-	var amount uint64
+	amount := math.NewInt(0)
 
 	for _, w := range withdrawals {
-		amount += w.GetAmountGwei()
+		amount = amount.Add(math.NewIntFromUint64(w.GetAmountGwei()))
 	}
 
-	return &types.SumPendingWithdrawalsByAddressResponse{Amount: amount}, nil
+	return &types.SumPendingWithdrawalsByAddressResponse{Amount: amount.Uint64()}, nil
 }

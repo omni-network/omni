@@ -12,6 +12,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/stretchr/testify/require"
@@ -57,7 +58,7 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 
 	for _, in := range inputs {
 		ctx = ctx.WithBlockHeight(int64(in.height))
-		err := keeper.InsertWithdrawal(ctx, in.addr, in.amount)
+		err := keeper.InsertWithdrawal(ctx, in.addr, math.NewIntFromUint64(in.amount))
 		require.NoError(t, err)
 	}
 

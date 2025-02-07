@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -74,11 +75,11 @@ func (k *Keeper) updateExecutionHead(ctx context.Context, payload engine.Executa
 }
 
 // insertWithdrawal inserts a withdrawal request.
-func (k *Keeper) InsertWithdrawal(ctx context.Context, withdrawalAddr common.Address, amountGwei uint64) error {
+func (k *Keeper) InsertWithdrawal(ctx context.Context, withdrawalAddr common.Address, amountGwei math.Int) error {
 	err := k.withdrawalTable.Insert(ctx, &Withdrawal{
 		Address:       withdrawalAddr.Bytes(),
 		CreatedHeight: uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()),
-		AmountGwei:    amountGwei,
+		AmountGwei:    amountGwei.Uint64(),
 	})
 	if err != nil {
 		return errors.Wrap(err, "insert withdrawal")

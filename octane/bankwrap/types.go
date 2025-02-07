@@ -3,10 +3,12 @@ package bankwrap
 import (
 	"context"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
+
+	"cosmossdk.io/math"
 )
 
 type WithdrawalKeeper interface {
 	// InsertWithdrawal creates a new withdrawal request into the local DB.
-	InsertWithdrawal(ctx context.Context, withdrawalAddr sdk.AccAddress, amountGwei uint64) error
+	InsertWithdrawal(ctx context.Context, withdrawalAddr common.Address, amountGwei math.Int) error
 }

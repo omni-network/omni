@@ -280,16 +280,17 @@ func TestCLIOperator(t *testing.T) {
 			}, valChangeWait, 500*time.Millisecond, "no rewards increase")
 		})
 
-		// make sure than an additional delegation triggers a withdrawal eventually
+		// make sure that an additional delegation triggers a withdrawal eventually
 		t.Run("withdrawals", func(t *testing.T) {
 			if !feature.FlagEVMStakingModule.Enabled(ctx) {
 				t.Skip("Skipping withdrawal test")
 			}
 
-			// make sure no withdrawals are pending
+			// make sure no withdrawals are pending yet
 			amount := pendingWithdrawals(t, ctx, cprov, delegatorCosmosAddr)
 			require.Equal(t, uint64(0), amount)
 
+			// delegate more stake
 			stdOut, _, err := execCLI(
 				ctx, "operator", "delegate",
 				"--network", "devnet",
@@ -301,7 +302,7 @@ func TestCLIOperator(t *testing.T) {
 			require.NoError(t, err)
 			require.Empty(t, stdOut)
 
-			// make sure the validator power is increased and the delegation can be found
+			// make sure the delegation succeeded
 			require.Eventuallyf(t, func() bool {
 				val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
 				require.True(t, ok)
@@ -311,7 +312,7 @@ func TestCLIOperator(t *testing.T) {
 				return newPower == opInitDelegation+opSelfDelegation+2*delegatorDelegation
 			}, valChangeWait, 500*time.Millisecond, "failed to delegate")
 
-			// make sure the validator power is increased and the delegation can be found
+			// make sure the pending withdrawals are non zero
 			require.Eventuallyf(t, func() bool {
 				amount := pendingWithdrawals(t, ctx, cprov, delegatorCosmosAddr)
 
