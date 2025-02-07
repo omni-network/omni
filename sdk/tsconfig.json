@@ -12,7 +12,6 @@
     "noImplicitOverride": true, // not enabled by default in strict
     "noUnusedLocals": true, // not enabled by default in strict
     "noUnusedParameters": true, // not enabled by default in strict
-    "exactOptionalPropertyTypes": true, // not enabled by default in strict
 
     // JS support
     "allowJs": false,
