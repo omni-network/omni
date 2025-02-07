@@ -12,6 +12,7 @@ remappings = [
 ]
 
 allow_paths = ["../core"]
+ffi = true
 
 solc_version = "0.8.24"
 

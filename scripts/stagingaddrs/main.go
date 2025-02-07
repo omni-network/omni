@@ -45,7 +45,7 @@ func run(ctx context.Context) error {
 		"feeoraclev2":        addrs.FeeOracleV2,
 	}
 
-	prettyJSON, err := json.MarshalIndent(addrsJSON, "", "    ")
+	prettyJSON, err := json.Marshal(addrsJSON)
 	if err != nil {
 		return errors.Wrap(err, "marshal json")
 	}
