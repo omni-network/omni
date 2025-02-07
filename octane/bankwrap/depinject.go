@@ -20,6 +20,10 @@ type DIOutputs struct {
 }
 
 func DependencyInjector(wrapper *Wrapper, wk types.WithdrawalKeeper) {
+	if wrapper == nil {
+		panic("dependency not found")
+	}
+
 	wrapper.WithdrawalKeeper = wk
 }
 
