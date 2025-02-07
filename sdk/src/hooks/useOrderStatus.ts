@@ -1,38 +1,33 @@
 import { useMemo } from 'react'
-import { type Hex, type Log, decodeEventLog } from 'viem'
-import {
-  type UseWaitForTransactionReceiptReturnType,
-  useReadContract,
-} from 'wagmi'
+import type { Hex } from 'viem'
+import { useReadContract } from 'wagmi'
 import { inbox, outbox } from '../index.js'
 import type { OrderStatus } from '../types/orderStatus.js'
 
 type UseOrderStatusParams = {
   destChainId: number
-  txStatus?: UseWaitForTransactionReceiptReturnType['status']
-  txLogs?: Log[]
   originChainId?: number
-  refetchInterval?: number
+  orderId?: Hex
+  originData?: Hex
 }
 
 type UseDidFillParams = {
   destChainId: number
-  id?: Hex
+  orderId?: Hex
   originData?: Hex
-  refetchInterval?: number
 }
 
 function useDidFill(params: UseDidFillParams) {
-  const { id, originData, destChainId, refetchInterval } = params
+  const { orderId, originData, destChainId } = params
   const filled = useReadContract({
     chainId: destChainId,
     address: outbox.address,
     abi: outbox.abi,
     functionName: 'didFill',
-    args: id && originData ? [id, originData] : undefined,
+    args: orderId && originData ? [orderId, originData] : undefined,
     query: {
-      enabled: !!id && !!originData,
-      refetchInterval: refetchInterval ?? 1000,
+      enabled: !!orderId && !!originData,
+      refetchInterval: 1000,
     },
   })
 
@@ -40,25 +35,8 @@ function useDidFill(params: UseDidFillParams) {
 }
 
 export function useOrderStatus(params: UseOrderStatusParams) {
-  const { txStatus, txLogs, refetchInterval, originChainId } = params
-  const eventData = useMemo(() => {
-    if (!txStatus || !txLogs || txStatus !== 'success') return
-    const openEvent = decodeEventLog({
-      abi: inbox.abi,
-      eventName: 'Open',
-      data: txLogs[txLogs.length - 1].data,
-      topics: txLogs[txLogs.length - 1].topics,
-    })
-    return {
-      id: openEvent.args.resolvedOrder.orderId,
-      originData: openEvent.args.resolvedOrder.fillInstructions[0].originData,
-    }
-  }, [txStatus, txLogs])
-
+  const { originChainId, orderId } = params
   const filled = useDidFill({
-    id: eventData?.id,
-    originData: eventData?.originData,
-    refetchInterval,
     ...params,
   })
 
@@ -67,10 +45,10 @@ export function useOrderStatus(params: UseOrderStatusParams) {
     abi: inbox.abi,
     functionName: 'getOrder',
     chainId: originChainId,
-    args: eventData?.id ? [eventData.id] : undefined,
+    args: orderId ? [orderId] : undefined,
     query: {
-      enabled: !!eventData?.id || !filled,
-      refetchInterval: refetchInterval ?? 1000,
+      enabled: !!orderId || !filled,
+      refetchInterval: 1000,
     },
   })
 

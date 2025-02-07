@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
 import { type Order, encodeOrder, inbox, typeHash } from '../index.js'
+import { useGetOpenOrder } from './useGetOpenOrder.js'
 import { useOrderStatus } from './useOrderStatus.js'
 
 type UseOpenOrderParams = {
@@ -14,13 +15,15 @@ export function useOpenOrder(params: UseOpenOrderParams) {
   const wait = useWaitForTransactionReceipt({
     hash: mutation.data,
   })
-
+  const { orderId, originData } = useGetOpenOrder({
+    status: wait.status,
+    logs: wait.data?.logs,
+  })
   const orderStatus = useOrderStatus({
-    txStatus: wait.status,
-    txLogs: wait.data?.logs,
     originChainId,
     destChainId,
-    refetchInterval: 1000,
+    orderId,
+    originData,
   })
 
   const openOrderAsync = useCallback(
