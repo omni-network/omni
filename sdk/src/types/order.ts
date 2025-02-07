@@ -60,6 +60,6 @@ type Call = {
   readonly target: Address
   readonly value: bigint
   // TODO: infer selector and args from abi
-  readonly selector: Hex
+  readonly functionName: Hex
   readonly args?: unknown[]
 }
