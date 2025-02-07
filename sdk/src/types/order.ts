@@ -22,9 +22,9 @@ import type { Address, Hex } from 'viem'
  *  calls: [
  *    {
  *      target: '0x...',
- *       selector: '0x...',
- *       value: BigInt(1000000000000000000),
- *       params: '0x...'
+ *      selector: '0x...',
+ *      value: BigInt(1000000000000000000),
+ *      params: '0x...'
  *     }
  *   ],
  *   expenses: [
