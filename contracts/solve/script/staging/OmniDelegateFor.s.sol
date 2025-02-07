@@ -87,7 +87,7 @@ contract OmniDelegateFor is Script {
             target: address(staking),
             selector: staking.delegateFor.selector,
             value: amount,
-            params: abi.encodeCall(IStaking.delegateFor, (msg.sender, block.number % 2 == 0 ? validator1 : validator2))
+            params: abi.encode(msg.sender, block.number % 2 == 0 ? validator1 : validator2)
         });
 
         SolverNet.OrderData memory orderData = SolverNet.OrderData({
