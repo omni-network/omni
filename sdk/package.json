@@ -1,25 +1,45 @@
 {
-  "name": "omni",
-  "version": "0.0.1",
+  "name": "@omni/solvernet",
+  "description": "Typescript interface for Omni Solvernet",
+  "version": "0.0.0-alpha.1",
   "type": "module",
   "license": "GPL-3.0-only",
   "packageManager": "pnpm@9.1.0",
   "sideEffects": false,
   "scripts": {
-    "clean": "rm -rf dist",
-    "build": "tsc -p tsconfig.build.json",
-    "build:clean": "pnpm clean && pnpm build",
+    "build": "pnpm run clean && tsc -p tsconfig.build.json",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "precommit": "biome check --write"
   },
-  "files": ["src/*", "dist/*"],
+  "files": [
+    "dist/**",
+    "!dist/**/*.tsbuildinfo",
+    "src/**/*.ts",
+    "!src/**/*.test.ts",
+    "!src/**/*.test-d.ts"
+  ],
   "engines": {
     "node": "22.x"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0.4",
+    "viem": "2.x"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
     "typescript": "5.7.2"
   },
-  "dependencies": {
-    "viem": "^2.21.53"
-  }
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/omni-network/omni.git",
+    "directory": "sdk"
+  },
+  "keywords": ["typescript", "web3", "ethereum", "omni"],
+  "author": "Omni Network",
+  "homepage": "https://omni.network/"
 }
