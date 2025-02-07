@@ -4,14 +4,14 @@ import type { UseWaitForTransactionReceiptReturnType } from 'wagmi'
 import { inbox } from '../index.js'
 
 type UseGetOpenOrderParams = {
-  status?: UseWaitForTransactionReceiptReturnType['status']
+  status: UseWaitForTransactionReceiptReturnType['status']
   logs?: Log[]
 }
 
 export function useGetOpenOrder(params: UseGetOpenOrderParams) {
   const { status, logs } = params
   const eventData = useMemo(() => {
-    if (!status || !logs || status !== 'success') return
+    if (!logs || status !== 'success') return
     const openEvent = decodeEventLog({
       abi: inbox.abi,
       eventName: 'Open',
