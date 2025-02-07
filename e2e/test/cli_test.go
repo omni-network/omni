@@ -290,7 +290,7 @@ func TestCLIOperator(t *testing.T) {
 
 			// make sure no withdrawals are pending
 			amount := pendingWithdrawals(t, ctx, cprov, delegatorCosmosAddr)
-			require.Equal(t, 0, amount)
+			require.Equal(t, uint64(0), amount)
 
 			const delegatorDelegation = uint64(700)
 			stdOut, _, err := execCLI(

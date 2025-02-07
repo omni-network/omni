@@ -48,7 +48,7 @@ interface IBridge {
     /**
      * @dev Event emitted when a bridge route is configured.
      */
-    event BridgeConfigured(uint64 indexed destChainId, address indexed bridge);
+    event RouteConfigured(uint64 indexed destChainId, address indexed bridge, bool indexed hasLockbox);
 
     /**
      * @dev Event emitted when a crosschain token transfer is initiated.
@@ -70,6 +70,16 @@ interface IBridge {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /**
+     * @dev Struct representing a bridge route.
+     * @param bridge     The address of the bridge contract.
+     * @param hasLockbox Whether the bridge has a lockbox.
+     */
+    struct Route {
+        address bridge;
+        bool hasLockbox;
+    }
+
+    /**
      * @dev Address of the token being bridged.
      */
     function token() external view returns (address);
@@ -84,11 +94,12 @@ interface IBridge {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /**
-     * @dev Returns the bridge address for a given destination chainId.
+     * @dev Returns the bridge address and config for a given destination chainId.
      * @param destChainId The chainId of the destination chain.
      * @return bridge     The bridge address.
+     * @return hasLockbox Whether the bridge has a lockbox.
      */
-    function routes(uint64 destChainId) external view returns (address bridge);
+    function getRoute(uint64 destChainId) external view returns (address bridge, bool hasLockbox);
 
     /**
      * @dev Returns the fee for bridging a token to a destination chain.
@@ -123,8 +134,8 @@ interface IBridge {
 
     /**
      * @dev Sets bridge routes for given chainIds.
-     * @param chainIds    The chainIds to configure.
-     * @param bridgeAddrs The bridges addresses to configure.
+     * @param chainIds The chainIds to configure.
+     * @param routes   The bridges addresses and configs to configure.
      */
-    function setRoutes(uint64[] calldata chainIds, address[] calldata bridgeAddrs) external;
+    function setRoutes(uint64[] calldata chainIds, Route[] calldata routes) external;
 }
