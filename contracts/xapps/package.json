@@ -1,7 +1,7 @@
 {
   "license": "GPL-3.0-only",
   "packageManager": "pnpm@9.12.1",
-  "repository": "https://github.com/omni-network/omni/tree/main/contracts/misc",
+  "repository": "https://github.com/omni-network/omni/tree/main/contracts/xapps",
   "scripts": {
     "test": "forge test"
   },
