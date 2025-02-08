@@ -1,4 +1,4 @@
-import { type Hex, encodeAbiParameters } from 'viem'
+import { type Hex, encodeAbiParameters, encodeFunctionData, slice } from 'viem'
 import type { Order } from '../index.js'
 
 /**
@@ -19,9 +19,12 @@ import type { Order } from '../index.js'
  *  calls: [
  *    {
  *      target: '0x...',
- *       selector: '0x...',
+ *       selector: 'deposit',
  *       value: BigInt(1000000000000000000),
- *       params: '0x...'
+ *       args: [
+ *        '0x...',
+ *        BigInt(1000000000000000000),
+ *       ]
  *     }
  *   ],
  *   expenses: [
@@ -35,12 +38,25 @@ import type { Order } from '../index.js'
  */
 export function encodeOrder(order: Order): Hex {
   // TODO add uint length validations
-  const callsTuple = order.calls.map((call) => ({
-    target: call.target,
-    selector: call.selector,
-    value: call.value,
-    params: call.params,
-  }))
+  const callsTuple = order.calls.map((call) => {
+    const callData = encodeFunctionData({
+      abi: call.abi,
+      functionName: call.functionName,
+      args: call.args,
+    })
+
+    const selector = slice(callData, 0, 4)
+
+    const params =
+      callData.length > 10 ? slice(callData, 4, callData.length) : '0x'
+
+    return {
+      target: call.target,
+      selector,
+      value: call.value,
+      params,
+    }
+  })
 
   const expensesTuple = order.expenses.map((expense) => ({
     spender: expense.spender,

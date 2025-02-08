@@ -1,4 +1,4 @@
-import type { Address, Hex } from 'viem'
+import type { Abi, Address, Hex } from 'viem'
 
 /**
  * @description Defines the structure of an order.
@@ -56,8 +56,10 @@ type Expense = {
 }
 
 type Call = {
+  readonly abi: Abi
   readonly target: Address
-  readonly selector: Hex
   readonly value: bigint
-  readonly params: Hex
+  // TODO: infer selector and args from abi
+  readonly functionName: Hex
+  readonly args?: unknown[]
 }
