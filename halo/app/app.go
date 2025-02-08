@@ -110,7 +110,8 @@ func newApp(
 ) (*App, error) {
 	depCfg := depinject.Configs(
 		depinject.Provide(diProviders(ctx)...),
-		depinject.Configs(bankInterfaceBindings(ctx)...),
+		depinject.Invoke(diInvokers(ctx)...),
+		depinject.Configs(bankWrapperBindings(ctx)...),
 		appConfig(ctx, network),
 		depinject.Supply(
 			logger,
@@ -121,7 +122,6 @@ func newApp(
 			feeRecProvider,
 			appOpts,
 		),
-		depinject.Invoke(diInvokers(ctx)...),
 	)
 
 	var (

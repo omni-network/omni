@@ -22,6 +22,7 @@ import (
 
 	"github.com/cometbft/cometbft/rpc/client/http"
 
+	"github.com/ethereum/go-ethereum/common"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 
@@ -287,7 +288,7 @@ func TestCLIOperator(t *testing.T) {
 			}
 
 			// make sure no withdrawals are pending yet
-			amount := pendingWithdrawals(t, ctx, cprov, delegatorCosmosAddr)
+			amount := sumPendingWithdrawals(t, ctx, cprov, delegatorCosmosAddr)
 			require.Equal(t, uint64(0), amount)
 
 			// delegate more stake
@@ -314,7 +315,7 @@ func TestCLIOperator(t *testing.T) {
 
 			// make sure the pending withdrawals are non zero
 			require.Eventuallyf(t, func() bool {
-				amount := pendingWithdrawals(t, ctx, cprov, delegatorCosmosAddr)
+				amount := sumPendingWithdrawals(t, ctx, cprov, delegatorCosmosAddr)
 
 				return amount > 0
 			}, 2*valChangeWait, 500*time.Millisecond, "failed to withdraw")
@@ -340,13 +341,13 @@ func delegationFound(t *testing.T, ctx context.Context, cprov provider.Provider,
 	return false
 }
 
-func pendingWithdrawals(t *testing.T, ctx context.Context, cprov provider.Provider, addr sdk.AccAddress) uint64 {
+func sumPendingWithdrawals(t *testing.T, ctx context.Context, cprov provider.Provider, addr sdk.AccAddress) uint64 {
 	t.Helper()
 	resp, err := cprov.QueryClients().EvmEngine.SumPendingWithdrawalsByAddress(
 		ctx,
-		&evmengtypes.SumPendingWithdrawalsByAddressRequest{Address: []byte(addr)},
+		&evmengtypes.SumPendingWithdrawalsByAddressRequest{Address: evmengtypes.Address(common.BytesToAddress(addr.Bytes()))},
 	)
 	require.NoError(t, err)
 
-	return resp.Amount
+	return resp.SumGwei
 }

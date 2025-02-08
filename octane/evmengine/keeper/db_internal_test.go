@@ -12,7 +12,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/stretchr/testify/require"
@@ -58,7 +57,7 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 
 	for _, in := range inputs {
 		ctx = ctx.WithBlockHeight(int64(in.height))
-		err := keeper.InsertWithdrawal(ctx, in.addr, math.NewIntFromUint64(in.amount))
+		err := keeper.InsertWithdrawal(ctx, in.addr, in.amount)
 		require.NoError(t, err)
 	}
 
@@ -73,18 +72,22 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 		require.Equal(t, in.height, withdrawals[i].GetCreatedHeight())
 	}
 
-	withdrawalsByAddr, err := keeper.getWithdrawalsByAddress(ctx, addr1)
+	withdrawalsByAddr, err := keeper.listWithdrawalsByAddress(ctx, addr1)
 	require.NoError(t, err)
 	require.Len(t, withdrawalsByAddr, 2)
 	require.Equal(t, addr1.Bytes(), withdrawalsByAddr[0].GetAddress())
 
-	withdrawalsByAddr, err = keeper.getWithdrawalsByAddress(ctx, addr2)
+	withdrawalsByAddr, err = keeper.listWithdrawalsByAddress(ctx, addr2)
 	require.NoError(t, err)
 	require.Len(t, withdrawalsByAddr, 1)
 	require.Equal(t, addr2.Bytes(), withdrawalsByAddr[0].GetAddress())
+
+	withdrawalsByAddr, err = keeper.listWithdrawalsByAddress(ctx, tutil.RandomAddress())
+	require.NoError(t, err)
+	require.Empty(t, withdrawalsByAddr)
 }
 
-// getAllWithdrawals returns all stored withdrawals.
+// getAllWithdrawals returns all withdrawals in the keeper DB.
 func getAllWithdrawals(ctx context.Context, k *Keeper) ([]*Withdrawal, error) {
 	iter, err := k.withdrawalTable.List(ctx, WithdrawalIdIndexKey{})
 	if err != nil {

@@ -10,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
 
-	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -74,24 +73,28 @@ func (k *Keeper) updateExecutionHead(ctx context.Context, payload engine.Executa
 	return nil
 }
 
-// insertWithdrawal inserts a withdrawal request.
-func (k *Keeper) InsertWithdrawal(ctx context.Context, withdrawalAddr common.Address, amountGwei math.Int) error {
+// InsertWithdrawal inserts a new withdrawal.
+func (k *Keeper) InsertWithdrawal(ctx context.Context, withdrawalAddr common.Address, amountGwei uint64) error {
+	if amountGwei == 0 {
+		return errors.New("zero withdrawal amount")
+	}
+
 	err := k.withdrawalTable.Insert(ctx, &Withdrawal{
 		Address:       withdrawalAddr.Bytes(),
 		CreatedHeight: uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()),
-		AmountGwei:    amountGwei.Uint64(),
+		AmountGwei:    amountGwei,
 	})
 	if err != nil {
 		return errors.Wrap(err, "insert withdrawal")
 	}
 
-	withdrawals.Inc()
+	insertedWithdrawals.Inc()
 
 	return nil
 }
 
-// GetWithdrawalsByAddress returns all stored withdrawals.
-func (k *Keeper) getWithdrawalsByAddress(ctx context.Context, withdrawalAddr common.Address) ([]*Withdrawal, error) {
+// listWithdrawalsByAddress returns all withdrawals with provided address.
+func (k *Keeper) listWithdrawalsByAddress(ctx context.Context, withdrawalAddr common.Address) ([]*Withdrawal, error) {
 	iter, err := k.withdrawalTable.List(ctx, WithdrawalAddressIndexKey{}.WithAddress(withdrawalAddr[:]))
 	if err != nil {
 		return nil, errors.Wrap(err, "list withdrawals")
@@ -99,12 +102,12 @@ func (k *Keeper) getWithdrawalsByAddress(ctx context.Context, withdrawalAddr com
 	defer iter.Close()
 
 	var withdrawals []*Withdrawal
-
 	for iter.Next() {
 		val, err := iter.Value()
 		if err != nil {
 			return nil, errors.Wrap(err, "get withdrawal")
 		}
+
 		withdrawals = append(withdrawals, val)
 	}
 
