@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/umath"
+	evmengtypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	cmtcrypto "github.com/cometbft/cometbft/crypto"
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
@@ -20,6 +21,7 @@ import (
 	utypes "cosmossdk.io/x/upgrade/types"
 	cosmosk1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	btypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	dtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	mtypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	sltypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -38,6 +40,8 @@ type QueryClients struct {
 	Upgrade      utypes.QueryClient
 	Distribution dtypes.QueryClient
 	Mint         mtypes.QueryClient
+	EvmEngine    evmengtypes.QueryClient
+	Bank         btypes.QueryClient
 }
 
 // PortalValidator is a consensus chain validator in a validator set emitted/submitted by/tp portals .

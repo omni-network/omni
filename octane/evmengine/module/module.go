@@ -118,6 +118,7 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingCo
 // RegisterServices registers a gRPC query service to respond to the module-specific gRPC queries.
 func (m AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServiceServer(cfg.MsgServer(), keeper.NewMsgServerImpl(m.keeper))
+	types.RegisterQueryServer(cfg.QueryServer(), m.keeper)
 }
 
 // IsOnePerModuleType implements the depinject.OnePerModuleType interface.

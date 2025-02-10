@@ -134,7 +134,7 @@ var (
 
 	moduleAccPerms = []*authmodulev1.ModuleAccountPermission{
 		{Account: authtypes.FeeCollectorName},
-		{Account: distrtypes.ModuleName},
+		{Account: distrtypes.ModuleName, Permissions: []string{authtypes.Burner}},
 		{Account: stakingtypes.BondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
 		{Account: stakingtypes.NotBondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
 		// TODO(christian): rename package, the rest can stay because names are the same
@@ -142,12 +142,15 @@ var (
 		{Account: minttypes.ModuleName, Permissions: []string{authtypes.Minter}},
 	}
 
-	bankInterfaceBindings = func(ctx context.Context) []depinject.Config {
+	// bankWrapperBindings returns a list of depinject.Configs that binds the bankwrap.Wrapper
+	// to all x/bank Keeper interfaces.
+	bankWrapperBindings = func(ctx context.Context) []depinject.Config {
 		if !feature.FlagEVMStakingModule.Enabled(ctx) {
 			return nil
 		}
 
 		configs := bankwrap.SDKBindInterfaces()
+		// Add omni specific module overrides
 		configs = append(configs, depinject.BindInterface(
 			"github.com/omni-network/omni/halo/evmstaking/evmstaking.BankKeeper",
 			bankwrap.WrapperImpl,
@@ -274,8 +277,20 @@ var (
 		})
 	}
 
+	// diInvokers defines a list of depinject invoke functions.
+	// These are non-cosmos-module invokers used in halo's app wiring.
+	diInvokers = func(ctx context.Context) []any {
+		if !feature.FlagEVMStakingModule.Enabled(ctx) {
+			return nil
+		}
+
+		return []any{
+			bankwrap.DIInvoke,
+		}
+	}
+
 	// diProviders defines a list of depinject provider functions.
-	// These are non-cosmos module constructors used in halo's app wiring.
+	// These are non-cosmos-module providers used in halo's app wiring.
 	diProviders = func(ctx context.Context) []any {
 		if feature.FlagEVMStakingModule.Enabled(ctx) {
 			return []any{
@@ -323,7 +338,8 @@ func ClientEncodingConfig(ctx context.Context, network netconf.ID) (EncodingConf
 	depCfg := depinject.Configs(
 		appConfig(ctx, network),
 		depinject.Provide(diProviders(ctx)...),
-		depinject.Configs(bankInterfaceBindings(ctx)...),
+		depinject.Configs(bankWrapperBindings(ctx)...),
+		depinject.Invoke(diInvokers(ctx)...),
 		depinject.Supply(
 			newSDKLogger(ctx),
 			attesttypes.ChainVerNameFunc(netconf.ChainVersionNamer(network)),

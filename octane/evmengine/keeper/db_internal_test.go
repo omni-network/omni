@@ -57,7 +57,7 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 
 	for _, in := range inputs {
 		ctx = ctx.WithBlockHeight(int64(in.height))
-		err := keeper.insertWithdrawal(ctx, in.addr, in.amount)
+		err := keeper.InsertWithdrawal(ctx, in.addr, in.amount)
 		require.NoError(t, err)
 	}
 
@@ -71,9 +71,23 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 		require.Equal(t, in.amount, withdrawals[i].GetAmountGwei())
 		require.Equal(t, in.height, withdrawals[i].GetCreatedHeight())
 	}
+
+	withdrawalsByAddr, err := keeper.listWithdrawalsByAddress(ctx, addr1)
+	require.NoError(t, err)
+	require.Len(t, withdrawalsByAddr, 2)
+	require.Equal(t, addr1.Bytes(), withdrawalsByAddr[0].GetAddress())
+
+	withdrawalsByAddr, err = keeper.listWithdrawalsByAddress(ctx, addr2)
+	require.NoError(t, err)
+	require.Len(t, withdrawalsByAddr, 1)
+	require.Equal(t, addr2.Bytes(), withdrawalsByAddr[0].GetAddress())
+
+	withdrawalsByAddr, err = keeper.listWithdrawalsByAddress(ctx, tutil.RandomAddress())
+	require.NoError(t, err)
+	require.Empty(t, withdrawalsByAddr)
 }
 
-// getAllWithdrawals returns all stored withdrawals.
+// getAllWithdrawals returns all withdrawals in the keeper DB.
 func getAllWithdrawals(ctx context.Context, k *Keeper) ([]*Withdrawal, error) {
 	iter, err := k.withdrawalTable.List(ctx, WithdrawalIdIndexKey{})
 	if err != nil {

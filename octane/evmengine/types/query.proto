@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package octane.evmengine.types;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "octane/evmengine/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // SumPendingWithdrawalsByAddress returns the sum of pending withdrawal amounts (in gwei) to requested address or 0 if none.
+  rpc SumPendingWithdrawalsByAddress(SumPendingWithdrawalsByAddressRequest) returns (SumPendingWithdrawalsByAddressResponse) {}
+}
+
+message SumPendingWithdrawalsByAddressRequest {
+    bytes address = 1 [(gogoproto.nullable) = false, (gogoproto.customtype) = "Address"]; // Withdrawal address
+}
+
+message SumPendingWithdrawalsByAddressResponse {
+    uint64 sum_gwei = 1; // Sum of pending withdrawal amounts (in gwei) to requested address or 0 if none.
+}

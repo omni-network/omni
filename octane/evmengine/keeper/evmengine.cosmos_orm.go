@@ -183,6 +183,19 @@ func (this WithdrawalIdIndexKey) WithId(id uint64) WithdrawalIdIndexKey {
 	return this
 }
 
+type WithdrawalAddressIndexKey struct {
+	vs []interface{}
+}
+
+func (x WithdrawalAddressIndexKey) id() uint32            { return 1 }
+func (x WithdrawalAddressIndexKey) values() []interface{} { return x.vs }
+func (x WithdrawalAddressIndexKey) withdrawalIndexKey()   {}
+
+func (this WithdrawalAddressIndexKey) WithAddress(address []byte) WithdrawalAddressIndexKey {
+	this.vs = []interface{}{address}
+	return this
+}
+
 type withdrawalTable struct {
 	table ormtable.AutoIncrementTable
 }

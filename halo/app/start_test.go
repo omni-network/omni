@@ -19,6 +19,7 @@ import (
 	uluwatu1 "github.com/omni-network/omni/halo/app/upgrades/uluwatu"
 	halocmd "github.com/omni-network/omni/halo/cmd"
 	halocfg "github.com/omni-network/omni/halo/config"
+	"github.com/omni-network/omni/lib/anvil"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/feature"
@@ -31,6 +32,8 @@ import (
 	"github.com/cometbft/cometbft/types"
 
 	db "github.com/cosmos/cosmos-db"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	"github.com/stretchr/testify/require"
 )
@@ -213,6 +216,19 @@ func testCProvider(t *testing.T, ctx context.Context, cprov cprovider.Provider) 
 		resp, err := cprov.QueryClients().Mint.Inflation(ctx, &minttypes.QueryInflationRequest{})
 		require.NoError(t, err)
 		require.EqualValues(t, "0.115789000000000000", resp.Inflation.String())
+
+		// make sure that no accounts used in e2e testing have a non-zero balance
+		for _, pubkey := range anvil.DevAccounts() {
+			resp, err := cprov.QueryClients().Bank.AllBalances(ctx, &banktypes.QueryAllBalancesRequest{
+				Address:      sdk.AccAddress(pubkey.Bytes()).String(),
+				Pagination:   nil,
+				ResolveDenom: false,
+			})
+			require.NoError(t, err)
+			for _, balance := range resp.Balances {
+				require.True(t, balance.Amount.IsZero())
+			}
+		}
 	}
 }
 

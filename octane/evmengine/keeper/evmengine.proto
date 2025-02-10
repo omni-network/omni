@@ -26,10 +26,11 @@ message Withdrawal {
   option (cosmos.orm.v1.table) = {
     id: 2;
     primary_key: { fields: "id", auto_increment: true }
+    index: { id: 1, fields: "address" } // Allows querying by address
   };
 
-  uint64  id               = 1; // Auto-incremented ID.
-  bytes   address          = 2; // Target address of the withdrawal.
-  uint64  created_height   = 3; // Consensus chain height this withdrawal was created in.
-  uint64  amount_gwei      = 4; // Value of withdrawal in Gwei.
+  uint64 id               = 1; // Auto-incremented ID.
+  bytes  address          = 2; // Target address of the withdrawal.
+  uint64 created_height   = 3; // Consensus chain height this withdrawal was created in.
+  uint64 amount_gwei      = 4; // Value of withdrawal in Gwei.
 }

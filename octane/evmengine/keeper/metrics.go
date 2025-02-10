@@ -6,10 +6,10 @@ import (
 )
 
 var (
-	withdrawals = promauto.NewGauge(prometheus.GaugeOpts{
+	insertedWithdrawals = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: "octane",
 		Subsystem: "evmengine",
-		Name:      "withdrawals_queued",
-		Help:      "The number of queued withdrawals",
+		Name:      "withdrawals_inserted_total",
+		Help:      "Total number of inserted withdrawals",
 	})
 )
