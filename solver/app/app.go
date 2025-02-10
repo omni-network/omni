@@ -93,7 +93,8 @@ func Run(ctx context.Context, cfg Config) error {
 
 	log.Info(ctx, "Serving API", "address", cfg.APIAddr)
 	apiChan := serveAPI(cfg.APIAddr, map[string]http.Handler{
-		"/api/v1/quote": newQuoteHandler(newQuoter(backends, solverAddr)),
+		"/api/v1/quote":     newQuoteHandler(newQuoter(backends, solverAddr)),
+		"/api/v1/contracts": newContractsHandler(network.ID),
 	})
 
 	select {
