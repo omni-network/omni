@@ -33,12 +33,14 @@ type QuoteRequest struct {
 
 // QuoteResponse is the response json for the /quote endpoint.
 type QuoteResponse struct {
-	Rejected          bool     `json:"rejected,omitempty"`
-	RejectReason      string   `json:"rejectReason,omitempty"`
-	RejectDescription string   `json:"rejectDescription,omitempty"`
-	Deposit           *Deposit `json:"deposit,omitempty"`
-	Error             *Error   `json:"error,omitempty"`
+	Rejected          bool               `json:"rejected,omitempty"`
+	RejectReason      string             `json:"rejectReason,omitempty"`
+	RejectDescription string             `json:"rejectDescription,omitempty"`
+	Deposit           *Deposit           `json:"deposit,omitempty"`
+	Error             *JSONErrorResponse `json:"error,omitempty"`
 }
+
+var _ JSONResponse = (*QuoteResponse)(nil)
 
 func (r QuoteResponse) StatusCode() int {
 	if r.Error != nil {
@@ -67,13 +69,6 @@ type Call struct {
 type Deposit struct {
 	Token  common.Address `json:"token"`
 	Amount *big.Int       `json:"amount"`
-}
-
-// Error is a json response for http errors (e.g 4xx, 5xx), not used for rejections.
-type Error struct {
-	Code    int    `json:"code"`
-	Status  string `json:"status"`
-	Message string `json:"message"`
 }
 
 type quoteFunc func(context.Context, QuoteRequest) (Deposit, error)
@@ -129,21 +124,11 @@ func newQuoteHandler(quoteFunc quoteFunc) http.Handler {
 
 		w.Header().Set("Content-Type", "application/json")
 
-		// TODO: better request / response logging
-
-		write := func(res QuoteResponse) {
-			// Write response header first, before body.
-			w.WriteHeader(res.StatusCode())
-			if err := json.NewEncoder(w).Encode(res); err != nil {
-				log.Error(ctx, "[BUG] error writing /quote response", err)
-			}
-		}
-
 		writeError := func(statusCode int, err error) {
 			log.DebugErr(ctx, "Error handling /quote request", err)
 
-			write(QuoteResponse{
-				Error: &Error{
+			writeJSON(ctx, w, QuoteResponse{
+				Error: &JSONErrorResponse{
 					Code:    statusCode,
 					Status:  http.StatusText(statusCode),
 					Message: err.Error(),
@@ -159,7 +144,7 @@ func newQuoteHandler(quoteFunc quoteFunc) http.Handler {
 
 		deposit, err := quoteFunc(ctx, req)
 		if r := new(RejectionError); errors.As(err, &r) { // RejectionError
-			write(QuoteResponse{
+			writeJSON(ctx, w, QuoteResponse{
 				Rejected:          true,
 				RejectReason:      r.Reason.String(),
 				RejectDescription: r.Err.Error(),
@@ -167,7 +152,7 @@ func newQuoteHandler(quoteFunc quoteFunc) http.Handler {
 		} else if err != nil { // Error
 			writeError(http.StatusInternalServerError, err)
 		} else {
-			write(QuoteResponse{Deposit: &deposit}) // Success
+			writeJSON(ctx, w, QuoteResponse{Deposit: &deposit}) // Success
 		}
 	})
 }
