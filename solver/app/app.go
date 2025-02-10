@@ -233,6 +233,28 @@ func startEventStreams(
 		outboxContracts[chain] = outbox
 	}
 
+	middlemanChains, err := detectContractChains(ctx, network, backends, addrs.SolverNetMiddleman)
+	if err != nil {
+		return errors.Wrap(err, "detect middleman chains")
+	}
+
+	middlemanContracts := make(map[uint64]*bindings.SolverNetMiddleman)
+	for _, chain := range middlemanChains {
+		name := network.ChainName(chain)
+		log.Debug(ctx, "Using middleman contract", "chain", name, "address", addrs.SolverNetMiddleman.Hex())
+
+		backend, err := backends.Backend(chain)
+		if err != nil {
+			return err
+		}
+
+		outbox, err := bindings.NewSolverNetMiddleman(addrs.SolverNetMiddleman, backend)
+		if err != nil {
+			return errors.Wrap(err, "create middleman contract", "chain", name)
+		}
+		middlemanContracts[chain] = outbox
+	}
+
 	cursorSetter := func(ctx context.Context, chainID uint64, height uint64) error {
 		return cursors.Set(ctx, chainVerFromID(chainID), height)
 	}
