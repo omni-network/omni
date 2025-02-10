@@ -7,7 +7,7 @@ import { Test } from "forge-std/Test.sol";
 contract Omni_Test is Test {
     function test_constructor() public {
         uint256 initialSupply = 1e24;
-        address recipient = makeAddr("receipient");
+        address recipient = makeAddr("recipient");
         Omni token = new Omni(initialSupply, recipient);
 
         assertEq(token.totalSupply(), initialSupply);
