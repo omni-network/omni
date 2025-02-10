@@ -3,11 +3,16 @@ package app
 import (
 	"context"
 	"fmt"
+	"math/big"
 
+	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
@@ -34,7 +39,7 @@ type RejectionError struct {
 	Err    error        // Internal detailed reject condition
 }
 
-// ShouldReject returns true if reject reason is not none.
+// Error implements error.
 func (r *RejectionError) Error() string {
 	return fmt.Sprintf("%s: %v", r.Reason.String(), r.Err)
 }
@@ -42,6 +47,15 @@ func (r *RejectionError) Error() string {
 // newRejection is a convenience function to create a new RejectionError error.
 func newRejection(reason rejectReason, err error) *RejectionError {
 	return &RejectionError{Reason: reason, Err: err}
+}
+
+type AlreadyFilledError struct {
+	OrderID OrderID
+}
+
+// Error implements error.
+func (e *AlreadyFilledError) Error() string {
+	return "already filled: " + e.OrderID.String()
 }
 
 // newShouldRejector returns as ShouldReject function for the given network.
@@ -81,7 +95,11 @@ func newShouldRejector(
 				return err
 			}
 
-			return checkLiquidity(ctx, expenses, backend, solverAddr)
+			if err := checkLiquidity(ctx, expenses, backend, solverAddr); err != nil {
+				return err
+			}
+
+			return checkFill(ctx, backend, order, solverAddr)
 		}(ctx, srcChainID, order)
 
 		if err == nil { // No error, no rejection
@@ -91,6 +109,13 @@ func newShouldRejector(
 		r := new(RejectionError)
 		if !errors.As(err, &r) { // Error, but no rejection
 			return rejectNone, false, err
+		}
+
+		// TODO:  handle upstream, do not accept if already filled
+		e := new(AlreadyFilledError)
+		if errors.As(err, &e) { // Already filled, no rejection
+			log.InfoErr(ctx, "Already filled", err, "order_id", order.ID.String())
+			return rejectNone, false, nil
 		}
 
 		// Handle rejection
@@ -142,6 +167,69 @@ func parseDeposits(order Order) ([]Payment, error) {
 	}
 
 	return deposits, nil
+}
+
+// checkFill checks if a destination call reverts.
+// TODO: approve outbox spend (will revert without approvals).
+func checkFill(ctx context.Context, backend *ethbackend.Backend, order Order, solverAddr common.Address) error {
+	outbox, err := bindings.NewSolverNetOutbox(order.DestinationSettler, backend)
+	if err != nil {
+		return errors.Wrap(err, "new outbox")
+	}
+
+	callOpts := &bind.CallOpts{Context: ctx}
+	if ok, err := outbox.DidFill(callOpts, order.ID, order.FillOriginData); err != nil {
+		return errors.Wrap(err, "did fill")
+	} else if ok {
+		return &AlreadyFilledError{OrderID: order.ID}
+	}
+
+	nativeValue := big.NewInt(0)
+	for _, output := range order.MaxSpent {
+		if output.ChainId.Uint64() != order.DestinationChainID {
+			// We error on this case for now, as our contracts only allow single dest chain orders
+			// ERC7683 allows for orders with multiple destination chains, so continue-ing here
+			// would also be appropriate.
+			return errors.New("[BUG] destination chain mismatch")
+		}
+
+		// zero token address means native token
+		if output.Token == [32]byte{} {
+			nativeValue.Add(nativeValue, output.Amount)
+			continue
+		}
+
+		// TODO: approve outbox spend
+	}
+
+	// xcall fee
+	fee, err := outbox.FillFee(callOpts, order.FillOriginData)
+	if err != nil {
+		return errors.Wrap(err, "get fulfill fee")
+	}
+
+	fillerData := []byte{} // fillerData is optional ERC7683 custom filler specific data, unused in our contracts
+	fillCallData, err := outboxABI.Pack("fill", order.ID, order.FillOriginData, fillerData)
+	if err != nil {
+		return errors.Wrap(err, "pack fill inputs")
+	}
+
+	msg := ethereum.CallMsg{
+		To:    &order.DestinationSettler,
+		From:  solverAddr,
+		Value: new(big.Int).Add(nativeValue, fee),
+		Data:  fillCallData,
+	}
+
+	returnData, err := backend.CallContract(ctx, msg, nil)
+	if err != nil {
+		return &RejectionError{
+			Reason: rejectDestCallReverts,
+			Err:    errors.Wrap(err, "return_data", hexutil.Encode(returnData), "custom", solvernet.DetectCustomError(err)),
+		}
+	}
+
+	return nil
 }
 
 // parseExpenses parses order.MaxSpent, checks all tokens are supported, returns the list of expenses.

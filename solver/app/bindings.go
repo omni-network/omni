@@ -21,7 +21,8 @@ const (
 )
 
 var (
-	inboxABI = mustGetABI(bindings.SolverNetInboxMetaData)
+	inboxABI  = mustGetABI(bindings.SolverNetInboxMetaData)
+	outboxABI = mustGetABI(bindings.SolverNetOutboxMetaData)
 
 	// Event log topics (common.Hash).
 	topicOpened   = mustGetEventTopic(inboxABI, "Open")
