@@ -16,13 +16,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// Deploy deploys solve inbox / outbox contracts, and devnet app (if devnet).
+// Deploy deploys solve inbox / outbox / middleman contracts, and devnet app (if devnet).
 func Deploy(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
-	if !network.ID.IsEphemeral() {
-		log.Warn(ctx, "Skipping solvernet deploy", nil)
-		return nil
-	}
-
 	var eg errgroup.Group
 	eg.Go(func() error { return deployBoxes(ctx, network, backends) })
 	eg.Go(func() error { return maybeDeployMockTokens(ctx, network, backends) })

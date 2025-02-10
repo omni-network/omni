@@ -7,6 +7,7 @@ import (
 
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/e2e/docker"
+	"github.com/omni-network/omni/e2e/solve"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/e2e/xbridge"
 	libcmd "github.com/omni-network/omni/lib/cmd"
@@ -86,6 +87,7 @@ func New() *cobra.Command {
 		newDeployBridgeCmd(&def),
 		newDeployFeeOracleV2Cmd(&def),
 		newDeployXBridgeCmd(&def),
+		newDeploySolverNetCmd(&def),
 		fundAccounts(&def),
 	)
 
@@ -297,6 +299,18 @@ func newDeployXBridgeCmd(def *app.Definition) *cobra.Command {
 		Short: "Deploys the XBridge contracts",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return xbridge.Deploy(cmd.Context(), app.NetworkFromDef(*def), def.Backends())
+		},
+	}
+
+	return cmd
+}
+
+func newDeploySolverNetCmd(def *app.Definition) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "deploy-solvernet",
+		Short: "Deploys the SolverNet contracts",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return solve.Deploy(cmd.Context(), app.NetworkFromDef(*def), def.Backends())
 		},
 	}
 
