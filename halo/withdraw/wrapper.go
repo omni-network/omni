@@ -1,6 +1,6 @@
-// Package bankwrap wraps the x/bank by overriding `SendCoinsFromModuleToAccount` with
-// creation of a new withdrawal requests.
-package bankwrap
+// Package withdraw provides tools to automatically create EVM withdrawals
+// for any call to bank.SendCoinsFromModuleToAccount.
+package withdraw
 
 import (
 	"context"
@@ -16,23 +16,25 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 )
 
-type Wrapper struct {
+// BankWrapper wraps x/bank.Keeper by overriding `SendCoinsFromModuleToAccount` with
+// creation of a new withdrawal requests.
+type BankWrapper struct {
 	bankkeeper.Keeper
 
 	EVMEngineKeeper EVMEngineKeeper
 }
 
-func NewWrapper(k bankkeeper.Keeper) *Wrapper {
-	return &Wrapper{Keeper: k}
+func NewBankWrapper(k bankkeeper.Keeper) *BankWrapper {
+	return &BankWrapper{Keeper: k}
 }
 
-func (w *Wrapper) SetEVMEngineKeeper(keeper EVMEngineKeeper) {
+func (w *BankWrapper) SetEVMEngineKeeper(keeper EVMEngineKeeper) {
 	w.EVMEngineKeeper = keeper
 }
 
 // SendCoinsFromModuleToAccountNoWithdrawal bypasses the EVM withdrawal creation.
 // This is required when "depositing" funds from the EVM.
-func (w *Wrapper) SendCoinsFromModuleToAccountNoWithdrawal(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, coins sdk.Coins) error {
+func (w *BankWrapper) SendCoinsFromModuleToAccountNoWithdrawal(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, coins sdk.Coins) error {
 	err := w.Keeper.SendCoinsFromModuleToAccount(ctx, senderModule, recipientAddr, coins)
 	if err != nil {
 		return errors.Wrap(err, "send coins from module to account")
@@ -43,7 +45,7 @@ func (w *Wrapper) SendCoinsFromModuleToAccountNoWithdrawal(ctx context.Context, 
 
 // SendCoinsFromModuleToAccount intercepts all "normal" bank transfers from modules to users and
 // creates EVM withdrawal to the user account and burns the funds from the module.
-func (w *Wrapper) SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, coins sdk.Coins) error {
+func (w *BankWrapper) SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, coins sdk.Coins) error {
 	if w.EVMEngineKeeper == nil {
 		return errors.New("nil EVMEngineKeeper [BUG]")
 	} else if !coins.IsValid() { // This ensures amounts are positive

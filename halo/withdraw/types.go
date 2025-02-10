@@ -1,4 +1,4 @@
-package bankwrap
+package withdraw
 
 import (
 	"context"

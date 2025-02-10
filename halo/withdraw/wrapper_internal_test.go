@@ -1,4 +1,4 @@
-package bankwrap
+package withdraw
 
 import (
 	"context"
@@ -51,7 +51,7 @@ func TestWrapper(t *testing.T) {
 				return nil
 			})
 
-			w := NewWrapper(keeper)
+			w := NewBankWrapper(keeper)
 			w.SetEVMEngineKeeper(engKeeper)
 			err := w.SendCoinsFromModuleToAccount(context.Background(), module, address.Bytes(), sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, tt.arg)))
 			require.NoError(t, err)
