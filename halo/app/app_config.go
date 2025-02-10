@@ -17,11 +17,11 @@ import (
 	"github.com/omni-network/omni/halo/sdk"
 	valsyncmodule "github.com/omni-network/omni/halo/valsync/module"
 	valsynctypes "github.com/omni-network/omni/halo/valsync/types"
+	"github.com/omni-network/omni/halo/withdraw"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/octane/bankwrap"
 	engevmmodule "github.com/omni-network/omni/octane/evmengine/module"
 	engevmtypes "github.com/omni-network/omni/octane/evmengine/types"
 
@@ -142,21 +142,14 @@ var (
 		{Account: minttypes.ModuleName, Permissions: []string{authtypes.Minter}},
 	}
 
-	// bankWrapperBindings returns a list of depinject.Configs that binds the bankwrap.Wrapper
+	// bankWrapperBindings returns a list of depinject.Configs that binds the bankwrap.BankWrapper
 	// to all x/bank Keeper interfaces.
 	bankWrapperBindings = func(ctx context.Context) []depinject.Config {
 		if !feature.FlagEVMStakingModule.Enabled(ctx) {
 			return nil
 		}
 
-		configs := bankwrap.SDKBindInterfaces()
-		// Add omni specific module overrides
-		configs = append(configs, depinject.BindInterface(
-			"github.com/omni-network/omni/halo/evmstaking/evmstaking.BankKeeper",
-			bankwrap.WrapperImpl,
-		))
-
-		return configs
+		return withdraw.BindInterfaces()
 	}
 
 	// appConfig application configuration (used by depinject).
@@ -285,7 +278,7 @@ var (
 		}
 
 		return []any{
-			bankwrap.DIInvoke,
+			withdraw.DIInvoke,
 		}
 	}
 
@@ -296,7 +289,7 @@ var (
 			return []any{
 				evmslashing.DIProvide,
 				evmupgrade.DIProvide,
-				bankwrap.DIProvide,
+				withdraw.DIProvide,
 			}
 		}
 
