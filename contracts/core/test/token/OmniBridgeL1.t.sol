@@ -156,7 +156,7 @@ contract OmniBridgeL1_Test is Test {
         vm.expectEmit();
         emit Withdraw(to, amount);
 
-        // tranfers amount to to
+        // transfers amount to to
         vm.expectCall(address(token), abi.encodeCall(token.transfer, (to, amount)));
         uint256 gasUsed = portal.mockXCall({
             sourceChainId: portal.omniChainId(),
