@@ -6,11 +6,10 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/contracts/bindings"
-	"github.com/omni-network/omni/halo/evmstaking2/testutil"
-	"github.com/omni-network/omni/halo/evmstaking2/types"
+	"github.com/omni-network/omni/halo/evmstaking/testutil"
+	"github.com/omni-network/omni/halo/evmstaking/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/umath"
@@ -446,8 +445,7 @@ func setupKeeper(
 
 	key := storetypes.NewKVStoreKey(types.ModuleName)
 	storeSvc := runtime.NewKVStoreService(key)
-	ctx := sdktestutil.DefaultContext(key, storetypes.NewTransientStoreKey("test_key")).
-		WithContext(feature.WithFlags(context.Background(), feature.Flags{string(feature.FlagEVMStakingModule)}))
+	ctx := sdktestutil.DefaultContext(key, storetypes.NewTransientStoreKey("test_key"))
 	ctx = ctx.WithBlockHeight(1)
 	ctx = ctx.WithChainID(netconf.Simnet.Static().OmniConsensusChainIDStr())
 
@@ -494,8 +492,5 @@ func setupKeeper(
 
 // getStakingEvents returns the staking events from the mock engine client.
 func getStakingEvents(ctx context.Context, cl ethclient.EngineClient, keeper *Keeper) ([]etypes.EVMEvent, error) {
-	// Enable simple staking to ensure events are in correct order, since FetchProcEvents sorts either by index or address>topic>data.
-	ctx = feature.WithFlag(ctx, feature.FlagSimpleEVMEvents)
-
 	return evmengkeeper.FetchProcEvents(ctx, cl, common.Hash{}, keeper)
 }

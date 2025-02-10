@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"encoding/json"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -10,7 +9,6 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/octane/evmengine/types"
@@ -57,7 +55,7 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 	populateGenesisHead(ctx, t, keeper)
 	msgSrv := NewMsgServerImpl(keeper)
 
-	var payloadData []byte
+	var execPayload engine.ExecutableData
 	var payloadID engine.PayloadID
 	var latestHeight uint64
 	var block *etypes.Block
@@ -70,7 +68,6 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
 		appHash := common.BytesToHash(sdkCtx.BlockHeader().AppHash)
 
-		var execPayload engine.ExecutableData
 		block, execPayload = mockEngine.nextBlock(
 			t,
 			latestHeight+1,
@@ -82,24 +79,15 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 
 		payloadID, err = ethclient.MockPayloadID(execPayload, &appHash)
 		require.NoError(t, err)
-
-		// Create execution payload message
-		payloadData, err = json.Marshal(execPayload)
-		require.NoError(t, err)
 	}
 
 	assertExecutionPayload := func(ctx context.Context) {
-		events, err := keeper.evmEvents(ctx, block.Hash())
+		payloadProto, err := types.PayloadToProto(&execPayload)
 		require.NoError(t, err)
 
-		if feature.FlagSimpleEVMEvents.Enabled(ctx) {
-			events = nil
-		}
-
 		resp, err := msgSrv.ExecutionPayload(ctx, &types.MsgExecutionPayload{
-			Authority:         authtypes.NewModuleAddress(types.ModuleName).String(),
-			ExecutionPayload:  payloadData,
-			PrevPayloadEvents: events,
+			Authority:             authtypes.NewModuleAddress(types.ModuleName).String(),
+			ExecutionPayloadDeneb: payloadProto,
 		})
 		tutil.RequireNoError(t, err)
 		require.NotNil(t, resp)
@@ -112,13 +100,6 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 		require.Equal(t, gotPayload.ExecutionPayload.FeeRecipient, frp.LocalFeeRecipient())
 		require.Empty(t, gotPayload.ExecutionPayload.Withdrawals)
 	}
-
-	newPayload(ctx)
-	assertExecutionPayload(ctx)
-
-	// Again, but with simple events
-	ctx = ctx.WithContext(feature.WithFlag(ctx, feature.FlagSimpleEVMEvents))
-	ctx = ctx.WithBlockTime(ctx.BlockTime().Add(time.Second))
 
 	newPayload(ctx)
 	assertExecutionPayload(ctx)

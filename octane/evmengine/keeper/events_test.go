@@ -6,7 +6,6 @@ import (
 
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/octane/evmengine/keeper"
@@ -51,13 +50,8 @@ func TestFetchProcEvents(t *testing.T) {
 
 	ctx := context.Background()
 
-	// Legacy ordering by address > topics > data
-	events := fetch(ctx)
-	assertOrder(t, events, p, p, p, s, s)
-
 	// Simple ordering by index (see MockEngineClient for indexes)
-	ctx = feature.WithFlag(ctx, feature.FlagSimpleEVMEvents)
-	events = fetch(ctx)
+	events := fetch(ctx)
 	assertOrder(t, events, s, p, p, p, s)
 }
 

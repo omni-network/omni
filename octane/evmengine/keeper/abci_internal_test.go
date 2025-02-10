@@ -3,7 +3,6 @@ package keeper
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"math/big"
 	"testing"
 	"time"
@@ -11,7 +10,6 @@ import (
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/tutil"
 	etypes "github.com/omni-network/omni/octane/evmengine/types"
@@ -203,7 +201,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 
 		for _, msg := range tx.GetMsgs() {
 			if _, ok := msg.(*etypes.MsgExecutionPayload); ok {
-				assertExecutablePayload(t, msg, ts.Unix(), nextBlock.Hash(), frp, uint64(req.Height), 0, 1)
+				assertExecutablePayload(t, msg, ts.Unix(), nextBlock.Hash(), frp, uint64(req.Height), 0)
 			}
 		}
 	})
@@ -252,7 +250,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		// assert that the message is an executable payload
 		for _, msg := range tx.GetMsgs() {
 			if _, ok := msg.(*etypes.MsgExecutionPayload); ok {
-				assertExecutablePayload(t, msg, req.Time.Unix(), headHash, frp, head.GetBlockHeight()+1, 0, 1)
+				assertExecutablePayload(t, msg, req.Time.Unix(), headHash, frp, head.GetBlockHeight()+1, 0)
 			}
 			if msgDelegate, ok := msg.(*stypes.MsgDelegate); ok {
 				require.Equal(t, msgDelegate.Amount, sdk.NewInt64Coin("stake", 100))
@@ -330,7 +328,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			found = true
 			expected := [][]byte{commitment1, commitment2}
 			require.EqualValues(t, expected, payload.BlobCommitments)
-			assertExecutablePayload(t, msg, req.Time.Unix(), headHash, frp, head.GetBlockHeight()+1, len(expected), 1)
+			assertExecutablePayload(t, msg, req.Time.Unix(), headHash, frp, head.GetBlockHeight()+1, len(expected))
 		}
 		require.True(t, found)
 	})
@@ -339,7 +337,6 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 		t.Parallel()
 		// setup dependencies
 		ctx, storeService := setupCtxStore(t, nil)
-		ctx = ctx.WithContext(feature.WithFlag(ctx, feature.FlagSimpleEVMEvents))
 
 		cdc := getCodec(t)
 		txConfig := authtx.NewTxConfig(cdc, nil)
@@ -379,7 +376,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 
 		for _, msg := range tx.GetMsgs() {
 			if _, ok := msg.(*etypes.MsgExecutionPayload); ok {
-				assertExecutablePayload(t, msg, req.Time.Unix(), headHash, frp, head.GetBlockHeight()+1, 0, 0)
+				assertExecutablePayload(t, msg, req.Time.Unix(), headHash, frp, head.GetBlockHeight()+1, 0)
 			}
 		}
 	})
@@ -452,27 +449,18 @@ func assertExecutablePayload(
 	frp etypes.FeeRecipientProvider,
 	height uint64,
 	blobs int,
-	events int,
 ) {
 	t.Helper()
 	executionPayload, ok := msg.(*etypes.MsgExecutionPayload)
 	require.True(t, ok)
 	require.NotNil(t, executionPayload)
 
-	payload := new(eengine.ExecutableData)
-	err := json.Unmarshal(executionPayload.GetExecutionPayload(), payload)
-	require.NoError(t, err)
+	payload := executionPayload.ExecutionPayloadDeneb
 	require.Equal(t, int64(payload.Timestamp), ts)
-	require.Equal(t, payload.Random, blockHash)
-	require.Equal(t, payload.FeeRecipient, frp.LocalFeeRecipient())
+	require.EqualValues(t, payload.PrevRandao, blockHash)
+	require.EqualValues(t, payload.FeeRecipient, frp.LocalFeeRecipient())
 	require.Empty(t, payload.Withdrawals)
-	require.Equal(t, payload.Number, height)
-
-	require.Len(t, executionPayload.PrevPayloadEvents, events)
-	if events > 0 {
-		evmLog := executionPayload.PrevPayloadEvents[0]
-		require.Equal(t, evmLog.Address, zeroAddr.Bytes())
-	}
+	require.Equal(t, payload.BlockNumber, height)
 
 	require.Len(t, executionPayload.BlobCommitments, blobs)
 }
@@ -716,7 +704,12 @@ func (m *mockEngineAPI) nextBlock(
 	header.ParentBeaconRoot = beaconRoot
 
 	// Convert header to block
-	block := types.NewBlock(&header, nil, nil, trie.NewStackTrie(nil))
+	block := types.NewBlock(
+		&header,
+		&types.Body{Withdrawals: []*types.Withdrawal{}},
+		nil,
+		trie.NewStackTrie(nil),
+	)
 
 	// Convert block to payload
 	env := eengine.BlockToExecutableData(block, big.NewInt(0), nil, nil)

@@ -1,15 +1,15 @@
 syntax = "proto3";
 
-package halo.evmstaking2.module;
+package halo.evmstaking.module;
 
 import "cosmos/app/v1alpha1/module.proto";
 
-option go_package = "halo/evmstaking2/module";
+option go_package = "halo/evmstaking/module";
 
 // Module is the config object for the module.
 message Module {
   option (cosmos.app.v1alpha1.module) = {
-    go_import: "github.com/omni-network/omni/halo/evmstaking2"
+    go_import: "github.com/omni-network/omni/halo/evmstaking"
   };
 
   // authority defines the custom module authority. If not set, defaults to the governance module.

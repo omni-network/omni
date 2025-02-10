@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 
+	magellan2 "github.com/omni-network/omni/halo/app/upgrades/magellan"
 	uluwatu1 "github.com/omni-network/omni/halo/app/upgrades/uluwatu"
 	"github.com/omni-network/omni/lib/errors"
 
@@ -25,11 +26,21 @@ var upgrades = []Upgrade{
 				a.ModuleManager,
 				a.Configurator(),
 				a.SlashingKeeper,
+			)
+		},
+		Store: uluwatu1.StoreUpgrades,
+	},
+	{
+		Name: magellan2.UpgradeName,
+		HandlerFunc: func(a App) upgradetypes.UpgradeHandler {
+			return magellan2.CreateUpgradeHandler(
+				a.ModuleManager,
+				a.Configurator(),
 				a.MintKeeper,
 				a.AccountKeeper,
 			)
 		},
-		Store: uluwatu1.StoreUpgrades,
+		Store: magellan2.StoreUpgrades,
 	},
 }
 

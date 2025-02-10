@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"math/rand/v2"
 	"net/http"
 	"net/url"
 	"os"
@@ -16,13 +15,11 @@ import (
 	"time"
 
 	haloapp "github.com/omni-network/omni/halo/app"
-	uluwatu1 "github.com/omni-network/omni/halo/app/upgrades/uluwatu"
+	magellan2 "github.com/omni-network/omni/halo/app/upgrades/magellan"
 	halocmd "github.com/omni-network/omni/halo/cmd"
 	halocfg "github.com/omni-network/omni/halo/config"
-	"github.com/omni-network/omni/lib/anvil"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
@@ -32,8 +29,6 @@ import (
 	"github.com/cometbft/cometbft/types"
 
 	db "github.com/cosmos/cosmos-db"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	"github.com/stretchr/testify/require"
 )
@@ -41,14 +36,6 @@ import (
 func TestSmoke(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
-	if rand.Float64() < 0.5 {
-		t.Log("Enabling feature flag: " + feature.FlagEVMStakingModule)
-		feature.WithFlag(ctx, feature.FlagEVMStakingModule)
-		feature.SetGlobals(feature.Flags{string(feature.FlagEVMStakingModule)})
-	} else {
-		t.Log("Not enabling any feature flags")
-	}
 
 	ctx, err := log.Init(ctx, log.Config{Color: log.ColorForce, Level: "debug", Format: log.FormatConsole})
 	require.NoError(t, err)
@@ -212,24 +199,9 @@ func testCProvider(t *testing.T, ctx context.Context, cprov cprovider.Provider) 
 		return ok
 	}, time.Second*5, time.Millisecond*100)
 
-	if feature.FlagEVMStakingModule.Enabled(ctx) {
-		resp, err := cprov.QueryClients().Mint.Inflation(ctx, &minttypes.QueryInflationRequest{})
-		require.NoError(t, err)
-		require.EqualValues(t, "0.115789000000000000", resp.Inflation.String())
-
-		// make sure that no accounts used in e2e testing have a non-zero balance
-		for _, pubkey := range anvil.DevAccounts() {
-			resp, err := cprov.QueryClients().Bank.AllBalances(ctx, &banktypes.QueryAllBalancesRequest{
-				Address:      sdk.AccAddress(pubkey.Bytes()).String(),
-				Pagination:   nil,
-				ResolveDenom: false,
-			})
-			require.NoError(t, err)
-			for _, balance := range resp.Balances {
-				require.True(t, balance.Amount.IsZero())
-			}
-		}
-	}
+	resp, err := cprov.QueryClients().Mint.Inflation(ctx, &minttypes.QueryInflationRequest{})
+	require.NoError(t, err)
+	require.EqualValues(t, "0.115789000000000000", resp.Inflation.String())
 }
 
 func setupSimnet(t *testing.T) haloapp.Config {
@@ -264,7 +236,7 @@ func setupSimnet(t *testing.T) haloapp.Config {
 		HomeDir:        homeDir,
 		Network:        netconf.Simnet,
 		ExecutionHash:  executionGenesis.Hash(),
-		GenesisUpgrade: uluwatu1.UpgradeName,
+		GenesisUpgrade: magellan2.UpgradeName,
 	})
 	tutil.RequireNoError(t, err)
 

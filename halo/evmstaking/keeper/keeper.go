@@ -4,10 +4,9 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/contracts/bindings"
-	"github.com/omni-network/omni/halo/evmstaking2/types"
+	"github.com/omni-network/omni/halo/evmstaking/types"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/umath"
@@ -58,7 +57,7 @@ func NewKeeper(
 	deliverInterval int64,
 ) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
-		{Id: 1, ProtoFileName: File_halo_evmstaking2_keeper_evmstaking_proto.Path()},
+		{Id: 1, ProtoFileName: File_halo_evmstaking_keeper_evmstaking_proto.Path()},
 	}}
 
 	modDB, err := ormdb.NewModuleDB(schema, ormdb.ModuleDBOptions{KVStoreService: storeService})
@@ -110,10 +109,6 @@ func (k Keeper) shouldDeliver(ctx context.Context) bool {
 
 // EndBlock delivers all pending EVM events on every `k.deliverInterval`'th block.
 func (k Keeper) EndBlock(ctx context.Context) error {
-	if !feature.FlagEVMStakingModule.Enabled(ctx) {
-		return errors.New("unexpected code path [BUG]")
-	}
-
 	if !k.shouldDeliver(ctx) {
 		return nil
 	}
@@ -162,10 +157,6 @@ func (k Keeper) FilterParams() ([]common.Address, [][]common.Hash) {
 // first stored in keeper's state. Then all stored events are periodically delivered
 // from `EndBlock` at once.
 func (k Keeper) Deliver(ctx context.Context, _ common.Hash, elog evmenginetypes.EVMEvent) error {
-	if !feature.FlagEVMStakingModule.Enabled(ctx) {
-		return errors.New("unexpected code path [BUG]")
-	}
-
 	log.Debug(ctx, "Buffering EVM staking event",
 		"name", eventName(&elog),
 		"deliver_height", k.nextDeliverHeight(ctx),
@@ -257,7 +248,7 @@ func (k Keeper) parseAndDeliver(ctx context.Context, elog *evmenginetypes.EVMEve
 //
 // NOTE: if we error, the deposit is lost (on EVM). consider recovery methods.
 func (k Keeper) deliverDelegate(ctx context.Context, ev *bindings.StakingDelegate) error {
-	if err := verifyStakingDelegate(ctx, ev); err != nil {
+	if err := verifyStakingDelegate(ev); err != nil {
 		return err
 	}
 
@@ -400,11 +391,7 @@ func (k Keeper) deliverCreateValidator(ctx context.Context, createValidator *bin
 	return nil
 }
 
-func verifyStakingDelegate(ctx context.Context, delegate *bindings.StakingDelegate) error {
-	if !feature.FlagEVMStakingModule.Enabled(ctx) && delegate.Delegator != delegate.Validator {
-		return errors.New("only self delegation")
-	}
-
+func verifyStakingDelegate(delegate *bindings.StakingDelegate) error {
 	if delegate.Amount == nil {
 		return errors.New("stake amount missing")
 	}

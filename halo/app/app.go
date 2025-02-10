@@ -8,15 +8,13 @@ import (
 	atypes "github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/comet"
 	"github.com/omni-network/omni/halo/evmslashing"
-	"github.com/omni-network/omni/halo/evmstaking"
-	evmstaking2 "github.com/omni-network/omni/halo/evmstaking2/keeper"
+	evmstakinkeeper "github.com/omni-network/omni/halo/evmstaking/keeper"
 	"github.com/omni-network/omni/halo/evmupgrade"
 	registrykeeper "github.com/omni-network/omni/halo/registry/keeper"
 	rtypes "github.com/omni-network/omni/halo/registry/types"
 	valsynckeeper "github.com/omni-network/omni/halo/valsync/keeper"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	evmengkeeper "github.com/omni-network/omni/octane/evmengine/keeper"
@@ -82,14 +80,13 @@ type App struct {
 	EVMEngKeeper          *evmengkeeper.Keeper
 	AttestKeeper          *attestkeeper.Keeper
 	ValSyncKeeper         *valsynckeeper.Keeper
-	EVMStakingKeeper      *evmstaking2.Keeper
+	EVMStakingKeeper      *evmstakinkeeper.Keeper
 	RegistryKeeper        registrykeeper.Keeper
 	EvidenceKeeper        evidencekeeper.Keeper
 	UpgradeKeeper         *upgradekeeper.Keeper
 	MintKeeper            mintkeeper.Keeper
 
 	SlashingEventProc evmslashing.EventProcessor
-	StakingEventProc  evmstaking.EventProcessor
 	UpgradeEventProc  evmupgrade.EventProcessor
 }
 
@@ -109,9 +106,9 @@ func newApp(
 	baseAppOpts ...func(*baseapp.BaseApp),
 ) (*App, error) {
 	depCfg := depinject.Configs(
-		depinject.Provide(diProviders(ctx)...),
-		depinject.Invoke(diInvokers(ctx)...),
-		depinject.Configs(bankWrapperBindings(ctx)...),
+		depinject.Provide(diProviders...),
+		depinject.Invoke(diInvokers...),
+		depinject.Configs(bankWrapperBindings...),
 		appConfig(ctx, network),
 		depinject.Supply(
 			logger,
@@ -145,16 +142,10 @@ func newApp(
 		&app.RegistryKeeper,
 		&app.EvidenceKeeper,
 		&app.UpgradeKeeper,
+		&app.EVMStakingKeeper,
+		&app.MintKeeper,
 		&app.SlashingEventProc,
 		&app.UpgradeEventProc,
-	}
-
-	// TODO (christian): remove feature check with logs
-	if feature.FlagEVMStakingModule.Enabled(ctx) {
-		dependencies = append(dependencies, &app.EVMStakingKeeper)
-		dependencies = append(dependencies, &app.MintKeeper)
-	} else {
-		dependencies = append(dependencies, &app.StakingEventProc)
 	}
 
 	if err := depinject.Inject(depCfg, dependencies...); err != nil {

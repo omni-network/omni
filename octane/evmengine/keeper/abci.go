@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"encoding/json"
 	"log/slog"
 	"math/rand/v2"
 	"strings"
@@ -120,18 +119,9 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 	payloadResp = maybeFuzzPayload(ctx, payloadResp)
 
 	// Create execution payload message
-	var payloadData []byte
-	var payloadProto *types.ExecutionPayloadDeneb
-	if feature.FlagProtoEVMPayload.Enabled(ctx) {
-		payloadProto, err = types.PayloadToProto(payloadResp.ExecutionPayload)
-		if err != nil {
-			return nil, errors.Wrap(err, "encode")
-		}
-	} else {
-		payloadData, err = json.Marshal(payloadResp.ExecutionPayload)
-		if err != nil {
-			return nil, errors.Wrap(err, "encode")
-		}
+	payloadProto, err := types.PayloadToProto(payloadResp.ExecutionPayload)
+	if err != nil {
+		return nil, errors.Wrap(err, "encode")
 	}
 
 	// Convert blobs bundle.
@@ -146,20 +136,9 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 		return nil, errors.Wrap(err, "prepare votes")
 	}
 
-	// Next, collect all prev payload evm event logs (only if simple-evm-events feature not enabled).
-	var evmEvents []types.EVMEvent
-	if !feature.FlagSimpleEVMEvents.Enabled(ctx) {
-		evmEvents, err = k.evmEvents(ctx, payloadResp.ExecutionPayload.ParentHash)
-		if err != nil {
-			return nil, errors.Wrap(err, "prepare evm event logs")
-		}
-	}
-
 	// Then construct the execution payload message.
 	payloadMsg := &types.MsgExecutionPayload{
 		Authority:             authtypes.NewModuleAddress(types.ModuleName).String(),
-		ExecutionPayload:      payloadData,
-		PrevPayloadEvents:     evmEvents,
 		BlobCommitments:       blobCommitments,
 		ExecutionPayloadDeneb: payloadProto,
 	}
@@ -180,7 +159,6 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 		"height", req.Height,
 		log.Hex7("execution_block_hash", payloadResp.ExecutionPayload.BlockHash[:]),
 		"vote_msgs", len(voteMsgs),
-		"evm_events", len(evmEvents),
 	)
 
 	return &abci.ResponsePrepareProposal{Txs: [][]byte{tx}}, nil

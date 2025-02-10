@@ -2,12 +2,10 @@ package keeper
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/expbackoff"
-	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
@@ -38,7 +36,7 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 
 	propSrv := NewProposalServer(keeper)
 
-	var payloadData []byte
+	var payload engine.ExecutableData
 	var payloadID engine.PayloadID
 	var latestHeight uint64
 	var block *etypes.Block
@@ -51,7 +49,7 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
 		appHash := common.BytesToHash(sdkCtx.BlockHeader().AppHash)
 
-		b, execPayload := mockEngine.nextBlock(
+		block, payload = mockEngine.nextBlock(
 			t,
 			latestHeight+1,
 			uint64(sdkCtx.BlockHeader().Time.Unix()),
@@ -59,20 +57,18 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 			frp.LocalFeeRecipient(),
 			&appHash,
 		)
-		block = b
 
-		payloadID, err = ethclient.MockPayloadID(execPayload, &appHash)
-		require.NoError(t, err)
-
-		// Create execution payload message
-		payloadData, err = json.Marshal(execPayload)
+		payloadID, err = ethclient.MockPayloadID(payload, &appHash)
 		require.NoError(t, err)
 	}
 
 	assertExecutionPayload := func(ctx context.Context) {
+		payloadProto, err := types.PayloadToProto(&payload)
+		require.NoError(t, err)
+
 		resp, err := propSrv.ExecutionPayload(ctx, &types.MsgExecutionPayload{
-			Authority:        authtypes.NewModuleAddress(types.ModuleName).String(),
-			ExecutionPayload: payloadData,
+			Authority:             authtypes.NewModuleAddress(types.ModuleName).String(),
+			ExecutionPayloadDeneb: payloadProto,
 		})
 		require.NoError(t, err)
 		require.NotNil(t, resp)
@@ -86,10 +82,6 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 	}
 
 	newPayload(sdkCtx)
-	assertExecutionPayload(sdkCtx)
-
-	// Again, but with simple events
-	sdkCtx = sdkCtx.WithContext(feature.WithFlag(sdkCtx, feature.FlagSimpleEVMEvents))
 	assertExecutionPayload(sdkCtx)
 }
 

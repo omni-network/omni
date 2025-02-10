@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-package halo.evmstaking2.keeper;
+package halo.evmstaking.keeper;
 
 import "cosmos/orm/v1/orm.proto";
 import "octane/evmengine/types/tx.proto";
 
-option go_package = "halo/evmstaking2/keeper";
+option go_package = "halo/evmstaking/keeper";
 
 // EVMEvent is an unparsed EVM event.
 message EVMEvent {

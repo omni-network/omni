@@ -3,8 +3,8 @@ package module
 import (
 	"context"
 
-	"github.com/omni-network/omni/halo/evmstaking2/keeper"
-	"github.com/omni-network/omni/halo/evmstaking2/types"
+	"github.com/omni-network/omni/halo/evmstaking/keeper"
+	"github.com/omni-network/omni/halo/evmstaking/types"
 	evmenginetypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"cosmossdk.io/core/appmodule"
