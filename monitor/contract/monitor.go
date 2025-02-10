@@ -38,7 +38,7 @@ func StartMonitoring(ctx context.Context, network netconf.Network, endpoints xch
 
 	allContracts, err := contracts.ToMonitor(ctx, network.ID)
 	if err != nil {
-		log.Error(ctx, "Failed to get contract addreses to monitor - skipping monitoring", err)
+		log.Error(ctx, "Failed to get contract addresses to monitor - skipping monitoring", err)
 		return nil
 	}
 
