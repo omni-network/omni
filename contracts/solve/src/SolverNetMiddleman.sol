@@ -16,7 +16,9 @@ contract SolverNetMiddleman is Initializable {
     function executeAndTransfer(address token, address to, address target, bytes calldata data) external payable {
         (bool success,) = target.call{ value: msg.value }(data);
         if (!success) revert CallFailed();
-        token.safeTransferAll(to);
+
+        if (token == address(0)) SafeTransferLib.safeTransferAllETH(to);
+        else token.safeTransferAll(to);
     }
 
     receive() external payable { }
