@@ -136,12 +136,10 @@ func populateGenesisHead(ctx context.Context, t *testing.T, keeper *Keeper) {
 func Test_pushPayload(t *testing.T) {
 	t.Parallel()
 
-	var commitments [][]byte
+	blobHashes := []common.Hash{}
 	for i := 0; i < rand.Intn(5); i++ {
-		commitments = append(commitments, tutil.RandomBytes(48))
+		blobHashes = append(blobHashes, tutil.RandomHash())
 	}
-	versionedHashes, err := blobHashes(commitments)
-	require.NoError(t, err)
 
 	newPayload := func(ctx context.Context, mockEngine mockEngineAPI, address common.Address) (engine.ExecutableData, engine.PayloadID) {
 		// get latest block to build on top
@@ -161,7 +159,7 @@ func Test_pushPayload(t *testing.T) {
 	type args struct {
 		transformPayload func(*engine.ExecutableData)
 		newPayloadV3Func func(context.Context, engine.ExecutableData, []common.Hash, *common.Hash) (engine.PayloadStatusV1, error)
-		blobsCommitments [][]byte
+		blobHashes       []common.Hash
 	}
 	tests := []struct {
 		name       string
@@ -247,9 +245,9 @@ func Test_pushPayload(t *testing.T) {
 		{
 			name: "blobs",
 			args: args{
-				blobsCommitments: commitments,
+				blobHashes: blobHashes,
 				newPayloadV3Func: func(_ context.Context, _ engine.ExecutableData, hashes []common.Hash, _ *common.Hash) (engine.PayloadStatusV1, error) {
-					require.Equal(t, versionedHashes, hashes)
+					require.Equal(t, blobHashes, hashes)
 					return engine.PayloadStatusV1{Status: engine.SYNCING}, nil
 				},
 			},
@@ -271,7 +269,11 @@ func Test_pushPayload(t *testing.T) {
 				tt.args.transformPayload(&payload)
 			}
 
-			status, err := pushPayload(ctx, &mockEngine, payload, tt.args.blobsCommitments)
+			if tt.args.blobHashes == nil {
+				tt.args.blobHashes = []common.Hash{} // Default to zero len slice, not nil.
+			}
+
+			status, err := pushPayload(ctx, &mockEngine, payload, tt.args.blobHashes)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("startMockBuild() error = %v, wantErr %v", err, tt.wantErr)
 				return

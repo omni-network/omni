@@ -136,7 +136,7 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 
 	// Convert blobs bundle.
 	blobCommitments := unwrapHexBytes(payloadResp.BlobsBundle.Commitments)
-	if _, err := blobHashes(blobCommitments); err != nil { // Sanity check blobs are valid.
+	if _, err := blobHashes(blobCommitments); err != nil && !feature.FlagFuzzOctane.Enabled(ctx) { // Sanity check blobs are valid.
 		return nil, errors.Wrap(err, "invalid blobs [BUG]")
 	}
 
@@ -192,7 +192,7 @@ func maybeFuzzPayload(ctx sdk.Context, resp *engine.ExecutionPayloadEnvelope) *e
 		return resp
 	}
 
-	switch rand.IntN(4) { //nolint:gosec // Weak RNG is fine for fuzz testing.
+	switch rand.IntN(5) { //nolint:gosec // Weak RNG is fine for fuzz testing.
 	case 0:
 		log.Warn(ctx, "Fuzzing proposed octane payload: invalid parent hash", nil)
 		resp.ExecutionPayload.BlockHash = resp.ExecutionPayload.ParentHash
@@ -210,6 +210,15 @@ func maybeFuzzPayload(ctx sdk.Context, resp *engine.ExecutionPayloadEnvelope) *e
 	case 3:
 		log.Warn(ctx, "Fuzzing proposed octane payload: invalid tx", nil)
 		resp.ExecutionPayload.Transactions = append(resp.ExecutionPayload.Transactions, []byte("invalid tx"))
+	case 4:
+		log.Warn(ctx, "Fuzzing proposed octane payload: invalid blobs bundle", nil)
+		if resp.BlobsBundle == nil {
+			resp.BlobsBundle = &engine.BlobsBundleV1{}
+		}
+		for len(resp.BlobsBundle.Commitments) < maxBlobsPerBlock {
+			var commit [48]byte
+			resp.BlobsBundle.Commitments = append(resp.BlobsBundle.Commitments, commit[:])
+		}
 	}
 
 	return resp
