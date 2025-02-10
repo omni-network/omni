@@ -46,6 +46,13 @@ func TestEventProcessor(t *testing.T) {
 			expect:       reject,
 		},
 		{
+			name:         "reject after accept",
+			event:        topicAccepted,
+			getStatus:    statusAccepted,
+			rejectReason: 1,
+			expect:       reject,
+		},
+		{
 			name:      "fulfill",
 			event:     topicAccepted,
 			getStatus: statusAccepted,
