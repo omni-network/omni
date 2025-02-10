@@ -8,12 +8,6 @@ import (
 )
 
 const (
-	// FlagEVMStakingModule enables the wip EVM Staking Module feature.
-	FlagEVMStakingModule Flag = "evm-staking-module"
-	// FlagSimpleEVMEvents enables the simplified EVM events refactor.
-	FlagSimpleEVMEvents Flag = "simple-evm-events"
-	// FlagProtoEVMPayload enables the protobuf encoded execution payload.
-	FlagProtoEVMPayload Flag = "proto-evm-payload"
 	// FlagFuzzOctane enables fuzz testing of octane.
 	FlagFuzzOctane Flag = "fuzz-octane"
 )
@@ -25,10 +19,7 @@ const (
 var enabledFlags sync.Map
 
 var allFlags = map[Flag]bool{
-	FlagEVMStakingModule: true,
-	FlagSimpleEVMEvents:  true,
-	FlagProtoEVMPayload:  true,
-	FlagFuzzOctane:       true,
+	FlagFuzzOctane: true,
 }
 
 // Flag is a feature flag.

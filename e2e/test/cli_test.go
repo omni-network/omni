@@ -14,7 +14,6 @@ import (
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
@@ -160,10 +159,6 @@ func TestCLIOperator(t *testing.T) {
 		const delegatorDelegation = uint64(77)
 		// delegate from a new account
 		t.Run("delegation", func(t *testing.T) {
-			if !feature.FlagEVMStakingModule.Enabled(ctx) {
-				t.Skip("Skipping delegation tests")
-			}
-
 			// delegator delegate test
 			stdOut, _, err := execCLI(
 				ctx, "operator", "delegate",
@@ -197,10 +192,6 @@ func TestCLIOperator(t *testing.T) {
 
 		// edit validator data
 		t.Run("edit validator", func(t *testing.T) {
-			if !feature.FlagEVMStakingModule.Enabled(ctx) {
-				t.Skip("Skipping evmstaking2 tests")
-			}
-
 			// Edit validator moniker
 			const moniker = "new-moniker"
 			const minSelf = 2 // TODO(corver): Also here
@@ -229,10 +220,6 @@ func TestCLIOperator(t *testing.T) {
 
 		// test rewards distribution
 		t.Run("distribution", func(t *testing.T) {
-			if !feature.FlagEVMStakingModule.Enabled(ctx) {
-				t.Skip("Skipping evmstaking2 tests")
-			}
-
 			val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
 			require.True(t, ok)
 
@@ -283,10 +270,6 @@ func TestCLIOperator(t *testing.T) {
 
 		// make sure that an additional delegation triggers a withdrawal eventually
 		t.Run("withdrawals", func(t *testing.T) {
-			if !feature.FlagEVMStakingModule.Enabled(ctx) {
-				t.Skip("Skipping withdrawal test")
-			}
-
 			// make sure no withdrawals are pending yet
 			amount := sumPendingWithdrawals(t, ctx, cprov, delegatorCosmosAddr)
 			require.Equal(t, uint64(0), amount)

@@ -4,11 +4,8 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/octane/evmengine/types"
-
-	"github.com/cosmos/gogoproto/proto"
 )
 
 type proposalServer struct {
@@ -51,24 +48,6 @@ func (s proposalServer) ExecutionPayload(ctx context.Context, msg *types.MsgExec
 		return nil, err
 	}
 
-	if feature.FlagSimpleEVMEvents.Enabled(ctx) {
-		// Ensure no events included in payload.
-		if len(msg.PrevPayloadEvents) > 0 {
-			return nil, errors.New("prev payload events included in payload")
-		}
-	} else {
-		// Collect local view of the evm logs from the previous payload.
-		evmEvents, err := s.evmEvents(ctx, payload.ParentHash)
-		if err != nil {
-			return nil, errors.Wrap(err, "prepare evm event logs")
-		}
-
-		// Ensure the proposed evm event logs are equal to the local view.
-		if err := evmEventsEqual(evmEvents, msg.PrevPayloadEvents); err != nil {
-			return nil, errors.Wrap(err, "verify prev payload events")
-		}
-	}
-
 	return &types.ExecutionPayloadResponse{}, nil
 }
 
@@ -79,17 +58,3 @@ func NewProposalServer(keeper *Keeper) types.MsgServiceServer {
 }
 
 var _ types.MsgServiceServer = proposalServer{}
-
-func evmEventsEqual(a, b []types.EVMEvent) error {
-	if len(a) != len(b) {
-		return errors.New("count mismatch", "a", len(a), "b", len(b))
-	}
-
-	for i := range a {
-		if !proto.Equal(&a[i], &b[i]) {
-			return errors.New("log mismatch", "index", i)
-		}
-	}
-
-	return nil
-}

@@ -6,9 +6,8 @@ import (
 	attestmodule "github.com/omni-network/omni/halo/attest/module"
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/evmslashing"
-	"github.com/omni-network/omni/halo/evmstaking"
-	evmstaking2module "github.com/omni-network/omni/halo/evmstaking2/module"
-	evmstaking2types "github.com/omni-network/omni/halo/evmstaking2/types"
+	evmstakingmodule "github.com/omni-network/omni/halo/evmstaking/module"
+	evmstakingtypes "github.com/omni-network/omni/halo/evmstaking/types"
 	"github.com/omni-network/omni/halo/evmupgrade"
 	portalmodule "github.com/omni-network/omni/halo/portal/module"
 	portaltypes "github.com/omni-network/omni/halo/portal/types"
@@ -20,7 +19,6 @@ import (
 	"github.com/omni-network/omni/halo/withdraw"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/netconf"
 	engevmmodule "github.com/omni-network/omni/octane/evmengine/module"
 	engevmtypes "github.com/omni-network/omni/octane/evmengine/types"
@@ -87,8 +85,9 @@ var (
 		engevmtypes.ModuleName,
 	}
 
-	beginBlockers = func(ctx context.Context) []string {
+	beginBlockers = func(context.Context) []string {
 		modules := []string{
+			minttypes.ModuleName,  // Mint module is generally first
 			distrtypes.ModuleName, // Note: slashing happens after distr.BeginBlocker
 			slashingtypes.ModuleName,
 			stakingtypes.ModuleName, // Note: staking module is required if HistoricalEntries param > 0
@@ -96,26 +95,13 @@ var (
 			attesttypes.ModuleName,
 		}
 
-		if feature.FlagEVMStakingModule.Enabled(ctx) {
-			// Mint module is generally first
-			modules = append([]string{minttypes.ModuleName}, modules...)
-		}
-
 		return modules
 	}
 
-	endBlockers = func(ctx context.Context) []string {
-		if feature.FlagEVMStakingModule.Enabled(ctx) {
-			return []string{
-				attesttypes.ModuleName,
-				evmstaking2types.ModuleName,
-				valsynctypes.ModuleName, // Wraps staking module end blocker (must come after attest module)
-				upgradetypes.ModuleName,
-			}
-		}
-
+	endBlockers = func(context.Context) []string {
 		return []string{
 			attesttypes.ModuleName,
+			evmstakingtypes.ModuleName,
 			valsynctypes.ModuleName, // Wraps staking module end blocker (must come after attest module)
 			upgradetypes.ModuleName,
 		}
@@ -127,49 +113,29 @@ var (
 		distrtypes.ModuleName,
 		stakingtypes.BondedPoolName,
 		stakingtypes.NotBondedPoolName,
-		// TODO(christian): rename package, the rest can stay because names are the same
-		evmstaking.ModuleName,
+		evmstakingtypes.ModuleName,
 		minttypes.ModuleName,
 	}
 
-	moduleAccPerms = func(ctx context.Context) []*authmodulev1.ModuleAccountPermission {
-		perms := []*authmodulev1.ModuleAccountPermission{
-			{Account: authtypes.FeeCollectorName},
-			{Account: stakingtypes.BondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
-			{Account: stakingtypes.NotBondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
-			// TODO(christian): rename package, the rest can stay because names are the same
-			{Account: evmstaking.ModuleName, Permissions: []string{authtypes.Burner, authtypes.Minter}},
-			{Account: minttypes.ModuleName, Permissions: []string{authtypes.Minter}},
-		}
-
-		// Add distribution permissions, only add burner if evm-staking-module enabled.
-		var distrPerm []string
-		if feature.FlagEVMStakingModule.Enabled(ctx) {
-			distrPerm = append(distrPerm, authtypes.Burner)
-		}
-		perms = append(perms, &authmodulev1.ModuleAccountPermission{
-			Account:     distrtypes.ModuleName,
-			Permissions: distrPerm,
-		})
-
-		return perms
+	moduleAccPerms = []*authmodulev1.ModuleAccountPermission{
+		{Account: authtypes.FeeCollectorName},
+		{Account: distrtypes.ModuleName, Permissions: []string{authtypes.Burner}},
+		{Account: stakingtypes.BondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
+		{Account: stakingtypes.NotBondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
+		// TODO(christian): rename package, the rest can stay because names are the same
+		{Account: evmstakingtypes.ModuleName, Permissions: []string{authtypes.Burner, authtypes.Minter}},
+		{Account: minttypes.ModuleName, Permissions: []string{authtypes.Minter}},
 	}
 
-	// bankWrapperBindings returns a list of depinject.Configs that binds the bankwrap.BankWrapper
+	// bankWrapperBindings returns a list of depinject.Configs that binds the withdraw.BankWrapper
 	// to all x/bank Keeper interfaces.
-	bankWrapperBindings = func(ctx context.Context) []depinject.Config {
-		if !feature.FlagEVMStakingModule.Enabled(ctx) {
-			return nil
-		}
-
-		return withdraw.BindInterfaces()
-	}
+	bankWrapperBindings = withdraw.BindInterfaces()
 
 	// appConfig application configuration (used by depinject).
 	appConfig = func(ctx context.Context, network netconf.ID) depinject.Config {
 		return appconfig.Compose(&appv1alpha1.Config{
 			Modules: func() []*appv1alpha1.ModuleConfig {
-				configs := []*appv1alpha1.ModuleConfig{
+				return []*appv1alpha1.ModuleConfig{
 					{
 						Name: runtime.ModuleName,
 						Config: appconfig.WrapAny(&runtimev1alpha1.Module{
@@ -262,55 +228,33 @@ var (
 						Name:   registrytypes.ModuleName,
 						Config: appconfig.WrapAny(&registrymodule.Module{}),
 					},
-				}
-
-				// TODO(christian): integrate into the list above
-				if feature.FlagEVMStakingModule.Enabled(ctx) {
-					configs = append(configs, &appv1alpha1.ModuleConfig{
-						Name: evmstaking2types.ModuleName,
-						Config: appconfig.WrapAny(&evmstaking2module.Module{
+					{
+						Name: evmstakingtypes.ModuleName,
+						Config: appconfig.WrapAny(&evmstakingmodule.Module{
 							DeliverInterval: deliverInterval(network),
 						}),
-					})
-					configs = append(configs, &appv1alpha1.ModuleConfig{
+					},
+					{
 						Name:   minttypes.ModuleName,
 						Config: appconfig.WrapAny(&mintmodulev1.Module{}),
-					})
+					},
 				}
-
-				return configs
 			}(),
 		})
 	}
 
 	// diInvokers defines a list of depinject invoke functions.
 	// These are non-cosmos-module invokers used in halo's app wiring.
-	diInvokers = func(ctx context.Context) []any {
-		if !feature.FlagEVMStakingModule.Enabled(ctx) {
-			return nil
-		}
-
-		return []any{
-			withdraw.DIInvoke,
-		}
+	diInvokers = []any{
+		withdraw.DIInvoke,
 	}
 
 	// diProviders defines a list of depinject provider functions.
 	// These are non-cosmos-module providers used in halo's app wiring.
-	diProviders = func(ctx context.Context) []any {
-		if feature.FlagEVMStakingModule.Enabled(ctx) {
-			return []any{
-				evmslashing.DIProvide,
-				evmupgrade.DIProvide,
-				withdraw.DIProvide,
-			}
-		}
-
-		return []any{
-			evmslashing.DIProvide,
-			evmstaking.DIProvide,
-			evmupgrade.DIProvide,
-		}
+	diProviders = []any{
+		evmslashing.DIProvide,
+		evmupgrade.DIProvide,
+		withdraw.DIProvide,
 	}
 )
 
@@ -343,9 +287,9 @@ func ClientEncodingConfig(ctx context.Context, network netconf.ID) (EncodingConf
 
 	depCfg := depinject.Configs(
 		appConfig(ctx, network),
-		depinject.Provide(diProviders(ctx)...),
-		depinject.Configs(bankWrapperBindings(ctx)...),
-		depinject.Invoke(diInvokers(ctx)...),
+		depinject.Provide(diProviders...),
+		depinject.Configs(bankWrapperBindings...),
+		depinject.Invoke(diInvokers...),
 		depinject.Supply(
 			newSDKLogger(ctx),
 			attesttypes.ChainVerNameFunc(netconf.ChainVersionNamer(network)),

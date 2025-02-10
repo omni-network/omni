@@ -1,13 +1,11 @@
 package keeper
 
 import (
-	"bytes"
 	"context"
 	"sort"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/octane/evmengine/types"
 
@@ -47,28 +45,10 @@ func FetchProcEvents(ctx context.Context, cl ethclient.EngineClient, blockHash c
 		}
 	}
 
-	if feature.FlagSimpleEVMEvents.Enabled(ctx) {
-		// Sort by Index
-		sort.Slice(all, func(i, j int) bool {
-			return all[i].Index < all[j].Index
-		})
-	} else {
-		// Sort by Address > Topics > Data
-		// This avoids dependency on runtime ordering.
-		sort.Slice(all, func(i, j int) bool {
-			if cmp := bytes.Compare(all[i].Address.Bytes(), all[j].Address.Bytes()); cmp != 0 {
-				return cmp < 0
-			}
-
-			topicI := concatHashes(all[i].Topics)
-			topicJ := concatHashes(all[j].Topics)
-			if cmp := bytes.Compare(topicI, topicJ); cmp != 0 {
-				return cmp < 0
-			}
-
-			return bytes.Compare(all[i].Data, all[j].Data) < 0
-		})
-	}
+	// Sort by Index
+	sort.Slice(all, func(i, j int) bool {
+		return all[i].Index < all[j].Index
+	})
 
 	// Verify and convert logs
 	var resp []types.EVMEvent
@@ -92,13 +72,4 @@ func FetchProcEvents(ctx context.Context, cl ethclient.EngineClient, blockHash c
 	}
 
 	return resp, nil
-}
-
-func concatHashes(hashes []common.Hash) []byte {
-	resp := make([]byte, 0, len(hashes)*common.HashLength)
-	for _, hash := range hashes {
-		resp = append(resp, hash.Bytes()...)
-	}
-
-	return resp
 }
