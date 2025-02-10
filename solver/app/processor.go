@@ -63,22 +63,42 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 				continue
 			}
 
+			maybeReject := func() (bool, error) {
+				if reason, reject, err := deps.ShouldReject(ctx, chainID, order); err != nil {
+					return false, errors.Wrap(err, "should reject")
+				} else if reject {
+					log.InfoErr(ctx, "Rejecting order", err, "reason", reason.String())
+
+					if err := deps.Reject(ctx, chainID, order, reason); err != nil {
+						return false, errors.Wrap(err, "reject order")
+					}
+
+					return true, nil
+				}
+
+				return false, nil
+			}
+
 			switch event.Status {
 			case statusPending:
-				if reason, reject, err := deps.ShouldReject(ctx, chainID, order); err != nil {
-					return errors.Wrap(err, "should reject")
-				} else if reject {
-					// ShouldReject does reject logging since it has more information.
-					if err := deps.Reject(ctx, chainID, order, reason); err != nil {
-						return errors.Wrap(err, "reject order")
-					}
-				} else {
-					log.Info(ctx, "Accepting order")
-					if err := deps.Accept(ctx, chainID, order); err != nil {
-						return errors.Wrap(err, "accept order")
-					}
+				if didReject, err := maybeReject(); err != nil {
+					return err
+				} else if didReject {
+					continue
+				}
+
+				log.Info(ctx, "Accepting order")
+				if err := deps.Accept(ctx, chainID, order); err != nil {
+					return errors.Wrap(err, "accept order")
 				}
 			case statusAccepted:
+				// check reject again, as liquidity (or other conditions) may have changed
+				if didReject, err := maybeReject(); err != nil {
+					return err
+				} else if didReject {
+					continue
+				}
+
 				log.Info(ctx, "Filling order")
 				if err := deps.Fill(ctx, chainID, order); err != nil {
 					return errors.Wrap(err, "fill order")
