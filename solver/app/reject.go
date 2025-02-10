@@ -199,7 +199,10 @@ func checkFill(ctx context.Context, backend *ethbackend.Backend, order Order, so
 			continue
 		}
 
-		// TODO: approve outbox spend
+		// approve outbox spend before checking for reverts, because lack of allowance will cause revert
+		if err := approveOutboxSpend(ctx, output, backend, solverAddr, order.DestinationSettler); err != nil {
+			return errors.Wrap(err, "approve outbox spend")
+		}
 	}
 
 	// xcall fee
