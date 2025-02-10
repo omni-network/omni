@@ -47,8 +47,7 @@ export function encodeOrder(order: Order): Hex {
 
     const selector = slice(callData, 0, 4)
 
-    const params =
-      callData.length > 10 ? slice(callData, 4, callData.length) : '0x'
+    const params = callData.length > 10 ? slice(callData, 4) : '0x'
 
     return {
       target: call.target,
