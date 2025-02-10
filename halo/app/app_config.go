@@ -132,14 +132,27 @@ var (
 		minttypes.ModuleName,
 	}
 
-	moduleAccPerms = []*authmodulev1.ModuleAccountPermission{
-		{Account: authtypes.FeeCollectorName},
-		{Account: distrtypes.ModuleName, Permissions: []string{authtypes.Burner}},
-		{Account: stakingtypes.BondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
-		{Account: stakingtypes.NotBondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
-		// TODO(christian): rename package, the rest can stay because names are the same
-		{Account: evmstaking.ModuleName, Permissions: []string{authtypes.Burner, authtypes.Minter}},
-		{Account: minttypes.ModuleName, Permissions: []string{authtypes.Minter}},
+	moduleAccPerms = func(ctx context.Context) []*authmodulev1.ModuleAccountPermission {
+		perms := []*authmodulev1.ModuleAccountPermission{
+			{Account: authtypes.FeeCollectorName},
+			{Account: stakingtypes.BondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
+			{Account: stakingtypes.NotBondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
+			// TODO(christian): rename package, the rest can stay because names are the same
+			{Account: evmstaking.ModuleName, Permissions: []string{authtypes.Burner, authtypes.Minter}},
+			{Account: minttypes.ModuleName, Permissions: []string{authtypes.Minter}},
+		}
+
+		// Add distribution permissions, only add burner if evm-staking-module enabled.
+		var distrPerm []string
+		if feature.FlagEVMStakingModule.Enabled(ctx) {
+			distrPerm = append(distrPerm, authtypes.Burner)
+		}
+		perms = append(perms, &authmodulev1.ModuleAccountPermission{
+			Account:     distrtypes.ModuleName,
+			Permissions: distrPerm,
+		})
+
+		return perms
 	}
 
 	// bankWrapperBindings returns a list of depinject.Configs that binds the bankwrap.BankWrapper
@@ -176,7 +189,7 @@ var (
 					{
 						Name: authtypes.ModuleName,
 						Config: appconfig.WrapAny(&authmodulev1.Module{
-							ModuleAccountPermissions: moduleAccPerms,
+							ModuleAccountPermissions: moduleAccPerms(ctx),
 							Bech32Prefix:             sdk.Bech32HRP,
 						}),
 					},
