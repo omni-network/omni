@@ -4,8 +4,10 @@ import type { Call } from '../types/order.js'
 
 type WithExecAndTransferParams = {
   readonly call: Call
-  readonly to: Address
-  readonly token: Address
+  readonly transfer: {
+    readonly to: Address
+    readonly token: Address
+  }
 }
 
 /**
@@ -26,12 +28,14 @@ type WithExecAndTransferParams = {
  *    value: BigInt(1),
  *    args: ['0x...', BigInt(1)],
  *  },
- *  to: '0x...',
- *  token: '0x...',
+ *  transfer: {
+ *    to: '0x...',
+ *    token: '0x...',
+ *  }
  * })
  */
 export function withExecAndTransfer(params: WithExecAndTransferParams): Call {
-  const { call, to, token } = params
+  const { call, transfer } = params
   const _callData = encodeFunctionData({
     abi: call.abi,
     functionName: call.functionName,
@@ -43,6 +47,6 @@ export function withExecAndTransfer(params: WithExecAndTransferParams): Call {
     abi: middleman.abi,
     target: middleman.address,
     functionName: 'executeAndTransfer',
-    args: [token, to, call.target, _callData],
+    args: [transfer.token, transfer.to, call.target, _callData],
   }
 }
