@@ -55,7 +55,7 @@ type Expense = {
   readonly amount: bigint
 }
 
-type Call = {
+export type Call = {
   readonly abi: Abi
   readonly target: Address
   readonly value: bigint

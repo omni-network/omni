@@ -168,7 +168,7 @@ export const inbox = {
     },
   ],
   // TODO: this will be fetched via the solver API
-  address: '0xD8c70d0b7e93744f9d4c52fcfa407E8fc203bAcf',
+  address: '0x0de9c716676064caaa07db21407a9e029112899d',
 } as const
 
 export const outbox = {
@@ -185,5 +185,25 @@ export const outbox = {
     },
   ],
   // TODO: this will be fetched via the solver API
-  address: '0x39A896F56bd5b973d0801f59262fff6d5cd13f91',
+  address: '0x25e9397adc8fdfdc1899c45ae2c48ecc00f3d4be',
+} as const
+
+export const middleman = {
+  abi: [
+    {
+      type: 'function',
+      inputs: [
+        { name: 'token', internalType: 'address', type: 'address' },
+        { name: 'to', internalType: 'address', type: 'address' },
+        { name: 'target', internalType: 'address', type: 'address' },
+        { name: 'data', internalType: 'bytes', type: 'bytes' },
+      ],
+      name: 'executeAndTransfer',
+      outputs: [],
+      stateMutability: 'payable',
+    },
+    { type: 'error', inputs: [], name: 'CallFailed' },
+  ],
+  // TODO: this will be fetched via the solver API
+  address: '0x49ea714481bb96ce7bc17fe6efd7b5b630d1d85f',
 } as const
