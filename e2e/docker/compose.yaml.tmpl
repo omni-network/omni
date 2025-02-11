@@ -31,7 +31,7 @@ services:
     - 6060 # Pprof
     volumes:
     - ./{{ .Name }}:/halo
-    environment: [{{ if $.EphemeralGenesisBinary}}COSMOVISOR_CUSTOM_GENESIS={{$.EphemeralGenesisBinary}}{{ end }}]
+    environment: [{{$.CustomGenesisVar .Name}}]
     logging:
       driver: local
     networks:

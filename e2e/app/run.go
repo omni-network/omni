@@ -20,6 +20,7 @@ import (
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 
@@ -436,6 +437,24 @@ func maybeSubmitNetworkUpgrades(ctx context.Context, def Definition) error {
 		if _, err := backend.WaitMined(ctx, tx); err != nil {
 			return errors.Wrap(err, "wait mined")
 		}
+
+		if _, ok, err := haloapp.NextUpgrade(upgrade); err != nil {
+			return err
+		} else if !ok {
+			return nil // No next upgrade to plan, just return
+		}
+
+		waitHeight, err := umath.ToInt64(height + 1)
+		if err != nil {
+			return err
+		}
+
+		// Wait for upgrade to be processed.
+		if _, _, err := waitForHeight(ctx, def.Testnet.Testnet, waitHeight); err != nil {
+			return errors.Wrap(err, "wait for height")
+		}
+
+		log.Info(ctx, "Upgrade applied", "height", height, "name", upgrade)
 	}
 }
 

@@ -25,8 +25,9 @@ service MsgService {
 message MsgExecutionPayload {
   option (cosmos.msg.v1.signer) = "authority";
   string                              authority = 1;
-  reserved                                        2;
-  reserved                                        3;
+   // TODO(corver): Reserve 2 and 3 during drake upgraded.
+  bytes                     execution_payload   = 2;
+  repeated EVMEvent         prev_payload_events = 3 [(gogoproto.nullable) = false];
   repeated bytes               blob_commitments = 4; // Array of blob tx KZGCommitments, 48 bytes each.
   ExecutionPayloadDeneb execution_payload_deneb = 5;
 }
