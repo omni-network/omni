@@ -37,9 +37,7 @@ type WithExecAndTransferParams = {
 export function withExecAndTransfer(params: WithExecAndTransferParams): Call {
   const { call, transfer } = params
   const _callData = encodeFunctionData({
-    abi: call.abi,
-    functionName: call.functionName,
-    args: call.args,
+    ...call,
   })
 
   return {
