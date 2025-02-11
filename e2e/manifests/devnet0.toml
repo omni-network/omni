@@ -3,6 +3,7 @@
 
 network = "devnet"
 anvil_chains = ["mock_op", "mock_arb"]
+ephemeral_genesis_binary = "1_uluwatu"
 
 [node.validator01]
 

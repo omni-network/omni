@@ -54,23 +54,27 @@ func AllUpgrades() []string {
 	return resp
 }
 
-// NextUpgrade returns the next upgrade name after the provided previous upgrade..
-func NextUpgrade(prev string) (string, error) {
+// NextUpgrade returns the next upgrade name after the provided previous upgrade,
+// or false if this the latest upgrade (no next), or an error if the name is not a
+// valid upgrade.
+func NextUpgrade(prev string) (string, bool, error) {
 	if prev == "" { // Return the first upgrade
-		return upgrades[0].Name, nil
+		return upgrades[0].Name, true, nil
 	}
 
 	for i, u := range upgrades {
-		if i == len(upgrades)-1 {
-			break
+		if u.Name != prev {
+			continue
 		}
 
-		if u.Name == prev {
-			return upgrades[i+1].Name, nil
+		if i == len(upgrades)-1 {
+			return "", false, nil // No next upgrade
 		}
+
+		return upgrades[i+1].Name, true, nil
 	}
 
-	return "", errors.New("prev upgrade not found [BUG]")
+	return "", false, errors.New("prev upgrade not found [BUG]")
 }
 
 func (a App) setUpgradeHandlers(ctx context.Context) error {

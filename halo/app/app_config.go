@@ -122,7 +122,6 @@ var (
 		{Account: distrtypes.ModuleName, Permissions: []string{authtypes.Burner}},
 		{Account: stakingtypes.BondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
 		{Account: stakingtypes.NotBondedPoolName, Permissions: []string{authtypes.Burner, stakingtypes.ModuleName}},
-		// TODO(christian): rename package, the rest can stay because names are the same
 		{Account: evmstakingtypes.ModuleName, Permissions: []string{authtypes.Burner, authtypes.Minter}},
 		{Account: minttypes.ModuleName, Permissions: []string{authtypes.Minter}},
 	}
@@ -155,7 +154,7 @@ var (
 					{
 						Name: authtypes.ModuleName,
 						Config: appconfig.WrapAny(&authmodulev1.Module{
-							ModuleAccountPermissions: moduleAccPerms(ctx),
+							ModuleAccountPermissions: moduleAccPerms,
 							Bech32Prefix:             sdk.Bech32HRP,
 						}),
 					},

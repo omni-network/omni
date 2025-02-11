@@ -5,6 +5,7 @@ anvil_chains = ["mock_l1", "mock_l2"]
 multi_omni_evms = true
 prometheus = true
 deploy_solve = true
+ephemeral_genesis_binary = "1_uluwatu"
 
 [node.validator01]
 [node.validator02]

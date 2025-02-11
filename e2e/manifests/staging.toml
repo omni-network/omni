@@ -3,6 +3,7 @@ public_chains = ["op_sepolia","base_sepolia","arb_sepolia","holesky"]
 multi_omni_evms = true
 prometheus = true
 deploy_solve = true
+network_upgrade_height = -1 # Manual upgrades for now
 
 feature_flags = ["evm-staking-module","simple-evm-events","proto-evm-payload"]
 
