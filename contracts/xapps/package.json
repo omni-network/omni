@@ -14,6 +14,6 @@
     "@openzeppelin/contracts-upgradeable": "^5.2.0",
     "rlusd": "github:ripple/RLUSD-Implementation",
     "createx": "github:pcaversaccio/createx",
-    "solady": "^0.0.295"
+    "solady": "^0.1.7"
   }
 }
