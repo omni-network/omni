@@ -56,8 +56,6 @@ func newCreateValCmd() *cobra.Command {
 				return errors.Wrap(err, "create-validator")
 			}
 
-			showDelayMessage(cmd.Context())
-
 			return nil
 		},
 	}
@@ -233,6 +231,8 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 		"block", rec.BlockNumber.Uint64(),
 	)
 
+	log.Info(ctx, "⏳ Staking events are delayed in the Omni Consensus chain and may take up to 12h to apply.")
+
 	return nil
 }
 
@@ -276,8 +276,6 @@ func newDelegateCmd() *cobra.Command {
 			if err != nil {
 				return errors.Wrap(err, "delegate")
 			}
-
-			showDelayMessage(cmd.Context())
 
 			return nil
 		},
@@ -363,6 +361,8 @@ func Delegate(ctx context.Context, cfg DelegateConfig) error {
 		"link", cfg.Network.Static().OmniScanTXURL(tx.Hash()),
 		"block", rec.BlockNumber.Uint64(),
 	)
+
+	log.Info(ctx, "⏳ Staking events are delayed in the Omni Consensus chain and may take up to 12h to apply.")
 
 	return nil
 }
@@ -596,8 +596,6 @@ func newEditValCmd() *cobra.Command {
 				return errors.Wrap(err, "edit validator")
 			}
 
-			showDelayMessage(cmd.Context())
-
 			return nil
 		},
 	}
@@ -704,13 +702,9 @@ func EditVal(ctx context.Context, cfg EditValConfig) error {
 		"block", rec.BlockNumber.Uint64(),
 	)
 
-	return nil
-}
+	log.Info(ctx, "⏳ Staking events are delayed in the Omni Consensus chain and may take up to 12h to apply.")
 
-func showDelayMessage(ctx context.Context) {
-	log.Info(ctx, "⏳ Staking events are delayed in the Omni Consensus chain and may take up to 12h to apply.",
-		"eta", time.Now().UTC().Add(12*time.Hour).Format(time.DateTime)+"UTC",
-	)
+	return nil
 }
 
 // setupClients is a helper that creates the omni evm client,
