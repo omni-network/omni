@@ -4,6 +4,7 @@ export { typeHash } from './constants/typehash.js'
 
 ////// UTILS //////
 export { encodeOrder } from './utils/encodeOrder.js'
+export { withExecAndTransfer } from './utils/withExecAndTransfer.js'
 
 ////// HOOKS //////
 export { useOpenOrder } from './hooks/useOpenOrder.js'
