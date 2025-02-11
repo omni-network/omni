@@ -2,7 +2,12 @@
 // Ferdinand Magellan, the famed explorer who led the first expedition to
 // circumnavigate the globe.
 //
-// It only includes ....
+// It includes:
+// - Normal staking delegations (previously only self-delegations)
+// - 11% inflation rewards for delegations (previously no rewards)
+// - Enqueuing of staking withdrawals to EVM (not processed yet)
+// - Protobuf encoding of EVM payload in blocks (improved performance and security)
+// - Simplified EVM events processing (improved performance and security)
 package magellan
 
 import (
