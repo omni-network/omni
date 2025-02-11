@@ -5,7 +5,7 @@ prometheus = true
 deploy_solve = true
 network_upgrade_height = -1 # Manual upgrades for now
 
-feature_flags = ["evm-staking-module","simple-evm-events","proto-evm-payload"]
+feature_flags = []
 
 [node.validator01]
 [node.validator02]
