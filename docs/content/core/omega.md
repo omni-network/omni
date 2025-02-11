@@ -27,6 +27,7 @@ Contracts can be deployed on the Omni EVM using the RPC below. To get started, y
 | --- | --- |
 | Archive Node(s) RPC | Available upon request |
 | Omni EVM Explorer | [https://omega.omniscan.network](https://omega.omniscan.network/) |
+| QuickNode Omni Testnet RPC | https://www.quicknode.com/chains/omni |
 | Omni EVM Faucet | [https://faucet.omni.network](https://faucet.omni.network/) |
 | Omni status page | [https://status.omni.network](https://status.omni.network/) |
 
