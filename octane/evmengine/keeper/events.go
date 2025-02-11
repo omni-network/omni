@@ -7,7 +7,6 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/octane/evmengine/types"
 
@@ -16,13 +15,48 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
-// evmEvents returns all EVM log events from the provided block hash in deterministic order.
-func (k *Keeper) evmEvents(ctx context.Context, blockHash common.Hash) ([]types.EVMEvent, error) {
-	return FetchProcEvents(ctx, k.engineCl, blockHash, k.eventProcs...)
+// sortIndex sorts the logs by index.
+func sortIndex(all []ethtypes.Log) {
+	sort.Slice(all, func(i, j int) bool {
+		return all[i].Index < all[j].Index
+	})
 }
 
-// FetchProcEvents fetches all EVM events for the given processors from the given block hash.
+// sortLegacy sorts the logs by address, topics, and data.
+func sortLegacy(all []ethtypes.Log) {
+	sort.Slice(all, func(i, j int) bool {
+		if cmp := bytes.Compare(all[i].Address.Bytes(), all[j].Address.Bytes()); cmp != 0 {
+			return cmp < 0
+		}
+
+		topicI := concatHashes(all[i].Topics)
+		topicJ := concatHashes(all[j].Topics)
+		if cmp := bytes.Compare(topicI, topicJ); cmp != 0 {
+			return cmp < 0
+		}
+
+		return bytes.Compare(all[i].Data, all[j].Data) < 0
+	})
+}
+
+// evmEvents returns all EVM log events from the provided block hash in deterministic order.
+// It uses the new index sorter.
+func (k *Keeper) evmEvents(ctx context.Context, blockHash common.Hash) ([]types.EVMEvent, error) {
+	return fetchProcEvents(ctx, k.engineCl, blockHash, sortIndex, k.eventProcs...)
+}
+
+// legacyEVMEvents returns all EVM log events from the provided block hash in deterministic order.
+// It uses the legacy address, topics, and data sorter.
+func (k *Keeper) legacyEVMEvents(ctx context.Context, blockHash common.Hash) ([]types.EVMEvent, error) {
+	return fetchProcEvents(ctx, k.engineCl, blockHash, sortLegacy, k.eventProcs...)
+}
+
 func FetchProcEvents(ctx context.Context, cl ethclient.EngineClient, blockHash common.Hash, procs ...types.EvmEventProcessor) ([]types.EVMEvent, error) {
+	return fetchProcEvents(ctx, cl, blockHash, sortIndex, procs...)
+}
+
+// fetchProcEvents fetches all EVM events for the given processors from the given block hash.
+func fetchProcEvents(ctx context.Context, cl ethclient.EngineClient, blockHash common.Hash, sortFunc func([]ethtypes.Log), procs ...types.EvmEventProcessor) ([]types.EVMEvent, error) {
 	var all []ethtypes.Log
 	for _, proc := range procs {
 		// Fetching evm events over the network is unreliable, retry forever.
@@ -47,28 +81,7 @@ func FetchProcEvents(ctx context.Context, cl ethclient.EngineClient, blockHash c
 		}
 	}
 
-	if feature.FlagSimpleEVMEvents.Enabled(ctx) {
-		// Sort by Index
-		sort.Slice(all, func(i, j int) bool {
-			return all[i].Index < all[j].Index
-		})
-	} else {
-		// Sort by Address > Topics > Data
-		// This avoids dependency on runtime ordering.
-		sort.Slice(all, func(i, j int) bool {
-			if cmp := bytes.Compare(all[i].Address.Bytes(), all[j].Address.Bytes()); cmp != 0 {
-				return cmp < 0
-			}
-
-			topicI := concatHashes(all[i].Topics)
-			topicJ := concatHashes(all[j].Topics)
-			if cmp := bytes.Compare(topicI, topicJ); cmp != 0 {
-				return cmp < 0
-			}
-
-			return bytes.Compare(all[i].Data, all[j].Data) < 0
-		})
-	}
+	sortFunc(all)
 
 	// Verify and convert logs
 	var resp []types.EVMEvent

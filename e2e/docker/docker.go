@@ -15,6 +15,7 @@ import (
 
 	"github.com/omni-network/omni/e2e/app/geth"
 	"github.com/omni-network/omni/e2e/types"
+	magellan2 "github.com/omni-network/omni/halo/app/upgrades/magellan"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
@@ -225,6 +226,34 @@ func (c ComposeDef) InitialGethTag(index int) string {
 	}
 
 	return tag
+}
+
+// hnitialGethTag return the geth docker image tag to initially deploy.
+func (c ComposeDef) haloGenesisBinary(node string) string {
+	for _, n := range c.Nodes {
+		if n.Name != node {
+			continue
+		}
+
+		if n.StateSync {
+			// When state syncing, use latest upgrade binary always.
+			// TODO(corver): Add better way to get this without haloapp dependency.
+			return magellan2.UpgradeName
+		}
+	}
+
+	return c.EphemeralGenesisBinary
+}
+
+// CustomGenesisVar returns the environment variable to set the custom genesis binary for a node
+// or empty if not required.
+func (c ComposeDef) CustomGenesisVar(node string) string {
+	bin := c.haloGenesisBinary(node)
+	if bin == "" {
+		return ""
+	}
+
+	return fmt.Sprintf("COSMOVISOR_CUSTOM_GENESIS=%s", bin)
 }
 
 // NodeOmniEVMs returns a map of node name to OmniEVM instance name; map[node_name]omni_evm.

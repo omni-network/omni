@@ -1,5 +1,5 @@
 // Package withdraw provides tools to automatically create EVM withdrawals
-// for any call to bank.SendCoinsFromModuleToAccount.
+// for any transfers into user accounts.
 package withdraw
 
 import (
@@ -16,7 +16,7 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 )
 
-// BankWrapper wraps x/bank.Keeper by overriding `SendCoinsFromModuleToAccount` with
+// BankWrapper wraps x/bank.Keeper by overriding methods with
 // creation of a new withdrawal requests.
 type BankWrapper struct {
 	bankkeeper.Keeper
@@ -38,6 +38,19 @@ func (w *BankWrapper) SendCoinsFromModuleToAccountNoWithdrawal(ctx context.Conte
 	err := w.Keeper.SendCoinsFromModuleToAccount(ctx, senderModule, recipientAddr, coins)
 	if err != nil {
 		return errors.Wrap(err, "send coins from module to account")
+	}
+
+	return nil
+}
+
+// UndelegateCoinsFromModuleToAccount intercepts all principal undelegations and
+// creates EVM withdrawal to the user account.
+// TODO(corver): This is unexpected in magellan upgrade, must be implemented in drake.
+func (w *BankWrapper) UndelegateCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+	log.Error(ctx, "Unexpected call to DelegateCoinsFromAccountToModule [BUG]", nil, "sender", senderModule, "recipient", recipientAddr, "amt", amt)
+
+	if err := w.Keeper.UndelegateCoinsFromModuleToAccount(ctx, senderModule, recipientAddr, amt); err != nil {
+		return errors.Wrap(err, "undelegate coins from module to account")
 	}
 
 	return nil

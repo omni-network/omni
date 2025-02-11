@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/lib/cchain/provider"
-	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/netconf"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -27,10 +26,6 @@ func TestInvariantNoUserBalance(t *testing.T) {
 		t.Helper()
 
 		ctx := context.Background()
-		if !feature.FlagEVMStakingModule.Enabled(ctx) {
-			t.Skip("EVM staking module not enabled")
-		}
-
 		client, err := node.Client()
 		require.NoError(t, err)
 		cprov := provider.NewABCI(client, network.ID)

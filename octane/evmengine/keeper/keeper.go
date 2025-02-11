@@ -9,7 +9,6 @@ import (
 	"github.com/omni-network/omni/halo/comet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/octane/evmengine/types"
 
@@ -140,29 +139,28 @@ func (k *Keeper) RegisterProposalService(server grpc1.Server) {
 	types.RegisterMsgServiceServer(server, NewProposalServer(k))
 }
 
-// parseAndVerifyProposedPayload parses and returns the proposed payload
+// parseAndVerifyProposedPayload parses and verifies and returns the proposed payload
 // if comparing it against the latest execution block succeeds.
-//
-//nolint:nestif // Will be removed with feature flag
 func (k *Keeper) parseAndVerifyProposedPayload(ctx context.Context, msg *types.MsgExecutionPayload) (engine.ExecutableData, error) {
+	// Block of magellan network upgrade height is built by uluwatu logic,
+	// support both that and new magellan proto payloads.
+	// Note this should strictly only be allowed for that first block, but is tricky to enforce.
+	if msg.ExecutionPayloadDeneb != nil && len(msg.ExecutionPayload) > 0 {
+		return engine.ExecutableData{}, errors.New("only one payload type allowed")
+	} else if msg.ExecutionPayloadDeneb == nil && len(msg.ExecutionPayload) == 0 {
+		return engine.ExecutableData{}, errors.New("no payload provided")
+	}
+
 	// Parse the payload.
 	var payload engine.ExecutableData
-	if feature.FlagProtoEVMPayload.Enabled(ctx) {
-		if msg.ExecutionPayload != nil {
-			return engine.ExecutableData{}, errors.New("legacy json payload not allowed")
-		}
+	if msg.ExecutionPayloadDeneb != nil {
 		var err error
 		payload, err = types.PayloadFromProto(msg.ExecutionPayloadDeneb)
 		if err != nil {
 			return engine.ExecutableData{}, errors.Wrap(err, "unmarshal proto payload")
 		}
-	} else {
-		if msg.ExecutionPayloadDeneb != nil {
-			return engine.ExecutableData{}, errors.New("proto payload not allowed")
-		}
-		if err := json.Unmarshal(msg.ExecutionPayload, &payload); err != nil {
-			return engine.ExecutableData{}, errors.Wrap(err, "unmarshal payload")
-		}
+	} else if err := json.Unmarshal(msg.ExecutionPayload, &payload); err != nil {
+		return engine.ExecutableData{}, errors.Wrap(err, "unmarshal payload")
 	}
 
 	// Ensure no withdrawals are included in the payload.

@@ -94,7 +94,7 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	// Network upgrade to include in genesis (applied at height=1)
 	var upgrade string
 	if def.Manifest.NetworkUpgradeHeight == 0 {
-		upgrade, err = haloapp.NextUpgrade(def.Manifest.EphemeralGenesisBinary)
+		upgrade, _, err = haloapp.NextUpgrade(def.Manifest.EphemeralGenesisBinary)
 		if err != nil {
 			return err
 		}

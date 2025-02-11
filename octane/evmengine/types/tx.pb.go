@@ -77,7 +77,8 @@ func (m *GenesisState) GetExecutionBlockHash() []byte {
 // MsgExecutionPayload defines the next EVM execution payload and the
 // logs from previous execution payload.
 type MsgExecutionPayload struct {
-	Authority             string                 `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
+	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
+	// TODO(corver): Reserve 2 and 3 during drake upgraded.
 	ExecutionPayload      []byte                 `protobuf:"bytes,2,opt,name=execution_payload,json=executionPayload,proto3" json:"execution_payload,omitempty"`
 	PrevPayloadEvents     []EVMEvent             `protobuf:"bytes,3,rep,name=prev_payload_events,json=prevPayloadEvents,proto3" json:"prev_payload_events"`
 	BlobCommitments       [][]byte               `protobuf:"bytes,4,rep,name=blob_commitments,json=blobCommitments,proto3" json:"blob_commitments,omitempty"`

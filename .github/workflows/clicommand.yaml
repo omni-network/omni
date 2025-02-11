@@ -34,7 +34,7 @@ jobs:
       uses: ./.github/actions/goreleaser-snapshot
 
     - name: Build halovisor image
-      run: scripts/halovisor/build.sh "${GITHUB_SHA::7}"
+      run: scripts/halovisor/build.sh
 
     - name: Install CLI from Source
       run: go install ./cli/cmd/omni

@@ -13,11 +13,14 @@ import (
 	"github.com/omni-network/omni/e2e/xbridge"
 	haloapp "github.com/omni-network/omni/halo/app"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
+	"github.com/omni-network/omni/lib/cchain"
+	"github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 
@@ -114,7 +117,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 	eg2.Go(func() error { return allowStagingValidators(ctx, def) })
 	eg2.Go(func() error { return DeployEphemeralGasApp(ctx, def) })
 	eg2.Go(func() error { return DeployBridge(ctx, def) })
-	eg2.Go(func() error { return maybeSubmitNetworkUpgrade(ctx, def) })
+	eg2.Go(func() error { return maybeSubmitNetworkUpgrades(ctx, def) })
 	eg2.Go(func() error { return FundValidatorsForTesting(ctx, def) })
 	eg2.Go(func() error { return xbridge.Deploy(ctx, NetworkFromDef(def), def.Backends()) })
 	if err := eg2.Wait(); err != nil {
@@ -369,13 +372,19 @@ func checkSupportedChains(ctx context.Context, n netman.Manager) (bool, error) {
 	return true, nil
 }
 
-// maybeSubmitNetworkUpgrade submits a network upgrade if required.
-func maybeSubmitNetworkUpgrade(ctx context.Context, def Definition) error {
-	if def.Manifest.NetworkUpgradeHeight <= 0 {
+// maybeSubmitNetworkUpgrades submits multiple network upgrade up to latest (if required).
+func maybeSubmitNetworkUpgrades(ctx context.Context, def Definition) error {
+	if def.Manifest.NetworkUpgradeHeight < 0 {
 		log.Debug(ctx, "Not submitting network upgrade admin tx")
 
 		return nil // No explicit network upgrade required.
 	}
+
+	client, err := def.Testnet.BroadcastNode().Client()
+	if err != nil {
+		return errors.Wrap(err, "broadcast client")
+	}
+	cprov := provider.NewABCI(client, def.Testnet.Network)
 
 	network := def.Testnet.Network
 
@@ -394,36 +403,76 @@ func maybeSubmitNetworkUpgrade(ctx context.Context, def Definition) error {
 		return err
 	}
 
-	height, err := backend.BlockNumber(ctx)
-	if err != nil {
-		return err
+	for i := 0; ; i++ {
+		upgrade, ok, err := NextUpgrade(ctx, cprov)
+		if err != nil {
+			return err
+		} else if !ok {
+			return nil // No next upgrade to plan
+		}
+
+		height, err := backend.BlockNumber(ctx)
+		if err != nil {
+			return err
+		}
+
+		const minDelay = 5 // Upgrades fail if processed too late (mempool is non-deterministic, so we need a buffer).
+		height += minDelay
+
+		// If requested height is later, use that as is for first upgrade.
+		if i == 0 && uint64(def.Manifest.NetworkUpgradeHeight) > height {
+			height = uint64(def.Manifest.NetworkUpgradeHeight)
+		}
+
+		log.Info(ctx, "Planning upgrade", "height", height, "name", upgrade)
+
+		tx, err := contract.PlanUpgrade(txOpts, bindings.UpgradePlan{
+			Name:   upgrade,
+			Height: height,
+			Info:   "e2e triggered upgrade",
+		})
+		if err != nil {
+			return errors.Wrap(err, "plan upgrade")
+		}
+		if _, err := backend.WaitMined(ctx, tx); err != nil {
+			return errors.Wrap(err, "wait mined")
+		}
+
+		if _, ok, err := haloapp.NextUpgrade(upgrade); err != nil {
+			return err
+		} else if !ok {
+			return nil // No next upgrade to plan, just return
+		}
+
+		waitHeight, err := umath.ToInt64(height + 1)
+		if err != nil {
+			return err
+		}
+
+		// Wait for upgrade to be processed.
+		if _, _, err := waitForHeight(ctx, def.Testnet.Testnet, waitHeight); err != nil {
+			return errors.Wrap(err, "wait for height")
+		}
+
+		log.Info(ctx, "Upgrade applied", "height", height, "name", upgrade)
+	}
+}
+
+func NextUpgrade(ctx context.Context, cprov cchain.Provider) (string, bool, error) {
+	for _, upgrade := range haloapp.AllUpgrades() {
+		plan, ok, err := cprov.AppliedPlan(ctx, upgrade)
+		if err != nil {
+			return "", false, errors.Wrap(err, "fetching applied plan")
+		} else if !ok {
+			continue
+		} else if upgrade != plan.Name {
+			return "", false, errors.New("unexpected upgrade plan name", "expected", upgrade, "actual", plan.Name)
+		}
+
+		return haloapp.NextUpgrade(upgrade)
 	}
 
-	const minDelay = 5 // Upgrades fail if processed too late (mempool is non-deterministic, so we need a buffer).
-	height += minDelay
+	// No applied upgrades, so return first upgrade.
 
-	// If requested height is later, use that as is.
-	if uint64(def.Manifest.NetworkUpgradeHeight) > height {
-		height = uint64(def.Manifest.NetworkUpgradeHeight)
-	}
-
-	upgrade, err := haloapp.NextUpgrade(def.Manifest.EphemeralGenesisBinary)
-	if err != nil {
-		return err
-	}
-	log.Info(ctx, "Planning upgrade", "height", height, "name", upgrade)
-
-	tx, err := contract.PlanUpgrade(txOpts, bindings.UpgradePlan{
-		Name:   upgrade,
-		Height: height,
-		Info:   "e2e triggered upgrade",
-	})
-	if err != nil {
-		return errors.Wrap(err, "plan upgrade")
-	}
-	if _, err := backend.WaitMined(ctx, tx); err != nil {
-		return errors.Wrap(err, "wait mined")
-	}
-
-	return nil
+	return haloapp.NextUpgrade("")
 }

@@ -1,12 +1,14 @@
 # Docker build args
 ARG OMNI_COSMOVISOR_VERSION=v0.5.0
 ARG HALO_VERSION_0_GENESIS=v0.8.1
-ARG HALO_VERSION_1_ULUWATU=main
+ARG HALO_VERSION_1_ULUWATU=v0.12.0
+ARG HALO_VERSION_2_MAGELLAN=main
 
 # Build stages
 FROM omniops/cosmovisor:${OMNI_COSMOVISOR_VERSION} AS build-cosmovisor
 FROM omniops/halo:${HALO_VERSION_0_GENESIS} AS build-0-genesis
 FROM omniops/halo:${HALO_VERSION_1_ULUWATU} AS build-1-uluwatu
+FROM omniops/halo:${HALO_VERSION_2_MAGELLAN} AS build-2-magellan
 
 # Runtime stage
 FROM scratch AS runtime
@@ -35,8 +37,9 @@ VOLUME /halo
 COPY --from=build-cosmovisor /ko-app/cosmovisor /usr/local/bin/cosmovisor
 COPY --from=build-0-genesis /app /halovisor/genesis/bin/halo
 COPY --from=build-1-uluwatu /app /halovisor/upgrades/1_uluwatu/bin/halo
+COPY --from=build-2-magellan /app /halovisor/upgrades/2_magellan/bin/halo
 
-HEALTHCHECK CMD ["/halovisor/upgrades/1_uluwatu/bin/halo", "ready"]
+HEALTHCHECK CMD ["/halovisor/upgrades/2_magellan/bin/halo", "ready"]
 
 # Cosmovisor is the entrypoint
 ENTRYPOINT [ "cosmovisor" ]

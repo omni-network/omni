@@ -445,6 +445,7 @@ func (m *engineMock) NewPayloadV3(ctx context.Context, params engine.ExecutableD
 	log.Debug(ctx, "Engine mock received new payload from proposer",
 		"height", params.Number,
 		log.Hex7("hash", params.BlockHash.Bytes()),
+		"payload_id", id,
 	)
 
 	return engine.PayloadStatusV1{
@@ -577,7 +578,12 @@ func makePayload(fuzzer *fuzz.Fuzzer, height uint64, timestamp uint64, parentHas
 	header.ParentBeaconRoot = beaconRoot
 
 	// Convert header to block
-	block := types.NewBlock(&header, nil, nil, trie.NewStackTrie(nil))
+	block := types.NewBlock(
+		&header,
+		&types.Body{Withdrawals: []*types.Withdrawal{}},
+		nil,
+		trie.NewStackTrie(nil),
+	)
 
 	// Convert block to payload
 	env := engine.BlockToExecutableData(block, big.NewInt(0), nil, nil)

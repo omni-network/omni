@@ -36,11 +36,14 @@ func DIInvoke(bankWrapper *BankWrapper, evmEngKeeper EVMEngineKeeper) {
 }
 
 // overrides is a list of x/bank Keeper interfaces to be overridden by the BankWrapper.
-// Only modules that call SendCoinsFromModuleToAccount need to be overridden.
+// Only modules that call SendCoinsFromModuleToAccount or UndelegateCoinsFromModuleToAccount need to be overridden.
 // Note that the `gov` and `protocolpool` modules would also require this if/when used.
 // Note that these modules require additional Burner permission to burn coins.
 var overrides = []string{
+	// SendCoinsFromModuleToAccount
 	"github.com/cosmos/cosmos-sdk/x/distribution/types/types.BankKeeper",
+	// UndelegateCoinsFromModuleToAccount
+	"github.com/cosmos/cosmos-sdk/x/staking/types/types.BankKeeper",
 
 	// Note the x/auth Keepers don't actually need to be wrapped, but
 	// it fails with "No type for explicit binding found" if added to noOverrides :(
@@ -49,12 +52,11 @@ var overrides = []string{
 }
 
 // noOverrides is a list of standard cosmosSDK module x/bank Keeper interfaces
-// that do not need to be overridden since they don't call SendCoinsFromModuleToAccount.
+// that do not need to be overridden since they don't call transfer methods.
 // They remain bound to the default x/bank Keeper.
 var noOverrides = []string{
 	"github.com/cosmos/cosmos-sdk/x/bank/keeper/keeper.Keeper",
 	"github.com/cosmos/cosmos-sdk/x/mint/types/types.BankKeeper",
-	"github.com/cosmos/cosmos-sdk/x/staking/types/types.BankKeeper",
 	"github.com/cosmos/cosmos-sdk/x/slashing/types/types.BankKeeper",
 }
 
@@ -67,7 +69,7 @@ const (
 // interfaces to either this BankWrapper or the default x/bank keeper.
 //
 // Note that the `gov` and `protocolpool` modules would also require this if/when used.
-// Other SDK modules don't call SendCoinsFromModuleToAccount so they don't need this.
+// Other SDK modules don't call transfer methods so they don't need this.
 func BindInterfaces() []depinject.Config {
 	var resp []depinject.Config
 
