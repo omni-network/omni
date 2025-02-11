@@ -12,8 +12,8 @@ importers:
         specifier: ^5.0.2
         version: 5.1.0
       solady:
-        specifier: ^0.0.287
-        version: 0.0.287
+        specifier: ^0.1.7
+        version: 0.1.8
     devDependencies:
       ds-test:
         specifier: github:dapphub/ds-test
@@ -35,8 +35,8 @@ packages:
     resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/da591f56d8884c5824c0c1b3103fbcfd81123c4c}
     version: 1.9.4
 
-  solady@0.0.287:
-    resolution: {integrity: sha512-Cti/U83eqIB0e3UNxZvmkwrFrQCT9YLY1vhVguaWnOVLKzv/OU5tQbKLGpamUzMtcLSxaBjBdhaTlmiciGfhHg==}
+  solady@0.1.8:
+    resolution: {integrity: sha512-r7qU0DbNjnT8NRwTyKkAmmC9iVoSQq3UXh6KEZjVbKYnjeH9wnYaSrimxocXPSR+o3ddWtzbtoGBT+KyDxxN7g==}
 
 snapshots:
 
@@ -46,4 +46,4 @@ snapshots:
 
   forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/da591f56d8884c5824c0c1b3103fbcfd81123c4c: {}
 
-  solady@0.0.287: {}
+  solady@0.1.8: {}
