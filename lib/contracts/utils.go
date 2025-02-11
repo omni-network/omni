@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/ethclient"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -30,8 +30,8 @@ func IsEmptyAddress(addr common.Address) bool {
 	return addr == common.Address{}
 }
 
-func IsDeployed(ctx context.Context, backend *ethbackend.Backend, addr common.Address) (bool, error) {
-	code, err := backend.CodeAt(ctx, addr, nil)
+func IsDeployed(ctx context.Context, client ethclient.Client, addr common.Address) (bool, error) {
+	code, err := client.CodeAt(ctx, addr, nil)
 	if err != nil {
 		return false, errors.Wrap(err, "code at", "address", addr)
 	}

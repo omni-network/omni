@@ -155,7 +155,7 @@ func parseDeposits(order Order) ([]Payment, error) {
 			return nil, newRejection(rejectUnsupportedDeposit, errors.New("non-eth addressed token", "addr", hexutil.Encode(output.Token[:])))
 		}
 
-		tkn, ok := tokens.find(chainID, addr)
+		tkn, ok := tokens.Find(chainID, addr)
 		if !ok {
 			return nil, newRejection(rejectUnsupportedDeposit, errors.New("unsupported token", "addr", addr))
 		}
@@ -251,7 +251,7 @@ func parseExpenses(order Order) ([]Payment, error) {
 			return nil, newRejection(rejectUnsupportedExpense, errors.New("non-eth addressed token", "addr", hexutil.Encode(output.Token[:])))
 		}
 
-		tkn, ok := tokens.find(chainID, addr)
+		tkn, ok := tokens.Find(chainID, addr)
 		if !ok {
 			return nil, newRejection(rejectUnsupportedExpense, errors.New("unsupported token", "addr", addr))
 		}

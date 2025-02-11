@@ -82,14 +82,14 @@ func newQuoter(backends ethbackend.Backends, solverAddr common.Address) quoteFun
 			return Deposit{}, newRejection(rejectUnsupportedDestChain, err)
 		}
 
-		depositTkn, ok := tokens.find(req.SourceChainID, req.DepositToken)
+		depositTkn, ok := tokens.Find(req.SourceChainID, req.DepositToken)
 		if !ok {
 			return Deposit{}, newRejection(rejectUnsupportedDeposit, errors.New("unsupported deposit token", "addr", req.DepositToken))
 		}
 
 		var expenses []Payment
 		for _, e := range req.Expenses {
-			tkn, ok := tokens.find(req.DestinationChainID, e.Token)
+			tkn, ok := tokens.Find(req.DestinationChainID, e.Token)
 			if !ok {
 				return Deposit{}, newRejection(rejectUnsupportedExpense, errors.New("unsupported expense token", "addr", e.Token))
 			}
