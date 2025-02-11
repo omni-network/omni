@@ -27,7 +27,7 @@ export function useOpenOrder(params: UseOpenOrderParams) {
   })
 
   const openOrderAsync = useCallback(
-    async (order: Order, fillDeadline: number) => {
+    async (order: Order, fillDeadline?: number) => {
       const encodedOrder = encodeOrder(order)
       const value = order.calls.reduce(
         (acc, call) => acc + call.value,
@@ -41,7 +41,7 @@ export function useOpenOrder(params: UseOpenOrderParams) {
         value,
         args: [
           {
-            fillDeadline: fillDeadline,
+            fillDeadline: fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
             orderDataType: typeHash,
             orderData: encodedOrder,
           },
