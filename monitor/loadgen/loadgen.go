@@ -36,10 +36,10 @@ type Config struct {
 
 // Start starts the validator self delegation load generator.
 // It does:
-// - Validator self-delegation on periodic basis.
+// - Validator self- and normal-delegation on periodic basis.
 // - Makes XCalls from -> to random EVM portals on periodic basis.
 func Start(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client, cfg Config, rpcEndpoints xchain.RPCEndpoints) error {
-	err := startSelfDelegation(ctx, network, ethClients, cfg)
+	err := startDelegation(ctx, network, ethClients, cfg)
 	if err != nil {
 		return errors.Wrap(err, "start self delegation")
 	}
@@ -52,7 +52,7 @@ func Start(ctx context.Context, network netconf.Network, ethClients map[uint64]e
 	return nil
 }
 
-func startSelfDelegation(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client, cfg Config) error {
+func startDelegation(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client, cfg Config) error {
 	// Only generate load in ephemeral networks, devnet and staging.
 	if !network.ID.IsEphemeral() {
 		return nil
@@ -100,9 +100,14 @@ func startSelfDelegation(ctx context.Context, network netconf.Network, ethClient
 		period = selfDelegationPeriodDevnet
 	}
 
-	for _, key := range keys {
-		val := ethcrypto.PubkeyToAddress(key.PublicKey)
-		go selfDelegateForever(ctx, contract, backend, val, period)
+	for i, key := range keys {
+		// Use each validator key as delegator
+		delegator := ethcrypto.PubkeyToAddress(key.PublicKey)
+		val := delegator // For even i, delegate to self.
+		if i%2 == 1 {    // For odd i, delegate to previous validator (normal non-self delegation).
+			val = ethcrypto.PubkeyToAddress(keys[i-1].PublicKey)
+		}
+		go delegateForever(ctx, contract, backend, delegator, val, period)
 	}
 
 	return nil
