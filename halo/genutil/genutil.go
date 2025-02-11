@@ -8,6 +8,7 @@ import (
 	"time"
 
 	haloapp "github.com/omni-network/omni/halo/app"
+	magellan2 "github.com/omni-network/omni/halo/app/upgrades/magellan"
 	uluwatu1 "github.com/omni-network/omni/halo/app/upgrades/uluwatu"
 	"github.com/omni-network/omni/halo/evmupgrade"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
@@ -54,10 +55,10 @@ func MakeGenesis(
 	upgradeName string,
 	valPubkeys ...crypto.PubKey,
 ) (*gtypes.AppGenesis, error) {
-	if upgradeName != "" && upgradeName != uluwatu1.UpgradeName {
+	if upgradeName != "" && upgradeName != uluwatu1.UpgradeName && upgradeName != magellan2.UpgradeName {
 		// TODO(corver): Add support for chain genesis (block 0) directly from subsequent upgrades,
 		//  ie, no actual network upgrade required since block 0 is already upgraded.
-		return nil, errors.New("genesis only supports 0_genesis and 1_uluwatu network upgrades")
+		return nil, errors.New("unsupported genesis network upgrade", "upgrade", upgradeName)
 	}
 
 	encConf, err := haloapp.ClientEncodingConfig(ctx, network)
