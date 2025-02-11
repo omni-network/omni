@@ -97,6 +97,10 @@ func Run(ctx context.Context, cfg Config) error {
 		"/api/v1/contracts": newContractsHandler(network.ID),
 	})
 
+	if err := approveOutboxes(ctx, network, backends, solverAddr); err != nil {
+		return errors.Wrap(err, "approve outboxes")
+	}
+
 	select {
 	case <-ctx.Done():
 		log.Info(ctx, "Shutdown detected, stopping...")

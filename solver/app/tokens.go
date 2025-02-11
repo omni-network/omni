@@ -82,7 +82,11 @@ var tokens = append(Tokens{
 	stETH(evmchain.IDMockL1, common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")), // copy of holesky stETH (for e2e fork testing)
 }, mocks()...)
 
-func (ts Tokens) find(chainID uint64, addr common.Address) (Token, bool) {
+func AllTokens() Tokens {
+	return tokens
+}
+
+func (ts Tokens) Find(chainID uint64, addr common.Address) (Token, bool) {
 	for _, t := range ts {
 		if t.ChainID == chainID && t.Address == addr {
 			return t, true
@@ -90,6 +94,18 @@ func (ts Tokens) find(chainID uint64, addr common.Address) (Token, bool) {
 	}
 
 	return Token{}, false
+}
+
+func (ts Tokens) ForChain(chainID uint64) Tokens {
+	var tkns Tokens
+
+	for _, t := range ts {
+		if t.ChainID == chainID {
+			tkns = append(tkns, t)
+		}
+	}
+
+	return tkns
 }
 
 func nativeETH(chainID uint64) Token {

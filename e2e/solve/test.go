@@ -33,7 +33,7 @@ type BridgeOrder struct {
 	Amount *big.Int
 }
 
-func TestV2(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints) error {
+func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints) error {
 	if network.ID != netconf.Devnet {
 		return errors.New("only devnet")
 	}

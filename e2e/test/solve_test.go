@@ -6,11 +6,16 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/solve"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/contracts"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
+	solver "github.com/omni-network/omni/solver/app"
 
 	"github.com/stretchr/testify/require"
 )
@@ -26,7 +31,9 @@ func TestSolver(t *testing.T) {
 
 		ensureSolverAPILive(t)
 		testContractsAPI(ctx, t)
-		err := solve.TestV2(ctx, network, endpoints)
+		testSolverApprovals(ctx, t, network, endpoints)
+
+		err := solve.Test(ctx, network, endpoints)
 		require.NoError(t, err)
 	})
 }
@@ -50,6 +57,44 @@ func testContractsAPI(ctx context.Context, t *testing.T) {
 	require.Equal(t, addrs.SolverNetInbox.Hex(), body["inbox"])
 	require.Equal(t, addrs.SolverNetOutbox.Hex(), body["outbox"])
 	require.Equal(t, addrs.SolverNetMiddleman.Hex(), body["middleman"])
+}
+
+func testSolverApprovals(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
+	t.Helper()
+
+	addrs, err := contracts.GetAddresses(ctx, network.ID)
+	require.NoError(t, err)
+
+	solverAddr := eoa.MustAddress(network.ID, eoa.RoleSolver)
+
+	for _, tkn := range solver.AllTokens() {
+		chain, ok := network.Chain(tkn.ChainID)
+		if !ok {
+			continue
+		}
+
+		endpoint, err := endpoints.ByNameOrID(chain.Name, chain.ID)
+		require.NoError(t, err)
+
+		client, err := ethclient.Dial(chain.Name, endpoint)
+		require.NoError(t, err)
+
+		isDeployed, err := contracts.IsDeployed(ctx, client, tkn.Address)
+		require.NoError(t, err)
+
+		if !isDeployed {
+			continue
+		}
+
+		erc20, err := bindings.NewIERC20(tkn.Address, client)
+		require.NoError(t, err)
+
+		allowance, err := erc20.Allowance(nil, solverAddr, addrs.SolverNetOutbox)
+		require.NoError(t, err)
+
+		// must be max allowance
+		require.Zero(t, allowance.Cmp(umath.MaxUint256), "not max allowance")
+	}
 }
 
 //nolint:noctx // Not an issue in tests
