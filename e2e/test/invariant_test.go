@@ -15,6 +15,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/address"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
 )
@@ -43,6 +44,7 @@ func TestInvariantNoUserBalance(t *testing.T) {
 		expected := map[common.Address]bool{
 			common.BytesToAddress(address.Module(stakingtypes.BondedPoolName)):    true,
 			common.BytesToAddress(address.Module(stakingtypes.NotBondedPoolName)): true,
+			common.BytesToAddress(address.Module(distrtypes.ModuleName)):          true,
 		}
 
 		for _, owner := range resp.DenomOwners {
