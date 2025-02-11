@@ -37,7 +37,7 @@ func (s proposalServer) ExecutionPayload(ctx context.Context, msg *types.MsgExec
 		}
 
 		// Collect local view of the evm logs from the previous payload.
-		evmEvents, err := s.evmEvents(ctx, payload.ParentHash)
+		evmEvents, err := s.legacyEVMEvents(ctx, payload.ParentHash)
 		if err != nil {
 			return nil, errors.Wrap(err, "prepare evm event logs")
 		}
