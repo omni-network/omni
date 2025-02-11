@@ -56,6 +56,8 @@ func newCreateValCmd() *cobra.Command {
 				return errors.Wrap(err, "create-validator")
 			}
 
+			showDelayMessage(cmd.Context())
+
 			return nil
 		},
 	}
@@ -274,6 +276,8 @@ func newDelegateCmd() *cobra.Command {
 			if err != nil {
 				return errors.Wrap(err, "delegate")
 			}
+
+			showDelayMessage(cmd.Context())
 
 			return nil
 		},
@@ -592,6 +596,8 @@ func newEditValCmd() *cobra.Command {
 				return errors.Wrap(err, "edit validator")
 			}
 
+			showDelayMessage(cmd.Context())
+
 			return nil
 		},
 	}
@@ -699,6 +705,12 @@ func EditVal(ctx context.Context, cfg EditValConfig) error {
 	)
 
 	return nil
+}
+
+func showDelayMessage(ctx context.Context) {
+	log.Info(ctx, "⏳ Staking events are delayed in the Omni Consensus chain and may take up to 12h to apply.",
+		"eta", time.Now().UTC().Add(12*time.Hour).Format(time.DateTime)+"UTC",
+	)
 }
 
 // setupClients is a helper that creates the omni evm client,
