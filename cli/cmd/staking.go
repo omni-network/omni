@@ -231,6 +231,8 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 		"block", rec.BlockNumber.Uint64(),
 	)
 
+	log.Info(ctx, "⏳ Staking events are delayed in the Omni Consensus chain and may take up to 12h to apply.")
+
 	return nil
 }
 
@@ -359,6 +361,8 @@ func Delegate(ctx context.Context, cfg DelegateConfig) error {
 		"link", cfg.Network.Static().OmniScanTXURL(tx.Hash()),
 		"block", rec.BlockNumber.Uint64(),
 	)
+
+	log.Info(ctx, "⏳ Staking events are delayed in the Omni Consensus chain and may take up to 12h to apply.")
 
 	return nil
 }
@@ -697,6 +701,8 @@ func EditVal(ctx context.Context, cfg EditValConfig) error {
 		"link", cfg.Network.Static().OmniScanTXURL(tx.Hash()),
 		"block", rec.BlockNumber.Uint64(),
 	)
+
+	log.Info(ctx, "⏳ Staking events are delayed in the Omni Consensus chain and may take up to 12h to apply.")
 
 	return nil
 }
