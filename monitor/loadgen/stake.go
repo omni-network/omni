@@ -18,8 +18,8 @@ import (
 
 const loadgenJitter = 0.2 // 20% jitter
 
-func selfDelegateForever(ctx context.Context, contract *bindings.Staking, backend *ethbackend.Backend, validator common.Address, period time.Duration) {
-	log.Info(ctx, "Starting periodic self-delegation", "validator", validator.Hex(), "period", period)
+func delegateForever(ctx context.Context, contract *bindings.Staking, backend *ethbackend.Backend, delegator, validator common.Address, period time.Duration) {
+	log.Info(ctx, "Starting periodic delegation", "delegator", delegator.Hex(), "validator", validator.Hex(), "period", period)
 
 	nextPeriod := func() time.Duration {
 		jitter := time.Duration(float64(period) * rand.Float64() * loadgenJitter) //nolint:gosec // Weak random ok for load tests.
@@ -34,22 +34,22 @@ func selfDelegateForever(ctx context.Context, contract *bindings.Staking, backen
 		case <-ctx.Done():
 			return
 		case <-timer.C:
-			if err := selfDelegateOnce(ctx, contract, backend, validator); err != nil {
-				log.Warn(ctx, "Failed to self-delegate (will retry)", err)
+			if err := delegateOnce(ctx, contract, backend, delegator, validator); err != nil {
+				log.Warn(ctx, "Failed to delegate (will retry)", err)
 			}
 			timer.Reset(nextPeriod())
 		}
 	}
 }
 
-func selfDelegateOnce(ctx context.Context, contract *bindings.Staking, backend *ethbackend.Backend, validator common.Address) error {
+func delegateOnce(ctx context.Context, contract *bindings.Staking, backend *ethbackend.Backend, delegator, validator common.Address) error {
 	backoff := expbackoff.New(ctx)
 	for {
-		ethBalance, err := backend.EtherBalanceAt(ctx, validator)
+		ethBalance, err := backend.EtherBalanceAt(ctx, delegator)
 		if err != nil {
 			return err
 		} else if ethBalance < 1 {
-			log.Info(ctx, "Waiting for validator to be funded", "balance", ethBalance, "validator", validator.Hex())
+			log.Info(ctx, "Waiting for delegator to be funded", "balance", ethBalance, "delegator", delegator.Hex())
 			backoff()
 
 			continue
@@ -58,7 +58,7 @@ func selfDelegateOnce(ctx context.Context, contract *bindings.Staking, backend *
 		break // Continue funding below
 	}
 
-	txOpts, err := backend.BindOpts(ctx, validator)
+	txOpts, err := backend.BindOpts(ctx, delegator)
 	if err != nil {
 		return err
 	}
@@ -74,8 +74,9 @@ func selfDelegateOnce(ctx context.Context, contract *bindings.Staking, backend *
 		return err
 	}
 
-	log.Info(ctx, "Deposited validator self-delegation",
+	log.Info(ctx, "Deposited delegation",
 		"height", rec.BlockNumber,
+		"delegator", delegator,
 		"validator", validator,
 	)
 
