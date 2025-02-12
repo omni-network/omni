@@ -42,7 +42,7 @@ func StoreUpgrades(_ context.Context) *storetypes.StoreUpgrades {
 var (
 	targetInflation  = math.LegacyNewDecWithPrec(115789, 6) // 11.5789% so that delegators earn ~11% after deducting of 5% validator rewards
 	blocksPeriodSecs = 2                                    // BlocksPerYear calculated based on 2 second block times
-	mintParams       = minttypes.Params{
+	MintParams       = minttypes.Params{
 		MintDenom:           sdk.DefaultBondDenom,
 		InflationRateChange: math.LegacyNewDec(0),
 		InflationMin:        targetInflation,
@@ -63,7 +63,7 @@ func CreateUpgradeHandler(
 
 		// Initialize mint module genesis (since it is being added in this upgrade)
 		minter := minttypes.InitialMinter(targetInflation)
-		genState := minttypes.NewGenesisState(minter, mintParams)
+		genState := minttypes.NewGenesisState(minter, MintParams)
 		if err := initMintGenesis(ctx, mint, account, genState); err != nil {
 			return nil, errors.Wrap(err, "init mint genesis")
 		}
