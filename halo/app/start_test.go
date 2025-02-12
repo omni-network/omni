@@ -18,7 +18,9 @@ import (
 	magellan2 "github.com/omni-network/omni/halo/app/upgrades/magellan"
 	halocmd "github.com/omni-network/omni/halo/cmd"
 	halocfg "github.com/omni-network/omni/halo/config"
+	"github.com/omni-network/omni/lib/cchain"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
+	"github.com/omni-network/omni/lib/cchain/queryutil"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -28,6 +30,7 @@ import (
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cometbft/cometbft/types"
 
+	"cosmossdk.io/math"
 	db "github.com/cosmos/cosmos-db"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	"github.com/stretchr/testify/require"
@@ -76,6 +79,7 @@ func TestSmoke(t *testing.T) {
 	testAPI(t, cfg)
 	testCProvider(t, ctx, cprov)
 	testCProvider(t, ctx, cprovGRPC)
+	go testInflation(t, ctx, cprov) //nolint:testifylint // Fix assertions in thread
 
 	genSet, err := cl.Validators(ctx, int64Ptr(1), nil, nil)
 	require.NoError(t, err)
@@ -114,6 +118,24 @@ func TestSmoke(t *testing.T) {
 
 	// Stop the server, with a fresh context
 	require.NoError(t, stopfunc(context.Background()))
+}
+
+func testInflation(t *testing.T, ctx context.Context, cprov cchain.Provider) {
+	t.Helper()
+
+	inf, changed, err := queryutil.AvgInflationRate(ctx, cprov, 3)
+	if changed {
+		t.Log("staking state changed")
+		return
+	}
+	require.NoError(t, err)
+
+	target := math.LegacyNewDecWithPrec(11, 2) // 11%
+	delta := math.LegacyNewDecWithPrec(1, 2)   // Allow +-1% error
+	minInf, maxInf := target.Sub(delta), target.Add(delta)
+	if inf.LT(minInf) || inf.GT(maxInf) {
+		require.Fail(t, "inflation average not within bounds", "rate: %v, min: %v, max: %v", inf, minInf, maxInf)
+	}
 }
 
 //nolint:bodyclose,noctx // We don't care about best practices here.

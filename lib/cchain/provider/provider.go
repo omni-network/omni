@@ -21,6 +21,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	upgradetypes "cosmossdk.io/x/upgrade/types"
+	"github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
@@ -103,6 +104,16 @@ func (p Provider) CurrentPlannedPlan(ctx context.Context) (upgradetypes.Plan, bo
 
 func (p Provider) AppliedPlan(ctx context.Context, name string) (upgradetypes.Plan, bool, error) {
 	return p.appliedFunc(ctx, name)
+}
+
+// BlockHeight returns the current consensus block height.
+func (p Provider) BlockHeight(ctx context.Context) (uint64, error) {
+	status, err := p.QueryClients().Node.Status(ctx, &node.StatusRequest{})
+	if err != nil {
+		return 0, errors.Wrap(err, "node status query")
+	}
+
+	return status.Height, nil
 }
 
 func (p Provider) AttestationsFrom(
