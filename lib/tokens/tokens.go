@@ -3,6 +3,7 @@ package tokens
 type Token struct {
 	Symbol      string
 	Name        string
+	Decimals    uint
 	CoingeckoID string
 }
 
@@ -10,24 +11,28 @@ var (
 	OMNI = Token{
 		Symbol:      "OMNI",
 		Name:        "Omni Network",
+		Decimals:    18,
 		CoingeckoID: "omni-network",
 	}
 
 	ETH = Token{
 		Symbol:      "ETH",
 		Name:        "Ether",
+		Decimals:    18,
 		CoingeckoID: "ethereum",
 	}
 
 	STETH = Token{
 		Symbol:      "stETH",
 		Name:        "Lido Staked Ether",
+		Decimals:    18,
 		CoingeckoID: "lido-staked-ether",
 	}
 
 	WSTETH = Token{
 		Symbol:      "wstETH",
 		Name:        "Wrapped Staked Ether",
+		Decimals:    18,
 		CoingeckoID: "wrapped-steth",
 	}
 
