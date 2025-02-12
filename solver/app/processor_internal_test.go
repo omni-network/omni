@@ -120,8 +120,8 @@ func TestEventProcessor(t *testing.T) {
 						MaxSpent: []bindings.IERC7683Output{},
 					}, true, nil
 				},
-				ShouldReject: func(ctx context.Context, _ uint64, order Order) (rejectReason, bool, error) {
-					return test.rejectReason, test.rejectReason != 0, nil
+				ShouldReject: func(ctx context.Context, _ uint64, order Order) (ShouldRejectResult, error) {
+					return ShouldRejectResult{Reason: test.rejectReason}, nil
 				},
 				Accept: func(ctx context.Context, _ uint64, order Order) error {
 					actual = accept

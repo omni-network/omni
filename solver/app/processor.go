@@ -15,8 +15,6 @@ import (
 // all inbox contract events and driving order lifecycle.
 func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 	return func(ctx context.Context, height uint64, elogs []types.Log) error {
-		// TODO: do return error on for an error on a single log. this skips potentially valid logs in the same block.
-
 		for _, elog := range elogs {
 			event, ok := eventsByTopic[elog.Topics[0]]
 			if !ok {
@@ -72,27 +70,40 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 				continue
 			}
 
-			maybeReject := func() (bool, error) {
-				if reason, reject, err := deps.ShouldReject(ctx, chainID, order); err != nil {
-					return false, errors.Wrap(err, "should reject")
-				} else if reject {
-					log.InfoErr(ctx, "Rejecting order", err, "reason", reason.String())
+			// maybeReject rejects orders if necessary, logging and counting them.
+			maybeReject := func() (ShouldRejectResult, error) {
+				r, err := deps.ShouldReject(ctx, chainID, order)
 
-					if err := deps.Reject(ctx, chainID, order, reason); err != nil {
-						return false, errors.Wrap(err, "reject order")
-					}
-
-					return true, nil
+				if err != nil {
+					return r, errors.Wrap(err, "should reject")
 				}
 
-				return false, nil
+				if r.AlreadyFilled || !r.Reject() {
+					return r, nil
+				}
+
+				log.InfoErr(ctx, "Rejecting order", err, "reason", r.Reason.String())
+
+				// reject, log and count, swallow err
+				if err := deps.Reject(ctx, chainID, order, r.Reason); err != nil {
+					return r, errors.Wrap(err, "reject order")
+				}
+
+				rejectedOrders.WithLabelValues(
+					deps.ChainName(order.SourceChainID),
+					deps.ChainName(order.DestinationChainID),
+					target,
+					r.Reason.String(),
+				).Inc()
+
+				return r, nil
 			}
 
 			switch event.Status {
 			case statusPending:
-				if didReject, err := maybeReject(); err != nil {
+				if r, err := maybeReject(); err != nil {
 					return err
-				} else if didReject {
+				} else if r.Reject() || r.AlreadyFilled {
 					continue
 				}
 
@@ -102,9 +113,9 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 				}
 			case statusAccepted:
 				// check reject again, as liquidity (or other conditions) may have changed
-				if didReject, err := maybeReject(); err != nil {
+				if r, err := maybeReject(); err != nil {
 					return err
-				} else if didReject {
+				} else if r.Reject() || r.AlreadyFilled {
 					continue
 				}
 

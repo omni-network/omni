@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
@@ -98,14 +99,7 @@ func approveToken(ctx context.Context, backend *ethbackend.Backend, token Token,
 		return errors.Wrap(err, "new token")
 	}
 
-	isApproved := func() (bool, error) {
-		allowance, err := erc20.Allowance(&bind.CallOpts{Context: ctx}, solverAddr, outboxAddr)
-		if err != nil {
-			return false, errors.Wrap(err, "get allowance")
-		}
-
-		return new(big.Int).Sub(allowance, umath.MaxUint256).Sign() >= 0, nil
-	}
+	isApproved := func() (bool, error) { return isAppproved(ctx, token.Address, backend, solverAddr, outboxAddr) }
 
 	if approved, err := isApproved(); err != nil {
 		return err
@@ -132,4 +126,18 @@ func approveToken(ctx context.Context, backend *ethbackend.Backend, token Token,
 	}
 
 	return nil
+}
+
+func isAppproved(ctx context.Context, token common.Address, client ethclient.Client, solverAddr, outboxAddr common.Address) (bool, error) {
+	tkn, err := bindings.NewIERC20(token, client)
+	if err != nil {
+		return false, errors.Wrap(err, "new token")
+	}
+
+	allowance, err := tkn.Allowance(&bind.CallOpts{Context: ctx}, solverAddr, outboxAddr)
+	if err != nil {
+		return false, errors.Wrap(err, "get allowance")
+	}
+
+	return new(big.Int).Sub(allowance, umath.MaxUint256).Sign() >= 0, nil
 }
