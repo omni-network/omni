@@ -12,7 +12,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 'stable'
+          go-version: 'v1.23'
 
       - name: Run e2e tests
         run: make e2e-ci

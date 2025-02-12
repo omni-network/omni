@@ -13,7 +13,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 'stable'
+          go-version: 'v1.23'
 
       - uses: ./.github/actions/setup-foundry
         with:

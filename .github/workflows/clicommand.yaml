@@ -28,7 +28,7 @@ jobs:
     - name: Install Go
       uses: actions/setup-go@v5
       with:
-        go-version: 'stable'
+        go-version: 'v1.23'
 
     - name: Go releaser snapshot
       uses: ./.github/actions/goreleaser-snapshot
@@ -84,7 +84,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 'stable'
+          go-version: 'v1.23'
 
       - name: Configure Git
         run: |
