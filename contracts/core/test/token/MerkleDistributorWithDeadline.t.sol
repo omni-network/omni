@@ -39,6 +39,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
         "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,Expense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)Expense(address spender,address token,uint96 amount)"
     );
 
+    uint256[] pks = new uint256[](addrCount);
     address[] stakers = new address[](addrCount);
     uint256[] amounts = new uint256[](addrCount);
     bytes32[] leaves = new bytes32[](addrCount);
@@ -67,13 +68,10 @@ contract MerkleDistributorWithDeadline_Test is Test {
     function _prepMerkleTree() internal {
         // Prep leaves
         for (uint256 i; i < addrCount; ++i) {
-            uint256 addrSeed = vm.randomUint();
-            address addr = address(uint160(addrSeed));
-            uint256 amount = vm.randomUint(1 ether, (initialSupply / 2) / addrCount);
-
-            stakers[i] = addr;
-            amounts[i] = amount;
-            leaves[i] = keccak256(abi.encodePacked(i, addr, amount));
+            pks[i] = vm.randomUint();
+            stakers[i] = vm.addr(pks[i]);
+            amounts[i] = vm.randomUint(1 ether, (initialSupply / 2) / addrCount);
+            leaves[i] = keccak256(abi.encodePacked(i, stakers[i], amounts[i]));
         }
 
         // Generate proofs
@@ -149,6 +147,8 @@ contract MerkleDistributorWithDeadline_Test is Test {
         view
         returns (IERC7683.OnchainCrossChainOrder memory)
     {
+        assertGe(genesisStake.balanceOf(addr), amount, "Insufficient staker balance");
+
         SolverNet.Deposit memory deposit = SolverNet.Deposit({ token: address(omni), amount: uint96(amount * 2) });
 
         SolverNet.Call[] memory call = new SolverNet.Call[](1);
@@ -207,10 +207,10 @@ contract MerkleDistributorWithDeadline_Test is Test {
     // Fully test migrateToOmni for all members of the merkle tree
     function test_migrateToOmni_succeeds() public {
         for (uint256 i; i < addrCount; ++i) {
-            vm.startPrank(stakers[i]);
             uint256 inboxBalance = omni.balanceOf(address(inbox));
 
             // Get IERC7683 order and resolved orders
+            vm.startPrank(stakers[i]);
             IERC7683.OnchainCrossChainOrder memory order = generateERC7683Order(stakers[i], amounts[i]);
             IERC7683.ResolvedCrossChainOrder memory resolved = inbox.resolve(order);
 
@@ -219,12 +219,57 @@ contract MerkleDistributorWithDeadline_Test is Test {
             vm.expectEmit(true, true, true, true);
             emit IERC7683.Open(resolved.orderId, resolved);
             merkleDistributor.migrateToOmni(i, amounts[i], proofs[i]);
+            vm.stopPrank();
 
             // Confirm the inbox balance has increased by the user's staked balance and claim reward
             assertEq(omni.balanceOf(address(inbox)), inboxBalance + amounts[i] * 2);
             assertEq(omni.balanceOf(stakers[i]), 0);
+        }
+    }
 
+    function test_migrateUserToOmni_reverts() public {
+        for (uint256 i; i < addrCount; ++i) {
+            bytes32 digest = merkleDistributor.getMigrationDigest(stakers[i], endTime - 1);
+            (uint8 v, bytes32 r, bytes32 s) = vm.sign(pks[i], digest);
+            vm.warp(endTime);
+
+            // Cannot migrate if signature is invalid
+            vm.expectRevert(MerkleDistributorWithDeadline.Expired.selector);
+            merkleDistributor.migrateUserToOmni(stakers[i], 0, amounts[i], proofs[i], v, r, s, endTime - 1);
+
+            vm.warp(1);
+            digest = merkleDistributor.getMigrationDigest(stakers[i], block.timestamp + 1);
+            (v, r,) = vm.sign(pks[i], digest);
+
+            // Cannot migrate if signature is invalid
+            vm.expectRevert(MerkleDistributorWithDeadline.InvalidSignature.selector);
+            merkleDistributor.migrateUserToOmni(stakers[i], 0, amounts[i], proofs[i], v, r, s, block.timestamp + 1);
+        }
+    }
+
+    function test_migrateUserToOmni_succeeds() public {
+        for (uint256 i; i < addrCount; ++i) {
+            uint256 inboxBalance = omni.balanceOf(address(inbox));
+
+            // Get IERC7683 order and resolved orders
+            vm.startPrank(stakers[i]);
+            IERC7683.OnchainCrossChainOrder memory order = generateERC7683Order(stakers[i], amounts[i]);
+            IERC7683.ResolvedCrossChainOrder memory resolved = inbox.resolve(order);
             vm.stopPrank();
+
+            // Get user signature for migration
+            bytes32 digest = merkleDistributor.getMigrationDigest(stakers[i], block.timestamp + 1);
+            (uint8 v, bytes32 r, bytes32 s) = vm.sign(pks[i], digest);
+
+            // Confirm merkleDistributor is calling the inbox with the order and that the resolved order is emitted
+            vm.expectCall(address(inbox), abi.encodeCall(MockSolverNetInbox.open, (order)));
+            vm.expectEmit(true, true, true, true);
+            emit IERC7683.Open(resolved.orderId, resolved);
+            merkleDistributor.migrateUserToOmni(stakers[i], i, amounts[i], proofs[i], v, r, s, block.timestamp + 1);
+
+            // Confirm the inbox balance has increased by the user's staked balance and claim reward
+            assertEq(omni.balanceOf(address(inbox)), inboxBalance + amounts[i] * 2);
+            assertEq(omni.balanceOf(stakers[i]), 0);
         }
     }
 }
