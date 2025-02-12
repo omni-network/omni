@@ -95,6 +95,7 @@ func Run(ctx context.Context, cfg Config) error {
 	go validator.MonitorForever(ctx, cprov)
 	go monitorPublicRPCForever(ctx, network, ethClients)
 	go monitorOmniEVMGasTipForever(ctx, network, ethClients)
+	go monitorInflationForever(ctx, cprov)
 
 	select {
 	case <-ctx.Done():

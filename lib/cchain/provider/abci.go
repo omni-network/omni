@@ -28,6 +28,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	utypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
+	"github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -103,6 +104,7 @@ func newProvider(cc gogogrpc.ClientConn, network netconf.ID, opts ...func(*Provi
 	mcl := mtypes.NewQueryClient(cc)
 	evmengcl := evmengtypes.NewQueryClient(cc)
 	bcl := btypes.NewQueryClient(cc)
+	ncl := node.NewServiceClient(cc)
 
 	p := Provider{
 		fetch:       newABCIFetchFunc(acl, cmtcl, namer),
@@ -135,6 +137,7 @@ func newProvider(cc gogogrpc.ClientConn, network netconf.ID, opts ...func(*Provi
 			Mint:         mcl,
 			EvmEngine:    evmengcl,
 			Bank:         bcl,
+			Node:         ncl,
 		},
 	}
 
@@ -556,12 +559,12 @@ type rpcAdaptor struct {
 	abci rpcclient.ABCIClient
 }
 
-// withCtxHeight returns a copy of the context with the `x-cosmos-block-height` grpc metadata header
+// WithCtxHeight returns a copy of the context with the `x-cosmos-block-height` grpc metadata header
 // set to the provided height.
 //
 // This height will be supplied in ABCIQueryOptions when issuing queries in the rpcAdaptor.
 // It will also be added to grpc queries automatically.
-func withCtxHeight(ctx context.Context, height uint64) (context.Context, error) {
+func WithCtxHeight(ctx context.Context, height uint64) (context.Context, error) {
 	if _, ok, err := heightFromCtx(ctx); err != nil {
 		return nil, err
 	} else if ok {
@@ -660,7 +663,7 @@ func getEarliestStoreHeight(ctx context.Context, cl atypes.QueryClient, chainVer
 // queryEarliestAttestation returns the earliest approved attestation for the provided chain version
 // at the provided consensus block height, or the latest block height if height is 0.
 func queryEarliestAttestation(ctx context.Context, cl atypes.QueryClient, chainVer xchain.ChainVersion, height uint64) (xchain.Attestation, bool, error) {
-	ctx, err := withCtxHeight(ctx, height)
+	ctx, err := WithCtxHeight(ctx, height)
 	if err != nil {
 		return xchain.Attestation{}, false, err
 	}
@@ -687,7 +690,7 @@ func queryEarliestAttestation(ctx context.Context, cl atypes.QueryClient, chainV
 // queryLatestAttestation returns the latest approved attestation for the provided chain version
 // at the provided consensus block height, or the latest block height if height is 0.
 func queryLatestAttestation(ctx context.Context, cl atypes.QueryClient, chainVer xchain.ChainVersion, height uint64) (xchain.Attestation, bool, error) {
-	ctx, err := withCtxHeight(ctx, height)
+	ctx, err := WithCtxHeight(ctx, height)
 	if err != nil {
 		return xchain.Attestation{}, false, err
 	}
@@ -714,7 +717,7 @@ func queryLatestAttestation(ctx context.Context, cl atypes.QueryClient, chainVer
 // attsFromAtHeight returns approved attestations for the provided chain version
 // at the provided consensus block height, or the latest block height if height is 0.
 func attsFromAtHeight(ctx context.Context, cl atypes.QueryClient, chainVer xchain.ChainVersion, fromOffset, height uint64) ([]xchain.Attestation, bool, error) {
-	ctx, err := withCtxHeight(ctx, height)
+	ctx, err := WithCtxHeight(ctx, height)
 	if err != nil {
 		return nil, false, err
 	}
