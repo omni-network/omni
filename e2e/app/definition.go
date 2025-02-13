@@ -470,9 +470,9 @@ func ExternalEndpoints(def Definition) xchain.RPCEndpoints {
 	return endpoints
 }
 
-// NetworkFromDef returns the network configuration from the definition.
+// networkFromDef returns the network configuration from the definition.
 // Note that this panics if not called after netman.DeployPortals.
-func NetworkFromDef(def Definition) netconf.Network {
+func networkFromDef(def Definition) netconf.Network {
 	var chains []netconf.Chain
 
 	newChain := func(chain types.EVMChain) netconf.Chain {
