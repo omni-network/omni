@@ -38,12 +38,28 @@ func chainVerFromID(id uint64) xchain.ChainVersion {
 
 // Run starts the solver service.
 func Run(ctx context.Context, cfg Config) error {
-	log.Info(ctx, "Starting solver v2 service")
+	log.Info(ctx, "Starting solver service")
 
 	buildinfo.Instrument(ctx)
 
 	// Start monitoring first, so app is "up"
 	monitorChan := serveMonitoring(cfg.MonitoringAddr)
+
+	// if mainnet, just run monitoring and api (/live only)
+	if cfg.Network == netconf.Mainnet {
+		log.Info(ctx, "Serving API", "address", cfg.APIAddr)
+		apiChan := serveAPI(cfg.APIAddr, map[string]http.Handler{})
+
+		select {
+		case <-ctx.Done():
+			log.Info(ctx, "Shutdown detected, stopping...")
+			return nil
+		case err := <-monitorChan:
+			return err
+		case err := <-apiChan:
+			return err
+		}
+	}
 
 	portalReg, err := makePortalRegistry(cfg.Network, cfg.RPCEndpoints)
 	if err != nil {
