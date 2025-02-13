@@ -190,5 +190,21 @@
   "isMock": true,
   "name": "Wrapped Staked Ether",
   "symbol": "wstETH"
+ },
+ {
+  "address": "0x818fdC36f383AC58C43c4388D6A6856455CF2B40",
+  "chainId": 84532,
+  "coingeckoId": "lido-staked-ether",
+  "isMock": true,
+  "name": "Lido Staked Ether",
+  "symbol": "stETH"
+ },
+ {
+  "address": "0xaF1e06227c302960934AC5F6af3361Af9B5244d9",
+  "chainId": 1654,
+  "coingeckoId": "lido-staked-ether",
+  "isMock": true,
+  "name": "Lido Staked Ether",
+  "symbol": "stETH"
  }
 ]
