@@ -51,40 +51,21 @@ func newRejection(reason rejectReason, err error) *RejectionError {
 	return &RejectionError{Reason: reason, Err: err}
 }
 
-type AlreadyFilledError struct {
-	OrderID OrderID
-}
-
-// Error implements error.
-func (e *AlreadyFilledError) Error() string {
-	return "already filled: " + e.OrderID.String()
-}
-
-type ShouldRejectResult struct {
-	Reason        rejectReason
-	AlreadyFilled bool
-}
-
-func (r *ShouldRejectResult) Reject() bool {
-	return r.Reason != rejectNone
-}
-
 // newShouldRejector returns as ShouldReject function for the given network.
 //
 // ShouldReject returns true and a reason if the request should be rejected.
 // It returns false if the request should be accepted.
 // Errors are unexpected and refer to internal problems.
+//
+// It will return true if the order has rleady been filled. DidFill check
+// should be made before calling ShouldReject.
 func newShouldRejector(
 	backends ethbackend.Backends,
 	solverAddr, outboxAddr common.Address,
-) func(ctx context.Context, srcChainID uint64, order Order) (ShouldRejectResult, error) {
-	return func(ctx context.Context, srcChainID uint64, order Order) (ShouldRejectResult, error) {
+) func(ctx context.Context, order Order) (rejectReason, bool, error) {
+	return func(ctx context.Context, order Order) (rejectReason, bool, error) {
 		// Internal logic just return errors (convert them to rejections below)
-		err := func(ctx context.Context, srcChainID uint64, order Order) error {
-			if srcChainID != order.SourceChainID {
-				return errors.New("source chain id mismatch [BUG]", "got", order.SourceChainID, "expected", srcChainID)
-			}
-
+		err := func(ctx context.Context, order Order) error {
 			backend, err := backends.Backend(order.DestinationChainID)
 			if err != nil {
 				return newRejection(rejectUnsupportedDestChain, err)
@@ -113,23 +94,18 @@ func newShouldRejector(
 			}
 
 			return checkFill(ctx, backend, order.ID, order.FillOriginData, nativeAmt(expenses), solverAddr, outboxAddr)
-		}(ctx, srcChainID, order)
+		}(ctx, order)
 
 		if err == nil { // No error, no rejection
-			return ShouldRejectResult{}, nil
+			return rejectNone, false, nil
 		}
 
 		r := new(RejectionError)
 		if !errors.As(err, &r) { // Error, but no rejection
-			return ShouldRejectResult{}, err
+			return rejectNone, false, err
 		}
 
-		e := new(AlreadyFilledError)
-		if errors.As(err, &e) { // Already filled, no rejection
-			return ShouldRejectResult{AlreadyFilled: true}, nil
-		}
-
-		return ShouldRejectResult{Reason: r.Reason}, nil
+		return r.Reason, true, nil
 	}
 }
 
@@ -185,7 +161,7 @@ func checkApprovals(ctx context.Context, expenses []Payment, client ethclient.Cl
 	return nil
 }
 
-// checkFill checks if a destination call reverts.
+// checkFill checks if a destination call reverts. Does not check if order was already filled.
 func checkFill(
 	ctx context.Context,
 	client ethclient.Client,
@@ -199,15 +175,8 @@ func checkFill(
 		return errors.Wrap(err, "new outbox")
 	}
 
-	callOpts := &bind.CallOpts{Context: ctx}
-	if ok, err := outbox.DidFill(callOpts, orderID, fillOriginData); err != nil {
-		return errors.Wrap(err, "did fill")
-	} else if ok {
-		return &AlreadyFilledError{OrderID: orderID}
-	}
-
 	// xcall fee
-	fee, err := outbox.FillFee(callOpts, fillOriginData)
+	fee, err := outbox.FillFee(&bind.CallOpts{Context: ctx}, fillOriginData)
 	if err != nil {
 		return errors.Wrap(err, "get fulfill fee")
 	}
