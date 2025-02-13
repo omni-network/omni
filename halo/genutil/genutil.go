@@ -8,8 +8,7 @@ import (
 	"time"
 
 	haloapp "github.com/omni-network/omni/halo/app"
-	magellan2 "github.com/omni-network/omni/halo/app/upgrades/magellan"
-	uluwatu1 "github.com/omni-network/omni/halo/app/upgrades/uluwatu"
+	"github.com/omni-network/omni/halo/app/upgrades"
 	"github.com/omni-network/omni/halo/evmupgrade"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/buildinfo"
@@ -52,15 +51,9 @@ func MakeGenesis(
 	network netconf.ID,
 	genesisTime time.Time,
 	executionBlockHash common.Hash,
-	upgradeName string,
+	fromUpgrade string, // Define the upgrade to use as genesis, next upgrade is automatically scheduled for block 1.
 	valPubkeys ...crypto.PubKey,
 ) (*gtypes.AppGenesis, error) {
-	if upgradeName != "" && upgradeName != uluwatu1.UpgradeName && upgradeName != magellan2.UpgradeName {
-		// TODO(corver): Add support for chain genesis (block 0) directly from subsequent upgrades,
-		//  ie, no actual network upgrade required since block 0 is already upgraded.
-		return nil, errors.New("unsupported genesis network upgrade", "upgrade", upgradeName)
-	}
-
 	encConf, err := haloapp.ClientEncodingConfig(ctx, network)
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal app state")
@@ -68,6 +61,12 @@ func MakeGenesis(
 
 	// Step 1: Create the default genesis app state for all modules.
 	appState1 := defaultAppState(network.Static().MaxValidators, executionBlockHash, encConf.Codec.MustMarshalJSON)
+
+	// Step 1b: Add all upgrades up to fromUpgrade genesis state
+	if err := maybeAddUpgradeGenesisState(appState1, encConf.Codec, fromUpgrade); err != nil {
+		return nil, errors.Wrap(err, "add upgrade genesis state")
+	}
+
 	appState1Bz, err := json.MarshalIndent(appState1, "", " ")
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal app state")
@@ -103,8 +102,12 @@ func MakeGenesis(
 		genTxs = append(genTxs, tx)
 	}
 
-	if upgradeName != "" {
-		tx, err := addUpgrade(encConf.TxConfig, upgradeName)
+	// Step 3b: Add the next upgrade transaction if needed. Will be applied in block 1.
+	nextUpgrade, ok, err := upgrades.NextUpgrade(fromUpgrade)
+	if err != nil {
+		return nil, errors.Wrap(err, "next upgrade")
+	} else if ok {
+		tx, err := addUpgrade(encConf.TxConfig, nextUpgrade)
 		if err != nil {
 			return nil, errors.Wrap(err, "add upgrade")
 		}
@@ -127,6 +130,41 @@ func MakeGenesis(
 	}
 
 	return appGen, validateGenesis(encConf.Codec, appState2)
+}
+
+// maybeAddUpgradeGenesisState adds the genesis state for all upgrades up to upToUpgrade.
+// This is useful for ephemeral chains that want to skip actual upgrades, instead starting
+// from the provided upToUpgrade from genesis itself.
+func maybeAddUpgradeGenesisState(state map[string]json.RawMessage, codec codec.Codec, upToUpgrade string) error {
+	if upToUpgrade == "" {
+		return nil
+	}
+
+	var foundUpgrade bool
+	for _, upgrade := range upgrades.Upgrades {
+		if upgrade.Name == upToUpgrade {
+			foundUpgrade = true
+		}
+		if foundUpgrade && upgrade.Name != upToUpgrade {
+			// Break out after upToUpgrade.
+			break
+		}
+
+		genesis, err := upgrade.GenesisState(codec)
+		if err != nil {
+			return errors.Wrap(err, "upgrade genesis state", "upgrade", upgrade.Name)
+		}
+
+		for k, v := range genesis {
+			state[k] = v
+		}
+	}
+
+	if !foundUpgrade {
+		return errors.New("upgrade not found", "upgrade", upToUpgrade)
+	}
+
+	return nil
 }
 
 func defaultConsensusGenesis() *gtypes.ConsensusGenesis {

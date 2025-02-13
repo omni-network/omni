@@ -11,10 +11,8 @@ import (
 	"github.com/omni-network/omni/e2e/solve"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/e2e/xbridge"
-	haloapp "github.com/omni-network/omni/halo/app"
+	"github.com/omni-network/omni/halo/app/upgrades"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
-	"github.com/omni-network/omni/lib/cchain"
-	"github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
@@ -374,18 +372,6 @@ func checkSupportedChains(ctx context.Context, n netman.Manager) (bool, error) {
 
 // maybeSubmitNetworkUpgrades submits multiple network upgrade up to latest (if required).
 func maybeSubmitNetworkUpgrades(ctx context.Context, def Definition) error {
-	if def.Manifest.NetworkUpgradeHeight < 0 {
-		log.Debug(ctx, "Not submitting network upgrade admin tx")
-
-		return nil // No explicit network upgrade required.
-	}
-
-	client, err := def.Testnet.BroadcastNode().Client()
-	if err != nil {
-		return errors.Wrap(err, "broadcast client")
-	}
-	cprov := provider.NewABCI(client, def.Testnet.Network)
-
 	network := def.Testnet.Network
 
 	backend, err := def.Backends().Backend(network.Static().OmniExecutionChainID)
@@ -403,8 +389,22 @@ func maybeSubmitNetworkUpgrades(ctx context.Context, def Definition) error {
 		return err
 	}
 
+	// Genesis always includes the first upgrade after ephemeral genesis at block=1.
+	upgrade, ok, err := upgrades.NextUpgrade(def.Manifest.EphemeralGenesis)
+	if err != nil {
+		return err
+	} else if !ok {
+		// No genesis upgrade needed, ephemeral genesis is latest upgrade.
+		if upgrades.LatestUpgrade() != def.Manifest.EphemeralGenesis {
+			return errors.New("ephemeral genesis is not the latest upgrade", "ephemeral", def.Manifest.EphemeralGenesis, "latest", upgrades.LatestUpgrade())
+		}
+
+		return nil
+	}
+
 	for i := 0; ; i++ {
-		upgrade, ok, err := NextUpgrade(ctx, cprov)
+		// Get the next upgrade to submit
+		upgrade, ok, err = upgrades.NextUpgrade(upgrade)
 		if err != nil {
 			return err
 		} else if !ok {
@@ -418,11 +418,6 @@ func maybeSubmitNetworkUpgrades(ctx context.Context, def Definition) error {
 
 		const minDelay = 5 // Upgrades fail if processed too late (mempool is non-deterministic, so we need a buffer).
 		height += minDelay
-
-		// If requested height is later, use that as is for first upgrade.
-		if i == 0 && uint64(def.Manifest.NetworkUpgradeHeight) > height {
-			height = uint64(def.Manifest.NetworkUpgradeHeight)
-		}
 
 		log.Info(ctx, "Planning upgrade", "height", height, "name", upgrade)
 
@@ -438,7 +433,7 @@ func maybeSubmitNetworkUpgrades(ctx context.Context, def Definition) error {
 			return errors.Wrap(err, "wait mined")
 		}
 
-		if _, ok, err := haloapp.NextUpgrade(upgrade); err != nil {
+		if _, ok, err := upgrades.NextUpgrade(upgrade); err != nil {
 			return err
 		} else if !ok {
 			return nil // No next upgrade to plan, just return
@@ -456,23 +451,4 @@ func maybeSubmitNetworkUpgrades(ctx context.Context, def Definition) error {
 
 		log.Info(ctx, "Upgrade applied", "height", height, "name", upgrade)
 	}
-}
-
-func NextUpgrade(ctx context.Context, cprov cchain.Provider) (string, bool, error) {
-	for _, upgrade := range haloapp.AllUpgrades() {
-		plan, ok, err := cprov.AppliedPlan(ctx, upgrade)
-		if err != nil {
-			return "", false, errors.Wrap(err, "fetching applied plan")
-		} else if !ok {
-			continue
-		} else if upgrade != plan.Name {
-			return "", false, errors.New("unexpected upgrade plan name", "expected", upgrade, "actual", plan.Name)
-		}
-
-		return haloapp.NextUpgrade(upgrade)
-	}
-
-	// No applied upgrades, so return first upgrade.
-
-	return haloapp.NextUpgrade("")
 }

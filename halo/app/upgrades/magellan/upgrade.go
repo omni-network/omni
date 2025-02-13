@@ -12,18 +12,22 @@ package magellan
 
 import (
 	"context"
+	"encoding/json"
 
 	evmstakingtypes "github.com/omni-network/omni/halo/evmstaking/types"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
 
 	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
+	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	mintmodule "github.com/cosmos/cosmos-sdk/x/mint"
 	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 )
@@ -59,14 +63,19 @@ func CreateUpgradeHandler(
 	account authkeeper.AccountKeeper,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx context.Context, _ upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+		log.Info(ctx, "Running 2_magellan upgrade handler")
+
 		// evmstaking module doesn't require genesis or params.
 
 		// Initialize mint module genesis (since it is being added in this upgrade)
-		minter := minttypes.InitialMinter(targetInflation)
-		genState := minttypes.NewGenesisState(minter, MintParams)
-		if err := initMintGenesis(ctx, mint, account, genState); err != nil {
+		if err := initMintGenesis(ctx, mint, account, mintGenesisState()); err != nil {
 			return nil, errors.Wrap(err, "init mint genesis")
 		}
+
+		// Register mint module consensus version in the version map
+		// to avoid the SDK from triggering the default InitGenesis function which overrides above genesis state.
+		// See https://docs.cosmos.network/main/learn/advanced/upgrade
+		fromVM[minttypes.ModuleName] = mintmodule.AppModule{}.ConsensusVersion()
 
 		// Add burner permission to distribution module in auth module state
 		accI, _ := account.GetModuleAccountAndPermissions(ctx, distrtypes.ModuleName)
@@ -86,6 +95,11 @@ func CreateUpgradeHandler(
 	}
 }
 
+func mintGenesisState() *minttypes.GenesisState {
+	minter := minttypes.InitialMinter(targetInflation)
+	return minttypes.NewGenesisState(minter, MintParams)
+}
+
 // initMintGenesis initializes mint module genesis
 // It is a copy of mintkeeper.InitGenesis but with proper error handling and simple context.
 func initMintGenesis(ctx context.Context, mint mintkeeper.Keeper, account minttypes.AccountKeeper, genesis *minttypes.GenesisState) error {
@@ -99,4 +113,15 @@ func initMintGenesis(ctx context.Context, mint mintkeeper.Keeper, account mintty
 	account.GetModuleAccount(ctx, minttypes.ModuleName) // This panics on error :(
 
 	return nil
+}
+
+func GenesisState(cdc codec.JSONCodec) (map[string]json.RawMessage, error) {
+	bz, err := cdc.MarshalJSON(mintGenesisState())
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal slashing genesis")
+	}
+
+	return map[string]json.RawMessage{
+		minttypes.ModuleName: bz,
+	}, nil
 }

@@ -13,11 +13,11 @@ import (
 
 	"github.com/omni-network/omni/e2e/app/geth"
 	"github.com/omni-network/omni/e2e/manifests"
-	haloapp "github.com/omni-network/omni/halo/app"
 	halocmd "github.com/omni-network/omni/halo/cmd"
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/lib/buildinfo"
 	cprovider "github.com/omni-network/omni/lib/cchain/provider"
+	"github.com/omni-network/omni/lib/cchain/queryutil"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
@@ -201,7 +201,14 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 	// the local node with this binary, so that the consensus snapshot pulled
 	// from the network is compatible with the local binary.
 	if !cfg.Archive {
-		upgrade, err = detectCurrentUpgrade(ctx, cfg.Network)
+		rpcServer := cfg.Network.Static().ConsensusRPC()
+		rpcCl, err := rpchttp.New(rpcServer, "/websocket")
+		if err != nil {
+			return errors.Wrap(err, "create rpc client")
+		}
+		cprov := cprovider.NewABCI(rpcCl, cfg.Network)
+
+		upgrade, err = queryutil.CurrentUpgrade(ctx, cprov)
 		if err != nil {
 			return errors.Wrap(err, "detect upgrade")
 		}
@@ -213,43 +220,6 @@ func InitNodes(ctx context.Context, cfg InitConfig) error {
 	}
 
 	return nil
-}
-
-// detectCurrentUpgrade detects the current upgrade applied on the network.
-// Note it only detects known upgrades. It return empty string if no known upgrade is applied.
-func detectCurrentUpgrade(ctx context.Context, network netconf.ID) (string, error) {
-	rpcServer := network.Static().ConsensusRPC()
-	rpcCl, err := rpchttp.New(rpcServer, "/websocket")
-	if err != nil {
-		return "", errors.Wrap(err, "create rpc client")
-	}
-	cprov := cprovider.NewABCI(rpcCl, network)
-
-	// Cosmos doesn't provide an API to simply query current applied upgrade.
-	// So we iterate through knowns and check which is active.
-	for _, upgrade := range haloapp.AllUpgrades() {
-		plan, ok, err := cprov.AppliedPlan(ctx, upgrade)
-		if err != nil {
-			return "", errors.Wrap(err, "fetching applied plan")
-		} else if !ok {
-			continue
-		} else if upgrade != plan.Name {
-			return "", errors.New("unexpected upgrade plan name", "expected", upgrade, "actual", plan.Name)
-		}
-
-		log.Info(ctx, "Detected activated network upgrade", "upgrade_name", plan.Name, "upgrade_height", plan.Height)
-
-		return upgrade, nil
-	}
-
-	// No known upgrade detected.
-	if network != netconf.Devnet { // This is only expected for devnet
-		return "", errors.New("failed to detect known network upgrade (use latest cli version)")
-	}
-
-	log.Info(ctx, "No known network upgrade detected")
-
-	return "", nil
 }
 
 // maybeDownloadGenesis downloads the genesis files via cprovider the network if they are not already set.

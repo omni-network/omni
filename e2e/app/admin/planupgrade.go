@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/cchain/provider"
+	"github.com/omni-network/omni/lib/cchain/queryutil"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -37,7 +38,7 @@ func PlanUpgrade(ctx context.Context, def app.Definition, cfg Config) error {
 	}
 	cprov := provider.NewABCI(client, network)
 
-	next, ok, err := app.NextUpgrade(ctx, cprov)
+	next, ok, err := queryutil.NextUpgrade(ctx, cprov)
 	if err != nil {
 		return err
 	} else if !ok {
