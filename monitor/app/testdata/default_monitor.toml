@@ -24,6 +24,9 @@ halo-url = ""
 # The gRPC URL of the halo node to connect to.
 halo-grpc-url = "localhost:1111"
 
+# The RouteScan API key used for increased rate limits on RouteScan.
+routescan-apikey = "secret"
+
 #######################################################################
 ###                             X-Chain                             ###
 #######################################################################

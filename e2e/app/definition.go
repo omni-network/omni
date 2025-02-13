@@ -41,6 +41,7 @@ type DefinitionConfig struct {
 	FireAPIKey      string
 	FireKeyPath     string
 	CoinGeckoAPIKey string
+	RouteScanAPIKey string
 	RPCOverrides    map[string]string // map[chainName]rpcURL1,rpcURL2,...
 
 	InfraDataFile string // Not required for docker provider

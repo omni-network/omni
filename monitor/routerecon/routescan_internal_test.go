@@ -15,9 +15,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//go:generate go test . -integration -v -run=TestQueryLatestXChain
+var (
+	integration = flag.Bool("integration", false, "run RouteScan integration tests")
+	apiKey      = flag.String("routeScanAPIKey", "", "RouteScan API key for enabling increased rate limiting")
+)
 
-var integration = flag.Bool("integration", false, "run routescan integration tests")
+//go:generate go test . -integration -v -run=TestQueryLatestXChain
 
 func TestReconLag(t *testing.T) {
 	t.Parallel()
@@ -45,7 +48,7 @@ func TestReconLag(t *testing.T) {
 			continue
 		}
 
-		crossTx, err := paginateLatestCrossTx(ctx, network, queryFilter{Stream: stream})
+		crossTx, err := paginateLatestCrossTx(ctx, network, *apiKey, queryFilter{Stream: stream})
 		require.NoError(t, err, streamName)
 
 		lag := float64(cursor.MsgOffset) - float64(crossTx.Data.Offset)
@@ -60,7 +63,7 @@ func TestQueryLatestXChain(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	resp, err := paginateLatestCrossTx(ctx, netconf.Mainnet, queryFilter{})
+	resp, err := paginateLatestCrossTx(ctx, netconf.Mainnet, *apiKey, queryFilter{})
 	require.NoError(t, err)
 	require.NotEmpty(t, resp.ID)
 
@@ -69,8 +72,41 @@ func TestQueryLatestXChain(t *testing.T) {
 	t.Log(string(bz))
 }
 
+func TestHasLargeRateLimit(t *testing.T) {
+	t.Parallel()
+	if !*integration {
+		t.Skip("skipping integration test")
+	}
+
+	ctx := context.Background()
+
+	_, _, hasLargeRateLimitOmega, err := queryLatestCrossTx(ctx, netconf.Omega, *apiKey, queryFilter{}, "")
+	require.NoError(t, err)
+
+	if *apiKey != "" {
+		require.True(t, hasLargeRateLimitOmega)
+	} else {
+		require.False(t, hasLargeRateLimitOmega)
+	}
+
+	_, _, hasLargeRateLimitMainnet, err := queryLatestCrossTx(ctx, netconf.Mainnet, *apiKey, queryFilter{}, "")
+	require.NoError(t, err)
+
+	if *apiKey != "" {
+		require.True(t, hasLargeRateLimitMainnet)
+	} else {
+		require.False(t, hasLargeRateLimitMainnet)
+	}
+}
+
 // TestIntegrationFalse ensures the integration flag defaults to false.
 func TestIntegrationFalse(t *testing.T) {
 	t.Parallel()
 	require.False(t, *integration)
+}
+
+// TestRouteScanAPIKeyEmpty ensures the apiKey flag defaults to empty string.
+func TestRouteScanAPIKeyEmpty(t *testing.T) {
+	t.Parallel()
+	require.Empty(t, *apiKey)
 }
