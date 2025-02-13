@@ -8,8 +8,8 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
-	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -30,6 +30,8 @@ const (
 	rejectUnsupportedDeposit    rejectReason = 6
 	rejectUnsupportedExpense    rejectReason = 7
 	rejectUnsupportedDestChain  rejectReason = 8
+	rejectUnsupportedSrcChain   rejectReason = 9
+	rejectSameChain             rejectReason = 10
 )
 
 // RejectionError implement error, but represents a logical (expected) rejection, not an unexpected system error.
@@ -58,6 +60,15 @@ func (e *AlreadyFilledError) Error() string {
 	return "already filled: " + e.OrderID.String()
 }
 
+type ShouldRejectResult struct {
+	Reason        rejectReason
+	AlreadyFilled bool
+}
+
+func (r *ShouldRejectResult) Reject() bool {
+	return r.Reason != rejectNone
+}
+
 // newShouldRejector returns as ShouldReject function for the given network.
 //
 // ShouldReject returns true and a reason if the request should be rejected.
@@ -65,11 +76,9 @@ func (e *AlreadyFilledError) Error() string {
 // Errors are unexpected and refer to internal problems.
 func newShouldRejector(
 	backends ethbackend.Backends,
-	solverAddr common.Address,
-	targetName func(Order) string,
-	chainName func(uint64) string,
-) func(ctx context.Context, srcChainID uint64, order Order) (rejectReason, bool, error) {
-	return func(ctx context.Context, srcChainID uint64, order Order) (rejectReason, bool, error) {
+	solverAddr, outboxAddr common.Address,
+) func(ctx context.Context, srcChainID uint64, order Order) (ShouldRejectResult, error) {
+	return func(ctx context.Context, srcChainID uint64, order Order) (ShouldRejectResult, error) {
 		// Internal logic just return errors (convert them to rejections below)
 		err := func(ctx context.Context, srcChainID uint64, order Order) error {
 			if srcChainID != order.SourceChainID {
@@ -86,7 +95,7 @@ func newShouldRejector(
 				return err
 			}
 
-			expenses, err := parseExpenses(order)
+			expenses, err := parseExpenses(order, outboxAddr)
 			if err != nil {
 				return err
 			}
@@ -99,43 +108,28 @@ func newShouldRejector(
 				return err
 			}
 
-			return checkFill(ctx, backend, order, solverAddr)
+			if err := checkApprovals(ctx, expenses, backend, solverAddr, outboxAddr); err != nil {
+				return err
+			}
+
+			return checkFill(ctx, backend, order.ID, order.FillOriginData, nativeAmt(expenses), solverAddr, outboxAddr)
 		}(ctx, srcChainID, order)
 
 		if err == nil { // No error, no rejection
-			return rejectNone, false, nil
+			return ShouldRejectResult{}, nil
 		}
 
 		r := new(RejectionError)
 		if !errors.As(err, &r) { // Error, but no rejection
-			return rejectNone, false, err
+			return ShouldRejectResult{}, err
 		}
 
-		// TODO:  handle upstream, do not accept if already filled
 		e := new(AlreadyFilledError)
 		if errors.As(err, &e) { // Already filled, no rejection
-			log.InfoErr(ctx, "Already filled", err, "order_id", order.ID.String())
-			return rejectNone, false, nil
+			return ShouldRejectResult{AlreadyFilled: true}, nil
 		}
 
-		// Handle rejection
-		rejectedOrders.WithLabelValues(
-			chainName(order.SourceChainID),
-			chainName(order.DestinationChainID),
-			targetName(order),
-			r.Reason.String(),
-		).Inc()
-
-		err = errors.Wrap(r.Err, "reject",
-			"reason", r.Reason.String(),
-			"order_id", order.ID.String(),
-			"dest_chain_id", order.DestinationChainID,
-			"src_chain_id", order.SourceChainID,
-			"target", targetName(order))
-
-		log.InfoErr(ctx, "Rejecting request", err)
-
-		return r.Reason, true, nil
+		return ShouldRejectResult{Reason: r.Reason}, nil
 	}
 }
 
@@ -169,62 +163,69 @@ func parseDeposits(order Order) ([]Payment, error) {
 	return deposits, nil
 }
 
+// checkApprovals checks if the outbox is approved to spend all expenses.
+func checkApprovals(ctx context.Context, expenses []Payment, client ethclient.Client, solverAddr, outboxAddr common.Address) error {
+	for _, expense := range expenses {
+		tkn := expense.Token
+
+		if tkn.IsNative() {
+			continue
+		}
+
+		isAppproved, err := isAppproved(ctx, tkn.Address, client, solverAddr, outboxAddr)
+		if err != nil {
+			return errors.Wrap(err, "is approved")
+		}
+
+		if !isAppproved {
+			return errors.New("outbox not approved to spend token [BUG]", "token", tkn.Symbol, "chain_id", tkn.ChainID)
+		}
+	}
+
+	return nil
+}
+
 // checkFill checks if a destination call reverts.
-// TODO: approve outbox spend (will revert without approvals).
-func checkFill(ctx context.Context, backend *ethbackend.Backend, order Order, solverAddr common.Address) error {
-	outbox, err := bindings.NewSolverNetOutbox(order.DestinationSettler, backend)
+func checkFill(
+	ctx context.Context,
+	client ethclient.Client,
+	orderID OrderID,
+	fillOriginData []byte,
+	nativeValue *big.Int,
+	solverAddr, outboxAddr common.Address,
+) error {
+	outbox, err := bindings.NewSolverNetOutbox(outboxAddr, client)
 	if err != nil {
 		return errors.Wrap(err, "new outbox")
 	}
 
 	callOpts := &bind.CallOpts{Context: ctx}
-	if ok, err := outbox.DidFill(callOpts, order.ID, order.FillOriginData); err != nil {
+	if ok, err := outbox.DidFill(callOpts, orderID, fillOriginData); err != nil {
 		return errors.Wrap(err, "did fill")
 	} else if ok {
-		return &AlreadyFilledError{OrderID: order.ID}
-	}
-
-	nativeValue := big.NewInt(0)
-	for _, output := range order.MaxSpent {
-		if output.ChainId.Uint64() != order.DestinationChainID {
-			// We error on this case for now, as our contracts only allow single dest chain orders
-			// ERC7683 allows for orders with multiple destination chains, so continue-ing here
-			// would also be appropriate.
-			return errors.New("[BUG] destination chain mismatch")
-		}
-
-		// zero token address means native token
-		if output.Token == [32]byte{} {
-			nativeValue.Add(nativeValue, output.Amount)
-			continue
-		}
-
-		// approve outbox spend before checking for reverts, because lack of allowance will cause revert
-		if err := approveOutboxSpend(ctx, output, backend, solverAddr, order.DestinationSettler); err != nil {
-			return errors.Wrap(err, "approve outbox spend")
-		}
+		return &AlreadyFilledError{OrderID: orderID}
 	}
 
 	// xcall fee
-	fee, err := outbox.FillFee(callOpts, order.FillOriginData)
+	fee, err := outbox.FillFee(callOpts, fillOriginData)
 	if err != nil {
 		return errors.Wrap(err, "get fulfill fee")
 	}
 
 	fillerData := []byte{} // fillerData is optional ERC7683 custom filler specific data, unused in our contracts
-	fillCallData, err := outboxABI.Pack("fill", order.ID, order.FillOriginData, fillerData)
+	fillCallData, err := outboxABI.Pack("fill", orderID, fillOriginData, fillerData)
 	if err != nil {
 		return errors.Wrap(err, "pack fill inputs")
 	}
 
 	msg := ethereum.CallMsg{
-		To:    &order.DestinationSettler,
+		To:    &outboxAddr,
 		From:  solverAddr,
 		Value: new(big.Int).Add(nativeValue, fee),
 		Data:  fillCallData,
 	}
 
-	returnData, err := backend.CallContract(ctx, msg, nil)
+	returnData, err := client.CallContract(ctx, msg, nil)
 	if err != nil {
 		return &RejectionError{
 			Reason: rejectDestCallReverts,
@@ -236,14 +237,22 @@ func checkFill(ctx context.Context, backend *ethbackend.Backend, order Order, so
 }
 
 // parseExpenses parses order.MaxSpent, checks all tokens are supported, returns the list of expenses.
-func parseExpenses(order Order) ([]Payment, error) {
+func parseExpenses(order Order, outboxAddr common.Address) ([]Payment, error) {
 	var expenses []Payment
+
+	hasNative := false
+
 	for _, output := range order.MaxSpent {
 		chainID := output.ChainId.Uint64()
 
-		// inbox contract order resolution should ensure maxSpent[].output.chainId matches order.DestinationChainID
+		// order resolution ensures maxSpent[].output.chainId matches order.DestinationChainID
 		if chainID != order.DestinationChainID {
 			return nil, errors.New("max spent chain id mismatch [BUG]", "got", chainID, "expected", order.DestinationChainID)
+		}
+
+		// order resolve ensures maxSpent[].output.recipient is outboxAddr
+		if toEthAddr(output.Recipient) != outboxAddr {
+			return nil, errors.New("unexpected max spent recipient [BUG]", "got", output.Recipient, "expected", outboxAddr)
 		}
 
 		addr := toEthAddr(output.Token)
@@ -256,6 +265,15 @@ func parseExpenses(order Order) ([]Payment, error) {
 			return nil, newRejection(rejectUnsupportedExpense, errors.New("unsupported token", "addr", addr))
 		}
 
+		if output.Token == [32]byte{} {
+			if hasNative {
+				// inbox contract enforces max 1 native expense
+				return nil, errors.New("multiple native expenses [BUG]")
+			}
+
+			hasNative = true
+		}
+
 		expenses = append(expenses, Payment{
 			Token:  tkn,
 			Amount: output.Amount,
@@ -263,6 +281,16 @@ func parseExpenses(order Order) ([]Payment, error) {
 	}
 
 	return expenses, nil
+}
+
+func nativeAmt(ps []Payment) *big.Int {
+	for _, p := range ps {
+		if p.Token.IsNative() {
+			return p.Amount
+		}
+	}
+
+	return big.NewInt(0)
 }
 
 // checkQuote checks if deposits match or exceed quote for expenses.

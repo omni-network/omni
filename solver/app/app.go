@@ -86,15 +86,20 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "create cursor store")
 	}
 
-	err = startEventStreams(ctx, network, xprov, backends, solverAddr, cursors)
+	addrs, err := contracts.GetAddresses(ctx, network.ID)
+	if err != nil {
+		return errors.Wrap(err, "get contract addresses")
+	}
+
+	err = startEventStreams(ctx, network, xprov, backends, solverAddr, addrs, cursors)
 	if err != nil {
 		return errors.Wrap(err, "start event streams")
 	}
 
 	log.Info(ctx, "Serving API", "address", cfg.APIAddr)
 	apiChan := serveAPI(cfg.APIAddr, map[string]http.Handler{
-		"/api/v1/quote":     newQuoteHandler(newQuoter(backends, solverAddr)),
-		"/api/v1/contracts": newContractsHandler(network.ID),
+		"/api/v1/quote":     newQuoteHandler(newQuoter(backends, solverAddr, addrs.SolverNetInbox, addrs.SolverNetOutbox)),
+		"/api/v1/contracts": newContractsHandler(addrs),
 	})
 
 	if err := approveOutboxes(ctx, network, backends, solverAddr); err != nil {
@@ -168,13 +173,9 @@ func startEventStreams(
 	xprov xchain.Provider,
 	backends ethbackend.Backends,
 	solverAddr common.Address,
+	addrs contracts.Addresses,
 	cursors *cursors,
 ) error {
-	addrs, err := contracts.GetAddresses(ctx, network.ID)
-	if err != nil {
-		return errors.Wrap(err, "get contract addresses")
-	}
-
 	inboxChains, err := detectContractChains(ctx, network, backends, addrs.SolverNetInbox)
 	if err != nil {
 		return errors.Wrap(err, "detect inbox chains")
@@ -256,7 +257,7 @@ func startEventStreams(
 	deps := procDeps{
 		ParseID:      newIDParser(inboxContracts),
 		GetOrder:     newOrderGetter(inboxContracts),
-		ShouldReject: newShouldRejector(backends, solverAddr, targetName, network.ChainName),
+		ShouldReject: newShouldRejector(backends, solverAddr, addrs.SolverNetOutbox),
 		Accept:       newAcceptor(inboxContracts, backends, solverAddr),
 		Reject:       newRejector(inboxContracts, backends, solverAddr),
 		Fill:         newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox),

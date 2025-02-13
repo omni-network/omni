@@ -9,7 +9,6 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -20,7 +19,7 @@ import (
 type procDeps struct {
 	ParseID      func(chainID uint64, log types.Log) (OrderID, error)
 	GetOrder     func(ctx context.Context, chainID uint64, id OrderID) (Order, bool, error)
-	ShouldReject func(ctx context.Context, chainID uint64, order Order) (rejectReason, bool, error)
+	ShouldReject func(ctx context.Context, chainID uint64, order Order) (ShouldRejectResult, error)
 	SetCursor    func(ctx context.Context, chainID uint64, height uint64) error
 
 	Accept func(ctx context.Context, chainID uint64, order Order) error
@@ -74,11 +73,11 @@ func newFiller(
 ) func(ctx context.Context, srcChainID uint64, order Order) error {
 	return func(ctx context.Context, srcChainID uint64, order Order) error {
 		if order.SourceChainID != srcChainID {
-			return errors.New("[BUG] source chain mismatch")
+			return errors.New("source chain mismatch [BUG] ")
 		}
 
 		if order.DestinationSettler != outboxAddr {
-			return errors.New("[BUG] destination settler mismatch", "got", order.DestinationSettler.Hex(), "expected", outboxAddr.Hex())
+			return errors.New("destination settler mismatch [BUG] ", "got", order.DestinationSettler.Hex(), "expected", outboxAddr.Hex())
 		}
 
 		destChainID := order.DestinationChainID
@@ -111,7 +110,7 @@ func newFiller(
 				// We error on this case for now, as our contracts only allow single dest chain orders
 				// ERC7683 allows for orders with multiple destination chains, so continue-ing here
 				// would also be appropriate.
-				return errors.New("[BUG] destination chain mismatch")
+				return errors.New("destination chain mismatch [BUG] ")
 			}
 
 			// zero token address means native token
@@ -120,8 +119,19 @@ func newFiller(
 				continue
 			}
 
-			if err := approveOutboxSpend(ctx, output, backend, solverAddr, outboxAddr); err != nil {
-				return errors.Wrap(err, "approve outbox spend")
+			tknAddr := toEthAddr(output.Token)
+			tkn, ok := tokens.Find(destChainID, tknAddr)
+			if !ok {
+				return errors.New("unsupported token, should have been rejected [BUG]", "addr", tknAddr.Hex(), "chain_id", destChainID)
+			}
+
+			isAppproved, err := isAppproved(ctx, tknAddr, backend, solverAddr, outboxAddr)
+			if err != nil {
+				return errors.Wrap(err, "is approved")
+			}
+
+			if !isAppproved {
+				return errors.New("outbox not approved to spend token [BUG] ", "token", tkn.Symbol, "chain_id", destChainID)
 			}
 		}
 
@@ -148,61 +158,6 @@ func newFiller(
 
 		return nil
 	}
-}
-
-func approveOutboxSpend(ctx context.Context, output bindings.IERC7683Output, backend *ethbackend.Backend, solverAddr, outboxAddr common.Address) error {
-	if output.Token == [32]byte{} {
-		return errors.New("cannot approve native token")
-	}
-
-	recipient := toEthAddr(output.Recipient)
-	if recipient != outboxAddr {
-		// in our contracts, recipient should always be outbox
-		return errors.New("[BUG] spender should be outbox")
-	}
-
-	addr := toEthAddr(output.Token)
-	token, err := bindings.NewIERC20(addr, backend)
-	if err != nil {
-		return errors.Wrap(err, "new token")
-	}
-
-	isApproved := func() (bool, error) {
-		allowance, err := token.Allowance(&bind.CallOpts{Context: ctx}, solverAddr, outboxAddr)
-		if err != nil {
-			return false, errors.Wrap(err, "get allowance")
-		}
-
-		return new(big.Int).Sub(allowance, output.Amount).Sign() >= 0, nil
-	}
-
-	if approved, err := isApproved(); err != nil {
-		return err
-	} else if approved {
-		return nil
-	}
-
-	txOpts, err := backend.BindOpts(ctx, solverAddr)
-	if err != nil {
-		return err
-	}
-
-	tx, err := token.Approve(txOpts, outboxAddr, umath.MaxUint256)
-	if err != nil {
-		return errors.Wrap(err, "approve token")
-	} else if _, err := backend.WaitMined(ctx, tx); err != nil {
-		return errors.Wrap(err, "wait mined")
-	}
-
-	if approved, err := isApproved(); err != nil {
-		return err
-	} else if !approved {
-		return errors.New("approve failed")
-	}
-
-	log.Debug(ctx, "Approved token spend", "token", addr.Hex(), "amount", output.Amount)
-
-	return nil
 }
 
 func newRejector(

@@ -6,10 +6,14 @@ import (
 	"math/big"
 	"net/http"
 
+	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -25,7 +29,7 @@ import (
 type QuoteRequest struct {
 	SourceChainID      uint64         `json:"sourceChainId"`
 	DestinationChainID uint64         `json:"destChainId"`
-	FillDeadline       uint64         `json:"fillDeadline"`
+	FillDeadline       uint32         `json:"fillDeadline"`
 	Calls              []Call         `json:"calls"`
 	Expenses           []Expense      `json:"expenses"`
 	DepositToken       common.Address `json:"depositToken"`
@@ -75,11 +79,20 @@ type quoteFunc func(context.Context, QuoteRequest) (Deposit, error)
 
 // newQuoter returns a quoteFunc that can be used to quote deposits for expenses.
 // It is the logic behind the /quote endpoint.
-func newQuoter(backends ethbackend.Backends, solverAddr common.Address) quoteFunc {
+func newQuoter(backends ethbackend.Backends, solverAddr, inboxAddr, outboxAddr common.Address) quoteFunc {
 	return func(ctx context.Context, req QuoteRequest) (Deposit, error) {
-		backend, err := backends.Backend(req.DestinationChainID)
+		if req.SourceChainID == req.DestinationChainID {
+			return Deposit{}, newRejection(rejectSameChain, errors.New("source and destination chain are the same"))
+		}
+
+		srcBackend, err := backends.Backend(req.SourceChainID)
 		if err != nil {
-			return Deposit{}, newRejection(rejectUnsupportedDestChain, err)
+			return Deposit{}, newRejection(rejectUnsupportedSrcChain, errors.New("unsupported source chain", "chain_id", req.SourceChainID))
+		}
+
+		dstBackend, err := backends.Backend(req.DestinationChainID)
+		if err != nil {
+			return Deposit{}, newRejection(rejectUnsupportedDestChain, errors.New("unsupported destination chain", "chain_id", req.DestinationChainID))
 		}
 
 		depositTkn, ok := tokens.Find(req.SourceChainID, req.DepositToken)
@@ -87,16 +100,9 @@ func newQuoter(backends ethbackend.Backends, solverAddr common.Address) quoteFun
 			return Deposit{}, newRejection(rejectUnsupportedDeposit, errors.New("unsupported deposit token", "addr", req.DepositToken))
 		}
 
-		var expenses []Payment
-		for _, e := range req.Expenses {
-			tkn, ok := tokens.Find(req.DestinationChainID, e.Token)
-			if !ok {
-				return Deposit{}, newRejection(rejectUnsupportedExpense, errors.New("unsupported expense token", "addr", e.Token))
-			}
-			expenses = append(expenses, Payment{
-				Token:  tkn,
-				Amount: e.Amount,
-			})
+		expenses, err := parseQuoteExpenses(req)
+		if err != nil {
+			return Deposit{}, err
 		}
 
 		quote, err := getQuote([]Token{depositTkn}, expenses)
@@ -104,7 +110,25 @@ func newQuoter(backends ethbackend.Backends, solverAddr common.Address) quoteFun
 			return Deposit{}, err
 		}
 
-		if err := checkLiquidity(ctx, expenses, backend, solverAddr); err != nil {
+		if err := checkLiquidity(ctx, expenses, dstBackend, solverAddr); err != nil {
+			return Deposit{}, err
+		}
+
+		if err := checkApprovals(ctx, expenses, dstBackend, solverAddr, outboxAddr); err != nil {
+			return Deposit{}, err
+		}
+
+		orderID, err := getNextOrderID(ctx, srcBackend, inboxAddr)
+		if err != nil {
+			return Deposit{}, err
+		}
+
+		fillOriginData, err := getFillOriginData(req)
+		if err != nil {
+			return Deposit{}, err
+		}
+
+		if err := checkFill(ctx, dstBackend, orderID, fillOriginData, nativeAmt(expenses), solverAddr, outboxAddr); err != nil {
 			return Deposit{}, err
 		}
 
@@ -113,6 +137,58 @@ func newQuoter(backends ethbackend.Backends, solverAddr common.Address) quoteFun
 			Amount: quote[0].Amount,
 		}, nil
 	}
+}
+
+// getNextOrderID returns the next order ID for the given inbox.
+func getNextOrderID(ctx context.Context, client ethclient.Client, inboxAddr common.Address) (OrderID, error) {
+	inbox, err := bindings.NewSolverNetInbox(inboxAddr, client)
+	if err != nil {
+		return OrderID{}, errors.Wrap(err, "new inbox")
+	}
+
+	orderID, err := inbox.GetNextId(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		return OrderID{}, errors.Wrap(err, "get next order id")
+	}
+
+	return orderID, nil
+}
+
+// getFillOriginData returns packed fill origin data for a quote request.
+func getFillOriginData(req QuoteRequest) ([]byte, error) {
+	calls := make([]bindings.SolverNetCall, len(req.Calls))
+	for i, c := range req.Calls {
+		calls[i] = bindings.SolverNetCall{
+			Target:   c.Target,
+			Selector: c.Selector,
+			Value:    c.Value,
+			Params:   c.Params,
+		}
+	}
+
+	expenses := make([]bindings.SolverNetExpense, len(req.Expenses))
+	for i, e := range req.Expenses {
+		expenses[i] = bindings.SolverNetExpense{
+			Spender: e.Spender,
+			Token:   e.Token,
+			Amount:  e.Amount,
+		}
+	}
+
+	fillOriginData := bindings.SolverNetFillOriginData{
+		FillDeadline: req.FillDeadline,
+		SrcChainId:   req.SourceChainID,
+		DestChainId:  req.DestinationChainID,
+		Expenses:     expenses,
+		Calls:        calls,
+	}
+
+	fillOriginDataBz, err := solvernet.PackFillOriginData(fillOriginData)
+	if err != nil {
+		return nil, errors.Wrap(err, "pack fill origin data")
+	}
+
+	return fillOriginDataBz, nil
 }
 
 // newQuoteHandler returns a handler for the /quote endpoint.
@@ -131,7 +207,7 @@ func newQuoteHandler(quoteFunc quoteFunc) http.Handler {
 				Error: &JSONErrorResponse{
 					Code:    statusCode,
 					Status:  http.StatusText(statusCode),
-					Message: err.Error(),
+					Message: removeBUG(err.Error()),
 				},
 			})
 		}
@@ -219,4 +295,31 @@ func coversQuote(deposits, quote []Payment) error {
 	}
 
 	return nil
+}
+
+func parseQuoteExpenses(req QuoteRequest) ([]Payment, error) {
+	var expenses []Payment
+
+	hasNative := false
+	for _, e := range req.Expenses {
+		tkn, ok := tokens.Find(req.DestinationChainID, e.Token)
+		if !ok {
+			return nil, newRejection(rejectUnsupportedExpense, errors.New("unsupported expense token", "addr", e.Token))
+		}
+
+		if tkn.IsNative() {
+			if hasNative {
+				return nil, newRejection(rejectInvalidExpense, errors.New("multiple native expenses not supported"))
+			}
+
+			hasNative = true
+		}
+
+		expenses = append(expenses, Payment{
+			Token:  tkn,
+			Amount: e.Amount,
+		})
+	}
+
+	return expenses, nil
 }

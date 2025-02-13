@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
 )
 
 // JSONErrorResponse is a json response for http errors (e.g 4xx, 5xx), not used for rejections.
@@ -18,6 +18,9 @@ type JSONErrorResponse struct {
 	Status  string `json:"status"`
 	Message string `json:"message"`
 }
+
+// removeBUG removes [BUG] from the error messages, so they are not included in responses to users.
+func removeBUG(s string) string { return strings.ReplaceAll(s, "[BUG]", "") }
 
 type JSONResponse interface {
 	StatusCode() int
@@ -75,24 +78,11 @@ func (r ContractsResponse) StatusCode() int {
 }
 
 // newContractsHandler returns a http handler that returns the contract address for `network`.
-func newContractsHandler(network netconf.ID) http.Handler {
+func newContractsHandler(addrs contracts.Addresses) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, rr *http.Request) {
 		ctx := rr.Context()
 
 		w.Header().Set("Content-Type", "application/json")
-
-		addrs, err := contracts.GetAddresses(ctx, network)
-		if err != nil {
-			writeJSON(ctx, w, ContractsResponse{
-				Error: &JSONErrorResponse{
-					Code:    http.StatusInternalServerError,
-					Status:  http.StatusText(http.StatusInternalServerError),
-					Message: err.Error(),
-				},
-			})
-
-			return
-		}
 
 		writeJSON(ctx, w, ContractsResponse{
 			Portal:    addrs.Portal.Hex(),
