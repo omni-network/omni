@@ -18,15 +18,16 @@ import (
 )
 
 type Config struct {
-	RPCEndpoints   xchain.RPCEndpoints
-	Network        netconf.ID
-	MonitoringAddr string
-	PrivateKey     string
-	HaloCometURL   string
-	HaloGRPCURL    string
-	LoadGen        loadgen.Config
-	XFeeMngr       xfeemngr.Config
-	DBDir          string
+	RPCEndpoints    xchain.RPCEndpoints
+	Network         netconf.ID
+	MonitoringAddr  string
+	PrivateKey      string
+	HaloCometURL    string
+	HaloGRPCURL     string
+	LoadGen         loadgen.Config
+	XFeeMngr        xfeemngr.Config
+	DBDir           string
+	RouteScanAPIKey string
 }
 
 func DefaultConfig() Config {
