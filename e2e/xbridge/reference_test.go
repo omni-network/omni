@@ -8,6 +8,8 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,6 +20,8 @@ func TestReference(t *testing.T) {
 
 	golden := make(map[string]map[netconf.ID]map[string]any)
 	ctx := context.Background()
+
+	seen := make(map[common.Address]bool)
 
 	for _, token := range xbridge.Tokens() {
 		golden[token.Symbol()] = make(map[netconf.ID]map[string]any)
@@ -44,6 +48,16 @@ func TestReference(t *testing.T) {
 
 			canon, err := token.Canonical(ctx, network)
 			require.NoError(t, err)
+
+			see := func(addr common.Address) {
+				require.False(t, seen[addr], "duplicate address: %s", addr.Hex())
+				seen[addr] = true
+			}
+
+			see(addr)
+			see(bridge)
+			see(lockbox)
+			see(canon.Address)
 
 			json := map[string]any{
 				"addr":    addr.Hex(),
