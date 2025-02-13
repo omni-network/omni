@@ -40,7 +40,6 @@ func TestSlashing(t *testing.T) {
 	t.Parallel()
 	testNetwork(t, func(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
 		t.Helper()
-		t.Skip("uluwatu upgrade not actually applied when ephemeral_genesis_binary specified")
 
 		cl, err := http.New(network.ID.Static().ConsensusRPC(), "/websocket")
 		require.NoError(t, err)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"regexp"
 
+	"github.com/omni-network/omni/halo/app/upgrades"
 	attestkeeper "github.com/omni-network/omni/halo/attest/keeper"
 	atypes "github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/comet"
@@ -26,7 +27,7 @@ import (
 	sdklog "cosmossdk.io/log"
 	evidencekeeper "cosmossdk.io/x/evidence/keeper"
 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
-	utypes "cosmossdk.io/x/upgrade/types"
+	upgradetypes "cosmossdk.io/x/upgrade/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -240,6 +241,51 @@ func (a App) ClientContext(ctx context.Context) client.Context {
 		WithCodec(a.appCodec)
 }
 
+func (a App) setUpgradeHandlers(ctx context.Context) error {
+	for _, u := range upgrades.Upgrades {
+		a.UpgradeKeeper.SetUpgradeHandler(u.Name, u.HandlerFunc(a))
+	}
+
+	upgradeInfo, err := a.UpgradeKeeper.ReadUpgradeInfoFromDisk()
+	if err != nil {
+		return errors.Wrap(err, "read upgrade info from disk")
+	} else if upgradeInfo.Name == "" {
+		return nil // No upgrade info found
+	}
+
+	for _, u := range upgrades.Upgrades {
+		if u.Name != upgradeInfo.Name {
+			continue
+		}
+
+		a.SetStoreLoader(upgradetypes.UpgradeStoreLoader(upgradeInfo.Height, u.Store(ctx)))
+
+		return nil
+	}
+
+	return errors.New("unknown upgrade info [BUG]", "name", upgradeInfo.Name)
+}
+
+func (a App) GetModuleManager() *module.Manager {
+	return a.ModuleManager
+}
+
+func (a App) GetModuleConfigurator() module.Configurator {
+	return a.Configurator()
+}
+
+func (a App) GetSlashingKeeper() slashingkeeper.Keeper {
+	return a.SlashingKeeper
+}
+
+func (a App) GetMintKeeper() mintkeeper.Keeper {
+	return a.MintKeeper
+}
+
+func (a App) GetAccountKeeper() authkeeper.AccountKeeper {
+	return a.AccountKeeper
+}
+
 // dumpLastAppliedUpgradeInfo dumps the last applied upgrade info to disk.
 // This is a workaround for halovisor to auto upgrade binaries
 // after snapsyncing to a post-upgrade state using a pre-upgrade (old) binary.
@@ -258,7 +304,7 @@ func dumpLastAppliedUpgradeInfo(ctx sdk.Context, keeper *upgradekeeper.Keeper) e
 		return errors.New("unexpected last upgrade height [BUG]")
 	}
 
-	err = keeper.DumpUpgradeInfoToDisk(height, utypes.Plan{
+	err = keeper.DumpUpgradeInfoToDisk(height, upgradetypes.Plan{
 		Name:   name,
 		Height: height,
 	})

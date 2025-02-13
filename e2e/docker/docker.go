@@ -88,22 +88,22 @@ func (p *Provider) Setup() error {
 	}
 
 	def := ComposeDef{
-		Network:                true,
-		NetworkName:            p.testnet.Name,
-		NetworkCIDR:            p.testnet.IP.String(),
-		BindAll:                false,
-		UpgradeVersion:         p.testnet.UpgradeVersion,
-		Nodes:                  p.testnet.Nodes,
-		OmniEVMs:               p.testnet.OmniEVMs,
-		Anvils:                 p.testnet.AnvilChains,
-		Relayer:                true,
-		Prometheus:             p.testnet.Prometheus,
-		Monitor:                true,
-		Solver:                 true,
-		GethVerbosity:          3, // Info
-		GethInitTags:           gethInitTags,
-		EphemeralGenesisBinary: p.testnet.Manifest.EphemeralGenesisBinary,
-		AnvilAMD:               AnvilAMD(),
+		Network:          true,
+		NetworkName:      p.testnet.Name,
+		NetworkCIDR:      p.testnet.IP.String(),
+		BindAll:          false,
+		UpgradeVersion:   p.testnet.UpgradeVersion,
+		Nodes:            p.testnet.Nodes,
+		OmniEVMs:         p.testnet.OmniEVMs,
+		Anvils:           p.testnet.AnvilChains,
+		Relayer:          true,
+		Prometheus:       p.testnet.Prometheus,
+		Monitor:          true,
+		Solver:           true,
+		GethVerbosity:    3, // Info
+		GethInitTags:     gethInitTags,
+		EphemeralGenesis: p.testnet.Manifest.EphemeralGenesis,
+		AnvilAMD:         AnvilAMD(),
 	}
 	def = SetImageTags(def, p.testnet.Manifest, p.omniTag)
 
@@ -183,15 +183,15 @@ func (p *Provider) StartNodes(ctx context.Context, nodes ...*e2e.Node) error {
 }
 
 type ComposeDef struct {
-	Network                bool
-	NetworkName            string
-	NetworkCIDR            string
-	BindAll                bool
-	UpgradeVersion         string         // Halo target upgrade version
-	GethVerbosity          int            // Geth log level (1=error,2=warn,3=info(default),4=debug,5=trace)
-	GethInitTags           map[int]string // Optional geth initial tags. Defaults to latest if empty.
-	EphemeralGenesisBinary string         // Optional network upgrade to use from genesis
-	AnvilAMD               bool           // Force amd64 for anvil images
+	Network          bool
+	NetworkName      string
+	NetworkCIDR      string
+	BindAll          bool
+	UpgradeVersion   string         // Halo target upgrade version
+	GethVerbosity    int            // Geth log level (1=error,2=warn,3=info(default),4=debug,5=trace)
+	GethInitTags     map[int]string // Optional geth initial tags. Defaults to latest if empty.
+	EphemeralGenesis string         // Optional network upgrade to use from genesis
+	AnvilAMD         bool           // Force amd64 for anvil images
 
 	Nodes    []*e2e.Node
 	OmniEVMs []types.OmniEVM
@@ -242,7 +242,7 @@ func (c ComposeDef) haloGenesisBinary(node string) string {
 		}
 	}
 
-	return c.EphemeralGenesisBinary
+	return c.EphemeralGenesis
 }
 
 // CustomGenesisVar returns the environment variable to set the custom genesis binary for a node
