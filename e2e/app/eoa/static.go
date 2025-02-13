@@ -40,6 +40,7 @@ var statics = map[netconf.ID][]Account{
 		secret("0x37AD6f7267454cac494C177127aC017750c8A7DB", RoleRelayer),
 		secret("0xcef2a2c477Ec8473E4DeB9a8c2DF1D0585ea1040", RoleMonitor),
 		secret("0x01A1A1C3Fe5369bc4DF3B5a5bbC10639a14113ab", RoleXCaller),
+		secret("0x2677B9165c426eF0d3EC74E0e853e2F3A3d525cd", RoleSolver),
 	),
 	netconf.Mainnet: flatten(
 		remote("0x8b6b217572582C57616262F9cE02A951A1D1b951", RoleCold),
