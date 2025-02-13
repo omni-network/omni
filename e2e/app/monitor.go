@@ -18,7 +18,7 @@ import (
 )
 
 func LogMetrics(ctx context.Context, def Definition) error {
-	extNetwork := NetworkFromDef(def) // Safe to call NetworkFromDef since this after netman.DeployContracts
+	extNetwork := networkFromDef(def) // Safe to call networkFromDef since this after netman.DeployContracts
 	archiveNode, ok := def.Testnet.ArchiveNode()
 	if !ok {
 		return errors.New("monitor must use archive node, no archive node found")
@@ -43,7 +43,7 @@ func StartMonitoringReceipts(ctx context.Context, def Definition) func() error {
 		return func() error { return errors.Wrap(err, "getting client") }
 	}
 
-	network := NetworkFromDef(def) // Safe to call NetworkFromDef since this after netman.DeployContracts
+	network := networkFromDef(def) // Safe to call networkFromDef since this after netman.DeployContracts
 	cProvider := cprovider.NewABCI(client, def.Testnet.Network)
 	xProvider := xprovider.New(network, def.Backends().RPCClients(), cProvider)
 	cChainID := def.Testnet.Network.Static().OmniConsensusChainIDUint64()
