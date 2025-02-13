@@ -28,7 +28,7 @@ func TestReconOnce(t *testing.T) {
 	require.NoError(t, err)
 
 	for _, stream := range conn.Network.EVMStreams() {
-		err := reconStreamOnce(ctx, conn.Network, *routeScanAPIKey, conn.XProvider, conn.EthClients, stream)
+		err := reconStreamOnce(ctx, conn.Network, *apiKey, conn.XProvider, conn.EthClients, stream)
 		if err != nil {
 			log.Warn(ctx, "RouteRecon failed", err, "stream", conn.Network.StreamName(stream))
 		} else {
@@ -77,7 +77,7 @@ func TestBasicHistorical(t *testing.T) {
 		return nil
 	}
 
-	_, err = paginateLatestCrossTx(ctx, network, *routeScanAPIKey, allCallback(callback))
+	_, err = paginateLatestCrossTx(ctx, network, *apiKey, allCallback(callback))
 	require.ErrorContains(t, err, "empty response") // Final pagination fails
 
 	for _, streamID := range conn.Network.EVMStreams() {

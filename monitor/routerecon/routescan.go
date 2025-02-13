@@ -15,12 +15,12 @@ import (
 )
 
 const (
-	baseURL                         = "https://api.routescan.io"
-	crossTxURL                      = "/v2/network/%s/evm/cross-transactions"
-	requestsPerDayLimitHeader       = "X-Ratelimit-Rpd-Limit"
-	requestsPerMinuteLimitHeader    = "X-Ratelimit-Rpm-Limit"
-	increasedRequestsPerDayLimit    = 200000
-	increasedRequestsPerMinuteLimit = 600
+	baseURL           = "https://api.routescan.io"
+	crossTxURL        = "/v2/network/%s/evm/cross-transactions"
+	rpdLimitHeader    = "X-Ratelimit-Rpd-Limit"
+	rpmLimitHeader    = "X-Ratelimit-Rpm-Limit"
+	increasedRPDLimit = 200000
+	increasedRPMLimit = 600
 )
 
 func getCrossTxURL(network netconf.ID) string {
@@ -90,62 +90,62 @@ func queryLatestCrossTx(ctx context.Context, network netconf.ID, routeScanAPIKey
 	}
 	defer resp.Body.Close()
 
-	requestsPerDayLimit, err := strconv.Atoi(resp.Header.Get(requestsPerDayLimitHeader))
+	rpdLimit, err := strconv.Atoi(resp.Header.Get(rpdLimitHeader))
 	if err != nil {
-		return crossTxJSON{}, "", false, errors.Wrap(err, "rate limit header", "header", requestsPerDayLimitHeader)
+		return crossTxJSON{}, "", false, errors.Wrap(err, "rate limit header", "header", rpdLimitHeader)
 	}
 
-	requestsPerMinuteLimit, err := strconv.Atoi(resp.Header.Get(requestsPerMinuteLimitHeader))
+	rpmLimit, err := strconv.Atoi(resp.Header.Get(rpmLimitHeader))
 	if err != nil {
-		return crossTxJSON{}, "", false, errors.Wrap(err, "rate limit header", "header", requestsPerMinuteLimitHeader)
+		return crossTxJSON{}, "", false, errors.Wrap(err, "rate limit header", "header", rpmLimitHeader)
 	}
 
-	isWithIncreasedRateLimit := requestsPerDayLimit >= increasedRequestsPerDayLimit && requestsPerMinuteLimit >= increasedRequestsPerMinuteLimit
+	hasLargeRateLimit := rpdLimit >= increasedRPDLimit && rpmLimit >= increasedRPMLimit
 
 	bz, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return crossTxJSON{}, "", isWithIncreasedRateLimit, errors.Wrap(err, "read response body")
+		return crossTxJSON{}, "", hasLargeRateLimit, errors.Wrap(err, "read response body")
 	}
 
 	if resp.StatusCode/http.StatusOK != 1 { // Checking for 2xx status code
 		var errJSON errorJSON
 		_ = json.Unmarshal(bz, &errJSON)
 
-		return crossTxJSON{}, "", isWithIncreasedRateLimit, errors.New("bad response", "status", resp.Status, "err_code", errJSON.Code, "err_msg", errJSON.Message)
+		return crossTxJSON{}, "", hasLargeRateLimit, errors.New("bad response", "status", resp.Status, "err_code", errJSON.Code, "err_msg", errJSON.Message)
 	}
 
 	var crossTxResp crossTxResponse
 	if err := json.Unmarshal(bz, &crossTxResp); err != nil {
-		return crossTxJSON{}, "", isWithIncreasedRateLimit, errors.Wrap(err, "decode response")
+		return crossTxJSON{}, "", hasLargeRateLimit, errors.Wrap(err, "decode response")
 	}
 
 	if len(crossTxResp.CrossTxs) == 0 {
-		return crossTxJSON{}, "", isWithIncreasedRateLimit, errors.New("empty response")
+		return crossTxJSON{}, "", hasLargeRateLimit, errors.New("empty response")
 	} else if len(crossTxResp.CrossTxs) > limit {
-		return crossTxJSON{}, "", isWithIncreasedRateLimit, errors.New("too many items in response")
+		return crossTxJSON{}, "", hasLargeRateLimit, errors.New("too many items in response")
 	}
 
 	for _, crossTx := range crossTxResp.CrossTxs {
 		if err := crossTx.Verify(); err != nil {
-			return crossTxJSON{}, "", isWithIncreasedRateLimit, errors.Wrap(err, "verify cross tx")
+			return crossTxJSON{}, "", hasLargeRateLimit, errors.Wrap(err, "verify cross tx")
 		}
 
 		if ok, err := filter.Match(crossTx); err != nil {
-			return crossTxJSON{}, "", isWithIncreasedRateLimit, errors.Wrap(err, "match filter")
+			return crossTxJSON{}, "", hasLargeRateLimit, errors.Wrap(err, "match filter")
 		} else if !ok {
 			continue
 		}
 
-		return crossTx, "", isWithIncreasedRateLimit, nil // Return found crossTx
+		return crossTx, "", hasLargeRateLimit, nil // Return found crossTx
 	}
 
 	// No matching crossTx found
 
 	if crossTxResp.Links.Next == "" {
-		return crossTxJSON{}, "", isWithIncreasedRateLimit, errors.New("no matching cross tx found")
+		return crossTxJSON{}, "", hasLargeRateLimit, errors.New("no matching cross tx found")
 	}
 
-	return crossTxJSON{}, crossTxResp.Links.Next, isWithIncreasedRateLimit, nil // Return next page to query
+	return crossTxJSON{}, crossTxResp.Links.Next, hasLargeRateLimit, nil // Return next page to query
 }
 
 const omegaResets = 4

@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	integration     = flag.Bool("integration", false, "run routescan integration tests")
-	routeScanAPIKey = flag.String("routeScanAPIKey", "", "RouteScan API key for enabling increased rate limiting")
+	integration = flag.Bool("integration", false, "run RouteScan integration tests")
+	apiKey      = flag.String("routeScanAPIKey", "", "RouteScan API key for enabling increased rate limiting")
 )
 
 //go:generate go test . -integration -v -run=TestQueryLatestXChain
@@ -48,7 +48,7 @@ func TestReconLag(t *testing.T) {
 			continue
 		}
 
-		crossTx, err := paginateLatestCrossTx(ctx, network, *routeScanAPIKey, queryFilter{Stream: stream})
+		crossTx, err := paginateLatestCrossTx(ctx, network, *apiKey, queryFilter{Stream: stream})
 		require.NoError(t, err, streamName)
 
 		lag := float64(cursor.MsgOffset) - float64(crossTx.Data.Offset)
@@ -63,7 +63,7 @@ func TestQueryLatestXChain(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	resp, err := paginateLatestCrossTx(ctx, netconf.Mainnet, *routeScanAPIKey, queryFilter{})
+	resp, err := paginateLatestCrossTx(ctx, netconf.Mainnet, *apiKey, queryFilter{})
 	require.NoError(t, err)
 	require.NotEmpty(t, resp.ID)
 
@@ -72,7 +72,7 @@ func TestQueryLatestXChain(t *testing.T) {
 	t.Log(string(bz))
 }
 
-func TestIsWithIncreasedRateLimit(t *testing.T) {
+func TestHasLargeRateLimit(t *testing.T) {
 	t.Parallel()
 	if !*integration {
 		t.Skip("skipping integration test")
@@ -80,22 +80,22 @@ func TestIsWithIncreasedRateLimit(t *testing.T) {
 
 	ctx := context.Background()
 
-	_, _, isWithIncreasedRateLimitOmega, err := queryLatestCrossTx(ctx, netconf.Omega, *routeScanAPIKey, queryFilter{}, "")
+	_, _, hasLargeRateLimitOmega, err := queryLatestCrossTx(ctx, netconf.Omega, *apiKey, queryFilter{}, "")
 	require.NoError(t, err)
 
-	if *routeScanAPIKey != "" {
-		require.True(t, isWithIncreasedRateLimitOmega)
+	if *apiKey != "" {
+		require.True(t, hasLargeRateLimitOmega)
 	} else {
-		require.False(t, isWithIncreasedRateLimitOmega)
+		require.False(t, hasLargeRateLimitOmega)
 	}
 
-	_, _, isWithIncreasedRateLimitMainnet, err := queryLatestCrossTx(ctx, netconf.Mainnet, *routeScanAPIKey, queryFilter{}, "")
+	_, _, hasLargeRateLimitMainnet, err := queryLatestCrossTx(ctx, netconf.Mainnet, *apiKey, queryFilter{}, "")
 	require.NoError(t, err)
 
-	if *routeScanAPIKey != "" {
-		require.True(t, isWithIncreasedRateLimitMainnet)
+	if *apiKey != "" {
+		require.True(t, hasLargeRateLimitMainnet)
 	} else {
-		require.False(t, isWithIncreasedRateLimitMainnet)
+		require.False(t, hasLargeRateLimitMainnet)
 	}
 }
 
@@ -105,8 +105,8 @@ func TestIntegrationFalse(t *testing.T) {
 	require.False(t, *integration)
 }
 
-// TestRouteScanAPIKeyEmpty ensures the routeScanAPIKey flag defaults to empty string.
+// TestRouteScanAPIKeyEmpty ensures the apiKey flag defaults to empty string.
 func TestRouteScanAPIKeyEmpty(t *testing.T) {
 	t.Parallel()
-	require.Empty(t, *routeScanAPIKey)
+	require.Empty(t, *apiKey)
 }
