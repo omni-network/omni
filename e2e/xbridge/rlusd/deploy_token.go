@@ -2,6 +2,7 @@ package rlusd
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
@@ -56,8 +57,27 @@ func (cfg TokenConfig) Validate() error {
 	return nil
 }
 
-func saltID(tkn types.TokenDescriptors) string {
-	return tkn.Symbol
+func addr(ctx context.Context, network netconf.ID, tkn types.TokenDescriptors) (common.Address, error) {
+	s, err := salt(ctx, network, tkn)
+	if err != nil {
+		return common.Address{}, errors.Wrap(err, "salt")
+	}
+
+	return contracts.Create3Address(network, s), nil
+}
+
+func salt(ctx context.Context, network netconf.ID, tkn types.TokenDescriptors) (string, error) {
+	net := network.String()
+
+	if network == netconf.Staging {
+		v, err := contracts.StagingID(ctx)
+		if err != nil {
+			return "", errors.Wrap(err, "staging id")
+		}
+		net = v
+	}
+
+	return fmt.Sprintf("%s-%s-xtoken", net, tkn.Symbol), nil
 }
 
 func deployXToken(
@@ -98,14 +118,14 @@ func deployToken(
 	cfg TokenConfig,
 	network netconf.ID,
 	backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
-	salt, err := contracts.Create3Salt(ctx, network, saltID(cfg.Token))
+	s, err := salt(ctx, network, cfg.Token)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "salt")
 	}
 
 	return proxy.Deploy(ctx, backend, proxy.DeployParams{
 		Network:     network,
-		Create3Salt: salt,
+		Create3Salt: s,
 		DeployImpl: func(txOpts *bind.TransactOpts, backend *ethbackend.Backend) (common.Address, *ethtypes.Transaction, error) {
 			addr, tx, _, err := bindings.DeployStablecoinUpgradeable(txOpts, backend)
 			return addr, tx, err

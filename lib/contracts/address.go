@@ -20,6 +20,10 @@ const (
 	omegaVersion   = "v0.1.0"
 	mainnetVersion = "v1.0.0"
 
+	// solver net versions can progress independently of core.
+	solvernetOmegaVersion   = "v0.1.0"
+	solvernetMainnetVersion = "v1.0.0"
+
 	NameAVS                = "avs"
 	NameCreate3Factory     = "create3-factory"
 	NameGasPump            = "gas-pump"
@@ -33,19 +37,30 @@ const (
 	NameFeeOracleV2        = "fee-oracle-v2"
 )
 
+type Versions struct {
+	Core      string
+	SolverNet string
+}
+
 // version returns the salt version for a given network. Staging version is block 1 hash.
-func version(ctx context.Context, network netconf.ID) (string, error) {
+func versions(ctx context.Context, network netconf.ID) (Versions, error) {
 	switch network {
 	case netconf.Devnet:
-		return devnetVersion, nil
+		// same for both on devnet
+		return Versions{Core: devnetVersion, SolverNet: devnetVersion}, nil
 	case netconf.Staging:
-		return getStagingVersion(ctx)
+		v, err := StagingID(ctx)
+		if err != nil {
+			return Versions{}, err
+		}
+		// same for both on staging
+		return Versions{Core: v, SolverNet: v}, nil
 	case netconf.Omega:
-		return omegaVersion, nil
+		return Versions{Core: omegaVersion, SolverNet: solvernetOmegaVersion}, nil
 	case netconf.Mainnet:
-		return mainnetVersion, nil
+		return Versions{Core: mainnetVersion, SolverNet: solvernetMainnetVersion}, nil
 	default:
-		return "", errors.New("unsupported network", "network", network)
+		return Versions{}, errors.New("unsupported network", "network", network)
 	}
 }
 
@@ -62,7 +77,8 @@ func UseStagingOmniRPC(rpc string) {
 	stagingOmniRPC = rpc
 }
 
-func getStagingVersion(ctx context.Context) (string, error) {
+// StagingID returns id for a staing instance (hash of block 1).
+func StagingID(ctx context.Context) (string, error) {
 	// Cache the staging version.
 	if stagingVersion != "" {
 		return stagingVersion, nil
@@ -134,7 +150,7 @@ var (
 
 // GetAddresses returns the contract addresses for the given network.
 func GetAddresses(ctx context.Context, network netconf.ID) (Addresses, error) {
-	ver, err := version(ctx, network)
+	v, err := versions(ctx, network)
 	if err != nil {
 		return Addresses{}, err
 	}
@@ -152,7 +168,11 @@ func GetAddresses(ctx context.Context, network netconf.ID) (Addresses, error) {
 			return salt(network, name)
 		}
 
-		return salt(network, versioned(name, ver))
+		if isSolvernet(name) {
+			return salt(network, versioned(name, v.SolverNet))
+		}
+
+		return salt(network, versioned(name, v.Core))
 	}
 
 	addrs = Addresses{
@@ -184,7 +204,7 @@ func GetSalts(ctx context.Context, network netconf.ID) (Salts, error) {
 		return salts, nil
 	}
 
-	ver, err := version(ctx, network)
+	v, err := versions(ctx, network)
 	if err != nil {
 		return Salts{}, err
 	}
@@ -194,7 +214,11 @@ func GetSalts(ctx context.Context, network netconf.ID) (Salts, error) {
 			return salt(network, name)
 		}
 
-		return salt(network, versioned(name, ver))
+		if isSolvernet(name) {
+			return salt(network, versioned(name, v.SolverNet))
+		}
+
+		return salt(network, versioned(name, v.Core))
 	}
 
 	salts = Salts{
@@ -242,24 +266,9 @@ func Create3Factory(network netconf.ID) common.Address {
 	return crypto.CreateAddress(eoa.MustAddress(network, eoa.RoleCreate3Deployer), 0)
 }
 
-// Create3Address returns the Create3 address for the given network and salt id.
-func Create3Address(ctx context.Context, network netconf.ID, saltID string) (common.Address, error) {
-	s, err := Create3Salt(ctx, network, saltID)
-	if err != nil {
-		return common.Address{}, err
-	}
-
-	return addr(network, s), nil
-}
-
-// Create3Salt returns the Create3 salt for the given network and salt id.
-func Create3Salt(ctx context.Context, network netconf.ID, saltID string) (string, error) {
-	ver, err := version(ctx, network)
-	if err != nil {
-		return "", err
-	}
-
-	return salt(network, versioned(saltID, ver)), nil
+// Create3Address returns the Create3 address for the given network and salt.
+func Create3Address(network netconf.ID, salt string) common.Address {
+	return addr(network, salt)
 }
 
 func isVersioned(contract string) bool {
@@ -268,6 +277,10 @@ func isVersioned(contract string) bool {
 	not := contract == NameAVS || contract == NameToken
 
 	return !not
+}
+
+func isSolvernet(contract string) bool {
+	return contract == NameSolverNetInbox || contract == NameSolverNetOutbox || contract == NameSolverNetMiddleman
 }
 
 func versioned(contract string, version string) string {

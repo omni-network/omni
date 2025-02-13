@@ -2,6 +2,7 @@ package xbridge
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
@@ -47,11 +48,26 @@ func (cfg BridgeConfig) Validate() error {
 }
 
 func BridgeAddr(ctx context.Context, network netconf.ID, xtoken types.XToken) (common.Address, error) {
-	return contracts.Create3Address(ctx, network, xtoken.Symbol()+"bridge")
+	salt, err := BridgeSalt(ctx, network, xtoken)
+	if err != nil {
+		return common.Address{}, errors.Wrap(err, "salt")
+	}
+
+	return contracts.Create3Address(network, salt), nil
 }
 
 func BridgeSalt(ctx context.Context, network netconf.ID, xtoken types.XToken) (string, error) {
-	return contracts.Create3Salt(ctx, network, xtoken.Symbol()+"bridge")
+	net := network.String()
+
+	if network == netconf.Staging {
+		v, err := contracts.StagingID(ctx)
+		if err != nil {
+			return "", errors.Wrap(err, "staging id")
+		}
+		net = v
+	}
+
+	return fmt.Sprintf("%s-%s-bridge", net, xtoken.Symbol()), nil
 }
 
 func deployBridges(ctx context.Context, network netconf.Network, backends ethbackend.Backends, xtoken types.XToken) error {

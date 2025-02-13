@@ -2,6 +2,7 @@ package xbridge
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
@@ -48,11 +49,26 @@ func (cfg LockboxConfig) Validate() error {
 }
 
 func LockboxAddr(ctx context.Context, network netconf.ID, xtoken types.XToken) (common.Address, error) {
-	return contracts.Create3Address(ctx, network, xtoken.Symbol()+"lockbox")
+	salt, err := LockboxSalt(ctx, network, xtoken)
+	if err != nil {
+		return common.Address{}, errors.Wrap(err, "salt")
+	}
+
+	return contracts.Create3Address(network, salt), nil
 }
 
 func LockboxSalt(ctx context.Context, network netconf.ID, xtoken types.XToken) (string, error) {
-	return contracts.Create3Salt(ctx, network, xtoken.Symbol()+"lockbox")
+	net := network.String()
+
+	if network == netconf.Staging {
+		v, err := contracts.StagingID(ctx)
+		if err != nil {
+			return "", errors.Wrap(err, "staging id")
+		}
+		net = v
+	}
+
+	return fmt.Sprintf("%s-%s-lockbox", net, xtoken.Symbol()), nil
 }
 
 // deployLockbox deploys a new lockbox contract and returns the address and receipt.

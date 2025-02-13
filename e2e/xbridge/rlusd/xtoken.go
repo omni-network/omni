@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/e2e/xbridge/types"
-	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
 
@@ -26,12 +25,7 @@ func (rlusd) Wraps() types.TokenDescriptors { return wraps }
 
 // Address returns the address of the RLUSD.e token on the given network.
 func (rlusd) Address(ctx context.Context, networkID netconf.ID) (common.Address, error) {
-	addr, err := contracts.Create3Address(ctx, networkID, saltID(xtoken))
-	if err != nil {
-		return common.Address{}, errors.Wrap(err, "salt")
-	}
-
-	return addr, nil
+	return addr(ctx, networkID, xtoken)
 }
 
 // Canonical returns the canonical RLUSD deployment by network.
@@ -43,7 +37,7 @@ func (rlusd) Canonical(ctx context.Context, networkID netconf.ID) (types.TokenDe
 
 	// if no canonical deployments in static, we deploy a stand in mock
 
-	addr, err := contracts.Create3Address(ctx, networkID, saltID(wraps))
+	addr, err := addr(ctx, networkID, wraps)
 	if err != nil {
 		return types.TokenDeployment{}, errors.Wrap(err, "salt")
 	}
