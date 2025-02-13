@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"net/http"
+	"strconv"
 	"testing"
 
 	"github.com/omni-network/omni/lib/evmchain"
@@ -13,6 +15,13 @@ import (
 	"github.com/omni-network/omni/lib/xchain/connect"
 
 	"github.com/stretchr/testify/require"
+)
+
+const (
+	rpdLimitHeader    = "X-Ratelimit-Rpd-Limit"
+	rpmLimitHeader    = "X-Ratelimit-Rpm-Limit"
+	increasedRPDLimit = 200000
+	increasedRPMLimit = 600
 )
 
 var (
@@ -80,23 +89,27 @@ func TestHasLargeRateLimit(t *testing.T) {
 
 	ctx := context.Background()
 
-	_, _, hasLargeRateLimitOmega, err := queryLatestCrossTx(ctx, netconf.Omega, *apiKey, queryFilter{}, "")
+	responseHook = func(resp *http.Response) {
+		rpdLimit, err := strconv.Atoi(resp.Header.Get(rpdLimitHeader))
+		require.NoError(t, err)
+
+		rpmLimit, err := strconv.Atoi(resp.Header.Get(rpmLimitHeader))
+		require.NoError(t, err)
+
+		hasLargeRateLimit := rpdLimit >= increasedRPDLimit && rpmLimit >= increasedRPMLimit
+		if *apiKey != "" {
+			require.True(t, hasLargeRateLimit)
+		} else {
+			require.False(t, hasLargeRateLimit)
+		}
+	}
+	defer func() { responseHook = func(*http.Response) {} }()
+
+	_, _, err := queryLatestCrossTx(ctx, netconf.Omega, *apiKey, queryFilter{}, "")
 	require.NoError(t, err)
 
-	if *apiKey != "" {
-		require.True(t, hasLargeRateLimitOmega)
-	} else {
-		require.False(t, hasLargeRateLimitOmega)
-	}
-
-	_, _, hasLargeRateLimitMainnet, err := queryLatestCrossTx(ctx, netconf.Mainnet, *apiKey, queryFilter{}, "")
+	_, _, err = queryLatestCrossTx(ctx, netconf.Mainnet, *apiKey, queryFilter{}, "")
 	require.NoError(t, err)
-
-	if *apiKey != "" {
-		require.True(t, hasLargeRateLimitMainnet)
-	} else {
-		require.False(t, hasLargeRateLimitMainnet)
-	}
 }
 
 // TestIntegrationFalse ensures the integration flag defaults to false.
