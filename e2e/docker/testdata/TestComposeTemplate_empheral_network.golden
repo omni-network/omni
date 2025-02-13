@@ -148,7 +148,7 @@ services:
     labels:
       e2e: true
     container_name: solver
-    image: omniops/solver:main
+    image: omniops/solver:v4
     restart: unless-stopped
     ports:
       - 26660 # Prometheus and pprof

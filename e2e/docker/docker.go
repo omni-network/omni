@@ -285,10 +285,15 @@ func SetImageTags(def ComposeDef, manifest types.Manifest, omniImgTag string) Co
 		relayerTag = manifest.PinnedRelayerTag
 	}
 
+	solverTag := omniImgTag
+	if manifest.PinnedSolverTag != "" {
+		solverTag = manifest.PinnedSolverTag
+	}
+
 	def.AnvilProxyTag = anvilProxyTag
 	def.MonitorTag = monitorTag
 	def.RelayerTag = relayerTag
-	def.SolverTag = omniImgTag
+	def.SolverTag = solverTag
 
 	return def
 }

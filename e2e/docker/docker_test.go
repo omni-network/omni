@@ -61,6 +61,7 @@ func TestComposeTemplate(t *testing.T) {
 				Manifest: types.Manifest{
 					PinnedRelayerTag: "v2",
 					PinnedMonitorTag: "v3",
+					PinnedSolverTag:  "v4",
 				},
 				Testnet: &e2e.Testnet{
 					Name:       "test",
