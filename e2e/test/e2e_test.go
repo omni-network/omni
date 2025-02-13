@@ -37,7 +37,6 @@ import (
 var (
 	endopintsCache  = map[string]xchain.RPCEndpoints{}
 	networkCache    = map[string]netconf.Network{}
-	deployInfoCache = map[string]types.DeployInfos{}
 	testnetCache    = map[string]types.Testnet{}
 	testnetCacheMtx = sync.Mutex{}
 	blocksCache     = map[string][]*cmttypes.Block{}
@@ -99,7 +98,7 @@ func test(t *testing.T, testFunc testFunc) {
 	t.Helper()
 	ctx := context.Background()
 
-	testnet, network, _, endpoints := loadEnv(t)
+	testnet, network, endpoints := loadEnv(t)
 	nodes := testnet.Nodes
 
 	if testFunc.skipFunc != nil && testFunc.skipFunc(testnet.Manifest) {
@@ -203,8 +202,8 @@ func makePortals(t *testing.T, network netconf.Network, endpoints xchain.RPCEndp
 
 // loadEnv loads the testnet and network based on env vars.
 //
-//nolint:unparam // DeployInfos will be used in future.
-func loadEnv(t *testing.T) (types.Testnet, netconf.Network, types.DeployInfos, xchain.RPCEndpoints) {
+
+func loadEnv(t *testing.T) (types.Testnet, netconf.Network, xchain.RPCEndpoints) {
 	t.Helper()
 
 	manifestFile := os.Getenv(app.EnvE2EManifest)
@@ -226,7 +225,7 @@ func loadEnv(t *testing.T) (types.Testnet, netconf.Network, types.DeployInfos, x
 	testnetCacheMtx.Lock()
 	defer testnetCacheMtx.Unlock()
 	if testnet, ok := testnetCache[manifestFile]; ok {
-		return testnet, networkCache[manifestFile], deployInfoCache[manifestFile], endopintsCache[manifestFile]
+		return testnet, networkCache[manifestFile], endopintsCache[manifestFile]
 	}
 	m, err := app.LoadManifest(manifestFile)
 	require.NoError(t, err)
@@ -260,14 +259,6 @@ func loadEnv(t *testing.T) (types.Testnet, netconf.Network, types.DeployInfos, x
 	require.NoError(t, json.Unmarshal(bz, &endpoints))
 	endopintsCache[manifestFile] = endpoints
 
-	var deployInfo types.DeployInfos
-	deployInfoFile := os.Getenv(app.EnvE2EDeployInfo)
-	if deployInfoFile != "" {
-		deployInfo, err = types.LoadDeployInfos(deployInfoFile)
-		require.NoError(t, err)
-		deployInfoCache[manifestFile] = deployInfo
-	}
-
 	portalReg, err := makePortalRegistry(testnet.Network, endpoints)
 	require.NoError(t, err)
 
@@ -275,7 +266,7 @@ func loadEnv(t *testing.T) (types.Testnet, netconf.Network, types.DeployInfos, x
 	require.NoError(t, err)
 	networkCache[manifestFile] = network
 
-	return testnet, network, deployInfo, endpoints
+	return testnet, network, endpoints
 }
 
 // fetchBlockChain fetches a complete, up-to-date block history from
@@ -283,7 +274,7 @@ func loadEnv(t *testing.T) (types.Testnet, netconf.Network, types.DeployInfos, x
 func fetchBlockChain(ctx context.Context, t *testing.T) []*cmttypes.Block {
 	t.Helper()
 
-	testnet, _, _, _ := loadEnv(t) //nolint:dogsled // Fine for testing.
+	testnet, _, _ := loadEnv(t)
 
 	// Find the freshest archive node
 	var (

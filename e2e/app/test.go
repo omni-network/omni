@@ -19,11 +19,15 @@ const (
 	EnvE2EManifest     = "E2E_MANIFEST"
 	EnvE2ENode         = "E2E_NODE"
 	EnvE2ERPCEndpoints = "E2E_RPC_ENDPOINTS"
-	EnvE2EDeployInfo   = "E2E_DEPLOY_INFO"
 )
 
+type TestConfig struct {
+	Verbose bool
+	RunArg  string
+}
+
 // Test runs test cases under tests/.
-func Test(ctx context.Context, def Definition, verbose bool) error {
+func Test(ctx context.Context, def Definition, cfg TestConfig) error {
 	log.Info(ctx, "Running tests in ./test/...")
 	endpoints := ExternalEndpoints(def)
 
@@ -66,25 +70,19 @@ func Test(ctx context.Context, def Definition, verbose bool) error {
 		return errors.Wrap(err, "setting env var")
 	}
 
-	deployInfoFile := filepath.Join(networkDir, "deployinfo.json")
-	if err := def.DeployInfos().Save(deployInfoFile); err != nil {
-		return errors.Wrap(err, "saving deployinfo")
-	}
-	if err = os.Setenv(EnvE2EDeployInfo, deployInfoFile); err != nil {
-		return errors.Wrap(err, "setting E2E_DEPLOY_INFO")
-	}
-
 	log.Debug(ctx, "Env files",
 		strings.ToLower(EnvE2EManifest), manifestFile,
 		strings.ToLower(EnvInfraType), infd.Provider,
 		strings.ToLower(EnvInfraFile), infd.Path,
-		strings.ToLower(EnvE2EDeployInfo), deployInfoFile,
 		strings.ToLower(EnvE2ERPCEndpoints), endpointsFile,
 	)
 
 	args := []string{"go", "test", "-timeout", "60s", "-count", "1"}
-	if verbose {
+	if cfg.Verbose {
 		args = append(args, "-v")
+	}
+	if cfg.RunArg != "" {
+		args = append(args, "-run", cfg.RunArg)
 	}
 	args = append(args, "github.com/omni-network/omni/e2e/test")
 	log.Debug(ctx, "Test command", "args", args)
