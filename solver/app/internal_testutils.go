@@ -35,24 +35,22 @@ type testOrder struct {
 
 // orderTestCase is a test case for both shouldReject and quote handlers.
 type orderTestCase struct {
-	name          string
-	reason        rejectReason
-	reject        bool
-	alreadyFilled bool
-	fillReverts   bool
-	mock          func(clients MockClients)
-	order         testOrder
+	name        string
+	reason      rejectReason
+	reject      bool
+	fillReverts bool
+	mock        func(clients MockClients)
+	order       testOrder
 }
 
 // rejectTestCase is a test case for shouldReject(...)
 type rejectTestCase struct {
-	name          string
-	reason        rejectReason
-	reject        bool
-	alreadyFilled bool
-	fillReverts   bool
-	mock          func(clients MockClients)
-	order         Order
+	name        string
+	reason      rejectReason
+	reject      bool
+	fillReverts bool
+	mock        func(clients MockClients)
+	order       Order
 }
 
 // quoteTestCase is test case for quote handler.
@@ -142,11 +140,6 @@ func quoteTestCases(t *testing.T, solver common.Address) []quoteTestCase {
 	for _, tt := range orderTestCases(t, solver) {
 		if len(tt.order.deposits) != 1 {
 			// quote requires single deposit token
-			continue
-		}
-
-		if tt.alreadyFilled {
-			// already filled not applicable for quote
 			continue
 		}
 
@@ -263,25 +256,6 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			name:   "sufficient ERC20 balance",
 			reason: rejectNone,
 			reject: false,
-			order: testOrder{
-				// request 1 erc20 OMNI for 1 native OMNI on omega
-				srcChainID: evmchain.IDOmniOmega,
-				dstChainID: evmchain.IDHolesky,
-				deposits:   []Deposit{{Amount: big.NewInt(1)}},
-				expenses:   []Expense{{Amount: big.NewInt(1), Token: omegaOMNIAddr}},
-			},
-			mock: func(clients MockClients) {
-				mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNIAddr, big.NewInt(1))
-				mockERC20Allowance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNIAddr)
-			},
-		},
-		{
-			name:          "already filled",
-			alreadyFilled: true,
-			reason:        rejectNone,
-			reject:        false,
-
-			// rest same as above
 			order: testOrder{
 				// request 1 erc20 OMNI for 1 native OMNI on omega
 				srcChainID: evmchain.IDOmniOmega,

@@ -55,17 +55,18 @@ func TestShouldReject(t *testing.T) {
 				tt.mock(clients)
 
 				destClient := clients.Client(t, tt.order.DestinationChainID)
-				mockDidFill(t, destClient, outbox, tt.alreadyFilled)
 				mockFill(t, destClient, outbox, tt.fillReverts)
 				mockFillFee(t, destClient, outbox)
+
+				// didFill check should be made before shouldReject
+				mockDidFill(t, destClient, outbox, false)
 			}
 
-			res, err := shouldReject(context.Background(), tt.order.SourceChainID, tt.order)
+			reason, reject, err := shouldReject(context.Background(), tt.order)
 
 			require.NoError(t, err)
-			require.Equal(t, tt.alreadyFilled, res.AlreadyFilled, "expected already filled %v, got %v", tt.alreadyFilled, res.AlreadyFilled)
-			require.Equal(t, tt.reason, res.Reason, "expected reject reason %s, got %s", tt.reason, res.Reason)
-			require.Equal(t, tt.reject, res.Reject(), "expected reject %s, got %s", tt.reject, res.Reject())
+			require.Equal(t, tt.reason, reason, "expected reject reason %s, got %s", tt.reason, reason)
+			require.Equal(t, tt.reject, reject, "expected reject %s, got %s", tt.reject, reject)
 
 			clients.Finish(t)
 		})

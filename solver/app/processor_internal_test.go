@@ -120,17 +120,20 @@ func TestEventProcessor(t *testing.T) {
 						MaxSpent: []bindings.IERC7683Output{},
 					}, true, nil
 				},
-				ShouldReject: func(ctx context.Context, _ uint64, order Order) (ShouldRejectResult, error) {
-					return ShouldRejectResult{Reason: test.rejectReason}, nil
+				DidFill: func(ctx context.Context, order Order) (bool, error) {
+					return false, nil
 				},
-				Accept: func(ctx context.Context, _ uint64, order Order) error {
+				ShouldReject: func(ctx context.Context, order Order) (rejectReason, bool, error) {
+					return test.rejectReason, test.rejectReason != rejectNone, nil
+				},
+				Accept: func(ctx context.Context, order Order) error {
 					actual = accept
 					require.Equal(t, test.getStatus, order.Status)
 					require.EqualValues(t, orderID, order.ID)
 
 					return nil
 				},
-				Reject: func(ctx context.Context, _ uint64, order Order, reason rejectReason) error {
+				Reject: func(ctx context.Context, order Order, reason rejectReason) error {
 					actual = reject
 					require.Equal(t, test.getStatus, order.Status)
 					require.Equal(t, test.rejectReason, reason)
@@ -138,14 +141,14 @@ func TestEventProcessor(t *testing.T) {
 
 					return nil
 				},
-				Fill: func(ctx context.Context, _ uint64, order Order) error {
+				Fill: func(ctx context.Context, order Order) error {
 					actual = fill
 					require.Equal(t, test.getStatus, order.Status)
 					require.EqualValues(t, orderID, order.ID)
 
 					return nil
 				},
-				Claim: func(ctx context.Context, _ uint64, order Order) error {
+				Claim: func(ctx context.Context, order Order) error {
 					actual = claim
 					require.Equal(t, test.getStatus, order.Status)
 					require.EqualValues(t, orderID, order.ID)

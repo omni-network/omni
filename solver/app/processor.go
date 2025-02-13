@@ -70,62 +70,81 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 				continue
 			}
 
-			// maybeReject rejects orders if necessary, logging and counting them.
-			maybeReject := func() (ShouldRejectResult, error) {
-				r, err := deps.ShouldReject(ctx, chainID, order)
-
+			alreadyFilled := func() (bool, error) {
+				filled, err := deps.DidFill(ctx, order)
 				if err != nil {
-					return r, errors.Wrap(err, "should reject")
+					return false, errors.Wrap(err, "did fill")
 				}
 
-				if r.AlreadyFilled || !r.Reject() {
-					return r, nil
+				return filled, nil
+			}
+
+			// maybeReject rejects orders if necessary, logging and counting them, returning true if rejected.
+			maybeReject := func() (bool, error) {
+				reason, reject, err := deps.ShouldReject(ctx, order)
+				if err != nil {
+					return false, errors.Wrap(err, "should reject")
 				}
 
-				log.InfoErr(ctx, "Rejecting order", err, "reason", r.Reason.String())
+				if !reject {
+					return false, nil
+				}
+
+				log.InfoErr(ctx, "Rejecting order", err, "reason", reason.String())
 
 				// reject, log and count, swallow err
-				if err := deps.Reject(ctx, chainID, order, r.Reason); err != nil {
-					return r, errors.Wrap(err, "reject order")
+				if err := deps.Reject(ctx, order, reason); err != nil {
+					return false, errors.Wrap(err, "reject order")
 				}
 
 				rejectedOrders.WithLabelValues(
 					deps.ChainName(order.SourceChainID),
 					deps.ChainName(order.DestinationChainID),
 					target,
-					r.Reason.String(),
+					reason.String(),
 				).Inc()
 
-				return r, nil
+				return true, nil
 			}
 
 			switch event.Status {
 			case statusPending:
-				if r, err := maybeReject(); err != nil {
+				if filed, err := alreadyFilled(); err != nil {
 					return err
-				} else if r.Reject() || r.AlreadyFilled {
+				} else if filed {
+					return errors.New("unexpected already filled [BUG]")
+				}
+
+				if didReject, err := maybeReject(); err != nil {
+					return err
+				} else if didReject {
 					continue
 				}
 
 				log.Info(ctx, "Accepting order")
-				if err := deps.Accept(ctx, chainID, order); err != nil {
+				if err := deps.Accept(ctx, order); err != nil {
 					return errors.Wrap(err, "accept order")
 				}
 			case statusAccepted:
-				// check reject again, as liquidity (or other conditions) may have changed
-				if r, err := maybeReject(); err != nil {
+				if filed, err := alreadyFilled(); err != nil {
 					return err
-				} else if r.Reject() || r.AlreadyFilled {
+				} else if filed {
+					return errors.New("unexpected already filled [BUG]")
+				}
+
+				if didReject, err := maybeReject(); err != nil {
+					return err
+				} else if didReject {
 					continue
 				}
 
 				log.Info(ctx, "Filling order")
-				if err := deps.Fill(ctx, chainID, order); err != nil {
+				if err := deps.Fill(ctx, order); err != nil {
 					return errors.Wrap(err, "fill order")
 				}
 			case statusFilled:
 				log.Info(ctx, "Claiming order")
-				if err := deps.Claim(ctx, chainID, order); err != nil {
+				if err := deps.Claim(ctx, order); err != nil {
 					return errors.Wrap(err, "claim order")
 				}
 			case statusRejected, statusReverted, statusClaimed:

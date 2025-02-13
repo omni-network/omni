@@ -19,13 +19,14 @@ import (
 type procDeps struct {
 	ParseID      func(chainID uint64, log types.Log) (OrderID, error)
 	GetOrder     func(ctx context.Context, chainID uint64, id OrderID) (Order, bool, error)
-	ShouldReject func(ctx context.Context, chainID uint64, order Order) (ShouldRejectResult, error)
 	SetCursor    func(ctx context.Context, chainID uint64, height uint64) error
+	ShouldReject func(ctx context.Context, order Order) (rejectReason, bool, error)
+	DidFill      func(ctx context.Context, order Order) (bool, error)
 
-	Accept func(ctx context.Context, chainID uint64, order Order) error
-	Reject func(ctx context.Context, chainID uint64, order Order, reason rejectReason) error
-	Fill   func(ctx context.Context, chainID uint64, order Order) error
-	Claim  func(ctx context.Context, chainID uint64, order Order) error
+	Accept func(ctx context.Context, order Order) error
+	Reject func(ctx context.Context, order Order, reason rejectReason) error
+	Fill   func(ctx context.Context, order Order) error
+	Claim  func(ctx context.Context, order Order) error
 
 	// Monitoring helpers
 	TargetName func(Order) string
@@ -36,14 +37,14 @@ func newClaimer(
 	inboxContracts map[uint64]*bindings.SolverNetInbox,
 	backends ethbackend.Backends,
 	solverAddr common.Address,
-) func(ctx context.Context, chainID uint64, order Order) error {
-	return func(ctx context.Context, chainID uint64, order Order) error {
-		inbox, ok := inboxContracts[chainID]
+) func(ctx context.Context, order Order) error {
+	return func(ctx context.Context, order Order) error {
+		inbox, ok := inboxContracts[order.SourceChainID]
 		if !ok {
 			return errors.New("unknown chain")
 		}
 
-		backend, err := backends.Backend(chainID)
+		backend, err := backends.Backend(order.SourceChainID)
 		if err != nil {
 			return err
 		}
@@ -70,12 +71,8 @@ func newFiller(
 	outboxContracts map[uint64]*bindings.SolverNetOutbox,
 	backends ethbackend.Backends,
 	solverAddr, outboxAddr common.Address,
-) func(ctx context.Context, srcChainID uint64, order Order) error {
-	return func(ctx context.Context, srcChainID uint64, order Order) error {
-		if order.SourceChainID != srcChainID {
-			return errors.New("source chain mismatch [BUG] ")
-		}
-
+) func(ctx context.Context, order Order) error {
+	return func(ctx context.Context, order Order) error {
 		if order.DestinationSettler != outboxAddr {
 			return errors.New("destination settler mismatch [BUG] ", "got", order.DestinationSettler.Hex(), "expected", outboxAddr.Hex())
 		}
@@ -164,14 +161,14 @@ func newRejector(
 	inboxContracts map[uint64]*bindings.SolverNetInbox,
 	backends ethbackend.Backends,
 	solverAddr common.Address,
-) func(ctx context.Context, chainID uint64, order Order, reason rejectReason) error {
-	return func(ctx context.Context, chainID uint64, order Order, reason rejectReason) error {
-		inbox, ok := inboxContracts[chainID]
+) func(ctx context.Context, order Order, reason rejectReason) error {
+	return func(ctx context.Context, order Order, reason rejectReason) error {
+		inbox, ok := inboxContracts[order.SourceChainID]
 		if !ok {
 			return errors.New("unknown chain")
 		}
 
-		backend, err := backends.Backend(chainID)
+		backend, err := backends.Backend(order.SourceChainID)
 		if err != nil {
 			return err
 		}
@@ -203,14 +200,14 @@ func newAcceptor(
 	inboxContracts map[uint64]*bindings.SolverNetInbox,
 	backends ethbackend.Backends,
 	solverAddr common.Address,
-) func(ctx context.Context, chainID uint64, order Order) error {
-	return func(ctx context.Context, chainID uint64, order Order) error {
-		inbox, ok := inboxContracts[chainID]
+) func(ctx context.Context, order Order) error {
+	return func(ctx context.Context, order Order) error {
+		inbox, ok := inboxContracts[order.SourceChainID]
 		if !ok {
 			return errors.New("unknown chain")
 		}
 
-		backend, err := backends.Backend(chainID)
+		backend, err := backends.Backend(order.SourceChainID)
 		if err != nil {
 			return err
 		}
@@ -228,6 +225,22 @@ func newAcceptor(
 		}
 
 		return nil
+	}
+}
+
+func newDidFiller(outboxContracts map[uint64]*bindings.SolverNetOutbox) func(ctx context.Context, order Order) (bool, error) {
+	return func(ctx context.Context, order Order) (bool, error) {
+		outbox, ok := outboxContracts[order.DestinationChainID]
+		if !ok {
+			return false, errors.New("unknown chain")
+		}
+
+		filled, err := outbox.DidFill(&bind.CallOpts{Context: ctx}, order.ID, order.FillOriginData)
+		if err != nil {
+			return false, errors.Wrap(err, "did fill")
+		}
+
+		return filled, nil
 	}
 }
 
