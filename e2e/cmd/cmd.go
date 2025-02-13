@@ -303,7 +303,7 @@ func newDeployXBridgeCmd(def *app.Definition) *cobra.Command {
 		Use:   "deploy-xbridge",
 		Short: "Deploys the XBridge contracts",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return xbridge.Deploy(cmd.Context(), app.NetworkFromDef(*def), def.Backends())
+			return xbridge.Deploy(cmd.Context(), def.Testnet.Network, def.Backends())
 		},
 	}
 
@@ -315,7 +315,7 @@ func newDeploySolverNetCmd(def *app.Definition) *cobra.Command {
 		Use:   "deploy-solvernet",
 		Short: "Deploys the SolverNet contracts",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return solve.Deploy(cmd.Context(), app.NetworkFromDef(*def), def.Backends())
+			return solve.Deploy(cmd.Context(), def.Testnet.Network, def.Backends())
 		},
 	}
 

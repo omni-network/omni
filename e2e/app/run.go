@@ -102,9 +102,11 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, errors.Wrap(err, "deploy portals")
 	}
 
+	networkID := def.Testnet.Network
+
 	if def.Manifest.DeploySolve {
 		// Deploy solver before initPortalRegistry, so solver detects boxes after netconf.Await
-		if err := solve.Deploy(ctx, NetworkFromDef(def), def.Backends()); err != nil {
+		if err := solve.Deploy(ctx, networkID, def.Backends()); err != nil {
 			return nil, errors.Wrap(err, "deploy solve")
 		}
 	}
@@ -117,7 +119,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 	eg2.Go(func() error { return DeployBridge(ctx, def) })
 	eg2.Go(func() error { return maybeSubmitNetworkUpgrades(ctx, def) })
 	eg2.Go(func() error { return FundValidatorsForTesting(ctx, def) })
-	eg2.Go(func() error { return xbridge.Deploy(ctx, NetworkFromDef(def), def.Backends()) })
+	eg2.Go(func() error { return xbridge.Deploy(ctx, networkID, def.Backends()) })
 	if err := eg2.Wait(); err != nil {
 		return nil, errors.Wrap(err, "deploy other contracts")
 	}
@@ -131,7 +133,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, nil //nolint:nilnil // No ping pong, no XDapp to return.
 	}
 
-	pp, err := pingpong.Deploy(ctx, NetworkFromDef(def), def.Backends()) // Safe to call NetworkFromDef since this after netman.DeployContracts
+	pp, err := pingpong.Deploy(ctx, networkFromDef(def), def.Backends()) // Safe to call NetworkFromDef since this after netman.DeployContracts
 	if err != nil {
 		return nil, errors.Wrap(err, "deploy pingpong")
 	}
@@ -180,7 +182,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 	var eg errgroup.Group
 	eg.Go(func() error { return testGasPumps(ctx, def) })
 	eg.Go(func() error { return testBridge(ctx, def) })
-	eg.Go(func() error { return xbridge.Test(ctx, NetworkFromDef(def), ExternalEndpoints(def)) })
+	eg.Go(func() error { return xbridge.Test(ctx, networkFromDef(def), ExternalEndpoints(def)) })
 	if err := eg.Wait(); err != nil {
 		return errors.Wrap(err, "test xdapps")
 	}
@@ -238,7 +240,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 		}
 	}
 
-	network := NetworkFromDef(def) // Safe to call NetworkFromDef since this after netman.DeployContracts
+	network := networkFromDef(def) // Safe to call NetworkFromDef since this after netman.DeployContracts
 	if err := WaitAllSubmissions(ctx, network, def.Netman().Portals(), sum(msgBatches)); err != nil {
 		return err
 	}
