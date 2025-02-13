@@ -44,7 +44,7 @@ type InitConfig struct {
 	Force          bool
 	Clean          bool
 	ExecutionHash  common.Hash
-	GenesisUpgrade string // Zero value omits network upgrade genesis tx
+	GenesisUpgrade string // Zero value starts from original genesis.
 }
 
 func (c InitConfig) Verify() error {

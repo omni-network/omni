@@ -18,7 +18,6 @@ import (
 	"github.com/omni-network/omni/e2e/app/static"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/e2e/vmcompose"
-	haloapp "github.com/omni-network/omni/halo/app"
 	halocmd "github.com/omni-network/omni/halo/cmd"
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/halo/genutil"
@@ -55,7 +54,7 @@ const (
 
 // Setup sets up the testnet configuration.
 //
-//nolint:gocyclo // Just multiple sequential steps.
+
 func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 	log.Info(ctx, "Setup testnet", "dir", def.Testnet.Dir)
 
@@ -91,21 +90,12 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 		valPrivKeys = append(valPrivKeys, val.PrivvalKey)
 	}
 
-	// Network upgrade to include in genesis (applied at height=1)
-	var upgrade string
-	if def.Manifest.NetworkUpgradeHeight == 0 {
-		upgrade, _, err = haloapp.NextUpgrade(def.Manifest.EphemeralGenesisBinary)
-		if err != nil {
-			return err
-		}
-	}
-
 	cosmosGenesis, err := genutil.MakeGenesis(
 		ctx,
 		def.Manifest.Network,
 		time.Now(),
 		gethGenesis.ToBlock().Hash(),
-		upgrade,
+		def.Manifest.EphemeralGenesis,
 		vals...)
 	if err != nil {
 		return errors.Wrap(err, "make genesis")

@@ -5,13 +5,16 @@ package uluwatu
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
 
 	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
+	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	slkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
 	sltypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
@@ -40,10 +43,25 @@ func CreateUpgradeHandler(
 	slashing slkeeper.Keeper,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx context.Context, _ upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
+		log.Info(ctx, "Running 1_uluwatu upgrade handler")
 		if err := slashing.SetParams(ctx, SlashingParams); err != nil {
 			return nil, errors.Wrap(err, "set slashing params")
 		}
 
 		return mm.RunMigrations(ctx, configurator, fromVM)
 	}
+}
+
+func GenesisState(cdc codec.JSONCodec) (map[string]json.RawMessage, error) {
+	st := sltypes.DefaultGenesisState()
+	st.Params = SlashingParams
+
+	bz, err := cdc.MarshalJSON(st)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal slashing genesis")
+	}
+
+	return map[string]json.RawMessage{
+		sltypes.ModuleName: bz,
+	}, nil
 }
