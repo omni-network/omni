@@ -92,10 +92,16 @@ e2e-ci: ## Runs all e2e CI tests
 	@cd e2e && ./run-multiple.sh manifests/devnet1.toml manifests/devnet2.toml manifests/fuzzyhead.toml manifests/ci.toml
 
 .PHONY: e2e-run
-e2e-run: ## Run specific e2e manifest (MANIFEST=single, MANIFEST=devnet1, etc). Note container remain running after the test.
+e2e-run: ## Run specific e2e manifest (MANIFEST=single, MANIFEST=devnet1, etc). `export RUN_ARGS='--preserve'` for containers remain running after the test.
 	@if [ -z "$(MANIFEST)" ]; then echo "⚠️ Please specify a manifest: MANIFEST=devnet1 make e2e-run" && exit 1; fi
-	@echo "Using MANIFEST=$(MANIFEST)"
-	@go run github.com/omni-network/omni/e2e -f e2e/manifests/$(MANIFEST).toml
+	@echo "Using MANIFEST=$(MANIFEST) and RUN_ARGS=$(RUN_ARGS)"
+	@go run github.com/omni-network/omni/e2e -f e2e/manifests/$(MANIFEST).toml $(RUN_ARGS)
+
+.PHONY: e2e-test-only
+e2e-test-only: ## Run e2e unit tests against previously preserved deployment, ie. e2e-run with `export RUN_ARGS='--preserve'`. Specific tests can be selected via `export TEST_ARGS='--run=TestCLIOperator'`.
+	@if [ -z "$(MANIFEST)" ]; then echo "⚠️ Please specify a manifest: MANIFEST=devnet1 make e2e-run" && exit 1; fi
+	@echo "Using MANIFEST=$(MANIFEST) and TEST_ARGS=$(TEST_ARGS)"
+	@go run github.com/omni-network/omni/e2e -f e2e/manifests/$(MANIFEST).toml test $(TEST_ARGS)
 
 .PHONY: e2e-logs
 e2e-logs: ## Print the docker logs of previously ran e2e manifest (devnet1, etc).

@@ -45,6 +45,11 @@ func bindServiceFlags(flags *pflag.FlagSet, cfg *types.ServiceConfig) {
 	flags.StringVar(&cfg.Regexp, "services", cfg.Regexp, "Regexp applied to services per VM. Any match results in the VM being upgraded/restarted (all services on that VM are upgraded/restarted, not only matching services)")
 }
 
+func bindTestFlags(flags *pflag.FlagSet, cfg *app.TestConfig) {
+	flags.StringVar(&cfg.RunArg, "run", cfg.RunArg, "Optional -run flag to provide to 'go test'")
+	flags.BoolVar(&cfg.Verbose, "verbose", true, "Enable verbose -v flag to provide to 'go test'")
+}
+
 func bindCreate3DeployFlags(flags *pflag.FlagSet, cfg *app.Create3DeployConfig) {
 	flags.Uint64Var(&cfg.ChainID, "chain-id", cfg.ChainID, "chain id of the chain to deploy to")
 }

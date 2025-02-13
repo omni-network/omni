@@ -3,10 +3,10 @@ package e2e_test
 import (
 	"bytes"
 	"context"
+	"crypto/ecdsa"
 	"encoding/hex"
 	"fmt"
 	"path/filepath"
-	"strconv"
 	"testing"
 	"time"
 
@@ -14,14 +14,18 @@ import (
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/txmgr"
 	"github.com/omni-network/omni/lib/xchain"
 	evmengtypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/cometbft/cometbft/rpc/client/http"
 
 	"github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 
@@ -67,13 +71,14 @@ func TestCLIOperator(t *testing.T) {
 	testNetwork(t, func(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
 		t.Helper()
 
+		netID := network.ID
 		e, ok := network.OmniEVMChain()
 		require.True(t, ok)
 		executionRPC, err := endpoints.ByNameOrID(e.Name, e.ID)
 		require.NoError(t, err)
 
 		// use an existing test anvil account for new validator and write it's pkey to temp file
-		validatorPriv := anvil.DevPrivateKey6()
+		validatorPriv := GenFundedEOA(ctx, t, network, endpoints)
 		validatorPubBz := ethcrypto.CompressPubkey(&validatorPriv.PublicKey)
 		validatorAddr := ethcrypto.PubkeyToAddress(validatorPriv.PublicKey)
 		tmpDir := t.TempDir()
@@ -99,7 +104,7 @@ func TestCLIOperator(t *testing.T) {
 			// operator create-validator test
 			stdOut, _, err := execCLI(
 				ctx, "operator", "create-validator",
-				"--network", "devnet",
+				"--network", netID.String(),
 				"--private-key-file", privKeyFile,
 				"--consensus-pubkey-hex", hex.EncodeToString(validatorPubBz),
 				// we use minimum stake so the new validator doesn't affect the network too much
@@ -126,7 +131,7 @@ func TestCLIOperator(t *testing.T) {
 			// it is already sufficiently funded
 			stdOut, _, err = execCLI(
 				ctx, "operator", "delegate",
-				"--network", "devnet",
+				"--network", netID.String(),
 				"--private-key-file", privKeyFile,
 				"--amount", fmt.Sprintf("%d", opSelfDelegation),
 				"--execution-rpc", executionRPC,
@@ -147,14 +152,12 @@ func TestCLIOperator(t *testing.T) {
 		})
 
 		// delegator's keys
-		privKey, pubKey := anvil.DevPrivateKey5(), anvil.DevAccount5()
-		delegatorCosmosAddr := sdk.AccAddress(pubKey.Bytes())
+		delegatorPrivKey := GenFundedEOA(ctx, t, network, endpoints)
+		delegatorEthAddr := ethcrypto.PubkeyToAddress(delegatorPrivKey.PublicKey)
+		delegatorCosmosAddr := sdk.AccAddress(delegatorEthAddr.Bytes())
 		delegatorPrivKeyFile := filepath.Join(tmpDir, "delegator_privkey")
-		require.NoError(
-			t,
-			ethcrypto.SaveECDSA(delegatorPrivKeyFile, privKey),
-			"failed to save new validator private key to temp file",
-		)
+		err = ethcrypto.SaveECDSA(delegatorPrivKeyFile, delegatorPrivKey)
+		require.NoError(t, err)
 
 		const delegatorDelegation = uint64(77)
 		// delegate from a new account
@@ -162,7 +165,7 @@ func TestCLIOperator(t *testing.T) {
 			// delegator delegate test
 			stdOut, _, err := execCLI(
 				ctx, "operator", "delegate",
-				"--network", "devnet",
+				"--network", netID.String(),
 				"--validator-address", validatorAddr.Hex(),
 				"--private-key-file", delegatorPrivKeyFile,
 				"--amount", fmt.Sprintf("%d", delegatorDelegation),
@@ -192,38 +195,42 @@ func TestCLIOperator(t *testing.T) {
 
 		// edit validator data
 		t.Run("edit validator", func(t *testing.T) {
+			val, _, err := cprov.SDKValidator(ctx, validatorAddr)
+			require.NoError(t, err)
+
 			// Edit validator moniker
-			const moniker = "new-moniker"
-			const minSelf = 2 // TODO(corver): Also here
+			newMoniker := val.Description.Moniker + "*"
+			// Add 1 Omni to current minSelf, then convert from wei to Omni.
+			newMinSelfEther := val.MinSelfDelegation.AddRaw(params.Ether).QuoRaw(params.Ether)
+			newMinSelfWei := newMinSelfEther.MulRaw(params.Ether)
 			stdOut, stdErr, err := execCLI(
 				ctx, "operator", "edit-validator",
-				"--network", netconf.Devnet.String(),
+				"--network", netID.String(),
 				"--private-key-file", privKeyFile,
 				"--execution-rpc", executionRPC,
-				"--moniker", moniker,
-				"--min-self-delegation", strconv.FormatInt(minSelf, 10),
+				"--moniker", newMoniker,
+				"--min-self-delegation", newMinSelfEther.String(),
 			)
 			require.NoError(t, err)
 			require.Empty(t, stdOut)
 			t.Log(stdErr)
-
-			minSelfWei := math.NewInt(minSelf).MulRaw(params.Ether)
 
 			// make sure the validator moniker and min-self-delegation is actually increased
 			require.Eventuallyf(t, func() bool {
 				val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
 				require.True(t, ok)
 
-				return val.GetMoniker() == moniker && val.MinSelfDelegation.Equal(minSelfWei)
+				return val.GetMoniker() == newMoniker && val.MinSelfDelegation.Equal(newMinSelfWei)
 			}, valChangeWait, 500*time.Millisecond, "failed to edit validator")
 		})
 
 		// test rewards distribution
+		var latestRewards math.LegacyDec
 		t.Run("distribution", func(t *testing.T) {
 			val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
 			require.True(t, ok)
 
-			var originalRewards sdk.DecCoins
+			var originalRewards math.LegacyDec
 
 			// fetch rewards and make sure they are positive
 			require.Eventuallyf(t, func() bool {
@@ -235,12 +242,9 @@ func TestCLIOperator(t *testing.T) {
 				if len(resp.Rewards) == 0 {
 					return false
 				}
-				originalRewards = resp.Rewards
-
-				for _, coin := range originalRewards {
-					require.Equal(t, "stake", coin.Denom)
-					require.True(t, coin.Amount.IsPositive())
-				}
+				require.Len(t, resp.Rewards, 1)
+				require.Equal(t, sdk.DefaultBondDenom, resp.Rewards[0].Denom)
+				originalRewards = resp.Rewards[0].Amount
 
 				return true
 			}, valChangeWait, 500*time.Millisecond, "no rewards increase")
@@ -255,16 +259,12 @@ func TestCLIOperator(t *testing.T) {
 				if len(resp2.Rewards) == 0 {
 					return false
 				}
+				require.Len(t, resp2.Rewards, 1)
+				require.Equal(t, sdk.DefaultBondDenom, resp2.Rewards[0].Denom)
 
-				// all fetched values should be strictly larger
-				for i, coin2 := range resp2.Rewards {
-					coin := originalRewards[i]
-					if !coin2.Amount.GT(coin.Amount) {
-						return false
-					}
-				}
+				latestRewards = resp2.Rewards[0].Amount
 
-				return true
+				return latestRewards.GT(originalRewards)
 			}, valChangeWait, 500*time.Millisecond, "no rewards increase")
 		})
 
@@ -272,12 +272,12 @@ func TestCLIOperator(t *testing.T) {
 		t.Run("withdrawals", func(t *testing.T) {
 			// make sure no withdrawals are pending yet
 			amount := sumPendingWithdrawals(t, ctx, cprov, delegatorCosmosAddr)
-			require.Equal(t, uint64(0), amount)
+			require.Zero(t, amount)
 
 			// delegate more stake
 			stdOut, _, err := execCLI(
 				ctx, "operator", "delegate",
-				"--network", "devnet",
+				"--network", netID.String(),
 				"--validator-address", validatorAddr.Hex(),
 				"--private-key-file", delegatorPrivKeyFile,
 				"--amount", fmt.Sprintf("%d", delegatorDelegation),
@@ -299,8 +299,19 @@ func TestCLIOperator(t *testing.T) {
 			// make sure the pending withdrawals are non zero
 			require.Eventuallyf(t, func() bool {
 				amount := sumPendingWithdrawals(t, ctx, cprov, delegatorCosmosAddr)
+				if amount == 0 {
+					return false
+				}
 
-				return amount > 0
+				// Allow rewards up to 10x latestRewards since non-deterministic amount of blocks may have elapsed
+				const maxFactor = 10
+				minAmountGei := latestRewards.QuoInt64(params.GWei).TruncateInt64()
+				maxAmountGei := minAmountGei * maxFactor
+				if amount < uint64(minAmountGei) || amount > uint64(maxAmountGei) {
+					require.Fail(t, "unexpected withdrawal amount, amount=%v, min=%v, max=%v", amount, minAmountGei, maxAmountGei)
+				}
+
+				return true
 			}, 2*valChangeWait, 500*time.Millisecond, "failed to withdraw")
 		})
 	})
@@ -314,8 +325,8 @@ func delegationFound(t *testing.T, ctx context.Context, cprov provider.Provider,
 	})
 	require.NoError(t, err)
 	require.NotNil(t, response)
-	log.Info(ctx, "delegations found", "number", len(response.DelegationResponses))
 	for _, response := range response.DelegationResponses {
+		log.Info(ctx, "delegation found", "del", response.Delegation.DelegatorAddress, "expect", delegatorAddr)
 		if response.Delegation.DelegatorAddress == delegatorAddr {
 			return true
 		}
@@ -333,4 +344,40 @@ func sumPendingWithdrawals(t *testing.T, ctx context.Context, cprov provider.Pro
 	require.NoError(t, err)
 
 	return resp.SumGwei
+}
+
+func GenFundedEOA(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) *ecdsa.PrivateKey {
+	t.Helper()
+
+	amount1k := math.NewIntFromUint64(1_000).MulRaw(params.Ether)
+
+	funder, funderAddr := anvil.DevPrivateKey9(), anvil.DevAccount9()
+
+	// fund the account
+	omniEVM, ok := network.OmniEVMChain()
+	require.True(t, ok)
+
+	omniRPC, err := endpoints.ByNameOrID(omniEVM.Name, omniEVM.ID)
+	require.NoError(t, err)
+
+	omniClient, err := ethclient.Dial(omniEVM.Name, omniRPC)
+	require.NoError(t, err)
+
+	omniBackend, err := ethbackend.NewBackend(omniEVM.Name, omniEVM.ID, omniEVM.BlockPeriod, omniClient, funder)
+	require.NoError(t, err)
+
+	newKey, err := ethcrypto.GenerateKey()
+	require.NoError(t, err)
+	newAddr := ethcrypto.PubkeyToAddress(newKey.PublicKey)
+
+	_, rec, err := omniBackend.Send(ctx, funderAddr, txmgr.TxCandidate{
+		To:    &newAddr,
+		Value: amount1k.BigInt(),
+	})
+	require.NoError(t, err)
+	require.Equal(t, ethtypes.ReceiptStatusSuccessful, rec.Status)
+
+	log.Debug(ctx, "Funded new EOA", "addr", newAddr.Hex(), "amount", amount1k.String())
+
+	return newKey
 }

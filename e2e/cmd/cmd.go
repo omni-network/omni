@@ -152,13 +152,18 @@ func newCleanCmd(def *app.Definition) *cobra.Command {
 }
 
 func newTestCmd(def *app.Definition) *cobra.Command {
-	return &cobra.Command{
+	cfg := app.TestConfig{}
+	cmd := &cobra.Command{
 		Use:   "test",
 		Short: "Runs go tests against the a previously preserved network",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return app.Test(cmd.Context(), *def, true)
+			return app.Test(cmd.Context(), *def, cfg)
 		},
 	}
+
+	bindTestFlags(cmd.Flags(), &cfg)
+
+	return cmd
 }
 
 func newUpgradeCmd(def *app.Definition) *cobra.Command {
