@@ -121,6 +121,11 @@ type Manifest struct {
 	// This overrides the --omni-image-tag if non-empty.
 	PinnedRelayerTag string `toml:"pinned_relayer_tag"`
 
+	// PinnedSolverTag defines the pinned solver docker image tag.
+	// This allows source code defined versions for protected networks.
+	// This overrides the --omni-image-tag if non-empty.
+	PinnedSolverTag string `toml:"pinned_solver_tag"`
+
 	// EphemeralGenesis defines halovisor binary (network upgrade) to use from genesis onwards.
 	// The next network upgrade will be planned at height=1.
 	// This is only applicable to ephemeral networks.
