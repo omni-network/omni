@@ -3,6 +3,8 @@ pragma solidity 0.8.24;
 
 import { MerkleDistributor } from "./MerkleDistributor.sol";
 import { Ownable } from "solady/src/auth/Ownable.sol";
+import { EIP712 } from "solady/src/utils/EIP712.sol";
+import { SignatureCheckerLib } from "solady/src/utils/SignatureCheckerLib.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { MerkleProofLib } from "solady/src/utils/MerkleProofLib.sol";
 import { LibBitmap } from "solady/src/utils/LibBitmap.sol";
@@ -11,11 +13,13 @@ import { IGenesisStake } from "../interfaces/IGenesisStake.sol";
 import { IERC7683, IOriginSettler } from "solve/src/erc7683/IOriginSettler.sol";
 import { SolverNet } from "solve/src/lib/SolverNet.sol";
 
-contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable {
+contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
     using LibBitmap for LibBitmap.Bitmap;
     using SafeTransferLib for address;
 
+    error Expired();
     error EndTimeInPast();
+    error InvalidSignature();
     error NothingToMigrate();
     error ClaimWindowFinished();
     error NoWithdrawDuringClaim();
@@ -23,11 +27,14 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable {
     bytes32 internal constant ORDERDATA_TYPEHASH = keccak256(
         "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,Expense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)Expense(address spender,address token,uint96 amount)"
     );
+    bytes32 internal constant MIGRATION_TYPEHASH = keccak256("Migration(address user,uint256 nonce,uint256 expiry)");
 
     uint256 public immutable endTime;
     IOmniPortal public immutable omniPortal;
     IGenesisStake public immutable genesisStaking;
     IOriginSettler public immutable solvernetInbox;
+
+    mapping(address account => uint256) public nonces;
 
     constructor(
         address token_,
@@ -49,6 +56,18 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable {
     }
 
     /**
+     * @notice Get the EIP-712 digest for a migration signature
+     * @param account  Address of the user migrating
+     * @param expiry   Signature expiry
+     * @return _       Migration digest
+     */
+    function getMigrationDigest(address account, uint256 expiry) public view returns (bytes32) {
+        if (expiry != 0 && block.timestamp > expiry) revert Expired();
+        bytes32 migrationHash = keccak256(abi.encode(MIGRATION_TYPEHASH, account, nonces[account], expiry));
+        return _hashTypedData(migrationHash);
+    }
+
+    /**
      * @notice Claim rewards
      * @dev Does not trigger any changes on the GenesisStake contract
      * @param index        Index of the claim
@@ -62,7 +81,7 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable {
     }
 
     /**
-     * @notice Claim rewards and/or migrate stake to Omni
+     * @notice Claim rewards and migrate stake to Omni
      * @dev Triggers a SolverNet order to generate a subsidized order for deposited tokens on Omni 1:1
      *      If the user has already claimed rewards, they can still migrate their stake to Omni
      * @param index        Index of the claim
@@ -70,35 +89,107 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable {
      * @param merkleProof  Merkle proof for the claim
      */
     function migrateToOmni(uint256 index, uint256 amount, bytes32[] calldata merkleProof) external {
+        _migrate(msg.sender, index, amount, merkleProof);
+    }
+
+    /**
+     * @notice Claim rewards and migrate stake to Omni on behalf of a user
+     * @dev Triggers a SolverNet order to generate a subsidized order for deposited tokens on Omni 1:1
+     *      If the user has already claimed rewards, they can still migrate their stake to Omni
+     * @param account      Address of the user migrating
+     * @param index        Index of the claim
+     * @param amount       Amount of tokens to claim
+     * @param merkleProof  Merkle proof for the claim
+     * @param v            Signature v
+     * @param r            Signature r
+     * @param s            Signature s
+     * @param expiry       Signature expiry
+     */
+    function migrateUserToOmni(
+        address account,
+        uint256 index,
+        uint256 amount,
+        bytes32[] calldata merkleProof,
+        uint8 v,
+        bytes32 r,
+        bytes32 s,
+        uint256 expiry
+    ) external {
+        // If the user isn't the caller, verify the signature
+        if (account != msg.sender) {
+            bytes32 digest = getMigrationDigest(account, expiry);
+
+            if (!SignatureCheckerLib.isValidSignatureNow(account, digest, v, r, s)) {
+                if (!SignatureCheckerLib.isValidERC1271SignatureNow(account, digest, v, r, s)) {
+                    revert InvalidSignature();
+                }
+            }
+
+            unchecked {
+                ++nonces[account];
+            }
+        }
+
+        _migrate(account, index, amount, merkleProof);
+    }
+
+    /**
+     * @notice Withdraw tokens from the contract
+     * @dev Reverts if called before the claim window has ended
+     */
+    function withdraw() external onlyOwner {
+        if (block.timestamp < endTime) revert NoWithdrawDuringClaim();
+        token.safeTransfer(msg.sender, token.balanceOf(address(this)));
+    }
+
+    /**
+     * @notice Migrate stake to Omni
+     * @param account      Address of the user migrating
+     * @param index        Index of the claim
+     * @param amount       Amount of tokens to claim
+     * @param merkleProof  Merkle proof for the claim
+     */
+    function _migrate(address account, uint256 index, uint256 amount, bytes32[] calldata merkleProof) internal {
         if (block.timestamp > endTime) revert ClaimWindowFinished();
 
-        // Migrate user's stake to Omni, if any
-        uint256 stake = IGenesisStake(genesisStaking).migrateStake(msg.sender);
+        // Migrate user's stake, if any
+        uint256 stake = IGenesisStake(genesisStaking).migrateStake(account);
 
-        // Mark reward distribution as claimed and add it to user's stake
-        if (!isClaimed(index)) {
-            // Verify the merkle proof.
-            bytes32 node = keccak256(abi.encodePacked(index, msg.sender, amount));
-            if (!MerkleProofLib.verifyCalldata(merkleProof, merkleRoot, node)) revert InvalidProof();
-
-            // Update bitmap and add claim amount to stake amount
-            claimedBitMap.set(index);
+        // If the user has unclaimed rewards, add them to their stake
+        if (_claimRewards(account, index, amount, merkleProof)) {
             unchecked {
                 stake += amount;
             }
         }
 
-        // Cannot migrate if user has no stake to migrate
+        // Block zero value migrations
         if (stake == 0) revert NothingToMigrate();
 
         // Generate and send the order
-        IERC7683.OnchainCrossChainOrder memory order = _generateOrder(msg.sender, stake);
+        IERC7683.OnchainCrossChainOrder memory order = _generateOrder(account, stake);
         solvernetInbox.open(order);
     }
 
-    function withdraw() external onlyOwner {
-        if (block.timestamp < endTime) revert NoWithdrawDuringClaim();
-        token.safeTransfer(msg.sender, token.balanceOf(address(this)));
+    /**
+     * @notice Claim rewards
+     * @dev Reverts if merkle proofs are invalid
+     * @param account  Address of the user claiming
+     * @param index    Index of the claim
+     * @param amount   Amount of tokens to claim
+     * @return _       True if the claim was processed, false if already claimed
+     */
+    function _claimRewards(address account, uint256 index, uint256 amount, bytes32[] calldata merkleProof)
+        internal
+        returns (bool)
+    {
+        // If rewards are unclaimed, verify the proof and process the claim
+        if (!isClaimed(index)) {
+            bytes32 leaf = keccak256(abi.encodePacked(index, account, amount));
+            if (!MerkleProofLib.verifyCalldata(merkleProof, merkleRoot, leaf)) revert InvalidProof();
+            claimedBitMap.set(index);
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -130,5 +221,10 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable {
             orderDataType: ORDERDATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });
+    }
+
+    function _domainNameAndVersion() internal pure override returns (string memory name, string memory version) {
+        name = "MerkleDistributorWithDeadline";
+        version = "1";
     }
 }
