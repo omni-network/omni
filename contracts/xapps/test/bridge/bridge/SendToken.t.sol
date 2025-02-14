@@ -294,7 +294,7 @@ contract SendTokenTest is TestBase {
             sender: address(bridgeWithLockbox),
             to: address(bridgeNoLockbox),
             data: data,
-            gasLimit: DEFAULT_GAS_LIMIT
+            gasLimit: _getGasLimit(Bridge(bridgeNoLockbox))
         });
 
         balance = user.balance;

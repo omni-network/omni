@@ -19,6 +19,11 @@ var (
 		Name:   "RLUSD",
 	}
 
+	gasLimits = types.TokenGasLimits{
+		BridgeNoLockbox:   125_000,
+		BridgeWithLockbox: 180_000,
+	}
+
 	canonicals = map[netconf.ID]types.TokenDeployment{
 		netconf.Mainnet: {
 			Name:    wraps.Name,

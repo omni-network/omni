@@ -22,6 +22,11 @@ interface IBridge {
     error ZeroAddress();
 
     /**
+     * @dev Error thrown when the address has no claimable amount.
+     */
+    error NoClaimable();
+
+    /**
      * @dev Error thrown when the destination chainId is invalid.
      */
     error InvalidRoute(uint64 chainId);
@@ -59,6 +64,16 @@ interface IBridge {
      * @dev Event emitted when a crosschain token transfer is received.
      */
     event TokenReceived(uint64 indexed srcChainId, address indexed to, uint256 value);
+
+    /**
+     * @dev Event emitted when a retry transfer is successful.
+     */
+    event RetrySuccessful(address indexed caller, address indexed to, uint256 value);
+
+    /**
+     * @dev Event emitted when a token mint fails.
+     */
+    event TokenMintFailed(address indexed token, address indexed to, uint256 value);
 
     /**
      * @dev Event emitted when a lockbox withdrawal fails.
@@ -127,6 +142,12 @@ interface IBridge {
      * @param value The amount of tokens to mint/unwrap.
      */
     function receiveToken(address to, uint256 value) external;
+
+    /**
+     * @dev Attempts to transfer claimable tokens to the recipient.
+     * @param addr The address to retry the transfer for.
+     */
+    function retryTransfer(address addr) external;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      ADMIN FUNCTIONS                       */

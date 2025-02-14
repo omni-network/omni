@@ -130,11 +130,13 @@ func deployBridge(
 	}
 
 	deploy := func(cfg BridgeConfig) error {
+		gasLimits := xtoken.GasLimits()
+
 		addr, receipt, err := proxy.Deploy(ctx, backend, proxy.DeployParams{
 			Network:     network,
 			Create3Salt: salt,
 			DeployImpl: func(txOpts *bind.TransactOpts, backend *ethbackend.Backend) (common.Address, *ethtypes.Transaction, error) {
-				addr, tx, _, err := bindings.DeployBridge(txOpts, backend)
+				addr, tx, _, err := bindings.DeployBridge(txOpts, backend, gasLimits.BridgeNoLockbox, gasLimits.BridgeWithLockbox)
 				return addr, tx, err
 			},
 			PackInitCode: func(impl common.Address) ([]byte, error) {

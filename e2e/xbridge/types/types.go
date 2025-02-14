@@ -20,6 +20,11 @@ type TokenDeployment struct {
 	Address common.Address
 }
 
+type TokenGasLimits struct {
+	BridgeNoLockbox   uint64
+	BridgeWithLockbox uint64
+}
+
 type XToken interface {
 	// Name returns the name of the xtoken
 	Name() string
@@ -29,6 +34,9 @@ type XToken interface {
 
 	// Wraps returns the token this xtoken wraps
 	Wraps() TokenDescriptors
+
+	// GasLimits returns the gas limits for the xtoken
+	GasLimits() TokenGasLimits
 
 	// Address returns the xtoken deployment address, consistent across all chains in the network
 	Address(ctx context.Context, networkID netconf.ID) (common.Address, error)
