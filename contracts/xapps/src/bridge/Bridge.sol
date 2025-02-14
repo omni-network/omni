@@ -289,9 +289,6 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
      * @param value The amount of tokens to receive.
      */
     function _receiveToken(address to, uint256 value) internal {
-        // Emit event right away as transfers will be cached if `token` reverts.
-        emit TokenReceived(xmsg.sourceChainId, to, value);
-
         // Cache addresses for gas optimization.
         address _token = token;
         address _lockbox = lockbox;
@@ -305,6 +302,8 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
             // Attempt withdrawal from the lockbox, but transfer the wrapped tokens to the recipient if it fails.
             if (success) _tryCatchLockboxWithdrawal(_token, _lockbox, to, value);
         }
+
+        emit TokenReceived(xmsg.sourceChainId, to, value);
     }
 
     /**
