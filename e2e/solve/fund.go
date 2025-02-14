@@ -29,6 +29,8 @@ func maybeFundSolver(ctx context.Context, network netconf.ID, backends ethbacken
 	}{
 		// holesky wstETH
 		{chainID: evmchain.IDMockL1, addr: common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")},
+		// holesky stETH
+		{chainID: evmchain.IDMockL1, addr: common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")},
 	}
 
 	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
