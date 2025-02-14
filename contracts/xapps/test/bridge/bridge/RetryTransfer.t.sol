@@ -20,7 +20,7 @@ contract RetryTransferTest is TestBase {
     function test_retryTransfer_reverts() public {
         // Reverts if no claimable tokens
         vm.expectRevert(abi.encodeWithSelector(IBridge.NoClaimable.selector));
-        bridgeWithLockbox.retryTransfer(user);
+        bridgeWithLockbox.claimFailedReceive(user);
 
         omni.mockXCall({
             sourceChainId: DEST_CHAIN_ID,
@@ -36,7 +36,7 @@ contract RetryTransferTest is TestBase {
                 IAccessControl.AccessControlUnauthorizedAccount.selector, address(bridgeWithLockbox), minterRole
             )
         );
-        bridgeWithLockbox.retryTransfer(user);
+        bridgeWithLockbox.claimFailedReceive(user);
     }
 
     function test_receiveToken_caches_tokens_when_mint_reverts() public {
@@ -100,8 +100,8 @@ contract RetryTransferTest is TestBase {
         vm.prank(minter);
         token.mint(address(lockbox), 1);
 
-        bridgeWithLockbox.retryTransfer(user);
-        bridgeNoLockbox.retryTransfer(user);
+        bridgeWithLockbox.claimFailedReceive(user);
+        bridgeNoLockbox.claimFailedReceive(user);
 
         assertEq(bridgeWithLockbox.claimable(user), 0, "bridgeWithLockbox claimable");
         assertEq(wrapper.balanceOf(address(bridgeWithLockbox)), 0, "bridgeWithLockbox balance");

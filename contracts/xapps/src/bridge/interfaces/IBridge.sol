@@ -63,7 +63,7 @@ interface IBridge {
     /**
      * @dev Event emitted when a crosschain token transfer is received.
      */
-    event TokenReceived(uint64 indexed srcChainId, address indexed to, uint256 value);
+    event TokenReceived(uint64 indexed srcChainId, address indexed to, uint256 value, bool indexed success);
 
     /**
      * @dev Event emitted when a retry transfer is successful.
@@ -147,7 +147,7 @@ interface IBridge {
      * @dev Attempts to transfer claimable tokens to the recipient.
      * @param addr The address to retry the transfer for.
      */
-    function retryTransfer(address addr) external;
+    function claimFailedReceive(address addr) external;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      ADMIN FUNCTIONS                       */

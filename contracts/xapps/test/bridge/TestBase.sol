@@ -90,7 +90,7 @@ contract TestBase is Test {
 
         vm.chainId(destChainId);
         vm.expectEmit(true, true, true, true);
-        emit IBridge.TokenReceived(srcChainId, to, value);
+        emit IBridge.TokenReceived(srcChainId, to, value, true);
         omni.mockXCall({
             sourceChainId: srcChainId,
             sender: address(bridge),

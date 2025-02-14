@@ -173,7 +173,7 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
      * @dev Attempts to transfer claimable tokens to the recipient.
      * @param addr The address to retry the transfer for.
      */
-    function retryTransfer(address addr) external {
+    function claimFailedReceive(address addr) external {
         uint256 value = claimable[addr];
         if (value == 0) revert NoClaimable();
 
@@ -292,18 +292,19 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
         // Cache addresses for gas optimization.
         address _token = token;
         address _lockbox = lockbox;
+        bool success;
 
         if (_lockbox == address(0)) {
             // If no lockbox is set, just mint the wrapped tokens to the recipient.
-            _tryCatchTokenMint(_token, to, value, false);
+            success = _tryCatchTokenMint(_token, to, value, false);
         } else {
             // If a lockbox is set, mint the wrapped tokens to the bridge contract.
-            bool success = _tryCatchTokenMint(_token, to, value, true);
+            success = _tryCatchTokenMint(_token, to, value, true);
             // Attempt withdrawal from the lockbox, but transfer the wrapped tokens to the recipient if it fails.
             if (success) _tryCatchLockboxWithdrawal(_token, _lockbox, to, value);
         }
 
-        emit TokenReceived(xmsg.sourceChainId, to, value);
+        emit TokenReceived(xmsg.sourceChainId, to, value, success);
     }
 
     /**
