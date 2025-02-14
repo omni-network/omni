@@ -56,24 +56,15 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
     }
 
     /**
-     * @notice Get the EIP-712 hash for a migration signature
-     * @param account  Address of the user migrating
-     * @param expiry   Signature expiry
-     * @return _       Migration hash
-     */
-    function getMigrationHash(address account, uint256 expiry) public view returns (bytes32) {
-        if (expiry != 0 && block.timestamp > expiry) revert Expired();
-        return keccak256(abi.encode(MIGRATION_TYPEHASH, account, nonces[account], expiry));
-    }
-
-    /**
      * @notice Get the EIP-712 digest for a migration signature
      * @param account  Address of the user migrating
      * @param expiry   Signature expiry
      * @return _       Migration digest
      */
     function getMigrationDigest(address account, uint256 expiry) public view returns (bytes32) {
-        return _hashTypedData(getMigrationHash(account, expiry));
+        if (expiry != 0 && block.timestamp > expiry) revert Expired();
+        bytes32 migrationHash = keccak256(abi.encode(MIGRATION_TYPEHASH, account, nonces[account], expiry));
+        return _hashTypedData(migrationHash);
     }
 
     /**
