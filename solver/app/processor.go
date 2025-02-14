@@ -70,13 +70,10 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 				continue
 			}
 
-			alreadyFilled := func() (bool, error) {
-				filled, err := deps.DidFill(ctx, order)
-				if err != nil {
-					return false, errors.Wrap(err, "did fill")
-				}
-
-				return filled, nil
+			alreadyFilled := func() bool {
+				// ignore err. maybeReject will handle unsupported dest chain
+				filled, _ := deps.DidFill(ctx, order)
+				return filled
 			}
 
 			// maybeReject rejects orders if necessary, logging and counting them, returning true if rejected.
@@ -109,9 +106,7 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 
 			switch event.Status {
 			case statusPending:
-				if filed, err := alreadyFilled(); err != nil {
-					return err
-				} else if filed {
+				if alreadyFilled() {
 					return errors.New("unexpected already filled [BUG]")
 				}
 
@@ -126,9 +121,7 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 					return errors.Wrap(err, "accept order")
 				}
 			case statusAccepted:
-				if filed, err := alreadyFilled(); err != nil {
-					return err
-				} else if filed {
+				if alreadyFilled() {
 					return errors.New("unexpected already filled [BUG]")
 				}
 
