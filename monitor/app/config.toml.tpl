@@ -24,6 +24,9 @@ halo-url = "{{ .HaloCometURL }}"
 # The gRPC URL of the halo node to connect to.
 halo-grpc-url = "{{ .HaloGRPCURL }}"
 
+# The RouteScan API key used for increased rate limits on RouteScan.
+routescan-apikey = "{{ .RouteScanAPIKey }}"
+
 #######################################################################
 ###                             X-Chain                             ###
 #######################################################################

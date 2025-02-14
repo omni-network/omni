@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"net/http"
+	"strconv"
 	"testing"
 
 	"github.com/omni-network/omni/lib/evmchain"
@@ -15,9 +17,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//go:generate go test . -integration -v -run=TestQueryLatestXChain
+const (
+	rpdLimitHeader    = "X-Ratelimit-Rpd-Limit"
+	rpmLimitHeader    = "X-Ratelimit-Rpm-Limit"
+	increasedRPDLimit = 200000
+	increasedRPMLimit = 600
+)
 
-var integration = flag.Bool("integration", false, "run routescan integration tests")
+var (
+	integration = flag.Bool("integration", false, "run RouteScan integration tests")
+	apiKey      = flag.String("routeScanAPIKey", "", "RouteScan API key for enabling increased rate limiting")
+)
+
+//go:generate go test . -integration -v -run=TestQueryLatestXChain
 
 func TestReconLag(t *testing.T) {
 	t.Parallel()
@@ -45,7 +57,7 @@ func TestReconLag(t *testing.T) {
 			continue
 		}
 
-		crossTx, err := paginateLatestCrossTx(ctx, network, queryFilter{Stream: stream})
+		crossTx, err := paginateLatestCrossTx(ctx, network, *apiKey, queryFilter{Stream: stream})
 		require.NoError(t, err, streamName)
 
 		lag := float64(cursor.MsgOffset) - float64(crossTx.Data.Offset)
@@ -60,7 +72,7 @@ func TestQueryLatestXChain(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	resp, err := paginateLatestCrossTx(ctx, netconf.Mainnet, queryFilter{})
+	resp, err := paginateLatestCrossTx(ctx, netconf.Mainnet, *apiKey, queryFilter{})
 	require.NoError(t, err)
 	require.NotEmpty(t, resp.ID)
 
@@ -69,8 +81,45 @@ func TestQueryLatestXChain(t *testing.T) {
 	t.Log(string(bz))
 }
 
+func TestHasLargeRateLimit(t *testing.T) {
+	t.Parallel()
+	if !*integration {
+		t.Skip("skipping integration test")
+	}
+
+	ctx := context.Background()
+
+	responseHook = func(resp *http.Response) {
+		rpdLimit, err := strconv.Atoi(resp.Header.Get(rpdLimitHeader))
+		require.NoError(t, err)
+
+		rpmLimit, err := strconv.Atoi(resp.Header.Get(rpmLimitHeader))
+		require.NoError(t, err)
+
+		hasLargeRateLimit := rpdLimit >= increasedRPDLimit && rpmLimit >= increasedRPMLimit
+		if *apiKey != "" {
+			require.True(t, hasLargeRateLimit)
+		} else {
+			require.False(t, hasLargeRateLimit)
+		}
+	}
+	defer func() { responseHook = func(*http.Response) {} }()
+
+	_, _, err := queryLatestCrossTx(ctx, netconf.Omega, *apiKey, queryFilter{}, "")
+	require.NoError(t, err)
+
+	_, _, err = queryLatestCrossTx(ctx, netconf.Mainnet, *apiKey, queryFilter{}, "")
+	require.NoError(t, err)
+}
+
 // TestIntegrationFalse ensures the integration flag defaults to false.
 func TestIntegrationFalse(t *testing.T) {
 	t.Parallel()
 	require.False(t, *integration)
+}
+
+// TestRouteScanAPIKeyEmpty ensures the apiKey flag defaults to empty string.
+func TestRouteScanAPIKeyEmpty(t *testing.T) {
+	t.Parallel()
+	require.Empty(t, *apiKey)
 }

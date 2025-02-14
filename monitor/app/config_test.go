@@ -23,6 +23,7 @@ func TestDefaultConfigReference(t *testing.T) {
 
 	cfg := monitor.DefaultConfig()
 	cfg.HaloGRPCURL = "localhost:1111"
+	cfg.RouteScanAPIKey = "secret"
 	cfg.LoadGen = loadgen.Config{
 		ValidatorKeysGlob: "path/*/1",
 		XCallerKey:        "path/xcaller_privatekey",

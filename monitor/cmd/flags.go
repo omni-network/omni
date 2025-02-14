@@ -18,6 +18,7 @@ func bindRunFlags(flags *pflag.FlagSet, cfg *monitor.Config) {
 	flags.StringVar(&cfg.HaloCometURL, "halo-url", cfg.HaloCometURL, "The URL of the halo node e.g localhost:26657")
 	flags.StringVar(&cfg.HaloGRPCURL, "halo-grpc-url", cfg.HaloGRPCURL, "The gRPC URL of the halo node e.g localhost:9999")
 	flags.StringVar(&cfg.DBDir, "db-dir", cfg.DBDir, "The path to the database directory")
+	flags.StringVar(&cfg.RouteScanAPIKey, "routescan-apikey", cfg.RouteScanAPIKey, "The RouteScan API key to use their APIs with higher rate limits")
 }
 
 func bindLoadGenFlags(flags *pflag.FlagSet, cfg *loadgen.Config) {

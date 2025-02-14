@@ -17,7 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-func ReconForever(ctx context.Context, network netconf.Network, xprov xchain.Provider, ethCls map[uint64]ethclient.Client) {
+func ReconForever(ctx context.Context, network netconf.Network, apiKey string, xprov xchain.Provider, ethCls map[uint64]ethclient.Client) {
 	if network.ID.IsEphemeral() {
 		return
 	}
@@ -31,7 +31,7 @@ func ReconForever(ctx context.Context, network netconf.Network, xprov xchain.Pro
 			return
 		case <-ticker.C:
 			for _, stream := range network.EVMStreams() {
-				err := reconStreamOnce(ctx, network, xprov, ethCls, stream)
+				err := reconStreamOnce(ctx, network, apiKey, xprov, ethCls, stream)
 				if err != nil {
 					reconFailure.Inc()
 					log.Warn(ctx, "RouteRecon failed", err, "stream", network.StreamName(stream))
@@ -55,6 +55,7 @@ func ReconForever(ctx context.Context, network netconf.Network, xprov xchain.Pro
 func reconStreamOnce(
 	ctx context.Context,
 	network netconf.Network,
+	apiKey string,
 	xprov xchain.Provider,
 	ethCls map[uint64]ethclient.Client,
 	stream xchain.StreamID,
@@ -66,7 +67,7 @@ func reconStreamOnce(
 		return nil // Skip recon for empty streams
 	}
 
-	crossTx, err := paginateLatestCrossTx(ctx, network.ID, queryFilter{Stream: stream})
+	crossTx, err := paginateLatestCrossTx(ctx, network.ID, apiKey, queryFilter{Stream: stream})
 	if err != nil {
 		return errors.Wrap(err, "fetch latest cross tx")
 	}

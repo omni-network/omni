@@ -640,6 +640,7 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 	cfg.Network = def.Testnet.Network
 	cfg.HaloCometURL = archiveNode.AddressRPC()
 	cfg.HaloGRPCURL = haloGRPCAddress(archiveNode)
+	cfg.RouteScanAPIKey = def.Cfg.RouteScanAPIKey
 	cfg.LoadGen.ValidatorKeysGlob = validatorKeyGlob
 	cfg.LoadGen.XCallerKey = xCallerPrivKeyFile
 	cfg.RPCEndpoints = endpoints
