@@ -5,7 +5,7 @@ import "../TestBase.sol";
 
 contract GeneralBridgeTest is TestBase {
     function test_initialize_reverts() public {
-        address impl = address(new Bridge());
+        address impl = address(new Bridge(DEFAULT_RECEIVE_GAS_LIMIT, DEFAULT_RECEIVE_LOCKBOX_GAS_LIMIT));
         bridgeWithLockbox = Bridge(address(new TransparentUpgradeableProxy(impl, admin, "")));
 
         // `admin` cannot be zero address.

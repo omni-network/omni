@@ -27,7 +27,8 @@ contract TestBase is Test {
 
     uint64 internal constant SRC_CHAIN_ID = 1;
     uint64 internal constant DEST_CHAIN_ID = 2;
-    uint64 internal constant DEFAULT_GAS_LIMIT = 200_000; // See `ReceiveTokenTest` for higher limit explanation.
+    uint64 internal constant DEFAULT_RECEIVE_GAS_LIMIT = 125_000;
+    uint64 internal constant DEFAULT_RECEIVE_LOCKBOX_GAS_LIMIT = 200_000;
     uint256 internal constant INITIAL_USER_BALANCE = 1_000_000 ether;
 
     address internal user = makeAddr("user");
@@ -44,7 +45,7 @@ contract TestBase is Test {
         vm.stopPrank();
     }
 
-    function setUp() public {
+    function setUp() public virtual {
         deploy();
         configure();
         vm.chainId(SRC_CHAIN_ID);
@@ -89,13 +90,13 @@ contract TestBase is Test {
 
         vm.chainId(destChainId);
         vm.expectEmit(true, true, true, true);
-        emit IBridge.TokenReceived(srcChainId, to, value);
+        emit IBridge.TokenReceived(srcChainId, to, value, true);
         omni.mockXCall({
             sourceChainId: srcChainId,
             sender: address(bridge),
             to: destination,
             data: data,
-            gasLimit: DEFAULT_GAS_LIMIT
+            gasLimit: _getGasLimit(Bridge(destination))
         });
     }
 
@@ -144,8 +145,8 @@ contract TestBase is Test {
     }
 
     function _deployBridge(address token_, address lockbox_) internal returns (Bridge) {
+        address impl = address(new Bridge(DEFAULT_RECEIVE_GAS_LIMIT, DEFAULT_RECEIVE_LOCKBOX_GAS_LIMIT));
         bytes memory data = abi.encodeCall(Bridge.initialize, (admin, pauser, address(omni), token_, lockbox_));
-        address impl = address(new Bridge());
 
         address proxy = address(new TransparentUpgradeableProxy(impl, admin, data));
         return Bridge(proxy);
@@ -155,6 +156,10 @@ contract TestBase is Test {
         vm.deal(addr, 1 ether);
         vm.prank(minter);
         token.mint(addr, INITIAL_USER_BALANCE);
+    }
+
+    function _getGasLimit(Bridge bridge) internal view returns (uint64) {
+        return bridge.lockbox() == address(0) ? DEFAULT_RECEIVE_GAS_LIMIT : DEFAULT_RECEIVE_LOCKBOX_GAS_LIMIT;
     }
 
     function _configureApprovals() internal {

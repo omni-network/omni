@@ -14,14 +14,16 @@ type rlusd struct{}
 
 var _ types.XToken = (*rlusd)(nil)
 
-func XToken() types.XToken          { return rlusd{} }
-func Name() string                  { return xtoken.Name }
-func Symbol() string                { return xtoken.Symbol }
-func Wraps() types.TokenDescriptors { return wraps }
+func XToken() types.XToken            { return rlusd{} }
+func Name() string                    { return xtoken.Name }
+func Symbol() string                  { return xtoken.Symbol }
+func Wraps() types.TokenDescriptors   { return wraps }
+func GasLimits() types.TokenGasLimits { return gasLimits }
 
-func (rlusd) Name() string                  { return xtoken.Name }
-func (rlusd) Symbol() string                { return xtoken.Symbol }
-func (rlusd) Wraps() types.TokenDescriptors { return wraps }
+func (rlusd) Name() string                    { return xtoken.Name }
+func (rlusd) Symbol() string                  { return xtoken.Symbol }
+func (rlusd) Wraps() types.TokenDescriptors   { return wraps }
+func (rlusd) GasLimits() types.TokenGasLimits { return gasLimits }
 
 // Address returns the address of the RLUSD.e token on the given network.
 func (rlusd) Address(ctx context.Context, networkID netconf.ID) (common.Address, error) {

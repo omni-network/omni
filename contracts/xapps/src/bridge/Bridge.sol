@@ -24,14 +24,14 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
     bytes32 public constant PAUSER_ROLE = 0x539440820030c4994db4e31b6b800deafd503688728f932addfe7a410515c14c;
 
     /**
-     * @dev Gas limit for xcalls to bridges without a lockbox.
+     * @dev Gas limit for xcalls to bridges without a lockbox. (~125k suggested unless transfer is nonstandard)
      */
-    uint64 internal constant RECEIVE_DEFAULT_GAS_LIMIT = 125_000;
+    uint64 private immutable RECEIVE_DEFAULT_GAS_LIMIT;
 
     /**
-     * @dev Gas limit for xcalls to bridges with a lockbox.
+     * @dev Gas limit for xcalls to bridges with a lockbox. (~200k suggested unless clawback is nonstandard)
      */
-    uint64 internal constant RECEIVE_LOCKBOX_GAS_LIMIT = 180_000;
+    uint64 private immutable RECEIVE_LOCKBOX_GAS_LIMIT;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
@@ -51,6 +51,11 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
      * @dev Mapping of destination chainId to bridge contract and config.
      */
     mapping(uint64 chainId => Route) private _routes;
+
+    /**
+     * @dev Track claimable amount per address, which increases when `token` reverts in `receiveToken`.
+     */
+    mapping(address => uint256) public claimable;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         MODIFIERS                          */
@@ -72,7 +77,9 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
     /*                        CONSTRUCTOR                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    constructor() {
+    constructor(uint64 receiveDefaultGasLimit, uint64 receiveLockboxGasLimit) {
+        RECEIVE_DEFAULT_GAS_LIMIT = receiveDefaultGasLimit;
+        RECEIVE_LOCKBOX_GAS_LIMIT = receiveLockboxGasLimit;
         _disableInitializers();
     }
 
@@ -160,6 +167,26 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
      */
     function receiveToken(address to, uint256 value) external xrecv onlyBridge {
         _receiveToken(to, value);
+    }
+
+    /**
+     * @dev Attempts to transfer claimable tokens to the recipient.
+     * @param addr The address to retry the transfer for.
+     */
+    function claimFailedReceive(address addr) external {
+        uint256 value = claimable[addr];
+        if (value == 0) revert NoClaimable();
+
+        delete claimable[addr];
+
+        if (lockbox == address(0)) {
+            ITokenOps(token).mint(addr, value);
+        } else {
+            ITokenOps(token).mint(address(this), value);
+            ILockbox(lockbox).withdrawTo(addr, value);
+        }
+
+        emit RetrySuccessful(msg.sender, addr, value);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -265,22 +292,52 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
         // Cache addresses for gas optimization.
         address _token = token;
         address _lockbox = lockbox;
+        bool success;
 
         if (_lockbox == address(0)) {
             // If no lockbox is set, just mint the wrapped tokens to the recipient.
-            ITokenOps(_token).mint(to, value);
+            success = _tryCatchTokenMint(_token, to, value, false);
         } else {
             // If a lockbox is set, mint the wrapped tokens to the bridge contract.
-            ITokenOps(_token).mint(address(this), value);
-
+            success = _tryCatchTokenMint(_token, to, value, true);
             // Attempt withdrawal from the lockbox, but transfer the wrapped tokens to the recipient if it fails.
-            try ILockbox(_lockbox).withdrawTo(to, value) { }
-            catch {
-                _token.safeTransfer(to, value);
-                emit LockboxWithdrawalFailed(_lockbox, to, value);
-            }
+            if (success) _tryCatchLockboxWithdrawal(_token, _lockbox, to, value);
         }
 
-        emit TokenReceived(xmsg.sourceChainId, to, value);
+        emit TokenReceived(xmsg.sourceChainId, to, value, success);
+    }
+
+    /**
+     * @dev Attempts to mint tokens, but caches the tokens for the recipient if it reverts.
+     * @param _token       The address of the token.
+     * @param to           The address of the recipient.
+     * @param value        The amount of tokens to mint.
+     * @param intermediate Whether to attempt to mint to the bridge contract directly.
+     */
+    function _tryCatchTokenMint(address _token, address to, uint256 value, bool intermediate) internal returns (bool) {
+        try ITokenOps(_token).mint(intermediate ? address(this) : to, value) { }
+        catch {
+            unchecked {
+                claimable[to] += value;
+            }
+            emit TokenMintFailed(_token, to, value);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * @dev Attempts to withdraw tokens from the lockbox, sends tokens to the recipient if it fails.
+     * @param _token    The address of the token.
+     * @param _lockbox  The address of the lockbox.
+     * @param to        The address of the recipient.
+     * @param value     The amount of tokens to withdraw.
+     */
+    function _tryCatchLockboxWithdrawal(address _token, address _lockbox, address to, uint256 value) internal {
+        try ILockbox(_lockbox).withdrawTo(to, value) { }
+        catch {
+            _token.safeTransfer(to, value);
+            emit LockboxWithdrawalFailed(_lockbox, to, value);
+        }
     }
 }
