@@ -143,7 +143,7 @@ func (s Static) OmniScanTXURL(tx common.Hash) string {
 
 //nolint:gochecknoglobals // Static addresses
 var (
-	stagingToken  = common.HexToAddress("0x5e9A8Aa213C912Bf54C86bf64aDB8ed6A79C04d1")
+	stagingToken  = common.HexToAddress("0xB50029Dc0DF4Db0193F25a8E41DEa207c13D09BB")
 	omegaAVS      = common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
 	omegaPortal   = common.HexToAddress("0xcB60A0451831E4865bC49f41F9C67665Fc9b75C3")
 	omegaBridge   = common.HexToAddress("0x084ef227534A6Ad2DE4C4e54dB19f1C457A57a27")
