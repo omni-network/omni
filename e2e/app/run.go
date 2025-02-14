@@ -416,10 +416,16 @@ func maybeSubmitNetworkUpgrades(ctx context.Context, def Definition) error {
 			return err
 		}
 
-		const minDelay = 5 // Upgrades fail if processed too late (mempool is non-deterministic, so we need a buffer).
-		height += minDelay
+		// Upgrades fail if processed after height (mempool is non-deterministic, so we need a buffer).
+		const delayDevnet uint64 = 5
+		const delayStaging uint64 = 30 // Staging txs are signed by fireblocks, which is slow
+		delay := delayDevnet
+		if def.Testnet.Network == netconf.Staging {
+			delay = delayStaging
+		}
+		height += delay
 
-		log.Info(ctx, "Planning upgrade", "height", height, "name", upgrade)
+		log.Info(ctx, "Planning upgrade", "height", height, "name", upgrade, "delay", delay)
 
 		tx, err := contract.PlanUpgrade(txOpts, bindings.UpgradePlan{
 			Name:   upgrade,
@@ -444,11 +450,11 @@ func maybeSubmitNetworkUpgrades(ctx context.Context, def Definition) error {
 			return err
 		}
 
-		// Wait for upgrade to be processed.
+		// Wait for upgrade height to be processed.
 		if _, _, err := waitForHeight(ctx, def.Testnet.Testnet, waitHeight); err != nil {
 			return errors.Wrap(err, "wait for height")
 		}
 
-		log.Info(ctx, "Upgrade applied", "height", height, "name", upgrade)
+		log.Info(ctx, "Upgrade applied", "height", height, "name", upgrade) // We don't actually confirm this...
 	}
 }
