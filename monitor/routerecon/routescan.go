@@ -32,14 +32,14 @@ func getCrossTxURL(network netconf.ID) string {
 	return fmt.Sprintf(crossTxURL, net)
 }
 
-func paginateLatestCrossTx(ctx context.Context, network netconf.ID, routeScanAPIKey string, filter filter) (crossTxJSON, error) {
+func paginateLatestCrossTx(ctx context.Context, network netconf.ID, apiKey string, filter filter) (crossTxJSON, error) {
 	var (
 		resp crossTxJSON
 		next string
 		err  error
 	)
 	for {
-		resp, next, err = queryLatestCrossTx(ctx, network, routeScanAPIKey, filter, next)
+		resp, next, err = queryLatestCrossTx(ctx, network, apiKey, filter, next)
 		if err != nil {
 			return crossTxJSON{}, errors.Wrap(err, "query latest cross tx")
 		} else if next != "" {
@@ -58,7 +58,7 @@ type filter interface {
 	Match(tx crossTxJSON) (bool, error)
 }
 
-func queryLatestCrossTx(ctx context.Context, network netconf.ID, routeScanAPIKey string, filter filter, next string) (crossTxJSON, string, error) {
+func queryLatestCrossTx(ctx context.Context, network netconf.ID, apiKey string, filter filter, next string) (crossTxJSON, string, error) {
 	url := baseURL + next
 	if next == "" {
 		// Build initial path
@@ -77,8 +77,8 @@ func queryLatestCrossTx(ctx context.Context, network netconf.ID, routeScanAPIKey
 		q := req.URL.Query()
 		q.Add("types", "omni")
 		q.Add("limit", strconv.FormatUint(limit, 10))
-		if routeScanAPIKey != "" {
-			q.Add("apikey", routeScanAPIKey)
+		if apiKey != "" {
+			q.Add("apikey", apiKey)
 		}
 		filter.QueryParams(q)
 		req.URL.RawQuery = q.Encode()
