@@ -210,9 +210,9 @@ func (p *Provider) Upgrade(ctx context.Context, cfg types.ServiceConfig) error {
 			continue
 		}
 
-		log.Debug(ctx, "Ensuring VM SSH connection", "vm", vmName)
-		if err := execOnVM(ctx, vmName, "ls"); err != nil {
-			return errors.Wrap(err, "test exec on vm", "vm", vmName)
+		log.Debug(ctx, "Ensuring VM SSH connection and permissions", "vm", vmName) // Also fix permissions
+		if err := execOnVM(ctx, vmName, "sudo chmod -R o+w /omni/"+p.Testnet.Name); err != nil {
+			return errors.Wrap(err, "chown perms exec on vm", "vm", vmName)
 		}
 	}
 
