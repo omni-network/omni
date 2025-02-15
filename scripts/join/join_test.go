@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -69,6 +70,7 @@ func TestJoinNetwork(t *testing.T) {
 		HaloTag:      haloTag,
 	}
 
+	log.Info(ctx, "Checking halovisor image", "halo_tag", haloTag)
 	tutil.RequireNoError(t, ensureHaloImage(cfg.HaloTag))
 
 	log.Info(ctx, "Exec: omni operator init-nodes", "network", networkID, "halo_tag", haloTag)
@@ -277,13 +279,18 @@ func ensureHaloImage(haloTag string) error {
 			return errors.New("omniops/halovisor:" + haloTag + " image not found locally (make build-docker?)")
 		}
 
-		return errors.New("halo tag must be a git commit hash or branch name, not a version")
+		return nil
+	}
+
+	// If macOS arm64, `main` tag not supported
+	if haloTag == "main" && runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		return errors.New("macOS arm64 does not support '--halo_tag=main', use official release or build images")
 	}
 
 	// For other tags, pull latest version of the image.
 	out, err := exec.Command("docker", "pull", "omniops/halovisor:"+haloTag).CombinedOutput()
 	if err != nil {
-		return errors.Wrap(err, "docker pull (if macOS, use official release or build images)", "output", string(out))
+		return errors.Wrap(err, "docker pull", "output", string(out), "image", "omniops/halovisor:"+haloTag)
 	}
 
 	return nil
