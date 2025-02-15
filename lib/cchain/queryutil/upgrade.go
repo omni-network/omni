@@ -13,6 +13,7 @@ import (
 // Note it will return genesis upgrade if unknown upgrades are applied.
 // This is due to CosmosSDK not providing an API to actually fetch applied upgrades :(.
 func CurrentUpgrade(ctx context.Context, cprov cchain.Provider) (string, error) {
+	var latest string
 	for _, upgrade := range upgrades.AllUpgradeNames() {
 		plan, ok, err := cprov.AppliedPlan(ctx, upgrade)
 		if err != nil {
@@ -23,12 +24,10 @@ func CurrentUpgrade(ctx context.Context, cprov cchain.Provider) (string, error) 
 			return "", errors.New("unexpected upgrade plan name [BUG]", "expected", upgrade, "actual", plan.Name)
 		}
 
-		return upgrade, nil
+		latest = upgrade
 	}
 
-	// No applied upgrades, so return first upgrade.
-
-	return "", nil
+	return latest, nil
 }
 
 // NextUpgrade returns the next upgrade to apply, or false if all upgrades has been applied.
