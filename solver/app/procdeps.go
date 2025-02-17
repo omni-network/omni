@@ -196,38 +196,6 @@ func newRejector(
 	}
 }
 
-func newAcceptor(
-	inboxContracts map[uint64]*bindings.SolverNetInbox,
-	backends ethbackend.Backends,
-	solverAddr common.Address,
-) func(ctx context.Context, order Order) error {
-	return func(ctx context.Context, order Order) error {
-		inbox, ok := inboxContracts[order.SourceChainID]
-		if !ok {
-			return errors.New("unknown chain")
-		}
-
-		backend, err := backends.Backend(order.SourceChainID)
-		if err != nil {
-			return err
-		}
-
-		txOpts, err := backend.BindOpts(ctx, solverAddr)
-		if err != nil {
-			return err
-		}
-
-		tx, err := inbox.Accept(txOpts, order.ID)
-		if err != nil {
-			return errors.Wrap(err, "accept order", "custom", solvernet.DetectCustomError(err))
-		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
-			return errors.Wrap(err, "wait mined")
-		}
-
-		return nil
-	}
-}
-
 func newDidFiller(outboxContracts map[uint64]*bindings.SolverNetOutbox) func(ctx context.Context, order Order) (bool, error) {
 	return func(ctx context.Context, order Order) (bool, error) {
 		outbox, ok := outboxContracts[order.DestinationChainID]

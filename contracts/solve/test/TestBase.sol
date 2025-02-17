@@ -219,7 +219,7 @@ contract TestBase is Test {
         });
 
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
-            fillDeadline: 0,
+            fillDeadline: defaultFillDeadline,
             orderDataType: ORDER_DATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });
@@ -255,7 +255,7 @@ contract TestBase is Test {
         });
 
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
-            fillDeadline: 0,
+            fillDeadline: defaultFillDeadline,
             orderDataType: ORDER_DATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });
@@ -309,7 +309,7 @@ contract TestBase is Test {
         });
 
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
-            fillDeadline: 0,
+            fillDeadline: defaultFillDeadline,
             orderDataType: ORDER_DATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });

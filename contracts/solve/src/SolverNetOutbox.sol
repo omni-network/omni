@@ -123,15 +123,15 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         nonReentrant
     {
         SolverNet.FillOriginData memory fillData = abi.decode(originData, (SolverNet.FillOriginData));
-        address claimant = msg.sender;
+        address creditTo = msg.sender;
 
         if (fillData.destChainId != block.chainid) revert WrongDestChain();
-        if (fillData.fillDeadline < block.timestamp && fillData.fillDeadline != 0) revert FillDeadlinePassed();
+        if (fillData.fillDeadline < block.timestamp) revert FillDeadlinePassed();
         if (fillerData.length != 0 && fillerData.length != 32) revert BadFillerData();
-        if (fillerData.length == 32) claimant = abi.decode(fillerData, (address));
+        if (fillerData.length == 32) creditTo = abi.decode(fillerData, (address));
 
         uint256 totalNativeValue = _executeCalls(fillData);
-        _markFilled(orderId, fillData, claimant, totalNativeValue);
+        _markFilled(orderId, fillData, creditTo, totalNativeValue);
     }
 
     /**

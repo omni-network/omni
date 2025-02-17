@@ -3,13 +3,13 @@ pragma solidity =0.8.24;
 
 import "../TestBase.sol";
 
-contract SolverNet_Inbox_Cancel_Test is TestBase {
-    function test_cancel_reverts() public {
+contract SolverNet_Inbox_Close_Test is TestBase {
+    function test_close_reverts() public {
         // order must be pending
         vm.expectRevert(ISolverNetInbox.OrderNotPending.selector);
-        inbox.cancel(bytes32(uint256(1)));
+        inbox.close(bytes32(uint256(1)));
 
-        // prep: open a valid order to cancel
+        // prep: open a valid order to close
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
             getNativeForNativeVaultOrder(defaultAmount, defaultAmount);
         assertTrue(inbox.validate(order), "order should be valid");
@@ -20,12 +20,17 @@ contract SolverNet_Inbox_Cancel_Test is TestBase {
         vm.prank(user);
         inbox.open{ value: defaultAmount }(order);
 
-        // order must be cancelled by order owner
+        // order must be closed by order owner
         vm.expectRevert(Ownable.Unauthorized.selector);
-        inbox.cancel(resolvedOrder.orderId);
+        inbox.close(resolvedOrder.orderId);
+
+        // order can only be closed after fill deadline has elapsed
+        vm.prank(user);
+        vm.expectRevert(ISolverNetInbox.OrderStillValid.selector);
+        inbox.close(resolvedOrder.orderId);
     }
 
-    function test_cancel_nativeDeposit_succeeds() public {
+    function test_close_nativeDeposit_succeeds() public {
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
             getNativeForNativeVaultOrder(defaultAmount, defaultAmount);
         assertTrue(inbox.validate(order), "order should be valid");
@@ -39,19 +44,20 @@ contract SolverNet_Inbox_Cancel_Test is TestBase {
         inbox.open{ value: defaultAmount }(order);
 
         vm.prank(user);
+        vm.warp(defaultFillDeadline + 1);
         vm.expectEmit(true, true, true, true);
-        emit ISolverNetInbox.Reverted(resolvedOrder.orderId);
-        inbox.cancel(resolvedOrder.orderId);
+        emit ISolverNetInbox.Closed(resolvedOrder.orderId);
+        inbox.close(resolvedOrder.orderId);
 
         assertEq(
-            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Reverted),
+            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Closed),
             resolvedOrder.orderId,
-            "order should be reverted"
+            "order should be closed"
         );
         assertEq(user.balance, defaultAmount, "deposit should have been returned to the user");
     }
 
-    function test_cancel_erc20Deposit_succeeds() public {
+    function test_close_erc20Deposit_succeeds() public {
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
             getErc20ForErc20VaultOrder(defaultAmount, defaultAmount);
         assertTrue(inbox.validate(order), "order should be valid");
@@ -65,12 +71,15 @@ contract SolverNet_Inbox_Cancel_Test is TestBase {
         inbox.open(order);
 
         vm.prank(user);
-        inbox.cancel(resolvedOrder.orderId);
+        vm.warp(defaultFillDeadline + 1);
+        vm.expectEmit(true, true, true, true);
+        emit ISolverNetInbox.Closed(resolvedOrder.orderId);
+        inbox.close(resolvedOrder.orderId);
 
         assertEq(
-            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Reverted),
+            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Closed),
             resolvedOrder.orderId,
-            "order should be reverted"
+            "order should be closed"
         );
         assertEq(token1.balanceOf(user), defaultAmount, "deposit should have been returned to the user");
     }

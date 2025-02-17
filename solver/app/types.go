@@ -26,8 +26,8 @@ type Order struct {
 	MaxSpent           []bindings.IERC7683Output
 	MinReceived        []bindings.IERC7683Output
 
-	Status   uint8
-	Claimant common.Address
+	Status    uint8
+	UpdatedBy common.Address
 }
 
 // Uint64 returns the order ID as a BigEndian uint64 (monotonically incrementing number).
@@ -48,7 +48,7 @@ func newOrder(resolved OrderResolved, state OrderState) (Order, error) {
 	o := Order{
 		ID:                 resolved.OrderId,
 		Status:             state.Status,
-		Claimant:           state.Claimant,
+		UpdatedBy:          state.UpdatedBy,
 		FillInstruction:    resolved.FillInstructions[0],
 		FillOriginData:     resolved.FillInstructions[0].OriginData,
 		DestinationChainID: resolved.FillInstructions[0].DestinationChainId,

@@ -5,8 +5,8 @@ import "../TestBase.sol";
 
 contract SolverNet_Inbox_MarkFilled_Test is TestBase {
     function test_markFilled_reverts() public {
-        // order must be pending or accepted
-        vm.expectRevert(ISolverNetInbox.OrderNotPendingOrAccepted.selector);
+        // order must be pending
+        vm.expectRevert(ISolverNetInbox.OrderNotPending.selector);
         inbox.markFilled(bytes32(uint256(1)), bytes32(0), address(0));
 
         // prep: open a valid order
