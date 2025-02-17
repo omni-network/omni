@@ -20,10 +20,12 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/umath"
 
+	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/rpc/client/http"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -216,7 +218,18 @@ func createValidator(ctx context.Context, cfg createValConfig) error {
 		return err
 	}
 
-	tx, err := contract.CreateValidator0(txOpts, crypto.CompressPubkey(consPubkey))
+	digest, err := contract.GetConsPubkeyDigest(bindOpts, opAddr)
+	if err != nil {
+		return errors.Wrap(err, "get consensus pubkey digest")
+	}
+
+	pk := k1.PrivKey(crypto.FromECDSA(operatorPriv))
+	sig, err := k1util.Sign(pk, digest)
+	if err != nil {
+		return err
+	}
+
+	tx, err := contract.CreateValidator(txOpts, crypto.CompressPubkey(consPubkey), sig[:])
 	if err != nil {
 		return errors.Wrap(err, "create validator")
 	}
