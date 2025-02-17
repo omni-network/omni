@@ -30,7 +30,7 @@ var (
 	// SlashingParams as per https://github.com/omni-network/omni/issues/2018.
 	SlashingParams = sltypes.Params{
 		SignedBlocksWindow:      2000,                            // Roughly 40min
-		MinSignedPerWindow:      math.LegacyNewDecWithPrec(5, 1), // Unchanged from default 5%
+		MinSignedPerWindow:      math.LegacyNewDecWithPrec(5, 1), // Unchanged from default 50%
 		DowntimeJailDuration:    12 * time.Hour,                  // Mimics post-valsync-buffer network upgrade.
 		SlashFractionDoubleSign: math.LegacyNewDec(0),            // 0% since mainnet V1 has trusted operators.
 		SlashFractionDowntime:   math.LegacyNewDec(0),            // 0% since mainnet V1 has trusted operators.
