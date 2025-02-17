@@ -41,7 +41,12 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     /**
      * @notice Addresses of the outbox contracts.
      */
-    mapping(uint64 chainId => address outbox) internal _outboxes;
+    mapping(uint64 chainId => address outbox) internal _outboxes; // Should this be public?
+
+    /**
+     * @notice Nonces for users.
+     */
+    mapping(address user => mapping(uint256 nonce => bool used)) public userNonces;
 
     /**
      * @notice Map order ID to header parameters.
@@ -139,6 +144,15 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @param order OnchainCrossChainOrder to validate.
      */
     function validate(OnchainCrossChainOrder calldata order) external view returns (bool) {
+        _validate(order);
+        return true;
+    }
+
+    /**
+     * @dev Validate the gasless order.
+     * @param order GaslessCrossChainOrder to validate.
+     */
+    function validate(GaslessCrossChainOrder calldata order) external view returns (bool) {
         _validate(order);
         return true;
     }
@@ -276,18 +290,26 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         });
     }
 
-    /**
-     * @dev Parse and return order data, validate correctness.
-     * @param order OnchainCrossChainOrder to parse
-     */
-    function _validate(OnchainCrossChainOrder calldata order) internal view returns (SolverNet.Order memory) {
+    function _validateOnchainOrder(OnchainCrossChainOrder calldata order) internal view {
         // Validate OnchainCrossChainOrder
         if (order.fillDeadline <= block.timestamp && order.fillDeadline != 0) revert InvalidFillDeadline();
         if (order.orderDataType != ORDERDATA_TYPEHASH) revert InvalidOrderTypehash();
         if (order.orderData.length == 0) revert InvalidOrderData();
+    }
 
-        SolverNet.OrderData memory orderData = abi.decode(order.orderData, (SolverNet.OrderData));
+    function _validateGaslessOrder(GaslessCrossChainOrder calldata order) internal view {
+        // Validate GaslessCrossChainOrder
+        if (order.originSettler != address(this)) revert InvalidOriginSettler();
+        if (order.user == address(0)) revert InvalidUser();
+        if (userNonces[order.user][order.nonce]) revert InvalidNonce();
+        if (order.originChainId != block.chainid) revert InvalidOriginChain();
+        if (order.openDeadline < block.timestamp) revert InvalidOpenDeadline();
+        if (order.fillDeadline <= order.openDeadline) revert InvalidFillDeadline(); // Enforce minimum order duration if accept is removed
+        if (order.orderDataType != ORDERDATA_TYPEHASH) revert InvalidOrderTypehash();
+        if (order.orderData.length == 0) revert InvalidOrderData();
+    }
 
+    function _validateSolverNetOrder(SolverNet.OrderData memory orderData, uint32 fillDeadline) internal view returns (SolverNet.Order memory) {
         // Validate SolverNet.OrderData.Header fields
         if (orderData.owner == address(0)) orderData.owner = msg.sender;
         if (orderData.destChainId == 0 || orderData.destChainId == block.chainid) revert InvalidChainId();
@@ -295,7 +317,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         SolverNet.Header memory header = SolverNet.Header({
             owner: orderData.owner,
             destChainId: orderData.destChainId,
-            fillDeadline: order.fillDeadline
+            fillDeadline: fillDeadline
         });
 
         // Validate SolverNet.OrderData.Call
@@ -314,6 +336,26 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         }
 
         return SolverNet.Order({ header: header, calls: calls, deposit: orderData.deposit, expenses: expenses });
+    }
+
+    /**
+     * @dev Parse and return OnchainCrossChainOrder data, validate correctness.
+     * @param order OnchainCrossChainOrder to parse
+     */
+    function _validate(OnchainCrossChainOrder calldata order) internal view returns (SolverNet.Order memory) {
+        _validateOnchainOrder(order);
+        SolverNet.OrderData memory orderData = abi.decode(order.orderData, (SolverNet.OrderData));
+        return _validateSolverNetOrder(orderData, order.fillDeadline);
+    }
+
+    /**
+     * @dev Parse and return GaslessCrossChainOrder data, validate correctness.
+     * @param order GaslessCrossChainOrder to parse
+     */
+    function _validate(GaslessCrossChainOrder calldata order) internal view returns (SolverNet.Order memory) {
+        _validateGaslessOrder(order);
+        SolverNet.OrderData memory orderData = abi.decode(order.orderData, (SolverNet.OrderData));
+        return _validateSolverNetOrder(orderData, order.fillDeadline);
     }
 
     /**

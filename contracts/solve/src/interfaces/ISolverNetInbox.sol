@@ -4,11 +4,18 @@ pragma solidity =0.8.24;
 import { IOriginSettler } from "../erc7683/IOriginSettler.sol";
 
 interface ISolverNetInbox is IOriginSettler {
-    // Validation errors
+    // Order validation errors
     error InvalidOrderTypehash();
+    error InvalidOriginSettler();
+    error InvalidOpenDeadline();
+    error InvalidFillDeadline();
+    error InvalidOriginChain();
     error InvalidOrderData();
     error InvalidChainId();
-    error InvalidFillDeadline();
+    error InvalidNonce();
+    error InvalidUser();
+
+    // OrderData validation errors
     error InvalidMissingCalls();
     error InvalidCallTarget();
     error InvalidExpenseToken();
