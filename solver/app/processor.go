@@ -116,21 +116,6 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 					continue
 				}
 
-				log.Info(ctx, "Accepting order")
-				if err := deps.Accept(ctx, order); err != nil {
-					return errors.Wrap(err, "accept order")
-				}
-			case statusAccepted:
-				if alreadyFilled() {
-					return errors.New("unexpected already filled [BUG]")
-				}
-
-				if didReject, err := maybeReject(); err != nil {
-					return err
-				} else if didReject {
-					continue
-				}
-
 				log.Info(ctx, "Filling order")
 				if err := deps.Fill(ctx, order); err != nil {
 					return errors.Wrap(err, "fill order")
@@ -140,7 +125,7 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 				if err := deps.Claim(ctx, order); err != nil {
 					return errors.Wrap(err, "claim order")
 				}
-			case statusRejected, statusReverted, statusClaimed:
+			case statusRejected, statusClosed, statusClaimed:
 			// Ignore for now
 			default:
 				return errors.New("unknown status [BUG]")

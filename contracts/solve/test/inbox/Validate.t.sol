@@ -11,7 +11,7 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
         // `fillDeadline` must be in the future
         vm.expectRevert(ISolverNetInbox.InvalidFillDeadline.selector);
         inbox.validate(order);
-        order.fillDeadline = 0;
+        order.fillDeadline = defaultFillDeadline;
 
         // `orderDataType` must be correct
         vm.expectRevert(ISolverNetInbox.InvalidOrderTypehash.selector);

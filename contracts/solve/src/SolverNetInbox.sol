@@ -166,23 +166,6 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     }
 
     /**
-     * @notice Accept an open order.
-     * @dev Only a whitelisted solver can accept.
-     * @param id ID of the order.
-     */
-    function accept(bytes32 id) external onlyRoles(SOLVER) nonReentrant {
-        SolverNet.Header memory header = _orderHeader[id];
-        OrderState memory state = _orderState[id];
-
-        if (state.status != Status.Pending) revert OrderNotPending();
-        if (header.fillDeadline < block.timestamp && header.fillDeadline != 0) revert FillDeadlinePassed();
-
-        _upsertOrder(id, Status.Accepted, msg.sender);
-
-        emit Accepted(id, msg.sender);
-    }
-
-    /**
      * @notice Reject an open order and refund deposits.
      * @dev Only a whitelisted solver can reject.
      * @param id     ID of the order.
@@ -191,10 +174,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     function reject(bytes32 id, uint8 reason) external onlyRoles(SOLVER) nonReentrant {
         OrderState memory state = _orderState[id];
 
-        if (state.status != Status.Pending) {
-            if (state.status != Status.Accepted) revert Unauthorized();
-            if (state.claimant != msg.sender) revert Unauthorized();
-        }
+        if (state.status != Status.Pending) revert OrderNotPending();
 
         _upsertOrder(id, Status.Rejected, msg.sender);
         _transferDeposit(id, _orderHeader[id].owner);
@@ -203,37 +183,36 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     }
 
     /**
-     * @notice Cancel an open and refund deposits.
-     * @dev Only order initiator can cancel.
+     * @notice Close order and refund deposits after fill deadline has elapsed.
+     * @dev Only order initiator can close.
      * @param id ID of the order.
      */
-    function cancel(bytes32 id) external nonReentrant {
+    function close(bytes32 id) external nonReentrant {
         OrderState memory state = _orderState[id];
-        address user = _orderHeader[id].owner;
+        SolverNet.Header memory header = _orderHeader[id];
 
         if (state.status != Status.Pending) revert OrderNotPending();
-        if (user != msg.sender) revert Unauthorized();
+        if (header.owner != msg.sender) revert Unauthorized();
+        if (header.fillDeadline >= block.timestamp) revert OrderStillValid();
 
-        _upsertOrder(id, Status.Reverted, msg.sender);
-        _transferDeposit(id, user);
+        _upsertOrder(id, Status.Closed, msg.sender);
+        _transferDeposit(id, header.owner);
 
-        emit Reverted(id);
+        emit Closed(id);
     }
 
     /**
      * @notice Fill an order.
      * @dev Only callable by the outbox.
-     * @param id        ID of the order.
-     * @param fillHash  Hash of fill instructions origin data.
-     * @param claimant  Address to claim the order, provided by the filler.
+     * @param id         ID of the order.
+     * @param fillHash   Hash of fill instructions origin data.
+     * @param creditedTo Address deposits are credited to, provided by the filler.
      */
-    function markFilled(bytes32 id, bytes32 fillHash, address claimant) external xrecv nonReentrant {
+    function markFilled(bytes32 id, bytes32 fillHash, address creditedTo) external xrecv nonReentrant {
         SolverNet.Header memory header = _orderHeader[id];
         OrderState memory state = _orderState[id];
 
-        if (state.status != Status.Pending && state.status != Status.Accepted) {
-            revert OrderNotPendingOrAccepted();
-        }
+        if (state.status != Status.Pending) revert OrderNotPending();
         if (xmsg.sourceChainId != header.destChainId) revert WrongSourceChain();
         if (xmsg.sender != _outboxes[xmsg.sourceChainId]) revert Unauthorized();
 
@@ -242,12 +221,12 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             revert WrongFillHash();
         }
 
-        _upsertOrder(id, Status.Filled, claimant);
-        emit Filled(id, fillHash, claimant);
+        _upsertOrder(id, Status.Filled, creditedTo);
+        emit Filled(id, fillHash, creditedTo);
     }
 
     /**
-     * @notice Claim a filled order.
+     * @notice Claim deposits for a filled order.
      * @param id ID of the order.
      * @param to Address to send deposits to.
      */
@@ -255,7 +234,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         OrderState memory state = _orderState[id];
 
         if (state.status != Status.Filled) revert OrderNotFilled();
-        if (state.claimant != msg.sender) revert Unauthorized();
+        if (state.updatedBy != msg.sender) revert Unauthorized();
 
         _upsertOrder(id, Status.Claimed, msg.sender);
         _transferDeposit(id, to);
@@ -282,7 +261,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      */
     function _validate(OnchainCrossChainOrder calldata order) internal view returns (SolverNet.Order memory) {
         // Validate OnchainCrossChainOrder
-        if (order.fillDeadline <= block.timestamp && order.fillDeadline != 0) revert InvalidFillDeadline();
+        if (order.fillDeadline <= block.timestamp) revert InvalidFillDeadline();
         if (order.orderDataType != ORDERDATA_TYPEHASH) revert InvalidOrderTypehash();
         if (order.orderData.length == 0) revert InvalidOrderData();
 
@@ -482,17 +461,10 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @dev Update or insert order state by id.
      * @param id        ID of the order.
      * @param status    Status to upsert.
-     * @param updatedBy Address updating the order, only written to state if status is Accepted or Filled.
+     * @param updatedBy Address updating the order.
      */
     function _upsertOrder(bytes32 id, Status status, address updatedBy) internal {
-        OrderState memory state = _orderState[id];
-
-        state.status = status;
-        state.timestamp = uint32(block.timestamp);
-        if (status == Status.Accepted) state.claimant = updatedBy;
-        if (status == Status.Filled && state.claimant == address(0)) state.claimant = updatedBy;
-
-        _orderState[id] = state;
+        _orderState[id] = OrderState({ status: status, timestamp: uint32(block.timestamp), updatedBy: updatedBy });
         _latestOrderIdByStatus[status] = id;
     }
 

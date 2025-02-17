@@ -17,12 +17,11 @@ interface ISolverNetInbox is IOriginSettler {
     // Open order errors
     error InvalidNativeDeposit();
 
-    // Order accept/reject/cancel errors
+    // Order status errors
     error OrderNotPending();
-    error FillDeadlinePassed();
+    error OrderStillValid();
 
     // Order fill errors
-    error OrderNotPendingOrAccepted();
     error WrongSourceChain();
     error WrongFillHash();
 
@@ -37,13 +36,6 @@ interface ISolverNetInbox is IOriginSettler {
     event OutboxSet(uint64 indexed chainId, address indexed outbox);
 
     /**
-     * @notice Emitted when an order is accepted.
-     * @param id ID of the order.
-     * @param by Address of the solver who accepted the order.
-     */
-    event Accepted(bytes32 indexed id, address indexed by);
-
-    /**
      * @notice Emitted when an order is rejected.
      * @param id     ID of the order.
      * @param by     Address of the solver who rejected the order.
@@ -55,7 +47,7 @@ interface ISolverNetInbox is IOriginSettler {
      * @notice Emitted when an order is cancelled.
      * @param id ID of the order.
      */
-    event Reverted(bytes32 indexed id);
+    event Closed(bytes32 indexed id);
 
     /**
      * @notice Emitted when an order is filled.
@@ -79,9 +71,8 @@ interface ISolverNetInbox is IOriginSettler {
     enum Status {
         Invalid,
         Pending,
-        Accepted,
         Rejected,
-        Reverted,
+        Closed,
         Filled,
         Claimed
     }
@@ -90,12 +81,12 @@ interface ISolverNetInbox is IOriginSettler {
      * @notice State of an order.
      * @param status    Latest order status.
      * @param timestamp Timestamp of the status update.
-     * @param claimant  Address of the claimant, defined at fill.
+     * @param updatedBy Address for who last updated the order.
      */
     struct OrderState {
         Status status;
         uint32 timestamp;
-        address claimant;
+        address updatedBy;
     }
 
     /**
@@ -132,13 +123,6 @@ interface ISolverNetInbox is IOriginSettler {
     function validate(OnchainCrossChainOrder calldata order) external view returns (bool);
 
     /**
-     * @notice Accept an open order.
-     * @dev Only a whitelisted solver can accept.
-     * @param id ID of the order.
-     */
-    function accept(bytes32 id) external;
-
-    /**
      * @notice Reject an open order and refund deposits.
      * @dev Only a whitelisted solver can reject.
      * @param id     ID of the order.
@@ -147,23 +131,23 @@ interface ISolverNetInbox is IOriginSettler {
     function reject(bytes32 id, uint8 reason) external;
 
     /**
-     * @notice Cancel an open and refund deposits.
-     * @dev Only order initiator can cancel.
+     * @notice Close order and refund deposits after fill deadline has elapsed.
+     * @dev Only order initiator can close.
      * @param id ID of the order.
      */
-    function cancel(bytes32 id) external;
+    function close(bytes32 id) external;
 
     /**
      * @notice Fill an order.
      * @dev Only callable by the outbox.
-     * @param id        ID of the order.
-     * @param fillHash  Hash of fill instructions origin data.
-     * @param claimant  Address to claim the order, provided by the filler.
+     * @param id         ID of the order.
+     * @param fillHash   Hash of fill instructions origin data.
+     * @param creditedTo Address deposits are credited to, provided by the filler.
      */
-    function markFilled(bytes32 id, bytes32 fillHash, address claimant) external;
+    function markFilled(bytes32 id, bytes32 fillHash, address creditedTo) external;
 
     /**
-     * @notice Claim a filled order.
+     * @notice Claim deposits for a filled order.
      * @param id ID of the order.
      * @param to Address to send deposits to.
      */
