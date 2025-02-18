@@ -14,15 +14,15 @@ import (
 )
 
 // Version defines the geth version deployed to all networks.
-const Version = "v1.15.2"
+const Version = "v1.14.13"
 
 // SupportedVersions are the supported older geth versions.
 // These are tested in backwards.toml.
 var SupportedVersions = []string{
-	"v1.14.13",
 	"v1.14.12",
 	"v1.14.11",
 	"v1.14.8",
+	"v1.14.7",
 }
 
 // Config is the configurable options for the standard omni geth config.
@@ -39,8 +39,6 @@ type Config struct {
 	TrustedNodes []*enode.Node
 	// SnapshotCacheMB overrides the default snapshot cache size in MB if not zero.
 	SnapshotCacheMB int
-	// AdvertisedIP defines the external NAT advertised IP address.
-	AdvertisedIP string
 }
 
 // defaultGethConfig returns the default geth config.
