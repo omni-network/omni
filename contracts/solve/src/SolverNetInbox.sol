@@ -21,6 +21,11 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     using AddrUtils for address;
 
     /**
+     * @notice Buffer for closing orders after fill deadline to give Omni Core relayer time to act.
+     */
+    uint256 internal constant CLOSE_BUFFER = 6 hours;
+
+    /**
      * @notice Role for solvers.
      * @dev _ROLE_0 evaluates to '1'.
      */
@@ -34,9 +39,30 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     );
 
     /**
+     * @notice Key for pausing the `open` function.
+     */
+    bytes32 internal constant OPEN = keccak256("OPEN");
+
+    /**
+     * @notice Key for pausing the `close` function.
+     */
+    bytes32 internal constant CLOSE = keccak256("CLOSE");
+
+    uint8 internal constant NONE_PAUSED = 0;
+    uint8 internal constant OPEN_PAUSED = 1;
+    uint8 internal constant CLOSE_PAUSED = 2;
+    uint8 internal constant ALL_PAUSED = 3;
+
+    /**
      * @dev Counter for generating unique order IDs. Incremented each time a new order is created.
      */
-    uint256 internal _lastId;
+    uint248 internal _lastId;
+
+    /**
+     * @notice Pause state.
+     * @dev 0 = no pause, 1 = open paused, 2 = close paused, 3 = all paused.
+     */
+    uint8 public pauseState;
 
     /**
      * @notice Addresses of the outbox contracts.
@@ -77,6 +103,19 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      */
     mapping(Status => bytes32 id) internal _latestOrderIdByStatus;
 
+    /**
+     * @notice Modifier to ensure contract functions are not paused.
+     */
+    modifier whenNotPaused(bytes32 pauseKey) {
+        uint8 _pauseState = pauseState;
+        if (_pauseState != 0) {
+            if (_pauseState == OPEN_PAUSED && pauseKey == OPEN) revert IsPaused();
+            if (_pauseState == CLOSE_PAUSED && pauseKey == CLOSE) revert IsPaused();
+            if (_pauseState == ALL_PAUSED) revert AllPaused();
+        }
+        _;
+    }
+
     constructor() {
         _disableInitializers();
     }
@@ -92,6 +131,34 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         _initializeOwner(owner_);
         _grantRoles(solver_, SOLVER);
         _setOmniPortal(omni_);
+    }
+
+    /**
+     * @notice Pause the `open` function, preventing new orders from being opened.
+     * @dev Cannot override ALL_PAUSED state.
+     * @param pause True to pause, false to unpause.
+     */
+    function pauseOpen(bool pause) external onlyOwnerOrRoles(SOLVER) {
+        _setPauseState(OPEN, pause);
+    }
+
+    /**
+     * @notice Pause the `close` function, preventing orders from being closed by users.
+     * @dev `close` should only be paused if the Omni Core relayer is not available.
+     * @dev Cannot override ALL_PAUSED state.
+     * @param pause True to pause, false to unpause.
+     */
+    function pauseClose(bool pause) external onlyOwnerOrRoles(SOLVER) {
+        _setPauseState(CLOSE, pause);
+    }
+
+    /**
+     * @notice Pause open and close functions.
+     * @dev Can override OPEN_PAUSED or CLOSE_PAUSED states.
+     * @param pause True to pause, false to unpause.
+     */
+    function pauseAll(bool pause) external onlyOwnerOrRoles(SOLVER) {
+        pause ? pauseState = ALL_PAUSED : pauseState = NONE_PAUSED;
     }
 
     /**
@@ -157,7 +224,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @dev Token deposits are transferred from msg.sender to this inbox.
      * @param order OnchainCrossChainOrder to open.
      */
-    function open(OnchainCrossChainOrder calldata order) external payable nonReentrant {
+    function open(OnchainCrossChainOrder calldata order) external payable whenNotPaused(OPEN) nonReentrant {
         SolverNet.Order memory orderData = _validate(order);
         _processDeposit(orderData.deposit);
         ResolvedCrossChainOrder memory resolved = _openOrder(orderData);
@@ -187,13 +254,13 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @dev Only order initiator can close.
      * @param id ID of the order.
      */
-    function close(bytes32 id) external nonReentrant {
+    function close(bytes32 id) external whenNotPaused(CLOSE) nonReentrant {
         OrderState memory state = _orderState[id];
         SolverNet.Header memory header = _orderHeader[id];
 
         if (state.status != Status.Pending) revert OrderNotPending();
         if (header.owner != msg.sender) revert Unauthorized();
-        if (header.fillDeadline >= block.timestamp) revert OrderStillValid();
+        if (header.fillDeadline + CLOSE_BUFFER >= block.timestamp) revert OrderStillValid();
 
         _upsertOrder(id, Status.Closed, msg.sender);
         _transferDeposit(id, header.owner);
@@ -472,14 +539,14 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @dev Return the next order ID.
      */
     function _nextId() internal view returns (bytes32) {
-        return bytes32(_lastId + 1);
+        return bytes32(uint256(_lastId + 1));
     }
 
     /**
      * @dev Increment and return the next order ID.
      */
     function _incrementId() internal returns (bytes32) {
-        return bytes32(++_lastId);
+        return bytes32(uint256(++_lastId));
     }
 
     /**
@@ -500,5 +567,21 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         });
 
         return keccak256(abi.encode(orderId, abi.encode(fillOriginData)));
+    }
+
+    /**
+     * @notice Pause the `open` or `close` function
+     * @dev Cannot override ALL_PAUSED state
+     * @param key OPEN or CLOSE pause key
+     * @param pause True to pause, false to unpause
+     */
+    function _setPauseState(bytes32 key, bool pause) internal {
+        uint8 _pauseState = pauseState;
+        if (_pauseState == ALL_PAUSED) revert AllPaused();
+
+        uint8 targetState = key == OPEN ? OPEN_PAUSED : CLOSE_PAUSED;
+        if (pause ? _pauseState == targetState : _pauseState != targetState) revert IsPaused();
+
+        pauseState = pause ? targetState : NONE_PAUSED;
     }
 }
