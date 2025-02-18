@@ -34,15 +34,13 @@ services:
     labels:
       e2e: true
     container_name: fullnode01_evm
-    image: ethereum/client-go:v1.14.13
+    image: ethereum/client-go:v1.15.2
     restart: unless-stopped
     command:
       - --config=/geth/config.toml
       # Flags not available via config.toml
-      - --nat=extip:127.0.0.5
       - --pprof
       - --pprof.addr=0.0.0.0
-      - --metrics
       - --graphql
       - --verbosity=3 # Log level (1=error,2=warn,3=info,4=debug)
       

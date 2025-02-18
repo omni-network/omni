@@ -38,7 +38,6 @@ contract SolverNet_E2E_Test is TestBase {
 
         vm.chainId(destChainId);
         vm.startPrank(solver);
-        inbox.accept(resolvedOrder.orderId);
         outbox.fill{ value: defaultAmount + fillFee }(
             resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
         );
@@ -103,7 +102,6 @@ contract SolverNet_E2E_Test is TestBase {
 
         vm.chainId(destChainId);
         vm.startPrank(solver);
-        inbox.accept(resolvedOrder.orderId);
         outbox.fill{ value: fillFee }(
             resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
         );
@@ -169,7 +167,6 @@ contract SolverNet_E2E_Test is TestBase {
 
         vm.chainId(destChainId);
         vm.startPrank(solver);
-        inbox.accept(resolvedOrder.orderId);
         outbox.fill{ value: defaultAmount + fillFee }(
             resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
         );
@@ -236,7 +233,6 @@ contract SolverNet_E2E_Test is TestBase {
 
         vm.chainId(destChainId);
         vm.startPrank(solver);
-        inbox.accept(resolvedOrder.orderId);
         outbox.fill{ value: fillFee }(
             resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
         );
@@ -306,7 +302,6 @@ contract SolverNet_E2E_Test is TestBase {
 
         vm.chainId(destChainId);
         vm.startPrank(solver);
-        inbox.accept(resolvedOrder.orderId);
         outbox.fill{ value: defaultAmount + fillFee }(
             resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
         );

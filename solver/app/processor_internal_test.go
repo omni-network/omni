@@ -14,7 +14,6 @@ import (
 )
 
 const (
-	accept  = "accept"
 	reject  = "reject"
 	fill    = "fill"
 	claim   = "claim"
@@ -32,13 +31,6 @@ func TestEventProcessor(t *testing.T) {
 		expect       string
 	}{
 		{
-			name:         "accept",
-			event:        topicOpened,
-			getStatus:    statusPending,
-			rejectReason: 0,
-			expect:       accept,
-		},
-		{
 			name:         "reject",
 			event:        topicOpened,
 			getStatus:    statusPending,
@@ -46,16 +38,9 @@ func TestEventProcessor(t *testing.T) {
 			expect:       reject,
 		},
 		{
-			name:         "reject after accept",
-			event:        topicAccepted,
-			getStatus:    statusAccepted,
-			rejectReason: 1,
-			expect:       reject,
-		},
-		{
 			name:      "fulfill",
-			event:     topicAccepted,
-			getStatus: statusAccepted,
+			event:     topicOpened,
+			getStatus: statusPending,
 			expect:    fill,
 		},
 		{
@@ -72,26 +57,14 @@ func TestEventProcessor(t *testing.T) {
 		},
 		{
 			name:      "ignore reverted",
-			event:     topicReverted,
-			getStatus: statusReverted,
+			event:     topicClosed,
+			getStatus: statusClosed,
 			expect:    ignored,
 		},
 		{
 			name:      "ignore claimed",
 			event:     topicClaimed,
 			getStatus: statusClaimed,
-			expect:    ignored,
-		},
-		{
-			name:      "ignore mismatch 1",
-			event:     topicOpened,
-			getStatus: statusAccepted,
-			expect:    ignored,
-		},
-		{
-			name:      "ignore mismatch 2",
-			event:     topicAccepted,
-			getStatus: statusFilled,
 			expect:    ignored,
 		},
 	}
@@ -125,13 +98,6 @@ func TestEventProcessor(t *testing.T) {
 				},
 				ShouldReject: func(ctx context.Context, order Order) (rejectReason, bool, error) {
 					return test.rejectReason, test.rejectReason != rejectNone, nil
-				},
-				Accept: func(ctx context.Context, order Order) error {
-					actual = accept
-					require.Equal(t, test.getStatus, order.Status)
-					require.EqualValues(t, orderID, order.ID)
-
-					return nil
 				},
 				Reject: func(ctx context.Context, order Order, reason rejectReason) error {
 					actual = reject

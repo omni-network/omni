@@ -112,30 +112,6 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
         assertEq(token2.balanceOf(address(erc20Vault)), defaultAmount, "vault token2 balance after");
     }
 
-    function test_fill_no_fill_deadline_succeeds() public {
-        (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
-            getErc20ForErc20VaultOrder(defaultAmount, defaultAmount);
-        order.fillDeadline = 0;
-        assertTrue(inbox.validate(order), "order should be valid");
-
-        vm.prank(user);
-        IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
-        uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
-        fundSolver(orderData, fillFee);
-
-        vm.chainId(destChainId);
-        vm.prank(solver);
-        outbox.fill{ value: fillFee }(
-            resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData, abi.encode(solver)
-        );
-
-        assertEq(token2.balanceOf(address(outbox)), 0, "outbox token2 balance after");
-        assertEq(token2.balanceOf(address(outbox.executor())), 0, "executor token2 balance after");
-        assertEq(token2.balanceOf(solver), 0, "solver token2 balance after");
-        assertEq(erc20Vault.balances(user), defaultAmount, "vault deposit balance after");
-        assertEq(token2.balanceOf(address(erc20Vault)), defaultAmount, "vault token2 balance after");
-    }
-
     function test_fill_call_refund_succeeds() public {
         (SolverNet.OrderData memory orderData,) = getNativeForNativeVaultOrder(defaultAmount, defaultAmount);
         orderData.calls[0].target = address(refunder);

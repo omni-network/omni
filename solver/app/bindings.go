@@ -13,11 +13,10 @@ import (
 const (
 	statusInvalid  uint8 = 0
 	statusPending  uint8 = 1
-	statusAccepted uint8 = 2
-	statusRejected uint8 = 3
-	statusReverted uint8 = 4
-	statusFilled   uint8 = 5
-	statusClaimed  uint8 = 6
+	statusRejected uint8 = 2
+	statusClosed   uint8 = 3
+	statusFilled   uint8 = 4
+	statusClaimed  uint8 = 5
 )
 
 var (
@@ -26,9 +25,8 @@ var (
 
 	// Event log topics (common.Hash).
 	topicOpened   = mustGetEventTopic(inboxABI, "Open")
-	topicAccepted = mustGetEventTopic(inboxABI, "Accepted")
 	topicRejected = mustGetEventTopic(inboxABI, "Rejected")
-	topicReverted = mustGetEventTopic(inboxABI, "Reverted")
+	topicClosed   = mustGetEventTopic(inboxABI, "Closed")
 	topicFilled   = mustGetEventTopic(inboxABI, "Filled")
 	topicClaimed  = mustGetEventTopic(inboxABI, "Claimed")
 )
@@ -48,19 +46,14 @@ var (
 			ParseID: parseOpened,
 		},
 		{
-			Topic:   topicAccepted,
-			Status:  statusAccepted,
-			ParseID: parseAccepted,
-		},
-		{
 			Topic:   topicRejected,
 			Status:  statusRejected,
 			ParseID: parseRejected,
 		},
 		{
-			Topic:   topicReverted,
-			Status:  statusReverted,
-			ParseID: parseReverted,
+			Topic:   topicClosed,
+			Status:  statusClosed,
+			ParseID: parseClosed,
 		},
 		{
 			Topic:   topicFilled,
@@ -100,12 +93,10 @@ func statusString(status uint8) string {
 		return "invalid"
 	case statusPending:
 		return "pending"
-	case statusAccepted:
-		return "accepted"
 	case statusRejected:
 		return "rejected"
-	case statusReverted:
-		return "reverted"
+	case statusClosed:
+		return "closed"
 	case statusFilled:
 		return "filled"
 	case statusClaimed:
@@ -124,15 +115,6 @@ func parseOpened(contract bindings.SolverNetInboxFilterer, log types.Log) (Order
 	return e.OrderId, nil
 }
 
-func parseAccepted(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error) {
-	e, err := contract.ParseAccepted(log)
-	if err != nil {
-		return OrderID{}, errors.Wrap(err, "parse accepted")
-	}
-
-	return e.Id, nil
-}
-
 func parseRejected(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error) {
 	e, err := contract.ParseRejected(log)
 	if err != nil {
@@ -142,10 +124,10 @@ func parseRejected(contract bindings.SolverNetInboxFilterer, log types.Log) (Ord
 	return e.Id, nil
 }
 
-func parseReverted(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error) {
-	e, err := contract.ParseReverted(log)
+func parseClosed(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error) {
+	e, err := contract.ParseClosed(log)
 	if err != nil {
-		return OrderID{}, errors.Wrap(err, "parse reverted")
+		return OrderID{}, errors.Wrap(err, "parse closed")
 	}
 
 	return e.Id, nil
