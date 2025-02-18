@@ -6,30 +6,137 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 var (
-	bindingsABI          = mustGetABI(bindings.ISolverNetBindingsMetaData)
+	inboxABI    = mustGetABI(bindings.SolverNetInboxMetaData)
+	outboxABI   = mustGetABI(bindings.SolverNetOutboxMetaData)
+	bindingsABI = mustGetABI(bindings.ISolverNetBindingsMetaData)
+
 	inputsOrderData      = mustGetInputs(bindingsABI, "orderData")
 	inputsFillOriginData = mustGetInputs(bindingsABI, "fillOriginData")
+
+	// Event log topics (common.Hash).
+	TopicOpened   = mustGetEventTopic(inboxABI, "Open")
+	TopicRejected = mustGetEventTopic(inboxABI, "Rejected")
+	TopicClosed   = mustGetEventTopic(inboxABI, "Closed")
+	TopicFilled   = mustGetEventTopic(inboxABI, "Filled")
+	TopicClaimed  = mustGetEventTopic(inboxABI, "Claimed")
 )
 
-func mustGetABI(metadata *bind.MetaData) *abi.ABI {
-	abi, err := metadata.GetAbi()
-	if err != nil {
-		panic(err)
-	}
-
-	return abi
+// EventMeta contains metadata about an event.
+type EventMeta struct {
+	Topic   common.Hash
+	Status  OrderStatus
+	ParseID func(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error)
 }
 
-func mustGetInputs(abi *abi.ABI, name string) abi.Arguments {
-	method, ok := abi.Methods[name]
-	if !ok {
-		panic("method not found")
+var (
+	allEvents = []EventMeta{
+		{
+			Topic:   TopicOpened,
+			Status:  StatusPending,
+			ParseID: ParseOpened,
+		},
+		{
+			Topic:   TopicRejected,
+			Status:  StatusRejected,
+			ParseID: ParseRejected,
+		},
+		{
+			Topic:   TopicClosed,
+			Status:  StatusClosed,
+			ParseID: ParseClosed,
+		},
+		{
+			Topic:   TopicFilled,
+			Status:  StatusFilled,
+			ParseID: ParseFilled,
+		},
+		{
+			Topic:   TopicClaimed,
+			Status:  StatusClaimed,
+			ParseID: ParseClaimed,
+		},
 	}
 
-	return method.Inputs
+	eventsByTopic = func() map[common.Hash]EventMeta {
+		resp := make(map[common.Hash]EventMeta, len(allEvents))
+		for _, e := range allEvents {
+			resp[e.Topic] = e
+		}
+
+		return resp
+	}()
+)
+
+// EventByTopic returns the event metadata for a given topic.
+func EventByTopic(topic common.Hash) (EventMeta, bool) {
+	e, ok := eventsByTopic[topic]
+	return e, ok
+}
+
+// AllEventTopics returns all solvernet event topics.
+func AllEventTopics() []common.Hash {
+	resp := make([]common.Hash, 0, len(allEvents))
+	for _, e := range allEvents {
+		resp = append(resp, e.Topic)
+	}
+
+	return resp
+}
+
+func ParseOpened(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error) {
+	e, err := contract.ParseOpen(log)
+	if err != nil {
+		return OrderID{}, errors.Wrap(err, "parse opened")
+	}
+
+	return e.OrderId, nil
+}
+
+func ParseRejected(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error) {
+	e, err := contract.ParseRejected(log)
+	if err != nil {
+		return OrderID{}, errors.Wrap(err, "parse rejected")
+	}
+
+	return e.Id, nil
+}
+
+func ParseClosed(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error) {
+	e, err := contract.ParseClosed(log)
+	if err != nil {
+		return OrderID{}, errors.Wrap(err, "parse closed")
+	}
+
+	return e.Id, nil
+}
+
+func ParseFilled(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error) {
+	e, err := contract.ParseFilled(log)
+	if err != nil {
+		return OrderID{}, errors.Wrap(err, "parse filled")
+	}
+
+	return e.Id, nil
+}
+
+func ParseClaimed(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error) {
+	e, err := contract.ParseClaimed(log)
+	if err != nil {
+		return OrderID{}, errors.Wrap(err, "parse claimed")
+	}
+
+	return e.Id, nil
+}
+
+func PackFillCalldata(orderID OrderID, fillOriginData []byte) ([]byte, error) {
+	// fillerData is optional ERC7683 custom filler specific data, unused in our contracts
+	fillerData := []byte{}
+	return outboxABI.Pack("fill", orderID, fillOriginData, fillerData)
 }
 
 func ParseFillOriginData(data []byte) (bindings.SolverNetFillOriginData, error) {
@@ -80,4 +187,31 @@ func PackFillOriginData(data bindings.SolverNetFillOriginData) ([]byte, error) {
 	}
 
 	return packed, nil
+}
+
+func mustGetEventTopic(abi *abi.ABI, name string) common.Hash {
+	event, ok := abi.Events[name]
+	if !ok {
+		panic("event not found")
+	}
+
+	return event.ID
+}
+
+func mustGetABI(metadata *bind.MetaData) *abi.ABI {
+	abi, err := metadata.GetAbi()
+	if err != nil {
+		panic(err)
+	}
+
+	return abi
+}
+
+func mustGetInputs(abi *abi.ABI, name string) abi.Arguments {
+	method, ok := abi.Methods[name]
+	if !ok {
+		panic("method not found")
+	}
+
+	return method.Inputs
 }

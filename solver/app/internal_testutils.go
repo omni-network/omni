@@ -15,6 +15,7 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
@@ -22,7 +23,11 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-var erc20ABI = mustGetABI(bindings.IERC20MetaData)
+var (
+	erc20ABI  = mustGetABI(bindings.IERC20MetaData)
+	inboxABI  = mustGetABI(bindings.SolverNetInboxMetaData)
+	outboxABI = mustGetABI(bindings.SolverNetOutboxMetaData)
+)
 
 type OrderData = bindings.SolverNetOrderData
 
@@ -598,4 +603,13 @@ func abiEncodeBool(t *testing.T, b bool) []byte {
 	require.NoError(t, err)
 
 	return data
+}
+
+func mustGetABI(metadata *bind.MetaData) *abi.ABI {
+	abi, err := metadata.GetAbi()
+	if err != nil {
+		panic(err)
+	}
+
+	return abi
 }

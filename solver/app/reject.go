@@ -181,8 +181,7 @@ func checkFill(
 		return errors.Wrap(err, "get fulfill fee")
 	}
 
-	fillerData := []byte{} // fillerData is optional ERC7683 custom filler specific data, unused in our contracts
-	fillCallData, err := outboxABI.Pack("fill", orderID, fillOriginData, fillerData)
+	fillCallData, err := solvernet.PackFillCalldata(orderID, fillOriginData)
 	if err != nil {
 		return errors.Wrap(err, "pack fill inputs")
 	}

@@ -190,7 +190,7 @@ func bridgeToNative(ctx context.Context, backends ethbackend.Backends, order Bri
 	log.Debug(ctx, "Requesting native solvernet bridge", "user", order.From.Hex(), "amt", order.Amount.Uint64())
 
 	// bridge to native requests a user.call{value: amt} on omni, while depositing amt ERC20 omni devnet l1
-	return solvernet.OpenOrder(ctx, netconf.Devnet, evmchain.IDMockL1, backends, order.From, bindings.SolverNetOrderData{
+	_, err := solvernet.OpenOrder(ctx, netconf.Devnet, evmchain.IDMockL1, backends, order.From, bindings.SolverNetOrderData{
 		DestChainId: evmchain.IDOmniDevnet,
 		Expenses:    nil,
 		Calls: []bindings.SolverNetCall{
@@ -206,6 +206,8 @@ func bridgeToNative(ctx context.Context, backends ethbackend.Backends, order Bri
 			Amount: order.Amount,
 		},
 	})
+
+	return err
 }
 
 func mintAndApproveAll(ctx context.Context, backends ethbackend.Backends, orders []BridgeOrder) error {
