@@ -52,10 +52,9 @@ func TestWriteConfigTOML(t *testing.T) {
 		name            string
 		isArchive       bool
 		snapShotCacheMB int
-		advertiseIP     string
 	}{
-		{"archive", true, 0, ""},
-		{"full", false, 999, "1.2.3.4"},
+		{"archive", true, 0},
+		{"full", false, 999},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -68,7 +67,6 @@ func TestWriteConfigTOML(t *testing.T) {
 				ChainID:         15651,
 				IsArchive:       test.isArchive,
 				SnapshotCacheMB: test.snapShotCacheMB,
-				AdvertisedIP:    test.advertiseIP,
 			}
 
 			tempFile := filepath.Join(t.TempDir(), test.name+".toml")

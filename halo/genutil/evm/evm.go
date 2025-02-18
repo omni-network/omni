@@ -42,7 +42,7 @@ func MakeGenesis(network netconf.ID) (core.Genesis, error) {
 	}
 
 	return core.Genesis{
-		Config:     DefaultChainConfig(network),
+		Config:     defaultChainConfig(network),
 		GasLimit:   miner.DefaultConfig.GasCeil,
 		BaseFee:    big.NewInt(params.InitialBaseFee),
 		Difficulty: big.NewInt(0),
@@ -90,9 +90,9 @@ func MarshallBackwardsCompatible(genesis core.Genesis) ([]byte, error) {
 	return bz, nil
 }
 
-// DefaultChainConfig returns the default chain config for a network.
+// defaultChainConfig returns the default chain config for a network.
 // See geth reference: https://github.com/ethereum/go-ethereum/blob/master/params/config.go#L65
-func DefaultChainConfig(network netconf.ID) *params.ChainConfig {
+func defaultChainConfig(network netconf.ID) *params.ChainConfig {
 	return &params.ChainConfig{
 		ChainID:                 umath.NewBigInt(network.Static().OmniExecutionChainID),
 		HomesteadBlock:          big.NewInt(0),
@@ -111,7 +111,6 @@ func DefaultChainConfig(network netconf.ID) *params.ChainConfig {
 		ShanghaiTime:            newUint64(0),
 		CancunTime:              newUint64(0),
 		TerminalTotalDifficulty: big.NewInt(0),
-		BlobScheduleConfig:      params.DefaultBlobSchedule,
 	}
 }
 

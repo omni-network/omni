@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/e2e/app/geth"
-	"github.com/omni-network/omni/halo/genutil/evm"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -51,17 +50,17 @@ func TestBlobTx(t *testing.T) {
 	t.Parallel()
 	testOmniEVM(t, func(t *testing.T, client ethclient.Client) {
 		t.Helper()
-		err := sendBlobTx(context.Background(), client, evm.DefaultChainConfig(netconf.Devnet))
+		err := sendBlobTx(context.Background(), client)
 		require.NoError(t, err)
 	})
 }
 
-func sendBlobTx(ctx context.Context, client ethclient.Client, config *params.ChainConfig) error {
+func sendBlobTx(ctx context.Context, client ethclient.Client) error {
 	privKey := anvil.DevPrivateKey1()
 	addr := crypto.PubkeyToAddress(privKey.PublicKey)
 
 	// Create a blob tx
-	blobTx, err := makeUnsignedBlobTx(ctx, client, config, addr)
+	blobTx, err := makeUnsignedBlobTx(ctx, client, addr)
 	if err != nil {
 		return err
 	}
@@ -93,13 +92,13 @@ func sendBlobTx(ctx context.Context, client ethclient.Client, config *params.Cha
 // makeUnsignedBlobTx is a utility method to construct a random blob transaction
 // without signing it.
 // Reference: github.com/ethereum/go-ethereum@v1.14.11/core/txpool/blobpool/blobpool_test.go:184.
-func makeUnsignedBlobTx(ctx context.Context, client ethclient.Client, config *params.ChainConfig, from common.Address) (*ethtypes.BlobTx, error) {
+func makeUnsignedBlobTx(ctx context.Context, client ethclient.Client, from common.Address) (*ethtypes.BlobTx, error) {
 	nonce, err := client.NonceAt(ctx, from, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "nonce")
 	}
 
-	tipCap, baseFee, blobFee, err := estimateGasPrice(ctx, client, config)
+	tipCap, baseFee, blobFee, err := estimateGasPrice(ctx, client)
 	if err != nil {
 		return nil, errors.Wrap(err, "estimate gas price")
 	}
@@ -131,7 +130,7 @@ func makeUnsignedBlobTx(ctx context.Context, client ethclient.Client, config *pa
 	}, nil
 }
 
-func estimateGasPrice(ctx context.Context, backend ethclient.Client, config *params.ChainConfig) (*big.Int, *big.Int, *big.Int, error) {
+func estimateGasPrice(ctx context.Context, backend ethclient.Client) (*big.Int, *big.Int, *big.Int, error) {
 	tip, err := backend.SuggestGasTipCap(ctx)
 	if err != nil {
 		return nil, nil, nil, err
@@ -153,7 +152,7 @@ func estimateGasPrice(ctx context.Context, backend ethclient.Client, config *par
 
 	var blobFee *big.Int
 	if head.ExcessBlobGas != nil {
-		blobFee = eip4844.CalcBlobFee(config, head)
+		blobFee = eip4844.CalcBlobFee(*head.ExcessBlobGas)
 	}
 
 	// The tip must be at most the base fee.
