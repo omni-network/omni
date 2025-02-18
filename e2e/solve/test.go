@@ -2,15 +2,11 @@ package solve
 
 import (
 	"context"
-	"fmt"
 	"math/big"
-	"strings"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
-	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/anvil"
-	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -18,19 +14,24 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
+	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 
 	"cosmossdk.io/math"
 	"golang.org/x/sync/errgroup"
 )
 
-type BridgeOrder struct {
-	From   common.Address
-	To     common.Address
-	Amount *big.Int
+type TestOrder struct {
+	Owner         common.Address
+	DestChainID   uint64
+	SourceChainID uint64
+	Expenses      []bindings.SolverNetExpense
+	Calls         []bindings.SolverNetCall
+	Deposit       bindings.SolverNetDeposit
+	ShouldReject  bool
 }
 
 func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints) error {
@@ -54,215 +55,148 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 		return errors.Wrap(err, "mint omni")
 	}
 
-	if err := bridgeToNativeAll(ctx, backends, orders); err != nil {
-		return errors.Wrap(err, "bridge to native")
-	}
-
-	if err := waitNativeAll(ctx, backends, orders); err != nil {
-		return errors.Wrap(err, "wait native")
-	}
-
-	if err := waitClaimAll(ctx, backends, orders); err != nil {
-		return errors.Wrap(err, "wait claim")
-	}
-
-	log.Info(ctx, "Solver test success")
-
-	return nil
-}
-
-func waitClaimAll(ctx context.Context, backends ethbackend.Backends, orders []BridgeOrder) error {
-	// solver claims erc20 OMNI on devnet L1
-	backend, err := backends.Backend(evmchain.IDMockL1)
+	tracker, err := openAll(ctx, backends, orders)
 	if err != nil {
-		return errors.Wrap(err, "backend")
+		return errors.Wrap(err, "open all")
 	}
 
-	token, err := bindings.NewIERC20(contracts.TokenAddr(netconf.Devnet), backend)
-	if err != nil {
-		return errors.Wrap(err, "bind token")
+	xprov := xprovider.New(network, backends.Clients(), nil)
+
+	proc := func(ctx context.Context, _ uint64, logs []types.Log) error {
+		for _, l := range logs {
+			event, ok := solvernet.EventByTopic(l.Topics[0])
+			if !ok {
+				return errors.New("unknown event", "topic", l.Topics[0])
+			}
+
+			id := solvernet.OrderID(l.Topics[1])
+
+			log.Info(ctx, "Order updated", "status", event.Status, "order", id)
+
+			tracker.setStatus(id, event.Status)
+		}
+
+		return nil
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
+	// start event streams
+	errChan := make(chan error, 1)
+	for _, chain := range network.EVMChains() {
+		go func() {
+			req := xchain.EventLogsReq{
+				ChainID:       chain.ID,
+				ConfLevel:     xchain.ConfLatest,
+				Height:        1,
+				FilterAddress: addrs.SolverNetInbox,
+				FilterTopics:  solvernet.AllEventTopics(),
+			}
 
-	total := big.NewInt(0)
-	for _, order := range orders {
-		total.Add(total, order.Amount)
+			err := xprov.StreamEventLogs(ctx, req, proc)
+			if err != nil {
+				errChan <- err
+			}
+		}()
 	}
 
-	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
+	// wait done
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
 
 	for {
 		select {
+		case err := <-errChan:
+			return errors.Wrap(err, "stream event logs")
 		case <-ctx.Done():
-			return errors.Wrap(ctx.Err(), "timeout")
+			return errors.Wrap(ctx.Err(), "context done")
 		case <-ticker.C:
-			balance, err := token.BalanceOf(&bind.CallOpts{Context: ctx}, solver)
+			done, err := tracker.done()
 			if err != nil {
-				return errors.Wrap(err, "balance of")
+				log.Error(ctx, "Solver test error", err)
+				return err
 			}
 
-			if balance.Cmp(total) == 0 {
-				log.Debug(ctx, "All claims complete")
+			if done {
+				log.Info(ctx, "Solver test success")
 				return nil
 			}
 		}
 	}
 }
 
-func makeOrders() []BridgeOrder {
+func makeOrders() []TestOrder {
 	users := anvil.DevAccounts()
-	amt := math.NewInt(10).MulRaw(params.Ether).BigInt()
-	orders := make([]BridgeOrder, len(users))
+	var orders []TestOrder
 
+	// erc20 OMNI -> native OMNI orders
 	for i, user := range users {
-		// use 0xdead0000ii... to get unique, unused order.To address per bridge order
-		// we bridge to unused addresses to simplify balance checks in waitNativeAll
-		const prefix = "0xdead0000"
-		to := common.HexToAddress(fmt.Sprintf("%s%s", prefix, strings.Repeat(fmt.Sprintf("%d", i), 42-len(prefix))))
+		requestAmt := math.NewInt(10).MulRaw(params.Ether).BigInt()
 
-		orders[i] = BridgeOrder{
-			From:   user,
-			To:     to,
-			Amount: amt,
+		// make some insufficient (should reject)
+		insufficientDeposit := i%2 == 0
+		depositAmt := new(big.Int).Set(requestAmt)
+		if insufficientDeposit {
+			depositAmt = depositAmt.Div(depositAmt, big.NewInt(2))
 		}
+
+		orders = append(orders, TestOrder{
+			Owner:         user,
+			SourceChainID: evmchain.IDMockL1,
+			DestChainID:   evmchain.IDOmniDevnet,
+			Expenses:      nil,
+			Calls:         nativeTransferCall(requestAmt, user),
+			Deposit:       erc20Deposit(depositAmt, addrs.Token),
+			ShouldReject:  insufficientDeposit,
+		})
 	}
+
+	// bad dest chain
+	orders = append(orders, TestOrder{
+		Owner:         users[0],
+		SourceChainID: evmchain.IDMockL1,
+		DestChainID:   1234, // invalid
+		Expenses:      nil,
+		Calls:         nativeTransferCall(big.NewInt(1), users[0]),
+		Deposit:       erc20Deposit(big.NewInt(1), addrs.Token),
+		ShouldReject:  true,
+	})
+
+	// TODO: more tests orders (different rejection cases, valid orders, etc)
 
 	return orders
 }
 
-func waitNativeAll(ctx context.Context, backends ethbackend.Backends, orders []BridgeOrder) error {
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
-	defer cancel()
+func openAll(ctx context.Context, backends ethbackend.Backends, orders []TestOrder) (*orderTracker, error) {
+	tracker := newOrderTracker()
 
-	backend, err := backends.Backend(evmchain.IDOmniDevnet)
-	if err != nil {
-		return errors.Wrap(err, "backend")
-	}
-
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return errors.Wrap(ctx.Err(), "timeout")
-		case <-ticker.C:
-			bridged := 0
-
-			for _, order := range orders {
-				balance, err := backend.BalanceAt(ctx, order.To, nil)
-				if err != nil {
-					return errors.Wrap(err, "balance of")
-				}
-
-				if balance.Cmp(order.Amount) == 0 {
-					bridged++
-				}
-			}
-
-			if bridged == len(orders) {
-				log.Debug(ctx, "All native bridges complete")
-				return nil
-			}
-		}
-	}
-}
-
-func bridgeToNativeAll(ctx context.Context, backends ethbackend.Backends, orders []BridgeOrder) error {
 	var eg errgroup.Group
 	for _, order := range orders {
-		eg.Go(func() error { return bridgeToNative(ctx, backends, order) })
+		eg.Go(func() error {
+			id, err := openOrder(ctx, backends, order)
+			if err != nil {
+				return err
+			}
+
+			tracker.add(id, order)
+
+			return nil
+		})
 	}
 
 	if err := eg.Wait(); err != nil {
-		return errors.Wrap(err, "wait group")
+		return nil, errors.Wrap(err, "wait group")
 	}
 
-	return nil
+	return tracker, nil
 }
 
-func bridgeToNative(ctx context.Context, backends ethbackend.Backends, order BridgeOrder) error {
-	log.Debug(ctx, "Requesting native solvernet bridge", "user", order.From.Hex(), "amt", order.Amount.Uint64())
-
-	// bridge to native requests a user.call{value: amt} on omni, while depositing amt ERC20 omni devnet l1
-	_, err := solvernet.OpenOrder(ctx, netconf.Devnet, evmchain.IDMockL1, backends, order.From, bindings.SolverNetOrderData{
-		DestChainId: evmchain.IDOmniDevnet,
-		Expenses:    nil,
-		Calls: []bindings.SolverNetCall{
-			{
-				Value:    order.Amount,
-				Target:   order.To,
-				Selector: [4]byte{},
-				Params:   nil,
-			},
-		},
-		Deposit: bindings.SolverNetDeposit{
-			Token:  contracts.TokenAddr(netconf.Devnet),
-			Amount: order.Amount,
-		},
+func openOrder(ctx context.Context, backends ethbackend.Backends, order TestOrder) ([32]byte, error) {
+	return solvernet.OpenOrder(ctx, netconf.Devnet, order.SourceChainID, backends, order.Owner, bindings.SolverNetOrderData{
+		DestChainId: order.DestChainID,
+		Expenses:    order.Expenses,
+		Calls:       order.Calls,
+		Deposit:     order.Deposit,
 	})
-
-	return err
-}
-
-func mintAndApproveAll(ctx context.Context, backends ethbackend.Backends, orders []BridgeOrder) error {
-	backend, err := backends.Backend(evmchain.IDMockL1)
-	if err != nil {
-		return errors.Wrap(err, "backend")
-	}
-
-	var eg errgroup.Group
-	for _, order := range orders {
-		eg.Go(func() error { return mintAndApprove(ctx, backend, order) })
-	}
-
-	if err := eg.Wait(); err != nil {
-		return errors.Wrap(err, "wait group")
-	}
-
-	return nil
-}
-
-func mintAndApprove(ctx context.Context, backend *ethbackend.Backend, order BridgeOrder) error {
-	addrs, err := contracts.GetAddresses(ctx, netconf.Devnet)
-	if err != nil {
-		return errors.Wrap(err, "get addrs")
-	}
-
-	txOpts, err := backend.BindOpts(ctx, order.From)
-	if err != nil {
-		return errors.Wrap(err, "bind opts")
-	}
-
-	contract, err := bindings.NewMockERC20(addrs.Token, backend)
-	if err != nil {
-		return errors.Wrap(err, "bind contract")
-	}
-
-	tx, err := contract.Mint(txOpts, order.From, order.Amount)
-	if err != nil {
-		return errors.Wrap(err, "mint tx")
-	}
-
-	_, err = backend.WaitMined(ctx, tx)
-	if err != nil {
-		return errors.Wrap(err, "wait mined")
-	}
-
-	tx, err = contract.Approve(txOpts, addrs.SolverNetInbox, order.Amount)
-	if err != nil {
-		return errors.Wrap(err, "mint tx")
-	}
-
-	_, err = backend.WaitMined(ctx, tx)
-	if err != nil {
-		return errors.Wrap(err, "wait mined")
-	}
-
-	return nil
 }
