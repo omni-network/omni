@@ -24,6 +24,7 @@ type LockboxConfig struct {
 	ProxyAdminOwner common.Address
 	Admin           common.Address
 	Pauser          common.Address
+	Unpauser        common.Address
 	XToken          common.Address
 	Token           common.Address
 }
@@ -37,6 +38,9 @@ func (cfg LockboxConfig) Validate() error {
 	}
 	if isEmpty(cfg.Pauser) {
 		return errors.New("pauser is zero")
+	}
+	if isEmpty(cfg.Unpauser) {
+		return errors.New("unpauser is zero")
 	}
 	if isEmpty(cfg.XToken) {
 		return errors.New("xtoken is zero")
@@ -102,6 +106,7 @@ func deployLockbox(ctx context.Context, network netconf.ID, backends ethbackend.
 		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleUpgrader),
 		Admin:           eoa.MustAddress(network, eoa.RoleManager),
 		Pauser:          eoa.MustAddress(network, eoa.RoleManager),
+		Unpauser:        eoa.MustAddress(network, eoa.RoleManager),
 		XToken:          xtkn,
 		Token:           canon.Address,
 	}
@@ -138,7 +143,7 @@ func packLockboxInitCode(cfg LockboxConfig, impl common.Address) ([]byte, error)
 		return nil, errors.Wrap(err, "get proxy abi")
 	}
 
-	initializer, err := lockboxAbi.Pack("initialize", cfg.Admin, cfg.Pauser, cfg.Token, cfg.XToken)
+	initializer, err := lockboxAbi.Pack("initialize", cfg.Admin, cfg.Pauser, cfg.Unpauser, cfg.Token, cfg.XToken)
 	if err != nil {
 		return nil, errors.Wrap(err, "encode initializer")
 	}

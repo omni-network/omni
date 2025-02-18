@@ -22,6 +22,10 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
 
     // keccak256("PAUSER")
     bytes32 public constant PAUSER_ROLE = 0x539440820030c4994db4e31b6b800deafd503688728f932addfe7a410515c14c;
+    // keccak256("UNPAUSER");
+    bytes32 public constant UNPAUSER_ROLE = 0x82b32d9ab5100db08aeb9a0e08b422d14851ec118736590462bf9c085a6e9448;
+    // keccak256("AUTHORIZER");
+    bytes32 public constant AUTHORIZER_ROLE = 0x94858e5561d6a33fcce848f16acfe1514fe5166e32b456aff42d7fb50e8c52ad;
 
     /**
      * @dev Gas limit for xcalls to bridges without a lockbox. (~125k suggested unless transfer is nonstandard)
@@ -51,6 +55,11 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
      * @dev Mapping of destination chainId to bridge contract and config.
      */
     mapping(uint64 chainId => Route) private _routes;
+
+    /**
+     * @dev Mapping of destination chainId to pending route updates.
+     */
+    mapping(uint64 chainId => Route) private _pendingRoutes;
 
     /**
      * @dev Track claimable amount per address, which increases when `token` reverts in `receiveToken`.
@@ -87,13 +96,20 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
     /*                        INITIALIZER                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function initialize(address admin_, address pauser_, address omni_, address token_, address lockbox_)
-        external
-        initializer
-    {
+    function initialize(
+        address admin_,
+        address authorizer_,
+        address pauser_,
+        address unpauser_,
+        address omni_,
+        address token_,
+        address lockbox_
+    ) external initializer {
         // Validate required inputs are not zero addresses.
         if (admin_ == address(0)) revert ZeroAddress();
+        if (authorizer_ == address(0)) revert ZeroAddress();
         if (pauser_ == address(0)) revert ZeroAddress();
+        if (unpauser_ == address(0)) revert ZeroAddress();
         if (omni_ == address(0)) revert ZeroAddress();
         if (token_ == address(0)) revert ZeroAddress();
 
@@ -103,15 +119,15 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
         __XApp_init(omni_, ConfLevel.Finalized);
         _grantRole(DEFAULT_ADMIN_ROLE, admin_);
         _grantRole(PAUSER_ROLE, pauser_);
+        _grantRole(UNPAUSER_ROLE, unpauser_);
+        _grantRole(AUTHORIZER_ROLE, authorizer_);
 
-        // Set configured values.
         token = token_;
-        if (lockbox_ != address(0)) lockbox = lockbox_;
 
         // Give lockbox relevant approvals to handle deposits and withdrawals if necessary.
         if (lockbox_ != address(0)) {
+            lockbox = lockbox_;
             ILockbox(lockbox_).token().safeApproveWithRetry(lockbox_, type(uint256).max);
-            token_.safeApproveWithRetry(lockbox_, type(uint256).max);
         }
     }
 
@@ -127,6 +143,7 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
      */
     function getRoute(uint64 destChainId) external view returns (address bridge, bool hasLockbox) {
         Route memory route = _routes[destChainId];
+        if (route.bridge == address(0)) revert InvalidRoute(destChainId);
         return (route.bridge, route.hasLockbox);
     }
 
@@ -137,6 +154,7 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
      */
     function bridgeFee(uint64 destChainId) external view returns (uint256 fee) {
         Route memory route = _routes[destChainId];
+        if (route.bridge == address(0)) revert InvalidRoute(destChainId);
         return feeFor(
             destChainId,
             abi.encodeCall(Bridge.receiveToken, (TypeMax.Address, TypeMax.Uint256)),
@@ -154,10 +172,15 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
      * @param to          The address of the recipient.
      * @param value       The amount of tokens to bridge.
      * @param wrap        Whether to wrap the token first.
+     * @param refundTo    The address to refund any excess payment to.
      */
-    function sendToken(uint64 destChainId, address to, uint256 value, bool wrap) external payable whenNotPaused {
-        _validateSend(destChainId, to, value, wrap);
-        _sendToken(destChainId, to, value, wrap);
+    function sendToken(uint64 destChainId, address to, uint256 value, bool wrap, address refundTo)
+        external
+        payable
+        whenNotPaused
+    {
+        _validateSend(destChainId, to, value, wrap, refundTo);
+        _sendToken(destChainId, to, value, wrap, refundTo);
     }
 
     /**
@@ -173,7 +196,7 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
      * @dev Attempts to transfer claimable tokens to the recipient.
      * @param addr The address to retry the transfer for.
      */
-    function claimFailedReceive(address addr) external {
+    function claimFailedReceive(address addr) external whenNotPaused {
         uint256 value = claimable[addr];
         if (value == 0) revert NoClaimable();
 
@@ -194,16 +217,31 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /**
-     * @dev Sets bridge routes for given chainIds.
+     * @dev Configures bridge routes for given chainIds.
      * @param chainIds The chainIds to configure.
      * @param routes   The bridges addresses and configs to configure.
      */
-    function setRoutes(uint64[] calldata chainIds, Route[] calldata routes) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function configureRoutes(uint64[] calldata chainIds, Route[] calldata routes)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         if (chainIds.length != routes.length) revert ArrayLengthMismatch();
         for (uint256 i = 0; i < chainIds.length; i++) {
-            if (routes[i].bridge == address(0)) revert ZeroAddress();
-            _routes[chainIds[i]] = routes[i];
+            _pendingRoutes[chainIds[i]] = routes[i];
             emit RouteConfigured(chainIds[i], routes[i].bridge, routes[i].hasLockbox);
+        }
+    }
+
+    /**
+     * @dev Authorizes pending bridge routes.
+     * @param chainIds The chainIds for pending routes to authorize.
+     */
+    function authorizeRoutes(uint64[] calldata chainIds) external onlyRole(AUTHORIZER_ROLE) {
+        for (uint256 i = 0; i < chainIds.length; i++) {
+            Route memory pendingRoute = _pendingRoutes[chainIds[i]];
+            _routes[chainIds[i]] = pendingRoute;
+            delete _pendingRoutes[chainIds[i]];
+            emit RouteAuthorized(chainIds[i], pendingRoute.bridge, pendingRoute.hasLockbox);
         }
     }
 
@@ -217,7 +255,7 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
     /**
      * @dev Unpauses performing crosschain transfers.
      */
-    function unpause() external onlyRole(PAUSER_ROLE) {
+    function unpause() external onlyRole(UNPAUSER_ROLE) {
         _unpause();
     }
 
@@ -231,12 +269,14 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
      * @param to          The address of the recipient.
      * @param value       The amount of tokens to transfer.
      * @param wrap        Whether the token is being wrapped.
+     * @param refundTo    The address to refund any excess payment to.
      */
-    function _validateSend(uint64 destChainId, address to, uint256 value, bool wrap) internal view {
+    function _validateSend(uint64 destChainId, address to, uint256 value, bool wrap, address refundTo) internal view {
         if (_routes[destChainId].bridge == address(0)) revert InvalidRoute(destChainId);
         if (to == address(0)) revert ZeroAddress();
         if (value == 0) revert ZeroAmount();
         if (wrap && lockbox == address(0)) revert CannotWrap();
+        if (refundTo == address(0)) revert ZeroAddress();
     }
 
     /**
@@ -245,8 +285,9 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
      * @param to          The address of the recipient.
      * @param value       The amount of tokens to transfer.
      * @param wrap        Whether the token is being wrapped.
+     * @param refundTo    The address to refund any excess payment to.
      */
-    function _sendToken(uint64 destChainId, address to, uint256 value, bool wrap) internal {
+    function _sendToken(uint64 destChainId, address to, uint256 value, bool wrap, address refundTo) internal {
         // Cache addresses for gas optimization.
         address _token = token;
         address _lockbox = lockbox;
@@ -261,7 +302,7 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
         ITokenOps(_token).clawback(msg.sender, value);
 
         // Send the tokens to the destination chain.
-        _omniTransfer(destChainId, to, value);
+        _omniTransfer(destChainId, to, value, refundTo);
     }
 
     /**
@@ -269,8 +310,9 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
      * @param destChainId The chainId of the destination chain.
      * @param to          The address of the recipient.
      * @param value       The amount of tokens to transfer.
+     * @param refundTo    The address to refund any excess payment to.
      */
-    function _omniTransfer(uint64 destChainId, address to, uint256 value) internal {
+    function _omniTransfer(uint64 destChainId, address to, uint256 value, address refundTo) internal {
         Route memory route = _routes[destChainId];
         bytes memory data = abi.encodeCall(Bridge.receiveToken, (to, value));
         uint256 fee = xcall(
@@ -278,7 +320,7 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
         );
 
         if (msg.value < fee) revert InsufficientPayment();
-        if (msg.value > fee) msg.sender.safeTransferETH(msg.value - fee);
+        if (msg.value > fee) refundTo.safeTransferETH(msg.value - fee);
 
         emit TokenSent(destChainId, msg.sender, to, value);
     }

@@ -37,11 +37,21 @@ contract RetryTransferTest is TestBase {
             )
         );
         bridgeWithLockbox.claimFailedReceive(user);
+
+        vm.prank(admin);
+        wrapper.grantRole(minterRole, address(bridgeWithLockbox));
+
+        // Reverts if bridge is paused
+        vm.prank(pauser);
+        bridgeWithLockbox.pause();
+
+        vm.prank(user);
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+        bridgeWithLockbox.claimFailedReceive(user);
     }
 
     function test_receiveToken_caches_tokens_when_mint_reverts() public {
-        bytes32 minterRole = wrapper.MINTER_ROLE();
-        bytes memory data = abi.encodeCall(Bridge.receiveToken, (user, 1));
+        minterRole = wrapper.MINTER_ROLE();
 
         vm.startPrank(admin);
         wrapper.revokeRole(minterRole, address(bridgeWithLockbox));

@@ -19,7 +19,7 @@ contract DepositTest is TestBase {
         lockbox.depositTo(other, INITIAL_USER_BALANCE);
         vm.stopPrank();
 
-        vm.prank(pauser);
+        vm.prank(unpauser);
         lockbox.unpause();
 
         // Cannot deposit if wrapper does not have minter role

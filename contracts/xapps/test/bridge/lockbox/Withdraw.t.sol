@@ -22,7 +22,7 @@ contract WithdrawTest is TestBase {
         lockbox.withdrawTo(other, INITIAL_USER_BALANCE);
         vm.stopPrank();
 
-        vm.prank(pauser);
+        vm.prank(unpauser);
         lockbox.unpause();
 
         // Cannot withdraw if wrapper does not have clawbacker role

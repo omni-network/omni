@@ -14,6 +14,7 @@ contract SendTokenTest is TestBase {
             srcChainId: SRC_CHAIN_ID,
             destChainId: DEST_CHAIN_ID,
             wrap: true,
+            refundTo: user,
             from: user,
             to: user,
             value: 1
@@ -22,44 +23,48 @@ contract SendTokenTest is TestBase {
         vm.startPrank(user);
         // `destChainId` must have a configured route.
         vm.expectRevert(abi.encodeWithSelector(IBridge.InvalidRoute.selector, 0));
-        bridgeWithLockbox.sendToken{ value: fee }(0, address(0), 0, true);
+        bridgeWithLockbox.sendToken{ value: fee }(0, address(0), 0, true, address(0));
         vm.expectRevert(abi.encodeWithSelector(IBridge.InvalidRoute.selector, 0));
-        bridgeWithLockbox.sendToken{ value: fee }(0, address(0), 0, false);
+        bridgeWithLockbox.sendToken{ value: fee }(0, address(0), 0, false, address(0));
 
         // `to` cannot be zero address.
         vm.expectRevert(abi.encodeWithSelector(IBridge.ZeroAddress.selector));
-        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, address(0), 0, true);
+        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, address(0), 0, true, address(0));
         vm.expectRevert(abi.encodeWithSelector(IBridge.ZeroAddress.selector));
-        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, address(0), 0, false);
+        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, address(0), 0, false, address(0));
 
         // `value` cannot be zero.
         vm.expectRevert(abi.encodeWithSelector(IBridge.ZeroAmount.selector));
-        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, 0, true);
+        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, 0, true, address(0));
         vm.expectRevert(abi.encodeWithSelector(IBridge.ZeroAmount.selector));
-        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, 0, false);
+        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, 0, false, address(0));
 
         // `wrap` cannot be true if `lockbox` is not set.
         vm.expectRevert(abi.encodeWithSelector(IBridge.CannotWrap.selector));
-        bridgeNoLockbox.sendToken{ value: fee }(SRC_CHAIN_ID, user, 1, true);
+        bridgeNoLockbox.sendToken{ value: fee }(SRC_CHAIN_ID, user, 1, true, address(0));
+
+        // `refundTo` cannot be zero address.
+        vm.expectRevert(abi.encodeWithSelector(IBridge.ZeroAddress.selector));
+        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, 1, true, address(0));
 
         // `amount` cannot exceed the user's balance.
         // wrap = true reverts with SafeTransferLib.TransferFromFailed (via token.transferFrom(...))
         vm.expectRevert(abi.encodeWithSelector(SafeTransferLib.TransferFromFailed.selector));
-        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, INITIAL_USER_BALANCE + 1, true);
+        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, INITIAL_USER_BALANCE + 1, true, user);
 
         // wrap = false reverts with ERC20InsufficientBalance (via xtoken.clawback())
         vm.expectRevert(
             abi.encodeWithSelector(IERC20Errors.ERC20InsufficientBalance.selector, user, 1, INITIAL_USER_BALANCE + 1)
         );
-        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, INITIAL_USER_BALANCE + 1, false);
+        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, INITIAL_USER_BALANCE + 1, false, user);
 
         // `bridgeFee` must be paid.
         vm.expectRevert("XApp: insufficient funds");
-        bridgeWithLockbox.sendToken{ value: fee - 1 }(DEST_CHAIN_ID, user, 1, true);
+        bridgeWithLockbox.sendToken{ value: fee - 1 }(DEST_CHAIN_ID, user, 1, true, user);
 
         lockbox.deposit(1);
         vm.expectRevert("XApp: insufficient funds");
-        bridgeWithLockbox.sendToken{ value: fee - 1 }(DEST_CHAIN_ID, user, 1, false);
+        bridgeWithLockbox.sendToken{ value: fee - 1 }(DEST_CHAIN_ID, user, 1, false, user);
         vm.stopPrank();
 
         // Reverts if bridge is paused
@@ -70,17 +75,17 @@ contract SendTokenTest is TestBase {
 
         vm.startPrank(user);
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
-        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, 1, true);
+        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, 1, true, user);
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
-        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, 1, false);
+        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, 1, false, user);
 
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
-        bridgeNoLockbox.sendToken{ value: fee }(SRC_CHAIN_ID, user, 1, true);
+        bridgeNoLockbox.sendToken{ value: fee }(SRC_CHAIN_ID, user, 1, true, user);
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
-        bridgeNoLockbox.sendToken{ value: fee }(SRC_CHAIN_ID, user, 1, false);
+        bridgeNoLockbox.sendToken{ value: fee }(SRC_CHAIN_ID, user, 1, false, user);
         vm.stopPrank();
 
-        vm.startPrank(pauser);
+        vm.startPrank(unpauser);
         bridgeWithLockbox.unpause();
         bridgeNoLockbox.unpause();
         vm.stopPrank();
@@ -97,14 +102,14 @@ contract SendTokenTest is TestBase {
                 IAccessControl.AccessControlUnauthorizedAccount.selector, address(bridgeWithLockbox), clawbackerRole
             )
         );
-        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, 1, true);
+        bridgeWithLockbox.sendToken{ value: fee }(DEST_CHAIN_ID, user, 1, true, user);
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector, address(bridgeNoLockbox), clawbackerRole
             )
         );
-        bridgeNoLockbox.sendToken{ value: fee }(SRC_CHAIN_ID, user, 1, false);
+        bridgeNoLockbox.sendToken{ value: fee }(SRC_CHAIN_ID, user, 1, false, user);
         vm.stopPrank();
     }
 
@@ -114,6 +119,7 @@ contract SendTokenTest is TestBase {
             srcChainId: SRC_CHAIN_ID,
             destChainId: DEST_CHAIN_ID,
             wrap: true,
+            refundTo: user,
             from: user,
             to: user,
             value: INITIAL_USER_BALANCE
@@ -141,6 +147,7 @@ contract SendTokenTest is TestBase {
             srcChainId: SRC_CHAIN_ID,
             destChainId: DEST_CHAIN_ID,
             wrap: false,
+            refundTo: user,
             from: user,
             to: user,
             value: INITIAL_USER_BALANCE
@@ -168,6 +175,7 @@ contract SendTokenTest is TestBase {
             srcChainId: DEST_CHAIN_ID,
             destChainId: SRC_CHAIN_ID,
             wrap: false,
+            refundTo: user,
             from: user,
             to: user,
             value: INITIAL_USER_BALANCE
@@ -181,6 +189,7 @@ contract SendTokenTest is TestBase {
             srcChainId: SRC_CHAIN_ID,
             destChainId: DEST_CHAIN_ID,
             wrap: true,
+            refundTo: user,
             from: user,
             to: user,
             value: INITIAL_USER_BALANCE
@@ -208,6 +217,7 @@ contract SendTokenTest is TestBase {
             srcChainId: DEST_CHAIN_ID,
             destChainId: SRC_CHAIN_ID,
             wrap: false,
+            refundTo: user,
             from: user,
             to: user,
             value: INITIAL_USER_BALANCE
@@ -224,6 +234,7 @@ contract SendTokenTest is TestBase {
             srcChainId: DEST_CHAIN_ID,
             destChainId: SRC_CHAIN_ID,
             wrap: false,
+            refundTo: user,
             from: user,
             to: user,
             value: INITIAL_USER_BALANCE
@@ -242,6 +253,7 @@ contract SendTokenTest is TestBase {
             srcChainId: SRC_CHAIN_ID,
             destChainId: DEST_CHAIN_ID,
             wrap: true,
+            refundTo: user,
             from: user,
             to: user,
             value: INITIAL_USER_BALANCE
@@ -269,6 +281,7 @@ contract SendTokenTest is TestBase {
             srcChainId: DEST_CHAIN_ID,
             destChainId: SRC_CHAIN_ID,
             wrap: false,
+            refundTo: user,
             from: user,
             to: user,
             value: INITIAL_USER_BALANCE * 2
@@ -286,7 +299,7 @@ contract SendTokenTest is TestBase {
         uint256 balance = user.balance;
         bytes memory data = abi.encodeCall(Bridge.receiveToken, (user, 1));
 
-        bridgeWithLockbox.sendToken{ value: fee + 1 }(DEST_CHAIN_ID, user, 1, true);
+        bridgeWithLockbox.sendToken{ value: fee + 1 }(DEST_CHAIN_ID, user, 1, true, user);
         assertEq(user.balance, balance - fee, "Fee overpayment should be refunded");
 
         omni.mockXCall({
@@ -298,7 +311,26 @@ contract SendTokenTest is TestBase {
         });
 
         balance = user.balance;
-        bridgeNoLockbox.sendToken{ value: fee + 1 }(SRC_CHAIN_ID, user, 1, false);
+        bridgeNoLockbox.sendToken{ value: fee + 1 }(SRC_CHAIN_ID, user, 1, false, user);
         assertEq(user.balance, balance - fee, "Fee overpayment should be refunded");
+    }
+
+    function test_sendToken_fee_overpayment_refunded_refundTo() public prank(user) {
+        uint256 fee = bridgeWithLockbox.bridgeFee(DEST_CHAIN_ID);
+        bytes memory data = abi.encodeCall(Bridge.receiveToken, (user, 1));
+
+        bridgeWithLockbox.sendToken{ value: fee + 1 }(DEST_CHAIN_ID, user, 1, true, other);
+        assertEq(other.balance, 1, "Fee overpayment should be refunded");
+
+        omni.mockXCall({
+            sourceChainId: SRC_CHAIN_ID,
+            sender: address(bridgeWithLockbox),
+            to: address(bridgeNoLockbox),
+            data: data,
+            gasLimit: _getGasLimit(Bridge(bridgeNoLockbox))
+        });
+
+        bridgeNoLockbox.sendToken{ value: fee + 1 }(SRC_CHAIN_ID, user, 1, false, other);
+        assertEq(other.balance, 2, "Fee overpayment should be refunded");
     }
 }

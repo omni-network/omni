@@ -8,9 +8,7 @@ contract ReceiveTokenTest is TestBase {
         bytes memory data = abi.encodeCall(Bridge.receiveToken, (user, 1));
         uint64 unknownChainId = DEST_CHAIN_ID + 1;
         address unknownSender = makeAddr("unknownSender");
-        bytes32 minterRole = wrapper.MINTER_ROLE();
         uint64 lockboxGasLimit = _getGasLimit(Bridge(bridgeWithLockbox));
-        uint64 noLockboxGasLimit = _getGasLimit(Bridge(bridgeNoLockbox));
 
         // Unknown source chain ID
         vm.expectRevert(abi.encodeWithSelector(IBridge.Unauthorized.selector, unknownChainId, address(bridgeNoLockbox)));

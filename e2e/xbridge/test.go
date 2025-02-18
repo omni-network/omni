@@ -200,7 +200,7 @@ func newBridger(
 
 		txOpts.Value = fee
 
-		tx, err := bridge.SendToken(txOpts, dst, user, amt, wrap)
+		tx, err := bridge.SendToken(txOpts, dst, user, amt, wrap, user)
 		if err != nil {
 			log.Error(ctx, "Send token", err, "custom", detectCustomError(err), "wrap", wrap, "src", src, "dst", dst)
 			return errors.Wrap(err, "send token", "custom", detectCustomError(err))
