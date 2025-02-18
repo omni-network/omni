@@ -5,6 +5,21 @@ import "../TestBase.sol";
 
 contract SolverNet_Inbox_Close_Test is TestBase {
     function test_close_reverts() public {
+        inbox.pauseClose(true);
+
+        // should revert when `close` is paused
+        vm.expectRevert(ISolverNetInbox.IsPaused.selector);
+        vm.prank(user);
+        inbox.close(bytes32(uint256(1)));
+
+        // should revert if `open` and `close` are paused
+        inbox.pauseAll(true);
+        vm.expectRevert(ISolverNetInbox.AllPaused.selector);
+        vm.prank(user);
+        inbox.close(bytes32(uint256(1)));
+
+        inbox.pauseAll(false);
+
         // order must be pending
         vm.expectRevert(ISolverNetInbox.OrderNotPending.selector);
         inbox.close(bytes32(uint256(1)));
@@ -44,7 +59,7 @@ contract SolverNet_Inbox_Close_Test is TestBase {
         inbox.open{ value: defaultAmount }(order);
 
         vm.prank(user);
-        vm.warp(defaultFillDeadline + 1);
+        vm.warp(defaultFillDeadline + defaultFillBuffer + 1);
         vm.expectEmit(true, true, true, true);
         emit ISolverNetInbox.Closed(resolvedOrder.orderId);
         inbox.close(resolvedOrder.orderId);
@@ -71,7 +86,7 @@ contract SolverNet_Inbox_Close_Test is TestBase {
         inbox.open(order);
 
         vm.prank(user);
-        vm.warp(defaultFillDeadline + 1);
+        vm.warp(defaultFillDeadline + defaultFillBuffer + 1);
         vm.expectEmit(true, true, true, true);
         emit ISolverNetInbox.Closed(resolvedOrder.orderId);
         inbox.close(resolvedOrder.orderId);
