@@ -3,7 +3,6 @@ package geth
 import (
 	"encoding/hex"
 	"math/big"
-	"net"
 	"os"
 	"path/filepath"
 	"time"
@@ -14,8 +13,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/core"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/eth/ethconfig"
-	"github.com/ethereum/go-ethereum/p2p/nat"
+	"github.com/ethereum/go-ethereum/eth/downloader"
 	"github.com/ethereum/go-ethereum/params"
 )
 
@@ -83,7 +81,6 @@ func WriteConfigTOML(conf Config, path string) error {
 // MakeGethConfig returns the full omni geth config for the provided custom config.
 func MakeGethConfig(conf Config) FullConfig {
 	cfg := defaultGethConfig()
-	cfg.Metrics.Enabled = true
 	cfg.Eth.GPO.MaxPrice = big.NewInt(params.GWei) // Very low gas tip cap (1gwei), blocks are far from half full.
 	cfg.Eth.NetworkId = conf.ChainID
 	cfg.Node.DataDir = "/geth" // Mount inside docker container
@@ -91,7 +88,7 @@ func MakeGethConfig(conf Config) FullConfig {
 
 	// Use syncmode=full. Since default "snap" sync has race condition on startup. Where engineAPI newPayload fails
 	// if snapsync has not completed. Should probably wait for snapsync to complete before starting engineAPI?
-	cfg.Eth.SyncMode = ethconfig.FullSync
+	cfg.Eth.SyncMode = downloader.FullSync
 
 	// Disable pruning for archive nodes.
 	// Note that runtime flags are also required for archive nodes, specifically:
@@ -117,9 +114,6 @@ func MakeGethConfig(conf Config) FullConfig {
 	cfg.Node.P2P.BootstrapNodesV5 = conf.BootNodes
 	cfg.Node.P2P.BootstrapNodes = conf.BootNodes
 	cfg.Node.P2P.TrustedNodes = conf.TrustedNodes
-	if conf.AdvertisedIP != "" {
-		cfg.Node.P2P.NAT = nat.ExtIP(net.ParseIP(conf.AdvertisedIP))
-	}
 
 	// Bind listen addresses to all interfaces inside the container.
 	const allInterfaces = "0.0.0.0"
