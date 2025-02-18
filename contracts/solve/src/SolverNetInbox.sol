@@ -108,7 +108,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      */
     modifier whenNotPaused(bytes32 pauseKey) {
         uint8 _pauseState = pauseState;
-        if (_pauseState != 0) {
+        if (_pauseState != NONE_PAUSED) {
             if (_pauseState == OPEN_PAUSED && pauseKey == OPEN) revert IsPaused();
             if (_pauseState == CLOSE_PAUSED && pauseKey == CLOSE) revert IsPaused();
             if (_pauseState == ALL_PAUSED) revert AllPaused();
