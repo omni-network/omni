@@ -14,6 +14,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 var (
@@ -40,6 +41,7 @@ func DefaultOpenOpts() *OpenOpts {
 
 // OpenOrder opens an order on chainID for user.
 // user pays for the order, and must be in the backend for chainID.
+// It returns the order id.
 func OpenOrder(
 	ctx context.Context,
 	network netconf.ID,
@@ -48,25 +50,25 @@ func OpenOrder(
 	user common.Address,
 	orderData bindings.SolverNetOrderData,
 	opts ...func(*OpenOpts),
-) error {
+) (OrderID, error) {
 	backend, err := backends.Backend(chainID)
 	if err != nil {
-		return errors.Wrap(err, "get backend")
+		return OrderID{}, errors.Wrap(err, "get backend")
 	}
 
 	addrs, err := contracts.GetAddresses(ctx, network)
 	if err != nil {
-		return errors.Wrap(err, "get addrs")
+		return OrderID{}, errors.Wrap(err, "get addrs")
 	}
 
 	txOpts, err := backend.BindOpts(ctx, user)
 	if err != nil {
-		return errors.Wrap(err, "bind opts")
+		return OrderID{}, errors.Wrap(err, "bind opts")
 	}
 
 	contract, err := bindings.NewSolverNetInbox(addrs.SolverNetInbox, backend)
 	if err != nil {
-		return errors.Wrap(err, "bind contract")
+		return OrderID{}, errors.Wrap(err, "bind contract")
 	}
 
 	o := DefaultOpenOpts()
@@ -76,15 +78,15 @@ func OpenOrder(
 
 	packed, err := PackOrderData(orderData)
 	if err != nil {
-		return errors.Wrap(err, "pack order data")
+		return OrderID{}, errors.Wrap(err, "pack order data")
 	}
 
 	// fill deadline is currently not enforced by the contract
 	fillDeadline := o.FillDeadline.Unix()
 	if fillDeadline < time.Now().Unix() {
-		return errors.New("fill deadline must be in the future")
+		return OrderID{}, errors.New("fill deadline must be in the future")
 	} else if fillDeadline > math.MaxUint32 {
-		return errors.New("fill deadline too far in the future")
+		return OrderID{}, errors.New("fill deadline too far in the future")
 	}
 
 	order := bindings.IERC7683OnchainCrossChainOrder{
@@ -96,13 +98,22 @@ func OpenOrder(
 
 	tx, err := contract.Open(txOpts, order)
 	if err != nil {
-		return errors.Wrap(err, "open tx", "custom", DetectCustomError(err))
+		return OrderID{}, errors.Wrap(err, "open tx", "custom", DetectCustomError(err))
 	}
 
-	_, err = backend.WaitMined(ctx, tx)
+	receipt, err := backend.WaitMined(ctx, tx)
 	if err != nil {
-		return errors.Wrap(err, "wait mined")
+		return OrderID{}, errors.Wrap(err, "wait mined")
 	}
 
-	return nil
+	logs := receipt.Logs
+	lastLog := func() *ethtypes.Log { return logs[len(logs)-1] }
+	if len(logs) < 1 || len(lastLog().Topics) < 2 {
+		return OrderID{}, errors.New("unexpeced open order logs [BUG]")
+	}
+
+	// order id is first topic of Open(...) log, which is the last log
+	orderID := lastLog().Topics[1]
+
+	return OrderID(orderID), nil
 }

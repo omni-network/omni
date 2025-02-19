@@ -176,7 +176,7 @@ func newRejector(
 		// Ensure latest on-chain order is still pending
 		if latest, err := inbox.GetOrder(&bind.CallOpts{Context: ctx}, order.ID); err != nil {
 			return errors.Wrap(err, "get order")
-		} else if latest.State.Status != statusPending {
+		} else if latest.State.Status != statusPending.Uint8() {
 			return errors.New("order status not pending anymore")
 		}
 
@@ -219,7 +219,7 @@ func newIDParser(inboxContracts map[uint64]*bindings.SolverNetInbox) func(chainI
 			return OrderID{}, errors.New("unknown chain")
 		}
 
-		event, ok := eventsByTopic[log.Topics[0]]
+		event, ok := solvernet.EventByTopic(log.Topics[0])
 		if !ok {
 			return OrderID{}, errors.New("unknown event")
 		}

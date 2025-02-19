@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/contracts"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -315,7 +316,7 @@ func streamEventsForever(
 			Height:        from, // Note the previous height is re-processed (idempotency FTW)
 			ConfLevel:     confLevel,
 			FilterAddress: inboxAddr,
-			FilterTopics:  allEventTopics,
+			FilterTopics:  solvernet.AllEventTopics(),
 		}
 		err = xprov.StreamEventLogs(ctx, req, newEventProcessor(deps, chainID))
 		if ctx.Err() != nil {

@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
@@ -11,12 +12,20 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
+const (
+	statusPending  = solvernet.StatusPending
+	statusFilled   = solvernet.StatusFilled
+	statusRejected = solvernet.StatusRejected
+	statusClosed   = solvernet.StatusClosed
+	statusClaimed  = solvernet.StatusClaimed
+)
+
 // newEventProcessor returns a callback provided to xchain.Provider::StreamEventLogs processing
 // all inbox contract events and driving order lifecycle.
 func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 	return func(ctx context.Context, height uint64, elogs []types.Log) error {
 		for _, elog := range elogs {
-			event, ok := eventsByTopic[elog.Topics[0]]
+			event, ok := solvernet.EventByTopic(elog.Topics[0])
 			if !ok {
 				return errors.New("unknown event [BUG]")
 			}
@@ -34,7 +43,7 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 			}
 
 			target := deps.TargetName(order)
-			statusOffset.WithLabelValues(deps.ChainName(chainID), target, statusString(event.Status)).Set(float64(orderID.Uint64()))
+			statusOffset.WithLabelValues(deps.ChainName(chainID), target, event.Status.String()).Set(float64(orderID.Uint64()))
 
 			attrs := []any{
 				"order_id", order.ID.String(),
@@ -66,7 +75,7 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 
 			if event.Status != order.Status {
 				// TODO(corver): Detect unexpected on-chain status.
-				log.Info(ctx, "Ignoring mismatching old event", "actual", statusString(order.Status))
+				log.Info(ctx, "Ignoring mismatching old event", "actual", order.Status.String())
 				continue
 			}
 
@@ -131,7 +140,7 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 				return errors.New("unknown status [BUG]")
 			}
 
-			processedEvents.WithLabelValues(deps.ChainName(chainID), target, statusString(event.Status)).Inc()
+			processedEvents.WithLabelValues(deps.ChainName(chainID), target, event.Status.String()).Inc()
 		}
 
 		return deps.SetCursor(ctx, chainID, height)

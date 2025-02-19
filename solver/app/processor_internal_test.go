@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -26,45 +27,45 @@ func TestEventProcessor(t *testing.T) {
 	tests := []struct {
 		name         string
 		event        common.Hash
-		getStatus    uint8
+		getStatus    solvernet.OrderStatus
 		rejectReason rejectReason
 		expect       string
 	}{
 		{
 			name:         "reject",
-			event:        topicOpened,
-			getStatus:    statusPending,
+			event:        solvernet.TopicOpened,
+			getStatus:    solvernet.StatusPending,
 			rejectReason: 1,
 			expect:       reject,
 		},
 		{
 			name:      "fulfill",
-			event:     topicOpened,
-			getStatus: statusPending,
+			event:     solvernet.TopicOpened,
+			getStatus: solvernet.StatusPending,
 			expect:    fill,
 		},
 		{
 			name:      "claim",
-			event:     topicFilled,
-			getStatus: statusFilled,
+			event:     solvernet.TopicFilled,
+			getStatus: solvernet.StatusFilled,
 			expect:    claim,
 		},
 		{
 			name:      "ignore rejected",
-			event:     topicRejected,
-			getStatus: statusRejected,
+			event:     solvernet.TopicRejected,
+			getStatus: solvernet.StatusRejected,
 			expect:    ignored,
 		},
 		{
 			name:      "ignore reverted",
-			event:     topicClosed,
-			getStatus: statusClosed,
+			event:     solvernet.TopicClosed,
+			getStatus: solvernet.StatusClosed,
 			expect:    ignored,
 		},
 		{
 			name:      "ignore claimed",
-			event:     topicClaimed,
-			getStatus: statusClaimed,
+			event:     solvernet.TopicClaimed,
+			getStatus: solvernet.StatusClaimed,
 			expect:    ignored,
 		},
 	}

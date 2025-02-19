@@ -1,9 +1,6 @@
 package app
 
 import (
-	"encoding/binary"
-	"strconv"
-
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
@@ -11,10 +8,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type OrderID [32]byte
-type OrderResolved = bindings.IERC7683ResolvedCrossChainOrder
-type OrderState = bindings.ISolverNetInboxOrderState
-type FillOriginData = bindings.SolverNetFillOriginData
+type (
+	OrderID        = solvernet.OrderID
+	OrderResolved  = solvernet.OrderResolved
+	OrderState     = solvernet.OrderState
+	FillOriginData = solvernet.FillOriginData
+)
 
 type Order struct {
 	ID                 OrderID
@@ -26,18 +25,8 @@ type Order struct {
 	MaxSpent           []bindings.IERC7683Output
 	MinReceived        []bindings.IERC7683Output
 
-	Status    uint8
+	Status    solvernet.OrderStatus
 	UpdatedBy common.Address
-}
-
-// Uint64 returns the order ID as a BigEndian uint64 (monotonically incrementing number).
-func (id OrderID) Uint64() uint64 {
-	return binary.BigEndian.Uint64(id[32-8:])
-}
-
-// String returns the Uint64 representation of the order ID as a string.
-func (id OrderID) String() string {
-	return strconv.FormatUint(id.Uint64(), 10)
 }
 
 func newOrder(resolved OrderResolved, state OrderState) (Order, error) {
@@ -47,7 +36,7 @@ func newOrder(resolved OrderResolved, state OrderState) (Order, error) {
 
 	o := Order{
 		ID:                 resolved.OrderId,
-		Status:             state.Status,
+		Status:             solvernet.OrderStatus(state.Status),
 		UpdatedBy:          state.UpdatedBy,
 		FillInstruction:    resolved.FillInstructions[0],
 		FillOriginData:     resolved.FillInstructions[0].OriginData,
