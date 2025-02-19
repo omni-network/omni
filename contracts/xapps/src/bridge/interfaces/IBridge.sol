@@ -56,6 +56,11 @@ interface IBridge {
     event RouteConfigured(uint64 indexed destChainId, address indexed bridge, bool indexed hasLockbox);
 
     /**
+     * @dev Event emitted when a bridge route is authorized.
+     */
+    event RouteAuthorized(uint64 indexed destChainId, address indexed bridge, bool indexed hasLockbox);
+
+    /**
      * @dev Event emitted when a crosschain token transfer is initiated.
      */
     event TokenSent(uint64 indexed destChainId, address indexed from, address indexed to, uint256 value);
@@ -133,8 +138,9 @@ interface IBridge {
      * @param to          The address of the recipient.
      * @param value       The amount of tokens to bridge.
      * @param wrap        Whether to wrap the token first.
+     * @param refundTo    The address to refund any excess payment to.
      */
-    function sendToken(uint64 destChainId, address to, uint256 value, bool wrap) external payable;
+    function sendToken(uint64 destChainId, address to, uint256 value, bool wrap, address refundTo) external payable;
 
     /**
      * @dev Receives a token from a bridge contract and mints/unwraps it to the recipient.
@@ -158,5 +164,11 @@ interface IBridge {
      * @param chainIds The chainIds to configure.
      * @param routes   The bridges addresses and configs to configure.
      */
-    function setRoutes(uint64[] calldata chainIds, Route[] calldata routes) external;
+    function configureRoutes(uint64[] calldata chainIds, Route[] calldata routes) external;
+
+    /**
+     * @dev Authorizes pending bridge routes.
+     * @param chainIds The chainIds for pending routes to authorize.
+     */
+    function authorizeRoutes(uint64[] calldata chainIds) external;
 }

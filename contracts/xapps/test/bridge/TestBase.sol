@@ -36,8 +36,10 @@ contract TestBase is Test {
     address internal admin = makeAddr("admin");
     address internal minter = makeAddr("minter");
     address internal pauser = makeAddr("pauser");
+    address internal unpauser = makeAddr("unpauser");
     address internal upgrader = makeAddr("upgrader");
     address internal clawbacker = makeAddr("clawbacker");
+    address internal authorizer = makeAddr("authorizer");
 
     modifier prank(address addr) {
         vm.startPrank(addr);
@@ -69,6 +71,7 @@ contract TestBase is Test {
         uint64 srcChainId,
         uint64 destChainId,
         bool wrap,
+        address refundTo,
         address from,
         address to,
         uint256 value
@@ -79,7 +82,7 @@ contract TestBase is Test {
         vm.prank(from);
         vm.expectEmit(true, true, true, true);
         emit IBridge.TokenSent(destChainId, from, to, value);
-        bridge.sendToken{ value: fee }(destChainId, to, value, wrap);
+        bridge.sendToken{ value: fee }(destChainId, to, value, wrap, refundTo);
     }
 
     function mockBridgeReceive(Bridge bridge, uint64 srcChainId, uint64 destChainId, address to, uint256 value)
@@ -105,11 +108,12 @@ contract TestBase is Test {
         uint64 srcChainId,
         uint64 destChainId,
         bool wrap,
+        address refundTo,
         address from,
         address to,
         uint256 value
     ) internal {
-        mockBridgeSend(bridge, srcChainId, destChainId, wrap, from, to, value);
+        mockBridgeSend(bridge, srcChainId, destChainId, wrap, refundTo, from, to, value);
         mockBridgeReceive(bridge, srcChainId, destChainId, to, value);
 
         vm.chainId(srcChainId);
@@ -138,7 +142,7 @@ contract TestBase is Test {
 
     function _deployLockbox(address token_, address wrapper_) internal returns (Lockbox) {
         address impl = address(new Lockbox());
-        bytes memory data = abi.encodeCall(Lockbox.initialize, (admin, pauser, token_, wrapper_));
+        bytes memory data = abi.encodeCall(Lockbox.initialize, (admin, pauser, unpauser, token_, wrapper_));
 
         address proxy = address(new TransparentUpgradeableProxy(impl, admin, data));
         return Lockbox(proxy);
@@ -146,7 +150,8 @@ contract TestBase is Test {
 
     function _deployBridge(address token_, address lockbox_) internal returns (Bridge) {
         address impl = address(new Bridge(DEFAULT_RECEIVE_GAS_LIMIT, DEFAULT_RECEIVE_LOCKBOX_GAS_LIMIT));
-        bytes memory data = abi.encodeCall(Bridge.initialize, (admin, pauser, address(omni), token_, lockbox_));
+        bytes memory data =
+            abi.encodeCall(Bridge.initialize, (admin, authorizer, pauser, unpauser, address(omni), token_, lockbox_));
 
         address proxy = address(new TransparentUpgradeableProxy(impl, admin, data));
         return Bridge(proxy);
@@ -182,17 +187,19 @@ contract TestBase is Test {
         uint64[] memory chainIds = new uint64[](1);
         IBridge.Route[] memory routes = new IBridge.Route[](1);
 
-        vm.startPrank(admin);
-
         chainIds[0] = DEST_CHAIN_ID;
         routes[0] = IBridge.Route({ bridge: address(bridgeNoLockbox), hasLockbox: false });
-        bridgeWithLockbox.setRoutes(chainIds, routes);
+        vm.prank(admin);
+        bridgeWithLockbox.configureRoutes(chainIds, routes);
+        vm.prank(authorizer);
+        bridgeWithLockbox.authorizeRoutes(chainIds);
 
         chainIds[0] = SRC_CHAIN_ID;
         routes[0] = IBridge.Route({ bridge: address(bridgeWithLockbox), hasLockbox: true });
-        bridgeNoLockbox.setRoutes(chainIds, routes);
-
-        vm.stopPrank();
+        vm.prank(admin);
+        bridgeNoLockbox.configureRoutes(chainIds, routes);
+        vm.prank(authorizer);
+        bridgeNoLockbox.authorizeRoutes(chainIds);
     }
 
     function _configurePermissions() internal {

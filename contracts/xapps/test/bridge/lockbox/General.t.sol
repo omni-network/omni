@@ -10,18 +10,22 @@ contract GeneralLockboxest is TestBase {
 
         // `admin` cannot be zero address.
         vm.expectRevert(ILockbox.ZeroAddress.selector);
-        lockbox.initialize(address(0), address(0), address(0), address(0));
+        lockbox.initialize(address(0), address(0), address(0), address(0), address(0));
 
         // `pauser` cannot be zero address.
         vm.expectRevert(ILockbox.ZeroAddress.selector);
-        lockbox.initialize(admin, address(0), address(0), address(0));
+        lockbox.initialize(admin, address(0), address(0), address(0), address(0));
+
+        // `unpauser` cannot be zero address.
+        vm.expectRevert(ILockbox.ZeroAddress.selector);
+        lockbox.initialize(admin, pauser, address(0), address(0), address(0));
 
         // `token` cannot be zero address.
         vm.expectRevert(ILockbox.ZeroAddress.selector);
-        lockbox.initialize(admin, pauser, address(0), address(0));
+        lockbox.initialize(admin, pauser, unpauser, address(0), address(0));
 
         // `wrapped` cannot be zero address.
         vm.expectRevert(ILockbox.ZeroAddress.selector);
-        lockbox.initialize(admin, pauser, address(token), address(0));
+        lockbox.initialize(admin, pauser, unpauser, address(token), address(0));
     }
 }

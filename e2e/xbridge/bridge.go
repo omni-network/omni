@@ -24,7 +24,9 @@ import (
 type BridgeConfig struct {
 	ProxyAdminOwner common.Address
 	Admin           common.Address
+	Authorizer      common.Address
 	Pauser          common.Address
+	Unpauser        common.Address
 	OmniPortal      common.Address
 	Token           common.Address
 	Lockbox         common.Address
@@ -34,8 +36,14 @@ func (cfg BridgeConfig) Validate() error {
 	if isEmpty(cfg.Admin) {
 		return errors.New("admin is zero")
 	}
+	if isEmpty(cfg.Authorizer) {
+		return errors.New("authorizer is zero")
+	}
 	if isEmpty(cfg.Pauser) {
 		return errors.New("pauser is zero")
+	}
+	if isEmpty(cfg.Unpauser) {
+		return errors.New("unpauser is zero")
 	}
 	if isEmpty(cfg.OmniPortal) {
 		return errors.New("omni portal is zero")
@@ -85,7 +93,7 @@ func deployBridges(ctx context.Context, network netconf.Network, backends ethbac
 				return errors.Wrap(err, "deploy bridge", "chain", chain.Name)
 			}
 
-			err = setRoutes(ctx, network, chain, backend, xtoken)
+			err = configureRoutes(ctx, network, chain, backend, xtoken)
 			if err != nil {
 				return errors.Wrap(err, "set routes", "chain", chain.Name)
 			}
@@ -156,7 +164,9 @@ func deployBridge(
 	cfg := BridgeConfig{
 		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleUpgrader),
 		Admin:           eoa.MustAddress(network, eoa.RoleManager),
+		Authorizer:      eoa.MustAddress(network, eoa.RoleManager),
 		Pauser:          eoa.MustAddress(network, eoa.RoleManager),
+		Unpauser:        eoa.MustAddress(network, eoa.RoleManager),
 		OmniPortal:      addrs.Portal,
 		Token:           token,
 	}
@@ -176,7 +186,7 @@ func deployBridge(
 	return deploy(cfg)
 }
 
-func setRoutes(
+func configureRoutes(
 	ctx context.Context,
 	network netconf.Network,
 	chain netconf.Chain,
@@ -217,9 +227,19 @@ func setRoutes(
 		return errors.Wrap(err, "new bridge")
 	}
 
-	tx, err := bridge.SetRoutes(txOpts, destChainIDs, routes)
+	tx, err := bridge.ConfigureRoutes(txOpts, destChainIDs, routes)
 	if err != nil {
 		return errors.Wrap(err, "set destinations")
+	}
+
+	_, err = backend.WaitMined(ctx, tx)
+	if err != nil {
+		return errors.Wrap(err, "wait mined")
+	}
+
+	tx, err = bridge.AuthorizeRoutes(txOpts, destChainIDs)
+	if err != nil {
+		return errors.Wrap(err, "authorize routes")
 	}
 
 	receipt, err := backend.WaitMined(ctx, tx)
@@ -244,7 +264,7 @@ func packBridgeInitCode(cfg BridgeConfig, impl common.Address) ([]byte, error) {
 		return nil, errors.Wrap(err, "get proxy abi")
 	}
 
-	initializer, err := bridgeAbi.Pack("initialize", cfg.Admin, cfg.Pauser, cfg.OmniPortal, cfg.Token, cfg.Lockbox)
+	initializer, err := bridgeAbi.Pack("initialize", cfg.Admin, cfg.Authorizer, cfg.Pauser, cfg.Unpauser, cfg.OmniPortal, cfg.Token, cfg.Lockbox)
 	if err != nil {
 		return nil, errors.Wrap(err, "encode initializer")
 	}

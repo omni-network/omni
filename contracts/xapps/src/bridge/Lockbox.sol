@@ -18,6 +18,8 @@ contract Lockbox is Initializable, AccessControlUpgradeable, PausableUpgradeable
 
     // keccak256("PAUSER")
     bytes32 public constant PAUSER_ROLE = 0x539440820030c4994db4e31b6b800deafd503688728f932addfe7a410515c14c;
+    // keccak256("UNPAUSER");
+    bytes32 public constant UNPAUSER_ROLE = 0x82b32d9ab5100db08aeb9a0e08b422d14851ec118736590462bf9c085a6e9448;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                          STORAGE                           */
@@ -45,10 +47,14 @@ contract Lockbox is Initializable, AccessControlUpgradeable, PausableUpgradeable
     /*                        INITIALIZER                         */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function initialize(address admin_, address pauser_, address token_, address wrapped_) external initializer {
+    function initialize(address admin_, address pauser_, address unpauser_, address token_, address wrapped_)
+        external
+        initializer
+    {
         // Validate required inputs are not zero addresses.
         if (admin_ == address(0)) revert ZeroAddress();
         if (pauser_ == address(0)) revert ZeroAddress();
+        if (unpauser_ == address(0)) revert ZeroAddress();
         if (token_ == address(0)) revert ZeroAddress();
         if (wrapped_ == address(0)) revert ZeroAddress();
 
@@ -57,6 +63,7 @@ contract Lockbox is Initializable, AccessControlUpgradeable, PausableUpgradeable
         __Pausable_init();
         _grantRole(DEFAULT_ADMIN_ROLE, admin_);
         _grantRole(PAUSER_ROLE, pauser_);
+        _grantRole(UNPAUSER_ROLE, unpauser_);
 
         // Set configured values.
         token = token_;
@@ -115,7 +122,7 @@ contract Lockbox is Initializable, AccessControlUpgradeable, PausableUpgradeable
     /**
      * @dev Unpauses depositing into and withdrawing from the lockbox.
      */
-    function unpause() external onlyRole(PAUSER_ROLE) {
+    function unpause() external onlyRole(UNPAUSER_ROLE) {
         _unpause();
     }
 
