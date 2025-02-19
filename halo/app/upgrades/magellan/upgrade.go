@@ -13,7 +13,9 @@ package magellan
 import (
 	"context"
 	"encoding/json"
+	"time"
 
+	"github.com/omni-network/omni/halo/app/upgrades/uluwatu"
 	evmstakingtypes "github.com/omni-network/omni/halo/evmstaking/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
@@ -30,6 +32,8 @@ import (
 	mintmodule "github.com/cosmos/cosmos-sdk/x/mint"
 	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
+	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
+	sltypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 )
 
 const UpgradeName = "2_magellan"
@@ -56,10 +60,21 @@ var (
 	}
 )
 
+func SlashingParams() sltypes.Params {
+	p := uluwatu.SlashingParams
+	// Set flash fraction downtime to default 5% (instead of 50%)
+	p.MinSignedPerWindow = math.LegacyNewDecWithPrec(5, 2)
+	// Minimum 1min downtime jail duration (instead of 12 hours)
+	p.DowntimeJailDuration = time.Minute
+
+	return p
+}
+
 func CreateUpgradeHandler(
 	mm *module.Manager,
 	configurator module.Configurator,
 	mint mintkeeper.Keeper,
+	slash slashingkeeper.Keeper,
 	account authkeeper.AccountKeeper,
 ) upgradetypes.UpgradeHandler {
 	return func(ctx context.Context, _ upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
@@ -70,6 +85,10 @@ func CreateUpgradeHandler(
 		// Initialize mint module genesis (since it is being added in this upgrade)
 		if err := initMintGenesis(ctx, mint, account, mintGenesisState()); err != nil {
 			return nil, errors.Wrap(err, "init mint genesis")
+		}
+
+		if err := slash.SetParams(ctx, SlashingParams()); err != nil {
+			return nil, errors.Wrap(err, "set slashing params")
 		}
 
 		// Register mint module consensus version in the version map
@@ -116,12 +135,20 @@ func initMintGenesis(ctx context.Context, mint mintkeeper.Keeper, account mintty
 }
 
 func GenesisState(cdc codec.JSONCodec) (map[string]json.RawMessage, error) {
-	bz, err := cdc.MarshalJSON(mintGenesisState())
+	mintState, err := cdc.MarshalJSON(mintGenesisState())
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal slashing genesis")
+	}
+
+	st := sltypes.DefaultGenesisState()
+	st.Params = SlashingParams()
+	slashState, err := cdc.MarshalJSON(st)
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal slashing genesis")
 	}
 
 	return map[string]json.RawMessage{
-		minttypes.ModuleName: bz,
+		minttypes.ModuleName: mintState,
+		sltypes.ModuleName:   slashState,
 	}, nil
 }

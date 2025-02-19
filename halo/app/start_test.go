@@ -17,7 +17,6 @@ import (
 	haloapp "github.com/omni-network/omni/halo/app"
 	"github.com/omni-network/omni/halo/app/upgrades"
 	magellan2 "github.com/omni-network/omni/halo/app/upgrades/magellan"
-	uluwatu1 "github.com/omni-network/omni/halo/app/upgrades/uluwatu"
 	halocmd "github.com/omni-network/omni/halo/cmd"
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/lib/cchain"
@@ -126,7 +125,8 @@ func testModuleParams(t *testing.T, ctx context.Context, cprov cchain.Provider) 
 
 	sParamsResp, err := cprov.QueryClients().Slashing.Params(ctx, &slashingtypes.QueryParamsRequest{})
 	require.NoError(t, err)
-	require.Equal(t, uluwatu1.SlashingParams.String(), sParamsResp.Params.String())
+	expected := magellan2.SlashingParams()
+	require.Equal(t, expected.String(), sParamsResp.Params.String())
 
 	mParamsResp, err := cprov.QueryClients().Mint.Params(ctx, &minttypes.QueryParamsRequest{})
 	require.NoError(t, err)

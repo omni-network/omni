@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	magellan2 "github.com/omni-network/omni/halo/app/upgrades/magellan"
-	uluwatu1 "github.com/omni-network/omni/halo/app/upgrades/uluwatu"
 	"github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
@@ -47,6 +46,8 @@ func TestSlashing(t *testing.T) {
 
 		paramResponse, err := cprov.QueryClients().Slashing.Params(ctx, &slashingtypes.QueryParamsRequest{})
 		require.NoError(t, err)
-		require.Equal(t, uluwatu1.SlashingParams.String(), paramResponse.Params.String())
+
+		expected := magellan2.SlashingParams()
+		require.Equal(t, expected.String(), paramResponse.Params.String())
 	})
 }
