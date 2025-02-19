@@ -2,6 +2,7 @@ package magellan
 
 import (
 	"testing"
+	"time"
 
 	"github.com/ethereum/go-ethereum/params"
 
@@ -9,6 +10,17 @@ import (
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	"github.com/stretchr/testify/require"
 )
+
+func TestSlashingParams(t *testing.T) {
+	t.Parallel()
+
+	p := SlashingParams()
+	require.True(t, p.SlashFractionDowntime.IsZero())
+	require.True(t, p.SlashFractionDoubleSign.IsZero())
+	require.Equal(t, time.Minute, p.DowntimeJailDuration)
+	require.Equal(t, "0.050000000000000000", p.MinSignedPerWindow.String())
+	require.EqualValues(t, 2000, p.SignedBlocksWindow)
+}
 
 func TestTargetInflation(t *testing.T) {
 	t.Parallel()

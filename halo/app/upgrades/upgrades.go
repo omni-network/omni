@@ -57,6 +57,7 @@ var Upgrades = []Upgrade{
 				a.GetModuleManager(),
 				a.GetModuleConfigurator(),
 				a.GetMintKeeper(),
+				a.GetSlashingKeeper(),
 				a.GetAccountKeeper(),
 			)
 		},
