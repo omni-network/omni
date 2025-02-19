@@ -92,6 +92,7 @@ issues:
     - ".*\\.pb\\.go$" # Ignore generated protobuf files
   exclude-dirs:
     - "scratch" # Ignore scratch folder if present
+    - "solver/solana/events" # Ignore anchor-go bindings.
   exclude-rules:
     - path: '(.*)(_test|tutil|scripts)(.*)'
       linters:         # Relax linters for both tests/scripts (non-production code)

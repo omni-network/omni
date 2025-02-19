@@ -3,6 +3,7 @@ package solana
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"net"
 	"os"
 	"os/exec"
@@ -21,11 +22,11 @@ import (
 
 // Start starts a genesis solana node and returns a client, a funded private key and a stop function or an error.
 // The dir parameter is the location of the docker compose.
-func Start(ctx context.Context, dir string) (*rpc.Client, solana.PrivateKey, func(), error) {
+func Start(ctx context.Context, composeDir string) (*rpc.Client, solana.PrivateKey, func(), error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Minute) // Allow 1 minute for edge case of pulling images.
 	defer cancel()
 
-	if !composeDown(ctx, dir) {
+	if !composeDown(ctx, composeDir) {
 		return nil, nil, nil, errors.New("failure to clean up previous solana instance")
 	}
 
@@ -35,13 +36,19 @@ func Start(ctx context.Context, dir string) (*rpc.Client, solana.PrivateKey, fun
 		return nil, nil, nil, errors.Wrap(err, "get available port")
 	}
 
-	if err := writeComposeFile(dir, port, "stable"); err != nil {
+	if err := writeComposeFile(composeDir, port, "stable"); err != nil {
 		return nil, nil, nil, errors.Wrap(err, "write compose file")
+	}
+
+	for _, program := range Programs {
+		if err := copyProgram(composeDir, program); err != nil {
+			return nil, nil, nil, errors.Wrap(err, "copy program")
+		}
 	}
 
 	log.Info(ctx, "Starting solana")
 
-	out, err := execCmd(ctx, dir, "docker", "compose", "up", "-d", "--remove-orphans")
+	out, err := execCmd(ctx, composeDir, "docker", "compose", "up", "-d", "--remove-orphans")
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "docker compose up: "+out)
 	}
@@ -54,11 +61,11 @@ func Start(ctx context.Context, dir string) (*rpc.Client, solana.PrivateKey, fun
 		// Fresh stop context since above context might be canceled.
 		stopCtx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 		defer cancel()
-		composeDown(stopCtx, dir)
+		composeDown(stopCtx, composeDir)
 	}
 
 	// Wait up to 10 secs for RPC to be available
-	const retry = 10
+	const retry = 20
 	for i := 0; i < retry; i++ {
 		if i == retry-1 {
 			stop()
@@ -68,10 +75,10 @@ func Start(ctx context.Context, dir string) (*rpc.Client, solana.PrivateKey, fun
 		select {
 		case <-ctx.Done():
 			return nil, nil, nil, errors.Wrap(ctx.Err(), "timeout")
-		case <-time.After(time.Millisecond * 500):
+		case <-time.After(time.Second):
 		}
 
-		_, err := cl.GetBlockHeight(ctx, rpc.CommitmentFinalized)
+		_, err := cl.GetHealth(ctx)
 		if err == nil {
 			break
 		}
@@ -81,7 +88,7 @@ func Start(ctx context.Context, dir string) (*rpc.Client, solana.PrivateKey, fun
 		}
 	}
 
-	privKey, err := solana.PrivateKeyFromSolanaKeygenFile(filepath.Join(dir, "id.json"))
+	privKey, err := solana.PrivateKeyFromSolanaKeygenFile(filepath.Join(composeDir, "id.json"))
 	if err != nil {
 		return nil, nil, nil, errors.Wrap(err, "get private key")
 	}
@@ -89,6 +96,101 @@ func Start(ctx context.Context, dir string) (*rpc.Client, solana.PrivateKey, fun
 	log.Info(ctx, "Solana: RPC is available", "addr", endpoint)
 
 	return cl, privKey, stop, nil
+}
+
+// Deploy deploys a program to the localhost compose network using hte default keypair.
+// It returns the confirmed transaction result or an error.
+func Deploy(ctx context.Context, cl *rpc.Client, composeDir string, program Program) (*rpc.GetTransactionResult, error) {
+	programDir := filepath.Join("/root/.config/solana/", program.Name)
+	soFile := filepath.Join(programDir, program.SOFile())
+
+	_, err := cl.GetAccountInfoWithOpts(ctx, program.MustPublicKey(), &rpc.GetAccountInfoOpts{
+		Commitment: rpc.CommitmentConfirmed,
+	})
+	if !errors.Is(err, rpc.ErrNotFound) {
+		return nil, errors.New("program already deployed", "account", program.MustPublicKey())
+	}
+
+	args := []string{
+		"compose", "exec", "solana",
+		"solana", "program", "deploy", soFile,
+		"--verbose",
+		"--commitment", string(rpc.CommitmentConfirmed),
+		"--url", "localhost",
+		"--output", "json",
+	}
+
+	var stdOut, stdErr bytes.Buffer
+	cmd := exec.CommandContext(ctx, "docker", args...)
+	cmd.Dir = composeDir
+	cmd.Stdout = &stdOut
+	cmd.Stderr = &stdErr
+
+	if err := cmd.Run(); err != nil {
+		return nil, errors.Wrap(err, "exec deploy", "stderr", stdErr.String(), "stdout", stdOut.String())
+	}
+
+	var resp struct {
+		ProgramID string `json:"programId"`
+		Signature string `json:"signature"`
+	}
+	if err := json.Unmarshal(stdOut.Bytes(), &resp); err != nil {
+		return nil, errors.Wrap(err, "unmarshal deploy response", "stdout", stdOut.String())
+	}
+
+	if resp.ProgramID != program.MustPublicKey().String() {
+		return nil, errors.New("unexpected program ID", "expected", program.MustPublicKey(), "got", resp.ProgramID)
+	}
+
+	txSig, err := solana.SignatureFromBase58(resp.Signature)
+	if err != nil {
+		return nil, errors.Wrap(err, "parse signature")
+	}
+
+	tx, err := AwaitConfirmedTransaction(ctx, cl, txSig)
+	if err != nil {
+		return nil, errors.Wrap(err, "await confirmed transaction")
+	}
+
+	info, err := cl.GetAccountInfoWithOpts(ctx, program.MustPublicKey(), &rpc.GetAccountInfoOpts{
+		Commitment: rpc.CommitmentConfirmed,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "get account info")
+	} else if !info.Value.Executable {
+		return nil, errors.New("program not executable", "account", program.MustPublicKey())
+	}
+
+	return tx, nil
+}
+
+func copyProgram(composeDir string, program Program) error {
+	targetDir := filepath.Join(composeDir, program.Name)
+	if err := os.RemoveAll(targetDir); err != nil {
+		return errors.Wrap(err, "remove target dir", "path", targetDir)
+	}
+	if err := os.MkdirAll(targetDir, 0755); err != nil {
+		return errors.Wrap(err, "mkdir", "path", targetDir)
+	}
+
+	// Copy <programDir>/<program>.so and <programDir>/<program>-keypair.json to <composeDir>/<programDir>
+	if err := os.WriteFile(
+		filepath.Join(targetDir, program.SOFile()),
+		program.SharedObject,
+		0644,
+	); err != nil {
+		return errors.Wrap(err, "write so file")
+	}
+
+	if err := os.WriteFile(
+		filepath.Join(targetDir, program.KeyPairFile()),
+		program.KeyPairJSON,
+		0644,
+	); err != nil {
+		return errors.Wrap(err, "write so file")
+	}
+
+	return nil
 }
 
 // composeDown runs docker-compose down in the provided directory.

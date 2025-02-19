@@ -62,6 +62,7 @@ repos:
         require_serial: true # Don't run this in parallel
         entry: .pre-commit/run_golint.sh
         types: [ file, go ]
+        exclude: "(solver/solana/events/.*)"
 
       - id: run-forge-tests
         name: run-forge-tests
@@ -75,7 +76,7 @@ repos:
         language: script
         entry: .pre-commit/run_regexp.sh
         types: [ file, go ]
-        exclude: "(_test.go|contracts/bindings/.*|scripts/)"
+        exclude: "(_test.go|contracts/bindings/.*|scripts/|solver/solana/events/.*)"
 
       - id: run-goversion
         name: run-goversion
