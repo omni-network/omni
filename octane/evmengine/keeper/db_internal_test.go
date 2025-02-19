@@ -43,16 +43,20 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 
 	addr1 := tutil.RandomAddress()
 	addr2 := tutil.RandomAddress()
+	addr3 := tutil.RandomAddress()
 
-	inputs := []struct {
+	type testCase struct {
 		addr   common.Address
 		height uint64
 		amount uint64
 		expID  uint64
-	}{
+	}
+
+	inputs := []testCase{
 		{addr1, 1, 777, 1},
 		{addr2, 2, 8888, 2},
 		{addr1, 100, 9999999, 3},
+		{addr3, 120, 10000000, 4},
 	}
 
 	for _, in := range inputs {
@@ -63,13 +67,17 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 
 	withdrawals, err := getAllWithdrawals(ctx, keeper)
 	require.NoError(t, err)
-	require.Len(t, withdrawals, 3)
+	require.Len(t, withdrawals, len(inputs))
+
+	matchesTestCase := func(w *Withdrawal, in testCase) {
+		require.Equal(t, in.expID, w.GetId())
+		require.Equal(t, in.addr.Bytes(), w.GetAddress())
+		require.Equal(t, in.amount, w.GetAmountGwei())
+		require.Equal(t, in.height, w.GetCreatedHeight())
+	}
 
 	for i, in := range inputs {
-		require.Equal(t, in.expID, withdrawals[i].GetId())
-		require.Equal(t, in.addr.Bytes(), withdrawals[i].GetAddress())
-		require.Equal(t, in.amount, withdrawals[i].GetAmountGwei())
-		require.Equal(t, in.height, withdrawals[i].GetCreatedHeight())
+		matchesTestCase(withdrawals[i], in)
 	}
 
 	withdrawalsByAddr, err := keeper.listWithdrawalsByAddress(ctx, addr1)
@@ -85,6 +93,42 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 	withdrawalsByAddr, err = keeper.listWithdrawalsByAddress(ctx, tutil.RandomAddress())
 	require.NoError(t, err)
 	require.Empty(t, withdrawalsByAddr)
+
+	limit := 4
+
+	// make sure we have no withdrawals below height 1
+	withdrawalsByHeight, err := keeper.ListWithdrawalsBelowHeight(ctx, 1, limit)
+	require.NoError(t, err)
+	require.Empty(t, withdrawalsByHeight)
+
+	// make sure we have exactly one withdrawal below height 2
+	withdrawalsByHeight, err = keeper.ListWithdrawalsBelowHeight(ctx, 2, limit)
+	require.NoError(t, err)
+	require.Len(t, withdrawalsByHeight, 1)
+	matchesTestCase(withdrawalsByHeight[0], inputs[0])
+
+	// under height 50 we only have 2 withdrawals
+	withdrawalsByHeight, err = keeper.ListWithdrawalsBelowHeight(ctx, 50, limit)
+	require.NoError(t, err)
+	require.Len(t, withdrawalsByHeight, 2)
+	matchesTestCase(withdrawalsByHeight[0], inputs[0])
+	matchesTestCase(withdrawalsByHeight[1], inputs[1])
+
+	// under height 1000 we get all of them
+	withdrawalsByHeight, err = keeper.ListWithdrawalsBelowHeight(ctx, 1000, limit)
+	require.NoError(t, err)
+	require.Len(t, withdrawalsByHeight, 4)
+	matchesTestCase(withdrawalsByHeight[0], inputs[0])
+	matchesTestCase(withdrawalsByHeight[1], inputs[1])
+	matchesTestCase(withdrawalsByHeight[2], inputs[2])
+	matchesTestCase(withdrawalsByHeight[3], inputs[3])
+
+	// under height 1000 we get the first 2 if we limit the output by 2
+	withdrawalsByHeight, err = keeper.ListWithdrawalsBelowHeight(ctx, 1000, limit/2)
+	require.NoError(t, err)
+	require.Len(t, withdrawalsByHeight, limit/2)
+	matchesTestCase(withdrawalsByHeight[0], inputs[0])
+	matchesTestCase(withdrawalsByHeight[1], inputs[1])
 }
 
 // getAllWithdrawals returns all withdrawals in the keeper DB.
