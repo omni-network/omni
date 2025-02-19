@@ -5,6 +5,8 @@ import "../TestBase.sol";
 
 contract SolverNet_Inbox_Open_Test is TestBase {
     function test_open_reverts() public {
+        inbox.pauseOpen(true);
+
         address[] memory expenseTokens = new address[](1);
         expenseTokens[0] = address(token2);
         uint96[] memory expenseAmounts = new uint96[](1);
@@ -14,6 +16,20 @@ contract SolverNet_Inbox_Open_Test is TestBase {
             getArbitraryVaultOrder(address(0), defaultAmount, expenseTokens, expenseAmounts);
         assertTrue(inbox.validate(order), "order should be valid");
 
+        // Should revert when `open` is paused
+        vm.expectRevert(ISolverNetInbox.IsPaused.selector);
+        vm.prank(user);
+        inbox.open(order);
+
+        // Should revert if `open` and `close` are paused
+        inbox.pauseAll(true);
+        vm.expectRevert(ISolverNetInbox.AllPaused.selector);
+        vm.prank(user);
+        inbox.open(order);
+
+        inbox.pauseAll(false);
+
+        // Should revert if msg.value doesn't match native deposit amount
         vm.expectRevert(ISolverNetInbox.InvalidNativeDeposit.selector);
         vm.prank(user);
         inbox.open(order);

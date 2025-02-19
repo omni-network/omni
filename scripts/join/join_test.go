@@ -60,12 +60,7 @@ func TestJoinNetwork(t *testing.T) {
 	output, err := os.OpenFile(logsPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	require.NoError(t, err)
 
-	// Ensure containers are always cleaned up, even if the test fails.
-	defer func() {
-		if err := shutdownContainers(home, output, logsPath); err != nil {
-			t.Errorf("failed to clean up containers: %v", err)
-		}
-	}()
+	defer cleanUp(t, home, output, logsPath)
 
 	networkID := netconf.ID(*network)
 	haloTag := haloTag(t)
@@ -187,6 +182,20 @@ func TestJoinNetwork(t *testing.T) {
 	if err := eg.Wait(); err != nil {
 		printLogsTail(t, logsPath)
 		tutil.RequireNoError(t, err)
+	}
+}
+
+func cleanUp(t *testing.T, home string, output *os.File, logsPath string) {
+	t.Helper()
+
+	// Ensure containers are always cleaned up, even if the test fails.
+	if err := shutdownContainers(home, output, logsPath); err != nil {
+		t.Errorf("failed to clean up containers: %v", err)
+	}
+
+	// Explicitly delete temp home test dir in order to avoid issues with automatic temp dir clean up permissions on CI.
+	if err := os.RemoveAll(home); err != nil {
+		t.Errorf("failed to remove test home temp dir: %v", err)
 	}
 }
 
@@ -366,7 +375,7 @@ func getContainerStats(ctx context.Context) (stats, error) {
 }
 
 func shutdownContainers(home string, output *os.File, logsPath string) error {
-	// Create a context with timeout to ensure cleanup doesn't hang indefinitely.
+	// Create a context with timeout to ensure clean up doesn't hang indefinitely.
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 

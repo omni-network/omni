@@ -52,6 +52,7 @@ contract TestBase is Test {
 
     uint96 defaultAmount = 100 ether;
     uint32 defaultFillDeadline = uint32(block.timestamp + 1 hours);
+    uint32 defaultFillBuffer = 6 hours;
 
     bytes32 internal constant ORDER_DATA_TYPEHASH = keccak256(
         "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,Expense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)Expense(address spender,address token,uint96 amount)"

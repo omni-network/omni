@@ -28,6 +28,10 @@ interface ISolverNetInbox is IOriginSettler {
     // Order claim errors
     error OrderNotFilled();
 
+    // Pause errors
+    error IsPaused();
+    error AllPaused();
+
     /**
      * @notice Emitted when an outbox is set.
      * @param chainId ID of the chain.
