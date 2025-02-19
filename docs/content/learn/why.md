@@ -9,7 +9,7 @@ The most glaring side effect of Ethereum’s pursuit of the rollup-centric roadm
 - Applications are siloed on individual rollups, limiting their ability to reach users across the ecosystem
 - If a developer wants to reach users across the ecosystem, they have a couple of options:
     1. Deploy multiple copies of their application to multiple rollups, which means each deployment is isolated from the others, must be maintained independently. Congratulations, your users are fragmented, and your application doesn't benefit from network effects.
-    2. Rearchitect their applications to be cross chain. This forces developers to reason about cross chain communication, finality risk, sequencer risk, plaform risk, and longer audits. Plus, it turns smart contract development into a distributed systems problem! The whole point of the EVM is to create a simple VM abstraction over a complex distributed system.
+    2. Rearchitect their applications to be cross chain. This forces developers to reason about cross chain communication, finality risk, sequencer risk, platform risk, and longer audits. Plus, it turns smart contract development into a distributed systems problem! The whole point of the EVM is to create a simple VM abstraction over a complex distributed system.
     3. Give up and just deploy on a single rollup, limiting themselves to the users and capital on that rollup.
 - None of these options are good, let alone desirable.
 
