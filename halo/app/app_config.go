@@ -67,6 +67,8 @@ const (
 
 	deliverIntervalProtected = 20_000 // Roughly ~12h assuming 0.5bps
 	deliverIntervalEphemeral = 2      // Fast updates while testing
+
+	maxWithdrawalsPerBlock uint64 = 32 // The maximum number of withdrawals included in one block.
 )
 
 //nolint:gochecknoglobals // Cosmos-style
@@ -202,8 +204,10 @@ var (
 						}),
 					},
 					{
-						Name:   engevmtypes.ModuleName,
-						Config: appconfig.WrapAny(&engevmmodule.Module{}),
+						Name: engevmtypes.ModuleName,
+						Config: appconfig.WrapAny(&engevmmodule.Module{
+							MaxWithdrawalsPerBlock: maxWithdrawalsPerBlock,
+						}),
 					},
 					{
 						Name: attesttypes.ModuleName,
