@@ -246,7 +246,7 @@ func (o feeOracle) syncToNativeRate(ctx context.Context, dest evmchain.Metadata)
 		return nil
 	}
 
-	// if bufferred rate is less than we can represent on chain, use smallest representable rate - 1/CONVERSION_RATE_DENOM
+	// if buffered rate is less than we can represent on chain, use smallest representable rate - 1/CONVERSION_RATE_DENOM
 	if bufferedRate < 1.0/float64(rateDenom) {
 		log.Warn(ctx, "Buffered rate too small, setting minimum on chain", errors.New("conversion rate < min repr"), "buffered", bufferedRate)
 		bufferedNumer = big.NewInt(1)
