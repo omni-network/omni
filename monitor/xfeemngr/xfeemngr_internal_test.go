@@ -79,7 +79,7 @@ func TestStart(t *testing.T) {
 					rate = maxSaneEthPerOmni
 				}
 
-				numer := rateToNumerator(rate)
+				number := rateToNumerator(rate)
 
 				if src.NativeToken == dest.NativeToken {
 					//nolint:testifylint // should be exactly 1:1
@@ -88,15 +88,15 @@ func TestStart(t *testing.T) {
 
 				// handle minimum rate case
 				if rate < 1.0/float64(rateDenom) {
-					numer = big.NewInt(1) // Use minimum representable rate
+					number = big.NewInt(1) // Use minimum representable rate
 				}
 
 				onChainNumer, err := mustGetContract(t, oracle).ToNativeRate(ctx, dest.ChainID)
 				require.NoError(t, err)
 
 				// allow variance of +-1 due to floating point rounding errors
-				numerDiff := new(big.Int).Sub(numer, onChainNumer).Int64()
-				require.True(t, numerDiff >= -1 && numerDiff <= 1, "conversion rate")
+				numberDiff := new(big.Int).Sub(number, onChainNumer).Int64()
+				require.True(t, numberDiff >= -1 && numberDiff <= 1, "conversion rate")
 			}
 		}
 	}
