@@ -1,3 +1,4 @@
+//nolint:paralleltest // Global docker dir container
 package solana_test
 
 import (
@@ -6,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/omni-network/omni/lib/tutil"
 	solcompose "github.com/omni-network/omni/solver/solana"
 
 	"github.com/gagliardetto/solana-go"
@@ -21,7 +23,6 @@ const dir = "compose"
 
 var v0 uint64
 
-//nolint:paralleltest // Global docker dir container
 func TestIntegration(t *testing.T) {
 	if !*integration {
 		t.Skip("skipping integration test")
@@ -55,20 +56,10 @@ func TestIntegration(t *testing.T) {
 		txSig, err := cl.RequestAirdrop(ctx, privKey1.PublicKey(), airdropVal, rpc.CommitmentConfirmed)
 		require.NoError(t, err)
 
-		require.Eventually(t, func() bool {
-			tx, err := cl.GetTransaction(ctx, txSig, &rpc.GetTransactionOpts{
-				Encoding:                       solana.EncodingBase64,
-				Commitment:                     rpc.CommitmentConfirmed,
-				MaxSupportedTransactionVersion: &v0,
-			})
-			if err != nil {
-				return false
-			}
+		tx, err := solcompose.AwaitConfirmedTransaction(ctx, cl, txSig)
+		require.NoError(t, err)
 
-			t.Logf("Airdrop Tx: slot=%d, time=%v, sig=%v", tx.Slot, tx.BlockTime, txSig)
-
-			return true
-		}, time.Second*10, time.Second)
+		t.Logf("Airdrop Tx: slot=%d, time=%v, sig=%v", tx.Slot, tx.BlockTime, txSig)
 
 		bal1, err = cl.GetBalance(ctx, privKey1.PublicKey(), rpc.CommitmentConfirmed)
 		require.NoError(t, err)
@@ -147,6 +138,23 @@ func TestIntegration(t *testing.T) {
 		require.Contains(t, *memoSigs[0].Memo, string(msg1))
 		require.Contains(t, *memoSigs[0].Memo, string(msg2))
 	})
+}
+
+func TestDeployEventsProgram(t *testing.T) {
+	if !*integration {
+		t.Skip("skipping integration test")
+	}
+
+	ctx := context.Background()
+	cl, _, _, err := solcompose.Start(ctx, dir)
+	require.NoError(t, err)
+
+	prog := solcompose.ProgramEvents
+
+	// Deploy events program
+	tx, err := solcompose.Deploy(ctx, cl, dir, prog)
+	tutil.RequireNoError(t, err)
+	t.Logf("Deployed events program: slot=%d, account=%s", tx.Slot, prog.MustPublicKey())
 }
 
 func ptr[A any](a A) *A {
