@@ -6,6 +6,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/contracts"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
@@ -27,17 +28,21 @@ func mustAddrs(network netconf.ID) contracts.Addresses {
 	return addrs
 }
 
-func erc20Deposit(amt *big.Int, addr common.Address) bindings.SolverNetDeposit {
-	return bindings.SolverNetDeposit{Token: addr, Amount: amt}
+func erc20Deposit(amt *big.Int, addr common.Address) solvernet.Deposit {
+	return solvernet.Deposit{Token: addr, Amount: amt}
 }
 
-func nativeTransferCall(amt *big.Int, to common.Address) []bindings.SolverNetCall {
-	return []bindings.SolverNetCall{{
+func nativeTransferCall(amt *big.Int, to common.Address) []solvernet.Call {
+	return []solvernet.Call{{
 		Value:    amt,
 		Target:   to,
 		Selector: [4]byte{},
 		Params:   nil,
 	}}
+}
+
+func nativeExpense(amt *big.Int) solvernet.Expenses {
+	return []solvernet.Expense{{Amount: amt}}
 }
 
 func mintAndApproveAll(ctx context.Context, backends ethbackend.Backends, orders []TestOrder) error {

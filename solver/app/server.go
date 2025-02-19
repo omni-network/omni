@@ -10,21 +10,16 @@ import (
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/solver/types"
 )
 
-// JSONErrorResponse is a json response for http errors (e.g 4xx, 5xx), not used for rejections.
-type JSONErrorResponse struct {
-	Code    int    `json:"code"`
-	Status  string `json:"status"`
-	Message string `json:"message"`
-}
+type (
+	JSONResponse      = types.JSONResponse
+	JSONErrorResponse = types.JSONErrorResponse
+)
 
 // removeBUG removes [BUG] from the error messages, so they are not included in responses to users.
 func removeBUG(s string) string { return strings.ReplaceAll(s, "[BUG]", "") }
-
-type JSONResponse interface {
-	StatusCode() int
-}
 
 func writeJSON(ctx context.Context, w http.ResponseWriter, res JSONResponse) {
 	w.WriteHeader(res.StatusCode())
@@ -59,24 +54,6 @@ func serveAPI(address string, endpoints map[string]http.Handler) <-chan error {
 	return errChan
 }
 
-type ContractsResponse struct {
-	Portal    string             `json:"portal,omitempty"`
-	Inbox     string             `json:"inbox,omitempty"`
-	Outbox    string             `json:"outbox,omitempty"`
-	Middleman string             `json:"middleman,omitempty"`
-	Error     *JSONErrorResponse `json:"error,omitempty"`
-}
-
-var _ JSONResponse = (*ContractsResponse)(nil)
-
-func (r ContractsResponse) StatusCode() int {
-	if r.Error != nil {
-		return r.Error.Code
-	}
-
-	return http.StatusOK
-}
-
 // newContractsHandler returns a http handler that returns the contract address for `network`.
 func newContractsHandler(addrs contracts.Addresses) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, rr *http.Request) {
@@ -84,7 +61,7 @@ func newContractsHandler(addrs contracts.Addresses) http.Handler {
 
 		w.Header().Set("Content-Type", "application/json")
 
-		writeJSON(ctx, w, ContractsResponse{
+		writeJSON(ctx, w, types.ContractsResponse{
 			Portal:    addrs.Portal.Hex(),
 			Inbox:     addrs.SolverNetInbox.Hex(),
 			Outbox:    addrs.SolverNetOutbox.Hex(),

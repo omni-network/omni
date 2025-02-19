@@ -34,6 +34,7 @@ type OrderData = bindings.SolverNetOrderData
 type testOrder struct {
 	srcChainID uint64
 	dstChainID uint64
+	calls      []Call // calls not tested explicitly, but required to test native expense
 	deposits   []Deposit
 	expenses   []Expense
 }
@@ -58,40 +59,38 @@ type rejectTestCase struct {
 	order       Order
 }
 
-// quoteTestCase is test case for quote handler.
-type quoteTestCase struct {
+// checkTestCase is test case for quote handler.
+type checkTestCase struct {
 	name string
 	mock func(clients MockClients)
-	req  QuoteRequest
-	res  QuoteResponse
+	req  CheckRequest
+	res  CheckResponse
 }
 
-func toQuoteTestCase(t *testing.T, tt orderTestCase) quoteTestCase {
+func toCheckTestCase(t *testing.T, tt orderTestCase) checkTestCase {
 	t.Helper()
 
 	require.Len(t, tt.order.deposits, 1)
 
-	var deposit *Deposit
-	if !tt.reject {
-		deposit = &tt.order.deposits[0]
-	}
+	deposit := tt.order.deposits[0]
 
 	var rejectReason string
 	if tt.reject {
 		rejectReason = tt.reason.String()
 	}
 
-	return quoteTestCase{
+	return checkTestCase{
 		name: tt.name,
 		mock: tt.mock,
-		req: QuoteRequest{
+		req: CheckRequest{
 			SourceChainID:      tt.order.srcChainID,
 			DestinationChainID: tt.order.dstChainID,
+			Calls:              tt.order.calls,
 			Expenses:           tt.order.expenses,
-			DepositToken:       tt.order.deposits[0].Token,
+			Deposit:            deposit,
 		},
-		res: QuoteResponse{
-			Deposit:      deposit,
+		res: CheckResponse{
+			Accepted:     !tt.reject,
 			Rejected:     tt.reject,
 			RejectReason: rejectReason,
 		},
@@ -101,23 +100,28 @@ func toQuoteTestCase(t *testing.T, tt orderTestCase) quoteTestCase {
 func toRejectTestCase(t *testing.T, tt orderTestCase, outbox common.Address) rejectTestCase {
 	t.Helper()
 
-	maxSpent := make([]bindings.IERC7683Output, len(tt.order.expenses))
-	for i, e := range tt.order.expenses {
-		maxSpent[i] = bindings.IERC7683Output{
+	// NOTE: in tests we map expenses directly to Order.MaxSpent.
+	// if there is a native expense, it should be included in expenses.
+	// this differs from inbox order opening / resolution, where native
+	// expenses are derived from sum of native call value
+
+	var maxSpent []bindings.IERC7683Output
+	for _, e := range tt.order.expenses {
+		maxSpent = append(maxSpent, bindings.IERC7683Output{
 			Amount:    e.Amount,
 			Token:     toBz32(e.Token),
 			Recipient: toBz32(outbox),
 			ChainId:   new(big.Int).SetUint64(tt.order.dstChainID),
-		}
+		})
 	}
 
-	minReceived := make([]bindings.IERC7683Output, len(tt.order.deposits))
-	for i, d := range tt.order.deposits {
-		minReceived[i] = bindings.IERC7683Output{
+	var minReceived []bindings.IERC7683Output
+	for _, d := range tt.order.deposits {
+		minReceived = append(minReceived, bindings.IERC7683Output{
 			Amount:  d.Amount,
 			Token:   toBz32(d.Token),
 			ChainId: new(big.Int).SetUint64(tt.order.srcChainID),
-		}
+		})
 	}
 
 	return rejectTestCase{
@@ -137,10 +141,10 @@ func toRejectTestCase(t *testing.T, tt orderTestCase, outbox common.Address) rej
 	}
 }
 
-func quoteTestCases(t *testing.T, solver common.Address) []quoteTestCase {
+func checkTestCases(t *testing.T, solver common.Address) []checkTestCase {
 	t.Helper()
 
-	var tests []quoteTestCase
+	var tests []checkTestCase
 
 	for _, tt := range orderTestCases(t, solver) {
 		if len(tt.order.deposits) != 1 {
@@ -148,28 +152,28 @@ func quoteTestCases(t *testing.T, solver common.Address) []quoteTestCase {
 			continue
 		}
 
-		tests = append(tests, toQuoteTestCase(t, tt))
+		tests = append(tests, toCheckTestCase(t, tt))
 	}
 
-	additional := []quoteTestCase{
+	additional := []checkTestCase{
 		{
 			name: "unsupported source chain",
-			req: QuoteRequest{
+			req: CheckRequest{
 				SourceChainID:      1234567,
 				DestinationChainID: evmchain.IDHolesky,
 			},
-			res: QuoteResponse{
+			res: CheckResponse{
 				Rejected:     true,
 				RejectReason: rejectUnsupportedSrcChain.String(),
 			},
 		},
 		{
 			name: "same chain",
-			req: QuoteRequest{
+			req: CheckRequest{
 				SourceChainID:      evmchain.IDHolesky,
 				DestinationChainID: evmchain.IDHolesky,
 			},
-			res: QuoteResponse{
+			res: CheckResponse{
 				Rejected:     true,
 				RejectReason: rejectSameChain.String(),
 			},
@@ -198,6 +202,7 @@ func rejectTestCases(t *testing.T, solver, outbox common.Address) []rejectTestCa
 				srcChainID: evmchain.IDBaseSepolia,
 				dstChainID: evmchain.IDHolesky,
 				deposits:   []Deposit{{Amount: big.NewInt(1)}},
+				calls:      []Call{{Value: big.NewInt(2)}},
 				expenses:   []Expense{{Amount: big.NewInt(2)}},
 			},
 		}, outbox),
@@ -221,6 +226,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				srcChainID: evmchain.IDHolesky,
 				dstChainID: evmchain.IDOmniOmega,
 				deposits:   []Deposit{{Amount: big.NewInt(1), Token: omegaOMNIAddr}},
+				calls:      []Call{{Value: big.NewInt(1)}},
 				expenses:   []Expense{{Amount: big.NewInt(1)}},
 			},
 			mock: func(clients MockClients) {
@@ -236,6 +242,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				srcChainID: evmchain.IDHolesky,
 				dstChainID: evmchain.IDOmniOmega,
 				deposits:   []Deposit{{Amount: big.NewInt(1), Token: omegaOMNIAddr}},
+				calls:      []Call{{Value: big.NewInt(1)}},
 				expenses:   []Expense{{Amount: big.NewInt(1)}},
 			},
 			mock: func(clients MockClients) {
@@ -313,14 +320,29 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			},
 		},
 		{
-			name:   "invalid deposit (token mismatch)",
+			name:   "invalid deposit (native token mismatch)",
 			reason: rejectInvalidDeposit,
 			reject: true,
 			order: testOrder{
 				srcChainID: evmchain.IDHolesky,
 				dstChainID: evmchain.IDOmniOmega,
 				deposits:   []Deposit{{Amount: big.NewInt(1)}},
+				calls:      []Call{{Value: big.NewInt(1)}},
 				expenses:   []Expense{{Amount: big.NewInt(1)}},
+			},
+		},
+		{
+			name:   "invalid deposit (token mismatch)",
+			reason: rejectInvalidDeposit,
+			reject: true,
+			order: testOrder{
+				srcChainID: evmchain.IDHolesky,
+				dstChainID: evmchain.IDBaseSepolia,
+				// wstETH on holesky
+				deposits: []Deposit{{Amount: big.NewInt(1), Token: common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")}},
+				// native eth on base
+				calls:    []Call{{Value: big.NewInt(1)}},
+				expenses: []Expense{{Amount: big.NewInt(1)}},
 			},
 		},
 		{
@@ -331,6 +353,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				srcChainID: evmchain.IDHolesky,
 				dstChainID: evmchain.IDOmniOmega,
 				deposits:   []Deposit{{Amount: big.NewInt(1), Token: omegaOMNIAddr}, {Amount: big.NewInt(1)}},
+				calls:      []Call{{Value: big.NewInt(1)}},
 				expenses:   []Expense{{Amount: big.NewInt(1)}},
 			},
 		},
@@ -342,18 +365,23 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				srcChainID: evmchain.IDHolesky,
 				dstChainID: evmchain.IDOptimism,
 				deposits:   []Deposit{{Amount: big.NewInt(1)}},
+				calls:      []Call{{Value: big.NewInt(1)}},
 				expenses:   []Expense{{Amount: big.NewInt(1)}},
 			},
 		},
 		{
-			name:   "invalid expense (multiple tokens)",
+			name:   "invalid expense (token and native)",
 			reason: rejectInvalidExpense,
 			reject: true,
 			order: testOrder{
-				srcChainID: evmchain.IDBaseSepolia,
+				srcChainID: evmchain.IDOmniOmega,
 				dstChainID: evmchain.IDHolesky,
-				deposits:   []Deposit{{Amount: big.NewInt(1)}},
-				expenses:   []Expense{{Amount: big.NewInt(1)}, {Amount: big.NewInt(1), Token: omegaOMNIAddr}},
+				deposits:   []Deposit{{Amount: big.NewInt(2)}},
+				calls:      []Call{{Value: big.NewInt(1)}},
+				expenses: []Expense{
+					{Amount: big.NewInt(1)},
+					{Amount: big.NewInt(1), Token: common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")},
+				},
 			},
 		},
 	}

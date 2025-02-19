@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -17,21 +18,20 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-//go:generate stringer -type=rejectReason -trimprefix=reject
-type rejectReason uint8
+type rejectReason = types.RejectReason
 
 const (
-	rejectNone                  rejectReason = 0
-	rejectDestCallReverts       rejectReason = 1
-	rejectInvalidDeposit        rejectReason = 2
-	rejectInvalidExpense        rejectReason = 3
-	rejectInsufficientDeposit   rejectReason = 4
-	rejectInsufficientInventory rejectReason = 5
-	rejectUnsupportedDeposit    rejectReason = 6
-	rejectUnsupportedExpense    rejectReason = 7
-	rejectUnsupportedDestChain  rejectReason = 8
-	rejectUnsupportedSrcChain   rejectReason = 9
-	rejectSameChain             rejectReason = 10
+	rejectNone                  = types.RejectNone
+	rejectDestCallReverts       = types.RejectDestCallReverts
+	rejectInvalidDeposit        = types.RejectInvalidDeposit
+	rejectInvalidExpense        = types.RejectInvalidExpense
+	rejectInsufficientDeposit   = types.RejectInsufficientDeposit
+	rejectInsufficientInventory = types.RejectInsufficientInventory
+	rejectUnsupportedDeposit    = types.RejectUnsupportedDeposit
+	rejectUnsupportedExpense    = types.RejectUnsupportedExpense
+	rejectUnsupportedDestChain  = types.RejectUnsupportedDestChain
+	rejectUnsupportedSrcChain   = types.RejectUnsupportedSrcChain
+	rejectSameChain             = types.RejectSameChain
 )
 
 // RejectionError implement error, but represents a logical (expected) rejection, not an unexpected system error.
@@ -71,12 +71,12 @@ func newShouldRejector(
 				return newRejection(rejectUnsupportedDestChain, err)
 			}
 
-			deposits, err := parseDeposits(order)
+			deposits, err := parseMinReceived(order)
 			if err != nil {
 				return err
 			}
 
-			expenses, err := parseExpenses(order, outboxAddr)
+			expenses, err := parseMaxSpent(order, outboxAddr)
 			if err != nil {
 				return err
 			}
@@ -109,8 +109,8 @@ func newShouldRejector(
 	}
 }
 
-// parseDeposits parses order.MinReceived, checks all tokens are supported, returns the list of deposits.
-func parseDeposits(order Order) ([]Payment, error) {
+// parseMinReceived parses order.MinReceived, checks all tokens are supported, returns the list of deposits.
+func parseMinReceived(order Order) ([]Payment, error) {
 	var deposits []Payment
 	for _, output := range order.MinReceived {
 		chainID := output.ChainId.Uint64()
@@ -204,8 +204,8 @@ func checkFill(
 	return nil
 }
 
-// parseExpenses parses order.MaxSpent, checks all tokens are supported, returns the list of expenses.
-func parseExpenses(order Order, outboxAddr common.Address) ([]Payment, error) {
+// parseMaxSpent parses order.MaxSpent, checks all tokens are supported, returns the list of expenses.
+func parseMaxSpent(order Order, outboxAddr common.Address) ([]Payment, error) {
 	var expenses []Payment
 
 	hasNative := false
