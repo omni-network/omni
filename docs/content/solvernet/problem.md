@@ -2,7 +2,7 @@
 
 ## The Challenge of Cross-Chain Applications
 
-Building cross-chain applications is hard. Building on top of a cross-chain messaging protocol introduces many challenges, and in the long run of smart contract development will primarily be used by infrastucture providers and sophistacted actors like solvers rather than apps for end users.
+Building cross-chain applications is hard. Building on top of a cross-chain messaging protocol introduces many challenges, and in the long run of smart contract development will primarily be used by infrastructure providers and sophistacted actors like solvers rather than apps for end users.
 
 In particular, cross chain app development introduces challenges like:
 
