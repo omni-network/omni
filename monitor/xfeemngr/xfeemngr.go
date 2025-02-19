@@ -54,7 +54,7 @@ var chainSyncOverrides = map[uint64]time.Duration{
 	// override for ethereum mainnet, to reduce spend
 	evmchain.IDEthereum: 90 * time.Minute,
 
-	// overide on holesky too, to test overide on omega
+	// override on holesky too, to test override on omega
 	evmchain.IDHolesky: 90 * time.Minute,
 }
 
