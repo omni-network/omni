@@ -114,9 +114,12 @@ contract SolverNet_Inbox_Resolve_Test is TestBase {
             params: abi.encode(user, defaultAmount)
         });
 
-        SolverNet.Expense[] memory expenses = new SolverNet.Expense[](1);
-        expenses[0] =
-            SolverNet.Expense({ spender: address(erc20Vault), token: address(token2), amount: uint96(defaultAmount) });
+        SolverNet.TokenExpense[] memory expenses = new SolverNet.TokenExpense[](1);
+        expenses[0] = SolverNet.TokenExpense({
+            spender: address(erc20Vault),
+            token: address(token2),
+            amount: uint96(defaultAmount)
+        });
 
         SolverNet.OrderData memory orderData = SolverNet.OrderData({
             owner: address(0),

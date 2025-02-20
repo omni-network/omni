@@ -139,10 +139,10 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
      * Approve spenders. Verify post-call balances match pre-call.
      * @dev Expenses doesn't contain native tokens sent alongside the call.
      */
-    modifier withExpenses(SolverNet.Expense[] memory expenses) {
+    modifier withExpenses(SolverNet.TokenExpense[] memory expenses) {
         // transfer from solver, approve spenders
         for (uint256 i; i < expenses.length; ++i) {
-            SolverNet.Expense memory expense = expenses[i];
+            SolverNet.TokenExpense memory expense = expenses[i];
             address spender = expense.spender;
             address token = expense.token;
             uint256 amount = expense.amount;
@@ -161,7 +161,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         // that token as an expense will get the balance.
         // This includes the call target.
         for (uint256 i; i < expenses.length; ++i) {
-            SolverNet.Expense memory expense = expenses[i];
+            SolverNet.TokenExpense memory expense = expenses[i];
             address token = expense.token;
             uint256 tokenBalance = token.balanceOf(address(_executor));
 
@@ -265,7 +265,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
             }
         }
 
-        // 2500 gas for Expense array length SLOAD + cost of reading each expense.
+        // 2500 gas for TokenExpense array length SLOAD + cost of reading each expense.
         uint256 expensesGas = 2500;
         unchecked {
             expensesGas += fillData.expenses.length * 5000;

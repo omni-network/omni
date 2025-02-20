@@ -36,7 +36,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
     uint256 addrCount = 32;
 
     bytes32 internal constant ORDER_DATA_TYPEHASH = keccak256(
-        "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,Expense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)Expense(address spender,address token,uint96 amount)"
+        "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)TokenExpense(address spender,address token,uint96 amount)"
     );
 
     uint256[] pks = new uint256[](addrCount);
@@ -159,7 +159,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
             destChainId: omniPortal.omniChainId(),
             deposit: deposit,
             calls: call,
-            expenses: new SolverNet.Expense[](0)
+            expenses: new SolverNet.TokenExpense[](0)
         });
 
         return IERC7683.OnchainCrossChainOrder({

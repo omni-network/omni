@@ -19,8 +19,8 @@ import (
 
 var (
 	// SolverNetInbox.ORDER_DATA_TYPEHASH
-	// keccak256( "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,Expense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)Expense(address spender,address token,uint96 amount)");.
-	orderDataTypeHash = cast.Must32(hexutil.MustDecode("0xfb2fd076b12750c4bfa77af573b3791b17a5e94805b6300eff13aae1c9ebaeb0"))
+	// keccak256("OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)TokenExpense(address spender,address token,uint96 amount)");.
+	orderDataTypeHash = cast.Must32(hexutil.MustDecode("0x2e7de755ca70cb933dc80103af16cc3303580e5712f1a8927d6461441e99a1e6"))
 )
 
 type OpenOpts struct {

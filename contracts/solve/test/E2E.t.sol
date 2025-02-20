@@ -8,7 +8,7 @@ contract SolverNet_E2E_Test is TestBase {
         SolverNet.Call[] memory calls = new SolverNet.Call[](1);
         calls[0] = getVaultCall(address(nativeVault), defaultAmount, user, defaultAmount);
 
-        SolverNet.Expense[] memory expenses = new SolverNet.Expense[](0); // No expense for native call value
+        SolverNet.TokenExpense[] memory expenses = new SolverNet.TokenExpense[](0); // No expense for native call value
 
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
             getOrder(user, destChainId, defaultFillDeadline, address(0), defaultAmount, calls, expenses);
@@ -71,7 +71,7 @@ contract SolverNet_E2E_Test is TestBase {
         SolverNet.Call[] memory calls = new SolverNet.Call[](1);
         calls[0] = getVaultCall(address(erc20Vault), 0, user, defaultAmount);
 
-        SolverNet.Expense[] memory expenses = new SolverNet.Expense[](1);
+        SolverNet.TokenExpense[] memory expenses = new SolverNet.TokenExpense[](1);
         expenses[0] = getExpense(address(erc20Vault), address(token2), defaultAmount);
 
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
@@ -137,7 +137,7 @@ contract SolverNet_E2E_Test is TestBase {
         SolverNet.Call[] memory calls = new SolverNet.Call[](1);
         calls[0] = getVaultCall(address(nativeVault), defaultAmount, user, defaultAmount);
 
-        SolverNet.Expense[] memory expenses = new SolverNet.Expense[](0); // No expense for native call value
+        SolverNet.TokenExpense[] memory expenses = new SolverNet.TokenExpense[](0); // No expense for native call value
 
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
             getOrder(user, destChainId, defaultFillDeadline, address(token1), defaultAmount, calls, expenses);
@@ -202,7 +202,7 @@ contract SolverNet_E2E_Test is TestBase {
         SolverNet.Call[] memory calls = new SolverNet.Call[](1);
         calls[0] = getVaultCall(address(erc20Vault), 0, user, defaultAmount);
 
-        SolverNet.Expense[] memory expenses = new SolverNet.Expense[](1);
+        SolverNet.TokenExpense[] memory expenses = new SolverNet.TokenExpense[](1);
         expenses[0] = getExpense(address(erc20Vault), address(token2), defaultAmount);
 
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
@@ -271,7 +271,7 @@ contract SolverNet_E2E_Test is TestBase {
         calls[0] = getVaultCall(address(nativeVault), defaultAmount, user, defaultAmount);
         calls[1] = getVaultCall(address(erc20Vault), 0, user, defaultAmount);
 
-        SolverNet.Expense[] memory expenses = new SolverNet.Expense[](1);
+        SolverNet.TokenExpense[] memory expenses = new SolverNet.TokenExpense[](1);
         expenses[0] = getExpense(address(erc20Vault), address(token2), defaultAmount);
 
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =

@@ -51,7 +51,7 @@ contract InvalidRequest is SolverNetStagingFixtures {
             destChainId: portal.omniChainId(),
             deposit: deposit,
             calls: call,
-            expenses: new SolverNet.Expense[](0)
+            expenses: new SolverNet.TokenExpense[](0)
         });
 
         return IERC7683.OnchainCrossChainOrder({
