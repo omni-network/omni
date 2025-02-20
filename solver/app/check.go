@@ -12,130 +12,79 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// NOTE: Quote request / response types mirror SolvertNet.OrderData, built
-// specifically for EVM -> EVM orders via SolverNetInbox / Outbox contracts,
-// with ERC7683 type hash matching SolverNetInbox.ORDERDATA_TYPEHASH.
-//
-// To support multiple order types with this api (e.g. EVM -> Solana, Solana -> EVM)
-// we'd need a more generic request / response format that discriminates on
-// order type hash.
+type (
+	CheckRequest  = types.CheckRequest
+	CheckResponse = types.CheckResponse
+	Expense       = solvernet.Expense
+	Call          = solvernet.Call
+	Deposit       = solvernet.Deposit
 
-// QuoteRequest is the expected request body for the /api/v1/quote endpoint.
-type QuoteRequest struct {
-	SourceChainID      uint64         `json:"sourceChainId"`
-	DestinationChainID uint64         `json:"destChainId"`
-	FillDeadline       uint32         `json:"fillDeadline"`
-	Calls              []Call         `json:"calls"`
-	Expenses           []Expense      `json:"expenses"`
-	DepositToken       common.Address `json:"depositToken"`
-}
+	checkFunc func(context.Context, CheckRequest) error
+)
 
-// QuoteResponse is the response json for the /quote endpoint.
-type QuoteResponse struct {
-	Rejected          bool               `json:"rejected,omitempty"`
-	RejectReason      string             `json:"rejectReason,omitempty"`
-	RejectDescription string             `json:"rejectDescription,omitempty"`
-	Deposit           *Deposit           `json:"deposit,omitempty"`
-	Error             *JSONErrorResponse `json:"error,omitempty"`
-}
-
-var _ JSONResponse = (*QuoteResponse)(nil)
-
-func (r QuoteResponse) StatusCode() int {
-	if r.Error != nil {
-		return r.Error.Code
-	}
-
-	return http.StatusOK
-}
-
-// Expense is a solver expense on the destination (matches bindings.SolverNetExpense).
-type Expense struct {
-	Spender common.Address `json:"spender"`
-	Token   common.Address `json:"token"`
-	Amount  *big.Int       `json:"amount"`
-}
-
-// Call is a call to be made on the destination (matches bindings.SolverNetCall).
-type Call struct {
-	Target   common.Address `json:"target"`
-	Selector [4]byte        `json:"selector"`
-	Value    *big.Int       `json:"value"`
-	Params   []byte         `json:"params"`
-}
-
-// Deposit is a user deposit on the source (matches bindings.SolverNetDeposit).
-type Deposit struct {
-	Token  common.Address `json:"token"`
-	Amount *big.Int       `json:"amount"`
-}
-
-type quoteFunc func(context.Context, QuoteRequest) (Deposit, error)
-
-// newQuoter returns a quoteFunc that can be used to quote deposits for expenses.
-// It is the logic behind the /quote endpoint.
-func newQuoter(backends ethbackend.Backends, solverAddr, inboxAddr, outboxAddr common.Address) quoteFunc {
-	return func(ctx context.Context, req QuoteRequest) (Deposit, error) {
+// newChecker returns a checkFunc that can be used to see if an order would be accepted or rejected.
+// It is the logic behind the /check endpoint.
+func newChecker(backends ethbackend.Backends, solverAddr, inboxAddr, outboxAddr common.Address) checkFunc {
+	return func(ctx context.Context, req CheckRequest) error {
 		if req.SourceChainID == req.DestinationChainID {
-			return Deposit{}, newRejection(rejectSameChain, errors.New("source and destination chain are the same"))
+			return newRejection(rejectSameChain, errors.New("source and destination chain are the same"))
 		}
 
 		srcBackend, err := backends.Backend(req.SourceChainID)
 		if err != nil {
-			return Deposit{}, newRejection(rejectUnsupportedSrcChain, errors.New("unsupported source chain", "chain_id", req.SourceChainID))
+			return newRejection(rejectUnsupportedSrcChain, errors.New("unsupported source chain", "chain_id", req.SourceChainID))
 		}
 
 		dstBackend, err := backends.Backend(req.DestinationChainID)
 		if err != nil {
-			return Deposit{}, newRejection(rejectUnsupportedDestChain, errors.New("unsupported destination chain", "chain_id", req.DestinationChainID))
+			return newRejection(rejectUnsupportedDestChain, errors.New("unsupported destination chain", "chain_id", req.DestinationChainID))
 		}
 
-		depositTkn, ok := tokens.Find(req.SourceChainID, req.DepositToken)
-		if !ok {
-			return Deposit{}, newRejection(rejectUnsupportedDeposit, errors.New("unsupported deposit token", "addr", req.DepositToken))
-		}
-
-		expenses, err := parseQuoteExpenses(req)
+		deposit, err := parseDeposit(req.SourceChainID, req.Deposit)
 		if err != nil {
-			return Deposit{}, err
+			return err
 		}
 
-		quote, err := getQuote([]Token{depositTkn}, expenses)
+		expenses, err := parseExpenses(req.DestinationChainID, req.Expenses, req.Calls)
 		if err != nil {
-			return Deposit{}, err
+			return err
+		}
+
+		quote, err := getQuote([]Token{deposit.Token}, expenses)
+		if err != nil {
+			return err
+		}
+
+		err = coversQuote([]Payment{deposit}, quote)
+		if err != nil {
+			return err
 		}
 
 		if err := checkLiquidity(ctx, expenses, dstBackend, solverAddr); err != nil {
-			return Deposit{}, err
+			return err
 		}
 
 		if err := checkApprovals(ctx, expenses, dstBackend, solverAddr, outboxAddr); err != nil {
-			return Deposit{}, err
+			return err
 		}
 
 		orderID, err := getNextOrderID(ctx, srcBackend, inboxAddr)
 		if err != nil {
-			return Deposit{}, err
+			return err
 		}
 
 		fillOriginData, err := getFillOriginData(req)
 		if err != nil {
-			return Deposit{}, err
+			return err
 		}
 
-		if err := checkFill(ctx, dstBackend, orderID, fillOriginData, nativeAmt(expenses), solverAddr, outboxAddr); err != nil {
-			return Deposit{}, err
-		}
-
-		return Deposit{
-			Token:  quote[0].Token.Address,
-			Amount: quote[0].Amount,
-		}, nil
+		return checkFill(ctx, dstBackend, orderID, fillOriginData, nativeAmt(expenses), solverAddr, outboxAddr)
 	}
 }
 
@@ -155,32 +104,13 @@ func getNextOrderID(ctx context.Context, client ethclient.Client, inboxAddr comm
 }
 
 // getFillOriginData returns packed fill origin data for a quote request.
-func getFillOriginData(req QuoteRequest) ([]byte, error) {
-	calls := make([]bindings.SolverNetCall, len(req.Calls))
-	for i, c := range req.Calls {
-		calls[i] = bindings.SolverNetCall{
-			Target:   c.Target,
-			Selector: c.Selector,
-			Value:    c.Value,
-			Params:   c.Params,
-		}
-	}
-
-	expenses := make([]bindings.SolverNetExpense, len(req.Expenses))
-	for i, e := range req.Expenses {
-		expenses[i] = bindings.SolverNetExpense{
-			Spender: e.Spender,
-			Token:   e.Token,
-			Amount:  e.Amount,
-		}
-	}
-
+func getFillOriginData(req CheckRequest) ([]byte, error) {
 	fillOriginData := bindings.SolverNetFillOriginData{
 		FillDeadline: req.FillDeadline,
 		SrcChainId:   req.SourceChainID,
 		DestChainId:  req.DestinationChainID,
-		Expenses:     expenses,
-		Calls:        calls,
+		Expenses:     req.Expenses.ToBindings(),
+		Calls:        req.Calls.ToBindings(),
 	}
 
 	fillOriginDataBz, err := solvernet.PackFillOriginData(fillOriginData)
@@ -191,10 +121,10 @@ func getFillOriginData(req QuoteRequest) ([]byte, error) {
 	return fillOriginDataBz, nil
 }
 
-// newQuoteHandler returns a handler for the /quote endpoint.
+// newCheckHandler returns a handler for the /quote endpoint.
 // It is responsible to http request / response handling, and delegates
 // logic to a quoteFunc.
-func newQuoteHandler(quoteFunc quoteFunc) http.Handler {
+func newCheckHandler(checkFunc checkFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, rr *http.Request) {
 		ctx := rr.Context()
 
@@ -203,7 +133,7 @@ func newQuoteHandler(quoteFunc quoteFunc) http.Handler {
 		writeError := func(statusCode int, err error) {
 			log.DebugErr(ctx, "Error handling /quote request", err)
 
-			writeJSON(ctx, w, QuoteResponse{
+			writeJSON(ctx, w, CheckResponse{
 				Error: &JSONErrorResponse{
 					Code:    statusCode,
 					Status:  http.StatusText(statusCode),
@@ -212,15 +142,15 @@ func newQuoteHandler(quoteFunc quoteFunc) http.Handler {
 			})
 		}
 
-		var req QuoteRequest
+		var req CheckRequest
 		if err := json.NewDecoder(rr.Body).Decode(&req); err != nil {
 			writeError(http.StatusBadRequest, errors.Wrap(err, "decode request"))
 			return
 		}
 
-		deposit, err := quoteFunc(ctx, req)
+		err := checkFunc(ctx, req)
 		if r := new(RejectionError); errors.As(err, &r) { // RejectionError
-			writeJSON(ctx, w, QuoteResponse{
+			writeJSON(ctx, w, CheckResponse{
 				Rejected:          true,
 				RejectReason:      r.Reason.String(),
 				RejectDescription: r.Err.Error(),
@@ -228,7 +158,7 @@ func newQuoteHandler(quoteFunc quoteFunc) http.Handler {
 		} else if err != nil { // Error
 			writeError(http.StatusInternalServerError, err)
 		} else {
-			writeJSON(ctx, w, QuoteResponse{Deposit: &deposit}) // Success
+			writeJSON(ctx, w, CheckResponse{Accepted: true}) // Success
 		}
 	})
 }
@@ -297,29 +227,63 @@ func coversQuote(deposits, quote []Payment) error {
 	return nil
 }
 
-func parseQuoteExpenses(req QuoteRequest) ([]Payment, error) {
-	var expenses []Payment
+func parseExpenses(destChainID uint64, expenses []Expense, calls []Call) ([]Payment, error) {
+	var ps []Payment
 
-	hasNative := false
-	for _, e := range req.Expenses {
-		tkn, ok := tokens.Find(req.DestinationChainID, e.Token)
+	// sum of call value must be represented in expenses
+	callValues := big.NewInt(0)
+	for _, c := range calls {
+		if c.Value == nil {
+			continue
+		}
+
+		callValues.Add(callValues, c.Value)
+	}
+
+	nativeExpense := big.NewInt(0)
+	for _, e := range expenses {
+		if e.Amount.Sign() <= 0 {
+			return nil, newRejection(rejectInvalidExpense, errors.New("expense amount positive"))
+		}
+
+		if isNative(e) {
+			// sum of call values must be represented by a single expense
+			if nativeExpense.Sign() > 0 {
+				return nil, newRejection(rejectInvalidExpense, errors.New("only one native expense supported"))
+			}
+
+			nativeExpense = nativeExpense.Set(e.Amount)
+		}
+
+		tkn, ok := tokens.Find(destChainID, e.Token)
 		if !ok {
 			return nil, newRejection(rejectUnsupportedExpense, errors.New("unsupported expense token", "addr", e.Token))
 		}
 
-		if tkn.IsNative() {
-			if hasNative {
-				return nil, newRejection(rejectInvalidExpense, errors.New("multiple native expenses not supported"))
-			}
-
-			hasNative = true
-		}
-
-		expenses = append(expenses, Payment{
+		ps = append(ps, Payment{
 			Token:  tkn,
 			Amount: e.Amount,
 		})
 	}
 
-	return expenses, nil
+	// native expense must match sum of call values
+	if nativeExpense.Cmp(callValues) != 0 {
+		return nil, newRejection(rejectInvalidExpense, errors.New("native expense must match native value"))
+	}
+
+	return ps, nil
 }
+
+func parseDeposit(srcChainID uint64, dep Deposit) (Payment, error) {
+	tkn, ok := tokens.Find(srcChainID, dep.Token)
+	if !ok {
+		return Payment{}, newRejection(rejectUnsupportedDeposit, errors.New("unsupported deposit token", "addr", dep.Token))
+	}
+
+	return Payment{
+		Token:  tkn,
+		Amount: dep.Amount,
+	}, nil
+}
+
+func isNative(e Expense) bool { return e.Token == (common.Address{}) }

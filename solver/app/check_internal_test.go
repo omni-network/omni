@@ -16,7 +16,7 @@ import (
 )
 
 //nolint:tparallel // subtests use same mock controller
-func TestQuote(t *testing.T) {
+func TestCheck(t *testing.T) {
 	t.Parallel()
 
 	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
@@ -27,11 +27,11 @@ func TestQuote(t *testing.T) {
 	outbox := addrs.SolverNetOutbox
 	inbox := addrs.SolverNetInbox
 
-	for _, tt := range quoteTestCases(t, solver) {
+	for _, tt := range checkTestCases(t, solver) {
 		t.Run(tt.name, func(t *testing.T) {
 			backends, clients := testBackends(t)
 
-			handler := newQuoteHandler(newQuoter(backends, solver, inbox, outbox))
+			handler := newCheckHandler(newChecker(backends, solver, inbox, outbox))
 
 			if tt.mock != nil {
 				tt.mock(clients)
@@ -57,7 +57,7 @@ func TestQuote(t *testing.T) {
 
 			require.Equal(t, http.StatusOK, rr.Code)
 
-			var res QuoteResponse
+			var res CheckResponse
 			err = json.NewDecoder(rr.Body).Decode(&res)
 			require.NoError(t, err)
 
@@ -65,7 +65,7 @@ func TestQuote(t *testing.T) {
 
 			require.Equal(t, tt.res.Rejected, res.Rejected)
 			require.Equal(t, tt.res.RejectReason, res.RejectReason)
-			require.Equal(t, tt.res.Deposit, res.Deposit)
+			require.Equal(t, tt.res.Accepted, res.Accepted)
 
 			clients.Finish(t)
 		})

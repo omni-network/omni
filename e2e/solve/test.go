@@ -1,8 +1,11 @@
 package solve
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"math/big"
+	"net/http"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -15,6 +18,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
+	solver "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -26,12 +30,14 @@ import (
 
 type TestOrder struct {
 	Owner         common.Address
+	FillDeadline  time.Time
 	DestChainID   uint64
 	SourceChainID uint64
-	Expenses      []bindings.SolverNetExpense
-	Calls         []bindings.SolverNetCall
-	Deposit       bindings.SolverNetDeposit
+	Expenses      solvernet.Expenses
+	Calls         solvernet.Calls
+	Deposit       solvernet.Deposit
 	ShouldReject  bool
+	RejectReason  string
 }
 
 func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints) error {
@@ -50,9 +56,12 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 
 	orders := makeOrders()
 
-	err = mintAndApproveAll(ctx, backends, orders)
-	if err != nil {
+	if err = mintAndApproveAll(ctx, backends, orders); err != nil {
 		return errors.Wrap(err, "mint omni")
+	}
+
+	if err = testCheckAPI(ctx, orders); err != nil {
+		return errors.Wrap(err, "test check api")
 	}
 
 	tracker, err := openAll(ctx, backends, orders)
@@ -141,26 +150,38 @@ func makeOrders() []TestOrder {
 			depositAmt = depositAmt.Div(depositAmt, big.NewInt(2))
 		}
 
-		orders = append(orders, TestOrder{
+		shouldReject := insufficientDeposit
+		rejectReason := ""
+		if insufficientDeposit {
+			rejectReason = solver.RejectInsufficientDeposit.String()
+		}
+
+		order := TestOrder{
 			Owner:         user,
+			FillDeadline:  time.Now().Add(1 * time.Hour),
 			SourceChainID: evmchain.IDMockL1,
 			DestChainID:   evmchain.IDOmniDevnet,
-			Expenses:      nil,
+			Expenses:      nativeExpense(requestAmt),
 			Calls:         nativeTransferCall(requestAmt, user),
 			Deposit:       erc20Deposit(depositAmt, addrs.Token),
-			ShouldReject:  insufficientDeposit,
-		})
+			ShouldReject:  shouldReject,
+			RejectReason:  rejectReason,
+		}
+
+		orders = append(orders, order)
 	}
 
 	// bad dest chain
 	orders = append(orders, TestOrder{
 		Owner:         users[0],
+		FillDeadline:  time.Now().Add(1 * time.Hour),
 		SourceChainID: evmchain.IDMockL1,
 		DestChainID:   1234, // invalid
-		Expenses:      nil,
+		Expenses:      nativeExpense(big.NewInt(1)),
 		Calls:         nativeTransferCall(big.NewInt(1), users[0]),
 		Deposit:       erc20Deposit(big.NewInt(1), addrs.Token),
 		ShouldReject:  true,
+		RejectReason:  solver.RejectUnsupportedDestChain.String(),
 	})
 
 	// TODO: more tests orders (different rejection cases, valid orders, etc)
@@ -195,8 +216,80 @@ func openAll(ctx context.Context, backends ethbackend.Backends, orders []TestOrd
 func openOrder(ctx context.Context, backends ethbackend.Backends, order TestOrder) ([32]byte, error) {
 	return solvernet.OpenOrder(ctx, netconf.Devnet, order.SourceChainID, backends, order.Owner, bindings.SolverNetOrderData{
 		DestChainId: order.DestChainID,
-		Expenses:    order.Expenses,
-		Calls:       order.Calls,
-		Deposit:     order.Deposit,
-	})
+		Expenses:    order.Expenses.ToBindings(),
+		Calls:       order.Calls.ToBindings(),
+		Deposit:     order.Deposit.ToBindings(),
+	}, solvernet.WithFillDeadline(order.FillDeadline))
+}
+
+func testCheckAPI(ctx context.Context, orders []TestOrder) error {
+	const url = "http://localhost:26661/api/v1/check"
+
+	var eg errgroup.Group
+	for i, order := range orders {
+		eg.Go(func() error {
+			checkReq := solver.CheckRequest{
+				FillDeadline:       uint32(order.FillDeadline.Unix()), //nolint:gosec // this is fine for tests
+				SourceChainID:      order.SourceChainID,
+				DestinationChainID: order.DestChainID,
+				Expenses:           order.Expenses,
+				Calls:              order.Calls,
+				Deposit:            order.Deposit,
+			}
+
+			body, err := json.Marshal(checkReq)
+			if err != nil {
+				return errors.Wrap(err, "marshal request")
+			}
+
+			req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(body))
+			if err != nil {
+				return errors.Wrap(err, "new request")
+			}
+
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				return errors.Wrap(err, "do request")
+			}
+
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				return errors.New("bad status", "status", resp.StatusCode)
+			}
+
+			var checkResp solver.CheckResponse
+			if err = json.NewDecoder(resp.Body).Decode(&checkResp); err != nil {
+				return errors.Wrap(err, "decode response")
+			}
+
+			if checkResp.Rejected != order.ShouldReject {
+				return errors.New("unexpected rejection",
+					"expected", order.ShouldReject,
+					"actual", checkResp.Rejected,
+					"reason", checkResp.RejectReason,
+					"order_idx", i,
+				)
+			}
+
+			if checkResp.RejectReason != order.RejectReason {
+				return errors.New("unexpected reject reason", "expected", order.RejectReason, "actual", checkResp.RejectReason)
+			}
+
+			if checkResp.Accepted && order.ShouldReject {
+				return errors.New("accepted but should reject")
+			}
+
+			return nil
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		log.Error(ctx, "Test /check error", err)
+		return errors.Wrap(err, "wait checks")
+	}
+
+	log.Info(ctx, "Test /check success")
+
+	return nil
 }
