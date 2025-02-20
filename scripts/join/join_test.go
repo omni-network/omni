@@ -192,11 +192,6 @@ func cleanUp(t *testing.T, home string, output *os.File, logsPath string) {
 	if err := shutdownContainers(home, output, logsPath); err != nil {
 		t.Errorf("failed to clean up containers: %v", err)
 	}
-
-	// Explicitly delete temp home test dir in order to avoid issues with automatic temp dir clean up permissions on CI.
-	if err := os.RemoveAll(home); err != nil {
-		t.Errorf("failed to remove test home temp dir: %v", err)
-	}
 }
 
 func haloTag(t *testing.T) string {
