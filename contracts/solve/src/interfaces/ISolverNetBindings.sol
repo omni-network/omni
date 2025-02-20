@@ -17,6 +17,6 @@ interface ISolverNetBindings {
     function header(SolverNet.Header calldata) external view;
     function deposit(SolverNet.Deposit calldata) external view;
     function call(SolverNet.Call calldata) external view;
-    function expense(SolverNet.Expense calldata) external view;
+    function tokenExpense(SolverNet.TokenExpense calldata) external view;
     function fillOriginData(SolverNet.FillOriginData calldata) external view;
 }

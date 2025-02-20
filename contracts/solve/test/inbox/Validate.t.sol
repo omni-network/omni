@@ -31,7 +31,7 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
             destChainId: 0,
             deposit: SolverNet.Deposit({ token: address(0), amount: 0 }),
             calls: new SolverNet.Call[](0),
-            expenses: new SolverNet.Expense[](1)
+            expenses: new SolverNet.TokenExpense[](1)
         });
         order.orderData = abi.encode(orderData);
 

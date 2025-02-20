@@ -20,7 +20,7 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
             destChainId: srcChainId,
             fillDeadline: uint32(block.timestamp),
             calls: new SolverNet.Call[](0),
-            expenses: new SolverNet.Expense[](0)
+            expenses: new SolverNet.TokenExpense[](0)
         });
         bytes memory fillDataBytes = abi.encode(fillData);
         bytes memory fillerData = hex"0420";

@@ -25,7 +25,7 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
     error NoWithdrawDuringClaim();
 
     bytes32 internal constant ORDERDATA_TYPEHASH = keccak256(
-        "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,Expense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)Expense(address spender,address token,uint96 amount)"
+        "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)TokenExpense(address spender,address token,uint96 amount)"
     );
     bytes32 internal constant MIGRATION_TYPEHASH = keccak256("Migration(address user,uint256 nonce,uint256 expiry)");
 
@@ -213,7 +213,7 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
             destChainId: omniPortal.omniChainId(),
             deposit: deposit,
             calls: call,
-            expenses: new SolverNet.Expense[](0)
+            expenses: new SolverNet.TokenExpense[](0)
         });
 
         return IERC7683.OnchainCrossChainOrder({

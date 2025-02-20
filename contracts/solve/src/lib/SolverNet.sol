@@ -7,14 +7,14 @@ library SolverNet {
         uint64 destChainId;
         Deposit deposit;
         Call[] calls;
-        Expense[] expenses;
+        TokenExpense[] expenses;
     }
 
     struct Order {
         Header header;
         Deposit deposit;
         Call[] calls;
-        Expense[] expenses;
+        TokenExpense[] expenses;
     }
 
     struct Header {
@@ -35,7 +35,7 @@ library SolverNet {
         bytes params;
     }
 
-    struct Expense {
+    struct TokenExpense {
         address spender;
         address token;
         uint96 amount;
@@ -46,6 +46,6 @@ library SolverNet {
         uint64 destChainId;
         uint32 fillDeadline;
         Call[] calls;
-        Expense[] expenses;
+        TokenExpense[] expenses;
     }
 }

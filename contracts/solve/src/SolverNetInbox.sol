@@ -35,7 +35,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @notice Typehash for the OrderData struct.
      */
     bytes32 internal constant ORDERDATA_TYPEHASH = keccak256(
-        "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,Expense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)Expense(address spender,address token,uint96 amount)"
+        "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)TokenExpense(address spender,address token,uint96 amount)"
     );
 
     /**
@@ -91,7 +91,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @notice Map order ID to expense parameters.
      * @dev (spender, token, amount)
      */
-    mapping(bytes32 id => SolverNet.Expense[]) internal _orderExpenses;
+    mapping(bytes32 id => SolverNet.TokenExpense[]) internal _orderExpenses;
 
     /**
      * @notice Map order ID to order parameters.
@@ -353,7 +353,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         }
 
         // Validate SolverNet.OrderData.Expenses
-        SolverNet.Expense[] memory expenses = orderData.expenses;
+        SolverNet.TokenExpense[] memory expenses = orderData.expenses;
         for (uint256 i; i < expenses.length; ++i) {
             if (expenses[i].token == address(0)) revert InvalidExpenseToken();
             if (expenses[i].amount == 0) revert InvalidExpenseAmount();
@@ -369,7 +369,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     function _deriveMaxSpent(SolverNet.Order memory orderData) internal view returns (IERC7683.Output[] memory) {
         SolverNet.Header memory header = orderData.header;
         SolverNet.Call[] memory calls = orderData.calls;
-        SolverNet.Expense[] memory expenses = orderData.expenses;
+        SolverNet.TokenExpense[] memory expenses = orderData.expenses;
 
         uint256 totalNativeValue;
         for (uint256 i; i < calls.length; ++i) {
@@ -429,7 +429,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     {
         SolverNet.Header memory header = orderData.header;
         SolverNet.Call[] memory calls = orderData.calls;
-        SolverNet.Expense[] memory expenses = orderData.expenses;
+        SolverNet.TokenExpense[] memory expenses = orderData.expenses;
 
         IERC7683.FillInstruction[] memory fillInstructions = new IERC7683.FillInstruction[](1);
         fillInstructions[0] = IERC7683.FillInstruction({
@@ -556,7 +556,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     function _fillHash(bytes32 orderId) internal view returns (bytes32) {
         SolverNet.Header memory header = _orderHeader[orderId];
         SolverNet.Call[] memory calls = _orderCalls[orderId];
-        SolverNet.Expense[] memory expenses = _orderExpenses[orderId];
+        SolverNet.TokenExpense[] memory expenses = _orderExpenses[orderId];
 
         SolverNet.FillOriginData memory fillOriginData = SolverNet.FillOriginData({
             srcChainId: uint64(block.chainid),

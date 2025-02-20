@@ -55,7 +55,7 @@ contract TestBase is Test {
     uint32 defaultFillBuffer = 6 hours;
 
     bytes32 internal constant ORDER_DATA_TYPEHASH = keccak256(
-        "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,Expense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)Expense(address spender,address token,uint96 amount)"
+        "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)TokenExpense(address spender,address token,uint96 amount)"
     );
 
     modifier prankUser() {
@@ -113,7 +113,7 @@ contract TestBase is Test {
 
     function fundSolver(SolverNet.OrderData memory orderData, uint256 fillFees) internal {
         SolverNet.Call[] memory calls = orderData.calls;
-        SolverNet.Expense[] memory expenses = orderData.expenses;
+        SolverNet.TokenExpense[] memory expenses = orderData.expenses;
 
         uint256 nativeValue;
         for (uint256 i; i < calls.length; ++i) {
@@ -123,7 +123,7 @@ contract TestBase is Test {
         if (nativeValue + fillFees > 0) vm.deal(solver, nativeValue + fillFees);
 
         for (uint256 i; i < expenses.length; ++i) {
-            SolverNet.Expense memory expense = expenses[i];
+            SolverNet.TokenExpense memory expense = expenses[i];
             address token = expense.token;
             uint96 amount = expense.amount;
 
@@ -151,9 +151,9 @@ contract TestBase is Test {
     function getExpense(address spender, address token, uint96 amount)
         internal
         pure
-        returns (SolverNet.Expense memory)
+        returns (SolverNet.TokenExpense memory)
     {
-        return SolverNet.Expense({ spender: spender, token: token, amount: amount });
+        return SolverNet.TokenExpense({ spender: spender, token: token, amount: amount });
     }
 
     function getOrder(uint256 fillDeadline, SolverNet.OrderData memory orderData)
@@ -175,7 +175,7 @@ contract TestBase is Test {
         address depositToken,
         uint96 depositAmount,
         SolverNet.Call[] memory calls,
-        SolverNet.Expense[] memory expenses
+        SolverNet.TokenExpense[] memory expenses
     ) internal pure returns (SolverNet.OrderData memory, IERC7683.OnchainCrossChainOrder memory) {
         SolverNet.OrderData memory orderData = SolverNet.OrderData({
             owner: owner,
@@ -209,7 +209,7 @@ contract TestBase is Test {
             params: abi.encode(user, expenseAmount)
         });
 
-        SolverNet.Expense[] memory expenses = new SolverNet.Expense[](0);
+        SolverNet.TokenExpense[] memory expenses = new SolverNet.TokenExpense[](0);
 
         SolverNet.OrderData memory orderData = SolverNet.OrderData({
             owner: address(0),
@@ -243,9 +243,12 @@ contract TestBase is Test {
             params: abi.encode(user, expenseAmount)
         });
 
-        SolverNet.Expense[] memory expenses = new SolverNet.Expense[](1);
-        expenses[0] =
-            SolverNet.Expense({ spender: address(erc20Vault), token: address(token2), amount: uint96(expenseAmount) });
+        SolverNet.TokenExpense[] memory expenses = new SolverNet.TokenExpense[](1);
+        expenses[0] = SolverNet.TokenExpense({
+            spender: address(erc20Vault),
+            token: address(token2),
+            amount: uint96(expenseAmount)
+        });
 
         SolverNet.OrderData memory orderData = SolverNet.OrderData({
             owner: address(0),
@@ -290,15 +293,18 @@ contract TestBase is Test {
         }
 
         uint256 bias;
-        SolverNet.Expense[] memory expenses = new SolverNet.Expense[](expenseLength);
+        SolverNet.TokenExpense[] memory expenses = new SolverNet.TokenExpense[](expenseLength);
         for (uint256 i; i < expenseTokens.length; ++i) {
             if (expenseTokens[i] == address(0)) {
                 ++bias;
                 continue;
             }
 
-            expenses[i - bias] =
-                SolverNet.Expense({ spender: address(erc20Vault), token: expenseTokens[i], amount: expenseAmounts[i] });
+            expenses[i - bias] = SolverNet.TokenExpense({
+                spender: address(erc20Vault),
+                token: expenseTokens[i],
+                amount: expenseAmounts[i]
+            });
         }
 
         SolverNet.OrderData memory orderData = SolverNet.OrderData({
@@ -335,7 +341,7 @@ contract TestBase is Test {
             }
         }
 
-        // 2500 gas for Expense array length SLOAD + cost of reading each expense.
+        // 2500 gas for TokenExpense array length SLOAD + cost of reading each expense.
         uint256 expensesGas = 2500;
         unchecked {
             expensesGas += fillData.expenses.length * 5000;

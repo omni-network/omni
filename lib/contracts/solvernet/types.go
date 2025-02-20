@@ -87,16 +87,6 @@ type Expenses []Expense
 // Calls is a list of calls.
 type Calls []Call
 
-// ToBindings converts a solvernet.Call to bindings.SolverNetCall.
-func (c Call) ToBindings() bindings.SolverNetCall {
-	return bindings.SolverNetCall{
-		Target:   c.Target,
-		Selector: c.Selector,
-		Value:    c.Value,
-		Params:   c.Params,
-	}
-}
-
 // ToBindings converts a solvernet.Deposit to bindings.SolverNetDeposit.
 func (d Deposit) ToBindings() bindings.SolverNetDeposit {
 	return bindings.SolverNetDeposit{
@@ -105,25 +95,21 @@ func (d Deposit) ToBindings() bindings.SolverNetDeposit {
 	}
 }
 
-// ToBindings converts a solvernet.Expense to bindings.SolverNetExpense.
-func (e Expense) ToBindings() bindings.SolverNetExpense {
-	return bindings.SolverNetExpense{
-		Spender: e.Spender,
-		Token:   e.Token,
-		Amount:  e.Amount,
-	}
-}
-
-// ToBindings converts a solvernet.Expenses to []bindings.SolverNetExpense.
-func (es Expenses) ToBindings() []bindings.SolverNetExpense {
-	var out []bindings.SolverNetExpense
+// ToBindings converts a solvernet.Expenses to []bindings.SolverNetTokenExpense.
+func (es Expenses) ToBindings() []bindings.SolverNetTokenExpense {
+	var out []bindings.SolverNetTokenExpense
 	for _, e := range es {
-		// native expenses are not submitted on chain, they are derived from call values
+		// native expenses are not included in TokenExpenses,
+		// they are derived from call values
 		if e.Token == (common.Address{}) {
 			continue
 		}
 
-		out = append(out, e.ToBindings())
+		out = append(out, bindings.SolverNetTokenExpense{
+			Token:   e.Token,
+			Amount:  e.Amount,
+			Spender: e.Spender,
+		})
 	}
 
 	return out
@@ -133,7 +119,12 @@ func (es Expenses) ToBindings() []bindings.SolverNetExpense {
 func (cs Calls) ToBindings() []bindings.SolverNetCall {
 	var out []bindings.SolverNetCall
 	for _, c := range cs {
-		out = append(out, c.ToBindings())
+		out = append(out, bindings.SolverNetCall{
+			Target:   c.Target,
+			Selector: c.Selector,
+			Value:    c.Value,
+			Params:   c.Params,
+		})
 	}
 
 	return out

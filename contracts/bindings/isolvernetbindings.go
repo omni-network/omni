@@ -43,20 +43,13 @@ type SolverNetDeposit struct {
 	Amount *big.Int
 }
 
-// SolverNetExpense is an auto generated low-level Go binding around an user-defined struct.
-type SolverNetExpense struct {
-	Spender common.Address
-	Token   common.Address
-	Amount  *big.Int
-}
-
 // SolverNetFillOriginData is an auto generated low-level Go binding around an user-defined struct.
 type SolverNetFillOriginData struct {
 	SrcChainId   uint64
 	DestChainId  uint64
 	FillDeadline uint32
 	Calls        []SolverNetCall
-	Expenses     []SolverNetExpense
+	Expenses     []SolverNetTokenExpense
 }
 
 // SolverNetHeader is an auto generated low-level Go binding around an user-defined struct.
@@ -71,7 +64,7 @@ type SolverNetOrder struct {
 	Header   SolverNetHeader
 	Deposit  SolverNetDeposit
 	Calls    []SolverNetCall
-	Expenses []SolverNetExpense
+	Expenses []SolverNetTokenExpense
 }
 
 // SolverNetOrderData is an auto generated low-level Go binding around an user-defined struct.
@@ -80,12 +73,19 @@ type SolverNetOrderData struct {
 	DestChainId uint64
 	Deposit     SolverNetDeposit
 	Calls       []SolverNetCall
-	Expenses    []SolverNetExpense
+	Expenses    []SolverNetTokenExpense
+}
+
+// SolverNetTokenExpense is an auto generated low-level Go binding around an user-defined struct.
+type SolverNetTokenExpense struct {
+	Spender common.Address
+	Token   common.Address
+	Amount  *big.Int
 }
 
 // ISolverNetBindingsMetaData contains all meta data concerning the ISolverNetBindings contract.
 var ISolverNetBindingsMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"call\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.Call\",\"components\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"selector\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"params\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"deposit\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.Deposit\",\"components\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"expense\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.Expense\",\"components\":[{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"fillOriginData\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.FillOriginData\",\"components\":[{\"name\":\"srcChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"fillDeadline\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"calls\",\"type\":\"tuple[]\",\"internalType\":\"structSolverNet.Call[]\",\"components\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"selector\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"params\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"expenses\",\"type\":\"tuple[]\",\"internalType\":\"structSolverNet.Expense[]\",\"components\":[{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"header\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.Header\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"fillDeadline\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"order\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.Order\",\"components\":[{\"name\":\"header\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.Header\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"fillDeadline\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"deposit\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.Deposit\",\"components\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"calls\",\"type\":\"tuple[]\",\"internalType\":\"structSolverNet.Call[]\",\"components\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"selector\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"params\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"expenses\",\"type\":\"tuple[]\",\"internalType\":\"structSolverNet.Expense[]\",\"components\":[{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"orderData\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.OrderData\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"deposit\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.Deposit\",\"components\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"calls\",\"type\":\"tuple[]\",\"internalType\":\"structSolverNet.Call[]\",\"components\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"selector\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"params\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"expenses\",\"type\":\"tuple[]\",\"internalType\":\"structSolverNet.Expense[]\",\"components\":[{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]}]}],\"outputs\":[],\"stateMutability\":\"view\"}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"call\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.Call\",\"components\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"selector\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"params\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"deposit\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.Deposit\",\"components\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"fillOriginData\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.FillOriginData\",\"components\":[{\"name\":\"srcChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"fillDeadline\",\"type\":\"uint32\",\"internalType\":\"uint32\"},{\"name\":\"calls\",\"type\":\"tuple[]\",\"internalType\":\"structSolverNet.Call[]\",\"components\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"selector\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"params\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"expenses\",\"type\":\"tuple[]\",\"internalType\":\"structSolverNet.TokenExpense[]\",\"components\":[{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"header\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.Header\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"fillDeadline\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"order\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.Order\",\"components\":[{\"name\":\"header\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.Header\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"fillDeadline\",\"type\":\"uint32\",\"internalType\":\"uint32\"}]},{\"name\":\"deposit\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.Deposit\",\"components\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"calls\",\"type\":\"tuple[]\",\"internalType\":\"structSolverNet.Call[]\",\"components\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"selector\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"params\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"expenses\",\"type\":\"tuple[]\",\"internalType\":\"structSolverNet.TokenExpense[]\",\"components\":[{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"orderData\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.OrderData\",\"components\":[{\"name\":\"owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"destChainId\",\"type\":\"uint64\",\"internalType\":\"uint64\"},{\"name\":\"deposit\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.Deposit\",\"components\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]},{\"name\":\"calls\",\"type\":\"tuple[]\",\"internalType\":\"structSolverNet.Call[]\",\"components\":[{\"name\":\"target\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"selector\",\"type\":\"bytes4\",\"internalType\":\"bytes4\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"params\",\"type\":\"bytes\",\"internalType\":\"bytes\"}]},{\"name\":\"expenses\",\"type\":\"tuple[]\",\"internalType\":\"structSolverNet.TokenExpense[]\",\"components\":[{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]}]}],\"outputs\":[],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"tokenExpense\",\"inputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structSolverNet.TokenExpense\",\"components\":[{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"amount\",\"type\":\"uint96\",\"internalType\":\"uint96\"}]}],\"outputs\":[],\"stateMutability\":\"view\"}]",
 }
 
 // ISolverNetBindingsABI is the input ABI used to generate the binding from.
@@ -292,35 +292,6 @@ func (_ISolverNetBindings *ISolverNetBindingsCallerSession) Deposit(arg0 SolverN
 	return _ISolverNetBindings.Contract.Deposit(&_ISolverNetBindings.CallOpts, arg0)
 }
 
-// Expense is a free data retrieval call binding the contract method 0x3cb42289.
-//
-// Solidity: function expense((address,address,uint96) ) view returns()
-func (_ISolverNetBindings *ISolverNetBindingsCaller) Expense(opts *bind.CallOpts, arg0 SolverNetExpense) error {
-	var out []interface{}
-	err := _ISolverNetBindings.contract.Call(opts, &out, "expense", arg0)
-
-	if err != nil {
-		return err
-	}
-
-	return err
-
-}
-
-// Expense is a free data retrieval call binding the contract method 0x3cb42289.
-//
-// Solidity: function expense((address,address,uint96) ) view returns()
-func (_ISolverNetBindings *ISolverNetBindingsSession) Expense(arg0 SolverNetExpense) error {
-	return _ISolverNetBindings.Contract.Expense(&_ISolverNetBindings.CallOpts, arg0)
-}
-
-// Expense is a free data retrieval call binding the contract method 0x3cb42289.
-//
-// Solidity: function expense((address,address,uint96) ) view returns()
-func (_ISolverNetBindings *ISolverNetBindingsCallerSession) Expense(arg0 SolverNetExpense) error {
-	return _ISolverNetBindings.Contract.Expense(&_ISolverNetBindings.CallOpts, arg0)
-}
-
 // FillOriginData is a free data retrieval call binding the contract method 0x85bc698a.
 //
 // Solidity: function fillOriginData((uint64,uint64,uint32,(address,bytes4,uint256,bytes)[],(address,address,uint96)[]) ) view returns()
@@ -435,4 +406,33 @@ func (_ISolverNetBindings *ISolverNetBindingsSession) OrderData(arg0 SolverNetOr
 // Solidity: function orderData((address,uint64,(address,uint96),(address,bytes4,uint256,bytes)[],(address,address,uint96)[]) ) view returns()
 func (_ISolverNetBindings *ISolverNetBindingsCallerSession) OrderData(arg0 SolverNetOrderData) error {
 	return _ISolverNetBindings.Contract.OrderData(&_ISolverNetBindings.CallOpts, arg0)
+}
+
+// TokenExpense is a free data retrieval call binding the contract method 0xbef23dd3.
+//
+// Solidity: function tokenExpense((address,address,uint96) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsCaller) TokenExpense(opts *bind.CallOpts, arg0 SolverNetTokenExpense) error {
+	var out []interface{}
+	err := _ISolverNetBindings.contract.Call(opts, &out, "tokenExpense", arg0)
+
+	if err != nil {
+		return err
+	}
+
+	return err
+
+}
+
+// TokenExpense is a free data retrieval call binding the contract method 0xbef23dd3.
+//
+// Solidity: function tokenExpense((address,address,uint96) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsSession) TokenExpense(arg0 SolverNetTokenExpense) error {
+	return _ISolverNetBindings.Contract.TokenExpense(&_ISolverNetBindings.CallOpts, arg0)
+}
+
+// TokenExpense is a free data retrieval call binding the contract method 0xbef23dd3.
+//
+// Solidity: function tokenExpense((address,address,uint96) ) view returns()
+func (_ISolverNetBindings *ISolverNetBindingsCallerSession) TokenExpense(arg0 SolverNetTokenExpense) error {
+	return _ISolverNetBindings.Contract.TokenExpense(&_ISolverNetBindings.CallOpts, arg0)
 }
