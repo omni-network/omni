@@ -2,7 +2,6 @@ package solvernet
 
 import (
 	"encoding/binary"
-	"math/big"
 	"strconv"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -60,72 +59,23 @@ func (s OrderStatus) Uint8() uint8 {
 	return uint8(s)
 }
 
-// Expense is a solver expense on the destination (matches bindings.SolverNetTokenExpense).
-type Expense struct {
-	Spender common.Address `json:"spender"`
-	Token   common.Address `json:"token"`
-	Amount  *big.Int       `json:"amount"`
-}
+type (
+	Expense  = bindings.SolverNetTokenExpense
+	Deposit  = bindings.SolverNetDeposit
+	Call     = bindings.SolverNetCall
+	Expenses []Expense
+	Calls    []Call
+)
 
-// Call is a call to be made on the destination (matches bindings.SolverNetCall).
-type Call struct {
-	Target   common.Address `json:"target"`
-	Selector [4]byte        `json:"selector"`
-	Value    *big.Int       `json:"value"`
-	Params   []byte         `json:"params"`
-}
-
-// Deposit is a user deposit on the source (matches bindings.SolverNetDeposit).
-type Deposit struct {
-	Token  common.Address `json:"token"`
-	Amount *big.Int       `json:"amount"`
-}
-
-// Expenses is a list of expenses.
-type Expenses []Expense
-
-// Calls is a list of calls.
-type Calls []Call
-
-// ToBindings converts a solvernet.Deposit to bindings.SolverNetDeposit.
-func (d Deposit) ToBindings() bindings.SolverNetDeposit {
-	return bindings.SolverNetDeposit{
-		Token:  d.Token,
-		Amount: d.Amount,
-	}
-}
-
-// ToBindings converts a solvernet.Expenses to []bindings.SolverNetTokenExpense.
-func (es Expenses) ToBindings() []bindings.SolverNetTokenExpense {
-	var out []bindings.SolverNetTokenExpense
+func (es Expenses) NoNative() Expenses {
+	var out Expenses
 	for _, e := range es {
-		// native expenses are not included in TokenExpenses,
-		// they are derived from call values
-		if e.Token == (common.Address{}) {
-			continue
+		if !isNative(e) {
+			out = append(out, e)
 		}
-
-		out = append(out, bindings.SolverNetTokenExpense{
-			Token:   e.Token,
-			Amount:  e.Amount,
-			Spender: e.Spender,
-		})
 	}
 
 	return out
 }
 
-// ToBindings converts a solvernet.Calls to []bindings.SolverNetCall.
-func (cs Calls) ToBindings() []bindings.SolverNetCall {
-	var out []bindings.SolverNetCall
-	for _, c := range cs {
-		out = append(out, bindings.SolverNetCall{
-			Target:   c.Target,
-			Selector: c.Selector,
-			Value:    c.Value,
-			Params:   c.Params,
-		})
-	}
-
-	return out
-}
+func isNative(e Expense) bool { return e.Token == (common.Address{}) }

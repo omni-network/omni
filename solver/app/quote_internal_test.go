@@ -11,11 +11,15 @@ import (
 
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/stretchr/testify/require"
 )
+
+type JSONQuoteUnit = types.JSONQuoteUnit
 
 func TestQuote(t *testing.T) {
 	t.Parallel()
@@ -32,12 +36,12 @@ func TestQuote(t *testing.T) {
 			req: QuoteRequest{
 				SourceChainID:      evmchain.IDEthereum,
 				DestinationChainID: evmchain.IDArbitrumOne,
-				Deposit:            QuoteUnit{},
-				Expense:            QuoteUnit{Amount: mustBig("1000000000000000000")},
+				Deposit:            JSONQuoteUnit{},
+				Expense:            JSONQuoteUnit{Amount: parseInt("1000000000000000000")},
 			},
 			res: QuoteResponse{
-				Deposit: QuoteUnit{Amount: mustBig("1003000000000000000")},
-				Expense: QuoteUnit{Amount: mustBig("1000000000000000000")},
+				Deposit: JSONQuoteUnit{Amount: parseInt("1003000000000000000")},
+				Expense: JSONQuoteUnit{Amount: parseInt("1000000000000000000")},
 			},
 		},
 		{
@@ -45,12 +49,12 @@ func TestQuote(t *testing.T) {
 			req: QuoteRequest{
 				SourceChainID:      evmchain.IDEthereum,
 				DestinationChainID: evmchain.IDArbitrumOne,
-				Deposit:            QuoteUnit{},
-				Expense:            QuoteUnit{Amount: mustBig("10000000000000000000")},
+				Deposit:            JSONQuoteUnit{},
+				Expense:            JSONQuoteUnit{Amount: parseInt("10000000000000000000")},
 			},
 			res: QuoteResponse{
-				Deposit: QuoteUnit{Amount: mustBig("10030000000000000000")},
-				Expense: QuoteUnit{Amount: mustBig("10000000000000000000")},
+				Deposit: JSONQuoteUnit{Amount: parseInt("10030000000000000000")},
+				Expense: JSONQuoteUnit{Amount: parseInt("10000000000000000000")},
 			},
 		},
 		{
@@ -58,12 +62,12 @@ func TestQuote(t *testing.T) {
 			req: QuoteRequest{
 				SourceChainID:      evmchain.IDEthereum,
 				DestinationChainID: evmchain.IDArbitrumOne,
-				Deposit:            QuoteUnit{Amount: mustBig("1003000000000000000")},
-				Expense:            QuoteUnit{},
+				Deposit:            JSONQuoteUnit{Amount: parseInt("1003000000000000000")},
+				Expense:            JSONQuoteUnit{},
 			},
 			res: QuoteResponse{
-				Deposit: QuoteUnit{Amount: mustBig("1003000000000000000")},
-				Expense: QuoteUnit{Amount: mustBig("1000000000000000000")},
+				Deposit: JSONQuoteUnit{Amount: parseInt("1003000000000000000")},
+				Expense: JSONQuoteUnit{Amount: parseInt("1000000000000000000")},
 			},
 		},
 		{
@@ -72,12 +76,12 @@ func TestQuote(t *testing.T) {
 			req: QuoteRequest{
 				SourceChainID:      evmchain.IDHolesky,
 				DestinationChainID: evmchain.IDOmniOmega,
-				Deposit:            QuoteUnit{Token: omegaOMNIAddr},
-				Expense:            QuoteUnit{Amount: mustBig("10000000000000000000")},
+				Deposit:            JSONQuoteUnit{Token: omegaOMNIAddr},
+				Expense:            JSONQuoteUnit{Amount: parseInt("10000000000000000000")},
 			},
 			res: QuoteResponse{
-				Deposit: QuoteUnit{Amount: mustBig("10000000000000000000"), Token: omegaOMNIAddr},
-				Expense: QuoteUnit{Amount: mustBig("10000000000000000000")},
+				Deposit: JSONQuoteUnit{Amount: parseInt("10000000000000000000"), Token: omegaOMNIAddr},
+				Expense: JSONQuoteUnit{Amount: parseInt("10000000000000000000")},
 			},
 		},
 		{
@@ -86,12 +90,12 @@ func TestQuote(t *testing.T) {
 			req: QuoteRequest{
 				SourceChainID:      evmchain.IDHolesky,
 				DestinationChainID: evmchain.IDOmniOmega,
-				Deposit:            QuoteUnit{Amount: mustBig("10000000000000000000"), Token: omegaOMNIAddr},
-				Expense:            QuoteUnit{},
+				Deposit:            JSONQuoteUnit{Amount: parseInt("10000000000000000000"), Token: omegaOMNIAddr},
+				Expense:            JSONQuoteUnit{},
 			},
 			res: QuoteResponse{
-				Deposit: QuoteUnit{Amount: mustBig("10000000000000000000"), Token: omegaOMNIAddr},
-				Expense: QuoteUnit{Amount: mustBig("10000000000000000000")},
+				Deposit: JSONQuoteUnit{Amount: parseInt("10000000000000000000"), Token: omegaOMNIAddr},
+				Expense: JSONQuoteUnit{Amount: parseInt("10000000000000000000")},
 			},
 		},
 		{
@@ -99,8 +103,8 @@ func TestQuote(t *testing.T) {
 			req: QuoteRequest{
 				SourceChainID:      evmchain.IDEthereum,
 				DestinationChainID: evmchain.IDArbitrumOne,
-				Deposit:            QuoteUnit{},
-				Expense:            QuoteUnit{},
+				Deposit:            JSONQuoteUnit{},
+				Expense:            JSONQuoteUnit{},
 			},
 			res: QuoteResponse{
 				Error: &JSONErrorResponse{
@@ -115,8 +119,8 @@ func TestQuote(t *testing.T) {
 			req: QuoteRequest{
 				SourceChainID:      evmchain.IDEthereum,
 				DestinationChainID: evmchain.IDArbitrumOne,
-				Deposit:            QuoteUnit{Amount: mustBig("1000000000000000000")},
-				Expense:            QuoteUnit{Amount: mustBig("1000000000000000000")},
+				Deposit:            JSONQuoteUnit{Amount: parseInt("1000000000000000000")},
+				Expense:            JSONQuoteUnit{Amount: parseInt("1000000000000000000")},
 			},
 			res: QuoteResponse{
 				Error: &JSONErrorResponse{
@@ -131,8 +135,8 @@ func TestQuote(t *testing.T) {
 			req: QuoteRequest{
 				SourceChainID:      evmchain.IDEthereum,
 				DestinationChainID: evmchain.IDArbitrumOne,
-				Deposit:            QuoteUnit{Token: common.HexToAddress("0x1234")},
-				Expense:            QuoteUnit{Amount: mustBig("1000000000000000000")},
+				Deposit:            JSONQuoteUnit{Token: common.HexToAddress("0x1234")},
+				Expense:            JSONQuoteUnit{Amount: parseInt("1000000000000000000")},
 			},
 			res: QuoteResponse{
 				Error: &JSONErrorResponse{
@@ -147,8 +151,8 @@ func TestQuote(t *testing.T) {
 			req: QuoteRequest{
 				SourceChainID:      evmchain.IDEthereum,
 				DestinationChainID: evmchain.IDArbitrumOne,
-				Deposit:            QuoteUnit{Amount: mustBig("1000000000000000000")},
-				Expense:            QuoteUnit{Token: common.HexToAddress("0x1234")},
+				Deposit:            JSONQuoteUnit{Amount: parseInt("1000000000000000000")},
+				Expense:            JSONQuoteUnit{Token: common.HexToAddress("0x1234")},
 			},
 			res: QuoteResponse{
 				Error: &JSONErrorResponse{
@@ -163,8 +167,8 @@ func TestQuote(t *testing.T) {
 			req: QuoteRequest{
 				SourceChainID:      evmchain.IDOmniMainnet,
 				DestinationChainID: evmchain.IDEthereum,
-				Deposit:            QuoteUnit{},
-				Expense:            QuoteUnit{Amount: mustBig("1000000000000000000")},
+				Deposit:            JSONQuoteUnit{},
+				Expense:            JSONQuoteUnit{Amount: parseInt("1000000000000000000")},
 			},
 			res: QuoteResponse{
 				Error: &JSONErrorResponse{
@@ -179,8 +183,8 @@ func TestQuote(t *testing.T) {
 			req: QuoteRequest{
 				SourceChainID:      evmchain.IDEthereum,
 				DestinationChainID: evmchain.IDHolesky,
-				Deposit:            QuoteUnit{Amount: mustBig("1000000000000000000")},
-				Expense:            QuoteUnit{},
+				Deposit:            JSONQuoteUnit{Amount: parseInt("1000000000000000000")},
+				Expense:            JSONQuoteUnit{},
 			},
 			res: QuoteResponse{
 				Error: &JSONErrorResponse{
@@ -211,11 +215,11 @@ func TestQuote(t *testing.T) {
 	}
 }
 
-func mustBig(s string) *big.Int {
+func parseInt(s string) *hexutil.Big {
 	b, ok := new(big.Int).SetString(s, 10)
 	if !ok {
 		panic("invalid big int")
 	}
 
-	return b
+	return (*hexutil.Big)(b)
 }

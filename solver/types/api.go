@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 type JSONResponse interface {
@@ -30,12 +31,12 @@ type JSONErrorResponse struct {
 // we'd need a more generic request / response format that discriminates on
 // order type hash.
 type CheckRequest struct {
-	SourceChainID      uint64             `json:"sourceChainId"`
-	DestinationChainID uint64             `json:"destChainId"`
-	FillDeadline       uint32             `json:"fillDeadline"`
-	Calls              solvernet.Calls    `json:"calls"`
-	Expenses           solvernet.Expenses `json:"expenses"`
-	Deposit            solvernet.Deposit  `json:"deposit"`
+	SourceChainID      uint64       `json:"sourceChainId"`
+	DestinationChainID uint64       `json:"destChainId"`
+	FillDeadline       uint32       `json:"fillDeadline"`
+	Calls              JSONCalls    `json:"calls"`
+	Expenses           JSONExpenses `json:"expenses"`
+	Deposit            JSONDeposit  `json:"deposit"`
 }
 
 // CheckResponse is the response json for the /check endpoint.
@@ -61,23 +62,42 @@ func (r CheckResponse) StatusCode() int {
 // If deposit amount is omitted, the response will include the required deposit amount.
 // If expense amount is omitted, the response will include the required expense amount.
 type QuoteRequest struct {
-	SourceChainID      uint64    `json:"sourceChainId"`
-	DestinationChainID uint64    `json:"destChainId"`
-	Deposit            QuoteUnit `json:"deposit"`
-	Expense            QuoteUnit `json:"expense"`
+	SourceChainID      uint64        `json:"sourceChainId"`
+	DestinationChainID uint64        `json:"destChainId"`
+	Deposit            JSONQuoteUnit `json:"deposit"`
+	Expense            JSONQuoteUnit `json:"expense"`
 }
 
 // QuoteUnit represents a token and amount pair, with the amount being optional.
 // If amount is nil or zero, quote response should inform the amount.
 type QuoteUnit struct {
+	Token  common.Address
+	Amount *big.Int
+}
+
+// JSONQuoteUnit is a json marshal-able QuoteUnit.
+type JSONQuoteUnit struct {
 	Token  common.Address `json:"token"`
-	Amount *big.Int       `json:"amount,omitempty"`
+	Amount *hexutil.Big   `json:"amount,omitempty"`
+}
+
+func (qu QuoteUnit) ToJSON() JSONQuoteUnit {
+	return JSONQuoteUnit{
+		Token:  qu.Token,
+		Amount: (*hexutil.Big)(qu.Amount),
+	}
+}
+func (qu JSONQuoteUnit) Parse() QuoteUnit {
+	return QuoteUnit{
+		Token:  qu.Token,
+		Amount: qu.Amount.ToInt(),
+	}
 }
 
 // QuoteResponse is the response json for the /api/v1/quote endpoint.
 type QuoteResponse struct {
-	Deposit QuoteUnit          `json:"deposit"`
-	Expense QuoteUnit          `json:"expense"`
+	Deposit JSONQuoteUnit      `json:"deposit"`
+	Expense JSONQuoteUnit      `json:"expense"`
 	Error   *JSONErrorResponse `json:"error,omitempty"`
 }
 
@@ -108,4 +128,98 @@ func (r ContractsResponse) StatusCode() int {
 	}
 
 	return http.StatusOK
+}
+
+// JSONExpense is a json marshal-able solvernt.Expense.
+type JSONExpense struct {
+	Spender common.Address `json:"spender"`
+	Token   common.Address `json:"token"`
+	Amount  *hexutil.Big   `json:"amount"`
+}
+
+// JSONCall is a json marshal-able solvernet.Call.
+type JSONCall struct {
+	Target   common.Address `json:"target"`
+	Selector [4]byte        `json:"selector"`
+	Value    *hexutil.Big   `json:"value"`
+	Params   []byte         `json:"params"`
+}
+
+// JSONDeposit is a json marshal-able solvernet.Deposit.
+type JSONDeposit struct {
+	Token  common.Address `json:"token"`
+	Amount *hexutil.Big   `json:"amount"`
+}
+
+type (
+	JSONCalls    []JSONCall
+	JSONExpenses []JSONExpense
+)
+
+func ToJSONCalls(calls []solvernet.Call) JSONCalls {
+	var out JSONCalls
+	for _, c := range calls {
+		out = append(out, JSONCall{
+			Target:   c.Target,
+			Selector: c.Selector,
+			Value:    (*hexutil.Big)(c.Value),
+			Params:   c.Params,
+		})
+	}
+
+	return out
+}
+
+func ToJSONExpenses(expenses []solvernet.Expense) JSONExpenses {
+	var out JSONExpenses
+	for _, e := range expenses {
+		out = append(out, JSONExpense{
+			Spender: e.Spender,
+			Token:   e.Token,
+			Amount:  (*hexutil.Big)(e.Amount),
+		})
+	}
+
+	return out
+}
+
+func ToJSONDeposit(deposit solvernet.Deposit) JSONDeposit {
+	return JSONDeposit{
+		Token:  deposit.Token,
+		Amount: (*hexutil.Big)(deposit.Amount),
+	}
+}
+
+func (cs JSONCalls) Parse() []solvernet.Call {
+	var out []solvernet.Call
+	for _, c := range cs {
+		out = append(out, solvernet.Call{
+			Target:   c.Target,
+			Selector: c.Selector,
+			Value:    c.Value.ToInt(),
+			Params:   c.Params,
+		})
+	}
+
+	return out
+}
+
+func (es JSONExpenses) Parse() solvernet.Expenses {
+	var out []solvernet.Expense
+	for _, e := range es {
+		out = append(out, solvernet.Expense{
+			Spender: e.Spender,
+			Token:   e.Token,
+			Amount:  e.Amount.ToInt(),
+		})
+	}
+
+	return out
+}
+
+func (d JSONDeposit) Parse() solvernet.Deposit {
+	return solvernet.Deposit{
+		Token:  d.Token,
+		Amount: d.Amount.ToInt(),
+	}
 }

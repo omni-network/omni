@@ -23,8 +23,11 @@ type (
 // quoter is quoteFunc that can be used to quoter an expense or deposit.
 // It is the logic behind the /quoter endpoint.
 func quoter(req QuoteRequest) QuoteResponse {
-	isDepositQuote := req.Deposit.Amount == nil || req.Deposit.Amount.Sign() == 0
-	isExpenseQuote := req.Expense.Amount == nil || req.Expense.Amount.Sign() == 0
+	deposit := req.Deposit.Parse()
+	expense := req.Expense.Parse()
+
+	isDepositQuote := deposit.Amount == nil || deposit.Amount.Sign() == 0
+	isExpenseQuote := expense.Amount == nil || expense.Amount.Sign() == 0
 
 	returnErr := func(code int, msg string) QuoteResponse {
 		return QuoteResponse{
@@ -53,31 +56,31 @@ func quoter(req QuoteRequest) QuoteResponse {
 	returnQuote := func(depositAmt, expenseAmt *big.Int) QuoteResponse {
 		return QuoteResponse{
 			Deposit: QuoteUnit{
-				Token:  depositTkn.Address,
+				Token:  deposit.Token,
 				Amount: depositAmt,
-			},
+			}.ToJSON(),
 			Expense: QuoteUnit{
-				Token:  expenseTkn.Address,
+				Token:  expense.Token,
 				Amount: expenseAmt,
-			},
+			}.ToJSON(),
 		}
 	}
 
 	if isDepositQuote {
-		deposit, err := quoteDeposit(depositTkn, Payment{Token: expenseTkn, Amount: req.Expense.Amount})
+		quoted, err := quoteDeposit(depositTkn, Payment{Token: expenseTkn, Amount: expense.Amount})
 		if err != nil {
 			return returnErr(http.StatusBadRequest, err.Error())
 		}
 
-		return returnQuote(deposit.Amount, req.Expense.Amount)
+		return returnQuote(quoted.Amount, expense.Amount)
 	}
 
-	expense, err := quoteExpense(expenseTkn, Payment{Token: depositTkn, Amount: req.Deposit.Amount})
+	quoted, err := quoteExpense(expenseTkn, Payment{Token: depositTkn, Amount: deposit.Amount})
 	if err != nil {
 		return returnErr(http.StatusBadRequest, err.Error())
 	}
 
-	return returnQuote(req.Deposit.Amount, expense.Amount)
+	return returnQuote(deposit.Amount, quoted.Amount)
 }
 
 // newQuoteHandler returns a handler for the /quote endpoint.
