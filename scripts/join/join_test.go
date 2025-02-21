@@ -60,6 +60,8 @@ func TestJoinNetwork(t *testing.T) {
 	output, err := os.OpenFile(logsPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	require.NoError(t, err)
 
+	defer cleanUp(t, ctx, home, output, logsPath)
+
 	networkID := netconf.ID(*network)
 	haloTag := haloTag(t)
 	cfg := clicmd.InitConfig{
@@ -180,6 +182,15 @@ func TestJoinNetwork(t *testing.T) {
 	if err := eg.Wait(); err != nil {
 		printLogsTail(t, logsPath)
 		tutil.RequireNoError(t, err)
+	}
+}
+
+func cleanUp(t *testing.T, ctx context.Context, home string, output *os.File, logsPath string) {
+	t.Helper()
+
+	// Ensure containers are always cleaned up, even if the test fails.
+	if err := shutdownContainers(ctx, home, output, logsPath); err != nil {
+		t.Errorf("failed to clean up containers: %v", err)
 	}
 }
 
@@ -356,4 +367,63 @@ func getContainerStats(ctx context.Context) (stats, error) {
 	}
 
 	return resp, nil
+}
+
+func shutdownContainers(ctx context.Context, home string, output *os.File, logsPath string) error {
+	// Create a context with timeout to ensure clean up doesn't hang indefinitely.
+	timeoutCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	// Stop and remove the containers.
+	log.Info(timeoutCtx, "Exec: docker compose down", "logs_file", logsPath)
+	stopCmd := exec.Command("docker", "compose", "down", "-v")
+	stopCmd.Dir = home
+	stopCmd.Stderr = output
+	stopCmd.Stdout = output
+	err := stopCmd.Run()
+	if err != nil || timeoutCtx.Err() != nil {
+		return errors.Wrap(err, "docker compose down early exit")
+	}
+
+	// Wait dynamically until all containers are stopped.
+	if err = waitForContainersToStop(timeoutCtx, home); err != nil {
+		return err
+	}
+
+	// Flush log file before closing.
+	if err = output.Sync(); err != nil {
+		return errors.Wrap(err, "log file flush", "logs_path", logsPath)
+	}
+
+	// Close log file.
+	if err = output.Close(); err != nil {
+		return errors.Wrap(err, "log file close", "logs_path", logsPath)
+	}
+
+	return nil
+}
+
+func waitForContainersToStop(ctx context.Context, home string) error {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return errors.New("timeout waiting for containers to stop")
+		case <-ticker.C:
+			checkCmd := exec.Command("docker", "compose", "ps", "-q")
+			checkCmd.Dir = home
+			out, err := checkCmd.Output()
+			if err != nil {
+				return errors.Wrap(err, "check running containers", "out", string(out))
+			}
+
+			// If no running containers, exit the loop
+			if len(strings.TrimSpace(string(out))) == 0 {
+				log.Info(ctx, "All containers stopped.")
+				return nil
+			}
+		}
+	}
 }
