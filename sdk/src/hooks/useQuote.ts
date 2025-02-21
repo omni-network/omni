@@ -1,5 +1,5 @@
-import { type UseMutationResult, useMutation } from '@tanstack/react-query'
-import { useCallback, useMemo } from 'react'
+import { type UseQueryResult, useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
 import { type Address, zeroAddress } from 'viem'
 import type { Deposit, Expense } from '../types/order.js'
 
@@ -9,16 +9,16 @@ type UseQuoteParams = {
   mode: 'expense'
   deposit: Deposit
   expense: Omit<Expense, 'spender'>
+  enabled?: boolean
 }
 
 type UseQuoteReturnType = {
-  quote: () => Promise<void>
   result?: Quote
   error?: QuoteError
   isPending: boolean
   isError: boolean
   isSuccess: boolean
-  mutation: UseMutationResult<Quote, Error, void, unknown>
+  query: UseQueryResult<Quote, Error>
 }
 
 type Quote = {
@@ -40,8 +40,9 @@ type QuoteError = {
 }
 
 export function useQuote(params: UseQuoteParams): UseQuoteReturnType {
-  const mutation = useMutation<Quote>({
-    mutationFn: async () => {
+  const query = useQuery<Quote>({
+    queryKey: ['quote'],
+    queryFn: async () => {
       const deposit = {
         amount: params.deposit.amount ?? 0,
         token: params.deposit.isNative ? zeroAddress : params.deposit.token,
@@ -71,44 +72,40 @@ export function useQuote(params: UseQuoteParams): UseQuoteReturnType {
       )
       return await response.json()
     },
+    enabled: params.enabled ?? true,
   })
 
-  const quoteAsync = useCallback(async () => {
-    await mutation.mutateAsync()
-  }, [mutation.mutateAsync])
-
   const result = useMemo(() => {
-    if (!mutation.data) return
+    if (!query.data) return
 
-    if (mutation.data.error) {
+    if (query.data.error) {
       return {
         error: {
-          code: mutation.data.error.code,
-          status: mutation.data.error.status,
-          message: mutation.data.error.message,
+          code: query.data.error.code,
+          status: query.data.error.status,
+          message: query.data.error.message,
         },
       }
     }
 
-    if (!mutation.data.deposit || !mutation.data.expense) {
+    if (!query.data.deposit || !query.data.expense) {
       return {
         error: {
           code: 500,
-          status: 'Internal Server Error',
+          status: 'Internal Error',
           message: 'Invalid quote response',
         },
       }
     }
 
-    return mutation.data
-  }, [mutation.data])
+    return query.data
+  }, [query.data])
 
   return {
-    quote: quoteAsync,
     result,
-    isPending: mutation.isPending,
-    isError: mutation.isError,
-    isSuccess: mutation.isSuccess,
-    mutation,
+    isPending: query.isPending,
+    isError: query.isError,
+    isSuccess: query.isSuccess,
+    query,
   }
 }

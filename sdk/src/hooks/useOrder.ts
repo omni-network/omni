@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
 import { encodeFunctionData, slice, zeroAddress } from 'viem'
 import type { Hex, WriteContractErrorType } from 'viem'
@@ -16,11 +16,13 @@ import { encodeOrder } from '../utils/encodeOrder.js'
 import { useGetOpenOrder } from './useGetOpenOrder.js'
 import { useOrderStatus } from './useOrderStatus.js'
 
-type UseOrderParams = Order
+type UseOrderParams = {
+  order: Order
+  validateEnabled?: boolean
+}
 
 type UseOrderReturnType = {
   open: () => Promise<Hex>
-  validate: () => Promise<void>
   validation?: Validation
   txHash?: Hex
   error?: WriteContractErrorType
@@ -68,13 +70,12 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
   const orderStatus = useOrderStatus({
     orderId: orderId,
     originData: originData,
-    ...params,
+    ...params.order,
   })
-  const validate = useValidateOrder(params)
-
-  const validateAsync = useCallback(async () => {
-    await validate.mutateAsync()
-  }, [validate.mutateAsync])
+  const validate = useValidateOrder(
+    params.order,
+    params.validateEnabled ?? true,
+  )
 
   const validation = useMemo(() => {
     if (validate.data?.error)
@@ -95,16 +96,19 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
   }, [validate.data])
 
   const open = useCallback(async () => {
-    const encoded = encodeOrder(params)
+    const encoded = encodeOrder(params.order)
     return await txMutation.writeContractAsync({
       ...inbox,
       functionName: 'open',
-      chainId: params.srcChainId,
-      value: params.calls.reduce((acc, call) => acc + call.value, BigInt(0)),
+      chainId: params.order.srcChainId,
+      value: params.order.calls.reduce(
+        (acc, call) => acc + call.value,
+        BigInt(0),
+      ),
       args: [
         {
           fillDeadline:
-            params.fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
+            params.order.fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
           orderDataType: typeHash,
           orderData: encoded,
         },
@@ -114,7 +118,6 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
 
   return {
     open,
-    validate: validateAsync,
     validation,
     txHash: txMutation.data,
     orderStatus,
@@ -146,7 +149,7 @@ type ValidationResponse = {
 }
 
 // TODO: runtime assertions?
-function useValidateOrder(order: Order) {
+function useValidateOrder(order: Order, enabled: boolean) {
   const calls = order.calls.map((call) => {
     const callData = encodeFunctionData({
       abi: call.abi,
@@ -180,8 +183,9 @@ function useValidateOrder(order: Order) {
     deposit,
   })
 
-  return useMutation<ValidationResponse>({
-    mutationFn: async () => {
+  return useQuery<ValidationResponse>({
+    queryKey: ['check'],
+    queryFn: async () => {
       // TODO remove hardcoded api url
       const response = await fetch(
         'https://solver.staging.omni.network/api/v1/check',
@@ -195,5 +199,6 @@ function useValidateOrder(order: Order) {
       )
       return await response.json()
     },
+    enabled,
   })
 }
