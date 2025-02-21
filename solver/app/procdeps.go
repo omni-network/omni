@@ -122,13 +122,18 @@ func newFiller(
 				return errors.New("unsupported token, should have been rejected [BUG]", "addr", tknAddr.Hex(), "chain_id", destChainID)
 			}
 
-			isAppproved, err := isAppproved(ctx, tknAddr, backend, solverAddr, outboxAddr)
+			isAppproved, err := isAppproved(ctx, tknAddr, backend, solverAddr, outboxAddr, output.Amount)
 			if err != nil {
 				return errors.Wrap(err, "is approved")
 			}
 
 			if !isAppproved {
-				return errors.New("outbox not approved to spend token [BUG] ", "token", tkn.Symbol, "chain_id", destChainID)
+				return errors.New("outbox not approved to spend token",
+					"token", tkn.Symbol,
+					"chain_id", destChainID,
+					"addr", tknAddr.Hex(),
+					"amount", output.Amount,
+				)
 			}
 		}
 

@@ -148,13 +148,18 @@ func checkApprovals(ctx context.Context, expenses []Payment, client ethclient.Cl
 			continue
 		}
 
-		isAppproved, err := isAppproved(ctx, tkn.Address, client, solverAddr, outboxAddr)
+		isAppproved, err := isAppproved(ctx, tkn.Address, client, solverAddr, outboxAddr, expense.Amount)
 		if err != nil {
 			return errors.Wrap(err, "is approved")
 		}
 
 		if !isAppproved {
-			return errors.New("outbox not approved to spend token [BUG]", "token", tkn.Symbol, "chain_id", tkn.ChainID)
+			return errors.New("outbox not approved to spend token",
+				"token", tkn.Symbol,
+				"chain_id", tkn.ChainID,
+				"addr", tkn.Address.Hex(),
+				"amount", expense.Amount,
+			)
 		}
 	}
 
