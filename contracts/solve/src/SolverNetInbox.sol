@@ -241,9 +241,10 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     function reject(bytes32 id, uint8 reason) external onlyRoles(SOLVER) nonReentrant {
         OrderState memory state = _orderState[id];
 
+        if (reason == 0) revert InvalidReason();
         if (state.status != Status.Pending) revert OrderNotPending();
 
-        _upsertOrder(id, Status.Rejected, msg.sender);
+        _upsertOrder(id, Status.Rejected, reason, msg.sender);
         _transferDeposit(id, _orderHeader[id].owner);
 
         emit Rejected(id, msg.sender, reason);
@@ -262,7 +263,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         if (header.owner != msg.sender) revert Unauthorized();
         if (header.fillDeadline + CLOSE_BUFFER >= block.timestamp) revert OrderStillValid();
 
-        _upsertOrder(id, Status.Closed, msg.sender);
+        _upsertOrder(id, Status.Closed, 0, msg.sender);
         _transferDeposit(id, header.owner);
 
         emit Closed(id);
@@ -288,7 +289,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             revert WrongFillHash();
         }
 
-        _upsertOrder(id, Status.Filled, creditedTo);
+        _upsertOrder(id, Status.Filled, 0, creditedTo);
         emit Filled(id, fillHash, creditedTo);
     }
 
@@ -303,7 +304,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         if (state.status != Status.Filled) revert OrderNotFilled();
         if (state.updatedBy != msg.sender) revert Unauthorized();
 
-        _upsertOrder(id, Status.Claimed, msg.sender);
+        _upsertOrder(id, Status.Claimed, 0, msg.sender);
         _transferDeposit(id, to);
 
         emit Claimed(id, msg.sender, to);
@@ -505,7 +506,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             _orderExpenses[id].push(orderData.expenses[i]);
         }
 
-        _upsertOrder(id, Status.Pending, msg.sender);
+        _upsertOrder(id, Status.Pending, 0, msg.sender);
 
         return resolved;
     }
@@ -526,12 +527,19 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
 
     /**
      * @dev Update or insert order state by id.
-     * @param id        ID of the order.
-     * @param status    Status to upsert.
-     * @param updatedBy Address updating the order.
+     * @param id           ID of the order.
+     * @param status       Status to upsert.
+     * @param rejectReason Reason code for rejecting the order, if rejected.
+     * @param updatedBy    Address updating the order.
      */
-    function _upsertOrder(bytes32 id, Status status, address updatedBy) internal {
-        _orderState[id] = OrderState({ status: status, timestamp: uint32(block.timestamp), updatedBy: updatedBy });
+    function _upsertOrder(bytes32 id, Status status, uint8 rejectReason, address updatedBy) internal {
+        uint8 _rejectReason = _orderState[id].rejectReason;
+        _orderState[id] = OrderState({
+            status: status,
+            rejectReason: rejectReason > 0 ? rejectReason : _rejectReason,
+            timestamp: uint32(block.timestamp),
+            updatedBy: updatedBy
+        });
         _latestOrderIdByStatus[status] = id;
     }
 

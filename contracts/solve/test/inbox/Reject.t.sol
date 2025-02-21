@@ -7,7 +7,12 @@ contract SolverNet_Inbox_Reject_Test is TestBase {
     function test_reject_reverts() public {
         // order must be rejected by a whitelisted solver
         vm.expectRevert(Ownable.Unauthorized.selector);
-        inbox.reject(bytes32(uint256(1)), 1);
+        inbox.reject(bytes32(uint256(1)), 0);
+
+        // order rejection reason must be non-zero
+        vm.prank(solver);
+        vm.expectRevert(ISolverNetInbox.InvalidReason.selector);
+        inbox.reject(bytes32(uint256(1)), 0);
 
         // order must at least be in pending state
         vm.prank(solver);
@@ -33,6 +38,9 @@ contract SolverNet_Inbox_Reject_Test is TestBase {
         emit ISolverNetInbox.Rejected(resolvedOrder.orderId, solver, 1);
         inbox.reject(resolvedOrder.orderId, 1);
 
+        (, ISolverNetInbox.OrderState memory state) = inbox.getOrder(resolvedOrder.orderId);
+
+        assertEq(state.rejectReason, 1, "reject reason should be set");
         assertEq(
             inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Rejected),
             resolvedOrder.orderId,
@@ -59,6 +67,9 @@ contract SolverNet_Inbox_Reject_Test is TestBase {
         emit ISolverNetInbox.Rejected(resolvedOrder.orderId, solver, 1);
         inbox.reject(resolvedOrder.orderId, 1);
 
+        (, ISolverNetInbox.OrderState memory state) = inbox.getOrder(resolvedOrder.orderId);
+
+        assertEq(state.rejectReason, 1, "reject reason should be set");
         assertEq(
             inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Rejected),
             resolvedOrder.orderId,
