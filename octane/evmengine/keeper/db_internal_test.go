@@ -1,7 +1,6 @@
 package keeper
 
 import (
-	"context"
 	"testing"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -11,6 +10,7 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	"github.com/ethereum/go-ethereum/common"
+	etypes "github.com/ethereum/go-ethereum/core/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
@@ -66,15 +66,14 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	withdrawals, err := getAllWithdrawals(ctx, keeper)
+	withdrawals, err := keeper.EligibleWithdrawals(ctx.WithBlockHeight(1000))
 	require.NoError(t, err)
 	require.Len(t, withdrawals, len(inputs))
 
-	matchesTestCase := func(w *Withdrawal, in testCase) {
-		require.Equal(t, in.expID, w.GetId())
-		require.Equal(t, in.addr.Bytes(), w.GetAddress())
-		require.Equal(t, in.amount, w.GetAmountGwei())
-		require.Equal(t, in.height, w.GetCreatedHeight())
+	matchesTestCase := func(w *etypes.Withdrawal, in testCase) {
+		require.Equal(t, in.expID, w.Index)
+		require.Equal(t, common.BytesToAddress(in.addr.Bytes()), w.Address)
+		require.Equal(t, in.amount, w.Amount)
 	}
 
 	for i, in := range inputs {
@@ -133,25 +132,4 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 	require.Len(t, withdrawalsByHeight, int(keeper.maxWithdrawalsPerBlock))
 	matchesTestCase(withdrawalsByHeight[0], inputs[0])
 	matchesTestCase(withdrawalsByHeight[1], inputs[1])
-}
-
-// getAllWithdrawals returns all withdrawals in the keeper DB.
-func getAllWithdrawals(ctx context.Context, k *Keeper) ([]*Withdrawal, error) {
-	iter, err := k.withdrawalTable.List(ctx, WithdrawalIdIndexKey{})
-	if err != nil {
-		return nil, errors.Wrap(err, "list withdrawals")
-	}
-	defer iter.Close()
-
-	var withdrawals []*Withdrawal
-
-	for iter.Next() {
-		val, err := iter.Value()
-		if err != nil {
-			return nil, errors.Wrap(err, "get withdrawal")
-		}
-		withdrawals = append(withdrawals, val)
-	}
-
-	return withdrawals, nil
 }
