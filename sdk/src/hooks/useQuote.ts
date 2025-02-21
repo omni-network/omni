@@ -12,7 +12,7 @@ type UseQuoteParams = {
 }
 
 type UseQuoteReturnType = {
-  quote?: () => Promise<void>
+  quote: () => Promise<void>
   result?: Quote
   error?: QuoteError
   isPending: boolean
