@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { type Log, decodeEventLog } from 'viem'
 import type { UseWaitForTransactionReceiptReturnType } from 'wagmi'
-import { inbox } from '../index.js'
+import { inbox } from '../constants/contracts.js'
 
 type UseGetOpenOrderParams = {
   status: UseWaitForTransactionReceiptReturnType['status']

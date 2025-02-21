@@ -168,7 +168,7 @@ export const inbox = {
     },
   ],
   // TODO: this will be fetched via the solver API
-  address: '0x0de9c716676064caaa07db21407a9e029112899d',
+  address: '0x71D48a88600A790FB1E94efdBF6c284fC08F99B8',
 } as const
 
 export const outbox = {
@@ -185,7 +185,7 @@ export const outbox = {
     },
   ],
   // TODO: this will be fetched via the solver API
-  address: '0x25e9397adc8fdfdc1899c45ae2c48ecc00f3d4be',
+  address: '0xD98068374C233e4d4081D24154489551DcD6FDF5',
 } as const
 
 export const middleman = {
@@ -205,5 +205,5 @@ export const middleman = {
     { type: 'error', inputs: [], name: 'CallFailed' },
   ],
   // TODO: this will be fetched via the solver API
-  address: '0x49ea714481bb96ce7bc17fe6efd7b5b630d1d85f',
+  address: '0xF72eA80Edec895CABE430f266135DD0267e18cb2',
 } as const

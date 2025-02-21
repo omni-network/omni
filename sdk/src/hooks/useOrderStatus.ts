@@ -1,12 +1,13 @@
 import { useMemo } from 'react'
 import type { Hex } from 'viem'
 import { useReadContract } from 'wagmi'
-import { inbox, outbox } from '../index.js'
-import type { OrderStatus } from '../types/orderStatus.js'
+import { inbox } from '../constants/contracts.js'
+import { outbox } from '../constants/contracts.js'
+import type { OrderStatus } from '../types/order.js'
 
 type UseOrderStatusParams = {
   destChainId: number
-  originChainId?: number
+  srcChainId?: number
   orderId?: Hex
   originData?: Hex
 }
@@ -35,7 +36,7 @@ function useDidFill(params: UseDidFillParams) {
 }
 
 export function useOrderStatus(params: UseOrderStatusParams) {
-  const { originChainId, orderId } = params
+  const { srcChainId, orderId } = params
   const filled = useDidFill({
     ...params,
   })
@@ -44,7 +45,7 @@ export function useOrderStatus(params: UseOrderStatusParams) {
     address: inbox.address,
     abi: inbox.abi,
     functionName: 'getOrder',
-    chainId: originChainId,
+    chainId: srcChainId,
     args: orderId ? [orderId] : undefined,
     query: {
       enabled: !!orderId || !filled,
@@ -65,11 +66,8 @@ export function useOrderStatus(params: UseOrderStatusParams) {
 const ORDER_STATUS: Record<number, OrderStatus> = {
   0: 'invalid',
   1: 'pending',
-  2: 'accepted',
-  3: 'rejected',
-  4: 'reverted',
-  5: 'filled',
-  6: 'claimed',
+  2: 'rejected',
+  3: 'filled',
 } as const
 
 function parseOrderStatus(status: number): OrderStatus {

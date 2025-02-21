@@ -1,59 +1,22 @@
 import type { Abi, Address } from 'viem'
+import type { Prettify } from './utils.js'
+export type OrderStatus = 'invalid' | 'pending' | 'rejected' | 'filled'
 
-/**
- * @description Defines the structure of an order.
- *
- * @param params Order object:
- * - owner: owner of the order
- * - destChainId: destination chainID
- * - deposit: token and amount to be sent on source chain
- * - calls: array of calls to be executed on the destination chain
- * - expenses: array of expenses required to fulfill the order
- *
- * @example
- *
- * const order: Order = {
- *  owner: '0x...',
- *  destChainId: 1,
- *  deposit: {
- *    token: '0x0000000000000000000000000000000000000000',
- *    amount: BigInt(1000000000000000000),
- *  },
- *  calls: [
- *    {
- *      target: '0x...',
- *      selector: '0x...',
- *      value: BigInt(1000000000000000000),
- *      params: '0x...'
- *     }
- *   ],
- *   expenses: [
- *    {
- *      spender: '0x...',
- *      token: '0x...',
- *      amount: BigInt(1000000000000000000),
- *     }
- *   ],
- * }
- */
-export type Order = {
-  readonly owner: Address
-  readonly destChainId: number
-  readonly calls: Call[]
-  readonly deposit: Deposit
-  readonly expenses: Expense[]
+type NativeToken = {
+  readonly amount: bigint
+  readonly isNative: true
 }
 
-type Deposit = {
+type ERC20Token = {
   readonly token: Address
   readonly amount: bigint
+  readonly isNative: false
 }
 
-type Expense = {
-  readonly spender: Address
-  readonly token: Address
-  readonly amount: bigint
-}
+type Deposit = Prettify<NativeToken | ERC20Token>
+type Expense = Prettify<
+  { readonly spender: Address } & (NativeToken | ERC20Token)
+>
 
 export type Call = {
   readonly abi: Abi
@@ -62,4 +25,14 @@ export type Call = {
   // TODO: infer selector and args from abi
   readonly functionName: string
   readonly args?: unknown[]
+}
+
+export type Order = {
+  readonly owner: Address
+  readonly srcChainId: number
+  readonly destChainId: number
+  readonly calls: Call[]
+  readonly fillDeadline?: number
+  readonly deposit: Deposit
+  readonly expense: Expense
 }
