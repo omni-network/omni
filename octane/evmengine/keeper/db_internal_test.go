@@ -38,7 +38,8 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 	}
 	frp := newRandomFeeRecipientProvider()
 	evmLogProc := mockEventProc{deliverErr: errors.New("test error")}
-	keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, evmLogProc)
+	maxWithdrawalsPerBlock := uint64(4)
+	keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, maxWithdrawalsPerBlock, evmLogProc)
 	require.NoError(t, err)
 
 	addr1 := tutil.RandomAddress()
@@ -94,28 +95,30 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, withdrawalsByAddr)
 
-	limit := 4
+	// make sure we have no withdrawals below and at height 1
+	withdrawalsByHeight, err := keeper.EligibleWithdrawals(ctx.WithBlockHeight(0))
+	require.NoError(t, err)
+	require.Empty(t, withdrawalsByHeight)
 
-	// make sure we have no withdrawals below height 1
-	withdrawalsByHeight, err := keeper.EligibleWithdrawals(ctx, 1, limit)
+	withdrawalsByHeight, err = keeper.EligibleWithdrawals(ctx.WithBlockHeight(1))
 	require.NoError(t, err)
 	require.Empty(t, withdrawalsByHeight)
 
 	// make sure we have exactly one withdrawal below height 2
-	withdrawalsByHeight, err = keeper.EligibleWithdrawals(ctx, 2, limit)
+	withdrawalsByHeight, err = keeper.EligibleWithdrawals(ctx.WithBlockHeight(2))
 	require.NoError(t, err)
 	require.Len(t, withdrawalsByHeight, 1)
 	matchesTestCase(withdrawalsByHeight[0], inputs[0])
 
 	// under height 50 we only have 2 withdrawals
-	withdrawalsByHeight, err = keeper.EligibleWithdrawals(ctx, 50, limit)
+	withdrawalsByHeight, err = keeper.EligibleWithdrawals(ctx.WithBlockHeight(50))
 	require.NoError(t, err)
 	require.Len(t, withdrawalsByHeight, 2)
 	matchesTestCase(withdrawalsByHeight[0], inputs[0])
 	matchesTestCase(withdrawalsByHeight[1], inputs[1])
 
 	// under height 1000 we get all of them
-	withdrawalsByHeight, err = keeper.EligibleWithdrawals(ctx, 1000, limit)
+	withdrawalsByHeight, err = keeper.EligibleWithdrawals(ctx.WithBlockHeight(1000))
 	require.NoError(t, err)
 	require.Len(t, withdrawalsByHeight, 4)
 	matchesTestCase(withdrawalsByHeight[0], inputs[0])
@@ -124,9 +127,10 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 	matchesTestCase(withdrawalsByHeight[3], inputs[3])
 
 	// under height 1000 we get the first 2 if we limit the output by 2
-	withdrawalsByHeight, err = keeper.EligibleWithdrawals(ctx, 1000, limit/2)
+	keeper.maxWithdrawalsPerBlock /= 2
+	withdrawalsByHeight, err = keeper.EligibleWithdrawals(ctx.WithBlockHeight(1000))
 	require.NoError(t, err)
-	require.Len(t, withdrawalsByHeight, limit/2)
+	require.Len(t, withdrawalsByHeight, int(keeper.maxWithdrawalsPerBlock))
 	matchesTestCase(withdrawalsByHeight[0], inputs[0])
 	matchesTestCase(withdrawalsByHeight[1], inputs[1])
 }

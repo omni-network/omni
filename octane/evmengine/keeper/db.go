@@ -3,7 +3,6 @@ package keeper
 import (
 	"bytes"
 	"context"
-	"sort"
 
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
@@ -115,8 +114,11 @@ func (k *Keeper) listWithdrawalsByAddress(ctx context.Context, withdrawalAddr co
 	return withdrawals, nil
 }
 
-// EligibleWithdrawals returns all withdrawals created below the specified height, sorted by the created height, limited by the provided count.
-func (k *Keeper) EligibleWithdrawals(ctx context.Context, height uint64, limit int) ([]*Withdrawal, error) {
+// EligibleWithdrawals returns all withdrawals created below the specified height,
+// sorted by the id (oldest to newest), limited by the provided count.
+func (k *Keeper) EligibleWithdrawals(ctx context.Context) ([]*Withdrawal, error) {
+	height := sdk.UnwrapSDKContext(ctx).BlockHeight()
+	// Note: items are ordered by the id in ascending order (oldest to newest).
 	iter, err := k.withdrawalTable.List(ctx, WithdrawalPrimaryKey{})
 	if err != nil {
 		return nil, errors.Wrap(err, "list withdrawals")
@@ -130,17 +132,13 @@ func (k *Keeper) EligibleWithdrawals(ctx context.Context, height uint64, limit i
 			return nil, errors.Wrap(err, "get withdrawal")
 		}
 
-		if val.GetCreatedHeight() < height {
+		if val.GetCreatedHeight() < uint64(height) {
 			withdrawals = append(withdrawals, val)
+
+			if uint64(len(withdrawals)) == k.maxWithdrawalsPerBlock {
+				break
+			}
 		}
-	}
-
-	sort.Slice(withdrawals, func(i, j int) bool {
-		return withdrawals[i].GetCreatedHeight() < withdrawals[j].GetCreatedHeight()
-	})
-
-	if len(withdrawals) > limit {
-		withdrawals = withdrawals[:limit]
 	}
 
 	return withdrawals, nil
