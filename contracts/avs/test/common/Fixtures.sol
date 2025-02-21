@@ -133,7 +133,7 @@ contract Fixtures is EigenLayerFixtures {
         return OmniAVS(address(proxy));
 
         // Below is the code to deploy OmniAVS contract using Create3. It requires vm.getCode(),
-        // which seems to be broken in the most recent veresion of forge.
+        // which seems to be broken in the most recent version of forge.
         //
         // Create3 create3 = new Create3();
         // bytes32 create3Salt = keccak256("avs-local-test");
