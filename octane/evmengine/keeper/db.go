@@ -6,6 +6,7 @@ import (
 
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
@@ -132,12 +133,16 @@ func (k *Keeper) EligibleWithdrawals(ctx context.Context) ([]*Withdrawal, error)
 			return nil, errors.Wrap(err, "get withdrawal")
 		}
 
-		if val.GetCreatedHeight() < uint64(height) {
-			withdrawals = append(withdrawals, val)
+		if val.GetCreatedHeight() >= uint64(height) {
+			// Withdrawals created in this block are not eligible
+			break
+		}
 
-			if uint64(len(withdrawals)) == k.maxWithdrawalsPerBlock {
-				break
-			}
+		withdrawals = append(withdrawals, val)
+
+		if umath.Len(withdrawals) == k.maxWithdrawalsPerBlock {
+			// Reached the max number of withdrawals
+			break
 		}
 	}
 
