@@ -22,6 +22,8 @@ import (
 )
 
 // approveOutboxes gives each outbox max allowance for all supported tokens.
+// Most tokens will not decrement allowance when set to max, though some do.
+// TODO: monitor allowances, alert or reset when "low" (half type(uint256).max).
 func approveOutboxes(ctx context.Context, network netconf.Network, backends ethbackend.Backends, solverAddr common.Address) error {
 	addrs, err := contracts.GetAddresses(ctx, network.ID)
 	if err != nil {
@@ -99,7 +101,9 @@ func approveToken(ctx context.Context, backend *ethbackend.Backend, token Token,
 		return errors.Wrap(err, "new token")
 	}
 
-	isApproved := func() (bool, error) { return isAppproved(ctx, token.Address, backend, solverAddr, outboxAddr) }
+	isApproved := func() (bool, error) {
+		return isAppproved(ctx, token.Address, backend, solverAddr, outboxAddr, umath.MaxUint256)
+	}
 
 	if approved, err := isApproved(); err != nil {
 		return err
@@ -128,7 +132,13 @@ func approveToken(ctx context.Context, backend *ethbackend.Backend, token Token,
 	return nil
 }
 
-func isAppproved(ctx context.Context, token common.Address, client ethclient.Client, solverAddr, outboxAddr common.Address) (bool, error) {
+func isAppproved(
+	ctx context.Context,
+	token common.Address,
+	client ethclient.Client,
+	solverAddr, outboxAddr common.Address,
+	spend *big.Int,
+) (bool, error) {
 	tkn, err := bindings.NewIERC20(token, client)
 	if err != nil {
 		return false, errors.Wrap(err, "new token")
@@ -139,5 +149,5 @@ func isAppproved(ctx context.Context, token common.Address, client ethclient.Cli
 		return false, errors.Wrap(err, "get allowance")
 	}
 
-	return new(big.Int).Sub(allowance, umath.MaxUint256).Sign() >= 0, nil
+	return spend.Cmp(allowance) <= 0, nil
 }
