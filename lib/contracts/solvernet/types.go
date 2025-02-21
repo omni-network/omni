@@ -2,6 +2,7 @@ package solvernet
 
 import (
 	"encoding/binary"
+	"math/big"
 	"strconv"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -59,13 +60,45 @@ func (s OrderStatus) Uint8() uint8 {
 	return uint8(s)
 }
 
+// Call is a bindings.SolverNetCall with Selector and Params joined into Data.
+type Call struct {
+	Target common.Address
+	Value  *big.Int
+	Data   []byte
+}
+
 type (
-	Expense  = bindings.SolverNetTokenExpense
-	Deposit  = bindings.SolverNetDeposit
-	Call     = bindings.SolverNetCall
+	Expense = bindings.SolverNetTokenExpense
+	Deposit = bindings.SolverNetDeposit
+
 	Expenses []Expense
 	Calls    []Call
 )
+
+func (cs Calls) ToBindings() []bindings.SolverNetCall {
+	var out []bindings.SolverNetCall
+	for _, c := range cs {
+		var selector [4]byte
+		if len(c.Data) >= 4 {
+			copy(selector[:], c.Data[:4])
+		}
+
+		var params []byte
+		if len(c.Data) > 4 {
+			params = make([]byte, len(c.Data)-4)
+			copy(params, c.Data[4:])
+		}
+
+		out = append(out, bindings.SolverNetCall{
+			Target:   c.Target,
+			Value:    c.Value,
+			Selector: selector,
+			Params:   params,
+		})
+	}
+
+	return out
+}
 
 func (es Expenses) NoNative() Expenses {
 	var out Expenses

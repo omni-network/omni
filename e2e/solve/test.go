@@ -217,7 +217,7 @@ func openOrder(ctx context.Context, backends ethbackend.Backends, order TestOrde
 	return solvernet.OpenOrder(ctx, netconf.Devnet, order.SourceChainID, backends, order.Owner, bindings.SolverNetOrderData{
 		DestChainId: order.DestChainID,
 		Expenses:    order.Expenses.NoNative(),
-		Calls:       order.Calls,
+		Calls:       order.Calls.ToBindings(),
 		Deposit:     order.Deposit,
 	}, solvernet.WithFillDeadline(order.FillDeadline))
 }

@@ -211,8 +211,12 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				srcChainID: evmchain.IDHolesky,
 				dstChainID: evmchain.IDOmniOmega,
 				deposits:   []Deposit{{Amount: ether(1), Token: omegaOMNIAddr}},
-				calls:      []Call{{Value: ether(1)}},
-				expenses:   []Expense{{Amount: ether(1)}},
+				calls: []Call{{
+					Value: ether(1),
+					// actual calldata does not matter. we include it to test /check parsing
+					Data: hexutil.MustDecode("0x70a08231000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc7"),
+				}},
+				expenses: []Expense{{Amount: ether(1)}},
 			},
 			mock: func(clients MockClients) {
 				mockNativeBalance(t, clients.Client(t, evmchain.IDOmniOmega), solver, ether(0))
@@ -228,7 +232,11 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				dstChainID: evmchain.IDOmniOmega,
 				// OMNI does not require fee
 				deposits: []Deposit{{Amount: ether(1), Token: omegaOMNIAddr}},
-				calls:    []Call{{Value: ether(1)}},
+				calls: []Call{{
+					Value: ether(1),
+					// actual calldata does not matter. we include it to test /check parsing
+					Data: hexutil.MustDecode("0x70a08231000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc7"),
+				}},
 				expenses: []Expense{{Amount: ether(1)}},
 			},
 			mock: func(clients MockClients) {

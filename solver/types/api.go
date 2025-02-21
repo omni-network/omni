@@ -139,10 +139,9 @@ type JSONExpense struct {
 
 // JSONCall is a json marshal-able solvernet.Call.
 type JSONCall struct {
-	Target   common.Address `json:"target"`
-	Selector [4]byte        `json:"selector"`
-	Value    *hexutil.Big   `json:"value"`
-	Params   []byte         `json:"params"`
+	Target common.Address `json:"target"`
+	Data   *hexutil.Bytes `json:"data"`
+	Value  *hexutil.Big   `json:"value"`
 }
 
 // JSONDeposit is a json marshal-able solvernet.Deposit.
@@ -159,11 +158,12 @@ type (
 func ToJSONCalls(calls []solvernet.Call) JSONCalls {
 	var out JSONCalls
 	for _, c := range calls {
+		data := c.Data
+
 		out = append(out, JSONCall{
-			Target:   c.Target,
-			Selector: c.Selector,
-			Value:    (*hexutil.Big)(c.Value),
-			Params:   c.Params,
+			Target: c.Target,
+			Value:  (*hexutil.Big)(c.Value),
+			Data:   (*hexutil.Bytes)(&data),
 		})
 	}
 
@@ -190,14 +190,13 @@ func ToJSONDeposit(deposit solvernet.Deposit) JSONDeposit {
 	}
 }
 
-func (cs JSONCalls) Parse() []solvernet.Call {
+func (cs JSONCalls) Parse() solvernet.Calls {
 	var out []solvernet.Call
 	for _, c := range cs {
 		out = append(out, solvernet.Call{
-			Target:   c.Target,
-			Selector: c.Selector,
-			Value:    c.Value.ToInt(),
-			Params:   c.Params,
+			Target: c.Target,
+			Value:  c.Value.ToInt(),
+			Data:   *c.Data,
 		})
 	}
 
