@@ -34,10 +34,9 @@ func erc20Deposit(amt *big.Int, addr common.Address) solvernet.Deposit {
 
 func nativeTransferCall(amt *big.Int, to common.Address) []solvernet.Call {
 	return []solvernet.Call{{
-		Value:    amt,
-		Target:   to,
-		Selector: [4]byte{},
-		Params:   nil,
+		Value:  amt,
+		Target: to,
+		Data:   nil,
 	}}
 }
 

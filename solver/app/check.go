@@ -110,7 +110,7 @@ func getFillOriginData(req CheckRequest) ([]byte, error) {
 		SrcChainId:   req.SourceChainID,
 		DestChainId:  req.DestinationChainID,
 		Expenses:     req.Expenses.Parse().NoNative(),
-		Calls:        req.Calls.Parse(),
+		Calls:        req.Calls.Parse().ToBindings(),
 	}
 
 	fillOriginDataBz, err := solvernet.PackFillOriginData(fillOriginData)
