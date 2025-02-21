@@ -13,8 +13,8 @@ type ERC20Token = {
   readonly isNative: false
 }
 
-type Deposit = Prettify<NativeToken | ERC20Token>
-type Expense = Prettify<
+export type Deposit = Prettify<NativeToken | ERC20Token>
+export type Expense = Prettify<
   { readonly spender: Address } & (NativeToken | ERC20Token)
 >
 

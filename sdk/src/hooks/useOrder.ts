@@ -16,9 +16,6 @@ import { encodeOrder } from '../utils/encodeOrder.js'
 import { useGetOpenOrder } from './useGetOpenOrder.js'
 import { useOrderStatus } from './useOrderStatus.js'
 
-// TODO remove
-const API_URL = 'https://solver.staging.omni.network/api/v1/'
-
 type UseOrderParams = Order
 
 type UseOrderReturnType = {
@@ -94,7 +91,6 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
         rejectDescription: validate.data.rejectDescription,
       } as const
     if (validate.data?.accepted) return { accepted: true } as const
-
     return
   }, [validate.data])
 
@@ -186,13 +182,17 @@ function useValidateOrder(order: Order) {
 
   return useMutation<ValidationResponse>({
     mutationFn: async () => {
-      const response = await fetch(`${API_URL}/api/check`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      // TODO remove hardcoded api url
+      const response = await fetch(
+        'https://solver.staging.omni.network/api/v1/check',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: request,
         },
-        body: request,
-      })
+      )
       return await response.json()
     },
   })
