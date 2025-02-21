@@ -6,6 +6,7 @@ import (
 
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
@@ -109,6 +110,40 @@ func (k *Keeper) listWithdrawalsByAddress(ctx context.Context, withdrawalAddr co
 		}
 
 		withdrawals = append(withdrawals, val)
+	}
+
+	return withdrawals, nil
+}
+
+// EligibleWithdrawals returns all withdrawals created below the specified height,
+// sorted by the id (oldest to newest), limited by the provided count.
+func (k *Keeper) EligibleWithdrawals(ctx context.Context) ([]*Withdrawal, error) {
+	height := sdk.UnwrapSDKContext(ctx).BlockHeight()
+	// Note: items are ordered by the id in ascending order (oldest to newest).
+	iter, err := k.withdrawalTable.List(ctx, WithdrawalPrimaryKey{})
+	if err != nil {
+		return nil, errors.Wrap(err, "list withdrawals")
+	}
+	defer iter.Close()
+
+	var withdrawals []*Withdrawal
+	for iter.Next() {
+		val, err := iter.Value()
+		if err != nil {
+			return nil, errors.Wrap(err, "get withdrawal")
+		}
+
+		if val.GetCreatedHeight() >= uint64(height) {
+			// Withdrawals created in this block are not eligible
+			break
+		}
+
+		withdrawals = append(withdrawals, val)
+
+		if umath.Len(withdrawals) == k.maxWithdrawalsPerBlock {
+			// Reached the max number of withdrawals
+			break
+		}
 	}
 
 	return withdrawals, nil

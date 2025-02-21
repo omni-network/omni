@@ -25,19 +25,20 @@ import (
 )
 
 type Keeper struct {
-	cdc             codec.BinaryCodec
-	storeService    store.KVStoreService
-	headTable       ExecutionHeadTable
-	withdrawalTable WithdrawalTable
-	engineCl        ethclient.EngineClient
-	txConfig        client.TxConfig
-	voteProvider    types.VoteExtensionProvider
-	eventProcs      []types.EvmEventProcessor
-	cmtAPI          comet.API
-	addrProvider    types.AddressProvider
-	feeRecProvider  types.FeeRecipientProvider
-	buildDelay      time.Duration
-	buildOptimistic bool
+	cdc                    codec.BinaryCodec
+	storeService           store.KVStoreService
+	headTable              ExecutionHeadTable
+	withdrawalTable        WithdrawalTable
+	engineCl               ethclient.EngineClient
+	txConfig               client.TxConfig
+	voteProvider           types.VoteExtensionProvider
+	eventProcs             []types.EvmEventProcessor
+	cmtAPI                 comet.API
+	addrProvider           types.AddressProvider
+	feeRecProvider         types.FeeRecipientProvider
+	buildDelay             time.Duration
+	buildOptimistic        bool
+	maxWithdrawalsPerBlock uint64
 
 	// mutablePayload contains the previous optimistically triggered payload.
 	// It is optimistic because the validator set can change,
@@ -57,6 +58,7 @@ func NewKeeper(
 	txConfig client.TxConfig,
 	addrProvider types.AddressProvider,
 	feeRecProvider types.FeeRecipientProvider,
+	maxWithdrawalsPerBlock uint64,
 	eventProcs ...types.EvmEventProcessor,
 ) (*Keeper, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
@@ -78,15 +80,16 @@ func NewKeeper(
 	}
 
 	return &Keeper{
-		cdc:             cdc,
-		storeService:    storeService,
-		headTable:       dbStore.ExecutionHeadTable(),
-		withdrawalTable: dbStore.WithdrawalTable(),
-		engineCl:        engineCl,
-		txConfig:        txConfig,
-		addrProvider:    addrProvider,
-		feeRecProvider:  feeRecProvider,
-		eventProcs:      eventProcs,
+		cdc:                    cdc,
+		storeService:           storeService,
+		headTable:              dbStore.ExecutionHeadTable(),
+		withdrawalTable:        dbStore.WithdrawalTable(),
+		engineCl:               engineCl,
+		txConfig:               txConfig,
+		addrProvider:           addrProvider,
+		feeRecProvider:         feeRecProvider,
+		eventProcs:             eventProcs,
+		maxWithdrawalsPerBlock: maxWithdrawalsPerBlock,
 	}, nil
 }
 

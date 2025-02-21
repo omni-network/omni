@@ -176,6 +176,7 @@ func ProvideModule(in ModuleInputs) (ModuleOutputs, error) {
 		in.TXConfig,
 		in.AddrProvider,
 		in.FeeRecProvider,
+		in.Config.GetMaxWithdrawalsPerBlock(),
 		eventProcs...,
 	)
 	if err != nil {
