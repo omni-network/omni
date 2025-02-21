@@ -17,6 +17,9 @@ interface ISolverNetInbox is IOriginSettler {
     // Open order errors
     error InvalidNativeDeposit();
 
+    // Reject order errors
+    error InvalidReason();
+
     // Order status errors
     error OrderNotPending();
     error OrderStillValid();
@@ -83,12 +86,14 @@ interface ISolverNetInbox is IOriginSettler {
 
     /**
      * @notice State of an order.
-     * @param status    Latest order status.
-     * @param timestamp Timestamp of the status update.
-     * @param updatedBy Address for who last updated the order.
+     * @param status       Latest order status.
+     * @param rejectReason Reason code for rejecting the order, if rejected.
+     * @param timestamp    Timestamp of the status update.
+     * @param updatedBy    Address for who last updated the order.
      */
     struct OrderState {
         Status status;
+        uint8 rejectReason;
         uint32 timestamp;
         address updatedBy;
     }
