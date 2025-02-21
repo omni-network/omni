@@ -1,9 +1,9 @@
 {
-  "name": "@omni-network/solvernet",
+  "name": "omni-network",
   "description": "Typescript interface for Omni Solvernet",
   "version": "0.0.0-alpha.1",
   "type": "module",
-  "license": "GPL-3.0-only",
+  "license": "MIT",
   "packageManager": "pnpm@9.1.0",
   "sideEffects": false,
   "main": "./dist/esm/index.js",
@@ -25,24 +25,18 @@
   },
   "files": [
     "dist/**",
-    "src/**",
     "!dist/**/*.tsbuildinfo",
     "!src/**/*.test.ts",
     "!src/**/*.test-d.ts"
   ],
   "engines": {
-    "node": "22.x"
+    "node": ">=22.x"
   },
   "peerDependencies": {
+    "@tanstack/react-query": "^5.64.2",
     "react": ">=18",
-    "typescript": ">=5.4.0",
     "viem": ">=2.22.10",
     "wagmi": ">=2.0.0"
-  },
-  "peerDependenciesMeta": {
-    "typescript": {
-      "optional": true
-    }
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
