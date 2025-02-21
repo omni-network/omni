@@ -1,6 +1,6 @@
 import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import { type Address, zeroAddress } from 'viem'
+import { type Address, fromHex, toHex, zeroAddress } from 'viem'
 import type { Deposit, Expense } from '../types/order.js'
 
 type UseQuoteParams = {
@@ -44,20 +44,28 @@ export function useQuote(params: UseQuoteParams): UseQuoteReturnType {
     queryKey: ['quote'],
     queryFn: async () => {
       const deposit = {
-        amount: params.deposit.amount ?? 0,
+        amount: params.deposit.amount ?? BigInt(0),
         token: params.deposit.isNative ? zeroAddress : params.deposit.token,
       }
       const expense = {
-        amount: params.deposit.amount ?? 0,
+        amount: params.deposit.amount ?? BigInt(0),
         token: params.deposit.isNative ? zeroAddress : params.deposit.token,
       }
 
-      const request = JSON.stringify({
-        sourceChainId: params.srcChainId,
-        destChainId: params.destChainId,
-        deposit,
-        expense,
-      })
+      const request = JSON.stringify(
+        {
+          sourceChainId: params.srcChainId,
+          destChainId: params.destChainId,
+          deposit,
+          expense,
+        },
+        (_, value) => {
+          if (typeof value === 'bigint') {
+            return toHex(value)
+          }
+          return value
+        },
+      )
 
       // TODO remove hardcoded api url
       const response = await fetch(
@@ -70,7 +78,18 @@ export function useQuote(params: UseQuoteParams): UseQuoteReturnType {
           body: request,
         },
       )
-      return await response.json()
+      const parsed = await response.json()
+
+      return {
+        deposit: {
+          ...parsed.deposit,
+          amount: fromHex(parsed.deposit.amount, 'bigint'),
+        },
+        expense: {
+          ...parsed.expense,
+          amount: fromHex(parsed.expense.amount, 'bigint'),
+        },
+      }
     },
     enabled: params.enabled ?? true,
   })

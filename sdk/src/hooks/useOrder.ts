@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
-import { encodeFunctionData, slice, zeroAddress } from 'viem'
+import { encodeFunctionData, slice, toHex, zeroAddress } from 'viem'
 import type { Hex, WriteContractErrorType } from 'viem'
 import {
   type Config,
@@ -38,25 +38,6 @@ type UseOrderReturnType = {
   txMutation: UseWriteContractReturnType<Config, unknown>
   waitForTx: UseWaitForTransactionReceiptReturnType<Config, number>
 }
-
-type ValidationRejected = {
-  rejected: true
-  rejectReason?: string
-  rejectDescription?: string
-}
-
-type ValidationAccepted = {
-  accepted: true
-}
-
-type ValidationError = {
-  error: {
-    code: number
-    message: string
-  }
-}
-
-type Validation = ValidationRejected | ValidationAccepted | ValidationError
 
 export function useOrder(params: UseOrderParams): UseOrderReturnType {
   const txMutation = useWriteContract()
@@ -148,6 +129,25 @@ type ValidationResponse = {
   rejectDescription?: string
 }
 
+type ValidationRejected = {
+  rejected: true
+  rejectReason?: string
+  rejectDescription?: string
+}
+
+type ValidationAccepted = {
+  accepted: true
+}
+
+type ValidationError = {
+  error: {
+    code: number
+    message: string
+  }
+}
+
+type Validation = ValidationRejected | ValidationAccepted | ValidationError
+
 // TODO: runtime assertions?
 function useValidateOrder(order: Order, enabled: boolean) {
   const calls = order.calls.map((call) => {
@@ -165,23 +165,31 @@ function useValidateOrder(order: Order, enabled: boolean) {
   })
 
   const expense = {
-    amount: order.expense.amount,
-    spender: order.expense.spender,
+    amount: toHex(order.expense.amount),
     token: order.expense.isNative ? zeroAddress : order.expense.token,
   }
+
   const deposit = {
-    amount: order.deposit.amount,
+    amount: toHex(order.deposit.amount),
     token: order.deposit.isNative ? zeroAddress : order.deposit.token,
   }
 
-  const request = JSON.stringify({
-    sourceChainId: order.srcChainId,
-    destChainId: order.destChainId,
-    fillDeadline: order.fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
-    calls: calls,
-    expenses: [expense],
-    deposit,
-  })
+  const request = JSON.stringify(
+    {
+      sourceChainId: order.srcChainId,
+      destChainId: order.destChainId,
+      fillDeadline: order.fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
+      calls: calls,
+      expenses: [expense],
+      deposit,
+    },
+    (_, value) => {
+      if (typeof value === 'bigint') {
+        return toHex(value)
+      }
+      return value
+    },
+  )
 
   return useQuery<ValidationResponse>({
     queryKey: ['check'],
