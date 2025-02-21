@@ -24,7 +24,7 @@ require (
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
 	github.com/cosmos/cosmos-sdk v0.50.12
 	github.com/cosmos/gogoproto v1.7.0
-	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0
+	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0
 	github.com/ethereum/go-ethereum v1.14.13
 	github.com/fjl/gencodec v0.1.0
 	github.com/gagliardetto/gofuzz v1.2.2
