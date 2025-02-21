@@ -30,7 +30,8 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 	sdkCtx = sdkCtx.WithExecMode(sdk.ExecModeFinalize)
 
 	frp := newRandomFeeRecipientProvider()
-	keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, nil, frp)
+	maxWithdrawalsPerBlock := uint64(32)
+	keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, nil, frp, maxWithdrawalsPerBlock)
 	require.NoError(t, err)
 	populateGenesisHead(sdkCtx, t, keeper)
 

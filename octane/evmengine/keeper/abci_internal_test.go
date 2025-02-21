@@ -49,6 +49,8 @@ import (
 var zeroAddr common.Address
 var zeroHash common.Hash
 
+const maxWithdrawalsPerBlock uint64 = 32
+
 func TestKeeper_PrepareProposal(t *testing.T) {
 	t.Parallel()
 
@@ -129,7 +131,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 					address: tutil.RandomAddress(),
 				}
 				frp := newRandomFeeRecipientProvider()
-				k, err := NewKeeper(cdc, storeService, &tt.mockEngine, txConfig, ap, frp)
+				k, err := NewKeeper(cdc, storeService, &tt.mockEngine, txConfig, ap, frp, maxWithdrawalsPerBlock)
 				require.NoError(t, err)
 				populateGenesisHead(ctx, t, k)
 
@@ -157,7 +159,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			address: common.BytesToAddress([]byte("test")),
 		}
 		frp := newRandomFeeRecipientProvider()
-		keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, mockEventProc{})
+		keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, maxWithdrawalsPerBlock, mockEventProc{})
 		require.NoError(t, err)
 		keeper.SetVoteProvider(mockVEProvider{})
 		populateGenesisHead(ctx, t, keeper)
@@ -220,7 +222,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			address: common.BytesToAddress([]byte("test")),
 		}
 		frp := newRandomFeeRecipientProvider()
-		keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, mockEventProc{})
+		keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, maxWithdrawalsPerBlock, mockEventProc{})
 		require.NoError(t, err)
 		keeper.SetVoteProvider(mockVEProvider{})
 		populateGenesisHead(ctx, t, keeper)
@@ -291,7 +293,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			address: common.BytesToAddress([]byte("test")),
 		}
 		frp := newRandomFeeRecipientProvider()
-		keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, mockEventProc{})
+		keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, maxWithdrawalsPerBlock, mockEventProc{})
 		require.NoError(t, err)
 		keeper.SetVoteProvider(mockVEProvider{})
 		populateGenesisHead(ctx, t, keeper)
@@ -348,7 +350,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 			address: common.BytesToAddress([]byte("test")),
 		}
 		frp := newRandomFeeRecipientProvider()
-		keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, mockEventProc{})
+		keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, maxWithdrawalsPerBlock, mockEventProc{})
 		require.NoError(t, err)
 		keeper.SetVoteProvider(mockVEProvider{})
 		populateGenesisHead(ctx, t, keeper)
@@ -407,7 +409,7 @@ func TestOptimistic(t *testing.T) {
 	}
 
 	frp := newRandomFeeRecipientProvider()
-	keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, mockEventProc{})
+	keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, maxWithdrawalsPerBlock, mockEventProc{})
 	require.NoError(t, err)
 	keeper.SetVoteProvider(mockVEProvider{})
 	keeper.SetCometAPI(cmtAPI)

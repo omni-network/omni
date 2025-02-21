@@ -94,7 +94,8 @@ func TestKeeper_isNextProposer(t *testing.T) {
 				address: nxtAddr,
 			}
 			frp := newRandomFeeRecipientProvider()
-			keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp)
+			maxWithdrawalsPerBlock := uint64(32)
+			keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, maxWithdrawalsPerBlock)
 			require.NoError(t, err)
 			keeper.SetCometAPI(cmtAPI)
 			populateGenesisHead(ctx, t, keeper)
