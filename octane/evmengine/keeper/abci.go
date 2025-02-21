@@ -300,11 +300,16 @@ func (k *Keeper) startBuild(ctx context.Context, appHash common.Hash, timestamp 
 		FinalizedBlockHash: headHash,
 	}
 
+	withdrawals, err := k.EligibleWithdrawals(ctx)
+	if err != nil {
+		return engine.ForkChoiceResponse{}, errors.Wrap(err, "eligible withdrawals")
+	}
+
 	attrs := &engine.PayloadAttributes{
 		Timestamp:             ts,
 		Random:                headHash, // We use head block hash as randao.
 		SuggestedFeeRecipient: k.feeRecProvider.LocalFeeRecipient(),
-		Withdrawals:           []*etypes.Withdrawal{}, // Withdrawals not supported yet.
+		Withdrawals:           withdrawals,
 		BeaconRoot:            &appHash,
 	}
 

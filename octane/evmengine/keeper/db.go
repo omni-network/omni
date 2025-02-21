@@ -10,6 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
+	etypes "github.com/ethereum/go-ethereum/core/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -160,5 +161,16 @@ func (k *Keeper) EligibleWithdrawals(ctx context.Context) ([]*Withdrawal, error)
 		}
 	}
 
-	return withdrawals, nil
+	var evmWithdrawals []*etypes.Withdrawal
+	for _, w := range withdrawals {
+		evmWithdrawals = append(evmWithdrawals, &etypes.Withdrawal{
+			Index:   w.GetId(),
+			Address: common.BytesToAddress(w.GetAddress()), //nolint:forbidigo // should be padded
+			Amount:  w.GetAmountGwei(),
+			// The validator index is not used for withdrawals.
+			Validator: 0,
+		})
+	}
+
+	return evmWithdrawals, nil
 }
