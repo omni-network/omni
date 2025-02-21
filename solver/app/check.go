@@ -103,7 +103,7 @@ func getNextOrderID(ctx context.Context, client ethclient.Client, inboxAddr comm
 	return orderID, nil
 }
 
-// getFillOriginData returns packed fill origin data for a quote request.
+// getFillOriginData returns packed fill origin data for a check request.
 func getFillOriginData(req CheckRequest) ([]byte, error) {
 	fillOriginData := bindings.SolverNetFillOriginData{
 		FillDeadline: req.FillDeadline,
@@ -121,9 +121,9 @@ func getFillOriginData(req CheckRequest) ([]byte, error) {
 	return fillOriginDataBz, nil
 }
 
-// newCheckHandler returns a handler for the /quote endpoint.
-// It is responsible to http request / response handling, and delegates
-// logic to a quoteFunc.
+// newCheckHandler returns a handler for the /check endpoint.
+// It is responsible for http request / response handling, and delegates
+// logic to a checkFunc.
 func newCheckHandler(checkFunc checkFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, rr *http.Request) {
 		ctx := rr.Context()
@@ -131,7 +131,7 @@ func newCheckHandler(checkFunc checkFunc) http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 
 		writeError := func(statusCode int, err error) {
-			log.DebugErr(ctx, "Error handling /quote request", err)
+			log.DebugErr(ctx, "Error handling /check request", err)
 
 			writeJSON(ctx, w, CheckResponse{
 				Error: &JSONErrorResponse{
@@ -161,42 +161,6 @@ func newCheckHandler(checkFunc checkFunc) http.Handler {
 			writeJSON(ctx, w, CheckResponse{Accepted: true}) // Success
 		}
 	})
-}
-
-// getQuote returns payment in `depositTkns` required to pay for `expenses`.
-//
-// For now, this is a simple quote that requires a single expense, paid
-// for by an equal amount of an equivalent deposit token. Token equivalence is
-// determined by symbol (ex arbitrum "ETH" is equivalent to optimism "ETH").
-func getQuote(depositTkns []Token, expenses []Payment) ([]Payment, error) {
-	if len(depositTkns) != 1 {
-		return nil, newRejection(rejectInvalidDeposit, errors.New("only single deposit token supported"))
-	}
-
-	if len(expenses) != 1 {
-		return nil, newRejection(rejectInvalidExpense, errors.New("only single expense supported"))
-	}
-
-	expense := expenses[0]
-	depositTkn := depositTkns[0]
-
-	if expense.Token.Symbol != depositTkn.Symbol {
-		return nil, newRejection(rejectInvalidDeposit, errors.New("deposit token must match expense token"))
-	}
-
-	// make sure chain class (e.g. mainnet, testnet) matches
-	// we should reject with UnsupportedDestChain before this. the solver is
-	// initialized by network, which only includes chains of the same class
-	if expense.Token.ChainClass != depositTkn.ChainClass {
-		return nil, newRejection(rejectInvalidDeposit, errors.New("deposit and expense must be of the same chain class (e.g. mainnet, testnet)"))
-	}
-
-	return []Payment{
-		{
-			Token:  depositTkn,
-			Amount: expense.Amount,
-		},
-	}, nil
 }
 
 // coversQuote checks if `deposits` match or exceed a `quote` for expenses.

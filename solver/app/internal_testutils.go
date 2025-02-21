@@ -192,23 +192,7 @@ func rejectTestCases(t *testing.T, solver, outbox common.Address) []rejectTestCa
 		tests = append(tests, toRejectTestCase(t, tt, outbox))
 	}
 
-	// not shared with quote
-	additional := []rejectTestCase{
-		toRejectTestCase(t, orderTestCase{
-			name:   "insufficient deposit",
-			reason: rejectInsufficientDeposit,
-			reject: true,
-			order: testOrder{
-				srcChainID: evmchain.IDBaseSepolia,
-				dstChainID: evmchain.IDHolesky,
-				deposits:   []Deposit{{Amount: big.NewInt(1)}},
-				calls:      []Call{{Value: big.NewInt(2)}},
-				expenses:   []Expense{{Amount: big.NewInt(2)}},
-			},
-		}, outbox),
-	}
-
-	return append(tests, additional...)
+	return tests
 }
 
 func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
@@ -225,12 +209,12 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				// request 1 native OMNI for 1 erc20 OMNI on omega
 				srcChainID: evmchain.IDHolesky,
 				dstChainID: evmchain.IDOmniOmega,
-				deposits:   []Deposit{{Amount: big.NewInt(1), Token: omegaOMNIAddr}},
-				calls:      []Call{{Value: big.NewInt(1)}},
-				expenses:   []Expense{{Amount: big.NewInt(1)}},
+				deposits:   []Deposit{{Amount: ether(1), Token: omegaOMNIAddr}},
+				calls:      []Call{{Value: ether(1)}},
+				expenses:   []Expense{{Amount: ether(1)}},
 			},
 			mock: func(clients MockClients) {
-				mockNativeBalance(t, clients.Client(t, evmchain.IDOmniOmega), solver, big.NewInt(0))
+				mockNativeBalance(t, clients.Client(t, evmchain.IDOmniOmega), solver, ether(0))
 			},
 		},
 		{
@@ -241,12 +225,13 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				// request 1 native OMNI for 1 erc20 OMNI on omega
 				srcChainID: evmchain.IDHolesky,
 				dstChainID: evmchain.IDOmniOmega,
-				deposits:   []Deposit{{Amount: big.NewInt(1), Token: omegaOMNIAddr}},
-				calls:      []Call{{Value: big.NewInt(1)}},
-				expenses:   []Expense{{Amount: big.NewInt(1)}},
+				// OMNI does not require fee
+				deposits: []Deposit{{Amount: ether(1), Token: omegaOMNIAddr}},
+				calls:    []Call{{Value: ether(1)}},
+				expenses: []Expense{{Amount: ether(1)}},
 			},
 			mock: func(clients MockClients) {
-				mockNativeBalance(t, clients.Client(t, evmchain.IDOmniOmega), solver, big.NewInt(1))
+				mockNativeBalance(t, clients.Client(t, evmchain.IDOmniOmega), solver, ether(1))
 			},
 		},
 		{
@@ -257,11 +242,11 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				// request 1 erc20 OMNI for 1 native OMNI on omega
 				srcChainID: evmchain.IDOmniOmega,
 				dstChainID: evmchain.IDHolesky,
-				deposits:   []Deposit{{Amount: big.NewInt(1)}},
-				expenses:   []Expense{{Amount: big.NewInt(1), Token: omegaOMNIAddr}},
+				deposits:   []Deposit{{Amount: ether(1)}},
+				expenses:   []Expense{{Amount: ether(1), Token: omegaOMNIAddr}},
 			},
 			mock: func(clients MockClients) {
-				mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNIAddr, big.NewInt(0))
+				mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNIAddr, ether(0))
 			},
 		},
 		{
@@ -272,11 +257,12 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				// request 1 erc20 OMNI for 1 native OMNI on omega
 				srcChainID: evmchain.IDOmniOmega,
 				dstChainID: evmchain.IDHolesky,
-				deposits:   []Deposit{{Amount: big.NewInt(1)}},
-				expenses:   []Expense{{Amount: big.NewInt(1), Token: omegaOMNIAddr}},
+				// OMNI does not require fee
+				deposits: []Deposit{{Amount: ether(1)}},
+				expenses: []Expense{{Amount: ether(1), Token: omegaOMNIAddr}},
 			},
 			mock: func(clients MockClients) {
-				mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNIAddr, big.NewInt(1))
+				mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNIAddr, ether(1))
 				mockERC20Allowance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNIAddr)
 			},
 		},
@@ -291,11 +277,11 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				// request 1 erc20 OMNI for 1 native OMNI on omega
 				srcChainID: evmchain.IDOmniOmega,
 				dstChainID: evmchain.IDHolesky,
-				deposits:   []Deposit{{Amount: big.NewInt(1)}},
-				expenses:   []Expense{{Amount: big.NewInt(1), Token: omegaOMNIAddr}},
+				deposits:   []Deposit{{Amount: ether(1)}},
+				expenses:   []Expense{{Amount: ether(1), Token: omegaOMNIAddr}},
 			},
 			mock: func(clients MockClients) {
-				mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNIAddr, big.NewInt(1))
+				mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNIAddr, ether(1))
 				mockERC20Allowance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNIAddr)
 			},
 		},
@@ -306,8 +292,8 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			order: testOrder{
 				srcChainID: evmchain.IDOmniOmega,
 				dstChainID: evmchain.IDHolesky,
-				deposits:   []Deposit{{Amount: big.NewInt(1)}},
-				expenses:   []Expense{{Amount: big.NewInt(1), Token: common.HexToAddress("0x01")}},
+				deposits:   []Deposit{{Amount: ether(1)}},
+				expenses:   []Expense{{Amount: ether(1), Token: common.HexToAddress("0x01")}},
 			},
 		},
 		{
@@ -326,9 +312,9 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			order: testOrder{
 				srcChainID: evmchain.IDHolesky,
 				dstChainID: evmchain.IDOmniOmega,
-				deposits:   []Deposit{{Amount: big.NewInt(1)}},
-				calls:      []Call{{Value: big.NewInt(1)}},
-				expenses:   []Expense{{Amount: big.NewInt(1)}},
+				deposits:   []Deposit{{Amount: ether(1)}},
+				calls:      []Call{{Value: ether(1)}},
+				expenses:   []Expense{{Amount: ether(1)}},
 			},
 		},
 		{
@@ -339,10 +325,10 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				srcChainID: evmchain.IDHolesky,
 				dstChainID: evmchain.IDBaseSepolia,
 				// wstETH on holesky
-				deposits: []Deposit{{Amount: big.NewInt(1), Token: common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")}},
+				deposits: []Deposit{{Amount: ether(1), Token: common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")}},
 				// native eth on base
-				calls:    []Call{{Value: big.NewInt(1)}},
-				expenses: []Expense{{Amount: big.NewInt(1)}},
+				calls:    []Call{{Value: ether(1)}},
+				expenses: []Expense{{Amount: ether(1)}},
 			},
 		},
 		{
@@ -352,9 +338,9 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			order: testOrder{
 				srcChainID: evmchain.IDHolesky,
 				dstChainID: evmchain.IDOmniOmega,
-				deposits:   []Deposit{{Amount: big.NewInt(1), Token: omegaOMNIAddr}, {Amount: big.NewInt(1)}},
-				calls:      []Call{{Value: big.NewInt(1)}},
-				expenses:   []Expense{{Amount: big.NewInt(1)}},
+				deposits:   []Deposit{{Amount: ether(1), Token: omegaOMNIAddr}, {Amount: ether(1)}},
+				calls:      []Call{{Value: ether(1)}},
+				expenses:   []Expense{{Amount: ether(1)}},
 			},
 		},
 		{
@@ -364,9 +350,9 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			order: testOrder{
 				srcChainID: evmchain.IDHolesky,
 				dstChainID: evmchain.IDOptimism,
-				deposits:   []Deposit{{Amount: big.NewInt(1)}},
-				calls:      []Call{{Value: big.NewInt(1)}},
-				expenses:   []Expense{{Amount: big.NewInt(1)}},
+				deposits:   []Deposit{{Amount: ether(1)}},
+				calls:      []Call{{Value: ether(1)}},
+				expenses:   []Expense{{Amount: ether(1)}},
 			},
 		},
 		{
@@ -376,12 +362,57 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			order: testOrder{
 				srcChainID: evmchain.IDOmniOmega,
 				dstChainID: evmchain.IDHolesky,
-				deposits:   []Deposit{{Amount: big.NewInt(2)}},
-				calls:      []Call{{Value: big.NewInt(1)}},
+				deposits:   []Deposit{{Amount: ether(2)}},
+				calls:      []Call{{Value: ether(1)}},
 				expenses: []Expense{
-					{Amount: big.NewInt(1)},
-					{Amount: big.NewInt(1), Token: common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")},
+					{Amount: ether(1)},
+					{Amount: ether(1), Token: common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")},
 				},
+			},
+		},
+		{
+			name:   "insufficient deposit",
+			reason: rejectInsufficientDeposit,
+			reject: true,
+			order: testOrder{
+				srcChainID: evmchain.IDBaseSepolia,
+				dstChainID: evmchain.IDHolesky,
+				// does not include fee
+				deposits: []Deposit{{Amount: ether(1)}},
+				calls:    []Call{{Value: ether(1)}},
+				expenses: []Expense{{Amount: ether(1)}},
+			},
+		},
+		{
+			name: "sufficient deposit",
+			order: testOrder{
+				srcChainID: evmchain.IDBaseSepolia,
+				dstChainID: evmchain.IDHolesky,
+				// includes fee
+				deposits: []Deposit{{Amount: depositFor(ether(1), standardFeeBips)}},
+				calls:    []Call{{Value: ether(1)}},
+				expenses: []Expense{{Amount: ether(1)}},
+			},
+			mock: func(clients MockClients) {
+				mockNativeBalance(t, clients.Client(t, evmchain.IDHolesky), solver, ether(1))
+			},
+		},
+		{
+			name: "more than sufficient deposit",
+			order: testOrder{
+				srcChainID: evmchain.IDBaseSepolia,
+				dstChainID: evmchain.IDHolesky,
+				deposits: []Deposit{{
+					Amount: new(big.Int).Add(
+						depositFor(ether(1), standardFeeBips), // required deposit
+						gwei(1),                               // a little more
+					),
+				}},
+				calls:    []Call{{Value: ether(1)}},
+				expenses: []Expense{{Amount: ether(1)}},
+			},
+			mock: func(clients MockClients) {
+				mockNativeBalance(t, clients.Client(t, evmchain.IDHolesky), solver, ether(2))
 			},
 		},
 	}
@@ -640,4 +671,12 @@ func mustGetABI(metadata *bind.MetaData) *abi.ABI {
 	}
 
 	return abi
+}
+
+func ether(x int64) *big.Int {
+	return new(big.Int).Mul(big.NewInt(x), big.NewInt(1e18))
+}
+
+func gwei(x int64) *big.Int {
+	return new(big.Int).Mul(big.NewInt(x), big.NewInt(1e9))
 }

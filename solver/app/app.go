@@ -115,6 +115,7 @@ func Run(ctx context.Context, cfg Config) error {
 
 	log.Info(ctx, "Serving API", "address", cfg.APIAddr)
 	apiChan := serveAPI(cfg.APIAddr, map[string]http.Handler{
+		"/api/v1/quote":     newQuoteHandler(quoter),
 		"/api/v1/check":     newCheckHandler(newChecker(backends, solverAddr, addrs.SolverNetInbox, addrs.SolverNetOutbox)),
 		"/api/v1/contracts": newContractsHandler(addrs),
 	})

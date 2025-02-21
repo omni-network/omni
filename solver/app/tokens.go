@@ -44,6 +44,10 @@ func (t Token) IsNative() bool {
 	return t.Address == common.Address{}
 }
 
+func (t Token) IsOMNI() bool {
+	return t.Token == tokenslib.OMNI
+}
+
 var tokens = append(Tokens{
 	// Native ETH (mainnet)
 	nativeETH(evmchain.IDEthereum),
