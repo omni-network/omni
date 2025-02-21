@@ -30,8 +30,11 @@ func TestBridgeBalance(t *testing.T) {
 		mp = add(mp, th.TargetBalance())
 	}
 
+	// Note that there were actually only 2 100 OMNI mainnet genesis validators. These calcs are wrong.
 	mp = add(mp, ether(1000)) // 1000 OMNI: genesis validator 1
 	mp = add(mp, ether(1000)) // 1000 OMNI: genesis validator 2
+	mp = add(mp, ether(1000)) // 1000 OMNI: genesis validator 3
+	mp = add(mp, ether(1000)) // 1000 OMNI: genesis validator 4
 
 	tests := []struct {
 		name     string
@@ -70,6 +73,7 @@ func TestBridgeBalance(t *testing.T) {
 	}
 }
 
+//nolint:unparam // Improves readability
 func ether(n int64) *big.Int {
 	return new(big.Int).Mul(big.NewInt(n), big.NewInt(params.Ether))
 }
