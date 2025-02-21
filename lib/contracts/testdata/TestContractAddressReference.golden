@@ -33,9 +33,9 @@
   "gasstation": "0x3266c030c1e302264063cf44f6df8bbaaf3d9767",
   "l1bridge": "0x084ef227534a6ad2de4c4e54db19f1c457a57a27",
   "portal": "0xcb60a0451831e4865bc49f41f9c67665fc9b75c3",
-  "solvernetinbox": "0x71d48a88600a790fb1e94efdbf6c284fc08f99b8",
-  "solvernetmiddleman": "0xf72ea80edec895cabe430f266135dd0267e18cb2",
-  "solvernetoutbox": "0xd98068374c233e4d4081d24154489551dcd6fdf5",
+  "solvernetinbox": "0x80b6ed465241a17080dc4a68be42e80fea1214dd",
+  "solvernetmiddleman": "0x191e0a0aab2b21e946a0ff0ecbd36218b90801c9",
+  "solvernetoutbox": "0x020b76746606c6ddb4708b6996cad9adb821604e",
   "token": "0xd036c60f46ff51dd7fbf6a819b5b171c8a076b07"
  }
 }
