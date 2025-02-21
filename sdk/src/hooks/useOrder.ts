@@ -36,7 +36,7 @@ type UseOrderReturnType = {
   isOpen: boolean
   isRejected: boolean
   isError: boolean
-  mutation: UseWriteContractReturnType<Config, unknown>
+  txMutation: UseWriteContractReturnType<Config, unknown>
   waitForTx: UseWaitForTransactionReceiptReturnType<Config, number>
 }
 
@@ -60,9 +60,9 @@ type ValidationError = {
 type Validation = ValidationRejected | ValidationAccepted | ValidationError
 
 export function useOrder(params: UseOrderParams): UseOrderReturnType {
-  const mutation = useWriteContract()
+  const txMutation = useWriteContract()
   const wait = useWaitForTransactionReceipt({
-    hash: mutation.data,
+    hash: txMutation.data,
   })
   const { orderId, originData } = useGetOpenOrder({
     status: wait.status,
@@ -100,7 +100,7 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
 
   const open = useCallback(async () => {
     const encoded = encodeOrder(params)
-    return await mutation.writeContractAsync({
+    return await txMutation.writeContractAsync({
       ...inbox,
       functionName: 'open',
       chainId: params.srcChainId,
@@ -114,23 +114,23 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
         },
       ],
     })
-  }, [params, mutation.writeContractAsync])
+  }, [params, txMutation.writeContractAsync])
 
   return {
     open,
     validate: validateAsync,
     validation,
-    txHash: mutation.data,
+    txHash: txMutation.data,
     orderStatus,
-    error: mutation.error as WriteContractErrorType | undefined,
+    error: txMutation.error as WriteContractErrorType | undefined,
     canOpen: validation?.accepted ?? false,
-    isTxPending: mutation.isPending,
-    isTxSubmitted: mutation.isSuccess,
+    isTxPending: txMutation.isPending,
+    isTxSubmitted: txMutation.isSuccess,
     isValidated: validation?.accepted ?? false,
     isRejected: validation?.rejected ?? false,
-    isError: !!(validation?.error || mutation.error),
+    isError: !!(validation?.error || txMutation.error),
     isOpen: !!wait.data,
-    mutation,
+    txMutation,
     waitForTx: wait,
   }
 }
