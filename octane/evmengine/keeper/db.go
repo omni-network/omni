@@ -174,3 +174,15 @@ func (k *Keeper) EligibleWithdrawals(ctx context.Context) ([]*Withdrawal, error)
 
 	return evmWithdrawals, nil
 }
+
+// RemoveWithdrawals removes all passed withdrawals by the id.
+func (k *Keeper) RemoveWithdrawals(ctx context.Context, withdrawals []*etypes.Withdrawal) error {
+	for _, w := range withdrawals {
+		err := k.withdrawalTable.DeleteBy(ctx, WithdrawalIdIndexKey{}.WithId(w.Index))
+		if err != nil {
+			return errors.Wrap(err, "remowing withdrawal", "id", w.Index)
+		}
+	}
+
+	return nil
+}
