@@ -1,4 +1,10 @@
-import { type Hex, encodeAbiParameters, encodeFunctionData, slice } from 'viem'
+import {
+  type Hex,
+  encodeAbiParameters,
+  encodeFunctionData,
+  slice,
+  zeroAddress,
+} from 'viem'
 import type { Order } from '../types/order.js'
 
 /**
@@ -37,13 +43,7 @@ import type { Order } from '../types/order.js'
  */
 export function encodeOrder(order: Order) {
   // TODO custom error
-  if (
-    !order.deposit.token ||
-    !order.deposit.amount ||
-    !order.expense.token ||
-    !order.expense.amount ||
-    !order.expense.spender
-  ) {
+  if (!order.deposit || !order.expense) {
     throw new Error('Invalid order')
   }
 
@@ -68,12 +68,12 @@ export function encodeOrder(order: Order) {
 
   const expenseTuple = {
     spender: order.expense.spender,
-    token: order.expense.token,
+    token: order.expense.isNative ? zeroAddress : order.expense.token,
     amount: order.expense.amount,
   }
 
   const depositTuple = {
-    token: order.deposit.token,
+    token: order.deposit.isNative ? zeroAddress : order.deposit.token,
     amount: order.deposit.amount,
   }
 
