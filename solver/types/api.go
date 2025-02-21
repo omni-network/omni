@@ -1,9 +1,12 @@
 package types
 
 import (
+	"math/big"
 	"net/http"
 
 	"github.com/omni-network/omni/lib/contracts/solvernet"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type JSONResponse interface {
@@ -47,6 +50,40 @@ type CheckResponse struct {
 var _ JSONResponse = (*CheckResponse)(nil)
 
 func (r CheckResponse) StatusCode() int {
+	if r.Error != nil {
+		return r.Error.Code
+	}
+
+	return http.StatusOK
+}
+
+// QuoteRequest is the expected request body for the /api/v1/quote endpoint.
+// If deposit amount is omitted, the response will include the required deposit amount.
+// If expense amount is omitted, the response will include the required expense amount.
+type QuoteRequest struct {
+	SourceChainID      uint64    `json:"sourceChainId"`
+	DestinationChainID uint64    `json:"destChainId"`
+	Deposit            QuoteUnit `json:"deposit"`
+	Expense            QuoteUnit `json:"expense"`
+}
+
+// QuoteUnit represents a token and amount pair, with the amount being optional.
+// If amount is nil or zero, quote response should inform the amount.
+type QuoteUnit struct {
+	Token  common.Address `json:"token"`
+	Amount *big.Int       `json:"amount,omitempty"`
+}
+
+// QuoteResponse is the response json for the /api/v1/quote endpoint.
+type QuoteResponse struct {
+	Deposit QuoteUnit          `json:"deposit"`
+	Expense QuoteUnit          `json:"expense"`
+	Error   *JSONErrorResponse `json:"error,omitempty"`
+}
+
+var _ JSONResponse = (*QuoteResponse)(nil)
+
+func (r QuoteResponse) StatusCode() int {
 	if r.Error != nil {
 		return r.Error.Code
 	}

@@ -49,7 +49,7 @@ func TestCheck(t *testing.T) {
 			require.NoError(t, err)
 
 			ctx := context.Background()
-			req, err := http.NewRequestWithContext(ctx, http.MethodPost, "api/v1/quote", bytes.NewBuffer(body))
+			req, err := http.NewRequestWithContext(ctx, http.MethodPost, "api/v1/check", bytes.NewBuffer(body))
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()

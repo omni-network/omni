@@ -60,7 +60,7 @@ func (s OrderStatus) Uint8() uint8 {
 	return uint8(s)
 }
 
-// Expense is a solver expense on the destination (matches bindings.SolverNetExpense).
+// Expense is a solver expense on the destination (matches bindings.SolverNetTokenExpense).
 type Expense struct {
 	Spender common.Address `json:"spender"`
 	Token   common.Address `json:"token"`
