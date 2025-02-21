@@ -233,14 +233,18 @@ func ugpradeSlashing(ctx context.Context, s shared, c chain) error {
 	return nil
 }
 
-var stakingABI = mustGetABI(bindings.StakingMetaData)
-
 func upgradeStaking(ctx context.Context, s shared, c chain) error {
-	// Staking.sol's initializeV2() is called after upgrade
-	initializer, err := stakingABI.Pack("initializeV2")
-	if err != nil {
-		return errors.Wrap(err, "pack initializer")
-	}
+	// Uncomment and update following block if re-initialization is required
+	/*
+		var stakingABI = mustGetABI(bindings.StakingMetaData)
+
+		initializer, err := stakingABI.Pack("initializeV2")
+		if err != nil {
+			return errors.Wrap(err, "pack initializer")
+		}
+	*/
+
+	initializer := []byte{}
 
 	calldata, err := adminABI.Pack("upgradeStaking", s.upgrader, s.deployer, initializer)
 	if err != nil {
