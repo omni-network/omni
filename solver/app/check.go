@@ -46,12 +46,12 @@ func newChecker(backends ethbackend.Backends, solverAddr, inboxAddr, outboxAddr 
 			return newRejection(rejectUnsupportedDestChain, errors.New("unsupported destination chain", "chain_id", req.DestinationChainID))
 		}
 
-		deposit, err := parseDeposit(req.SourceChainID, req.Deposit)
+		deposit, err := parseDeposit(req.SourceChainID, req.Deposit.Parse())
 		if err != nil {
 			return err
 		}
 
-		expenses, err := parseExpenses(req.DestinationChainID, req.Expenses, req.Calls)
+		expenses, err := parseExpenses(req.DestinationChainID, req.Expenses.Parse(), req.Calls.Parse())
 		if err != nil {
 			return err
 		}
@@ -109,8 +109,8 @@ func getFillOriginData(req CheckRequest) ([]byte, error) {
 		FillDeadline: req.FillDeadline,
 		SrcChainId:   req.SourceChainID,
 		DestChainId:  req.DestinationChainID,
-		Expenses:     req.Expenses.ToBindings(),
-		Calls:        req.Calls.ToBindings(),
+		Expenses:     req.Expenses.Parse().NoNative(),
+		Calls:        req.Calls.Parse(),
 	}
 
 	fillOriginDataBz, err := solvernet.PackFillOriginData(fillOriginData)

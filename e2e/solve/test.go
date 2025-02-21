@@ -216,9 +216,9 @@ func openAll(ctx context.Context, backends ethbackend.Backends, orders []TestOrd
 func openOrder(ctx context.Context, backends ethbackend.Backends, order TestOrder) ([32]byte, error) {
 	return solvernet.OpenOrder(ctx, netconf.Devnet, order.SourceChainID, backends, order.Owner, bindings.SolverNetOrderData{
 		DestChainId: order.DestChainID,
-		Expenses:    order.Expenses.ToBindings(),
-		Calls:       order.Calls.ToBindings(),
-		Deposit:     order.Deposit.ToBindings(),
+		Expenses:    order.Expenses.NoNative(),
+		Calls:       order.Calls,
+		Deposit:     order.Deposit,
 	}, solvernet.WithFillDeadline(order.FillDeadline))
 }
 
@@ -232,9 +232,9 @@ func testCheckAPI(ctx context.Context, orders []TestOrder) error {
 				FillDeadline:       uint32(order.FillDeadline.Unix()), //nolint:gosec // this is fine for tests
 				SourceChainID:      order.SourceChainID,
 				DestinationChainID: order.DestChainID,
-				Expenses:           order.Expenses,
-				Calls:              order.Calls,
-				Deposit:            order.Deposit,
+				Expenses:           solver.ToJSONExpenses(order.Expenses),
+				Calls:              solver.ToJSONCalls(order.Calls),
+				Deposit:            solver.ToJSONDeposit(order.Deposit),
 			}
 
 			body, err := json.Marshal(checkReq)

@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/umath"
+	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -85,9 +86,9 @@ func toCheckTestCase(t *testing.T, tt orderTestCase) checkTestCase {
 		req: CheckRequest{
 			SourceChainID:      tt.order.srcChainID,
 			DestinationChainID: tt.order.dstChainID,
-			Calls:              tt.order.calls,
-			Expenses:           tt.order.expenses,
-			Deposit:            deposit,
+			Calls:              types.ToJSONCalls(tt.order.calls),
+			Expenses:           types.ToJSONExpenses(tt.order.expenses),
+			Deposit:            types.ToJSONDeposit(deposit),
 		},
 		res: CheckResponse{
 			Accepted:     !tt.reject,
