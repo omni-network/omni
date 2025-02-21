@@ -10,6 +10,8 @@ pinned_monitor_tag = "5f08ffc"
 
 [node.validator01]
 [node.validator02]
+[node.validator03]
+[node.validator04]
 
 [node.seed01]
 mode = "seed"
@@ -39,6 +41,16 @@ p2p_consensus = "0093BBC5D625A10D560101C4F3AD763B16A6A608"
 validator = "0x19a4Cb685af95A96BEd67C764b6dB137978a5B17"
 [keys.validator02_evm]
 p2p_execution = "0x683d5892729d5fC9670e68b3e3bABFdb4d01b7c9"
+[keys.validator03]
+p2p_consensus = "EE11FBF527EC312C141FB22EE4F0A500C9914900"
+validator = "0xD5f9e687c1EA2b0Da7C06bEbe80ddAb03B33C075"
+[keys.validator03_evm]
+p2p_execution = "0x1A4e366517D4Ce47cc5006a1413E0A4c566Ca392"
+[keys.validator04]
+p2p_consensus = "B4E42F15D3CE72FB25351369905408C3D029ECDA"
+validator = "0x8be1aBb26435fc1AF39Fc88DF9499f626094f9AF"
+[keys.validator04_evm]
+p2p_execution = "0x07E0730C776D6101eC8911bbE667E300827E9944"
 
 # Seed keys
 [keys.seed01]
