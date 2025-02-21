@@ -60,7 +60,7 @@ func TestJoinNetwork(t *testing.T) {
 	output, err := os.OpenFile(logsPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	require.NoError(t, err)
 
-	defer cleanUp(t, home, output, logsPath)
+	defer cleanUp(t, ctx, home, output, logsPath)
 
 	networkID := netconf.ID(*network)
 	haloTag := haloTag(t)
@@ -185,11 +185,11 @@ func TestJoinNetwork(t *testing.T) {
 	}
 }
 
-func cleanUp(t *testing.T, home string, output *os.File, logsPath string) {
+func cleanUp(t *testing.T, ctx context.Context, home string, output *os.File, logsPath string) {
 	t.Helper()
 
 	// Ensure containers are always cleaned up, even if the test fails.
-	if err := shutdownContainers(home, output, logsPath); err != nil {
+	if err := shutdownContainers(ctx, home, output, logsPath); err != nil {
 		t.Errorf("failed to clean up containers: %v", err)
 	}
 }
@@ -369,24 +369,24 @@ func getContainerStats(ctx context.Context) (stats, error) {
 	return resp, nil
 }
 
-func shutdownContainers(home string, output *os.File, logsPath string) error {
+func shutdownContainers(ctx context.Context, home string, output *os.File, logsPath string) error {
 	// Create a context with timeout to ensure clean up doesn't hang indefinitely.
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	timeoutCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	// Stop and remove the containers.
-	log.Info(ctx, "Exec: docker compose down", "logs_file", logsPath)
+	log.Info(timeoutCtx, "Exec: docker compose down", "logs_file", logsPath)
 	stopCmd := exec.Command("docker", "compose", "down", "-v")
 	stopCmd.Dir = home
 	stopCmd.Stderr = output
 	stopCmd.Stdout = output
 	err := stopCmd.Run()
-	if err != nil || ctx.Err() != nil {
+	if err != nil || timeoutCtx.Err() != nil {
 		return errors.Wrap(err, "docker compose down early exit")
 	}
 
 	// Wait dynamically until all containers are stopped.
-	if err = waitForContainersToStop(ctx, home); err != nil {
+	if err = waitForContainersToStop(timeoutCtx, home); err != nil {
 		return err
 	}
 
