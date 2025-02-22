@@ -28,8 +28,8 @@ export type Call = {
 }
 
 export type Order = {
-  readonly owner: Address
-  readonly srcChainId: number
+  readonly owner?: Address
+  readonly srcChainId?: number
   readonly destChainId: number
   readonly calls: Call[]
   readonly fillDeadline?: number

@@ -150,6 +150,9 @@ type Validation = ValidationRejected | ValidationAccepted | ValidationError
 
 // TODO: runtime assertions?
 function useValidateOrder(order: Order, enabled: boolean) {
+  const queryEnabled =
+    !!order.srcChainId && !!order.destChainId && !!order.owner && enabled
+
   const calls = order.calls.map((call) => {
     const callData = encodeFunctionData({
       abi: call.abi,
@@ -207,6 +210,6 @@ function useValidateOrder(order: Order, enabled: boolean) {
       )
       return await response.json()
     },
-    enabled,
+    enabled: queryEnabled,
   })
 }

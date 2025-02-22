@@ -43,7 +43,7 @@ import type { Order } from '../types/order.js'
  */
 export function encodeOrder(order: Order) {
   // TODO custom error
-  if (!order.deposit || !order.expense) {
+  if (!order.deposit || !order.expense || !order.owner) {
     throw new Error('Invalid order')
   }
 
