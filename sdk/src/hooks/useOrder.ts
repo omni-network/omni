@@ -1,6 +1,6 @@
-import { useMutation } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
-import { encodeFunctionData, slice, zeroAddress } from 'viem'
+import { encodeFunctionData, slice, toHex, zeroAddress } from 'viem'
 import type { Hex, WriteContractErrorType } from 'viem'
 import {
   type Config,
@@ -16,14 +16,13 @@ import { encodeOrder } from '../utils/encodeOrder.js'
 import { useGetOpenOrder } from './useGetOpenOrder.js'
 import { useOrderStatus } from './useOrderStatus.js'
 
-// TODO remove
-const API_URL = 'https://solver.staging.omni.network/api/v1/'
-
-type UseOrderParams = Order
+type UseOrderParams = {
+  order: Order
+  validateEnabled?: boolean
+}
 
 type UseOrderReturnType = {
   open: () => Promise<Hex>
-  validate: () => Promise<void>
   validation?: Validation
   txHash?: Hex
   error?: WriteContractErrorType
@@ -40,25 +39,6 @@ type UseOrderReturnType = {
   waitForTx: UseWaitForTransactionReceiptReturnType<Config, number>
 }
 
-type ValidationRejected = {
-  rejected: true
-  rejectReason?: string
-  rejectDescription?: string
-}
-
-type ValidationAccepted = {
-  accepted: true
-}
-
-type ValidationError = {
-  error: {
-    code: number
-    message: string
-  }
-}
-
-type Validation = ValidationRejected | ValidationAccepted | ValidationError
-
 export function useOrder(params: UseOrderParams): UseOrderReturnType {
   const txMutation = useWriteContract()
   const wait = useWaitForTransactionReceipt({
@@ -71,44 +51,45 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
   const orderStatus = useOrderStatus({
     orderId: orderId,
     originData: originData,
-    ...params,
+    ...params.order,
   })
-  const validate = useValidateOrder(params)
-
-  const validateAsync = useCallback(async () => {
-    await validate.mutateAsync()
-  }, [validate.mutateAsync])
+  const validate = useValidateOrder(
+    params.order,
+    params.validateEnabled ?? true,
+  )
 
   const validation = useMemo(() => {
-    if (validate.data?.error)
+    if (validate?.data?.error)
       return {
         error: {
           code: validate.data.error.code,
           message: validate.data.error.message,
         },
       }
-    if (validate.data?.rejected)
+    if (validate?.data?.rejected)
       return {
         rejected: true,
         rejectReason: validate.data.rejectReason,
         rejectDescription: validate.data.rejectDescription,
       } as const
-    if (validate.data?.accepted) return { accepted: true } as const
-
+    if (validate?.data?.accepted) return { accepted: true } as const
     return
-  }, [validate.data])
+  }, [validate?.data])
 
   const open = useCallback(async () => {
-    const encoded = encodeOrder(params)
+    const encoded = encodeOrder(params.order)
     return await txMutation.writeContractAsync({
       ...inbox,
       functionName: 'open',
-      chainId: params.srcChainId,
-      value: params.calls.reduce((acc, call) => acc + call.value, BigInt(0)),
+      chainId: params.order.srcChainId,
+      value: params.order.calls.reduce(
+        (acc, call) => acc + call.value,
+        BigInt(0),
+      ),
       args: [
         {
           fillDeadline:
-            params.fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
+            params.order.fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
           orderDataType: typeHash,
           orderData: encoded,
         },
@@ -118,7 +99,6 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
 
   return {
     open,
-    validate: validateAsync,
     validation,
     txHash: txMutation.data,
     orderStatus,
@@ -149,51 +129,86 @@ type ValidationResponse = {
   rejectDescription?: string
 }
 
+type ValidationRejected = {
+  rejected: true
+  rejectReason?: string
+  rejectDescription?: string
+}
+
+type ValidationAccepted = {
+  accepted: true
+}
+
+type ValidationError = {
+  error: {
+    code: number
+    message: string
+  }
+}
+
+type Validation = ValidationRejected | ValidationAccepted | ValidationError
+
 // TODO: runtime assertions?
-function useValidateOrder(order: Order) {
-  const calls = order.calls.map((call) => {
-    const callData = encodeFunctionData({
-      abi: call.abi,
-      functionName: call.functionName,
-      args: call.args,
+function useValidateOrder(order: Order, enabled: boolean) {
+  function _encodeCalls() {
+    return order.calls.map((call) => {
+      const callData = encodeFunctionData({
+        abi: call.abi,
+        functionName: call.functionName,
+        args: call.args,
+      })
+      return {
+        target: call.target,
+        selector: slice(callData, 0, 4),
+        value: call.value,
+        params: callData.length > 10 ? slice(callData, 4) : '0x',
+      }
     })
-    return {
-      target: call.target,
-      selector: slice(callData, 0, 4),
-      value: call.value,
-      params: callData.length > 10 ? slice(callData, 4) : '0x',
-    }
-  })
+  }
 
   const expense = {
-    amount: order.expense.amount,
-    spender: order.expense.spender,
+    amount: toHex(order.expense.amount),
     token: order.expense.isNative ? zeroAddress : order.expense.token,
   }
+
   const deposit = {
-    amount: order.deposit.amount,
+    amount: toHex(order.deposit.amount),
     token: order.deposit.isNative ? zeroAddress : order.deposit.token,
   }
 
-  const request = JSON.stringify({
-    sourceChainId: order.srcChainId,
-    destChainId: order.destChainId,
-    fillDeadline: order.fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
-    calls: calls,
-    expenses: [expense],
-    deposit,
-  })
+  const request = JSON.stringify(
+    {
+      sourceChainId: order.srcChainId,
+      destChainId: order.destChainId,
+      fillDeadline: order.fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
+      calls: order.owner ? _encodeCalls() : [],
+      expenses: [expense],
+      deposit,
+    },
+    (_, value) => {
+      if (typeof value === 'bigint') {
+        return toHex(value)
+      }
+      return value
+    },
+  )
 
-  return useMutation<ValidationResponse>({
-    mutationFn: async () => {
-      const response = await fetch(`${API_URL}/api/check`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+  return useQuery<ValidationResponse>({
+    queryKey: ['check'],
+    queryFn: async () => {
+      // TODO remove hardcoded api url
+      const response = await fetch(
+        'https://solver.staging.omni.network/api/v1/check',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: request,
         },
-        body: request,
-      })
+      )
       return await response.json()
     },
+    enabled: !!order.owner && !!order.srcChainId && enabled,
   })
 }
