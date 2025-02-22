@@ -40,6 +40,8 @@ type QuoteError = {
 }
 
 export function useQuote(params: UseQuoteParams): UseQuoteReturnType {
+  const queryEnabled = !!params.srcChainId && !!params.enabled
+
   const query = useQuery<Quote>({
     queryKey: ['quote'],
     queryFn: async () => {
@@ -91,7 +93,7 @@ export function useQuote(params: UseQuoteParams): UseQuoteReturnType {
         },
       }
     },
-    enabled: params.enabled ?? true,
+    enabled: queryEnabled,
   })
 
   const result = useMemo(() => {
