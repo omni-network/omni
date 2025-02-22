@@ -150,21 +150,21 @@ type Validation = ValidationRejected | ValidationAccepted | ValidationError
 
 // TODO: runtime assertions?
 function useValidateOrder(order: Order, enabled: boolean) {
-  if (!order.owner || !order.srcChainId) return
-
-  const calls = order.calls.map((call) => {
-    const callData = encodeFunctionData({
-      abi: call.abi,
-      functionName: call.functionName,
-      args: call.args,
+  function _encodeCalls() {
+    return order.calls.map((call) => {
+      const callData = encodeFunctionData({
+        abi: call.abi,
+        functionName: call.functionName,
+        args: call.args,
+      })
+      return {
+        target: call.target,
+        selector: slice(callData, 0, 4),
+        value: call.value,
+        params: callData.length > 10 ? slice(callData, 4) : '0x',
+      }
     })
-    return {
-      target: call.target,
-      selector: slice(callData, 0, 4),
-      value: call.value,
-      params: callData.length > 10 ? slice(callData, 4) : '0x',
-    }
-  })
+  }
 
   const expense = {
     amount: toHex(order.expense.amount),
@@ -181,7 +181,7 @@ function useValidateOrder(order: Order, enabled: boolean) {
       sourceChainId: order.srcChainId,
       destChainId: order.destChainId,
       fillDeadline: order.fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
-      calls: calls,
+      calls: order.owner ? _encodeCalls() : [],
       expenses: [expense],
       deposit,
     },
@@ -209,6 +209,6 @@ function useValidateOrder(order: Order, enabled: boolean) {
       )
       return await response.json()
     },
-    enabled,
+    enabled: !!order.owner && !!order.srcChainId && enabled,
   })
 }
