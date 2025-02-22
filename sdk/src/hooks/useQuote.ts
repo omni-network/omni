@@ -4,9 +4,9 @@ import { type Address, fromHex, toHex, zeroAddress } from 'viem'
 import type { Deposit, Expense } from '../types/order.js'
 
 type UseQuoteParams = {
-  srcChainId: number
+  srcChainId?: number
   destChainId: number
-  mode: 'expense'
+  mode: 'expense' | 'deposit'
   deposit: Deposit
   expense: Omit<Expense, 'spender'>
   enabled?: boolean
