@@ -15,4 +15,6 @@ const (
 	RejectUnsupportedDestChain  RejectReason = 8
 	RejectUnsupportedSrcChain   RejectReason = 9
 	RejectSameChain             RejectReason = 10
+	RejectExpenseOverMax        RejectReason = 11
+	RejectExpenseUnderMin       RejectReason = 12
 )

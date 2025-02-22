@@ -4,6 +4,8 @@
   "chainId": 1,
   "coingeckoId": "ethereum",
   "isMock": false,
+  "maxSpend": "10.0000",
+  "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
  },
@@ -12,6 +14,8 @@
   "chainId": 42161,
   "coingeckoId": "ethereum",
   "isMock": false,
+  "maxSpend": "10.0000",
+  "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
  },
@@ -20,6 +24,8 @@
   "chainId": 8453,
   "coingeckoId": "ethereum",
   "isMock": false,
+  "maxSpend": "10.0000",
+  "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
  },
@@ -28,6 +34,8 @@
   "chainId": 10,
   "coingeckoId": "ethereum",
   "isMock": false,
+  "maxSpend": "10.0000",
+  "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
  },
@@ -36,6 +44,8 @@
   "chainId": 17000,
   "coingeckoId": "ethereum",
   "isMock": false,
+  "maxSpend": "10.0000",
+  "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
  },
@@ -44,6 +54,8 @@
   "chainId": 421614,
   "coingeckoId": "ethereum",
   "isMock": false,
+  "maxSpend": "10.0000",
+  "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
  },
@@ -52,6 +64,8 @@
   "chainId": 84532,
   "coingeckoId": "ethereum",
   "isMock": false,
+  "maxSpend": "10.0000",
+  "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
  },
@@ -60,6 +74,8 @@
   "chainId": 11155420,
   "coingeckoId": "ethereum",
   "isMock": false,
+  "maxSpend": "10.0000",
+  "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
  },
@@ -68,6 +84,8 @@
   "chainId": 1652,
   "coingeckoId": "ethereum",
   "isMock": false,
+  "maxSpend": "10.0000",
+  "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
  },
@@ -76,6 +94,8 @@
   "chainId": 1654,
   "coingeckoId": "ethereum",
   "isMock": false,
+  "maxSpend": "10.0000",
+  "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
  },
@@ -84,6 +104,8 @@
   "chainId": 166,
   "coingeckoId": "omni-network",
   "isMock": false,
+  "maxSpend": "1000.0000",
+  "minSpend": "0.1000",
   "name": "Omni Network",
   "symbol": "OMNI"
  },
@@ -92,6 +114,8 @@
   "chainId": 164,
   "coingeckoId": "omni-network",
   "isMock": false,
+  "maxSpend": "1000.0000",
+  "minSpend": "0.1000",
   "name": "Omni Network",
   "symbol": "OMNI"
  },
@@ -100,6 +124,8 @@
   "chainId": 1650,
   "coingeckoId": "omni-network",
   "isMock": false,
+  "maxSpend": "1000.0000",
+  "minSpend": "0.1000",
   "name": "Omni Network",
   "symbol": "OMNI"
  },
@@ -108,6 +134,8 @@
   "chainId": 1651,
   "coingeckoId": "omni-network",
   "isMock": false,
+  "maxSpend": "1000.0000",
+  "minSpend": "0.1000",
   "name": "Omni Network",
   "symbol": "OMNI"
  },
@@ -116,6 +144,8 @@
   "chainId": 1,
   "coingeckoId": "omni-network",
   "isMock": false,
+  "maxSpend": "1000.0000",
+  "minSpend": "0.1000",
   "name": "Omni Network",
   "symbol": "OMNI"
  },
@@ -124,6 +154,8 @@
   "chainId": 17000,
   "coingeckoId": "omni-network",
   "isMock": false,
+  "maxSpend": "1000.0000",
+  "minSpend": "0.1000",
   "name": "Omni Network",
   "symbol": "OMNI"
  },
@@ -132,6 +164,8 @@
   "chainId": 17000,
   "coingeckoId": "omni-network",
   "isMock": false,
+  "maxSpend": "1000.0000",
+  "minSpend": "0.1000",
   "name": "Omni Network",
   "symbol": "OMNI"
  },
@@ -140,6 +174,8 @@
   "chainId": 1652,
   "coingeckoId": "omni-network",
   "isMock": false,
+  "maxSpend": "1000.0000",
+  "minSpend": "0.1000",
   "name": "Omni Network",
   "symbol": "OMNI"
  },
@@ -148,6 +184,8 @@
   "chainId": 17000,
   "coingeckoId": "wrapped-steth",
   "isMock": false,
+  "maxSpend": "10.0000",
+  "minSpend": "0.0010",
   "name": "Wrapped Staked Ether",
   "symbol": "wstETH"
  },
@@ -156,6 +194,8 @@
   "chainId": 1652,
   "coingeckoId": "wrapped-steth",
   "isMock": false,
+  "maxSpend": "10.0000",
+  "minSpend": "0.0010",
   "name": "Wrapped Staked Ether",
   "symbol": "wstETH"
  },
@@ -164,6 +204,8 @@
   "chainId": 17000,
   "coingeckoId": "lido-staked-ether",
   "isMock": false,
+  "maxSpend": "nil",
+  "minSpend": "nil",
   "name": "Lido Staked Ether",
   "symbol": "stETH"
  },
@@ -172,6 +214,8 @@
   "chainId": 1652,
   "coingeckoId": "lido-staked-ether",
   "isMock": false,
+  "maxSpend": "nil",
+  "minSpend": "nil",
   "name": "Lido Staked Ether",
   "symbol": "stETH"
  },
@@ -180,6 +224,8 @@
   "chainId": 84532,
   "coingeckoId": "wrapped-steth",
   "isMock": true,
+  "maxSpend": "nil",
+  "minSpend": "nil",
   "name": "Wrapped Staked Ether",
   "symbol": "wstETH"
  },
@@ -188,6 +234,8 @@
   "chainId": 1654,
   "coingeckoId": "wrapped-steth",
   "isMock": true,
+  "maxSpend": "nil",
+  "minSpend": "nil",
   "name": "Wrapped Staked Ether",
   "symbol": "wstETH"
  },
@@ -196,6 +244,8 @@
   "chainId": 84532,
   "coingeckoId": "lido-staked-ether",
   "isMock": true,
+  "maxSpend": "nil",
+  "minSpend": "nil",
   "name": "Lido Staked Ether",
   "symbol": "stETH"
  },
@@ -204,6 +254,8 @@
   "chainId": 1654,
   "coingeckoId": "lido-staked-ether",
   "isMock": true,
+  "maxSpend": "nil",
+  "minSpend": "nil",
   "name": "Lido Staked Ether",
   "symbol": "stETH"
  }

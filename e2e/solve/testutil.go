@@ -44,6 +44,10 @@ func nativeExpense(amt *big.Int) solvernet.Expenses {
 	return []solvernet.Expense{{Amount: amt}}
 }
 
+func nativeDeposit(amt *big.Int) solvernet.Deposit {
+	return solvernet.Deposit{Amount: amt}
+}
+
 func mintAndApproveAll(ctx context.Context, backends ethbackend.Backends, orders []TestOrder) error {
 	var eg errgroup.Group
 	for _, order := range orders {

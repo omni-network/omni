@@ -30,6 +30,8 @@ type Token struct {
 	ChainID    uint64
 	ChainClass ChainClass
 	Address    common.Address // empty if native
+	MaxSpend   *big.Int
+	MinSpend   *big.Int
 	IsMock     bool
 }
 
@@ -47,6 +49,17 @@ func (t Token) IsNative() bool {
 func (t Token) IsOMNI() bool {
 	return t.Token == tokenslib.OMNI
 }
+
+var (
+	maxETHSpend = mustBig("10000000000000000000") // 10 ETH
+	minETHSpend = mustBig("1000000000000000")     // 0.001 ETH
+
+	maxWSTETHSpend = mustBig("10000000000000000000") // 10 ETH
+	minWSTETHSpend = mustBig("1000000000000000")     // 0.001 ETH
+
+	maxOMNISpend = mustBig("1000000000000000000000") // 1000 OMNI
+	minOMNISpend = mustBig("100000000000000000")     // 0.1 OMNI
+)
 
 var tokens = append(Tokens{
 	// Native ETH (mainnet)
@@ -117,6 +130,8 @@ func nativeETH(chainID uint64) Token {
 		Token:      tokenslib.ETH,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
+		MaxSpend:   maxETHSpend,
+		MinSpend:   minETHSpend,
 	}
 }
 
@@ -125,6 +140,8 @@ func nativeOMNI(chainID uint64) Token {
 		Token:      tokenslib.OMNI,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
+		MaxSpend:   maxOMNISpend,
+		MinSpend:   minOMNISpend,
 	}
 }
 
@@ -136,6 +153,8 @@ func omniERC20(network netconf.ID) Token {
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    contracts.TokenAddr(network),
+		MaxSpend:   maxOMNISpend,
+		MinSpend:   minOMNISpend,
 	}
 }
 
@@ -154,6 +173,8 @@ func wstETH(chainID uint64, addr common.Address) Token {
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    addr,
+		MaxSpend:   maxWSTETHSpend,
+		MinSpend:   minWSTETHSpend,
 	}
 }
 
@@ -229,4 +250,13 @@ func chainClass(chainID uint64) (ChainClass, error) {
 	default:
 		return "", errors.New("unsupported chain ID", "chain_id", chainID)
 	}
+}
+
+func mustBig(s string) *big.Int {
+	b, ok := new(big.Int).SetString(s, 10)
+	if !ok {
+		panic("invalid big int")
+	}
+
+	return b
 }
