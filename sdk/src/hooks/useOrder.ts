@@ -59,22 +59,22 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
   )
 
   const validation = useMemo(() => {
-    if (validate.data?.error)
+    if (validate?.data?.error)
       return {
         error: {
           code: validate.data.error.code,
           message: validate.data.error.message,
         },
       }
-    if (validate.data?.rejected)
+    if (validate?.data?.rejected)
       return {
         rejected: true,
         rejectReason: validate.data.rejectReason,
         rejectDescription: validate.data.rejectDescription,
       } as const
-    if (validate.data?.accepted) return { accepted: true } as const
+    if (validate?.data?.accepted) return { accepted: true } as const
     return
-  }, [validate.data])
+  }, [validate?.data])
 
   const open = useCallback(async () => {
     const encoded = encodeOrder(params.order)
@@ -150,8 +150,7 @@ type Validation = ValidationRejected | ValidationAccepted | ValidationError
 
 // TODO: runtime assertions?
 function useValidateOrder(order: Order, enabled: boolean) {
-  const queryEnabled =
-    !!order.srcChainId && !!order.destChainId && !!order.owner && enabled
+  if (!order.owner || !order.srcChainId) return
 
   const calls = order.calls.map((call) => {
     const callData = encodeFunctionData({
@@ -210,6 +209,6 @@ function useValidateOrder(order: Order, enabled: boolean) {
       )
       return await response.json()
     },
-    enabled: queryEnabled,
+    enabled,
   })
 }
