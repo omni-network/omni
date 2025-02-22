@@ -424,6 +424,30 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				mockNativeBalance(t, clients.Client(t, evmchain.IDHolesky), solver, ether(2))
 			},
 		},
+		{
+			name:   "expense over max",
+			reason: rejectExpenseOverMax,
+			reject: true,
+			order: testOrder{
+				srcChainID: evmchain.IDBaseSepolia,
+				dstChainID: evmchain.IDHolesky,
+				deposits:   []Deposit{{Amount: ether(3000)}},
+				calls:      []Call{{Value: ether(2000)}},
+				expenses:   []Expense{{Amount: ether(2000)}},
+			},
+		},
+		{
+			name:   "expense under min",
+			reason: rejectExpenseUnderMin,
+			reject: true,
+			order: testOrder{
+				srcChainID: evmchain.IDBaseSepolia,
+				dstChainID: evmchain.IDHolesky,
+				deposits:   []Deposit{{Amount: big.NewInt(2)}},
+				calls:      []Call{{Value: big.NewInt(1)}},
+				expenses:   []Expense{{Amount: big.NewInt(1)}},
+			},
+		},
 	}
 }
 

@@ -184,6 +184,48 @@ func makeOrders() []TestOrder {
 		RejectReason:  solver.RejectUnsupportedDestChain.String(),
 	})
 
+	// native ETH transfers
+	for i, user := range users {
+		amt := math.NewInt(10).MulRaw(params.Ether).BigInt()
+
+		// make some under min or over max expense
+		overMax := i < 3
+		underMin := i > 6
+
+		if overMax {
+			// max is 10 ETH
+			amt = math.NewInt(11).MulRaw(params.Ether).BigInt()
+		}
+
+		if underMin {
+			// min is 0.001 ETH
+			amt = big.NewInt(1)
+		}
+
+		shouldReject := underMin || overMax
+		rejectReason := ""
+		if underMin {
+			rejectReason = solver.RejectExpenseUnderMin.String()
+		}
+		if overMax {
+			rejectReason = solver.RejectExpenseOverMax.String()
+		}
+
+		order := TestOrder{
+			Owner:         user,
+			FillDeadline:  time.Now().Add(1 * time.Hour),
+			SourceChainID: evmchain.IDMockL1,
+			DestChainID:   evmchain.IDMockL2,
+			Expenses:      nativeExpense(amt),
+			Calls:         nativeTransferCall(amt, user),
+			Deposit:       nativeDeposit(new(big.Int).Add(amt, big.NewInt(1e17))), // add enough to cover fee
+			ShouldReject:  shouldReject,
+			RejectReason:  rejectReason,
+		}
+
+		orders = append(orders, order)
+	}
+
 	// TODO: more tests orders (different rejection cases, valid orders, etc)
 
 	return orders

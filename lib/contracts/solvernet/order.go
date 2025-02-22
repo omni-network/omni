@@ -66,6 +66,12 @@ func OpenOrder(
 		return OrderID{}, errors.Wrap(err, "bind opts")
 	}
 
+	// if native deposit, add tx value
+	deposit := orderData.Deposit
+	if deposit.Token == (common.Address{}) {
+		txOpts.Value = deposit.Amount
+	}
+
 	contract, err := bindings.NewSolverNetInbox(addrs.SolverNetInbox, backend)
 	if err != nil {
 		return OrderID{}, errors.Wrap(err, "bind contract")

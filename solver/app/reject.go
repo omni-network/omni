@@ -32,6 +32,8 @@ const (
 	rejectUnsupportedDestChain  = types.RejectUnsupportedDestChain
 	rejectUnsupportedSrcChain   = types.RejectUnsupportedSrcChain
 	rejectSameChain             = types.RejectSameChain
+	rejectExpenseOverMax        = types.RejectExpenseOverMax
+	rejectExpenseUnderMin       = types.RejectExpenseUnderMin
 )
 
 // RejectionError implement error, but represents a logical (expected) rejection, not an unexpected system error.
@@ -245,6 +247,14 @@ func parseMaxSpent(order Order, outboxAddr common.Address) ([]Payment, error) {
 			}
 
 			hasNative = true
+		}
+
+		if tkn.MaxSpend != nil && output.Amount.Cmp(tkn.MaxSpend) > 0 {
+			return nil, newRejection(rejectExpenseOverMax, errors.New("expense over max", "token", tkn.Symbol, "max", tkn.MaxSpend, "amount", output.Amount))
+		}
+
+		if tkn.MinSpend != nil && output.Amount.Cmp(tkn.MinSpend) < 0 {
+			return nil, newRejection(rejectExpenseUnderMin, errors.New("expense under min", "token", tkn.Symbol, "min", tkn.MinSpend, "amount", output.Amount))
 		}
 
 		expenses = append(expenses, Payment{

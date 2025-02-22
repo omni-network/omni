@@ -224,6 +224,14 @@ func parseExpenses(destChainID uint64, expenses []Expense, calls []Call) ([]Paym
 			return nil, newRejection(rejectUnsupportedExpense, errors.New("unsupported expense token", "addr", e.Token))
 		}
 
+		if tkn.MaxSpend != nil && e.Amount.Cmp(tkn.MaxSpend) > 0 {
+			return nil, newRejection(rejectExpenseOverMax, errors.New("expense over max", "token", tkn.Symbol, "max", tkn.MaxSpend, "amount", e.Amount))
+		}
+
+		if tkn.MinSpend != nil && e.Amount.Cmp(tkn.MinSpend) < 0 {
+			return nil, newRejection(rejectExpenseUnderMin, errors.New("expense under min", "token", tkn.Symbol, "min", tkn.MinSpend, "amount", e.Amount))
+		}
+
 		ps = append(ps, Payment{
 			Token:  tkn,
 			Amount: e.Amount,
