@@ -10,6 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
+	etypes "github.com/ethereum/go-ethereum/core/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -117,7 +118,7 @@ func (k *Keeper) listWithdrawalsByAddress(ctx context.Context, withdrawalAddr co
 
 // EligibleWithdrawals returns all withdrawals created below the specified height,
 // sorted by the id (oldest to newest), limited by the provided count.
-func (k *Keeper) EligibleWithdrawals(ctx context.Context) ([]*Withdrawal, error) {
+func (k *Keeper) EligibleWithdrawals(ctx context.Context) ([]*etypes.Withdrawal, error) {
 	height := sdk.UnwrapSDKContext(ctx).BlockHeight()
 	// Note: items are ordered by the id in ascending order (oldest to newest).
 	iter, err := k.withdrawalTable.List(ctx, WithdrawalPrimaryKey{})
@@ -146,5 +147,28 @@ func (k *Keeper) EligibleWithdrawals(ctx context.Context) ([]*Withdrawal, error)
 		}
 	}
 
-	return withdrawals, nil
+	var evmWithdrawals []*etypes.Withdrawal
+	for _, w := range withdrawals {
+		evmWithdrawals = append(evmWithdrawals, &etypes.Withdrawal{
+			Index:   w.GetId(),
+			Address: common.BytesToAddress(w.GetAddress()), //nolint:forbidigo // should be padded
+			Amount:  w.GetAmountGwei(),
+			// The validator index is not used for withdrawals.
+			Validator: 0,
+		})
+	}
+
+	return evmWithdrawals, nil
+}
+
+// RemoveWithdrawals removes all passed withdrawals by the id.
+func (k *Keeper) RemoveWithdrawals(ctx context.Context, withdrawals []*etypes.Withdrawal) error {
+	for _, w := range withdrawals {
+		err := k.withdrawalTable.DeleteBy(ctx, WithdrawalIdIndexKey{}.WithId(w.Index))
+		if err != nil {
+			return errors.Wrap(err, "remowing withdrawal", "id", w.Index)
+		}
+	}
+
+	return nil
 }
