@@ -255,7 +255,7 @@ contract OmniGasPump_Test is Test {
         assertFalse(pump.paused());
 
         // fillUp is unpaused
-        vm.expectRevert("OmniGasPump: insufficient fee"); // reverts, but not becasue its paused
+        vm.expectRevert("OmniGasPump: insufficient fee"); // reverts, but not because its paused
         pump.fillUp(recipient);
     }
 
