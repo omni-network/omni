@@ -34,11 +34,17 @@ func TestCallBindings(t *testing.T) {
 			// no calldata
 			Data: nil,
 		},
+		{
+			// nil value
+			Value:  nil,
+			Target: common.HexToAddress("0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4"),
+			Data:   nil,
+		},
 	}
 
 	bindings := calls.ToBindings()
 
-	require.Len(t, bindings, 3)
+	require.Len(t, bindings, 4)
 
 	// full calldata
 	require.Equal(t, calls[0].Value, bindings[0].Value)
@@ -57,6 +63,12 @@ func TestCallBindings(t *testing.T) {
 	require.Equal(t, calls[2].Target, bindings[2].Target)
 	require.Equal(t, [4]byte{}, bindings[2].Selector)
 	require.Equal(t, []byte(nil), bindings[2].Params)
+
+	// nil value
+	require.Equal(t, calls[3].Value, bindings[3].Value)
+	require.Equal(t, calls[3].Target, bindings[3].Target)
+	require.Equal(t, [4]byte{}, bindings[3].Selector)
+	require.Equal(t, []byte(nil), bindings[3].Params)
 }
 
 func ether(x int64) *big.Int {
