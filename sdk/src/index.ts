@@ -9,4 +9,4 @@ export { useQuote } from './hooks/useQuote.js'
 export type { Order } from './types/order.js'
 
 ////// PROVIDER //////
-export { OmniProvider } from './context/omni.js'
+export { OmniProvider, useOmniContext } from './context/omni.js'
