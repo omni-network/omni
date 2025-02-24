@@ -1,21 +1,15 @@
 import type { Abi, Address } from 'viem'
-import type { Prettify } from './utils.js'
 
-type NativeToken = {
-  readonly amount: bigint
-  readonly isNative: true
-}
-
-type ERC20Token = {
+type Deposit = {
   readonly token: Address
   readonly amount: bigint
-  readonly isNative: false
 }
 
-export type Deposit = Prettify<NativeToken | ERC20Token>
-export type Expense = Prettify<
-  { readonly spender: Address } & (NativeToken | ERC20Token)
->
+type Expense = {
+  readonly spender: Address
+  readonly token: Address
+  readonly amount: bigint
+}
 
 export type Call = {
   readonly abi: Abi

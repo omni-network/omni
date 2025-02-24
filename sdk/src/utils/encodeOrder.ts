@@ -1,10 +1,4 @@
-import {
-  type Hex,
-  encodeAbiParameters,
-  encodeFunctionData,
-  slice,
-  zeroAddress,
-} from 'viem'
+import { type Hex, encodeAbiParameters, encodeFunctionData, slice } from 'viem'
 import type { Order } from '../types/order.js'
 
 /**
@@ -43,8 +37,8 @@ import type { Order } from '../types/order.js'
  */
 export function encodeOrder(order: Order) {
   // TODO custom error
-  if (!order.deposit || !order.expense || !order.owner) {
-    throw new Error('Invalid order')
+  if (!order.owner) {
+    throw new Error('Owner must be defined')
   }
 
   const callsTuple = order.calls.map((call) => {
@@ -61,19 +55,21 @@ export function encodeOrder(order: Order) {
     return {
       target: call.target,
       selector,
-      value: call.value,
+      value: call.value ?? 0n,
       params,
     }
   })
 
-  const expenseTuple = {
-    spender: order.expense.spender,
-    token: order.expense.isNative ? zeroAddress : order.expense.token,
-    amount: order.expense.amount,
-  }
+  const expenseTuple = [
+    {
+      spender: order.expense.spender,
+      token: order.expense.token,
+      amount: order.expense.amount,
+    },
+  ]
 
   const depositTuple = {
-    token: order.deposit.isNative ? zeroAddress : order.deposit.token,
+    token: order.deposit.token,
     amount: order.deposit.amount,
   }
 
@@ -104,7 +100,7 @@ export function encodeOrder(order: Order) {
           },
           {
             // expense
-            type: 'tuple',
+            type: 'tuple[]',
             components: [
               { name: 'spender', type: 'address' },
               { name: 'token', type: 'address' },
