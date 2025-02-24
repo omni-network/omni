@@ -53,6 +53,7 @@ export function useQuote(params: UseQuoteParams): UseQuoteResult {
   // TODO: move to context
   const apiBaseUrl = 'https://solver.staging.omni.network/api/v1'
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: deep compare on obj properties
   const request = useMemo(() => {
     return toJSON({
       sourceChainId: params.srcChainId,
@@ -60,7 +61,17 @@ export function useQuote(params: UseQuoteParams): UseQuoteResult {
       deposit: toQuoteUnit(params.deposit, params.mode === 'deposit'),
       expense: toQuoteUnit(params.expense, params.mode === 'expense'),
     })
-  }, [params, params.deposit, params.expense])
+  }, [
+    params.srcChainId,
+    params.destChainId,
+    params.deposit.isNative,
+    params.deposit.amount,
+    params.deposit.token,
+    params.expense.isNative,
+    params.expense.amount,
+    params.expense.token,
+    params.mode,
+  ])
 
   const query = useQuery<Quote, QuoteError>({
     queryKey: ['quote', request],
@@ -85,6 +96,11 @@ async function doQuote(apiBaseUrl: string, request: string) {
   })
 
   const { deposit, expense } = await response.json()
+
+  if (!response.ok) {
+    const { error } = await response.json()
+    throw error as QuoteError
+  }
 
   return {
     deposit: { ...deposit, amount: fromHex(deposit.amount, 'bigint') },
