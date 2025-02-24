@@ -163,23 +163,21 @@ function useValidateOrder(order: Order, enabled = true) {
     })
   }
 
-  const expense = {
-    amount: toHex(order.expense.amount ?? 0n),
-    token: order.expense.isNative ? zeroAddress : order.expense.token,
-  }
-
-  const deposit = {
-    amount: toHex(order.deposit.amount ?? 0n),
-    token: order.deposit.isNative ? zeroAddress : order.deposit.token,
-  }
-
   const request = toJSON({
     sourceChainId: order.srcChainId,
     destChainId: order.destChainId,
     fillDeadline: order.fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
     calls: order.owner ? _encodeCalls() : [],
-    expenses: [expense],
-    deposit,
+    expenses: [
+      {
+        amount: toHex(order.expense.amount ?? 0n),
+        token: order.expense.isNative ? zeroAddress : order.expense.token,
+      },
+    ],
+    deposit: {
+      amount: toHex(order.deposit.amount ?? 0n),
+      token: order.deposit.isNative ? zeroAddress : order.deposit.token,
+    },
   })
 
   return useQuery<ValidationResponse>({
