@@ -186,15 +186,15 @@ func makeOrders() []TestOrder {
 
 	// native ETH transfers
 	for i, user := range users {
-		amt := math.NewInt(10).MulRaw(params.Ether).BigInt()
+		amt := math.NewInt(1).MulRaw(params.Ether).BigInt()
 
 		// make some under min or over max expense
 		overMax := i < 3
 		underMin := i > 6
 
 		if overMax {
-			// max is 10 ETH
-			amt = math.NewInt(11).MulRaw(params.Ether).BigInt()
+			// max is 1 ETH
+			amt = math.NewInt(2).MulRaw(params.Ether).BigInt()
 		}
 
 		if underMin {

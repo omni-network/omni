@@ -51,14 +51,13 @@ func (t Token) IsOMNI() bool {
 }
 
 var (
-	maxETHSpend = mustBig("10000000000000000000") // 10 ETH
-	minETHSpend = mustBig("1000000000000000")     // 0.001 ETH
-
-	maxWSTETHSpend = mustBig("10000000000000000000") // 10 ETH
-	minWSTETHSpend = mustBig("1000000000000000")     // 0.001 ETH
-
-	maxOMNISpend = mustBig("1000000000000000000000") // 1000 OMNI
-	minOMNISpend = mustBig("100000000000000000")     // 0.1 OMNI
+	// TODO: increase max spend on mainnet, keep low for staging / omega.
+	maxETHSpend    = mustBig("1000000000000000000")    // 1 ETH
+	minETHSpend    = mustBig("1000000000000000")       // 0.001 ETH
+	maxWSTETHSpend = mustBig("1000000000000000000")    // 1 wstETH
+	minWSTETHSpend = mustBig("1000000000000000")       // 0.001 wstETH
+	maxOMNISpend   = mustBig("1000000000000000000000") // 1000 OMNI
+	minOMNISpend   = mustBig("100000000000000000")     // 0.1 OMNI
 )
 
 var tokens = append(Tokens{
