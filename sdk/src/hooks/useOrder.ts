@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
-import { encodeFunctionData, slice, toHex, zeroAddress } from 'viem'
+import { encodeFunctionData, toHex, zeroAddress } from 'viem'
 import type { Hex, WriteContractErrorType } from 'viem'
 import {
   type Config,
@@ -15,6 +15,7 @@ import type { Order, OrderStatus } from '../types/order.js'
 import { encodeOrder } from '../utils/encodeOrder.js'
 import { useGetOpenOrder } from './useGetOpenOrder.js'
 import { useOrderStatus } from './useOrderStatus.js'
+import { toJSON } from './util.js'
 
 type UseOrderParams = {
   order: Order
@@ -53,10 +54,7 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
     originData: originData,
     ...params.order,
   })
-  const validate = useValidateOrder(
-    params.order,
-    params.validateEnabled ?? true,
-  )
+  const validate = useValidateOrder(params.order, params.validateEnabled)
 
   const validation = useMemo(() => {
     if (validate?.data?.error)
@@ -149,7 +147,7 @@ type ValidationError = {
 type Validation = ValidationRejected | ValidationAccepted | ValidationError
 
 // TODO: runtime assertions?
-function useValidateOrder(order: Order, enabled: boolean) {
+function useValidateOrder(order: Order, enabled = true) {
   function _encodeCalls() {
     return order.calls.map((call) => {
       const callData = encodeFunctionData({
@@ -159,42 +157,31 @@ function useValidateOrder(order: Order, enabled: boolean) {
       })
       return {
         target: call.target,
-        selector: slice(callData, 0, 4),
         value: call.value,
-        params: callData.length > 10 ? slice(callData, 4) : '0x',
+        data: callData,
       }
     })
   }
 
-  const expense = {
-    amount: toHex(order.expense.amount),
-    token: order.expense.isNative ? zeroAddress : order.expense.token,
-  }
-
-  const deposit = {
-    amount: toHex(order.deposit.amount),
-    token: order.deposit.isNative ? zeroAddress : order.deposit.token,
-  }
-
-  const request = JSON.stringify(
-    {
-      sourceChainId: order.srcChainId,
-      destChainId: order.destChainId,
-      fillDeadline: order.fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
-      calls: order.owner ? _encodeCalls() : [],
-      expenses: [expense],
-      deposit,
+  const request = toJSON({
+    sourceChainId: order.srcChainId,
+    destChainId: order.destChainId,
+    fillDeadline: order.fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
+    calls: order.owner ? _encodeCalls() : [],
+    expenses: [
+      {
+        amount: toHex(order.expense.amount ?? 0n),
+        token: order.expense.isNative ? zeroAddress : order.expense.token,
+      },
+    ],
+    deposit: {
+      amount: toHex(order.deposit.amount ?? 0n),
+      token: order.deposit.isNative ? zeroAddress : order.deposit.token,
     },
-    (_, value) => {
-      if (typeof value === 'bigint') {
-        return toHex(value)
-      }
-      return value
-    },
-  )
+  })
 
   return useQuery<ValidationResponse>({
-    queryKey: ['check'],
+    queryKey: ['check', request],
     queryFn: async () => {
       // TODO remove hardcoded api url
       const response = await fetch(
@@ -209,6 +196,12 @@ function useValidateOrder(order: Order, enabled: boolean) {
       )
       return await response.json()
     },
-    enabled: !!order.owner && !!order.srcChainId && enabled,
+    enabled:
+      !!order.owner &&
+      !!order.srcChainId &&
+      !(
+        (order.deposit.amount ?? 0n) > 0n && (order.expense.amount ?? 0n) > 0n
+      ) &&
+      enabled,
   })
 }
