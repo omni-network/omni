@@ -7,3 +7,6 @@ export { useQuote } from './hooks/useQuote.js'
 
 ////// TYPES //////
 export type { Order } from './types/order.js'
+
+////// PROVIDER //////
+export { OmniProvider } from './context/omni.js'

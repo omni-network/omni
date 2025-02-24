@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
-import { encodeFunctionData, toHex, zeroAddress } from 'viem'
+import { encodeFunctionData } from 'viem'
 import type { Hex, WriteContractErrorType } from 'viem'
 import {
   type Config,
@@ -74,7 +74,7 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
     wait.status,
   )
 
-  const validate = useValidateOrder(params.order, params.validateEnabled)
+  const validate = useValidateOrder(params)
 
   const validation = useMemo(() => {
     if (validate?.data?.error)
@@ -97,14 +97,25 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
   const { inbox } = useOmniContext()
 
   const open = useCallback(async () => {
-    const encoded = encodeOrder(params.order)
+    const order = params.order
+    if (
+      !order.deposit.token ||
+      !order.expense.token ||
+      !order.deposit.amount ||
+      !order.expense.amount
+    ) {
+      throw new Error('Tokens and amounts are required')
+    }
+
+    // we check for overriden deposit and expense params above
+    const encoded = encodeOrder(order)
     return await txMutation.writeContractAsync({
       abi: inboxABI,
       address: inbox,
       functionName: 'open',
       chainId: params.order.srcChainId,
       value: params.order.calls.reduce(
-        (acc, call) => acc + call.value,
+        (acc, call) => acc + (call.value ?? 0n),
         BigInt(0),
       ),
       args: [
@@ -169,39 +180,55 @@ type ValidationError = {
 
 type Validation = ValidationRejected | ValidationAccepted | ValidationError
 
-// TODO: runtime assertions?
-function useValidateOrder(order: Order, enabled = true) {
-  function _encodeCalls() {
-    return order.calls.map((call) => {
-      const callData = encodeFunctionData({
-        abi: call.abi,
-        functionName: call.functionName,
-        args: call.args,
-      })
-      return {
-        target: call.target,
-        value: call.value,
-        data: callData,
-      }
-    })
-  }
+// TODO: runtime assertions
+function useValidateOrder({ order, validateEnabled = true }: UseOrderParams) {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: deep compare on obj properties
+  const request = useMemo(() => {
+    if (!order.owner) return ''
 
-  const request = toJSON({
-    sourceChainId: order.srcChainId,
-    destChainId: order.destChainId,
-    fillDeadline: order.fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
-    calls: order.owner ? _encodeCalls() : [],
-    expenses: [
-      {
-        amount: toHex(order.expense.amount ?? 0n),
-        token: order.expense.isNative ? zeroAddress : order.expense.token,
+    function _encodeCalls() {
+      return order.calls.map((call) => {
+        const callData = encodeFunctionData({
+          abi: call.abi,
+          functionName: call.functionName,
+          args: call.args,
+        })
+        return {
+          target: call.target,
+          value: call.value,
+          data: callData,
+        }
+      })
+    }
+
+    return toJSON({
+      sourceChainId: order.srcChainId,
+      destChainId: order.destChainId,
+      fillDeadline: order.fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
+      calls: _encodeCalls(),
+      deposit: {
+        amount: order.deposit.amount,
+        token: order.deposit.token,
       },
-    ],
-    deposit: {
-      amount: toHex(order.deposit.amount ?? 0n),
-      token: order.deposit.isNative ? zeroAddress : order.deposit.token,
-    },
-  })
+      expenses: [
+        {
+          amount: order.expense.amount,
+          token: order.expense.token,
+          spender: order.expense.spender,
+        },
+      ],
+    })
+  }, [
+    order.srcChainId,
+    order.destChainId,
+    order.deposit.amount?.toString(),
+    order.deposit.token,
+    order.expense.amount?.toString(),
+    order.expense.token,
+    order.expense.spender,
+    order.owner,
+    order.fillDeadline,
+  ])
 
   return useQuery<ValidationResponse>({
     queryKey: ['check', request],
@@ -222,10 +249,8 @@ function useValidateOrder(order: Order, enabled = true) {
     enabled:
       !!order.owner &&
       !!order.srcChainId &&
-      !(
-        (order.deposit.amount ?? 0n) > 0n && (order.expense.amount ?? 0n) > 0n
-      ) &&
-      enabled,
+      validateEnabled !== false &&
+      !(order.deposit.amount === 0n && order.expense.amount === 0n),
   })
 }
 

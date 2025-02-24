@@ -87,9 +87,7 @@ export function useQuote(params: UseQuoteParams): UseQuoteResult {
     enabled:
       !!params.srcChainId &&
       params.enabled !== false &&
-      !(
-        (params.deposit.amount ?? 0n) > 0n || (params.expense.amount ?? 0n) > 0n
-      ),
+      !(params.deposit.amount === 0n && params.expense.amount === 0n),
   })
 
   return useResult(query)
