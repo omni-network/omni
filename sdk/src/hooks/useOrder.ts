@@ -6,17 +6,17 @@ import {
   type Config,
   type UseWaitForTransactionReceiptReturnType,
   type UseWriteContractReturnType,
+  useChainId,
   useWaitForTransactionReceipt,
   useWriteContract,
-  useChainId,
 } from 'wagmi'
 import { inboxABI } from '../constants/abis.js'
 import { typeHash } from '../constants/typehash.js'
 import type { Order } from '../types/order.js'
 import { encodeOrder } from '../utils/encodeOrder.js'
+import { useDidFill } from './useDidFill.js'
 import { useGetOpenOrder } from './useGetOpenOrder.js'
 import { useInboxStatus, type InboxStatus } from './useInboxStatus.js'
-import { useDidFill } from './useDidFill.js'
 import { useOmniContext } from '../context/omni.js'
 import { toJSON } from './util.js'
 
@@ -172,7 +172,7 @@ type Validation = ValidationRejected | ValidationAccepted | ValidationError
 // TODO: runtime assertions?
 function useValidateOrder(order: Order, enabled = true) {
   function _encodeCalls() {
-    return order.calls.map(call => {
+    return order.calls.map((call) => {
       const callData = encodeFunctionData({
         abi: call.abi,
         functionName: call.functionName,
