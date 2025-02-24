@@ -48,7 +48,7 @@ type Quote = {
 
 type QuoteError = { code: number; status: string; message: string }
 
-// useQuote quotes an expense for deposit, or vice versa[
+// useQuote quotes an expense for deposit, or vice versa
 export function useQuote(params: UseQuoteParams): UseQuoteResult {
   // TODO: move to context
   const apiBaseUrl = 'https://solver.staging.omni.network/api/v1'
@@ -60,7 +60,7 @@ export function useQuote(params: UseQuoteParams): UseQuoteResult {
       deposit: toQuoteUnit(params.deposit, params.mode === 'deposit'),
       expense: toQuoteUnit(params.expense, params.mode === 'expense'),
     })
-  }, [params])
+  }, [params, params.deposit, params.expense])
 
   const query = useQuery<Quote, QuoteError>({
     queryKey: ['quote', request],
