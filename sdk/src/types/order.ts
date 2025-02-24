@@ -1,6 +1,5 @@
 import type { Abi, Address } from 'viem'
 import type { Prettify } from './utils.js'
-export type OrderStatus = 'invalid' | 'pending' | 'rejected' | 'filled'
 
 type NativeToken = {
   readonly amount: bigint

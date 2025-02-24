@@ -1,6 +1,8 @@
 import type { Hex } from 'viem'
 import { useGetOrder } from './useGetOrder.js'
 
+export type InboxStatus = ReturnType<typeof useInboxStatus>
+
 export function useInboxStatus({
   chainId,
   orderId,
