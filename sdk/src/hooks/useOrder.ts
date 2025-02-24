@@ -14,6 +14,7 @@ import { inboxABI } from '../constants/abis.js'
 import { typeHash } from '../constants/typehash.js'
 import { useOmniContext } from '../context/omni.js'
 import type { Order } from '../types/order.js'
+import type { OrderStatus } from '../types/order.js'
 import { encodeOrder } from '../utils/encodeOrder.js'
 import { useDidFill } from './useDidFill.js'
 import { useGetOpenOrder } from './useGetOpenOrder.js'
@@ -24,15 +25,6 @@ type UseOrderParams = {
   order: Order
   validateEnabled?: boolean
 }
-
-type OrderStatus =
-  | 'idle'
-  | 'opening'
-  | 'open'
-  | 'closed'
-  | 'rejected'
-  | 'error'
-  | 'filled'
 
 type UseOrderReturnType = {
   open: () => Promise<Hex>
