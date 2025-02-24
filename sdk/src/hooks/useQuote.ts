@@ -51,7 +51,7 @@ type QuoteError = { code: number; status: string; message: string }
 // useQuote quotes an expense for deposit, or vice versa[
 export function useQuote(params: UseQuoteParams): UseQuoteResult {
   // TODO: move to context
-  const apiBaseUrl = 'https://solver.staging.omni.network/api/v1/quote'
+  const apiBaseUrl = 'https://solver.staging.omni.network/api/v1'
 
   const request = useMemo(() => {
     return toJSON({
