@@ -64,6 +64,7 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
     didFill,
     txMutation.status,
     wait.status,
+    wait.fetchStatus,
   )
 
   const validate = useValidateOrder(params)
@@ -252,6 +253,7 @@ function deriveStatus(
   didFill: boolean,
   txStatus: UseWriteContractReturnType['status'],
   receiptStatus: UseWaitForTransactionReceiptReturnType['status'],
+  receiptFetchStatus: UseWaitForTransactionReceiptReturnType['fetchStatus'],
 ): OrderStatus {
   // if outbox says filled, it's filled
   if (didFill) return 'filled'
@@ -264,8 +266,9 @@ function deriveStatus(
 
   // prioritize receipt status over tx status
   if (receiptStatus === 'error') return 'error'
-  if (receiptStatus === 'pending') return 'opening'
   if (receiptStatus === 'success') return 'open' // receipt success == open (may be seen before inboxStatus is updated)
+  if (receiptFetchStatus === 'idle') return 'idle' // pending is true when !txHash, so we prioritise fetchStatus to check if query is executing
+  if (receiptStatus === 'pending') return 'opening'
 
   // fallback to tx status
   if (txStatus === 'error') return 'error'
