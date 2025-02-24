@@ -9,12 +9,13 @@ import {
   useWaitForTransactionReceipt,
   useWriteContract,
 } from 'wagmi'
-import { inbox } from '../constants/contracts.js'
+import { inboxABI } from '../constants/abis.js'
 import { typeHash } from '../constants/typehash.js'
 import type { Order, OrderStatus } from '../types/order.js'
 import { encodeOrder } from '../utils/encodeOrder.js'
 import { useGetOpenOrder } from './useGetOpenOrder.js'
 import { useOrderStatus } from './useOrderStatus.js'
+import { useOmniContext } from '../context/omni.js'
 import { toJSON } from './util.js'
 
 type UseOrderParams = {
@@ -74,10 +75,13 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
     return
   }, [validate?.data])
 
+  const { inbox } = useOmniContext()
+
   const open = useCallback(async () => {
     const encoded = encodeOrder(params.order)
     return await txMutation.writeContractAsync({
-      ...inbox,
+      abi: inboxABI,
+      address: inbox,
       functionName: 'open',
       chainId: params.order.srcChainId,
       value: params.order.calls.reduce(
@@ -149,7 +153,7 @@ type Validation = ValidationRejected | ValidationAccepted | ValidationError
 // TODO: runtime assertions?
 function useValidateOrder(order: Order, enabled = true) {
   function _encodeCalls() {
-    return order.calls.map((call) => {
+    return order.calls.map(call => {
       const callData = encodeFunctionData({
         abi: call.abi,
         functionName: call.functionName,

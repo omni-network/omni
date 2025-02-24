@@ -1,16 +1,14 @@
-import type { Hex, Address } from 'viem'
+import type { Hex } from 'viem'
 import { useGetOrder } from './useGetOrder.js'
 
 export function useInboxStatus({
   chainId,
   orderId,
-  inbox,
 }: {
   chainId: number
-  inbox?: Address
   orderId?: Hex
 }) {
-  const order = useGetOrder({ chainId, orderId, inbox })
+  const order = useGetOrder({ chainId, orderId })
   const status = order?.data?.[1].status
   if (!isKnown(status)) return 'unknown'
   return strs[status]

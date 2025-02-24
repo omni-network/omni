@@ -21,6 +21,7 @@
     "skipLibCheck": true,
 
     // language / env
+    "jsx": "react-jsx",
     "moduleResolution": "nodenext",
     "module": "nodenext",
     "target": "ES2021", // setting to es2021 enables native support for node v16+, we may want to evaluate this

@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 import type { Hex } from 'viem'
 import { useReadContract } from 'wagmi'
-import { inbox } from '../constants/contracts.js'
-import { outbox } from '../constants/contracts.js'
+import { useOmniContext } from '../context/omni.js'
+import { inboxABI, outboxABI } from '../constants/abis.js'
 import type { OrderStatus } from '../types/order.js'
 
 type UseOrderStatusParams = {
@@ -20,10 +20,11 @@ type UseDidFillParams = {
 
 function useDidFill(params: UseDidFillParams) {
   const { orderId, originData, destChainId } = params
+  const { outbox } = useOmniContext()
   const filled = useReadContract({
     chainId: destChainId,
-    address: outbox.address,
-    abi: outbox.abi,
+    address: outbox,
+    abi: outboxABI,
     functionName: 'didFill',
     args: orderId && originData ? [orderId, originData] : undefined,
     query: {
@@ -37,13 +38,14 @@ function useDidFill(params: UseDidFillParams) {
 
 export function useOrderStatus(params: UseOrderStatusParams) {
   const { srcChainId, orderId } = params
+  const { inbox } = useOmniContext()
   const filled = useDidFill({
     ...params,
   })
 
   const order = useReadContract({
-    address: inbox.address,
-    abi: inbox.abi,
+    address: inbox,
+    abi: inboxABI,
     functionName: 'getOrder',
     chainId: srcChainId,
     args: orderId ? [orderId] : undefined,
