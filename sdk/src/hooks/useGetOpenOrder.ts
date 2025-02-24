@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { type Log, decodeEventLog } from 'viem'
 import type { UseWaitForTransactionReceiptReturnType } from 'wagmi'
-import { inbox } from '../constants/contracts.js'
+import { inboxABI } from '../constants/abis.js'
 
 type UseGetOpenOrderParams = {
   status: UseWaitForTransactionReceiptReturnType['status']
@@ -13,7 +13,7 @@ export function useGetOpenOrder(params: UseGetOpenOrderParams) {
   const eventData = useMemo(() => {
     if (!logs || status !== 'success') return
     const openEvent = decodeEventLog({
-      abi: inbox.abi,
+      abi: inboxABI,
       eventName: 'Open',
       data: logs[logs.length - 1].data,
       topics: logs[logs.length - 1].topics,
