@@ -1,132 +1,139 @@
 import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import { type Address, fromHex, toHex, zeroAddress } from 'viem'
-import type { Deposit, Expense } from '../types/order.js'
+import { type Address, fromHex, zeroAddress } from 'viem'
+import { toJSON } from './util.js'
+
+type Quoteable =
+  | { isNative: true; token?: never; amount: bigint }
+  | { isNative: false; token: Address; amount: bigint }
 
 type UseQuoteParams = {
   srcChainId?: number
   destChainId: number
   mode: 'expense' | 'deposit'
-  deposit: Deposit
-  expense: Omit<Expense, 'spender'>
+  deposit: Quoteable
+  expense: Quoteable
   enabled?: boolean
 }
 
-type UseQuoteReturnType = {
-  result?: Quote
-  error?: QuoteError
-  isPending: boolean
-  isError: boolean
-  isSuccess: boolean
-  query: UseQueryResult<Quote, Error>
+type UseQuoteSuccess = {
+  quote: Quote
+  isPending: false
+  isError: false
+  isSuccess: true
+}
+
+type UseQuoteError = {
+  error: QuoteError
+  isPending: false
+  isError: true
+  isSuccess: false
+}
+
+type UseQuotePending = {
+  isPending: true
+  isError: false
+  isSuccess: false
+}
+
+type UseQuoteResult = (UseQuoteSuccess | UseQuoteError | UseQuotePending) & {
+  query: UseQueryResult<Quote, QuoteError>
 }
 
 type Quote = {
-  deposit?: {
-    token: Address
-    amount: bigint
-  }
-  expense?: {
-    token: Address
-    amount: bigint
-  }
-  error?: QuoteError
+  deposit: { token: Address; amount: bigint }
+  expense: { token: Address; amount: bigint }
 }
 
-type QuoteError = {
-  code: number
-  status: string
-  message: string
-}
+type QuoteError = { code: number; status: string; message: string }
 
-export function useQuote(params: UseQuoteParams): UseQuoteReturnType {
-  const queryEnabled = !!params.srcChainId && !!params.enabled
+// useQuote quotes an expense for deposit, or vice versa[
+export function useQuote(p: UseQuoteParams): UseQuoteResult {
+  // TODO: move to context
+  const apiBaseUrl = 'https://solver.staging.omni.network/api/v1/check'
 
-  const query = useQuery<Quote>({
-    queryKey: ['quote'],
-    queryFn: async () => {
-      const deposit = {
-        amount: params.deposit.amount ?? BigInt(0),
-        token: params.deposit.isNative ? zeroAddress : params.deposit.token,
-      }
-      const expense = {
-        amount: params.deposit.amount ?? BigInt(0),
-        token: params.deposit.isNative ? zeroAddress : params.deposit.token,
-      }
+  const request = useMemo(() => {
+    return toJSON({
+      sourceChainId: p.srcChainId,
+      destChainId: p.destChainId,
+      deposit: toQuoteUnit(p.deposit, p.mode == 'deposit'),
+      expense: toQuoteUnit(p.expense, p.mode == 'expense'),
+    })
+  }, [
+    p.srcChainId,
+    p.destChainId,
+    p.deposit.amount,
+    p.deposit.isNative,
+    p.deposit.token,
+    p.expense.amount,
+    p.expense.isNative,
+    p.expense.token,
+  ])
 
-      const request = JSON.stringify(
-        {
-          sourceChainId: params.srcChainId,
-          destChainId: params.destChainId,
-          deposit,
-          expense,
-        },
-        (_, value) => {
-          if (typeof value === 'bigint') {
-            return toHex(value)
-          }
-          return value
-        },
-      )
-
-      // TODO remove hardcoded api url
-      const response = await fetch(
-        'https://solver.staging.omni.network/api/v1/quote',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: request,
-        },
-      )
-      const parsed = await response.json()
-
-      return {
-        deposit: {
-          ...parsed.deposit,
-          amount: fromHex(parsed.deposit.amount, 'bigint'),
-        },
-        expense: {
-          ...parsed.expense,
-          amount: fromHex(parsed.expense.amount, 'bigint'),
-        },
-      }
-    },
-    enabled: queryEnabled,
+  const enabled = !p.srcChainId || p.enabled
+  const query = useQuery<Quote, QuoteError>({
+    queryKey: ['quote', request],
+    queryFn: async () => doQuote(apiBaseUrl, request),
+    enabled,
   })
 
-  const result = useMemo(() => {
-    if (!query.data) return
+  return useResult(query)
+}
 
-    if (query.data.error) {
-      return {
-        error: {
-          code: query.data.error.code,
-          status: query.data.error.status,
-          message: query.data.error.message,
-        },
-      }
-    }
+// doQuote calls the /quote endpoint, throwing on error
+async function doQuote(apiBaseUrl: string, request: string) {
+  const response = await fetch(apiBaseUrl + '/quote', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: request,
+  })
 
-    if (!query.data.deposit || !query.data.expense) {
-      return {
-        error: {
-          code: 500,
-          status: 'Internal Error',
-          message: 'Invalid quote response',
-        },
-      }
-    }
+  if (!response.ok) {
+    const { error } = await response.json()
+    throw error as QuoteError
+  }
 
-    return query.data
-  }, [query.data])
+  const { deposit, expense } = await response.json()
 
   return {
-    result,
-    isPending: query.isPending,
-    isError: query.isError,
-    isSuccess: query.isSuccess,
-    query,
-  }
+    deposit: { ...deposit, amount: fromHex(deposit.amount, 'bigint') },
+    expense: { ...expense, amount: fromHex(expense.amount, 'bigint') },
+  } as Quote
 }
+
+// toQuoteUnit translates a Quoteable to "QuoteUnit", the format expected by /quote
+const toQuoteUnit = (q: Quoteable, omitAmount: boolean) => ({
+  amount: omitAmount ? undefined : q.amount,
+  token: q.isNative ? zeroAddress : q.token,
+})
+
+// useResult memoizes a query into a UseQuoteResult
+const useResult = (q: UseQueryResult<Quote, QuoteError>): UseQuoteResult =>
+  useMemo(() => {
+    if (q.isError) {
+      return {
+        error: q.error,
+        isPending: false,
+        isError: true,
+        isSuccess: false,
+        query: q,
+      }
+    }
+
+    if (q.isSuccess) {
+      return {
+        quote: q.data,
+        isPending: false,
+        isError: false,
+        isSuccess: true,
+        query: q,
+      }
+    }
+
+    return {
+      isPending: true,
+      isError: false,
+      isSuccess: false,
+      query: q,
+    }
+  }, [q])

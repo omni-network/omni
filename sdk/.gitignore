@@ -9,3 +9,6 @@ tsconfig.build.tsbuildinfo
 # ide files
 !.vscode/settings.json
 !.vscode/extensions.json
+
+# asdf
+.tool-versions
