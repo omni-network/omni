@@ -1,5 +1,14 @@
 import type { Abi, Address } from 'viem'
 
+export type OrderStatus =
+  | 'idle'
+  | 'opening'
+  | 'open'
+  | 'closed'
+  | 'rejected'
+  | 'error'
+  | 'filled'
+
 type Deposit = {
   readonly token: Address
   readonly amount: bigint
