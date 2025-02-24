@@ -9,8 +9,9 @@ import {
   useWaitForTransactionReceipt,
   useWriteContract,
 } from 'wagmi'
-import { inbox } from '../constants/contracts.js'
+import { inboxABI } from '../constants/abis.js'
 import { typeHash } from '../constants/typehash.js'
+import { useOmniContext } from '../context/omni.js'
 import type { Order, OrderStatus } from '../types/order.js'
 import { encodeOrder } from '../utils/encodeOrder.js'
 import { useGetOpenOrder } from './useGetOpenOrder.js'
@@ -74,10 +75,13 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
     return
   }, [validate?.data])
 
+  const { inbox } = useOmniContext()
+
   const open = useCallback(async () => {
     const encoded = encodeOrder(params.order)
     return await txMutation.writeContractAsync({
-      ...inbox,
+      abi: inboxABI,
+      address: inbox,
       functionName: 'open',
       chainId: params.order.srcChainId,
       value: params.order.calls.reduce(
@@ -93,7 +97,7 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
         },
       ],
     })
-  }, [params, txMutation.writeContractAsync])
+  }, [params, txMutation.writeContractAsync, inbox])
 
   return {
     open,
