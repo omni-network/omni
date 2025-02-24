@@ -1,7 +1,7 @@
 import type { Hex } from 'viem'
 import { useReadContract } from 'wagmi'
-import { useOmniContext } from '../context/omni.js'
 import { outboxABI } from '../constants/abis.js'
+import { useOmniContext } from '../context/omni.js'
 
 type UseDidFillParams = {
   destChainId: number
