@@ -12,12 +12,12 @@ import {
 } from 'wagmi'
 import { inboxABI } from '../constants/abis.js'
 import { typeHash } from '../constants/typehash.js'
+import { useOmniContext } from '../context/omni.js'
 import type { Order } from '../types/order.js'
 import { encodeOrder } from '../utils/encodeOrder.js'
 import { useDidFill } from './useDidFill.js'
 import { useGetOpenOrder } from './useGetOpenOrder.js'
-import { useInboxStatus, type InboxStatus } from './useInboxStatus.js'
-import { useOmniContext } from '../context/omni.js'
+import { type InboxStatus, useInboxStatus } from './useInboxStatus.js'
 import { toJSON } from './util.js'
 
 type UseOrderParams = {
