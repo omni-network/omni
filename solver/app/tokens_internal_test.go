@@ -54,9 +54,9 @@ func TestTokens(t *testing.T) {
 	tutil.RequireGoldenJSON(t, golden)
 
 	// check max / min
-	require.Equal(t, "10.0000", etherStr(maxETHSpend))
+	require.Equal(t, "1.0000", etherStr(maxETHSpend))
 	require.Equal(t, "0.0010", etherStr(minETHSpend))
-	require.Equal(t, "10.0000", etherStr(maxWSTETHSpend))
+	require.Equal(t, "1.0000", etherStr(maxWSTETHSpend))
 	require.Equal(t, "0.0010", etherStr(minWSTETHSpend))
 	require.Equal(t, "1000.0000", etherStr(maxOMNISpend))
 	require.Equal(t, "0.1000", etherStr(minOMNISpend))
