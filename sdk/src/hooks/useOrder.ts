@@ -15,7 +15,7 @@ import { typeHash } from '../constants/typehash.js'
 import type { Order } from '../types/order.js'
 import { encodeOrder } from '../utils/encodeOrder.js'
 import { useGetOpenOrder } from './useGetOpenOrder.js'
-import { useInboxStatus, InboxStatus } from './useInboxStatus.js'
+import { useInboxStatus, type InboxStatus } from './useInboxStatus.js'
 import { useDidFill } from './useDidFill.js'
 import { useOmniContext } from '../context/omni.js'
 import { toJSON } from './util.js'
@@ -116,7 +116,7 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
         },
       ],
     })
-  }, [params, txMutation.writeContractAsync])
+  }, [params, txMutation.writeContractAsync, inbox])
 
   return {
     open,
