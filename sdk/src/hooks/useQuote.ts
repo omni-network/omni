@@ -4,8 +4,8 @@ import { type Address, fromHex, zeroAddress } from 'viem'
 import { toJSON } from './util.js'
 
 type Quoteable =
-  | { isNative: true; token?: never; amount: bigint }
-  | { isNative: false; token: Address; amount: bigint }
+  | { isNative: true; token?: never; amount?: bigint }
+  | { isNative: false; token: Address; amount?: bigint }
 
 type UseQuoteParams = {
   srcChainId?: number
@@ -48,33 +48,28 @@ type Quote = {
 type QuoteError = { code: number; status: string; message: string }
 
 // useQuote quotes an expense for deposit, or vice versa[
-export function useQuote(p: UseQuoteParams): UseQuoteResult {
+export function useQuote(params: UseQuoteParams): UseQuoteResult {
   // TODO: move to context
-  const apiBaseUrl = 'https://solver.staging.omni.network/api/v1/check'
+  const apiBaseUrl = 'https://solver.staging.omni.network/api/v1/quote'
 
   const request = useMemo(() => {
     return toJSON({
-      sourceChainId: p.srcChainId,
-      destChainId: p.destChainId,
-      deposit: toQuoteUnit(p.deposit, p.mode == 'deposit'),
-      expense: toQuoteUnit(p.expense, p.mode == 'expense'),
+      sourceChainId: params.srcChainId,
+      destChainId: params.destChainId,
+      deposit: toQuoteUnit(params.deposit, params.mode === 'deposit'),
+      expense: toQuoteUnit(params.expense, params.mode === 'expense'),
     })
-  }, [
-    p.srcChainId,
-    p.destChainId,
-    p.deposit.amount,
-    p.deposit.isNative,
-    p.deposit.token,
-    p.expense.amount,
-    p.expense.isNative,
-    p.expense.token,
-  ])
+  }, [params])
 
-  const enabled = !p.srcChainId || p.enabled
   const query = useQuery<Quote, QuoteError>({
     queryKey: ['quote', request],
     queryFn: async () => doQuote(apiBaseUrl, request),
-    enabled,
+    enabled:
+      !!params.srcChainId &&
+      params.enabled !== false &&
+      !(
+        (params.deposit.amount ?? 0n) > 0n || (params.expense.amount ?? 0n) > 0n
+      ),
   })
 
   return useResult(query)
@@ -82,16 +77,11 @@ export function useQuote(p: UseQuoteParams): UseQuoteResult {
 
 // doQuote calls the /quote endpoint, throwing on error
 async function doQuote(apiBaseUrl: string, request: string) {
-  const response = await fetch(apiBaseUrl + '/quote', {
+  const response = await fetch(`${apiBaseUrl} + /quote`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: request,
   })
-
-  if (!response.ok) {
-    const { error } = await response.json()
-    throw error as QuoteError
-  }
 
   const { deposit, expense } = await response.json()
 
