@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 import type { Hex } from 'viem'
 import { useReadContract } from 'wagmi'
-import { useOmniContext } from '../context/omni.js'
 import { inboxABI, outboxABI } from '../constants/abis.js'
+import { useOmniContext } from '../context/omni.js'
 import type { OrderStatus } from '../types/order.js'
 
 type UseOrderStatusParams = {

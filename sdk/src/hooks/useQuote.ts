@@ -1,6 +1,6 @@
-import { useMemo } from 'react'
-import { type Hex } from 'viem'
 import { type UseQueryResult, useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
+import type { Hex } from 'viem'
 import { type Address, fromHex, zeroAddress } from 'viem'
 import { type FetchJSONError, fetchJSON } from '../internal/api.js'
 import { toJSON } from './util.js'

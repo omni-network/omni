@@ -1,10 +1,10 @@
-import { createContext, useContext, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { createContext, useContext, useMemo } from 'react'
+import type { Address } from 'viem'
 import { fetchJSON } from '../internal/api.js'
 import { throwingProxy } from '../internal/util.js'
-import type { Address } from 'viem'
 
-type Environment = 'devnet' | 'staging' | 'testnet' | 'mainnet'
+type Environment = 'devnet' | 'staging' | 'omega' | 'mainnet'
 
 type OmniProviderProps = {
   env: Environment
@@ -21,8 +21,9 @@ type OmniContextValue = OmniContracts & {
   env: Environment
 }
 
-const OmniContext =
-  createContext<OmniContextValue>(throwingProxy<OmniContextValue>())
+const OmniContext = createContext<OmniContextValue>(
+  throwingProxy<OmniContextValue>(),
+)
 
 export function OmniProvider({
   env,
@@ -54,7 +55,7 @@ export function OmniProvider({
       apiBaseUrl,
       env,
     }
-  }, [contracts.data, env])
+  }, [contracts.data, env, apiBaseUrl])
 
   return <OmniContext.Provider value={value}>{children}</OmniContext.Provider>
 }
@@ -63,7 +64,7 @@ export function useOmniContext() {
   const context = useContext(OmniContext)
 
   if (!context) {
-    throw new Error('useOmni must be used within OmniProvider')
+    throw new Error('useOmniContext must be used within OmniProvider')
   }
 
   return context
@@ -92,7 +93,7 @@ function apiUrl(env: Environment): string {
       return 'http://localhost:26661/api/v1'
     case 'staging':
       return 'https://solver.staging.omni.network/api/v1'
-    case 'testnet':
+    case 'omega':
       return 'https://solver.omega.omni.network/api/v1'
     case 'mainnet':
       return 'https://solver.omni.network/api/v1'
@@ -116,7 +117,7 @@ function defaultContracts(env: Environment): OmniContracts {
         outbox: '0x',
         middleman: '0x',
       }
-    case 'testnet':
+    case 'omega':
       return {
         inbox: '0x80b6ed465241a17080dc4a68be42e80fea1214dd',
         outbox: '0x020b76746606c6ddb4708b6996cad9adb821604e',
