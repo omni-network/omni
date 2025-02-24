@@ -486,7 +486,7 @@ func getEventLogs(ctx context.Context, rpcClient ethclient.Client, contractAddr 
 		Topics:    [][]common.Hash{topics}, // Match any of the topics in the first position.
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "filter logs")
+		return nil, errors.Wrap(err, "filter logs", "block_hash", blockHash)
 	}
 
 	// Ensure events are valid and sorted by index.
