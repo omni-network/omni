@@ -90,7 +90,7 @@ func (qu QuoteUnit) ToJSON() JSONQuoteUnit {
 func (qu JSONQuoteUnit) Parse() QuoteUnit {
 	return QuoteUnit{
 		Token:  qu.Token,
-		Amount: qu.Amount.ToInt(),
+		Amount: intOrZero(qu.Amount),
 	}
 }
 
@@ -195,8 +195,8 @@ func (cs JSONCalls) Parse() solvernet.Calls {
 	for _, c := range cs {
 		out = append(out, solvernet.Call{
 			Target: c.Target,
-			Value:  c.Value.ToInt(),
-			Data:   *c.Data,
+			Value:  intOrZero(c.Value),
+			Data:   bzOrNil(c.Data),
 		})
 	}
 
@@ -209,7 +209,7 @@ func (es JSONExpenses) Parse() solvernet.Expenses {
 		out = append(out, solvernet.Expense{
 			Spender: e.Spender,
 			Token:   e.Token,
-			Amount:  e.Amount.ToInt(),
+			Amount:  intOrZero(e.Amount),
 		})
 	}
 
@@ -219,6 +219,22 @@ func (es JSONExpenses) Parse() solvernet.Expenses {
 func (d JSONDeposit) Parse() solvernet.Deposit {
 	return solvernet.Deposit{
 		Token:  d.Token,
-		Amount: d.Amount.ToInt(),
+		Amount: intOrZero(d.Amount),
 	}
+}
+
+func intOrZero(i *hexutil.Big) *big.Int {
+	if i == nil {
+		return big.NewInt(0)
+	}
+
+	return i.ToInt()
+}
+
+func bzOrNil(b *hexutil.Bytes) []byte {
+	if b == nil {
+		return nil
+	}
+
+	return *b
 }
