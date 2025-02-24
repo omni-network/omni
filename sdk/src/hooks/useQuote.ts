@@ -1,6 +1,8 @@
-import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
+import { type Hex } from 'viem'
+import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import { type Address, fromHex, zeroAddress } from 'viem'
+import { type FetchJSONError, fetchJSON } from '../internal/api.js'
 import { toJSON } from './util.js'
 
 // TODO add complex type to enforce one of the amounts is defined
@@ -46,7 +48,13 @@ type Quote = {
   expense: { token: Address; amount: bigint }
 }
 
-type QuoteError = { code: number; status: string; message: string }
+// QuoteResponse is the response from the /quote endpoint, with hex encoded amounts
+type QuoteResponse = {
+  deposit: { token: Address; amount: Hex }
+  expense: { token: Address; amount: Hex }
+}
+
+type QuoteError = FetchJSONError
 
 // useQuote quotes an expense for deposit, or vice versa
 export function useQuote(params: UseQuoteParams): UseQuoteResult {
@@ -89,19 +97,17 @@ export function useQuote(params: UseQuoteParams): UseQuoteResult {
 
 // doQuote calls the /quote endpoint, throwing on error
 async function doQuote(apiBaseUrl: string, request: string) {
-  const response = await fetch(`${apiBaseUrl} + /quote`, {
+  const json = await fetchJSON(`${apiBaseUrl}/quote`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: request,
   })
 
-  const { deposit, expense } = await response.json()
-
-  if (!response.ok) {
-    const { error } = await response.json()
-    throw error as QuoteError
+  if (!isQuoteRes(json)) {
+    throw new Error(`Unexpected quote response: ${JSON.stringify(json)}`)
   }
 
+  const { deposit, expense } = json
   return {
     deposit: { ...deposit, amount: fromHex(deposit.amount, 'bigint') },
     expense: { ...expense, amount: fromHex(expense.amount, 'bigint') },
@@ -144,3 +150,17 @@ const useResult = (q: UseQueryResult<Quote, QuoteError>): UseQuoteResult =>
       query: q,
     }
   }, [q])
+
+// isQuoteRes checks if a json is a QuoteResponse
+// TODO: use zod
+function isQuoteRes(json: unknown): json is QuoteResponse {
+  return (
+    json != null &&
+    (json as any).deposit != null &&
+    (json as any).expense != null &&
+    typeof (json as any).deposit.token === 'string' &&
+    typeof (json as any).deposit.amount === 'string' &&
+    typeof (json as any).expense.token === 'string' &&
+    typeof (json as any).expense.amount === 'string'
+  )
+}
