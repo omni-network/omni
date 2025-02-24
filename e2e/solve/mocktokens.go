@@ -32,12 +32,6 @@ var mocks = []MockToken{
 
 	// devnet mock wstETH
 	{Token: tokens.WSTETH, ChainID: evmchain.IDMockL2, NetworkID: netconf.Devnet},
-
-	// staging mock stETH
-	{Token: tokens.STETH, ChainID: evmchain.IDBaseSepolia, NetworkID: netconf.Staging},
-
-	// devnet mock stETH
-	{Token: tokens.STETH, ChainID: evmchain.IDMockL2, NetworkID: netconf.Devnet},
 }
 
 func MockTokens() []MockToken {
