@@ -7,7 +7,7 @@ export function useGetOrder({
   chainId,
   orderId,
 }: {
-  chainId: number
+  chainId?: number
   orderId?: Hex
 }) {
   const { inbox } = useOmniContext()
@@ -18,7 +18,7 @@ export function useGetOrder({
     chainId,
     args: orderId ? [orderId] : undefined,
     query: {
-      enabled: !!orderId,
+      enabled: !!orderId && !!chainId,
       refetchInterval: 1000,
     },
   })
