@@ -11,6 +11,8 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/solver/types"
+
+	"github.com/rs/cors"
 )
 
 type (
@@ -41,12 +43,18 @@ func serveAPI(address string, endpoints map[string]http.Handler) <-chan error {
 			mux.Handle(endpoint, instrumentHandler(endpoint, handler))
 		}
 
+		c := cors.New(cors.Options{
+			AllowedOrigins: []string{"*"},
+			AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+			AllowedHeaders: []string{"Origin", "Content-Type", "Accept"},
+		})
+
 		srv := &http.Server{
 			Addr:              address,
 			ReadHeaderTimeout: 5 * time.Second,
 			IdleTimeout:       5 * time.Second,
 			WriteTimeout:      5 * time.Second,
-			Handler:           mux,
+			Handler:           c.Handler(mux),
 		}
 		errChan <- errors.Wrap(srv.ListenAndServe(), "serve api")
 	}()
