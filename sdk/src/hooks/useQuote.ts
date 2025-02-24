@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import { type Address, fromHex, zeroAddress } from 'viem'
 import { toJSON } from './util.js'
 
+// TODO add complex type to enforce one of the amounts is defined
 type Quoteable =
   | { isNative: true; token?: never; amount?: bigint }
   | { isNative: false; token: Address; amount?: bigint }
