@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"math/big"
 	"net/http"
 	"time"
 
@@ -13,7 +12,6 @@ import (
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
-	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
@@ -22,9 +20,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/params"
 
-	"cosmossdk.io/math"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -36,8 +32,11 @@ type TestOrder struct {
 	Expenses      solvernet.Expenses
 	Calls         solvernet.Calls
 	Deposit       solvernet.Deposit
-	ShouldReject  bool
 	RejectReason  string
+}
+
+func (o TestOrder) ShouldReject() bool {
+	return o.RejectReason != ""
 }
 
 func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints) error {
@@ -135,102 +134,6 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 	}
 }
 
-func makeOrders() []TestOrder {
-	users := anvil.DevAccounts()
-	var orders []TestOrder
-
-	// erc20 OMNI -> native OMNI orders
-	for i, user := range users {
-		requestAmt := math.NewInt(10).MulRaw(params.Ether).BigInt()
-
-		// make some insufficient (should reject)
-		insufficientDeposit := i%2 == 0
-		depositAmt := new(big.Int).Set(requestAmt)
-		if insufficientDeposit {
-			depositAmt = depositAmt.Div(depositAmt, big.NewInt(2))
-		}
-
-		shouldReject := insufficientDeposit
-		rejectReason := ""
-		if insufficientDeposit {
-			rejectReason = solver.RejectInsufficientDeposit.String()
-		}
-
-		order := TestOrder{
-			Owner:         user,
-			FillDeadline:  time.Now().Add(1 * time.Hour),
-			SourceChainID: evmchain.IDMockL1,
-			DestChainID:   evmchain.IDOmniDevnet,
-			Expenses:      nativeExpense(requestAmt),
-			Calls:         nativeTransferCall(requestAmt, user),
-			Deposit:       erc20Deposit(depositAmt, addrs.Token),
-			ShouldReject:  shouldReject,
-			RejectReason:  rejectReason,
-		}
-
-		orders = append(orders, order)
-	}
-
-	// bad dest chain
-	orders = append(orders, TestOrder{
-		Owner:         users[0],
-		FillDeadline:  time.Now().Add(1 * time.Hour),
-		SourceChainID: evmchain.IDMockL1,
-		DestChainID:   1234, // invalid
-		Expenses:      nativeExpense(big.NewInt(1)),
-		Calls:         nativeTransferCall(big.NewInt(1), users[0]),
-		Deposit:       erc20Deposit(big.NewInt(1), addrs.Token),
-		ShouldReject:  true,
-		RejectReason:  solver.RejectUnsupportedDestChain.String(),
-	})
-
-	// native ETH transfers
-	for i, user := range users {
-		amt := math.NewInt(1).MulRaw(params.Ether).BigInt()
-
-		// make some under min or over max expense
-		overMax := i < 3
-		underMin := i > 6
-
-		if overMax {
-			// max is 1 ETH
-			amt = math.NewInt(2).MulRaw(params.Ether).BigInt()
-		}
-
-		if underMin {
-			// min is 0.001 ETH
-			amt = big.NewInt(1)
-		}
-
-		shouldReject := underMin || overMax
-		rejectReason := ""
-		if underMin {
-			rejectReason = solver.RejectExpenseUnderMin.String()
-		}
-		if overMax {
-			rejectReason = solver.RejectExpenseOverMax.String()
-		}
-
-		order := TestOrder{
-			Owner:         user,
-			FillDeadline:  time.Now().Add(1 * time.Hour),
-			SourceChainID: evmchain.IDMockL1,
-			DestChainID:   evmchain.IDMockL2,
-			Expenses:      nativeExpense(amt),
-			Calls:         nativeTransferCall(amt, user),
-			Deposit:       nativeDeposit(new(big.Int).Add(amt, big.NewInt(1e17))), // add enough to cover fee
-			ShouldReject:  shouldReject,
-			RejectReason:  rejectReason,
-		}
-
-		orders = append(orders, order)
-	}
-
-	// TODO: more tests orders (different rejection cases, valid orders, etc)
-
-	return orders
-}
-
 func openAll(ctx context.Context, backends ethbackend.Backends, orders []TestOrder) (*orderTracker, error) {
 	tracker := newOrderTracker()
 
@@ -305,9 +208,9 @@ func testCheckAPI(ctx context.Context, orders []TestOrder) error {
 				return errors.Wrap(err, "decode response")
 			}
 
-			if checkResp.Rejected != order.ShouldReject {
+			if checkResp.Rejected != order.ShouldReject() {
 				return errors.New("unexpected rejection",
-					"expected", order.ShouldReject,
+					"expected", order.ShouldReject(),
 					"actual", checkResp.Rejected,
 					"reason", checkResp.RejectReason,
 					"order_idx", i,
@@ -318,7 +221,7 @@ func testCheckAPI(ctx context.Context, orders []TestOrder) error {
 				return errors.New("unexpected reject reason", "expected", order.RejectReason, "actual", checkResp.RejectReason)
 			}
 
-			if checkResp.Accepted && order.ShouldReject {
+			if checkResp.Accepted && order.ShouldReject() {
 				return errors.New("accepted but should reject")
 			}
 
