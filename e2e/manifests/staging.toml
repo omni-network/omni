@@ -1,5 +1,6 @@
 network = "staging"
-public_chains = ["op_sepolia","base_sepolia","arb_sepolia","holesky"]
+public_chains = ["op_sepolia","base_sepolia","arb_sepolia"]
+anvil_chains = ["mock_l1"]
 multi_omni_evms = true
 prometheus = true
 deploy_solve = true
