@@ -41,7 +41,7 @@ const minSelfDelegation = uint64(100)
 const minDelegation = uint64(1)
 
 func newCreateValCmd() *cobra.Command {
-	var cfg createValConfig
+	var cfg CreateValConfig
 
 	cmd := &cobra.Command{
 		Use:   "create-validator",
@@ -53,7 +53,7 @@ func newCreateValCmd() *cobra.Command {
 				return errors.Wrap(err, "verify flags")
 			}
 
-			err := createValidator(cmd.Context(), cfg)
+			err := CreateValidator(cmd.Context(), cfg)
 			if err != nil {
 				return errors.Wrap(err, "create-validator")
 			}
@@ -112,13 +112,13 @@ func (v EOAConfig) validate() error {
 	return nil
 }
 
-type createValConfig struct {
+type CreateValConfig struct {
 	EOAConfig
 	ConsensusPubKeyHex string
 	SelfDelegation     uint64
 }
 
-func (c createValConfig) consensusPublicKey() (*ecdsa.PublicKey, error) {
+func (c CreateValConfig) consensusPublicKey() (*ecdsa.PublicKey, error) {
 	if strings.HasPrefix(c.ConsensusPubKeyHex, "0x") {
 		return nil, errors.New("consensus pubkey hex should not have 0x prefix")
 	}
@@ -136,7 +136,7 @@ func (c createValConfig) consensusPublicKey() (*ecdsa.PublicKey, error) {
 	return resp, nil
 }
 
-func (c createValConfig) validate() error {
+func (c CreateValConfig) validate() error {
 	if err := c.EOAConfig.validate(); err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ func (c createValConfig) validate() error {
 	return nil
 }
 
-func createValidator(ctx context.Context, cfg createValConfig) error {
+func CreateValidator(ctx context.Context, cfg CreateValConfig) error {
 	operatorPriv, err := cfg.privateKey()
 	if err != nil {
 		return err
