@@ -81,7 +81,7 @@ func (c Client) getAssetID() string {
 	case netconf.Mainnet:
 		return assetMainnet
 	default:
-		return assetHolesky
+		return assetSepolia
 	}
 }
 
