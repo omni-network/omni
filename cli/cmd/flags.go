@@ -86,7 +86,7 @@ func bindDelegateConfig(cmd *cobra.Command, cfg *DelegateConfig) {
 	_ = cmd.MarkFlagRequired(flagDelegationAmount)
 }
 
-func bindCreateValConfig(cmd *cobra.Command, cfg *createValConfig) {
+func bindCreateValConfig(cmd *cobra.Command, cfg *CreateValConfig) {
 	bindEOAConfig(cmd, &cfg.EOAConfig)
 
 	cmd.Flags().StringVar(&cfg.ConsensusPubKeyHex, flagConsPubKeyHex, cfg.ConsensusPubKeyHex, "Hex-encoded validator consensus public key")

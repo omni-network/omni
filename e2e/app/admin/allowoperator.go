@@ -43,6 +43,8 @@ var allowedOperators = map[netconf.ID][]common.Address{
 		common.HexToAddress("0x231a7A2872208A3e3EF75Ae6580a16308D60706b"), // Finoa
 		common.HexToAddress("0x58D2A4e3880635B7682A1BB7Ed8a43F5ac6cFD3d"), // validator01
 		common.HexToAddress("0x19a4Cb685af95A96BEd67C764b6dB137978a5B17"), // validator02
+		common.HexToAddress("0xD5f9e687c1EA2b0Da7C06bEbe80ddAb03B33C075"), // validator03
+		common.HexToAddress("0x8be1aBb26435fc1AF39Fc88DF9499f626094f9AF"), // validator04
 	},
 }
 
