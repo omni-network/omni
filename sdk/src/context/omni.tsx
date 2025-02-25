@@ -79,11 +79,12 @@ async function getContracts(apiBaseUrl: string) {
 }
 
 function isContracts(json: unknown): json is OmniContracts {
+  const contracts = json as OmniContracts
   return (
-    json != null &&
-    typeof (json as any).inbox === 'string' &&
-    typeof (json as any).outbox === 'string' &&
-    typeof (json as any).middleman === 'string'
+    contracts != null &&
+    typeof contracts.inbox === 'string' &&
+    typeof contracts.outbox === 'string' &&
+    typeof contracts.middleman === 'string'
   )
 }
 

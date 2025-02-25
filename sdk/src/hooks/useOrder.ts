@@ -28,6 +28,7 @@ type UseOrderParams = {
 
 type UseOrderReturnType = {
   open: () => Promise<Hex>
+  orderId?: Hex
   validation?: Validation
   txHash?: Hex
   error?: WriteContractErrorType
@@ -124,6 +125,7 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
 
   return {
     open,
+    orderId,
     validation,
     txHash: txMutation.data,
     status,

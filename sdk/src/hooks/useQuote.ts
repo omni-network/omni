@@ -5,10 +5,7 @@ import { type Address, fromHex, zeroAddress } from 'viem'
 import { type FetchJSONError, fetchJSON } from '../internal/api.js'
 import { toJSON } from './util.js'
 
-// TODO add complex type to enforce one of the amounts is defined
-type Quoteable =
-  | { isNative: true; token?: never; amount?: bigint }
-  | { isNative: false; token: Address; amount?: bigint }
+import type { Quote, Quoteable } from '../types/quote.js'
 
 type UseQuoteParams = {
   srcChainId?: number
@@ -41,11 +38,6 @@ type UseQuotePending = {
 
 type UseQuoteResult = (UseQuoteSuccess | UseQuoteError | UseQuotePending) & {
   query: UseQueryResult<Quote, QuoteError>
-}
-
-type Quote = {
-  deposit: { token: Address; amount: bigint }
-  expense: { token: Address; amount: bigint }
 }
 
 // QuoteResponse is the response from the /quote endpoint, with hex encoded amounts
@@ -152,13 +144,14 @@ const useResult = (q: UseQueryResult<Quote, QuoteError>): UseQuoteResult =>
 // isQuoteRes checks if a json is a QuoteResponse
 // TODO: use zod
 function isQuoteRes(json: unknown): json is QuoteResponse {
+  const quote = json as QuoteResponse
   return (
     json != null &&
-    (json as any).deposit != null &&
-    (json as any).expense != null &&
-    typeof (json as any).deposit.token === 'string' &&
-    typeof (json as any).deposit.amount === 'string' &&
-    typeof (json as any).expense.token === 'string' &&
-    typeof (json as any).expense.amount === 'string'
+    quote.deposit != null &&
+    quote.expense != null &&
+    typeof quote.deposit.token === 'string' &&
+    typeof quote.deposit.amount === 'string' &&
+    typeof quote.expense.token === 'string' &&
+    typeof quote.expense.amount === 'string'
   )
 }
