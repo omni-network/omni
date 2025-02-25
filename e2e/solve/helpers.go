@@ -17,7 +17,10 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-var addrs = mustAddrs(netconf.Devnet)
+var (
+	zeroAddr common.Address
+	addrs    = mustAddrs(netconf.Devnet)
+)
 
 func mustAddrs(network netconf.ID) contracts.Addresses {
 	addrs, err := contracts.GetAddresses(context.Background(), network)
@@ -62,7 +65,6 @@ func mintAndApproveAll(ctx context.Context, backends ethbackend.Backends, orders
 }
 
 func mintAndApprove(ctx context.Context, backends ethbackend.Backends, order TestOrder) error {
-	var zeroAddr common.Address
 	if order.Deposit.Token == zeroAddr {
 		// native, nothing to do
 		return nil
