@@ -74,7 +74,7 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 
 	// temporarily remove holesky from solver network, until holesky issue is
-	// resolved, or it's deperecated and removed from core
+	// resolved, or it's deprecated and removed from core
 	network = removeHolesky(network)
 
 	// TODO: log supported tokens / balances
