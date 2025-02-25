@@ -21,7 +21,7 @@
     "build:esm": "tsc -p tsconfig.build.json",
     "build:types": "tsc -p tsconfig.build.json",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
-    "precommit": "biome check --write"
+    "check": "biome check --write"
   },
   "files": [
     "dist/**",
