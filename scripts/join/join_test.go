@@ -381,13 +381,12 @@ func shutdownContainers(ctx context.Context, home string, output *os.File, logsP
 	stopCmd.Stderr = output
 	stopCmd.Stdout = output
 	err := stopCmd.Run()
-	if err != nil || timeoutCtx.Err() != nil {
+	if err != nil {
 		return errors.Wrap(err, "docker compose down early exit")
 	}
 
-	// Wait dynamically until all containers are stopped.
-	if err = waitForContainersToStop(timeoutCtx, home); err != nil {
-		return err
+	if err = timeoutCtx.Err(); err != nil {
+		return errors.Wrap(err, "docker compose down timed out")
 	}
 
 	// Flush log file before closing.
@@ -401,29 +400,4 @@ func shutdownContainers(ctx context.Context, home string, output *os.File, logsP
 	}
 
 	return nil
-}
-
-func waitForContainersToStop(ctx context.Context, home string) error {
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return errors.New("timeout waiting for containers to stop")
-		case <-ticker.C:
-			checkCmd := exec.Command("docker", "compose", "ps", "-q")
-			checkCmd.Dir = home
-			out, err := checkCmd.Output()
-			if err != nil {
-				return errors.Wrap(err, "check running containers", "out", string(out))
-			}
-
-			// If no running containers, exit the loop
-			if len(strings.TrimSpace(string(out))) == 0 {
-				log.Info(ctx, "All containers stopped.")
-				return nil
-			}
-		}
-	}
 }
