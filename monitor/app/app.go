@@ -20,6 +20,7 @@ import (
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 	"github.com/omni-network/omni/monitor/account"
 	"github.com/omni-network/omni/monitor/contract"
+	"github.com/omni-network/omni/monitor/flowgen"
 	"github.com/omni-network/omni/monitor/loadgen"
 	"github.com/omni-network/omni/monitor/routerecon"
 	"github.com/omni-network/omni/monitor/validator"
@@ -57,6 +58,10 @@ func Run(ctx context.Context, cfg Config) error {
 	ethClients, err := initializeEthClients(network.EVMChains(), cfg.RPCEndpoints)
 	if err != nil {
 		return err
+	}
+
+	if err := flowgen.Start(ctx, network, cfg.RPCEndpoints, cfg.LoadGen.XCallerKey); err != nil {
+		log.Error(ctx, "Failed to start monitor flowgen [BUG]", err)
 	}
 
 	cprov, err := newCProvider(ctx, cfg)

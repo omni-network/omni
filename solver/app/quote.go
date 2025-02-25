@@ -75,7 +75,7 @@ func quoter(req QuoteRequest) QuoteResponse {
 		return returnQuote(quoted.Amount, expense.Amount)
 	}
 
-	quoted, err := quoteExpense(expenseTkn, Payment{Token: depositTkn, Amount: deposit.Amount})
+	quoted, err := QuoteExpense(expenseTkn, Payment{Token: depositTkn, Amount: deposit.Amount})
 	if err != nil {
 		return returnErr(http.StatusBadRequest, err.Error())
 	}
@@ -148,8 +148,8 @@ func quoteDeposit(tkn Token, expense Payment) (Payment, error) {
 	}, nil
 }
 
-// quoteExpense returns the expense allowed for `deposit`.
-func quoteExpense(tkn Token, deposit Payment) (Payment, error) {
+// QuoteExpense returns the expense allowed for `deposit`.
+func QuoteExpense(tkn Token, deposit Payment) (Payment, error) {
 	if deposit.Token.Symbol != tkn.Symbol {
 		return Payment{}, newRejection(rejectInvalidDeposit, errors.New("deposit token must match expense token"))
 	}
