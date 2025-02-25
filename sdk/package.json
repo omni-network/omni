@@ -21,7 +21,8 @@
     "build:esm": "tsc -p tsconfig.build.json",
     "build:types": "tsc -p tsconfig.build.json",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
-    "precommit": "biome check --write"
+    "check": "biome check --write",
+    "prepare": "pnpm simple-git-hooks"
   },
   "files": [
     "dist/**",
@@ -32,6 +33,9 @@
   "engines": {
     "node": ">=22.x"
   },
+  "simple-git-hooks": {
+    "pre-commit": "cd $(git rev-parse --show-toplevel)/sdk && pnpm check"
+  },
   "peerDependencies": {
     "@tanstack/react-query": "^5.64.2",
     "react": ">=18",
@@ -41,6 +45,7 @@
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
     "@types/react": "^19.0.8",
+    "simple-git-hooks": "^2.11.1",
     "typescript": "5.7.2"
   },
   "repository": {
