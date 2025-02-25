@@ -25,8 +25,8 @@ func TestSlashingParams(t *testing.T) {
 func TestTargetInflation(t *testing.T) {
 	t.Parallel()
 
-	require.Equal(t, "0.115789000000000000", targetInflation.String())
-	require.EqualValues(t, 15768000, MintParams.BlocksPerYear)
+	require.Equal(t, "0.110000000000000000", targetInflation.String())
+	require.EqualValues(t, 21024000, MintParams.BlocksPerYear)
 
 	totalStaked := math.NewInt(1000).MulRaw(params.Ether) // 1000 omni staked
 	bondedRatio := math.LegacyNewDec(1)                   // 100% bonded
