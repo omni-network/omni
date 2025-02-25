@@ -20,13 +20,12 @@ pnpm build
 echo "Running SDK checks..."
 pnpm check
 
-# TODO enable after issues resolved
-# CHECK_EXIT_CODE=$?
+CHECK_EXIT_CODE=$?
 
-# if [ $CHECK_EXIT_CODE -ne 0 ]; then
-#     echo "SDK check failed with $CHECK_EXIT_CODE"
-#     exit $CHECK_EXIT_CODE
-# fi
+if [ $CHECK_EXIT_CODE -ne 0 ]; then
+    echo "SDK check failed with $CHECK_EXIT_CODE"
+    exit $CHECK_EXIT_CODE
+fi
 
 echo "SDK check completed..."
 
