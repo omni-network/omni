@@ -20,6 +20,7 @@ import (
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 	"github.com/omni-network/omni/monitor/account"
 	"github.com/omni-network/omni/monitor/contract"
+	"github.com/omni-network/omni/monitor/flowgen"
 	"github.com/omni-network/omni/monitor/loadgen"
 	"github.com/omni-network/omni/monitor/routerecon"
 	"github.com/omni-network/omni/monitor/validator"
@@ -65,6 +66,10 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 
 	xprov := xprovider.New(network, ethClients, cprov)
+
+	if err := flowgen.Start(ctx, xprov, network, cfg.RPCEndpoints, cfg.PrivateKey); err != nil {
+		log.Error(ctx, "Failed to start monitor flowgen [BUG]", err)
+	}
 
 	account.StartMonitoring(ctx, network, ethClients)
 
