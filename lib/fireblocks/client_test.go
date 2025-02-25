@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"flag"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -92,7 +93,9 @@ func parseKey(t *testing.T, data []byte) *rsa.PrivateKey {
 	return k.(*rsa.PrivateKey)
 }
 
-// Populate this or run TestSmoke via terminal
+var integration = flag.Bool("integration", false, "run integration tests")
+
+// Populate this or run TestSmoke via terminal (also enable --integration flag)
 // func init() {
 //	os.Setenv("FIREBLOCKS_APIKEY", "")
 //	os.Setenv("FIREBLOCKS_KEY_PATH", "")
@@ -100,6 +103,9 @@ func parseKey(t *testing.T, data []byte) *rsa.PrivateKey {
 
 func TestSmoke(t *testing.T) {
 	t.Parallel()
+	if !*integration {
+		t.Skip("skipping integration test")
+	}
 	ctx := context.Background()
 
 	apiKey, ok := os.LookupEnv("FIREBLOCKS_APIKEY")
