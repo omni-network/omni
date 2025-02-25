@@ -1,6 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
-import { useCallback, useMemo } from 'react'
-import { encodeFunctionData } from 'viem'
+import { useCallback } from 'react'
 import type { Hex, WriteContractErrorType } from 'viem'
 import {
   type Config,
@@ -19,7 +17,10 @@ import { encodeOrder } from '../utils/encodeOrder.js'
 import { useDidFill } from './useDidFill.js'
 import { useGetOpenOrder } from './useGetOpenOrder.js'
 import { type InboxStatus, useInboxStatus } from './useInboxStatus.js'
-import { toJSON } from './util.js'
+import {
+  type UseValidateOrderResult,
+  useValidateOrder,
+} from './useValidateOrder.js'
 
 type UseOrderParams = {
   order: Order
@@ -29,17 +30,14 @@ type UseOrderParams = {
 type UseOrderReturnType = {
   open: () => Promise<Hex>
   orderId?: Hex
-  validation?: Validation
+  validation?: UseValidateOrderResult
   txHash?: Hex
   error?: WriteContractErrorType
-  validationError?: ValidationError
   status: OrderStatus
-  canOpen: boolean
   isTxPending: boolean
   isTxSubmitted: boolean
   isValidated: boolean
   isOpen: boolean
-  isRejected: boolean
   isError: boolean
   txMutation: UseWriteContractReturnType<Config, unknown>
   waitForTx: UseWaitForTransactionReceiptReturnType<Config, number>
@@ -68,25 +66,7 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
     wait.fetchStatus,
   )
 
-  const validate = useValidateOrder(params)
-
-  const validation = useMemo(() => {
-    if (validate?.data?.error)
-      return {
-        error: {
-          code: validate.data.error.code,
-          message: validate.data.error.message,
-        },
-      }
-    if (validate?.data?.rejected)
-      return {
-        rejected: true,
-        rejectReason: validate.data.rejectReason,
-        rejectDescription: validate.data.rejectDescription,
-      } as const
-    if (validate?.data?.accepted) return { accepted: true } as const
-    return
-  }, [validate?.data])
+  const validation = useValidateOrder(params)
 
   const { inbox } = useOmniContext()
 
@@ -130,123 +110,14 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
     txHash: txMutation.data,
     status,
     error: txMutation.error as WriteContractErrorType | undefined,
-    canOpen: validation?.accepted ?? false,
+    isValidated: validation?.status === 'accepted',
     isTxPending: txMutation.isPending,
     isTxSubmitted: txMutation.isSuccess,
-    isValidated: validation?.accepted ?? false,
-    isRejected: validation?.rejected ?? false,
-    isError: !!(validation?.error || txMutation.error),
+    isError: !!txMutation.error,
     isOpen: !!wait.data,
     txMutation,
     waitForTx: wait,
   }
-}
-
-////////////////////////
-//// order validation
-////////////////////////
-type ValidationResponse = {
-  accepted?: boolean
-  rejected?: boolean
-  error?: {
-    code: number
-    message: string
-  }
-  rejectReason?: string
-  rejectDescription?: string
-}
-
-type ValidationRejected = {
-  rejected: true
-  rejectReason?: string
-  rejectDescription?: string
-}
-
-type ValidationAccepted = {
-  accepted: true
-}
-
-type ValidationError = {
-  error: {
-    code: number
-    message: string
-  }
-}
-
-type Validation = ValidationRejected | ValidationAccepted | ValidationError
-
-// TODO: runtime assertions
-function useValidateOrder({ order, validateEnabled = true }: UseOrderParams) {
-  // biome-ignore lint/correctness/useExhaustiveDependencies: deep compare on obj properties
-  const request = useMemo(() => {
-    if (!order.owner) return ''
-
-    function _encodeCalls() {
-      return order.calls.map((call) => {
-        const callData = encodeFunctionData({
-          abi: call.abi,
-          functionName: call.functionName,
-          args: call.args,
-        })
-        return {
-          target: call.target,
-          value: call.value,
-          data: callData,
-        }
-      })
-    }
-
-    return toJSON({
-      sourceChainId: order.srcChainId,
-      destChainId: order.destChainId,
-      fillDeadline: order.fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
-      calls: _encodeCalls(),
-      deposit: {
-        amount: order.deposit.amount,
-        token: order.deposit.token,
-      },
-      expenses: [
-        {
-          amount: order.expense.amount,
-          token: order.expense.token,
-          spender: order.expense.spender,
-        },
-      ],
-    })
-  }, [
-    order.srcChainId,
-    order.destChainId,
-    order.deposit.amount?.toString(),
-    order.deposit.token,
-    order.expense.amount?.toString(),
-    order.expense.token,
-    order.expense.spender,
-    order.owner,
-    order.fillDeadline,
-  ])
-
-  return useQuery<ValidationResponse>({
-    queryKey: ['check', request],
-    queryFn: async () => {
-      // TODO remove hardcoded api url
-      const response = await fetch(
-        'https://solver.staging.omni.network/api/v1/check',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: request,
-        },
-      )
-      return await response.json()
-    },
-    enabled:
-      !!order.owner &&
-      !!order.srcChainId &&
-      validateEnabled !== false &&
-      !(order.deposit.amount === 0n && order.expense.amount === 0n),
-  })
 }
 
 // deriveStatus returns a status derived from open tx, inbox and outbox statuses
