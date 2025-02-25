@@ -13,5 +13,5 @@ The Omni SDK is a TypeScript library for interfacing with Omni SolverNet, your g
 - [ ] Add e2e tests
 - [ ] Zod schema validation
 - [ ] Write docs
-- [ ] Build package abstractions - `core` and `react` 
+- [ ] Build package abstractions - `core` and `react`
 - [ ] Add examples
