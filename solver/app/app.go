@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -71,6 +72,10 @@ func Run(ctx context.Context, cfg Config) error {
 	if err != nil {
 		return err
 	}
+
+	// temporarily remove holesky from solver network, until holesky issue is
+	// resolved, or it's deperecated and removed from core
+	network = removeHolesky(network)
 
 	// TODO: log supported tokens / balances
 
@@ -326,5 +331,20 @@ func streamEventsForever(
 
 		log.Warn(ctx, "Failure streaming inbox events (will retry)", err)
 		backoff()
+	}
+}
+
+func removeHolesky(network netconf.Network) netconf.Network {
+	var chains []netconf.Chain
+	for _, chain := range network.Chains {
+		if chain.ID == evmchain.IDHolesky {
+			continue
+		}
+		chains = append(chains, chain)
+	}
+
+	return netconf.Network{
+		ID:     network.ID,
+		Chains: chains,
 	}
 }
