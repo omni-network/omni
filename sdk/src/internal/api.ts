@@ -25,10 +25,11 @@ export async function fetchJSON(
 
 // TODO: use zod
 function isJSONError(error: unknown): error is JSONError {
+  const err = error as JSONError
   return (
-    error != null &&
-    typeof (error as any).code === 'number' &&
-    typeof (error as any).status === 'string' &&
-    typeof (error as any).message === 'string'
+    err != null &&
+    typeof err.code === 'number' &&
+    typeof err.status === 'string' &&
+    typeof err.message === 'string'
   )
 }
