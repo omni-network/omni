@@ -85,6 +85,15 @@ var (
 		Name:      "votes_expected_total",
 		Help:      "Total number of expected votes for attestations per validator per chain version.",
 	}, []string{"validator", "chain_version"})
+
+	// pendingBlocks tracks the number of blocks between the first vote and quorum for the latest attestation
+	// Alert if growing (not reaching quorum).
+	pendingBlocks = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "halo",
+		Subsystem: "attest",
+		Name:      "pending_blocks",
+		Help:      "Number of blocks the latest attestation is/was pending per chain version",
+	}, []string{"chain_version"})
 )
 
 func latency(method string) func() {
