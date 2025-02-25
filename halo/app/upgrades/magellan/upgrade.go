@@ -48,8 +48,8 @@ func StoreUpgrades(_ context.Context) *storetypes.StoreUpgrades {
 }
 
 var (
-	targetInflation  = math.LegacyNewDecWithPrec(115789, 6) // 11.5789% so that delegators earn ~11% after deducting of 5% validator rewards
-	blocksPeriodSecs = 2                                    // BlocksPerYear calculated based on 2 second block times
+	targetInflation  = math.LegacyNewDecWithPrec(11, 2) // Fixed 11% rewards for delegators
+	blocksPeriodSecs = 1.5                              // Avg mainnet block period is 1.5s per block
 	MintParams       = minttypes.Params{
 		MintDenom:           sdk.DefaultBondDenom,
 		InflationRateChange: math.LegacyNewDec(0),
