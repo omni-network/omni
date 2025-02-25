@@ -27,6 +27,7 @@
  "staging": [
   "fullnode01",
   "fullnode01_evm",
+  "mock_l1",
   "monitor",
   "relayer",
   "seed01",
