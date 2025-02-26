@@ -1,5 +1,12 @@
-import { type Hex, encodeAbiParameters, encodeFunctionData, slice } from 'viem'
-import type { Order } from '../types/order.js'
+import type { Hex } from 'viem'
+import {
+  encodeAbiParameters,
+  encodeFunctionData,
+  slice,
+  zeroAddress,
+} from 'viem'
+import type { OptionalAbis } from '../types/abi.js'
+import { type Order, isContractCall } from '../types/order.js'
 
 /**
  * @description Encodes order params in preparation for sending to the inbox contract
@@ -35,13 +42,17 @@ import type { Order } from '../types/order.js'
  *   ],
  * })
  */
-export function encodeOrder(order: Order) {
-  // TODO custom error
-  if (!order.owner) {
-    throw new Error('Owner must be defined')
-  }
-
+export function encodeOrder(order: Order<OptionalAbis>): Hex {
   const callsTuple = order.calls.map((call) => {
+    if (!isContractCall(call)) {
+      return {
+        target: call.target,
+        selector: '0x00000000',
+        value: call.value,
+        params: '0x',
+      } as const
+    }
+
     const callData = encodeFunctionData({
       abi: call.abi,
       functionName: call.functionName,
@@ -62,14 +73,15 @@ export function encodeOrder(order: Order) {
 
   const expenseTuple = [
     {
-      spender: order.expense.spender,
-      token: order.expense.token,
+      spender: order.expense.spender ?? zeroAddress,
+      token: order.expense.token ?? zeroAddress,
       amount: order.expense.amount,
     },
-  ]
+    // native expenses not included in order data
+  ].filter((e) => e.token !== zeroAddress)
 
   const depositTuple = {
-    token: order.deposit.token,
+    token: order.deposit.token ?? zeroAddress,
     amount: order.deposit.amount,
   }
 
@@ -112,7 +124,7 @@ export function encodeOrder(order: Order) {
     ],
     [
       [
-        order.owner,
+        order.owner ?? zeroAddress,
         BigInt(order.destChainId),
         depositTuple,
         callsTuple,

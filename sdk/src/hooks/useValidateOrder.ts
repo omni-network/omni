@@ -1,12 +1,15 @@
 import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import { encodeFunctionData } from 'viem'
+import { encodeFunctionData, zeroAddress } from 'viem'
+import { useOmniContext } from '../context/omni.js'
 import { type FetchJSONError, fetchJSON } from '../internal/api.js'
+import type { OptionalAbis } from '../types/abi.js'
 import type { Order } from '../types/order.js'
+import { isContractCall } from '../types/order.js'
 import { toJSON } from './util.js'
 
-type UseValidateOrderParams = {
-  order: Order
+type UseValidateOrderParams<abis extends OptionalAbis> = {
+  order: Order<abis>
   enabled?: boolean
 }
 
@@ -55,68 +58,59 @@ export type UseValidateOrderResult =
   | ValidationAccepted
   | ValidationError
 
-export function useValidateOrder({
+export function useValidateOrder<abis extends OptionalAbis>({
   order,
-  enabled = true,
-}: UseValidateOrderParams): UseValidateOrderResult {
-  const apiBaseUrl = 'https://solver.staging.omni.network/api/v1'
+  enabled,
+}: UseValidateOrderParams<abis>): UseValidateOrderResult {
+  const { apiBaseUrl } = useOmniContext()
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: deep compare on obj properties
-  const request = useMemo(() => {
-    if (!order.owner) return ''
-
-    function _encodeCalls() {
-      return order.calls.map((call) => {
-        const callData = encodeFunctionData({
-          abi: call.abi,
-          functionName: call.functionName,
-          args: call.args,
-        })
+  function _encodeCalls() {
+    return order.calls.map((call) => {
+      if (!isContractCall(call)) {
         return {
           target: call.target,
           value: call.value,
-          data: callData,
+          data: '0x',
         }
-      })
-    }
+      }
 
-    return toJSON({
-      sourceChainId: order.srcChainId,
-      destChainId: order.destChainId,
-      fillDeadline: order.fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
-      calls: _encodeCalls(),
-      deposit: {
-        amount: order.deposit.amount,
-        token: order.deposit.token,
-      },
-      expenses: [
-        {
-          amount: order.expense.amount,
-          token: order.expense.token,
-          spender: order.expense.spender,
-        },
-      ],
+      const callData = encodeFunctionData({
+        abi: call.abi,
+        functionName: call.functionName,
+        args: call.args,
+      })
+
+      return {
+        target: call.target,
+        value: call.value,
+        data: callData,
+      }
     })
-  }, [
-    order.srcChainId,
-    order.destChainId,
-    order.deposit.amount?.toString(),
-    order.deposit.token,
-    order.expense.amount?.toString(),
-    order.expense.token,
-    order.expense.spender,
-    order.owner,
-    order.fillDeadline,
-  ])
+  }
+
+  const request = toJSON({
+    orderId: order.owner ?? zeroAddress,
+    sourceChainId: order.srcChainId,
+    destChainId: order.destChainId,
+    fillDeadline: order.fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
+    calls: _encodeCalls(),
+    deposit: {
+      amount: order.deposit.amount,
+      token: order.deposit.token,
+    },
+    expenses: [
+      {
+        amount: order.expense.amount,
+        token: order.expense.token,
+        spender: order.expense.spender,
+      },
+    ],
+  })
 
   const query = useQuery<ValidationResponse, FetchJSONError>({
     queryKey: ['check', request],
     queryFn: async () => doValidate(apiBaseUrl, request),
-    enabled:
-      !!order.owner &&
-      !!order.srcChainId &&
-      enabled !== false &&
-      !(order.deposit.amount === 0n && order.expense.amount === 0n),
+    enabled: enabled && order.deposit.amount > 0n && order.expense.amount > 0n,
   })
 
   return useResult(query)
@@ -152,43 +146,29 @@ const isValidateRes = (json: unknown): json is ValidationResponse => {
 }
 
 const useResult = (
-  q: UseQueryResult<ValidationResponse, FetchJSONError>,
+  query: UseQueryResult<ValidationResponse, FetchJSONError>,
 ): UseValidateOrderResult =>
   useMemo(() => {
-    if (q.isError) {
-      return {
-        status: 'error',
-        error: q.error,
-      }
-    }
+    if (query.isError) return { status: 'error', error: query.error }
+    if (query.isPending) return { status: 'pending' }
+    if (query.data.accepted) return { status: 'accepted' }
 
-    if (q.isPending) {
-      return {
-        status: 'pending',
-      }
-    }
-
-    if (q.data.rejected) {
+    if (query.data.rejected) {
       return {
         status: 'rejected',
         // TODO validation on rejections
-        rejectReason: q.data.rejectReason ?? 'Unknown reason',
+        rejectReason: query.data.rejectReason ?? 'Unknown reason',
         rejectDescription:
-          q.data.rejectDescription ?? 'No description provided',
-      }
-    }
-
-    if (q.data.accepted) {
-      return {
-        status: 'accepted',
+          query.data.rejectDescription ?? 'No description provided',
       }
     }
 
     return {
       status: 'error',
-      error: q.data?.error ?? {
+      error: query.data?.error ?? {
         code: 0,
         message: 'Unknown validation error',
       },
+      query,
     }
-  }, [q])
+  }, [query])
