@@ -16,8 +16,7 @@ type UseQuoteParams = {
   enabled: boolean
 }
 
-type UseQuoteSuccess = {
-  quote: Quote
+type UseQuoteSuccess = Quote & {
   isPending: false
   isError: false
   isSuccess: true
@@ -104,17 +103,17 @@ const useResult = (q: UseQueryResult<Quote, QuoteError>): UseQuoteResult =>
         isError: true,
         isSuccess: false,
         query: q,
-      }
+      } as const
     }
 
     if (q.isSuccess) {
       return {
-        quote: q.data,
+        ...q.data,
         isPending: false,
         isError: false,
         isSuccess: true,
         query: q,
-      }
+      } as const
     }
 
     return {
@@ -122,7 +121,7 @@ const useResult = (q: UseQueryResult<Quote, QuoteError>): UseQuoteResult =>
       isError: false,
       isSuccess: false,
       query: q,
-    }
+    } as const
   }, [q])
 
 // isQuoteRes checks if a json is a QuoteResponse
