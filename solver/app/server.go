@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -36,12 +37,13 @@ func serveAPI(address string, endpoints map[string]http.Handler) <-chan error {
 	go func() {
 		mux := http.NewServeMux()
 
-		endpoints["/live"] = newLiveHandler()
-		endpoints["/"] = newLiveHandler() // Also serve live from root for easy health checks
-
 		for endpoint, handler := range endpoints {
 			mux.Handle(endpoint, instrumentHandler(endpoint, handler))
 		}
+
+		// Add health check endpoints (not instrumented)
+		mux.Handle("/live", newLiveHandler())
+		mux.Handle("/", newLiveHandler()) // Also serve live from root for easy health checks
 
 		c := cors.New(cors.Options{
 			AllowedOrigins: []string{"*"},
@@ -80,6 +82,7 @@ func newContractsHandler(addrs contracts.Addresses) http.Handler {
 
 // newLiveHandler returns a http handler that always return 200s.
 // It indicates the API server is "live" (up and running).
+// It isn't necessarily "ready" or "healthy" since downstream dependencies may be down.
 func newLiveHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -89,13 +92,24 @@ func newLiveHandler() http.Handler {
 // instrumentHandler wraps an http.Handler, instrumenting the latency and error rate.
 func instrumentHandler(endpoint string, handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		apiConcurrent.Inc()
+		defer apiConcurrent.Dec()
+
 		t0 := time.Now()
 		iw := &instrumentWriter{ResponseWriter: w}
 
 		handler.ServeHTTP(iw, r)
 
-		apiLatency.WithLabelValues(endpoint).Observe(time.Since(t0).Seconds())
-		apiErrors.WithLabelValues(endpoint).Add(iw.ErrorCount())
+		latency := time.Since(t0)
+		apiLatency.WithLabelValues(endpoint).Observe(latency.Seconds())
+		apiResponses.WithLabelValues(endpoint, iw.StatusClass()).Inc()
+
+		log.Debug(r.Context(), "Served API request",
+			"endpoint", endpoint,
+			"status", iw.StatusCode(),
+			"latency_millis", latency.Milliseconds(),
+			"client_ip", clientIP(r),
+		)
 	})
 }
 
@@ -110,10 +124,33 @@ func (w *instrumentWriter) WriteHeader(status int) {
 	w.ResponseWriter.WriteHeader(status)
 }
 
-func (w *instrumentWriter) ErrorCount() float64 {
-	if w.status < 400 {
-		return 0 // 200 or unset is not an error
+// StatusClass returns the status class of the response ("2xx", "4xx", "5xx") .
+func (w *instrumentWriter) StatusClass() string {
+	if w.status == 0 {
+		return "2xx" // unset is 200
 	}
 
-	return 1
+	return fmt.Sprintf("%dxx", w.status/100)
+}
+
+// StatusCode returns the status code of the response.
+func (w *instrumentWriter) StatusCode() int {
+	if w.status == 0 {
+		return http.StatusOK
+	}
+
+	return w.status
+}
+
+func clientIP(r *http.Request) string {
+	for _, header := range []string{
+		"CF-Connecting-IP", // Use CloudFlare if present
+		"X-Forwarded-For",  // Otherwise GCP / AWS LB
+	} {
+		if ip := r.Header.Get(header); ip != "" {
+			return ip
+		}
+	}
+
+	return r.RemoteAddr // Fallback to remote address
 }
