@@ -262,58 +262,6 @@ func makeOrders() []TestOrder {
 		RejectReason:  solver.RejectInvalidExpense.String(),
 	})
 
-	// insufficient inventory test case
-	// orders = append(orders, TestOrder{
-	//	Owner:         users[0],
-	//	FillDeadline:  time.Now().Add(1 * time.Hour),
-	//	SourceChainID: evmchain.IDMockL1,
-	//	DestChainID:   evmchain.IDMockL2,
-	//	Expenses:      nativeExpense(math.NewInt(1).MulRaw(params.GWei).BigInt()),
-	//	Calls:         nativeTransferCall(big.NewInt(1), users[0]),
-	//	Deposit:       solvernet.Deposit{Amount: new(big.Int).Add(big.NewInt(1), big.NewInt(1e17)), Token: common.Address{}},
-	//	ShouldReject:  true,
-	//	RejectReason:  solver.RejectInsufficientInventory.String(),
-	// })
-
-	// // unsupported deposit
-	// orders = append(orders, TestOrder{
-	//	Owner:         users[0],
-	//	FillDeadline:  time.Now().Add(1 * time.Hour),
-	//	SourceChainID: evmchain.IDMockL1,
-	//	DestChainID:   evmchain.IDOmniDevnet,
-	//	Expenses:      nativeExpense(new(big.Int).Mul(big.NewInt(10), big.NewInt(1e16))),
-	//	Calls:         nativeTransferCall(big.NewInt(1), users[0]),
-	//	Deposit:       unsupportedDeposit(big.NewInt(1)),
-	//	ShouldReject:  true,
-	//	RejectReason:  solver.RejectUnsupportedDeposit.String(),
-	// })
-
-	// // bad src chain
-	// orders = append(orders, TestOrder{
-	//	Owner:         users[0],
-	//	FillDeadline:  time.Now().Add(1 * time.Hour),
-	//	SourceChainID: 1234, // invalid
-	//	DestChainID:   evmchain.IDMockL1,
-	//	Expenses:      nativeExpense(big.NewInt(1)),
-	//	Calls:         nativeTransferCall(big.NewInt(1), users[0]),
-	//	Deposit:       erc20Deposit(big.NewInt(1), common.Address{}),
-	//	ShouldReject:  true,
-	//	RejectReason:  solver.RejectUnsupportedSrcChain.String(),
-	// })
-
-	// same chain for src and dest
-	// orders = append(orders, TestOrder{
-	//	Owner:         users[0],
-	//	FillDeadline:  time.Now().Add(1 * time.Hour),
-	//	SourceChainID: evmchain.IDMockL1,
-	//	DestChainID:   evmchain.IDMockL1,
-	//	Expenses:      nativeExpense(big.NewInt(1)),
-	//	Calls:         nativeTransferCall(big.NewInt(1), users[0]),
-	//	Deposit:       erc20Deposit(big.NewInt(1), addrs.Token),
-	//	ShouldReject:  true,
-	//	RejectReason:  solver.RejectSameChain.String(),
-	// })
-
 	// TODO: more tests orders (different rejection cases, valid orders, etc)
 
 	return orders
