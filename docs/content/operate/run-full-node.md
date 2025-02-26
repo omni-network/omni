@@ -18,7 +18,7 @@ docker compose up
 
 Congrats, you're running a full node!
 
-For the upcoming mainnet, replace the `omega` network with `mainnet`.
+For a mainnet node, replace the `--network=omega` with `--network=mainnet`.
 
 ## Details
 
@@ -56,8 +56,11 @@ There are three ways to run `halo`, listed in order of preference:
 
 1. **🥇 Halovisor docker container**
     - Simply run the `omniops/halovisor:<latest>` docker container.
-    - It combines multiple `halo` versions with `cosmovisor` for automatic network upgrades.
-    - E.g. `omniops/halovisor:v0.9.0` contains the `halo:v0.8.1` and `halo:v0.9.0` binaries and will automatically switch at the correct height.
+    - The `halovisor:v0.13.0` container combines the following `halo` versions with `cosmovisor` for automatic network upgrades.
+      - `halo:v0.8.1` for `genesis`
+      - `halo:v0.12.0` for `1_uluwatu`
+      - `halo:v0.13.0` for `2_magellan`
+    - It will automatically switch to the correct network upgrade binary at the applicable height.
     - It only requires a single docker volume mount: `-v ~/.omni/<network>/halo:/halo`
     - It will persist the cosmovisor “current” binary symlink to: `halo/halovisor-current`
     - It will persist the cosmovisor “current” upgrade info to: `halo/halovisor-upgradeinfo.json`
@@ -66,7 +69,8 @@ There are three ways to run `halo`, listed in order of preference:
     - Install and configure stock-standard CosmosSDK Cosmovisor with `halo` binaries, see docs [here](https://docs.cosmos.network/main/build/tooling/cosmovisor#setup) and [here](https://docs.archway.io/validators/running-a-node/cosmovisor) and [here](https://docs.junonetwork.io/validators/setting-up-cosmovisor). This will also automatically swap the “current” binary at the correct height.
     - The binaries versions to use are:
         - `genesis: halo:v0.8.1`
-        - `upgrade/1_uluwatu: halo:v0.9.0`
+        - `upgrade/1_uluwatu: halo:v0.12.0`
+        - `upgrade/2_magellan: halo:v0.13.0`
     - Suggested env vars:
         - `ENV DAEMON_ALLOW_DOWNLOAD_BINARIES=false`
         - `ENV DAEMON_RESTART_AFTER_UPGRADE=true`
@@ -78,13 +82,14 @@ There are three ways to run `halo`, listed in order of preference:
       ├─ config/...
       ├─ cosmovisor/
       │ ├── genesis/bin/$DEAMONNAME # halo:v0.8.1
-      │ ├── upgrades/1_uluwatu/bin/$DEAMONNAME # halo:v0.9.0
+      │ ├── upgrades/1_uluwatu/bin/$DEAMONNAME # halo:v0.12.0
+      │ ├── upgrades/2_magellan/bin/$DEAMONNAME # halo:v0.13.0
     ```
 
 3. **🥉 Manual binary/docker swapping**
     - Swapping halo binary or docker version manually is also an option.
-    - When `halo:v0.8.1` reaches the network upgrade height, it will stall.
-    - Stop it, and replace it with `halo:v0.9.0`
+    - When `halo:v0.12.0` reaches the `2_magellan` network upgrade height, it will stall.
+    - Stop it, and replace it with `halo:v0.13.0`
     - Start the node and it should catch up and continue processing the chain.
     - Note this will include downtime and is therefore not advised for validators as will negatively impact validator performance.
 
