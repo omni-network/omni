@@ -61,6 +61,7 @@ const sidebars: SidebarsConfig = {
         'operate/validator',
         'operate/roadmap',
         'operate/faq',
+        'operate/magellan'
       ],
       collapsed: true,
     },

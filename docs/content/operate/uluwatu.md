@@ -1,6 +1,6 @@
 # Network Upgrade: Uluwatu
 
-This guide describes the process to participate in the *critical coordinated* Omni Omega  “Uluwatu” network upgrade (hard fork).  (Omni network upgrades are named after iconic surf spots; Uluwatu is in Bali).
+This guide describes the process to participate in the *critical coordinated* Omni Omega  “Uluwatu” network upgrade (hard fork).  (Omni network upgrades were previously named after iconic surf spots; Uluwatu is in Bali).
 
 ## TL;DR
 
