@@ -23,7 +23,7 @@ import {
 } from './useValidateOrder.js'
 
 type UseOrderParams<abis extends OptionalAbis> = Order<abis> & {
-  validate?: boolean
+  validate: boolean
 }
 
 type UseOrderReturnType = {

@@ -13,7 +13,7 @@ type UseQuoteParams = {
   mode: 'expense' | 'deposit'
   deposit: Quoteable
   expense: Quoteable
-  enabled?: boolean
+  enabled: boolean
 }
 
 type UseQuoteSuccess = {
@@ -63,11 +63,7 @@ export function useQuote(params: UseQuoteParams): UseQuoteResult {
   const query = useQuery<Quote, QuoteError>({
     queryKey: ['quote', request],
     queryFn: async () => doQuote(apiBaseUrl, request),
-    enabled:
-      enabled &&
-      !!srcChainId &&
-      (deposit?.amount ?? 0n) > 0n &&
-      (expense?.amount ?? 0n) > 0n,
+    enabled,
   })
 
   return useResult(query)

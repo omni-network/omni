@@ -10,7 +10,7 @@ import { toJSON } from './util.js'
 
 type UseValidateOrderParams<abis extends OptionalAbis> = {
   order: Order<abis>
-  enabled?: boolean
+  enabled: boolean
 }
 
 type ValidationResponse = {
@@ -110,7 +110,7 @@ export function useValidateOrder<abis extends OptionalAbis>({
   const query = useQuery<ValidationResponse, FetchJSONError>({
     queryKey: ['check', request],
     queryFn: async () => doValidate(apiBaseUrl, request),
-    enabled: enabled && order.deposit.amount > 0n && order.expense.amount > 0n,
+    enabled,
   })
 
   return useResult(query)
