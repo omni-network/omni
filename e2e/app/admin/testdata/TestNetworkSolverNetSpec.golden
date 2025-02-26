@@ -1,0 +1,34 @@
+{
+ "devnet": {
+  "Global": {
+   "PauseAll": false,
+   "PauseOpen": false,
+   "PauseClose": false
+  },
+  "ChainOverrides": null
+ },
+ "mainnet": {
+  "Global": {
+   "PauseAll": false,
+   "PauseOpen": false,
+   "PauseClose": false
+  },
+  "ChainOverrides": null
+ },
+ "omega": {
+  "Global": {
+   "PauseAll": false,
+   "PauseOpen": false,
+   "PauseClose": false
+  },
+  "ChainOverrides": null
+ },
+ "staging": {
+  "Global": {
+   "PauseAll": false,
+   "PauseOpen": false,
+   "PauseClose": false
+  },
+  "ChainOverrides": null
+ }
+}
