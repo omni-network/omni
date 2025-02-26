@@ -9,17 +9,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-const (
-	pausing   = "Pausing"
-	unpausing = "Unpausing"
-)
-
 // pauseSolverNetAll pauses or unpauses all functions on the SolverNetInbox.
 func pauseSolverNetAll(ctx context.Context, s shared, c chain, addr common.Address, pause bool) error {
-	action := pausing
-	if !pause {
-		action = unpausing
-	}
+	action := getActionText(pause)
 
 	log.Info(ctx, action+" all on SolverNetInbox...", "chain", c.Name, "addr", addr)
 
@@ -40,10 +32,7 @@ func pauseSolverNetAll(ctx context.Context, s shared, c chain, addr common.Addre
 
 // pauseSolverNetOpen pauses or unpauses the open function on the SolverNetInbox.
 func pauseSolverNetOpen(ctx context.Context, s shared, c chain, addr common.Address, pause bool) error {
-	action := pausing
-	if !pause {
-		action = unpausing
-	}
+	action := getActionText(pause)
 
 	log.Info(ctx, action+" open on SolverNetInbox...", "chain", c.Name, "addr", addr)
 
@@ -64,10 +53,7 @@ func pauseSolverNetOpen(ctx context.Context, s shared, c chain, addr common.Addr
 
 // pauseSolverNetClose pauses or unpauses the close function on the SolverNetInbox.
 func pauseSolverNetClose(ctx context.Context, s shared, c chain, addr common.Address, pause bool) error {
-	action := pausing
-	if !pause {
-		action = unpausing
-	}
+	action := getActionText(pause)
 
 	log.Info(ctx, action+" close on SolverNetInbox...", "chain", c.Name, "addr", addr)
 
@@ -84,6 +70,15 @@ func pauseSolverNetClose(ctx context.Context, s shared, c chain, addr common.Add
 	log.Info(ctx, "Close function on SolverNetInbox "+getStatusText(pause)+" ✅", "chain", c.Name, "addr", addr, "out", out)
 
 	return nil
+}
+
+// getActionText returns "Pausing" or "Unpausing" based on the pause flag.
+func getActionText(pause bool) string {
+	if pause {
+		return "Pausing"
+	}
+
+	return "Unpausing"
 }
 
 // getStatusText returns "paused" or "unpaused" based on the pause flag.
