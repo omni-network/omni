@@ -1,7 +1,7 @@
 import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import type { Hex } from 'viem'
-import { type Address, fromHex, zeroAddress } from 'viem'
+import { type Address, type Hex, fromHex, zeroAddress } from 'viem'
+import { useOmniContext } from '../context/omni.js'
 import { type FetchJSONError, fetchJSON } from '../internal/api.js'
 import { toJSON } from './util.js'
 
@@ -50,36 +50,24 @@ type QuoteError = FetchJSONError
 
 // useQuote quotes an expense for deposit, or vice versa
 export function useQuote(params: UseQuoteParams): UseQuoteResult {
-  // TODO: move to context
-  const apiBaseUrl = 'https://solver.staging.omni.network/api/v1'
+  const { apiBaseUrl } = useOmniContext()
+  const { srcChainId, destChainId, deposit, expense, mode, enabled } = params
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: deep compare on obj properties
-  const request = useMemo(() => {
-    return toJSON({
-      sourceChainId: params.srcChainId,
-      destChainId: params.destChainId,
-      deposit: toQuoteUnit(params.deposit, params.mode === 'deposit'),
-      expense: toQuoteUnit(params.expense, params.mode === 'expense'),
-    })
-  }, [
-    params.srcChainId,
-    params.destChainId,
-    params.deposit.isNative,
-    params.deposit.amount,
-    params.deposit.token,
-    params.expense.isNative,
-    params.expense.amount,
-    params.expense.token,
-    params.mode,
-  ])
+  const request = toJSON({
+    sourceChainId: srcChainId,
+    destChainId: destChainId,
+    deposit: toQuoteUnit(deposit, mode === 'deposit'),
+    expense: toQuoteUnit(expense, mode === 'expense'),
+  })
 
   const query = useQuery<Quote, QuoteError>({
     queryKey: ['quote', request],
     queryFn: async () => doQuote(apiBaseUrl, request),
     enabled:
-      !!params.srcChainId &&
-      params.enabled !== false &&
-      !(params.deposit.amount === 0n && params.expense.amount === 0n),
+      enabled &&
+      !!srcChainId &&
+      (deposit?.amount ?? 0n) > 0n &&
+      (expense?.amount ?? 0n) > 0n,
   })
 
   return useResult(query)

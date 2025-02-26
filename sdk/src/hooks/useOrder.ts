@@ -1,5 +1,5 @@
-import { useCallback } from 'react'
 import type { Hex, WriteContractErrorType } from 'viem'
+import { zeroAddress } from 'viem'
 import {
   type Config,
   type UseWaitForTransactionReceiptReturnType,
@@ -13,6 +13,7 @@ import { typeHash } from '../constants/typehash.js'
 import { useOmniContext } from '../context/omni.js'
 import type { Order } from '../types/order.js'
 import type { OrderStatus } from '../types/order.js'
+import type { OptionalAbis } from '../types/order.js'
 import { encodeOrder } from '../utils/encodeOrder.js'
 import { useDidFill } from './useDidFill.js'
 import { useGetOpenOrder } from './useGetOpenOrder.js'
@@ -22,9 +23,8 @@ import {
   useValidateOrder,
 } from './useValidateOrder.js'
 
-type UseOrderParams = {
-  order: Order
-  validateEnabled?: boolean
+type UseOrderParams<abis extends OptionalAbis> = Order<abis> & {
+  validate?: boolean
 }
 
 type UseOrderReturnType = {
@@ -43,7 +43,12 @@ type UseOrderReturnType = {
   waitForTx: UseWaitForTransactionReceiptReturnType<Config, number>
 }
 
-export function useOrder(params: UseOrderParams): UseOrderReturnType {
+const defaultFillDeadline = () => Math.floor(Date.now() / 1000 + 86400)
+
+export function useOrder<abis extends OptionalAbis>(
+  params: UseOrderParams<abis>,
+): UseOrderReturnType {
+  const { validate, ...order } = params
   const txMutation = useWriteContract()
   const wait = useWaitForTransactionReceipt({ hash: txMutation.data })
 
@@ -53,8 +58,8 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
   })
 
   const connected = useChainId()
-  const srcChainId = params.order.srcChainId ?? connected
-  const destChainId = params.order.destChainId
+  const srcChainId = order.srcChainId ?? connected
+  const destChainId = order.destChainId
   const inboxStatus = useInboxStatus({ orderId, chainId: srcChainId })
   const didFill = useDidFill({ destChainId, orderId, originData })
 
@@ -66,42 +71,31 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
     wait.fetchStatus,
   )
 
-  const validation = useValidateOrder(params)
+  const validation = useValidateOrder({ order, enabled: validate })
 
   const { inbox } = useOmniContext()
 
-  const open = useCallback(async () => {
-    const order = params.order
-    if (
-      !order.deposit.token ||
-      !order.expense.token ||
-      !order.deposit.amount ||
-      !order.expense.amount
-    ) {
-      throw new Error('Tokens and amounts are required')
-    }
-
-    // we check for overriden deposit and expense params above
+  const open = async () => {
     const encoded = encodeOrder(order)
+
+    const isNativeDeposit =
+      order.deposit.token == null || order.deposit.token === zeroAddress
+
     return await txMutation.writeContractAsync({
       abi: inboxABI,
       address: inbox,
       functionName: 'open',
-      chainId: params.order.srcChainId,
-      value: params.order.calls.reduce(
-        (acc, call) => acc + (call.value ?? 0n),
-        BigInt(0),
-      ),
+      chainId: order.srcChainId,
+      value: isNativeDeposit ? order.deposit.amount : 0n,
       args: [
         {
-          fillDeadline:
-            params.order.fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
+          fillDeadline: order.fillDeadline ?? defaultFillDeadline(),
           orderDataType: typeHash,
           orderData: encoded,
         },
       ],
     })
-  }, [params, txMutation.writeContractAsync, inbox])
+  }
 
   return {
     open,

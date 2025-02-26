@@ -1,10 +1,11 @@
-import { type Address, encodeFunctionData } from 'viem'
+import type { Abi, Address } from 'viem'
+import { encodeFunctionData } from 'viem'
 import { middlemanABI } from '../constants/abis.js'
 import { useOmniContext } from '../context/omni.js'
 import type { Call } from '../types/order.js'
 
 type WithExecAndTransferParams = {
-  readonly call: Call
+  readonly call: Call<Abi>
   readonly transfer: {
     readonly to: Address
     readonly token: Address
@@ -35,12 +36,12 @@ type WithExecAndTransferParams = {
  *  }
  * })
  */
-export function withExecAndTransfer(params: WithExecAndTransferParams): Call {
+export function withExecAndTransfer(
+  params: WithExecAndTransferParams,
+): Call<typeof middlemanABI> {
   const { middleman } = useOmniContext()
   const { call, transfer } = params
-  const _callData = encodeFunctionData({
-    ...call,
-  })
+  const _callData = encodeFunctionData({ ...call })
 
   return {
     ...call,
