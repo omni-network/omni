@@ -82,7 +82,7 @@ contract Staking_delegateFor is SolverNetStagingFixtures {
         });
 
         return IERC7683.OnchainCrossChainOrder({
-            fillDeadline: 0,
+            fillDeadline: uint32(block.timestamp + 1 hours),
             orderDataType: ORDERDATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });

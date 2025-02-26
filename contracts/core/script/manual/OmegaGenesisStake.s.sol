@@ -11,15 +11,14 @@ import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { ISolverNetInbox } from "solve/src/interfaces/ISolverNetInbox.sol";
 
 import { GenesisStake } from "src/token/GenesisStake.sol";
-import { MerkleDistributorWithDeadline } from "src/token/MerkleDistributorWithDeadline.sol";
+import { DebugMerkleDistributorWithDeadline } from "./DebugMerkleDistributorWithDeadline.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-contract TestnetGenesisStakeScript is Script {
+contract OmegaGenesisStakeScript is Script {
     CompleteMerkle internal m;
 
     ICreateX internal createX = ICreateX(0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed);
-    // IERC20 internal omni = IERC20(0xD036C60f46FF51dd7Fbf6a819b5B171c8A076b07); // Holesky Omni
-    IERC20 internal omni = IERC20(0x8FbF29dE613Fb25F33587083b89A38baF150ca32); // DebugMockOmni
+    IERC20 internal omni = IERC20(0xD036C60f46FF51dd7Fbf6a819b5B171c8A076b07);
     IOmniPortal internal portal = IOmniPortal(0xcB60A0451831E4865bC49f41F9C67665Fc9b75C3);
     ISolverNetInbox internal inbox = ISolverNetInbox(0x80b6Ed465241a17080DC4A68bE42e80FEa1214DD);
 
@@ -30,7 +29,7 @@ contract TestnetGenesisStakeScript is Script {
     address internal expectedMerkleDistributorAddr = 0x0000000000003E960a909Ef4F0E77699a4286711;
 
     GenesisStake internal genesisStake;
-    MerkleDistributorWithDeadline internal merkleDistributor;
+    DebugMerkleDistributorWithDeadline internal merkleDistributor;
 
     uint256 internal endTime = block.timestamp + 30 days;
     uint256 internal depositAmount = 100 ether;
@@ -39,7 +38,7 @@ contract TestnetGenesisStakeScript is Script {
     bytes32[][] internal proofs = new bytes32[][](5);
     bytes32 internal root;
 
-    function deployTestnet() public {
+    function deploy() public {
         vm.startBroadcast();
 
         _prepMerkleTree();
@@ -110,11 +109,11 @@ contract TestnetGenesisStakeScript is Script {
                 )
             )
         );
-        merkleDistributor = MerkleDistributorWithDeadline(
+        merkleDistributor = DebugMerkleDistributorWithDeadline(
             createX.deployCreate3(
                 merkleDistributorSalt,
                 abi.encodePacked(
-                    type(MerkleDistributorWithDeadline).creationCode,
+                    type(DebugMerkleDistributorWithDeadline).creationCode,
                     abi.encode(address(omni), root, endTime, address(portal), genesisStakeAddr, address(inbox))
                 )
             )
@@ -150,11 +149,11 @@ contract TestnetGenesisStakeScript is Script {
                 )
             )
         );
-        merkleDistributor = MerkleDistributorWithDeadline(
+        merkleDistributor = DebugMerkleDistributorWithDeadline(
             createX.deployCreate3(
                 merkleDistributorSalt,
                 abi.encodePacked(
-                    type(MerkleDistributorWithDeadline).creationCode,
+                    type(DebugMerkleDistributorWithDeadline).creationCode,
                     abi.encode(address(omni), root, endTime, address(portal), expectedGenesisStakeAddr, address(inbox))
                 )
             )

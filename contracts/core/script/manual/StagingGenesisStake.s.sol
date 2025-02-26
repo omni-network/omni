@@ -1,0 +1,224 @@
+// SPDX-License-Identifier: GPL-3.0-only
+/* solhint-disable no-console */
+pragma solidity 0.8.24;
+
+import { Script, console2 } from "forge-std/Script.sol";
+import { CompleteMerkle } from "murky/src/CompleteMerkle.sol";
+import { LibString } from "solady/src/utils/LibString.sol";
+import { JSONParserLib } from "solady/src/utils/JSONParserLib.sol";
+
+import { ICreateX } from "createx/src/ICreateX.sol";
+import { IERC20 } from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
+import { ISolverNetInbox } from "solve/src/interfaces/ISolverNetInbox.sol";
+
+import { GenesisStake } from "src/token/GenesisStake.sol";
+import { DebugMerkleDistributorWithDeadline } from "./DebugMerkleDistributorWithDeadline.sol";
+import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+
+contract StagingGenesisStakeScript is Script {
+    CompleteMerkle internal m;
+
+    ICreateX internal createX = ICreateX(0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed);
+    IERC20 internal omni;
+    IOmniPortal internal portal;
+    ISolverNetInbox internal inbox;
+
+    bytes32 internal genesisStakeSalt = 0xa779fc675db318dab004ab8d538cb320d0013f42006fda006bab5cd1034643cc;
+    bytes32 internal merkleDistributorSalt = 0xa779fc675db318dab004ab8d538cb320d0013f4200205ad9f17a619b0079c949;
+
+    address internal expectedGenesisStakeAddr = 0x00000000000063B7931226e67CeF52d86085154d;
+    address internal expectedMerkleDistributorAddr = 0x0000000000003E960a909Ef4F0E77699a4286711;
+
+    GenesisStake internal genesisStake;
+    DebugMerkleDistributorWithDeadline internal merkleDistributor;
+
+    uint256 internal endTime = block.timestamp + 30 days;
+    uint256 internal depositAmount = 100 ether;
+    uint256 internal rewardAmount = 100 ether;
+    bytes32[] internal leaves = new bytes32[](5);
+    bytes32[][] internal proofs = new bytes32[][](5);
+    bytes32 internal root;
+
+    function setUp() public {
+        string memory stagingAddrsJson = _getStagingAddresses();
+        _setStagingAddresses(stagingAddrsJson);
+    }
+
+    function deploy() public {
+        vm.startBroadcast();
+
+        _prepMerkleTree();
+        _deployDeterministicContracts();
+
+        omni.transfer(address(merkleDistributor), 10_000 ether);
+
+        vm.stopBroadcast();
+    }
+
+    /**
+     * @dev This assumes the four relevant addresses above have been set and that a new GenesisStake contract should be
+     * deployed. It also assumes that the broadcaster has 200 OMNI ERC20 tokens to spend on the network.
+     */
+    function freshDeployAndTest() public {
+        vm.startBroadcast();
+
+        _prepMerkleTree();
+        _deployFreshContracts();
+        _approveStakeAndFund();
+
+        merkleDistributor.migrateToOmni(0, rewardAmount, proofs[0]);
+
+        vm.stopBroadcast();
+    }
+
+    function _prepMerkleTree() internal {
+        m = new CompleteMerkle();
+
+        leaves[0] = keccak256(abi.encodePacked(uint256(0), msg.sender, rewardAmount));
+        leaves[1] = keccak256(abi.encodePacked(uint256(1), 0xF6CDB1E733EA00D0eEa1A32F218B0ec76ABF1517, rewardAmount));
+        leaves[2] = keccak256(abi.encodePacked(uint256(2), 0xBeD17aa3E1c99ea86e19e7B38356C54007BB6CDe, rewardAmount));
+        leaves[3] = keccak256(abi.encodePacked(uint256(3), 0x2D61bE547b365BD5CdCc02920818492Fb7bdb765, rewardAmount));
+        leaves[4] = keccak256(abi.encodePacked(uint256(4), 0xA6C9c842dc0C9C16338444e8bB77b885986Ef38b, rewardAmount));
+
+        proofs[0] = m.getProof(leaves, 0);
+        proofs[1] = m.getProof(leaves, 1);
+        proofs[2] = m.getProof(leaves, 2);
+        proofs[3] = m.getProof(leaves, 3);
+        proofs[4] = m.getProof(leaves, 4);
+
+        root = m.getRoot(leaves);
+
+        require(m.verifyProof(root, proofs[0], leaves[0]), "Proof 0 is invalid");
+        require(m.verifyProof(root, proofs[1], leaves[1]), "Proof 1 is invalid");
+        require(m.verifyProof(root, proofs[2], leaves[2]), "Proof 2 is invalid");
+        require(m.verifyProof(root, proofs[3], leaves[3]), "Proof 3 is invalid");
+        require(m.verifyProof(root, proofs[4], leaves[4]), "Proof 4 is invalid");
+    }
+
+    function _deployFreshContracts() internal {
+        genesisStakeSalt = keccak256(abi.encodePacked("genesisStake", block.timestamp));
+        merkleDistributorSalt = keccak256(abi.encodePacked("merkleDistributor", block.timestamp));
+
+        address genesisStakeAddr = createX.computeCreate3Address(keccak256(abi.encodePacked(genesisStakeSalt)));
+        address merkleDistributorAddr =
+            createX.computeCreate3Address(keccak256(abi.encodePacked(merkleDistributorSalt)));
+
+        address genesisStakeImpl = address(new GenesisStake(address(omni), merkleDistributorAddr));
+        genesisStake = GenesisStake(
+            createX.deployCreate3(
+                genesisStakeSalt,
+                abi.encodePacked(
+                    type(TransparentUpgradeableProxy).creationCode,
+                    abi.encode(
+                        genesisStakeImpl, msg.sender, abi.encodeCall(GenesisStake.initialize, (msg.sender, 30 days))
+                    )
+                )
+            )
+        );
+        merkleDistributor = DebugMerkleDistributorWithDeadline(
+            createX.deployCreate3(
+                merkleDistributorSalt,
+                abi.encodePacked(
+                    type(DebugMerkleDistributorWithDeadline).creationCode,
+                    abi.encode(address(omni), root, endTime, address(portal), genesisStakeAddr, address(inbox))
+                )
+            )
+        );
+
+        require(address(genesisStake) == genesisStakeAddr, "GenesisStake addr mismatch");
+        require(address(merkleDistributor) == merkleDistributorAddr, "MerkleDistributor addr mismatch");
+
+        console2.log("GenesisStake implementation:", address(genesisStakeImpl));
+        console2.log("GenesisStake implementation constructor args:");
+        console2.logBytes(abi.encode(address(omni), merkleDistributorAddr));
+        console2.log("GenesisStake proxy address:", address(genesisStake));
+        console2.log("GenesisStake proxy constructor args:");
+        console2.logBytes(
+            abi.encode(genesisStakeImpl, msg.sender, abi.encodeCall(GenesisStake.initialize, (msg.sender, 30 days)))
+        );
+        console2.log("");
+        console2.log("MerkleDistributor address:", address(merkleDistributor));
+        console2.log("MerkleDistributor constructor args:");
+        console2.logBytes(abi.encode(address(omni), root, endTime, address(portal), genesisStakeAddr, address(inbox)));
+    }
+
+    function _deployDeterministicContracts() internal {
+        address genesisStakeImpl = address(new GenesisStake(address(omni), expectedMerkleDistributorAddr));
+        genesisStake = GenesisStake(
+            createX.deployCreate3(
+                genesisStakeSalt,
+                abi.encodePacked(
+                    type(TransparentUpgradeableProxy).creationCode,
+                    abi.encode(
+                        genesisStakeImpl, msg.sender, abi.encodeCall(GenesisStake.initialize, (msg.sender, 30 days))
+                    )
+                )
+            )
+        );
+        merkleDistributor = DebugMerkleDistributorWithDeadline(
+            createX.deployCreate3(
+                merkleDistributorSalt,
+                abi.encodePacked(
+                    type(DebugMerkleDistributorWithDeadline).creationCode,
+                    abi.encode(address(omni), root, endTime, address(portal), expectedGenesisStakeAddr, address(inbox))
+                )
+            )
+        );
+
+        require(address(genesisStake) == expectedGenesisStakeAddr, "GenesisStake addr mismatch");
+        require(address(merkleDistributor) == expectedMerkleDistributorAddr, "MerkleDistributor addr mismatch");
+
+        console2.log("GenesisStake implementation:", address(genesisStakeImpl));
+        console2.log("GenesisStake implementation constructor args:");
+        console2.logBytes(abi.encode(address(omni), expectedMerkleDistributorAddr));
+        console2.log("GenesisStake proxy address:", address(genesisStake));
+        console2.log("GenesisStake proxy constructor args:");
+        console2.logBytes(
+            abi.encode(genesisStakeImpl, msg.sender, abi.encodeCall(GenesisStake.initialize, (msg.sender, 30 days)))
+        );
+        console2.log("");
+        console2.log("MerkleDistributor address:", address(merkleDistributor));
+        console2.log("MerkleDistributor constructor args:");
+        console2.logBytes(
+            abi.encode(address(omni), root, endTime, address(portal), expectedGenesisStakeAddr, address(inbox))
+        );
+    }
+
+    function _approveStakeAndFund() internal {
+        omni.approve(address(genesisStake), type(uint256).max);
+        genesisStake.stake(depositAmount);
+        omni.transfer(address(merkleDistributor), rewardAmount);
+    }
+
+    function _getStagingAddresses() internal returns (string memory) {
+        string[] memory inputs = new string[](3);
+        inputs[0] = "go";
+        inputs[1] = "run";
+        inputs[2] = "../../scripts/stagingaddrs/main.go";
+
+        bytes memory stagingAddrsJson = vm.ffi(inputs);
+        return string(stagingAddrsJson);
+    }
+
+    function _setStagingAddresses(string memory stagingAddrsJson) internal {
+        JSONParserLib.Item memory object = JSONParserLib.parse(stagingAddrsJson);
+        /* solhint-disable quotes */
+        JSONParserLib.Item memory omniItem = JSONParserLib.at(object, '"token"');
+        JSONParserLib.Item memory portalItem = JSONParserLib.at(object, '"portal"');
+        JSONParserLib.Item memory inboxItem = JSONParserLib.at(object, '"solvernetinbox"');
+        /* solhint-enable quotes */
+
+        string memory omniAddr = JSONParserLib.value(omniItem);
+        omniAddr = LibString.slice(omniAddr, 1, bytes(omniAddr).length - 1);
+        omni = IERC20(vm.parseAddress(omniAddr));
+
+        string memory portalAddr = JSONParserLib.value(portalItem);
+        portalAddr = LibString.slice(portalAddr, 1, bytes(portalAddr).length - 1);
+        portal = IOmniPortal(vm.parseAddress(portalAddr));
+
+        string memory inboxAddr = JSONParserLib.value(inboxItem);
+        inboxAddr = LibString.slice(inboxAddr, 1, bytes(inboxAddr).length - 1);
+        inbox = ISolverNetInbox(vm.parseAddress(inboxAddr));
+    }
+}
