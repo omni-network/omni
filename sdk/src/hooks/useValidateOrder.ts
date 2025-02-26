@@ -96,13 +96,13 @@ export function useValidateOrder<abis extends OptionalAbis>({
     calls: _encodeCalls(),
     deposit: {
       amount: order.deposit.amount,
-      token: order.deposit.token,
+      token: order.deposit.token ?? zeroAddress,
     },
     expenses: [
       {
         amount: order.expense.amount,
-        token: order.expense.token,
-        spender: order.expense.spender,
+        token: order.expense.token ?? zeroAddress,
+        spender: order.expense.spender ?? zeroAddress,
       },
     ],
   })
