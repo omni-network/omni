@@ -18,7 +18,8 @@ contract TestnetGenesisStakeScript is Script {
     CompleteMerkle internal m;
 
     ICreateX internal createX = ICreateX(0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed);
-    IERC20 internal omni = IERC20(0xD036C60f46FF51dd7Fbf6a819b5B171c8A076b07);
+    // IERC20 internal omni = IERC20(0xD036C60f46FF51dd7Fbf6a819b5B171c8A076b07); // Holesky Omni
+    IERC20 internal omni = IERC20(0x8FbF29dE613Fb25F33587083b89A38baF150ca32); // DebugMockOmni
     IOmniPortal internal portal = IOmniPortal(0xcB60A0451831E4865bC49f41F9C67665Fc9b75C3);
     ISolverNetInbox internal inbox = ISolverNetInbox(0x80b6Ed465241a17080DC4A68bE42e80FEa1214DD);
 
