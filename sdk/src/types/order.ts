@@ -5,6 +5,7 @@ import type {
   ContractFunctionName,
   ContractFunctionParameters,
 } from 'viem'
+import type { AbiWriteMutability, OptionalAbi, OptionalAbis } from './abi.js'
 
 export type OrderStatus =
   | 'idle'
@@ -25,8 +26,6 @@ type Expense = {
   readonly token?: Address
   readonly amount: bigint
 }
-
-type AbiWriteMutability = 'nonpayable' | 'payable'
 
 export type ContractCall<
   abi extends Abi,
@@ -52,11 +51,6 @@ export type ContractCall<
     : {
         readonly target: Address
       })
-
-export type OptionalAbi = Abi | undefined
-
-// all unknown to let abi narrow type before reporting errors
-export type OptionalAbis = readonly OptionalAbi[] | readonly unknown[]
 
 type NativeTransfer = {
   readonly abi?: Abi // allows auto-complete abi, type will narrow if abi is provided

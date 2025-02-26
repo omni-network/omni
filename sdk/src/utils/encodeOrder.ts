@@ -5,8 +5,8 @@ import {
   slice,
   zeroAddress,
 } from 'viem'
-import type { OptionalAbis, Order } from '../types/order.js'
-import { isContractCall } from '../types/order.js'
+import type { OptionalAbis } from '../types/abi.js'
+import { type Order, isContractCall } from '../types/order.js'
 
 /**
  * @description Encodes order params in preparation for sending to the inbox contract
