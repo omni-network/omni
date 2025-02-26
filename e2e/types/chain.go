@@ -41,6 +41,12 @@ var (
 		Shards:   allShards,
 	}
 
+	chainSepolia = EVMChain{
+		Metadata: mustMetadata(evmchain.IDSepolia),
+		IsPublic: true,
+		Shards:   allShards,
+	}
+
 	chainArbSepolia = EVMChain{
 		Metadata: mustMetadata(evmchain.IDArbSepolia),
 		IsPublic: true,
@@ -97,6 +103,8 @@ func PublicChainByName(name string) (EVMChain, error) {
 	switch name {
 	case chainHolesky.Name:
 		return chainHolesky, nil
+	case chainSepolia.Name:
+		return chainSepolia, nil
 	case chainArbSepolia.Name:
 		return chainArbSepolia, nil
 	case chainOpSepolia.Name:
@@ -121,6 +129,8 @@ func PublicRPCByName(name string) string {
 	switch name {
 	case chainHolesky.Name:
 		return "https://ethereum-holesky-rpc.publicnode.com"
+	case chainSepolia.Name:
+		return "https://ethereum-sepolia-rpc.publicnode.com"
 	case chainArbSepolia.Name:
 		return "https://sepolia-rollup.arbitrum.io/rpc"
 	case chainOpSepolia.Name:

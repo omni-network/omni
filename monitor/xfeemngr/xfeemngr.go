@@ -56,6 +56,9 @@ var chainSyncOverrides = map[uint64]time.Duration{
 
 	// overide on holesky too, to test overide on omega
 	evmchain.IDHolesky: 90 * time.Minute,
+
+	// override for sepolia, to reduce spend
+	evmchain.IDSepolia: 90 * time.Minute,
 }
 
 func Start(ctx context.Context, network netconf.Network, cfg Config, privKeyPath string) error {

@@ -235,6 +235,7 @@ func chainClass(chainID uint64) (ChainClass, error) {
 		evmchain.IDOmniOmega,
 		evmchain.IDOmniStaging, // classify omni staging as testnet, because it interops with other testnets
 		evmchain.IDHolesky,
+		evmchain.IDSepolia,
 		evmchain.IDArbSepolia,
 		evmchain.IDBaseSepolia,
 		evmchain.IDOpSepolia:

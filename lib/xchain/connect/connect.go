@@ -110,6 +110,7 @@ func WithInfuraENV(keyVar string) option {
 		infuraNames := map[string]string{
 			"ethereum":     "mainnet",
 			"holesky":      "holesky",
+			"sepolia":      "sepolia",
 			"base":         "base-mainnet",
 			"base_sepolia": "base-sepolia",
 			"arbitrum_one": "arbitrum-mainnet",
