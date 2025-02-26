@@ -23,7 +23,7 @@ import {
 } from './useValidateOrder.js'
 
 type UseOrderParams<abis extends OptionalAbis> = Order<abis> & {
-  validate?: boolean
+  enableValidate: boolean
 }
 
 type UseOrderReturnType = {
@@ -47,7 +47,7 @@ const defaultFillDeadline = () => Math.floor(Date.now() / 1000 + 86400)
 export function useOrder<abis extends OptionalAbis>(
   params: UseOrderParams<abis>,
 ): UseOrderReturnType {
-  const { validate, ...order } = params
+  const { enableValidate, ...order } = params
   const txMutation = useWriteContract()
   const wait = useWaitForTransactionReceipt({ hash: txMutation.data })
 
@@ -70,7 +70,7 @@ export function useOrder<abis extends OptionalAbis>(
     wait.fetchStatus,
   )
 
-  const validation = useValidateOrder({ order, enabled: validate })
+  const validation = useValidateOrder({ order, enabled: enableValidate })
 
   const { inbox } = useOmniContext()
 
