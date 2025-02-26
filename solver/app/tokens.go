@@ -157,6 +157,19 @@ func omniERC20(network netconf.ID) Token {
 	}
 }
 
+// mockOMNI returns a manually deployed OMNI token on a given chain for testing purposes.
+func mockOMNI(chainID uint64, addr common.Address) Token {
+	return Token{
+		Token:      tokenslib.OMNI,
+		ChainID:    chainID,
+		ChainClass: mustChainClass(chainID),
+		Address:    addr,
+		MaxSpend:   maxOMNISpend,
+		MinSpend:   minOMNISpend,
+		IsMock:     true,
+	}
+}
+
 func stETH(chainID uint64, addr common.Address) Token {
 	return Token{
 		Token:      tokenslib.STETH,
@@ -190,6 +203,13 @@ func mocks() []Token {
 			IsMock:     true,
 		})
 	}
+
+	// Add manually deployed tokens that aren't part of the automatic mock deployment
+	tkns = append(tkns,
+		mockOMNI(evmchain.IDBaseSepolia, common.HexToAddress("0xb8f8d179270FFe7C6C5766819DCD6a8b76f8403b")),
+		mockOMNI(evmchain.IDOpSepolia, common.HexToAddress("0x87590BBeEC6ec190d1af7D88d90a16585dF48fFC")),
+		mockOMNI(evmchain.IDArbSepolia, common.HexToAddress("0x0DE57e38bF1FC27E6C228F15041a0e590586A3ee")),
+	)
 
 	return tkns
 }

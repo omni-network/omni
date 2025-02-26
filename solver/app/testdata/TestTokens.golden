@@ -238,5 +238,35 @@
   "minSpend": "nil",
   "name": "Wrapped Staked Ether",
   "symbol": "wstETH"
+ },
+ {
+  "address": "0xb8f8d179270FFe7C6C5766819DCD6a8b76f8403b",
+  "chainId": 84532,
+  "coingeckoId": "omni-network",
+  "isMock": true,
+  "maxSpend": "1000.0000",
+  "minSpend": "0.1000",
+  "name": "Omni Network",
+  "symbol": "OMNI"
+ },
+ {
+  "address": "0x87590BBeEC6ec190d1af7D88d90a16585dF48fFC",
+  "chainId": 11155420,
+  "coingeckoId": "omni-network",
+  "isMock": true,
+  "maxSpend": "1000.0000",
+  "minSpend": "0.1000",
+  "name": "Omni Network",
+  "symbol": "OMNI"
+ },
+ {
+  "address": "0x0DE57e38bF1FC27E6C228F15041a0e590586A3ee",
+  "chainId": 421614,
+  "coingeckoId": "omni-network",
+  "isMock": true,
+  "maxSpend": "1000.0000",
+  "minSpend": "0.1000",
+  "name": "Omni Network",
+  "symbol": "OMNI"
  }
 ]
