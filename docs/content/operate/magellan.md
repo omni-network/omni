@@ -30,10 +30,11 @@ The `2_magellan` upgrade is the second planned network upgrade (hard fork) for t
   - Protobuf encoding of EVM payloads in consensus blocks for improved performance and security.
   - Simplified EVM event processing for enhanced efficiency.
   - Enqueuing of automatic staking withdrawals to EVM (*not yet processed*).
+  - Staking event buffer (up to 12h) to prevent validator set thrashing.
 
-### Compatibility:
+### Geth Compatibility:
 - No changes are required to `geth`; this version remains compatible with `v1.14.13`.
-- The latest (at time of writing) `geth v1.15.3` is **not yet supported** due to a [regression](https://github.com/ethereum/go-ethereum/issues/31208) affecting DNS bootnode support.
+- The latest `geth` version `v1.15.3` (at time of writing) is **not supported** due to a [regression](https://github.com/ethereum/go-ethereum/issues/31208) affecting DNS bootnode support.
 
 ### Additional Resources:
 - See [Run a Full Node](./run-full-node.md#halo-deployment-options) for details on running `halo` with Cosmovisor.
