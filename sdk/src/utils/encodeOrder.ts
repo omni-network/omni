@@ -1,5 +1,7 @@
-import { type Hex, encodeAbiParameters, encodeFunctionData, slice } from 'viem'
-import type { Order } from '../types/order.js'
+import type { Hex } from 'viem'
+import { encodeAbiParameters, encodeFunctionData, slice } from 'viem'
+import type { OptionalAbis, Order } from '../types/order.js'
+import { isContractCall } from '../types/order.js'
 
 /**
  * @description Encodes order params in preparation for sending to the inbox contract
@@ -35,13 +37,22 @@ import type { Order } from '../types/order.js'
  *   ],
  * })
  */
-export function encodeOrder(order: Order) {
+export function encodeOrder(order: Order<OptionalAbis>): Hex {
   // TODO custom error
   if (!order.owner) {
     throw new Error('Owner must be defined')
   }
 
   const callsTuple = order.calls.map((call) => {
+    if (!isContractCall(call)) {
+      return {
+        target: call.target,
+        selector: '0x',
+        value: call.value,
+        params: '0x',
+      } as const
+    }
+
     const callData = encodeFunctionData({
       abi: call.abi,
       functionName: call.functionName,

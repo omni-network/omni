@@ -2,11 +2,12 @@ import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { encodeFunctionData } from 'viem'
 import { type FetchJSONError, fetchJSON } from '../internal/api.js'
-import type { Order } from '../types/order.js'
+import type { OptionalAbis, Order } from '../types/order.js'
+import { isContractCall } from '../types/order.js'
 import { toJSON } from './util.js'
 
-type UseValidateOrderParams = {
-  order: Order
+type UseValidateOrderParams<abis extends OptionalAbis> = {
+  order: Order<abis>
   enabled?: boolean
 }
 
@@ -55,10 +56,10 @@ export type UseValidateOrderResult =
   | ValidationAccepted
   | ValidationError
 
-export function useValidateOrder({
+export function useValidateOrder<abis extends OptionalAbis>({
   order,
   enabled = true,
-}: UseValidateOrderParams): UseValidateOrderResult {
+}: UseValidateOrderParams<abis>): UseValidateOrderResult {
   const apiBaseUrl = 'https://solver.staging.omni.network/api/v1'
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: deep compare on obj properties
@@ -67,6 +68,18 @@ export function useValidateOrder({
 
     function _encodeCalls() {
       return order.calls.map((call) => {
+        if (!isContractCall(call)) {
+          return {
+            target: call.target,
+            value: call.value,
+            data: '0x',
+          }
+        }
+
+        if (!call.functionName) {
+          throw new Error('functionName must be defined')
+        }
+
         const callData = encodeFunctionData({
           abi: call.abi,
           functionName: call.functionName,

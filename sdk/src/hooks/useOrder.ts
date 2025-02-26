@@ -1,4 +1,3 @@
-import { useCallback } from 'react'
 import type { Hex, WriteContractErrorType } from 'viem'
 import {
   type Config,
@@ -13,6 +12,7 @@ import { typeHash } from '../constants/typehash.js'
 import { useOmniContext } from '../context/omni.js'
 import type { Order } from '../types/order.js'
 import type { OrderStatus } from '../types/order.js'
+import type { OptionalAbis } from '../types/order.js'
 import { encodeOrder } from '../utils/encodeOrder.js'
 import { useDidFill } from './useDidFill.js'
 import { useGetOpenOrder } from './useGetOpenOrder.js'
@@ -22,8 +22,8 @@ import {
   useValidateOrder,
 } from './useValidateOrder.js'
 
-type UseOrderParams = {
-  order: Order
+type UseOrderParams<abis extends OptionalAbis> = {
+  order: Order<abis>
   validateEnabled?: boolean
 }
 
@@ -43,7 +43,11 @@ type UseOrderReturnType = {
   waitForTx: UseWaitForTransactionReceiptReturnType<Config, number>
 }
 
-export function useOrder(params: UseOrderParams): UseOrderReturnType {
+const defaultFillDeadline = () => Math.floor(Date.now() / 1000 + 86400)
+
+export function useOrder<abis extends OptionalAbis>(
+  params: UseOrderParams<abis>,
+): UseOrderReturnType {
   const txMutation = useWriteContract()
   const wait = useWaitForTransactionReceipt({ hash: txMutation.data })
 
@@ -70,7 +74,7 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
 
   const { inbox } = useOmniContext()
 
-  const open = useCallback(async () => {
+  const open = async () => {
     const order = params.order
     if (
       !order.deposit.token ||
@@ -87,21 +91,20 @@ export function useOrder(params: UseOrderParams): UseOrderReturnType {
       abi: inboxABI,
       address: inbox,
       functionName: 'open',
-      chainId: params.order.srcChainId,
-      value: params.order.calls.reduce(
+      chainId: order.srcChainId,
+      value: order.calls.reduce(
         (acc, call) => acc + (call.value ?? 0n),
         BigInt(0),
       ),
       args: [
         {
-          fillDeadline:
-            params.order.fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
+          fillDeadline: params.order.fillDeadline ?? defaultFillDeadline(),
           orderDataType: typeHash,
           orderData: encoded,
         },
       ],
     })
-  }, [params, txMutation.writeContractAsync, inbox])
+  }
 
   return {
     open,

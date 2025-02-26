@@ -7,7 +7,7 @@ export { useQuote } from './hooks/useQuote.js'
 
 ////// TYPES //////
 export type { Order, OrderStatus } from './types/order.js'
-export type { Quote } from './types/quote.js'
+export type { Quote, Quoteable } from './types/quote.js'
 
 ////// PROVIDER //////
 export { OmniProvider, useOmniContext } from './context/omni.js'
