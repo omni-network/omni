@@ -156,7 +156,7 @@ func makeOrders() []TestOrder {
 			rejectReason = solver.RejectInsufficientDeposit.String()
 		}
 
-		order := TestOrder{
+		orders = append(orders, TestOrder{
 			Owner:         user,
 			FillDeadline:  time.Now().Add(1 * time.Hour),
 			SourceChainID: evmchain.IDMockL1,
@@ -166,23 +166,20 @@ func makeOrders() []TestOrder {
 			Deposit:       erc20Deposit(depositAmt, addrs.Token),
 			ShouldReject:  shouldReject,
 			RejectReason:  rejectReason,
-		}
+		})
 
-		orders = append(orders, order)
+		orders = append(orders, TestOrder{
+			Owner:         user,
+			FillDeadline:  time.Now().Add(1 * time.Hour),
+			SourceChainID: evmchain.IDMockL1,
+			DestChainID:   evmchain.IDOmniDevnet,
+			Expenses:      nativeExpense(requestAmt),
+			Calls:         nativeTransferCall(requestAmt, user),
+			Deposit:       nativeDeposit(depositAmt),
+			ShouldReject:  true,
+			RejectReason:  solver.RejectInvalidDeposit.String(),
+		})
 	}
-
-	// bad dest chain
-	orders = append(orders, TestOrder{
-		Owner:         users[0],
-		FillDeadline:  time.Now().Add(1 * time.Hour),
-		SourceChainID: evmchain.IDMockL1,
-		DestChainID:   1234, // invalid
-		Expenses:      nativeExpense(big.NewInt(1)),
-		Calls:         nativeTransferCall(big.NewInt(1), users[0]),
-		Deposit:       erc20Deposit(big.NewInt(1), addrs.Token),
-		ShouldReject:  true,
-		RejectReason:  solver.RejectUnsupportedDestChain.String(),
-	})
 
 	// native ETH transfers
 	for i, user := range users {
@@ -225,6 +222,45 @@ func makeOrders() []TestOrder {
 
 		orders = append(orders, order)
 	}
+
+	// bad dest chain
+	orders = append(orders, TestOrder{
+		Owner:         users[0],
+		FillDeadline:  time.Now().Add(1 * time.Hour),
+		SourceChainID: evmchain.IDMockL1,
+		DestChainID:   1234, // invalid
+		Expenses:      nativeExpense(big.NewInt(1)),
+		Calls:         nativeTransferCall(big.NewInt(1), users[0]),
+		Deposit:       erc20Deposit(big.NewInt(1), addrs.Token),
+		ShouldReject:  true,
+		RejectReason:  solver.RejectUnsupportedDestChain.String(),
+	})
+
+	// unsupported expense token
+	orders = append(orders, TestOrder{
+		Owner:         users[0],
+		FillDeadline:  time.Now().Add(1 * time.Hour),
+		SourceChainID: evmchain.IDMockL1,
+		DestChainID:   evmchain.IDMockL2,
+		Expenses:      unsupportedExpense(big.NewInt(1)),
+		Calls:         nativeTransferCall(big.NewInt(1), users[0]),
+		Deposit:       erc20Deposit(big.NewInt(1), addrs.Token),
+		ShouldReject:  true,
+		RejectReason:  solver.RejectUnsupportedExpense.String(),
+	})
+
+	// invalid expense
+	orders = append(orders, TestOrder{
+		Owner:         users[0],
+		FillDeadline:  time.Now().Add(1 * time.Hour),
+		SourceChainID: evmchain.IDMockL1,
+		DestChainID:   evmchain.IDMockL2,
+		Expenses:      invalidExpense(),
+		Calls:         nativeTransferCall(big.NewInt(1), users[0]),
+		Deposit:       erc20Deposit(big.NewInt(1), addrs.Token),
+		ShouldReject:  true,
+		RejectReason:  solver.RejectInvalidExpense.String(),
+	})
 
 	// TODO: more tests orders (different rejection cases, valid orders, etc)
 

@@ -13,11 +13,15 @@ import (
 	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/params"
 
 	"golang.org/x/sync/errgroup"
 )
 
-var addrs = mustAddrs(netconf.Devnet)
+var (
+	zeroAddr common.Address
+	addrs    = mustAddrs(netconf.Devnet)
+)
 
 func mustAddrs(network netconf.ID) contracts.Addresses {
 	addrs, err := contracts.GetAddresses(context.Background(), network)
@@ -44,6 +48,14 @@ func nativeExpense(amt *big.Int) solvernet.Expenses {
 	return []solvernet.Expense{{Amount: amt}}
 }
 
+func unsupportedExpense(amt *big.Int) solvernet.Expenses {
+	return []solvernet.Expense{{Amount: amt, Token: common.HexToAddress("0x1234")}}
+}
+
+func invalidExpense() solvernet.Expenses {
+	return nativeExpense(big.NewInt(params.Ether))
+}
+
 func nativeDeposit(amt *big.Int) solvernet.Deposit {
 	return solvernet.Deposit{Amount: amt}
 }
@@ -62,7 +74,6 @@ func mintAndApproveAll(ctx context.Context, backends ethbackend.Backends, orders
 }
 
 func mintAndApprove(ctx context.Context, backends ethbackend.Backends, order TestOrder) error {
-	var zeroAddr common.Address
 	if order.Deposit.Token == zeroAddr {
 		// native, nothing to do
 		return nil
