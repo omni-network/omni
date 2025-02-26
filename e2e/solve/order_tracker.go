@@ -42,7 +42,7 @@ func (t *orderTracker) done() (bool, error) {
 			return false, nil
 		}
 
-		if order.ShouldReject() {
+		if order.ShouldReject {
 			if status == solvernet.StatusFilled || status == solvernet.StatusClaimed {
 				return false, errors.New("order should have been rejected", "id", id, "status", status)
 			}
@@ -52,7 +52,7 @@ func (t *orderTracker) done() (bool, error) {
 			}
 		}
 
-		if !order.ShouldReject() {
+		if !order.ShouldReject {
 			if status == solvernet.StatusRejected {
 				return false, errors.New("order should have been filled", "id", id, "status", status)
 			}

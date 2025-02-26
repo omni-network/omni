@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/params"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -45,6 +46,14 @@ func nativeTransferCall(amt *big.Int, to common.Address) []solvernet.Call {
 
 func nativeExpense(amt *big.Int) solvernet.Expenses {
 	return []solvernet.Expense{{Amount: amt}}
+}
+
+func unsupportedExpense(amt *big.Int) solvernet.Expenses {
+	return []solvernet.Expense{{Amount: amt, Token: common.HexToAddress("0x1234")}}
+}
+
+func invalidExpense() solvernet.Expenses {
+	return nativeExpense(big.NewInt(params.Ether))
 }
 
 func nativeDeposit(amt *big.Int) solvernet.Deposit {
