@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 
+echo "starting sdk checks in dir: $(pwd)"
+
 source scripts/install_pnpm.sh
 
 # get dir
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+echo "SCRIPT_DIR used to jump to SCRIPT_DIR/../sdk =: $(SCRIPT_DIR)"
 
 # nav to sdk dir
 SDK_DIR="$SCRIPT_DIR/../sdk"
