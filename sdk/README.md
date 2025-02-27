@@ -30,7 +30,7 @@ import { WagmiProvider } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { OmniProvider } from '@omni-network/react'
 
-const queryClient = new QueryClient()   
+const queryClient = new QueryClient()
 
 <WagmiProvider>
   <QueryClientProvider client={queryClient}>
@@ -43,93 +43,99 @@ const queryClient = new QueryClient()
 
 Note - you need to supply an `env` prop, for now default to `testnet`.
 
-2. Now you can start using the hooks! Let's build an example of an eth bridge:
+2. Now you can start using the hooks! Let's build an example of an eth bridge from Base Sepolia to Arbitrum Sepolia.
+
+First, we need to quote how much ETH we can receive on the destination chain for a given source chain deposit.
 
 ```tsx
-import { useAccount } from 'wagmi'
-import { useOrder } from '@omni-network/react'
+import { useQuote } from '@omni-network/react'
 
-const order = {
-    srcChainId: 84532, 
-    destChainId: 11155420,
-    deposit: {
-        amount: 10000000000000000,
-        isNative: true
-    }
-    expense: {
-        isNative: true,
-    }
-}
+function App() {
+    // quote how much ArbSepolia we can get for 0.1 Eth on BaseSepolia
+    const quote = useQuote({
+        srcChainId: baseSepolia.id,
+        destChainId: arbitrumSepolia.id,
+        deposit: { isNative: true, amount: parseEther("0.1") },
+        expense: { isNative: true, },
+        mode: "expense", // quote expense amount
+        enabled: true,
+    })
 
-export function useBridge({ amount }: { amount: bigint }) {
-  const { address: user } = useAccount()
-
-  const quote = useQuote({
-    ...order,
-    mode: 'expense',
-    deposit: {
-        ...order.deposit,
-        amount,
-    }
-    enabled: !!user && amount !== 0n
-  })
-
-  const {
-    txHash,
-    validation,
-    txMutation,
-    open,
-    status,
-    waitForTx,
-    isError,
-    isOpen,
-    isTxPending,
-    isValidated,
-  } = useOrder({
-    ...order,
-    calls: [{
-          target: user ?? '0x',
-          value: quote.isSuccess ? quote.expense.amount : 0n,
-      }],
-      deposit: {
-        amount: quote.isSuccess ? quote.deposit.amount : 0n,
-      },
-      expense: {
-        amount: quote.isSuccess ? quote.expense.amount : 0n,
-      },
-      validateEnabled:
-        !!user &&
-        !!quote.query.data?.expense.amount &&
-        !!quote.query.data?.deposit.amount,
-  })
-
-  return {
-    open,
-    txHash,
-    validation,
-    txMutation,
-    status,
-    waitForTx,
-    isError,
-    isOpen,
-    isTxPending,
-    isValidated,
-  }
+    // ...
 }
 ```
 
-Lets walk through what's happening here:
+Now, we use that quote to inform the order we will open with Omni.
 
-- `useAccount` gives us the address of the connected wallet
-- `useQuote` internally calls our Solver API requesting a quote for the bridge. Note the `mode` param sets the direction of the quote. 
-- The `expense` mode requires a `deposit` amount to be set. A quote will be returned describing the `deposit` and `expense` amounts.
-- Deposit reflects the amount to be spent on the source chain.
-- Expenses reflects the amount to be used for the calls on the destination chain.
-- In this simple bridge, expense is simply the amount sent to the user (deposit - fees).
-- `useOrder` is used to create an order. An open method is returned to asynchronously open an order.
-- Validation reflects another call to our Solver API to validate the order, this can be helpful for verifying an order before opening it.
-- `error` will give you information about any potential issues.
-- `status` will give you the status of the order:
+
+```tsx
+import { useOrder, useQuote } from '@omni-network/react'
+
+function App() {
+   // ...
+
+  const user = "0x...."
+  const order = useOrder({
+    srcChainId: baseSepolia.id,
+    destChainId: arbitrumSepolia.id,
+
+    // request ETH transfer of quoted expense to `user`
+    calls: [
+      {
+        target: user,
+        value: quote.isSuccess ? quote.expense.amount : 0n,
+      }
+    ],
+    deposit: {
+      amount: quote.isSuccess ? quote.deposit.amount : 0n,
+    },
+    expense: {
+      amount: quote.isSuccess ? quote.expense.amount : 0n,
+    },
+
+    // when true, this will if check the order will be accepted by Omni
+    validateEnabled: quote.isSuccess
+  })
+}
+
+```
+
+
+Finally, open the order, and checks it's status.
+
+
+```tsx
+import { useOrder, useQuote } from '@omni-network/react'
+
+
+function App() {
+  // ...
+
+  const {
+    open,
+    txHash,
+    validation,
+    txMutation,
+    status,
+    waitForTx,
+    isError,
+    isOpen,
+    isTxPending,
+    isValidated,
+  } = order
+
+  return (
+    <div>
+        <button onClick={open}>Bridge</button>
+        <p>Order status: {status}</p>
+    </div>
+  )
+}
+
+
+```
+
+Order status lets you track the order's progress.
 
 ```tsx
 export type OrderStatus =
