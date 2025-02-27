@@ -10,6 +10,7 @@ var statics = map[netconf.ID][]Account{
 		wellKnown(DevPrivateKey0(), RoleCreate3Deployer, RoleDeployer, RoleManager, RoleUpgrader),
 		wellKnown(DevPrivateKey5(), RoleRelayer),
 		wellKnown(DevPrivateKey6(), RoleMonitor),
+		wellKnown(DevPrivateKey2(), RoleFlowgen),
 		wellKnown(DevPrivateKey7(), RoleTester),
 		wellKnown(DevPrivateKey8(), RoleHot),
 		wellKnown(DevPrivateKey9(), RoleCold),
@@ -26,6 +27,7 @@ var statics = map[netconf.ID][]Account{
 		remote("0x7a6cF389082dc698285474976d7C75CAdE08ab7e", RoleTester), // reused shared-test with omega. Concurrent usage will result in nonce clashes.
 		secret("0xfE921e06Ed0a22c035b4aCFF0A5D3a434A330c96", RoleRelayer),
 		secret("0x0De553555Fa19d787Af4273B18bDB77282D618c4", RoleMonitor),
+		secret("0x9a8BF80057c8E5B5526a87389cF21A631a420998", RoleFlowgen),
 		secret("0xbC0F36A57B666922CF7C01003a01a613D44e993C", RoleXCaller),
 		secret("0xa2C64d844c177C814b6F0423b41D8644539f5F58", RoleSolver),
 	),
@@ -39,6 +41,7 @@ var statics = map[netconf.ID][]Account{
 		remote("0x7a6cF389082dc698285474976d7C75CAdE08ab7e", RoleTester), // reused shared-test with staging. Concurrent usage will result in nonce clashes.
 		secret("0x37AD6f7267454cac494C177127aC017750c8A7DB", RoleRelayer),
 		secret("0xcef2a2c477Ec8473E4DeB9a8c2DF1D0585ea1040", RoleMonitor),
+		secret("0x16DA241141D70290F043eED299140b6EC5942CAb", RoleFlowgen),
 		secret("0x01A1A1C3Fe5369bc4DF3B5a5bbC10639a14113ab", RoleXCaller),
 		secret("0x2677B9165c426eF0d3EC74E0e853e2F3A3d525cd", RoleSolver),
 	),
@@ -50,6 +53,7 @@ var statics = map[netconf.ID][]Account{
 		remote("0x992b9de7D42981B90A75C523842C01e27875b65B", RoleCreate3Deployer),
 		remote("0x9496Bf1Bd2Fa5BCba72062cC781cC97eA6930A13", RoleDeployer),
 		secret("0xfD62020Cee216Dc543E29752058Ee9f60f7D9Ff9", RoleMonitor),
+		secret("0x7f409BaC75F5260340EbEC91066a845631Dc4859", RoleFlowgen),
 		secret("0x6191442101086253A636aecBCC870e4778490AaB", RoleRelayer),
 		secret("0x835c36774B28563b9a1d1ae83dD6F671F51DCb5c", RoleXCaller),
 	),
