@@ -13,6 +13,8 @@ import (
 	"github.com/omni-network/omni/e2e/xbridge"
 	"github.com/omni-network/omni/halo/app/upgrades"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
+	"github.com/omni-network/omni/lib/cchain/provider"
+	"github.com/omni-network/omni/lib/cchain/queryutil"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
@@ -374,6 +376,12 @@ func checkSupportedChains(ctx context.Context, n netman.Manager) (bool, error) {
 func maybeSubmitNetworkUpgrades(ctx context.Context, def Definition) error {
 	network := def.Testnet.Network
 
+	client, err := def.Testnet.BroadcastNode().Client()
+	if err != nil {
+		return errors.Wrap(err, "broadcast client")
+	}
+	cprov := provider.NewABCI(client, network)
+
 	backend, err := def.Backends().Backend(network.Static().OmniExecutionChainID)
 	if err != nil {
 		return err
@@ -453,6 +461,12 @@ func maybeSubmitNetworkUpgrades(ctx context.Context, def Definition) error {
 		// Wait for upgrade height to be processed.
 		if _, _, err := waitForHeight(ctx, def.Testnet.Testnet, waitHeight); err != nil {
 			return errors.Wrap(err, "wait for height")
+		}
+
+		if current, err := queryutil.CurrentUpgrade(ctx, cprov); err != nil {
+			return errors.Wrap(err, "current upgrade")
+		} else if current != upgrade {
+			return errors.New("upgrade not applied", "current", current, "want", upgrade)
 		}
 
 		log.Info(ctx, "Upgrade applied", "height", height, "name", upgrade) // We don't actually confirm this...

@@ -34,6 +34,7 @@ func newAdminCmd(def *app.Definition) *cobra.Command {
 		newSetPortalFeeOracleV2Cmd(def, &cfg),
 		newAllowValidatorsCmd(def, &cfg),
 		newPlanUpgradeCmd(def, &cfg),
+		newCancelUpgradeCmd(def, &cfg),
 		newAdminTestCmd(def),
 	)
 
@@ -58,6 +59,18 @@ func newPlanUpgradeCmd(def *app.Definition, cfg *admin.Config) *cobra.Command {
 		Short: "Plan a network upgrade",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return admin.PlanUpgrade(cmd.Context(), *def, *cfg)
+		},
+	}
+
+	return cmd
+}
+
+func newCancelUpgradeCmd(def *app.Definition, cfg *admin.Config) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "cancel-upgrade",
+		Short: "Cancel the current network upgrade",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.CancelPlannedUpgrade(cmd.Context(), *def, *cfg)
 		},
 	}
 
