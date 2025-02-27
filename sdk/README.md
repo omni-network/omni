@@ -45,13 +45,13 @@ Note - you need to supply an `env` prop, for now default to `testnet`.
 
 2. Now you can start using the hooks! Let's build an example of an eth bridge from Base Sepolia to Arbitrum Sepolia.
 
-First, we need to quote how much ETH we can receive on the destination chain for a given source chain deposit.
+First, we need to quote how much ETH we can receive on the destination chain for a given source chain deposit:
 
 ```tsx
 import { useQuote } from '@omni-network/react'
 
 function App() {
-    // quote how much ArbSepolia we can get for 0.1 Eth on BaseSepolia
+    // quote how much ArbSepolia eth we can get for 0.1 Eth on BaseSepolia
     const quote = useQuote({
         srcChainId: baseSepolia.id,
         destChainId: arbitrumSepolia.id,
@@ -65,15 +65,13 @@ function App() {
 }
 ```
 
-Now, we use that quote to inform the order we will open with Omni.
-
+Now, we use that quote to inform the order we will open with Omni:
 
 ```tsx
 import { useOrder, useQuote } from '@omni-network/react'
 
 function App() {
    // ...
-
   const user = "0x...."
   const order = useOrder({
     srcChainId: baseSepolia.id,
@@ -92,25 +90,20 @@ function App() {
     expense: {
       amount: quote.isSuccess ? quote.expense.amount : 0n,
     },
-
-    // when true, this will if check the order will be accepted by Omni
+    // when true, this will if check the order will be accepted by Omni, you can consume the result via validation
     validateEnabled: quote.isSuccess
   })
 }
 
 ```
 
-
-Finally, open the order, and checks it's status.
-
+Finally, open the order, and checks it's status:
 
 ```tsx
 import { useOrder, useQuote } from '@omni-network/react'
 
-
 function App() {
   // ...
-
   const {
     open,
     txHash,
