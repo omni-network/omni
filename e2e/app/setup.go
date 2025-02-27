@@ -502,6 +502,7 @@ func writeSolverConfig(ctx context.Context, def Definition, logCfg log.Config) e
 
 	const (
 		privKeyFile    = "privatekey"
+		flowGenKeyFile = "flowgenkey"
 		loadGenKeyFile = "loadgenkey"
 		configFile     = "solver.toml"
 	)
@@ -565,6 +566,7 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 	const (
 		privKeyFile        = "privatekey"
 		xCallerPrivKeyFile = "xcaller_privatekey"
+		flowGenPrivKeyFile = "flowgen_privatekey"
 		configFile         = "monitor.toml"
 	)
 
@@ -613,6 +615,15 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 		return errors.Wrap(err, "write xcaller private key")
 	}
 
+	// Save flowgen private key
+	flowGenPrivKey, err := eoa.PrivateKey(ctx, def.Testnet.Network, eoa.RoleFlowgen)
+	if err != nil {
+		return errors.Wrap(err, "get flowgen key")
+	}
+	if err := ethcrypto.SaveECDSA(filepath.Join(confRoot, flowGenPrivKeyFile), flowGenPrivKey); err != nil {
+		return errors.Wrap(err, "write private key")
+	}
+
 	var validatorKeyGlob string
 	for i, privKey := range valPrivKeys {
 		validatorKeyGlob = "validator_*"
@@ -643,6 +654,7 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 	cfg.RouteScanAPIKey = def.Cfg.RouteScanAPIKey
 	cfg.LoadGen.ValidatorKeysGlob = validatorKeyGlob
 	cfg.LoadGen.XCallerKey = xCallerPrivKeyFile
+	cfg.FlowGenKey = xCallerPrivKeyFile
 	cfg.RPCEndpoints = endpoints
 	cfg.XFeeMngr.RPCEndpoints = xfeemngrEndpoints
 	cfg.XFeeMngr.CoinGeckoAPIKey = def.Cfg.CoinGeckoAPIKey

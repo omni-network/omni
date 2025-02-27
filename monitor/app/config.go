@@ -22,6 +22,7 @@ type Config struct {
 	Network         netconf.ID
 	MonitoringAddr  string
 	PrivateKey      string
+	FlowGenKey      string
 	HaloCometURL    string
 	HaloGRPCURL     string
 	LoadGen         loadgen.Config
