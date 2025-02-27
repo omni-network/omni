@@ -1,6 +1,6 @@
 {
-  "name": "omni-network",
-  "description": "Typescript interface for Omni Solvernet",
+  "name": "@omni-network/react",
+  "description": "React hooks for Omni Solvernet",
   "version": "0.0.0-alpha.5",
   "type": "module",
   "license": "MIT",
