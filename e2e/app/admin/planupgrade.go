@@ -20,7 +20,7 @@ import (
 var upgradePlans = map[netconf.ID]bindings.UpgradePlan{
 	netconf.Omega: {
 		Name:   magellan2.UpgradeName,
-		Height: 87200000, // Mon 27 Feb 1pm UTC
+		Height: 8_720_000, // Mon 27 Feb 1pm UTC
 	},
 }
 
@@ -99,6 +99,68 @@ func PlanUpgrade(ctx context.Context, def app.Definition, cfg Config) error {
 	}
 
 	log.Info(ctx, "🎉 Successfully planned network upgrade",
+		"upgrade", plan.Name,
+		"height", plan.Height,
+		"network", network,
+		"link", network.Static().OmniScanTXURL(tx.Hash()),
+	)
+
+	return nil
+}
+
+// CancelPlannedUpgrade cancels the current planned upgrade.
+func CancelPlannedUpgrade(ctx context.Context, def app.Definition, cfg Config) error {
+	network := def.Manifest.Network
+
+	backend, err := def.Backends().Backend(network.Static().OmniExecutionChainID)
+	if err != nil {
+		return err
+	}
+
+	client, err := def.Testnet.BroadcastNode().Client()
+	if err != nil {
+		return errors.Wrap(err, "broadcast client")
+	}
+	cprov := provider.NewABCI(client, network)
+
+	plan, ok, err := cprov.CurrentPlannedPlan(ctx)
+	if err != nil {
+		return err
+	} else if !ok {
+		return errors.New("no current planned upgrade")
+	}
+
+	log.Debug(ctx, "Canceling planned network upgrade",
+		"network", network,
+		"upgrade", plan.Name,
+		"height", plan.Height,
+	)
+
+	contract, err := bindings.NewUpgrade(common.HexToAddress(predeploys.Upgrade), backend)
+	if err != nil {
+		return errors.Wrap(err, "new upgrade contract")
+	}
+
+	txOpts, err := backend.BindOpts(ctx, eoa.MustAddress(network, eoa.RoleUpgrader))
+	if err != nil {
+		return errors.Wrap(err, "bind tx opts")
+	}
+
+	if !cfg.Broadcast {
+		log.Info(ctx, "Dry-run mode, skipping transaction broadcast")
+		return nil
+	}
+
+	tx, err := contract.CancelUpgrade(txOpts)
+	if err != nil {
+		return errors.Wrap(err, "allow validators")
+	}
+
+	if _, err := backend.WaitMined(ctx, tx); err != nil {
+		return errors.Wrap(err, "wait minded")
+	}
+
+	log.Info(ctx, "🎉 Successfully canceled network upgrade",
 		"upgrade", plan.Name,
 		"height", plan.Height,
 		"network", network,
