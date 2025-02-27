@@ -40,6 +40,22 @@ type TestOrder struct {
 	RejectReason  string
 }
 
+func (o TestOrder) IsDepositTokenInvalid() bool {
+	return o.Deposit.Token == invalidTokenAddress
+}
+
+func (o TestOrder) IsDepositTokenEmpty() bool {
+	return o.Deposit.Token == zeroAddr
+}
+
+func (o TestOrder) SrcAndDestChainAreSame() bool {
+	return o.SourceChainID == o.DestChainID
+}
+
+func (o TestOrder) IsSrcChainInvalid() bool {
+	return o.SourceChainID == invalidChainID
+}
+
 func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints) error {
 	if network.ID != netconf.Devnet {
 		return errors.New("only devnet")
@@ -179,6 +195,18 @@ func makeOrders() []TestOrder {
 			ShouldReject:  true,
 			RejectReason:  solver.RejectInvalidDeposit.String(),
 		})
+
+		orders = append(orders, TestOrder{
+			Owner:         user,
+			FillDeadline:  time.Now().Add(1 * time.Hour),
+			SourceChainID: evmchain.IDOmniDevnet,
+			DestChainID:   evmchain.IDMockL1,
+			Expenses:      nativeExpense(requestAmt),
+			Calls:         nativeTransferCall(requestAmt, user),
+			Deposit:       unsupportedDeposit(depositAmt),
+			ShouldReject:  true,
+			RejectReason:  solver.RejectUnsupportedDeposit.String(),
+		})
 	}
 
 	// native ETH transfers
@@ -223,17 +251,43 @@ func makeOrders() []TestOrder {
 		orders = append(orders, order)
 	}
 
+	// bad src chain
+	orders = append(orders, TestOrder{
+		Owner:         users[0],
+		FillDeadline:  time.Now().Add(1 * time.Hour),
+		SourceChainID: invalidChainID,
+		DestChainID:   evmchain.IDMockL1,
+		Expenses:      nativeExpense(big.NewInt(1)),
+		Calls:         nativeTransferCall(big.NewInt(1), users[0]),
+		Deposit:       erc20Deposit(big.NewInt(1), common.Address{}),
+		ShouldReject:  true,
+		RejectReason:  solver.RejectUnsupportedSrcChain.String(),
+	})
+
 	// bad dest chain
 	orders = append(orders, TestOrder{
 		Owner:         users[0],
 		FillDeadline:  time.Now().Add(1 * time.Hour),
 		SourceChainID: evmchain.IDMockL1,
-		DestChainID:   1234, // invalid
+		DestChainID:   invalidChainID,
 		Expenses:      nativeExpense(big.NewInt(1)),
 		Calls:         nativeTransferCall(big.NewInt(1), users[0]),
 		Deposit:       erc20Deposit(big.NewInt(1), addrs.Token),
 		ShouldReject:  true,
 		RejectReason:  solver.RejectUnsupportedDestChain.String(),
+	})
+
+	// same chain for src and dest
+	orders = append(orders, TestOrder{
+		Owner:         users[0],
+		FillDeadline:  time.Now().Add(1 * time.Hour),
+		SourceChainID: evmchain.IDMockL1,
+		DestChainID:   evmchain.IDMockL1,
+		Expenses:      nativeExpense(big.NewInt(1)),
+		Calls:         nativeTransferCall(big.NewInt(1), users[0]),
+		Deposit:       erc20Deposit(big.NewInt(1), addrs.Token),
+		ShouldReject:  true,
+		RejectReason:  solver.RejectSameChain.String(),
 	})
 
 	// unsupported expense token
@@ -273,6 +327,10 @@ func openAll(ctx context.Context, backends ethbackend.Backends, orders []TestOrd
 	var eg errgroup.Group
 	for _, order := range orders {
 		eg.Go(func() error {
+			if order.IsSrcChainInvalid() || order.IsDepositTokenInvalid() || order.SrcAndDestChainAreSame() {
+				return nil
+			}
+
 			id, err := openOrder(ctx, backends, order)
 			if err != nil {
 				return err

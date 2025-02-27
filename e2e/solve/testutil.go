@@ -18,9 +18,12 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const invalidChainID = 1234
+
 var (
-	zeroAddr common.Address
-	addrs    = mustAddrs(netconf.Devnet)
+	zeroAddr            common.Address
+	addrs               = mustAddrs(netconf.Devnet)
+	invalidTokenAddress = common.HexToAddress("0x1234")
 )
 
 func mustAddrs(network netconf.ID) contracts.Addresses {
@@ -49,11 +52,15 @@ func nativeExpense(amt *big.Int) solvernet.Expenses {
 }
 
 func unsupportedExpense(amt *big.Int) solvernet.Expenses {
-	return []solvernet.Expense{{Amount: amt, Token: common.HexToAddress("0x1234")}}
+	return []solvernet.Expense{{Amount: amt, Token: invalidTokenAddress}}
 }
 
 func invalidExpense() solvernet.Expenses {
 	return nativeExpense(big.NewInt(params.Ether))
+}
+
+func unsupportedDeposit(amt *big.Int) solvernet.Deposit {
+	return solvernet.Deposit{Amount: amt, Token: invalidTokenAddress}
 }
 
 func nativeDeposit(amt *big.Int) solvernet.Deposit {
@@ -74,7 +81,7 @@ func mintAndApproveAll(ctx context.Context, backends ethbackend.Backends, orders
 }
 
 func mintAndApprove(ctx context.Context, backends ethbackend.Backends, order TestOrder) error {
-	if order.Deposit.Token == zeroAddr {
+	if order.IsDepositTokenEmpty() || order.IsDepositTokenInvalid() {
 		// native, nothing to do
 		return nil
 	}
