@@ -2,10 +2,10 @@ package flowgen
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"time"
 
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
@@ -19,19 +19,32 @@ import (
 	"github.com/omni-network/omni/monitor/flowgen/types"
 	"github.com/omni-network/omni/monitor/flowgen/util"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 )
 
 func Start(
 	ctx context.Context,
-	xprovider xchain.Provider,
 	network netconf.Network,
 	rpcEndpoints xchain.RPCEndpoints,
 	keyPath string,
 ) error {
-	var jobs []*types.Job
+	if keyPath == "" {
+		return errors.New("private key is required")
+	}
+
+	privKey, err := ethcrypto.LoadECDSA(keyPath)
+	if err != nil {
+		return errors.Wrap(err, "load key", "path", keyPath)
+	}
+
+	backends, err := ethbackend.BackendsFromNetwork(network, rpcEndpoints, privKey)
+	if err != nil {
+		return errors.Wrap(err, "backends")
+	}
+
+	var jobs []types.Job
 
 	// Add jobs according to the current network ID
 	switch network.ID {
@@ -54,20 +67,6 @@ func Start(
 	default:
 	}
 
-	if keyPath == "" {
-		return errors.New("private key is required")
-	}
-
-	privKey, err := ethcrypto.LoadECDSA(keyPath)
-	if err != nil {
-		return errors.Wrap(err, "load key", "path", keyPath)
-	}
-
-	backends, err := ethbackend.BackendsFromNetwork(network, rpcEndpoints, privKey)
-	if err != nil {
-		return errors.Wrap(err, "backends")
-	}
-
 	for _, job := range jobs {
 		go func() {
 			ticker := time.NewTicker(job.Cadence)
@@ -78,8 +77,8 @@ func Start(
 				case <-ctx.Done():
 					return
 				case <-ticker.C:
-					if err := run(ctx, xprovider, backends, job); err != nil {
-						log.Error(ctx, fmt.Sprintf("Flowgen job %s failed", job.Name), err)
+					if err := run(log.WithCtx(ctx, "job", job.Name), backends, job); err != nil {
+						log.Error(ctx, "Flowgen: job failed (will retry)", err)
 					}
 				}
 			}
@@ -90,97 +89,65 @@ func Start(
 }
 
 // run runs a job exactly once.
-func run(ctx context.Context, xprovider xchain.Provider, backends ethbackend.Backends, j *types.Job) error {
-	log.Debug(ctx, "Flowgen: running job", "name", j.Name)
-
-	// We fetch the latest finalized height of the source chain before we open the order.
-	// Once we open the order, we start fetching all event logs starting above this
-	// finalized height to retrieve the order status.
-	height, err := xprovider.ChainVersionHeight(ctx, xchain.ChainVersion{
-		ID:        j.SrcChain,
-		ConfLevel: xchain.ConfFinalized,
-	})
-	if err != nil {
-		return errors.Wrap(err, "chain height")
-	}
+func run(ctx context.Context, backends ethbackend.Backends, j types.Job) error {
+	log.Debug(ctx, "Flowgen: running job")
 
 	id, err := solvernet.OpenOrder(ctx, j.Network, evmchain.IDMockL1, backends, j.Owner, j.OrderData)
 	if err != nil {
 		return errors.Wrap(err, "open order")
 	}
 
-	log.Debug(ctx, "Flowgen order opened", "id", id)
+	ctx = log.WithCtx(ctx, "id", id)
 
-	status, err := waitForFinalStatus(ctx, xprovider, j, id, height+1)
+	log.Debug(ctx, "Flowgen: order opened")
+
+	status, err := waitForFinalStatus(ctx, backends, j, id)
 	if err != nil {
 		return errors.Wrap(err, "wait for status")
 	}
-	log.Info(ctx, "Flowgen order finalized", "id", id, "status", status)
+	log.Info(ctx, "Flowgen: order finalized", "status", status)
 
 	return nil
 }
 
-// waitForFinalStatus fetches all event logs starting from the provided height and
-// tries to find a final status of the specified order and returns it. Since we assume that
-// all orders will eventually be rejected, closed or claimed, the function never terminates.
+// waitForFinalStatus monitors the specified order id for the final status and return it. Since we
+// assume that all orders will eventually be rejected, closed or claimed, the function never terminates.
 func waitForFinalStatus(
 	ctx context.Context,
-	xprovider xchain.Provider,
-	j *types.Job,
+	backends ethbackend.Backends,
+	j types.Job,
 	orderID solvernet.OrderID,
-	height uint64,
 ) (solvernet.OrderStatus, error) {
 	addrs, err := contracts.GetAddresses(ctx, j.Network)
 	if err != nil {
 		panic(err)
 	}
 
-	statusChan := make(chan solvernet.OrderStatus, 1)
-	errChan := make(chan error, 1)
-
-	proc := func(_ context.Context, _ uint64, logs []ethtypes.Log) error {
-		for _, l := range logs {
-			event, ok := solvernet.EventByTopic(l.Topics[0])
-			if !ok {
-				return errors.New("unknown event", "topic", l.Topics[0])
-			}
-
-			id := solvernet.OrderID(l.Topics[1])
-			if id != orderID {
-				continue
-			}
-
-			switch event.Status {
-			case solvernet.StatusInvalid, solvernet.StatusRejected, solvernet.StatusClosed, solvernet.StatusClaimed:
-				statusChan <- event.Status
-			default:
-			}
-		}
-
-		return nil
+	backend, err := backends.Backend(j.SrcChain)
+	if err != nil {
+		return solvernet.StatusInvalid, errors.Wrap(err, "get backend")
 	}
 
-	go func() {
-		req := xchain.EventLogsReq{
-			ChainID:       j.SrcChain,
-			ConfLevel:     xchain.ConfLatest,
-			Height:        height,
-			FilterAddress: addrs.SolverNetInbox,
-			FilterTopics:  solvernet.AllEventTopics(),
-		}
+	inbox, err := bindings.NewSolverNetInbox(addrs.SolverNetInbox, backend)
+	if err != nil {
+		return solvernet.StatusInvalid, errors.Wrap(err, "create inbox contract")
+	}
 
-		err := xprovider.StreamEventLogs(ctx, req, proc)
+	for {
+		latest, err := inbox.GetOrder(&bind.CallOpts{Context: ctx}, orderID)
 		if err != nil {
-			errChan <- err
+			return solvernet.StatusInvalid, errors.Wrap(err, "get order")
 		}
-	}()
 
-	select {
-	case status := <-statusChan:
-		return status, nil
-	case err := <-errChan:
-		return solvernet.StatusInvalid, errors.Wrap(err, "stream event logs")
-	case <-ctx.Done():
-		return solvernet.StatusInvalid, errors.Wrap(ctx.Err(), "context done")
+		status := solvernet.OrderStatus(latest.State.Status)
+
+		switch status {
+		case solvernet.StatusInvalid, solvernet.StatusRejected, solvernet.StatusClosed, solvernet.StatusClaimed:
+			return status, nil
+		default:
+			log.Debug(ctx, "Flowgen: order in flight", "status", status)
+		}
+
+		time.Sleep(time.Second)
 	}
 }

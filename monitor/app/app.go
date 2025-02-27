@@ -65,9 +65,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	xprov := xprovider.New(network, ethClients, cprov)
-
-	if err := flowgen.Start(ctx, xprov, network, cfg.RPCEndpoints, cfg.PrivateKey); err != nil {
+	if err := flowgen.Start(ctx, network, cfg.RPCEndpoints, cfg.PrivateKey); err != nil {
 		log.Error(ctx, "Failed to start monitor flowgen [BUG]", err)
 	}
 
@@ -80,6 +78,8 @@ func Run(ctx context.Context, cfg Config) error {
 	if err := startLoadGen(ctx, cfg, network, ethClients); err != nil {
 		log.Error(ctx, "Failed to start monitor loadgen [BUG]", err)
 	}
+
+	xprov := xprovider.New(network, ethClients, cprov)
 
 	if err := xmonitor.Start(ctx, network, xprov, cprov, ethClients); err != nil {
 		return errors.Wrap(err, "start xchain monitor")

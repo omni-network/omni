@@ -15,7 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// NewJob instantiates the flow-specific job configuration.
+// NewJob instantiates the job that bridges native ETH.
 func NewJob(
 	network netconf.ID,
 	srcChain,
@@ -23,14 +23,14 @@ func NewJob(
 	role eoa.Role,
 	token common.Address,
 	amount *big.Int,
-) (*types.Job, error) {
+) (types.Job, error) {
 	owner := eoa.MustAddress(network, role)
 	data, err := orderData(owner, srcChain, dstChain, token, amount)
 	if err != nil {
-		return nil, errors.Wrap(err, "new job")
+		return types.Job{}, errors.Wrap(err, "new job")
 	}
 
-	job := types.Job{
+	return types.Job{
 		Name:    "Bridging",
 		Cadence: 1 * time.Minute,
 		Network: network,
@@ -41,12 +41,10 @@ func NewJob(
 		Owner: owner,
 
 		OrderData: data,
-	}
-
-	return &job, nil
+	}, nil
 }
 
-// OrderData returns the flow-specific order data.
+// OrderData returns the order data required to do the job.
 func orderData(
 	owner common.Address,
 	srcChain, dstChain uint64,
