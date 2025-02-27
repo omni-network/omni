@@ -81,7 +81,7 @@ func mintAndApproveAll(ctx context.Context, backends ethbackend.Backends, orders
 }
 
 func mintAndApprove(ctx context.Context, backends ethbackend.Backends, order TestOrder) error {
-	if order.IsDepositTokenEmpty() || order.IsDepositTokenInvalid() {
+	if isDepositTokenEmpty(order) || isDepositTokenInvalid(order) {
 		// native, nothing to do
 		return nil
 	}

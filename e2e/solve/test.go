@@ -40,19 +40,19 @@ type TestOrder struct {
 	RejectReason  string
 }
 
-func (o TestOrder) IsDepositTokenInvalid() bool {
+func isDepositTokenInvalid(o TestOrder) bool {
 	return o.Deposit.Token == invalidTokenAddress
 }
 
-func (o TestOrder) IsDepositTokenEmpty() bool {
+func isDepositTokenEmpty(o TestOrder) bool {
 	return o.Deposit.Token == zeroAddr
 }
 
-func (o TestOrder) SrcAndDestChainAreSame() bool {
+func srcAndDestChainAreSame(o TestOrder) bool {
 	return o.SourceChainID == o.DestChainID
 }
 
-func (o TestOrder) IsSrcChainInvalid() bool {
+func isSrcChainInvalid(o TestOrder) bool {
 	return o.SourceChainID == invalidChainID
 }
 
@@ -327,7 +327,7 @@ func openAll(ctx context.Context, backends ethbackend.Backends, orders []TestOrd
 	var eg errgroup.Group
 	for _, order := range orders {
 		eg.Go(func() error {
-			if order.IsSrcChainInvalid() || order.IsDepositTokenInvalid() || order.SrcAndDestChainAreSame() {
+			if isSrcChainInvalid(order) || isDepositTokenInvalid(order) || srcAndDestChainAreSame(order) {
 				return nil
 			}
 
