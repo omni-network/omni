@@ -8,13 +8,13 @@ The Omni SDK contains React hooks for interfacing with Omni SolverNet, your gate
 
 ## Getting Started
 
-The SDK in its current form has peer dependencies on `viem`, `wagmi`, and `react-query`. In future we plan build additional setups that don't have the same dependencies.
+The SDK in its current form has peer dependencies on `viem`, `wagmi`, and `react-query`. In future, we plan to build additional setups that don't have the same dependencies.
 
-Note - given we're in alpha, there we're still making improvements, particularly on e2e type safety, testing, and documentation. If you have any feedback or request please reach out to us (telegram below).
+Note - given we're in alpha, we're still making improvements, particularly on e2e type safety, testing, and documentation. If you have any feedback or requests, please reach out to us (telegram below).
 
 ### Installation
 
-1. You'll need to have `wagmi` and `react-query` setup in your project already. If you don't already you can follow the instructions [here](https://wagmi.sh/react/getting-started).
+1. You'll need to have `wagmi` and `react-query` setup in your project already. If you don't, you can follow the instructions [here](https://wagmi.sh/react/getting-started).
 
 2. Once you're setup, install the SDK:
 ```bash
@@ -23,7 +23,7 @@ pnpm install @omni-network/react
 
 ### Usage
 
-1. You'll need to wrap your app in the `OmniProvider`, **inside** your `WagmiProvider` and `QueryClientProvider` provider:
+1. You'll need to wrap your app in the `OmniProvider`. Make sure to wrap it **_inside_** your `WagmiProvider` and `QueryClientProvider` provider:
 
 ```tsx
 import { WagmiProvider } from 'wagmi'
@@ -50,8 +50,8 @@ import { useAccount } from 'wagmi'
 import { useOrder } from '@omni-network/react'
 
 const order = {
-    srcChainId: 84532, // base sepolia
-    destChainId: 11155420, // optimism sepolia
+    srcChainId: 84532, 
+    destChainId: 11155420,
     deposit: {
         amount: 10000000000000000,
         isNative: true
