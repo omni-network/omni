@@ -24,5 +24,5 @@ export function useDidFill(params: UseDidFillParams) {
     },
   })
 
-  return filled.data ?? false
+  return filled ?? false
 }
