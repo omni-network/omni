@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+source scripts/install_pnpm.sh
+
 # get dir
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -12,12 +14,15 @@ TS_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep "^sdk.*\.\(ts
 echo "Running SDK checks..."
 cd "$SDK_DIR"
 
+echo "Installing deps via pnpm..."
+pnpm install
+
 # clean + build
 echo "Building SDK..."
 pnpm build
 
 # precommit checks (Biome)
-echo "Running SDK checks..."
+echo "Running checks..."
 pnpm check
 
 CHECK_EXIT_CODE=$?
