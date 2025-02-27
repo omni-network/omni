@@ -129,7 +129,7 @@ Lets walk through what's happening here:
 - `useOrder` is used to create an order. An open method is returned to asynchronously open an order.
 - Validation reflects another call to our Solver API to validate the order, this can be helpful for verifying an order before opening it.
 - `error` will give you information about any potential issues.
-- `status` will give you the status of the order:
+- `status` will give you the status of the order (exported by the SDK if required):
 
 ```tsx
 export type OrderStatus =
@@ -147,3 +147,5 @@ And that's it! That's all you need to use SolverNet to bridge eth across L2s.
 ## Get in touch
 
 You can reach out to us on telegram with any queries, feedback, or requests: [@omnidevsupport](https://t.me/omnidevsupport)
+
+Or feel free to open an issue here or discussion here on github.
