@@ -3,12 +3,12 @@ import { type Log, decodeEventLog } from 'viem'
 import type { UseWaitForTransactionReceiptReturnType } from 'wagmi'
 import { inboxABI } from '../constants/abis.js'
 
-type UseGetOrderDataParams = {
+type UseParseOpenEventParams = {
   status: UseWaitForTransactionReceiptReturnType['status']
   logs?: Log[]
 }
 
-export function useGetOrderData(params: UseGetOrderDataParams) {
+export function useParseOpenEvent(params: UseParseOpenEventParams) {
   const { status, logs } = params
   const eventData = useMemo(() => {
     if (!logs || status !== 'success') return

@@ -1,4 +1,4 @@
-import type { Hex, WriteContractErrorType } from 'viem'
+import type { Hex } from 'viem'
 import { zeroAddress } from 'viem'
 import {
   type Config,
@@ -11,12 +11,19 @@ import {
 import { inboxABI } from '../constants/abis.js'
 import { typeHash } from '../constants/typehash.js'
 import { useOmniContext } from '../context/omni.js'
+import {
+  DidFillError,
+  GetOrderError,
+  OpenError,
+  TxReceiptError,
+  ValidateOrderError,
+} from '../errors/base.js'
 import type { OptionalAbis } from '../types/abi.js'
 import type { Order, OrderStatus } from '../types/order.js'
 import { encodeOrder } from '../utils/encodeOrder.js'
 import { useDidFill } from './useDidFill.js'
-import { useGetOrderData } from './useGetOrderData.js'
 import { type InboxStatus, useInboxStatus } from './useInboxStatus.js'
+import { useParseOpenEvent } from './useParseOpenEvent.js'
 import {
   type UseValidateOrderResult,
   useValidateOrder,
@@ -26,12 +33,20 @@ type UseOrderParams<abis extends OptionalAbis> = Order<abis> & {
   validateEnabled: boolean
 }
 
+type UseOrderError =
+  | OpenError
+  | TxReceiptError
+  | GetOrderError
+  | DidFillError
+  | ValidateOrderError
+  | undefined
+
 type UseOrderReturnType = {
   open: () => Promise<Hex>
   orderId?: Hex
   validation?: UseValidateOrderResult
   txHash?: Hex
-  error?: WriteContractErrorType
+  error?: UseOrderError
   status: OrderStatus
   isTxPending: boolean
   isTxSubmitted: boolean
@@ -50,8 +65,7 @@ export function useOrder<abis extends OptionalAbis>(
   const { validateEnabled, ...order } = params
   const txMutation = useWriteContract()
   const wait = useWaitForTransactionReceipt({ hash: txMutation.data })
-
-  const { orderId, originData } = useGetOrderData({
+  const { orderId, originData } = useParseOpenEvent({
     status: wait.status,
     logs: wait.data?.logs,
   })
@@ -64,7 +78,7 @@ export function useOrder<abis extends OptionalAbis>(
 
   const status = deriveStatus(
     inboxStatus,
-    didFill,
+    didFill.data ?? false,
     txMutation.status,
     wait.status,
     wait.fetchStatus,
@@ -96,21 +110,63 @@ export function useOrder<abis extends OptionalAbis>(
     })
   }
 
+  const error = deriveError({
+    txMutation,
+    wait,
+    didFill,
+    validation,
+    inboxStatus,
+  })
+
   return {
     open,
     orderId,
     validation,
     txHash: txMutation.data,
     status,
-    error: txMutation.error as WriteContractErrorType | undefined,
+    error,
+    isError: !!error,
     isValidated: validation?.status === 'accepted',
     isTxPending: txMutation.isPending,
     isTxSubmitted: txMutation.isSuccess,
-    isError: !!txMutation.error,
     isOpen: !!wait.data,
     txMutation,
     waitForTx: wait,
   }
+}
+
+type DeriveErrorParams = {
+  txMutation: UseWriteContractReturnType<Config, unknown>
+  wait: UseWaitForTransactionReceiptReturnType
+  didFill: ReturnType<typeof useDidFill>
+  validation: ReturnType<typeof useValidateOrder>
+  inboxStatus: InboxStatus
+}
+
+function deriveError(params: DeriveErrorParams): UseOrderError {
+  const { txMutation, wait, didFill, validation, inboxStatus } = params
+
+  if (validation.status === 'error') {
+    return new ValidateOrderError(validation.error.message)
+  }
+
+  if (txMutation.error) {
+    return new OpenError(txMutation.error.message)
+  }
+
+  if (wait.error) {
+    return new TxReceiptError(wait.error.message)
+  }
+
+  if (didFill.error) {
+    return new DidFillError(didFill.error.message)
+  }
+
+  if (wait.isSuccess && inboxStatus === 'not-found') {
+    return new GetOrderError(inboxStatus)
+  }
+
+  return
 }
 
 // deriveStatus returns a status derived from open tx, inbox and outbox statuses
