@@ -15,7 +15,7 @@ import type { OptionalAbis } from '../types/abi.js'
 import type { Order, OrderStatus } from '../types/order.js'
 import { encodeOrder } from '../utils/encodeOrder.js'
 import { useDidFill } from './useDidFill.js'
-import { useGetOrderId } from './useGetOrderId.js'
+import { useGetOrderData } from './useGetOrderData.js'
 import { type InboxStatus, useInboxStatus } from './useInboxStatus.js'
 import {
   type UseValidateOrderResult,
