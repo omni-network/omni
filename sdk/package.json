@@ -1,7 +1,7 @@
 {
   "name": "omni-network",
   "description": "Typescript interface for Omni Solvernet",
-  "version": "0.0.0-alpha.2",
+  "version": "0.0.0-alpha.4",
   "type": "module",
   "license": "MIT",
   "packageManager": "pnpm@9.1.0",

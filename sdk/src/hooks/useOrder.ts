@@ -15,7 +15,7 @@ import type { OptionalAbis } from '../types/abi.js'
 import type { Order, OrderStatus } from '../types/order.js'
 import { encodeOrder } from '../utils/encodeOrder.js'
 import { useDidFill } from './useDidFill.js'
-import { useGetOpenOrder } from './useGetOpenOrder.js'
+import { useGetOrderId } from './useGetOrderId.js'
 import { type InboxStatus, useInboxStatus } from './useInboxStatus.js'
 import {
   type UseValidateOrderResult,
@@ -51,7 +51,7 @@ export function useOrder<abis extends OptionalAbis>(
   const txMutation = useWriteContract()
   const wait = useWaitForTransactionReceipt({ hash: txMutation.data })
 
-  const { orderId, originData } = useGetOpenOrder({
+  const { orderId, originData } = useGetOrderData({
     status: wait.status,
     logs: wait.data?.logs,
   })
