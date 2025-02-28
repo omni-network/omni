@@ -50,7 +50,7 @@ func Run(ctx context.Context, cfg Config) error {
 	// if mainnet, just run monitoring and api (/live only)
 	if cfg.Network == netconf.Mainnet {
 		log.Info(ctx, "Serving API", "address", cfg.APIAddr)
-		apiChan := serveAPI(cfg.APIAddr, map[string]http.Handler{})
+		apiChan := serveAPI(cfg.APIAddr)
 
 		select {
 		case <-ctx.Done():
@@ -119,11 +119,11 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 
 	log.Info(ctx, "Serving API", "address", cfg.APIAddr)
-	apiChan := serveAPI(cfg.APIAddr, map[string]http.Handler{
-		"/api/v1/quote":     newQuoteHandler(quoter),
-		"/api/v1/check":     newCheckHandler(newChecker(backends, solverAddr, addrs.SolverNetInbox, addrs.SolverNetOutbox)),
-		"/api/v1/contracts": newContractsHandler(addrs),
-	})
+	apiChan := serveAPI(cfg.APIAddr,
+		newCheckHandler(newChecker(backends, solverAddr, addrs.SolverNetInbox, addrs.SolverNetOutbox)),
+		newContractsHandler(addrs),
+		newQuoteHandler(quoter),
+	)
 
 	if err := approveOutboxes(ctx, network, backends, solverAddr); err != nil {
 		return errors.Wrap(err, "approve outboxes")

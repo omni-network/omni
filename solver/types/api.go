@@ -2,7 +2,6 @@ package types
 
 import (
 	"math/big"
-	"net/http"
 
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 
@@ -41,21 +40,10 @@ type CheckRequest struct {
 
 // CheckResponse is the response json for the /check endpoint.
 type CheckResponse struct {
-	Accepted          bool               `json:"accepted,omitempty"`
-	Rejected          bool               `json:"rejected,omitempty"`
-	RejectReason      string             `json:"rejectReason,omitempty"`
-	RejectDescription string             `json:"rejectDescription,omitempty"`
-	Error             *JSONErrorResponse `json:"error,omitempty"`
-}
-
-var _ JSONResponse = (*CheckResponse)(nil)
-
-func (r CheckResponse) StatusCode() int {
-	if r.Error != nil {
-		return r.Error.Code
-	}
-
-	return http.StatusOK
+	Accepted          bool   `json:"accepted"`
+	Rejected          bool   `json:"rejected"`
+	RejectReason      string `json:"rejectReason"`
+	RejectDescription string `json:"rejectDescription"`
 }
 
 // QuoteRequest is the expected request body for the /api/v1/quote endpoint.
@@ -96,38 +84,16 @@ func (qu JSONQuoteUnit) Parse() QuoteUnit {
 
 // QuoteResponse is the response json for the /api/v1/quote endpoint.
 type QuoteResponse struct {
-	Deposit JSONQuoteUnit      `json:"deposit"`
-	Expense JSONQuoteUnit      `json:"expense"`
-	Error   *JSONErrorResponse `json:"error,omitempty"`
-}
-
-var _ JSONResponse = (*QuoteResponse)(nil)
-
-func (r QuoteResponse) StatusCode() int {
-	if r.Error != nil {
-		return r.Error.Code
-	}
-
-	return http.StatusOK
+	Deposit JSONQuoteUnit `json:"deposit"`
+	Expense JSONQuoteUnit `json:"expense"`
 }
 
 // ContractsResponse is the response json for the /api/vi/contracts endpoint.
 type ContractsResponse struct {
-	Portal    string             `json:"portal,omitempty"`
-	Inbox     string             `json:"inbox,omitempty"`
-	Outbox    string             `json:"outbox,omitempty"`
-	Middleman string             `json:"middleman,omitempty"`
-	Error     *JSONErrorResponse `json:"error,omitempty"`
-}
-
-var _ JSONResponse = (*ContractsResponse)(nil)
-
-func (r ContractsResponse) StatusCode() int {
-	if r.Error != nil {
-		return r.Error.Code
-	}
-
-	return http.StatusOK
+	Portal    string `json:"portal"`
+	Inbox     string `json:"inbox"`
+	Outbox    string `json:"outbox"`
+	Middleman string `json:"middleman"`
 }
 
 // JSONExpense is a json marshal-able solvernt.Expense.

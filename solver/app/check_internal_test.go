@@ -31,7 +31,7 @@ func TestCheck(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			backends, clients := testBackends(t)
 
-			handler := newCheckHandler(newChecker(backends, solver, inbox, outbox))
+			handler := handlerAdapter(newCheckHandler(newChecker(backends, solver, inbox, outbox)))
 
 			if tt.mock != nil {
 				tt.mock(clients)
@@ -49,7 +49,7 @@ func TestCheck(t *testing.T) {
 			require.NoError(t, err)
 
 			ctx := context.Background()
-			req, err := http.NewRequestWithContext(ctx, http.MethodPost, "api/v1/check", bytes.NewBuffer(body))
+			req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpointCheck, bytes.NewBuffer(body))
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()

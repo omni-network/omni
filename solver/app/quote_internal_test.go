@@ -27,9 +27,10 @@ func TestQuote(t *testing.T) {
 	omegaOMNIAddr := omniERC20(netconf.Omega).Address
 
 	tests := []struct {
-		name string
-		req  QuoteRequest
-		res  QuoteResponse
+		name   string
+		req    QuoteRequest
+		res    QuoteResponse
+		expErr *JSONErrorResponse
 	}{
 		{
 			name: "quote deposit 1 eth expense",
@@ -106,12 +107,10 @@ func TestQuote(t *testing.T) {
 				Deposit:            JSONQuoteUnit{},
 				Expense:            JSONQuoteUnit{},
 			},
-			res: QuoteResponse{
-				Error: &JSONErrorResponse{
-					Code:    http.StatusBadRequest,
-					Status:  http.StatusText(http.StatusBadRequest),
-					Message: "deposit and expense amount cannot be both zero or both non-zero",
-				},
+			expErr: &JSONErrorResponse{
+				Code:    http.StatusBadRequest,
+				Status:  http.StatusText(http.StatusBadRequest),
+				Message: "deposit and expense amount cannot be both zero or both non-zero",
 			},
 		},
 		{
@@ -122,12 +121,10 @@ func TestQuote(t *testing.T) {
 				Deposit:            JSONQuoteUnit{Amount: parseInt("1000000000000000000")},
 				Expense:            JSONQuoteUnit{Amount: parseInt("1000000000000000000")},
 			},
-			res: QuoteResponse{
-				Error: &JSONErrorResponse{
-					Code:    http.StatusBadRequest,
-					Status:  http.StatusText(http.StatusBadRequest),
-					Message: "deposit and expense amount cannot be both zero or both non-zero",
-				},
+			expErr: &JSONErrorResponse{
+				Code:    http.StatusBadRequest,
+				Status:  http.StatusText(http.StatusBadRequest),
+				Message: "deposit and expense amount cannot be both zero or both non-zero",
 			},
 		},
 		{
@@ -138,12 +135,10 @@ func TestQuote(t *testing.T) {
 				Deposit:            JSONQuoteUnit{Token: common.HexToAddress("0x1234")},
 				Expense:            JSONQuoteUnit{Amount: parseInt("1000000000000000000")},
 			},
-			res: QuoteResponse{
-				Error: &JSONErrorResponse{
-					Code:    http.StatusNotFound,
-					Status:  http.StatusText(http.StatusNotFound),
-					Message: "unsupported deposit token",
-				},
+			expErr: &JSONErrorResponse{
+				Code:    http.StatusNotFound,
+				Status:  http.StatusText(http.StatusNotFound),
+				Message: "unsupported deposit token",
 			},
 		},
 		{
@@ -154,12 +149,10 @@ func TestQuote(t *testing.T) {
 				Deposit:            JSONQuoteUnit{Amount: parseInt("1000000000000000000")},
 				Expense:            JSONQuoteUnit{Token: common.HexToAddress("0x1234")},
 			},
-			res: QuoteResponse{
-				Error: &JSONErrorResponse{
-					Code:    http.StatusNotFound,
-					Status:  http.StatusText(http.StatusNotFound),
-					Message: "unsupported expense token",
-				},
+			expErr: &JSONErrorResponse{
+				Code:    http.StatusNotFound,
+				Status:  http.StatusText(http.StatusNotFound),
+				Message: "unsupported expense token",
 			},
 		},
 		{
@@ -170,12 +163,10 @@ func TestQuote(t *testing.T) {
 				Deposit:            JSONQuoteUnit{},
 				Expense:            JSONQuoteUnit{Amount: parseInt("1000000000000000000")},
 			},
-			res: QuoteResponse{
-				Error: &JSONErrorResponse{
-					Code:    http.StatusBadRequest,
-					Status:  http.StatusText(http.StatusBadRequest),
-					Message: "InvalidDeposit: deposit token must match expense token",
-				},
+			expErr: &JSONErrorResponse{
+				Code:    http.StatusBadRequest,
+				Status:  http.StatusText(http.StatusBadRequest),
+				Message: "InvalidDeposit: deposit token must match expense token",
 			},
 		},
 		{
@@ -186,32 +177,37 @@ func TestQuote(t *testing.T) {
 				Deposit:            JSONQuoteUnit{Amount: parseInt("1000000000000000000")},
 				Expense:            JSONQuoteUnit{},
 			},
-			res: QuoteResponse{
-				Error: &JSONErrorResponse{
-					Code:    http.StatusBadRequest,
-					Status:  http.StatusText(http.StatusBadRequest),
-					Message: "InvalidDeposit: deposit and expense must be of the same chain class (e.g. mainnet, testnet)",
-				},
+			expErr: &JSONErrorResponse{
+				Code:    http.StatusBadRequest,
+				Status:  http.StatusText(http.StatusBadRequest),
+				Message: "InvalidDeposit: deposit and expense must be of the same chain class (e.g. mainnet, testnet)",
 			},
 		},
 	}
 	for _, tt := range tests {
-		handler := newQuoteHandler(quoter)
+		handler := handlerAdapter(newQuoteHandler(quoter))
 
 		body, err := json.Marshal(tt.req)
 		require.NoError(t, err)
 
 		ctx := context.Background()
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, "api/v1/quote", bytes.NewBuffer(body))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpointQuote, bytes.NewBuffer(body))
 		require.NoError(t, err)
 
 		rr := httptest.NewRecorder()
 		handler.ServeHTTP(rr, req)
 
-		var res QuoteResponse
+		var res struct {
+			QuoteResponse
+			JSONErrorResponse
+		}
 		require.NoError(t, json.NewDecoder(rr.Body).Decode(&res))
-		require.Equal(t, tt.res.StatusCode(), rr.Code)
-		require.Equal(t, tt.res, res)
+		if rr.Code != http.StatusOK {
+			require.Equal(t, res.Code, rr.Code)
+		} else {
+			require.Empty(t, res.Code)
+		}
+		require.Equal(t, tt.res, res.QuoteResponse)
 	}
 }
 
