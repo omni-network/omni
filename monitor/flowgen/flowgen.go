@@ -54,7 +54,7 @@ func Start(
 			netconf.Devnet,
 			evmchain.IDMockL1,
 			evmchain.IDMockL2,
-			eoa.RoleMonitor,
+			eoa.RoleFlowgen,
 			common.Address{}, // native ETH
 			big.NewInt(0).Mul(util.MilliEther, big.NewInt(2)), // 0.002 ETH
 		)

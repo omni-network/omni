@@ -8,14 +8,14 @@ import (
 var statics = map[netconf.ID][]Account{
 	netconf.Devnet: flatten(
 		wellKnown(DevPrivateKey0(), RoleCreate3Deployer, RoleDeployer, RoleManager, RoleUpgrader),
+		wellKnown(DevPrivateKey2(), RoleFlowgen),
+		wellKnown(DevPrivateKey3(), RoleXCaller),
+		wellKnown(DevPrivateKey4(), RoleSolver),
 		wellKnown(DevPrivateKey5(), RoleRelayer),
 		wellKnown(DevPrivateKey6(), RoleMonitor),
-		wellKnown(DevPrivateKey2(), RoleFlowgen),
 		wellKnown(DevPrivateKey7(), RoleTester),
 		wellKnown(DevPrivateKey8(), RoleHot),
 		wellKnown(DevPrivateKey9(), RoleCold),
-		wellKnown(DevPrivateKey3(), RoleXCaller),
-		wellKnown(DevPrivateKey4(), RoleSolver),
 	),
 	netconf.Staging: flatten(
 		remote("0x64Bf40F5E6C4DE0dfe8fE6837F6339455657A2F5", RoleCold), // we use shared-cold
