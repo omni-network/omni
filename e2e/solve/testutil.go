@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/params"
 
 	"golang.org/x/sync/errgroup"
@@ -24,6 +25,10 @@ var (
 	zeroAddr            common.Address
 	addrs               = mustAddrs(netconf.Devnet)
 	invalidTokenAddress = common.HexToAddress("0x1234")
+	invalidCallData     = hexutil.MustDecode("0x00000000")
+	minETHSpend         = big.NewInt(1)
+	maxETHSpend         = big.NewInt(params.Ether)
+	validETHSpend       = new(big.Int).Div(new(big.Int).Add(minETHSpend, maxETHSpend), big.NewInt(2))
 )
 
 func mustAddrs(network netconf.ID) contracts.Addresses {
@@ -44,6 +49,15 @@ func nativeTransferCall(amt *big.Int, to common.Address) []solvernet.Call {
 		Value:  amt,
 		Target: to,
 		Data:   nil,
+	}}
+}
+
+// contractCallWithInvalidCallData calls SolverNetInbox.sol contract with invalid calldata causing the tx to be reverted.
+func contractCallWithInvalidCallData() []solvernet.Call {
+	return []solvernet.Call{{
+		Value:  validETHSpend,
+		Target: addrs.SolverNetInbox,
+		Data:   invalidCallData, // will revert
 	}}
 }
 
