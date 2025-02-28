@@ -60,17 +60,19 @@ func maybeFundERC20Solver(ctx context.Context, network netconf.ID, backends ethb
 	return nil
 }
 
+// maybeDrainSolverAccount drains solver account balance to 0.
 func maybeDrainSolverAccount(ctx context.Context, network netconf.ID, backends ethbackend.Backends) error {
 	return maybeSetSolverAccountBalance(ctx, network, backends, big.NewInt(0))
 }
 
+// maybeFundSolverAccount funds/refunds solver account balance to 1_000_000 ETH.
 func maybeFundSolverAccount(ctx context.Context, network netconf.ID, backends ethbackend.Backends) error {
 	eth1m := math.NewInt(1_000_000).MulRaw(params.Ether).BigInt()
 	return maybeSetSolverAccountBalance(ctx, network, backends, eth1m)
 }
 
+// maybeSetSolverAccountBalance calls anvil_setBalance to set the solver account to a passed amount.
 func maybeSetSolverAccountBalance(ctx context.Context, network netconf.ID, backends ethbackend.Backends, amt *big.Int) error {
-	// funding solver with l1 wsETH uses anvil_setStorageAt util, which is only available on devnet
 	if network != netconf.Devnet {
 		return nil
 	}
@@ -95,6 +97,7 @@ func maybeSetSolverAccountBalance(ctx context.Context, network netconf.ID, backe
 	return nil
 }
 
+// checkAccountBalance checks the account balance of any given account address.
 func checkAccountBalance(ctx context.Context, ethCl ethclient.Client, accAddr common.Address, tknAddr common.Address, tknChainID uint64) error {
 	balance, err := ethCl.BalanceAt(ctx, accAddr, nil)
 	if err != nil {
