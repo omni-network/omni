@@ -654,7 +654,7 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 	cfg.RouteScanAPIKey = def.Cfg.RouteScanAPIKey
 	cfg.LoadGen.ValidatorKeysGlob = validatorKeyGlob
 	cfg.LoadGen.XCallerKey = xCallerPrivKeyFile
-	cfg.FlowGenKey = xCallerPrivKeyFile
+	cfg.FlowGenKey = flowGenPrivKeyFile
 	cfg.RPCEndpoints = endpoints
 	cfg.XFeeMngr.RPCEndpoints = xfeemngrEndpoints
 	cfg.XFeeMngr.CoinGeckoAPIKey = def.Cfg.CoinGeckoAPIKey
