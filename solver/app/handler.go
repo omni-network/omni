@@ -45,10 +45,10 @@ func newContractsHandler(addrs contracts.Addresses) Handler {
 		ZeroReq:  func() any { return nil },
 		HandleFunc: func(context.Context, any) (any, error) {
 			return types.ContractsResponse{
-				Portal:    addrs.Portal.Hex(),
-				Inbox:     addrs.SolverNetInbox.Hex(),
-				Outbox:    addrs.SolverNetOutbox.Hex(),
-				Middleman: addrs.SolverNetMiddleman.Hex(),
+				Portal:    addrs.Portal,
+				Inbox:     addrs.SolverNetInbox,
+				Outbox:    addrs.SolverNetOutbox,
+				Middleman: addrs.SolverNetMiddleman,
 			}, nil
 		},
 	}
@@ -60,25 +60,25 @@ func newContractsHandler(addrs contracts.Addresses) Handler {
 func newCheckHandler(checkFunc checkFunc) Handler {
 	return Handler{
 		Endpoint: endpointCheck,
-		ZeroReq:  func() any { return &CheckRequest{} },
+		ZeroReq:  func() any { return &types.CheckRequest{} },
 		HandleFunc: func(ctx context.Context, request any) (any, error) {
-			req, ok := request.(*CheckRequest)
+			req, ok := request.(*types.CheckRequest)
 			if !ok {
 				return nil, errors.New("invalid request type [BUG]", "type", fmt.Sprintf("%T", request))
 			}
 
 			err := checkFunc(ctx, *req)
 			if r := new(RejectionError); errors.As(err, &r) {
-				return CheckResponse{
+				return types.CheckResponse{
 					Rejected:          true,
 					RejectReason:      r.Reason.String(),
 					RejectDescription: r.Err.Error(),
 				}, nil
 			} else if err != nil {
-				return CheckResponse{}, err
+				return types.CheckResponse{}, err
 			}
 
-			return CheckResponse{Accepted: true}, nil
+			return types.CheckResponse{Accepted: true}, nil
 		},
 	}
 }
@@ -89,9 +89,9 @@ func newCheckHandler(checkFunc checkFunc) Handler {
 func newQuoteHandler(quoteFunc quoteFunc) Handler {
 	return Handler{
 		Endpoint: endpointQuote,
-		ZeroReq:  func() any { return &QuoteRequest{} },
+		ZeroReq:  func() any { return &types.QuoteRequest{} },
 		HandleFunc: func(ctx context.Context, request any) (any, error) {
-			req, ok := request.(*QuoteRequest)
+			req, ok := request.(*types.QuoteRequest)
 			if !ok {
 				return nil, errors.New("invalid request type [BUG]", "type", fmt.Sprintf("%T", request))
 			}

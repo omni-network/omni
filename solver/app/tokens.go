@@ -35,7 +35,9 @@ type Token struct {
 	IsMock     bool
 }
 
-type Payment struct {
+// TokenAmt represents a token and an amount.
+// It differs from types.AddrAmt in that it contains fully resolved token type, not just the token address.
+type TokenAmt struct {
 	Token  Token
 	Amount *big.Int
 }

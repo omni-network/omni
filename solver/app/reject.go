@@ -112,8 +112,8 @@ func newShouldRejector(
 }
 
 // parseMinReceived parses order.MinReceived, checks all tokens are supported, returns the list of deposits.
-func parseMinReceived(order Order) ([]Payment, error) {
-	var deposits []Payment
+func parseMinReceived(order Order) ([]TokenAmt, error) {
+	var deposits []TokenAmt
 	for _, output := range order.MinReceived {
 		chainID := output.ChainId.Uint64()
 
@@ -132,7 +132,7 @@ func parseMinReceived(order Order) ([]Payment, error) {
 			return nil, newRejection(rejectUnsupportedDeposit, errors.New("unsupported token", "addr", addr))
 		}
 
-		deposits = append(deposits, Payment{
+		deposits = append(deposits, TokenAmt{
 			Token:  tkn,
 			Amount: output.Amount,
 		})
@@ -142,7 +142,7 @@ func parseMinReceived(order Order) ([]Payment, error) {
 }
 
 // checkApprovals checks if the outbox is approved to spend all expenses.
-func checkApprovals(ctx context.Context, expenses []Payment, client ethclient.Client, solverAddr, outboxAddr common.Address) error {
+func checkApprovals(ctx context.Context, expenses []TokenAmt, client ethclient.Client, solverAddr, outboxAddr common.Address) error {
 	for _, expense := range expenses {
 		tkn := expense.Token
 
@@ -212,8 +212,8 @@ func checkFill(
 }
 
 // parseMaxSpent parses order.MaxSpent, checks all tokens are supported, returns the list of expenses.
-func parseMaxSpent(order Order, outboxAddr common.Address) ([]Payment, error) {
-	var expenses []Payment
+func parseMaxSpent(order Order, outboxAddr common.Address) ([]TokenAmt, error) {
+	var expenses []TokenAmt
 
 	hasNative := false
 
@@ -257,7 +257,7 @@ func parseMaxSpent(order Order, outboxAddr common.Address) ([]Payment, error) {
 			return nil, newRejection(rejectExpenseUnderMin, errors.New("expense under min", "token", tkn.Symbol, "min", tkn.MinSpend, "amount", output.Amount))
 		}
 
-		expenses = append(expenses, Payment{
+		expenses = append(expenses, TokenAmt{
 			Token:  tkn,
 			Amount: output.Amount,
 		})
@@ -266,7 +266,7 @@ func parseMaxSpent(order Order, outboxAddr common.Address) ([]Payment, error) {
 	return expenses, nil
 }
 
-func nativeAmt(ps []Payment) *big.Int {
+func nativeAmt(ps []TokenAmt) *big.Int {
 	for _, p := range ps {
 		if p.Token.IsNative() {
 			return p.Amount
@@ -278,7 +278,7 @@ func nativeAmt(ps []Payment) *big.Int {
 
 // checkQuote checks if deposits match or exceed quote for expenses.
 // only single expense supported with matching deposit is supported.
-func checkQuote(deposits, expenses []Payment) error {
+func checkQuote(deposits, expenses []TokenAmt) error {
 	quote, err := getQuote(tkns(deposits), expenses)
 	if err != nil {
 		return err
@@ -288,7 +288,7 @@ func checkQuote(deposits, expenses []Payment) error {
 }
 
 // checkLiquidity checks that the solver has enough liquidity to pay for the expenses.
-func checkLiquidity(ctx context.Context, expenses []Payment, backend *ethbackend.Backend, solverAddr common.Address) error {
+func checkLiquidity(ctx context.Context, expenses []TokenAmt, backend *ethbackend.Backend, solverAddr common.Address) error {
 	for _, expense := range expenses {
 		bal, err := balanceOf(ctx, expense.Token, backend, solverAddr)
 		if err != nil {
@@ -305,7 +305,7 @@ func checkLiquidity(ctx context.Context, expenses []Payment, backend *ethbackend
 	return nil
 }
 
-func tkns(payments []Payment) []Token {
+func tkns(payments []TokenAmt) []Token {
 	tkns := make([]Token, len(payments))
 	for i, p := range payments {
 		tkns[i] = p.Token

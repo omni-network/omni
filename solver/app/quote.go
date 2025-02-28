@@ -12,25 +12,19 @@ import (
 // standardFeeBips is the standard fee charged by the solver (0.3%).
 const standardFeeBips = 30
 
-type (
-	QuoteRequest  = types.QuoteRequest
-	QuoteResponse = types.QuoteResponse
-	QuoteUnit     = types.QuoteUnit
-
-	quoteFunc func(context.Context, QuoteRequest) (QuoteResponse, error)
-)
+type quoteFunc func(context.Context, types.QuoteRequest) (types.QuoteResponse, error)
 
 // quoter is quoteFunc that can be used to quoter an expense or deposit.
 // It is the logic behind the /quoter endpoint.
-func quoter(_ context.Context, req QuoteRequest) (QuoteResponse, error) {
-	deposit := req.Deposit.Parse()
-	expense := req.Expense.Parse()
+func quoter(_ context.Context, req types.QuoteRequest) (types.QuoteResponse, error) {
+	deposit := req.Deposit
+	expense := req.Expense
 
 	isDepositQuote := deposit.Amount == nil || deposit.Amount.Sign() == 0
 	isExpenseQuote := expense.Amount == nil || expense.Amount.Sign() == 0
 
-	returnErr := func(code int, msg string) (QuoteResponse, error) {
-		return QuoteResponse{}, newAPIError(errors.New(msg), code)
+	returnErr := func(code int, msg string) (types.QuoteResponse, error) {
+		return types.QuoteResponse{}, newAPIError(errors.New(msg), code)
 	}
 
 	if isDepositQuote == isExpenseQuote {
@@ -47,38 +41,38 @@ func quoter(_ context.Context, req QuoteRequest) (QuoteResponse, error) {
 		return returnErr(http.StatusNotFound, "unsupported expense token")
 	}
 
-	returnQuote := func(depositAmt, expenseAmt *big.Int) QuoteResponse {
-		return QuoteResponse{
-			Deposit: QuoteUnit{
+	returnQuote := func(depositAmt, expenseAmt *big.Int) types.QuoteResponse {
+		return types.QuoteResponse{
+			Deposit: types.AddrAmt{
 				Token:  deposit.Token,
 				Amount: depositAmt,
-			}.ToJSON(),
-			Expense: QuoteUnit{
+			},
+			Expense: types.AddrAmt{
 				Token:  expense.Token,
 				Amount: expenseAmt,
-			}.ToJSON(),
+			},
 		}
 	}
 
 	if isDepositQuote {
-		quoted, err := quoteDeposit(depositTkn, Payment{Token: expenseTkn, Amount: expense.Amount})
+		quoted, err := quoteDeposit(depositTkn, TokenAmt{Token: expenseTkn, Amount: expense.Amount})
 		if err != nil {
-			return returnErr(http.StatusBadRequest, err.Error())
+			return types.QuoteResponse{}, newAPIError(err, http.StatusBadRequest)
 		}
 
 		return returnQuote(quoted.Amount, expense.Amount), nil
 	}
 
-	quoted, err := QuoteExpense(expenseTkn, Payment{Token: depositTkn, Amount: deposit.Amount})
+	quoted, err := QuoteExpense(expenseTkn, TokenAmt{Token: depositTkn, Amount: deposit.Amount})
 	if err != nil {
-		return returnErr(http.StatusBadRequest, err.Error())
+		return types.QuoteResponse{}, newAPIError(err, http.StatusBadRequest)
 	}
 
 	return returnQuote(deposit.Amount, quoted.Amount), nil
 }
 
 // getQuote returns payment in `depositTkns` required to pay for `expenses`.
-func getQuote(depositTkns []Token, expenses []Payment) ([]Payment, error) {
+func getQuote(depositTkns []Token, expenses []TokenAmt) ([]TokenAmt, error) {
 	if len(depositTkns) != 1 {
 		return nil, newRejection(rejectInvalidDeposit, errors.New("only single deposit token supported"))
 	}
@@ -95,38 +89,38 @@ func getQuote(depositTkns []Token, expenses []Payment) ([]Payment, error) {
 		return nil, err
 	}
 
-	return []Payment{deposit}, nil
+	return []TokenAmt{deposit}, nil
 }
 
 // quoteDeposit returns the deposit required to cover `expense`.
-func quoteDeposit(tkn Token, expense Payment) (Payment, error) {
+func quoteDeposit(tkn Token, expense TokenAmt) (TokenAmt, error) {
 	if expense.Token.Symbol != tkn.Symbol {
-		return Payment{}, newRejection(rejectInvalidDeposit, errors.New("deposit token must match expense token"))
+		return TokenAmt{}, newRejection(rejectInvalidDeposit, errors.New("deposit token must match expense token"))
 	}
 
 	if expense.Token.ChainClass != tkn.ChainClass {
 		// we should reject with UnsupportedDestChain before quoting tokens of different chain classes.
-		return Payment{}, newRejection(rejectInvalidDeposit, errors.New("deposit and expense must be of the same chain class (e.g. mainnet, testnet)"))
+		return TokenAmt{}, newRejection(rejectInvalidDeposit, errors.New("deposit and expense must be of the same chain class (e.g. mainnet, testnet)"))
 	}
 
-	return Payment{
+	return TokenAmt{
 		Token:  tkn,
 		Amount: depositFor(expense.Amount, feeBipsFor(tkn)),
 	}, nil
 }
 
 // QuoteExpense returns the expense allowed for `deposit`.
-func QuoteExpense(tkn Token, deposit Payment) (Payment, error) {
+func QuoteExpense(tkn Token, deposit TokenAmt) (TokenAmt, error) {
 	if deposit.Token.Symbol != tkn.Symbol {
-		return Payment{}, newRejection(rejectInvalidDeposit, errors.New("deposit token must match expense token"))
+		return TokenAmt{}, newRejection(rejectInvalidDeposit, errors.New("deposit token must match expense token"))
 	}
 
 	if deposit.Token.ChainClass != tkn.ChainClass {
 		// we should reject with UnsupportedDestChain before quoting tokens of different chain classes.
-		return Payment{}, newRejection(rejectInvalidDeposit, errors.New("deposit and expense must be of the same chain class (e.g. mainnet, testnet)"))
+		return TokenAmt{}, newRejection(rejectInvalidDeposit, errors.New("deposit and expense must be of the same chain class (e.g. mainnet, testnet)"))
 	}
 
-	return Payment{
+	return TokenAmt{
 		Token:  tkn,
 		Amount: expenseFor(deposit.Amount, feeBipsFor(tkn)),
 	}, nil

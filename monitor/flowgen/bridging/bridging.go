@@ -55,7 +55,7 @@ func orderData(
 	if !ok {
 		return bindings.SolverNetOrderData{}, errors.New("token not found")
 	}
-	deposit := app.Payment{Token: token, Amount: amount}
+	deposit := app.TokenAmt{Token: token, Amount: amount}
 
 	expense, err := app.QuoteExpense(deposit.Token, deposit)
 	if err != nil {
