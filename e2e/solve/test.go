@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"math/big"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -56,6 +57,10 @@ func isSrcChainInvalid(o TestOrder) bool {
 	return o.SourceChainID == invalidChainID
 }
 
+func isInsufficientInventory(o TestOrder) bool {
+	return o.RejectReason == solver.RejectInsufficientInventory.String()
+}
+
 func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints) error {
 	if network.ID != netconf.Devnet {
 		return errors.New("only devnet")
@@ -76,7 +81,7 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 		return errors.Wrap(err, "mint omni")
 	}
 
-	if err = testCheckAPI(ctx, orders); err != nil {
+	if err = testCheckAPI(ctx, backends, orders); err != nil {
 		return errors.Wrap(err, "test check api")
 	}
 
@@ -341,7 +346,18 @@ func makeOrders() []TestOrder {
 		RejectReason:  solver.RejectDestCallReverts.String(),
 	})
 
-	// TODO: add insufficient inventory rejection test order
+	// insufficient inventory
+	orders = append(orders, TestOrder{
+		Owner:         users[0],
+		FillDeadline:  time.Now().Add(1 * time.Hour),
+		SourceChainID: evmchain.IDMockL2,
+		DestChainID:   evmchain.IDMockL1,
+		Expenses:      nativeExpense(validETHSpend),
+		Calls:         nativeTransferCall(validETHSpend, users[0]),
+		Deposit:       nativeDeposit(maxETHSpend),
+		ShouldReject:  true,
+		RejectReason:  solver.RejectInsufficientInventory.String(),
+	})
 
 	return orders
 }
@@ -352,7 +368,7 @@ func openAll(ctx context.Context, backends ethbackend.Backends, orders []TestOrd
 	var eg errgroup.Group
 	for _, order := range orders {
 		eg.Go(func() error {
-			if isSrcChainInvalid(order) || isDepositTokenInvalid(order) || srcAndDestChainAreSame(order) {
+			if isSrcChainInvalid(order) || isDepositTokenInvalid(order) || srcAndDestChainAreSame(order) || isInsufficientInventory(order) {
 				return nil
 			}
 
@@ -383,12 +399,36 @@ func openOrder(ctx context.Context, backends ethbackend.Backends, order TestOrde
 	}, solvernet.WithFillDeadline(order.FillDeadline))
 }
 
-func testCheckAPI(ctx context.Context, orders []TestOrder) error {
+func testCheckAPI(ctx context.Context, backends ethbackend.Backends, orders []TestOrder) error {
 	const url = "http://localhost:26661/api/v1/check"
 
 	var eg errgroup.Group
-	for i, order := range orders {
+	var balanceChangingInProgress bool // Tracks if a solver account drain/refund cycle is running.
+	var refundMutex sync.Mutex
+	balanceRestored := sync.NewCond(&refundMutex)
+
+	for i, o := range orders {
+		order := o
 		eg.Go(func() error {
+			// Ensure any ongoing balance refund is completed before proceeding.
+			refundMutex.Lock()
+			for balanceChangingInProgress {
+				balanceRestored.Wait() // Wait until the draining process is completed.
+			}
+
+			// If this order requires balance draining, do it before test logic.
+			if isInsufficientInventory(order) {
+				// Indicate that a drain/refund process is happening.
+				balanceChangingInProgress = true
+
+				// Drain solver balance.
+				if err := maybeDrainSolverAccount(ctx, netconf.Devnet, backends); err != nil {
+					refundMutex.Unlock()
+					return errors.Wrap(err, "drain solver account failed")
+				}
+			}
+			refundMutex.Unlock()
+
 			checkReq := solver.CheckRequest{
 				FillDeadline:       uint32(order.FillDeadline.Unix()), //nolint:gosec // this is fine for tests
 				SourceChainID:      order.SourceChainID,
@@ -441,6 +481,20 @@ func testCheckAPI(ctx context.Context, orders []TestOrder) error {
 			if checkResp.Accepted && order.ShouldReject {
 				return errors.New("accepted but should reject")
 			}
+
+			// Refund solver balance after test logic.
+			refundMutex.Lock()
+			if isInsufficientInventory(order) {
+				if err := maybeFundSolverAccount(ctx, netconf.Devnet, backends); err != nil {
+					return errors.Wrap(err, "refund solver account failed")
+				}
+				log.Info(ctx, "Solver account balance refunded successfully")
+
+				balanceChangingInProgress = false
+				// Wake up other goroutines to continue processing orders.
+				balanceRestored.Broadcast()
+			}
+			refundMutex.Unlock()
 
 			return nil
 		})
