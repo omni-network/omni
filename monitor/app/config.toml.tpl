@@ -15,6 +15,9 @@ network = "{{ .Network }}"
 # Path to the ethereum private key used to sign avs omni sync transactions.
 private-key = "{{ .PrivateKey }}"
 
+# Path to the ethereum private key used to sign flowgen transactions.
+flowgen-key = "{{ .FlowGenKey }}"
+
 # The address that the monitor listens for metric scrape requests.
 monitoring-addr = "{{ .MonitoringAddr }}"
 
