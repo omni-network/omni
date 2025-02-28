@@ -107,7 +107,7 @@ func (p *Provider) StreamEventLogs(ctx context.Context, req xchain.EventLogsReq,
 	})
 }
 
-// GetEventLogs returns the evn event logs for the provided request, or false if not available yet (not finalized),
+// GetEventLogs returns the evm event logs for the provided request, or false if not available yet (not finalized),
 // or an error.
 func (p *Provider) GetEventLogs(ctx context.Context, req xchain.EventLogsReq) ([]types.Log, bool, error) {
 	ctx, span := tracer.Start(ctx, spanName("get_events"))
