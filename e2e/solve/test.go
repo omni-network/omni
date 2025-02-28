@@ -259,7 +259,7 @@ func makeOrders() []TestOrder {
 		DestChainID:   evmchain.IDMockL1,
 		Expenses:      nativeExpense(big.NewInt(1)),
 		Calls:         nativeTransferCall(big.NewInt(1), users[0]),
-		Deposit:       erc20Deposit(big.NewInt(1), common.Address{}),
+		Deposit:       erc20Deposit(big.NewInt(1), zeroAddr),
 		ShouldReject:  true,
 		RejectReason:  solver.RejectUnsupportedSrcChain.String(),
 	})
@@ -316,7 +316,32 @@ func makeOrders() []TestOrder {
 		RejectReason:  solver.RejectInvalidExpense.String(),
 	})
 
-	// TODO: more tests orders (different rejection cases, valid orders, etc)
+	// valid order with valid ETH spend
+	orders = append(orders, TestOrder{
+		Owner:         users[0],
+		FillDeadline:  time.Now().Add(1 * time.Hour),
+		SourceChainID: evmchain.IDMockL1,
+		DestChainID:   evmchain.IDMockL2,
+		Expenses:      nativeExpense(validETHSpend),
+		Calls:         nativeTransferCall(validETHSpend, users[0]),
+		Deposit:       nativeDeposit(maxETHSpend),
+		ShouldReject:  false,
+	})
+
+	// dest call reverts
+	orders = append(orders, TestOrder{
+		Owner:         users[0],
+		FillDeadline:  time.Now().Add(1 * time.Hour),
+		SourceChainID: evmchain.IDMockL1,
+		DestChainID:   evmchain.IDMockL2,
+		Expenses:      nativeExpense(validETHSpend),
+		Calls:         contractCallWithInvalidCallData(),
+		Deposit:       nativeDeposit(maxETHSpend),
+		ShouldReject:  true,
+		RejectReason:  solver.RejectDestCallReverts.String(),
+	})
+
+	// TODO: add insufficient inventory rejection test order
 
 	return orders
 }
@@ -404,6 +429,7 @@ func testCheckAPI(ctx context.Context, orders []TestOrder) error {
 					"expected", order.ShouldReject,
 					"actual", checkResp.Rejected,
 					"reason", checkResp.RejectReason,
+					"description", checkResp.RejectDescription,
 					"order_idx", i,
 				)
 			}
