@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"math/big"
+	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
@@ -29,8 +30,9 @@ type procDeps struct {
 	Claim  func(ctx context.Context, order Order) error
 
 	// Monitoring helpers
-	TargetName func(Order) string
-	ChainName  func(chainID uint64) string
+	TargetName     func(Order) string
+	ChainName      func(chainID uint64) string
+	BlockTimestamp func(chainID uint64, height uint64) time.Time
 }
 
 func newClaimer(

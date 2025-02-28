@@ -18,6 +18,7 @@ import (
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 
@@ -205,6 +206,7 @@ func startEventStreams(
 	}
 
 	inboxContracts := make(map[uint64]*bindings.SolverNetInbox)
+	inboxTimestamps := make(map[uint64]func(uint64) time.Time)
 	for _, chain := range inboxChains {
 		name := network.ChainName(chain)
 		chainVer := chainVerFromID(chain)
@@ -237,6 +239,19 @@ func startEventStreams(
 
 		if err := cursors.Set(ctx, chainVer, height.Uint64()); err != nil {
 			return err
+		}
+
+		inboxTimestamps[chain] = func(height uint64) time.Time {
+			header, err := backend.HeaderByNumber(ctx, umath.NewBigInt(height))
+			if err != nil {
+				return time.Time{} // Best effort, ignore for now.
+			}
+			timeI64, err := umath.ToInt64(header.Time)
+			if err != nil {
+				return time.Time{} // Best effort, ignore for now.
+			}
+
+			return time.Unix(timeI64, 0)
 		}
 	}
 
@@ -277,17 +292,27 @@ func startEventStreams(
 		return fill.Calls[len(fill.Calls)-1].Target.Hex()
 	}
 
+	blockTimestamps := func(chainID uint64, height uint64) time.Time {
+		f, ok := inboxTimestamps[chainID]
+		if !ok {
+			return time.Time{}
+		}
+
+		return f(height)
+	}
+
 	deps := procDeps{
-		ParseID:      newIDParser(inboxContracts),
-		GetOrder:     newOrderGetter(inboxContracts),
-		ShouldReject: newShouldRejector(backends, solverAddr, addrs.SolverNetOutbox),
-		DidFill:      newDidFiller(outboxContracts),
-		Reject:       newRejector(inboxContracts, backends, solverAddr),
-		Fill:         newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox),
-		Claim:        newClaimer(inboxContracts, backends, solverAddr),
-		SetCursor:    cursorSetter,
-		ChainName:    network.ChainName,
-		TargetName:   targetName,
+		ParseID:        newIDParser(inboxContracts),
+		GetOrder:       newOrderGetter(inboxContracts),
+		ShouldReject:   newShouldRejector(backends, solverAddr, addrs.SolverNetOutbox),
+		DidFill:        newDidFiller(outboxContracts),
+		Reject:         newRejector(inboxContracts, backends, solverAddr),
+		Fill:           newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox),
+		Claim:          newClaimer(inboxContracts, backends, solverAddr),
+		SetCursor:      cursorSetter,
+		ChainName:      network.ChainName,
+		TargetName:     targetName,
+		BlockTimestamp: blockTimestamps,
 	}
 
 	for _, chain := range inboxChains {
