@@ -3,6 +3,7 @@ package e2e_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
@@ -49,13 +50,19 @@ func TestPlanCancelUpgrade(t *testing.T) {
 		txOpts, err := backend.BindOpts(ctx, upgraderAddr)
 		require.NoError(t, err)
 
+		assertCurrentPlan := func(t *testing.T, name string) {
+			t.Helper()
+			require.Eventually(t, func() bool {
+				current, _, err := cprov.CurrentPlannedPlan(ctx)
+				return err == nil && current.Name == name
+			}, time.Second*10, time.Second)
+		}
+
 		const upgrade = "far-future-upgrade"
 		const farFuture = 1_000_000_000
 
 		// Ensure no upgrade planned
-		_, ok, err = cprov.CurrentPlannedPlan(ctx)
-		require.NoError(t, err)
-		require.False(t, ok)
+		assertCurrentPlan(t, "")
 
 		// Plan far future upgrade
 		tx, err := contract.PlanUpgrade(txOpts, bindings.UpgradePlan{
@@ -68,9 +75,7 @@ func TestPlanCancelUpgrade(t *testing.T) {
 		log.Debug(ctx, "Planned far-future upgrade", "block", rc.BlockNumber)
 
 		// Ensure far-future upgrade planned
-		current, _, err := cprov.CurrentPlannedPlan(ctx)
-		require.NoError(t, err)
-		require.Equal(t, upgrade, current.Name)
+		assertCurrentPlan(t, upgrade)
 
 		// Cancel far future upgrade
 		tx, err = contract.CancelUpgrade(txOpts)
@@ -80,8 +85,6 @@ func TestPlanCancelUpgrade(t *testing.T) {
 		log.Debug(ctx, "Canceled far-future upgrade", "block", rc.BlockNumber)
 
 		// Ensure no upgrade planned
-		_, ok, err = cprov.CurrentPlannedPlan(ctx)
-		require.NoError(t, err)
-		require.False(t, ok)
+		assertCurrentPlan(t, "")
 	})
 }
