@@ -2,16 +2,13 @@ package app
 
 import (
 	"context"
-	"encoding/json"
 	"math/big"
-	"net/http"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
-	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -119,48 +116,6 @@ func getFillOriginData(req CheckRequest) ([]byte, error) {
 	}
 
 	return fillOriginDataBz, nil
-}
-
-// newCheckHandler returns a handler for the /check endpoint.
-// It is responsible for http request / response handling, and delegates
-// logic to a checkFunc.
-func newCheckHandler(checkFunc checkFunc) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, rr *http.Request) {
-		ctx := rr.Context()
-
-		w.Header().Set("Content-Type", "application/json")
-
-		writeError := func(statusCode int, err error) {
-			log.DebugErr(ctx, "Error handling /check request", err)
-
-			writeJSON(ctx, w, CheckResponse{
-				Error: &JSONErrorResponse{
-					Code:    statusCode,
-					Status:  http.StatusText(statusCode),
-					Message: removeBUG(err.Error()),
-				},
-			})
-		}
-
-		var req CheckRequest
-		if err := json.NewDecoder(rr.Body).Decode(&req); err != nil {
-			writeError(http.StatusBadRequest, errors.Wrap(err, "decode request"))
-			return
-		}
-
-		err := checkFunc(ctx, req)
-		if r := new(RejectionError); errors.As(err, &r) { // RejectionError
-			writeJSON(ctx, w, CheckResponse{
-				Rejected:          true,
-				RejectReason:      r.Reason.String(),
-				RejectDescription: r.Err.Error(),
-			})
-		} else if err != nil { // Error
-			writeError(http.StatusInternalServerError, err)
-		} else {
-			writeJSON(ctx, w, CheckResponse{Accepted: true}) // Success
-		}
-	})
 }
 
 // coversQuote checks if `deposits` match or exceed a `quote` for expenses.

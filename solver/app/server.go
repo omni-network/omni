@@ -1,14 +1,10 @@
 package app
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
-	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/solver/types"
@@ -16,29 +12,24 @@ import (
 	"github.com/rs/cors"
 )
 
+const (
+	endpointQuote     = "/api/v1/quote"
+	endpointContracts = "/api/v1/contracts"
+	endpointCheck     = "/api/v1/check"
+)
+
 type (
-	JSONResponse      = types.JSONResponse
 	JSONErrorResponse = types.JSONErrorResponse
 )
 
-// removeBUG removes [BUG] from the error messages, so they are not included in responses to users.
-func removeBUG(s string) string { return strings.ReplaceAll(s, "[BUG]", "") }
-
-func writeJSON(ctx context.Context, w http.ResponseWriter, res JSONResponse) {
-	w.WriteHeader(res.StatusCode())
-	if err := json.NewEncoder(w).Encode(res); err != nil {
-		log.Error(ctx, "[BUG] error writing /quote response", err)
-	}
-}
-
 // serveAPI starts the API server, returning a async error.
-func serveAPI(address string, endpoints map[string]http.Handler) <-chan error {
+func serveAPI(address string, handlers ...Handler) <-chan error {
 	errChan := make(chan error)
 	go func() {
 		mux := http.NewServeMux()
 
-		for endpoint, handler := range endpoints {
-			mux.Handle(endpoint, instrumentHandler(endpoint, handler))
+		for _, handler := range handlers {
+			mux.Handle(handler.Endpoint, instrumentHandler(handler.Endpoint, handlerAdapter(handler)))
 		}
 
 		// Add health check endpoints (not instrumented)
@@ -62,22 +53,6 @@ func serveAPI(address string, endpoints map[string]http.Handler) <-chan error {
 	}()
 
 	return errChan
-}
-
-// newContractsHandler returns a http handler that returns the contract address for `network`.
-func newContractsHandler(addrs contracts.Addresses) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, rr *http.Request) {
-		ctx := rr.Context()
-
-		w.Header().Set("Content-Type", "application/json")
-
-		writeJSON(ctx, w, types.ContractsResponse{
-			Portal:    addrs.Portal.Hex(),
-			Inbox:     addrs.SolverNetInbox.Hex(),
-			Outbox:    addrs.SolverNetOutbox.Hex(),
-			Middleman: addrs.SolverNetMiddleman.Hex(),
-		})
-	})
 }
 
 // newLiveHandler returns a http handler that always return 200s.

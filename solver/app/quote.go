@@ -1,7 +1,7 @@
 package app
 
 import (
-	"encoding/json"
+	"context"
 	"math/big"
 	"net/http"
 
@@ -17,26 +17,20 @@ type (
 	QuoteResponse = types.QuoteResponse
 	QuoteUnit     = types.QuoteUnit
 
-	quoteFunc func(QuoteRequest) QuoteResponse
+	quoteFunc func(context.Context, QuoteRequest) (QuoteResponse, error)
 )
 
 // quoter is quoteFunc that can be used to quoter an expense or deposit.
 // It is the logic behind the /quoter endpoint.
-func quoter(req QuoteRequest) QuoteResponse {
+func quoter(_ context.Context, req QuoteRequest) (QuoteResponse, error) {
 	deposit := req.Deposit.Parse()
 	expense := req.Expense.Parse()
 
 	isDepositQuote := deposit.Amount == nil || deposit.Amount.Sign() == 0
 	isExpenseQuote := expense.Amount == nil || expense.Amount.Sign() == 0
 
-	returnErr := func(code int, msg string) QuoteResponse {
-		return QuoteResponse{
-			Error: &JSONErrorResponse{
-				Code:    code,
-				Status:  http.StatusText(code),
-				Message: msg,
-			},
-		}
+	returnErr := func(code int, msg string) (QuoteResponse, error) {
+		return QuoteResponse{}, newAPIError(errors.New(msg), code)
 	}
 
 	if isDepositQuote == isExpenseQuote {
@@ -72,7 +66,7 @@ func quoter(req QuoteRequest) QuoteResponse {
 			return returnErr(http.StatusBadRequest, err.Error())
 		}
 
-		return returnQuote(quoted.Amount, expense.Amount)
+		return returnQuote(quoted.Amount, expense.Amount), nil
 	}
 
 	quoted, err := QuoteExpense(expenseTkn, Payment{Token: depositTkn, Amount: deposit.Amount})
@@ -80,34 +74,7 @@ func quoter(req QuoteRequest) QuoteResponse {
 		return returnErr(http.StatusBadRequest, err.Error())
 	}
 
-	return returnQuote(deposit.Amount, quoted.Amount)
-}
-
-// newQuoteHandler returns a handler for the /quote endpoint.
-// It is responsible to http request / response handling, and delegates
-// logic to a quoteFunc.
-func newQuoteHandler(quoteFunc quoteFunc) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, rr *http.Request) {
-		ctx := rr.Context()
-
-		w.Header().Set("Content-Type", "application/json")
-
-		var req QuoteRequest
-		if err := json.NewDecoder(rr.Body).Decode(&req); err != nil {
-			writeJSON(ctx, w, QuoteResponse{
-				Error: &JSONErrorResponse{
-					Code:    http.StatusBadRequest,
-					Status:  http.StatusText(http.StatusBadRequest),
-					Message: err.Error(),
-				},
-			})
-
-			return
-		}
-
-		res := quoteFunc(req)
-		writeJSON(ctx, w, res)
-	})
+	return returnQuote(deposit.Amount, quoted.Amount), nil
 }
 
 // getQuote returns payment in `depositTkns` required to pay for `expenses`.
