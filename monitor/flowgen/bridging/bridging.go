@@ -1,6 +1,7 @@
 package bridging
 
 import (
+	"fmt"
 	"math/big"
 	"time"
 
@@ -31,7 +32,7 @@ func NewJob(
 	}
 
 	return types.Job{
-		Name:    "Bridging",
+		Name:    fmt.Sprintf("Bridging (%v->%v)", srcChain, dstChain),
 		Cadence: 1 * time.Minute,
 		Network: network,
 

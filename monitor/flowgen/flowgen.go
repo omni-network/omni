@@ -61,7 +61,19 @@ func Start(
 		if err != nil {
 			return err
 		}
+		jobs = append(jobs, job)
 
+		job, err = bridging.NewJob(
+			netconf.Devnet,
+			evmchain.IDMockL2,
+			evmchain.IDMockL1,
+			eoa.RoleFlowgen,
+			common.Address{}, // native ETH
+			big.NewInt(0).Mul(util.MilliEther, big.NewInt(2)), // 0.002 ETH
+		)
+		if err != nil {
+			return err
+		}
 		jobs = append(jobs, job)
 
 	default:
@@ -92,7 +104,7 @@ func Start(
 func run(ctx context.Context, backends ethbackend.Backends, j types.Job) error {
 	log.Debug(ctx, "Flowgen: running job")
 
-	id, err := solvernet.OpenOrder(ctx, j.Network, evmchain.IDMockL1, backends, j.Owner, j.OrderData)
+	id, err := solvernet.OpenOrder(ctx, j.Network, j.SrcChain, backends, j.Owner, j.OrderData)
 	if err != nil {
 		return errors.Wrap(err, "open order")
 	}
