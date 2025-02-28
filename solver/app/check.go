@@ -15,20 +15,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type (
-	CheckRequest  = types.CheckRequest
-	CheckResponse = types.CheckResponse
-	Expense       = solvernet.Expense
-	Call          = solvernet.Call
-	Deposit       = solvernet.Deposit
-
-	checkFunc func(context.Context, CheckRequest) error
-)
+type checkFunc func(context.Context, types.CheckRequest) error
 
 // newChecker returns a checkFunc that can be used to see if an order would be accepted or rejected.
 // It is the logic behind the /check endpoint.
 func newChecker(backends ethbackend.Backends, solverAddr, inboxAddr, outboxAddr common.Address) checkFunc {
-	return func(ctx context.Context, req CheckRequest) error {
+	return func(ctx context.Context, req types.CheckRequest) error {
 		if req.SourceChainID == req.DestinationChainID {
 			return newRejection(rejectSameChain, errors.New("source and destination chain are the same"))
 		}
@@ -43,12 +35,12 @@ func newChecker(backends ethbackend.Backends, solverAddr, inboxAddr, outboxAddr 
 			return newRejection(rejectUnsupportedDestChain, errors.New("unsupported destination chain", "chain_id", req.DestinationChainID))
 		}
 
-		deposit, err := parseDeposit(req.SourceChainID, req.Deposit.Parse())
+		deposit, err := parseTokenAmt(req.SourceChainID, req.Deposit)
 		if err != nil {
 			return err
 		}
 
-		expenses, err := parseExpenses(req.DestinationChainID, req.Expenses.Parse(), req.Calls.Parse())
+		expenses, err := parseExpenses(req.DestinationChainID, req.Expenses, req.Calls)
 		if err != nil {
 			return err
 		}
@@ -58,7 +50,7 @@ func newChecker(backends ethbackend.Backends, solverAddr, inboxAddr, outboxAddr 
 			return err
 		}
 
-		err = coversQuote([]Payment{deposit}, quote)
+		err = coversQuote([]TokenAmt{deposit}, quote)
 		if err != nil {
 			return err
 		}
@@ -101,13 +93,13 @@ func getNextOrderID(ctx context.Context, client ethclient.Client, inboxAddr comm
 }
 
 // getFillOriginData returns packed fill origin data for a check request.
-func getFillOriginData(req CheckRequest) ([]byte, error) {
+func getFillOriginData(req types.CheckRequest) ([]byte, error) {
 	fillOriginData := bindings.SolverNetFillOriginData{
 		FillDeadline: req.FillDeadline,
 		SrcChainId:   req.SourceChainID,
 		DestChainId:  req.DestinationChainID,
-		Expenses:     req.Expenses.Parse().NoNative(),
-		Calls:        req.Calls.Parse().ToBindings(),
+		Expenses:     types.ExpensesToBindings(req.Expenses).NoNative(),
+		Calls:        types.CallsToBindings(req.Calls).ToBindings(),
 	}
 
 	fillOriginDataBz, err := solvernet.PackFillOriginData(fillOriginData)
@@ -119,8 +111,8 @@ func getFillOriginData(req CheckRequest) ([]byte, error) {
 }
 
 // coversQuote checks if `deposits` match or exceed a `quote` for expenses.
-func coversQuote(deposits, quote []Payment) error {
-	byTkn := func(ps []Payment) map[Token]*big.Int {
+func coversQuote(deposits, quote []TokenAmt) error {
+	byTkn := func(ps []TokenAmt) map[Token]*big.Int {
 		res := make(map[Token]*big.Int)
 		for _, p := range ps {
 			res[p.Token] = p.Amount
@@ -146,8 +138,8 @@ func coversQuote(deposits, quote []Payment) error {
 	return nil
 }
 
-func parseExpenses(destChainID uint64, expenses []Expense, calls []Call) ([]Payment, error) {
-	var ps []Payment
+func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.Call) ([]TokenAmt, error) {
+	var ps []TokenAmt
 
 	// sum of call value must be represented in expenses
 	callValues := big.NewInt(0)
@@ -187,7 +179,7 @@ func parseExpenses(destChainID uint64, expenses []Expense, calls []Call) ([]Paym
 			return nil, newRejection(rejectExpenseUnderMin, errors.New("expense under min", "token", tkn.Symbol, "min", tkn.MinSpend, "amount", e.Amount))
 		}
 
-		ps = append(ps, Payment{
+		ps = append(ps, TokenAmt{
 			Token:  tkn,
 			Amount: e.Amount,
 		})
@@ -201,16 +193,16 @@ func parseExpenses(destChainID uint64, expenses []Expense, calls []Call) ([]Paym
 	return ps, nil
 }
 
-func parseDeposit(srcChainID uint64, dep Deposit) (Payment, error) {
+func parseTokenAmt(srcChainID uint64, dep types.AddrAmt) (TokenAmt, error) {
 	tkn, ok := tokens.Find(srcChainID, dep.Token)
 	if !ok {
-		return Payment{}, newRejection(rejectUnsupportedDeposit, errors.New("unsupported deposit token", "addr", dep.Token))
+		return TokenAmt{}, newRejection(rejectUnsupportedDeposit, errors.New("unsupported deposit token", "addr", dep.Token))
 	}
 
-	return Payment{
+	return TokenAmt{
 		Token:  tkn,
 		Amount: dep.Amount,
 	}, nil
 }
 
-func isNative(e Expense) bool { return e.Token == (common.Address{}) }
+func isNative(e types.Expense) bool { return e.Token == (common.Address{}) }

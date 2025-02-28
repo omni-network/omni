@@ -393,9 +393,9 @@ func testCheckAPI(ctx context.Context, orders []TestOrder) error {
 				FillDeadline:       uint32(order.FillDeadline.Unix()), //nolint:gosec // this is fine for tests
 				SourceChainID:      order.SourceChainID,
 				DestinationChainID: order.DestChainID,
-				Expenses:           solver.ToJSONExpenses(order.Expenses),
-				Calls:              solver.ToJSONCalls(order.Calls),
-				Deposit:            solver.ToJSONDeposit(order.Deposit),
+				Expenses:           expensesFromBindings(order.Expenses),
+				Calls:              callsFromBindings(order.Calls),
+				Deposit:            addrAmtFromDeposit(order.Deposit),
 			}
 
 			body, err := json.Marshal(checkReq)

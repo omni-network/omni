@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/umath"
+	solver "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -141,4 +142,26 @@ func mintAndApprove(ctx context.Context, backends ethbackend.Backends, order Tes
 	}
 
 	return nil
+}
+
+func addrAmtFromDeposit(d solvernet.Deposit) solver.AddrAmt {
+	return solver.AddrAmt{Token: d.Token, Amount: d.Amount}
+}
+
+func callsFromBindings(calls solvernet.Calls) []solver.Call {
+	var resp []solver.Call
+	for _, c := range calls {
+		resp = append(resp, solver.Call(c))
+	}
+
+	return resp
+}
+
+func expensesFromBindings(expenses solvernet.Expenses) []solver.Expense {
+	var resp []solver.Expense
+	for _, e := range expenses {
+		resp = append(resp, solver.Expense(e))
+	}
+
+	return resp
 }

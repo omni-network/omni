@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/solver/types"
 
 	"github.com/stretchr/testify/require"
 )
@@ -57,7 +58,7 @@ func TestCheck(t *testing.T) {
 
 			require.Equal(t, http.StatusOK, rr.Code)
 
-			var res CheckResponse
+			var res types.CheckResponse
 			err = json.NewDecoder(rr.Body).Decode(&res)
 			require.NoError(t, err)
 
