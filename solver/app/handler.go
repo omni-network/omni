@@ -36,13 +36,17 @@ type Handler struct {
 	// The request will be a pointer (same at type returned by ZeroReq).
 	// The response must be a struct and optional error.
 	HandleFunc func(context.Context, any) (any, error)
+
+	// SkipInstrument skips the handler instrumentation.
+	SkipInstrument bool
 }
 
 // newContractsHandler returns a http handler that returns the contract address for `network`.
 func newContractsHandler(addrs contracts.Addresses) Handler {
 	return Handler{
-		Endpoint: endpointContracts,
-		ZeroReq:  func() any { return nil },
+		Endpoint:       endpointContracts,
+		SkipInstrument: true, // Reduce noise as this endpoint returns static data.
+		ZeroReq:        func() any { return nil },
 		HandleFunc: func(context.Context, any) (any, error) {
 			return types.ContractsResponse{
 				Portal:    addrs.Portal,
@@ -101,8 +105,8 @@ func newQuoteHandler(quoteFunc quoteFunc) Handler {
 	}
 }
 
-func handlerAdapter(h Handler) http.HandlerFunc {
-	return func(w http.ResponseWriter, rr *http.Request) {
+func handlerAdapter(h Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, rr *http.Request) {
 		defer rr.Body.Close()
 		ctx := rr.Context()
 
@@ -121,7 +125,7 @@ func handlerAdapter(h Handler) http.HandlerFunc {
 		}
 
 		writeJSONResponse(ctx, w, http.StatusOK, res)
-	}
+	})
 }
 
 func writeErrResponse(ctx context.Context, w http.ResponseWriter, err error) {
@@ -134,7 +138,7 @@ func writeErrResponse(ctx context.Context, w http.ResponseWriter, err error) {
 
 	log.DebugErr(ctx, "Serving API error", err, "status", statusCode)
 
-	writeJSONResponse(ctx, w, statusCode, JSONErrorResponse{
+	writeJSONResponse(ctx, w, statusCode, types.JSONErrorResponse{
 		Code:    statusCode,
 		Status:  http.StatusText(statusCode),
 		Message: removeBUG(err.Error()),

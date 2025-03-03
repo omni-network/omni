@@ -75,5 +75,12 @@ func validateResolved(o OrderResolved) error {
 }
 
 func (o Order) ParsedFillOriginData() (FillOriginData, error) {
-	return solvernet.ParseFillOriginData(o.FillOriginData)
+	resp, err := solvernet.ParseFillOriginData(o.FillOriginData)
+	if err != nil {
+		return FillOriginData{}, errors.Wrap(err, "parse fill origin data")
+	} else if len(resp.Calls) == 0 {
+		return FillOriginData{}, errors.New("no calls in fill origin data")
+	}
+
+	return resp, nil
 }

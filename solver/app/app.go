@@ -287,9 +287,20 @@ func startEventStreams(
 			return unknown
 		}
 
-		// TODO: Give known targets friendly names
 		// use last call target for target name
-		return fill.Calls[len(fill.Calls)-1].Target.Hex()
+		call := fill.Calls[len(fill.Calls)-1]
+
+		if tkn, ok := tokens.Find(o.DestinationChainID, call.Target); ok {
+			return "ERC20:" + tkn.Symbol
+		}
+
+		// Native bridging has zero call data and positive value
+		isNative := call.Selector == [4]byte{} && len(call.Params) == 0 && call.Value.Sign() > 0
+		if nativeTkn, ok := tokens.Find(o.DestinationChainID, common.Address{}); ok && isNative {
+			return "Native:" + nativeTkn.Symbol
+		}
+
+		return call.Target.Hex()[:7] // Short hex.
 	}
 
 	blockTimestamps := func(chainID uint64, height uint64) time.Time {
