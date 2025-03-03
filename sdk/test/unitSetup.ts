@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, vi } from 'vitest'
 
 beforeEach(() => {
-  vi.restoreAllMocks()
+  vi.clearAllMocks()
 })
 
 afterEach(() => {
-  vi.restoreAllMocks()
+  vi.clearAllMocks()
 })
