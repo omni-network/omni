@@ -24,18 +24,24 @@ importers:
       '@biomejs/biome':
         specifier: 1.9.4
         version: 1.9.4
+      '@testing-library/dom':
+        specifier: ^10.4.0
+        version: 10.4.0
       '@testing-library/react':
         specifier: ^16.2.0
-        version: 16.2.0(@testing-library/dom@10.4.0)(@types/react@19.0.8)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+        version: 16.2.0(@testing-library/dom@10.4.0)(@types/react-dom@19.0.4(@types/react@19.0.8))(@types/react@19.0.8)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       '@types/react':
         specifier: ^19.0.8
         version: 19.0.8
+      '@types/react-dom':
+        specifier: ^19.0.4
+        version: 19.0.4(@types/react@19.0.8)
       '@vitest/browser':
         specifier: ^3.0.7
         version: 3.0.7(bufferutil@4.0.9)(playwright@1.50.1)(typescript@5.7.2)(utf-8-validate@5.0.10)(vite@6.2.0)(vitest@3.0.7)
       '@vitest/coverage-v8':
         specifier: ^3.0.7
-        version: 3.0.7(@vitest/browser@3.0.7(bufferutil@4.0.9)(playwright@1.50.1)(typescript@5.7.2)(utf-8-validate@5.0.10)(vite@6.2.0)(vitest@3.0.7))(vitest@3.0.7(@types/debug@4.1.12)(@vitest/browser@3.0.7)(msw@2.7.3(typescript@5.7.2)))
+        version: 3.0.7(@vitest/browser@3.0.7)(vitest@3.0.7)
       playwright:
         specifier: ^1.50.1
         version: 1.50.1
@@ -47,7 +53,7 @@ importers:
         version: 6.2.0
       vitest:
         specifier: ^3.0.7
-        version: 3.0.7(@types/debug@4.1.12)(@vitest/browser@3.0.7)(msw@2.7.3(typescript@5.7.2))
+        version: 3.0.7(@types/debug@4.1.12)(@vitest/browser@3.0.7)(happy-dom@17.1.8)(msw@2.7.3(typescript@5.7.2))
 
   src:
     dependencies:
@@ -768,6 +774,11 @@ packages:
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
 
+  '@types/react-dom@19.0.4':
+    resolution: {integrity: sha512-4fSQ8vWFkg+TGhePfUzVmat3eC14TXYSsiiDSLI0dVLsrm9gZFABjPy/Qu6TKgl1tq1Bu1yDsuQgY3A3DOjCcg==}
+    peerDependencies:
+      '@types/react': ^19.0.0
+
   '@types/react@19.0.8':
     resolution: {integrity: sha512-9P/o1IGdfmQxrujGbIMDyYaaCykhLKc0NGCtYcECNUr9UAaDe4gwvV9bR6tvd5Br1SG0j+PBpbKr2UYY8CwqSw==}
 
@@ -1346,6 +1357,10 @@ packages:
 
   h3@1.15.0:
     resolution: {integrity: sha512-OsjX4JW8J4XGgCgEcad20pepFQWnuKH+OwkCJjogF3C+9AZ1iYdtB4hX6vAb5DskBiu5ljEXqApINjR8CqoCMQ==}
+
+  happy-dom@17.1.8:
+    resolution: {integrity: sha512-Yxbq/FG79z1rhAf/iB6YM8wO2JB/JDQBy99RiLSs+2siEAi5J05x9eW1nnASHZJbpldjJE2KuFLsLZ+AzX/IxA==}
+    engines: {node: '>=18.0.0'}
 
   has-flag@4.0.0:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
@@ -2210,6 +2225,14 @@ packages:
   webidl-conversions@3.0.1:
     resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
 
+  webidl-conversions@7.0.0:
+    resolution: {integrity: sha512-VwddBukDzu71offAQR975unBIGqfKZpM+8ZX6ySk8nYhVoo5CYaZyzt3YBvYtRtO+aoGlqxPg/B87NGVZ/fu6g==}
+    engines: {node: '>=12'}
+
+  whatwg-mimetype@3.0.0:
+    resolution: {integrity: sha512-nt+N2dzIutVRxARx1nghPKGv1xHikU7HKdfafKkLNLindmPU/ch3U31NOCGGA/dmPcmb1VlofO0vnKAcsm0o/Q==}
+    engines: {node: '>=12'}
+
   whatwg-url@5.0.0:
     resolution: {integrity: sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==}
 
@@ -3053,7 +3076,7 @@ snapshots:
       lz-string: 1.5.0
       pretty-format: 27.5.1
 
-  '@testing-library/react@16.2.0(@testing-library/dom@10.4.0)(@types/react@19.0.8)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
+  '@testing-library/react@16.2.0(@testing-library/dom@10.4.0)(@types/react-dom@19.0.4(@types/react@19.0.8))(@types/react@19.0.8)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
     dependencies:
       '@babel/runtime': 7.26.7
       '@testing-library/dom': 10.4.0
@@ -3061,6 +3084,7 @@ snapshots:
       react-dom: 19.0.0(react@19.0.0)
     optionalDependencies:
       '@types/react': 19.0.8
+      '@types/react-dom': 19.0.4(@types/react@19.0.8)
 
   '@testing-library/user-event@14.6.1(@testing-library/dom@10.4.0)':
     dependencies:
@@ -3077,6 +3101,10 @@ snapshots:
   '@types/estree@1.0.6': {}
 
   '@types/ms@2.1.0': {}
+
+  '@types/react-dom@19.0.4(@types/react@19.0.8)':
+    dependencies:
+      '@types/react': 19.0.8
 
   '@types/react@19.0.8':
     dependencies:
@@ -3098,7 +3126,7 @@ snapshots:
       msw: 2.7.3(typescript@5.7.2)
       sirv: 3.0.1
       tinyrainbow: 2.0.0
-      vitest: 3.0.7(@types/debug@4.1.12)(@vitest/browser@3.0.7)(msw@2.7.3(typescript@5.7.2))
+      vitest: 3.0.7(@types/debug@4.1.12)(@vitest/browser@3.0.7)(happy-dom@17.1.8)(msw@2.7.3(typescript@5.7.2))
       ws: 8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     optionalDependencies:
       playwright: 1.50.1
@@ -3109,7 +3137,7 @@ snapshots:
       - utf-8-validate
       - vite
 
-  '@vitest/coverage-v8@3.0.7(@vitest/browser@3.0.7(bufferutil@4.0.9)(playwright@1.50.1)(typescript@5.7.2)(utf-8-validate@5.0.10)(vite@6.2.0)(vitest@3.0.7))(vitest@3.0.7(@types/debug@4.1.12)(@vitest/browser@3.0.7)(msw@2.7.3(typescript@5.7.2)))':
+  '@vitest/coverage-v8@3.0.7(@vitest/browser@3.0.7)(vitest@3.0.7)':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@bcoe/v8-coverage': 1.0.2
@@ -3123,7 +3151,7 @@ snapshots:
       std-env: 3.8.0
       test-exclude: 7.0.1
       tinyrainbow: 2.0.0
-      vitest: 3.0.7(@types/debug@4.1.12)(@vitest/browser@3.0.7)(msw@2.7.3(typescript@5.7.2))
+      vitest: 3.0.7(@types/debug@4.1.12)(@vitest/browser@3.0.7)(happy-dom@17.1.8)(msw@2.7.3(typescript@5.7.2))
     optionalDependencies:
       '@vitest/browser': 3.0.7(bufferutil@4.0.9)(playwright@1.50.1)(typescript@5.7.2)(utf-8-validate@5.0.10)(vite@6.2.0)(vitest@3.0.7)
     transitivePeerDependencies:
@@ -4010,6 +4038,12 @@ snapshots:
       ufo: 1.5.4
       uncrypto: 0.1.3
 
+  happy-dom@17.1.8:
+    dependencies:
+      webidl-conversions: 7.0.0
+      whatwg-mimetype: 3.0.0
+    optional: true
+
   has-flag@4.0.0: {}
 
   has-property-descriptors@1.0.2:
@@ -4760,7 +4794,7 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.3
 
-  vitest@3.0.7(@types/debug@4.1.12)(@vitest/browser@3.0.7)(msw@2.7.3(typescript@5.7.2)):
+  vitest@3.0.7(@types/debug@4.1.12)(@vitest/browser@3.0.7)(happy-dom@17.1.8)(msw@2.7.3(typescript@5.7.2)):
     dependencies:
       '@vitest/expect': 3.0.7
       '@vitest/mocker': 3.0.7(msw@2.7.3(typescript@5.7.2))(vite@6.2.0)
@@ -4785,6 +4819,7 @@ snapshots:
     optionalDependencies:
       '@types/debug': 4.1.12
       '@vitest/browser': 3.0.7(bufferutil@4.0.9)(playwright@1.50.1)(typescript@5.7.2)(utf-8-validate@5.0.10)(vite@6.2.0)(vitest@3.0.7)
+      happy-dom: 17.1.8
     transitivePeerDependencies:
       - jiti
       - less
@@ -4840,6 +4875,12 @@ snapshots:
   webextension-polyfill@0.10.0: {}
 
   webidl-conversions@3.0.1: {}
+
+  webidl-conversions@7.0.0:
+    optional: true
+
+  whatwg-mimetype@3.0.0:
+    optional: true
 
   whatwg-url@5.0.0:
     dependencies:
