@@ -7,44 +7,51 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 )
 
+type orderKey struct {
+	id         solvernet.OrderID
+	srcChainID uint64
+}
+
 type orderTracker struct {
 	mu     sync.Mutex
-	orders map[solvernet.OrderID]TestOrder
-	status map[solvernet.OrderID]solvernet.OrderStatus
+	orders map[orderKey]TestOrder
+	status map[orderKey]solvernet.OrderStatus
 }
 
 func newOrderTracker() *orderTracker {
 	return &orderTracker{
-		orders: make(map[solvernet.OrderID]TestOrder),
-		status: make(map[solvernet.OrderID]solvernet.OrderStatus),
+		orders: make(map[orderKey]TestOrder),
+		status: make(map[orderKey]solvernet.OrderStatus),
 	}
 }
 
 func (t *orderTracker) add(id solvernet.OrderID, order TestOrder) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	t.orders[id] = order
+	key := orderKey{id: id, srcChainID: order.SourceChainID}
+	t.orders[key] = order
 }
 
-func (t *orderTracker) setStatus(id solvernet.OrderID, status solvernet.OrderStatus) {
+func (t *orderTracker) setStatus(id solvernet.OrderID, srcChainID uint64, status solvernet.OrderStatus) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	t.status[id] = status
+	key := orderKey{id: id, srcChainID: srcChainID}
+	t.status[key] = status
 }
 
 func (t *orderTracker) done() (bool, error) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	for id, order := range t.orders {
-		status, ok := t.status[id]
+	for key, order := range t.orders {
+		status, ok := t.status[key]
 		if !ok {
 			return false, nil
 		}
 
 		if order.ShouldReject {
 			if status == solvernet.StatusFilled || status == solvernet.StatusClaimed {
-				return false, errors.New("order should have been rejected", "id", id, "status", status)
+				return false, errors.New("order should have been rejected", "id", key.id, "src_chain_id", key.srcChainID, "status", status)
 			}
 
 			if status != solvernet.StatusRejected {
@@ -54,7 +61,7 @@ func (t *orderTracker) done() (bool, error) {
 
 		if !order.ShouldReject {
 			if status == solvernet.StatusRejected {
-				return false, errors.New("order should have been filled", "id", id, "status", status)
+				return false, errors.New("order should have been filled", "id", key.id, "src_chain_id", key.srcChainID, "status", status)
 			}
 
 			if status != solvernet.StatusClaimed {
