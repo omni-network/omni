@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"context"
+	"math/big"
 
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
@@ -10,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 // detectContractChains returns the chains on which the contract is deployed at the provided address.
@@ -54,4 +56,9 @@ func toBz32(addr common.Address) [32]byte {
 	copy(bz[12:], addr.Bytes())
 
 	return bz
+}
+
+func toGweiF64(amount *big.Int) float64 {
+	resp, _ := new(big.Int).Quo(amount, big.NewInt(params.GWei)).Float64()
+	return resp
 }

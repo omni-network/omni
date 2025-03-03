@@ -65,7 +65,9 @@ func newClaimer(
 			return errors.Wrap(err, "wait mined")
 		}
 
-		return nil
+		srcChainName, _ := backend.Chain()
+
+		return pnlIncome(ctx, order, srcChainName)
 	}
 }
 
@@ -160,7 +162,9 @@ func newFiller(
 			return errors.New("fill failed [BUG]")
 		}
 
-		return nil
+		dstChainName, _ := backend.Chain()
+
+		return pnlExpenses(ctx, order, outboxAddr, dstChainName)
 	}
 }
 
