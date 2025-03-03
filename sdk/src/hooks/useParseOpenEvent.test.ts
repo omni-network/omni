@@ -114,7 +114,7 @@ const logs: Log[] = [
   },
 ]
 
-test('should return undefined results when status pending', async () => {
+test('should return undefined results when status pending', () => {
   const { result } = renderHook(
     () =>
       useParseOpenEvent({
@@ -150,7 +150,7 @@ test('should return orderId and originData when props update to expected values'
   await waitFor(() => result.current.originData === originData)
 })
 
-test('should return instance of ParseOpenEventError if success status and empty logs', async () => {
+test('should return instance of ParseOpenEventError if success status and empty logs', () => {
   const { result } = renderHook(
     () =>
       useParseOpenEvent({
@@ -163,7 +163,7 @@ test('should return instance of ParseOpenEventError if success status and empty 
   expect(result.current.error).toBeInstanceOf(ParseOpenEventError)
 })
 
-test('should return instance of ParseOpenEventError if success status and logs are not valid', async () => {
+test('should return instance of ParseOpenEventError if success status and logs are not valid', () => {
   const { result } = renderHook(
     () =>
       useParseOpenEvent({
