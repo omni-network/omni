@@ -46,10 +46,9 @@ func Start(
 
 	var jobs []types.Job
 
-	// Add jobs according to the current network ID
 	switch network.ID {
 	case netconf.Devnet:
-		// Instantiate bridging of native ETH on a devnet
+		// Bridging of native ETH on a devnet
 		job, err := bridging.NewJob(
 			netconf.Devnet,
 			evmchain.IDMockL1,
@@ -67,6 +66,34 @@ func Start(
 			netconf.Devnet,
 			evmchain.IDMockL2,
 			evmchain.IDMockL1,
+			eoa.RoleFlowgen,
+			common.Address{}, // native ETH
+			big.NewInt(0).Mul(util.MilliEther, big.NewInt(2)), // 0.002 ETH
+		)
+		if err != nil {
+			return err
+		}
+		jobs = append(jobs, job)
+
+	case netconf.Omega:
+		// Bridging of native ETH on omega
+		job, err := bridging.NewJob(
+			netconf.Omega,
+			evmchain.IDBaseSepolia,
+			evmchain.IDOpSepolia,
+			eoa.RoleFlowgen,
+			common.Address{}, // native ETH
+			big.NewInt(0).Mul(util.MilliEther, big.NewInt(2)), // 0.002 ETH
+		)
+		if err != nil {
+			return err
+		}
+		jobs = append(jobs, job)
+
+		job, err = bridging.NewJob(
+			netconf.Omega,
+			evmchain.IDOpSepolia,
+			evmchain.IDBaseSepolia,
 			eoa.RoleFlowgen,
 			common.Address{}, // native ETH
 			big.NewInt(0).Mul(util.MilliEther, big.NewInt(2)), // 0.002 ETH
