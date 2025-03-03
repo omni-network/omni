@@ -150,7 +150,7 @@ test('should return orderId and originData when props update to expected values'
   await waitFor(() => result.current.originData === originData)
 })
 
-test('should throw if success status and empty logs', async () => {
+test('should return instance of ParseOpenEventError if success status and empty logs', async () => {
   const { result } = renderHook(
     () =>
       useParseOpenEvent({
@@ -163,7 +163,7 @@ test('should throw if success status and empty logs', async () => {
   expect(result.current.error).toBeInstanceOf(ParseOpenEventError)
 })
 
-test('should throw if success status and logs are not valid', async () => {
+test('should return instance of ParseOpenEventError if success status and logs are not valid', async () => {
   const { result } = renderHook(
     () =>
       useParseOpenEvent({
