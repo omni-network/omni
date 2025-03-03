@@ -5,9 +5,9 @@ import {
   renderHook as _renderHook,
 } from '@testing-library/react'
 import { createElement } from 'react'
-import { WagmiProvider } from 'wagmi'
+import { WagmiProvider, type createConfig } from 'wagmi'
 import { OmniProvider } from '../src/context/omni.js'
-import { web3Config } from './shared.js'
+import { web3Config as defaultWeb3Config } from './shared.js'
 
 const queryClient = new QueryClient()
 
@@ -15,6 +15,7 @@ const queryClient = new QueryClient()
 export function createWrapper<TComponent extends React.FunctionComponent<any>>(
   Wrapper: TComponent,
   props: Parameters<TComponent>[0],
+  web3Config: ReturnType<typeof createConfig> = defaultWeb3Config,
 ) {
   return function CreatedWrapper({
     children,
