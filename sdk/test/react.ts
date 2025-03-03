@@ -40,8 +40,8 @@ export function renderHook<Result, Props>(
   render: (props: Props) => Result,
   options?: RenderHookOptions<Props> & {
     mockContractsCall?: boolean
+    env?: 'devnet' | 'testnet'
   },
-  env: 'devnet' | 'testnet' = 'devnet',
 ): RenderHookResult<Result, Props> {
   queryClient.clear()
 
@@ -55,7 +55,7 @@ export function renderHook<Result, Props>(
 
   return _renderHook(render, {
     wrapper: createWrapper(OmniProvider, {
-      env,
+      env: options?.env ?? 'devnet',
     }),
     ...options,
   })
