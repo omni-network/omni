@@ -4,6 +4,7 @@ import type {
   ContractFunctionArgs,
   ContractFunctionName,
   ContractFunctionParameters,
+  Hex,
 } from 'viem'
 import type { AbiWriteMutability, OptionalAbi, OptionalAbis } from './abi.js'
 
@@ -85,4 +86,29 @@ export function isContractCall<
   defined extends NonNullable<abi> = NonNullable<abi>,
 >(call: NativeTransfer | ContractCall<defined>): call is ContractCall<defined> {
   return call.abi != null
+}
+
+export type ResolvedCrossChainOrder = {
+  user: Hex
+  originChainId: bigint
+  openDeadline: number
+  fillDeadline: number
+  orderId: Hex
+  maxSpent: readonly {
+    token: Hex
+    amount: bigint
+    recipient: Hex
+    chainId: bigint
+  }[]
+  minReceived: readonly {
+    token: Hex
+    amount: bigint
+    recipient: Hex
+    chainId: bigint
+  }[]
+  fillInstructions: readonly {
+    destinationChainId: bigint
+    destinationSettler: Hex
+    originData: Hex
+  }[]
 }
