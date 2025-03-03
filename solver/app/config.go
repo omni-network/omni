@@ -6,9 +6,9 @@ import (
 
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/xchain"
 
 	cmtos "github.com/cometbft/cometbft/libs/os"
@@ -24,7 +24,7 @@ type Config struct {
 	SolverPrivKey  string
 	LoadGenPrivKey string
 	DBDir          string
-	FeatureFlags   feature.Flags
+	Tracer         tracer.Config
 }
 
 func DefaultConfig() Config {
@@ -33,7 +33,6 @@ func DefaultConfig() Config {
 		MonitoringAddr: ":26660",
 		APIAddr:        ":26661",
 		DBDir:          "./db",
-		FeatureFlags:   feature.Flags{}, // Zero enabled flags by default (note not nil).
 	}
 }
 

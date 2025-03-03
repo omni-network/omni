@@ -102,18 +102,17 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 				FilterTopics:  solvernet.AllEventTopics(),
 			}
 
+			// Stream all inbox event logs and update order status in tracker
 			proc := func(ctx context.Context, _ uint64, logs []types.Log) error {
 				for _, l := range logs {
-					event, ok := solvernet.EventByTopic(l.Topics[0])
-					if !ok {
-						return errors.New("unknown event", "topic", l.Topics[0])
+					orderID, status, err := solvernet.ParseEvent(l)
+					if err != nil {
+						return err
 					}
 
-					id := solvernet.OrderID(l.Topics[1])
+					log.Debug(ctx, "Order status updated", "status", status, "order_id", orderID)
 
-					log.Info(ctx, "Order updated", "status", event.Status, "order", id)
-
-					tracker.setStatus(id, chain.ID, event.Status)
+					tracker.UpdateStatus(orderID, chain.ID, status)
 				}
 
 				return nil
@@ -126,7 +125,7 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 		}()
 	}
 
-	// wait done
+	// wait Done
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
@@ -137,10 +136,9 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 		case <-ctx.Done():
 			return errors.Wrap(ctx.Err(), "context done")
 		case <-ticker.C:
-			done, err := tracker.done()
+			done, err := tracker.Done()
 			if err != nil {
-				log.Error(ctx, "Solver test error", err)
-				return err
+				return errors.Wrap(err, "solver tracker failed")
 			}
 
 			if done {
@@ -361,7 +359,7 @@ func openAll(ctx context.Context, backends ethbackend.Backends, orders []TestOrd
 				return err
 			}
 
-			tracker.add(id, order)
+			tracker.TrackOrder(id, order)
 
 			return nil
 		})
@@ -370,6 +368,9 @@ func openAll(ctx context.Context, backends ethbackend.Backends, orders []TestOrd
 	if err := eg.Wait(); err != nil {
 		return nil, errors.Wrap(err, "wait group")
 	}
+
+	// Mark all orders as tracked
+	tracker.AllTracked()
 
 	return tracker, nil
 }
@@ -430,7 +431,7 @@ func testCheckAPI(ctx context.Context, orders []TestOrder) error {
 					"actual", checkResp.Rejected,
 					"reason", checkResp.RejectReason,
 					"description", checkResp.RejectDescription,
-					"order_idx", i,
+					"idx", i,
 				)
 			}
 
@@ -447,7 +448,6 @@ func testCheckAPI(ctx context.Context, orders []TestOrder) error {
 	}
 
 	if err := eg.Wait(); err != nil {
-		log.Error(ctx, "Test /check error", err)
 		return errors.Wrap(err, "wait checks")
 	}
 

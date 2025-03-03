@@ -88,6 +88,31 @@ func AllEventTopics() []common.Hash {
 	return resp
 }
 
+// ParseEvent return the order ID and status from the event log.
+func ParseEvent(l types.Log) (OrderID, OrderStatus, error) {
+	if len(l.Topics) == 0 {
+		return OrderID{}, 0, errors.New("no topics")
+	}
+
+	e, ok := EventByTopic(l.Topics[0])
+	if !ok {
+		return OrderID{}, 0, errors.New("unknown event")
+	}
+
+	// Safe to use dummy address and backend since we only parse events.
+	parser, err := bindings.NewSolverNetInbox(common.Address{}, nil)
+	if err != nil {
+		return OrderID{}, 0, errors.New("new solver inbox")
+	}
+
+	orderID, err := e.ParseID(parser.SolverNetInboxFilterer, l)
+	if err != nil {
+		return OrderID{}, 0, errors.Wrap(err, "parse id")
+	}
+
+	return orderID, e.Status, nil
+}
+
 func ParseOpened(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error) {
 	e, err := contract.ParseOpen(log)
 	if err != nil {

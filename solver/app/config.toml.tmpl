@@ -8,9 +8,6 @@ version = "{{ .Version}}"
 # Omni network to participate in: mainnet, testnet, or devnet.
 network = "{{ .Network }}"
 
-{{ if .FeatureFlags }}feature-flags = {{ .FeatureFlags.FormatToml }}
-{{ end -}}
-
 #######################################################################
 ###                         Solver Options                          ###
 #######################################################################
@@ -58,3 +55,10 @@ format = "{{ .Log.Format }}"
 
 # Logging color if console format is chosen. Options are: auto, force, disable.
 color = "{{ .Log.Color }}"
+
+[tracing]
+# Open Telemetry OTLP endpoint URL. See https://pkg.go.dev/go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp.
+endpoint = "{{ .Tracer.Endpoint }}"
+
+# Open Telemetry OTLP headers. See https://grafana.com/docs/grafana-cloud/monitor-applications/application-observability/setup/quickstart/go/.
+headers = "{{ .Tracer.Headers }}"
