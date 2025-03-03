@@ -12,7 +12,6 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -101,19 +100,6 @@ func OpenOrder(
 		FillDeadline:  uint32(fillDeadline),
 		OrderData:     packed,
 		OrderDataType: orderDataTypeHash,
-	}
-
-	// Simulate the call first.
-	callOpts := bind.CallOpts{
-		From:    txOpts.From,
-		Context: txOpts.Context,
-	}
-	contractCaller := bindings.SolverNetInboxRaw{
-		Contract: contract,
-	}
-	err = contractCaller.Call(&callOpts, nil, "open", order)
-	if err != nil {
-		return OrderID{}, errors.Wrap(err, "order simulation")
 	}
 
 	tx, err := contract.Open(txOpts, order)
