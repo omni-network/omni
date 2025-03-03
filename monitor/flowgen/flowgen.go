@@ -46,67 +46,11 @@ func Start(
 
 	var jobs []types.Job
 
-	switch network.ID {
-	case netconf.Devnet:
-		// Bridging of native ETH on a devnet
-		amount := big.NewInt(0).Mul(util.MilliEther, big.NewInt(2)) // 0.002 ETH
-		job, err := bridging.NewJob(
-			network.ID,
-			evmchain.IDMockL1,
-			evmchain.IDMockL2,
-			eoa.RoleFlowgen,
-			common.Address{}, // native ETH
-			amount,
-		)
-		if err != nil {
-			return err
-		}
-		jobs = append(jobs, job)
-
-		job, err = bridging.NewJob(
-			network.ID,
-			evmchain.IDMockL2,
-			evmchain.IDMockL1,
-			eoa.RoleFlowgen,
-			common.Address{}, // native ETH
-			amount,
-		)
-		if err != nil {
-			return err
-		}
-		jobs = append(jobs, job)
-
-	case netconf.Staging:
-		// Bridging of native ETH on staging
-		amount := big.NewInt(0).Mul(util.MilliEther, big.NewInt(20)) // 0.02 ETH
-		job, err := bridging.NewJob(
-			network.ID,
-			evmchain.IDBaseSepolia,
-			evmchain.IDOpSepolia,
-			eoa.RoleFlowgen,
-			common.Address{}, // native ETH
-			amount,
-		)
-		if err != nil {
-			return err
-		}
-		jobs = append(jobs, job)
-
-		job, err = bridging.NewJob(
-			network.ID,
-			evmchain.IDOpSepolia,
-			evmchain.IDBaseSepolia,
-			eoa.RoleFlowgen,
-			common.Address{}, // native ETH
-			amount,
-		)
-		if err != nil {
-			return err
-		}
-		jobs = append(jobs, job)
-
-	default:
+	result, err := bridgeJobs(network.ID)
+	if err != nil {
+		return err
 	}
+	jobs = append(jobs, result...)
 
 	for _, job := range jobs {
 		go func() {
@@ -120,7 +64,7 @@ func Start(
 				case <-ticker.C:
 					jobsTotal.Inc()
 					if err := run(log.WithCtx(ctx, "job", job.Name), backends, job); err != nil {
-						log.Error(ctx, "Flowgen: job failed (will retry)", err)
+						log.Warn(ctx, "Flowgen: job failed (will retry)", err)
 						jobsFailed.Inc()
 					}
 				}
@@ -193,4 +137,34 @@ func waitForFinalStatus(
 
 		time.Sleep(time.Second)
 	}
+}
+
+func bridgeJobs(network netconf.ID) ([]types.Job, error) {
+	type balanced struct {
+		From uint64
+		To   uint64
+	}
+
+	b, ok := map[netconf.ID]balanced{
+		netconf.Devnet:  {evmchain.IDMockL1, evmchain.IDMockL2},
+		netconf.Staging: {evmchain.IDBaseSepolia, evmchain.IDOpSepolia},
+	}[network]
+	if !ok {
+		return nil, nil
+	}
+
+	// Bridging of native ETH
+	amount := big.NewInt(0).Mul(util.MilliEther, big.NewInt(20)) // 0.02 ETH
+
+	job1, err := bridging.NewJob(network, b.From, b.To, eoa.RoleFlowgen, common.Address{}, amount)
+	if err != nil {
+		return nil, err
+	}
+
+	job2, err := bridging.NewJob(network, b.To, b.From, eoa.RoleFlowgen, common.Address{}, amount)
+	if err != nil {
+		return nil, err
+	}
+
+	return []types.Job{job1, job2}, nil
 }
