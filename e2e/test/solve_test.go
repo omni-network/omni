@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -16,6 +17,8 @@ import (
 	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 	solver "github.com/omni-network/omni/solver/app"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/stretchr/testify/require"
 )
@@ -53,10 +56,14 @@ func testContractsAPI(ctx context.Context, t *testing.T) {
 	require.NoError(t, resp.Body.Close())
 
 	require.Equal(t, http.StatusOK, resp.StatusCode)
-	require.Equal(t, addrs.Portal.Hex(), body["portal"])
-	require.Equal(t, addrs.SolverNetInbox.Hex(), body["inbox"])
-	require.Equal(t, addrs.SolverNetOutbox.Hex(), body["outbox"])
-	require.Equal(t, addrs.SolverNetMiddleman.Hex(), body["middleman"])
+	addrEqual := func(addr common.Address, name string) {
+		// Golang common.Address marshalls to lower case (not EIP55).
+		require.Equal(t, strings.ToLower(addr.Hex()), body[name], name)
+	}
+	addrEqual(addrs.Portal, "portal")
+	addrEqual(addrs.SolverNetInbox, "inbox")
+	addrEqual(addrs.SolverNetOutbox, "outbox")
+	addrEqual(addrs.SolverNetMiddleman, "middleman")
 }
 
 func testSolverApprovals(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {

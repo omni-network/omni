@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/solver/types"
 
 	"github.com/stretchr/testify/require"
 )
@@ -31,7 +32,7 @@ func TestCheck(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			backends, clients := testBackends(t)
 
-			handler := newCheckHandler(newChecker(backends, solver, inbox, outbox))
+			handler := handlerAdapter(newCheckHandler(newChecker(backends, solver, inbox, outbox)))
 
 			if tt.mock != nil {
 				tt.mock(clients)
@@ -49,7 +50,7 @@ func TestCheck(t *testing.T) {
 			require.NoError(t, err)
 
 			ctx := context.Background()
-			req, err := http.NewRequestWithContext(ctx, http.MethodPost, "api/v1/check", bytes.NewBuffer(body))
+			req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpointCheck, bytes.NewBuffer(body))
 			require.NoError(t, err)
 
 			rr := httptest.NewRecorder()
@@ -57,7 +58,7 @@ func TestCheck(t *testing.T) {
 
 			require.Equal(t, http.StatusOK, rr.Code)
 
-			var res CheckResponse
+			var res types.CheckResponse
 			err = json.NewDecoder(rr.Body).Decode(&res)
 			require.NoError(t, err)
 

@@ -18,9 +18,13 @@ import (
 )
 
 var upgradePlans = map[netconf.ID]bindings.UpgradePlan{
-	netconf.Omega: {
+	// netconf.Omega: {
+	// Name:   magellan2.UpgradeName,
+	// Height: 8_720_000, // Mon 27 Feb 1pm UTC
+	// },
+	netconf.Mainnet: {
 		Name:   magellan2.UpgradeName,
-		Height: 8_720_000, // Mon 27 Feb 1pm UTC
+		Height: 6_964_000, // Mon 03 Mar 1pm UTC
 	},
 }
 

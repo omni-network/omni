@@ -14,6 +14,7 @@ func bindRunFlags(flags *pflag.FlagSet, cfg *monitor.Config) {
 	netconf.BindFlag(flags, &cfg.Network)
 	xchain.BindFlags(flags, &cfg.RPCEndpoints)
 	flags.StringVar(&cfg.PrivateKey, "private-key", cfg.PrivateKey, "The path to the private key e.g path/private.key")
+	flags.StringVar(&cfg.FlowGenKey, "flowgen-key", cfg.FlowGenKey, "The path to the flowgen private key e.g path/flowgen.key")
 	flags.StringVar(&cfg.MonitoringAddr, "monitoring-addr", cfg.MonitoringAddr, "The address to bind the monitoring server")
 	flags.StringVar(&cfg.HaloCometURL, "halo-url", cfg.HaloCometURL, "The URL of the halo node e.g localhost:26657")
 	flags.StringVar(&cfg.HaloGRPCURL, "halo-grpc-url", cfg.HaloGRPCURL, "The gRPC URL of the halo node e.g localhost:9999")

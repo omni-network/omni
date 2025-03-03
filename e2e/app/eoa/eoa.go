@@ -23,6 +23,8 @@ const (
 	RoleRelayer Role = "relayer"
 	// RoleMonitor is the monitor service eoa on all networks. It is used by the feemanager.
 	RoleMonitor Role = "monitor"
+	// RoleFlowgen is the flowgen service eoa on all networks. It is used by the feemanager.
+	RoleFlowgen Role = "flowgen"
 	// RoleCreate3Deployer is used to deploy our create3 factories on all chains. This MUST only be done once with nonce 0.
 	RoleCreate3Deployer Role = "create3-deployer"
 	// RoleDeployer is used to deploy official omni contracts on all chains.
@@ -53,6 +55,7 @@ func AllRoles() []Role {
 		RoleRelayer,
 		RoleHot,
 		RoleMonitor,
+		RoleFlowgen,
 		RoleCreate3Deployer,
 		RoleDeployer,
 		RoleManager,

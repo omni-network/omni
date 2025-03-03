@@ -35,9 +35,9 @@ type OrderData = bindings.SolverNetOrderData
 type testOrder struct {
 	srcChainID uint64
 	dstChainID uint64
-	calls      []Call // calls not tested explicitly, but required to test native expense
-	deposits   []Deposit
-	expenses   []Expense
+	calls      []types.Call // calls not tested explicitly, but required to test native expense
+	deposits   []types.AddrAmt
+	expenses   []types.Expense
 }
 
 // orderTestCase is a test case for both shouldReject and quote handlers.
@@ -64,8 +64,8 @@ type rejectTestCase struct {
 type checkTestCase struct {
 	name string
 	mock func(clients MockClients)
-	req  CheckRequest
-	res  CheckResponse
+	req  types.CheckRequest
+	res  types.CheckResponse
 }
 
 func toCheckTestCase(t *testing.T, tt orderTestCase) checkTestCase {
@@ -83,14 +83,14 @@ func toCheckTestCase(t *testing.T, tt orderTestCase) checkTestCase {
 	return checkTestCase{
 		name: tt.name,
 		mock: tt.mock,
-		req: CheckRequest{
+		req: types.CheckRequest{
 			SourceChainID:      tt.order.srcChainID,
 			DestinationChainID: tt.order.dstChainID,
-			Calls:              types.ToJSONCalls(tt.order.calls),
-			Expenses:           types.ToJSONExpenses(tt.order.expenses),
-			Deposit:            types.ToJSONDeposit(deposit),
+			Calls:              tt.order.calls,
+			Expenses:           tt.order.expenses,
+			Deposit:            deposit,
 		},
-		res: CheckResponse{
+		res: types.CheckResponse{
 			Accepted:     !tt.reject,
 			Rejected:     tt.reject,
 			RejectReason: rejectReason,
@@ -159,22 +159,22 @@ func checkTestCases(t *testing.T, solver common.Address) []checkTestCase {
 	additional := []checkTestCase{
 		{
 			name: "unsupported source chain",
-			req: CheckRequest{
+			req: types.CheckRequest{
 				SourceChainID:      1234567,
 				DestinationChainID: evmchain.IDHolesky,
 			},
-			res: CheckResponse{
+			res: types.CheckResponse{
 				Rejected:     true,
 				RejectReason: rejectUnsupportedSrcChain.String(),
 			},
 		},
 		{
 			name: "same chain",
-			req: CheckRequest{
+			req: types.CheckRequest{
 				SourceChainID:      evmchain.IDHolesky,
 				DestinationChainID: evmchain.IDHolesky,
 			},
-			res: CheckResponse{
+			res: types.CheckResponse{
 				Rejected:     true,
 				RejectReason: rejectSameChain.String(),
 			},
@@ -210,13 +210,13 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				// request 1 native OMNI for 1 erc20 OMNI on omega
 				srcChainID: evmchain.IDHolesky,
 				dstChainID: evmchain.IDOmniOmega,
-				deposits:   []Deposit{{Amount: ether(1), Token: omegaOMNIAddr}},
-				calls: []Call{{
+				deposits:   []types.AddrAmt{{Amount: ether(1), Token: omegaOMNIAddr}},
+				calls: []types.Call{{
 					Value: ether(1),
 					// actual calldata does not matter. we include it to test /check parsing
 					Data: hexutil.MustDecode("0x70a08231000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc7"),
 				}},
-				expenses: []Expense{{Amount: ether(1)}},
+				expenses: []types.Expense{{Amount: ether(1)}},
 			},
 			mock: func(clients MockClients) {
 				mockNativeBalance(t, clients.Client(t, evmchain.IDOmniOmega), solver, ether(0))
@@ -231,13 +231,13 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				srcChainID: evmchain.IDHolesky,
 				dstChainID: evmchain.IDOmniOmega,
 				// OMNI does not require fee
-				deposits: []Deposit{{Amount: ether(1), Token: omegaOMNIAddr}},
-				calls: []Call{{
+				deposits: []types.AddrAmt{{Amount: ether(1), Token: omegaOMNIAddr}},
+				calls: []types.Call{{
 					Value: ether(1),
 					// actual calldata does not matter. we include it to test /check parsing
 					Data: hexutil.MustDecode("0x70a08231000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc7"),
 				}},
-				expenses: []Expense{{Amount: ether(1)}},
+				expenses: []types.Expense{{Amount: ether(1)}},
 			},
 			mock: func(clients MockClients) {
 				mockNativeBalance(t, clients.Client(t, evmchain.IDOmniOmega), solver, ether(1))
@@ -251,8 +251,8 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				// request 1 erc20 OMNI for 1 native OMNI on omega
 				srcChainID: evmchain.IDOmniOmega,
 				dstChainID: evmchain.IDHolesky,
-				deposits:   []Deposit{{Amount: ether(1)}},
-				expenses:   []Expense{{Amount: ether(1), Token: omegaOMNIAddr}},
+				deposits:   []types.AddrAmt{{Amount: ether(1)}},
+				expenses:   []types.Expense{{Amount: ether(1), Token: omegaOMNIAddr}},
 			},
 			mock: func(clients MockClients) {
 				mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNIAddr, ether(0))
@@ -267,8 +267,8 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				srcChainID: evmchain.IDOmniOmega,
 				dstChainID: evmchain.IDHolesky,
 				// OMNI does not require fee
-				deposits: []Deposit{{Amount: ether(1)}},
-				expenses: []Expense{{Amount: ether(1), Token: omegaOMNIAddr}},
+				deposits: []types.AddrAmt{{Amount: ether(1)}},
+				expenses: []types.Expense{{Amount: ether(1), Token: omegaOMNIAddr}},
 			},
 			mock: func(clients MockClients) {
 				mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNIAddr, ether(1))
@@ -286,8 +286,8 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				// request 1 erc20 OMNI for 1 native OMNI on omega
 				srcChainID: evmchain.IDOmniOmega,
 				dstChainID: evmchain.IDHolesky,
-				deposits:   []Deposit{{Amount: ether(1)}},
-				expenses:   []Expense{{Amount: ether(1), Token: omegaOMNIAddr}},
+				deposits:   []types.AddrAmt{{Amount: ether(1)}},
+				expenses:   []types.Expense{{Amount: ether(1), Token: omegaOMNIAddr}},
 			},
 			mock: func(clients MockClients) {
 				mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNIAddr, ether(1))
@@ -301,8 +301,8 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			order: testOrder{
 				srcChainID: evmchain.IDOmniOmega,
 				dstChainID: evmchain.IDHolesky,
-				deposits:   []Deposit{{Amount: ether(1)}},
-				expenses:   []Expense{{Amount: ether(1), Token: common.HexToAddress("0x01")}},
+				deposits:   []types.AddrAmt{{Amount: ether(1)}},
+				expenses:   []types.Expense{{Amount: ether(1), Token: common.HexToAddress("0x01")}},
 			},
 		},
 		{
@@ -321,9 +321,9 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			order: testOrder{
 				srcChainID: evmchain.IDHolesky,
 				dstChainID: evmchain.IDOmniOmega,
-				deposits:   []Deposit{{Amount: ether(1)}},
-				calls:      []Call{{Value: ether(1)}},
-				expenses:   []Expense{{Amount: ether(1)}},
+				deposits:   []types.AddrAmt{{Amount: ether(1)}},
+				calls:      []types.Call{{Value: ether(1)}},
+				expenses:   []types.Expense{{Amount: ether(1)}},
 			},
 		},
 		{
@@ -334,10 +334,10 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				srcChainID: evmchain.IDHolesky,
 				dstChainID: evmchain.IDBaseSepolia,
 				// wstETH on holesky
-				deposits: []Deposit{{Amount: ether(1), Token: common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")}},
+				deposits: []types.AddrAmt{{Amount: ether(1), Token: common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")}},
 				// native eth on base
-				calls:    []Call{{Value: ether(1)}},
-				expenses: []Expense{{Amount: ether(1)}},
+				calls:    []types.Call{{Value: ether(1)}},
+				expenses: []types.Expense{{Amount: ether(1)}},
 			},
 		},
 		{
@@ -347,9 +347,9 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			order: testOrder{
 				srcChainID: evmchain.IDHolesky,
 				dstChainID: evmchain.IDOmniOmega,
-				deposits:   []Deposit{{Amount: ether(1), Token: omegaOMNIAddr}, {Amount: ether(1)}},
-				calls:      []Call{{Value: ether(1)}},
-				expenses:   []Expense{{Amount: ether(1)}},
+				deposits:   []types.AddrAmt{{Amount: ether(1), Token: omegaOMNIAddr}, {Amount: ether(1)}},
+				calls:      []types.Call{{Value: ether(1)}},
+				expenses:   []types.Expense{{Amount: ether(1)}},
 			},
 		},
 		{
@@ -359,9 +359,9 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			order: testOrder{
 				srcChainID: evmchain.IDHolesky,
 				dstChainID: evmchain.IDOptimism,
-				deposits:   []Deposit{{Amount: ether(1)}},
-				calls:      []Call{{Value: ether(1)}},
-				expenses:   []Expense{{Amount: ether(1)}},
+				deposits:   []types.AddrAmt{{Amount: ether(1)}},
+				calls:      []types.Call{{Value: ether(1)}},
+				expenses:   []types.Expense{{Amount: ether(1)}},
 			},
 		},
 		{
@@ -371,9 +371,9 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			order: testOrder{
 				srcChainID: evmchain.IDOmniOmega,
 				dstChainID: evmchain.IDHolesky,
-				deposits:   []Deposit{{Amount: ether(2)}},
-				calls:      []Call{{Value: ether(1)}},
-				expenses: []Expense{
+				deposits:   []types.AddrAmt{{Amount: ether(2)}},
+				calls:      []types.Call{{Value: ether(1)}},
+				expenses: []types.Expense{
 					{Amount: ether(1)},
 					{Amount: ether(1), Token: common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")},
 				},
@@ -387,9 +387,9 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				srcChainID: evmchain.IDBaseSepolia,
 				dstChainID: evmchain.IDHolesky,
 				// does not include fee
-				deposits: []Deposit{{Amount: ether(1)}},
-				calls:    []Call{{Value: ether(1)}},
-				expenses: []Expense{{Amount: ether(1)}},
+				deposits: []types.AddrAmt{{Amount: ether(1)}},
+				calls:    []types.Call{{Value: ether(1)}},
+				expenses: []types.Expense{{Amount: ether(1)}},
 			},
 		},
 		{
@@ -398,9 +398,9 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				srcChainID: evmchain.IDBaseSepolia,
 				dstChainID: evmchain.IDHolesky,
 				// includes fee
-				deposits: []Deposit{{Amount: depositFor(ether(1), standardFeeBips)}},
-				calls:    []Call{{Value: ether(1)}},
-				expenses: []Expense{{Amount: ether(1)}},
+				deposits: []types.AddrAmt{{Amount: depositFor(ether(1), standardFeeBips)}},
+				calls:    []types.Call{{Value: ether(1)}},
+				expenses: []types.Expense{{Amount: ether(1)}},
 			},
 			mock: func(clients MockClients) {
 				mockNativeBalance(t, clients.Client(t, evmchain.IDHolesky), solver, ether(1))
@@ -411,14 +411,14 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			order: testOrder{
 				srcChainID: evmchain.IDBaseSepolia,
 				dstChainID: evmchain.IDHolesky,
-				deposits: []Deposit{{
+				deposits: []types.AddrAmt{{
 					Amount: new(big.Int).Add(
 						depositFor(ether(1), standardFeeBips), // required deposit
 						gwei(1),                               // a little more
 					),
 				}},
-				calls:    []Call{{Value: ether(1)}},
-				expenses: []Expense{{Amount: ether(1)}},
+				calls:    []types.Call{{Value: ether(1)}},
+				expenses: []types.Expense{{Amount: ether(1)}},
 			},
 			mock: func(clients MockClients) {
 				mockNativeBalance(t, clients.Client(t, evmchain.IDHolesky), solver, ether(2))
@@ -431,9 +431,9 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			order: testOrder{
 				srcChainID: evmchain.IDBaseSepolia,
 				dstChainID: evmchain.IDHolesky,
-				deposits:   []Deposit{{Amount: ether(3000)}},
-				calls:      []Call{{Value: ether(2000)}},
-				expenses:   []Expense{{Amount: ether(2000)}},
+				deposits:   []types.AddrAmt{{Amount: ether(3000)}},
+				calls:      []types.Call{{Value: ether(2000)}},
+				expenses:   []types.Expense{{Amount: ether(2000)}},
 			},
 		},
 		{
@@ -443,9 +443,9 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			order: testOrder{
 				srcChainID: evmchain.IDBaseSepolia,
 				dstChainID: evmchain.IDHolesky,
-				deposits:   []Deposit{{Amount: big.NewInt(2)}},
-				calls:      []Call{{Value: big.NewInt(1)}},
-				expenses:   []Expense{{Amount: big.NewInt(1)}},
+				deposits:   []types.AddrAmt{{Amount: big.NewInt(2)}},
+				calls:      []types.Call{{Value: big.NewInt(1)}},
+				expenses:   []types.Expense{{Amount: big.NewInt(1)}},
 			},
 		},
 	}

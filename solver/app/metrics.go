@@ -1,4 +1,3 @@
-//nolint:unused // This is a work in progress.
 package app
 
 import (
@@ -28,12 +27,13 @@ var (
 		Help:      "Total number of rejected orders by chain and reason",
 	}, []string{"src_chain", "dest_chain", "target", "reason"})
 
-	tokenBalance = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	orderAge = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "solver",
-		Subsystem: "liquidity",
-		Name:      "token_balance",
-		Help:      "Token balance of solver",
-	}, []string{"chain", "solver_addr", "token_addr", "token_symbol", "is_native"})
+		Subsystem: "processor",
+		Name:      "order_age_seconds",
+		Help:      "Order age (from creation) in seconds by chain and status",
+		Buckets:   prometheus.ExponentialBucketsRange(1, 60, 5),
+	}, []string{"chain", "target", "status"})
 
 	apiLatency = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "solver",

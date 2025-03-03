@@ -59,6 +59,7 @@ var (
 	staticThresholdsByRole = map[Role]FundThresholds{
 		RoleRelayer:         thresholdMedium, // Relayer needs sufficient balance to operator for 2 weeks
 		RoleMonitor:         thresholdMedium, // Dynamic Fee updates every few hours.
+		RoleFlowgen:         thresholdMedium, // Dynamic Fee updates every few hours.
 		RoleCreate3Deployer: thresholdTiny,   // Only 1 contract per chain
 		RoleManager:         thresholdTiny,   // Rarely used
 		RoleUpgrader:        thresholdTiny,   // Rarely used
@@ -71,7 +72,7 @@ var (
 	dynamicThresholdsByRole = map[Role]dynamicThreshold{
 		RoleHot: {
 			Multiplier: hotDynamicMultiplier,
-			Roles:      []Role{RoleRelayer, RoleMonitor, RoleCreate3Deployer, RoleManager, RoleUpgrader, RoleDeployer, RoleTester, RoleXCaller},
+			Roles:      []Role{RoleRelayer, RoleMonitor, RoleFlowgen, RoleCreate3Deployer, RoleManager, RoleUpgrader, RoleDeployer, RoleTester, RoleXCaller},
 		},
 		RoleCold: {
 			Multiplier: coldDynamicMultiplier,
