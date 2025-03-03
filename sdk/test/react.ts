@@ -37,12 +37,13 @@ export function createWrapper<TComponent extends React.FunctionComponent<any>>(
 
 export function renderHook<Result, Props>(
   render: (props: Props) => Result,
+  env: 'devnet' | 'testnet' = 'devnet',
   options?: RenderHookOptions<Props> | undefined,
 ): RenderHookResult<Result, Props> {
   queryClient.clear()
   return _renderHook(render, {
     wrapper: createWrapper(OmniProvider, {
-      env: 'devnet',
+      env,
     }),
     ...options,
   })
