@@ -4,7 +4,6 @@ import type {
   ContractFunctionArgs,
   ContractFunctionName,
   ContractFunctionParameters,
-  Hex,
 } from 'viem'
 import type { AbiWriteMutability, OptionalAbi, OptionalAbis } from './abi.js'
 
