@@ -31,8 +31,10 @@ func NewJob(
 		return types.Job{}, errors.Wrap(err, "new job")
 	}
 
+	namer := netconf.ChainNamer(network)
+
 	return types.Job{
-		Name:    fmt.Sprintf("Bridging (%v->%v)", srcChain, dstChain),
+		Name:    fmt.Sprintf("Bridging (%v->%v)", namer(srcChain), namer(dstChain)),
 		Cadence: 1 * time.Minute,
 		Network: network,
 
