@@ -1,3 +1,5 @@
+import { version } from '../version.js'
+
 // JSONError is a json error response from the solver api
 export type JSONError = {
   code: number
@@ -12,7 +14,11 @@ export async function fetchJSON(
   url: string,
   init?: RequestInit,
 ): Promise<unknown> {
-  const res = await fetch(url, init)
+  const headers = new Headers(init?.headers)
+  headers.set('user-agent', `@omni-network/react:${version}`)
+  const _init = { ...init, headers }
+
+  const res = await fetch(url, _init)
   const json = await res.json()
 
   if (!res.ok) {
