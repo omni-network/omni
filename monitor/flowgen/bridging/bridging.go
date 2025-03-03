@@ -1,6 +1,7 @@
 package bridging
 
 import (
+	"fmt"
 	"math/big"
 	"time"
 
@@ -30,8 +31,10 @@ func NewJob(
 		return types.Job{}, errors.Wrap(err, "new job")
 	}
 
+	namer := netconf.ChainNamer(network)
+
 	return types.Job{
-		Name:    "Bridging",
+		Name:    fmt.Sprintf("Bridging (%v->%v)", namer(srcChain), namer(dstChain)),
 		Cadence: 1 * time.Minute,
 		Network: network,
 

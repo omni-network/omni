@@ -46,26 +46,11 @@ func Start(
 
 	var jobs []types.Job
 
-	// Add jobs according to the current network ID
-	switch network.ID {
-	case netconf.Devnet:
-		// Instantiate bridging of native ETH on a devnet
-		job, err := bridging.NewJob(
-			netconf.Devnet,
-			evmchain.IDMockL1,
-			evmchain.IDMockL2,
-			eoa.RoleFlowgen,
-			common.Address{}, // native ETH
-			big.NewInt(0).Mul(util.MilliEther, big.NewInt(2)), // 0.002 ETH
-		)
-		if err != nil {
-			return err
-		}
-
-		jobs = append(jobs, job)
-
-	default:
+	result, err := bridgeJobs(network.ID)
+	if err != nil {
+		return err
 	}
+	jobs = append(jobs, result...)
 
 	for _, job := range jobs {
 		go func() {
@@ -77,8 +62,10 @@ func Start(
 				case <-ctx.Done():
 					return
 				case <-ticker.C:
+					jobsTotal.Inc()
 					if err := run(log.WithCtx(ctx, "job", job.Name), backends, job); err != nil {
-						log.Error(ctx, "Flowgen: job failed (will retry)", err)
+						log.Warn(ctx, "Flowgen: job failed (will retry)", err)
+						jobsFailed.Inc()
 					}
 				}
 			}
@@ -92,7 +79,7 @@ func Start(
 func run(ctx context.Context, backends ethbackend.Backends, j types.Job) error {
 	log.Debug(ctx, "Flowgen: running job")
 
-	id, err := solvernet.OpenOrder(ctx, j.Network, evmchain.IDMockL1, backends, j.Owner, j.OrderData)
+	id, err := solvernet.OpenOrder(ctx, j.Network, j.SrcChain, backends, j.Owner, j.OrderData)
 	if err != nil {
 		return errors.Wrap(err, "open order")
 	}
@@ -148,6 +135,36 @@ func waitForFinalStatus(
 			log.Debug(ctx, "Flowgen: order in flight", "status", status)
 		}
 
-		time.Sleep(time.Second)
+		time.Sleep(5 * time.Second)
 	}
+}
+
+func bridgeJobs(network netconf.ID) ([]types.Job, error) {
+	type balanced struct {
+		From uint64
+		To   uint64
+	}
+
+	b, ok := map[netconf.ID]balanced{
+		netconf.Devnet:  {evmchain.IDMockL1, evmchain.IDMockL2},
+		netconf.Staging: {evmchain.IDBaseSepolia, evmchain.IDOpSepolia},
+	}[network]
+	if !ok {
+		return nil, nil
+	}
+
+	// Bridging of native ETH
+	amount := big.NewInt(0).Mul(util.MilliEther, big.NewInt(20)) // 0.02 ETH
+
+	job1, err := bridging.NewJob(network, b.From, b.To, eoa.RoleFlowgen, common.Address{}, amount)
+	if err != nil {
+		return nil, err
+	}
+
+	job2, err := bridging.NewJob(network, b.To, b.From, eoa.RoleFlowgen, common.Address{}, amount)
+	if err != nil {
+		return nil, err
+	}
+
+	return []types.Job{job1, job2}, nil
 }
