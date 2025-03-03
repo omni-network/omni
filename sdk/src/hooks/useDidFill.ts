@@ -1,11 +1,11 @@
 import { useReadContract } from 'wagmi'
 import { outboxABI } from '../constants/abis.js'
 import { useOmniContext } from '../context/omni.js'
-import type { ResolvedOrder } from '../types/order.js'
+import type { useParseOpenEvent } from './useParseOpenEvent.js'
 
 type UseDidFillParams = {
   destChainId: number
-  resolvedOrder?: ResolvedOrder
+  resolvedOrder?: ReturnType<typeof useParseOpenEvent>['resolvedOrder']
 }
 
 export function useDidFill(params: UseDidFillParams) {
@@ -16,11 +16,12 @@ export function useDidFill(params: UseDidFillParams) {
     address: outbox,
     abi: outboxABI,
     functionName: 'didFill',
-    args: resolvedOrder
+    args: resolvedOrder?.fillInstructions[0].originData
       ? [resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData]
       : undefined,
     query: {
-      enabled: !!resolvedOrder,
+      enabled:
+        !!resolvedOrder && !!resolvedOrder.fillInstructions[0].originData,
       refetchInterval: 1000,
     },
   })
