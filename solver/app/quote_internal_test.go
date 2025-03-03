@@ -27,7 +27,7 @@ func TestQuote(t *testing.T) {
 		name   string
 		req    types.QuoteRequest
 		res    types.QuoteResponse
-		expErr *JSONErrorResponse
+		expErr *types.JSONErrorResponse
 	}{
 		{
 			name: "quote deposit 1 eth expense",
@@ -104,7 +104,7 @@ func TestQuote(t *testing.T) {
 				Deposit:            zeroAddrAmt,
 				Expense:            zeroAddrAmt,
 			},
-			expErr: &JSONErrorResponse{
+			expErr: &types.JSONErrorResponse{
 				Code:    http.StatusBadRequest,
 				Status:  http.StatusText(http.StatusBadRequest),
 				Message: "deposit and expense amount cannot be both zero or both non-zero",
@@ -118,7 +118,7 @@ func TestQuote(t *testing.T) {
 				Deposit:            mockAddrAmt("1000000000000000000"),
 				Expense:            mockAddrAmt("1000000000000000000"),
 			},
-			expErr: &JSONErrorResponse{
+			expErr: &types.JSONErrorResponse{
 				Code:    http.StatusBadRequest,
 				Status:  http.StatusText(http.StatusBadRequest),
 				Message: "deposit and expense amount cannot be both zero or both non-zero",
@@ -132,7 +132,7 @@ func TestQuote(t *testing.T) {
 				Deposit:            types.AddrAmt{Token: common.HexToAddress("0x1234")},
 				Expense:            mockAddrAmt("1000000000000000000"),
 			},
-			expErr: &JSONErrorResponse{
+			expErr: &types.JSONErrorResponse{
 				Code:    http.StatusNotFound,
 				Status:  http.StatusText(http.StatusNotFound),
 				Message: "unsupported deposit token",
@@ -146,7 +146,7 @@ func TestQuote(t *testing.T) {
 				Deposit:            mockAddrAmt("1000000000000000000"),
 				Expense:            types.AddrAmt{Token: common.HexToAddress("0x1234")},
 			},
-			expErr: &JSONErrorResponse{
+			expErr: &types.JSONErrorResponse{
 				Code:    http.StatusNotFound,
 				Status:  http.StatusText(http.StatusNotFound),
 				Message: "unsupported expense token",
@@ -160,7 +160,7 @@ func TestQuote(t *testing.T) {
 				Deposit:            zeroAddrAmt,
 				Expense:            mockAddrAmt("1000000000000000000"),
 			},
-			expErr: &JSONErrorResponse{
+			expErr: &types.JSONErrorResponse{
 				Code:    http.StatusBadRequest,
 				Status:  http.StatusText(http.StatusBadRequest),
 				Message: "InvalidDeposit: deposit token must match expense token",
@@ -174,7 +174,7 @@ func TestQuote(t *testing.T) {
 				Deposit:            mockAddrAmt("1000000000000000000"),
 				Expense:            zeroAddrAmt,
 			},
-			expErr: &JSONErrorResponse{
+			expErr: &types.JSONErrorResponse{
 				Code:    http.StatusBadRequest,
 				Status:  http.StatusText(http.StatusBadRequest),
 				Message: "InvalidDeposit: deposit and expense must be of the same chain class (e.g. mainnet, testnet)",
@@ -194,9 +194,10 @@ func TestQuote(t *testing.T) {
 		rr := httptest.NewRecorder()
 		handler.ServeHTTP(rr, req)
 
+		// Response is either a QuoteResponse or a JSONErrorResponse
 		var res struct {
 			types.QuoteResponse
-			JSONErrorResponse
+			types.JSONErrorResponse
 		}
 		require.NoError(t, json.NewDecoder(rr.Body).Decode(&res))
 		if rr.Code != http.StatusOK {

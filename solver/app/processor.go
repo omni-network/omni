@@ -53,32 +53,14 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 			age := ageCache.InstrumentAge(order.ID, target, order.Status.String(), timestamp)
 			statusOffset.WithLabelValues(deps.ChainName(chainID), target, event.Status.String()).Set(float64(orderID.Uint64()))
 
-			attrs := []any{
+			ctx := log.WithCtx(ctx,
 				"order_id", order.ID.String(),
 				"status", order.Status,
 				"src_chain", deps.ChainName(order.SourceChainID),
 				"dst_chain", deps.ChainName(order.DestinationChainID),
 				"age", age,
-			}
-
-			fill, err := order.ParsedFillOriginData()
-			if err != nil {
-				log.Warn(ctx, "Failed to parse fill origin data", err, attrs...)
-				attrs = append(attrs, "calls", unknown)
-			} else {
-				// use last call target for logs
-				lastCall := fill.Calls[len(fill.Calls)-1]
-
-				attrs = append(attrs,
-					"calls", len(fill.Calls),
-					"call_target", lastCall.Target.Hex(),
-					"call_selector", hexutil.Encode(lastCall.Selector[:]),
-					"call_params", hexutil.Encode(lastCall.Params),
-					"call_value", lastCall.Value.String(),
-				)
-			}
-
-			ctx := log.WithCtx(ctx, attrs...)
+				"target", target,
+			)
 
 			log.Debug(ctx, "Processing order event")
 
@@ -130,6 +112,7 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 
 				// Track all orders for now, since we reject explicitly.
 				ageCache.Add(order.ID, timestamp)
+				debugOriginData(ctx, order)
 
 				if didReject, err := maybeReject(); err != nil {
 					return err
@@ -213,4 +196,23 @@ func (a *ageCache) MaybePurge() bool {
 	a.createdAts = make(map[solvernet.OrderID]time.Time)
 
 	return true
+}
+
+func debugOriginData(ctx context.Context, order Order) {
+	fill, err := order.ParsedFillOriginData()
+	if err != nil {
+		log.Warn(ctx, "Failed to parse fill origin data", err)
+		return
+	}
+
+	// use last call target for logs
+	lastCall := fill.Calls[len(fill.Calls)-1]
+
+	log.Debug(ctx, "Fill origin data",
+		"calls", len(fill.Calls),
+		"call_target", lastCall.Target.Hex(),
+		"call_selector", hexutil.Encode(lastCall.Selector[:]),
+		"call_params", hexutil.Encode(lastCall.Params),
+		"call_value", lastCall.Value.String(),
+	)
 }
