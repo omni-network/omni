@@ -8,6 +8,7 @@ export default defineConfig({
           name: 'unit',
           include: ['src/**/*.test.{ts,tsx}'],
           environment: 'happy-dom',
+          setupFiles: ['./test/unitSetup.ts'],
         },
       },
       {

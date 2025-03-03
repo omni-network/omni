@@ -7,11 +7,12 @@ import {
 import { createElement } from 'react'
 import { WagmiProvider, type createConfig } from 'wagmi'
 import { OmniProvider } from '../src/context/omni.js'
+import { mockContractsQuery } from './mocks.js'
 import { web3Config as defaultWeb3Config } from './shared.js'
 
 const queryClient = new QueryClient()
 
-// biome-ignore lint/suspicious/noExplicitAny: test
+// biome-ignore lint/suspicious/noExplicitAny: test module
 export function createWrapper<TComponent extends React.FunctionComponent<any>>(
   Wrapper: TComponent,
   props: Parameters<TComponent>[0],
@@ -37,13 +38,24 @@ export function createWrapper<TComponent extends React.FunctionComponent<any>>(
 
 export function renderHook<Result, Props>(
   render: (props: Props) => Result,
-  env: 'devnet' | 'testnet' = 'devnet',
-  options?: RenderHookOptions<Props> | undefined,
+  options?: RenderHookOptions<Props> & {
+    mockContractsCall?: boolean
+    env?: 'devnet' | 'testnet'
+  },
 ): RenderHookResult<Result, Props> {
   queryClient.clear()
+
+  if (options?.mockContractsCall) {
+    mockContractsQuery()
+
+    const { mockContractsCall, ...restOptions } = options
+    // biome-ignore lint/style/noParameterAssign: test module
+    options = restOptions
+  }
+
   return _renderHook(render, {
     wrapper: createWrapper(OmniProvider, {
-      env,
+      env: options?.env ?? 'devnet',
     }),
     ...options,
   })
