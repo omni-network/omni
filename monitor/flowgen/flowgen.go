@@ -135,7 +135,7 @@ func waitForFinalStatus(
 			log.Debug(ctx, "Flowgen: order in flight", "status", status)
 		}
 
-		time.Sleep(time.Second)
+		time.Sleep(5 * time.Second)
 	}
 }
 
