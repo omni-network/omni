@@ -1,5 +1,5 @@
 import { arbitrum, base, optimism } from 'viem/chains'
-import { http, createConfig } from 'wagmi'
+import { http, createConfig, mock } from 'wagmi'
 import { mainnet } from 'wagmi/chains'
 
 export const MOCK_L1_ID = 1652
@@ -14,6 +14,7 @@ export const privateKey =
 
 export const web3Config = createConfig({
   chains: [mainnet, base, optimism, arbitrum],
+  connectors: [mock({ accounts }), mock({ accounts })],
   pollingInterval: 100,
   storage: null,
   transports: {
@@ -23,3 +24,9 @@ export const web3Config = createConfig({
     [arbitrum.id]: http(),
   },
 })
+
+export const contracts = {
+  inbox: '0x123',
+  outbox: '0x456',
+  middleman: '0x789',
+}
