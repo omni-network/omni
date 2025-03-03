@@ -124,8 +124,7 @@ test('should return undefined results when status pending', () => {
     { mockContractsCall: true },
   )
 
-  expect(result.current.orderId).toBeUndefined()
-  expect(result.current.originData).toBeUndefined()
+  expect(result.current.resolvedOrder).toBeUndefined()
 })
 
 test('should return orderId and originData when props update to expected values', async () => {
@@ -138,16 +137,14 @@ test('should return orderId and originData when props update to expected values'
     { mockContractsCall: true },
   )
 
-  expect(result.current.orderId).toBeUndefined()
-  expect(result.current.originData).toBeUndefined()
+  expect(result.current.resolvedOrder).toBeUndefined()
 
   rerender({
     status: 'success',
     logs: logs,
   })
 
-  await waitFor(() => result.current.orderId === orderId)
-  await waitFor(() => result.current.originData === originData)
+  await waitFor(() => result.current.resolvedOrder?.orderId === orderId)
 })
 
 test('should return instance of ParseOpenEventError if success status and empty logs', () => {

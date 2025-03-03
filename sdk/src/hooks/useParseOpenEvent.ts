@@ -21,8 +21,7 @@ export function useParseOpenEvent(params: UseParseOpenEventParams) {
         topics: logs[logs.length - 1].topics,
       })
       return {
-        id: openEvent.args.resolvedOrder.orderId,
-        originData: openEvent.args.resolvedOrder.fillInstructions[0].originData,
+        resolvedOrder: openEvent.args.resolvedOrder,
       }
     } catch (error) {
       return {
@@ -32,8 +31,7 @@ export function useParseOpenEvent(params: UseParseOpenEventParams) {
   }, [status, logs])
 
   return {
-    orderId: eventData?.id,
-    originData: eventData?.originData,
+    resolvedOrder: eventData?.resolvedOrder,
     error: eventData?.error,
   }
 }

@@ -67,11 +67,7 @@ export function useOrder<abis extends OptionalAbis>(
   const { validateEnabled, ...order } = params
   const txMutation = useWriteContract()
   const wait = useWaitForTransactionReceipt({ hash: txMutation.data })
-  const {
-    orderId,
-    originData,
-    error: parseOpenEventError,
-  } = useParseOpenEvent({
+  const { resolvedOrder, error: parseOpenEventError } = useParseOpenEvent({
     status: wait.status,
     logs: wait.data?.logs,
   })
@@ -79,8 +75,11 @@ export function useOrder<abis extends OptionalAbis>(
   const connected = useChainId()
   const srcChainId = order.srcChainId ?? connected
   const destChainId = order.destChainId
-  const inboxStatus = useInboxStatus({ orderId, chainId: srcChainId })
-  const didFill = useDidFill({ destChainId, orderId, originData })
+  const inboxStatus = useInboxStatus({
+    orderId: resolvedOrder?.orderId,
+    chainId: srcChainId,
+  })
+  const didFill = useDidFill({ destChainId, resolvedOrder })
 
   const status = deriveStatus(
     inboxStatus,
@@ -127,7 +126,7 @@ export function useOrder<abis extends OptionalAbis>(
 
   return {
     open,
-    orderId,
+    orderId: resolvedOrder?.orderId,
     validation,
     txHash: txMutation.data,
     status,
