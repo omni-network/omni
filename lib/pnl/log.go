@@ -3,6 +3,8 @@ package pnl
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/omni-network/omni/lib/log"
 )
@@ -10,7 +12,6 @@ import (
 type (
 	Type     string
 	Currency string
-	Unit     string
 )
 
 const (
@@ -55,15 +56,18 @@ func fstr(f float64) string {
 	return fmt.Sprintf("%.2f", f)
 }
 
-// mdstr returns a string repr of metadat.
+// mdstr returns a key-ordered string representation of metadata.
 func mdstr(m map[string]any) string {
-	var s string
+	var keys []string
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
 
-	for k, v := range m {
-		s += fmt.Sprintf("%s:%v|", k, v)
+	var kvs []string
+	for _, k := range keys {
+		kvs = append(kvs, fmt.Sprintf("%s=%v", k, m[k]))
 	}
 
-	s = s[:len(s)-1] // remove last pipe
-
-	return s
+	return strings.Join(kvs, "|")
 }
