@@ -118,8 +118,10 @@ func Start(
 				case <-ctx.Done():
 					return
 				case <-ticker.C:
+					jobsTotal.Inc()
 					if err := run(log.WithCtx(ctx, "job", job.Name), backends, job); err != nil {
 						log.Error(ctx, "Flowgen: job failed (will retry)", err)
+						jobsFailed.Inc()
 					}
 				}
 			}
