@@ -248,20 +248,26 @@ contract Admin is Script {
     }
 
     /**
-     * @notice Upgrade the Staking predeploy.
-     * @param admin     The address of the admin account, owner of the proxy admin
-     * @param deployer  The address of the account that will deploy the new implementation.
+     * @notice Deploy the Staking predeploy implementation.
+     * @param deployer The address of the account that will deploy the new implementation.
      */
-    function upgradeStaking(address admin, address deployer, bytes calldata data) public {
+    function deployStaking(address deployer) public {
+        vm.startBroadcast(deployer);
+        new Staking();
+        vm.stopBroadcast();
+    }
+
+    /**
+     * @notice Upgrade the Staking predeploy.
+     * @param admin The address of the admin account, owner of the proxy admin
+     */
+    function upgradeStaking(address admin, bytes calldata data) public {
         Staking staking = Staking(Predeploys.Staking);
+        address impl = address(0); // Replace with new implementation address
 
         // read storage pre-upgrade
         address owner = staking.owner();
         bool isAllowlistEnabled = staking.isAllowlistEnabled();
-
-        vm.startBroadcast(deployer);
-        address impl = address(new Staking());
-        vm.stopBroadcast();
 
         _upgradeProxy(admin, Predeploys.Staking, impl, data);
 

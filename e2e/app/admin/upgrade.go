@@ -52,6 +52,18 @@ func UpgradeSlashing(ctx context.Context, def app.Definition, cfg Config) error 
 	return ugpradeSlashing(ctx, s, c)
 }
 
+// DeployStaking deploys the Staking predeploy implementation.
+func DeployStaking(ctx context.Context, def app.Definition, cfg Config) error {
+	s := setup(def, cfg)
+
+	c, err := setupChain(ctx, s, omniEVMName)
+	if err != nil {
+		return errors.Wrap(err, "setup chain")
+	}
+
+	return deployStaking(ctx, s, c)
+}
+
 // UpgradeStaking upgrades the Staking predeploy.
 func UpgradeStaking(ctx context.Context, def app.Definition, cfg Config) error {
 	s := setup(def, cfg)
@@ -233,6 +245,22 @@ func ugpradeSlashing(ctx context.Context, s shared, c chain) error {
 	return nil
 }
 
+func deployStaking(ctx context.Context, s shared, c chain) error {
+	calldata, err := adminABI.Pack("deployStaking", s.deployer)
+	if err != nil {
+		return errors.Wrap(err, "pack calldata")
+	}
+
+	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.deployer)
+	if err != nil {
+		return errors.Wrap(err, "run forge", "out", out)
+	}
+
+	log.Info(ctx, "Staking deployed ✅", "chain", c.Name, "out", out)
+
+	return nil
+}
+
 func upgradeStaking(ctx context.Context, s shared, c chain) error {
 	// Uncomment and update following block if re-initialization is required
 	/*
@@ -246,12 +274,12 @@ func upgradeStaking(ctx context.Context, s shared, c chain) error {
 
 	initializer := []byte{}
 
-	calldata, err := adminABI.Pack("upgradeStaking", s.upgrader, s.deployer, initializer)
+	calldata, err := adminABI.Pack("upgradeStaking", s.upgrader, initializer)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
 
-	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader)
 	if err != nil {
 		return errors.Wrap(err, "run forge", "out", out)
 	}

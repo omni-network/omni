@@ -26,6 +26,7 @@ func newAdminCmd(def *app.Definition) *cobra.Command {
 		newUpgradeFeeOracleV1Cmd(def, &cfg),
 		newUpgradeGasStationCmd(def, &cfg),
 		newUpgradeGasPumpCmd(def, &cfg),
+		newDeployStakingCmd(def, &cfg),
 		newUpgradeStakingCmd(def, &cfg),
 		newUpgradeSlashingCmd(def, &cfg),
 		newUpgradeBridgeNativeCmd(def, &cfg),
@@ -155,6 +156,18 @@ func newUpgradeGasPumpCmd(def *app.Definition, cfg *admin.Config) *cobra.Command
 		Short: "Upgrade OmniGasPump contracts.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return admin.UpgradeGasPump(cmd.Context(), *def, *cfg)
+		},
+	}
+
+	return cmd
+}
+
+func newDeployStakingCmd(def *app.Definition, cfg *admin.Config) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "deploy-staking",
+		Short: "Deploy the Staking predeploy.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.DeployStaking(cmd.Context(), *def, *cfg)
 		},
 	}
 
