@@ -1,1 +1,1 @@
-nightly-58bf161bc9dd6e74de8cb61e3ae23f701feb5512
+stable
