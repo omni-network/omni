@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -174,13 +175,37 @@ func maybeAll(chains []types.EVMChain, chain string, exclude []string) ([]string
 
 func (s shared) runForge(ctx context.Context, rpc string, input []byte, senders ...common.Address,
 ) (string, error) {
-	return runForge(ctx, rpc, input, s.cfg.Broadcast, senders...)
+	resume := false
+	attempts := 0
+	const maxAttempts = 6
+
+	// Retrying lets us resume resumes submitting transactions that failed or timed-out previously.
+	// This is a temporarary workaround until foundry lets us increase tx timeout.
+	// See https://github.com/foundry-rs/foundry/issues/9303
+
+	for {
+		if attempts >= 1 {
+			resume = true
+		}
+
+		out, err := runForgeOnce(ctx, rpc, input, s.cfg.Broadcast, resume, senders...)
+		if err == nil {
+			return out, nil
+		}
+
+		attempts++
+		if attempts >= maxAttempts {
+			return out, errors.Wrap(err, "max attempts reached", "out", out)
+		}
+
+		log.Warn(ctx, "Run failed, will retry", err, "attempts", attempts, "remaining", maxAttempts-attempts)
+	}
 }
 
 // runForge runs an Admin forge script against an rpc, returning the ouptut.
 // if the senders are known anvil accounts, it will sign with private keys directly.
 // otherwise, it will use the unlocked flag.
-func runForge(ctx context.Context, rpc string, input []byte, broadcast bool, senders ...common.Address,
+func runForgeOnce(ctx context.Context, rpc string, input []byte, broadcast, resume bool, senders ...common.Address,
 ) (string, error) {
 	// name of admin forge script in contracts/core
 	const script = "Admin"
@@ -208,6 +233,11 @@ func runForge(ctx context.Context, rpc string, input []byte, broadcast bool, sen
 	if broadcast {
 		// if omitted, transactions are not broadcasted
 		args = append(args, "--broadcast")
+	}
+
+	if resume {
+		// resumes submitting transactions that failed or timed-out previously.
+		args = append(args, "--resume")
 	}
 
 	if len(pks) > 0 {
