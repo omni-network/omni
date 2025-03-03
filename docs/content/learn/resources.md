@@ -19,3 +19,4 @@ Below is a list of resources that may be helpful as you explore Omni:
 - [Sigma Prime AVS Review](https://docs.omni.network/sigma-prime-avs.pdf)
 - [Zellic AVS Review](https://docs.omni.network/zellic-avs.pdf)
 - [Spearbit Solidity Review](https://docs.omni.network/spearbit-solidity.pdf)
+- [Cantina Competition](https://docs.omni.network/cantina.pdf)
