@@ -18,6 +18,7 @@ import (
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
@@ -44,6 +45,13 @@ func Run(ctx context.Context, cfg Config) error {
 	log.Info(ctx, "Starting solver service")
 
 	buildinfo.Instrument(ctx)
+
+	tracerID := tracer.Identifiers{Network: cfg.Network, Service: "solver"}
+	stopTracer, err := tracer.Init(ctx, tracerID, cfg.Tracer)
+	if err != nil {
+		return err
+	}
+	defer stopTracer(ctx) //nolint:errcheck // Tracing shutdown errors not critical
 
 	// Start monitoring first, so app is "up"
 	monitorChan := serveMonitoring(cfg.MonitoringAddr)

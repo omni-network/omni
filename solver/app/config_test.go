@@ -20,6 +20,7 @@ func TestDefaultConfigReference(t *testing.T) {
 
 	cfg := solver.DefaultConfig()
 	cfg.LoadGenPrivKey = "loadgen.key"
+	cfg.Tracer.Endpoint = "http://localhost:1234"
 
 	path := filepath.Join(tempDir, "solver.toml")
 

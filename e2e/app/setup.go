@@ -551,7 +551,8 @@ func writeSolverConfig(ctx context.Context, def Definition, logCfg log.Config) e
 	solverCfg.LoadGenPrivKey = loadGenKeyFile
 	solverCfg.Network = def.Testnet.Network
 	solverCfg.RPCEndpoints = endpoints
-	solverCfg.FeatureFlags = def.Manifest.FeatureFlags
+	solverCfg.Tracer.Endpoint = def.Cfg.TracingEndpoint
+	solverCfg.Tracer.Headers = def.Cfg.TracingHeaders
 
 	if err := solverapp.WriteConfigTOML(solverCfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write solver config")
