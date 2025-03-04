@@ -2,6 +2,7 @@ package solve
 
 import (
 	"context"
+	"math/big"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/anvil"
@@ -16,7 +17,7 @@ import (
 	"cosmossdk.io/math"
 )
 
-func maybeFundSolver(ctx context.Context, network netconf.ID, backends ethbackend.Backends) error {
+func maybeFundERC20Solver(ctx context.Context, network netconf.ID, backends ethbackend.Backends) error {
 	// funding solver with l1 wsETH uses anvil_setStorageAt util, which is only available on devnet
 	if network != netconf.Devnet {
 		return nil
@@ -48,6 +49,22 @@ func maybeFundSolver(ctx context.Context, network netconf.ID, backends ethbacken
 		if err != nil {
 			return errors.Wrap(err, "fund tkn failed", "chain_id", tkn.chainID, "addr", tkn.addr)
 		}
+	}
+
+	return nil
+}
+
+// setSolverAccountNativeBalance calls anvil_setBalance to set the solver account native balance to a certain amount.
+func setSolverAccountNativeBalance(ctx context.Context, chainID uint64, backends ethbackend.Backends, amt *big.Int) error {
+	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
+
+	ethCl, ok := backends.Clients()[chainID]
+	if !ok {
+		return errors.New("eth client not found", "chain_id", chainID)
+	}
+
+	if err := anvil.FundAccounts(ctx, ethCl, amt, solver); err != nil {
+		return errors.Wrap(err, "set solver account balance failed")
 	}
 
 	return nil

@@ -56,6 +56,10 @@ func isSrcChainInvalid(o TestOrder) bool {
 	return o.SourceChainID == invalidChainID
 }
 
+func isInsufficientInventory(o TestOrder) bool {
+	return o.RejectReason == solver.RejectInsufficientInventory.String()
+}
+
 func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints) error {
 	if network.ID != netconf.Devnet {
 		return errors.New("only devnet")
@@ -76,7 +80,7 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 		return errors.Wrap(err, "mint omni")
 	}
 
-	if err = testCheckAPI(ctx, orders); err != nil {
+	if err = testCheckAPI(ctx, backends, orders); err != nil {
 		return errors.Wrap(err, "test check api")
 	}
 
@@ -339,7 +343,20 @@ func makeOrders() []TestOrder {
 		RejectReason:  solver.RejectDestCallReverts.String(),
 	})
 
-	// TODO: add insufficient inventory rejection test order
+	// insufficient inventory for native expense
+	orders = append(orders, TestOrder{
+		Owner:         users[0],
+		FillDeadline:  time.Now().Add(1 * time.Hour),
+		SourceChainID: evmchain.IDMockL2,
+		DestChainID:   evmchain.IDMockL1,
+		Expenses:      nativeExpense(validETHSpend),
+		Calls:         nativeTransferCall(validETHSpend, users[0]),
+		Deposit:       nativeDeposit(maxETHSpend),
+		ShouldReject:  true,
+		RejectReason:  solver.RejectInsufficientInventory.String(),
+	})
+
+	// TODO: add test order for insufficient inventory for ERC20 expenses
 
 	return orders
 }
@@ -350,7 +367,7 @@ func openAll(ctx context.Context, backends ethbackend.Backends, orders []TestOrd
 	var eg errgroup.Group
 	for _, order := range orders {
 		eg.Go(func() error {
-			if isSrcChainInvalid(order) || isDepositTokenInvalid(order) || srcAndDestChainAreSame(order) {
+			if isSrcChainInvalid(order) || isDepositTokenInvalid(order) || srcAndDestChainAreSame(order) || isInsufficientInventory(order) {
 				return nil
 			}
 
@@ -384,71 +401,80 @@ func openOrder(ctx context.Context, backends ethbackend.Backends, order TestOrde
 	}, solvernet.WithFillDeadline(order.FillDeadline))
 }
 
-func testCheckAPI(ctx context.Context, orders []TestOrder) error {
+func testCheckAPI(ctx context.Context, backends ethbackend.Backends, orders []TestOrder) error {
 	const url = "http://localhost:26661/api/v1/check"
 
-	var eg errgroup.Group
 	for i, order := range orders {
-		eg.Go(func() error {
-			checkReq := solver.CheckRequest{
-				FillDeadline:       uint32(order.FillDeadline.Unix()), //nolint:gosec // this is fine for tests
-				SourceChainID:      order.SourceChainID,
-				DestinationChainID: order.DestChainID,
-				Expenses:           expensesFromBindings(order.Expenses),
-				Calls:              callsFromBindings(order.Calls),
-				Deposit:            addrAmtFromDeposit(order.Deposit),
+		// If this order requires balance draining, do it before test logic.
+		if isInsufficientInventory(order) {
+			// Drain solver native balance.
+			if err := setSolverAccountNativeBalance(ctx, order.DestChainID, backends, big.NewInt(0)); err != nil {
+				return errors.Wrap(err, "drain solver account failed")
 			}
+		}
 
-			body, err := json.Marshal(checkReq)
-			if err != nil {
-				return errors.Wrap(err, "marshal request")
+		checkReq := solver.CheckRequest{
+			FillDeadline:       uint32(order.FillDeadline.Unix()), //nolint:gosec // this is fine for tests
+			SourceChainID:      order.SourceChainID,
+			DestinationChainID: order.DestChainID,
+			Expenses:           expensesFromBindings(order.Expenses),
+			Calls:              callsFromBindings(order.Calls),
+			Deposit:            addrAmtFromDeposit(order.Deposit),
+		}
+
+		body, err := json.Marshal(checkReq)
+		if err != nil {
+			return errors.Wrap(err, "marshal request")
+		}
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(body))
+		if err != nil {
+			return errors.Wrap(err, "new request")
+		}
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return errors.Wrap(err, "do request")
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			return errors.New("bad status", "status", resp.StatusCode)
+		}
+
+		var checkResp solver.CheckResponse
+		if err = json.NewDecoder(resp.Body).Decode(&checkResp); err != nil {
+			return errors.Wrap(err, "decode response")
+		}
+
+		if err = resp.Body.Close(); err != nil {
+			return errors.Wrap(err, "close response body")
+		}
+
+		if checkResp.Rejected != order.ShouldReject {
+			return errors.New("unexpected rejection",
+				"expected", order.ShouldReject,
+				"actual", checkResp.Rejected,
+				"reason", checkResp.RejectReason,
+				"description", checkResp.RejectDescription,
+				"order_idx", i,
+			)
+		}
+
+		if checkResp.RejectReason != order.RejectReason {
+			return errors.New("unexpected reject reason", "expected", order.RejectReason, "actual", checkResp.RejectReason)
+		}
+
+		if checkResp.Accepted && order.ShouldReject {
+			return errors.New("accepted but should reject")
+		}
+
+		// Refund solver native balance after test logic.
+		if isInsufficientInventory(order) {
+			eth1m := math.NewInt(1_000_000).MulRaw(params.Ether).BigInt()
+			if err := setSolverAccountNativeBalance(ctx, order.DestChainID, backends, eth1m); err != nil {
+				return errors.Wrap(err, "refund solver account failed")
 			}
-
-			req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(body))
-			if err != nil {
-				return errors.Wrap(err, "new request")
-			}
-
-			resp, err := http.DefaultClient.Do(req)
-			if err != nil {
-				return errors.Wrap(err, "do request")
-			}
-
-			defer resp.Body.Close()
-
-			if resp.StatusCode != http.StatusOK {
-				return errors.New("bad status", "status", resp.StatusCode)
-			}
-
-			var checkResp solver.CheckResponse
-			if err = json.NewDecoder(resp.Body).Decode(&checkResp); err != nil {
-				return errors.Wrap(err, "decode response")
-			}
-
-			if checkResp.Rejected != order.ShouldReject {
-				return errors.New("unexpected rejection",
-					"expected", order.ShouldReject,
-					"actual", checkResp.Rejected,
-					"reason", checkResp.RejectReason,
-					"description", checkResp.RejectDescription,
-					"idx", i,
-				)
-			}
-
-			if checkResp.RejectReason != order.RejectReason {
-				return errors.New("unexpected reject reason", "expected", order.RejectReason, "actual", checkResp.RejectReason)
-			}
-
-			if checkResp.Accepted && order.ShouldReject {
-				return errors.New("accepted but should reject")
-			}
-
-			return nil
-		})
-	}
-
-	if err := eg.Wait(); err != nil {
-		return errors.Wrap(err, "wait checks")
+		}
 	}
 
 	log.Info(ctx, "Test /check success")
