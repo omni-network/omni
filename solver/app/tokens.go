@@ -208,9 +208,9 @@ func mocks() []Token {
 
 	// Add manually deployed tokens that aren't part of the automatic mock deployment
 	tkns = append(tkns,
-		mockOMNI(evmchain.IDBaseSepolia, common.HexToAddress("0xb8f8d179270FFe7C6C5766819DCD6a8b76f8403b")),
-		mockOMNI(evmchain.IDOpSepolia, common.HexToAddress("0x87590BBeEC6ec190d1af7D88d90a16585dF48fFC")),
-		mockOMNI(evmchain.IDArbSepolia, common.HexToAddress("0x0DE57e38bF1FC27E6C228F15041a0e590586A3ee")),
+		mockOMNI(evmchain.IDBaseSepolia, common.HexToAddress("0xe4075366F03C286846dECE8AAF104cF2a542294d")),
+		mockOMNI(evmchain.IDOpSepolia, common.HexToAddress("0x0b3AED256a51919b660fF79a280A309EecA9d688")),
+		mockOMNI(evmchain.IDArbSepolia, common.HexToAddress("0xd859f9Ff3C9700fB623Dc8e76217ba2a9f8613F0")),
 	)
 
 	return tkns
