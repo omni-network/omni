@@ -64,6 +64,13 @@ contract MockSolverNetInbox is ReentrancyGuard, IOriginSettler {
         return _resolve(orderData, _nextId());
     }
 
+    // Currently unused
+    function resolveFor(GaslessCrossChainOrder calldata order, bytes calldata)
+        external
+        view
+        returns (ResolvedCrossChainOrder memory)
+    { }
+
     function open(OnchainCrossChainOrder calldata order) external payable nonReentrant {
         SolverNet.Order memory orderData = _validate(order);
         _processDeposit(orderData.deposit);
@@ -71,6 +78,13 @@ contract MockSolverNetInbox is ReentrancyGuard, IOriginSettler {
 
         emit Open(resolved.orderId, resolved);
     }
+
+    // Currently unused
+    function openFor(GaslessCrossChainOrder calldata order, bytes calldata signature, bytes calldata)
+        external
+        payable
+        nonReentrant
+    { }
 
     function _nextId() internal view returns (bytes32) {
         return bytes32(_lastId + 1);
