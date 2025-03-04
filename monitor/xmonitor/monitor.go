@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
@@ -20,6 +21,18 @@ func Start(
 	cprovider cchain.Provider,
 	rpcClients map[uint64]ethclient.Client,
 ) error {
+	{
+		meta, _ := evmchain.MetadataByID(evmchain.IDHolesky)
+		holesky := netconf.Chain{ID: meta.ChainID, Name: meta.Name}
+		if cl, ok := rpcClients[holesky.ID]; ok && evmchain.IsDisabled(holesky.ID) {
+			log.Info(ctx, "Starting head monitoring of disabled Holesky")
+			headsFunc := func(ctx context.Context) map[ethclient.HeadType]uint64 {
+				return getEVMHeads(ctx, cl)
+			}
+			go monitorHeadsForever(ctx, holesky, headsFunc)
+		}
+	}
+
 	// Monitor the head of all chains, including consensus.
 	for _, srcChain := range network.Chains {
 		headsFunc := func(ctx context.Context) map[ethclient.HeadType]uint64 {

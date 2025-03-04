@@ -136,6 +136,11 @@ func containsAll(network Network, expected []string) bool {
 func networkFromPortals(ctx context.Context, network ID, portals []bindings.PortalRegistryDeployment) (Network, error) {
 	var chains []Chain
 	for _, portal := range portals {
+		if evmchain.IsDisabled(portal.ChainId) {
+			log.Warn(ctx, "Ignoring disabled network portal", nil, "chain", portal.Name)
+			continue
+		}
+
 		// PortalRegistry guarantees BlockPeriod <= MaxInt64, but we check here to be safe.
 		periodNanos, err := umath.ToInt64(portal.BlockPeriodNs)
 		if err != nil {

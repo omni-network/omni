@@ -193,3 +193,9 @@ var static = map[uint64]Metadata{
 		NativeToken: tokens.ETH,
 	},
 }
+
+// IsDisabled returns true if the chain is disabled.
+// TODO(corver): Remove once holesky issue resolved.
+func IsDisabled(id uint64) bool {
+	return id == IDHolesky
+}
