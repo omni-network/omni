@@ -120,6 +120,12 @@ func AwaitOnConsensusChain(ctx context.Context, netID ID, cprov cchain.Provider,
 
 // containsAll returns true if the network contains the all expected chains (by name or ID).
 func containsAll(network Network, expected []string) bool {
+	if network.ID != Devnet {
+		// Only wait for expected chains on devnet.
+		// Since portal registration already done on other networks.
+		return true
+	}
+
 	want := make(map[string]struct{}, len(expected))
 	for _, name := range expected {
 		want[name] = struct{}{}
