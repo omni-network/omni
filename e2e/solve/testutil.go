@@ -62,15 +62,15 @@ func contractCallWithInvalidCallData() []solvernet.Call {
 	}}
 }
 
-func nativeExpense(amt *big.Int) solvernet.Expenses {
+func nativeExpense(amt *big.Int) []solvernet.Expense {
 	return []solvernet.Expense{{Amount: amt}}
 }
 
-func unsupportedExpense(amt *big.Int) solvernet.Expenses {
+func unsupportedExpense(amt *big.Int) []solvernet.Expense {
 	return []solvernet.Expense{{Amount: amt, Token: invalidTokenAddress}}
 }
 
-func invalidExpense() solvernet.Expenses {
+func invalidExpense() []solvernet.Expense {
 	return nativeExpense(big.NewInt(params.Ether))
 }
 
@@ -148,7 +148,7 @@ func addrAmtFromDeposit(d solvernet.Deposit) solver.AddrAmt {
 	return solver.AddrAmt{Token: d.Token, Amount: d.Amount}
 }
 
-func callsFromBindings(calls solvernet.Calls) []solver.Call {
+func callsFromBindings(calls []solvernet.Call) []solver.Call {
 	var resp []solver.Call
 	for _, c := range calls {
 		resp = append(resp, solver.Call(c))
@@ -157,7 +157,7 @@ func callsFromBindings(calls solvernet.Calls) []solver.Call {
 	return resp
 }
 
-func expensesFromBindings(expenses solvernet.Expenses) []solver.Expense {
+func expensesFromBindings(expenses []solvernet.Expense) []solver.Expense {
 	var resp []solver.Expense
 	for _, e := range expenses {
 		resp = append(resp, solver.Expense(e))

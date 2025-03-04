@@ -67,45 +67,53 @@ type Call struct {
 	Data   []byte
 }
 
+// ToBinding converts a Call to a bindings.SolverNetCall.
+// Specifically, it splits the Data field into Selector and Params.
+func (c Call) ToBinding() bindings.SolverNetCall {
+	var selector [4]byte
+	if len(c.Data) >= 4 {
+		copy(selector[:], c.Data[:4])
+	}
+
+	var params []byte
+	if len(c.Data) > 4 {
+		params = make([]byte, len(c.Data)-4)
+		copy(params, c.Data[4:])
+	}
+
+	return bindings.SolverNetCall{
+		Target:   c.Target,
+		Value:    c.Value,
+		Selector: selector,
+		Params:   params,
+	}
+}
+
 type (
 	Expense = bindings.SolverNetTokenExpense
 	Deposit = bindings.SolverNetDeposit
-
-	Expenses []Expense
-	Calls    []Call
 )
 
-func (cs Calls) ToBindings() []bindings.SolverNetCall {
+// CallsToBindings is a convenience function to convert a slice of Calls to a slice of bindings.SolverNetCall.
+func CallsToBindings(calls []Call) []bindings.SolverNetCall {
 	var out []bindings.SolverNetCall
-	for _, c := range cs {
-		var selector [4]byte
-		if len(c.Data) >= 4 {
-			copy(selector[:], c.Data[:4])
-		}
-
-		var params []byte
-		if len(c.Data) > 4 {
-			params = make([]byte, len(c.Data)-4)
-			copy(params, c.Data[4:])
-		}
-
-		out = append(out, bindings.SolverNetCall{
-			Target:   c.Target,
-			Value:    c.Value,
-			Selector: selector,
-			Params:   params,
-		})
+	for _, c := range calls {
+		out = append(out, c.ToBinding())
 	}
 
 	return out
 }
 
-func (es Expenses) NoNative() Expenses {
-	var out Expenses
-	for _, e := range es {
-		if !isNative(e) {
-			out = append(out, e)
+// FilterNativeExpenses filters out native expenses.
+// Specifying explicit native expenses is not required (not valid), since
+// they are automatically inferred from calls (having non-zero value).
+func FilterNativeExpenses(expenses []Expense) []Expense {
+	var out []Expense
+	for _, e := range expenses {
+		if isNative(e) {
+			continue
 		}
+		out = append(out, e)
 	}
 
 	return out

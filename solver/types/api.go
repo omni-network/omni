@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"math/big"
 
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 
@@ -186,17 +187,17 @@ func unmarshal(bz []byte, v any) error {
 	return nil
 }
 
-func CallsToBindings(calls []Call) solvernet.Calls {
-	var resp solvernet.Calls
+func CallsToBindings(calls []Call) []bindings.SolverNetCall {
+	var resp []bindings.SolverNetCall
 	for _, c := range calls {
-		resp = append(resp, solvernet.Call(c))
+		resp = append(resp, solvernet.Call(c).ToBinding())
 	}
 
 	return resp
 }
 
-func ExpensesToBindings(expenses []Expense) solvernet.Expenses {
-	var resp solvernet.Expenses
+func ExpensesToBindings(expenses []Expense) []solvernet.Expense {
+	var resp []solvernet.Expense
 	for _, e := range expenses {
 		resp = append(resp, solvernet.Expense(e))
 	}

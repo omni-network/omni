@@ -73,13 +73,13 @@ func orderData(
 			Token:  depositWithFee.Token.Address,
 			Amount: depositWithFee.Amount,
 		},
-		Calls: solvernet.Calls{
+		Expenses: []solvernet.Expense{},
+		Calls: []bindings.SolverNetCall{
 			{
 				Target: owner,
 				Value:  expense.Amount,
-				Data:   nil,
 			},
-		}.ToBindings(),
+		},
 	}
 
 	return orderData, nil

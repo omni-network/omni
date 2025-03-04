@@ -98,8 +98,8 @@ func getFillOriginData(req types.CheckRequest) ([]byte, error) {
 		FillDeadline: req.FillDeadline,
 		SrcChainId:   req.SourceChainID,
 		DestChainId:  req.DestinationChainID,
-		Expenses:     types.ExpensesToBindings(req.Expenses).NoNative(),
-		Calls:        types.CallsToBindings(req.Calls).ToBindings(),
+		Expenses:     solvernet.FilterNativeExpenses(types.ExpensesToBindings(req.Expenses)),
+		Calls:        types.CallsToBindings(req.Calls),
 	}
 
 	fillOriginDataBz, err := solvernet.PackFillOriginData(fillOriginData)

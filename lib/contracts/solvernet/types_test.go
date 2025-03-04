@@ -8,6 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/params"
 
 	"github.com/stretchr/testify/require"
 )
@@ -15,7 +16,7 @@ import (
 func TestCallBindings(t *testing.T) {
 	t.Parallel()
 
-	calls := solvernet.Calls{
+	calls := []solvernet.Call{
 		{
 			Value:  ether(1),
 			Target: common.HexToAddress("0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4"),
@@ -42,7 +43,7 @@ func TestCallBindings(t *testing.T) {
 		},
 	}
 
-	bindings := calls.ToBindings()
+	bindings := solvernet.CallsToBindings(calls)
 
 	require.Len(t, bindings, 4)
 
@@ -72,5 +73,5 @@ func TestCallBindings(t *testing.T) {
 }
 
 func ether(x int64) *big.Int {
-	return new(big.Int).Mul(big.NewInt(x), big.NewInt(1e18))
+	return new(big.Int).Mul(big.NewInt(x), big.NewInt(params.Ether))
 }

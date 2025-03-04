@@ -33,8 +33,8 @@ type TestOrder struct {
 	FillDeadline  time.Time
 	DestChainID   uint64
 	SourceChainID uint64
-	Expenses      solvernet.Expenses
-	Calls         solvernet.Calls
+	Expenses      []solvernet.Expense
+	Calls         []solvernet.Call
 	Deposit       solvernet.Deposit
 	ShouldReject  bool
 	RejectReason  string
@@ -395,8 +395,8 @@ func openAll(ctx context.Context, backends ethbackend.Backends, orders []TestOrd
 func openOrder(ctx context.Context, backends ethbackend.Backends, order TestOrder) ([32]byte, error) {
 	return solvernet.OpenOrder(ctx, netconf.Devnet, order.SourceChainID, backends, order.Owner, bindings.SolverNetOrderData{
 		DestChainId: order.DestChainID,
-		Expenses:    order.Expenses.NoNative(),
-		Calls:       order.Calls.ToBindings(),
+		Expenses:    solvernet.FilterNativeExpenses(order.Expenses),
+		Calls:       solvernet.CallsToBindings(order.Calls),
 		Deposit:     order.Deposit,
 	}, solvernet.WithFillDeadline(order.FillDeadline))
 }
