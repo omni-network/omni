@@ -7,6 +7,7 @@ test('type: useParseOpenEvent return', () => {
     status: 'pending',
     logs: [],
   })
+  // TODO replace return type as it doesnt assert exact type
   expectTypeOf(result.resolvedOrder).toEqualTypeOf<
     ReturnType<typeof useParseOpenEvent>['resolvedOrder'] | undefined
   >()

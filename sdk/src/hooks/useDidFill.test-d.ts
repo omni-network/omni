@@ -7,5 +7,6 @@ test('type: useDidFill return', () => {
     destChainId: 1,
     resolvedOrder,
   })
+  // TODO replace return type as it doesnt assert exact type
   expectTypeOf(result).toEqualTypeOf<ReturnType<typeof useDidFill>>()
 })
