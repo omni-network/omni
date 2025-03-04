@@ -103,14 +103,6 @@ test('default', async () => {
   await waitFor(() => result.current.resolvedOrder?.orderId === orderId)
 })
 
-// TODO
-test('parameters: status', () => {})
-
-// TODO
-test('parameters: logs', () => {})
-
-// TODO: assert decodeEventLog not called via spy/mock
-// vi.mock('./src/calculator.ts', { spy: true })
 test('behaviour: no parsing when status is pending', () => {
   const { result } = renderHook(
     () =>
@@ -124,7 +116,6 @@ test('behaviour: no parsing when status is pending', () => {
   expect(result.current.resolvedOrder).toBeUndefined()
 })
 
-// TODO: assert decodeEventLog not called via spy/mock
 test('behaviour: no parsing when logs is undefined', () => {
   const { result } = renderHook(
     () =>
