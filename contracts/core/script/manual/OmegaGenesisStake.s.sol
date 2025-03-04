@@ -18,13 +18,13 @@ contract OmegaGenesisStakeScript is Script {
     CompleteMerkle internal m;
 
     ICreateX internal createX = ICreateX(0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed);
-    IERC20 internal omni = IERC20(0xb8f8d179270FFe7C6C5766819DCD6a8b76f8403b); // Base Sepolia, Sepolia: 0xD036C60f46FF51dd7Fbf6a819b5B171c8A076b07
+    IERC20 internal omni = IERC20(0xe4075366F03C286846dECE8AAF104cF2a542294d); // Base Sepolia, Sepolia: 0xD036C60f46FF51dd7Fbf6a819b5B171c8A076b07
     IOmniPortal internal portal = IOmniPortal(0xcB60A0451831E4865bC49f41F9C67665Fc9b75C3);
     ISolverNetInbox internal inbox = ISolverNetInbox(0x80b6Ed465241a17080DC4A68bE42e80FEa1214DD);
 
-    GenesisStake internal genesisStake = GenesisStake(0xA1656D90F3F06d65B38Ff23a13183b82Ca98ee5d);
+    GenesisStake internal genesisStake = GenesisStake(0xB790cDF155d5739d483Bc3a14970c298D1691f0a);
     DebugMerkleDistributorWithDeadline internal merkleDistributor =
-        DebugMerkleDistributorWithDeadline(0x2B683C7BCa23a96Fb172464423bE3926904cCd19);
+        DebugMerkleDistributorWithDeadline(0x5B46d1fA23584c071fa5478D709A189c452Eb050);
 
     uint256 internal endTime = block.timestamp + 30 days;
     uint256 internal depositAmount = 100 ether;
