@@ -4,10 +4,11 @@ public_chains = ["holesky","op_sepolia", "base_sepolia","arb_sepolia"]
 multi_omni_evms = true
 prometheus = true
 
-pinned_halo_tag = "v0.13.0"
-pinned_relayer_tag = "8622c0c"
-pinned_monitor_tag = "8622c0c"
-pinned_solver_tag = "6a22bac"
+# c9b8f2c disables holesky
+pinned_halo_tag = "c9b8f2c"
+pinned_relayer_tag = "c9b8f2c"
+pinned_monitor_tag = "c9b8f2c"
+pinned_solver_tag = "c9b8f2c"
 
 [node.validator01]
 [node.validator02]
