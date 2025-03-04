@@ -7,7 +7,6 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
@@ -25,7 +24,7 @@ func maybeFundERC20Solver(ctx context.Context, network netconf.ID, backends ethb
 		return nil
 	}
 
-	// erc20 tokens to fund solver with on devnet. useful for solvernet development when forking public networks.
+	// erc20 tokens to fund solver with on devnet. useful for solvernet development when forking public networks
 	toFund := []struct {
 		chainID uint64
 		addr    common.Address
@@ -37,6 +36,7 @@ func maybeFundERC20Solver(ctx context.Context, network netconf.ID, backends ethb
 	}
 
 	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
+	eth1m := math.NewInt(1_000_000).MulRaw(params.Ether).BigInt()
 
 	for _, tkn := range toFund {
 		ethCl, ok := backends.Clients()[tkn.chainID]
@@ -44,11 +44,10 @@ func maybeFundERC20Solver(ctx context.Context, network netconf.ID, backends ethb
 			continue
 		}
 
-		eth1m := math.NewInt(1_000_000).MulRaw(params.Ether).BigInt()
-
 		// if devnet is not forking the public chain tkn is deployed on, this sets
 		// storage on an unused address, which is fine
-		if err := anvil.FundERC20(ctx, ethCl, tkn.addr, eth1m, solver); err != nil {
+		err := anvil.FundERC20(ctx, ethCl, tkn.addr, eth1m, solver)
+		if err != nil {
 			return errors.Wrap(err, "fund tkn failed", "chain_id", tkn.chainID, "addr", tkn.addr)
 		}
 	}
@@ -56,46 +55,26 @@ func maybeFundERC20Solver(ctx context.Context, network netconf.ID, backends ethb
 	return nil
 }
 
-// setSolverAccountBalance calls anvil_setBalance to set the solver account to a passed amount.
-func setSolverAccountBalance(ctx context.Context, backends ethbackend.Backends, amt *big.Int) error {
-	toFund := []struct {
-		chainID uint64
-		addr    common.Address
-	}{
-		// holesky wstETH
-		{chainID: evmchain.IDMockL1, addr: common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")},
-		// holesky stETH
-		{chainID: evmchain.IDMockL1, addr: common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")},
-	}
-
+// setSolverAccountNativeBalance calls anvil_setBalance to set the solver account to a passed amount.
+func setSolverAccountNativeBalance(ctx context.Context, backends ethbackend.Backends, amt *big.Int) error {
 	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
+	chainID := evmchain.IDMockL1
 
-	for _, tkn := range toFund {
-		ethCl, ok := backends.Clients()[tkn.chainID]
-		if !ok {
-			continue
-		}
-
-		if err := anvil.FundAccounts(ctx, ethCl, amt, solver); err != nil {
-			return errors.Wrap(err, "set solver account balance failed")
-		}
-
-		if err := checkAccountBalance(ctx, ethCl, solver, tkn.addr, tkn.chainID); err != nil {
-			return errors.Wrap(err, "get solver account balance failed")
-		}
+	ethCl, ok := backends.Clients()[chainID]
+	if !ok {
+		return errors.New("eth client not found", "chain_id", chainID)
 	}
 
-	return nil
-}
+	if err := anvil.FundAccounts(ctx, ethCl, amt, solver); err != nil {
+		return errors.Wrap(err, "set solver account balance failed")
+	}
 
-// checkAccountBalance checks the account balance of any given account address.
-func checkAccountBalance(ctx context.Context, ethCl ethclient.Client, accAddr common.Address, tknAddr common.Address, tknChainID uint64) error {
-	balance, err := ethCl.BalanceAt(ctx, accAddr, nil)
+	balance, err := ethCl.BalanceAt(ctx, solver, nil)
 	if err != nil {
-		return errors.Wrap(err, "get account balance failed", "chain_id", tknChainID, "addr", tknAddr)
+		return errors.Wrap(err, "get account balance failed", "chain_id", chainID)
 	}
 
-	log.Info(ctx, "Current Solver Balance", "balance", balance.String(), "chain_id", tknChainID, "addr", tknAddr)
+	log.Debug(ctx, "Current Solver Balance", "balance", balance.String(), "chain_id", chainID)
 
 	return nil
 }
