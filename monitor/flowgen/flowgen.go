@@ -54,19 +54,20 @@ func Start(
 
 	for _, job := range jobs {
 		go func() {
-			ticker := time.NewTicker(job.Cadence)
-			defer ticker.Stop()
+			timer := time.NewTimer(0)
+			defer timer.Stop()
 
 			for {
 				select {
 				case <-ctx.Done():
 					return
-				case <-ticker.C:
+				case <-timer.C:
 					jobsTotal.Inc()
 					if err := run(log.WithCtx(ctx, "job", job.Name), backends, job); err != nil {
 						log.Warn(ctx, "Flowgen: job failed (will retry)", err)
 						jobsFailed.Inc()
 					}
+					timer.Reset(job.Cadence)
 				}
 			}
 		}()
