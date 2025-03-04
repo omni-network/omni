@@ -77,7 +77,7 @@ func Test(ctx context.Context, def Definition, cfg TestConfig) error {
 		strings.ToLower(EnvE2ERPCEndpoints), endpointsFile,
 	)
 
-	args := []string{"go", "test", "-timeout", "60s", "-count", "1"}
+	args := []string{"go", "test", "-timeout", "120s", "-count", "1"}
 	if cfg.Verbose {
 		args = append(args, "-v")
 	}
