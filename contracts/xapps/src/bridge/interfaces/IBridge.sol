@@ -81,6 +81,11 @@ interface IBridge {
     event TokenMintFailed(address indexed token, address indexed to, uint256 value);
 
     /**
+     * @dev Event emitted when a token transfer fails.
+     */
+    event TokenTransferFailed(address indexed token, address indexed to, uint256 value);
+
+    /**
      * @dev Event emitted when a lockbox withdrawal fails.
      */
     event LockboxWithdrawalFailed(address indexed badLockbox, address indexed to, uint256 value);
@@ -167,8 +172,9 @@ interface IBridge {
     function configureRoutes(uint64[] calldata chainIds, Route[] calldata routes) external;
 
     /**
-     * @dev Authorizes pending bridge routes.
-     * @param chainIds The chainIds for pending routes to authorize.
+     * @dev Authorizes pending bridge routes, manual specification prevents frontrunning.
+     * @param chainIds       The chainIds for pending routes to authorize.
+     * @param expectedRoutes The expected routes to authorize.
      */
-    function authorizeRoutes(uint64[] calldata chainIds) external;
+    function authorizeRoutes(uint64[] calldata chainIds, Route[] calldata expectedRoutes) external;
 }
