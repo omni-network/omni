@@ -58,9 +58,10 @@ func orderData(
 	if !ok {
 		return bindings.SolverNetOrderData{}, errors.New("token not found")
 	}
-	deposit := app.TokenAmt{Token: token, Amount: amount}
+	// Tokens that will be deposited to the user on the destination chain.
+	expense := app.TokenAmt{Token: token, Amount: amount}
 
-	depositWithFee, err := app.QuoteDeposit(deposit.Token, deposit)
+	depositWithFee, err := app.QuoteDeposit(expense.Token, expense)
 	if err != nil {
 		return bindings.SolverNetOrderData{}, errors.Wrap(err, "quote expense")
 	}
@@ -75,7 +76,7 @@ func orderData(
 		Calls: solvernet.Calls{
 			{
 				Target: owner,
-				Value:  deposit.Amount,
+				Value:  expense.Amount,
 				Data:   nil,
 			},
 		}.ToBindings(),
