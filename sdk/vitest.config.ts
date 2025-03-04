@@ -26,7 +26,7 @@ export default defineConfig({
       },
     ],
     coverage: {
-      reporter: ['lcov'],
+      reporter: ['text', 'json', 'html'],
       // TODO use lcov when running in CI
       // reporter: process.env.CI ? ['lcov'] : ['text', 'json', 'html'],
     },
