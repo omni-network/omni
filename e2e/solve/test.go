@@ -92,23 +92,6 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 
 	xprov := xprovider.New(network, backends.Clients(), nil)
 
-	proc := func(ctx context.Context, _ uint64, logs []types.Log) error {
-		for _, l := range logs {
-			event, ok := solvernet.EventByTopic(l.Topics[0])
-			if !ok {
-				return errors.New("unknown event", "topic", l.Topics[0])
-			}
-
-			id := solvernet.OrderID(l.Topics[1])
-
-			log.Info(ctx, "Order updated", "status", event.Status, "order", id)
-
-			tracker.setStatus(id, event.Status)
-		}
-
-		return nil
-	}
-
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -122,6 +105,23 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 				Height:        1,
 				FilterAddress: addrs.SolverNetInbox,
 				FilterTopics:  solvernet.AllEventTopics(),
+			}
+
+			proc := func(ctx context.Context, _ uint64, logs []types.Log) error {
+				for _, l := range logs {
+					event, ok := solvernet.EventByTopic(l.Topics[0])
+					if !ok {
+						return errors.New("unknown event", "topic", l.Topics[0])
+					}
+
+					id := solvernet.OrderID(l.Topics[1])
+
+					log.Info(ctx, "Order updated", "status", event.Status, "order", id)
+
+					tracker.setStatus(id, chain.ID, event.Status)
+				}
+
+				return nil
 			}
 
 			err := xprov.StreamEventLogs(ctx, req, proc)

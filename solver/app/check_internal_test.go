@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -58,11 +59,14 @@ func TestCheck(t *testing.T) {
 
 			require.Equal(t, http.StatusOK, rr.Code)
 
-			var res types.CheckResponse
-			err = json.NewDecoder(rr.Body).Decode(&res)
+			respBody, err := io.ReadAll(rr.Body)
 			require.NoError(t, err)
 
-			t.Logf("res: %+v", res)
+			var res types.CheckResponse
+			err = json.Unmarshal(respBody, &res)
+			require.NoError(t, err)
+
+			t.Logf("resp_body: %s", respBody)
 
 			require.Equal(t, tt.res.Rejected, res.Rejected)
 			require.Equal(t, tt.res.RejectReason, res.RejectReason)

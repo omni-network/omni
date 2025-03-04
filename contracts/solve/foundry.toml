@@ -15,6 +15,8 @@ allow_paths = ["../core"]
 ffi = true
 
 solc_version = "0.8.24"
+optimizer = true
+optimizer_runs = 200
 
 [fmt]
 bracket_spacing = true

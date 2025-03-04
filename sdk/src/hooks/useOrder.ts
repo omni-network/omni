@@ -15,6 +15,7 @@ import {
   DidFillError,
   GetOrderError,
   OpenError,
+  type ParseOpenEventError,
   TxReceiptError,
   ValidateOrderError,
 } from '../errors/base.js'
@@ -39,6 +40,7 @@ type UseOrderError =
   | GetOrderError
   | DidFillError
   | ValidateOrderError
+  | ParseOpenEventError
   | undefined
 
 type UseOrderReturnType = {
@@ -65,7 +67,7 @@ export function useOrder<abis extends OptionalAbis>(
   const { validateEnabled, ...order } = params
   const txMutation = useWriteContract()
   const wait = useWaitForTransactionReceipt({ hash: txMutation.data })
-  const { orderId, originData } = useParseOpenEvent({
+  const { resolvedOrder, error: parseOpenEventError } = useParseOpenEvent({
     status: wait.status,
     logs: wait.data?.logs,
   })
@@ -73,8 +75,11 @@ export function useOrder<abis extends OptionalAbis>(
   const connected = useChainId()
   const srcChainId = order.srcChainId ?? connected
   const destChainId = order.destChainId
-  const inboxStatus = useInboxStatus({ orderId, chainId: srcChainId })
-  const didFill = useDidFill({ destChainId, orderId, originData })
+  const inboxStatus = useInboxStatus({
+    orderId: resolvedOrder?.orderId,
+    chainId: srcChainId,
+  })
+  const didFill = useDidFill({ destChainId, resolvedOrder })
 
   const status = deriveStatus(
     inboxStatus,
@@ -116,11 +121,12 @@ export function useOrder<abis extends OptionalAbis>(
     didFill,
     validation,
     inboxStatus,
+    parseOpenEventError,
   })
 
   return {
     open,
-    orderId,
+    orderId: resolvedOrder?.orderId,
     validation,
     txHash: txMutation.data,
     status,
@@ -141,6 +147,7 @@ type DeriveErrorParams = {
   didFill: ReturnType<typeof useDidFill>
   validation: ReturnType<typeof useValidateOrder>
   inboxStatus: InboxStatus
+  parseOpenEventError?: ParseOpenEventError
 }
 
 function deriveError(params: DeriveErrorParams): UseOrderError {
@@ -156,6 +163,10 @@ function deriveError(params: DeriveErrorParams): UseOrderError {
 
   if (wait.error) {
     return new TxReceiptError(wait.error.message)
+  }
+
+  if (params.parseOpenEventError) {
+    return params.parseOpenEventError
   }
 
   if (didFill.error) {

@@ -7,7 +7,7 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/solver/types"
+	"github.com/omni-network/omni/lib/tracer"
 
 	"github.com/rs/cors"
 )
@@ -18,18 +18,19 @@ const (
 	endpointCheck     = "/api/v1/check"
 )
 
-type (
-	JSONErrorResponse = types.JSONErrorResponse
-)
-
 // serveAPI starts the API server, returning a async error.
 func serveAPI(address string, handlers ...Handler) <-chan error {
 	errChan := make(chan error)
 	go func() {
 		mux := http.NewServeMux()
 
+		// Add all handlers
 		for _, handler := range handlers {
-			mux.Handle(handler.Endpoint, instrumentHandler(handler.Endpoint, handlerAdapter(handler)))
+			fn := handlerAdapter(handler)
+			if !handler.SkipInstrument {
+				fn = instrumentHandler(handler.Endpoint, fn)
+			}
+			mux.Handle(handler.Endpoint, fn)
 		}
 
 		// Add health check endpoints (not instrumented)
@@ -73,17 +74,27 @@ func instrumentHandler(endpoint string, handler http.Handler) http.Handler {
 		t0 := time.Now()
 		iw := &instrumentWriter{ResponseWriter: w}
 
+		// Start trace
+		ctx, span := tracer.Start(r.Context(), "api")
+		defer span.End()
+		traceID := span.SpanContext().TraceID()
+		ctx = log.WithCtx(ctx, log.Hex7("tid", traceID[:]))
+		r = r.WithContext(ctx)
+
 		handler.ServeHTTP(iw, r)
 
 		latency := time.Since(t0)
 		apiLatency.WithLabelValues(endpoint).Observe(latency.Seconds())
 		apiResponses.WithLabelValues(endpoint, iw.StatusClass()).Inc()
 
-		log.Debug(r.Context(), "Served API request",
+		ip, typ := clientIP(r)
+		log.Debug(ctx, "Served API request",
 			"endpoint", endpoint,
 			"status", iw.StatusCode(),
 			"latency_millis", latency.Milliseconds(),
-			"client_ip", clientIP(r),
+			"client_ip", ip,
+			"client_ip_type", typ,
+			"user_agent", r.UserAgent(),
 		)
 	})
 }
@@ -117,15 +128,16 @@ func (w *instrumentWriter) StatusCode() int {
 	return w.status
 }
 
-func clientIP(r *http.Request) string {
+// clientIP returns the client IP address from the request and the type/header used.
+func clientIP(r *http.Request) (ip string, typ string) { //nolint:nonamedreturns // Disambiguate identical return types
 	for _, header := range []string{
 		"CF-Connecting-IP", // Use CloudFlare if present
 		"X-Forwarded-For",  // Otherwise GCP / AWS LB
 	} {
 		if ip := r.Header.Get(header); ip != "" {
-			return ip
+			return ip, header
 		}
 	}
 
-	return r.RemoteAddr // Fallback to remote address
+	return r.RemoteAddr, "RemoteAddr" // Fallback to remote address
 }

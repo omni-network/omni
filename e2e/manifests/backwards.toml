@@ -3,6 +3,7 @@ network = "devnet"
 anvil_chains = ["mock_l1", "mock_l2"]
 
 multi_omni_evms = true
+ephemeral_genesis = "1_uluwatu"
 
 [node.validator01]
 [node.validator02]

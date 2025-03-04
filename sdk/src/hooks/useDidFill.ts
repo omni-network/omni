@@ -1,25 +1,27 @@
-import type { Hex } from 'viem'
 import { useReadContract } from 'wagmi'
 import { outboxABI } from '../constants/abis.js'
 import { useOmniContext } from '../context/omni.js'
+import type { useParseOpenEvent } from './useParseOpenEvent.js'
 
 type UseDidFillParams = {
   destChainId: number
-  orderId?: Hex
-  originData?: Hex
+  resolvedOrder?: ReturnType<typeof useParseOpenEvent>['resolvedOrder']
 }
 
 export function useDidFill(params: UseDidFillParams) {
-  const { orderId, originData, destChainId } = params
+  const { resolvedOrder, destChainId } = params
   const { outbox } = useOmniContext()
   const filled = useReadContract({
     chainId: destChainId,
     address: outbox,
     abi: outboxABI,
     functionName: 'didFill',
-    args: orderId && originData ? [orderId, originData] : undefined,
+    args: resolvedOrder?.fillInstructions[0].originData
+      ? [resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData]
+      : undefined,
     query: {
-      enabled: !!orderId && !!originData,
+      enabled:
+        !!resolvedOrder && !!resolvedOrder.fillInstructions[0].originData,
       refetchInterval: 1000,
     },
   })
