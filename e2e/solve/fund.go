@@ -9,7 +9,6 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
-	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -55,10 +54,9 @@ func maybeFundERC20Solver(ctx context.Context, network netconf.ID, backends ethb
 	return nil
 }
 
-// setSolverAccountNativeBalance calls anvil_setBalance to set the solver account to a passed amount.
-func setSolverAccountNativeBalance(ctx context.Context, backends ethbackend.Backends, amt *big.Int) error {
+// setSolverAccountNativeBalance calls anvil_setBalance to set the solver account native balance to a certain amount.
+func setSolverAccountNativeBalance(ctx context.Context, chainID uint64, backends ethbackend.Backends, amt *big.Int) error {
 	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
-	chainID := evmchain.IDMockL1
 
 	ethCl, ok := backends.Clients()[chainID]
 	if !ok {
@@ -68,13 +66,6 @@ func setSolverAccountNativeBalance(ctx context.Context, backends ethbackend.Back
 	if err := anvil.FundAccounts(ctx, ethCl, amt, solver); err != nil {
 		return errors.Wrap(err, "set solver account balance failed")
 	}
-
-	balance, err := ethCl.BalanceAt(ctx, solver, nil)
-	if err != nil {
-		return errors.Wrap(err, "get account balance failed", "chain_id", chainID)
-	}
-
-	log.Debug(ctx, "Current Solver Balance", "balance", balance.String(), "chain_id", chainID)
 
 	return nil
 }

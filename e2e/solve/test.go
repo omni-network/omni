@@ -408,7 +408,7 @@ func testCheckAPI(ctx context.Context, backends ethbackend.Backends, orders []Te
 		// If this order requires balance draining, do it before test logic.
 		if isInsufficientInventory(order) {
 			// Drain solver native balance.
-			if err := setSolverAccountNativeBalance(ctx, backends, big.NewInt(0)); err != nil {
+			if err := setSolverAccountNativeBalance(ctx, order.DestChainID, backends, big.NewInt(0)); err != nil {
 				return errors.Wrap(err, "drain solver account failed")
 			}
 		}
@@ -471,10 +471,9 @@ func testCheckAPI(ctx context.Context, backends ethbackend.Backends, orders []Te
 		// Refund solver native balance after test logic.
 		if isInsufficientInventory(order) {
 			eth1m := math.NewInt(1_000_000).MulRaw(params.Ether).BigInt()
-			if err := setSolverAccountNativeBalance(ctx, backends, eth1m); err != nil {
+			if err := setSolverAccountNativeBalance(ctx, order.DestChainID, backends, eth1m); err != nil {
 				return errors.Wrap(err, "refund solver account failed")
 			}
-			log.Debug(ctx, "Solver account native balance refunded successfully")
 		}
 	}
 
