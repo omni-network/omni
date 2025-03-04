@@ -422,7 +422,7 @@ func testCheckAPI(ctx context.Context, backends ethbackend.Backends, orders []Te
 				balanceChangingInProgress = true
 
 				// Drain solver balance.
-				if err := maybeDrainSolverAccount(ctx, netconf.Devnet, backends); err != nil {
+				if err := setSolverAccountBalance(ctx, backends, big.NewInt(0)); err != nil {
 					refundMutex.Unlock()
 					return errors.Wrap(err, "drain solver account failed")
 				}
@@ -485,7 +485,8 @@ func testCheckAPI(ctx context.Context, backends ethbackend.Backends, orders []Te
 			// Refund solver balance after test logic.
 			refundMutex.Lock()
 			if isInsufficientInventory(order) {
-				if err := maybeFundSolverAccount(ctx, netconf.Devnet, backends); err != nil {
+				eth1m := math.NewInt(1_000_000).MulRaw(params.Ether).BigInt()
+				if err := setSolverAccountBalance(ctx, backends, eth1m); err != nil {
 					return errors.Wrap(err, "refund solver account failed")
 				}
 				log.Info(ctx, "Solver account balance refunded successfully")

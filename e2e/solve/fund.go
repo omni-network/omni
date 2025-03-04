@@ -19,26 +19,26 @@ import (
 	"cosmossdk.io/math"
 )
 
-// erc20 tokens to fund solver with on devnet. useful for solvernet development when forking public networks.
-var testTokenAddressesToFund = []struct {
-	chainID uint64
-	addr    common.Address
-}{
-	// holesky wstETH
-	{chainID: evmchain.IDMockL1, addr: common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")},
-	// holesky stETH
-	{chainID: evmchain.IDMockL1, addr: common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")},
-}
-
 func maybeFundERC20Solver(ctx context.Context, network netconf.ID, backends ethbackend.Backends) error {
 	// funding solver with l1 wsETH uses anvil_setStorageAt util, which is only available on devnet
 	if network != netconf.Devnet {
 		return nil
 	}
 
+	// erc20 tokens to fund solver with on devnet. useful for solvernet development when forking public networks.
+	toFund := []struct {
+		chainID uint64
+		addr    common.Address
+	}{
+		// holesky wstETH
+		{chainID: evmchain.IDMockL1, addr: common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")},
+		// holesky stETH
+		{chainID: evmchain.IDMockL1, addr: common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")},
+	}
+
 	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
 
-	for _, tkn := range testTokenAddressesToFund {
+	for _, tkn := range toFund {
 		ethCl, ok := backends.Clients()[tkn.chainID]
 		if !ok {
 			continue
@@ -51,35 +51,26 @@ func maybeFundERC20Solver(ctx context.Context, network netconf.ID, backends ethb
 		if err := anvil.FundERC20(ctx, ethCl, tkn.addr, eth1m, solver); err != nil {
 			return errors.Wrap(err, "fund tkn failed", "chain_id", tkn.chainID, "addr", tkn.addr)
 		}
-
-		if err := checkAccountBalance(ctx, ethCl, solver, tkn.addr, tkn.chainID); err != nil {
-			return errors.Wrap(err, "get solver account balance failed")
-		}
 	}
 
 	return nil
 }
 
-// maybeDrainSolverAccount drains solver account balance to 0.
-func maybeDrainSolverAccount(ctx context.Context, network netconf.ID, backends ethbackend.Backends) error {
-	return maybeSetSolverAccountBalance(ctx, network, backends, big.NewInt(0))
-}
-
-// maybeFundSolverAccount funds/refunds solver account balance to 1_000_000 ETH.
-func maybeFundSolverAccount(ctx context.Context, network netconf.ID, backends ethbackend.Backends) error {
-	eth1m := math.NewInt(1_000_000).MulRaw(params.Ether).BigInt()
-	return maybeSetSolverAccountBalance(ctx, network, backends, eth1m)
-}
-
-// maybeSetSolverAccountBalance calls anvil_setBalance to set the solver account to a passed amount.
-func maybeSetSolverAccountBalance(ctx context.Context, network netconf.ID, backends ethbackend.Backends, amt *big.Int) error {
-	if network != netconf.Devnet {
-		return nil
+// setSolverAccountBalance calls anvil_setBalance to set the solver account to a passed amount.
+func setSolverAccountBalance(ctx context.Context, backends ethbackend.Backends, amt *big.Int) error {
+	toFund := []struct {
+		chainID uint64
+		addr    common.Address
+	}{
+		// holesky wstETH
+		{chainID: evmchain.IDMockL1, addr: common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")},
+		// holesky stETH
+		{chainID: evmchain.IDMockL1, addr: common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")},
 	}
 
 	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
 
-	for _, tkn := range testTokenAddressesToFund {
+	for _, tkn := range toFund {
 		ethCl, ok := backends.Clients()[tkn.chainID]
 		if !ok {
 			continue
