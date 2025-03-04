@@ -55,7 +55,7 @@ func quoter(_ context.Context, req types.QuoteRequest) (types.QuoteResponse, err
 	}
 
 	if isDepositQuote {
-		quoted, err := quoteDeposit(depositTkn, TokenAmt{Token: expenseTkn, Amount: expense.Amount})
+		quoted, err := QuoteDeposit(depositTkn, TokenAmt{Token: expenseTkn, Amount: expense.Amount})
 		if err != nil {
 			return types.QuoteResponse{}, newAPIError(err, http.StatusBadRequest)
 		}
@@ -63,7 +63,7 @@ func quoter(_ context.Context, req types.QuoteRequest) (types.QuoteResponse, err
 		return returnQuote(quoted.Amount, expense.Amount), nil
 	}
 
-	quoted, err := QuoteExpense(expenseTkn, TokenAmt{Token: depositTkn, Amount: deposit.Amount})
+	quoted, err := quoteExpense(expenseTkn, TokenAmt{Token: depositTkn, Amount: deposit.Amount})
 	if err != nil {
 		return types.QuoteResponse{}, newAPIError(err, http.StatusBadRequest)
 	}
@@ -84,7 +84,7 @@ func getQuote(depositTkns []Token, expenses []TokenAmt) ([]TokenAmt, error) {
 	expense := expenses[0]
 	depositTkn := depositTkns[0]
 
-	deposit, err := quoteDeposit(depositTkn, expense)
+	deposit, err := QuoteDeposit(depositTkn, expense)
 	if err != nil {
 		return nil, err
 	}
@@ -92,8 +92,8 @@ func getQuote(depositTkns []Token, expenses []TokenAmt) ([]TokenAmt, error) {
 	return []TokenAmt{deposit}, nil
 }
 
-// quoteDeposit returns the deposit required to cover `expense`.
-func quoteDeposit(tkn Token, expense TokenAmt) (TokenAmt, error) {
+// QuoteDeposit returns the deposit required to cover `expense`.
+func QuoteDeposit(tkn Token, expense TokenAmt) (TokenAmt, error) {
 	if expense.Token.Symbol != tkn.Symbol {
 		return TokenAmt{}, newRejection(rejectInvalidDeposit, errors.New("deposit token must match expense token"))
 	}
@@ -110,7 +110,7 @@ func quoteDeposit(tkn Token, expense TokenAmt) (TokenAmt, error) {
 }
 
 // QuoteExpense returns the expense allowed for `deposit`.
-func QuoteExpense(tkn Token, deposit TokenAmt) (TokenAmt, error) {
+func quoteExpense(tkn Token, deposit TokenAmt) (TokenAmt, error) {
 	if deposit.Token.Symbol != tkn.Symbol {
 		return TokenAmt{}, newRejection(rejectInvalidDeposit, errors.New("deposit token must match expense token"))
 	}
