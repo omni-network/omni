@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/txmgr"
@@ -46,6 +47,11 @@ func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool
 	log.Info(ctx, "Checking accounts to fund", "network", network, "count", len(accounts))
 
 	for _, chain := range def.Testnet.EVMChains() {
+		if evmchain.IsDisabled(chain.ChainID) {
+			log.Warn(ctx, "Ignoring disabled chain", nil, "chain", chain.Name)
+			continue
+		}
+
 		backend, err := def.Backends().Backend(chain.ChainID)
 		if err != nil {
 			return errors.Wrap(err, "backend")
