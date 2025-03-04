@@ -60,7 +60,7 @@ func orderData(
 	}
 	deposit := app.TokenAmt{Token: token, Amount: amount}
 
-	expense, err := app.QuoteExpense(deposit.Token, deposit)
+	depositWithFee, err := app.QuoteDeposit(deposit.Token, deposit)
 	if err != nil {
 		return bindings.SolverNetOrderData{}, errors.Wrap(err, "quote expense")
 	}
@@ -69,14 +69,13 @@ func orderData(
 		Owner:       owner,
 		DestChainId: dstChain,
 		Deposit: solvernet.Deposit{
-			Token:  deposit.Token.Address,
-			Amount: deposit.Amount,
+			Token:  depositWithFee.Token.Address,
+			Amount: depositWithFee.Amount,
 		},
-		Expenses: solvernet.Expenses{},
 		Calls: solvernet.Calls{
 			{
 				Target: owner,
-				Value:  expense.Amount,
+				Value:  deposit.Amount,
 				Data:   nil,
 			},
 		}.ToBindings(),
