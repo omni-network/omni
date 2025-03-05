@@ -48,6 +48,7 @@ XAPPS_CONTRACTS := Bridge Lockbox StablecoinUpgradeable StablecoinProxy
 
 .PHONY: bindings
 bindings: check-abigen-version build ## Generate golang contract bindings.
+	./bindings/scripts/enumgen.sh
 	ROOT=./core ./bindings/scripts/gen.sh $(CORE_CONTRACTS)
 	ROOT=./avs ./bindings/scripts/gen.sh $(AVS_CONTRACTS)
 	ROOT=./solve ./bindings/scripts/gen.sh $(SOLVE_CONTRACTS)
