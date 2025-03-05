@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
+	libtokens "github.com/omni-network/omni/lib/tokens"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -39,6 +40,7 @@ func newClaimer(
 	inboxContracts map[uint64]*bindings.SolverNetInbox,
 	backends ethbackend.Backends,
 	solverAddr common.Address,
+	pricer libtokens.Pricer,
 ) func(ctx context.Context, order Order) error {
 	return func(ctx context.Context, order Order) error {
 		inbox, ok := inboxContracts[order.SourceChainID]
@@ -67,7 +69,7 @@ func newClaimer(
 
 		srcChainName, _ := backend.Chain()
 
-		return pnlIncome(ctx, order, srcChainName)
+		return pnlIncome(ctx, pricer, order, srcChainName)
 	}
 }
 
@@ -75,6 +77,7 @@ func newFiller(
 	outboxContracts map[uint64]*bindings.SolverNetOutbox,
 	backends ethbackend.Backends,
 	solverAddr, outboxAddr common.Address,
+	pricer libtokens.Pricer,
 ) func(ctx context.Context, order Order) error {
 	return func(ctx context.Context, order Order) error {
 		if order.DestinationSettler != outboxAddr {
@@ -164,7 +167,7 @@ func newFiller(
 
 		dstChainName, _ := backend.Chain()
 
-		return pnlExpenses(ctx, order, outboxAddr, dstChainName)
+		return pnlExpenses(ctx, pricer, order, outboxAddr, dstChainName)
 	}
 }
 

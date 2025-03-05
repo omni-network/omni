@@ -4,12 +4,16 @@ import (
 	"context"
 	"sync"
 	"time"
+
+	"github.com/omni-network/omni/lib/errors"
 )
 
 // Pricer is the token price provider interface.
 type Pricer interface {
-	// Price returns the price of each provided token in USD.
-	Price(ctx context.Context, tokens ...Token) (map[Token]float64, error)
+	// Price returns the price of the token in USD.
+	Price(ctx context.Context, tokens Token) (float64, error)
+	// Prices returns the price of each provided token in USD.
+	Prices(ctx context.Context, tokens ...Token) (map[Token]float64, error)
 }
 
 type CachedPricer struct {
@@ -25,7 +29,21 @@ func NewCachedPricer(p Pricer) *CachedPricer {
 	}
 }
 
-func (c *CachedPricer) Price(ctx context.Context, tokens ...Token) (map[Token]float64, error) {
+func (c *CachedPricer) Price(ctx context.Context, token Token) (float64, error) {
+	prices, err := c.Prices(ctx, token)
+	if err != nil {
+		return 0, err
+	}
+
+	price, ok := prices[token]
+	if !ok {
+		return 0, errors.New("missing token price [BUG]")
+	}
+
+	return price, nil
+}
+
+func (c *CachedPricer) Prices(ctx context.Context, tokens ...Token) (map[Token]float64, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -45,7 +63,7 @@ func (c *CachedPricer) Price(ctx context.Context, tokens ...Token) (map[Token]fl
 		return prices, nil
 	}
 
-	newPrices, err := c.p.Price(ctx, uncached...)
+	newPrices, err := c.p.Prices(ctx, uncached...)
 	if err != nil {
 		return nil, err
 	}

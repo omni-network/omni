@@ -21,7 +21,14 @@ func NewMockPricer(prices map[Token]float64) *MockPricer {
 	return &MockPricer{prices: cloned}
 }
 
-func (m *MockPricer) Price(_ context.Context, tkns ...Token) (map[Token]float64, error) {
+func (m *MockPricer) Price(_ context.Context, tk Token) (float64, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	return m.prices[tk], nil
+}
+
+func (m *MockPricer) Prices(_ context.Context, tkns ...Token) (map[Token]float64, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
