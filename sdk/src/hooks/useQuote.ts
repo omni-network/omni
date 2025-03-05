@@ -3,9 +3,8 @@ import { useMemo } from 'react'
 import { type Address, type Hex, fromHex, zeroAddress } from 'viem'
 import { useOmniContext } from '../context/omni.js'
 import { type FetchJSONError, fetchJSON } from '../internal/api.js'
-import { toJSON } from './util.js'
-
 import type { Quote, Quoteable } from '../types/quote.js'
+import { toJSON } from './util.js'
 
 type UseQuoteParams = {
   srcChainId?: number
