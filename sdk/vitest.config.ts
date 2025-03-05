@@ -9,6 +9,9 @@ export default defineConfig({
           include: ['src/**/*.test.{ts,tsx}'],
           environment: 'happy-dom',
           setupFiles: ['./test/unitSetup.ts'],
+          typecheck: {
+            enabled: true,
+          },
         },
       },
       {
