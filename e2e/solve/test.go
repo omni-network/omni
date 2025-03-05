@@ -100,6 +100,10 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 
 	// start event streams
 	errChan := make(chan error, 1)
+	// Set a 90 sec timeout which is a bit below the 120 sec go test timeout in order to avoid being canceled by the go runtime and leave time for cleanup.
+	ctx, cancel = context.WithTimeout(ctx, 90*time.Second)
+	defer cancel()
+
 	for _, chain := range network.EVMChains() {
 		go func() {
 			req := xchain.EventLogsReq{
@@ -142,7 +146,7 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 		case err := <-errChan:
 			return errors.Wrap(err, "stream event logs")
 		case <-ctx.Done():
-			return errors.Wrap(ctx.Err(), "context done")
+			return errors.Wrap(ctx.Err(), "context timeout or canceled")
 		case <-ticker.C:
 			done, err := tracker.Done()
 			if err != nil {
