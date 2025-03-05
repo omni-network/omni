@@ -103,8 +103,6 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	// TODO: maybeLoadgen
-
 	xprov := xprovider.New(network, backends.Clients(), nil)
 
 	db, err := newSolverDB(cfg.DBDir)

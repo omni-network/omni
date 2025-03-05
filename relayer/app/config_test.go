@@ -20,6 +20,7 @@ func TestDefaultConfigReference(t *testing.T) {
 
 	cfg := relayer.DefaultConfig()
 	cfg.HaloGRPCURL = "localhost:9"
+	cfg.CoinGeckoAPIKey = "secret"
 	path := filepath.Join(tempDir, "relayer.toml")
 
 	require.NoError(t, os.MkdirAll(tempDir, 0o755))

@@ -15,14 +15,15 @@ network = ""
 # Path to the ethereum private key used to for inbox and outbox request state transitions.
 private-key = "solver.key"
 
-# Path to the ethereum private key used to generate deposit load on ephemeral networks only.
-loadgen-key = "loadgen.key"
 
 # The address that the solver listens for API requests.
 api-addr = ":26661"
 
 # The address that the solver listens for metric scrape requests.
 monitoring-addr = ":26660"
+
+# The CoinGecko API key to use for fetching token prices.
+coingecko-apikey = "secret"
 
 #######################################################################
 ###                             X-Chain                             ###

@@ -19,8 +19,8 @@ func TestDefaultConfigReference(t *testing.T) {
 	tempDir := t.TempDir()
 
 	cfg := solver.DefaultConfig()
-	cfg.LoadGenPrivKey = "loadgen.key"
 	cfg.Tracer.Endpoint = "http://localhost:1234"
+	cfg.CoinGeckoAPIKey = "secret"
 
 	path := filepath.Join(tempDir, "solver.toml")
 

@@ -489,6 +489,7 @@ func writeRelayerConfig(ctx context.Context, def Definition, logCfg log.Config) 
 	relayCfg.HaloCometURL = archiveNode.AddressRPC()
 	relayCfg.HaloGRPCURL = haloGRPCAddress(archiveNode)
 	relayCfg.RPCEndpoints = endpoints
+	relayCfg.CoinGeckoAPIKey = def.Cfg.CoinGeckoAPIKey
 
 	if err := relayapp.WriteConfigTOML(relayCfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write relayer config")
@@ -501,10 +502,8 @@ func writeSolverConfig(ctx context.Context, def Definition, logCfg log.Config) e
 	confRoot := filepath.Join(def.Testnet.Dir, "solver")
 
 	const (
-		privKeyFile    = "privatekey"
-		flowGenKeyFile = "flowgenkey"
-		loadGenKeyFile = "loadgenkey"
-		configFile     = "solver.toml"
+		privKeyFile = "privatekey"
+		configFile  = "solver.toml"
 	)
 
 	if err := os.MkdirAll(confRoot, 0o755); err != nil {
@@ -532,27 +531,13 @@ func writeSolverConfig(ctx context.Context, def Definition, logCfg log.Config) e
 		return errors.Wrap(err, "write private key")
 	}
 
-	// Save loadgen private key (use random keys for non-ephemeral)
-	loadGenPrivKey, err := ethcrypto.GenerateKey()
-	if err != nil {
-		return errors.Wrap(err, "generate loadgen private key")
-	} else if def.Testnet.Network.IsEphemeral() {
-		loadGenPrivKey, err = eoa.PrivateKey(ctx, def.Testnet.Network, eoa.RoleXCaller)
-		if err != nil {
-			return errors.Wrap(err, "get loadgen key")
-		}
-	}
-	if err := ethcrypto.SaveECDSA(filepath.Join(confRoot, loadGenKeyFile), loadGenPrivKey); err != nil {
-		return errors.Wrap(err, "write private key")
-	}
-
 	solverCfg := solverapp.DefaultConfig()
 	solverCfg.SolverPrivKey = privKeyFile
-	solverCfg.LoadGenPrivKey = loadGenKeyFile
 	solverCfg.Network = def.Testnet.Network
 	solverCfg.RPCEndpoints = endpoints
 	solverCfg.Tracer.Endpoint = def.Cfg.TracingEndpoint
 	solverCfg.Tracer.Headers = def.Cfg.TracingHeaders
+	solverCfg.CoinGeckoAPIKey = def.Cfg.CoinGeckoAPIKey
 
 	if err := solverapp.WriteConfigTOML(solverCfg, logCfg, filepath.Join(confRoot, configFile)); err != nil {
 		return errors.Wrap(err, "write solver config")

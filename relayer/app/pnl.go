@@ -25,11 +25,10 @@ const (
 )
 
 // newTokenPricer creates a new cached pricer with priceCacheEvictInterval.
-func newTokenPricer(ctx context.Context) *tokens.CachedPricer {
-	pricer := tokens.NewCachedPricer(coingecko.New())
+func newTokenPricer(ctx context.Context, cgAPIKey string) tokens.Pricer {
+	pricer := tokens.NewCachedPricer(coingecko.New(coingecko.WithAPIKey(cgAPIKey)))
 
 	// use cached pricer avoid spamming coingecko public api
-	// TODO: use api key
 	go pricer.ClearCacheForever(ctx, priceCacheEvictInterval)
 
 	return pricer
