@@ -98,7 +98,7 @@ test('parameters: deposit', () => {
   expect(result.current).not.toBeUndefined()
 })
 
-test('parameters: mpde', () => {
+test('parameters: mode', () => {
   const { result, rerender } = renderHook(
     () =>
       useQuote({
@@ -136,43 +136,26 @@ test('behaviour: quote does not fire when enabled is false', () => {
   expect(result.current.query.isFetched).toBeFalsy()
 })
 
-test('behaviour: quote is error if response is not a quote', async () => {
-  const { result } = renderHook(() => useQuote({ ...params, enabled: false }), {
-    mockContractsCall: true,
-  })
+test.each([
+  'test',
+  {},
+  { deposit: { token, amount: '100' } },
+  { expense: { token, amount: '100' } },
+  { deposit: { token }, expense: { token } },
+  { deposit: { amount: '100' }, expense: { amount: '99' } },
+])(
+  'behaviour: quote is error if response is not a quote: %s',
+  async (mockReturn) => {
+    const { result } = renderHook(
+      () => useQuote({ ...params, enabled: true }),
+      {
+        mockContractsCall: true,
+      },
+    )
 
-  fetchJSON.mockReturnValue('test')
+    fetchJSON.mockReturnValue(mockReturn)
 
-  await waitFor(() => result.current.isPending === false)
-  await waitFor(() => result.current.isError === true)
-
-  fetchJSON.mockReturnValue({
-    deposit: { token, amount: '100' },
-  })
-
-  await waitFor(() => result.current.isPending === false)
-  await waitFor(() => result.current.isError === true)
-
-  fetchJSON.mockReturnValue({
-    expense: { token, amount: '100' },
-  })
-
-  await waitFor(() => result.current.isPending === false)
-  await waitFor(() => result.current.isError === true)
-
-  fetchJSON.mockReturnValue({
-    deposit: { token },
-    expense: { token },
-  })
-
-  await waitFor(() => result.current.isPending === false)
-  await waitFor(() => result.current.isError === true)
-
-  fetchJSON.mockReturnValue({
-    deposit: { amount: '100' },
-    expense: { amount: '99' },
-  })
-
-  await waitFor(() => result.current.isPending === false)
-  await waitFor(() => result.current.isError === true)
-})
+    await waitFor(() => result.current.isPending === false)
+    await waitFor(() => result.current.isError === true)
+  },
+)
