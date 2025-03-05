@@ -3,6 +3,9 @@ import { arbitrum, base, optimism } from 'viem/chains'
 import { http, createConfig, mock } from 'wagmi'
 import { mainnet } from 'wagmi/chains'
 
+////////////////////////////////////////
+//// TEST DATA
+////////////////////////////////////////
 export const MOCK_L1_ID = 1652
 export const MOCK_L2_ID = 1654
 export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
@@ -26,9 +29,6 @@ export const web3Config = createConfig({
   },
 })
 
-////////////////////////////////////////
-//// TEST DATA
-////////////////////////////////////////
 type Transfer = {
   token: Hex
   amount: bigint
