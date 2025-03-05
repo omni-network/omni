@@ -20,7 +20,7 @@ func TestCachedPricer(t *testing.T) {
 
 	cached := tokens.NewCachedPricer(pricer)
 
-	prices, err := cached.Price(context.Background(), tokens.ETH, tokens.OMNI)
+	prices, err := cached.Prices(context.Background(), tokens.ETH, tokens.OMNI)
 	require.NoError(t, err)
 	require.InEpsilon(t, 100.0, prices[tokens.ETH], epsilon)
 	require.InEpsilon(t, 200.0, prices[tokens.OMNI], epsilon)
@@ -30,7 +30,7 @@ func TestCachedPricer(t *testing.T) {
 	pricer.SetPrice(tokens.OMNI, 250)
 
 	// prices should still be cached
-	prices, err = cached.Price(context.Background(), tokens.ETH, tokens.OMNI)
+	prices, err = cached.Prices(context.Background(), tokens.ETH, tokens.OMNI)
 	require.NoError(t, err)
 	require.InEpsilon(t, 100.0, prices[tokens.ETH], epsilon)
 	require.InEpsilon(t, 200.0, prices[tokens.OMNI], epsilon)
@@ -39,7 +39,7 @@ func TestCachedPricer(t *testing.T) {
 	cached.ClearCache()
 
 	// prices should be updated
-	prices, err = cached.Price(context.Background(), tokens.ETH, tokens.OMNI)
+	prices, err = cached.Prices(context.Background(), tokens.ETH, tokens.OMNI)
 	require.NoError(t, err)
 	require.InEpsilon(t, 150.0, prices[tokens.ETH], epsilon)
 	require.InEpsilon(t, 250.0, prices[tokens.OMNI], epsilon)

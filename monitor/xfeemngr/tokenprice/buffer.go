@@ -63,7 +63,7 @@ func (b *buffer) Stream(ctx context.Context) {
 // stream starts streaming prices for all tokens into the buffer.
 func (b *buffer) stream(ctx context.Context) {
 	callback := func(ctx context.Context) {
-		prices, err := b.pricer.Price(ctx, b.tokens...)
+		prices, err := b.pricer.Prices(ctx, b.tokens...)
 		if err != nil {
 			log.Warn(ctx, "Failed to get prices (will retry)", err)
 			return

@@ -38,8 +38,23 @@ func New(opts ...func(*options)) Client {
 	}
 }
 
-// Price returns the price of each coin in USD.
-func (c Client) Price(ctx context.Context, tkns ...tokens.Token) (map[tokens.Token]float64, error) {
+// Price returns the price of the token in USD.
+func (c Client) Price(ctx context.Context, tkn tokens.Token) (float64, error) {
+	prices, err := c.Prices(ctx, tkn)
+	if err != nil {
+		return 0, err
+	}
+
+	price, ok := prices[tkn]
+	if !ok {
+		return 0, errors.New("missing token [BUG]", "token", tkn)
+	}
+
+	return price, nil
+}
+
+// Prices returns the price of each coin in USD.
+func (c Client) Prices(ctx context.Context, tkns ...tokens.Token) (map[tokens.Token]float64, error) {
 	return c.getPrice(ctx, "usd", tkns...)
 }
 

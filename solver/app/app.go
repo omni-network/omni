@@ -18,6 +18,8 @@ import (
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	tokenslib "github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tokens/coingecko"
 	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
@@ -120,7 +122,9 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "get contract addresses")
 	}
 
-	err = startEventStreams(ctx, network, xprov, backends, solverAddr, addrs, cursors)
+	pricer := newPricer(ctx, cfg.CoinGeckoAPIKey)
+
+	err = startEventStreams(ctx, network, xprov, backends, solverAddr, addrs, cursors, pricer)
 	if err != nil {
 		return errors.Wrap(err, "start event streams")
 	}
@@ -145,6 +149,16 @@ func Run(ctx context.Context, cfg Config) error {
 	case err := <-apiChan:
 		return err
 	}
+}
+
+func newPricer(ctx context.Context, apiKey string) tokenslib.Pricer {
+	pricer := tokenslib.NewCachedPricer(coingecko.New(coingecko.WithAPIKey(apiKey)))
+
+	// use cached pricer avoid spamming coingecko public api
+	const priceCacheEvictInterval = time.Minute * 10
+	go pricer.ClearCacheForever(ctx, priceCacheEvictInterval)
+
+	return pricer
 }
 
 // serveMonitoring starts a goroutine that serves the monitoring API. It
@@ -205,6 +219,7 @@ func startEventStreams(
 	solverAddr common.Address,
 	addrs contracts.Addresses,
 	cursors *cursors,
+	pricer tokenslib.Pricer,
 ) error {
 	inboxChains, err := detectContractChains(ctx, network, backends, addrs.SolverNetInbox)
 	if err != nil {
@@ -324,8 +339,8 @@ func startEventStreams(
 		ShouldReject:   newShouldRejector(backends, solverAddr, addrs.SolverNetOutbox),
 		DidFill:        newDidFiller(outboxContracts),
 		Reject:         newRejector(inboxContracts, backends, solverAddr),
-		Fill:           newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox),
-		Claim:          newClaimer(inboxContracts, backends, solverAddr),
+		Fill:           newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, pricer),
+		Claim:          newClaimer(inboxContracts, backends, solverAddr, pricer),
 		SetCursor:      cursorSetter,
 		ChainName:      network.ChainName,
 		TargetName:     targetName,
