@@ -84,9 +84,12 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	// temporarily remove holesky from solver network, until holesky issue is
-	// resolved, or it's deprecated and removed from core
-	network = removeHolesky(network)
+	// add back holesky manually on holesky on omega
+	// temporary fix to enable holesky solving before it is re-enabled in core
+	// It was disabled here https://github.com/omni-network/omni/pull/3259/files
+	if network.ID == netconf.Omega {
+		network = addHolesky(network)
+	}
 
 	// TODO: log supported tokens / balances
 
@@ -391,17 +394,24 @@ func streamEventsForever(
 	}
 }
 
-func removeHolesky(network netconf.Network) netconf.Network {
-	var chains []netconf.Chain
-	for _, chain := range network.Chains {
-		if chain.ID == evmchain.IDHolesky {
-			continue
-		}
-		chains = append(chains, chain)
+func addHolesky(network netconf.Network) netconf.Network {
+	if network.ID != netconf.Omega {
+		return network
 	}
 
-	return netconf.Network{
-		ID:     network.ID,
-		Chains: chains,
+	// if holesky already exists, return
+	for _, chain := range network.Chains {
+		if chain.ID == evmchain.IDHolesky {
+			return network
+		}
 	}
+
+	// add it
+	network.Chains = append(network.Chains, netconf.Chain{
+		ID:   evmchain.IDHolesky,
+		Name: "holesky",
+		// rest does not matter for solvernet
+	})
+
+	return network
 }
