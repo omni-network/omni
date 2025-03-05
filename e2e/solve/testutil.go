@@ -66,15 +66,23 @@ func nativeExpense(amt *big.Int) []solvernet.Expense {
 	return []solvernet.Expense{{Amount: amt}}
 }
 
+func multipleNativeExpenses(amt *big.Int) []solvernet.Expense {
+	return []solvernet.Expense{{Amount: amt}, {Amount: amt}}
+}
+
+func multipleERC20Expenses(amt *big.Int) []solvernet.Expense {
+	return []solvernet.Expense{{Amount: amt, Token: addrs.Token}, {Amount: amt, Token: addrs.Token}}
+}
+
 func unsupportedExpense(amt *big.Int) []solvernet.Expense {
 	return []solvernet.Expense{{Amount: amt, Token: invalidTokenAddress}}
 }
 
-func invalidExpense() []solvernet.Expense {
+func invalidExpenseOutOfBounds() []solvernet.Expense {
 	return nativeExpense(big.NewInt(params.Ether))
 }
 
-func unsupportedDeposit(amt *big.Int) solvernet.Deposit {
+func unsupportedERC20Deposit(amt *big.Int) solvernet.Deposit {
 	return solvernet.Deposit{Amount: amt, Token: invalidTokenAddress}
 }
 
