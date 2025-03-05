@@ -128,7 +128,7 @@ test('behaviour: no parsing when logs is undefined', () => {
   expect(result.current.resolvedOrder).toBeUndefined()
 })
 
-test('behaviour: error when status is success and logs is []', () => {
+test('behaviour: error when status is success and logs is empty array', () => {
   const { result } = renderHook(
     () =>
       useParseOpenEvent({

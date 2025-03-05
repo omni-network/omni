@@ -1,9 +1,8 @@
 import { waitFor } from '@testing-library/react'
 import { beforeEach, expect, test, vi } from 'vitest'
-import { resolvedOrder } from '../../test/index.js'
+import { orderId, renderHook, resolvedOrder } from '../../test/index.js'
 import { createMockReadContractResult } from '../../test/mocks.js'
-import { renderHook } from '../../test/react.js'
-import { useDidFill } from './useDidFill.js'
+import { useGetOrder } from './useGetOrder.js'
 
 const { useReadContract } = vi.hoisted(() => {
   return {
@@ -28,64 +27,70 @@ beforeEach(() => {
 test('default', async () => {
   const { result, rerender } = renderHook(
     () =>
-      useDidFill({
-        destChainId: 1,
+      useGetOrder({
+        chainId: 1,
       }),
     { mockContractsCall: true },
   )
 
   expect(result.current.data).toBeUndefined()
-  expect(useReadContract).toHaveBeenCalled()
 
   useReadContract.mockReturnValue(
     createMockReadContractResult({
-      data: true,
+      data: [
+        resolvedOrder,
+        { status: 1, claimant: '0x123', timestamp: 1 } as const,
+      ],
       isSuccess: true,
       status: 'success',
     }),
   )
 
   rerender({
-    destChainId: 1,
-    resolvedOrder,
+    chainId: 1,
+    orderId,
   })
 
-  await waitFor(() => result.current.data === true)
+  await waitFor(() => result.current.data?.[0].orderId === orderId)
+  await waitFor(() => result.current.data?.[1].status === 1)
 })
 
-test('behaviour: no exception if contract read fails', () => {
-  useReadContract.mockReturnValue(
-    createMockReadContractResult({
-      isSuccess: false,
-      isError: true,
-      status: 'error',
-    }),
-  )
-
+test('behaviour: no contract read when orderId is undefined', () => {
   const { result } = renderHook(
     () =>
-      useDidFill({
-        destChainId: 1,
-        resolvedOrder,
+      useGetOrder({
+        chainId: 1,
       }),
     { mockContractsCall: true },
   )
 
-  expect(result.current.status).toBe('error')
-  expect(result.current.isError).toBeTruthy()
   expect(result.current.data).toBeUndefined()
-  expect(useReadContract).toHaveBeenCalled()
+  expect(result.current.status).toBe('pending')
+  expect(result.current.isFetched).toBeFalsy()
+  // once on mount
+  expect(useReadContract).toHaveBeenCalledOnce()
 })
 
-test('behaviour: no contract read when resolvedOrder is undefined', async () => {
+test('behaviour: no contract read when chainId is undefined', () => {
   const { result } = renderHook(
     () =>
-      useDidFill({
-        destChainId: 1,
-        resolvedOrder: undefined,
+      useGetOrder({
+        orderId,
       }),
     { mockContractsCall: true },
   )
+
+  expect(result.current.data).toBeUndefined()
+  expect(result.current.status).toBe('pending')
+  expect(result.current.isFetched).toBeFalsy()
+  // once on mount
+  expect(useReadContract).toHaveBeenCalledOnce()
+})
+
+test('behaviour: no contract read when all inputs undefined', () => {
+  const { result } = renderHook(() => useGetOrder({}), {
+    mockContractsCall: true,
+  })
 
   expect(result.current.data).toBeUndefined()
   expect(result.current.status).toBe('pending')
