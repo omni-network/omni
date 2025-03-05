@@ -10,18 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-const (
-	StatusInvalid  OrderStatus = 0
-	StatusPending  OrderStatus = 1
-	StatusRejected OrderStatus = 2
-	StatusClosed   OrderStatus = 3
-	StatusFilled   OrderStatus = 4
-	StatusClaimed  OrderStatus = 5
-)
-
 type (
 	OrderID        [32]byte
-	OrderStatus    uint8
 	OrderResolved  = bindings.IERC7683ResolvedCrossChainOrder
 	OrderState     = bindings.ISolverNetInboxOrderState
 	FillOriginData = bindings.SolverNetFillOriginData
