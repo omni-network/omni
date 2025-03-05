@@ -406,12 +406,44 @@ func addHolesky(network netconf.Network) netconf.Network {
 		}
 	}
 
-	// add it
+	// from omega netconf static
+	deployHeight := 2130892
+	portalAddr := common.HexToAddress("0xcB60A0451831E4865bC49f41F9C67665Fc9b75C3")
+
+	// from e2e/types
+	shards := []xchain.ShardID{xchain.ShardFinalized0, xchain.ShardLatest0}
+
+	meta, ok := evmchain.MetadataByID(evmchain.IDHolesky)
+	if !ok {
+		// will not happen
+		return network
+	}
+
 	network.Chains = append(network.Chains, netconf.Chain{
-		ID:   evmchain.IDHolesky,
-		Name: "holesky",
-		// rest does not matter for solvernet
+		ID:             evmchain.IDHolesky,
+		Name:           meta.Name,
+		PortalAddress:  portalAddr,
+		DeployHeight:   uint64(deployHeight),
+		BlockPeriod:    meta.BlockPeriod,
+		Shards:         shards,
+		AttestInterval: intervalFromPeriod(network.ID, meta.BlockPeriod),
 	})
 
 	return network
+}
+
+// from e2e/types testnet.go (temporary).
+func intervalFromPeriod(network netconf.ID, period time.Duration) uint64 {
+	target := time.Hour
+	if network == netconf.Staging {
+		target = time.Minute * 10
+	} else if network == netconf.Devnet {
+		target = time.Second * 10
+	}
+
+	if period == 0 {
+		return 0
+	}
+
+	return uint64(target / period)
 }
