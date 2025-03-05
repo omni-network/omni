@@ -17,14 +17,14 @@ import (
 )
 
 type Config struct {
-	RPCEndpoints   xchain.RPCEndpoints
-	Network        netconf.ID
-	MonitoringAddr string
-	APIAddr        string
-	SolverPrivKey  string
-	LoadGenPrivKey string
-	DBDir          string
-	Tracer         tracer.Config
+	RPCEndpoints    xchain.RPCEndpoints
+	Network         netconf.ID
+	MonitoringAddr  string
+	APIAddr         string
+	SolverPrivKey   string
+	DBDir           string
+	Tracer          tracer.Config
+	CoinGeckoAPIKey string
 }
 
 func DefaultConfig() Config {

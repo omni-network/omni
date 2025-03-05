@@ -62,7 +62,7 @@ func Run(ctx context.Context, cfg Config) error {
 
 	xprov := xprovider.New(network, rpcClientPerChain, cprov)
 
-	pricer := newTokenPricer(ctx)
+	pricer := newTokenPricer(ctx, cfg.CoinGeckoAPIKey)
 	pnl := newPnlLogger(network.ID, pricer)
 
 	db, err := initializeDB(ctx, cfg)
