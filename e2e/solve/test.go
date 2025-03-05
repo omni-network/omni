@@ -101,7 +101,7 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 	// start event streams
 	errChan := make(chan error, 1)
 	// Set a 90 sec timeout which is a bit below the 120 sec go test timeout in order to avoid being canceled by the go runtime and leave time for cleanup.
-	timeoutCtx, cancel := context.WithTimeout(ctx, 1*time.Minute+30*time.Second)
+	ctx, cancel = context.WithTimeout(ctx, 90*time.Second)
 	defer cancel()
 
 	for _, chain := range network.EVMChains() {
@@ -145,8 +145,8 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 		select {
 		case err := <-errChan:
 			return errors.Wrap(err, "stream event logs")
-		case <-timeoutCtx.Done():
-			return errors.Wrap(timeoutCtx.Err(), "context timeout or canceled")
+		case <-ctx.Done():
+			return errors.Wrap(ctx.Err(), "context timeout or canceled")
 		case <-ticker.C:
 			done, err := tracker.Done()
 			if err != nil {
@@ -154,7 +154,7 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 			}
 
 			if done {
-				log.Info(timeoutCtx, "Solver test success")
+				log.Info(ctx, "Solver test success")
 				return nil
 			}
 		}
