@@ -54,9 +54,7 @@ const account = privateKeyToAccount(
 )
 
 function createClient({ chain }: { chain: Chain }) {
-  return createWalletClient({ account, chain, transport: http() }).extend(
-    publicActions,
-  )
+  return createWalletClient({ account, chain, transport: http() })
 }
 
 export const testConnector: CreateConnectorFn = (config) => {

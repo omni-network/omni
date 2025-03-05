@@ -16,6 +16,7 @@ import {
   MOCK_L1_ID,
   MOCK_L2_ID,
   ZERO_ADDRESS,
+  accounts,
   createRenderHook,
   createWagmiConfig,
   testConnector,
@@ -52,7 +53,7 @@ test('successfully processes order from quote to filled', async () => {
   const orderParams = {
     deposit: { token: ZERO_ADDRESS, amount: 2n * ETHER },
     expense: { token: ZERO_ADDRESS, amount: 1n * ETHER },
-    calls: [{ target: ZERO_ADDRESS, value: 1n * ETHER }],
+    calls: [{ target: accounts[0], value: 1n * ETHER }],
     srcChainId: MOCK_L1_ID,
     destChainId: MOCK_L2_ID,
     validateEnabled: false,
@@ -70,10 +71,7 @@ test('successfully processes order from quote to filled', async () => {
 
   // useOrder() can only be used with a connected account, so we need to render it conditionally
   function TestOrder() {
-    orderRef.current = useOrder({
-      ...orderParams,
-      deposit: { token: ZERO_ADDRESS, amount: 0n },
-    })
+    orderRef.current = useOrder(orderParams)
     return null
   }
 
@@ -93,9 +91,5 @@ test('successfully processes order from quote to filled', async () => {
   act(() => {
     orderRef.current?.open()
   })
-  // TODO: should wait for txHash to be defined, but currently the order creation fails on a eth_estimateGas call
-  await waitFor(() => expect(orderRef.current?.txHash).toBeUndefined(), {
-    interval: 1_000,
-    timeout: 5_000,
-  })
+  await waitFor(() => expect(orderRef.current?.txHash).toBeDefined())
 })
