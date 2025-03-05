@@ -26,7 +26,7 @@ export function createMockReadContractResult<
   overrides?: Partial<UseReadContractReturn<TResult['data']>>,
 ): UseReadContractReturn<TResult['data']> {
   const result = {
-    data: null as TResult['data'],
+    data: undefined as TResult['data'],
     error: null,
     isError: false,
     isPending: true,
