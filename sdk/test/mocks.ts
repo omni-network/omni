@@ -1,6 +1,15 @@
 import { vi } from 'vitest'
+import type { useReadContract } from 'wagmi'
 import * as apiModule from '../src/internal/api.js'
 import { contracts } from './shared.js'
+
+type UseReadContractReturn<Data> = Omit<
+  ReturnType<typeof useReadContract>,
+  'error' | 'data'
+> & {
+  error: Error | null
+  data: Data
+}
 
 export function mockContractsQuery() {
   vi.spyOn(apiModule, 'fetchJSON').mockImplementation((url: string) => {
@@ -11,9 +20,13 @@ export function mockContractsQuery() {
   })
 }
 
-export function createMockReadContractResult(overrides = {}) {
-  return {
-    data: undefined,
+export function createMockReadContractResult<
+  TResult extends ReturnType<typeof useReadContract> = never,
+>(
+  overrides?: Partial<UseReadContractReturn<TResult['data']>>,
+): UseReadContractReturn<TResult['data']> {
+  const result = {
+    data: null as TResult['data'],
     error: null,
     isError: false,
     isPending: true,
@@ -22,7 +35,7 @@ export function createMockReadContractResult(overrides = {}) {
     isRefetchError: false,
     isSuccess: false,
     isPlaceholderData: false,
-    status: 'pending',
+    status: 'pending' as const,
     dataUpdatedAt: 0,
     errorUpdatedAt: 0,
     failureCount: 0,
@@ -36,11 +49,11 @@ export function createMockReadContractResult(overrides = {}) {
     isRefetching: false,
     isStale: false,
     refetch: vi.fn(),
-    remove: vi.fn(),
-    fetchStatus: 'idle',
+    fetchStatus: 'idle' as const,
     queryKey: [],
-    queryHash: '',
     promise: Promise.resolve(),
     ...overrides,
-  } as const
+  }
+
+  return result
 }
