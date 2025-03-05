@@ -13,6 +13,7 @@ interface ISolverNetInbox is IOriginSettler {
     error InvalidCallTarget();
     error InvalidExpenseToken();
     error InvalidExpenseAmount();
+    error InvalidArrayLength();
 
     // Open order errors
     error InvalidNativeDeposit();
@@ -34,6 +35,7 @@ interface ISolverNetInbox is IOriginSettler {
     // Pause errors
     error IsPaused();
     error AllPaused();
+    error PortalPaused();
 
     /**
      * @notice Emitted when an outbox is set.

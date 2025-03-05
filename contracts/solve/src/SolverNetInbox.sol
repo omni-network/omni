@@ -11,6 +11,7 @@ import { ISolverNetInbox } from "./interfaces/ISolverNetInbox.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { SolverNet } from "./lib/SolverNet.sol";
 import { AddrUtils } from "./lib/AddrUtils.sol";
+import { IOmniPortalPausable } from "core/src/interfaces/IOmniPortalPausable.sol";
 
 /**
  * @title SolverNetInbox
@@ -19,6 +20,11 @@ import { AddrUtils } from "./lib/AddrUtils.sol";
 contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, DeployedAt, XAppBase, ISolverNetInbox {
     using SafeTransferLib for address;
     using AddrUtils for address;
+
+    /**
+     * @notice Maximum number of calls and expenses in an order.
+     */
+    uint8 internal constant MAX_ARRAY_SIZE = 32;
 
     /**
      * @notice Buffer for closing orders after fill deadline to give Omni Core relayer time to act.
@@ -37,6 +43,11 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     bytes32 internal constant ORDERDATA_TYPEHASH = keccak256(
         "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)TokenExpense(address spender,address token,uint96 amount)"
     );
+
+    /**
+     * @notice Action ID for xsubmissions, used as Pauseable key in OmniPortal
+     */
+    bytes32 internal constant ACTION_XSUBMIT = keccak256("xsubmit");
 
     /**
      * @notice Key for pausing the `open` function.
@@ -167,6 +178,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @param outboxes Addresses of the outboxes.
      */
     function setOutboxes(uint64[] calldata chainIds, address[] calldata outboxes) external onlyOwner {
+        if (chainIds.length != outboxes.length) revert InvalidArrayLength();
         for (uint256 i; i < chainIds.length; ++i) {
             _outboxes[chainIds[i]] = outboxes[i];
             emit OutboxSet(chainIds[i], outboxes[i]);
@@ -244,8 +256,8 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         if (reason == 0) revert InvalidReason();
         if (state.status != Status.Pending) revert OrderNotPending();
 
-        _upsertOrder(id, Status.Rejected, reason, msg.sender);
         _transferDeposit(id, _orderHeader[id].owner);
+        _upsertOrder(id, Status.Rejected, reason, msg.sender);
 
         emit Rejected(id, msg.sender, reason);
     }
@@ -261,10 +273,11 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
 
         if (state.status != Status.Pending) revert OrderNotPending();
         if (header.owner != msg.sender) revert Unauthorized();
+        if (IOmniPortalPausable(address(omni)).isPaused(ACTION_XSUBMIT, header.destChainId)) revert PortalPaused();
         if (header.fillDeadline + CLOSE_BUFFER >= block.timestamp) revert OrderStillValid();
 
-        _upsertOrder(id, Status.Closed, 0, msg.sender);
         _transferDeposit(id, header.owner);
+        _upsertOrder(id, Status.Closed, 0, msg.sender);
 
         emit Closed(id);
     }
@@ -276,7 +289,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @param fillHash   Hash of fill instructions origin data.
      * @param creditedTo Address deposits are credited to, provided by the filler.
      */
-    function markFilled(bytes32 id, bytes32 fillHash, address creditedTo) external xrecv nonReentrant {
+    function markFilled(bytes32 id, bytes32 fillHash, address creditedTo) external xrecv {
         SolverNet.Header memory header = _orderHeader[id];
         OrderState memory state = _orderState[id];
 
@@ -304,8 +317,8 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         if (state.status != Status.Filled) revert OrderNotFilled();
         if (state.updatedBy != msg.sender) revert Unauthorized();
 
-        _upsertOrder(id, Status.Claimed, 0, msg.sender);
         _transferDeposit(id, to);
+        _upsertOrder(id, Status.Claimed, 0, msg.sender);
 
         emit Claimed(id, msg.sender, to);
     }
@@ -348,6 +361,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         // Validate SolverNet.OrderData.Call
         SolverNet.Call[] memory calls = orderData.calls;
         if (calls.length == 0) revert InvalidMissingCalls();
+        if (calls.length > MAX_ARRAY_SIZE) revert InvalidArrayLength();
         for (uint256 i; i < calls.length; ++i) {
             SolverNet.Call memory call = calls[i];
             if (call.target == address(0)) revert InvalidCallTarget();
@@ -355,6 +369,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
 
         // Validate SolverNet.OrderData.Expenses
         SolverNet.TokenExpense[] memory expenses = orderData.expenses;
+        if (expenses.length > MAX_ARRAY_SIZE) revert InvalidArrayLength();
         for (uint256 i; i < expenses.length; ++i) {
             if (expenses[i].token == address(0)) revert InvalidExpenseToken();
             if (expenses[i].amount == 0) revert InvalidExpenseAmount();
@@ -541,6 +556,25 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             updatedBy: updatedBy
         });
         _latestOrderIdByStatus[status] = id;
+        _purgeState(id, status);
+    }
+
+    /**
+     * @dev Purge order state after it is no longer needed.
+     * @param id     ID of the order.
+     * @param status Status of the order.
+     */
+    function _purgeState(bytes32 id, Status status) internal {
+        if (status == Status.Pending) {
+            return;
+        } else {
+            if (status != Status.Filled) delete _orderDeposit[id];
+            if (status != Status.Claimed) {
+                delete _orderHeader[id];
+                delete _orderCalls[id];
+                delete _orderExpenses[id];
+            }
+        }
     }
 
     /**
