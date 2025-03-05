@@ -1,33 +1,21 @@
 # Operator Roadmap
 
-## ✅ Private Developer Omega Testnet
+## ✅ Omega Testnet - 2024
 
-## ✅ Public Omega Testnet
+## ✅ Mainnet - Beta - 2024
 
-## ✅ Public Omega Testnet + Whitelisted Validators
+## ✅ Mainnet - Magellan - Staking - Q1 2025
 
-## ✅ Mainnet - Beta
+See [Network Upgrade - Magellan](https://docs.omni.network/operate/magellan)
 
-- Whitelisted operators will be asked to validate mainnet once ready.
-- You will need to stake a minimum amount of 100 OMNI tokens initially.
-- Slashing will be enabled for double signing. You may be jailed for inactivity, but can unjail your validator if you come back online.
-- Staking rewards, withdrawals, delegations, and ETH restaking will NOT be enabled.
-- You will need to run full nodes for: Ethereum, Arbitrum, Optimism, and Base (if you don’t already). Your Omni validator will need access to RPC endpoints for those chains.
-
-## ⏳ Mainnet - Staking Network Upgrades
-
-- Delegations: receive native $OMNI delegations from the Omni foundation and other users.
-- Rewards: Enable staking rewards so delegators and validators accrue rewards.
-- Withdrawals: withdraw your stake and leave the validator set.
-- X-Chain attestations: Enable rewards and penalties.
-- ETH restaking: receive $ETH delegations from users via Eigenlayer
-
-We plan to batch release these in 3-4 network upgrades.
-
-💡 Please note that the current Omni AVS contract is deployed to mainnet, but will require an upgrade in order to support separation of validator & operator keys (in addition to a few other upgrades). This will require you to re-register your operator.
+## ⏳ Mainnet - Drake - Staking withdrawals - Q2 2025
 
 ## 🗺️ Mainnet++
 
-- After launching each of these phases, we’ll be removing the validator whitelist.
+- X-Chain attestations: Enable rewards and penalties.
+- ETH restaking: receive $ETH delegations from users via Eigenlayer.
+- Remove the validator whitelist.
 - The **top n*** validators of the registered set will be included in the active validator set.
 - The precise formula for determining the “top n” will be released with this upgrade. For most blockchains, the formula is simply the n validators with the most native tokens staked/delegated to them. However, because Omni validators can stake/receive delegation in both OMNI and ETH, the formula used to compute validator power is slightly more complex and will depend on several factors like the amount of economic security currently derived from each asset, the desired ratio, and more.
+
+💡 Please note that the current Omni AVS contract is deployed to mainnet, but will require an upgrade in order to support separation of validator & operator keys (in addition to a few other upgrades). This will require you to re-register your operator.
