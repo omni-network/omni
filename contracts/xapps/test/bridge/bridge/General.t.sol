@@ -12,6 +12,20 @@ contract GeneralBridgeTest is TestBase {
         vm.expectRevert(IBridge.ZeroAddress.selector);
         bridgeWithLockbox.initialize({
             admin_: address(0),
+            configurer_: address(0),
+            authorizer_: address(0),
+            pauser_: address(0),
+            unpauser_: address(0),
+            omni_: address(0),
+            token_: address(0),
+            lockbox_: address(0)
+        });
+
+        // `configurer` cannot be zero address.
+        vm.expectRevert(IBridge.ZeroAddress.selector);
+        bridgeWithLockbox.initialize({
+            admin_: admin,
+            configurer_: address(0),
             authorizer_: address(0),
             pauser_: address(0),
             unpauser_: address(0),
@@ -24,6 +38,7 @@ contract GeneralBridgeTest is TestBase {
         vm.expectRevert(IBridge.ZeroAddress.selector);
         bridgeWithLockbox.initialize({
             admin_: admin,
+            configurer_: configurer,
             authorizer_: address(0),
             pauser_: address(0),
             unpauser_: address(0),
@@ -36,6 +51,7 @@ contract GeneralBridgeTest is TestBase {
         vm.expectRevert(IBridge.ZeroAddress.selector);
         bridgeWithLockbox.initialize({
             admin_: admin,
+            configurer_: configurer,
             authorizer_: authorizer,
             pauser_: address(0),
             unpauser_: address(0),
@@ -48,6 +64,7 @@ contract GeneralBridgeTest is TestBase {
         vm.expectRevert(IBridge.ZeroAddress.selector);
         bridgeWithLockbox.initialize({
             admin_: admin,
+            configurer_: configurer,
             authorizer_: authorizer,
             pauser_: pauser,
             unpauser_: address(0),
@@ -60,6 +77,7 @@ contract GeneralBridgeTest is TestBase {
         vm.expectRevert(IBridge.ZeroAddress.selector);
         bridgeWithLockbox.initialize({
             admin_: admin,
+            configurer_: configurer,
             authorizer_: authorizer,
             pauser_: pauser,
             unpauser_: unpauser,
@@ -72,6 +90,7 @@ contract GeneralBridgeTest is TestBase {
         vm.expectRevert(IBridge.ZeroAddress.selector);
         bridgeWithLockbox.initialize({
             admin_: admin,
+            configurer_: configurer,
             authorizer_: authorizer,
             pauser_: pauser,
             unpauser_: unpauser,
@@ -83,6 +102,7 @@ contract GeneralBridgeTest is TestBase {
         // Initialization works with all fields populated.
         bridgeWithLockbox.initialize({
             admin_: admin,
+            configurer_: configurer,
             authorizer_: authorizer,
             pauser_: pauser,
             unpauser_: unpauser,
@@ -95,6 +115,7 @@ contract GeneralBridgeTest is TestBase {
         bridgeNoLockbox = Bridge(address(new TransparentUpgradeableProxy(impl, admin, "")));
         bridgeNoLockbox.initialize({
             admin_: admin,
+            configurer_: configurer,
             authorizer_: authorizer,
             pauser_: pauser,
             unpauser_: unpauser,
@@ -104,7 +125,7 @@ contract GeneralBridgeTest is TestBase {
         });
     }
 
-    function test_setRoutes_reverts() public prank(admin) {
+    function test_setRoutes_reverts() public prank(configurer) {
         uint64[] memory chainIds = new uint64[](1);
         chainIds[0] = DEST_CHAIN_ID + 1;
         IBridge.Route[] memory routes;
@@ -119,7 +140,7 @@ contract GeneralBridgeTest is TestBase {
         bridgeWithLockbox.configureRoutes(chainIds, routes);
     }
 
-    function test_setRoutes_succeeds() public prank(admin) {
+    function test_setRoutes_succeeds() public prank(configurer) {
         uint64[] memory chainIds = new uint64[](1);
         chainIds[0] = DEST_CHAIN_ID + 1;
         IBridge.Route[] memory routes = new IBridge.Route[](1);
@@ -133,7 +154,10 @@ contract GeneralBridgeTest is TestBase {
 
         uint64[] memory chainIds = new uint64[](1);
         chainIds[0] = DEST_CHAIN_ID + 1;
+        IBridge.Route[] memory routes = new IBridge.Route[](1);
+        routes[0] = IBridge.Route({ bridge: makeAddr("newBridge"), hasLockbox: false });
+
         vm.prank(authorizer);
-        bridgeWithLockbox.authorizeRoutes(chainIds);
+        bridgeWithLockbox.authorizeRoutes(chainIds, routes);
     }
 }

@@ -24,6 +24,7 @@ import (
 type BridgeConfig struct {
 	ProxyAdminOwner common.Address
 	Admin           common.Address
+	Configurer      common.Address
 	Authorizer      common.Address
 	Pauser          common.Address
 	Unpauser        common.Address
@@ -35,6 +36,9 @@ type BridgeConfig struct {
 func (cfg BridgeConfig) Validate() error {
 	if isEmpty(cfg.Admin) {
 		return errors.New("admin is zero")
+	}
+	if isEmpty(cfg.Configurer) {
+		return errors.New("configurer is zero")
 	}
 	if isEmpty(cfg.Authorizer) {
 		return errors.New("authorizer is zero")
@@ -164,6 +168,7 @@ func deployBridge(
 	cfg := BridgeConfig{
 		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleUpgrader),
 		Admin:           eoa.MustAddress(network, eoa.RoleManager),
+		Configurer:      eoa.MustAddress(network, eoa.RoleManager),
 		Authorizer:      eoa.MustAddress(network, eoa.RoleManager),
 		Pauser:          eoa.MustAddress(network, eoa.RoleManager),
 		Unpauser:        eoa.MustAddress(network, eoa.RoleManager),
@@ -237,7 +242,7 @@ func configureRoutes(
 		return errors.Wrap(err, "wait mined")
 	}
 
-	tx, err = bridge.AuthorizeRoutes(txOpts, destChainIDs)
+	tx, err = bridge.AuthorizeRoutes(txOpts, destChainIDs, routes)
 	if err != nil {
 		return errors.Wrap(err, "authorize routes")
 	}
@@ -264,7 +269,7 @@ func packBridgeInitCode(cfg BridgeConfig, impl common.Address) ([]byte, error) {
 		return nil, errors.Wrap(err, "get proxy abi")
 	}
 
-	initializer, err := bridgeAbi.Pack("initialize", cfg.Admin, cfg.Authorizer, cfg.Pauser, cfg.Unpauser, cfg.OmniPortal, cfg.Token, cfg.Lockbox)
+	initializer, err := bridgeAbi.Pack("initialize", cfg.Admin, cfg.Configurer, cfg.Authorizer, cfg.Pauser, cfg.Unpauser, cfg.OmniPortal, cfg.Token, cfg.Lockbox)
 	if err != nil {
 		return nil, errors.Wrap(err, "encode initializer")
 	}

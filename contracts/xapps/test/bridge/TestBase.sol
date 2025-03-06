@@ -27,8 +27,8 @@ contract TestBase is Test {
 
     uint64 internal constant SRC_CHAIN_ID = 1;
     uint64 internal constant DEST_CHAIN_ID = 2;
-    uint64 internal constant DEFAULT_RECEIVE_GAS_LIMIT = 125_000;
-    uint64 internal constant DEFAULT_RECEIVE_LOCKBOX_GAS_LIMIT = 200_000;
+    uint64 internal constant DEFAULT_RECEIVE_GAS_LIMIT = 150_000;
+    uint64 internal constant DEFAULT_RECEIVE_LOCKBOX_GAS_LIMIT = 250_000;
     uint256 internal constant INITIAL_USER_BALANCE = 1_000_000 ether;
 
     address internal user = makeAddr("user");
@@ -39,6 +39,7 @@ contract TestBase is Test {
     address internal unpauser = makeAddr("unpauser");
     address internal upgrader = makeAddr("upgrader");
     address internal clawbacker = makeAddr("clawbacker");
+    address internal configurer = makeAddr("configurer");
     address internal authorizer = makeAddr("authorizer");
 
     modifier prank(address addr) {
@@ -150,8 +151,9 @@ contract TestBase is Test {
 
     function _deployBridge(address token_, address lockbox_) internal returns (Bridge) {
         address impl = address(new Bridge(DEFAULT_RECEIVE_GAS_LIMIT, DEFAULT_RECEIVE_LOCKBOX_GAS_LIMIT));
-        bytes memory data =
-            abi.encodeCall(Bridge.initialize, (admin, authorizer, pauser, unpauser, address(omni), token_, lockbox_));
+        bytes memory data = abi.encodeCall(
+            Bridge.initialize, (admin, configurer, authorizer, pauser, unpauser, address(omni), token_, lockbox_)
+        );
 
         address proxy = address(new TransparentUpgradeableProxy(impl, admin, data));
         return Bridge(proxy);
@@ -189,17 +191,17 @@ contract TestBase is Test {
 
         chainIds[0] = DEST_CHAIN_ID;
         routes[0] = IBridge.Route({ bridge: address(bridgeNoLockbox), hasLockbox: false });
-        vm.prank(admin);
+        vm.prank(configurer);
         bridgeWithLockbox.configureRoutes(chainIds, routes);
         vm.prank(authorizer);
-        bridgeWithLockbox.authorizeRoutes(chainIds);
+        bridgeWithLockbox.authorizeRoutes(chainIds, routes);
 
         chainIds[0] = SRC_CHAIN_ID;
         routes[0] = IBridge.Route({ bridge: address(bridgeWithLockbox), hasLockbox: true });
-        vm.prank(admin);
+        vm.prank(configurer);
         bridgeNoLockbox.configureRoutes(chainIds, routes);
         vm.prank(authorizer);
-        bridgeNoLockbox.authorizeRoutes(chainIds);
+        bridgeNoLockbox.authorizeRoutes(chainIds, routes);
     }
 
     function _configurePermissions() internal {
