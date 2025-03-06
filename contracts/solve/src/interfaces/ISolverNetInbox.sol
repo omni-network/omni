@@ -5,14 +5,20 @@ import { IOriginSettler } from "../erc7683/IOriginSettler.sol";
 
 interface ISolverNetInbox is IOriginSettler {
     // Validation errors
-    error InvalidOrderTypehash();
-    error InvalidOrderData();
+    error InvalidUser();
+    error InvalidNonce();
     error InvalidChainId();
+    error InvalidOrderData();
+    error InvalidSignature();
+    error InvalidCallTarget();
+    error InvalidOriginChain();
+    error InvalidExpenseToken();
+    error InvalidOpenDeadline();
     error InvalidFillDeadline();
     error InvalidMissingCalls();
-    error InvalidCallTarget();
-    error InvalidExpenseToken();
+    error InvalidOrderTypehash();
     error InvalidExpenseAmount();
+    error InvalidOriginSettler();
 
     // Open order errors
     error InvalidNativeDeposit();
