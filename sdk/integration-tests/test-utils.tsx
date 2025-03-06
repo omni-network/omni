@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { type RenderHookResult, renderHook } from '@testing-library/react'
-import { http, type Chain, createWalletClient, publicActions } from 'viem'
+import { http, type Chain, createWalletClient } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import {
   type Config,
