@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 
@@ -21,7 +22,24 @@ import (
 var solverNetSpec = map[netconf.ID]NetworkSolverNetSpec{
 	netconf.Devnet:  {Global: DefaultSolverNetSpec()},
 	netconf.Staging: {Global: DefaultSolverNetSpec()},
-	netconf.Omega:   {Global: DefaultSolverNetSpec()},
+	netconf.Omega: {
+		Global: SolverNetSpec{
+			PauseAll:   true,
+			PauseOpen:  false,
+			PauseClose: false,
+		},
+		ChainOverrides: map[uint64]*SolverNetSpec{
+			evmchain.IDBaseSepolia: {
+				PauseAll:   false,
+				PauseOpen:  false,
+				PauseClose: true,
+			},
+			evmchain.IDOpSepolia: func() *SolverNetSpec {
+				spec := DefaultSolverNetSpec()
+				return &spec
+			}(),
+		},
+	},
 	netconf.Mainnet: {Global: DefaultSolverNetSpec()},
 }
 

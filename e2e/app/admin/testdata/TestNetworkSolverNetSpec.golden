@@ -17,11 +17,22 @@
  },
  "omega": {
   "Global": {
-   "PauseAll": false,
+   "PauseAll": true,
    "PauseOpen": false,
    "PauseClose": false
   },
-  "ChainOverrides": null
+  "ChainOverrides": {
+   "11155420": {
+    "PauseAll": false,
+    "PauseOpen": false,
+    "PauseClose": false
+   },
+   "84532": {
+    "PauseAll": false,
+    "PauseOpen": false,
+    "PauseClose": true
+   }
+  }
  },
  "staging": {
   "Global": {
