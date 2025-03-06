@@ -14,7 +14,7 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-var yearDuration = math.LegacyNewDec(365 * 24 * time.Hour.Milliseconds())
+var yearMillis = math.LegacyNewDec(365 * 24 * time.Hour.Milliseconds())
 
 // AvgInflationRate returns the average inflation for all delegations over the given number of blocks
 // or true if all delegations changed (couldn't calculate inflation).
@@ -73,7 +73,7 @@ func DelegatorInflationRates(ctx context.Context, cprov cchain.Provider, delegat
 		return nil, true, errors.New("delegations mismatch") // Staking actions occurred
 	}
 
-	timeDelta := math.LegacyNewDec(timestamp1.Sub(*timestamp0).Milliseconds())
+	milliDelta := math.LegacyNewDec(timestamp1.Sub(timestamp0).Milliseconds())
 
 	var resp []math.LegacyDec
 	for i := range len(rewards0) {
@@ -85,7 +85,7 @@ func DelegatorInflationRates(ctx context.Context, cprov cchain.Provider, delegat
 		}
 
 		rewardDelta := rew1.Rewards.Sub(rew0.Rewards)
-		rewardsPerYear := rewardDelta.Mul(yearDuration).Quo(timeDelta)
+		rewardsPerYear := rewardDelta.Mul(yearMillis).Quo(milliDelta)
 		stake := rew0.Delegation.Balance.Amount.ToLegacyDec()
 		rewardsAPY := rewardsPerYear.Quo(stake)
 
@@ -151,12 +151,12 @@ type delegationReward struct {
 }
 
 // getDelegationRewards returns the current rewards-per-delegation (and height) for the given delegator.
-func getDelegationRewards(ctx context.Context, cprov cchain.Provider, delegator sdk.AccAddress) ([]delegationReward, uint64, *time.Time, error) {
+func getDelegationRewards(ctx context.Context, cprov cchain.Provider, delegator sdk.AccAddress) ([]delegationReward, uint64, time.Time, error) {
 	status, err := cprov.NodeStatus(ctx)
 	if err != nil {
-		return nil, 0, &time.Time{}, errors.Wrap(err, "node status")
+		return nil, 0, time.Time{}, errors.Wrap(err, "node status")
 	}
-	timestamp := status.Timestamp
+	timestamp := *status.Timestamp
 	height := status.Height
 
 	resp, err := cprov.QueryClients().Staking.DelegatorDelegations(ctx, &stakingtypes.QueryDelegatorDelegationsRequest{
