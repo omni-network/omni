@@ -13,7 +13,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/core"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/eth/downloader"
+	"github.com/ethereum/go-ethereum/eth/ethconfig"
+	"github.com/ethereum/go-ethereum/p2p/nat"
 	"github.com/ethereum/go-ethereum/params"
 )
 
@@ -54,6 +55,7 @@ func WriteAllConfig(testnet types.Testnet, genesis core.Genesis) error {
 			ChainID:         evm.Chain.ChainID,
 			BootNodes:       evm.Peers, // TODO(corver): Use seed nodes once available.
 			TrustedNodes:    evm.Peers,
+			AdvertisedIP:    evm.AdvertisedIP,
 			SnapshotCacheMB: snapshotCacheMB,
 		}
 		if err := WriteConfigTOML(conf, filepath.Join(testnet.Dir, evm.InstanceName, "config.toml")); err != nil {
@@ -85,10 +87,14 @@ func MakeGethConfig(conf Config) FullConfig {
 	cfg.Eth.NetworkId = conf.ChainID
 	cfg.Node.DataDir = "/geth" // Mount inside docker container
 	cfg.Node.IPCPath = "/geth/geth.ipc"
+	cfg.Metrics.Enabled = true
+	if len(conf.AdvertisedIP) != 0 {
+		cfg.Node.P2P.NAT = nat.ExtIP(conf.AdvertisedIP)
+	}
 
 	// Use syncmode=full. Since default "snap" sync has race condition on startup. Where engineAPI newPayload fails
 	// if snapsync has not completed. Should probably wait for snapsync to complete before starting engineAPI?
-	cfg.Eth.SyncMode = downloader.FullSync
+	cfg.Eth.SyncMode = ethconfig.FullSync
 
 	// Disable pruning for archive nodes.
 	// Note that runtime flags are also required for archive nodes, specifically:

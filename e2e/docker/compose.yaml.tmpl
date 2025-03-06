@@ -77,10 +77,8 @@ services:
     command:
       - --config=/geth/config.toml
       # Flags not available via config.toml
-      - --nat=extip:{{ .AdvertisedIP }}
       - --pprof
       - --pprof.addr=0.0.0.0
-      - --metrics
       - --graphql
       - --verbosity={{$.GethVerbosity}} # Log level (1=error,2=warn,3=info,4=debug)
       {{ if .IsArchive }}- --gcmode=archive{{ end }}
