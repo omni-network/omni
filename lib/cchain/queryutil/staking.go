@@ -16,12 +16,12 @@ import (
 
 var yearMillis = math.LegacyNewDec(365 * 24 * time.Hour.Milliseconds())
 
-// AvgInflationRate returns the average inflation for all delegations over the given number of blocks
+// AvgRewardsRate returns the average staking rewards for all delegations over the given number of blocks
 // or true if all delegations changed (couldn't calculate inflation).
-func AvgInflationRate(ctx context.Context, cprov cchain.Provider, waitBlocks uint64) (math.LegacyDec, bool, error) {
-	delegators, err := allDelegators(ctx, cprov)
-	if err != nil {
-		return math.LegacyDec{}, false, errors.Wrap(err, "get delegators")
+func AvgRewardsRate(ctx context.Context, cprov cchain.Provider, delegations []DelegationBalance, waitBlocks uint64) (math.LegacyDec, bool, error) {
+	var delegators []sdk.AccAddress
+	for _, del := range delegations {
+		delegators = append(delegators, del.DelegatorAddress)
 	}
 
 	result, cancel := forkjoin.NewWithInputs(ctx, func(ctx context.Context, addr sdk.AccAddress) ([]math.LegacyDec, error) {
@@ -95,13 +95,20 @@ func DelegatorInflationRates(ctx context.Context, cprov cchain.Provider, delegat
 	return resp, false, nil
 }
 
-func allDelegators(ctx context.Context, cprov cchain.Provider) ([]sdk.AccAddress, error) {
+// DelegationBalance represents the total delegation balance of a delegator.
+type DelegationBalance struct {
+	DelegatorAddress sdk.AccAddress
+	Balance          sdk.Coin
+}
+
+// AllDelegations returns delegation balances of each unique delegator.
+func AllDelegations(ctx context.Context, cprov cchain.Provider) ([]DelegationBalance, error) {
 	vals, err := cprov.SDKValidators(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	uniq := make(map[string]sdk.AccAddress)
+	uniq := make(map[string]*DelegationBalance)
 	for _, val := range vals {
 		resp, err := cprov.QueryClients().Staking.ValidatorDelegations(ctx, &stakingtypes.QueryValidatorDelegationsRequest{
 			ValidatorAddr: val.OperatorAddress,
@@ -115,14 +122,20 @@ func allDelegators(ctx context.Context, cprov cchain.Provider) ([]sdk.AccAddress
 			if err != nil {
 				return nil, errors.Wrap(err, "parse delegator address")
 			}
-
-			uniq[del.Delegation.DelegatorAddress] = addr
+			if delegation, ok := uniq[del.Delegation.DelegatorAddress]; ok {
+				delegation.Balance = del.Balance.Add(del.Balance)
+			} else {
+				uniq[del.Delegation.DelegatorAddress] = &DelegationBalance{
+					DelegatorAddress: addr,
+					Balance:          del.Balance,
+				}
+			}
 		}
 	}
 
-	var resp []sdk.AccAddress
-	for _, addr := range uniq {
-		resp = append(resp, addr)
+	var resp []DelegationBalance
+	for _, del := range uniq {
+		resp = append(resp, *del)
 	}
 
 	return resp, nil
