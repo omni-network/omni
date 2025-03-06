@@ -14,16 +14,19 @@ import (
 	"github.com/naoina/toml"
 )
 
-// Version defines the geth version deployed to all networks.
-const Version = "v1.15.5"
+// ServerVersion defines the geth version deployed to all networks.
+const ServerVersion = "v1.14.13"
 
-// SupportedVersions are the supported older geth versions.
+// ClientVersion defines the geth version used mostly for ethclient.
+const ClientVersion = "v1.15.5"
+
+// SupportedVersions are the supported older geth server versions.
 // These are tested in backwards.toml.
 var SupportedVersions = []string{
-	"v1.14.13",
 	"v1.14.12",
 	"v1.14.11",
 	"v1.14.8",
+	"v1.14.7",
 }
 
 // Config is the configurable options for the standard omni geth config.
