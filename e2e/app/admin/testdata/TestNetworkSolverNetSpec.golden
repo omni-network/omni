@@ -25,21 +25,10 @@
  },
  "staging": {
   "Global": {
-   "PauseAll": true,
+   "PauseAll": false,
    "PauseOpen": false,
    "PauseClose": false
   },
-  "ChainOverrides": {
-   "11155420": {
-    "PauseAll": false,
-    "PauseOpen": false,
-    "PauseClose": false
-   },
-   "84532": {
-    "PauseAll": false,
-    "PauseOpen": false,
-    "PauseClose": true
-   }
-  }
+  "ChainOverrides": null
  }
 }
