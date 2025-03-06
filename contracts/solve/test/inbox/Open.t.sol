@@ -12,7 +12,7 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         uint96[] memory expenseAmounts = new uint96[](1);
         expenseAmounts[0] = defaultAmount;
 
-        (, IERC7683.OnchainCrossChainOrder memory order) =
+        (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
             getArbitraryVaultOrder(address(0), defaultAmount, expenseTokens, expenseAmounts);
         assertTrue(inbox.validate(order), "order should be valid");
 
@@ -33,6 +33,27 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         vm.expectRevert(ISolverNetInbox.InvalidNativeDeposit.selector);
         vm.prank(user);
         inbox.open(order);
+
+        // Should revert if order contains more than 32 calls
+        SolverNet.Call[] memory originalCalls = orderData.calls;
+        SolverNet.Call[] memory calls = new SolverNet.Call[](33);
+        orderData.calls = calls;
+        order.orderData = abi.encode(orderData);
+
+        vm.deal(user, defaultAmount);
+        vm.expectRevert(ISolverNetInbox.InvalidArrayLength.selector);
+        vm.prank(user);
+        inbox.open{ value: defaultAmount }(order);
+
+        // Should revert if order contains more than 32 expenses
+        orderData.calls = originalCalls;
+        SolverNet.TokenExpense[] memory expenses = new SolverNet.TokenExpense[](33);
+        orderData.expenses = expenses;
+        order.orderData = abi.encode(orderData);
+
+        vm.expectRevert(ISolverNetInbox.InvalidArrayLength.selector);
+        vm.prank(user);
+        inbox.open{ value: defaultAmount }(order);
     }
 
     function test_open_nativeDeposit_succeeds() public {
