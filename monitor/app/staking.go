@@ -10,7 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 )
 
-func monitorInflationForever(ctx context.Context, cprov cchain.Provider) {
+func monitorStakingForever(ctx context.Context, cprov cchain.Provider) {
 	ticker := time.NewTicker(time.Hour)
 	defer ticker.Stop()
 
@@ -28,21 +28,26 @@ func monitorInflationForever(ctx context.Context, cprov cchain.Provider) {
 				continue
 			}
 
-			// Collect data during multiple blocks.
-			blocks := uint64(30)
-			inflation, _, err := queryutil.AvgInflationRate(ctx, cprov, blocks)
-			if err != nil {
-				log.Warn(ctx, "Failed to get inflation rate (will retry)", err)
-				continue
-			}
-
-			inflationF64, err := inflation.Float64()
-			if err != nil {
-				log.Warn(ctx, "Failed to convert inflation rate to float64 [BUG]", err)
-				continue
-			}
-
-			inflationAvg.Set(inflationF64)
+			effectiveStakingRewards(ctx, cprov)
 		}
 	}
+}
+
+// effectiveStakingRewards instruments effective staking rewards.
+func effectiveStakingRewards(ctx context.Context, cprov cchain.Provider) {
+	// Collect data during multiple blocks.
+	blocks := uint64(30)
+	inflation, _, err := queryutil.AvgInflationRate(ctx, cprov, blocks)
+	if err != nil {
+		log.Warn(ctx, "Failed to get inflation rate (will retry)", err)
+		return
+	}
+
+	inflationF64, err := inflation.Float64()
+	if err != nil {
+		log.Warn(ctx, "Failed to convert inflation rate to float64 [BUG]", err)
+		return
+	}
+
+	inflationAvg.Set(inflationF64)
 }
