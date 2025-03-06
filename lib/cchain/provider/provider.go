@@ -106,14 +106,14 @@ func (p Provider) AppliedPlan(ctx context.Context, name string) (upgradetypes.Pl
 	return p.appliedFunc(ctx, name)
 }
 
-// BlockHeight returns the current consensus block height.
-func (p Provider) BlockHeight(ctx context.Context) (uint64, error) {
+// NodeStatus returns the current consensus node status.
+func (p Provider) NodeStatus(ctx context.Context) (*node.StatusResponse, error) {
 	status, err := p.QueryClients().Node.Status(ctx, &node.StatusRequest{})
 	if err != nil {
-		return 0, errors.Wrap(err, "node status query")
+		return &node.StatusResponse{}, errors.Wrap(err, "node status query")
 	}
 
-	return status.Height, nil
+	return status, nil
 }
 
 func (p Provider) AttestationsFrom(
