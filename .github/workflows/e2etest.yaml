@@ -13,6 +13,15 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 'v1.23'
+      
+      - name: Install node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
 
       - name: Run e2e tests
         run: make e2e-ci
