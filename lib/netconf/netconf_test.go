@@ -1,10 +1,12 @@
 package netconf_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"flag"
 	"fmt"
+	"net"
 	"sort"
 	"strings"
 	"testing"
@@ -190,7 +192,18 @@ func TestGenExecutionSeeds(t *testing.T) {
 					pubkeyHex := hex.EncodeToString(pubkey64)
 					nodeName := strings.TrimSuffix(node, "_evm")
 
-					peers = append(peers, fmt.Sprintf("enode://%s@%s.%s.omni.network:30303", pubkeyHex, nodeName, test.network))
+					// Convert hostname to IP since geth doesn't support DNS bootstrap nodes anymore.
+					// TODO(corver): Revert once fixed https://github.com/ethereum/go-ethereum/issues/31208
+					hostname := fmt.Sprintf("%s.%s.omni.network", nodeName, test.network)
+					ips, err := net.LookupIP(hostname)
+					require.NoError(t, err)
+					require.NotEmpty(t, ips)
+					sort.Slice(ips, func(i, j int) bool {
+						return bytes.Compare(ips[i], ips[j]) < 0
+					})
+
+					//nolint:nosprintfhostport // Not important
+					peers = append(peers, fmt.Sprintf("enode://%s@%s:30303", pubkeyHex, ips[0]))
 				}
 			}
 
