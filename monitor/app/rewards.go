@@ -11,7 +11,7 @@ import (
 )
 
 func monitorInflationForever(ctx context.Context, cprov cchain.Provider) {
-	ticker := time.NewTicker(time.Minute)
+	ticker := time.NewTicker(time.Hour)
 	defer ticker.Stop()
 
 	for {
@@ -28,7 +28,9 @@ func monitorInflationForever(ctx context.Context, cprov cchain.Provider) {
 				continue
 			}
 
-			inflation, _, err := queryutil.AvgInflationRate(ctx, cprov, 3)
+			// Collect data during multiple blocks.
+			blocks := uint64(30)
+			inflation, _, err := queryutil.AvgInflationRate(ctx, cprov, blocks)
 			if err != nil {
 				log.Warn(ctx, "Failed to get inflation rate (will retry)", err)
 				continue

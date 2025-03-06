@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	utypes "cosmossdk.io/x/upgrade/types"
+	"github.com/cosmos/cosmos-sdk/client/grpc/node"
 )
 
 // ProviderCallback is the callback function signature that will be called with each approved attestation per
@@ -84,8 +85,8 @@ type Provider interface {
 	// AppliedPlan returns the applied (activated) upgrade plan by name.
 	AppliedPlan(ctx context.Context, name string) (utypes.Plan, bool, error)
 
-	// BlockHeight returns the current consensus block height.
-	BlockHeight(ctx context.Context) (uint64, error)
+	// NodeStatus returns the consensus node status.
+	NodeStatus(ctx context.Context) (*node.StatusResponse, error)
 
 	// QueryClients returns the query clients for the various modules.
 	QueryClients() QueryClients
