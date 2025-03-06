@@ -113,9 +113,14 @@ func handlerAdapter(h Handler) http.Handler {
 		req := h.ZeroReq()
 		if req == nil { //nolint:revive // noop if-block for readability
 			// Skip request unmarshalling if ZeroReq returns nil.
-		} else if err := json.NewDecoder(rr.Body).Decode(req); err != nil {
-			writeErrResponse(ctx, w, newAPIError(err, http.StatusBadRequest))
-			return
+		} else {
+			decoder := json.NewDecoder(rr.Body)
+			decoder.DisallowUnknownFields() // This will cause an error if unexpected fields are found.
+
+			if err := decoder.Decode(req); err != nil {
+				writeErrResponse(ctx, w, newAPIError(err, http.StatusBadRequest))
+				return
+			}
 		}
 
 		res, err := h.HandleFunc(ctx, req)
