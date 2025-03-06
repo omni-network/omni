@@ -24,6 +24,8 @@ services:
       - --verbosity={{.GethVerbosity}}                 # Log level (1=error,2=warn,3=info,4=debug)
       {{ if .GethArchive }}- --gcmode=archive{{ end }}
       # Flags not available via config.toml
+      #- --nat=extip:<my-external-ip> # External IP for P2P via NAT
+      #- --metrics                    # Enable prometheus metrics
       #- --pprof                      # Enable prometheus metrics
       #- --pprof.addr=0.0.0.0         # Enable prometheus metrics
     healthcheck:

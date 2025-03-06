@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"regexp"
 	"time"
 
 	"github.com/omni-network/omni/e2e/types"
@@ -71,6 +72,14 @@ func WriteConfigTOML(conf Config, path string) error {
 	bz, err := tomlSettings.Marshal(MakeGethConfig(conf))
 	if err != nil {
 		return errors.Wrap(err, "marshal toml")
+	}
+
+	// Remove some config introduced in v1.15 (golang dependency)  but not supported by v1.14 (server)
+	for _, pattern := range []string{
+		"NAT = \".*\"\n",
+	} {
+		re := regexp.MustCompile(pattern)
+		bz = re.ReplaceAll(bz, nil)
 	}
 
 	if err := os.WriteFile(path, bz, 0o644); err != nil {

@@ -84,7 +84,6 @@ StaticNodes = []
 TrustedNodes = []
 ListenAddr = "0.0.0.0:30303"
 DiscAddr = ""
-NAT = "any"
 EnableMsgEvents = false
 
 [Node.HTTPTimeouts]

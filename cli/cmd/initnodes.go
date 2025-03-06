@@ -282,7 +282,7 @@ func writeComposeFile(ctx context.Context, cfg InitConfig, upgrade string) error
 		GenesisBinary string
 	}{
 		HaloTag:       cfg.HaloTag,
-		GethTag:       geth.Version,
+		GethTag:       geth.ServerVersion,
 		GethVerbosity: verbosity,
 		GethArchive:   cfg.Archive,
 		GenesisBinary: upgrade,
@@ -295,7 +295,7 @@ func writeComposeFile(ctx context.Context, cfg InitConfig, upgrade string) error
 		return errors.Wrap(err, "writing compose file")
 	}
 
-	log.Info(ctx, "Generated docker compose file", "path", filepath.Join(cfg.Home, "compose.yaml"), "geth_version", geth.Version, "halo_version", cfg.HaloTag)
+	log.Info(ctx, "Generated docker compose file", "path", filepath.Join(cfg.Home, "compose.yaml"), "geth_version", geth.ServerVersion, "halo_version", cfg.HaloTag)
 
 	return nil
 }
@@ -375,7 +375,7 @@ func gethInit(ctx context.Context, cfg InitConfig, dir string) error {
 
 	// Run geth init via docker
 	{
-		image := "ethereum/client-go:" + geth.Version
+		image := "ethereum/client-go:" + geth.ServerVersion
 
 		stateScheme := "path"
 		if cfg.NodeSnapshot || cfg.Archive {
