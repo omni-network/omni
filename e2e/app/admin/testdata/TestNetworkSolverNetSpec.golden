@@ -17,6 +17,14 @@
  },
  "omega": {
   "Global": {
+   "PauseAll": false,
+   "PauseOpen": false,
+   "PauseClose": false
+  },
+  "ChainOverrides": null
+ },
+ "staging": {
+  "Global": {
    "PauseAll": true,
    "PauseOpen": false,
    "PauseClose": false
@@ -33,13 +41,5 @@
     "PauseClose": true
    }
   }
- },
- "staging": {
-  "Global": {
-   "PauseAll": false,
-   "PauseOpen": false,
-   "PauseClose": false
-  },
-  "ChainOverrides": null
  }
 }

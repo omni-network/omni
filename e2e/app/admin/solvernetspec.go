@@ -20,9 +20,8 @@ import (
 // To update SolverNet spec, update this map.
 // Then run `ensure-solvernet-spec` to apply the changes.
 var solverNetSpec = map[netconf.ID]NetworkSolverNetSpec{
-	netconf.Devnet:  {Global: DefaultSolverNetSpec()},
-	netconf.Staging: {Global: DefaultSolverNetSpec()},
-	netconf.Omega: {
+	netconf.Devnet: {Global: DefaultSolverNetSpec()},
+	netconf.Staging: {
 		Global: SolverNetSpec{
 			PauseAll:   true,
 			PauseOpen:  false,
@@ -40,6 +39,7 @@ var solverNetSpec = map[netconf.ID]NetworkSolverNetSpec{
 			}(),
 		},
 	},
+	netconf.Omega:   {Global: DefaultSolverNetSpec()},
 	netconf.Mainnet: {Global: DefaultSolverNetSpec()},
 }
 
