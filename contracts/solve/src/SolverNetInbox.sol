@@ -565,15 +565,12 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @param status Status of the order.
      */
     function _purgeState(bytes32 id, Status status) internal {
-        if (status == Status.Pending) {
-            return;
-        } else {
-            if (status != Status.Filled) delete _orderDeposit[id];
-            if (status != Status.Claimed) {
-                delete _orderHeader[id];
-                delete _orderCalls[id];
-                delete _orderExpenses[id];
-            }
+        if (status == Status.Pending) return;
+        if (status != Status.Filled) delete _orderDeposit[id];
+        if (status != Status.Claimed) {
+            delete _orderHeader[id];
+            delete _orderCalls[id];
+            delete _orderExpenses[id];
         }
     }
 
