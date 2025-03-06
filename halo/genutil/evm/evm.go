@@ -111,6 +111,7 @@ func DefaultChainConfig(network netconf.ID) *params.ChainConfig {
 		ShanghaiTime:            newUint64(0),
 		CancunTime:              newUint64(0),
 		TerminalTotalDifficulty: big.NewInt(0),
+		BlobScheduleConfig:      params.DefaultBlobSchedule,
 	}
 }
 
