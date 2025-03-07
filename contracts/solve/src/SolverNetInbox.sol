@@ -256,8 +256,9 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         if (reason == 0) revert InvalidReason();
         if (state.status != Status.Pending) revert OrderNotPending();
 
-        _transferDeposit(id, _orderHeader[id].owner);
         _upsertOrder(id, Status.Rejected, reason, msg.sender);
+        _transferDeposit(id, _orderHeader[id].owner);
+        _purgeState(id, Status.Rejected);
 
         emit Rejected(id, msg.sender, reason);
     }
@@ -276,8 +277,9 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         if (IOmniPortalPausable(address(omni)).isPaused(ACTION_XSUBMIT, header.destChainId)) revert PortalPaused();
         if (header.fillDeadline + CLOSE_BUFFER >= block.timestamp) revert OrderStillValid();
 
-        _transferDeposit(id, header.owner);
         _upsertOrder(id, Status.Closed, 0, msg.sender);
+        _transferDeposit(id, header.owner);
+        _purgeState(id, Status.Closed);
 
         emit Closed(id);
     }
@@ -303,6 +305,8 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         }
 
         _upsertOrder(id, Status.Filled, 0, creditedTo);
+        _purgeState(id, Status.Filled);
+
         emit Filled(id, fillHash, creditedTo);
     }
 
@@ -317,8 +321,9 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         if (state.status != Status.Filled) revert OrderNotFilled();
         if (state.updatedBy != msg.sender) revert Unauthorized();
 
-        _transferDeposit(id, to);
         _upsertOrder(id, Status.Claimed, 0, msg.sender);
+        _transferDeposit(id, to);
+        _purgeState(id, Status.Claimed);
 
         emit Claimed(id, msg.sender, to);
     }
@@ -556,7 +561,6 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             updatedBy: updatedBy
         });
         _latestOrderIdByStatus[status] = id;
-        _purgeState(id, status);
     }
 
     /**
