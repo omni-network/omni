@@ -56,5 +56,6 @@ var statics = map[netconf.ID][]Account{
 		secret("0x7f409BaC75F5260340EbEC91066a845631Dc4859", RoleFlowgen),
 		secret("0x6191442101086253A636aecBCC870e4778490AaB", RoleRelayer),
 		secret("0x835c36774B28563b9a1d1ae83dD6F671F51DCb5c", RoleXCaller),
+		secret("0x8cC81c5C09394CEaCa7a53be5f547AE719D75dFC", RoleSolver),
 	),
 }
