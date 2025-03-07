@@ -35,9 +35,16 @@ func MonitorForever(ctx context.Context, cprov cchain.Provider) {
 
 // instrEffRewards instruments effective staking rewards.
 func instrEffRewards(ctx context.Context, cprov cchain.Provider, allDelegations []queryutil.DelegationBalance) {
+	delegations := allDelegations
+	// Since we have no validator commissions, we can use just a couple of random delegations to estimate rewards.
+	// Once we have validator commissions, this code needs to be removed.
+	if len(allDelegations) > 4 {
+		delegations = allDelegations[:4]
+	}
+
 	// Collect data during multiple blocks.
 	const blocks = uint64(30)
-	rewards, ok, err := queryutil.AvgRewardsRate(ctx, cprov, allDelegations, blocks)
+	rewards, ok, err := queryutil.AvgRewardsRate(ctx, cprov, delegations, blocks)
 	if err != nil {
 		log.Warn(ctx, "Failed to get rewards rate (will retry)", err)
 		return
