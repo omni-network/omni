@@ -110,27 +110,32 @@ func AllDelegations(ctx context.Context, cprov cchain.Provider) ([]DelegationBal
 
 	uniq := make(map[string]DelegationBalance)
 	for _, val := range vals {
-		resp, err := cprov.QueryClients().Staking.ValidatorDelegations(ctx, &stakingtypes.QueryValidatorDelegationsRequest{
-			ValidatorAddr: val.OperatorAddress,
-		})
-		if err != nil {
-			return nil, errors.Wrap(err, "query validator delegations")
-		}
-
-		for _, del := range resp.DelegationResponses {
-			addr, err := sdk.AccAddressFromBech32(del.Delegation.DelegatorAddress)
+		request := &stakingtypes.QueryValidatorDelegationsRequest{ValidatorAddr: val.OperatorAddress}
+		for {
+			resp, err := cprov.QueryClients().Staking.ValidatorDelegations(ctx, request)
 			if err != nil {
-				return nil, errors.Wrap(err, "parse delegator address")
+				return nil, errors.Wrap(err, "query validator delegations")
 			}
-			if delegation, ok := uniq[del.Delegation.DelegatorAddress]; ok {
-				delegation.Balance = delegation.Balance.Add(del.Balance)
-				uniq[del.Delegation.DelegatorAddress] = delegation
-			} else {
-				uniq[del.Delegation.DelegatorAddress] =
-					DelegationBalance{
-						DelegatorAddress: addr,
-						Balance:          del.Balance,
-					}
+
+			for _, del := range resp.DelegationResponses {
+				addr, err := sdk.AccAddressFromBech32(del.Delegation.DelegatorAddress)
+				if err != nil {
+					return nil, errors.Wrap(err, "parse delegator address")
+				}
+				if delegation, ok := uniq[del.Delegation.DelegatorAddress]; ok {
+					delegation.Balance = delegation.Balance.Add(del.Balance)
+					uniq[del.Delegation.DelegatorAddress] = delegation
+				} else {
+					uniq[del.Delegation.DelegatorAddress] =
+						DelegationBalance{
+							DelegatorAddress: addr,
+							Balance:          del.Balance,
+						}
+				}
+			}
+			request.Pagination.Key = resp.Pagination.NextKey
+			if len(request.Pagination.Key) == 0 {
+				break
 			}
 		}
 	}
