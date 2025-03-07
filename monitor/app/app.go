@@ -19,6 +19,7 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 	"github.com/omni-network/omni/monitor/account"
+	"github.com/omni-network/omni/monitor/app/staking"
 	"github.com/omni-network/omni/monitor/contract"
 	"github.com/omni-network/omni/monitor/flowgen"
 	"github.com/omni-network/omni/monitor/loadgen"
@@ -100,7 +101,7 @@ func Run(ctx context.Context, cfg Config) error {
 	go validator.MonitorForever(ctx, cprov)
 	go monitorPublicRPCForever(ctx, network, ethClients)
 	go monitorOmniEVMGasTipForever(ctx, network, ethClients)
-	go monitorInflationForever(ctx, cprov)
+	go staking.MonitorForever(ctx, cprov)
 
 	select {
 	case <-ctx.Done():
