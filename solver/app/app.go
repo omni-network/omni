@@ -18,6 +18,8 @@ import (
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	tokenslib "github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tokens/coingecko"
 	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
@@ -82,9 +84,10 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	// temporarily remove holesky from solver network, until holesky issue is
-	// resolved, or it's deprecated and removed from core
-	network = removeHolesky(network)
+	// add back holesky manually on holesky on omega
+	// temporary fix to enable holesky solving before it is re-enabled in core
+	// It was disabled here https://github.com/omni-network/omni/pull/3259/files
+	network = maybeAddHolesky(network)
 
 	// TODO: log supported tokens / balances
 
@@ -103,8 +106,6 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	// TODO: maybeLoadgen
-
 	xprov := xprovider.New(network, backends.Clients(), nil)
 
 	db, err := newSolverDB(cfg.DBDir)
@@ -122,7 +123,9 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "get contract addresses")
 	}
 
-	err = startEventStreams(ctx, network, xprov, backends, solverAddr, addrs, cursors)
+	pricer := newPricer(ctx, cfg.CoinGeckoAPIKey)
+
+	err = startEventStreams(ctx, network, xprov, backends, solverAddr, addrs, cursors, pricer)
 	if err != nil {
 		return errors.Wrap(err, "start event streams")
 	}
@@ -147,6 +150,16 @@ func Run(ctx context.Context, cfg Config) error {
 	case err := <-apiChan:
 		return err
 	}
+}
+
+func newPricer(ctx context.Context, apiKey string) tokenslib.Pricer {
+	pricer := tokenslib.NewCachedPricer(coingecko.New(coingecko.WithAPIKey(apiKey)))
+
+	// use cached pricer avoid spamming coingecko public api
+	const priceCacheEvictInterval = time.Minute * 10
+	go pricer.ClearCacheForever(ctx, priceCacheEvictInterval)
+
+	return pricer
 }
 
 // serveMonitoring starts a goroutine that serves the monitoring API. It
@@ -207,6 +220,7 @@ func startEventStreams(
 	solverAddr common.Address,
 	addrs contracts.Addresses,
 	cursors *cursors,
+	pricer tokenslib.Pricer,
 ) error {
 	inboxChains, err := detectContractChains(ctx, network, backends, addrs.SolverNetInbox)
 	if err != nil {
@@ -326,8 +340,8 @@ func startEventStreams(
 		ShouldReject:   newShouldRejector(backends, solverAddr, addrs.SolverNetOutbox),
 		DidFill:        newDidFiller(outboxContracts),
 		Reject:         newRejector(inboxContracts, backends, solverAddr),
-		Fill:           newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox),
-		Claim:          newClaimer(inboxContracts, backends, solverAddr),
+		Fill:           newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, pricer),
+		Claim:          newClaimer(inboxContracts, backends, solverAddr, pricer),
 		SetCursor:      cursorSetter,
 		ChainName:      network.ChainName,
 		TargetName:     targetName,
@@ -378,17 +392,56 @@ func streamEventsForever(
 	}
 }
 
-func removeHolesky(network netconf.Network) netconf.Network {
-	var chains []netconf.Chain
-	for _, chain := range network.Chains {
-		if chain.ID == evmchain.IDHolesky {
-			continue
-		}
-		chains = append(chains, chain)
+func maybeAddHolesky(network netconf.Network) netconf.Network {
+	if network.ID != netconf.Omega {
+		return network
 	}
 
-	return netconf.Network{
-		ID:     network.ID,
-		Chains: chains,
+	// if holesky already exists, return
+	for _, chain := range network.Chains {
+		if chain.ID == evmchain.IDHolesky {
+			return network
+		}
 	}
+
+	// from omega netconf static
+	deployHeight := 2130892
+	portalAddr := common.HexToAddress("0xcB60A0451831E4865bC49f41F9C67665Fc9b75C3")
+
+	// from e2e/types
+	shards := []xchain.ShardID{xchain.ShardFinalized0, xchain.ShardLatest0}
+
+	meta, ok := evmchain.MetadataByID(evmchain.IDHolesky)
+	if !ok {
+		// will not happen
+		return network
+	}
+
+	network.Chains = append(network.Chains, netconf.Chain{
+		ID:             evmchain.IDHolesky,
+		Name:           meta.Name,
+		PortalAddress:  portalAddr,
+		DeployHeight:   uint64(deployHeight),
+		BlockPeriod:    meta.BlockPeriod,
+		Shards:         shards,
+		AttestInterval: intervalFromPeriod(network.ID, meta.BlockPeriod),
+	})
+
+	return network
+}
+
+// from e2e/types testnet.go (temporary).
+func intervalFromPeriod(network netconf.ID, period time.Duration) uint64 {
+	target := time.Hour
+	if network == netconf.Staging {
+		target = time.Minute * 10
+	} else if network == netconf.Devnet {
+		target = time.Second * 10
+	}
+
+	if period == 0 {
+		return 0
+	}
+
+	return uint64(target / period)
 }

@@ -4,6 +4,7 @@ pragma solidity =0.8.24;
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { ISolverNetExecutor } from "./interfaces/ISolverNetExecutor.sol";
 import { AddrUtils } from "./lib/AddrUtils.sol";
+import { IERC20 } from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 contract SolverNetExecutor is ISolverNetExecutor {
     using SafeTransferLib for address;
@@ -32,7 +33,15 @@ contract SolverNetExecutor is ISolverNetExecutor {
      * @dev Called prior to `execute` in order to ensure tokens can be spent and after to purge excess approvals.
      */
     function approve(address token, address spender, uint256 amount) external onlyOutbox {
-        token.safeApprove(spender, amount);
+        token.safeApproveWithRetry(spender, amount);
+    }
+
+    /**
+     * @notice Attempts to revoke an approval for a spender.
+     * @dev If the token reverts when setting approval to zero, this will not revert.
+     */
+    function tryRevokeApproval(address token, address spender) external onlyOutbox {
+        try IERC20(token).approve(spender, 0) { } catch { }
     }
 
     /**

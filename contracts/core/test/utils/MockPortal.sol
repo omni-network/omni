@@ -27,6 +27,8 @@ contract MockPortal is IOmniPortal, OmniPortalConstants {
 
     address public feeOracle;
 
+    bool public paused;
+
     mapping(uint64 => mapping(uint64 => uint64)) public outXMsgOffset;
     mapping(uint64 => mapping(uint64 => uint64)) public inXMsgOffset;
     mapping(uint64 => mapping(uint64 => uint64)) public inXBlockOffset;
@@ -135,4 +137,20 @@ contract MockPortal is IOmniPortal, OmniPortalConstants {
     //////////////////////////////////////////////////////////////////////////////
 
     function xsubmit(XTypes.Submission calldata submit) external override { }
+
+    function pause(bool status) external {
+        paused = status;
+    }
+
+    function isPaused(bytes32) external view returns (bool) {
+        return paused;
+    }
+
+    function isPaused(bytes32, uint64) external view returns (bool) {
+        return paused;
+    }
+
+    function isPaused() external view returns (bool) {
+        return paused;
+    }
 }

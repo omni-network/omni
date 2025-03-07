@@ -4,48 +4,17 @@ import {
   type Log,
   encodeAbiParameters,
   encodeEventTopics,
-  toBytes,
-  toHex,
-  zeroAddress,
 } from 'viem'
 import { expect, test } from 'vitest'
-import { accounts, renderHook } from '../../test/index.js'
+import {
+  accounts,
+  orderId,
+  renderHook,
+  resolvedOrder,
+} from '../../test/index.js'
 import { inboxABI } from '../constants/abis.js'
 import { ParseOpenEventError } from '../errors/base.js'
 import { useParseOpenEvent } from './useParseOpenEvent.js'
-
-const orderId = toHex(toBytes(1n, { size: 32 }))
-const originData = '0x123456' as Hex
-const resolvedOrder = {
-  user: accounts[0],
-  originChainId: BigInt(1),
-  openDeadline: 0,
-  fillDeadline: 0,
-  orderId,
-  maxSpent: [
-    {
-      token: toHex(toBytes(zeroAddress, { size: 32 })),
-      amount: 1000000000000000000n, // 1 eth
-      recipient: toHex(toBytes(accounts[0], { size: 32 })),
-      chainId: BigInt(1),
-    },
-  ],
-  minReceived: [
-    {
-      token: toHex(toBytes(zeroAddress, { size: 32 })),
-      amount: 1000000000000000000n, // 1eth
-      recipient: toHex(toBytes(accounts[0], { size: 32 })),
-      chainId: BigInt(1),
-    },
-  ],
-  fillInstructions: [
-    {
-      destinationChainId: BigInt(1),
-      destinationSettler: toHex(toBytes(accounts[0], { size: 32 })),
-      originData,
-    },
-  ],
-}
 
 const encodedOpenEvent = encodeAbiParameters(
   [
@@ -114,20 +83,7 @@ const logs: Log[] = [
   },
 ]
 
-test('should return undefined results when status pending', () => {
-  const { result } = renderHook(
-    () =>
-      useParseOpenEvent({
-        status: 'pending',
-        logs: [],
-      }),
-    { mockContractsCall: true },
-  )
-
-  expect(result.current.resolvedOrder).toBeUndefined()
-})
-
-test('should return orderId and originData when props update to expected values', async () => {
+test('default', async () => {
   const { result, rerender } = renderHook(
     () =>
       useParseOpenEvent({
@@ -141,13 +97,38 @@ test('should return orderId and originData when props update to expected values'
 
   rerender({
     status: 'success',
-    logs: logs,
+    logs,
   })
 
   await waitFor(() => result.current.resolvedOrder?.orderId === orderId)
 })
 
-test('should return instance of ParseOpenEventError if success status and empty logs', () => {
+test('behaviour: no parsing when status is pending', () => {
+  const { result } = renderHook(
+    () =>
+      useParseOpenEvent({
+        status: 'pending',
+        logs,
+      }),
+    { mockContractsCall: true },
+  )
+
+  expect(result.current.resolvedOrder).toBeUndefined()
+})
+
+test('behaviour: no parsing when logs is undefined', () => {
+  const { result } = renderHook(
+    () =>
+      useParseOpenEvent({
+        status: 'success',
+      }),
+    { mockContractsCall: true },
+  )
+
+  expect(result.current.resolvedOrder).toBeUndefined()
+})
+
+test('behaviour: error when status is success and logs is empty array', () => {
   const { result } = renderHook(
     () =>
       useParseOpenEvent({
@@ -160,7 +141,7 @@ test('should return instance of ParseOpenEventError if success status and empty 
   expect(result.current.error).toBeInstanceOf(ParseOpenEventError)
 })
 
-test('should return instance of ParseOpenEventError if success status and logs are not valid', () => {
+test('behaviour: error when status is success and logs not valid', () => {
   const { result } = renderHook(
     () =>
       useParseOpenEvent({

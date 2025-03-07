@@ -136,8 +136,6 @@ func (k Keeper) EndBlock(ctx context.Context) error {
 		eventDeliveries.Inc()
 	}
 
-	bufferedEvents.Set(0)
-
 	return nil
 }
 

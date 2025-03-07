@@ -12,6 +12,7 @@ import { TypeMax } from "core/src/libraries/TypeMax.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { ITokenOps } from "./interfaces/ITokenOps.sol";
 import { ILockbox } from "./interfaces/ILockbox.sol";
+import { IERC20 } from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable, XAppUpgradeable, IBridge {
     using SafeTransferLib for address;
@@ -20,10 +21,12 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
     /*                         CONSTANTS                          */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    // keccak256("PAUSER")
+    // keccak256("PAUSER");
     bytes32 public constant PAUSER_ROLE = 0x539440820030c4994db4e31b6b800deafd503688728f932addfe7a410515c14c;
     // keccak256("UNPAUSER");
     bytes32 public constant UNPAUSER_ROLE = 0x82b32d9ab5100db08aeb9a0e08b422d14851ec118736590462bf9c085a6e9448;
+    // keccak256("CONFIGURER");
+    bytes32 public constant CONFIGURER_ROLE = 0x527e2c92bb6983874717bce74818faf5a9be45b6e85909ee478af653c6d98755;
     // keccak256("AUTHORIZER");
     bytes32 public constant AUTHORIZER_ROLE = 0x94858e5561d6a33fcce848f16acfe1514fe5166e32b456aff42d7fb50e8c52ad;
 
@@ -98,6 +101,7 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
 
     function initialize(
         address admin_,
+        address configurer_,
         address authorizer_,
         address pauser_,
         address unpauser_,
@@ -107,6 +111,7 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
     ) external initializer {
         // Validate required inputs are not zero addresses.
         if (admin_ == address(0)) revert ZeroAddress();
+        if (configurer_ == address(0)) revert ZeroAddress();
         if (authorizer_ == address(0)) revert ZeroAddress();
         if (pauser_ == address(0)) revert ZeroAddress();
         if (unpauser_ == address(0)) revert ZeroAddress();
@@ -118,10 +123,10 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
         __Pausable_init();
         __XApp_init(omni_, ConfLevel.Finalized);
         _grantRole(DEFAULT_ADMIN_ROLE, admin_);
+        _grantRole(CONFIGURER_ROLE, configurer_);
+        _grantRole(AUTHORIZER_ROLE, authorizer_);
         _grantRole(PAUSER_ROLE, pauser_);
         _grantRole(UNPAUSER_ROLE, unpauser_);
-        _grantRole(AUTHORIZER_ROLE, authorizer_);
-
         token = token_;
 
         // Give lockbox relevant approvals to handle deposits and withdrawals if necessary.
@@ -221,10 +226,7 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
      * @param chainIds The chainIds to configure.
      * @param routes   The bridges addresses and configs to configure.
      */
-    function configureRoutes(uint64[] calldata chainIds, Route[] calldata routes)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
+    function configureRoutes(uint64[] calldata chainIds, Route[] calldata routes) external onlyRole(CONFIGURER_ROLE) {
         if (chainIds.length != routes.length) revert ArrayLengthMismatch();
         for (uint256 i = 0; i < chainIds.length; i++) {
             _pendingRoutes[chainIds[i]] = routes[i];
@@ -233,12 +235,20 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
     }
 
     /**
-     * @dev Authorizes pending bridge routes.
-     * @param chainIds The chainIds for pending routes to authorize.
+     * @dev Authorizes pending bridge routes, manual specification prevents frontrunning.
+     * @param chainIds       The chainIds for pending routes to authorize.
+     * @param expectedRoutes The expected routes to authorize.
      */
-    function authorizeRoutes(uint64[] calldata chainIds) external onlyRole(AUTHORIZER_ROLE) {
+    function authorizeRoutes(uint64[] calldata chainIds, Route[] calldata expectedRoutes)
+        external
+        onlyRole(AUTHORIZER_ROLE)
+    {
         for (uint256 i = 0; i < chainIds.length; i++) {
             Route memory pendingRoute = _pendingRoutes[chainIds[i]];
+            if (
+                pendingRoute.bridge != expectedRoutes[i].bridge
+                    || pendingRoute.hasLockbox != expectedRoutes[i].hasLockbox
+            ) revert InvalidRoute(chainIds[i]);
             _routes[chainIds[i]] = pendingRoute;
             delete _pendingRoutes[chainIds[i]];
             emit RouteAuthorized(chainIds[i], pendingRoute.bridge, pendingRoute.hasLockbox);
@@ -343,7 +353,7 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
             // If a lockbox is set, mint the wrapped tokens to the bridge contract.
             success = _tryCatchTokenMint(_token, to, value, true);
             // Attempt withdrawal from the lockbox, but transfer the wrapped tokens to the recipient if it fails.
-            if (success) _tryCatchLockboxWithdrawal(_token, _lockbox, to, value);
+            if (success) success = _tryCatchLockboxWithdrawal(_token, _lockbox, to, value);
         }
 
         emit TokenReceived(xmsg.sourceChainId, to, value, success);
@@ -359,9 +369,7 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
     function _tryCatchTokenMint(address _token, address to, uint256 value, bool intermediate) internal returns (bool) {
         try ITokenOps(_token).mint(intermediate ? address(this) : to, value) { }
         catch {
-            unchecked {
-                claimable[to] += value;
-            }
+            _incrementClaimable(to, value);
             emit TokenMintFailed(_token, to, value);
             return false;
         }
@@ -375,11 +383,30 @@ contract Bridge is Initializable, AccessControlUpgradeable, PausableUpgradeable,
      * @param to        The address of the recipient.
      * @param value     The amount of tokens to withdraw.
      */
-    function _tryCatchLockboxWithdrawal(address _token, address _lockbox, address to, uint256 value) internal {
+    function _tryCatchLockboxWithdrawal(address _token, address _lockbox, address to, uint256 value)
+        internal
+        returns (bool)
+    {
         try ILockbox(_lockbox).withdrawTo(to, value) { }
         catch {
-            _token.safeTransfer(to, value);
-            emit LockboxWithdrawalFailed(_lockbox, to, value);
+            try IERC20(_token).transfer(to, value) returns (bool success) {
+                if (!success) {
+                    _incrementClaimable(to, value);
+                    emit TokenTransferFailed(_token, to, value);
+                    return false;
+                }
+            } catch {
+                _incrementClaimable(to, value);
+                emit LockboxWithdrawalFailed(_lockbox, to, value);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function _incrementClaimable(address to, uint256 value) internal {
+        unchecked {
+            claimable[to] += value;
         }
     }
 }

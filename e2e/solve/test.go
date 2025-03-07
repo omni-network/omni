@@ -60,6 +60,10 @@ func isInsufficientInventory(o TestOrder) bool {
 	return o.RejectReason == solver.RejectInsufficientInventory.String()
 }
 
+func isInvalidExpense(o TestOrder) bool {
+	return o.RejectReason == solver.RejectInvalidExpense.String()
+}
+
 func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints) error {
 	if network.ID != netconf.Devnet {
 		return errors.New("only devnet")
@@ -96,6 +100,10 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 
 	// start event streams
 	errChan := make(chan error, 1)
+	// Set a 90 sec timeout which is a bit below the 120 sec go test timeout in order to avoid being canceled by the go runtime and leave time for cleanup.
+	ctx, cancel = context.WithTimeout(ctx, 90*time.Second)
+	defer cancel()
+
 	for _, chain := range network.EVMChains() {
 		go func() {
 			req := xchain.EventLogsReq{
@@ -138,7 +146,7 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 		case err := <-errChan:
 			return errors.Wrap(err, "stream event logs")
 		case <-ctx.Done():
-			return errors.Wrap(ctx.Err(), "context done")
+			return errors.Wrap(ctx.Err(), "context timeout or canceled")
 		case <-ticker.C:
 			done, err := tracker.Done()
 			if err != nil {
@@ -205,7 +213,7 @@ func makeOrders() []TestOrder {
 			DestChainID:   evmchain.IDMockL1,
 			Expenses:      nativeExpense(requestAmt),
 			Calls:         nativeTransferCall(requestAmt, user),
-			Deposit:       unsupportedDeposit(depositAmt),
+			Deposit:       unsupportedERC20Deposit(depositAmt),
 			ShouldReject:  true,
 			RejectReason:  solver.RejectUnsupportedDeposit.String(),
 		})
@@ -311,9 +319,34 @@ func makeOrders() []TestOrder {
 		FillDeadline:  time.Now().Add(1 * time.Hour),
 		SourceChainID: evmchain.IDMockL1,
 		DestChainID:   evmchain.IDMockL2,
-		Expenses:      invalidExpense(),
+		Expenses:      invalidExpenseOutOfBounds(),
 		Calls:         nativeTransferCall(big.NewInt(1), users[0]),
 		Deposit:       erc20Deposit(big.NewInt(1), addrs.Token),
+		ShouldReject:  true,
+		RejectReason:  solver.RejectInvalidExpense.String(),
+	})
+
+	// invalid expense with multiple native expenses
+	orders = append(orders, TestOrder{
+		Owner:         users[0],
+		FillDeadline:  time.Now().Add(1 * time.Hour),
+		SourceChainID: evmchain.IDMockL1,
+		DestChainID:   evmchain.IDMockL2,
+		Expenses:      multipleNativeExpenses(validETHSpend),
+		Calls:         nativeTransferCall(validETHSpend, users[0]),
+		Deposit:       nativeDeposit(maxETHSpend),
+		ShouldReject:  true,
+		RejectReason:  solver.RejectInvalidExpense.String(),
+	})
+
+	// invalid expense with multiple ERC20 expenses
+	orders = append(orders, TestOrder{
+		Owner:         users[0],
+		FillDeadline:  time.Now().Add(1 * time.Hour),
+		SourceChainID: evmchain.IDMockL2,
+		DestChainID:   evmchain.IDMockL1,
+		Expenses:      multipleERC20Expenses(validETHSpend),
+		Deposit:       nativeDeposit(maxETHSpend),
 		ShouldReject:  true,
 		RejectReason:  solver.RejectInvalidExpense.String(),
 	})
@@ -367,7 +400,7 @@ func openAll(ctx context.Context, backends ethbackend.Backends, orders []TestOrd
 	var eg errgroup.Group
 	for _, order := range orders {
 		eg.Go(func() error {
-			if isSrcChainInvalid(order) || isDepositTokenInvalid(order) || srcAndDestChainAreSame(order) || isInsufficientInventory(order) {
+			if isInvalidExpense(order) || isSrcChainInvalid(order) || isDepositTokenInvalid(order) || srcAndDestChainAreSame(order) || isInsufficientInventory(order) {
 				return nil
 			}
 
@@ -436,7 +469,6 @@ func testCheckAPI(ctx context.Context, backends ethbackend.Backends, orders []Te
 		if err != nil {
 			return errors.Wrap(err, "do request")
 		}
-
 		if resp.StatusCode != http.StatusOK {
 			return errors.New("bad status", "status", resp.StatusCode)
 		}

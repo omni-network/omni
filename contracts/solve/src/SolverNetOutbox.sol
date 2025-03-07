@@ -167,7 +167,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
 
             if (tokenBalance > 0) {
                 address spender = expense.spender;
-                if (spender != address(0)) _executor.approve(token, spender, 0);
+                if (spender != address(0)) _executor.tryRevokeApproval(token, spender);
                 _executor.transfer(token, msg.sender, tokenBalance);
             }
         }
@@ -258,10 +258,14 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         uint256 callsGas = 2500;
         for (uint256 i; i < fillData.calls.length; ++i) {
             SolverNet.Call memory call = fillData.calls[i];
+            uint256 paramsLength = call.params.length;
             unchecked {
                 // 5000 gas for the two slots that hold target, selector, and value.
                 // 2500 gas per params slot (1 per function argument) used (minimum of 1 slot).
                 callsGas += 5000 + (FixedPointMathLib.divUp(call.params.length + 32, 32) * 2500);
+                // Plus memory expansion costs: 3 gas per 32 bytes + bytes^2 / 524288
+                callsGas += (3 * FixedPointMathLib.divUp(paramsLength, 32))
+                    + FixedPointMathLib.mulDivUp(paramsLength, paramsLength, 524_288);
             }
         }
 

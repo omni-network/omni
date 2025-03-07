@@ -17,6 +17,7 @@ import { OmniBridgeL1 } from "src/token/OmniBridgeL1.sol";
 import { Staking } from "src/octane/Staking.sol";
 import { Slashing } from "src/octane/Slashing.sol";
 import { Predeploys } from "src/libraries/Predeploys.sol";
+import { SolverNetInbox } from "solve/src/SolverNetInbox.sol";
 import { Script } from "forge-std/Script.sol";
 
 import { BridgeL1PostUpgradeTest } from "./BridgeL1PostUpgradeTest.sol";
@@ -181,6 +182,36 @@ contract Admin is Script {
         vm.startBroadcast(admin);
         b.unpause(action);
         vm.stopBroadcast();
+    }
+
+    /**
+     * @notice Pause all functions on the SolverNetInbox.
+     * @param admin          The owner of the SolverNetInbox.
+     * @param solverNetInbox The address of the SolverNetInbox.
+     * @param pause          Whether to pause or unpause the SolverNetInbox.
+     */
+    function pauseSolverNetAll(address admin, address solverNetInbox, bool pause) public withBroadcast(admin) {
+        SolverNetInbox(solverNetInbox).pauseAll(pause);
+    }
+
+    /**
+     * @notice Pause the open function on the SolverNetInbox.
+     * @param admin          The owner of the SolverNetInbox.
+     * @param solverNetInbox The address of the SolverNetInbox.
+     * @param pause          Whether to pause or unpause the SolverNetInbox.
+     */
+    function pauseSolverNetOpen(address admin, address solverNetInbox, bool pause) public withBroadcast(admin) {
+        SolverNetInbox(solverNetInbox).pauseOpen(pause);
+    }
+
+    /**
+     * @notice Pause the close function on the SolverNetInbox.
+     * @param admin          The owner of the SolverNetInbox.
+     * @param solverNetInbox The address of the SolverNetInbox.
+     * @param pause          Whether to pause or unpause the SolverNetInbox.
+     */
+    function pauseSolverNetClose(address admin, address solverNetInbox, bool pause) public withBroadcast(admin) {
+        SolverNetInbox(solverNetInbox).pauseClose(pause);
     }
 
     /**

@@ -16,13 +16,14 @@ import (
 )
 
 type Config struct {
-	RPCEndpoints   xchain.RPCEndpoints
-	PrivateKey     string
-	HaloCometURL   string
-	HaloGRPCURL    string
-	Network        netconf.ID
-	MonitoringAddr string
-	DBDir          string
+	RPCEndpoints    xchain.RPCEndpoints
+	PrivateKey      string
+	HaloCometURL    string
+	HaloGRPCURL     string
+	Network         netconf.ID
+	MonitoringAddr  string
+	DBDir           string
+	CoinGeckoAPIKey string
 }
 
 func DefaultConfig() Config {

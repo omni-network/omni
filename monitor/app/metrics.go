@@ -50,11 +50,4 @@ var (
 		Name:      "gas_tip_cap_gwei",
 		Help:      "Suggested OmniEVM gas tip cap in gwei",
 	})
-
-	inflationAvg = promauto.NewGauge(prometheus.GaugeOpts{
-		Namespace: "monitor",
-		Subsystem: "omni_consensus",
-		Name:      "avg_inflation",
-		Help:      "Avg inflation percentage [0,1] of the omni consensus chain",
-	})
 )

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/cchain"
-	"github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/forkjoin"
 
@@ -15,14 +14,14 @@ import (
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
-var blocksPerYear = math.LegacyNewDec(365 * 24 * 60 * 60 / 2) // Matches upgrades/magellan::blocksPerYear
+var yearMillis = math.LegacyNewDec(365 * 24 * time.Hour.Milliseconds())
 
-// AvgInflationRate returns the average inflation for all delegations over the given number of blocks
+// AvgRewardsRate returns the average staking rewards for all delegations over the given number of blocks
 // or true if all delegations changed (couldn't calculate inflation).
-func AvgInflationRate(ctx context.Context, cprov cchain.Provider, waitBlocks uint64) (math.LegacyDec, bool, error) {
-	delegators, err := allDelegators(ctx, cprov)
-	if err != nil {
-		return math.LegacyDec{}, false, errors.Wrap(err, "get delegators")
+func AvgRewardsRate(ctx context.Context, cprov cchain.Provider, delegations []DelegationBalance, waitBlocks uint64) (math.LegacyDec, bool, error) {
+	var delegators []sdk.AccAddress
+	for _, del := range delegations {
+		delegators = append(delegators, del.DelegatorAddress)
 	}
 
 	result, cancel := forkjoin.NewWithInputs(ctx, func(ctx context.Context, addr sdk.AccAddress) ([]math.LegacyDec, error) {
@@ -58,7 +57,7 @@ func AvgInflationRate(ctx context.Context, cprov cchain.Provider, waitBlocks uin
 // DelegatorInflationRates returns the inflation rate per delegation for the given delegator over the given number of blocks,
 // or true if the delegation changed (couldn't calculate inflation).
 func DelegatorInflationRates(ctx context.Context, cprov cchain.Provider, delegator sdk.AccAddress, waitBlocks uint64) ([]math.LegacyDec, bool, error) {
-	rewards0, height0, err := getDelegationRewards(ctx, cprov, delegator)
+	rewards0, height0, timestamp0, err := getDelegationRewards(ctx, cprov, delegator)
 	if err != nil {
 		return nil, false, err
 	}
@@ -67,14 +66,14 @@ func DelegatorInflationRates(ctx context.Context, cprov cchain.Provider, delegat
 		return nil, false, err
 	}
 
-	rewards1, height1, err := getDelegationRewards(ctx, cprov, delegator)
+	rewards1, _, timestamp1, err := getDelegationRewards(ctx, cprov, delegator)
 	if err != nil {
 		return nil, false, err
 	} else if len(rewards0) != len(rewards1) {
 		return nil, true, errors.New("delegations mismatch") // Staking actions occurred
 	}
 
-	blockDelta := math.LegacyNewDec(int64(height1) - int64(height0)) //nolint:gosec // No risk of overflow
+	milliDelta := math.LegacyNewDec(timestamp1.Sub(timestamp0).Milliseconds())
 
 	var resp []math.LegacyDec
 	for i := range len(rewards0) {
@@ -86,7 +85,7 @@ func DelegatorInflationRates(ctx context.Context, cprov cchain.Provider, delegat
 		}
 
 		rewardDelta := rew1.Rewards.Sub(rew0.Rewards)
-		rewardsPerYear := rewardDelta.Mul(blocksPerYear).Quo(blockDelta)
+		rewardsPerYear := rewardDelta.Mul(yearMillis).Quo(milliDelta)
 		stake := rew0.Delegation.Balance.Amount.ToLegacyDec()
 		rewardsAPY := rewardsPerYear.Quo(stake)
 
@@ -96,13 +95,20 @@ func DelegatorInflationRates(ctx context.Context, cprov cchain.Provider, delegat
 	return resp, false, nil
 }
 
-func allDelegators(ctx context.Context, cprov cchain.Provider) ([]sdk.AccAddress, error) {
+// DelegationBalance represents the total delegation balance of a delegator.
+type DelegationBalance struct {
+	DelegatorAddress sdk.AccAddress
+	Balance          sdk.Coin
+}
+
+// AllDelegations returns delegation balances of each unique delegator.
+func AllDelegations(ctx context.Context, cprov cchain.Provider) ([]DelegationBalance, error) {
 	vals, err := cprov.SDKValidators(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	uniq := make(map[string]sdk.AccAddress)
+	uniq := make(map[string]DelegationBalance)
 	for _, val := range vals {
 		resp, err := cprov.QueryClients().Staking.ValidatorDelegations(ctx, &stakingtypes.QueryValidatorDelegationsRequest{
 			ValidatorAddr: val.OperatorAddress,
@@ -116,14 +122,22 @@ func allDelegators(ctx context.Context, cprov cchain.Provider) ([]sdk.AccAddress
 			if err != nil {
 				return nil, errors.Wrap(err, "parse delegator address")
 			}
-
-			uniq[del.Delegation.DelegatorAddress] = addr
+			if delegation, ok := uniq[del.Delegation.DelegatorAddress]; ok {
+				delegation.Balance = delegation.Balance.Add(del.Balance)
+				uniq[del.Delegation.DelegatorAddress] = delegation
+			} else {
+				uniq[del.Delegation.DelegatorAddress] =
+					DelegationBalance{
+						DelegatorAddress: addr,
+						Balance:          del.Balance,
+					}
+			}
 		}
 	}
 
-	var resp []sdk.AccAddress
-	for _, addr := range uniq {
-		resp = append(resp, addr)
+	var resp []DelegationBalance
+	for _, del := range uniq {
+		resp = append(resp, del)
 	}
 
 	return resp, nil
@@ -131,16 +145,17 @@ func allDelegators(ctx context.Context, cprov cchain.Provider) ([]sdk.AccAddress
 
 func waitUntil(ctx context.Context, cprov cchain.Provider, target uint64) error {
 	for {
-		height, err := cprov.BlockHeight(ctx)
+		status, err := cprov.NodeStatus(ctx)
 		if err != nil {
 			return errors.Wrap(err, "get block")
 		}
+		height := status.Height
 
 		if height >= target {
 			return nil
 		}
 
-		time.Sleep(time.Second)
+		time.Sleep(2 * time.Second)
 	}
 }
 
@@ -151,23 +166,21 @@ type delegationReward struct {
 }
 
 // getDelegationRewards returns the current rewards-per-delegation (and height) for the given delegator.
-func getDelegationRewards(ctx context.Context, cprov cchain.Provider, delegator sdk.AccAddress) ([]delegationReward, uint64, error) {
-	height, err := cprov.BlockHeight(ctx)
+func getDelegationRewards(ctx context.Context, cprov cchain.Provider, delegator sdk.AccAddress) ([]delegationReward, uint64, time.Time, error) {
+	status, err := cprov.NodeStatus(ctx)
 	if err != nil {
-		return nil, 0, errors.Wrap(err, "get block")
+		return nil, 0, time.Time{}, errors.Wrap(err, "node status")
 	}
-	ctx, err = provider.WithCtxHeight(ctx, height)
-	if err != nil {
-		return nil, 0, errors.Wrap(err, "set height")
-	}
+	timestamp := *status.Timestamp
+	height := status.Height
 
 	resp, err := cprov.QueryClients().Staking.DelegatorDelegations(ctx, &stakingtypes.QueryDelegatorDelegationsRequest{
 		DelegatorAddr: delegator.String(),
 	})
 	if err != nil {
-		return nil, 0, errors.Wrap(err, "query delegator delegations")
+		return nil, 0, timestamp, errors.Wrap(err, "query delegator delegations")
 	} else if len(resp.DelegationResponses) == 0 {
-		return nil, 0, errors.New("no delegations")
+		return nil, 0, timestamp, errors.New("no delegations")
 	}
 
 	var delegationRewards []delegationReward
@@ -177,7 +190,7 @@ func getDelegationRewards(ctx context.Context, cprov cchain.Provider, delegator 
 			ValidatorAddress: del.Delegation.ValidatorAddress,
 		})
 		if err != nil {
-			return nil, 0, errors.Wrap(err, "query delegation rewards")
+			return nil, 0, timestamp, errors.Wrap(err, "query delegation rewards")
 		} else if len(rewardResp.Rewards) != 1 {
 			continue // This is expected if delegation was processed in same block.
 		}
@@ -188,5 +201,5 @@ func getDelegationRewards(ctx context.Context, cprov cchain.Provider, delegator 
 		})
 	}
 
-	return delegationRewards, height, nil
+	return delegationRewards, height, timestamp, nil
 }

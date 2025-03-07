@@ -25,11 +25,10 @@ const (
 )
 
 // newTokenPricer creates a new cached pricer with priceCacheEvictInterval.
-func newTokenPricer(ctx context.Context) *tokens.CachedPricer {
-	pricer := tokens.NewCachedPricer(coingecko.New())
+func newTokenPricer(ctx context.Context, cgAPIKey string) tokens.Pricer {
+	pricer := tokens.NewCachedPricer(coingecko.New(coingecko.WithAPIKey(cgAPIKey)))
 
 	// use cached pricer avoid spamming coingecko public api
-	// TODO: use api key
 	go pricer.ClearCacheForever(ctx, priceCacheEvictInterval)
 
 	return pricer
@@ -65,7 +64,7 @@ func (l pnlLogger) logE(ctx context.Context, tx *ethtypes.Transaction, receipt *
 	spendGwei := totalSpendGwei(tx, receipt)
 	spendTotal.WithLabelValues(dest.Name, dest.NativeToken.Symbol).Add(spendGwei)
 
-	prices, err := l.pricer.Price(ctx, tokens.OMNI, tokens.ETH)
+	prices, err := l.pricer.Prices(ctx, tokens.OMNI, tokens.ETH)
 	if err != nil {
 		return errors.Wrap(err, "get prices")
 	}

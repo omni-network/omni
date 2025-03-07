@@ -39,6 +39,13 @@ contract SolverNet_Inbox_Close_Test is TestBase {
         vm.expectRevert(Ownable.Unauthorized.selector);
         inbox.close(resolvedOrder.orderId);
 
+        // order cannot be closed if portal is paused
+        portal.pause(true);
+        vm.expectRevert(ISolverNetInbox.PortalPaused.selector);
+        vm.prank(user);
+        inbox.close(resolvedOrder.orderId);
+        portal.pause(false);
+
         // order can only be closed after fill deadline has elapsed
         vm.prank(user);
         vm.expectRevert(ISolverNetInbox.OrderStillValid.selector);

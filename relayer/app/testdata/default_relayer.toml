@@ -21,6 +21,9 @@ halo-url = "localhost:26657"
 # The gRPC URL of the halo node to connect to.
 halo-grpc-url = "localhost:9"
 
+# The CoinGecko API key to use for fetching token prices.
+coingecko-apikey = "secret"
+
 #######################################################################
 ###                             X-Chain                             ###
 #######################################################################

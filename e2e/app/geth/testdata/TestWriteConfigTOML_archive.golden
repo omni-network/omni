@@ -95,6 +95,7 @@ WriteTimeout = 30000000000
 IdleTimeout = 120000000000
 
 [Metrics]
+Enabled = true
 HTTP = "127.0.0.1"
 Port = 6060
 InfluxDBEndpoint = "http://localhost:8086"
