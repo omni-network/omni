@@ -100,7 +100,8 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
     function _deployGenesisStakeImpl() internal returns (bool) {
         if (address(expectedGenesisStakeImplAddr).code.length != 0) return false;
 
-        vm.prank(deployer);
+        (VmSafe.CallerMode mode,,) = vm.readCallers();
+        if (mode == VmSafe.CallerMode.None) vm.prank(deployer);
         address genesisStakeImpl = createX.deployCreate3(
             genesisStakeImplSalt,
             abi.encodePacked(type(GenesisStake).creationCode, abi.encode(address(omni), expectedMerkleDistributorAddr))
