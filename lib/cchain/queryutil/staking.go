@@ -108,7 +108,7 @@ func AllDelegations(ctx context.Context, cprov cchain.Provider) ([]DelegationBal
 		return nil, err
 	}
 
-	uniq := make(map[string]*DelegationBalance)
+	uniq := make(map[string]DelegationBalance)
 	for _, val := range vals {
 		resp, err := cprov.QueryClients().Staking.ValidatorDelegations(ctx, &stakingtypes.QueryValidatorDelegationsRequest{
 			ValidatorAddr: val.OperatorAddress,
@@ -123,19 +123,21 @@ func AllDelegations(ctx context.Context, cprov cchain.Provider) ([]DelegationBal
 				return nil, errors.Wrap(err, "parse delegator address")
 			}
 			if delegation, ok := uniq[del.Delegation.DelegatorAddress]; ok {
-				delegation.Balance = del.Balance.Add(del.Balance)
+				delegation.Balance = delegation.Balance.Add(del.Balance)
+				uniq[del.Delegation.DelegatorAddress] = delegation
 			} else {
-				uniq[del.Delegation.DelegatorAddress] = &DelegationBalance{
-					DelegatorAddress: addr,
-					Balance:          del.Balance,
-				}
+				uniq[del.Delegation.DelegatorAddress] =
+					DelegationBalance{
+						DelegatorAddress: addr,
+						Balance:          del.Balance,
+					}
 			}
 		}
 	}
 
 	var resp []DelegationBalance
 	for _, del := range uniq {
-		resp = append(resp, *del)
+		resp = append(resp, del)
 	}
 
 	return resp, nil

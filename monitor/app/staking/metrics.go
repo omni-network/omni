@@ -9,7 +9,7 @@ var (
 	rewardsAvg = promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: "monitor",
 		Subsystem: "staking",
-		Name:      "avg_rewards",
+		Name:      "avg_rewards_percentage",
 		Help:      "Average staking rewards percentage [0,1]",
 	})
 
@@ -23,14 +23,14 @@ var (
 	stakeAvg = promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: "monitor",
 		Subsystem: "staking",
-		Name:      "avg_stake",
+		Name:      "stake_avg_gwei",
 		Help:      "Average stake size in gwei",
 	})
 
 	stakeMedian = promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: "monitor",
 		Subsystem: "staking",
-		Name:      "median_stake",
+		Name:      "stake_median_gwei",
 		Help:      "Median stake size in gwei",
 	})
 )
