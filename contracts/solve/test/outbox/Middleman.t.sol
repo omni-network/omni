@@ -4,15 +4,25 @@ pragma solidity =0.8.24;
 import "../TestBase.sol";
 import { MockLST } from "test/utils/MockLST.sol";
 import { Refunder } from "test/utils/Refunder.sol";
+import { Reverter } from "test/utils/Reverter.sol";
 
 contract SolverNet_Outbox_Middleman_Test is TestBase {
     MockLST lst;
     Refunder refunder;
+    Reverter reverter;
 
     function setUp() public override {
         super.setUp();
         lst = new MockLST();
         refunder = new Refunder();
+        reverter = new Reverter();
+    }
+
+    function test_executeAndTransfer_reverts() public {
+        vm.deal(solver, 1 ether);
+        vm.prank(solver);
+        vm.expectRevert(SolverNetMiddleman.CallFailed.selector);
+        middleman.executeAndTransfer{ value: 1 ether }(address(0), user, address(reverter), "");
     }
 
     function test_executeAndTransfer_erc20_succeeds() public {

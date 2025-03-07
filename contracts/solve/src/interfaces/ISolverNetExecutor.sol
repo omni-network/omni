@@ -24,6 +24,12 @@ interface ISolverNetExecutor {
     function approve(address token, address spender, uint256 amount) external;
 
     /**
+     * @notice Attempts to revoke an approval for a spender.
+     * @dev If the token reverts when setting approval to zero, this will not revert.
+     */
+    function tryRevokeApproval(address token, address spender) external;
+
+    /**
      * @notice Executes a call.
      * @param target Address of the contract to call.
      * @param value  Value to send with the call.

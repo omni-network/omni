@@ -143,14 +143,12 @@ func New(ctx context.Context, netID netconf.ID, opts ...option) (Connector, erro
 
 	endpoints := make(xchain.RPCEndpoints)
 
-	// Add default omni consensus and execution RPC endpoints.
-	omniCons := netID.Static().OmniConsensusChain()
+	// Add default omni execution RPC endpoints.
 	omniExec, ok := evmchain.MetadataByID(netID.Static().OmniExecutionChainID)
 	if !ok {
 		return Connector{}, errors.New("omni evm metadata not found")
 	}
 	endpoints[omniExec.Name] = netID.Static().ExecutionRPC()
-	endpoints[omniCons.Name] = netID.Static().ConsensusRPC()
 
 	// Apply any custom endpoint options.
 	o := options{Endpoints: endpoints}
@@ -186,7 +184,7 @@ func New(ctx context.Context, netID netconf.ID, opts ...option) (Connector, erro
 	}
 
 	ethClients := make(map[uint64]ethclient.Client)
-	for _, chain := range network.Chains {
+	for _, chain := range network.EVMChains() {
 		rpc, err := endpoints.ByNameOrID(chain.Name, chain.ID)
 		if err != nil {
 			rpc = "unknown"
@@ -198,11 +196,11 @@ func New(ctx context.Context, netID netconf.ID, opts ...option) (Connector, erro
 			ethClients[chain.ID] = ethCl
 		}
 
-		log.Info(ctx, "Network chain", "chain", chain.Name, "id", chain.ID, "rpc", libcmd.Redact("", rpc))
+		log.Info(ctx, "Network evm chain", "chain", chain.Name, "id", chain.ID, "rpc", libcmd.Redact("", rpc))
 	}
 
 	// Connect to the halo cometBFT RPC server.
-	cometCl, err := rpchttp.New(endpoints[omniCons.Name], "/websocket")
+	cometCl, err := rpchttp.New(netID.Static().ConsensusRPC(), "/websocket")
 	if err != nil {
 		return Connector{}, errors.Wrap(err, "comet rpc client")
 	}

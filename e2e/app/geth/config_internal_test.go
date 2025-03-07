@@ -52,9 +52,10 @@ func TestWriteConfigTOML(t *testing.T) {
 		name            string
 		isArchive       bool
 		snapShotCacheMB int
+		advertisedIP    net.IP
 	}{
-		{"archive", true, 0},
-		{"full", false, 999},
+		{"archive", true, 0, nil},
+		{"full", false, 999, net.ParseIP("1.2.3.4")},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -67,6 +68,7 @@ func TestWriteConfigTOML(t *testing.T) {
 				ChainID:         15651,
 				IsArchive:       test.isArchive,
 				SnapshotCacheMB: test.snapShotCacheMB,
+				AdvertisedIP:    test.advertisedIP,
 			}
 
 			tempFile := filepath.Join(t.TempDir(), test.name+".toml")
@@ -83,7 +85,7 @@ func TestWriteConfigTOML(t *testing.T) {
 			// Geth does some custom config parsing/sanitizing/updating of the config, so we ensure our config doesn't
 			// get silently updated by geth.
 			// See https://github.com/ethereum/go-ethereum/blob/master/cmd/utils/flags.go#L1640
-			result := gethDumpConfigToml(t, MakeGethConfig(data))
+			result := gethDumpConfigToml(t, data)
 			require.Equal(t, string(bz), string(result))
 		})
 	}
@@ -104,25 +106,23 @@ func TestGethVersion(t *testing.T) {
 	err = json.Unmarshal(out, &resp)
 	require.NoError(t, err)
 
-	require.Equal(t, Version, resp.Module.Version, "A different geth has been released, update `geth.Version`")
+	require.Equal(t, ClientVersion, resp.Module.Version, "A different geth dependency is installed, update `geth.Version`")
 }
 
 // gethDumpConfigToml executes `geth dumpconfig` using the provided base config and
 // returns the resulting toml config file content.
-func gethDumpConfigToml(t *testing.T, baseCfg FullConfig) []byte {
+func gethDumpConfigToml(t *testing.T, baseCfg Config) []byte {
 	t.Helper()
 
-	bz, err := tomlSettings.Marshal(baseCfg)
-	require.NoError(t, err)
-
 	baseFile := filepath.Join(t.TempDir(), "base.toml")
-	err = os.WriteFile(baseFile, bz, 0o644)
+	err := WriteConfigTOML(baseCfg, baseFile)
 	require.NoError(t, err)
 
 	var stdout, stderr bytes.Buffer
 	cmd := exec.Command("docker", "run",
+		"--rm",
 		fmt.Sprintf("--volume=%s:/tmp/config.toml", baseFile),
-		fmt.Sprintf("ethereum/client-go:%s", Version),
+		fmt.Sprintf("ethereum/client-go:%s", ServerVersion),
 		"dumpconfig",
 		"--config=/tmp/config.toml")
 	cmd.Stdout = &stdout

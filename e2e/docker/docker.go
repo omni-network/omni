@@ -215,14 +215,14 @@ func (c ComposeDef) UpgradeGeth(index int) bool {
 
 // UpgradeGethTag returns the geth docker image tag to upgrade to.
 func (ComposeDef) UpgradeGethTag() string {
-	return geth.Version
+	return geth.ServerVersion
 }
 
 // InitialGethTag return the geth docker image tag to initially deploy.
 func (c ComposeDef) InitialGethTag(index int) string {
 	tag, ok := c.GethInitTags[index]
 	if !ok {
-		return geth.Version
+		return geth.ServerVersion
 	}
 
 	return tag

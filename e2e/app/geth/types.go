@@ -1,6 +1,7 @@
 package geth
 
 import (
+	"net"
 	"reflect"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -13,10 +14,13 @@ import (
 	"github.com/naoina/toml"
 )
 
-// Version defines the geth version deployed to all networks.
-const Version = "v1.14.13"
+// ServerVersion defines the geth version deployed to all networks.
+const ServerVersion = "v1.14.13"
 
-// SupportedVersions are the supported older geth versions.
+// ClientVersion defines the geth version used mostly for ethclient.
+const ClientVersion = "v1.15.5"
+
+// SupportedVersions are the supported older geth server versions.
 // These are tested in backwards.toml.
 var SupportedVersions = []string{
 	"v1.14.12",
@@ -39,6 +43,8 @@ type Config struct {
 	TrustedNodes []*enode.Node
 	// SnapshotCacheMB overrides the default snapshot cache size in MB if not zero.
 	SnapshotCacheMB int
+	// AdvertisedIP
+	AdvertisedIP net.IP
 }
 
 // defaultGethConfig returns the default geth config.

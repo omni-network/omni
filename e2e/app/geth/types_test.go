@@ -11,5 +11,5 @@ import (
 func TestVersions(t *testing.T) {
 	t.Parallel()
 	require.Len(t, geth.SupportedVersions, 4) // Only support (max) 4 versions
-	require.NotContains(t, geth.SupportedVersions, geth.Version)
+	require.NotContains(t, geth.SupportedVersions, geth.ServerVersion)
 }
