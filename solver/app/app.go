@@ -375,12 +375,20 @@ func streamEventsForever(
 			continue
 		}
 
+		var delay uint64
+		// For L1 we delay the processing of events by two heights to minimize the risks
+		// of the intent trasaction getting excluded during a reorg.
+		if chainID == evmchain.IDEthereum {
+			delay = 2
+		}
+
 		req := xchain.EventLogsReq{
 			ChainID:       chainID,
 			Height:        from, // Note the previous height is re-processed (idempotency FTW)
 			ConfLevel:     confLevel,
 			FilterAddress: inboxAddr,
 			FilterTopics:  solvernet.AllEventTopics(),
+			Delay:         delay,
 		}
 		err = xprov.StreamEventLogs(ctx, req, newEventProcessor(deps, chainID))
 		if ctx.Err() != nil {

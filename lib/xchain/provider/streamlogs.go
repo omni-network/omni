@@ -51,6 +51,7 @@ func (p *Provider) StreamEventLogs(ctx context.Context, req xchain.EventLogsReq,
 				ConfLevel:     req.ConfLevel,
 				FilterAddress: req.FilterAddress,
 				FilterTopics:  req.FilterTopics,
+				Delay:         req.Delay,
 			}
 
 			// Retry fetching logs a few times, since RPC providers load balance requests and some servers may lag a bit.
@@ -112,6 +113,13 @@ func (p *Provider) StreamEventLogs(ctx context.Context, req xchain.EventLogsReq,
 func (p *Provider) GetEventLogs(ctx context.Context, req xchain.EventLogsReq) ([]types.Log, bool, error) {
 	ctx, span := tracer.Start(ctx, spanName("get_events"))
 	defer span.End()
+
+	// Height too small, we can't start processing yet.
+	if req.Height < req.Delay {
+		return nil, false, nil
+	}
+
+	req.Height = umath.SubtractOrZero(req.Height, req.Delay)
 
 	_, ethCl, err := p.getEVMChain(req.ChainID)
 	if err != nil {

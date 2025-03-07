@@ -32,6 +32,7 @@ type EventLogsReq struct {
 	ConfLevel     ConfLevel      // Confirmation level to ensure
 	FilterAddress common.Address // Filter logs by optional address
 	FilterTopics  []common.Hash  // Filters zero or more topics (in the first position only).
+	Delay         uint64         // Delay in heights applied to event processing to address possible reorgs.
 }
 
 func (r EventLogsReq) ChainVersion() ChainVersion {
