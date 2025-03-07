@@ -22,8 +22,8 @@
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "check": "biome check --write",
     "test": "vitest",
-    "test:unit": "vitest --project unit",
-    "test:integration": "vitest --project integration",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
     "coverage": "vitest run --coverage"
   },
   "files": [

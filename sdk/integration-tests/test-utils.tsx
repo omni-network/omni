@@ -24,7 +24,7 @@ const MOCK_L1_CHAIN: Chain = {
   nativeCurrency: { decimals: 18, name: 'Ether', symbol: 'ETH' },
   rpcUrls: {
     default: {
-      http: ['http://localhost:8001'],
+      http: ['http://localhost:8003'],
     },
   },
 }
@@ -35,7 +35,7 @@ const MOCK_L2_CHAIN: Chain = {
   nativeCurrency: { decimals: 18, name: 'Ether', symbol: 'ETH' },
   rpcUrls: {
     default: {
-      http: ['http://localhost:8002'],
+      http: ['http://localhost:8004'],
     },
   },
 }
