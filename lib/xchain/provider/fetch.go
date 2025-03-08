@@ -42,17 +42,47 @@ func (p *Provider) ChainVersionHeight(ctx context.Context, chainVer xchain.Chain
 		return 0, err
 	}
 
-	headType, ok := headTypeFromConfLevel(chainVer.ConfLevel)
+	// TODO(corver): This could be optimized to do single query for minX conf levels.
+	header, err := headerByConfLevel(ctx, ethCl, chainVer.ConfLevel)
+	if err != nil {
+		return 0, errors.Wrap(err, "header by conf level")
+	}
+
+	return header.Number.Uint64(), nil
+}
+
+// headTypeFromConfLevel returns the current header for the provided conf level.
+func headerByConfLevel(ctx context.Context, ethCl ethclient.Client, confLevel xchain.ConfLevel) (*types.Header, error) {
+	headers := map[xchain.ConfLevel]ethclient.HeadType{
+		xchain.ConfFinalized: ethclient.HeadFinalized,
+		xchain.ConfLatest:    ethclient.HeadLatest,
+		xchain.ConfMin1:      ethclient.HeadLatest,
+	}
+	headType, ok := headers[confLevel]
 	if !ok {
-		return 0, errors.New("unsupported conf level")
+		return nil, errors.New("unsupported conf level")
 	}
 
 	header, err := ethCl.HeaderByType(ctx, headType)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return header.Number.Uint64(), nil
+	delays := map[xchain.ConfLevel]uint64{
+		xchain.ConfFinalized: 0,
+		xchain.ConfLatest:    0,
+		xchain.ConfMin1:      1,
+	}
+	delay, ok := delays[confLevel]
+	if !ok {
+		return nil, errors.New("unsupported conf level")
+	} else if delay == 0 {
+		return header, nil
+	}
+
+	delayedBig := new(big.Int).Sub(header.Number, big.NewInt(1))
+
+	return ethCl.HeaderByNumber(ctx, delayedBig)
 }
 
 // GetEmittedCursor returns the emitted cursor for the destination chain on the source chain,
@@ -371,15 +401,10 @@ func (p *Provider) headerByChainVersion(ctx context.Context, chainVer xchain.Cha
 		return nil, err
 	}
 
-	headType, ok := headTypeFromConfLevel(chainVer.ConfLevel)
-	if !ok {
-		return nil, errors.New("unsupported conf level")
-	}
-
 	// Fetch the header from the ethclient
-	header, err := rpcClient.HeaderByType(ctx, headType)
+	header, err := headerByConfLevel(ctx, rpcClient, chainVer.ConfLevel)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "header by conf level")
 	}
 
 	// Update the strategy cache
@@ -467,17 +492,6 @@ func spanName(method string) string {
 	return "xprovider/" + method
 }
 
-func headTypeFromConfLevel(conf xchain.ConfLevel) (ethclient.HeadType, bool) {
-	switch conf {
-	case xchain.ConfLatest:
-		return ethclient.HeadLatest, true
-	case xchain.ConfFinalized:
-		return ethclient.HeadFinalized, true
-	default:
-		return "", false
-	}
-}
-
 // getEventLogs returns the logs for the contract address and block hash with any of the provided topics in the first position.
 func getEventLogs(ctx context.Context, rpcClient ethclient.Client, contractAddr common.Address, blockHash common.Hash, topics []common.Hash) ([]types.Log, error) {
 	logs, err := rpcClient.FilterLogs(ctx, ethereum.FilterQuery{
@@ -514,12 +528,8 @@ func heightForRef(ctx context.Context, client ethclient.Client, ref xchain.Ref) 
 		return umath.NewBigInt(*ref.Height), nil
 	}
 
-	head, ok := headTypeFromConfLevel(*ref.ConfLevel)
-	if !ok {
-		return nil, errors.New("invalid conf level")
-	}
-
-	header, err := client.HeaderByType(ctx, head)
+	// TODO(corver): This could be optimized to do single query for minX conf levels.
+	header, err := headerByConfLevel(ctx, client, *ref.ConfLevel)
 	if err != nil {
 		return nil, err
 	}
