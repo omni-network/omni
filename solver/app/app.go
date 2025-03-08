@@ -32,14 +32,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-// confLevel of solver streamers.
 const (
-	confLevel = xchain.ConfLatest
-	unknown   = "unknown"
+	defaultConfLevel = xchain.ConfLatest
+	unknown          = "unknown"
 )
 
 func chainVerFromID(id uint64) xchain.ChainVersion {
-	return xchain.ChainVersion{ID: id, ConfLevel: confLevel}
+	return xchain.ChainVersion{ID: id, ConfLevel: defaultConfLevel}
 }
 
 // Run starts the solver service.
@@ -239,6 +238,20 @@ func startEventStreams(
 			return err
 		}
 
+		// Logic to query block timestamp for a given height
+		inboxTimestamps[chain] = func(height uint64) time.Time {
+			header, err := backend.HeaderByNumber(ctx, umath.NewBigInt(height))
+			if err != nil {
+				return time.Time{} // Best effort, ignore for now.
+			}
+			timeI64, err := umath.ToInt64(header.Time)
+			if err != nil {
+				return time.Time{} // Best effort, ignore for now.
+			}
+
+			return time.Unix(timeI64, 0)
+		}
+
 		inbox, err := bindings.NewSolverNetInbox(addrs.SolverNetInbox, backend)
 		if err != nil {
 			return errors.Wrap(err, "create inbox contract", "chain", name)
@@ -261,19 +274,6 @@ func startEventStreams(
 
 		if err := cursors.Set(ctx, chainVer, height.Uint64()); err != nil {
 			return err
-		}
-
-		inboxTimestamps[chain] = func(height uint64) time.Time {
-			header, err := backend.HeaderByNumber(ctx, umath.NewBigInt(height))
-			if err != nil {
-				return time.Time{} // Best effort, ignore for now.
-			}
-			timeI64, err := umath.ToInt64(header.Time)
-			if err != nil {
-				return time.Time{} // Best effort, ignore for now.
-			}
-
-			return time.Unix(timeI64, 0)
 		}
 	}
 
@@ -366,8 +366,9 @@ func streamEventsForever(
 	inboxAddr common.Address,
 ) {
 	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second*5))
+	chainVer := chainVerFromID(chainID)
 	for {
-		from, ok, err := cursors.Get(ctx, xchain.ChainVersion{ID: chainID, ConfLevel: confLevel})
+		from, ok, err := cursors.Get(ctx, chainVer)
 		if !ok || err != nil {
 			log.Warn(ctx, "Failed reading cursor (will retry)", err)
 			backoff()
@@ -378,7 +379,7 @@ func streamEventsForever(
 		req := xchain.EventLogsReq{
 			ChainID:       chainID,
 			Height:        from, // Note the previous height is re-processed (idempotency FTW)
-			ConfLevel:     confLevel,
+			ConfLevel:     chainVer.ConfLevel,
 			FilterAddress: inboxAddr,
 			FilterTopics:  solvernet.AllEventTopics(),
 		}
