@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/omni-network/omni/lib/errors"
+	tokenslib "github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/solver/types"
 )
 
@@ -94,7 +95,7 @@ func getQuote(depositTkns []Token, expenses []TokenAmt) ([]TokenAmt, error) {
 
 // QuoteDeposit returns the deposit required to cover `expense`.
 func QuoteDeposit(tkn Token, expense TokenAmt) (TokenAmt, error) {
-	if expense.Token.Symbol != tkn.Symbol {
+	if !areEqualBySymbol(tkn, expense.Token) {
 		return TokenAmt{}, newRejection(rejectInvalidDeposit, errors.New("deposit token must match expense token"))
 	}
 
@@ -111,7 +112,7 @@ func QuoteDeposit(tkn Token, expense TokenAmt) (TokenAmt, error) {
 
 // QuoteExpense returns the expense allowed for `deposit`.
 func quoteExpense(tkn Token, deposit TokenAmt) (TokenAmt, error) {
-	if deposit.Token.Symbol != tkn.Symbol {
+	if !areEqualBySymbol(tkn, deposit.Token) {
 		return TokenAmt{}, newRejection(rejectInvalidDeposit, errors.New("deposit token must match expense token"))
 	}
 
@@ -124,6 +125,23 @@ func quoteExpense(tkn Token, deposit TokenAmt) (TokenAmt, error) {
 		Token:  tkn,
 		Amount: expenseFor(deposit.Amount, feeBipsFor(tkn)),
 	}, nil
+}
+
+func areEqualBySymbol(a, b Token) bool {
+	if a.Symbol == b.Symbol {
+		return true
+	}
+
+	wstETH := tokenslib.WSTETH.Symbol
+	wstETHDC := tokenslib.WSTETHDC.Symbol
+
+	equivalents := map[string]string{
+		// consider wstETH and wstETH_DC equal
+		wstETH:   wstETHDC,
+		wstETHDC: wstETH,
+	}
+
+	return equivalents[a.Symbol] == b.Symbol
 }
 
 // feeBipsFor returns the fee in bips for a given token.

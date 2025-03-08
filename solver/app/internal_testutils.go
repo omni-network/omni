@@ -201,6 +201,12 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 
 	omegaOMNIAddr := omniERC20(netconf.Omega).Address
 
+	// mock base sepolia wstETH (from e2e/solver/mocktokens.go)
+	baseSepoliaWSTETH := common.HexToAddress("0x6319df7c227e34B967C1903A08a698A3cC43492B")
+
+	// holesky wstETH_DC (symbiotic wstETH collateral)
+	holeskyWSTETHDC := common.HexToAddress("0x23e98253f372ee29910e22986fe75bb287b011fc")
+
 	return []orderTestCase{
 		{
 			name:   "insufficient native balance",
@@ -446,6 +452,21 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				deposits:   []types.AddrAmt{{Amount: big.NewInt(2)}},
 				calls:      []types.Call{{Value: big.NewInt(1)}},
 				expenses:   []types.Expense{{Amount: big.NewInt(1)}},
+			},
+		},
+		{
+			name:   "wstETH covers wstETH_DC",
+			reason: rejectNone,
+			reject: false,
+			order: testOrder{
+				srcChainID: evmchain.IDBaseSepolia,
+				dstChainID: evmchain.IDHolesky,
+				deposits:   []types.AddrAmt{{Amount: depositFor(ether(1), standardFeeBips), Token: baseSepoliaWSTETH}},
+				expenses:   []types.Expense{{Amount: ether(1), Token: holeskyWSTETHDC}},
+			},
+			mock: func(clients MockClients) {
+				mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), holeskyWSTETHDC, ether(1))
+				mockERC20Allowance(t, clients.Client(t, evmchain.IDHolesky), holeskyWSTETHDC)
 			},
 		},
 	}

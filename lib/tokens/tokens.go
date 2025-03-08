@@ -36,7 +36,14 @@ var (
 		CoingeckoID: "wrapped-steth",
 	}
 
-	all = []Token{OMNI, ETH, STETH, WSTETH}
+	WSTETHDC = Token{
+		Symbol:      "wstETH_DC",
+		Name:        "DefaultCollateral_Wrapped liquid staked Ether",
+		Decimals:    18,
+		CoingeckoID: "wrapped-steth", // no coingecko id, price as wstETH
+	}
+
+	all = []Token{OMNI, ETH, STETH, WSTETH, WSTETHDC}
 )
 
 func All() []Token {

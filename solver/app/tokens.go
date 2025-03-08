@@ -54,12 +54,14 @@ func (t Token) IsOMNI() bool {
 
 var (
 	// TODO: increase max spend on mainnet, keep low for staging / omega.
-	maxETHSpend    = mustBig("1000000000000000000")    // 1 ETH
-	minETHSpend    = mustBig("1000000000000000")       // 0.001 ETH
-	maxWSTETHSpend = mustBig("1000000000000000000")    // 1 wstETH
-	minWSTETHSpend = mustBig("1000000000000000")       // 0.001 wstETH
-	maxOMNISpend   = mustBig("1000000000000000000000") // 1000 OMNI
-	minOMNISpend   = mustBig("100000000000000000")     // 0.1 OMNI
+	maxETHSpend      = mustBig("1000000000000000000")    // 1 ETH
+	minETHSpend      = mustBig("1000000000000000")       // 0.001 ETH
+	maxWSTETHSpend   = mustBig("1000000000000000000")    // 1 wstETH
+	minWSTETHSpend   = mustBig("1000000000000000")       // 0.001 wstETH
+	maxWSTETHDCSpend = mustBig("1000000000000000000")    // 1 wstETH_DC
+	minWSTETHDCSpend = mustBig("1000000000000000")       // 0.001 wstETH_DC
+	maxOMNISpend     = mustBig("1000000000000000000000") // 1000 OMNI
+	minOMNISpend     = mustBig("100000000000000000")     // 0.1 OMNI
 )
 
 var tokens = append(Tokens{
@@ -98,6 +100,10 @@ var tokens = append(Tokens{
 	// stETH
 	stETH(evmchain.IDHolesky, common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")),
 	stETH(evmchain.IDMockL1, common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")), // copy of holesky stETH (for e2e fork testing)
+
+	// symbiotic wstETH collateral
+	wstETHDC(evmchain.IDHolesky, common.HexToAddress("0x23e98253f372ee29910e22986fe75bb287b011fc")),
+	wstETHDC(evmchain.IDMockL1, common.HexToAddress("0x23e98253f372ee29910e22986fe75bb287b011fc")), // copy of holesky wstETH_DC (for e2e fork testing)
 }, mocks()...)
 
 func AllTokens() Tokens {
@@ -189,6 +195,17 @@ func wstETH(chainID uint64, addr common.Address) Token {
 		Address:    addr,
 		MaxSpend:   maxWSTETHSpend,
 		MinSpend:   minWSTETHSpend,
+	}
+}
+
+func wstETHDC(chainID uint64, addr common.Address) Token {
+	return Token{
+		Token:      tokenslib.WSTETHDC,
+		ChainID:    chainID,
+		ChainClass: mustChainClass(chainID),
+		Address:    addr,
+		MaxSpend:   maxWSTETHDCSpend,
+		MinSpend:   minWSTETHDCSpend,
 	}
 }
 
