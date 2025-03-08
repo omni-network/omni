@@ -51,8 +51,13 @@ func (c ConfLevel) IsFinalized() bool {
 }
 
 // Label returns a short label for the confirmation level.
-// IT is the uppercase first letter of the confirmation level.
+// It is the number-only for `minX` or,
+// it is the uppercase first letter of the confirmation level.
 func (c ConfLevel) Label() string {
+	if strings.Contains(c.String(), "min") {
+		return strings.TrimPrefix(c.String(), "min")
+	}
+
 	return strings.ToUpper(c.String()[:1])
 }
 
@@ -63,12 +68,13 @@ const (
 	_             ConfLevel = 2 // reserved
 	_             ConfLevel = 3 // reserved
 	ConfFinalized ConfLevel = 4 // final
-	confSentinel  ConfLevel = 5 // sentinel must always be last
+	ConfMin1      ConfLevel = 5 // min1
+	confSentinel  ConfLevel = 6 // sentinel must always be last
 )
 
 // FuzzyConfLevels returns a list of all fuzzy confirmation levels.
 func FuzzyConfLevels() []ConfLevel {
-	return []ConfLevel{ConfLatest}
+	return []ConfLevel{ConfLatest, ConfMin1}
 }
 
 type ShardID uint64
