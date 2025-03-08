@@ -1,4 +1,4 @@
-import { parseEther, toBytes, toHex } from 'viem'
+import { type Hex, parseEther, toBytes, toHex } from 'viem'
 import { arbitrum, base, optimism } from 'viem/chains'
 import { http, createConfig, mock } from 'wagmi'
 import { mainnet } from 'wagmi/chains'
@@ -29,6 +29,19 @@ export const web3Config = createConfig({
 ////////////////////////////////////////
 //// TEST DATA
 ////////////////////////////////////////
+type Transfer = {
+  token: Hex
+  amount: bigint
+  recipient: Hex
+  chainId: bigint
+}
+
+type FillInstruction = {
+  destinationChainId: bigint
+  destinationSettler: Hex
+  originData: Hex
+}
+
 export const oneEth = parseEther('1')
 export const contracts = {
   inbox: '0x123',
@@ -51,7 +64,7 @@ export const resolvedOrder = {
       recipient: bytes32Addr,
       chainId: 1n,
     },
-  ],
+  ] as readonly Transfer[],
   minReceived: [
     {
       token: bytes32Addr,
@@ -59,12 +72,12 @@ export const resolvedOrder = {
       recipient: bytes32Addr,
       chainId: 1n,
     },
-  ],
+  ] as readonly Transfer[],
   fillInstructions: [
     {
       destinationChainId: 1n,
       destinationSettler: bytes32Addr,
       originData,
     },
-  ],
-}
+  ] as readonly FillInstruction[],
+} as const

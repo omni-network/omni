@@ -13,3 +13,6 @@ coverage
 
 # asdf
 .tool-versions
+
+# vitest
+tsconfig.vitest-temp.json

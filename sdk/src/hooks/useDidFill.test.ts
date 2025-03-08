@@ -38,7 +38,7 @@ test('default', async () => {
   expect(useReadContract).toHaveBeenCalled()
 
   useReadContract.mockReturnValue(
-    createMockReadContractResult({
+    createMockReadContractResult<ReturnType<typeof useDidFill>>({
       data: true,
       isSuccess: true,
       status: 'success',
@@ -55,7 +55,7 @@ test('default', async () => {
 
 test('behaviour: no exception if contract read fails', () => {
   useReadContract.mockReturnValue(
-    createMockReadContractResult({
+    createMockReadContractResult<ReturnType<typeof useDidFill>>({
       isSuccess: false,
       isError: true,
       status: 'error',
