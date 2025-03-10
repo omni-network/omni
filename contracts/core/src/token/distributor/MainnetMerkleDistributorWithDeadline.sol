@@ -3,7 +3,7 @@ pragma solidity 0.8.24;
 
 import { MerkleDistributorWithDeadline } from "./MerkleDistributorWithDeadline.sol";
 
-contract OmegaMerkleDistributorWithDeadline is MerkleDistributorWithDeadline {
+contract MainnetMerkleDistributorWithDeadline is MerkleDistributorWithDeadline {
     address internal constant VALIDATOR_1 = 0x58D2A4e3880635B7682A1BB7Ed8a43F5ac6cFD3d;
     address internal constant VALIDATOR_2 = 0x19a4Cb685af95A96BEd67C764b6dB137978a5B17;
     address internal constant VALIDATOR_3 = 0xD5f9e687c1EA2b0Da7C06bEbe80ddAb03B33C075;
