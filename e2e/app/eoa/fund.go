@@ -59,20 +59,30 @@ var (
 	staticThresholdsByRole = map[Role]FundThresholds{
 		RoleRelayer:         thresholdMedium, // Relayer needs sufficient balance to operator for 2 weeks
 		RoleMonitor:         thresholdMedium, // Dynamic Fee updates every few hours.
-		RoleFlowgen:         thresholdMedium, // Dynamic Fee updates every few hours.
 		RoleCreate3Deployer: thresholdTiny,   // Only 1 contract per chain
 		RoleManager:         thresholdTiny,   // Rarely used
 		RoleUpgrader:        thresholdTiny,   // Rarely used
 		RoleDeployer:        thresholdTiny,   // Protected chains are only deployed once
 		RoleTester:          thresholdLarge,  // Tester funds pingpongs, validator updates, etc, on non-mainnet.
 		RoleXCaller:         thresholdSmall,  // XCaller funds used for sending xmsgs across networks.
-		RoleSolver:          thresholdLarge,  // Needs significant funds to fill orders (TODO: higher threshold?)
+
+		// Enough funds to fill orders, restricted to supported targets (to be implemented)
+		RoleSolver: {
+			minGwei:    gwei(1),
+			targetGwei: gwei(3),
+		},
+
+		// Needs enough to cover gas, and bridge eth between chains
+		RoleFlowgen: {
+			minGwei:    gwei(0.1),
+			targetGwei: gwei(1),
+		},
 	}
 
 	dynamicThresholdsByRole = map[Role]dynamicThreshold{
 		RoleHot: {
 			Multiplier: hotDynamicMultiplier,
-			Roles:      []Role{RoleRelayer, RoleMonitor, RoleFlowgen, RoleCreate3Deployer, RoleManager, RoleUpgrader, RoleDeployer, RoleTester, RoleXCaller},
+			Roles:      []Role{RoleRelayer, RoleMonitor, RoleFlowgen, RoleSolver, RoleCreate3Deployer, RoleManager, RoleUpgrader, RoleDeployer, RoleTester, RoleXCaller},
 		},
 		RoleCold: {
 			Multiplier: coldDynamicMultiplier,
