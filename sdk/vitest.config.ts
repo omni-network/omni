@@ -18,13 +18,7 @@ export default defineConfig({
         test: {
           name: 'integration',
           include: ['integration-tests/**/*.test.{ts,tsx}'],
-          environment: 'browser',
-          browser: {
-            enabled: true,
-            headless: true,
-            provider: 'playwright',
-            instances: [{ browser: 'chromium' }],
-          },
+          environment: 'happy-dom',
         },
       },
     ],
