@@ -32,3 +32,7 @@ export class ValidateOrderError extends BaseError {
 export class ParseOpenEventError extends BaseError {
   override name = 'ParseOpenEventError' as const
 }
+
+export class LoadContractsError extends BaseError {
+  override name = 'LoadContractsError' as const
+}

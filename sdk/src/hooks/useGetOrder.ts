@@ -1,7 +1,7 @@
 import type { Hex } from 'viem'
 import { useReadContract } from 'wagmi'
 import { inboxABI } from '../constants/abis.js'
-import { useOmniContext } from '../context/omni.js'
+import { useOmniContracts } from './useOmniContracts.js'
 
 export function useGetOrder({
   chainId,
@@ -10,15 +10,15 @@ export function useGetOrder({
   chainId?: number
   orderId?: Hex
 }) {
-  const { inbox } = useOmniContext()
+  const { data: contracts } = useOmniContracts()
   return useReadContract({
-    address: inbox,
+    address: contracts?.inbox,
     abi: inboxABI,
     functionName: 'getOrder',
     chainId,
     args: orderId ? [orderId] : undefined,
     query: {
-      enabled: !!orderId && !!chainId,
+      enabled: !!contracts && !!orderId && !!chainId,
       refetchInterval: 1000,
     },
   })
