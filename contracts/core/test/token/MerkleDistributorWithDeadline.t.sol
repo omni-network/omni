@@ -11,8 +11,9 @@ import { MockSolverNetInbox } from "solve/test/utils/MockSolverNetInbox.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import { GenesisStake } from "src/token/GenesisStake.sol";
-import { MerkleDistributor } from "src/token/MerkleDistributor.sol";
-import { MerkleDistributorWithDeadline } from "src/token/MerkleDistributorWithDeadline.sol";
+import { MerkleDistributor } from "src/token/distributor/MerkleDistributor.sol";
+import { MerkleDistributorWithDeadline } from "src/token/distributor/MerkleDistributorWithDeadline.sol";
+import { StagingMerkleDistributorWithDeadline } from "src/token/distributor/StagingMerkleDistributorWithDeadline.sol";
 
 import { IERC7683, IOriginSettler } from "solve/src/erc7683/IOriginSettler.sol";
 import { IStaking } from "src/interfaces/IStaking.sol";
@@ -27,7 +28,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
     MockSolverNetInbox inbox;
 
     GenesisStake genesisStake;
-    MerkleDistributorWithDeadline merkleDistributor;
+    StagingMerkleDistributorWithDeadline merkleDistributor;
 
     address proxyAdmin = makeAddr("proxyAdmin");
     address outbox = makeAddr("outbox");
@@ -112,11 +113,11 @@ contract MerkleDistributorWithDeadline_Test is Test {
                 )
             )
         );
-        merkleDistributor = MerkleDistributorWithDeadline(
+        merkleDistributor = StagingMerkleDistributorWithDeadline(
             create3.deploy(
                 keccak256("merkleDistributor"),
                 abi.encodePacked(
-                    type(MerkleDistributorWithDeadline).creationCode,
+                    type(StagingMerkleDistributorWithDeadline).creationCode,
                     abi.encode(address(omni), root, endTime, address(omniPortal), genesisStakeAddr, address(inbox))
                 )
             )
@@ -124,7 +125,9 @@ contract MerkleDistributorWithDeadline_Test is Test {
 
         // Verify precomputed addresses
         require(address(genesisStake) == genesisStakeAddr, "GenesisStake address mismatch");
-        require(address(merkleDistributor) == merkleDistributorAddr, "MerkleDistributorWithDeadline address mismatch");
+        require(
+            address(merkleDistributor) == merkleDistributorAddr, "StagingMerkleDistributorWithDeadline address mismatch"
+        );
     }
 
     // Fund stakers and the distributor contract
@@ -146,7 +149,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
         }
     }
 
-    function getValidator(uint256 iteration) internal returns (address) {
+    function getValidator(uint256 iteration) internal pure returns (address) {
         uint256 selection = ++iteration % 2;
 
         if (selection == 1) return VALIDATOR_1;
@@ -217,7 +220,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
 
         // Cannot migrate if user has already claimed
         vm.prank(stakers[0]);
-        vm.expectRevert(MerkleDistributorWithDeadline.InvalidClaim.selector);
+        vm.expectRevert(MerkleDistributorWithDeadline.InsufficientAmount.selector);
         merkleDistributor.migrateToOmni(0, amounts[0], proofs[0]);
     }
 

@@ -8,21 +8,20 @@ import { SignatureCheckerLib } from "solady/src/utils/SignatureCheckerLib.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { MerkleProofLib } from "solady/src/utils/MerkleProofLib.sol";
 import { LibBitmap } from "solady/src/utils/LibBitmap.sol";
-import { IStaking } from "../interfaces/IStaking.sol";
-import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
-import { IGenesisStake } from "../interfaces/IGenesisStake.sol";
+import { IStaking } from "../../interfaces/IStaking.sol";
+import { IOmniPortal } from "../../interfaces/IOmniPortal.sol";
+import { IGenesisStake } from "../../interfaces/IGenesisStake.sol";
 import { IERC7683, IOriginSettler } from "solve/src/erc7683/IOriginSettler.sol";
 import { SolverNet } from "solve/src/lib/SolverNet.sol";
 
-contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
+abstract contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
     using LibBitmap for LibBitmap.Bitmap;
     using SafeTransferLib for address;
 
     error Expired();
-    error InvalidClaim();
     error EndTimeInPast();
     error InvalidSignature();
-    error NothingToMigrate();
+    error InsufficientAmount();
     error ClaimWindowFinished();
     error NoWithdrawDuringClaim();
 
@@ -32,8 +31,6 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
     bytes32 internal constant MIGRATION_TYPEHASH = keccak256("Migration(address user,uint256 nonce,uint256 expiry)");
 
     address internal constant STAKING = 0xCCcCcC0000000000000000000000000000000001;
-    address internal constant VALIDATOR_1 = 0xD6CD71dF91a6886f69761826A9C4D123178A8d9D;
-    address internal constant VALIDATOR_2 = 0x9C7bf21f72CA34af89F620D27E0F18C4366b88c6;
 
     uint256 internal _delegationCount;
 
@@ -166,17 +163,17 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
         // Migrate user's stake, if any
         uint256 stake = IGenesisStake(genesisStaking).migrateStake(account);
 
-        // If the user has unclaimed rewards, add them to their stake
-        if (_claimRewards(account, index, amount, merkleProof)) {
-            unchecked {
-                stake += amount;
+        // If proofs are provided, check if the user is eligible for rewards and add them to their stake
+        if (merkleProof.length > 0) {
+            if (_claimRewards(account, index, amount, merkleProof)) {
+                unchecked {
+                    stake += amount;
+                }
             }
-        } else {
-            revert InvalidClaim();
         }
 
-        // Block zero value migrations
-        if (stake == 0) revert NothingToMigrate();
+        // Block insufficient stake migrations
+        if (stake < 1 ether) revert InsufficientAmount();
 
         // Generate and send the order
         IERC7683.OnchainCrossChainOrder memory order = _generateOrder(account, _getValidator(), stake);
@@ -210,12 +207,7 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
      * @dev Iterates through the validators in a round-robin fashion
      * @return Validator address
      */
-    function _getValidator() internal returns (address) {
-        uint256 selection = ++_delegationCount % 2;
-
-        if (selection == 1) return VALIDATOR_1;
-        return VALIDATOR_2;
-    }
+    function _getValidator() internal virtual returns (address);
 
     /**
      * @notice Generate a SolverNet order that generates a subsidized order for deposited tokens on Omni 1:1
