@@ -24,7 +24,7 @@ contract SolverNet_E2E_Test is TestBase {
         inbox.open{ value: defaultAmount }(order);
         vm.stopPrank();
 
-        (IERC7683.ResolvedCrossChainOrder memory resolved2,) = inbox.getOrder(resolvedOrder.orderId);
+        (IERC7683.ResolvedCrossChainOrder memory resolved2,,) = inbox.getOrder(resolvedOrder.orderId);
         assertResolvedEq(resolvedOrder, resolved2);
         assertEq(
             inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Pending),
@@ -88,7 +88,7 @@ contract SolverNet_E2E_Test is TestBase {
         inbox.open{ value: defaultAmount }(order);
         vm.stopPrank();
 
-        (IERC7683.ResolvedCrossChainOrder memory resolved2,) = inbox.getOrder(resolvedOrder.orderId);
+        (IERC7683.ResolvedCrossChainOrder memory resolved2,,) = inbox.getOrder(resolvedOrder.orderId);
         assertResolvedEq(resolvedOrder, resolved2);
         assertEq(
             inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Pending),
@@ -153,7 +153,7 @@ contract SolverNet_E2E_Test is TestBase {
         inbox.open(order);
         vm.stopPrank();
 
-        (IERC7683.ResolvedCrossChainOrder memory resolved2,) = inbox.getOrder(resolvedOrder.orderId);
+        (IERC7683.ResolvedCrossChainOrder memory resolved2,,) = inbox.getOrder(resolvedOrder.orderId);
         assertResolvedEq(resolvedOrder, resolved2);
         assertEq(
             inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Pending),
@@ -219,7 +219,7 @@ contract SolverNet_E2E_Test is TestBase {
         inbox.open(order);
         vm.stopPrank();
 
-        (IERC7683.ResolvedCrossChainOrder memory resolved2,) = inbox.getOrder(resolvedOrder.orderId);
+        (IERC7683.ResolvedCrossChainOrder memory resolved2,,) = inbox.getOrder(resolvedOrder.orderId);
         assertResolvedEq(resolvedOrder, resolved2);
         assertEq(
             inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Pending),
@@ -288,7 +288,7 @@ contract SolverNet_E2E_Test is TestBase {
         inbox.open{ value: defaultAmount * 2 }(order);
         vm.stopPrank();
 
-        (IERC7683.ResolvedCrossChainOrder memory resolved2,) = inbox.getOrder(resolvedOrder.orderId);
+        (IERC7683.ResolvedCrossChainOrder memory resolved2,,) = inbox.getOrder(resolvedOrder.orderId);
         assertResolvedEq(resolvedOrder, resolved2);
         assertEq(
             inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Pending),

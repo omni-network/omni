@@ -78,6 +78,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
      * @param inboxes  Addresses of the inboxes.
      */
     function setInboxes(uint64[] calldata chainIds, address[] calldata inboxes) external onlyOwner {
+        if (chainIds.length != inboxes.length) revert InvalidArrayLength();
         for (uint256 i; i < chainIds.length; ++i) {
             _inboxes[chainIds[i]] = inboxes[i];
             emit InboxSet(chainIds[i], inboxes[i]);

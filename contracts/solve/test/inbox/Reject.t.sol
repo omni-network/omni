@@ -38,7 +38,7 @@ contract SolverNet_Inbox_Reject_Test is TestBase {
         emit ISolverNetInbox.Rejected(resolvedOrder.orderId, solver, 1);
         inbox.reject(resolvedOrder.orderId, 1);
 
-        (, ISolverNetInbox.OrderState memory state) = inbox.getOrder(resolvedOrder.orderId);
+        (, ISolverNetInbox.OrderState memory state,) = inbox.getOrder(resolvedOrder.orderId);
 
         assertEq(state.rejectReason, 1, "reject reason should be set");
         assertEq(
@@ -67,7 +67,7 @@ contract SolverNet_Inbox_Reject_Test is TestBase {
         emit ISolverNetInbox.Rejected(resolvedOrder.orderId, solver, 1);
         inbox.reject(resolvedOrder.orderId, 1);
 
-        (, ISolverNetInbox.OrderState memory state) = inbox.getOrder(resolvedOrder.orderId);
+        (, ISolverNetInbox.OrderState memory state,) = inbox.getOrder(resolvedOrder.orderId);
 
         assertEq(state.rejectReason, 1, "reject reason should be set");
         assertEq(

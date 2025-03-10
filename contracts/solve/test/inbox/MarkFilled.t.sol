@@ -6,8 +6,9 @@ import "../TestBase.sol";
 contract SolverNet_Inbox_MarkFilled_Test is TestBase {
     function test_markFilled_reverts() public {
         // order must be pending
+        bytes32 orderId = inbox.getOrderId(user, inbox.getUserNonce(user));
         vm.expectRevert(ISolverNetInbox.OrderNotPending.selector);
-        inbox.markFilled(bytes32(uint256(1)), bytes32(0), address(0));
+        inbox.markFilled(orderId, bytes32(0), address(0));
 
         // prep: open a valid order
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
@@ -26,7 +27,7 @@ contract SolverNet_Inbox_MarkFilled_Test is TestBase {
             destChainId + 1,
             address(outbox),
             address(inbox),
-            abi.encodeWithSelector(ISolverNetInbox.markFilled.selector, resolvedOrder.orderId, bytes32(0), address(0))
+            abi.encodeWithSelector(ISolverNetInbox.markFilled.selector, orderId, bytes32(0), address(0))
         );
 
         // order must be filled by the outbox
@@ -35,18 +36,18 @@ contract SolverNet_Inbox_MarkFilled_Test is TestBase {
             destChainId,
             user,
             address(inbox),
-            abi.encodeWithSelector(ISolverNetInbox.markFilled.selector, resolvedOrder.orderId, bytes32(0), address(0))
+            abi.encodeWithSelector(ISolverNetInbox.markFilled.selector, orderId, bytes32(0), address(0))
         );
 
         // order must have a matching fill hash
-        bytes32 fillhash = fillHash(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData);
+        bytes32 fillhash = fillHash(orderId, resolvedOrder.fillInstructions[0].originData);
         fillhash = bytes32(uint256(fillhash) + 1);
         vm.expectRevert(ISolverNetInbox.WrongFillHash.selector);
         portal.mockXCall(
             destChainId,
             address(outbox),
             address(inbox),
-            abi.encodeWithSelector(ISolverNetInbox.markFilled.selector, resolvedOrder.orderId, fillhash, address(0))
+            abi.encodeWithSelector(ISolverNetInbox.markFilled.selector, orderId, fillhash, address(0))
         );
     }
 
