@@ -57,7 +57,10 @@ func instrSupplies(ctx context.Context, cprov cchain.Provider, network netconf.N
 	}
 
 	ethChainID := netconf.EthereumChainID(network.ID)
-	l1Client := ethCls[ethChainID]
+	l1Client, ok := ethCls[ethChainID]
+	if !ok {
+		return errors.Wrap(err, "ethereum client")
+	}
 	l1Token, err := bindings.NewOmni(addrs.Token, l1Client)
 	if err != nil {
 		return errors.Wrap(err, "contract bindings")
