@@ -15,6 +15,7 @@ import { MerkleDistributor } from "src/token/MerkleDistributor.sol";
 import { MerkleDistributorWithDeadline } from "src/token/MerkleDistributorWithDeadline.sol";
 
 import { IERC7683, IOriginSettler } from "solve/src/erc7683/IOriginSettler.sol";
+import { IStaking } from "src/interfaces/IStaking.sol";
 import { SolverNet } from "solve/src/lib/SolverNet.sol";
 
 contract MerkleDistributorWithDeadline_Test is Test {
@@ -38,6 +39,8 @@ contract MerkleDistributorWithDeadline_Test is Test {
     bytes32 internal constant ORDER_DATA_TYPEHASH = keccak256(
         "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)TokenExpense(address spender,address token,uint96 amount)"
     );
+
+    address internal constant STAKING = 0xCCcCcC0000000000000000000000000000000001;
 
     uint256[] pks = new uint256[](addrCount);
     address[] stakers = new address[](addrCount);
@@ -152,7 +155,12 @@ contract MerkleDistributorWithDeadline_Test is Test {
         SolverNet.Deposit memory deposit = SolverNet.Deposit({ token: address(omni), amount: uint96(amount * 2) });
 
         SolverNet.Call[] memory call = new SolverNet.Call[](1);
-        call[0] = SolverNet.Call({ target: addr, selector: bytes4(0), value: amount * 2, params: "" });
+        call[0] = SolverNet.Call({
+            target: STAKING,
+            selector: IStaking.delegateFor.selector,
+            value: amount * 2,
+            params: abi.encode(addr, address(0))
+        });
 
         SolverNet.OrderData memory orderData = SolverNet.OrderData({
             owner: addr,

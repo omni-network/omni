@@ -8,6 +8,7 @@ import { SignatureCheckerLib } from "solady/src/utils/SignatureCheckerLib.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { MerkleProofLib } from "solady/src/utils/MerkleProofLib.sol";
 import { LibBitmap } from "solady/src/utils/LibBitmap.sol";
+import { IStaking } from "../interfaces/IStaking.sol";
 import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
 import { IGenesisStake } from "../interfaces/IGenesisStake.sol";
 import { IERC7683, IOriginSettler } from "solve/src/erc7683/IOriginSettler.sol";
@@ -28,6 +29,8 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
         "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)TokenExpense(address spender,address token,uint96 amount)"
     );
     bytes32 internal constant MIGRATION_TYPEHASH = keccak256("Migration(address user,uint256 nonce,uint256 expiry)");
+
+    address internal constant STAKING = 0xCCcCcC0000000000000000000000000000000001;
 
     uint256 public immutable endTime;
     IOmniPortal public immutable omniPortal;
@@ -206,7 +209,13 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
         SolverNet.Deposit memory deposit = SolverNet.Deposit({ token: token, amount: uint96(amount) });
 
         SolverNet.Call[] memory call = new SolverNet.Call[](1);
-        call[0] = SolverNet.Call({ target: account, selector: bytes4(0), value: amount, params: "" });
+        address validator; // TODO: select validators
+        call[0] = SolverNet.Call({
+            target: STAKING,
+            selector: IStaking.delegateFor.selector,
+            value: amount,
+            params: abi.encode(account, validator)
+        });
 
         SolverNet.OrderData memory orderData = SolverNet.OrderData({
             owner: account,
