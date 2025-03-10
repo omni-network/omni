@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
@@ -39,7 +40,12 @@ func Start(
 	xprov xchain.Provider,
 	db db.DB,
 ) error {
-	indexer, err := newIndexer(db, xprov, network.StreamName)
+	xdapps, err := newXDapps(ctx, network)
+	if err != nil {
+		return err
+	}
+
+	indexer, err := newIndexer(db, xprov, network.StreamName, xdapps)
 	if err != nil {
 		return errors.Wrap(err, "create indexer")
 	}
@@ -65,11 +71,26 @@ func Start(
 	return nil
 }
 
+// newXDapps returns a map of known xdapps (xmsg source contracts) for the given network.
+func newXDapps(ctx context.Context, network netconf.Network) (map[common.Address]string, error) {
+	addrs, err := contracts.GetAddresses(ctx, network.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO(corver): Add more addresses here
+
+	return map[common.Address]string{
+		addrs.SolverNetOutbox: "solver",
+	}, nil
+}
+
 // newIndexer creates a new indexer using the provided DB.
 func newIndexer(
 	db db.DB,
 	xprov xchain.Provider,
 	streamNamer func(xchain.StreamID) string,
+	xdapps map[common.Address]string,
 ) (*indexer, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
 		{Id: 1, ProtoFileName: File_monitor_xmonitor_indexer_indexer_proto.Path()},
@@ -94,7 +115,7 @@ func newIndexer(
 		msgLinkTable: dbStore.MsgLinkTable(),
 		cursorTable:  dbStore.CursorTable(),
 		sampleFunc:   instrumentSample,
-		xdapps:       nil, // TODO(corver): Populate this once we have well-known xdapps
+		xdapps:       xdapps,
 	}, nil
 }
 
