@@ -2,6 +2,7 @@ package queryutil
 
 import (
 	"context"
+	"math/big"
 	"time"
 
 	"github.com/omni-network/omni/lib/cchain"
@@ -99,7 +100,7 @@ func DelegatorInflationRates(ctx context.Context, cprov cchain.Provider, delegat
 // DelegationBalance represents the total delegation balance of a delegator.
 type DelegationBalance struct {
 	DelegatorAddress sdk.AccAddress
-	Balance          sdk.Coin
+	Balance          big.Int
 }
 
 // AllDelegations returns delegation balances of each unique delegator.
@@ -119,18 +120,21 @@ func AllDelegations(ctx context.Context, cprov cchain.Provider) ([]DelegationBal
 			}
 
 			for _, del := range resp.DelegationResponses {
+				if del.Balance.Denom != sdk.DefaultBondDenom {
+					continue
+				}
 				addr, err := sdk.AccAddressFromBech32(del.Delegation.DelegatorAddress)
 				if err != nil {
 					return nil, errors.Wrap(err, "parse delegator address")
 				}
 				if delegation, ok := uniq[del.Delegation.DelegatorAddress]; ok {
-					delegation.Balance = delegation.Balance.Add(del.Balance)
+					delegation.Balance = *new(big.Int).Add(&delegation.Balance, del.Balance.Amount.BigInt())
 					uniq[del.Delegation.DelegatorAddress] = delegation
 				} else {
 					uniq[del.Delegation.DelegatorAddress] =
 						DelegationBalance{
 							DelegatorAddress: addr,
-							Balance:          del.Balance,
+							Balance:          *del.Balance.Amount.BigInt(),
 						}
 				}
 			}

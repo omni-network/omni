@@ -2,6 +2,7 @@ package supply
 
 import (
 	"context"
+	"math/big"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -15,22 +16,25 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/params"
 
+	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
 )
 
 func MonitorForever(ctx context.Context, cprov cchain.Provider, network netconf.Network, ethCls map[uint64]ethclient.Client) {
-	ticker := time.NewTicker(time.Hour)
-	defer ticker.Stop()
+	timer := time.NewTimer(0)
+	defer timer.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C:
+		case <-timer.C:
 			if err := instrSupplies(ctx, cprov, network, ethCls); err != nil {
 				log.Warn(ctx, "Token supply intrumentation failed", err)
 			}
+
+			timer.Reset(time.Hour)
 		}
 	}
 }
@@ -42,14 +46,14 @@ func instrSupplies(ctx context.Context, cprov cchain.Provider, network netconf.N
 	if err != nil {
 		return errors.Wrap(err, "total supply query")
 	}
-	var cosmosSupplyWei uint64
+	cosmosSupplyWei := math.NewInt(0)
 	for _, coin := range response.Supply {
 		if coin.Denom == sdk.DefaultBondDenom {
-			cosmosSupplyWei += coin.Amount.Uint64()
+			cosmosSupplyWei = cosmosSupplyWei.Add(coin.Amount)
 		}
 	}
 
-	cChainSupply.Set(toGwei(float64(cosmosSupplyWei)))
+	cChainSupply.Set(toGweiFloat64(*cosmosSupplyWei.BigInt()))
 
 	addrs, err := contracts.GetAddresses(ctx, network.ID)
 	if err != nil {
@@ -72,17 +76,18 @@ func instrSupplies(ctx context.Context, cprov cchain.Provider, network netconf.N
 	if err != nil {
 		return errors.Wrap(err, "l1 token supply")
 	}
-	eChainSupply.Set(toGwei(float64(l1TokenSupplyWei.Uint64())))
+	eChainSupply.Set(toGweiFloat64(*l1TokenSupplyWei))
 
 	l1BridgeBalanceWei, err := l1Token.BalanceOf(callOpts, addrs.L1Bridge)
 	if err != nil {
 		return errors.Wrap(err, "l1 bridge balance")
 	}
-	bridgeBalance.Set(toGwei(float64(l1BridgeBalanceWei.Uint64())))
+	bridgeBalance.Set(toGweiFloat64(*l1BridgeBalanceWei))
 
 	return nil
 }
 
-func toGwei(wei float64) float64 {
-	return wei / params.GWei
+func toGweiFloat64(wei big.Int) float64 {
+	f64, _ := new(big.Int).Div(&wei, big.NewInt(params.GWei)).Float64()
+	return f64
 }
