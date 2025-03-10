@@ -10,7 +10,6 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/query"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
@@ -111,33 +110,28 @@ func AllDelegations(ctx context.Context, cprov cchain.Provider) ([]DelegationBal
 
 	uniq := make(map[string]DelegationBalance)
 	for _, val := range vals {
-		request := &stakingtypes.QueryValidatorDelegationsRequest{ValidatorAddr: val.OperatorAddress}
-		for {
-			resp, err := cprov.QueryClients().Staking.ValidatorDelegations(ctx, request)
-			if err != nil {
-				return nil, errors.Wrap(err, "query validator delegations")
-			}
+		resp, err := cprov.QueryClients().Staking.ValidatorDelegations(ctx, &stakingtypes.QueryValidatorDelegationsRequest{
+			ValidatorAddr: val.OperatorAddress,
+		})
+		if err != nil {
+			return nil, errors.Wrap(err, "query validator delegations")
+		}
 
-			for _, del := range resp.DelegationResponses {
-				addr, err := sdk.AccAddressFromBech32(del.Delegation.DelegatorAddress)
-				if err != nil {
-					return nil, errors.Wrap(err, "parse delegator address")
-				}
-				if delegation, ok := uniq[del.Delegation.DelegatorAddress]; ok {
-					delegation.Balance = delegation.Balance.Add(del.Balance)
-					uniq[del.Delegation.DelegatorAddress] = delegation
-				} else {
-					uniq[del.Delegation.DelegatorAddress] =
-						DelegationBalance{
-							DelegatorAddress: addr,
-							Balance:          del.Balance,
-						}
-				}
+		for _, del := range resp.DelegationResponses {
+			addr, err := sdk.AccAddressFromBech32(del.Delegation.DelegatorAddress)
+			if err != nil {
+				return nil, errors.Wrap(err, "parse delegator address")
 			}
-			if len(resp.Pagination.NextKey) == 0 {
-				break
+			if delegation, ok := uniq[del.Delegation.DelegatorAddress]; ok {
+				delegation.Balance = delegation.Balance.Add(del.Balance)
+				uniq[del.Delegation.DelegatorAddress] = delegation
+			} else {
+				uniq[del.Delegation.DelegatorAddress] =
+					DelegationBalance{
+						DelegatorAddress: addr,
+						Balance:          del.Balance,
+					}
 			}
-			request.Pagination = &query.PageRequest{Key: resp.Pagination.NextKey}
 		}
 	}
 
