@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/ethclient/mock"
@@ -16,7 +17,6 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
@@ -42,30 +42,33 @@ type testOrder struct {
 
 // orderTestCase is a test case for both shouldReject and quote handlers.
 type orderTestCase struct {
-	name        string
-	reason      types.RejectReason
-	reject      bool
-	fillReverts bool
-	mock        func(clients MockClients)
-	order       testOrder
+	name         string
+	reason       rejectReason
+	reject       bool
+	fillReverts  bool
+	disallowCall bool
+	mock         func(clients MockClients)
+	order        testOrder
 }
 
 // rejectTestCase is a test case for shouldReject(...)
 type rejectTestCase struct {
-	name        string
-	reason      types.RejectReason
-	reject      bool
-	fillReverts bool
-	mock        func(clients MockClients)
-	order       Order
+	name         string
+	reason       rejectReason
+	reject       bool
+	fillReverts  bool
+	disallowCall bool
+	mock         func(clients MockClients)
+	order        Order
 }
 
 // checkTestCase is test case for quote handler.
 type checkTestCase struct {
-	name string
-	mock func(clients MockClients)
-	req  types.CheckRequest
-	res  types.CheckResponse
+	name         string
+	disallowCall bool
+	mock         func(clients MockClients)
+	req          types.CheckRequest
+	res          types.CheckResponse
 }
 
 func toCheckTestCase(t *testing.T, tt orderTestCase) checkTestCase {
@@ -81,8 +84,9 @@ func toCheckTestCase(t *testing.T, tt orderTestCase) checkTestCase {
 	}
 
 	return checkTestCase{
-		name: tt.name,
-		mock: tt.mock,
+		name:         tt.name,
+		mock:         tt.mock,
+		disallowCall: tt.disallowCall,
 		req: types.CheckRequest{
 			SourceChainID:      tt.order.srcChainID,
 			DestinationChainID: tt.order.dstChainID,
@@ -125,12 +129,24 @@ func toRejectTestCase(t *testing.T, tt orderTestCase, outbox common.Address) rej
 		})
 	}
 
+	fillOriginData, err := solvernet.PackFillOriginData(
+		bindings.SolverNetFillOriginData{
+			SrcChainId:   tt.order.srcChainID,
+			DestChainId:  tt.order.dstChainID,
+			FillDeadline: uint32(4294967295), // max, does not matter
+			Calls:        types.CallsToBindings(tt.order.calls),
+			Expenses:     types.ExpensesToBindings(tt.order.expenses),
+		},
+	)
+	require.NoError(t, err)
+
 	return rejectTestCase{
-		name:        tt.name,
-		reason:      tt.reason,
-		reject:      tt.reject,
-		fillReverts: tt.fillReverts,
-		mock:        tt.mock,
+		name:         tt.name,
+		reason:       tt.reason,
+		reject:       tt.reject,
+		fillReverts:  tt.fillReverts,
+		disallowCall: tt.disallowCall,
+		mock:         tt.mock,
 		order: Order{
 			ID:                 [32]byte{0x01},
 			SourceChainID:      tt.order.srcChainID,
@@ -138,6 +154,7 @@ func toRejectTestCase(t *testing.T, tt orderTestCase, outbox common.Address) rej
 			DestinationSettler: outbox,
 			MaxSpent:           maxSpent,
 			MinReceived:        minReceived,
+			FillOriginData:     fillOriginData,
 		},
 	}
 }
@@ -201,6 +218,9 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 
 	omegaOMNIAddr := omniERC20(netconf.Omega).Address
 
+	// dummy calldata / target. unused but for /check calls, and to build valid FillOriginData
+	dummyCallData := hexutil.MustDecode("0x70a08231000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc7")
+
 	return []orderTestCase{
 		{
 			name:   "insufficient native balance",
@@ -211,12 +231,8 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				srcChainID: evmchain.IDHolesky,
 				dstChainID: evmchain.IDOmniOmega,
 				deposits:   []types.AddrAmt{{Amount: ether(1), Token: omegaOMNIAddr}},
-				calls: []types.Call{{
-					Value: ether(1),
-					// actual calldata does not matter. we include it to test /check parsing
-					Data: hexutil.MustDecode("0x70a08231000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc7"),
-				}},
-				expenses: []types.Expense{{Amount: ether(1)}},
+				calls:      []types.Call{{Value: ether(1)}},
+				expenses:   []types.Expense{{Amount: ether(1)}},
 			},
 			mock: func(clients MockClients) {
 				mockNativeBalance(t, clients.Client(t, evmchain.IDOmniOmega), solver, ether(0))
@@ -232,11 +248,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				dstChainID: evmchain.IDOmniOmega,
 				// OMNI does not require fee
 				deposits: []types.AddrAmt{{Amount: ether(1), Token: omegaOMNIAddr}},
-				calls: []types.Call{{
-					Value: ether(1),
-					// actual calldata does not matter. we include it to test /check parsing
-					Data: hexutil.MustDecode("0x70a08231000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc7"),
-				}},
+				calls:    []types.Call{{Value: ether(1)}},
 				expenses: []types.Expense{{Amount: ether(1)}},
 			},
 			mock: func(clients MockClients) {
@@ -252,6 +264,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				srcChainID: evmchain.IDOmniOmega,
 				dstChainID: evmchain.IDHolesky,
 				deposits:   []types.AddrAmt{{Amount: ether(1)}},
+				calls:      []types.Call{{Data: dummyCallData}},
 				expenses:   []types.Expense{{Amount: ether(1), Token: omegaOMNIAddr}},
 			},
 			mock: func(clients MockClients) {
@@ -268,6 +281,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				dstChainID: evmchain.IDHolesky,
 				// OMNI does not require fee
 				deposits: []types.AddrAmt{{Amount: ether(1)}},
+				calls:    []types.Call{{Data: dummyCallData}},
 				expenses: []types.Expense{{Amount: ether(1), Token: omegaOMNIAddr}},
 			},
 			mock: func(clients MockClients) {
@@ -287,6 +301,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				srcChainID: evmchain.IDOmniOmega,
 				dstChainID: evmchain.IDHolesky,
 				deposits:   []types.AddrAmt{{Amount: ether(1)}},
+				calls:      []types.Call{{Data: dummyCallData}},
 				expenses:   []types.Expense{{Amount: ether(1), Token: omegaOMNIAddr}},
 			},
 			mock: func(clients MockClients) {
@@ -302,6 +317,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				srcChainID: evmchain.IDOmniOmega,
 				dstChainID: evmchain.IDHolesky,
 				deposits:   []types.AddrAmt{{Amount: ether(1)}},
+				calls:      []types.Call{{Data: dummyCallData}},
 				expenses:   []types.Expense{{Amount: ether(1), Token: common.HexToAddress("0x01")}},
 			},
 		},
@@ -444,6 +460,20 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				srcChainID: evmchain.IDBaseSepolia,
 				dstChainID: evmchain.IDHolesky,
 				deposits:   []types.AddrAmt{{Amount: big.NewInt(2)}},
+				calls:      []types.Call{{Value: big.NewInt(1)}},
+				expenses:   []types.Expense{{Amount: big.NewInt(1)}},
+			},
+		},
+		{
+			name:         "disallowed call",
+			reason:       rejectCallNotAllowed,
+			reject:       true,
+			disallowCall: true,
+			// rest does not matter
+			order: testOrder{
+				srcChainID: evmchain.IDHolesky,
+				dstChainID: evmchain.IDOmniOmega,
+				deposits:   []types.AddrAmt{{Amount: big.NewInt(1)}},
 				calls:      []types.Call{{Value: big.NewInt(1)}},
 				expenses:   []types.Expense{{Amount: big.NewInt(1)}},
 			},
@@ -682,15 +712,6 @@ func abiEncodeBool(t *testing.T, b bool) []byte {
 	require.NoError(t, err)
 
 	return data
-}
-
-func mustGetABI(metadata *bind.MetaData) *abi.ABI {
-	abi, err := metadata.GetAbi()
-	if err != nil {
-		panic(err)
-	}
-
-	return abi
 }
 
 func ether(x int64) *big.Int {

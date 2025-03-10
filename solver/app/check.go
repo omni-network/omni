@@ -18,7 +18,7 @@ type checkFunc func(context.Context, types.CheckRequest) error
 
 // newChecker returns a checkFunc that can be used to see if an order would be accepted or rejected.
 // It is the logic behind the /check endpoint.
-func newChecker(backends ethbackend.Backends, solverAddr, outboxAddr common.Address) checkFunc {
+func newChecker(backends ethbackend.Backends, isAllowedCall callAllowFunc, solverAddr, outboxAddr common.Address) checkFunc {
 	return func(ctx context.Context, req types.CheckRequest) error {
 		if req.SourceChainID == req.DestinationChainID {
 			return newRejection(types.RejectSameChain, errors.New("source and destination chain are the same"))
@@ -31,6 +31,10 @@ func newChecker(backends ethbackend.Backends, solverAddr, outboxAddr common.Addr
 		dstBackend, err := backends.Backend(req.DestinationChainID)
 		if err != nil {
 			return newRejection(types.RejectUnsupportedDestChain, errors.New("unsupported destination chain", "chain_id", req.DestinationChainID))
+		}
+
+		if err := checkCalls(req.DestinationChainID, req.Calls, isAllowedCall); err != nil {
+			return err
 		}
 
 		deposit, err := parseTokenAmt(req.SourceChainID, req.Deposit)

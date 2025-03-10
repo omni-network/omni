@@ -14,6 +14,8 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/solver/types"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,7 +34,8 @@ func TestCheck(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			backends, clients := testBackends(t)
 
-			handler := handlerAdapter(newCheckHandler(newChecker(backends, solver, outbox)))
+			callAllower := func(_ uint64, _ common.Address, _ []byte) bool { return !tt.disallowCall }
+			handler := handlerAdapter(newCheckHandler(newChecker(backends, callAllower, solver, outbox)))
 
 			if tt.mock != nil {
 				tt.mock(clients)
