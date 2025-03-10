@@ -12,8 +12,6 @@ import (
 	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/params"
-
-	"cosmossdk.io/math"
 )
 
 // maxDelegationsForRewardsEstimation is the max number of random rewards we track across multiple blocks
@@ -81,28 +79,29 @@ func instrStakeSizes(allDelegations []queryutil.DelegationBalance) {
 	delegatorsTotal := float64(len(allDelegations))
 	delegatorsCount.Set(delegatorsTotal)
 
-	var totalStake math.Int
-	var stakes []math.Int
+	var totalStake big.Int
+	var stakes []big.Int
 	for _, del := range allDelegations {
-		stake := del.Balance.Amount
-		totalStake = totalStake.Add(stake)
+		stake := del.Balance
+		totalStake = *new(big.Int).Add(&totalStake, &stake)
 		stakes = append(stakes, stake)
 	}
 
-	avgStakeWei := totalStake.Quo(math.NewInt(int64(len(allDelegations))))
-	stakeAvg.Set(toGweiFloat64(avgStakeWei.BigInt()))
+	avgStakeWei := new(big.Int).Quo(&totalStake, big.NewInt(int64(len(allDelegations))))
+	stakeAvg.Set(toGweiFloat64(*avgStakeWei))
 
 	l := len(stakes)
 	if l == 0 {
 		return
 	}
 	sort.Slice(stakes, func(i, j int) bool {
-		return stakes[i].GTE(stakes[j])
+		return stakes[i].Cmp(&stakes[j]) < 0
 	})
 	medianVal := stakes[l/2+l%2]
-	stakeMedian.Set(toGweiFloat64(medianVal.BigInt()))
+	stakeMedian.Set(toGweiFloat64(medianVal))
 }
 
-func toGweiFloat64(wei *big.Int) float64 {
-	return float64(new(big.Int).Div(wei, big.NewInt(params.GWei)).Uint64())
+func toGweiFloat64(wei big.Int) float64 {
+	f64, _ := new(big.Int).Div(&wei, big.NewInt(params.GWei)).Float64()
+	return f64
 }
