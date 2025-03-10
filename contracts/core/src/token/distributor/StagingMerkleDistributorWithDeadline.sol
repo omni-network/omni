@@ -16,7 +16,7 @@ contract StagingMerkleDistributorWithDeadline is MerkleDistributorWithDeadline {
         address solverNetInbox_
     ) MerkleDistributorWithDeadline(token_, merkleRoot_, endTime_, omniPortal_, genesisStaking_, solverNetInbox_) { }
 
-    function _getValidator(address addr) internal override returns (address) {
+    function _getValidator(address addr) internal pure override returns (address) {
         uint256 selection = uint160(addr) % 2;
 
         if (selection == 1) return VALIDATOR_1;

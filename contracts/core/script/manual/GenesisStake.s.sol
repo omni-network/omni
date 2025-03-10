@@ -58,13 +58,15 @@ contract GenesisStakeScript is Script {
     }
 
     function _deployContracts() internal {
-        address genesisStakeAddr = create3.getDeployed(msg.sender, keccak256("genesisStake"));
-        address merkleDistributorAddr = create3.getDeployed(msg.sender, keccak256("merkleDistributor"));
+        address genesisStakeAddr =
+            create3.getDeployed(msg.sender, keccak256(abi.encode("genesisStake", block.timestamp)));
+        address merkleDistributorAddr =
+            create3.getDeployed(msg.sender, keccak256(abi.encode("merkleDistributor", block.timestamp)));
 
         address genesisStakeImpl = address(new GenesisStake(address(omni), merkleDistributorAddr));
         genesisStake = GenesisStake(
             create3.deploy(
-                keccak256("genesisStake"),
+                keccak256(abi.encode("genesisStake", block.timestamp)),
                 abi.encodePacked(
                     type(TransparentUpgradeableProxy).creationCode,
                     abi.encode(
@@ -75,7 +77,7 @@ contract GenesisStakeScript is Script {
         );
         merkleDistributor = StagingMerkleDistributorWithDeadline(
             create3.deploy(
-                keccak256("merkleDistributor"),
+                keccak256(abi.encode("merkleDistributor", block.timestamp)),
                 abi.encodePacked(
                     type(StagingMerkleDistributorWithDeadline).creationCode,
                     abi.encode(address(omni), root, endTime, address(portal), genesisStakeAddr, address(inbox))

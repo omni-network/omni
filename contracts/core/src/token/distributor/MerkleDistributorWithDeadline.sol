@@ -239,7 +239,7 @@ abstract contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, E
         });
 
         return IERC7683.OnchainCrossChainOrder({
-            fillDeadline: 0,
+            fillDeadline: uint32(block.timestamp + 6 hours),
             orderDataType: ORDERDATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });
