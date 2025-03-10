@@ -7,7 +7,6 @@ import (
 
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/cchain/queryutil"
-	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/params"
@@ -33,16 +32,13 @@ func MonitorForever(ctx context.Context, cprov cchain.Provider) {
 			}
 
 			instrStakeSizes(allDelegations)
-
-			if err := instrEffRewards(ctx, cprov, allDelegations); err != nil {
-				log.Warn(ctx, "Effective rewards intrumentation failed", err)
-			}
+			instrEffRewards(ctx, cprov, allDelegations)
 		}
 	}
 }
 
 // instrEffRewards instruments effective staking rewards.
-func instrEffRewards(ctx context.Context, cprov cchain.Provider, allDelegations []queryutil.DelegationBalance) error {
+func instrEffRewards(ctx context.Context, cprov cchain.Provider, allDelegations []queryutil.DelegationBalance) {
 	delegations := allDelegations
 	// Since we have no validator commissions, we can use just a couple of random delegations to estimate rewards.
 	// Once we have validator commissions, this code needs to be removed.
@@ -54,21 +50,21 @@ func instrEffRewards(ctx context.Context, cprov cchain.Provider, allDelegations 
 	const blocks = uint64(30)
 	rewards, ok, err := queryutil.AvgRewardsRate(ctx, cprov, delegations, blocks)
 	if err != nil {
-		return errors.Wrap(err, "avg rewards")
+		log.Warn(ctx, "Failed to get rewards rate (will retry)", err)
+		return
 	}
 
 	if !ok {
-		return nil
+		return
 	}
 
 	rewardsF64, err := rewards.Float64()
 	if err != nil {
-		return errors.Wrap(err, "rewards to float64 conversion")
+		log.Warn(ctx, "Failed to convert rewards rate to float64 [BUG]", err)
+		return
 	}
 
 	rewardsAvg.Set(rewardsF64)
-
-	return nil
 }
 
 // instrStakeSizes delegations instruments delegations data.
