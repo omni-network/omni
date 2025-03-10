@@ -60,7 +60,7 @@ linters-settings:
       - name: line-length-limit # Requires us to cause indentation confusion: https://google.github.io/styleguide/go/decisions#indentation-confusion
         disabled: true
       # Some configured revive rules
-      - name: imports-blacklist
+      - name: imports-blocklist
         arguments:
           - "log"                                # Prefer ./lib/log
           - "errors"                             # Prefer ./lib/errors
