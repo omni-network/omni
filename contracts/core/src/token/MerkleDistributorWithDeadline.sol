@@ -31,6 +31,10 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
     bytes32 internal constant MIGRATION_TYPEHASH = keccak256("Migration(address user,uint256 nonce,uint256 expiry)");
 
     address internal constant STAKING = 0xCCcCcC0000000000000000000000000000000001;
+    address internal constant VALIDATOR_1 = 0xD6CD71dF91a6886f69761826A9C4D123178A8d9D;
+    address internal constant VALIDATOR_2 = 0x9C7bf21f72CA34af89F620D27E0F18C4366b88c6;
+
+    uint256 internal _delegationCount;
 
     uint256 public immutable endTime;
     IOmniPortal public immutable omniPortal;
@@ -169,7 +173,7 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
         if (stake == 0) revert NothingToMigrate();
 
         // Generate and send the order
-        IERC7683.OnchainCrossChainOrder memory order = _generateOrder(account, stake);
+        IERC7683.OnchainCrossChainOrder memory order = _generateOrder(account, _getValidator(), stake);
         solvernetInbox.open(order);
     }
 
@@ -196,12 +200,25 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
     }
 
     /**
+     * @notice Get the validator to delegate to
+     * @dev Iterates through the validators in a round-robin fashion
+     * @return Validator address
+     */
+    function _getValidator() internal returns (address) {
+        uint256 selection = ++_delegationCount % 2;
+
+        if (selection == 1) return VALIDATOR_1;
+        return VALIDATOR_2;
+    }
+
+    /**
      * @notice Generate a SolverNet order that generates a subsidized order for deposited tokens on Omni 1:1
-     * @param account  Address of the user claiming
-     * @param amount   Amount of tokens to claim
+     * @param account   Address of the user claiming
+     * @param validator Validator to delegate to
+     * @param amount    Amount of tokens to claim
      * @return         SolverNet order
      */
-    function _generateOrder(address account, uint256 amount)
+    function _generateOrder(address account, address validator, uint256 amount)
         internal
         view
         returns (IERC7683.OnchainCrossChainOrder memory)
@@ -209,7 +226,6 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
         SolverNet.Deposit memory deposit = SolverNet.Deposit({ token: token, amount: uint96(amount) });
 
         SolverNet.Call[] memory call = new SolverNet.Call[](1);
-        address validator; // TODO: select validators
         call[0] = SolverNet.Call({
             target: STAKING,
             selector: IStaking.delegateFor.selector,

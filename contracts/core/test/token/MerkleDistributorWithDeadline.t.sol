@@ -41,6 +41,8 @@ contract MerkleDistributorWithDeadline_Test is Test {
     );
 
     address internal constant STAKING = 0xCCcCcC0000000000000000000000000000000001;
+    address internal constant VALIDATOR_1 = 0xD6CD71dF91a6886f69761826A9C4D123178A8d9D;
+    address internal constant VALIDATOR_2 = 0x9C7bf21f72CA34af89F620D27E0F18C4366b88c6;
 
     uint256[] pks = new uint256[](addrCount);
     address[] stakers = new address[](addrCount);
@@ -144,8 +146,15 @@ contract MerkleDistributorWithDeadline_Test is Test {
         }
     }
 
+    function getValidator(uint256 iteration) internal returns (address) {
+        uint256 selection = ++iteration % 2;
+
+        if (selection == 1) return VALIDATOR_1;
+        return VALIDATOR_2;
+    }
+
     // Generate an ERC7683 order to check merkle distributor's call to inbox against
-    function generateERC7683Order(address addr, uint256 amount)
+    function generateERC7683Order(address addr, address validator, uint256 amount)
         public
         view
         returns (IERC7683.OnchainCrossChainOrder memory)
@@ -159,7 +168,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
             target: STAKING,
             selector: IStaking.delegateFor.selector,
             value: amount * 2,
-            params: abi.encode(addr, address(0))
+            params: abi.encode(addr, validator)
         });
 
         SolverNet.OrderData memory orderData = SolverNet.OrderData({
@@ -219,7 +228,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
 
             // Get IERC7683 order and resolved orders
             vm.startPrank(stakers[i]);
-            IERC7683.OnchainCrossChainOrder memory order = generateERC7683Order(stakers[i], amounts[i]);
+            IERC7683.OnchainCrossChainOrder memory order = generateERC7683Order(stakers[i], getValidator(i), amounts[i]);
             IERC7683.ResolvedCrossChainOrder memory resolved = inbox.resolve(order);
 
             // Confirm merkleDistributor is calling the inbox with the order and that the resolved order is emitted
@@ -261,7 +270,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
 
             // Get IERC7683 order and resolved orders
             vm.startPrank(stakers[i]);
-            IERC7683.OnchainCrossChainOrder memory order = generateERC7683Order(stakers[i], amounts[i]);
+            IERC7683.OnchainCrossChainOrder memory order = generateERC7683Order(stakers[i], getValidator(i), amounts[i]);
             IERC7683.ResolvedCrossChainOrder memory resolved = inbox.resolve(order);
             vm.stopPrank();
 
