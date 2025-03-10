@@ -551,7 +551,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      */
     function _openOrder(SolverNet.Order memory orderData) internal returns (ResolvedCrossChainOrder memory resolved) {
         address user = orderData.header.owner;
-        bytes32 id = _getOrderId(user, _userNonce[user]);
+        bytes32 id = _getOrderId(user, _userNonce[user]++);
         resolved = _resolve(orderData, id);
 
         _orderHeader[id] = orderData.header;

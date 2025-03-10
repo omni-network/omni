@@ -30,7 +30,7 @@ contract SolverNet_Inbox_Claim_Test is TestBase {
 
         // order must be claimed by the claimant
         vm.expectRevert(Ownable.Unauthorized.selector);
-        inbox.claim(bytes32(uint256(1)), address(0));
+        inbox.claim(resolvedOrder.orderId, address(0));
     }
 
     function test_claim_nativeDeposit_succeeds() public {

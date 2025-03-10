@@ -23,17 +23,17 @@ contract MockSolverNetInbox is ReentrancyGuard, IOriginSettler {
     enum Status {
         Invalid,
         Pending,
-        Accepted,
         Rejected,
-        Reverted,
+        Closed,
         Filled,
         Claimed
     }
 
     struct OrderState {
         Status status;
+        uint8 rejectReason;
         uint32 timestamp;
-        address claimant;
+        address updatedBy;
     }
 
     bytes32 internal constant ORDERDATA_TYPEHASH = keccak256(
@@ -42,26 +42,37 @@ contract MockSolverNetInbox is ReentrancyGuard, IOriginSettler {
 
     address public immutable outbox;
 
-    uint256 internal _lastId;
+    uint248 internal _offset;
 
     mapping(bytes32 id => SolverNet.Header) internal _orderHeader;
     mapping(bytes32 id => SolverNet.Deposit) internal _orderDeposit;
     mapping(bytes32 id => SolverNet.Call[]) internal _orderCalls;
     mapping(bytes32 id => SolverNet.TokenExpense[]) internal _orderExpenses;
     mapping(bytes32 id => OrderState) internal _orderState;
+    mapping(bytes32 id => bytes32) internal _orderOffset;
+    mapping(address user => uint256 nonce) internal _userNonce;
     mapping(Status => bytes32 id) internal _latestOrderIdByStatus;
 
     constructor(address outbox_) {
         outbox = outbox_;
     }
 
-    function getNextId() external view returns (bytes32) {
-        return _nextId();
+    function getNextOrderId(address user) external view returns (bytes32) {
+        return _getOrderId(user, _userNonce[user]);
+    }
+
+    function getUserNonce(address user) external view returns (uint256) {
+        return _userNonce[user];
+    }
+
+    function getOffset() external view returns (bytes32) {
+        return bytes32(uint256(_offset));
     }
 
     function resolve(OnchainCrossChainOrder calldata order) external view returns (ResolvedCrossChainOrder memory) {
         SolverNet.Order memory orderData = _validate(order);
-        return _resolve(orderData, _nextId());
+        address user = orderData.header.owner;
+        return _resolve(orderData, _getOrderId(user, _userNonce[user]));
     }
 
     function open(OnchainCrossChainOrder calldata order) external payable nonReentrant {
@@ -72,12 +83,12 @@ contract MockSolverNetInbox is ReentrancyGuard, IOriginSettler {
         emit Open(resolved.orderId, resolved);
     }
 
-    function _nextId() internal view returns (bytes32) {
-        return bytes32(_lastId + 1);
+    function _getOrderId(address user, uint256 nonce) internal view returns (bytes32) {
+        return keccak256(abi.encode(user, nonce, block.chainid));
     }
 
-    function _incrementId() internal returns (bytes32) {
-        return bytes32(++_lastId);
+    function _incrementOffset() internal returns (bytes32) {
+        return bytes32(uint256(++_offset));
     }
 
     function _validate(OnchainCrossChainOrder calldata order) internal view returns (SolverNet.Order memory) {
@@ -218,7 +229,8 @@ contract MockSolverNetInbox is ReentrancyGuard, IOriginSettler {
     }
 
     function _openOrder(SolverNet.Order memory orderData) internal returns (ResolvedCrossChainOrder memory resolved) {
-        bytes32 id = _incrementId();
+        address user = orderData.header.owner;
+        bytes32 id = _getOrderId(user, _userNonce[user]++);
         resolved = _resolve(orderData, id);
 
         _orderHeader[id] = orderData.header;
@@ -230,20 +242,21 @@ contract MockSolverNetInbox is ReentrancyGuard, IOriginSettler {
             _orderExpenses[id].push(orderData.expenses[i]);
         }
 
-        _upsertOrder(id, Status.Pending, msg.sender);
+        _upsertOrder(id, Status.Pending, 0, msg.sender);
 
         return resolved;
     }
 
-    function _upsertOrder(bytes32 id, Status status, address updatedBy) internal {
-        OrderState memory state = _orderState[id];
+    function _upsertOrder(bytes32 id, Status status, uint8 rejectReason, address updatedBy) internal {
+        uint8 _rejectReason = _orderState[id].rejectReason;
+        _orderState[id] = OrderState({
+            status: status,
+            rejectReason: rejectReason > 0 ? rejectReason : _rejectReason,
+            timestamp: uint32(block.timestamp),
+            updatedBy: updatedBy
+        });
 
-        state.status = status;
-        state.timestamp = uint32(block.timestamp);
-        if (status == Status.Accepted) state.claimant = updatedBy;
-        if (status == Status.Filled && state.claimant == address(0)) state.claimant = updatedBy;
-
-        _orderState[id] = state;
         _latestOrderIdByStatus[status] = id;
+        if (status == Status.Pending) _orderOffset[id] = _incrementOffset();
     }
 }
