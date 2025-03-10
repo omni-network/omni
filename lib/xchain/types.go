@@ -77,6 +77,19 @@ func FuzzyConfLevels() []ConfLevel {
 	return []ConfLevel{ConfLatest, ConfMin1}
 }
 
+// AllConfLevels returns a list of all confirmation levels.
+func AllConfLevels() []ConfLevel {
+	var resp []ConfLevel
+	for i := ConfUnknown; i < confSentinel; i++ {
+		if !i.Valid() {
+			continue
+		}
+		resp = append(resp, i)
+	}
+
+	return resp
+}
+
 type ShardID uint64
 
 const (

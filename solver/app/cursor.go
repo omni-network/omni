@@ -4,8 +4,12 @@ import (
 	"context"
 	"sync"
 
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
+
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	ormv1alpha1 "cosmossdk.io/api/cosmos/orm/v1alpha1"
 	"cosmossdk.io/core/store"
@@ -96,4 +100,48 @@ type dbStoreService struct {
 
 func (db dbStoreService) OpenKVStore(context.Context) store.KVStore {
 	return db.DB
+}
+
+// maybeBootstrapCursor bootstraps a cursor if not present.
+// It either uses the height of an existing cursor (of same chain), or the deploy height of the inbox.
+func maybeBootstrapCursor(
+	ctx context.Context,
+	inbox *bindings.SolverNetInbox,
+	cursors *cursors,
+	chainVer xchain.ChainVersion,
+) error {
+	// Check if cursor already bootstrapped
+	if _, ok, err := cursors.Get(ctx, chainVer); err != nil {
+		return errors.Wrap(err, "get cursor")
+	} else if ok {
+		return nil
+	}
+
+	// Try to use existing cursor for same chain
+	for _, confLevel := range xchain.AllConfLevels() {
+		height, ok, err := cursors.Get(ctx, xchain.NewChainVersion(chainVer.ID, confLevel))
+		if err != nil {
+			return err
+		} else if !ok {
+			continue
+		}
+
+		log.Info(ctx, "Bootstrap cursor from existing", "existing", confLevel, "height", height)
+
+		if err := cursors.Set(ctx, chainVer, height); err != nil {
+			return errors.Wrap(err, "set cursor")
+		}
+
+		return nil
+	}
+
+	// No existing cursor found, bootstrap from contract deploy height
+	deployHeight, err := inbox.DeployedAt(&bind.CallOpts{Context: ctx})
+	if err != nil {
+		return errors.Wrap(err, "deployed at")
+	}
+
+	log.Info(ctx, "Bootstrap cursor from inbox deploy height", "height", deployHeight)
+
+	return cursors.Set(ctx, chainVer, deployHeight.Uint64())
 }
