@@ -121,6 +121,8 @@ func waitForFinalStatus(
 		return solvernet.StatusInvalid, errors.Wrap(err, "create inbox contract")
 	}
 
+	var checks uint16
+	const logFreq = 20
 	for {
 		latest, err := inbox.GetOrder(&bind.CallOpts{Context: ctx}, orderID)
 		if err != nil {
@@ -133,7 +135,10 @@ func waitForFinalStatus(
 		case solvernet.StatusInvalid, solvernet.StatusRejected, solvernet.StatusClosed, solvernet.StatusClaimed:
 			return status, nil
 		default:
-			log.Debug(ctx, "Flowgen: order in flight", "status", status)
+			if checks%logFreq == 0 {
+				log.Debug(ctx, "Flowgen: order in flight", "status", status)
+			}
+			checks++
 		}
 
 		time.Sleep(5 * time.Second)
