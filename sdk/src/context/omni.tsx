@@ -1,7 +1,8 @@
-import { createContext, useContext, useMemo } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { createContext, useContext, useEffect, useMemo } from 'react'
 import { throwingProxy } from '../internal/util.js'
-
-type Environment = 'devnet' | 'testnet'
+import type { Environment, OmniConfig } from '../types/config.js'
+import { getOmniContractsQueryOptions } from '../utils/getContracts.js'
 
 function apiUrl(env: Environment): string {
   switch (env) {
@@ -19,14 +20,7 @@ type OmniProviderProps = {
   __apiBaseUrl?: string
 }
 
-type OmniContextValue = {
-  apiBaseUrl: string
-  env: Environment
-}
-
-const OmniContext = createContext<OmniContextValue>(
-  throwingProxy<OmniContextValue>(),
-)
+const OmniContext = createContext<OmniConfig>(throwingProxy<OmniConfig>())
 
 export function OmniProvider({
   env,
@@ -34,12 +28,16 @@ export function OmniProvider({
   __apiBaseUrl: apiOverride,
 }: React.PropsWithChildren<OmniProviderProps>) {
   const apiBaseUrl = apiOverride ?? apiUrl(env)
-
-  const value = useMemo(() => {
+  const config = useMemo(() => {
     return { apiBaseUrl, env }
   }, [env, apiBaseUrl])
 
-  return <OmniContext.Provider value={value}>{children}</OmniContext.Provider>
+  const queryClient = useQueryClient()
+  useEffect(() => {
+    queryClient.prefetchQuery(getOmniContractsQueryOptions(config))
+  }, [queryClient, config])
+
+  return <OmniContext.Provider value={config}>{children}</OmniContext.Provider>
 }
 
 export function useOmniContext() {

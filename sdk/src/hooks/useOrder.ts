@@ -49,25 +49,21 @@ type UseOrderError =
   | undefined
 
 type UseOrderReturnType = {
+  open: () => Promise<Hex>
   orderId?: Hex
   validation?: UseValidateOrderResult
   txHash?: Hex
   error?: UseOrderError
+  status: OrderStatus
   isTxPending: boolean
   isTxSubmitted: boolean
   isValidated: boolean
   isOpen: boolean
   isError: boolean
+  isReady: boolean
   txMutation: UseWriteContractReturnType<Config, unknown>
   waitForTx: UseWaitForTransactionReceiptReturnType<Config, number>
-} & (
-  | {
-      status: Omit<OrderStatus, 'initializing'>
-      isReady: true
-      open: () => Promise<Hex>
-    }
-  | { status: 'initializing' | 'error'; isReady: false; open?: never }
-)
+}
 
 const defaultFillDeadline = () => Math.floor(Date.now() / 1000 + 86400)
 
@@ -129,7 +125,7 @@ export function useOrder<abis extends OptionalAbis>(
       }
     : () => {
         return Promise.reject(
-          new Error('Inbox contract address needs to be loaded'),
+          new LoadContractsError('Inbox contract address needs to be loaded'),
         )
       }
 
@@ -143,26 +139,22 @@ export function useOrder<abis extends OptionalAbis>(
     parseOpenEventError,
   })
 
-  const orderReturn = {
+  return {
+    open,
     orderId: resolvedOrder?.orderId,
     validation,
     txHash: txMutation.data,
     error,
+    status,
     isError: !!error,
     isValidated: validation?.status === 'accepted',
     isTxPending: txMutation.isPending,
     isTxSubmitted: txMutation.isSuccess,
     isOpen: !!wait.data,
+    isReady: !!inboxAddress,
     txMutation,
     waitForTx: wait,
   }
-  return status === 'initializing' || contractsResult.isError
-    ? {
-        ...orderReturn,
-        status: status === 'initializing' ? 'initializing' : 'error',
-        isReady: false,
-      }
-    : { ...orderReturn, status, isReady: true, open }
 }
 
 type DeriveErrorParams = {
