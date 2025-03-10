@@ -108,18 +108,37 @@ interface ISolverNetInbox is IOriginSettler {
     function setOutboxes(uint64[] calldata chainIds, address[] calldata outboxes) external;
 
     /**
-     * @notice Returns the order and its state with the given ID.
+     * @notice Returns the order, its state, and offset with the given ID.
      * @param id ID of the order.
      */
     function getOrder(bytes32 id)
         external
         view
-        returns (ResolvedCrossChainOrder memory order, OrderState memory state);
+        returns (ResolvedCrossChainOrder memory order, OrderState memory state, bytes32 offset);
 
     /**
-     * @notice Returns the next order ID.
+     * @notice Returns the order ID for the given user and nonce.
+     * @param user  Address of the user.
+     * @param nonce Nonce of the order.
      */
-    function getNextId() external view returns (bytes32);
+    function getOrderId(address user, uint256 nonce) external view returns (bytes32);
+
+    /**
+     * @notice Returns the next order ID for the given user.
+     * @param user Address of the user.
+     */
+    function getNextOrderId(address user) external view returns (bytes32);
+
+    /**
+     * @notice Returns the nonce for the given user.
+     * @param user Address of the user.
+     */
+    function getUserNonce(address user) external view returns (uint256);
+
+    /**
+     * @notice Returns the next order offset.
+     */
+    function getOffset() external view returns (bytes32);
 
     /**
      * @notice Returns the latest order with the given status.
