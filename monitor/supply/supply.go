@@ -53,7 +53,7 @@ func instrSupplies(ctx context.Context, cprov cchain.Provider, network netconf.N
 		}
 	}
 
-	cChainSupply.Set(toGweiFloat64(cosmosSupplyWei.BigInt()))
+	cChainSupply.Set(toGweiFloat64(*cosmosSupplyWei.BigInt()))
 
 	addrs, err := contracts.GetAddresses(ctx, network.ID)
 	if err != nil {
@@ -76,17 +76,18 @@ func instrSupplies(ctx context.Context, cprov cchain.Provider, network netconf.N
 	if err != nil {
 		return errors.Wrap(err, "l1 token supply")
 	}
-	eChainSupply.Set(toGweiFloat64(l1TokenSupplyWei))
+	eChainSupply.Set(toGweiFloat64(*l1TokenSupplyWei))
 
 	l1BridgeBalanceWei, err := l1Token.BalanceOf(callOpts, addrs.L1Bridge)
 	if err != nil {
 		return errors.Wrap(err, "l1 bridge balance")
 	}
-	bridgeBalance.Set(toGweiFloat64(l1BridgeBalanceWei))
+	bridgeBalance.Set(toGweiFloat64(*l1BridgeBalanceWei))
 
 	return nil
 }
 
-func toGweiFloat64(wei *big.Int) float64 {
-	return float64(new(big.Int).Div(wei, big.NewInt(params.GWei)).Uint64())
+func toGweiFloat64(wei big.Int) float64 {
+	f64, _ := new(big.Int).Div(&wei, big.NewInt(params.GWei)).Float64()
+	return f64
 }
