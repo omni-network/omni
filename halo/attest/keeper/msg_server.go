@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
 type msgServer struct {
@@ -23,6 +24,10 @@ func (s msgServer) AddVotes(ctx context.Context, msg *types.MsgAddVotes,
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	if sdkCtx.ExecMode() != sdk.ExecModeFinalize {
 		return nil, errors.New("only allowed in finalize mode")
+	}
+
+	if msg.Authority != authtypes.NewModuleAddress(types.ModuleName).String() {
+		return nil, errors.New("invalid authority")
 	}
 
 	for _, aggVote := range msg.Votes {

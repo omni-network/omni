@@ -13,6 +13,10 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
+// maxDelegationsForRewardsEstimation is the max number of random rewards we track across multiple blocks
+// to estimate the average effective staking rewards.
+const maxDelegationsForRewardsEstimation = 4
+
 func MonitorForever(ctx context.Context, cprov cchain.Provider) {
 	ticker := time.NewTicker(time.Hour)
 	defer ticker.Stop()
@@ -39,9 +43,16 @@ func MonitorForever(ctx context.Context, cprov cchain.Provider) {
 
 // instrEffRewards instruments effective staking rewards.
 func instrEffRewards(ctx context.Context, cprov cchain.Provider, allDelegations []queryutil.DelegationBalance) error {
+	delegations := allDelegations
+	// Since we have no validator commissions, we can use just a couple of random delegations to estimate rewards.
+	// Once we have validator commissions, this code needs to be removed.
+	if len(allDelegations) > maxDelegationsForRewardsEstimation {
+		delegations = allDelegations[:4]
+	}
+
 	// Collect data during multiple blocks.
 	const blocks = uint64(30)
-	rewards, ok, err := queryutil.AvgRewardsRate(ctx, cprov, allDelegations, blocks)
+	rewards, ok, err := queryutil.AvgRewardsRate(ctx, cprov, delegations, blocks)
 	if err != nil {
 		return errors.Wrap(err, "avg rewards")
 	}
@@ -52,7 +63,7 @@ func instrEffRewards(ctx context.Context, cprov cchain.Provider, allDelegations 
 
 	rewardsF64, err := rewards.Float64()
 	if err != nil {
-		return errors.Wrap(err, "rewards to flaot64 conversion")
+		return errors.Wrap(err, "rewards to float64 conversion")
 	}
 
 	rewardsAvg.Set(rewardsF64)
