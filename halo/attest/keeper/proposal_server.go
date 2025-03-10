@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
 type proposalServer struct {
@@ -22,6 +23,10 @@ func (s proposalServer) AddVotes(ctx context.Context, msg *types.MsgAddVotes,
 	consensusID, err := netconf.ConsensusChainIDStr2Uint64(sdkCtx.ChainID())
 	if err != nil {
 		return nil, errors.Wrap(err, "parse chain id")
+	}
+
+	if msg.Authority != authtypes.NewModuleAddress(types.ModuleName).String() {
+		return nil, errors.New("invalid authority")
 	}
 
 	// Verify proposed msg
