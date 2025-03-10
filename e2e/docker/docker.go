@@ -228,7 +228,7 @@ func (c ComposeDef) InitialGethTag(index int) string {
 	return tag
 }
 
-// hnitialGethTag return the geth docker image tag to initially deploy.
+// haloGenesisBinary return the geth docker image tag to initially deploy.
 func (c ComposeDef) haloGenesisBinary(node string) string {
 	for _, n := range c.Nodes {
 		if n.Name != node {

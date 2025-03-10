@@ -202,7 +202,7 @@ func (s shared) runForge(ctx context.Context, rpc string, input []byte, senders 
 	}
 }
 
-// runForge runs an Admin forge script against an rpc, returning the ouptut.
+// runForgeOnce runs an Admin forge script against an rpc, returning the ouptut.
 // if the senders are known anvil accounts, it will sign with private keys directly.
 // otherwise, it will use the unlocked flag.
 func runForgeOnce(ctx context.Context, rpc string, input []byte, broadcast, resume bool, senders ...common.Address,

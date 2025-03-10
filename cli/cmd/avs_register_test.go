@@ -185,7 +185,7 @@ func deployAVS(t *testing.T, ctx context.Context, backend *ethbackend.Backend) c
 	return addr
 }
 
-// packInitializer encodes the initializer parameters for the AVS contract.
+// packInitialzer encodes the initializer parameters for the AVS contract.
 func packInitialzer(t *testing.T, cfg deployConfig) []byte {
 	t.Helper()
 
