@@ -19,6 +19,7 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
     using SafeTransferLib for address;
 
     error Expired();
+    error InvalidClaim();
     error EndTimeInPast();
     error InvalidSignature();
     error NothingToMigrate();
@@ -96,6 +97,9 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
      * @param merkleProof  Merkle proof for the claim
      */
     function migrateToOmni(uint256 index, uint256 amount, bytes32[] calldata merkleProof) external {
+        unchecked {
+            ++nonces[msg.sender];
+        }
         _migrate(msg.sender, index, amount, merkleProof);
     }
 
@@ -167,6 +171,8 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
             unchecked {
                 stake += amount;
             }
+        } else {
+            revert InvalidClaim();
         }
 
         // Block zero value migrations

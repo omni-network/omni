@@ -215,9 +215,9 @@ contract MerkleDistributorWithDeadline_Test is Test {
         vm.prank(stakers[0]);
         merkleDistributor.migrateToOmni(0, amounts[0], proofs[0]);
 
-        // Cannot migrate if user has no stake to migrate
+        // Cannot migrate if user has already claimed
         vm.prank(stakers[0]);
-        vm.expectRevert(MerkleDistributorWithDeadline.NothingToMigrate.selector);
+        vm.expectRevert(MerkleDistributorWithDeadline.InvalidClaim.selector);
         merkleDistributor.migrateToOmni(0, amounts[0], proofs[0]);
     }
 
