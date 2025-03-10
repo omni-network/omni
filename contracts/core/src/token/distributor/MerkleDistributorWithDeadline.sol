@@ -32,8 +32,6 @@ abstract contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, E
 
     address internal constant STAKING = 0xCCcCcC0000000000000000000000000000000001;
 
-    uint256 internal _delegationCount;
-
     uint256 public immutable endTime;
     IOmniPortal public immutable omniPortal;
     IGenesisStake public immutable genesisStaking;
@@ -176,7 +174,7 @@ abstract contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, E
         if (stake < 1 ether) revert InsufficientAmount();
 
         // Generate and send the order
-        IERC7683.OnchainCrossChainOrder memory order = _generateOrder(account, _getValidator(), stake);
+        IERC7683.OnchainCrossChainOrder memory order = _generateOrder(account, _getValidator(account), stake);
         solvernetInbox.open(order);
     }
 
@@ -205,9 +203,10 @@ abstract contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, E
     /**
      * @notice Get the validator to delegate to
      * @dev Iterates through the validators in a round-robin fashion
+     * @param addr Address of the user claiming
      * @return Validator address
      */
-    function _getValidator() internal virtual returns (address);
+    function _getValidator(address addr) internal virtual returns (address);
 
     /**
      * @notice Generate a SolverNet order that generates a subsidized order for deposited tokens on Omni 1:1

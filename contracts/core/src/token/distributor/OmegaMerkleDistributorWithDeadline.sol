@@ -18,8 +18,8 @@ contract OmegaMerkleDistributorWithDeadline is MerkleDistributorWithDeadline {
         address solverNetInbox_
     ) MerkleDistributorWithDeadline(token_, merkleRoot_, endTime_, omniPortal_, genesisStaking_, solverNetInbox_) { }
 
-    function _getValidator() internal override returns (address) {
-        uint256 selection = ++_delegationCount % 4;
+    function _getValidator(address addr) internal override returns (address) {
+        uint256 selection = uint160(addr) % 4;
 
         if (selection == 1) return VALIDATOR_1;
         if (selection == 2) return VALIDATOR_2;

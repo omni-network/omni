@@ -149,8 +149,8 @@ contract MerkleDistributorWithDeadline_Test is Test {
         }
     }
 
-    function getValidator(uint256 iteration) internal pure returns (address) {
-        uint256 selection = ++iteration % 2;
+    function getValidator(address addr) internal view returns (address) {
+        uint256 selection = uint160(addr) % 2;
 
         if (selection == 1) return VALIDATOR_1;
         return VALIDATOR_2;
@@ -231,7 +231,8 @@ contract MerkleDistributorWithDeadline_Test is Test {
 
             // Get IERC7683 order and resolved orders
             vm.startPrank(stakers[i]);
-            IERC7683.OnchainCrossChainOrder memory order = generateERC7683Order(stakers[i], getValidator(i), amounts[i]);
+            IERC7683.OnchainCrossChainOrder memory order =
+                generateERC7683Order(stakers[i], getValidator(stakers[i]), amounts[i]);
             IERC7683.ResolvedCrossChainOrder memory resolved = inbox.resolve(order);
 
             // Confirm merkleDistributor is calling the inbox with the order and that the resolved order is emitted
@@ -273,7 +274,8 @@ contract MerkleDistributorWithDeadline_Test is Test {
 
             // Get IERC7683 order and resolved orders
             vm.startPrank(stakers[i]);
-            IERC7683.OnchainCrossChainOrder memory order = generateERC7683Order(stakers[i], getValidator(i), amounts[i]);
+            IERC7683.OnchainCrossChainOrder memory order =
+                generateERC7683Order(stakers[i], getValidator(stakers[i]), amounts[i]);
             IERC7683.ResolvedCrossChainOrder memory resolved = inbox.resolve(order);
             vm.stopPrank();
 
