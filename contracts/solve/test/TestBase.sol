@@ -334,10 +334,13 @@ contract TestBase is Test {
         uint256 callsGas = 2500;
         for (uint256 i; i < fillData.calls.length; ++i) {
             SolverNet.Call memory call = fillData.calls[i];
+            uint256 paramsLength = call.params.length;
             unchecked {
                 // 5000 gas for the two slots that hold target, selector, and value.
                 // 2500 gas per params slot (1 per function argument) used (minimum of 1 slot).
                 callsGas += 5000 + (FixedPointMathLib.divUp(call.params.length + 32, 32) * 2500);
+                callsGas += (3 * FixedPointMathLib.divUp(paramsLength, 32))
+                    + FixedPointMathLib.mulDivUp(paramsLength, paramsLength, 524_288);
             }
         }
 
