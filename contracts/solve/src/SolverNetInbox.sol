@@ -112,17 +112,12 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     /**
      * @notice Map order ID to order offset.
      */
-    mapping(bytes32 id => bytes32) internal _orderOffset;
+    mapping(bytes32 id => uint248) internal _orderOffset;
 
     /**
      * @notice Map user to nonce.
      */
     mapping(address user => uint256 nonce) internal _userNonce;
-
-    /**
-     * @notice Map status to latest order ID.
-     */
-    mapping(Status => bytes32 id) internal _latestOrderIdByStatus;
 
     /**
      * @notice Modifier to ensure contract functions are not paused.
@@ -202,7 +197,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     function getOrder(bytes32 id)
         external
         view
-        returns (ResolvedCrossChainOrder memory resolved, OrderState memory state, bytes32 offset)
+        returns (ResolvedCrossChainOrder memory resolved, OrderState memory state, uint248 offset)
     {
         SolverNet.Order memory orderData = _getOrder(id);
         return (_resolve(orderData, id), _orderState[id], _orderOffset[id]);
@@ -234,18 +229,10 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     }
 
     /**
-     * @notice Returns the next order offset.
+     * @notice Returns the order offset of the last order opened at this inbox.
      */
-    function getOffset() external view returns (bytes32) {
-        return bytes32(uint256(_offset));
-    }
-
-    /**
-     * @notice Returns the latest order with the given status.
-     * @param status Order status to query.
-     */
-    function getLatestOrderIdByStatus(Status status) external view returns (bytes32) {
-        return _latestOrderIdByStatus[status];
+    function getLastOrderOffset() external view returns (uint248) {
+        return _offset;
     }
 
     /**
@@ -556,6 +543,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
 
         _orderHeader[id] = orderData.header;
         _orderDeposit[id] = orderData.deposit;
+        _orderOffset[id] = _incrementOffset();
         for (uint256 i; i < orderData.calls.length; ++i) {
             _orderCalls[id].push(orderData.calls[i]);
         }
@@ -597,9 +585,6 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             timestamp: uint32(block.timestamp),
             updatedBy: updatedBy
         });
-
-        _latestOrderIdByStatus[status] = id;
-        if (status == Status.Pending) _orderOffset[id] = _incrementOffset();
     }
 
     /**
@@ -629,8 +614,8 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     /**
      * @dev Increment and return the next order offset.
      */
-    function _incrementOffset() internal returns (bytes32) {
-        return bytes32(uint256(++_offset));
+    function _incrementOffset() internal returns (uint248) {
+        return ++_offset;
     }
 
     /**

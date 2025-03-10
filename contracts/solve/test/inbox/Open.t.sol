@@ -70,10 +70,10 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         emit IERC7683.Open(resolvedOrder.orderId, resolvedOrder);
         inbox.open{ value: defaultAmount }(order);
 
-        (IERC7683.ResolvedCrossChainOrder memory resolved2,, bytes32 orderOffset) = inbox.getOrder(orderId);
+        (IERC7683.ResolvedCrossChainOrder memory resolved2,, uint248 orderOffset) = inbox.getOrder(orderId);
         assertResolvedEq(resolvedOrder, resolved2);
-        assertEq(orderOffset, inbox.getOffset(), "order offset should match contract state");
-        assertEq(inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Pending), orderId, "order should be pending");
+        assertEq(orderOffset, inbox.getLastOrderOffset(), "order offset should match contract state");
+        assertStatus(orderId, ISolverNetInbox.Status.Pending);
         assertEq(address(inbox).balance, defaultAmount, "inbox should have received the deposit");
     }
 
@@ -91,10 +91,10 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         emit IERC7683.Open(resolvedOrder.orderId, resolvedOrder);
         inbox.open(order);
 
-        (IERC7683.ResolvedCrossChainOrder memory resolved2,, bytes32 orderOffset) = inbox.getOrder(orderId);
+        (IERC7683.ResolvedCrossChainOrder memory resolved2,, uint248 orderOffset) = inbox.getOrder(orderId);
         assertResolvedEq(resolvedOrder, resolved2);
-        assertEq(orderOffset, inbox.getOffset(), "order offset should match contract state");
-        assertEq(inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Pending), orderId, "order should be pending");
+        assertEq(orderOffset, inbox.getLastOrderOffset(), "order offset should match contract state");
+        assertStatus(orderId, ISolverNetInbox.Status.Pending);
         assertEq(token1.balanceOf(address(inbox)), defaultAmount, "inbox should have received the deposit");
     }
 }

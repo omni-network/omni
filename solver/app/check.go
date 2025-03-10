@@ -63,7 +63,7 @@ func newChecker(backends ethbackend.Backends, solverAddr, inboxAddr, outboxAddr 
 			return err
 		}
 
-		orderID, err := getNextOrderID(ctx, srcBackend, inboxAddr)
+		orderID, err := getStubOrderID(ctx, srcBackend, solverAddr, inboxAddr)
 		if err != nil {
 			return err
 		}
@@ -77,14 +77,15 @@ func newChecker(backends ethbackend.Backends, solverAddr, inboxAddr, outboxAddr 
 	}
 }
 
-// getNextOrderID returns the next order ID for the given inbox.
-func getNextOrderID(ctx context.Context, client ethclient.Client, inboxAddr common.Address) (OrderID, error) {
+// getStubOrderID returns an unused order id from the inbox contract.
+func getStubOrderID(ctx context.Context, client ethclient.Client, solverAddr, inboxAddr common.Address) (OrderID, error) {
 	inbox, err := bindings.NewSolverNetInbox(inboxAddr, client)
 	if err != nil {
 		return OrderID{}, errors.Wrap(err, "new inbox")
 	}
 
-	orderID, err := inbox.GetNextId(&bind.CallOpts{Context: ctx})
+	// we only need an used order id, so we use solverAddr as the owner
+	orderID, err := inbox.GetNextOrderId(&bind.CallOpts{Context: ctx}, solverAddr)
 	if err != nil {
 		return OrderID{}, errors.Wrap(err, "get next order id")
 	}

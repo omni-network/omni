@@ -41,11 +41,7 @@ contract SolverNet_Inbox_Reject_Test is TestBase {
         (, ISolverNetInbox.OrderState memory state,) = inbox.getOrder(resolvedOrder.orderId);
 
         assertEq(state.rejectReason, 1, "reject reason should be set");
-        assertEq(
-            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Rejected),
-            resolvedOrder.orderId,
-            "order should be rejected"
-        );
+        assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Rejected);
         assertEq(user.balance, defaultAmount, "deposit should have been returned to the user");
     }
 
@@ -70,11 +66,7 @@ contract SolverNet_Inbox_Reject_Test is TestBase {
         (, ISolverNetInbox.OrderState memory state,) = inbox.getOrder(resolvedOrder.orderId);
 
         assertEq(state.rejectReason, 1, "reject reason should be set");
-        assertEq(
-            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Rejected),
-            resolvedOrder.orderId,
-            "order should be rejected"
-        );
+        assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Rejected);
         assertEq(token1.balanceOf(user), defaultAmount, "deposit should have been returned to the user");
     }
 }

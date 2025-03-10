@@ -384,4 +384,18 @@ contract TestBase is Test {
         inboxes[0] = address(inbox);
         outbox.setInboxes(chainIds, inboxes);
     }
+
+    function assertStatus(bytes32 orderId, ISolverNetInbox.Status status) internal {
+        (, ISolverNetInbox.OrderState memory state,) = inbox.getOrder(orderId);
+
+        uint8 expect = uint8(status);
+        uint8 actual = uint8(state.status);
+
+        if (status == ISolverNetInbox.Status.Pending) assertEq(expect, actual, "order should be pending");
+        if (status == ISolverNetInbox.Status.Claimed) assertEq(expect, actual, "order should be claimed");
+        if (status == ISolverNetInbox.Status.Rejected) assertEq(expect, actual, "order should be rejected");
+        if (status == ISolverNetInbox.Status.Closed) assertEq(expect, actual, "order should be closed");
+        if (status == ISolverNetInbox.Status.Filled) assertEq(expect, actual, "order should be filled");
+        if (status == ISolverNetInbox.Status.Invalid) revert("invalid status");
+    }
 }

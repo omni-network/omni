@@ -114,7 +114,7 @@ interface ISolverNetInbox is IOriginSettler {
     function getOrder(bytes32 id)
         external
         view
-        returns (ResolvedCrossChainOrder memory order, OrderState memory state, bytes32 offset);
+        returns (ResolvedCrossChainOrder memory order, OrderState memory state, uint248 offset);
 
     /**
      * @notice Returns the order ID for the given user and nonce.
@@ -136,15 +136,9 @@ interface ISolverNetInbox is IOriginSettler {
     function getUserNonce(address user) external view returns (uint256);
 
     /**
-     * @notice Returns the next order offset.
+     * @notice Returns the order offset of the last order opened at this inbox.
      */
-    function getOffset() external view returns (bytes32);
-
-    /**
-     * @notice Returns the latest order with the given status.
-     * @param status Order status to query.
-     */
-    function getLatestOrderIdByStatus(Status status) external view returns (bytes32);
+    function getLastOrderOffset() external view returns (uint248);
 
     /**
      * @dev Validate the onchain order.

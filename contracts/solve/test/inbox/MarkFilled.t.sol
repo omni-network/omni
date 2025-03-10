@@ -72,10 +72,6 @@ contract SolverNet_Inbox_MarkFilled_Test is TestBase {
             abi.encodeWithSelector(ISolverNetInbox.markFilled.selector, resolvedOrder.orderId, fillhash, solver)
         );
 
-        assertEq(
-            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Filled),
-            resolvedOrder.orderId,
-            "order should be filled"
-        );
+        assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Filled);
     }
 }

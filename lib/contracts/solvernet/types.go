@@ -1,13 +1,12 @@
 package solvernet
 
 import (
-	"encoding/binary"
 	"math/big"
-	"strconv"
 
 	"github.com/omni-network/omni/contracts/bindings"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 type (
@@ -17,14 +16,9 @@ type (
 	FillOriginData = bindings.SolverNetFillOriginData
 )
 
-// Uint64 returns the order ID as a BigEndian uint64 (monotonically incrementing number).
-func (id OrderID) Uint64() uint64 {
-	return binary.BigEndian.Uint64(id[32-8:])
-}
-
 // String returns the Uint64 representation of the order ID as a string.
 func (id OrderID) String() string {
-	return strconv.FormatUint(id.Uint64(), 10)
+	return hexutil.Encode(id[:])
 }
 
 func (s OrderStatus) String() string {
