@@ -21,6 +21,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
 )
 
@@ -145,6 +146,10 @@ func (k *Keeper) RegisterProposalService(server grpc1.Server) {
 // parseAndVerifyProposedPayload parses and verifies and returns the proposed payload
 // if comparing it against the latest execution block succeeds.
 func (k *Keeper) parseAndVerifyProposedPayload(ctx context.Context, msg *types.MsgExecutionPayload) (engine.ExecutableData, error) {
+	if msg.Authority != authtypes.NewModuleAddress(types.ModuleName).String() {
+		return engine.ExecutableData{}, errors.New("invalid authority")
+	}
+
 	// Block of magellan network upgrade height is built by uluwatu logic,
 	// support both that and new magellan proto payloads.
 	// Note this should strictly only be allowed for that first block, but is tricky to enforce.
