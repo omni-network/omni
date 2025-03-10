@@ -2,7 +2,6 @@ package staking
 
 import (
 	"context"
-	"math/big"
 	"sort"
 	"time"
 
@@ -10,10 +9,12 @@ import (
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/cchain/queryutil"
 	"github.com/omni-network/omni/lib/contracts"
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/params"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -36,19 +37,24 @@ func MonitorForever(ctx context.Context, cprov cchain.Provider, network netconf.
 			}
 
 			instrStakeSizes(allDelegations)
-			instrEffRewards(ctx, cprov, allDelegations)
-			instrSupplies(ctx, cprov, network, ethCls)
+
+			if err := instrEffRewards(ctx, cprov, allDelegations); err != nil {
+				log.Warn(ctx, "Effective rewards intrumentation failed", err)
+			}
+
+			if err := instrSupplies(ctx, cprov, network, ethCls); err != nil {
+				log.Warn(ctx, "Token supply intrumentation failed", err)
+			}
 		}
 	}
 }
 
 // instrSupplies instruments the supplies of OMNI token on the L1 (without the bridge balances)
 // and on the consensus chain.
-func instrSupplies(ctx context.Context, cprov cchain.Provider, network netconf.Network, ethCls map[uint64]ethclient.Client) {
+func instrSupplies(ctx context.Context, cprov cchain.Provider, network netconf.Network, ethCls map[uint64]ethclient.Client) error {
 	response, err := cprov.QueryClients().Bank.TotalSupply(ctx, &types.QueryTotalSupplyRequest{})
 	if err != nil {
-		log.Warn(ctx, "Failed to get total supply (will retry)", err)
-		return
+		return errors.Wrap(err, "total supply query")
 	}
 	var cosmosSupplyWei uint64
 	for _, coin := range response.Supply {
@@ -68,45 +74,47 @@ func instrSupplies(ctx context.Context, cprov cchain.Provider, network netconf.N
 	l1Client := ethCls[ethChainID]
 	l1Token, err := bindings.NewOmni(addrs.Token, l1Client)
 	if err != nil {
-		log.Warn(ctx, "Failed to get Omni bindings (will retry)", err)
-		return
-	}
-	l1TokenSupplyWei, err := l1Token.TotalSupply(nil)
-	if err != nil {
-		log.Warn(ctx, "Failed to get L1 total supply (will retry)", err)
-		return
-	}
-	l1BridgeBalanceWei, err := l1Token.BalanceOf(nil, addrs.L1Bridge)
-	if err != nil {
-		log.Warn(ctx, "Failed to get L1 bridge balance (will retry)", err)
-		return
+		return errors.Wrap(err, "contract bindings")
 	}
 
-	l1TotalSupplyWei := new(big.Int).Sub(l1TokenSupplyWei, l1BridgeBalanceWei).Uint64()
-	eChainSupply.Set(toGwei(float64(l1TotalSupplyWei)))
+	callOpts := &bind.CallOpts{Context: ctx}
+
+	l1TokenSupplyWei, err := l1Token.TotalSupply(callOpts)
+	if err != nil {
+		return errors.Wrap(err, "l1 token supply")
+	}
+	eChainSupply.Set(toGwei(float64(l1TokenSupplyWei.Uint64())))
+
+	l1BridgeBalanceWei, err := l1Token.BalanceOf(callOpts, addrs.L1Bridge)
+	if err != nil {
+		return errors.Wrap(err, "l1 bridge balance")
+	}
+	bridgeBalance.Set(toGwei(float64(l1BridgeBalanceWei.Uint64())))
+
+	return nil
 }
 
 // instrEffRewards instruments effective staking rewards.
-func instrEffRewards(ctx context.Context, cprov cchain.Provider, allDelegations []queryutil.DelegationBalance) {
+func instrEffRewards(ctx context.Context, cprov cchain.Provider, allDelegations []queryutil.DelegationBalance) error {
 	// Collect data during multiple blocks.
 	const blocks = uint64(30)
 	rewards, ok, err := queryutil.AvgRewardsRate(ctx, cprov, allDelegations, blocks)
 	if err != nil {
-		log.Warn(ctx, "Failed to get rewards rate (will retry)", err)
-		return
+		return errors.Wrap(err, "avg rewards")
 	}
 
 	if !ok {
-		return
+		return nil
 	}
 
 	rewardsF64, err := rewards.Float64()
 	if err != nil {
-		log.Warn(ctx, "Failed to convert rewards rate to float64 [BUG]", err)
-		return
+		return errors.Wrap(err, "rewards to flaot64 conversion")
 	}
 
 	rewardsAvg.Set(rewardsF64)
+
+	return nil
 }
 
 // instrStakeSizes delegations instruments delegations data.
