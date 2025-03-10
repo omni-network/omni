@@ -27,7 +27,7 @@ func TestIndexer(t *testing.T) {
 
 	streamNamer := func(s xchain.StreamID) string { return fmt.Sprint(s) }
 
-	indexer, err := newIndexer(db, mockXProvider{}, streamNamer)
+	indexer, err := newIndexer(db, mockXProvider{}, streamNamer, nil)
 	require.NoError(t, err)
 	var samples []sample
 	indexer.sampleFunc = func(s sample) {
