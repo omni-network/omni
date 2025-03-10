@@ -12,6 +12,10 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
+// maxDelegationsForRewardsEstimation is the max number of random rewards we track across multiple blocks
+// to estimate the average effective staking rewards.
+const maxDelegationsForRewardsEstimation = 4
+
 func MonitorForever(ctx context.Context, cprov cchain.Provider) {
 	ticker := time.NewTicker(time.Hour)
 	defer ticker.Stop()
@@ -38,7 +42,7 @@ func instrEffRewards(ctx context.Context, cprov cchain.Provider, allDelegations 
 	delegations := allDelegations
 	// Since we have no validator commissions, we can use just a couple of random delegations to estimate rewards.
 	// Once we have validator commissions, this code needs to be removed.
-	if len(allDelegations) > 4 {
+	if len(allDelegations) > maxDelegationsForRewardsEstimation {
 		delegations = allDelegations[:4]
 	}
 

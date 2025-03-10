@@ -10,6 +10,7 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
@@ -133,10 +134,10 @@ func AllDelegations(ctx context.Context, cprov cchain.Provider) ([]DelegationBal
 						}
 				}
 			}
-			request.Pagination.Key = resp.Pagination.NextKey
-			if len(request.Pagination.Key) == 0 {
+			if len(resp.Pagination.NextKey) == 0 {
 				break
 			}
+			request.Pagination = &query.PageRequest{Key: resp.Pagination.NextKey}
 		}
 	}
 
