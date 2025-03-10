@@ -2,6 +2,7 @@ package staking
 
 import (
 	"context"
+	"math/big"
 	"sort"
 	"time"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/params"
+
+	"cosmossdk.io/math"
 )
 
 // maxDelegationsForRewardsEstimation is the max number of random rewards we track across multiple blocks
@@ -18,14 +21,14 @@ import (
 const maxDelegationsForRewardsEstimation = 4
 
 func MonitorForever(ctx context.Context, cprov cchain.Provider) {
-	ticker := time.NewTicker(time.Hour)
-	defer ticker.Stop()
+	timer := time.NewTimer(0)
+	defer timer.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C:
+		case <-timer.C:
 			allDelegations, err := queryutil.AllDelegations(ctx, cprov)
 			if err != nil {
 				log.Warn(ctx, "Failed to query all delegations", err)
@@ -38,6 +41,8 @@ func MonitorForever(ctx context.Context, cprov cchain.Provider) {
 				log.Warn(ctx, "Effective rewards intrumentation failed", err)
 			}
 		}
+
+		timer.Reset(time.Hour)
 	}
 }
 
@@ -76,28 +81,28 @@ func instrStakeSizes(allDelegations []queryutil.DelegationBalance) {
 	delegatorsTotal := float64(len(allDelegations))
 	delegatorsCount.Set(delegatorsTotal)
 
-	var totalStake float64
-	var stakes []float64
+	var totalStake math.Int
+	var stakes []math.Int
 	for _, del := range allDelegations {
-		stake := float64(del.Balance.Amount.Uint64())
-		totalStake += stake
+		stake := del.Balance.Amount
+		totalStake = totalStake.Add(stake)
 		stakes = append(stakes, stake)
 	}
 
-	avgStakeWei := totalStake / delegatorsTotal
-	stakeAvg.Set(toGwei(avgStakeWei))
+	avgStakeWei := totalStake.Quo(math.NewInt(int64(len(allDelegations))))
+	stakeAvg.Set(toGweiFloat64(avgStakeWei.BigInt()))
 
 	l := len(stakes)
 	if l == 0 {
 		return
 	}
 	sort.Slice(stakes, func(i, j int) bool {
-		return stakes[i] < stakes[j]
+		return stakes[i].GTE(stakes[j])
 	})
 	medianVal := stakes[l/2+l%2]
-	stakeMedian.Set(toGwei(medianVal))
+	stakeMedian.Set(toGweiFloat64(medianVal.BigInt()))
 }
 
-func toGwei(wei float64) float64 {
-	return wei / params.GWei
+func toGweiFloat64(wei *big.Int) float64 {
+	return float64(new(big.Int).Div(wei, big.NewInt(params.GWei)).Uint64())
 }
