@@ -133,6 +133,11 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "start event streams")
 	}
 
+	err = startRebalancing(ctx, network, backends)
+	if err != nil {
+		return errors.Wrap(err, "start rebalancing")
+	}
+
 	callAllower := newCallAllower(network.ID, addrs.SolverNetMiddleman)
 
 	log.Info(ctx, "Serving API", "address", cfg.APIAddr)
