@@ -161,7 +161,7 @@
  },
  {
   "address": "0xB50029Dc0DF4Db0193F25a8E41DEa207c13D09BB",
-  "chainId": 11155111,
+  "chainId": 17000,
   "coingeckoId": "omni-network",
   "isMock": false,
   "maxSpend": "1000.0000",
