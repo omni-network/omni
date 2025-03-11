@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/tutil"
+	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -29,7 +30,7 @@ func TestEventProcessor(t *testing.T) {
 		name         string
 		event        common.Hash
 		getStatus    solvernet.OrderStatus
-		rejectReason rejectReason
+		rejectReason stypes.RejectReason
 		expect       string
 	}{
 		{
@@ -98,10 +99,10 @@ func TestEventProcessor(t *testing.T) {
 				DidFill: func(ctx context.Context, order Order) (bool, error) {
 					return false, nil
 				},
-				ShouldReject: func(ctx context.Context, order Order) (rejectReason, bool, error) {
-					return test.rejectReason, test.rejectReason != rejectNone, nil
+				ShouldReject: func(ctx context.Context, order Order) (stypes.RejectReason, bool, error) {
+					return test.rejectReason, test.rejectReason != stypes.RejectNone, nil
 				},
-				Reject: func(ctx context.Context, order Order, reason rejectReason) error {
+				Reject: func(ctx context.Context, order Order, reason stypes.RejectReason) error {
 					actual = reject
 					require.Equal(t, test.getStatus, order.Status)
 					require.Equal(t, test.rejectReason, reason)

@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 	libtokens "github.com/omni-network/omni/lib/tokens"
+	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -22,11 +23,11 @@ type procDeps struct {
 	ParseID      func(chainID uint64, log types.Log) (OrderID, error)
 	GetOrder     func(ctx context.Context, chainID uint64, id OrderID) (Order, bool, error)
 	SetCursor    func(ctx context.Context, chainID uint64, height uint64) error
-	ShouldReject func(ctx context.Context, order Order) (rejectReason, bool, error)
+	ShouldReject func(ctx context.Context, order Order) (stypes.RejectReason, bool, error)
 	DidFill      func(ctx context.Context, order Order) (bool, error)
 
 	Accept func(ctx context.Context, order Order) error
-	Reject func(ctx context.Context, order Order, reason rejectReason) error
+	Reject func(ctx context.Context, order Order, reason stypes.RejectReason) error
 	Fill   func(ctx context.Context, order Order) error
 	Claim  func(ctx context.Context, order Order) error
 
@@ -175,8 +176,8 @@ func newRejector(
 	inboxContracts map[uint64]*bindings.SolverNetInbox,
 	backends ethbackend.Backends,
 	solverAddr common.Address,
-) func(ctx context.Context, order Order, reason rejectReason) error {
-	return func(ctx context.Context, order Order, reason rejectReason) error {
+) func(ctx context.Context, order Order, reason stypes.RejectReason) error {
+	return func(ctx context.Context, order Order, reason stypes.RejectReason) error {
 		inbox, ok := inboxContracts[order.SourceChainID]
 		if !ok {
 			return errors.New("unknown chain")

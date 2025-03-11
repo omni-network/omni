@@ -27,24 +27,20 @@ func TestCheck(t *testing.T) {
 	addrs, err := contracts.GetAddresses(context.Background(), netconf.Devnet)
 	require.NoError(t, err)
 	outbox := addrs.SolverNetOutbox
-	inbox := addrs.SolverNetInbox
 
 	for _, tt := range checkTestCases(t, solver) {
 		t.Run(tt.name, func(t *testing.T) {
 			backends, clients := testBackends(t)
 
-			handler := handlerAdapter(newCheckHandler(newChecker(backends, solver, inbox, outbox)))
+			handler := handlerAdapter(newCheckHandler(newChecker(backends, solver, outbox)))
 
 			if tt.mock != nil {
 				tt.mock(clients)
 
 				destClient := clients.Client(t, tt.req.DestinationChainID)
 				mockDidFill(t, destClient, outbox, false)
-				mockFill(t, destClient, outbox, tt.res.RejectReason == rejectDestCallReverts.String())
+				mockFill(t, destClient, outbox, tt.res.RejectReason == types.RejectDestCallReverts.String())
 				mockFillFee(t, destClient, outbox)
-
-				srcClient := clients.Client(t, tt.req.SourceChainID)
-				mockGetNextID(t, srcClient, inbox)
 			}
 
 			body, err := json.Marshal(tt.req)
