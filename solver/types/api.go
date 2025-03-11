@@ -98,6 +98,7 @@ type ContractsResponse struct {
 	Inbox     common.Address `json:"inbox"`
 	Outbox    common.Address `json:"outbox"`
 	Middleman common.Address `json:"middleman"`
+	Executor  common.Address `json:"executor"`
 }
 
 // expenseJSON is a json marshal-able solvernt.Expense.

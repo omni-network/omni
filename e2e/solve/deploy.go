@@ -3,6 +3,7 @@ package solve
 import (
 	"context"
 
+	"github.com/omni-network/omni/lib/contracts/solvernet/executor"
 	"github.com/omni-network/omni/lib/contracts/solvernet/inbox"
 	"github.com/omni-network/omni/lib/contracts/solvernet/middleman"
 	"github.com/omni-network/omni/lib/contracts/solvernet/outbox"
@@ -41,24 +42,31 @@ func deployBoxes(ctx context.Context, network netconf.Network, backends ethbacke
 
 			addr, receipt, err := inbox.Deploy(ctx, network, backend)
 			if err != nil {
-				return errors.Wrap(err, "deploy solve inbox", "chain", chain.Name)
+				return errors.Wrap(err, "deploy inbox", "chain", chain.Name)
 			}
 
 			log.Info(ctx, "SolverNetInbox deployed", "addr", addr.Hex(), "chain", chain.Name, "tx", maybeTxHash(receipt))
 
 			addr, receipt, err = outbox.Deploy(ctx, network, backend)
 			if err != nil {
-				return errors.Wrap(err, "deploy solve outbox", "chain", chain.Name)
+				return errors.Wrap(err, "deploy outbox", "chain", chain.Name)
 			}
 
 			log.Info(ctx, "SolverNetOutbox deployed", "addr", addr.Hex(), "chain", chain.Name, "tx", maybeTxHash(receipt))
 
 			addr, receipt, err = middleman.Deploy(ctx, network, backend)
 			if err != nil {
-				return errors.Wrap(err, "deploy solve middleman", "chain", chain.Name)
+				return errors.Wrap(err, "deploy middleman", "chain", chain.Name)
 			}
 
 			log.Info(ctx, "SolverNetMiddleman deployed", "addr", addr.Hex(), "chain", chain.Name, "tx", maybeTxHash(receipt))
+
+			addr, receipt, err = executor.Deploy(ctx, network, backend)
+			if err != nil {
+				return errors.Wrap(err, "deploy executor", "chain", chain.Name)
+			}
+
+			log.Info(ctx, "SolverNetExecutor deployed", "addr", addr.Hex(), "chain", chain.Name, "tx", maybeTxHash(receipt))
 
 			return nil
 		})
