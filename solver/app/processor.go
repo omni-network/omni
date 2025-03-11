@@ -108,7 +108,7 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 			switch event.Status {
 			case statusPending:
 				if alreadyFilled() {
-					return errors.New("unexpected already filled [BUG]")
+					return nil
 				}
 
 				// Track all orders for now, since we reject explicitly.

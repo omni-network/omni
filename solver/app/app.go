@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/pprof"
+	"sync"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -24,20 +25,29 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-const (
-	defaultConfLevel = xchain.ConfLatest
-	unknown          = "unknown"
-)
+const unknown = "unknown"
 
-func chainVerFromID(id uint64) xchain.ChainVersion {
-	return xchain.ChainVersion{ID: id, ConfLevel: defaultConfLevel}
+// chainVersFromID returns the chain versions to stream/process per chain ID.
+func chainVersFromID(network netconf.ID, chainID uint64) []xchain.ChainVersion {
+	// On devnet we stream twice (for idempotency testing)
+	if network == netconf.Devnet {
+		return []xchain.ChainVersion{
+			xchain.NewChainVersion(chainID, xchain.ConfLatest),
+			xchain.NewChainVersion(chainID, xchain.ConfMin1),
+		}
+	}
+
+	// On other chains, we only stream latest for now,
+	return []xchain.ChainVersion{
+		xchain.NewChainVersion(chainID, xchain.ConfLatest),
+	}
 }
 
 // Run starts the solver service.
@@ -224,7 +234,6 @@ func startEventStreams(
 	inboxTimestamps := make(map[uint64]func(uint64) time.Time)
 	for _, chain := range inboxChains {
 		name := network.ChainName(chain)
-		chainVer := chainVerFromID(chain)
 		log.Debug(ctx, "Using inbox contract", "chain", name, "address", addrs.SolverNetInbox.Hex())
 
 		backend, err := backends.Backend(chain)
@@ -252,22 +261,12 @@ func startEventStreams(
 		}
 		inboxContracts[chain] = inbox
 
-		// Check if cursor store should be initialized with deploy height
-		if _, ok, err := cursors.Get(ctx, chainVer); err != nil {
-			return errors.Wrap(err, "get cursor", "chain", name)
-		} else if ok { // Cursor already set, skip
-			continue
-		}
-
-		height, err := inbox.DeployedAt(&bind.CallOpts{Context: ctx})
-		if err != nil {
-			return errors.New("get inbox deploy height", "chain", name)
-		}
-
-		log.Info(ctx, "Initializing inbox cursor", "chain", name, "deployed_at", height)
-
-		if err := cursors.Set(ctx, chainVer, height.Uint64()); err != nil {
-			return err
+		// Bootstrap all streamer cursors for this chain
+		for _, chainVer := range chainVersFromID(network.ID, chain) {
+			loopCtx := log.WithCtx(ctx, "chain_version", network.ChainVersionName(chainVer))
+			if err := maybeBootstrapCursor(loopCtx, inbox, cursors, chainVer); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -291,10 +290,6 @@ func startEventStreams(
 			return errors.Wrap(err, "create outbox contract", "chain", name)
 		}
 		outboxContracts[chain] = outbox
-	}
-
-	cursorSetter := func(ctx context.Context, chainID uint64, height uint64) error {
-		return cursors.Set(ctx, chainVerFromID(chainID), height)
 	}
 
 	targetName := func(o Order) string {
@@ -328,39 +323,69 @@ func startEventStreams(
 		return f(height)
 	}
 
-	deps := procDeps{
-		ParseID:        newIDParser(inboxContracts),
-		GetOrder:       newOrderGetter(inboxContracts),
-		ShouldReject:   newShouldRejector(backends, solverAddr, addrs.SolverNetOutbox),
-		DidFill:        newDidFiller(outboxContracts),
-		Reject:         newRejector(inboxContracts, backends, solverAddr),
-		Fill:           newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, pricer),
-		Claim:          newClaimer(inboxContracts, backends, solverAddr, pricer),
-		SetCursor:      cursorSetter,
-		ChainName:      network.ChainName,
-		TargetName:     targetName,
-		BlockTimestamp: blockTimestamps,
-	}
+	for _, chainID := range inboxChains {
+		// Ensure chain version processors don't process same height concurrently.
+		callbackWrapper := newHeightMutexer()
+		for _, chainVer := range chainVersFromID(network.ID, chainID) {
+			cursorSetter := func(ctx context.Context, _ uint64, height uint64) error {
+				return cursors.Set(ctx, chainVer, height)
+			}
 
-	for _, chain := range inboxChains {
-		log.Info(ctx, "Starting inbox event stream", "chain", network.ChainName(chain))
-		go streamEventsForever(ctx, chain, xprov, deps, cursors, addrs.SolverNetInbox)
+			deps := procDeps{
+				ParseID:        newIDParser(inboxContracts),
+				GetOrder:       newOrderGetter(inboxContracts),
+				ShouldReject:   newShouldRejector(backends, solverAddr, addrs.SolverNetOutbox),
+				DidFill:        newDidFiller(outboxContracts),
+				Reject:         newRejector(inboxContracts, backends, solverAddr),
+				Fill:           newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, pricer),
+				Claim:          newClaimer(inboxContracts, backends, solverAddr, pricer),
+				SetCursor:      cursorSetter,
+				ChainName:      network.ChainName,
+				TargetName:     targetName,
+				BlockTimestamp: blockTimestamps,
+			}
+
+			loopCtx := log.WithCtx(ctx, "chain_version", network.ChainVersionName(chainVer))
+			log.Info(loopCtx, "Starting inbox event stream")
+			go streamEventsForever(loopCtx, chainVer, xprov, deps, cursors, addrs.SolverNetInbox, callbackWrapper)
+		}
 	}
 
 	return nil
 }
 
-// streamEventsForever streams events from the inbox contract on the given chain.
+// newHeightMutexer returns a callback wrapper that ensures a specific chain height is NOT processed concurrently.
+// This prevents races when multiple chain versions concurrently processing log events.
+// Since we wait for submitted txs to be mined, subsequent processors will read state from chain.
+// The risk is wasting gas due to re-submitting the same tx.
+func newHeightMutexer() func(callback xchain.EventLogsCallback) xchain.EventLogsCallback {
+	var mutexes sync.Map
+	return func(callback xchain.EventLogsCallback) xchain.EventLogsCallback {
+		return func(ctx context.Context, height uint64, events []types.Log) error {
+			anyMutex, _ := mutexes.LoadOrStore(height, new(sync.Mutex))
+			mutex := anyMutex.(*sync.Mutex) //nolint:revive,forcetypeassert // Known type
+			mutex.Lock()
+			defer func() {
+				mutex.Unlock()
+				mutexes.Delete(height)
+			}()
+
+			return callback(ctx, height, events)
+		}
+	}
+}
+
+// streamEventsForever streams events from the inbox contract on the given chain version.
 func streamEventsForever(
 	ctx context.Context,
-	chainID uint64,
+	chainVer xchain.ChainVersion,
 	xprov xchain.Provider,
 	deps procDeps,
 	cursors *cursors,
 	inboxAddr common.Address,
+	callbackWrapper func(xchain.EventLogsCallback) xchain.EventLogsCallback,
 ) {
 	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second*5))
-	chainVer := chainVerFromID(chainID)
 	for {
 		from, ok, err := cursors.Get(ctx, chainVer)
 		if !ok || err != nil {
@@ -371,13 +396,13 @@ func streamEventsForever(
 		}
 
 		req := xchain.EventLogsReq{
-			ChainID:       chainID,
+			ChainID:       chainVer.ID,
 			Height:        from, // Note the previous height is re-processed (idempotency FTW)
 			ConfLevel:     chainVer.ConfLevel,
 			FilterAddress: inboxAddr,
 			FilterTopics:  solvernet.AllEventTopics(),
 		}
-		err = xprov.StreamEventLogs(ctx, req, newEventProcessor(deps, chainID))
+		err = xprov.StreamEventLogs(ctx, req, callbackWrapper(newEventProcessor(deps, chainVer.ID)))
 		if ctx.Err() != nil {
 			return
 		}
