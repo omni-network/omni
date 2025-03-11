@@ -21,7 +21,7 @@ const (
 	mainnetVersion = "v1.0.0"
 
 	// solver net versions can progress independently of core.
-	solvernetOmegaVersion   = "v0.1.1"
+	solvernetOmegaVersion   = "v0.1.2"
 	solvernetMainnetVersion = "v1.0.0"
 
 	NameAVS                = "avs"

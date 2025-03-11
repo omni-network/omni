@@ -35,10 +35,10 @@
   "gasstation": "0x3266c030c1e302264063cf44f6df8bbaaf3d9767",
   "l1bridge": "0x084ef227534a6ad2de4c4e54db19f1c457a57a27",
   "portal": "0xcb60a0451831e4865bc49f41f9c67665fc9b75c3",
-  "solvernetexecutor": "0xa762edfe7cebcb5e5f7513fb81e69ebd53aef269",
-  "solvernetinbox": "0x80b6ed465241a17080dc4a68be42e80fea1214dd",
-  "solvernetmiddleman": "0x191e0a0aab2b21e946a0ff0ecbd36218b90801c9",
-  "solvernetoutbox": "0x020b76746606c6ddb4708b6996cad9adb821604e",
+  "solvernetexecutor": "0x2b6bf280897cccbef827e8546cbd4d28367a8196",
+  "solvernetinbox": "0x7ea0ceb70d5df75a730e6cb3eadec12efdfe80a1",
+  "solvernetmiddleman": "0x491e48229b2911d918cd43d4092fc9e0f5766dff",
+  "solvernetoutbox": "0xae9e2e3acb2914604ca8f13c734388f05c697ef0",
   "token": "0xd036c60f46ff51dd7fbf6a819b5b171c8a076b07"
  }
 }
