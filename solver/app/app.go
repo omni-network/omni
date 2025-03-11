@@ -137,7 +137,7 @@ func Run(ctx context.Context, cfg Config) error {
 
 	log.Info(ctx, "Serving API", "address", cfg.APIAddr)
 	apiChan := serveAPI(cfg.APIAddr,
-		newCheckHandler(newChecker(backends, solverAddr, addrs.SolverNetOutbox)),
+		newCheckHandler(newChecker(backends, callAllower, solverAddr, addrs.SolverNetOutbox)),
 		newContractsHandler(addrs),
 		newQuoteHandler(quoter),
 	)
@@ -324,7 +324,6 @@ func startEventStreams(
 
 		return f(height)
 	}
-
 
 	callAllower := newCallAllower(network.ID, addrs.SolverNetMiddleman)
 

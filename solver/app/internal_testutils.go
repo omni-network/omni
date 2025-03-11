@@ -43,7 +43,7 @@ type testOrder struct {
 // orderTestCase is a test case for both shouldReject and quote handlers.
 type orderTestCase struct {
 	name         string
-	reason       rejectReason
+	reason       types.RejectReason
 	reject       bool
 	fillReverts  bool
 	disallowCall bool
@@ -54,7 +54,7 @@ type orderTestCase struct {
 // rejectTestCase is a test case for shouldReject(...)
 type rejectTestCase struct {
 	name         string
-	reason       rejectReason
+	reason       types.RejectReason
 	reject       bool
 	fillReverts  bool
 	disallowCall bool
@@ -466,16 +466,19 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 		},
 		{
 			name:         "disallowed call",
-			reason:       rejectCallNotAllowed,
+			reason:       types.RejectCallNotAllowed,
 			reject:       true,
 			disallowCall: true,
 			// rest does not matter
 			order: testOrder{
 				srcChainID: evmchain.IDHolesky,
-				dstChainID: evmchain.IDOmniOmega,
-				deposits:   []types.AddrAmt{{Amount: big.NewInt(1)}},
-				calls:      []types.Call{{Value: big.NewInt(1)}},
-				expenses:   []types.Expense{{Amount: big.NewInt(1)}},
+				dstChainID: evmchain.IDBaseSepolia,
+				deposits:   []types.AddrAmt{{Amount: ether(2)}},
+				calls:      []types.Call{{Value: ether(1)}},
+				expenses:   []types.Expense{{Amount: ether(1)}},
+			},
+			mock: func(clients MockClients) {
+				mockNativeBalance(t, clients.Client(t, evmchain.IDBaseSepolia), solver, ether(2))
 			},
 		},
 	}

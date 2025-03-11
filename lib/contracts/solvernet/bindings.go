@@ -208,21 +208,19 @@ func PackOrderData(data bindings.SolverNetOrderData) ([]byte, error) {
 }
 
 func PackFillOriginData(data bindings.SolverNetFillOriginData) ([]byte, error) {
-	// replaces nil call values with zero (inputs.Pack panics if value is nil)
-	zeroNils := func(calls []bindings.SolverNetCall) []bindings.SolverNetCall {
-		var out []bindings.SolverNetCall
-
-		for i, c := range calls {
-			out = append(out, c)
-			if out[i].Value == nil {
-				out[i].Value = big.NewInt(0)
-			}
+	// Replaces nil call values with zero (inputs.Pack panics if value is nil)
+	for i := range data.Calls {
+		if data.Calls[i].Value == nil {
+			data.Calls[i].Value = big.NewInt(0)
 		}
-
-		return out
 	}
 
-	data.Calls = zeroNils(data.Calls)
+	// Same for expenses
+	for i := range data.Expenses {
+		if data.Expenses[i].Amount == nil {
+			data.Expenses[i].Amount = big.NewInt(0)
+		}
+	}
 
 	packed, err := inputsFillOriginData.Pack(data)
 	if err != nil {

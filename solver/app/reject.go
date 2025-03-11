@@ -315,7 +315,7 @@ func checkOrderCalls(order Order, isAllowed callAllowFunc) error {
 func checkCalls(destChainID uint64, calls []types.Call, isAllowed callAllowFunc) error {
 	for _, call := range calls {
 		if !isAllowed(destChainID, call.Target, call.Data) {
-			return newRejection(rejectCallNotAllowed, errors.New("call not allowed", "target", call.Target.Hex(), "data", hexutil.Encode(call.Data)))
+			return newRejection(types.RejectCallNotAllowed, errors.New("call not allowed", "target", call.Target.Hex(), "data", hexutil.Encode(call.Data)))
 		}
 	}
 

@@ -33,10 +33,6 @@ func newChecker(backends ethbackend.Backends, isAllowedCall callAllowFunc, solve
 			return newRejection(types.RejectUnsupportedDestChain, errors.New("unsupported destination chain", "chain_id", req.DestinationChainID))
 		}
 
-		if err := checkCalls(req.DestinationChainID, req.Calls, isAllowedCall); err != nil {
-			return err
-		}
-
 		deposit, err := parseTokenAmt(req.SourceChainID, req.Deposit)
 		if err != nil {
 			return err
@@ -58,6 +54,10 @@ func newChecker(backends ethbackend.Backends, isAllowedCall callAllowFunc, solve
 		}
 
 		if err := checkLiquidity(ctx, expenses, dstBackend, solverAddr); err != nil {
+			return err
+		}
+
+		if err := checkCalls(req.DestinationChainID, req.Calls, isAllowedCall); err != nil {
 			return err
 		}
 
