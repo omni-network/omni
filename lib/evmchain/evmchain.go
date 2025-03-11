@@ -196,6 +196,6 @@ var static = map[uint64]Metadata{
 
 // IsDisabled returns true if the chain is disabled.
 // TODO(corver): Remove once holesky issue resolved.
-func IsDisabled(id uint64) bool {
-	return id == IDHolesky
+func IsDisabled(_ uint64) bool {
+	return false // id == IDHolesky
 }
