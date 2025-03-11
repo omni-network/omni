@@ -105,8 +105,8 @@ func AllDelegations(ctx context.Context, cprov cchain.Provider) ([]DelegationBal
 
 	uniq := make(map[string]DelegationBalance)
 	for _, val := range vals {
-		if val.Jailed {
-			continue
+		if val.Jailed || val.IsUnbonded() {
+			continue // Only use delegations from bonded unjailed validators
 		}
 		request := &stakingtypes.QueryValidatorDelegationsRequest{ValidatorAddr: val.OperatorAddress}
 		for {
