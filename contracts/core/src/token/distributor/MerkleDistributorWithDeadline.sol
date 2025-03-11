@@ -8,19 +8,20 @@ import { SignatureCheckerLib } from "solady/src/utils/SignatureCheckerLib.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { MerkleProofLib } from "solady/src/utils/MerkleProofLib.sol";
 import { LibBitmap } from "solady/src/utils/LibBitmap.sol";
-import { IOmniPortal } from "../interfaces/IOmniPortal.sol";
-import { IGenesisStake } from "../interfaces/IGenesisStake.sol";
+import { IStaking } from "../../interfaces/IStaking.sol";
+import { IOmniPortal } from "../../interfaces/IOmniPortal.sol";
+import { IGenesisStake } from "../../interfaces/IGenesisStake.sol";
 import { IERC7683, IOriginSettler } from "solve/src/erc7683/IOriginSettler.sol";
 import { SolverNet } from "solve/src/lib/SolverNet.sol";
 
-contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
+abstract contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
     using LibBitmap for LibBitmap.Bitmap;
     using SafeTransferLib for address;
 
     error Expired();
     error EndTimeInPast();
     error InvalidSignature();
-    error NothingToMigrate();
+    error InsufficientAmount();
     error ClaimWindowFinished();
     error NoWithdrawDuringClaim();
 
@@ -28,6 +29,8 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
         "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)TokenExpense(address spender,address token,uint96 amount)"
     );
     bytes32 internal constant MIGRATION_TYPEHASH = keccak256("Migration(address user,uint256 nonce,uint256 expiry)");
+
+    address internal constant STAKING = 0xCCcCcC0000000000000000000000000000000001;
 
     uint256 public immutable endTime;
     IOmniPortal public immutable omniPortal;
@@ -89,6 +92,9 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
      * @param merkleProof  Merkle proof for the claim
      */
     function migrateToOmni(uint256 index, uint256 amount, bytes32[] calldata merkleProof) external {
+        unchecked {
+            ++nonces[msg.sender];
+        }
         _migrate(msg.sender, index, amount, merkleProof);
     }
 
@@ -155,18 +161,20 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
         // Migrate user's stake, if any
         uint256 stake = IGenesisStake(genesisStaking).migrateStake(account);
 
-        // If the user has unclaimed rewards, add them to their stake
-        if (_claimRewards(account, index, amount, merkleProof)) {
-            unchecked {
-                stake += amount;
+        // If proofs are provided, check if the user is eligible for rewards and add them to their stake
+        if (merkleProof.length > 0) {
+            if (_claimRewards(account, index, amount, merkleProof)) {
+                unchecked {
+                    stake += amount;
+                }
             }
         }
 
-        // Block zero value migrations
-        if (stake == 0) revert NothingToMigrate();
+        // Block insufficient stake migrations
+        if (stake < 1 ether) revert InsufficientAmount();
 
         // Generate and send the order
-        IERC7683.OnchainCrossChainOrder memory order = _generateOrder(account, stake);
+        IERC7683.OnchainCrossChainOrder memory order = _generateOrder(account, _getValidator(account), stake);
         solvernetInbox.open(order);
     }
 
@@ -193,12 +201,21 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
     }
 
     /**
+     * @notice Get the validator to delegate to
+     * @dev Iterates through the validators in a round-robin fashion
+     * @param addr Address of the user claiming
+     * @return Validator address
+     */
+    function _getValidator(address addr) internal virtual returns (address);
+
+    /**
      * @notice Generate a SolverNet order that generates a subsidized order for deposited tokens on Omni 1:1
-     * @param account  Address of the user claiming
-     * @param amount   Amount of tokens to claim
+     * @param account   Address of the user claiming
+     * @param validator Validator to delegate to
+     * @param amount    Amount of tokens to claim
      * @return         SolverNet order
      */
-    function _generateOrder(address account, uint256 amount)
+    function _generateOrder(address account, address validator, uint256 amount)
         internal
         view
         returns (IERC7683.OnchainCrossChainOrder memory)
@@ -206,7 +223,12 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
         SolverNet.Deposit memory deposit = SolverNet.Deposit({ token: token, amount: uint96(amount) });
 
         SolverNet.Call[] memory call = new SolverNet.Call[](1);
-        call[0] = SolverNet.Call({ target: account, selector: bytes4(0), value: amount, params: "" });
+        call[0] = SolverNet.Call({
+            target: STAKING,
+            selector: IStaking.delegateFor.selector,
+            value: amount,
+            params: abi.encode(account, validator)
+        });
 
         SolverNet.OrderData memory orderData = SolverNet.OrderData({
             owner: account,
@@ -217,7 +239,7 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
         });
 
         return IERC7683.OnchainCrossChainOrder({
-            fillDeadline: 0,
+            fillDeadline: uint32(block.timestamp + 6 hours),
             orderDataType: ORDERDATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });
