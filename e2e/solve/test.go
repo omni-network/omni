@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/anvil"
+	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -20,6 +22,7 @@ import (
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 	solver "github.com/omni-network/omni/solver/types"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
@@ -154,7 +157,13 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 			}
 
 			if done {
+				// if done, wait for solver to rebalance OMNI (bridge L1 back to native)
+				if err := waitRebalance(ctx, backends); err != nil {
+					return errors.Wrap(err, "wait rebalance")
+				}
+
 				log.Info(ctx, "Solver test success")
+
 				return nil
 			}
 		}
@@ -512,4 +521,40 @@ func testCheckAPI(ctx context.Context, backends ethbackend.Backends, orders []Te
 	log.Info(ctx, "Test /check success")
 
 	return nil
+}
+
+func waitRebalance(ctx context.Context, backends ethbackend.Backends) error {
+	backend, err := backends.Backend(evmchain.IDMockL1)
+	if err != nil {
+		return errors.Wrap(err, "l1 backend")
+	}
+
+	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
+
+	token, err := bindings.NewIERC20(contracts.TokenAddr(netconf.Devnet), backend)
+	if err != nil {
+		return errors.Wrap(err, "new erc20")
+	}
+
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return errors.Wrap(ctx.Err(), "timeout")
+		case <-ticker.C:
+			balance, err := token.BalanceOf(&bind.CallOpts{Context: ctx}, solver)
+			if err != nil {
+				return errors.Wrap(err, "balance of")
+			}
+
+			// solver will have claimed much more than 1 OMNI
+			// if balance is < 1, rebalancing is working
+			oneOMNI := new(big.Int).Mul(big.NewInt(1), big.NewInt(params.Ether))
+			if balance.Cmp(oneOMNI) <= 0 {
+				return nil
+			}
+		}
+	}
 }
