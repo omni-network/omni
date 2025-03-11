@@ -81,15 +81,27 @@ contract StagingGenesisStakeScript is Script {
     function merkleTest() public {
         m = new CompleteMerkle();
 
-        leaves[0] = keccak256(abi.encodePacked(uint256(0), 0xA779fC675Db318dab004Ab8D538CB320D0013F42, rewardAmount));
-        proofs[0].push(hex"d63ffdb42cc723a1c6d5680d227c3fcc1eb3a496f4516d658739bde53d43d7e5");
-        proofs[0].push(hex"629d5c1cc8dabddba6ce83fab447555682bc817de8206caf1f33e3c96db480bf");
-        proofs[0].push(hex"359ea71da4d34de23c735ff73c6e50deeb4f1e16cff3d7094f3af60267a8e0c0");
-        proofs[0].push(hex"0bc86c0dc974955298d28f5b588dc36f19429cb97a81863d400d6469cb94403d");
-        proofs[0].push(hex"6c2f3969e324d1a1d1b3609173d620755e9fbb6e1a3e90948e65a848572ce3e0");
-        proofs[0].push(hex"b393094f8b8deae0e3ebb3c6a55a99e9a77584d7a1ffa60e620ad788ee8be08e");
+        leaves[0] = keccak256(
+            abi.encodePacked(
+                uint256(7956), 0xA779fC675Db318dab004Ab8D538CB320D0013F42, uint256(1_305_710_306_500_000_000)
+            )
+        );
+        proofs[0].push(hex"00e7dad07181b59b1f038181844e40254aa180d3b04b7e473faf4c960a99eded");
+        proofs[0].push(hex"463978574b00aa05219cd93135c1d787a4565ba1a5001b7063e48419e9d6719d");
+        proofs[0].push(hex"fb0c0e87305db129fb1acb5aa5e75e055c584c3d7109754b343438f0256a7c96");
+        proofs[0].push(hex"893f87ead4b105b5af0389dfbc354e06c38026ece5c94411de9d78e5f928e294");
+        proofs[0].push(hex"cbf387b1cd966ed9aa8549af125c0039b96062a13e3f7053d245635c19d004fb");
+        proofs[0].push(hex"12a296264c3483bf23456a745feb1f0afbb423b50ed04800b3f4bf3203f58104");
+        proofs[0].push(hex"4d5f5a35000501ba7c713fbe0663ef0325fdeaca3de2ff79c16f1193aa2d3688");
+        proofs[0].push(hex"00599b87e2278d1778c5872df387af6530dbfcc7d9c56601a8af14452d6a7c52");
+        proofs[0].push(hex"3dc163521a23ea985c1908f9fef2267cd3be23452f92218f8d72362e9efa6159");
+        proofs[0].push(hex"866bf35be46662c6de366bcdd17c89f6fa4167528f599bcd9dc6fed4a1216697");
+        proofs[0].push(hex"108e8afc22ef50935d515b90522e4155a96d762d018fb11275bde0719608fb08");
+        proofs[0].push(hex"cf736f928c4819ad0219d7c32179e6cddc474132d775792b206b804e42ababba");
+        proofs[0].push(hex"ebf7bdce15089351b96d633be463d1e6d327624db7ae7e8c94d3fe27a7cb34ba");
+        proofs[0].push(hex"0c17dbcd20b4f15264b9b382cc1cc57b05c2e0dd309a23d7f08e35743a3f5dde");
 
-        root = hex"9389e8b3e37cce68001c83a741ac6c3ba048d8621272d0603fc0f6eb3d969d7c";
+        root = hex"2fe059bec6dd8491e5aa41329711a14bce8108f8b00aa4b9cb8795579836c5c2";
 
         m.verifyProof(root, proofs[0], leaves[0]);
     }
