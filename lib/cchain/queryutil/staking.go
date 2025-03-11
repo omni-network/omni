@@ -100,7 +100,7 @@ func DelegatorInflationRates(ctx context.Context, cprov cchain.Provider, delegat
 // DelegationBalance represents the total delegation balance of a delegator.
 type DelegationBalance struct {
 	DelegatorAddress sdk.AccAddress
-	Balance          big.Int
+	Balance          *big.Int
 }
 
 // AllDelegations returns delegation balances of each unique delegator.
@@ -128,13 +128,13 @@ func AllDelegations(ctx context.Context, cprov cchain.Provider) ([]DelegationBal
 					return nil, errors.Wrap(err, "parse delegator address")
 				}
 				if delegation, ok := uniq[del.Delegation.DelegatorAddress]; ok {
-					delegation.Balance = *new(big.Int).Add(&delegation.Balance, del.Balance.Amount.BigInt())
+					delegation.Balance = new(big.Int).Add(delegation.Balance, del.Balance.Amount.BigInt())
 					uniq[del.Delegation.DelegatorAddress] = delegation
 				} else {
 					uniq[del.Delegation.DelegatorAddress] =
 						DelegationBalance{
 							DelegatorAddress: addr,
-							Balance:          *del.Balance.Amount.BigInt(),
+							Balance:          del.Balance.Amount.BigInt(),
 						}
 				}
 			}

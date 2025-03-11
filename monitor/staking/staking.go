@@ -80,28 +80,28 @@ func instrStakeSizes(allDelegations []queryutil.DelegationBalance) {
 	delegatorsCount.Set(delegatorsTotal)
 
 	var totalStake big.Int
-	var stakes []big.Int
+	var stakes []*big.Int
 	for _, del := range allDelegations {
 		stake := del.Balance
-		totalStake = *new(big.Int).Add(&totalStake, &stake)
+		totalStake = *new(big.Int).Add(&totalStake, stake)
 		stakes = append(stakes, stake)
 	}
 
 	avgStakeWei := new(big.Int).Quo(&totalStake, big.NewInt(int64(len(allDelegations))))
-	stakeAvg.Set(toGweiFloat64(*avgStakeWei))
+	stakeAvg.Set(toGweiFloat64(avgStakeWei))
 
 	l := len(stakes)
 	if l == 0 {
 		return
 	}
 	sort.Slice(stakes, func(i, j int) bool {
-		return stakes[i].Cmp(&stakes[j]) < 0
+		return stakes[i].Cmp(stakes[j]) < 0
 	})
 	medianVal := stakes[l/2+l%2]
 	stakeMedian.Set(toGweiFloat64(medianVal))
 }
 
-func toGweiFloat64(wei big.Int) float64 {
-	f64, _ := new(big.Int).Div(&wei, big.NewInt(params.GWei)).Float64()
+func toGweiFloat64(wei *big.Int) float64 {
+	f64, _ := new(big.Int).Div(wei, big.NewInt(params.GWei)).Float64()
 	return f64
 }
