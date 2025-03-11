@@ -18,27 +18,21 @@ import (
 
 var yearMillis = math.LegacyNewDec(365 * 24 * time.Hour.Milliseconds())
 
-// AvgRewardsRate returns the average staking rewards for all delegations over the given number of blocks
-// or true if all delegations changed (couldn't calculate inflation).
-func AvgRewardsRate(ctx context.Context, cprov cchain.Provider, delegations []DelegationBalance, waitBlocks uint64) (math.LegacyDec, bool, error) {
+// AvgRewardsRate returns the average staking rewards for all delegations over the given number of blocks.
+func AvgRewardsRate(ctx context.Context, cprov cchain.Provider, delegations []DelegationBalance, waitBlocks uint64) (math.LegacyDec, error) {
 	var delegators []sdk.AccAddress
 	for _, del := range delegations {
 		delegators = append(delegators, del.DelegatorAddress)
 	}
 
 	result, cancel := forkjoin.NewWithInputs(ctx, func(ctx context.Context, addr sdk.AccAddress) ([]math.LegacyDec, error) {
-		infl, changed, err := DelegatorInflationRates(ctx, cprov, addr, waitBlocks)
-		if changed {
-			return nil, nil
-		}
-
-		return infl, err
+		return DelegatorInflationRates(ctx, cprov, addr, waitBlocks)
 	}, delegators, forkjoin.WithWorkers(4)) // Don't overload the API
 	defer cancel()
 
 	inflations, err := result.Flatten()
 	if err != nil {
-		return math.LegacyDec{}, false, errors.Wrap(err, "forkjoin")
+		return math.LegacyDec{}, errors.Wrap(err, "forkjoin")
 	}
 
 	sum, length := math.LegacyZeroDec(), math.LegacyZeroDec()
@@ -50,29 +44,28 @@ func AvgRewardsRate(ctx context.Context, cprov cchain.Provider, delegations []De
 	}
 
 	if length.IsZero() {
-		return math.LegacyDec{}, true, errors.New("zero delegations")
+		return math.LegacyDec{}, errors.New("zero delegations")
 	}
 
-	return sum.Quo(length), false, nil
+	return sum.Quo(length), nil
 }
 
-// DelegatorInflationRates returns the inflation rate per delegation for the given delegator over the given number of blocks,
-// or true if the delegation changed (couldn't calculate inflation).
-func DelegatorInflationRates(ctx context.Context, cprov cchain.Provider, delegator sdk.AccAddress, waitBlocks uint64) ([]math.LegacyDec, bool, error) {
+// DelegatorInflationRates returns the inflation rate per delegation for the given delegator over the given number of blocks.
+func DelegatorInflationRates(ctx context.Context, cprov cchain.Provider, delegator sdk.AccAddress, waitBlocks uint64) ([]math.LegacyDec, error) {
 	rewards0, height0, timestamp0, err := getDelegationRewards(ctx, cprov, delegator)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	if err := waitUntil(ctx, cprov, height0+waitBlocks); err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	rewards1, _, timestamp1, err := getDelegationRewards(ctx, cprov, delegator)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	} else if len(rewards0) != len(rewards1) {
-		return nil, true, errors.New("delegations mismatch") // Staking actions occurred
+		return nil, errors.New("delegations mismatch") // Staking actions occurred
 	}
 
 	milliDelta := math.LegacyNewDec(timestamp1.Sub(timestamp0).Milliseconds())
@@ -83,7 +76,7 @@ func DelegatorInflationRates(ctx context.Context, cprov cchain.Provider, delegat
 		rew1 := rewards1[i]
 
 		if !rew0.Delegation.Balance.Equal(rew1.Delegation.Balance) {
-			return nil, true, errors.New("delegation balance mismatch")
+			return nil, errors.New("delegation balance mismatch")
 		}
 
 		rewardDelta := rew1.Rewards.Sub(rew0.Rewards)
@@ -94,7 +87,7 @@ func DelegatorInflationRates(ctx context.Context, cprov cchain.Provider, delegat
 		resp = append(resp, rewardsAPY)
 	}
 
-	return resp, false, nil
+	return resp, nil
 }
 
 // DelegationBalance represents the total delegation balance of a delegator.
@@ -112,6 +105,9 @@ func AllDelegations(ctx context.Context, cprov cchain.Provider) ([]DelegationBal
 
 	uniq := make(map[string]DelegationBalance)
 	for _, val := range vals {
+		if val.Jailed {
+			continue
+		}
 		request := &stakingtypes.QueryValidatorDelegationsRequest{ValidatorAddr: val.OperatorAddress}
 		for {
 			resp, err := cprov.QueryClients().Staking.ValidatorDelegations(ctx, request)

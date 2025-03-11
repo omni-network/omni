@@ -27,19 +27,19 @@ func MonitorForever(ctx context.Context, cprov cchain.Provider) {
 		case <-ctx.Done():
 			return
 		case <-timer.C:
+			timer.Reset(time.Hour)
+
 			allDelegations, err := queryutil.AllDelegations(ctx, cprov)
 			if err != nil {
-				log.Warn(ctx, "Failed to query all delegations", err)
+				log.Warn(ctx, "Failed to query all delegations (will retry)", err)
 				continue
 			}
 
 			instrStakeSizes(allDelegations)
 
 			if err := instrEffRewards(ctx, cprov, allDelegations); err != nil {
-				log.Warn(ctx, "Effective rewards intrumentation failed", err)
+				log.Warn(ctx, "Effective rewards instrumentation failed (will retry)", err)
 			}
-
-			timer.Reset(time.Hour)
 		}
 	}
 }
@@ -55,13 +55,9 @@ func instrEffRewards(ctx context.Context, cprov cchain.Provider, allDelegations 
 
 	// Collect data during multiple blocks.
 	const blocks = uint64(30)
-	rewards, ok, err := queryutil.AvgRewardsRate(ctx, cprov, delegations, blocks)
+	rewards, err := queryutil.AvgRewardsRate(ctx, cprov, delegations, blocks)
 	if err != nil {
 		return errors.Wrap(err, "avg rewards")
-	}
-
-	if !ok {
-		return nil
 	}
 
 	rewardsF64, err := rewards.Float64()
