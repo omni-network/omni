@@ -43,7 +43,7 @@ type testOrder struct {
 // orderTestCase is a test case for both shouldReject and quote handlers.
 type orderTestCase struct {
 	name        string
-	reason      rejectReason
+	reason      types.RejectReason
 	reject      bool
 	fillReverts bool
 	mock        func(clients MockClients)
@@ -53,7 +53,7 @@ type orderTestCase struct {
 // rejectTestCase is a test case for shouldReject(...)
 type rejectTestCase struct {
 	name        string
-	reason      rejectReason
+	reason      types.RejectReason
 	reject      bool
 	fillReverts bool
 	mock        func(clients MockClients)
@@ -165,7 +165,7 @@ func checkTestCases(t *testing.T, solver common.Address) []checkTestCase {
 			},
 			res: types.CheckResponse{
 				Rejected:     true,
-				RejectReason: rejectUnsupportedSrcChain.String(),
+				RejectReason: types.RejectUnsupportedSrcChain.String(),
 			},
 		},
 		{
@@ -176,7 +176,7 @@ func checkTestCases(t *testing.T, solver common.Address) []checkTestCase {
 			},
 			res: types.CheckResponse{
 				Rejected:     true,
-				RejectReason: rejectSameChain.String(),
+				RejectReason: types.RejectSameChain.String(),
 			},
 		},
 	}
@@ -204,7 +204,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 	return []orderTestCase{
 		{
 			name:   "insufficient native balance",
-			reason: rejectInsufficientInventory,
+			reason: types.RejectInsufficientInventory,
 			reject: true,
 			order: testOrder{
 				// request 1 native OMNI for 1 erc20 OMNI on omega
@@ -224,7 +224,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 		},
 		{
 			name:   "sufficient native balance",
-			reason: rejectNone,
+			reason: types.RejectNone,
 			reject: false,
 			order: testOrder{
 				// request 1 native OMNI for 1 erc20 OMNI on omega
@@ -245,7 +245,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 		},
 		{
 			name:   "insufficient ERC20 balance",
-			reason: rejectInsufficientInventory,
+			reason: types.RejectInsufficientInventory,
 			reject: true,
 			order: testOrder{
 				// request 1 erc20 OMNI for 1 native OMNI on omega
@@ -260,7 +260,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 		},
 		{
 			name:   "sufficient ERC20 balance",
-			reason: rejectNone,
+			reason: types.RejectNone,
 			reject: false,
 			order: testOrder{
 				// request 1 erc20 OMNI for 1 native OMNI on omega
@@ -278,7 +278,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 		{
 			name:        "fill reverts",
 			fillReverts: true,
-			reason:      rejectDestCallReverts,
+			reason:      types.RejectDestCallReverts,
 			reject:      true,
 
 			// rest same as above
@@ -296,7 +296,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 		},
 		{
 			name:   "unsupported expense token",
-			reason: rejectUnsupportedExpense,
+			reason: types.RejectUnsupportedExpense,
 			reject: true,
 			order: testOrder{
 				srcChainID: evmchain.IDOmniOmega,
@@ -307,7 +307,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 		},
 		{
 			name:   "unsupported dest chain",
-			reason: rejectUnsupportedDestChain,
+			reason: types.RejectUnsupportedDestChain,
 			reject: true,
 			order: testOrder{
 				srcChainID: evmchain.IDOmniOmega,
@@ -316,7 +316,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 		},
 		{
 			name:   "invalid deposit (native token mismatch)",
-			reason: rejectInvalidDeposit,
+			reason: types.RejectInvalidDeposit,
 			reject: true,
 			order: testOrder{
 				srcChainID: evmchain.IDHolesky,
@@ -328,7 +328,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 		},
 		{
 			name:   "invalid deposit (token mismatch)",
-			reason: rejectInvalidDeposit,
+			reason: types.RejectInvalidDeposit,
 			reject: true,
 			order: testOrder{
 				srcChainID: evmchain.IDHolesky,
@@ -342,7 +342,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 		},
 		{
 			name:   "invalid deposit (multiple tokens)",
-			reason: rejectInvalidDeposit,
+			reason: types.RejectInvalidDeposit,
 			reject: true,
 			order: testOrder{
 				srcChainID: evmchain.IDHolesky,
@@ -354,7 +354,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 		},
 		{
 			name:   "invalid deposit (mismatch chain class)",
-			reason: rejectInvalidDeposit,
+			reason: types.RejectInvalidDeposit,
 			reject: true,
 			order: testOrder{
 				srcChainID: evmchain.IDHolesky,
@@ -366,7 +366,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 		},
 		{
 			name:   "invalid expense (token and native)",
-			reason: rejectInvalidExpense,
+			reason: types.RejectInvalidExpense,
 			reject: true,
 			order: testOrder{
 				srcChainID: evmchain.IDOmniOmega,
@@ -381,7 +381,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 		},
 		{
 			name:   "insufficient deposit",
-			reason: rejectInsufficientDeposit,
+			reason: types.RejectInsufficientDeposit,
 			reject: true,
 			order: testOrder{
 				srcChainID: evmchain.IDBaseSepolia,
@@ -426,7 +426,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 		},
 		{
 			name:   "expense over max",
-			reason: rejectExpenseOverMax,
+			reason: types.RejectExpenseOverMax,
 			reject: true,
 			order: testOrder{
 				srcChainID: evmchain.IDBaseSepolia,
@@ -438,7 +438,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 		},
 		{
 			name:   "expense under min",
-			reason: rejectExpenseUnderMin,
+			reason: types.RejectExpenseUnderMin,
 			reject: true,
 			order: testOrder{
 				srcChainID: evmchain.IDBaseSepolia,
@@ -505,19 +505,6 @@ func mockFillFee(t *testing.T, client *mock.MockClient, outbox common.Address) {
 	msg := newCallMatcher("Outbox.fillFee", outbox, outboxABI.Methods["fillFee"].ID)
 
 	client.EXPECT().CallContract(ctx, msg, nil).Return(abiEncodeBig(t, fee), nil).AnyTimes()
-}
-
-// mockGetNextID mocks an Inbox.getNextId(...) call.
-func mockGetNextID(t *testing.T, client *mock.MockClient, inbox common.Address) {
-	t.Helper()
-
-	// next id does not matter, just return 1
-	id := big.NewInt(1)
-
-	ctx := gomock.Any()
-	msg := newCallMatcher("Inbox.getNextId", inbox, inboxABI.Methods["getNextId"].ID)
-
-	client.EXPECT().CallContract(ctx, msg, nil).Return(abiEncodeBig(t, id), nil).AnyTimes()
 }
 
 // mockNativeBalance mocks a Client.BalanceAt(...) call.
