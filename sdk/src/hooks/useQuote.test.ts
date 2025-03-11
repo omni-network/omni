@@ -70,12 +70,12 @@ test('parameters: expense', () => {
     },
   )
 
-  expect(result.current).not.toBeUndefined()
+  expect(result.current).toBeDefined()
 
   // TODO token shouldn't be allowed if isNative === true
   rerender({ ...params, expense: { token, isNative: true } })
 
-  expect(result.current).not.toBeUndefined()
+  expect(result.current).toBeDefined()
 })
 
 test('parameters: deposit', () => {
@@ -90,12 +90,12 @@ test('parameters: deposit', () => {
     },
   )
 
-  expect(result.current).not.toBeUndefined()
+  expect(result.current).toBeDefined()
 
   // TODO token shouldn't be allowed if isNative === true
   rerender({ ...params, expense: { token, isNative: true } })
 
-  expect(result.current).not.toBeUndefined()
+  expect(result.current).toBeDefined()
 })
 
 test('parameters: mode', () => {
@@ -113,7 +113,7 @@ test('parameters: mode', () => {
     },
   )
 
-  expect(result.current).not.toBeUndefined()
+  expect(result.current).toBeDefined()
 
   rerender({
     ...params,
@@ -123,7 +123,7 @@ test('parameters: mode', () => {
     expense: { isNative: true, amount: 100n },
   })
 
-  expect(result.current).not.toBeUndefined()
+  expect(result.current).toBeDefined()
 })
 
 test('behaviour: quote does not fire when enabled is false', () => {
