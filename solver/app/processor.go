@@ -51,10 +51,11 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 			target := deps.TargetName(order)
 			timestamp := deps.BlockTimestamp(chainID, elog.BlockNumber)
 			age := ageCache.InstrumentAge(order.ID, target, order.Status.String(), timestamp)
-			statusOffset.WithLabelValues(deps.ChainName(chainID), target, event.Status.String()).Set(float64(orderID.Uint64()))
+			statusOffset.WithLabelValues(deps.ChainName(chainID), target, event.Status.String()).Set(float64(order.Offset))
 
 			ctx := log.WithCtx(ctx,
 				"order_id", order.ID.String(),
+				"order_offset", order.Offset,
 				"status", order.Status,
 				"src_chain", deps.ChainName(order.SourceChainID),
 				"dst_chain", deps.ChainName(order.DestinationChainID),

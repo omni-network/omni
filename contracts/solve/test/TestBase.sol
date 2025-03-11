@@ -334,10 +334,13 @@ contract TestBase is Test {
         uint256 callsGas = 2500;
         for (uint256 i; i < fillData.calls.length; ++i) {
             SolverNet.Call memory call = fillData.calls[i];
+            uint256 paramsLength = call.params.length;
             unchecked {
                 // 5000 gas for the two slots that hold target, selector, and value.
                 // 2500 gas per params slot (1 per function argument) used (minimum of 1 slot).
                 callsGas += 5000 + (FixedPointMathLib.divUp(call.params.length + 32, 32) * 2500);
+                callsGas += (3 * FixedPointMathLib.divUp(paramsLength, 32))
+                    + FixedPointMathLib.mulDivUp(paramsLength, paramsLength, 524_288);
             }
         }
 
@@ -380,5 +383,21 @@ contract TestBase is Test {
         address[] memory inboxes = new address[](1);
         inboxes[0] = address(inbox);
         outbox.setInboxes(chainIds, inboxes);
+    }
+
+    function assertStatus(bytes32 orderId, ISolverNetInbox.Status status) internal {
+        (, ISolverNetInbox.OrderState memory state, uint248 offset) = inbox.getOrder(orderId);
+
+        uint8 expect = uint8(status);
+        uint8 actual = uint8(state.status);
+
+        if (status == ISolverNetInbox.Status.Pending) assertEq(expect, actual, "order should be pending");
+        if (status == ISolverNetInbox.Status.Claimed) assertEq(expect, actual, "order should be claimed");
+        if (status == ISolverNetInbox.Status.Rejected) assertEq(expect, actual, "order should be rejected");
+        if (status == ISolverNetInbox.Status.Closed) assertEq(expect, actual, "order should be closed");
+        if (status == ISolverNetInbox.Status.Filled) assertEq(expect, actual, "order should be filled");
+        if (status == ISolverNetInbox.Status.Invalid) revert("invalid status");
+
+        assertEq(inbox.getLatestOrderOffsetByStatus(status), offset, "latest order offest by status should match");
     }
 }

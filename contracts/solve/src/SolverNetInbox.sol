@@ -65,9 +65,9 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     uint8 internal constant ALL_PAUSED = 3;
 
     /**
-     * @dev Counter for generating unique order IDs. Incremented each time a new order is created.
+     * @dev Incremental order offset for source inbox orders.
      */
-    uint248 internal _lastId;
+    uint248 internal _offset;
 
     /**
      * @notice Pause state.
@@ -110,9 +110,19 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     mapping(bytes32 id => OrderState) internal _orderState;
 
     /**
-     * @notice Map status to latest order ID.
+     * @notice Map order ID to order offset.
      */
-    mapping(Status => bytes32 id) internal _latestOrderIdByStatus;
+    mapping(bytes32 id => uint248) internal _orderOffset;
+
+    /**
+     * @notice Map user to nonce.
+     */
+    mapping(address user => uint256 nonce) internal _userNonce;
+
+    /**
+     * @notice Map status to latest order ID of that status.
+     */
+    mapping(Status => uint248 offset) internal _latestOffsetByStatus;
 
     /**
      * @notice Modifier to ensure contract functions are not paused.
@@ -186,31 +196,55 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     }
 
     /**
-     * @notice Returns the order and its state with the given ID.
+     * @notice Returns the order, its state, and offset with the given ID.
      * @param id ID of the order.
      */
     function getOrder(bytes32 id)
         external
         view
-        returns (ResolvedCrossChainOrder memory resolved, OrderState memory state)
+        returns (ResolvedCrossChainOrder memory resolved, OrderState memory state, uint248 offset)
     {
         SolverNet.Order memory orderData = _getOrder(id);
-        return (_resolve(orderData, id), _orderState[id]);
+        return (_resolve(orderData, id), _orderState[id], _orderOffset[id]);
     }
 
     /**
-     * @notice Returns the next order ID.
+     * @notice Returns the order ID for the given user and nonce.
+     * @param user  Address of the user.
+     * @param nonce Nonce of the order.
      */
-    function getNextId() external view returns (bytes32) {
-        return _nextId();
+    function getOrderId(address user, uint256 nonce) external view returns (bytes32) {
+        return _getOrderId(user, nonce);
     }
 
     /**
-     * @notice Returns the latest order with the given status.
-     * @param status Order status to query.
+     * @notice Returns the next order ID for the given user.
+     * @param user Address of the user.
      */
-    function getLatestOrderIdByStatus(Status status) external view returns (bytes32) {
-        return _latestOrderIdByStatus[status];
+    function getNextOrderId(address user) external view returns (bytes32) {
+        return _getOrderId(user, _userNonce[user]);
+    }
+
+    /**
+     * @notice Returns the nonce for the given user.
+     * @param user Address of the user.
+     */
+    function getUserNonce(address user) external view returns (uint256) {
+        return _userNonce[user];
+    }
+
+    /**
+     * @notice Returns the order offset of the latest order opened at this inbox.
+     */
+    function getLatestOrderOffset() external view returns (uint248) {
+        return _offset;
+    }
+
+    /**
+     * @notice Returns the order offset of the latest order opened at this inbox with the given status.
+     */
+    function getLatestOrderOffsetByStatus(Status status) external view returns (uint248) {
+        return _latestOffsetByStatus[status];
     }
 
     /**
@@ -228,7 +262,8 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      */
     function resolve(OnchainCrossChainOrder calldata order) public view returns (ResolvedCrossChainOrder memory) {
         SolverNet.Order memory orderData = _validate(order);
-        return _resolve(orderData, _nextId());
+        address user = orderData.header.owner;
+        return _resolve(orderData, _getOrderId(user, _userNonce[user]));
     }
 
     /**
@@ -514,11 +549,13 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @param orderData Order data to open.
      */
     function _openOrder(SolverNet.Order memory orderData) internal returns (ResolvedCrossChainOrder memory resolved) {
-        bytes32 id = _incrementId();
+        address user = orderData.header.owner;
+        bytes32 id = _getOrderId(user, _userNonce[user]++);
         resolved = _resolve(orderData, id);
 
         _orderHeader[id] = orderData.header;
         _orderDeposit[id] = orderData.deposit;
+        _orderOffset[id] = _incrementOffset();
         for (uint256 i; i < orderData.calls.length; ++i) {
             _orderCalls[id].push(orderData.calls[i]);
         }
@@ -560,7 +597,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             timestamp: uint32(block.timestamp),
             updatedBy: updatedBy
         });
-        _latestOrderIdByStatus[status] = id;
+        _latestOffsetByStatus[status] = _orderOffset[id];
     }
 
     /**
@@ -579,17 +616,19 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     }
 
     /**
-     * @dev Return the next order ID.
+     * @dev Derive order ID from user and nonce.
+     * @param user  Address of the user.
+     * @param nonce Nonce of the order.
      */
-    function _nextId() internal view returns (bytes32) {
-        return bytes32(uint256(_lastId + 1));
+    function _getOrderId(address user, uint256 nonce) internal view returns (bytes32) {
+        return keccak256(abi.encode(user, nonce, block.chainid));
     }
 
     /**
-     * @dev Increment and return the next order ID.
+     * @dev Increment and return the next order offset.
      */
-    function _incrementId() internal returns (bytes32) {
-        return bytes32(uint256(++_lastId));
+    function _incrementOffset() internal returns (uint248) {
+        return ++_offset;
     }
 
     /**

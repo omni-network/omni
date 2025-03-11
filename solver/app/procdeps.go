@@ -263,7 +263,7 @@ func newOrderGetter(inboxContracts map[uint64]*bindings.SolverNetInbox) func(ctx
 			return Order{}, false, errors.New("[BUG] order ID mismatch")
 		}
 
-		order, err := newOrder(o.Resolved, o.State)
+		order, err := newOrder(o.Resolved, o.State, o.Offset)
 		if err != nil {
 			return Order{}, false, errors.Wrap(err, "new order")
 		}

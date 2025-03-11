@@ -30,7 +30,7 @@ contract SolverNet_Inbox_Claim_Test is TestBase {
 
         // order must be claimed by the claimant
         vm.expectRevert(Ownable.Unauthorized.selector);
-        inbox.claim(bytes32(uint256(1)), address(0));
+        inbox.claim(resolvedOrder.orderId, address(0));
     }
 
     function test_claim_nativeDeposit_succeeds() public {
@@ -57,11 +57,7 @@ contract SolverNet_Inbox_Claim_Test is TestBase {
         emit ISolverNetInbox.Claimed(resolvedOrder.orderId, solver, solver);
         inbox.claim(resolvedOrder.orderId, address(solver));
 
-        assertEq(
-            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Claimed),
-            resolvedOrder.orderId,
-            "order should be claimed"
-        );
+        assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Claimed);
         assertEq(solver.balance, defaultAmount, "deposit should have been claimed by the solver");
     }
 
@@ -89,11 +85,7 @@ contract SolverNet_Inbox_Claim_Test is TestBase {
         emit ISolverNetInbox.Claimed(resolvedOrder.orderId, solver, solver);
         inbox.claim(resolvedOrder.orderId, address(solver));
 
-        assertEq(
-            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Claimed),
-            resolvedOrder.orderId,
-            "order should be claimed"
-        );
+        assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Claimed);
         assertEq(token1.balanceOf(solver), defaultAmount, "deposit should have been claimed by the solver");
     }
 }
