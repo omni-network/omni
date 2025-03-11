@@ -29,11 +29,11 @@ func MonitorForever(ctx context.Context, cprov cchain.Provider, network netconf.
 		case <-ctx.Done():
 			return
 		case <-timer.C:
-			if err := instrSupplies(ctx, cprov, network, ethCls); err != nil {
-				log.Warn(ctx, "Token supply intrumentation failed", err)
-			}
-
 			timer.Reset(time.Hour)
+
+			if err := instrSupplies(ctx, cprov, network, ethCls); err != nil {
+				log.Warn(ctx, "Token supply instrumentation failed", err)
+			}
 		}
 	}
 }
