@@ -10,7 +10,7 @@ import { IOmniPortal } from "src/interfaces/IOmniPortal.sol";
 import { ISolverNetInbox } from "solve/src/interfaces/ISolverNetInbox.sol";
 
 import { GenesisStake } from "src/token/GenesisStake.sol";
-import { StagingMerkleDistributorWithDeadline } from "src/token/distributor/StagingMerkleDistributorWithDeadline.sol";
+import { MerkleDistributorWithDeadline } from "src/token/MerkleDistributorWithDeadline.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract GenesisStakeScript is Script {
@@ -21,8 +21,10 @@ contract GenesisStakeScript is Script {
     IOmniPortal internal portal = IOmniPortal(0x50FAf0Dce72Fa237249535Ea2F5eccebbC141Ed0);
     ISolverNetInbox internal inbox = ISolverNetInbox(0x4E3913cE81B3dd27cd92675e2121e36FC603BEB8);
 
+    address internal validator = 0xD6CD71dF91a6886f69761826A9C4D123178A8d9D;
+
     GenesisStake internal genesisStake;
-    StagingMerkleDistributorWithDeadline internal merkleDistributor;
+    MerkleDistributorWithDeadline internal merkleDistributor;
 
     uint256 internal endTime = block.timestamp + 30 days;
     uint256 internal depositAmount = 100 ether;
@@ -75,20 +77,18 @@ contract GenesisStakeScript is Script {
                 )
             )
         );
-        merkleDistributor = StagingMerkleDistributorWithDeadline(
+        merkleDistributor = MerkleDistributorWithDeadline(
             create3.deploy(
                 keccak256(abi.encode("merkleDistributor", block.timestamp)),
                 abi.encodePacked(
-                    type(StagingMerkleDistributorWithDeadline).creationCode,
+                    type(MerkleDistributorWithDeadline).creationCode,
                     abi.encode(address(omni), root, endTime, address(portal), genesisStakeAddr, address(inbox))
                 )
             )
         );
 
         require(address(genesisStake) == genesisStakeAddr, "GenesisStake addr mismatch");
-        require(
-            address(merkleDistributor) == merkleDistributorAddr, "StagingMerkleDistributorWithDeadline addr mismatch"
-        );
+        require(address(merkleDistributor) == merkleDistributorAddr, "MerkleDistributorWithDeadline addr mismatch");
     }
 
     function _approveStakeAndFund() internal {
@@ -98,6 +98,6 @@ contract GenesisStakeScript is Script {
     }
 
     function _migrateToOmni() internal {
-        merkleDistributor.migrateToOmni(0, rewardAmount, proofs[0]);
+        merkleDistributor.migrateToOmni(validator, 0, rewardAmount, proofs[0]);
     }
 }

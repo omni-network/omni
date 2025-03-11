@@ -11,9 +11,8 @@ import { MockSolverNetInbox } from "solve/test/utils/MockSolverNetInbox.sol";
 import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 import { GenesisStake } from "src/token/GenesisStake.sol";
-import { MerkleDistributor } from "src/token/distributor/MerkleDistributor.sol";
-import { MerkleDistributorWithDeadline } from "src/token/distributor/MerkleDistributorWithDeadline.sol";
-import { StagingMerkleDistributorWithDeadline } from "src/token/distributor/StagingMerkleDistributorWithDeadline.sol";
+import { MerkleDistributor } from "src/token/MerkleDistributor.sol";
+import { MerkleDistributorWithDeadline } from "src/token/MerkleDistributorWithDeadline.sol";
 
 import { IERC7683, IOriginSettler } from "solve/src/erc7683/IOriginSettler.sol";
 import { IStaking } from "src/interfaces/IStaking.sol";
@@ -28,10 +27,11 @@ contract MerkleDistributorWithDeadline_Test is Test {
     MockSolverNetInbox inbox;
 
     GenesisStake genesisStake;
-    StagingMerkleDistributorWithDeadline merkleDistributor;
+    MerkleDistributorWithDeadline merkleDistributor;
 
     address proxyAdmin = makeAddr("proxyAdmin");
     address outbox = makeAddr("outbox");
+    address validator = makeAddr("validator");
 
     uint256 endTime = block.timestamp + 30 days;
     uint256 initialSupply = 1_000_000 ether;
@@ -42,8 +42,6 @@ contract MerkleDistributorWithDeadline_Test is Test {
     );
 
     address internal constant STAKING = 0xCCcCcC0000000000000000000000000000000001;
-    address internal constant VALIDATOR_1 = 0xD6CD71dF91a6886f69761826A9C4D123178A8d9D;
-    address internal constant VALIDATOR_2 = 0x9C7bf21f72CA34af89F620D27E0F18C4366b88c6;
 
     uint256[] pks = new uint256[](addrCount);
     address[] stakers = new address[](addrCount);
@@ -113,11 +111,11 @@ contract MerkleDistributorWithDeadline_Test is Test {
                 )
             )
         );
-        merkleDistributor = StagingMerkleDistributorWithDeadline(
+        merkleDistributor = MerkleDistributorWithDeadline(
             create3.deploy(
                 keccak256("merkleDistributor"),
                 abi.encodePacked(
-                    type(StagingMerkleDistributorWithDeadline).creationCode,
+                    type(MerkleDistributorWithDeadline).creationCode,
                     abi.encode(address(omni), root, endTime, address(omniPortal), genesisStakeAddr, address(inbox))
                 )
             )
@@ -125,9 +123,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
 
         // Verify precomputed addresses
         require(address(genesisStake) == genesisStakeAddr, "GenesisStake address mismatch");
-        require(
-            address(merkleDistributor) == merkleDistributorAddr, "StagingMerkleDistributorWithDeadline address mismatch"
-        );
+        require(address(merkleDistributor) == merkleDistributorAddr, "MerkleDistributorWithDeadline address mismatch");
     }
 
     // Fund stakers and the distributor contract
@@ -149,15 +145,8 @@ contract MerkleDistributorWithDeadline_Test is Test {
         }
     }
 
-    function getValidator(address addr) internal view returns (address) {
-        uint256 selection = uint160(addr) % 2;
-
-        if (selection == 1) return VALIDATOR_1;
-        return VALIDATOR_2;
-    }
-
     // Generate an ERC7683 order to check merkle distributor's call to inbox against
-    function generateERC7683Order(address addr, address validator, uint256 amount)
+    function generateERC7683Order(address addr, uint256 amount)
         public
         view
         returns (IERC7683.OnchainCrossChainOrder memory)
@@ -203,25 +192,30 @@ contract MerkleDistributorWithDeadline_Test is Test {
         vm.warp(endTime + 1);
         vm.prank(stakers[0]);
         vm.expectRevert(MerkleDistributorWithDeadline.ClaimWindowFinished.selector);
-        merkleDistributor.migrateToOmni(0, amounts[0], proofs[0]);
+        merkleDistributor.migrateToOmni(address(0), 0, amounts[0], proofs[0]);
+
+        // Cannot migrate if validator is zero address
+        vm.warp(endTime - 1);
+        vm.prank(stakers[0]);
+        vm.expectRevert(MerkleDistributorWithDeadline.ZeroAddress.selector);
+        merkleDistributor.migrateToOmni(address(0), 0, amounts[0], proofs[0]);
 
         // Cannot migrate if proof is invalid
         bytes32 proof = proofs[0][0];
         proofs[0][0] = bytes32(uint256(proof) + 1);
-        vm.warp(endTime - 1);
         vm.prank(stakers[0]);
         vm.expectRevert(MerkleDistributor.InvalidProof.selector);
-        merkleDistributor.migrateToOmni(0, amounts[0], proofs[0]);
+        merkleDistributor.migrateToOmni(validator, 0, amounts[0], proofs[0]);
         proofs[0][0] = proof;
 
         // Fully claim all stake and rewards
         vm.prank(stakers[0]);
-        merkleDistributor.migrateToOmni(0, amounts[0], proofs[0]);
+        merkleDistributor.migrateToOmni(validator, 0, amounts[0], proofs[0]);
 
         // Cannot migrate if user has already claimed
         vm.prank(stakers[0]);
         vm.expectRevert(MerkleDistributorWithDeadline.InsufficientAmount.selector);
-        merkleDistributor.migrateToOmni(0, amounts[0], proofs[0]);
+        merkleDistributor.migrateToOmni(validator, 0, amounts[0], proofs[0]);
     }
 
     // Fully test migrateToOmni for all members of the merkle tree
@@ -231,15 +225,14 @@ contract MerkleDistributorWithDeadline_Test is Test {
 
             // Get IERC7683 order and resolved orders
             vm.startPrank(stakers[i]);
-            IERC7683.OnchainCrossChainOrder memory order =
-                generateERC7683Order(stakers[i], getValidator(stakers[i]), amounts[i]);
+            IERC7683.OnchainCrossChainOrder memory order = generateERC7683Order(stakers[i], amounts[i]);
             IERC7683.ResolvedCrossChainOrder memory resolved = inbox.resolve(order);
 
             // Confirm merkleDistributor is calling the inbox with the order and that the resolved order is emitted
             vm.expectCall(address(inbox), abi.encodeCall(MockSolverNetInbox.open, (order)));
             vm.expectEmit(true, true, true, true);
             emit IERC7683.Open(resolved.orderId, resolved);
-            merkleDistributor.migrateToOmni(i, amounts[i], proofs[i]);
+            merkleDistributor.migrateToOmni(validator, i, amounts[i], proofs[i]);
             vm.stopPrank();
 
             // Confirm the inbox balance has increased by the user's staked balance and claim reward
@@ -250,21 +243,23 @@ contract MerkleDistributorWithDeadline_Test is Test {
 
     function test_migrateUserToOmni_reverts() public {
         for (uint256 i; i < addrCount; ++i) {
-            bytes32 digest = merkleDistributor.getMigrationDigest(stakers[i], endTime - 1);
+            bytes32 digest = merkleDistributor.getMigrationDigest(stakers[i], validator, endTime - 1);
             (uint8 v, bytes32 r, bytes32 s) = vm.sign(pks[i], digest);
             vm.warp(endTime);
 
             // Cannot migrate if signature is invalid
             vm.expectRevert(MerkleDistributorWithDeadline.Expired.selector);
-            merkleDistributor.migrateUserToOmni(stakers[i], 0, amounts[i], proofs[i], v, r, s, endTime - 1);
+            merkleDistributor.migrateUserToOmni(stakers[i], validator, 0, amounts[i], proofs[i], v, r, s, endTime - 1);
 
             vm.warp(1);
-            digest = merkleDistributor.getMigrationDigest(stakers[i], block.timestamp + 1);
+            digest = merkleDistributor.getMigrationDigest(stakers[i], validator, block.timestamp + 1);
             (v, r,) = vm.sign(pks[i], digest);
 
             // Cannot migrate if signature is invalid
             vm.expectRevert(MerkleDistributorWithDeadline.InvalidSignature.selector);
-            merkleDistributor.migrateUserToOmni(stakers[i], 0, amounts[i], proofs[i], v, r, s, block.timestamp + 1);
+            merkleDistributor.migrateUserToOmni(
+                stakers[i], validator, 0, amounts[i], proofs[i], v, r, s, block.timestamp + 1
+            );
         }
     }
 
@@ -274,20 +269,21 @@ contract MerkleDistributorWithDeadline_Test is Test {
 
             // Get IERC7683 order and resolved orders
             vm.startPrank(stakers[i]);
-            IERC7683.OnchainCrossChainOrder memory order =
-                generateERC7683Order(stakers[i], getValidator(stakers[i]), amounts[i]);
+            IERC7683.OnchainCrossChainOrder memory order = generateERC7683Order(stakers[i], amounts[i]);
             IERC7683.ResolvedCrossChainOrder memory resolved = inbox.resolve(order);
             vm.stopPrank();
 
             // Get user signature for migration
-            bytes32 digest = merkleDistributor.getMigrationDigest(stakers[i], block.timestamp + 1);
+            bytes32 digest = merkleDistributor.getMigrationDigest(stakers[i], validator, block.timestamp + 1);
             (uint8 v, bytes32 r, bytes32 s) = vm.sign(pks[i], digest);
 
             // Confirm merkleDistributor is calling the inbox with the order and that the resolved order is emitted
             vm.expectCall(address(inbox), abi.encodeCall(MockSolverNetInbox.open, (order)));
             vm.expectEmit(true, true, true, true);
             emit IERC7683.Open(resolved.orderId, resolved);
-            merkleDistributor.migrateUserToOmni(stakers[i], i, amounts[i], proofs[i], v, r, s, block.timestamp + 1);
+            merkleDistributor.migrateUserToOmni(
+                stakers[i], validator, i, amounts[i], proofs[i], v, r, s, block.timestamp + 1
+            );
 
             // Confirm the inbox balance has increased by the user's staked balance and claim reward
             assertEq(omni.balanceOf(address(inbox)), inboxBalance + amounts[i] * 2);
