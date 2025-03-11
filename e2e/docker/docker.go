@@ -62,6 +62,10 @@ func (*Provider) Clean(ctx context.Context) error {
 	return nil
 }
 
+func (p *Provider) AllLogs(ctx context.Context) ([]byte, error) {
+	return ExecComposeOutput(ctx, p.Testnet.Dir, "logs")
+}
+
 // NewProvider returns a new Provider.
 func NewProvider(testnet types.Testnet, infd types.InfrastructureData, imgTag string) *Provider {
 	return &Provider{
@@ -404,6 +408,18 @@ func ExecComposeVerbose(ctx context.Context, dir string, args ...string) error {
 	}
 
 	return nil
+}
+
+// ExecComposeOutput runs a Docker Compose command for a testnet and returns its output.
+func ExecComposeOutput(ctx context.Context, dir string, args ...string) ([]byte, error) {
+	out, err := exec.CommandOutput(ctx, append(
+		[]string{"docker", "compose", "-f", filepath.Join(dir, "docker-compose.yaml")},
+		args...)...)
+	if err != nil {
+		return nil, errors.Wrap(err, "exec docker-compose output")
+	}
+
+	return out, nil
 }
 
 // Exec runs a Docker command.

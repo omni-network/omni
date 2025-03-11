@@ -102,6 +102,10 @@ type InfraProvider interface {
 	// I.e., docker-compose up/down.
 	// Note that all services on matching VMs are restarted.
 	Restart(ctx context.Context, cfg ServiceConfig) error
+
+	// AllLogs returns all logs from all services.
+	// This is only used for testing of docker provider
+	AllLogs(ctx context.Context) ([]byte, error)
 }
 
 // InfrastructureData wraps e2e.InfrastructureData with additional omni-specific fields.
