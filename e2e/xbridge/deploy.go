@@ -15,6 +15,11 @@ import (
 
 // Deploy idempotently deploys all xtokens, bridges and lockboxes for a given network.
 func Deploy(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
+	// only deploy on devnet for now
+	if network.ID != netconf.Devnet {
+		return nil
+	}
+
 	for _, tkn := range Tokens() {
 		bridge, err := BridgeAddr(ctx, network.ID, tkn)
 		if err != nil {
