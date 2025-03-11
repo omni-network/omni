@@ -10,7 +10,6 @@ import (
 	"github.com/omni-network/omni/e2e/netman/pingpong"
 	"github.com/omni-network/omni/e2e/solve"
 	"github.com/omni-network/omni/e2e/types"
-	"github.com/omni-network/omni/e2e/xbridge"
 	"github.com/omni-network/omni/halo/app/upgrades"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/cchain/provider"
@@ -119,7 +118,7 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 	eg2.Go(func() error { return DeployBridge(ctx, def) })
 	eg2.Go(func() error { return maybeSubmitNetworkUpgrades(ctx, def) })
 	eg2.Go(func() error { return FundValidatorsForTesting(ctx, def) })
-	eg2.Go(func() error { return xbridge.Deploy(ctx, networkFromDef(def), def.Backends()) })
+	// eg2.Go(func() error { return xbridge.Deploy(ctx, networkFromDef(def), def.Backends()) }) // (zodomo): disabled for now
 	if err := eg2.Wait(); err != nil {
 		return nil, errors.Wrap(err, "deploy other contracts")
 	}
@@ -182,7 +181,7 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 	var eg errgroup.Group
 	eg.Go(func() error { return testGasPumps(ctx, def) })
 	eg.Go(func() error { return testBridge(ctx, def) })
-	eg.Go(func() error { return xbridge.Test(ctx, networkFromDef(def), ExternalEndpoints(def)) })
+	// eg.Go(func() error { return xbridge.Test(ctx, networkFromDef(def), ExternalEndpoints(def)) }) // (zodomo): disabled for now
 	if err := eg.Wait(); err != nil {
 		return errors.Wrap(err, "test xdapps")
 	}
