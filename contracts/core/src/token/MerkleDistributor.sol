@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.24;
 
-import { IMerkleDistributor } from "../../interfaces/IMerkleDistributor.sol";
+import { IMerkleDistributor } from "../interfaces/IMerkleDistributor.sol";
 import { LibBitmap } from "solady/src/utils/LibBitmap.sol";
 import { MerkleProofLib } from "solady/src/utils/MerkleProofLib.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
