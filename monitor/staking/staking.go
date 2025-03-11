@@ -79,7 +79,7 @@ func instrStakeSizes(allDelegations []queryutil.DelegationBalance) {
 	delegatorsTotal := float64(len(allDelegations))
 	delegatorsCount.Set(delegatorsTotal)
 
-	var totalStake *big.Int
+	totalStake := new(big.Int)
 	var stakes []*big.Int
 	for _, del := range allDelegations {
 		stake := del.Balance
