@@ -16,7 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/params"
 
-	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
 )
@@ -46,18 +45,17 @@ func instrSupplies(ctx context.Context, cprov cchain.Provider, network netconf.N
 	if err != nil {
 		return errors.Wrap(err, "total supply query")
 	}
-	cosmosSupplyWei := math.NewInt(0)
-	for _, coin := range response.Supply {
-		if coin.Denom == sdk.DefaultBondDenom {
-			cosmosSupplyWei = cosmosSupplyWei.Add(coin.Amount)
-		}
+
+	cosmosSupplyWei, err := stakeAmount(response.Supply)
+	if err != nil {
+		return errors.Wrap(err, "stake amount")
 	}
 
-	cChainSupply.Set(toEtherF64(cosmosSupplyWei.BigInt()))
+	cChainSupply.Set(toEtherF64(cosmosSupplyWei))
 
 	addrs, err := contracts.GetAddresses(ctx, network.ID)
 	if err != nil {
-		panic(err)
+		return errors.Wrap(err, "get addresses")
 	}
 
 	ethChainID := netconf.EthereumChainID(network.ID)
@@ -76,7 +74,7 @@ func instrSupplies(ctx context.Context, cprov cchain.Provider, network netconf.N
 	if err != nil {
 		return errors.Wrap(err, "l1 token supply")
 	}
-	eChainSupply.Set(toEtherF64(l1TokenSupplyWei))
+	l1Erc20Supply.Set(toEtherF64(l1TokenSupplyWei))
 
 	l1BridgeBalanceWei, err := l1Token.BalanceOf(callOpts, addrs.L1Bridge)
 	if err != nil {
@@ -90,4 +88,16 @@ func instrSupplies(ctx context.Context, cprov cchain.Provider, network netconf.N
 func toEtherF64(wei *big.Int) float64 {
 	f64, _ := new(big.Int).Div(wei, big.NewInt(params.Ether)).Float64()
 	return f64
+}
+
+func stakeAmount(coins sdk.Coins) (*big.Int, error) {
+	if len(coins) != 1 {
+		return nil, errors.New("unexpected number of coins")
+	}
+	ok, coin := coins.Find(sdk.DefaultBondDenom)
+	if !ok {
+		return nil, errors.New("missing default bond denom")
+	}
+
+	return coin.Amount.BigInt(), nil
 }

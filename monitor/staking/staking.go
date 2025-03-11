@@ -50,7 +50,7 @@ func instrEffRewards(ctx context.Context, cprov cchain.Provider, allDelegations 
 	// Since we have no validator commissions, we can use just a couple of random delegations to estimate rewards.
 	// Once we have validator commissions, this code needs to be removed.
 	if len(allDelegations) > maxDelegationsForRewardsEstimation {
-		delegations = allDelegations[:4]
+		delegations = allDelegations[:maxDelegationsForRewardsEstimation]
 	}
 
 	// Collect data during multiple blocks.
@@ -79,15 +79,15 @@ func instrStakeSizes(allDelegations []queryutil.DelegationBalance) {
 	delegatorsTotal := float64(len(allDelegations))
 	delegatorsCount.Set(delegatorsTotal)
 
-	var totalStake big.Int
+	var totalStake *big.Int
 	var stakes []*big.Int
 	for _, del := range allDelegations {
 		stake := del.Balance
-		totalStake = *new(big.Int).Add(&totalStake, stake)
+		totalStake = new(big.Int).Add(totalStake, stake)
 		stakes = append(stakes, stake)
 	}
 
-	avgStakeWei := new(big.Int).Quo(&totalStake, big.NewInt(int64(len(allDelegations))))
+	avgStakeWei := new(big.Int).Quo(totalStake, big.NewInt(int64(len(allDelegations))))
 	stakeAvg.Set(toEtherF64(avgStakeWei))
 
 	l := len(stakes)
