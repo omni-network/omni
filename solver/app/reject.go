@@ -45,6 +45,7 @@ func newRejection(reason types.RejectReason, err error) *RejectionError {
 // should be made before calling ShouldReject.
 func newShouldRejector(
 	backends ethbackend.Backends,
+	isAllowedCall callAllowFunc,
 	solverAddr, outboxAddr common.Address,
 ) func(ctx context.Context, order Order) (types.RejectReason, bool, error) {
 	return func(ctx context.Context, order Order) (types.RejectReason, bool, error) {
@@ -53,6 +54,10 @@ func newShouldRejector(
 			backend, err := backends.Backend(order.DestinationChainID)
 			if err != nil {
 				return newRejection(types.RejectUnsupportedDestChain, err)
+			}
+
+			if err := checkOrderCalls(order, isAllowedCall); err != nil {
+				return err
 			}
 
 			deposits, err := parseMinReceived(order)
@@ -281,6 +286,36 @@ func checkLiquidity(ctx context.Context, expenses []TokenAmt, backend *ethbacken
 		// spend out whole balance. we'll need to keep some for gas
 		if bal.Cmp(expense.Amount) < 0 {
 			return newRejection(types.RejectInsufficientInventory, errors.New("insufficient balance", "token", expense.Token.Symbol))
+		}
+	}
+
+	return nil
+}
+
+// checkOrderCalls checks if all calls in an order are allowed.
+func checkOrderCalls(order Order, isAllowed callAllowFunc) error {
+	fill, err := order.ParsedFillOriginData()
+	if err != nil {
+		return errors.Wrap(err, "parse fill origin data")
+	}
+
+	var calls []types.Call
+	for _, call := range fill.Calls {
+		calls = append(calls, types.Call{
+			Target: call.Target,
+			Value:  call.Value,
+			Data:   append(call.Selector[:], call.Params...),
+		})
+	}
+
+	return checkCalls(order.DestinationChainID, calls, isAllowed)
+}
+
+// checkCalls checks if all calls to destChainID are allowed.
+func checkCalls(destChainID uint64, calls []types.Call, isAllowed callAllowFunc) error {
+	for _, call := range calls {
+		if !isAllowed(destChainID, call.Target, call.Data) {
+			return newRejection(types.RejectCallNotAllowed, errors.New("call not allowed", "target", call.Target.Hex(), "data", hexutil.Encode(call.Data)))
 		}
 	}
 

@@ -133,9 +133,11 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "start event streams")
 	}
 
+	callAllower := newCallAllower(network.ID, addrs.SolverNetMiddleman)
+
 	log.Info(ctx, "Serving API", "address", cfg.APIAddr)
 	apiChan := serveAPI(cfg.APIAddr,
-		newCheckHandler(newChecker(backends, solverAddr, addrs.SolverNetOutbox)),
+		newCheckHandler(newChecker(backends, callAllower, solverAddr, addrs.SolverNetOutbox)),
 		newContractsHandler(addrs),
 		newQuoteHandler(quoter),
 	)
@@ -323,6 +325,8 @@ func startEventStreams(
 		return f(height)
 	}
 
+	callAllower := newCallAllower(network.ID, addrs.SolverNetMiddleman)
+
 	for _, chainID := range inboxChains {
 		// Ensure chain version processors don't process same height concurrently.
 		callbackWrapper := newHeightMutexer()
@@ -334,7 +338,7 @@ func startEventStreams(
 			deps := procDeps{
 				ParseID:        newIDParser(inboxContracts),
 				GetOrder:       newOrderGetter(inboxContracts),
-				ShouldReject:   newShouldRejector(backends, solverAddr, addrs.SolverNetOutbox),
+				ShouldReject:   newShouldRejector(backends, callAllower, solverAddr, addrs.SolverNetOutbox),
 				DidFill:        newDidFiller(outboxContracts),
 				Reject:         newRejector(inboxContracts, backends, solverAddr),
 				Fill:           newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, pricer),

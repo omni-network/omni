@@ -17,4 +17,5 @@ const (
 	RejectSameChain             RejectReason = 10
 	RejectExpenseOverMax        RejectReason = 11
 	RejectExpenseUnderMin       RejectReason = 12
+	RejectCallNotAllowed        RejectReason = 13
 )
