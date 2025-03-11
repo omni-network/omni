@@ -23,14 +23,14 @@ var (
 	stakeAvg = promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: "monitor",
 		Subsystem: "staking",
-		Name:      "stake_avg_gwei",
-		Help:      "Average stake size in gwei",
+		Name:      "stake_avg_ether",
+		Help:      "Average stake size in ether",
 	})
 
 	stakeMedian = promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: "monitor",
 		Subsystem: "staking",
-		Name:      "stake_median_gwei",
-		Help:      "Median stake size in gwei",
+		Name:      "stake_median_ether",
+		Help:      "Median stake size in ether",
 	})
 )

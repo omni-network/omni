@@ -2,6 +2,7 @@ package queryutil
 
 import (
 	"context"
+	"math/big"
 	"time"
 
 	"github.com/omni-network/omni/lib/cchain"
@@ -10,6 +11,7 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
@@ -98,7 +100,7 @@ func DelegatorInflationRates(ctx context.Context, cprov cchain.Provider, delegat
 // DelegationBalance represents the total delegation balance of a delegator.
 type DelegationBalance struct {
 	DelegatorAddress sdk.AccAddress
-	Balance          sdk.Coin
+	Balance          *big.Int
 }
 
 // AllDelegations returns delegation balances of each unique delegator.
@@ -110,28 +112,36 @@ func AllDelegations(ctx context.Context, cprov cchain.Provider) ([]DelegationBal
 
 	uniq := make(map[string]DelegationBalance)
 	for _, val := range vals {
-		resp, err := cprov.QueryClients().Staking.ValidatorDelegations(ctx, &stakingtypes.QueryValidatorDelegationsRequest{
-			ValidatorAddr: val.OperatorAddress,
-		})
-		if err != nil {
-			return nil, errors.Wrap(err, "query validator delegations")
-		}
-
-		for _, del := range resp.DelegationResponses {
-			addr, err := sdk.AccAddressFromBech32(del.Delegation.DelegatorAddress)
+		request := &stakingtypes.QueryValidatorDelegationsRequest{ValidatorAddr: val.OperatorAddress}
+		for {
+			resp, err := cprov.QueryClients().Staking.ValidatorDelegations(ctx, request)
 			if err != nil {
-				return nil, errors.Wrap(err, "parse delegator address")
+				return nil, errors.Wrap(err, "query validator delegations")
 			}
-			if delegation, ok := uniq[del.Delegation.DelegatorAddress]; ok {
-				delegation.Balance = delegation.Balance.Add(del.Balance)
-				uniq[del.Delegation.DelegatorAddress] = delegation
-			} else {
-				uniq[del.Delegation.DelegatorAddress] =
-					DelegationBalance{
-						DelegatorAddress: addr,
-						Balance:          del.Balance,
-					}
+
+			for _, del := range resp.DelegationResponses {
+				if del.Balance.Denom != sdk.DefaultBondDenom {
+					continue
+				}
+				addr, err := sdk.AccAddressFromBech32(del.Delegation.DelegatorAddress)
+				if err != nil {
+					return nil, errors.Wrap(err, "parse delegator address")
+				}
+				if delegation, ok := uniq[del.Delegation.DelegatorAddress]; ok {
+					delegation.Balance = new(big.Int).Add(delegation.Balance, del.Balance.Amount.BigInt())
+					uniq[del.Delegation.DelegatorAddress] = delegation
+				} else {
+					uniq[del.Delegation.DelegatorAddress] =
+						DelegationBalance{
+							DelegatorAddress: addr,
+							Balance:          del.Balance.Amount.BigInt(),
+						}
+				}
 			}
+			if len(resp.Pagination.NextKey) == 0 {
+				break
+			}
+			request.Pagination = &query.PageRequest{Key: resp.Pagination.NextKey}
 		}
 	}
 
