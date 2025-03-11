@@ -34,6 +34,7 @@ const (
 	NameSolverNetInbox     = "solvernet-inbox"
 	NameSolverNetOutbox    = "solvernet-outbox"
 	NameSolverNetMiddleman = "solvernet-middleman"
+	NameSovlerNetExecutor  = "solvernet-executor"
 	NameFeeOracleV2        = "fee-oracle-v2"
 )
 
@@ -115,6 +116,7 @@ type Addresses struct {
 	SolverNetInbox     common.Address
 	SolverNetOutbox    common.Address
 	SolverNetMiddleman common.Address
+	SolverNetExecutor  common.Address
 	FeeOracleV2        common.Address
 }
 
@@ -128,6 +130,7 @@ type Salts struct {
 	SolverNetInbox     string
 	SolverNetOutbox    string
 	SolverNetMiddleman string
+	SolverNetExecutor  string
 	FeeOracleV2        string
 }
 
@@ -163,17 +166,7 @@ func GetAddresses(ctx context.Context, network netconf.ID) (Addresses, error) {
 		return addrs, nil
 	}
 
-	s := func(name string) string {
-		if !isVersioned(name) {
-			return salt(network, name)
-		}
-
-		if isSolvernet(name) {
-			return salt(network, versioned(name, v.SolverNet))
-		}
-
-		return salt(network, versioned(name, v.Core))
-	}
+	s := func(name string) string { return salt(network, name, v) }
 
 	addrs = Addresses{
 		Create3Factory:     Create3Factory(network),
@@ -186,6 +179,7 @@ func GetAddresses(ctx context.Context, network netconf.ID) (Addresses, error) {
 		SolverNetInbox:     addr(network, s(NameSolverNetInbox)),
 		SolverNetOutbox:    addr(network, s(NameSolverNetOutbox)),
 		SolverNetMiddleman: addr(network, s(NameSolverNetMiddleman)),
+		SolverNetExecutor:  addr(network, s(NameSovlerNetExecutor)),
 		FeeOracleV2:        addr(network, s(NameFeeOracleV2)),
 	}
 
@@ -209,17 +203,7 @@ func GetSalts(ctx context.Context, network netconf.ID) (Salts, error) {
 		return Salts{}, err
 	}
 
-	s := func(name string) string {
-		if !isVersioned(name) {
-			return salt(network, name)
-		}
-
-		if isSolvernet(name) {
-			return salt(network, versioned(name, v.SolverNet))
-		}
-
-		return salt(network, versioned(name, v.Core))
-	}
+	s := func(name string) string { return salt(network, name, v) }
 
 	salts = Salts{
 		AVS:                s(NameAVS),
@@ -231,6 +215,7 @@ func GetSalts(ctx context.Context, network netconf.ID) (Salts, error) {
 		SolverNetInbox:     s(NameSolverNetInbox),
 		SolverNetOutbox:    s(NameSolverNetOutbox),
 		SolverNetMiddleman: s(NameSolverNetMiddleman),
+		SolverNetExecutor:  s(NameSovlerNetExecutor),
 		FeeOracleV2:        s(NameFeeOracleV2),
 	}
 
@@ -247,7 +232,7 @@ func Avs(network netconf.ID) common.Address {
 		return common.HexToAddress("0xa7b2e7830C51728832D33421670DbBE30299fD92")
 	}
 
-	return addr(network, salt(network, NameAVS))
+	return addr(network, prefixNetwork(network, NameAVS))
 }
 
 // TokenAddr returns the Omni ERC20 token contract address for the given network.
@@ -258,7 +243,7 @@ func TokenAddr(network netconf.ID) common.Address {
 		return common.HexToAddress("0xD036C60f46FF51dd7Fbf6a819b5B171c8A076b07")
 	}
 
-	return addr(network, salt(network, NameToken))
+	return addr(network, prefixNetwork(network, NameToken))
 }
 
 // Create3Factory returns the Create3 factory address for the given network.
@@ -271,6 +256,19 @@ func Create3Address(network netconf.ID, salt string) common.Address {
 	return addr(network, salt)
 }
 
+// salt returns the salt string for a contract on a network / version.
+func salt(network netconf.ID, name string, versions Versions) string {
+	if !isVersioned(name) {
+		return prefixNetwork(network, name)
+	}
+
+	if isSolvernet(name) {
+		return prefixNetwork(network, suffixVersion(name, versions.SolverNet))
+	}
+
+	return prefixNetwork(network, suffixVersion(name, versions.Core))
+}
+
 func isVersioned(contract string) bool {
 	// AVS not versioned, as requiring re-registration per each version is too cumbersome.
 	// Token salt is static, as Omni ERC20 contract does not change.
@@ -280,14 +278,17 @@ func isVersioned(contract string) bool {
 }
 
 func isSolvernet(contract string) bool {
-	return contract == NameSolverNetInbox || contract == NameSolverNetOutbox || contract == NameSolverNetMiddleman
+	return (contract == NameSolverNetInbox ||
+		contract == NameSolverNetOutbox ||
+		contract == NameSolverNetMiddleman ||
+		contract == NameSovlerNetExecutor)
 }
 
-func versioned(contract string, version string) string {
+func suffixVersion(contract string, version string) string {
 	return contract + "-" + version
 }
 
-func salt(network netconf.ID, suffix string) string {
+func prefixNetwork(network netconf.ID, suffix string) string {
 	return string(network) + "-" + suffix
 }
 

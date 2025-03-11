@@ -64,6 +64,7 @@ func testContractsAPI(ctx context.Context, t *testing.T) {
 	addrEqual(addrs.SolverNetInbox, "inbox")
 	addrEqual(addrs.SolverNetOutbox, "outbox")
 	addrEqual(addrs.SolverNetMiddleman, "middleman")
+	addrEqual(addrs.SolverNetExecutor, "executor")
 }
 
 func testSolverApprovals(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {

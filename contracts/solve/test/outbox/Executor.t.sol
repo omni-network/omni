@@ -9,13 +9,11 @@ import { ApprovalReverterERC20 } from "test/utils/ApprovalReverterERC20.sol";
 contract SolverNet_Outbox_Executor_Test is TestBase {
     using AddrUtils for address;
 
-    SolverNetExecutor internal executor;
     Reverter internal reverter;
     ApprovalReverterERC20 internal approvalReverter;
 
     function setUp() public override {
         super.setUp();
-        executor = SolverNetExecutor(payable(outbox.executor()));
         reverter = new Reverter();
         approvalReverter = new ApprovalReverterERC20();
         approvalReverter.mint(address(executor), 1 ether);
