@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/hex"
+	"strings"
 	"sync"
 
 	"github.com/omni-network/omni/e2e/netman"
@@ -164,6 +165,33 @@ func MonitorCProvider(ctx context.Context, node *e2e.Node, network netconf.Netwo
 
 			log.Debug(ctx, "Halo approved attestations", "chain", chain.Name, "conf", chainVer.ConfLevel, "count", len(atts))
 		}
+	}
+
+	return nil
+}
+
+// detectPanics returns an error if any panic was detected in container logs.
+func detectPanics(ctx context.Context, def Definition) error {
+	logs, err := def.Infra.AllLogs(ctx)
+	if err != nil {
+		return errors.Wrap(err, "get all logs")
+	}
+
+	const limit = 50 // Print max 50 lines after first detected panic.
+	var detected []string
+	for _, line := range strings.Split(string(logs), "\n") {
+		if len(detected) == 0 && !strings.Contains(line, "panic") {
+			continue
+		}
+
+		detected = append(detected, line)
+		if len(detected) >= limit {
+			break
+		}
+	}
+
+	if len(detected) > 0 {
+		return errors.New("panic detected", "panic", strings.Join(detected, "\n"))
 	}
 
 	return nil

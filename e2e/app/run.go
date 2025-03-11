@@ -270,6 +270,10 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 		return err
 	}
 
+	if err := detectPanics(ctx, def); err != nil {
+		return err
+	}
+
 	if cfg.Preserve {
 		log.Warn(ctx, "Docker containers not stopped, --preserve=true", nil)
 	} else if err := CleanInfra(ctx, def); err != nil {

@@ -41,6 +41,10 @@ func NewProvider(testnet types.Testnet, data types.InfrastructureData, imgTag st
 	}
 }
 
+func (*Provider) AllLogs(context.Context) ([]byte, error) {
+	return nil, errors.New("vmcompose doesn't support all logs")
+}
+
 // Setup generates the docker-compose file for each VM IP.
 func (p *Provider) Setup() error {
 	// Group infra services by VM IP
