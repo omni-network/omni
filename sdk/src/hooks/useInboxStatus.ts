@@ -11,6 +11,7 @@ export function useInboxStatus({
   orderId?: Hex
 }) {
   const order = useGetOrder({ chainId, orderId })
+  // TODO propagate error if getOrder fails / data not found
   const status = order?.data?.[1].status
   if (!isKnown(status)) return 'unknown'
   return strs[status]
