@@ -33,6 +33,8 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
     IOmniPortal internal portal = IOmniPortal(0x5e9A8Aa213C912Bf54C86bf64aDB8ed6A79C04d1);
     ISolverNetInbox internal inbox = ISolverNetInbox(0x8FCFcd0B4Fa2cc2965a3c7F27995B0A43F210dB8);
 
+    address internal validator = 0x8be1aBb26435fc1AF39Fc88DF9499f626094f9AF;
+
     bytes32 internal genesisStakeImplSalt = 0xa779fc675db318dab004ab8d538cb320d0013f42006fda006bab5cd1034643cc;
     bytes32 internal merkleDistributorSalt = 0xa779fc675db318dab004ab8d538cb320d0013f4200205ad9f17a619b0079c949;
 
@@ -185,6 +187,6 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
 
     function _migrate() internal {
         vm.prank(deployer);
-        merkleDistributor.migrateToOmni(0, rewardAmount, proofs[0]);
+        merkleDistributor.migrateToOmni(validator, 0, rewardAmount, proofs[0]);
     }
 }

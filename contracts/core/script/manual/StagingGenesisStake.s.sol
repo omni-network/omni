@@ -24,14 +24,16 @@ contract StagingGenesisStakeScript is Script {
     IOmniPortal internal portal;
     ISolverNetInbox internal inbox;
 
+    address internal validator = 0xD6CD71dF91a6886f69761826A9C4D123178A8d9D;
+
     GenesisStake internal genesisStake;
     DebugMerkleDistributorWithDeadline internal merkleDistributor;
 
     uint256 internal endTime = block.timestamp + 30 days;
     uint256 internal depositAmount = 100 ether;
-    uint256 internal rewardAmount = 100 ether;
-    bytes32[] internal leaves = new bytes32[](51);
-    bytes32[][] internal proofs = new bytes32[][](51);
+    uint256 internal rewardAmount = 5 ether;
+    bytes32[] internal leaves = new bytes32[](64);
+    bytes32[][] internal proofs = new bytes32[][](64);
     bytes32 internal root;
 
     function setUp() public {
@@ -61,7 +63,8 @@ contract StagingGenesisStakeScript is Script {
         _deployContracts();
         _approveStakeAndFund();
 
-        merkleDistributor.migrateToOmni(0, rewardAmount, proofs[0]);
+        // Change index values according to deployer/caller address in merkle tree
+        merkleDistributor.migrateToOmni(validator, 0, rewardAmount, proofs[0]);
 
         vm.stopBroadcast();
     }
@@ -75,10 +78,26 @@ contract StagingGenesisStakeScript is Script {
         console2.logBytes(abi.encode(proofs));
     }
 
+    function merkleTest() public {
+        m = new CompleteMerkle();
+
+        leaves[0] = keccak256(abi.encodePacked(uint256(0), 0xA779fC675Db318dab004Ab8D538CB320D0013F42, rewardAmount));
+        proofs[0].push(hex"d63ffdb42cc723a1c6d5680d227c3fcc1eb3a496f4516d658739bde53d43d7e5");
+        proofs[0].push(hex"629d5c1cc8dabddba6ce83fab447555682bc817de8206caf1f33e3c96db480bf");
+        proofs[0].push(hex"359ea71da4d34de23c735ff73c6e50deeb4f1e16cff3d7094f3af60267a8e0c0");
+        proofs[0].push(hex"0bc86c0dc974955298d28f5b588dc36f19429cb97a81863d400d6469cb94403d");
+        proofs[0].push(hex"6c2f3969e324d1a1d1b3609173d620755e9fbb6e1a3e90948e65a848572ce3e0");
+        proofs[0].push(hex"b393094f8b8deae0e3ebb3c6a55a99e9a77584d7a1ffa60e620ad788ee8be08e");
+
+        root = hex"9389e8b3e37cce68001c83a741ac6c3ba048d8621272d0603fc0f6eb3d969d7c";
+
+        m.verifyProof(root, proofs[0], leaves[0]);
+    }
+
     function _prepMerkleTree() internal {
         m = new CompleteMerkle();
 
-        leaves[0] = keccak256(abi.encodePacked(uint256(0), msg.sender, rewardAmount));
+        leaves[0] = keccak256(abi.encodePacked(uint256(0), 0xA779fC675Db318dab004Ab8D538CB320D0013F42, rewardAmount));
         leaves[1] = keccak256(abi.encodePacked(uint256(1), 0x2e6d9f2CA3E25b4216a1430208046f965bdc1f75, rewardAmount));
         leaves[2] = keccak256(abi.encodePacked(uint256(2), 0xF8d882Bc33D4a2b327E7C4d3cA7AaA325b5591Ea, rewardAmount));
         leaves[3] = keccak256(abi.encodePacked(uint256(3), 0xF52015A4777aE31e0540441b345a9dC17111a956, rewardAmount));
@@ -129,17 +148,30 @@ contract StagingGenesisStakeScript is Script {
         leaves[48] = keccak256(abi.encodePacked(uint256(48), 0x0AC94Fa7C75a48a3bbCDd1210882FcE6391fCE58, rewardAmount));
         leaves[49] = keccak256(abi.encodePacked(uint256(49), 0x70bD9E2297edC6b4712ad51E37454504b936BBe3, rewardAmount));
         leaves[50] = keccak256(abi.encodePacked(uint256(50), 0xfaB5c13854603F439bEc15aB4FC756D81ed058C2, rewardAmount));
+        leaves[51] = keccak256(abi.encodePacked(uint256(51), 0x2D61bE547b365BD5CdCc02920818492Fb7bdb765, rewardAmount));
+        leaves[52] = keccak256(abi.encodePacked(uint256(52), 0x3ddB180d96C98e77A8F20aC456B6764B4D478A8a, rewardAmount));
+        leaves[53] = keccak256(abi.encodePacked(uint256(53), 0x62398788692aDed44638F8b9F3eE4B977C78ff46, rewardAmount));
+        leaves[54] = keccak256(abi.encodePacked(uint256(54), 0x38E2a3FC1923767F74d2308a529a353e91763EBF, rewardAmount));
+        leaves[55] = keccak256(abi.encodePacked(uint256(55), 0xe3481474b23f88a8917DbcB4cBC55Efcf0f68CC7, rewardAmount));
+        leaves[56] = keccak256(abi.encodePacked(uint256(56), 0xD9c0BB3476CE2AD2102D3AC07287BB802EeA98f1, rewardAmount));
+        leaves[57] = keccak256(abi.encodePacked(uint256(57), 0xDEdDf2DA39E0E39469a28F5A0392DcFbe40323de, rewardAmount));
+        leaves[58] = keccak256(abi.encodePacked(uint256(58), 0x9474d842BaCa1fe809810dF4fe4D194Dae83f9d6, rewardAmount));
+        leaves[59] = keccak256(abi.encodePacked(uint256(59), 0xf41c4c528E06020Ccc1FC738398f26e7334854b3, rewardAmount));
+        leaves[60] = keccak256(abi.encodePacked(uint256(60), 0xA6C9c842dc0C9C16338444e8bB77b885986Ef38b, rewardAmount));
+        leaves[61] = keccak256(abi.encodePacked(uint256(61), 0xc83629D6A24851b7B90A2fa7f63a762dFE1021BC, rewardAmount));
+        leaves[62] = keccak256(abi.encodePacked(uint256(62), 0xF6CDB1E733EA00D0eEa1A32F218B0ec76ABF1517, rewardAmount));
+        leaves[63] = keccak256(abi.encodePacked(uint256(63), 0xBeD17aa3E1c99ea86e19e7B38356C54007BB6CDe, rewardAmount));
 
         // Generate the Merkle root
         root = m.getRoot(leaves);
 
         // Generate proofs for each leaf
-        for (uint256 i = 0; i < leaves.length; i++) {
+        for (uint256 i; i < leaves.length; ++i) {
             proofs[i] = m.getProof(leaves, i);
         }
 
         // Verify all proofs
-        for (uint256 i = 0; i < leaves.length; i++) {
+        for (uint256 i; i < leaves.length; ++i) {
             require(
                 m.verifyProof(root, proofs[i], leaves[i]),
                 string(abi.encodePacked("Proof ", LibString.toString(i), " is invalid"))
