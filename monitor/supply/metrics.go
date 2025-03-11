@@ -9,21 +9,21 @@ var (
 	cChainSupply = promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: "monitor",
 		Subsystem: "supply",
-		Name:      "cchain_total_gwei",
-		Help:      "Token supply on the consensus chain in gwei",
+		Name:      "cchain_total_ether",
+		Help:      "Token supply on the consensus chain in ether",
 	})
 
 	eChainSupply = promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: "monitor",
 		Subsystem: "supply",
-		Name:      "l1_erc20_total_gwei",
-		Help:      "ERC20 token supply on Ethereum chain in gwei",
+		Name:      "l1_erc20_total_ether",
+		Help:      "ERC20 token supply on Ethereum chain in ether",
 	})
 
 	bridgeBalance = promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: "monitor",
 		Subsystem: "supply",
-		Name:      "l1_bridge_balance_gwei",
-		Help:      "ERC20 token balance of the bridge contract on Ethereum in gwei",
+		Name:      "l1_bridge_balance_ether",
+		Help:      "ERC20 token balance of the bridge contract on Ethereum in ether",
 	})
 )

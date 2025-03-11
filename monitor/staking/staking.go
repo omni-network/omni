@@ -38,9 +38,9 @@ func MonitorForever(ctx context.Context, cprov cchain.Provider) {
 			if err := instrEffRewards(ctx, cprov, allDelegations); err != nil {
 				log.Warn(ctx, "Effective rewards intrumentation failed", err)
 			}
-		}
 
-		timer.Reset(time.Hour)
+			timer.Reset(time.Hour)
+		}
 	}
 }
 
@@ -88,7 +88,7 @@ func instrStakeSizes(allDelegations []queryutil.DelegationBalance) {
 	}
 
 	avgStakeWei := new(big.Int).Quo(&totalStake, big.NewInt(int64(len(allDelegations))))
-	stakeAvg.Set(toGweiFloat64(avgStakeWei))
+	stakeAvg.Set(toEtherF64(avgStakeWei))
 
 	l := len(stakes)
 	if l == 0 {
@@ -98,10 +98,10 @@ func instrStakeSizes(allDelegations []queryutil.DelegationBalance) {
 		return stakes[i].Cmp(stakes[j]) < 0
 	})
 	medianVal := stakes[l/2+l%2]
-	stakeMedian.Set(toGweiFloat64(medianVal))
+	stakeMedian.Set(toEtherF64(medianVal))
 }
 
-func toGweiFloat64(wei *big.Int) float64 {
-	f64, _ := new(big.Int).Div(wei, big.NewInt(params.GWei)).Float64()
+func toEtherF64(wei *big.Int) float64 {
+	f64, _ := new(big.Int).Div(wei, big.NewInt(params.Ether)).Float64()
 	return f64
 }
