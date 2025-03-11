@@ -136,9 +136,14 @@ interface ISolverNetInbox is IOriginSettler {
     function getUserNonce(address user) external view returns (uint256);
 
     /**
-     * @notice Returns the order offset of the last order opened at this inbox.
+     * @notice Returns the order offset of the latest order opened at this inbox.
      */
-    function getLastOrderOffset() external view returns (uint248);
+    function getLatestOrderOffset() external view returns (uint248);
+
+    /**
+     * @notice Returns the order offset of the latest order opened at this inbox with the given status.
+     */
+    function getLatestOrderOffsetByStatus(Status status) external view returns (uint248);
 
     /**
      * @dev Validate the onchain order.

@@ -120,6 +120,11 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     mapping(address user => uint256 nonce) internal _userNonce;
 
     /**
+     * @notice Map status to latest order ID of that status.
+     */
+    mapping(Status => uint248 offset) internal _latestOffsetByStatus;
+
+    /**
      * @notice Modifier to ensure contract functions are not paused.
      */
     modifier whenNotPaused(bytes32 pauseKey) {
@@ -229,10 +234,17 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
     }
 
     /**
-     * @notice Returns the order offset of the last order opened at this inbox.
+     * @notice Returns the order offset of the latest order opened at this inbox.
      */
-    function getLastOrderOffset() external view returns (uint248) {
+    function getLatestOrderOffset() external view returns (uint248) {
         return _offset;
+    }
+
+    /**
+     * @notice Returns the order offset of the latest order opened at this inbox with the given status.
+     */
+    function getLatestOrderOffsetByStatus(Status status) external view returns (uint248) {
+        return _latestOffsetByStatus[status];
     }
 
     /**
@@ -585,6 +597,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
             timestamp: uint32(block.timestamp),
             updatedBy: updatedBy
         });
+        _latestOffsetByStatus[status] = _orderOffset[id];
     }
 
     /**

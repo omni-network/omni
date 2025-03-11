@@ -72,7 +72,7 @@ contract SolverNet_Inbox_Open_Test is TestBase {
 
         (IERC7683.ResolvedCrossChainOrder memory resolved2,, uint248 orderOffset) = inbox.getOrder(orderId);
         assertResolvedEq(resolvedOrder, resolved2);
-        assertEq(orderOffset, inbox.getLastOrderOffset(), "order offset should match contract state");
+        assertEq(orderOffset, inbox.getLatestOrderOffset(), "order offset should match contract state");
         assertStatus(orderId, ISolverNetInbox.Status.Pending);
         assertEq(address(inbox).balance, defaultAmount, "inbox should have received the deposit");
     }
@@ -93,7 +93,7 @@ contract SolverNet_Inbox_Open_Test is TestBase {
 
         (IERC7683.ResolvedCrossChainOrder memory resolved2,, uint248 orderOffset) = inbox.getOrder(orderId);
         assertResolvedEq(resolvedOrder, resolved2);
-        assertEq(orderOffset, inbox.getLastOrderOffset(), "order offset should match contract state");
+        assertEq(orderOffset, inbox.getLatestOrderOffset(), "order offset should match contract state");
         assertStatus(orderId, ISolverNetInbox.Status.Pending);
         assertEq(token1.balanceOf(address(inbox)), defaultAmount, "inbox should have received the deposit");
     }

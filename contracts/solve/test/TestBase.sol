@@ -386,7 +386,7 @@ contract TestBase is Test {
     }
 
     function assertStatus(bytes32 orderId, ISolverNetInbox.Status status) internal {
-        (, ISolverNetInbox.OrderState memory state,) = inbox.getOrder(orderId);
+        (, ISolverNetInbox.OrderState memory state, uint248 offset) = inbox.getOrder(orderId);
 
         uint8 expect = uint8(status);
         uint8 actual = uint8(state.status);
@@ -397,5 +397,7 @@ contract TestBase is Test {
         if (status == ISolverNetInbox.Status.Closed) assertEq(expect, actual, "order should be closed");
         if (status == ISolverNetInbox.Status.Filled) assertEq(expect, actual, "order should be filled");
         if (status == ISolverNetInbox.Status.Invalid) revert("invalid status");
+
+        assertEq(inbox.getLatestOrderOffsetByStatus(status), offset, "latest order offest by status should match");
     }
 }
