@@ -16,6 +16,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/monitor/flowgen/bridging"
+	"github.com/omni-network/omni/monitor/flowgen/symbiotic"
 	"github.com/omni-network/omni/monitor/flowgen/types"
 	"github.com/omni-network/omni/monitor/flowgen/util"
 	stypes "github.com/omni-network/omni/solver/types"
@@ -49,9 +50,30 @@ func Start(
 
 	result, err := bridgeJobs(network.ID)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "bridge jobs")
 	}
 	jobs = append(jobs, result...)
+
+	if network.ID == netconf.Omega {
+		deposit := big.NewInt(0).Mul(util.MilliEther, big.NewInt(20)) // 0.02 ETH
+		wstETHBaseSepolia := common.HexToAddress("0x6319df7c227e34B967C1903A08a698A3cC43492B")
+		wstETHHolesky := common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")
+		symbioticContractOnHolesky := common.HexToAddress("0x23E98253F372Ee29910e22986fe75Bb287b011fC")
+		job, err := symbiotic.NewJob(
+			network.ID,
+			evmchain.IDBaseSepolia,
+			evmchain.IDHolesky,
+			wstETHBaseSepolia,
+			wstETHHolesky,
+			symbioticContractOnHolesky,
+			eoa.RoleFlowgen,
+			deposit,
+		)
+		if err != nil {
+			return errors.Wrap(err, "symbiotic job")
+		}
+		jobs = append(jobs, job)
+	}
 
 	for _, job := range jobs {
 		go func() {
@@ -169,12 +191,12 @@ func bridgeJobs(network netconf.ID) ([]types.Job, error) {
 	// Bridging of native ETH
 	amount := big.NewInt(0).Mul(util.MilliEther, big.NewInt(20)) // 0.02 ETH
 
-	job1, err := bridging.NewJob(network, b.From, b.To, eoa.RoleFlowgen, common.Address{}, amount)
+	job1, err := bridging.NewJob(network, b.From, b.To, eoa.RoleFlowgen, amount)
 	if err != nil {
 		return nil, err
 	}
 
-	job2, err := bridging.NewJob(network, b.To, b.From, eoa.RoleFlowgen, common.Address{}, amount)
+	job2, err := bridging.NewJob(network, b.To, b.From, eoa.RoleFlowgen, amount)
 	if err != nil {
 		return nil, err
 	}

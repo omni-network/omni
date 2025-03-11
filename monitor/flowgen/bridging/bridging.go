@@ -22,11 +22,10 @@ func NewJob(
 	srcChain,
 	dstChain uint64,
 	role eoa.Role,
-	token common.Address,
 	amount *big.Int,
 ) (types.Job, error) {
 	owner := eoa.MustAddress(network, role)
-	data, err := orderData(owner, srcChain, dstChain, token, amount)
+	data, err := orderData(owner, srcChain, dstChain, amount)
 	if err != nil {
 		return types.Job{}, errors.Wrap(err, "new job")
 	}
@@ -52,14 +51,13 @@ func NewJob(
 	}, nil
 }
 
-// OrderData returns the order data required to do the job.
+// orderData returns the order data required to do the job.
 func orderData(
 	owner common.Address,
 	srcChain, dstChain uint64,
-	tokenAddr common.Address,
 	amount *big.Int,
 ) (bindings.SolverNetOrderData, error) {
-	token, ok := app.AllTokens().Find(srcChain, tokenAddr)
+	token, ok := app.AllTokens().Find(srcChain, common.Address{})
 	if !ok {
 		return bindings.SolverNetOrderData{}, errors.New("token not found")
 	}
@@ -68,7 +66,7 @@ func orderData(
 
 	depositWithFee, err := app.QuoteDeposit(expense.Token, expense)
 	if err != nil {
-		return bindings.SolverNetOrderData{}, errors.Wrap(err, "quote expense")
+		return bindings.SolverNetOrderData{}, errors.Wrap(err, "quote deposit")
 	}
 
 	orderData := bindings.SolverNetOrderData{

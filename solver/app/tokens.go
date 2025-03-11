@@ -91,9 +91,10 @@ var tokens = append(Tokens{
 	omniERC20(netconf.Staging),
 	omniERC20(netconf.Devnet),
 
-	// wtSETH
+	// wstETH
 	wstETH(evmchain.IDHolesky, common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")),
 	wstETH(evmchain.IDSepolia, common.HexToAddress("0xB82381A3fBD3FaFA77B3a7bE693342618240067b")),
+	wstETH(evmchain.IDBaseSepolia, common.HexToAddress("0x6319df7c227e34B967C1903A08a698A3cC43492B")),
 
 	// stETH
 	stETH(evmchain.IDHolesky, common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")),
