@@ -5,8 +5,8 @@ multi_omni_evms = true
 prometheus = true
 
 # 1849471 enables holesky
-pinned_halo_tag = "3e4a9f8"
-pinned_relayer_tag = "3e4a9f8"
+pinned_halo_tag = "1849471"
+pinned_relayer_tag = "1849471"
 pinned_monitor_tag = "1849471"
 pinned_solver_tag = "98ce013"
 
