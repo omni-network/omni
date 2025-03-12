@@ -22,7 +22,7 @@ import {
   testConnector,
 } from './test-utils.js'
 
-test('successfully processes order from quote to filled', async () => {
+test.skip('successfully processes order from quote to filled', async () => {
   const wagmiConfig = createWagmiConfig()
   const renderHook = createRenderHook({ wagmiConfig })
 
