@@ -99,6 +99,7 @@ func orderData(
 			solvernet.Call{
 				Target: symbioticContractAddress,
 				Data:   data,
+				Value:  new(big.Int),
 			}.ToBinding(),
 		},
 	}
