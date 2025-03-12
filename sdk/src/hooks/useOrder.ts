@@ -205,10 +205,8 @@ function deriveStatus(
   if (contracts.isError) return 'error'
   if (!contracts.data) return 'initializing'
 
-  // if outbox says filled, it's filled
+  // prioritize on chain status over tx status
   if (orderStatus === 'filled') return 'filled'
-
-  // prioritize inbox status over tx status
   if (orderStatus === 'open') return 'open'
   if (orderStatus === 'rejected') return 'rejected'
   if (orderStatus === 'closed') return 'closed'
