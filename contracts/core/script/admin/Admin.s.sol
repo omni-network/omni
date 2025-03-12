@@ -18,12 +18,16 @@ import { Staking } from "src/octane/Staking.sol";
 import { Slashing } from "src/octane/Slashing.sol";
 import { Predeploys } from "src/libraries/Predeploys.sol";
 import { SolverNetInbox } from "solve/src/SolverNetInbox.sol";
+import { SolverNetOutbox } from "solve/src/SolverNetOutbox.sol";
+import { SolverNetMiddleman } from "solve/src/SolverNetMiddleman.sol";
+import { SolverNetExecutor } from "solve/src/SolverNetExecutor.sol";
 import { Script } from "forge-std/Script.sol";
 
 import { BridgeL1PostUpgradeTest } from "./BridgeL1PostUpgradeTest.sol";
 import { BridgeNativePostUpgradeTest } from "./BridgeNativePostUpgradeTest.sol";
 import { StakingPostUpgradeTest } from "./StakingPostUpgradeTest.sol";
 import { FeeOracleV2PostUpdateTest } from "./FeeOracleV2PostUpdateTest.sol";
+import { SolverNetPostUpgradeTest } from "./SolverNetPostUpgradeTest.sol";
 
 /**
  * @title Admin
@@ -412,6 +416,110 @@ contract Admin is Script {
         _upgradeProxy(admin, Predeploys.PortalRegistry, impl, data);
 
         // TODO: add post upgrade tests
+    }
+
+    /**
+     * @notice Upgrade the SolverNetInbox contract.
+     * @param admin     The address of the admin account, owner of the proxy admin
+     * @param deployer  The address of the account that will deploy the new implementation.
+     * @param proxy     The address of the SolverNetInbox proxy to upgrade.
+     */
+    function upgradeSolverNetInbox(address admin, address deployer, address proxy, bytes calldata data) public {
+        SolverNetInbox inbox = SolverNetInbox(proxy);
+
+        address owner = inbox.owner();
+        uint256 deployedAt = inbox.deployedAt();
+        address omni = address(inbox.omni());
+        uint8 defaultConfLevel = inbox.defaultConfLevel();
+        uint8 pauseState = inbox.pauseState();
+        uint248 offset = inbox.getLatestOrderOffset();
+
+        vm.startBroadcast(deployer);
+        address impl = address(new SolverNetInbox());
+        vm.stopBroadcast();
+
+        _upgradeProxy(admin, proxy, impl, data);
+
+        require(inbox.owner() == owner, "owner changed");
+        require(inbox.deployedAt() == deployedAt, "deployedAt changed");
+        require(address(inbox.omni()) == omni, "omni changed");
+        require(inbox.defaultConfLevel() == defaultConfLevel, "defaultConfLevel changed");
+        require(inbox.pauseState() == pauseState, "pauseState changed");
+        require(inbox.getLatestOrderOffset() == offset, "offset changed");
+
+        new SolverNetPostUpgradeTest().runInbox(proxy);
+    }
+
+    /**
+     * @notice Upgrade the SolverNetOutbox contract.
+     * @param admin     The address of the admin account, owner of the proxy admin
+     * @param deployer  The address of the account that will deploy the new implementation.
+     * @param proxy     The address of the SolverNetOutbox proxy to upgrade.
+     */
+    function upgradeSolverNetOutbox(address admin, address deployer, address proxy, bytes calldata data) public {
+        SolverNetOutbox outbox = SolverNetOutbox(proxy);
+
+        address owner = outbox.owner();
+        uint256 deployedAt = outbox.deployedAt();
+        address omni = address(outbox.omni());
+        address executor = outbox.executor();
+
+        vm.startBroadcast(deployer);
+        address impl = address(new SolverNetOutbox());
+        vm.stopBroadcast();
+
+        _upgradeProxy(admin, proxy, impl, data);
+
+        require(outbox.owner() == owner, "owner changed");
+        require(outbox.deployedAt() == deployedAt, "deployedAt changed");
+        require(address(outbox.omni()) == omni, "omni changed");
+        require(outbox.executor() == executor, "executor changed");
+
+        new SolverNetPostUpgradeTest().runOutbox(proxy);
+    }
+
+    /**
+     * @notice Upgrade the SolverNetMiddleman contract.
+     * @param admin     The address of the admin account, owner of the proxy admin
+     * @param deployer  The address of the account that will deploy the new implementation.
+     * @param proxy     The address of the SolverNetMiddleman proxy to upgrade.
+     */
+    function upgradeSolverNetMiddleman(address admin, address deployer, address proxy, bytes calldata data) public {
+        vm.startBroadcast(deployer);
+        address impl = address(new SolverNetMiddleman());
+        vm.stopBroadcast();
+
+        _upgradeProxy(admin, proxy, impl, data);
+
+        new SolverNetPostUpgradeTest().runMiddleman(proxy);
+    }
+
+    /**
+     * @notice Upgrade the SolverNetExecutor contract.
+     * @param admin     The address of the admin account, owner of the proxy admin
+     * @param deployer  The address of the account that will deploy the new implementation.
+     * @param proxy     The address of the SolverNetExecutor proxy to upgrade.
+     */
+    function upgradeSolverNetExecutor(
+        address admin,
+        address deployer,
+        address proxy,
+        address outbox,
+        bytes calldata data
+    ) public {
+        SolverNetExecutor executor = SolverNetExecutor(payable(proxy));
+
+        address _outbox = executor.outbox();
+
+        vm.startBroadcast(deployer);
+        address impl = address(new SolverNetExecutor(outbox));
+        vm.stopBroadcast();
+
+        _upgradeProxy(admin, proxy, impl, data);
+
+        require(executor.outbox() == _outbox, "outbox changed");
+
+        new SolverNetPostUpgradeTest().runExecutor(proxy);
     }
 
     /**

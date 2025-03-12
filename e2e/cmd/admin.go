@@ -31,6 +31,10 @@ func newAdminCmd(def *app.Definition) *cobra.Command {
 		newUpgradeBridgeNativeCmd(def, &cfg),
 		newUpgradeBridgeL1(def, &cfg),
 		newUpgradePortalRegistryCmd(def, &cfg),
+		newUpgradeSolverNetInboxCmd(def, &cfg),
+		newUpgradeSolverNetOutboxCmd(def, &cfg),
+		newUpgradeSolverNetMiddlemanCmd(def, &cfg),
+		newUpgradeSolverNetExecutorCmd(def, &cfg),
 		newSetPortalFeeOracleV2Cmd(def, &cfg),
 		newAllowValidatorsCmd(def, &cfg),
 		newPlanUpgradeCmd(def, &cfg),
@@ -215,6 +219,54 @@ func newUpgradePortalRegistryCmd(def *app.Definition, cfg *admin.Config) *cobra.
 		Short: "Upgrade the PortalRegistry predeploy.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return admin.UpgradePortalRegistry(cmd.Context(), *def, *cfg)
+		},
+	}
+
+	return cmd
+}
+
+func newUpgradeSolverNetInboxCmd(def *app.Definition, cfg *admin.Config) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "upgrade-solvernet-inbox",
+		Short: "Upgrade the SolverNetInbox contract.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.UpgradeSolverNetInbox(cmd.Context(), *def, *cfg)
+		},
+	}
+
+	return cmd
+}
+
+func newUpgradeSolverNetOutboxCmd(def *app.Definition, cfg *admin.Config) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "upgrade-solvernet-outbox",
+		Short: "Upgrade the SolverNetOutbox contract.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.UpgradeSolverNetOutbox(cmd.Context(), *def, *cfg)
+		},
+	}
+
+	return cmd
+}
+
+func newUpgradeSolverNetMiddlemanCmd(def *app.Definition, cfg *admin.Config) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "upgrade-solvernet-middleman",
+		Short: "Upgrade the SolverNetMiddleman contract.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.UpgradeSolverNetMiddleman(cmd.Context(), *def, *cfg)
+		},
+	}
+
+	return cmd
+}
+
+func newUpgradeSolverNetExecutorCmd(def *app.Definition, cfg *admin.Config) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "upgrade-solvernet-executor",
+		Short: "Upgrade the SolverNetExecutor contract.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.UpgradeSolverNetExecutor(cmd.Context(), *def, *cfg)
 		},
 	}
 
