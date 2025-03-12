@@ -4,6 +4,7 @@ pragma solidity 0.8.24;
 import { ProxyAdmin } from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import { ITransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { InitializableHelper } from "script/utils/InitializableHelper.sol";
+import { InitializableHelperSolady } from "script/utils/InitializableHelperSolady.sol";
 import { EIP1967Helper } from "script/utils/EIP1967Helper.sol";
 import { OmniPortal } from "src/xchain/OmniPortal.sol";
 import { FeeOracleV1 } from "src/xchain/FeeOracleV1.sol";
@@ -317,7 +318,7 @@ contract Admin is Script {
         address impl = address(new Slashing());
         vm.stopBroadcast();
 
-        _upgradeProxy(admin, Predeploys.Slashing, impl, data, false); // Slashing has no initializers
+        _upgradeProxy(admin, Predeploys.Slashing, impl, data, false, false); // Slashing has no initializers
 
         // TODO: add post upgrade tests
     }
@@ -438,7 +439,7 @@ contract Admin is Script {
         address impl = address(new SolverNetInbox());
         vm.stopBroadcast();
 
-        _upgradeProxy(admin, proxy, impl, data);
+        _upgradeProxy(admin, proxy, impl, data, true, true);
 
         require(inbox.owner() == owner, "owner changed");
         require(inbox.deployedAt() == deployedAt, "deployedAt changed");
@@ -468,7 +469,7 @@ contract Admin is Script {
         address impl = address(new SolverNetOutbox());
         vm.stopBroadcast();
 
-        _upgradeProxy(admin, proxy, impl, data);
+        _upgradeProxy(admin, proxy, impl, data, true, true);
 
         require(outbox.owner() == owner, "owner changed");
         require(outbox.deployedAt() == deployedAt, "deployedAt changed");
@@ -489,7 +490,7 @@ contract Admin is Script {
         address impl = address(new SolverNetMiddleman());
         vm.stopBroadcast();
 
-        _upgradeProxy(admin, proxy, impl, data, false); // Drop the bool parameter once its initializable
+        _upgradeProxy(admin, proxy, impl, data, false, true); // Change the false parameter once its initializable
 
         new SolverNetPostUpgradeTest().runMiddleman(proxy);
     }
@@ -515,7 +516,7 @@ contract Admin is Script {
         address impl = address(new SolverNetExecutor(outbox));
         vm.stopBroadcast();
 
-        _upgradeProxy(admin, proxy, impl, data, false); // Drop the bool parameter once its initializable
+        _upgradeProxy(admin, proxy, impl, data, false, true); // Change the false parameter once its initializable
 
         require(executor.outbox() == _outbox, "outbox changed");
 
@@ -551,19 +552,39 @@ contract Admin is Script {
      * @param data      Calldata to execute after upgrading the contract.
      */
     function _upgradeProxy(address admin, address proxy, address impl, bytes calldata data) internal {
-        _upgradeProxy(admin, proxy, impl, data, true);
+        _upgradeProxy(admin, proxy, impl, data, true, false);
     }
 
-    function _upgradeProxy(address admin, address proxy, address impl, bytes calldata data, bool initializable)
-        internal
-    {
+    /**
+     * @notice Upgrade a proxy contract.
+     * @param admin     The address of the admin account, owner of the proxy admin
+     * @param proxy     The address of the proxy to upgrade.
+     * @param impl      The address of the new implementation.
+     * @param data      Calldata to execute after upgrading the contract.
+     * @param initializable Whether the implementation is initializable.
+     * @param soladyInitializable Whether the implementation uses Solady's Initializable library. (OZ is default)
+     */
+    function _upgradeProxy(
+        address admin,
+        address proxy,
+        address impl,
+        bytes calldata data,
+        bool initializable,
+        bool soladyInitializable
+    ) internal {
         address proxyAdmin = EIP1967Helper.getAdmin(proxy);
 
         vm.startBroadcast(admin);
         ProxyAdmin(proxyAdmin).upgradeAndCall(ITransparentUpgradeableProxy(proxy), impl, data);
         vm.stopBroadcast();
 
-        if (initializable) require(InitializableHelper.areInitializersDisabled(impl), "initializers not disabled");
+        if (initializable) {
+            if (!soladyInitializable) {
+                require(InitializableHelper.areInitializersDisabled(impl), "initializers not disabled");
+            } else {
+                require(InitializableHelperSolady.areInitializersDisabled(impl), "initializers not disabled");
+            }
+        }
 
         require(EIP1967Helper.getImplementation(proxy) == impl, "upgrade failed");
     }
