@@ -103,7 +103,31 @@ func FundAccounts(ctx context.Context, def Definition, hotOnly bool, dryRun bool
 		}
 
 		if hotOnly {
-			continue // Skip contract funding if hotOnly.
+			continue // Skip contract / sponsor funding if hotOnly.
+		}
+
+		for _, sponsor := range eoa.AllSponsors(network) {
+			if sponsor.ChainID != chain.ChainID {
+				continue
+			}
+
+			sponsorCtx := log.WithCtx(ctx,
+				"chain", chain.Name,
+				"role", sponsor.Name,
+				"address", sponsor.Address,
+			)
+
+			if err := fund(sponsorCtx, fundParams{
+				backend:       backend,
+				account:       sponsor.Address,
+				minBalance:    sponsor.FundThresholds.MinBalance(),
+				targetBalance: sponsor.FundThresholds.TargetBalance(),
+				saneMax:       saneMax(chain.NativeToken),
+				dryRun:        dryRun,
+				funder:        funderAddr,
+			}); err != nil {
+				return errors.Wrap(err, "fund sponsor")
+			}
 		}
 
 		toFund, err := contracts.ToFund(ctx, network)
