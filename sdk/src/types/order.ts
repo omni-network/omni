@@ -15,16 +15,6 @@ export type OrderStatus =
   | 'filled'
   | 'error'
 
-export type OpenOrderStatus =
-  | 'initializing'
-  | 'ready'
-  | 'opening'
-  | 'open'
-  | 'closed'
-  | 'rejected'
-  | 'error'
-  | 'filled'
-
 type Deposit = {
   readonly token?: Address
   readonly amount: bigint

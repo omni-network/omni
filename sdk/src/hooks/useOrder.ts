@@ -20,7 +20,7 @@ import {
   ValidateOrderError,
 } from '../errors/base.js'
 import type { OptionalAbis } from '../types/abi.js'
-import type { OpenOrderStatus, Order, OrderStatus } from '../types/order.js'
+import type { Order, OrderStatus } from '../types/order.js'
 import { encodeOrder } from '../utils/encodeOrder.js'
 import {
   type UseOmniContractsResult,
@@ -52,7 +52,7 @@ type UseOrderReturnType = {
   validation?: UseValidateOrderResult
   txHash?: Hex
   error?: UseOrderError
-  status: OpenOrderStatus
+  status: UseOrderStatus
   isTxPending: boolean
   isTxSubmitted: boolean
   isValidated: boolean
@@ -62,6 +62,16 @@ type UseOrderReturnType = {
   txMutation: UseWriteContractReturnType<Config, unknown>
   waitForTx: UseWaitForTransactionReceiptReturnType<Config, number>
 }
+
+type UseOrderStatus =
+  | 'initializing'
+  | 'ready'
+  | 'opening'
+  | 'open'
+  | 'closed'
+  | 'rejected'
+  | 'error'
+  | 'filled'
 
 const defaultFillDeadline = () => Math.floor(Date.now() / 1000 + 86400)
 
@@ -190,7 +200,7 @@ function deriveStatus(
   txStatus: UseWriteContractReturnType['status'],
   receiptStatus: UseWaitForTransactionReceiptReturnType['status'],
   receiptFetchStatus: UseWaitForTransactionReceiptReturnType['fetchStatus'],
-): OpenOrderStatus {
+): UseOrderStatus {
   // inbox contract address needs to be loaded
   if (contracts.isError) return 'error'
   if (!contracts.data) return 'initializing'
