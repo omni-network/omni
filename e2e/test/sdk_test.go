@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -16,7 +17,10 @@ import (
 
 func TestSDK(t *testing.T) {
 	t.Parallel()
-	testNetwork(t, func(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
+	skipFunc := func(manifest types.Manifest) bool {
+		return !manifest.DeploySolve
+	}
+	maybeTestNetwork(t, skipFunc, func(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
 		t.Helper()
 
 		cwd, err := os.Getwd()
