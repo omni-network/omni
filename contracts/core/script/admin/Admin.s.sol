@@ -489,7 +489,7 @@ contract Admin is Script {
         address impl = address(new SolverNetMiddleman());
         vm.stopBroadcast();
 
-        _upgradeProxy(admin, proxy, impl, data);
+        _upgradeProxy(admin, proxy, impl, data, false); // Drop the bool parameter once its initializable
 
         new SolverNetPostUpgradeTest().runMiddleman(proxy);
     }
@@ -515,7 +515,7 @@ contract Admin is Script {
         address impl = address(new SolverNetExecutor(outbox));
         vm.stopBroadcast();
 
-        _upgradeProxy(admin, proxy, impl, data);
+        _upgradeProxy(admin, proxy, impl, data, false); // Drop the bool parameter once its initializable
 
         require(executor.outbox() == _outbox, "outbox changed");
 
