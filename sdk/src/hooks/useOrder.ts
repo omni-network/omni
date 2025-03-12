@@ -22,11 +22,11 @@ import {
 import type { OptionalAbis } from '../types/abi.js'
 import type { Order, OrderStatus } from '../types/order.js'
 import { encodeOrder } from '../utils/encodeOrder.js'
+import { useGetOrderStatus } from './useGetOrderStatus.js'
 import {
   type UseOmniContractsResult,
   useOmniContracts,
 } from './useOmniContracts.js'
-import { useOrderStatus } from './useOrderStatus.js'
 import {
   type UseValidateOrderResult,
   useValidateOrder,
@@ -82,7 +82,7 @@ export function useOrder<abis extends OptionalAbis>(
   const connected = useChainId()
   const txMutation = useWriteContract()
   const wait = useWaitForTransactionReceipt({ hash: txMutation.data })
-  const orderStatus = useOrderStatus({
+  const orderStatus = useGetOrderStatus({
     srcChainId: order.srcChainId ?? connected,
     destChainId: order.destChainId,
     waitTx: wait,
@@ -160,7 +160,7 @@ type DeriveErrorParams = {
   txMutation: UseWriteContractReturnType<Config, unknown>
   wait: UseWaitForTransactionReceiptReturnType
   validation: ReturnType<typeof useValidateOrder>
-  orderStatus: ReturnType<typeof useOrderStatus>
+  orderStatus: ReturnType<typeof useGetOrderStatus>
 }
 
 function deriveError(params: DeriveErrorParams): UseOrderError {

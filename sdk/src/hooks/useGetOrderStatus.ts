@@ -6,7 +6,7 @@ import { useDidFillOutbox } from './useDidFillOutbox.js'
 import { type InboxStatus, useInboxStatus } from './useInboxStatus.js'
 import { useParseOpenEvent } from './useParseOpenEvent.js'
 
-export function useOrderStatus({
+export function useGetOrderStatus({
   srcChainId,
   destChainId,
   waitTx,
