@@ -148,13 +148,19 @@ func toRejectTestCase(t *testing.T, tt orderTestCase, outbox common.Address) rej
 		disallowCall: tt.disallowCall,
 		mock:         tt.mock,
 		order: Order{
-			ID:                 [32]byte{0x01},
-			SourceChainID:      tt.order.srcChainID,
-			DestinationChainID: tt.order.dstChainID,
-			DestinationSettler: outbox,
-			MaxSpent:           maxSpent,
-			MinReceived:        minReceived,
-			FillOriginData:     fillOriginData,
+			ID:            [32]byte{0x01},
+			SourceChainID: tt.order.srcChainID,
+			Status:        solvernet.StatusPending,
+			pendingData: PendingData{
+				DestinationChainID: tt.order.dstChainID,
+				DestinationSettler: outbox,
+				MaxSpent:           maxSpent,
+				MinReceived:        minReceived,
+				FillOriginData:     fillOriginData,
+			},
+			filledData: FilledData{
+				MinReceived: minReceived,
+			},
 		},
 	}
 }
@@ -204,8 +210,7 @@ func checkTestCases(t *testing.T, solver common.Address) []checkTestCase {
 func rejectTestCases(t *testing.T, solver, outbox common.Address) []rejectTestCase {
 	t.Helper()
 
-	tests := []rejectTestCase{}
-
+	var tests []rejectTestCase
 	for _, tt := range orderTestCases(t, solver) {
 		tests = append(tests, toRejectTestCase(t, tt, outbox))
 	}

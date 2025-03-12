@@ -32,7 +32,8 @@ type procDeps struct {
 	Claim  func(ctx context.Context, order Order) error
 
 	// Monitoring helpers
-	TargetName     func(Order) string
+	ProcessorName  string
+	TargetName     func(PendingData) string
 	ChainName      func(chainID uint64) string
 	BlockTimestamp func(chainID uint64, height uint64) time.Time
 }
@@ -81,11 +82,16 @@ func newFiller(
 	pricer libtokens.Pricer,
 ) func(ctx context.Context, order Order) error {
 	return func(ctx context.Context, order Order) error {
-		if order.DestinationSettler != outboxAddr {
-			return errors.New("destination settler mismatch [BUG] ", "got", order.DestinationSettler.Hex(), "expected", outboxAddr.Hex())
+		pendingData, err := order.PendingData()
+		if err != nil {
+			return err
 		}
 
-		destChainID := order.DestinationChainID
+		if pendingData.DestinationSettler != outboxAddr {
+			return errors.New("destination settler mismatch [BUG] ", "got", pendingData.DestinationSettler.Hex(), "expected", outboxAddr.Hex())
+		}
+
+		destChainID := pendingData.DestinationChainID
 		outbox, ok := outboxContracts[destChainID]
 		if !ok {
 			return errors.New("unknown chain")
@@ -102,7 +108,7 @@ func newFiller(
 			return err
 		}
 
-		if ok, err := outbox.DidFill(callOpts, order.ID, order.FillOriginData); err != nil {
+		if ok, err := outbox.DidFill(callOpts, order.ID, pendingData.FillOriginData); err != nil {
 			return errors.Wrap(err, "did fill")
 		} else if ok {
 			log.Info(ctx, "Skipping already filled order", "order_id", order.ID)
@@ -110,7 +116,7 @@ func newFiller(
 		}
 
 		nativeValue := big.NewInt(0)
-		for _, output := range order.MaxSpent {
+		for _, output := range pendingData.MaxSpent {
 			if output.ChainId.Uint64() != destChainID {
 				// We error on this case for now, as our contracts only allow single dest chain orders
 				// ERC7683 allows for orders with multiple destination chains, so continue-ing here
@@ -146,21 +152,21 @@ func newFiller(
 		}
 
 		// xcall fee
-		fee, err := outbox.FillFee(callOpts, order.FillOriginData)
+		fee, err := outbox.FillFee(callOpts, pendingData.FillOriginData)
 		if err != nil {
 			return errors.Wrap(err, "get fulfill fee")
 		}
 
 		txOpts.Value = new(big.Int).Add(nativeValue, fee)
 		fillerData := []byte{} // fillerData is optional ERC7683 custom filler specific data, unused in our contracts
-		tx, err := outbox.Fill(txOpts, order.ID, order.FillOriginData, fillerData)
+		tx, err := outbox.Fill(txOpts, order.ID, pendingData.FillOriginData, fillerData)
 		if err != nil {
 			return errors.Wrap(err, "fill order", "custom", solvernet.DetectCustomError(err))
 		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
 			return errors.Wrap(err, "wait mined")
 		}
 
-		if ok, err := outbox.DidFill(callOpts, order.ID, order.FillOriginData); err != nil {
+		if ok, err := outbox.DidFill(callOpts, order.ID, pendingData.FillOriginData); err != nil {
 			return errors.Wrap(err, "did fill")
 		} else if !ok {
 			return errors.New("fill failed [BUG]")
@@ -191,7 +197,7 @@ func newRejector(
 		// Ensure latest on-chain order is still pending
 		if latest, err := inbox.GetOrder(&bind.CallOpts{Context: ctx}, order.ID); err != nil {
 			return errors.Wrap(err, "get order")
-		} else if latest.State.Status != statusPending.Uint8() {
+		} else if latest.State.Status != solvernet.StatusPending.Uint8() {
 			return errors.New("order status not pending anymore")
 		}
 
@@ -213,12 +219,17 @@ func newRejector(
 
 func newDidFiller(outboxContracts map[uint64]*bindings.SolverNetOutbox) func(ctx context.Context, order Order) (bool, error) {
 	return func(ctx context.Context, order Order) (bool, error) {
-		outbox, ok := outboxContracts[order.DestinationChainID]
+		pendingData, err := order.PendingData()
+		if err != nil {
+			return false, err
+		}
+
+		outbox, ok := outboxContracts[pendingData.DestinationChainID]
 		if !ok {
 			return false, errors.New("unknown chain")
 		}
 
-		filled, err := outbox.DidFill(&bind.CallOpts{Context: ctx}, order.ID, order.FillOriginData)
+		filled, err := outbox.DidFill(&bind.CallOpts{Context: ctx}, order.ID, pendingData.FillOriginData)
 		if err != nil {
 			return false, errors.Wrap(err, "did fill")
 		}

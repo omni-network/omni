@@ -10,22 +10,22 @@ var (
 		Namespace: "solver",
 		Subsystem: "processor",
 		Name:      "status_offset",
-		Help:      "Last inbox offset processed by chain and status",
-	}, []string{"chain", "target", "status"})
+		Help:      "Last inbox offset processed by chain version and status",
+	}, []string{"chain_version", "status"})
 
 	processedEvents = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "solver",
 		Subsystem: "processor",
 		Name:      "processed_events_total",
 		Help:      "Total number of events processed by chain and status",
-	}, []string{"chain", "target", "status"})
+	}, []string{"chain_version", "status"})
 
 	rejectedOrders = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "solver",
 		Subsystem: "processor",
 		Name:      "rejected_orders_total",
 		Help:      "Total number of rejected orders by chain and reason",
-	}, []string{"src_chain", "dest_chain", "target", "reason"})
+	}, []string{"chain", "reason"})
 
 	orderAge = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "solver",
@@ -33,7 +33,7 @@ var (
 		Name:      "order_age_seconds",
 		Help:      "Order age (from creation) in seconds by chain and status",
 		Buckets:   prometheus.ExponentialBucketsRange(1, 60, 5),
-	}, []string{"chain", "target", "status"})
+	}, []string{"chain", "status"})
 
 	apiLatency = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "solver",

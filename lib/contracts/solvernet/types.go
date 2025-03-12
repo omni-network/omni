@@ -1,6 +1,7 @@
 package solvernet
 
 import (
+	"encoding/hex"
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -16,8 +17,13 @@ type (
 	FillOriginData = bindings.SolverNetFillOriginData
 )
 
-// String returns the Uint64 representation of the order ID as a string.
+// String returns the short hex (7 chars) representation of the order ID.
 func (id OrderID) String() string {
+	return hex.EncodeToString(id[:])[:7]
+}
+
+// Hex returns the full 0xHEX representation of the order ID.
+func (id OrderID) Hex() string {
 	return hexutil.Encode(id[:])
 }
 

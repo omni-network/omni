@@ -18,6 +18,7 @@ import (
 	"github.com/omni-network/omni/monitor/flowgen/bridging"
 	"github.com/omni-network/omni/monitor/flowgen/types"
 	"github.com/omni-network/omni/monitor/flowgen/util"
+	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -80,65 +81,70 @@ func Start(
 func run(ctx context.Context, backends ethbackend.Backends, j types.Job) error {
 	log.Debug(ctx, "Flowgen: running job")
 
-	id, err := solvernet.OpenOrder(ctx, j.Network, j.SrcChain, backends, j.Owner, j.OrderData)
+	orderID, err := solvernet.OpenOrder(ctx, j.Network, j.SrcChain, backends, j.Owner, j.OrderData)
 	if err != nil {
 		return errors.Wrap(err, "open order")
 	}
 
-	ctx = log.WithCtx(ctx, "id", id)
+	ctx = log.WithCtx(ctx, "order_id", orderID)
 
 	log.Debug(ctx, "Flowgen: order opened")
 
-	status, err := waitForFinalStatus(ctx, backends, j, id)
-	if err != nil {
-		return errors.Wrap(err, "wait for status")
+	if err := awaitClaimed(ctx, backends, j, orderID); err != nil {
+		return errors.Wrap(err, "await claimed")
 	}
-	log.Info(ctx, "Flowgen: order finalized", "status", status)
+
+	log.Info(ctx, "Flowgen: order claimed")
 
 	return nil
 }
 
-// waitForFinalStatus monitors the specified order id for the final status and return it. Since we
-// assume that all orders will eventually be rejected, closed or claimed, the function never terminates.
-func waitForFinalStatus(
+// awaitClaimed blocks until the order is claimed.
+// It returns an.
+func awaitClaimed(
 	ctx context.Context,
 	backends ethbackend.Backends,
 	j types.Job,
 	orderID solvernet.OrderID,
-) (solvernet.OrderStatus, error) {
+) error {
 	addrs, err := contracts.GetAddresses(ctx, j.Network)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	backend, err := backends.Backend(j.SrcChain)
 	if err != nil {
-		return solvernet.StatusInvalid, errors.Wrap(err, "get backend")
+		return errors.Wrap(err, "get backend")
 	}
 
 	inbox, err := bindings.NewSolverNetInbox(addrs.SolverNetInbox, backend)
 	if err != nil {
-		return solvernet.StatusInvalid, errors.Wrap(err, "create inbox contract")
+		return errors.Wrap(err, "create inbox contract")
 	}
 
 	var checks uint16
 	const logFreq = 20
 	for {
-		latest, err := inbox.GetOrder(&bind.CallOpts{Context: ctx}, orderID)
+		order, err := inbox.GetOrder(&bind.CallOpts{Context: ctx}, orderID)
 		if err != nil {
-			return solvernet.StatusInvalid, errors.Wrap(err, "get order")
+			return errors.Wrap(err, "get order")
 		}
 
-		status := solvernet.OrderStatus(latest.State.Status)
+		status := solvernet.OrderStatus(order.State.Status)
+		reason := stypes.RejectReason(order.State.RejectReason)
 
 		switch status {
-		case solvernet.StatusInvalid, solvernet.StatusRejected, solvernet.StatusClosed, solvernet.StatusClaimed:
-			return status, nil
+		case solvernet.StatusClaimed:
+			return nil
+		case solvernet.StatusRejected:
+			return errors.New("order rejected", "reason", reason)
+		case solvernet.StatusClosed, solvernet.StatusInvalid:
+			return errors.New("unexpected order status", "status", status)
 		default:
+			checks++
 			if checks%logFreq == 0 {
 				log.Debug(ctx, "Flowgen: order in flight", "status", status)
 			}
-			checks++
 		}
 
 		time.Sleep(5 * time.Second)

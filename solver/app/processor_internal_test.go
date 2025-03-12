@@ -88,12 +88,14 @@ func TestEventProcessor(t *testing.T) {
 					return Order{
 						ID:     id,
 						Status: test.getStatus,
-						FillInstruction: bindings.IERC7683FillInstruction{
-							DestinationSettler: [32]byte{},
-							DestinationChainId: 0,
-							OriginData:         []byte{},
+						pendingData: PendingData{
+							FillInstruction: bindings.IERC7683FillInstruction{
+								DestinationSettler: [32]byte{},
+								DestinationChainId: 0,
+								OriginData:         []byte{},
+							},
+							MaxSpent: []bindings.IERC7683Output{},
 						},
-						MaxSpent: []bindings.IERC7683Output{},
 					}, true, nil
 				},
 				DidFill: func(ctx context.Context, order Order) (bool, error) {
@@ -131,7 +133,7 @@ func TestEventProcessor(t *testing.T) {
 					return nil
 				},
 				ChainName:      func(uint64) string { return "" },
-				TargetName:     func(Order) string { return "" },
+				TargetName:     func(PendingData) string { return "" },
 				BlockTimestamp: func(uint64, uint64) time.Time { return time.Time{} },
 			}
 

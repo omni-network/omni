@@ -18,18 +18,48 @@ type (
 )
 
 type Order struct {
-	ID                 OrderID
-	Offset             uint64
-	FillInstruction    bindings.IERC7683FillInstruction
-	FillOriginData     []byte
+	ID            OrderID
+	Offset        uint64
+	SourceChainID uint64
+	Status        solvernet.OrderStatus
+	UpdatedBy     common.Address
+
+	pendingData PendingData
+	filledData  FilledData
+}
+
+func (o Order) PendingData() (PendingData, error) {
+	if o.Status != solvernet.StatusPending {
+		return PendingData{}, errors.New("order is not pending")
+	}
+
+	return o.pendingData, nil
+}
+
+func (o Order) MinReceived() ([]bindings.IERC7683Output, error) {
+	if o.Status == solvernet.StatusPending {
+		return o.pendingData.MinReceived, nil
+	} else if o.Status == solvernet.StatusFilled {
+		return o.filledData.MinReceived, nil
+	}
+
+	return nil, errors.New("order is not pending or filled")
+}
+
+// PendingData contains order data that is only available for pending orders.
+type PendingData struct {
+	MinReceived        []bindings.IERC7683Output
 	DestinationSettler common.Address
 	DestinationChainID uint64
-	SourceChainID      uint64
-	MaxSpent           []bindings.IERC7683Output
-	MinReceived        []bindings.IERC7683Output
 
-	Status    solvernet.OrderStatus
-	UpdatedBy common.Address
+	FillInstruction bindings.IERC7683FillInstruction
+	FillOriginData  []byte
+	MaxSpent        []bindings.IERC7683Output
+}
+
+// FilledData contains order data that is only available for filled orders.
+type FilledData struct {
+	MinReceived []bindings.IERC7683Output
 }
 
 func newOrder(resolved OrderResolved, state OrderState, offset *big.Int) (Order, error) {
@@ -37,21 +67,24 @@ func newOrder(resolved OrderResolved, state OrderState, offset *big.Int) (Order,
 		return Order{}, errors.Wrap(err, "validate resolved")
 	}
 
-	o := Order{
-		ID:                 resolved.OrderId,
-		Offset:             offset.Uint64(),
-		Status:             solvernet.OrderStatus(state.Status),
-		UpdatedBy:          state.UpdatedBy,
-		FillInstruction:    resolved.FillInstructions[0],
-		FillOriginData:     resolved.FillInstructions[0].OriginData,
-		DestinationChainID: resolved.FillInstructions[0].DestinationChainId,
-		DestinationSettler: toEthAddr(resolved.FillInstructions[0].DestinationSettler),
-		SourceChainID:      resolved.OriginChainId.Uint64(),
-		MaxSpent:           resolved.MaxSpent,
-		MinReceived:        resolved.MinReceived,
-	}
-
-	return o, nil
+	return Order{
+		ID:            resolved.OrderId,
+		Offset:        offset.Uint64(),
+		Status:        solvernet.OrderStatus(state.Status),
+		UpdatedBy:     state.UpdatedBy,
+		SourceChainID: resolved.OriginChainId.Uint64(),
+		filledData: FilledData{
+			MinReceived: resolved.MinReceived,
+		},
+		pendingData: PendingData{
+			MinReceived:        resolved.MinReceived,
+			FillInstruction:    resolved.FillInstructions[0],
+			FillOriginData:     resolved.FillInstructions[0].OriginData,
+			DestinationChainID: resolved.FillInstructions[0].DestinationChainId,
+			DestinationSettler: toEthAddr(resolved.FillInstructions[0].DestinationSettler),
+			MaxSpent:           resolved.MaxSpent,
+		},
+	}, nil
 }
 
 func validateResolved(o OrderResolved) error {
@@ -78,8 +111,8 @@ func validateResolved(o OrderResolved) error {
 	return nil
 }
 
-func (o Order) ParsedFillOriginData() (FillOriginData, error) {
-	resp, err := solvernet.ParseFillOriginData(o.FillOriginData)
+func (d PendingData) ParsedFillOriginData() (FillOriginData, error) {
+	resp, err := solvernet.ParseFillOriginData(d.FillOriginData)
 	if err != nil {
 		return FillOriginData{}, errors.Wrap(err, "parse fill origin data")
 	} else if len(resp.Calls) == 0 {

@@ -49,14 +49,19 @@ func newShouldRejector(
 	solverAddr, outboxAddr common.Address,
 ) func(ctx context.Context, order Order) (types.RejectReason, bool, error) {
 	return func(ctx context.Context, order Order) (types.RejectReason, bool, error) {
+		pendingData, err := order.PendingData()
+		if err != nil {
+			return types.RejectNone, false, err
+		}
+
 		// Internal logic just return errors (convert them to rejections below)
-		err := func(ctx context.Context, order Order) error {
-			backend, err := backends.Backend(order.DestinationChainID)
+		err = func(ctx context.Context, order Order) error {
+			backend, err := backends.Backend(pendingData.DestinationChainID)
 			if err != nil {
 				return newRejection(types.RejectUnsupportedDestChain, err)
 			}
 
-			if err := checkOrderCalls(order, isAllowedCall); err != nil {
+			if err := checkOrderCalls(pendingData, isAllowedCall); err != nil {
 				return err
 			}
 
@@ -65,7 +70,7 @@ func newShouldRejector(
 				return err
 			}
 
-			expenses, err := parseMaxSpent(order, outboxAddr)
+			expenses, err := parseMaxSpent(pendingData, outboxAddr)
 			if err != nil {
 				return err
 			}
@@ -82,7 +87,7 @@ func newShouldRejector(
 				return err
 			}
 
-			return checkFill(ctx, backend, order.ID, order.FillOriginData, nativeAmt(expenses), solverAddr, outboxAddr)
+			return checkFill(ctx, backend, order.ID, pendingData.FillOriginData, nativeAmt(expenses), solverAddr, outboxAddr)
 		}(ctx, order)
 
 		if err == nil { // No error, no rejection
@@ -100,8 +105,13 @@ func newShouldRejector(
 
 // parseMinReceived parses order.MinReceived, checks all tokens are supported, returns the list of deposits.
 func parseMinReceived(order Order) ([]TokenAmt, error) {
+	minReceived, err := order.MinReceived()
+	if err != nil {
+		return nil, err
+	}
+
 	var deposits []TokenAmt
-	for _, output := range order.MinReceived {
+	for _, output := range minReceived {
 		chainID := output.ChainId.Uint64()
 
 		// inbox contract order resolution should ensure minReceived[].output.chainId matches order.SourceChainID
@@ -199,17 +209,15 @@ func checkFill(
 }
 
 // parseMaxSpent parses order.MaxSpent, checks all tokens are supported, returns the list of expenses.
-func parseMaxSpent(order Order, outboxAddr common.Address) ([]TokenAmt, error) {
+func parseMaxSpent(pendingData PendingData, outboxAddr common.Address) ([]TokenAmt, error) {
 	var expenses []TokenAmt
-
-	hasNative := false
-
-	for _, output := range order.MaxSpent {
+	var hasNative bool
+	for _, output := range pendingData.MaxSpent {
 		chainID := output.ChainId.Uint64()
 
 		// order resolution ensures maxSpent[].output.chainId matches order.DestinationChainID
-		if chainID != order.DestinationChainID {
-			return nil, errors.New("max spent chain id mismatch [BUG]", "got", chainID, "expected", order.DestinationChainID)
+		if chainID != pendingData.DestinationChainID {
+			return nil, errors.New("max spent chain id mismatch [BUG]", "got", chainID, "expected", pendingData.DestinationChainID)
 		}
 
 		// order resolve ensures maxSpent[].output.recipient is outboxAddr
@@ -293,8 +301,8 @@ func checkLiquidity(ctx context.Context, expenses []TokenAmt, backend *ethbacken
 }
 
 // checkOrderCalls checks if all calls in an order are allowed.
-func checkOrderCalls(order Order, isAllowed callAllowFunc) error {
-	fill, err := order.ParsedFillOriginData()
+func checkOrderCalls(pendingData PendingData, isAllowed callAllowFunc) error {
+	fill, err := pendingData.ParsedFillOriginData()
 	if err != nil {
 		return errors.Wrap(err, "parse fill origin data")
 	}
@@ -308,7 +316,7 @@ func checkOrderCalls(order Order, isAllowed callAllowFunc) error {
 		})
 	}
 
-	return checkCalls(order.DestinationChainID, calls, isAllowed)
+	return checkCalls(pendingData.DestinationChainID, calls, isAllowed)
 }
 
 // checkCalls checks if all calls to destChainID are allowed.
