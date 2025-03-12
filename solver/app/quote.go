@@ -74,11 +74,11 @@ func quoter(_ context.Context, req types.QuoteRequest) (types.QuoteResponse, err
 // getQuote returns payment in `depositTkns` required to pay for `expenses`.
 func getQuote(depositTkns []Token, expenses []TokenAmt) ([]TokenAmt, error) {
 	if len(depositTkns) != 1 {
-		return nil, newRejection(rejectInvalidDeposit, errors.New("only single deposit token supported"))
+		return nil, newRejection(types.RejectInvalidDeposit, errors.New("only single deposit token supported"))
 	}
 
 	if len(expenses) != 1 {
-		return nil, newRejection(rejectInvalidExpense, errors.New("only single expense supported"))
+		return nil, newRejection(types.RejectInvalidExpense, errors.New("only single expense supported"))
 	}
 
 	expense := expenses[0]
@@ -95,12 +95,12 @@ func getQuote(depositTkns []Token, expenses []TokenAmt) ([]TokenAmt, error) {
 // QuoteDeposit returns the deposit required to cover `expense`.
 func QuoteDeposit(tkn Token, expense TokenAmt) (TokenAmt, error) {
 	if expense.Token.Symbol != tkn.Symbol {
-		return TokenAmt{}, newRejection(rejectInvalidDeposit, errors.New("deposit token must match expense token"))
+		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, errors.New("deposit token must match expense token"))
 	}
 
 	if expense.Token.ChainClass != tkn.ChainClass {
 		// we should reject with UnsupportedDestChain before quoting tokens of different chain classes.
-		return TokenAmt{}, newRejection(rejectInvalidDeposit, errors.New("deposit and expense must be of the same chain class (e.g. mainnet, testnet)"))
+		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, errors.New("deposit and expense must be of the same chain class (e.g. mainnet, testnet)"))
 	}
 
 	return TokenAmt{
@@ -112,12 +112,12 @@ func QuoteDeposit(tkn Token, expense TokenAmt) (TokenAmt, error) {
 // QuoteExpense returns the expense allowed for `deposit`.
 func quoteExpense(tkn Token, deposit TokenAmt) (TokenAmt, error) {
 	if deposit.Token.Symbol != tkn.Symbol {
-		return TokenAmt{}, newRejection(rejectInvalidDeposit, errors.New("deposit token must match expense token"))
+		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, errors.New("deposit token must match expense token"))
 	}
 
 	if deposit.Token.ChainClass != tkn.ChainClass {
 		// we should reject with UnsupportedDestChain before quoting tokens of different chain classes.
-		return TokenAmt{}, newRejection(rejectInvalidDeposit, errors.New("deposit and expense must be of the same chain class (e.g. mainnet, testnet)"))
+		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, errors.New("deposit and expense must be of the same chain class (e.g. mainnet, testnet)"))
 	}
 
 	return TokenAmt{

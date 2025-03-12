@@ -71,11 +71,7 @@ contract SolverNet_Inbox_Close_Test is TestBase {
         emit ISolverNetInbox.Closed(resolvedOrder.orderId);
         inbox.close(resolvedOrder.orderId);
 
-        assertEq(
-            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Closed),
-            resolvedOrder.orderId,
-            "order should be closed"
-        );
+        assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Closed);
         assertEq(user.balance, defaultAmount, "deposit should have been returned to the user");
     }
 
@@ -98,11 +94,7 @@ contract SolverNet_Inbox_Close_Test is TestBase {
         emit ISolverNetInbox.Closed(resolvedOrder.orderId);
         inbox.close(resolvedOrder.orderId);
 
-        assertEq(
-            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Closed),
-            resolvedOrder.orderId,
-            "order should be closed"
-        );
+        assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Closed);
         assertEq(token1.balanceOf(user), defaultAmount, "deposit should have been returned to the user");
     }
 }

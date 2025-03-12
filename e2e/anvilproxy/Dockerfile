@@ -1,5 +1,5 @@
 ARG FOUNDRY_VERSION
-FROM --platform=linux/amd64 ghcr.io/foundry-rs/foundry:${FOUNDRY_VERSION}
+FROM ghcr.io/foundry-rs/foundry:${FOUNDRY_VERSION}
 
 # Need wget for localhost perturbations
 # apk for apline (https://github.com/foundry-rs/foundry/blob/master/Dockerfile)

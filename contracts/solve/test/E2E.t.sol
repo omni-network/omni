@@ -24,13 +24,9 @@ contract SolverNet_E2E_Test is TestBase {
         inbox.open{ value: defaultAmount }(order);
         vm.stopPrank();
 
-        (IERC7683.ResolvedCrossChainOrder memory resolved2,) = inbox.getOrder(resolvedOrder.orderId);
+        (IERC7683.ResolvedCrossChainOrder memory resolved2,,) = inbox.getOrder(resolvedOrder.orderId);
         assertResolvedEq(resolvedOrder, resolved2);
-        assertEq(
-            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Pending),
-            resolvedOrder.orderId,
-            "order should be pending"
-        );
+        assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Pending);
 
         uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
         bytes32 fillhash = fillHash(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData);
@@ -55,11 +51,7 @@ contract SolverNet_E2E_Test is TestBase {
         vm.prank(solver);
         inbox.claim(resolvedOrder.orderId, solver);
 
-        assertEq(
-            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Claimed),
-            resolvedOrder.orderId,
-            "order should be claimed"
-        );
+        assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Claimed);
         assertEq(
             nativeVault.balances(user), defaultAmount, "user should have received the native expense as a vault deposit"
         );
@@ -88,13 +80,9 @@ contract SolverNet_E2E_Test is TestBase {
         inbox.open{ value: defaultAmount }(order);
         vm.stopPrank();
 
-        (IERC7683.ResolvedCrossChainOrder memory resolved2,) = inbox.getOrder(resolvedOrder.orderId);
+        (IERC7683.ResolvedCrossChainOrder memory resolved2,,) = inbox.getOrder(resolvedOrder.orderId);
         assertResolvedEq(resolvedOrder, resolved2);
-        assertEq(
-            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Pending),
-            resolvedOrder.orderId,
-            "order should be pending"
-        );
+        assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Pending);
 
         uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
         bytes32 fillhash = fillHash(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData);
@@ -119,11 +107,7 @@ contract SolverNet_E2E_Test is TestBase {
         vm.prank(solver);
         inbox.claim(resolvedOrder.orderId, solver);
 
-        assertEq(
-            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Claimed),
-            resolvedOrder.orderId,
-            "order should be claimed"
-        );
+        assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Claimed);
         assertEq(
             erc20Vault.balances(user), defaultAmount, "user should have received the erc20 expense as a vault deposit"
         );
@@ -153,13 +137,9 @@ contract SolverNet_E2E_Test is TestBase {
         inbox.open(order);
         vm.stopPrank();
 
-        (IERC7683.ResolvedCrossChainOrder memory resolved2,) = inbox.getOrder(resolvedOrder.orderId);
+        (IERC7683.ResolvedCrossChainOrder memory resolved2,,) = inbox.getOrder(resolvedOrder.orderId);
         assertResolvedEq(resolvedOrder, resolved2);
-        assertEq(
-            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Pending),
-            resolvedOrder.orderId,
-            "order should be pending"
-        );
+        assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Pending);
 
         uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
         bytes32 fillhash = fillHash(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData);
@@ -184,11 +164,7 @@ contract SolverNet_E2E_Test is TestBase {
         vm.prank(solver);
         inbox.claim(resolvedOrder.orderId, solver);
 
-        assertEq(
-            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Claimed),
-            resolvedOrder.orderId,
-            "order should be claimed"
-        );
+        assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Claimed);
         assertEq(
             nativeVault.balances(user), defaultAmount, "user should have received the native expense as a vault deposit"
         );
@@ -219,13 +195,9 @@ contract SolverNet_E2E_Test is TestBase {
         inbox.open(order);
         vm.stopPrank();
 
-        (IERC7683.ResolvedCrossChainOrder memory resolved2,) = inbox.getOrder(resolvedOrder.orderId);
+        (IERC7683.ResolvedCrossChainOrder memory resolved2,,) = inbox.getOrder(resolvedOrder.orderId);
         assertResolvedEq(resolvedOrder, resolved2);
-        assertEq(
-            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Pending),
-            resolvedOrder.orderId,
-            "order should be pending"
-        );
+        assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Pending);
 
         uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
         bytes32 fillhash = fillHash(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData);
@@ -250,11 +222,7 @@ contract SolverNet_E2E_Test is TestBase {
         vm.prank(solver);
         inbox.claim(resolvedOrder.orderId, solver);
 
-        assertEq(
-            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Claimed),
-            resolvedOrder.orderId,
-            "order should be claimed"
-        );
+        assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Claimed);
         assertEq(
             erc20Vault.balances(user), defaultAmount, "user should have received the erc20 expense as a vault deposit"
         );
@@ -288,13 +256,9 @@ contract SolverNet_E2E_Test is TestBase {
         inbox.open{ value: defaultAmount * 2 }(order);
         vm.stopPrank();
 
-        (IERC7683.ResolvedCrossChainOrder memory resolved2,) = inbox.getOrder(resolvedOrder.orderId);
+        (IERC7683.ResolvedCrossChainOrder memory resolved2,,) = inbox.getOrder(resolvedOrder.orderId);
         assertResolvedEq(resolvedOrder, resolved2);
-        assertEq(
-            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Pending),
-            resolvedOrder.orderId,
-            "order should be pending"
-        );
+        assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Pending);
 
         uint256 fillFee = outbox.fillFee(resolvedOrder.fillInstructions[0].originData);
         bytes32 fillhash = fillHash(resolvedOrder.orderId, resolvedOrder.fillInstructions[0].originData);
@@ -319,11 +283,7 @@ contract SolverNet_E2E_Test is TestBase {
         vm.prank(solver);
         inbox.claim(resolvedOrder.orderId, solver);
 
-        assertEq(
-            inbox.getLatestOrderIdByStatus(ISolverNetInbox.Status.Claimed),
-            resolvedOrder.orderId,
-            "order should be claimed"
-        );
+        assertStatus(resolvedOrder.orderId, ISolverNetInbox.Status.Claimed);
         assertEq(
             nativeVault.balances(user), defaultAmount, "user should have received the native expense as a vault deposit"
         );

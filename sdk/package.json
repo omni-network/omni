@@ -1,7 +1,7 @@
 {
   "name": "@omni-network/react",
   "description": "React hooks for Omni Solvernet",
-  "version": "0.0.0-alpha.5",
+  "version": "0.0.0-alpha.7",
   "type": "module",
   "license": "MIT",
   "packageManager": "pnpm@9.1.0",
@@ -19,6 +19,7 @@
   "scripts": {
     "build": "pnpm clean && pnpm build:ts",
     "build:ts": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "pnpm build",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "check": "biome check --write",
     "test": "vitest",

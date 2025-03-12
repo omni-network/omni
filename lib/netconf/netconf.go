@@ -132,7 +132,7 @@ func EthereumChainID(network ID) uint64 {
 	case Omega:
 		return evmchain.IDHolesky
 	case Staging:
-		return evmchain.IDSepolia
+		return evmchain.IDHolesky
 	default:
 		return evmchain.IDMockL1
 	}

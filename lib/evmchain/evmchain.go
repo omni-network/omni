@@ -18,9 +18,9 @@ const (
 	// Mainnets.
 	IDEthereum    uint64 = 1
 	IDOmniMainnet uint64 = 166
-	IDArbitrumOne        = 42161
-	IDBase               = 8453
-	IDOptimism           = 10
+	IDArbitrumOne uint64 = 42161
+	IDBase        uint64 = 8453
+	IDOptimism    uint64 = 10
 
 	// Testnets.
 	IDOmniOmega   uint64 = 164
@@ -196,6 +196,6 @@ var static = map[uint64]Metadata{
 
 // IsDisabled returns true if the chain is disabled.
 // TODO(corver): Remove once holesky issue resolved.
-func IsDisabled(id uint64) bool {
-	return id == IDHolesky
+func IsDisabled(_ uint64) bool {
+	return false // id == IDHolesky
 }

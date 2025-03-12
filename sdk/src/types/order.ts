@@ -8,7 +8,8 @@ import type {
 import type { AbiWriteMutability, OptionalAbi, OptionalAbis } from './abi.js'
 
 export type OrderStatus =
-  | 'idle'
+  | 'initializing'
+  | 'ready'
   | 'opening'
   | 'open'
   | 'closed'

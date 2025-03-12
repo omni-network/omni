@@ -36,7 +36,7 @@ test('default', async () => {
   expect(result.current.data).toBeUndefined()
 
   useReadContract.mockReturnValue(
-    createMockReadContractResult({
+    createMockReadContractResult<ReturnType<typeof useGetOrder>>({
       data: [
         resolvedOrder,
         { status: 1, claimant: '0x123', timestamp: 1 } as const,

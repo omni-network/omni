@@ -97,7 +97,7 @@ function App() {
 
 ```
 
-Finally, open the order, and checks it's status:
+Finally, check the order is ready to be opened, open the order, and checks it's status:
 
 ```tsx
 import { useOrder, useQuote } from '@omni-network/react'
@@ -115,11 +115,12 @@ function App() {
     isOpen,
     isTxPending,
     isValidated,
+    isReady,
   } = order
 
   return (
     <div>
-        <button onClick={open}>Bridge</button>
+        <button disabled={!isReady} onClick={open}>Bridge</button>
         <p>Order status: {status}</p>
     </div>
   )
@@ -132,7 +133,8 @@ Order status lets you track the order's progress.
 
 ```tsx
 export type OrderStatus =
-  | 'idle'
+  | 'initializing'
+  | 'ready'
   | 'opening'
   | 'open'
   | 'closed'

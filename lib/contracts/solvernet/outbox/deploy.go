@@ -25,14 +25,7 @@ type DeploymentConfig struct {
 	Inbox           common.Address
 	Deployer        common.Address
 	ExpectedAddr    common.Address
-}
-
-type MiddlemanConfig struct {
-	Create3Factory  common.Address
-	Create3Salt     string
-	ProxyAdminOwner common.Address
-	Deployer        common.Address
-	ExpectedAddr    common.Address
+	Executor        common.Address
 }
 
 func (cfg DeploymentConfig) Validate() error {
@@ -62,6 +55,9 @@ func (cfg DeploymentConfig) Validate() error {
 	}
 	if (cfg.ExpectedAddr == common.Address{}) {
 		return errors.New("expected address is zero")
+	}
+	if (cfg.Executor == common.Address{}) {
+		return errors.New("executor is zero")
 	}
 
 	return nil
@@ -96,6 +92,7 @@ func Deploy(ctx context.Context, network netconf.Network, backend *ethbackend.Ba
 		Portal:          addrs.Portal,
 		Inbox:           addrs.SolverNetInbox,
 		ExpectedAddr:    addrs.SolverNetOutbox,
+		Executor:        addrs.SolverNetExecutor,
 	}
 
 	return deploy(ctx, cfg, network, backend)
@@ -202,7 +199,7 @@ func packInitCode(cfg DeploymentConfig, impl common.Address) ([]byte, error) {
 		return nil, errors.Wrap(err, "get proxy abi")
 	}
 
-	initializer, err := outboxAbi.Pack("initialize", cfg.Owner, cfg.Solver, cfg.Portal)
+	initializer, err := outboxAbi.Pack("initialize", cfg.Owner, cfg.Solver, cfg.Portal, cfg.Executor)
 	if err != nil {
 		return nil, errors.Wrap(err, "encode initializer")
 	}

@@ -42,6 +42,7 @@ func TestContractAddressReference(t *testing.T) {
 			"solvernetinbox":     addrs.SolverNetInbox,
 			"solvernetoutbox":    addrs.SolverNetOutbox,
 			"solvernetmiddleman": addrs.SolverNetMiddleman,
+			"solvernetexecutor":  addrs.SolverNetExecutor,
 			"feeoraclev2":        addrs.FeeOracleV2,
 		}
 

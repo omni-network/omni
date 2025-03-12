@@ -32,7 +32,7 @@ func monitorPublicRPCForever(
 
 	omniNodeRPC := ethClients[omniChain.ID]
 
-	log.Info(ctx, "Monitoring public RPC", "public", publicRPC, "local", omniNodeRPC)
+	log.Info(ctx, "Monitoring public RPC", "public", publicRPC.Address(), "local", omniNodeRPC.Address())
 
 	ticker := time.NewTicker(time.Second * 30)
 	defer ticker.Stop()

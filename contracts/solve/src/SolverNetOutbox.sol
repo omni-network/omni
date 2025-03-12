@@ -61,15 +61,16 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
     /**
      * @notice Initialize the contract's owner and solver.
      * @dev Used instead of constructor as we want to use the transparent upgradeable proxy pattern.
-     * @param owner_  Address of the owner.
-     * @param solver_ Address of the solver.
-     * @param omni_   Address of the OmniPortal.
+     * @param owner_    Address of the owner.
+     * @param solver_   Address of the solver.
+     * @param omni_     Address of the OmniPortal.
+     * @param executor_ Address of the executor.
      */
-    function initialize(address owner_, address solver_, address omni_) external initializer {
+    function initialize(address owner_, address solver_, address omni_, address executor_) external initializer {
         _initializeOwner(owner_);
         _grantRoles(solver_, SOLVER);
         _setOmniPortal(omni_);
-        _executor = new SolverNetExecutor(address(this));
+        _executor = SolverNetExecutor(payable(executor_));
     }
 
     /**
@@ -78,6 +79,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
      * @param inboxes  Addresses of the inboxes.
      */
     function setInboxes(uint64[] calldata chainIds, address[] calldata inboxes) external onlyOwner {
+        if (chainIds.length != inboxes.length) revert InvalidArrayLength();
         for (uint256 i; i < chainIds.length; ++i) {
             _inboxes[chainIds[i]] = inboxes[i];
             emit InboxSet(chainIds[i], inboxes[i]);

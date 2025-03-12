@@ -18,29 +18,11 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-type rejectReason = types.RejectReason
-
-const (
-	rejectNone                  = types.RejectNone
-	rejectDestCallReverts       = types.RejectDestCallReverts
-	rejectInvalidDeposit        = types.RejectInvalidDeposit
-	rejectInvalidExpense        = types.RejectInvalidExpense
-	rejectInsufficientDeposit   = types.RejectInsufficientDeposit
-	rejectInsufficientInventory = types.RejectInsufficientInventory
-	rejectUnsupportedDeposit    = types.RejectUnsupportedDeposit
-	rejectUnsupportedExpense    = types.RejectUnsupportedExpense
-	rejectUnsupportedDestChain  = types.RejectUnsupportedDestChain
-	rejectUnsupportedSrcChain   = types.RejectUnsupportedSrcChain
-	rejectSameChain             = types.RejectSameChain
-	rejectExpenseOverMax        = types.RejectExpenseOverMax
-	rejectExpenseUnderMin       = types.RejectExpenseUnderMin
-)
-
 // RejectionError implement error, but represents a logical (expected) rejection, not an unexpected system error.
 // We combine rejections with errors for detailed internal structured errors.
 type RejectionError struct {
-	Reason rejectReason // Succinct human-readable reason for rejection.
-	Err    error        // Internal detailed reject condition
+	Reason types.RejectReason // Succinct human-readable reason for rejection.
+	Err    error              // Internal detailed reject condition
 }
 
 // Error implements error.
@@ -49,7 +31,7 @@ func (r *RejectionError) Error() string {
 }
 
 // newRejection is a convenience function to create a new RejectionError error.
-func newRejection(reason rejectReason, err error) *RejectionError {
+func newRejection(reason types.RejectReason, err error) *RejectionError {
 	return &RejectionError{Reason: reason, Err: err}
 }
 
@@ -63,14 +45,19 @@ func newRejection(reason rejectReason, err error) *RejectionError {
 // should be made before calling ShouldReject.
 func newShouldRejector(
 	backends ethbackend.Backends,
+	isAllowedCall callAllowFunc,
 	solverAddr, outboxAddr common.Address,
-) func(ctx context.Context, order Order) (rejectReason, bool, error) {
-	return func(ctx context.Context, order Order) (rejectReason, bool, error) {
+) func(ctx context.Context, order Order) (types.RejectReason, bool, error) {
+	return func(ctx context.Context, order Order) (types.RejectReason, bool, error) {
 		// Internal logic just return errors (convert them to rejections below)
 		err := func(ctx context.Context, order Order) error {
 			backend, err := backends.Backend(order.DestinationChainID)
 			if err != nil {
-				return newRejection(rejectUnsupportedDestChain, err)
+				return newRejection(types.RejectUnsupportedDestChain, err)
+			}
+
+			if err := checkOrderCalls(order, isAllowedCall); err != nil {
+				return err
 			}
 
 			deposits, err := parseMinReceived(order)
@@ -99,12 +86,12 @@ func newShouldRejector(
 		}(ctx, order)
 
 		if err == nil { // No error, no rejection
-			return rejectNone, false, nil
+			return types.RejectNone, false, nil
 		}
 
 		r := new(RejectionError)
 		if !errors.As(err, &r) { // Error, but no rejection
-			return rejectNone, false, err
+			return types.RejectNone, false, err
 		}
 
 		return r.Reason, true, nil
@@ -124,12 +111,12 @@ func parseMinReceived(order Order) ([]TokenAmt, error) {
 
 		addr := toEthAddr(output.Token)
 		if !cmpAddrs(addr, output.Token) {
-			return nil, newRejection(rejectUnsupportedDeposit, errors.New("non-eth addressed token", "addr", hexutil.Encode(output.Token[:])))
+			return nil, newRejection(types.RejectUnsupportedDeposit, errors.New("non-eth addressed token", "addr", hexutil.Encode(output.Token[:])))
 		}
 
 		tkn, ok := tokens.Find(chainID, addr)
 		if !ok {
-			return nil, newRejection(rejectUnsupportedDeposit, errors.New("unsupported token", "addr", addr))
+			return nil, newRejection(types.RejectUnsupportedDeposit, errors.New("unsupported token", "addr", addr))
 		}
 
 		deposits = append(deposits, TokenAmt{
@@ -203,7 +190,7 @@ func checkFill(
 	returnData, err := client.CallContract(ctx, msg, nil)
 	if err != nil {
 		return &RejectionError{
-			Reason: rejectDestCallReverts,
+			Reason: types.RejectDestCallReverts,
 			Err:    errors.Wrap(err, "return_data", hexutil.Encode(returnData), "custom", solvernet.DetectCustomError(err)),
 		}
 	}
@@ -232,12 +219,12 @@ func parseMaxSpent(order Order, outboxAddr common.Address) ([]TokenAmt, error) {
 
 		addr := toEthAddr(output.Token)
 		if !cmpAddrs(addr, output.Token) {
-			return nil, newRejection(rejectUnsupportedExpense, errors.New("non-eth addressed token", "addr", hexutil.Encode(output.Token[:])))
+			return nil, newRejection(types.RejectUnsupportedExpense, errors.New("non-eth addressed token", "addr", hexutil.Encode(output.Token[:])))
 		}
 
 		tkn, ok := tokens.Find(chainID, addr)
 		if !ok {
-			return nil, newRejection(rejectUnsupportedExpense, errors.New("unsupported token", "addr", addr))
+			return nil, newRejection(types.RejectUnsupportedExpense, errors.New("unsupported token", "addr", addr))
 		}
 
 		if output.Token == [32]byte{} {
@@ -250,11 +237,11 @@ func parseMaxSpent(order Order, outboxAddr common.Address) ([]TokenAmt, error) {
 		}
 
 		if tkn.MaxSpend != nil && output.Amount.Cmp(tkn.MaxSpend) > 0 {
-			return nil, newRejection(rejectExpenseOverMax, errors.New("expense over max", "token", tkn.Symbol, "max", tkn.MaxSpend, "amount", output.Amount))
+			return nil, newRejection(types.RejectExpenseOverMax, errors.New("expense over max", "token", tkn.Symbol, "max", tkn.MaxSpend, "amount", output.Amount))
 		}
 
 		if tkn.MinSpend != nil && output.Amount.Cmp(tkn.MinSpend) < 0 {
-			return nil, newRejection(rejectExpenseUnderMin, errors.New("expense under min", "token", tkn.Symbol, "min", tkn.MinSpend, "amount", output.Amount))
+			return nil, newRejection(types.RejectExpenseUnderMin, errors.New("expense under min", "token", tkn.Symbol, "min", tkn.MinSpend, "amount", output.Amount))
 		}
 
 		expenses = append(expenses, TokenAmt{
@@ -298,7 +285,37 @@ func checkLiquidity(ctx context.Context, expenses []TokenAmt, backend *ethbacken
 		// TODO: for native tokens, even if we have enough, we don't want to
 		// spend out whole balance. we'll need to keep some for gas
 		if bal.Cmp(expense.Amount) < 0 {
-			return newRejection(rejectInsufficientInventory, errors.New("insufficient balance", "token", expense.Token.Symbol))
+			return newRejection(types.RejectInsufficientInventory, errors.New("insufficient balance", "token", expense.Token.Symbol))
+		}
+	}
+
+	return nil
+}
+
+// checkOrderCalls checks if all calls in an order are allowed.
+func checkOrderCalls(order Order, isAllowed callAllowFunc) error {
+	fill, err := order.ParsedFillOriginData()
+	if err != nil {
+		return errors.Wrap(err, "parse fill origin data")
+	}
+
+	var calls []types.Call
+	for _, call := range fill.Calls {
+		calls = append(calls, types.Call{
+			Target: call.Target,
+			Value:  call.Value,
+			Data:   append(call.Selector[:], call.Params...),
+		})
+	}
+
+	return checkCalls(order.DestinationChainID, calls, isAllowed)
+}
+
+// checkCalls checks if all calls to destChainID are allowed.
+func checkCalls(destChainID uint64, calls []types.Call, isAllowed callAllowFunc) error {
+	for _, call := range calls {
+		if !isAllowed(destChainID, call.Target, call.Data) {
+			return newRejection(types.RejectCallNotAllowed, errors.New("call not allowed", "target", call.Target.Hex(), "data", hexutil.Encode(call.Data)))
 		}
 	}
 

@@ -10,10 +10,10 @@ import {
 } from 'wagmi'
 import { inboxABI } from '../constants/abis.js'
 import { typeHash } from '../constants/typehash.js'
-import { useOmniContext } from '../context/omni.js'
 import {
   DidFillError,
   GetOrderError,
+  LoadContractsError,
   OpenError,
   type ParseOpenEventError,
   TxReceiptError,
@@ -24,6 +24,10 @@ import type { Order, OrderStatus } from '../types/order.js'
 import { encodeOrder } from '../utils/encodeOrder.js'
 import { useDidFill } from './useDidFill.js'
 import { type InboxStatus, useInboxStatus } from './useInboxStatus.js'
+import {
+  type UseOmniContractsResult,
+  useOmniContracts,
+} from './useOmniContracts.js'
 import { useParseOpenEvent } from './useParseOpenEvent.js'
 import {
   type UseValidateOrderResult,
@@ -41,6 +45,7 @@ type UseOrderError =
   | DidFillError
   | ValidateOrderError
   | ParseOpenEventError
+  | LoadContractsError
   | undefined
 
 type UseOrderReturnType = {
@@ -55,6 +60,7 @@ type UseOrderReturnType = {
   isValidated: boolean
   isOpen: boolean
   isError: boolean
+  isReady: boolean
   txMutation: UseWriteContractReturnType<Config, unknown>
   waitForTx: UseWaitForTransactionReceiptReturnType<Config, number>
 }
@@ -81,7 +87,11 @@ export function useOrder<abis extends OptionalAbis>(
   })
   const didFill = useDidFill({ destChainId, resolvedOrder })
 
+  const contractsResult = useOmniContracts()
+  const inboxAddress = contractsResult.data?.inbox
+
   const status = deriveStatus(
+    contractsResult,
     inboxStatus,
     didFill.data ?? false,
     txMutation.status,
@@ -91,31 +101,36 @@ export function useOrder<abis extends OptionalAbis>(
 
   const validation = useValidateOrder({ order, enabled: validateEnabled })
 
-  const { inbox } = useOmniContext()
+  const open = inboxAddress
+    ? async () => {
+        const encoded = encodeOrder(order)
 
-  const open = async () => {
-    const encoded = encodeOrder(order)
+        const isNativeDeposit =
+          order.deposit.token == null || order.deposit.token === zeroAddress
 
-    const isNativeDeposit =
-      order.deposit.token == null || order.deposit.token === zeroAddress
-
-    return await txMutation.writeContractAsync({
-      abi: inboxABI,
-      address: inbox,
-      functionName: 'open',
-      chainId: order.srcChainId,
-      value: isNativeDeposit ? order.deposit.amount : 0n,
-      args: [
-        {
-          fillDeadline: order.fillDeadline ?? defaultFillDeadline(),
-          orderDataType: typeHash,
-          orderData: encoded,
-        },
-      ],
-    })
-  }
+        return await txMutation.writeContractAsync({
+          abi: inboxABI,
+          address: inboxAddress,
+          functionName: 'open',
+          chainId: order.srcChainId,
+          value: isNativeDeposit ? order.deposit.amount : 0n,
+          args: [
+            {
+              fillDeadline: order.fillDeadline ?? defaultFillDeadline(),
+              orderDataType: typeHash,
+              orderData: encoded,
+            },
+          ],
+        })
+      }
+    : () => {
+        return Promise.reject(
+          new LoadContractsError('Inbox contract address needs to be loaded'),
+        )
+      }
 
   const error = deriveError({
+    contracts: contractsResult,
     txMutation,
     wait,
     didFill,
@@ -129,19 +144,21 @@ export function useOrder<abis extends OptionalAbis>(
     orderId: resolvedOrder?.orderId,
     validation,
     txHash: txMutation.data,
-    status,
     error,
+    status,
     isError: !!error,
     isValidated: validation?.status === 'accepted',
     isTxPending: txMutation.isPending,
     isTxSubmitted: txMutation.isSuccess,
     isOpen: !!wait.data,
+    isReady: !!inboxAddress,
     txMutation,
     waitForTx: wait,
   }
 }
 
 type DeriveErrorParams = {
+  contracts: UseOmniContractsResult
   txMutation: UseWriteContractReturnType<Config, unknown>
   wait: UseWaitForTransactionReceiptReturnType
   didFill: ReturnType<typeof useDidFill>
@@ -151,7 +168,12 @@ type DeriveErrorParams = {
 }
 
 function deriveError(params: DeriveErrorParams): UseOrderError {
-  const { txMutation, wait, didFill, validation, inboxStatus } = params
+  const { contracts, txMutation, wait, didFill, validation, inboxStatus } =
+    params
+
+  if (contracts.error) {
+    return new LoadContractsError(contracts.error.message)
+  }
 
   if (validation.status === 'error') {
     return new ValidateOrderError(validation.error.message)
@@ -182,12 +204,17 @@ function deriveError(params: DeriveErrorParams): UseOrderError {
 
 // deriveStatus returns a status derived from open tx, inbox and outbox statuses
 function deriveStatus(
+  contracts: UseOmniContractsResult,
   inboxStatus: InboxStatus,
   didFill: boolean,
   txStatus: UseWriteContractReturnType['status'],
   receiptStatus: UseWaitForTransactionReceiptReturnType['status'],
   receiptFetchStatus: UseWaitForTransactionReceiptReturnType['fetchStatus'],
 ): OrderStatus {
+  // inbox contract address needs to be loaded
+  if (contracts.isError) return 'error'
+  if (!contracts.data) return 'initializing'
+
   // if outbox says filled, it's filled
   if (didFill) return 'filled'
 
@@ -200,7 +227,7 @@ function deriveStatus(
   // prioritize receipt status over tx status
   if (receiptStatus === 'error') return 'error'
   if (receiptStatus === 'success') return 'open' // receipt success == open (may be seen before inboxStatus is updated)
-  if (receiptFetchStatus === 'idle') return 'idle' // pending is true when !txHash, so we prioritise fetchStatus to check if query is executing
+  if (receiptFetchStatus === 'idle') return 'ready' // pending is true when !txHash, so we prioritise fetchStatus to check if query is executing
   if (receiptStatus === 'pending') return 'opening'
 
   // fallback to tx status
@@ -208,5 +235,5 @@ function deriveStatus(
   if (txStatus === 'pending') return 'opening'
   if (txStatus === 'success') return 'opening' // still need to wait for receipt
 
-  return 'idle'
+  return 'ready'
 }

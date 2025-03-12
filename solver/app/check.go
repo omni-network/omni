@@ -2,16 +2,15 @@ package app
 
 import (
 	"context"
+	"crypto/rand"
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/solver/types"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -19,20 +18,19 @@ type checkFunc func(context.Context, types.CheckRequest) error
 
 // newChecker returns a checkFunc that can be used to see if an order would be accepted or rejected.
 // It is the logic behind the /check endpoint.
-func newChecker(backends ethbackend.Backends, solverAddr, inboxAddr, outboxAddr common.Address) checkFunc {
+func newChecker(backends ethbackend.Backends, isAllowedCall callAllowFunc, solverAddr, outboxAddr common.Address) checkFunc {
 	return func(ctx context.Context, req types.CheckRequest) error {
 		if req.SourceChainID == req.DestinationChainID {
-			return newRejection(rejectSameChain, errors.New("source and destination chain are the same"))
+			return newRejection(types.RejectSameChain, errors.New("source and destination chain are the same"))
 		}
 
-		srcBackend, err := backends.Backend(req.SourceChainID)
-		if err != nil {
-			return newRejection(rejectUnsupportedSrcChain, errors.New("unsupported source chain", "chain_id", req.SourceChainID))
+		if _, err := backends.Backend(req.SourceChainID); err != nil {
+			return newRejection(types.RejectUnsupportedSrcChain, errors.New("unsupported source chain", "chain_id", req.SourceChainID))
 		}
 
 		dstBackend, err := backends.Backend(req.DestinationChainID)
 		if err != nil {
-			return newRejection(rejectUnsupportedDestChain, errors.New("unsupported destination chain", "chain_id", req.DestinationChainID))
+			return newRejection(types.RejectUnsupportedDestChain, errors.New("unsupported destination chain", "chain_id", req.DestinationChainID))
 		}
 
 		deposit, err := parseTokenAmt(req.SourceChainID, req.Deposit)
@@ -59,12 +57,11 @@ func newChecker(backends ethbackend.Backends, solverAddr, inboxAddr, outboxAddr 
 			return err
 		}
 
-		if err := checkApprovals(ctx, expenses, dstBackend, solverAddr, outboxAddr); err != nil {
+		if err := checkCalls(req.DestinationChainID, req.Calls, isAllowedCall); err != nil {
 			return err
 		}
 
-		orderID, err := getNextOrderID(ctx, srcBackend, inboxAddr)
-		if err != nil {
+		if err := checkApprovals(ctx, expenses, dstBackend, solverAddr, outboxAddr); err != nil {
 			return err
 		}
 
@@ -73,23 +70,12 @@ func newChecker(backends ethbackend.Backends, solverAddr, inboxAddr, outboxAddr 
 			return err
 		}
 
+		// Random orderID (since unfilled).
+		var orderID OrderID
+		_, _ = rand.Read(orderID[:])
+
 		return checkFill(ctx, dstBackend, orderID, fillOriginData, nativeAmt(expenses), solverAddr, outboxAddr)
 	}
-}
-
-// getNextOrderID returns the next order ID for the given inbox.
-func getNextOrderID(ctx context.Context, client ethclient.Client, inboxAddr common.Address) (OrderID, error) {
-	inbox, err := bindings.NewSolverNetInbox(inboxAddr, client)
-	if err != nil {
-		return OrderID{}, errors.Wrap(err, "new inbox")
-	}
-
-	orderID, err := inbox.GetNextId(&bind.CallOpts{Context: ctx})
-	if err != nil {
-		return OrderID{}, errors.Wrap(err, "get next order id")
-	}
-
-	return orderID, nil
 }
 
 // getFillOriginData returns packed fill origin data for a check request.
@@ -127,11 +113,11 @@ func coversQuote(deposits, quote []TokenAmt) error {
 	for tkn, q := range quoteByTkn {
 		d, ok := depositsByTkn[tkn]
 		if !ok {
-			return newRejection(rejectInsufficientDeposit, errors.New("missing deposit", "token", tkn))
+			return newRejection(types.RejectInsufficientDeposit, errors.New("missing deposit", "token", tkn))
 		}
 
 		if d.Cmp(q) < 0 {
-			return newRejection(rejectInsufficientDeposit, errors.New("insufficient deposit", "token", tkn, "deposit", d, "quote", q))
+			return newRejection(types.RejectInsufficientDeposit, errors.New("insufficient deposit", "token", tkn, "deposit", d, "quote", q))
 		}
 	}
 
@@ -154,13 +140,13 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 	nativeExpense := big.NewInt(0)
 	for _, e := range expenses {
 		if e.Amount.Sign() <= 0 {
-			return nil, newRejection(rejectInvalidExpense, errors.New("expense amount positive"))
+			return nil, newRejection(types.RejectInvalidExpense, errors.New("expense amount positive"))
 		}
 
 		if isNative(e) {
 			// sum of call values must be represented by a single expense
 			if nativeExpense.Sign() > 0 {
-				return nil, newRejection(rejectInvalidExpense, errors.New("only one native expense supported"))
+				return nil, newRejection(types.RejectInvalidExpense, errors.New("only one native expense supported"))
 			}
 
 			nativeExpense = nativeExpense.Set(e.Amount)
@@ -168,15 +154,15 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 
 		tkn, ok := tokens.Find(destChainID, e.Token)
 		if !ok {
-			return nil, newRejection(rejectUnsupportedExpense, errors.New("unsupported expense token", "addr", e.Token))
+			return nil, newRejection(types.RejectUnsupportedExpense, errors.New("unsupported expense token", "addr", e.Token))
 		}
 
 		if tkn.MaxSpend != nil && e.Amount.Cmp(tkn.MaxSpend) > 0 {
-			return nil, newRejection(rejectExpenseOverMax, errors.New("expense over max", "token", tkn.Symbol, "max", tkn.MaxSpend, "amount", e.Amount))
+			return nil, newRejection(types.RejectExpenseOverMax, errors.New("expense over max", "token", tkn.Symbol, "max", tkn.MaxSpend, "amount", e.Amount))
 		}
 
 		if tkn.MinSpend != nil && e.Amount.Cmp(tkn.MinSpend) < 0 {
-			return nil, newRejection(rejectExpenseUnderMin, errors.New("expense under min", "token", tkn.Symbol, "min", tkn.MinSpend, "amount", e.Amount))
+			return nil, newRejection(types.RejectExpenseUnderMin, errors.New("expense under min", "token", tkn.Symbol, "min", tkn.MinSpend, "amount", e.Amount))
 		}
 
 		ps = append(ps, TokenAmt{
@@ -187,7 +173,7 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 
 	// native expense must match sum of call values
 	if nativeExpense.Cmp(callValues) != 0 {
-		return nil, newRejection(rejectInvalidExpense, errors.New("native expense must match native value"))
+		return nil, newRejection(types.RejectInvalidExpense, errors.New("native expense must match native value"))
 	}
 
 	return ps, nil
@@ -196,7 +182,7 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 func parseTokenAmt(srcChainID uint64, dep types.AddrAmt) (TokenAmt, error) {
 	tkn, ok := tokens.Find(srcChainID, dep.Token)
 	if !ok {
-		return TokenAmt{}, newRejection(rejectUnsupportedDeposit, errors.New("unsupported deposit token", "addr", dep.Token))
+		return TokenAmt{}, newRejection(types.RejectUnsupportedDeposit, errors.New("unsupported source chain deposit token", "addr", dep.Token, "src_chain", srcChainID))
 	}
 
 	return TokenAmt{

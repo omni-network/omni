@@ -53,6 +53,7 @@ func newContractsHandler(addrs contracts.Addresses) Handler {
 				Inbox:     addrs.SolverNetInbox,
 				Outbox:    addrs.SolverNetOutbox,
 				Middleman: addrs.SolverNetMiddleman,
+				Executor:  addrs.SolverNetExecutor,
 			}, nil
 		},
 	}

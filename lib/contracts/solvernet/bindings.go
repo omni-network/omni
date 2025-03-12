@@ -1,6 +1,8 @@
 package solvernet
 
 import (
+	"math/big"
+
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 
@@ -206,6 +208,20 @@ func PackOrderData(data bindings.SolverNetOrderData) ([]byte, error) {
 }
 
 func PackFillOriginData(data bindings.SolverNetFillOriginData) ([]byte, error) {
+	// Replaces nil call values with zero (inputs.Pack panics if value is nil)
+	for i := range data.Calls {
+		if data.Calls[i].Value == nil {
+			data.Calls[i].Value = big.NewInt(0)
+		}
+	}
+
+	// Same for expenses
+	for i := range data.Expenses {
+		if data.Expenses[i].Amount == nil {
+			data.Expenses[i].Amount = big.NewInt(0)
+		}
+	}
+
 	packed, err := inputsFillOriginData.Pack(data)
 	if err != nil {
 		return nil, errors.Wrap(err, "pack fill data")

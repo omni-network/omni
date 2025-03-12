@@ -1,6 +1,8 @@
 package app
 
 import (
+	"math/big"
+
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
@@ -17,6 +19,7 @@ type (
 
 type Order struct {
 	ID                 OrderID
+	Offset             uint64
 	FillInstruction    bindings.IERC7683FillInstruction
 	FillOriginData     []byte
 	DestinationSettler common.Address
@@ -29,13 +32,14 @@ type Order struct {
 	UpdatedBy common.Address
 }
 
-func newOrder(resolved OrderResolved, state OrderState) (Order, error) {
+func newOrder(resolved OrderResolved, state OrderState, offset *big.Int) (Order, error) {
 	if err := validateResolved(resolved); err != nil {
 		return Order{}, errors.Wrap(err, "validate resolved")
 	}
 
 	o := Order{
 		ID:                 resolved.OrderId,
+		Offset:             offset.Uint64(),
 		Status:             solvernet.OrderStatus(state.Status),
 		UpdatedBy:          state.UpdatedBy,
 		FillInstruction:    resolved.FillInstructions[0],

@@ -9,6 +9,8 @@ import (
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/netconf"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -49,7 +51,8 @@ func TestShouldReject(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			backends, clients := testBackends(t)
 
-			shouldReject := newShouldRejector(backends, solver, outbox)
+			callAllower := func(_ uint64, _ common.Address, _ []byte) bool { return !tt.disallowCall }
+			shouldReject := newShouldRejector(backends, callAllower, solver, outbox)
 
 			if tt.mock != nil {
 				tt.mock(clients)

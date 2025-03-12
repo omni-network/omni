@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/pprof"
+	"sync"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -14,7 +15,6 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
-	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -25,21 +25,29 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-// confLevel of solver streamers.
-const (
-	confLevel = xchain.ConfLatest
-	unknown   = "unknown"
-)
+const unknown = "unknown"
 
-func chainVerFromID(id uint64) xchain.ChainVersion {
-	return xchain.ChainVersion{ID: id, ConfLevel: confLevel}
+// chainVersFromID returns the chain versions to stream/process per chain ID.
+func chainVersFromID(network netconf.ID, chainID uint64) []xchain.ChainVersion {
+	// On devnet we stream twice (for idempotency testing)
+	if network == netconf.Devnet {
+		return []xchain.ChainVersion{
+			xchain.NewChainVersion(chainID, xchain.ConfLatest),
+			xchain.NewChainVersion(chainID, xchain.ConfMin1),
+		}
+	}
+
+	// On other chains, we only stream latest for now,
+	return []xchain.ChainVersion{
+		xchain.NewChainVersion(chainID, xchain.ConfLatest),
+	}
 }
 
 // Run starts the solver service.
@@ -84,11 +92,6 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	// add back holesky manually on holesky on omega
-	// temporary fix to enable holesky solving before it is re-enabled in core
-	// It was disabled here https://github.com/omni-network/omni/pull/3259/files
-	network = maybeAddHolesky(network)
-
 	// TODO: log supported tokens / balances
 
 	if cfg.SolverPrivKey == "" {
@@ -130,9 +133,16 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "start event streams")
 	}
 
+	err = startRebalancing(ctx, network, backends)
+	if err != nil {
+		return errors.Wrap(err, "start rebalancing")
+	}
+
+	callAllower := newCallAllower(network.ID, addrs.SolverNetMiddleman)
+
 	log.Info(ctx, "Serving API", "address", cfg.APIAddr)
 	apiChan := serveAPI(cfg.APIAddr,
-		newCheckHandler(newChecker(backends, solverAddr, addrs.SolverNetInbox, addrs.SolverNetOutbox)),
+		newCheckHandler(newChecker(backends, callAllower, solverAddr, addrs.SolverNetOutbox)),
 		newContractsHandler(addrs),
 		newQuoteHandler(quoter),
 	)
@@ -231,7 +241,6 @@ func startEventStreams(
 	inboxTimestamps := make(map[uint64]func(uint64) time.Time)
 	for _, chain := range inboxChains {
 		name := network.ChainName(chain)
-		chainVer := chainVerFromID(chain)
 		log.Debug(ctx, "Using inbox contract", "chain", name, "address", addrs.SolverNetInbox.Hex())
 
 		backend, err := backends.Backend(chain)
@@ -239,30 +248,7 @@ func startEventStreams(
 			return err
 		}
 
-		inbox, err := bindings.NewSolverNetInbox(addrs.SolverNetInbox, backend)
-		if err != nil {
-			return errors.Wrap(err, "create inbox contract", "chain", name)
-		}
-		inboxContracts[chain] = inbox
-
-		// Check if cursor store should be initialized with deploy height
-		if _, ok, err := cursors.Get(ctx, chainVer); err != nil {
-			return errors.Wrap(err, "get cursor", "chain", name)
-		} else if ok { // Cursor already set, skip
-			continue
-		}
-
-		height, err := inbox.DeployedAt(&bind.CallOpts{Context: ctx})
-		if err != nil {
-			return errors.New("get inbox deploy height", "chain", name)
-		}
-
-		log.Info(ctx, "Initializing inbox cursor", "chain", name, "deployed_at", height)
-
-		if err := cursors.Set(ctx, chainVer, height.Uint64()); err != nil {
-			return err
-		}
-
+		// Logic to query block timestamp for a given height
 		inboxTimestamps[chain] = func(height uint64) time.Time {
 			header, err := backend.HeaderByNumber(ctx, umath.NewBigInt(height))
 			if err != nil {
@@ -274,6 +260,20 @@ func startEventStreams(
 			}
 
 			return time.Unix(timeI64, 0)
+		}
+
+		inbox, err := bindings.NewSolverNetInbox(addrs.SolverNetInbox, backend)
+		if err != nil {
+			return errors.Wrap(err, "create inbox contract", "chain", name)
+		}
+		inboxContracts[chain] = inbox
+
+		// Bootstrap all streamer cursors for this chain
+		for _, chainVer := range chainVersFromID(network.ID, chain) {
+			loopCtx := log.WithCtx(ctx, "chain_version", network.ChainVersionName(chainVer))
+			if err := maybeBootstrapCursor(loopCtx, inbox, cursors, chainVer); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -297,10 +297,6 @@ func startEventStreams(
 			return errors.Wrap(err, "create outbox contract", "chain", name)
 		}
 		outboxContracts[chain] = outbox
-	}
-
-	cursorSetter := func(ctx context.Context, chainID uint64, height uint64) error {
-		return cursors.Set(ctx, chainVerFromID(chainID), height)
 	}
 
 	targetName := func(o Order) string {
@@ -334,40 +330,73 @@ func startEventStreams(
 		return f(height)
 	}
 
-	deps := procDeps{
-		ParseID:        newIDParser(inboxContracts),
-		GetOrder:       newOrderGetter(inboxContracts),
-		ShouldReject:   newShouldRejector(backends, solverAddr, addrs.SolverNetOutbox),
-		DidFill:        newDidFiller(outboxContracts),
-		Reject:         newRejector(inboxContracts, backends, solverAddr),
-		Fill:           newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, pricer),
-		Claim:          newClaimer(inboxContracts, backends, solverAddr, pricer),
-		SetCursor:      cursorSetter,
-		ChainName:      network.ChainName,
-		TargetName:     targetName,
-		BlockTimestamp: blockTimestamps,
-	}
+	callAllower := newCallAllower(network.ID, addrs.SolverNetMiddleman)
 
-	for _, chain := range inboxChains {
-		log.Info(ctx, "Starting inbox event stream", "chain", network.ChainName(chain))
-		go streamEventsForever(ctx, chain, xprov, deps, cursors, addrs.SolverNetInbox)
+	for _, chainID := range inboxChains {
+		// Ensure chain version processors don't process same height concurrently.
+		callbackWrapper := newHeightMutexer()
+		for _, chainVer := range chainVersFromID(network.ID, chainID) {
+			cursorSetter := func(ctx context.Context, _ uint64, height uint64) error {
+				return cursors.Set(ctx, chainVer, height)
+			}
+
+			deps := procDeps{
+				ParseID:        newIDParser(inboxContracts),
+				GetOrder:       newOrderGetter(inboxContracts),
+				ShouldReject:   newShouldRejector(backends, callAllower, solverAddr, addrs.SolverNetOutbox),
+				DidFill:        newDidFiller(outboxContracts),
+				Reject:         newRejector(inboxContracts, backends, solverAddr),
+				Fill:           newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, pricer),
+				Claim:          newClaimer(inboxContracts, backends, solverAddr, pricer),
+				SetCursor:      cursorSetter,
+				ChainName:      network.ChainName,
+				TargetName:     targetName,
+				BlockTimestamp: blockTimestamps,
+			}
+
+			loopCtx := log.WithCtx(ctx, "chain_version", network.ChainVersionName(chainVer))
+			log.Info(loopCtx, "Starting inbox event stream")
+			go streamEventsForever(loopCtx, chainVer, xprov, deps, cursors, addrs.SolverNetInbox, callbackWrapper)
+		}
 	}
 
 	return nil
 }
 
-// streamEventsForever streams events from the inbox contract on the given chain.
+// newHeightMutexer returns a callback wrapper that ensures a specific chain height is NOT processed concurrently.
+// This prevents races when multiple chain versions concurrently processing log events.
+// Since we wait for submitted txs to be mined, subsequent processors will read state from chain.
+// The risk is wasting gas due to re-submitting the same tx.
+func newHeightMutexer() func(callback xchain.EventLogsCallback) xchain.EventLogsCallback {
+	var mutexes sync.Map
+	return func(callback xchain.EventLogsCallback) xchain.EventLogsCallback {
+		return func(ctx context.Context, height uint64, events []types.Log) error {
+			anyMutex, _ := mutexes.LoadOrStore(height, new(sync.Mutex))
+			mutex := anyMutex.(*sync.Mutex) //nolint:revive,forcetypeassert // Known type
+			mutex.Lock()
+			defer func() {
+				mutex.Unlock()
+				mutexes.Delete(height)
+			}()
+
+			return callback(ctx, height, events)
+		}
+	}
+}
+
+// streamEventsForever streams events from the inbox contract on the given chain version.
 func streamEventsForever(
 	ctx context.Context,
-	chainID uint64,
+	chainVer xchain.ChainVersion,
 	xprov xchain.Provider,
 	deps procDeps,
 	cursors *cursors,
 	inboxAddr common.Address,
+	callbackWrapper func(xchain.EventLogsCallback) xchain.EventLogsCallback,
 ) {
 	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second*5))
 	for {
-		from, ok, err := cursors.Get(ctx, xchain.ChainVersion{ID: chainID, ConfLevel: confLevel})
+		from, ok, err := cursors.Get(ctx, chainVer)
 		if !ok || err != nil {
 			log.Warn(ctx, "Failed reading cursor (will retry)", err)
 			backoff()
@@ -376,13 +405,13 @@ func streamEventsForever(
 		}
 
 		req := xchain.EventLogsReq{
-			ChainID:       chainID,
+			ChainID:       chainVer.ID,
 			Height:        from, // Note the previous height is re-processed (idempotency FTW)
-			ConfLevel:     confLevel,
+			ConfLevel:     chainVer.ConfLevel,
 			FilterAddress: inboxAddr,
 			FilterTopics:  solvernet.AllEventTopics(),
 		}
-		err = xprov.StreamEventLogs(ctx, req, newEventProcessor(deps, chainID))
+		err = xprov.StreamEventLogs(ctx, req, callbackWrapper(newEventProcessor(deps, chainVer.ID)))
 		if ctx.Err() != nil {
 			return
 		}
@@ -390,58 +419,4 @@ func streamEventsForever(
 		log.Warn(ctx, "Failure streaming inbox events (will retry)", err)
 		backoff()
 	}
-}
-
-func maybeAddHolesky(network netconf.Network) netconf.Network {
-	if network.ID != netconf.Omega {
-		return network
-	}
-
-	// if holesky already exists, return
-	for _, chain := range network.Chains {
-		if chain.ID == evmchain.IDHolesky {
-			return network
-		}
-	}
-
-	// from omega netconf static
-	deployHeight := 2130892
-	portalAddr := common.HexToAddress("0xcB60A0451831E4865bC49f41F9C67665Fc9b75C3")
-
-	// from e2e/types
-	shards := []xchain.ShardID{xchain.ShardFinalized0, xchain.ShardLatest0}
-
-	meta, ok := evmchain.MetadataByID(evmchain.IDHolesky)
-	if !ok {
-		// will not happen
-		return network
-	}
-
-	network.Chains = append(network.Chains, netconf.Chain{
-		ID:             evmchain.IDHolesky,
-		Name:           meta.Name,
-		PortalAddress:  portalAddr,
-		DeployHeight:   uint64(deployHeight),
-		BlockPeriod:    meta.BlockPeriod,
-		Shards:         shards,
-		AttestInterval: intervalFromPeriod(network.ID, meta.BlockPeriod),
-	})
-
-	return network
-}
-
-// from e2e/types testnet.go (temporary).
-func intervalFromPeriod(network netconf.ID, period time.Duration) uint64 {
-	target := time.Hour
-	if network == netconf.Staging {
-		target = time.Minute * 10
-	} else if network == netconf.Devnet {
-		target = time.Second * 10
-	}
-
-	if period == 0 {
-		return 0
-	}
-
-	return uint64(target / period)
 }
