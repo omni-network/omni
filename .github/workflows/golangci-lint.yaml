@@ -15,7 +15,7 @@ jobs:
         with:
           go-version: 'v1.23'
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v3
         with:
           version: v1.60.3
           # Verbose with color. Just fail, don't fix issues. Use both annotations and normal output.

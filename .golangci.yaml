@@ -60,7 +60,7 @@ linters-settings:
       - name: line-length-limit # Requires us to cause indentation confusion: https://google.github.io/styleguide/go/decisions#indentation-confusion
         disabled: true
       # Some configured revive rules
-      - name: imports-blocklist
+      - name: imports-blacklist
         arguments:
           - "log"                                # Prefer ./lib/log
           - "errors"                             # Prefer ./lib/errors
@@ -69,7 +69,6 @@ linters-settings:
           - "github.com/stretchr/testify/assert" # Prefer github.com/stretchr/testify/require
           - "golang.org/x/exp/slices"            # Prefer slices
           - "golang.org/x/exp/maps"              # Prefer maps
-        exclude: ["lib/errors/errors.go", "lib/errors/go113.go", "lib/errors/structured.go", "lib/log/log.go"]
       - name: unhandled-error
         arguments:
          - 'fmt.Printf'
