@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/cometbft/cometbft/test/e2e/pkg/exec"
+
 	"github.com/stretchr/testify/require"
 )
 

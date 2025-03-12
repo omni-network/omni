@@ -69,6 +69,11 @@ linters-settings:
           - "github.com/stretchr/testify/assert" # Prefer github.com/stretchr/testify/require
           - "golang.org/x/exp/slices"            # Prefer slices
           - "golang.org/x/exp/maps"              # Prefer maps
+        exclude:
+          - "lib/errors/errors.go"
+          - "lib/errors/go113.go"
+          - "lib/errors/structured.go"
+          - "lib/log/log.go"
       - name: unhandled-error
         arguments:
          - 'fmt.Printf'
