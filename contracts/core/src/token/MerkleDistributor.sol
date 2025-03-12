@@ -24,7 +24,7 @@ contract MerkleDistributor is IMerkleDistributor {
         merkleRoot = merkleRoot_;
     }
 
-    function isClaimed(uint256 index) public view override returns (bool) {
+    function isClaimed(uint256 index) public view virtual override returns (bool) {
         return claimedBitMap.get(index);
     }
 
