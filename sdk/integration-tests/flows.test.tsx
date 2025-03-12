@@ -88,7 +88,7 @@ test('successfully processes order from quote to filled', async () => {
     connectRef.current?.connect({ connector: testConnector })
   })
 
-  await waitFor(() => expect(orderRef.current).toBeDefined())
+  await waitFor(() => expect(orderRef.current?.isReady).toBe(true))
   act(() => {
     orderRef.current?.open()
   })
