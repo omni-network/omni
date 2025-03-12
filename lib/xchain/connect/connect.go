@@ -64,6 +64,26 @@ func (c Connector) Portal(ctx context.Context, chainID uint64) (*bindings.OmniPo
 	return contract, nil
 }
 
+// SolverNetInbox returns a SolverNetInbox contract.
+func (c Connector) SolverNetInbox(ctx context.Context, chainID uint64) (*bindings.SolverNetInbox, error) {
+	backend, err := c.Backends.Backend(chainID)
+	if err != nil {
+		return nil, err
+	}
+
+	addrs, err := contracts.GetAddresses(ctx, c.Network.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	contract, err := bindings.NewSolverNetInbox(addrs.SolverNetInbox, backend)
+	if err != nil {
+		return nil, err
+	}
+
+	return contract, nil
+}
+
 type options struct {
 	Endpoints xchain.RPCEndpoints
 	PrivKeys  []*ecdsa.PrivateKey

@@ -13,7 +13,12 @@ import (
 
 // pnlExpenses logs the solver expense PnL for the order.
 func pnlExpenses(ctx context.Context, pricer tokenslib.Pricer, order Order, outboxAddr common.Address, dstChainName string) error {
-	maxSpent, err := parseMaxSpent(order, outboxAddr)
+	pendingData, err := order.PendingData()
+	if err != nil {
+		return errors.Wrap(err, "get pending data [BUG]")
+	}
+
+	maxSpent, err := parseMaxSpent(pendingData, outboxAddr)
 	if err != nil {
 		return errors.Wrap(err, "parse max spent [BUG]") // This should never fail here.
 	}

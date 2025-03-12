@@ -40,7 +40,7 @@ func (p *Provider) StreamEventLogs(ctx context.Context, req xchain.EventLogsReq,
 	}
 
 	chainVersionName := p.network.ChainVersionName(req.ChainVersion())
-	ctx = log.WithCtx(ctx, "chain", chainVersionName)
+	ctx = log.WithCtx(ctx, "chain_version", chainVersionName)
 
 	deps := stream.Deps[events]{
 		FetchWorkers: workers,

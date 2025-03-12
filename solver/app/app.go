@@ -32,8 +32,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-const unknown = "unknown"
-
 // chainVersFromID returns the chain versions to stream/process per chain ID.
 func chainVersFromID(network netconf.ID, chainID uint64) []xchain.ChainVersion {
 	// On devnet we stream twice (for idempotency testing)
@@ -299,22 +297,22 @@ func startEventStreams(
 		outboxContracts[chain] = outbox
 	}
 
-	targetName := func(o Order) string {
-		fill, err := o.ParsedFillOriginData()
+	targetName := func(pendingData PendingData) string {
+		fill, err := pendingData.ParsedFillOriginData()
 		if err != nil {
-			return unknown
+			return "unknown"
 		}
 
 		// use last call target for target name
 		call := fill.Calls[len(fill.Calls)-1]
 
-		if tkn, ok := tokens.Find(o.DestinationChainID, call.Target); ok {
+		if tkn, ok := tokens.Find(pendingData.DestinationChainID, call.Target); ok {
 			return "ERC20:" + tkn.Symbol
 		}
 
 		// Native bridging has zero call data and positive value
 		isNative := call.Selector == [4]byte{} && len(call.Params) == 0 && call.Value.Sign() > 0
-		if nativeTkn, ok := tokens.Find(o.DestinationChainID, common.Address{}); ok && isNative {
+		if nativeTkn, ok := tokens.Find(pendingData.DestinationChainID, common.Address{}); ok && isNative {
 			return "Native:" + nativeTkn.Symbol
 		}
 
@@ -350,6 +348,7 @@ func startEventStreams(
 				Claim:          newClaimer(inboxContracts, backends, solverAddr, pricer),
 				SetCursor:      cursorSetter,
 				ChainName:      network.ChainName,
+				ProcessorName:  network.ChainVersionName(chainVer),
 				TargetName:     targetName,
 				BlockTimestamp: blockTimestamps,
 			}

@@ -14,11 +14,6 @@ import (
 )
 
 const (
-	statusPending    = solvernet.StatusPending
-	statusFilled     = solvernet.StatusFilled
-	statusRejected   = solvernet.StatusRejected
-	statusClosed     = solvernet.StatusClosed
-	statusClaimed    = solvernet.StatusClaimed
 	statusDestFilled = "dest_filled" // Unofficial state after destination fill
 
 	maxAgeCache = 10000 // Max orders to track in age cache
@@ -48,26 +43,21 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 				return errors.New("order not found [BUG]")
 			}
 
-			target := deps.TargetName(order)
 			timestamp := deps.BlockTimestamp(chainID, elog.BlockNumber)
-			age := ageCache.InstrumentAge(order.ID, target, order.Status.String(), timestamp)
-			statusOffset.WithLabelValues(deps.ChainName(chainID), target, event.Status.String()).Set(float64(order.Offset))
+			age := ageCache.InstrumentAge(order.ID, order.Status.String(), timestamp)
+			statusOffset.WithLabelValues(deps.ProcessorName, event.Status.String()).Set(float64(order.Offset))
 
 			ctx := log.WithCtx(ctx,
 				"order_id", order.ID.String(),
-				"order_offset", order.Offset,
+				"offset", order.Offset,
 				"status", order.Status,
-				"src_chain", deps.ChainName(order.SourceChainID),
-				"dst_chain", deps.ChainName(order.DestinationChainID),
 				"age", age,
-				"target", target,
 			)
 
 			log.Debug(ctx, "Processing order event")
 
 			if event.Status != order.Status {
-				// TODO(corver): Detect unexpected on-chain status.
-				log.Info(ctx, "Ignoring mismatching old event", "actual", order.Status.String())
+				log.Debug(ctx, "Ignoring old event (status already changed)", "event_status", event.Status.String())
 				continue
 			}
 
@@ -82,9 +72,7 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 				reason, reject, err := deps.ShouldReject(ctx, order)
 				if err != nil {
 					return false, errors.Wrap(err, "should reject")
-				}
-
-				if !reject {
+				} else if !reject {
 					return false, nil
 				}
 
@@ -97,8 +85,6 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 
 				rejectedOrders.WithLabelValues(
 					deps.ChainName(order.SourceChainID),
-					deps.ChainName(order.DestinationChainID),
-					target,
 					reason.String(),
 				).Inc()
 
@@ -106,14 +92,14 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 			}
 
 			switch event.Status {
-			case statusPending:
+			case solvernet.StatusPending:
 				if alreadyFilled() {
 					return nil
 				}
 
 				// Track all orders for now, since we reject explicitly.
 				ageCache.Add(order.ID, timestamp)
-				debugOriginData(ctx, order)
+				debugPendingData(ctx, deps, order)
 
 				if didReject, err := maybeReject(); err != nil {
 					return err
@@ -125,21 +111,21 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 				if err := deps.Fill(ctx, order); err != nil {
 					return errors.Wrap(err, "fill order")
 				}
-				ageCache.InstrumentAge(order.ID, target, statusDestFilled, time.Now())
-			case statusFilled:
+				ageCache.InstrumentAge(order.ID, statusDestFilled, time.Now())
+			case solvernet.StatusFilled:
 				log.Info(ctx, "Claiming order")
 				if err := deps.Claim(ctx, order); err != nil {
 					return errors.Wrap(err, "claim order")
 				}
 				ageCache.Remove(order.ID) // Delete from cache on final state
-			case statusRejected, statusClosed, statusClaimed:
+			case solvernet.StatusRejected, solvernet.StatusClosed, solvernet.StatusClaimed:
 				// Noop for now
 				ageCache.Remove(order.ID) // Delete from cache on final state
 			default:
 				return errors.New("unknown status [BUG]")
 			}
 
-			processedEvents.WithLabelValues(deps.ChainName(chainID), target, event.Status.String()).Inc()
+			processedEvents.WithLabelValues(deps.ProcessorName, event.Status.String()).Inc()
 		}
 
 		if ageCache.MaybePurge() {
@@ -163,7 +149,7 @@ type ageCache struct {
 }
 
 // InstrumentAge records the age of an order, returning the age.
-func (a *ageCache) InstrumentAge(order OrderID, target, status string, timestamp time.Time) time.Duration {
+func (a *ageCache) InstrumentAge(order OrderID, status string, timestamp time.Time) time.Duration {
 	if timestamp.IsZero() {
 		return 0 // Best effort ignore for now
 	}
@@ -172,7 +158,7 @@ func (a *ageCache) InstrumentAge(order OrderID, target, status string, timestamp
 		return 0 // Best effort ignore for now
 	}
 	age := timestamp.Sub(t0)
-	orderAge.WithLabelValues("", target, status).Observe(age.Seconds())
+	orderAge.WithLabelValues("", status).Observe(age.Seconds())
 
 	return age
 }
@@ -199,8 +185,14 @@ func (a *ageCache) MaybePurge() bool {
 	return true
 }
 
-func debugOriginData(ctx context.Context, order Order) {
-	fill, err := order.ParsedFillOriginData()
+func debugPendingData(ctx context.Context, deps procDeps, order Order) {
+	pendingData, err := order.PendingData()
+	if err != nil {
+		log.Warn(ctx, "Order not pending [BUG]", err)
+		return
+	}
+
+	fill, err := pendingData.ParsedFillOriginData()
 	if err != nil {
 		log.Warn(ctx, "Failed to parse fill origin data", err)
 		return
@@ -209,11 +201,14 @@ func debugOriginData(ctx context.Context, order Order) {
 	// use last call target for logs
 	lastCall := fill.Calls[len(fill.Calls)-1]
 
-	log.Debug(ctx, "Fill origin data",
+	log.Debug(ctx, "Pending order data",
 		"calls", len(fill.Calls),
 		"call_target", lastCall.Target.Hex(),
 		"call_selector", hexutil.Encode(lastCall.Selector[:]),
 		"call_params", hexutil.Encode(lastCall.Params),
 		"call_value", lastCall.Value.String(),
+		"dst_chain", deps.ChainName(pendingData.DestinationChainID),
+		"full_order_id", order.ID.Hex(),
+		"target", deps.TargetName(pendingData),
 	)
 }

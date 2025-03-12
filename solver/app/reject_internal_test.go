@@ -57,7 +57,7 @@ func TestShouldReject(t *testing.T) {
 			if tt.mock != nil {
 				tt.mock(clients)
 
-				destClient := clients.Client(t, tt.order.DestinationChainID)
+				destClient := clients.Client(t, tt.order.pendingData.DestinationChainID)
 				mockFill(t, destClient, outbox, tt.fillReverts)
 				mockFillFee(t, destClient, outbox)
 
