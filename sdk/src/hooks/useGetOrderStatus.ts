@@ -1,28 +1,23 @@
-import type { Log } from 'viem'
-import type { UseWaitForTransactionReceiptReturnType } from 'wagmi'
-import { DidFillError, type ParseOpenEventError } from '../errors/base.js'
+import type { Hex } from 'viem'
+import { DidFillError } from '../errors/base.js'
 import type { OrderStatus } from '../types/order.js'
 import { useDidFillOutbox } from './useDidFillOutbox.js'
 import { type InboxStatus, useInboxStatus } from './useInboxStatus.js'
-import { useParseOpenEvent } from './useParseOpenEvent.js'
+import type { useParseOpenEvent } from './useParseOpenEvent.js'
 
 export function useGetOrderStatus({
   srcChainId,
   destChainId,
-  waitTx,
-  logs,
+  orderId,
+  resolvedOrder,
 }: {
   srcChainId?: number
   destChainId: number
-  waitTx: UseWaitForTransactionReceiptReturnType
-  logs?: Log[]
+  orderId?: Hex
+  resolvedOrder?: ReturnType<typeof useParseOpenEvent>['resolvedOrder']
 }) {
-  const { resolvedOrder, error: parseOpenEventError } = useParseOpenEvent({
-    status: waitTx.status,
-    logs,
-  })
   const inboxStatus = useInboxStatus({
-    orderId: resolvedOrder?.orderId,
+    orderId: resolvedOrder?.orderId ?? orderId,
     chainId: srcChainId,
   })
   const didFillOutbox = useDidFillOutbox({
@@ -30,32 +25,24 @@ export function useGetOrderStatus({
     resolvedOrder,
   })
 
-  const status = deriveStatus(inboxStatus, parseOpenEventError, didFillOutbox)
-
-  const error = deriveError(parseOpenEventError, didFillOutbox)
+  const status = deriveStatus(inboxStatus, didFillOutbox)
 
   return {
-    orderId: resolvedOrder?.orderId,
     status,
-    error,
+    error: deriveError(didFillOutbox),
   }
 }
 
-function deriveError(
-  parseOpenEventError: ParseOpenEventError | undefined,
-  didFillOutbox: ReturnType<typeof useDidFillOutbox>,
-) {
-  if (parseOpenEventError) return parseOpenEventError
+function deriveError(didFillOutbox: ReturnType<typeof useDidFillOutbox>) {
   if (didFillOutbox.error) return new DidFillError(didFillOutbox.error.message)
   return
 }
 
 function deriveStatus(
   inboxStatus: InboxStatus,
-  parseOpenEventError: ParseOpenEventError | undefined,
   didFillOutbox: ReturnType<typeof useDidFillOutbox>,
 ): OrderStatus {
-  if (parseOpenEventError || didFillOutbox.error) return 'error'
+  if (didFillOutbox.error) return 'error'
   if (didFillOutbox?.data === true) return 'filled'
   if (inboxStatus === 'filled') return 'filled'
   if (inboxStatus === 'open') return 'open'

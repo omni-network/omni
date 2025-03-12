@@ -27,11 +27,11 @@ import {
   type UseOmniContractsResult,
   useOmniContracts,
 } from './useOmniContracts.js'
+import { useParseOpenEvent } from './useParseOpenEvent.js'
 import {
   type UseValidateOrderResult,
   useValidateOrder,
 } from './useValidateOrder.js'
-
 type UseOrderParams<abis extends OptionalAbis> = Order<abis> & {
   validateEnabled: boolean
 }
@@ -82,11 +82,16 @@ export function useOrder<abis extends OptionalAbis>(
   const connected = useChainId()
   const txMutation = useWriteContract()
   const wait = useWaitForTransactionReceipt({ hash: txMutation.data })
+  const { resolvedOrder, error: parseOpenEventError } = useParseOpenEvent({
+    status: wait.status,
+    logs: wait.data?.logs,
+  })
+
   const orderStatus = useGetOrderStatus({
     srcChainId: order.srcChainId ?? connected,
     destChainId: order.destChainId,
-    waitTx: wait,
-    logs: wait.data?.logs,
+    orderId: resolvedOrder?.orderId,
+    resolvedOrder,
   })
   const contractsResult = useOmniContracts()
   const inboxAddress = contractsResult.data?.inbox
@@ -134,12 +139,13 @@ export function useOrder<abis extends OptionalAbis>(
     txMutation,
     wait,
     validation,
+    parseOpenEventError,
     orderStatus,
   })
 
   return {
     open,
-    orderId: orderStatus?.orderId,
+    orderId: resolvedOrder?.orderId,
     validation,
     txHash: txMutation.data,
     error,
@@ -161,10 +167,18 @@ type DeriveErrorParams = {
   wait: UseWaitForTransactionReceiptReturnType
   validation: ReturnType<typeof useValidateOrder>
   orderStatus: ReturnType<typeof useGetOrderStatus>
+  parseOpenEventError?: ParseOpenEventError
 }
 
 function deriveError(params: DeriveErrorParams): UseOrderError {
-  const { contracts, txMutation, wait, validation, orderStatus } = params
+  const {
+    contracts,
+    txMutation,
+    wait,
+    validation,
+    orderStatus,
+    parseOpenEventError,
+  } = params
 
   if (contracts.error) {
     return new LoadContractsError(contracts.error.message)
@@ -180,6 +194,10 @@ function deriveError(params: DeriveErrorParams): UseOrderError {
 
   if (wait.error) {
     return new TxReceiptError(wait.error.message)
+  }
+
+  if (parseOpenEventError) {
+    return parseOpenEventError
   }
 
   if (orderStatus.error) {
