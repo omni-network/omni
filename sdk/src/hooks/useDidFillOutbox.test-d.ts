@@ -2,16 +2,16 @@ import { expectTypeOf, test } from 'vitest'
 import type { UseReadContractReturnType } from 'wagmi'
 import { resolvedOrder } from '../../test/shared.js'
 import type { outboxABI } from '../constants/abis.js'
-import { useDidFill } from './useDidFill.js'
+import { useDidFillOutbox } from './useDidFillOutbox.js'
 import type { useParseOpenEvent } from './useParseOpenEvent.js'
 
-test('type: useDidFill', () => {
-  const result = useDidFill({
+test('type: useDidFillOutbox', () => {
+  const result = useDidFillOutbox({
     destChainId: 1,
     resolvedOrder,
   })
 
-  expectTypeOf(useDidFill).parameter(0).toMatchTypeOf<{
+  expectTypeOf(useDidFillOutbox).parameter(0).toMatchTypeOf<{
     destChainId: number
     resolvedOrder?: ReturnType<typeof useParseOpenEvent>['resolvedOrder']
   }>()

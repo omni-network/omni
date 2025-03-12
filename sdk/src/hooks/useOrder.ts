@@ -11,7 +11,7 @@ import {
 import { inboxABI } from '../constants/abis.js'
 import { typeHash } from '../constants/typehash.js'
 import {
-  DidFillError,
+  type DidFillError,
   GetOrderError,
   LoadContractsError,
   OpenError,
@@ -20,15 +20,13 @@ import {
   ValidateOrderError,
 } from '../errors/base.js'
 import type { OptionalAbis } from '../types/abi.js'
-import type { Order, OrderStatus } from '../types/order.js'
+import type { OpenOrderStatus, Order, OrderStatus } from '../types/order.js'
 import { encodeOrder } from '../utils/encodeOrder.js'
-import { useDidFill } from './useDidFill.js'
-import { type InboxStatus, useInboxStatus } from './useInboxStatus.js'
 import {
   type UseOmniContractsResult,
   useOmniContracts,
 } from './useOmniContracts.js'
-import { useParseOpenEvent } from './useParseOpenEvent.js'
+import { useOrderStatus } from './useOrderStatus.js'
 import {
   type UseValidateOrderResult,
   useValidateOrder,
@@ -54,7 +52,7 @@ type UseOrderReturnType = {
   validation?: UseValidateOrderResult
   txHash?: Hex
   error?: UseOrderError
-  status: OrderStatus
+  status: OpenOrderStatus
   isTxPending: boolean
   isTxSubmitted: boolean
   isValidated: boolean
@@ -71,29 +69,21 @@ export function useOrder<abis extends OptionalAbis>(
   params: UseOrderParams<abis>,
 ): UseOrderReturnType {
   const { validateEnabled, ...order } = params
+  const connected = useChainId()
   const txMutation = useWriteContract()
   const wait = useWaitForTransactionReceipt({ hash: txMutation.data })
-  const { resolvedOrder, error: parseOpenEventError } = useParseOpenEvent({
-    status: wait.status,
+  const orderStatus = useOrderStatus({
+    srcChainId: order.srcChainId ?? connected,
+    destChainId: order.destChainId,
+    waitTx: wait,
     logs: wait.data?.logs,
   })
-
-  const connected = useChainId()
-  const srcChainId = order.srcChainId ?? connected
-  const destChainId = order.destChainId
-  const inboxStatus = useInboxStatus({
-    orderId: resolvedOrder?.orderId,
-    chainId: srcChainId,
-  })
-  const didFill = useDidFill({ destChainId, resolvedOrder })
-
   const contractsResult = useOmniContracts()
   const inboxAddress = contractsResult.data?.inbox
 
   const status = deriveStatus(
     contractsResult,
-    inboxStatus,
-    didFill.data ?? false,
+    orderStatus.status,
     txMutation.status,
     wait.status,
     wait.fetchStatus,
@@ -133,15 +123,13 @@ export function useOrder<abis extends OptionalAbis>(
     contracts: contractsResult,
     txMutation,
     wait,
-    didFill,
     validation,
-    inboxStatus,
-    parseOpenEventError,
+    orderStatus,
   })
 
   return {
     open,
-    orderId: resolvedOrder?.orderId,
+    orderId: orderStatus?.orderId,
     validation,
     txHash: txMutation.data,
     error,
@@ -161,15 +149,12 @@ type DeriveErrorParams = {
   contracts: UseOmniContractsResult
   txMutation: UseWriteContractReturnType<Config, unknown>
   wait: UseWaitForTransactionReceiptReturnType
-  didFill: ReturnType<typeof useDidFill>
   validation: ReturnType<typeof useValidateOrder>
-  inboxStatus: InboxStatus
-  parseOpenEventError?: ParseOpenEventError
+  orderStatus: ReturnType<typeof useOrderStatus>
 }
 
 function deriveError(params: DeriveErrorParams): UseOrderError {
-  const { contracts, txMutation, wait, didFill, validation, inboxStatus } =
-    params
+  const { contracts, txMutation, wait, validation, orderStatus } = params
 
   if (contracts.error) {
     return new LoadContractsError(contracts.error.message)
@@ -187,16 +172,12 @@ function deriveError(params: DeriveErrorParams): UseOrderError {
     return new TxReceiptError(wait.error.message)
   }
 
-  if (params.parseOpenEventError) {
-    return params.parseOpenEventError
+  if (orderStatus.error) {
+    return orderStatus.error
   }
 
-  if (didFill.error) {
-    return new DidFillError(didFill.error.message)
-  }
-
-  if (wait.isSuccess && inboxStatus === 'not-found') {
-    return new GetOrderError(inboxStatus)
+  if (wait.isSuccess && orderStatus.status === 'not-found') {
+    return new GetOrderError(orderStatus.status)
   }
 
   return
@@ -205,24 +186,23 @@ function deriveError(params: DeriveErrorParams): UseOrderError {
 // deriveStatus returns a status derived from open tx, inbox and outbox statuses
 function deriveStatus(
   contracts: UseOmniContractsResult,
-  inboxStatus: InboxStatus,
-  didFill: boolean,
+  orderStatus: OrderStatus, // TODO rename
   txStatus: UseWriteContractReturnType['status'],
   receiptStatus: UseWaitForTransactionReceiptReturnType['status'],
   receiptFetchStatus: UseWaitForTransactionReceiptReturnType['fetchStatus'],
-): OrderStatus {
+): OpenOrderStatus {
   // inbox contract address needs to be loaded
   if (contracts.isError) return 'error'
   if (!contracts.data) return 'initializing'
 
   // if outbox says filled, it's filled
-  if (didFill) return 'filled'
+  if (orderStatus === 'filled') return 'filled'
 
   // prioritize inbox status over tx status
-  if (inboxStatus === 'filled') return 'filled'
-  if (inboxStatus === 'open') return 'open'
-  if (inboxStatus === 'rejected') return 'rejected'
-  if (inboxStatus === 'closed') return 'closed'
+  if (orderStatus === 'open') return 'open'
+  if (orderStatus === 'rejected') return 'rejected'
+  if (orderStatus === 'closed') return 'closed'
+  if (orderStatus === 'error') return 'error'
 
   // prioritize receipt status over tx status
   if (receiptStatus === 'error') return 'error'
