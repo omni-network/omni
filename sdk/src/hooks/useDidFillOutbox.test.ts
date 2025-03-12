@@ -50,7 +50,7 @@ test('default', async () => {
     resolvedOrder,
   })
 
-  await waitFor(() => result.current.data === true)
+  await waitFor(() => expect(result.current.data).toBeTruthy())
 })
 
 test('behaviour: no exception if contract read fails', () => {
