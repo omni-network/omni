@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
-	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
@@ -24,10 +23,9 @@ func NewJob(
 	srcChainToken common.Address,
 	dstChainToken common.Address,
 	symbioticContractAddress common.Address,
-	role eoa.Role,
+	owner common.Address,
 	amount *big.Int,
 ) (types.Job, error) {
-	owner := eoa.MustAddress(network, role)
 	data, err := orderData(owner, srcChain, dstChain, srcChainToken, dstChainToken, symbioticContractAddress, amount)
 	if err != nil {
 		return types.Job{}, errors.Wrap(err, "new job")

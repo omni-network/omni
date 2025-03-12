@@ -46,6 +46,17 @@ func Start(
 		return errors.Wrap(err, "backends")
 	}
 
+	owner := eoa.MustAddress(network.ID, eoa.RoleFlowgen)
+
+	return startWithBackends(ctx, network, backends, owner)
+}
+
+func startWithBackends(
+	ctx context.Context,
+	network netconf.Network,
+	backends ethbackend.Backends,
+	owner common.Address,
+) error {
 	var jobs []types.Job
 
 	result, err := bridgeJobs(network.ID)
@@ -66,7 +77,7 @@ func Start(
 			wstETHBaseSepolia,
 			wstETHHolesky,
 			symbioticContractOnHolesky,
-			eoa.RoleFlowgen,
+			owner,
 			deposit,
 		)
 		if err != nil {
@@ -173,7 +184,7 @@ func awaitClaimed(
 	}
 }
 
-func bridgeJobs(network netconf.ID) ([]types.Job, error) {
+func bridgeJobs(network netconf.ID, owner common.Address) ([]types.Job, error) {
 	type balanced struct {
 		From uint64
 		To   uint64
@@ -191,12 +202,12 @@ func bridgeJobs(network netconf.ID) ([]types.Job, error) {
 	// Bridging of native ETH
 	amount := big.NewInt(0).Mul(util.MilliEther, big.NewInt(20)) // 0.02 ETH
 
-	job1, err := bridging.NewJob(network, b.From, b.To, eoa.RoleFlowgen, amount)
+	job1, err := bridging.NewJob(network, b.From, b.To, owner, amount)
 	if err != nil {
 		return nil, err
 	}
 
-	job2, err := bridging.NewJob(network, b.To, b.From, eoa.RoleFlowgen, amount)
+	job2, err := bridging.NewJob(network, b.To, b.From, owner, amount)
 	if err != nil {
 		return nil, err
 	}
