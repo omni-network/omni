@@ -3,7 +3,7 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import { resolvedOrder } from '../../test/index.js'
 import { createMockReadContractResult } from '../../test/mocks.js'
 import { renderHook } from '../../test/react.js'
-import { useDidFill } from './useDidFill.js'
+import { useDidFillOutbox } from './useDidFillOutbox.js'
 
 const { useReadContract } = vi.hoisted(() => {
   return {
@@ -28,7 +28,7 @@ beforeEach(() => {
 test('default', async () => {
   const { result, rerender } = renderHook(
     () =>
-      useDidFill({
+      useDidFillOutbox({
         destChainId: 1,
       }),
     { mockContractsCall: true },
@@ -38,7 +38,7 @@ test('default', async () => {
   expect(useReadContract).toHaveBeenCalled()
 
   useReadContract.mockReturnValue(
-    createMockReadContractResult<ReturnType<typeof useDidFill>>({
+    createMockReadContractResult<ReturnType<typeof useDidFillOutbox>>({
       data: true,
       isSuccess: true,
       status: 'success',
@@ -50,12 +50,12 @@ test('default', async () => {
     resolvedOrder,
   })
 
-  await waitFor(() => result.current.data === true)
+  await waitFor(() => expect(result.current.data).toBeTruthy())
 })
 
 test('behaviour: no exception if contract read fails', () => {
   useReadContract.mockReturnValue(
-    createMockReadContractResult<ReturnType<typeof useDidFill>>({
+    createMockReadContractResult<ReturnType<typeof useDidFillOutbox>>({
       isSuccess: false,
       isError: true,
       status: 'error',
@@ -64,7 +64,7 @@ test('behaviour: no exception if contract read fails', () => {
 
   const { result } = renderHook(
     () =>
-      useDidFill({
+      useDidFillOutbox({
         destChainId: 1,
         resolvedOrder,
       }),
@@ -80,7 +80,7 @@ test('behaviour: no exception if contract read fails', () => {
 test('behaviour: no contract read when resolvedOrder is undefined', async () => {
   const { result } = renderHook(
     () =>
-      useDidFill({
+      useDidFillOutbox({
         destChainId: 1,
         resolvedOrder: undefined,
       }),

@@ -10,7 +10,7 @@ test('type: useInboxStatus', () => {
   })
 
   expectTypeOf(useInboxStatus).parameter(0).toMatchTypeOf<{
-    chainId: number
+    chainId?: number
     orderId?: Hex
   }>()
 

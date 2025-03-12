@@ -7,7 +7,7 @@ export function useInboxStatus({
   chainId,
   orderId,
 }: {
-  chainId: number
+  chainId?: number
   orderId?: Hex
 }) {
   const order = useGetOrder({ chainId, orderId })

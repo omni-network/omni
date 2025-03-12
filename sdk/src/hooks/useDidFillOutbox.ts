@@ -8,7 +8,7 @@ type UseDidFillParams = {
   resolvedOrder?: ReturnType<typeof useParseOpenEvent>['resolvedOrder']
 }
 
-export function useDidFill(params: UseDidFillParams) {
+export function useDidFillOutbox(params: UseDidFillParams) {
   const { resolvedOrder, destChainId } = params
   const { data: contracts } = useOmniContracts()
   const filled = useReadContract({

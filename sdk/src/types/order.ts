@@ -8,14 +8,12 @@ import type {
 import type { AbiWriteMutability, OptionalAbi, OptionalAbis } from './abi.js'
 
 export type OrderStatus =
-  | 'initializing'
-  | 'ready'
-  | 'opening'
+  | 'not-found'
   | 'open'
-  | 'closed'
   | 'rejected'
-  | 'error'
+  | 'closed'
   | 'filled'
+  | 'error'
 
 type Deposit = {
   readonly token?: Address

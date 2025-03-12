@@ -6,6 +6,8 @@ export { useOmniContracts } from './hooks/useOmniContracts.js'
 export { useOrder } from './hooks/useOrder.js'
 export { useQuote } from './hooks/useQuote.js'
 export { useValidateOrder } from './hooks/useValidateOrder.js'
+export { useGetOrderStatus } from './hooks/useGetOrderStatus.js'
+export { useParseOpenEvent } from './hooks/useParseOpenEvent.js'
 
 ////// TYPES //////
 export type { Order, OrderStatus } from './types/order.js'
