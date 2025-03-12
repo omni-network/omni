@@ -55,9 +55,8 @@ function deriveStatus(
   parseOpenEventError: ParseOpenEventError | undefined,
   didFillOutbox: ReturnType<typeof useDidFillOutbox>,
 ): OrderStatus {
-  if (parseOpenEventError) return 'error'
-  if (didFillOutbox.error) return 'error'
-  if (didFillOutbox.data) return 'filled'
+  if (parseOpenEventError || didFillOutbox.error) return 'error'
+  if (didFillOutbox?.data === true) return 'filled'
   if (inboxStatus === 'filled') return 'filled'
   if (inboxStatus === 'open') return 'open'
   if (inboxStatus === 'rejected') return 'rejected'
