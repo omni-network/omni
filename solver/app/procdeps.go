@@ -10,7 +10,6 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
-	libtokens "github.com/omni-network/omni/lib/tokens"
 	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -42,7 +41,6 @@ func newClaimer(
 	inboxContracts map[uint64]*bindings.SolverNetInbox,
 	backends ethbackend.Backends,
 	solverAddr common.Address,
-	pricer libtokens.Pricer,
 ) func(ctx context.Context, order Order) error {
 	return func(ctx context.Context, order Order) error {
 		inbox, ok := inboxContracts[order.SourceChainID]
@@ -69,9 +67,7 @@ func newClaimer(
 			return errors.Wrap(err, "wait mined")
 		}
 
-		srcChainName, _ := backend.Chain()
-
-		return pnlIncome(ctx, pricer, order, srcChainName)
+		return nil
 	}
 }
 
@@ -79,7 +75,7 @@ func newFiller(
 	outboxContracts map[uint64]*bindings.SolverNetOutbox,
 	backends ethbackend.Backends,
 	solverAddr, outboxAddr common.Address,
-	pricer libtokens.Pricer,
+	pnl pnlFunc,
 ) func(ctx context.Context, order Order) error {
 	return func(ctx context.Context, order Order) error {
 		pendingData, err := order.PendingData()
@@ -172,9 +168,7 @@ func newFiller(
 			return errors.New("fill failed [BUG]")
 		}
 
-		dstChainName, _ := backend.Chain()
-
-		return pnlExpenses(ctx, pricer, order, outboxAddr, dstChainName)
+		return pnl(ctx, order)
 	}
 }
 
