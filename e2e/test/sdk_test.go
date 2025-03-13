@@ -36,7 +36,6 @@ func TestSDK(t *testing.T) {
 		err = exec.CommandVerbose(ctx, "pnpm", "run", "test:unit")
 		require.NoError(t, err)
 
-		// TODO: inject RPC endpoints as environment variables
 		err = exec.CommandVerbose(ctx, "pnpm", "run", "test:integration")
 		require.NoError(t, err)
 	})
