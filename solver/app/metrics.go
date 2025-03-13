@@ -32,7 +32,7 @@ var (
 		Subsystem: "processor",
 		Name:      "order_age_seconds",
 		Help:      "Order age (from creation) in seconds by chain and status",
-		Buckets:   prometheus.ExponentialBucketsRange(1, 60, 5),
+		Buckets:   prometheus.ExponentialBucketsRange(1, 60*60, 8),
 	}, []string{"chain", "status"})
 
 	apiLatency = promauto.NewHistogramVec(prometheus.HistogramOpts{
