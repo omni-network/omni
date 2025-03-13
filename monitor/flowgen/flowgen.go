@@ -64,17 +64,17 @@ func startWithBackends(
 
 	var jobs []types.Job
 
-	// result, err := bridgeJobs(network.ID, owner)
-	// if err != nil {
-	// 	return errors.Wrap(err, "bridge jobs")
-	// }
-	// jobs = append(jobs, result...)
+	result, err := bridgeJobs(network.ID, owner)
+	if err != nil {
+		return errors.Wrap(err, "bridge jobs")
+	}
+	jobs = append(jobs, result...)
 
 	if network.ID == netconf.Omega {
 		deposit := big.NewInt(0).Mul(util.MilliEther, big.NewInt(20)) // 0.02 ETH
 		wstETHBaseSepolia := common.HexToAddress("0x6319df7c227e34B967C1903A08a698A3cC43492B")
 		wstETHHolesky := common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")
-		symbioticContractOnHolesky := common.HexToAddress("0x23E98253F372Ee29910e22986fe75Bb287b011fC")
+		symbioticVaultOnHolesky := common.HexToAddress("0xd88dDf98fE4d161a66FB836bee4Ca469eb0E4a75")
 		job, err := symbiotic.NewJob(
 			ctx,
 			backends,
@@ -84,7 +84,7 @@ func startWithBackends(
 			evmchain.IDHolesky,
 			wstETHBaseSepolia,
 			wstETHHolesky,
-			symbioticContractOnHolesky,
+			symbioticVaultOnHolesky,
 			owner,
 			deposit,
 		)
@@ -132,7 +132,7 @@ func run(ctx context.Context, inboxAddr common.Address, backends ethbackend.Back
 	log.Debug(ctx, "Flowgen: order opened")
 
 	if err := awaitClaimed(ctx, inboxAddr, backends, j, orderID); err != nil {
-		return errors.Wrap(err, "awaitclaimed")
+		return errors.Wrap(err, "await claimed")
 	}
 
 	log.Info(ctx, "Flowgen: order claimed")
