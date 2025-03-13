@@ -241,7 +241,7 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
         });
 
         return IERC7683.OnchainCrossChainOrder({
-            fillDeadline: uint32(block.timestamp + 6 hours),
+            fillDeadline: uint32(block.timestamp + 24 hours),
             orderDataType: ORDERDATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });
