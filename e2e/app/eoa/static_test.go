@@ -28,7 +28,7 @@ func TestThresholdReference(t *testing.T) {
 		for _, token := range []tokens.Token{tokens.ETH, tokens.OMNI} {
 			resp[network][token.Symbol] = make(map[eoa.Role]map[string]string)
 			for _, role := range eoa.AllRoles() {
-				if !shouldExist(role, network) {
+				if !shouldExist(role, network, token) {
 					continue
 				}
 
@@ -51,7 +51,7 @@ func TestStatic(t *testing.T) {
 	for _, chain := range evmchain.All() {
 		for _, network := range []netconf.ID{netconf.Devnet, netconf.Staging, netconf.Omega, netconf.Mainnet} {
 			for _, role := range eoa.AllRoles() {
-				if !shouldExist(role, network) {
+				if !shouldExist(role, network, chain.NativeToken) {
 					continue
 				}
 
@@ -101,11 +101,15 @@ func etherStr(amount *big.Int) string {
 	return fmt.Sprintf("%.4f", b)
 }
 
-func shouldExist(role eoa.Role, id netconf.ID) bool {
+func shouldExist(role eoa.Role, id netconf.ID, token tokens.Token) bool {
 	switch {
 	case role == eoa.RoleTester && id == netconf.Mainnet: // RoleTester not supported on mainnet
 		return false
 	default:
+		if token != tokens.ETH && role == eoa.RoleFlowgen { // Flowgen is only used on ETH chains
+			return false
+		}
+
 		return true
 	}
 }
