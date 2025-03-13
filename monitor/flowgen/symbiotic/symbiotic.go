@@ -1,6 +1,7 @@
 package symbiotic
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"time"
@@ -8,8 +9,10 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/monitor/flowgen/types"
+	"github.com/omni-network/omni/monitor/flowgen/util"
 	"github.com/omni-network/omni/solver/app"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -17,7 +20,10 @@ import (
 )
 
 func NewJob(
+	ctx context.Context,
+	backends ethbackend.Backends,
 	network netconf.ID,
+	inboxAddr common.Address,
 	srcChain,
 	dstChain uint64,
 	srcChainToken common.Address,
@@ -26,6 +32,15 @@ func NewJob(
 	owner common.Address,
 	amount *big.Int,
 ) (types.Job, error) {
+	backend, err := backends.Backend(srcChain)
+	if err != nil {
+		return types.Job{}, errors.Wrap(err, "get backend")
+	}
+
+	if err := util.ApproveToken(ctx, backend, srcChainToken, owner, inboxAddr); err != nil {
+		return types.Job{}, errors.Wrap(err, "token approval")
+	}
+
 	data, err := orderData(owner, srcChain, dstChain, srcChainToken, dstChainToken, symbioticContractAddress, amount)
 	if err != nil {
 		return types.Job{}, errors.Wrap(err, "new job")

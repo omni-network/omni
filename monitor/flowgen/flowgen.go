@@ -57,13 +57,18 @@ func startWithBackends(
 	backends ethbackend.Backends,
 	owner common.Address,
 ) error {
+	addrs, err := contracts.GetAddresses(ctx, network.ID)
+	if err != nil {
+		return errors.New("contract addresses")
+	}
+
 	var jobs []types.Job
 
-	result, err := bridgeJobs(network.ID, owner)
-	if err != nil {
-		return errors.Wrap(err, "bridge jobs")
-	}
-	jobs = append(jobs, result...)
+	// result, err := bridgeJobs(network.ID, owner)
+	// if err != nil {
+	// 	return errors.Wrap(err, "bridge jobs")
+	// }
+	// jobs = append(jobs, result...)
 
 	if network.ID == netconf.Omega {
 		deposit := big.NewInt(0).Mul(util.MilliEther, big.NewInt(20)) // 0.02 ETH
@@ -71,7 +76,10 @@ func startWithBackends(
 		wstETHHolesky := common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")
 		symbioticContractOnHolesky := common.HexToAddress("0x23E98253F372Ee29910e22986fe75Bb287b011fC")
 		job, err := symbiotic.NewJob(
+			ctx,
+			backends,
 			network.ID,
+			addrs.SolverNetInbox,
 			evmchain.IDBaseSepolia,
 			evmchain.IDHolesky,
 			wstETHBaseSepolia,
@@ -97,7 +105,7 @@ func startWithBackends(
 					return
 				case <-timer.C:
 					jobsTotal.Inc()
-					if err := run(log.WithCtx(ctx, "job", job.Name), backends, job); err != nil {
+					if err := run(log.WithCtx(ctx, "job", job.Name), addrs.SolverNetInbox, backends, job); err != nil {
 						log.Warn(ctx, "Flowgen: job failed (will retry)", err)
 						jobsFailed.Inc()
 					}
@@ -111,7 +119,7 @@ func startWithBackends(
 }
 
 // run runs a job exactly once.
-func run(ctx context.Context, backends ethbackend.Backends, j types.Job) error {
+func run(ctx context.Context, inboxAddr common.Address, backends ethbackend.Backends, j types.Job) error {
 	log.Debug(ctx, "Flowgen: running job")
 
 	orderID, err := solvernet.OpenOrder(ctx, j.Network, j.SrcChain, backends, j.Owner, j.OrderData)
@@ -123,8 +131,8 @@ func run(ctx context.Context, backends ethbackend.Backends, j types.Job) error {
 
 	log.Debug(ctx, "Flowgen: order opened")
 
-	if err := awaitClaimed(ctx, backends, j, orderID); err != nil {
-		return errors.Wrap(err, "await claimed")
+	if err := awaitClaimed(ctx, inboxAddr, backends, j, orderID); err != nil {
+		return errors.Wrap(err, "awaitclaimed")
 	}
 
 	log.Info(ctx, "Flowgen: order claimed")
@@ -136,21 +144,17 @@ func run(ctx context.Context, backends ethbackend.Backends, j types.Job) error {
 // It returns an.
 func awaitClaimed(
 	ctx context.Context,
+	inboxAddr common.Address,
 	backends ethbackend.Backends,
 	j types.Job,
 	orderID solvernet.OrderID,
 ) error {
-	addrs, err := contracts.GetAddresses(ctx, j.Network)
-	if err != nil {
-		return err
-	}
-
 	backend, err := backends.Backend(j.SrcChain)
 	if err != nil {
 		return errors.Wrap(err, "get backend")
 	}
 
-	inbox, err := bindings.NewSolverNetInbox(addrs.SolverNetInbox, backend)
+	inbox, err := bindings.NewSolverNetInbox(inboxAddr, backend)
 	if err != nil {
 		return errors.Wrap(err, "create inbox contract")
 	}
