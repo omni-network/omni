@@ -68,7 +68,7 @@ func orderData(
 	if !ok {
 		return bindings.SolverNetOrderData{}, errors.New("token not found")
 	}
-	// Tokens that will be deposited to the user on the destination chain.
+
 	expense := app.TokenAmt{Token: token, Amount: amount}
 
 	depositWithFee, err := app.QuoteDeposit(expense.Token, expense)

@@ -2,8 +2,8 @@ package app
 
 import (
 	"context"
+	"log/slog"
 	"math/big"
-	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
@@ -31,10 +31,10 @@ type procDeps struct {
 	Claim  func(ctx context.Context, order Order) error
 
 	// Monitoring helpers
-	ProcessorName  string
-	TargetName     func(PendingData) string
-	ChainName      func(chainID uint64) string
-	BlockTimestamp func(chainID uint64, height uint64) time.Time
+	ProcessorName string
+	TargetName    func(PendingData) string
+	ChainName     func(chainID uint64) string
+	InstrumentAge func(ctx context.Context, chainID uint64, height uint64, order Order) slog.Attr
 }
 
 func newClaimer(
@@ -76,6 +76,7 @@ func newFiller(
 	backends ethbackend.Backends,
 	solverAddr, outboxAddr common.Address,
 	pnl pnlFunc,
+	instrumentDestFilled instrDestFilledFunc,
 ) func(ctx context.Context, order Order) error {
 	return func(ctx context.Context, order Order) error {
 		pendingData, err := order.PendingData()
@@ -158,7 +159,9 @@ func newFiller(
 		tx, err := outbox.Fill(txOpts, order.ID, pendingData.FillOriginData, fillerData)
 		if err != nil {
 			return errors.Wrap(err, "fill order", "custom", solvernet.DetectCustomError(err))
-		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
+		}
+		rec, err := backend.WaitMined(ctx, tx)
+		if err != nil {
 			return errors.Wrap(err, "wait mined")
 		}
 
@@ -167,6 +170,8 @@ func newFiller(
 		} else if !ok {
 			return errors.New("fill failed [BUG]")
 		}
+
+		instrumentDestFilled(ctx, destChainID, rec.BlockNumber.Uint64(), order)
 
 		return pnl(ctx, order)
 	}

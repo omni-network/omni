@@ -90,7 +90,8 @@ func startWithBackends(
 					return
 				case <-timer.C:
 					jobsTotal.Inc()
-					if err := run(log.WithCtx(ctx, "job", job.Name), backends, job); err != nil {
+					ctx := log.WithCtx(ctx, "job", job.Name)
+					if err := run(ctx, backends, job); err != nil {
 						log.Warn(ctx, "Flowgen: job failed (will retry)", err)
 						jobsFailed.Inc()
 					}

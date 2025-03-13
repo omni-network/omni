@@ -102,7 +102,6 @@ func orderData(
 		return bindings.SolverNetOrderData{}, errors.New("dst token not found", "token", dstToken.Address)
 	}
 
-	// Tokens that will be deposited to the user on the destination chain.
 	expense := solver.TokenAmt{Token: dstToken, Amount: amount}
 
 	depositWithFee, err := solver.QuoteDeposit(srcToken, solver.TokenAmt{Token: srcToken, Amount: amount})
