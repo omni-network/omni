@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { type RenderHookResult, renderHook } from '@testing-library/react'
 import { http, type Chain, createWalletClient } from 'viem'
@@ -12,6 +13,20 @@ import {
 
 import { OmniProvider } from '../src/index.js'
 
+type RPCEndpoints = {
+  mock_l1: string
+  mock_l2: string
+}
+
+let RPC_ENDPOINTS: RPCEndpoints = {
+  mock_l1: 'http://127.0.0.1:8003',
+  mock_l2: 'http://127.0.0.1:8004',
+}
+const endpointsFilePath = process.env.E2E_RPC_ENDPOINTS
+if (endpointsFilePath != null && endpointsFilePath.trim() !== '') {
+  RPC_ENDPOINTS = JSON.parse(readFileSync(endpointsFilePath, 'utf-8'))
+}
+
 export const ETHER = 1_000_000_000_000_000_000n // 18 decimals
 export const MOCK_L1_ID = 1652
 export const MOCK_L2_ID = 1654
@@ -24,7 +39,7 @@ const MOCK_L1_CHAIN: Chain = {
   nativeCurrency: { decimals: 18, name: 'Ether', symbol: 'ETH' },
   rpcUrls: {
     default: {
-      http: ['http://localhost:8003'],
+      http: [RPC_ENDPOINTS.mock_l1],
     },
   },
 }
@@ -35,7 +50,7 @@ const MOCK_L2_CHAIN: Chain = {
   nativeCurrency: { decimals: 18, name: 'Ether', symbol: 'ETH' },
   rpcUrls: {
     default: {
-      http: ['http://localhost:8004'],
+      http: [RPC_ENDPOINTS.mock_l2],
     },
   },
 }
