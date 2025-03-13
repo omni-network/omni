@@ -30,7 +30,7 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
         "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)TokenExpense(address spender,address token,uint96 amount)"
     );
     bytes32 internal constant MIGRATION_TYPEHASH =
-        keccak256("Migration(address user,address validator,uint256 nonce,uint256 expiry)");
+        keccak256("Upgrade(address user,address validator,uint256 nonce,uint256 expiry)");
 
     address internal constant STAKING = 0xCCcCcC0000000000000000000000000000000001;
 
