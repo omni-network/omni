@@ -52,7 +52,7 @@ library InitializableHelperSolady {
 
     /**
      * @notice Disables the initializers for a given address.
-     * @dev Sets _initialized to max uint64 (0xFFFFFFFFFFFFFFFE), which disables all initializers.
+     * @dev Sets _initialized to left shifted max uint64 (0x01FFFFFFFFFFFFFFFE), which disables all initializers.
      */
     function disableInitializers(address addr) internal {
         vm.store(addr, INITIALIZABLE_STORAGE, bytes32(uint256(type(uint64).max) << 1));
