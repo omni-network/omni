@@ -192,33 +192,33 @@ contract MerkleDistributorWithDeadline_Test is Test {
         vm.warp(endTime + 1);
         vm.prank(stakers[0]);
         vm.expectRevert(MerkleDistributorWithDeadline.ClaimWindowFinished.selector);
-        merkleDistributor.migrateToOmni(address(0), 0, amounts[0], proofs[0]);
+        merkleDistributor.upgradeStake(address(0), 0, amounts[0], proofs[0]);
 
         // Cannot migrate if validator is zero address
         vm.warp(endTime - 1);
         vm.prank(stakers[0]);
         vm.expectRevert(MerkleDistributorWithDeadline.ZeroAddress.selector);
-        merkleDistributor.migrateToOmni(address(0), 0, amounts[0], proofs[0]);
+        merkleDistributor.upgradeStake(address(0), 0, amounts[0], proofs[0]);
 
         // Cannot migrate if proof is invalid
         bytes32 proof = proofs[0][0];
         proofs[0][0] = bytes32(uint256(proof) + 1);
         vm.prank(stakers[0]);
         vm.expectRevert(MerkleDistributor.InvalidProof.selector);
-        merkleDistributor.migrateToOmni(validator, 0, amounts[0], proofs[0]);
+        merkleDistributor.upgradeStake(validator, 0, amounts[0], proofs[0]);
         proofs[0][0] = proof;
 
         // Fully claim all stake and rewards
         vm.prank(stakers[0]);
-        merkleDistributor.migrateToOmni(validator, 0, amounts[0], proofs[0]);
+        merkleDistributor.upgradeStake(validator, 0, amounts[0], proofs[0]);
 
         // Cannot migrate if user has already claimed
         vm.prank(stakers[0]);
         vm.expectRevert(MerkleDistributorWithDeadline.InsufficientAmount.selector);
-        merkleDistributor.migrateToOmni(validator, 0, amounts[0], proofs[0]);
+        merkleDistributor.upgradeStake(validator, 0, amounts[0], proofs[0]);
     }
 
-    // Fully test migrateToOmni for all members of the merkle tree
+    // Fully test upgradeStake for all members of the merkle tree
     function test_migrateToOmni_succeeds() public {
         for (uint256 i; i < addrCount; ++i) {
             uint256 inboxBalance = omni.balanceOf(address(inbox));
@@ -232,7 +232,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
             vm.expectCall(address(inbox), abi.encodeCall(MockSolverNetInbox.open, (order)));
             vm.expectEmit(true, true, true, true);
             emit IERC7683.Open(resolved.orderId, resolved);
-            merkleDistributor.migrateToOmni(validator, i, amounts[i], proofs[i]);
+            merkleDistributor.upgradeStake(validator, i, amounts[i], proofs[i]);
             vm.stopPrank();
 
             // Confirm the inbox balance has increased by the user's staked balance and claim reward
@@ -243,21 +243,21 @@ contract MerkleDistributorWithDeadline_Test is Test {
 
     function test_migrateUserToOmni_reverts() public {
         for (uint256 i; i < addrCount; ++i) {
-            bytes32 digest = merkleDistributor.getMigrationDigest(stakers[i], validator, endTime - 1);
+            bytes32 digest = merkleDistributor.getUpgradeDigest(stakers[i], validator, endTime - 1);
             (uint8 v, bytes32 r, bytes32 s) = vm.sign(pks[i], digest);
             vm.warp(endTime);
 
             // Cannot migrate if signature is invalid
             vm.expectRevert(MerkleDistributorWithDeadline.Expired.selector);
-            merkleDistributor.migrateUserToOmni(stakers[i], validator, 0, amounts[i], proofs[i], v, r, s, endTime - 1);
+            merkleDistributor.upgradeUserStake(stakers[i], validator, 0, amounts[i], proofs[i], v, r, s, endTime - 1);
 
             vm.warp(1);
-            digest = merkleDistributor.getMigrationDigest(stakers[i], validator, block.timestamp + 1);
+            digest = merkleDistributor.getUpgradeDigest(stakers[i], validator, block.timestamp + 1);
             (v, r,) = vm.sign(pks[i], digest);
 
             // Cannot migrate if signature is invalid
             vm.expectRevert(MerkleDistributorWithDeadline.InvalidSignature.selector);
-            merkleDistributor.migrateUserToOmni(
+            merkleDistributor.upgradeUserStake(
                 stakers[i], validator, 0, amounts[i], proofs[i], v, r, s, block.timestamp + 1
             );
         }
@@ -274,14 +274,14 @@ contract MerkleDistributorWithDeadline_Test is Test {
             vm.stopPrank();
 
             // Get user signature for migration
-            bytes32 digest = merkleDistributor.getMigrationDigest(stakers[i], validator, block.timestamp + 1);
+            bytes32 digest = merkleDistributor.getUpgradeDigest(stakers[i], validator, block.timestamp + 1);
             (uint8 v, bytes32 r, bytes32 s) = vm.sign(pks[i], digest);
 
             // Confirm merkleDistributor is calling the inbox with the order and that the resolved order is emitted
             vm.expectCall(address(inbox), abi.encodeCall(MockSolverNetInbox.open, (order)));
             vm.expectEmit(true, true, true, true);
             emit IERC7683.Open(resolved.orderId, resolved);
-            merkleDistributor.migrateUserToOmni(
+            merkleDistributor.upgradeUserStake(
                 stakers[i], validator, i, amounts[i], proofs[i], v, r, s, block.timestamp + 1
             );
 
