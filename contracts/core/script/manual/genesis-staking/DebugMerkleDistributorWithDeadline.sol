@@ -29,7 +29,7 @@ contract DebugMerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP71
     bytes32 internal constant ORDERDATA_TYPEHASH = keccak256(
         "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)TokenExpense(address spender,address token,uint96 amount)"
     );
-    bytes32 internal constant MIGRATION_TYPEHASH =
+    bytes32 internal constant UPGRADE_TYPEHASH =
         keccak256("Upgrade(address user,address validator,uint256 nonce,uint256 expiry)");
 
     address internal constant STAKING = 0xCCcCcC0000000000000000000000000000000001;
@@ -70,15 +70,15 @@ contract DebugMerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP71
     }
 
     /**
-     * @notice Get the EIP-712 digest for a migration signature
-     * @param account   Address of the user migrating
+     * @notice Get the EIP-712 digest for a stake upgrade signature
+     * @param account   Address of the user upgrading
      * @param validator Validator to delegate to
      * @param expiry    Signature expiry
-     * @return _        Migration digest
+     * @return _        Upgrade digest
      */
-    function getMigrationDigest(address account, address validator, uint256 expiry) public view returns (bytes32) {
+    function getUpgradeDigest(address account, address validator, uint256 expiry) public view returns (bytes32) {
         if (expiry != 0 && block.timestamp > expiry) revert Expired();
-        bytes32 migrationHash = keccak256(abi.encode(MIGRATION_TYPEHASH, account, validator, nonces[account], expiry));
+        bytes32 migrationHash = keccak256(abi.encode(UPGRADE_TYPEHASH, account, validator, nonces[account], expiry));
         return _hashTypedData(migrationHash);
     }
 
@@ -117,26 +117,26 @@ contract DebugMerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP71
     }
 
     /**
-     * @notice Claim rewards and migrate stake to Omni
+     * @notice Claim rewards and upgrade stake to Omni
      * @dev Triggers a SolverNet order to generate a subsidized order for deposited tokens on Omni 1:1
-     *      If the user has already claimed rewards, they can still migrate their stake to Omni
+     *      If the user has already claimed rewards, they can still upgrade their stake to Omni
      * @param validator    Validator to delegate to
      * @param index        Index of the claim
      * @param amount       Amount of tokens to claim
      * @param merkleProof  Merkle proof for the claim
      */
-    function migrateToOmni(address validator, uint256 index, uint256 amount, bytes32[] calldata merkleProof) external {
+    function upgradeStake(address validator, uint256 index, uint256 amount, bytes32[] calldata merkleProof) external {
         unchecked {
             ++nonces[msg.sender];
         }
-        _migrate(msg.sender, validator, index, amount, merkleProof);
+        _upgrade(msg.sender, validator, index, amount, merkleProof);
     }
 
     /**
-     * @notice Claim rewards and migrate stake to Omni on behalf of a user
+     * @notice Claim rewards and upgrade stake to Omni on behalf of a user
      * @dev Triggers a SolverNet order to generate a subsidized order for deposited tokens on Omni 1:1
-     *      If the user has already claimed rewards, they can still migrate their stake to Omni
-     * @param account      Address of the user migrating
+     *      If the user has already claimed rewards, they can still upgrade their stake to Omni
+     * @param account      Address of the user upgrading
      * @param validator    Validator to delegate to
      * @param index        Index of the claim
      * @param amount       Amount of tokens to claim
@@ -146,7 +146,7 @@ contract DebugMerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP71
      * @param s            Signature s
      * @param expiry       Signature expiry
      */
-    function migrateUserToOmni(
+    function upgradeUserStake(
         address account,
         address validator,
         uint256 index,
@@ -159,7 +159,7 @@ contract DebugMerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP71
     ) external {
         // If the user isn't the caller, verify the signature
         if (account != msg.sender) {
-            bytes32 digest = getMigrationDigest(account, validator, expiry);
+            bytes32 digest = getUpgradeDigest(account, validator, expiry);
 
             if (!SignatureCheckerLib.isValidSignatureNow(account, digest, v, r, s)) {
                 if (!SignatureCheckerLib.isValidERC1271SignatureNow(account, digest, v, r, s)) {
@@ -172,7 +172,7 @@ contract DebugMerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP71
             }
         }
 
-        _migrate(account, validator, index, amount, merkleProof);
+        _upgrade(account, validator, index, amount, merkleProof);
     }
 
     /**
@@ -185,14 +185,14 @@ contract DebugMerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP71
     }
 
     /**
-     * @notice Migrate stake to Omni
-     * @param account      Address of the user migrating
+     * @notice Upgrade stake to Omni
+     * @param account      Address of the user upgrading
      * @param validator    Validator to delegate to
      * @param index        Index of the claim
      * @param amount       Amount of tokens to claim
      * @param merkleProof  Merkle proof for the claim
      */
-    function _migrate(address account, address validator, uint256 index, uint256 amount, bytes32[] calldata merkleProof)
+    function _upgrade(address account, address validator, uint256 index, uint256 amount, bytes32[] calldata merkleProof)
         internal
     {
         if (block.timestamp > endTime) revert ClaimWindowFinished();
@@ -210,7 +210,7 @@ contract DebugMerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP71
             }
         }
 
-        // Block insufficient stake migrations
+        // Block insufficient stake upgrades
         if (stake < 1 ether) revert InsufficientAmount();
 
         // Generate and send the order

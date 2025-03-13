@@ -59,7 +59,7 @@ contract OmegaGenesisStakeScript is Script {
         _approveStakeAndFund();
 
         // Change index values according to deployer/caller address in merkle tree
-        merkleDistributor.migrateToOmni(validator, 0, rewardAmount, proofs[0]);
+        merkleDistributor.upgradeStake(validator, 0, rewardAmount, proofs[0]);
 
         vm.stopBroadcast();
     }
@@ -71,7 +71,7 @@ contract OmegaGenesisStakeScript is Script {
         _approveStakeAndFund();
 
         // Change index values according to deployer/caller address in merkle tree
-        merkleDistributor.migrateToOmni(validator, 0, rewardAmount, proofs[0]);
+        merkleDistributor.upgradeStake(validator, 0, rewardAmount, proofs[0]);
 
         vm.stopBroadcast();
     }
