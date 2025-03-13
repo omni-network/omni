@@ -87,7 +87,7 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 					return nil
 				}
 
-				debugPendingData(ctx, deps, order)
+				debugPendingData(ctx, deps, order, elog)
 
 				if didReject, err := maybeReject(); err != nil {
 					return err
@@ -117,7 +117,7 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 	}
 }
 
-func debugPendingData(ctx context.Context, deps procDeps, order Order) {
+func debugPendingData(ctx context.Context, deps procDeps, order Order, elog types.Log) {
 	pendingData, err := order.PendingData()
 	if err != nil {
 		log.Warn(ctx, "Order not pending [BUG]", err)
@@ -142,5 +142,6 @@ func debugPendingData(ctx context.Context, deps procDeps, order Order) {
 		"dst_chain", deps.ChainName(pendingData.DestinationChainID),
 		"full_order_id", order.ID.Hex(),
 		"target", deps.TargetName(pendingData),
+		"tx", elog.TxHash.Hex(),
 	)
 }
