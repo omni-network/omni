@@ -24,6 +24,7 @@ import (
 	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
+	"github.com/omni-network/omni/solver/targets"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -316,6 +317,10 @@ func startEventStreams(
 			return "Native:" + nativeTkn.Symbol
 		}
 
+		if target, ok := targets.Get(pendingData.DestinationChainID, call.Target); ok {
+			return target.Name
+		}
+
 		return call.Target.Hex()[:7] // Short hex.
 	}
 
@@ -329,6 +334,8 @@ func startEventStreams(
 	}
 
 	callAllower := newCallAllower(network.ID, addrs.SolverNetMiddleman)
+
+	pnl := newPnlFunc(pricer, targetName, network.ChainName, addrs.SolverNetOutbox)
 
 	for _, chainID := range inboxChains {
 		// Ensure chain version processors don't process same height concurrently.
@@ -344,8 +351,8 @@ func startEventStreams(
 				ShouldReject:   newShouldRejector(backends, callAllower, solverAddr, addrs.SolverNetOutbox),
 				DidFill:        newDidFiller(outboxContracts),
 				Reject:         newRejector(inboxContracts, backends, solverAddr),
-				Fill:           newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, pricer),
-				Claim:          newClaimer(inboxContracts, backends, solverAddr, pricer),
+				Fill:           newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, pnl),
+				Claim:          newClaimer(inboxContracts, backends, solverAddr),
 				SetCursor:      cursorSetter,
 				ChainName:      network.ChainName,
 				ProcessorName:  network.ChainVersionName(chainVer),
@@ -353,8 +360,8 @@ func startEventStreams(
 				BlockTimestamp: blockTimestamps,
 			}
 
-			loopCtx := log.WithCtx(ctx, "chain_version", network.ChainVersionName(chainVer))
-			log.Info(loopCtx, "Starting inbox event stream")
+			loopCtx := log.WithCtx(ctx, "proc", network.ChainVersionName(chainVer))
+			log.Info(loopCtx, "Starting inbox event processor")
 			go streamEventsForever(loopCtx, chainVer, xprov, deps, cursors, addrs.SolverNetInbox, callbackWrapper)
 		}
 	}
@@ -415,7 +422,7 @@ func streamEventsForever(
 			return
 		}
 
-		log.Warn(ctx, "Failure streaming inbox events (will retry)", err)
+		log.Warn(ctx, "Failure processing inbox events (will retry)", err)
 		backoff()
 	}
 }

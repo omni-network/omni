@@ -42,7 +42,9 @@ func newCallAllower(network netconf.ID, middlemanAddr common.Address) callAllowF
 			target = proxiedTarget
 		}
 
-		return targets.IsAllowedTarget(chainID, target)
+		_, ok := targets.Get(chainID, target)
+
+		return ok
 	}
 }
 
