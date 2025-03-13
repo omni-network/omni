@@ -161,6 +161,7 @@ func bridgeJobs(network netconf.ID) ([]types.Job, error) {
 		netconf.Devnet:  {evmchain.IDMockL1, evmchain.IDMockL2},
 		netconf.Staging: {evmchain.IDBaseSepolia, evmchain.IDOpSepolia},
 		netconf.Omega:   {evmchain.IDOpSepolia, evmchain.IDArbSepolia},
+		netconf.Mainnet: {evmchain.IDOptimism, evmchain.IDArbitrumOne},
 	}[network]
 	if !ok {
 		return nil, nil
