@@ -22,26 +22,25 @@ library InitializableHelperSolady {
     // This means that a freshly initialized contract will return 2 in the `getInitialized` function.
 
     /**
-     * @notice Returns the Initializable._initialized value for a given address, at slot 0.
-     * @dev Reverts in _initializing.
+     * @notice Returns the initialized version for a given address.
+     * @dev Reverts if the contract is currently initializing.
      */
     function getInitialized(address addr) internal view returns (uint64) {
-        // _initialized is the first field in the storage layout
         bytes32 slot = vm.load(addr, INITIALIZABLE_STORAGE);
 
-        // if _initializing is false, it's bit will be 0, and will not affect uint conversion
-        // if _initializing is true, it's bit will be 1, and will affect uint conversion
-        // we therefore require it is 0
-        require(uint256(slot) <= uint256(type(uint64).max), "initializing");
+        // Check if initializing bit is set (bit 0)
+        require((uint256(slot) & 1) == 0, "initializing");
 
-        return uint64(uint256(slot));
+        // Extract only the initializedVersion (bits 1-64)
+        // by right-shifting by 1 to remove the initializing bit
+        return uint64(uint256(slot) >> 1);
     }
 
     /**
      * @notice Returns true if the address has been initialized.
      */
     function isInitialized(address addr) internal view returns (bool) {
-        return getInitialized(addr) == uint64(2);
+        return getInitialized(addr) == 1;
     }
 
     /**
@@ -53,9 +52,9 @@ library InitializableHelperSolady {
 
     /**
      * @notice Disables the initializers for a given address.
-     * @dev Sets _initialized to max uint64 (0xFFFFFFFFFFFFFFFF), which disables all initializers.
+     * @dev Sets _initialized to max uint64 (0xFFFFFFFFFFFFFFFE), which disables all initializers.
      */
     function disableInitializers(address addr) internal {
-        vm.store(addr, INITIALIZABLE_STORAGE, bytes32(uint256(type(uint64).max)));
+        vm.store(addr, INITIALIZABLE_STORAGE, bytes32(uint256(type(uint64).max) << 1));
     }
 }
