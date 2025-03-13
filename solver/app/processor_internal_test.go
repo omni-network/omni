@@ -2,8 +2,8 @@ package app
 
 import (
 	"context"
+	"log/slog"
 	"testing"
-	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
@@ -132,9 +132,9 @@ func TestEventProcessor(t *testing.T) {
 
 					return nil
 				},
-				ChainName:      func(uint64) string { return "" },
-				TargetName:     func(PendingData) string { return "" },
-				BlockTimestamp: func(uint64, uint64) time.Time { return time.Time{} },
+				ChainName:     func(uint64) string { return "" },
+				TargetName:    func(PendingData) string { return "" },
+				InstrumentAge: func(context.Context, uint64, uint64, Order) slog.Attr { return slog.Attr{} },
 			}
 
 			processor := newEventProcessor(deps, chainID)
