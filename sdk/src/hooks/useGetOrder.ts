@@ -6,9 +6,11 @@ import { useOmniContracts } from './useOmniContracts.js'
 export function useGetOrder({
   chainId,
   orderId,
+  enabled,
 }: {
   chainId?: number
   orderId?: Hex
+  enabled?: boolean
 }) {
   const { data: contracts } = useOmniContracts()
   return useReadContract({
@@ -18,7 +20,7 @@ export function useGetOrder({
     chainId,
     args: orderId ? [orderId] : undefined,
     query: {
-      enabled: !!contracts && !!orderId && !!chainId,
+      enabled: !!contracts && !!orderId && !!chainId && (enabled ?? true),
       refetchInterval: 1000,
     },
   })
