@@ -180,6 +180,26 @@
   "symbol": "OMNI"
  },
  {
+  "address": "0xc1CBa3fCea344f92D9239c08C0568f6F2F0ee452",
+  "chainId": 8453,
+  "coingeckoId": "wrapped-steth",
+  "isMock": false,
+  "maxSpend": "4.0000",
+  "minSpend": "0.0010",
+  "name": "Wrapped Staked Ether",
+  "symbol": "wstETH"
+ },
+ {
+  "address": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
+  "chainId": 1,
+  "coingeckoId": "wrapped-steth",
+  "isMock": false,
+  "maxSpend": "4.0000",
+  "minSpend": "0.0010",
+  "name": "Wrapped Staked Ether",
+  "symbol": "wstETH"
+ },
+ {
   "address": "0x8d09a4502Cc8Cf1547aD300E066060D043f6982D",
   "chainId": 17000,
   "coingeckoId": "wrapped-steth",

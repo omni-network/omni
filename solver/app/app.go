@@ -313,7 +313,7 @@ func startEventStreams(
 				DidFill:       newDidFiller(outboxContracts),
 				Reject:        newRejector(inboxContracts, backends, solverAddr, orderGasPnL),
 				Fill:          newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, filledPnL),
-				Claim:         newClaimer(inboxContracts, backends, solverAddr, orderGasPnL),
+				Claim:         newClaimer(network.ID, inboxContracts, backends, solverAddr, orderGasPnL),
 				SetCursor:     cursorSetter,
 				ChainName:     network.ChainName,
 				ProcessorName: network.ChainVersionName(chainVer),
