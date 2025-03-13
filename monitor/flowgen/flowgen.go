@@ -7,7 +7,6 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
-	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -57,14 +56,9 @@ func startWithBackends(
 	backends ethbackend.Backends,
 	owner common.Address,
 ) error {
-	addrs, err := contracts.GetAddresses(ctx, network.ID)
-	if err != nil {
-		return errors.New("contract addresses")
-	}
-
 	var jobs []types.Job
 
-	result, err := bridgeJobs(network.ID, owner)
+	result, err := bridgeJobs(ctx, network.ID, owner)
 	if err != nil {
 		return errors.Wrap(err, "bridge jobs")
 	}
@@ -72,19 +66,10 @@ func startWithBackends(
 
 	if network.ID == netconf.Omega {
 		deposit := big.NewInt(0).Mul(util.MilliEther, big.NewInt(20)) // 0.02 ETH
-		wstETHBaseSepolia := common.HexToAddress("0x6319df7c227e34B967C1903A08a698A3cC43492B")
-		wstETHHolesky := common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")
-		symbioticVaultOnHolesky := common.HexToAddress("0xd88dDf98fE4d161a66FB836bee4Ca469eb0E4a75")
 		job, err := symbiotic.NewJob(
 			ctx,
 			backends,
 			network.ID,
-			addrs.SolverNetInbox,
-			evmchain.IDBaseSepolia,
-			evmchain.IDHolesky,
-			wstETHBaseSepolia,
-			wstETHHolesky,
-			symbioticVaultOnHolesky,
 			owner,
 			deposit,
 		)
@@ -105,7 +90,7 @@ func startWithBackends(
 					return
 				case <-timer.C:
 					jobsTotal.Inc()
-					if err := run(log.WithCtx(ctx, "job", job.Name), addrs.SolverNetInbox, backends, job); err != nil {
+					if err := run(log.WithCtx(ctx, "job", job.Name), backends, job); err != nil {
 						log.Warn(ctx, "Flowgen: job failed (will retry)", err)
 						jobsFailed.Inc()
 					}
@@ -119,10 +104,10 @@ func startWithBackends(
 }
 
 // run runs a job exactly once.
-func run(ctx context.Context, inboxAddr common.Address, backends ethbackend.Backends, j types.Job) error {
+func run(ctx context.Context, backends ethbackend.Backends, j types.Job) error {
 	log.Debug(ctx, "Flowgen: running job")
 
-	orderID, err := solvernet.OpenOrder(ctx, j.Network, j.SrcChain, backends, j.Owner, j.OrderData)
+	orderID, err := solvernet.OpenOrder(ctx, j.NetworkID, j.SrcChain, backends, j.Owner, j.OrderData)
 	if err != nil {
 		return errors.Wrap(err, "open order")
 	}
@@ -131,7 +116,7 @@ func run(ctx context.Context, inboxAddr common.Address, backends ethbackend.Back
 
 	log.Debug(ctx, "Flowgen: order opened")
 
-	if err := awaitClaimed(ctx, inboxAddr, backends, j, orderID); err != nil {
+	if err := awaitClaimed(ctx, j.InboxAddr, backends, j, orderID); err != nil {
 		return errors.Wrap(err, "await claimed")
 	}
 
@@ -188,7 +173,7 @@ func awaitClaimed(
 	}
 }
 
-func bridgeJobs(network netconf.ID, owner common.Address) ([]types.Job, error) {
+func bridgeJobs(ctx context.Context, networkID netconf.ID, owner common.Address) ([]types.Job, error) {
 	type balanced struct {
 		From uint64
 		To   uint64
@@ -198,7 +183,7 @@ func bridgeJobs(network netconf.ID, owner common.Address) ([]types.Job, error) {
 		netconf.Devnet:  {evmchain.IDMockL1, evmchain.IDMockL2},
 		netconf.Staging: {evmchain.IDBaseSepolia, evmchain.IDOpSepolia},
 		netconf.Omega:   {evmchain.IDOpSepolia, evmchain.IDArbSepolia},
-	}[network]
+	}[networkID]
 	if !ok {
 		return nil, nil
 	}
@@ -206,12 +191,12 @@ func bridgeJobs(network netconf.ID, owner common.Address) ([]types.Job, error) {
 	// Bridging of native ETH
 	amount := big.NewInt(0).Mul(util.MilliEther, big.NewInt(20)) // 0.02 ETH
 
-	job1, err := bridging.NewJob(network, b.From, b.To, owner, amount)
+	job1, err := bridging.NewJob(ctx, networkID, b.From, b.To, owner, amount)
 	if err != nil {
 		return nil, err
 	}
 
-	job2, err := bridging.NewJob(network, b.To, b.From, owner, amount)
+	job2, err := bridging.NewJob(ctx, networkID, b.To, b.From, owner, amount)
 	if err != nil {
 		return nil, err
 	}

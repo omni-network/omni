@@ -1,11 +1,13 @@
 package bridging
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
@@ -17,33 +19,40 @@ import (
 
 // NewJob instantiates the job that bridges native ETH.
 func NewJob(
-	network netconf.ID,
+	ctx context.Context,
+	networkID netconf.ID,
 	srcChain,
 	dstChain uint64,
 	owner common.Address,
 	amount *big.Int,
 ) (types.Job, error) {
+	addrs, err := contracts.GetAddresses(ctx, networkID)
+	if err != nil {
+		return types.Job{}, errors.New("contract addresses")
+	}
+
 	data, err := orderData(owner, srcChain, dstChain, amount)
 	if err != nil {
 		return types.Job{}, errors.Wrap(err, "new job")
 	}
 
 	cadence := 30 * time.Minute
-	if network == netconf.Devnet {
+	if networkID == netconf.Devnet {
 		cadence = time.Second * 10
 	}
 
-	namer := netconf.ChainNamer(network)
+	namer := netconf.ChainNamer(networkID)
 
 	return types.Job{
-		Name:    fmt.Sprintf("Bridging (%v->%v)", namer(srcChain), namer(dstChain)),
-		Cadence: cadence,
-		Network: network,
+		Name:      fmt.Sprintf("Bridging (%v->%v)", namer(srcChain), namer(dstChain)),
+		Cadence:   cadence,
+		NetworkID: networkID,
 
 		SrcChain: srcChain,
 		DstChain: dstChain,
 
-		Owner: owner,
+		Owner:     owner,
+		InboxAddr: addrs.SolverNetInbox,
 
 		OrderData: data,
 	}, nil

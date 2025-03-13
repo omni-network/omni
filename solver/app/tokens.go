@@ -109,6 +109,16 @@ func AllTokens() Tokens {
 	return tokens
 }
 
+func (ts Tokens) FindBySymbol(chainID uint64, symbol string) (Token, bool) {
+	for _, t := range ts {
+		if t.ChainID == chainID && t.Symbol == symbol {
+			return t, true
+		}
+	}
+
+	return Token{}, false
+}
+
 func (ts Tokens) Find(chainID uint64, addr common.Address) (Token, bool) {
 	for _, t := range ts {
 		if t.ChainID == chainID && t.Address == addr {

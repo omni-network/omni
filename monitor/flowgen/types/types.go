@@ -16,12 +16,14 @@ type Job struct {
 	// Cadence is intrerval at which to run the job
 	Cadence time.Duration
 
-	Network netconf.ID
+	NetworkID netconf.ID
 
 	SrcChain uint64
 	DstChain uint64
 
 	Owner common.Address
+
+	InboxAddr common.Address
 
 	OrderData bindings.SolverNetOrderData
 }
