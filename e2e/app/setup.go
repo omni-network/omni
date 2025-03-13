@@ -516,17 +516,11 @@ func writeSolverConfig(ctx context.Context, def Definition, logCfg log.Config) e
 		endpoints = ExternalEndpoints(def)
 	}
 
-	// Save solver private key (use random keys for mainnet)
-	// TODO(corver): Switch to proper keys once ready.
-	solverPrivKey, err := ethcrypto.GenerateKey()
+	solverPrivKey, err := eoa.PrivateKey(ctx, def.Testnet.Network, eoa.RoleSolver)
 	if err != nil {
-		return errors.Wrap(err, "generate private key")
-	} else if def.Testnet.Network != netconf.Mainnet {
-		solverPrivKey, err = eoa.PrivateKey(ctx, def.Testnet.Network, eoa.RoleSolver)
-		if err != nil {
-			return errors.Wrap(err, "get solver key")
-		}
+		return errors.Wrap(err, "get solver key")
 	}
+
 	if err := ethcrypto.SaveECDSA(filepath.Join(confRoot, privKeyFile), solverPrivKey); err != nil {
 		return errors.Wrap(err, "write private key")
 	}
