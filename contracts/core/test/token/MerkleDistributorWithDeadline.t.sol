@@ -172,7 +172,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
         });
 
         return IERC7683.OnchainCrossChainOrder({
-            fillDeadline: uint32(block.timestamp + 6 hours),
+            fillDeadline: uint32(block.timestamp + 24 hours),
             orderDataType: ORDER_DATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });
