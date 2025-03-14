@@ -95,7 +95,7 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 					continue
 				}
 
-				log.Info(ctx, "Filling order")
+				log.Debug(ctx, "Filling order")
 				if err := deps.Fill(ctx, order); err != nil {
 					return errors.Wrap(err, "fill order")
 				}
