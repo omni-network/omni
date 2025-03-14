@@ -36,7 +36,8 @@ func dec(amt float64, decimals int) *big.Int {
 	return new(big.Int).SetUint64(uint64(p))
 }
 
-// ApproveToken gives `user` max allowance for `token`.
+// TODO (christian): consolidate with `ApproveToken` in the solver package.
+// ApproveToken gives the 'contract' max allowance to spend the 'user's 'tokens'.
 func ApproveToken(ctx context.Context, backend *ethbackend.Backend, token, user, contract common.Address) error {
 	erc20, err := bindings.NewIERC20(token, backend)
 	if err != nil {

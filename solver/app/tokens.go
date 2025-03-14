@@ -62,6 +62,7 @@ var (
 	minOMNISpend   = mustBig("100000000000000000")     // 0.1 OMNI
 )
 
+// TODO(christian): move to a separate package.
 var tokens = append(Tokens{
 	// Native ETH (mainnet)
 	nativeETH(evmchain.IDEthereum),
@@ -94,7 +95,6 @@ var tokens = append(Tokens{
 	// wstETH
 	wstETH(evmchain.IDHolesky, common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")),
 	wstETH(evmchain.IDSepolia, common.HexToAddress("0xB82381A3fBD3FaFA77B3a7bE693342618240067b")),
-	wstETH(evmchain.IDBaseSepolia, common.HexToAddress("0x6319df7c227e34B967C1903A08a698A3cC43492B")),
 
 	// stETH
 	stETH(evmchain.IDHolesky, common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")),

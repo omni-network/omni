@@ -2,22 +2,20 @@ package flowgen
 
 import (
 	"context"
-	"math/big"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
-	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/monitor/flowgen/bridging"
 	"github.com/omni-network/omni/monitor/flowgen/symbiotic"
 	"github.com/omni-network/omni/monitor/flowgen/types"
-	"github.com/omni-network/omni/monitor/flowgen/util"
 	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -58,26 +56,17 @@ func startWithBackends(
 ) error {
 	var jobs []types.Job
 
-	result, err := bridgeJobs(ctx, network.ID, owner)
+	result, err := bridging.Jobs(network.ID, owner)
 	if err != nil {
 		return errors.Wrap(err, "bridge jobs")
 	}
 	jobs = append(jobs, result...)
 
-	if network.ID == netconf.Omega {
-		deposit := big.NewInt(0).Mul(util.MilliEther, big.NewInt(20)) // 0.02 ETH
-		job, err := symbiotic.NewJob(
-			ctx,
-			backends,
-			network.ID,
-			owner,
-			deposit,
-		)
-		if err != nil {
-			return errors.Wrap(err, "symbiotic job")
-		}
-		jobs = append(jobs, job)
+	result, err = symbiotic.Jobs(ctx, backends, network.ID, owner)
+	if err != nil {
+		return errors.Wrap(err, "symbiotic jobs")
 	}
+	jobs = append(jobs, result...)
 
 	for _, job := range jobs {
 		go func() {
@@ -90,9 +79,9 @@ func startWithBackends(
 					return
 				case <-timer.C:
 					jobsTotal.Inc()
-					ctx := log.WithCtx(ctx, "job", job.Name)
-					if err := run(ctx, backends, job); err != nil {
-						log.Warn(ctx, "Flowgen: job failed (will retry)", err)
+					runCtx := log.WithCtx(ctx, "job", job.Name)
+					if err := run(runCtx, backends, job); err != nil {
+						log.Warn(runCtx, "Flowgen: job failed (will retry)", err)
 						jobsFailed.Inc()
 					}
 					timer.Reset(job.Cadence)
@@ -117,7 +106,7 @@ func run(ctx context.Context, backends ethbackend.Backends, j types.Job) error {
 
 	log.Debug(ctx, "Flowgen: order opened")
 
-	if err := awaitClaimed(ctx, j.InboxAddr, backends, j, orderID); err != nil {
+	if err := awaitClaimed(ctx, backends, j, orderID); err != nil {
 		return errors.Wrap(err, "await claimed")
 	}
 
@@ -130,7 +119,6 @@ func run(ctx context.Context, backends ethbackend.Backends, j types.Job) error {
 // It returns an.
 func awaitClaimed(
 	ctx context.Context,
-	inboxAddr common.Address,
 	backends ethbackend.Backends,
 	j types.Job,
 	orderID solvernet.OrderID,
@@ -140,7 +128,12 @@ func awaitClaimed(
 		return errors.Wrap(err, "get backend")
 	}
 
-	inbox, err := bindings.NewSolverNetInbox(inboxAddr, backend)
+	addrs, err := contracts.GetAddresses(ctx, j.NetworkID)
+	if err != nil {
+		return errors.New("contract addresses")
+	}
+
+	inbox, err := bindings.NewSolverNetInbox(addrs.SolverNetInbox, backend)
 	if err != nil {
 		return errors.Wrap(err, "create inbox contract")
 	}
@@ -172,35 +165,4 @@ func awaitClaimed(
 
 		time.Sleep(5 * time.Second)
 	}
-}
-
-func bridgeJobs(ctx context.Context, networkID netconf.ID, owner common.Address) ([]types.Job, error) {
-	type balanced struct {
-		From uint64
-		To   uint64
-	}
-
-	b, ok := map[netconf.ID]balanced{
-		netconf.Devnet:  {evmchain.IDMockL1, evmchain.IDMockL2},
-		netconf.Staging: {evmchain.IDBaseSepolia, evmchain.IDOpSepolia},
-		netconf.Omega:   {evmchain.IDOpSepolia, evmchain.IDArbSepolia},
-	}[networkID]
-	if !ok {
-		return nil, nil
-	}
-
-	// Bridging of native ETH
-	amount := big.NewInt(0).Mul(util.MilliEther, big.NewInt(20)) // 0.02 ETH
-
-	job1, err := bridging.NewJob(ctx, networkID, b.From, b.To, owner, amount)
-	if err != nil {
-		return nil, err
-	}
-
-	job2, err := bridging.NewJob(ctx, networkID, b.To, b.From, owner, amount)
-	if err != nil {
-		return nil, err
-	}
-
-	return []types.Job{job1, job2}, nil
 }

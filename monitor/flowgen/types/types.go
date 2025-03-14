@@ -23,7 +23,5 @@ type Job struct {
 
 	Owner common.Address
 
-	InboxAddr common.Address
-
 	OrderData bindings.SolverNetOrderData
 }

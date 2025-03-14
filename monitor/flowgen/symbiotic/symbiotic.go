@@ -25,7 +25,7 @@ import (
 //go:embed symbiotic_abi.json
 var abiJSON []byte
 
-func NewJob(
+func newJob(
 	ctx context.Context,
 	backends ethbackend.Backends,
 	networkID netconf.ID,
@@ -61,7 +61,7 @@ func NewJob(
 		return types.Job{}, errors.Wrap(err, "token approval")
 	}
 
-	data, err := orderData(owner, conf.srcChain, conf.dstChain, srcChainTkn.Address, dstChainTkn.Address, conf.vaultAddr, amount)
+	data, err := orderData(owner, conf.dstChain, srcChainTkn, dstChainTkn, conf.vaultAddr, amount)
 	if err != nil {
 		return types.Job{}, errors.Wrap(err, "new job")
 	}
@@ -78,8 +78,6 @@ func NewJob(
 
 		Owner: owner,
 
-		InboxAddr: addrs.SolverNetInbox,
-
 		OrderData: data,
 	}, nil
 }
@@ -87,21 +85,11 @@ func NewJob(
 // orderData returns the order data required to do the job.
 func orderData(
 	owner common.Address,
-	srcChain, dstChain uint64,
-	srcChainToken common.Address,
-	dstChainToken common.Address,
-	symbioticContractAddress common.Address,
+	dstChain uint64,
+	srcToken, dstToken solver.Token,
+	vaultAddr common.Address,
 	amount *big.Int,
 ) (bindings.SolverNetOrderData, error) {
-	srcToken, ok := solver.AllTokens().Find(srcChain, srcChainToken)
-	if !ok {
-		return bindings.SolverNetOrderData{}, errors.New("src token not found", "token", srcToken.Address)
-	}
-	dstToken, ok := solver.AllTokens().Find(dstChain, dstChainToken)
-	if !ok {
-		return bindings.SolverNetOrderData{}, errors.New("dst token not found", "token", dstToken.Address)
-	}
-
 	expense := solver.TokenAmt{Token: dstToken, Amount: amount}
 
 	depositWithFee, err := solver.QuoteDeposit(srcToken, solver.TokenAmt{Token: srcToken, Amount: amount})
@@ -129,11 +117,11 @@ func orderData(
 		Expenses: []solvernet.Expense{{
 			Token:   expense.Token.Address,
 			Amount:  expense.Amount,
-			Spender: symbioticContractAddress,
+			Spender: vaultAddr,
 		}},
 		Calls: []bindings.SolverNetCall{
 			solvernet.Call{
-				Target: symbioticContractAddress,
+				Target: vaultAddr,
 				Data:   data,
 				Value:  new(big.Int),
 			}.ToBinding(),
@@ -145,4 +133,22 @@ func orderData(
 
 var metaData = &bind.MetaData{
 	ABI: string(abiJSON),
+}
+
+func Jobs(ctx context.Context, backends ethbackend.Backends, networkID netconf.ID, owner common.Address) ([]types.Job, error) {
+	var jobs []types.Job
+	deposit := big.NewInt(0).Mul(util.MilliEther, big.NewInt(20)) // 0.02 ETH
+	job, err := newJob(
+		ctx,
+		backends,
+		networkID,
+		owner,
+		deposit,
+	)
+	if err != nil {
+		return jobs, errors.Wrap(err, "symbiotic job")
+	}
+	jobs = append(jobs, job)
+
+	return jobs, nil
 }

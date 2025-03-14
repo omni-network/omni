@@ -200,16 +200,6 @@
   "symbol": "wstETH"
  },
  {
-  "address": "0x6319df7c227e34B967C1903A08a698A3cC43492B",
-  "chainId": 84532,
-  "coingeckoId": "wrapped-steth",
-  "isMock": false,
-  "maxSpend": "1.0000",
-  "minSpend": "0.0010",
-  "name": "Wrapped Staked Ether",
-  "symbol": "wstETH"
- },
- {
   "address": "0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034",
   "chainId": 17000,
   "coingeckoId": "lido-staked-ether",
