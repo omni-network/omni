@@ -15,8 +15,11 @@ func fundAnvil(ctx context.Context, def Definition) error {
 		return nil
 	}
 
-	toFund := eoa.MustAddresses(def.Testnet.Network, eoa.AllRoles()...)
 	amt := bi.Ether(1_000_000) // 1M Ether
+	toFund := dedup(append(
+		eoa.MustAddresses(def.Testnet.Network, eoa.AllRoles()...),
+		eoa.DevAccounts()...,
+	))
 
 	for _, chain := range def.Testnet.AnvilChains {
 		backend, err := def.Backends().Backend(chain.Chain.ChainID)
@@ -30,4 +33,20 @@ func fundAnvil(ctx context.Context, def Definition) error {
 	}
 
 	return nil
+}
+
+func dedup[T comparable](s []T) []T {
+	seen := make(map[T]bool)
+	var out []T
+
+	for _, v := range s {
+		if seen[v] {
+			continue
+		}
+
+		seen[v] = true
+		out = append(out, v)
+	}
+
+	return out
 }
