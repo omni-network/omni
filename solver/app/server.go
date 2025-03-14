@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/tracer"
 
 	"github.com/rs/cors"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 const (
@@ -76,8 +77,10 @@ func instrumentHandler(endpoint string, handler http.Handler) http.Handler {
 
 		// Start trace
 		ctx, span := tracer.Start(r.Context(), "api")
+		span.SetAttributes(attribute.String("endpoint", endpoint))
 		defer span.End()
 		traceID := span.SpanContext().TraceID()
+
 		ctx = log.WithCtx(ctx, log.Hex7("tid", traceID[:]))
 		r = r.WithContext(ctx)
 

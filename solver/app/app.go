@@ -21,7 +21,6 @@ import (
 	tokenslib "github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tokens/coingecko"
 	"github.com/omni-network/omni/lib/tracer"
-	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 	"github.com/omni-network/omni/solver/targets"
@@ -64,22 +63,6 @@ func Run(ctx context.Context, cfg Config) error {
 
 	// Start monitoring first, so app is "up"
 	monitorChan := serveMonitoring(cfg.MonitoringAddr)
-
-	// if mainnet, just run monitoring and api (/live only)
-	if cfg.Network == netconf.Mainnet {
-		log.Info(ctx, "Serving API", "address", cfg.APIAddr)
-		apiChan := serveAPI(cfg.APIAddr)
-
-		select {
-		case <-ctx.Done():
-			log.Info(ctx, "Shutdown detected, stopping...")
-			return nil
-		case err := <-monitorChan:
-			return err
-		case err := <-apiChan:
-			return err
-		}
-	}
 
 	portalReg, err := makePortalRegistry(cfg.Network, cfg.RPCEndpoints)
 	if err != nil {
@@ -132,7 +115,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "start event streams")
 	}
 
-	err = startRebalancing(ctx, network, backends)
+	err = startRebalancing(ctx, network, backends, newSimpleGasPnLFunc(pricer, network.ChainName))
 	if err != nil {
 		return errors.Wrap(err, "start rebalancing")
 	}
@@ -237,7 +220,6 @@ func startEventStreams(
 	}
 
 	inboxContracts := make(map[uint64]*bindings.SolverNetInbox)
-	inboxTimestamps := make(map[uint64]func(uint64) time.Time)
 	for _, chain := range inboxChains {
 		name := network.ChainName(chain)
 		log.Debug(ctx, "Using inbox contract", "chain", name, "address", addrs.SolverNetInbox.Hex())
@@ -245,20 +227,6 @@ func startEventStreams(
 		backend, err := backends.Backend(chain)
 		if err != nil {
 			return err
-		}
-
-		// Logic to query block timestamp for a given height
-		inboxTimestamps[chain] = func(height uint64) time.Time {
-			header, err := backend.HeaderByNumber(ctx, umath.NewBigInt(height))
-			if err != nil {
-				return time.Time{} // Best effort, ignore for now.
-			}
-			timeI64, err := umath.ToInt64(header.Time)
-			if err != nil {
-				return time.Time{} // Best effort, ignore for now.
-			}
-
-			return time.Unix(timeI64, 0)
 		}
 
 		inbox, err := bindings.NewSolverNetInbox(addrs.SolverNetInbox, backend)
@@ -313,7 +281,7 @@ func startEventStreams(
 
 		// Native bridging has zero call data and positive value
 		isNative := call.Selector == [4]byte{} && len(call.Params) == 0 && call.Value.Sign() > 0
-		if nativeTkn, ok := tokens.Find(pendingData.DestinationChainID, common.Address{}); ok && isNative {
+		if nativeTkn, ok := tokens.Find(pendingData.DestinationChainID, NativeAddr); ok && isNative {
 			return "Native:" + nativeTkn.Symbol
 		}
 
@@ -324,18 +292,11 @@ func startEventStreams(
 		return call.Target.Hex()[:7] // Short hex.
 	}
 
-	blockTimestamps := func(chainID uint64, height uint64) time.Time {
-		f, ok := inboxTimestamps[chainID]
-		if !ok {
-			return time.Time{}
-		}
-
-		return f(height)
-	}
-
 	callAllower := newCallAllower(network.ID, addrs.SolverNetMiddleman)
 
-	pnl := newPnlFunc(pricer, targetName, network.ChainName, addrs.SolverNetOutbox)
+	ageCache := newAgeCache(backends)
+	filledPnL := newFilledPnlFunc(pricer, targetName, network.ChainName, addrs.SolverNetOutbox, ageCache.InstrumentDestFilled)
+	orderGasPnL := newOrderGasPnLFunc(pricer, network.ChainName)
 
 	for _, chainID := range inboxChains {
 		// Ensure chain version processors don't process same height concurrently.
@@ -346,18 +307,18 @@ func startEventStreams(
 			}
 
 			deps := procDeps{
-				ParseID:        newIDParser(inboxContracts),
-				GetOrder:       newOrderGetter(inboxContracts),
-				ShouldReject:   newShouldRejector(backends, callAllower, solverAddr, addrs.SolverNetOutbox),
-				DidFill:        newDidFiller(outboxContracts),
-				Reject:         newRejector(inboxContracts, backends, solverAddr),
-				Fill:           newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, pnl),
-				Claim:          newClaimer(inboxContracts, backends, solverAddr),
-				SetCursor:      cursorSetter,
-				ChainName:      network.ChainName,
-				ProcessorName:  network.ChainVersionName(chainVer),
-				TargetName:     targetName,
-				BlockTimestamp: blockTimestamps,
+				ParseID:       newIDParser(inboxContracts),
+				GetOrder:      newOrderGetter(inboxContracts),
+				ShouldReject:  newShouldRejector(backends, callAllower, solverAddr, addrs.SolverNetOutbox),
+				DidFill:       newDidFiller(outboxContracts),
+				Reject:        newRejector(inboxContracts, backends, solverAddr, orderGasPnL),
+				Fill:          newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, filledPnL),
+				Claim:         newClaimer(inboxContracts, backends, solverAddr, orderGasPnL),
+				SetCursor:     cursorSetter,
+				ChainName:     network.ChainName,
+				ProcessorName: network.ChainVersionName(chainVer),
+				TargetName:    targetName,
+				InstrumentAge: ageCache.InstrumentAge,
 			}
 
 			loopCtx := log.WithCtx(ctx, "proc", network.ChainVersionName(chainVer))

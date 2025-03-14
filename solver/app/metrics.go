@@ -24,15 +24,22 @@ var (
 		Namespace: "solver",
 		Subsystem: "processor",
 		Name:      "rejected_orders_total",
-		Help:      "Total number of rejected orders by chain and reason",
+		Help:      "Total number of rejected orders by source chain and reason",
 	}, []string{"chain", "reason"})
+
+	filledOrders = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "solver",
+		Subsystem: "processor",
+		Name:      "filled_orders_total",
+		Help:      "Total number of filled orders by source chain, destination chain and target",
+	}, []string{"src_chain", "dst_chain", "target"})
 
 	orderAge = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "solver",
 		Subsystem: "processor",
 		Name:      "order_age_seconds",
 		Help:      "Order age (from creation) in seconds by chain and status",
-		Buckets:   prometheus.ExponentialBucketsRange(1, 60, 5),
+		Buckets:   prometheus.ExponentialBucketsRange(1, 60*60, 8),
 	}, []string{"chain", "status"})
 
 	apiLatency = promauto.NewHistogramVec(prometheus.HistogramOpts{

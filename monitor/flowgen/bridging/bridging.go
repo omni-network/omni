@@ -16,17 +16,16 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// NewJob instantiates the job that bridges native ETH.
+// NewJob returns a job that bridges native tokens.
 func NewJob(
 	network netconf.ID,
 	srcChain,
 	dstChain uint64,
 	role eoa.Role,
-	token common.Address,
 	amount *big.Int,
 ) (types.Job, error) {
 	owner := eoa.MustAddress(network, role)
-	data, err := orderData(owner, srcChain, dstChain, token, amount)
+	data, err := nativeOrderData(owner, srcChain, dstChain, amount)
 	if err != nil {
 		return types.Job{}, errors.Wrap(err, "new job")
 	}
@@ -52,21 +51,25 @@ func NewJob(
 	}, nil
 }
 
-// OrderData returns the order data required to do the job.
-func orderData(
+// nativeOrderData returns the order data required bridge native token amount from source to destination chain.
+func nativeOrderData(
 	owner common.Address,
 	srcChain, dstChain uint64,
-	tokenAddr common.Address,
 	amount *big.Int,
 ) (bindings.SolverNetOrderData, error) {
-	token, ok := app.AllTokens().Find(srcChain, tokenAddr)
+	srcToken, ok := app.AllTokens().Find(srcChain, app.NativeAddr)
 	if !ok {
-		return bindings.SolverNetOrderData{}, errors.New("token not found")
+		return bindings.SolverNetOrderData{}, errors.New("src token not found")
 	}
-	// Tokens that will be deposited to the user on the destination chain.
-	expense := app.TokenAmt{Token: token, Amount: amount}
+	dstToken, ok := app.AllTokens().Find(dstChain, app.NativeAddr)
+	if !ok {
+		return bindings.SolverNetOrderData{}, errors.New("dst token not found")
+	}
 
-	depositWithFee, err := app.QuoteDeposit(expense.Token, expense)
+	// Tokens that will be deposited to the user on the destination chain.
+	expense := app.TokenAmt{Token: dstToken, Amount: amount}
+
+	depositWithFee, err := app.QuoteDeposit(srcToken, expense)
 	if err != nil {
 		return bindings.SolverNetOrderData{}, errors.Wrap(err, "quote expense")
 	}
@@ -78,7 +81,7 @@ func orderData(
 			Token:  depositWithFee.Token.Address,
 			Amount: depositWithFee.Amount,
 		},
-		Expenses: []solvernet.Expense{},
+		Expenses: []solvernet.Expense{}, // Explicit expense not required for native transfer calls.
 		Calls: []bindings.SolverNetCall{
 			{
 				Target: owner,

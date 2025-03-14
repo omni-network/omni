@@ -2,8 +2,8 @@ package app
 
 import (
 	"context"
+	"log/slog"
 	"math/big"
-	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
@@ -31,16 +31,17 @@ type procDeps struct {
 	Claim  func(ctx context.Context, order Order) error
 
 	// Monitoring helpers
-	ProcessorName  string
-	TargetName     func(PendingData) string
-	ChainName      func(chainID uint64) string
-	BlockTimestamp func(chainID uint64, height uint64) time.Time
+	ProcessorName string
+	TargetName    func(PendingData) string
+	ChainName     func(chainID uint64) string
+	InstrumentAge func(ctx context.Context, chainID uint64, height uint64, order Order) slog.Attr
 }
 
 func newClaimer(
 	inboxContracts map[uint64]*bindings.SolverNetInbox,
 	backends ethbackend.Backends,
 	solverAddr common.Address,
+	pnl orderPnLFunc,
 ) func(ctx context.Context, order Order) error {
 	return func(ctx context.Context, order Order) error {
 		inbox, ok := inboxContracts[order.SourceChainID]
@@ -63,11 +64,13 @@ func newClaimer(
 		tx, err := inbox.Claim(txOpts, order.ID, solverAddr)
 		if err != nil {
 			return errors.Wrap(err, "claim order")
-		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
+		}
+		rec, err := backend.WaitMined(ctx, tx)
+		if err != nil {
 			return errors.Wrap(err, "wait mined")
 		}
 
-		return nil
+		return pnl(ctx, order, rec)
 	}
 }
 
@@ -75,7 +78,7 @@ func newFiller(
 	outboxContracts map[uint64]*bindings.SolverNetOutbox,
 	backends ethbackend.Backends,
 	solverAddr, outboxAddr common.Address,
-	pnl pnlFunc,
+	pnl orderPnLFunc,
 ) func(ctx context.Context, order Order) error {
 	return func(ctx context.Context, order Order) error {
 		pendingData, err := order.PendingData()
@@ -158,7 +161,9 @@ func newFiller(
 		tx, err := outbox.Fill(txOpts, order.ID, pendingData.FillOriginData, fillerData)
 		if err != nil {
 			return errors.Wrap(err, "fill order", "custom", solvernet.DetectCustomError(err))
-		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
+		}
+		rec, err := backend.WaitMined(ctx, tx)
+		if err != nil {
 			return errors.Wrap(err, "wait mined")
 		}
 
@@ -168,7 +173,7 @@ func newFiller(
 			return errors.New("fill failed [BUG]")
 		}
 
-		return pnl(ctx, order)
+		return pnl(ctx, order, rec)
 	}
 }
 
@@ -176,6 +181,7 @@ func newRejector(
 	inboxContracts map[uint64]*bindings.SolverNetInbox,
 	backends ethbackend.Backends,
 	solverAddr common.Address,
+	pnl orderPnLFunc,
 ) func(ctx context.Context, order Order, reason stypes.RejectReason) error {
 	return func(ctx context.Context, order Order, reason stypes.RejectReason) error {
 		inbox, ok := inboxContracts[order.SourceChainID]
@@ -203,11 +209,13 @@ func newRejector(
 		tx, err := inbox.Reject(txOpts, order.ID, uint8(reason))
 		if err != nil {
 			return errors.Wrap(err, "reject order", "custom", solvernet.DetectCustomError(err))
-		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
+		}
+		rec, err := backend.WaitMined(ctx, tx)
+		if err != nil {
 			return errors.Wrap(err, "wait mined")
 		}
 
-		return nil
+		return pnl(ctx, order, rec)
 	}
 }
 

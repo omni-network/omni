@@ -21,7 +21,6 @@ import (
 	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -161,6 +160,7 @@ func bridgeJobs(network netconf.ID) ([]types.Job, error) {
 		netconf.Devnet:  {evmchain.IDMockL1, evmchain.IDMockL2},
 		netconf.Staging: {evmchain.IDBaseSepolia, evmchain.IDOpSepolia},
 		netconf.Omega:   {evmchain.IDOpSepolia, evmchain.IDArbSepolia},
+		netconf.Mainnet: {evmchain.IDOptimism, evmchain.IDArbitrumOne},
 	}[network]
 	if !ok {
 		return nil, nil
@@ -169,12 +169,12 @@ func bridgeJobs(network netconf.ID) ([]types.Job, error) {
 	// Bridging of native ETH
 	amount := big.NewInt(0).Mul(util.MilliEther, big.NewInt(20)) // 0.02 ETH
 
-	job1, err := bridging.NewJob(network, b.From, b.To, eoa.RoleFlowgen, common.Address{}, amount)
+	job1, err := bridging.NewJob(network, b.From, b.To, eoa.RoleFlowgen, amount)
 	if err != nil {
 		return nil, err
 	}
 
-	job2, err := bridging.NewJob(network, b.To, b.From, eoa.RoleFlowgen, common.Address{}, amount)
+	job2, err := bridging.NewJob(network, b.To, b.From, eoa.RoleFlowgen, amount)
 	if err != nil {
 		return nil, err
 	}
