@@ -41,6 +41,7 @@ func newClaimer(
 	inboxContracts map[uint64]*bindings.SolverNetInbox,
 	backends ethbackend.Backends,
 	solverAddr common.Address,
+	pnl orderPnLFunc,
 ) func(ctx context.Context, order Order) error {
 	return func(ctx context.Context, order Order) error {
 		inbox, ok := inboxContracts[order.SourceChainID]
@@ -63,11 +64,13 @@ func newClaimer(
 		tx, err := inbox.Claim(txOpts, order.ID, solverAddr)
 		if err != nil {
 			return errors.Wrap(err, "claim order")
-		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
+		}
+		rec, err := backend.WaitMined(ctx, tx)
+		if err != nil {
 			return errors.Wrap(err, "wait mined")
 		}
 
-		return nil
+		return pnl(ctx, order, rec)
 	}
 }
 
@@ -75,8 +78,7 @@ func newFiller(
 	outboxContracts map[uint64]*bindings.SolverNetOutbox,
 	backends ethbackend.Backends,
 	solverAddr, outboxAddr common.Address,
-	pnl pnlFunc,
-	instrumentDestFilled instrDestFilledFunc,
+	pnl orderPnLFunc,
 ) func(ctx context.Context, order Order) error {
 	return func(ctx context.Context, order Order) error {
 		pendingData, err := order.PendingData()
@@ -171,9 +173,7 @@ func newFiller(
 			return errors.New("fill failed [BUG]")
 		}
 
-		instrumentDestFilled(ctx, destChainID, rec.BlockNumber.Uint64(), order)
-
-		return pnl(ctx, order)
+		return pnl(ctx, order, rec)
 	}
 }
 
@@ -181,6 +181,7 @@ func newRejector(
 	inboxContracts map[uint64]*bindings.SolverNetInbox,
 	backends ethbackend.Backends,
 	solverAddr common.Address,
+	pnl orderPnLFunc,
 ) func(ctx context.Context, order Order, reason stypes.RejectReason) error {
 	return func(ctx context.Context, order Order, reason stypes.RejectReason) error {
 		inbox, ok := inboxContracts[order.SourceChainID]
@@ -208,11 +209,13 @@ func newRejector(
 		tx, err := inbox.Reject(txOpts, order.ID, uint8(reason))
 		if err != nil {
 			return errors.Wrap(err, "reject order", "custom", solvernet.DetectCustomError(err))
-		} else if _, err := backend.WaitMined(ctx, tx); err != nil {
+		}
+		rec, err := backend.WaitMined(ctx, tx)
+		if err != nil {
 			return errors.Wrap(err, "wait mined")
 		}
 
-		return nil
+		return pnl(ctx, order, rec)
 	}
 }
 

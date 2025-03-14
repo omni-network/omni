@@ -20,7 +20,7 @@ const (
 	statusDestFilled = "dest_filled"
 )
 
-type instrDestFilledFunc func(ctx context.Context, dstChainID uint64, dstHeight uint64, order Order)
+type destFilledAge func(ctx context.Context, dstChainID uint64, dstHeight uint64, order Order) slog.Attr
 
 func newAgeCache(backends ethbackend.Backends) *ageCache {
 	return &ageCache{
@@ -71,41 +71,40 @@ func (a *ageCache) InstrumentAge(ctx context.Context, srcChainID uint64, srcHeig
 		log.Warn(ctx, "Purged overflowing age cache", nil)
 	}
 
-	if age == 0 {
-		return slog.Attr{}
-	}
-
-	return slog.Duration("age", age)
+	return age
 }
 
 // InstrumentDestFilled instruments the age of an order filled on the destination chain.
-func (a *ageCache) InstrumentDestFilled(ctx context.Context, dstChainID uint64, dstHeight uint64, order Order) {
+func (a *ageCache) InstrumentDestFilled(ctx context.Context, dstChainID uint64, dstHeight uint64, order Order) slog.Attr {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	_, err := a.instrumentUnsafe(ctx, dstChainID, dstHeight, order.ID, statusDestFilled)
+	age, err := a.instrumentUnsafe(ctx, dstChainID, dstHeight, order.ID, statusDestFilled)
 	if err != nil {
 		log.Warn(ctx, "Failed instrumenting order filled (will retry)", err)
+		return slog.Attr{}
 	}
+
+	return age
 }
 
-func (a *ageCache) instrumentUnsafe(ctx context.Context, chainID uint64, height uint64, orderID OrderID, status string) (time.Duration, error) {
+func (a *ageCache) instrumentUnsafe(ctx context.Context, chainID uint64, height uint64, orderID OrderID, status string) (slog.Attr, error) {
 	chainName, timestamp, err := a.blockMeta(ctx, chainID, height)
 	if err != nil {
-		return 0, err
+		return slog.Attr{}, err
 	}
 
 	if status == solvernet.StatusPending.String() {
 		// Order is created in the block that emits pending status
 		a.createdAts[orderID] = timestamp
 
-		return 0, nil
+		return slog.Attr{}, nil
 	}
 
 	createdAt, ok := a.createdAts[orderID]
 	if !ok {
 		// Pending event not seen or purged, best-effort ignore
-		return 0, nil
+		return slog.Attr{}, nil
 	}
 
 	age := timestamp.Sub(createdAt)
@@ -117,7 +116,7 @@ func (a *ageCache) instrumentUnsafe(ctx context.Context, chainID uint64, height 
 		delete(a.createdAts, orderID)
 	}
 
-	return age, nil
+	return slog.Float64("age_s", age.Seconds()), nil
 }
 
 // maybePurge returns true if the cache was purged.

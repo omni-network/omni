@@ -31,20 +31,28 @@ var maxL1OMNI = map[netconf.ID]*big.Int{
 }
 
 // startRebalancing starts rebalancing of tokens that the solver is able to rebalance.
-func startRebalancing(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
-	if err := startRebalancingOMNI(ctx, network, backends); err != nil {
+func startRebalancing(
+	ctx context.Context,
+	network netconf.Network,
+	backends ethbackend.Backends,
+	gasPnL simpleGasPnLFunc,
+) error {
+	if err := startRebalancingOMNI(ctx, network, backends, gasPnL); err != nil {
 		return errors.Wrap(err, "rebalance OMNI")
 	}
 
 	return nil
 }
 
-// startRebalancingOMNI starts the rebalancing of OMNI tokens.
-func startRebalancingOMNI(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
+// startRebalancingOMNI starts the rebalancing of solved OMNI tokens.
+func startRebalancingOMNI(
+	ctx context.Context,
+	network netconf.Network,
+	backends ethbackend.Backends,
+	gasPnL simpleGasPnLFunc,
+) error {
 	l1, ok := network.EthereumChain()
-
-	// if no l1, nothing to rebalance
-	if !ok {
+	if !ok { // if no l1, nothing to rebalance
 		return nil
 	}
 
@@ -53,14 +61,20 @@ func startRebalancingOMNI(ctx context.Context, network netconf.Network, backends
 		return errors.Wrap(err, "get backend")
 	}
 
-	go rebalanceOMNIForever(ctx, network, l1, backend)
+	go rebalanceOMNIForever(ctx, network, l1, backend, gasPnL)
 
 	return nil
 }
 
-// rebalanceOMNIForever periodically bridges L1 ERC20 OMNI back to Omni's EVM.
-func rebalanceOMNIForever(ctx context.Context, network netconf.Network, l1 netconf.Chain, backend *ethbackend.Backend) {
-	ctx = log.WithCtx(ctx, "rebalancer", "OMNI", "chain", l1.Name, "network", network.ID)
+// rebalanceOMNIForever periodically bridges solved L1 ERC20 OMNI back to Omni's EVM.
+func rebalanceOMNIForever(
+	ctx context.Context,
+	network netconf.Network,
+	l1 netconf.Chain,
+	backend *ethbackend.Backend,
+	gasPnL simpleGasPnLFunc,
+) {
+	ctx = log.WithCtx(ctx, "rebalancer", "OMNI", "chain", l1.Name)
 	log.Info(ctx, "Rebalancing OMNI tokens")
 
 	interval := time.Second * 30
@@ -76,22 +90,26 @@ func rebalanceOMNIForever(ctx context.Context, network netconf.Network, l1 netco
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			err := rebalanceOMNIOnce(ctx, network, backend)
+			err := rebalanceOMNIOnce(ctx, network.ID, backend, gasPnL)
 			if ctx.Err() != nil {
 				return
 			} else if err != nil {
-				log.Error(ctx, "Rebalancing OMNI failed (will retry)", err)
-
-				continue
+				log.Warn(ctx, "Rebalancing OMNI failed (will retry)", err)
 			}
 		}
 	}
 }
 
-// rebalanceOMNIOnce moves any OMNI balance (above 1000) on L1 back to Omni's EVM.
-func rebalanceOMNIOnce(ctx context.Context, network netconf.Network, backend *ethbackend.Backend) error {
-	solverAddr := eoa.MustAddress(network.ID, eoa.RoleSolver)
-	tokenAddr := contracts.TokenAddr(network.ID)
+// rebalanceOMNIOnce moves any solver OMNI balance (above 1000) on L1 back to Omni's EVM.
+// It returns the receipt of the bridging transaction.
+func rebalanceOMNIOnce(
+	ctx context.Context,
+	network netconf.ID,
+	backend *ethbackend.Backend,
+	gasPnL simpleGasPnLFunc,
+) error {
+	solverAddr := eoa.MustAddress(network, eoa.RoleSolver)
+	tokenAddr := contracts.TokenAddr(network)
 
 	token, err := bindings.NewIERC20(tokenAddr, backend)
 	if err != nil {
@@ -104,11 +122,11 @@ func rebalanceOMNIOnce(ctx context.Context, network netconf.Network, backend *et
 	}
 
 	// if balance not above max, do nothing
-	if balance.Cmp(maxL1OMNI[network.ID]) < 0 {
+	if balance.Cmp(maxL1OMNI[network]) < 0 {
 		return nil
 	}
 
-	addrs, err := contracts.GetAddresses(ctx, network.ID)
+	addrs, err := contracts.GetAddresses(ctx, network)
 	if err != nil {
 		return errors.Wrap(err, "get addrs")
 	}
@@ -139,14 +157,18 @@ func rebalanceOMNIOnce(ctx context.Context, network netconf.Network, backend *et
 		return errors.Wrap(err, "bridge")
 	}
 
-	_, err = backend.WaitMined(ctx, tx)
+	rec, err := backend.WaitMined(ctx, tx)
 	if err != nil {
 		return errors.Wrap(err, "wait mined")
 	}
 
-	log.Info(ctx, "Bridged L1-to-native OMNI", "to", solverAddr, "amount", balance, "fee", fee, "tx", tx.Hash())
+	log.Info(ctx, "Bridged L1-to-native OMNI for solver",
+		"amount_ether", umath.WeiToEtherF64(balance),
+		"fee_gwei", umath.WeiToGweiF64(fee),
+		"tx", tx.Hash(),
+	)
 
-	return nil
+	return gasPnL(ctx, tx.ChainId().Uint64(), rec, "Rebalance:OMNI")
 }
 
 func maybeApprove(
