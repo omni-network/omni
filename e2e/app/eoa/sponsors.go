@@ -33,8 +33,8 @@ func genstakeSponsors(
 			ChainID: chainID,
 			Name:    fmt.Sprintf("genstake-sponsor-%d", i),
 			FundThresholds: FundThresholds{
-				minGwei:    gwei(1),
-				targetGwei: gwei(2),
+				minEther:    1,
+				targetEther: 2,
 			},
 		})
 	}

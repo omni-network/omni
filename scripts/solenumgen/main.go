@@ -6,12 +6,13 @@ import (
 	"bytes"
 	"context"
 	"flag"
-	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/log"
-	"golang.org/x/tools/imports"
 	"os"
 	"strings"
 	"text/template"
+
+	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/log"
+	"golang.org/x/tools/imports"
 )
 
 var (

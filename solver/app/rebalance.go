@@ -16,18 +16,17 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 // maxL1OMNI is the max amount of L1 OMNI the solver should hold by network.
 var maxL1OMNI = map[netconf.ID]*big.Int{
 	// 1 OMNI for ephemeral networks (tests rebalancing more frequently)
-	netconf.Devnet:  new(big.Int).Mul(big.NewInt(1), big.NewInt(params.Ether)),
-	netconf.Staging: new(big.Int).Mul(big.NewInt(1), big.NewInt(params.Ether)),
+	netconf.Devnet:  umath.Ether,
+	netconf.Staging: umath.Ether,
 
 	// 1000 OMNI for protected networks (reduces gas spend)
-	netconf.Omega:   new(big.Int).Mul(big.NewInt(1000), big.NewInt(params.Ether)),
-	netconf.Mainnet: new(big.Int).Mul(big.NewInt(1000), big.NewInt(params.Ether)),
+	netconf.Omega:   umath.EtherToWei(1000),
+	netconf.Mainnet: umath.EtherToWei(1000),
 }
 
 // startRebalancing starts rebalancing of tokens that the solver is able to rebalance.

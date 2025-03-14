@@ -13,10 +13,10 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/txmgr"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 const saneMaxETH = 120    // Maximum amount of ETH to fund (in ether).
@@ -257,15 +257,12 @@ func fund(ctx context.Context, params fundParams) error {
 }
 
 func etherStr(amount *big.Int) string {
-	b, _ := amount.Float64()
-	b /= params.Ether
-
-	return fmt.Sprintf("%.4f", b)
+	return fmt.Sprintf("%.4f", umath.WeiToEtherF64(amount))
 }
 
 func saneMax(token tokens.Token) *big.Int {
-	saneETH := new(big.Int).Mul(big.NewInt(saneMaxETH), big.NewInt(params.Ether))
-	saneOmni := new(big.Int).Mul(big.NewInt(saneMaxOmni), big.NewInt(params.Ether))
+	saneETH := new(big.Int).Mul(big.NewInt(saneMaxETH), umath.Ether)
+	saneOmni := new(big.Int).Mul(big.NewInt(saneMaxOmni), umath.Ether)
 
 	if token == tokens.OMNI {
 		return saneOmni

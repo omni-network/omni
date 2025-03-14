@@ -234,28 +234,13 @@ func newConfig(cfg CLIConfig, signer SignerFn, from common.Address, client ethcl
 		return Config{}, errors.Wrap(err, "invalid config")
 	}
 
-	feeLimitThreshold, err := GweiToWei(cfg.FeeLimitThresholdGwei)
-	if err != nil {
-		return Config{}, errors.Wrap(err, "invalid fee limit threshold")
-	}
-
-	minBaseFee, err := GweiToWei(cfg.MinBaseFeeGwei)
-	if err != nil {
-		return Config{}, errors.Wrap(err, "invalid min base fee")
-	}
-
-	minTipCap, err := GweiToWei(cfg.MinTipCapGwei)
-	if err != nil {
-		return Config{}, errors.Wrap(err, "invalid min tip cap")
-	}
-
 	return Config{
 		Backend:                   client,
 		ResubmissionTimeout:       cfg.ResubmissionTimeout,
 		FeeLimitMultiplier:        cfg.FeeLimitMultiplier,
-		FeeLimitThreshold:         feeLimitThreshold,
-		MinBaseFee:                minBaseFee,
-		MinTipCap:                 minTipCap,
+		FeeLimitThreshold:         umath.GweiToWei(cfg.FeeLimitThresholdGwei),
+		MinBaseFee:                umath.GweiToWei(cfg.MinBaseFeeGwei),
+		MinTipCap:                 umath.GweiToWei(cfg.MinTipCapGwei),
 		ChainID:                   umath.NewBigInt(cfg.ChainID),
 		TxSendTimeout:             cfg.TxSendTimeout,
 		TxNotInMempoolTimeout:     cfg.TxNotInMempoolTimeout,

@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log/slog"
-	"math/big"
 	"net/url"
 	"strings"
 	"time"
@@ -212,7 +211,7 @@ func CreateValidator(ctx context.Context, cfg CreateValConfig) error {
 	if err != nil {
 		return err
 	}
-	txOpts.Value = new(big.Int).Mul(umath.NewBigInt(cfg.SelfDelegation), big.NewInt(params.Ether)) // Send self-delegation
+	txOpts.Value = umath.EtherToWei(cfg.SelfDelegation) // Send self-delegation
 	consPubkey, err := cfg.consensusPublicKey()
 	if err != nil {
 		return err
@@ -345,7 +344,7 @@ func Delegate(ctx context.Context, cfg DelegateConfig) error {
 	if err != nil {
 		return err
 	}
-	txOpts.Value = new(big.Int).Mul(umath.NewBigInt(cfg.Amount), big.NewInt(params.Ether)) // Send delegation
+	txOpts.Value = umath.EtherToWei(cfg.Amount) // Send delegation
 
 	callOpts := &bind.CallOpts{Context: ctx}
 	ok, err := contract.IsAllowlistEnabled(callOpts)

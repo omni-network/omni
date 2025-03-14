@@ -4,6 +4,7 @@ package indexer
 
 import (
 	context "context"
+
 	ormlist "cosmossdk.io/orm/model/ormlist"
 	ormtable "cosmossdk.io/orm/model/ormtable"
 	ormerrors "cosmossdk.io/orm/types/ormerrors"

@@ -19,11 +19,11 @@ import (
 	"github.com/omni-network/omni/lib/contracts/omnitoken"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 var (
@@ -31,10 +31,7 @@ var (
 	forgeScriptABI = mustGetABI(bindings.AllocPredeploysMetaData)
 
 	// genValAlloc is the genesis validator allocation.
-	genValAlloc = new(big.Int).Mul(
-		big.NewInt(genutil.ValidatorPower),
-		big.NewInt(params.Ether),
-	)
+	genValAlloc = umath.EtherToWei(genutil.ValidatorPower)
 )
 
 func main() {

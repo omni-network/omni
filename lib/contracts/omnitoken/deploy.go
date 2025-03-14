@@ -2,7 +2,6 @@ package omnitoken
 
 import (
 	"context"
-	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
@@ -11,13 +10,14 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 // TotalSupply is the 100M, total supply of the token.
-var TotalSupply = new(big.Int).Mul(big.NewInt(100e6), big.NewInt(1e18))
+var TotalSupply = umath.EtherToWei(100e6)
 
 type deploymentConfig struct {
 	Create3Factory common.Address

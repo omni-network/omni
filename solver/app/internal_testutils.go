@@ -537,7 +537,7 @@ func mockFillFee(t *testing.T, client *mock.MockClient, outbox common.Address) {
 	t.Helper()
 
 	// always return a fee of 1 gwei
-	fee := big.NewInt(1e9)
+	fee := umath.Gwei
 
 	ctx := gomock.Any()
 	msg := newCallMatcher("Outbox.fillFee", outbox, outboxABI.Methods["fillFee"].ID)
@@ -723,9 +723,9 @@ func abiEncodeBool(t *testing.T, b bool) []byte {
 }
 
 func ether(x int64) *big.Int {
-	return new(big.Int).Mul(big.NewInt(x), big.NewInt(1e18))
+	return umath.EtherToWei(x)
 }
 
 func gwei(x int64) *big.Int {
-	return new(big.Int).Mul(big.NewInt(x), big.NewInt(1e9))
+	return umath.GweiToWei(x)
 }

@@ -7,11 +7,10 @@ import (
 
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/tutil"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
 
-	"cosmossdk.io/math"
 	"github.com/stretchr/testify/require"
 )
 
@@ -36,7 +35,7 @@ func TestFundAccounts(t *testing.T) {
 		common.HexToAddress("0x333"),
 	}
 
-	amt := math.NewInt(100).MulRaw(params.Ether).BigInt() // 100 ETH
+	amt := umath.EtherToWei(100) // 100 ETH
 	err = anvil.FundAccounts(ctx, ethCl, amt, accounts...)
 	require.NoError(t, err)
 

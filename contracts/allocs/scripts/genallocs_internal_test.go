@@ -8,8 +8,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts/omnitoken"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
-
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/stretchr/testify/require"
 )
@@ -31,10 +30,10 @@ func TestBridgeBalance(t *testing.T) {
 	}
 
 	// Note that there were actually only 2 100 OMNI mainnet genesis validators. These calcs are wrong.
-	mp = add(mp, ether(1000)) // 1000 OMNI: genesis validator 1
-	mp = add(mp, ether(1000)) // 1000 OMNI: genesis validator 2
-	mp = add(mp, ether(1000)) // 1000 OMNI: genesis validator 3
-	mp = add(mp, ether(1000)) // 1000 OMNI: genesis validator 4
+	mp = add(mp, umath.EtherToWei(1000)) // 1000 OMNI: genesis validator 1
+	mp = add(mp, umath.EtherToWei(1000)) // 1000 OMNI: genesis validator 2
+	mp = add(mp, umath.EtherToWei(1000)) // 1000 OMNI: genesis validator 3
+	mp = add(mp, umath.EtherToWei(1000)) // 1000 OMNI: genesis validator 4
 
 	tests := []struct {
 		name     string
@@ -71,11 +70,6 @@ func TestBridgeBalance(t *testing.T) {
 			require.Equal(t, tt.expected, balance)
 		})
 	}
-}
-
-//nolint:unparam // Improves readability
-func ether(n int64) *big.Int {
-	return new(big.Int).Mul(big.NewInt(n), big.NewInt(params.Ether))
 }
 
 func add(x, y *big.Int) *big.Int {

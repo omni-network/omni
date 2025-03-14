@@ -15,6 +15,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -357,5 +358,5 @@ func bridgeToL1(ctx context.Context, def Definition, toBridge []BridgeTest) erro
 }
 
 func ether(n int64) *big.Int {
-	return new(big.Int).Mul(big.NewInt(n), big.NewInt(1e18))
+	return umath.EtherToWei(n)
 }

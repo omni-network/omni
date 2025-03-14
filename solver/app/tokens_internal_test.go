@@ -7,6 +7,7 @@ import (
 
 	tokenslib "github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tutil"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/stretchr/testify/require"
 )
@@ -67,8 +68,5 @@ func etherStr(amount *big.Int) string {
 		return "nil"
 	}
 
-	b, _ := amount.Float64()
-	b /= 1e18
-
-	return fmt.Sprintf("%.4f", b)
+	return fmt.Sprintf("%.4f", umath.WeiToEtherF64(amount))
 }

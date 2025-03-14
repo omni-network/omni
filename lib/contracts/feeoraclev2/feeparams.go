@@ -10,9 +10,8 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
-
-	"github.com/ethereum/go-ethereum/params"
 )
 
 // feeParams returns the fee parameters for the given destination chains.
@@ -49,12 +48,12 @@ func destFeeParams(ctx context.Context, destChain evmchain.Metadata, backends et
 	backend, err := backends.Backend(destChain.ChainID)
 	if err != nil {
 		log.Warn(ctx, "Failed getting exec backend, using default 1 Gwei", err, "dest_chain", destChain.Name)
-		gasPrice = big.NewInt(params.GWei)
+		gasPrice = umath.Gwei
 	} else {
 		gasPrice, err = backend.SuggestGasPrice(ctx)
 		if err != nil {
 			log.Warn(ctx, "Failed fetching exec gas price, using default 1 Gwei", err, "dest_chain", destChain.Name)
-			gasPrice = big.NewInt(params.GWei)
+			gasPrice = umath.Gwei
 		}
 	}
 
@@ -127,12 +126,12 @@ func destDataCostParams(ctx context.Context, destChain evmchain.Metadata, backen
 	backend, err := backends.Backend(dataCostCfg.ID)
 	if err != nil {
 		log.Warn(ctx, "Failed getting data cost backend, using default 1 Gwei", err, "dest_chain", destChain.Name, "posts_to", destChain.PostsTo)
-		gasPrice = big.NewInt(params.GWei)
+		gasPrice = umath.Gwei
 	} else {
 		gasPrice, err = backend.SuggestGasPrice(ctx)
 		if err != nil {
 			log.Warn(ctx, "Failed fetching data cost gas price, using default 1 Gwei", err, "dest_chain", destChain.Name, "posts_to", destChain.PostsTo)
-			gasPrice = big.NewInt(params.GWei)
+			gasPrice = umath.Gwei
 		}
 	}
 

@@ -18,7 +18,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 type BoundFeeOracleV1 struct {
@@ -88,7 +87,7 @@ func (c BoundFeeOracleV1) SetGasPriceOn(ctx context.Context, destChainID uint64,
 		return errors.Wrap(err, "tx opts")
 	}
 
-	gweiPrice, _ := new(big.Int).Div(gasPrice, umath.NewBigInt(params.GWei)).Float64()
+	gweiPrice := umath.WeiToGweiF64(gasPrice)
 	log.Info(ctx, "Setting gas price on chain", "dest_chain", c.chain.Name, "rate", gweiPrice)
 	tx, err := c.bound.SetGasPrice(txOpts, destChainID, gasPrice)
 	if err != nil {
@@ -168,9 +167,8 @@ func (c BoundFeeOracleV1) BulkSetFeeParams(ctx context.Context, params []binding
 func totalSpentGwei(tx *ethtypes.Transaction, rec *ethtypes.Receipt) float64 {
 	fees := new(big.Int).Mul(rec.EffectiveGasPrice, umath.NewBigInt(rec.GasUsed))
 	total := new(big.Int).Add(tx.Value(), fees)
-	totalGwei, _ := new(big.Int).Div(total, umath.NewBigInt(params.GWei)).Float64()
 
-	return totalGwei
+	return umath.WeiToGweiF64(total)
 }
 
 // callOpts returns a new call opts with the given context.
