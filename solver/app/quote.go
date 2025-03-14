@@ -92,37 +92,37 @@ func getQuote(depositTkns []Token, expenses []TokenAmt) ([]TokenAmt, error) {
 	return []TokenAmt{deposit}, nil
 }
 
-// QuoteDeposit returns the deposit required to cover `expense`.
-func QuoteDeposit(tkn Token, expense TokenAmt) (TokenAmt, error) {
-	if expense.Token.Symbol != tkn.Symbol {
+// QuoteDeposit returns the source chain deposit required to cover `expense`.
+func QuoteDeposit(depositTkn Token, expense TokenAmt) (TokenAmt, error) {
+	if expense.Token.Symbol != depositTkn.Symbol {
 		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, errors.New("deposit token must match expense token"))
 	}
 
-	if expense.Token.ChainClass != tkn.ChainClass {
+	if expense.Token.ChainClass != depositTkn.ChainClass {
 		// we should reject with UnsupportedDestChain before quoting tokens of different chain classes.
 		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, errors.New("deposit and expense must be of the same chain class (e.g. mainnet, testnet)"))
 	}
 
 	return TokenAmt{
-		Token:  tkn,
-		Amount: depositFor(expense.Amount, feeBipsFor(tkn)),
+		Token:  depositTkn,
+		Amount: depositFor(expense.Amount, feeBipsFor(depositTkn)),
 	}, nil
 }
 
-// QuoteExpense returns the expense allowed for `deposit`.
-func quoteExpense(tkn Token, deposit TokenAmt) (TokenAmt, error) {
-	if deposit.Token.Symbol != tkn.Symbol {
+// QuoteExpense returns the destination chain expense allowed for `deposit`.
+func quoteExpense(expenseTkn Token, deposit TokenAmt) (TokenAmt, error) {
+	if deposit.Token.Symbol != expenseTkn.Symbol {
 		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, errors.New("deposit token must match expense token"))
 	}
 
-	if deposit.Token.ChainClass != tkn.ChainClass {
+	if deposit.Token.ChainClass != expenseTkn.ChainClass {
 		// we should reject with UnsupportedDestChain before quoting tokens of different chain classes.
 		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, errors.New("deposit and expense must be of the same chain class (e.g. mainnet, testnet)"))
 	}
 
 	return TokenAmt{
-		Token:  tkn,
-		Amount: expenseFor(deposit.Amount, feeBipsFor(tkn)),
+		Token:  expenseTkn,
+		Amount: expenseFor(deposit.Amount, feeBipsFor(expenseTkn)),
 	}, nil
 }
 

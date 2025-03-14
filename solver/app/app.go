@@ -64,22 +64,6 @@ func Run(ctx context.Context, cfg Config) error {
 	// Start monitoring first, so app is "up"
 	monitorChan := serveMonitoring(cfg.MonitoringAddr)
 
-	// if mainnet, just run monitoring and api (/live only)
-	if cfg.Network == netconf.Mainnet {
-		log.Info(ctx, "Serving API", "address", cfg.APIAddr)
-		apiChan := serveAPI(cfg.APIAddr)
-
-		select {
-		case <-ctx.Done():
-			log.Info(ctx, "Shutdown detected, stopping...")
-			return nil
-		case err := <-monitorChan:
-			return err
-		case err := <-apiChan:
-			return err
-		}
-	}
-
 	portalReg, err := makePortalRegistry(cfg.Network, cfg.RPCEndpoints)
 	if err != nil {
 		return err
@@ -131,7 +115,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "start event streams")
 	}
 
-	err = startRebalancing(ctx, network, backends)
+	err = startRebalancing(ctx, network, backends, newSimpleGasPnLFunc(pricer, network.ChainName))
 	if err != nil {
 		return errors.Wrap(err, "start rebalancing")
 	}
@@ -297,7 +281,7 @@ func startEventStreams(
 
 		// Native bridging has zero call data and positive value
 		isNative := call.Selector == [4]byte{} && len(call.Params) == 0 && call.Value.Sign() > 0
-		if nativeTkn, ok := tokens.Find(pendingData.DestinationChainID, common.Address{}); ok && isNative {
+		if nativeTkn, ok := tokens.Find(pendingData.DestinationChainID, NativeAddr); ok && isNative {
 			return "Native:" + nativeTkn.Symbol
 		}
 
@@ -310,9 +294,9 @@ func startEventStreams(
 
 	callAllower := newCallAllower(network.ID, addrs.SolverNetMiddleman)
 
-	pnl := newPnlFunc(pricer, targetName, network.ChainName, addrs.SolverNetOutbox)
-
 	ageCache := newAgeCache(backends)
+	filledPnL := newFilledPnlFunc(pricer, targetName, network.ChainName, addrs.SolverNetOutbox, ageCache.InstrumentDestFilled)
+	orderGasPnL := newOrderGasPnLFunc(pricer, network.ChainName)
 
 	for _, chainID := range inboxChains {
 		// Ensure chain version processors don't process same height concurrently.
@@ -327,9 +311,9 @@ func startEventStreams(
 				GetOrder:      newOrderGetter(inboxContracts),
 				ShouldReject:  newShouldRejector(backends, callAllower, solverAddr, addrs.SolverNetOutbox),
 				DidFill:       newDidFiller(outboxContracts),
-				Reject:        newRejector(inboxContracts, backends, solverAddr),
-				Fill:          newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, pnl, ageCache.InstrumentDestFilled),
-				Claim:         newClaimer(inboxContracts, backends, solverAddr),
+				Reject:        newRejector(inboxContracts, backends, solverAddr, orderGasPnL),
+				Fill:          newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, filledPnL),
+				Claim:         newClaimer(inboxContracts, backends, solverAddr, orderGasPnL),
 				SetCursor:     cursorSetter,
 				ChainName:     network.ChainName,
 				ProcessorName: network.ChainVersionName(chainVer),

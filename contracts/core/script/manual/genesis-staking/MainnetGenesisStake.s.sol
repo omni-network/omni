@@ -68,7 +68,7 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
         else console2.log("MerkleDistributor already deployed");
 
         _dealApproveStakeAndFund();
-        _migrate();
+        _upgrade();
     }
 
     function deployGenesisStakeImpl() public {
@@ -185,8 +185,8 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
         vm.stopPrank();
     }
 
-    function _migrate() internal {
+    function _upgrade() internal {
         vm.prank(deployer);
-        merkleDistributor.migrateToOmni(validator, 0, rewardAmount, proofs[0]);
+        merkleDistributor.upgradeStake(validator, 0, rewardAmount, proofs[0]);
     }
 }

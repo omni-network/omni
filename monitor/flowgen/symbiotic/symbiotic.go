@@ -39,7 +39,7 @@ func newJob(
 
 	conf, ok := config[networkID]
 	if !ok {
-		return types.Job{}, errors.Wrap(err, "flow config missing")
+		return types.Job{}, errors.New("flow config missing")
 	}
 
 	backend, err := backends.Backend(conf.srcChain)

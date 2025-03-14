@@ -24,8 +24,15 @@ var (
 		Namespace: "solver",
 		Subsystem: "processor",
 		Name:      "rejected_orders_total",
-		Help:      "Total number of rejected orders by chain and reason",
+		Help:      "Total number of rejected orders by source chain and reason",
 	}, []string{"chain", "reason"})
+
+	filledOrders = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "solver",
+		Subsystem: "processor",
+		Name:      "filled_orders_total",
+		Help:      "Total number of filled orders by source chain, destination chain and target",
+	}, []string{"src_chain", "dst_chain", "target"})
 
 	orderAge = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "solver",

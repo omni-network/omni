@@ -429,7 +429,7 @@ contract Admin is Script {
         SolverNetInbox inbox = SolverNetInbox(proxy);
 
         address owner = inbox.owner();
-        uint256 deployedAt = inbox.deployedAt();
+        // uint256 deployedAt = inbox.deployedAt();
         address omni = address(inbox.omni());
         uint8 defaultConfLevel = inbox.defaultConfLevel();
         uint8 pauseState = inbox.pauseState();
@@ -442,7 +442,9 @@ contract Admin is Script {
         _upgradeProxy(admin, proxy, impl, data, true, true);
 
         require(inbox.owner() == owner, "owner changed");
-        require(inbox.deployedAt() == deployedAt, "deployedAt changed");
+        // NOTE: This is disabled because ArbSys on Arbitrum chains doesn't work when forked by anvil
+        // We will need to address this if we don't want the deployedAt value to change for upgrades
+        // require(inbox.deployedAt() > deployedAt, "deployedAt didn't increase");
         require(address(inbox.omni()) == omni, "omni changed");
         require(inbox.defaultConfLevel() == defaultConfLevel, "defaultConfLevel changed");
         require(inbox.pauseState() == pauseState, "pauseState changed");
@@ -461,7 +463,7 @@ contract Admin is Script {
         SolverNetOutbox outbox = SolverNetOutbox(proxy);
 
         address owner = outbox.owner();
-        uint256 deployedAt = outbox.deployedAt();
+        // uint256 deployedAt = outbox.deployedAt();
         address omni = address(outbox.omni());
         address executor = outbox.executor();
 
@@ -472,7 +474,9 @@ contract Admin is Script {
         _upgradeProxy(admin, proxy, impl, data, true, true);
 
         require(outbox.owner() == owner, "owner changed");
-        require(outbox.deployedAt() == deployedAt, "deployedAt changed");
+        // NOTE: This is disabled because ArbSys on Arbitrum chains doesn't work when forked by anvil
+        // We will need to address this if we don't want the deployedAt value to change for upgrades
+        // require(outbox.deployedAt() > deployedAt, "deployedAt didn't increase");
         require(address(outbox.omni()) == omni, "omni changed");
         require(outbox.executor() == executor, "executor changed");
 

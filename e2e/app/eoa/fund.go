@@ -93,11 +93,19 @@ var (
 	ephemeralOverrides = map[Role]FundThresholds{
 		RoleDeployer: thresholdMedium, // Ephemeral chains are deployed often and fees can spike by a lot
 	}
+
+	ethOnly = map[Role]bool{
+		RoleFlowgen: true, // Flowgen is only used on ETH chains
+	}
 )
 
 func GetFundThresholds(token tokens.Token, network netconf.ID, role Role) (FundThresholds, bool) {
 	thresh, ok := getThreshold(network, role)
 	if !ok {
+		return FundThresholds{}, false
+	}
+
+	if token != tokens.ETH && ethOnly[role] {
 		return FundThresholds{}, false
 	}
 

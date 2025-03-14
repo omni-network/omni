@@ -17,15 +17,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// NewJob instantiates the job that bridges native ETH.
+// NewJob returns a job that bridges native tokens.
 func newJob(
 	networkID netconf.ID,
-	srcChain,
-	dstChain uint64,
+	srcChain, dstChain uint64,
 	owner common.Address,
 	amount *big.Int,
 ) (types.Job, error) {
-	data, err := orderData(owner, srcChain, dstChain, amount)
+	data, err := nativeOrderData(owner, srcChain, dstChain, amount)
 	if err != nil {
 		return types.Job{}, errors.Wrap(err, "new job")
 	}
@@ -51,20 +50,24 @@ func newJob(
 	}, nil
 }
 
-// orderData returns the order data required to do the job.
-func orderData(
+// nativeOrderData returns the order data required bridge native token amount from source to destination chain.
+func nativeOrderData(
 	owner common.Address,
 	srcChain, dstChain uint64,
 	amount *big.Int,
 ) (bindings.SolverNetOrderData, error) {
-	token, ok := app.AllTokens().Find(srcChain, common.Address{})
+	srcToken, ok := app.AllTokens().Find(srcChain, app.NativeAddr)
 	if !ok {
-		return bindings.SolverNetOrderData{}, errors.New("token not found")
+		return bindings.SolverNetOrderData{}, errors.New("src token not found")
+	}
+	dstToken, ok := app.AllTokens().Find(dstChain, app.NativeAddr)
+	if !ok {
+		return bindings.SolverNetOrderData{}, errors.New("dst token not found")
 	}
 
-	expense := app.TokenAmt{Token: token, Amount: amount}
+	expense := app.TokenAmt{Token: dstToken, Amount: amount}
 
-	depositWithFee, err := app.QuoteDeposit(expense.Token, expense)
+	depositWithFee, err := app.QuoteDeposit(srcToken, expense)
 	if err != nil {
 		return bindings.SolverNetOrderData{}, errors.Wrap(err, "quote deposit")
 	}
@@ -76,7 +79,7 @@ func orderData(
 			Token:  depositWithFee.Token.Address,
 			Amount: depositWithFee.Amount,
 		},
-		Expenses: []solvernet.Expense{},
+		Expenses: []solvernet.Expense{}, // Explicit expense not required for native transfer calls.
 		Calls: []bindings.SolverNetCall{
 			{
 				Target: owner,
@@ -98,6 +101,7 @@ func Jobs(networkID netconf.ID, owner common.Address) ([]types.Job, error) {
 		netconf.Devnet:  {evmchain.IDMockL1, evmchain.IDMockL2},
 		netconf.Staging: {evmchain.IDBaseSepolia, evmchain.IDOpSepolia},
 		netconf.Omega:   {evmchain.IDOpSepolia, evmchain.IDArbSepolia},
+		netconf.Mainnet: {evmchain.IDOptimism, evmchain.IDArbitrumOne},
 	}[networkID]
 	if !ok {
 		return nil, nil

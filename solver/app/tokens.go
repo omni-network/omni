@@ -17,6 +17,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// NativeAddr is the "address" of the native token; the zero address.
+var NativeAddr common.Address
+
 type ChainClass string
 
 const (
@@ -45,7 +48,7 @@ type TokenAmt struct {
 type Tokens []Token
 
 func (t Token) IsNative() bool {
-	return t.Address == common.Address{}
+	return t.Address == NativeAddr
 }
 
 func (t Token) IsOMNI() bool {
@@ -148,6 +151,7 @@ func nativeETH(chainID uint64) Token {
 		ChainClass: mustChainClass(chainID),
 		MaxSpend:   maxETHSpend,
 		MinSpend:   minETHSpend,
+		Address:    NativeAddr,
 	}
 }
 
@@ -158,6 +162,7 @@ func nativeOMNI(chainID uint64) Token {
 		ChainClass: mustChainClass(chainID),
 		MaxSpend:   maxOMNISpend,
 		MinSpend:   minOMNISpend,
+		Address:    NativeAddr,
 	}
 }
 
