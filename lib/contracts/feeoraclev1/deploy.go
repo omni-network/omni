@@ -54,7 +54,7 @@ func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainID
 		Deployer:        eoa.MustAddress(network, eoa.RoleDeployer),
 		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleUpgrader),
 		BaseGasLimit:    50_000,
-		ProtocolFee:     umath.Zero,
+		ProtocolFee:     umath.Zero(),
 	}
 	if err := cfg.Validate(); err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "validate cfg")

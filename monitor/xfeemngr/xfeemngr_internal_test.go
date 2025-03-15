@@ -89,7 +89,7 @@ func TestStart(t *testing.T) {
 
 				// handle minimum rate case
 				if rate < 1.0/float64(rateDenom) {
-					numer = umath.One // Use minimum representable rate
+					numer = umath.One() // Use minimum representable rate
 				}
 
 				onChainNumer, err := mustGetContract(t, oracle).ToNativeRate(ctx, dest.ChainID)

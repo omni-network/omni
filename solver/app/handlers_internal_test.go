@@ -36,7 +36,7 @@ func TestCheckHandlerRequests(t *testing.T) {
 			Request: types.CheckRequest{
 				Deposit: types.AddrAmt{
 					Token:  common.HexToAddress("0x0123456789012345678901234567890123456789"),
-					Amount: umath.Zero,
+					Amount: umath.Zero(),
 				},
 			},
 		},

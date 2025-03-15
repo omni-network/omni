@@ -272,7 +272,7 @@ func (b *mockBackend) PendingNonceAt(ctx context.Context, account common.Address
 }
 
 func (*mockBackend) ChainID(ctx context.Context) (*big.Int, error) {
-	return umath.One, nil
+	return umath.One(), nil
 }
 
 // TransactionReceipt queries the mockBackend for a mined txHash. If none is found, nil is returned
@@ -462,7 +462,7 @@ func TestTxMgr_CraftTx(t *testing.T) {
 	tx, err := h.mgr.craftTx(context.Background(), candidate)
 	require.NoError(t, err)
 	require.NotNil(t, tx)
-	require.Equal(t, ptr(types.DynamicFeeTxType), tx.Type())
+	require.Equal(t, uint8(types.DynamicFeeTxType), tx.Type())
 
 	// Validate the gas tip cap and fee cap.
 	require.Equal(t, gasTipCap, tx.GasTipCap())
@@ -688,7 +688,7 @@ func TestWaitMinedReturnsReceiptOnFirstSuccess(t *testing.T) {
 	// Create a tx and mine it immediately using the default backend.
 	tx := types.NewTx(&types.LegacyTx{})
 	txHash := tx.Hash()
-	h.backend.mine(&txHash, umath.Zero)
+	h.backend.mine(&txHash, umath.Zero())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -730,7 +730,7 @@ func TestWaitMinedMultipleConfs(t *testing.T) {
 	// Create an unimined tx.
 	tx := types.NewTx(&types.LegacyTx{})
 	txHash := tx.Hash()
-	h.backend.mine(&txHash, umath.Zero)
+	h.backend.mine(&txHash, umath.Zero())
 
 	receipt, err := h.mgr.waitMined(ctx, tx, NewSendState(10, time.Hour))
 	require.Error(t, err)
@@ -789,7 +789,7 @@ func (b *failingBackend) TransactionReceipt(
 
 	return &types.Receipt{
 		TxHash:      txHash,
-		BlockNumber: umath.One,
+		BlockNumber: umath.One(),
 	}, nil
 }
 
@@ -807,7 +807,7 @@ func (b *failingBackend) TxReceipt(_ context.Context, txHash common.Hash) (*ethc
 
 func (b *failingBackend) HeaderByNumber(_ context.Context, _ *big.Int) (*types.Header, error) {
 	return &types.Header{
-		Number:        umath.One,
+		Number:        umath.One(),
 		BaseFee:       b.baseFee,
 		ExcessBlobGas: b.excessBlobGas,
 	}, nil
@@ -1213,16 +1213,16 @@ func TestMinFees(t *testing.T) {
 		},
 		{
 			desc:       "low-min-basefee",
-			minBaseFee: umath.One,
+			minBaseFee: umath.One(),
 		},
 		{
 			desc:      "low-min-tipcap",
-			minTipCap: umath.One,
+			minTipCap: umath.One(),
 		},
 		{
 			desc:       "low-mins",
-			minBaseFee: umath.One,
-			minTipCap:  umath.One,
+			minBaseFee: umath.One(),
+			minTipCap:  umath.One(),
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {

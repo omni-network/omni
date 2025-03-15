@@ -228,7 +228,7 @@ func makeOrders() []TestOrder {
 
 	// native ETH transfers
 	for i, user := range users {
-		amt := umath.Ether
+		amt := umath.Ether()
 
 		// make some under min or over max expense
 		overMax := i < 3
@@ -274,9 +274,9 @@ func makeOrders() []TestOrder {
 		FillDeadline:  time.Now().Add(1 * time.Hour),
 		SourceChainID: invalidChainID,
 		DestChainID:   evmchain.IDMockL1,
-		Expenses:      nativeExpense(umath.Wei),
-		Calls:         nativeTransferCall(umath.Wei, users[0]),
-		Deposit:       erc20Deposit(umath.Wei, zeroAddr),
+		Expenses:      nativeExpense(umath.Wei()),
+		Calls:         nativeTransferCall(umath.Wei(), users[0]),
+		Deposit:       erc20Deposit(umath.Wei(), zeroAddr),
 		ShouldReject:  true,
 		RejectReason:  solver.RejectUnsupportedSrcChain.String(),
 	})
@@ -287,9 +287,9 @@ func makeOrders() []TestOrder {
 		FillDeadline:  time.Now().Add(1 * time.Hour),
 		SourceChainID: evmchain.IDMockL1,
 		DestChainID:   invalidChainID,
-		Expenses:      nativeExpense(umath.One),
-		Calls:         nativeTransferCall(umath.One, users[0]),
-		Deposit:       erc20Deposit(umath.One, addrs.Token),
+		Expenses:      nativeExpense(umath.Wei()),
+		Calls:         nativeTransferCall(umath.Wei(), users[0]),
+		Deposit:       erc20Deposit(umath.Wei(), addrs.Token),
 		ShouldReject:  true,
 		RejectReason:  solver.RejectUnsupportedDestChain.String(),
 	})
@@ -300,9 +300,9 @@ func makeOrders() []TestOrder {
 		FillDeadline:  time.Now().Add(1 * time.Hour),
 		SourceChainID: evmchain.IDMockL1,
 		DestChainID:   evmchain.IDMockL1,
-		Expenses:      nativeExpense(umath.One),
-		Calls:         nativeTransferCall(umath.One, users[0]),
-		Deposit:       erc20Deposit(umath.One, addrs.Token),
+		Expenses:      nativeExpense(umath.Wei()),
+		Calls:         nativeTransferCall(umath.Wei(), users[0]),
+		Deposit:       erc20Deposit(umath.Wei(), addrs.Token),
 		ShouldReject:  true,
 		RejectReason:  solver.RejectSameChain.String(),
 	})
@@ -313,9 +313,9 @@ func makeOrders() []TestOrder {
 		FillDeadline:  time.Now().Add(1 * time.Hour),
 		SourceChainID: evmchain.IDMockL1,
 		DestChainID:   evmchain.IDMockL2,
-		Expenses:      unsupportedExpense(umath.One),
-		Calls:         nativeTransferCall(umath.One, users[0]),
-		Deposit:       erc20Deposit(umath.One, addrs.Token),
+		Expenses:      unsupportedExpense(umath.Wei()),
+		Calls:         nativeTransferCall(umath.Wei(), users[0]),
+		Deposit:       erc20Deposit(umath.Wei(), addrs.Token),
 		ShouldReject:  true,
 		RejectReason:  solver.RejectUnsupportedExpense.String(),
 	})
@@ -327,8 +327,8 @@ func makeOrders() []TestOrder {
 		SourceChainID: evmchain.IDMockL1,
 		DestChainID:   evmchain.IDMockL2,
 		Expenses:      invalidExpenseOutOfBounds(),
-		Calls:         nativeTransferCall(umath.One, users[0]),
-		Deposit:       erc20Deposit(umath.One, addrs.Token),
+		Calls:         nativeTransferCall(umath.Wei(), users[0]),
+		Deposit:       erc20Deposit(umath.Wei(), addrs.Token),
 		ShouldReject:  true,
 		RejectReason:  solver.RejectInvalidExpense.String(),
 	})
@@ -448,7 +448,7 @@ func testCheckAPI(ctx context.Context, backends ethbackend.Backends, orders []Te
 		// If this order requires balance draining, do it before test logic.
 		if isInsufficientInventory(order) {
 			// Drain solver native balance.
-			if err := setSolverAccountNativeBalance(ctx, order.DestChainID, backends, umath.Zero); err != nil {
+			if err := setSolverAccountNativeBalance(ctx, order.DestChainID, backends, umath.Zero()); err != nil {
 				return errors.Wrap(err, "drain solver account failed")
 			}
 		}
@@ -549,7 +549,7 @@ func waitRebalance(ctx context.Context, backends ethbackend.Backends) error {
 
 			// solver will have claimed much more than 1 OMNI
 			// if balance is < 1, rebalancing is working
-			if umath.LTE(balance, umath.Ether) {
+			if umath.LTE(balance, umath.Ether()) {
 				return nil
 			}
 		}

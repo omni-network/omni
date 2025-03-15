@@ -55,8 +55,8 @@ func TestBridge(t *testing.T) {
 		nativeBridge, err := bindings.NewOmniBridgeNative(common.HexToAddress(predeploys.OmniBridgeNative), omniClient)
 		require.NoError(t, err)
 
-		sumToNative := umath.Zero
-		sumToL1 := umath.Zero
+		sumToNative := umath.Zero()
+		sumToL1 := umath.Zero()
 
 		for _, test := range app.ToNativeBridgeTests {
 			balance, err := omniClient.BalanceAt(ctx, test.To, nil)

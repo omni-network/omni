@@ -42,7 +42,7 @@ func MakeGenesis(network netconf.ID) (core.Genesis, error) {
 		Config:     DefaultChainConfig(network),
 		GasLimit:   miner.DefaultConfig.GasCeil,
 		BaseFee:    umath.New(params.InitialBaseFee),
-		Difficulty: umath.Zero,
+		Difficulty: umath.Zero(),
 		Alloc:      mergeAllocs(PrecompilesAlloc(), predeps, prefunds),
 	}, nil
 }
@@ -92,22 +92,22 @@ func MarshallBackwardsCompatible(genesis core.Genesis) ([]byte, error) {
 func DefaultChainConfig(network netconf.ID) *params.ChainConfig {
 	return &params.ChainConfig{
 		ChainID:                 umath.New(network.Static().OmniExecutionChainID),
-		HomesteadBlock:          umath.Zero,
-		EIP150Block:             umath.Zero,
-		EIP155Block:             umath.Zero,
-		EIP158Block:             umath.Zero,
-		ByzantiumBlock:          umath.Zero,
-		ConstantinopleBlock:     umath.Zero,
-		PetersburgBlock:         umath.Zero,
-		IstanbulBlock:           umath.Zero,
-		MuirGlacierBlock:        umath.Zero,
-		BerlinBlock:             umath.Zero,
-		LondonBlock:             umath.Zero,
-		ArrowGlacierBlock:       umath.Zero,
-		GrayGlacierBlock:        umath.Zero,
+		HomesteadBlock:          umath.Zero(),
+		EIP150Block:             umath.Zero(),
+		EIP155Block:             umath.Zero(),
+		EIP158Block:             umath.Zero(),
+		ByzantiumBlock:          umath.Zero(),
+		ConstantinopleBlock:     umath.Zero(),
+		PetersburgBlock:         umath.Zero(),
+		IstanbulBlock:           umath.Zero(),
+		MuirGlacierBlock:        umath.Zero(),
+		BerlinBlock:             umath.Zero(),
+		LondonBlock:             umath.Zero(),
+		ArrowGlacierBlock:       umath.Zero(),
+		GrayGlacierBlock:        umath.Zero(),
 		ShanghaiTime:            newUint64(0),
 		CancunTime:              newUint64(0),
-		TerminalTotalDifficulty: umath.Zero,
+		TerminalTotalDifficulty: umath.Zero(),
 		BlobScheduleConfig:      params.DefaultBlobSchedule,
 	}
 }
@@ -118,15 +118,15 @@ func DefaultChainConfig(network netconf.ID) *params.ChainConfig {
 //nolint:forbidigo // Explicitly use BytesToAddress with left padding.
 func PrecompilesAlloc() types.GenesisAlloc {
 	return types.GenesisAlloc{
-		common.BytesToAddress([]byte{1}): {Balance: umath.One}, // ECRecover
-		common.BytesToAddress([]byte{2}): {Balance: umath.One}, // SHA256
-		common.BytesToAddress([]byte{3}): {Balance: umath.One}, // RIPEMD
-		common.BytesToAddress([]byte{4}): {Balance: umath.One}, // Identity
-		common.BytesToAddress([]byte{5}): {Balance: umath.One}, // ModExp
-		common.BytesToAddress([]byte{6}): {Balance: umath.One}, // ECAdd
-		common.BytesToAddress([]byte{7}): {Balance: umath.One}, // ECScalarMul
-		common.BytesToAddress([]byte{8}): {Balance: umath.One}, // ECPairing
-		common.BytesToAddress([]byte{9}): {Balance: umath.One}, // BLAKE2b
+		common.BytesToAddress([]byte{1}): {Balance: umath.One()}, // ECRecover
+		common.BytesToAddress([]byte{2}): {Balance: umath.One()}, // SHA256
+		common.BytesToAddress([]byte{3}): {Balance: umath.One()}, // RIPEMD
+		common.BytesToAddress([]byte{4}): {Balance: umath.One()}, // Identity
+		common.BytesToAddress([]byte{5}): {Balance: umath.One()}, // ModExp
+		common.BytesToAddress([]byte{6}): {Balance: umath.One()}, // ECAdd
+		common.BytesToAddress([]byte{7}): {Balance: umath.One()}, // ECScalarMul
+		common.BytesToAddress([]byte{8}): {Balance: umath.One()}, // ECPairing
+		common.BytesToAddress([]byte{9}): {Balance: umath.One()}, // BLAKE2b
 	}
 }
 

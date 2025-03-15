@@ -95,7 +95,7 @@ func StagingID(ctx context.Context) (string, error) {
 		return "", errors.Wrap(err, "dial omni")
 	}
 
-	block1, err := client.BlockByNumber(ctx, umath.One)
+	block1, err := client.BlockByNumber(ctx, umath.One())
 	if err != nil {
 		return "", errors.Wrap(err, "get block 1")
 	}

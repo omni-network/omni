@@ -151,7 +151,7 @@ func (s Sender) SendAsync(ctx context.Context, sub xchain.Submission) <-chan err
 		TxData:   txData,
 		To:       &s.chain.PortalAddress,
 		GasLimit: estimatedGas,
-		Value:    umath.Zero,
+		Value:    umath.Zero(),
 		Nonce:    &nonce,
 	}
 

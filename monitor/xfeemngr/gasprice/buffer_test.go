@@ -55,7 +55,7 @@ func TestBufferStream(t *testing.T) {
 		// for each step, we check if buffer properly updates (or doesn't)
 		for chainID, mock := range mocks {
 			tier := gasprice.Tier(mock.Price())
-			require.GreaterOrEqual(t, tier, live[chainID], "tier greater than live")
+			require.True(t, umath.GTE(tier, live[chainID]), "tier greater than live")
 			require.Equal(t, tier, b.GasPrice(chainID), "buffer equal to tier")
 		}
 	}

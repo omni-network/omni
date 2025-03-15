@@ -44,7 +44,7 @@ func TestGasPumps(t *testing.T) {
 			for _, test := range app.GasPumpTests {
 				current, ok := totalTargetOMNI[test.Recipient]
 				if !ok {
-					current = umath.Zero
+					current = umath.Zero()
 				}
 
 				totalTargetOMNI[test.Recipient] = umath.Add(current, test.TargetOMNI)

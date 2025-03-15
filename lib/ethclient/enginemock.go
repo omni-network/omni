@@ -77,7 +77,7 @@ func WithMockValidatorCreation(pubkey crypto.PubKey) func(*engineMock) {
 			panic(errors.Wrap(err, "pubkey to address"))
 		}
 
-		data, err := createValEvent.Inputs.NonIndexed().Pack(pubkey.Bytes(), umath.Ether)
+		data, err := createValEvent.Inputs.NonIndexed().Pack(pubkey.Bytes(), umath.Ether())
 		if err != nil {
 			panic(errors.Wrap(err, "pack create validator"))
 		}
@@ -584,7 +584,7 @@ func makePayload(fuzzer *fuzz.Fuzzer, height uint64, timestamp uint64, parentHas
 	)
 
 	// Convert block to payload
-	env := engine.BlockToExecutableData(block, umath.Zero, nil, nil)
+	env := engine.BlockToExecutableData(block, umath.Zero(), nil, nil)
 	payload := *env.ExecutionPayload
 
 	// Ensure the block is valid

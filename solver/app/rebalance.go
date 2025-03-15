@@ -21,8 +21,8 @@ import (
 // maxL1OMNI is the max amount of L1 OMNI the solver should hold by network.
 var maxL1OMNI = map[netconf.ID]*big.Int{
 	// 1 OMNI for ephemeral networks (tests rebalancing more frequently)
-	netconf.Devnet:  umath.Ether,
-	netconf.Staging: umath.Ether,
+	netconf.Devnet:  umath.Ether(),
+	netconf.Staging: umath.Ether(),
 
 	// 1000 OMNI for protected networks (reduces gas spend)
 	netconf.Omega:   umath.EtherToWei(1000),

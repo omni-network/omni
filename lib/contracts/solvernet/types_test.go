@@ -17,19 +17,19 @@ func TestCallBindings(t *testing.T) {
 
 	calls := []solvernet.Call{
 		{
-			Value:  umath.Ether,
+			Value:  umath.Ether(),
 			Target: common.HexToAddress("0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4"),
 			// selector + params
 			Data: hexutil.MustDecode("0x70a08231000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc7"),
 		},
 		{
-			Value:  umath.Ether,
+			Value:  umath.Ether(),
 			Target: common.HexToAddress("0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4"),
 			// just selector
 			Data: hexutil.MustDecode("0x70a08231"),
 		},
 		{
-			Value:  umath.Ether,
+			Value:  umath.Ether(),
 			Target: common.HexToAddress("0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4"),
 			// no calldata
 			Data: nil,

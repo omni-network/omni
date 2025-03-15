@@ -26,7 +26,7 @@ func TempDir(t *testing.T) string {
 func randStr(t *testing.T) string {
 	t.Helper()
 
-	n, err := rand.Int(rand.Reader, umath.Ether)
+	n, err := rand.Int(rand.Reader, umath.Ether())
 	require.NoError(t, err)
 
 	return hexutil.EncodeBig(n)

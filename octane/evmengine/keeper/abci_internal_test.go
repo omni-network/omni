@@ -714,7 +714,7 @@ func (m *mockEngineAPI) nextBlock(
 	)
 
 	// Convert block to payload
-	env := eengine.BlockToExecutableData(block, umath.Zero, nil, nil)
+	env := eengine.BlockToExecutableData(block, umath.Zero(), nil, nil)
 	payload := *env.ExecutionPayload
 
 	// Ensure the block is valid

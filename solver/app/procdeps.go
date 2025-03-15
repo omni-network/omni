@@ -114,7 +114,7 @@ func newFiller(
 			return nil
 		}
 
-		nativeValue := umath.Zero
+		nativeValue := umath.Zero()
 		for _, output := range pendingData.MaxSpent {
 			if output.ChainId.Uint64() != destChainID {
 				// We error on this case for now, as our contracts only allow single dest chain orders

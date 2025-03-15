@@ -48,12 +48,12 @@ func destFeeParams(ctx context.Context, destChain evmchain.Metadata, backends et
 	backend, err := backends.Backend(destChain.ChainID)
 	if err != nil {
 		log.Warn(ctx, "Failed getting exec backend, using default 1 Gwei", err, "dest_chain", destChain.Name)
-		gasPrice = umath.Gwei
+		gasPrice = umath.Gwei()
 	} else {
 		gasPrice, err = backend.SuggestGasPrice(ctx)
 		if err != nil {
 			log.Warn(ctx, "Failed fetching exec gas price, using default 1 Gwei", err, "dest_chain", destChain.Name)
-			gasPrice = umath.Gwei
+			gasPrice = umath.Gwei()
 		}
 	}
 
@@ -126,12 +126,12 @@ func destDataCostParams(ctx context.Context, destChain evmchain.Metadata, backen
 	backend, err := backends.Backend(dataCostCfg.ID)
 	if err != nil {
 		log.Warn(ctx, "Failed getting data cost backend, using default 1 Gwei", err, "dest_chain", destChain.Name, "posts_to", destChain.PostsTo)
-		gasPrice = umath.Gwei
+		gasPrice = umath.Gwei()
 	} else {
 		gasPrice, err = backend.SuggestGasPrice(ctx)
 		if err != nil {
 			log.Warn(ctx, "Failed fetching data cost gas price, using default 1 Gwei", err, "dest_chain", destChain.Name, "posts_to", destChain.PostsTo)
-			gasPrice = umath.Gwei
+			gasPrice = umath.Gwei()
 		}
 	}
 

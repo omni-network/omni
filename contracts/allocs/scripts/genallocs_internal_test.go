@@ -20,7 +20,7 @@ func TestBridgeBalance(t *testing.T) {
 	t.Parallel()
 
 	// mainnet prefunds
-	mp := umath.Zero
+	mp := umath.Zero()
 	for _, role := range eoa.AllRoles() {
 		th, ok := eoa.GetFundThresholds(tokens.OMNI, netconf.Mainnet, role)
 		if !ok {
@@ -45,22 +45,22 @@ func TestBridgeBalance(t *testing.T) {
 		{
 			name:     "devnet",
 			network:  netconf.Devnet,
-			expected: omnitoken.TotalSupply,
+			expected: omnitoken.TotalSupply(),
 		},
 		{
 			name:     "staging",
 			network:  netconf.Staging,
-			expected: omnitoken.TotalSupply,
+			expected: omnitoken.TotalSupply(),
 		},
 		{
 			name:     "omega",
 			network:  netconf.Omega,
-			expected: omnitoken.TotalSupply,
+			expected: omnitoken.TotalSupply(),
 		},
 		{
 			name:     "mainnet",
 			network:  netconf.Mainnet,
-			expected: umath.Sub(omnitoken.TotalSupply, mp),
+			expected: umath.Sub(omnitoken.TotalSupply(), mp),
 		},
 	}
 

@@ -50,7 +50,7 @@ func (m *MockFeeOracleV1) GasPriceOn(_ context.Context, destChainID uint64) (*bi
 
 	gasPrice, ok := m.gasPriceOn[destChainID]
 	if !ok {
-		return umath.Zero, nil
+		return umath.Zero(), nil
 	}
 
 	return gasPrice, nil
@@ -62,7 +62,7 @@ func (m *MockFeeOracleV1) ToNativeRate(_ context.Context, destChainID uint64) (*
 
 	rate, ok := m.toNativeRate[destChainID]
 	if !ok {
-		return umath.Zero, nil
+		return umath.Zero(), nil
 	}
 
 	return rate, nil

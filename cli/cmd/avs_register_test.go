@@ -132,7 +132,7 @@ func testStratParams() []bindings.IOmniAVSStrategyParam {
 		{
 			// devnet WETH
 			Strategy:   common.HexToAddress("0xdBD296711eC8eF9Aacb623ee3F1C0922dce0D7b2"),
-			Multiplier: umath.Ether, // OmniAVS.STRATEGY_WEIGHTING_DIVISOR
+			Multiplier: umath.Ether(), // OmniAVS.STRATEGY_WEIGHTING_DIVISOR
 		},
 	}
 }
@@ -153,7 +153,7 @@ func testDeployCfg(t *testing.T) deployConfig {
 		stratParams:      testStratParams(),
 		portal:           addrs.Portal,
 		ethStakeInbox:    common.HexToAddress("0x1234"), // stub
-		minOperatorStake: umath.Ether,                   // 1 ETH
+		minOperatorStake: umath.Ether(),                 // 1 ETH
 		maxOperatorCount: 10,
 		allowlistEnabled: false,
 	}

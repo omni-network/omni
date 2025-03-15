@@ -36,11 +36,11 @@ func TestGethConfig(t *testing.T) {
 
 		cfg := geth.MakeGethConfig(geth.Config{})
 
-		block, err := client.BlockByNumber(ctx, umath.One)
+		block, err := client.BlockByNumber(ctx, umath.One())
 		require.NoError(t, err)
 
 		require.EqualValues(t, int(cfg.Eth.Miner.GasCeil), int(block.GasLimit()))
-		require.Equal(t, umath.Zero, block.Difficulty())
+		require.Equal(t, umath.Zero(), block.Difficulty())
 
 		require.NotNil(t, block.BeaconRoot())
 		require.NotEqual(t, common.Hash{}, *block.BeaconRoot())
@@ -146,7 +146,7 @@ func estimateGasPrice(ctx context.Context, backend ethclient.Client, config *par
 	}
 
 	baseFee := head.BaseFee
-	minBase := umath.Gwei // Minimum base fee is 1 GWei.
+	minBase := umath.Gwei() // Minimum base fee is 1 GWei.
 	if umath.LT(baseFee, minBase) {
 		baseFee = minBase
 	}

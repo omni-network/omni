@@ -43,7 +43,7 @@ func NewFuzzer(seed int64) *fuzz.Fuzzer {
 			block := new(types.Block)
 			c.Fuzz(block)
 
-			env := engine.BlockToExecutableData(block, umath.Zero, nil, nil)
+			env := engine.BlockToExecutableData(block, umath.Zero(), nil, nil)
 
 			*b = *env.ExecutionPayload
 		},

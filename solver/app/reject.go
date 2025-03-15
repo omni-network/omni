@@ -269,7 +269,7 @@ func nativeAmt(ps []TokenAmt) *big.Int {
 		}
 	}
 
-	return umath.Zero
+	return umath.Zero()
 }
 
 // checkQuote checks if deposits match or exceed quote for expenses.

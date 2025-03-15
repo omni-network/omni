@@ -129,7 +129,7 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 	var ps []TokenAmt
 
 	// sum of call value must be represented in expenses
-	callValues := umath.Zero
+	callValues := umath.Zero()
 	for _, c := range calls {
 		if c.Value == nil {
 			continue
@@ -138,7 +138,7 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 		callValues.Add(callValues, c.Value)
 	}
 
-	nativeExpense := umath.Zero
+	nativeExpense := umath.Zero()
 	for _, e := range expenses {
 		if e.Amount.Sign() <= 0 {
 			return nil, newRejection(types.RejectInvalidExpense, errors.New("expense amount positive"))

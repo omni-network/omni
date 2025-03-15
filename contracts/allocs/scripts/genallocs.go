@@ -97,11 +97,11 @@ func genallocs() error {
 }
 
 func getNativeBridgeBalance(network netconf.ID) (*big.Int, error) {
-	nativeBridgeBalance := omnitoken.TotalSupply
+	resp := omnitoken.TotalSupply()
 
 	// if not mainnet, return total supply
 	if network != netconf.Mainnet {
-		return nativeBridgeBalance, nil
+		return resp, nil
 	}
 
 	// subtract prefunds
@@ -111,7 +111,7 @@ func getNativeBridgeBalance(network netconf.ID) (*big.Int, error) {
 	}
 
 	for _, prefund := range prefunds {
-		nativeBridgeBalance.Sub(nativeBridgeBalance, prefund.Balance)
+		resp = umath.Sub(resp, prefund.Balance)
 	}
 
 	// subtract genesis validator allocations
@@ -123,11 +123,11 @@ func getNativeBridgeBalance(network netconf.ID) (*big.Int, error) {
 	for _, node := range manifest.Nodes {
 		// empty mode is validator (defauly)
 		if node.Mode == string(e2etypes.ModeValidator) || node.Mode == "" {
-			nativeBridgeBalance.Sub(nativeBridgeBalance, genValAlloc)
+			resp = umath.Sub(resp, genValAlloc)
 		}
 	}
 
-	return nativeBridgeBalance, nil
+	return resp, nil
 }
 
 func execCmd(dir string, cmd string, args ...string) (string, error) {

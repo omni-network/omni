@@ -166,7 +166,7 @@ func (c Call) MarshalJSON() ([]byte, error) {
 
 func intOrZero(i *hexutil.Big) *big.Int {
 	if i == nil {
-		return umath.Zero
+		return umath.Zero()
 	}
 
 	return i.ToInt()

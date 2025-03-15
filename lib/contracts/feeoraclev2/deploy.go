@@ -33,7 +33,7 @@ func isEmpty(addr common.Address) bool {
 	return addr == common.Address{}
 }
 
-var maxUint96 = umath.Sub(new(big.Int).Lsh(umath.One, 96), umath.One) // 1 << 96 - 1
+var maxUint96 = umath.Sub(new(big.Int).Lsh(umath.One(), 96), umath.One()) // 1 << 96 - 1
 
 func (cfg DeploymentConfig) Validate() error {
 	if cfg.Create3Salt == "" {
@@ -122,7 +122,7 @@ func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainID
 		Owner:           eoa.MustAddress(network, eoa.RoleManager),
 		Deployer:        eoa.MustAddress(network, eoa.RoleDeployer),
 		Manager:         eoa.MustAddress(network, eoa.RoleMonitor), // NOTE: monitor is owner of fee oracle contracts, because monitor manages on chain gas prices / conversion rates
-		ProtocolFee:     umath.Zero,
+		ProtocolFee:     umath.Zero(),
 	}
 
 	return deploy(ctx, chainID, destChainIDs, cfg, backend, backends)

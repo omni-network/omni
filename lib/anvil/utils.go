@@ -46,7 +46,7 @@ func FundERC20(ctx context.Context, client ethclient.Client,
 
 var (
 	// _balances[account] storage slot == keccak256(abi.encode(account, idx)).
-	slotIdx = umath.Zero
+	slotIdx = umath.Zero()
 	slotABI = abi.Arguments{
 		{Type: abi.Type{T: abi.AddressTy}},
 		{Type: abi.Type{T: abi.UintTy, Size: 256}},

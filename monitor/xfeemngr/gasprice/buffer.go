@@ -50,7 +50,12 @@ func (b *buffer) GasPrice(chainID uint64) *big.Int {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
-	return b.buffer[chainID]
+	resp, ok := b.buffer[chainID]
+	if !ok {
+		return umath.Zero()
+	}
+
+	return resp
 }
 
 // Stream starts streaming gas prices for all providers into the buffer.
