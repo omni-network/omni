@@ -17,7 +17,6 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 const (
@@ -162,7 +161,7 @@ func feeByDenom(
 			return amtByDenom{}, errors.New("source chain ID mismatch [BUG]", "expected", src.ChainID, "got", msg.SourceChainID)
 		}
 
-		feesGwei := toGwei(msg.Fees)
+		feesGwei := umath.WeiToGweiF64(msg.Fees)
 
 		switch src.NativeToken {
 		case tokens.OMNI:
@@ -213,11 +212,5 @@ func totalSpendGwei(tx *ethtypes.Transaction, rec *ethclient.Receipt) float64 {
 	// add tx value
 	spend = new(big.Int).Add(spend, tx.Value())
 
-	return toGwei(spend)
-}
-
-// toGwei converts a big.Int to gwei float64.
-func toGwei(b *big.Int) float64 {
-	gwei, _ := new(big.Int).Div(b, umath.NewBigInt(params.GWei)).Float64()
-	return gwei
+	return umath.WeiToGweiF64(spend)
 }

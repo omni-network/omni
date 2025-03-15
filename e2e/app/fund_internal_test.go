@@ -7,8 +7,7 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
-
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/stretchr/testify/require"
 )
@@ -36,7 +35,7 @@ func TestSaneMax(t *testing.T) {
 }
 
 func etherFloat(b *big.Int) float64 {
-	resp, _ := new(big.Int).Div(b, big.NewInt(params.Ether)).Float64()
+	resp, _ := new(big.Int).Div(b, umath.Ether).Float64()
 
 	return resp
 }

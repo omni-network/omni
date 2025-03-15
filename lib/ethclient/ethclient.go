@@ -6,12 +6,12 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/tracer"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
@@ -176,9 +176,7 @@ func (w Wrapper) EtherBalanceAt(ctx context.Context, addr common.Address) (float
 		return 0, err
 	}
 
-	bf, _ := b.Float64()
-
-	return bf / params.Ether, nil
+	return umath.WeiToEtherF64(b), nil
 }
 
 // TxReceipt returns the transaction receipt for the given transaction hash.

@@ -21,7 +21,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/txpool"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/p2p/netutil"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 const (
@@ -330,8 +329,8 @@ func (m *simple) sendTx(ctx context.Context, tx *types.Transaction) (*types.Tran
 				return nil, nil, errors.New("mined hash mismatch [BUG]", "tx", mined.Tx.Hash(), "receipt", mined.Rec.TxHash)
 			}
 			if mined.Rec.EffectiveGasPrice != nil {
-				gasPrice, _ := mined.Rec.EffectiveGasPrice.Float64()
-				txEffectiveGasPrice.WithLabelValues(m.chainName).Set(gasPrice / params.GWei)
+				gasPriceGwei := umath.WeiToGweiF64(mined.Rec.EffectiveGasPrice)
+				txEffectiveGasPrice.WithLabelValues(m.chainName).Set(gasPriceGwei)
 				txGasUsed.WithLabelValues(m.chainName).Observe(float64(mined.Rec.GasUsed))
 			}
 

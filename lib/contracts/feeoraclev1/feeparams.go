@@ -10,9 +10,8 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
-
-	"github.com/ethereum/go-ethereum/params"
 )
 
 func feeParams(ctx context.Context, srcChainID uint64, destChainIDs []uint64, backends ethbackend.Backends, pricer tokens.Pricer,
@@ -44,7 +43,7 @@ func feeParams(ctx context.Context, srcChainID uint64, destChainIDs []uint64, ba
 			resp = append(resp, bindings.IFeeOracleV1ChainFeeParams{
 				ChainId:      destChain.PostsTo,
 				PostsTo:      destChain.PostsTo,
-				GasPrice:     big.NewInt(params.GWei),
+				GasPrice:     umath.Gwei,
 				ToNativeRate: rateToNumerator(1), // Stub native rates for now
 			})
 		}
@@ -78,7 +77,7 @@ func destFeeParams(ctx context.Context, srcChain evmchain.Metadata, destChain ev
 	gasPrice, err := backend.SuggestGasPrice(ctx)
 	if err != nil {
 		log.Warn(ctx, "Failed fetching gas price, using default 1 Gwei", err, "dest_chain", destChain.Name)
-		gasPrice = big.NewInt(params.GWei)
+		gasPrice = umath.Gwei
 	}
 
 	postsTo := destChain.PostsTo

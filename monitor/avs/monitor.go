@@ -3,15 +3,14 @@ package avs
 import (
 	"context"
 	"fmt"
-	"math/big"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 func startMonitoring(ctx context.Context, avs *bindings.OmniAVS) {
@@ -37,8 +36,8 @@ func monitorOperatorsOnce(ctx context.Context, avs *bindings.OmniAVS) error {
 	var total float64
 	for _, operator := range operators {
 		addr := operator.Addr.Hex()
-		staked := weiToEth(operator.Staked)
-		delegated := weiToEth(operator.Delegated)
+		staked := umath.WeiToEtherF64(operator.Staked)
+		delegated := umath.WeiToEtherF64(operator.Delegated)
 
 		operatorStakeGuage.WithLabelValues(addr).Set(staked)
 		operatorDelegationsGuage.WithLabelValues(addr).Set(delegated)
@@ -99,7 +98,7 @@ func monitorMinStakeOnce(ctx context.Context, avs *bindings.OmniAVS) error {
 		return errors.Wrap(err, "get min stake")
 	}
 
-	minStakeGuage.Set(weiToEth(stake))
+	minStakeGuage.Set(umath.WeiToEtherF64(stake))
 
 	return nil
 }
@@ -156,10 +155,4 @@ func monitorForever(ctx context.Context, avs *bindings.OmniAVS, name string, f m
 			}
 		}
 	}
-}
-
-// weiToEth converts a wei amount to an ether amount.
-func weiToEth(wei *big.Int) float64 {
-	f, _ := wei.Float64()
-	return f / params.Ether
 }

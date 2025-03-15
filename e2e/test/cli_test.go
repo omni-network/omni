@@ -19,6 +19,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 	evmengtypes "github.com/omni-network/omni/octane/evmengine/types"
 
@@ -349,7 +350,7 @@ func sumPendingWithdrawals(t *testing.T, ctx context.Context, cprov provider.Pro
 func GenFundedEOA(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) *ecdsa.PrivateKey {
 	t.Helper()
 
-	amount1k := math.NewIntFromUint64(1_000).MulRaw(params.Ether)
+	amount1k := umath.EtherToWei(1_000)
 
 	funder, funderAddr := anvil.DevPrivateKey9(), anvil.DevAccount9()
 
@@ -372,7 +373,7 @@ func GenFundedEOA(ctx context.Context, t *testing.T, network netconf.Network, en
 
 	_, rec, err := omniBackend.Send(ctx, funderAddr, txmgr.TxCandidate{
 		To:    &newAddr,
-		Value: amount1k.BigInt(),
+		Value: amount1k,
 	})
 	require.NoError(t, err)
 	require.Equal(t, ethtypes.ReceiptStatusSuccessful, rec.Status)

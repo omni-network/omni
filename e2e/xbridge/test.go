@@ -15,13 +15,11 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
-
-	"cosmossdk.io/math"
 )
 
 func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints) error {
@@ -44,7 +42,7 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 
 func testRLUSD(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
 	user := anvil.DevAccount5()
-	amt := math.NewInt(1_000_000).MulRaw(params.Ether).BigInt() // 1M
+	amt := umath.EtherToWei(1_000_000) // 1M
 
 	if err := rlusd.MintCanonical(ctx, network, backends, user, amt); err != nil {
 		return errors.Wrap(err, "mint wrapped")

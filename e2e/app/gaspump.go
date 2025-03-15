@@ -14,11 +14,11 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 // DeployEphemeralGasApp deploys OmniGasPump and OmniGasStation contracts to ephemeral networks.
@@ -132,7 +132,7 @@ func fundGasStation(ctx context.Context, def Definition) error {
 	}
 
 	// 1000 OMNI
-	amt := new(big.Int).Mul(big.NewInt(1000), big.NewInt(params.Ether))
+	amt := umath.EtherToWei(1_000)
 
 	tx, rec, err := backend.Send(ctx, funder, txmgr.TxCandidate{
 		To:       &addrs.GasStation,

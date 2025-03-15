@@ -27,7 +27,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/trie"
 
 	fuzz "github.com/google/gofuzz"
@@ -78,8 +77,7 @@ func WithMockValidatorCreation(pubkey crypto.PubKey) func(*engineMock) {
 			panic(errors.Wrap(err, "pubkey to address"))
 		}
 
-		oneEth := new(big.Int).Mul(big.NewInt(1), big.NewInt(params.Ether))
-		data, err := createValEvent.Inputs.NonIndexed().Pack(pubkey.Bytes(), oneEth)
+		data, err := createValEvent.Inputs.NonIndexed().Pack(pubkey.Bytes(), umath.Ether)
 		if err != nil {
 			panic(errors.Wrap(err, "pack create validator"))
 		}
@@ -136,7 +134,7 @@ func WithMockDelegation(validatorPubkey crypto.PubKey, delegatorAddr common.Addr
 		mock.mu.Lock()
 		defer mock.mu.Unlock()
 
-		wei := new(big.Int).Mul(big.NewInt(ether), big.NewInt(params.Ether))
+		wei := umath.EtherToWei(ether)
 
 		valAddr, err := k1util.PubKeyToAddress(validatorPubkey)
 		if err != nil {

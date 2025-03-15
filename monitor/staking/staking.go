@@ -10,8 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/cchain/queryutil"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/omni-network/omni/lib/umath"
 )
 
 // maxDelegationsForRewardsEstimation is the max number of random rewards we track across multiple blocks
@@ -84,7 +83,7 @@ func instrStakeSizes(allDelegations []queryutil.DelegationBalance) {
 	}
 
 	avgStakeWei := new(big.Int).Quo(totalStake, big.NewInt(int64(len(allDelegations))))
-	stakeAvg.Set(toEtherF64(avgStakeWei))
+	stakeAvg.Set(umath.WeiToEtherF64(avgStakeWei))
 
 	l := len(stakes)
 	if l == 0 {
@@ -94,10 +93,5 @@ func instrStakeSizes(allDelegations []queryutil.DelegationBalance) {
 		return stakes[i].Cmp(stakes[j]) < 0
 	})
 	medianVal := stakes[l/2+l%2]
-	stakeMedian.Set(toEtherF64(medianVal))
-}
-
-func toEtherF64(wei *big.Int) float64 {
-	f64, _ := new(big.Int).Div(wei, big.NewInt(params.Ether)).Float64()
-	return f64
+	stakeMedian.Set(umath.WeiToEtherF64(medianVal))
 }

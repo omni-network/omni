@@ -10,10 +10,10 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 // StartMonitoring starts the monitoring goroutines.
@@ -104,8 +104,7 @@ func monitorContractOnce(
 	}
 
 	// Convert to ether units
-	bf, _ := balance.Float64()
-	balanceEth := bf / params.Ether
+	balanceEth := umath.WeiToEtherF64(balance)
 
 	// Always set the balance metric
 	contractBalance.WithLabelValues(chain.Name, contract.Name).Set(balanceEth)
@@ -143,8 +142,7 @@ func monitorContractOnce(
 				return err
 			}
 
-			bf, _ := balance.Float64()
-			balanceEth := bf / params.Ether
+			balanceEth := umath.WeiToEtherF64(balance)
 			contractTokenBalance.WithLabelValues(chain.Name, contract.Name, t.Symbol, t.Address.Hex()).Set(balanceEth)
 		}
 	}

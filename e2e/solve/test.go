@@ -18,6 +18,7 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 	solver "github.com/omni-network/omni/solver/types"
@@ -25,9 +26,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/params"
 
-	"cosmossdk.io/math"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -176,7 +175,7 @@ func makeOrders() []TestOrder {
 
 	// erc20 OMNI -> native OMNI orders
 	for i, user := range users {
-		requestAmt := math.NewInt(10).MulRaw(params.Ether).BigInt()
+		requestAmt := umath.EtherToWei(10)
 
 		// make some insufficient (should reject)
 		insufficientDeposit := i%2 == 0
@@ -230,7 +229,7 @@ func makeOrders() []TestOrder {
 
 	// native ETH transfers
 	for i, user := range users {
-		amt := math.NewInt(1).MulRaw(params.Ether).BigInt()
+		amt := umath.Ether
 
 		// make some under min or over max expense
 		overMax := i < 3
@@ -238,12 +237,12 @@ func makeOrders() []TestOrder {
 
 		if overMax {
 			// max is 1 ETH
-			amt = math.NewInt(2).MulRaw(params.Ether).BigInt()
+			amt = umath.EtherToWei(2)
 		}
 
 		if underMin {
 			// min is 0.001 ETH
-			amt = big.NewInt(1)
+			amt = umath.GweiToWei(1)
 		}
 
 		shouldReject := underMin || overMax
@@ -511,7 +510,7 @@ func testCheckAPI(ctx context.Context, backends ethbackend.Backends, orders []Te
 
 		// Refund solver native balance after test logic.
 		if isInsufficientInventory(order) {
-			eth1m := math.NewInt(1_000_000).MulRaw(params.Ether).BigInt()
+			eth1m := umath.EtherToWei(1_000_000)
 			if err := setSolverAccountNativeBalance(ctx, order.DestChainID, backends, eth1m); err != nil {
 				return errors.Wrap(err, "refund solver account failed")
 			}
@@ -551,7 +550,7 @@ func waitRebalance(ctx context.Context, backends ethbackend.Backends) error {
 
 			// solver will have claimed much more than 1 OMNI
 			// if balance is < 1, rebalancing is working
-			oneOMNI := new(big.Int).Mul(big.NewInt(1), big.NewInt(params.Ether))
+			oneOMNI := new(big.Int).Mul(big.NewInt(1), umath.Ether)
 			if balance.Cmp(oneOMNI) <= 0 {
 				return nil
 			}

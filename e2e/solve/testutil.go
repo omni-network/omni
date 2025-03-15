@@ -15,7 +15,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/params"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -28,7 +27,7 @@ var (
 	invalidTokenAddress = common.HexToAddress("0x1234")
 	invalidCallData     = hexutil.MustDecode("0x00000000")
 	minETHSpend         = big.NewInt(1)
-	maxETHSpend         = big.NewInt(params.Ether)
+	maxETHSpend         = umath.Ether
 	validETHSpend       = new(big.Int).Div(new(big.Int).Add(minETHSpend, maxETHSpend), big.NewInt(2))
 )
 
@@ -79,7 +78,7 @@ func unsupportedExpense(amt *big.Int) []solvernet.Expense {
 }
 
 func invalidExpenseOutOfBounds() []solvernet.Expense {
-	return nativeExpense(big.NewInt(params.Ether))
+	return nativeExpense(umath.Ether)
 }
 
 func unsupportedERC20Deposit(amt *big.Int) solvernet.Deposit {

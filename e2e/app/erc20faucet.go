@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/contracts"
@@ -13,7 +12,6 @@ import (
 	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 type RunERC20FaucetConfig struct {
@@ -45,7 +43,7 @@ func RunERC20Faucet(ctx context.Context, def Definition, cfg RunERC20FaucetConfi
 	}
 
 	account := common.HexToAddress(cfg.AddrToFund)
-	amt := new(big.Int).Mul(umath.NewBigInt(cfg.Amount), big.NewInt(params.Ether))
+	amt := umath.EtherToWei(cfg.Amount)
 
 	funder, err := omnitoken.InitialSupplyRecipient(networkID)
 	if err != nil {

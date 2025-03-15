@@ -17,13 +17,11 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/miner"
 	"github.com/ethereum/go-ethereum/params"
-
-	"cosmossdk.io/math"
 )
 
 var (
-	eth1k = math.NewInt(1000).MulRaw(params.Ether).BigInt()
-	eth1m = math.NewInt(1000000).MulRaw(params.Ether).BigInt()
+	eth1k = umath.EtherToWei(1_000)
+	eth1m = umath.EtherToWei(1_000_000)
 )
 
 func newUint64(val uint64) *uint64 { return &val }
