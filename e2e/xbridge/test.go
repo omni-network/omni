@@ -230,7 +230,7 @@ func waitForBalance(ctx context.Context, tkn *bindings.IERC20, addr common.Addre
 				return errors.Wrap(err, "balance")
 			}
 
-			if balance.Cmp(amount) >= 0 {
+			if umath.GTE(balance, amount) {
 				return nil
 			}
 		}

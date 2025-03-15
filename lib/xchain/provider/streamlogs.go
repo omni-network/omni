@@ -138,7 +138,7 @@ func (p *Provider) GetEventLogs(ctx context.Context, req xchain.EventLogsReq) ([
 
 	// Fetch the header if we didn't find it in the cache
 	if header == nil {
-		header, err = ethCl.HeaderByNumber(ctx, umath.NewBigInt(req.Height))
+		header, err = ethCl.HeaderByNumber(ctx, umath.New(req.Height))
 		if err != nil {
 			return nil, false, errors.Wrap(err, "header by number")
 		}

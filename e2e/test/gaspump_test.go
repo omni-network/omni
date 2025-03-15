@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -43,10 +44,10 @@ func TestGasPumps(t *testing.T) {
 			for _, test := range app.GasPumpTests {
 				current, ok := totalTargetOMNI[test.Recipient]
 				if !ok {
-					current = big.NewInt(0)
+					current = umath.Zero
 				}
 
-				totalTargetOMNI[test.Recipient] = new(big.Int).Add(current, test.TargetOMNI)
+				totalTargetOMNI[test.Recipient] = umath.Add(current, test.TargetOMNI)
 			}
 		}
 

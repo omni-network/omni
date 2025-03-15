@@ -2,7 +2,6 @@ package flowgen
 
 import (
 	"context"
-	"math/big"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -14,10 +13,10 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/monitor/flowgen/bridging"
 	"github.com/omni-network/omni/monitor/flowgen/types"
-	"github.com/omni-network/omni/monitor/flowgen/util"
 	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -167,7 +166,7 @@ func bridgeJobs(network netconf.ID) ([]types.Job, error) {
 	}
 
 	// Bridging of native ETH
-	amount := big.NewInt(0).Mul(util.MilliEther, big.NewInt(20)) // 0.02 ETH
+	amount := umath.EtherToWei(0.02) // 0.02 ETH
 
 	job1, err := bridging.NewJob(network, b.From, b.To, eoa.RoleFlowgen, amount)
 	if err != nil {

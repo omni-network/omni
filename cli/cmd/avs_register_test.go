@@ -475,7 +475,7 @@ func registerOperator(t *testing.T, ctx context.Context, contracts Contracts, b 
 			PrivateKeyStorePath: keystoreFile,
 			SignerType:          eigentypes.LocalKeystoreSigner,
 		},
-		ChainId: *big.NewInt(int64(chainID)),
+		ChainId: *umath.New(chainID),
 	}
 
 	cfgYAML, err := cfg.MarshalYAML() // Convert into custom yaml struct first
@@ -533,7 +533,7 @@ func deregisterOperator(t *testing.T, ctx context.Context, contracts Contracts, 
 			PrivateKeyStorePath: keystoreFile,
 			SignerType:          eigentypes.LocalKeystoreSigner,
 		},
-		ChainId: *big.NewInt(int64(chainID)),
+		ChainId: *umath.New(chainID),
 	}
 
 	cfgYAML, err := cfg.MarshalYAML() // Convert into custom yaml struct first

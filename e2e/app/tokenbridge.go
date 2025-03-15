@@ -99,7 +99,7 @@ func DeployBridge(ctx context.Context, def Definition) error {
 	}
 
 	// initialize l1Deposits to total supply - native bridge balance
-	l1Deposits := new(big.Int).Sub(omnitoken.TotalSupply, balance)
+	l1Deposits := umath.Sub(omnitoken.TotalSupply, balance)
 
 	tx, err := nativeBridge.Setup(txOpts, l1.ChainID, addrs.Portal, l1BridgeAddr, l1Deposits)
 	if err != nil {
@@ -288,7 +288,7 @@ func waitNativeBridges(ctx context.Context, def Definition, bridges []BridgeTest
 					return errors.Wrap(err, "balance of")
 				}
 
-				if balance.Cmp(test.Amount) == 0 {
+				if umath.EQ(balance, test.Amount) {
 					bridged++
 				}
 			}
@@ -335,7 +335,7 @@ func bridgeToL1(ctx context.Context, def Definition, toBridge []BridgeTest) erro
 			return errors.Wrap(err, "bridge fee")
 		}
 
-		txOpts.Value = new(big.Int).Add(test.Amount, fee)
+		txOpts.Value = umath.Add(test.Amount, fee)
 
 		log.Debug(ctx, "Bridging to L1", "to", test.To.Hex(), "amount", test.Amount, "fee", fee)
 

@@ -120,11 +120,11 @@ func gasPnL(
 	subCat string,
 	id string,
 ) error {
-	amount := new(big.Int).Mul(rec.EffectiveGasPrice, umath.NewBigInt(rec.GasUsed))
+	amount := umath.MulRaw(rec.EffectiveGasPrice, rec.GasUsed)
 
 	// Add any xcall fees included in tx
 	if fee, ok := maybeParseXCallFee(rec); ok {
-		amount = new(big.Int).Add(amount, fee)
+		amount = umath.Add(amount, fee)
 	}
 
 	nativeToken, ok := tokens.Find(chainID, NativeAddr)

@@ -2,9 +2,11 @@ package gasprice_test
 
 import (
 	"context"
+	"math/big"
 	"math/rand"
 	"testing"
 
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
 	"github.com/omni-network/omni/monitor/xfeemngr/ticker"
 
@@ -41,7 +43,7 @@ func TestBufferStream(t *testing.T) {
 	}
 
 	// 10 steps
-	live := make(map[uint64]uint64)
+	live := make(map[uint64]*big.Int)
 	for i := 0; i < 10; i++ {
 		for chainID, mock := range mocks {
 			live[chainID] = randGasPrice()
@@ -60,8 +62,8 @@ func TestBufferStream(t *testing.T) {
 }
 
 // makePrices generates a map chainID -> gas price for each chainID.
-func makePrices(chainIDs []uint64) map[uint64]uint64 {
-	prices := make(map[uint64]uint64)
+func makePrices(chainIDs []uint64) map[uint64]*big.Int {
+	prices := make(map[uint64]*big.Int)
 
 	for _, chainID := range chainIDs {
 		prices[chainID] = randGasPrice()
@@ -71,7 +73,7 @@ func makePrices(chainIDs []uint64) map[uint64]uint64 {
 }
 
 // makeMockPricers generates a map of mock gas pricers for n chains.
-func makeMockPricers(prices map[uint64]uint64) map[uint64]*gasprice.MockPricer {
+func makeMockPricers(prices map[uint64]*big.Int) map[uint64]*gasprice.MockPricer {
 	mocks := make(map[uint64]*gasprice.MockPricer)
 	for chainID, price := range prices {
 		mocks[chainID] = gasprice.NewMockPricer(price)
@@ -91,7 +93,7 @@ func toEthGasPricers(mocks map[uint64]*gasprice.MockPricer) map[uint64]ethereum.
 }
 
 // randGasPrice generates a random, reasonable gas price.
-func randGasPrice() uint64 {
-	oneGwei := 1_000_000_000 // i gwei
-	return uint64(rand.Float64() * float64(oneGwei))
+func randGasPrice() *big.Int {
+	oneGwei := int64(1_000_000_000) // i gwei
+	return umath.New(rand.Int63n(oneGwei))
 }

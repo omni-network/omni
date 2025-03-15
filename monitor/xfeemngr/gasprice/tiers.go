@@ -1,7 +1,13 @@
 package gasprice
 
-// buffer will be the lowest tier that is higher than the live gas price.
-var tiers = []uint64{
+import (
+	"math/big"
+
+	"github.com/omni-network/omni/lib/umath"
+)
+
+// tiers ensures the buffer will be the lowest tier that is higher than the live gas price.
+var tiers = []*big.Int{
 	gwei(0.0015), // op stack chains generally maintain 0.001+epsilon.
 	gwei(0.05),   // arb generally maintains 0.01 - 0.05.
 	gwei(0.1),
@@ -26,13 +32,13 @@ var tiers = []uint64{
 	gwei(5000),
 }
 
-func Tiers() []uint64 {
+func Tiers() []*big.Int {
 	return tiers
 }
 
-func Tier(live uint64) uint64 {
+func Tier(live *big.Int) *big.Int {
 	for _, p := range tiers {
-		if p >= live {
+		if umath.GTE(p, live) {
 			return p
 		}
 	}
@@ -40,6 +46,6 @@ func Tier(live uint64) uint64 {
 	return tiers[len(tiers)-1]
 }
 
-func gwei(p float64) uint64 {
-	return uint64(p * 1e9)
+func gwei(p float64) *big.Int {
+	return umath.GweiToWei(p)
 }

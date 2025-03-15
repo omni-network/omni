@@ -3,10 +3,12 @@ package gasprice
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"sync"
 
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/monitor/xfeemngr/ticker"
 
 	"github.com/ethereum/go-ethereum"
@@ -18,14 +20,14 @@ type buffer struct {
 	ticker ticker.Ticker
 
 	// map chainID to buffered gas price (not changed if outside threshold)
-	buffer map[uint64]uint64
+	buffer map[uint64]*big.Int
 
 	// map chainID to provider
 	pricers map[uint64]ethereum.GasPricer
 }
 
 type Buffer interface {
-	GasPrice(chainID uint64) uint64
+	GasPrice(chainID uint64) *big.Int
 	Stream(ctx context.Context)
 }
 
@@ -36,7 +38,7 @@ func NewBuffer(pricers map[uint64]ethereum.GasPricer, ticker ticker.Ticker) (Buf
 	return &buffer{
 		mu:      sync.RWMutex{},
 		once:    sync.Once{},
-		buffer:  make(map[uint64]uint64),
+		buffer:  make(map[uint64]*big.Int),
 		pricers: pricers,
 		ticker:  ticker,
 	}, nil
@@ -44,7 +46,7 @@ func NewBuffer(pricers map[uint64]ethereum.GasPricer, ticker ticker.Ticker) (Buf
 
 // GasPrice returns the buffered gas price for the given chainID.
 // If the price is not known, returns 0.
-func (b *buffer) GasPrice(chainID uint64) uint64 {
+func (b *buffer) GasPrice(chainID uint64) *big.Int {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
@@ -75,19 +77,18 @@ func (b *buffer) streamOne(ctx context.Context, chainID uint64) {
 	tick := b.ticker
 
 	callback := func(ctx context.Context) {
-		liveBn, err := pricer.SuggestGasPrice(ctx)
+		live, err := pricer.SuggestGasPrice(ctx)
 		if err != nil {
 			log.Warn(ctx, "Failed to get gas price (will retry)", err)
 			return
 		}
 
-		live := liveBn.Uint64()
 		guageLive(chainID, live)
 
 		tiered := Tier(live)
 		buffed := b.GasPrice(chainID)
 
-		if tiered == buffed {
+		if umath.EQ(tiered, buffed) {
 			return
 		}
 
@@ -99,17 +100,19 @@ func (b *buffer) streamOne(ctx context.Context, chainID uint64) {
 }
 
 // guageLive updates "live" guages for chain's gas price.
-func guageLive(chainID uint64, price uint64) {
-	liveGasPrice.WithLabelValues(chainName(chainID)).Set(float64(price))
+func guageLive(chainID uint64, price *big.Int) {
+	f, _ := price.Float64()
+	liveGasPrice.WithLabelValues(chainName(chainID)).Set(f)
 }
 
 // guageBuffered updates "buffered" guages for a chain's gas price.
-func guageBuffered(chainID uint64, price uint64) {
-	bufferedGasPrice.WithLabelValues(chainName(chainID)).Set(float64(price))
+func guageBuffered(chainID uint64, price *big.Int) {
+	f, _ := price.Float64()
+	bufferedGasPrice.WithLabelValues(chainName(chainID)).Set(f)
 }
 
 // setPrice sets the buffered gas price for the given chainID.
-func (b *buffer) setPrice(chainID, price uint64) {
+func (b *buffer) setPrice(chainID uint64, price *big.Int) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 

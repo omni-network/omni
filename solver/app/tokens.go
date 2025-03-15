@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	tokenslib "github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -57,12 +58,12 @@ func (t Token) IsOMNI() bool {
 
 var (
 	// TODO: increase max spend on mainnet, keep low for staging / omega.
-	maxETHSpend    = mustBig("1000000000000000000")    // 1 ETH
-	minETHSpend    = mustBig("1000000000000000")       // 0.001 ETH
-	maxWSTETHSpend = mustBig("1000000000000000000")    // 1 wstETH
-	minWSTETHSpend = mustBig("1000000000000000")       // 0.001 wstETH
-	maxOMNISpend   = mustBig("1000000000000000000000") // 1000 OMNI
-	minOMNISpend   = mustBig("100000000000000000")     // 0.1 OMNI
+	maxETHSpend    = umath.EtherToWei(1)     // 1 ETH
+	minETHSpend    = umath.EtherToWei(0.001) // 0.001 ETH
+	maxWSTETHSpend = umath.EtherToWei(1)     // 1 wstETH
+	minWSTETHSpend = umath.EtherToWei(0.001) // 0.001 wstETH
+	maxOMNISpend   = umath.EtherToWei(1_000) // 1000 OMNI
+	minOMNISpend   = umath.EtherToWei(0.1)   // 0.1 OMNI
 )
 
 var tokens = append(Tokens{
@@ -281,13 +282,4 @@ func chainClass(chainID uint64) (ChainClass, error) {
 	default:
 		return "", errors.New("unsupported chain ID", "chain_id", chainID)
 	}
-}
-
-func mustBig(s string) *big.Int {
-	b, ok := new(big.Int).SetString(s, 10)
-	if !ok {
-		panic("invalid big int")
-	}
-
-	return b
 }

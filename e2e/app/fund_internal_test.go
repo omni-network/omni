@@ -1,7 +1,6 @@
 package app
 
 import (
-	"math/big"
 	"testing"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
@@ -20,22 +19,16 @@ func TestSaneMax(t *testing.T) {
 	for _, role := range eoa.AllRoles() {
 		thresh, ok := eoa.GetFundThresholds(tokens.ETH, network, role)
 		if ok {
-			expect := etherFloat(saneMax(tokens.ETH))
-			actual := etherFloat(thresh.TargetBalance())
+			expect := umath.WeiToEtherF64(saneMax(tokens.ETH))
+			actual := umath.WeiToEtherF64(thresh.TargetBalance())
 			require.GreaterOrEqual(t, expect, actual, "ETH %s %s", network, role)
 		}
 
 		thresh, ok = eoa.GetFundThresholds(tokens.OMNI, network, role)
 		if ok {
-			expect := etherFloat(saneMax(tokens.OMNI))
-			actual := etherFloat(thresh.TargetBalance())
+			expect := umath.WeiToEtherF64(saneMax(tokens.OMNI))
+			actual := umath.WeiToEtherF64(thresh.TargetBalance())
 			require.GreaterOrEqual(t, expect, actual, "OMNI %s %s", network, role)
 		}
 	}
-}
-
-func etherFloat(b *big.Int) float64 {
-	resp, _ := new(big.Int).Div(b, umath.Ether).Float64()
-
-	return resp
 }
