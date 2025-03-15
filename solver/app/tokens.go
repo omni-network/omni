@@ -65,6 +65,7 @@ var (
 	minOMNISpend   = mustBig("100000000000000000")     // 0.1 OMNI
 )
 
+// TODO(christian): move to a separate package.
 var tokens = append(Tokens{
 	// Native ETH (mainnet)
 	nativeETH(evmchain.IDEthereum),
@@ -94,7 +95,7 @@ var tokens = append(Tokens{
 	omniERC20(netconf.Staging),
 	omniERC20(netconf.Devnet),
 
-	// wtSETH
+	// wstETH
 	wstETH(evmchain.IDHolesky, common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")),
 	wstETH(evmchain.IDSepolia, common.HexToAddress("0xB82381A3fBD3FaFA77B3a7bE693342618240067b")),
 
@@ -109,6 +110,16 @@ var tokens = append(Tokens{
 
 func AllTokens() Tokens {
 	return tokens
+}
+
+func (ts Tokens) FindBySymbol(chainID uint64, symbol string) (Token, bool) {
+	for _, t := range ts {
+		if t.ChainID == chainID && t.Symbol == symbol {
+			return t, true
+		}
+	}
+
+	return Token{}, false
 }
 
 func (ts Tokens) Find(chainID uint64, addr common.Address) (Token, bool) {
