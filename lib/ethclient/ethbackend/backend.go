@@ -191,7 +191,7 @@ func (b *Backend) BindOpts(ctx context.Context, from common.Address) (*bind.Tran
 	// Bindings will estimate gas.
 	return &bind.TransactOpts{
 		From:  from,
-		Nonce: big.NewInt(1),
+		Nonce: umath.One,
 		Signer: func(from common.Address, tx *ethtypes.Transaction) (*ethtypes.Transaction, error) {
 			resp, err := tx.WithSignature(backendStubSigner{}, from[:])
 			if err != nil {
@@ -288,7 +288,7 @@ type backendStubSigner struct {
 }
 
 func (backendStubSigner) ChainID() *big.Int {
-	return new(big.Int)
+	return umath.Zero
 }
 
 func (backendStubSigner) Sender(tx *ethtypes.Transaction) (common.Address, error) {
@@ -302,10 +302,10 @@ func (backendStubSigner) Sender(tx *ethtypes.Transaction) (common.Address, error
 	if len(r.Bytes()) > common.AddressLength {
 		return common.Address{}, errors.New("invalid r length", "length", len(r.Bytes()))
 	}
-	if s.Uint64() != 0 {
+	if !umath.IsZero(s) {
 		return common.Address{}, errors.New("non-empty s [BUG]", "length", len(s.Bytes()))
 	}
-	if v.Uint64() != 0 {
+	if !umath.IsZero(v) {
 		return common.Address{}, errors.New("non-empty v [BUG]", "length", len(v.Bytes()))
 	}
 
@@ -325,8 +325,8 @@ func (backendStubSigner) SignatureValues(_ *ethtypes.Transaction, sig []byte) (r
 
 	// Set the 20 byte signature (from address) as R
 	r = new(big.Int).SetBytes(sig)
-	s = new(big.Int) // 0
-	v = new(big.Int) // 0
+	s = umath.Zero // 0
+	v = umath.Zero // 0
 
 	return r, s, v, nil
 }

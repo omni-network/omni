@@ -104,7 +104,7 @@ func monitorAccountOnce(
 	}
 
 	var isLow float64
-	if balance.Cmp(thresholds.MinBalance()) <= 0 {
+	if umath.LTE(balance, thresholds.MinBalance()) {
 		isLow = 1
 	}
 
@@ -182,7 +182,7 @@ func monitorSponsorOnce(
 	thresholds := sponsor.FundThresholds
 
 	var isLow float64
-	if balance.Cmp(thresholds.MinBalance()) <= 0 {
+	if umath.LTE(balance, thresholds.MinBalance()) {
 		isLow = 1
 	}
 

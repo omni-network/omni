@@ -373,7 +373,7 @@ func TestEditValidator(t *testing.T) {
 		SecurityContact:          "https://contract",
 		Details:                  "details",
 		CommissionRatePercentage: 99,
-		MinSelfDelegation:        umath.NewBigInt(11),
+		MinSelfDelegation:        umath.New(11),
 	}
 	ethClientMock, err := ethclient.NewEngineMock(
 		ethclient.WithMockEditValidator(privKey.PubKey(), params),

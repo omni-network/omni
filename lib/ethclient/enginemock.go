@@ -192,7 +192,7 @@ func WithPortalRegister(network netconf.Network) func(*engineMock) {
 				panic(errors.Wrap(err, "pack delegate"))
 			}
 
-			topicChainID, err := cast.EthHash(math.U256Bytes(umath.NewBigInt(chain.ID)))
+			topicChainID, err := cast.EthHash(math.U256Bytes(umath.New(chain.ID)))
 			if err != nil {
 				panic(errors.Wrap(err, "cast chain ID"))
 			}
@@ -383,7 +383,7 @@ func (m *engineMock) HeaderByType(ctx context.Context, typ HeadType) (*types.Hea
 		return nil, err
 	}
 
-	return m.HeaderByNumber(ctx, umath.NewBigInt(number))
+	return m.HeaderByNumber(ctx, umath.New(number))
 }
 
 func (m *engineMock) HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error) {
@@ -413,7 +413,7 @@ func (m *engineMock) BlockByNumber(ctx context.Context, number *big.Int) (*types
 		return m.head, nil
 	}
 
-	if number.Cmp(m.head.Number()) != 0 {
+	if !umath.EQ(number, m.head.Number()) {
 		return nil, errors.New("block not found") // Only support latest block
 	}
 
@@ -568,7 +568,7 @@ func makePayload(fuzzer *fuzz.Fuzzer, height uint64, timestamp uint64, parentHas
 	// Build a new header
 	var header types.Header
 	fuzzer.Fuzz(&header)
-	header.Number = umath.NewBigInt(height)
+	header.Number = umath.New(height)
 	header.Time = timestamp
 	header.ParentHash = parentHash
 	header.MixDigest = randao      // this corresponds to Random field in PayloadAttributes
@@ -584,7 +584,7 @@ func makePayload(fuzzer *fuzz.Fuzzer, height uint64, timestamp uint64, parentHas
 	)
 
 	// Convert block to payload
-	env := engine.BlockToExecutableData(block, big.NewInt(0), nil, nil)
+	env := engine.BlockToExecutableData(block, umath.Zero, nil, nil)
 	payload := *env.ExecutionPayload
 
 	// Ensure the block is valid

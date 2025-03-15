@@ -3,12 +3,12 @@ package app
 import (
 	"bytes"
 	"context"
-	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -36,7 +36,7 @@ func TestCheckHandlerRequests(t *testing.T) {
 			Request: types.CheckRequest{
 				Deposit: types.AddrAmt{
 					Token:  common.HexToAddress("0x0123456789012345678901234567890123456789"),
-					Amount: big.NewInt(0),
+					Amount: umath.Zero,
 				},
 			},
 		},

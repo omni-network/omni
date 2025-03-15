@@ -165,8 +165,8 @@ func (c BoundFeeOracleV1) BulkSetFeeParams(ctx context.Context, params []binding
 
 // totalSpentGwei returns the total amount spent on a transaction in gwei.
 func totalSpentGwei(tx *ethtypes.Transaction, rec *ethtypes.Receipt) float64 {
-	fees := new(big.Int).Mul(rec.EffectiveGasPrice, umath.NewBigInt(rec.GasUsed))
-	total := new(big.Int).Add(tx.Value(), fees)
+	fees := umath.MulRaw(rec.EffectiveGasPrice, rec.GasUsed)
+	total := umath.Add(tx.Value(), fees)
 
 	return umath.WeiToGweiF64(total)
 }

@@ -112,7 +112,7 @@ func monitorContractOnce(
 	// Handle funding threshold checks, if any
 	if contract.FundThresholds != nil {
 		var isLow float64
-		if balance.Cmp(contract.FundThresholds.MinBalance()) <= 0 {
+		if umath.LTE(balance, contract.FundThresholds.MinBalance()) {
 			isLow = 1
 		}
 
@@ -122,7 +122,7 @@ func monitorContractOnce(
 	// Handle withdrawal threshold checks, if any
 	if contract.WithdrawThresholds != nil {
 		var isHigh float64
-		if balance.Cmp(contract.WithdrawThresholds.MaxBalance()) >= 0 {
+		if umath.GTE(balance, contract.WithdrawThresholds.MaxBalance()) {
 			isHigh = 1
 		}
 

@@ -3,7 +3,6 @@ package keeper
 import (
 	"bytes"
 	"context"
-	"math/big"
 	"testing"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/tutil"
+	"github.com/omni-network/omni/lib/umath"
 	etypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -698,7 +698,7 @@ func (m *mockEngineAPI) nextBlock(
 	t.Helper()
 	var header types.Header
 	m.fuzzer.Fuzz(&header)
-	header.Number = big.NewInt(int64(height))
+	header.Number = umath.New(height)
 	header.Time = timestamp
 	header.ParentHash = parentHash
 	header.Coinbase = feeRecipient
@@ -714,7 +714,7 @@ func (m *mockEngineAPI) nextBlock(
 	)
 
 	// Convert block to payload
-	env := eengine.BlockToExecutableData(block, big.NewInt(0), nil, nil)
+	env := eengine.BlockToExecutableData(block, umath.Zero, nil, nil)
 	payload := *env.ExecutionPayload
 
 	// Ensure the block is valid

@@ -149,5 +149,5 @@ func isAppproved(
 		return false, errors.Wrap(err, "get allowance")
 	}
 
-	return spend.Cmp(allowance) <= 0, nil
+	return umath.LTE(spend, allowance), nil
 }

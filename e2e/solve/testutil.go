@@ -26,9 +26,9 @@ var (
 	addrs               = mustAddrs(netconf.Devnet)
 	invalidTokenAddress = common.HexToAddress("0x1234")
 	invalidCallData     = hexutil.MustDecode("0x00000000")
-	minETHSpend         = big.NewInt(1)
+	minETHSpend         = umath.Wei
 	maxETHSpend         = umath.Ether
-	validETHSpend       = new(big.Int).Div(new(big.Int).Add(minETHSpend, maxETHSpend), big.NewInt(2))
+	validETHSpend       = umath.DivRaw(umath.Add(minETHSpend, maxETHSpend), 2) // mid = (min + max) / 2
 )
 
 func mustAddrs(network netconf.ID) contracts.Addresses {

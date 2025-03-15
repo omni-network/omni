@@ -64,7 +64,7 @@ func genallocs() error {
 		cfg := bindings.AllocPredeploysConfig{
 			Manager:                eoa.MustAddress(network, eoa.RoleManager),
 			Upgrader:               eoa.MustAddress(network, eoa.RoleUpgrader),
-			ChainId:                new(big.Int).SetUint64(network.Static().OmniExecutionChainID),
+			ChainId:                umath.New(network.Static().OmniExecutionChainID),
 			EnableStakingAllowlist: network.IsProtected(),
 			NativeBridgeBalance:    nativeBridgeBalance,
 			Output:                 "allocs/" + network.String() + ".json",
@@ -97,7 +97,7 @@ func genallocs() error {
 }
 
 func getNativeBridgeBalance(network netconf.ID) (*big.Int, error) {
-	nativeBridgeBalance := new(big.Int).Set(omnitoken.TotalSupply)
+	nativeBridgeBalance := omnitoken.TotalSupply
 
 	// if not mainnet, return total supply
 	if network != netconf.Mainnet {

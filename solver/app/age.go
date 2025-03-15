@@ -43,7 +43,7 @@ func (a *ageCache) blockMeta(ctx context.Context, chainID uint64, height uint64)
 		return "", time.Time{}, err
 	}
 
-	header, err := backend.HeaderByNumber(ctx, umath.NewBigInt(height))
+	header, err := backend.HeaderByNumber(ctx, umath.New(height))
 	if err != nil {
 		return "", time.Time{}, err
 	}

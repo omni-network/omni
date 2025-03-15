@@ -4,11 +4,11 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"encoding/json"
-	"math/big"
 	"testing"
 
 	"github.com/omni-network/omni/e2e/fbproxy/app"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -28,7 +28,7 @@ const (
 )
 
 var (
-	chainID = big.NewInt(1337)
+	chainID = umath.New(1337)
 )
 
 func (b *mockTxSigner) Sign(ctx context.Context, digest common.Hash, signer common.Address) ([65]byte, error) {
@@ -137,14 +137,14 @@ func testTxns() []testTx {
 		{
 			tx: &types.LegacyTx{
 				Nonce:    5,
-				GasPrice: big.NewInt(6),
+				GasPrice: umath.New(6),
 				Gas:      7,
 				To:       &dead,
-				Value:    big.NewInt(8),
+				Value:    umath.New(8),
 				Data:     []byte{0, 1, 2, 3, 4},
-				V:        big.NewInt(9),
-				R:        big.NewInt(10),
-				S:        big.NewInt(11),
+				V:        umath.New(9),
+				R:        umath.New(10),
+				S:        umath.New(11),
 			},
 			txArgsJSON: `{
 				"from": "0x71562b71999873db5b286df957af199ec94617f7",
@@ -178,14 +178,14 @@ func testTxns() []testTx {
 		{
 			tx: &types.LegacyTx{
 				Nonce:    5,
-				GasPrice: big.NewInt(6),
+				GasPrice: umath.New(6),
 				Gas:      7,
 				To:       nil,
-				Value:    big.NewInt(8),
+				Value:    umath.New(8),
 				Data:     []byte{0, 1, 2, 3, 4},
-				V:        big.NewInt(32),
-				R:        big.NewInt(10),
-				S:        big.NewInt(11),
+				V:        umath.New(32),
+				R:        umath.New(10),
+				S:        umath.New(11),
 			},
 			txArgsJSON: `{
 				"from": "0x71562b71999873db5b286df957af199ec94617f7",
@@ -221,10 +221,10 @@ func testTxns() []testTx {
 			tx: &types.AccessListTx{
 				ChainID:  chainID,
 				Nonce:    5,
-				GasPrice: big.NewInt(6),
+				GasPrice: umath.New(6),
 				Gas:      7,
 				To:       &dead,
-				Value:    big.NewInt(8),
+				Value:    umath.New(8),
 				Data:     []byte{0, 1, 2, 3, 4},
 				AccessList: types.AccessList{
 					types.AccessTuple{
@@ -232,9 +232,9 @@ func testTxns() []testTx {
 						StorageKeys: []common.Hash{types.EmptyRootHash},
 					},
 				},
-				V: big.NewInt(32),
-				R: big.NewInt(10),
-				S: big.NewInt(11),
+				V: umath.New(32),
+				R: umath.New(10),
+				S: umath.New(11),
 			},
 			txArgsJSON: `{
 				"from": "0x71562b71999873db5b286df957af199ec94617f7",
@@ -286,10 +286,10 @@ func testTxns() []testTx {
 			tx: &types.AccessListTx{
 				ChainID:  chainID,
 				Nonce:    5,
-				GasPrice: big.NewInt(6),
+				GasPrice: umath.New(6),
 				Gas:      7,
 				To:       nil,
-				Value:    big.NewInt(8),
+				Value:    umath.New(8),
 				Data:     []byte{0, 1, 2, 3, 4},
 				AccessList: types.AccessList{
 					types.AccessTuple{
@@ -297,9 +297,9 @@ func testTxns() []testTx {
 						StorageKeys: []common.Hash{types.EmptyRootHash},
 					},
 				},
-				V: big.NewInt(32),
-				R: big.NewInt(10),
-				S: big.NewInt(11),
+				V: umath.New(32),
+				R: umath.New(10),
+				S: umath.New(11),
 			},
 			txArgsJSON: `{
 				"from": "0x71562b71999873db5b286df957af199ec94617f7",
@@ -351,11 +351,11 @@ func testTxns() []testTx {
 			tx: &types.DynamicFeeTx{
 				ChainID:   chainID,
 				Nonce:     5,
-				GasTipCap: big.NewInt(6),
-				GasFeeCap: big.NewInt(9),
+				GasTipCap: umath.New(6),
+				GasFeeCap: umath.New(9),
 				Gas:       7,
 				To:        &dead,
-				Value:     big.NewInt(8),
+				Value:     umath.New(8),
 				Data:      []byte{0, 1, 2, 3, 4},
 				AccessList: types.AccessList{
 					types.AccessTuple{
@@ -363,9 +363,9 @@ func testTxns() []testTx {
 						StorageKeys: []common.Hash{types.EmptyRootHash},
 					},
 				},
-				V: big.NewInt(32),
-				R: big.NewInt(10),
-				S: big.NewInt(11),
+				V: umath.New(32),
+				R: umath.New(10),
+				S: umath.New(11),
 			},
 			txArgsJSON: `{
 				"from": "0x71562b71999873db5b286df957af199ec94617f7",
@@ -421,16 +421,16 @@ func testTxns() []testTx {
 			tx: &types.DynamicFeeTx{
 				ChainID:    chainID,
 				Nonce:      5,
-				GasTipCap:  big.NewInt(6),
-				GasFeeCap:  big.NewInt(9),
+				GasTipCap:  umath.New(6),
+				GasFeeCap:  umath.New(9),
 				Gas:        7,
 				To:         nil,
-				Value:      big.NewInt(8),
+				Value:      umath.New(8),
 				Data:       []byte{0, 1, 2, 3, 4},
 				AccessList: types.AccessList{},
-				V:          big.NewInt(32),
-				R:          big.NewInt(10),
-				S:          big.NewInt(11),
+				V:          umath.New(32),
+				R:          umath.New(10),
+				S:          umath.New(11),
 			},
 			txArgsJSON: `{
 				"from": "0x71562b71999873db5b286df957af199ec94617f7",

@@ -13,6 +13,9 @@ var (
 	// Zero is a big.Int zero value.
 	Zero = new(big.Int)
 
+	// One is a big.Int value representing 1.
+	One = big.NewInt(1)
+
 	// Wei is a big.Int value representing 1 wei.
 	Wei = big.NewInt(1)
 
@@ -46,7 +49,7 @@ func WeiToGweiF64(wei *big.Int) float64 {
 // Note this can be lossy for large floats.
 func GweiToWei[N number](i N) *big.Int {
 	if iU64, ok := numToU64(i); ok {
-		return new(big.Int).Mul(Gwei, NewBigInt(iU64))
+		return new(big.Int).Mul(Gwei, New(iU64))
 	} else if iI64, ok := numToI64(i); ok {
 		return new(big.Int).Mul(Gwei, big.NewInt(iI64))
 	}
@@ -63,7 +66,7 @@ func GweiToWei[N number](i N) *big.Int {
 // Note this can be lossy for large floats.
 func EtherToWei[N number](i N) *big.Int {
 	if iU64, ok := numToU64(i); ok {
-		return new(big.Int).Mul(Ether, NewBigInt(iU64))
+		return new(big.Int).Mul(Ether, New(iU64))
 	} else if iI64, ok := numToI64(i); ok {
 		return new(big.Int).Mul(Ether, big.NewInt(iI64))
 	}

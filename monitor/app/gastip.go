@@ -2,7 +2,6 @@ package monitor
 
 import (
 	"context"
-	"math/big"
 	"time"
 
 	"github.com/omni-network/omni/lib/ethclient"
@@ -36,8 +35,7 @@ func monitorOmniEVMGasTipForever(ctx context.Context,
 				continue
 			}
 
-			tipGwei := new(big.Int).Div(tip, umath.Gwei)
-			gasTipCap.Set(float64(tipGwei.Uint64()))
+			gasTipCap.Set(umath.WeiToGweiF64(tip))
 		}
 	}
 }

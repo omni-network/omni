@@ -2,13 +2,13 @@ package avs
 
 import (
 	"context"
-	"math/big"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/k1util"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -27,8 +27,8 @@ func RegisterOperatorWithAVS(ctx context.Context, addr common.Address, backend *
 		return err
 	}
 
-	salt := crypto.Keccak256Hash(operator.Bytes())         // Salt can be anything, it should just be unique.
-	expiry := big.NewInt(time.Now().Add(time.Hour).Unix()) // Sig is 1 Hour valid
+	salt := crypto.Keccak256Hash(operator.Bytes())        // Salt can be anything, it should just be unique.
+	expiry := umath.New(time.Now().Add(time.Hour).Unix()) // Sig is 1 Hour valid
 
 	avsDirAddr, err := avs.AvsDirectory(&bind.CallOpts{})
 	if err != nil {

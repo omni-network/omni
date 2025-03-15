@@ -66,7 +66,7 @@ func destFeeParams(ctx context.Context, destChain evmchain.Metadata, backends et
 		GasToken:     gasToken,
 		BaseGasLimit: cfg.BaseGasLimit,
 		ChainId:      destChain.ChainID,
-		GasPrice:     gasprice.Tier(gasPrice.Uint64()),
+		GasPrice:     gasprice.Tier(gasPrice).Uint64(),
 		DataCostId:   cfg.DataCostID,
 	}, nil
 }
@@ -139,7 +139,7 @@ func destDataCostParams(ctx context.Context, destChain evmchain.Metadata, backen
 		GasToken:   dataCostCfg.GasToken,
 		BaseBytes:  dataCostCfg.BaseBytes,
 		Id:         dataCostCfg.ID,
-		GasPrice:   gasprice.Tier(gasPrice.Uint64()),
+		GasPrice:   gasprice.Tier(gasPrice).Uint64(),
 		GasPerByte: dataCostCfg.GasPerByte,
 	}, nil
 }
@@ -225,7 +225,7 @@ func conversionRate(ctx context.Context, pricer tokens.Pricer, from, to tokens.T
 // This denominator helps convert between token amounts in solidity, in which there are no floating point numbers.
 //
 //	ex. (amt A) * (rate R) / CONVERSION_RATE_DENOM = (amt B)
-var conversionRateDenom = big.NewInt(1_000_000)
+var conversionRateDenom = umath.New(1_000_000)
 
 // rateToNumerator translates a float rate (ex 0.1) to numerator / CONVERSION_RATE_DENOM (ex 100_000).
 // This rate-as-numerator representation is used in FeeOracleV2 contracts.

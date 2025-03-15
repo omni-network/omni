@@ -40,12 +40,6 @@ func SubtractOrZero(a, b uint64) uint64 {
 	return resp
 }
 
-// NewBigInt return a big.Int version of the provided uint64.
-// This is a convenience function to avoid gosec complaining about big.NewInt(int64(i))).
-func NewBigInt(i uint64) *big.Int {
-	return new(big.Int).SetUint64(i)
-}
-
 // Len returns the length of the slice as a uint64.
 // This convenience function to avoid gosec complaining about uint64(len(slice)).
 func Len[T any](slice []T) uint64 {

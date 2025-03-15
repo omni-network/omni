@@ -20,20 +20,22 @@ func TestBridgeBalance(t *testing.T) {
 	t.Parallel()
 
 	// mainnet prefunds
-	mp := big.NewInt(0)
+	mp := umath.Zero
 	for _, role := range eoa.AllRoles() {
 		th, ok := eoa.GetFundThresholds(tokens.OMNI, netconf.Mainnet, role)
 		if !ok {
 			continue
 		}
-		mp = add(mp, th.TargetBalance())
+		mp = umath.Add(mp, th.TargetBalance())
 	}
 
 	// Note that there were actually only 2 100 OMNI mainnet genesis validators. These calcs are wrong.
-	mp = add(mp, umath.EtherToWei(1000)) // 1000 OMNI: genesis validator 1
-	mp = add(mp, umath.EtherToWei(1000)) // 1000 OMNI: genesis validator 2
-	mp = add(mp, umath.EtherToWei(1000)) // 1000 OMNI: genesis validator 3
-	mp = add(mp, umath.EtherToWei(1000)) // 1000 OMNI: genesis validator 4
+	mp = umath.Add(mp,
+		umath.EtherToWei(1000), // 1000 OMNI: genesis validator 1
+		umath.EtherToWei(1000), // 1000 OMNI: genesis validator 2
+		umath.EtherToWei(1000), // 1000 OMNI: genesis validator 3
+		umath.EtherToWei(1000), // 1000 OMNI: genesis validator 4
+	)
 
 	tests := []struct {
 		name     string
@@ -58,7 +60,7 @@ func TestBridgeBalance(t *testing.T) {
 		{
 			name:     "mainnet",
 			network:  netconf.Mainnet,
-			expected: new(big.Int).Sub(omnitoken.TotalSupply, mp),
+			expected: umath.Sub(omnitoken.TotalSupply, mp),
 		},
 	}
 
@@ -70,8 +72,4 @@ func TestBridgeBalance(t *testing.T) {
 			require.Equal(t, tt.expected, balance)
 		})
 	}
-}
-
-func add(x, y *big.Int) *big.Int {
-	return new(big.Int).Add(x, y)
 }
