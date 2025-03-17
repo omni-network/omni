@@ -3,10 +3,10 @@ package eoa
 import (
 	"math/big"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
-	"github.com/omni-network/omni/lib/umath"
 )
 
 const (
@@ -122,11 +122,11 @@ type FundThresholds struct {
 }
 
 func (t FundThresholds) MinBalance() *big.Int {
-	return umath.Ether(t.minEther)
+	return bi.Ether(t.minEther)
 }
 
 func (t FundThresholds) TargetBalance() *big.Int {
-	return umath.Ether(t.targetEther)
+	return bi.Ether(t.targetEther)
 }
 
 func convert(threshold FundThresholds, token tokens.Token) (FundThresholds, error) {
@@ -143,20 +143,20 @@ func convert(threshold FundThresholds, token tokens.Token) (FundThresholds, erro
 
 // multipleSum returns a function that calculates the sum of the thresholds for the given roles and multiplier.
 func multipleSum(network netconf.ID, multiplier uint64, roles []Role) FundThresholds {
-	minSum, targetSum := umath.Zero(), umath.Zero()
+	minSum, targetSum := bi.Zero(), bi.Zero()
 	for _, role := range roles {
 		thresh, ok := getThreshold(network, role)
 		if !ok {
 			continue
 		}
 
-		minSum = umath.Add(minSum, umath.MulRaw(thresh.MinBalance(), multiplier))
-		targetSum = umath.Add(targetSum, umath.MulRaw(thresh.TargetBalance(), multiplier))
+		minSum = bi.Add(minSum, bi.MulRaw(thresh.MinBalance(), multiplier))
+		targetSum = bi.Add(targetSum, bi.MulRaw(thresh.TargetBalance(), multiplier))
 	}
 
 	return FundThresholds{
-		minEther:    umath.ToEtherF64(minSum),
-		targetEther: umath.ToEtherF64(targetSum),
+		minEther:    bi.ToEtherF64(minSum),
+		targetEther: bi.ToEtherF64(targetSum),
 	}
 }
 

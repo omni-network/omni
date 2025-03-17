@@ -6,9 +6,9 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -102,7 +102,7 @@ func (m CLIConfig) Check() error {
 }
 
 func externalSignerFn(external ExternalSigner, address common.Address, chainID uint64) SignerFn {
-	signer := types.LatestSignerForChainID(umath.New(chainID))
+	signer := types.LatestSignerForChainID(bi.N(chainID))
 	return func(ctx context.Context, from common.Address, tx *types.Transaction) (*types.Transaction, error) {
 		if address != from {
 			return nil, bind.ErrNotAuthorized
@@ -125,7 +125,7 @@ func externalSignerFn(external ExternalSigner, address common.Address, chainID u
 // privateKeySignerFn returns a SignerFn that signs transactions with the given private key.
 func privateKeySignerFn(key *ecdsa.PrivateKey, chainID uint64) SignerFn {
 	from := crypto.PubkeyToAddress(key.PublicKey)
-	signer := types.LatestSignerForChainID(umath.New(chainID))
+	signer := types.LatestSignerForChainID(bi.N(chainID))
 
 	return func(_ context.Context, address common.Address, tx *types.Transaction) (*types.Transaction, error) {
 		if address != from {
@@ -238,10 +238,10 @@ func newConfig(cfg CLIConfig, signer SignerFn, from common.Address, client ethcl
 		Backend:                   client,
 		ResubmissionTimeout:       cfg.ResubmissionTimeout,
 		FeeLimitMultiplier:        cfg.FeeLimitMultiplier,
-		FeeLimitThreshold:         umath.Gwei(cfg.FeeLimitThresholdGwei),
-		MinBaseFee:                umath.Gwei(cfg.MinBaseFeeGwei),
-		MinTipCap:                 umath.Gwei(cfg.MinTipCapGwei),
-		ChainID:                   umath.New(cfg.ChainID),
+		FeeLimitThreshold:         bi.Gwei(cfg.FeeLimitThresholdGwei),
+		MinBaseFee:                bi.Gwei(cfg.MinBaseFeeGwei),
+		MinTipCap:                 bi.Gwei(cfg.MinTipCapGwei),
+		ChainID:                   bi.N(cfg.ChainID),
 		TxSendTimeout:             cfg.TxSendTimeout,
 		TxNotInMempoolTimeout:     cfg.TxNotInMempoolTimeout,
 		NetworkTimeout:            cfg.NetworkTimeout,
@@ -266,7 +266,7 @@ func (m Config) Check() error {
 	if m.FeeLimitMultiplier == 0 {
 		return errors.New("must provide FeeLimitMultiplier")
 	}
-	if m.MinBaseFee != nil && m.MinTipCap != nil && umath.LT(m.MinBaseFee, m.MinTipCap) {
+	if m.MinBaseFee != nil && m.MinTipCap != nil && bi.LT(m.MinBaseFee, m.MinTipCap) {
 		return errors.New("minBaseFee smaller than minTipCap",
 			"base", m.MinBaseFee, "min", m.MinTipCap)
 	}

@@ -6,9 +6,9 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/monitor/xfeemngr/ticker"
 
 	"github.com/ethereum/go-ethereum"
@@ -52,7 +52,7 @@ func (b *buffer) GasPrice(chainID uint64) *big.Int {
 
 	resp, ok := b.buffer[chainID]
 	if !ok {
-		return umath.Zero()
+		return bi.Zero()
 	}
 
 	return resp
@@ -93,7 +93,7 @@ func (b *buffer) streamOne(ctx context.Context, chainID uint64) {
 		tiered := Tier(live)
 		buffed := b.GasPrice(chainID)
 
-		if umath.EQ(tiered, buffed) {
+		if bi.EQ(tiered, buffed) {
 			return
 		}
 

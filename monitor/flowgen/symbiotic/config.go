@@ -18,14 +18,6 @@ type flowConfig struct {
 }
 
 var config = map[netconf.ID]flowConfig{
-	netconf.Omega: {
-		srcChain:     evmchain.IDBaseSepolia,
-		dstChain:     evmchain.IDHolesky,
-		depositToken: tokens.WSTETH,
-		expenseToken: tokens.WSTETH,
-		vaultAddr:    targets.SymbioticHoleskyWSTETHVault1,
-	},
-
 	netconf.Devnet: {
 		srcChain:     evmchain.IDMockL1,
 		dstChain:     evmchain.IDMockL2,
@@ -33,5 +25,13 @@ var config = map[netconf.ID]flowConfig{
 		expenseToken: tokens.WSTETH,
 		// Deterministic address on devnet
 		vaultAddr: common.HexToAddress("0x81487c7b22a0babadC98D5cA1d7D21240beB14Cc"),
+	},
+
+	netconf.Omega: {
+		srcChain:     evmchain.IDBaseSepolia,
+		dstChain:     evmchain.IDHolesky,
+		depositToken: tokens.WSTETH,
+		expenseToken: tokens.WSTETH,
+		vaultAddr:    targets.SymbioticHoleskyWSTETHVault1,
 	},
 }

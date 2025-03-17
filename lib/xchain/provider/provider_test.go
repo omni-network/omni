@@ -6,11 +6,11 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/mock"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/lib/xchain/provider"
 
@@ -61,7 +61,7 @@ func TestProvider(t *testing.T) {
 		}
 
 		return &ethtypes.Header{
-			Number: umath.New(fromHeight * 10),
+			Number: bi.N(fromHeight * 10),
 		}, nil
 	})
 

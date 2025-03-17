@@ -4,9 +4,9 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -46,7 +46,7 @@ func FundERC20(ctx context.Context, client ethclient.Client,
 
 var (
 	// _balances[account] storage slot == keccak256(abi.encode(account, idx)).
-	slotIdx = umath.Zero()
+	slotIdx = bi.Zero()
 	slotABI = abi.Arguments{
 		{Type: abi.Type{T: abi.AddressTy}},
 		{Type: abi.Type{T: abi.UintTy, Size: 256}},

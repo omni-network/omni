@@ -6,16 +6,16 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/create3"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 type DeploymentConfig struct {
@@ -95,7 +95,7 @@ func isDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Bac
 
 // DeployIfNeeded deploys a new token contract if it is not already deployed.
 // If the contract is already deployed, the receipt is nil.
-func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethclient.Receipt, error) {
 	deployed, addr, err := isDeployed(ctx, network, backend)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "is deployed")
@@ -108,7 +108,7 @@ func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend
 }
 
 // Deploy deploys a new L1Bridge contract and returns the address and receipt.
-func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethclient.Receipt, error) {
 	addrs, err := contracts.GetAddresses(ctx, network)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "get addresses")
@@ -138,15 +138,15 @@ func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend
 		Portal:          addrs.Portal,
 		GasStation:      addrs.GasStation,
 		Oracle:          oracle,
-		MaxSwap:         umath.Ether(0.001), // 0.001 ETH
-		Toll:            umath.New(100),     // 100 / 1000 = 0.1 = 10% (1000 = GasPump.TOLL_DENOM),
+		MaxSwap:         bi.Ether(0.001), // 0.001 ETH
+		Toll:            bi.N(100),       // 100 / 1000 = 0.1 = 10% (1000 = GasPump.TOLL_DENOM),
 		ExpectedAddr:    addrs.GasPump,
 	}
 
 	return deploy(ctx, network, cfg, backend)
 }
 
-func deploy(ctx context.Context, network netconf.ID, cfg DeploymentConfig, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func deploy(ctx context.Context, network netconf.ID, cfg DeploymentConfig, backend *ethbackend.Backend) (common.Address, *ethclient.Receipt, error) {
 	if err := cfg.Validate(); err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "validate config")
 	}

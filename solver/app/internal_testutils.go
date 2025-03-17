@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -47,6 +48,7 @@ type orderTestCase struct {
 	reject       bool
 	fillReverts  bool
 	disallowCall bool
+	shouldErr    bool
 	mock         func(clients MockClients)
 	order        testOrder
 }
@@ -58,6 +60,7 @@ type rejectTestCase struct {
 	reject       bool
 	fillReverts  bool
 	disallowCall bool
+	shouldErr    bool
 	mock         func(clients MockClients)
 	order        Order
 }
@@ -116,7 +119,7 @@ func toRejectTestCase(t *testing.T, tt orderTestCase, outbox common.Address) rej
 			Amount:    e.Amount,
 			Token:     toBz32(e.Token),
 			Recipient: toBz32(outbox),
-			ChainId:   umath.New(tt.order.dstChainID),
+			ChainId:   bi.N(tt.order.dstChainID),
 		})
 	}
 
@@ -125,7 +128,7 @@ func toRejectTestCase(t *testing.T, tt orderTestCase, outbox common.Address) rej
 		minReceived = append(minReceived, bindings.IERC7683Output{
 			Amount:  d.Amount,
 			Token:   toBz32(d.Token),
-			ChainId: umath.New(tt.order.srcChainID),
+			ChainId: bi.N(tt.order.srcChainID),
 		})
 	}
 
@@ -146,6 +149,7 @@ func toRejectTestCase(t *testing.T, tt orderTestCase, outbox common.Address) rej
 		reject:       tt.reject,
 		fillReverts:  tt.fillReverts,
 		disallowCall: tt.disallowCall,
+		shouldErr:    tt.shouldErr,
 		mock:         tt.mock,
 		order: Order{
 			ID:            [32]byte{0x01},
@@ -215,7 +219,25 @@ func rejectTestCases(t *testing.T, solver, outbox common.Address) []rejectTestCa
 		tests = append(tests, toRejectTestCase(t, tt, outbox))
 	}
 
-	return tests
+	additional := []rejectTestCase{
+		// special case: insufficient native OMNI should error, not reject
+		toRejectTestCase(t, orderTestCase{
+			name:      "insufficient native OMNI",
+			shouldErr: true,
+			order: testOrder{
+				srcChainID: evmchain.IDHolesky,
+				dstChainID: evmchain.IDOmniOmega,
+				deposits:   []types.AddrAmt{{Amount: ether(1), Token: omniERC20(netconf.Omega).Address}},
+				calls:      []types.Call{{Value: ether(1)}},
+				expenses:   []types.Expense{{Amount: ether(1)}},
+			},
+			mock: func(clients MockClients) {
+				mockNativeBalance(t, clients.Client(t, evmchain.IDOmniOmega), solver, ether(0))
+			},
+		}, outbox),
+	}
+
+	return append(tests, additional...)
 }
 
 func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
@@ -232,15 +254,15 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			reason: types.RejectInsufficientInventory,
 			reject: true,
 			order: testOrder{
-				// request 1 native OMNI for 1 erc20 OMNI on omega
+				// erqeust 1 ETH for 2 ETH (large deposit to cover fee)
 				srcChainID: evmchain.IDHolesky,
-				dstChainID: evmchain.IDOmniOmega,
-				deposits:   []types.AddrAmt{{Amount: ether(1), Token: omegaOMNIAddr}},
+				dstChainID: evmchain.IDBaseSepolia,
+				deposits:   []types.AddrAmt{{Amount: ether(2)}},
 				calls:      []types.Call{{Value: ether(1)}},
 				expenses:   []types.Expense{{Amount: ether(1)}},
 			},
 			mock: func(clients MockClients) {
-				mockNativeBalance(t, clients.Client(t, evmchain.IDOmniOmega), solver, ether(0))
+				mockNativeBalance(t, clients.Client(t, evmchain.IDBaseSepolia), solver, ether(0))
 			},
 		},
 		{
@@ -433,7 +455,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				srcChainID: evmchain.IDBaseSepolia,
 				dstChainID: evmchain.IDHolesky,
 				deposits: []types.AddrAmt{{
-					Amount: umath.Add(
+					Amount: bi.Add(
 						depositFor(ether(1), standardFeeBips), // required deposit
 						gwei(1),                               // a little more
 					),
@@ -464,9 +486,9 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			order: testOrder{
 				srcChainID: evmchain.IDBaseSepolia,
 				dstChainID: evmchain.IDHolesky,
-				deposits:   []types.AddrAmt{{Amount: umath.New(2)}},
-				calls:      []types.Call{{Value: umath.New(1)}},
-				expenses:   []types.Expense{{Amount: umath.New(1)}},
+				deposits:   []types.AddrAmt{{Amount: bi.N(2)}},
+				calls:      []types.Call{{Value: bi.N(1)}},
+				expenses:   []types.Expense{{Amount: bi.N(1)}},
 			},
 		},
 		{
@@ -537,7 +559,7 @@ func mockFillFee(t *testing.T, client *mock.MockClient, outbox common.Address) {
 	t.Helper()
 
 	// always return a fee of 1 gwei
-	fee := umath.Gwei(1)
+	fee := bi.Gwei(1)
 
 	ctx := gomock.Any()
 	msg := newCallMatcher("Outbox.fillFee", outbox, outboxABI.Methods["fillFee"].ID)
@@ -723,9 +745,9 @@ func abiEncodeBool(t *testing.T, b bool) []byte {
 }
 
 func ether(x int64) *big.Int {
-	return umath.Ether(x)
+	return bi.Ether(x)
 }
 
 func gwei(x int64) *big.Int {
-	return umath.Gwei(x)
+	return bi.Gwei(x)
 }

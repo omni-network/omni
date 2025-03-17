@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/omni-network/omni/contracts/bindings"
-	"github.com/omni-network/omni/lib/umath"
+	"github.com/omni-network/omni/lib/bi"
 )
 
 type MockFeeOracleV1 struct {
@@ -50,7 +50,7 @@ func (m *MockFeeOracleV1) GasPriceOn(_ context.Context, destChainID uint64) (*bi
 
 	gasPrice, ok := m.gasPriceOn[destChainID]
 	if !ok {
-		return umath.Zero(), nil
+		return bi.Zero(), nil
 	}
 
 	return gasPrice, nil
@@ -62,7 +62,7 @@ func (m *MockFeeOracleV1) ToNativeRate(_ context.Context, destChainID uint64) (*
 
 	rate, ok := m.toNativeRate[destChainID]
 	if !ok {
-		return umath.Zero(), nil
+		return bi.Zero(), nil
 	}
 
 	return rate, nil

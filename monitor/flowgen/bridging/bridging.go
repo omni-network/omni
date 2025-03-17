@@ -6,12 +6,12 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/monitor/flowgen/types"
-	"github.com/omni-network/omni/monitor/flowgen/util"
 	"github.com/omni-network/omni/solver/app"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -108,7 +108,8 @@ func Jobs(networkID netconf.ID, owner common.Address) ([]types.Job, error) {
 		return nil, nil
 	}
 
-	amount := big.NewInt(0).Mul(util.MilliEther, big.NewInt(20)) // 0.02 ETH
+	// Bridging of native ETH
+	amount := bi.Ether(0.02) // 0.02 ETH
 
 	job1, err := newJob(networkID, b.From, b.To, owner, amount)
 	if err != nil {

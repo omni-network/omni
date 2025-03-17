@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -66,6 +67,13 @@ func TestShouldReject(t *testing.T) {
 			}
 
 			reason, reject, err := shouldReject(context.Background(), tt.order)
+			if tt.shouldErr {
+				require.Error(t, err, "expected error for %s", tt.name)
+				require.Equal(t, types.RejectNone, reason, "expected no reason for error")
+				require.False(t, tt.reject, "expected reject false for error")
+
+				return
+			}
 
 			require.NoError(t, err)
 			require.Equal(t, tt.reason, reason, "expected reject reason %s, got %s", tt.reason, reason)

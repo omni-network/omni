@@ -12,6 +12,7 @@ import (
 
 	"github.com/omni-network/omni/cli/cmd"
 	"github.com/omni-network/omni/lib/anvil"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -19,7 +20,6 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
-	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 	evmengtypes "github.com/omni-network/omni/octane/evmengine/types"
 
@@ -350,7 +350,7 @@ func sumPendingWithdrawals(t *testing.T, ctx context.Context, cprov provider.Pro
 func GenFundedEOA(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) *ecdsa.PrivateKey {
 	t.Helper()
 
-	amount1k := umath.Ether(1_000)
+	amount1k := bi.Ether(1_000)
 
 	funder, funderAddr := anvil.DevPrivateKey9(), anvil.DevAccount9()
 

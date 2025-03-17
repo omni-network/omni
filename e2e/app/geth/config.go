@@ -9,8 +9,8 @@ import (
 
 	"github.com/omni-network/omni/e2e/types"
 	evmgenutil "github.com/omni-network/omni/halo/genutil/evm"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/core"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
@@ -91,7 +91,7 @@ func WriteConfigTOML(conf Config, path string) error {
 // MakeGethConfig returns the full omni geth config for the provided custom config.
 func MakeGethConfig(conf Config) FullConfig {
 	cfg := defaultGethConfig()
-	cfg.Eth.GPO.MaxPrice = umath.Gwei(1) // Very low gas tip cap (1gwei), blocks are far from half full.
+	cfg.Eth.GPO.MaxPrice = bi.Gwei(1) // Very low gas tip cap (1gwei), blocks are far from half full.
 	cfg.Eth.NetworkId = conf.ChainID
 	cfg.Node.DataDir = "/geth" // Mount inside docker container
 	cfg.Node.IPCPath = "/geth/geth.ipc"

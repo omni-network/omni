@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/evmchain"
@@ -12,7 +13,6 @@ import (
 	"github.com/omni-network/omni/lib/pnl"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tokens/coingecko"
-	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -160,7 +160,7 @@ func feeByDenom(
 			return amtByDenom{}, errors.New("source chain ID mismatch [BUG]", "expected", src.ChainID, "got", msg.SourceChainID)
 		}
 
-		feesGwei := umath.ToGweiF64(msg.Fees)
+		feesGwei := bi.ToGweiF64(msg.Fees)
 
 		switch src.NativeToken {
 		case tokens.OMNI:
@@ -201,15 +201,15 @@ func spendByDenom(
 
 // totalSpendGwei returns the total amount spent on a transaction in gwei.
 func totalSpendGwei(tx *ethtypes.Transaction, rec *ethclient.Receipt) float64 {
-	spend := umath.MulRaw(rec.EffectiveGasPrice, rec.GasUsed)
+	spend := bi.MulRaw(rec.EffectiveGasPrice, rec.GasUsed)
 
 	// add op l1 fee, if any
 	if rec.OPL1Fee != nil {
-		spend = umath.Add(spend, rec.OPL1Fee)
+		spend = bi.Add(spend, rec.OPL1Fee)
 	}
 
 	// add tx value
-	spend = umath.Add(spend, tx.Value())
+	spend = bi.Add(spend, tx.Value())
 
-	return umath.ToGweiF64(spend)
+	return bi.ToGweiF64(spend)
 }

@@ -5,18 +5,18 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/pnl"
 	tokenslib "github.com/omni-network/omni/lib/tokens"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
-type orderPnLFunc func(ctx context.Context, order Order, rec *types.Receipt) error
-type simpleGasPnLFunc func(ctx context.Context, chainID uint64, rec *types.Receipt, subCat string) error
+type orderPnLFunc func(ctx context.Context, order Order, rec *ethclient.Receipt) error
+type simpleGasPnLFunc func(ctx context.Context, chainID uint64, rec *ethclient.Receipt, subCat string) error
 
 type targetFunc func(PendingData) string
 
@@ -33,7 +33,7 @@ func newFilledPnlFunc(
 	outbox common.Address,
 	destFilledAge destFilledAge,
 ) orderPnLFunc {
-	return func(ctx context.Context, order Order, rec *types.Receipt) error {
+	return func(ctx context.Context, order Order, rec *ethclient.Receipt) error {
 		pendingData, err := order.PendingData()
 		if err != nil {
 			return errors.Wrap(err, "get pending data [BUG]")
@@ -65,7 +65,7 @@ func newFilledPnlFunc(
 		for _, tknAmt := range maxSpent {
 			p := pnl.LogP{
 				Type:        pnl.Expense,
-				AmountGwei:  umath.ToGweiF64(tknAmt.Amount),
+				AmountGwei:  bi.ToGweiF64(tknAmt.Amount),
 				Currency:    pnl.Currency(tknAmt.Token.Symbol),
 				Category:    "solver_expense",
 				Subcategory: target,
@@ -79,7 +79,7 @@ func newFilledPnlFunc(
 		for _, tknAmt := range minReceived {
 			p := pnl.LogP{
 				Type:        pnl.Income,
-				AmountGwei:  umath.ToGweiF64(tknAmt.Amount),
+				AmountGwei:  bi.ToGweiF64(tknAmt.Amount),
 				Currency:    pnl.Currency(tknAmt.Token.Symbol),
 				Category:    "solver_deposit",
 				Subcategory: target,
@@ -97,7 +97,7 @@ func newFilledPnlFunc(
 
 // newOrderGasPnLFunc returns a orderPnLFunc that logs the gas expense PnL for updating order status, except for filled orders.
 func newOrderGasPnLFunc(pricer tokenslib.Pricer, namer func(uint64) string) orderPnLFunc {
-	return func(ctx context.Context, order Order, rec *types.Receipt) error {
+	return func(ctx context.Context, order Order, rec *ethclient.Receipt) error {
 		srcChainName := namer(order.SourceChainID)
 		return gasPnL(ctx, pricer, order.SourceChainID, srcChainName, rec, order.Status.String(), order.ID.String())
 	}
@@ -105,7 +105,7 @@ func newOrderGasPnLFunc(pricer tokenslib.Pricer, namer func(uint64) string) orde
 
 // newSimpleGasPnLFunc returns a simpleGasPnLFunc that logs simple gas PnL, not related to orders.
 func newSimpleGasPnLFunc(pricer tokenslib.Pricer, namer func(uint64) string) simpleGasPnLFunc {
-	return func(ctx context.Context, chainID uint64, rec *types.Receipt, subCat string) error {
+	return func(ctx context.Context, chainID uint64, rec *ethclient.Receipt, subCat string) error {
 		chainName := namer(chainID)
 		return gasPnL(ctx, pricer, chainID, chainName, rec, subCat, rec.TxHash.Hex())
 	}
@@ -116,15 +116,18 @@ func gasPnL(
 	pricer tokenslib.Pricer,
 	chainID uint64,
 	chainName string,
-	rec *types.Receipt,
+	rec *ethclient.Receipt,
 	subCat string,
 	id string,
 ) error {
-	amount := umath.MulRaw(rec.EffectiveGasPrice, rec.GasUsed)
+	amount := bi.MulRaw(rec.EffectiveGasPrice, rec.GasUsed)
+	if rec.OPL1Fee != nil {
+		amount = bi.Add(amount, rec.OPL1Fee)
+	}
 
 	// Add any xcall fees included in tx
 	if fee, ok := maybeParseXCallFee(rec); ok {
-		amount = umath.Add(amount, fee)
+		amount = bi.Add(amount, fee)
 	}
 
 	nativeToken, ok := tokens.Find(chainID, NativeAddr)
@@ -135,7 +138,7 @@ func gasPnL(
 	// Log native gas as expense
 	p := pnl.LogP{
 		Type:        pnl.Expense,
-		AmountGwei:  umath.ToGweiF64(amount),
+		AmountGwei:  bi.ToGweiF64(amount),
 		Currency:    pnl.Currency(nativeToken.Symbol),
 		Category:    "gas",
 		Subcategory: subCat,
@@ -149,7 +152,7 @@ func gasPnL(
 }
 
 // maybeParseXCallFee returns the xcall fee from the receipt if present or false.
-func maybeParseXCallFee(rec *types.Receipt) (*big.Int, bool) {
+func maybeParseXCallFee(rec *ethclient.Receipt) (*big.Int, bool) {
 	portal, _ := bindings.NewOmniPortal(common.Address{}, nil) // Safe to pass in zeros since we only parse events.
 	for _, event := range rec.Logs {
 		if event == nil {

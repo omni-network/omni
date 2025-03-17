@@ -16,10 +16,10 @@ import (
 	e2etypes "github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/halo/genutil"
 	"github.com/omni-network/omni/halo/genutil/evm"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts/omnitoken"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -31,7 +31,7 @@ var (
 	forgeScriptABI = mustGetABI(bindings.AllocPredeploysMetaData)
 
 	// genValAlloc is the genesis validator allocation.
-	genValAlloc = umath.Ether(genutil.ValidatorPower)
+	genValAlloc = bi.Ether(genutil.ValidatorPower)
 )
 
 func main() {
@@ -64,7 +64,7 @@ func genallocs() error {
 		cfg := bindings.AllocPredeploysConfig{
 			Manager:                eoa.MustAddress(network, eoa.RoleManager),
 			Upgrader:               eoa.MustAddress(network, eoa.RoleUpgrader),
-			ChainId:                umath.New(network.Static().OmniExecutionChainID),
+			ChainId:                bi.N(network.Static().OmniExecutionChainID),
 			EnableStakingAllowlist: network.IsProtected(),
 			NativeBridgeBalance:    nativeBridgeBalance,
 			Output:                 "allocs/" + network.String() + ".json",
@@ -111,7 +111,7 @@ func getNativeBridgeBalance(network netconf.ID) (*big.Int, error) {
 	}
 
 	for _, prefund := range prefunds {
-		resp = umath.Sub(resp, prefund.Balance)
+		resp = bi.Sub(resp, prefund.Balance)
 	}
 
 	// subtract genesis validator allocations
@@ -123,7 +123,7 @@ func getNativeBridgeBalance(network netconf.ID) (*big.Int, error) {
 	for _, node := range manifest.Nodes {
 		// empty mode is validator (defauly)
 		if node.Mode == string(e2etypes.ModeValidator) || node.Mode == "" {
-			resp = umath.Sub(resp, genValAlloc)
+			resp = bi.Sub(resp, genValAlloc)
 		}
 	}
 

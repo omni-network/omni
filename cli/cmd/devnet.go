@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/e2e/manifests"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/anvil"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/buildinfo"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -20,7 +21,6 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
-	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -326,7 +326,7 @@ func devnetFund(ctx context.Context, cfg devnetFundConfig) error {
 	tx, _, err := backend.Send(ctx, funder, txmgr.TxCandidate{
 		To:       &addr,
 		GasLimit: 100_000,
-		Value:    umath.Ether(1),
+		Value:    bi.Ether(1),
 	})
 	if err != nil {
 		return errors.Wrap(err, "send tx")

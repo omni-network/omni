@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/tokens"
-	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/monitor/xfeemngr/contract"
 	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
 	"github.com/omni-network/omni/monitor/xfeemngr/ticker"
@@ -89,14 +89,14 @@ func TestStart(t *testing.T) {
 
 				// handle minimum rate case
 				if rate < 1.0/float64(rateDenom) {
-					numer = umath.One() // Use minimum representable rate
+					numer = bi.One() // Use minimum representable rate
 				}
 
 				onChainNumer, err := mustGetContract(t, oracle).ToNativeRate(ctx, dest.ChainID)
 				require.NoError(t, err)
 
 				// allow variance of +-1 due to floating point rounding errors
-				numerDiff := umath.Sub(numer, onChainNumer).Int64()
+				numerDiff := bi.Sub(numer, onChainNumer).Int64()
 				require.True(t, numerDiff >= -1 && numerDiff <= 1, "conversion rate")
 			}
 		}
@@ -213,7 +213,7 @@ func makeGasPrices(chainIDs []uint64) map[uint64]*big.Int {
 // randGasPrice generates a random, reasonable gas price.
 func randGasPrice() *big.Int {
 	oneGwei := 1_000_000_000 // i gwei
-	return umath.New(rand.Intn(oneGwei))
+	return bi.N(rand.Intn(oneGwei))
 }
 
 // randTokenPrice generates a random, reasonable token price.

@@ -8,11 +8,10 @@ import (
 	"github.com/omni-network/omni/lib/contracts/solvernet/middleman"
 	"github.com/omni-network/omni/lib/contracts/solvernet/outbox"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -80,7 +79,7 @@ func deployBoxes(ctx context.Context, network netconf.Network, backends ethbacke
 	return nil
 }
 
-func maybeTxHash(receipt *ethtypes.Receipt) string {
+func maybeTxHash(receipt *ethclient.Receipt) string {
 	if receipt != nil {
 		return receipt.TxHash.Hex()
 	}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/anvil"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/fireblocks"
@@ -20,6 +21,7 @@ import (
 
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -159,10 +161,10 @@ func (b *Backend) Send(ctx context.Context, from common.Address, candidate txmgr
 }
 
 // WaitMined waits for the transaction to be mined and asserts the receipt is successful.
-func (b *Backend) WaitMined(ctx context.Context, tx *ethtypes.Transaction) (*ethtypes.Receipt, error) {
-	rec, err := bind.WaitMined(ctx, b, tx)
+func (b *Backend) WaitMined(ctx context.Context, tx *ethtypes.Transaction) (*ethclient.Receipt, error) {
+	rec, err := waitMinedHash(ctx, b, tx.Hash())
 	if err != nil {
-		return nil, errors.Wrap(err, "wait mined", "chain", b.chainName)
+		return nil, errors.Wrap(err, "wait mined", "chain", b.chainName, "tx", tx.Hash())
 	} else if rec.Status != ethtypes.ReceiptStatusSuccessful {
 		return rec, errors.New("receipt status unsuccessful", "status", rec.Status, "tx", tx.Hash(), "chain", b.chainName)
 	}
@@ -191,7 +193,7 @@ func (b *Backend) BindOpts(ctx context.Context, from common.Address) (*bind.Tran
 	// Bindings will estimate gas.
 	return &bind.TransactOpts{
 		From:  from,
-		Nonce: umath.One(),
+		Nonce: bi.One(),
 		Signer: func(from common.Address, tx *ethtypes.Transaction) (*ethtypes.Transaction, error) {
 			resp, err := tx.WithSignature(backendStubSigner{}, from[:])
 			if err != nil {
@@ -288,7 +290,7 @@ type backendStubSigner struct {
 }
 
 func (backendStubSigner) ChainID() *big.Int {
-	return umath.Zero()
+	return bi.Zero()
 }
 
 func (backendStubSigner) Sender(tx *ethtypes.Transaction) (common.Address, error) {
@@ -302,10 +304,10 @@ func (backendStubSigner) Sender(tx *ethtypes.Transaction) (common.Address, error
 	if len(r.Bytes()) > common.AddressLength {
 		return common.Address{}, errors.New("invalid r length", "length", len(r.Bytes()))
 	}
-	if !umath.IsZero(s) {
+	if !bi.IsZero(s) {
 		return common.Address{}, errors.New("non-empty s [BUG]", "length", len(s.Bytes()))
 	}
-	if !umath.IsZero(v) {
+	if !bi.IsZero(v) {
 		return common.Address{}, errors.New("non-empty v [BUG]", "length", len(v.Bytes()))
 	}
 
@@ -325,8 +327,39 @@ func (backendStubSigner) SignatureValues(_ *ethtypes.Transaction, sig []byte) (r
 
 	// Set the 20 byte signature (from address) as R
 	r = new(big.Int).SetBytes(sig)
-	s = umath.Zero() // 0
-	v = umath.Zero() // 0
+	s = bi.Zero() // 0
+	v = bi.Zero() // 0
 
 	return r, s, v, nil
+}
+
+// waitMinedHash waits for a transaction with the provided hash to be mined on the blockchain.
+// It stops waiting when the context is canceled.
+// This is a copy of bind.WaitMinedHash returning omni custom Receipt type.
+func waitMinedHash(ctx context.Context, b *Backend, hash common.Hash) (*ethclient.Receipt, error) {
+	ticker := time.NewTimer(0) // Check immediately
+	defer ticker.Stop()
+
+	ctx = log.WithCtx(ctx, "tx", hash.Hex(), "chain", b.chainName)
+
+	var logFailedOnce bool
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, errors.Wrap(ctx.Err(), "wait mined timeout")
+		case <-ticker.C:
+			ticker.Reset(time.Second) // Then every 1 second
+
+			receipt, err := b.TxReceipt(ctx, hash)
+			if err == nil {
+				return receipt, nil
+			} else if errors.Is(err, ethereum.NotFound) {
+				continue
+			} else if !logFailedOnce {
+				// Only log this once, avoid spamming the logs.
+				log.DebugErr(ctx, "Failed querying receipt", err)
+				logFailedOnce = true
+			}
+		}
+	}
 }

@@ -6,10 +6,10 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
-	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -117,7 +117,7 @@ func coversQuote(deposits, quote []TokenAmt) error {
 			return newRejection(types.RejectInsufficientDeposit, errors.New("missing deposit", "token", tkn))
 		}
 
-		if umath.LT(d, q) {
+		if bi.LT(d, q) {
 			return newRejection(types.RejectInsufficientDeposit, errors.New("insufficient deposit", "token", tkn, "deposit", d, "quote", q))
 		}
 	}
@@ -129,7 +129,7 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 	var ps []TokenAmt
 
 	// sum of call value must be represented in expenses
-	callValues := umath.Zero()
+	callValues := bi.Zero()
 	for _, c := range calls {
 		if c.Value == nil {
 			continue
@@ -138,7 +138,7 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 		callValues.Add(callValues, c.Value)
 	}
 
-	nativeExpense := umath.Zero()
+	nativeExpense := bi.Zero()
 	for _, e := range expenses {
 		if e.Amount.Sign() <= 0 {
 			return nil, newRejection(types.RejectInvalidExpense, errors.New("expense amount positive"))
@@ -158,11 +158,11 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 			return nil, newRejection(types.RejectUnsupportedExpense, errors.New("unsupported expense token", "addr", e.Token))
 		}
 
-		if tkn.MaxSpend != nil && umath.GT(e.Amount, tkn.MaxSpend) {
+		if tkn.MaxSpend != nil && bi.GT(e.Amount, tkn.MaxSpend) {
 			return nil, newRejection(types.RejectExpenseOverMax, errors.New("expense over max", "token", tkn.Symbol, "max", tkn.MaxSpend, "amount", e.Amount))
 		}
 
-		if tkn.MinSpend != nil && umath.LT(e.Amount, tkn.MinSpend) {
+		if tkn.MinSpend != nil && bi.LT(e.Amount, tkn.MinSpend) {
 			return nil, newRejection(types.RejectExpenseUnderMin, errors.New("expense under min", "token", tkn.Symbol, "min", tkn.MinSpend, "amount", e.Amount))
 		}
 
@@ -173,7 +173,7 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 	}
 
 	// native expense must match sum of call values
-	if !umath.EQ(nativeExpense, callValues) {
+	if !bi.EQ(nativeExpense, callValues) {
 		return nil, newRejection(types.RejectInvalidExpense, errors.New("native expense must match native value"))
 	}
 

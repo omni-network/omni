@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/umath"
 )
 
 // monitorOmniEVMGasTipForever monitors the suggested gas tip cap for the Omni EVM chain.
@@ -35,7 +35,7 @@ func monitorOmniEVMGasTipForever(ctx context.Context,
 				continue
 			}
 
-			gasTipCap.Set(umath.ToGweiF64(tip))
+			gasTipCap.Set(bi.ToGweiF64(tip))
 		}
 	}
 }

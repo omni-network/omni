@@ -7,14 +7,15 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/anvil"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/gaspump"
 	"github.com/omni-network/omni/lib/contracts/gasstation"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -132,7 +133,7 @@ func fundGasStation(ctx context.Context, def Definition) error {
 	}
 
 	// 1000 OMNI
-	amt := umath.Ether(1_000)
+	amt := bi.Ether(1_000)
 
 	tx, rec, err := backend.Send(ctx, funder, txmgr.TxCandidate{
 		To:       &addrs.GasStation,
@@ -150,7 +151,7 @@ func fundGasStation(ctx context.Context, def Definition) error {
 	return nil
 }
 
-func maybeTxHash(receipt *ethtypes.Receipt) string {
+func maybeTxHash(receipt *ethclient.Receipt) string {
 	if receipt != nil {
 		return receipt.TxHash.Hex()
 	}
@@ -167,15 +168,15 @@ var (
 	GasPumpTests = []GasPumpTest{
 		{
 			Recipient:  common.HexToAddress("0x0000000000000000000000000000000000001111"),
-			TargetOMNI: umath.Ether(0.005), // 0.005 OMNI
+			TargetOMNI: bi.Ether(0.005), // 0.005 OMNI
 		},
 		{
 			Recipient:  common.HexToAddress("0x0000000000000000000000000000000000002222"),
-			TargetOMNI: umath.Ether(0.01), // 0.01 OMNI
+			TargetOMNI: bi.Ether(0.01), // 0.01 OMNI
 		},
 		{
 			Recipient:  common.HexToAddress("0x0000000000000000000000000000000000003333"),
-			TargetOMNI: umath.Ether(0.015), // 0.015 OMNI
+			TargetOMNI: bi.Ether(0.015), // 0.015 OMNI
 		},
 	}
 )
@@ -237,7 +238,7 @@ func testGasPumps(ctx context.Context, def Definition) error {
 				return errors.New("dry fill up failed", "chain", chain.Name, "revert_reason", revertReason)
 			}
 
-			if !umath.EQ(actualOMNI, test.TargetOMNI) {
+			if !bi.EQ(actualOMNI, test.TargetOMNI) {
 				return errors.New("inaccurate quote", "chain", chain.Name, "actual_omni", actualOMNI, "provided_eth", neededETH, "target_omni", test.TargetOMNI)
 			}
 

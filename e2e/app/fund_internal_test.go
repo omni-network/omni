@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/stretchr/testify/require"
 )
@@ -19,15 +19,15 @@ func TestSaneMax(t *testing.T) {
 	for _, role := range eoa.AllRoles() {
 		thresh, ok := eoa.GetFundThresholds(tokens.ETH, network, role)
 		if ok {
-			expect := umath.ToEtherF64(saneMax(tokens.ETH))
-			actual := umath.ToEtherF64(thresh.TargetBalance())
+			expect := bi.ToEtherF64(saneMax(tokens.ETH))
+			actual := bi.ToEtherF64(thresh.TargetBalance())
 			require.GreaterOrEqual(t, expect, actual, "ETH %s %s", network, role)
 		}
 
 		thresh, ok = eoa.GetFundThresholds(tokens.OMNI, network, role)
 		if ok {
-			expect := umath.ToEtherF64(saneMax(tokens.OMNI))
-			actual := umath.ToEtherF64(thresh.TargetBalance())
+			expect := bi.ToEtherF64(saneMax(tokens.OMNI))
+			actual := bi.ToEtherF64(thresh.TargetBalance())
 			require.GreaterOrEqual(t, expect, actual, "OMNI %s %s", network, role)
 		}
 	}

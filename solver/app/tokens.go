@@ -6,13 +6,13 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	e2e "github.com/omni-network/omni/e2e/solve"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	tokenslib "github.com/omni-network/omni/lib/tokens"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -56,14 +56,56 @@ func (t Token) IsOMNI() bool {
 	return t.Token == tokenslib.OMNI
 }
 
+type SpendBounds struct {
+	MinSpend *big.Int // minimum spend amount
+	MaxSpend *big.Int // maximum spend amount
+}
+
 var (
-	// TODO: increase max spend on mainnet, keep low for staging / omega.
-	maxETHSpend    = umath.Ether(1)     // 1 ETH
-	minETHSpend    = umath.Ether(0.001) // 0.001 ETH
-	maxWSTETHSpend = umath.Ether(1)     // 1 wstETH
-	minWSTETHSpend = umath.Ether(0.001) // 0.001 wstETH
-	maxOMNISpend   = umath.Ether(1_000) // 1000 OMNI
-	minOMNISpend   = umath.Ether(0.1)   // 0.1 OMNI
+	spendBounds = map[tokenslib.Token]map[ChainClass]SpendBounds{
+		tokenslib.ETH: {
+			ClassMainnet: {
+				MinSpend: bi.Ether(0.001), // 0.001 ETH
+				MaxSpend: bi.Ether(1),     // 1 ETH
+			},
+			ClassTestnet: {
+				MinSpend: bi.Ether(0.001), // 0.001 ETH
+				MaxSpend: bi.Ether(1),     // 1 ETH
+			},
+			ClassDevent: {
+				MinSpend: bi.Ether(0.001), // 0.001 ETH
+				MaxSpend: bi.Ether(1),     // 1 ETH
+			},
+		},
+		tokenslib.OMNI: {
+			ClassMainnet: {
+				MinSpend: bi.Ether(0.1),     // 0.1 OMNI
+				MaxSpend: bi.Ether(120_000), // 120k OMNI
+			},
+			ClassTestnet: {
+				MinSpend: bi.Ether(0.1),   // 0.1 OMNI
+				MaxSpend: bi.Ether(1_000), // 1k OMNI
+			},
+			ClassDevent: {
+				MinSpend: bi.Ether(0.1),   // 0.1 OMNI
+				MaxSpend: bi.Ether(1_000), // 1k OMNI
+			},
+		},
+		tokenslib.WSTETH: {
+			ClassMainnet: {
+				MinSpend: bi.Ether(0.001), // 0.001 wstETH
+				MaxSpend: bi.Ether(4),     // 4 wstETH
+			},
+			ClassTestnet: {
+				MinSpend: bi.Ether(0.001), // 0.001 wstETH
+				MaxSpend: bi.Ether(1),     // 1 wstETH
+			},
+			ClassDevent: {
+				MinSpend: bi.Ether(0.001), // 0.001 wstETH
+				MaxSpend: bi.Ether(1),     // 1 wstETH
+			},
+		},
+	}
 )
 
 // TODO(christian): move to a separate package.
@@ -146,49 +188,60 @@ func (ts Tokens) ForChain(chainID uint64) Tokens {
 }
 
 func nativeETH(chainID uint64) Token {
+	chainClass := mustChainClass(chainID)
+	bounds := mustSpendBounds(tokenslib.ETH, chainClass)
+
 	return Token{
 		Token:      tokenslib.ETH,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
-		MaxSpend:   maxETHSpend,
-		MinSpend:   minETHSpend,
+		MaxSpend:   bounds.MaxSpend,
+		MinSpend:   bounds.MinSpend,
 		Address:    NativeAddr,
 	}
 }
 
 func nativeOMNI(chainID uint64) Token {
+	chainClass := mustChainClass(chainID)
+	bounds := mustSpendBounds(tokenslib.OMNI, chainClass)
+
 	return Token{
 		Token:      tokenslib.OMNI,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
-		MaxSpend:   maxOMNISpend,
-		MinSpend:   minOMNISpend,
+		MaxSpend:   bounds.MaxSpend,
+		MinSpend:   bounds.MinSpend,
 		Address:    NativeAddr,
 	}
 }
 
 func omniERC20(network netconf.ID) Token {
 	chainID := netconf.EthereumChainID(network)
+	chainClass := mustChainClass(chainID)
+	bounds := mustSpendBounds(tokenslib.OMNI, chainClass)
 
 	return Token{
 		Token:      tokenslib.OMNI,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    contracts.TokenAddr(network),
-		MaxSpend:   maxOMNISpend,
-		MinSpend:   minOMNISpend,
+		MaxSpend:   bounds.MaxSpend,
+		MinSpend:   bounds.MinSpend,
 	}
 }
 
 // mockOMNI returns a manually deployed OMNI token on a given chain for testing purposes.
 func mockOMNI(chainID uint64, addr common.Address) Token {
+	chainClass := mustChainClass(chainID)
+	bounds := mustSpendBounds(tokenslib.OMNI, chainClass)
+
 	return Token{
 		Token:      tokenslib.OMNI,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    addr,
-		MaxSpend:   maxOMNISpend,
-		MinSpend:   minOMNISpend,
+		MaxSpend:   bounds.MaxSpend,
+		MinSpend:   bounds.MinSpend,
 		IsMock:     true,
 	}
 }
@@ -203,13 +256,16 @@ func stETH(chainID uint64, addr common.Address) Token {
 }
 
 func wstETH(chainID uint64, addr common.Address) Token {
+	chainClass := mustChainClass(chainID)
+	bounds := mustSpendBounds(tokenslib.WSTETH, chainClass)
+
 	return Token{
 		Token:      tokenslib.WSTETH,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    addr,
-		MaxSpend:   maxWSTETHSpend,
-		MinSpend:   minWSTETHSpend,
+		MaxSpend:   bounds.MaxSpend,
+		MinSpend:   bounds.MinSpend,
 	}
 }
 
@@ -263,6 +319,15 @@ func mustChainClass(chainID uint64) ChainClass {
 	}
 
 	return class
+}
+
+func mustSpendBounds(tkn tokenslib.Token, chainClass ChainClass) SpendBounds {
+	bounds, ok := spendBounds[tkn][chainClass]
+	if !ok {
+		panic(errors.New("spend bounds not found", "token", tkn, "chain_class", chainClass))
+	}
+
+	return bounds
 }
 
 func chainClass(chainID uint64) (ChainClass, error) {
