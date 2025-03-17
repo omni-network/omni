@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
@@ -26,10 +27,10 @@ var (
 	addrs               = mustAddrs(netconf.Devnet)
 	invalidTokenAddress = common.HexToAddress("0x1234")
 	invalidCallData     = hexutil.MustDecode("0x00000000")
-	minETHSpend         = umath.Wei(1)
-	maxETHSpend         = umath.Ether(1)
-	validETHSpend       = umath.DivRaw( // mid = (min + max) / 2
-		umath.Add(minETHSpend, maxETHSpend),
+	minETHSpend         = bi.Wei(1)
+	maxETHSpend         = bi.Ether(1)
+	validETHSpend       = bi.DivRaw( // mid = (min + max) / 2
+		bi.Add(minETHSpend, maxETHSpend),
 		2,
 	)
 )
@@ -81,7 +82,7 @@ func unsupportedExpense(amt *big.Int) []solvernet.Expense {
 }
 
 func invalidExpenseOutOfBounds() []solvernet.Expense {
-	return nativeExpense(umath.Ether(1))
+	return nativeExpense(bi.Ether(1))
 }
 
 func unsupportedERC20Deposit(amt *big.Int) solvernet.Deposit {

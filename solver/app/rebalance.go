@@ -7,6 +7,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -21,12 +22,12 @@ import (
 // maxL1OMNI is the max amount of L1 OMNI the solver should hold by network.
 var maxL1OMNI = map[netconf.ID]*big.Int{
 	// 1 OMNI for ephemeral networks (tests rebalancing more frequently)
-	netconf.Devnet:  umath.Ether(1),
-	netconf.Staging: umath.Ether(1),
+	netconf.Devnet:  bi.Ether(1),
+	netconf.Staging: bi.Ether(1),
 
 	// 1000 OMNI for protected networks (reduces gas spend)
-	netconf.Omega:   umath.Ether(1000),
-	netconf.Mainnet: umath.Ether(1000),
+	netconf.Omega:   bi.Ether(1000),
+	netconf.Mainnet: bi.Ether(1000),
 }
 
 // startRebalancing starts rebalancing of tokens that the solver is able to rebalance.
@@ -121,7 +122,7 @@ func rebalanceOMNIOnce(
 	}
 
 	// if balance not above max, do nothing
-	if umath.LT(balance, maxL1OMNI[network]) {
+	if bi.LT(balance, maxL1OMNI[network]) {
 		return nil
 	}
 
@@ -162,8 +163,8 @@ func rebalanceOMNIOnce(
 	}
 
 	log.Info(ctx, "Bridged L1-to-native OMNI for solver",
-		"amount_ether", umath.ToEtherF64(balance),
-		"fee_gwei", umath.ToGweiF64(fee),
+		"amount_ether", bi.ToEtherF64(balance),
+		"fee_gwei", bi.ToGweiF64(fee),
 		"tx", tx.Hash(),
 	)
 
@@ -182,7 +183,7 @@ func maybeApprove(
 		return errors.Wrap(err, "allowance")
 	}
 
-	if umath.GTE(allowance, amount) {
+	if bi.GTE(allowance, amount) {
 		return nil
 	}
 

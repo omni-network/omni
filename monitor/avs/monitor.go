@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
@@ -36,8 +36,8 @@ func monitorOperatorsOnce(ctx context.Context, avs *bindings.OmniAVS) error {
 	var total float64
 	for _, operator := range operators {
 		addr := operator.Addr.Hex()
-		staked := umath.ToEtherF64(operator.Staked)
-		delegated := umath.ToEtherF64(operator.Delegated)
+		staked := bi.ToEtherF64(operator.Staked)
+		delegated := bi.ToEtherF64(operator.Delegated)
 
 		operatorStakeGuage.WithLabelValues(addr).Set(staked)
 		operatorDelegationsGuage.WithLabelValues(addr).Set(delegated)
@@ -98,7 +98,7 @@ func monitorMinStakeOnce(ctx context.Context, avs *bindings.OmniAVS) error {
 		return errors.Wrap(err, "get min stake")
 	}
 
-	minStakeGuage.Set(umath.ToEtherF64(stake))
+	minStakeGuage.Set(bi.ToEtherF64(stake))
 
 	return nil
 }

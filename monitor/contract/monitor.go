@@ -5,12 +5,12 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -104,7 +104,7 @@ func monitorContractOnce(
 	}
 
 	// Convert to ether units
-	balanceEth := umath.ToEtherF64(balance)
+	balanceEth := bi.ToEtherF64(balance)
 
 	// Always set the balance metric
 	contractBalance.WithLabelValues(chain.Name, contract.Name).Set(balanceEth)
@@ -112,7 +112,7 @@ func monitorContractOnce(
 	// Handle funding threshold checks, if any
 	if contract.FundThresholds != nil {
 		var isLow float64
-		if umath.LTE(balance, contract.FundThresholds.MinBalance()) {
+		if bi.LTE(balance, contract.FundThresholds.MinBalance()) {
 			isLow = 1
 		}
 
@@ -122,7 +122,7 @@ func monitorContractOnce(
 	// Handle withdrawal threshold checks, if any
 	if contract.WithdrawThresholds != nil {
 		var isHigh float64
-		if umath.GTE(balance, contract.WithdrawThresholds.MaxBalance()) {
+		if bi.GTE(balance, contract.WithdrawThresholds.MaxBalance()) {
 			isHigh = 1
 		}
 
@@ -142,7 +142,7 @@ func monitorContractOnce(
 				return err
 			}
 
-			balanceEth := umath.ToEtherF64(balance)
+			balanceEth := bi.ToEtherF64(balance)
 			contractTokenBalance.WithLabelValues(chain.Name, contract.Name, t.Symbol, t.Address.Hex()).Set(balanceEth)
 		}
 	}

@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/solve"
 	"github.com/omni-network/omni/e2e/types"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
@@ -101,7 +102,7 @@ func testSolverApprovals(ctx context.Context, t *testing.T, network netconf.Netw
 		require.NoError(t, err)
 
 		// must be max allowance
-		require.True(t, umath.EQ(allowance, umath.MaxUint256), "not max allowance")
+		require.True(t, bi.EQ(allowance, umath.MaxUint256), "not max allowance")
 	}
 }
 

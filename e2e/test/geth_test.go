@@ -10,10 +10,10 @@ import (
 	"github.com/omni-network/omni/e2e/app/geth"
 	"github.com/omni-network/omni/halo/genutil/evm"
 	"github.com/omni-network/omni/lib/anvil"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -36,11 +36,11 @@ func TestGethConfig(t *testing.T) {
 
 		cfg := geth.MakeGethConfig(geth.Config{})
 
-		block, err := client.BlockByNumber(ctx, umath.One())
+		block, err := client.BlockByNumber(ctx, bi.One())
 		require.NoError(t, err)
 
 		require.EqualValues(t, int(cfg.Eth.Miner.GasCeil), int(block.GasLimit()))
-		require.Equal(t, umath.Zero(), block.Difficulty())
+		require.Equal(t, bi.Zero(), block.Difficulty())
 
 		require.NotNil(t, block.BeaconRoot())
 		require.NotEqual(t, common.Hash{}, *block.BeaconRoot())
@@ -66,7 +66,7 @@ func sendBlobTx(ctx context.Context, client ethclient.Client, config *params.Cha
 		return err
 	}
 	tx, err := ethtypes.SignNewTx(privKey,
-		ethtypes.NewCancunSigner(umath.New(netconf.Devnet.Static().OmniExecutionChainID)),
+		ethtypes.NewCancunSigner(bi.N(netconf.Devnet.Static().OmniExecutionChainID)),
 		blobTx)
 	if err != nil {
 		return err
@@ -146,8 +146,8 @@ func estimateGasPrice(ctx context.Context, backend ethclient.Client, config *par
 	}
 
 	baseFee := head.BaseFee
-	minBase := umath.Gwei(1) // Minimum base fee is 1 GWei.
-	if umath.LT(baseFee, minBase) {
+	minBase := bi.Gwei(1) // Minimum base fee is 1 GWei.
+	if bi.LT(baseFee, minBase) {
 		baseFee = minBase
 	}
 
@@ -157,7 +157,7 @@ func estimateGasPrice(ctx context.Context, backend ethclient.Client, config *par
 	}
 
 	// The tip must be at most the base fee.
-	if umath.GT(tip, baseFee) {
+	if bi.GT(tip, baseFee) {
 		tip = baseFee
 	}
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
@@ -13,7 +14,6 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/monitor/flowgen/bridging"
 	"github.com/omni-network/omni/monitor/flowgen/types"
@@ -166,7 +166,7 @@ func bridgeJobs(network netconf.ID) ([]types.Job, error) {
 	}
 
 	// Bridging of native ETH
-	amount := umath.Ether(0.02) // 0.02 ETH
+	amount := bi.Ether(0.02) // 0.02 ETH
 
 	job1, err := bridging.NewJob(network, b.From, b.To, eoa.RoleFlowgen, amount)
 	if err != nil {

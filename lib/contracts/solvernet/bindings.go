@@ -2,8 +2,8 @@ package solvernet
 
 import (
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -210,14 +210,14 @@ func PackFillOriginData(data bindings.SolverNetFillOriginData) ([]byte, error) {
 	// Replaces nil call values with zero (inputs.Pack panics if value is nil)
 	for i := range data.Calls {
 		if data.Calls[i].Value == nil {
-			data.Calls[i].Value = umath.Zero()
+			data.Calls[i].Value = bi.Zero()
 		}
 	}
 
 	// Same for expenses
 	for i := range data.Expenses {
 		if data.Expenses[i].Amount == nil {
-			data.Expenses[i].Amount = umath.Zero()
+			data.Expenses[i].Amount = bi.Zero()
 		}
 	}
 

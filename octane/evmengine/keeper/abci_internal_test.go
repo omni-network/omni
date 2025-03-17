@@ -7,11 +7,11 @@ import (
 	"time"
 
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/tutil"
-	"github.com/omni-network/omni/lib/umath"
 	etypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -698,7 +698,7 @@ func (m *mockEngineAPI) nextBlock(
 	t.Helper()
 	var header types.Header
 	m.fuzzer.Fuzz(&header)
-	header.Number = umath.New(height)
+	header.Number = bi.N(height)
 	header.Time = timestamp
 	header.ParentHash = parentHash
 	header.Coinbase = feeRecipient
@@ -714,7 +714,7 @@ func (m *mockEngineAPI) nextBlock(
 	)
 
 	// Convert block to payload
-	env := eengine.BlockToExecutableData(block, umath.Zero(), nil, nil)
+	env := eengine.BlockToExecutableData(block, bi.Zero(), nil, nil)
 	payload := *env.ExecutionPayload
 
 	// Ensure the block is valid

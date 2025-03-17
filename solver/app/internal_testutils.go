@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -116,7 +117,7 @@ func toRejectTestCase(t *testing.T, tt orderTestCase, outbox common.Address) rej
 			Amount:    e.Amount,
 			Token:     toBz32(e.Token),
 			Recipient: toBz32(outbox),
-			ChainId:   umath.New(tt.order.dstChainID),
+			ChainId:   bi.N(tt.order.dstChainID),
 		})
 	}
 
@@ -125,7 +126,7 @@ func toRejectTestCase(t *testing.T, tt orderTestCase, outbox common.Address) rej
 		minReceived = append(minReceived, bindings.IERC7683Output{
 			Amount:  d.Amount,
 			Token:   toBz32(d.Token),
-			ChainId: umath.New(tt.order.srcChainID),
+			ChainId: bi.N(tt.order.srcChainID),
 		})
 	}
 
@@ -433,7 +434,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				srcChainID: evmchain.IDBaseSepolia,
 				dstChainID: evmchain.IDHolesky,
 				deposits: []types.AddrAmt{{
-					Amount: umath.Add(
+					Amount: bi.Add(
 						depositFor(ether(1), standardFeeBips), // required deposit
 						gwei(1),                               // a little more
 					),
@@ -464,9 +465,9 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			order: testOrder{
 				srcChainID: evmchain.IDBaseSepolia,
 				dstChainID: evmchain.IDHolesky,
-				deposits:   []types.AddrAmt{{Amount: umath.New(2)}},
-				calls:      []types.Call{{Value: umath.New(1)}},
-				expenses:   []types.Expense{{Amount: umath.New(1)}},
+				deposits:   []types.AddrAmt{{Amount: bi.N(2)}},
+				calls:      []types.Call{{Value: bi.N(1)}},
+				expenses:   []types.Expense{{Amount: bi.N(1)}},
 			},
 		},
 		{
@@ -537,7 +538,7 @@ func mockFillFee(t *testing.T, client *mock.MockClient, outbox common.Address) {
 	t.Helper()
 
 	// always return a fee of 1 gwei
-	fee := umath.Gwei(1)
+	fee := bi.Gwei(1)
 
 	ctx := gomock.Any()
 	msg := newCallMatcher("Outbox.fillFee", outbox, outboxABI.Methods["fillFee"].ID)
@@ -723,9 +724,9 @@ func abiEncodeBool(t *testing.T, b bool) []byte {
 }
 
 func ether(x int64) *big.Int {
-	return umath.Ether(x)
+	return bi.Ether(x)
 }
 
 func gwei(x int64) *big.Int {
-	return umath.Gwei(x)
+	return bi.Gwei(x)
 }

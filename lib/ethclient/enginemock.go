@@ -11,12 +11,12 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/cometbft/cometbft/crypto"
 
@@ -77,7 +77,7 @@ func WithMockValidatorCreation(pubkey crypto.PubKey) func(*engineMock) {
 			panic(errors.Wrap(err, "pubkey to address"))
 		}
 
-		data, err := createValEvent.Inputs.NonIndexed().Pack(pubkey.Bytes(), umath.Ether(1))
+		data, err := createValEvent.Inputs.NonIndexed().Pack(pubkey.Bytes(), bi.Ether(1))
 		if err != nil {
 			panic(errors.Wrap(err, "pack create validator"))
 		}
@@ -134,7 +134,7 @@ func WithMockDelegation(validatorPubkey crypto.PubKey, delegatorAddr common.Addr
 		mock.mu.Lock()
 		defer mock.mu.Unlock()
 
-		wei := umath.Ether(ether)
+		wei := bi.Ether(ether)
 
 		valAddr, err := k1util.PubKeyToAddress(validatorPubkey)
 		if err != nil {
@@ -192,7 +192,7 @@ func WithPortalRegister(network netconf.Network) func(*engineMock) {
 				panic(errors.Wrap(err, "pack delegate"))
 			}
 
-			topicChainID, err := cast.EthHash(math.U256Bytes(umath.New(chain.ID)))
+			topicChainID, err := cast.EthHash(math.U256Bytes(bi.N(chain.ID)))
 			if err != nil {
 				panic(errors.Wrap(err, "cast chain ID"))
 			}
@@ -383,7 +383,7 @@ func (m *engineMock) HeaderByType(ctx context.Context, typ HeadType) (*types.Hea
 		return nil, err
 	}
 
-	return m.HeaderByNumber(ctx, umath.New(number))
+	return m.HeaderByNumber(ctx, bi.N(number))
 }
 
 func (m *engineMock) HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error) {
@@ -413,7 +413,7 @@ func (m *engineMock) BlockByNumber(ctx context.Context, number *big.Int) (*types
 		return m.head, nil
 	}
 
-	if !umath.EQ(number, m.head.Number()) {
+	if !bi.EQ(number, m.head.Number()) {
 		return nil, errors.New("block not found") // Only support latest block
 	}
 
@@ -568,7 +568,7 @@ func makePayload(fuzzer *fuzz.Fuzzer, height uint64, timestamp uint64, parentHas
 	// Build a new header
 	var header types.Header
 	fuzzer.Fuzz(&header)
-	header.Number = umath.New(height)
+	header.Number = bi.N(height)
 	header.Time = timestamp
 	header.ParentHash = parentHash
 	header.MixDigest = randao      // this corresponds to Random field in PayloadAttributes
@@ -584,7 +584,7 @@ func makePayload(fuzzer *fuzz.Fuzzer, height uint64, timestamp uint64, parentHas
 	)
 
 	// Convert block to payload
-	env := engine.BlockToExecutableData(block, umath.Zero(), nil, nil)
+	env := engine.BlockToExecutableData(block, bi.Zero(), nil, nil)
 	payload := *env.ExecutionPayload
 
 	// Ensure the block is valid

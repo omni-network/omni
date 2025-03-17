@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -109,8 +109,8 @@ type gasPricer struct {
 func newGasPricer(mineAtEpoch int64) *gasPricer {
 	return &gasPricer{
 		mineAtEpoch:   mineAtEpoch,
-		baseGasTipFee: umath.New(5),
-		baseBaseFee:   umath.New(7),
+		baseGasTipFee: bi.N(5),
+		baseBaseFee:   bi.N(7),
 		// Simulate 100 excess blobs, which results in a blobBaseFee of 50 wei.  This default means
 		// blob txs will be subject to the geth minimum blobgas fee of 1 gwei.
 		excessBlobGas: 100 * (params.BlobTxBlobGasPerBlob),
@@ -130,19 +130,19 @@ func (g *gasPricer) expGasFeeCap() *big.Int {
 }
 
 func (g *gasPricer) shouldMine(gasFeeCap *big.Int) bool {
-	return umath.LTE(g.expGasFeeCap(), gasFeeCap)
+	return bi.LTE(g.expGasFeeCap(), gasFeeCap)
 }
 
 func (g *gasPricer) feesForEpoch(epoch int64) (*big.Int, *big.Int) {
-	epochBaseFee := umath.MulRaw(g.baseBaseFee, epoch)
-	epochGasTipCap := umath.MulRaw(g.baseGasTipFee, epoch)
+	epochBaseFee := bi.MulRaw(g.baseBaseFee, epoch)
+	epochGasTipCap := bi.MulRaw(g.baseGasTipFee, epoch)
 	epochGasFeeCap := calcGasFeeCap(epochBaseFee, epochGasTipCap)
 
 	return epochGasTipCap, epochGasFeeCap
 }
 
 func (g *gasPricer) baseFee() *big.Int {
-	return umath.MulRaw(g.baseBaseFee, g.getEpoch())
+	return bi.MulRaw(g.baseBaseFee, g.getEpoch())
 }
 
 func (g *gasPricer) sample() (*big.Int, *big.Int) {
@@ -225,7 +225,7 @@ func (b *mockBackend) HeaderByNumber(ctx context.Context, number *big.Int) (*typ
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
-	num := umath.New(b.blockHeight)
+	num := bi.N(b.blockHeight)
 	if number != nil {
 		num.Set(number)
 	}
@@ -243,7 +243,7 @@ func (b *mockBackend) EstimateGas(ctx context.Context, msg ethereum.CallMsg) (ui
 	if b.g.err != nil {
 		return 0, b.g.err
 	}
-	if umath.LT(msg.GasFeeCap, msg.GasTipCap) {
+	if bi.LT(msg.GasFeeCap, msg.GasTipCap) {
 		return 0, core.ErrTipAboveFeeCap
 	}
 
@@ -272,7 +272,7 @@ func (b *mockBackend) PendingNonceAt(ctx context.Context, account common.Address
 }
 
 func (*mockBackend) ChainID(ctx context.Context) (*big.Int, error) {
-	return umath.One(), nil
+	return bi.One(), nil
 }
 
 // TransactionReceipt queries the mockBackend for a mined txHash. If none is found, nil is returned
@@ -299,7 +299,7 @@ func (b *mockBackend) TransactionReceipt(ctx context.Context, txHash common.Hash
 		TxHash:            txHash,
 		GasUsed:           txInfo.gasFeeCap.Uint64(),
 		CumulativeGasUsed: blobFeeCap,
-		BlockNumber:       umath.New(txInfo.blockNumber),
+		BlockNumber:       bi.N(txInfo.blockNumber),
 	}, nil
 }
 
@@ -648,7 +648,7 @@ func TestTxMgrDoesntAbortNonceTooLowAfterMiningTx(t *testing.T) {
 		switch {
 		// If the txn's gas fee cap is less than the one we expect to mine,
 		// accept the txn to the mempool.
-		case umath.LT(tx.GasFeeCap(), h.gasPricer.expGasFeeCap()):
+		case bi.LT(tx.GasFeeCap(), h.gasPricer.expGasFeeCap()):
 			return nil
 
 		// Accept and mine the actual txn we expect to confirm.
@@ -688,7 +688,7 @@ func TestWaitMinedReturnsReceiptOnFirstSuccess(t *testing.T) {
 	// Create a tx and mine it immediately using the default backend.
 	tx := types.NewTx(&types.LegacyTx{})
 	txHash := tx.Hash()
-	h.backend.mine(&txHash, umath.Zero())
+	h.backend.mine(&txHash, bi.Zero())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -730,7 +730,7 @@ func TestWaitMinedMultipleConfs(t *testing.T) {
 	// Create an unimined tx.
 	tx := types.NewTx(&types.LegacyTx{})
 	txHash := tx.Hash()
-	h.backend.mine(&txHash, umath.Zero())
+	h.backend.mine(&txHash, bi.Zero())
 
 	receipt, err := h.mgr.waitMined(ctx, tx, NewSendState(10, time.Hour))
 	require.Error(t, err)
@@ -789,7 +789,7 @@ func (b *failingBackend) TransactionReceipt(
 
 	return &types.Receipt{
 		TxHash:      txHash,
-		BlockNumber: umath.One(),
+		BlockNumber: bi.One(),
 	}, nil
 }
 
@@ -807,7 +807,7 @@ func (b *failingBackend) TxReceipt(_ context.Context, txHash common.Hash) (*ethc
 
 func (b *failingBackend) HeaderByNumber(_ context.Context, _ *big.Int) (*types.Header, error) {
 	return &types.Header{
-		Number:        umath.One(),
+		Number:        bi.One(),
 		BaseFee:       b.baseFee,
 		ExcessBlobGas: b.excessBlobGas,
 	}, nil
@@ -890,8 +890,8 @@ func TestWaitMinedRetriesNetError(t *testing.T) {
 func doGasPriceIncrease(_ *testing.T, txTipCap, txFeeCap, newTip,
 	newBaseFee int64) (*types.Transaction, *types.Transaction, error) {
 	borkedBackend := failingBackend{
-		gasTip:              umath.New(newTip),
-		baseFee:             umath.New(newBaseFee),
+		gasTip:              bi.N(newTip),
+		baseFee:             bi.N(newBaseFee),
 		returnSuccessHeader: true,
 	}
 
@@ -912,8 +912,8 @@ func doGasPriceIncrease(_ *testing.T, txTipCap, txFeeCap, newTip,
 	}
 
 	tx := types.NewTx(&types.DynamicFeeTx{
-		GasTipCap: umath.New(txTipCap),
-		GasFeeCap: umath.New(txFeeCap),
+		GasTipCap: bi.N(txTipCap),
+		GasFeeCap: bi.N(txFeeCap),
 	})
 	newTx, err := mgr.increaseGasPrice(context.Background(), tx)
 
@@ -1051,7 +1051,7 @@ func TestIncreaseGasPriceLimits(t *testing.T) {
 	t.Run("with-threshold", func(t *testing.T) {
 		t.Parallel()
 		testIncreaseGasPriceLimit(t, gasPriceLimitTest{
-			thr:           umath.Gwei(10),
+			thr:           bi.Gwei(10),
 			expTipCap:     1_293_535_754,
 			expFeeCap:     9_192_620_686, // just below 10 gwei
 			expBlobFeeCap: 8 * params.GWei,
@@ -1075,8 +1075,8 @@ func testIncreaseGasPriceLimit(t *testing.T, lt gasPriceLimitTest) {
 	// simulate 100 excess blobs which yields a 50 wei blob base fee
 	borkedExcessBlobGas := uint64(100 * params.BlobTxBlobGasPerBlob)
 	borkedBackend := failingBackend{
-		gasTip:              umath.New(borkedTip),
-		baseFee:             umath.New(borkedFee),
+		gasTip:              bi.N(borkedTip),
+		baseFee:             bi.N(borkedFee),
 		excessBlobGas:       &borkedExcessBlobGas,
 		returnSuccessHeader: true,
 	}
@@ -1098,8 +1098,8 @@ func testIncreaseGasPriceLimit(t *testing.T, lt gasPriceLimitTest) {
 		backend:   &borkedBackend,
 	}
 	lastGoodTx := types.NewTx(&types.DynamicFeeTx{
-		GasTipCap: umath.New(10),
-		GasFeeCap: umath.New(100),
+		GasTipCap: bi.N(10),
+		GasFeeCap: bi.N(100),
 	})
 
 	// Run increaseGasPrice a bunch of times in a row to simulate a very fast resubmit loop to make
@@ -1196,33 +1196,33 @@ func TestMinFees(t *testing.T) {
 		},
 		{
 			desc:             "high-min-basefee",
-			minBaseFee:       umath.New(10_000_000),
+			minBaseFee:       bi.N(10_000_000),
 			expectMinBaseFee: true,
 		},
 		{
 			desc:            "high-min-tipcap",
-			minTipCap:       umath.New(1_000_000),
+			minTipCap:       bi.N(1_000_000),
 			expectMinTipCap: true,
 		},
 		{
 			desc:             "high-mins",
-			minBaseFee:       umath.New(10_000_000),
-			minTipCap:        umath.New(1_000_000),
+			minBaseFee:       bi.N(10_000_000),
+			minTipCap:        bi.N(1_000_000),
 			expectMinBaseFee: true,
 			expectMinTipCap:  true,
 		},
 		{
 			desc:       "low-min-basefee",
-			minBaseFee: umath.One(),
+			minBaseFee: bi.One(),
 		},
 		{
 			desc:      "low-min-tipcap",
-			minTipCap: umath.One(),
+			minTipCap: bi.One(),
 		},
 		{
 			desc:       "low-mins",
-			minBaseFee: umath.One(),
-			minTipCap:  umath.One(),
+			minBaseFee: bi.One(),
+			minTipCap:  bi.One(),
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
@@ -1267,7 +1267,7 @@ func TestCalcThresholdValue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("input=%d", tt.input), func(t *testing.T) {
 			t.Parallel()
-			input := umath.New(tt.input)
+			input := bi.N(tt.input)
 			result := calcThresholdValue(input)
 			require.Equal(t, tt.expected, result.Int64())
 		})

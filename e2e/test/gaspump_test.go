@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/e2e/app"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -44,10 +44,10 @@ func TestGasPumps(t *testing.T) {
 			for _, test := range app.GasPumpTests {
 				current, ok := totalTargetOMNI[test.Recipient]
 				if !ok {
-					current = umath.Zero()
+					current = bi.Zero()
 				}
 
-				totalTargetOMNI[test.Recipient] = umath.Add(current, test.TargetOMNI)
+				totalTargetOMNI[test.Recipient] = bi.Add(current, test.TargetOMNI)
 			}
 		}
 

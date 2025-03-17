@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/anvil"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/tutil"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -35,7 +35,7 @@ func TestFundAccounts(t *testing.T) {
 		common.HexToAddress("0x333"),
 	}
 
-	amt := umath.Ether(100) // 100 ETH
+	amt := bi.Ether(100) // 100 ETH
 	err = anvil.FundAccounts(ctx, ethCl, amt, accounts...)
 	require.NoError(t, err)
 
