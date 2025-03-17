@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/monitor/xfeemngr/contract"
 	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
 	"github.com/omni-network/omni/monitor/xfeemngr/ticker"
@@ -105,13 +106,14 @@ func (o feeOracle) syncGasPrice(ctx context.Context, dest evmchain.Metadata) err
 
 	buffered := o.gprice.GasPrice(dest.ChainID)
 
-	if buffered == 0 {
+	if umath.IsZero(buffered) {
 		return nil
 	}
 
-	if buffered > maxSaneGasPrice {
-		log.Warn(ctx, "Buffered gas price exceeds sane max", errors.New("unexpected gas price"), "buffered", buffered, "max_sane", maxSaneGasPrice)
-		buffered = maxSaneGasPrice
+	saneMax := umath.New(maxSaneGasPrice)
+	if umath.GT(buffered, saneMax) {
+		log.Warn(ctx, "Buffered gas price exceeds sane max", errors.New("unexpected gas price"), "buffered", buffered, "max_sane", saneMax)
+		buffered = saneMax
 	}
 
 	c, err := o.getContract(ctx)
@@ -119,11 +121,10 @@ func (o feeOracle) syncGasPrice(ctx context.Context, dest evmchain.Metadata) err
 		return errors.Wrap(err, "get contract")
 	}
 
-	onChainB, err := c.GasPriceOn(ctx, dest.ChainID)
+	onChain, err := c.GasPriceOn(ctx, dest.ChainID)
 	if err != nil {
 		return errors.Wrap(err, "gas price on")
 	}
-	onChain := onChainB.Uint64()
 
 	guageGasPrice(o.chain, dest, onChain)
 
@@ -134,7 +135,7 @@ func (o feeOracle) syncGasPrice(ctx context.Context, dest evmchain.Metadata) err
 		return nil
 	}
 
-	err = c.SetGasPriceOn(ctx, dest.ChainID, new(big.Int).SetUint64(buffered))
+	err = c.SetGasPriceOn(ctx, dest.ChainID, buffered)
 	if err != nil {
 		return errors.Wrap(err, "set gas price on")
 	}
@@ -196,8 +197,9 @@ func (o feeOracle) correctPostsTo(ctx context.Context, dest evmchain.Metadata) e
 }
 
 // guageGasPrice updates the gas price gauge for the given chain.
-func guageGasPrice(src, dest evmchain.Metadata, price uint64) {
-	onChainGasPrice.WithLabelValues(src.Name, dest.Name).Set(float64(price))
+func guageGasPrice(src, dest evmchain.Metadata, price *big.Int) {
+	f, _ := price.Float64()
+	onChainGasPrice.WithLabelValues(src.Name, dest.Name).Set(f)
 }
 
 // syncToNativeRate sets the on-chain conversion rate to the buffered conversion rate, if they differ.
@@ -249,7 +251,7 @@ func (o feeOracle) syncToNativeRate(ctx context.Context, dest evmchain.Metadata)
 	// if bufferred rate is less than we can represent on chain, use smallest representable rate - 1/CONVERSION_RATE_DENOM
 	if bufferedRate < 1.0/float64(rateDenom) {
 		log.Warn(ctx, "Buffered rate too small, setting minimum on chain", errors.New("conversion rate < min repr"), "buffered", bufferedRate)
-		bufferedNumer = big.NewInt(1)
+		bufferedNumer = umath.One()
 	}
 
 	err = c.SetToNativeRate(ctx, dest.ChainID, bufferedNumer)

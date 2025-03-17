@@ -123,12 +123,12 @@ type FundThresholds struct {
 
 // MinBalance returns the minimum balance required for funding a contract.
 func (t FundThresholds) MinBalance() *big.Int {
-	return umath.EtherToWei(t.minEther)
+	return umath.Ether(t.minEther)
 }
 
 // TargetBalance returns the target balance to fund a contract to.
 func (t FundThresholds) TargetBalance() *big.Int {
-	return umath.EtherToWei(t.targetEther)
+	return umath.Ether(t.targetEther)
 }
 
 // WithdrawThresholds defines the thresholds for withdrawing from a contract.
@@ -138,5 +138,5 @@ type WithdrawThresholds struct {
 
 // MaxBalance returns the max balance a contract can have before a withdrawal.
 func (t WithdrawThresholds) MaxBalance() *big.Int {
-	return umath.EtherToWei(t.maxEther)
+	return umath.Ether(t.maxEther)
 }

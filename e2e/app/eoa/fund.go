@@ -17,7 +17,7 @@ const (
 // dynamicThreshold list roles we use to sum their funding thresholds and a multiplier
 // that increases the sum to calculate the dynamic threshold. Used by funding roles.
 type dynamicThreshold struct {
-	Multiplier float64
+	Multiplier uint64
 	Roles      []Role
 }
 
@@ -122,11 +122,11 @@ type FundThresholds struct {
 }
 
 func (t FundThresholds) MinBalance() *big.Int {
-	return umath.EtherToWei(t.minEther)
+	return umath.Ether(t.minEther)
 }
 
 func (t FundThresholds) TargetBalance() *big.Int {
-	return umath.EtherToWei(t.targetEther)
+	return umath.Ether(t.targetEther)
 }
 
 func convert(threshold FundThresholds, token tokens.Token) (FundThresholds, error) {
@@ -142,19 +142,22 @@ func convert(threshold FundThresholds, token tokens.Token) (FundThresholds, erro
 }
 
 // multipleSum returns a function that calculates the sum of the thresholds for the given roles and multiplier.
-func multipleSum(network netconf.ID, multiplier float64, roles []Role) FundThresholds {
-	var sum FundThresholds
+func multipleSum(network netconf.ID, multiplier uint64, roles []Role) FundThresholds {
+	minSum, targetSum := umath.Zero(), umath.Zero()
 	for _, role := range roles {
 		thresh, ok := getThreshold(network, role)
 		if !ok {
 			continue
 		}
 
-		sum.minEther += thresh.minEther * multiplier
-		sum.targetEther += thresh.targetEther * multiplier
+		minSum = umath.Add(minSum, umath.MulRaw(thresh.MinBalance(), multiplier))
+		targetSum = umath.Add(targetSum, umath.MulRaw(thresh.TargetBalance(), multiplier))
 	}
 
-	return sum
+	return FundThresholds{
+		minEther:    umath.ToEtherF64(minSum),
+		targetEther: umath.ToEtherF64(targetSum),
+	}
 }
 
 func getThreshold(network netconf.ID, role Role) (FundThresholds, bool) {

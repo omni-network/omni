@@ -49,7 +49,7 @@ func FundValidatorsForTesting(ctx context.Context, def Definition) error {
 			tx, _, err := fundBackend.Send(ctx, funder, txmgr.TxCandidate{
 				To:       &addr,
 				GasLimit: 100_000,
-				Value:    umath.EtherToWei(1000),
+				Value:    umath.Ether(1000),
 			})
 			if err != nil {
 				return errors.Wrap(err, "send")
@@ -195,7 +195,7 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 					returnErr(errors.Wrap(err, "bind opts"))
 					return
 				}
-				txOpts.Value = umath.EtherToWei(power)
+				txOpts.Value = umath.Ether(power)
 
 				// NOTE: We can use CreateValidator here, rather than Delegate (self-delegation)
 				// because current e2e manifest validator_udpates are only used to create a new validator,

@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum"
@@ -193,7 +194,7 @@ func checkFill(
 	msg := ethereum.CallMsg{
 		To:    &outboxAddr,
 		From:  solverAddr,
-		Value: new(big.Int).Add(nativeValue, fee),
+		Value: umath.Add(nativeValue, fee),
 		Data:  fillCallData,
 	}
 
@@ -244,11 +245,11 @@ func parseMaxSpent(pendingData PendingData, outboxAddr common.Address) ([]TokenA
 			hasNative = true
 		}
 
-		if tkn.MaxSpend != nil && output.Amount.Cmp(tkn.MaxSpend) > 0 {
+		if tkn.MaxSpend != nil && umath.GT(output.Amount, tkn.MaxSpend) {
 			return nil, newRejection(types.RejectExpenseOverMax, errors.New("expense over max", "token", tkn.Symbol, "max", tkn.MaxSpend, "amount", output.Amount))
 		}
 
-		if tkn.MinSpend != nil && output.Amount.Cmp(tkn.MinSpend) < 0 {
+		if tkn.MinSpend != nil && umath.LT(output.Amount, tkn.MinSpend) {
 			return nil, newRejection(types.RejectExpenseUnderMin, errors.New("expense under min", "token", tkn.Symbol, "min", tkn.MinSpend, "amount", output.Amount))
 		}
 
@@ -268,7 +269,7 @@ func nativeAmt(ps []TokenAmt) *big.Int {
 		}
 	}
 
-	return big.NewInt(0)
+	return umath.Zero()
 }
 
 // checkQuote checks if deposits match or exceed quote for expenses.
@@ -292,7 +293,7 @@ func checkLiquidity(ctx context.Context, expenses []TokenAmt, backend *ethbacken
 
 		// TODO: for native tokens, even if we have enough, we don't want to
 		// spend out whole balance. we'll need to keep some for gas
-		if bal.Cmp(expense.Amount) < 0 {
+		if umath.LT(bal, expense.Amount) {
 			return newRejection(types.RejectInsufficientInventory, errors.New("insufficient balance", "token", expense.Token.Symbol))
 		}
 	}

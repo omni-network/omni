@@ -60,7 +60,7 @@ func TestRegisterDeregister(t *testing.T) {
 
 	// Register operators to omni AVS with a stake more than minimum stake
 	for _, operator := range eoas.operators() {
-		delegateWETH(t, ctx, contracts, backend, operator, umath.EtherToWei(100))
+		delegateWETH(t, ctx, contracts, backend, operator, umath.Ether(100))
 		registerOperator(t, ctx, contracts, backend, eoas.operatorKey(operator))
 		assertOperatorRegistered(t, ctx, contracts, operator)
 	}
@@ -93,7 +93,7 @@ func setup(t *testing.T) (context.Context, *ethbackend.Backend, Contracts, EOAS)
 	// So they can transact, and delegate to operators.
 	for _, account := range eoas.operators() {
 		fundAccount(t, ctx, backend, eoas.EigenOwner, account)
-		mintWETHToAddresses(t, ctx, backend, contracts, eoas.EigenOwner, umath.EtherToWei(1000), account)
+		mintWETHToAddresses(t, ctx, backend, contracts, eoas.EigenOwner, umath.Ether(1000), account)
 	}
 
 	// Register operators with EigenLayer
@@ -132,7 +132,7 @@ func testStratParams() []bindings.IOmniAVSStrategyParam {
 		{
 			// devnet WETH
 			Strategy:   common.HexToAddress("0xdBD296711eC8eF9Aacb623ee3F1C0922dce0D7b2"),
-			Multiplier: umath.Ether, // OmniAVS.STRATEGY_WEIGHTING_DIVISOR
+			Multiplier: umath.Ether(1), // OmniAVS.STRATEGY_WEIGHTING_DIVISOR
 		},
 	}
 }
@@ -153,7 +153,7 @@ func testDeployCfg(t *testing.T) deployConfig {
 		stratParams:      testStratParams(),
 		portal:           addrs.Portal,
 		ethStakeInbox:    common.HexToAddress("0x1234"), // stub
-		minOperatorStake: umath.Ether,                   // 1 ETH
+		minOperatorStake: umath.Ether(1),                // 1 ETH
 		maxOperatorCount: 10,
 		allowlistEnabled: false,
 	}
@@ -431,7 +431,7 @@ func fundAccount(t *testing.T, ctx context.Context, backend *ethbackend.Backend,
 	t.Helper()
 	tx, _, err := backend.Send(ctx, funder, txmgr.TxCandidate{
 		To:    &account,
-		Value: umath.EtherToWei(10), // 10 ETH
+		Value: umath.Ether(10), // 10 ETH
 	})
 	require.NoError(t, err)
 
@@ -475,7 +475,7 @@ func registerOperator(t *testing.T, ctx context.Context, contracts Contracts, b 
 			PrivateKeyStorePath: keystoreFile,
 			SignerType:          eigentypes.LocalKeystoreSigner,
 		},
-		ChainId: *big.NewInt(int64(chainID)),
+		ChainId: *umath.New(chainID),
 	}
 
 	cfgYAML, err := cfg.MarshalYAML() // Convert into custom yaml struct first
@@ -533,7 +533,7 @@ func deregisterOperator(t *testing.T, ctx context.Context, contracts Contracts, 
 			PrivateKeyStorePath: keystoreFile,
 			SignerType:          eigentypes.LocalKeystoreSigner,
 		},
-		ChainId: *big.NewInt(int64(chainID)),
+		ChainId: *umath.New(chainID),
 	}
 
 	cfgYAML, err := cfg.MarshalYAML() // Convert into custom yaml struct first

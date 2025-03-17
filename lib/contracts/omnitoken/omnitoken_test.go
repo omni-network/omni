@@ -15,5 +15,5 @@ func TestTotalSupply(t *testing.T) {
 
 	totalSupply, ok := new(big.Int).SetString("100000000000000000000000000", 10)
 	require.True(t, ok)
-	require.Equal(t, omnitoken.TotalSupply, totalSupply)
+	require.Equal(t, omnitoken.TotalSupply(), totalSupply)
 }

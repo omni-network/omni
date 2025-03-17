@@ -9,46 +9,59 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-var (
-	// Zero is a big.Int zero value.
-	Zero = new(big.Int)
+// Zero returns a big.Int value representing 0.
+// It is a function instead of a variable since big ints are mutable :/.
+func Zero() *big.Int {
+	return big.NewInt(0)
+}
 
-	// Wei is a big.Int value representing 1 wei.
-	Wei = big.NewInt(1)
+// One returns a big.Int value representing 1.
+// It is a function instead of a variable since big ints are mutable :/.
+func One() *big.Int {
+	return big.NewInt(1)
+}
 
-	// Gwei is a big.Int value representing 1 gwei (1e9 wei).
-	Gwei = big.NewInt(params.GWei)
-
-	// Ether is a big.Int value representing 1 ether (1e18 wei).
-	Ether = big.NewInt(params.Ether)
-)
+// Wei is an alias for New.
+// It doesn't support floats like Ether or Gwei, since wei is the smallest unit.
+func Wei[N constraints.Integer](i N) *big.Int {
+	return New(i)
+}
 
 // number is a generic number type for int*/uint*/float*.
 type number interface {
 	constraints.Float | constraints.Integer
 }
 
-// WeiToEtherF64 converts big.Int wei to float64 ether (wei/1e18).
+// ToEtherF64 converts big.Int wei to float64 ether (wei/1e18).
 // Note that this is not accurate, only use for logging/metrics/display, not math.
-func WeiToEtherF64(wei *big.Int) float64 {
+func ToEtherF64(wei *big.Int) float64 {
+	if GTE(wei, Ether(1)) {
+		// Avoid float division of large numbers, rather trim to gwei first.
+		wgei := Div(wei, Gwei(1))
+		f, _ := wgei.Float64()
+
+		return f / params.GWei
+	}
+
 	f, _ := wei.Float64()
+
 	return f / params.Ether
 }
 
-// WeiToGweiF64 converts big.Int wei to float64 gwei (wei/1e9).
+// ToGweiF64 converts big.Int wei to float64 gwei (wei/1e9).
 // Note that this is not accurate, only use for logging/metrics/display, not math.
-func WeiToGweiF64(wei *big.Int) float64 {
+func ToGweiF64(wei *big.Int) float64 {
 	f, _ := wei.Float64()
 	return f / params.GWei
 }
 
-// GweiToWei convert a gwei float/int/uint to wei big.Int.
+// Gwei converts gwei float/int/uint in to wei big.Int; i * 1e9.
 // Note this can be lossy for large floats.
-func GweiToWei[N number](i N) *big.Int {
+func Gwei[N number](i N) *big.Int {
 	if iU64, ok := numToU64(i); ok {
-		return new(big.Int).Mul(Gwei, NewBigInt(iU64))
+		return MulRaw(big.NewInt(params.GWei), iU64)
 	} else if iI64, ok := numToI64(i); ok {
-		return new(big.Int).Mul(Gwei, big.NewInt(iI64))
+		return MulRaw(big.NewInt(params.GWei), iI64)
 	}
 
 	wei, _ := new(big.Float).Mul(
@@ -59,13 +72,13 @@ func GweiToWei[N number](i N) *big.Int {
 	return wei
 }
 
-// EtherToWei convert an ether float/int/uint to wei big.Int.
+// Ether converts ether float/int/uint in to wei big.Int; i * 1e18.
 // Note this can be lossy for large floats.
-func EtherToWei[N number](i N) *big.Int {
+func Ether[N number](i N) *big.Int {
 	if iU64, ok := numToU64(i); ok {
-		return new(big.Int).Mul(Ether, NewBigInt(iU64))
+		return MulRaw(big.NewInt(params.Ether), iU64)
 	} else if iI64, ok := numToI64(i); ok {
-		return new(big.Int).Mul(Ether, big.NewInt(iI64))
+		return MulRaw(big.NewInt(params.Ether), iI64)
 	}
 
 	wei, _ := new(big.Float).Mul(

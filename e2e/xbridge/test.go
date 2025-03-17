@@ -42,7 +42,7 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 
 func testRLUSD(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
 	user := anvil.DevAccount5()
-	amt := umath.EtherToWei(1_000_000) // 1M
+	amt := umath.Ether(1_000_000) // 1M
 
 	if err := rlusd.MintCanonical(ctx, network, backends, user, amt); err != nil {
 		return errors.Wrap(err, "mint wrapped")
@@ -230,7 +230,7 @@ func waitForBalance(ctx context.Context, tkn *bindings.IERC20, addr common.Addre
 				return errors.Wrap(err, "balance")
 			}
 
-			if balance.Cmp(amount) >= 0 {
+			if umath.GTE(balance, amount) {
 				return nil
 			}
 		}

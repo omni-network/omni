@@ -26,9 +26,12 @@ var (
 	addrs               = mustAddrs(netconf.Devnet)
 	invalidTokenAddress = common.HexToAddress("0x1234")
 	invalidCallData     = hexutil.MustDecode("0x00000000")
-	minETHSpend         = big.NewInt(1)
-	maxETHSpend         = umath.Ether
-	validETHSpend       = new(big.Int).Div(new(big.Int).Add(minETHSpend, maxETHSpend), big.NewInt(2))
+	minETHSpend         = umath.Wei(1)
+	maxETHSpend         = umath.Ether(1)
+	validETHSpend       = umath.DivRaw( // mid = (min + max) / 2
+		umath.Add(minETHSpend, maxETHSpend),
+		2,
+	)
 )
 
 func mustAddrs(network netconf.ID) contracts.Addresses {
@@ -78,7 +81,7 @@ func unsupportedExpense(amt *big.Int) []solvernet.Expense {
 }
 
 func invalidExpenseOutOfBounds() []solvernet.Expense {
-	return nativeExpense(umath.Ether)
+	return nativeExpense(umath.Ether(1))
 }
 
 func unsupportedERC20Deposit(amt *big.Int) solvernet.Deposit {

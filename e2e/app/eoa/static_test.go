@@ -95,7 +95,7 @@ func TestMainnet(t *testing.T) {
 }
 
 func etherStr(amount *big.Int) string {
-	return fmt.Sprintf("%.4f", umath.WeiToEtherF64(amount))
+	return fmt.Sprintf("%.4f", umath.ToEtherF64(amount))
 }
 
 func shouldExist(role eoa.Role, id netconf.ID, token tokens.Token) bool {

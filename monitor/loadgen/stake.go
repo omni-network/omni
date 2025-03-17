@@ -61,7 +61,7 @@ func delegateOnce(ctx context.Context, contract *bindings.Staking, backend *ethb
 	if err != nil {
 		return err
 	}
-	txOpts.Value = umath.Ether // 1 ETH (in wei)
+	txOpts.Value = umath.Ether(1) // 1 ETH (in wei)
 
 	tx, err := contract.Delegate(txOpts, validator)
 	if err != nil {

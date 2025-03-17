@@ -43,7 +43,7 @@ func feeParams(ctx context.Context, srcChainID uint64, destChainIDs []uint64, ba
 			resp = append(resp, bindings.IFeeOracleV1ChainFeeParams{
 				ChainId:      destChain.PostsTo,
 				PostsTo:      destChain.PostsTo,
-				GasPrice:     umath.Gwei,
+				GasPrice:     umath.Gwei(1),
 				ToNativeRate: rateToNumerator(1), // Stub native rates for now
 			})
 		}
@@ -77,7 +77,7 @@ func destFeeParams(ctx context.Context, srcChain evmchain.Metadata, destChain ev
 	gasPrice, err := backend.SuggestGasPrice(ctx)
 	if err != nil {
 		log.Warn(ctx, "Failed fetching gas price, using default 1 Gwei", err, "dest_chain", destChain.Name)
-		gasPrice = umath.Gwei
+		gasPrice = umath.Gwei(1)
 	}
 
 	postsTo := destChain.PostsTo
@@ -91,7 +91,7 @@ func destFeeParams(ctx context.Context, srcChain evmchain.Metadata, destChain ev
 		ChainId:      destChain.ChainID,
 		PostsTo:      postsTo,
 		ToNativeRate: rateToNumerator(toNativeRate),
-		GasPrice:     new(big.Int).SetUint64(gasprice.Tier(gasPrice.Uint64())),
+		GasPrice:     gasprice.Tier(gasPrice),
 	}, nil
 }
 
@@ -125,7 +125,7 @@ func conversionRate(ctx context.Context, pricer tokens.Pricer, from, to tokens.T
 // This denominator helps convert between token amounts in solidity, in which there are no floating point numbers.
 //
 //	ex. (amt A) * (rate R) / CONVERSION_RATE_DENOM = (amt B)
-var conversionRateDenom = big.NewInt(1_000_000)
+var conversionRateDenom = umath.New(1_000_000)
 
 // rateToNumerator translates a float rate (ex 0.1) to numerator / CONVERSION_RATE_DENOM (ex 100_000).
 // This rate-as-numerator representation is used in FeeOracleV1 contracts.

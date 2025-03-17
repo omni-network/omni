@@ -2,7 +2,6 @@ package relayer
 
 import (
 	"context"
-	"math/big"
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -161,7 +160,7 @@ func feeByDenom(
 			return amtByDenom{}, errors.New("source chain ID mismatch [BUG]", "expected", src.ChainID, "got", msg.SourceChainID)
 		}
 
-		feesGwei := umath.WeiToGweiF64(msg.Fees)
+		feesGwei := umath.ToGweiF64(msg.Fees)
 
 		switch src.NativeToken {
 		case tokens.OMNI:
@@ -202,15 +201,15 @@ func spendByDenom(
 
 // totalSpendGwei returns the total amount spent on a transaction in gwei.
 func totalSpendGwei(tx *ethtypes.Transaction, rec *ethclient.Receipt) float64 {
-	spend := new(big.Int).Mul(rec.EffectiveGasPrice, umath.NewBigInt(rec.GasUsed))
+	spend := umath.MulRaw(rec.EffectiveGasPrice, rec.GasUsed)
 
 	// add op l1 fee, if any
 	if rec.OPL1Fee != nil {
-		spend = new(big.Int).Add(spend, rec.OPL1Fee)
+		spend = umath.Add(spend, rec.OPL1Fee)
 	}
 
 	// add tx value
-	spend = new(big.Int).Add(spend, tx.Value())
+	spend = umath.Add(spend, tx.Value())
 
-	return umath.WeiToGweiF64(spend)
+	return umath.ToGweiF64(spend)
 }

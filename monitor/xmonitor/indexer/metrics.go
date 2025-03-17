@@ -85,7 +85,7 @@ func instrumentSample(s sample) {
 	excessGasHist.WithLabelValues(s.Stream, s.XDApp).Observe(float64(s.ExcessGas))
 
 	if s.FeeAmount != nil {
-		feesGwei := umath.WeiToGweiF64(s.FeeAmount)
+		feesGwei := umath.ToGweiF64(s.FeeAmount)
 		feesGweiTotal.WithLabelValues(s.SrcChain, s.FeeToken).Add(feesGwei)
 	}
 }

@@ -89,7 +89,7 @@ func monitorAccountOnce(
 		return err
 	}
 
-	accountBalance.WithLabelValues(chainName, string(account.Role)).Set(umath.WeiToEtherF64(balance))
+	accountBalance.WithLabelValues(chainName, string(account.Role)).Set(umath.ToEtherF64(balance))
 	accountNonce.WithLabelValues(chainName, string(account.Role)).Set(float64(nonce))
 
 	meta, ok := evmchain.MetadataByName(chainName)
@@ -104,7 +104,7 @@ func monitorAccountOnce(
 	}
 
 	var isLow float64
-	if balance.Cmp(thresholds.MinBalance()) <= 0 {
+	if umath.LTE(balance, thresholds.MinBalance()) {
 		isLow = 1
 	}
 
@@ -160,7 +160,7 @@ func monitorSponsorOnce(
 		return err
 	}
 	// Convert to ether units
-	balanceEth := umath.WeiToEtherF64(balance)
+	balanceEth := umath.ToEtherF64(balance)
 
 	nonce, err := client.NonceAt(ctx, sponsor.Address, nil)
 	if err != nil {
@@ -182,7 +182,7 @@ func monitorSponsorOnce(
 	thresholds := sponsor.FundThresholds
 
 	var isLow float64
-	if balance.Cmp(thresholds.MinBalance()) <= 0 {
+	if umath.LTE(balance, thresholds.MinBalance()) {
 		isLow = 1
 	}
 

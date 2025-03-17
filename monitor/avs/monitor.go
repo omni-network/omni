@@ -36,8 +36,8 @@ func monitorOperatorsOnce(ctx context.Context, avs *bindings.OmniAVS) error {
 	var total float64
 	for _, operator := range operators {
 		addr := operator.Addr.Hex()
-		staked := umath.WeiToEtherF64(operator.Staked)
-		delegated := umath.WeiToEtherF64(operator.Delegated)
+		staked := umath.ToEtherF64(operator.Staked)
+		delegated := umath.ToEtherF64(operator.Delegated)
 
 		operatorStakeGuage.WithLabelValues(addr).Set(staked)
 		operatorDelegationsGuage.WithLabelValues(addr).Set(delegated)
@@ -98,7 +98,7 @@ func monitorMinStakeOnce(ctx context.Context, avs *bindings.OmniAVS) error {
 		return errors.Wrap(err, "get min stake")
 	}
 
-	minStakeGuage.Set(umath.WeiToEtherF64(stake))
+	minStakeGuage.Set(umath.ToEtherF64(stake))
 
 	return nil
 }

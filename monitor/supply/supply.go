@@ -51,7 +51,7 @@ func instrSupplies(ctx context.Context, cprov cchain.Provider, network netconf.N
 		return errors.Wrap(err, "stake amount")
 	}
 
-	cChainSupply.Set(umath.WeiToEtherF64(cosmosSupplyWei))
+	cChainSupply.Set(umath.ToEtherF64(cosmosSupplyWei))
 
 	addrs, err := contracts.GetAddresses(ctx, network.ID)
 	if err != nil {
@@ -74,13 +74,13 @@ func instrSupplies(ctx context.Context, cprov cchain.Provider, network netconf.N
 	if err != nil {
 		return errors.Wrap(err, "l1 token supply")
 	}
-	l1Erc20Supply.Set(umath.WeiToEtherF64(l1TokenSupplyWei))
+	l1Erc20Supply.Set(umath.ToEtherF64(l1TokenSupplyWei))
 
 	l1BridgeBalanceWei, err := l1Token.BalanceOf(callOpts, addrs.L1Bridge)
 	if err != nil {
 		return errors.Wrap(err, "l1 bridge balance")
 	}
-	bridgeBalance.Set(umath.WeiToEtherF64(l1BridgeBalanceWei))
+	bridgeBalance.Set(umath.ToEtherF64(l1BridgeBalanceWei))
 
 	return nil
 }

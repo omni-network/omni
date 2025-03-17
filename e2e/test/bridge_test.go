@@ -2,7 +2,6 @@ package e2e_test
 
 import (
 	"context"
-	"math/big"
 	"testing"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -11,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -55,24 +55,24 @@ func TestBridge(t *testing.T) {
 		nativeBridge, err := bindings.NewOmniBridgeNative(common.HexToAddress(predeploys.OmniBridgeNative), omniClient)
 		require.NoError(t, err)
 
-		sumToNative := big.NewInt(0)
-		sumToL1 := big.NewInt(0)
+		sumToNative := umath.Zero()
+		sumToL1 := umath.Zero()
 
 		for _, test := range app.ToNativeBridgeTests {
 			balance, err := omniClient.BalanceAt(ctx, test.To, nil)
 			require.NoError(t, err)
 			require.Equal(t, balance, test.Amount)
-			sumToNative = new(big.Int).Add(sumToNative, test.Amount)
+			sumToNative = umath.Add(sumToNative, test.Amount)
 		}
 
 		for _, test := range app.ToL1BridgeTests {
 			balance, err := l1Token.BalanceOf(nil, test.To)
 			require.NoError(t, err)
 			require.Equal(t, balance, test.Amount)
-			sumToL1 = new(big.Int).Add(sumToL1, test.Amount)
+			sumToL1 = umath.Add(sumToL1, test.Amount)
 		}
 
-		expectedL1BridgeBalance := new(big.Int).Sub(sumToNative, sumToL1)
+		expectedL1BridgeBalance := umath.Sub(sumToNative, sumToL1)
 
 		// assert l1 bridge balance tracked on native bridge is expected
 		trackedL1BridgeBalance, err := nativeBridge.L1Deposits(nil)

@@ -90,7 +90,7 @@ func Start(ctx context.Context, dir string, chainID uint64) (ethclient.Client, f
 	}
 
 	// always fund dev accounts
-	eth1m := umath.EtherToWei(1_000_000) // 1M ETH
+	eth1m := umath.Ether(1_000_000) // 1M ETH
 	if err := FundAccounts(ctx, ethCl, eth1m, eoa.DevAccounts()...); err != nil {
 		stop()
 		return nil, nil, errors.Wrap(err, "fund accounts")

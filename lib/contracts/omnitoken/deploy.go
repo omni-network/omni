@@ -2,6 +2,7 @@ package omnitoken
 
 import (
 	"context"
+	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
@@ -17,7 +18,10 @@ import (
 )
 
 // TotalSupply is the 100M, total supply of the token.
-var TotalSupply = umath.EtherToWei(100e6)
+// It is a function since big ints are mutable.
+func TotalSupply() *big.Int {
+	return umath.Ether(100e6)
+}
 
 type deploymentConfig struct {
 	Create3Factory common.Address
@@ -171,7 +175,7 @@ func deploy(ctx context.Context, network netconf.ID, cfg deploymentConfig, backe
 			return common.Address{}, nil, errors.Wrap(err, "new mock erc20")
 		}
 
-		tx, err := token.Mint(txOpts, cfg.Recipient, TotalSupply)
+		tx, err := token.Mint(txOpts, cfg.Recipient, TotalSupply())
 		if err != nil {
 			return common.Address{}, nil, errors.Wrap(err, "mint")
 		}
