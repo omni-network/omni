@@ -257,12 +257,12 @@ func fund(ctx context.Context, params fundParams) error {
 }
 
 func etherStr(amount *big.Int) string {
-	return fmt.Sprintf("%.4f", umath.WeiToEtherF64(amount))
+	return fmt.Sprintf("%.4f", umath.ToEtherF64(amount))
 }
 
 func saneMax(token tokens.Token) *big.Int {
-	saneETH := umath.EtherToWei(saneMaxETH)
-	saneOmni := umath.EtherToWei(saneMaxOmni)
+	saneETH := umath.Ether(saneMaxETH)
+	saneOmni := umath.Ether(saneMaxOmni)
 
 	if token == tokens.OMNI {
 		return saneOmni

@@ -211,7 +211,7 @@ func CreateValidator(ctx context.Context, cfg CreateValConfig) error {
 	if err != nil {
 		return err
 	}
-	txOpts.Value = umath.EtherToWei(cfg.SelfDelegation) // Send self-delegation
+	txOpts.Value = umath.Ether(cfg.SelfDelegation) // Send self-delegation
 	consPubkey, err := cfg.consensusPublicKey()
 	if err != nil {
 		return err
@@ -344,7 +344,7 @@ func Delegate(ctx context.Context, cfg DelegateConfig) error {
 	if err != nil {
 		return err
 	}
-	txOpts.Value = umath.EtherToWei(cfg.Amount) // Send delegation
+	txOpts.Value = umath.Ether(cfg.Amount) // Send delegation
 
 	callOpts := &bind.CallOpts{Context: ctx}
 	ok, err := contract.IsAllowlistEnabled(callOpts)

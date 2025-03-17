@@ -47,5 +47,5 @@ func Tier(live *big.Int) *big.Int {
 }
 
 func gwei(p float64) *big.Int {
-	return umath.GweiToWei(p)
+	return umath.Gwei(p)
 }

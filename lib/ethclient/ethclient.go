@@ -175,7 +175,7 @@ func (w Wrapper) EtherBalanceAt(ctx context.Context, addr common.Address) (float
 		return 0, err
 	}
 
-	return umath.WeiToEtherF64(b), nil
+	return umath.ToEtherF64(b), nil
 }
 
 // TxReceipt returns the transaction receipt for the given transaction hash.

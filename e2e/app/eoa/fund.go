@@ -122,11 +122,11 @@ type FundThresholds struct {
 }
 
 func (t FundThresholds) MinBalance() *big.Int {
-	return umath.EtherToWei(t.minEther)
+	return umath.Ether(t.minEther)
 }
 
 func (t FundThresholds) TargetBalance() *big.Int {
-	return umath.EtherToWei(t.targetEther)
+	return umath.Ether(t.targetEther)
 }
 
 func convert(threshold FundThresholds, token tokens.Token) (FundThresholds, error) {
@@ -155,8 +155,8 @@ func multipleSum(network netconf.ID, multiplier uint64, roles []Role) FundThresh
 	}
 
 	return FundThresholds{
-		minEther:    umath.WeiToEtherF64(minSum),
-		targetEther: umath.WeiToEtherF64(targetSum),
+		minEther:    umath.ToEtherF64(minSum),
+		targetEther: umath.ToEtherF64(targetSum),
 	}
 }
 

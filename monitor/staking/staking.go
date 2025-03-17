@@ -83,7 +83,7 @@ func instrStakeSizes(allDelegations []queryutil.DelegationBalance) {
 	}
 
 	avgStakeWei := umath.DivRaw(totalStake, len(allDelegations))
-	stakeAvg.Set(umath.WeiToEtherF64(avgStakeWei))
+	stakeAvg.Set(umath.ToEtherF64(avgStakeWei))
 
 	l := len(stakes)
 	if l == 0 {
@@ -93,5 +93,5 @@ func instrStakeSizes(allDelegations []queryutil.DelegationBalance) {
 		return umath.LT(stakes[i], stakes[j])
 	})
 	medianVal := stakes[l/2+l%2]
-	stakeMedian.Set(umath.WeiToEtherF64(medianVal))
+	stakeMedian.Set(umath.ToEtherF64(medianVal))
 }

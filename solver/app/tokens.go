@@ -58,12 +58,12 @@ func (t Token) IsOMNI() bool {
 
 var (
 	// TODO: increase max spend on mainnet, keep low for staging / omega.
-	maxETHSpend    = umath.EtherToWei(1)     // 1 ETH
-	minETHSpend    = umath.EtherToWei(0.001) // 0.001 ETH
-	maxWSTETHSpend = umath.EtherToWei(1)     // 1 wstETH
-	minWSTETHSpend = umath.EtherToWei(0.001) // 0.001 wstETH
-	maxOMNISpend   = umath.EtherToWei(1_000) // 1000 OMNI
-	minOMNISpend   = umath.EtherToWei(0.1)   // 0.1 OMNI
+	maxETHSpend    = umath.Ether(1)     // 1 ETH
+	minETHSpend    = umath.Ether(0.001) // 0.001 ETH
+	maxWSTETHSpend = umath.Ether(1)     // 1 wstETH
+	minWSTETHSpend = umath.Ether(0.001) // 0.001 wstETH
+	maxOMNISpend   = umath.Ether(1_000) // 1000 OMNI
+	minOMNISpend   = umath.Ether(0.1)   // 0.1 OMNI
 )
 
 var tokens = append(Tokens{

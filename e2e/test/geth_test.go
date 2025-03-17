@@ -146,7 +146,7 @@ func estimateGasPrice(ctx context.Context, backend ethclient.Client, config *par
 	}
 
 	baseFee := head.BaseFee
-	minBase := umath.Gwei() // Minimum base fee is 1 GWei.
+	minBase := umath.Gwei(1) // Minimum base fee is 1 GWei.
 	if umath.LT(baseFee, minBase) {
 		baseFee = minBase
 	}

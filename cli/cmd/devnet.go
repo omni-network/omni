@@ -326,7 +326,7 @@ func devnetFund(ctx context.Context, cfg devnetFundConfig) error {
 	tx, _, err := backend.Send(ctx, funder, txmgr.TxCandidate{
 		To:       &addr,
 		GasLimit: 100_000,
-		Value:    umath.Ether(),
+		Value:    umath.Ether(1),
 	})
 	if err != nil {
 		return errors.Wrap(err, "send tx")

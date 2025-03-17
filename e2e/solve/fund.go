@@ -33,7 +33,7 @@ func maybeFundERC20Solver(ctx context.Context, network netconf.ID, backends ethb
 	}
 
 	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
-	eth1m := umath.EtherToWei(1_000_000)
+	eth1m := umath.Ether(1_000_000)
 
 	for _, tkn := range toFund {
 		ethCl, ok := backends.Clients()[tkn.chainID]

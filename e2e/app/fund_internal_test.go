@@ -19,15 +19,15 @@ func TestSaneMax(t *testing.T) {
 	for _, role := range eoa.AllRoles() {
 		thresh, ok := eoa.GetFundThresholds(tokens.ETH, network, role)
 		if ok {
-			expect := umath.WeiToEtherF64(saneMax(tokens.ETH))
-			actual := umath.WeiToEtherF64(thresh.TargetBalance())
+			expect := umath.ToEtherF64(saneMax(tokens.ETH))
+			actual := umath.ToEtherF64(thresh.TargetBalance())
 			require.GreaterOrEqual(t, expect, actual, "ETH %s %s", network, role)
 		}
 
 		thresh, ok = eoa.GetFundThresholds(tokens.OMNI, network, role)
 		if ok {
-			expect := umath.WeiToEtherF64(saneMax(tokens.OMNI))
-			actual := umath.WeiToEtherF64(thresh.TargetBalance())
+			expect := umath.ToEtherF64(saneMax(tokens.OMNI))
+			actual := umath.ToEtherF64(thresh.TargetBalance())
 			require.GreaterOrEqual(t, expect, actual, "OMNI %s %s", network, role)
 		}
 	}

@@ -35,7 +35,7 @@ func TestFundAccounts(t *testing.T) {
 		common.HexToAddress("0x333"),
 	}
 
-	amt := umath.EtherToWei(100) // 100 ETH
+	amt := umath.Ether(100) // 100 ETH
 	err = anvil.FundAccounts(ctx, ethCl, amt, accounts...)
 	require.NoError(t, err)
 

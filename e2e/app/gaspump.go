@@ -132,7 +132,7 @@ func fundGasStation(ctx context.Context, def Definition) error {
 	}
 
 	// 1000 OMNI
-	amt := umath.EtherToWei(1_000)
+	amt := umath.Ether(1_000)
 
 	tx, rec, err := backend.Send(ctx, funder, txmgr.TxCandidate{
 		To:       &addrs.GasStation,
@@ -167,15 +167,15 @@ var (
 	GasPumpTests = []GasPumpTest{
 		{
 			Recipient:  common.HexToAddress("0x0000000000000000000000000000000000001111"),
-			TargetOMNI: umath.EtherToWei(0.005), // 0.005 OMNI
+			TargetOMNI: umath.Ether(0.005), // 0.005 OMNI
 		},
 		{
 			Recipient:  common.HexToAddress("0x0000000000000000000000000000000000002222"),
-			TargetOMNI: umath.EtherToWei(0.01), // 0.01 OMNI
+			TargetOMNI: umath.Ether(0.01), // 0.01 OMNI
 		},
 		{
 			Recipient:  common.HexToAddress("0x0000000000000000000000000000000000003333"),
-			TargetOMNI: umath.EtherToWei(0.015), // 0.015 OMNI
+			TargetOMNI: umath.Ether(0.015), // 0.015 OMNI
 		},
 	}
 )

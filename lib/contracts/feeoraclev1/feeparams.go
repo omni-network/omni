@@ -43,7 +43,7 @@ func feeParams(ctx context.Context, srcChainID uint64, destChainIDs []uint64, ba
 			resp = append(resp, bindings.IFeeOracleV1ChainFeeParams{
 				ChainId:      destChain.PostsTo,
 				PostsTo:      destChain.PostsTo,
-				GasPrice:     umath.Gwei(),
+				GasPrice:     umath.Gwei(1),
 				ToNativeRate: rateToNumerator(1), // Stub native rates for now
 			})
 		}
@@ -77,7 +77,7 @@ func destFeeParams(ctx context.Context, srcChain evmchain.Metadata, destChain ev
 	gasPrice, err := backend.SuggestGasPrice(ctx)
 	if err != nil {
 		log.Warn(ctx, "Failed fetching gas price, using default 1 Gwei", err, "dest_chain", destChain.Name)
-		gasPrice = umath.Gwei()
+		gasPrice = umath.Gwei(1)
 	}
 
 	postsTo := destChain.PostsTo

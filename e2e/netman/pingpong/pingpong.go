@@ -126,11 +126,11 @@ func (d *XDapp) fund(ctx context.Context) error {
 		}
 
 		// For ETH chains, fund it with 0.5 ETH
-		fund := umath.EtherToWei(0.5)
+		fund := umath.Ether(0.5)
 
 		// for OMNI chains, fund it with 100 OMNI
 		if contract.Chain.ID == d.network.Static().OmniExecutionChainID {
-			fund = umath.EtherToWei(100)
+			fund = umath.Ether(100)
 		}
 
 		txOpts.Value = fund

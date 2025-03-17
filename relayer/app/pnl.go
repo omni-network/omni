@@ -160,7 +160,7 @@ func feeByDenom(
 			return amtByDenom{}, errors.New("source chain ID mismatch [BUG]", "expected", src.ChainID, "got", msg.SourceChainID)
 		}
 
-		feesGwei := umath.WeiToGweiF64(msg.Fees)
+		feesGwei := umath.ToGweiF64(msg.Fees)
 
 		switch src.NativeToken {
 		case tokens.OMNI:
@@ -211,5 +211,5 @@ func totalSpendGwei(tx *ethtypes.Transaction, rec *ethclient.Receipt) float64 {
 	// add tx value
 	spend = umath.Add(spend, tx.Value())
 
-	return umath.WeiToGweiF64(spend)
+	return umath.ToGweiF64(spend)
 }

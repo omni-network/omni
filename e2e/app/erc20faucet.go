@@ -43,7 +43,7 @@ func RunERC20Faucet(ctx context.Context, def Definition, cfg RunERC20FaucetConfi
 	}
 
 	account := common.HexToAddress(cfg.AddrToFund)
-	amt := umath.EtherToWei(cfg.Amount)
+	amt := umath.Ether(cfg.Amount)
 
 	funder, err := omnitoken.InitialSupplyRecipient(networkID)
 	if err != nil {

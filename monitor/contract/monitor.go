@@ -104,7 +104,7 @@ func monitorContractOnce(
 	}
 
 	// Convert to ether units
-	balanceEth := umath.WeiToEtherF64(balance)
+	balanceEth := umath.ToEtherF64(balance)
 
 	// Always set the balance metric
 	contractBalance.WithLabelValues(chain.Name, contract.Name).Set(balanceEth)
@@ -142,7 +142,7 @@ func monitorContractOnce(
 				return err
 			}
 
-			balanceEth := umath.WeiToEtherF64(balance)
+			balanceEth := umath.ToEtherF64(balance)
 			contractTokenBalance.WithLabelValues(chain.Name, contract.Name, t.Symbol, t.Address.Hex()).Set(balanceEth)
 		}
 	}

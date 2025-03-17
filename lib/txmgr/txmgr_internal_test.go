@@ -1051,7 +1051,7 @@ func TestIncreaseGasPriceLimits(t *testing.T) {
 	t.Run("with-threshold", func(t *testing.T) {
 		t.Parallel()
 		testIncreaseGasPriceLimit(t, gasPriceLimitTest{
-			thr:           umath.GweiToWei(10),
+			thr:           umath.Gwei(10),
 			expTipCap:     1_293_535_754,
 			expFeeCap:     9_192_620_686, // just below 10 gwei
 			expBlobFeeCap: 8 * params.GWei,

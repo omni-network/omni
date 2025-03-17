@@ -87,7 +87,7 @@ func (c BoundFeeOracleV1) SetGasPriceOn(ctx context.Context, destChainID uint64,
 		return errors.Wrap(err, "tx opts")
 	}
 
-	gweiPrice := umath.WeiToGweiF64(gasPrice)
+	gweiPrice := umath.ToGweiF64(gasPrice)
 	log.Info(ctx, "Setting gas price on chain", "dest_chain", c.chain.Name, "rate", gweiPrice)
 	tx, err := c.bound.SetGasPrice(txOpts, destChainID, gasPrice)
 	if err != nil {
@@ -168,7 +168,7 @@ func totalSpentGwei(tx *ethtypes.Transaction, rec *ethtypes.Receipt) float64 {
 	fees := umath.MulRaw(rec.EffectiveGasPrice, rec.GasUsed)
 	total := umath.Add(tx.Value(), fees)
 
-	return umath.WeiToGweiF64(total)
+	return umath.ToGweiF64(total)
 }
 
 // callOpts returns a new call opts with the given context.

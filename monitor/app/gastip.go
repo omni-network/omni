@@ -35,7 +35,7 @@ func monitorOmniEVMGasTipForever(ctx context.Context,
 				continue
 			}
 
-			gasTipCap.Set(umath.WeiToGweiF64(tip))
+			gasTipCap.Set(umath.ToGweiF64(tip))
 		}
 	}
 }

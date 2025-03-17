@@ -166,7 +166,7 @@ func bridgeJobs(network netconf.ID) ([]types.Job, error) {
 	}
 
 	// Bridging of native ETH
-	amount := umath.EtherToWei(0.02) // 0.02 ETH
+	amount := umath.Ether(0.02) // 0.02 ETH
 
 	job1, err := bridging.NewJob(network, b.From, b.To, eoa.RoleFlowgen, amount)
 	if err != nil {

@@ -68,5 +68,5 @@ func etherStr(amount *big.Int) string {
 		return "nil"
 	}
 
-	return fmt.Sprintf("%.4f", umath.WeiToEtherF64(amount))
+	return fmt.Sprintf("%.4f", umath.ToEtherF64(amount))
 }

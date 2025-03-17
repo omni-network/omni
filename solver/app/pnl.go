@@ -65,7 +65,7 @@ func newFilledPnlFunc(
 		for _, tknAmt := range maxSpent {
 			p := pnl.LogP{
 				Type:        pnl.Expense,
-				AmountGwei:  umath.WeiToGweiF64(tknAmt.Amount),
+				AmountGwei:  umath.ToGweiF64(tknAmt.Amount),
 				Currency:    pnl.Currency(tknAmt.Token.Symbol),
 				Category:    "solver_expense",
 				Subcategory: target,
@@ -79,7 +79,7 @@ func newFilledPnlFunc(
 		for _, tknAmt := range minReceived {
 			p := pnl.LogP{
 				Type:        pnl.Income,
-				AmountGwei:  umath.WeiToGweiF64(tknAmt.Amount),
+				AmountGwei:  umath.ToGweiF64(tknAmt.Amount),
 				Currency:    pnl.Currency(tknAmt.Token.Symbol),
 				Category:    "solver_deposit",
 				Subcategory: target,
@@ -135,7 +135,7 @@ func gasPnL(
 	// Log native gas as expense
 	p := pnl.LogP{
 		Type:        pnl.Expense,
-		AmountGwei:  umath.WeiToGweiF64(amount),
+		AmountGwei:  umath.ToGweiF64(amount),
 		Currency:    pnl.Currency(nativeToken.Symbol),
 		Category:    "gas",
 		Subcategory: subCat,

@@ -358,5 +358,5 @@ func bridgeToL1(ctx context.Context, def Definition, toBridge []BridgeTest) erro
 }
 
 func ether(n int64) *big.Int {
-	return umath.EtherToWei(n)
+	return umath.Ether(n)
 }

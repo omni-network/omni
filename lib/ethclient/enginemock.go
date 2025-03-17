@@ -77,7 +77,7 @@ func WithMockValidatorCreation(pubkey crypto.PubKey) func(*engineMock) {
 			panic(errors.Wrap(err, "pubkey to address"))
 		}
 
-		data, err := createValEvent.Inputs.NonIndexed().Pack(pubkey.Bytes(), umath.Ether())
+		data, err := createValEvent.Inputs.NonIndexed().Pack(pubkey.Bytes(), umath.Ether(1))
 		if err != nil {
 			panic(errors.Wrap(err, "pack create validator"))
 		}
@@ -134,7 +134,7 @@ func WithMockDelegation(validatorPubkey crypto.PubKey, delegatorAddr common.Addr
 		mock.mu.Lock()
 		defer mock.mu.Unlock()
 
-		wei := umath.EtherToWei(ether)
+		wei := umath.Ether(ether)
 
 		valAddr, err := k1util.PubKeyToAddress(validatorPubkey)
 		if err != nil {

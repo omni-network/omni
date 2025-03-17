@@ -20,7 +20,7 @@ import (
 // TotalSupply is the 100M, total supply of the token.
 // It is a function since big ints are mutable.
 func TotalSupply() *big.Int {
-	return umath.EtherToWei(100e6)
+	return umath.Ether(100e6)
 }
 
 type deploymentConfig struct {

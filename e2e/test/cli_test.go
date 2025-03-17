@@ -350,7 +350,7 @@ func sumPendingWithdrawals(t *testing.T, ctx context.Context, cprov provider.Pro
 func GenFundedEOA(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) *ecdsa.PrivateKey {
 	t.Helper()
 
-	amount1k := umath.EtherToWei(1_000)
+	amount1k := umath.Ether(1_000)
 
 	funder, funderAddr := anvil.DevPrivateKey9(), anvil.DevAccount9()
 

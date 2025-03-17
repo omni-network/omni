@@ -31,10 +31,10 @@ func TestBridgeBalance(t *testing.T) {
 
 	// Note that there were actually only 2 100 OMNI mainnet genesis validators. These calcs are wrong.
 	mp = umath.Add(mp,
-		umath.EtherToWei(1000), // 1000 OMNI: genesis validator 1
-		umath.EtherToWei(1000), // 1000 OMNI: genesis validator 2
-		umath.EtherToWei(1000), // 1000 OMNI: genesis validator 3
-		umath.EtherToWei(1000), // 1000 OMNI: genesis validator 4
+		umath.Ether(1000), // 1000 OMNI: genesis validator 1
+		umath.Ether(1000), // 1000 OMNI: genesis validator 2
+		umath.Ether(1000), // 1000 OMNI: genesis validator 3
+		umath.Ether(1000), // 1000 OMNI: genesis validator 4
 	)
 
 	tests := []struct {

@@ -19,8 +19,8 @@ import (
 )
 
 var (
-	eth1k = umath.EtherToWei(1_000)
-	eth1m = umath.EtherToWei(1_000_000)
+	eth1k = umath.Ether(1_000)
+	eth1m = umath.Ether(1_000_000)
 )
 
 func newUint64(val uint64) *uint64 { return &val }

@@ -31,7 +31,7 @@ var (
 	forgeScriptABI = mustGetABI(bindings.AllocPredeploysMetaData)
 
 	// genValAlloc is the genesis validator allocation.
-	genValAlloc = umath.EtherToWei(genutil.ValidatorPower)
+	genValAlloc = umath.Ether(genutil.ValidatorPower)
 )
 
 func main() {

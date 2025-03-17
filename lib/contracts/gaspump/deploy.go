@@ -138,8 +138,8 @@ func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend
 		Portal:          addrs.Portal,
 		GasStation:      addrs.GasStation,
 		Oracle:          oracle,
-		MaxSwap:         umath.EtherToWei(0.001), // 0.001 ETH
-		Toll:            umath.New(100),          // 100 / 1000 = 0.1 = 10% (1000 = GasPump.TOLL_DENOM),
+		MaxSwap:         umath.Ether(0.001), // 0.001 ETH
+		Toll:            umath.New(100),     // 100 / 1000 = 0.1 = 10% (1000 = GasPump.TOLL_DENOM),
 		ExpectedAddr:    addrs.GasPump,
 	}
 
