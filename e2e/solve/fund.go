@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -44,6 +45,46 @@ func maybeFundERC20Solver(ctx context.Context, network netconf.ID, backends ethb
 		// if devnet is not forking the public chain tkn is deployed on, this sets
 		// storage on an unused address, which is fine
 		err := anvil.FundERC20(ctx, ethCl, tkn.addr, eth1m, solver)
+		if err != nil {
+			return errors.Wrap(err, "fund tkn failed", "chain_id", tkn.chainID, "addr", tkn.addr)
+		}
+	}
+
+	return nil
+}
+func maybeFundERC20Flowgen(ctx context.Context, network netconf.ID, backends ethbackend.Backends) error {
+	if network != netconf.Devnet {
+		return nil
+	}
+
+	mockTokens := MockTokens()
+	if len(mockTokens) != 3 {
+		return errors.New("unexpected mock tokens")
+	}
+
+	wstETHOnMockL1 := MockTokens()[1]
+	if wstETHOnMockL1.ChainID != evmchain.IDMockL1 || wstETHOnMockL1.Symbol != tokens.WSTETH.Symbol {
+		return errors.New("unexpected mock token")
+	}
+
+	toFund := []struct {
+		chainID uint64
+		addr    common.Address
+	}{
+		// devnet wstETH
+		{chainID: evmchain.IDMockL1, addr: wstETHOnMockL1.Address()},
+	}
+
+	flowgen := eoa.MustAddress(netconf.Devnet, eoa.RoleFlowgen)
+	eth1m := bi.Ether(1_000_000)
+
+	for _, tkn := range toFund {
+		ethCl, ok := backends.Clients()[tkn.chainID]
+		if !ok {
+			continue
+		}
+
+		err := anvil.FundERC20(ctx, ethCl, tkn.addr, eth1m, flowgen)
 		if err != nil {
 			return errors.Wrap(err, "fund tkn failed", "chain_id", tkn.chainID, "addr", tkn.addr)
 		}

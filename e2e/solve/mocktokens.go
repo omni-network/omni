@@ -30,7 +30,10 @@ var mocks = []MockToken{
 	// staging mock wstETH
 	{Token: tokens.WSTETH, ChainID: evmchain.IDBaseSepolia, NetworkID: netconf.Staging},
 
-	// devnet mock wstETH
+	// devnet L1 mock wstETH
+	{Token: tokens.WSTETH, ChainID: evmchain.IDMockL1, NetworkID: netconf.Devnet},
+
+	// devnet L2 mock wstETH
 	{Token: tokens.WSTETH, ChainID: evmchain.IDMockL2, NetworkID: netconf.Devnet},
 }
 
