@@ -25,7 +25,7 @@ type DeployParams struct {
 }
 
 // Deploy deploys a proxy via a network's create3 factory.
-func Deploy(ctx context.Context, backend *ethbackend.Backend, params DeployParams) (common.Address, *ethtypes.Receipt, error) {
+func Deploy(ctx context.Context, backend *ethbackend.Backend, params DeployParams) (common.Address, *ethclient.Receipt, error) {
 	network := params.Network
 	deployImpl := params.DeployImpl
 	packInitCode := params.PackInitCode

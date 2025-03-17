@@ -5,9 +5,9 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -166,7 +166,7 @@ func (c Call) MarshalJSON() ([]byte, error) {
 
 func intOrZero(i *hexutil.Big) *big.Int {
 	if i == nil {
-		return umath.Zero()
+		return bi.Zero()
 	}
 
 	return i.ToInt()

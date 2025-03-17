@@ -8,11 +8,11 @@ import (
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/create3"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 type DeploymentConfig struct {
@@ -60,7 +60,7 @@ func (cfg DeploymentConfig) Validate() error {
 }
 
 // Deploy idempotently deploys a new SolverNetInbox contract and returns the address and receipt.
-func Deploy(ctx context.Context, network netconf.Network, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func Deploy(ctx context.Context, network netconf.Network, backend *ethbackend.Backend) (common.Address, *ethclient.Receipt, error) {
 	addrs, err := contracts.GetAddresses(ctx, network.ID)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "get addresses")
@@ -93,7 +93,7 @@ func Deploy(ctx context.Context, network netconf.Network, backend *ethbackend.Ba
 	return deploy(ctx, cfg, network, backend)
 }
 
-func deploy(ctx context.Context, cfg DeploymentConfig, network netconf.Network, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func deploy(ctx context.Context, cfg DeploymentConfig, network netconf.Network, backend *ethbackend.Backend) (common.Address, *ethclient.Receipt, error) {
 	if err := cfg.Validate(); err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "validate config")
 	}

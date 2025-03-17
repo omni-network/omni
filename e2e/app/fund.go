@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -13,7 +14,6 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/txmgr"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -195,7 +195,7 @@ func fund(ctx context.Context, params fundParams) error {
 	if err != nil {
 		log.Warn(ctx, "Failed fetching balance, skipping", err)
 		return nil
-	} else if umath.LT(minBalance, balance) {
+	} else if bi.LT(minBalance, balance) {
 		log.Info(ctx,
 			"Not funding account, balance sufficient",
 			"balance", etherStr(balance),
@@ -205,15 +205,15 @@ func fund(ctx context.Context, params fundParams) error {
 		return nil
 	}
 
-	amount := umath.Sub(targetBalance, balance)
+	amount := bi.Sub(targetBalance, balance)
 	if amount.Sign() <= 0 {
 		return errors.New("unexpected negative amount [BUG]") // Target balance below minimum balance
-	} else if saneMax != nil && umath.GT(amount, saneMax) {
+	} else if saneMax != nil && bi.GT(amount, saneMax) {
 		log.Warn(ctx, "Funding amount exceeds sane max, skipping", nil,
 			"amount", etherStr(amount),
 			"max", etherStr(saneMax),
 		)
-	} else if umath.GTE(amount, funderBal) {
+	} else if bi.GTE(amount, funderBal) {
 		return errors.New("funder balance too low",
 			"amount", etherStr(amount),
 			"funder", etherStr(funderBal),
@@ -257,12 +257,12 @@ func fund(ctx context.Context, params fundParams) error {
 }
 
 func etherStr(amount *big.Int) string {
-	return fmt.Sprintf("%.4f", umath.ToEtherF64(amount))
+	return fmt.Sprintf("%.4f", bi.ToEtherF64(amount))
 }
 
 func saneMax(token tokens.Token) *big.Int {
-	saneETH := umath.Ether(saneMaxETH)
-	saneOmni := umath.Ether(saneMaxOmni)
+	saneETH := bi.Ether(saneMaxETH)
+	saneOmni := bi.Ether(saneMaxOmni)
 
 	if token == tokens.OMNI {
 		return saneOmni

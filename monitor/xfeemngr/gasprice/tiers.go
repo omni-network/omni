@@ -3,7 +3,7 @@ package gasprice
 import (
 	"math/big"
 
-	"github.com/omni-network/omni/lib/umath"
+	"github.com/omni-network/omni/lib/bi"
 )
 
 // tiers ensures the buffer will be the lowest tier that is higher than the live gas price.
@@ -38,7 +38,7 @@ func Tiers() []*big.Int {
 
 func Tier(live *big.Int) *big.Int {
 	for _, p := range tiers {
-		if umath.GTE(p, live) {
+		if bi.GTE(p, live) {
 			return p
 		}
 	}
@@ -47,5 +47,5 @@ func Tier(live *big.Int) *big.Int {
 }
 
 func gwei(p float64) *big.Int {
-	return umath.Gwei(p)
+	return bi.Gwei(p)
 }

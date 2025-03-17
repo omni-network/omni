@@ -5,11 +5,11 @@ import (
 	"log/slog"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/umath"
 	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -114,7 +114,7 @@ func newFiller(
 			return nil
 		}
 
-		nativeValue := umath.Zero()
+		nativeValue := bi.Zero()
 		for _, output := range pendingData.MaxSpent {
 			if output.ChainId.Uint64() != destChainID {
 				// We error on this case for now, as our contracts only allow single dest chain orders
@@ -156,7 +156,7 @@ func newFiller(
 			return errors.Wrap(err, "get fulfill fee")
 		}
 
-		txOpts.Value = umath.Add(nativeValue, fee)
+		txOpts.Value = bi.Add(nativeValue, fee)
 		fillerData := []byte{} // fillerData is optional ERC7683 custom filler specific data, unused in our contracts
 		tx, err := outbox.Fill(txOpts, order.ID, pendingData.FillOriginData, fillerData)
 		if err != nil {

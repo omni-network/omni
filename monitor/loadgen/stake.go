@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -61,7 +61,7 @@ func delegateOnce(ctx context.Context, contract *bindings.Staking, backend *ethb
 	if err != nil {
 		return err
 	}
-	txOpts.Value = umath.Ether(1) // 1 ETH (in wei)
+	txOpts.Value = bi.Ether(1) // 1 ETH (in wei)
 
 	tx, err := contract.Delegate(txOpts, validator)
 	if err != nil {

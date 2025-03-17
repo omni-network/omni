@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/evmchain"
@@ -14,7 +15,6 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/txmgr"
-	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum"
@@ -151,7 +151,7 @@ func (s Sender) SendAsync(ctx context.Context, sub xchain.Submission) <-chan err
 		TxData:   txData,
 		To:       &s.chain.PortalAddress,
 		GasLimit: estimatedGas,
-		Value:    umath.Zero(),
+		Value:    bi.Zero(),
 		Nonce:    &nonce,
 	}
 

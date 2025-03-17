@@ -6,13 +6,13 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -147,7 +147,7 @@ func maybeDeployCanonical(ctx context.Context, network netconf.Network, backends
 	return nil
 }
 
-func maybeTxHash(receipt *ethtypes.Receipt) string {
+func maybeTxHash(receipt *ethclient.Receipt) string {
 	if receipt != nil {
 		return receipt.TxHash.Hex()
 	}

@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/expbackoff"
@@ -329,7 +330,7 @@ func (m *simple) sendTx(ctx context.Context, tx *types.Transaction) (*types.Tran
 				return nil, nil, errors.New("mined hash mismatch [BUG]", "tx", mined.Tx.Hash(), "receipt", mined.Rec.TxHash)
 			}
 			if mined.Rec.EffectiveGasPrice != nil {
-				gasPriceGwei := umath.ToGweiF64(mined.Rec.EffectiveGasPrice)
+				gasPriceGwei := bi.ToGweiF64(mined.Rec.EffectiveGasPrice)
 				txEffectiveGasPrice.WithLabelValues(m.chainName).Set(gasPriceGwei)
 				txGasUsed.WithLabelValues(m.chainName).Observe(float64(mined.Rec.GasUsed))
 			}
@@ -601,13 +602,13 @@ func (m *simple) suggestGasPriceCaps(ctx context.Context) (*big.Int, *big.Int, e
 	baseFee := head.BaseFee
 
 	// Enforce minimum base fee and tip cap
-	if minTipCap := m.cfg.MinTipCap; minTipCap != nil && umath.LT(tip, minTipCap) {
+	if minTipCap := m.cfg.MinTipCap; minTipCap != nil && bi.LT(tip, minTipCap) {
 		log.Debug(ctx, "Enforcing min tip cap", "min_tip_cap", m.cfg.MinTipCap, "orig_tip_cap", tip)
-		tip = umath.Clone(m.cfg.MinTipCap)
+		tip = bi.Clone(m.cfg.MinTipCap)
 	}
-	if minBaseFee := m.cfg.MinBaseFee; minBaseFee != nil && umath.LT(baseFee, minBaseFee) {
+	if minBaseFee := m.cfg.MinBaseFee; minBaseFee != nil && bi.LT(baseFee, minBaseFee) {
 		log.Debug(ctx, "Enforcing min base fee", "min_base_fee", m.cfg.MinBaseFee, "orig_base_fee", baseFee)
-		baseFee = umath.Clone(m.cfg.MinBaseFee)
+		baseFee = bi.Clone(m.cfg.MinBaseFee)
 	}
 
 	return tip, baseFee, nil
@@ -617,18 +618,18 @@ func (m *simple) suggestGasPriceCaps(ctx context.Context) (*big.Int, *big.Int, e
 // if FeeLimitThreshold is specified in config, any increase which stays under the threshold are allowed.
 func (m *simple) checkLimits(tip, baseFee, bumpedTip, bumpedFee *big.Int) error {
 	threshold := m.cfg.FeeLimitThreshold
-	limit := umath.New(m.cfg.FeeLimitMultiplier)
-	maxTip := umath.Mul(tip, limit)
-	maxFee := calcGasFeeCap(umath.Mul(baseFee, limit), maxTip)
+	limit := bi.N(m.cfg.FeeLimitMultiplier)
+	maxTip := bi.Mul(tip, limit)
+	maxFee := calcGasFeeCap(bi.Mul(baseFee, limit), maxTip)
 	var errs error
 	// generic check function to check tip and fee, and build up an error
 	check := func(v, max *big.Int, name string) {
 		// if threshold is specified and the value is under the threshold, no need to check the max
-		if threshold != nil && umath.GT(threshold, v) {
+		if threshold != nil && bi.GT(threshold, v) {
 			return
 		}
 		// if the value is over the max, add an error message
-		if umath.GT(v, max) {
+		if bi.GT(v, max) {
 			errs = errors.New("bumped cap is over multiple of the suggested value", name, v, "limit", limit)
 		}
 	}
@@ -641,13 +642,13 @@ func (m *simple) checkLimits(tip, baseFee, bumpedTip, bumpedFee *big.Int) error 
 // calcThresholdValue returns ceil(x * priceBumpPercent / 100) for non-blob txs, or
 // It guarantees that x is increased by at least 1.
 func calcThresholdValue(x *big.Int) *big.Int {
-	priceBumpPercent := umath.New(100 + PriceBump)
-	oneHundred := umath.New(100)
-	ninetyNine := umath.New(99) // Used for 'ceil'
+	priceBumpPercent := bi.N(100 + PriceBump)
+	oneHundred := bi.N(100)
+	ninetyNine := bi.N(99) // Used for 'ceil'
 
-	return umath.Div(
-		umath.Add(
-			umath.Mul(x, priceBumpPercent),
+	return bi.Div(
+		bi.Add(
+			bi.Mul(x, priceBumpPercent),
 			ninetyNine,
 		),
 		oneHundred,
@@ -666,15 +667,15 @@ func updateFees(ctx context.Context, oldTip, oldFeeCap, newTip, newBaseFee *big.
 		"new_gas_tip_cap", newTip, "new_gas_fee_cap", newFeeCap, "new_base_fee", newBaseFee)
 	thresholdTip := calcThresholdValue(oldTip)
 	thresholdFeeCap := calcThresholdValue(oldFeeCap)
-	if umath.GTE(newTip, thresholdTip) && umath.GTE(newFeeCap, thresholdFeeCap) {
+	if bi.GTE(newTip, thresholdTip) && bi.GTE(newFeeCap, thresholdFeeCap) {
 		log.Debug(ctx, "Using new tip and feecap")
 		return newTip, newFeeCap
-	} else if umath.GTE(newTip, thresholdTip) && umath.LT(newFeeCap, thresholdFeeCap) {
+	} else if bi.GTE(newTip, thresholdTip) && bi.LT(newFeeCap, thresholdFeeCap) {
 		// Tip has gone up, but base fee is flat or down.
 		// TODO(CLI-3714): Do we need to recalculate the FC here?
 		log.Debug(ctx, "Using new tip and threshold feecap")
 		return newTip, thresholdFeeCap
-	} else if umath.LT(newTip, thresholdTip) && umath.GTE(newFeeCap, thresholdFeeCap) {
+	} else if bi.LT(newTip, thresholdTip) && bi.GTE(newFeeCap, thresholdFeeCap) {
 		// Base fee has gone up, but the tip hasn't. Recalculate the feecap because if the tip went up a lot
 		// not enough of the feecap may be dedicated to paying the base fee.
 		log.Debug(ctx, "Using threshold tip and recalculated feecap")
@@ -691,9 +692,9 @@ func updateFees(ctx context.Context, oldTip, oldFeeCap, newTip, newBaseFee *big.
 //
 //	gasTipCap + 2*baseFee.
 func calcGasFeeCap(baseFee, gasTipCap *big.Int) *big.Int {
-	return umath.Add(
+	return bi.Add(
 		gasTipCap,
-		umath.MulRaw(baseFee, 2),
+		bi.MulRaw(baseFee, 2),
 	)
 }
 

@@ -8,11 +8,11 @@ import (
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/create3"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 type DeploymentConfig struct {
@@ -77,7 +77,7 @@ func DeployIfNeeded(
 	network netconf.ID,
 	backend *ethbackend.Backend,
 	gasPumps []bindings.OmniGasStationGasPump,
-) (common.Address, *ethtypes.Receipt, error) {
+) (common.Address, *ethclient.Receipt, error) {
 	deployed, addr, err := isDeployed(ctx, network, backend)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "is deployed")
@@ -95,7 +95,7 @@ func Deploy(
 	network netconf.ID,
 	backend *ethbackend.Backend,
 	gasPumps []bindings.OmniGasStationGasPump,
-) (common.Address, *ethtypes.Receipt, error) {
+) (common.Address, *ethclient.Receipt, error) {
 	addrs, err := contracts.GetAddresses(ctx, network)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "get addresses")
@@ -125,7 +125,7 @@ func deploy(
 	cfg DeploymentConfig,
 	backend *ethbackend.Backend,
 	gasPumps []bindings.OmniGasStationGasPump,
-) (common.Address, *ethtypes.Receipt, error) {
+) (common.Address, *ethclient.Receipt, error) {
 	if err := cfg.Validate(); err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "validate config")
 	}

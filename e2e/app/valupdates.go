@@ -9,13 +9,13 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/txmgr"
-	"github.com/omni-network/omni/lib/umath"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
 
@@ -49,7 +49,7 @@ func FundValidatorsForTesting(ctx context.Context, def Definition) error {
 			tx, _, err := fundBackend.Send(ctx, funder, txmgr.TxCandidate{
 				To:       &addr,
 				GasLimit: 100_000,
-				Value:    umath.Ether(1000),
+				Value:    bi.Ether(1000),
 			})
 			if err != nil {
 				return errors.Wrap(err, "send")
@@ -195,7 +195,7 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 					returnErr(errors.Wrap(err, "bind opts"))
 					return
 				}
-				txOpts.Value = umath.Ether(power)
+				txOpts.Value = bi.Ether(power)
 
 				// NOTE: We can use CreateValidator here, rather than Delegate (self-delegation)
 				// because current e2e manifest validator_udpates are only used to create a new validator,

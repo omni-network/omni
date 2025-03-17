@@ -104,7 +104,7 @@
   "chainId": 166,
   "coingeckoId": "omni-network",
   "isMock": false,
-  "maxSpend": "1000.0000",
+  "maxSpend": "120000.0000",
   "minSpend": "0.1000",
   "name": "Omni Network",
   "symbol": "OMNI"
@@ -144,7 +144,7 @@
   "chainId": 1,
   "coingeckoId": "omni-network",
   "isMock": false,
-  "maxSpend": "1000.0000",
+  "maxSpend": "120000.0000",
   "minSpend": "0.1000",
   "name": "Omni Network",
   "symbol": "OMNI"
