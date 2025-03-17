@@ -25,8 +25,10 @@ var maxL1OMNI = map[netconf.ID]*big.Int{
 	netconf.Devnet:  bi.Ether(1),
 	netconf.Staging: bi.Ether(1),
 
-	// 1000 OMNI for protected networks (reduces gas spend)
-	netconf.Omega:   bi.Ether(1000),
+	// 50 OMNI for oemga (still small, but more than devnet)
+	netconf.Omega: bi.Ether(50),
+
+	// 1000 OMNI for mainnet (reduce gas spend)
 	netconf.Mainnet: bi.Ether(1000),
 }
 
