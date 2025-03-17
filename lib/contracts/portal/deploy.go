@@ -8,11 +8,11 @@ import (
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/create3"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 type deploymentConfig struct {
@@ -123,7 +123,7 @@ func IsDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Bac
 // Deploy deploys a new Portal contract and returns the address and receipt.
 // It only allows deployments to explicitly supported chains.
 func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend, feeOracle common.Address, valSetID uint64, validators []bindings.Validator,
-) (common.Address, *ethtypes.Receipt, error) {
+) (common.Address, *ethclient.Receipt, error) {
 	addrs, err := contracts.GetAddresses(ctx, network)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "get addrs")
@@ -156,7 +156,7 @@ func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend
 }
 
 func deploy(ctx context.Context, cfg deploymentConfig, backend *ethbackend.Backend, feeOracle common.Address, valSetID uint64, validators []bindings.Validator,
-) (common.Address, *ethtypes.Receipt, error) {
+) (common.Address, *ethclient.Receipt, error) {
 	if err := cfg.Validate(); err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "validate")
 	}

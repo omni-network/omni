@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts/gaspump"
 	"github.com/omni-network/omni/lib/contracts/gasstation"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
@@ -150,7 +151,7 @@ func fundGasStation(ctx context.Context, def Definition) error {
 	return nil
 }
 
-func maybeTxHash(receipt *ethtypes.Receipt) string {
+func maybeTxHash(receipt *ethclient.Receipt) string {
 	if receipt != nil {
 		return receipt.TxHash.Hex()
 	}
