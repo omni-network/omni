@@ -1,4 +1,4 @@
-package umath
+package bi
 
 import (
 	"math"
@@ -9,22 +9,20 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-// Zero returns a big.Int value representing 0.
-// It is a function instead of a variable since big ints are mutable :/.
+// Zero returns a new big.Int value representing 0.
 func Zero() *big.Int {
 	return big.NewInt(0)
 }
 
-// One returns a big.Int value representing 1.
-// It is a function instead of a variable since big ints are mutable :/.
+// One returns a new big.Int value representing 1.
 func One() *big.Int {
 	return big.NewInt(1)
 }
 
 // Wei is an alias for New.
 // It doesn't support floats like Ether or Gwei, since wei is the smallest unit.
-func Wei[N constraints.Integer](i N) *big.Int {
-	return New(i)
+func Wei[I constraints.Integer](i I) *big.Int {
+	return N(i)
 }
 
 // number is a generic number type for int*/uint*/float*.

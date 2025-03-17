@@ -6,13 +6,13 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/create3"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens/coingecko"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -33,7 +33,7 @@ func isEmpty(addr common.Address) bool {
 	return addr == common.Address{}
 }
 
-var maxUint96 = umath.Sub(new(big.Int).Lsh(umath.One(), 96), umath.One()) // 1 << 96 - 1
+var maxUint96 = bi.Sub(new(big.Int).Lsh(bi.One(), 96), bi.One()) // 1 << 96 - 1
 
 func (cfg DeploymentConfig) Validate() error {
 	if cfg.Create3Salt == "" {
@@ -57,7 +57,7 @@ func (cfg DeploymentConfig) Validate() error {
 	if isEmpty(cfg.Manager) {
 		return errors.New("manager is zero")
 	}
-	if umath.GT(cfg.ProtocolFee, maxUint96) {
+	if bi.GT(cfg.ProtocolFee, maxUint96) {
 		return errors.New("protocol fee too high")
 	}
 
@@ -122,7 +122,7 @@ func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainID
 		Owner:           eoa.MustAddress(network, eoa.RoleManager),
 		Deployer:        eoa.MustAddress(network, eoa.RoleDeployer),
 		Manager:         eoa.MustAddress(network, eoa.RoleMonitor), // NOTE: monitor is owner of fee oracle contracts, because monitor manages on chain gas prices / conversion rates
-		ProtocolFee:     umath.Zero(),
+		ProtocolFee:     bi.Zero(),
 	}
 
 	return deploy(ctx, chainID, destChainIDs, cfg, backend, backends)

@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/omni-network/omni/lib/umath"
+	"github.com/omni-network/omni/lib/bi"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
@@ -26,7 +26,7 @@ func TempDir(t *testing.T) string {
 func randStr(t *testing.T) string {
 	t.Helper()
 
-	n, err := rand.Int(rand.Reader, umath.Ether(1))
+	n, err := rand.Int(rand.Reader, bi.Ether(1))
 	require.NoError(t, err)
 
 	return hexutil.EncodeBig(n)

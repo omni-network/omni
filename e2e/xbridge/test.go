@@ -11,11 +11,11 @@ import (
 	"github.com/omni-network/omni/e2e/xbridge/rlusd"
 	"github.com/omni-network/omni/e2e/xbridge/types"
 	"github.com/omni-network/omni/lib/anvil"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -42,7 +42,7 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 
 func testRLUSD(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
 	user := anvil.DevAccount5()
-	amt := umath.Ether(1_000_000) // 1M
+	amt := bi.Ether(1_000_000) // 1M
 
 	if err := rlusd.MintCanonical(ctx, network, backends, user, amt); err != nil {
 		return errors.Wrap(err, "mint wrapped")
@@ -230,7 +230,7 @@ func waitForBalance(ctx context.Context, tkn *bindings.IERC20, addr common.Addre
 				return errors.Wrap(err, "balance")
 			}
 
-			if umath.GTE(balance, amount) {
+			if bi.GTE(balance, amount) {
 				return nil
 			}
 		}

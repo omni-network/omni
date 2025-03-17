@@ -11,9 +11,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/tutil"
-	"github.com/omni-network/omni/lib/umath"
 
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/privval"
@@ -74,7 +74,7 @@ func TestECDSAMalleability(t *testing.T) {
 	// Negate S
 	sBytes := sig[32:64]
 	s := new(big.Int).SetBytes(sBytes)
-	s = umath.Sub(crypto.S256().Params().N, s)
+	s = bi.Sub(crypto.S256().Params().N, s)
 	copy(sig[32:64], s.Bytes())
 
 	// Adjust V

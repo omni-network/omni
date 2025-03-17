@@ -5,9 +5,9 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/omni-network/omni/lib/bi"
 	tokenslib "github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tutil"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/stretchr/testify/require"
 )
@@ -68,5 +68,5 @@ func etherStr(amount *big.Int) string {
 		return "nil"
 	}
 
-	return fmt.Sprintf("%.4f", umath.ToEtherF64(amount))
+	return fmt.Sprintf("%.4f", bi.ToEtherF64(amount))
 }

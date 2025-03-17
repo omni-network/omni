@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -149,5 +150,5 @@ func isAppproved(
 		return false, errors.Wrap(err, "get allowance")
 	}
 
-	return umath.LTE(spend, allowance), nil
+	return bi.LTE(spend, allowance), nil
 }

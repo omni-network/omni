@@ -6,11 +6,11 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tutil"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -95,7 +95,7 @@ func TestMainnet(t *testing.T) {
 }
 
 func etherStr(amount *big.Int) string {
-	return fmt.Sprintf("%.4f", umath.ToEtherF64(amount))
+	return fmt.Sprintf("%.4f", bi.ToEtherF64(amount))
 }
 
 func shouldExist(role eoa.Role, id netconf.ID, token tokens.Token) bool {

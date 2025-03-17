@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts/omnitoken"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/stretchr/testify/require"
 )
@@ -20,21 +20,21 @@ func TestBridgeBalance(t *testing.T) {
 	t.Parallel()
 
 	// mainnet prefunds
-	mp := umath.Zero()
+	mp := bi.Zero()
 	for _, role := range eoa.AllRoles() {
 		th, ok := eoa.GetFundThresholds(tokens.OMNI, netconf.Mainnet, role)
 		if !ok {
 			continue
 		}
-		mp = umath.Add(mp, th.TargetBalance())
+		mp = bi.Add(mp, th.TargetBalance())
 	}
 
 	// Note that there were actually only 2 100 OMNI mainnet genesis validators. These calcs are wrong.
-	mp = umath.Add(mp,
-		umath.Ether(1000), // 1000 OMNI: genesis validator 1
-		umath.Ether(1000), // 1000 OMNI: genesis validator 2
-		umath.Ether(1000), // 1000 OMNI: genesis validator 3
-		umath.Ether(1000), // 1000 OMNI: genesis validator 4
+	mp = bi.Add(mp,
+		bi.Ether(1000), // 1000 OMNI: genesis validator 1
+		bi.Ether(1000), // 1000 OMNI: genesis validator 2
+		bi.Ether(1000), // 1000 OMNI: genesis validator 3
+		bi.Ether(1000), // 1000 OMNI: genesis validator 4
 	)
 
 	tests := []struct {
@@ -60,7 +60,7 @@ func TestBridgeBalance(t *testing.T) {
 		{
 			name:     "mainnet",
 			network:  netconf.Mainnet,
-			expected: umath.Sub(omnitoken.TotalSupply(), mp),
+			expected: bi.Sub(omnitoken.TotalSupply(), mp),
 		},
 	}
 

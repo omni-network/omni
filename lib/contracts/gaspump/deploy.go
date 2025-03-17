@@ -6,12 +6,12 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/create3"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -138,8 +138,8 @@ func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend
 		Portal:          addrs.Portal,
 		GasStation:      addrs.GasStation,
 		Oracle:          oracle,
-		MaxSwap:         umath.Ether(0.001), // 0.001 ETH
-		Toll:            umath.New(100),     // 100 / 1000 = 0.1 = 10% (1000 = GasPump.TOLL_DENOM),
+		MaxSwap:         bi.Ether(0.001), // 0.001 ETH
+		Toll:            bi.N(100),       // 100 / 1000 = 0.1 = 10% (1000 = GasPump.TOLL_DENOM),
 		ExpectedAddr:    addrs.GasPump,
 	}
 

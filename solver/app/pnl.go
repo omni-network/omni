@@ -5,11 +5,11 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/pnl"
 	tokenslib "github.com/omni-network/omni/lib/tokens"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -65,7 +65,7 @@ func newFilledPnlFunc(
 		for _, tknAmt := range maxSpent {
 			p := pnl.LogP{
 				Type:        pnl.Expense,
-				AmountGwei:  umath.ToGweiF64(tknAmt.Amount),
+				AmountGwei:  bi.ToGweiF64(tknAmt.Amount),
 				Currency:    pnl.Currency(tknAmt.Token.Symbol),
 				Category:    "solver_expense",
 				Subcategory: target,
@@ -79,7 +79,7 @@ func newFilledPnlFunc(
 		for _, tknAmt := range minReceived {
 			p := pnl.LogP{
 				Type:        pnl.Income,
-				AmountGwei:  umath.ToGweiF64(tknAmt.Amount),
+				AmountGwei:  bi.ToGweiF64(tknAmt.Amount),
 				Currency:    pnl.Currency(tknAmt.Token.Symbol),
 				Category:    "solver_deposit",
 				Subcategory: target,
@@ -120,11 +120,11 @@ func gasPnL(
 	subCat string,
 	id string,
 ) error {
-	amount := umath.MulRaw(rec.EffectiveGasPrice, rec.GasUsed)
+	amount := bi.MulRaw(rec.EffectiveGasPrice, rec.GasUsed)
 
 	// Add any xcall fees included in tx
 	if fee, ok := maybeParseXCallFee(rec); ok {
-		amount = umath.Add(amount, fee)
+		amount = bi.Add(amount, fee)
 	}
 
 	nativeToken, ok := tokens.Find(chainID, NativeAddr)
@@ -135,7 +135,7 @@ func gasPnL(
 	// Log native gas as expense
 	p := pnl.LogP{
 		Type:        pnl.Expense,
-		AmountGwei:  umath.ToGweiF64(amount),
+		AmountGwei:  bi.ToGweiF64(amount),
 		Currency:    pnl.Currency(nativeToken.Symbol),
 		Category:    "gas",
 		Subcategory: subCat,

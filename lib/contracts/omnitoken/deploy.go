@@ -6,12 +6,12 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/create3"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -20,7 +20,7 @@ import (
 // TotalSupply is the 100M, total supply of the token.
 // It is a function since big ints are mutable.
 func TotalSupply() *big.Int {
-	return umath.Ether(100e6)
+	return bi.Ether(100e6)
 }
 
 type deploymentConfig struct {

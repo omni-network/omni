@@ -6,11 +6,11 @@ import (
 	"sort"
 	"time"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/cchain/queryutil"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/umath"
 )
 
 // maxDelegationsForRewardsEstimation is the max number of random rewards we track across multiple blocks
@@ -74,24 +74,24 @@ func instrStakeSizes(allDelegations []queryutil.DelegationBalance) {
 	delegatorsTotal := float64(len(allDelegations))
 	delegatorsCount.Set(delegatorsTotal)
 
-	totalStake := umath.Zero()
+	totalStake := bi.Zero()
 	var stakes []*big.Int
 	for _, del := range allDelegations {
 		stake := del.Balance
-		totalStake = umath.Add(totalStake, stake)
+		totalStake = bi.Add(totalStake, stake)
 		stakes = append(stakes, stake)
 	}
 
-	avgStakeWei := umath.DivRaw(totalStake, len(allDelegations))
-	stakeAvg.Set(umath.ToEtherF64(avgStakeWei))
+	avgStakeWei := bi.DivRaw(totalStake, len(allDelegations))
+	stakeAvg.Set(bi.ToEtherF64(avgStakeWei))
 
 	l := len(stakes)
 	if l == 0 {
 		return
 	}
 	sort.Slice(stakes, func(i, j int) bool {
-		return umath.LT(stakes[i], stakes[j])
+		return bi.LT(stakes[i], stakes[j])
 	})
 	medianVal := stakes[l/2+l%2]
-	stakeMedian.Set(umath.ToEtherF64(medianVal))
+	stakeMedian.Set(bi.ToEtherF64(medianVal))
 }

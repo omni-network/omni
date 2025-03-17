@@ -6,13 +6,13 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
-	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/monitor/xfeemngr/contract"
 	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
 	"github.com/omni-network/omni/monitor/xfeemngr/ticker"
@@ -106,12 +106,12 @@ func (o feeOracle) syncGasPrice(ctx context.Context, dest evmchain.Metadata) err
 
 	buffered := o.gprice.GasPrice(dest.ChainID)
 
-	if umath.IsZero(buffered) {
+	if bi.IsZero(buffered) {
 		return nil
 	}
 
-	saneMax := umath.New(maxSaneGasPrice)
-	if umath.GT(buffered, saneMax) {
+	saneMax := bi.N(maxSaneGasPrice)
+	if bi.GT(buffered, saneMax) {
 		log.Warn(ctx, "Buffered gas price exceeds sane max", errors.New("unexpected gas price"), "buffered", buffered, "max_sane", saneMax)
 		buffered = saneMax
 	}
@@ -251,7 +251,7 @@ func (o feeOracle) syncToNativeRate(ctx context.Context, dest evmchain.Metadata)
 	// if bufferred rate is less than we can represent on chain, use smallest representable rate - 1/CONVERSION_RATE_DENOM
 	if bufferedRate < 1.0/float64(rateDenom) {
 		log.Warn(ctx, "Buffered rate too small, setting minimum on chain", errors.New("conversion rate < min repr"), "buffered", bufferedRate)
-		bufferedNumer = umath.One()
+		bufferedNumer = bi.One()
 	}
 
 	err = c.SetToNativeRate(ctx, dest.ChainID, bufferedNumer)

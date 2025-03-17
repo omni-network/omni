@@ -6,13 +6,13 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	e2e "github.com/omni-network/omni/e2e/solve"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	tokenslib "github.com/omni-network/omni/lib/tokens"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -58,12 +58,12 @@ func (t Token) IsOMNI() bool {
 
 var (
 	// TODO: increase max spend on mainnet, keep low for staging / omega.
-	maxETHSpend    = umath.Ether(1)     // 1 ETH
-	minETHSpend    = umath.Ether(0.001) // 0.001 ETH
-	maxWSTETHSpend = umath.Ether(1)     // 1 wstETH
-	minWSTETHSpend = umath.Ether(0.001) // 0.001 wstETH
-	maxOMNISpend   = umath.Ether(1_000) // 1000 OMNI
-	minOMNISpend   = umath.Ether(0.1)   // 0.1 OMNI
+	maxETHSpend    = bi.Ether(1)     // 1 ETH
+	minETHSpend    = bi.Ether(0.001) // 0.001 ETH
+	maxWSTETHSpend = bi.Ether(1)     // 1 wstETH
+	minWSTETHSpend = bi.Ether(0.001) // 0.001 wstETH
+	maxOMNISpend   = bi.Ether(1_000) // 1000 OMNI
+	minOMNISpend   = bi.Ether(0.1)   // 0.1 OMNI
 )
 
 var tokens = append(Tokens{

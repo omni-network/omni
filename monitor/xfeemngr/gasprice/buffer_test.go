@@ -6,7 +6,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/omni-network/omni/lib/umath"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
 	"github.com/omni-network/omni/monitor/xfeemngr/ticker"
 
@@ -55,7 +55,7 @@ func TestBufferStream(t *testing.T) {
 		// for each step, we check if buffer properly updates (or doesn't)
 		for chainID, mock := range mocks {
 			tier := gasprice.Tier(mock.Price())
-			require.True(t, umath.GTE(tier, live[chainID]), "tier greater than live")
+			require.True(t, bi.GTE(tier, live[chainID]), "tier greater than live")
 			require.Equal(t, tier, b.GasPrice(chainID), "buffer equal to tier")
 		}
 	}
@@ -95,5 +95,5 @@ func toEthGasPricers(mocks map[uint64]*gasprice.MockPricer) map[uint64]ethereum.
 // randGasPrice generates a random, reasonable gas price.
 func randGasPrice() *big.Int {
 	oneGwei := int64(1_000_000_000) // i gwei
-	return umath.New(rand.Int63n(oneGwei))
+	return bi.N(rand.Int63n(oneGwei))
 }

@@ -9,13 +9,13 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/anvil"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/l1bridge"
 	"github.com/omni-network/omni/lib/contracts/omnitoken"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -99,7 +99,7 @@ func DeployBridge(ctx context.Context, def Definition) error {
 	}
 
 	// initialize l1Deposits to total supply - native bridge balance
-	l1Deposits := umath.Sub(omnitoken.TotalSupply(), balance)
+	l1Deposits := bi.Sub(omnitoken.TotalSupply(), balance)
 
 	tx, err := nativeBridge.Setup(txOpts, l1.ChainID, addrs.Portal, l1BridgeAddr, l1Deposits)
 	if err != nil {
@@ -288,7 +288,7 @@ func waitNativeBridges(ctx context.Context, def Definition, bridges []BridgeTest
 					return errors.Wrap(err, "balance of")
 				}
 
-				if umath.EQ(balance, test.Amount) {
+				if bi.EQ(balance, test.Amount) {
 					bridged++
 				}
 			}
@@ -335,7 +335,7 @@ func bridgeToL1(ctx context.Context, def Definition, toBridge []BridgeTest) erro
 			return errors.Wrap(err, "bridge fee")
 		}
 
-		txOpts.Value = umath.Add(test.Amount, fee)
+		txOpts.Value = bi.Add(test.Amount, fee)
 
 		log.Debug(ctx, "Bridging to L1", "to", test.To.Hex(), "amount", test.Amount, "fee", fee)
 
@@ -358,5 +358,5 @@ func bridgeToL1(ctx context.Context, def Definition, toBridge []BridgeTest) erro
 }
 
 func ether(n int64) *big.Int {
-	return umath.Ether(n)
+	return bi.Ether(n)
 }
