@@ -25,45 +25,46 @@ import (
 //go:embed symbiotic_abi.json
 var abiJSON []byte
 
+// newJob returns a symbiotic deposit job if a config for the given network exists, or it returns false.
 func newJob(
 	ctx context.Context,
 	backends ethbackend.Backends,
 	networkID netconf.ID,
 	owner common.Address,
 	amount *big.Int,
-) (types.Job, error) {
+) (types.Job, bool, error) {
 	addrs, err := contracts.GetAddresses(ctx, networkID)
 	if err != nil {
-		return types.Job{}, errors.New("contract addresses")
+		return types.Job{}, false, errors.New("contract addresses")
 	}
 
 	conf, ok := config[networkID]
 	if !ok {
-		return types.Job{}, errors.New("flow config missing")
+		return types.Job{}, false, nil
 	}
 
 	backend, err := backends.Backend(conf.srcChain)
 	if err != nil {
-		return types.Job{}, errors.Wrap(err, "get backend")
+		return types.Job{}, false, errors.Wrap(err, "get backend")
 	}
 
 	srcChainTkn, ok := solver.AllTokens().FindBySymbol(conf.srcChain, conf.depositToken.Symbol)
 	if !ok {
-		return types.Job{}, errors.Wrap(err, "src token not found")
+		return types.Job{}, false, errors.Wrap(err, "src token not found")
 	}
 
 	dstChainTkn, ok := solver.AllTokens().FindBySymbol(conf.dstChain, conf.expenseToken.Symbol)
 	if !ok {
-		return types.Job{}, errors.Wrap(err, "dst token not found")
+		return types.Job{}, false, errors.Wrap(err, "dst token not found")
 	}
 
 	if err := util.ApproveToken(ctx, backend, srcChainTkn.Address, owner, addrs.SolverNetInbox); err != nil {
-		return types.Job{}, errors.Wrap(err, "token approval")
+		return types.Job{}, false, errors.Wrap(err, "token approval")
 	}
 
 	data, err := orderData(owner, conf.dstChain, srcChainTkn, dstChainTkn, conf.vaultAddr, amount)
 	if err != nil {
-		return types.Job{}, errors.Wrap(err, "new job")
+		return types.Job{}, false, errors.Wrap(err, "new job")
 	}
 
 	namer := netconf.ChainNamer(networkID)
@@ -79,7 +80,7 @@ func newJob(
 		Owner: owner,
 
 		OrderData: data,
-	}, nil
+	}, true, nil
 }
 
 // orderData returns the order data required to do the job.
@@ -140,7 +141,7 @@ var metaData = &bind.MetaData{
 func Jobs(ctx context.Context, backends ethbackend.Backends, networkID netconf.ID, owner common.Address) ([]types.Job, error) {
 	var jobs []types.Job
 	deposit := big.NewInt(0).Mul(util.MilliEther, big.NewInt(20)) // 0.02 ETH
-	job, err := newJob(
+	job, ok, err := newJob(
 		ctx,
 		backends,
 		networkID,
@@ -150,7 +151,9 @@ func Jobs(ctx context.Context, backends ethbackend.Backends, networkID netconf.I
 	if err != nil {
 		return jobs, errors.Wrap(err, "symbiotic job")
 	}
-	jobs = append(jobs, job)
+	if ok {
+		jobs = append(jobs, job)
+	}
 
 	return jobs, nil
 }

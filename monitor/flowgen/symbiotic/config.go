@@ -1,10 +1,8 @@
 package symbiotic
 
 import (
-	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
-	"github.com/omni-network/omni/solver/targets"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -18,11 +16,12 @@ type flowConfig struct {
 }
 
 var config = map[netconf.ID]flowConfig{
-	netconf.Omega: {
-		srcChain:     evmchain.IDBaseSepolia,
-		dstChain:     evmchain.IDHolesky,
-		depositToken: tokens.WSTETH,
-		expenseToken: tokens.WSTETH,
-		vaultAddr:    targets.SymbioticHoleskyWSTETHVault1,
-	},
+	// TODO(christian): enable once tested on devnet
+	// netconf.Omega: {
+	// 	srcChain:     evmchain.IDBaseSepolia,
+	// 	dstChain:     evmchain.IDHolesky,
+	// 	depositToken: tokens.WSTETH,
+	// 	expenseToken: tokens.WSTETH,
+	// 	vaultAddr:    targets.SymbioticHoleskyWSTETHVault1,
+	// },
 }
