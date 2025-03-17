@@ -48,6 +48,7 @@ type orderTestCase struct {
 	reject       bool
 	fillReverts  bool
 	disallowCall bool
+	shouldErr    bool
 	mock         func(clients MockClients)
 	order        testOrder
 }
@@ -59,6 +60,7 @@ type rejectTestCase struct {
 	reject       bool
 	fillReverts  bool
 	disallowCall bool
+	shouldErr    bool
 	mock         func(clients MockClients)
 	order        Order
 }
@@ -147,6 +149,7 @@ func toRejectTestCase(t *testing.T, tt orderTestCase, outbox common.Address) rej
 		reject:       tt.reject,
 		fillReverts:  tt.fillReverts,
 		disallowCall: tt.disallowCall,
+		shouldErr:    tt.shouldErr,
 		mock:         tt.mock,
 		order: Order{
 			ID:            [32]byte{0x01},
@@ -216,7 +219,25 @@ func rejectTestCases(t *testing.T, solver, outbox common.Address) []rejectTestCa
 		tests = append(tests, toRejectTestCase(t, tt, outbox))
 	}
 
-	return tests
+	additional := []rejectTestCase{
+		// special case: insufficient native OMNI should error, not reject
+		toRejectTestCase(t, orderTestCase{
+			name:      "insufficient native OMNI",
+			shouldErr: true,
+			order: testOrder{
+				srcChainID: evmchain.IDHolesky,
+				dstChainID: evmchain.IDOmniOmega,
+				deposits:   []types.AddrAmt{{Amount: ether(1), Token: omniERC20(netconf.Omega).Address}},
+				calls:      []types.Call{{Value: ether(1)}},
+				expenses:   []types.Expense{{Amount: ether(1)}},
+			},
+			mock: func(clients MockClients) {
+				mockNativeBalance(t, clients.Client(t, evmchain.IDOmniOmega), solver, ether(0))
+			},
+		}, outbox),
+	}
+
+	return append(tests, additional...)
 }
 
 func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
@@ -233,15 +254,15 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			reason: types.RejectInsufficientInventory,
 			reject: true,
 			order: testOrder{
-				// request 1 native OMNI for 1 erc20 OMNI on omega
+				// erqeust 1 ETH for 2 ETH (large deposit to cover fee)
 				srcChainID: evmchain.IDHolesky,
-				dstChainID: evmchain.IDOmniOmega,
-				deposits:   []types.AddrAmt{{Amount: ether(1), Token: omegaOMNIAddr}},
+				dstChainID: evmchain.IDBaseSepolia,
+				deposits:   []types.AddrAmt{{Amount: ether(2)}},
 				calls:      []types.Call{{Value: ether(1)}},
 				expenses:   []types.Expense{{Amount: ether(1)}},
 			},
 			mock: func(clients MockClients) {
-				mockNativeBalance(t, clients.Client(t, evmchain.IDOmniOmega), solver, ether(0))
+				mockNativeBalance(t, clients.Client(t, evmchain.IDBaseSepolia), solver, ether(0))
 			},
 		},
 		{
