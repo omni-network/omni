@@ -335,7 +335,7 @@ func (backendStubSigner) SignatureValues(_ *ethtypes.Transaction, sig []byte) (r
 
 // waitMinedHash waits for a transaction with the provided hash to be mined on the blockchain.
 // It stops waiting when the context is canceled.
-// This is a copy of bind.WaitMindedHash returning omni custom Receipt type.
+// This is a copy of bind.WaitMinedHash returning omni custom Receipt type.
 func waitMinedHash(ctx context.Context, b *Backend, hash common.Hash) (*ethclient.Receipt, error) {
 	ticker := time.NewTimer(0) // Check immediately
 	defer ticker.Stop()
