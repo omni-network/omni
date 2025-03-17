@@ -18,6 +18,7 @@ import (
 var (
 	middlemanABI          = mustGetABI(bindings.SolverNetMiddlemanMetaData)
 	execAndTransferMethod = mustMethod(middlemanABI, "executeAndTransfer")
+	zodomoEOA             = common.HexToAddress("0xA779fC675Db318dab004Ab8D538CB320D0013F42")
 )
 
 type callAllowFunc func(chainID uint64, target common.Address, calldata []byte) bool
@@ -30,6 +31,11 @@ func newCallAllower(network netconf.ID, middlemanAddr common.Address) callAllowF
 
 		// flowgen can bridge to itself
 		if target == eoa.MustAddress(network, eoa.RoleFlowgen) {
+			return true
+		}
+
+		// temporarily whitelist Zodomo
+		if target == zodomoEOA {
 			return true
 		}
 
