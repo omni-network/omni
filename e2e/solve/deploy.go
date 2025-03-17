@@ -23,6 +23,7 @@ func Deploy(ctx context.Context, network netconf.Network, backends ethbackend.Ba
 	eg.Go(func() error { return deployBoxes(ctx, network, backends) })
 	eg.Go(func() error { return maybeDeployMockTokens(ctx, network, backends) })
 	eg.Go(func() error { return maybeFundERC20Solver(ctx, network.ID, backends) })
+	eg.Go(func() error { return maybeDeployMockVaults(ctx, network, backends) })
 
 	if err := eg.Wait(); err != nil {
 		return errors.Wrap(err, "deploy")

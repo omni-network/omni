@@ -1,0 +1,95 @@
+package solve
+
+import (
+	"context"
+
+	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/contracts"
+	"github.com/omni-network/omni/lib/create3"
+	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens"
+)
+
+// maybeDeployMockVaults deploys a wstETH mock vault to the MockL2 chain.
+func maybeDeployMockVaults(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
+	if !network.ID.IsEphemeral() {
+		return nil
+	}
+
+	chain, ok := network.Chain(evmchain.IDMockL2)
+	if !ok {
+		return errors.New("chain not found")
+	}
+
+	backend, err := backends.Backend(chain.ID)
+	if err != nil {
+		return errors.Wrap(err, "get backend", "chain", chain.Name)
+	}
+
+	return maybeDeployMockVault(ctx, network.ID, backend)
+}
+
+func maybeDeployMockVault(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) error {
+	deployer := eoa.MustAddress(network, eoa.RoleDeployer)
+
+	txOpts, err := backend.BindOpts(ctx, deployer)
+	if err != nil {
+		return errors.Wrap(err, "bind opts")
+	}
+
+	factory, err := bindings.NewCreate3(contracts.Create3Factory(network), backend)
+	if err != nil {
+		return errors.Wrap(err, "new create3")
+	}
+
+	salt := network.String() + "::mock::vault"
+
+	addr, deployed, err := isDeployed(ctx, backend, factory, deployer, salt)
+	if err != nil {
+		return errors.Wrap(err, "is deployed")
+	}
+
+	if deployed {
+		log.Info(ctx, "MockVault already deployed", "addr", addr, "salt", salt)
+		return nil
+	}
+
+	abi, err := bindings.MockVaultMetaData.GetAbi()
+	if err != nil {
+		return errors.Wrap(err, "get abi")
+	}
+
+	mockTokens := MockTokens()
+	if len(mockTokens) != 2 {
+		return errors.Wrap(err, "unexpected mock tokens")
+	}
+
+	wstETHOnMockL2 := MockTokens()[1]
+	if wstETHOnMockL2.ChainID != evmchain.IDMockL2 || wstETHOnMockL2.Symbol != tokens.WSTETH.Symbol {
+		return errors.Wrap(err, "unexpected mock token")
+	}
+
+	initCode, err := contracts.PackInitCode(abi, bindings.MockVaultMetaData.Bin, wstETHOnMockL2.Address())
+	if err != nil {
+		return errors.Wrap(err, "pack init code")
+	}
+
+	tx, err := factory.DeployWithRetry(txOpts, create3.HashSalt(salt), initCode) //nolint:contextcheck // Context is txOpts
+	if err != nil {
+		return errors.Wrap(err, "deploy")
+	}
+
+	_, err = backend.WaitMined(ctx, tx)
+	if err != nil {
+		return errors.Wrap(err, "wait mined")
+	}
+
+	log.Info(ctx, "MockVault deployed", "addr", addr, "salt", salt)
+
+	return nil
+}
