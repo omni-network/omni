@@ -10,8 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/omni-network/omni/lib/umath"
 )
 
 // StartMonitoring starts the monitoring goroutines.
@@ -84,16 +83,13 @@ func monitorAccountOnce(
 	if err != nil {
 		return err
 	}
-	// Convert to ether units
-	bf, _ := balance.Float64()
-	balanceEth := bf / params.Ether
 
 	nonce, err := client.NonceAt(ctx, account.Address, nil)
 	if err != nil {
 		return err
 	}
 
-	accountBalance.WithLabelValues(chainName, string(account.Role)).Set(balanceEth)
+	accountBalance.WithLabelValues(chainName, string(account.Role)).Set(umath.ToEtherF64(balance))
 	accountNonce.WithLabelValues(chainName, string(account.Role)).Set(float64(nonce))
 
 	meta, ok := evmchain.MetadataByName(chainName)
@@ -108,7 +104,7 @@ func monitorAccountOnce(
 	}
 
 	var isLow float64
-	if balance.Cmp(thresholds.MinBalance()) <= 0 {
+	if umath.LTE(balance, thresholds.MinBalance()) {
 		isLow = 1
 	}
 
@@ -164,8 +160,7 @@ func monitorSponsorOnce(
 		return err
 	}
 	// Convert to ether units
-	bf, _ := balance.Float64()
-	balanceEth := bf / params.Ether
+	balanceEth := umath.ToEtherF64(balance)
 
 	nonce, err := client.NonceAt(ctx, sponsor.Address, nil)
 	if err != nil {
@@ -187,7 +182,7 @@ func monitorSponsorOnce(
 	thresholds := sponsor.FundThresholds
 
 	var isLow float64
-	if balance.Cmp(thresholds.MinBalance()) <= 0 {
+	if umath.LTE(balance, thresholds.MinBalance()) {
 		isLow = 1
 	}
 

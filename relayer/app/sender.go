@@ -3,7 +3,6 @@ package relayer
 import (
 	"context"
 	"crypto/ecdsa"
-	"math/big"
 	"slices"
 	"strings"
 
@@ -15,6 +14,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/txmgr"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum"
@@ -151,7 +151,7 @@ func (s Sender) SendAsync(ctx context.Context, sub xchain.Submission) <-chan err
 		TxData:   txData,
 		To:       &s.chain.PortalAddress,
 		GasLimit: estimatedGas,
-		Value:    big.NewInt(0),
+		Value:    umath.Zero(),
 		Nonce:    &nonce,
 	}
 

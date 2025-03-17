@@ -116,7 +116,7 @@ func toRejectTestCase(t *testing.T, tt orderTestCase, outbox common.Address) rej
 			Amount:    e.Amount,
 			Token:     toBz32(e.Token),
 			Recipient: toBz32(outbox),
-			ChainId:   new(big.Int).SetUint64(tt.order.dstChainID),
+			ChainId:   umath.New(tt.order.dstChainID),
 		})
 	}
 
@@ -125,7 +125,7 @@ func toRejectTestCase(t *testing.T, tt orderTestCase, outbox common.Address) rej
 		minReceived = append(minReceived, bindings.IERC7683Output{
 			Amount:  d.Amount,
 			Token:   toBz32(d.Token),
-			ChainId: new(big.Int).SetUint64(tt.order.srcChainID),
+			ChainId: umath.New(tt.order.srcChainID),
 		})
 	}
 
@@ -433,7 +433,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				srcChainID: evmchain.IDBaseSepolia,
 				dstChainID: evmchain.IDHolesky,
 				deposits: []types.AddrAmt{{
-					Amount: new(big.Int).Add(
+					Amount: umath.Add(
 						depositFor(ether(1), standardFeeBips), // required deposit
 						gwei(1),                               // a little more
 					),
@@ -464,9 +464,9 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			order: testOrder{
 				srcChainID: evmchain.IDBaseSepolia,
 				dstChainID: evmchain.IDHolesky,
-				deposits:   []types.AddrAmt{{Amount: big.NewInt(2)}},
-				calls:      []types.Call{{Value: big.NewInt(1)}},
-				expenses:   []types.Expense{{Amount: big.NewInt(1)}},
+				deposits:   []types.AddrAmt{{Amount: umath.New(2)}},
+				calls:      []types.Call{{Value: umath.New(1)}},
+				expenses:   []types.Expense{{Amount: umath.New(1)}},
 			},
 		},
 		{
@@ -537,7 +537,7 @@ func mockFillFee(t *testing.T, client *mock.MockClient, outbox common.Address) {
 	t.Helper()
 
 	// always return a fee of 1 gwei
-	fee := big.NewInt(1e9)
+	fee := umath.Gwei(1)
 
 	ctx := gomock.Any()
 	msg := newCallMatcher("Outbox.fillFee", outbox, outboxABI.Methods["fillFee"].ID)
@@ -723,9 +723,9 @@ func abiEncodeBool(t *testing.T, b bool) []byte {
 }
 
 func ether(x int64) *big.Int {
-	return new(big.Int).Mul(big.NewInt(x), big.NewInt(1e18))
+	return umath.Ether(x)
 }
 
 func gwei(x int64) *big.Int {
-	return new(big.Int).Mul(big.NewInt(x), big.NewInt(1e9))
+	return umath.Gwei(x)
 }

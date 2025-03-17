@@ -10,11 +10,9 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
-
-	"cosmossdk.io/math"
 )
 
 func maybeFundERC20Solver(ctx context.Context, network netconf.ID, backends ethbackend.Backends) error {
@@ -35,7 +33,7 @@ func maybeFundERC20Solver(ctx context.Context, network netconf.ID, backends ethb
 	}
 
 	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
-	eth1m := math.NewInt(1_000_000).MulRaw(params.Ether).BigInt()
+	eth1m := umath.Ether(1_000_000)
 
 	for _, tkn := range toFund {
 		ethCl, ok := backends.Clients()[tkn.chainID]

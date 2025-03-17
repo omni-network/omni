@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"os"
 	"path/filepath"
 	"time"
@@ -21,10 +20,10 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
 
 	"github.com/spf13/cobra"
 )
@@ -327,7 +326,7 @@ func devnetFund(ctx context.Context, cfg devnetFundConfig) error {
 	tx, _, err := backend.Send(ctx, funder, txmgr.TxCandidate{
 		To:       &addr,
 		GasLimit: 100_000,
-		Value:    big.NewInt(params.Ether),
+		Value:    umath.Ether(1),
 	})
 	if err != nil {
 		return errors.Wrap(err, "send tx")

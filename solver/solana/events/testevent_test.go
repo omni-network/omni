@@ -4,10 +4,11 @@ package dummy
 
 import (
 	"bytes"
-	ag_gofuzz "github.com/gagliardetto/gofuzz"
-	ag_require "github.com/stretchr/testify/require"
 	"strconv"
 	"testing"
+
+	ag_gofuzz "github.com/gagliardetto/gofuzz"
+	ag_require "github.com/stretchr/testify/require"
 )
 
 func TestEncodeDecode_TestEvent(t *testing.T) {

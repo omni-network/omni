@@ -2,7 +2,6 @@ package loadgen
 
 import (
 	"context"
-	"math/big"
 	"math/rand/v2"
 	"time"
 
@@ -11,9 +10,9 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 const loadgenJitter = 0.2 // 20% jitter
@@ -62,7 +61,7 @@ func delegateOnce(ctx context.Context, contract *bindings.Staking, backend *ethb
 	if err != nil {
 		return err
 	}
-	txOpts.Value = big.NewInt(params.Ether) // 1 ETH (in wei)
+	txOpts.Value = umath.Ether(1) // 1 ETH (in wei)
 
 	tx, err := contract.Delegate(txOpts, validator)
 	if err != nil {

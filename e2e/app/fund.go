@@ -13,13 +13,13 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/txmgr"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/params"
 )
 
-const saneMaxETH = 120    // Maximum amount of ETH to fund (in ether).
+const saneMaxETH = 121    // Maximum amount of ETH to fund (in ether).
 const saneMaxOmni = 60230 // Maximum amount of OMNI to fund (in ether OMNI).
 
 // FundAccounts funds the EOAs and contracts that need funding to their target balance.
@@ -195,7 +195,7 @@ func fund(ctx context.Context, params fundParams) error {
 	if err != nil {
 		log.Warn(ctx, "Failed fetching balance, skipping", err)
 		return nil
-	} else if minBalance.Cmp(balance) < 0 {
+	} else if umath.LT(minBalance, balance) {
 		log.Info(ctx,
 			"Not funding account, balance sufficient",
 			"balance", etherStr(balance),
@@ -205,15 +205,15 @@ func fund(ctx context.Context, params fundParams) error {
 		return nil
 	}
 
-	amount := new(big.Int).Sub(targetBalance, balance)
-	if amount.Cmp(big.NewInt(0)) <= 0 {
+	amount := umath.Sub(targetBalance, balance)
+	if amount.Sign() <= 0 {
 		return errors.New("unexpected negative amount [BUG]") // Target balance below minimum balance
-	} else if saneMax != nil && amount.Cmp(saneMax) > 0 {
+	} else if saneMax != nil && umath.GT(amount, saneMax) {
 		log.Warn(ctx, "Funding amount exceeds sane max, skipping", nil,
 			"amount", etherStr(amount),
 			"max", etherStr(saneMax),
 		)
-	} else if amount.Cmp(funderBal) >= 0 {
+	} else if umath.GTE(amount, funderBal) {
 		return errors.New("funder balance too low",
 			"amount", etherStr(amount),
 			"funder", etherStr(funderBal),
@@ -257,15 +257,12 @@ func fund(ctx context.Context, params fundParams) error {
 }
 
 func etherStr(amount *big.Int) string {
-	b, _ := amount.Float64()
-	b /= params.Ether
-
-	return fmt.Sprintf("%.4f", b)
+	return fmt.Sprintf("%.4f", umath.ToEtherF64(amount))
 }
 
 func saneMax(token tokens.Token) *big.Int {
-	saneETH := new(big.Int).Mul(big.NewInt(saneMaxETH), big.NewInt(params.Ether))
-	saneOmni := new(big.Int).Mul(big.NewInt(saneMaxOmni), big.NewInt(params.Ether))
+	saneETH := umath.Ether(saneMaxETH)
+	saneOmni := umath.Ether(saneMaxOmni)
 
 	if token == tokens.OMNI {
 		return saneOmni

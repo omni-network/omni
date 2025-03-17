@@ -14,11 +14,11 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 // DeployEphemeralGasApp deploys OmniGasPump and OmniGasStation contracts to ephemeral networks.
@@ -132,7 +132,7 @@ func fundGasStation(ctx context.Context, def Definition) error {
 	}
 
 	// 1000 OMNI
-	amt := new(big.Int).Mul(big.NewInt(1000), big.NewInt(params.Ether))
+	amt := umath.Ether(1_000)
 
 	tx, rec, err := backend.Send(ctx, funder, txmgr.TxCandidate{
 		To:       &addrs.GasStation,
@@ -167,15 +167,15 @@ var (
 	GasPumpTests = []GasPumpTest{
 		{
 			Recipient:  common.HexToAddress("0x0000000000000000000000000000000000001111"),
-			TargetOMNI: big.NewInt(5000000000000000), // 0.005 OMNI
+			TargetOMNI: umath.Ether(0.005), // 0.005 OMNI
 		},
 		{
 			Recipient:  common.HexToAddress("0x0000000000000000000000000000000000002222"),
-			TargetOMNI: big.NewInt(10000000000000000), // 0.01 OMNI
+			TargetOMNI: umath.Ether(0.01), // 0.01 OMNI
 		},
 		{
 			Recipient:  common.HexToAddress("0x0000000000000000000000000000000000003333"),
-			TargetOMNI: big.NewInt(15000000000000000), // 0.015 OMNI
+			TargetOMNI: umath.Ether(0.015), // 0.015 OMNI
 		},
 	}
 )
@@ -237,7 +237,7 @@ func testGasPumps(ctx context.Context, def Definition) error {
 				return errors.New("dry fill up failed", "chain", chain.Name, "revert_reason", revertReason)
 			}
 
-			if actualOMNI.Cmp(test.TargetOMNI) != 0 {
+			if !umath.EQ(actualOMNI, test.TargetOMNI) {
 				return errors.New("inaccurate quote", "chain", chain.Name, "actual_omni", actualOMNI, "provided_eth", neededETH, "target_omni", test.TargetOMNI)
 			}
 

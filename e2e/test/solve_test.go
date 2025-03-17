@@ -101,7 +101,7 @@ func testSolverApprovals(ctx context.Context, t *testing.T, network netconf.Netw
 		require.NoError(t, err)
 
 		// must be max allowance
-		require.Zero(t, allowance.Cmp(umath.MaxUint256), "not max allowance")
+		require.True(t, umath.EQ(allowance, umath.MaxUint256), "not max allowance")
 	}
 }
 

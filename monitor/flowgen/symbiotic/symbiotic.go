@@ -135,6 +135,8 @@ var metaData = &bind.MetaData{
 	ABI: string(abiJSON),
 }
 
+// Jobs creates the following jobs:
+// - deposit wstETH from the source to the destination chain.
 func Jobs(ctx context.Context, backends ethbackend.Backends, networkID netconf.ID, owner common.Address) ([]types.Job, error) {
 	var jobs []types.Job
 	deposit := big.NewInt(0).Mul(util.MilliEther, big.NewInt(20)) // 0.02 ETH

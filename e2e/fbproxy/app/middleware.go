@@ -24,7 +24,7 @@ type txSigner interface {
 func NewSendTxMiddleware(txsigner txSigner, chainID uint64) Middleware {
 	// sigHelper used to create signature hash and recover tx sender,
 	// not for actual signing which is left to txsigner
-	sigHelper := types.LatestSignerForChainID(umath.NewBigInt(chainID))
+	sigHelper := types.LatestSignerForChainID(umath.New(chainID))
 
 	return func(ctx context.Context, req JSONRPCMessage) (JSONRPCMessage, error) {
 		if req.Method != "eth_sendTransaction" {

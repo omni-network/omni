@@ -6,8 +6,7 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/errors"
-
-	"cosmossdk.io/math"
+	"github.com/omni-network/omni/lib/umath"
 )
 
 // fundAnvil funds EOAs on anvil chains.
@@ -17,7 +16,7 @@ func fundAnvil(ctx context.Context, def Definition) error {
 	}
 
 	toFund := eoa.MustAddresses(def.Testnet.Network, eoa.AllRoles()...)
-	amt := math.NewInt(1000000).MulRaw(1e18).BigInt() // 1M ETH
+	amt := umath.Ether(1_000_000) // 1M Ether
 
 	for _, chain := range def.Testnet.AnvilChains {
 		backend, err := def.Backends().Backend(chain.Chain.ChainID)

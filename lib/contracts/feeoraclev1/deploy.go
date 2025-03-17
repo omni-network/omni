@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens/coingecko"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -53,7 +54,7 @@ func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainID
 		Deployer:        eoa.MustAddress(network, eoa.RoleDeployer),
 		ProxyAdminOwner: eoa.MustAddress(network, eoa.RoleUpgrader),
 		BaseGasLimit:    50_000,
-		ProtocolFee:     big.NewInt(0),
+		ProtocolFee:     umath.Zero(),
 	}
 	if err := cfg.Validate(); err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "validate cfg")

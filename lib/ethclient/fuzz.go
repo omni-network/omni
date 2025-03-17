@@ -1,8 +1,9 @@
 package ethclient
 
 import (
-	"math/big"
 	"time"
+
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
@@ -42,7 +43,7 @@ func NewFuzzer(seed int64) *fuzz.Fuzzer {
 			block := new(types.Block)
 			c.Fuzz(block)
 
-			env := engine.BlockToExecutableData(block, big.NewInt(0), nil, nil)
+			env := engine.BlockToExecutableData(block, umath.Zero(), nil, nil)
 
 			*b = *env.ExecutionPayload
 		},

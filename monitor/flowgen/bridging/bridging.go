@@ -91,6 +91,7 @@ func nativeOrderData(
 	return orderData, nil
 }
 
+// Jobs bridges native ETH from one chain to another one.
 func Jobs(networkID netconf.ID, owner common.Address) ([]types.Job, error) {
 	type balanced struct {
 		From uint64
@@ -107,7 +108,6 @@ func Jobs(networkID netconf.ID, owner common.Address) ([]types.Job, error) {
 		return nil, nil
 	}
 
-	// Bridging of native ETH
 	amount := big.NewInt(0).Mul(util.MilliEther, big.NewInt(20)) // 0.02 ETH
 
 	job1, err := newJob(networkID, b.From, b.To, owner, amount)

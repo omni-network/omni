@@ -23,13 +23,13 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/lib/txmgr"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
 
 	eigentypes "github.com/Layr-Labs/eigenlayer-cli/pkg/types"
 	eigenutils "github.com/Layr-Labs/eigenlayer-cli/pkg/utils"
@@ -60,7 +60,7 @@ func TestRegisterDeregister(t *testing.T) {
 
 	// Register operators to omni AVS with a stake more than minimum stake
 	for _, operator := range eoas.operators() {
-		delegateWETH(t, ctx, contracts, backend, operator, toWei(100))
+		delegateWETH(t, ctx, contracts, backend, operator, umath.Ether(100))
 		registerOperator(t, ctx, contracts, backend, eoas.operatorKey(operator))
 		assertOperatorRegistered(t, ctx, contracts, operator)
 	}
@@ -93,7 +93,7 @@ func setup(t *testing.T) (context.Context, *ethbackend.Backend, Contracts, EOAS)
 	// So they can transact, and delegate to operators.
 	for _, account := range eoas.operators() {
 		fundAccount(t, ctx, backend, eoas.EigenOwner, account)
-		mintWETHToAddresses(t, ctx, backend, contracts, eoas.EigenOwner, toWei(1000), account)
+		mintWETHToAddresses(t, ctx, backend, contracts, eoas.EigenOwner, umath.Ether(1000), account)
 	}
 
 	// Register operators with EigenLayer
@@ -132,7 +132,7 @@ func testStratParams() []bindings.IOmniAVSStrategyParam {
 		{
 			// devnet WETH
 			Strategy:   common.HexToAddress("0xdBD296711eC8eF9Aacb623ee3F1C0922dce0D7b2"),
-			Multiplier: big.NewInt(1e18), // OmniAVS.STRATEGY_WEIGHTING_DIVISOR
+			Multiplier: umath.Ether(1), // OmniAVS.STRATEGY_WEIGHTING_DIVISOR
 		},
 	}
 }
@@ -153,7 +153,7 @@ func testDeployCfg(t *testing.T) deployConfig {
 		stratParams:      testStratParams(),
 		portal:           addrs.Portal,
 		ethStakeInbox:    common.HexToAddress("0x1234"), // stub
-		minOperatorStake: big.NewInt(1e18),              // 1 ETH
+		minOperatorStake: umath.Ether(1),                // 1 ETH
 		maxOperatorCount: 10,
 		allowlistEnabled: false,
 	}
@@ -431,7 +431,7 @@ func fundAccount(t *testing.T, ctx context.Context, backend *ethbackend.Backend,
 	t.Helper()
 	tx, _, err := backend.Send(ctx, funder, txmgr.TxCandidate{
 		To:    &account,
-		Value: new(big.Int).Mul(big.NewInt(params.Ether), big.NewInt(10)), // 10 ETH
+		Value: umath.Ether(10), // 10 ETH
 	})
 	require.NoError(t, err)
 
@@ -475,7 +475,7 @@ func registerOperator(t *testing.T, ctx context.Context, contracts Contracts, b 
 			PrivateKeyStorePath: keystoreFile,
 			SignerType:          eigentypes.LocalKeystoreSigner,
 		},
-		ChainId: *big.NewInt(int64(chainID)),
+		ChainId: *umath.New(chainID),
 	}
 
 	cfgYAML, err := cfg.MarshalYAML() // Convert into custom yaml struct first
@@ -533,7 +533,7 @@ func deregisterOperator(t *testing.T, ctx context.Context, contracts Contracts, 
 			PrivateKeyStorePath: keystoreFile,
 			SignerType:          eigentypes.LocalKeystoreSigner,
 		},
-		ChainId: *big.NewInt(int64(chainID)),
+		ChainId: *umath.New(chainID),
 	}
 
 	cfgYAML, err := cfg.MarshalYAML() // Convert into custom yaml struct first
@@ -573,10 +573,6 @@ type stubPrompter struct {
 
 func (s stubPrompter) InputHiddenString(_, _ string, _ func(string) error) (string, error) {
 	return s.password, nil
-}
-
-func toWei(amount int64) *big.Int {
-	return new(big.Int).Mul(big.NewInt(amount), big.NewInt(params.Ether))
 }
 
 // mustGetABI returns the metadata's ABI as an abi.ABI type.

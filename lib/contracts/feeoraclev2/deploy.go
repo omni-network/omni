@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens/coingecko"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -32,7 +33,7 @@ func isEmpty(addr common.Address) bool {
 	return addr == common.Address{}
 }
 
-var maxUint96 = new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 96), big.NewInt(1))
+var maxUint96 = umath.Sub(new(big.Int).Lsh(umath.One(), 96), umath.One()) // 1 << 96 - 1
 
 func (cfg DeploymentConfig) Validate() error {
 	if cfg.Create3Salt == "" {
@@ -56,7 +57,7 @@ func (cfg DeploymentConfig) Validate() error {
 	if isEmpty(cfg.Manager) {
 		return errors.New("manager is zero")
 	}
-	if cfg.ProtocolFee.Cmp(maxUint96) > 0 {
+	if umath.GT(cfg.ProtocolFee, maxUint96) {
 		return errors.New("protocol fee too high")
 	}
 
@@ -121,7 +122,7 @@ func Deploy(ctx context.Context, network netconf.ID, chainID uint64, destChainID
 		Owner:           eoa.MustAddress(network, eoa.RoleManager),
 		Deployer:        eoa.MustAddress(network, eoa.RoleDeployer),
 		Manager:         eoa.MustAddress(network, eoa.RoleMonitor), // NOTE: monitor is owner of fee oracle contracts, because monitor manages on chain gas prices / conversion rates
-		ProtocolFee:     big.NewInt(0),
+		ProtocolFee:     umath.Zero(),
 	}
 
 	return deploy(ctx, chainID, destChainIDs, cfg, backend, backends)
