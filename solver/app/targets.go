@@ -33,6 +33,11 @@ func newCallAllower(network netconf.ID, middlemanAddr common.Address) callAllowF
 			return true
 		}
 
+		// temporarily whitelist Zodomo
+		if target == common.HexToAddress("0xA779fC675Db318dab004Ab8D538CB320D0013F42") {
+			return true
+		}
+
 		if target == middlemanAddr {
 			proxiedTarget, _, err := parseMiddlemanCall(calldata)
 			if err != nil {
