@@ -23,6 +23,20 @@ func maybeFundERC20Solver(ctx context.Context, network netconf.ID, backends ethb
 		return nil
 	}
 
+	mockTokens := MockTokens()
+	if len(mockTokens) != 3 {
+		return errors.New("unexpected mock tokens")
+	}
+
+	wstETHOnMockL1 := MockTokens()[1]
+	if wstETHOnMockL1.ChainID != evmchain.IDMockL1 || wstETHOnMockL1.Symbol != tokens.WSTETH.Symbol {
+		return errors.New("unexpected mock token")
+	}
+	wstETHOnMockL2 := MockTokens()[2]
+	if wstETHOnMockL2.ChainID != evmchain.IDMockL2 || wstETHOnMockL2.Symbol != tokens.WSTETH.Symbol {
+		return errors.New("unexpected mock token")
+	}
+
 	// erc20 tokens to fund solver with on devnet. useful for solvernet development when forking public networks
 	toFund := []struct {
 		chainID uint64
@@ -32,6 +46,9 @@ func maybeFundERC20Solver(ctx context.Context, network netconf.ID, backends ethb
 		{chainID: evmchain.IDMockL1, addr: common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")},
 		// holesky stETH
 		{chainID: evmchain.IDMockL1, addr: common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")},
+		// devnet wstETH
+		{chainID: evmchain.IDMockL1, addr: wstETHOnMockL1.Address()},
+		{chainID: evmchain.IDMockL2, addr: wstETHOnMockL2.Address()},
 	}
 
 	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
