@@ -71,10 +71,14 @@ func newJob(
 	}
 
 	namer := netconf.ChainNamer(networkID)
+	cadence := 30 * time.Minute
+	if networkID == netconf.Devnet {
+		cadence = time.Second * 10
+	}
 
 	return types.Job{
 		Name:      fmt.Sprintf("Symbiotic deposit (%v->%v)", namer(conf.srcChain), namer(conf.dstChain)),
-		Cadence:   30 * time.Minute,
+		Cadence:   cadence,
 		NetworkID: networkID,
 
 		SrcChain: conf.srcChain,
