@@ -13,7 +13,21 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
+
+	"github.com/ethereum/go-ethereum/common"
 )
+
+func salt(networkID netconf.ID) string {
+	return networkID.String() + "::mock::vault"
+}
+
+func MockVaultAddress(networkID netconf.ID) common.Address {
+	return create3.Address(
+		contracts.Create3Factory(networkID),
+		salt(networkID),
+		eoa.MustAddress(networkID, eoa.RoleDeployer),
+	)
+}
 
 // maybeDeployMockVault deploys a wstETH mock vault to the MockL2 chain.
 func maybeDeployMockVault(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
@@ -43,7 +57,7 @@ func maybeDeployMockVault(ctx context.Context, network netconf.Network, backends
 		return errors.Wrap(err, "new create3")
 	}
 
-	salt := network.ID.String() + "::mock::vault"
+	salt := salt(network.ID)
 
 	addr, deployed, err := isDeployed(ctx, backend, factory, deployer, salt)
 	if err != nil {
