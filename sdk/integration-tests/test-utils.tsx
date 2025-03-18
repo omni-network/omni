@@ -3,13 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { type RenderHookResult, renderHook } from '@testing-library/react'
 import { http, type Chain, createWalletClient } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
-import {
-  type Config,
-  type CreateConnectorFn,
-  WagmiProvider,
-  createConfig,
-  mock,
-} from 'wagmi'
+import { type Config, WagmiProvider, createConfig, mock } from 'wagmi'
 
 import { OmniProvider } from '../src/index.js'
 
@@ -28,6 +22,7 @@ if (endpointsFilePath != null && endpointsFilePath.trim() !== '') {
 }
 
 export const ETHER = 1_000_000_000_000_000_000n // 18 decimals
+export const OMNI_DEVNET_ID = 1651
 export const MOCK_L1_ID = 1652
 export const MOCK_L2_ID = 1654
 export const ZERO_ADDRESS =
@@ -60,19 +55,17 @@ const MOCK_CHAINS: Record<number, Chain> = {
   [MOCK_L2_ID]: MOCK_L2_CHAIN,
 }
 
-export const accounts = ['0xE0cF003AC27FaeC91f107E3834968A601842e9c6'] as const
-
-const mockConnector = mock({ accounts })
-
-const account = privateKeyToAccount(
+export const testAccount = privateKeyToAccount(
   '0xbb119deceaff95378015e684292e91a37ef2ae1522f300a2cfdcb5b004bbf00d',
 )
 
+const mockConnector = mock({ accounts: [testAccount.address] as const })
+
 function createClient({ chain }: { chain: Chain }) {
-  return createWalletClient({ account, chain, transport: http() })
+  return createWalletClient({ account: testAccount, chain, transport: http() })
 }
 
-export const testConnector: CreateConnectorFn = (config) => {
+export function testConnector(config) {
   const connector = mockConnector(config)
   connector.getClient = async ({ chainId } = {}) => {
     const chain = chainId ? MOCK_CHAINS[chainId] : MOCK_L1_CHAIN
@@ -123,7 +116,7 @@ export function ContextProvider(props: ContextProviderProps) {
   )
 }
 
-export function createRenderHook(config: TestConfig) {
+export function createRenderHook(config: TestConfig = {}) {
   return function customRenderHook<Result>(
     render: () => Result,
   ): RenderHookResult<Result, ContextProviderProps> {
