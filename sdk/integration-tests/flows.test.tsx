@@ -78,7 +78,7 @@ async function executeTestOrder(
 }
 
 describe('ERC20 OMNI to native OMNI transfer orders', () => {
-  test('succeeds with valid expense', async () => {
+  test('behaviour: succeeds with valid expense', async () => {
     const amount = 10n * ETHER
     const order: AnyOrder = {
       owner: testAccount.address,
@@ -89,6 +89,32 @@ describe('ERC20 OMNI to native OMNI transfer orders', () => {
       deposit: { token: TOKEN_ADDRESS, amount },
     }
     await executeTestOrder(order)
+  })
+
+  test('behaviour: fails with native deposit', async () => {
+    const amount = 10n * ETHER
+    const order: AnyOrder = {
+      owner: testAccount.address,
+      srcChainId: MOCK_L1_ID,
+      destChainId: OMNI_DEVNET_ID,
+      expense: { token: ZERO_ADDRESS, amount },
+      calls: [{ target: testAccount.address, value: amount }],
+      deposit: { token: ZERO_ADDRESS, amount },
+    }
+    await executeTestOrder(order, 'InvalidDeposit')
+  })
+
+  test('behaviour: fails with unsupported ERC20 deposit', async () => {
+    const amount = 10n * ETHER
+    const order: AnyOrder = {
+      owner: testAccount.address,
+      srcChainId: MOCK_L1_ID,
+      destChainId: OMNI_DEVNET_ID,
+      expense: { token: ZERO_ADDRESS, amount },
+      calls: [{ target: testAccount.address, value: amount }],
+      deposit: { token: '0x1234000000000000000000000000000000000000', amount },
+    }
+    await executeTestOrder(order, 'UnsupportedDeposit')
   })
 })
 
