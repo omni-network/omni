@@ -21,14 +21,14 @@
     "@nomad-xyz/excessively-safe-call": "github:nomad-xyz/ExcessivelySafeCall",
     "@openzeppelin-v4/contracts": "npm:@openzeppelin/contracts@4.9.6",
     "@openzeppelin-v4/contracts-upgradeable": "npm:@openzeppelin/contracts-upgradeable@4.9.6",
-    "@openzeppelin/contracts": "^5.0.2",
-    "@openzeppelin/contracts-upgradeable": "^5.0.2",
+    "@openzeppelin/contracts": "^5.2.0",
+    "@openzeppelin/contracts-upgradeable": "^5.2.0",
     "createx": "github:pcaversaccio/createx",
     "eigenlayer-contracts": "github:Layr-Labs/eigenlayer-contracts",
     "eigenlayer-middleware": "github:Layr-Labs/eigenlayer-middleware",
     "elliptic-curve-solidity": "github:witnet/elliptic-curve-solidity",
     "murky": "github:dmfxyz/murky",
-    "solady": "^0.1.7",
-    "solmate": "^6.2.0"
+    "solady": "^0.1.12",
+    "solmate": "^6.8.0"
   }
 }
