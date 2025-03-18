@@ -27,7 +27,7 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
     CompleteMerkle internal m;
 
     address internal deployer = 0xA779fC675Db318dab004Ab8D538CB320D0013F42;
-    address internal admin = 0xFf89C654846B2E4BC572cEABE77056daf7b299a3;
+    address internal admin = 0xd09DD1126385877352d24B669Fd68f462200756E;
 
     ICreateX internal createX = ICreateX(0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed);
     IERC20 internal omni = IERC20(0x36E66fbBce51e4cD5bd3C62B637Eb411b18949D4);
@@ -43,7 +43,8 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
     address internal expectedMerkleDistributorAddr = 0x0000000000009bBE7DE32eaF5a88E355907B680E;
 
     GenesisStake internal genesisStake = GenesisStake(0xD2639676dA3dEA5491d27DA19340556b3a7d58B8);
-    MerkleDistributorWithDeadline internal merkleDistributor; // = MerkleDistributorWithDeadline(0x5B46d1fA23584c071fa5478D709A189c452Eb050);
+    MerkleDistributorWithDeadline internal merkleDistributor =
+        MerkleDistributorWithDeadline(0x0000000000009bBE7DE32eaF5a88E355907B680E);
 
     uint256 internal endTime = 1_746_057_599; // 2025-04-29 23:59:59 UTC
     uint256 internal index = 7987;
