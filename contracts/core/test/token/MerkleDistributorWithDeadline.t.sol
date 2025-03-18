@@ -29,7 +29,6 @@ contract MerkleDistributorWithDeadline_Test is Test {
     GenesisStake genesisStake;
     MerkleDistributorWithDeadline merkleDistributor;
 
-    address admin = makeAddr("admin");
     address proxyAdmin = makeAddr("proxyAdmin");
     address outbox = makeAddr("outbox");
     address validator = makeAddr("validator");
@@ -117,9 +116,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
                 keccak256("merkleDistributor"),
                 abi.encodePacked(
                     type(MerkleDistributorWithDeadline).creationCode,
-                    abi.encode(
-                        admin, address(omni), root, endTime, address(omniPortal), genesisStakeAddr, address(inbox)
-                    )
+                    abi.encode(address(omni), root, endTime, address(omniPortal), genesisStakeAddr, address(inbox))
                 )
             )
         );

@@ -42,7 +42,6 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
     mapping(address account => uint256) public nonces;
 
     constructor(
-        address admin,
         address token_,
         bytes32 merkleRoot_,
         uint256 endTime_,
@@ -52,7 +51,7 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
     ) MerkleDistributor(token_, merkleRoot_) {
         if (endTime_ <= block.timestamp) revert EndTimeInPast();
 
-        _initializeOwner(admin);
+        _initializeOwner(msg.sender);
         token_.safeApprove(solverNetInbox_, type(uint256).max);
 
         endTime = endTime_;
@@ -149,11 +148,10 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
     /**
      * @notice Withdraw tokens from the contract
      * @dev Reverts if called before the claim window has ended
-     * @param to Address to send the tokens to
      */
-    function withdraw(address to) external onlyOwner {
+    function withdraw() external onlyOwner {
         if (block.timestamp < endTime) revert NoWithdrawDuringClaim();
-        token.safeTransfer(to, token.balanceOf(address(this)));
+        token.safeTransfer(msg.sender, token.balanceOf(address(this)));
     }
 
     /**

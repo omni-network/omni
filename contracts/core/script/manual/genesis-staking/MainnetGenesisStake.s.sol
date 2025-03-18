@@ -27,7 +27,6 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
     CompleteMerkle internal m;
 
     address internal deployer = 0xA779fC675Db318dab004Ab8D538CB320D0013F42;
-    address internal admin = 0xFf89C654846B2E4BC572cEABE77056daf7b299a3;
 
     ICreateX internal createX = ICreateX(0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed);
     IERC20 internal omni = IERC20(0x36E66fbBce51e4cD5bd3C62B637Eb411b18949D4);
@@ -36,11 +35,11 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
 
     address internal validator = 0x8be1aBb26435fc1AF39Fc88DF9499f626094f9AF;
 
-    bytes32 internal genesisStakeImplSalt = 0xa779fc675db318dab004ab8d538cb320d0013f4200fc20573d7a708801d08213;
-    bytes32 internal merkleDistributorSalt = 0xa779fc675db318dab004ab8d538cb320d0013f42008dbcdb4f2b296d009be3b2;
+    bytes32 internal genesisStakeImplSalt = 0xa779fc675db318dab004ab8d538cb320d0013f42006fda006bab5cd1034643cc;
+    bytes32 internal merkleDistributorSalt = 0xa779fc675db318dab004ab8d538cb320d0013f4200205ad9f17a619b0079c949;
 
-    address internal expectedGenesisStakeImplAddr = 0x00000000000022bff6Fa8AC173fA1A87b1E4a04A;
-    address internal expectedMerkleDistributorAddr = 0x0000000000009bBE7DE32eaF5a88E355907B680E;
+    address internal expectedGenesisStakeImplAddr = 0x00000000000063B7931226e67CeF52d86085154d;
+    address internal expectedMerkleDistributorAddr = 0x0000000000003E960a909Ef4F0E77699a4286711;
 
     GenesisStake internal genesisStake = GenesisStake(0xD2639676dA3dEA5491d27DA19340556b3a7d58B8);
     MerkleDistributorWithDeadline internal merkleDistributor; // = MerkleDistributorWithDeadline(0x5B46d1fA23584c071fa5478D709A189c452Eb050);
@@ -54,7 +53,6 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
     bytes32 internal root;
 
     function fullDryRun() public {
-        _prepMerkleTree();
         _preventBroadcast();
         _maybeEtchSolverNetInbox();
 
@@ -72,8 +70,6 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
 
         _fundRewards();
         _upgrade();
-
-        require(merkleDistributor.owner() == admin, "MerkleDistributor owner mismatch");
     }
 
     function deployGenesisStakeImpl() public {
@@ -87,8 +83,6 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
     }
 
     function deployMerkleDistributor() public {
-        _prepMerkleTree();
-
         vm.startBroadcast();
         if (msg.sender != deployer) revert("Unintended deployer");
         bool deployed = _deployMerkleDistributor();
@@ -138,9 +132,9 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
         if (impl == expectedGenesisStakeImplAddr) return false;
 
         ProxyAdmin proxyAdmin = ProxyAdmin(EIP1967Helper.getAdmin(address(genesisStake)));
-        address _admin = proxyAdmin.owner();
+        address admin = proxyAdmin.owner();
 
-        vm.prank(_admin);
+        vm.prank(admin);
         proxyAdmin.upgradeAndCall(ITransparentUpgradeableProxy(address(genesisStake)), expectedGenesisStakeImplAddr, "");
 
         address newImpl = EIP1967Helper.getImplementation(address(genesisStake));
@@ -173,25 +167,23 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
     }
 
     function _deployMerkleDistributor() internal returns (bool) {
+        _prepMerkleTree();
         if (address(expectedMerkleDistributorAddr).code.length != 0) return false;
 
-        (VmSafe.CallerMode mode,,) = vm.readCallers();
-        if (mode == VmSafe.CallerMode.None) vm.prank(deployer);
+        vm.prank(deployer);
         merkleDistributor = MerkleDistributorWithDeadline(
             createX.deployCreate3(
                 merkleDistributorSalt,
                 abi.encodePacked(
                     type(MerkleDistributorWithDeadline).creationCode,
-                    abi.encode(
-                        admin, address(omni), root, endTime, address(portal), address(genesisStake), address(inbox)
-                    )
+                    abi.encode(address(omni), root, endTime, address(portal), address(genesisStake), address(inbox))
                 )
             )
         );
 
         console2.log("MerkleDistributor constructor args:");
         console2.logBytes(
-            abi.encode(admin, address(omni), root, endTime, address(portal), address(genesisStake), address(inbox))
+            abi.encode(address(omni), root, endTime, address(portal), address(genesisStake), address(inbox))
         );
 
         require(address(merkleDistributor) == expectedMerkleDistributorAddr, "MerkleDistributor addr mismatch");
