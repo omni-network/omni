@@ -10,6 +10,8 @@ function apiUrl(env: Environment): string {
       return 'http://localhost:26661/api/v1'
     case 'testnet':
       return 'https://solver.omega.omni.network/api/v1'
+    case 'mainnet':
+      return 'https://solver.omni.network/api/v1'
     default:
       throw new Error(`Invalid environment supplied: ${env}`)
   }
