@@ -45,10 +45,12 @@ async function buildAndCheckOrder(quote: any) {
         value: quote.expense.amount,
       },
     ],
-    expense: {
-      isNative: true,
-      amount: quote.expense.amount,
-    },
+    expenses: [
+      {
+        isNative: true,
+        amount: quote.expense.amount,
+      },
+    ],
   };
 
   // Check order and return result

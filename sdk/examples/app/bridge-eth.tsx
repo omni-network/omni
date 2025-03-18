@@ -151,7 +151,7 @@ const EthBridge: React.FC<EthBridgeProps> = ({ selectedNetwork, onNetworkChange 
             token: zeroAddress,
             amount: quoteResult.isSuccess ? quoteResult.expense.amount : 0n
         },
-        validateEnabled: true
+        validateEnabled: quoteResult.isSuccess
     });
 
     // SDK INTEGRATION POINT #4 - Monitor order status
