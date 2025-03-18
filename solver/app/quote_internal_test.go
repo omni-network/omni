@@ -7,8 +7,10 @@ import (
 	"math/big"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/solver/types"
@@ -18,6 +20,82 @@ import (
 	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
 )
+
+func TestQuoteExpense(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		Name         string
+		DepositGwei  uint64
+		DepositEther float64
+		Expense      string
+	}{
+		{
+			Name:        "1 gwei",
+			DepositGwei: 1,
+			Expense:     "997_008_973",
+		},
+		{
+			Name:        "1000 gwei",
+			DepositGwei: 1_000,
+			Expense:     "997_008_973_080",
+		},
+		{
+			Name:         "0.01 eth",
+			DepositEther: 0.01,
+			Expense:      "9_970_089_730_807_577",
+		},
+		{
+			Name:         "1 eth",
+			DepositEther: 1,
+			Expense:      "997_008_973_080_757_726",
+		},
+		{
+			Name:         "1000 eth",
+			DepositEther: 1000,
+			Expense:      "997_008_973_080_757_726_819",
+		},
+		{
+			Name:        "1003 gwei",
+			DepositGwei: 1003,
+			Expense:     "1_000_000_000_000",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			t.Parallel()
+
+			dep := bi.Gwei(test.DepositGwei)
+			if bi.IsZero(dep) {
+				dep = bi.Ether(test.DepositEther)
+			}
+
+			expense := expenseFor(dep, standardFeeBips)
+			expenseFormatted := addThousandSeparators(expense.String())
+			require.Equal(t, test.Expense, expenseFormatted)
+
+			deposit2 := depositFor(expense, standardFeeBips)
+			require.Equal(t, dep, deposit2)
+		})
+	}
+}
+
+func addThousandSeparators(num string) string {
+	n := len(num)
+	if n <= 3 {
+		return num
+	}
+
+	var result []string
+	for i, digit := range num {
+		if (n-i)%3 == 0 && i != 0 {
+			result = append(result, "_")
+		}
+		result = append(result, string(digit))
+	}
+
+	return strings.Join(result, "")
+}
 
 func TestQuote(t *testing.T) {
 	t.Parallel()
