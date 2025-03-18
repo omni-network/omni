@@ -41,7 +41,7 @@ importers:
         version: 19.0.4(@types/react@19.0.8)
       '@vitest/coverage-v8':
         specifier: ^3.0.7
-        version: 3.0.7(@vitest/browser@3.0.7(@types/node@22.13.10)(typescript@5.7.2)(vite@6.2.0(@types/node@22.13.10))(vitest@3.0.7))(vitest@3.0.7(@types/debug@4.1.12)(@types/node@22.13.10)(@vitest/browser@3.0.7)(happy-dom@17.1.8)(msw@2.7.3(@types/node@22.13.10)(typescript@5.7.2)))
+        version: 3.0.7(@vitest/browser@3.0.7(@types/node@22.13.10)(bufferutil@4.0.9)(typescript@5.7.2)(utf-8-validate@5.0.10)(vite@6.2.0(@types/node@22.13.10))(vitest@3.0.7))(vitest@3.0.7(@types/debug@4.1.12)(@types/node@22.13.10)(@vitest/browser@3.0.7)(happy-dom@17.1.8)(msw@2.7.3(@types/node@22.13.10)(typescript@5.7.2)))
       typescript:
         specifier: ^5.7.2
         version: 5.7.2
@@ -84,8 +84,8 @@ packages:
     engines: {node: '>=6.0.0'}
     hasBin: true
 
-  '@babel/runtime@7.26.7':
-    resolution: {integrity: sha512-AOPI3D+a8dXnja+iwsUqGRjr1BbZIe771sXdapOtYI531gSqpi92vXivKcq2asu/DFpdl1ceFAKZyRzK2PCVcQ==}
+  '@babel/runtime@7.26.10':
+    resolution: {integrity: sha512-2WJMeRQPHKSPemqk/awGrAiuFfzBmOIPXKizAsVhWH9YJqLZ0H+HS4c8loHGgW6utJ3E/ejXQUsiGaQy2NZ9Fw==}
     engines: {node: '>=6.9.0'}
 
   '@babel/types@7.26.9':
@@ -336,8 +336,8 @@ packages:
     resolution: {integrity: sha512-zQ0IqbdX8FZ9aw11vP+dZkKDkS+kgIvQPHnSAXzP9pLu+Rfu3D3XEeLbicvoXJTYnhZiPmsZUxgdzXwNKxRPbA==}
     engines: {node: '>=14'}
 
-  '@inquirer/confirm@5.1.6':
-    resolution: {integrity: sha512-6ZXYK3M1XmaVBZX6FCfChgtponnL0R6I7k8Nu+kaoNkT828FVZTcca1MqmWQipaW2oNREQl5AaPCUOOCVNdRMw==}
+  '@inquirer/confirm@5.1.8':
+    resolution: {integrity: sha512-dNLWCYZvXDjO3rnQfk2iuJNL4Ivwz/T2+C3+WnNfJKsNGSuOs3wAo2F6e0p946gtSAk31nZMfW+MRmYaplPKsg==}
     engines: {node: '>=18'}
     peerDependencies:
       '@types/node': '>=18'
@@ -345,8 +345,8 @@ packages:
       '@types/node':
         optional: true
 
-  '@inquirer/core@10.1.7':
-    resolution: {integrity: sha512-AA9CQhlrt6ZgiSy6qoAigiA1izOa751ugX6ioSjqgJ+/Gd+tEN/TORk5sUYNjXuHWfW0r1n/a6ak4u/NqHHrtA==}
+  '@inquirer/core@10.1.9':
+    resolution: {integrity: sha512-sXhVB8n20NYkUBfDYgizGHlpRVaCRjtuzNZA6xpALIUbkgfd2Hjz+DfEN6+h1BRnuxw0/P4jCIMjMsEOAMwAJw==}
     engines: {node: '>=18'}
     peerDependencies:
       '@types/node': '>=18'
@@ -354,12 +354,12 @@ packages:
       '@types/node':
         optional: true
 
-  '@inquirer/figures@1.0.10':
-    resolution: {integrity: sha512-Ey6176gZmeqZuY/W/nZiUyvmb1/qInjcpiZjXWi6nON+nxJpD1bxtSoBxNliGISae32n6OwbY+TSXPZ1CfS4bw==}
+  '@inquirer/figures@1.0.11':
+    resolution: {integrity: sha512-eOg92lvrn/aRUqbxRyvpEWnrvRuTYRifixHkYVpJiygTgVSBIHDqLh0SrMQXkafvULg3ck11V7xvR+zcgvpHFw==}
     engines: {node: '>=18'}
 
-  '@inquirer/type@3.0.4':
-    resolution: {integrity: sha512-2MNFrDY8jkFYc9Il9DgLsHhMzuHnOYM1+CUYVWbzu9oT0hC7V7EcYvdCKeoll/Fcci04A+ERZ9wcc7cQ8lTkIA==}
+  '@inquirer/type@3.0.5':
+    resolution: {integrity: sha512-ZJpeIYYueOz/i/ONzrfof8g89kNdO2hjGuvULROo3O8rlB2CRtSseE5KeirnyE4t/thAn/EwvS/vuQeJCn+NZg==}
     engines: {node: '>=18'}
     peerDependencies:
       '@types/node': '>=18'
@@ -1512,6 +1512,7 @@ packages:
 
   lodash.isequal@4.5.0:
     resolution: {integrity: sha512-pDo3lu8Jhfjqls6GkMgpahsF9kCyayhgykjyLMNFTKWrpVdAQtYyB4muAMWozBB4ig/dtWAmsMxLEI8wuz+DYQ==}
+    deprecated: This package is deprecated. Use require('node:util').isDeepStrictEqual instead.
 
   loupe@3.1.3:
     resolution: {integrity: sha512-kkIp7XSkP78ZxJEsSxW3712C6teJVoeHHwgo9zJ380de7IYyJ2ISlxojcH2pC5OFLewESmnRi/+XCDIEEVyoug==}
@@ -1726,6 +1727,9 @@ packages:
 
   preact@10.25.4:
     resolution: {integrity: sha512-jLdZDb+Q+odkHJ+MpW/9U5cODzqnB+fy2EiHSZES7ldV5LK7yjlVzTp7R8Xy6W6y75kfK8iWYtFVH7lvjwrCMA==}
+
+  preact@10.26.4:
+    resolution: {integrity: sha512-KJhO7LBFTjP71d83trW+Ilnjbo+ySsaAgCfXOXUlmGzJ4ygYPWmysm77yg4emwfmoz3b22yvH5IsVFHbhUaH5w==}
 
   pretty-format@27.5.1:
     resolution: {integrity: sha512-Qb1gy5OrP5+zDf2Bvnzdl3jsTf1qXVMazbvCoKhtKqVs4/YK4ozX4gKQJJVyNe+cajNPn0KoC0MC3FUmaHWEmQ==}
@@ -1988,8 +1992,8 @@ packages:
     resolution: {integrity: sha512-t0rzBq87m3fVcduHDUFhKmyyX+9eo6WQjZvf51Ea/M0Q7+T374Jp1aUiyUl0GKxp8M/OETVHSDvmkyPgvX+X2w==}
     engines: {node: '>=10'}
 
-  type-fest@4.35.0:
-    resolution: {integrity: sha512-2/AwEFQDFEy30iOLjrvHDIH7e4HEWH+f1Yl1bI5XMqzuoCUqwYCdxachgsgv0og/JdVZUhbfjcJAoHj5L1753A==}
+  type-fest@4.37.0:
+    resolution: {integrity: sha512-S/5/0kFftkq27FPNye0XM1e2NsnoD/3FS+pBmbjmmtLT6I+i344KoOf7pvXreaFsDamWeaJX55nczA1m5PsBDg==}
     engines: {node: '>=16'}
 
   typescript@5.7.2:
@@ -2380,7 +2384,7 @@ snapshots:
     dependencies:
       '@babel/types': 7.26.9
 
-  '@babel/runtime@7.26.7':
+  '@babel/runtime@7.26.10':
     dependencies:
       regenerator-runtime: 0.14.1
 
@@ -2451,7 +2455,7 @@ snapshots:
       eth-json-rpc-filters: 6.0.1
       eventemitter3: 5.0.1
       keccak: 3.0.4
-      preact: 10.25.4
+      preact: 10.26.4
       sha.js: 2.4.11
     transitivePeerDependencies:
       - supports-color
@@ -2562,18 +2566,18 @@ snapshots:
       ethereum-cryptography: 2.2.1
       micro-ftch: 0.3.1
 
-  '@inquirer/confirm@5.1.6(@types/node@22.13.10)':
+  '@inquirer/confirm@5.1.8(@types/node@22.13.10)':
     dependencies:
-      '@inquirer/core': 10.1.7(@types/node@22.13.10)
-      '@inquirer/type': 3.0.4(@types/node@22.13.10)
+      '@inquirer/core': 10.1.9(@types/node@22.13.10)
+      '@inquirer/type': 3.0.5(@types/node@22.13.10)
     optionalDependencies:
       '@types/node': 22.13.10
     optional: true
 
-  '@inquirer/core@10.1.7(@types/node@22.13.10)':
+  '@inquirer/core@10.1.9(@types/node@22.13.10)':
     dependencies:
-      '@inquirer/figures': 1.0.10
-      '@inquirer/type': 3.0.4(@types/node@22.13.10)
+      '@inquirer/figures': 1.0.11
+      '@inquirer/type': 3.0.5(@types/node@22.13.10)
       ansi-escapes: 4.3.2
       cli-width: 4.1.0
       mute-stream: 2.0.0
@@ -2584,10 +2588,10 @@ snapshots:
       '@types/node': 22.13.10
     optional: true
 
-  '@inquirer/figures@1.0.10':
+  '@inquirer/figures@1.0.11':
     optional: true
 
-  '@inquirer/type@3.0.4(@types/node@22.13.10)':
+  '@inquirer/type@3.0.5(@types/node@22.13.10)':
     optionalDependencies:
       '@types/node': 22.13.10
     optional: true
@@ -2717,7 +2721,7 @@ snapshots:
 
   '@metamask/sdk@0.32.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
     dependencies:
-      '@babel/runtime': 7.26.7
+      '@babel/runtime': 7.26.10
       '@metamask/onboarding': 1.0.1
       '@metamask/providers': 16.1.0
       '@metamask/sdk-communication-layer': 0.32.0(cross-fetch@4.1.0)(eciesjs@0.4.13)(eventemitter2@6.4.9)(readable-stream@3.6.2)(socket.io-client@4.8.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))
@@ -3074,7 +3078,7 @@ snapshots:
   '@testing-library/dom@10.4.0':
     dependencies:
       '@babel/code-frame': 7.26.2
-      '@babel/runtime': 7.26.7
+      '@babel/runtime': 7.26.10
       '@types/aria-query': 5.0.4
       aria-query: 5.3.0
       chalk: 4.1.2
@@ -3084,7 +3088,7 @@ snapshots:
 
   '@testing-library/react@16.2.0(@testing-library/dom@10.4.0)(@types/react-dom@19.0.4(@types/react@19.0.8))(@types/react@19.0.8)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
     dependencies:
-      '@babel/runtime': 7.26.7
+      '@babel/runtime': 7.26.10
       '@testing-library/dom': 10.4.0
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
@@ -3130,7 +3134,7 @@ snapshots:
 
   '@types/trusted-types@2.0.7': {}
 
-  '@vitest/browser@3.0.7(@types/node@22.13.10)(typescript@5.7.2)(vite@6.2.0(@types/node@22.13.10))(vitest@3.0.7)':
+  '@vitest/browser@3.0.7(@types/node@22.13.10)(bufferutil@4.0.9)(typescript@5.7.2)(utf-8-validate@5.0.10)(vite@6.2.0(@types/node@22.13.10))(vitest@3.0.7)':
     dependencies:
       '@testing-library/dom': 10.4.0
       '@testing-library/user-event': 14.6.1(@testing-library/dom@10.4.0)
@@ -3141,7 +3145,7 @@ snapshots:
       sirv: 3.0.1
       tinyrainbow: 2.0.0
       vitest: 3.0.7(@types/debug@4.1.12)(@types/node@22.13.10)(@vitest/browser@3.0.7)(happy-dom@17.1.8)(msw@2.7.3(@types/node@22.13.10)(typescript@5.7.2))
-      ws: 8.18.1
+      ws: 8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - '@types/node'
       - bufferutil
@@ -3150,7 +3154,7 @@ snapshots:
       - vite
     optional: true
 
-  '@vitest/coverage-v8@3.0.7(@vitest/browser@3.0.7(@types/node@22.13.10)(typescript@5.7.2)(vite@6.2.0(@types/node@22.13.10))(vitest@3.0.7))(vitest@3.0.7(@types/debug@4.1.12)(@types/node@22.13.10)(@vitest/browser@3.0.7)(happy-dom@17.1.8)(msw@2.7.3(@types/node@22.13.10)(typescript@5.7.2)))':
+  '@vitest/coverage-v8@3.0.7(@vitest/browser@3.0.7(@types/node@22.13.10)(bufferutil@4.0.9)(typescript@5.7.2)(utf-8-validate@5.0.10)(vite@6.2.0(@types/node@22.13.10))(vitest@3.0.7))(vitest@3.0.7(@types/debug@4.1.12)(@types/node@22.13.10)(@vitest/browser@3.0.7)(happy-dom@17.1.8)(msw@2.7.3(@types/node@22.13.10)(typescript@5.7.2)))':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@bcoe/v8-coverage': 1.0.2
@@ -3166,7 +3170,7 @@ snapshots:
       tinyrainbow: 2.0.0
       vitest: 3.0.7(@types/debug@4.1.12)(@types/node@22.13.10)(@vitest/browser@3.0.7)(happy-dom@17.1.8)(msw@2.7.3(@types/node@22.13.10)(typescript@5.7.2))
     optionalDependencies:
-      '@vitest/browser': 3.0.7(@types/node@22.13.10)(typescript@5.7.2)(vite@6.2.0(@types/node@22.13.10))(vitest@3.0.7)
+      '@vitest/browser': 3.0.7(@types/node@22.13.10)(bufferutil@4.0.9)(typescript@5.7.2)(utf-8-validate@5.0.10)(vite@6.2.0(@types/node@22.13.10))(vitest@3.0.7)
     transitivePeerDependencies:
       - supports-color
 
@@ -3790,7 +3794,7 @@ snapshots:
 
   date-fns@2.30.0:
     dependencies:
-      '@babel/runtime': 7.26.7
+      '@babel/runtime': 7.26.10
 
   debug@4.3.7:
     dependencies:
@@ -4277,7 +4281,7 @@ snapshots:
       '@bundled-es-modules/cookie': 2.0.1
       '@bundled-es-modules/statuses': 1.0.1
       '@bundled-es-modules/tough-cookie': 0.1.6
-      '@inquirer/confirm': 5.1.6(@types/node@22.13.10)
+      '@inquirer/confirm': 5.1.8(@types/node@22.13.10)
       '@mswjs/interceptors': 0.37.6
       '@open-draft/deferred-promise': 2.2.0
       '@open-draft/until': 2.1.0
@@ -4290,7 +4294,7 @@ snapshots:
       path-to-regexp: 6.3.0
       picocolors: 1.1.1
       strict-event-emitter: 0.5.1
-      type-fest: 4.35.0
+      type-fest: 4.37.0
       yargs: 17.7.2
     optionalDependencies:
       typescript: 5.7.2
@@ -4426,6 +4430,8 @@ snapshots:
       source-map-js: 1.2.1
 
   preact@10.25.4: {}
+
+  preact@10.26.4: {}
 
   pretty-format@27.5.1:
     dependencies:
@@ -4707,7 +4713,7 @@ snapshots:
   type-fest@0.21.3:
     optional: true
 
-  type-fest@4.35.0:
+  type-fest@4.37.0:
     optional: true
 
   typescript@5.7.2: {}
@@ -4850,7 +4856,7 @@ snapshots:
     optionalDependencies:
       '@types/debug': 4.1.12
       '@types/node': 22.13.10
-      '@vitest/browser': 3.0.7(@types/node@22.13.10)(typescript@5.7.2)(vite@6.2.0(@types/node@22.13.10))(vitest@3.0.7)
+      '@vitest/browser': 3.0.7(@types/node@22.13.10)(bufferutil@4.0.9)(typescript@5.7.2)(utf-8-validate@5.0.10)(vite@6.2.0(@types/node@22.13.10))(vitest@3.0.7)
       happy-dom: 17.1.8
     transitivePeerDependencies:
       - jiti
@@ -4974,7 +4980,10 @@ snapshots:
       bufferutil: 4.0.9
       utf-8-validate: 5.0.10
 
-  ws@8.18.1:
+  ws@8.18.1(bufferutil@4.0.9)(utf-8-validate@5.0.10):
+    optionalDependencies:
+      bufferutil: 4.0.9
+      utf-8-validate: 5.0.10
     optional: true
 
   xmlhttprequest-ssl@2.1.2: {}
