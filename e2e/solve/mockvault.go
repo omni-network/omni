@@ -17,7 +17,7 @@ import (
 
 // maybeDeployMockVault deploys a wstETH mock vault to the MockL2 chain.
 func maybeDeployMockVault(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
-	if !network.ID.IsEphemeral() {
+	if network.ID != netconf.Devnet {
 		return nil
 	}
 
@@ -60,7 +60,7 @@ func maybeDeployMockVault(ctx context.Context, network netconf.Network, backends
 		return errors.Wrap(err, "get abi")
 	}
 
-	wstETHOnMockL2, err := MockTokens().Find(evmchain.IDMockL2, tokens.WSTETH.Symbol)
+	wstETHOnMockL2, err := Find(evmchain.IDMockL2, tokens.WSTETH.Symbol)
 	if err != nil {
 		return err
 	}

@@ -23,11 +23,11 @@ func maybeFundERC20Solver(ctx context.Context, network netconf.ID, backends ethb
 		return nil
 	}
 
-	wstETHOnMockL1, err := MockTokens().Find(evmchain.IDMockL1, tokens.WSTETH.Symbol)
+	wstETHOnMockL1, err := Find(evmchain.IDMockL1, tokens.WSTETH.Symbol)
 	if err != nil {
 		return err
 	}
-	wstETHOnMockL2, err := MockTokens().Find(evmchain.IDMockL2, tokens.WSTETH.Symbol)
+	wstETHOnMockL2, err := Find(evmchain.IDMockL2, tokens.WSTETH.Symbol)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func maybeFundERC20Flowgen(ctx context.Context, network netconf.ID, backends eth
 		return nil
 	}
 
-	wstETHOnMockL1, err := MockTokens().Find(evmchain.IDMockL1, tokens.WSTETH.Symbol)
+	wstETHOnMockL1, err := Find(evmchain.IDMockL1, tokens.WSTETH.Symbol)
 	if err != nil {
 		return err
 	}

@@ -26,8 +26,6 @@ type MockToken struct {
 	NetworkID netconf.ID
 }
 
-type MockTokensSlice []MockToken
-
 var mocks = []MockToken{
 	// staging mock wstETH
 	{Token: tokens.WSTETH, ChainID: evmchain.IDBaseSepolia, NetworkID: netconf.Staging},
@@ -39,12 +37,12 @@ var mocks = []MockToken{
 	{Token: tokens.WSTETH, ChainID: evmchain.IDMockL2, NetworkID: netconf.Devnet},
 }
 
-func MockTokens() MockTokensSlice {
+func MockTokens() []MockToken {
 	return mocks
 }
 
-func (ts MockTokensSlice) Find(chainID uint64, symbol string) (common.Address, error) {
-	for _, t := range ts {
+func Find(chainID uint64, symbol string) (common.Address, error) {
+	for _, t := range MockTokens() {
 		if t.ChainID == chainID && t.Symbol == symbol {
 			return t.Address(), nil
 		}

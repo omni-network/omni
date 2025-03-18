@@ -18,25 +18,22 @@ import (
 
 // Deploy deploys solve inbox / outbox / middleman contracts, and devnet app (if devnet).
 func Deploy(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
-	var eg errgroup.Group
-	eg.Go(func() error { return deployBoxes(ctx, network, backends) })
-	eg.Go(func() error {
-		if err := maybeDeployMockTokens(ctx, network, backends); err != nil {
-			return err
-		}
+	var eg1 errgroup.Group
+	eg1.Go(func() error { return deployBoxes(ctx, network, backends) })
+	eg1.Go(func() error { return maybeDeployMockTokens(ctx, network, backends) })
 
-		// Block on potential mock tokens deployment, before funding.
-		eg.Go(func() error { return maybeFundERC20Solver(ctx, network.ID, backends) })
-		eg.Go(func() error { return maybeFundERC20Flowgen(ctx, network.ID, backends) })
+	if err := eg1.Wait(); err != nil {
+		return errors.Wrap(err, "deploy prerequisites")
+	}
 
-		// The mock vault is using one of the mock tokens as collateral, so we deploy it after the mock tokens are deployed.
-		eg.Go(func() error { return maybeDeployMockVault(ctx, network, backends) })
+	// These routines need to wait for `maybeDeployMockTokens` because they might use mock tokens.
+	var eg2 errgroup.Group
+	eg2.Go(func() error { return maybeFundERC20Solver(ctx, network.ID, backends) })
+	eg2.Go(func() error { return maybeFundERC20Flowgen(ctx, network.ID, backends) })
+	eg2.Go(func() error { return maybeDeployMockVault(ctx, network, backends) })
 
-		return nil
-	})
-
-	if err := eg.Wait(); err != nil {
-		return errors.Wrap(err, "deploy")
+	if err := eg2.Wait(); err != nil {
+		return errors.Wrap(err, "deploy dependent tasks")
 	}
 
 	return nil
