@@ -32,7 +32,7 @@
   "b"
  ],
  "Comet": {
-  "Version": "0.38.15",
+  "Version": "0.38.17",
   "RootDir": "testinput/input1",
   "ProxyApp": "",
   "Moniker": "config.toml",
