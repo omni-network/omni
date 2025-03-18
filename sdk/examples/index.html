@@ -58,6 +58,43 @@
             border-radius: var(--border-radius);
             padding: 1.5rem;
             box-shadow: var(--box-shadow);
+            position: relative;
+        }
+
+        .network-selector {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .network-selector label {
+            font-size: 0.875rem;
+            color: #666;
+            margin-bottom: 0;
+        }
+
+        .network-selector select {
+            padding: 0.375rem 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.25rem;
+            background-color: white;
+            font-size: 0.875rem;
+            color: var(--text-color);
+            cursor: pointer;
+            width: auto;
+        }
+
+        .network-selector select:hover {
+            border-color: #999;
+        }
+
+        .network-selector select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(4, 0, 255, 0.2);
         }
 
         .connect-wallet {

@@ -10,14 +10,27 @@ import {
 import ConnectButton from '../components/ConnectButton';
 
 // Network configuration
-const CHAINS: Record<number, { name: string; shortName: string }> = {
-    17000: { name: 'Ethereum Holesky', shortName: 'Holesky' },
-    84532: { name: 'Base Sepolia', shortName: 'Base Sepolia' },
-    421614: { name: 'Arbitrum Sepolia', shortName: 'Arb Sepolia' },
-    11155420: { name: 'Optimism Sepolia', shortName: 'Opt Sepolia' }
+const MAINNET_CHAINS: Record<number, { name: string; }> = {
+    1: { name: 'Ethereum' },
+    10: { name: 'Optimism' },
+    42161: { name: 'Arbitrum One' },
+    8453: { name: 'Base' }
 };
 
-const CHAIN_IDS = Object.keys(CHAINS).map(id => parseInt(id));
+const TESTNET_CHAINS: Record<number, { name: string; }> = {
+    17000: { name: 'Ethereum Holesky' },
+    84532: { name: 'Base Sepolia' },
+    421614: { name: 'Arbitrum Sepolia' },
+    11155420: { name: 'Optimism Sepolia' }
+};
+
+const MAINNET_CHAIN_IDS = Object.keys(MAINNET_CHAINS).map(id => parseInt(id));
+const TESTNET_CHAIN_IDS = Object.keys(TESTNET_CHAINS).map(id => parseInt(id));
+
+// Helper function to get chain name safely
+const getChainName = (chains: Record<number, { name: string }>, chainId: number): string => {
+    return chains[chainId]?.name || `Chain ${chainId}`;
+};
 
 /**
  * ETH Bridge Component
@@ -34,6 +47,33 @@ const EthBridge: React.FC = () => {
     const [sourceChainId, setSourceChainId] = useState<number>(17000);
     const [destinationChainId, setDestinationChainId] = useState<number>(421614);
     const [quoteMode, setQuoteMode] = useState<'deposit' | 'expense'>('deposit');
+    const [selectedNetwork, setSelectedNetwork] = useState<'mainnet' | 'omega' | 'staging'>('staging');
+
+    // Get available chains based on selected network
+    const availableChains = selectedNetwork === 'mainnet' ? MAINNET_CHAINS : TESTNET_CHAINS;
+    const availableChainIds = selectedNetwork === 'mainnet' ? MAINNET_CHAIN_IDS : TESTNET_CHAIN_IDS;
+
+    // Update chain selections when network changes
+    useEffect(() => {
+        const defaultSourceId = selectedNetwork === 'mainnet' ? 1 : 17000;
+        const defaultDestId = selectedNetwork === 'mainnet' ? 10 : 421614;
+
+        setSourceChainId(defaultSourceId);
+        setDestinationChainId(defaultDestId);
+    }, [selectedNetwork]);
+
+    // Ensure selected chains are valid for current network
+    useEffect(() => {
+        const isSourceValid = availableChainIds.includes(sourceChainId);
+        const isDestValid = availableChainIds.includes(destinationChainId);
+
+        if (!isSourceValid) {
+            setSourceChainId(availableChainIds[0]);
+        }
+        if (!isDestValid) {
+            setDestinationChainId(availableChainIds[1]);
+        }
+    }, [availableChainIds, sourceChainId, destinationChainId]);
 
     // Transaction state
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -178,6 +218,19 @@ const EthBridge: React.FC = () => {
 
     return (
         <div className="eth-bridge-container">
+            <div className="network-selector">
+                <label htmlFor="network">Network:</label>
+                <select
+                    id="network"
+                    value={selectedNetwork}
+                    onChange={(e) => setSelectedNetwork(e.target.value as 'mainnet' | 'omega' | 'staging')}
+                >
+                    <option value="mainnet">Mainnet</option>
+                    <option value="omega">Omega</option>
+                    <option value="staging">Staging</option>
+                </select>
+            </div>
+
             <h2>Cross-Chain ETH Bridge</h2>
 
             <div className="connect-wallet">
@@ -199,9 +252,9 @@ const EthBridge: React.FC = () => {
                                 value={sourceChainId}
                                 onChange={handleSourceChainChange}
                             >
-                                {CHAIN_IDS.map(id => (
+                                {availableChainIds.map(id => (
                                     <option key={`src-${id}`} value={id}>
-                                        {CHAINS[id].name}
+                                        {getChainName(availableChains, id)}
                                     </option>
                                 ))}
                             </select>
@@ -214,9 +267,9 @@ const EthBridge: React.FC = () => {
                                 value={destinationChainId}
                                 onChange={handleDestinationChainChange}
                             >
-                                {CHAIN_IDS.map(id => (
+                                {availableChainIds.map(id => (
                                     <option key={`dest-${id}`} value={id} disabled={id === sourceChainId}>
-                                        {CHAINS[id].name}
+                                        {getChainName(availableChains, id)}
                                     </option>
                                 ))}
                             </select>
@@ -225,7 +278,7 @@ const EthBridge: React.FC = () => {
 
                     {/* Balance info */}
                     <div className="balance-info">
-                        <p>Balance: {balance ? formatEther(balance.value) : '0'} ETH on {CHAINS[sourceChainId].name}</p>
+                        <p>Balance: {balance ? formatEther(balance.value) : '0'} ETH on {getChainName(availableChains, sourceChainId)}</p>
                     </div>
 
                     {/* Quote Mode Selection */}
@@ -270,38 +323,27 @@ const EthBridge: React.FC = () => {
                     </div>
 
                     {/* Quote Information */}
-                    {validAmount && (
+                    {validAmount && quoteResult.isSuccess && (
                         <div className="quote-summary">
                             <h3>Quote Summary</h3>
-
-                            {quoteResult.isSuccess ? (
+                            {quoteMode === 'deposit' ? (
                                 <>
-                                    {quoteMode === 'deposit' ? (
-                                        // User selected "Send Exact"
-                                        <>
-                                            <p>You send: {formatEther(quoteResult.deposit.amount)} ETH from {CHAINS[sourceChainId].name}</p>
-                                            <p>You receive: {formatEther(quoteResult.expense.amount)} ETH on {CHAINS[destinationChainId].name}</p>
-                                            <p className="fee-info">
-                                                Fee: {formatEther(quoteResult.deposit.amount - quoteResult.expense.amount)} ETH
-                                                {' (deducted from what you receive)'}
-                                            </p>
-                                        </>
-                                    ) : (
-                                        // User selected "Receive Exact"
-                                        <>
-                                            <p>You send: {formatEther(quoteResult.deposit.amount)} ETH from {CHAINS[sourceChainId].name}</p>
-                                            <p>You receive: {formatEther(quoteResult.expense.amount)} ETH on {CHAINS[destinationChainId].name}</p>
-                                            <p className="fee-info">
-                                                Fee: {formatEther(quoteResult.deposit.amount - quoteResult.expense.amount)} ETH
-                                                {' (added to what you send)'}
-                                            </p>
-                                        </>
-                                    )}
+                                    <p>You send: {formatEther(quoteResult.deposit.amount)} ETH from {getChainName(availableChains, sourceChainId)}</p>
+                                    <p>You receive: {formatEther(quoteResult.expense.amount)} ETH on {getChainName(availableChains, destinationChainId)}</p>
+                                    <p className="fee-info">
+                                        Fee: {formatEther(quoteResult.deposit.amount - quoteResult.expense.amount)} ETH
+                                        {' (deducted from what you receive)'}
+                                    </p>
                                 </>
                             ) : (
-                                <div className="loading-quote">
-                                    Calculating best cross-chain route...
-                                </div>
+                                <>
+                                    <p>You send: {formatEther(quoteResult.deposit.amount)} ETH from {getChainName(availableChains, sourceChainId)}</p>
+                                    <p>You receive: {formatEther(quoteResult.expense.amount)} ETH on {getChainName(availableChains, destinationChainId)}</p>
+                                    <p className="fee-info">
+                                        Fee: {formatEther(quoteResult.deposit.amount - quoteResult.expense.amount)} ETH
+                                        {' (added to what you send)'}
+                                    </p>
+                                </>
                             )}
                         </div>
                     )}
@@ -324,7 +366,7 @@ const EthBridge: React.FC = () => {
                     {/* Error Messages */}
                     {isWrongChain && (
                         <div className="error-message">
-                            Please switch to {CHAINS[sourceChainId].name}
+                            Please switch to {getChainName(availableChains, sourceChainId)}
                         </div>
                     )}
 
@@ -349,7 +391,7 @@ const EthBridge: React.FC = () => {
 
                             {orderStatus.status === 'filled' && (
                                 <div className="success-message">
-                                    Transfer complete! Your ETH has been bridged to {CHAINS[destinationChainId].name}.
+                                    Transfer complete! Your ETH has been bridged to {getChainName(availableChains, destinationChainId)}.
                                 </div>
                             )}
                         </div>
