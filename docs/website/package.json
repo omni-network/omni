@@ -50,5 +50,10 @@
   },
   "engines": {
     "node": ">=18.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "path-to-regexp@<0.1.12": ">=0.1.12"
+    }
   }
 }
