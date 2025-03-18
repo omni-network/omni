@@ -8,35 +8,18 @@ import {
     useGetOrderStatus
 } from '../../src/index';
 import ConnectButton from '../components/ConnectButton';
+import { Network, MAINNET_CHAINS, TESTNET_CHAINS, MAINNET_CHAIN_IDS, TESTNET_CHAIN_IDS, getChainName, getDefaultChains } from './config/chains';
 
-// Network configuration
-const MAINNET_CHAINS: Record<number, { name: string; }> = {
-    1: { name: 'Ethereum' },
-    10: { name: 'Optimism' },
-    42161: { name: 'Arbitrum One' },
-    8453: { name: 'Base' }
-};
-
-const TESTNET_CHAINS: Record<number, { name: string; }> = {
-    17000: { name: 'Ethereum Holesky' },
-    84532: { name: 'Base Sepolia' },
-    421614: { name: 'Arbitrum Sepolia' },
-    11155420: { name: 'Optimism Sepolia' }
-};
-
-const MAINNET_CHAIN_IDS = Object.keys(MAINNET_CHAINS).map(id => parseInt(id));
-const TESTNET_CHAIN_IDS = Object.keys(TESTNET_CHAINS).map(id => parseInt(id));
-
-// Helper function to get chain name safely
-const getChainName = (chains: Record<number, { name: string }>, chainId: number): string => {
-    return chains[chainId]?.name || `Chain ${chainId}`;
-};
+interface EthBridgeProps {
+    selectedNetwork: Network;
+    onNetworkChange: (network: Network) => void;
+}
 
 /**
  * ETH Bridge Component
  * Demonstrates Omni SDK integration for cross-chain transfers
  */
-const EthBridge: React.FC = () => {
+const EthBridge: React.FC<EthBridgeProps> = ({ selectedNetwork, onNetworkChange }) => {
     // Wallet connection from wagmi
     const { address, isConnected } = useAccount();
     const chainId = useChainId();
@@ -47,7 +30,6 @@ const EthBridge: React.FC = () => {
     const [sourceChainId, setSourceChainId] = useState<number>(17000);
     const [destinationChainId, setDestinationChainId] = useState<number>(421614);
     const [quoteMode, setQuoteMode] = useState<'deposit' | 'expense'>('deposit');
-    const [selectedNetwork, setSelectedNetwork] = useState<'mainnet' | 'omega' | 'staging'>('staging');
 
     // Get available chains based on selected network
     const availableChains = selectedNetwork === 'mainnet' ? MAINNET_CHAINS : TESTNET_CHAINS;
@@ -55,11 +37,9 @@ const EthBridge: React.FC = () => {
 
     // Update chain selections when network changes
     useEffect(() => {
-        const defaultSourceId = selectedNetwork === 'mainnet' ? 1 : 17000;
-        const defaultDestId = selectedNetwork === 'mainnet' ? 10 : 421614;
-
-        setSourceChainId(defaultSourceId);
-        setDestinationChainId(defaultDestId);
+        const { source, destination } = getDefaultChains(selectedNetwork);
+        setSourceChainId(source);
+        setDestinationChainId(destination);
     }, [selectedNetwork]);
 
     // Ensure selected chains are valid for current network
@@ -131,9 +111,6 @@ const EthBridge: React.FC = () => {
 
     // SDK INTEGRATION POINT #2 - Get cross-chain quote
     const quoteResult = useQuote({
-        // The SDK uses inverted mode terminology compared to our UI:
-        // UI "Send Exact" (deposit) -> SDK uses "expense" mode to calculate what user receives
-        // UI "Receive Exact" (expense) -> SDK uses "deposit" mode to calculate what user sends
         srcChainId: sourceChainId,
         destChainId: destinationChainId,
         mode: quoteMode === 'deposit' ? 'expense' : 'deposit',
@@ -223,7 +200,7 @@ const EthBridge: React.FC = () => {
                 <select
                     id="network"
                     value={selectedNetwork}
-                    onChange={(e) => setSelectedNetwork(e.target.value as 'mainnet' | 'omega' | 'staging')}
+                    onChange={(e) => onNetworkChange(e.target.value as Network)}
                 >
                     <option value="mainnet">Mainnet</option>
                     <option value="omega">Omega</option>
@@ -407,14 +384,23 @@ const EthBridge: React.FC = () => {
  * SDK INTEGRATION POINT #6 - Root provider setup
  */
 const App: React.FC = () => {
+    const [selectedNetwork, setSelectedNetwork] = useState<Network>('staging');
+
+    const getApiUrl = (network: Network) => {
+        return `https://solver.${network}.omni.network/api/v1`;
+    };
+
     return (
-        <OmniProvider env="testnet">
+        <OmniProvider
+            env="testnet"
+            __apiBaseUrl={getApiUrl(selectedNetwork)}
+        >
             <div className="app-container">
-                <h1>Omni SDK Integration Demo</h1>
-                <p>Demonstrating cross-chain ETH bridging with the Omni SDK</p>
-                <EthBridge />
+                <h1>Omni SolverNet SDK Integration Demo</h1>
+                <p>Demonstrating cross-chain ETH bridging with the Omni SolverNet SDK</p>
+                <EthBridge selectedNetwork={selectedNetwork} onNetworkChange={setSelectedNetwork} />
                 <div className="demo-notes">
-                    <p>Note: This demo uses testnet networks. You'll need testnet ETH to try it.</p>
+                    <p>Note: This demo uses testnet and mainnet networks. You'll need ETH on your source network to try it.</p>
                 </div>
             </div>
         </OmniProvider>
