@@ -103,6 +103,14 @@ const EthBridge: React.FC<EthBridgeProps> = ({ selectedNetwork, onNetworkChange 
         clearError();
     };
 
+    // Handler for swapping source and destination chains
+    const handleSwapChains = () => {
+        const tempSourceChain = sourceChainId;
+        setSourceChainId(destinationChainId);
+        setDestinationChainId(tempSourceChain);
+        clearError();
+    };
+
     // Auto-switch to the correct network when source chain changes
     useEffect(() => {
         if (isConnected && chainId !== sourceChainId) {
@@ -227,7 +235,7 @@ const EthBridge: React.FC<EthBridgeProps> = ({ selectedNetwork, onNetworkChange 
                     {/* Chain Selection */}
                     <div className="chain-selection">
                         <div className="source-chain">
-                            <label htmlFor="sourceChain">From:</label>
+                            <label>From:</label>
                             <select
                                 id="sourceChain"
                                 value={sourceChainId}
@@ -241,8 +249,16 @@ const EthBridge: React.FC<EthBridgeProps> = ({ selectedNetwork, onNetworkChange 
                             </select>
                         </div>
 
+                        <button
+                            className="swap-chains-button"
+                            onClick={handleSwapChains}
+                            title="Swap chains"
+                        >
+                            ⇄
+                        </button>
+
                         <div className="destination-chain">
-                            <label htmlFor="destinationChain">To:</label>
+                            <label>To:</label>
                             <select
                                 id="destinationChain"
                                 value={destinationChainId}

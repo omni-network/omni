@@ -95,7 +95,7 @@ p {
 
 .chain-selection {
     display: flex;
-    flex-direction: column;
+    align-items: center;
     gap: 1rem;
     margin-bottom: 1rem;
     background-color: #f3f4f6;
@@ -103,18 +103,56 @@ p {
     border-radius: var(--border-radius);
 }
 
-@media (min-width: 640px) {
-    .chain-selection {
-        flex-direction: row;
-        align-items: center;
-    }
-}
-
 .source-chain,
 .destination-chain {
     flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
+/* Override global label styles */
+.chain-selection .source-chain label,
+.chain-selection .destination-chain label {
+    margin: 0;
+    padding: 0;
+    white-space: nowrap;
+    width: 3rem;
+    display: inline-flex;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.source-chain select,
+.destination-chain select {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+}
+
+.swap-chains-button {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+    color: var(--primary-color);
+    margin: 0 -0.5rem;
+}
+
+.swap-chains-button:hover {
+    transform: scale(1.2);
+}
+
+.swap-chains-button:active {
+    transform: scale(0.9);
+}
+
+/* Move the global label styles after the specific ones */
 label {
     display: block;
     margin-bottom: 0.5rem;
