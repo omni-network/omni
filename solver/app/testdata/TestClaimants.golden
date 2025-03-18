@@ -1,0 +1,7 @@
+{
+ "wstETH": {
+  "mainnet": "0x79ef4d1224a055ad4ee5e2226d0cb3720d929ae7",
+  "omega": "0x521786be8a0f455700c25fb25f94a4b626e460ec",
+  "staging": "0x521786be8a0f455700c25fb25f94a4b626e460ec"
+ }
+}

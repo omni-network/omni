@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -38,6 +39,7 @@ type procDeps struct {
 }
 
 func newClaimer(
+	networkID netconf.ID,
 	inboxContracts map[uint64]*bindings.SolverNetInbox,
 	backends ethbackend.Backends,
 	solverAddr common.Address,
@@ -59,9 +61,16 @@ func newClaimer(
 			return err
 		}
 
+		claimant, ok, err := getClaimant(networkID, order)
+		if err != nil {
+			return errors.Wrap(err, "get claimant")
+		} else if !ok {
+			claimant = solverAddr
+		}
+
 		// Claim to solver address for now
 		// TODO: consider claiming to hot / cold funding wallet
-		tx, err := inbox.Claim(txOpts, order.ID, solverAddr)
+		tx, err := inbox.Claim(txOpts, order.ID, claimant)
 		if err != nil {
 			return errors.Wrap(err, "claim order")
 		}
