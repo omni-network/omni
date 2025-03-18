@@ -15,6 +15,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
+	fuzz "github.com/google/gofuzz"
 	"github.com/stretchr/testify/require"
 )
 
@@ -209,6 +210,55 @@ func TestQuote(t *testing.T) {
 	}
 }
 
+func TestFees(t *testing.T) {
+	t.Parallel()
+
+	mustBigStr := func(s string) *big.Int {
+		b, ok := new(big.Int).SetString(s, 10)
+		if !ok {
+			panic("invalid big int")
+		}
+
+		return b
+	}
+
+	// couple sanity checks w/ known values
+	require.Equal(t,
+		mustBigStr("1500000000000000000"),
+		expenseFor(
+			mustBigStr("1504500000000000000"),
+			standardFeeBips),
+	)
+
+	require.Equal(t,
+		mustBigStr("1504500000000000000"),
+		depositFor(
+			mustBigStr("1500000000000000000"),
+			standardFeeBips),
+	)
+
+	f := fuzz.New().NilChance(0)
+	f.Funcs(func(bi *big.Int, c fuzz.Continue) {
+		var val uint64
+		c.Fuzz(&val)
+		bi.SetUint64(val)
+	})
+
+	// then fuzz
+
+	var big *big.Int
+	f.Fuzz(&big)
+
+	require.True(t,
+		// withinOne, because 1 wei can be lost in rounding
+		withinOne(
+			depositFor(expenseFor(big, standardFeeBips), standardFeeBips),
+			big,
+		),
+		"depositFor(expenseFor(x)) == x",
+	)
+}
+
 func parseInt(s string) *big.Int {
 	b, ok := new(big.Int).SetString(s, 10)
 	if !ok {
@@ -223,3 +273,9 @@ func mockAddrAmt(amt string) types.AddrAmt {
 }
 
 var zeroAddrAmt types.AddrAmt
+
+func withinOne(a, b *big.Int) bool {
+	diff := new(big.Int).Sub(a, b) // Compute a - b
+
+	return diff.Abs(diff).Cmp(big.NewInt(1)) <= 0
+}
