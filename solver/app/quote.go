@@ -139,19 +139,20 @@ func feeBipsFor(tkn Token) int64 {
 
 // depositFor returns the deposit required to cover `expense` with a fee in bips.
 func depositFor(expense *big.Int, bips int64) *big.Int {
-	// deposit = expense + (expense * bips / 10_000)
+	// deposit = expense + ceil(expense * bips / 10_000)
 
-	fee := bi.DivRaw(
-		bi.MulRaw(expense, bips),
-		10_000,
-	)
+	feeDividend := bi.Mul(expense, bi.N(bips))
+	feeDividend = bi.Add(feeDividend, bi.N(9_999)) // Add 9_999 to dividend to round up.
+	feeDivisor := bi.N(10_000)
+
+	fee := bi.Div(feeDividend, feeDivisor)
 
 	return bi.Add(expense, fee)
 }
 
 // expenseFor returns the expense allowed for `deposit` with a fee in bips.
 func expenseFor(deposit *big.Int, bips int64) *big.Int {
-	// expense = 10_000 * d / (10_000 + bips)
+	// expense = floor(d * 10_000 / (10_000 + bips))
 
 	return bi.DivRaw(
 		bi.MulRaw(deposit, 10_000),

@@ -84,7 +84,27 @@ func Div(a *big.Int, bs ...*big.Int) *big.Int {
 func DivRaw[I constraints.Integer](a *big.Int, bs ...I) *big.Int {
 	resp := Clone(a)
 	for _, b := range bs {
-		resp.Div(resp, N(b))
+		resp = Div(resp, N(b))
+	}
+
+	return resp
+}
+
+// Mod returns a % b0 [% b1 % b2 ...].
+func Mod(a *big.Int, bs ...*big.Int) *big.Int {
+	resp := Clone(a)
+	for _, b := range bs {
+		resp.Mod(resp, b)
+	}
+
+	return resp
+}
+
+// ModRaw returns a % b0 [% b1 % b2 ...].
+func ModRaw[I constraints.Integer](a *big.Int, bs ...I) *big.Int {
+	resp := Clone(a)
+	for _, b := range bs {
+		resp.Mod(resp, N(b))
 	}
 
 	return resp

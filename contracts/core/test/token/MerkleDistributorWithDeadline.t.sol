@@ -29,6 +29,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
     GenesisStake genesisStake;
     MerkleDistributorWithDeadline merkleDistributor;
 
+    address admin = makeAddr("admin");
     address proxyAdmin = makeAddr("proxyAdmin");
     address outbox = makeAddr("outbox");
     address validator = makeAddr("validator");
@@ -116,7 +117,9 @@ contract MerkleDistributorWithDeadline_Test is Test {
                 keccak256("merkleDistributor"),
                 abi.encodePacked(
                     type(MerkleDistributorWithDeadline).creationCode,
-                    abi.encode(address(omni), root, endTime, address(omniPortal), genesisStakeAddr, address(inbox))
+                    abi.encode(
+                        admin, address(omni), root, endTime, address(omniPortal), genesisStakeAddr, address(inbox)
+                    )
                 )
             )
         );
@@ -172,7 +175,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
         });
 
         return IERC7683.OnchainCrossChainOrder({
-            fillDeadline: uint32(block.timestamp + 6 hours),
+            fillDeadline: uint32(block.timestamp + 24 hours),
             orderDataType: ORDER_DATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });
