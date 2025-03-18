@@ -15,8 +15,8 @@ import (
 	"github.com/omni-network/omni/lib/tokens"
 )
 
-// maybeDeployMockVaults deploys a wstETH mock vault to the MockL2 chain.
-func maybeDeployMockVaults(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
+// maybeDeployMockVault deploys a wstETH mock vault to the MockL2 chain.
+func maybeDeployMockVault(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
 	if !network.ID.IsEphemeral() {
 		return nil
 	}
@@ -31,23 +31,19 @@ func maybeDeployMockVaults(ctx context.Context, network netconf.Network, backend
 		return errors.Wrap(err, "get backend", "chain", chain.Name)
 	}
 
-	return maybeDeployMockVault(ctx, network.ID, backend)
-}
-
-func maybeDeployMockVault(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) error {
-	deployer := eoa.MustAddress(network, eoa.RoleDeployer)
+	deployer := eoa.MustAddress(network.ID, eoa.RoleDeployer)
 
 	txOpts, err := backend.BindOpts(ctx, deployer)
 	if err != nil {
 		return errors.Wrap(err, "bind opts")
 	}
 
-	factory, err := bindings.NewCreate3(contracts.Create3Factory(network), backend)
+	factory, err := bindings.NewCreate3(contracts.Create3Factory(network.ID), backend)
 	if err != nil {
 		return errors.Wrap(err, "new create3")
 	}
 
-	salt := network.String() + "::mock::vault"
+	salt := network.ID.String() + "::mock::vault"
 
 	addr, deployed, err := isDeployed(ctx, backend, factory, deployer, salt)
 	if err != nil {
