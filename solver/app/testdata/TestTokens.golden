@@ -230,26 +230,6 @@
   "symbol": "stETH"
  },
  {
-  "address": "0x8d09a4502Cc8Cf1547aD300E066060D043f6982D",
-  "chainId": 1652,
-  "coingeckoId": "wrapped-steth",
-  "isMock": false,
-  "maxSpend": "1.0000",
-  "minSpend": "0.0010",
-  "name": "Wrapped Staked Ether",
-  "symbol": "wstETH"
- },
- {
-  "address": "0xB82381A3fBD3FaFA77B3a7bE693342618240067b",
-  "chainId": 1652,
-  "coingeckoId": "wrapped-steth",
-  "isMock": false,
-  "maxSpend": "1.0000",
-  "minSpend": "0.0010",
-  "name": "Wrapped Staked Ether",
-  "symbol": "wstETH"
- },
- {
   "address": "0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034",
   "chainId": 1652,
   "coingeckoId": "lido-staked-ether",
@@ -262,6 +242,16 @@
  {
   "address": "0x6319df7c227e34B967C1903A08a698A3cC43492B",
   "chainId": 84532,
+  "coingeckoId": "wrapped-steth",
+  "isMock": true,
+  "maxSpend": "nil",
+  "minSpend": "nil",
+  "name": "Wrapped Staked Ether",
+  "symbol": "wstETH"
+ },
+ {
+  "address": "0x86156a9225DCE4781005d8CDC48106e308A0F338",
+  "chainId": 1652,
   "coingeckoId": "wrapped-steth",
   "isMock": true,
   "maxSpend": "nil",

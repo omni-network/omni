@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/monitor/flowgen/types"
 	"github.com/omni-network/omni/monitor/flowgen/util"
 	solver "github.com/omni-network/omni/solver/app"
@@ -48,12 +49,14 @@ func newJob(
 		return types.Job{}, false, errors.Wrap(err, "get backend")
 	}
 
-	srcChainTkn, ok := solver.AllTokens().FindBySymbol(conf.srcChain, conf.depositToken.Symbol)
+	token := tokens.WSTETH
+
+	srcChainTkn, ok := solver.AllTokens().FindBySymbol(conf.srcChain, token.Symbol)
 	if !ok {
 		return types.Job{}, false, errors.Wrap(err, "src token not found")
 	}
 
-	dstChainTkn, ok := solver.AllTokens().FindBySymbol(conf.dstChain, conf.expenseToken.Symbol)
+	dstChainTkn, ok := solver.AllTokens().FindBySymbol(conf.dstChain, token.Symbol)
 	if !ok {
 		return types.Job{}, false, errors.Wrap(err, "dst token not found")
 	}
@@ -68,10 +71,14 @@ func newJob(
 	}
 
 	namer := netconf.ChainNamer(networkID)
+	cadence := 30 * time.Minute
+	if networkID == netconf.Devnet {
+		cadence = time.Second * 10
+	}
 
 	return types.Job{
 		Name:      fmt.Sprintf("Symbiotic deposit (%v->%v)", namer(conf.srcChain), namer(conf.dstChain)),
-		Cadence:   30 * time.Minute,
+		Cadence:   cadence,
 		NetworkID: networkID,
 
 		SrcChain: conf.srcChain,

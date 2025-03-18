@@ -30,12 +30,25 @@ var mocks = []MockToken{
 	// staging mock wstETH
 	{Token: tokens.WSTETH, ChainID: evmchain.IDBaseSepolia, NetworkID: netconf.Staging},
 
-	// devnet mock wstETH
+	// devnet L1 mock wstETH
+	{Token: tokens.WSTETH, ChainID: evmchain.IDMockL1, NetworkID: netconf.Devnet},
+
+	// devnet L2 mock wstETH
 	{Token: tokens.WSTETH, ChainID: evmchain.IDMockL2, NetworkID: netconf.Devnet},
 }
 
 func MockTokens() []MockToken {
 	return mocks
+}
+
+func Find(chainID uint64, symbol string) (common.Address, error) {
+	for _, t := range MockTokens() {
+		if t.ChainID == chainID && t.Symbol == symbol {
+			return t.Address(), nil
+		}
+	}
+
+	return common.Address{}, errors.New("token not found", "symbol", symbol, "chain_id", chainID)
 }
 
 func (m MockToken) Address() common.Address {

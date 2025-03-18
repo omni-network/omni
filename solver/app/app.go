@@ -108,6 +108,10 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "get contract addresses")
 	}
 
+	if err := approveOutboxes(ctx, network, backends, solverAddr); err != nil {
+		return errors.Wrap(err, "approve outboxes")
+	}
+
 	pricer := newPricer(ctx, cfg.CoinGeckoAPIKey)
 
 	err = startEventStreams(ctx, network, xprov, backends, solverAddr, addrs, cursors, pricer)
@@ -128,10 +132,6 @@ func Run(ctx context.Context, cfg Config) error {
 		newContractsHandler(addrs),
 		newQuoteHandler(quoter),
 	)
-
-	if err := approveOutboxes(ctx, network, backends, solverAddr); err != nil {
-		return errors.Wrap(err, "approve outboxes")
-	}
 
 	select {
 	case <-ctx.Done():

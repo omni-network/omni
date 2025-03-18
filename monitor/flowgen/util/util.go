@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -39,6 +40,8 @@ func dec(amt float64, decimals int) *big.Int {
 // TODO (christian): consolidate with `ApproveToken` in the solver package.
 // ApproveToken gives the 'contract' max allowance to spend the 'user's 'tokens'.
 func ApproveToken(ctx context.Context, backend *ethbackend.Backend, token, user, contract common.Address) error {
+	log.Debug(ctx, "Approving token", "token", token, "user", user, "contract", contract)
+
 	erc20, err := bindings.NewIERC20(token, backend)
 	if err != nil {
 		return errors.Wrap(err, "new token")

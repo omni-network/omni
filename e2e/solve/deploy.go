@@ -18,13 +18,22 @@ import (
 
 // Deploy deploys solve inbox / outbox / middleman contracts, and devnet app (if devnet).
 func Deploy(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
-	var eg errgroup.Group
-	eg.Go(func() error { return deployBoxes(ctx, network, backends) })
-	eg.Go(func() error { return maybeDeployMockTokens(ctx, network, backends) })
-	eg.Go(func() error { return maybeFundERC20Solver(ctx, network.ID, backends) })
+	var eg1 errgroup.Group
+	eg1.Go(func() error { return deployBoxes(ctx, network, backends) })
+	eg1.Go(func() error { return maybeDeployMockTokens(ctx, network, backends) })
 
-	if err := eg.Wait(); err != nil {
-		return errors.Wrap(err, "deploy")
+	if err := eg1.Wait(); err != nil {
+		return errors.Wrap(err, "deploy prerequisites")
+	}
+
+	// These routines need to wait for `maybeDeployMockTokens` because they might use mock tokens.
+	var eg2 errgroup.Group
+	eg2.Go(func() error { return maybeFundERC20Solver(ctx, network.ID, backends) })
+	eg2.Go(func() error { return maybeFundERC20Flowgen(ctx, network.ID, backends) })
+	eg2.Go(func() error { return maybeDeployMockVault(ctx, network, backends) })
+
+	if err := eg2.Wait(); err != nil {
+		return errors.Wrap(err, "deploy dependent tasks")
 	}
 
 	return nil
