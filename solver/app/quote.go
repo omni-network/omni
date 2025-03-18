@@ -152,6 +152,7 @@ func depositFor(expense *big.Int, bips int64) *big.Int {
 // expenseFor returns the expense allowed for `deposit` with a fee in bips.
 func expenseFor(deposit *big.Int, bips int64) *big.Int {
 	// expense = 10_000 * d / (10_000 + bips)
+
 	return bi.DivRaw(
 		bi.MulRaw(deposit, 10_000),
 		10_000+bips,
