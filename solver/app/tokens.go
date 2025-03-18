@@ -6,6 +6,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	e2e "github.com/omni-network/omni/e2e/solve"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -55,16 +56,59 @@ func (t Token) IsOMNI() bool {
 	return t.Token == tokenslib.OMNI
 }
 
+type SpendBounds struct {
+	MinSpend *big.Int // minimum spend amount
+	MaxSpend *big.Int // maximum spend amount
+}
+
 var (
-	// TODO: increase max spend on mainnet, keep low for staging / omega.
-	maxETHSpend    = mustBig("1000000000000000000")    // 1 ETH
-	minETHSpend    = mustBig("1000000000000000")       // 0.001 ETH
-	maxWSTETHSpend = mustBig("1000000000000000000")    // 1 wstETH
-	minWSTETHSpend = mustBig("1000000000000000")       // 0.001 wstETH
-	maxOMNISpend   = mustBig("1000000000000000000000") // 1000 OMNI
-	minOMNISpend   = mustBig("100000000000000000")     // 0.1 OMNI
+	spendBounds = map[tokenslib.Token]map[ChainClass]SpendBounds{
+		tokenslib.ETH: {
+			ClassMainnet: {
+				MinSpend: bi.Ether(0.001), // 0.001 ETH
+				MaxSpend: bi.Ether(1),     // 1 ETH
+			},
+			ClassTestnet: {
+				MinSpend: bi.Ether(0.001), // 0.001 ETH
+				MaxSpend: bi.Ether(1),     // 1 ETH
+			},
+			ClassDevent: {
+				MinSpend: bi.Ether(0.001), // 0.001 ETH
+				MaxSpend: bi.Ether(1),     // 1 ETH
+			},
+		},
+		tokenslib.OMNI: {
+			ClassMainnet: {
+				MinSpend: bi.Ether(0.1),     // 0.1 OMNI
+				MaxSpend: bi.Ether(120_000), // 120k OMNI
+			},
+			ClassTestnet: {
+				MinSpend: bi.Ether(0.1),   // 0.1 OMNI
+				MaxSpend: bi.Ether(1_000), // 1k OMNI
+			},
+			ClassDevent: {
+				MinSpend: bi.Ether(0.1),   // 0.1 OMNI
+				MaxSpend: bi.Ether(1_000), // 1k OMNI
+			},
+		},
+		tokenslib.WSTETH: {
+			ClassMainnet: {
+				MinSpend: bi.Ether(0.001), // 0.001 wstETH
+				MaxSpend: bi.Ether(4),     // 4 wstETH
+			},
+			ClassTestnet: {
+				MinSpend: bi.Ether(0.001), // 0.001 wstETH
+				MaxSpend: bi.Ether(1),     // 1 wstETH
+			},
+			ClassDevent: {
+				MinSpend: bi.Ether(0.001), // 0.001 wstETH
+				MaxSpend: bi.Ether(1),     // 1 wstETH
+			},
+		},
+	}
 )
 
+// TODO(christian): move to a separate package.
 var tokens = append(Tokens{
 	// Native ETH (mainnet)
 	nativeETH(evmchain.IDEthereum),
@@ -94,7 +138,7 @@ var tokens = append(Tokens{
 	omniERC20(netconf.Staging),
 	omniERC20(netconf.Devnet),
 
-	// wtSETH
+	// wstETH
 	wstETH(evmchain.IDHolesky, common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")),
 	wstETH(evmchain.IDSepolia, common.HexToAddress("0xB82381A3fBD3FaFA77B3a7bE693342618240067b")),
 
@@ -109,6 +153,16 @@ var tokens = append(Tokens{
 
 func AllTokens() Tokens {
 	return tokens
+}
+
+func (ts Tokens) FindBySymbol(chainID uint64, symbol string) (Token, bool) {
+	for _, t := range ts {
+		if t.ChainID == chainID && t.Symbol == symbol {
+			return t, true
+		}
+	}
+
+	return Token{}, false
 }
 
 func (ts Tokens) Find(chainID uint64, addr common.Address) (Token, bool) {
@@ -134,49 +188,60 @@ func (ts Tokens) ForChain(chainID uint64) Tokens {
 }
 
 func nativeETH(chainID uint64) Token {
+	chainClass := mustChainClass(chainID)
+	bounds := mustSpendBounds(tokenslib.ETH, chainClass)
+
 	return Token{
 		Token:      tokenslib.ETH,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
-		MaxSpend:   maxETHSpend,
-		MinSpend:   minETHSpend,
+		MaxSpend:   bounds.MaxSpend,
+		MinSpend:   bounds.MinSpend,
 		Address:    NativeAddr,
 	}
 }
 
 func nativeOMNI(chainID uint64) Token {
+	chainClass := mustChainClass(chainID)
+	bounds := mustSpendBounds(tokenslib.OMNI, chainClass)
+
 	return Token{
 		Token:      tokenslib.OMNI,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
-		MaxSpend:   maxOMNISpend,
-		MinSpend:   minOMNISpend,
+		MaxSpend:   bounds.MaxSpend,
+		MinSpend:   bounds.MinSpend,
 		Address:    NativeAddr,
 	}
 }
 
 func omniERC20(network netconf.ID) Token {
 	chainID := netconf.EthereumChainID(network)
+	chainClass := mustChainClass(chainID)
+	bounds := mustSpendBounds(tokenslib.OMNI, chainClass)
 
 	return Token{
 		Token:      tokenslib.OMNI,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    contracts.TokenAddr(network),
-		MaxSpend:   maxOMNISpend,
-		MinSpend:   minOMNISpend,
+		MaxSpend:   bounds.MaxSpend,
+		MinSpend:   bounds.MinSpend,
 	}
 }
 
 // mockOMNI returns a manually deployed OMNI token on a given chain for testing purposes.
 func mockOMNI(chainID uint64, addr common.Address) Token {
+	chainClass := mustChainClass(chainID)
+	bounds := mustSpendBounds(tokenslib.OMNI, chainClass)
+
 	return Token{
 		Token:      tokenslib.OMNI,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    addr,
-		MaxSpend:   maxOMNISpend,
-		MinSpend:   minOMNISpend,
+		MaxSpend:   bounds.MaxSpend,
+		MinSpend:   bounds.MinSpend,
 		IsMock:     true,
 	}
 }
@@ -191,13 +256,16 @@ func stETH(chainID uint64, addr common.Address) Token {
 }
 
 func wstETH(chainID uint64, addr common.Address) Token {
+	chainClass := mustChainClass(chainID)
+	bounds := mustSpendBounds(tokenslib.WSTETH, chainClass)
+
 	return Token{
 		Token:      tokenslib.WSTETH,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    addr,
-		MaxSpend:   maxWSTETHSpend,
-		MinSpend:   minWSTETHSpend,
+		MaxSpend:   bounds.MaxSpend,
+		MinSpend:   bounds.MinSpend,
 	}
 }
 
@@ -253,6 +321,15 @@ func mustChainClass(chainID uint64) ChainClass {
 	return class
 }
 
+func mustSpendBounds(tkn tokenslib.Token, chainClass ChainClass) SpendBounds {
+	bounds, ok := spendBounds[tkn][chainClass]
+	if !ok {
+		panic(errors.New("spend bounds not found", "token", tkn, "chain_class", chainClass))
+	}
+
+	return bounds
+}
+
 func chainClass(chainID uint64) (ChainClass, error) {
 	switch chainID {
 	case
@@ -281,13 +358,4 @@ func chainClass(chainID uint64) (ChainClass, error) {
 	default:
 		return "", errors.New("unsupported chain ID", "chain_id", chainID)
 	}
-}
-
-func mustBig(s string) *big.Int {
-	b, ok := new(big.Int).SetString(s, 10)
-	if !ok {
-		panic("invalid big int")
-	}
-
-	return b
 }

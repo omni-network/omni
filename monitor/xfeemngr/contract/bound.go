@@ -6,19 +6,18 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 type BoundFeeOracleV1 struct {
@@ -88,7 +87,7 @@ func (c BoundFeeOracleV1) SetGasPriceOn(ctx context.Context, destChainID uint64,
 		return errors.Wrap(err, "tx opts")
 	}
 
-	gweiPrice, _ := new(big.Int).Div(gasPrice, umath.NewBigInt(params.GWei)).Float64()
+	gweiPrice := bi.ToGweiF64(gasPrice)
 	log.Info(ctx, "Setting gas price on chain", "dest_chain", c.chain.Name, "rate", gweiPrice)
 	tx, err := c.bound.SetGasPrice(txOpts, destChainID, gasPrice)
 	if err != nil {
@@ -165,12 +164,14 @@ func (c BoundFeeOracleV1) BulkSetFeeParams(ctx context.Context, params []binding
 }
 
 // totalSpentGwei returns the total amount spent on a transaction in gwei.
-func totalSpentGwei(tx *ethtypes.Transaction, rec *ethtypes.Receipt) float64 {
-	fees := new(big.Int).Mul(rec.EffectiveGasPrice, umath.NewBigInt(rec.GasUsed))
-	total := new(big.Int).Add(tx.Value(), fees)
-	totalGwei, _ := new(big.Int).Div(total, umath.NewBigInt(params.GWei)).Float64()
+func totalSpentGwei(tx *ethtypes.Transaction, rec *ethclient.Receipt) float64 {
+	fees := bi.MulRaw(rec.EffectiveGasPrice, rec.GasUsed)
+	total := bi.Add(tx.Value(), fees)
+	if rec.OPL1Fee != nil {
+		total = bi.Add(total, rec.OPL1Fee)
+	}
 
-	return totalGwei
+	return bi.ToGweiF64(total)
 }
 
 // callOpts returns a new call opts with the given context.

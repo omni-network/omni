@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
@@ -43,7 +44,7 @@ func (a *ageCache) blockMeta(ctx context.Context, chainID uint64, height uint64)
 		return "", time.Time{}, err
 	}
 
-	header, err := backend.HeaderByNumber(ctx, umath.NewBigInt(height))
+	header, err := backend.HeaderByNumber(ctx, bi.N(height))
 	if err != nil {
 		return "", time.Time{}, err
 	}

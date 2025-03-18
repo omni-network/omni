@@ -3,11 +3,11 @@ package keeper
 import (
 	"bytes"
 	"context"
-	"math/big"
 	"testing"
 	"time"
 
 	attesttypes "github.com/omni-network/omni/halo/attest/types"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/k1util"
@@ -698,7 +698,7 @@ func (m *mockEngineAPI) nextBlock(
 	t.Helper()
 	var header types.Header
 	m.fuzzer.Fuzz(&header)
-	header.Number = big.NewInt(int64(height))
+	header.Number = bi.N(height)
 	header.Time = timestamp
 	header.ParentHash = parentHash
 	header.Coinbase = feeRecipient
@@ -714,7 +714,7 @@ func (m *mockEngineAPI) nextBlock(
 	)
 
 	// Convert block to payload
-	env := eengine.BlockToExecutableData(block, big.NewInt(0), nil, nil)
+	env := eengine.BlockToExecutableData(block, bi.Zero(), nil, nil)
 	payload := *env.ExecutionPayload
 
 	// Ensure the block is valid

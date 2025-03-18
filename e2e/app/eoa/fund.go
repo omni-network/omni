@@ -1,14 +1,12 @@
 package eoa
 
 import (
-	"math"
 	"math/big"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
-
-	"github.com/ethereum/go-ethereum/params"
 )
 
 const (
@@ -19,41 +17,41 @@ const (
 // dynamicThreshold list roles we use to sum their funding thresholds and a multiplier
 // that increases the sum to calculate the dynamic threshold. Used by funding roles.
 type dynamicThreshold struct {
-	Multiplier int
+	Multiplier uint64
 	Roles      []Role
 }
 
 var (
 	// tokenConversion defines conversion rate for fund threshold amounts.
-	tokenConversion = map[tokens.Token]int{
+	tokenConversion = map[tokens.Token]float64{
 		tokens.OMNI: 500,
 		tokens.ETH:  1,
 	}
 
 	// thresholdTiny is used for EOAs which are rarely used, mostly to deploy a handful of contracts per network.
 	thresholdTiny = FundThresholds{
-		minGwei:    gwei(0.001),
-		targetGwei: gwei(0.01),
+		minEther:    0.001,
+		targetEther: 0.01,
 	}
 
 	// thresholdSmall is used for EOAs which are used sometimes, mostly to make small test transactions per network.
 	thresholdSmall = FundThresholds{
-		minGwei:    gwei(0.02),
-		targetGwei: gwei(.2),
+		minEther:    0.02,
+		targetEther: .2,
 	}
 
 	// thresholdMedium is used by EOAs that regularly perform actions and need enough balance
 	// to last a weekend without topping up even if fees are spiking.
 	thresholdMedium = FundThresholds{
-		minGwei:    gwei(0.5),
-		targetGwei: gwei(2),
+		minEther:    0.5,
+		targetEther: 2,
 	}
 
 	// thresholdLarge is used by EOAs that constantly perform actions and need enough balance
 	// to last a weekend without topping up even if fees are spiking.
 	thresholdLarge = FundThresholds{
-		minGwei:    gwei(10),
-		targetGwei: gwei(50),
+		minEther:    10,
+		targetEther: 50,
 	}
 
 	staticThresholdsByRole = map[Role]FundThresholds{
@@ -68,14 +66,14 @@ var (
 
 		// Enough funds to fill orders, restricted to supported targets (to be implemented)
 		RoleSolver: {
-			minGwei:    gwei(1),
-			targetGwei: gwei(3),
+			minEther:    1,
+			targetEther: 3,
 		},
 
 		// Needs enough to cover gas, and bridge eth between chains
 		RoleFlowgen: {
-			minGwei:    gwei(0.1),
-			targetGwei: gwei(1),
+			minEther:    0.1,
+			targetEther: 1,
 		},
 	}
 
@@ -94,18 +92,21 @@ var (
 		RoleDeployer: thresholdMedium, // Ephemeral chains are deployed often and fees can spike by a lot
 	}
 
-	ethOnly = map[Role]bool{
-		RoleFlowgen: true, // Flowgen is only used on ETH chains
+	nativeTokens = map[tokens.Token]bool{
+		tokens.ETH:  true,
+		tokens.OMNI: true,
+	}
+
+	// tokenOverrides specifies roles that support non-native-only tokens.
+	tokenOverrides = map[Role]map[tokens.Token]bool{
+		// Flowgen only submits ETH-style solver orders
+		RoleFlowgen: {tokens.ETH: true},
 	}
 )
 
 func GetFundThresholds(token tokens.Token, network netconf.ID, role Role) (FundThresholds, bool) {
-	thresh, ok := getThreshold(network, role)
+	thresh, ok := getThreshold(token, network, role)
 	if !ok {
-		return FundThresholds{}, false
-	}
-
-	if token != tokens.ETH && ethOnly[role] {
 		return FundThresholds{}, false
 	}
 
@@ -119,16 +120,16 @@ func GetFundThresholds(token tokens.Token, network netconf.ID, role Role) (FundT
 }
 
 type FundThresholds struct {
-	minGwei    uint64
-	targetGwei uint64
+	minEther    float64
+	targetEther float64
 }
 
 func (t FundThresholds) MinBalance() *big.Int {
-	return new(big.Int).Mul(big.NewInt(params.GWei), new(big.Int).SetUint64(t.minGwei))
+	return bi.Ether(t.minEther)
 }
 
 func (t FundThresholds) TargetBalance() *big.Int {
-	return new(big.Int).Mul(big.NewInt(params.GWei), new(big.Int).SetUint64(t.targetGwei))
+	return bi.Ether(t.targetEther)
 }
 
 func convert(threshold FundThresholds, token tokens.Token) (FundThresholds, error) {
@@ -138,28 +139,38 @@ func convert(threshold FundThresholds, token tokens.Token) (FundThresholds, erro
 	}
 
 	return FundThresholds{
-		minGwei:    threshold.minGwei * uint64(conversion),
-		targetGwei: threshold.targetGwei * uint64(conversion),
+		minEther:    threshold.minEther * conversion,
+		targetEther: threshold.targetEther * conversion,
 	}, nil
 }
 
 // multipleSum returns a function that calculates the sum of the thresholds for the given roles and multiplier.
-func multipleSum(network netconf.ID, multiplier int, roles []Role) FundThresholds {
-	var sum FundThresholds
+func multipleSum(token tokens.Token, network netconf.ID, multiplier uint64, roles []Role) FundThresholds {
+	minSum, targetSum := bi.Zero(), bi.Zero()
 	for _, role := range roles {
-		thresh, ok := getThreshold(network, role)
+		thresh, ok := getThreshold(token, network, role)
 		if !ok {
 			continue
 		}
 
-		sum.minGwei += thresh.minGwei * uint64(multiplier)
-		sum.targetGwei += thresh.targetGwei * uint64(multiplier)
+		minSum = bi.Add(minSum, bi.MulRaw(thresh.MinBalance(), multiplier))
+		targetSum = bi.Add(targetSum, bi.MulRaw(thresh.TargetBalance(), multiplier))
 	}
 
-	return sum
+	return FundThresholds{
+		minEther:    bi.ToEtherF64(minSum),
+		targetEther: bi.ToEtherF64(targetSum),
+	}
 }
 
-func getThreshold(network netconf.ID, role Role) (FundThresholds, bool) {
+func getThreshold(token tokens.Token, network netconf.ID, role Role) (FundThresholds, bool) {
+	if supported, ok := tokenOverrides[role]; ok && !supported[token] {
+		return FundThresholds{}, false
+	} else if !ok && !nativeTokens[token] {
+		// Only native tokens are supported by default.
+		return FundThresholds{}, false
+	}
+
 	if _, ok := AccountForRole(network, role); !ok {
 		// Skip roles that don't have an account.
 		return FundThresholds{}, false
@@ -174,21 +185,10 @@ func getThreshold(network netconf.ID, role Role) (FundThresholds, bool) {
 
 	dynamic, ok := dynamicThresholdsByRole[role]
 	if ok {
-		return multipleSum(network, dynamic.Multiplier, dynamic.Roles), true
+		return multipleSum(token, network, dynamic.Multiplier, dynamic.Roles), true
 	}
 
 	thresh, ok := staticThresholdsByRole[role]
 
 	return thresh, ok
-}
-
-func gwei(eth float64) uint64 {
-	g := eth * params.GWei
-
-	_, dec := math.Modf(g)
-	if dec != 0 {
-		panic("ether float64 must be an int multiple of GWei")
-	}
-
-	return uint64(g)
 }

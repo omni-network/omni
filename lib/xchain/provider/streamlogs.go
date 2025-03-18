@@ -5,11 +5,11 @@ import (
 	"path"
 	"time"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/stream"
 	"github.com/omni-network/omni/lib/tracer"
-	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/core/types"
@@ -138,7 +138,7 @@ func (p *Provider) GetEventLogs(ctx context.Context, req xchain.EventLogsReq) ([
 
 	// Fetch the header if we didn't find it in the cache
 	if header == nil {
-		header, err = ethCl.HeaderByNumber(ctx, umath.NewBigInt(req.Height))
+		header, err = ethCl.HeaderByNumber(ctx, bi.N(req.Height))
 		if err != nil {
 			return nil, false, errors.Wrap(err, "header by number")
 		}

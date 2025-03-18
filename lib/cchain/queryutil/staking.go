@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/forkjoin"
@@ -124,7 +125,7 @@ func AllDelegations(ctx context.Context, cprov cchain.Provider) ([]DelegationBal
 					return nil, errors.Wrap(err, "parse delegator address")
 				}
 				if delegation, ok := uniq[del.Delegation.DelegatorAddress]; ok {
-					delegation.Balance = new(big.Int).Add(delegation.Balance, del.Balance.Amount.BigInt())
+					delegation.Balance = bi.Add(delegation.Balance, del.Balance.Amount.BigInt())
 					uniq[del.Delegation.DelegatorAddress] = delegation
 				} else {
 					uniq[del.Delegation.DelegatorAddress] =

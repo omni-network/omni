@@ -2,8 +2,8 @@ package ethclient
 
 import (
 	"context"
-	"math/big"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/tracer"
 
@@ -11,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
@@ -123,7 +122,7 @@ func (w Wrapper) HeaderByType(ctx context.Context, typ HeadType) (*types.Header,
 		return nil, errors.Wrap(err, "unmarshal head type")
 	}
 
-	header, err := w.cl.HeaderByNumber(ctx, big.NewInt(int64(bn)))
+	header, err := w.cl.HeaderByNumber(ctx, bi.N(bn))
 	if err != nil {
 		incError(w.chain, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
@@ -176,9 +175,7 @@ func (w Wrapper) EtherBalanceAt(ctx context.Context, addr common.Address) (float
 		return 0, err
 	}
 
-	bf, _ := b.Float64()
-
-	return bf / params.Ether, nil
+	return bi.ToEtherF64(b), nil
 }
 
 // TxReceipt returns the transaction receipt for the given transaction hash.

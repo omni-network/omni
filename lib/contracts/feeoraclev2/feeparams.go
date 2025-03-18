@@ -5,14 +5,13 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
-
-	"github.com/ethereum/go-ethereum/params"
 )
 
 // feeParams returns the fee parameters for the given destination chains.
@@ -49,12 +48,12 @@ func destFeeParams(ctx context.Context, destChain evmchain.Metadata, backends et
 	backend, err := backends.Backend(destChain.ChainID)
 	if err != nil {
 		log.Warn(ctx, "Failed getting exec backend, using default 1 Gwei", err, "dest_chain", destChain.Name)
-		gasPrice = big.NewInt(params.GWei)
+		gasPrice = bi.Gwei(1)
 	} else {
 		gasPrice, err = backend.SuggestGasPrice(ctx)
 		if err != nil {
 			log.Warn(ctx, "Failed fetching exec gas price, using default 1 Gwei", err, "dest_chain", destChain.Name)
-			gasPrice = big.NewInt(params.GWei)
+			gasPrice = bi.Gwei(1)
 		}
 	}
 
@@ -67,7 +66,7 @@ func destFeeParams(ctx context.Context, destChain evmchain.Metadata, backends et
 		GasToken:     gasToken,
 		BaseGasLimit: cfg.BaseGasLimit,
 		ChainId:      destChain.ChainID,
-		GasPrice:     gasprice.Tier(gasPrice.Uint64()),
+		GasPrice:     gasprice.Tier(gasPrice).Uint64(),
 		DataCostId:   cfg.DataCostID,
 	}, nil
 }
@@ -127,12 +126,12 @@ func destDataCostParams(ctx context.Context, destChain evmchain.Metadata, backen
 	backend, err := backends.Backend(dataCostCfg.ID)
 	if err != nil {
 		log.Warn(ctx, "Failed getting data cost backend, using default 1 Gwei", err, "dest_chain", destChain.Name, "posts_to", destChain.PostsTo)
-		gasPrice = big.NewInt(params.GWei)
+		gasPrice = bi.Gwei(1)
 	} else {
 		gasPrice, err = backend.SuggestGasPrice(ctx)
 		if err != nil {
 			log.Warn(ctx, "Failed fetching data cost gas price, using default 1 Gwei", err, "dest_chain", destChain.Name, "posts_to", destChain.PostsTo)
-			gasPrice = big.NewInt(params.GWei)
+			gasPrice = bi.Gwei(1)
 		}
 	}
 
@@ -140,7 +139,7 @@ func destDataCostParams(ctx context.Context, destChain evmchain.Metadata, backen
 		GasToken:   dataCostCfg.GasToken,
 		BaseBytes:  dataCostCfg.BaseBytes,
 		Id:         dataCostCfg.ID,
-		GasPrice:   gasprice.Tier(gasPrice.Uint64()),
+		GasPrice:   gasprice.Tier(gasPrice).Uint64(),
 		GasPerByte: dataCostCfg.GasPerByte,
 	}, nil
 }
@@ -226,7 +225,7 @@ func conversionRate(ctx context.Context, pricer tokens.Pricer, from, to tokens.T
 // This denominator helps convert between token amounts in solidity, in which there are no floating point numbers.
 //
 //	ex. (amt A) * (rate R) / CONVERSION_RATE_DENOM = (amt B)
-var conversionRateDenom = big.NewInt(1_000_000)
+var conversionRateDenom = bi.N(1_000_000)
 
 // rateToNumerator translates a float rate (ex 0.1) to numerator / CONVERSION_RATE_DENOM (ex 100_000).
 // This rate-as-numerator representation is used in FeeOracleV2 contracts.

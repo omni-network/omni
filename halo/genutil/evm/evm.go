@@ -2,28 +2,25 @@ package evm
 
 import (
 	"encoding/json"
-	"math/big"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/anvil"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/miner"
 	"github.com/ethereum/go-ethereum/params"
-
-	"cosmossdk.io/math"
 )
 
 var (
-	eth1k = math.NewInt(1000).MulRaw(params.Ether).BigInt()
-	eth1m = math.NewInt(1000000).MulRaw(params.Ether).BigInt()
+	eth1k = bi.Ether(1_000)
+	eth1m = bi.Ether(1_000_000)
 )
 
 func newUint64(val uint64) *uint64 { return &val }
@@ -44,8 +41,8 @@ func MakeGenesis(network netconf.ID) (core.Genesis, error) {
 	return core.Genesis{
 		Config:     DefaultChainConfig(network),
 		GasLimit:   miner.DefaultConfig.GasCeil,
-		BaseFee:    big.NewInt(params.InitialBaseFee),
-		Difficulty: big.NewInt(0),
+		BaseFee:    bi.N(params.InitialBaseFee),
+		Difficulty: bi.Zero(),
 		Alloc:      mergeAllocs(PrecompilesAlloc(), predeps, prefunds),
 	}, nil
 }
@@ -94,23 +91,23 @@ func MarshallBackwardsCompatible(genesis core.Genesis) ([]byte, error) {
 // See geth reference: https://github.com/ethereum/go-ethereum/blob/master/params/config.go#L65
 func DefaultChainConfig(network netconf.ID) *params.ChainConfig {
 	return &params.ChainConfig{
-		ChainID:                 umath.NewBigInt(network.Static().OmniExecutionChainID),
-		HomesteadBlock:          big.NewInt(0),
-		EIP150Block:             big.NewInt(0),
-		EIP155Block:             big.NewInt(0),
-		EIP158Block:             big.NewInt(0),
-		ByzantiumBlock:          big.NewInt(0),
-		ConstantinopleBlock:     big.NewInt(0),
-		PetersburgBlock:         big.NewInt(0),
-		IstanbulBlock:           big.NewInt(0),
-		MuirGlacierBlock:        big.NewInt(0),
-		BerlinBlock:             big.NewInt(0),
-		LondonBlock:             big.NewInt(0),
-		ArrowGlacierBlock:       big.NewInt(0),
-		GrayGlacierBlock:        big.NewInt(0),
+		ChainID:                 bi.N(network.Static().OmniExecutionChainID),
+		HomesteadBlock:          bi.Zero(),
+		EIP150Block:             bi.Zero(),
+		EIP155Block:             bi.Zero(),
+		EIP158Block:             bi.Zero(),
+		ByzantiumBlock:          bi.Zero(),
+		ConstantinopleBlock:     bi.Zero(),
+		PetersburgBlock:         bi.Zero(),
+		IstanbulBlock:           bi.Zero(),
+		MuirGlacierBlock:        bi.Zero(),
+		BerlinBlock:             bi.Zero(),
+		LondonBlock:             bi.Zero(),
+		ArrowGlacierBlock:       bi.Zero(),
+		GrayGlacierBlock:        bi.Zero(),
 		ShanghaiTime:            newUint64(0),
 		CancunTime:              newUint64(0),
-		TerminalTotalDifficulty: big.NewInt(0),
+		TerminalTotalDifficulty: bi.Zero(),
 		BlobScheduleConfig:      params.DefaultBlobSchedule,
 	}
 }
@@ -121,15 +118,15 @@ func DefaultChainConfig(network netconf.ID) *params.ChainConfig {
 //nolint:forbidigo // Explicitly use BytesToAddress with left padding.
 func PrecompilesAlloc() types.GenesisAlloc {
 	return types.GenesisAlloc{
-		common.BytesToAddress([]byte{1}): {Balance: big.NewInt(1)}, // ECRecover
-		common.BytesToAddress([]byte{2}): {Balance: big.NewInt(1)}, // SHA256
-		common.BytesToAddress([]byte{3}): {Balance: big.NewInt(1)}, // RIPEMD
-		common.BytesToAddress([]byte{4}): {Balance: big.NewInt(1)}, // Identity
-		common.BytesToAddress([]byte{5}): {Balance: big.NewInt(1)}, // ModExp
-		common.BytesToAddress([]byte{6}): {Balance: big.NewInt(1)}, // ECAdd
-		common.BytesToAddress([]byte{7}): {Balance: big.NewInt(1)}, // ECScalarMul
-		common.BytesToAddress([]byte{8}): {Balance: big.NewInt(1)}, // ECPairing
-		common.BytesToAddress([]byte{9}): {Balance: big.NewInt(1)}, // BLAKE2b
+		common.BytesToAddress([]byte{1}): {Balance: bi.One()}, // ECRecover
+		common.BytesToAddress([]byte{2}): {Balance: bi.One()}, // SHA256
+		common.BytesToAddress([]byte{3}): {Balance: bi.One()}, // RIPEMD
+		common.BytesToAddress([]byte{4}): {Balance: bi.One()}, // Identity
+		common.BytesToAddress([]byte{5}): {Balance: bi.One()}, // ModExp
+		common.BytesToAddress([]byte{6}): {Balance: bi.One()}, // ECAdd
+		common.BytesToAddress([]byte{7}): {Balance: bi.One()}, // ECScalarMul
+		common.BytesToAddress([]byte{8}): {Balance: bi.One()}, // ECPairing
+		common.BytesToAddress([]byte{9}): {Balance: bi.One()}, // BLAKE2b
 	}
 }
 

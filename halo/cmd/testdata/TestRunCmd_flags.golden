@@ -26,7 +26,7 @@
  },
  "FeatureFlags": [],
  "Comet": {
-  "Version": "0.38.15",
+  "Version": "0.38.17",
   "RootDir": "foo",
   "ProxyApp": "",
   "Moniker": "testmoniker",

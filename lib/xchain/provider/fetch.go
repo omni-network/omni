@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -107,7 +108,7 @@ func headerByConfLevel(ctx context.Context, ethCl ethclient.Client, confLevel xc
 	// Use SubtractOrZero since genesis always confirmed for all levels
 	delayed := umath.SubtractOrZero(latest, delay)
 
-	return ethCl.HeaderByNumber(ctx, umath.NewBigInt(delayed))
+	return ethCl.HeaderByNumber(ctx, bi.N(delayed))
 }
 
 // GetEmittedCursor returns the emitted cursor for the destination chain on the source chain,
@@ -277,7 +278,7 @@ func (p *Provider) GetBlock(ctx context.Context, req xchain.ProviderRequest) (xc
 
 	// Fetch the header if we didn't find it in the cache
 	if header == nil {
-		header, err = ethCl.HeaderByNumber(ctx, umath.NewBigInt(req.Height))
+		header, err = ethCl.HeaderByNumber(ctx, bi.N(req.Height))
 		if err != nil {
 			return xchain.Block{}, false, errors.Wrap(err, "header by number")
 		}
@@ -550,7 +551,7 @@ func heightForRef(ctx context.Context, client ethclient.Client, ref xchain.Ref) 
 	}
 
 	if ref.Height != nil {
-		return umath.NewBigInt(*ref.Height), nil
+		return bi.N(*ref.Height), nil
 	}
 
 	height, err := heightByConfLevel(ctx, client, *ref.ConfLevel)
@@ -558,5 +559,5 @@ func heightForRef(ctx context.Context, client ethclient.Client, ref xchain.Ref) 
 		return nil, err
 	}
 
-	return umath.NewBigInt(height), nil
+	return bi.N(height), nil
 }

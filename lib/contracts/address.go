@@ -2,10 +2,10 @@ package contracts
 
 import (
 	"context"
-	"math/big"
 	"sync"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/create3"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -95,7 +95,7 @@ func StagingID(ctx context.Context) (string, error) {
 		return "", errors.Wrap(err, "dial omni")
 	}
 
-	block1, err := client.BlockByNumber(ctx, big.NewInt(1))
+	block1, err := client.BlockByNumber(ctx, bi.One())
 	if err != nil {
 		return "", errors.Wrap(err, "get block 1")
 	}

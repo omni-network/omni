@@ -6,6 +6,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/mock"
@@ -60,7 +61,7 @@ func TestProvider(t *testing.T) {
 		}
 
 		return &ethtypes.Header{
-			Number: big.NewInt(int64(fromHeight * 10)),
+			Number: bi.N(fromHeight * 10),
 		}, nil
 	})
 

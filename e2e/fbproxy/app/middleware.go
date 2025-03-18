@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -24,7 +24,7 @@ type txSigner interface {
 func NewSendTxMiddleware(txsigner txSigner, chainID uint64) Middleware {
 	// sigHelper used to create signature hash and recover tx sender,
 	// not for actual signing which is left to txsigner
-	sigHelper := types.LatestSignerForChainID(umath.NewBigInt(chainID))
+	sigHelper := types.LatestSignerForChainID(bi.N(chainID))
 
 	return func(ctx context.Context, req JSONRPCMessage) (JSONRPCMessage, error) {
 		if req.Method != "eth_sendTransaction" {

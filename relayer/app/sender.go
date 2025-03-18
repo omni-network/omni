@@ -3,11 +3,11 @@ package relayer
 import (
 	"context"
 	"crypto/ecdsa"
-	"math/big"
 	"slices"
 	"strings"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/evmchain"
@@ -151,7 +151,7 @@ func (s Sender) SendAsync(ctx context.Context, sub xchain.Submission) <-chan err
 		TxData:   txData,
 		To:       &s.chain.PortalAddress,
 		GasLimit: estimatedGas,
-		Value:    big.NewInt(0),
+		Value:    bi.Zero(),
 		Nonce:    &nonce,
 	}
 

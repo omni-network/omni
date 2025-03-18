@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/monitor/xfeemngr/contract"
@@ -56,7 +57,7 @@ func TestStart(t *testing.T) {
 		oracles: oracles,
 	}
 
-	expect := func(tprices map[tokens.Token]float64, gprices map[uint64]uint64) {
+	expect := func(tprices map[tokens.Token]float64, gprices map[uint64]*big.Int) {
 		for _, oracle := range oracles {
 			src := oracle.chain
 
@@ -66,7 +67,7 @@ func TestStart(t *testing.T) {
 				require.NoError(t, err)
 				gasprice, err := c.GasPriceOn(ctx, dest.ChainID)
 				require.NoError(t, err)
-				require.Equal(t, gprices[dest.ChainID], gasprice.Uint64(), "gas price")
+				require.Equal(t, gprices[dest.ChainID].Uint64(), gasprice.Uint64(), "gas price")
 
 				// check toNativeRate
 				rate := tprices[dest.NativeToken] / tprices[src.NativeToken]
@@ -88,14 +89,14 @@ func TestStart(t *testing.T) {
 
 				// handle minimum rate case
 				if rate < 1.0/float64(rateDenom) {
-					numer = big.NewInt(1) // Use minimum representable rate
+					numer = bi.One() // Use minimum representable rate
 				}
 
 				onChainNumer, err := mustGetContract(t, oracle).ToNativeRate(ctx, dest.ChainID)
 				require.NoError(t, err)
 
 				// allow variance of +-1 due to floating point rounding errors
-				numerDiff := new(big.Int).Sub(numer, onChainNumer).Int64()
+				numerDiff := bi.Sub(numer, onChainNumer).Int64()
 				require.True(t, numerDiff >= -1 && numerDiff <= 1, "conversion rate")
 			}
 		}
@@ -199,8 +200,8 @@ func makeChains(chainIDs []uint64) []evmchain.Metadata {
 }
 
 // makeGasPrices generates a map chainID -> gas price for each chainID.
-func makeGasPrices(chainIDs []uint64) map[uint64]uint64 {
-	prices := make(map[uint64]uint64)
+func makeGasPrices(chainIDs []uint64) map[uint64]*big.Int {
+	prices := make(map[uint64]*big.Int)
 
 	for _, chainID := range chainIDs {
 		prices[chainID] = randGasPrice()
@@ -210,9 +211,9 @@ func makeGasPrices(chainIDs []uint64) map[uint64]uint64 {
 }
 
 // randGasPrice generates a random, reasonable gas price.
-func randGasPrice() uint64 {
+func randGasPrice() *big.Int {
 	oneGwei := 1_000_000_000 // i gwei
-	return uint64(rand.Float64() * float64(oneGwei))
+	return bi.N(rand.Intn(oneGwei))
 }
 
 // randTokenPrice generates a random, reasonable token price.

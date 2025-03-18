@@ -7,13 +7,13 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log/slog"
-	"math/big"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
@@ -23,7 +23,6 @@ import (
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/umath"
 
 	k1 "github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/rpc/client/http"
@@ -212,7 +211,7 @@ func CreateValidator(ctx context.Context, cfg CreateValConfig) error {
 	if err != nil {
 		return err
 	}
-	txOpts.Value = new(big.Int).Mul(umath.NewBigInt(cfg.SelfDelegation), big.NewInt(params.Ether)) // Send self-delegation
+	txOpts.Value = bi.Ether(cfg.SelfDelegation) // Send self-delegation
 	consPubkey, err := cfg.consensusPublicKey()
 	if err != nil {
 		return err
@@ -345,7 +344,7 @@ func Delegate(ctx context.Context, cfg DelegateConfig) error {
 	if err != nil {
 		return err
 	}
-	txOpts.Value = new(big.Int).Mul(umath.NewBigInt(cfg.Amount), big.NewInt(params.Ether)) // Send delegation
+	txOpts.Value = bi.Ether(cfg.Amount) // Send delegation
 
 	callOpts := &bind.CallOpts{Context: ctx}
 	ok, err := contract.IsAllowlistEnabled(callOpts)

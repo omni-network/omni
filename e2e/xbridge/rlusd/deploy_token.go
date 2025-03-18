@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/proxy"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
 
@@ -84,7 +85,7 @@ func deployXToken(
 	ctx context.Context,
 	network netconf.ID,
 	backend *ethbackend.Backend,
-	bridge common.Address) (common.Address, *ethtypes.Receipt, error) {
+	bridge common.Address) (common.Address, *ethclient.Receipt, error) {
 	cfg := TokenConfig{
 		Token:      xtoken,
 		Upgrader:   eoa.MustAddress(network, eoa.RoleUpgrader),
@@ -100,7 +101,7 @@ func deployXToken(
 func deployCanonical(
 	ctx context.Context,
 	network netconf.ID,
-	backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+	backend *ethbackend.Backend) (common.Address, *ethclient.Receipt, error) {
 	cfg := TokenConfig{
 		Token:      wraps,
 		Upgrader:   eoa.MustAddress(network, eoa.RoleUpgrader),
@@ -117,7 +118,7 @@ func deployToken(
 	ctx context.Context,
 	cfg TokenConfig,
 	network netconf.ID,
-	backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+	backend *ethbackend.Backend) (common.Address, *ethclient.Receipt, error) {
 	s, err := salt(ctx, network, cfg.Token)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "salt")

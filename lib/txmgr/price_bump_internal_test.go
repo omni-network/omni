@@ -2,9 +2,10 @@ package txmgr
 
 import (
 	"context"
-	"math/big"
 	"strconv"
 	"testing"
+
+	"github.com/omni-network/omni/lib/bi"
 
 	"github.com/stretchr/testify/require"
 )
@@ -20,10 +21,10 @@ type priceBumpTest struct {
 
 func (tc *priceBumpTest) run(t *testing.T) {
 	t.Helper()
-	prevFC := calcGasFeeCap(big.NewInt(tc.prevBaseFee), big.NewInt(tc.prevGasTip))
+	prevFC := calcGasFeeCap(bi.N(tc.prevBaseFee), bi.N(tc.prevGasTip))
 
-	tip, fc := updateFees(context.Background(), big.NewInt(tc.prevGasTip), prevFC, big.NewInt(tc.newGasTip),
-		big.NewInt(tc.newBaseFee))
+	tip, fc := updateFees(context.Background(), bi.N(tc.prevGasTip), prevFC, bi.N(tc.newGasTip),
+		bi.N(tc.newBaseFee))
 
 	require.Equal(t, tc.expectedTip, tip.Int64(), "tip must be as expected")
 	require.Equal(t, tc.expectedFC, fc.Int64(), "fee cap must be as expected")

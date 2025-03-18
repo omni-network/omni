@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"net/http"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/solver/types"
 )
@@ -140,19 +141,20 @@ func feeBipsFor(tkn Token) int64 {
 func depositFor(expense *big.Int, bips int64) *big.Int {
 	// deposit = expense + (expense * bips / 10_000)
 
-	quo := big.NewInt(10_000)
-	num := new(big.Int).Mul(expense, big.NewInt(bips))
-	fee := new(big.Int).Div(num, quo)
+	fee := bi.DivRaw(
+		bi.MulRaw(expense, bips),
+		10_000,
+	)
 
-	return new(big.Int).Add(expense, fee)
+	return bi.Add(expense, fee)
 }
 
 // expenseFor returns the expense allowed for `deposit` with a fee in bips.
 func expenseFor(deposit *big.Int, bips int64) *big.Int {
 	// expense = 10_000 * d / (10_000 + bips)
 
-	quo := big.NewInt(10_000 + bips)
-	num := new(big.Int).Mul(deposit, big.NewInt(10_000))
-
-	return new(big.Int).Div(num, quo)
+	return bi.DivRaw(
+		bi.MulRaw(deposit, 10_000),
+		10_000+bips,
+	)
 }

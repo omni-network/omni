@@ -7,11 +7,11 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 // IsDeployed checks if the Create3 factory contract is deployed to the provided backend
@@ -35,7 +35,7 @@ func IsDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Bac
 }
 
 // DeployIfNeeded deploys a new Create3 factory contract if it is not already deployed.
-func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethclient.Receipt, error) {
 	deployed, addr, err := IsDeployed(ctx, network, backend)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "is deployed")
@@ -49,7 +49,7 @@ func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend
 
 // Deploy deploys a new Create3 factory contract and returns the address and receipt.
 // It only allows deployments to explicitly supported chains.
-func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethclient.Receipt, error) {
 	cfg, ok := eoa.Address(network, eoa.RoleCreate3Deployer)
 	if !ok {
 		return common.Address{}, nil, errors.New("unsupported network", "network", network)
@@ -58,7 +58,7 @@ func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend
 	return deploy(ctx, cfg, backend)
 }
 
-func deploy(ctx context.Context, deployer common.Address, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func deploy(ctx context.Context, deployer common.Address, backend *ethbackend.Backend) (common.Address, *ethclient.Receipt, error) {
 	txOpts, err := backend.BindOpts(ctx, deployer)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "bind opts")

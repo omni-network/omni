@@ -12,14 +12,11 @@ import (
 
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/app/static"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/scripts"
-
-	"github.com/ethereum/go-ethereum/params"
-
-	"cosmossdk.io/math"
 
 	_ "embed"
 )
@@ -93,7 +90,7 @@ func Start(ctx context.Context, dir string, chainID uint64) (ethclient.Client, f
 	}
 
 	// always fund dev accounts
-	eth1m := math.NewInt(1_000_000).MulRaw(params.Ether).BigInt() // 1M ETH
+	eth1m := bi.Ether(1_000_000) // 1M ETH
 	if err := FundAccounts(ctx, ethCl, eth1m, eoa.DevAccounts()...); err != nil {
 		stop()
 		return nil, nil, errors.Wrap(err, "fund accounts")

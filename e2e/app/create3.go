@@ -5,10 +5,10 @@ import (
 
 	"github.com/omni-network/omni/lib/contracts/create3"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 type Create3DeployConfig struct {
@@ -51,7 +51,7 @@ func deployAllCreate3(ctx context.Context, def Definition) error {
 	return nil
 }
 
-func deployCreate3(ctx context.Context, def Definition, chainID uint64) (common.Address, *ethtypes.Receipt, error) {
+func deployCreate3(ctx context.Context, def Definition, chainID uint64) (common.Address, *ethclient.Receipt, error) {
 	backend, err := def.Backends().Backend(chainID)
 	if err != nil {
 		return common.Address{}, nil, err

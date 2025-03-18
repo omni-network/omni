@@ -8,11 +8,11 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/evmstaking/testutil"
 	"github.com/omni-network/omni/halo/evmstaking/types"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/umath"
 	evmengkeeper "github.com/omni-network/omni/octane/evmengine/keeper"
 	etypes "github.com/omni-network/omni/octane/evmengine/types"
 
@@ -373,7 +373,7 @@ func TestEditValidator(t *testing.T) {
 		SecurityContact:          "https://contract",
 		Details:                  "details",
 		CommissionRatePercentage: 99,
-		MinSelfDelegation:        umath.NewBigInt(11),
+		MinSelfDelegation:        bi.N(11),
 	}
 	ethClientMock, err := ethclient.NewEngineMock(
 		ethclient.WithMockEditValidator(privKey.PubKey(), params),

@@ -5,12 +5,10 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
-
-	"cosmossdk.io/math"
 )
 
 // Contract defines a contract to monitor.
@@ -125,23 +123,12 @@ type FundThresholds struct {
 
 // MinBalance returns the minimum balance required for funding a contract.
 func (t FundThresholds) MinBalance() *big.Int {
-	gwei := t.minEther * params.GWei
-
-	if gwei < 1 {
-		panic("ether float64 must be greater than 1 Gwei")
-	}
-
-	return math.NewInt(params.GWei).MulRaw(int64(gwei)).BigInt()
+	return bi.Ether(t.minEther)
 }
 
 // TargetBalance returns the target balance to fund a contract to.
 func (t FundThresholds) TargetBalance() *big.Int {
-	gwei := t.targetEther * params.GWei
-	if gwei < 1 {
-		panic("ether float64 must be greater than 1 Gwei")
-	}
-
-	return math.NewInt(params.GWei).MulRaw(int64(gwei)).BigInt()
+	return bi.Ether(t.targetEther)
 }
 
 // WithdrawThresholds defines the thresholds for withdrawing from a contract.
@@ -151,11 +138,5 @@ type WithdrawThresholds struct {
 
 // MaxBalance returns the max balance a contract can have before a withdrawal.
 func (t WithdrawThresholds) MaxBalance() *big.Int {
-	gwei := t.maxEther * params.GWei
-
-	if gwei < 1 {
-		panic("ether float64 must be greater than 1 Gwei")
-	}
-
-	return math.NewInt(params.GWei).MulRaw(int64(gwei)).BigInt()
+	return bi.Ether(t.maxEther)
 }

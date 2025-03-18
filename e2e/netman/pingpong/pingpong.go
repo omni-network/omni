@@ -4,12 +4,12 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"math/big"
 	"slices"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/forkjoin"
@@ -19,7 +19,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -127,11 +126,11 @@ func (d *XDapp) fund(ctx context.Context) error {
 		}
 
 		// For ETH chains, fund it with 0.5 ETH
-		fund := new(big.Int).Div(big.NewInt(params.Ether), big.NewInt(2))
+		fund := bi.Ether(0.5)
 
 		// for OMNI chains, fund it with 100 OMNI
 		if contract.Chain.ID == d.network.Static().OmniExecutionChainID {
-			fund = new(big.Int).Mul(big.NewInt(params.Ether), big.NewInt(100))
+			fund = bi.Ether(100)
 		}
 
 		txOpts.Value = fund

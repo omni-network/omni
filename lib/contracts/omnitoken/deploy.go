@@ -6,18 +6,22 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/create3"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 // TotalSupply is the 100M, total supply of the token.
-var TotalSupply = new(big.Int).Mul(big.NewInt(100e6), big.NewInt(1e18))
+// It is a function since big ints are mutable.
+func TotalSupply() *big.Int {
+	return bi.Ether(100e6)
+}
 
 type deploymentConfig struct {
 	Create3Factory common.Address
@@ -77,7 +81,7 @@ func isDeployed(ctx context.Context, network netconf.ID, backend *ethbackend.Bac
 
 // DeployIfNeeded deploys a new token contract if it is not already deployed.
 // If the contract is already deployed, the receipt is nil.
-func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethclient.Receipt, error) {
 	deployed, addr, err := isDeployed(ctx, network, backend)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "is deployed")
@@ -93,7 +97,7 @@ func DeployIfNeeded(ctx context.Context, network netconf.ID, backend *ethbackend
 //
 // NOTE: the mainnet ERC20 OMNI token is already deployed to ETH mainnet. We use
 // this code for test / ephemeral networks.
-func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend) (common.Address, *ethclient.Receipt, error) {
 	if network == netconf.Mainnet {
 		return common.Address{}, nil, errors.New("mainnet token already deployed")
 	}
@@ -124,7 +128,7 @@ func Deploy(ctx context.Context, network netconf.ID, backend *ethbackend.Backend
 	return deploy(ctx, network, cfg, backend)
 }
 
-func deploy(ctx context.Context, network netconf.ID, cfg deploymentConfig, backend *ethbackend.Backend) (common.Address, *ethtypes.Receipt, error) {
+func deploy(ctx context.Context, network netconf.ID, cfg deploymentConfig, backend *ethbackend.Backend) (common.Address, *ethclient.Receipt, error) {
 	if err := cfg.validate(); err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "validate config")
 	}
@@ -171,7 +175,7 @@ func deploy(ctx context.Context, network netconf.ID, cfg deploymentConfig, backe
 			return common.Address{}, nil, errors.Wrap(err, "new mock erc20")
 		}
 
-		tx, err := token.Mint(txOpts, cfg.Recipient, TotalSupply)
+		tx, err := token.Mint(txOpts, cfg.Recipient, TotalSupply())
 		if err != nil {
 			return common.Address{}, nil, errors.Wrap(err, "mint")
 		}

@@ -1,14 +1,13 @@
 package solvernet_test
 
 import (
-	"math/big"
 	"testing"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/params"
 
 	"github.com/stretchr/testify/require"
 )
@@ -18,19 +17,19 @@ func TestCallBindings(t *testing.T) {
 
 	calls := []solvernet.Call{
 		{
-			Value:  ether(1),
+			Value:  bi.Ether(1),
 			Target: common.HexToAddress("0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4"),
 			// selector + params
 			Data: hexutil.MustDecode("0x70a08231000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc7"),
 		},
 		{
-			Value:  ether(1),
+			Value:  bi.Ether(1),
 			Target: common.HexToAddress("0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4"),
 			// just selector
 			Data: hexutil.MustDecode("0x70a08231"),
 		},
 		{
-			Value:  ether(1),
+			Value:  bi.Ether(1),
 			Target: common.HexToAddress("0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4"),
 			// no calldata
 			Data: nil,
@@ -70,8 +69,4 @@ func TestCallBindings(t *testing.T) {
 	require.Equal(t, calls[3].Target, bindings[3].Target)
 	require.Equal(t, [4]byte{}, bindings[3].Selector)
 	require.Equal(t, []byte(nil), bindings[3].Params)
-}
-
-func ether(x int64) *big.Int {
-	return new(big.Int).Mul(big.NewInt(x), big.NewInt(params.Ether))
 }

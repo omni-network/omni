@@ -3,9 +3,9 @@ package app
 import (
 	"context"
 	"log/slog"
-	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -114,7 +114,7 @@ func newFiller(
 			return nil
 		}
 
-		nativeValue := big.NewInt(0)
+		nativeValue := bi.Zero()
 		for _, output := range pendingData.MaxSpent {
 			if output.ChainId.Uint64() != destChainID {
 				// We error on this case for now, as our contracts only allow single dest chain orders
@@ -156,7 +156,7 @@ func newFiller(
 			return errors.Wrap(err, "get fulfill fee")
 		}
 
-		txOpts.Value = new(big.Int).Add(nativeValue, fee)
+		txOpts.Value = bi.Add(nativeValue, fee)
 		fillerData := []byte{} // fillerData is optional ERC7683 custom filler specific data, unused in our contracts
 		tx, err := outbox.Fill(txOpts, order.ID, pendingData.FillOriginData, fillerData)
 		if err != nil {

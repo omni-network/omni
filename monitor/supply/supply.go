@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
@@ -14,7 +15,6 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/params"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -51,7 +51,7 @@ func instrSupplies(ctx context.Context, cprov cchain.Provider, network netconf.N
 		return errors.Wrap(err, "stake amount")
 	}
 
-	cChainSupply.Set(toEtherF64(cosmosSupplyWei))
+	cChainSupply.Set(bi.ToEtherF64(cosmosSupplyWei))
 
 	addrs, err := contracts.GetAddresses(ctx, network.ID)
 	if err != nil {
@@ -74,20 +74,15 @@ func instrSupplies(ctx context.Context, cprov cchain.Provider, network netconf.N
 	if err != nil {
 		return errors.Wrap(err, "l1 token supply")
 	}
-	l1Erc20Supply.Set(toEtherF64(l1TokenSupplyWei))
+	l1Erc20Supply.Set(bi.ToEtherF64(l1TokenSupplyWei))
 
 	l1BridgeBalanceWei, err := l1Token.BalanceOf(callOpts, addrs.L1Bridge)
 	if err != nil {
 		return errors.Wrap(err, "l1 bridge balance")
 	}
-	bridgeBalance.Set(toEtherF64(l1BridgeBalanceWei))
+	bridgeBalance.Set(bi.ToEtherF64(l1BridgeBalanceWei))
 
 	return nil
-}
-
-func toEtherF64(wei *big.Int) float64 {
-	f64, _ := new(big.Int).Div(wei, big.NewInt(params.Ether)).Float64()
-	return f64
 }
 
 func stakeAmount(coins sdk.Coins) (*big.Int, error) {

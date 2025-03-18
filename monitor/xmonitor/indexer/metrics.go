@@ -4,9 +4,7 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/omni-network/omni/lib/umath"
-
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/omni-network/omni/lib/bi"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -87,7 +85,7 @@ func instrumentSample(s sample) {
 	excessGasHist.WithLabelValues(s.Stream, s.XDApp).Observe(float64(s.ExcessGas))
 
 	if s.FeeAmount != nil {
-		feesGwei, _ := new(big.Int).Div(s.FeeAmount, umath.NewBigInt(params.GWei)).Float64()
+		feesGwei := bi.ToGweiF64(s.FeeAmount)
 		feesGweiTotal.WithLabelValues(s.SrcChain, s.FeeToken).Add(feesGwei)
 	}
 }

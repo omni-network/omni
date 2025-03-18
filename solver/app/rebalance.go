@@ -7,6 +7,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -16,18 +17,19 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 // maxL1OMNI is the max amount of L1 OMNI the solver should hold by network.
 var maxL1OMNI = map[netconf.ID]*big.Int{
 	// 1 OMNI for ephemeral networks (tests rebalancing more frequently)
-	netconf.Devnet:  new(big.Int).Mul(big.NewInt(1), big.NewInt(params.Ether)),
-	netconf.Staging: new(big.Int).Mul(big.NewInt(1), big.NewInt(params.Ether)),
+	netconf.Devnet:  bi.Ether(1),
+	netconf.Staging: bi.Ether(1),
 
-	// 1000 OMNI for protected networks (reduces gas spend)
-	netconf.Omega:   new(big.Int).Mul(big.NewInt(1000), big.NewInt(params.Ether)),
-	netconf.Mainnet: new(big.Int).Mul(big.NewInt(1000), big.NewInt(params.Ether)),
+	// 50 OMNI for oemga (still small, but more than devnet)
+	netconf.Omega: bi.Ether(50),
+
+	// 1000 OMNI for mainnet (reduce gas spend)
+	netconf.Mainnet: bi.Ether(1000),
 }
 
 // startRebalancing starts rebalancing of tokens that the solver is able to rebalance.
@@ -122,7 +124,7 @@ func rebalanceOMNIOnce(
 	}
 
 	// if balance not above max, do nothing
-	if balance.Cmp(maxL1OMNI[network]) < 0 {
+	if bi.LT(balance, maxL1OMNI[network]) {
 		return nil
 	}
 
@@ -163,8 +165,8 @@ func rebalanceOMNIOnce(
 	}
 
 	log.Info(ctx, "Bridged L1-to-native OMNI for solver",
-		"amount_ether", umath.WeiToEtherF64(balance),
-		"fee_gwei", umath.WeiToGweiF64(fee),
+		"amount_ether", bi.ToEtherF64(balance),
+		"fee_gwei", bi.ToGweiF64(fee),
 		"tx", tx.Hash(),
 	)
 
@@ -183,7 +185,7 @@ func maybeApprove(
 		return errors.Wrap(err, "allowance")
 	}
 
-	if allowance.Cmp(amount) >= 0 {
+	if bi.GTE(allowance, amount) {
 		return nil
 	}
 

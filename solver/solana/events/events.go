@@ -5,12 +5,13 @@ package dummy
 import (
 	"encoding/base64"
 	"fmt"
+	"reflect"
+	"strings"
+
 	ag_binary "github.com/gagliardetto/binary"
 	ag_solanago "github.com/gagliardetto/solana-go"
 	ag_rpc "github.com/gagliardetto/solana-go/rpc"
 	ag_base58 "github.com/mr-tron/base58"
-	"reflect"
-	"strings"
 )
 
 type MyEventEventData struct {

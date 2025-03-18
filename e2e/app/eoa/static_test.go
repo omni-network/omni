@@ -6,18 +6,18 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
 
 	"github.com/stretchr/testify/require"
 )
 
-//go:generate go test . -run=TestThresholdReference -clean -golden
+//go:generate go test . -run=TestThresholdReference -golden
 
 func TestThresholdReference(t *testing.T) {
 	t.Parallel()
@@ -28,14 +28,8 @@ func TestThresholdReference(t *testing.T) {
 		for _, token := range []tokens.Token{tokens.ETH, tokens.OMNI} {
 			resp[network][token.Symbol] = make(map[eoa.Role]map[string]string)
 			for _, role := range eoa.AllRoles() {
-				if !shouldExist(role, network, token) {
-					continue
-				}
-
 				resp[network][token.Symbol][role] = make(map[string]string)
-
-				thresholds, ok := eoa.GetFundThresholds(token, network, role)
-				require.True(t, ok, "thresholds not found: %s %s %s", network, role, token)
+				thresholds, _ := eoa.GetFundThresholds(token, network, role)
 
 				resp[network][token.Symbol][role]["target"] = etherStr(thresholds.TargetBalance())
 				resp[network][token.Symbol][role]["min"] = etherStr(thresholds.MinBalance())
@@ -51,7 +45,7 @@ func TestStatic(t *testing.T) {
 	for _, chain := range evmchain.All() {
 		for _, network := range []netconf.ID{netconf.Devnet, netconf.Staging, netconf.Omega, netconf.Mainnet} {
 			for _, role := range eoa.AllRoles() {
-				if !shouldExist(role, network, chain.NativeToken) {
+				if !shouldExist(role, network) {
 					continue
 				}
 
@@ -60,8 +54,7 @@ func TestStatic(t *testing.T) {
 				require.NotZero(t, acc.Address)
 				require.True(t, common.IsHexAddress(acc.Address.Hex()))
 
-				thresholds, ok := eoa.GetFundThresholds(chain.NativeToken, network, acc.Role)
-				require.True(t, ok, "thresholds not found")
+				thresholds, _ := eoa.GetFundThresholds(chain.NativeToken, network, acc.Role)
 
 				require.NotPanics(t, func() {
 					mini := thresholds.MinBalance()
@@ -95,21 +88,14 @@ func TestMainnet(t *testing.T) {
 }
 
 func etherStr(amount *big.Int) string {
-	b, _ := amount.Float64()
-	b /= params.Ether
-
-	return fmt.Sprintf("%.4f", b)
+	return fmt.Sprintf("%.4f", bi.ToEtherF64(amount))
 }
 
-func shouldExist(role eoa.Role, id netconf.ID, token tokens.Token) bool {
+func shouldExist(role eoa.Role, id netconf.ID) bool {
 	switch {
 	case role == eoa.RoleTester && id == netconf.Mainnet: // RoleTester not supported on mainnet
 		return false
 	default:
-		if token != tokens.ETH && role == eoa.RoleFlowgen { // Flowgen is only used on ETH chains
-			return false
-		}
-
 		return true
 	}
 }

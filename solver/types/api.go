@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 
@@ -165,7 +166,7 @@ func (c Call) MarshalJSON() ([]byte, error) {
 
 func intOrZero(i *hexutil.Big) *big.Int {
 	if i == nil {
-		return big.NewInt(0)
+		return bi.Zero()
 	}
 
 	return i.ToInt()

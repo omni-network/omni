@@ -71,7 +71,9 @@ func Run(ctx context.Context, cfg Config) error {
 		log.Error(ctx, "Failed to start monitor flowgen [BUG]", err)
 	}
 
-	account.StartMonitoring(ctx, network, ethClients)
+	if err := account.StartMonitoring(ctx, network, ethClients); err != nil {
+		return errors.Wrap(err, "start account monitor")
+	}
 
 	if err := contract.StartMonitoring(ctx, network, cfg.RPCEndpoints, ethClients); err != nil {
 		return errors.Wrap(err, "monitor contracts")
