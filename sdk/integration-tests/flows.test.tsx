@@ -1,8 +1,8 @@
 import { act, render, waitFor } from '@testing-library/react'
 import { createRef } from 'react'
 import type { PrivateKeyAccount } from 'viem/accounts'
-import { describe, expect, should, test } from 'vitest'
-import { useConnect } from 'wagmi'
+import { describe, expect, test } from 'vitest'
+import { type CreateConnectorFn, useConnect } from 'wagmi'
 
 import {
   type Order,
@@ -13,53 +13,79 @@ import {
 } from '../src/index.js'
 
 import {
-  ACCOUNTS_RECORD,
   ContextProvider,
   ETHER,
   MOCK_L1_ID,
   MOCK_L2_ID,
   ZERO_ADDRESS,
-  accounts,
-  createClientFactory,
   createRenderHook,
-  createTestConnector,
-  createWagmiConfig,
+  testAccount,
   testConnector,
 } from './test-utils.js'
 
 type AnyOrder = Order<Array<unknown>>
 
-describe('solver test orders', () => {
-  type TestOrder = {
-    label: string
-    account: PrivateKeyAccount
-    order: AnyOrder
-    shouldReject: boolean
-    rejectReason: string
+type TestOrder = {
+  account: PrivateKeyAccount
+  order: AnyOrder
+  shouldReject: boolean
+  rejectReason: string
+}
+
+type UseOrderReturn = ReturnType<typeof useOrder>
+
+function useOrderRef(
+  connector: CreateConnectorFn,
+  order: AnyOrder,
+): React.RefObject<UseOrderReturn | null> {
+  const connectRef = createRef()
+  const orderRef = createRef<UseOrderReturn>()
+
+  // useOrder() can only be used with a connected account, so we need to render it conditionally
+  function TestOrder() {
+    orderRef.current = useOrder({ validateEnabled: true, ...order })
+    return null
   }
 
-  const testAccounts = Object.values(ACCOUNTS_RECORD)
+  // Wrap TestOrder to only render if connected
+  function TestConnectAndOrder() {
+    const connectReturn = useConnect()
+    connectRef.current = connectReturn
+    return connectReturn.data ? <TestOrder /> : null
+  }
 
-  const nativeOrders: Array<TestOrder> = testAccounts.map((account, i) => {
-    const isOverMax = i < 3
-    const isUnderMin = i > 6
+  render(<TestConnectAndOrder />, { wrapper: ContextProvider })
+  act(() => {
+    connectRef.current?.connect({ connector })
+  })
 
-    const [label, amount, shouldReject, rejectReason] = isOverMax
-      ? [
-          'Native order failing with expense over max amount',
-          2n * ETHER,
-          true,
-          'ExpenseOverMax',
-        ]
-      : isUnderMin
-        ? [
-            'Native order failing with expense under min amount',
-            1n,
-            true,
-            'ExpenseUnderMin',
-          ]
-        : ['Native order succeeding', ETHER, false, '']
+  return orderRef
+}
 
+async function executeTestOrder({
+  order,
+  shouldReject,
+  rejectReason,
+}: TestOrder): Promise<void> {
+  const orderRef = useOrderRef(testConnector, order)
+  await waitFor(() => expect(orderRef.current?.isReady).toBe(true))
+
+  if (shouldReject) {
+    expect(orderRef.current?.validation?.status).toBe('rejected')
+    expect(orderRef.current?.validation?.rejectReason).toBe(rejectReason)
+  } else {
+    expect(orderRef.current?.validation?.status).toBe('accepted')
+    act(() => {
+      orderRef.current?.open()
+    })
+    await waitFor(() => expect(orderRef.current?.txHash).toBeDefined())
+  }
+}
+
+describe('ETH transfer orders', () => {
+  test('succeeds with valid expense', async () => {
+    const account = testAccount
+    const amount = ETHER
     const order: AnyOrder = {
       owner: account.address,
       srcChainId: MOCK_L1_ID,
@@ -68,56 +94,55 @@ describe('solver test orders', () => {
       calls: [{ target: account.address, value: amount }],
       deposit: { token: ZERO_ADDRESS, amount: amount + ETHER },
     }
-
-    return { label, account, order, shouldReject, rejectReason }
+    await executeTestOrder({
+      account,
+      order,
+      shouldReject: false,
+      rejectReason: '',
+    })
   })
 
-  test.each(nativeOrders)(
-    '$label with account $account.address',
-    async ({ account, order, shouldReject, rejectReason }) => {
-      const createClient = createClientFactory(account)
-      const testConnector = createTestConnector(createClient)
+  test('fails with expense over max amount', async () => {
+    const account = testAccount
+    const amount = 2n * ETHER
+    const order: AnyOrder = {
+      owner: account.address,
+      srcChainId: MOCK_L1_ID,
+      destChainId: MOCK_L2_ID,
+      expense: { token: ZERO_ADDRESS, amount },
+      calls: [{ target: account.address, value: amount }],
+      deposit: { token: ZERO_ADDRESS, amount: amount + ETHER },
+    }
+    await executeTestOrder({
+      account,
+      order,
+      shouldReject: true,
+      rejectReason: 'ExpenseOverMax',
+    })
+  })
 
-      const connectRef = createRef()
-      const orderRef = createRef()
-
-      // useOrder() can only be used with a connected account, so we need to render it conditionally
-      function TestOrder() {
-        orderRef.current = useOrder({ ...order, validateEnabled: true })
-        return null
-      }
-
-      // Wrap TestOrder to only render if connected
-      function TestConnectAndOrder() {
-        const connectReturn = useConnect()
-        connectRef.current = connectReturn
-        return connectReturn.data ? <TestOrder /> : null
-      }
-
-      render(<TestConnectAndOrder />, { wrapper: ContextProvider })
-      act(() => {
-        connectRef.current?.connect({ connector: testConnector })
-      })
-
-      await waitFor(() => expect(orderRef.current?.isReady).toBe(true))
-
-      if (shouldReject) {
-        expect(orderRef.current?.validation?.status).toBe('rejected')
-        expect(orderRef.current?.validation?.rejectReason).toBe(rejectReason)
-      } else {
-        expect(orderRef.current?.validation?.status).toBe('accepted')
-        act(() => {
-          orderRef.current?.open()
-        })
-        await waitFor(() => expect(orderRef.current?.txHash).toBeDefined())
-      }
-    },
-  )
+  test('fails with expense under min amount', async () => {
+    const account = testAccount
+    const amount = 1n
+    const order: AnyOrder = {
+      owner: account.address,
+      srcChainId: MOCK_L1_ID,
+      destChainId: MOCK_L2_ID,
+      expense: { token: ZERO_ADDRESS, amount },
+      calls: [{ target: account.address, value: amount }],
+      deposit: { token: ZERO_ADDRESS, amount: amount + ETHER },
+    }
+    await executeTestOrder({
+      account,
+      order,
+      shouldReject: true,
+      rejectReason: 'ExpenseUnderMin',
+    })
+  })
 })
 
 test('successfully processes order from quote to filled', async () => {
-  const wagmiConfig = createWagmiConfig()
-  const renderHook = createRenderHook({ wagmiConfig })
+  const renderHook = createRenderHook()
 
   const quoteHook = renderHook(() => {
     return useQuote({
@@ -147,7 +172,7 @@ test('successfully processes order from quote to filled', async () => {
   const orderParams = {
     deposit: { token: ZERO_ADDRESS, amount: 2n * ETHER },
     expense: { token: ZERO_ADDRESS, amount: 1n * ETHER },
-    calls: [{ target: accounts[0], value: 1n * ETHER }],
+    calls: [{ target: testAccount.address, value: 1n * ETHER }],
     srcChainId: MOCK_L1_ID,
     destChainId: MOCK_L2_ID,
     validateEnabled: false,
@@ -160,28 +185,9 @@ test('successfully processes order from quote to filled', async () => {
     return expect(validateHook.result.current.status === 'accepted').toBe(true)
   })
 
-  const connectRef = createRef()
-  const orderRef = createRef()
-
-  // useOrder() can only be used with a connected account, so we need to render it conditionally
-  function TestOrder() {
-    orderRef.current = useOrder(orderParams)
-    return null
-  }
-
-  // Wrap TestOrder to only render if connected
-  function TestConnectAndOrder() {
-    const connectReturn = useConnect()
-    connectRef.current = connectReturn
-    return connectReturn.data ? <TestOrder /> : null
-  }
-
-  render(<TestConnectAndOrder />, { wrapper: ContextProvider })
-  act(() => {
-    connectRef.current?.connect({ connector: testConnector })
-  })
-
+  const orderRef = useOrderRef(testConnector, orderParams)
   await waitFor(() => expect(orderRef.current?.isReady).toBe(true))
+
   act(() => {
     orderRef.current?.open()
   })

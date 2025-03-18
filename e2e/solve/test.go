@@ -101,8 +101,8 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 
 	// start event streams
 	errChan := make(chan error, 1)
-	// Set a 210 sec timeout which is a bit below the 240 sec go test timeout in order to avoid being canceled by the go runtime and leave time for cleanup.
-	ctx, cancel = context.WithTimeout(ctx, 210*time.Second)
+	// Set a 90 sec timeout which is a bit below the 120 sec go test timeout in order to avoid being canceled by the go runtime and leave time for cleanup.
+	ctx, cancel = context.WithTimeout(ctx, 90*time.Second)
 	defer cancel()
 
 	for _, chain := range network.EVMChains() {
