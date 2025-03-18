@@ -20,10 +20,18 @@ import (
 func Deploy(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
 	var eg errgroup.Group
 	eg.Go(func() error { return deployBoxes(ctx, network, backends) })
-	eg.Go(func() error { return maybeDeployMockTokens(ctx, network, backends) })
-	eg.Go(func() error { return maybeFundERC20Solver(ctx, network.ID, backends) })
-	eg.Go(func() error { return maybeDeployMockVault(ctx, network, backends) })
-	eg.Go(func() error { return maybeFundERC20Flowgen(ctx, network.ID, backends) })
+	eg.Go(func() error {
+		if err := maybeDeployMockTokens(ctx, network, backends); err != nil {
+			return err
+		}
+
+		// After we have deployed the mock tokens, we can fund accounts and deploy vaults.
+		eg.Go(func() error { return maybeFundERC20Solver(ctx, network.ID, backends) })
+		eg.Go(func() error { return maybeFundERC20Flowgen(ctx, network.ID, backends) })
+		eg.Go(func() error { return maybeDeployMockVault(ctx, network, backends) })
+
+		return nil
+	})
 
 	if err := eg.Wait(); err != nil {
 		return errors.Wrap(err, "deploy")
