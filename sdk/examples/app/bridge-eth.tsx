@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { parseEther, formatEther, zeroAddress } from 'viem';
 import { useAccount, useBalance, useChainId, useSwitchChain } from 'wagmi';
+// SDK INTEGRATION POINT #1 - Import the SDK components
 import {
     OmniProvider,
     useQuote,
@@ -110,49 +111,51 @@ const EthBridge: React.FC<EthBridgeProps> = ({ selectedNetwork, onNetworkChange 
     }, [sourceChainId, isConnected, chainId, switchChain]);
 
     // SDK INTEGRATION POINT #2 - Get cross-chain quote
+    // Quote hook determines the deposit/expense amounts based on mode
     const quoteResult = useQuote({
         srcChainId: sourceChainId,
         destChainId: destinationChainId,
-        mode: quoteMode === 'deposit' ? 'expense' : 'deposit',
+        mode: quoteMode,
         deposit: {
             isNative: true,
-            amount: parseEther(amount || '0')
+            amount: quoteMode === 'expense' ? parseEther(amount) : undefined // Only include amount when quoting for expense
         },
         expense: {
             isNative: true,
-            amount: parseEther(amount || '0')
+            amount: quoteMode === 'deposit' ? parseEther(amount) : undefined // Only include amount when quoting for deposit
         },
-        enabled: !!address && parseFloat(amount || '0') > 0
+        enabled: true
     });
 
-    // SDK INTEGRATION POINT #3 - Setup order parameters
+    // SDK INTEGRATION POINT #3 - Prepare order parameters
+    // Order hook validates and prepares the transaction for execution
     const orderResult = useOrder({
         srcChainId: sourceChainId,
         destChainId: destinationChainId,
         owner: address,
         deposit: {
-            token: zeroAddress, // For native ETH
+            token: zeroAddress,
             amount: quoteResult.isSuccess ? quoteResult.deposit.amount : 0n
         },
         calls: [
             {
-                target: (address || '0x') as `0x${string}`, // Send to same address by default
+                target: address as `0x${string}`,
                 value: quoteResult.isSuccess
                     ? (quoteMode === 'deposit'
-                        ? parseEther(amount)  // "Send Exact" mode: use user's input amount
-                        : quoteResult.expense.amount  // "Receive Exact" mode: use quote result
-                    )
+                        ? parseEther(amount)
+                        : quoteResult.expense.amount)
                     : 0n,
             }
         ],
         expense: {
-            token: undefined,
-            amount: 0n
+            token: zeroAddress,
+            amount: quoteResult.isSuccess ? quoteResult.expense.amount : 0n
         },
         validateEnabled: true
     });
 
-    // SDK INTEGRATION POINT #4 - Track transaction status
+    // SDK INTEGRATION POINT #4 - Monitor order status
+    // Status hook tracks the cross-chain transaction progress
     const orderStatus = useGetOrderStatus({
         destChainId: destinationChainId,
         orderId,
@@ -173,6 +176,7 @@ const EthBridge: React.FC<EthBridgeProps> = ({ selectedNetwork, onNetworkChange 
             }
 
             // SDK INTEGRATION POINT #5 - Execute the bridge transaction
+            // Submit the prepared order to initiate the cross-chain transfer
             const txHash = await orderResult.open();
             console.log('Bridge transaction hash:', txHash);
 
@@ -265,9 +269,9 @@ const EthBridge: React.FC<EthBridgeProps> = ({ selectedNetwork, onNetworkChange 
                                 <input
                                     type="radio"
                                     name="quoteMode"
-                                    value="deposit"
-                                    checked={quoteMode === 'deposit'}
-                                    onChange={() => handleModeChange('deposit')}
+                                    value="expense"
+                                    checked={quoteMode === 'expense'}
+                                    onChange={() => handleModeChange('expense')}
                                 />
                                 Send Exact
                             </label>
@@ -275,9 +279,9 @@ const EthBridge: React.FC<EthBridgeProps> = ({ selectedNetwork, onNetworkChange 
                                 <input
                                     type="radio"
                                     name="quoteMode"
-                                    value="expense"
-                                    checked={quoteMode === 'expense'}
-                                    onChange={() => handleModeChange('expense')}
+                                    value="deposit"
+                                    checked={quoteMode === 'deposit'}
+                                    onChange={() => handleModeChange('deposit')}
                                 />
                                 Receive Exact
                             </label>
@@ -287,7 +291,7 @@ const EthBridge: React.FC<EthBridgeProps> = ({ selectedNetwork, onNetworkChange 
                     {/* Amount Input */}
                     <div className="amount-input">
                         <label htmlFor="amount">
-                            {quoteMode === 'deposit' ? 'You\'ll send exactly (ETH):' : 'You\'ll receive exactly (ETH):'}
+                            {quoteMode === 'expense' ? 'You\'ll send exactly (ETH):' : 'You\'ll receive exactly (ETH):'}
                         </label>
                         <input
                             id="amount"
@@ -303,7 +307,7 @@ const EthBridge: React.FC<EthBridgeProps> = ({ selectedNetwork, onNetworkChange 
                     {validAmount && quoteResult.isSuccess && (
                         <div className="quote-summary">
                             <h3>Quote Summary</h3>
-                            {quoteMode === 'deposit' ? (
+                            {quoteMode === 'expense' ? (
                                 <>
                                     <p>You send: {formatEther(quoteResult.deposit.amount)} ETH from {getChainName(availableChains, sourceChainId)}</p>
                                     <p>You receive: {formatEther(quoteResult.expense.amount)} ETH on {getChainName(availableChains, destinationChainId)}</p>
@@ -381,7 +385,7 @@ const EthBridge: React.FC<EthBridgeProps> = ({ selectedNetwork, onNetworkChange 
 
 /**
  * Main App Component with OmniProvider wrapper
- * SDK INTEGRATION POINT #6 - Root provider setup
+ * SDK INTEGRATION POINT #6 - Configure provider with environment and API endpoint
  */
 const App: React.FC = () => {
     const [selectedNetwork, setSelectedNetwork] = useState<Network>('staging');
