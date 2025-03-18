@@ -79,7 +79,7 @@ func approveOutbox(ctx context.Context, chain netconf.Chain, backend *ethbackend
 					continue
 				}
 
-				log.Debug(ctx, "Approved token spend", "chain", chain.Name, "token", token.Symbol)
+				log.Debug(ctx, "Approved token spend", "chain", chain.Name, "token", token.Symbol, "address", token.Address)
 
 				return nil
 			}
