@@ -78,7 +78,7 @@ async function executeTestOrder(
 }
 
 describe('ERC20 OMNI to native OMNI transfer orders', () => {
-  test('behaviour: succeeds with valid expense', async () => {
+  test('default: succeeds with valid expense', async () => {
     const amount = 10n * ETHER
     const order: AnyOrder = {
       owner: testAccount.address,
@@ -119,7 +119,7 @@ describe('ERC20 OMNI to native OMNI transfer orders', () => {
 })
 
 describe('ETH transfer orders', () => {
-  test('succeeds with valid expense', async () => {
+  test('default: succeeds with valid expense', async () => {
     const account = testAccount
     const amount = ETHER
     const order: AnyOrder = {
@@ -133,7 +133,7 @@ describe('ETH transfer orders', () => {
     await executeTestOrder(order)
   })
 
-  test('fails with expense over max amount', async () => {
+  test('behaviour: fails with expense over max amount', async () => {
     const account = testAccount
     const amount = 2n * ETHER
     const order: AnyOrder = {
@@ -147,7 +147,7 @@ describe('ETH transfer orders', () => {
     await executeTestOrder(order, 'ExpenseOverMax')
   })
 
-  test('fails with expense under min amount', async () => {
+  test('behaviour: fails with expense under min amount', async () => {
     const account = testAccount
     const amount = 1n
     const order: AnyOrder = {
@@ -162,7 +162,7 @@ describe('ETH transfer orders', () => {
   })
 })
 
-test('successfully processes order from quote to filled', async () => {
+test('default: successfully processes order from quote to filled', async () => {
   const renderHook = createRenderHook()
 
   const quoteHook = renderHook(() => {
