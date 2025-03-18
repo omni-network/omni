@@ -1,0 +1,23 @@
+{
+ "mainnet": {
+  "ethereum": {
+   "wstETH": {
+    "min": "10.0000"
+   }
+  }
+ },
+ "omega": {
+  "holesky": {
+   "wstETH": {
+    "min": "1.0000"
+   }
+  }
+ },
+ "staging": {
+  "holesky": {
+   "wstETH": {
+    "min": "1.0000"
+   }
+  }
+ }
+}

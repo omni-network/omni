@@ -92,18 +92,21 @@ var (
 		RoleDeployer: thresholdMedium, // Ephemeral chains are deployed often and fees can spike by a lot
 	}
 
-	ethOnly = map[Role]bool{
-		RoleFlowgen: true, // Flowgen is only used on ETH chains
+	nativeTokens = map[tokens.Token]bool{
+		tokens.ETH:  true,
+		tokens.OMNI: true,
+	}
+
+	// tokenOverrides specifies roles that support non-native-only tokens.
+	tokenOverrides = map[Role]map[tokens.Token]bool{
+		// Flowgen only submits ETH-style solver orders
+		RoleFlowgen: {tokens.ETH: true},
 	}
 )
 
 func GetFundThresholds(token tokens.Token, network netconf.ID, role Role) (FundThresholds, bool) {
-	thresh, ok := getThreshold(network, role)
+	thresh, ok := getThreshold(token, network, role)
 	if !ok {
-		return FundThresholds{}, false
-	}
-
-	if token != tokens.ETH && ethOnly[role] {
 		return FundThresholds{}, false
 	}
 
@@ -142,10 +145,10 @@ func convert(threshold FundThresholds, token tokens.Token) (FundThresholds, erro
 }
 
 // multipleSum returns a function that calculates the sum of the thresholds for the given roles and multiplier.
-func multipleSum(network netconf.ID, multiplier uint64, roles []Role) FundThresholds {
+func multipleSum(token tokens.Token, network netconf.ID, multiplier uint64, roles []Role) FundThresholds {
 	minSum, targetSum := bi.Zero(), bi.Zero()
 	for _, role := range roles {
-		thresh, ok := getThreshold(network, role)
+		thresh, ok := getThreshold(token, network, role)
 		if !ok {
 			continue
 		}
@@ -160,7 +163,14 @@ func multipleSum(network netconf.ID, multiplier uint64, roles []Role) FundThresh
 	}
 }
 
-func getThreshold(network netconf.ID, role Role) (FundThresholds, bool) {
+func getThreshold(token tokens.Token, network netconf.ID, role Role) (FundThresholds, bool) {
+	if supported, ok := tokenOverrides[role]; ok && !supported[token] {
+		return FundThresholds{}, false
+	} else if !ok && !nativeTokens[token] {
+		// Only native tokens are supported by default.
+		return FundThresholds{}, false
+	}
+
 	if _, ok := AccountForRole(network, role); !ok {
 		// Skip roles that don't have an account.
 		return FundThresholds{}, false
@@ -175,7 +185,7 @@ func getThreshold(network netconf.ID, role Role) (FundThresholds, bool) {
 
 	dynamic, ok := dynamicThresholdsByRole[role]
 	if ok {
-		return multipleSum(network, dynamic.Multiplier, dynamic.Roles), true
+		return multipleSum(token, network, dynamic.Multiplier, dynamic.Roles), true
 	}
 
 	thresh, ok := staticThresholdsByRole[role]

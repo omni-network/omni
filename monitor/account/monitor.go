@@ -8,21 +8,40 @@ import (
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens"
+	solverapp "github.com/omni-network/omni/solver/app"
+	"github.com/omni-network/omni/solver/tokenutil"
+
+	"github.com/ethereum/go-ethereum/params"
 )
 
 // StartMonitoring starts the monitoring goroutines.
-func StartMonitoring(ctx context.Context, network netconf.Network, rpcClients map[uint64]ethclient.Client) {
+func StartMonitoring(ctx context.Context, network netconf.Network, rpcClients map[uint64]ethclient.Client) error {
 	accounts := eoa.AllAccounts(network.ID)
 	sponsors := eoa.AllSponsors(network.ID)
 	chains := network.EVMChains()
 	log.Info(ctx, "Monitoring accounts", "accounts", len(accounts), "sponsors", len(sponsors), "chains", len(chains))
 
 	for _, chain := range chains {
+		meta, ok := evmchain.MetadataByID(chain.ID)
+		if !ok {
+			return errors.New("chain metadata not found", "chain", chain.ID)
+		}
+		backend, err := ethbackend.NewBackend(chain.Name, chain.ID, meta.BlockPeriod, rpcClients[chain.ID])
+		if err != nil {
+			return errors.Wrap(err, "new backend")
+		}
+
 		for _, account := range accounts {
 			go monitorAccountForever(ctx, network.ID, account, chain.Name, rpcClients[chain.ID])
+
+			for isSolverNetRole(account.Role) {
+				go monitorSolverNetRoleForever(ctx, network.ID, account, backend)
+			}
 		}
 
 		for _, sponsor := range sponsors {
@@ -33,6 +52,8 @@ func StartMonitoring(ctx context.Context, network netconf.Network, rpcClients ma
 			go monitorSponsorForever(ctx, sponsor, chain.Name, rpcClients[chain.ID])
 		}
 	}
+
+	return nil
 }
 
 // monitorAccountForever blocks and periodically monitors the account for the given chain.
@@ -113,6 +134,97 @@ func monitorAccountOnce(
 	return nil
 }
 
+// monitorSolverNetRoleTokenOnce monitors solvernet role for provided token and chain.
+func monitorSolverNetRoleForever(
+	ctx context.Context,
+	network netconf.ID,
+	account eoa.Account,
+	backend *ethbackend.Backend,
+) {
+	// Not all network+chains+solver_roles need to be monitored
+	var found bool
+	for _, token := range eoa.SolverNetTokens() {
+		_, chainID := backend.Chain()
+		_, ok := eoa.GetSolverNetThreshold(account.Role, network, chainID, token)
+		if ok {
+			found = true
+		}
+	}
+	if !found {
+		return
+	}
+
+	ctx = log.WithCtx(ctx, "role", account.Role)
+	log.Info(ctx, "Monitoring solvernet role")
+
+	ticker := time.NewTicker(time.Second * 30)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			for _, token := range eoa.SolverNetTokens() {
+				loopCtx := log.WithCtx(ctx, "token", token)
+				err := monitorSolverNetRoleTokenOnce(loopCtx, network, account, backend, token)
+				if ctx.Err() != nil {
+					return
+				} else if err != nil {
+					log.Warn(loopCtx, "Monitoring solvernet role token failed (will retry)", err)
+				}
+			}
+		}
+	}
+}
+
+// monitorSolverNetRoleTokenOnce monitors solvernet role for provided token and chain.
+func monitorSolverNetRoleTokenOnce(
+	ctx context.Context,
+	network netconf.ID,
+	account eoa.Account,
+	backend *ethbackend.Backend,
+	token tokens.Token,
+) error {
+	// TODO(corver): improve this.
+	var stkn solverapp.Token
+	for _, tkn := range solverapp.AllTokens() {
+		if tkn.Token == token {
+			stkn = tkn
+		}
+	}
+	if stkn.Symbol == "" {
+		return errors.New("token not found", "token", token)
+	}
+
+	chainName, chainID := backend.Chain()
+
+	thresh, ok := eoa.GetSolverNetThreshold(account.Role, network, chainID, token)
+	if !ok {
+		return nil
+	}
+
+	balance, err := tokenutil.Balance(ctx, backend, stkn, account.Address)
+	if err != nil {
+		return err
+	}
+
+	// Convert to ether units
+	bf, _ := balance.Float64()
+	balanceEth := bf / params.Ether
+
+	tokenBalance.WithLabelValues(chainName, string(account.Role), token.Symbol).Set(balanceEth)
+
+	var isLow float64
+	if balance.Cmp(thresh.MinBalance()) <= 0 {
+		isLow = 1
+	}
+
+	tokenBalanceLow.WithLabelValues(chainName, string(account.Role), token.Symbol).Set(isLow)
+
+	return nil
+}
+
 // monitorSponsorForever blocks and periodically monitors the sponsor account for the given chain.
 func monitorSponsorForever(
 	ctx context.Context,
@@ -189,4 +301,14 @@ func monitorSponsorOnce(
 	accountBalanceLow.WithLabelValues(chainName, sponsor.Name).Set(isLow)
 
 	return nil
+}
+
+func isSolverNetRole(role eoa.Role) bool {
+	for _, r := range eoa.SolverNetRoles() {
+		if role == r {
+			return true
+		}
+	}
+
+	return false
 }
