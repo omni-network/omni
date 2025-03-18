@@ -25,9 +25,11 @@ func Deploy(ctx context.Context, network netconf.Network, backends ethbackend.Ba
 			return err
 		}
 
-		// After we have deployed the mock tokens, we can fund accounts and deploy vaults.
+		// Block on potential mock tokens deployment, before funding.
 		eg.Go(func() error { return maybeFundERC20Solver(ctx, network.ID, backends) })
 		eg.Go(func() error { return maybeFundERC20Flowgen(ctx, network.ID, backends) })
+
+		// The mock vault is using one of the mock tokens as collateral, so we deploy it after the mock tokens are deployed.
 		eg.Go(func() error { return maybeDeployMockVault(ctx, network, backends) })
 
 		return nil

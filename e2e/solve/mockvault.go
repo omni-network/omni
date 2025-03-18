@@ -60,17 +60,12 @@ func maybeDeployMockVault(ctx context.Context, network netconf.Network, backends
 		return errors.Wrap(err, "get abi")
 	}
 
-	mockTokens := MockTokens()
-	if len(mockTokens) != 3 {
-		return errors.New("unexpected mock tokens")
+	wstETHOnMockL2, err := MockTokens().Find(evmchain.IDMockL2, tokens.WSTETH.Symbol)
+	if err != nil {
+		return err
 	}
 
-	wstETHOnMockL2 := MockTokens()[2]
-	if wstETHOnMockL2.ChainID != evmchain.IDMockL2 || wstETHOnMockL2.Symbol != tokens.WSTETH.Symbol {
-		return errors.New("unexpected mock token")
-	}
-
-	initCode, err := contracts.PackInitCode(abi, bindings.MockVaultMetaData.Bin, wstETHOnMockL2.Address())
+	initCode, err := contracts.PackInitCode(abi, bindings.MockVaultMetaData.Bin, wstETHOnMockL2)
 	if err != nil {
 		return errors.Wrap(err, "pack init code")
 	}

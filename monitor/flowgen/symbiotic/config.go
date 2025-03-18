@@ -4,7 +4,6 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
-	"github.com/omni-network/omni/solver/targets"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -27,11 +26,12 @@ var config = map[netconf.ID]flowConfig{
 		vaultAddr: common.HexToAddress("0x81487c7b22a0babadC98D5cA1d7D21240beB14Cc"),
 	},
 
-	netconf.Omega: {
-		srcChain:     evmchain.IDBaseSepolia,
-		dstChain:     evmchain.IDHolesky,
-		depositToken: tokens.WSTETH,
-		expenseToken: tokens.WSTETH,
-		vaultAddr:    targets.SymbioticHoleskyWSTETHVault1,
-	},
+	// TODO(christian): enable once this is needed.
+	// netconf.Omega: {
+	// 	srcChain:     evmchain.IDBaseSepolia,
+	// 	dstChain:     evmchain.IDHolesky,
+	// 	depositToken: tokens.WSTETH,
+	// 	expenseToken: tokens.WSTETH,
+	// 	vaultAddr:    targets.SymbioticHoleskyWSTETHVault1,
+	// },
 }
