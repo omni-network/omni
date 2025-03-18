@@ -9,6 +9,7 @@ it('exports the expected APIs', () => {
     'useOrder',
     'useQuote',
     'useValidateOrder',
+    'useGetOrder',
     'useGetOrderStatus',
     'useParseOpenEvent',
     'OmniProvider',
