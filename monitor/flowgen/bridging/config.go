@@ -9,33 +9,39 @@ import (
 )
 
 type flowConfig struct {
-	srcChain  uint64
-	dstChain  uint64
-	orderSize *big.Int
+	srcChain uint64
+	dstChain uint64
+
+	minOrderSize *big.Int
+	maxOrderSize *big.Int
 }
 
 var config = map[netconf.ID]flowConfig{
 	netconf.Devnet: {
-		srcChain:  evmchain.IDMockL1,
-		dstChain:  evmchain.IDMockL2,
-		orderSize: bi.Ether(0.02),
+		srcChain:     evmchain.IDMockL1,
+		dstChain:     evmchain.IDMockL2,
+		minOrderSize: bi.Ether(0.02),
+		maxOrderSize: bi.Ether(1),
 	},
 
 	netconf.Staging: {
-		srcChain:  evmchain.IDBaseSepolia,
-		dstChain:  evmchain.IDOpSepolia,
-		orderSize: bi.Ether(0.02),
+		srcChain:     evmchain.IDBaseSepolia,
+		dstChain:     evmchain.IDOpSepolia,
+		minOrderSize: bi.Ether(0.1),
+		maxOrderSize: bi.Ether(0.2),
 	},
 
 	netconf.Omega: {
-		srcChain:  evmchain.IDOpSepolia,
-		dstChain:  evmchain.IDArbSepolia,
-		orderSize: bi.Ether(0.02),
+		srcChain:     evmchain.IDOpSepolia,
+		dstChain:     evmchain.IDArbSepolia,
+		minOrderSize: bi.Ether(0.02),
+		maxOrderSize: bi.Ether(0.2),
 	},
 
 	netconf.Mainnet: {
-		srcChain:  evmchain.IDOptimism,
-		dstChain:  evmchain.IDArbitrumOne,
-		orderSize: bi.Ether(0.02),
+		srcChain:     evmchain.IDOptimism,
+		dstChain:     evmchain.IDArbitrumOne,
+		minOrderSize: bi.Ether(0.02),
+		maxOrderSize: bi.Ether(0.2),
 	},
 }
