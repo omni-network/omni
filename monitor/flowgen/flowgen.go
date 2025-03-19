@@ -56,7 +56,7 @@ func startWithBackends(
 ) error {
 	var jobs []types.Job
 
-	result, err := bridging.Jobs(network.ID, owner)
+	result, err := bridging.Jobs(network.ID, backends, owner)
 	if err != nil {
 		return errors.Wrap(err, "bridge jobs")
 	}
@@ -80,7 +80,7 @@ func startWithBackends(
 				case <-timer.C:
 					jobsTotal.Inc()
 					runCtx := log.WithCtx(ctx, "job", job.Name)
-					if err := run(runCtx, backends, job); err != nil {
+					if err := run(runCtx, job); err != nil {
 						log.Warn(runCtx, "Flowgen: job failed (will retry)", err)
 						jobsFailed.Inc()
 					}
@@ -94,19 +94,23 @@ func startWithBackends(
 }
 
 // run runs a job exactly once.
-func run(ctx context.Context, backends ethbackend.Backends, j types.Job) error {
+func run(ctx context.Context, job types.Job) error {
 	log.Debug(ctx, "Flowgen: running job")
 
-	orderID, err := solvernet.OpenOrder(ctx, j.NetworkID, j.SrcChain, backends, j.Owner, j.OrderData)
+	orderID, ok, err := job.OpenOrderFunc(ctx)
 	if err != nil {
 		return errors.Wrap(err, "open order")
+	}
+
+	if !ok {
+		return nil
 	}
 
 	ctx = log.WithCtx(ctx, "order_id", orderID)
 
 	log.Debug(ctx, "Flowgen: order opened")
 
-	if err := awaitClaimed(ctx, backends, j, orderID); err != nil {
+	if err := awaitClaimed(ctx, job, orderID); err != nil {
 		return errors.Wrap(err, "await claimed")
 	}
 
@@ -116,24 +120,13 @@ func run(ctx context.Context, backends ethbackend.Backends, j types.Job) error {
 }
 
 // awaitClaimed blocks until the order is claimed.
-// It returns an.
-func awaitClaimed(
-	ctx context.Context,
-	backends ethbackend.Backends,
-	j types.Job,
-	orderID solvernet.OrderID,
-) error {
-	backend, err := backends.Backend(j.SrcChain)
-	if err != nil {
-		return errors.Wrap(err, "get backend")
-	}
-
-	addrs, err := contracts.GetAddresses(ctx, j.NetworkID)
+func awaitClaimed(ctx context.Context, job types.Job, orderID solvernet.OrderID) error {
+	addrs, err := contracts.GetAddresses(ctx, job.NetworkID)
 	if err != nil {
 		return errors.New("contract addresses")
 	}
 
-	inbox, err := bindings.NewSolverNetInbox(addrs.SolverNetInbox, backend)
+	inbox, err := bindings.NewSolverNetInbox(addrs.SolverNetInbox, job.SrcChainBackend)
 	if err != nil {
 		return errors.Wrap(err, "create inbox contract")
 	}
