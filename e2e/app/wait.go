@@ -68,7 +68,7 @@ func WaitAllSubmissions(ctx context.Context, network netconf.Network, portals ma
 					return errors.Wrap(err, "get inXmsgOffset")
 				}
 
-				if srcOffset >= minimum && destOffset == srcOffset {
+				if srcOffset >= minimum && withinOne(srcOffset, destOffset) {
 					break
 				}
 
@@ -87,4 +87,12 @@ func WaitAllSubmissions(ctx context.Context, network netconf.Network, portals ma
 	}
 
 	return nil
+}
+
+func withinOne(a, b uint64) bool {
+	if a > b {
+		return a <= b+1
+	}
+
+	return b <= a+1
 }
