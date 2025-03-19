@@ -20,7 +20,7 @@ import {
   TOKEN_ADDRESS,
   ZERO_ADDRESS,
   createRenderHook,
-  omniMintedPromise,
+  mintOMNI,
   testAccount,
   testConnector,
 } from './test-utils.js'
@@ -78,7 +78,7 @@ async function executeTestOrder(
 
 describe('ERC20 OMNI to native OMNI transfer orders', () => {
   test('default: succeeds with valid expense', async () => {
-    await omniMintedPromise
+    await mintOMNI()
     const amount = 10n * ETHER
     const order: AnyOrder = {
       owner: testAccount.address,

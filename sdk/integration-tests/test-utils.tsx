@@ -98,28 +98,27 @@ function createClient({ chain }: { chain: Chain }) {
 
 const mockL1Client = createClient({ chain: MOCK_L1_CHAIN })
 
-export const omniMintedPromise = mockL1Client
+export async function mintOMNI() {
   // mint token
-  .writeContract({
+  const mintHash = await mockL1Client.writeContract({
     address: TOKEN_ADDRESS,
     abi: OMNI_TOKEN_ABI,
     functionName: 'mint',
     args: [testAccount.address, 100n * ETHER],
   })
   // wait for transaction to be mined
-  .then((hash) => mockL1Client.waitForTransactionReceipt({ hash }))
+  await mockL1Client.waitForTransactionReceipt({ hash: mintHash })
   // approve transfers to inbox contract
-  .then(() => {
-    return mockL1Client
-      .writeContract({
-        address: TOKEN_ADDRESS,
-        abi: OMNI_TOKEN_ABI,
-        functionName: 'approve',
-        args: [SOLVERNET_INBOX_ADDRESS, 100n * ETHER],
-      })
-  })
+  const approveHash = await mockL1Client
+    .writeContract({
+      address: TOKEN_ADDRESS,
+      abi: OMNI_TOKEN_ABI,
+      functionName: 'approve',
+      args: [SOLVERNET_INBOX_ADDRESS, 100n * ETHER],
+    })
   // wait for transaction to be mined
-  .then((hash) => mockL1Client.waitForTransactionReceipt({ hash }))
+  await mockL1Client.waitForTransactionReceipt({ hash: approveHash })
+}
 
 export function testConnector(config) {
   const connector = mockConnector(config)
