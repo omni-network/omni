@@ -1,15 +1,14 @@
 package bridging
 
 import (
+	"context"
 	"fmt"
-	"math/big"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
-	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/monitor/flowgen/types"
 	"github.com/omni-network/omni/solver/app"
@@ -18,63 +17,60 @@ import (
 )
 
 // NewJob returns a job that bridges native tokens.
-func newJob(
-	networkID netconf.ID,
-	srcChain, dstChain uint64,
-	owner common.Address,
-	amount *big.Int,
-) (types.Job, error) {
-	data, err := nativeOrderData(owner, srcChain, dstChain, amount)
-	if err != nil {
-		return types.Job{}, errors.Wrap(err, "new job")
-	}
-
+func newJob(networkID netconf.ID, backends ethbackend.Backends, conf flowConfig, owner common.Address) (types.Job, error) {
 	cadence := 30 * time.Minute
 	if networkID == netconf.Devnet {
 		cadence = time.Second * 10
 	}
 
+	backend, err := backends.Backend(conf.srcChain)
+	if err != nil {
+		return types.Job{}, errors.Wrap(err, "src chain backend")
+	}
+
 	namer := netconf.ChainNamer(networkID)
 
 	return types.Job{
-		Name:      fmt.Sprintf("Bridging (%v->%v)", namer(srcChain), namer(dstChain)),
+		Name:      fmt.Sprintf("Bridging (%v->%v)", namer(conf.srcChain), namer(conf.dstChain)),
 		Cadence:   cadence,
 		NetworkID: networkID,
 
-		SrcChain: srcChain,
-		DstChain: dstChain,
+		SrcChainBackend: backend,
 
-		Owner: owner,
-
-		OrderData: data,
+		OpenOrderFunc: func(ctx context.Context) (solvernet.OrderID, bool, error) {
+			return openOrder(ctx, backends, networkID, owner, conf)
+		},
 	}, nil
 }
 
-// nativeOrderData returns the order data required bridge native token amount from source to destination chain.
-func nativeOrderData(
+// openOrder returns the order id if an order was opened successfully,
+// it returns false if no order was opened or an error in case of an error.
+func openOrder(
+	ctx context.Context,
+	backends ethbackend.Backends,
+	networkID netconf.ID,
 	owner common.Address,
-	srcChain, dstChain uint64,
-	amount *big.Int,
-) (bindings.SolverNetOrderData, error) {
-	srcToken, ok := app.AllTokens().Find(srcChain, app.NativeAddr)
+	conf flowConfig,
+) (solvernet.OrderID, bool, error) {
+	srcToken, ok := app.AllTokens().Find(conf.srcChain, app.NativeAddr)
 	if !ok {
-		return bindings.SolverNetOrderData{}, errors.New("src token not found")
+		return solvernet.OrderID{}, false, errors.New("src token not found")
 	}
-	dstToken, ok := app.AllTokens().Find(dstChain, app.NativeAddr)
+	dstToken, ok := app.AllTokens().Find(conf.dstChain, app.NativeAddr)
 	if !ok {
-		return bindings.SolverNetOrderData{}, errors.New("dst token not found")
+		return solvernet.OrderID{}, false, errors.New("dst token not found")
 	}
 
-	expense := app.TokenAmt{Token: dstToken, Amount: amount}
+	expense := app.TokenAmt{Token: dstToken, Amount: conf.orderSize}
 
 	depositWithFee, err := app.QuoteDeposit(srcToken, expense)
 	if err != nil {
-		return bindings.SolverNetOrderData{}, errors.Wrap(err, "quote deposit")
+		return solvernet.OrderID{}, false, errors.Wrap(err, "quote deposit")
 	}
 
 	orderData := bindings.SolverNetOrderData{
 		Owner:       owner,
-		DestChainId: dstChain,
+		DestChainId: conf.dstChain,
 		Deposit: solvernet.Deposit{
 			Token:  depositWithFee.Token.Address,
 			Amount: depositWithFee.Amount,
@@ -88,35 +84,27 @@ func nativeOrderData(
 		},
 	}
 
-	return orderData, nil
+	orderID, err := solvernet.OpenOrder(ctx, networkID, conf.srcChain, backends, owner, orderData)
+	if err != nil {
+		return solvernet.OrderID{}, false, errors.Wrap(err, "open order")
+	}
+
+	return orderID, true, nil
 }
 
 // Jobs bridges native ETH from one chain to another one.
-func Jobs(networkID netconf.ID, owner common.Address) ([]types.Job, error) {
-	type balanced struct {
-		From uint64
-		To   uint64
-	}
-
-	b, ok := map[netconf.ID]balanced{
-		netconf.Devnet:  {evmchain.IDMockL1, evmchain.IDMockL2},
-		netconf.Staging: {evmchain.IDBaseSepolia, evmchain.IDOpSepolia},
-		netconf.Omega:   {evmchain.IDOpSepolia, evmchain.IDArbSepolia},
-		netconf.Mainnet: {evmchain.IDOptimism, evmchain.IDArbitrumOne},
-	}[networkID]
+func Jobs(networkID netconf.ID, backends ethbackend.Backends, owner common.Address) ([]types.Job, error) {
+	conf, ok := config[networkID]
 	if !ok {
 		return nil, nil
 	}
 
-	// Bridging of native ETH
-	amount := bi.Ether(0.02) // 0.02 ETH
-
-	job1, err := newJob(networkID, b.From, b.To, owner, amount)
+	job1, err := newJob(networkID, backends, conf, owner)
 	if err != nil {
 		return nil, err
 	}
 
-	job2, err := newJob(networkID, b.To, b.From, owner, amount)
+	job2, err := newJob(networkID, backends, conf, owner)
 	if err != nil {
 		return nil, err
 	}

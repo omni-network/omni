@@ -32,7 +32,6 @@ func newJob(
 	backends ethbackend.Backends,
 	networkID netconf.ID,
 	owner common.Address,
-	amount *big.Int,
 ) (types.Job, bool, error) {
 	addrs, err := contracts.GetAddresses(ctx, networkID)
 	if err != nil {
@@ -46,7 +45,7 @@ func newJob(
 
 	backend, err := backends.Backend(conf.srcChain)
 	if err != nil {
-		return types.Job{}, false, errors.Wrap(err, "get backend")
+		return types.Job{}, false, errors.Wrap(err, "src chain backend")
 	}
 
 	token := tokens.WSTETH
@@ -65,11 +64,6 @@ func newJob(
 		return types.Job{}, false, errors.Wrap(err, "token approval")
 	}
 
-	data, err := orderData(owner, conf.dstChain, srcChainTkn, dstChainTkn, conf.vaultAddr, amount)
-	if err != nil {
-		return types.Job{}, false, errors.Wrap(err, "new job")
-	}
-
 	namer := netconf.ChainNamer(networkID)
 	cadence := 30 * time.Minute
 	if networkID == netconf.Devnet {
@@ -81,43 +75,44 @@ func newJob(
 		Cadence:   cadence,
 		NetworkID: networkID,
 
-		SrcChain: conf.srcChain,
-		DstChain: conf.dstChain,
+		SrcChainBackend: backend,
 
-		Owner: owner,
-
-		OrderData: data,
+		OpenOrderFunc: func(ctx context.Context) (solvernet.OrderID, bool, error) {
+			return openOrder(ctx, backends, networkID, owner, srcChainTkn, dstChainTkn, conf)
+		},
 	}, true, nil
 }
 
-// orderData returns the order data required to do the job.
-func orderData(
+// openOrder returns the order id if an order was opened successfully,
+// it returns false if no order was opened or an error in case of an error.
+func openOrder(
+	ctx context.Context,
+	backends ethbackend.Backends,
+	networkID netconf.ID,
 	owner common.Address,
-	dstChain uint64,
 	srcToken, dstToken solver.Token,
-	vaultAddr common.Address,
-	amount *big.Int,
-) (bindings.SolverNetOrderData, error) {
-	expense := solver.TokenAmt{Token: dstToken, Amount: amount}
+	conf flowConfig,
+) (solvernet.OrderID, bool, error) {
+	expense := solver.TokenAmt{Token: dstToken, Amount: conf.orderSize}
 
-	depositWithFee, err := solver.QuoteDeposit(srcToken, solver.TokenAmt{Token: srcToken, Amount: amount})
+	depositWithFee, err := solver.QuoteDeposit(srcToken, solver.TokenAmt{Token: srcToken, Amount: conf.orderSize})
 	if err != nil {
-		return bindings.SolverNetOrderData{}, errors.Wrap(err, "quote deposit")
+		return solvernet.OrderID{}, false, errors.Wrap(err, "quote deposit")
 	}
 
 	abi, err := metaData.GetAbi()
 	if err != nil {
-		return bindings.SolverNetOrderData{}, errors.Wrap(err, "get abi")
+		return solvernet.OrderID{}, false, errors.Wrap(err, "get abi")
 	}
 
 	data, err := abi.Pack("deposit", owner, expense.Amount)
 	if err != nil {
-		return bindings.SolverNetOrderData{}, errors.Wrap(err, "packing")
+		return solvernet.OrderID{}, false, errors.Wrap(err, "packing")
 	}
 
 	orderData := bindings.SolverNetOrderData{
 		Owner:       owner,
-		DestChainId: dstChain,
+		DestChainId: conf.dstChain,
 		Deposit: solvernet.Deposit{
 			Token:  depositWithFee.Token.Address,
 			Amount: depositWithFee.Amount,
@@ -125,18 +120,23 @@ func orderData(
 		Expenses: []solvernet.Expense{{
 			Token:   expense.Token.Address,
 			Amount:  expense.Amount,
-			Spender: vaultAddr,
+			Spender: conf.vaultAddr,
 		}},
 		Calls: []bindings.SolverNetCall{
 			solvernet.Call{
-				Target: vaultAddr,
+				Target: conf.vaultAddr,
 				Data:   data,
 				Value:  new(big.Int),
 			}.ToBinding(),
 		},
 	}
 
-	return orderData, nil
+	orderID, err := solvernet.OpenOrder(ctx, networkID, conf.srcChain, backends, owner, orderData)
+	if err != nil {
+		return solvernet.OrderID{}, false, errors.Wrap(err, "open order")
+	}
+
+	return orderID, true, nil
 }
 
 var metaData = &bind.MetaData{
@@ -147,13 +147,11 @@ var metaData = &bind.MetaData{
 // - deposit wstETH from the source to the destination chain.
 func Jobs(ctx context.Context, backends ethbackend.Backends, networkID netconf.ID, owner common.Address) ([]types.Job, error) {
 	var jobs []types.Job
-	deposit := big.NewInt(0).Mul(util.MilliEther, big.NewInt(20)) // 0.02 ETH
 	job, ok, err := newJob(
 		ctx,
 		backends,
 		networkID,
 		owner,
-		deposit,
 	)
 	if err != nil {
 		return jobs, errors.Wrap(err, "symbiotic job")

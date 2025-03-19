@@ -1,12 +1,12 @@
 package types
 
 import (
+	"context"
 	"time"
 
-	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
-
-	"github.com/ethereum/go-ethereum/common"
 )
 
 type Job struct {
@@ -18,10 +18,7 @@ type Job struct {
 
 	NetworkID netconf.ID
 
-	SrcChain uint64
-	DstChain uint64
+	SrcChainBackend *ethbackend.Backend
 
-	Owner common.Address
-
-	OrderData bindings.SolverNetOrderData
+	OpenOrderFunc func(ctx context.Context) (solvernet.OrderID, bool, error)
 }
