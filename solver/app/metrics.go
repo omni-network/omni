@@ -42,6 +42,13 @@ var (
 		Buckets:   prometheus.ExponentialBucketsRange(1, 60*60, 8),
 	}, []string{"chain", "status"})
 
+	oldestOrder = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "solver",
+		Subsystem: "processor",
+		Name:      "agecache_oldest_order_seconds",
+		Help:      "Oldest order in age cache per chain in seconds",
+	}, []string{"chain"})
+
 	apiLatency = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "solver",
 		Subsystem: "api",
