@@ -131,6 +131,10 @@ func handlerAdapter(h Handler) http.Handler {
 
 func writeErrResponse(ctx context.Context, w http.ResponseWriter, err error) {
 	statusCode := http.StatusInternalServerError
+	if ctx.Err() != nil {
+		// If request context is canceled, return a 408 instead of 500.
+		statusCode = http.StatusRequestTimeout
+	}
 
 	var apiErr APIError
 	if errors.As(err, &apiErr) {

@@ -17,6 +17,46 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+//nolint:bodyclose // Not required
+func TestRequestCancel(t *testing.T) {
+	t.Parallel()
+
+	serving := make(chan struct{})
+	served := make(chan struct{})
+
+	h := Handler{
+		Endpoint: "test",
+		ZeroReq:  func() any { return nil },
+		HandleFunc: func(ctx context.Context, _ any) (any, error) {
+			<-ctx.Done()
+			return nil, ctx.Err()
+		},
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Wrap handlerAdapter to detect status code (since client cancels)
+		close(serving)
+		w2 := instrumentWriter{ResponseWriter: w}
+		handlerAdapter(h).ServeHTTP(&w2, r)
+		require.Equal(t, http.StatusRequestTimeout, w2.status)
+		close(served)
+	}))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	// Async: when the handler is serving, cancel the context.
+	go func() {
+		<-serving
+		cancel()
+	}()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, srv.URL, nil)
+	require.NoError(t, err)
+
+	_, err = new(http.Client).Do(req)
+	require.ErrorIs(t, err, context.Canceled)
+	<-served
+}
+
 //nolint:bodyclose,noctx // Not critical for tests
 func TestCheckHandlerRequests(t *testing.T) {
 	t.Parallel()
