@@ -38,7 +38,14 @@ func chainVersFromID(network netconf.ID, chainID uint64) []xchain.ChainVersion {
 	if network == netconf.Devnet {
 		return []xchain.ChainVersion{
 			xchain.NewChainVersion(chainID, xchain.ConfLatest),
-			xchain.NewChainVersion(chainID, xchain.ConfMin1),
+			xchain.NewChainVersion(chainID, xchain.ConfMin2),
+		}
+	}
+
+	// For ethereum, we stream min2 to reduce reorg risk
+	if chainID == netconf.EthereumChainID(network) {
+		return []xchain.ChainVersion{
+			xchain.NewChainVersion(chainID, xchain.ConfMin2),
 		}
 	}
 
