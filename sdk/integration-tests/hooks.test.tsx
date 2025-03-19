@@ -11,7 +11,7 @@ import {
 } from './test-utils.js'
 
 describe('useQuote()', () => {
-  test('successfully gets a quote', async () => {
+  test('default: successfully gets a quote', async () => {
     const { result } = renderHook(
       () => {
         return useQuote({

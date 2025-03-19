@@ -1,6 +1,5 @@
 import { act, render, waitFor } from '@testing-library/react'
 import { createRef } from 'react'
-import type { PrivateKeyAccount } from 'viem/accounts'
 import { describe, expect, test } from 'vitest'
 import { type CreateConnectorFn, useConnect } from 'wagmi'
 
@@ -17,20 +16,16 @@ import {
   ETHER,
   MOCK_L1_ID,
   MOCK_L2_ID,
+  OMNI_DEVNET_ID,
+  TOKEN_ADDRESS,
   ZERO_ADDRESS,
   createRenderHook,
+  omniMintedPromise,
   testAccount,
   testConnector,
 } from './test-utils.js'
 
 type AnyOrder = Order<Array<unknown>>
-
-type TestOrder = {
-  account: PrivateKeyAccount
-  order: AnyOrder
-  shouldReject: boolean
-  rejectReason: string
-}
 
 type UseOrderReturn = ReturnType<typeof useOrder>
 
@@ -62,15 +57,14 @@ function useOrderRef(
   return orderRef
 }
 
-async function executeTestOrder({
-  order,
-  shouldReject,
-  rejectReason,
-}: TestOrder): Promise<void> {
+async function executeTestOrder(
+  order: AnyOrder,
+  rejectReason?: string,
+): Promise<void> {
   const orderRef = useOrderRef(testConnector, order)
   await waitFor(() => expect(orderRef.current?.isReady).toBe(true))
 
-  if (shouldReject) {
+  if (rejectReason) {
     expect(orderRef.current?.validation?.status).toBe('rejected')
     expect(orderRef.current?.validation?.rejectReason).toBe(rejectReason)
   } else {
@@ -82,8 +76,50 @@ async function executeTestOrder({
   }
 }
 
+describe('ERC20 OMNI to native OMNI transfer orders', () => {
+  test('default: succeeds with valid expense', async () => {
+    await omniMintedPromise
+    const amount = 10n * ETHER
+    const order: AnyOrder = {
+      owner: testAccount.address,
+      srcChainId: MOCK_L1_ID,
+      destChainId: OMNI_DEVNET_ID,
+      expense: { token: ZERO_ADDRESS, amount },
+      calls: [{ target: testAccount.address, value: amount }],
+      deposit: { token: TOKEN_ADDRESS, amount },
+    }
+    await executeTestOrder(order)
+  }, 15_000)
+
+  test('behaviour: fails with native deposit', async () => {
+    const amount = 10n * ETHER
+    const order: AnyOrder = {
+      owner: testAccount.address,
+      srcChainId: MOCK_L1_ID,
+      destChainId: OMNI_DEVNET_ID,
+      expense: { token: ZERO_ADDRESS, amount },
+      calls: [{ target: testAccount.address, value: amount }],
+      deposit: { token: ZERO_ADDRESS, amount },
+    }
+    await executeTestOrder(order, 'InvalidDeposit')
+  })
+
+  test('behaviour: fails with unsupported ERC20 deposit', async () => {
+    const amount = 10n * ETHER
+    const order: AnyOrder = {
+      owner: testAccount.address,
+      srcChainId: MOCK_L1_ID,
+      destChainId: OMNI_DEVNET_ID,
+      expense: { token: ZERO_ADDRESS, amount },
+      calls: [{ target: testAccount.address, value: amount }],
+      deposit: { token: '0x1234000000000000000000000000000000000000', amount },
+    }
+    await executeTestOrder(order, 'UnsupportedDeposit')
+  })
+})
+
 describe('ETH transfer orders', () => {
-  test('succeeds with valid expense', async () => {
+  test('default: succeeds with valid expense', async () => {
     const account = testAccount
     const amount = ETHER
     const order: AnyOrder = {
@@ -94,15 +130,10 @@ describe('ETH transfer orders', () => {
       calls: [{ target: account.address, value: amount }],
       deposit: { token: ZERO_ADDRESS, amount: amount + ETHER },
     }
-    await executeTestOrder({
-      account,
-      order,
-      shouldReject: false,
-      rejectReason: '',
-    })
+    await executeTestOrder(order)
   })
 
-  test('fails with expense over max amount', async () => {
+  test('behaviour: fails with expense over max amount', async () => {
     const account = testAccount
     const amount = 2n * ETHER
     const order: AnyOrder = {
@@ -113,15 +144,10 @@ describe('ETH transfer orders', () => {
       calls: [{ target: account.address, value: amount }],
       deposit: { token: ZERO_ADDRESS, amount: amount + ETHER },
     }
-    await executeTestOrder({
-      account,
-      order,
-      shouldReject: true,
-      rejectReason: 'ExpenseOverMax',
-    })
+    await executeTestOrder(order, 'ExpenseOverMax')
   })
 
-  test('fails with expense under min amount', async () => {
+  test('behaviour: fails with expense under min amount', async () => {
     const account = testAccount
     const amount = 1n
     const order: AnyOrder = {
@@ -132,16 +158,11 @@ describe('ETH transfer orders', () => {
       calls: [{ target: account.address, value: amount }],
       deposit: { token: ZERO_ADDRESS, amount: amount + ETHER },
     }
-    await executeTestOrder({
-      account,
-      order,
-      shouldReject: true,
-      rejectReason: 'ExpenseUnderMin',
-    })
+    await executeTestOrder(order, 'ExpenseUnderMin')
   })
 })
 
-test('successfully processes order from quote to filled', async () => {
+test('default: successfully processes order from quote to filled', async () => {
   const renderHook = createRenderHook()
 
   const quoteHook = renderHook(() => {
