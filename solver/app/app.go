@@ -295,6 +295,8 @@ func startEventStreams(
 	callAllower := newCallAllower(network.ID, addrs.SolverNetMiddleman)
 
 	ageCache := newAgeCache(backends)
+	go monitorAgeCacheForever(ctx, ageCache, network.ChainName)
+
 	filledPnL := newFilledPnlFunc(pricer, targetName, network.ChainName, addrs.SolverNetOutbox, ageCache.InstrumentDestFilled)
 	orderGasPnL := newOrderGasPnLFunc(pricer, network.ChainName)
 

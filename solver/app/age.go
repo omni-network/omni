@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"log/slog"
+	"maps"
 	"sync"
 	"time"
 
@@ -21,11 +22,16 @@ const (
 	statusDestFilled = "dest_filled"
 )
 
+type cacheVal struct {
+	CreatedAt  time.Time
+	SrcChainID uint64
+}
+
 type destFilledAge func(ctx context.Context, dstChainID uint64, dstHeight uint64, order Order) slog.Attr
 
 func newAgeCache(backends ethbackend.Backends) *ageCache {
 	return &ageCache{
-		createdAts: make(map[solvernet.OrderID]time.Time),
+		createdAts: make(map[solvernet.OrderID]cacheVal),
 		backends:   backends,
 	}
 }
@@ -35,7 +41,7 @@ func newAgeCache(backends ethbackend.Backends) *ageCache {
 type ageCache struct {
 	mu         sync.Mutex
 	backends   ethbackend.Backends
-	createdAts map[solvernet.OrderID]time.Time
+	createdAts map[solvernet.OrderID]cacheVal
 }
 
 func (a *ageCache) blockMeta(ctx context.Context, chainID uint64, height uint64) (string, time.Time, error) {
@@ -97,18 +103,21 @@ func (a *ageCache) instrumentUnsafe(ctx context.Context, chainID uint64, height 
 
 	if status == solvernet.StatusPending.String() {
 		// Order is created in the block that emits pending status
-		a.createdAts[orderID] = timestamp
+		a.createdAts[orderID] = cacheVal{
+			CreatedAt:  timestamp,
+			SrcChainID: chainID,
+		}
 
 		return slog.Attr{}, nil
 	}
 
-	createdAt, ok := a.createdAts[orderID]
+	v, ok := a.createdAts[orderID]
 	if !ok {
 		// Pending event not seen or purged, best-effort ignore
 		return slog.Attr{}, nil
 	}
 
-	age := timestamp.Sub(createdAt)
+	age := timestamp.Sub(v.CreatedAt)
 	orderAge.WithLabelValues(chainName, status).Observe(age.Seconds())
 
 	// Remove from cache once final status is reached
@@ -127,7 +136,57 @@ func (a *ageCache) maybePurge() bool {
 		return false
 	}
 
-	a.createdAts = make(map[solvernet.OrderID]time.Time)
+	a.createdAts = make(map[solvernet.OrderID]cacheVal)
 
 	return true
+}
+
+func (a *ageCache) Clone() map[solvernet.OrderID]cacheVal {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	return maps.Clone(a.createdAts)
+}
+
+// monitorAgeCacheForever monitors the age cache instrumenting the oldest order per chain.
+func monitorAgeCacheForever(ctx context.Context, cache *ageCache, namer func(uint64) string) {
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+
+	const tooOld = time.Hour
+
+	// OrderAge is tuple containing order and age
+	type OrderAge struct {
+		OrderID solvernet.OrderID
+		Age     time.Duration
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			// Calculate oldest order per chain
+			oldest := make(map[string]OrderAge)
+			for orderID, v := range cache.Clone() {
+				chain := namer(v.SrcChainID)
+				age := time.Since(v.CreatedAt)
+				if oldest[chain].Age < age {
+					oldest[chain] = OrderAge{
+						OrderID: orderID,
+						Age:     age,
+					}
+				}
+			}
+
+			// Instrument
+			for chain, o := range oldest {
+				oldestOrder.WithLabelValues(chain).Set(o.Age.Seconds())
+
+				if o.Age > tooOld {
+					log.Warn(ctx, "Age cache has very old order", nil, "src_chain", chain, "order_id", o.OrderID, "age", o.Age)
+				}
+			}
+		}
+	}
 }
