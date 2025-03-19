@@ -12,24 +12,25 @@ func _() {
 	_ = x[ConfLatest-1]
 	_ = x[ConfFinalized-4]
 	_ = x[ConfMin1-5]
-	_ = x[confSentinel-6]
+	_ = x[ConfMin2-6]
+	_ = x[confSentinel-7]
 }
 
 const (
 	_ConfLevel_name_0 = "unknownlatest"
-	_ConfLevel_name_1 = "finalmin1sentinel must always be last"
+	_ConfLevel_name_1 = "finalmin1min2sentinel must always be last"
 )
 
 var (
 	_ConfLevel_index_0 = [...]uint8{0, 7, 13}
-	_ConfLevel_index_1 = [...]uint8{0, 5, 9, 37}
+	_ConfLevel_index_1 = [...]uint8{0, 5, 9, 13, 41}
 )
 
 func (i ConfLevel) String() string {
 	switch {
 	case i <= 1:
 		return _ConfLevel_name_0[_ConfLevel_index_0[i]:_ConfLevel_index_0[i+1]]
-	case 4 <= i && i <= 6:
+	case 4 <= i && i <= 7:
 		i -= 4
 		return _ConfLevel_name_1[_ConfLevel_index_1[i]:_ConfLevel_index_1[i+1]]
 	default:

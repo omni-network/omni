@@ -53,6 +53,7 @@ func heightByConfLevel(ctx context.Context, ethCl ethclient.Client, confLevel xc
 	delays := map[xchain.ConfLevel]uint64{
 		xchain.ConfLatest: 0,
 		xchain.ConfMin1:   1,
+		xchain.ConfMin2:   2,
 	}
 	if delay, ok := delays[confLevel]; ok {
 		latest, err := ethCl.BlockNumber(ctx)
@@ -99,6 +100,7 @@ func headerByConfLevel(ctx context.Context, ethCl ethclient.Client, confLevel xc
 
 	delays := map[xchain.ConfLevel]uint64{
 		xchain.ConfMin1: 1,
+		xchain.ConfMin2: 2,
 	}
 	delay, ok := delays[confLevel]
 	if !ok {

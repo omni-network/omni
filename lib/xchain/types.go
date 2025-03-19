@@ -69,12 +69,13 @@ const (
 	_             ConfLevel = 3 // reserved
 	ConfFinalized ConfLevel = 4 // final
 	ConfMin1      ConfLevel = 5 // min1
-	confSentinel  ConfLevel = 6 // sentinel must always be last
+	ConfMin2      ConfLevel = 6 // min2
+	confSentinel  ConfLevel = 7 // sentinel must always be last
 )
 
 // FuzzyConfLevels returns a list of all fuzzy confirmation levels.
 func FuzzyConfLevels() []ConfLevel {
-	return []ConfLevel{ConfLatest, ConfMin1}
+	return []ConfLevel{ConfLatest, ConfMin1, ConfMin2}
 }
 
 // AllConfLevels returns a list of all confirmation levels.
