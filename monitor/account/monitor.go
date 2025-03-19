@@ -39,7 +39,7 @@ func StartMonitoring(ctx context.Context, network netconf.Network, rpcClients ma
 		for _, account := range accounts {
 			go monitorAccountForever(ctx, network.ID, account, chain.Name, rpcClients[chain.ID])
 
-			for isSolverNetRole(account.Role) {
+			if isSolverNetRole(account.Role) {
 				go monitorSolverNetRoleForever(ctx, network.ID, account, backend)
 			}
 		}
