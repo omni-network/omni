@@ -1,10 +1,50 @@
 package cmd
 
 import (
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
+
+func TestMaybeRedactQuery(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		values   url.Values
+		expected string
+	}{
+		{
+			name:     "empty",
+			values:   nil,
+			expected: "",
+		},
+		{
+			name:     "nothing to redact",
+			values:   url.Values{"k": []string{"1", "2"}},
+			expected: "k=1&k=2",
+		},
+		{
+			name:     "single redact",
+			values:   url.Values{"k": []string{"1", "2"}, "secret": []string{"best"}},
+			expected: "k=1&k=2&secret=xxxxx",
+		},
+		{
+			name:     "double redact",
+			values:   url.Values{"k": []string{"1", "2"}, "db": []string{"best", "kept"}},
+			expected: "db=xxxxx&k=1&k=2",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			result := maybeRedactQuery(tt.values)
+			require.Equal(t, tt.expected, result)
+		})
+	}
+}
 
 func TestMaybeRedactHexToken(t *testing.T) {
 	t.Parallel()
