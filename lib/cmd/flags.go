@@ -77,22 +77,30 @@ func Redact(flag, val string) string {
 		return val
 	}
 
-	if strings.Contains(flag, "token") ||
-		strings.Contains(flag, "password") ||
-		strings.Contains(flag, "secret") ||
-		strings.Contains(flag, "db") ||
-		strings.Contains(flag, "header") ||
-		strings.Contains(flag, "key") {
+	if mustRedactKey(flag) {
 		return "xxxxx"
 	}
 
 	u, err := url.Parse(val)
 	if err == nil {
 		u.Path = maybeRedactHexToken(u.Path)
+		u.RawQuery = maybeRedactQuery(u.Query())
+
 		return u.Redacted()
 	}
 
 	return val
+}
+
+// maybeRedactQuery returns a redacted version of the given query parameters.
+func maybeRedactQuery(values url.Values) string {
+	for key := range values {
+		if mustRedactKey(key) {
+			values[key] = []string{"xxxxx"}
+		}
+	}
+
+	return values.Encode()
 }
 
 // maybeRedactToken redacts the last element of the given path
@@ -106,4 +114,13 @@ func maybeRedactHexToken(path string) string {
 	}
 
 	return filepath.Join(filepath.Dir(path), fmt.Sprintf("%s..%s", token[:2], token[len(token)-2:]))
+}
+
+func mustRedactKey(key string) bool {
+	return strings.Contains(key, "token") ||
+		strings.Contains(key, "password") ||
+		strings.Contains(key, "secret") ||
+		strings.Contains(key, "db") ||
+		strings.Contains(key, "header") ||
+		strings.Contains(key, "key")
 }
