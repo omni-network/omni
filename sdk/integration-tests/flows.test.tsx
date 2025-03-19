@@ -17,14 +17,13 @@ import {
   MOCK_L1_ID,
   MOCK_L2_ID,
   OMNI_DEVNET_ID,
+  TOKEN_ADDRESS,
   ZERO_ADDRESS,
   createRenderHook,
+  omniMintedPromise,
   testAccount,
   testConnector,
 } from './test-utils.js'
-
-// Address from lib/contracts/testdata/TestContractAddressReference.golden
-const TOKEN_ADDRESS = '0x73cc960fb6705e9a6a3d9eaf4de94a828cfa6d2a'
 
 type AnyOrder = Order<Array<unknown>>
 
@@ -79,6 +78,7 @@ async function executeTestOrder(
 
 describe('ERC20 OMNI to native OMNI transfer orders', () => {
   test('default: succeeds with valid expense', async () => {
+    await omniMintedPromise
     const amount = 10n * ETHER
     const order: AnyOrder = {
       owner: testAccount.address,
@@ -89,7 +89,7 @@ describe('ERC20 OMNI to native OMNI transfer orders', () => {
       deposit: { token: TOKEN_ADDRESS, amount },
     }
     await executeTestOrder(order)
-  })
+  }, 15_000)
 
   test('behaviour: fails with native deposit', async () => {
     const amount = 10n * ETHER
