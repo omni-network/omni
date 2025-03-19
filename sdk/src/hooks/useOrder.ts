@@ -81,7 +81,12 @@ export function useOrder<abis extends OptionalAbis>(
   const { validateEnabled, ...order } = params
   const connected = useChainId()
   const txMutation = useWriteContract()
-  const wait = useWaitForTransactionReceipt({ hash: txMutation.data })
+
+  const wait = useWaitForTransactionReceipt({
+    hash: txMutation.data,
+    chainId: order.srcChainId,
+  })
+
   const { resolvedOrder, error: parseOpenEventError } = useParseOpenEvent({
     status: wait.status,
     logs: wait.data?.logs,
