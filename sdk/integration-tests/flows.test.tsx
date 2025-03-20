@@ -1,80 +1,24 @@
-import { act, render, waitFor } from '@testing-library/react'
-import { createRef } from 'react'
+import { act, waitFor } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
-import { type CreateConnectorFn, useConnect } from 'wagmi'
+
+import { type Quote, useQuote, useValidateOrder } from '../src/index.js'
 
 import {
-  type Order,
-  type Quote,
-  useOrder,
-  useQuote,
-  useValidateOrder,
-} from '../src/index.js'
-
-import {
-  ContextProvider,
+  type AnyOrder,
   ETHER,
+  INVALID_TOKEN_ADDRESS,
   MOCK_L1_ID,
   MOCK_L2_ID,
   OMNI_DEVNET_ID,
   TOKEN_ADDRESS,
   ZERO_ADDRESS,
   createRenderHook,
+  executeTestOrder,
   mintOMNI,
   testAccount,
   testConnector,
+  useOrderRef,
 } from './test-utils.js'
-
-type AnyOrder = Order<Array<unknown>>
-
-type UseOrderReturn = ReturnType<typeof useOrder>
-
-function useOrderRef(
-  connector: CreateConnectorFn,
-  order: AnyOrder,
-): React.RefObject<UseOrderReturn | null> {
-  const connectRef = createRef()
-  const orderRef = createRef<UseOrderReturn>()
-
-  // useOrder() can only be used with a connected account, so we need to render it conditionally
-  function TestOrder() {
-    orderRef.current = useOrder({ validateEnabled: true, ...order })
-    return null
-  }
-
-  // Wrap TestOrder to only render if connected
-  function TestConnectAndOrder() {
-    const connectReturn = useConnect()
-    connectRef.current = connectReturn
-    return connectReturn.data ? <TestOrder /> : null
-  }
-
-  render(<TestConnectAndOrder />, { wrapper: ContextProvider })
-  act(() => {
-    connectRef.current?.connect({ connector })
-  })
-
-  return orderRef
-}
-
-async function executeTestOrder(
-  order: AnyOrder,
-  rejectReason?: string,
-): Promise<void> {
-  const orderRef = useOrderRef(testConnector, order)
-  await waitFor(() => expect(orderRef.current?.isReady).toBe(true))
-
-  if (rejectReason) {
-    expect(orderRef.current?.validation?.status).toBe('rejected')
-    expect(orderRef.current?.validation?.rejectReason).toBe(rejectReason)
-  } else {
-    expect(orderRef.current?.validation?.status).toBe('accepted')
-    act(() => {
-      orderRef.current?.open()
-    })
-    await waitFor(() => expect(orderRef.current?.txHash).toBeDefined())
-  }
-}
 
 describe('ERC20 OMNI to native OMNI transfer orders', () => {
   test('default: succeeds with valid expense', async () => {
@@ -112,7 +56,7 @@ describe('ERC20 OMNI to native OMNI transfer orders', () => {
       destChainId: OMNI_DEVNET_ID,
       expense: { token: ZERO_ADDRESS, amount },
       calls: [{ target: testAccount.address, value: amount }],
-      deposit: { token: '0x1234000000000000000000000000000000000000', amount },
+      deposit: { token: INVALID_TOKEN_ADDRESS, amount },
     }
     await executeTestOrder(order, 'UnsupportedDeposit')
   })

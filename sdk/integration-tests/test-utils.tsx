@@ -1,11 +1,26 @@
 import { readFileSync } from 'node:fs'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { type RenderHookResult, renderHook } from '@testing-library/react'
+import {
+  type RenderHookResult,
+  act,
+  render,
+  renderHook,
+  waitFor,
+} from '@testing-library/react'
+import { createRef } from 'react'
 import { http, type Chain, createWalletClient, publicActions } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
-import { type Config, WagmiProvider, createConfig, mock } from 'wagmi'
+import { expect } from 'vitest'
+import {
+  type Config,
+  type CreateConnectorFn,
+  WagmiProvider,
+  createConfig,
+  mock,
+  useConnect,
+} from 'wagmi'
 
-import { OmniProvider } from '../src/index.js'
+import { OmniProvider, type Order, useOrder } from '../src/index.js'
 
 type RPCEndpoints = {
   mock_l1: string
@@ -22,13 +37,19 @@ if (endpointsFilePath != null && endpointsFilePath.trim() !== '') {
 }
 
 export const ETHER = 1_000_000_000_000_000_000n // 18 decimals
+
+export const INVALID_CHAIN_ID = 1234
 export const OMNI_DEVNET_ID = 1651
 export const MOCK_L1_ID = 1652
 export const MOCK_L2_ID = 1654
+
 // Addresses from lib/contracts/testdata/TestContractAddressReference.golden
-export const SOLVERNET_INBOX_ADDRESS = '0x7c7759b801078ecb2c41c9caecc2db13c3079c76' as const
+export const SOLVERNET_INBOX_ADDRESS =
+  '0x7c7759b801078ecb2c41c9caecc2db13c3079c76' as const
 export const TOKEN_ADDRESS =
   '0x73cc960fb6705e9a6a3d9eaf4de94a828cfa6d2a' as const
+export const INVALID_TOKEN_ADDRESS =
+  '0x1234000000000000000000000000000000000000' as const
 export const ZERO_ADDRESS =
   '0x0000000000000000000000000000000000000000' as const
 
@@ -109,13 +130,12 @@ export async function mintOMNI() {
   // wait for transaction to be mined
   await mockL1Client.waitForTransactionReceipt({ hash: mintHash })
   // approve transfers to inbox contract
-  const approveHash = await mockL1Client
-    .writeContract({
-      address: TOKEN_ADDRESS,
-      abi: OMNI_TOKEN_ABI,
-      functionName: 'approve',
-      args: [SOLVERNET_INBOX_ADDRESS, 100n * ETHER],
-    })
+  const approveHash = await mockL1Client.writeContract({
+    address: TOKEN_ADDRESS,
+    abi: OMNI_TOKEN_ABI,
+    functionName: 'approve',
+    args: [SOLVERNET_INBOX_ADDRESS, 100n * ETHER],
+  })
   // wait for transaction to be mined
   await mockL1Client.waitForTransactionReceipt({ hash: approveHash })
 }
@@ -182,5 +202,56 @@ export function createRenderHook(config: TestConfig = {}) {
       initialProps: config,
       wrapper: ContextProvider,
     })
+  }
+}
+
+export type AnyOrder = Order<Array<unknown>>
+
+export type UseOrderReturn = ReturnType<typeof useOrder>
+
+export function useOrderRef(
+  connector: CreateConnectorFn,
+  order: AnyOrder,
+): React.RefObject<UseOrderReturn | null> {
+  const connectRef = createRef()
+  const orderRef = createRef<UseOrderReturn>()
+
+  // useOrder() can only be used with a connected account, so we need to render it conditionally
+  function TestOrder() {
+    orderRef.current = useOrder({ validateEnabled: true, ...order })
+    return null
+  }
+
+  // Wrap TestOrder to only render if connected
+  function TestConnectAndOrder() {
+    const connectReturn = useConnect()
+    connectRef.current = connectReturn
+    return connectReturn.data ? <TestOrder /> : null
+  }
+
+  render(<TestConnectAndOrder />, { wrapper: ContextProvider })
+  act(() => {
+    connectRef.current?.connect({ connector })
+  })
+
+  return orderRef
+}
+
+export async function executeTestOrder(
+  order: AnyOrder,
+  rejectReason?: string,
+): Promise<void> {
+  const orderRef = useOrderRef(testConnector, order)
+  await waitFor(() => expect(orderRef.current?.isReady).toBe(true))
+
+  if (rejectReason) {
+    expect(orderRef.current?.validation?.status).toBe('rejected')
+    expect(orderRef.current?.validation?.rejectReason).toBe(rejectReason)
+  } else {
+    expect(orderRef.current?.validation?.status).toBe('accepted')
+    act(() => {
+      orderRef.current?.open()
+    })
+    await waitFor(() => expect(orderRef.current?.txHash).toBeDefined())
   }
 }
