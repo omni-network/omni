@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/monitor/flowgen/types"
@@ -149,8 +150,7 @@ func estimateOrderSize(
 		return nil, false, errors.New("no thresholds found", "role", eoa.RoleFlowgen)
 	}
 
-	orderSize := new(big.Int)
-	orderSize.Sub(balance, thresholds.MinBalance())
+	orderSize := bi.Sub(balance, thresholds.MinBalance())
 
 	// if order size is too small, do nothing
 	if bi.LT(orderSize, conf.minOrderSize) {
@@ -161,6 +161,8 @@ func estimateOrderSize(
 	if bi.GT(orderSize, conf.maxOrderSize) {
 		orderSize = conf.maxOrderSize
 	}
+
+	log.Debug(ctx, "Flowgen: order size estimated", "balance", balance, "min_threshold", thresholds.MinBalance(), "order", orderSize)
 
 	return orderSize, true, nil
 }
