@@ -33,6 +33,9 @@ func TestSDK(t *testing.T) {
 		err = exec.CommandVerbose(ctx, "pnpm", "install")
 		require.NoError(t, err)
 
+		err = exec.CommandVerbose(ctx, "pnpm", "run", "build")
+		require.NoError(t, err)
+
 		err = exec.CommandVerbose(ctx, "pnpm", "run", "test:unit")
 		require.NoError(t, err)
 

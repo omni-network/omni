@@ -1,7 +1,6 @@
+import { type Quote, useQuote, useValidateOrder } from '@omni-network/react'
 import { act, waitFor } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
-
-import { type Quote, useQuote, useValidateOrder } from '../src/index.js'
 
 import {
   type AnyOrder,
@@ -18,7 +17,7 @@ import {
   testAccount,
   testConnector,
   useOrderRef,
-} from './test-utils.js'
+} from '../test-utils.js'
 
 describe('ERC20 OMNI to native OMNI transfer orders', () => {
   test('default: succeeds with valid expense', async () => {

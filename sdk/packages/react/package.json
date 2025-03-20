@@ -1,0 +1,62 @@
+{
+  "name": "@omni-network/react",
+  "description": "React hooks for Omni Solvernet",
+  "version": "0.0.0-alpha.10",
+  "type": "module",
+  "license": "MIT",
+  "packageManager": "pnpm@9.1.0",
+  "sideEffects": false,
+  "main": "./dist/esm/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/esm/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "pnpm clean && pnpm build:ts",
+    "build:ts": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "pnpm build",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage"
+  },
+  "files": [
+    "dist/**",
+    "src/**",
+    "!dist/**/*.tsbuildinfo",
+    "!src/**/*.test.ts",
+    "!src/**/*.test-d.ts"
+  ],
+  "engines": {
+    "node": ">=22.x"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.64.2",
+    "react": ">=18",
+    "viem": ">=2.22.10",
+    "wagmi": ">=2.0.0"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/react": "^16.2.0",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.4",
+    "@vitest/coverage-v8": "^3.0.7",
+    "happy-dom": "^17.4.4",
+    "typescript": "^5.7.2",
+    "vite": "^6.2.0",
+    "vitest": "^3.0.7"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/omni-network/omni.git",
+    "directory": "sdk/packages/react"
+  },
+  "keywords": ["typescript", "web3", "ethereum", "omni"],
+  "author": "Omni Network",
+  "homepage": "https://omni.network/"
+}

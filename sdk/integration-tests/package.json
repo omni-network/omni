@@ -1,0 +1,23 @@
+{
+  "name": "sdk-integration-tests",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@omni-network/react": "workspace:*",
+    "@tanstack/react-query": "^5.69.0",
+    "react": "^19.0.0",
+    "wagmi": "^2.14.15"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/react": "^16.2.0",
+    "@types/node": "^22.13.10",
+    "@vitest/coverage-v8": "^3.0.7",
+    "happy-dom": "^17.4.4",
+    "typescript": "^5.7.2",
+    "viem": "^2.23.13",
+    "vite": "^6.2.0",
+    "vitest": "^3.0.7"
+  }
+}

@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { OmniProvider, type Order, useOrder } from '@omni-network/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
   type RenderHookResult,
@@ -19,8 +20,6 @@ import {
   mock,
   useConnect,
 } from 'wagmi'
-
-import { OmniProvider, type Order, useOrder } from '../src/index.js'
 
 type RPCEndpoints = {
   mock_l1: string
