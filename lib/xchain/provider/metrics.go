@@ -24,7 +24,7 @@ var (
 		Namespace: "lib",
 		Subsystem: "xprovider",
 		Name:      "stream_height",
-		Help:      "Latest streamed height per source chain version and stream type. Alert if not growing.",
+		Help:      "Latest successfully streamed height per source chain version and stream type. Alert if not growing.",
 	}, []string{"chain_version", "type"})
 
 	callbackLatency = promauto.NewHistogramVec(prometheus.HistogramOpts{

@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"log/slog"
+	"math/big"
 	"testing"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -139,7 +140,8 @@ func TestEventProcessor(t *testing.T) {
 
 			processor := newEventProcessor(deps, chainID)
 
-			err := processor(context.Background(), height, []types.Log{{Topics: []common.Hash{test.event, orderID}}})
+			header := &types.Header{Number: big.NewInt(height)}
+			err := processor(context.Background(), header, []types.Log{{Topics: []common.Hash{test.event, orderID}}})
 			require.NoError(t, err)
 			require.Equal(t, test.expect, actual)
 		})

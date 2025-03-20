@@ -17,9 +17,9 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-// events extends zero or more event logs with an explicit height.
+// events extends zero or more event logs with an explicit block header.
 type events struct {
-	Height uint64
+	Header *types.Header
 	Events []types.Log
 }
 
@@ -53,9 +53,10 @@ func (p *Provider) StreamEventLogs(ctx context.Context, req xchain.EventLogsReq,
 
 			// Retry fetching logs a few times, since RPC providers load balance requests and some servers may lag a bit.
 			var logs []types.Log
+			var header *types.Header
 			var exists bool
 			err := expbackoff.Retry(ctx, func() (err error) { //nolint:nonamedreturns // Succinctness FTW
-				logs, exists, err = p.GetEventLogs(ctx, fetchReq)
+				logs, header, exists, err = p.GetEventLogs(ctx, fetchReq)
 				return err
 			})
 			if err != nil {
@@ -65,7 +66,7 @@ func (p *Provider) StreamEventLogs(ctx context.Context, req xchain.EventLogsReq,
 			}
 
 			return []events{{
-				Height: height,
+				Header: header,
 				Events: logs,
 			}}, nil
 		},
@@ -73,11 +74,11 @@ func (p *Provider) StreamEventLogs(ctx context.Context, req xchain.EventLogsReq,
 		ElemLabel:     "events",
 		HeightLabel:   "height",
 		RetryCallback: false,
-		Height: func(logs events) uint64 {
-			return logs.Height
+		Height: func(e events) uint64 {
+			return e.Header.Number.Uint64()
 		},
-		Verify: func(_ context.Context, events events, h uint64) error {
-			if events.Height != h {
+		Verify: func(_ context.Context, e events, h uint64) error {
+			if e.Header.Number.Uint64() != h {
 				return errors.New("invalid block height")
 			}
 
@@ -101,19 +102,19 @@ func (p *Provider) StreamEventLogs(ctx context.Context, req xchain.EventLogsReq,
 	}
 
 	return stream.Stream[events](ctx, deps, req.Height, func(ctx context.Context, events events) error {
-		return callback(ctx, events.Height, events.Events)
+		return callback(ctx, events.Header, events.Events)
 	})
 }
 
 // GetEventLogs returns the evm event logs for the provided request, or false if not available yet (not finalized),
 // or an error.
-func (p *Provider) GetEventLogs(ctx context.Context, req xchain.EventLogsReq) ([]types.Log, bool, error) {
+func (p *Provider) GetEventLogs(ctx context.Context, req xchain.EventLogsReq) ([]types.Log, *types.Header, bool, error) {
 	ctx, span := tracer.Start(ctx, spanName("get_events"))
 	defer span.End()
 
 	_, ethCl, err := p.getEVMChain(req.ChainID)
 	if err != nil {
-		return nil, false, err
+		return nil, nil, false, err
 	}
 
 	// First check if height is confirmed.
@@ -122,12 +123,12 @@ func (p *Provider) GetEventLogs(ctx context.Context, req xchain.EventLogsReq) ([
 		// No higher cached header available, so fetch the latest head
 		latest, err := p.headerByChainVersion(ctx, req.ChainVersion())
 		if err != nil {
-			return nil, false, errors.Wrap(err, "header by strategy")
+			return nil, nil, false, errors.Wrap(err, "header by strategy")
 		}
 
 		// If still lower, we reached the head of the chain, return false
 		if latest.Number.Uint64() < req.Height {
-			return nil, false, nil
+			return nil, nil, false, nil
 		}
 
 		// Use this header if it matches height
@@ -140,14 +141,14 @@ func (p *Provider) GetEventLogs(ctx context.Context, req xchain.EventLogsReq) ([
 	if header == nil {
 		header, err = ethCl.HeaderByNumber(ctx, bi.N(req.Height))
 		if err != nil {
-			return nil, false, errors.Wrap(err, "header by number")
+			return nil, nil, false, errors.Wrap(err, "header by number")
 		}
 	}
 
 	events, err := getEventLogs(ctx, ethCl, req.FilterAddress, header.Hash(), req.FilterTopics)
 	if err != nil {
-		return nil, false, err
+		return nil, nil, false, err
 	}
 
-	return events, true, nil
+	return events, header, true, nil
 }

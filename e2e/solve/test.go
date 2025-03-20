@@ -117,7 +117,7 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 			}
 
 			// Stream all inbox event logs and update order status in tracker
-			proc := func(ctx context.Context, _ uint64, logs []types.Log) error {
+			proc := func(ctx context.Context, _ *types.Header, logs []types.Log) error {
 				for _, l := range logs {
 					orderID, status, err := solvernet.ParseEvent(l)
 					if err != nil {
