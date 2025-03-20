@@ -3,13 +3,18 @@ package bridging
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/monitor/flowgen/types"
 	"github.com/omni-network/omni/solver/app"
 
@@ -38,7 +43,7 @@ func newJob(networkID netconf.ID, backends ethbackend.Backends, conf flowConfig,
 		SrcChainBackend: backend,
 
 		OpenOrderFunc: func(ctx context.Context) (solvernet.OrderID, bool, error) {
-			return openOrder(ctx, backends, networkID, owner, conf)
+			return openOrder(ctx, backends, backend, networkID, owner, conf)
 		},
 	}, nil
 }
@@ -48,6 +53,7 @@ func newJob(networkID netconf.ID, backends ethbackend.Backends, conf flowConfig,
 func openOrder(
 	ctx context.Context,
 	backends ethbackend.Backends,
+	backend *ethbackend.Backend,
 	networkID netconf.ID,
 	owner common.Address,
 	conf flowConfig,
@@ -61,7 +67,15 @@ func openOrder(
 		return solvernet.OrderID{}, false, errors.New("dst token not found")
 	}
 
-	expense := app.TokenAmt{Token: dstToken, Amount: conf.orderSize}
+	orderSize, ok, err := estimateOrderSize(ctx, networkID, backend.Client, owner, conf, srcToken.Token)
+	if err != nil {
+		return solvernet.OrderID{}, false, errors.Wrap(err, "estimate order size")
+	}
+	if !ok {
+		return solvernet.OrderID{}, false, nil
+	}
+
+	expense := app.TokenAmt{Token: dstToken, Amount: orderSize}
 
 	depositWithFee, err := app.QuoteDeposit(srcToken, expense)
 	if err != nil {
@@ -110,4 +124,41 @@ func Jobs(networkID netconf.ID, backends ethbackend.Backends, owner common.Addre
 	}
 
 	return []types.Job{job1, job2}, nil
+}
+
+// estimateOrderSize checks the current balance of the flowgen EOA and returns
+// the maximal possible order size or false if the minimal balance is reached.
+func estimateOrderSize(
+	ctx context.Context,
+	networkID netconf.ID,
+	client ethclient.Client,
+	owner common.Address,
+	conf flowConfig,
+	srcToken tokens.Token,
+) (*big.Int, bool, error) {
+	balance, err := client.BalanceAt(ctx, owner, nil)
+	if err != nil {
+		return nil, false, errors.Wrap(err, "balance at")
+	}
+
+	thresholds, ok := eoa.GetFundThresholds(srcToken, networkID, eoa.RoleFlowgen)
+	if !ok {
+		// Skip accounts without thresholds
+		return nil, false, errors.New("no thresholds found", "role", eoa.RoleFlowgen)
+	}
+
+	orderSize := new(big.Int)
+	orderSize.Sub(balance, thresholds.MinBalance())
+
+	// if order size is too small, do nothing
+	if bi.LT(orderSize, conf.minOrderSize) {
+		return nil, false, nil
+	}
+
+	// cap the order if necessary
+	if bi.GT(orderSize, conf.maxOrderSize) {
+		orderSize = conf.maxOrderSize
+	}
+
+	return orderSize, true, nil
 }
