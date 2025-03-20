@@ -16,7 +16,7 @@ require (
 	cosmossdk.io/x/upgrade v0.1.4
 	github.com/BurntSushi/toml v1.5.0
 	github.com/Layr-Labs/eigenlayer-cli v0.10.7
-	github.com/Layr-Labs/eigensdk-go v0.1.13-0.20240927005004-ed4b05c87610
+	github.com/Layr-Labs/eigensdk-go v0.3.0
 	github.com/bufbuild/buf v1.50.1
 	github.com/charmbracelet/log v0.4.1
 	github.com/cometbft/cometbft v0.38.17
@@ -99,7 +99,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/bgentry/speakeasy v0.1.1-0.20220910012023-760eaf8b6816 // indirect
-	github.com/bits-and-blooms/bitset v1.17.0 // indirect
+	github.com/bits-and-blooms/bitset v1.20.0 // indirect
 	github.com/blendle/zapdriver v1.3.1 // indirect
 	github.com/bufbuild/protocompile v0.14.1 // indirect
 	github.com/bufbuild/protoplugin v0.0.0-20250106231243-3a819552c9d9 // indirect
@@ -117,8 +117,8 @@ require (
 	github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06 // indirect
 	github.com/cometbft/cometbft-db v0.14.1 // indirect
 	github.com/common-nighthawk/go-figure v0.0.0-20210622060536-734e95fb86be
-	github.com/consensys/bavard v0.1.22 // indirect
-	github.com/consensys/gnark-crypto v0.14.0 // indirect
+	github.com/consensys/bavard v0.1.27 // indirect
+	github.com/consensys/gnark-crypto v0.16.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.16.3 // indirect
 	github.com/cosmos/btcutil v1.0.5 // indirect
