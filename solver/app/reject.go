@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	stokens "github.com/omni-network/omni/solver/tokens"
 	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum"
@@ -125,7 +126,7 @@ func parseMinReceived(order Order) ([]TokenAmt, error) {
 			return nil, newRejection(types.RejectUnsupportedDeposit, errors.New("non-eth addressed token", "addr", hexutil.Encode(output.Token[:])))
 		}
 
-		tkn, ok := tokens.Find(chainID, addr)
+		tkn, ok := stokens.ByAddress(chainID, addr)
 		if !ok {
 			return nil, newRejection(types.RejectUnsupportedDeposit, errors.New("unsupported token", "addr", addr))
 		}
@@ -231,7 +232,7 @@ func parseMaxSpent(pendingData PendingData, outboxAddr common.Address) ([]TokenA
 			return nil, newRejection(types.RejectUnsupportedExpense, errors.New("non-eth addressed token", "addr", hexutil.Encode(output.Token[:])))
 		}
 
-		tkn, ok := tokens.Find(chainID, addr)
+		tkn, ok := stokens.ByAddress(chainID, addr)
 		if !ok {
 			return nil, newRejection(types.RejectUnsupportedExpense, errors.New("unsupported token", "addr", addr))
 		}
@@ -286,7 +287,7 @@ func checkQuote(deposits, expenses []TokenAmt) error {
 // checkLiquidity checks that the solver has enough liquidity to pay for the expenses.
 func checkLiquidity(ctx context.Context, expenses []TokenAmt, backend *ethbackend.Backend, solverAddr common.Address) error {
 	for _, expense := range expenses {
-		bal, err := balanceOf(ctx, expense.Token, backend, solverAddr)
+		bal, err := stokens.BalanceOf(ctx, backend, expense.Token, solverAddr)
 		if err != nil {
 			return errors.Wrap(err, "get balance", "token", expense.Token.Symbol)
 		}
@@ -339,8 +340,8 @@ func checkCalls(destChainID uint64, calls []types.Call, isAllowed callAllowFunc)
 	return nil
 }
 
-func tkns(payments []TokenAmt) []Token {
-	tkns := make([]Token, len(payments))
+func tkns(payments []TokenAmt) []stokens.Token {
+	tkns := make([]stokens.Token, len(payments))
 	for i, p := range payments {
 		tkns[i] = p.Token
 	}

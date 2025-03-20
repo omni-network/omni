@@ -13,8 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
-	solverapp "github.com/omni-network/omni/solver/app"
-	"github.com/omni-network/omni/solver/tokenutil"
+	stokens "github.com/omni-network/omni/solver/tokens"
 
 	"github.com/ethereum/go-ethereum/params"
 )
@@ -187,7 +186,7 @@ func monitorSolverNetRoleTokenOnce(
 	token tokens.Token,
 ) error {
 	chainName, chainID := backend.Chain()
-	solverToken, ok := solverapp.AllTokens().FindBySymbol(chainID, token.Symbol)
+	solverToken, ok := stokens.BySymbol(chainID, token.Symbol)
 	if !ok {
 		return errors.New("token not found")
 	}
@@ -197,7 +196,7 @@ func monitorSolverNetRoleTokenOnce(
 		return nil
 	}
 
-	balance, err := tokenutil.Balance(ctx, backend, solverToken, account.Address)
+	balance, err := stokens.BalanceOf(ctx, backend, solverToken, account.Address)
 	if err != nil {
 		return err
 	}

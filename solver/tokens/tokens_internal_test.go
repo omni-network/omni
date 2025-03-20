@@ -1,4 +1,4 @@
-package app
+package tokens
 
 import (
 	"fmt"
@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 )
+
+//go:generate go test . -golden -clean
 
 // TestTokens ensures solver toke list does not change without explicit golden update.
 func TestTokens(t *testing.T) {

@@ -17,7 +17,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
-	solver "github.com/omni-network/omni/solver/app"
+	stokens "github.com/omni-network/omni/solver/tokens"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -76,7 +76,7 @@ func testSolverApprovals(ctx context.Context, t *testing.T, network netconf.Netw
 
 	solverAddr := eoa.MustAddress(network.ID, eoa.RoleSolver)
 
-	for _, tkn := range solver.AllTokens() {
+	for _, tkn := range stokens.All() {
 		chain, ok := network.Chain(tkn.ChainID)
 		if !ok {
 			continue
