@@ -106,7 +106,7 @@ func openOrder(
 	return orderID, true, nil
 }
 
-// Jobs bridges native ETH from one chain to another one.
+// Jobs returns two jobs bridging native ETH from one chain to another one and back.
 func Jobs(networkID netconf.ID, backends ethbackend.Backends, owner common.Address) ([]types.Job, error) {
 	conf, ok := config[networkID]
 	if !ok {
@@ -118,7 +118,9 @@ func Jobs(networkID netconf.ID, backends ethbackend.Backends, owner common.Addre
 		return nil, err
 	}
 
-	job2, err := newJob(networkID, backends, conf, owner)
+	conf2 := conf
+	conf2.srcChain, conf2.dstChain = conf2.dstChain, conf2.srcChain
+	job2, err := newJob(networkID, backends, conf2, owner)
 	if err != nil {
 		return nil, err
 	}
