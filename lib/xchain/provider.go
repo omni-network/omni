@@ -41,7 +41,7 @@ func (r EventLogsReq) ChainVersion() ChainVersion {
 	}
 }
 
-type EventLogsCallback func(ctx context.Context, height uint64, events []types.Log) error
+type EventLogsCallback func(ctx context.Context, header *types.Header, events []types.Log) error
 
 // Provider abstracts fetching cross chain data from any supported chain.
 // This is basically a cross-chain data client for all supported chains.

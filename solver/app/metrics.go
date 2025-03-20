@@ -20,6 +20,13 @@ var (
 		Help:      "Total number of events processed by processor and status",
 	}, []string{"proc", "status"})
 
+	processorLag = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "solver",
+		Subsystem: "processor",
+		Name:      "lag_seconds",
+		Help:      "The elapsed seconds since latest processed block timestamp per processor",
+	}, []string{"proc"})
+
 	rejectedOrders = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "solver",
 		Subsystem: "processor",

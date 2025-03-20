@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"time"
 
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
@@ -15,7 +16,11 @@ import (
 // newEventProcessor returns a callback provided to xchain.Provider::StreamEventLogs processing
 // all inbox contract events and driving order lifecycle.
 func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
-	return func(ctx context.Context, height uint64, elogs []types.Log) error {
+	return func(ctx context.Context, header *types.Header, elogs []types.Log) error {
+		// Instrument lag; how old is the block we are processing; how far behind are we?
+		lag := float64(time.Now().Unix()) - float64(header.Time)
+		processorLag.WithLabelValues(deps.ProcessorName).Set(lag)
+
 		for _, elog := range elogs {
 			event, ok := solvernet.EventByTopic(elog.Topics[0])
 			if !ok {
@@ -47,7 +52,7 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 				continue
 			}
 
-			age := deps.InstrumentAge(ctx, chainID, height, order)
+			age := deps.InstrumentAge(ctx, chainID, header.Number.Uint64(), order)
 
 			log.Debug(ctx, "Processing order event", age)
 
@@ -113,7 +118,7 @@ func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
 			processedEvents.WithLabelValues(deps.ProcessorName, event.Status.String()).Inc()
 		}
 
-		return deps.SetCursor(ctx, chainID, height)
+		return deps.SetCursor(ctx, chainID, header.Number.Uint64())
 	}
 }
 

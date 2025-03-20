@@ -346,7 +346,8 @@ func startEventStreams(
 func newHeightMutexer() func(callback xchain.EventLogsCallback) xchain.EventLogsCallback {
 	var mutexes sync.Map
 	return func(callback xchain.EventLogsCallback) xchain.EventLogsCallback {
-		return func(ctx context.Context, height uint64, events []types.Log) error {
+		return func(ctx context.Context, header *types.Header, events []types.Log) error {
+			height := header.Number.Uint64()
 			anyMutex, _ := mutexes.LoadOrStore(height, new(sync.Mutex))
 			mutex := anyMutex.(*sync.Mutex) //nolint:revive,forcetypeassert // Known type
 			mutex.Lock()
@@ -355,7 +356,7 @@ func newHeightMutexer() func(callback xchain.EventLogsCallback) xchain.EventLogs
 				mutexes.Delete(height)
 			}()
 
-			return callback(ctx, height, events)
+			return callback(ctx, header, events)
 		}
 	}
 }
