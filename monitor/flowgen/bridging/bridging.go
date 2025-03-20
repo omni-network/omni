@@ -119,6 +119,7 @@ func Jobs(networkID netconf.ID, backends ethbackend.Backends, owner common.Addre
 		return nil, err
 	}
 
+	// Clone the job and flip the chains
 	conf2 := conf
 	conf2.srcChain, conf2.dstChain = conf2.dstChain, conf2.srcChain
 	job2, err := newJob(networkID, backends, conf2, owner)
