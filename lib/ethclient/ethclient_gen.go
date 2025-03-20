@@ -35,99 +35,100 @@ type Client interface {
 	ProgressIfSyncing(ctx context.Context) (*ethereum.SyncProgress, bool, error)
 	CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error
 	Address() string
+	Name() string
 	Close()
 }
 
-func (w Wrapper) BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error) {
+func (w wrapper) BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error) {
 	const endpoint = "block_by_hash"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.BlockByHash(ctx, hash)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return res0, err
 }
 
-func (w Wrapper) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
+func (w wrapper) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
 	const endpoint = "block_by_number"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.BlockByNumber(ctx, number)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return res0, err
 }
 
-func (w Wrapper) HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error) {
+func (w wrapper) HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error) {
 	const endpoint = "header_by_hash"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.HeaderByHash(ctx, hash)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return res0, err
 }
 
-func (w Wrapper) HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error) {
+func (w wrapper) HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error) {
 	const endpoint = "header_by_number"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.HeaderByNumber(ctx, number)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return res0, err
 }
 
-func (w Wrapper) TransactionCount(ctx context.Context, blockHash common.Hash) (uint, error) {
+func (w wrapper) TransactionCount(ctx context.Context, blockHash common.Hash) (uint, error) {
 	const endpoint = "transaction_count"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.TransactionCount(ctx, blockHash)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return res0, err
 }
 
-func (w Wrapper) TransactionInBlock(ctx context.Context, blockHash common.Hash, index uint) (*types.Transaction, error) {
+func (w wrapper) TransactionInBlock(ctx context.Context, blockHash common.Hash, index uint) (*types.Transaction, error) {
 	const endpoint = "transaction_in_block"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.TransactionInBlock(ctx, blockHash, index)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
@@ -137,16 +138,16 @@ func (w Wrapper) TransactionInBlock(ctx context.Context, blockHash common.Hash, 
 // This method subscribes to notifications about changes of the head block of
 // the canonical chain.
 
-func (w Wrapper) SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (ethereum.Subscription, error) {
+func (w wrapper) SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (ethereum.Subscription, error) {
 	const endpoint = "subscribe_new_head"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.SubscribeNewHead(ctx, ch)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
@@ -158,16 +159,16 @@ func (w Wrapper) SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) 
 // mined yet. Note that the transaction may not be part of the canonical chain even if
 // it's not pending.
 
-func (w Wrapper) TransactionByHash(ctx context.Context, txHash common.Hash) (*types.Transaction, bool, error) {
+func (w wrapper) TransactionByHash(ctx context.Context, txHash common.Hash) (*types.Transaction, bool, error) {
 	const endpoint = "transaction_by_hash"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, res1, err := w.cl.TransactionByHash(ctx, txHash)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
@@ -178,304 +179,304 @@ func (w Wrapper) TransactionByHash(ctx context.Context, txHash common.Hash) (*ty
 // transaction may not be included in the current canonical chain even if a receipt
 // exists.
 
-func (w Wrapper) TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error) {
+func (w wrapper) TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error) {
 	const endpoint = "transaction_receipt"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.TransactionReceipt(ctx, txHash)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return res0, err
 }
 
-func (w Wrapper) BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error) {
+func (w wrapper) BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error) {
 	const endpoint = "balance_at"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.BalanceAt(ctx, account, blockNumber)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return res0, err
 }
 
-func (w Wrapper) StorageAt(ctx context.Context, account common.Address, key common.Hash, blockNumber *big.Int) ([]byte, error) {
+func (w wrapper) StorageAt(ctx context.Context, account common.Address, key common.Hash, blockNumber *big.Int) ([]byte, error) {
 	const endpoint = "storage_at"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.StorageAt(ctx, account, key, blockNumber)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return res0, err
 }
 
-func (w Wrapper) CodeAt(ctx context.Context, account common.Address, blockNumber *big.Int) ([]byte, error) {
+func (w wrapper) CodeAt(ctx context.Context, account common.Address, blockNumber *big.Int) ([]byte, error) {
 	const endpoint = "code_at"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.CodeAt(ctx, account, blockNumber)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return res0, err
 }
 
-func (w Wrapper) NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error) {
+func (w wrapper) NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error) {
 	const endpoint = "nonce_at"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.NonceAt(ctx, account, blockNumber)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return res0, err
 }
 
-func (w Wrapper) CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
+func (w wrapper) CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
 	const endpoint = "call_contract"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.CallContract(ctx, call, blockNumber)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return res0, err
 }
 
-func (w Wrapper) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
+func (w wrapper) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
 	const endpoint = "filter_logs"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.FilterLogs(ctx, q)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return res0, err
 }
 
-func (w Wrapper) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error) {
+func (w wrapper) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error) {
 	const endpoint = "subscribe_filter_logs"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.SubscribeFilterLogs(ctx, q, ch)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return res0, err
 }
 
-func (w Wrapper) SendTransaction(ctx context.Context, tx *types.Transaction) error {
+func (w wrapper) SendTransaction(ctx context.Context, tx *types.Transaction) error {
 	const endpoint = "send_transaction"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	err := w.cl.SendTransaction(ctx, tx)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return err
 }
 
-func (w Wrapper) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
+func (w wrapper) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
 	const endpoint = "suggest_gas_price"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.SuggestGasPrice(ctx)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return res0, err
 }
 
-func (w Wrapper) SuggestGasTipCap(ctx context.Context) (*big.Int, error) {
+func (w wrapper) SuggestGasTipCap(ctx context.Context) (*big.Int, error) {
 	const endpoint = "suggest_gas_tip_cap"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.SuggestGasTipCap(ctx)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return res0, err
 }
 
-func (w Wrapper) PendingBalanceAt(ctx context.Context, account common.Address) (*big.Int, error) {
+func (w wrapper) PendingBalanceAt(ctx context.Context, account common.Address) (*big.Int, error) {
 	const endpoint = "pending_balance_at"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.PendingBalanceAt(ctx, account)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return res0, err
 }
 
-func (w Wrapper) PendingStorageAt(ctx context.Context, account common.Address, key common.Hash) ([]byte, error) {
+func (w wrapper) PendingStorageAt(ctx context.Context, account common.Address, key common.Hash) ([]byte, error) {
 	const endpoint = "pending_storage_at"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.PendingStorageAt(ctx, account, key)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return res0, err
 }
 
-func (w Wrapper) PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error) {
+func (w wrapper) PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error) {
 	const endpoint = "pending_code_at"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.PendingCodeAt(ctx, account)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return res0, err
 }
 
-func (w Wrapper) PendingNonceAt(ctx context.Context, account common.Address) (uint64, error) {
+func (w wrapper) PendingNonceAt(ctx context.Context, account common.Address) (uint64, error) {
 	const endpoint = "pending_nonce_at"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.PendingNonceAt(ctx, account)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return res0, err
 }
 
-func (w Wrapper) PendingTransactionCount(ctx context.Context) (uint, error) {
+func (w wrapper) PendingTransactionCount(ctx context.Context) (uint, error) {
 	const endpoint = "pending_transaction_count"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.PendingTransactionCount(ctx)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return res0, err
 }
 
-func (w Wrapper) EstimateGas(ctx context.Context, call ethereum.CallMsg) (uint64, error) {
+func (w wrapper) EstimateGas(ctx context.Context, call ethereum.CallMsg) (uint64, error) {
 	const endpoint = "estimate_gas"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.EstimateGas(ctx, call)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return res0, err
 }
 
-func (w Wrapper) BlockNumber(ctx context.Context) (uint64, error) {
+func (w wrapper) BlockNumber(ctx context.Context) (uint64, error) {
 	const endpoint = "block_number"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.BlockNumber(ctx)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
 	return res0, err
 }
 
-func (w Wrapper) ChainID(ctx context.Context) (*big.Int, error) {
+func (w wrapper) ChainID(ctx context.Context) (*big.Int, error) {
 	const endpoint = "chain_id"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
 
 	res0, err := w.cl.ChainID(ctx)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
