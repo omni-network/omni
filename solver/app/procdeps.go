@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/bi"
@@ -69,18 +70,58 @@ func newClaimer(
 			claimant = solverAddr
 		}
 
+		_, chainID := backend.Chain()
+
 		// Claim to solver address for now
 		// TODO: consider claiming to hot / cold funding wallet
-		tx, err := inbox.Claim(txOpts, order.ID, claimant)
-		if err != nil {
-			return errors.Wrap(err, "claim order")
-		}
-		rec, err := backend.WaitMined(ctx, tx)
-		if err != nil {
-			return errors.Wrap(err, "wait mined")
-		}
 
-		return pnl(ctx, order, rec)
+		// In general, wait for async claiming, making is effectively sync
+		waitTimeout := time.Hour
+		if networkID != netconf.Devnet && chainID == netconf.EthereumChainID(networkID) {
+			// But on staging/omega/mainnet L1, we shouldn't wait, just return immediately.
+			// TODO(corver): Remove this once mainnet has multiple processors.
+			waitTimeout = time.Millisecond
+		}
+		waitCtx, cancel := context.WithTimeout(ctx, waitTimeout)
+		defer cancel()
+
+		done := make(chan error)
+		go func() {
+			log.Debug(ctx, "Async order claiming", "timeout", waitTimeout)
+			tx, err := inbox.Claim(txOpts, order.ID, claimant)
+			if err != nil {
+				done <- errors.Wrap(err, "claim order")
+				return
+			}
+
+			rec, err := backend.WaitMined(ctx, tx)
+			if err != nil {
+				done <- errors.Wrap(err, "wait mined")
+				return
+			}
+
+			if err := pnl(ctx, order, rec); err != nil {
+				done <- errors.Wrap(err, "pnl")
+				return
+			}
+
+			done <- nil
+		}()
+
+		select {
+		case <-waitCtx.Done():
+			log.Debug(ctx, "Timeout waiting for async claim", "timeout", waitTimeout)
+
+			go func() {
+				if err := <-done; err != nil {
+					log.Warn(ctx, "Async claim failed", err)
+				}
+			}()
+
+			return nil
+		case err := <-done:
+			return err
+		}
 	}
 }
 
