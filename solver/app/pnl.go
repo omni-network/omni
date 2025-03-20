@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/pnl"
 	tokenslib "github.com/omni-network/omni/lib/tokens"
+	stokens "github.com/omni-network/omni/solver/tokens"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -130,7 +131,7 @@ func gasPnL(
 		amount = bi.Add(amount, fee)
 	}
 
-	nativeToken, ok := tokens.Find(chainID, NativeAddr)
+	nativeToken, ok := stokens.Native(chainID)
 	if !ok {
 		return errors.New("native token not found [BUG]")
 	}

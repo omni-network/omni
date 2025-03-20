@@ -18,6 +18,7 @@ import (
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/monitor/flowgen/types"
 	"github.com/omni-network/omni/solver/app"
+	stokens "github.com/omni-network/omni/solver/tokens"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -59,11 +60,11 @@ func openOrder(
 	owner common.Address,
 	conf flowConfig,
 ) (solvernet.OrderID, bool, error) {
-	srcToken, ok := app.AllTokens().Find(conf.srcChain, app.NativeAddr)
+	srcToken, ok := stokens.Native(conf.srcChain)
 	if !ok {
 		return solvernet.OrderID{}, false, errors.New("src token not found")
 	}
-	dstToken, ok := app.AllTokens().Find(conf.dstChain, app.NativeAddr)
+	dstToken, ok := stokens.Native(conf.dstChain)
 	if !ok {
 		return solvernet.OrderID{}, false, errors.New("dst token not found")
 	}

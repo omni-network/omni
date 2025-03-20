@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/umath"
+	"github.com/omni-network/omni/solver/tokens"
 	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum"
@@ -238,6 +239,15 @@ func rejectTestCases(t *testing.T, solver, outbox common.Address) []rejectTestCa
 	}
 
 	return append(tests, additional...)
+}
+
+func omniERC20(network netconf.ID) tokens.Token {
+	token, ok := tokens.BySymbol(netconf.EthereumChainID(network), "OMNI")
+	if !ok {
+		panic("OMNI token not found")
+	}
+
+	return token
 }
 
 func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
