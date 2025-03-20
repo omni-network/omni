@@ -2,6 +2,7 @@ package withdraw
 
 import (
 	"context"
+	gomath "math"
 	"testing"
 
 	"github.com/omni-network/omni/lib/tutil"
@@ -82,11 +83,16 @@ func TestToGwei(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.arg.String(), func(t *testing.T) {
 			t.Parallel()
-			gwei, wei := toGwei(tt.arg)
+			gwei, wei, err := toGwei(tt.arg)
+			require.NoError(t, err)
 			require.Equal(t, tt.gwei, gwei)
 			require.Equal(t, tt.wei, wei)
 		})
 	}
+
+	const maxUint64 = gomath.MaxUint64
+	_, _, err := toGwei(math.NewIntFromUint64(maxUint64).MulRaw(2).MulRaw(params.GWei))
+	require.ErrorContains(t, err, "invalid amount [BUG]")
 }
 
 type testEVMEngKeeper func(ctx context.Context, withdrawalAddr common.Address, amountGwei uint64) error
