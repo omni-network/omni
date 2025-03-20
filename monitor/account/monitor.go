@@ -40,7 +40,8 @@ func StartMonitoring(ctx context.Context, network netconf.Network, rpcClients ma
 			go monitorAccountForever(ctx, network.ID, account, chain.Name, rpcClients[chain.ID])
 
 			if isSolverNetRole(account.Role) {
-				go monitorSolverNetRoleForever(ctx, network.ID, account, backend)
+				solverCtx := log.WithCtx(ctx, "chain", chain.Name, "role", account.Role)
+				go monitorSolverNetRoleForever(solverCtx, network.ID, account, backend)
 			}
 		}
 
@@ -154,7 +155,6 @@ func monitorSolverNetRoleForever(
 		return
 	}
 
-	ctx = log.WithCtx(ctx, "role", account.Role)
 	log.Info(ctx, "Monitoring solvernet role")
 
 	ticker := time.NewTicker(time.Second * 30)
@@ -186,25 +186,18 @@ func monitorSolverNetRoleTokenOnce(
 	backend *ethbackend.Backend,
 	token tokens.Token,
 ) error {
-	// TODO(corver): improve this.
-	var stkn solverapp.Token
-	for _, tkn := range solverapp.AllTokens() {
-		if tkn.Token == token {
-			stkn = tkn
-		}
-	}
-	if stkn.Symbol == "" {
-		return errors.New("token not found", "token", token)
-	}
-
 	chainName, chainID := backend.Chain()
+	solverToken, ok := solverapp.AllTokens().FindBySymbol(chainID, token.Symbol)
+	if !ok {
+		return errors.New("token not found")
+	}
 
 	thresh, ok := eoa.GetSolverNetThreshold(account.Role, network, chainID, token)
 	if !ok {
 		return nil
 	}
 
-	balance, err := tokenutil.Balance(ctx, backend, stkn, account.Address)
+	balance, err := tokenutil.Balance(ctx, backend, solverToken, account.Address)
 	if err != nil {
 		return err
 	}
