@@ -67,11 +67,11 @@ func openOrder(
 		return solvernet.OrderID{}, false, errors.New("dst token not found")
 	}
 
-	orderSize, err := estimateOrderSize(ctx, networkID, backend.Client, owner, conf)
+	orderSize, ok, err := estimateOrderSize(ctx, networkID, backend.Client, owner, conf, srcToken.Token)
 	if err != nil {
 		return solvernet.OrderID{}, false, errors.Wrap(err, "estimate order size")
 	}
-	if orderSize.Cmp(bi.Zero()) == 0 {
+	if !ok {
 		return solvernet.OrderID{}, false, nil
 	}
 
@@ -127,37 +127,38 @@ func Jobs(networkID netconf.ID, backends ethbackend.Backends, owner common.Addre
 }
 
 // estimateOrderSize checks the current balance of the flowgen EOA and returns
-// the maximal possible order size or nil if the minimal balance is reached.
+// the maximal possible order size or false if the minimal balance is reached.
 func estimateOrderSize(
 	ctx context.Context,
 	networkID netconf.ID,
 	client ethclient.Client,
 	owner common.Address,
 	conf flowConfig,
-) (*big.Int, error) {
+	srcToken tokens.Token,
+) (*big.Int, bool, error) {
 	balance, err := client.BalanceAt(ctx, owner, nil)
 	if err != nil {
-		return nil, err
+		return nil, false, errors.Wrap(err, "balance at")
 	}
 
-	thresholds, ok := eoa.GetFundThresholds(tokens.ETH, networkID, eoa.RoleFlowgen)
+	thresholds, ok := eoa.GetFundThresholds(srcToken, networkID, eoa.RoleFlowgen)
 	if !ok {
 		// Skip accounts without thresholds
-		return bi.Zero(), nil
+		return nil, false, errors.New("no thresholds found", "role", eoa.RoleFlowgen)
 	}
 
 	orderSize := new(big.Int)
 	orderSize.Sub(balance, thresholds.MinBalance())
 
 	// if order size is too small, do nothing
-	if orderSize.Cmp(conf.minOrderSize) < 0 {
-		return bi.Zero(), nil
+	if bi.LT(orderSize, conf.minOrderSize) {
+		return nil, false, nil
 	}
 
 	// cap the order if necessary
-	if orderSize.Cmp(conf.maxOrderSize) > 0 {
+	if bi.GT(orderSize, conf.maxOrderSize) {
 		orderSize = conf.maxOrderSize
 	}
 
-	return orderSize, nil
+	return orderSize, true, nil
 }
