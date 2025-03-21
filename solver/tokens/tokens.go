@@ -134,9 +134,6 @@ var tokens = append([]Token{
 
 	// stETH
 	stETH(evmchain.IDHolesky, common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")),
-
-	// mock l1 copies (for e2e fork testing)
-	stETH(evmchain.IDMockL1, common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")), // holesky stETH
 }, mocks()...)
 
 func All() []Token {

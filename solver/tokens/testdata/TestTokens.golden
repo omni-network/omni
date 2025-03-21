@@ -230,16 +230,6 @@
   "symbol": "stETH"
  },
  {
-  "address": "0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034",
-  "chainId": 1652,
-  "coingeckoId": "lido-staked-ether",
-  "isMock": false,
-  "maxSpend": "nil",
-  "minSpend": "nil",
-  "name": "Lido Staked Ether",
-  "symbol": "stETH"
- },
- {
   "address": "0x6319df7c227e34B967C1903A08a698A3cC43492B",
   "chainId": 84532,
   "coingeckoId": "wrapped-steth",
