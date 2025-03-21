@@ -1,5 +1,5 @@
 {
-  "name": "sdk-integration-tests",
+  "name": "integration-tests",
   "scripts": {
     "test": "vitest run"
   },
