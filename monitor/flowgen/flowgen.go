@@ -80,11 +80,17 @@ func startWithBackends(
 				case <-timer.C:
 					jobsTotal.Inc()
 					runCtx := log.WithCtx(ctx, "job", job.Name)
-					if err := run(runCtx, job); err != nil {
+					ok, err := run(runCtx, job)
+					if err != nil {
 						log.Warn(runCtx, "Flowgen: job failed (will retry)", err)
 						jobsFailed.Inc()
 					}
-					timer.Reset(job.Cadence)
+					if ok {
+						timer.Reset(job.Cadence)
+					} else {
+						// If the job was skipped, we retry earlier.
+						timer.Reset(1 * time.Minute)
+					}
 				}
 			}
 		}()
@@ -93,17 +99,17 @@ func startWithBackends(
 	return nil
 }
 
-// run runs a job exactly once.
-func run(ctx context.Context, job types.Job) error {
+// run runs a job exactly once. It returns false if the job was skipped.
+func run(ctx context.Context, job types.Job) (bool, error) {
 	log.Debug(ctx, "Flowgen: running job")
 
 	orderID, ok, err := job.OpenOrderFunc(ctx)
 	if err != nil {
-		return errors.Wrap(err, "open order")
+		return false, errors.Wrap(err, "open order")
 	}
 
 	if !ok {
-		return nil
+		return false, nil
 	}
 
 	ctx = log.WithCtx(ctx, "order_id", orderID)
@@ -111,12 +117,12 @@ func run(ctx context.Context, job types.Job) error {
 	log.Debug(ctx, "Flowgen: order opened")
 
 	if err := awaitClaimed(ctx, job, orderID); err != nil {
-		return errors.Wrap(err, "await claimed")
+		return false, errors.Wrap(err, "await claimed")
 	}
 
 	log.Info(ctx, "Flowgen: order claimed")
 
-	return nil
+	return true, nil
 }
 
 // awaitClaimed blocks until the order is claimed.
