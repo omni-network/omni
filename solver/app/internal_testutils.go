@@ -254,6 +254,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 	t.Helper()
 
 	omegaOMNIAddr := omniERC20(netconf.Omega).Address
+	holeskySTETH := common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")
 
 	// dummy calldata / target. unused but for /check calls, and to build valid FillOriginData
 	dummyCallData := hexutil.MustDecode("0x70a08231000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc7")
@@ -516,6 +517,22 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			},
 			mock: func(clients MockClients) {
 				mockNativeBalance(t, clients.Client(t, evmchain.IDBaseSepolia), solver, ether(2))
+			},
+		},
+		{
+			name:   "ETH covers STETH",
+			reason: types.RejectNone,
+			reject: false,
+			order: testOrder{
+				srcChainID: evmchain.IDBaseSepolia,
+				dstChainID: evmchain.IDHolesky,
+				deposits:   []types.AddrAmt{{Amount: depositFor(ether(1), standardFeeBips)}},
+				calls:      []types.Call{{Target: common.HexToAddress("0x01"), Data: dummyCallData}}, // does not matter
+				expenses:   []types.Expense{{Amount: ether(1), Token: holeskySTETH}},
+			},
+			mock: func(clients MockClients) {
+				mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), holeskySTETH, ether(1))
+				mockERC20Allowance(t, clients.Client(t, evmchain.IDHolesky), holeskySTETH)
 			},
 		},
 	}
