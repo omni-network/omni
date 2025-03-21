@@ -41,6 +41,7 @@ func Log(ctx context.Context, ps ...LogP) {
 			"PnL",
 			"type", p.Type,
 			"amt_gwei", fstr(p.AmountGwei),
+			"delta_gwei", deltaFstr(p.AmountGwei, p.Type),
 			"currency", p.Currency,
 			"category", p.Category,
 			"subcategory", p.Subcategory,
@@ -54,6 +55,15 @@ func Log(ctx context.Context, ps ...LogP) {
 // fstr returns a string repr of a float.
 func fstr(f float64) string {
 	return fmt.Sprintf("%.2f", f)
+}
+
+// deltaFstr returns a string repr of a float with an optional negative sign for expenses.
+func deltaFstr(f float64, t Type) string {
+	if t == Expense {
+		return "-" + fstr(f)
+	}
+
+	return fstr(f)
 }
 
 // mdstr returns a key-ordered string representation of metadata.

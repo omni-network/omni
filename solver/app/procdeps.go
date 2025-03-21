@@ -44,7 +44,7 @@ func newClaimer(
 	inboxContracts map[uint64]*bindings.SolverNetInbox,
 	backends ethbackend.Backends,
 	solverAddr common.Address,
-	pnl orderPnLFunc,
+	pnl updatePnLFunc,
 ) func(ctx context.Context, order Order) error {
 	return func(ctx context.Context, order Order) error {
 		inbox, ok := inboxContracts[order.SourceChainID]
@@ -80,7 +80,7 @@ func newClaimer(
 			return errors.Wrap(err, "wait mined")
 		}
 
-		return pnl(ctx, order, rec)
+		return pnl(ctx, order, rec, "Inbox:Claim")
 	}
 }
 
@@ -88,7 +88,7 @@ func newFiller(
 	outboxContracts map[uint64]*bindings.SolverNetOutbox,
 	backends ethbackend.Backends,
 	solverAddr, outboxAddr common.Address,
-	pnl orderPnLFunc,
+	pnl filledPnLFunc,
 ) func(ctx context.Context, order Order) error {
 	return func(ctx context.Context, order Order) error {
 		pendingData, err := order.PendingData()
@@ -191,7 +191,7 @@ func newRejector(
 	inboxContracts map[uint64]*bindings.SolverNetInbox,
 	backends ethbackend.Backends,
 	solverAddr common.Address,
-	pnl orderPnLFunc,
+	pnl updatePnLFunc,
 ) func(ctx context.Context, order Order, reason stypes.RejectReason) error {
 	return func(ctx context.Context, order Order, reason stypes.RejectReason) error {
 		inbox, ok := inboxContracts[order.SourceChainID]
@@ -225,7 +225,7 @@ func newRejector(
 			return errors.Wrap(err, "wait mined")
 		}
 
-		return pnl(ctx, order, rec)
+		return pnl(ctx, order, rec, "Inbox:Reject")
 	}
 }
 
