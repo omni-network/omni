@@ -22,6 +22,7 @@ var (
 	SymbioticSepoliaWSTETHVault3 = common.HexToAddress("0x6415D3B5fc615D4a00C71f4044dEc24C141EBFf8")
 	SymbioticHoleskyWSTETHVault1 = common.HexToAddress("0xd88dDf98fE4d161a66FB836bee4Ca469eb0E4a75")
 	SymbioticHoleskyWSTETHVault2 = common.HexToAddress("0xa4c81649c79f8378a4409178E758B839F1d57a54")
+	EigenHoleskyStrategyManager  = common.HexToAddress("0xdfB5f6CE42aAA7830E94ECFCcAd411beF4d4D5b6")
 
 	// targetsRestricted maps each network to whether targets should be restricted to the allowed set.
 	targetsRestricted = map[netconf.ID]bool{
@@ -42,6 +43,7 @@ var (
 				evmchain.IDHolesky: {
 					SymbioticHoleskyWSTETHVault1: true,
 					SymbioticHoleskyWSTETHVault2: true,
+					EigenHoleskyStrategyManager:  true,
 				},
 			}),
 		},
