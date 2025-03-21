@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	stokens "github.com/omni-network/omni/solver/tokens"
 	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -44,7 +45,7 @@ func newChecker(backends ethbackend.Backends, isAllowedCall callAllowFunc, solve
 			return err
 		}
 
-		quote, err := getQuote([]Token{deposit.Token}, expenses)
+		quote, err := getQuote([]stokens.Token{deposit.Token}, expenses)
 		if err != nil {
 			return err
 		}
@@ -99,8 +100,8 @@ func getFillOriginData(req types.CheckRequest) ([]byte, error) {
 
 // coversQuote checks if `deposits` match or exceed a `quote` for expenses.
 func coversQuote(deposits, quote []TokenAmt) error {
-	byTkn := func(ps []TokenAmt) map[Token]*big.Int {
-		res := make(map[Token]*big.Int)
+	byTkn := func(ps []TokenAmt) map[stokens.Token]*big.Int {
+		res := make(map[stokens.Token]*big.Int)
 		for _, p := range ps {
 			res[p.Token] = p.Amount
 		}
@@ -153,7 +154,7 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 			nativeExpense = nativeExpense.Set(e.Amount)
 		}
 
-		tkn, ok := tokens.Find(destChainID, e.Token)
+		tkn, ok := stokens.ByAddress(destChainID, e.Token)
 		if !ok {
 			return nil, newRejection(types.RejectUnsupportedExpense, errors.New("unsupported expense token", "addr", e.Token))
 		}
@@ -181,7 +182,7 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 }
 
 func parseTokenAmt(srcChainID uint64, dep types.AddrAmt) (TokenAmt, error) {
-	tkn, ok := tokens.Find(srcChainID, dep.Token)
+	tkn, ok := stokens.ByAddress(srcChainID, dep.Token)
 	if !ok {
 		return TokenAmt{}, newRejection(types.RejectUnsupportedDeposit, errors.New("unsupported source chain deposit token", "addr", dep.Token, "src_chain", srcChainID))
 	}
@@ -192,4 +193,4 @@ func parseTokenAmt(srcChainID uint64, dep types.AddrAmt) (TokenAmt, error) {
 	}, nil
 }
 
-func isNative(e types.Expense) bool { return e.Token == (common.Address{}) }
+func isNative(e types.Expense) bool { return e.Token == stokens.NativeAddr }

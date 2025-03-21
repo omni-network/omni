@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/umath"
 )
 
@@ -149,7 +150,7 @@ func (a *ageCache) Clone() map[solvernet.OrderID]cacheVal {
 }
 
 // monitorAgeCacheForever monitors the age cache instrumenting the oldest order per chain.
-func monitorAgeCacheForever(ctx context.Context, cache *ageCache, namer func(uint64) string) {
+func monitorAgeCacheForever(ctx context.Context, network netconf.Network, cache *ageCache) {
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 
@@ -166,10 +167,15 @@ func monitorAgeCacheForever(ctx context.Context, cache *ageCache, namer func(uin
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
+			// Reset oldest order for all chains (to remove stale data)
+			for _, chain := range network.EVMChains() {
+				oldestOrder.Reset(chain.Name)
+			}
+
 			// Calculate oldest order per chain
 			oldest := make(map[string]OrderAge)
 			for orderID, v := range cache.Clone() {
-				chain := namer(v.SrcChainID)
+				chain := network.ChainName(v.SrcChainID)
 				age := time.Since(v.CreatedAt)
 				if oldest[chain].Age < age {
 					oldest[chain] = OrderAge{

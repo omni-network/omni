@@ -13,10 +13,12 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/monitor/flowgen/types"
 	"github.com/omni-network/omni/solver/app"
+	stokens "github.com/omni-network/omni/solver/tokens"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -58,11 +60,11 @@ func openOrder(
 	owner common.Address,
 	conf flowConfig,
 ) (solvernet.OrderID, bool, error) {
-	srcToken, ok := app.AllTokens().Find(conf.srcChain, app.NativeAddr)
+	srcToken, ok := stokens.Native(conf.srcChain)
 	if !ok {
 		return solvernet.OrderID{}, false, errors.New("src token not found")
 	}
-	dstToken, ok := app.AllTokens().Find(conf.dstChain, app.NativeAddr)
+	dstToken, ok := stokens.Native(conf.dstChain)
 	if !ok {
 		return solvernet.OrderID{}, false, errors.New("dst token not found")
 	}
@@ -106,7 +108,7 @@ func openOrder(
 	return orderID, true, nil
 }
 
-// Jobs bridges native ETH from one chain to another one.
+// Jobs returns two jobs bridging native ETH from one chain to another one and back.
 func Jobs(networkID netconf.ID, backends ethbackend.Backends, owner common.Address) ([]types.Job, error) {
 	conf, ok := config[networkID]
 	if !ok {
@@ -118,7 +120,10 @@ func Jobs(networkID netconf.ID, backends ethbackend.Backends, owner common.Addre
 		return nil, err
 	}
 
-	job2, err := newJob(networkID, backends, conf, owner)
+	// Clone the job and flip the chains
+	conf2 := conf
+	conf2.srcChain, conf2.dstChain = conf2.dstChain, conf2.srcChain
+	job2, err := newJob(networkID, backends, conf2, owner)
 	if err != nil {
 		return nil, err
 	}
@@ -147,8 +152,7 @@ func estimateOrderSize(
 		return nil, false, errors.New("no thresholds found", "role", eoa.RoleFlowgen)
 	}
 
-	orderSize := new(big.Int)
-	orderSize.Sub(balance, thresholds.MinBalance())
+	orderSize := bi.Sub(balance, thresholds.MinBalance())
 
 	// if order size is too small, do nothing
 	if bi.LT(orderSize, conf.minOrderSize) {
@@ -159,6 +163,8 @@ func estimateOrderSize(
 	if bi.GT(orderSize, conf.maxOrderSize) {
 		orderSize = conf.maxOrderSize
 	}
+
+	log.Debug(ctx, "Flowgen: order size estimated", "balance", balance, "min_threshold", thresholds.MinBalance(), "order", orderSize)
 
 	return orderSize, true, nil
 }

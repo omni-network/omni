@@ -16,6 +16,7 @@ import (
 	"github.com/omni-network/omni/monitor/flowgen/types"
 	"github.com/omni-network/omni/monitor/flowgen/util"
 	solver "github.com/omni-network/omni/solver/app"
+	stokens "github.com/omni-network/omni/solver/tokens"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -50,12 +51,12 @@ func newJob(
 
 	token := tokens.WSTETH
 
-	srcChainTkn, ok := solver.AllTokens().FindBySymbol(conf.srcChain, token.Symbol)
+	srcChainTkn, ok := stokens.BySymbol(conf.srcChain, token.Symbol)
 	if !ok {
 		return types.Job{}, false, errors.Wrap(err, "src token not found")
 	}
 
-	dstChainTkn, ok := solver.AllTokens().FindBySymbol(conf.dstChain, token.Symbol)
+	dstChainTkn, ok := stokens.BySymbol(conf.dstChain, token.Symbol)
 	if !ok {
 		return types.Job{}, false, errors.Wrap(err, "dst token not found")
 	}
@@ -90,7 +91,7 @@ func openOrder(
 	backends ethbackend.Backends,
 	networkID netconf.ID,
 	owner common.Address,
-	srcToken, dstToken solver.Token,
+	srcToken, dstToken stokens.Token,
 	conf flowConfig,
 ) (solvernet.OrderID, bool, error) {
 	expense := solver.TokenAmt{Token: dstToken, Amount: conf.orderSize}

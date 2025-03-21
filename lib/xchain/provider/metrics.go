@@ -32,6 +32,6 @@ var (
 		Subsystem: "xprovider",
 		Name:      "callback_latency_seconds",
 		Help:      "Callback latency in seconds per source chain version and type. Alert if growing.",
-		Buckets:   []float64{.001, .002, .005, .01, .025, .05, .1, .25, .5, 1, 2.5},
+		Buckets:   []float64{.001, .002, .005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10, 25, 50, 100},
 	}, []string{"chain_version", "type"})
 )

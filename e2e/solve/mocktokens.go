@@ -28,7 +28,7 @@ type MockToken struct {
 
 var mocks = []MockToken{
 	// staging mock wstETH
-	{Token: tokens.WSTETH, ChainID: evmchain.IDBaseSepolia, NetworkID: netconf.Staging},
+	{Token: tokens.WSTETH, ChainID: evmchain.IDBaseSepolia, NetworkID: netconf.Staging}, // Note this is also used on omega.
 
 	// devnet L1 mock wstETH
 	{Token: tokens.WSTETH, ChainID: evmchain.IDMockL1, NetworkID: netconf.Devnet},

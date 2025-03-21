@@ -1,20 +1,16 @@
-package app
+package tokens
 
 import (
-	"context"
 	"math/big"
 
-	"github.com/omni-network/omni/contracts/bindings"
 	e2e "github.com/omni-network/omni/e2e/solve"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	tokenslib "github.com/omni-network/omni/lib/tokens"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -29,6 +25,7 @@ const (
 	ClassMainnet ChainClass = "mainnet"
 )
 
+// Token represents a token (erc20 or native) on a specific chain.
 type Token struct {
 	tokenslib.Token
 	ChainID    uint64
@@ -38,15 +35,6 @@ type Token struct {
 	MinSpend   *big.Int
 	IsMock     bool
 }
-
-// TokenAmt represents a token and an amount.
-// It differs from types.AddrAmt in that it contains fully resolved token type, not just the token address.
-type TokenAmt struct {
-	Token  Token
-	Amount *big.Int
-}
-
-type Tokens []Token
 
 func (t Token) IsNative() bool {
 	return t.Address == NativeAddr
@@ -108,8 +96,7 @@ var (
 	}
 )
 
-// TODO(christian): move to a separate package.
-var tokens = append(Tokens{
+var tokens = append([]Token{
 	// Native ETH (mainnet)
 	nativeETH(evmchain.IDEthereum),
 	nativeETH(evmchain.IDArbitrumOne),
@@ -143,6 +130,7 @@ var tokens = append(Tokens{
 	wstETH(evmchain.IDEthereum, common.HexToAddress("0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0")),
 	wstETH(evmchain.IDHolesky, common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")),
 	wstETH(evmchain.IDSepolia, common.HexToAddress("0xB82381A3fBD3FaFA77B3a7bE693342618240067b")),
+	// Mocks contain wstETH on IDBaseSepolia for omega and staging
 
 	// stETH
 	stETH(evmchain.IDHolesky, common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")),
@@ -151,12 +139,28 @@ var tokens = append(Tokens{
 	stETH(evmchain.IDMockL1, common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")), // holesky stETH
 }, mocks()...)
 
-func AllTokens() Tokens {
+func All() []Token {
 	return tokens
 }
 
-func (ts Tokens) FindBySymbol(chainID uint64, symbol string) (Token, bool) {
-	for _, t := range ts {
+// UniqueSymbols returns the unique set of tokenslib.Tokens in the tokens list.
+func UniqueSymbols() []tokenslib.Token {
+	uniq := make(map[tokenslib.Token]bool)
+
+	for _, t := range tokens {
+		uniq[t.Token] = true
+	}
+
+	var resp []tokenslib.Token
+	for t := range uniq {
+		resp = append(resp, t)
+	}
+
+	return resp
+}
+
+func BySymbol(chainID uint64, symbol string) (Token, bool) {
+	for _, t := range tokens {
 		if t.ChainID == chainID && t.Symbol == symbol {
 			return t, true
 		}
@@ -165,8 +169,13 @@ func (ts Tokens) FindBySymbol(chainID uint64, symbol string) (Token, bool) {
 	return Token{}, false
 }
 
-func (ts Tokens) Find(chainID uint64, addr common.Address) (Token, bool) {
-	for _, t := range ts {
+// Native is an alias for ByAddress with the native token address.
+func Native(chainID uint64) (Token, bool) {
+	return ByAddress(chainID, NativeAddr)
+}
+
+func ByAddress(chainID uint64, addr common.Address) (Token, bool) {
+	for _, t := range tokens {
 		if t.ChainID == chainID && t.Address == addr {
 			return t, true
 		}
@@ -175,10 +184,10 @@ func (ts Tokens) Find(chainID uint64, addr common.Address) (Token, bool) {
 	return Token{}, false
 }
 
-func (ts Tokens) ForChain(chainID uint64) Tokens {
-	var tkns Tokens
+func ByChain(chainID uint64) []Token {
+	var tkns []Token
 
-	for _, t := range ts {
+	for _, t := range tokens {
 		if t.ChainID == chainID {
 			tkns = append(tkns, t)
 		}
@@ -291,25 +300,6 @@ func mocks() []Token {
 	)
 
 	return tkns
-}
-
-func balanceOf(
-	ctx context.Context,
-	tkn Token,
-	backend *ethbackend.Backend,
-	addr common.Address,
-) (*big.Int, error) {
-	switch {
-	case tkn.IsNative():
-		return backend.BalanceAt(ctx, addr, nil)
-	default:
-		contract, err := bindings.NewIERC20(tkn.Address, backend)
-		if err != nil {
-			return nil, err
-		}
-
-		return contract.BalanceOf(&bind.CallOpts{Context: ctx}, addr)
-	}
 }
 
 func mustChainClass(chainID uint64) ChainClass {

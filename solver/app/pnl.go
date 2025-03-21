@@ -11,11 +11,13 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/pnl"
 	tokenslib "github.com/omni-network/omni/lib/tokens"
+	stokens "github.com/omni-network/omni/solver/tokens"
 
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type orderPnLFunc func(ctx context.Context, order Order, rec *ethclient.Receipt) error
+type filledPnLFunc func(ctx context.Context, order Order, rec *ethclient.Receipt) error
+type updatePnLFunc func(ctx context.Context, order Order, rec *ethclient.Receipt, update string) error
 type simpleGasPnLFunc func(ctx context.Context, chainID uint64, rec *ethclient.Receipt, subCat string) error
 
 type targetFunc func(PendingData) string
@@ -32,7 +34,7 @@ func newFilledPnlFunc(
 	namer func(uint64) string,
 	outbox common.Address,
 	destFilledAge destFilledAge,
-) orderPnLFunc {
+) filledPnLFunc {
 	return func(ctx context.Context, order Order, rec *ethclient.Receipt) error {
 		pendingData, err := order.PendingData()
 		if err != nil {
@@ -95,11 +97,11 @@ func newFilledPnlFunc(
 	}
 }
 
-// newOrderGasPnLFunc returns a orderPnLFunc that logs the gas expense PnL for updating order status, except for filled orders.
-func newOrderGasPnLFunc(pricer tokenslib.Pricer, namer func(uint64) string) orderPnLFunc {
-	return func(ctx context.Context, order Order, rec *ethclient.Receipt) error {
+// newUpdatePnLFunc returns a updatePnLFunc that logs the gas expense PnL for updating order status, except for filled orders.
+func newUpdatePnLFunc(pricer tokenslib.Pricer, namer func(uint64) string) updatePnLFunc {
+	return func(ctx context.Context, order Order, rec *ethclient.Receipt, update string) error {
 		srcChainName := namer(order.SourceChainID)
-		return gasPnL(ctx, pricer, order.SourceChainID, srcChainName, rec, order.Status.String(), order.ID.String())
+		return gasPnL(ctx, pricer, order.SourceChainID, srcChainName, rec, update, order.ID.String())
 	}
 }
 
@@ -130,7 +132,7 @@ func gasPnL(
 		amount = bi.Add(amount, fee)
 	}
 
-	nativeToken, ok := tokens.Find(chainID, NativeAddr)
+	nativeToken, ok := stokens.Native(chainID)
 	if !ok {
 		return errors.New("native token not found [BUG]")
 	}
