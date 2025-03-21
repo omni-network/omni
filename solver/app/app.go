@@ -24,6 +24,7 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 	"github.com/omni-network/omni/solver/targets"
+	stokens "github.com/omni-network/omni/solver/tokens"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -282,13 +283,13 @@ func startEventStreams(
 		// use last call target for target name
 		call := fill.Calls[len(fill.Calls)-1]
 
-		if tkn, ok := tokens.Find(pendingData.DestinationChainID, call.Target); ok {
+		if tkn, ok := stokens.ByAddress(pendingData.DestinationChainID, call.Target); ok {
 			return "ERC20:" + tkn.Symbol
 		}
 
 		// Native bridging has zero call data and positive value
 		isNative := call.Selector == [4]byte{} && len(call.Params) == 0 && call.Value.Sign() > 0
-		if nativeTkn, ok := tokens.Find(pendingData.DestinationChainID, NativeAddr); ok && isNative {
+		if nativeTkn, ok := stokens.Native(pendingData.DestinationChainID); ok && isNative {
 			return "Native:" + nativeTkn.Symbol
 		}
 
@@ -302,7 +303,7 @@ func startEventStreams(
 	callAllower := newCallAllower(network.ID, addrs.SolverNetMiddleman)
 
 	ageCache := newAgeCache(backends)
-	go monitorAgeCacheForever(ctx, ageCache, network.ChainName)
+	go monitorAgeCacheForever(ctx, network, ageCache)
 
 	filledPnL := newFilledPnlFunc(pricer, targetName, network.ChainName, addrs.SolverNetOutbox, ageCache.InstrumentDestFilled)
 	orderGasPnL := newOrderGasPnLFunc(pricer, network.ChainName)

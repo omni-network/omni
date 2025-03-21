@@ -7,6 +7,7 @@ import (
 
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
+	stokens "github.com/omni-network/omni/solver/tokens"
 	"github.com/omni-network/omni/solver/types"
 )
 
@@ -32,12 +33,12 @@ func quoter(_ context.Context, req types.QuoteRequest) (types.QuoteResponse, err
 		return returnErr(http.StatusBadRequest, "deposit and expense amount cannot be both zero or both non-zero")
 	}
 
-	depositTkn, ok := tokens.Find(req.SourceChainID, req.Deposit.Token)
+	depositTkn, ok := stokens.ByAddress(req.SourceChainID, req.Deposit.Token)
 	if !ok {
 		return returnErr(http.StatusNotFound, "unsupported deposit token")
 	}
 
-	expenseTkn, ok := tokens.Find(req.DestinationChainID, req.Expense.Token)
+	expenseTkn, ok := stokens.ByAddress(req.DestinationChainID, req.Expense.Token)
 	if !ok {
 		return returnErr(http.StatusNotFound, "unsupported expense token")
 	}
@@ -73,7 +74,7 @@ func quoter(_ context.Context, req types.QuoteRequest) (types.QuoteResponse, err
 }
 
 // getQuote returns payment in `depositTkns` required to pay for `expenses`.
-func getQuote(depositTkns []Token, expenses []TokenAmt) ([]TokenAmt, error) {
+func getQuote(depositTkns []stokens.Token, expenses []TokenAmt) ([]TokenAmt, error) {
 	if len(depositTkns) != 1 {
 		return nil, newRejection(types.RejectInvalidDeposit, errors.New("only single deposit token supported"))
 	}
@@ -94,7 +95,7 @@ func getQuote(depositTkns []Token, expenses []TokenAmt) ([]TokenAmt, error) {
 }
 
 // QuoteDeposit returns the source chain deposit required to cover `expense`.
-func QuoteDeposit(depositTkn Token, expense TokenAmt) (TokenAmt, error) {
+func QuoteDeposit(depositTkn stokens.Token, expense TokenAmt) (TokenAmt, error) {
 	if expense.Token.Symbol != depositTkn.Symbol {
 		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, errors.New("deposit token must match expense token"))
 	}
@@ -111,7 +112,7 @@ func QuoteDeposit(depositTkn Token, expense TokenAmt) (TokenAmt, error) {
 }
 
 // QuoteExpense returns the destination chain expense allowed for `deposit`.
-func quoteExpense(expenseTkn Token, deposit TokenAmt) (TokenAmt, error) {
+func quoteExpense(expenseTkn stokens.Token, deposit TokenAmt) (TokenAmt, error) {
 	if deposit.Token.Symbol != expenseTkn.Symbol {
 		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, errors.New("deposit token must match expense token"))
 	}
@@ -128,7 +129,7 @@ func quoteExpense(expenseTkn Token, deposit TokenAmt) (TokenAmt, error) {
 }
 
 // feeBipsFor returns the fee in bips for a given token.
-func feeBipsFor(tkn Token) int64 {
+func feeBipsFor(tkn stokens.Token) int64 {
 	// if OMNI, charge no fee
 	if tkn.IsOMNI() {
 		return 0

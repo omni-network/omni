@@ -1,6 +1,8 @@
 package app
 
 import (
+	"github.com/omni-network/omni/lib/promutil"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -49,7 +51,7 @@ var (
 		Buckets:   prometheus.ExponentialBucketsRange(1, 60*60, 8),
 	}, []string{"chain", "status"})
 
-	oldestOrder = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	oldestOrder = promutil.NewResetGaugeVec(prometheus.GaugeOpts{
 		Namespace: "solver",
 		Subsystem: "processor",
 		Name:      "agecache_oldest_order_seconds",

@@ -15,6 +15,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/umath"
+	stokens "github.com/omni-network/omni/solver/tokens"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -49,7 +50,7 @@ func approveOutboxes(ctx context.Context, network netconf.Network, backends ethb
 func approveOutbox(ctx context.Context, chain netconf.Chain, backend *ethbackend.Backend, solverAddr, outboxAddr common.Address) error {
 	var eg errgroup.Group
 
-	for _, token := range tokens.ForChain(chain.ID) {
+	for _, token := range stokens.ByChain(chain.ID) {
 		if token.IsNative() {
 			continue
 		}
@@ -96,7 +97,7 @@ func approveOutbox(ctx context.Context, chain netconf.Chain, backend *ethbackend
 }
 
 // approveToken gives `outboxAddr` max allowance for `token`.
-func approveToken(ctx context.Context, backend *ethbackend.Backend, token Token, solverAddr, outboxAddr common.Address) error {
+func approveToken(ctx context.Context, backend *ethbackend.Backend, token stokens.Token, solverAddr, outboxAddr common.Address) error {
 	erc20, err := bindings.NewIERC20(token.Address, backend)
 	if err != nil {
 		return errors.Wrap(err, "new token")
