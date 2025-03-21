@@ -41,6 +41,7 @@
     "wagmi": ">=2.0.0"
   },
   "devDependencies": {
+    "@omni-network/test-utils": "workspace:^",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.2.0",
     "@types/react": "^19.0.8",
