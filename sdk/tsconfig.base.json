@@ -1,0 +1,29 @@
+{
+	"exclude": ["node_modules"],
+	"compilerOptions": {
+		// incremental builds - NOTE: Enabling incremental builds speeds up `tsc`
+		"incremental": true,
+
+		// type checking
+		"strict": true,
+		"noFallthroughCasesInSwitch": true, // not enabled by default in strict
+		"noImplicitReturns": true, // not enabled by default in strict
+		"noImplicitOverride": true, // not enabled by default in strict
+		"noUnusedLocals": true, // not enabled by default in strict
+		"noUnusedParameters": true, // not enabled by default in strict
+
+		// JS support
+		"allowJs": false,
+		"checkJs": false,
+
+		// skip type checking for node_modules
+		"skipLibCheck": true,
+
+		// language / env
+		"jsx": "react-jsx",
+		"moduleResolution": "nodenext",
+		"module": "nodenext",
+		"target": "ES2021", // setting to es2021 enables native support for node v16+, we may want to evaluate this
+		"lib": ["ES2022", "DOM"]
+	}
+}

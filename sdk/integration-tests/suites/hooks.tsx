@@ -1,7 +1,6 @@
+import { useQuote } from '@omni-network/react'
 import { renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
-
-import { useQuote } from '../src/index.js'
 
 import {
   type AnyOrder,
@@ -15,7 +14,7 @@ import {
   ZERO_ADDRESS,
   executeTestOrder,
   testAccount,
-} from './test-utils.js'
+} from '../test-utils.js'
 
 describe('useQuote()', () => {
   test('parameters: gets a quote in expense mode', async () => {
