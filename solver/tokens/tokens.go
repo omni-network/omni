@@ -130,6 +130,7 @@ var tokens = append([]Token{
 	wstETH(evmchain.IDEthereum, common.HexToAddress("0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0")),
 	wstETH(evmchain.IDHolesky, common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")),
 	wstETH(evmchain.IDSepolia, common.HexToAddress("0xB82381A3fBD3FaFA77B3a7bE693342618240067b")),
+	// Mocks contain wstETH on IDBaseSepolia for omega and staging
 
 	// stETH
 	stETH(evmchain.IDHolesky, common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")),
@@ -140,6 +141,22 @@ var tokens = append([]Token{
 
 func All() []Token {
 	return tokens
+}
+
+// UniqueSymbols returns the unique set of tokenslib.Tokens in the tokens list.
+func UniqueSymbols() []tokenslib.Token {
+	uniq := make(map[tokenslib.Token]bool)
+
+	for _, t := range tokens {
+		uniq[t.Token] = true
+	}
+
+	var resp []tokenslib.Token
+	for t := range uniq {
+		resp = append(resp, t)
+	}
+
+	return resp
 }
 
 func BySymbol(chainID uint64, symbol string) (Token, bool) {

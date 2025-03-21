@@ -57,11 +57,6 @@ var (
 	}
 )
 
-// SolverNetTokens returns the tokens that have solvernet thresholds.
-func SolverNetTokens() []tokens.Token {
-	return []tokens.Token{tokens.WSTETH}
-}
-
 // SolverNetRoles returns the roles that have solvernet thresholds.
 func SolverNetRoles() []Role {
 	return []Role{RoleSolver, RoleFlowgen}
