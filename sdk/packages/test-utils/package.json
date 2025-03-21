@@ -1,7 +1,7 @@
 {
   "name": "@omni-network/test-utils",
   "private": true,
-  "description": "Sahred test utilities for SDK packages",
+  "description": "Shared test utilities for SDK packages",
   "version": "0.0.0",
   "type": "module",
   "packageManager": "pnpm@9.1.0",
