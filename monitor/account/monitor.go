@@ -13,8 +13,10 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
+	solverapp "github.com/omni-network/omni/solver/app"
 	stokens "github.com/omni-network/omni/solver/tokens"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
 )
 
@@ -40,7 +42,7 @@ func StartMonitoring(ctx context.Context, network netconf.Network, rpcClients ma
 
 			if isSolverNetRole(account.Role) {
 				solverCtx := log.WithCtx(ctx, "chain", chain.Name, "role", account.Role)
-				go monitorSolverNetRoleForever(solverCtx, network.ID, account, backend)
+				go monitorSolverNetRoleForever(solverCtx, network.ID, backend, account.Role, account.Address)
 			}
 		}
 
@@ -50,6 +52,19 @@ func StartMonitoring(ctx context.Context, network netconf.Network, rpcClients ma
 			}
 
 			go monitorSponsorForever(ctx, sponsor, chain.Name, rpcClients[chain.ID])
+		}
+
+		// Also monitor solvernet claimant balances
+		// These claimants should maybe be added as proper roles and added to isSolverNetRole
+		for _, token := range stokens.UniqueSymbols() {
+			claimantAddress, ok := solverapp.Claimant(network.ID, token)
+			if !ok {
+				continue
+			}
+
+			claimantRole := eoa.Role("claimant")
+			solverCtx := log.WithCtx(ctx, "chain", chain.Name, "role", claimantRole)
+			go monitorSolverNetRoleForever(solverCtx, network.ID, backend, claimantRole, claimantAddress)
 		}
 	}
 
@@ -138,22 +153,10 @@ func monitorAccountOnce(
 func monitorSolverNetRoleForever(
 	ctx context.Context,
 	network netconf.ID,
-	account eoa.Account,
 	backend *ethbackend.Backend,
+	role eoa.Role,
+	address common.Address,
 ) {
-	// Not all network+chains+solver_roles need to be monitored
-	var found bool
-	for _, token := range eoa.SolverNetTokens() {
-		_, chainID := backend.Chain()
-		_, ok := eoa.GetSolverNetThreshold(account.Role, network, chainID, token)
-		if ok {
-			found = true
-		}
-	}
-	if !found {
-		return
-	}
-
 	log.Info(ctx, "Monitoring solvernet role")
 
 	ticker := time.NewTicker(time.Second * 30)
@@ -164,9 +167,9 @@ func monitorSolverNetRoleForever(
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			for _, token := range eoa.SolverNetTokens() {
+			for _, token := range stokens.UniqueSymbols() {
 				loopCtx := log.WithCtx(ctx, "token", token)
-				err := monitorSolverNetRoleTokenOnce(loopCtx, network, account, backend, token)
+				err := monitorSolverNetRoleTokenOnce(loopCtx, network, backend, token, role, address)
 				if ctx.Err() != nil {
 					return
 				} else if err != nil {
@@ -181,22 +184,19 @@ func monitorSolverNetRoleForever(
 func monitorSolverNetRoleTokenOnce(
 	ctx context.Context,
 	network netconf.ID,
-	account eoa.Account,
 	backend *ethbackend.Backend,
 	token tokens.Token,
+	role eoa.Role,
+	address common.Address,
 ) error {
 	chainName, chainID := backend.Chain()
 	solverToken, ok := stokens.BySymbol(chainID, token.Symbol)
 	if !ok {
-		return errors.New("token not found")
-	}
-
-	thresh, ok := eoa.GetSolverNetThreshold(account.Role, network, chainID, token)
-	if !ok {
+		// Not all tokens are present on all chains.
 		return nil
 	}
 
-	balance, err := stokens.BalanceOf(ctx, backend, solverToken, account.Address)
+	balance, err := stokens.BalanceOf(ctx, backend, solverToken, address)
 	if err != nil {
 		return err
 	}
@@ -205,14 +205,20 @@ func monitorSolverNetRoleTokenOnce(
 	bf, _ := balance.Float64()
 	balanceEth := bf / params.Ether
 
-	tokenBalance.WithLabelValues(chainName, string(account.Role), token.Symbol).Set(balanceEth)
+	tokenBalance.WithLabelValues(chainName, string(role), token.Symbol).Set(balanceEth)
+
+	thresh, ok := eoa.GetSolverNetThreshold(role, network, chainID, token)
+	if !ok {
+		// Thresholds only exist for solver and flowgen role on dest fill chains
+		return nil
+	}
 
 	var isLow float64
 	if balance.Cmp(thresh.MinBalance()) <= 0 {
 		isLow = 1
 	}
 
-	tokenBalanceLow.WithLabelValues(chainName, string(account.Role), token.Symbol).Set(isLow)
+	tokenBalanceLow.WithLabelValues(chainName, string(role), token.Symbol).Set(isLow)
 
 	return nil
 }

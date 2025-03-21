@@ -17,6 +17,13 @@ var claimants = map[libtokens.Token]map[netconf.ID]common.Address{
 	},
 }
 
+// Claimant returns the address that should claim the order/token, or false if it doesn't exist.
+func Claimant(network netconf.ID, token libtokens.Token) (common.Address, bool) {
+	c, ok := claimants[token][network]
+
+	return c, ok
+}
+
 func getClaimant(network netconf.ID, order Order) (common.Address, bool, error) {
 	minReceived, err := parseMinReceived(order)
 	if err != nil {
