@@ -7,6 +7,7 @@ import (
 
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
+	ltokens "github.com/omni-network/omni/lib/tokens"
 	stokens "github.com/omni-network/omni/solver/tokens"
 	"github.com/omni-network/omni/solver/types"
 )
@@ -96,7 +97,7 @@ func getQuote(depositTkns []stokens.Token, expenses []TokenAmt) ([]TokenAmt, err
 
 // QuoteDeposit returns the source chain deposit required to cover `expense`.
 func QuoteDeposit(depositTkn stokens.Token, expense TokenAmt) (TokenAmt, error) {
-	if expense.Token.Symbol != depositTkn.Symbol {
+	if !areEqualBySymbol(depositTkn, expense.Token) {
 		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, errors.New("deposit token must match expense token"))
 	}
 
@@ -113,7 +114,7 @@ func QuoteDeposit(depositTkn stokens.Token, expense TokenAmt) (TokenAmt, error) 
 
 // QuoteExpense returns the destination chain expense allowed for `deposit`.
 func quoteExpense(expenseTkn stokens.Token, deposit TokenAmt) (TokenAmt, error) {
-	if deposit.Token.Symbol != expenseTkn.Symbol {
+	if !areEqualBySymbol(deposit.Token, expenseTkn) {
 		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, errors.New("deposit token must match expense token"))
 	}
 
@@ -126,6 +127,23 @@ func quoteExpense(expenseTkn stokens.Token, deposit TokenAmt) (TokenAmt, error) 
 		Token:  expenseTkn,
 		Amount: expenseFor(deposit.Amount, feeBipsFor(expenseTkn)),
 	}, nil
+}
+
+func areEqualBySymbol(a, b stokens.Token) bool {
+	if a.Symbol == b.Symbol {
+		return true
+	}
+
+	equivalents := map[string]string{}
+	makeEq := func(a, b string) {
+		equivalents[a] = b
+		equivalents[b] = a
+	}
+
+	// consider stETH and ETH as equivalent
+	makeEq(ltokens.STETH.Symbol, ltokens.ETH.Symbol)
+
+	return equivalents[a.Symbol] == b.Symbol
 }
 
 // feeBipsFor returns the fee in bips for a given token.
