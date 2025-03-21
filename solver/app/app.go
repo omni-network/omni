@@ -306,7 +306,7 @@ func startEventStreams(
 	go monitorAgeCacheForever(ctx, ageCache, network.ChainName)
 
 	filledPnL := newFilledPnlFunc(pricer, targetName, network.ChainName, addrs.SolverNetOutbox, ageCache.InstrumentDestFilled)
-	orderGasPnL := newOrderGasPnLFunc(pricer, network.ChainName)
+	updatePnL := newUpdatePnLFunc(pricer, network.ChainName)
 
 	for _, chainID := range inboxChains {
 		// Ensure chain version processors don't process same height concurrently.
@@ -321,9 +321,9 @@ func startEventStreams(
 				GetOrder:      newOrderGetter(inboxContracts),
 				ShouldReject:  newShouldRejector(backends, callAllower, solverAddr, addrs.SolverNetOutbox),
 				DidFill:       newDidFiller(outboxContracts),
-				Reject:        newRejector(inboxContracts, backends, solverAddr, orderGasPnL),
+				Reject:        newRejector(inboxContracts, backends, solverAddr, updatePnL),
 				Fill:          newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, filledPnL),
-				Claim:         newClaimer(network.ID, inboxContracts, backends, solverAddr, orderGasPnL),
+				Claim:         newClaimer(network.ID, inboxContracts, backends, solverAddr, updatePnL),
 				SetCursor:     cursorSetter,
 				ChainName:     network.ChainName,
 				ProcessorName: network.ChainVersionName(chainVer),
