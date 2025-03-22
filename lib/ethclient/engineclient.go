@@ -46,7 +46,7 @@ type EngineClient interface {
 
 // engineClient implements EngineClient using JSON-RPC.
 type engineClient struct {
-	Wrapper
+	Client
 }
 
 // NewAuthClient returns a new authenticated JSON-RPc engineClient.
@@ -64,7 +64,7 @@ func NewAuthClient(ctx context.Context, urlAddr string, jwtSecret []byte) (Engin
 	}
 
 	return engineClient{
-		Wrapper: NewClient(rpcClient, "engine", urlAddr),
+		Client: NewClient(rpcClient, "engine", urlAddr),
 	}, nil
 }
 
@@ -72,7 +72,7 @@ func (c engineClient) NewPayloadV3(ctx context.Context, params engine.Executable
 	beaconRoot *common.Hash,
 ) (engine.PayloadStatusV1, error) {
 	const endpoint = "new_payload_v3"
-	defer latency(c.chain, endpoint)()
+	defer latency(c.Name(), endpoint)()
 
 	// isStatusOk returns true if the response status is valid.
 	isStatusOk := func(status engine.PayloadStatusV1) bool {
@@ -86,7 +86,7 @@ func (c engineClient) NewPayloadV3(ctx context.Context, params engine.Executable
 
 	var resp engine.PayloadStatusV1
 	var rpcErr rpc.Error
-	err := c.cl.Client().CallContext(ctx, &resp, newPayloadV3, params, versionedHashes, beaconRoot)
+	err := c.Client.CallContext(ctx, &resp, newPayloadV3, params, versionedHashes, beaconRoot)
 	if isStatusOk(resp) {
 		// Swallow errors when geth returns errors along with proper responses (but at least log it).
 		if err != nil {
@@ -109,11 +109,11 @@ func (c engineClient) NewPayloadV3(ctx context.Context, params engine.Executable
 			ValidationError: &valErr,
 		}, nil
 	} else if err != nil {
-		incError(c.chain, endpoint)
+		incError(c.Name(), endpoint)
 		return engine.PayloadStatusV1{}, errors.Wrap(err, "rpc new payload")
 	} /* else err==nil && status!=ok */
 
-	incError(c.chain, endpoint)
+	incError(c.Name(), endpoint)
 
 	return engine.PayloadStatusV1{}, errors.New("nil error and unknown status", "status", resp.Status)
 }
@@ -122,7 +122,7 @@ func (c engineClient) ForkchoiceUpdatedV3(ctx context.Context, update engine.For
 	payloadAttributes *engine.PayloadAttributes,
 ) (engine.ForkChoiceResponse, error) {
 	const endpoint = "forkchoice_updated_v3"
-	defer latency(c.chain, endpoint)()
+	defer latency(c.Name(), endpoint)()
 
 	// isStatusOk returns true if the response status is valid.
 	isStatusOk := func(resp engine.ForkChoiceResponse) bool {
@@ -135,7 +135,7 @@ func (c engineClient) ForkchoiceUpdatedV3(ctx context.Context, update engine.For
 	}
 
 	var resp engine.ForkChoiceResponse
-	err := c.cl.Client().CallContext(ctx, &resp, forkchoiceUpdatedV3, update, payloadAttributes)
+	err := c.Client.CallContext(ctx, &resp, forkchoiceUpdatedV3, update, payloadAttributes)
 	if isStatusOk(resp) {
 		// Swallow errors when geth returns errors along with proper responses (but at least log it).
 		if err != nil {
@@ -144,11 +144,11 @@ func (c engineClient) ForkchoiceUpdatedV3(ctx context.Context, update engine.For
 
 		return resp, nil
 	} else if err != nil {
-		incError(c.chain, endpoint)
+		incError(c.Name(), endpoint)
 		return engine.ForkChoiceResponse{}, errors.Wrap(err, "rpc forkchoice updated v3")
 	} /* else err==nil && status!=ok */
 
-	incError(c.chain, endpoint)
+	incError(c.Name(), endpoint)
 
 	return engine.ForkChoiceResponse{}, errors.New("nil error and unknown status", "status", resp.PayloadStatus.Status)
 }
@@ -157,12 +157,12 @@ func (c engineClient) GetPayloadV3(ctx context.Context, payloadID engine.Payload
 	*engine.ExecutionPayloadEnvelope, error,
 ) {
 	const endpoint = "get_payload_v3"
-	defer latency(c.chain, endpoint)()
+	defer latency(c.Name(), endpoint)()
 
 	var resp engine.ExecutionPayloadEnvelope
-	err := c.cl.Client().CallContext(ctx, &resp, getPayloadV3, payloadID)
+	err := c.Client.CallContext(ctx, &resp, getPayloadV3, payloadID)
 	if err != nil {
-		incError(c.chain, endpoint)
+		incError(c.Name(), endpoint)
 		return nil, errors.Wrap(err, "rpc get payload v3")
 	}
 

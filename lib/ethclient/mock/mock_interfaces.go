@@ -285,6 +285,20 @@ func (mr *MockClientMockRecorder) HeaderByType(ctx, typ any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HeaderByType", reflect.TypeOf((*MockClient)(nil).HeaderByType), ctx, typ)
 }
 
+// Name mocks base method.
+func (m *MockClient) Name() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Name")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// Name indicates an expected call of Name.
+func (mr *MockClientMockRecorder) Name() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Name", reflect.TypeOf((*MockClient)(nil).Name))
+}
+
 // NonceAt mocks base method.
 func (m *MockClient) NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error) {
 	m.ctrl.T.Helper()

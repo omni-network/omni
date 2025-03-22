@@ -61,6 +61,13 @@ func (c ConfLevel) Label() string {
 	return strings.ToUpper(c.String()[:1])
 }
 
+// MinX returns X for ConfMinX conf levels, otherwise zero.
+func (c ConfLevel) MinX() uint64 {
+	delay, _ := strconv.ParseUint(c.Label(), 10, 64)
+
+	return delay
+}
+
 // ConfLevel values MUST never change as they are persisted on-chain.
 const (
 	ConfUnknown   ConfLevel = 0 // unknown
