@@ -55,6 +55,15 @@ importers:
         specifier: ^3.0.7
         version: 3.0.9(@types/debug@4.1.12)(@types/node@22.13.10)(happy-dom@17.4.4)
 
+  packages/core:
+    dependencies:
+      up-fetch:
+        specifier: ^2.0.0
+        version: 2.0.0
+      valibot:
+        specifier: ^1.0.0
+        version: 1.0.0(typescript@5.8.2)
+
   packages/react:
     dependencies:
       '@tanstack/react-query':
@@ -1862,6 +1871,10 @@ packages:
       uploadthing:
         optional: true
 
+  up-fetch@2.0.0:
+    resolution: {integrity: sha512-T+6HO/kR+pKJXUq12tAkzefKqPT+3M7wWmFqdPsYCDQpfOCEmR6wdb5VnemN0hlxizhQQm06QcBvH4HZpTKVDg==}
+    engines: {node: '>=18'}
+
   use-sync-external-store@1.2.0:
     resolution: {integrity: sha512-eEgnFxGQ1Ife9bzYs6VLi8/4X6CObHMw9Qr9tPY43iKwsPw8xE8+EFsf/2cFZ5S3esXgpWgtSCtLNS41F+sKPA==}
     peerDependencies:
@@ -1889,6 +1902,14 @@ packages:
   uuid@9.0.1:
     resolution: {integrity: sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==}
     hasBin: true
+
+  valibot@1.0.0:
+    resolution: {integrity: sha512-1Hc0ihzWxBar6NGeZv7fPLY0QuxFMyxwYR2sF1Blu7Wq7EnremwY2W02tit2ij2VJT8HcSkHAQqmFfl77f73Yw==}
+    peerDependencies:
+      typescript: '>=5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
 
   valtio@1.11.2:
     resolution: {integrity: sha512-1XfIxnUXzyswPAPXo1P3Pdx2mq/pIqZICkWN60Hby0d9Iqb+MEIpqgYVlbflvHdrp2YR/q3jyKWRPJJ100yxaw==}
@@ -4212,6 +4233,8 @@ snapshots:
     optionalDependencies:
       idb-keyval: 6.2.1
 
+  up-fetch@2.0.0: {}
+
   use-sync-external-store@1.2.0(react@19.0.0):
     dependencies:
       react: 19.0.0
@@ -4237,6 +4260,10 @@ snapshots:
   uuid@8.3.2: {}
 
   uuid@9.0.1: {}
+
+  valibot@1.0.0(typescript@5.8.2):
+    optionalDependencies:
+      typescript: 5.8.2
 
   valtio@1.11.2(@types/react@19.0.12)(react@19.0.0):
     dependencies:
