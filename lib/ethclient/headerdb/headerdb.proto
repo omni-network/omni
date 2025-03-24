@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package lib.ethclient.headerdb;
+
+import "cosmos/orm/v1/orm.proto";
+
+option go_package = "lib/ethclient/headerdb";
+
+message Header {
+  option (cosmos.orm.v1.table) = {
+    id: 1;
+    primary_key: { fields: "id", auto_increment: true }
+    index: {id: 2, fields: "height", unique: true} // Allow querying by height.
+    index: {id: 3, fields: "hash", unique: true} // Allow querying by hash.
+  };
+
+  uint64 id           = 1; // Auto-incremented ID, insert order
+  uint64 height       = 2; // Height of the source-chain block
+  bytes  hash         = 3; // Hash of the source-chain block
+  bytes  header_json  = 4; // *types.Header JSON
+}
+
+
+
