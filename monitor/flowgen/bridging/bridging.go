@@ -152,7 +152,8 @@ func estimateOrderSize(
 		return nil, false, errors.New("no thresholds found", "role", eoa.RoleFlowgen)
 	}
 
-	orderSize := bi.Sub(balance, thresholds.MinBalance())
+	reserved := bi.Ether(0.01) // overhead that should cover solver commission and tx fees
+	orderSize := bi.Sub(balance, thresholds.MinBalance(), reserved)
 
 	// if order size is too small, do nothing
 	if bi.LT(orderSize, conf.minOrderSize) {
