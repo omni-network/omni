@@ -224,8 +224,8 @@
   "chainId": 17000,
   "coingeckoId": "lido-staked-ether",
   "isMock": false,
-  "maxSpend": "nil",
-  "minSpend": "nil",
+  "maxSpend": "1.0000",
+  "minSpend": "0.0010",
   "name": "Lido Staked Ether",
   "symbol": "stETH"
  },
