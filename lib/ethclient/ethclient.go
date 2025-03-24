@@ -16,7 +16,7 @@ import (
 
 //go:generate go run genwrap/genwrap.go
 
-var _ Client = Wrapper{}
+var _ Client = wrapper{}
 
 type HeadType string
 
@@ -49,61 +49,66 @@ const (
 	HeadFinalized HeadType = "finalized"
 )
 
-// Wrapper wraps an ethclient.Client adding metrics and wrapped errors.
-type Wrapper struct {
+// wrapper wraps an ethclient.Client adding metrics and wrapped errors.
+type wrapper struct {
 	cl      *ethclient.Client
-	chain   string
+	name    string
 	address string
 }
 
-// NewClient wraps an *rpc.Client adding metrics and wrapped errors.
-func NewClient(cl *rpc.Client, chain, address string) Wrapper {
-	return Wrapper{
+// NewClient wraps an *rpc.Client adding metrics and wrapped errors and a header cache.
+func NewClient(cl *rpc.Client, name, address string) Client {
+	return newHeaderCache(wrapper{
 		cl:      ethclient.NewClient(cl),
-		chain:   chain,
+		name:    name,
 		address: address,
-	}
+	})
 }
 
-// Dial connects a client to the given URL.
+// Dial connects a client to the given URL. It returns a wrapped  client adding metrics and wrapped errors and a header cache.
 //
 // Note if the URL is http(s), it doesn't return an error if it cannot connect to the URL.
 // It will retry connecting on every call to a wrapped method. It will only return an error if the
 // url is invalid.
-func Dial(chainName string, url string) (Wrapper, error) {
+func Dial(chainName string, url string) (Client, error) {
 	cl, err := ethclient.Dial(url)
 	if err != nil {
-		return Wrapper{}, errors.Wrap(err, "dial", "chain", chainName, "url", url)
+		return wrapper{}, errors.Wrap(err, "dial", "chain", chainName, "url", url)
 	}
 
-	return Wrapper{
+	return newHeaderCache(wrapper{
 		cl:      cl,
-		chain:   chainName,
+		name:    chainName,
 		address: url,
-	}, nil
+	}), nil
 }
 
 // Close closes the underlying RPC connection.
-func (w Wrapper) Close() {
+func (w wrapper) Close() {
 	w.cl.Close()
 }
 
 // Address returns the underlying RPC address.
-func (w Wrapper) Address() string {
+func (w wrapper) Address() string {
 	return w.address
+}
+
+// Name returns the client or chain name.
+func (w wrapper) Name() string {
+	return w.name
 }
 
 // ProgressIfSyncing returns the sync progress (and true) if the node is syncing else false if node is
 // not syncing or an error.
 //
 // This wrap SyncProgress which returns nil-nil if the node is not syncing which results in panics.
-func (w Wrapper) ProgressIfSyncing(ctx context.Context) (*ethereum.SyncProgress, bool, error) {
+func (w wrapper) ProgressIfSyncing(ctx context.Context) (*ethereum.SyncProgress, bool, error) {
 	const endpoint = "sync_progress"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	resp, err := w.cl.SyncProgress(ctx)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		return nil, false, errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	} else if resp == nil {
 		return nil, false, nil
@@ -113,9 +118,9 @@ func (w Wrapper) ProgressIfSyncing(ctx context.Context) (*ethereum.SyncProgress,
 }
 
 // HeaderByType returns the block header for the given head type.
-func (w Wrapper) HeaderByType(ctx context.Context, typ HeadType) (*types.Header, error) {
+func (w wrapper) HeaderByType(ctx context.Context, typ HeadType) (*types.Header, error) {
 	const endpoint = "header_by_type"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	var bn rpc.BlockNumber
 	if err := bn.UnmarshalJSON([]byte(typ.String())); err != nil {
@@ -124,7 +129,7 @@ func (w Wrapper) HeaderByType(ctx context.Context, typ HeadType) (*types.Header,
 
 	header, err := w.cl.HeaderByNumber(ctx, bi.N(bn))
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
@@ -134,9 +139,9 @@ func (w Wrapper) HeaderByType(ctx context.Context, typ HeadType) (*types.Header,
 // SetHead sets the current head of the local chain by block number.
 // Note, this is a destructive action and may severely damage your chain.
 // Use with extreme caution.
-func (w Wrapper) SetHead(ctx context.Context, height uint64) error {
+func (w wrapper) SetHead(ctx context.Context, height uint64) error {
 	const endpoint = "set_head"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	err := w.cl.Client().CallContext(
 		ctx,
@@ -145,7 +150,7 @@ func (w Wrapper) SetHead(ctx context.Context, height uint64) error {
 		height,
 	)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		return errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
@@ -153,13 +158,13 @@ func (w Wrapper) SetHead(ctx context.Context, height uint64) error {
 }
 
 // PeerCount returns the number of p2p peers as reported by the net_peerCount method.
-func (w Wrapper) PeerCount(ctx context.Context) (uint64, error) {
+func (w wrapper) PeerCount(ctx context.Context) (uint64, error) {
 	const endpoint = "peer_count"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	resp, err := w.cl.PeerCount(ctx)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		return 0, errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
@@ -169,7 +174,7 @@ func (w Wrapper) PeerCount(ctx context.Context) (uint64, error) {
 // EtherBalanceAt returns the current balance in ether of the provided account.
 // Note this converts big.Int to float64 so IS NOT accurate.
 // Only use if accuracy is not required, i.e., for display/metrics purposes.
-func (w Wrapper) EtherBalanceAt(ctx context.Context, addr common.Address) (float64, error) {
+func (w wrapper) EtherBalanceAt(ctx context.Context, addr common.Address) (float64, error) {
 	b, err := w.BalanceAt(ctx, addr, nil)
 	if err != nil {
 		return 0, err
@@ -180,9 +185,9 @@ func (w Wrapper) EtherBalanceAt(ctx context.Context, addr common.Address) (float
 
 // TxReceipt returns the transaction receipt for the given transaction hash.
 // It includes additional fields not present in the geth ethclient, such as OP L1 fee info.
-func (w Wrapper) TxReceipt(ctx context.Context, txHash common.Hash) (*Receipt, error) {
+func (w wrapper) TxReceipt(ctx context.Context, txHash common.Hash) (*Receipt, error) {
 	const endpoint = "tx_receipt"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	ctx, span := tracer.Start(ctx, spanName(endpoint))
 	defer span.End()
@@ -196,7 +201,7 @@ func (w Wrapper) TxReceipt(ctx context.Context, txHash common.Hash) (*Receipt, e
 	}
 
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 
@@ -204,13 +209,13 @@ func (w Wrapper) TxReceipt(ctx context.Context, txHash common.Hash) (*Receipt, e
 }
 
 //nolint:revive // interface{} required by upstream.
-func (w Wrapper) CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error {
+func (w wrapper) CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error {
 	const endpoint = "raw_call"
-	defer latency(w.chain, endpoint)()
+	defer latency(w.name, endpoint)()
 
 	err := w.cl.Client().CallContext(ctx, result, method, args...)
 	if err != nil {
-		incError(w.chain, endpoint)
+		incError(w.name, endpoint)
 		err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 	}
 

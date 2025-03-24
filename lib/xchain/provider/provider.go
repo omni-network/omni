@@ -216,7 +216,7 @@ func (p *Provider) stream(
 	return stream.Stream(ctx, deps, fromHeight, cb)
 }
 
-// getEVMChain provides the configuration of the given chainID.
+// getEVMChain returns the configuration, eth client and header cache of the given EVM chainID.
 func (p *Provider) getEVMChain(chainID uint64) (netconf.Chain, ethclient.Client, error) {
 	if chainID == p.cChainID {
 		return netconf.Chain{}, nil, errors.New("consensus chain not supported")

@@ -53,21 +53,22 @@ type Client interface {
 	ProgressIfSyncing(ctx context.Context) (*ethereum.SyncProgress, bool, error)
 	CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error
 	Address() string
+	Name() string
 	Close()
 }
 
 {{range .Methods}}
 	{{.Doc}}
-	func (w Wrapper) {{.Name}}({{.Params}}) ({{.ResultTypes}}) {
+	func (w wrapper) {{.Name}}({{.Params}}) ({{.ResultTypes}}) {
 		const endpoint = "{{.Label}}"
-		{{if .Latency}}defer latency(w.chain, endpoint)() {{end}}
+		{{if .Latency}}defer latency(w.name, endpoint)() {{end}}
 
 		ctx, span := tracer.Start(ctx, spanName(endpoint))
 		defer span.End()
 
 		{{.ResultNames}} := w.cl.{{.Name}}({{.ParamNames}})
 		if err != nil {
-			incError(w.chain, endpoint)
+			incError(w.name, endpoint)
 			err = errors.Wrap(err, "json-rpc", "endpoint", endpoint)
 		}
 
