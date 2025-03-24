@@ -12,19 +12,10 @@ const (
 	flagSelfDelegation   = "self-delegation"
 	flagDelegationAmount = "amount"
 	flagNetwork          = "network"
-	flagConfig           = "config-file"
-	flagOperator         = "operator"
 	flagRPCURL           = "rpc-url"
 	flagAddress          = "address"
 	flagType             = "type"
 )
-
-func bindRegConfig(cmd *cobra.Command, cfg *RegConfig) {
-	bindAVSAddress(cmd, &cfg.AVSAddr)
-
-	cmd.Flags().StringVar(&cfg.ConfigFile, flagConfig, cfg.ConfigFile, "Path to the Eigen-Layer yaml configuration file")
-	_ = cmd.MarkFlagRequired(flagConfig)
-}
 
 func bindInitConfig(cmd *cobra.Command, cfg *InitConfig) {
 	netconf.BindFlag(cmd.Flags(), &cfg.Network)
@@ -37,20 +28,8 @@ func bindInitConfig(cmd *cobra.Command, cfg *InitConfig) {
 	cmd.Flags().StringVar(&cfg.HaloTag, "halo-tag", cfg.HaloTag, "Docker image tag for omniops/halovisor")
 }
 
-func bindAVSAddress(cmd *cobra.Command, addr *string) {
-	cmd.Flags().StringVar(addr, "avs-address", *addr, "Optional address of the Omni AVS contract")
-}
-
 func bindDeveloperForgeProjectConfig(cmd *cobra.Command, cfg *developerForgeProjectConfig) {
 	cmd.Flags().StringVar(&cfg.templateName, "template", defaultTemplate, "Name of the forge template repo to use found in the omni-network github organization")
-}
-
-func bindDevnetAVSAllowConfig(cmd *cobra.Command, cfg *devnetAllowConfig) {
-	bindRPCURL(cmd, &cfg.RPCURL)
-	bindAVSAddress(cmd, &cfg.AVSAddr)
-
-	cmd.Flags().StringVar(&cfg.OperatorAddr, flagOperator, cfg.OperatorAddr, "Operator address to allow")
-	_ = cmd.MarkFlagRequired(flagOperator)
 }
 
 func bindDevnetFundConfig(cmd *cobra.Command, d *devnetFundConfig) {
