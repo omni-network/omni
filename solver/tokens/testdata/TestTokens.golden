@@ -220,6 +220,16 @@
   "symbol": "wstETH"
  },
  {
+  "address": "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
+  "chainId": 1,
+  "coingeckoId": "lido-staked-ether",
+  "isMock": false,
+  "maxSpend": "4.0000",
+  "minSpend": "0.0010",
+  "name": "Lido Staked Ether",
+  "symbol": "stETH"
+ },
+ {
   "address": "0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034",
   "chainId": 17000,
   "coingeckoId": "lido-staked-ether",

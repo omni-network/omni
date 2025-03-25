@@ -147,6 +147,7 @@ var tokens = append([]Token{
 	// Mocks contain wstETH on IDBaseSepolia for omega and staging
 
 	// stETH
+	stETH(evmchain.IDEthereum, common.HexToAddress("0xae7ab96520de3a18e5e111b5eaab095312d7fe84")),
 	stETH(evmchain.IDHolesky, common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")),
 }, mocks()...)
 
