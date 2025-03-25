@@ -1,0 +1,34 @@
+{
+  "name": "@omni-network/test-utils",
+  "private": true,
+  "description": "Shared test utilities for SDK packages",
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "pnpm@9.1.0",
+  "sideEffects": false,
+  "main": "./dist/esm/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/esm/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "pnpm clean && pnpm build:ts",
+    "build:ts": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo"
+  },
+  "files": ["dist/**", "src/**", "!dist/**/*.tsbuildinfo"],
+  "engines": {
+    "node": ">=22.x"
+  },
+  "dependencies": {
+    "viem": "^2.23.13"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10"
+  }
+}

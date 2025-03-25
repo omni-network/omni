@@ -6,7 +6,7 @@
   "type": "module",
   "packageManager": "pnpm@9.1.0",
   "scripts": {
-    "build": "cd packages/react && pnpm build",
+    "build": "pnpm run -r build",
     "check": "biome check --write",
     "test:unit": "cd packages/react && pnpm test",
     "test:integration": "cd integration-tests && pnpm test"

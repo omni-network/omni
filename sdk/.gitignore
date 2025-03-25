@@ -1,6 +1,7 @@
 .DS_Store
 cache
 node_modules
+tsconfig.tsbuildinfo
 tsconfig.build.tsbuildinfo
 coverage
 
