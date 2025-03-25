@@ -151,6 +151,7 @@ And that's it! That's all you need to use SolverNet to bridge eth across L2s.
 |---------|-------|-------|-----------------|-----|-----|
 | Mainnet | Ethereum, Base, Arbitrum One, Optimism | `ETH` | Native | 0.001 | 1 |
 | Mainnet | Ethereum | `wstETH` | `0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0` | 0.001 | 4 |
+| Mainnet | Ethereum | `stETH` | `0xae7ab96520de3a18e5e111b5eaab095312d7fe84` | 0.001 | 4 |
 | Mainnet | Base | `wstETH` | `0xc1cba3fcea344f92d9239c08c0568f6f2f0ee452` | 0.001 | 4 |
 | Testnet | Holesky, Arb/Base/Op Sepolia | `ETH` | Native | 0.001 | 1 |
 | Testnet | Holesky | `wstETH` | `0x8d09a4502cc8cf1547ad300e066060d043f6982d` | 0.001 | 1 |
