@@ -145,6 +145,49 @@ export type OrderStatus =
 
 And that's it! That's all you need to use SolverNet to bridge eth across L2s.
 
+## ETH, wstETH, and stETH Chain Support
+
+### Mainnet Chains
+
+| Chain | Native ETH | wstETH | stETH |
+|-------|------------|--------|-------|
+| Ethereum (1) | ✅ | ✅ `0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0` | ❌ |
+| Arbitrum One (42161) | ✅ | ❌ | ❌ |
+| Base (8453) | ✅ | ✅ `0xc1cba3fcea344f92d9239c08c0568f6f2f0ee452` | ❌ |
+| Optimism (10) | ✅ | ❌ | ❌ |
+
+## Testnet Chains
+
+| Chain | Native ETH | wstETH | stETH |
+|-------|------------|--------|-------|
+| Holesky (17000) | ✅ | ✅ `0x8d09a4502cc8cf1547ad300e066060d043f6982d` | ✅ `0x3f1c547b21f65e10480de3ad8e19faac46c95034` |
+| Sepolia (11155111) | ❌ | ✅ `0xB82381A3fBD3FaFA77B3a7bE693342618240067b` | ❌ |
+| Arbitrum Sepolia | ✅ | ❌ | ❌ |
+| Base Sepolia | ✅ | ❌ | ❌ |
+| Optimism Sepolia | ✅ | ❌ | ❌ |
+
+## Token Spend Limits
+
+### ETH (all networks)
+- **Min**: 0.001 ETH
+- **Max**: 1 ETH
+
+### wstETH
+- **Mainnet**
+  - Min: 0.001 wstETH
+  - Max: 4 wstETH
+- **Testnet**
+  - Min: 0.001 wstETH
+  - Max: 1 wstETH
+
+### stETH
+- **Mainnet**
+  - Min: 0.001 stETH
+  - Max: 4 stETH
+- **Testnet**
+  - Min: 0.001 stETH
+  - Max: 1 stETH
+
 ## Get in touch
 
 You can reach out to us on telegram with any queries, feedback, or requests: [@omnidevsupport](https://t.me/omnidevsupport).
