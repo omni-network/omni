@@ -25,7 +25,7 @@ import (
 
 // NewJob returns a job that bridges native tokens.
 func newJob(networkID netconf.ID, backends ethbackend.Backends, conf flowConfig, owner common.Address) (types.Job, error) {
-	cadence := 30 * time.Minute
+	cadence := 25 * time.Minute
 	if networkID == netconf.Devnet {
 		cadence = time.Second * 10
 	}

@@ -20,28 +20,28 @@ var config = map[netconf.ID]flowConfig{
 	netconf.Devnet: {
 		srcChain:     evmchain.IDMockL1,
 		dstChain:     evmchain.IDMockL2,
-		minOrderSize: bi.Ether(0.1),
-		maxOrderSize: bi.Ether(1),
+		minOrderSize: bi.Ether(0.2),
+		maxOrderSize: bi.Ether(3),
 	},
 
 	netconf.Staging: {
 		srcChain:     evmchain.IDBaseSepolia,
 		dstChain:     evmchain.IDOpSepolia,
-		minOrderSize: bi.Ether(0.1),
-		maxOrderSize: bi.Ether(1),
+		minOrderSize: bi.Ether(0.2),
+		maxOrderSize: bi.Ether(3),
 	},
 
 	netconf.Omega: {
 		srcChain:     evmchain.IDOpSepolia,
 		dstChain:     evmchain.IDArbSepolia,
-		minOrderSize: bi.Ether(0.1),
-		maxOrderSize: bi.Ether(1),
+		minOrderSize: bi.Ether(0.2),
+		maxOrderSize: bi.Ether(3),
 	},
 
 	netconf.Mainnet: {
 		srcChain:     evmchain.IDOptimism,
 		dstChain:     evmchain.IDArbitrumOne,
-		minOrderSize: bi.Ether(0.1),
-		maxOrderSize: bi.Ether(1),
+		minOrderSize: bi.Ether(0.2),
+		maxOrderSize: bi.Ether(3),
 	},
 }
