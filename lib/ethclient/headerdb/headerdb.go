@@ -4,6 +4,7 @@ package headerdb
 import (
 	"context"
 	"encoding/json"
+	"sync"
 
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
@@ -21,7 +22,7 @@ import (
 )
 
 // New returns a new headerdb backed by the given db.
-func New(db db.DB, limit int) (DB, error) {
+func New(db db.DB) (*DB, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
 		{Id: 1, ProtoFileName: File_lib_ethclient_headerdb_headerdb_proto.Path()},
 	}}
@@ -30,17 +31,16 @@ func New(db db.DB, limit int) (DB, error) {
 
 	modDB, err := ormdb.NewModuleDB(schema, ormdb.ModuleDBOptions{KVStoreService: storeSvc})
 	if err != nil {
-		return DB{}, errors.Wrap(err, "create ormdb module db")
+		return nil, errors.Wrap(err, "create ormdb module db")
 	}
 
 	dbStore, err := NewHeaderdbStore(modDB)
 	if err != nil {
-		return DB{}, errors.Wrap(err, "create store")
+		return nil, errors.Wrap(err, "create store")
 	}
 
-	return DB{
+	return &DB{
 		table: dbStore.HeaderTable(),
-		limit: limit,
 	}, nil
 }
 
@@ -51,15 +51,15 @@ func New(db db.DB, limit int) (DB, error) {
 // When a reorg is however detected, it replaces/fixes any existing invalid headers.
 // Fetching valid parent headers (via fetchFunc) is required to identify all reorged-out-headers.
 type DB struct {
+	mu    sync.Mutex // Lock public write methods, even though cosmos-db supports concurrent access.
 	table HeaderTable
-	limit int
 }
 
-// Set saves the header to the db.
+// set saves the header to the db.
 // It is a noop if the header (by hash) already exists.
 // It returns ormerrors.UniqueKeyViolation if a header with the same height already exists (reorg).
 // Rather use AddAndReorg to handle reorgs.
-func (db DB) Set(ctx context.Context, h *types.Header) error {
+func (db *DB) set(ctx context.Context, h *types.Header) error {
 	hpb, err := toProto(h)
 	if err != nil {
 		return err
@@ -79,7 +79,7 @@ func (db DB) Set(ctx context.Context, h *types.Header) error {
 }
 
 // ByHash returns the header with the given hash or false if not found.
-func (db DB) ByHash(ctx context.Context, hash common.Hash) (*types.Header, bool, error) {
+func (db *DB) ByHash(ctx context.Context, hash common.Hash) (*types.Header, bool, error) {
 	hpb, err := db.table.GetByHash(ctx, hash[:])
 	if ormerrors.IsNotFound(err) {
 		return nil, false, nil
@@ -96,7 +96,7 @@ func (db DB) ByHash(ctx context.Context, hash common.Hash) (*types.Header, bool,
 }
 
 // ByHeight returns the header at the given height or false if not found.
-func (db DB) ByHeight(ctx context.Context, height uint64) (*types.Header, bool, error) {
+func (db *DB) ByHeight(ctx context.Context, height uint64) (*types.Header, bool, error) {
 	hpb, err := db.table.GetByHeight(ctx, height)
 	if ormerrors.IsNotFound(err) {
 		return nil, false, nil
@@ -117,7 +117,10 @@ type fetchFunc func(ctx context.Context, hash common.Hash) (*types.Header, error
 // AddAndReorg adds the known header to the chain, and deletes any existing headers not part of known header's chain.
 // It replaces all invalid parents of the known head (using fetchfunc).
 // It returns the number of headers deleted (reorg depth).
-func (db DB) AddAndReorg(ctx context.Context, known *types.Header, fetch fetchFunc) (int, error) {
+func (db *DB) AddAndReorg(ctx context.Context, known *types.Header, fetch fetchFunc) (int, error) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	var deleted int
 
 	reorgHeight, fetched, err := db.getReorgHeight(ctx, known, fetch)
@@ -131,13 +134,13 @@ func (db DB) AddAndReorg(ctx context.Context, known *types.Header, fetch fetchFu
 	}
 
 	// Add new known header
-	if err := db.Set(ctx, known); err != nil {
+	if err := db.set(ctx, known); err != nil {
 		return 0, err
 	}
 
 	// Add fetched headers
 	for _, h := range fetched {
-		if err := db.Set(ctx, h); err != nil {
+		if err := db.set(ctx, h); err != nil {
 			return 0, err
 		}
 	}
@@ -147,7 +150,7 @@ func (db DB) AddAndReorg(ctx context.Context, known *types.Header, fetch fetchFu
 
 // getReorgHeight returns the height of the reorg, or zero if no reorg detected.
 // It also returns any fetched parents if reorg height is lower than known height.
-func (db DB) getReorgHeight(ctx context.Context, known *types.Header, fetch fetchFunc) (uint64, []*types.Header, error) {
+func (db *DB) getReorgHeight(ctx context.Context, known *types.Header, fetch fetchFunc) (uint64, []*types.Header, error) {
 	// First check if parent height is in new known chain
 	if parentHeight, ok := umath.Subtract(known.Number.Uint64(), 1); ok { //nolint:nestif // Not too bad
 		if parent, ok, err := db.ByHeight(ctx, parentHeight); err != nil {
@@ -198,8 +201,11 @@ func (db DB) getReorgHeight(ctx context.Context, known *types.Header, fetch fetc
 	return 0, nil, nil
 }
 
-// maybePrune deletes headers ensuring max limit header with highest height.
-func (db DB) maybePrune(ctx context.Context) (int, error) {
+// MaybePrune deletes headers ensuring max limit header with highest height.
+func (db *DB) MaybePrune(ctx context.Context, limit int) (int, error) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	iter, err := db.table.List(ctx, HeaderHeightIndexKey{}, ormlist.Reverse())
 	if err != nil {
 		return 0, errors.Wrap(err, "list header")
@@ -209,7 +215,7 @@ func (db DB) maybePrune(ctx context.Context) (int, error) {
 	var i, deleted int
 	for iter.Next() {
 		i++
-		if i <= db.limit {
+		if i <= limit {
 			continue
 		}
 
@@ -229,7 +235,7 @@ func (db DB) maybePrune(ctx context.Context) (int, error) {
 }
 
 // deleteFrom deletes all headers from the given height and higher.
-func (db DB) deleteFrom(ctx context.Context, height uint64) (int, error) {
+func (db *DB) deleteFrom(ctx context.Context, height uint64) (int, error) {
 	var deleted int
 	iter, err := db.table.ListRange(ctx, HeaderHeightIndexKey{}.WithHeight(height), HeaderHeightIndexKey{})
 	if err != nil {
