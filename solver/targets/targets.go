@@ -23,8 +23,6 @@ type Target struct {
 var (
 	// targetsRestricted maps each network to whether targets should be restricted to the allowed set.
 	targetsRestricted = map[netconf.ID]bool{
-		netconf.Staging: true,
-		netconf.Omega:   true,
 		netconf.Mainnet: true,
 	}
 
