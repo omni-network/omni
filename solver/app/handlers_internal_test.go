@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
@@ -55,6 +56,34 @@ func TestRequestCancel(t *testing.T) {
 	_, err = new(http.Client).Do(req)
 	require.ErrorIs(t, err, context.Canceled)
 	<-served
+}
+
+//nolint:bodyclose,paralleltest // Global gateway timeout is modified
+func TestGatewayTimeout(t *testing.T) {
+	// Replace 10s gateway timeout with faster test value
+	cached := gatewayTimeout
+	gatewayTimeout = time.Millisecond * 50
+	t.Cleanup(func() {
+		gatewayTimeout = cached
+	})
+
+	h := Handler{
+		Endpoint: "test",
+		ZeroReq:  func() any { return nil },
+		HandleFunc: func(ctx context.Context, _ any) (any, error) {
+			<-ctx.Done()
+			return nil, ctx.Err()
+		},
+	}
+
+	srv := httptest.NewServer(handlerAdapter(h))
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, srv.URL, nil)
+	require.NoError(t, err)
+
+	resp, err := new(http.Client).Do(req)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusGatewayTimeout, resp.StatusCode)
 }
 
 //nolint:bodyclose,noctx // Not critical for tests
