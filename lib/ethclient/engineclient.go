@@ -63,8 +63,13 @@ func NewAuthClient(ctx context.Context, urlAddr string, jwtSecret []byte) (Engin
 		return engineClient{}, errors.Wrap(err, "rpc dial")
 	}
 
+	cl, err := NewClient(rpcClient, "engine", urlAddr)
+	if err != nil {
+		return engineClient{}, errors.Wrap(err, "new client")
+	}
+
 	return engineClient{
-		Client: NewClient(rpcClient, "engine", urlAddr),
+		Client: cl,
 	}, nil
 }
 

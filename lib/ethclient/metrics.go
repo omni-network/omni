@@ -21,6 +21,27 @@ var (
 		Name:      "errors_total",
 		Help:      "Total number of errors returned by a Ethereum JSON-RPC by chain and endpoint",
 	}, []string{"chain", "endpoint"})
+
+	reorgTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "lib",
+		Subsystem: "ethclient",
+		Name:      "cache_reorg_total",
+		Help:      "Total number of blocks reorged by chain",
+	}, []string{"chain"})
+
+	cacheHits = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "lib",
+		Subsystem: "ethclient",
+		Name:      "cache_hits_total",
+		Help:      "Total number of cache hits by chain",
+	}, []string{"chain"})
+
+	cacheMisses = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "lib",
+		Subsystem: "ethclient",
+		Name:      "cache_misses_total",
+		Help:      "Total number of cache misses by chain",
+	}, []string{"chain"})
 )
 
 // latency returns a function that records the latency of an RPC call.

@@ -2,6 +2,7 @@ package ethclient
 
 import (
 	"context"
+	"encoding/json"
 	"math/big"
 	"testing"
 
@@ -18,73 +19,85 @@ func TestHeaderCache(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	h1 := &types.Header{Number: bi.N(1)}
-	h2 := &types.Header{Number: bi.N(2), ParentHash: h1.Hash()}
-	h3 := &types.Header{Number: bi.N(3), ParentHash: h2.Hash()}
+	fuzzHeader := func(height int, parent *types.Header) *types.Header {
+		var resp types.Header
+		NewFuzzer(0).Fuzz(&resp)
+		resp.Number = bi.N(height)
+		if parent != nil {
+			resp.ParentHash = parent.Hash()
+		}
+
+		return &resp
+	}
+
+	h1 := fuzzHeader(1, nil)
+	h2 := fuzzHeader(2, h1)
+	h3 := fuzzHeader(3, h2)
 
 	testCl := &testClient{headers: []*types.Header{h1, h2, h3}}
-	cache := newHeaderCache(testCl)
+	cache, err := newHeaderCache(testCl)
+	require.NoError(t, err)
 	cache.limit = 2
 
 	// Fetch h1 by hash, ensure queried
 	h, err := cache.HeaderByHash(ctx, h1.Hash())
 	require.NoError(t, err)
-	require.Equal(t, h1, h)
+	headersEqual(t, h1, h)
 	require.Equal(t, 1, testCl.headerByHash)
 
 	// Fetch h1 by hash again, ensure cached
 	h, err = cache.HeaderByHash(ctx, h1.Hash())
 	require.NoError(t, err)
-	require.Equal(t, h1, h)
+	headersEqual(t, h1, h)
 	require.Equal(t, 1, testCl.headerByHash)
 
-	// Fetch h1 by number, ensure queried
+	// Fetch h1 by number, ensure cached
 	h, err = cache.HeaderByNumber(ctx, h1.Number)
 	require.NoError(t, err)
-	require.Equal(t, h1, h)
-	require.Equal(t, 1, testCl.headerByNumber)
+	headersEqual(t, h1, h)
+	require.Equal(t, 0, testCl.headerByNumber)
 
 	// Fetch h2 by number, ensure queried
 	h, err = cache.HeaderByNumber(ctx, h2.Number)
 	require.NoError(t, err)
-	require.Equal(t, h2, h)
-	require.Equal(t, 2, testCl.headerByNumber)
+	headersEqual(t, h2, h)
+	require.Equal(t, 1, testCl.headerByNumber)
 
 	// Fetch h2 by hash, ensure cached
 	h, err = cache.HeaderByHash(ctx, h2.Hash())
 	require.NoError(t, err)
-	require.Equal(t, h2, h)
+	headersEqual(t, h2, h)
 	require.Equal(t, 1, testCl.headerByHash)
 
 	// Fetch h3 by type, ensure queried
 	h, err = cache.HeaderByType(ctx, HeadLatest)
 	require.NoError(t, err)
-	require.Equal(t, h3, h)
+	headersEqual(t, h3, h)
 	require.Equal(t, 1, testCl.headerByType)
 
 	// Fetch h3 by type again, ensure queried
 	h, err = cache.HeaderByType(ctx, HeadLatest)
 	require.NoError(t, err)
-	require.Equal(t, h3, h)
+	headersEqual(t, h3, h)
 	require.Equal(t, 2, testCl.headerByType)
 
-	// Fetch h3 by number, ensure queried
+	// Fetch h3 by number, ensure cached
 	h, err = cache.HeaderByNumber(ctx, h3.Number)
 	require.NoError(t, err)
-	require.Equal(t, h3, h)
-	require.Equal(t, 3, testCl.headerByNumber)
+	headersEqual(t, h3, h)
+	require.Equal(t, 1, testCl.headerByNumber)
 
 	// Fetch h3 by hash, ensure cached
 	h, err = cache.HeaderByHash(ctx, h3.Hash())
 	require.NoError(t, err)
-	require.Equal(t, h3, h)
-	require.Equal(t, 2, testCl.headerByHash)
+	headersEqual(t, h3, h)
+	require.Equal(t, 1, testCl.headerByHash)
 
 	// Ensure h1 pruned, so queried when fetched by hash
 	h, err = cache.HeaderByHash(ctx, h1.Hash())
 	require.NoError(t, err)
-	require.Equal(t, h1, h)
-	require.Equal(t, 3, testCl.headerByHash)
+	headersEqual(t, h1, h)
+	require.Equal(t, 2, testCl.headerByHash)
 }
 
 type testClient struct {
@@ -93,6 +106,10 @@ type testClient struct {
 	headerByType   int
 	headerByNumber int
 	headers        []*types.Header
+}
+
+func (c *testClient) Name() string {
+	return "test"
 }
 
 func (c *testClient) HeaderByType(_ context.Context, typ HeadType) (*types.Header, error) {
@@ -125,4 +142,13 @@ func (c *testClient) HeaderByHash(_ context.Context, hash common.Hash) (*types.H
 	}
 
 	return nil, errors.New("invalid hash")
+}
+
+func headersEqual(t *testing.T, h1, h2 *types.Header) {
+	t.Helper()
+	bz1, err := json.MarshalIndent(h1, "", " ")
+	require.NoError(t, err)
+	bz2, err := json.MarshalIndent(h2, "", " ")
+	require.NoError(t, err)
+	require.Equal(t, string(bz1), string(bz2))
 }
