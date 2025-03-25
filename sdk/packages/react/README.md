@@ -145,6 +145,20 @@ export type OrderStatus =
 
 And that's it! That's all you need to use SolverNet to bridge eth across L2s.
 
+# Supported Assets
+
+| Network | Chain | Asset | Contract Address | Min | Max |
+|---------|-------|-------|-----------------|-----|-----|
+| Mainnet | Ethereum, Base, Arbitrum One, Optimism | `ETH` | Native | 0.001 | 1 |
+| Mainnet | Ethereum | `wstETH` | `0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0` | 0.001 | 4 |
+| Mainnet | Base | `wstETH` | `0xc1cba3fcea344f92d9239c08c0568f6f2f0ee452` | 0.001 | 4 |
+| Testnet | Holesky, Arb/Base/Op Sepolia | `ETH` | Native | 0.001 | 1 |
+| Testnet | Holesky | `wstETH` | `0x8d09a4502cc8cf1547ad300e066060d043f6982d` | 0.001 | 1 |
+| Testnet | Holesky | `stETH` | `0x3f1c547b21f65e10480de3ad8e19faac46c95034` | 0.001 | 1 |
+| Testnet | Base Sepolia | `Mock wstETH` (mintable) | `0x6319df7c227e34B967C1903A08a698A3cC43492B` | 0.001 | 1 |
+
+> **Note:** Currently limited to like-asset deposits (e.g., wstETH on Base → wstETH vault on Ethereum). Cross-asset swaps coming soon!
+
 ## Get in touch
 
 You can reach out to us on telegram with any queries, feedback, or requests: [@omnidevsupport](https://t.me/omnidevsupport).
