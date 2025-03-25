@@ -161,7 +161,6 @@ And that's it! That's all you need to use SolverNet to bridge eth across L2s.
 | Chain | Native ETH | wstETH | stETH |
 |-------|------------|--------|-------|
 | Holesky (17000) | ✅ | ✅ `0x8d09a4502cc8cf1547ad300e066060d043f6982d` | ✅ `0x3f1c547b21f65e10480de3ad8e19faac46c95034` |
-| Sepolia (11155111) | ❌ | ✅ `0xB82381A3fBD3FaFA77B3a7bE693342618240067b` | ❌ |
 | Arbitrum Sepolia | ✅ | ❌ | ❌ |
 | Base Sepolia | ✅ | ❌ | ❌ |
 | Optimism Sepolia | ✅ | ❌ | ❌ |
