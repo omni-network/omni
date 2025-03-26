@@ -7,7 +7,14 @@ import (
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
+	solver "github.com/omni-network/omni/solver/app"
 )
+
+type Receipt struct {
+	OrderID solvernet.OrderID
+	Expense solver.TokenAmt
+	Success bool
+}
 
 type Job struct {
 	// Name is the friendly name of the job
@@ -20,5 +27,5 @@ type Job struct {
 
 	SrcChainBackend *ethbackend.Backend
 
-	OpenOrderFunc func(ctx context.Context) (solvernet.OrderID, bool, error)
+	OpenOrderFunc func(ctx context.Context) (Receipt, error)
 }

@@ -13,15 +13,17 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
-	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/monitor/flowgen/types"
-	"github.com/omni-network/omni/solver/app"
+	solver "github.com/omni-network/omni/solver/app"
 	stokens "github.com/omni-network/omni/solver/tokens"
 
 	"github.com/ethereum/go-ethereum/common"
 )
+
+// Don't go too low, because we need to generate volume.
+var minOrderSize = bi.Ether(0.1)
 
 // NewJob returns a job that bridges native tokens.
 func newJob(networkID netconf.ID, backends ethbackend.Backends, conf flowConfig, owner common.Address) (types.Job, error) {
@@ -44,7 +46,7 @@ func newJob(networkID netconf.ID, backends ethbackend.Backends, conf flowConfig,
 
 		SrcChainBackend: backend,
 
-		OpenOrderFunc: func(ctx context.Context) (solvernet.OrderID, bool, error) {
+		OpenOrderFunc: func(ctx context.Context) (types.Receipt, error) {
 			return openOrder(ctx, backends, backend, networkID, owner, conf)
 		},
 	}, nil
@@ -59,29 +61,33 @@ func openOrder(
 	networkID netconf.ID,
 	owner common.Address,
 	conf flowConfig,
-) (solvernet.OrderID, bool, error) {
+) (types.Receipt, error) {
+	defaultReceipt := types.Receipt{}
+
 	srcToken, ok := stokens.Native(conf.srcChain)
 	if !ok {
-		return solvernet.OrderID{}, false, errors.New("src token not found")
+		return defaultReceipt, errors.New("src token not found")
 	}
+
 	dstToken, ok := stokens.Native(conf.dstChain)
 	if !ok {
-		return solvernet.OrderID{}, false, errors.New("dst token not found")
+		return defaultReceipt, errors.New("dst token not found")
 	}
 
 	orderSize, ok, err := estimateOrderSize(ctx, networkID, backend.Client, owner, conf, srcToken.Token)
 	if err != nil {
-		return solvernet.OrderID{}, false, errors.Wrap(err, "estimate order size")
+		return defaultReceipt, errors.Wrap(err, "estimate order size")
 	}
+
 	if !ok {
-		return solvernet.OrderID{}, false, nil
+		return defaultReceipt, nil
 	}
 
-	expense := app.TokenAmt{Token: dstToken, Amount: orderSize}
+	expense := solver.TokenAmt{Token: dstToken, Amount: orderSize}
 
-	depositWithFee, err := app.QuoteDeposit(srcToken, expense)
+	depositWithFee, err := solver.QuoteDeposit(srcToken, expense)
 	if err != nil {
-		return solvernet.OrderID{}, false, errors.Wrap(err, "quote deposit")
+		return defaultReceipt, errors.Wrap(err, "quote deposit")
 	}
 
 	orderData := bindings.SolverNetOrderData{
@@ -102,10 +108,10 @@ func openOrder(
 
 	orderID, err := solvernet.OpenOrder(ctx, networkID, conf.srcChain, backends, owner, orderData)
 	if err != nil {
-		return solvernet.OrderID{}, false, errors.Wrap(err, "open order")
+		return defaultReceipt, errors.Wrap(err, "open order")
 	}
 
-	return orderID, true, nil
+	return types.Receipt{OrderID: orderID, Expense: expense, Success: true}, nil
 }
 
 // Jobs returns two jobs bridging native ETH from one chain to another one and back.
@@ -152,20 +158,24 @@ func estimateOrderSize(
 		return nil, false, errors.New("no thresholds found", "role", eoa.RoleFlowgen)
 	}
 
+	// use solver's spend bounds on the destination chain
+	nativeEthTkn, ok := stokens.Native(conf.dstChain)
+	if !ok {
+		return nil, false, nil
+	}
+
 	reserved := bi.Ether(0.01) // overhead that should cover solver commission and tx fees
 	orderSize := bi.Sub(balance, thresholds.MinBalance(), reserved)
 
 	// if order size is too small, do nothing
-	if bi.LT(orderSize, conf.minOrderSize) {
+	if bi.LT(orderSize, minOrderSize) {
 		return nil, false, nil
 	}
 
 	// cap the order if necessary
-	if bi.GT(orderSize, conf.maxOrderSize) {
-		orderSize = conf.maxOrderSize
+	if bi.GT(orderSize, nativeEthTkn.MaxSpend) {
+		orderSize = nativeEthTkn.MaxSpend
 	}
-
-	log.Debug(ctx, "Flowgen: order size estimated", "balance", balance, "min_threshold", thresholds.MinBalance(), "order", orderSize)
 
 	return orderSize, true, nil
 }

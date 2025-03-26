@@ -4,7 +4,7 @@
   "chainId": 1,
   "coingeckoId": "ethereum",
   "isMock": false,
-  "maxSpend": "1.0000",
+  "maxSpend": "3.0000",
   "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
@@ -14,7 +14,7 @@
   "chainId": 42161,
   "coingeckoId": "ethereum",
   "isMock": false,
-  "maxSpend": "1.0000",
+  "maxSpend": "3.0000",
   "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
@@ -24,7 +24,7 @@
   "chainId": 8453,
   "coingeckoId": "ethereum",
   "isMock": false,
-  "maxSpend": "1.0000",
+  "maxSpend": "3.0000",
   "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
@@ -34,7 +34,7 @@
   "chainId": 10,
   "coingeckoId": "ethereum",
   "isMock": false,
-  "maxSpend": "1.0000",
+  "maxSpend": "3.0000",
   "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
@@ -44,7 +44,7 @@
   "chainId": 17000,
   "coingeckoId": "ethereum",
   "isMock": false,
-  "maxSpend": "1.0000",
+  "maxSpend": "3.0000",
   "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
@@ -54,7 +54,7 @@
   "chainId": 421614,
   "coingeckoId": "ethereum",
   "isMock": false,
-  "maxSpend": "1.0000",
+  "maxSpend": "3.0000",
   "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
@@ -64,7 +64,7 @@
   "chainId": 84532,
   "coingeckoId": "ethereum",
   "isMock": false,
-  "maxSpend": "1.0000",
+  "maxSpend": "3.0000",
   "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
@@ -74,7 +74,7 @@
   "chainId": 11155420,
   "coingeckoId": "ethereum",
   "isMock": false,
-  "maxSpend": "1.0000",
+  "maxSpend": "3.0000",
   "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
@@ -84,7 +84,7 @@
   "chainId": 1652,
   "coingeckoId": "ethereum",
   "isMock": false,
-  "maxSpend": "1.0000",
+  "maxSpend": "3.0000",
   "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
@@ -94,7 +94,7 @@
   "chainId": 1654,
   "coingeckoId": "ethereum",
   "isMock": false,
-  "maxSpend": "1.0000",
+  "maxSpend": "3.0000",
   "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
