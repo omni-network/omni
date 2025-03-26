@@ -7,6 +7,8 @@ import (
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tutil"
+	"github.com/omni-network/omni/solver/targets"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -17,8 +19,7 @@ import (
 func TestCallAllower(t *testing.T) {
 	t.Parallel()
 
-	// actual address does not matter
-	middlemanAddr := common.HexToAddress("0x1234567890123456789012345678901234567890")
+	middlemanAddr := tutil.RandomAddress()
 
 	tests := []struct {
 		name     string
@@ -53,19 +54,19 @@ func TestCallAllower(t *testing.T) {
 			allowed:  true,
 		},
 		{
-			name:     "sepolia symbiotic",
-			network:  netconf.Staging,
-			chainID:  evmchain.IDSepolia,
-			target:   common.HexToAddress("0x77F170Dcd0439c0057055a6D7e5A1Eb9c48cCD2a"), // wstETH vault 1
-			calldata: []byte{0x01, 0x02, 0x03},                                          // doesn't matter,
+			name:     "holesky eigen",
+			network:  netconf.Omega,
+			chainID:  evmchain.IDHolesky,
+			target:   targets.EigenHoleskyStrategyManager,
+			calldata: []byte{0x01, 0x02, 0x03}, // doesn't matter,
 			allowed:  true,
 		},
 		{
-			name:     "holesky symbiotic",
-			network:  netconf.Omega,
-			chainID:  evmchain.IDHolesky,
-			target:   common.HexToAddress("0xd88dDf98fE4d161a66FB836bee4Ca469eb0E4a75"), // wstETH vault 1
-			calldata: []byte{0x01, 0x02, 0x03},                                          // doesn't matter,
+			name:     "holesky mainnet",
+			network:  netconf.Mainnet,
+			chainID:  evmchain.IDEthereum,
+			target:   targets.EigenMainnetStrategyManager,
+			calldata: []byte{0x01, 0x02, 0x03}, // doesn't matter,
 			allowed:  true,
 		},
 		{
@@ -94,11 +95,11 @@ func TestCallAllower(t *testing.T) {
 		},
 		{
 			name:    "middleman allowed call",
-			network: netconf.Omega,
-			chainID: evmchain.IDSepolia,
+			network: netconf.Mainnet,
+			chainID: evmchain.IDEthereum,
 			target:  middlemanAddr,
-			// executeAndTransfer call to allowed target (sepolia symbiotic wstETH vault)
-			calldata: hexutil.MustDecode("0xfebe2c2c000000000000000000000000b82381a3fbd3fafa77b3a7be693342618240067b000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc70000000000000000000000006415d3b5fc615d4a00c71f4044dec24c141ebff80000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000004447e7ef24000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc70000000000000000000000000000000000000000000000008ac7230489e8000000000000000000000000000000000000000000000000000000000000"),
+			// executeAndTransfer call to allowed target (eigen strategy manager)
+			calldata: hexutil.MustDecode("0xfebe2c2c000000000000000000000000b82381a3fbd3fafa77b3a7be693342618240067b000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc7000000000000000000000000858646372cc42e1a627fce94aa7a7033e7cf075a0000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000004447e7ef24000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc70000000000000000000000000000000000000000000000008ac7230489e8000000000000000000000000000000000000000000000000000000000000"),
 			allowed:  true,
 		},
 		{
