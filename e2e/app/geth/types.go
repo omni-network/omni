@@ -18,7 +18,7 @@ import (
 const ServerVersion = "v1.14.13"
 
 // ClientVersion defines the geth version used mostly for ethclient.
-const ClientVersion = "v1.15.5"
+const ClientVersion = "v1.15.6"
 
 // SupportedVersions are the supported older geth server versions.
 // These are tested in backwards.toml.
