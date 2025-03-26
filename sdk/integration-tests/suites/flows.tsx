@@ -80,7 +80,7 @@ describe('ETH transfer orders', () => {
 
   test('behaviour: fails with expense over max amount', async () => {
     const account = testAccount
-    const amount = 2n * ETHER
+    const amount = 1000n * ETHER
     const order: AnyOrder = {
       owner: account.address,
       srcChainId: MOCK_L1_ID,
