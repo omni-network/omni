@@ -8,7 +8,6 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
-	"github.com/omni-network/omni/solver/targets"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -30,22 +29,6 @@ func TestCallAllower(t *testing.T) {
 		allowed  bool
 	}{
 		{
-			name:     "staging flowgen",
-			network:  netconf.Staging,
-			chainID:  evmchain.IDSepolia,
-			target:   eoa.MustAddress(netconf.Staging, eoa.RoleFlowgen),
-			calldata: nil,
-			allowed:  true,
-		},
-		{
-			name:     "omega flowgen",
-			network:  netconf.Omega,
-			chainID:  evmchain.IDSepolia,
-			target:   eoa.MustAddress(netconf.Omega, eoa.RoleFlowgen),
-			calldata: nil,
-			allowed:  true,
-		},
-		{
 			name:     "mainnet flowgen",
 			network:  netconf.Mainnet,
 			chainID:  evmchain.IDSepolia,
@@ -54,39 +37,7 @@ func TestCallAllower(t *testing.T) {
 			allowed:  true,
 		},
 		{
-			name:     "holesky eigen",
-			network:  netconf.Omega,
-			chainID:  evmchain.IDHolesky,
-			target:   targets.EigenHoleskyStrategyManager,
-			calldata: []byte{0x01, 0x02, 0x03}, // doesn't matter,
-			allowed:  true,
-		},
-		{
-			name:     "holesky mainnet",
-			network:  netconf.Mainnet,
-			chainID:  evmchain.IDEthereum,
-			target:   targets.EigenMainnetStrategyManager,
-			calldata: []byte{0x01, 0x02, 0x03}, // doesn't matter,
-			allowed:  true,
-		},
-		{
-			name:     "staging staking",
-			network:  netconf.Staging,
-			chainID:  evmchain.IDOmniStaging,
-			target:   common.HexToAddress(predeploys.Staking),
-			calldata: []byte{0x01, 0x02, 0x03}, // doesn't matter,
-			allowed:  true,
-		},
-		{
-			name:     "omega staking",
-			network:  netconf.Omega,
-			chainID:  evmchain.IDOmniOmega,
-			target:   common.HexToAddress(predeploys.Staking),
-			calldata: []byte{0x01, 0x02, 0x03}, // doesn't matter,
-			allowed:  true,
-		},
-		{
-			name:     "mainnet staking",
+			name:     "mainnet eigen",
 			network:  netconf.Mainnet,
 			chainID:  evmchain.IDOmniMainnet,
 			target:   common.HexToAddress(predeploys.Staking),
@@ -98,14 +49,14 @@ func TestCallAllower(t *testing.T) {
 			network: netconf.Mainnet,
 			chainID: evmchain.IDEthereum,
 			target:  middlemanAddr,
-			// executeAndTransfer call to allowed target (eigen strategy manager)
-			calldata: hexutil.MustDecode("0xfebe2c2c000000000000000000000000b82381a3fbd3fafa77b3a7be693342618240067b000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc7000000000000000000000000858646372cc42e1a627fce94aa7a7033e7cf075a0000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000004447e7ef24000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc70000000000000000000000000000000000000000000000008ac7230489e8000000000000000000000000000000000000000000000000000000000000"),
+			// executeAndTransfer call to allowed target (call to eigen strategy manager)
+			calldata: hexutil.MustDecode("0xfebe2c2c000000000000000000000000b82381a3fbd3fafa77b3a7be693342618240067b000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc7000000000000000000000000858646372cc42e1a627FCe94AA7a7033E7cf075a0000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000004447e7ef24000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc70000000000000000000000000000000000000000000000008ac7230489e8000000000000000000000000000000000000000000000000000000000000"),
 			allowed:  true,
 		},
 		{
 			name:    "middleman disallowed call",
-			network: netconf.Omega,
-			chainID: evmchain.IDSepolia,
+			network: netconf.Mainnet,
+			chainID: evmchain.IDEthereum,
 			target:  middlemanAddr,
 			// executeAndTransfer call to disallowed target
 			calldata: hexutil.MustDecode("0xfebe2c2c000000000000000000000000b82381a3fbd3fafa77b3a7be693342618240067b0000000000000000000000006415d3b5fc615d4a00c71f4044dec24c141ebff8000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc70000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000004447e7ef240000000000000000000000006415d3b5fc615d4a00c71f4044dec24c141ebff80000000000000000000000000000000000000000000000008ac7230489e8000000000000000000000000000000000000000000000000000000000000"),
@@ -113,8 +64,8 @@ func TestCallAllower(t *testing.T) {
 		},
 		{
 			name:    "middleman invalid params",
-			network: netconf.Omega,
-			chainID: evmchain.IDSepolia,
+			network: netconf.Mainnet,
+			chainID: evmchain.IDEthereum,
 			target:  middlemanAddr,
 			// executeAndTransfer, invalid params (only selector)
 			calldata: hexutil.MustDecode("0xfebe2c2c"),
@@ -122,16 +73,32 @@ func TestCallAllower(t *testing.T) {
 		},
 		{
 			name:    "middleman invalid calldata",
-			network: netconf.Omega,
-			chainID: evmchain.IDSepolia,
+			network: netconf.Mainnet,
+			chainID: evmchain.IDEthereum,
 			target:  middlemanAddr,
 			// invalid calldata (not executeAndTransfer)
 			calldata: hexutil.MustDecode("0x12345678"),
 			allowed:  false,
 		},
 		{
-			name:     "devnet, calls not restricted",
+			name:     "devnet calls not restricted",
 			network:  netconf.Devnet,
+			chainID:  evmchain.IDSepolia,
+			target:   common.HexToAddress("0xe3481474b23f88a8917DbcB4cBC55Efcf0f68CC7"), // doesn't matter
+			calldata: []byte{0x01, 0x02, 0x03},                                          // doesn't matter,
+			allowed:  true,
+		},
+		{
+			name:     "staging calls not restricted",
+			network:  netconf.Staging,
+			chainID:  evmchain.IDSepolia,
+			target:   common.HexToAddress("0xe3481474b23f88a8917DbcB4cBC55Efcf0f68CC7"), // doesn't matter
+			calldata: []byte{0x01, 0x02, 0x03},                                          // doesn't matter,
+			allowed:  true,
+		},
+		{
+			name:     "omega calls not restricted",
+			network:  netconf.Omega,
 			chainID:  evmchain.IDSepolia,
 			target:   common.HexToAddress("0xe3481474b23f88a8917DbcB4cBC55Efcf0f68CC7"), // doesn't matter
 			calldata: []byte{0x01, 0x02, 0x03},                                          // doesn't matter,
