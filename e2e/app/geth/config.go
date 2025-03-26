@@ -76,6 +76,7 @@ func WriteConfigTOML(conf Config, path string) error {
 	// Remove some config introduced in v1.15 (golang dependency)  but not supported by v1.14 (server)
 	for _, pattern := range []string{
 		"NAT = \".*\"\n",
+		"HistoryMode = \".*\"\n",
 	} {
 		re := regexp.MustCompile(pattern)
 		bz = re.ReplaceAll(bz, nil)
