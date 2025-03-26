@@ -3,7 +3,9 @@ package app
 import (
 	"context"
 	"sync"
+	"time"
 
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
@@ -29,6 +31,12 @@ func newAsyncWorkerFunc(
 			return errors.Wrap(err, "parse event log [BUG]")
 		}
 
+		event, ok := solvernet.EventByTopic(elog.Topics[0])
+		if !ok {
+			return errors.New("unknown event [BUG]")
+		}
+		status := event.Status.String()
+
 		proc, ok := procs[j.GetChainId()]
 		if !ok {
 			return errors.New("unknown chain [BUG]")
@@ -43,7 +51,7 @@ func newAsyncWorkerFunc(
 			workActive.WithLabelValues(chainName).Inc()
 			defer workActive.WithLabelValues(chainName).Dec()
 
-			ctx := log.WithCtx(ctx, "height", elog.BlockNumber)
+			ctx := log.WithCtx(ctx, "height", elog.BlockNumber, "src_chain", chainName)
 
 			backoff := expbackoff.New(ctx)
 			for {
@@ -51,10 +59,15 @@ func newAsyncWorkerFunc(
 				if ctx.Err() != nil {
 					return // Shutdown
 				} else if err == nil {
-					return // Done
+					// Done
+					duration := time.Since(j.GetCreatedAt().AsTime()).Seconds()
+					workDuration.WithLabelValues(chainName, status).Observe(duration)
+
+					return
 				}
 
 				log.Warn(ctx, "Failed to process job (will retry)", err, "job_id", j.GetId())
+				workErrors.WithLabelValues(chainName, status).Inc()
 				backoff()
 			}
 		}()

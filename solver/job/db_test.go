@@ -3,6 +3,7 @@ package job_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/solver/job"
@@ -30,11 +31,13 @@ func TestDB(t *testing.T) {
 	elogs := []types.Log{fuzzLog(), fuzzLog(), fuzzLog()}
 
 	for i, elog := range elogs {
+		t0 := time.Now()
 		id := uint64(i + 1)
 		j, err := db.Insert(ctx, id, elog)
 		require.NoError(t, err)
 		require.Equal(t, id, j.GetId())
 		require.Equal(t, id, j.GetChainId())
+		require.WithinRange(t, j.GetCreatedAt().AsTime(), t0, time.Now())
 
 		ok, err := db.Exists(ctx, id)
 		require.NoError(t, err)

@@ -3,6 +3,7 @@ syntax = "proto3";
 package solver.job;
 
 import "cosmos/orm/v1/orm.proto";
+import "google/protobuf/timestamp.proto";
 
 option go_package = "solver/job";
 
@@ -18,5 +19,6 @@ message Job {
   uint64 block_height = 3; // Height of the source-chain block
   uint64 event_index  = 4; // Event index in the block
   bytes  event_json   = 5; // *types.Log JSON
+  google.protobuf.Timestamp created_at = 6; // Creation timestamp
 }
 
