@@ -54,15 +54,15 @@ var (
 		tokenslib.ETH: {
 			ClassMainnet: {
 				MinSpend: bi.Ether(0.001), // 0.001 ETH
-				MaxSpend: bi.Ether(1),     // 1 ETH
+				MaxSpend: bi.Ether(3),     // 3 ETH
 			},
 			ClassTestnet: {
 				MinSpend: bi.Ether(0.001), // 0.001 ETH
-				MaxSpend: bi.Ether(1),     // 1 ETH
+				MaxSpend: bi.Ether(3),     // 3 ETH
 			},
 			ClassDevent: {
 				MinSpend: bi.Ether(0.001), // 0.001 ETH
-				MaxSpend: bi.Ether(1),     // 1 ETH
+				MaxSpend: bi.Ether(3),     // 3 ETH
 			},
 		},
 		tokenslib.OMNI: {
@@ -91,6 +91,20 @@ var (
 			ClassDevent: {
 				MinSpend: bi.Ether(0.001), // 0.001 wstETH
 				MaxSpend: bi.Ether(1),     // 1 wstETH
+			},
+		},
+		tokenslib.STETH: {
+			ClassMainnet: {
+				MinSpend: bi.Ether(0.001), // 0.001 stETH
+				MaxSpend: bi.Ether(4),     // 4 stETH
+			},
+			ClassTestnet: {
+				MinSpend: bi.Ether(0.001), // 0.001 stETH
+				MaxSpend: bi.Ether(1),     // 1 stETH
+			},
+			ClassDevent: {
+				MinSpend: bi.Ether(0.001), // 0.001 stETH
+				MaxSpend: bi.Ether(1),     // 1 stETH
 			},
 		},
 	}
@@ -133,6 +147,7 @@ var tokens = append([]Token{
 	// Mocks contain wstETH on IDBaseSepolia for omega and staging
 
 	// stETH
+	stETH(evmchain.IDEthereum, common.HexToAddress("0xae7ab96520de3a18e5e111b5eaab095312d7fe84")),
 	stETH(evmchain.IDHolesky, common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")),
 }, mocks()...)
 
@@ -253,10 +268,15 @@ func mockOMNI(chainID uint64, addr common.Address) Token {
 }
 
 func stETH(chainID uint64, addr common.Address) Token {
+	chainClass := mustChainClass(chainID)
+	bounds := mustSpendBounds(tokenslib.STETH, chainClass)
+
 	return Token{
 		Token:      tokenslib.STETH,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
+		MaxSpend:   bounds.MaxSpend,
+		MinSpend:   bounds.MinSpend,
 		Address:    addr,
 	}
 }

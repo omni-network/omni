@@ -49,68 +49,63 @@ func (p *Provider) ChainVersionHeight(ctx context.Context, chainVer xchain.Chain
 // heightByConfLevel returns the current height for the provided conf level.
 // This is slightly more efficient for MinX conf levels than headerByConfLevel.
 func heightByConfLevel(ctx context.Context, ethCl ethclient.Client, confLevel xchain.ConfLevel) (uint64, error) {
-	// Some conf levels are related to `latest` height
-	delays := map[xchain.ConfLevel]uint64{
-		xchain.ConfLatest: 0,
-		xchain.ConfMin1:   1,
-		xchain.ConfMin2:   2,
+	// Some conf levels are directly queryable
+	headers := map[xchain.ConfLevel]ethclient.HeadType{
+		xchain.ConfFinalized: ethclient.HeadFinalized,
 	}
-	if delay, ok := delays[confLevel]; ok {
-		latest, err := ethCl.BlockNumber(ctx)
+	if headType, ok := headers[confLevel]; ok {
+		header, err := ethCl.HeaderByType(ctx, headType)
 		if err != nil {
 			return 0, err
 		}
 
-		return umath.SubtractOrZero(latest, delay), nil // Use SubtractOrZero since genesis always confirmed for all levels
+		return header.Number.Uint64(), nil
 	}
 
-	// Other conf levels are directly queryable
-	headers := map[xchain.ConfLevel]ethclient.HeadType{
-		xchain.ConfFinalized: ethclient.HeadFinalized,
-	}
-	headType, ok := headers[confLevel]
-	if !ok {
-		return 0, errors.New("unsupported conf level")
+	// Other conf levels are related to `latest` height
+	delay := confLevel.MinX()
+	if delay == 0 && confLevel != xchain.ConfLatest {
+		return 0, errors.New("unsupported 0-delay conf level")
 	}
 
-	header, err := ethCl.HeaderByType(ctx, headType)
+	latest, err := ethCl.BlockNumber(ctx)
 	if err != nil {
 		return 0, err
 	}
 
-	return header.Number.Uint64(), nil
+	return umath.SubtractOrZero(latest, delay), nil // Use SubtractOrZero since genesis always confirmed for all levels
 }
 
 // headerByConfLevel returns the current header for the provided conf level.
 func headerByConfLevel(ctx context.Context, ethCl ethclient.Client, confLevel xchain.ConfLevel) (*types.Header, error) {
-	// Some conf levels are directly queryable
-	headers := map[xchain.ConfLevel]ethclient.HeadType{
-		xchain.ConfFinalized: ethclient.HeadFinalized,
-		xchain.ConfLatest:    ethclient.HeadLatest,
-	}
-	if headType, ok := headers[confLevel]; ok {
-		return ethCl.HeaderByType(ctx, headType)
-	}
-
-	// Others are delayed behind `latest` height
-	latest, err := ethCl.BlockNumber(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "block number")
-	}
-
-	delays := map[xchain.ConfLevel]uint64{
-		xchain.ConfMin1: 1,
-		xchain.ConfMin2: 2,
-	}
-	delay, ok := delays[confLevel]
-	if !ok {
+	var headType ethclient.HeadType
+	if confLevel == xchain.ConfLatest || confLevel.MinX() > 0 {
+		headType = ethclient.HeadLatest
+	} else if confLevel == xchain.ConfFinalized {
+		headType = ethclient.HeadFinalized
+	} else {
 		return nil, errors.New("unsupported conf level")
 	}
 
-	// Use SubtractOrZero since genesis always confirmed for all levels
-	delayed := umath.SubtractOrZero(latest, delay)
+	header, err := ethCl.HeaderByType(ctx, headType)
+	if err != nil {
+		return nil, errors.Wrap(err, "header by type")
+	}
 
-	return ethCl.HeaderByNumber(ctx, bi.N(delayed))
+	// Walk back MinX blocks using parent hash (if applicable)
+	for range confLevel.MinX() {
+		// Return if we reached the genesis block
+		if bi.IsZero(header.Number) && header.ParentHash == (common.Hash{}) {
+			return header, nil
+		}
+
+		header, err = ethCl.HeaderByHash(ctx, header.ParentHash)
+		if err != nil {
+			return nil, errors.Wrap(err, "header cache by hash")
+		}
+	}
+
+	return header, nil
 }
 
 // GetEmittedCursor returns the emitted cursor for the destination chain on the source chain,
@@ -435,7 +430,7 @@ func (p *Provider) headerByChainVersion(ctx context.Context, chainVer xchain.Cha
 		return nil, errors.Wrap(err, "header by conf level")
 	}
 
-	// Update the strategy cache
+	// Update the head cache
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.confHeads[chainVer] = header.Number.Uint64()

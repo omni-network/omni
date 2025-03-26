@@ -37,7 +37,6 @@ func newDevnetCmds() *cobra.Command {
 
 	cmd.AddCommand(
 		newDevnetFundCmd(),
-		newDevnetAVSAllow(),
 		newDevnetStartCmd(),
 		newDevnetInfoCmd(),
 		newDevnetCleanCmd(),
@@ -59,23 +58,6 @@ func newDevnetFundCmd() *cobra.Command {
 	}
 
 	bindDevnetFundConfig(cmd, &cfg)
-
-	return cmd
-}
-
-func newDevnetAVSAllow() *cobra.Command {
-	var cfg devnetAllowConfig
-
-	cmd := &cobra.Command{
-		Use:   "avs-allow",
-		Short: "Add an operator to the omni AVS allow list",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			return devnetAllow(cmd.Context(), cfg)
-		},
-	}
-
-	bindDevnetAVSAllowConfig(cmd, &cfg)
 
 	return cmd
 }
@@ -255,56 +237,6 @@ func writeTempFile(content []byte) (string, error) {
 	}
 
 	return f.Name(), nil
-}
-
-type devnetAllowConfig struct {
-	OperatorAddr string
-	RPCURL       string
-	AVSAddr      string
-}
-
-func devnetAllow(ctx context.Context, cfg devnetAllowConfig) error {
-	if !common.IsHexAddress(cfg.OperatorAddr) {
-		return errors.New("invalid operator address", "address", cfg.OperatorAddr)
-	}
-
-	avsOwner, backend, err := devnetBackend(ctx, cfg.RPCURL)
-	if err != nil {
-		return err
-	}
-
-	chainID, err := backend.ChainID(ctx)
-	if err != nil {
-		return errors.Wrap(err, "get chain id")
-	}
-
-	avsAddress, err := avsAddressOrDefault(cfg.AVSAddr, chainID)
-	if err != nil {
-		return err
-	}
-
-	omniAVS, err := bindings.NewOmniAVS(avsAddress, backend)
-	if err != nil {
-		return errors.Wrap(err, "omni avs")
-	}
-
-	txOpts, err := backend.BindOpts(ctx, avsOwner)
-	if err != nil {
-		return err
-	}
-
-	tx, err := omniAVS.AddToAllowlist(txOpts, common.HexToAddress(cfg.OperatorAddr))
-	if err != nil {
-		return errors.Wrap(err, "add to allowlist")
-	}
-
-	if _, err := backend.WaitMined(ctx, tx); err != nil {
-		return errors.Wrap(err, "wait mined")
-	}
-
-	log.Info(ctx, "Operator added to Omni AVS allow list", "address", cfg.OperatorAddr)
-
-	return nil
 }
 
 type devnetFundConfig struct {

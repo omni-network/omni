@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
@@ -106,10 +107,14 @@ func newQuoteHandler(quoteFunc quoteFunc) Handler {
 	}
 }
 
+var gatewayTimeout = time.Second * 10
+
 func handlerAdapter(h Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, rr *http.Request) {
 		defer rr.Body.Close()
 		ctx := rr.Context()
+		ctx, cancel := context.WithTimeout(ctx, gatewayTimeout)
+		defer cancel()
 
 		req := h.ZeroReq()
 		if req == nil { //nolint:revive // noop if-block for readability
@@ -131,9 +136,12 @@ func handlerAdapter(h Handler) http.Handler {
 
 func writeErrResponse(ctx context.Context, w http.ResponseWriter, err error) {
 	statusCode := http.StatusInternalServerError
-	if ctx.Err() != nil {
+	if errors.Is(ctx.Err(), context.Canceled) {
 		// If request context is canceled, return a 408 instead of 500.
 		statusCode = http.StatusRequestTimeout
+	} else if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		// If request context deadline exceeded, return a 504 instead of 500.
+		statusCode = http.StatusGatewayTimeout
 	}
 
 	var apiErr APIError

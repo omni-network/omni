@@ -135,3 +135,20 @@ func TestNewWithReset(t *testing.T) {
 	backoff()
 	elapsed(t, "16s") // +0s
 }
+
+func TestInterrupt(t *testing.T) {
+	// Test that interrupts work and that we don't block for 1 hour.
+	interrupt := make(chan struct{}, 1)
+	backoff := expbackoff.New(context.Background(), expbackoff.With(expbackoff.Config{
+		BaseDelay:  time.Hour,
+		Multiplier: 1,
+		Jitter:     0,
+		MaxDelay:   time.Hour,
+		Interrupts: interrupt,
+	}))
+
+	interrupt <- struct{}{}
+	backoff()
+	interrupt <- struct{}{}
+	backoff()
+}

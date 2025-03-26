@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -133,14 +134,20 @@ func (w *instrumentWriter) StatusCode() int {
 
 // clientIP returns the client IP address from the request and the type/header used.
 func clientIP(r *http.Request) (ip string, typ string) { //nolint:nonamedreturns // Disambiguate identical return types
+	// first returns the first IP address in a comma-separated list.
+	// Or just the string otherwise.
+	first := func(ip string) string {
+		return strings.Split(ip, ",")[0]
+	}
+
 	for _, header := range []string{
 		"CF-Connecting-IP", // Use CloudFlare if present
 		"X-Forwarded-For",  // Otherwise GCP / AWS LB
 	} {
 		if ip := r.Header.Get(header); ip != "" {
-			return ip, header
+			return first(ip), header
 		}
 	}
 
-	return r.RemoteAddr, "RemoteAddr" // Fallback to remote address
+	return first(r.RemoteAddr), "RemoteAddr" // Fallback to remote address
 }

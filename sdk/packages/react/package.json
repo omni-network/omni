@@ -1,7 +1,7 @@
 {
   "name": "@omni-network/react",
   "description": "React hooks for Omni Solvernet",
-  "version": "0.0.0-alpha.10",
+  "version": "0.0.0-alpha.11",
   "type": "module",
   "license": "MIT",
   "packageManager": "pnpm@9.1.0",
@@ -41,6 +41,7 @@
     "wagmi": ">=2.0.0"
   },
   "devDependencies": {
+    "@omni-network/test-utils": "workspace:^",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.2.0",
     "@types/bn.js": "^5.1.6",

@@ -21,6 +21,35 @@ var (
 		Name:      "errors_total",
 		Help:      "Total number of errors returned by a Ethereum JSON-RPC by chain and endpoint",
 	}, []string{"chain", "endpoint"})
+
+	reorgTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "lib",
+		Subsystem: "ethclient",
+		Name:      "cache_reorg_total",
+		Help:      "Total number of reorgs detected by chain",
+	}, []string{"chain"})
+
+	cacheHits = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "lib",
+		Subsystem: "ethclient",
+		Name:      "cache_hits_total",
+		Help:      "Total number of cache hits by chain",
+	}, []string{"chain"})
+
+	cacheMisses = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "lib",
+		Subsystem: "ethclient",
+		Name:      "cache_misses_total",
+		Help:      "Total number of cache misses by chain",
+	}, []string{"chain"})
+
+	// Using gauge for websocket latency is good enough (avoid expensive histogram).
+	websocketLatency = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "lib",
+		Subsystem: "ethclient",
+		Name:      "wss_header_latency_seconds",
+		Help:      "Last header age in seconds received via websockets by chain",
+	}, []string{"chain"})
 )
 
 // latency returns a function that records the latency of an RPC call.

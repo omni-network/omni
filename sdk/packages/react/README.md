@@ -23,7 +23,7 @@ pnpm install @omni-network/react
 
 ### Usage
 
-1. You'll need to wrap your app in the `OmniProvider`. Make sure to wrap it **_inside_** your `WagmiProvider` and `QueryClientProvider` provider:
+You'll need to wrap your app in the `OmniProvider`. Make sure to wrap it **_inside_** your `WagmiProvider` and `QueryClientProvider` provider:
 
 ```tsx
 import { WagmiProvider } from 'wagmi'
@@ -43,20 +43,25 @@ const queryClient = new QueryClient()
 
 Note - you need to supply an `env` prop, for now default to `testnet`.
 
-2. Now you can start using the hooks! Let's build an example of an eth bridge from Base Sepolia to Arbitrum Sepolia.
+Now you can start using the hooks! Let's build an example of depositing a token into a vault on a different chain. We'll work with `wstETH`
 
-First, we need to quote how much ETH we can receive on the destination chain for a given source chain deposit:
+```tsx
+const holeskyWSTETH = '0x8d09a4502Cc8Cf1547aD300E066060D043f6982D' as const
+const baseSepoliaWSTETH = '0x6319df7c227e34B967C1903A08a698A3cC43492B' as const
+```
+
+First, we need to quote how much `wstETH` we can spend on the destination chain for a given source chain deposit.
 
 ```tsx
 import { useQuote } from '@omni-network/react'
 
 function App() {
-    // quote how much ArbSepolia eth we can get for 0.1 Eth on BaseSepolia
+    // quote how much Holesky wstETH we can spend for a 0.1 wstETH deposit on Base Sepolia
     const quote = useQuote({
         srcChainId: baseSepolia.id,
-        destChainId: arbitrumSepolia.id,
-        deposit: { isNative: true, amount: parseEther("0.1") },
-        expense: { isNative: true, },
+        destChainId: holesky.id,
+        deposit: { isNative: false, token: baseSepoliaWSTETH, amount: parseEther("0.1") },
+        expense: { isNative: false, token: holeskyWSTETH },
         mode: "expense", // quote expense amount
         enabled: true,
     })
@@ -65,67 +70,138 @@ function App() {
 }
 ```
 
-Now, we use that quote to inform the order we will open with Omni:
+Alternatively, we can quote how much `wstETH` we need to deposit for a certain spend.
+
+```tsx
+import { useQuote } from '@omni-network/react'
+
+function App() {
+    // quote how much BaseSepolia wstETH we need to deposit to spend 0.1 wstETH on Holesky
+    const quote = useQuote({
+        srcChainId: baseSepolia.id,
+        destChainId: holesky.id,
+        deposit: { isNative: false, token: baseSepoliaWSTETH },
+        expense: { isNative: false, token: holeskyWSTETH, amount: parseEther("0.1") },
+        mode: "deposit ", // quote deposit amount
+        enabled: true,
+    })
+
+    // ...
+}
+```
+
+Now, we use that quote to inform the order we will open with Omni. We'll use the quoted deposit / expense amounts. We'll also specify the calls we want to make on the destination chain. To describe that call, we'll need an abi.
+
 
 ```tsx
 import { useOrder, useQuote } from '@omni-network/react'
 
-function App() {
-   // ...
-  const user = "0x...."
-  const order = useOrder({
-    srcChainId: baseSepolia.id,
-    destChainId: arbitrumSepolia.id,
-
-    // request ETH transfer of quoted expense to `user`
-    calls: [
-      {
-        target: user,
-        value: quote.isSuccess ? quote.expense.amount : 0n,
-      }
+// Vault.deposit(address onBehalfOf, uint256 amount)
+const vaultABI = [
+  {
+    inputs: [
+      { internalType: 'address', name: 'onBehalfOf', type: 'address' },
+      { internalType: 'uint256', name: 'amount', type: 'uint256' },
     ],
-    deposit: {
-      amount: quote.isSuccess ? quote.deposit.amount : 0n,
-    },
-    expense: {
-      amount: quote.isSuccess ? quote.expense.amount : 0n,
-    },
-    // when true, this will if check the order will be accepted by Omni, you can consume the result via validation
-    validateEnabled: quote.isSuccess
-  })
+    name: 'deposit',
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+] as const
+
+// your vault address
+const vault = `0x...` as const
+
+function App() {
+    // quote how much Holesky wstETH we can spend for a 0.1 wstETH deposit on Base Sepolia
+    const quote = useQuote({
+        srcChainId: baseSepolia.id,
+        destChainId: holesky.id,
+        deposit: { isNative: false, token: baseSepoliaWSTETH, amount: parseEther("0.1") },
+        expense: { isNative: false, token: holeskyWSTETH },
+        mode: "expense", // quote expense amount
+        enabled: true,
+    })
+
+    // address to deposit on behalf of
+    const user = '0x...'
+
+    // quoted amounts
+    const depositAmt = quote.isSuccess ? quote.deposit.amount : 0n
+    const expenseAmt = quote.isSuccess ? quote.expense.amount : 0n
+
+    const order = useOrder({
+        srcChainId: baseSepolia.id,
+        destChainId: holesky.id,
+
+        // amount to deposit on source chain, paid by connected account
+        deposit: {
+            amount: depositAmt,
+            token: baseSepoliaWSTETH
+        },
+
+        // amount spent on the destination chain, paid by solver
+        // spender = the address that will call token.transferFrom(...)
+        expense: {
+            amount: expenseAmt,
+            token: holeskyWSTETH,
+            spender: vault
+        },
+
+        // request Vault.deposit(user, expenseAmt)
+        // Note we calldata also relies on quoted expense amount
+        calls: [
+          {
+            target: vault,
+            abi: vaultABI,
+            functionName: 'deposit',
+            args: [user, expenseAmt]
+          }
+        ],
+
+        // when true, this will if check the order will be accepted by Omni
+        // you can consume the result via order.validation
+        validateEnabled: quote.isSuccess
+    })
 }
 
 ```
 
-Finally, check the order is ready to be opened, open the order, and checks it's status:
+With the order defined, and quote successfull, the order will be validated with Omni. You can read the result at `order.validation`.
+
+```tsx
+order.validation?.status            // 'pending' | 'rejected'  | 'accepted' | 'rejected'
+order.validation?.rejectReason      // string reason code (ex. "DestCallReverts")
+order.validation?.rejectDescription // a longer description of the specific rejection reason
+```
+
+
+Note validation is best effort, and does not guarantee the order will be filled by the solver.
+Once the order is validated, open the order and track it's status:
 
 ```tsx
 import { useOrder, useQuote } from '@omni-network/react'
 
 function App() {
-  // ...
-  const {
-    open,
-    txHash,
-    validation,
-    txMutation,
-    status,
-    waitForTx,
-    isError,
-    isOpen,
-    isTxPending,
-    isValidated,
-    isReady,
-  } = order
+    // ...
 
-  return (
-    <div>
-        <button disabled={!isReady} onClick={open}>Bridge</button>
-        <p>Order status: {status}</p>
-    </div>
-  )
+    const {
+        open,
+        status,
+        validation,
+        isReady,
+    } = order
+
+    const canOpen = isReady && validation?.status === 'accepted'
+
+    return (
+        <div>
+            <button disabled={!canOpen} onClick={open}>Deposit</button>
+            <p>Order status: {status}</p>
+        </div>
+    )
 }
-
 
 ```
 
@@ -143,7 +219,58 @@ export type OrderStatus =
   | 'filled'
 ```
 
+The `useOrder` hook also returns additional information. The full list of properties is:
+
+```tsx
+const {
+    // opens the order
+    open,
+
+    // order status
+    status,
+
+    // the order id, if open (status == 'open')
+    orderId,
+    isOpen,
+
+    // validation result
+    validation,
+    isValidated,
+
+    // error state (status == 'error')
+    error,
+    isError,
+
+    // open tx state (status == 'opening')
+    isTxPending,
+    isTxSubmitted,
+    txMutation,
+    txHash,
+    waitForTx,
+
+    // ready to open (status == 'ready')
+    // does not imply validation is accepted
+    isReady,
+} = order
+```
+
+
 And that's it! That's all you need to use SolverNet to bridge eth across L2s.
+
+# Supported Assets
+
+| Network | Chain | Asset | Contract Address | Min | Max |
+|---------|-------|-------|-----------------|-----|-----|
+| Mainnet | Ethereum, Base, Arbitrum One, Optimism | `ETH` | Native | 0.001 | 1 |
+| Mainnet | Ethereum | `wstETH` | `0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0` | 0.001 | 4 |
+| Mainnet | Ethereum | `stETH` | `0xae7ab96520de3a18e5e111b5eaab095312d7fe84` | 0.001 | 4 |
+| Mainnet | Base | `wstETH` | `0xc1cba3fcea344f92d9239c08c0568f6f2f0ee452` | 0.001 | 4 |
+| Testnet | Holesky, Arb/Base/Op Sepolia | `ETH` | Native | 0.001 | 1 |
+| Testnet | Holesky | `wstETH` | `0x8d09a4502cc8cf1547ad300e066060d043f6982d` | 0.001 | 1 |
+| Testnet | Holesky | `stETH` | `0x3f1c547b21f65e10480de3ad8e19faac46c95034` | 0.001 | 1 |
+| Testnet | Base Sepolia | `Mock wstETH` (mintable) | `0x6319df7c227e34B967C1903A08a698A3cC43492B` | 0.001 | 1 |
+
+> **Note:** Currently limited to like-asset deposits (e.g., wstETH on Base → wstETH vault on Ethereum). Cross-asset swaps coming soon!
 
 ## Get in touch
 

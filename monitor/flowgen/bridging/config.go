@@ -1,9 +1,6 @@
 package bridging
 
 import (
-	"math/big"
-
-	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 )
@@ -11,37 +8,26 @@ import (
 type flowConfig struct {
 	srcChain uint64
 	dstChain uint64
-
-	minOrderSize *big.Int
-	maxOrderSize *big.Int
 }
 
 var config = map[netconf.ID]flowConfig{
 	netconf.Devnet: {
-		srcChain:     evmchain.IDMockL1,
-		dstChain:     evmchain.IDMockL2,
-		minOrderSize: bi.Ether(0.1),
-		maxOrderSize: bi.Ether(1),
+		srcChain: evmchain.IDMockL1,
+		dstChain: evmchain.IDMockL2,
 	},
 
 	netconf.Staging: {
-		srcChain:     evmchain.IDBaseSepolia,
-		dstChain:     evmchain.IDOpSepolia,
-		minOrderSize: bi.Ether(0.1),
-		maxOrderSize: bi.Ether(1),
+		srcChain: evmchain.IDBaseSepolia,
+		dstChain: evmchain.IDOpSepolia,
 	},
 
 	netconf.Omega: {
-		srcChain:     evmchain.IDOpSepolia,
-		dstChain:     evmchain.IDArbSepolia,
-		minOrderSize: bi.Ether(0.1),
-		maxOrderSize: bi.Ether(1),
+		srcChain: evmchain.IDOpSepolia,
+		dstChain: evmchain.IDArbSepolia,
 	},
 
 	netconf.Mainnet: {
-		srcChain:     evmchain.IDOptimism,
-		dstChain:     evmchain.IDArbitrumOne,
-		minOrderSize: bi.Ether(0.1),
-		maxOrderSize: bi.Ether(1),
+		srcChain: evmchain.IDOptimism,
+		dstChain: evmchain.IDArbitrumOne,
 	},
 }

@@ -1,3 +1,4 @@
+import { testAccount } from '@omni-network/test-utils'
 import { type Hex, parseEther, toBytes, toHex } from 'viem'
 import { arbitrum, base, optimism } from 'viem/chains'
 import { http, createConfig, mock } from 'wagmi'
@@ -6,15 +7,9 @@ import { mainnet } from 'wagmi/chains'
 ////////////////////////////////////////
 //// TEST DATA
 ////////////////////////////////////////
-export const MOCK_L1_ID = 1652
-export const MOCK_L2_ID = 1654
-export const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
-
-export const accounts = ['0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'] as const
 
 // 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
-export const privateKey =
-  '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
+export const accounts = [testAccount.address] as const
 
 export const web3Config = createConfig({
   chains: [mainnet, base, optimism, arbitrum],

@@ -22,13 +22,6 @@ var (
 		Help:      "Total number of events processed by processor and status",
 	}, []string{"proc", "status"})
 
-	processorLag = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "solver",
-		Subsystem: "processor",
-		Name:      "lag_seconds",
-		Help:      "The elapsed seconds since latest processed block timestamp per processor",
-	}, []string{"proc"})
-
 	rejectedOrders = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "solver",
 		Subsystem: "processor",
@@ -78,4 +71,25 @@ var (
 		Name:      "concurrent_requests",
 		Help:      "Number of concurrent requests being served by the API server (at scrape time)",
 	})
+
+	workActive = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "solver",
+		Subsystem: "worker",
+		Name:      "active_jobs",
+		Help:      "Number of active jobs per chain",
+	}, []string{"chain"})
+
+	workDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: "solver",
+		Subsystem: "worker",
+		Name:      "job_duration_seconds",
+		Help:      "Job duration in seconds by chain and event status",
+	}, []string{"chain", "status"})
+
+	workErrors = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "solver",
+		Subsystem: "worker",
+		Name:      "job_error_total",
+		Help:      "Total job errors by chain and event status",
+	}, []string{"chain", "status"})
 )
