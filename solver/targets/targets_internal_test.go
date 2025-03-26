@@ -1,4 +1,4 @@
-package targets_test
+package targets
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/lib/evmchain"
-	"github.com/omni-network/omni/solver/targets"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -23,11 +22,11 @@ func TestIntegration(t *testing.T) {
 		t.Skip("skipping integration tests")
 	}
 
-	err := targets.Init(context.Background())
+	err := refreshOnce(context.Background())
 	require.NoError(t, err)
 
 	// assert known symbiotic mainnet vault in targets
-	target, ok := targets.Get(evmchain.IDEthereum, common.HexToAddress("0xC329400492c6ff2438472D4651Ad17389fCb843a"))
+	target, ok := Get(evmchain.IDEthereum, common.HexToAddress("0xC329400492c6ff2438472D4651Ad17389fCb843a"))
 	require.True(t, ok)
-	require.Equal(t, "Symbiotic", target.Name)
+	require.Equal(t, NameSymbiotic, target.Name)
 }

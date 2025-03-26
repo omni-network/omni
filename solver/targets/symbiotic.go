@@ -68,8 +68,8 @@ func getMainnetVaults(ctx context.Context) ([]common.Address, error) {
 		return nil, errors.Wrap(err, "decode response")
 	}
 
-	// we include all vaults, and do not disriminate by token
-	// solver will reject unsupported tokens
+	// Include all vaults, do not discriminate by token,
+	// solver will reject unsupported tokens.
 	var addresses []common.Address
 	for _, v := range vaults {
 		addresses = append(addresses, v.Address)

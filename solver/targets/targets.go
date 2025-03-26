@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 
@@ -35,59 +34,32 @@ var (
 		staking,
 	}
 
-	// targets is the list of targets all targets, set during Init.
-	targets []Target
-	mu      sync.RWMutex
+	// dynamic is the list of dynamic targets, see RefreshForever.
+	dynamic   []Target
+	dynamicMu sync.RWMutex
 )
 
-// InitStatic initializes onlystatic targets.
-func InitStatic() {
-	targets = []Target{}
-	targets = append(targets, static...)
-}
-
-// Init initializes the targets.
-func Init(ctx context.Context) error {
+// refreshOnce refreshes the dynamic targets once.
+func refreshOnce(ctx context.Context) error {
 	symbiotic, err := getSymbiotic(ctx)
 	if err != nil {
 		return errors.Wrap(err, "symbiotic target")
 	}
 
-	mu.Lock()
-	defer mu.Unlock()
-
-	targets = []Target{}
-	targets = append(targets, static...)
-	targets = append(targets, symbiotic)
+	dynamicMu.Lock()
+	defer dynamicMu.Unlock()
+	dynamic = []Target{symbiotic}
 
 	return nil
 }
 
-// TryInitRefreshForever tries to initialize the targets forever, with exponential backoff.
-// Once initialized, targets are refreshed every hour.
-func TryInitRefreshForever(ctx context.Context) {
-	backoff := expbackoff.New(ctx)
-	for ctx.Err() == nil {
-		if ctx.Err() != nil {
-			return
-		}
-
-		err := Init(ctx)
-		if err == nil {
-			log.Info(ctx, "Targets initialized")
-			go refreshForever(ctx)
-
-			return
-		}
-
-		log.Warn(ctx, "Failed to init targets, will retry", err)
-		backoff()
-	}
-}
-
-// refreshForever refreshes the targets every hour.
-func refreshForever(ctx context.Context) {
-	ticker := time.NewTicker(time.Hour)
+// RefreshForever refreshes dynamic targets forever.
+// It blocks forever, only returning when the context is closed,
+//
+// Note that technically refreshing is only required on mainnet, but testing it
+// on all networks is useful.
+func RefreshForever(ctx context.Context) {
+	ticker := time.NewTimer(0) // Immediately refresh on startup
 	defer ticker.Stop()
 
 	for {
@@ -95,12 +67,11 @@ func refreshForever(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			err := Init(ctx)
-			if err != nil {
-				log.Warn(ctx, "Failed to refresh targets, will retry", err)
-			}
+		}
+		ticker.Reset(time.Hour) // Then refresh every hour
 
-			log.Info(ctx, "Targets refreshed")
+		if err := refreshOnce(ctx); err != nil {
+			log.Warn(ctx, "Failed to refresh targets (will retry)", err)
 		}
 	}
 }
@@ -118,10 +89,16 @@ func IsRestricted(network netconf.ID) bool {
 
 // Get returns the allowed target for the given chain and address.
 func Get(chainID uint64, target common.Address) (Target, bool) {
-	mu.RLock()
-	defer mu.RUnlock()
+	for _, t := range static {
+		if _, ok := t.Addresses(chainID)[target]; ok {
+			return t, true
+		}
+	}
 
-	for _, t := range targets {
+	dynamicMu.RLock()
+	defer dynamicMu.RUnlock()
+
+	for _, t := range dynamic {
 		if _, ok := t.Addresses(chainID)[target]; ok {
 			return t, true
 		}

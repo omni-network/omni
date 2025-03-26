@@ -7,6 +7,7 @@ import (
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/solver/targets"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -18,10 +19,7 @@ import (
 func TestCallAllower(t *testing.T) {
 	t.Parallel()
 
-	targets.InitStatic()
-
-	// actual address does not matter
-	middlemanAddr := common.HexToAddress("0x1234567890123456789012345678901234567890")
+	middlemanAddr := tutil.RandomAddress()
 
 	tests := []struct {
 		name     string
