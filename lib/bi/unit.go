@@ -87,6 +87,23 @@ func Ether[N number](i N) *big.Int {
 	return wei
 }
 
+// Dec6 converts ether float/int/uint in to big.Int amt with 6 decimals; i * 1e6.
+// Note this can be lossy for large floats.
+func Dec6[N number](i N) *big.Int {
+	if iU64, ok := numToU64(i); ok {
+		return MulRaw(big.NewInt(1e6), iU64)
+	} else if iI64, ok := numToI64(i); ok {
+		return MulRaw(big.NewInt(1e6), iI64)
+	}
+
+	out, _ := new(big.Float).Mul(
+		big.NewFloat(float64(i)),
+		big.NewFloat(1e6)).
+		Int(nil)
+
+	return out
+}
+
 // numToU64 converts a number to uint64 if lossless.
 func numToU64[N number](i N) (uint64, bool) {
 	if i < 0 || float64(i) > math.MaxUint64 {

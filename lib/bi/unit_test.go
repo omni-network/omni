@@ -39,6 +39,27 @@ func TestToWei(t *testing.T) {
 	require.Equal(t, min1G, bi.Ether(-1_000_000_000))
 }
 
+func TestDec6(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t, bi.Wei(1_000_000), bi.Dec6(1))
+	require.Equal(t, bi.Gwei(1), bi.Dec6(1_000))
+	require.Equal(t, bi.Ether(1), bi.Dec6(1_000_000_000_000))
+
+	require.Equal(t, bi.N(1), bi.Dec6(0.000_001))
+	require.Equal(t, bi.Zero(), bi.Dec6(0.000_000_1))
+
+	min1 := new(big.Int).Mul(bi.Dec6(1), big.NewInt(-1))
+	min1K := new(big.Int).Mul(bi.Dec6(1), big.NewInt(-1_000))
+	min1M := new(big.Int).Mul(bi.Dec6(1), big.NewInt(-1_000_000))
+	min1G := new(big.Int).Mul(bi.Dec6(1), big.NewInt(-1_000_000_000))
+
+	require.Equal(t, min1, bi.Dec6(-1))
+	require.Equal(t, min1K, bi.Dec6(-1_000))
+	require.Equal(t, min1M, bi.Dec6(-1_000_000))
+	require.Equal(t, min1G, bi.Dec6(-1_000_000_000))
+}
+
 //nolint:testifylint // Epsilon comparison not required
 func TestWeiTo(t *testing.T) {
 	t.Parallel()

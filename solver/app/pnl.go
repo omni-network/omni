@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"math"
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -67,7 +68,7 @@ func newFilledPnlFunc(
 		for _, tknAmt := range maxSpent {
 			p := pnl.LogP{
 				Type:        pnl.Expense,
-				AmountGwei:  bi.ToGweiF64(tknAmt.Amount),
+				AmountGwei:  tknAmtToGweiF64(tknAmt.Amount, tknAmt.Token.Decimals),
 				Currency:    pnl.Currency(tknAmt.Token.Symbol),
 				Category:    "solver_expense",
 				Subcategory: target,
@@ -81,7 +82,7 @@ func newFilledPnlFunc(
 		for _, tknAmt := range minReceived {
 			p := pnl.LogP{
 				Type:        pnl.Income,
-				AmountGwei:  bi.ToGweiF64(tknAmt.Amount),
+				AmountGwei:  tknAmtToGweiF64(tknAmt.Amount, tknAmt.Token.Decimals),
 				Currency:    pnl.Currency(tknAmt.Token.Symbol),
 				Category:    "solver_deposit",
 				Subcategory: target,
@@ -183,4 +184,15 @@ func usdPnL(ctx context.Context, pricer tokenslib.Pricer, token tokenslib.Token,
 	p.Currency = pnl.USD
 	p.AmountGwei *= usdPrice // USDAmount = TokenAmount * USDPricePerToken
 	pnl.Log(ctx, p)
+}
+
+// tknAmtToGweiF64 converts a amt / dec to Gwei float64, accounting for token decimals.
+func tknAmtToGweiF64(amt *big.Int, dec uint) float64 {
+	// normalize to 18 decimals
+	if dec < 18 {
+		//nolint:gosec // dec will not overflow, < 18
+		amt = bi.MulRaw(amt, int(math.Pow10(18-int(dec))))
+	}
+
+	return bi.ToGweiF64(amt)
 }
