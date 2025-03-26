@@ -26,7 +26,7 @@ var (
 		Namespace: "lib",
 		Subsystem: "ethclient",
 		Name:      "cache_reorg_total",
-		Help:      "Total number of blocks reorged by chain",
+		Help:      "Total number of reorgs detected by chain",
 	}, []string{"chain"})
 
 	cacheHits = promauto.NewCounterVec(prometheus.CounterOpts{

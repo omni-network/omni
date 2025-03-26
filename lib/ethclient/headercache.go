@@ -97,7 +97,12 @@ func (c headerCache) add(ctx context.Context, h *types.Header) {
 		return
 	}
 
-	reorgTotal.WithLabelValues(c.Name()).Add(float64(depth))
+	reorgTotal.WithLabelValues(c.Name()).Inc()
+	// Increment counter instead of adding depth, since one cannot easily distinguish counter
+	// increases when close together. Log the depth instead.
+	if depth > 0 {
+		log.Debug(ctx, "Chain reorg detected", "chain", c.Name(), "depth", depth, "height", h.Number)
+	}
 
 	if _, err := c.db.MaybePrune(ctx, c.limit); err != nil {
 		// Best effort, don't block on cache update.
