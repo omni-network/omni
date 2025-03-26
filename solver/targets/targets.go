@@ -4,8 +4,13 @@
 package targets
 
 import (
-	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
-	"github.com/omni-network/omni/lib/evmchain"
+	"context"
+	"sync"
+	"time"
+
+	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/expbackoff"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -17,19 +22,6 @@ type Target struct {
 }
 
 var (
-	// Symbiotic testnet.
-	SymbioticSepoliaWSTETHVault1 = addr("0x77F170Dcd0439c0057055a6D7e5A1Eb9c48cCD2a")
-	SymbioticSepoliaWSTETHVault2 = addr("0x1BAe55e4774372F6181DaAaB4Ca197A8D9CC06Dd")
-	SymbioticSepoliaWSTETHVault3 = addr("0x6415D3B5fc615D4a00C71f4044dEc24C141EBFf8")
-	SymbioticHoleskyWSTETHVault1 = addr("0xd88dDf98fE4d161a66FB836bee4Ca469eb0E4a75")
-	SymbioticHoleskyWSTETHVault2 = addr("0xa4c81649c79f8378a4409178E758B839F1d57a54")
-
-	// Eigen testnet.
-	EigenHoleskyStrategyManager = addr("0xdfB5f6CE42aAA7830E94ECFCcAd411beF4d4D5b6")
-
-	// Eigen mainnet.
-	EigenMainnetStrategyManager = addr("0x858646372CC42E1A627fcE94aa7A7033e7CF075A")
-
 	// targetsRestricted maps each network to whether targets should be restricted to the allowed set.
 	targetsRestricted = map[netconf.ID]bool{
 		netconf.Staging: true,
@@ -37,38 +29,81 @@ var (
 		netconf.Mainnet: true,
 	}
 
-	targets = []Target{
-		{
-			Name: "Symbiotic",
-			Addresses: networkChainAddrs(map[uint64]map[common.Address]bool{
-				evmchain.IDSepolia: set(
-					SymbioticSepoliaWSTETHVault1,
-					SymbioticSepoliaWSTETHVault2,
-					SymbioticSepoliaWSTETHVault3,
-				),
-				evmchain.IDHolesky: set(
-					SymbioticHoleskyWSTETHVault1,
-					SymbioticHoleskyWSTETHVault2,
-				),
-			}),
-		},
-		{
-			Name: "Eigen",
-			Addresses: networkChainAddrs(map[uint64]map[common.Address]bool{
-				evmchain.IDHolesky:  set(EigenHoleskyStrategyManager),
-				evmchain.IDEthereum: set(EigenMainnetStrategyManager),
-			}),
-		},
-		{
-			Name: "OmniStaking",
-			Addresses: func(uint64) map[common.Address]bool {
-				return map[common.Address]bool{
-					common.HexToAddress(predeploys.Staking): true,
-				}
-			},
-		},
+	// static are known, static targets.
+	static = []Target{
+		eigen,
+		staking,
 	}
+
+	// targets is the list of targets all targets, set during Init.
+	targets []Target
+	mu      sync.RWMutex
 )
+
+// InitStatic initializes onlystatic targets.
+func InitStatic() {
+	targets = []Target{}
+	targets = append(targets, static...)
+}
+
+// Init initializes the targets.
+func Init(ctx context.Context) error {
+	symbiotic, err := getSymbiotic(ctx)
+	if err != nil {
+		return errors.Wrap(err, "symbiotic target")
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	targets = []Target{}
+	targets = append(targets, static...)
+	targets = append(targets, symbiotic)
+
+	return nil
+}
+
+// TryInitRefreshForever tries to initialize the targets forever, with exponential backoff.
+// Once initialized, targets are refreshed every hour.
+func TryInitRefreshForever(ctx context.Context) {
+	backoff := expbackoff.New(ctx)
+	for ctx.Err() == nil {
+		if ctx.Err() != nil {
+			return
+		}
+
+		err := Init(ctx)
+		if err == nil {
+			log.Info(ctx, "Targets initialized")
+			go refreshForever(ctx)
+
+			return
+		}
+
+		log.Warn(ctx, "Failed to init targets, will retry", err)
+		backoff()
+	}
+}
+
+// refreshForever refreshes the targets every hour.
+func refreshForever(ctx context.Context) {
+	ticker := time.NewTicker(time.Hour)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			err := Init(ctx)
+			if err != nil {
+				log.Warn(ctx, "Failed to refresh targets, will retry", err)
+			}
+
+			log.Info(ctx, "Targets refreshed")
+		}
+	}
+}
 
 func networkChainAddrs(m map[uint64]map[common.Address]bool) func(uint64) map[common.Address]bool {
 	return func(chainID uint64) map[common.Address]bool {
@@ -83,6 +118,9 @@ func IsRestricted(network netconf.ID) bool {
 
 // Get returns the allowed target for the given chain and address.
 func Get(chainID uint64, target common.Address) (Target, bool) {
+	mu.RLock()
+	defer mu.RUnlock()
+
 	for _, t := range targets {
 		if _, ok := t.Addresses(chainID)[target]; ok {
 			return t, true

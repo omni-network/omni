@@ -69,6 +69,8 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 	defer stopTracer(ctx) //nolint:errcheck // Tracing shutdown errors not critical
 
+	go targets.TryInitRefreshForever(ctx)
+
 	// Start monitoring first, so app is "up"
 	monitorChan := serveMonitoring(cfg.MonitoringAddr)
 
@@ -81,8 +83,6 @@ func Run(ctx context.Context, cfg Config) error {
 	if err != nil {
 		return err
 	}
-
-	// TODO: log supported tokens / balances
 
 	if cfg.SolverPrivKey == "" {
 		return errors.New("private key not set")
