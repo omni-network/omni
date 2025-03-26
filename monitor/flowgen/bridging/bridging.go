@@ -46,7 +46,7 @@ func newJob(networkID netconf.ID, backends ethbackend.Backends, conf flowConfig,
 
 		SrcChainBackend: backend,
 
-		OpenOrderFunc: func(ctx context.Context) (types.Receipt, error) {
+		OpenOrderFunc: func(ctx context.Context) (types.Result, bool, error) {
 			return openOrder(ctx, backends, backend, networkID, owner, conf)
 		},
 	}, nil
@@ -61,33 +61,31 @@ func openOrder(
 	networkID netconf.ID,
 	owner common.Address,
 	conf flowConfig,
-) (types.Receipt, error) {
-	defaultReceipt := types.Receipt{}
-
+) (types.Result, bool, error) {
 	srcToken, ok := stokens.Native(conf.srcChain)
 	if !ok {
-		return defaultReceipt, errors.New("src token not found")
+		return types.Result{}, false, errors.New("src token not found")
 	}
 
 	dstToken, ok := stokens.Native(conf.dstChain)
 	if !ok {
-		return defaultReceipt, errors.New("dst token not found")
+		return types.Result{}, false, errors.New("dst token not found")
 	}
 
 	orderSize, ok, err := estimateOrderSize(ctx, networkID, backend.Client, owner, conf, srcToken.Token)
 	if err != nil {
-		return defaultReceipt, errors.Wrap(err, "estimate order size")
+		return types.Result{}, false, errors.Wrap(err, "estimate order size")
 	}
 
 	if !ok {
-		return defaultReceipt, nil
+		return types.Result{}, false, nil
 	}
 
 	expense := solver.TokenAmt{Token: dstToken, Amount: orderSize}
 
 	depositWithFee, err := solver.QuoteDeposit(srcToken, expense)
 	if err != nil {
-		return defaultReceipt, errors.Wrap(err, "quote deposit")
+		return types.Result{}, false, errors.Wrap(err, "quote deposit")
 	}
 
 	orderData := bindings.SolverNetOrderData{
@@ -108,10 +106,10 @@ func openOrder(
 
 	orderID, err := solvernet.OpenOrder(ctx, networkID, conf.srcChain, backends, owner, orderData)
 	if err != nil {
-		return defaultReceipt, errors.Wrap(err, "open order")
+		return types.Result{}, false, errors.Wrap(err, "open order")
 	}
 
-	return types.Receipt{OrderID: orderID, Expense: expense, Success: true}, nil
+	return types.Result{OrderID: orderID, Expense: expense}, true, nil
 }
 
 // Jobs returns two jobs bridging native ETH from one chain to another one and back.

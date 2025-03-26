@@ -103,14 +103,14 @@ func startWithBackends(
 // run runs a job exactly once. It returns false if the job was skipped.
 func run(ctx context.Context, job types.Job) (bool, error) {
 	log.Debug(ctx, "Flowgen: running job")
-	startTime := time.Now()
+	t0 := time.Now()
 
-	receipt, err := job.OpenOrderFunc(ctx)
+	receipt, ok, err := job.OpenOrderFunc(ctx)
 	if err != nil {
 		return false, errors.Wrap(err, "open order")
 	}
 
-	if !receipt.Success {
+	if !ok {
 		return false, nil
 	}
 
@@ -122,11 +122,11 @@ func run(ctx context.Context, job types.Job) (bool, error) {
 		return false, errors.Wrap(err, "await claimed")
 	}
 
-	duration := time.Since(startTime)
+	duration := time.Since(t0)
 	log.Info(ctx, "Flowgen: order claimed",
 		"amount", bi.ToEtherF64(receipt.Expense.Amount),
 		"token", receipt.Expense.Token.Symbol,
-		"duration_minutes", duration.Minutes(),
+		"duration", duration.Minutes(),
 	)
 
 	return true, nil

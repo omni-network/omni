@@ -10,10 +10,9 @@ import (
 	solver "github.com/omni-network/omni/solver/app"
 )
 
-type Receipt struct {
+type Result struct {
 	OrderID solvernet.OrderID
 	Expense solver.TokenAmt
-	Success bool
 }
 
 type Job struct {
@@ -27,5 +26,6 @@ type Job struct {
 
 	SrcChainBackend *ethbackend.Backend
 
-	OpenOrderFunc func(ctx context.Context) (Receipt, error)
+	// OpenOrderFunc opens an order and returns the result, or false if the order wasn't opened, or an error.
+	OpenOrderFunc func(ctx context.Context) (Result, bool, error)
 }
