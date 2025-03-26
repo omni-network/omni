@@ -336,6 +336,7 @@ func startProcessingEvents(
 	if err != nil {
 		return err
 	}
+	log.Debug(ctx, "Restarting existing jobs", "count", len(jobs))
 	for _, j := range jobs {
 		if err := asyncWork(ctx, j); err != nil {
 			return err

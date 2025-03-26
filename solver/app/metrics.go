@@ -78,4 +78,18 @@ var (
 		Name:      "active_jobs",
 		Help:      "Number of active jobs per chain",
 	}, []string{"chain"})
+
+	workDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: "solver",
+		Subsystem: "worker",
+		Name:      "job_duration_seconds",
+		Help:      "Job duration in seconds by chain and event status",
+	}, []string{"chain", "status"})
+
+	workErrors = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "solver",
+		Subsystem: "worker",
+		Name:      "job_error_total",
+		Help:      "Total job errors by chain and event status",
+	}, []string{"chain", "status"})
 )

@@ -16,6 +16,7 @@ import (
 	"cosmossdk.io/orm/types/ormerrors"
 	dbm "github.com/cosmos/cosmos-db"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // New returns a new job DB backed by the given cosmos db.
@@ -128,6 +129,7 @@ func (db DB) Insert(ctx context.Context, chainID uint64, elog types.Log) (*Job, 
 		BlockHeight: elog.BlockNumber,
 		EventIndex:  index,
 		EventJson:   bz,
+		CreatedAt:   timestamppb.Now(),
 	}
 
 	id, err := db.table.InsertReturningId(ctx, j)

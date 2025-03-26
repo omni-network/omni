@@ -10,6 +10,7 @@ import (
 	_ "cosmossdk.io/api/cosmos/orm/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -29,6 +30,7 @@ type Job struct {
 	BlockHeight   uint64                 `protobuf:"varint,3,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"` // Height of the source-chain block
 	EventIndex    uint64                 `protobuf:"varint,4,opt,name=event_index,json=eventIndex,proto3" json:"event_index,omitempty"`    // Event index in the block
 	EventJson     []byte                 `protobuf:"bytes,5,opt,name=event_json,json=eventJson,proto3" json:"event_json,omitempty"`        // *types.Log JSON
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`        // Creation timestamp
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -98,12 +100,19 @@ func (x *Job) GetEventJson() []byte {
 	return nil
 }
 
+func (x *Job) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
 var File_solver_job_job_proto protoreflect.FileDescriptor
 
 const file_solver_job_job_proto_rawDesc = "" +
 	"\n" +
 	"\x14solver/job/job.proto\x12\n" +
-	"solver.job\x1a\x17cosmos/orm/v1/orm.proto\"\xce\x01\n" +
+	"solver.job\x1a\x17cosmos/orm/v1/orm.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x89\x02\n" +
 	"\x03Job\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x19\n" +
 	"\bchain_id\x18\x02 \x01(\x04R\achainId\x12!\n" +
@@ -111,7 +120,9 @@ const file_solver_job_job_proto_rawDesc = "" +
 	"\vevent_index\x18\x04 \x01(\x04R\n" +
 	"eventIndex\x12\x1d\n" +
 	"\n" +
-	"event_json\x18\x05 \x01(\fR\teventJson:9\xf2\x9eӎ\x033\n" +
+	"event_json\x18\x05 \x01(\fR\teventJson\x129\n" +
+	"\n" +
+	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt:9\xf2\x9eӎ\x033\n" +
 	"\x06\n" +
 	"\x02id\x10\x01\x12'\n" +
 	"!chain_id,block_height,event_index\x10\x02\x18\x01\x18\x02B\x8c\x01\n" +
@@ -133,14 +144,16 @@ func file_solver_job_job_proto_rawDescGZIP() []byte {
 
 var file_solver_job_job_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_solver_job_job_proto_goTypes = []any{
-	(*Job)(nil), // 0: solver.job.Job
+	(*Job)(nil),                   // 0: solver.job.Job
+	(*timestamppb.Timestamp)(nil), // 1: google.protobuf.Timestamp
 }
 var file_solver_job_job_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	1, // 0: solver.job.Job.created_at:type_name -> google.protobuf.Timestamp
+	1, // [1:1] is the sub-list for method output_type
+	1, // [1:1] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_solver_job_job_proto_init() }
