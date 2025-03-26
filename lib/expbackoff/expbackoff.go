@@ -29,6 +29,12 @@ type Config struct {
 	// MaxDelay is the upper bound of backoff delay.
 	MaxDelay time.Duration
 
+	// Interrupts provides a channel to interrupt the backoff by sending a value.
+	// A nil value results in no interrupts.
+	// Note that closing the channel results in immediate interruption of all subsequent backoffs.
+	// Note that exponential backoff duration is not reset on interrupt.
+	Interrupts <-chan struct{}
+
 	// retryConfig only applicable to Retry.
 	retryConfig retryConfig
 }
@@ -137,6 +143,7 @@ func NewWithReset(ctx context.Context, opts ...func(*Config)) (backoff func(), r
 
 		select {
 		case <-ctx.Done():
+		case <-conf.Interrupts:
 		case <-after(Backoff(conf, retries)):
 		}
 		retries++
@@ -178,6 +185,7 @@ func NewWithAutoReset(ctx context.Context, opts ...func(*Config)) (backoff func(
 
 		select {
 		case <-ctx.Done():
+		case <-conf.Interrupts:
 		case <-after(Backoff(conf, retries)):
 		}
 		retries++
