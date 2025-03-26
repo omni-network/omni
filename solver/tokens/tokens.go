@@ -54,15 +54,15 @@ var (
 		tokenslib.ETH: {
 			ClassMainnet: {
 				MinSpend: bi.Ether(0.001), // 0.001 ETH
-				MaxSpend: bi.Ether(1),     // 1 ETH
+				MaxSpend: bi.Ether(3),     // 3 ETH
 			},
 			ClassTestnet: {
 				MinSpend: bi.Ether(0.001), // 0.001 ETH
-				MaxSpend: bi.Ether(1),     // 1 ETH
+				MaxSpend: bi.Ether(3),     // 3 ETH
 			},
 			ClassDevent: {
 				MinSpend: bi.Ether(0.001), // 0.001 ETH
-				MaxSpend: bi.Ether(1),     // 1 ETH
+				MaxSpend: bi.Ether(3),     // 3 ETH
 			},
 		},
 		tokenslib.OMNI: {

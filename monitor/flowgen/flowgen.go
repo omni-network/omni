@@ -6,6 +6,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
@@ -102,8 +103,9 @@ func startWithBackends(
 // run runs a job exactly once. It returns false if the job was skipped.
 func run(ctx context.Context, job types.Job) (bool, error) {
 	log.Debug(ctx, "Flowgen: running job")
+	t0 := time.Now()
 
-	orderID, ok, err := job.OpenOrderFunc(ctx)
+	receipt, ok, err := job.OpenOrderFunc(ctx)
 	if err != nil {
 		return false, errors.Wrap(err, "open order")
 	}
@@ -112,15 +114,20 @@ func run(ctx context.Context, job types.Job) (bool, error) {
 		return false, nil
 	}
 
-	ctx = log.WithCtx(ctx, "order_id", orderID)
+	ctx = log.WithCtx(ctx, "order_id", receipt.OrderID)
 
 	log.Debug(ctx, "Flowgen: order opened")
 
-	if err := awaitClaimed(ctx, job, orderID); err != nil {
+	if err := awaitClaimed(ctx, job, receipt.OrderID); err != nil {
 		return false, errors.Wrap(err, "await claimed")
 	}
 
-	log.Info(ctx, "Flowgen: order claimed")
+	duration := time.Since(t0)
+	log.Info(ctx, "Flowgen: order claimed",
+		"amount", bi.ToEtherF64(receipt.Expense.Amount),
+		"token", receipt.Expense.Token.Symbol,
+		"duration", duration.Minutes(),
+	)
 
 	return true, nil
 }

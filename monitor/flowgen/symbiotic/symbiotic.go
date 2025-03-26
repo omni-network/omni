@@ -78,7 +78,7 @@ func newJob(
 
 		SrcChainBackend: backend,
 
-		OpenOrderFunc: func(ctx context.Context) (solvernet.OrderID, bool, error) {
+		OpenOrderFunc: func(ctx context.Context) (types.Result, bool, error) {
 			return openOrder(ctx, backends, networkID, owner, srcChainTkn, dstChainTkn, conf)
 		},
 	}, true, nil
@@ -93,22 +93,22 @@ func openOrder(
 	owner common.Address,
 	srcToken, dstToken stokens.Token,
 	conf flowConfig,
-) (solvernet.OrderID, bool, error) {
+) (types.Result, bool, error) {
 	expense := solver.TokenAmt{Token: dstToken, Amount: conf.orderSize}
 
 	depositWithFee, err := solver.QuoteDeposit(srcToken, solver.TokenAmt{Token: srcToken, Amount: conf.orderSize})
 	if err != nil {
-		return solvernet.OrderID{}, false, errors.Wrap(err, "quote deposit")
+		return types.Result{}, false, errors.Wrap(err, "quote deposit")
 	}
 
 	abi, err := metaData.GetAbi()
 	if err != nil {
-		return solvernet.OrderID{}, false, errors.Wrap(err, "get abi")
+		return types.Result{}, false, errors.Wrap(err, "get abi")
 	}
 
 	data, err := abi.Pack("deposit", owner, expense.Amount)
 	if err != nil {
-		return solvernet.OrderID{}, false, errors.Wrap(err, "packing")
+		return types.Result{}, false, errors.Wrap(err, "packing")
 	}
 
 	orderData := bindings.SolverNetOrderData{
@@ -134,10 +134,10 @@ func openOrder(
 
 	orderID, err := solvernet.OpenOrder(ctx, networkID, conf.srcChain, backends, owner, orderData)
 	if err != nil {
-		return solvernet.OrderID{}, false, errors.Wrap(err, "open order")
+		return types.Result{}, false, errors.Wrap(err, "open order")
 	}
 
-	return orderID, true, nil
+	return types.Result{OrderID: orderID, Expense: expense}, true, nil
 }
 
 var metaData = &bind.MetaData{
