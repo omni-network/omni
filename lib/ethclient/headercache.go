@@ -3,10 +3,14 @@ package ethclient
 import (
 	"context"
 	"math/big"
+	"sync"
+	"time"
 
 	"github.com/omni-network/omni/lib/ethclient/headerdb"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/umath"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
@@ -89,6 +93,42 @@ func (c headerCache) HeaderByHash(ctx context.Context, hash common.Hash) (*types
 	return header, nil
 }
 
+// SubscribeNewHead subscribes to new headers and caches them.
+// Note that the Subscription.Unsubscribe MUST be called to avoid leaking resources (if error is nil).
+func (c headerCache) SubscribeNewHead(ctx context.Context, outer chan<- *types.Header) (ethereum.Subscription, error) {
+	inner := make(chan *types.Header)
+	sub, err := c.Client.SubscribeNewHead(ctx, inner)
+	if err != nil {
+		return nil, err
+	}
+
+	cancelSub := newCancelSub(sub)
+
+	// Not using ctx for scheduling since the contract of SubscribeNewHead
+	// states that context is only applicable to initial setup, not subscription lifetime.
+
+	go func() {
+		for {
+			select {
+			case <-cancelSub.cancel:
+				return
+			case header := <-inner:
+				instrumentWebsocket(c.Name(), header)
+
+				c.add(ctx, header)
+
+				select {
+				case outer <- header:
+				case <-cancelSub.cancel:
+					return
+				}
+			}
+		}
+	}()
+
+	return cancelSub, nil
+}
+
 func (c headerCache) add(ctx context.Context, h *types.Header) {
 	depth, err := c.db.AddAndReorg(ctx, h, c.Client.HeaderByHash)
 	if err != nil {
@@ -104,4 +144,34 @@ func (c headerCache) add(ctx context.Context, h *types.Header) {
 		log.Warn(ctx, "Failed pruning cache [BUG]", err)
 		return
 	}
+}
+
+func newCancelSub(sub ethereum.Subscription) *cancelSub {
+	return &cancelSub{
+		Subscription: sub,
+		cancel:       make(chan struct{}),
+	}
+}
+
+// cancelSub wraps an ethereum.Subscription and adds a cancel channel that is closed on Unsubscribe.
+type cancelSub struct {
+	ethereum.Subscription
+	cancelOnce sync.Once
+	cancel     chan struct{}
+}
+
+func (s *cancelSub) Unsubscribe() {
+	s.cancelOnce.Do(func() {
+		close(s.cancel)
+	})
+	s.Subscription.Unsubscribe()
+}
+
+func instrumentWebsocket(name string, header *types.Header) {
+	epochSecs, err := umath.ToInt64(header.Time)
+	if err != nil {
+		return
+	}
+	latency := time.Since(time.Unix(epochSecs, 0))
+	websocketLatency.WithLabelValues(name).Set(latency.Seconds())
 }
