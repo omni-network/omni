@@ -2,123 +2,118 @@ package app
 
 import (
 	"context"
-	"time"
 
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-// newEventProcessor returns a callback provided to xchain.Provider::StreamEventLogs processing
-// all inbox contract events and driving order lifecycle.
-func newEventProcessor(deps procDeps, chainID uint64) xchain.EventLogsCallback {
-	return func(ctx context.Context, header *types.Header, elogs []types.Log) error {
-		// Instrument lag; how old is the block we are processing; how far behind are we?
-		lag := float64(time.Now().Unix()) - float64(header.Time)
-		processorLag.WithLabelValues(deps.ProcessorName).Set(lag)
+// eventProcFunc abstracts the event processing function.
+type eventProcFunc func(ctx context.Context, elog types.Log) error
 
-		for _, elog := range elogs {
-			event, ok := solvernet.EventByTopic(elog.Topics[0])
-			if !ok {
-				return errors.New("unknown event [BUG]")
-			}
-
-			orderID, err := deps.ParseID(chainID, elog)
-			if err != nil {
-				return errors.Wrap(err, "parse id")
-			}
-
-			order, found, err := deps.GetOrder(ctx, chainID, orderID)
-			if err != nil {
-				return errors.Wrap(err, "get order")
-			} else if !found {
-				return errors.New("order not found [BUG]")
-			}
-
-			statusOffset.WithLabelValues(deps.ProcessorName, event.Status.String()).Set(float64(order.Offset))
-
-			ctx := log.WithCtx(ctx,
-				"order_id", order.ID.String(),
-				"offset", order.Offset,
-				"status", order.Status,
-			)
-
-			if event.Status != order.Status {
-				log.Debug(ctx, "Ignoring old order event (status already changed)", "event_status", event.Status.String())
-				continue
-			}
-
-			age := deps.InstrumentAge(ctx, chainID, header.Number.Uint64(), order)
-
-			log.Debug(ctx, "Processing order event", age)
-
-			alreadyFilled := func() bool {
-				// ignore err. maybeReject will handle unsupported dest chain
-				filled, _ := deps.DidFill(ctx, order)
-				return filled
-			}
-
-			// maybeReject rejects orders if necessary, logging and counting them, returning true if rejected.
-			maybeReject := func() (bool, error) {
-				reason, reject, err := deps.ShouldReject(ctx, order)
-				if err != nil {
-					return false, errors.Wrap(err, "should reject")
-				} else if !reject {
-					return false, nil
-				}
-
-				log.InfoErr(ctx, "Rejecting order", err, "reason", reason.String())
-
-				// reject, log and count, swallow err
-				if err := deps.Reject(ctx, order, reason); err != nil {
-					return false, errors.Wrap(err, "reject order")
-				}
-
-				rejectedOrders.WithLabelValues(
-					deps.ChainName(order.SourceChainID),
-					reason.String(),
-				).Inc()
-
-				return true, nil
-			}
-
-			switch event.Status {
-			case solvernet.StatusPending:
-				if alreadyFilled() {
-					return nil
-				}
-
-				debugPendingData(ctx, deps, order, elog)
-
-				if didReject, err := maybeReject(); err != nil {
-					return err
-				} else if didReject {
-					continue
-				}
-
-				log.Debug(ctx, "Filling order")
-				if err := deps.Fill(ctx, order); err != nil {
-					return errors.Wrap(err, "fill order")
-				}
-			case solvernet.StatusFilled:
-				log.Info(ctx, "Claiming order")
-				if err := deps.Claim(ctx, order); err != nil {
-					return errors.Wrap(err, "claim order")
-				}
-			case solvernet.StatusRejected, solvernet.StatusClosed, solvernet.StatusClaimed:
-				// Noop for now
-			default:
-				return errors.New("unknown status [BUG]")
-			}
-
-			processedEvents.WithLabelValues(deps.ProcessorName, event.Status.String()).Inc()
+// newEventProcFunc returns a new event processing function for the provided chain.
+// It handles all inbox contract events and driving order lifecycle.
+func newEventProcFunc(deps procDeps, chainID uint64) eventProcFunc {
+	return func(ctx context.Context, elog types.Log) error {
+		event, ok := solvernet.EventByTopic(elog.Topics[0])
+		if !ok {
+			return errors.New("unknown event [BUG]")
 		}
 
-		return deps.SetCursor(ctx, chainID, header.Number.Uint64())
+		orderID, err := deps.ParseID(chainID, elog)
+		if err != nil {
+			return errors.Wrap(err, "parse id")
+		}
+
+		order, found, err := deps.GetOrder(ctx, chainID, orderID)
+		if err != nil {
+			return errors.Wrap(err, "get order")
+		} else if !found {
+			return errors.New("order not found [BUG]")
+		}
+
+		statusOffset.WithLabelValues(deps.ProcessorName, event.Status.String()).Set(float64(order.Offset))
+
+		ctx = log.WithCtx(ctx,
+			"order_id", order.ID.String(),
+			"offset", order.Offset,
+			"status", order.Status,
+		)
+
+		if event.Status != order.Status {
+			log.Debug(ctx, "Ignoring old order event (status already changed)", "event_status", event.Status.String())
+			return nil
+		}
+
+		age := deps.InstrumentAge(ctx, chainID, elog.BlockNumber, order)
+
+		log.Debug(ctx, "Processing order event", age)
+
+		alreadyFilled := func() bool {
+			// ignore err. maybeReject will handle unsupported dest chain
+			filled, _ := deps.DidFill(ctx, order)
+			return filled
+		}
+
+		// maybeReject rejects orders if necessary, logging and counting them, returning true if rejected.
+		maybeReject := func() (bool, error) {
+			reason, reject, err := deps.ShouldReject(ctx, order)
+			if err != nil {
+				return false, errors.Wrap(err, "should reject")
+			} else if !reject {
+				return false, nil
+			}
+
+			log.InfoErr(ctx, "Rejecting order", err, "reason", reason.String())
+
+			// reject, log and count, swallow err
+			if err := deps.Reject(ctx, order, reason); err != nil {
+				return false, errors.Wrap(err, "reject order")
+			}
+
+			rejectedOrders.WithLabelValues(
+				deps.ChainName(order.SourceChainID),
+				reason.String(),
+			).Inc()
+
+			return true, nil
+		}
+
+		switch event.Status {
+		case solvernet.StatusPending:
+			if alreadyFilled() {
+				return nil
+			}
+
+			debugPendingData(ctx, deps, order, elog)
+
+			if didReject, err := maybeReject(); err != nil {
+				return err
+			} else if didReject {
+				break
+			}
+
+			log.Debug(ctx, "Filling order")
+			if err := deps.Fill(ctx, order); err != nil {
+				return errors.Wrap(err, "fill order")
+			}
+		case solvernet.StatusFilled:
+			log.Info(ctx, "Claiming order")
+			if err := deps.Claim(ctx, order); err != nil {
+				return errors.Wrap(err, "claim order")
+			}
+		case solvernet.StatusRejected, solvernet.StatusClosed, solvernet.StatusClaimed:
+			// Noop for now
+		default:
+			return errors.New("unknown status [BUG]")
+		}
+
+		processedEvents.WithLabelValues(deps.ProcessorName, event.Status.String()).Inc()
+
+		return nil
 	}
 }
 

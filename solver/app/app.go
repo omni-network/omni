@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"net/http/pprof"
-	"sync"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -23,6 +22,7 @@ import (
 	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
+	"github.com/omni-network/omni/solver/job"
 	"github.com/omni-network/omni/solver/targets"
 	stokens "github.com/omni-network/omni/solver/tokens"
 
@@ -33,27 +33,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-// chainVersFromID returns the chain versions to stream/process per chain ID.
-func chainVersFromID(network netconf.ID, chainID uint64) []xchain.ChainVersion {
-	// On devnet we stream twice (for idempotency testing)
-	if network == netconf.Devnet {
-		return []xchain.ChainVersion{
-			xchain.NewChainVersion(chainID, xchain.ConfLatest),
-			xchain.NewChainVersion(chainID, xchain.ConfMin2),
-		}
-	}
-
-	// For ethereum, we stream min2 to reduce reorg risk
+// chainVerFromID returns the chain version to stream/process per chain ID.
+func chainVerFromID(network netconf.ID, chainID uint64) xchain.ChainVersion {
+	// For ethereum L1, we stream min2 to reduce reorg risk
 	if chainID == netconf.EthereumChainID(network) {
-		return []xchain.ChainVersion{
-			xchain.NewChainVersion(chainID, xchain.ConfMin2),
-		}
+		return xchain.NewChainVersion(chainID, xchain.ConfMin2)
 	}
 
 	// On other chains, we only stream latest for now,
-	return []xchain.ChainVersion{
-		xchain.NewChainVersion(chainID, xchain.ConfLatest),
-	}
+	return xchain.NewChainVersion(chainID, xchain.ConfLatest)
 }
 
 // Run starts the solver service.
@@ -106,6 +94,11 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
+	jobDB, err := job.New(db)
+	if err != nil {
+		return err
+	}
+
 	cursors, err := newCursors(db)
 	if err != nil {
 		return errors.Wrap(err, "create cursor store")
@@ -122,7 +115,7 @@ func Run(ctx context.Context, cfg Config) error {
 
 	pricer := newPricer(ctx, cfg.CoinGeckoAPIKey)
 
-	err = startEventStreams(ctx, network, xprov, backends, solverAddr, addrs, cursors, pricer)
+	err = startProcessingEvents(ctx, network, xprov, jobDB, backends, solverAddr, addrs, cursors, pricer)
 	if err != nil {
 		return errors.Wrap(err, "start event streams")
 	}
@@ -210,12 +203,15 @@ func makePortalRegistry(network netconf.ID, endpoints xchain.RPCEndpoints) (*bin
 	return resp, nil
 }
 
-// startEventStreams starts the event streams for the solver.
+// startProcessingEvents starts the event processing for the solver.
+// It starts processing all existing jobs in the DB, as well as
+// streaming new events and inserting into job DB and processing them.
 // TODO(corver): Make this robust against chains not be available on startup.
-func startEventStreams(
+func startProcessingEvents(
 	ctx context.Context,
 	network netconf.Network,
 	xprov xchain.Provider,
+	jobDB job.DB,
 	backends ethbackend.Backends,
 	solverAddr common.Address,
 	addrs contracts.Addresses,
@@ -243,12 +239,10 @@ func startEventStreams(
 		}
 		inboxContracts[chain] = inbox
 
-		// Bootstrap all streamer cursors for this chain
-		for _, chainVer := range chainVersFromID(network.ID, chain) {
-			loopCtx := log.WithCtx(ctx, "chain_version", network.ChainVersionName(chainVer))
-			if err := maybeBootstrapCursor(loopCtx, inbox, cursors, chainVer); err != nil {
-				return err
-			}
+		chainVer := chainVerFromID(network.ID, chain)
+		loopCtx := log.WithCtx(ctx, "chain_version", network.ChainVersionName(chainVer))
+		if err := maybeBootstrapCursor(loopCtx, inbox, cursors, chainVer); err != nil {
+			return err
 		}
 	}
 
@@ -308,58 +302,53 @@ func startEventStreams(
 	filledPnL := newFilledPnlFunc(pricer, targetName, network.ChainName, addrs.SolverNetOutbox, ageCache.InstrumentDestFilled)
 	updatePnL := newUpdatePnLFunc(pricer, network.ChainName)
 
+	// Create all event processing functions per chain
+	procs := make(map[uint64]eventProcFunc)
 	for _, chainID := range inboxChains {
-		// Ensure chain version processors don't process same height concurrently.
-		callbackWrapper := newHeightMutexer()
-		for _, chainVer := range chainVersFromID(network.ID, chainID) {
-			cursorSetter := func(ctx context.Context, _ uint64, height uint64) error {
-				return cursors.Set(ctx, chainVer, height)
-			}
-
-			deps := procDeps{
-				ParseID:       newIDParser(inboxContracts),
-				GetOrder:      newOrderGetter(inboxContracts),
-				ShouldReject:  newShouldRejector(backends, callAllower, solverAddr, addrs.SolverNetOutbox),
-				DidFill:       newDidFiller(outboxContracts),
-				Reject:        newRejector(inboxContracts, backends, solverAddr, updatePnL),
-				Fill:          newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, filledPnL),
-				Claim:         newClaimer(network.ID, inboxContracts, backends, solverAddr, updatePnL),
-				SetCursor:     cursorSetter,
-				ChainName:     network.ChainName,
-				ProcessorName: network.ChainVersionName(chainVer),
-				TargetName:    targetName,
-				InstrumentAge: ageCache.InstrumentAge,
-			}
-
-			loopCtx := log.WithCtx(ctx, "proc", network.ChainVersionName(chainVer))
-			log.Info(loopCtx, "Starting inbox event processor")
-			go streamEventsForever(loopCtx, chainVer, xprov, deps, cursors, addrs.SolverNetInbox, callbackWrapper)
+		chainVer := chainVerFromID(network.ID, chainID)
+		cursorSetter := func(ctx context.Context, _ uint64, height uint64) error {
+			return cursors.Set(ctx, chainVer, height)
 		}
+
+		deps := procDeps{
+			ParseID:       newIDParser(inboxContracts),
+			GetOrder:      newOrderGetter(inboxContracts),
+			ShouldReject:  newShouldRejector(backends, callAllower, solverAddr, addrs.SolverNetOutbox),
+			DidFill:       newDidFiller(outboxContracts),
+			Reject:        newRejector(inboxContracts, backends, solverAddr, updatePnL),
+			Fill:          newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, filledPnL),
+			Claim:         newClaimer(network.ID, inboxContracts, backends, solverAddr, updatePnL),
+			SetCursor:     cursorSetter,
+			ChainName:     network.ChainName,
+			ProcessorName: network.ChainVersionName(chainVer),
+			TargetName:    targetName,
+			InstrumentAge: ageCache.InstrumentAge,
+		}
+
+		procs[chainID] = newEventProcFunc(deps, chainID)
+	}
+
+	// Create the async worker function
+	asyncWork := newAsyncWorkerFunc(jobDB, procs, network.ChainName)
+
+	// Start all processing all existing jobs
+	jobs, err := jobDB.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, j := range jobs {
+		if err := asyncWork(ctx, j); err != nil {
+			return err
+		}
+	}
+
+	// Start streaming events for all chains
+	for _, chainID := range inboxChains {
+		chainVer := chainVerFromID(network.ID, chainID)
+		go streamEventsForever(ctx, chainVer, xprov, cursors, addrs.SolverNetInbox, jobDB, asyncWork)
 	}
 
 	return nil
-}
-
-// newHeightMutexer returns a callback wrapper that ensures a specific chain height is NOT processed concurrently.
-// This prevents races when multiple chain versions concurrently processing log events.
-// Since we wait for submitted txs to be mined, subsequent processors will read state from chain.
-// The risk is wasting gas due to re-submitting the same tx.
-func newHeightMutexer() func(callback xchain.EventLogsCallback) xchain.EventLogsCallback {
-	var mutexes sync.Map
-	return func(callback xchain.EventLogsCallback) xchain.EventLogsCallback {
-		return func(ctx context.Context, header *types.Header, events []types.Log) error {
-			height := header.Number.Uint64()
-			anyMutex, _ := mutexes.LoadOrStore(height, new(sync.Mutex))
-			mutex := anyMutex.(*sync.Mutex) //nolint:revive,forcetypeassert // Known type
-			mutex.Lock()
-			defer func() {
-				mutex.Unlock()
-				mutexes.Delete(height)
-			}()
-
-			return callback(ctx, header, events)
-		}
-	}
 }
 
 // streamEventsForever streams events from the inbox contract on the given chain version.
@@ -367,12 +356,12 @@ func streamEventsForever(
 	ctx context.Context,
 	chainVer xchain.ChainVersion,
 	xprov xchain.Provider,
-	deps procDeps,
 	cursors *cursors,
 	inboxAddr common.Address,
-	callbackWrapper func(xchain.EventLogsCallback) xchain.EventLogsCallback,
+	jobDB job.DB,
+	asyncWork asyncWorkFunc,
 ) {
-	backoff := expbackoff.New(ctx, expbackoff.WithPeriodicConfig(time.Second*5))
+	backoff := expbackoff.New(ctx)
 	for {
 		from, ok, err := cursors.Get(ctx, chainVer)
 		if !ok || err != nil {
@@ -389,7 +378,22 @@ func streamEventsForever(
 			FilterAddress: inboxAddr,
 			FilterTopics:  solvernet.AllEventTopics(),
 		}
-		err = xprov.StreamEventLogs(ctx, req, callbackWrapper(newEventProcessor(deps, chainVer.ID)))
+		err = xprov.StreamEventLogs(ctx, req, func(ctx context.Context, header *types.Header, elogs []types.Log) error {
+			for _, elog := range elogs {
+				// Insert each event/job into the jobDB, and start work async
+				j, err := jobDB.Insert(ctx, chainVer.ID, elog)
+				if err != nil {
+					return err
+				}
+
+				err = asyncWork(ctx, j)
+				if err != nil {
+					return err
+				}
+			}
+
+			return cursors.Set(ctx, chainVer, header.Number.Uint64())
+		})
 		if ctx.Err() != nil {
 			return
 		}

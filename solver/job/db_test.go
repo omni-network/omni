@@ -36,6 +36,13 @@ func TestDB(t *testing.T) {
 		require.Equal(t, id, j.GetId())
 		require.Equal(t, id, j.GetChainId())
 
+		ok, err := db.Exists(ctx, id)
+		require.NoError(t, err)
+		require.True(t, ok)
+		ok, err = db.Exists(ctx, id+1)
+		require.NoError(t, err)
+		require.False(t, ok)
+
 		// Idempotent
 		j, err = db.Insert(ctx, id, elog)
 		require.NoError(t, err)

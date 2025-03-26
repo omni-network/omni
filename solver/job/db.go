@@ -15,6 +15,7 @@ import (
 	"cosmossdk.io/orm/model/ormdb"
 	"cosmossdk.io/orm/types/ormerrors"
 	dbm "github.com/cosmos/cosmos-db"
+	"google.golang.org/protobuf/proto"
 )
 
 // New returns a new job DB backed by the given cosmos db.
@@ -63,7 +64,11 @@ func (db DB) All(ctx context.Context) ([]*Job, error) {
 			return nil, errors.Wrap(err, "get value")
 		}
 
-		jobs = append(jobs, job)
+		if _, err := job.EventLog(); err != nil {
+			return nil, err
+		}
+
+		jobs = append(jobs, proto.Clone(job).(*Job)) //nolint:forcetypeassert // Type known
 	}
 
 	return jobs, nil
@@ -77,6 +82,16 @@ func (db DB) Delete(ctx context.Context, id uint64) error {
 	}
 
 	return nil
+}
+
+// Exists returns true if the job exists in the database.
+func (db DB) Exists(ctx context.Context, id uint64) (bool, error) {
+	ok, err := db.table.Has(ctx, id)
+	if err != nil {
+		return false, errors.Wrap(err, "has job")
+	}
+
+	return ok, nil
 }
 
 // Insert adds a new job to the database returning the created job.
@@ -119,9 +134,11 @@ func (db DB) Insert(ctx context.Context, chainID uint64, elog types.Log) (*Job, 
 	if err != nil {
 		return nil, errors.Wrap(err, "insert job")
 	}
-	j.Id = id
 
-	return j, nil
+	resp := proto.Clone(j).(*Job) //nolint:revive,forcetypeassert // Type known
+	resp.Id = id
+
+	return resp, nil
 }
 
 func (db DB) getUnique(ctx context.Context, chainID uint64, height uint64, index uint) (*Job, bool, error) {
