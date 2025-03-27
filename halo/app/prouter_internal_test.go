@@ -5,16 +5,19 @@ import (
 	"testing"
 
 	atypes "github.com/omni-network/omni/halo/attest/types"
+	"github.com/omni-network/omni/lib/netconf"
 	etypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmttypes "github.com/cometbft/cometbft/proto/tendermint/types"
 
+	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/client"
 	sdktestutil "github.com/cosmos/cosmos-sdk/testutil"
 	"github.com/cosmos/cosmos-sdk/types"
-	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
 )
@@ -85,20 +88,17 @@ func TestProcessProposalRouter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
+			authority := authtypes.NewModuleAddress("test").String()
 			key := storetypes.NewKVStoreKey("test")
 			ctx := sdktestutil.DefaultContext(key, storetypes.NewTransientStoreKey("test_key"))
 
 			srv := &mockServer{}
-			encCfg := moduletestutil.MakeTestEncodingConfig()
+			encCfg, err := ClientEncodingConfig(ctx, netconf.Devnet)
+			require.NoError(t, err)
 			txConfig := encCfg.TxConfig
 
-			reg := encCfg.InterfaceRegistry
-			etypes.RegisterInterfaces(reg)
-			atypes.RegisterInterfaces(reg)
-			stypes.RegisterInterfaces(reg)
-
 			router := baseapp.NewMsgServiceRouter()
-			router.SetInterfaceRegistry(reg)
+			router.SetInterfaceRegistry(encCfg.InterfaceRegistry)
 			etypes.RegisterMsgServiceServer(router, srv)
 			atypes.RegisterMsgServiceServer(router, srv)
 			stypes.RegisterMsgServer(router, srv)
@@ -107,13 +107,13 @@ func TestProcessProposalRouter(t *testing.T) {
 
 			var msgs []types.Msg
 			for i := 0; i < tt.payloadMsgs; i++ {
-				msgs = append(msgs, &etypes.MsgExecutionPayload{})
+				msgs = append(msgs, &etypes.MsgExecutionPayload{Authority: authority})
 			}
 			for i := 0; i < tt.voteMsgs; i++ {
-				msgs = append(msgs, &atypes.MsgAddVotes{})
+				msgs = append(msgs, &atypes.MsgAddVotes{Authority: authority})
 			}
 			for i := 0; i < tt.stakingMsgs; i++ {
-				msgs = append(msgs, &stypes.MsgDelegate{})
+				msgs = append(msgs, &stypes.MsgDelegate{DelegatorAddress: authority})
 			}
 
 			newReq := func(msgs ...types.Msg) *abci.RequestProcessProposal {
@@ -166,6 +166,102 @@ func TestProcessProposalRouter(t *testing.T) {
 			} else if tt.accept {
 				require.Equal(t, tt.payloadMsgs, srv.payload)
 				require.Equal(t, tt.voteMsgs, srv.addVotes)
+			}
+		})
+	}
+}
+
+func TestVerifyTx(t *testing.T) {
+	t.Parallel()
+
+	authority := authtypes.NewModuleAddress("test").String()
+
+	tests := []struct {
+		Name     string
+		Msgs     []types.Msg
+		Callback func(client.TxBuilder)
+		Error    string
+	}{
+		{
+			Name:  "empty",
+			Msgs:  nil,
+			Error: "",
+		},
+		{
+			Name: "one payload message",
+			Msgs: []types.Msg{&etypes.MsgExecutionPayload{Authority: authority}},
+		},
+		{
+			Name: "two payload messages",
+			Msgs: []types.Msg{
+				&etypes.MsgExecutionPayload{Authority: authority},
+				&etypes.MsgExecutionPayload{Authority: authority},
+			},
+			Error: "",
+		},
+		{
+			Name:  "no authority",
+			Msgs:  []types.Msg{&etypes.MsgExecutionPayload{}},
+			Error: "get signers: empty address string is not allowed",
+		},
+		{
+			Name: "fee not empty",
+			Msgs: []types.Msg{&atypes.MsgAddVotes{Authority: authority}},
+			Callback: func(b client.TxBuilder) {
+				b.SetFeeAmount(types.Coins{types.NewCoin(types.DefaultBondDenom, math.NewInt(1))})
+			},
+			Error: "fee not empty",
+		},
+		{
+			Name: "gas not empty",
+			Msgs: []types.Msg{&etypes.MsgExecutionPayload{Authority: authority}},
+			Callback: func(b client.TxBuilder) {
+				b.SetGasLimit(1)
+			},
+			Error: "gas not empty",
+		},
+		{
+			Name: "timeout height",
+			Msgs: []types.Msg{&etypes.MsgExecutionPayload{Authority: authority}},
+			Callback: func(b client.TxBuilder) {
+				b.SetTimeoutHeight(1)
+			},
+			Error: "timeout height not empty",
+		},
+		{
+			Name: "fee granter",
+			Msgs: []types.Msg{&etypes.MsgExecutionPayload{Authority: authority}},
+			Callback: func(b client.TxBuilder) {
+				b.SetFeeGranter(authtypes.NewModuleAddress("granter"))
+			},
+			Error: "fee granter not empty",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			t.Parallel()
+
+			key := storetypes.NewKVStoreKey("test")
+			ctx := sdktestutil.DefaultContext(key, storetypes.NewTransientStoreKey("test_key"))
+
+			encCfg, err := ClientEncodingConfig(ctx, netconf.Devnet)
+			require.NoError(t, err)
+			txConfig := encCfg.TxConfig
+
+			b := txConfig.NewTxBuilder()
+			if tt.Callback != nil {
+				tt.Callback(b)
+			}
+			err = b.SetMsgs(tt.Msgs...)
+			require.NoError(t, err)
+
+			err = verifyTX(b.GetTx())
+
+			if tt.Error != "" {
+				require.ErrorContains(t, err, tt.Error)
+			} else {
+				require.NoError(t, err)
 			}
 		})
 	}

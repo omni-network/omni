@@ -15,6 +15,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/auth/signing"
 )
 
 // processTimeout is the maximum time to process a proposal.
@@ -78,6 +79,10 @@ func makeProcessProposalHandler(router *baseapp.MsgServiceRouter, txConfig clien
 				return rejectProposal(ctx, errors.Wrap(err, "decode transaction"))
 			}
 
+			if err := verifyTX(tx); err != nil {
+				return rejectProposal(ctx, errors.Wrap(err, "verify transaction"))
+			}
+
 			for _, msg := range tx.GetMsgs() {
 				typeURL := sdk.MsgTypeURL(msg)
 
@@ -103,6 +108,80 @@ func makeProcessProposalHandler(router *baseapp.MsgServiceRouter, txConfig clien
 
 		return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
 	}
+}
+
+// verifyTX ensures a transaction is empty of all signing fields.
+func verifyTX(tx sdk.Tx) error {
+	if tx == nil {
+		return errors.New("nil tx")
+	}
+
+	stx, ok := tx.(signing.Tx)
+	if !ok {
+		return errors.New("not a signing tx")
+	}
+
+	const addrLen = 20
+
+	// Ensure all signing fields are empty
+	if stx.GetGas() != 0 {
+		return errors.New("gas not empty")
+	}
+	if !stx.GetFee().IsZero() {
+		return errors.New("fee not empty")
+	}
+	if len(stx.FeeGranter()) != 0 {
+		return errors.New("fee granter not empty")
+	}
+	if len(stx.GetMemo()) != 0 {
+		return errors.New("memo not empty")
+	}
+	if stx.GetTimeoutHeight() != 0 {
+		return errors.New("timeout height not empty")
+	}
+
+	msgsLen := len(stx.GetMsgs())
+
+	signers, err := stx.GetSigners()
+	if err != nil {
+		return errors.Wrap(err, "get signers")
+	} else if len(signers) > msgsLen { // Unique signers can't be more than amount of msgs
+		return errors.New("unexpected amount of signers", "count", len(signers), "max", msgsLen)
+	}
+	for _, signer := range signers {
+		if len(signer) != addrLen {
+			return errors.New("signer invalid", "len", len(signer))
+		}
+	}
+	if len(signers) > 0 {
+		// FeePayer panics if no signers
+		if len(stx.FeePayer()) != addrLen {
+			return errors.New("fee payer invalid")
+		}
+	}
+
+	pks, err := stx.GetPubKeys()
+	if err != nil {
+		return errors.Wrap(err, "get pubkeys")
+	} else if len(pks) != 0 {
+		return errors.New("pks not empty", "count", len(pks))
+	}
+
+	sigs, err := stx.GetSignaturesV2()
+	if err != nil {
+		return errors.Wrap(err, "get sigs")
+	} else if len(sigs) != 0 {
+		return errors.New("sigs not empty", "count", len(sigs))
+	}
+
+	msgs2, err := stx.GetMsgsV2()
+	if err != nil {
+		return errors.Wrap(err, "get msgs v2")
+	} else if len(msgs2) != msgsLen {
+		return errors.New("msgs v2 count mismatch")
+	}
+
+	return nil
 }
 
 //nolint:unparam // Explicitly return nil error

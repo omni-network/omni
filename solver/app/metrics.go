@@ -84,6 +84,7 @@ var (
 		Subsystem: "worker",
 		Name:      "job_duration_seconds",
 		Help:      "Job duration in seconds by chain and event status",
+		Buckets:   prometheus.ExponentialBucketsRange(0.1, 60, 10),
 	}, []string{"chain", "status"})
 
 	workErrors = promauto.NewCounterVec(prometheus.CounterOpts{
