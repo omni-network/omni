@@ -170,3 +170,23 @@ test.each([
 
   await waitFor(() => result.current.status === 'error')
 })
+
+test('behaviour: returns an error instead of throwing when the order encoding throws', async () => {
+  const invalidOrder = {
+    ...order,
+    calls: [{ ...order.calls[0], args: ['0xinvalid', 0n] }],
+  }
+  const { result } = renderHook(() => {
+    // @ts-expect-error: invalid order
+    return useValidateOrder({ order: invalidOrder, enabled: true })
+  })
+
+  await waitFor(() => {
+    expect(result.current.status).toBe('error')
+    if (result.current.status === 'error') {
+      expect(result.current.error.message).toMatch(
+        'Address "0xinvalid" is invalid',
+      )
+    }
+  })
+})

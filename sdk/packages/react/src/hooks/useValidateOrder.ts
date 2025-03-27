@@ -63,9 +63,31 @@ export function useValidateOrder<abis extends OptionalAbis>({
   enabled,
 }: UseValidateOrderParams<abis>): UseValidateOrderResult {
   const { apiBaseUrl } = useOmniContext()
+  const encoded = encodeOrder(order)
 
-  function _encodeCalls() {
-    return order.calls.map((call) => {
+  const query = useQuery<ValidationResponse, FetchJSONError>({
+    queryKey: ['check', encoded.ok ? encoded.value : 'error'],
+    queryFn: async () => {
+      if (!encoded.ok) {
+        throw encoded.error
+      }
+      return await doValidate(apiBaseUrl, encoded.value)
+    },
+    enabled: enabled && encoded.ok,
+  })
+
+  return useResult(encoded, query)
+}
+
+type EncodeOrderResult =
+  | { ok: true; value: string }
+  | { ok: false; error: Error }
+
+function encodeOrder<abis extends OptionalAbis>(
+  order: Order<abis>,
+): EncodeOrderResult {
+  try {
+    const calls = order.calls.map((call) => {
       if (!isContractCall(call)) {
         return {
           target: call.target,
@@ -86,34 +108,33 @@ export function useValidateOrder<abis extends OptionalAbis>({
         data: callData,
       }
     })
-  }
 
-  const request = toJSON({
-    orderId: order.owner ?? zeroAddress,
-    sourceChainId: order.srcChainId,
-    destChainId: order.destChainId,
-    fillDeadline: order.fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
-    calls: _encodeCalls(),
-    deposit: {
-      amount: order.deposit.amount,
-      token: order.deposit.token ?? zeroAddress,
-    },
-    expenses: [
-      {
-        amount: order.expense.amount,
-        token: order.expense.token ?? zeroAddress,
-        spender: order.expense.spender ?? zeroAddress,
+    const value = toJSON({
+      orderId: order.owner ?? zeroAddress,
+      sourceChainId: order.srcChainId,
+      destChainId: order.destChainId,
+      fillDeadline: order.fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
+      calls,
+      deposit: {
+        amount: order.deposit.amount,
+        token: order.deposit.token ?? zeroAddress,
       },
-    ],
-  })
-
-  const query = useQuery<ValidationResponse, FetchJSONError>({
-    queryKey: ['check', request],
-    queryFn: async () => doValidate(apiBaseUrl, request),
-    enabled,
-  })
-
-  return useResult(query)
+      expenses: [
+        {
+          amount: order.expense.amount,
+          token: order.expense.token ?? zeroAddress,
+          spender: order.expense.spender ?? zeroAddress,
+        },
+      ],
+    })
+    return { ok: true, value }
+  } catch (e) {
+    const error =
+      e instanceof Error
+        ? e
+        : new Error((e as { message: string }).message ?? 'Invalid order')
+    return { ok: false, error }
+  }
 }
 
 async function doValidate(apiBaseUrl: string, request: string) {
@@ -146,9 +167,12 @@ const isValidateRes = (json: unknown): json is ValidationResponse => {
 }
 
 const useResult = (
+  encoded: EncodeOrderResult,
   query: UseQueryResult<ValidationResponse, FetchJSONError>,
 ): UseValidateOrderResult =>
   useMemo(() => {
+    if (!encoded.ok) return { status: 'error', error: encoded.error }
+
     if (query.isError) return { status: 'error', error: query.error }
     if (query.isPending) return { status: 'pending' }
     if (query.data.accepted) return { status: 'accepted' }
@@ -171,4 +195,4 @@ const useResult = (
       },
       query,
     }
-  }, [query])
+  }, [encoded, query])
