@@ -57,12 +57,12 @@ type wrapper struct {
 }
 
 // NewClient wraps an *rpc.Client adding metrics and wrapped errors and a header cache.
-func NewClient(cl *rpc.Client, name, address string) (Client, error) {
-	return newHeaderCache(wrapper{
+func NewClient(cl *rpc.Client, name, address string) Client {
+	return wrapper{
 		cl:      ethclient.NewClient(cl),
 		name:    name,
 		address: address,
-	})
+	}
 }
 
 // Dial connects a client to the given URL. It returns a wrapped  client adding metrics and wrapped errors and a header cache.
@@ -76,11 +76,11 @@ func Dial(chainName string, url string) (Client, error) {
 		return wrapper{}, errors.Wrap(err, "dial", "chain", chainName, "url", url)
 	}
 
-	return newHeaderCache(wrapper{
+	return wrapper{
 		cl:      cl,
 		name:    chainName,
 		address: url,
-	})
+	}, nil
 }
 
 // Close closes the underlying RPC connection.
