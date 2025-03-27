@@ -8,6 +8,7 @@ import (
 	"flag"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
@@ -48,7 +49,7 @@ func RequireGoldenBytes(t *testing.T, data []byte, opts ...func(*string)) {
 			})
 		}
 
-		require.NoError(t, os.MkdirAll("testdata", 0o755))
+		require.NoError(t, os.MkdirAll(filepath.Dir(filename), 0o755))
 
 		_ = os.Remove(filename)
 		require.NoError(t, os.WriteFile(filename, data, 0o644))

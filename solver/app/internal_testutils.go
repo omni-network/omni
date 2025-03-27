@@ -52,6 +52,7 @@ type orderTestCase struct {
 	shouldErr    bool
 	mock         func(clients MockClients)
 	order        testOrder
+	testdata     bool
 }
 
 // rejectTestCase is a test case for shouldReject(...)
@@ -73,6 +74,7 @@ type checkTestCase struct {
 	mock         func(clients MockClients)
 	req          types.CheckRequest
 	res          types.CheckResponse
+	testdata     bool
 }
 
 func toCheckTestCase(t *testing.T, tt orderTestCase) checkTestCase {
@@ -91,6 +93,7 @@ func toCheckTestCase(t *testing.T, tt orderTestCase) checkTestCase {
 		name:         tt.name,
 		mock:         tt.mock,
 		disallowCall: tt.disallowCall,
+		testdata:     tt.testdata,
 		req: types.CheckRequest{
 			SourceChainID:      tt.order.srcChainID,
 			DestinationChainID: tt.order.dstChainID,
@@ -275,6 +278,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			mock: func(clients MockClients) {
 				mockNativeBalance(t, clients.Client(t, evmchain.IDBaseSepolia), solver, ether(0))
 			},
+			testdata: true,
 		},
 		{
 			name:   "sufficient native balance",
@@ -292,6 +296,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			mock: func(clients MockClients) {
 				mockNativeBalance(t, clients.Client(t, evmchain.IDOmniOmega), solver, ether(1))
 			},
+			testdata: true,
 		},
 		{
 			name:   "insufficient ERC20 balance",
@@ -326,6 +331,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNIAddr, ether(1))
 				mockERC20Allowance(t, clients.Client(t, evmchain.IDHolesky), omegaOMNIAddr)
 			},
+			testdata: true,
 		},
 		{
 			name:        "fill reverts",
@@ -445,6 +451,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				calls:    []types.Call{{Value: ether(1)}},
 				expenses: []types.Expense{{Amount: ether(1)}},
 			},
+			testdata: true,
 		},
 		{
 			name: "sufficient deposit",

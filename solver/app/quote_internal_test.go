@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +14,7 @@ import (
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -97,16 +99,19 @@ func addThousandSeparators(num string) string {
 	return strings.Join(result, "")
 }
 
+//go:generate go test . -run=TestQuote -golden
+
 func TestQuote(t *testing.T) {
 	t.Parallel()
 
 	omegaOMNIAddr := omniERC20(netconf.Omega).Address
 
 	tests := []struct {
-		name   string
-		req    types.QuoteRequest
-		res    types.QuoteResponse
-		expErr *types.JSONErrorResponse
+		name     string
+		req      types.QuoteRequest
+		res      types.QuoteResponse
+		expErr   types.JSONError
+		testdata bool
 	}{
 		{
 			name: "quote deposit 1 eth expense",
@@ -120,6 +125,7 @@ func TestQuote(t *testing.T) {
 				Deposit: mockAddrAmt("1003000000000000000"),
 				Expense: mockAddrAmt("1000000000000000000"),
 			},
+			testdata: true,
 		},
 		{
 			name: "quote deposit 10 eth expense",
@@ -174,6 +180,7 @@ func TestQuote(t *testing.T) {
 				Deposit: types.AddrAmt{Amount: parseInt("10000000000000000000"), Token: omegaOMNIAddr},
 				Expense: mockAddrAmt("10000000000000000000"),
 			},
+			testdata: true,
 		},
 		{
 			name: "no deposit of expense amount specified",
@@ -183,11 +190,12 @@ func TestQuote(t *testing.T) {
 				Deposit:            zeroAddrAmt,
 				Expense:            zeroAddrAmt,
 			},
-			expErr: &types.JSONErrorResponse{
+			expErr: types.JSONError{
 				Code:    http.StatusBadRequest,
 				Status:  http.StatusText(http.StatusBadRequest),
 				Message: "deposit and expense amount cannot be both zero or both non-zero",
 			},
+			testdata: true,
 		},
 		{
 			name: "both deposit and expense amount specified",
@@ -197,7 +205,7 @@ func TestQuote(t *testing.T) {
 				Deposit:            mockAddrAmt("1000000000000000000"),
 				Expense:            mockAddrAmt("1000000000000000000"),
 			},
-			expErr: &types.JSONErrorResponse{
+			expErr: types.JSONError{
 				Code:    http.StatusBadRequest,
 				Status:  http.StatusText(http.StatusBadRequest),
 				Message: "deposit and expense amount cannot be both zero or both non-zero",
@@ -211,7 +219,7 @@ func TestQuote(t *testing.T) {
 				Deposit:            types.AddrAmt{Token: common.HexToAddress("0x1234")},
 				Expense:            mockAddrAmt("1000000000000000000"),
 			},
-			expErr: &types.JSONErrorResponse{
+			expErr: types.JSONError{
 				Code:    http.StatusNotFound,
 				Status:  http.StatusText(http.StatusNotFound),
 				Message: "unsupported deposit token",
@@ -225,7 +233,7 @@ func TestQuote(t *testing.T) {
 				Deposit:            mockAddrAmt("1000000000000000000"),
 				Expense:            types.AddrAmt{Token: common.HexToAddress("0x1234")},
 			},
-			expErr: &types.JSONErrorResponse{
+			expErr: types.JSONError{
 				Code:    http.StatusNotFound,
 				Status:  http.StatusText(http.StatusNotFound),
 				Message: "unsupported expense token",
@@ -239,7 +247,7 @@ func TestQuote(t *testing.T) {
 				Deposit:            zeroAddrAmt,
 				Expense:            mockAddrAmt("1000000000000000000"),
 			},
-			expErr: &types.JSONErrorResponse{
+			expErr: types.JSONError{
 				Code:    http.StatusBadRequest,
 				Status:  http.StatusText(http.StatusBadRequest),
 				Message: "InvalidDeposit: deposit token must match expense token",
@@ -253,38 +261,49 @@ func TestQuote(t *testing.T) {
 				Deposit:            mockAddrAmt("1000000000000000000"),
 				Expense:            zeroAddrAmt,
 			},
-			expErr: &types.JSONErrorResponse{
+			expErr: types.JSONError{
 				Code:    http.StatusBadRequest,
 				Status:  http.StatusText(http.StatusBadRequest),
 				Message: "InvalidDeposit: deposit and expense must be of the same chain class (e.g. mainnet, testnet)",
 			},
+			testdata: true,
 		},
 	}
 	for _, tt := range tests {
-		handler := handlerAdapter(newQuoteHandler(quoter))
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			handler := handlerAdapter(newQuoteHandler(quoter))
 
-		body, err := json.Marshal(tt.req)
-		require.NoError(t, err)
+			body, err := json.Marshal(tt.req)
+			require.NoError(t, err)
 
-		ctx := context.Background()
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpointQuote, bytes.NewBuffer(body))
-		require.NoError(t, err)
+			ctx := context.Background()
+			req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpointQuote, bytes.NewBuffer(body))
+			require.NoError(t, err)
 
-		rr := httptest.NewRecorder()
-		handler.ServeHTTP(rr, req)
+			rr := httptest.NewRecorder()
+			handler.ServeHTTP(rr, req)
 
-		// Response is either a QuoteResponse or a JSONErrorResponse
-		var res struct {
-			types.QuoteResponse
-			types.JSONErrorResponse
-		}
-		require.NoError(t, json.NewDecoder(rr.Body).Decode(&res))
-		if rr.Code != http.StatusOK {
-			require.Equal(t, res.Code, rr.Code)
-		} else {
-			require.Empty(t, res.Code)
-		}
-		require.Equal(t, tt.res, res.QuoteResponse)
+			respBody, err := io.ReadAll(rr.Body)
+			require.NoError(t, err)
+
+			// Response is either a QuoteResponse or a JSONErrorResponse
+			var res struct {
+				types.QuoteResponse
+				types.JSONErrorResponse
+			}
+			require.NoError(t, json.Unmarshal(respBody, &res))
+			if rr.Code != http.StatusOK {
+				require.Equal(t, res.Error.Code, rr.Code)
+			}
+			require.Equal(t, tt.res, res.QuoteResponse)
+			require.Equal(t, tt.expErr, res.JSONErrorResponse.Error)
+
+			if tt.testdata {
+				tutil.RequireGoldenBytes(t, indent(body), tutil.WithFilename(t.Name()+"/req_body.json"))
+				tutil.RequireGoldenBytes(t, indent(respBody), tutil.WithFilename(t.Name()+"/resp_body.json"))
+			}
+		})
 	}
 }
 
