@@ -64,6 +64,19 @@ export function useValidateOrder<abis extends OptionalAbis>({
 }: UseValidateOrderParams<abis>): UseValidateOrderResult {
   const { apiBaseUrl } = useOmniContext()
 
+  const query = useQuery<ValidationResponse, FetchJSONError>({
+    queryKey: ['check', toJSON(order)],
+    queryFn: async () => doValidate(apiBaseUrl, order),
+    enabled,
+  })
+
+  return useResult(query)
+}
+
+async function doValidate<abis extends OptionalAbis>(
+  apiBaseUrl: string,
+  order: Order<abis>,
+) {
   function _encodeCalls() {
     return order.calls.map((call) => {
       if (!isContractCall(call)) {
@@ -107,16 +120,6 @@ export function useValidateOrder<abis extends OptionalAbis>({
     ],
   })
 
-  const query = useQuery<ValidationResponse, FetchJSONError>({
-    queryKey: ['check', request],
-    queryFn: async () => doValidate(apiBaseUrl, request),
-    enabled,
-  })
-
-  return useResult(query)
-}
-
-async function doValidate(apiBaseUrl: string, request: string) {
   const json = await fetchJSON(`${apiBaseUrl}/check`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
