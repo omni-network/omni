@@ -107,6 +107,20 @@ var (
 				MaxSpend: bi.Ether(1),     // 1 stETH
 			},
 		},
+		tokenslib.USDC: {
+			ClassMainnet: {
+				MinSpend: bi.Dec6(0.1),   // 0.1 USDC
+				MaxSpend: bi.Dec6(1_000), // 1k USDC
+			},
+			ClassTestnet: {
+				MinSpend: bi.Dec6(0.1), // 0.1 USDC
+				MaxSpend: bi.Dec6(10),  // 10 USDC
+			},
+			ClassDevent: {
+				MinSpend: bi.Dec6(0.1), // 0.1 USDC
+				MaxSpend: bi.Dec6(10),  // 10 USDC
+			},
+		},
 	}
 )
 
@@ -132,6 +146,18 @@ var tokens = append([]Token{
 	nativeOMNI(evmchain.IDOmniOmega),
 	nativeOMNI(evmchain.IDOmniStaging),
 	nativeOMNI(evmchain.IDOmniDevnet),
+
+	// USDC (mainnet)
+	usdc(evmchain.IDEthereum, common.HexToAddress("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48")),
+	usdc(evmchain.IDArbitrumOne, common.HexToAddress("0xaf88d065e77c8cC2239327C5EDb3A432268e5831")),
+	usdc(evmchain.IDOptimism, common.HexToAddress("0x0b2c639c533813f4aa9d7837caf62653d097ff85")),
+	usdc(evmchain.IDBase, common.HexToAddress("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913")),
+
+	// USDC (testnet)
+	usdc(evmchain.IDSepolia, common.HexToAddress("0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238")),
+	usdc(evmchain.IDArbSepolia, common.HexToAddress("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d")),
+	usdc(evmchain.IDOpSepolia, common.HexToAddress("0x5fd84259d66Cd46123540766Be93DFE6D43130D7")),
+	usdc(evmchain.IDBaseSepolia, common.HexToAddress("0x036CbD53842c5426634e7929541eC2318f3dCF7e")),
 
 	// ERC20 OMNI
 	omniERC20(netconf.Mainnet),
@@ -287,6 +313,20 @@ func wstETH(chainID uint64, addr common.Address) Token {
 
 	return Token{
 		Token:      tokenslib.WSTETH,
+		ChainID:    chainID,
+		ChainClass: mustChainClass(chainID),
+		Address:    addr,
+		MaxSpend:   bounds.MaxSpend,
+		MinSpend:   bounds.MinSpend,
+	}
+}
+
+func usdc(chainID uint64, addr common.Address) Token {
+	chainClass := mustChainClass(chainID)
+	bounds := mustSpendBounds(tokenslib.USDC, chainClass)
+
+	return Token{
+		Token:      tokenslib.USDC,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    addr,

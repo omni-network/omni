@@ -22,6 +22,13 @@ var (
 		CoingeckoID: "ethereum",
 	}
 
+	USDC = Token{
+		Symbol:      "USDC",
+		Name:        "USD Coin",
+		Decimals:    6,
+		CoingeckoID: "usdc",
+	}
+
 	STETH = Token{
 		Symbol:      "stETH",
 		Name:        "Lido Staked Ether",
