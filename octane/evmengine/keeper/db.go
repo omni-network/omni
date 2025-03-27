@@ -180,7 +180,7 @@ func (k *Keeper) RemoveWithdrawals(ctx context.Context, withdrawals []*etypes.Wi
 	for _, w := range withdrawals {
 		err := k.withdrawalTable.DeleteBy(ctx, WithdrawalIdIndexKey{}.WithId(w.Index))
 		if err != nil {
-			return errors.Wrap(err, "remowing withdrawal", "id", w.Index)
+			return errors.Wrap(err, "removing withdrawal", "id", w.Index)
 		}
 	}
 
