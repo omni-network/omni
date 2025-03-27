@@ -189,6 +189,9 @@ func (p *Provider) stream(
 				return errors.New("invalid block height")
 			}
 
+			lag := time.Since(block.Timestamp)
+			streamLag.WithLabelValues(chainVersionName, streamTypeXBlock).Set(lag.Seconds())
+
 			return nil
 		},
 		IncFetchErr: func() {
