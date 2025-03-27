@@ -88,35 +88,50 @@ export function useValidateOrder<abis extends OptionalAbis>({
     })
   }
 
-  const request = toJSON({
-    orderId: order.owner ?? zeroAddress,
-    sourceChainId: order.srcChainId,
-    destChainId: order.destChainId,
-    fillDeadline: order.fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
-    calls: _encodeCalls(),
-    deposit: {
-      amount: order.deposit.amount,
-      token: order.deposit.token ?? zeroAddress,
-    },
-    expenses: [
-      {
-        amount: order.expense.amount,
-        token: order.expense.token ?? zeroAddress,
-        spender: order.expense.spender ?? zeroAddress,
+  let request: string = ""
+  let error: string | undefined = undefined
+
+  try {
+    request = toJSON({
+      orderId: order.owner ?? zeroAddress,
+      sourceChainId: order.srcChainId,
+      destChainId: order.destChainId,
+      fillDeadline: order.fillDeadline ?? Math.floor(Date.now() / 1000 + 86400),
+      calls: _encodeCalls(),
+      deposit: {
+        amount: order.deposit.amount,
+        token: order.deposit.token ?? zeroAddress,
       },
-    ],
-  })
+      expenses: [
+        {
+          amount: order.expense.amount,
+          token: order.expense.token ?? zeroAddress,
+          spender: order.expense.spender ?? zeroAddress,
+        },
+      ],
+    })
+  } catch (e) {
+    // EncodeFunctionDataErrorType has message property
+    if (hasMessage(e)) error = e.message
+    else error = 'Unknown error'
+  }
 
   const query = useQuery<ValidationResponse, FetchJSONError>({
     queryKey: ['check', request],
-    queryFn: async () => doValidate(apiBaseUrl, request),
+    queryFn: async () => doValidate(apiBaseUrl, request, error),
     enabled,
   })
 
   return useResult(query)
 }
 
-async function doValidate(apiBaseUrl: string, request: string) {
+function hasMessage(e: unknown): e is { message: string } {
+  return (e as { message: string }).message != null
+}
+
+async function doValidate(apiBaseUrl: string, request: string, error?: string) {
+  if (error) throw new Error(error)
+
   const json = await fetchJSON(`${apiBaseUrl}/check`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
