@@ -85,7 +85,7 @@ func TestCallAllower(t *testing.T) {
 			network:  netconf.Devnet,
 			chainID:  evmchain.IDSepolia,
 			target:   common.HexToAddress("0xe3481474b23f88a8917DbcB4cBC55Efcf0f68CC7"), // doesn't matter
-			calldata: []byte{0x01, 0x02, 0x03},                                          // doesn't matter,
+			calldata: []byte{0x01, 0x02, 0x03},                                          // doesn't matter
 			allowed:  true,
 		},
 		{
@@ -93,7 +93,7 @@ func TestCallAllower(t *testing.T) {
 			network:  netconf.Staging,
 			chainID:  evmchain.IDSepolia,
 			target:   common.HexToAddress("0xe3481474b23f88a8917DbcB4cBC55Efcf0f68CC7"), // doesn't matter
-			calldata: []byte{0x01, 0x02, 0x03},                                          // doesn't matter,
+			calldata: []byte{0x01, 0x02, 0x03},                                          // doesn't matter
 			allowed:  true,
 		},
 		{
@@ -101,7 +101,15 @@ func TestCallAllower(t *testing.T) {
 			network:  netconf.Omega,
 			chainID:  evmchain.IDSepolia,
 			target:   common.HexToAddress("0xe3481474b23f88a8917DbcB4cBC55Efcf0f68CC7"), // doesn't matter
-			calldata: []byte{0x01, 0x02, 0x03},                                          // doesn't matter,
+			calldata: []byte{0x01, 0x02, 0x03},                                          // doesn't matter
+			allowed:  true,
+		},
+		{
+			name:     "morpho mainnet steakhouse vault",
+			network:  netconf.Mainnet,
+			chainID:  evmchain.IDBase,
+			target:   common.HexToAddress("0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183"),
+			calldata: []byte{0x01, 0x02, 0x03}, // doesn't matter
 			allowed:  true,
 		},
 	}

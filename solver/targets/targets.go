@@ -30,6 +30,7 @@ var (
 	static = []Target{
 		eigen,
 		staking,
+		morpho,
 	}
 
 	// dynamic is the list of dynamic targets, see RefreshForever.
