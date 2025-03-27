@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": 400,
+    "status": "Bad Request",
+    "message": "deposit and expense amount cannot be both zero or both non-zero"
+  }
+}

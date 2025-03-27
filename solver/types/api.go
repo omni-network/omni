@@ -15,6 +15,10 @@ import (
 
 // JSONErrorResponse is a json response for http errors (e.g 4xx, 5xx), not used for rejections.
 type JSONErrorResponse struct {
+	Error JSONError `json:"error"`
+}
+
+type JSONError struct {
 	Code    int    `json:"code"`
 	Status  string `json:"status"`
 	Message string `json:"message"`

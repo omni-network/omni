@@ -1,0 +1,6 @@
+{
+  "accepted": false,
+  "rejected": true,
+  "rejectReason": "InsufficientDeposit",
+  "rejectDescription": "insufficient deposit"
+}

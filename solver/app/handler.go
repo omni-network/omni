@@ -152,9 +152,11 @@ func writeErrResponse(ctx context.Context, w http.ResponseWriter, err error) {
 	log.DebugErr(ctx, "Serving API error", err, "status", statusCode)
 
 	writeJSONResponse(ctx, w, statusCode, types.JSONErrorResponse{
-		Code:    statusCode,
-		Status:  http.StatusText(statusCode),
-		Message: removeBUG(err.Error()),
+		Error: types.JSONError{
+			Code:    statusCode,
+			Status:  http.StatusText(statusCode),
+			Message: removeBUG(err.Error()),
+		},
 	})
 }
 

@@ -1,0 +1,23 @@
+{
+  "sourceChainId": 17000,
+  "destChainId": 164,
+  "fillDeadline": 0,
+  "calls": [
+    {
+      "target": "0x0000000000000000000000000000000000000000",
+      "data": "0x",
+      "value": "0xde0b6b3a7640000"
+    }
+  ],
+  "expenses": [
+    {
+      "spender": "0x0000000000000000000000000000000000000000",
+      "token": "0x0000000000000000000000000000000000000000",
+      "amount": "0xde0b6b3a7640000"
+    }
+  ],
+  "deposit": {
+    "token": "0xd036c60f46ff51dd7fbf6a819b5b171c8a076b07",
+    "amount": "0xde0b6b3a7640000"
+  }
+}

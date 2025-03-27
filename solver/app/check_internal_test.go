@@ -12,12 +12,15 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/stretchr/testify/require"
 )
+
+//go:generate go test . -run=TestCheck -golden
 
 //nolint:tparallel // subtests use same mock controller
 func TestCheck(t *testing.T) {
@@ -65,13 +68,27 @@ func TestCheck(t *testing.T) {
 			err = json.Unmarshal(respBody, &res)
 			require.NoError(t, err)
 
-			t.Logf("resp_body: %s", respBody)
-
 			require.Equal(t, tt.res.Rejected, res.Rejected)
 			require.Equal(t, tt.res.RejectReason, res.RejectReason)
 			require.Equal(t, tt.res.Accepted, res.Accepted)
 
 			clients.Finish(t)
+
+			if tt.testdata {
+				tutil.RequireGoldenBytes(t, indent(body), tutil.WithFilename(t.Name()+"/req_body.json"))
+				tutil.RequireGoldenBytes(t, indent(respBody), tutil.WithFilename(t.Name()+"/resp_body.json"))
+			}
 		})
 	}
+}
+
+// indent returns the json bytes indented.
+func indent(bz []byte) []byte {
+	var buf bytes.Buffer
+	err := json.Indent(&buf, bz, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+
+	return buf.Bytes()
 }

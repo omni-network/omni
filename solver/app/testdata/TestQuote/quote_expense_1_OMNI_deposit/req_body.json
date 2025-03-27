@@ -1,0 +1,11 @@
+{
+  "sourceChainId": 17000,
+  "destChainId": 164,
+  "deposit": {
+    "token": "0xd036c60f46ff51dd7fbf6a819b5b171c8a076b07",
+    "amount": "0x8ac7230489e80000"
+  },
+  "expense": {
+    "token": "0x0000000000000000000000000000000000000000"
+  }
+}
