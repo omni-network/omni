@@ -22,8 +22,9 @@ export async function fetchJSON(
   const json = await res.json()
 
   if (!res.ok) {
-    if (!isJSONError(json.error)) new Error(`${res.status} ${res.statusText}`)
-    throw json.error
+    if (isJSONError(json)) throw json
+    if (isJSONError(json.error)) throw json.error
+    throw new Error(`${res.status} ${res.statusText}`)
   }
 
   return json
