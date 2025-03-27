@@ -27,6 +27,13 @@ var (
 		Help:      "Latest successfully streamed height per source chain version and stream type. Alert if not growing.",
 	}, []string{"chain_version", "type"})
 
+	streamLag = promauto.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "lib",
+		Subsystem: "xprovider",
+		Name:      "stream_lag_seconds",
+		Help:      "Latest successfully streamed lag (since timestamp) per source chain version and stream type.",
+	}, []string{"chain_version", "type"})
+
 	callbackLatency = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: "lib",
 		Subsystem: "xprovider",

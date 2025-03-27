@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/stream"
 	"github.com/omni-network/omni/lib/tracer"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/core/types"
@@ -81,6 +82,13 @@ func (p *Provider) StreamEventLogs(ctx context.Context, req xchain.EventLogsReq,
 			if e.Header.Number.Uint64() != h {
 				return errors.New("invalid block height")
 			}
+
+			timestamp, err := umath.ToInt64(e.Header.Time)
+			if err != nil {
+				return err
+			}
+			lag := time.Since(time.Unix(timestamp, 0))
+			streamLag.WithLabelValues(chainVersionName, streamTypeEvent).Set(lag.Seconds())
 
 			return nil
 		},
