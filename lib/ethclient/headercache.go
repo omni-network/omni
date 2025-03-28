@@ -34,7 +34,7 @@ func newHeaderCache(ethCl Client) (*headerCache, error) {
 
 // headerCache extends/wraps a Client with a read-through cache for headers.
 //
-// It caches headers by hash and height, not type.
+// It caches headers by hash only, not height or type since that has non-zero risk of returning reorged blocks.
 type headerCache struct {
 	Client
 	db    *headerdb.DB
@@ -42,17 +42,6 @@ type headerCache struct {
 }
 
 func (c headerCache) HeaderByNumber(ctx context.Context, num *big.Int) (*types.Header, error) {
-	// Avoid lookups for "dynamic" headers (h<=0, see rpc.BlockNumber)
-	if num != nil && num.Sign() > 0 {
-		if header, ok, err := c.db.ByHeight(ctx, num.Uint64()); err != nil {
-			return nil, err
-		} else if ok {
-			cacheHits.WithLabelValues(c.Name()).Inc()
-			return header, nil
-		}
-		cacheMisses.WithLabelValues(c.Name()).Inc()
-	}
-
 	header, err := c.Client.HeaderByNumber(ctx, num)
 	if err != nil {
 		return nil, err
