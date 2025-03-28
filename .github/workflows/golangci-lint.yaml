@@ -18,5 +18,5 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: v2.0.2
-          # Verbose with color. Just fail, don't fix issues. Use both annotations and normal output.
-          args: -v --color=always --fix=false --out-format=colored-line-number,github-actions
+          # Verbose with color. Just fail, don't fix issues.
+          args: -v --color=always --fix=false
