@@ -3,14 +3,13 @@ package e2e_test
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
-
-	"github.com/cometbft/cometbft/test/e2e/pkg/exec"
 
 	"github.com/stretchr/testify/require"
 )
@@ -23,22 +22,22 @@ func TestSDK(t *testing.T) {
 	maybeTestNetwork(t, skipFunc, func(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
 		t.Helper()
 
-		cwd, err := os.Getwd()
+		sdkPath, err := filepath.Abs("../../sdk")
 		require.NoError(t, err)
 
-		sdkPath := filepath.Join(cwd, "../../sdk")
-		t.Chdir(sdkPath)
+		exe := func(ctx context.Context, name string, args ...string) {
+			cmd := exec.CommandContext(ctx, name, args...)
+			cmd.Dir = sdkPath
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
 
-		err = exec.CommandVerbose(ctx, "pnpm", "install")
-		require.NoError(t, err)
+			err := cmd.Run()
+			require.NoError(t, err, "failed to run command: %s %v", name, args)
+		}
 
-		err = exec.CommandVerbose(ctx, "pnpm", "run", "build")
-		require.NoError(t, err)
-
-		err = exec.CommandVerbose(ctx, "pnpm", "run", "test:unit")
-		require.NoError(t, err)
-
-		err = exec.CommandVerbose(ctx, "pnpm", "run", "test:integration")
-		require.NoError(t, err)
+		exe(ctx, "pnpm", "install")
+		exe(ctx, "pnpm", "run", "build")
+		exe(ctx, "pnpm", "run", "test:unit")
+		exe(ctx, "pnpm", "run", "test:integration")
 	})
 }
