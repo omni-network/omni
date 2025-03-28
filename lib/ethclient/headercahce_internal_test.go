@@ -51,17 +51,17 @@ func TestHeaderCache(t *testing.T) {
 	headersEqual(t, h1, h)
 	require.Equal(t, 1, testCl.headerByHash)
 
-	// Fetch h1 by number, ensure cached
+	// Fetch h1 by number, ensure queried
 	h, err = cache.HeaderByNumber(ctx, h1.Number)
 	require.NoError(t, err)
 	headersEqual(t, h1, h)
-	require.Equal(t, 0, testCl.headerByNumber)
+	require.Equal(t, 1, testCl.headerByNumber)
 
 	// Fetch h2 by number, ensure queried
 	h, err = cache.HeaderByNumber(ctx, h2.Number)
 	require.NoError(t, err)
 	headersEqual(t, h2, h)
-	require.Equal(t, 1, testCl.headerByNumber)
+	require.Equal(t, 2, testCl.headerByNumber)
 
 	// Fetch h2 by hash, ensure cached
 	h, err = cache.HeaderByHash(ctx, h2.Hash())
@@ -81,11 +81,11 @@ func TestHeaderCache(t *testing.T) {
 	headersEqual(t, h3, h)
 	require.Equal(t, 2, testCl.headerByType)
 
-	// Fetch h3 by number, ensure cached
+	// Fetch h3 by number, ensure queried
 	h, err = cache.HeaderByNumber(ctx, h3.Number)
 	require.NoError(t, err)
 	headersEqual(t, h3, h)
-	require.Equal(t, 1, testCl.headerByNumber)
+	require.Equal(t, 3, testCl.headerByNumber)
 
 	// Fetch h3 by hash, ensure cached
 	h, err = cache.HeaderByHash(ctx, h3.Hash())
