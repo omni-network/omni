@@ -57,7 +57,7 @@ func startWithBackends(
 ) error {
 	var jobs []types.Job
 
-	result, err := bridging.Jobs(network.ID, backends, owner)
+	result, err := bridging.Jobs(ctx, network.ID, backends, owner)
 	if err != nil {
 		return errors.Wrap(err, "bridge jobs")
 	}
