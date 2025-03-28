@@ -1,7 +1,6 @@
 package e2e_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/omni-network/omni/lib/cchain/provider"
@@ -25,7 +24,7 @@ func TestInvariantNoUserBalance(t *testing.T) {
 	testNode(t, func(t *testing.T, network netconf.Network, node *e2e.Node, portals []Portal) {
 		t.Helper()
 
-		ctx := context.Background()
+		ctx := t.Context()
 		client, err := node.Client()
 		require.NoError(t, err)
 		cprov := provider.NewABCI(client, network.ID)

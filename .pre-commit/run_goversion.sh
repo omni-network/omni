@@ -6,7 +6,7 @@
 # minor returns the minor version from the provided string.
 # e.g. go1.14.2 -> 1.14
 function minor() (
-  REGEX="([0-9]+\.[0-9]+)\.[0-9]+"
+  REGEX="([0-9]+\.[0-9]+)(\.[0-9]+)?"
   if [[ ! $1 =~ $REGEX ]]; then
      echo "Failed parsing minor version from $1"
      exit 1

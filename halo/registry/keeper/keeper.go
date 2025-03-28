@@ -8,6 +8,7 @@ import (
 	ptypes "github.com/omni-network/omni/halo/portal/types"
 	"github.com/omni-network/omni/halo/registry/types"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -69,7 +70,11 @@ func NewKeeper(
 // New networks are emitted as cross chain messages to portals.
 func (k Keeper) getOrCreateNetwork(ctx context.Context) (*Network, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	createHeight := uint64(sdkCtx.BlockHeight())
+
+	createHeight, err := umath.ToUint64(sdkCtx.BlockHeight())
+	if err != nil {
+		return nil, err
+	}
 
 	var lastPortals []*Portal
 

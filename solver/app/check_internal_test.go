@@ -2,7 +2,6 @@ package app
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -22,14 +21,14 @@ import (
 
 //go:generate go test . -run=TestCheck -golden
 
-//nolint:tparallel // subtests use same mock controller
+//nolint:tparallel,paralleltest // subtests use same mock controller
 func TestCheck(t *testing.T) {
 	t.Parallel()
 
 	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
 
 	// inbox / outbox addr only matters for mocks, using devnet
-	addrs, err := contracts.GetAddresses(context.Background(), netconf.Devnet)
+	addrs, err := contracts.GetAddresses(t.Context(), netconf.Devnet)
 	require.NoError(t, err)
 	outbox := addrs.SolverNetOutbox
 
@@ -52,7 +51,7 @@ func TestCheck(t *testing.T) {
 			body, err := json.Marshal(tt.req)
 			require.NoError(t, err)
 
-			ctx := context.Background()
+			ctx := t.Context()
 			req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpointCheck, bytes.NewBuffer(body))
 			require.NoError(t, err)
 

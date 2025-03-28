@@ -2,7 +2,6 @@ package netconf_test
 
 import (
 	"bytes"
-	"context"
 	"encoding/hex"
 	"flag"
 	"fmt"
@@ -166,7 +165,7 @@ func TestGenExecutionSeeds(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.network.String(), func(t *testing.T) {
 			t.Parallel()
-			ctx := context.Background()
+			ctx := t.Context()
 			manifest, err := test.manifestFunc()
 			require.NoError(t, err)
 
@@ -239,8 +238,8 @@ func TestExecutionSeeds(t *testing.T) {
 		node, err := enode.ParseV4(seed)
 		require.NoError(t, err)
 
-		require.EqualValues(t, 30303, node.TCP())
-		require.EqualValues(t, 30303, node.UDP())
+		require.Equal(t, 30303, node.TCP())
+		require.Equal(t, 30303, node.UDP())
 		t.Logf("Seed IP: %s: %s", node.IP(), seed)
 		require.NotEmpty(t, node.IP())
 	}
@@ -253,16 +252,16 @@ func TestConfLevels(t *testing.T) {
 		Shards: []xchain.ShardID{xchain.ShardBroadcast0, xchain.ShardLatest0},
 	}
 	require.Len(t, chain.ConfLevels(), 2)
-	require.EqualValues(t, []xchain.ConfLevel{xchain.ConfLatest, xchain.ConfFinalized}, chain.ConfLevels())
+	require.Equal(t, []xchain.ConfLevel{xchain.ConfLatest, xchain.ConfFinalized}, chain.ConfLevels())
 }
 
 func TestAddrs(t *testing.T) {
 	t.Parallel()
 
-	omegaAddrs, err := contracts.GetAddresses(context.Background(), netconf.Omega)
+	omegaAddrs, err := contracts.GetAddresses(t.Context(), netconf.Omega)
 	require.NoError(t, err)
 
-	mainnetAddrs, err := contracts.GetAddresses(context.Background(), netconf.Mainnet)
+	mainnetAddrs, err := contracts.GetAddresses(t.Context(), netconf.Mainnet)
 	require.NoError(t, err)
 
 	// test that hardcoded address in netconf match lib/contract addresses

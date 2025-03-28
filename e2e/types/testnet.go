@@ -11,6 +11,7 @@ import (
 
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	e2e "github.com/cometbft/cometbft/test/e2e/pkg"
@@ -215,7 +216,12 @@ func intervalFromPeriod(network netconf.ID, period time.Duration) uint64 {
 		return 0
 	}
 
-	return uint64(target / period)
+	interval, err := umath.ToUint64(target / period)
+	if err != nil {
+		return 0
+	}
+
+	return interval
 }
 
 func (c EVMChain) ShardsUint64() []uint64 {

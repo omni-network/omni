@@ -33,7 +33,7 @@ var testPrivateKey []byte
 func TestSignOK(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 	apiKey := uuid.New().String()
 	txID := uuid.New().String()
 
@@ -106,7 +106,7 @@ func TestSmoke(t *testing.T) {
 	if !*integration {
 		t.Skip("skipping integration test")
 	}
-	ctx := context.Background()
+	ctx := t.Context()
 
 	apiKey, ok := os.LookupEnv("FIREBLOCKS_APIKEY")
 	if !ok {

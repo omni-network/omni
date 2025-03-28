@@ -17,7 +17,7 @@ import (
 
 func TestHeaderCache(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	fuzzHeader := func(height int, parent *types.Header) *types.Header {
 		var resp types.Header

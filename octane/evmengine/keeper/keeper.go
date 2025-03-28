@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/k1util"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
@@ -205,10 +206,15 @@ func (k *Keeper) parseAndVerifyProposedPayload(ctx context.Context, msg *types.M
 
 	// Ensure the payload timestamp is after latest execution block and before or equaled to the current consensus block.
 	minTimestamp := head.GetBlockTime() + 1
-	maxTimestamp := uint64(sdk.UnwrapSDKContext(ctx).BlockTime().Unix())
+	maxTimestamp, err := umath.ToUint64(sdk.UnwrapSDKContext(ctx).BlockTime().Unix())
+	if err != nil {
+		return engine.ExecutableData{}, err
+	}
+
 	if maxTimestamp < minTimestamp { // Execution block minimum takes precedence
 		maxTimestamp = minTimestamp
 	}
+
 	if payload.Timestamp < minTimestamp || payload.Timestamp > maxTimestamp {
 		return engine.ExecutableData{}, errors.New("invalid payload timestamp",
 			"proposed", payload.Timestamp, "min", minTimestamp, "max", maxTimestamp,

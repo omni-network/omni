@@ -12,7 +12,7 @@ import (
 
 func TestMock(t *testing.T) {
 	t.Parallel()
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 
 	const (
 		chainID    = 123

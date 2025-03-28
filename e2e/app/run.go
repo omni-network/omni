@@ -310,9 +310,14 @@ func toPortalValidators(validators map[*e2e.Node]int64) ([]bindings.Validator, e
 			return nil, errors.Wrap(err, "convert validator pubkey to address")
 		}
 
+		power, err := umath.ToUint64(power)
+		if err != nil {
+			return nil, err
+		}
+
 		vals = append(vals, bindings.Validator{
 			Addr:  addr,
-			Power: uint64(power),
+			Power: power,
 		})
 	}
 

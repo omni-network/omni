@@ -1,7 +1,6 @@
 package p2putil_test
 
 import (
-	"context"
 	"flag"
 	"testing"
 
@@ -19,14 +18,14 @@ var integration = flag.Bool("integration", false, "Include integration tests")
 
 // TestSeedP2PPeers fetches and prints P2P peers from the seed nodes of the specified networks.
 //
-//nolint:tparallel // Concurrent output is hard to read, so do it sequentially.
+//nolint:tparallel,paralleltest // Concurrent output is hard to read, so do it sequentially.
 func TestSeedP2PPeers(t *testing.T) {
 	t.Parallel()
 	if !*integration {
 		t.Skip("skipping integration test")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx, err := log.Init(ctx, log.Config{
 		Level:  "debug",
 		Color:  "force",
@@ -56,14 +55,14 @@ func TestSeedP2PPeers(t *testing.T) {
 
 // TestRPCPeers fetches and prints RPC peers from the specified networks.
 //
-//nolint:tparallel // Concurrent output is hard to read, so do it sequentially.
+//nolint:tparallel,paralleltest // Concurrent output is hard to read, so do it sequentially.
 func TestRPCPeers(t *testing.T) {
 	t.Parallel()
 	if !*integration {
 		t.Skip("skipping integration test")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx, err := log.Init(ctx, log.Config{
 		Level:  "debug",
 		Color:  "force",

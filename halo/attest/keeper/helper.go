@@ -12,6 +12,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+func (s Status) Uint32() uint32 {
+	if s < 0 {
+		return 0 // Negative is invalid, default to unknown
+	}
+
+	return uint32(s) //nolint:gosec // Safe to convert after zero check
+}
+
 func (s *Signature) ValidatorEthAddress() (common.Address, error) {
 	return cast.EthAddress(s.GetValidatorAddress())
 }

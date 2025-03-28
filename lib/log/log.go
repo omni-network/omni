@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	pkgerrors "github.com/pkg/errors"
+	pkgerrors "github.com/pkg/errors" //nolint:revive // Cannot import lib/errors due to import cycle.
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )

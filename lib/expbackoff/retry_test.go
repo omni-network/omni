@@ -21,7 +21,7 @@ func Test(t *testing.T) {
 		return ch
 	})
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	t.Run("default", func(t *testing.T) {
 		var count int

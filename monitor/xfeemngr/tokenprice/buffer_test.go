@@ -1,7 +1,6 @@
 package tokenprice_test
 
 import (
-	"context"
 	"math/rand"
 	"testing"
 
@@ -24,7 +23,7 @@ func TestBufferStream(t *testing.T) {
 
 	thresh := 0.1
 	tick := ticker.NewMock()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	b := tokenprice.NewBuffer(pricer, []tokens.Token{tokens.OMNI, tokens.ETH}, thresh, tick)
 

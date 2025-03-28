@@ -1,3 +1,4 @@
+//nolint:paralleltest // Global envs set
 package docker_test
 
 import (

@@ -15,7 +15,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 'v1.23'
+          go-version: 'v1.24'
       - name: Install Foundry
         uses: ./.github/actions/setup-foundry
       - name: Install pnpm

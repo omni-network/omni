@@ -96,7 +96,7 @@ func maybeTestNetwork(
 // otherwise all nodes are tested.
 func test(t *testing.T, testFunc testFunc) {
 	t.Helper()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	testnet, network, endpoints := loadEnv(t)
 	nodes := testnet.Nodes
@@ -236,7 +236,7 @@ func loadEnv(t *testing.T) (types.Testnet, netconf.Network, xchain.RPCEndpoints)
 	case docker.ProviderName:
 		ifd, err = docker.NewInfraData(m)
 	case vmcompose.ProviderName:
-		ifd, err = vmcompose.LoadData(context.Background(), ifdFile)
+		ifd, err = vmcompose.LoadData(t.Context(), ifdFile)
 	default:
 		require.Fail(t, "unsupported infrastructure type", ifdType)
 	}
@@ -245,7 +245,7 @@ func loadEnv(t *testing.T) (types.Testnet, netconf.Network, xchain.RPCEndpoints)
 	cfg := app.DefinitionConfig{
 		ManifestFile: manifestFile,
 	}
-	testnet, err := app.TestnetFromManifest(context.Background(), m, ifd, cfg)
+	testnet, err := app.TestnetFromManifest(t.Context(), m, ifd, cfg)
 	require.NoError(t, err)
 	testnetCache[manifestFile] = testnet
 
@@ -262,7 +262,7 @@ func loadEnv(t *testing.T) (types.Testnet, netconf.Network, xchain.RPCEndpoints)
 	portalReg, err := makePortalRegistry(testnet.Network, endpoints)
 	require.NoError(t, err)
 
-	network, err := netconf.AwaitOnExecutionChain(context.Background(), testnet.Network, portalReg, endpoints.Keys())
+	network, err := netconf.AwaitOnExecutionChain(t.Context(), testnet.Network, portalReg, endpoints.Keys())
 	require.NoError(t, err)
 	networkCache[manifestFile] = network
 

@@ -42,7 +42,7 @@ func TestIntegration(t *testing.T) {
 		Instance: "test_instance",
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	stop, err := tracer.Init(ctx, ids, cfg)
 	require.NoError(t, err)
 	defer func() {
@@ -69,16 +69,17 @@ func TestIntegration(t *testing.T) {
 	time.Sleep(time.Millisecond * 30)
 }
 
-func TestDefaultNoopTracer(_ *testing.T) {
+func TestDefaultNoopTracer(t *testing.T) {
+	t.Helper()
 	// This just shouldn't panic.
-	ctx, span := tracer.Start(context.Background(), "root")
+	ctx, span := tracer.Start(t.Context(), "root")
 	defer span.End()
 
 	inner(ctx)
 }
 
 func TestStdOutTracer(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ids := tracer.Identifiers{
 		Network:  netconf.Simnet,

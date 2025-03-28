@@ -16,7 +16,7 @@ import (
 )
 
 func TestForkJoin(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	const n = 100
 	testErr := errors.New("test error")
@@ -110,7 +110,7 @@ func TestForkJoin(t *testing.T) {
 func TestPanic(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
-	fork, join, cancel := forkjoin.New[int, int](context.Background(), nil, forkjoin.WithWaitOnCancel())
+	fork, join, cancel := forkjoin.New[int, int](t.Context(), nil, forkjoin.WithWaitOnCancel())
 	join()
 	cancel()
 
@@ -129,7 +129,7 @@ func TestLeak(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
 	fork, join, cancel := forkjoin.New[int, int](
-		context.Background(),
+		t.Context(),
 		func(ctx context.Context, i int) (int, error) { return i, nil },
 		forkjoin.WithWaitOnCancel(),
 	)

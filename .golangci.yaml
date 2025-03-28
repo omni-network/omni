@@ -1,169 +1,212 @@
+version: "2"
+
 run:
-  timeout: 5m
-  go: "1.23"
-linters-settings:
-  exhaustive:
-    default-signifies-exhaustive: true
-  forbidigo:
-    forbid:
-      - 'fmt\.Print.*(# Avoid debug logging)?'
-      - 'fmt\.Errorf.*(# Prefer lib/errors.Wrap)?'
-      - 'prometheus\.New.*(# Prefer promauto)?'
-      - 'common\.BytesToAddress.*(# Prefer cast pkg)?'
-      - 'common\.BytesToHash.*(# Prefer cast pkg)?'
-  gci: # Auto-format imports
-    sections:
-      - standard                           # Go stdlib
-      - prefix(github.com/omni-network)    # Omni
-      - prefix(github.com/cometbft)        # CometBFT
-      - prefix(github.com/ethereum)        # Go-Ethereum
-      - default                            # All other imports not matched to another section type.
-      - blank                              # Blank imports
-    custom-order: true
-  govet:
-    enable-all: true
-  importas:
-    no-unaliased: true
-    alias:
-      - pkg: github.com/cometbft/cometbft/crypto/secp256k1
-        alias: k1
-    # TODO(corver): Add our own import aliases here
-  misspell:
-    locale: US
-  nlreturn:
-    block-size: 2
-  nolintlint:
-    require-explanation: true
-    require-specific: true
-  revive:
-    enable-all-rules: true
-    severity: warning
-    ignore-generated-header: true
+  go: "1.24"
+
+linters:
+  default: all
+  disable:
+    - cyclop
+    - depguard
+    - err113
+    - exhaustruct
+    - funlen
+    - gochecknoglobals
+    - gocognit
+    - godox
+    - gomoddirectives
+    - interfacebloat
+    - intrange
+    - ireturn
+    - lll
+    - mnd
+    - prealloc
+    - predeclared
+    - tagliatelle
+    - varnamelen
+    - wsl
+
+  settings:
+    exhaustive:
+      default-signifies-exhaustive: true
+    forbidigo:
+      forbid:
+        - pattern: fmt\.Print.*(# Avoid debug logging)?
+        - pattern: fmt\.Errorf.*(# Prefer lib/errors.Wrap)?
+        - pattern: prometheus\.New.*(# Prefer promauto)?
+        - pattern: common\.BytesToAddress.*(# Prefer cast pkg)?
+        - pattern: common\.BytesToHash.*(# Prefer cast pkg)?
+    gocritic:
+      disabled-checks:
+        - ifElseChain
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment # Micro optimisation
+    importas:
+      alias:
+        - pkg: github.com/cometbft/cometbft/crypto/secp256k1
+          alias: k1
+      no-unaliased: true
+    misspell:
+      locale: US
+    nlreturn:
+      block-size: 2
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+    revive:
+      severity: warning
+      enable-all-rules: true
+      rules:
+        # Disabled revive rules
+        - name: file-header # Doesn't support auto fix
+          disabled: true
+        - name: max-public-structs # Too strict
+          disabled: true
+        - name: banned-characters # Not applicable
+          disabled: true
+        - name: cognitive-complexity # False positives, address in code reviews
+          disabled: true
+        - name: function-length # False positives, address in code reviews
+          disabled: true
+        - name: function-result-limit # False positives, address in code reviews
+          disabled: true
+        - name: cyclomatic # False positives, address in code reviews
+          disabled: true
+        - name: argument-limit # False positives, address in code reviews
+          disabled: true
+        - name: line-length-limit # Requires us to cause indentation confusion: https://google.github.io/styleguide/go/decisions#indentation-confusion
+          disabled: true
+        # Some configured revive rules
+        - name: imports-blocklist
+          arguments:
+            - log                                 # Prefer ./lib/log
+            - errors                              # Prefer ./lib/errors
+            - github.com/pkg/errors               # Prefer ./lib/errors
+            - github.com/gogo/protobuf/proto      # Prefer google.golang.org/protobuf
+            - github.com/stretchr/testify/assert  # Prefer github.com/stretchr/testify/require
+            - golang.org/x/exp/slices             # Prefer slices
+            - golang.org/x/exp/maps               # Prefer maps
+        - name: unhandled-error
+          arguments:
+            - fmt.Printf
+            - fmt.Println
+        - name: max-control-nesting
+          arguments:
+            - 10 # We allow more nesting
+    staticcheck:
+      checks:
+        - all
+
+    testpackage:
+      skip-regexp: internal_test\.go # Allow internal tests
+    wrapcheck:
+      ignore-sigs:
+        - github.com/omni-network/omni/
+        - google.golang.org/grpc/status     # No point wrapping gRPC/network errors.
+        - github.com/ethereum/go-ethereum   # We wrap these automatically in lib/ethclient
+
+  exclusions:
+    generated: strict
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
     rules:
-      # Disabled revive rules
-      - name: file-header # Doesn't support auto fix
-        disabled: true
-      - name: max-public-structs # Too strict
-        disabled: true
-      - name: banned-characters # Not applicable
-        disabled: true
-      - name: cognitive-complexity # False positives, address in code reviews
-        disabled: true
-      - name: function-length # False positives, address in code reviews
-        disabled: true
-      - name: function-result-limit # False positives, address in code reviews
-        disabled: true
-      - name: cyclomatic # False positives, address in code reviews
-        disabled: true
-      - name: argument-limit # False positives, address in code reviews
-        disabled: true
-      - name: line-length-limit # Requires us to cause indentation confusion: https://google.github.io/styleguide/go/decisions#indentation-confusion
-        disabled: true
-      # Some configured revive rules
-      - name: imports-blacklist
-        arguments:
-          - "log"                                # Prefer ./lib/log
-          - "errors"                             # Prefer ./lib/errors
-          - "github.com/pkg/errors"              # Prefer ./lib/errors
-          - "github.com/gogo/protobuf/proto"     # Prefer google.golang.org/protobuf
-          - "github.com/stretchr/testify/assert" # Prefer github.com/stretchr/testify/require
-          - "golang.org/x/exp/slices"            # Prefer slices
-          - "golang.org/x/exp/maps"              # Prefer maps
-      - name: unhandled-error
-        arguments:
-         - 'fmt.Printf'
-         - 'fmt.Println'
-      - name: max-control-nesting
-        arguments: [10] # We allow more nesting
-  staticcheck:
-    checks:
-     - "all"
-  testpackage:
-    skip-regexp: internal_test\.go # Allow internal tests
-  wrapcheck:
-    ignoreSigs:
-      - github.com/omni-network/omni/
-      - google.golang.org/grpc/status # No point wrapping gRPC/network errors.
-      - github.com/ethereum/go-ethereum # We wrap these automatically in lib/ethclient
+      - path: (.*)(_test|tutil|scripts)(.*)
+        linters: # Relax linters for both tests/scripts (non-production code)
+          - contextcheck
+          - dupl
+          - forcetypeassert
+          - gosec
+          - maintidx
+          - perfsprint
+          - revive
+          - wrapcheck
+
+      - path: (.*)(_test|tutil|scripts)(.*)
+        linters: # Relax forbidigo common.BytesTo* in non-production code
+          - forbidigo
+        text: "Prefer cast" # Save casting not critical
+
+      - path: (.*)(e2e)(.*)
+        linters: # Relax linters for e2e (performance not required)
+          - perfsprint
+
+      - path: (.*)(scripts|cli)(.*)
+        linters: # Relax linters for scripts and clis
+          - forbidigo # Allow debug printing
+        text: "debug"
+
+      - text: 'add-constant'                                             # Ignore "add-constant: avoid magic numbers like" since it is too strict
+        linters: [revive]
+      - text: 'fieldalignment'                                           # Ignore "fieldalignment: struct with XXX pointer bytes could be YYY"
+        linters: [govet]
+      - text: 'shadow: declaration of'                                   # Relax govet
+        linters: [govet]
+      - text: 'shadows an import name'                                   # Relax revive
+        linters: [revive]
+      - text: 'ifElseChain: rewrite if-else to switch statement'         # IfElseChain actually preferred to switches
+        linters: [gocritic]
+      - text: 'nested-structs: no nested structs are allowed'            # Relax revive
+        linters: [revive]
+      - text: 'confusing-naming'                                         # Relax revive, we often use Foo and foo function names.
+        linters: [revive]
+      - text: 'confusing-results'                                        # Relax revive, we often return identical variables.
+        linters: [revive]
+      - text: 'flag-parameter'                                           # Relax revive, flag parameters are ok if used sparingly.
+        linters: [revive]
+      - text: 'G306: Expect WriteFile permissions to be 0600 or less'    # We write a lot of files that need to be editable.
+        linters: [gosec]
+      - text: 'exported: type name will be used as module.Module'        # Cosmos style
+        linters: [revive]
+      - text: 'defer: prefer not to defer chains of function calls'      # We use this for defer latency()()
+        linters: [revive]
+      - text: 'redefines-builtin-id'                                     # Too many false positives
+        linters: [revive]
+      - text: 'unexported-return'                                        # We often return unexpected functional options
+        linters: [revive]
+      - text: 'go-require: do not use require in http handlers'          # This is not important
+        linters: [testifylint]
+      - text: 'the given struct should be annotated with the `toml` tag' # TOML tags not required.
+        linters: [musttag]
+      - text: 'has no field or method'                                   # False positive
+        linters: [typecheck]
+      - text: 'use pointer receiver and non-pointer receiver'            # We prefer non-pointers, but require pointer receivers for unmarshalling.
+        linters: [recvcheck]
+      - text: 'QF1003: could use tagged switch on'                       # If-else chains are fine
+        linters: [staticcheck]
+      - path: 'lib/errors'                                               # lib errors imports std error pkgs.
+        text: 'imports-blocklist'
+        linters: [revive]
+
+    paths:
+      - .*\.pb\.go$           # Ignore generated protobuf files
+      - scratch               # Ignore scratch folder if present
+      - solver/solana/events  # Ignore anchor-go bindings.
 
 issues:
   fix: true
-  exclude-files:
-    - ".*\\.pb\\.go$" # Ignore generated protobuf files
-  exclude-dirs:
-    - "scratch" # Ignore scratch folder if present
-    - "solver/solana/events" # Ignore anchor-go bindings.
-  exclude-rules:
-    - path: '(.*)(_test|tutil|scripts)(.*)'
-      linters:         # Relax linters for both tests/scripts (non-production code)
-        - gosec        # Security not required
-        - revive       # Relax revive rules
-        - wrapcheck    # Wrapping not required
-        - perfsprint   # Performance not an issue here
-        - contextcheck # Context not an issue here
-        - maintidx     # Relax linter for table driven tests
-        - dupl         # Many tests share similar testing logic but call different methods with different args
-        - forcetypeassert # Asserting casts in tests not required.
-    - path: '(.*)(_test|tutil|scripts)(.*)'
-      linters: # Relax forbidigo common.BytesTo* in non-production code
-        - forbidigo
-      text: "Prefer cast"
-    - path: '(.*)(e2e)(.*)'
-      linters:         # Relax linters for both e2e (performance not required)
-        - perfsprint   # Performance not an issue here
-    - path: '(.*)(scripts|cli)(.*)'
-      linters:        # Relax linters for scripts and clis
-        - forbidigo   # Allow debug printing
-      text: "debug"
-  exclude:
-    - add-constant         # Ignore "add-constant: avoid magic numbers like" since it is too strict
-    - fieldalignment # Ignore "fieldalignment: struct with XXX pointer bytes could be YYY"
-    - "shadow: declaration of" # Relax govet
-    - "shadows an import name" # Relax revive
-    - "ifElseChain: rewrite if-else to switch statement"   # IfElseChain actually preferred to switches
-    - "nested-structs: no nested structs are allowed"      # Relax revive
-    - "confusing-naming" #  Relax revive, we often use Foo and foo function names.
-    - "flag-parameter" # Relax revive, flag parameters are ok if used sparingly.
-    - "G306: Expect WriteFile permissions to be 0600 or less" # We write a lot of files that need to be editable.
-    - "exported: type name will be used as module.Module" # Cosmos style
-    - "defer: prefer not to defer chains of function calls" # We use this for defer latency()()
-    - "go-require: do not use require in http handlers" # This is not important
-    - "the given struct should be annotated with the `toml` tag" # TOML tags not required.
 
-    # Loop variable issues have been fixed in Go 1.22, so can be ignored
-    - "G601: Implicit memory aliasing in for loop"
-    - "loopclosure: loop variable"
-    - "Range statement for test"
-    - "range-val-address: suspicious assignment of"
-    - "exporting a pointer for the loop variable snapshot"
-
-linters:
-  enable-all: true
-  disable:
-    # Disable some linters (alphabetical order)
-    - cyclop               # False positives, address in code reviews
-    - depguard             # Dependency guard is for enterprise users
-    - exhaustruct          # Exhaustive structs results in super verbose go code
-    - funlen               # Some functions will be long
-    - gocognit             # We tend to write long multi-step functions
-    - gochecknoglobals     # We use globals in many places
-    - err113               # We do not religiously follow the Go 1.13 package level error convention
-    - godox                # Allow TODOs
-    - goimports            # Handled by gci
-    - gofumpt              # Not compatible with gci, see https://github.com/golangci/golangci-lint/issues/1490.
-    - gomnd                # Too many false positives
-    - gomoddirectives      # We have a replace directive
-    - interfacebloat       # This isn't a big problem
-    - intrange             # Intrange just result in other lint warns in many cases.
-    - ireturn              # Too many false positives
-    - mnd                  # Too many false positives
-    - prealloc             # Too many false positives
-    - predeclared          # Too strict
-    - tagliatelle          # Too strict
-    - varnamelen           # False positives
-    - wsl                  # Way to strict and opinionated
-    - lll                  # Disable rigid line length limit
-
-    # Disable deprecated/archived linters (alphabetical order)
-    - execinquery
-    - exportloopref
+formatters:
+  enable:
+    - gci
+    - gofmt
+  settings:
+    gci:
+      sections:
+        - standard                           # Go stdlib
+        - prefix(github.com/omni-network)    # Omni
+        - prefix(github.com/cometbft)        # CometBFT
+        - prefix(github.com/ethereum)        # Go-Ethereum
+        - default                            # All other imports not matched to another section type.
+        - blank                              # Blank imports
+      custom-order: true
+  exclusions:
+    generated: strict
+    paths:
+      - .*\.pb\.go$
+      - scratch
+      - solver/solana/events

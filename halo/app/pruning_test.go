@@ -24,7 +24,7 @@ import (
 )
 
 func TestPruningHistory(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	ctx, err := log.Init(ctx, log.Config{Color: log.ColorForce, Level: "debug", Format: log.FormatConsole})
@@ -119,5 +119,5 @@ func TestPruningHistory(t *testing.T) {
 	cancel()
 
 	// Stop the server.
-	require.NoError(t, stopfunc(context.Background()))
+	require.NoError(t, stopfunc(t.Context()))
 }

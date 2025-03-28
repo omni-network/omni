@@ -1,3 +1,4 @@
+//nolint:imports-blocklist // Importing pkg/errors is only allowed here.
 package errors
 
 import (

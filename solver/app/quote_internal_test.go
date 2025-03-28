@@ -2,7 +2,6 @@ package app
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"io"
 	"math/big"
@@ -277,7 +276,7 @@ func TestQuote(t *testing.T) {
 			body, err := json.Marshal(tt.req)
 			require.NoError(t, err)
 
-			ctx := context.Background()
+			ctx := t.Context()
 			req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpointQuote, bytes.NewBuffer(body))
 			require.NoError(t, err)
 
@@ -297,7 +296,7 @@ func TestQuote(t *testing.T) {
 				require.Equal(t, res.Error.Code, rr.Code)
 			}
 			require.Equal(t, tt.res, res.QuoteResponse)
-			require.Equal(t, tt.expErr, res.JSONErrorResponse.Error)
+			require.Equal(t, tt.expErr, res.Error)
 
 			if tt.testdata {
 				tutil.RequireGoldenBytes(t, indent(body), tutil.WithFilename(t.Name()+"/req_body.json"))

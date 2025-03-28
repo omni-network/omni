@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/halo/registry/types"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -66,7 +67,7 @@ func (p Provider) XBlock(ctx context.Context, height uint64, latest bool) (xchai
 				StreamOffset: msg.StreamOffset,
 			},
 			Data:     data,
-			LogIndex: uint64(i), // Converting slice index to uint64 is safe
+			LogIndex: uint64(i), //nolint:gosec // Converting slice index to uint64 is safe
 		})
 	}
 
@@ -136,9 +137,14 @@ func toPortalVals(vals []cchain.PortalValidator) ([]bindings.Validator, error) {
 			return nil, err
 		}
 
+		power, err := umath.ToUint64(val.Power)
+		if err != nil {
+			return nil, err
+		}
+
 		resp = append(resp, bindings.Validator{
 			Addr:  val.Address,
-			Power: uint64(val.Power),
+			Power: power,
 		})
 	}
 

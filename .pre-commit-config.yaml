@@ -33,7 +33,7 @@ repos:
   # Then run code validators (on the formatted code)
 
   - repo: https://github.com/golangci/golangci-lint # See .golangci.yaml for config
-    rev: v1.60.3
+    rev: v2.0.2
     hooks:
       - id: golangci-lint
         require_serial: true # Don't run this in parallel

@@ -1,7 +1,6 @@
 package genutil
 
 import (
-	"context"
 	"testing"
 
 	haloapp "github.com/omni-network/omni/halo/app"
@@ -20,7 +19,7 @@ func TestDefaultConsensusParams(t *testing.T) {
 	t.Parallel()
 	cons := defaultConsensusGenesis()
 	require.EqualValues(t, 1, cons.Params.ABCI.VoteExtensionsEnableHeight)
-	require.EqualValues(t, types.ABCIPubKeyTypeSecp256k1, cons.Params.Validator.PubKeyTypes[0])
+	require.Equal(t, types.ABCIPubKeyTypeSecp256k1, cons.Params.Validator.PubKeyTypes[0])
 	require.EqualValues(t, -1, cons.Params.Block.MaxBytes)
 	require.EqualValues(t, -1, cons.Params.Block.MaxGas)
 }
@@ -36,7 +35,7 @@ func TestEncodeTXs(t *testing.T) {
 		},
 	}
 
-	encConf, err := haloapp.ClientEncodingConfig(context.Background(), netconf.Simnet)
+	encConf, err := haloapp.ClientEncodingConfig(t.Context(), netconf.Simnet)
 	require.NoError(t, err)
 
 	b := encConf.TxConfig.NewTxBuilder()

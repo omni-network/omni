@@ -298,7 +298,7 @@ func (v *Voter) getFromHeightAndOffset(ctx context.Context, chainVer xchain.Chai
 	} else if ok && fromBlockHeight < latest.BlockHeight+1 {
 		// Allows skipping ahead of we were behind for some reason.
 		fromBlockHeight = latest.BlockHeight + 1
-		fromAttestOffset = latest.AttestHeader.AttestOffset + 1
+		fromAttestOffset = latest.AttestOffset + 1
 	}
 
 	return fromBlockHeight, fromAttestOffset, nil

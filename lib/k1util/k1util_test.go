@@ -46,7 +46,7 @@ func TestK1Util(t *testing.T) {
 
 	sig, err := k1util.Sign(key, [32]byte(digest))
 	require.NoError(t, err)
-	require.EqualValues(t, fromHex(t, sig1), sig[:])
+	require.Equal(t, fromHex(t, sig1), sig[:])
 
 	addr, err := k1util.PubKeyToAddress(key.PubKey())
 	require.NoError(t, err)
@@ -65,7 +65,7 @@ func TestECDSAMalleability(t *testing.T) {
 
 	sig, err := k1util.Sign(key, [32]byte(digest))
 	require.NoError(t, err)
-	require.EqualValues(t, fromHex(t, sig1), sig[:])
+	require.Equal(t, fromHex(t, sig1), sig[:])
 
 	addr, err := k1util.PubKeyToAddress(key.PubKey())
 	require.NoError(t, err)

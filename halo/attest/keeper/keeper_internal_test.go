@@ -170,7 +170,7 @@ func TestVerifyAggVotes(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			ctx := context.Background()
+			ctx := t.Context()
 			keeper := Keeper{
 				portalRegistry: portalReg,
 				namer:          netconf.SimnetNetwork().ChainVersionName,

@@ -1,7 +1,6 @@
 package routerecon
 
 import (
-	"context"
 	"encoding/json"
 	"flag"
 	"net/http"
@@ -38,7 +37,7 @@ func TestReconLag(t *testing.T) {
 	}
 
 	network := netconf.Omega
-	ctx := context.Background()
+	ctx := t.Context()
 	conn, err := connect.New(ctx, network)
 	require.NoError(t, err)
 
@@ -71,7 +70,7 @@ func TestQueryLatestXChain(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	resp, err := paginateLatestCrossTx(ctx, netconf.Mainnet, *apiKey, queryFilter{})
 	require.NoError(t, err)
 	require.NotEmpty(t, resp.ID)
@@ -87,7 +86,7 @@ func TestHasLargeRateLimit(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	responseHook = func(resp *http.Response) {
 		rpdLimit, err := strconv.Atoi(resp.Header.Get(rpdLimitHeader))

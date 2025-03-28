@@ -25,7 +25,7 @@ var errSentAsync = errors.New("sent async")
 
 func TestSendAsync(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	fuzzer := fuzz.New().NilChance(0).NumElements(1, 8)
 	mockGasEstimator := func(destChain uint64, msgs []xchain.Msg) uint64 {
 		return 0

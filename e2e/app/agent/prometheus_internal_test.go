@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"context"
 	"testing"
 
 	"github.com/omni-network/omni/e2e/types"
@@ -72,7 +71,7 @@ func TestPromGen(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			ctx := context.Background()
+			ctx := t.Context()
 
 			var nodes []*e2e.Node
 			for _, name := range test.nodes {

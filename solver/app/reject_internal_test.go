@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"crypto/rand"
 	"testing"
 
@@ -37,14 +36,14 @@ func TestCmdAddrs(t *testing.T) {
 	require.False(t, cmpAddrs(addr, bz))
 }
 
-//nolint:tparallel // subtests use same mock controller
+//nolint:tparallel,paralleltest // subtests use same mock controller
 func TestShouldReject(t *testing.T) {
 	t.Parallel()
 
 	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
 
 	// outbox addr only matters for mocks, using devnet
-	addrs, err := contracts.GetAddresses(context.Background(), netconf.Devnet)
+	addrs, err := contracts.GetAddresses(t.Context(), netconf.Devnet)
 	require.NoError(t, err)
 	outbox := addrs.SolverNetOutbox
 
@@ -66,7 +65,7 @@ func TestShouldReject(t *testing.T) {
 				mockDidFill(t, destClient, outbox, false)
 			}
 
-			reason, reject, err := shouldReject(context.Background(), tt.order)
+			reason, reject, err := shouldReject(t.Context(), tt.order)
 			if tt.shouldErr {
 				require.Error(t, err, "expected error for %s", tt.name)
 				require.Equal(t, types.RejectNone, reason, "expected no reason for error")

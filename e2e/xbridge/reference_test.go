@@ -1,7 +1,6 @@
 package xbridge_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/omni-network/omni/e2e/xbridge"
@@ -19,7 +18,7 @@ func TestReference(t *testing.T) {
 	t.Parallel()
 
 	golden := make(map[string]map[netconf.ID]map[string]any)
-	ctx := context.Background()
+	ctx := t.Context()
 
 	seen := make(map[common.Address]bool)
 

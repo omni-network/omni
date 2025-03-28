@@ -31,7 +31,7 @@ const empty uint64 = 0
 
 func TestAbort(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	dir := filepath.Join(t.TempDir(), "deleteme")
 	err := os.MkdirAll(dir, 0o755)
@@ -65,7 +65,7 @@ func TestAbort(t *testing.T) {
 	// Assert it's available
 	vote, ok := v.LatestByChain(chainVer)
 	require.True(t, ok)
-	require.EqualValues(t, att1, vote.AttestHeader.ToXChain())
+	require.Equal(t, att1, vote.AttestHeader.ToXChain())
 
 	// Delete the state dir
 	err = os.RemoveAll(dir)
@@ -95,7 +95,7 @@ func TestAbort(t *testing.T) {
 
 func TestRunner(t *testing.T) {
 	t.Parallel()
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	path := filepath.Join(t.TempDir(), "state.json")
@@ -188,7 +188,7 @@ func TestRunner(t *testing.T) {
 
 func TestVoteWindow(t *testing.T) {
 	t.Parallel()
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	path := filepath.Join(t.TempDir(), "state.json")
@@ -226,7 +226,7 @@ func TestVoteWindow(t *testing.T) {
 
 	// Trim behind 3 (deletes 1 and 2)
 	l := w.v.TrimBehind(minByChain(network, chain1, 3))
-	require.EqualValues(t, 2, l)
+	require.Equal(t, 2, l)
 
 	w.Available(t, chain1, 1, false)
 	w.Available(t, chain1, 2, false)
@@ -234,7 +234,7 @@ func TestVoteWindow(t *testing.T) {
 
 	// Trim behind 4 (deletes 3)
 	l = w.v.TrimBehind(minByChain(network, chain1, 4))
-	require.EqualValues(t, 1, l)
+	require.Equal(t, 1, l)
 
 	w.Available(t, chain1, 1, false)
 	w.Available(t, chain1, 2, false)
@@ -277,7 +277,7 @@ func TestVoter(t *testing.T) {
 
 		cancel()
 		var ctx context.Context
-		ctx, cancel = context.WithCancel(context.Background())
+		ctx, cancel = context.WithCancel(t.Context())
 
 		v.Start(ctx)
 
@@ -388,7 +388,7 @@ func expectSubscriptions(t *testing.T, prov stubProvider, chainOffsets ...uint64
 
 	l := len(expected)
 	for i := 0; i < l; i++ {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 		select {
 		case <-ctx.Done():
 			require.Fail(t, "timed out waiting for subscription")
@@ -438,7 +438,7 @@ func (w *wrappedVoter) Add(t *testing.T, chainID, offset uint64) {
 
 func (w *wrappedVoter) Propose(t *testing.T, chainID, offset uint64) {
 	t.Helper()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	if offset == empty {
 		err := w.v.SetProposed(ctx, nil)
@@ -460,7 +460,7 @@ func (w *wrappedVoter) Propose(t *testing.T, chainID, offset uint64) {
 
 func (w *wrappedVoter) Commit(t *testing.T, chainID, offset uint64) {
 	t.Helper()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	if offset == empty {
 		err := w.v.SetProposed(ctx, nil)

@@ -23,7 +23,7 @@ func TestUpgradeQueries(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	cprov, err := provider.Dial(netconf.Staging)
 	require.NoError(t, err)
@@ -39,7 +39,7 @@ func TestSigningInfos(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	cprov, err := provider.Dial(netconf.Omega)
 	require.NoError(t, err)
@@ -67,7 +67,7 @@ func TestSDKValidator(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	cprov, err := provider.Dial(netconf.Omega)
 	require.NoError(t, err)
@@ -102,7 +102,7 @@ func TestSDKValidator(t *testing.T) {
 func TestProvider(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel() // Ensure all paths cancel the context to avoid context leak
 
 	const (

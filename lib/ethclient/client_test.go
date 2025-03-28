@@ -111,8 +111,7 @@ func testEndpoint(t *testing.T, callback func(context.Context, ethclient.EngineC
 		for i, actualJSON := range rpcReq.Params {
 			expectJSON, err := json.Marshal(params[i])
 			require.NoError(t, err)
-
-			require.Equal(t, string(expectJSON), string(actualJSON))
+			require.JSONEq(t, string(expectJSON), string(actualJSON))
 		}
 
 		rpcResp := jsonRPCResponse{
@@ -127,7 +126,7 @@ func testEndpoint(t *testing.T, callback func(context.Context, ethclient.EngineC
 	}))
 	defer srv.Close()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	api, err := ethclient.NewAuthClient(ctx, srv.URL, []byte(jwtSecret))
 	require.NoError(t, err)

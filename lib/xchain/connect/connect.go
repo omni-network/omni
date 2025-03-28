@@ -1,4 +1,3 @@
-//nolint:revive // unexported option type is fine.
 package connect
 
 import (

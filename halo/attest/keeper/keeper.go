@@ -173,6 +173,11 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 		return errors.Wrap(err, "attestation root")
 	}
 
+	height, err := umath.ToUint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
+	if err != nil {
+		return err
+	}
+
 	// Get existing attestation (by unique key) or insert new one.
 	var attID uint64
 	existing, err := k.attTable.GetByAttestationRoot(ctx, attRoot[:])
@@ -189,7 +194,7 @@ func (k *Keeper) addOne(ctx context.Context, agg *types.AggVote, valSetID uint64
 			AttestationRoot: attRoot[:],
 			Status:          uint32(Status_Pending),
 			ValidatorSetId:  0, // Unknown at this point.
-			CreatedHeight:   uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()),
+			CreatedHeight:   height,
 			FinalizedAttId:  0, // No finalized override yet.
 		})
 		if err != nil {
@@ -572,8 +577,8 @@ func (k *Keeper) listAllAttestations(ctx context.Context, version xchain.ChainVe
 
 	const limit = 100
 
-	start := AttestationStatusChainIdConfLevelAttestOffsetIndexKey{}.WithStatusChainIdConfLevelAttestOffset(uint32(status), version.ID, uint32(version.ConfLevel), attestOffset)
-	end := AttestationStatusChainIdConfLevelAttestOffsetIndexKey{}.WithStatusChainIdConfLevel(uint32(status), version.ID, uint32(version.ConfLevel))
+	start := AttestationStatusChainIdConfLevelAttestOffsetIndexKey{}.WithStatusChainIdConfLevelAttestOffset(status.Uint32(), version.ID, uint32(version.ConfLevel), attestOffset)
+	end := AttestationStatusChainIdConfLevelAttestOffsetIndexKey{}.WithStatusChainIdConfLevel(status.Uint32(), version.ID, uint32(version.ConfLevel))
 	iter, err := k.attTable.ListRange(ctx, start, end)
 	if err != nil {
 		return nil, errors.Wrap(err, "list")
@@ -649,7 +654,11 @@ func (k *Keeper) BeginBlock(ctx context.Context) error {
 		return errors.Wrap(err, "parse chain id")
 	}
 
-	head := uint64(sdkCtx.BlockHeight())
+	head, err := umath.ToUint64(sdkCtx.BlockHeight())
+	if err != nil {
+		return err
+	}
+
 	before := umath.SubtractOrZero(head, k.trimLag)
 	cBefore := umath.SubtractOrZero(head, k.cTrimLag)
 
@@ -746,7 +755,12 @@ func (k *Keeper) VerifyVoteExtension(ctx sdk.Context, req *abci.RequestVerifyVot
 		Status: abci.ResponseVerifyVoteExtension_REJECT,
 	}
 
-	_, ok, err := k.parseAndVerifyVoteExtension(ctx, req.ValidatorAddress, req.VoteExtension, uint64(req.Height))
+	height, err := umath.ToUint64(ctx.BlockHeight())
+	if err != nil {
+		return nil, err
+	}
+
+	_, ok, err := k.parseAndVerifyVoteExtension(ctx, req.ValidatorAddress, req.VoteExtension, height)
 	if err != nil {
 		log.Warn(ctx, "Rejecting vote extension", err, log.Hex7("validator", req.ValidatorAddress))
 		return respReject, nil
@@ -862,8 +876,14 @@ func (s ValSet) TotalPower() int64 {
 // prevBlockValSet returns the previous blocks active validator set.
 // Previous block is used since vote extensions are delayed by one block.
 func (k *Keeper) prevBlockValSet(ctx context.Context) (ValSet, error) {
-	prevBlock := sdk.UnwrapSDKContext(ctx).BlockHeight() - 1
-	resp, err := k.valProvider.ActiveSetByHeight(ctx, uint64(prevBlock))
+	height, err := umath.ToUint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
+	if err != nil {
+		return ValSet{}, err
+	}
+
+	prevBlock := umath.SubtractOrZero(height, 1) // This is only called AFTER genesis, so safe to subtract 1.
+
+	resp, err := k.valProvider.ActiveSetByHeight(ctx, prevBlock)
 	if err != nil {
 		return ValSet{}, err
 	}

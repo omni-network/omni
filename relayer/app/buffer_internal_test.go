@@ -15,7 +15,7 @@ import (
 
 func Test_activeBuffer_AddInput(t *testing.T) {
 	t.Parallel()
-	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
 	defer cancel()
 	limit := int64(5)
 	sender := &mockBufSender{}
@@ -67,7 +67,7 @@ func (m *mockBufSender) Next() xchain.Submission {
 // than the mempoolLimit.
 func Test_activeBuffer_Run(t *testing.T) {
 	t.Parallel()
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	//
 	const (

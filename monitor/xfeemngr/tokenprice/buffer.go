@@ -53,7 +53,7 @@ func (b *buffer) Price(token tokens.Token) float64 {
 // Stream starts streaming prices for all tokens into the buffer.
 func (b *buffer) Stream(ctx context.Context) {
 	b.once.Do(func() {
-		ctx = log.WithCtx(ctx, "component", "tokenprice.Buffer")
+		ctx := log.WithCtx(ctx, "component", "tokenprice.Buffer")
 		log.Info(ctx, "Streaming token prices into buffer")
 
 		b.stream(ctx)

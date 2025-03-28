@@ -61,7 +61,7 @@ func (b *buffer) GasPrice(chainID uint64) *big.Int {
 // Stream starts streaming gas prices for all providers into the buffer.
 func (b *buffer) Stream(ctx context.Context) {
 	b.once.Do(func() {
-		ctx = log.WithCtx(ctx, "component", "gasprice.Buffer")
+		ctx := log.WithCtx(ctx, "component", "gasprice.Buffer")
 		log.Info(ctx, "Streaming gas prices into buffer")
 
 		b.streamAll(ctx)

@@ -52,7 +52,7 @@ func TestJoinNetwork(t *testing.T) {
 		minDuration = time.Minute * 10
 	)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	home := t.TempDir()
 	logsPath, err := filepath.Abs(*logsFile)

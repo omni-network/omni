@@ -1,7 +1,6 @@
 package job_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -27,7 +26,7 @@ func TestDB(t *testing.T) {
 		return resp
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	elogs := []types.Log{fuzzLog(), fuzzLog(), fuzzLog()}
 
 	for i, elog := range elogs {

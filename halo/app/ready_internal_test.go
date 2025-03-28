@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -44,11 +43,11 @@ func TestReadinessStatusMarshaling(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 			if tt.input != nil {
-				require.True(t,
-					strings.Contains(string(data), fmt.Sprintf("\"execution_p2p_peers\":%v", *tt.input)),
+				require.Contains(t,
+					string(data), fmt.Sprintf("\"execution_p2p_peers\":%v", *tt.input),
 					tt.name)
 			} else {
-				require.False(t, strings.Contains(string(data), "execution_p2p_peers"), tt.name)
+				require.NotContains(t, string(data), "execution_p2p_peers", tt.name)
 			}
 		})
 	}

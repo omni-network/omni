@@ -1,7 +1,6 @@
 package txmgr
 
 import (
-	"context"
 	"strconv"
 	"testing"
 
@@ -23,7 +22,7 @@ func (tc *priceBumpTest) run(t *testing.T) {
 	t.Helper()
 	prevFC := calcGasFeeCap(bi.N(tc.prevBaseFee), bi.N(tc.prevGasTip))
 
-	tip, fc := updateFees(context.Background(), bi.N(tc.prevGasTip), prevFC, bi.N(tc.newGasTip),
+	tip, fc := updateFees(t.Context(), bi.N(tc.prevGasTip), prevFC, bi.N(tc.newGasTip),
 		bi.N(tc.newBaseFee))
 
 	require.Equal(t, tc.expectedTip, tip.Int64(), "tip must be as expected")

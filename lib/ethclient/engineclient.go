@@ -86,7 +86,7 @@ func (c engineClient) NewPayloadV3(ctx context.Context, params engine.Executable
 
 	var resp engine.PayloadStatusV1
 	var rpcErr rpc.Error
-	err := c.Client.CallContext(ctx, &resp, newPayloadV3, params, versionedHashes, beaconRoot)
+	err := c.CallContext(ctx, &resp, newPayloadV3, params, versionedHashes, beaconRoot)
 	if isStatusOk(resp) {
 		// Swallow errors when geth returns errors along with proper responses (but at least log it).
 		if err != nil {
@@ -135,7 +135,7 @@ func (c engineClient) ForkchoiceUpdatedV3(ctx context.Context, update engine.For
 	}
 
 	var resp engine.ForkChoiceResponse
-	err := c.Client.CallContext(ctx, &resp, forkchoiceUpdatedV3, update, payloadAttributes)
+	err := c.CallContext(ctx, &resp, forkchoiceUpdatedV3, update, payloadAttributes)
 	if isStatusOk(resp) {
 		// Swallow errors when geth returns errors along with proper responses (but at least log it).
 		if err != nil {
@@ -160,7 +160,7 @@ func (c engineClient) GetPayloadV3(ctx context.Context, payloadID engine.Payload
 	defer latency(c.Name(), endpoint)()
 
 	var resp engine.ExecutionPayloadEnvelope
-	err := c.Client.CallContext(ctx, &resp, getPayloadV3, payloadID)
+	err := c.CallContext(ctx, &resp, getPayloadV3, payloadID)
 	if err != nil {
 		incError(c.Name(), endpoint)
 		return nil, errors.Wrap(err, "rpc get payload v3")

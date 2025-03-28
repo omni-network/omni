@@ -27,8 +27,7 @@ func TestSDK(t *testing.T) {
 		require.NoError(t, err)
 
 		sdkPath := filepath.Join(cwd, "../../sdk")
-		err = os.Chdir(sdkPath)
-		require.NoError(t, err)
+		t.Chdir(sdkPath)
 
 		err = exec.CommandVerbose(ctx, "pnpm", "install")
 		require.NoError(t, err)
