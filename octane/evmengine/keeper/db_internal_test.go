@@ -17,6 +17,76 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestKeeper_withdrawalsAggregation(t *testing.T) {
+	t.Parallel()
+
+	cdc := getCodec(t)
+	txConfig := authtx.NewTxConfig(cdc, nil)
+
+	mockEngine, err := newMockEngineAPI(2)
+	require.NoError(t, err)
+	cmtAPI := newMockCometAPI(t, nil)
+	header := cmtproto.Header{Height: 1, AppHash: tutil.RandomHash().Bytes()}
+	nxtAddr, err := k1util.PubKeyToAddress(cmtAPI.validatorSet.Validators[1].PubKey)
+	require.NoError(t, err)
+
+	ctx, storeService := setupCtxStore(t, &header)
+	ctx = ctx.WithExecMode(sdk.ExecModeFinalize)
+
+	ap := mockAddressProvider{
+		address: nxtAddr,
+	}
+	frp := newRandomFeeRecipientProvider()
+	evmLogProc := mockEventProc{deliverErr: errors.New("test error")}
+	maxWithdrawalsPerBlock := uint64(4)
+	keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, maxWithdrawalsPerBlock, evmLogProc)
+	require.NoError(t, err)
+
+	addr1 := tutil.RandomAddress()
+	addr2 := tutil.RandomAddress()
+
+	type testCase struct {
+		addr   common.Address
+		height uint64
+		amount uint64
+		expID  uint64
+	}
+
+	inputs := []testCase{
+		{addr1, 1, 777, 1},
+		{addr2, 2, 8888, 2},
+		{addr1, 100, 9999999, 3},
+		{addr2, 120, 10000000, 4},
+	}
+
+	// expected number of aggregated withdrawals
+	expectedLen := 2
+
+	for _, in := range inputs {
+		ctx = ctx.WithBlockHeight(int64(in.height))
+		err := keeper.InsertWithdrawal(ctx, in.addr, in.amount)
+		require.NoError(t, err)
+	}
+
+	withdrawals, err := keeper.EligibleWithdrawals(ctx.WithBlockHeight(1000))
+	require.NoError(t, err)
+
+	// we only have two withdrawals
+	require.Len(t, withdrawals, expectedLen)
+
+	// test aggregation of inputs 0 and 2
+	w := withdrawals[0]
+	require.Equal(t, inputs[2].expID, w.Index)
+	require.Equal(t, common.BytesToAddress(inputs[2].addr.Bytes()), w.Address)
+	require.Equal(t, inputs[0].amount+inputs[2].amount, w.Amount)
+
+	// test aggregation of inputs 1 and 3
+	w = withdrawals[1]
+	require.Equal(t, inputs[3].expID, w.Index)
+	require.Equal(t, common.BytesToAddress(inputs[3].addr.Bytes()), w.Address)
+	require.Equal(t, inputs[1].amount+inputs[3].amount, w.Amount)
+}
+
 func TestKeeper_withdrawalsPersistence(t *testing.T) {
 	t.Parallel()
 
@@ -45,6 +115,7 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 	addr1 := tutil.RandomAddress()
 	addr2 := tutil.RandomAddress()
 	addr3 := tutil.RandomAddress()
+	addr4 := tutil.RandomAddress()
 
 	type testCase struct {
 		addr   common.Address
@@ -56,7 +127,7 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 	inputs := []testCase{
 		{addr1, 1, 777, 1},
 		{addr2, 2, 8888, 2},
-		{addr1, 100, 9999999, 3},
+		{addr4, 100, 9999999, 3},
 		{addr3, 120, 10000000, 4},
 	}
 
@@ -82,7 +153,7 @@ func TestKeeper_withdrawalsPersistence(t *testing.T) {
 
 	withdrawalsByAddr, err := keeper.listWithdrawalsByAddress(ctx, addr1)
 	require.NoError(t, err)
-	require.Len(t, withdrawalsByAddr, 2)
+	require.Len(t, withdrawalsByAddr, 1)
 	require.Equal(t, addr1.Bytes(), withdrawalsByAddr[0].GetAddress())
 
 	withdrawalsByAddr, err = keeper.listWithdrawalsByAddress(ctx, addr2)
