@@ -3,6 +3,7 @@ package keeper
 import (
 	"bytes"
 	"context"
+	"sort"
 
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
@@ -127,13 +128,12 @@ func (k *Keeper) listWithdrawalsByAddress(ctx context.Context, withdrawalAddr co
 }
 
 // EligibleWithdrawals returns all withdrawals created below the specified height,
-// sorted by the id (oldest to newest), limited by the provided count.
-func (k *Keeper) EligibleWithdrawals(ctx context.Context) ([]*Withdrawal, error) {
+// aggregated by address and sorted by the id (oldest to newest), limited by the configured count.
+func (k *Keeper) EligibleWithdrawals(ctx context.Context) ([]*etypes.Withdrawal, error) {
 	height, err := umath.ToUint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
 	if err != nil {
 		return nil, err
 	}
-
 	// Note: items are ordered by the id in ascending order (oldest to newest).
 	iter, err := k.withdrawalTable.List(ctx, WithdrawalPrimaryKey{})
 	if err != nil {
@@ -141,7 +141,12 @@ func (k *Keeper) EligibleWithdrawals(ctx context.Context) ([]*Withdrawal, error)
 	}
 	defer iter.Close()
 
-	var withdrawals []*Withdrawal
+	type AggregatedWithdrawal struct {
+		id      uint64
+		balance uint64
+	}
+
+	withdrawals := make(map[common.Address]AggregatedWithdrawal)
 	for iter.Next() {
 		val, err := iter.Value()
 		if err != nil {
@@ -153,24 +158,33 @@ func (k *Keeper) EligibleWithdrawals(ctx context.Context) ([]*Withdrawal, error)
 			break
 		}
 
-		withdrawals = append(withdrawals, val)
+		addr := common.BytesToAddress(val.GetAddress()) //nolint:forbidigo // should be padded
+		aggrWth := withdrawals[addr]
+		withdrawals[addr] = AggregatedWithdrawal{
+			id:      max(aggrWth.id, val.GetId()),
+			balance: aggrWth.balance + val.GetAmountGwei(),
+		}
 
-		if umath.Len(withdrawals) == k.maxWithdrawalsPerBlock {
+		if uint64(len(withdrawals)) == k.maxWithdrawalsPerBlock {
 			// Reached the max number of withdrawals
 			break
 		}
 	}
 
-	var evmWithdrawals []*etypes.Withdrawal
-	for _, w := range withdrawals {
+	evmWithdrawals := []*etypes.Withdrawal{}
+	for addr, w := range withdrawals {
 		evmWithdrawals = append(evmWithdrawals, &etypes.Withdrawal{
-			Index:   w.GetId(),
-			Address: common.BytesToAddress(w.GetAddress()), //nolint:forbidigo // should be padded
-			Amount:  w.GetAmountGwei(),
+			Index:   w.id,
+			Address: addr,
+			Amount:  w.balance,
 			// The validator index is not used for withdrawals.
 			Validator: 0,
 		})
 	}
+
+	sort.Slice(evmWithdrawals, func(i, j int) bool {
+		return evmWithdrawals[i].Index < evmWithdrawals[j].Index
+	})
 
 	return evmWithdrawals, nil
 }
