@@ -179,7 +179,8 @@ func (k *Keeper) parseAndVerifyProposedPayload(ctx context.Context, msg *types.M
 	}
 
 	if !withdrawalsEqual(payload.Withdrawals, eligibleWithdrawals) {
-		return engine.ExecutableData{}, errors.New("mismatch with eligible withdrawals")
+		height := sdk.UnwrapSDKContext(ctx).BlockHeight()
+		return engine.ExecutableData{}, errors.New("mismatch with eligible withdrawals", "height", height)
 	}
 
 	// Ensure no witness
