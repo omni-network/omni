@@ -41,7 +41,7 @@ var network = netconf.Network{Chains: []netconf.Chain{
 func TestStore(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	finalized := make(map[xchain.StreamID]uint64)
 	getSubmitCursorFunc := func(ctx context.Context, ref xchain.Ref, stream xchain.StreamID) (xchain.SubmitCursor, bool, error) {

@@ -48,7 +48,7 @@ func TestFetchProcEvents(t *testing.T) {
 		return events
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Simple ordering by index (see MockEngineClient for indexes)
 	events := fetch(ctx)

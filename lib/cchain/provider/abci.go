@@ -412,15 +412,18 @@ func newABCIFetchFunc(attCl atypes.QueryClient, cmtCl cmtservice.ServiceClient, 
 		// Caller has to wait and retry in both cases
 		if !ok || earliestAttestationAtLatestHeight.AttestOffset < fromOffset {
 			// First attestation hasn't happened yet, return empty and set cursor to latest height
-			return []xchain.Attestation{}, cursor, nil
+			return nil, cursor, nil
 		}
 
 		latestBlockResp, err := cmtCl.GetLatestBlock(ctx, &cmtservice.GetLatestBlockRequest{})
 		if err != nil {
-			return []xchain.Attestation{}, 0, errors.Wrap(err, "query latest block")
+			return nil, 0, errors.Wrap(err, "query latest block")
 		}
 
-		latestHeight := uint64(latestBlockResp.SdkBlock.Header.Height)
+		latestHeight, err := umath.ToUint64(latestBlockResp.SdkBlock.Header.Height)
+		if err != nil {
+			return nil, 0, err
+		}
 
 		// Binary search range from cached to latest
 		searchStart, searchEnd := cursor, latestHeight

@@ -329,7 +329,7 @@ func TestKeeper_PrepareProposal(t *testing.T) {
 
 			found = true
 			expected := [][]byte{commitment1, commitment2}
-			require.EqualValues(t, expected, payload.BlobCommitments)
+			require.Equal(t, expected, payload.BlobCommitments)
 			assertExecutablePayload(t, msg, req.Time.Unix(), headHash, frp, head.GetBlockHeight()+1, len(expected))
 		}
 		require.True(t, found)
@@ -437,8 +437,8 @@ func TestOptimistic(t *testing.T) {
 	payload := env.ExecutionPayload
 	require.EqualValues(t, 1, payload.Number)
 	require.EqualValues(t, timestamp.Unix(), payload.Timestamp)
-	require.EqualValues(t, b.Hash(), payload.ParentHash)
-	require.EqualValues(t, frp.LocalFeeRecipient(), payload.FeeRecipient)
+	require.Equal(t, b.Hash(), payload.ParentHash)
+	require.Equal(t, frp.LocalFeeRecipient(), payload.FeeRecipient)
 	require.Empty(t, payload.Withdrawals)
 }
 
@@ -483,6 +483,7 @@ func setupCtxStore(t *testing.T, header *cmtproto.Header) (sdk.Context, store.KV
 		header = &cmtproto.Header{
 			Time:    cmttime.Now(),
 			AppHash: tutil.RandomHash().Bytes(),
+			Height:  1,
 		}
 	}
 	ctx := testCtx.Ctx.WithBlockHeader(*header)
@@ -616,7 +617,7 @@ func (mockEngineAPI) FilterLogs(_ context.Context, q ethereum.FilterQuery) ([]ty
 	}}, nil
 }
 
-func (m *mockEngineAPI) HeaderByType(ctx context.Context, typ ethclient.HeadType) (*types.Header, error) {
+func (m mockEngineAPI) HeaderByType(ctx context.Context, typ ethclient.HeadType) (*types.Header, error) {
 	if m.headerByTypeFunc != nil {
 		return m.headerByTypeFunc(ctx, typ)
 	}
@@ -625,7 +626,7 @@ func (m *mockEngineAPI) HeaderByType(ctx context.Context, typ ethclient.HeadType
 }
 
 //nolint:nonamedreturns // Required for defer
-func (m *mockEngineAPI) NewPayloadV3(ctx context.Context, params eengine.ExecutableData, versionedHashes []common.Hash, beaconRoot *common.Hash) (resp eengine.PayloadStatusV1, err error) {
+func (m mockEngineAPI) NewPayloadV3(ctx context.Context, params eengine.ExecutableData, versionedHashes []common.Hash, beaconRoot *common.Hash) (resp eengine.PayloadStatusV1, err error) {
 	if status, ok := m.maybeSync(); ok {
 		defer func() {
 			resp.Status = status.Status
@@ -640,7 +641,7 @@ func (m *mockEngineAPI) NewPayloadV3(ctx context.Context, params eengine.Executa
 }
 
 //nolint:nonamedreturns // Required for defer
-func (m *mockEngineAPI) ForkchoiceUpdatedV3(ctx context.Context, update eengine.ForkchoiceStateV1, payloadAttributes *eengine.PayloadAttributes) (resp eengine.ForkChoiceResponse, err error) {
+func (m mockEngineAPI) ForkchoiceUpdatedV3(ctx context.Context, update eengine.ForkchoiceStateV1, payloadAttributes *eengine.PayloadAttributes) (resp eengine.ForkChoiceResponse, err error) {
 	if status, ok := m.maybeSync(); ok {
 		defer func() {
 			resp.PayloadStatus.Status = status.Status
@@ -654,7 +655,7 @@ func (m *mockEngineAPI) ForkchoiceUpdatedV3(ctx context.Context, update eengine.
 	return m.mock.ForkchoiceUpdatedV3(ctx, update, payloadAttributes)
 }
 
-func (m *mockEngineAPI) GetPayloadV3(ctx context.Context, payloadID eengine.PayloadID) (*eengine.ExecutionPayloadEnvelope, error) {
+func (m mockEngineAPI) GetPayloadV3(ctx context.Context, payloadID eengine.PayloadID) (*eengine.ExecutionPayloadEnvelope, error) {
 	if m.getPayloadV3Func != nil {
 		return m.getPayloadV3Func(ctx, payloadID)
 	}
@@ -663,7 +664,7 @@ func (m *mockEngineAPI) GetPayloadV3(ctx context.Context, payloadID eengine.Payl
 }
 
 // pushPayload - invokes the ForkchoiceUpdatedV3 method on the mock engine and returns the payload ID.
-func (m *mockEngineAPI) pushPayload(t *testing.T, ctx context.Context, feeRecipient common.Address, blockHash common.Hash, ts time.Time, appHash common.Hash) *eengine.PayloadID {
+func (m mockEngineAPI) pushPayload(t *testing.T, ctx context.Context, feeRecipient common.Address, blockHash common.Hash, ts time.Time, appHash common.Hash) *eengine.PayloadID {
 	t.Helper()
 	state := eengine.ForkchoiceStateV1{
 		HeadBlockHash:      blockHash,
@@ -687,7 +688,7 @@ func (m *mockEngineAPI) pushPayload(t *testing.T, ctx context.Context, feeRecipi
 
 // nextBlock creates a new block with the given height, timestamp, parentHash, and feeRecipient. It also returns the
 // payload for the block. It's a utility function for testing.
-func (m *mockEngineAPI) nextBlock(
+func (m mockEngineAPI) nextBlock(
 	t *testing.T,
 	height uint64,
 	timestamp uint64,

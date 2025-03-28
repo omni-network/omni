@@ -1,7 +1,6 @@
 package routerecon
 
 import (
-	"context"
 	"net/url"
 	"testing"
 	"time"
@@ -23,7 +22,7 @@ func TestReconOnce(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	conn, err := xconnect.New(ctx, netconf.Omega)
 	require.NoError(t, err)
 
@@ -49,7 +48,7 @@ func TestBasicHistorical(t *testing.T) {
 
 	network := netconf.Omega
 
-	ctx := context.Background()
+	ctx := t.Context()
 	conn, err := xconnect.New(ctx, network)
 	require.NoError(t, err)
 

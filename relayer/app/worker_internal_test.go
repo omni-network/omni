@@ -16,7 +16,7 @@ import (
 
 func TestWorker_Run(t *testing.T) {
 	t.Parallel()
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 
 	const (
 		srcChain         = 1
@@ -222,6 +222,6 @@ func TestWorker_Run(t *testing.T) {
 	}
 
 	// Ensure totals.
-	require.EqualValues(t, expectChainA, actualChainA)
-	require.EqualValues(t, expectChainB, actualChainB)
+	require.Equal(t, expectChainA, actualChainA)
+	require.Equal(t, expectChainB, actualChainB)
 }

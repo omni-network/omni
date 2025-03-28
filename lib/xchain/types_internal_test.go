@@ -22,6 +22,6 @@ func TestConfLevelFuzzy(t *testing.T) {
 		}
 	}
 
-	require.EqualValues(t, fuzzies, FuzzyConfLevels())
-	require.EqualValues(t, []ConfLevel{ConfMin1, ConfMin2}, minXs)
+	require.Equal(t, fuzzies, FuzzyConfLevels())
+	require.Equal(t, []ConfLevel{ConfMin1, ConfMin2}, minXs)
 }

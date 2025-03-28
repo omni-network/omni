@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -22,7 +21,7 @@ func TestInitFiles(t *testing.T) {
 		HomeDir: dir,
 		Network: netconf.Simnet,
 	}
-	err := InitFiles(context.Background(), cfg)
+	err := InitFiles(t.Context(), cfg)
 	require.NoError(t, err)
 
 	files, err := filepath.Glob(dir + "/**/*")
@@ -49,10 +48,10 @@ func TestInitForce(t *testing.T) {
 		Network: netconf.Simnet,
 	}
 
-	err = InitFiles(context.Background(), cfg)
+	err = InitFiles(t.Context(), cfg)
 	require.ErrorContains(t, err, "unexpected file")
 
 	cfg.Force = true
-	err = InitFiles(context.Background(), cfg)
+	err = InitFiles(t.Context(), cfg)
 	require.NoError(t, err)
 }

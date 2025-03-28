@@ -1,7 +1,6 @@
 package chaos_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/omni-network/omni/lib/chaos"
@@ -11,7 +10,7 @@ import (
 
 func TestMaybeError(t *testing.T) {
 	t.Parallel()
-	ctx := chaos.WithErrProbability(context.Background(), netconf.Devnet)
+	ctx := chaos.WithErrProbability(t.Context(), netconf.Devnet)
 
 	for i := 0; ; i++ {
 		err := chaos.MaybeError(ctx)

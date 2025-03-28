@@ -1,7 +1,6 @@
 package targets
 
 import (
-	"context"
 	"flag"
 	"testing"
 
@@ -22,7 +21,7 @@ func TestIntegration(t *testing.T) {
 		t.Skip("skipping integration tests")
 	}
 
-	err := refreshOnce(context.Background())
+	err := refreshOnce(t.Context())
 	require.NoError(t, err)
 
 	// assert known symbiotic mainnet vault in targets

@@ -104,7 +104,7 @@ func TestNewWithReset(t *testing.T) {
 		return ch
 	})
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 
 	backoff, reset := expbackoff.NewWithReset(ctx, expbackoff.With(expbackoff.Config{
 		BaseDelay:  time.Second,
@@ -139,7 +139,7 @@ func TestNewWithReset(t *testing.T) {
 func TestInterrupt(t *testing.T) {
 	// Test that interrupts work and that we don't block for 1 hour.
 	interrupt := make(chan struct{}, 1)
-	backoff := expbackoff.New(context.Background(), expbackoff.With(expbackoff.Config{
+	backoff := expbackoff.New(t.Context(), expbackoff.With(expbackoff.Config{
 		BaseDelay:  time.Hour,
 		Multiplier: 1,
 		Jitter:     0,

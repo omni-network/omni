@@ -1,7 +1,6 @@
 package contracts_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/omni-network/omni/lib/contracts"
@@ -28,7 +27,7 @@ func TestContractAddressReference(t *testing.T) {
 			continue // Skip staging because salt version is dynamic.
 		}
 
-		addrs, err := contracts.GetAddresses(context.Background(), network)
+		addrs, err := contracts.GetAddresses(t.Context(), network)
 		require.NoError(t, err)
 
 		addrsJSON := map[string]common.Address{

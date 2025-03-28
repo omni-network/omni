@@ -139,7 +139,7 @@ func TestEventProcessor(t *testing.T) {
 
 			proc := newEventProcFunc(deps, chainID)
 
-			err := proc(context.Background(), types.Log{Topics: []common.Hash{test.event, orderID}})
+			err := proc(t.Context(), types.Log{Topics: []common.Hash{test.event, orderID}})
 			require.NoError(t, err)
 			require.Equal(t, test.expect, actual)
 		})

@@ -2,7 +2,6 @@
 package solana_test
 
 import (
-	"context"
 	"flag"
 	"testing"
 	"time"
@@ -28,7 +27,7 @@ func TestIntegration(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	cl, privKey0, stop, err := solcompose.Start(ctx, dir)
 	require.NoError(t, err)
@@ -65,7 +64,7 @@ func TestIntegration(t *testing.T) {
 		require.NoError(t, err)
 		t.Logf("Balance: %d lamports, %d sol", bal1.Value, bal1.Value/solana.LAMPORTS_PER_SOL)
 
-		require.EqualValues(t, airdropVal, bal1.Value)
+		require.Equal(t, airdropVal, bal1.Value)
 	})
 
 	t.Run("send memo", func(t *testing.T) {
@@ -145,7 +144,7 @@ func TestDeployEventsProgram(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	cl, _, _, err := solcompose.Start(ctx, dir)
 	require.NoError(t, err)
 

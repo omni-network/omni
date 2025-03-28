@@ -6,5 +6,9 @@ func sum(batches []int) uint64 {
 		resp += b
 	}
 
+	if resp < 0 {
+		return 0
+	}
+
 	return uint64(resp)
 }

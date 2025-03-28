@@ -161,7 +161,7 @@ func maybeParseXCallFee(rec *ethclient.Receipt) (*big.Int, bool) {
 		if event == nil {
 			continue
 		}
-		xmsg, err := portal.OmniPortalFilterer.ParseXMsg(*event)
+		xmsg, err := portal.ParseXMsg(*event)
 		if err != nil {
 			continue
 		}
@@ -190,7 +190,6 @@ func usdPnL(ctx context.Context, pricer tokenslib.Pricer, token tokenslib.Token,
 func tknAmtToGweiF64(amt *big.Int, dec uint) float64 {
 	// normalize to 18 decimals
 	if dec < 18 {
-		//nolint:gosec // dec will not overflow, < 18
 		amt = bi.MulRaw(amt, int(math.Pow10(18-int(dec))))
 	}
 

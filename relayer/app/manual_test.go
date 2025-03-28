@@ -46,7 +46,7 @@ func TestManualSubmission(t *testing.T) {
 	_, ok := os.LookupEnv(infuraSecretEnv)
 	require.True(t, ok, "missing "+infuraSecretEnv+" env var")
 
-	ctx := context.Background()
+	ctx := t.Context()
 	network := netconf.ID(*flagNetwork)
 	streamName := *flagSrcChain + "|" + *flagShard + "|" + *flagDestChain
 

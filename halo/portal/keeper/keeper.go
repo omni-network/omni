@@ -5,6 +5,7 @@ import (
 
 	"github.com/omni-network/omni/halo/portal/types"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	ormv1alpha1 "cosmossdk.io/api/cosmos/orm/v1alpha1"
@@ -47,7 +48,10 @@ func (k Keeper) EmitMsg(ctx sdk.Context, typ types.MsgType, msgTypeID uint64, de
 		return 0, errors.New("dest chain and shard broadcast flag mismatch [BUG]")
 	}
 
-	height := uint64(ctx.BlockHeight())
+	height, err := umath.ToUint64(ctx.BlockHeight())
+	if err != nil {
+		return 0, err
+	}
 
 	// Get or create a block to add the message to
 	var blockID uint64

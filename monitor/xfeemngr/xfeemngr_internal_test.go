@@ -49,7 +49,7 @@ func TestStart(t *testing.T) {
 	chains := makeChains(chainIDs)
 	oracles := makeMockOracles(chains, tick, gpriceBuf, tpriceBuf)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	mngr := Manager{
 		gprice:  gpriceBuf,
@@ -161,7 +161,7 @@ func makeMockOracles(chains []evmchain.Metadata, tick ticker.Ticker, gprice gasp
 
 func mustGetContract(t *testing.T, oracle feeOracle) contract.FeeOracleV1 {
 	t.Helper()
-	c, err := oracle.getContract(context.Background())
+	c, err := oracle.getContract(t.Context())
 	require.NoError(t, err)
 
 	return c

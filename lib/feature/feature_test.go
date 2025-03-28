@@ -1,7 +1,6 @@
 package feature_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/omni-network/omni/lib/feature"
@@ -11,7 +10,7 @@ import (
 
 func TestFlags(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	// No flags enabled
 	require.False(t, feature.FlagFuzzOctane.Enabled(ctx))
 

@@ -61,7 +61,7 @@ func TestLeavesProvable(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check that the proof contains the leaves
-	require.Equal(t, len(leafIndices), len(multi.Leaves))
+	require.Len(t, multi.Leaves, len(leafIndices))
 	for _, i := range leafIndices {
 		require.Contains(t, multi.Leaves, leaves[i])
 	}

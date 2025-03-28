@@ -58,15 +58,20 @@ func (k *Keeper) getExecutionHead(ctx context.Context) (*ExecutionHead, error) {
 
 // updateExecutionHead updates the execution head with the given payload.
 func (k *Keeper) updateExecutionHead(ctx context.Context, payload engine.ExecutableData) error {
+	height, err := umath.ToUint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
+	if err != nil {
+		return err
+	}
+
 	head := &ExecutionHead{
 		Id:            executionHeadID,
-		CreatedHeight: uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()),
+		CreatedHeight: height,
 		BlockHeight:   payload.Number,
 		BlockHash:     payload.BlockHash.Bytes(),
 		BlockTime:     payload.Timestamp,
 	}
 
-	err := k.headTable.Update(ctx, head)
+	err = k.headTable.Update(ctx, head)
 	if err != nil {
 		return errors.Wrap(err, "update execution head")
 	}
@@ -80,9 +85,14 @@ func (k *Keeper) InsertWithdrawal(ctx context.Context, withdrawalAddr common.Add
 		return errors.New("zero withdrawal amount")
 	}
 
-	err := k.withdrawalTable.Insert(ctx, &Withdrawal{
+	height, err := umath.ToUint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
+	if err != nil {
+		return err
+	}
+
+	err = k.withdrawalTable.Insert(ctx, &Withdrawal{
 		Address:       withdrawalAddr.Bytes(),
-		CreatedHeight: uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()),
+		CreatedHeight: height,
 		AmountGwei:    amountGwei,
 	})
 	if err != nil {
@@ -118,7 +128,11 @@ func (k *Keeper) listWithdrawalsByAddress(ctx context.Context, withdrawalAddr co
 // EligibleWithdrawals returns all withdrawals created below the specified height,
 // sorted by the id (oldest to newest), limited by the provided count.
 func (k *Keeper) EligibleWithdrawals(ctx context.Context) ([]*Withdrawal, error) {
-	height := sdk.UnwrapSDKContext(ctx).BlockHeight()
+	height, err := umath.ToUint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
+	if err != nil {
+		return nil, err
+	}
+
 	// Note: items are ordered by the id in ascending order (oldest to newest).
 	iter, err := k.withdrawalTable.List(ctx, WithdrawalPrimaryKey{})
 	if err != nil {
@@ -133,7 +147,7 @@ func (k *Keeper) EligibleWithdrawals(ctx context.Context) ([]*Withdrawal, error)
 			return nil, errors.Wrap(err, "get withdrawal")
 		}
 
-		if val.GetCreatedHeight() >= uint64(height) {
+		if val.GetCreatedHeight() >= height {
 			// Withdrawals created in this block are not eligible
 			break
 		}

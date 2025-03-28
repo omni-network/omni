@@ -185,7 +185,7 @@ func startFetchWorkers[E any](
 				var last uint64
 				for i, e := range batch {
 					last = deps.Height(e)
-					if last != height+uint64(i) {
+					if last != height+uint64(i) { //nolint:gosec // Converting index to uint64 is safe
 						log.Error(ctx, "Invalid batch [BUG]", nil)
 						return
 					}

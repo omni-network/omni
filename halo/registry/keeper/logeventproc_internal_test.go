@@ -109,7 +109,7 @@ func TestAddPortal(t *testing.T) {
 
 	// We added portals in two blocks.
 	require.Len(t, emitPortal.emittedIDs, 2)
-	require.EqualValues(t, []uint64{1, 2}, emitPortal.emittedIDs)
+	require.Equal(t, []uint64{1, 2}, emitPortal.emittedIDs)
 }
 
 func setupKeeper(t *testing.T) (sdk.Context, Keeper, *testEmitPortal) {

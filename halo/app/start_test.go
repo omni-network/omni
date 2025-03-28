@@ -37,7 +37,7 @@ import (
 )
 
 func TestSmoke(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	ctx, err := log.Init(ctx, log.Config{Color: log.ColorForce, Level: "debug", Format: log.FormatConsole})
@@ -117,7 +117,7 @@ func TestSmoke(t *testing.T) {
 	<-ctx.Done()
 
 	// Stop the server, with a fresh context
-	require.NoError(t, stopfunc(context.Background()))
+	require.NoError(t, stopfunc(t.Context()))
 }
 
 func testModuleParams(t *testing.T, ctx context.Context, cprov cchain.Provider) {
@@ -222,7 +222,7 @@ func testCProvider(t *testing.T, ctx context.Context, cprov cprovider.Provider) 
 
 	resp, err := cprov.QueryClients().Mint.Inflation(ctx, &minttypes.QueryInflationRequest{})
 	require.NoError(t, err)
-	require.EqualValues(t, "0.110000000000000000", resp.Inflation.String())
+	require.Equal(t, "0.110000000000000000", resp.Inflation.String())
 }
 
 func setupSimnet(t *testing.T) haloapp.Config {
@@ -230,7 +230,7 @@ func setupSimnet(t *testing.T) haloapp.Config {
 	homeDir := t.TempDir()
 
 	cmtCfg := halocmd.DefaultCometConfig(homeDir)
-	cmtCfg.BaseConfig.DBBackend = string(db.MemDBBackend)
+	cmtCfg.DBBackend = string(db.MemDBBackend)
 	cmtCfg.P2P.ListenAddress = tutil.RandomListenAddress(t) // Avoid port clashes
 	cmtCfg.RPC.ListenAddress = tutil.RandomListenAddress(t) // Avoid port clashes
 	cmtCfg.Instrumentation.Prometheus = false
@@ -253,7 +253,7 @@ func setupSimnet(t *testing.T) haloapp.Config {
 	executionGenesis, err := ethclient.MockGenesisBlock()
 	tutil.RequireNoError(t, err)
 
-	err = halocmd.InitFiles(log.WithNoopLogger(context.Background()), halocmd.InitConfig{
+	err = halocmd.InitFiles(log.WithNoopLogger(t.Context()), halocmd.InitConfig{
 		HomeDir:        homeDir,
 		Network:        netconf.Simnet,
 		ExecutionHash:  executionGenesis.Hash(),

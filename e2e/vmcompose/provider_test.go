@@ -1,7 +1,7 @@
+//nolint:paralleltest // Global env used
 package vmcompose_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -22,7 +22,7 @@ func TestSetup(t *testing.T) {
 
 	manifestFile, dataFile := vmcompose.SetupDataFixtures(t)
 
-	def, err := app.MakeDefinition(context.Background(), app.DefinitionConfig{
+	def, err := app.MakeDefinition(t.Context(), app.DefinitionConfig{
 		ManifestFile:  manifestFile,
 		InfraProvider: vmcompose.ProviderName,
 		InfraDataFile: dataFile,

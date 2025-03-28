@@ -32,14 +32,14 @@ func TestGethConfig(t *testing.T) {
 	t.Parallel()
 	testOmniEVM(t, func(t *testing.T, client ethclient.Client) {
 		t.Helper()
-		ctx := context.Background()
+		ctx := t.Context()
 
 		cfg := geth.MakeGethConfig(geth.Config{})
 
 		block, err := client.BlockByNumber(ctx, bi.One())
 		require.NoError(t, err)
 
-		require.EqualValues(t, int(cfg.Eth.Miner.GasCeil), int(block.GasLimit()))
+		require.Equal(t, int(cfg.Eth.Miner.GasCeil), int(block.GasLimit()))
 		require.Equal(t, bi.Zero(), block.Difficulty())
 
 		require.NotNil(t, block.BeaconRoot())
@@ -51,7 +51,7 @@ func TestBlobTx(t *testing.T) {
 	t.Parallel()
 	testOmniEVM(t, func(t *testing.T, client ethclient.Client) {
 		t.Helper()
-		err := sendBlobTx(context.Background(), client, evm.DefaultChainConfig(netconf.Devnet))
+		err := sendBlobTx(t.Context(), client, evm.DefaultChainConfig(netconf.Devnet))
 		require.NoError(t, err)
 	})
 }

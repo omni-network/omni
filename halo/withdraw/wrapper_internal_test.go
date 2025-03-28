@@ -54,7 +54,7 @@ func TestWrapper(t *testing.T) {
 
 			w := NewBankWrapper(keeper)
 			w.SetEVMEngineKeeper(engKeeper)
-			err := w.SendCoinsFromModuleToAccount(context.Background(), module, address.Bytes(), sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, tt.arg)))
+			err := w.SendCoinsFromModuleToAccount(t.Context(), module, address.Bytes(), sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, tt.arg)))
 			require.NoError(t, err)
 			require.True(t, burnt)
 			if tt.gwei > 0 {

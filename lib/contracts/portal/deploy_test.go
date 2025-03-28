@@ -1,7 +1,6 @@
 package portal_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -29,7 +28,7 @@ const (
 func TestDeployDevnet(t *testing.T) {
 	t.Parallel()
 	network := netconf.Devnet
-	ctx := context.Background()
+	ctx := t.Context()
 
 	client, stop, err := anvil.Start(ctx, tutil.TempDir(t), chainID)
 	require.NoError(t, err)

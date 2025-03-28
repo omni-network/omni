@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/lib/xchain"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -204,8 +205,13 @@ func (k *Keeper) insertValidatorSet(ctx context.Context, vals []*Validator, isGe
 		return 0, errors.New("empty validators")
 	}
 
+	height, err := umath.ToUint64(sdkCtx.BlockHeight())
+	if err != nil {
+		return 0, err
+	}
+
 	valset := &ValidatorSet{
-		CreatedHeight: uint64(sdkCtx.BlockHeight()),
+		CreatedHeight: height,
 		Attested:      isGenesis, // Only genesis set is automatically attested.
 	}
 
@@ -274,7 +280,12 @@ func (k *Keeper) maybeInitSubscriber(ctx context.Context) error {
 		return nil
 	}
 
-	set, err := k.ActiveSetByHeight(ctx, uint64(sdk.UnwrapSDKContext(ctx).BlockHeight()))
+	height, err := umath.ToUint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
+	if err != nil {
+		return err
+	}
+
+	set, err := k.ActiveSetByHeight(ctx, height)
 	if err != nil {
 		return err
 	}
@@ -314,9 +325,14 @@ func (k *Keeper) processAttested(ctx context.Context) ([]abci.ValidatorUpdate, e
 		return nil, nil // No attested set, so no updates.
 	}
 
+	activatedHeight, err := umath.ToUint64(sdkCtx.BlockHeight() + cometValidatorActiveDelay)
+	if err != nil {
+		return nil, err
+	}
+
 	// Mark the valset as attested.
 	valset.Attested = true
-	valset.ActivatedHeight = uint64(sdkCtx.BlockHeight()) + cometValidatorActiveDelay
+	valset.ActivatedHeight = activatedHeight
 	if err := k.valsetTable.Update(ctx, valset); err != nil {
 		return nil, errors.Wrap(err, "update valset")
 	}

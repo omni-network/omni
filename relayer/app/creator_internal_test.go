@@ -74,7 +74,7 @@ func TestQuorumSigs(t *testing.T) {
 			for _, sig := range actual {
 				got = append(got, int(sig.ValidatorAddress[19]))
 			}
-			require.EqualValues(t, test.output, got)
+			require.Equal(t, test.output, got)
 		})
 	}
 }

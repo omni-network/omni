@@ -43,7 +43,7 @@ func TestRequestCancel(t *testing.T) {
 		close(served)
 	}))
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	// Async: when the handler is serving, cancel the context.
 	go func() {
 		<-serving
@@ -78,7 +78,7 @@ func TestGatewayTimeout(t *testing.T) {
 
 	srv := httptest.NewServer(handlerAdapter(h))
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, srv.URL, nil)
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, srv.URL, nil)
 	require.NoError(t, err)
 
 	resp, err := new(http.Client).Do(req)

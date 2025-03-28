@@ -1,7 +1,6 @@
 package validator
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"testing"
@@ -21,7 +20,7 @@ func TestMonitorOnce(t *testing.T) {
 		t.Skip("skipping integration tests")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	cprov, err := provider.Dial(netconf.Omega)
 	require.NoError(t, err)

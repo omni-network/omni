@@ -37,7 +37,7 @@ func (s msgServer) AddVotes(ctx context.Context, msg *types.MsgAddVotes,
 	}
 
 	// Not verifying votes here since this block is now finalized, so it is too late to reject votes.
-	err := s.Keeper.Add(ctx, msg)
+	err := s.Add(ctx, msg)
 	if err != nil {
 		return nil, errors.Wrap(err, "add votes")
 	}

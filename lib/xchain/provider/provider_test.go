@@ -23,7 +23,7 @@ import (
 
 //nolint:paralleltest // Access global thresholds not locked
 func TestProvider(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 
 	var mu sync.Mutex
 	const (

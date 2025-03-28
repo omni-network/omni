@@ -22,7 +22,7 @@ func TestIndexer(t *testing.T) {
 	t.Parallel()
 
 	f := fuzz.New().NilChance(0).NumElements(0, 10)
-	ctx := context.Background()
+	ctx := t.Context()
 	db := dbm.NewMemDB()
 
 	streamNamer := func(s xchain.StreamID) string { return fmt.Sprint(s) }

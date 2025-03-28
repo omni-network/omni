@@ -13,10 +13,8 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v5
         with:
-          go-version: 'v1.23'
+          go-version: 'v1.24'
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v7
         with:
-          version: v1.60.3
-          # Verbose with color. Just fail, don't fix issues. Use both annotations and normal output.
-          args: -v --color=always --fix=false --out-format=colored-line-number,github-actions
+          version: v2.0.2

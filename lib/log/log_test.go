@@ -67,7 +67,7 @@ func AssertLogging(t *testing.T, testFunc func(*testing.T, context.Context)) {
 			var buf bytes.Buffer
 			logger := initFunc(&buf)
 
-			ctx := context.Background()
+			ctx := t.Context()
 			ctx = log.WithLogger(ctx, logger)
 
 			testFunc(t, ctx)

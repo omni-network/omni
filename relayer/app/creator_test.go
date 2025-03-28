@@ -124,7 +124,7 @@ func TestCreatorService_CreateSubmissions(t *testing.T) {
 			msgCount := 0
 			msgs := make([]xchain.Msg, 0, len(tt.streamUpdate.Msgs))
 			for _, sub := range subs {
-				require.EqualValues(t, valSetID, sub.ValidatorSetID)
+				require.Equal(t, valSetID, sub.ValidatorSetID)
 				require.NotNil(t, sub.AttestationRoot)
 				attRoot, err := att.AttestationRoot()
 				require.NoError(t, err)

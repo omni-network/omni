@@ -17,6 +17,7 @@ import (
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/cometbft/cometbft/crypto"
 
@@ -181,10 +182,15 @@ func WithPortalRegister(network netconf.Network) func(*engineMock) {
 
 		var eventLogs []types.Log
 		for i, chain := range network.EVMChains() {
+			blockPeriod, err := umath.ToUint64(chain.BlockPeriod)
+			if err != nil {
+				panic(err)
+			}
+
 			data, err := portalRegEvent.Inputs.NonIndexed().Pack(
 				chain.DeployHeight,
 				chain.AttestInterval,
-				uint64(chain.BlockPeriod),
+				blockPeriod,
 				chain.Shards,
 				chain.Name,
 			)
@@ -205,7 +211,7 @@ func WithPortalRegister(network netconf.Network) func(*engineMock) {
 					common.BytesToHash(chain.PortalAddress.Bytes()), //nolint:forbidigo // Explicit left padded
 				},
 				Data:  data,
-				Index: 200 + uint(i),
+				Index: 200 + uint(i), //nolint:gosec // Converting index to uint is safe
 			}
 
 			eventLogs = append(eventLogs, eventLog)
@@ -267,7 +273,12 @@ func MockGenesisBlock() (*types.Block, error) {
 		fuzzer           = NewFuzzer(timestamp)
 	)
 
-	genesisPayload, err := makePayload(fuzzer, height, uint64(timestamp), parentHash, common.Address{}, parentHash, &parentBeaconRoot)
+	ts, err := umath.ToUint64(timestamp)
+	if err != nil {
+		return nil, err
+	}
+
+	genesisPayload, err := makePayload(fuzzer, height, ts, parentHash, common.Address{}, parentHash, &parentBeaconRoot)
 	if err != nil {
 		return nil, errors.Wrap(err, "make next payload")
 	}

@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/octane/evmengine/types"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -60,9 +61,14 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 		return nil, err
 	}
 
+	reqHeight, err := umath.ToUint64(req.Height)
+	if err != nil {
+		return nil, err
+	}
+
 	// Either use the optimistic payload or create a new one.
 	payloadID, height, triggeredAt := k.getOptimisticPayload()
-	if uint64(req.Height) != height { //nolint:nestif // Not an issue
+	if reqHeight != height { //nolint:nestif // Not an issue
 		// Create a new payload (retrying on network errors).
 		err := retryForever(ctx, func(ctx context.Context) (bool, error) {
 			fcr, err := k.startBuild(ctx, appHash, req.Time)
@@ -131,7 +137,8 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 	}
 
 	// First, collect all vote extension msgs from the vote provider.
-	voteMsgs, err := k.voteProvider.PrepareVotes(ctx, req.LocalLastCommit, uint64(req.Height-1))
+	prevHeight := umath.SubtractOrZero(reqHeight, 1) // Safe to subtract one since this is only called AFTER genesis.
+	voteMsgs, err := k.voteProvider.PrepareVotes(ctx, req.LocalLastCommit, prevHeight)
 	if err != nil {
 		return nil, errors.Wrap(err, "prepare votes")
 	}
@@ -232,8 +239,12 @@ func (k *Keeper) PostFinalize(ctx sdk.Context) error {
 		return nil // Nothing to do if we are not next proposer.
 	}
 
-	nextHeight := height + 1
-	logAttr := slog.Int64("next_height", nextHeight)
+	nextHeight, err := umath.ToUint64(height + 1)
+	if err != nil {
+		return err
+	}
+
+	logAttr := slog.Uint64("next_height", nextHeight)
 	log.Debug(ctx, "Starting optimistic EVM payload build", logAttr)
 
 	// No need to wrap this in retryForever since this is a best-effort optimisation, if it fails, just skip it.
@@ -252,7 +263,7 @@ func (k *Keeper) PostFinalize(ctx sdk.Context) error {
 		return nil
 	} /* else isValid(status) */
 
-	k.setOptimisticPayload(*fcr.PayloadID, uint64(nextHeight))
+	k.setOptimisticPayload(*fcr.PayloadID, nextHeight)
 
 	return nil
 }
@@ -268,7 +279,11 @@ func (k *Keeper) startBuild(ctx context.Context, appHash common.Hash, timestamp 
 	// Use provided time as timestamp for the next block.
 	// Or use latest execution block timestamp + 1 if is not greater.
 	// Since execution blocks must have unique second-granularity timestamps.
-	ts := uint64(timestamp.Unix())
+	ts, err := umath.ToUint64(timestamp.Unix())
+	if err != nil {
+		return engine.ForkChoiceResponse{}, err
+	}
+
 	if ts <= head.GetBlockTime() {
 		ts = head.GetBlockTime() + 1 // Subsequent blocks must have a higher timestamp.
 	}

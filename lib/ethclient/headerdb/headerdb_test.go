@@ -31,7 +31,7 @@ func TestGetSetPrune(t *testing.T) {
 	h4 := fuzzHeader(t, 4444, nil)
 	h5 := fuzzHeader(t, 55555, nil)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	require.NoError(t, db.Set(ctx, h1))
 	require.NoError(t, db.Set(ctx, h1))                               // Noop
@@ -79,7 +79,7 @@ func TestAddAndReorg(t *testing.T) {
 	f4 := fuzzHeader(t, 4, f3) // Fork at height 4
 	f5 := fuzzHeader(t, 5, f4) // Fork at height 5
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	require.NoError(t, db.Set(ctx, h1))
 	require.NoError(t, db.Set(ctx, h2))

@@ -77,7 +77,7 @@ func TestKeeper(t *testing.T) {
 
 	assert(t, 2, 22, []uint64{3}, []uint64{1, 2})
 
-	require.EqualValues(t, map[xchain.StreamID]map[uint64]uint64{
+	require.Equal(t, map[xchain.StreamID]map[uint64]uint64{
 		{DestChainID: xchain.BroadcastChainID, ShardID: xchain.ShardBroadcast0}: {
 			1: 1,
 			2: 2,

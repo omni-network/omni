@@ -134,7 +134,7 @@ func TestAggregateVotes(t *testing.T) {
 		for _, s := range agg.Signatures {
 			sig, err := s.ToXChain()
 			require.NoError(t, err)
-			require.True(t, expected[attRoot][sig], agg, sig)
+			require.True(t, expected[attRoot][sig], "not found", agg, sig)
 			delete(expected[attRoot], sig)
 			if len(expected[attRoot]) == 0 {
 				delete(expected, attRoot)

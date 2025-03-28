@@ -32,7 +32,7 @@ func setupTest(t *testing.T) (uint64, func(ctx context.Context, h uint64, _ bool
 	f.Fuzz(&height)
 
 	valFunc := func(ctx context.Context, h uint64, _ bool) (valSetResponse, bool, error) {
-		require.EqualValues(t, height, h)
+		require.Equal(t, height, h)
 		var resp []cchain.PortalValidator
 		f.Fuzz(&resp)
 
@@ -42,7 +42,7 @@ func setupTest(t *testing.T) (uint64, func(ctx context.Context, h uint64, _ bool
 		}, true, nil
 	}
 	networkFunc := func(ctx context.Context, h uint64, _ bool) (*rtypes.NetworkResponse, bool, error) {
-		require.EqualValues(t, height, h)
+		require.Equal(t, height, h)
 		var resp rtypes.NetworkResponse
 		f.Fuzz(&resp)
 
@@ -79,7 +79,7 @@ func TestXBlock(t *testing.T) {
 	height, networkFunc, valFunc, chainFunc, portalBlockFunc := setupTest(t)
 	prov := Provider{valset: valFunc, networkFunc: networkFunc, chainID: chainFunc, portalBlock: portalBlockFunc}
 
-	block, ok, err := prov.XBlock(context.Background(), height, false)
+	block, ok, err := prov.XBlock(t.Context(), height, false)
 	require.NoError(t, err)
 	require.True(t, ok)
 	tutil.RequireGoldenJSON(t, block)
@@ -100,7 +100,7 @@ func TestXBlock_MaliciousResponse(t *testing.T) {
 
 	height, networkFunc, valFunc, chainFunc, _ := setupTest(t)
 	prov := Provider{valset: valFunc, networkFunc: networkFunc, chainID: chainFunc, portalBlock: portalBlockFunc}
-	_, ok, err := prov.XBlock(context.Background(), height, false)
+	_, ok, err := prov.XBlock(t.Context(), height, false)
 	require.Error(t, err)
 	require.Equal(t, "unexpected empty block [BUG]", err.Error())
 	require.False(t, ok)

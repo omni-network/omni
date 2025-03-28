@@ -309,7 +309,7 @@ func TestCLIOperator(t *testing.T) {
 				minAmountGei := latestRewards.QuoInt64(params.GWei).TruncateInt64()
 				maxAmountGei := minAmountGei * maxFactor
 				if amount < uint64(minAmountGei) || amount > uint64(maxAmountGei) {
-					require.Fail(t, "unexpected withdrawal amount, amount=%v, min=%v, max=%v", amount, minAmountGei, maxAmountGei)
+					require.Fail(t, "unexpected withdrawal amount", "amount=%v, min=%v, max=%v", amount, minAmountGei, maxAmountGei)
 				}
 
 				return true

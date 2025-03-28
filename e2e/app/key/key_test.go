@@ -1,7 +1,6 @@
 package key_test
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"testing"
@@ -62,7 +61,7 @@ func TestIntegration(t *testing.T) {
 		t.Run(typ.String(), func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
+			ctx := t.Context()
 			network := netconf.Simnet
 			name := "deleteme"
 

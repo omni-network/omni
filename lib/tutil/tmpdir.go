@@ -14,6 +14,8 @@ import (
 
 // TempDir creates a temporary directory with a random name, as opposed to t.TempDir which
 // uses consecutive numbers per test (001, 002 ...).
+//
+//nolint:usetesting // Explicitly not using t.TempDir() to avoid consecutive numbers.
 func TempDir(t *testing.T) string {
 	t.Helper()
 

@@ -160,7 +160,7 @@ func TestTomlConfig(t *testing.T) {
 
 	// Create a run command that asserts the config is as expected.
 	cmd := newRunCmd("run", func(_ context.Context, actual app.Config) error {
-		require.EqualValues(t, expect, actual.Config)
+		require.Equal(t, expect, actual.Config)
 
 		return nil
 	})
@@ -216,7 +216,7 @@ func TestDefaultCometConfig(t *testing.T) {
 	err := WriteCometConfig(path, &cfg)
 	require.NoError(t, err)
 
-	cfg2, err := parseCometConfig(context.Background(), home)
+	cfg2, err := parseCometConfig(t.Context(), home)
 	require.NoError(t, err)
 
 	cfg.StateSync.RPCServers = []string{} // Replace nil with empty slice for comparison.

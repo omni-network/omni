@@ -1,7 +1,8 @@
-//nolint:forbidigo,govet,staticcheck // We use cosmos errors explicitly.
+//nolint:forbidigo // We use cosmos errors explicitly.
 package app
 
 import (
+	stderrors "errors"
 	"fmt"
 	"io"
 	"testing"
@@ -75,14 +76,14 @@ func TestIsErrUpgradeNeeded(t *testing.T) {
 		},
 		{
 			name:    "wrong version error",
-			err:     fmt.Errorf(upgrade.BuildUpgradeNeededMsg(utypes.Plan{Name: "1_uluwatu", Height: 1, Info: "genesis upgrade"})),
+			err:     stderrors.New(upgrade.BuildUpgradeNeededMsg(utypes.Plan{Name: "1_uluwatu", Height: 1, Info: "genesis upgrade"})),
 			want:    true,
 			upgrade: "1_uluwatu",
 		},
 		{
 			name: "wrapped wrong version error",
 			err: errors.Wrap(
-				fmt.Errorf(upgrade.BuildUpgradeNeededMsg(utypes.Plan{Name: "1_uluwatu", Height: 1, Info: "genesis upgrade"})),
+				stderrors.New(upgrade.BuildUpgradeNeededMsg(utypes.Plan{Name: "1_uluwatu", Height: 1, Info: "genesis upgrade"})),
 				"wrapper"),
 			want:    true,
 			upgrade: "1_uluwatu",

@@ -73,7 +73,7 @@ func testSendTxMiddlewareOnce(t *testing.T, tt testTx) {
 	}
 
 	// Test that the middleware signs the transaction
-	resp, err := mw(context.Background(), req)
+	resp, err := mw(t.Context(), req)
 	require.NoError(t, err)
 	require.Equal(t, "eth_sendRawTransaction", resp.Method)
 

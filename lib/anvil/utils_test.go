@@ -1,7 +1,6 @@
 package anvil_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -23,7 +22,7 @@ const (
 func TestFundAccounts(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	ethCl, stop, err := anvil.Start(ctx, tutil.TempDir(t), chainID)
 	require.NoError(t, err)

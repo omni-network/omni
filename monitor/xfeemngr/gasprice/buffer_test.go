@@ -1,7 +1,6 @@
 package gasprice_test
 
 import (
-	"context"
 	"math/big"
 	"math/rand"
 	"testing"
@@ -27,7 +26,7 @@ func TestBufferStream(t *testing.T) {
 	mocks := makeMockPricers(initials)
 
 	tick := ticker.NewMock()
-	ctx := context.Background()
+	ctx := t.Context()
 
 	b, err := gasprice.NewBuffer(toEthGasPricers(mocks), tick)
 	require.NoError(t, err)

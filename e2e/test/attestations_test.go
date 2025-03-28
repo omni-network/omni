@@ -32,7 +32,7 @@ func TestApprovedAttestations(t *testing.T) {
 		require.NoError(t, err)
 		cprov := provider.NewABCI(client, network.ID)
 
-		ctx := context.Background()
+		ctx := t.Context()
 		for _, portal := range portals {
 			for _, chainVer := range portal.Chain.ChainVersions() {
 				atts, err := fetchAllAtts(ctx, cprov, chainVer, node.StartAt > 0)
@@ -60,7 +60,7 @@ func TestApprovedValUpdates(t *testing.T) {
 	t.Parallel()
 	testNode(t, func(t *testing.T, network netconf.Network, node *e2e.Node, portals []Portal) {
 		t.Helper()
-		ctx := context.Background()
+		ctx := t.Context()
 
 		// See if this node has a validator update
 		var hasUpdate bool

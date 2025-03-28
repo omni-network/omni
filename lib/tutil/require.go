@@ -2,7 +2,6 @@
 package tutil
 
 import (
-	"context"
 	"testing"
 
 	"github.com/omni-network/omni/lib/log"
@@ -17,7 +16,7 @@ func RequireNoError(tb testing.TB, err error) {
 	tb.Helper()
 
 	if !assert.NoErrorf(tb, err, "See log line for error details") {
-		log.Error(context.Background(), "Unexpected error", err)
+		log.Error(tb.Context(), "Unexpected error", err)
 		tb.FailNow()
 	}
 }
