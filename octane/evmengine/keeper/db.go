@@ -3,6 +3,7 @@ package keeper
 import (
 	"bytes"
 	"context"
+	"sort"
 
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
+	etypes "github.com/ethereum/go-ethereum/core/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -126,13 +128,12 @@ func (k *Keeper) listWithdrawalsByAddress(ctx context.Context, withdrawalAddr co
 }
 
 // EligibleWithdrawals returns all withdrawals created below the specified height,
-// sorted by the id (oldest to newest), limited by the provided count.
-func (k *Keeper) EligibleWithdrawals(ctx context.Context) ([]*Withdrawal, error) {
+// aggregated by address and sorted by the id (oldest to newest), limited by the configured count.
+func (k *Keeper) EligibleWithdrawals(ctx context.Context) ([]*etypes.Withdrawal, error) {
 	height, err := umath.ToUint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
 	if err != nil {
 		return nil, err
 	}
-
 	// Note: items are ordered by the id in ascending order (oldest to newest).
 	iter, err := k.withdrawalTable.List(ctx, WithdrawalPrimaryKey{})
 	if err != nil {
@@ -140,7 +141,12 @@ func (k *Keeper) EligibleWithdrawals(ctx context.Context) ([]*Withdrawal, error)
 	}
 	defer iter.Close()
 
-	var withdrawals []*Withdrawal
+	type AggregatedWithdrawal struct {
+		id      uint64
+		balance uint64
+	}
+
+	withdrawals := make(map[common.Address]AggregatedWithdrawal)
 	for iter.Next() {
 		val, err := iter.Value()
 		if err != nil {
@@ -152,13 +158,45 @@ func (k *Keeper) EligibleWithdrawals(ctx context.Context) ([]*Withdrawal, error)
 			break
 		}
 
-		withdrawals = append(withdrawals, val)
+		addr := common.BytesToAddress(val.GetAddress()) //nolint:forbidigo // should be padded
+		aggrWth := withdrawals[addr]
+		withdrawals[addr] = AggregatedWithdrawal{
+			id:      max(aggrWth.id, val.GetId()),
+			balance: aggrWth.balance + val.GetAmountGwei(),
+		}
 
-		if umath.Len(withdrawals) == k.maxWithdrawalsPerBlock {
+		if uint64(len(withdrawals)) == k.maxWithdrawalsPerBlock {
 			// Reached the max number of withdrawals
 			break
 		}
 	}
 
-	return withdrawals, nil
+	evmWithdrawals := []*etypes.Withdrawal{}
+	for addr, w := range withdrawals {
+		evmWithdrawals = append(evmWithdrawals, &etypes.Withdrawal{
+			Index:   w.id,
+			Address: addr,
+			Amount:  w.balance,
+			// The validator index is not used for withdrawals.
+			Validator: 0,
+		})
+	}
+
+	sort.Slice(evmWithdrawals, func(i, j int) bool {
+		return evmWithdrawals[i].Index < evmWithdrawals[j].Index
+	})
+
+	return evmWithdrawals, nil
+}
+
+// RemoveWithdrawals removes all passed withdrawals by the id.
+func (k *Keeper) RemoveWithdrawals(ctx context.Context, withdrawals []*etypes.Withdrawal) error {
+	for _, w := range withdrawals {
+		err := k.withdrawalTable.DeleteBy(ctx, WithdrawalIdIndexKey{}.WithId(w.Index))
+		if err != nil {
+			return errors.Wrap(err, "removing withdrawal", "id", w.Index)
+		}
+	}
+
+	return nil
 }
