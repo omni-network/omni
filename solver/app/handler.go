@@ -63,7 +63,7 @@ func newContractsHandler(addrs contracts.Addresses) Handler {
 // newCheckHandler returns a handler for the /check endpoint.
 // It is responsible for http request / response handling, and delegates
 // logic to a checkFunc.
-func newCheckHandler(checkFunc checkFunc) Handler {
+func newCheckHandler(checkFunc CheckFunc) Handler {
 	return Handler{
 		Endpoint: endpointCheck,
 		ZeroReq:  func() any { return &types.CheckRequest{} },

@@ -16,11 +16,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type checkFunc func(context.Context, types.CheckRequest) error
+type CheckFunc func(context.Context, types.CheckRequest) error
 
-// newChecker returns a checkFunc that can be used to see if an order would be accepted or rejected.
+// NewChecker returns a checkFunc that can be used to see if an order would be accepted or rejected.
 // It is the logic behind the /check endpoint.
-func newChecker(backends ethbackend.Backends, isAllowedCall callAllowFunc, solverAddr, outboxAddr common.Address) checkFunc {
+func NewChecker(backends ethbackend.Backends, isAllowedCall callAllowFunc, solverAddr, outboxAddr common.Address) CheckFunc {
 	return func(ctx context.Context, req types.CheckRequest) error {
 		if req.SourceChainID == req.DestinationChainID {
 			return newRejection(types.RejectSameChain, errors.New("source and destination chain are the same"))
