@@ -36,7 +36,7 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 	require.NoError(t, err)
 	cmtAPI := newMockCometAPI(t, nil)
 	// set the header and proposer so we have the correct next proposer
-	header := cmtproto.Header{Height: 1, AppHash: tutil.RandomHash().Bytes()}
+	header := cmtproto.Header{Height: 1, AppHash: tutil.RandomHash().Bytes(), Time: time.Now()}
 	header.ProposerAddress = cmtAPI.validatorSet.Validators[0].Address
 	nxtAddr, err := k1util.PubKeyToAddress(cmtAPI.validatorSet.Validators[1].PubKey)
 	require.NoError(t, err)

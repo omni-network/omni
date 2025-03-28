@@ -483,6 +483,7 @@ func setupCtxStore(t *testing.T, header *cmtproto.Header) (sdk.Context, store.KV
 		header = &cmtproto.Header{
 			Time:    cmttime.Now(),
 			AppHash: tutil.RandomHash().Bytes(),
+			Height:  1,
 		}
 	}
 	ctx := testCtx.Ctx.WithBlockHeader(*header)
