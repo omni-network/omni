@@ -47,11 +47,11 @@ interface ISolverNetInbox is IOriginSettler {
 
     /**
      * @notice Emitted when an order is opened.
-     * @dev This event emits the typed `originData`, rather than ABI-encoded as seen in `IERC7683.Open`.
+     * @dev This event emits the FillOriginData typed `originData`, rather than ABI-encoded as seen in `IERC7683.Open`.
      * @param id ID of the order.
-     * @param originData Order fill originData.
+     * @param fillOriginData Order fill originData.
      */
-    event OriginData(bytes32 indexed id, SolverNet.FillOriginData originData);
+    event FillOriginData(bytes32 indexed id, SolverNet.FillOriginData fillOriginData);
 
     /**
      * @notice Emitted when an order is rejected.

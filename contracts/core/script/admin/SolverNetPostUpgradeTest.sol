@@ -92,7 +92,7 @@ contract SolverNetPostUpgradeTest is Test {
         });
 
         bytes32 id = inbox.getNextOrderId(user);
-        SolverNet.FillOriginData memory originData = SolverNet.FillOriginData({
+        SolverNet.FillOriginData memory fillOriginData = SolverNet.FillOriginData({
             srcChainId: uint64(block.chainid),
             destChainId: uint64(block.chainid == 1 ? 10 : 1),
             fillDeadline: type(uint32).max,
@@ -103,7 +103,7 @@ contract SolverNetPostUpgradeTest is Test {
         vm.deal(user, 1 ether);
         vm.prank(user);
         vm.expectEmit(address(inbox));
-        emit ISolverNetInbox.OriginData(id, originData);
+        emit ISolverNetInbox.FillOriginData(id, fillOriginData);
         inbox.open{ value: 1 ether }(order);
     }
 }
