@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -23,8 +22,10 @@ import (
 
 //go:generate go test . -run=TestCheck -golden
 
-//nolint:paralleltest // HTTP server using a deterministic port
+//nolint:tparallel,paralleltest // subtests use same mock controller
 func TestCheck(t *testing.T) {
+	t.Parallel()
+
 	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
 
 	// inbox / outbox addr only matters for mocks, using devnet
@@ -87,22 +88,11 @@ func TestCheck(t *testing.T) {
 func fetchResponseViaClient(t *testing.T, h http.Handler, req types.CheckRequest) types.CheckResponse {
 	t.Helper()
 
-	const addr = ":29997"
-	server := &http.Server{Handler: h}
-	listener, err := net.Listen("tcp", addr)
-	require.NoError(t, err)
+	srv := httptest.NewServer(h)
+	defer srv.Close()
 
-	go func() {
-		if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
-			panic(err)
-		}
-	}()
-
-	apiClient := client.New("http://localhost" + addr)
+	apiClient := client.New(srv.URL)
 	res, err := apiClient.Check(t.Context(), req)
-	require.NoError(t, err)
-
-	err = server.Shutdown(t.Context())
 	require.NoError(t, err)
 
 	return res

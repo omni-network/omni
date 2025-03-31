@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -50,7 +51,18 @@ func (c Client) Check(ctx context.Context, req types.CheckRequest) (types.CheckR
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return types.CheckResponse{}, errors.New("non-200 response", "status", resp.Status)
+		var jsonError *types.JSONErrorResponse
+
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return types.CheckResponse{}, errors.Wrap(err, "response body")
+		}
+
+		if err := json.Unmarshal(bodyBytes, &jsonError); err != nil {
+			return types.CheckResponse{}, errors.Wrap(err, "unmarshal")
+		}
+
+		return types.CheckResponse{}, errors.New(jsonError.Error.Message)
 	}
 
 	var response types.CheckResponse
@@ -62,7 +74,11 @@ func (c Client) Check(ctx context.Context, req types.CheckRequest) (types.CheckR
 }
 
 func (c Client) uri(path string) (*url.URL, error) {
-	uri, err := url.Parse(c.host + path)
+	absURL, err := url.JoinPath(c.host, path)
+	if err != nil {
+		return nil, errors.Wrap(err, "join path", "base", c.host, "path", path)
+	}
+	uri, err := url.Parse(absURL)
 	if err != nil {
 		return nil, errors.Wrap(err, "parse url", "host", c.host, "path", path)
 	}
