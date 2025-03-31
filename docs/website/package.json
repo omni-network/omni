@@ -19,7 +19,7 @@
     "@docusaurus/preset-classic": "3.7.0",
     "@docusaurus/theme-common": "3.7.0",
     "@mdx-js/react": "^3.0.1",
-    "@tanstack/react-query": "^5.66.0",
+    "@tanstack/react-query": "^5.71.1",
     "axios": "^1.8.2",
     "clsx": "^2.1.1",
     "prism-react-renderer": "^2.4.1",
