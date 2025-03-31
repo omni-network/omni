@@ -42,7 +42,6 @@ func TestSolver(t *testing.T) {
 	})
 }
 
-//nolint:noctx // Not an issue in tests
 func testContractsAPI(ctx context.Context, t *testing.T) {
 	t.Helper()
 
@@ -106,7 +105,6 @@ func testSolverApprovals(ctx context.Context, t *testing.T, network netconf.Netw
 	}
 }
 
-//nolint:noctx // Not an issue in tests
 func ensureSolverAPILive(t *testing.T) {
 	t.Helper()
 

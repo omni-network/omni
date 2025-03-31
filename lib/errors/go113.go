@@ -1,6 +1,6 @@
 // Copyright © 2022-2023 Obol Labs Inc. Licensed under the terms of a Business Source License 1.1
 
-//nolint:wrapcheck,imports-blocklist // Importing pkg/errors is only allowed here. Wrapping not needed in this package.
+//nolint:wrapcheck // Wrapping not needed in this package.
 package errors
 
 import (

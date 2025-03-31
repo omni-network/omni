@@ -137,7 +137,6 @@ func testModuleParams(t *testing.T, ctx context.Context, cprov cchain.Provider) 
 	require.Equal(t, magellan2.MintParams.InflationMin.String(), inflResponse.Inflation.String())
 }
 
-//nolint:bodyclose,noctx // We don't care about best practices here.
 func testAPI(t *testing.T, cfg haloapp.Config) {
 	t.Helper()
 
@@ -157,7 +156,6 @@ func testAPI(t *testing.T, cfg haloapp.Config) {
 	}
 }
 
-//nolint:noctx // We don't care about best practices here.
 func testReadyEndpoint(t *testing.T, cfg haloapp.Config) {
 	t.Helper()
 
