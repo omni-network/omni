@@ -4,20 +4,23 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"net"
+	"net/url"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/bi"
-	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/monitor/flowgen/types"
 	solver "github.com/omni-network/omni/solver/app"
+	sclient "github.com/omni-network/omni/solver/client"
 	stokens "github.com/omni-network/omni/solver/tokens"
 	stypes "github.com/omni-network/omni/solver/types"
 
@@ -28,7 +31,13 @@ import (
 var minOrderSize = bi.Ether(0.1)
 
 // NewJob returns a job that bridges native tokens.
-func newJob(ctx context.Context, networkID netconf.ID, backends ethbackend.Backends, conf flowConfig, owner common.Address) (types.Job, error) {
+func newJob(
+	networkID netconf.ID,
+	backends ethbackend.Backends,
+	conf flowConfig,
+	owner common.Address,
+	solverIPAddress net.IP,
+) (types.Job, error) {
 	cadence := 25 * time.Minute
 	if networkID == netconf.Devnet {
 		cadence = time.Second * 10
@@ -39,18 +48,11 @@ func newJob(ctx context.Context, networkID netconf.ID, backends ethbackend.Backe
 		return types.Job{}, errors.Wrap(err, "src chain backend")
 	}
 
-	addrs, err := contracts.GetAddresses(ctx, networkID)
-	if err != nil {
-		return types.Job{}, errors.New("contract addresses")
+	solverURL := url.URL{
+		Scheme: "https",
+		Host:   solverIPAddress.String(),
 	}
-
-	solverAddr := eoa.MustAddress(networkID, eoa.RoleSolver)
-	checker := solver.NewChecker(
-		backends,
-		func(uint64, common.Address, []byte) bool { return true },
-		solverAddr,
-		addrs.SolverNetOutbox,
-	)
+	solverClient := sclient.New(solverURL.String())
 
 	namer := netconf.ChainNamer(networkID)
 
@@ -62,7 +64,7 @@ func newJob(ctx context.Context, networkID netconf.ID, backends ethbackend.Backe
 		SrcChainBackend: backend,
 
 		OpenOrderFunc: func(ctx context.Context) (types.Result, bool, error) {
-			return openOrder(ctx, backends, backend, networkID, owner, conf, checker)
+			return openOrder(ctx, backends, backend, networkID, owner, conf, solverClient)
 		},
 	}, nil
 }
@@ -76,7 +78,7 @@ func openOrder(
 	networkID netconf.ID,
 	owner common.Address,
 	conf flowConfig,
-	checker solver.CheckFunc,
+	solverClient sclient.Client,
 ) (types.Result, bool, error) {
 	srcToken, ok := stokens.Native(conf.srcChain)
 	if !ok {
@@ -125,7 +127,7 @@ func openOrder(
 		return types.Result{}, false, errors.Wrap(err, "open order")
 	}
 
-	if err = checker(ctx, stypes.CheckRequest{
+	req := stypes.CheckRequest{
 		SourceChainID:      conf.srcChain,
 		DestinationChainID: conf.dstChain,
 		FillDeadline:       uint32(time.Now().Add(time.Hour).Unix()), //nolint:gosec // unix timestamp won't overflow
@@ -134,12 +136,14 @@ func openOrder(
 			Amount: call.Value,
 		}},
 		Calls: []stypes.Call{stypes.Call(call)},
-	}); err != nil {
-		var rejErr *solver.RejectionError
-		if errors.As(err, &rejErr) && rejErr.Reason == stypes.RejectInsufficientInventory {
-			return types.Result{}, false, nil
-		}
+	}
+	resp, err := solverClient.Check(ctx, req)
+	if err != nil {
+		return types.Result{}, false, errors.Wrap(err, "check solving")
+	}
 
+	if resp.Rejected {
+		log.Debug(ctx, "Solving rejected", "reasons", resp.RejectReason)
 		return types.Result{}, false, err
 	}
 
@@ -147,13 +151,18 @@ func openOrder(
 }
 
 // Jobs returns two jobs bridging native ETH from one chain to another one and back.
-func Jobs(ctx context.Context, networkID netconf.ID, backends ethbackend.Backends, owner common.Address) ([]types.Job, error) {
+func Jobs(
+	networkID netconf.ID,
+	backends ethbackend.Backends,
+	owner common.Address,
+	solverIPAddress net.IP,
+) ([]types.Job, error) {
 	conf, ok := config[networkID]
 	if !ok {
 		return nil, nil
 	}
 
-	job1, err := newJob(ctx, networkID, backends, conf, owner)
+	job1, err := newJob(networkID, backends, conf, owner, solverIPAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +170,7 @@ func Jobs(ctx context.Context, networkID netconf.ID, backends ethbackend.Backend
 	// Clone the job and flip the chains
 	conf2 := conf
 	conf2.srcChain, conf2.dstChain = conf2.dstChain, conf2.srcChain
-	job2, err := newJob(ctx, networkID, backends, conf2, owner)
+	job2, err := newJob(networkID, backends, conf2, owner, solverIPAddress)
 	if err != nil {
 		return nil, err
 	}

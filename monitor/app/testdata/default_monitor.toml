@@ -24,6 +24,10 @@ monitoring-addr = ":26660"
 # The URL of the halo node to connect to.
 halo-url = ""
 
+# The IP address of the solver.
+solver-ip = ""
+
+
 # The gRPC URL of the halo node to connect to.
 halo-grpc-url = "localhost:1111"
 
