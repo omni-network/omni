@@ -2,6 +2,7 @@
 pragma solidity =0.8.24;
 
 import { IOriginSettler } from "../erc7683/IOriginSettler.sol";
+import { SolverNet } from "../lib/SolverNet.sol";
 
 interface ISolverNetInbox is IOriginSettler {
     // Validation errors
@@ -43,6 +44,14 @@ interface ISolverNetInbox is IOriginSettler {
      * @param outbox  Address of the outbox.
      */
     event OutboxSet(uint64 indexed chainId, address indexed outbox);
+
+    /**
+     * @notice Emitted when an order is opened.
+     * @dev This event emits the typed `originData`, rather than ABI-encoded as seen in `IERC7683.Open`.
+     * @param id ID of the order.
+     * @param originData Order fill originData.
+     */
+    event OriginData(bytes32 indexed id, SolverNet.FillOriginData originData);
 
     /**
      * @notice Emitted when an order is rejected.
