@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/url"
 
@@ -39,7 +38,7 @@ func (c Client) Check(ctx context.Context, req types.CheckRequest) (types.CheckR
 		return types.CheckResponse{}, err
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, uri.String(), bytes.NewReader(body))
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, uri, bytes.NewReader(body))
 	if err != nil {
 		return types.CheckResponse{}, errors.Wrap(err, "create request")
 	}
@@ -51,18 +50,12 @@ func (c Client) Check(ctx context.Context, req types.CheckRequest) (types.CheckR
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		var jsonError *types.JSONErrorResponse
-
-		bodyBytes, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return types.CheckResponse{}, errors.Wrap(err, "response body")
+		var jsonError types.JSONErrorResponse
+		if err := json.NewDecoder(resp.Body).Decode(&jsonError); err == nil {
+			return types.CheckResponse{}, errors.New(jsonError.Error.Message, "status", resp.StatusCode)
 		}
 
-		if err := json.Unmarshal(bodyBytes, &jsonError); err != nil {
-			return types.CheckResponse{}, errors.Wrap(err, "unmarshal")
-		}
-
-		return types.CheckResponse{}, errors.New(jsonError.Error.Message)
+		return types.CheckResponse{}, errors.New("non-json-error response", "status", resp.StatusCode)
 	}
 
 	var response types.CheckResponse
@@ -73,14 +66,10 @@ func (c Client) Check(ctx context.Context, req types.CheckRequest) (types.CheckR
 	return response, nil
 }
 
-func (c Client) uri(path string) (*url.URL, error) {
-	absURL, err := url.JoinPath(c.host, path)
+func (c Client) uri(path string) (string, error) {
+	uri, err := url.JoinPath(c.host, path)
 	if err != nil {
-		return nil, errors.Wrap(err, "join path", "base", c.host, "path", path)
-	}
-	uri, err := url.Parse(absURL)
-	if err != nil {
-		return nil, errors.Wrap(err, "parse url", "host", c.host, "path", path)
+		return "", errors.Wrap(err, "join path", "base", c.host, "path", path)
 	}
 
 	return uri, nil
