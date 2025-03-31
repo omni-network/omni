@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/contracts"
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/solver/client"
@@ -83,6 +85,25 @@ func TestCheck(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCheckError(t *testing.T) {
+	t.Parallel()
+
+	msg := "example error message"
+	handler := handlerAdapter(newCheckHandler(func(context.Context, types.CheckRequest) error {
+		return APIError{
+			Err:        errors.New(msg),
+			StatusCode: http.StatusServiceUnavailable,
+		}
+	}))
+
+	srv := httptest.NewServer(handler)
+	defer srv.Close()
+
+	cl := client.New(srv.URL)
+	_, err := cl.Check(t.Context(), types.CheckRequest{})
+	require.ErrorContains(t, err, msg)
 }
 
 func fetchResponseViaClient(t *testing.T, h http.Handler, req types.CheckRequest) types.CheckResponse {
