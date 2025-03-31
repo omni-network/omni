@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
+	"github.com/omni-network/omni/solver/client"
 	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -71,6 +72,9 @@ func TestCheck(t *testing.T) {
 			require.Equal(t, tt.res.RejectReason, res.RejectReason)
 			require.Equal(t, tt.res.Accepted, res.Accepted)
 
+			res2 := fetchResponseViaClient(t, handler, tt.req)
+			require.Equal(t, res, res2)
+
 			clients.Finish(t)
 
 			if tt.testdata {
@@ -79,6 +83,19 @@ func TestCheck(t *testing.T) {
 			}
 		})
 	}
+}
+
+func fetchResponseViaClient(t *testing.T, h http.Handler, req types.CheckRequest) types.CheckResponse {
+	t.Helper()
+
+	srv := httptest.NewServer(h)
+	defer srv.Close()
+
+	apiClient := client.New(srv.URL)
+	res, err := apiClient.Check(t.Context(), req)
+	require.NoError(t, err)
+
+	return res
 }
 
 // indent returns the json bytes indented.
