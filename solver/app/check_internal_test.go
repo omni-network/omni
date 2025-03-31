@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
+	"github.com/omni-network/omni/solver/client"
 	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -21,10 +23,8 @@ import (
 
 //go:generate go test . -run=TestCheck -golden
 
-//nolint:tparallel,paralleltest // subtests use same mock controller
+//nolint:paralleltest // HTTP server using a deterministic port
 func TestCheck(t *testing.T) {
-	t.Parallel()
-
 	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
 
 	// inbox / outbox addr only matters for mocks, using devnet
@@ -71,6 +71,9 @@ func TestCheck(t *testing.T) {
 			require.Equal(t, tt.res.RejectReason, res.RejectReason)
 			require.Equal(t, tt.res.Accepted, res.Accepted)
 
+			res2 := fetchResponseViaClient(t, handler, tt.req)
+			require.Equal(t, res, res2)
+
 			clients.Finish(t)
 
 			if tt.testdata {
@@ -79,6 +82,30 @@ func TestCheck(t *testing.T) {
 			}
 		})
 	}
+}
+
+func fetchResponseViaClient(t *testing.T, h http.Handler, req types.CheckRequest) types.CheckResponse {
+	t.Helper()
+
+	const addr = ":29997"
+	server := &http.Server{Handler: h}
+	listener, err := net.Listen("tcp", addr)
+	require.NoError(t, err)
+
+	go func() {
+		if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
+			panic(err)
+		}
+	}()
+
+	apiClient := client.New("http://localhost" + addr)
+	res, err := apiClient.Check(t.Context(), req)
+	require.NoError(t, err)
+
+	err = server.Shutdown(t.Context())
+	require.NoError(t, err)
+
+	return res
 }
 
 // indent returns the json bytes indented.
