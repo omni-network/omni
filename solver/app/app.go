@@ -128,11 +128,13 @@ func Run(ctx context.Context, cfg Config) error {
 	callAllower := newCallAllower(network.ID, addrs.SolverNetMiddleman)
 
 	log.Info(ctx, "Serving API", "address", cfg.APIAddr)
-	apiChan := serveAPI(cfg.APIAddr,
+	//nolint:contextcheck // False positive, inner context is used for shutdown
+	apiChan, apiCancel := serveAPI(cfg.APIAddr,
 		newCheckHandler(newChecker(backends, callAllower, solverAddr, addrs.SolverNetOutbox)),
 		newContractsHandler(addrs),
 		newQuoteHandler(quoter),
 	)
+	defer apiCancel()
 
 	select {
 	case <-ctx.Done():

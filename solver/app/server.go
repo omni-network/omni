@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -20,42 +21,51 @@ const (
 	endpointCheck     = "/api/v1/check"
 )
 
-// serveAPI starts the API server, returning a async error.
-func serveAPI(address string, handlers ...Handler) <-chan error {
+// serveAPI starts the API server, returning a async error and shutdown function.
+func serveAPI(address string, handlers ...Handler) (<-chan error, func()) {
+	mux := http.NewServeMux()
+
+	// Add all handlers
+	for _, handler := range handlers {
+		fn := handlerAdapter(handler)
+		if !handler.SkipInstrument {
+			fn = instrumentHandler(handler.Endpoint, fn)
+		}
+		mux.Handle(handler.Endpoint, fn)
+	}
+
+	// Add health check endpoints (not instrumented)
+	mux.Handle("/live", newLiveHandler())
+	mux.Handle("/", newLiveHandler()) // Also serve live from root for easy health checks
+
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET", "POST", "OPTIONS"},
+		AllowedHeaders: []string{"Accept", "Content-Type", "Origin", "User-Agent"},
+	})
+
+	srv := &http.Server{
+		Addr:              address,
+		ReadHeaderTimeout: 5 * time.Second,
+		IdleTimeout:       5 * time.Second,
+		WriteTimeout:      5 * time.Second,
+		Handler:           c.Handler(mux),
+	}
+
 	errChan := make(chan error)
 	go func() {
-		mux := http.NewServeMux()
-
-		// Add all handlers
-		for _, handler := range handlers {
-			fn := handlerAdapter(handler)
-			if !handler.SkipInstrument {
-				fn = instrumentHandler(handler.Endpoint, fn)
-			}
-			mux.Handle(handler.Endpoint, fn)
-		}
-
-		// Add health check endpoints (not instrumented)
-		mux.Handle("/live", newLiveHandler())
-		mux.Handle("/", newLiveHandler()) // Also serve live from root for easy health checks
-
-		c := cors.New(cors.Options{
-			AllowedOrigins: []string{"*"},
-			AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-			AllowedHeaders: []string{"Origin", "Content-Type", "Accept"},
-		})
-
-		srv := &http.Server{
-			Addr:              address,
-			ReadHeaderTimeout: 5 * time.Second,
-			IdleTimeout:       5 * time.Second,
-			WriteTimeout:      5 * time.Second,
-			Handler:           c.Handler(mux),
-		}
 		errChan <- errors.Wrap(srv.ListenAndServe(), "serve api")
 	}()
 
-	return errChan
+	return errChan, func() {
+		// Fresh shutdown context allowing 5s for graceful shutdown.
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		err := srv.Shutdown(ctx)
+		if err != nil {
+			log.Warn(ctx, "Shutdown api server failed", err)
+		}
+	}
 }
 
 // newLiveHandler returns a http handler that always return 200s.

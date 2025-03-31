@@ -18,7 +18,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//nolint:bodyclose // Not required
 func TestRequestCancel(t *testing.T) {
 	t.Parallel()
 
@@ -58,7 +57,7 @@ func TestRequestCancel(t *testing.T) {
 	<-served
 }
 
-//nolint:bodyclose,paralleltest // Global gateway timeout is modified
+//nolint:paralleltest // Global gateway timeout is modified
 func TestGatewayTimeout(t *testing.T) {
 	// Replace 10s gateway timeout with faster test value
 	cached := gatewayTimeout
@@ -86,7 +85,6 @@ func TestGatewayTimeout(t *testing.T) {
 	require.Equal(t, http.StatusGatewayTimeout, resp.StatusCode)
 }
 
-//nolint:bodyclose,noctx // Not critical for tests
 func TestCheckHandlerRequests(t *testing.T) {
 	t.Parallel()
 
