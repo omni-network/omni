@@ -17,7 +17,6 @@ import (
 	stokens "github.com/omni-network/omni/solver/tokens"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 // StartMonitoring starts the monitoring goroutines.
@@ -201,11 +200,9 @@ func monitorSolverNetRoleTokenOnce(
 		return err
 	}
 
-	// Convert to ether units
-	bf, _ := balance.Float64()
-	balanceEth := bf / params.Ether
-
-	tokenBalance.WithLabelValues(chainName, string(role), token.Symbol).Set(balanceEth)
+	// Convert to ether (primary) units
+	balPrimary := tokens.ToPrimaryF64(token, balance)
+	tokenBalance.WithLabelValues(chainName, string(role), token.Symbol).Set(balPrimary)
 
 	thresh, ok := eoa.GetSolverNetThreshold(role, network, chainID, token)
 	if !ok {
@@ -214,7 +211,7 @@ func monitorSolverNetRoleTokenOnce(
 	}
 
 	var isLow float64
-	if balance.Cmp(thresh.MinBalance()) <= 0 {
+	if bi.LTE(balance, thresh.MinBalance()) {
 		isLow = 1
 	}
 

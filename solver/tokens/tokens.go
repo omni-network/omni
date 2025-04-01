@@ -54,7 +54,7 @@ var (
 		tokenslib.ETH: {
 			ClassMainnet: {
 				MinSpend: bi.Ether(0.001), // 0.001 ETH
-				MaxSpend: bi.Ether(3),     // 3 ETH
+				MaxSpend: bi.Ether(6),     // 6 ETH
 			},
 			ClassTestnet: {
 				MinSpend: bi.Ether(0.001), // 0.001 ETH
@@ -82,7 +82,7 @@ var (
 		tokenslib.WSTETH: {
 			ClassMainnet: {
 				MinSpend: bi.Ether(0.001), // 0.001 wstETH
-				MaxSpend: bi.Ether(4),     // 4 wstETH
+				MaxSpend: bi.Ether(6),     // 6 wstETH
 			},
 			ClassTestnet: {
 				MinSpend: bi.Ether(0.001), // 0.001 wstETH
@@ -96,7 +96,7 @@ var (
 		tokenslib.STETH: {
 			ClassMainnet: {
 				MinSpend: bi.Ether(0.001), // 0.001 stETH
-				MaxSpend: bi.Ether(4),     // 4 stETH
+				MaxSpend: bi.Ether(6),     // 6 stETH
 			},
 			ClassTestnet: {
 				MinSpend: bi.Ether(0.001), // 0.001 stETH
@@ -109,8 +109,8 @@ var (
 		},
 		tokenslib.USDC: {
 			ClassMainnet: {
-				MinSpend: bi.Dec6(0.1),   // 0.1 USDC
-				MaxSpend: bi.Dec6(1_000), // 1k USDC
+				MinSpend: bi.Dec6(0.1),    // 0.1 USDC
+				MaxSpend: bi.Dec6(10_000), // 10k USDC
 			},
 			ClassTestnet: {
 				MinSpend: bi.Dec6(0.1), // 0.1 USDC

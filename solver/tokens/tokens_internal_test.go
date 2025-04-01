@@ -5,7 +5,9 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/bi"
+	"github.com/omni-network/omni/lib/netconf"
 	tokenslib "github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tutil"
 
@@ -28,19 +30,9 @@ func TestTokens(t *testing.T) {
 
 		chainClass := mustChainClass(token.ChainID)
 
-		if token.Symbol == tokenslib.ETH.Symbol && !token.IsMock {
-			require.Equal(t, token.MaxSpend, spendBounds[tokenslib.ETH][chainClass].MaxSpend)
-			require.Equal(t, token.MinSpend, spendBounds[tokenslib.ETH][chainClass].MinSpend)
-		}
-
-		if token.Symbol == tokenslib.WSTETH.Symbol && !token.IsMock {
-			require.Equal(t, token.MaxSpend, spendBounds[tokenslib.WSTETH][chainClass].MaxSpend)
-			require.Equal(t, token.MinSpend, spendBounds[tokenslib.WSTETH][chainClass].MinSpend)
-		}
-
-		if token.Symbol == tokenslib.OMNI.Symbol && !token.IsMock {
-			require.Equal(t, token.MaxSpend, spendBounds[tokenslib.OMNI][chainClass].MaxSpend)
-			require.Equal(t, token.MinSpend, spendBounds[tokenslib.OMNI][chainClass].MinSpend)
+		if !token.IsMock {
+			require.Equal(t, token.MaxSpend, spendBounds[token.Token][chainClass].MaxSpend)
+			require.Equal(t, token.MinSpend, spendBounds[token.Token][chainClass].MinSpend)
 		}
 
 		seen[token] = true
@@ -48,8 +40,8 @@ func TestTokens(t *testing.T) {
 			"name":        token.Name,
 			"symbol":      token.Symbol,
 			"address":     token.Address.Hex(),
-			"maxSpend":    etherStr(token.MaxSpend),
-			"minSpend":    etherStr(token.MinSpend),
+			"maxSpend":    primaryStr(token.Token, token.MaxSpend),
+			"minSpend":    primaryStr(token.Token, token.MinSpend),
 			"chainId":     token.ChainID,
 			"coingeckoId": token.CoingeckoID,
 			"isMock":      token.IsMock,
@@ -57,28 +49,30 @@ func TestTokens(t *testing.T) {
 	}
 
 	tutil.RequireGoldenJSON(t, golden)
-
-	// check max / min
-	require.Equal(t, "3.0000", etherStr(spendBounds[tokenslib.ETH]["mainnet"].MaxSpend))
-	require.Equal(t, "0.0010", etherStr(spendBounds[tokenslib.ETH]["mainnet"].MinSpend))
-	require.Equal(t, "3.0000", etherStr(spendBounds[tokenslib.ETH]["testnet"].MaxSpend))
-	require.Equal(t, "0.0010", etherStr(spendBounds[tokenslib.ETH]["testnet"].MinSpend))
-
-	require.Equal(t, "4.0000", etherStr(spendBounds[tokenslib.WSTETH]["mainnet"].MaxSpend))
-	require.Equal(t, "0.0010", etherStr(spendBounds[tokenslib.WSTETH]["mainnet"].MinSpend))
-	require.Equal(t, "1.0000", etherStr(spendBounds[tokenslib.WSTETH]["testnet"].MaxSpend))
-	require.Equal(t, "0.0010", etherStr(spendBounds[tokenslib.WSTETH]["testnet"].MinSpend))
-
-	require.Equal(t, "120000.0000", etherStr(spendBounds[tokenslib.OMNI]["mainnet"].MaxSpend))
-	require.Equal(t, "0.1000", etherStr(spendBounds[tokenslib.OMNI]["mainnet"].MinSpend))
-	require.Equal(t, "1000.0000", etherStr(spendBounds[tokenslib.OMNI]["testnet"].MaxSpend))
-	require.Equal(t, "0.1000", etherStr(spendBounds[tokenslib.OMNI]["testnet"].MinSpend))
 }
 
-func etherStr(amount *big.Int) string {
+func primaryStr(token tokenslib.Token, amount *big.Int) string {
 	if amount == nil {
 		return "nil"
 	}
 
-	return fmt.Sprintf("%.4f", bi.ToEtherF64(amount))
+	return fmt.Sprintf("%.4f", tokenslib.ToPrimaryF64(token, amount))
+}
+
+func TestMaxSpendMinThreshold(t *testing.T) {
+	t.Parallel()
+
+	for _, token := range tokens {
+		bounds, ok := spendBounds[token.Token][token.ChainClass]
+		if !ok {
+			continue
+		}
+
+		thresh, ok := eoa.GetSolverNetThreshold(eoa.RoleSolver, netconf.Mainnet, token.ChainID, token.Token)
+		if !ok {
+			continue
+		}
+
+		require.True(t, bi.GTE(thresh.MinBalance(), bounds.MaxSpend), "solver min balance must be greater than max spend: token=%s, min_bal=%s, max_spend=%s", token.Token, thresh.MinBalance(), bounds.MaxSpend)
+	}
 }

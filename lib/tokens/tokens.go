@@ -1,5 +1,11 @@
 package tokens
 
+import (
+	"math/big"
+
+	"github.com/omni-network/omni/lib/bi"
+)
+
 type Token struct {
 	Symbol      string
 	Name        string
@@ -62,4 +68,18 @@ func FromCoingeckoID(id string) (Token, bool) {
 	}
 
 	return Token{}, false
+}
+
+// ToPrimaryF64 converts the token amount to a float64 value in the primary unit (e.g. ether, dollar, etc.).
+func ToPrimaryF64(token Token, amount *big.Int) float64 {
+	if token.Decimals == 6 {
+		return toDec6F64(amount)
+	}
+
+	return bi.ToEtherF64(amount)
+}
+
+func toDec6F64(value *big.Int) float64 {
+	f, _ := value.Float64()
+	return f / 1e6
 }
