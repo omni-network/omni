@@ -1,4 +1,4 @@
-# Omni SDK
+# React Hooks
 
 ## Note - The SDK is in alpha so expect breaking changes
 
