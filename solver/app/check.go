@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"crypto/rand"
+	"fmt"
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -10,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	ltokens "github.com/omni-network/omni/lib/tokens"
 	stokens "github.com/omni-network/omni/solver/tokens"
 	"github.com/omni-network/omni/solver/types"
 
@@ -160,11 +162,23 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 		}
 
 		if tkn.MaxSpend != nil && bi.GT(e.Amount, tkn.MaxSpend) {
-			return nil, newRejection(types.RejectExpenseOverMax, errors.New("expense over max", "token", tkn.Symbol, "max", tkn.MaxSpend, "amount", e.Amount))
+			msg := fmt.Sprintf(
+				"requested expense exceeds maximum: ask=%s, max=%s",
+				ltokens.FormatAmt(e.Amount, tkn.Token),
+				ltokens.FormatAmt(tkn.MaxSpend, tkn.Token),
+			)
+
+			return nil, newRejection(types.RejectExpenseOverMax, errors.New(msg))
 		}
 
 		if tkn.MinSpend != nil && bi.LT(e.Amount, tkn.MinSpend) {
-			return nil, newRejection(types.RejectExpenseUnderMin, errors.New("expense under min", "token", tkn.Symbol, "min", tkn.MinSpend, "amount", e.Amount))
+			msg := fmt.Sprintf(
+				"requested expense is below minimum: ask=%s, min=%s",
+				ltokens.FormatAmt(e.Amount, tkn.Token),
+				ltokens.FormatAmt(tkn.MinSpend, tkn.Token),
+			)
+
+			return nil, newRejection(types.RejectExpenseUnderMin, errors.New(msg))
 		}
 
 		ps = append(ps, TokenAmt{

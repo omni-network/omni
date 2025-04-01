@@ -6,5 +6,9 @@
   "expense": {
     "token": "0x0000000000000000000000000000000000000000",
     "amount": "0x8ac7230489e80000"
-  }
+  },
+  "rejected": false,
+  "rejectCode": 0,
+  "rejectReason": "",
+  "rejectDescription": ""
 }

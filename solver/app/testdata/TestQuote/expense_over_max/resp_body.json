@@ -1,0 +1,14 @@
+{
+  "deposit": {
+    "token": "0x0000000000000000000000000000000000000000",
+    "amount": "0x8b31b7dbd92b0000"
+  },
+  "expense": {
+    "token": "0x0000000000000000000000000000000000000000",
+    "amount": "0x8ac7230489e80000"
+  },
+  "rejected": true,
+  "rejectCode": 11,
+  "rejectReason": "ExpenseOverMax",
+  "rejectDescription": "requested expense exceeds maximum: ask=10 ETH, max=6 ETH"
+}

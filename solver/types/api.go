@@ -94,8 +94,12 @@ func (u *AddrAmt) UnmarshalJSON(bz []byte) error {
 
 // QuoteResponse is the response json for the /api/v1/quote endpoint.
 type QuoteResponse struct {
-	Deposit AddrAmt `json:"deposit"`
-	Expense AddrAmt `json:"expense"`
+	Deposit           AddrAmt      `json:"deposit"`
+	Expense           AddrAmt      `json:"expense"`
+	Rejected          bool         `json:"rejected"`
+	RejectCode        RejectReason `json:"rejectCode"`
+	RejectReason      string       `json:"rejectReason"`
+	RejectDescription string       `json:"rejectDescription"`
 }
 
 // ContractsResponse is the response json for the /api/vi/contracts endpoint.

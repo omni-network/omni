@@ -53,6 +53,21 @@ func ToGweiF64(wei *big.Int) float64 {
 	return f / params.GWei
 }
 
+// ToF64 converts big.Int amt to float64 with dec decimals.
+// Note that this is not accurate, only use for logging/metrics/display, not math.
+func ToF64(amt *big.Int, dec uint) float64 {
+	return ToEtherF64(ToWei(amt, dec))
+}
+
+// ToWei converts an amt with dec decimals to wei big.Int with 18 decimals.
+func ToWei(amt *big.Int, dec uint) *big.Int {
+	if dec < 18 {
+		return MulRaw(amt, int(math.Pow10(18-int(dec))))
+	}
+
+	return amt
+}
+
 // Gwei converts gwei float/int/uint in to wei big.Int; i * 1e9.
 // Note this can be lossy for large floats.
 func Gwei[N number](i N) *big.Int {

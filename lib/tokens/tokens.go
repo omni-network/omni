@@ -1,7 +1,9 @@
 package tokens
 
 import (
+	"fmt"
 	"math/big"
+	"strconv"
 
 	"github.com/omni-network/omni/lib/bi"
 )
@@ -82,4 +84,11 @@ func ToPrimaryF64(token Token, amount *big.Int) float64 {
 func toDec6F64(value *big.Int) float64 {
 	f, _ := value.Float64()
 	return f / 1e6
+}
+
+// FormatAmt prints a token float amt, with its symbol ex e. "1.2345 ETH". All decimals are printed.
+func FormatAmt(amt *big.Int, tkn Token) string {
+	return fmt.Sprintf("%s %s",
+		strconv.FormatFloat(bi.ToF64(amt, tkn.Decimals), 'f', -1, 64),
+		tkn.Symbol)
 }
