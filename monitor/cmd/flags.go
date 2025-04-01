@@ -17,7 +17,7 @@ func bindRunFlags(flags *pflag.FlagSet, cfg *monitor.Config) {
 	flags.StringVar(&cfg.FlowGenKey, "flowgen-key", cfg.FlowGenKey, "The path to the flowgen private key e.g path/flowgen.key")
 	flags.StringVar(&cfg.MonitoringAddr, "monitoring-addr", cfg.MonitoringAddr, "The address to bind the monitoring server")
 	flags.StringVar(&cfg.HaloCometURL, "halo-url", cfg.HaloCometURL, "The URL of the halo node e.g localhost:26657")
-	flags.StringVar(&cfg.SolverIPAddress, "solver-ip", cfg.SolverIPAddress, "The IP address of the solver e.g 1.2.3.4")
+	flags.StringVar(&cfg.SolverAddress, "solver-addr", cfg.SolverAddress, "The URL address of the solver e.g https://1.2.3.4:26661")
 	flags.StringVar(&cfg.HaloGRPCURL, "halo-grpc-url", cfg.HaloGRPCURL, "The gRPC URL of the halo node e.g localhost:9999")
 	flags.StringVar(&cfg.DBDir, "db-dir", cfg.DBDir, "The path to the database directory")
 	flags.StringVar(&cfg.RouteScanAPIKey, "routescan-apikey", cfg.RouteScanAPIKey, "The RouteScan API key to use their APIs with higher rate limits")

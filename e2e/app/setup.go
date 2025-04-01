@@ -626,16 +626,11 @@ func writeMonitorConfig(ctx context.Context, def Definition, logCfg log.Config, 
 		return errors.New("monitor must use archive node, no archive node found")
 	}
 
-	solverData, ok := def.Infra.GetInfrastructureData().Instances["solver"]
-	if !ok {
-		return errors.New("no solver instance found")
-	}
-
 	cfg := monapp.DefaultConfig()
 	cfg.PrivateKey = privKeyFile
 	cfg.Network = def.Testnet.Network
 	cfg.HaloCometURL = archiveNode.AddressRPC()
-	cfg.SolverIPAddress = solverData.IPAddress.String()
+	cfg.SolverAddress = def.Testnet.SolverInternalAddr
 	cfg.HaloGRPCURL = haloGRPCAddress(archiveNode)
 	cfg.RouteScanAPIKey = def.Cfg.RouteScanAPIKey
 	cfg.LoadGen.ValidatorKeysGlob = validatorKeyGlob

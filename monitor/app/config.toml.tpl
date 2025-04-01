@@ -24,8 +24,8 @@ monitoring-addr = "{{ .MonitoringAddr }}"
 # The URL of the halo node to connect to.
 halo-url = "{{ .HaloCometURL }}"
 
-# The IP address of the solver.
-solver-ip = "{{ .SolverIPAddress }}"
+# The URL address of the solver.
+solver-addr = "{{ .SolverAddress }}"
 
 
 # The gRPC URL of the halo node to connect to.

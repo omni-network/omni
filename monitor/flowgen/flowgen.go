@@ -2,7 +2,6 @@ package flowgen
 
 import (
 	"context"
-	"net"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -30,7 +29,7 @@ func Start(
 	network netconf.Network,
 	rpcEndpoints xchain.RPCEndpoints,
 	keyPath string,
-	solverIPAddress net.IP,
+	solverAddress string,
 ) error {
 	if keyPath == "" {
 		return errors.New("private key is required")
@@ -48,7 +47,7 @@ func Start(
 
 	owner := eoa.MustAddress(network.ID, eoa.RoleFlowgen)
 
-	return startWithBackends(ctx, network, backends, owner, solverIPAddress)
+	return startWithBackends(ctx, network, backends, owner, solverAddress)
 }
 
 func startWithBackends(
@@ -56,11 +55,11 @@ func startWithBackends(
 	network netconf.Network,
 	backends ethbackend.Backends,
 	owner common.Address,
-	solverIPAddress net.IP,
+	solverAddress string,
 ) error {
 	var jobs []types.Job
 
-	result, err := bridging.Jobs(network.ID, backends, owner, solverIPAddress)
+	result, err := bridging.Jobs(network.ID, backends, owner, solverAddress)
 	if err != nil {
 		return errors.Wrap(err, "bridge jobs")
 	}

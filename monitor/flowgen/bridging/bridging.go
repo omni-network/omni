@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"net"
-	"net/url"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -18,6 +16,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/umath"
 	"github.com/omni-network/omni/monitor/flowgen/types"
 	solver "github.com/omni-network/omni/solver/app"
 	sclient "github.com/omni-network/omni/solver/client"
@@ -36,7 +35,7 @@ func newJob(
 	backends ethbackend.Backends,
 	conf flowConfig,
 	owner common.Address,
-	solverIPAddress net.IP,
+	solverAddress string,
 ) (types.Job, error) {
 	cadence := 25 * time.Minute
 	if networkID == netconf.Devnet {
@@ -48,11 +47,7 @@ func newJob(
 		return types.Job{}, errors.Wrap(err, "src chain backend")
 	}
 
-	solverURL := url.URL{
-		Scheme: "https",
-		Host:   solverIPAddress.String(),
-	}
-	solverClient := sclient.New(solverURL.String())
+	solverClient := sclient.New(solverAddress)
 
 	namer := netconf.ChainNamer(networkID)
 
@@ -127,10 +122,15 @@ func openOrder(
 		return types.Result{}, false, errors.Wrap(err, "open order")
 	}
 
+	deadline, err := umath.ToUint32(time.Now().Add(time.Hour).Unix())
+	if err != nil {
+		return types.Result{}, false, errors.Wrap(err, "deadline conversion")
+	}
+
 	req := stypes.CheckRequest{
 		SourceChainID:      conf.srcChain,
 		DestinationChainID: conf.dstChain,
-		FillDeadline:       uint32(time.Now().Add(time.Hour).Unix()), //nolint:gosec // unix timestamp won't overflow
+		FillDeadline:       deadline,
 		Deposit:            stypes.AddrAmt(orderData.Deposit),
 		Expenses: []stypes.Expense{{
 			Amount: call.Value,
@@ -143,8 +143,12 @@ func openOrder(
 	}
 
 	if resp.Rejected {
-		log.Debug(ctx, "Solving rejected", "reasons", resp.RejectReason)
-		return types.Result{}, false, err
+		if resp.RejectCode == stypes.RejectInsufficientInventory {
+			log.Debug(ctx, "Skipping order due to solver rejection", "reason", resp.RejectReason)
+			return types.Result{}, false, nil
+		}
+
+		return types.Result{}, false, errors.New(resp.RejectReason)
 	}
 
 	return types.Result{OrderID: orderID, Expense: expense}, true, nil
@@ -155,14 +159,14 @@ func Jobs(
 	networkID netconf.ID,
 	backends ethbackend.Backends,
 	owner common.Address,
-	solverIPAddress net.IP,
+	solverAddress string,
 ) ([]types.Job, error) {
 	conf, ok := config[networkID]
 	if !ok {
 		return nil, nil
 	}
 
-	job1, err := newJob(networkID, backends, conf, owner, solverIPAddress)
+	job1, err := newJob(networkID, backends, conf, owner, solverAddress)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +174,7 @@ func Jobs(
 	// Clone the job and flip the chains
 	conf2 := conf
 	conf2.srcChain, conf2.dstChain = conf2.dstChain, conf2.srcChain
-	job2, err := newJob(networkID, backends, conf2, owner, solverIPAddress)
+	job2, err := newJob(networkID, backends, conf2, owner, solverAddress)
 	if err != nil {
 		return nil, err
 	}

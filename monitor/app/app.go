@@ -2,7 +2,6 @@ package monitor
 
 import (
 	"context"
-	"net"
 	"net/http"
 	"net/http/pprof"
 	"time"
@@ -68,12 +67,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	solverIPAddress := net.ParseIP(cfg.SolverIPAddress)
-	if solverIPAddress == nil {
-		return errors.New("ip parsing error", "solver_ip_address", cfg.SolverIPAddress)
-	}
-
-	if err := flowgen.Start(ctx, network, cfg.RPCEndpoints, cfg.FlowGenKey, solverIPAddress); err != nil {
+	if err := flowgen.Start(ctx, network, cfg.RPCEndpoints, cfg.FlowGenKey, cfg.SolverAddress); err != nil {
 		log.Error(ctx, "Failed to start monitor flowgen [BUG]", err)
 	}
 

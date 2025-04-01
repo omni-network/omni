@@ -24,7 +24,7 @@ type Config struct {
 	PrivateKey      string
 	FlowGenKey      string
 	HaloCometURL    string
-	SolverIPAddress string
+	SolverAddress   string
 	HaloGRPCURL     string
 	LoadGen         loadgen.Config
 	XFeeMngr        xfeemngr.Config
