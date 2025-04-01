@@ -257,6 +257,89 @@ const {
 
 And that's it! That's all you need to use SolverNet to bridge eth across L2s.
 
+### withExecAndTransfer
+
+Some target contracts do not have `onBehalfOf`-style methods. If they, instead, credit a tokenized position to `msg.sender`, you can use the `withExecAndTransfer` util. This util wraps your call in a call to our [SolverNetMiddleman](https://github.com/omni-network/omni/blob/main/contracts/solve/src/SolverNetMiddleman.sol). The wrapped call executes a call on your target, and transfers all earned tokens to some `to` address.
+
+See ths solidity below code for reference.
+
+```solidity
+contract SolverNetMiddleman {
+    // ...
+
+    /**
+     * @notice Execute a call and transfer any received tokens back to the recipient
+     * @dev Intended to be used when interacting with contracts that don't allow us to specify a recipient
+     * @param token  Token to transfer
+     * @param to     Recipient address
+     * @param target Call target address
+     * @param data   Calldata for the call
+     */
+    function executeAndTransfer(address token, address to, address target, bytes calldata data)
+        external
+        payable
+        nonReentrant
+    {
+        (bool success,) = target.call{ value: msg.value }(data);
+        if (!success) revert CallFailed();
+
+        if (token == address(0)) SafeTransferLib.safeTransferAllETH(to);
+        else token.safeTransferAll(to);
+    }
+
+    // ...
+}
+```
+
+To use `withExecAndTransfer`, specify your target call, the token to transfer post-call, and address to transfer to.
+
+```typescript
+// ABI for Vault.deposit{ value: amount }()
+const tokenizedVaultABI = [
+  {
+    inputs: [],
+    name: 'deposit',
+    outputs: [],
+    stateMutability: 'payable',
+    type: 'function',
+  },
+] as const
+
+
+// Your vault address
+const vault = `0x...` as const
+
+
+// Fetch SolverNetMiddleman contract address
+const contracts = useOmniContracts()
+const middlemanAddress = contracts.data?.middleman ?? zeroAddress
+
+// Wrap Vault.deposit() with a middleman call.
+const middlemanCall = withExecAndTransfer({
+    middlemanAddress: middlemanAddress,
+    call: {
+        target: vault,
+        abi: tokenizedVaultABI,
+        functionName: 'deposit',
+        value: expenseAmt, // from quote
+    },
+    transfer: {
+        token: vault, // vault is address of token to transfer
+        to: user,     // transfer all post-call tokens to this address
+    }
+})
+
+// Pass the middleman call in to `useOrder`
+const order = useOrder({
+    srcChainId: baseSepolia.id,
+    destChainId: holesky.id,
+    deposit: { amount: depositAmt },
+    expense: { amount: expenseAmt },
+    calls: [middlemanCall],
+    validateEnabled: quote.isSuccess,
+})
+```
+
 # Supported Assets
 
 | Network | Chain | Asset | Contract Address | Min | Max |
