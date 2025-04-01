@@ -67,7 +67,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	if err := flowgen.Start(ctx, network, cfg.RPCEndpoints, cfg.FlowGenKey); err != nil {
+	if err := flowgen.Start(ctx, network, cfg.RPCEndpoints, cfg.FlowGenKey, cfg.SolverAddress); err != nil {
 		log.Error(ctx, "Failed to start monitor flowgen [BUG]", err)
 	}
 

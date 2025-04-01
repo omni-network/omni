@@ -29,6 +29,7 @@ func Start(
 	network netconf.Network,
 	rpcEndpoints xchain.RPCEndpoints,
 	keyPath string,
+	solverAddress string,
 ) error {
 	if keyPath == "" {
 		return errors.New("private key is required")
@@ -46,7 +47,7 @@ func Start(
 
 	owner := eoa.MustAddress(network.ID, eoa.RoleFlowgen)
 
-	return startWithBackends(ctx, network, backends, owner)
+	return startWithBackends(ctx, network, backends, owner, solverAddress)
 }
 
 func startWithBackends(
@@ -54,10 +55,11 @@ func startWithBackends(
 	network netconf.Network,
 	backends ethbackend.Backends,
 	owner common.Address,
+	solverAddress string,
 ) error {
 	var jobs []types.Job
 
-	result, err := bridging.Jobs(network.ID, backends, owner)
+	result, err := bridging.Jobs(network.ID, backends, owner, solverAddress)
 	if err != nil {
 		return errors.Wrap(err, "bridge jobs")
 	}
