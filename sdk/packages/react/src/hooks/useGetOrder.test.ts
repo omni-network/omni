@@ -24,7 +24,7 @@ beforeEach(() => {
   useReadContract.mockReturnValue(createMockReadContractResult())
 })
 
-test('default', async () => {
+test('default: returns order when contract read returns an order', async () => {
   const { result, rerender } = renderHook(
     () =>
       useGetOrder({
@@ -51,8 +51,8 @@ test('default', async () => {
     orderId,
   })
 
-  await waitFor(() => result.current.data?.[0].orderId === orderId)
-  await waitFor(() => result.current.data?.[1].status === 1)
+  await waitFor(() => expect(result.current.data?.[0].orderId).toBe(orderId))
+  await waitFor(() => expect(result.current.data?.[1].status).toBe(1))
 })
 
 test('behaviour: no contract read when orderId is undefined', () => {
