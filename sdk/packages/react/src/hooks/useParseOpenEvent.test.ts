@@ -6,6 +6,7 @@ import {
   encodeEventTopics,
 } from 'viem'
 import { expect, test } from 'vitest'
+import type { UseWaitForTransactionReceiptReturnType } from 'wagmi'
 import {
   accounts,
   orderId,
@@ -83,14 +84,20 @@ const logs: Log[] = [
   },
 ]
 
-test('default', async () => {
+test('default: parses open event', async () => {
   const { result, rerender } = renderHook(
-    () =>
+    ({
+      status,
+      logs,
+    }: {
+      status: UseWaitForTransactionReceiptReturnType['status']
+      logs: Log[]
+    }) =>
       useParseOpenEvent({
-        status: 'pending',
-        logs: [],
+        status,
+        logs,
       }),
-    { mockContractsCall: true },
+    { mockContractsCall: true, initialProps: { status: 'pending', logs: [] } },
   )
 
   expect(result.current.resolvedOrder).toBeUndefined()
@@ -100,7 +107,9 @@ test('default', async () => {
     logs,
   })
 
-  await waitFor(() => result.current.resolvedOrder?.orderId === orderId)
+  await waitFor(() =>
+    expect(result.current.resolvedOrder?.orderId).toBe(orderId),
+  )
 })
 
 test('behaviour: no parsing when status is pending', () => {

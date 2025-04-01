@@ -27,7 +27,7 @@ beforeEach(() => {
   mockUseGetOrder.mockReturnValue(createMockReadContractResult())
 })
 
-test('default', async () => {
+test('default: returns appropriate inbox status when order is resolved', async () => {
   const { result, rerender } = renderHook(
     () => useInboxStatus({ chainId: 1 }),
     {
@@ -52,7 +52,7 @@ test('default', async () => {
     orderId,
   })
 
-  await waitFor(() => result.current === 'open')
+  await waitFor(() => expect(result.current).toBe('open'))
 })
 
 test('parameters: status unknown', () => {

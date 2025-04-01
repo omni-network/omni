@@ -25,7 +25,7 @@ beforeEach(() => {
   useReadContract.mockReturnValue(createMockReadContractResult())
 })
 
-test('default', async () => {
+test('default: returns true when outbox read is truthy', async () => {
   const { result, rerender } = renderHook(
     () =>
       useDidFillOutbox({

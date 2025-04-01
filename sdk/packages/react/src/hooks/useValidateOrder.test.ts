@@ -80,6 +80,7 @@ test('default: native transfer order', async () => {
   rerender({
     enabled: true,
   })
+
   await waitFor(() => expect(result.current.status).toBe('accepted'))
 })
 
