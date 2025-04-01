@@ -77,6 +77,7 @@ func newCheckHandler(checkFunc checkFunc) Handler {
 			if r := new(RejectionError); errors.As(err, &r) {
 				return types.CheckResponse{
 					Rejected:          true,
+					RejectCode:        r.Reason,
 					RejectReason:      r.Reason.String(),
 					RejectDescription: r.Err.Error(),
 				}, nil

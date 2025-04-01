@@ -1,6 +1,7 @@
 {
   "accepted": false,
   "rejected": true,
+  "rejectCode": 5,
   "rejectReason": "InsufficientInventory",
   "rejectDescription": "insufficient balance"
 }

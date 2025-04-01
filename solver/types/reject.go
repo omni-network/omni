@@ -18,4 +18,5 @@ const (
 	RejectExpenseOverMax        RejectReason = 11
 	RejectExpenseUnderMin       RejectReason = 12
 	RejectCallNotAllowed        RejectReason = 13
+	rejectSentinel              RejectReason = 14
 )

@@ -1,6 +1,7 @@
 {
   "accepted": false,
   "rejected": true,
+  "rejectCode": 4,
   "rejectReason": "InsufficientDeposit",
   "rejectDescription": "insufficient deposit"
 }
