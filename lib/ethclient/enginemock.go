@@ -278,7 +278,7 @@ func MockGenesisBlock() (*types.Block, error) {
 		return nil, err
 	}
 
-	genesisPayload, err := makePayload(fuzzer, height, ts, parentHash, common.Address{}, parentHash, &parentBeaconRoot)
+	genesisPayload, err := makePayload(fuzzer, height, ts, parentHash, common.Address{}, parentHash, &parentBeaconRoot, []*types.Withdrawal{})
 	if err != nil {
 		return nil, errors.Wrap(err, "make next payload")
 	}
@@ -516,7 +516,7 @@ func (m *engineMock) ForkchoiceUpdatedV3(ctx context.Context, update engine.Fork
 	// If we have payload attributes, make a new payload
 	if attrs != nil {
 		payload, err := makePayload(m.fuzzer, m.head.NumberU64()+1,
-			attrs.Timestamp, update.HeadBlockHash, attrs.SuggestedFeeRecipient, attrs.Random, attrs.BeaconRoot)
+			attrs.Timestamp, update.HeadBlockHash, attrs.SuggestedFeeRecipient, attrs.Random, attrs.BeaconRoot, attrs.Withdrawals)
 		if err != nil {
 			return engine.ForkChoiceResponse{}, err
 		}
@@ -575,7 +575,8 @@ func (*engineMock) GetPayloadV2(context.Context, engine.PayloadID) (*engine.Exec
 
 // makePayload returns a new fuzzed payload using head as parent if provided.
 func makePayload(fuzzer *fuzz.Fuzzer, height uint64, timestamp uint64, parentHash common.Hash,
-	feeRecipient common.Address, randao common.Hash, beaconRoot *common.Hash) (engine.ExecutableData, error) {
+	feeRecipient common.Address, randao common.Hash, beaconRoot *common.Hash,
+	withdrawals []*types.Withdrawal) (engine.ExecutableData, error) {
 	// Build a new header
 	var header types.Header
 	fuzzer.Fuzz(&header)
@@ -589,7 +590,7 @@ func makePayload(fuzzer *fuzz.Fuzzer, height uint64, timestamp uint64, parentHas
 	// Convert header to block
 	block := types.NewBlock(
 		&header,
-		&types.Body{Withdrawals: []*types.Withdrawal{}},
+		&types.Body{Withdrawals: withdrawals},
 		nil,
 		trie.NewStackTrie(nil),
 	)
