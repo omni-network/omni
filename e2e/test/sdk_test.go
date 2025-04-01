@@ -8,8 +8,6 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/e2e/types"
-	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/stretchr/testify/require"
 )
@@ -19,7 +17,7 @@ func TestSDK(t *testing.T) {
 	skipFunc := func(manifest types.Manifest) bool {
 		return !manifest.DeploySolve
 	}
-	maybeTestNetwork(t, skipFunc, func(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
+	maybeTestNetwork(t, skipFunc, func(ctx context.Context, t *testing.T, _ NetworkDeps) {
 		t.Helper()
 
 		sdkPath, err := filepath.Abs("../../sdk")

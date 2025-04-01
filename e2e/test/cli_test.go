@@ -69,9 +69,11 @@ func execCLI(ctx context.Context, args ...string) (string, string, error) {
 func TestCLIOperator(t *testing.T) {
 	t.Parallel()
 
-	testNetwork(t, func(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
+	testNetwork(t, func(ctx context.Context, t *testing.T, deps NetworkDeps) {
 		t.Helper()
 
+		endpoints := deps.RPCEndpoints
+		network := deps.Network
 		netID := network.ID
 		e, ok := network.OmniEVMChain()
 		require.True(t, ok)

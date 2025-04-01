@@ -6,8 +6,6 @@ import (
 
 	magellan2 "github.com/omni-network/omni/halo/app/upgrades/magellan"
 	"github.com/omni-network/omni/lib/cchain/provider"
-	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/cometbft/cometbft/rpc/client/http"
 
@@ -18,9 +16,10 @@ import (
 
 func TestMint(t *testing.T) {
 	t.Parallel()
-	testNetwork(t, func(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
+	testNetwork(t, func(ctx context.Context, t *testing.T, deps NetworkDeps) {
 		t.Helper()
 
+		network := deps.Network
 		cl, err := http.New(network.ID.Static().ConsensusRPC(), "/websocket")
 		require.NoError(t, err)
 		cprov := provider.NewABCI(cl, network.ID)
@@ -37,9 +36,10 @@ func TestMint(t *testing.T) {
 
 func TestSlashing(t *testing.T) {
 	t.Parallel()
-	testNetwork(t, func(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
+	testNetwork(t, func(ctx context.Context, t *testing.T, deps NetworkDeps) {
 		t.Helper()
 
+		network := deps.Network
 		cl, err := http.New(network.ID.Static().ConsensusRPC(), "/websocket")
 		require.NoError(t, err)
 		cprov := provider.NewABCI(cl, network.ID)

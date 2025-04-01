@@ -50,11 +50,17 @@ type Portal struct {
 	Contract *bindings.OmniPortal
 }
 
+type NetworkDeps struct {
+	Network      netconf.Network
+	RPCEndpoints xchain.RPCEndpoints
+	SolverAddr   string
+}
+
 type testFunc struct {
 	TestNode    func(*testing.T, netconf.Network, *e2e.Node, []Portal)
 	TestPortal  func(*testing.T, netconf.Network, Portal, []Portal)
 	TestOmniEVM func(*testing.T, ethclient.Client)
-	TestNetwork func(context.Context, *testing.T, netconf.Network, xchain.RPCEndpoints)
+	TestNetwork func(context.Context, *testing.T, NetworkDeps)
 	skipFunc    func(types.Manifest) bool
 }
 
@@ -73,7 +79,7 @@ func testOmniEVM(t *testing.T, fn func(*testing.T, ethclient.Client)) {
 	test(t, testFunc{TestOmniEVM: fn})
 }
 
-func testNetwork(t *testing.T, fn func(context.Context, *testing.T, netconf.Network, xchain.RPCEndpoints)) {
+func testNetwork(t *testing.T, fn func(context.Context, *testing.T, NetworkDeps)) {
 	t.Helper()
 	test(t, testFunc{TestNetwork: fn})
 }
@@ -81,7 +87,7 @@ func testNetwork(t *testing.T, fn func(context.Context, *testing.T, netconf.Netw
 func maybeTestNetwork(
 	t *testing.T,
 	skipFunc func(types.Manifest) bool,
-	fn func(context.Context, *testing.T, netconf.Network, xchain.RPCEndpoints),
+	fn func(context.Context, *testing.T, NetworkDeps),
 ) {
 	t.Helper()
 	test(t, testFunc{TestNetwork: fn, skipFunc: skipFunc})
@@ -164,7 +170,11 @@ func test(t *testing.T, testFunc testFunc) {
 	if testFunc.TestNetwork != nil {
 		t.Run("network", func(t *testing.T) {
 			t.Parallel()
-			testFunc.TestNetwork(ctx, t, network, endpoints)
+			testFunc.TestNetwork(ctx, t, NetworkDeps{
+				Network:      network,
+				RPCEndpoints: endpoints,
+				SolverAddr:   testnet.SolverExternalAddr,
+			})
 		})
 	}
 }

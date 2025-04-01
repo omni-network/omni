@@ -375,14 +375,24 @@ func TestnetFromManifest(ctx context.Context, manifest types.Manifest, infd type
 		return types.Testnet{}, err
 	}
 
+	solverInst := infd.Instances["solver"]
+	solverInternalIP := solverInst.IPAddress.String()
+	if infd.Provider == docker.ProviderName {
+		solverInternalIP = "solver" // For docker, we use container names
+	}
+	solverInternalAddr := fmt.Sprintf("http://%s:%d", solverInternalIP, solverInst.Port)
+	solverExternalAddr := fmt.Sprintf("http://%s:%d", solverInst.ExtIPAddress.String(), solverInst.Port)
+
 	return types.Testnet{
-		Manifest:     manifest,
-		Network:      manifest.Network,
-		Testnet:      cmtTestnet,
-		OmniEVMs:     omniEVMS,
-		AnvilChains:  anvils,
-		PublicChains: publics,
-		Perturb:      manifest.Perturb,
+		Manifest:           manifest,
+		Network:            manifest.Network,
+		Testnet:            cmtTestnet,
+		OmniEVMs:           omniEVMS,
+		AnvilChains:        anvils,
+		PublicChains:       publics,
+		Perturb:            manifest.Perturb,
+		SolverInternalAddr: solverInternalAddr,
+		SolverExternalAddr: solverExternalAddr,
 	}, nil
 }
 

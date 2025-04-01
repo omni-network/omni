@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -16,7 +17,6 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/umath"
-	"github.com/omni-network/omni/lib/xchain"
 	stokens "github.com/omni-network/omni/solver/tokens"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -30,25 +30,27 @@ func TestSolver(t *testing.T) {
 	skipFunc := func(manifest types.Manifest) bool {
 		return !manifest.DeploySolve
 	}
-	maybeTestNetwork(t, skipFunc, func(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
+	maybeTestNetwork(t, skipFunc, func(ctx context.Context, t *testing.T, deps NetworkDeps) {
 		t.Helper()
 
-		ensureSolverAPILive(t)
-		testContractsAPI(ctx, t)
-		testSolverApprovals(ctx, t, network, endpoints)
+		ensureSolverAPILive(t, deps.SolverAddr)
+		testContractsAPI(ctx, t, deps.SolverAddr)
+		testSolverApprovals(ctx, t, deps)
 
-		err := solve.Test(ctx, network, endpoints)
+		err := solve.Test(ctx, deps.Network, deps.RPCEndpoints, deps.SolverAddr)
 		require.NoError(t, err)
 	})
 }
 
-func testContractsAPI(ctx context.Context, t *testing.T) {
+func testContractsAPI(ctx context.Context, t *testing.T, solverAddr string) {
 	t.Helper()
 
 	addrs, err := contracts.GetAddresses(ctx, netconf.Devnet)
 	require.NoError(t, err)
 
-	resp, err := http.Get("http://localhost:26661/api/v1/contracts")
+	uri, err := url.JoinPath(solverAddr, "/api/v1/contracts")
+	require.NoError(t, err)
+	resp, err := http.Get(uri)
 	require.NoError(t, err)
 
 	body := make(map[string]any)
@@ -67,21 +69,23 @@ func testContractsAPI(ctx context.Context, t *testing.T) {
 	addrEqual(addrs.SolverNetExecutor, "executor")
 }
 
-func testSolverApprovals(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
+func testSolverApprovals(ctx context.Context, t *testing.T, deps NetworkDeps) {
 	t.Helper()
 
-	addrs, err := contracts.GetAddresses(ctx, network.ID)
+	network := deps.Network.ID
+
+	addrs, err := contracts.GetAddresses(ctx, network)
 	require.NoError(t, err)
 
-	solverAddr := eoa.MustAddress(network.ID, eoa.RoleSolver)
+	solverAddr := eoa.MustAddress(network, eoa.RoleSolver)
 
 	for _, tkn := range stokens.All() {
-		chain, ok := network.Chain(tkn.ChainID)
+		chain, ok := deps.Network.Chain(tkn.ChainID)
 		if !ok {
 			continue
 		}
 
-		endpoint, err := endpoints.ByNameOrID(chain.Name, chain.ID)
+		endpoint, err := deps.RPCEndpoints.ByNameOrID(chain.Name, chain.ID)
 		require.NoError(t, err)
 
 		client, err := ethclient.Dial(chain.Name, endpoint)
@@ -105,10 +109,12 @@ func testSolverApprovals(ctx context.Context, t *testing.T, network netconf.Netw
 	}
 }
 
-func ensureSolverAPILive(t *testing.T) {
+func ensureSolverAPILive(t *testing.T, solverAddr string) {
 	t.Helper()
 
-	resp, err := http.Get("http://localhost:26661/live")
+	uri, err := url.JoinPath(solverAddr, "/live")
+	require.NoError(t, err)
+	resp, err := http.Get(uri)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 	require.NoError(t, resp.Body.Close())
