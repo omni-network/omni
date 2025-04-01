@@ -22,9 +22,9 @@ type Target struct {
 
 var (
 	// targetsRestricted maps each network to whether targets should be restricted to the allowed set.
-	targetsRestricted = map[netconf.ID]bool{
-		netconf.Mainnet: true,
-	}
+	// Targets are no longer restricted, but logic is kept to let us turn it on again if needed. Target
+	// names are still used for logging / metrics.
+	targetsRestricted = map[netconf.ID]bool{}
 
 	// static are known, static targets.
 	static = []Target{

@@ -3,8 +3,6 @@ package app
 import (
 	"testing"
 
-	"github.com/omni-network/omni/e2e/app/eoa"
-	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
@@ -28,58 +26,6 @@ func TestCallAllower(t *testing.T) {
 		calldata []byte
 		allowed  bool
 	}{
-		{
-			name:     "mainnet flowgen",
-			network:  netconf.Mainnet,
-			chainID:  evmchain.IDSepolia,
-			target:   eoa.MustAddress(netconf.Mainnet, eoa.RoleFlowgen),
-			calldata: nil,
-			allowed:  true,
-		},
-		{
-			name:     "mainnet eigen",
-			network:  netconf.Mainnet,
-			chainID:  evmchain.IDOmniMainnet,
-			target:   common.HexToAddress(predeploys.Staking),
-			calldata: []byte{0x01, 0x02, 0x03}, // doesn't matter,
-			allowed:  true,
-		},
-		{
-			name:    "middleman allowed call",
-			network: netconf.Mainnet,
-			chainID: evmchain.IDEthereum,
-			target:  middlemanAddr,
-			// executeAndTransfer call to allowed target (call to eigen strategy manager)
-			calldata: hexutil.MustDecode("0xfebe2c2c000000000000000000000000b82381a3fbd3fafa77b3a7be693342618240067b000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc7000000000000000000000000858646372cc42e1a627FCe94AA7a7033E7cf075a0000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000004447e7ef24000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc70000000000000000000000000000000000000000000000008ac7230489e8000000000000000000000000000000000000000000000000000000000000"),
-			allowed:  true,
-		},
-		{
-			name:    "middleman disallowed call",
-			network: netconf.Mainnet,
-			chainID: evmchain.IDEthereum,
-			target:  middlemanAddr,
-			// executeAndTransfer call to disallowed target
-			calldata: hexutil.MustDecode("0xfebe2c2c000000000000000000000000b82381a3fbd3fafa77b3a7be693342618240067b0000000000000000000000006415d3b5fc615d4a00c71f4044dec24c141ebff8000000000000000000000000e3481474b23f88a8917dbcb4cbc55efcf0f68cc70000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000004447e7ef240000000000000000000000006415d3b5fc615d4a00c71f4044dec24c141ebff80000000000000000000000000000000000000000000000008ac7230489e8000000000000000000000000000000000000000000000000000000000000"),
-			allowed:  false,
-		},
-		{
-			name:    "middleman invalid params",
-			network: netconf.Mainnet,
-			chainID: evmchain.IDEthereum,
-			target:  middlemanAddr,
-			// executeAndTransfer, invalid params (only selector)
-			calldata: hexutil.MustDecode("0xfebe2c2c"),
-			allowed:  false,
-		},
-		{
-			name:    "middleman invalid calldata",
-			network: netconf.Mainnet,
-			chainID: evmchain.IDEthereum,
-			target:  middlemanAddr,
-			// invalid calldata (not executeAndTransfer)
-			calldata: hexutil.MustDecode("0x12345678"),
-			allowed:  false,
-		},
 		{
 			name:     "devnet calls not restricted",
 			network:  netconf.Devnet,
@@ -105,11 +51,11 @@ func TestCallAllower(t *testing.T) {
 			allowed:  true,
 		},
 		{
-			name:     "morpho mainnet steakhouse vault",
+			name:     "mainnet calls not restricted",
 			network:  netconf.Mainnet,
-			chainID:  evmchain.IDBase,
-			target:   common.HexToAddress("0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183"),
-			calldata: []byte{0x01, 0x02, 0x03}, // doesn't matter
+			chainID:  evmchain.IDEthereum,
+			target:   common.HexToAddress("0xe3481474b23f88a8917DbcB4cBC55Efcf0f68CC7"), // doesn't matter
+			calldata: []byte{0x01, 0x02, 0x03},                                          // doesn't matter
 			allowed:  true,
 		},
 	}
