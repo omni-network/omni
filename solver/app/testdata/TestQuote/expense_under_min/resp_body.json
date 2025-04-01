@@ -1,0 +1,14 @@
+{
+  "deposit": {
+    "token": "0x0000000000000000000000000000000000000000",
+    "amount": "0x5b38e9def800"
+  },
+  "expense": {
+    "token": "0x0000000000000000000000000000000000000000",
+    "amount": "0x5af3107a4000"
+  },
+  "rejected": true,
+  "rejectCode": 12,
+  "rejectReason": "ExpenseUnderMin",
+  "rejectDescription": "requested expense is below minimum: ask=0.0001 ETH, min=0.001 ETH"
+}

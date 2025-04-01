@@ -37,6 +37,12 @@ func TestToWei(t *testing.T) {
 	require.Equal(t, min1K, bi.Ether(-1_000))
 	require.Equal(t, min1M, bi.Ether(-1_000_000))
 	require.Equal(t, min1G, bi.Ether(-1_000_000_000))
+
+	require.Equal(t, bi.Ether(1), bi.ToWei(bi.Ether(1), 18))
+	require.Equal(t, bi.Ether(1), bi.ToWei(bi.Dec6(1), 6))
+	require.Equal(t, bi.Ether(1), bi.ToWei(bi.Gwei(1), 9))
+	require.Equal(t, bi.Ether(1), bi.ToWei(bi.Wei(10), 1))
+	require.Equal(t, bi.Ether(1), bi.ToWei(bi.Wei(1), 0))
 }
 
 func TestDec6(t *testing.T) {
@@ -75,4 +81,17 @@ func TestWeiTo(t *testing.T) {
 	require.Equal(t, 1.0, bi.ToEtherF64(bi.Ether(1)))
 	require.Equal(t, 1_000_000.0, bi.ToEtherF64(bi.Ether(1_000_000)))
 	require.Equal(t, 0.1, bi.ToEtherF64(bi.Ether(0.1)))
+
+	require.Equal(t, 1.0, bi.ToF64(bi.Ether(1), 18))
+	require.Equal(t, 1.0, bi.ToF64(bi.Dec6(1), 6))
+	require.Equal(t, 5.0, bi.ToF64(bi.Ether(5), 18))
+	require.Equal(t, 5.0, bi.ToF64(bi.Dec6(5), 6))
+	require.Equal(t, 10.0, bi.ToF64(bi.Ether(10), 18))
+	require.Equal(t, 10.0, bi.ToF64(bi.Dec6(10), 6))
+	require.Equal(t, 0.1, bi.ToF64(bi.Ether(0.1), 18))
+	require.Equal(t, 0.1, bi.ToF64(bi.Dec6(0.1), 6))
+	require.Equal(t, 0.01, bi.ToF64(bi.Ether(0.01), 18))
+	require.Equal(t, 0.01, bi.ToF64(bi.Dec6(0.01), 6))
+	require.Equal(t, 10.0, bi.ToF64(bi.Ether(1), 17))
+	require.Equal(t, 100.0, bi.ToF64(bi.Ether(1), 16))
 }

@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"net/http"
 
@@ -44,7 +45,34 @@ func quoter(_ context.Context, req types.QuoteRequest) (types.QuoteResponse, err
 		return returnErr(http.StatusNotFound, "unsupported expense token")
 	}
 
-	returnQuote := func(depositAmt, expenseAmt *big.Int) types.QuoteResponse {
+	maybeMinMaxReject := func(expenseAmt *big.Int) error {
+		overMax := expenseTkn.MaxSpend != nil && bi.GT(expenseAmt, expenseTkn.MaxSpend)
+		underMin := expenseTkn.MinSpend != nil && bi.LT(expenseAmt, expenseTkn.MinSpend)
+
+		if overMax {
+			msg := fmt.Sprintf(
+				"requested expense exceeds maximum: ask=%s, max=%s",
+				ltokens.FormatAmt(expenseAmt, expenseTkn.Token),
+				ltokens.FormatAmt(expenseTkn.MaxSpend, expenseTkn.Token),
+			)
+
+			return newRejection(types.RejectExpenseOverMax, errors.New(msg))
+		}
+
+		if underMin {
+			msg := fmt.Sprintf(
+				"requested expense is below minimum: ask=%s, min=%s",
+				ltokens.FormatAmt(expenseAmt, expenseTkn.Token),
+				ltokens.FormatAmt(expenseTkn.MinSpend, expenseTkn.Token),
+			)
+
+			return newRejection(types.RejectExpenseUnderMin, errors.New(msg))
+		}
+
+		return nil
+	}
+
+	returnQuote := func(depositAmt, expenseAmt *big.Int) (types.QuoteResponse, error) {
 		return types.QuoteResponse{
 			Deposit: types.AddrAmt{
 				Token:  deposit.Token,
@@ -54,7 +82,7 @@ func quoter(_ context.Context, req types.QuoteRequest) (types.QuoteResponse, err
 				Token:  expense.Token,
 				Amount: expenseAmt,
 			},
-		}
+		}, maybeMinMaxReject(expenseAmt)
 	}
 
 	if isDepositQuote {
@@ -63,7 +91,7 @@ func quoter(_ context.Context, req types.QuoteRequest) (types.QuoteResponse, err
 			return types.QuoteResponse{}, newAPIError(err, http.StatusBadRequest)
 		}
 
-		return returnQuote(quoted.Amount, expense.Amount), nil
+		return returnQuote(quoted.Amount, expense.Amount)
 	}
 
 	quoted, err := quoteExpense(expenseTkn, TokenAmt{Token: depositTkn, Amount: deposit.Amount})
@@ -71,7 +99,7 @@ func quoter(_ context.Context, req types.QuoteRequest) (types.QuoteResponse, err
 		return types.QuoteResponse{}, newAPIError(err, http.StatusBadRequest)
 	}
 
-	return returnQuote(deposit.Amount, quoted.Amount), nil
+	return returnQuote(deposit.Amount, quoted.Amount)
 }
 
 // getQuote returns payment in `depositTkns` required to pay for `expenses`.

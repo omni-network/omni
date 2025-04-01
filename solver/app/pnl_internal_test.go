@@ -8,24 +8,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTknAmtToGweiF64(t *testing.T) {
+//nolint:testifylint // Epsilon comparison not required
+func TestToGweiF64(t *testing.T) {
 	t.Parallel()
 
-	require.InEpsilon(t, 1e9, tknAmtToGweiF64(bi.Ether(1), 18), 1e-9)
-	require.InEpsilon(t, 1e9, tknAmtToGweiF64(bi.Dec6(1), 6), 1e-9)
+	require.Equal(t, 1e9, toGweiF64(bi.Ether(1), 18))
+	require.Equal(t, 1e9, toGweiF64(bi.Dec6(1), 6))
 
-	require.InEpsilon(t, 5e9, tknAmtToGweiF64(bi.Ether(5), 18), 1e-9)
-	require.InEpsilon(t, 5e9, tknAmtToGweiF64(bi.Dec6(5), 6), 1e-9)
+	require.Equal(t, 5e9, toGweiF64(bi.Ether(5), 18))
+	require.Equal(t, 5e9, toGweiF64(bi.Dec6(5), 6))
 
-	require.InEpsilon(t, 1e10, tknAmtToGweiF64(bi.Ether(10), 18), 1e-9)
-	require.InEpsilon(t, 1e10, tknAmtToGweiF64(bi.Dec6(10), 6), 1e-9)
+	require.Equal(t, 1e10, toGweiF64(bi.Ether(10), 18))
+	require.Equal(t, 1e10, toGweiF64(bi.Dec6(10), 6))
 
-	require.InEpsilon(t, 1e8, tknAmtToGweiF64(bi.Ether(0.1), 18), 1e-9)
-	require.InEpsilon(t, 1e8, tknAmtToGweiF64(bi.Dec6(0.1), 6), 1e-9)
+	require.Equal(t, 1e8, toGweiF64(bi.Ether(0.1), 18))
+	require.Equal(t, 1e8, toGweiF64(bi.Dec6(0.1), 6))
 
-	require.InEpsilon(t, 1e7, tknAmtToGweiF64(bi.Ether(0.01), 18), 1e-9)
-	require.InEpsilon(t, 1e7, tknAmtToGweiF64(bi.Dec6(0.01), 6), 1e-9)
+	require.Equal(t, 1e7, toGweiF64(bi.Ether(0.01), 18))
+	require.Equal(t, 1e7, toGweiF64(bi.Dec6(0.01), 6))
 
-	require.InEpsilon(t, 1e10, tknAmtToGweiF64(bi.Ether(1), 17), 1e-9)
-	require.InEpsilon(t, 1e11, tknAmtToGweiF64(bi.Ether(1), 16), 1e-9)
+	require.Equal(t, 1e10, toGweiF64(bi.Ether(1), 17))
+	require.Equal(t, 1e11, toGweiF64(bi.Ether(1), 16))
 }

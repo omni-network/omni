@@ -127,16 +127,16 @@ func TestQuote(t *testing.T) {
 			testdata: true,
 		},
 		{
-			name: "quote deposit 10 eth expense",
+			name: "quote deposit 2 eth expense",
 			req: types.QuoteRequest{
 				SourceChainID:      evmchain.IDEthereum,
 				DestinationChainID: evmchain.IDArbitrumOne,
 				Deposit:            zeroAddrAmt,
-				Expense:            mockAddrAmt("10000000000000000000"),
+				Expense:            mockAddrAmt("2000000000000000000"),
 			},
 			res: types.QuoteResponse{
-				Deposit: mockAddrAmt("10030000000000000000"),
-				Expense: mockAddrAmt("10000000000000000000"),
+				Deposit: mockAddrAmt("2006000000000000000"),
+				Expense: mockAddrAmt("2000000000000000000"),
 			},
 		},
 		{
@@ -264,6 +264,42 @@ func TestQuote(t *testing.T) {
 				Code:    http.StatusBadRequest,
 				Status:  http.StatusText(http.StatusBadRequest),
 				Message: "InvalidDeposit: deposit and expense must be of the same chain class (e.g. mainnet, testnet)",
+			},
+			testdata: true,
+		},
+		{
+			name: "expense over max",
+			req: types.QuoteRequest{
+				SourceChainID:      evmchain.IDEthereum,
+				DestinationChainID: evmchain.IDArbitrumOne,
+				Deposit:            zeroAddrAmt,
+				Expense:            types.AddrAmt{Amount: bi.Ether(10)},
+			},
+			res: types.QuoteResponse{
+				Deposit:           types.AddrAmt{Amount: bi.Ether(10.03)},
+				Expense:           types.AddrAmt{Amount: bi.Ether(10)},
+				Rejected:          true,
+				RejectCode:        types.RejectExpenseOverMax,
+				RejectReason:      types.RejectExpenseOverMax.String(),
+				RejectDescription: "requested expense exceeds maximum: ask=10 ETH, max=6 ETH",
+			},
+			testdata: true,
+		},
+		{
+			name: "expense under min",
+			req: types.QuoteRequest{
+				SourceChainID:      evmchain.IDEthereum,
+				DestinationChainID: evmchain.IDArbitrumOne,
+				Deposit:            types.AddrAmt{Amount: bi.Ether(0.0001003)},
+				Expense:            zeroAddrAmt,
+			},
+			res: types.QuoteResponse{
+				Deposit:           types.AddrAmt{Amount: bi.Ether(0.0001003)},
+				Expense:           types.AddrAmt{Amount: bi.Ether(0.0001)},
+				Rejected:          true,
+				RejectCode:        types.RejectExpenseUnderMin,
+				RejectReason:      types.RejectExpenseUnderMin.String(),
+				RejectDescription: "requested expense is below minimum: ask=0.0001 ETH, min=0.001 ETH",
 			},
 			testdata: true,
 		},

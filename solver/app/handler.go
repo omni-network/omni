@@ -103,7 +103,22 @@ func newQuoteHandler(quoteFunc quoteFunc) Handler {
 				return nil, errors.New("invalid request type [BUG]", "type", fmt.Sprintf("%T", request))
 			}
 
-			return quoteFunc(ctx, *req)
+			res, err := quoteFunc(ctx, *req)
+			if r := new(RejectionError); errors.As(err, &r) {
+				return types.QuoteResponse{
+					// include quoted response, even if rejected (useful for min/max rejections)
+					Deposit:           res.Deposit,
+					Expense:           res.Expense,
+					Rejected:          true,
+					RejectCode:        r.Reason,
+					RejectReason:      r.Reason.String(),
+					RejectDescription: r.Err.Error(),
+				}, nil
+			} else if err != nil {
+				return types.QuoteResponse{}, err
+			}
+
+			return res, nil
 		},
 	}
 }
