@@ -4,7 +4,7 @@
 
 ## Overview
 
-The Omni SDK contains React hooks for interfacing with Omni SolverNet, your gateway to any transaction, on any chain. In future, we plan to add additional packages to support other frameworks, and introduce lower level APIs. 
+The Omni SDK contains React hooks for interfacing with Omni SolverNet, your gateway to any transaction, on any chain. In future, we plan to add additional packages to support other frameworks, and introduce lower level APIs.
 
 ## Getting Started
 
