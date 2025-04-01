@@ -11,9 +11,14 @@ import (
 
 type SolverNetThreshold struct {
 	minEther float64
+	minDec6  float64 // Only applicable to USDC (6 decimals)
 }
 
 func (t SolverNetThreshold) MinBalance() *big.Int {
+	if t.minDec6 > 0 {
+		return bi.Dec6(t.minDec6)
+	}
+
 	return bi.Ether(t.minEther)
 }
 
@@ -22,7 +27,13 @@ var (
 	solverThresholds = map[netconf.ID]map[uint64]map[tokens.Token]SolverNetThreshold{
 		netconf.Mainnet: {
 			evmchain.IDEthereum: {
-				tokens.WSTETH: {minEther: 10}, // 10 wstETH
+				tokens.WSTETH: {minEther: 10},    // 10 wstETH
+				tokens.STETH:  {minEther: 10},    // 10 stETH
+				tokens.ETH:    {minEther: 10},    // 10 ETH
+				tokens.USDC:   {minDec6: 10_000}, // 10k USDC
+			},
+			evmchain.IDBase: {
+				tokens.USDC: {minDec6: 10_000}, // 10k USDC
 			},
 		},
 		netconf.Omega: {

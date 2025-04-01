@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
-	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
@@ -31,8 +30,8 @@ func TestThresholdReference(t *testing.T) {
 				resp[network][token.Symbol][role] = make(map[string]string)
 				thresholds, _ := eoa.GetFundThresholds(token, network, role)
 
-				resp[network][token.Symbol][role]["target"] = etherStr(thresholds.TargetBalance())
-				resp[network][token.Symbol][role]["min"] = etherStr(thresholds.MinBalance())
+				resp[network][token.Symbol][role]["target"] = primaryStr(token, thresholds.TargetBalance())
+				resp[network][token.Symbol][role]["min"] = primaryStr(token, thresholds.MinBalance())
 			}
 		}
 	}
@@ -60,7 +59,7 @@ func TestStatic(t *testing.T) {
 					mini := thresholds.MinBalance()
 					target := thresholds.TargetBalance()
 					t.Logf("Thresholds: network=%s, role=%s, min=%s, target=%s",
-						network, acc.Role, etherStr(mini), etherStr(target))
+						network, acc.Role, primaryStr(chain.NativeToken, mini), primaryStr(chain.NativeToken, target))
 				})
 			}
 		}
@@ -87,8 +86,8 @@ func TestMainnet(t *testing.T) {
 	}
 }
 
-func etherStr(amount *big.Int) string {
-	return fmt.Sprintf("%.4f", bi.ToEtherF64(amount))
+func primaryStr(token tokens.Token, amount *big.Int) string {
+	return fmt.Sprintf("%.4f", tokens.ToPrimaryF64(token, amount))
 }
 
 func shouldExist(role eoa.Role, id netconf.ID) bool {

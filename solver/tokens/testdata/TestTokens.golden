@@ -4,7 +4,7 @@
   "chainId": 1,
   "coingeckoId": "ethereum",
   "isMock": false,
-  "maxSpend": "3.0000",
+  "maxSpend": "6.0000",
   "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
@@ -14,7 +14,7 @@
   "chainId": 42161,
   "coingeckoId": "ethereum",
   "isMock": false,
-  "maxSpend": "3.0000",
+  "maxSpend": "6.0000",
   "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
@@ -24,7 +24,7 @@
   "chainId": 8453,
   "coingeckoId": "ethereum",
   "isMock": false,
-  "maxSpend": "3.0000",
+  "maxSpend": "6.0000",
   "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
@@ -34,7 +34,7 @@
   "chainId": 10,
   "coingeckoId": "ethereum",
   "isMock": false,
-  "maxSpend": "3.0000",
+  "maxSpend": "6.0000",
   "minSpend": "0.0010",
   "name": "Ether",
   "symbol": "ETH"
@@ -144,8 +144,8 @@
   "chainId": 1,
   "coingeckoId": "usdc",
   "isMock": false,
-  "maxSpend": "0.0000",
-  "minSpend": "0.0000",
+  "maxSpend": "10000.0000",
+  "minSpend": "0.1000",
   "name": "USD Coin",
   "symbol": "USDC"
  },
@@ -154,8 +154,8 @@
   "chainId": 42161,
   "coingeckoId": "usdc",
   "isMock": false,
-  "maxSpend": "0.0000",
-  "minSpend": "0.0000",
+  "maxSpend": "10000.0000",
+  "minSpend": "0.1000",
   "name": "USD Coin",
   "symbol": "USDC"
  },
@@ -164,8 +164,8 @@
   "chainId": 10,
   "coingeckoId": "usdc",
   "isMock": false,
-  "maxSpend": "0.0000",
-  "minSpend": "0.0000",
+  "maxSpend": "10000.0000",
+  "minSpend": "0.1000",
   "name": "USD Coin",
   "symbol": "USDC"
  },
@@ -174,8 +174,8 @@
   "chainId": 8453,
   "coingeckoId": "usdc",
   "isMock": false,
-  "maxSpend": "0.0000",
-  "minSpend": "0.0000",
+  "maxSpend": "10000.0000",
+  "minSpend": "0.1000",
   "name": "USD Coin",
   "symbol": "USDC"
  },
@@ -184,8 +184,8 @@
   "chainId": 11155111,
   "coingeckoId": "usdc",
   "isMock": false,
-  "maxSpend": "0.0000",
-  "minSpend": "0.0000",
+  "maxSpend": "10.0000",
+  "minSpend": "0.1000",
   "name": "USD Coin",
   "symbol": "USDC"
  },
@@ -194,8 +194,8 @@
   "chainId": 421614,
   "coingeckoId": "usdc",
   "isMock": false,
-  "maxSpend": "0.0000",
-  "minSpend": "0.0000",
+  "maxSpend": "10.0000",
+  "minSpend": "0.1000",
   "name": "USD Coin",
   "symbol": "USDC"
  },
@@ -204,8 +204,8 @@
   "chainId": 11155420,
   "coingeckoId": "usdc",
   "isMock": false,
-  "maxSpend": "0.0000",
-  "minSpend": "0.0000",
+  "maxSpend": "10.0000",
+  "minSpend": "0.1000",
   "name": "USD Coin",
   "symbol": "USDC"
  },
@@ -214,8 +214,8 @@
   "chainId": 84532,
   "coingeckoId": "usdc",
   "isMock": false,
-  "maxSpend": "0.0000",
-  "minSpend": "0.0000",
+  "maxSpend": "10.0000",
+  "minSpend": "0.1000",
   "name": "USD Coin",
   "symbol": "USDC"
  },
@@ -264,7 +264,7 @@
   "chainId": 8453,
   "coingeckoId": "wrapped-steth",
   "isMock": false,
-  "maxSpend": "4.0000",
+  "maxSpend": "6.0000",
   "minSpend": "0.0010",
   "name": "Wrapped Staked Ether",
   "symbol": "wstETH"
@@ -274,7 +274,7 @@
   "chainId": 1,
   "coingeckoId": "wrapped-steth",
   "isMock": false,
-  "maxSpend": "4.0000",
+  "maxSpend": "6.0000",
   "minSpend": "0.0010",
   "name": "Wrapped Staked Ether",
   "symbol": "wstETH"
@@ -304,7 +304,7 @@
   "chainId": 1,
   "coingeckoId": "lido-staked-ether",
   "isMock": false,
-  "maxSpend": "4.0000",
+  "maxSpend": "6.0000",
   "minSpend": "0.0010",
   "name": "Lido Staked Ether",
   "symbol": "stETH"
