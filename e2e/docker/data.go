@@ -56,7 +56,14 @@ func NewInfraData(manifest types.Manifest) (types.InfrastructureData, error) {
 		}
 	}
 
-	// No IP for relayer required since it doesn't serve an API.
+	// No IP for relayer or monitor required since they doesn't serve an API.
+
+	// Solver IP and port hardcoded in docker/compose.yaml.tmpl
+	infd.Instances["solver"] = e2e.InstanceData{
+		IPAddress:    net.ParseIP("10.186.73.203"),
+		ExtIPAddress: localhost,
+		Port:         26661,
+	}
 
 	return types.InfrastructureData{
 		InfrastructureData: infd,

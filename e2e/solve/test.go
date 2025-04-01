@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"math/big"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -66,7 +67,7 @@ func isInvalidExpense(o TestOrder) bool {
 	return o.RejectReason == solver.RejectInvalidExpense.String()
 }
 
-func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints) error {
+func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints, solverAddr string) error {
 	if network.ID != netconf.Devnet {
 		return errors.New("only devnet")
 	}
@@ -86,7 +87,7 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 		return errors.Wrap(err, "mint omni")
 	}
 
-	if err = testCheckAPI(ctx, backends, orders); err != nil {
+	if err = testCheckAPI(ctx, backends, orders, solverAddr); err != nil {
 		return errors.Wrap(err, "test check api")
 	}
 
@@ -397,8 +398,11 @@ func openOrder(ctx context.Context, backends ethbackend.Backends, order TestOrde
 	}, solvernet.WithFillDeadline(order.FillDeadline))
 }
 
-func testCheckAPI(ctx context.Context, backends ethbackend.Backends, orders []TestOrder) error {
-	const url = "http://localhost:26661/api/v1/check"
+func testCheckAPI(ctx context.Context, backends ethbackend.Backends, orders []TestOrder, solverAddr string) error {
+	uri, err := url.JoinPath(solverAddr, "/api/v1/check")
+	if err != nil {
+		return errors.Wrap(err, "get api uri")
+	}
 
 	for i, order := range orders {
 		// If this order requires balance draining, do it before test logic.
@@ -423,7 +427,7 @@ func testCheckAPI(ctx context.Context, backends ethbackend.Backends, orders []Te
 			return errors.Wrap(err, "marshal request")
 		}
 
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(body))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, uri, bytes.NewBuffer(body))
 		if err != nil {
 			return errors.Wrap(err, "new request")
 		}

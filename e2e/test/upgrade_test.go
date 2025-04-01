@@ -12,8 +12,6 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/cometbft/cometbft/rpc/client/http"
 
@@ -26,9 +24,10 @@ import (
 // TestPlanCancelUpgrade tests planning and canceling a far-future upgrade.
 func TestPlanCancelUpgrade(t *testing.T) {
 	t.Parallel()
-	testNetwork(t, func(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
+	testNetwork(t, func(ctx context.Context, t *testing.T, deps NetworkDeps) {
 		t.Helper()
 
+		network := deps.Network
 		cl, err := http.New(network.ID.Static().ConsensusRPC(), "/websocket")
 		require.NoError(t, err)
 		cprov := provider.NewABCI(cl, network.ID)
@@ -39,7 +38,7 @@ func TestPlanCancelUpgrade(t *testing.T) {
 
 		omniEVM, ok := network.OmniEVMChain()
 		require.True(t, ok)
-		omniRPC, err := endpoints.ByNameOrID(omniEVM.Name, omniEVM.ID)
+		omniRPC, err := deps.RPCEndpoints.ByNameOrID(omniEVM.Name, omniEVM.ID)
 		require.NoError(t, err)
 		omniClient, err := ethclient.Dial(omniEVM.Name, omniRPC)
 		require.NoError(t, err)

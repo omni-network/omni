@@ -29,6 +29,9 @@ type Testnet struct {
 	AnvilChains  []AnvilChain
 	PublicChains []PublicChain
 	Perturb      map[string][]Perturb
+
+	SolverInternalAddr string
+	SolverExternalAddr string
 }
 
 // RandomHaloAddr returns a random halo address for cprovider and cometBFT rpc clients.

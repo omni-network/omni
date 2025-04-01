@@ -18,9 +18,12 @@ import (
 var omniEvmRegx = regexp.MustCompile(".*_evm")
 
 const (
-	evmPort  = uint32(8545)
-	haloPort = uint32(26657)
-	relayer  = "relayer"
+	evmPort    = uint32(8545)
+	haloPort   = uint32(26657)
+	solverPort = uint32(26661)
+	relayer    = "relayer"
+	monitor    = "monitor"
+	solver     = "solver"
 )
 
 type vmJSON struct {
@@ -87,8 +90,10 @@ func LoadData(ctx context.Context, path string) (types.InfrastructureData, error
 			port = evmPort
 		} else if _, ok := evmchain.MetadataByName(serviceName); ok {
 			port = evmPort
-		} else if serviceName == relayer {
-			port = 0 // No port for relayer
+		} else if serviceName == solver {
+			port = solverPort
+		} else if serviceName == relayer || serviceName == monitor {
+			port = 0 // No port for relayer/monitor
 		}
 
 		instances[serviceName] = e2e.InstanceData{

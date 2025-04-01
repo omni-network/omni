@@ -10,8 +10,6 @@ import (
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -21,8 +19,11 @@ import (
 // TestBridge ensures that bridge tests cases defined in e2e/app/tokenbridge.go were successful.
 func TestBridge(t *testing.T) {
 	t.Parallel()
-	testNetwork(t, func(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
+	testNetwork(t, func(ctx context.Context, t *testing.T, deps NetworkDeps) {
 		t.Helper()
+
+		network := deps.Network
+		endpoints := deps.RPCEndpoints
 
 		if _, ok := network.EthereumChain(); !ok {
 			t.Skip("no ethereum chain")

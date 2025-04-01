@@ -8,8 +8,6 @@ import (
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -19,13 +17,14 @@ import (
 // TestGasPumps ensures that bridge tests cases defined in e2e/app/gaspump.go were successful.
 func TestGasPumps(t *testing.T) {
 	t.Parallel()
-	testNetwork(t, func(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) {
+	testNetwork(t, func(ctx context.Context, t *testing.T, deps NetworkDeps) {
 		t.Helper()
 
+		network := deps.Network
 		omniEVM, ok := network.OmniEVMChain()
 		require.True(t, ok)
 
-		omniRPC, err := endpoints.ByNameOrID(omniEVM.Name, omniEVM.ID)
+		omniRPC, err := deps.RPCEndpoints.ByNameOrID(omniEVM.Name, omniEVM.ID)
 		require.NoError(t, err)
 
 		omniClient, err := ethclient.Dial(omniEVM.Name, omniRPC)
