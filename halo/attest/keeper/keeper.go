@@ -318,7 +318,7 @@ func (k *Keeper) Approve(ctx context.Context, valset ValSet) error {
 			return errors.Wrap(err, "get att signatures")
 		}
 
-		{
+		if approvedByChain[chainVer] < att.GetAttestOffset() {
 			// Calculate pending blocks; safe to ignore errors since metrics is non-critical.
 			current, _ := umath.ToUint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
 			delta := umath.SubtractOrZero(current, att.GetCreatedHeight())
