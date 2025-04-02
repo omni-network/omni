@@ -5,6 +5,7 @@ import (
 	"context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/staking/types"
 	stypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
@@ -26,5 +27,6 @@ type StakingKeeper interface {
 type StakingMsgServer interface {
 	CreateValidator(ctx context.Context, msg *stypes.MsgCreateValidator) (*stypes.MsgCreateValidatorResponse, error)
 	Delegate(ctx context.Context, msg *stypes.MsgDelegate) (*stypes.MsgDelegateResponse, error)
+	Undelegate(ctx context.Context, msg *types.MsgUndelegate) (*types.MsgUndelegateResponse, error)
 	EditValidator(ctx context.Context, msg *stypes.MsgEditValidator) (*stypes.MsgEditValidatorResponse, error)
 }
