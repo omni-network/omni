@@ -126,14 +126,12 @@ func (k *Keeper) listWithdrawalsByAddress(ctx context.Context, withdrawalAddr co
 	return withdrawals, nil
 }
 
-// EligibleWithdrawals returns all withdrawals created below the specified height,
-// sorted by the id (oldest to newest), limited by the provided count.
-func (k *Keeper) EligibleWithdrawals(ctx context.Context) ([]*etypes.Withdrawal, error) {
-	height, err := umath.ToUint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
-	if err != nil {
-		return nil, err
-	}
-
+// eligibleWithdrawals returns all withdrawals created below the specified height, sorted by the
+// id in ascending order, limited by the provided count.
+// Note we exclude the provided height, because this function is called during the proposal
+// verification and execution, but in the case of the latter we also execute BeginBlockers, which
+// can trigger creation of new withdrawals, that were not present during the proposal creation.
+func (k *Keeper) eligibleWithdrawals(ctx context.Context, height uint64) ([]*etypes.Withdrawal, error) {
 	// Note: items are ordered by the id in ascending order (oldest to newest).
 	iter, err := k.withdrawalTable.List(ctx, WithdrawalPrimaryKey{})
 	if err != nil {
@@ -161,11 +159,16 @@ func (k *Keeper) EligibleWithdrawals(ctx context.Context) ([]*etypes.Withdrawal,
 		}
 	}
 
+	// This can't be nil, because the engine API would reject it otherwise.
 	evmWithdrawals := []*etypes.Withdrawal{}
 	for _, w := range withdrawals {
+		addr, err := cast.EthAddress(w.GetAddress())
+		if err != nil {
+			return nil, errors.Wrap(err, "address conversion")
+		}
 		evmWithdrawals = append(evmWithdrawals, &etypes.Withdrawal{
 			Index:   w.GetId(),
-			Address: common.BytesToAddress(w.GetAddress()), //nolint:forbidigo // should be padded
+			Address: addr,
 			Amount:  w.GetAmountGwei(),
 			// The validator index is not used for withdrawals.
 			Validator: 0,
@@ -175,10 +178,10 @@ func (k *Keeper) EligibleWithdrawals(ctx context.Context) ([]*etypes.Withdrawal,
 	return evmWithdrawals, nil
 }
 
-// RemoveWithdrawals removes all passed withdrawals by the id.
-func (k *Keeper) RemoveWithdrawals(ctx context.Context, withdrawals []*etypes.Withdrawal) error {
+// deleteWithdrawals removes all passed withdrawals by the id.
+func (k *Keeper) deleteWithdrawals(ctx context.Context, withdrawals []*etypes.Withdrawal) error {
 	for _, w := range withdrawals {
-		err := k.withdrawalTable.DeleteBy(ctx, WithdrawalIdIndexKey{}.WithId(w.Index))
+		err := k.withdrawalTable.Delete(ctx, &Withdrawal{Id: w.Index})
 		if err != nil {
 			return errors.Wrap(err, "removing withdrawal", "id", w.Index)
 		}

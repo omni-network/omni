@@ -300,13 +300,7 @@ func (k *Keeper) startBuild(ctx context.Context, appHash common.Hash, timestamp 
 		FinalizedBlockHash: headHash,
 	}
 
-	intHeight, err := umath.ToInt64(height)
-	if err != nil {
-		return engine.ForkChoiceResponse{}, errors.Wrap(err, "height conversion")
-	}
-
-	callCtx := sdk.UnwrapSDKContext(ctx).WithBlockHeight(intHeight)
-	withdrawals, err := k.EligibleWithdrawals(callCtx) //nolint:contextcheck // no new ctx
+	withdrawals, err := k.eligibleWithdrawals(ctx, height)
 	if err != nil {
 		return engine.ForkChoiceResponse{}, errors.Wrap(err, "eligible withdrawals")
 	}

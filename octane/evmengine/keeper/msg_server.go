@@ -106,7 +106,7 @@ func (s msgServer) ExecutionPayload(ctx context.Context, msg *types.MsgExecution
 		return nil, errors.Wrap(err, "update execution head")
 	}
 
-	if err := s.RemoveWithdrawals(ctx, payload.Withdrawals); err != nil {
+	if err := s.deleteWithdrawals(ctx, payload.Withdrawals); err != nil {
 		return nil, errors.Wrap(err, "remove withdrawals")
 	}
 
