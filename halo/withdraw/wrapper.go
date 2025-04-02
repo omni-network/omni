@@ -45,12 +45,26 @@ func (w *BankWrapper) SendCoinsFromModuleToAccountNoWithdrawal(ctx context.Conte
 
 // UndelegateCoinsFromModuleToAccount intercepts all principal undelegations and
 // creates EVM withdrawal to the user account.
-// TODO(corver): This is unexpected in magellan upgrade, must be implemented in drake.
-func (w *BankWrapper) UndelegateCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
-	log.Error(ctx, "Unexpected call to DelegateCoinsFromAccountToModule [BUG]", nil, "sender", senderModule, "recipient", recipientAddr, "amt", amt)
+func (w *BankWrapper) UndelegateCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, coins sdk.Coins) error {
+	log.Debug(ctx, "Undelegating coins from module to account", "sender", senderModule, "recipient", recipientAddr, "coins", coins)
 
-	if err := w.Keeper.UndelegateCoinsFromModuleToAccount(ctx, senderModule, recipientAddr, amt); err != nil {
-		return errors.Wrap(err, "undelegate coins from module to account")
+	if err := w.Keeper.UndelegateCoinsFromModuleToAccount(ctx, senderModule, recipientAddr, coins); err != nil {
+		return errors.Wrap(err, "undelegate coins")
+	}
+
+	// The standard undelegation mints coins on recipientAddr, so we need to burn them.
+	// Since we can only burn coins on module's accounts, we first move the coins to senderModule.
+	if err := w.SendCoinsFromAccountToModule(ctx, recipientAddr, senderModule, coins); err != nil {
+		return errors.Wrap(err, "send coins from account to module")
+	}
+
+	// Burn the coins moved in the previous step.
+	if err := w.BurnCoins(ctx, senderModule, coins); err != nil {
+		return errors.Wrap(err, "burn coins")
+	}
+
+	if err := w.createWithdrawal(ctx, recipientAddr, coins); err != nil {
+		return errors.Wrap(err, "create withdrawal")
 	}
 
 	return nil
@@ -59,6 +73,19 @@ func (w *BankWrapper) UndelegateCoinsFromModuleToAccount(ctx context.Context, se
 // SendCoinsFromModuleToAccount intercepts all "normal" bank transfers from modules to users and
 // creates EVM withdrawal to the user account and burns the funds from the module.
 func (w *BankWrapper) SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, coins sdk.Coins) error {
+	if err := w.BurnCoins(ctx, senderModule, coins); err != nil {
+		return errors.Wrap(err, "burn coins")
+	}
+
+	if err := w.createWithdrawal(ctx, recipientAddr, coins); err != nil {
+		return errors.Wrap(err, "create withdrawal")
+	}
+
+	return nil
+}
+
+// createWithdrawal validates inputs and creates a withdrawal for a gwei amount and burns the dust.
+func (w *BankWrapper) createWithdrawal(ctx context.Context, recipientAddr sdk.AccAddress, coins sdk.Coins) error {
 	if w.EVMEngineKeeper == nil {
 		return errors.New("nil EVMEngineKeeper [BUG]")
 	} else if !coins.IsValid() { // This ensures amounts are positive
@@ -84,10 +111,6 @@ func (w *BankWrapper) SendCoinsFromModuleToAccount(ctx context.Context, senderMo
 		log.Debug(ctx, "Not creating all-dust withdrawal", "addr", addr, "amount_wei", coins[0].Amount)
 	} else if err := w.EVMEngineKeeper.InsertWithdrawal(ctx, addr, gwei); err != nil {
 		return err
-	}
-
-	if err := w.BurnCoins(ctx, senderModule, coins); err != nil {
-		return errors.Wrap(err, "burn coins")
 	}
 
 	return nil
