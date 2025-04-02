@@ -34,6 +34,14 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
     event Delegate(address indexed delegator, address indexed validator, uint256 amount);
 
     /**
+     * @notice Emitted when an undelegation is made from a validator
+     * @param delegator     (MsgUndelegate.delegator_addr) The address of the delegator
+     * @param validator     (MsgUndelegate.validator_addr) The address of the validator to undelegate from
+     * @param amount        (MsgUndelegate.amount) The amount of tokens to undelegate
+     */
+    event Undelegate(address indexed delegator, address indexed validator, uint256 amount);
+
+    /**
      * @notice Emitted when a validator is edited
      * @param validator The validator address
      * @param params The parameters for the editValidator function
@@ -92,6 +100,11 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
      * @notice The minimum delegation required to delegate to a validator
      */
     uint256 public constant MinDelegation = 1 ether;
+
+    /**
+     * @notice The undelegation fee preventing spam
+     */
+    uint256 public constant UndelegationFee = 0.001 ether;
 
     /**
      * @notice EIP-712 typehash
@@ -230,6 +243,16 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
         _delegate(delegator, validator);
     }
 
+    /**
+     * @notice Undelegate tokens from a validator
+     * @dev Proxies x/staking.MsgUndelegate
+     * @param validator The address of the validator to undelegate from
+     * @param undelegationAmount The amount of ether tokens to undelegate
+     */
+    function undelegate(address validator, uint256 undelegationAmount) external payable {
+        _undelegate(msg.sender, validator, undelegationAmount);
+    }
+
     //////////////////////////////////////////////////////////////////////////////
     //                                  Admin                                   //
     //////////////////////////////////////////////////////////////////////////////
@@ -297,6 +320,19 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
         require(msg.value >= MinDelegation, "Staking: insufficient deposit");
 
         emit Delegate(delegator, validator, msg.value);
+    }
+
+    /**
+     * @notice Undelegate tokens from a validator
+     * @param delegator The address of the delegator
+     * @param validator The address of the validator to undelegate from
+     * @param undelegationAmount The amount of ether tokens to undelegate
+     */
+    function _undelegate(address delegator, address validator, uint256 undelegationAmount) internal {
+        require(!isAllowlistEnabled || isAllowedValidator[validator], "Staking: not allowed val");
+        require(msg.value >= UndelegationFee, "Staking: insufficient fee");
+
+        emit Undelegate(delegator, validator, undelegationAmount);
     }
 
     /**
