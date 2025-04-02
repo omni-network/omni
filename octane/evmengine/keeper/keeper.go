@@ -173,7 +173,12 @@ func (k *Keeper) parseAndVerifyProposedPayload(ctx context.Context, msg *types.M
 		return engine.ExecutableData{}, errors.Wrap(err, "unmarshal payload")
 	}
 
-	eligibleWithdrawals, err := k.EligibleWithdrawals(ctx)
+	height, err := umath.ToUint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
+	if err != nil {
+		return engine.ExecutableData{}, errors.Wrap(err, "height conversion")
+	}
+
+	eligibleWithdrawals, err := k.eligibleWithdrawals(ctx, height)
 	if err != nil {
 		return engine.ExecutableData{}, errors.Wrap(err, "eligible withdrawals")
 	}
@@ -277,16 +282,17 @@ func (k *Keeper) getOptimisticPayload() (engine.PayloadID, uint64, time.Time) {
 	return k.mutablePayload.ID, k.mutablePayload.Height, k.mutablePayload.UpdatedAt
 }
 
+// withdrawalsEqual returns true only if two non-nil slices contain identical
+// withdrawals in identical order.
 func withdrawalsEqual(w1, w2 []*etypes.Withdrawal) bool {
 	if len(w1) != len(w2) {
 		return false
 	}
 
 	for i, w := range w1 {
-		if w.Index != w2[i].Index ||
-			w.Validator != w2[i].Validator ||
-			w.Address != w2[i].Address ||
-			w.Amount != w2[i].Amount {
+		if w == nil || w2[i] == nil {
+			return false
+		} else if *w != *w2[i] {
 			return false
 		}
 	}
