@@ -25,6 +25,12 @@ type TokenAmt struct {
 	Amount *big.Int
 }
 
+// String returns a string representation of the token amount
+// in primary units with the token symbol appended.
+func (a TokenAmt) String() string {
+	return a.Token.FormatAmt(a.Amount)
+}
+
 type Order struct {
 	ID            OrderID
 	Offset        uint64

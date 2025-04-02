@@ -300,10 +300,16 @@ func checkLiquidity(ctx context.Context, expenses []TokenAmt, backend *ethbacken
 				// will retry this order. this is a special case "fix" to handle
 				// potentially high load / order size for genesis stake upgrades.
 				// solver rebalances OMNI manually, so should recover
-				return errors.New("insufficient balance, will retry", "token", expense.Token.Symbol, "balance", bal, "amount", expense.Amount)
+				return errors.New("insufficient balance, will retry",
+					"balance", expense.Token.FormatAmt(bal),
+					"expense", expense,
+				)
 			}
 
-			return newRejection(types.RejectInsufficientInventory, errors.New("insufficient balance", "token", expense.Token.Symbol))
+			return newRejection(types.RejectInsufficientInventory, errors.New("insufficient balance",
+				"balance", expense.Token.FormatAmt(bal),
+				"expense", expense,
+			))
 		}
 	}
 

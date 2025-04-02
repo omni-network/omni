@@ -2,35 +2,35 @@
  "mainnet": {
   "base": {
    "USDC": {
-    "min": "10000.0000"
+    "min": "10000 USDC"
    }
   },
   "ethereum": {
    "ETH": {
-    "min": "10.0000"
+    "min": "10 ETH"
    },
    "USDC": {
-    "min": "10000.0000"
+    "min": "10000 USDC"
    },
    "stETH": {
-    "min": "10.0000"
+    "min": "10 stETH"
    },
    "wstETH": {
-    "min": "10.0000"
+    "min": "10 wstETH"
    }
   }
  },
  "omega": {
   "holesky": {
    "wstETH": {
-    "min": "1.0000"
+    "min": "1 wstETH"
    }
   }
  },
  "staging": {
   "holesky": {
    "wstETH": {
-    "min": "1.0000"
+    "min": "1 wstETH"
    }
   }
  }

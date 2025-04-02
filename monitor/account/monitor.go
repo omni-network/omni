@@ -200,9 +200,9 @@ func monitorSolverNetRoleTokenOnce(
 		return err
 	}
 
-	// Convert to ether (primary) units
-	balPrimary := tokens.ToPrimaryF64(token, balance)
-	tokenBalance.WithLabelValues(chainName, string(role), token.Symbol).Set(balPrimary)
+	// Convert to float64 ether
+	balF64 := solverToken.AmtToF64(balance)
+	tokenBalance.WithLabelValues(chainName, string(role), token.Symbol).Set(balF64)
 
 	thresh, ok := eoa.GetSolverNetThreshold(role, network, chainID, token)
 	if !ok {

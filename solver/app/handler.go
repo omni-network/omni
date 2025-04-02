@@ -79,7 +79,7 @@ func newCheckHandler(checkFunc checkFunc) Handler {
 					Rejected:          true,
 					RejectCode:        r.Reason,
 					RejectReason:      r.Reason.String(),
-					RejectDescription: r.Err.Error(),
+					RejectDescription: errors.Format(r.Err),
 				}, nil
 			} else if err != nil {
 				return types.CheckResponse{}, err
@@ -112,7 +112,7 @@ func newQuoteHandler(quoteFunc quoteFunc) Handler {
 					Rejected:          true,
 					RejectCode:        r.Reason,
 					RejectReason:      r.Reason.String(),
-					RejectDescription: r.Err.Error(),
+					RejectDescription: errors.Format(r.Err),
 				}, nil
 			} else if err != nil {
 				return types.QuoteResponse{}, err

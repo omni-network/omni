@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"crypto/rand"
-	"fmt"
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -11,7 +10,6 @@ import (
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
-	ltokens "github.com/omni-network/omni/lib/tokens"
 	stokens "github.com/omni-network/omni/solver/tokens"
 	"github.com/omni-network/omni/solver/types"
 
@@ -121,7 +119,7 @@ func coversQuote(deposits, quote []TokenAmt) error {
 		}
 
 		if bi.LT(d, q) {
-			return newRejection(types.RejectInsufficientDeposit, errors.New("insufficient deposit", "token", tkn, "deposit", d, "quote", q))
+			return newRejection(types.RejectInsufficientDeposit, errors.New("insufficient deposit", "deposit", tkn.FormatAmt(d), "min", tkn.FormatAmt(q)))
 		}
 	}
 
@@ -131,7 +129,7 @@ func coversQuote(deposits, quote []TokenAmt) error {
 func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.Call) ([]TokenAmt, error) {
 	var ps []TokenAmt
 
-	// sum of call value must be represented in expenses
+	// Sum of call value must be represented in expenses
 	callValues := bi.Zero()
 	for _, c := range calls {
 		if c.Value == nil {
@@ -144,7 +142,12 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 	nativeExpense := bi.Zero()
 	for _, e := range expenses {
 		if e.Amount.Sign() <= 0 {
-			return nil, newRejection(types.RejectInvalidExpense, errors.New("expense amount positive"))
+			return nil, newRejection(types.RejectInvalidExpense, errors.New("expense amount not positive"))
+		}
+
+		tkn, ok := stokens.ByAddress(destChainID, e.Token)
+		if !ok {
+			return nil, newRejection(types.RejectUnsupportedExpense, errors.New("unsupported expense token", "addr", e.Token))
 		}
 
 		if isNative(e) {
@@ -153,32 +156,23 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 				return nil, newRejection(types.RejectInvalidExpense, errors.New("only one native expense supported"))
 			}
 
-			nativeExpense = nativeExpense.Set(e.Amount)
-		}
-
-		tkn, ok := stokens.ByAddress(destChainID, e.Token)
-		if !ok {
-			return nil, newRejection(types.RejectUnsupportedExpense, errors.New("unsupported expense token", "addr", e.Token))
+			nativeExpense = bi.Add(nativeExpense, e.Amount)
 		}
 
 		if tkn.MaxSpend != nil && bi.GT(e.Amount, tkn.MaxSpend) {
-			msg := fmt.Sprintf(
-				"requested expense exceeds maximum: ask=%s, max=%s",
-				ltokens.FormatAmt(e.Amount, tkn.Token),
-				ltokens.FormatAmt(tkn.MaxSpend, tkn.Token),
-			)
-
-			return nil, newRejection(types.RejectExpenseOverMax, errors.New(msg))
+			return nil, newRejection(types.RejectExpenseOverMax,
+				errors.New("requested expense exceeds maximum",
+					"ask", tkn.FormatAmt(e.Amount),
+					"max", tkn.FormatAmt(tkn.MaxSpend),
+				))
 		}
 
 		if tkn.MinSpend != nil && bi.LT(e.Amount, tkn.MinSpend) {
-			msg := fmt.Sprintf(
-				"requested expense is below minimum: ask=%s, min=%s",
-				ltokens.FormatAmt(e.Amount, tkn.Token),
-				ltokens.FormatAmt(tkn.MinSpend, tkn.Token),
-			)
-
-			return nil, newRejection(types.RejectExpenseUnderMin, errors.New(msg))
+			return nil, newRejection(types.RejectExpenseUnderMin,
+				errors.New("requested expense is below minimum",
+					"ask", tkn.FormatAmt(e.Amount),
+					"min", tkn.FormatAmt(tkn.MinSpend),
+				))
 		}
 
 		ps = append(ps, TokenAmt{
@@ -187,9 +181,18 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 		})
 	}
 
+	native, ok := stokens.Native(destChainID)
+	if !ok {
+		return nil, errors.New("invalid destination chain ID [BUG]") // This shouldn't happen here.
+	}
+
 	// native expense must match sum of call values
 	if !bi.EQ(nativeExpense, callValues) {
-		return nil, newRejection(types.RejectInvalidExpense, errors.New("native expense must match native value"))
+		return nil, newRejection(types.RejectInvalidExpense,
+			errors.New("native expense must match native value",
+				"expense", native.FormatAmt(nativeExpense),
+				"values", native.FormatAmt(callValues),
+			))
 	}
 
 	return ps, nil

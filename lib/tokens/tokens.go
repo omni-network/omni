@@ -62,33 +62,31 @@ func (t Token) String() string {
 	return t.Symbol
 }
 
-func FromCoingeckoID(id string) (Token, bool) {
-	for _, t := range all {
-		if t.CoingeckoID == id {
-			return t, true
-		}
+// F64ToAmt returns the float64 in primary units as a big.Int in base units.
+// E.g. 1.1 (ether) is returned as 1.1 * 10^18 (wei).
+func (t Token) F64ToAmt(n float64) *big.Int {
+	if t.Decimals == 6 {
+		return bi.Dec6(n)
 	}
 
-	return Token{}, false
+	return bi.Ether(n)
 }
 
-// ToPrimaryF64 converts the token amount to a float64 value in the primary unit (e.g. ether, dollar, etc.).
-func ToPrimaryF64(token Token, amount *big.Int) float64 {
-	if token.Decimals == 6 {
-		return toDec6F64(amount)
+// AmtToF64 returns amount in base units as a float64 in primary units.
+// E.g. 1.1 * 10^18 (wei) is returned as 1.1 (ether).
+func (t Token) AmtToF64(n *big.Int) float64 {
+	return bi.ToF64(n, t.Decimals)
+}
+
+// FormatAmt returns a string representation of the provided base unit amount
+// in primary units with the token symbol appended. Note all decimals are shown.
+func (t Token) FormatAmt(n *big.Int) string {
+	if n == nil {
+		return "nil"
 	}
 
-	return bi.ToEtherF64(amount)
-}
-
-func toDec6F64(value *big.Int) float64 {
-	f, _ := value.Float64()
-	return f / 1e6
-}
-
-// FormatAmt prints a token float amt, with its symbol ex e. "1.2345 ETH". All decimals are printed.
-func FormatAmt(amt *big.Int, tkn Token) string {
 	return fmt.Sprintf("%s %s",
-		strconv.FormatFloat(bi.ToF64(amt, tkn.Decimals), 'f', -1, 64),
-		tkn.Symbol)
+		strconv.FormatFloat(t.AmtToF64(n), 'f', -1, 64), // Use FormatFloat 'f' instead of %f since it avoids trailing zeros
+		t.Symbol,
+	)
 }
