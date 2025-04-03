@@ -36,12 +36,12 @@ contract SolverNet_Inbox_Validate_Test is TestBase {
         order.orderData = abi.encode(orderData);
 
         // `destChainId` must be non-zero and non-local
-        vm.expectRevert(ISolverNetInbox.InvalidChainId.selector);
+        vm.expectRevert(ISolverNetInbox.InvalidDestinationChainId.selector);
         inbox.validate(order);
         orderData.destChainId = srcChainId;
         order.orderData = abi.encode(orderData);
 
-        vm.expectRevert(ISolverNetInbox.InvalidChainId.selector);
+        vm.expectRevert(ISolverNetInbox.InvalidDestinationChainId.selector);
         inbox.validate(order);
         orderData.destChainId = destChainId;
         order.orderData = abi.encode(orderData);

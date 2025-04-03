@@ -7,7 +7,7 @@ contract SolverNet_Inbox_Resolve_Test is TestBase {
     using AddrUtils for address;
 
     function test_resolve_nativeDeposit_nativeExpense_succeeds() public {
-        bytes32 id = inbox.getNextOrderId(user);
+        bytes32 id = inbox.getNextOnchainOrderId(user);
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
             getNativeForNativeVaultOrder(defaultAmount, defaultAmount);
         vm.prank(user);
@@ -51,7 +51,7 @@ contract SolverNet_Inbox_Resolve_Test is TestBase {
     }
 
     function test_resolve_erc20Deposit_erc20Expense_succeeds() public {
-        bytes32 id = inbox.getNextOrderId(user);
+        bytes32 id = inbox.getNextOnchainOrderId(user);
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
             getErc20ForErc20VaultOrder(defaultAmount, defaultAmount);
         vm.prank(user);
@@ -95,7 +95,7 @@ contract SolverNet_Inbox_Resolve_Test is TestBase {
     }
 
     function test_resolve_erc20Deposit_mixedExpenses_multicall_succeeds() public {
-        bytes32 id = inbox.getNextOrderId(user);
+        bytes32 id = inbox.getNextOnchainOrderId(user);
 
         SolverNet.Deposit memory deposit =
             SolverNet.Deposit({ token: address(token1), amount: uint96(defaultAmount * 2) });

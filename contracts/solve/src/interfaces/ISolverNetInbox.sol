@@ -8,16 +8,22 @@ interface ISolverNetInbox is IOriginSettler {
     // Validation errors
     error InvalidOrderTypehash();
     error InvalidOrderData();
-    error InvalidChainId();
+    error InvalidOriginChainId();
+    error InvalidOriginSettler();
+    error InvalidDestinationChainId();
+    error InvalidOpenDeadline();
     error InvalidFillDeadline();
     error InvalidMissingCalls();
     error InvalidCallTarget();
     error InvalidExpenseToken();
     error InvalidExpenseAmount();
     error InvalidArrayLength();
+    error InvalidUser();
+    error InvalidNonce();
 
     // Open order errors
     error InvalidNativeDeposit();
+    error InvalidSignature();
 
     // Reject order errors
     error InvalidReason();
@@ -110,6 +116,28 @@ interface ISolverNetInbox is IOriginSettler {
     }
 
     /**
+     * @notice Pause the `open` function, preventing new orders from being opened.
+     * @dev Cannot override ALL_PAUSED state.
+     * @param pause True to pause, false to unpause.
+     */
+    function pauseOpen(bool pause) external;
+
+    /**
+     * @notice Pause the `close` function, preventing orders from being closed by users.
+     * @dev `close` should only be paused if the Omni Core relayer is not available.
+     * @dev Cannot override ALL_PAUSED state.
+     * @param pause True to pause, false to unpause.
+     */
+    function pauseClose(bool pause) external;
+
+    /**
+     * @notice Pause open and close functions.
+     * @dev Can override OPEN_PAUSED or CLOSE_PAUSED states.
+     * @param pause True to pause, false to unpause.
+     */
+    function pauseAll(bool pause) external;
+
+    /**
      * @notice Set the outbox addresses for the given chain IDs.
      * @param chainIds IDs of the chains.
      * @param outboxes Addresses of the outboxes.
@@ -133,16 +161,28 @@ interface ISolverNetInbox is IOriginSettler {
     function getOrderId(address user, uint256 nonce) external view returns (bytes32);
 
     /**
-     * @notice Returns the next order ID for the given user.
-     * @param user Address of the user.
+     * @notice Returns the next onchain order ID for the given user.
+     * @param user Address of the user the order is opened for.
      */
-    function getNextOrderId(address user) external view returns (bytes32);
+    function getNextOnchainOrderId(address user) external view returns (bytes32);
 
     /**
-     * @notice Returns the nonce for the given user.
-     * @param user Address of the user.
+     * @notice Returns the next gasless order ID for the given user.
+     * @param user Address of the user paying for the order.
      */
-    function getUserNonce(address user) external view returns (uint256);
+    function getNextGaslessOrderId(address user) external view returns (bytes32);
+
+    /**
+     * @notice Returns the onchain nonce for the given user.
+     * @param user Address of the user the order is opened for.
+     */
+    function getOnchainUserNonce(address user) external view returns (uint256);
+
+    /**
+     * @notice Returns the gasless nonce for the given user.
+     * @param user Address of the user paying for the order.
+     */
+    function getGaslessUserNonce(address user) external view returns (uint256);
 
     /**
      * @notice Returns the order offset of the latest order opened at this inbox.
@@ -154,6 +194,12 @@ interface ISolverNetInbox is IOriginSettler {
      * @param order OnchainCrossChainOrder to validate.
      */
     function validate(OnchainCrossChainOrder calldata order) external view returns (bool);
+
+    /**
+     * @dev Validate the gasless order.
+     * @param order GaslessCrossChainOrder to validate.
+     */
+    function validateFor(GaslessCrossChainOrder calldata order) external view returns (bool);
 
     /**
      * @notice Reject an open order and refund deposits.
@@ -185,4 +231,10 @@ interface ISolverNetInbox is IOriginSettler {
      * @param to Address to send deposits to.
      */
     function claim(bytes32 id, address to) external;
+
+    /**
+     * @notice Increment the gasless nonce for the sender.
+     * @param amount Amount to increment the nonce by.
+     */
+    function incrementGaslessNonce(uint16 amount) external;
 }
