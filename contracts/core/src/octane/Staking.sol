@@ -102,11 +102,6 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
     uint256 public constant MinDelegation = 1 ether;
 
     /**
-     * @notice The undelegation fee preventing spam
-     */
-    uint256 public constant UndelegationFee = 0.001 ether;
-
-    /**
      * @notice EIP-712 typehash
      */
     bytes32 private constant _EIP712_TYPEHASH = keccak256("ValidatorAddress(address validator)");
@@ -250,7 +245,9 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
      * @param undelegationAmount The amount of ether tokens to undelegate
      */
     function undelegate(address validator, uint256 undelegationAmount) external payable {
-        _undelegate(msg.sender, validator, undelegationAmount);
+        require(!isAllowlistEnabled || isAllowedValidator[validator], "Staking: not allowed val");
+        _burnFee();
+        emit Undelegate(msg.sender, validator, undelegationAmount);
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -320,19 +317,6 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
         require(msg.value >= MinDelegation, "Staking: insufficient deposit");
 
         emit Delegate(delegator, validator, msg.value);
-    }
-
-    /**
-     * @notice Undelegate tokens from a validator
-     * @param delegator The address of the delegator
-     * @param validator The address of the validator to undelegate from
-     * @param undelegationAmount The amount of ether tokens to undelegate
-     */
-    function _undelegate(address delegator, address validator, uint256 undelegationAmount) internal {
-        require(!isAllowlistEnabled || isAllowedValidator[validator], "Staking: not allowed val");
-        require(msg.value >= UndelegationFee, "Staking: insufficient fee");
-
-        emit Undelegate(delegator, validator, undelegationAmount);
     }
 
     /**
