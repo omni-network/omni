@@ -26,10 +26,10 @@ func TestSolverThresholds(t *testing.T) {
 					}
 					mini := thresholds.MinBalance()
 					t.Logf("Thresholds: network=%s, role=%s, chain=%s, token=%s, min=%s",
-						network, role, chain.Name, token.Name, primaryStr(token, mini))
+						network, role, chain.Name, token.Name, token.FormatAmt(mini))
 
 					if role == eoa.RoleSolver {
-						addSolverKV(solverGolden, network, chain.Name, token.Symbol, primaryStr(token, mini))
+						addSolverKV(solverGolden, network, chain.Name, token.Symbol, token.FormatAmt(mini))
 					}
 				}
 			}

@@ -1,6 +1,11 @@
 package errors
 
 import (
+	"fmt"
+	"io"
+	"log/slog"
+	"strings"
+
 	pkgerrors "github.com/pkg/errors"
 )
 
@@ -52,4 +57,31 @@ func (s structured) Is(err error) bool {
 	}
 
 	return pkgerrors.Is(s.err, other.err)
+}
+
+func (s structured) Format(st fmt.State, verb rune) {
+	// Just write the error message.
+	_, _ = io.WriteString(st, s.Error())
+
+	// Only write the attributes if the verb is '%+v'
+	if verb != 'v' || !st.Flag('+') || len(s.attrs) == 0 {
+		return
+	}
+
+	var attrs []string
+	var r slog.Record
+	r.Add(s.attrs...)
+	r.Attrs(func(attr slog.Attr) bool {
+		attrs = append(attrs, attr.String())
+		return true
+	})
+
+	_, _ = fmt.Fprintf(st, " [%s]", strings.Join(attrs, ", "))
+}
+
+// Format is a convenience function to format an error using the %+v verb.
+// It appends structured attributes to the error message.
+// This is useful to format structured errors outside the lib/log package.
+func Format(err error) string {
+	return fmt.Sprintf("%+v", err)
 }

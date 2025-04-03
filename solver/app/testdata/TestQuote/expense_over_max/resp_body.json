@@ -10,5 +10,5 @@
   "rejected": true,
   "rejectCode": 11,
   "rejectReason": "ExpenseOverMax",
-  "rejectDescription": "requested expense exceeds maximum: ask=10 ETH, max=6 ETH"
+  "rejectDescription": "requested expense exceeds maximum [ask=10 ETH, max=6 ETH]"
 }

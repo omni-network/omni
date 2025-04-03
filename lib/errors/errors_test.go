@@ -62,3 +62,18 @@ func TestIs(t *testing.T) {
 	require.True(t, errors.Is(errIO11, errIO11))
 	require.False(t, errors.Is(err111, errX))
 }
+
+func TestFormat(t *testing.T) {
+	t.Parallel()
+
+	err1 := errors.New("1", "1", "1")
+	err11 := errors.Wrap(err1, "w1", "11", "11")
+	err111 := errors.Wrap(err11, "w2", "111", "this is a long wrapped string")
+	errWrapSent := errors.Wrap(errSentinel, "w1")
+
+	require.Equal(t, "<nil>", errors.Format(nil))
+	require.Equal(t, "1 [1=1]", errors.Format(err1))
+	require.Equal(t, "w1: 1 [11=11, 1=1]", errors.Format(err11))
+	require.Equal(t, "w2: w1: 1 [111=this is a long wrapped string, 11=11, 1=1]", errors.Format(err111))
+	require.Equal(t, "w1: test sentinel", errors.Format(errWrapSent))
+}

@@ -1,14 +1,11 @@
 package tokens
 
 import (
-	"fmt"
-	"math/big"
 	"testing"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/netconf"
-	tokenslib "github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/stretchr/testify/require"
@@ -40,8 +37,8 @@ func TestTokens(t *testing.T) {
 			"name":        token.Name,
 			"symbol":      token.Symbol,
 			"address":     token.Address.Hex(),
-			"maxSpend":    primaryStr(token.Token, token.MaxSpend),
-			"minSpend":    primaryStr(token.Token, token.MinSpend),
+			"maxSpend":    token.FormatAmt(token.MaxSpend),
+			"minSpend":    token.FormatAmt(token.MinSpend),
 			"chainId":     token.ChainID,
 			"coingeckoId": token.CoingeckoID,
 			"isMock":      token.IsMock,
@@ -49,14 +46,6 @@ func TestTokens(t *testing.T) {
 	}
 
 	tutil.RequireGoldenJSON(t, golden)
-}
-
-func primaryStr(token tokenslib.Token, amount *big.Int) string {
-	if amount == nil {
-		return "nil"
-	}
-
-	return fmt.Sprintf("%.4f", tokenslib.ToPrimaryF64(token, amount))
 }
 
 func TestMaxSpendMinThreshold(t *testing.T) {

@@ -1,8 +1,6 @@
 package eoa_test
 
 import (
-	"fmt"
-	"math/big"
 	"testing"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
@@ -30,8 +28,8 @@ func TestThresholdReference(t *testing.T) {
 				resp[network][token.Symbol][role] = make(map[string]string)
 				thresholds, _ := eoa.GetFundThresholds(token, network, role)
 
-				resp[network][token.Symbol][role]["target"] = primaryStr(token, thresholds.TargetBalance())
-				resp[network][token.Symbol][role]["min"] = primaryStr(token, thresholds.MinBalance())
+				resp[network][token.Symbol][role]["target"] = token.FormatAmt(thresholds.TargetBalance())
+				resp[network][token.Symbol][role]["min"] = token.FormatAmt(thresholds.MinBalance())
 			}
 		}
 	}
@@ -59,7 +57,7 @@ func TestStatic(t *testing.T) {
 					mini := thresholds.MinBalance()
 					target := thresholds.TargetBalance()
 					t.Logf("Thresholds: network=%s, role=%s, min=%s, target=%s",
-						network, acc.Role, primaryStr(chain.NativeToken, mini), primaryStr(chain.NativeToken, target))
+						network, acc.Role, chain.NativeToken.FormatAmt(mini), chain.NativeToken.FormatAmt(target))
 				})
 			}
 		}
@@ -84,10 +82,6 @@ func TestMainnet(t *testing.T) {
 		require.True(t, ok, "account not found: %s %s", n, role)
 		require.Equal(t, fixed[acc.Role], acc.Address.Hex())
 	}
-}
-
-func primaryStr(token tokens.Token, amount *big.Int) string {
-	return fmt.Sprintf("%.4f", tokens.ToPrimaryF64(token, amount))
 }
 
 func shouldExist(role eoa.Role, id netconf.ID) bool {

@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"net/http"
 
@@ -50,23 +49,19 @@ func quoter(_ context.Context, req types.QuoteRequest) (types.QuoteResponse, err
 		underMin := expenseTkn.MinSpend != nil && bi.LT(expenseAmt, expenseTkn.MinSpend)
 
 		if overMax {
-			msg := fmt.Sprintf(
-				"requested expense exceeds maximum: ask=%s, max=%s",
-				ltokens.FormatAmt(expenseAmt, expenseTkn.Token),
-				ltokens.FormatAmt(expenseTkn.MaxSpend, expenseTkn.Token),
-			)
-
-			return newRejection(types.RejectExpenseOverMax, errors.New(msg))
+			return newRejection(types.RejectExpenseOverMax,
+				errors.New("requested expense exceeds maximum",
+					"ask", expenseTkn.FormatAmt(expenseAmt),
+					"max", expenseTkn.FormatAmt(expenseTkn.MaxSpend),
+				))
 		}
 
 		if underMin {
-			msg := fmt.Sprintf(
-				"requested expense is below minimum: ask=%s, min=%s",
-				ltokens.FormatAmt(expenseAmt, expenseTkn.Token),
-				ltokens.FormatAmt(expenseTkn.MinSpend, expenseTkn.Token),
-			)
-
-			return newRejection(types.RejectExpenseUnderMin, errors.New(msg))
+			return newRejection(types.RejectExpenseUnderMin,
+				errors.New("requested expense is below minimum",
+					"ask", expenseTkn.FormatAmt(expenseAmt),
+					"min", expenseTkn.FormatAmt(expenseTkn.MinSpend),
+				))
 		}
 
 		return nil

@@ -10,5 +10,5 @@
   "rejected": true,
   "rejectCode": 12,
   "rejectReason": "ExpenseUnderMin",
-  "rejectDescription": "requested expense is below minimum: ask=0.0001 ETH, min=0.001 ETH"
+  "rejectDescription": "requested expense is below minimum [ask=0.0001 ETH, min=0.001 ETH]"
 }
