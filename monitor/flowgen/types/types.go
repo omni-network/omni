@@ -4,28 +4,26 @@ import (
 	"context"
 	"time"
 
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
-	"github.com/omni-network/omni/lib/ethclient/ethbackend"
-	"github.com/omni-network/omni/lib/netconf"
-	solver "github.com/omni-network/omni/solver/app"
 )
 
 type Result struct {
 	OrderID solvernet.OrderID
-	Expense solver.TokenAmt
+	Data    bindings.SolverNetOrderData
 }
 
 type Job struct {
 	// Name is the friendly name of the job
 	Name string
 
-	// Cadence is intrerval at which to run the job
+	// Cadence is interval at which to run the job
 	Cadence time.Duration
 
-	NetworkID netconf.ID
+	// SrcChainID is chain ID of the inbox.
+	SrcChainID uint64
 
-	SrcChainBackend *ethbackend.Backend
-
-	// OpenOrderFunc opens an order and returns the result, or false if the order wasn't opened, or an error.
-	OpenOrderFunc func(ctx context.Context) (Result, bool, error)
+	// OpenOrdersFunc opens multiple orders and returns their results.
+	// Note it may open no orders.
+	OpenOrdersFunc func(ctx context.Context) ([]Result, error)
 }

@@ -3,6 +3,7 @@ package solvernet
 import (
 	"encoding/hex"
 	"math/big"
+	"slices"
 
 	"github.com/omni-network/omni/contracts/bindings"
 
@@ -92,6 +93,14 @@ func CallsToBindings(calls []Call) []bindings.SolverNetCall {
 	}
 
 	return out
+}
+
+func CallFromBinding(c bindings.SolverNetCall) Call {
+	return Call{
+		Target: c.Target,
+		Value:  c.Value,
+		Data:   slices.Concat(c.Selector[:], c.Params),
+	}
 }
 
 // FilterNativeExpenses filters out native expenses.

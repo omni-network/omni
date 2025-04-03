@@ -3,11 +3,13 @@ package types
 import (
 	"encoding/json"
 	"math/big"
+	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -207,6 +209,15 @@ func CallsToBindings(calls []Call) []bindings.SolverNetCall {
 	return resp
 }
 
+func CallsFromBindings(calls []bindings.SolverNetCall) []Call {
+	var resp []Call
+	for _, c := range calls {
+		resp = append(resp, Call(solvernet.CallFromBinding(c)))
+	}
+
+	return resp
+}
+
 func ExpensesToBindings(expenses []Expense) []solvernet.Expense {
 	var resp []solvernet.Expense
 	for _, e := range expenses {
@@ -214,4 +225,43 @@ func ExpensesToBindings(expenses []Expense) []solvernet.Expense {
 	}
 
 	return resp
+}
+
+func ExpensesFromBindings(expenses []solvernet.Expense) []Expense {
+	var resp []Expense
+	for _, e := range expenses {
+		resp = append(resp, Expense(e))
+	}
+
+	return resp
+}
+
+func CheckRequestFromOrderData(srcChainID uint64, data bindings.SolverNetOrderData) (CheckRequest, error) {
+	deadline, err := umath.ToUint32(time.Now().Add(time.Hour).Unix())
+	if err != nil {
+		return CheckRequest{}, err
+	}
+
+	expenses := ExpensesFromBindings(data.Expenses)
+
+	// Add native calls as expenses.
+	// Note this is inconsistent with OpenOrder where native calls MUST NOT be included as expenses.
+	for _, call := range data.Calls {
+		if call.Value == nil || bi.IsZero(call.Value) {
+			continue
+		}
+		expenses = append(expenses, Expense{
+			// TODO(corver): What should spender be?
+			Amount: bi.Clone(call.Value),
+		})
+	}
+
+	return CheckRequest{
+		SourceChainID:      srcChainID,
+		DestinationChainID: data.DestChainId,
+		FillDeadline:       deadline,
+		Deposit:            AddrAmt(data.Deposit),
+		Expenses:           expenses,
+		Calls:              CallsFromBindings(data.Calls),
+	}, nil
 }
