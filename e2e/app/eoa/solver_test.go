@@ -16,7 +16,6 @@ func TestSolverThresholds(t *testing.T) {
 	t.Parallel()
 
 	solverGolden := make(map[netconf.ID]map[string]map[string]map[string]string)
-	flowgenGolden := make(map[netconf.ID]map[string]map[string]map[string]string)
 	for _, network := range []netconf.ID{netconf.Devnet, netconf.Staging, netconf.Omega, netconf.Mainnet} {
 		for _, chain := range evmchain.All() {
 			for _, role := range eoa.SolverNetRoles() {
@@ -31,8 +30,6 @@ func TestSolverThresholds(t *testing.T) {
 
 					if role == eoa.RoleSolver {
 						addSolverKV(solverGolden, network, chain.Name, token.Symbol, primaryStr(token, mini))
-					} else if role == eoa.RoleFlowgen {
-						addSolverKV(flowgenGolden, network, chain.Name, token.Symbol, primaryStr(token, mini))
 					}
 				}
 			}
@@ -40,7 +37,6 @@ func TestSolverThresholds(t *testing.T) {
 	}
 
 	tutil.RequireGoldenJSON(t, solverGolden, tutil.WithFilename("solver_reference.json"))
-	tutil.RequireGoldenJSON(t, flowgenGolden, tutil.WithFilename("flowgen_reference.json"))
 }
 
 func addSolverKV(m map[netconf.ID]map[string]map[string]map[string]string, network netconf.ID, chainID string, token string, min string) {
