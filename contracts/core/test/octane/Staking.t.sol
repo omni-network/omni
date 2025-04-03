@@ -16,6 +16,9 @@ contract Staking_Test is Test {
     /// @dev Matches Staking.Delegate event
     event Delegate(address indexed delegator, address indexed validator, uint256 amount);
 
+    /// @dev Matches Staking.Undelegate event
+    event Undelegate(address indexed delegator, address indexed validator, uint256 amount);
+
     address owner;
     address validator;
     address[] validators;
@@ -236,6 +239,34 @@ contract Staking_Test is Test {
 
         vm.prank(validator);
         staking.delegate{ value: minDelegation }(validator);
+    }
+
+    function test_undelegate() public {
+        uint256 fee = 0.1 ether;
+        uint256 amount = 1 ether;
+
+        vm.expectRevert("Staking: insufficient fee");
+        staking.undelegate{ value: 0 }(validator, amount);
+
+        vm.deal(validator, amount + fee);
+
+        // if allowlist enabled, must be in allowlist
+        vm.prank(owner);
+        staking.enableAllowlist();
+
+        vm.expectRevert("Staking: not allowed val");
+        vm.prank(validator);
+        staking.undelegate{ value: fee }(validator, amount);
+
+        // succeeds
+        vm.prank(owner);
+        staking.allowValidators(validators);
+
+        vm.expectEmit();
+        emit Undelegate(validator, validator, amount);
+
+        vm.prank(validator);
+        staking.undelegate{ value: fee }(validator, amount);
     }
 
     function _sign(bytes32 digest, uint256 privkey) private pure returns (bytes memory) {
