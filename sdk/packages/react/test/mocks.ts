@@ -11,8 +11,12 @@ type UseReadContractReturn<Data> = Omit<
   data: Data
 }
 
-export function mockContractsQuery() {
+export function mockContractsQuery(failure = false) {
   vi.spyOn(apiModule, 'fetchJSON').mockImplementation((url: string) => {
+    if (failure) {
+      return Promise.reject(new Error('mock error'))
+    }
+
     if (url.includes('/contracts')) {
       return Promise.resolve(contracts)
     }
