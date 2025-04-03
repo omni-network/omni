@@ -16,9 +16,6 @@ test('default: returns contracts when API call succeeds', async () => {
 
   expect(result.current.isSuccess).toBe(true)
   expect(result.current.data).toEqual(contracts)
-  expect(result.current.data?.inbox).toBe(contracts.inbox)
-  expect(result.current.data?.outbox).toBe(contracts.outbox)
-  expect(result.current.data?.middleman).toBe(contracts.middleman)
 })
 
 test('behaviour: handles API error gracefully', async () => {
