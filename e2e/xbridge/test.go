@@ -28,7 +28,7 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 	}
 
 	pks := append(anvil.DevPrivateKeys(), eoa.DevPrivateKeys()...)
-	backends, err := ethbackend.BackendsFromNetwork(network, endpoints, pks...)
+	backends, err := ethbackend.BackendsFromNetwork(ctx, network, endpoints, pks...)
 	if err != nil {
 		return err
 	}

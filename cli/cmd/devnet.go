@@ -197,7 +197,7 @@ func loadDevnetNetwork(ctx context.Context) (netconf.Network, xchain.RPCEndpoint
 
 	netID := netconf.Devnet
 
-	portalReg, err := makePortalRegistry(netID, endpoints)
+	portalReg, err := makePortalRegistry(ctx, netID, endpoints)
 	if err != nil {
 		return netconf.Network{}, nil, errors.Wrap(err, "make portal registry")
 	}
@@ -278,7 +278,7 @@ func devnetFund(ctx context.Context, cfg devnetFundConfig) error {
 
 // devnetBackend returns a backend populated with the default anvil account 0 private key.
 func devnetBackend(ctx context.Context, rpcURL string) (common.Address, *ethbackend.Backend, error) {
-	ethCl, err := ethclient.Dial("", rpcURL)
+	ethCl, err := ethclient.DialContext(ctx, "", rpcURL)
 	if err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "dial eth client", "url", rpcURL)
 	}
@@ -310,14 +310,14 @@ func homeDir(network netconf.ID) (string, error) {
 	return filepath.Join(homeDir, ".omni", network.String()), nil
 }
 
-func makePortalRegistry(network netconf.ID, endpoints xchain.RPCEndpoints) (*bindings.PortalRegistry, error) {
+func makePortalRegistry(ctx context.Context, network netconf.ID, endpoints xchain.RPCEndpoints) (*bindings.PortalRegistry, error) {
 	meta := netconf.MetadataByID(network, network.Static().OmniExecutionChainID)
 	rpc, err := endpoints.ByNameOrID(meta.Name, meta.ChainID)
 	if err != nil {
 		return nil, err
 	}
 
-	ethCl, err := ethclient.Dial(meta.Name, rpc)
+	ethCl, err := ethclient.DialContext(ctx, meta.Name, rpc)
 	if err != nil {
 		return nil, err
 	}

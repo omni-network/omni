@@ -130,7 +130,7 @@ func StartValidatorUpdates(ctx context.Context, def Definition) func() error {
 			returnErr(errors.Wrap(err, "get rpc"))
 			return
 		}
-		ethCl, err := ethclient.Dial(omniEVM.Name, rpc)
+		ethCl, err := ethclient.DialContext(ctx, omniEVM.Name, rpc)
 		if err != nil {
 			returnErr(errors.Wrap(err, "dial"))
 			return

@@ -177,7 +177,7 @@ func New(ctx context.Context, netID netconf.ID, opts ...option) (Connector, erro
 		}
 	}
 
-	portalReg, err := makePortalRegistry(netID, endpoints)
+	portalReg, err := makePortalRegistry(ctx, netID, endpoints)
 	if err != nil {
 		return Connector{}, err
 	}
@@ -208,10 +208,12 @@ func New(ctx context.Context, netID netconf.ID, opts ...option) (Connector, erro
 		if err != nil {
 			rpc = "unknown"
 		} else {
-			ethCl, err := ethclient.Dial(chain.Name, rpc)
+			ethCl, err := ethclient.DialContext(ctx, chain.Name, rpc)
 			if err != nil {
 				return Connector{}, errors.Wrap(err, "dial eth client")
 			}
+			go ethCl.CloseIdleConnectionsForever(ctx)
+
 			ethClients[chain.ID] = ethCl
 		}
 
@@ -228,7 +230,7 @@ func New(ctx context.Context, netID netconf.ID, opts ...option) (Connector, erro
 
 	xprov := xprovider.New(network, ethClients, cprov)
 
-	backends, err := ethbackend.BackendsFromNetwork(network, o.Endpoints, o.PrivKeys...)
+	backends, err := ethbackend.BackendsFromNetwork(ctx, network, o.Endpoints, o.PrivKeys...)
 	if err != nil {
 		return Connector{}, errors.Wrap(err, "eth backends")
 	}
@@ -243,14 +245,14 @@ func New(ctx context.Context, netID netconf.ID, opts ...option) (Connector, erro
 	}, nil
 }
 
-func makePortalRegistry(network netconf.ID, endpoints xchain.RPCEndpoints) (*bindings.PortalRegistry, error) {
+func makePortalRegistry(ctx context.Context, network netconf.ID, endpoints xchain.RPCEndpoints) (*bindings.PortalRegistry, error) {
 	meta := netconf.MetadataByID(network, network.Static().OmniExecutionChainID)
 	rpc, err := endpoints.ByNameOrID(meta.Name, meta.ChainID)
 	if err != nil {
 		return nil, err
 	}
 
-	ethCl, err := ethclient.Dial(meta.Name, rpc)
+	ethCl, err := ethclient.DialContext(ctx, meta.Name, rpc)
 	if err != nil {
 		return nil, err
 	}
