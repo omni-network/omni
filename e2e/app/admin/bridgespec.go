@@ -125,7 +125,7 @@ func ensureNativeBridgeSpec(ctx context.Context, s shared, c chain, specOverride
 		local = *specOverride
 	}
 
-	ethCl, err := ethclient.Dial(c.Name, c.RPCEndpoint)
+	ethCl, err := ethclient.DialContext(ctx, c.Name, c.RPCEndpoint)
 	if err != nil {
 		return errors.Wrap(err, "dial eth client")
 	}
@@ -157,7 +157,7 @@ func ensureL1BridgeSpec(ctx context.Context, s shared, c chain, specOverride *Br
 		local = *specOverride
 	}
 
-	ethCl, err := ethclient.Dial(c.Name, c.RPCEndpoint)
+	ethCl, err := ethclient.DialContext(ctx, c.Name, c.RPCEndpoint)
 	if err != nil {
 		return errors.Wrap(err, "dial eth client")
 	}

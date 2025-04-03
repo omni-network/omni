@@ -93,7 +93,7 @@ func EnsureSolverNetSpec(ctx context.Context, def app.Definition, cfg Config, lo
 			local = *localSpecOverride
 		}
 
-		ethCl, err := ethclient.Dial(c.Name, c.RPCEndpoint)
+		ethCl, err := ethclient.DialContext(ctx, c.Name, c.RPCEndpoint)
 		if err != nil {
 			return errors.Wrap(err, "dial eth client", "chain", c.Name)
 		}

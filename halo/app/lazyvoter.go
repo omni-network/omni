@@ -143,10 +143,11 @@ func (l *voterLoader) LazyLoad(
 				return err
 			}
 
-			ethCl, err := ethclient.Dial(chain.Name, rpc)
+			ethCl, err := ethclient.DialContext(ctx, chain.Name, rpc)
 			if err != nil {
 				return err
 			}
+			go ethCl.CloseIdleConnectionsForever(ctx)
 
 			ethClients[chain.ID] = ethCl
 		}

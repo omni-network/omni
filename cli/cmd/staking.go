@@ -162,7 +162,7 @@ func CreateValidator(ctx context.Context, cfg CreateValConfig) error {
 	}
 	opAddr := crypto.PubkeyToAddress(operatorPriv.PublicKey)
 
-	eth, cprov, backend, err := setupClients(cfg.EOAConfig, operatorPriv)
+	eth, cprov, backend, err := setupClients(ctx, cfg.EOAConfig, operatorPriv)
 	if err != nil {
 		return err
 	}
@@ -305,7 +305,7 @@ func Delegate(ctx context.Context, cfg DelegateConfig) error {
 	}
 	delegatorAddr := crypto.PubkeyToAddress(delegatorPriv.PublicKey)
 
-	eth, cprov, backend, err := setupClients(cfg.EOAConfig, delegatorPriv)
+	eth, cprov, backend, err := setupClients(ctx, cfg.EOAConfig, delegatorPriv)
 	if err != nil {
 		return err
 	}
@@ -414,7 +414,7 @@ func unjailValidator(ctx context.Context, cfg EOAConfig) error {
 	}
 	opAddr := crypto.PubkeyToAddress(opPrivKey.PublicKey)
 
-	_, cprov, backend, err := setupClients(cfg, opPrivKey)
+	_, cprov, backend, err := setupClients(ctx, cfg, opPrivKey)
 	if err != nil {
 		return err
 	}
@@ -624,7 +624,7 @@ func EditVal(ctx context.Context, cfg EditValConfig) error {
 	}
 	valAddr := crypto.PubkeyToAddress(valPriv.PublicKey)
 
-	_, cprov, backend, err := setupClients(cfg.EOAConfig, valPriv)
+	_, cprov, backend, err := setupClients(ctx, cfg.EOAConfig, valPriv)
 	if err != nil {
 		return err
 	}
@@ -722,6 +722,7 @@ func EditVal(ctx context.Context, cfg EditValConfig) error {
 // setupClients is a helper that creates the omni evm client,
 // omni consensus client and a backend set with the operator private key.
 func setupClients(
+	ctx context.Context,
 	conf EOAConfig,
 	operatorPriv *ecdsa.PrivateKey,
 ) (ethclient.Client, cchain.Provider, *ethbackend.Backend, error) {
@@ -748,7 +749,7 @@ func setupClients(
 
 	cprov := provider.NewABCI(cl, conf.Network)
 
-	eth, err := ethclient.Dial(chainMeta.Name, conf.ExecutionRPC)
+	eth, err := ethclient.DialContext(ctx, chainMeta.Name, conf.ExecutionRPC)
 	if err != nil {
 		return nil, nil, nil, err
 	}

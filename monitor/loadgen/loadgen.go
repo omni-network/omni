@@ -13,7 +13,6 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
@@ -38,13 +37,13 @@ type Config struct {
 // It does:
 // - Validator self- and normal-delegation on periodic basis.
 // - Makes XCalls from -> to random EVM portals on periodic basis.
-func Start(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client, cfg Config, rpcEndpoints xchain.RPCEndpoints) error {
+func Start(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client, cfg Config) error {
 	err := startDelegation(ctx, network, ethClients, cfg)
 	if err != nil {
 		return errors.Wrap(err, "start self delegation")
 	}
 
-	err = startXCaller(ctx, network, rpcEndpoints, cfg.XCallerKey)
+	err = startXCaller(ctx, network, ethClients, cfg.XCallerKey)
 	if err != nil {
 		return errors.Wrap(err, "start xcaller")
 	}
@@ -113,7 +112,7 @@ func startDelegation(ctx context.Context, network netconf.Network, ethClients ma
 	return nil
 }
 
-func startXCaller(ctx context.Context, network netconf.Network, rpcEndpoints xchain.RPCEndpoints, keyPath string) error {
+func startXCaller(ctx context.Context, network netconf.Network, ethClients map[uint64]ethclient.Client, keyPath string) error {
 	if keyPath == "" {
 		// Skip if no key is provided.
 		return nil
@@ -124,7 +123,7 @@ func startXCaller(ctx context.Context, network netconf.Network, rpcEndpoints xch
 		return errors.Wrap(err, "load xcaller key", "path", keyPath)
 	}
 
-	backends, err := ethbackend.BackendsFromNetwork(network, rpcEndpoints, privKey)
+	backends, err := ethbackend.BackendsFromClients(ethClients, privKey)
 	if err != nil {
 		return err
 	}

@@ -55,6 +55,7 @@ type Client interface {
 	CallContext(ctx context.Context, result interface{}, method string, args ...interface{}) error
 	Address() string
 	Name() string
+	CloseIdleConnectionsForever(ctx context.Context)
 	Close()
 }
 

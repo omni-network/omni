@@ -157,7 +157,7 @@ func isFuzzyXMsgLogFilter(ctx context.Context, perturb types.Perturb, target str
 		return false, 0, errors.New("unexpected perturbation", "perturb", perturb)
 	}
 
-	ethCl, err := ethclient.Dial("proxy", target)
+	ethCl, err := ethclient.DialContext(ctx, "proxy", target)
 	if err != nil {
 		return false, 0, errors.Wrap(err, "dial ethclient")
 	}

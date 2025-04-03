@@ -35,7 +35,7 @@ func Run(ctx context.Context, cfg Config) error {
 	// Start metrics first, so app is "up"
 	monitorChan := serveMonitoring(cfg.MonitoringAddr)
 
-	portalReg, err := makePortalRegistry(cfg.Network, cfg.RPCEndpoints)
+	portalReg, err := makePortalRegistry(ctx, cfg.Network, cfg.RPCEndpoints)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	rpcClientPerChain, err := initializeRPCClients(network.EVMChains(), cfg.RPCEndpoints)
+	rpcClientPerChain, err := initializeRPCClients(ctx, network.EVMChains(), cfg.RPCEndpoints)
 	if err != nil {
 		return err
 	}
@@ -148,17 +148,19 @@ func newCProvider(ctx context.Context, cfg Config) (cchain.Provider, error) {
 	return cprovider.NewABCI(c, cfg.Network), nil
 }
 
-func initializeRPCClients(chains []netconf.Chain, endpoints xchain.RPCEndpoints) (map[uint64]ethclient.Client, error) {
+func initializeRPCClients(ctx context.Context, chains []netconf.Chain, endpoints xchain.RPCEndpoints) (map[uint64]ethclient.Client, error) {
 	rpcClientPerChain := make(map[uint64]ethclient.Client)
 	for _, chain := range chains {
 		rpc, err := endpoints.ByNameOrID(chain.Name, chain.ID)
 		if err != nil {
 			return nil, err
 		}
-		c, err := ethclient.Dial(chain.Name, rpc)
+		c, err := ethclient.DialContext(ctx, chain.Name, rpc)
 		if err != nil {
 			return nil, errors.Wrap(err, "dial rpc", "chain_name", chain.Name, "chain_id", chain.ID, "rpc_url", rpc)
 		}
+		go c.CloseIdleConnectionsForever(ctx)
+
 		rpcClientPerChain[chain.ID] = c
 	}
 
@@ -179,14 +181,14 @@ func initializeDB(ctx context.Context, cfg Config) (dbm.DB, error) {
 	return db, nil
 }
 
-func makePortalRegistry(network netconf.ID, endpoints xchain.RPCEndpoints) (*bindings.PortalRegistry, error) {
+func makePortalRegistry(ctx context.Context, network netconf.ID, endpoints xchain.RPCEndpoints) (*bindings.PortalRegistry, error) {
 	meta := netconf.MetadataByID(network, network.Static().OmniExecutionChainID)
 	rpc, err := endpoints.ByNameOrID(meta.Name, meta.ChainID)
 	if err != nil {
 		return nil, err
 	}
 
-	ethCl, err := ethclient.Dial(meta.Name, rpc)
+	ethCl, err := ethclient.DialContext(ctx, meta.Name, rpc)
 	if err != nil {
 		return nil, err
 	}

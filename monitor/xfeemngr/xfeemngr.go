@@ -61,7 +61,13 @@ var chainSyncOverrides = map[uint64]time.Duration{
 	evmchain.IDSepolia: 90 * time.Minute,
 }
 
-func Start(ctx context.Context, network netconf.Network, cfg Config, privKeyPath string) error {
+func Start(
+	ctx context.Context,
+	network netconf.Network,
+	cfg Config,
+	privKeyPath string,
+	ethClients map[uint64]ethclient.Client,
+) error {
 	log.Info(ctx, "Starting fee manager", "endpoint", cfg.RPCEndpoints)
 
 	privKey, err := crypto.LoadECDSA(privKeyPath)
@@ -70,11 +76,6 @@ func Start(ctx context.Context, network netconf.Network, cfg Config, privKeyPath
 	}
 
 	toSync, err := chainsToSync(network)
-	if err != nil {
-		return err
-	}
-
-	ethClients, err := makeEthClients(toSync, cfg.RPCEndpoints)
 	if err != nil {
 		return err
 	}
@@ -192,24 +193,4 @@ func chainsToSync(network netconf.Network) ([]evmchain.Metadata, error) {
 	}
 
 	return toSync, nil
-}
-
-func makeEthClients(chains []evmchain.Metadata, rpcs xchain.RPCEndpoints) (map[uint64]ethclient.Client, error) {
-	clients := make(map[uint64]ethclient.Client)
-
-	for _, chain := range chains {
-		rpc, err := rpcs.ByNameOrID(chain.Name, chain.ChainID)
-		if err != nil {
-			return nil, err
-		}
-
-		c, err := ethclient.Dial(chain.Name, rpc)
-		if err != nil {
-			return nil, errors.Wrap(err, "dial rpc", "chain_name", chain.Name, "chain_id", chain.ChainID, "rpc_url", rpc)
-		}
-
-		clients[chain.ChainID] = c
-	}
-
-	return clients, nil
 }

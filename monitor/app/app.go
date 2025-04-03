@@ -47,7 +47,7 @@ func Run(ctx context.Context, cfg Config) error {
 	// Start monitoring first, so app is "up"
 	monitorChan := serveMonitoring(cfg.MonitoringAddr)
 
-	portalReg, err := makePortalRegistry(cfg.Network, cfg.RPCEndpoints)
+	portalReg, err := makePortalRegistry(ctx, cfg.Network, cfg.RPCEndpoints)
 	if err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	ethClients, err := initializeEthClients(network.EVMChains(), cfg.RPCEndpoints)
+	ethClients, err := initializeEthClients(ctx, network.EVMChains(), cfg.RPCEndpoints)
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return err
 	}
 
-	if err := flowgen.Start(ctx, network, cfg.RPCEndpoints, cfg.FlowGenKey, cfg.SolverAddress); err != nil {
+	if err := flowgen.Start(ctx, network, ethClients, cfg.FlowGenKey, cfg.SolverAddress); err != nil {
 		log.Error(ctx, "Failed to start monitor flowgen [BUG]", err)
 	}
 
@@ -79,7 +79,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "monitor contracts")
 	}
 
-	if err := startLoadGen(ctx, cfg, network, ethClients); err != nil {
+	if err := loadgen.Start(ctx, network, ethClients, cfg.LoadGen); err != nil {
 		log.Error(ctx, "Failed to start monitor loadgen [BUG]", err)
 	}
 
@@ -93,7 +93,7 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "start xchain indexer")
 	}
 
-	if err := xfeemngr.Start(ctx, network, cfg.XFeeMngr, cfg.PrivateKey); err != nil {
+	if err := xfeemngr.Start(ctx, network, cfg.XFeeMngr, cfg.PrivateKey, ethClients); err != nil {
 		log.Error(ctx, "Failed to start xfee manager [BUG]", err)
 	}
 
@@ -190,22 +190,14 @@ func serveMonitoring(address string) <-chan error {
 	return errChan
 }
 
-func startLoadGen(ctx context.Context, cfg Config, network netconf.Network, ethClients map[uint64]ethclient.Client) error {
-	if err := loadgen.Start(ctx, network, ethClients, cfg.LoadGen, cfg.RPCEndpoints); err != nil {
-		return errors.Wrap(err, "start load generator")
-	}
-
-	return nil
-}
-
-func makePortalRegistry(network netconf.ID, endpoints xchain.RPCEndpoints) (*bindings.PortalRegistry, error) {
+func makePortalRegistry(ctx context.Context, network netconf.ID, endpoints xchain.RPCEndpoints) (*bindings.PortalRegistry, error) {
 	meta := netconf.MetadataByID(network, network.Static().OmniExecutionChainID)
 	rpc, err := endpoints.ByNameOrID(meta.Name, meta.ChainID)
 	if err != nil {
 		return nil, err
 	}
 
-	ethCl, err := ethclient.Dial(meta.Name, rpc)
+	ethCl, err := ethclient.DialContext(ctx, meta.Name, rpc)
 	if err != nil {
 		return nil, err
 	}
@@ -219,17 +211,19 @@ func makePortalRegistry(network netconf.ID, endpoints xchain.RPCEndpoints) (*bin
 }
 
 // initializeEthClients initializes the RPC clients for the given chains.
-func initializeEthClients(chains []netconf.Chain, endpoints xchain.RPCEndpoints) (map[uint64]ethclient.Client, error) {
+func initializeEthClients(ctx context.Context, chains []netconf.Chain, endpoints xchain.RPCEndpoints) (map[uint64]ethclient.Client, error) {
 	rpcClientPerChain := make(map[uint64]ethclient.Client)
 	for _, chain := range chains {
 		rpc, err := endpoints.ByNameOrID(chain.Name, chain.ID)
 		if err != nil {
 			return nil, err
 		}
-		c, err := ethclient.Dial(chain.Name, rpc)
+		c, err := ethclient.DialContext(ctx, chain.Name, rpc)
 		if err != nil {
 			return nil, errors.Wrap(err, "dial rpc", "chain_name", chain.Name, "chain_id", chain.ID, "rpc_url", rpc)
 		}
+		go c.CloseIdleConnectionsForever(ctx)
+
 		rpcClientPerChain[chain.ID] = c
 	}
 
