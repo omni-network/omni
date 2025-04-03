@@ -10,10 +10,10 @@ import (
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/monitor/flowgen/bridging"
 	"github.com/omni-network/omni/monitor/flowgen/symbiotic"
 	"github.com/omni-network/omni/monitor/flowgen/types"
@@ -27,7 +27,7 @@ import (
 func Start(
 	ctx context.Context,
 	network netconf.Network,
-	rpcEndpoints xchain.RPCEndpoints,
+	ethClients map[uint64]ethclient.Client,
 	keyPath string,
 	solverAddress string,
 ) error {
@@ -40,7 +40,7 @@ func Start(
 		return errors.Wrap(err, "load key", "path", keyPath)
 	}
 
-	backends, err := ethbackend.BackendsFromNetwork(network, rpcEndpoints, privKey)
+	backends, err := ethbackend.BackendsFromClients(ethClients, privKey)
 	if err != nil {
 		return errors.Wrap(err, "backends")
 	}

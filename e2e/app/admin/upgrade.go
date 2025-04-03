@@ -153,7 +153,7 @@ func upgradeFeeOracleV1(ctx context.Context, s shared, c chain) error {
 	// FeeOracleV1 contracts were not deployed via Create3
 	// The address must be read from the portal
 
-	client, err := ethclient.Dial(c.Name, c.RPCEndpoint)
+	client, err := ethclient.DialContext(ctx, c.Name, c.RPCEndpoint)
 	if err != nil {
 		return errors.Wrap(err, "dial RPCEndpoint")
 	}

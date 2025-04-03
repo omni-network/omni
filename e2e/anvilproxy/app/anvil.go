@@ -36,7 +36,7 @@ func (i anvilInstance) Height(ctx context.Context) (uint64, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	ethCl, err := ethclient.Dial("proxy", i.URL())
+	ethCl, err := ethclient.DialContext(ctx, "proxy", i.URL())
 	if err != nil {
 		return 0, errors.Wrap(err, "dial ethclient")
 	}

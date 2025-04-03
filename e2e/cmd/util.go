@@ -18,7 +18,7 @@ func networkFromDef(ctx context.Context, def app.Definition) (netconf.Network, e
 	endpoints := app.ExternalEndpoints(def)
 	networkID := def.Testnet.Network
 
-	portalReg, err := makePortalRegistry(networkID, endpoints)
+	portalReg, err := makePortalRegistry(ctx, networkID, endpoints)
 	if err != nil {
 		return netconf.Network{}, errors.Wrap(err, "portal registry")
 	}
@@ -31,14 +31,14 @@ func networkFromDef(ctx context.Context, def app.Definition) (netconf.Network, e
 	return network, nil
 }
 
-func makePortalRegistry(network netconf.ID, endpoints xchain.RPCEndpoints) (*bindings.PortalRegistry, error) {
+func makePortalRegistry(ctx context.Context, network netconf.ID, endpoints xchain.RPCEndpoints) (*bindings.PortalRegistry, error) {
 	meta := netconf.MetadataByID(network, network.Static().OmniExecutionChainID)
 	rpc, err := endpoints.ByNameOrID(meta.Name, meta.ChainID)
 	if err != nil {
 		return nil, err
 	}
 
-	ethCl, err := ethclient.Dial(meta.Name, rpc)
+	ethCl, err := ethclient.DialContext(ctx, meta.Name, rpc)
 	if err != nil {
 		return nil, err
 	}

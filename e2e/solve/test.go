@@ -76,7 +76,7 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 
 	// use anvil.DevAccounts instead of eoa.DevAccounts, because eoa.DevAccounts
 	// are used frequently elsewhere in e2e / e2e tests, and nonce issues get annoying
-	backends, err := ethbackend.BackendsFromNetwork(network, endpoints, anvil.DevPrivateKeys()...)
+	backends, err := ethbackend.BackendsFromNetwork(ctx, network, endpoints, anvil.DevPrivateKeys()...)
 	if err != nil {
 		return err
 	}

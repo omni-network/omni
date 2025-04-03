@@ -180,6 +180,18 @@ func (mr *MockClientMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockClient)(nil).Close))
 }
 
+// CloseIdleConnectionsForever mocks base method.
+func (m *MockClient) CloseIdleConnectionsForever(ctx context.Context) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "CloseIdleConnectionsForever", ctx)
+}
+
+// CloseIdleConnectionsForever indicates an expected call of CloseIdleConnectionsForever.
+func (mr *MockClientMockRecorder) CloseIdleConnectionsForever(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloseIdleConnectionsForever", reflect.TypeOf((*MockClient)(nil).CloseIdleConnectionsForever), ctx)
+}
+
 // CodeAt mocks base method.
 func (m *MockClient) CodeAt(ctx context.Context, account common.Address, blockNumber *big.Int) ([]byte, error) {
 	m.ctrl.T.Helper()

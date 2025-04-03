@@ -8,6 +8,7 @@ import (
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/fireblocks"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
@@ -37,7 +38,7 @@ func NewFireBackends(ctx context.Context, testnet types.Testnet, fireCl firebloc
 	// Configure omni EVM Backend
 	if testnet.HasOmniEVM() {
 		chain := testnet.BroadcastOmniEVM()
-		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.ExternalRPC)
+		ethCl, err := ethclient.DialContext(ctx, chain.Chain.Name, chain.ExternalRPC)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "dial")
 		}
@@ -50,7 +51,7 @@ func NewFireBackends(ctx context.Context, testnet types.Testnet, fireCl firebloc
 
 	// Configure anvil EVM Backends
 	for _, chain := range testnet.AnvilChains {
-		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.ExternalRPC)
+		ethCl, err := ethclient.DialContext(ctx, chain.Chain.Name, chain.ExternalRPC)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "dial")
 		}
@@ -63,7 +64,7 @@ func NewFireBackends(ctx context.Context, testnet types.Testnet, fireCl firebloc
 
 	// Configure public EVM Backends
 	for _, chain := range testnet.PublicChains {
-		ethCl, err := ethclient.Dial(chain.Chain().Name, chain.NextRPCAddress())
+		ethCl, err := ethclient.DialContext(ctx, chain.Chain().Name, chain.NextRPCAddress())
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "dial")
 		}
@@ -83,7 +84,7 @@ func NewFireBackends(ctx context.Context, testnet types.Testnet, fireCl firebloc
 	}, nil
 }
 
-func BackendsFromNetwork(network netconf.Network, endpoints xchain.RPCEndpoints, privKeys ...*ecdsa.PrivateKey) (Backends, error) {
+func BackendsFromNetwork(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints, privKeys ...*ecdsa.PrivateKey) (Backends, error) {
 	inner := make(map[uint64]*Backend)
 	for _, chain := range network.EVMChains() {
 		endpoint, err := endpoints.ByNameOrID(chain.Name, chain.ID)
@@ -91,7 +92,7 @@ func BackendsFromNetwork(network netconf.Network, endpoints xchain.RPCEndpoints,
 			return Backends{}, err
 		}
 
-		ethCl, err := ethclient.Dial(chain.Name, endpoint)
+		ethCl, err := ethclient.DialContext(ctx, chain.Name, endpoint)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "dial")
 		}
@@ -107,12 +108,30 @@ func BackendsFromNetwork(network netconf.Network, endpoints xchain.RPCEndpoints,
 	}, nil
 }
 
+func BackendsFromClients(ethClients map[uint64]ethclient.Client, privkeys ...*ecdsa.PrivateKey) (Backends, error) {
+	inner := make(map[uint64]*Backend)
+	for chainID, ethCl := range ethClients {
+		chain, ok := evmchain.MetadataByID(chainID)
+		if !ok {
+			return Backends{}, errors.New("chain not found", "chain", chainID)
+		}
+
+		backend, err := NewBackend(chain.Name, chainID, chain.BlockPeriod, ethCl, privkeys...)
+		if err != nil {
+			panic(err)
+		}
+		inner[chainID] = backend
+	}
+
+	return Backends{backends: inner}, nil
+}
+
 func BackendsFrom(backends map[uint64]*Backend) Backends {
 	return Backends{backends: backends}
 }
 
-// NewBackends returns a multi-backends backed by in-memory keys that supports configured all chains.
-func NewBackends(ctx context.Context, testnet types.Testnet, deployKeyFile string) (Backends, error) {
+// BackendsFromTestnet returns a multi-backends backed by in-memory keys that supports configured all chains.
+func BackendsFromTestnet(ctx context.Context, testnet types.Testnet, deployKeyFile string) (Backends, error) {
 	var err error
 
 	var publicDeployKey *ecdsa.PrivateKey
@@ -134,7 +153,7 @@ func NewBackends(ctx context.Context, testnet types.Testnet, deployKeyFile strin
 	// Configure omni EVM Backend
 	{
 		chain := testnet.BroadcastOmniEVM()
-		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.ExternalRPC)
+		ethCl, err := ethclient.DialContext(ctx, chain.Chain.Name, chain.ExternalRPC)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "dial")
 		}
@@ -151,7 +170,7 @@ func NewBackends(ctx context.Context, testnet types.Testnet, deployKeyFile strin
 
 	// Configure anvil EVM Backends
 	for _, chain := range testnet.AnvilChains {
-		ethCl, err := ethclient.Dial(chain.Chain.Name, chain.ExternalRPC)
+		ethCl, err := ethclient.DialContext(ctx, chain.Chain.Name, chain.ExternalRPC)
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "dial")
 		}
@@ -169,7 +188,7 @@ func NewBackends(ctx context.Context, testnet types.Testnet, deployKeyFile strin
 		if publicDeployKey == nil {
 			return Backends{}, errors.New("public deploy key required")
 		}
-		ethCl, err := ethclient.Dial(chain.Chain().Name, chain.NextRPCAddress())
+		ethCl, err := ethclient.DialContext(ctx, chain.Chain().Name, chain.NextRPCAddress())
 		if err != nil {
 			return Backends{}, errors.Wrap(err, "dial")
 		}
@@ -191,6 +210,14 @@ func NewBackends(ctx context.Context, testnet types.Testnet, deployKeyFile strin
 
 func (b Backends) All() map[uint64]*Backend {
 	return b.backends
+}
+
+// StartIdleConnectionClosing starts a goroutine for each backend to close idle connections periodically.
+// It returns immediately.
+func (b Backends) StartIdleConnectionClosing(ctx context.Context) {
+	for _, backend := range b.backends {
+		go backend.CloseIdleConnectionsForever(ctx)
+	}
 }
 
 // AddAccount adds a in-memory private key account to all backends.

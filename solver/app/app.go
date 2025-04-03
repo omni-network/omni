@@ -62,7 +62,7 @@ func Run(ctx context.Context, cfg Config) error {
 	// Start monitoring first, so app is "up"
 	monitorChan := serveMonitoring(cfg.MonitoringAddr)
 
-	portalReg, err := makePortalRegistry(cfg.Network, cfg.RPCEndpoints)
+	portalReg, err := makePortalRegistry(ctx, cfg.Network, cfg.RPCEndpoints)
 	if err != nil {
 		return err
 	}
@@ -82,10 +82,11 @@ func Run(ctx context.Context, cfg Config) error {
 	solverAddr := ethcrypto.PubkeyToAddress(privKey.PublicKey)
 	log.Debug(ctx, "Using solver address", "address", solverAddr.Hex())
 
-	backends, err := ethbackend.BackendsFromNetwork(network, cfg.RPCEndpoints, privKey)
+	backends, err := ethbackend.BackendsFromNetwork(ctx, network, cfg.RPCEndpoints, privKey)
 	if err != nil {
 		return err
 	}
+	backends.StartIdleConnectionClosing(ctx)
 
 	xprov := xprovider.New(network, backends.Clients(), nil)
 
@@ -185,14 +186,14 @@ func serveMonitoring(address string) <-chan error {
 	return errChan
 }
 
-func makePortalRegistry(network netconf.ID, endpoints xchain.RPCEndpoints) (*bindings.PortalRegistry, error) {
+func makePortalRegistry(ctx context.Context, network netconf.ID, endpoints xchain.RPCEndpoints) (*bindings.PortalRegistry, error) {
 	meta := netconf.MetadataByID(network, network.Static().OmniExecutionChainID)
 	rpc, err := endpoints.ByNameOrID(meta.Name, meta.ChainID)
 	if err != nil {
 		return nil, err
 	}
 
-	ethCl, err := ethclient.Dial(meta.Name, rpc)
+	ethCl, err := ethclient.DialContext(ctx, meta.Name, rpc)
 	if err != nil {
 		return nil, err
 	}
