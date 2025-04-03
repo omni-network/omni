@@ -47,37 +47,17 @@ var (
 			},
 		},
 	}
-
-	// flowgenThresholds defines the solvernet thresholds RoleFlowgen: network -> chain -> token -> threshold.
-	flowgenThresholds = map[netconf.ID]map[uint64]map[tokens.Token]SolverNetThreshold{
-		netconf.Mainnet: {
-			evmchain.IDEthereum: {
-				tokens.WSTETH: {minEther: 0.001}, // 0.001 wstETH
-			},
-		},
-		netconf.Omega: {
-			evmchain.IDHolesky: {
-				tokens.WSTETH: {minEther: 0.001}, // 0.001 wstETH
-			},
-		},
-		netconf.Staging: {
-			evmchain.IDHolesky: {
-				tokens.WSTETH: {minEther: 0.001}, // 0.001 wstETH
-			},
-		},
-	}
 )
 
 // SolverNetRoles returns the roles that have solvernet thresholds.
 func SolverNetRoles() []Role {
-	return []Role{RoleSolver, RoleFlowgen}
+	return []Role{RoleSolver}
 }
 
 // GetSolverNetThreshold returns the solvernet threshold for the given role, network, chain, and token.
 func GetSolverNetThreshold(role Role, network netconf.ID, chainID uint64, tkn tokens.Token) (SolverNetThreshold, bool) {
 	m := map[Role]map[netconf.ID]map[uint64]map[tokens.Token]SolverNetThreshold{
-		RoleSolver:  solverThresholds,
-		RoleFlowgen: flowgenThresholds,
+		RoleSolver: solverThresholds,
 	}
 
 	resp, ok := m[role][network][chainID][tkn]
