@@ -53,7 +53,7 @@ contract MockSolverNetInbox is ReentrancyGuard, EIP712, DeployedAt, XAppBase, IS
      * @notice Typehash for the GaslessCrossChainOrder struct.
      */
     bytes32 internal constant GASLESS_ORDER_TYPEHASH = keccak256(
-        "GaslessCrossChainOrder(address originSettler,address user,uint256 nonce,uint256 originChainId,uint32 openDeadline,uint32 fillDeadline,bytes32 orderDataType,bytes orderData)"
+        "OmniGaslessCrossChainOrder(address originSettler,address user,uint256 nonce,uint256 originChainId,uint32 openDeadline,uint32 fillDeadline,bytes32 orderDataType,bytes orderData)"
     );
 
     /**
@@ -479,6 +479,7 @@ contract MockSolverNetInbox is ReentrancyGuard, EIP712, DeployedAt, XAppBase, IS
 
     /**
      * @notice Increment the gasless nonce for the sender.
+     * @dev This allows a user to invalidate unused nonces.
      * @param amount Amount to increment the nonce by.
      */
     function incrementGaslessNonce(uint16 amount) external {
@@ -764,10 +765,10 @@ contract MockSolverNetInbox is ReentrancyGuard, EIP712, DeployedAt, XAppBase, IS
         _processDeposit(orderData.deposit, user);
         ResolvedCrossChainOrder memory resolved = _openOrder(orderData, id, openDeadline);
 
-        emit Open(resolved.orderId, resolved);
         emit FillOriginData(
             resolved.orderId, abi.decode(resolved.fillInstructions[0].originData, (SolverNet.FillOriginData))
         );
+        emit Open(resolved.orderId, resolved);
     }
 
     /**
