@@ -10,6 +10,7 @@ interface ISolverNetInbox is IOriginSettler {
     error InvalidOrderData();
     error InvalidOriginChainId();
     error InvalidOriginSettler();
+    error InvalidOriginFillerData();
     error InvalidDestinationChainId();
     error InvalidOpenDeadline();
     error InvalidFillDeadline();
@@ -190,6 +191,20 @@ interface ISolverNetInbox is IOriginSettler {
     function getLatestOrderOffset() external view returns (uint248);
 
     /**
+     * @notice Returns the EIP-712 digest for the given gasless order.
+     * @param order GaslessCrossChainOrder being signed.
+     * @return _ EIP-712 digest for the given gasless order.
+     */
+    function getGaslessCrossChainOrderDigest(GaslessCrossChainOrder calldata order) external view returns (bytes32);
+
+    /**
+     * @notice Returns the EIP-712 digest for the given Permit2 data.
+     * @param order GaslessCrossChainOrder containing user, deposit token/amount, and deadline.
+     * @return _ EIP-712 digest for the given Permit2 data.
+     */
+    function getPermit2Digest(GaslessCrossChainOrder calldata order) external view returns (bytes32);
+
+    /**
      * @dev Validate the onchain order.
      * @param order OnchainCrossChainOrder to validate.
      */
@@ -198,8 +213,12 @@ interface ISolverNetInbox is IOriginSettler {
     /**
      * @dev Validate the gasless order.
      * @param order GaslessCrossChainOrder to validate.
+     * @param originFillerData Permit2 data for the origin settler.
      */
-    function validateFor(GaslessCrossChainOrder calldata order) external view returns (bool);
+    function validateFor(GaslessCrossChainOrder calldata order, bytes calldata originFillerData)
+        external
+        view
+        returns (bool);
 
     /**
      * @notice Reject an open order and refund deposits.

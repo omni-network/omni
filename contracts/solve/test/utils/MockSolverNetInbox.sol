@@ -7,10 +7,12 @@ import { DeployedAt } from "../../src/util/DeployedAt.sol";
 import { XAppBase } from "core/src/pkg/XAppBase.sol";
 import { IERC7683 } from "../../src/erc7683/IERC7683.sol";
 import { ISolverNetInbox } from "../../src/interfaces/ISolverNetInbox.sol";
+import { LibBytes } from "solady/src/utils/LibBytes.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { SignatureCheckerLib } from "solady/src/utils/SignatureCheckerLib.sol";
 import { SolverNet } from "../../src/lib/SolverNet.sol";
 import { AddrUtils } from "../../src/lib/AddrUtils.sol";
+import { IPermit2 } from "../../src/ext/IPermit2.sol";
 import { IOmniPortalPausable } from "core/src/interfaces/IOmniPortalPausable.sol";
 
 /**
@@ -55,6 +57,19 @@ contract MockSolverNetInbox is ReentrancyGuard, EIP712, DeployedAt, XAppBase, IS
     );
 
     /**
+     * @notice Typehash for the PermitDetails struct.
+     */
+    bytes32 internal constant PERMITDETAILS_TYPEHASH =
+        keccak256("PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)");
+
+    /**
+     * @notice Typehash for the PermitSingle struct.
+     */
+    bytes32 internal constant PERMITSINGLE_TYPEHASH = keccak256(
+        "PermitSingle(PermitDetails details,address spender,uint256 sigDeadline)PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)"
+    );
+
+    /**
      * @notice Action ID for xsubmissions, used as Pauseable key in OmniPortal
      */
     bytes32 internal constant ACTION_XSUBMIT = keccak256("xsubmit");
@@ -73,6 +88,11 @@ contract MockSolverNetInbox is ReentrancyGuard, EIP712, DeployedAt, XAppBase, IS
     uint8 internal constant OPEN_PAUSED = 1;
     uint8 internal constant CLOSE_PAUSED = 2;
     uint8 internal constant ALL_PAUSED = 3;
+
+    /**
+     * @notice The canonical Permit2 contract.
+     */
+    IPermit2 internal constant PERMIT2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
 
     /**
      * @dev Incremental order offset for source inbox orders.
@@ -268,6 +288,30 @@ contract MockSolverNetInbox is ReentrancyGuard, EIP712, DeployedAt, XAppBase, IS
     }
 
     /**
+     * @notice Returns the EIP-712 digest for the given Permit2 data.
+     * @param order GaslessCrossChainOrder containing user, deposit token/amount, and deadline.
+     * @return _ EIP-712 digest for the given Permit2 data.
+     */
+    function getPermit2Digest(GaslessCrossChainOrder calldata order) external view returns (bytes32) {
+        SolverNet.Order memory orderData = _validateFor(order, LibBytes.emptyCalldata());
+        address user = order.user;
+        address token = orderData.deposit.token;
+        address spender = address(this);
+        uint160 amount = orderData.deposit.amount;
+        uint48 expiration = type(uint48).max; // Set max value for expiration, consistent with SafeTransferLib's approach
+        uint256 deadline = order.openDeadline;
+
+        (,, uint48 nonce) = PERMIT2.allowance(user, token, spender);
+        bytes32 permit2DomainSeparator = PERMIT2.DOMAIN_SEPARATOR();
+
+        bytes32 permitDetailsHash = keccak256(abi.encode(PERMITDETAILS_TYPEHASH, token, amount, expiration, nonce));
+        bytes32 permitSingleHash = keccak256(abi.encode(PERMITSINGLE_TYPEHASH, permitDetailsHash, spender, deadline));
+
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", permit2DomainSeparator, permitSingleHash));
+        return digest;
+    }
+
+    /**
      * @dev Validate the onchain order.
      * @param order OnchainCrossChainOrder to validate.
      */
@@ -279,9 +323,14 @@ contract MockSolverNetInbox is ReentrancyGuard, EIP712, DeployedAt, XAppBase, IS
     /**
      * @dev Validate the gasless order.
      * @param order GaslessCrossChainOrder to validate.
+     * @param originFillerData Permit2 data for the origin settler.
      */
-    function validateFor(GaslessCrossChainOrder calldata order) external view returns (bool) {
-        _validateFor(order);
+    function validateFor(GaslessCrossChainOrder calldata order, bytes calldata originFillerData)
+        external
+        view
+        returns (bool)
+    {
+        _validateFor(order, originFillerData);
         return true;
     }
 
@@ -298,13 +347,14 @@ contract MockSolverNetInbox is ReentrancyGuard, EIP712, DeployedAt, XAppBase, IS
     /**
      * @notice Resolve the gasless order with validation.
      * @param order GaslessCrossChainOrder to resolve.
+     * @param originFillerData Permit2 data for the origin settler.
      */
-    function resolveFor(GaslessCrossChainOrder calldata order, bytes calldata)
+    function resolveFor(GaslessCrossChainOrder calldata order, bytes calldata originFillerData)
         public
         view
         returns (ResolvedCrossChainOrder memory)
     {
-        SolverNet.Order memory orderData = _validateFor(order);
+        SolverNet.Order memory orderData = _validateFor(order, originFillerData);
         address user = order.user;
         return _resolve(orderData, _getOrderId(user, _gaslessUserNonce[user]), order.openDeadline);
     }
@@ -327,15 +377,17 @@ contract MockSolverNetInbox is ReentrancyGuard, EIP712, DeployedAt, XAppBase, IS
      * @dev Token deposits are transferred from order.user to this inbox.
      * @param order GaslessCrossChainOrder to open.
      * @param signature Signature from order.user.
+     * @param originFillerData Permit2 data for the origin settler.
      */
-    function openFor(GaslessCrossChainOrder calldata order, bytes calldata signature, bytes calldata)
+    function openFor(GaslessCrossChainOrder calldata order, bytes calldata signature, bytes calldata originFillerData)
         external
         whenNotPaused(OPEN)
         nonReentrant
     {
         address user = order.user;
-        SolverNet.Order memory orderData = _validateFor(order);
+        SolverNet.Order memory orderData = _validateFor(order, originFillerData);
         if (msg.sender != user) _validateSignature(order, signature);
+        if (originFillerData.length > 0) _permit2(order, orderData.deposit, originFillerData);
 
         bytes32 id = _getOrderId(user, _gaslessUserNonce[user]++);
         _open(orderData, id, user, order.openDeadline);
@@ -459,9 +511,14 @@ contract MockSolverNetInbox is ReentrancyGuard, EIP712, DeployedAt, XAppBase, IS
     /**
      * @dev Validate and parse GaslessCrossChainOrder parameters
      * @param order GaslessCrossChainOrder to validate
+     * @param originFillerData Permit2 data for the origin settler
      */
-    function _validateFor(GaslessCrossChainOrder calldata order) internal view returns (SolverNet.Order memory) {
-        _validateGaslessOrder(order);
+    function _validateFor(GaslessCrossChainOrder calldata order, bytes calldata originFillerData)
+        internal
+        view
+        returns (SolverNet.Order memory)
+    {
+        _validateGaslessOrder(order, originFillerData);
         return _validateOrderData(order.orderData, order.fillDeadline);
     }
 
@@ -478,8 +535,12 @@ contract MockSolverNetInbox is ReentrancyGuard, EIP712, DeployedAt, XAppBase, IS
     /**
      * @dev Validate GaslessCrossChainOrder parameters
      * @param order GaslessCrossChainOrder to validate
+     * @param originFillerData Permit2 data for the origin settler
      */
-    function _validateGaslessOrder(GaslessCrossChainOrder calldata order) internal view {
+    function _validateGaslessOrder(GaslessCrossChainOrder calldata order, bytes calldata originFillerData)
+        internal
+        view
+    {
         uint256 gaslessUserNonce = _gaslessUserNonce[order.user];
         if (order.originSettler != address(this)) revert InvalidOriginSettler();
         if (order.user == address(0)) revert InvalidUser();
@@ -491,6 +552,7 @@ contract MockSolverNetInbox is ReentrancyGuard, EIP712, DeployedAt, XAppBase, IS
         if (order.fillDeadline <= block.timestamp) revert InvalidFillDeadline();
         if (order.orderDataType != ORDERDATA_TYPEHASH) revert InvalidOrderTypehash();
         if (order.orderData.length == 0) revert InvalidOrderData();
+        if (originFillerData.length != 0 && originFillerData.length != 96) revert InvalidOriginFillerData();
     }
 
     /**
@@ -663,6 +725,22 @@ contract MockSolverNetInbox is ReentrancyGuard, EIP712, DeployedAt, XAppBase, IS
     }
 
     /**
+     * @dev Approve the origin settler to spend the deposit using Permit2.
+     * @param order GaslessCrossChainOrder containing user and deadline.
+     * @param deposit Deposit to approve.
+     * @param originFillerData Permit2 data from the depositor.
+     */
+    function _permit2(
+        GaslessCrossChainOrder calldata order,
+        SolverNet.Deposit memory deposit,
+        bytes calldata originFillerData
+    ) internal {
+        if (deposit.token == address(0)) return;
+        (uint8 v, bytes32 r, bytes32 s) = abi.decode(originFillerData, (uint8, bytes32, bytes32));
+        deposit.token.permit2(order.user, address(this), deposit.amount, order.openDeadline, v, r, s);
+    }
+
+    /**
      * @notice Validate and intake an ERC20 or native deposit.
      * @param deposit Deposit to process.
      * @param from Address to retrieve the deposit from.
@@ -671,7 +749,7 @@ contract MockSolverNetInbox is ReentrancyGuard, EIP712, DeployedAt, XAppBase, IS
         if (deposit.token == address(0)) {
             if (msg.value != deposit.amount) revert InvalidNativeDeposit();
         } else {
-            deposit.token.safeTransferFrom(from, address(this), deposit.amount);
+            deposit.token.safeTransferFrom2(from, address(this), deposit.amount);
         }
     }
 
