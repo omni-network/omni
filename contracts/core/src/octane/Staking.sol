@@ -242,12 +242,12 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
      * @notice Undelegate tokens from a validator
      * @dev Proxies x/staking.MsgUndelegate
      * @param validator The address of the validator to undelegate from
-     * @param undelegationAmount The amount of ether tokens to undelegate
+     * @param amount The amount of ether tokens to undelegate
      */
-    function undelegate(address validator, uint256 undelegationAmount) external payable {
+    function undelegate(address validator, uint256 amount) external payable {
         require(!isAllowlistEnabled || isAllowedValidator[validator], "Staking: not allowed val");
         _burnFee();
-        emit Undelegate(msg.sender, validator, undelegationAmount);
+        emit Undelegate(msg.sender, validator, amount);
     }
 
     //////////////////////////////////////////////////////////////////////////////
