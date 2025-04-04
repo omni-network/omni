@@ -264,10 +264,10 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
         _processDeposit(orderData.deposit);
         ResolvedCrossChainOrder memory resolved = _openOrder(orderData);
 
-        emit Open(resolved.orderId, resolved);
         emit FillOriginData(
             resolved.orderId, abi.decode(resolved.fillInstructions[0].originData, (SolverNet.FillOriginData))
         );
+        emit Open(resolved.orderId, resolved);
     }
 
     /**
