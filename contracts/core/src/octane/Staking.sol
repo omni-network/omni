@@ -34,6 +34,14 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
     event Delegate(address indexed delegator, address indexed validator, uint256 amount);
 
     /**
+     * @notice Emitted when an undelegation is made from a validator
+     * @param delegator     (MsgUndelegate.delegator_addr) The address of the delegator
+     * @param validator     (MsgUndelegate.validator_addr) The address of the validator to undelegate from
+     * @param amount        (MsgUndelegate.amount) The amount of tokens to undelegate
+     */
+    event Undelegate(address indexed delegator, address indexed validator, uint256 amount);
+
+    /**
      * @notice Emitted when a validator is edited
      * @param validator The validator address
      * @param params The parameters for the editValidator function
@@ -228,6 +236,18 @@ contract Staking is OwnableUpgradeable, EIP712Upgradeable {
      */
     function delegateFor(address delegator, address validator) external payable {
         _delegate(delegator, validator);
+    }
+
+    /**
+     * @notice Undelegate tokens from a validator
+     * @dev Proxies x/staking.MsgUndelegate
+     * @param validator The address of the validator to undelegate from
+     * @param amount The amount of ether tokens to undelegate
+     */
+    function undelegate(address validator, uint256 amount) external payable {
+        require(!isAllowlistEnabled || isAllowedValidator[validator], "Staking: not allowed val");
+        _burnFee();
+        emit Undelegate(msg.sender, validator, amount);
     }
 
     //////////////////////////////////////////////////////////////////////////////
