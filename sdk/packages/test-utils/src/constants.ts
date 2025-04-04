@@ -2,11 +2,13 @@ import { readFileSync } from 'node:fs'
 import type { Chain } from 'viem'
 
 type RPCEndpoints = {
+  omni_evm: string
   mock_l1: string
   mock_l2: string
 }
 
 let RPC_ENDPOINTS: RPCEndpoints = {
+  omni_evm: 'http://127.0.0.1:8001',
   mock_l1: 'http://127.0.0.1:8003',
   mock_l2: 'http://127.0.0.1:8004',
 }
@@ -54,9 +56,21 @@ export const MOCK_L2_CHAIN: Chain = {
   },
 }
 
+export const OMNI_DEVNET_CHAIN: Chain = {
+  id: OMNI_DEVNET_ID,
+  name: 'Omni Devnet',
+  nativeCurrency: { decimals: 18, name: 'Ether', symbol: 'ETH' },
+  rpcUrls: {
+    default: {
+      http: [RPC_ENDPOINTS.omni_evm],
+    },
+  },
+}
+
 export const MOCK_CHAINS: Record<number, Chain> = {
   [MOCK_L1_ID]: MOCK_L1_CHAIN,
   [MOCK_L2_ID]: MOCK_L2_CHAIN,
+  [OMNI_DEVNET_ID]: OMNI_DEVNET_CHAIN,
 }
 
 export const OMNI_TOKEN_ABI = [

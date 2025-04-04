@@ -4,6 +4,7 @@ import {
   MOCK_L1_CHAIN,
   MOCK_L1_ID,
   MOCK_L2_CHAIN,
+  OMNI_DEVNET_CHAIN,
   createClient,
   mockL1Client,
   testAccount,
@@ -46,7 +47,7 @@ export function testConnector(config) {
 
 export function createWagmiConfig() {
   return createConfig({
-    chains: [MOCK_L1_CHAIN, MOCK_L2_CHAIN],
+    chains: [MOCK_L1_CHAIN, MOCK_L2_CHAIN, OMNI_DEVNET_CHAIN],
     client: createClient,
   })
 }
@@ -131,16 +132,51 @@ export async function executeTestOrder(
   rejectReason?: string,
 ): Promise<void> {
   const orderRef = useOrderRef(testConnector, order)
+
   await waitFor(() => expect(orderRef.current?.isReady).toBe(true))
+
+  // Wait for order to be validated
+  await waitFor(() =>
+    expect(orderRef.current?.validation?.status).toBeOneOf([
+      'accepted',
+      'rejected',
+    ]),
+  )
 
   if (rejectReason) {
     expect(orderRef.current?.validation?.status).toBe('rejected')
     expect(orderRef.current?.validation?.rejectReason).toBe(rejectReason)
-  } else {
-    expect(orderRef.current?.validation?.status).toBe('accepted')
-    act(() => {
-      orderRef.current?.open()
-    })
-    await waitFor(() => expect(orderRef.current?.txHash).toBeDefined())
+    return
   }
+
+  expect(orderRef.current?.validation?.status).toBe('accepted')
+
+  // Open the order
+  act(() => {
+    orderRef.current?.open()
+  })
+
+  const waitForOpts = {
+    interval: 100,
+    timeout: 5000,
+  }
+
+  // Assert tx submitted
+  await waitFor(() => {
+    expect(orderRef.current?.error).toBeUndefined()
+    expect(orderRef.current?.txHash).toBeDefined()
+  }, waitForOpts)
+
+  // Assert the order was opened properly
+  await waitFor(() => {
+    expect(orderRef.current?.error).toBeUndefined()
+    expect(orderRef.current?.orderId).toBeDefined()
+    expect(orderRef.current?.status).toBeOneOf(['open', 'filled']) // allow filled, in case order was filled quickly
+  }, waitForOpts)
+
+  // Assert the order was filled
+  await waitFor(() => {
+    expect(orderRef.current?.error).toBeUndefined()
+    expect(orderRef.current?.status).toBe('filled')
+  }, waitForOpts)
 }

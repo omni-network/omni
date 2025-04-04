@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { type Log, decodeEventLog } from 'viem'
+import { type Log, decodeEventLog, parseEventLogs } from 'viem'
 import type { UseWaitForTransactionReceiptReturnType } from 'wagmi'
 import { inboxABI } from '../constants/abis.js'
 import { ParseOpenEventError } from '../errors/base.js'
@@ -14,12 +14,25 @@ export function useParseOpenEvent(params: UseParseOpenEventParams) {
   const eventData = useMemo(() => {
     if (!logs || status !== 'success') return
     try {
+      const parsed = parseEventLogs({
+        abi: inboxABI,
+        logs,
+        eventName: 'Open',
+      })
+
+      if (parsed.length !== 1) {
+        throw new ParseOpenEventError( `Expected exactly one 'Open' event but found ${parsed.length}.`)
+      }
+
+      const openLog = parsed[0]
+
       const openEvent = decodeEventLog({
         abi: inboxABI,
         eventName: 'Open',
-        data: logs[logs.length - 1].data,
-        topics: logs[logs.length - 1].topics,
+        data: openLog.data,
+        topics: openLog.topics,
       })
+
       return {
         resolvedOrder: openEvent.args.resolvedOrder,
       }
