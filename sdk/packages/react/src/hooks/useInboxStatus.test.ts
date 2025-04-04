@@ -5,7 +5,12 @@ import { createMockReadContractResult } from '../../test/mocks.js'
 import { useGetOrder } from './useGetOrder.js'
 import { useInboxStatus } from './useInboxStatus.js'
 
-const data = { status: 1, claimant: '0x123', timestamp: 1 } as const
+const data = {
+  status: 1,
+  updatedBy: '0x123',
+  timestamp: 1,
+  rejectReason: 0,
+} as const
 
 const { mockUseGetOrder } = vi.hoisted(() => {
   return {
@@ -41,7 +46,7 @@ test('default: returns appropriate inbox status when order is resolved', async (
 
   mockUseGetOrder.mockReturnValue(
     createMockReadContractResult<ReturnType<typeof useGetOrder>>({
-      data: [resolvedOrder, data],
+      data: [resolvedOrder, data, 0n],
       isSuccess: true,
       status: 'success',
     }),
@@ -66,7 +71,7 @@ test('parameters: status unknown', () => {
 test('parameters: status open', () => {
   mockUseGetOrder.mockReturnValue(
     createMockReadContractResult<ReturnType<typeof useGetOrder>>({
-      data: [resolvedOrder, data],
+      data: [resolvedOrder, data, 0n],
     }),
   )
 
@@ -80,7 +85,7 @@ test('parameters: status open', () => {
 test('parameters: status rejected', () => {
   mockUseGetOrder.mockReturnValue(
     createMockReadContractResult<ReturnType<typeof useGetOrder>>({
-      data: [resolvedOrder, { ...data, status: 2 }],
+      data: [resolvedOrder, { ...data, status: 2 }, 0n],
     }),
   )
 
@@ -94,7 +99,7 @@ test('parameters: status rejected', () => {
 test('parameters: status closed', () => {
   mockUseGetOrder.mockReturnValue(
     createMockReadContractResult<ReturnType<typeof useGetOrder>>({
-      data: [resolvedOrder, { ...data, status: 3 }],
+      data: [resolvedOrder, { ...data, status: 3 }, 0n],
     }),
   )
 
@@ -108,7 +113,7 @@ test('parameters: status closed', () => {
 test('parameters: status filled', () => {
   mockUseGetOrder.mockReturnValue(
     createMockReadContractResult<ReturnType<typeof useGetOrder>>({
-      data: [resolvedOrder, { ...data, status: 4 }],
+      data: [resolvedOrder, { ...data, status: 4 }, 0n],
     }),
   )
 
@@ -122,7 +127,7 @@ test('parameters: status filled', () => {
 test('parameters: status claimed', () => {
   mockUseGetOrder.mockReturnValue(
     createMockReadContractResult<ReturnType<typeof useGetOrder>>({
-      data: [resolvedOrder, { ...data, status: 5 }],
+      data: [resolvedOrder, { ...data, status: 5 }, 0n],
     }),
   )
 

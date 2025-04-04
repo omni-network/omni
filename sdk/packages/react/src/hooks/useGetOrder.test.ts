@@ -39,7 +39,13 @@ test('default: returns order when contract read returns an order', async () => {
     createMockReadContractResult<ReturnType<typeof useGetOrder>>({
       data: [
         resolvedOrder,
-        { status: 1, claimant: '0x123', timestamp: 1 } as const,
+        {
+          status: 1,
+          updatedBy: '0x123',
+          timestamp: 1,
+          rejectReason: 0,
+        } as const,
+        0n,
       ],
       isSuccess: true,
       status: 'success',

@@ -14,6 +14,8 @@ jobs:
         with:
           go-version: 'v1.24'
 
+      - name: Install foundry
+        uses: ./.github/actions/setup-foundry
       - name: Install node
         uses: actions/setup-node@v4
         with:
