@@ -10,6 +10,13 @@ type flowConfig struct {
 	dstChain uint64
 }
 
+func (c flowConfig) Flip() flowConfig {
+	return flowConfig{
+		srcChain: c.dstChain,
+		dstChain: c.srcChain,
+	}
+}
+
 var config = map[netconf.ID]flowConfig{
 	netconf.Devnet: {
 		srcChain: evmchain.IDMockL1,
