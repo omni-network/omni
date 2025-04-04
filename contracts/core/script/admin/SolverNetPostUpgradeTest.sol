@@ -91,7 +91,7 @@ contract SolverNetPostUpgradeTest is Test {
             orderData: abi.encode(orderData)
         });
 
-        bytes32 id = inbox.getNextOrderId(user);
+        bytes32 id = inbox.getNextOnchainOrderId(user);
         SolverNet.FillOriginData memory fillOriginData = SolverNet.FillOriginData({
             srcChainId: uint64(block.chainid),
             destChainId: uint64(block.chainid == 1 ? 10 : 1),

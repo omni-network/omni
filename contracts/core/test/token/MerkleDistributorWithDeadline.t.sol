@@ -66,7 +66,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
         omni = new Omni(initialSupply, address(this));
         create3 = new Create3();
         omniPortal = new MockPortal();
-        inbox = new MockSolverNetInbox(outbox);
+        inbox = new MockSolverNetInbox(address(omniPortal));
     }
 
     // Setup randomly generated merkle tree

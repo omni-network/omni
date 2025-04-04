@@ -388,8 +388,8 @@ contract TestBase is Test {
         outbox.setInboxes(chainIds, inboxes);
     }
 
-    function assertStatus(bytes32 orderId, ISolverNetInbox.Status status) internal {
-        (, ISolverNetInbox.OrderState memory state, uint248 offset) = inbox.getOrder(orderId);
+    function assertStatus(bytes32 orderId, ISolverNetInbox.Status status) internal view {
+        (, ISolverNetInbox.OrderState memory state,) = inbox.getOrder(orderId);
 
         uint8 expect = uint8(status);
         uint8 actual = uint8(state.status);

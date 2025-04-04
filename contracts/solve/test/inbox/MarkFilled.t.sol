@@ -6,7 +6,7 @@ import "../TestBase.sol";
 contract SolverNet_Inbox_MarkFilled_Test is TestBase {
     function test_markFilled_reverts() public {
         // order must be pending
-        bytes32 orderId = inbox.getOrderId(user, inbox.getUserNonce(user));
+        bytes32 orderId = inbox.getOrderId(user, inbox.getOnchainUserNonce(user));
         vm.expectRevert(ISolverNetInbox.OrderNotPending.selector);
         inbox.markFilled(orderId, bytes32(0), address(0));
 
