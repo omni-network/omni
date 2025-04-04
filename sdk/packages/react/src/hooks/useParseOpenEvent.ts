@@ -11,6 +11,7 @@ type UseParseOpenEventParams = {
 
 export function useParseOpenEvent(params: UseParseOpenEventParams) {
   const { status, logs } = params
+
   const eventData = useMemo(() => {
     if (!logs || status !== 'success') return
     try {
@@ -21,7 +22,11 @@ export function useParseOpenEvent(params: UseParseOpenEventParams) {
       })
 
       if (parsed.length !== 1) {
-        throw new ParseOpenEventError( `Expected exactly one 'Open' event but found ${parsed.length}.`)
+        return {
+          error: new ParseOpenEventError(
+            `Expected exactly one 'Open' event but found ${parsed.length}.`,
+          ),
+        }
       }
 
       const openLog = parsed[0]
