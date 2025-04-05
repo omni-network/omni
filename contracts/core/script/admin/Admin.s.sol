@@ -425,7 +425,9 @@ contract Admin is Script {
      * @param deployer  The address of the account that will deploy the new implementation.
      * @param proxy     The address of the SolverNetInbox proxy to upgrade.
      */
-    function upgradeSolverNetInbox(address admin, address deployer, address proxy, bytes calldata data) public {
+    function upgradeSolverNetInbox(address admin, address deployer, address proxy, address weth, bytes calldata data)
+        public
+    {
         SolverNetInbox inbox = SolverNetInbox(proxy);
 
         address owner = inbox.owner();
@@ -436,7 +438,7 @@ contract Admin is Script {
         uint248 offset = inbox.getLatestOrderOffset();
 
         vm.startBroadcast(deployer);
-        address impl = address(new SolverNetInbox());
+        address impl = address(new SolverNetInbox(weth));
         vm.stopBroadcast();
 
         _upgradeProxy(admin, proxy, impl, data, true, true);

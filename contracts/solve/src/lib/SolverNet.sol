@@ -30,6 +30,22 @@ library SolverNet {
     }
 
     /**
+     * @notice SponsoredOrderData is the SolverNet's ERC7683 order data encoding, used when opening a sponsored order.
+     * It is functionally identical to OrderData, but includes a sponsor address and their signature.
+     * @custom:field sponsor   The address of the sponsor.
+     * @custom:field signature The signature of the sponsor.
+     */
+    struct SponsoredOrderData {
+        address owner;
+        address sponsor;
+        bytes signature;
+        uint64 destChainId;
+        Deposit deposit;
+        Call[] calls;
+        TokenExpense[] expenses;
+    }
+
+    /**
      * @notice Order is a convenience struct that fully describes an order.
      * @dev It is not written to storage, but rather built on view.
      */
@@ -38,6 +54,9 @@ library SolverNet {
         Deposit deposit;
         Call[] calls;
         TokenExpense[] expenses;
+        address sponsor;
+        uint256 sponsorFee;
+        bytes signature;
     }
 
     /**

@@ -11,9 +11,11 @@ import { IERC7683 } from "./erc7683/IERC7683.sol";
 import { ISolverNetInbox } from "./interfaces/ISolverNetInbox.sol";
 import { LibBytes } from "solady/src/utils/LibBytes.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
+import { FixedPointMathLib } from "solady/src/utils/FixedPointMathLib.sol";
 import { SignatureCheckerLib } from "solady/src/utils/SignatureCheckerLib.sol";
 import { SolverNet } from "./lib/SolverNet.sol";
 import { AddrUtils } from "./lib/AddrUtils.sol";
+import { IWETH } from "./ext/IWETH.sol";
 import { IPermit2 } from "./ext/IPermit2.sol";
 import { IOmniPortalPausable } from "core/src/interfaces/IOmniPortalPausable.sol";
 
@@ -63,6 +65,13 @@ contract SolverNetInbox is
     );
 
     /**
+     * @notice Typehash for the SponsoredOrderData struct.
+     */
+    bytes32 internal constant SPONSORED_ORDERDATA_TYPEHASH = keccak256(
+        "SponsoredOrderData(address owner,address sponsor,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)TokenExpense(address spender,address token,uint96 amount)"
+    );
+
+    /**
      * @notice Typehash for the GaslessCrossChainOrder struct.
      */
     bytes32 internal constant GASLESS_ORDER_TYPEHASH = keccak256(
@@ -81,6 +90,12 @@ contract SolverNetInbox is
     bytes32 internal constant PERMITSINGLE_TYPEHASH = keccak256(
         "PermitSingle(PermitDetails details,address spender,uint256 sigDeadline)PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)"
     );
+
+    /**
+     * @notice Typehash for the Sponsorship struct.
+     */
+    bytes32 internal constant SPONSORSHIP_TYPEHASH =
+        keccak256("Sponsorship(bytes32 orderId,Deposit deposit)Deposit(address token,uint96 amount)");
 
     /**
      * @notice Action ID for xsubmissions, used as Pauseable key in OmniPortal
@@ -103,9 +118,19 @@ contract SolverNetInbox is
     uint8 internal constant ALL_PAUSED = 3;
 
     /**
+     * @notice The sponsor fee as a percentage of the deposit, in basis points.
+     */
+    uint8 internal constant SPONSOR_FEE = 30;
+
+    /**
      * @notice The canonical Permit2 contract.
      */
     IPermit2 internal constant PERMIT2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
+
+    /**
+     * @notice The canonical WETH contract.
+     */
+    address internal immutable WETH;
 
     /**
      * @dev Incremental order offset for source inbox orders.
@@ -153,6 +178,11 @@ contract SolverNetInbox is
     mapping(bytes32 id => OrderState) internal _orderState;
 
     /**
+     * @notice Map order ID to sponsor.
+     */
+    mapping(bytes32 id => address) internal _orderSponsor;
+
+    /**
      * @notice Map order ID to order offset.
      */
     mapping(bytes32 id => uint248) internal _orderOffset;
@@ -180,7 +210,12 @@ contract SolverNetInbox is
         _;
     }
 
-    constructor() {
+    /**
+     * @notice Sets the WETH address and disables initialization in the implementation contract.
+     * @param weth_ The address of the WETH contract.
+     */
+    constructor(address weth_) {
+        WETH = weth_;
         _disableInitializers();
     }
 
@@ -252,6 +287,14 @@ contract SolverNetInbox is
     }
 
     /**
+     * @notice Returns the sponsor for the given order.
+     * @param id ID of the order.
+     */
+    function getOrderSponsor(bytes32 id) external view returns (address) {
+        return _orderSponsor[id];
+    }
+
+    /**
      * @notice Returns the order ID for the given user and nonce.
      * @param user  Address of the user.
      * @param nonce Nonce of the order.
@@ -315,7 +358,7 @@ contract SolverNetInbox is
      * @return _ EIP-712 digest for the given Permit2 data.
      */
     function getPermit2Digest(GaslessCrossChainOrder calldata order) external view returns (bytes32) {
-        SolverNet.Order memory orderData = _validateFor(order, LibBytes.emptyCalldata());
+        (SolverNet.Order memory orderData,) = _validateFor(order, LibBytes.emptyCalldata());
         address user = order.user;
         address token = orderData.deposit.token;
         address spender = address(this);
@@ -331,6 +374,26 @@ contract SolverNetInbox is
 
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", permit2DomainSeparator, permitSingleHash));
         return digest;
+    }
+
+    /**
+     * @notice Returns the EIP-712 digest for the given onchain order.
+     * @param order OnchainCrossChainOrder to get the digest for.
+     * @return _ EIP-712 digest for the given onchain order.
+     */
+    function getSponsorshipDigest(OnchainCrossChainOrder calldata order) public view returns (bytes32) {
+        (SolverNet.Order memory orderData, bytes32 id) = _validate(order);
+        return _getSponsorshipDigest(orderData, id);
+    }
+
+    /**
+     * @notice Returns the EIP-712 digest for the given gasless order.
+     * @param order GaslessCrossChainOrder to get the digest for.
+     * @return _ EIP-712 digest for the given gasless order.
+     */
+    function getSponsorshipDigest(GaslessCrossChainOrder calldata order) public view returns (bytes32) {
+        (SolverNet.Order memory orderData, bytes32 id) = _validateFor(order, LibBytes.emptyCalldata());
+        return _getSponsorshipDigest(orderData, id);
     }
 
     /**
@@ -361,9 +424,8 @@ contract SolverNetInbox is
      * @param order OnchainCrossChainOrder to resolve.
      */
     function resolve(OnchainCrossChainOrder calldata order) public view returns (ResolvedCrossChainOrder memory) {
-        SolverNet.Order memory orderData = _validate(order);
-        address user = orderData.header.owner;
-        return _resolve(orderData, _getOrderId(user, _onchainUserNonce[user]), 0);
+        (SolverNet.Order memory orderData, bytes32 id) = _validate(order);
+        return _resolve(orderData, id, 0);
     }
 
     /**
@@ -376,9 +438,8 @@ contract SolverNetInbox is
         view
         returns (ResolvedCrossChainOrder memory)
     {
-        SolverNet.Order memory orderData = _validateFor(order, originFillerData);
-        address user = order.user;
-        return _resolve(orderData, _getOrderId(user, _gaslessUserNonce[user]), order.openDeadline);
+        (SolverNet.Order memory orderData, bytes32 id) = _validateFor(order, originFillerData);
+        return _resolve(orderData, id, order.openDeadline);
     }
 
     /**
@@ -387,11 +448,11 @@ contract SolverNetInbox is
      * @param order OnchainCrossChainOrder to open.
      */
     function open(OnchainCrossChainOrder calldata order) external payable whenNotPaused(OPEN) nonReentrant {
-        SolverNet.Order memory orderData = _validate(order);
-        address user = orderData.header.owner;
-        bytes32 id = _getOrderId(user, _onchainUserNonce[user]++);
+        (SolverNet.Order memory orderData, bytes32 id) = _validate(order);
+        if (orderData.sponsor != address(0)) _validateSponsorship(orderData, id);
 
         _open(orderData, id, msg.sender, 0);
+        _incrementOnchainUserNonce(msg.sender);
     }
 
     /**
@@ -406,13 +467,13 @@ contract SolverNetInbox is
         whenNotPaused(OPEN)
         nonReentrant
     {
-        address user = order.user;
-        SolverNet.Order memory orderData = _validateFor(order, originFillerData);
-        if (msg.sender != user) _validateSignature(order, signature);
+        (SolverNet.Order memory orderData, bytes32 id) = _validateFor(order, originFillerData);
+        if (msg.sender != order.user) _validateSignature(order, signature);
+        if (orderData.sponsor != address(0)) _validateSponsorship(orderData, id);
         if (originFillerData.length > 0) _permit2(order, orderData.deposit, originFillerData);
 
-        bytes32 id = _getOrderId(user, _gaslessUserNonce[user]++);
-        _open(orderData, id, user, order.openDeadline);
+        _open(orderData, id, order.user, order.openDeadline);
+        _incrementGaslessUserNonce(order.user);
     }
 
     /**
@@ -428,7 +489,7 @@ contract SolverNetInbox is
         if (state.status != Status.Pending) revert OrderNotPending();
 
         _upsertOrder(id, Status.Rejected, reason, msg.sender);
-        _transferDeposit(id, _orderHeader[id].owner);
+        _transferDeposit(id, _orderHeader[id].owner, _orderSponsor[id], true);
         _purgeState(id, Status.Rejected);
 
         emit Rejected(id, msg.sender, reason);
@@ -449,7 +510,7 @@ contract SolverNetInbox is
         if (header.fillDeadline + CLOSE_BUFFER >= block.timestamp) revert OrderStillValid();
 
         _upsertOrder(id, Status.Closed, 0, msg.sender);
-        _transferDeposit(id, header.owner);
+        _transferDeposit(id, header.owner, _orderSponsor[id], true);
         _purgeState(id, Status.Closed);
 
         emit Closed(id);
@@ -493,7 +554,7 @@ contract SolverNetInbox is
         if (state.updatedBy != msg.sender) revert Unauthorized();
 
         _upsertOrder(id, Status.Claimed, 0, msg.sender);
-        _transferDeposit(id, to);
+        _transferDeposit(id, to, address(0), false);
         _purgeState(id, Status.Claimed);
 
         emit Claimed(id, msg.sender, to);
@@ -514,21 +575,55 @@ contract SolverNetInbox is
      * @param id ID of the order.
      */
     function _getOrder(bytes32 id) internal view returns (SolverNet.Order memory) {
+        SolverNet.Deposit memory deposit = _orderDeposit[id];
         return SolverNet.Order({
             header: _orderHeader[id],
             calls: _orderCalls[id],
-            deposit: _orderDeposit[id],
-            expenses: _orderExpenses[id]
+            deposit: deposit,
+            expenses: _orderExpenses[id],
+            sponsor: _orderSponsor[id],
+            sponsorFee: _getSponsorFee(deposit),
+            signature: bytes("")
         });
+    }
+
+    /**
+     * @notice Returns the EIP-712 digest for a fee sponsorship on a given order.
+     * @param orderData Order data to get the digest for.
+     * @param id ID of the order.
+     * @return _ EIP-712 digest for the given sponsorship.
+     */
+    function _getSponsorshipDigest(SolverNet.Order memory orderData, bytes32 id) internal view returns (bytes32) {
+        bytes32 sponsorshipHash = keccak256(abi.encode(SPONSORSHIP_TYPEHASH, id, orderData.deposit));
+        return _hashTypedData(sponsorshipHash);
+    }
+
+    /**
+     * @dev Derive the sponsor fee for the order.
+     * @param deposit Deposit of the order.
+     */
+    function _getSponsorFee(SolverNet.Deposit memory deposit) internal pure returns (uint256) {
+        return FixedPointMathLib.fullMulDiv(deposit.amount, SPONSOR_FEE, 10_000);
     }
 
     /**
      * @dev Validate and parse OnchainCrossChainOrder parameters
      * @param order OnchainCrossChainOrder to validate
      */
-    function _validate(OnchainCrossChainOrder calldata order) internal view returns (SolverNet.Order memory) {
+    function _validate(OnchainCrossChainOrder calldata order) internal view returns (SolverNet.Order memory, bytes32) {
+        SolverNet.Order memory orderData;
         _validateOnchainOrder(order);
-        return _validateOrderData(order.orderData, order.fillDeadline);
+
+        if (order.orderDataType == ORDERDATA_TYPEHASH) {
+            orderData = _validateOrderData(order.orderData, order.fillDeadline);
+        } else {
+            orderData = _validateSponsoredOrderData(order.orderData, order.fillDeadline);
+        }
+
+        uint256 nonce = _onchainUserNonce[orderData.header.owner];
+        bytes32 id = _getOrderId(orderData.header.owner, nonce);
+
+        return (orderData, id);
     }
 
     /**
@@ -539,10 +634,23 @@ contract SolverNetInbox is
     function _validateFor(GaslessCrossChainOrder calldata order, bytes calldata originFillerData)
         internal
         view
-        returns (SolverNet.Order memory)
+        returns (SolverNet.Order memory orderData, bytes32)
     {
         _validateGaslessOrder(order, originFillerData);
-        return _validateOrderData(order.orderData, order.fillDeadline);
+        address user;
+
+        if (order.orderDataType == ORDERDATA_TYPEHASH) {
+            orderData = _validateOrderData(order.orderData, order.fillDeadline);
+            user = orderData.header.owner;
+        } else {
+            orderData = _validateSponsoredOrderData(order.orderData, order.fillDeadline);
+            user = order.user;
+        }
+
+        uint256 nonce = _gaslessUserNonce[user];
+        bytes32 id = _getOrderId(user, nonce);
+
+        return (orderData, id);
     }
 
     /**
@@ -551,7 +659,9 @@ contract SolverNetInbox is
      */
     function _validateOnchainOrder(OnchainCrossChainOrder calldata order) internal view {
         if (order.fillDeadline <= block.timestamp) revert InvalidFillDeadline();
-        if (order.orderDataType != ORDERDATA_TYPEHASH) revert InvalidOrderTypehash();
+        if (order.orderDataType != ORDERDATA_TYPEHASH && order.orderDataType != SPONSORED_ORDERDATA_TYPEHASH) {
+            revert InvalidOrderTypehash();
+        }
         if (order.orderData.length == 0) revert InvalidOrderData();
     }
 
@@ -573,7 +683,9 @@ contract SolverNetInbox is
             revert InvalidOpenDeadline();
         }
         if (order.fillDeadline <= block.timestamp) revert InvalidFillDeadline();
-        if (order.orderDataType != ORDERDATA_TYPEHASH) revert InvalidOrderTypehash();
+        if (order.orderDataType != ORDERDATA_TYPEHASH && order.orderDataType != SPONSORED_ORDERDATA_TYPEHASH) {
+            revert InvalidOrderTypehash();
+        }
         if (order.orderData.length == 0) revert InvalidOrderData();
         if (originFillerData.length != 0 && originFillerData.length != 96) revert InvalidOriginFillerData();
     }
@@ -589,16 +701,60 @@ contract SolverNetInbox is
         returns (SolverNet.Order memory)
     {
         SolverNet.OrderData memory orderData = abi.decode(orderDataBytes, (SolverNet.OrderData));
+        return _validateCoreOrderData(
+            orderData.owner, orderData.destChainId, fillDeadline, orderData.deposit, orderData.calls, orderData.expenses
+        );
+    }
 
+    /**
+     * @dev Validate SolverNet.SponsoredOrderData
+     * @param orderDataBytes Undecoded SolverNet.SponsoredOrderData to validate
+     * @param fillDeadline Fill deadline of the order
+     */
+    function _validateSponsoredOrderData(bytes calldata orderDataBytes, uint32 fillDeadline)
+        internal
+        view
+        returns (SolverNet.Order memory)
+    {
+        SolverNet.SponsoredOrderData memory orderData = abi.decode(orderDataBytes, (SolverNet.SponsoredOrderData));
+
+        if (orderData.sponsor == address(0)) revert InvalidSponsor();
+
+        SolverNet.Order memory order = _validateCoreOrderData(
+            orderData.owner, orderData.destChainId, fillDeadline, orderData.deposit, orderData.calls, orderData.expenses
+        );
+        order.sponsor = orderData.sponsor;
+        order.sponsorFee = _getSponsorFee(orderData.deposit);
+        order.signature = orderData.signature;
+
+        return order;
+    }
+
+    /**
+     * @dev Validate SolverNet.OrderData
+     * @param owner Owner of the order.
+     * @param destChainId Destination chain ID.
+     * @param fillDeadline Fill deadline of the order.
+     * @param deposit Deposit of the order.
+     * @param calls Calls to execute.
+     * @param expenses Expenses to pay for the order.
+     */
+    function _validateCoreOrderData(
+        address owner,
+        uint64 destChainId,
+        uint32 fillDeadline,
+        SolverNet.Deposit memory deposit,
+        SolverNet.Call[] memory calls,
+        SolverNet.TokenExpense[] memory expenses
+    ) internal view returns (SolverNet.Order memory) {
         // Validate SolverNet.OrderData.Header fields
-        if (orderData.owner == address(0)) orderData.owner = msg.sender;
-        if (orderData.destChainId == 0 || orderData.destChainId == block.chainid) revert InvalidDestinationChainId();
+        if (owner == address(0)) owner = msg.sender;
+        if (destChainId == 0 || destChainId == block.chainid) revert InvalidDestinationChainId();
 
         SolverNet.Header memory header =
-            SolverNet.Header({ owner: orderData.owner, destChainId: orderData.destChainId, fillDeadline: fillDeadline });
+            SolverNet.Header({ owner: owner, destChainId: destChainId, fillDeadline: fillDeadline });
 
         // Validate SolverNet.OrderData.Call
-        SolverNet.Call[] memory calls = orderData.calls;
         if (calls.length == 0) revert InvalidMissingCalls();
         if (calls.length > MAX_ARRAY_SIZE) revert InvalidArrayLength();
         for (uint256 i; i < calls.length; ++i) {
@@ -607,14 +763,21 @@ contract SolverNetInbox is
         }
 
         // Validate SolverNet.OrderData.Expenses
-        SolverNet.TokenExpense[] memory expenses = orderData.expenses;
         if (expenses.length > MAX_ARRAY_SIZE) revert InvalidArrayLength();
         for (uint256 i; i < expenses.length; ++i) {
             if (expenses[i].token == address(0)) revert InvalidExpenseToken();
             if (expenses[i].amount == 0) revert InvalidExpenseAmount();
         }
 
-        return SolverNet.Order({ header: header, calls: calls, deposit: orderData.deposit, expenses: expenses });
+        return SolverNet.Order({
+            header: header,
+            calls: calls,
+            deposit: deposit,
+            expenses: expenses,
+            sponsor: address(0),
+            sponsorFee: 0,
+            signature: bytes("")
+        });
     }
 
     /**
@@ -627,6 +790,20 @@ contract SolverNetInbox is
         if (!SignatureCheckerLib.isValidSignatureNowCalldata(order.user, digest, signature)) {
             if (!SignatureCheckerLib.isValidERC1271SignatureNowCalldata(order.user, digest, signature)) {
                 revert InvalidSignature();
+            }
+        }
+    }
+
+    /**
+     * @dev Validate the signature for a fee sponsorship on a given order.
+     * @param orderData Order data to validate.
+     * @param id ID of the order.
+     */
+    function _validateSponsorship(SolverNet.Order memory orderData, bytes32 id) internal view {
+        bytes32 digest = _getSponsorshipDigest(orderData, id);
+        if (!SignatureCheckerLib.isValidSignatureNow(orderData.sponsor, digest, orderData.signature)) {
+            if (!SignatureCheckerLib.isValidERC1271SignatureNow(orderData.sponsor, digest, orderData.signature)) {
+                revert InvalidSponsorship();
             }
         }
     }
@@ -669,17 +846,20 @@ contract SolverNetInbox is
 
     /**
      * @dev Derive the minReceived Output for the order.
+     * @dev If the order is sponsored, the recipient is the sponsor.
      * @param orderData Order data to derive from.
      */
     function _deriveMinReceived(SolverNet.Order memory orderData) internal view returns (IERC7683.Output[] memory) {
         SolverNet.Deposit memory deposit = orderData.deposit;
+
+        if (orderData.sponsor != address(0)) deposit.amount += uint96(orderData.sponsorFee);
 
         IERC7683.Output[] memory minReceived = new IERC7683.Output[](deposit.amount > 0 ? 1 : 0);
         if (deposit.amount > 0) {
             minReceived[0] = IERC7683.Output({
                 token: deposit.token.toBytes32(),
                 amount: deposit.amount,
-                recipient: bytes32(0),
+                recipient: orderData.sponsor.toBytes32(),
                 chainId: block.chainid
             });
         }
@@ -764,15 +944,24 @@ contract SolverNetInbox is
     }
 
     /**
-     * @notice Validate and intake an ERC20 or native deposit.
+     * @notice Validate and intake an ERC20 or native deposit and sponsored fee.
      * @param deposit Deposit to process.
      * @param from Address to retrieve the deposit from.
+     * @param sponsor Address of the sponsor, if any.
+     * @param sponsorFee Sponsor fee to process.
      */
-    function _processDeposit(SolverNet.Deposit memory deposit, address from) internal {
+    function _processDeposit(SolverNet.Deposit memory deposit, address from, address sponsor, uint256 sponsorFee)
+        internal
+    {
         if (deposit.token == address(0)) {
             if (msg.value != deposit.amount) revert InvalidNativeDeposit();
+            if (sponsor != address(0)) {
+                WETH.safeTransferFrom2(sponsor, address(this), sponsorFee);
+                IWETH(WETH).withdraw(sponsorFee);
+            }
         } else {
             deposit.token.safeTransferFrom2(from, address(this), deposit.amount);
+            if (sponsor != address(0)) deposit.token.safeTransferFrom2(sponsor, address(this), sponsorFee);
         }
     }
 
@@ -784,7 +973,7 @@ contract SolverNetInbox is
      * @param openDeadline Open deadline of the order.
      */
     function _open(SolverNet.Order memory orderData, bytes32 id, address user, uint32 openDeadline) internal {
-        _processDeposit(orderData.deposit, user);
+        _processDeposit(orderData.deposit, user, orderData.sponsor, orderData.sponsorFee);
         ResolvedCrossChainOrder memory resolved = _openOrder(orderData, id, openDeadline);
 
         emit FillOriginData(
@@ -805,6 +994,7 @@ contract SolverNetInbox is
         resolved = _resolve(orderData, id, openDeadline);
         _orderHeader[id] = orderData.header;
         _orderDeposit[id] = orderData.deposit;
+        _orderSponsor[id] = orderData.sponsor;
         _orderOffset[id] = _incrementOffset();
         for (uint256 i; i < orderData.calls.length; ++i) {
             _orderCalls[id].push(orderData.calls[i]);
@@ -822,13 +1012,38 @@ contract SolverNetInbox is
      * @dev Transfer deposit to recipient. Used for both refunds and claims.
      * @param id ID of the order.
      * @param to Address to send deposits to.
+     * @param sponsor Address of the sponsor, if any.
+     * @param refund Whether the deposit is a refund (influences sponsor fee handling).
      */
-    function _transferDeposit(bytes32 id, address to) internal {
-        SolverNet.Deposit memory deposit = _orderDeposit[id];
+    function _transferDeposit(bytes32 id, address to, address sponsor, bool refund) internal {
+        SolverNet.Deposit memory deposit = _orderDeposit[id]; // This holds the original deposit amount
 
+        if (sponsor != address(0)) {
+            // Calculate the fee based on the original deposit amount
+            uint256 sponsorFee = FixedPointMathLib.fullMulDiv(deposit.amount, SPONSOR_FEE, 10_000);
+
+            // Only refund the sponsor if this is a closure/rejection (refund == true)
+            // On claim (refund == false), the filler implicitly gets the fee benefit.
+            if (refund && sponsorFee > 0) {
+                if (deposit.token == address(0)) {
+                    // Original deposit was ETH. Sponsor paid fee in WETH. Contract unwrapped it.
+                    // To refund sponsor, wrap ETH back to WETH and transfer WETH.
+                    IWETH(WETH).deposit{ value: sponsorFee }();
+                    WETH.safeTransfer(sponsor, sponsorFee);
+                } else {
+                    // Original deposit was ERC20. Sponsor paid fee in same token. Refund in token.
+                    deposit.token.safeTransfer(sponsor, sponsorFee);
+                }
+            }
+        }
+
+        // Transfer the original deposit amount to the final recipient 'to'
         if (deposit.amount > 0) {
-            if (deposit.token == address(0)) to.safeTransferETH(deposit.amount);
-            else deposit.token.safeTransfer(to, deposit.amount);
+            if (deposit.token == address(0)) {
+                to.safeTransferETH(deposit.amount);
+            } else {
+                deposit.token.safeTransfer(to, deposit.amount);
+            }
         }
     }
 
@@ -878,6 +1093,26 @@ contract SolverNetInbox is
      */
     function _incrementOffset() internal returns (uint248) {
         return ++_offset;
+    }
+
+    /**
+     * @dev Increment and return the next onchain user nonce.
+     * @param user Address of the user.
+     */
+    function _incrementOnchainUserNonce(address user) internal {
+        unchecked {
+            ++_onchainUserNonce[user];
+        }
+    }
+
+    /**
+     * @dev Increment and return the next gasless user nonce.
+     * @param user Address of the user.
+     */
+    function _incrementGaslessUserNonce(address user) internal {
+        unchecked {
+            ++_gaslessUserNonce[user];
+        }
     }
 
     /**

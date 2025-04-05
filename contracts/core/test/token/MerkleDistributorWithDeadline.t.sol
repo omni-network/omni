@@ -5,6 +5,7 @@ import { Test } from "forge-std/Test.sol";
 import { CompleteMerkle } from "murky/src/CompleteMerkle.sol";
 
 import { Omni } from "src/token/Omni.sol";
+import { WETH } from "solady/src/tokens/WETH.sol";
 import { Create3 } from "src/deploy/Create3.sol";
 import { MockPortal } from "test/utils/MockPortal.sol";
 import { MockSolverNetInbox } from "solve/test/utils/MockSolverNetInbox.sol";
@@ -22,6 +23,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
     CompleteMerkle m;
 
     Omni omni;
+    WETH weth;
     Create3 create3;
     MockPortal omniPortal;
     MockSolverNetInbox inbox;
@@ -63,10 +65,11 @@ contract MerkleDistributorWithDeadline_Test is Test {
     function _setupEnvironment() internal {
         m = new CompleteMerkle();
 
+        weth = new WETH();
         omni = new Omni(initialSupply, address(this));
         create3 = new Create3();
         omniPortal = new MockPortal();
-        inbox = new MockSolverNetInbox(address(omniPortal));
+        inbox = new MockSolverNetInbox(address(omniPortal), address(weth));
     }
 
     // Setup randomly generated merkle tree

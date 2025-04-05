@@ -29,6 +29,7 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
     address internal deployer = 0xA779fC675Db318dab004Ab8D538CB320D0013F42;
     address internal admin = 0xd09DD1126385877352d24B669Fd68f462200756E;
 
+    address internal weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     ICreateX internal createX = ICreateX(0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed);
     IERC20 internal omni = IERC20(0x36E66fbBce51e4cD5bd3C62B637Eb411b18949D4);
     IOmniPortal internal portal = IOmniPortal(0x5e9A8Aa213C912Bf54C86bf64aDB8ed6A79C04d1);
@@ -107,7 +108,7 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
     function _maybeEtchSolverNetInbox() internal {
         if (address(inbox).code.length != 0) return;
 
-        SolverNetInbox inboxImpl = new SolverNetInbox();
+        SolverNetInbox inboxImpl = new SolverNetInbox(weth);
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
             address(inboxImpl),
             address(deployer),
