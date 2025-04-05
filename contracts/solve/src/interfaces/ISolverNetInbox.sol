@@ -21,6 +21,8 @@ interface ISolverNetInbox is IOriginSettler {
     error InvalidArrayLength();
     error InvalidUser();
     error InvalidNonce();
+    error InvalidSponsor();
+    error InvalidSponsorship();
 
     // Open order errors
     error InvalidNativeDeposit();
@@ -153,6 +155,12 @@ interface ISolverNetInbox is IOriginSettler {
         external
         view
         returns (ResolvedCrossChainOrder memory order, OrderState memory state, uint248 offset);
+
+    /**
+     * @notice Returns the sponsor for the given order.
+     * @param id ID of the order.
+     */
+    function getOrderSponsor(bytes32 id) external view returns (address);
 
     /**
      * @notice Returns the order ID for the given user and nonce.

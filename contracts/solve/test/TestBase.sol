@@ -9,6 +9,7 @@ import { SolverNetExecutor } from "src/SolverNetExecutor.sol";
 import { ISolverNetInbox } from "src/interfaces/ISolverNetInbox.sol";
 import { ISolverNetOutbox } from "src/interfaces/ISolverNetOutbox.sol";
 
+import { WETH } from "solady/src/tokens/WETH.sol";
 import { IERC20 } from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import { MockERC20 } from "test/utils/MockERC20.sol";
 import { MockVault } from "test/utils/MockVault.sol";
@@ -36,6 +37,7 @@ contract TestBase is Test {
     SolverNetMiddleman middleman;
     SolverNetExecutor executor;
 
+    WETH weth;
     MockERC20 token1;
     MockERC20 token2;
 
@@ -67,6 +69,7 @@ contract TestBase is Test {
     }
 
     function setUp() public virtual {
+        weth = new WETH();
         token1 = new MockERC20("Token 1", "TKN1");
         token2 = new MockERC20("Token 2", "TKN2");
 
@@ -359,7 +362,7 @@ contract TestBase is Test {
     // Setup functions
 
     function deploySolverNetInbox() internal returns (SolverNetInbox) {
-        address impl = address(new SolverNetInbox());
+        address impl = address(new SolverNetInbox(address(weth)));
         return SolverNetInbox(address(new TransparentUpgradeableProxy(impl, proxyAdmin, bytes(""))));
     }
 
