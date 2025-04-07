@@ -26,7 +26,7 @@ import (
 
 const UpgradeName = "3_drake"
 
-const UnbondingTime = time.Duration(0)
+const UnbondingTime = 1 * time.Second
 
 func StoreUpgrades(_ context.Context) *storetypes.StoreUpgrades {
 	return &storetypes.StoreUpgrades{}
