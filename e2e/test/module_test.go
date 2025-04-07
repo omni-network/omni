@@ -67,7 +67,7 @@ func TestStaking(t *testing.T) {
 		paramResponse, err := cprov.QueryClients().Staking.Params(ctx, &stakingtypes.QueryParamsRequest{})
 		require.NoError(t, err)
 
-		expected := drake3.StakingParams()
-		require.Equal(t, expected.String(), paramResponse.Params.String())
+		expected := drake3.UnbondingTime
+		require.Equal(t, expected, paramResponse.Params.UnbondingTime)
 	})
 }

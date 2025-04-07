@@ -1,6 +1,6 @@
 // Package drake defines the third Omni consensus chain upgrade, named after
-// Sir Francis Drake, an English explorer and privateer best known for making the
-// second circumnavigation of the world in a single expedition between 1577 and 1580.
+// Sir Francis Drake, an English explorer best known for making the second
+// circumnavigation of the world in a single expedition between 1577 and 1580.
 //
 // It includes:
 // - Unstaking of funds,
@@ -11,8 +11,8 @@ package drake
 import (
 	"context"
 	"encoding/json"
+	"time"
 
-	"github.com/omni-network/omni/halo/app/upgrades/magellan"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
@@ -25,6 +25,8 @@ import (
 )
 
 const UpgradeName = "3_drake"
+
+const UnbondingTime = time.Duration(0)
 
 func StoreUpgrades(_ context.Context) *storetypes.StoreUpgrades {
 	return &storetypes.StoreUpgrades{}
@@ -43,7 +45,7 @@ func CreateUpgradeHandler(
 			return nil, errors.Wrap(err, "get staking params")
 		}
 
-		p.UnbondingTime = 0
+		p.UnbondingTime = UnbondingTime
 
 		if err := staking.SetParams(ctx, p); err != nil {
 			return nil, errors.Wrap(err, "set staking params")
@@ -53,32 +55,19 @@ func CreateUpgradeHandler(
 	}
 }
 
-// Staking params overwrites the default params with 30 validators and no unbonding time.
-func StakingParams() stypes.Params {
-	p := stypes.DefaultParams()
-	p.MaxValidators = 30
-	p.UnbondingTime = 0
-
-	return p
-}
-
 // GenesisState creates a new genesis state. This state will be used on networks
 // defining `3_drake` as `ephemeral_genesis` in their manifests.
 func GenesisState(cdc codec.JSONCodec) (map[string]json.RawMessage, error) {
-	genesis, err := magellan.GenesisState(cdc)
-	if err != nil {
-		return nil, errors.Wrap(err, "magellan genesis state")
-	}
-
 	stakingGenesis := stypes.DefaultGenesisState()
-	stakingGenesis.Params = StakingParams()
+	stakingGenesis.Params.UnbondingTime = UnbondingTime
+	stakingGenesis.Params.MaxValidators = 30
 
 	data, err := cdc.MarshalJSON(stakingGenesis)
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal staking genesis")
 	}
 
-	genesis[stypes.ModuleName] = data
-
-	return genesis, nil
+	return map[string]json.RawMessage{
+		stypes.ModuleName: data,
+	}, nil
 }
