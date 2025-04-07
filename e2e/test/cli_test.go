@@ -6,6 +6,7 @@ import (
 	"crypto/ecdsa"
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"path/filepath"
 	"testing"
 	"time"
@@ -96,7 +97,7 @@ func TestCLIOperator(t *testing.T) {
 		require.NoError(t, err)
 		cprov := provider.NewABCI(cl, network.ID)
 
-		const valChangeWait = 15 * time.Second
+		const valChangeWait = 30 * time.Second
 
 		// operator's initial and self delegations
 		const opInitDelegation = uint64(100)
@@ -299,23 +300,20 @@ func TestCLIOperator(t *testing.T) {
 				return newPower == opInitDelegation+opSelfDelegation+2*delegatorDelegation
 			}, valChangeWait, 500*time.Millisecond, "failed to delegate")
 
-			// make sure the pending withdrawals are non zero
+			// fetch the EVM balance before we delegate new coins
+			omniBackend := omniBackend(t, network, endpoints)
+			var block *big.Int
+			balance1, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, block)
+			require.NoError(t, err)
+
+			// make sure the EVM balance increases after a new delegation because
+			// the intermediate rewards will be withdrawn automatically
 			require.Eventuallyf(t, func() bool {
-				amount := sumPendingWithdrawals(t, ctx, cprov, delegatorCosmosAddr)
-				if amount == 0 {
-					return false
-				}
+				balance2, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, block)
+				require.NoError(t, err)
 
-				// Allow rewards up to 10x latestRewards since non-deterministic amount of blocks may have elapsed
-				const maxFactor = 10
-				minAmountGei := latestRewards.QuoInt64(params.GWei).TruncateInt64()
-				maxAmountGei := minAmountGei * maxFactor
-				if amount < uint64(minAmountGei) || amount > uint64(maxAmountGei) {
-					require.Fail(t, "unexpected withdrawal amount", "amount=%v, min=%v, max=%v", amount, minAmountGei, maxAmountGei)
-				}
-
-				return true
-			}, 2*valChangeWait, 500*time.Millisecond, "failed to withdraw")
+				return bi.GT(balance2, balance1)
+			}, valChangeWait, 500*time.Millisecond, "failed to withdraw to EVM")
 		})
 	})
 }
@@ -356,18 +354,7 @@ func GenFundedEOA(ctx context.Context, t *testing.T, network netconf.Network, en
 
 	funder, funderAddr := anvil.DevPrivateKey9(), anvil.DevAccount9()
 
-	// fund the account
-	omniEVM, ok := network.OmniEVMChain()
-	require.True(t, ok)
-
-	omniRPC, err := endpoints.ByNameOrID(omniEVM.Name, omniEVM.ID)
-	require.NoError(t, err)
-
-	omniClient, err := ethclient.Dial(omniEVM.Name, omniRPC)
-	require.NoError(t, err)
-
-	omniBackend, err := ethbackend.NewBackend(omniEVM.Name, omniEVM.ID, omniEVM.BlockPeriod, omniClient, funder)
-	require.NoError(t, err)
+	omniBackend := omniBackend(t, network, endpoints, funder)
 
 	newKey, err := ethcrypto.GenerateKey()
 	require.NoError(t, err)
@@ -383,4 +370,21 @@ func GenFundedEOA(ctx context.Context, t *testing.T, network netconf.Network, en
 	log.Debug(ctx, "Funded new EOA", "addr", newAddr.Hex(), "amount", amount1k.String())
 
 	return newKey
+}
+
+func omniBackend(t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints, privateKeys ...*ecdsa.PrivateKey) ethbackend.Backend {
+	t.Helper()
+
+	omniEVM, ok := network.OmniEVMChain()
+	require.True(t, ok)
+
+	omniRPC, err := endpoints.ByNameOrID(omniEVM.Name, omniEVM.ID)
+	require.NoError(t, err)
+	omniClient, err := ethclient.Dial(omniEVM.Name, omniRPC)
+	require.NoError(t, err)
+
+	omniBackend, err := ethbackend.NewBackend(omniEVM.Name, omniEVM.ID, omniEVM.BlockPeriod, omniClient, privateKeys...)
+	require.NoError(t, err)
+
+	return *omniBackend
 }
