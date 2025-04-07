@@ -11,12 +11,11 @@ package drake
 import (
 	"context"
 	"encoding/json"
-	"time"
 
+	"github.com/omni-network/omni/halo/app/upgrades/magellan"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 
-	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -28,22 +27,8 @@ import (
 const UpgradeName = "3_drake"
 
 func StoreUpgrades(_ context.Context) *storetypes.StoreUpgrades {
-	return &storetypes.StoreUpgrades{
-		Added: []string{},
-	}
+	return &storetypes.StoreUpgrades{}
 }
-
-var (
-	// StakingParams are genesis params with UnbondingTime set to 0.
-	StakingParams = stypes.Params{
-		UnbondingTime:     0 * time.Second,
-		MaxValidators:     30,
-		MaxEntries:        7,
-		HistoricalEntries: 10_000,
-		BondDenom:         "stake",
-		MinCommissionRate: math.LegacyNewDec(0),
-	}
-)
 
 func CreateUpgradeHandler(
 	mm *module.Manager,
@@ -53,7 +38,14 @@ func CreateUpgradeHandler(
 	return func(ctx context.Context, _ upgradetypes.Plan, fromVM module.VersionMap) (module.VersionMap, error) {
 		log.Info(ctx, "Running 3_drake upgrade handler")
 
-		if err := staking.SetParams(ctx, StakingParams); err != nil {
+		p, err := staking.GetParams(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "get staking params")
+		}
+
+		p.UnbondingTime = 0
+
+		if err := staking.SetParams(ctx, p); err != nil {
 			return nil, errors.Wrap(err, "set staking params")
 		}
 
@@ -61,6 +53,32 @@ func CreateUpgradeHandler(
 	}
 }
 
-func GenesisState(codec.JSONCodec) (map[string]json.RawMessage, error) {
-	return map[string]json.RawMessage{}, nil
+// Staking params overwrites the default params with 30 validators and no unbonding time.
+func StakingParams() stypes.Params {
+	p := stypes.DefaultParams()
+	p.MaxValidators = 30
+	p.UnbondingTime = 0
+
+	return p
+}
+
+// GenesisState creates a new genesis state. This state will be used on networks
+// defining `3_drake` as `ephemeral_genesis` in their manifests.
+func GenesisState(cdc codec.JSONCodec) (map[string]json.RawMessage, error) {
+	genesis, err := magellan.GenesisState(cdc)
+	if err != nil {
+		return nil, errors.Wrap(err, "magellan genesis state")
+	}
+
+	stakingGenesis := stypes.DefaultGenesisState()
+	stakingGenesis.Params = StakingParams()
+
+	data, err := cdc.MarshalJSON(stakingGenesis)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal staking genesis")
+	}
+
+	genesis[stypes.ModuleName] = data
+
+	return genesis, nil
 }
