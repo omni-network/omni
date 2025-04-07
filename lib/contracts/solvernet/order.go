@@ -14,7 +14,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 var (
@@ -112,14 +111,16 @@ func OpenOrder(
 		return OrderID{}, errors.Wrap(err, "wait mined")
 	}
 
-	logs := receipt.Logs
-	lastLog := func() *ethtypes.Log { return logs[len(logs)-1] }
-	if len(logs) < 1 || len(lastLog().Topics) < 2 {
-		return OrderID{}, errors.New("unexpeced open order logs [BUG]")
+	for _, log := range receipt.Logs {
+		if log == nil {
+			return OrderID{}, errors.New("invalid log")
+		}
+
+		orderID, status, err := ParseEvent(*log)
+		if err == nil && status == StatusPending {
+			return orderID, nil
+		}
 	}
 
-	// order id is first topic of Open(...) log, which is the last log
-	orderID := lastLog().Topics[1]
-
-	return OrderID(orderID), nil
+	return OrderID{}, errors.New("no pending event in logs")
 }
