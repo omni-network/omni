@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	drake3 "github.com/omni-network/omni/halo/app/upgrades/drake"
 	magellan2 "github.com/omni-network/omni/halo/app/upgrades/magellan"
 	"github.com/omni-network/omni/lib/cchain/provider"
 
@@ -11,6 +12,7 @@ import (
 
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -49,5 +51,23 @@ func TestSlashing(t *testing.T) {
 
 		expected := magellan2.SlashingParams()
 		require.Equal(t, expected.String(), paramResponse.Params.String())
+	})
+}
+
+func TestStaking(t *testing.T) {
+	t.Parallel()
+	testNetwork(t, func(ctx context.Context, t *testing.T, deps NetworkDeps) {
+		t.Helper()
+
+		network := deps.Network
+		cl, err := http.New(network.ID.Static().ConsensusRPC(), "/websocket")
+		require.NoError(t, err)
+		cprov := provider.NewABCI(cl, network.ID)
+
+		paramResponse, err := cprov.QueryClients().Staking.Params(ctx, &stakingtypes.QueryParamsRequest{})
+		require.NoError(t, err)
+
+		expected := drake3.UnbondingTime
+		require.Equal(t, expected, paramResponse.Params.UnbondingTime)
 	})
 }
