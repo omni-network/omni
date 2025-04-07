@@ -1,6 +1,6 @@
+import { inboxABI } from '@omni-network/core'
 import type { Hex } from 'viem'
 import { useReadContract } from 'wagmi'
-import { inboxABI } from '../constants/abis.js'
 import { useOmniContracts } from './useOmniContracts.js'
 
 export function useGetOrder({

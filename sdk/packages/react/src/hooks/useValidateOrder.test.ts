@@ -35,8 +35,8 @@ const { fetchJSON } = vi.hoisted(() => {
   }
 })
 
-vi.mock('../internal/api.js', async () => {
-  const actual = await vi.importActual('../internal/api.js')
+vi.mock('@omni-network/core', async () => {
+  const actual = await vi.importActual('@omni-network/core')
   return {
     ...actual,
     fetchJSON,

@@ -1,7 +1,7 @@
+import type { ParseOpenEventError } from '@omni-network/core'
 import type { Hex, Log } from 'viem'
 import { expectTypeOf, test } from 'vitest'
 import type { UseWaitForTransactionReceiptReturnType } from 'wagmi'
-import type { ParseOpenEventError } from '../errors/base.js'
 import { useParseOpenEvent } from './useParseOpenEvent.js'
 
 type ResolvedOrder = {

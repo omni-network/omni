@@ -1,3 +1,4 @@
+import { ParseOpenEventError, inboxABI } from '@omni-network/core'
 import { waitFor } from '@testing-library/react'
 import {
   type Hex,
@@ -13,8 +14,6 @@ import {
   renderHook,
   resolvedOrder,
 } from '../../test/index.js'
-import { inboxABI } from '../constants/abis.js'
-import { ParseOpenEventError } from '../errors/base.js'
 import { useParseOpenEvent } from './useParseOpenEvent.js'
 
 const encodedOpenEvent = encodeAbiParameters(

@@ -1,6 +1,6 @@
+import type { OmniContracts } from '@omni-network/core'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { expectTypeOf, test } from 'vitest'
-import type { OmniContracts } from '../types/contracts.js'
 import {
   type UseOmniContractsResult,
   useOmniContracts,

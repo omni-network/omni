@@ -15,7 +15,7 @@ export async function fetchJSON(
   init?: RequestInit,
 ): Promise<unknown> {
   const headers = new Headers(init?.headers)
-  headers.set('user-agent', `@omni-network/react:${version}`)
+  headers.set('user-agent', `@omni-network/core:${version}`)
   const _init = { ...init, headers }
 
   const res = await fetch(url, _init)

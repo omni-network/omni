@@ -55,8 +55,21 @@ importers:
         specifier: ^3.0.7
         version: 3.0.9(@types/debug@4.1.12)(@types/node@22.13.10)(happy-dom@17.4.4)
 
+  packages/core:
+    dependencies:
+      viem:
+        specifier: ^2.23.13
+        version: 2.23.13(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.8.2
+
   packages/react:
     dependencies:
+      '@omni-network/core':
+        specifier: workspace:^
+        version: link:../core
       '@tanstack/react-query':
         specifier: ^5.64.2
         version: 5.69.0(react@19.0.0)

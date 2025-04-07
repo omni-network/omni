@@ -1,6 +1,6 @@
+import * as core from '@omni-network/core'
 import { vi } from 'vitest'
 import type { useReadContract } from 'wagmi'
-import * as apiModule from '../src/internal/api.js'
 import { contracts } from './shared.js'
 
 type UseReadContractReturn<Data> = Omit<
@@ -12,15 +12,11 @@ type UseReadContractReturn<Data> = Omit<
 }
 
 export function mockContractsQuery(failure = false) {
-  vi.spyOn(apiModule, 'fetchJSON').mockImplementation((url: string) => {
+  vi.spyOn(core, 'getContracts').mockImplementation(() => {
     if (failure) {
       return Promise.reject(new Error('mock error'))
     }
-
-    if (url.includes('/contracts')) {
-      return Promise.resolve(contracts)
-    }
-    return apiModule.fetchJSON(url)
+    return Promise.resolve(contracts)
   })
 }
 

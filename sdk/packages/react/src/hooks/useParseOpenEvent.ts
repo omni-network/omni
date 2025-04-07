@@ -1,8 +1,7 @@
+import { ParseOpenEventError, inboxABI } from '@omni-network/core'
 import { useMemo } from 'react'
 import { type Log, decodeEventLog, parseEventLogs } from 'viem'
 import type { UseWaitForTransactionReceiptReturnType } from 'wagmi'
-import { inboxABI } from '../constants/abis.js'
-import { ParseOpenEventError } from '../errors/base.js'
 
 type UseParseOpenEventParams = {
   status: UseWaitForTransactionReceiptReturnType['status']
@@ -21,7 +20,9 @@ export function useParseOpenEvent(params: UseParseOpenEventParams) {
       })
 
       if (parsed.length !== 1) {
-        throw new ParseOpenEventError( `Expected exactly one 'Open' event but found ${parsed.length}.`)
+        throw new ParseOpenEventError(
+          `Expected exactly one 'Open' event but found ${parsed.length}.`,
+        )
       }
 
       const openLog = parsed[0]

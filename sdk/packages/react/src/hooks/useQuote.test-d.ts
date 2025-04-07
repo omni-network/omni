@@ -1,7 +1,6 @@
+import type { FetchJSONError, Quote, Quoteable } from '@omni-network/core'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { expectTypeOf, test } from 'vitest'
-import type { FetchJSONError } from '../internal/api.js'
-import type { Quote, Quoteable } from '../types/quote.js'
 import { useQuote } from './useQuote.js'
 
 test('type: useInboxStatus', () => {

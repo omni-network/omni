@@ -169,7 +169,9 @@ describe('useValidateOrder()', () => {
     await waitFor(() => expect(result.current.status).toBe('rejected'))
     if (result.current.status === 'rejected') {
       expect(result.current.rejectReason).toBe('UnsupportedSrcChain')
-      expect(result.current.rejectDescription).toBe('unsupported source chain [chain_id=1234]')
+      expect(result.current.rejectDescription).toBe(
+        'unsupported source chain [chain_id=1234]',
+      )
     }
   })
 })
