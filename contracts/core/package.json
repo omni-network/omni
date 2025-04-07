@@ -28,7 +28,7 @@
     "eigenlayer-middleware": "github:Layr-Labs/eigenlayer-middleware",
     "elliptic-curve-solidity": "github:witnet/elliptic-curve-solidity",
     "murky": "github:dmfxyz/murky",
-    "solady": "^0.1.12",
+    "solady": "^0.1.14",
     "solmate": "^6.8.0"
   }
 }

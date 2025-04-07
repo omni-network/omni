@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@nomad-xyz/excessively-safe-call':
         specifier: github:nomad-xyz/ExcessivelySafeCall
-        version: https://codeload.github.com/nomad-xyz/ExcessivelySafeCall/tar.gz/81cd99ce3e69117d665d7601c330ea03b97acce0
+        version: git+https://git@github.com:nomad-xyz/ExcessivelySafeCall.git#81cd99ce3e69117d665d7601c330ea03b97acce0
       '@openzeppelin-v4/contracts':
         specifier: npm:@openzeppelin/contracts@4.9.6
         version: '@openzeppelin/contracts@4.9.6'
@@ -25,35 +25,35 @@ importers:
         version: 5.2.0(@openzeppelin/contracts@5.2.0)
       createx:
         specifier: github:pcaversaccio/createx
-        version: https://codeload.github.com/pcaversaccio/createx/tar.gz/a12f49fe6146ab09441bbf56c095292439ad838a
+        version: git+https://git@github.com:pcaversaccio/createx.git#ced81f2d20696e327d8414fbe994f004d65127e7
       eigenlayer-contracts:
         specifier: github:Layr-Labs/eigenlayer-contracts
-        version: https://codeload.github.com/Layr-Labs/eigenlayer-contracts/tar.gz/f14d9d669e853927c4e1ca30a20b89d0c48639c9(hardhat@2.22.10(ts-node@10.9.2(@types/node@22.13.10)(typescript@5.6.3))(typescript@5.6.3))
+        version: git+https://git@github.com:Layr-Labs/eigenlayer-contracts.git#f0ff053ed92cf4541bf0c3cfdb9e0c375bdd51a9(hardhat@2.22.10(ts-node@10.9.2(@types/node@22.14.0)(typescript@5.6.3))(typescript@5.6.3))
       eigenlayer-middleware:
         specifier: github:Layr-Labs/eigenlayer-middleware
-        version: https://codeload.github.com/Layr-Labs/eigenlayer-middleware/tar.gz/7d49b5181b09198ed275783453aa082bb3766990
+        version: git+https://git@github.com:Layr-Labs/eigenlayer-middleware.git#f5adbcac55d9336cd646ce71bc467aa7e20f1a12
       elliptic-curve-solidity:
         specifier: github:witnet/elliptic-curve-solidity
-        version: https://codeload.github.com/witnet/elliptic-curve-solidity/tar.gz/347547890840fd501809dfe0b855206407136ec0
+        version: git+https://git@github.com:witnet/elliptic-curve-solidity.git#347547890840fd501809dfe0b855206407136ec0
       murky:
         specifier: github:dmfxyz/murky
-        version: https://codeload.github.com/dmfxyz/murky/tar.gz/6f67641219549ca78f575a12493e25fe193da727
+        version: git+https://git@github.com:dmfxyz/murky.git#991e371eb1dfa9f86701869eb08ec4e98c3cc0b0
       solady:
-        specifier: ^0.1.12
-        version: 0.1.12
+        specifier: ^0.1.14
+        version: 0.1.14
       solmate:
         specifier: ^6.8.0
         version: 6.8.0
     devDependencies:
       ds-test:
         specifier: github:dapphub/ds-test
-        version: https://codeload.github.com/dapphub/ds-test/tar.gz/e282159d5170298eb2455a6c05280ab5a73a4ef0
+        version: git+https://git@github.com:dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0
       forge-std:
         specifier: github:foundry-rs/forge-std
-        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/8ba9031ffcbe25aa0d1224d3ca263a995026e477
+        version: git+https://git@github.com:foundry-rs/forge-std.git#3353993420c6e488a2914ce02d88174e80ad80f8
       multiproof:
         specifier: github:sigp/multiproof
-        version: https://codeload.github.com/sigp/multiproof/tar.gz/d2fc889b524a58dc57d5ba7f9c51ec98869b8eff
+        version: git+https://git@github.com:sigp/multiproof.git#d2fc889b524a58dc57d5ba7f9c51ec98869b8eff
 
 packages:
 
@@ -139,8 +139,8 @@ packages:
   '@noble/secp256k1@1.7.1':
     resolution: {integrity: sha512-hOUk6AyBFmqVrv7k5WAw/LpszxVbj9gGN4JRkIX52fdFAj1UA61KXmZDvqVEm+pOyec3+fIeZB02LYa/pWOArw==}
 
-  '@nomad-xyz/excessively-safe-call@https://codeload.github.com/nomad-xyz/ExcessivelySafeCall/tar.gz/81cd99ce3e69117d665d7601c330ea03b97acce0':
-    resolution: {tarball: https://codeload.github.com/nomad-xyz/ExcessivelySafeCall/tar.gz/81cd99ce3e69117d665d7601c330ea03b97acce0}
+  '@nomad-xyz/excessively-safe-call@git+https://git@github.com:nomad-xyz/ExcessivelySafeCall.git#81cd99ce3e69117d665d7601c330ea03b97acce0':
+    resolution: {commit: 81cd99ce3e69117d665d7601c330ea03b97acce0, repo: git@github.com:nomad-xyz/ExcessivelySafeCall.git, type: git}
     version: 0.0.1-rc.1
 
   '@nomicfoundation/edr-darwin-arm64@0.5.2':
@@ -305,8 +305,8 @@ packages:
   '@types/lru-cache@5.1.1':
     resolution: {integrity: sha512-ssE3Vlrys7sdIzs5LOxCzTVMsU7i9oa/IaW92wF32JFb3CVczqOkru2xspuKczHEbG3nvmPY7IFqVmGGHdNbYw==}
 
-  '@types/node@22.13.10':
-    resolution: {integrity: sha512-I6LPUvlRH+O6VRUqYOcMudhaIdUVWfsjnZavnsraHvpBwaEyMN29ry+0UVJhImYL16xsscu0aske3yA+uPOWfw==}
+  '@types/node@22.14.0':
+    resolution: {integrity: sha512-Kmpl+z84ILoG+3T/zQFyAJsU6EPTmOCj8/2+83fSN6djd6I4o7uOuGIH6vq3PrjY5BGitSbFuMN18j3iknubbA==}
 
   '@types/pbkdf2@3.1.2':
     resolution: {integrity: sha512-uRwJqmiXmh9++aSu1VNEn3iIxWOhd8AHXNSdlaLfdAAdSTY9jYVeGWnzejM3dvrkbqE3/hyQkQQ29IFATEGlew==}
@@ -516,8 +516,8 @@ packages:
   create-require@1.1.1:
     resolution: {integrity: sha512-dcKFX3jn0MpIaXjisoRvexIJVEKzaq7z2rZKxf+MSr9TkdmHmsU4m2lcLojrj/FHl8mk5VxMmYA+ftRkP/3oKQ==}
 
-  createx@https://codeload.github.com/pcaversaccio/createx/tar.gz/a12f49fe6146ab09441bbf56c095292439ad838a:
-    resolution: {tarball: https://codeload.github.com/pcaversaccio/createx/tar.gz/a12f49fe6146ab09441bbf56c095292439ad838a}
+  createx@git+https://git@github.com:pcaversaccio/createx.git#ced81f2d20696e327d8414fbe994f004d65127e7:
+    resolution: {commit: ced81f2d20696e327d8414fbe994f004d65127e7, repo: git@github.com:pcaversaccio/createx.git, type: git}
     version: 1.0.0
 
   data-view-buffer@1.0.1:
@@ -565,20 +565,20 @@ packages:
     resolution: {integrity: sha512-uIFDxqpRZGZ6ThOk84hEfqWoHx2devRFvpTZcTHur85vImfaxUbTW9Ryh4CpCuDnToOP1CEtXKIgytHBPVff5A==}
     engines: {node: '>=0.3.1'}
 
-  ds-test@https://codeload.github.com/dapphub/ds-test/tar.gz/e282159d5170298eb2455a6c05280ab5a73a4ef0:
-    resolution: {tarball: https://codeload.github.com/dapphub/ds-test/tar.gz/e282159d5170298eb2455a6c05280ab5a73a4ef0}
+  ds-test@git+https://git@github.com:dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0:
+    resolution: {commit: e282159d5170298eb2455a6c05280ab5a73a4ef0, repo: git@github.com:dapphub/ds-test.git, type: git}
     version: 1.0.0
 
-  eigenlayer-contracts@https://codeload.github.com/Layr-Labs/eigenlayer-contracts/tar.gz/f14d9d669e853927c4e1ca30a20b89d0c48639c9:
-    resolution: {tarball: https://codeload.github.com/Layr-Labs/eigenlayer-contracts/tar.gz/f14d9d669e853927c4e1ca30a20b89d0c48639c9}
+  eigenlayer-contracts@git+https://git@github.com:Layr-Labs/eigenlayer-contracts.git#f0ff053ed92cf4541bf0c3cfdb9e0c375bdd51a9:
+    resolution: {commit: f0ff053ed92cf4541bf0c3cfdb9e0c375bdd51a9, repo: git@github.com:Layr-Labs/eigenlayer-contracts.git, type: git}
     version: 1.0.0
 
-  eigenlayer-middleware@https://codeload.github.com/Layr-Labs/eigenlayer-middleware/tar.gz/7d49b5181b09198ed275783453aa082bb3766990:
-    resolution: {tarball: https://codeload.github.com/Layr-Labs/eigenlayer-middleware/tar.gz/7d49b5181b09198ed275783453aa082bb3766990}
+  eigenlayer-middleware@git+https://git@github.com:Layr-Labs/eigenlayer-middleware.git#f5adbcac55d9336cd646ce71bc467aa7e20f1a12:
+    resolution: {commit: f5adbcac55d9336cd646ce71bc467aa7e20f1a12, repo: git@github.com:Layr-Labs/eigenlayer-middleware.git, type: git}
     version: 0.0.0
 
-  elliptic-curve-solidity@https://codeload.github.com/witnet/elliptic-curve-solidity/tar.gz/347547890840fd501809dfe0b855206407136ec0:
-    resolution: {tarball: https://codeload.github.com/witnet/elliptic-curve-solidity/tar.gz/347547890840fd501809dfe0b855206407136ec0}
+  elliptic-curve-solidity@git+https://git@github.com:witnet/elliptic-curve-solidity.git#347547890840fd501809dfe0b855206407136ec0:
+    resolution: {commit: 347547890840fd501809dfe0b855206407136ec0, repo: git@github.com:witnet/elliptic-curve-solidity.git, type: git}
     version: 0.2.5
 
   elliptic@6.6.1:
@@ -682,8 +682,8 @@ packages:
   for-each@0.3.3:
     resolution: {integrity: sha512-jqYfLp7mo9vIyQf8ykW2v7A+2N4QjeCeI5+Dz9XraiO1ign81wjiH7Fb9vSOWvQfNtmSa4H2RoQTrrXivdUZmw==}
 
-  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/8ba9031ffcbe25aa0d1224d3ca263a995026e477:
-    resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/8ba9031ffcbe25aa0d1224d3ca263a995026e477}
+  forge-std@git+https://git@github.com:foundry-rs/forge-std.git#3353993420c6e488a2914ce02d88174e80ad80f8:
+    resolution: {commit: 3353993420c6e488a2914ce02d88174e80ad80f8, repo: git@github.com:foundry-rs/forge-std.git, type: git}
     version: 1.9.6
 
   fp-ts@1.19.3:
@@ -998,12 +998,12 @@ packages:
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
-  multiproof@https://codeload.github.com/sigp/multiproof/tar.gz/d2fc889b524a58dc57d5ba7f9c51ec98869b8eff:
-    resolution: {tarball: https://codeload.github.com/sigp/multiproof/tar.gz/d2fc889b524a58dc57d5ba7f9c51ec98869b8eff}
+  multiproof@git+https://git@github.com:sigp/multiproof.git#d2fc889b524a58dc57d5ba7f9c51ec98869b8eff:
+    resolution: {commit: d2fc889b524a58dc57d5ba7f9c51ec98869b8eff, repo: git@github.com:sigp/multiproof.git, type: git}
     version: 0.0.0
 
-  murky@https://codeload.github.com/dmfxyz/murky/tar.gz/6f67641219549ca78f575a12493e25fe193da727:
-    resolution: {tarball: https://codeload.github.com/dmfxyz/murky/tar.gz/6f67641219549ca78f575a12493e25fe193da727}
+  murky@git+https://git@github.com:dmfxyz/murky.git#991e371eb1dfa9f86701869eb08ec4e98c3cc0b0:
+    resolution: {commit: 991e371eb1dfa9f86701869eb08ec4e98c3cc0b0, repo: git@github.com:dmfxyz/murky.git, type: git}
     version: 0.1.0
 
   neo-async@2.6.2:
@@ -1183,8 +1183,8 @@ packages:
     resolution: {integrity: sha512-fDW/EZ6Q9RiO8eFG8Hj+7u/oW+XrPTIChwCOM2+th2A6OblDtYYIpve9m+KvI9Z4C9qSEXlaGR6bTEYHReuglA==}
     engines: {node: '>= 0.4'}
 
-  solady@0.1.12:
-    resolution: {integrity: sha512-wfgSFhxPKJzrd2jsxe9u7/XWIaiFzJcS8Jy8uc/9H2uSwGZ/XM7IxfVaZohJj/P9gTBdkFRJ7xzsyTFy7Hz7CA==}
+  solady@0.1.14:
+    resolution: {integrity: sha512-Gowq1vzo1xGErRFvtV5W10tvyeq9UafGVWh0WisWvJ04fx5gn4dmakwnzEIYr76Am9csHcL1jMhsuuc5/rmEsg==}
 
   solc@0.8.26:
     resolution: {integrity: sha512-yiPQNVf5rBFHwN6SIf3TUUvVAFKcQqmSUFeq+fb6pNRCo0ZCgpYOZDi3BVoezCPIAcKrVYd/qXlBLUP9wVrZ9g==}
@@ -1338,11 +1338,11 @@ packages:
   unbox-primitive@1.0.2:
     resolution: {integrity: sha512-61pPlCD9h51VoreyJ0BReideM3MDKMKnh6+V9L08331ipq6Q8OFXZYiqP6n/tbHx4s5I9uRhcye6BrbkizkBDw==}
 
-  undici-types@6.20.0:
-    resolution: {integrity: sha512-Ny6QZ2Nju20vw1SRHe3d9jVu6gJ+4e3+MMpqu7pqE5HT6WsTSlce++GQmK5UXS8mzV8DSYHrQH+Xrf2jVcuKNg==}
+  undici-types@6.21.0:
+    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
-  undici@5.28.5:
-    resolution: {integrity: sha512-zICwjrDrcrUE0pyyJc1I2QzBkLM8FINsgOrt6WjA+BgajVq9Nxu2PbFFXUrAggLfDXlZGZBVZYw7WNV5KiBiBA==}
+  undici@5.29.0:
+    resolution: {integrity: sha512-raqeBD6NQK4SkWhQzeYKd1KmIG6dllBOTt55Rmkt4HtI9mwdWtJljnrXjAFUBLTSN67HWrOIZ3EPF4kjUw80Bg==}
     engines: {node: '>=14.0'}
 
   universalify@0.1.2:
@@ -1579,7 +1579,7 @@ snapshots:
 
   '@noble/secp256k1@1.7.1': {}
 
-  '@nomad-xyz/excessively-safe-call@https://codeload.github.com/nomad-xyz/ExcessivelySafeCall/tar.gz/81cd99ce3e69117d665d7601c330ea03b97acce0': {}
+  '@nomad-xyz/excessively-safe-call@git+https://git@github.com:nomad-xyz/ExcessivelySafeCall.git#81cd99ce3e69117d665d7601c330ea03b97acce0': {}
 
   '@nomicfoundation/edr-darwin-arm64@0.5.2': {}
 
@@ -1742,25 +1742,25 @@ snapshots:
 
   '@types/bn.js@4.11.6':
     dependencies:
-      '@types/node': 22.13.10
+      '@types/node': 22.14.0
 
   '@types/bn.js@5.1.6':
     dependencies:
-      '@types/node': 22.13.10
+      '@types/node': 22.14.0
 
   '@types/lru-cache@5.1.1': {}
 
-  '@types/node@22.13.10':
+  '@types/node@22.14.0':
     dependencies:
-      undici-types: 6.20.0
+      undici-types: 6.21.0
 
   '@types/pbkdf2@3.1.2':
     dependencies:
-      '@types/node': 22.13.10
+      '@types/node': 22.14.0
 
   '@types/secp256k1@4.0.6':
     dependencies:
-      '@types/node': 22.13.10
+      '@types/node': 22.14.0
 
   acorn-walk@8.3.4:
     dependencies:
@@ -1999,7 +1999,7 @@ snapshots:
   create-require@1.1.1:
     optional: true
 
-  createx@https://codeload.github.com/pcaversaccio/createx/tar.gz/a12f49fe6146ab09441bbf56c095292439ad838a: {}
+  createx@git+https://git@github.com:pcaversaccio/createx.git#ced81f2d20696e327d8414fbe994f004d65127e7: {}
 
   data-view-buffer@1.0.1:
     dependencies:
@@ -2046,17 +2046,17 @@ snapshots:
 
   diff@5.2.0: {}
 
-  ds-test@https://codeload.github.com/dapphub/ds-test/tar.gz/e282159d5170298eb2455a6c05280ab5a73a4ef0: {}
+  ds-test@git+https://git@github.com:dapphub/ds-test.git#e282159d5170298eb2455a6c05280ab5a73a4ef0: {}
 
-  eigenlayer-contracts@https://codeload.github.com/Layr-Labs/eigenlayer-contracts/tar.gz/f14d9d669e853927c4e1ca30a20b89d0c48639c9(hardhat@2.22.10(ts-node@10.9.2(@types/node@22.13.10)(typescript@5.6.3))(typescript@5.6.3)):
+  eigenlayer-contracts@git+https://git@github.com:Layr-Labs/eigenlayer-contracts.git#f0ff053ed92cf4541bf0c3cfdb9e0c375bdd51a9(hardhat@2.22.10(ts-node@10.9.2(@types/node@22.14.0)(typescript@5.6.3))(typescript@5.6.3)):
     dependencies:
-      solidity-docgen: 0.6.0-beta.36(hardhat@2.22.10(ts-node@10.9.2(@types/node@22.13.10)(typescript@5.6.3))(typescript@5.6.3))
+      solidity-docgen: 0.6.0-beta.36(hardhat@2.22.10(ts-node@10.9.2(@types/node@22.14.0)(typescript@5.6.3))(typescript@5.6.3))
     transitivePeerDependencies:
       - hardhat
 
-  eigenlayer-middleware@https://codeload.github.com/Layr-Labs/eigenlayer-middleware/tar.gz/7d49b5181b09198ed275783453aa082bb3766990: {}
+  eigenlayer-middleware@git+https://git@github.com:Layr-Labs/eigenlayer-middleware.git#f5adbcac55d9336cd646ce71bc467aa7e20f1a12: {}
 
-  elliptic-curve-solidity@https://codeload.github.com/witnet/elliptic-curve-solidity/tar.gz/347547890840fd501809dfe0b855206407136ec0: {}
+  elliptic-curve-solidity@git+https://git@github.com:witnet/elliptic-curve-solidity.git#347547890840fd501809dfe0b855206407136ec0: {}
 
   elliptic@6.6.1:
     dependencies:
@@ -2231,7 +2231,7 @@ snapshots:
     dependencies:
       is-callable: 1.2.7
 
-  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/8ba9031ffcbe25aa0d1224d3ca263a995026e477: {}
+  forge-std@git+https://git@github.com:foundry-rs/forge-std.git#3353993420c6e488a2914ce02d88174e80ad80f8: {}
 
   fp-ts@1.19.3: {}
 
@@ -2314,7 +2314,7 @@ snapshots:
     optionalDependencies:
       uglify-js: 3.19.3
 
-  hardhat@2.22.10(ts-node@10.9.2(@types/node@22.13.10)(typescript@5.6.3))(typescript@5.6.3):
+  hardhat@2.22.10(ts-node@10.9.2(@types/node@22.14.0)(typescript@5.6.3))(typescript@5.6.3):
     dependencies:
       '@ethersproject/abi': 5.8.0
       '@metamask/eth-sig-util': 4.0.1
@@ -2356,11 +2356,11 @@ snapshots:
       source-map-support: 0.5.21
       stacktrace-parser: 0.1.11
       tsort: 0.0.1
-      undici: 5.28.5
+      undici: 5.29.0
       uuid: 8.3.2
       ws: 7.5.10
     optionalDependencies:
-      ts-node: 10.9.2(@types/node@22.13.10)(typescript@5.6.3)
+      ts-node: 10.9.2(@types/node@22.14.0)(typescript@5.6.3)
       typescript: 5.6.3
     transitivePeerDependencies:
       - bufferutil
@@ -2614,9 +2614,9 @@ snapshots:
 
   ms@2.1.3: {}
 
-  multiproof@https://codeload.github.com/sigp/multiproof/tar.gz/d2fc889b524a58dc57d5ba7f9c51ec98869b8eff: {}
+  multiproof@git+https://git@github.com:sigp/multiproof.git#d2fc889b524a58dc57d5ba7f9c51ec98869b8eff: {}
 
-  murky@https://codeload.github.com/dmfxyz/murky/tar.gz/6f67641219549ca78f575a12493e25fe193da727: {}
+  murky@git+https://git@github.com:dmfxyz/murky.git#991e371eb1dfa9f86701869eb08ec4e98c3cc0b0: {}
 
   neo-async@2.6.2: {}
 
@@ -2797,7 +2797,7 @@ snapshots:
       get-intrinsic: 1.2.4
       object-inspect: 1.13.2
 
-  solady@0.1.12: {}
+  solady@0.1.14: {}
 
   solc@0.8.26(debug@4.4.0):
     dependencies:
@@ -2815,10 +2815,10 @@ snapshots:
     dependencies:
       array.prototype.findlast: 1.2.5
 
-  solidity-docgen@0.6.0-beta.36(hardhat@2.22.10(ts-node@10.9.2(@types/node@22.13.10)(typescript@5.6.3))(typescript@5.6.3)):
+  solidity-docgen@0.6.0-beta.36(hardhat@2.22.10(ts-node@10.9.2(@types/node@22.14.0)(typescript@5.6.3))(typescript@5.6.3)):
     dependencies:
       handlebars: 4.7.8
-      hardhat: 2.22.10(ts-node@10.9.2(@types/node@22.13.10)(typescript@5.6.3))(typescript@5.6.3)
+      hardhat: 2.22.10(ts-node@10.9.2(@types/node@22.14.0)(typescript@5.6.3))(typescript@5.6.3)
       solidity-ast: 0.4.56
 
   solmate@6.8.0: {}
@@ -2897,14 +2897,14 @@ snapshots:
 
   toidentifier@1.0.1: {}
 
-  ts-node@10.9.2(@types/node@22.13.10)(typescript@5.6.3):
+  ts-node@10.9.2(@types/node@22.14.0)(typescript@5.6.3):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       '@tsconfig/node10': 1.0.11
       '@tsconfig/node12': 1.0.11
       '@tsconfig/node14': 1.0.3
       '@tsconfig/node16': 1.0.4
-      '@types/node': 22.13.10
+      '@types/node': 22.14.0
       acorn: 8.14.1
       acorn-walk: 8.3.4
       arg: 4.1.3
@@ -2975,9 +2975,9 @@ snapshots:
       has-symbols: 1.0.3
       which-boxed-primitive: 1.0.2
 
-  undici-types@6.20.0: {}
+  undici-types@6.21.0: {}
 
-  undici@5.28.5:
+  undici@5.29.0:
     dependencies:
       '@fastify/busboy': 2.1.1
 
