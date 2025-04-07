@@ -206,16 +206,16 @@ func (db *DB) MaybePrune(ctx context.Context, limit int) (int, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
+	// Reverse iterations take a read lock, so we can't delete while iterating.
 	iter, err := db.table.List(ctx, HeaderHeightIndexKey{}, ormlist.Reverse())
 	if err != nil {
 		return 0, errors.Wrap(err, "list header")
 	}
 	defer iter.Close()
 
-	var i, deleted int
-	for iter.Next() {
-		i++
-		if i <= limit {
+	var toDelete []uint64
+	for i := 0; iter.Next(); i++ {
+		if i < limit {
 			continue
 		}
 
@@ -224,39 +224,51 @@ func (db *DB) MaybePrune(ctx context.Context, limit int) (int, error) {
 			return 0, errors.Wrap(err, "value")
 		}
 
-		if err := db.table.Delete(ctx, val); err != nil {
-			return 0, errors.Wrap(err, "delete header")
-		}
-
-		deleted++
+		toDelete = append(toDelete, val.GetId())
 	}
 
-	return deleted, nil
+	// Close the iterator, which releases the read lock.
+	iter.Close()
+
+	for _, id := range toDelete {
+		if err := db.table.Delete(ctx, &Header{Id: id}); err != nil {
+			return 0, errors.Wrap(err, "delete header")
+		}
+	}
+
+	return len(toDelete), nil
 }
 
 // deleteFrom deletes all headers from the given height and higher.
 func (db *DB) deleteFrom(ctx context.Context, height uint64) (int, error) {
-	var deleted int
+	// Not using DeleteRange since it doesn't return the number deleted (which we need).
 	iter, err := db.table.ListRange(ctx, HeaderHeightIndexKey{}.WithHeight(height), HeaderHeightIndexKey{})
 	if err != nil {
 		return 0, errors.Wrap(err, "list from height")
 	}
 	defer iter.Close()
 
+	// Collect to values to delete after iterating, since writes while iterating isn't supported.
+	var toDelete []uint64
 	for iter.Next() {
 		val, err := iter.Value()
 		if err != nil {
 			return 0, errors.Wrap(err, "value")
 		}
 
-		if err := db.table.Delete(ctx, val); err != nil {
-			return 0, errors.Wrap(err, "delete header")
-		}
-
-		deleted++
+		toDelete = append(toDelete, val.GetId())
 	}
 
-	return deleted, nil
+	// Close the iterator, which releases the read lock.
+	iter.Close()
+
+	for _, id := range toDelete {
+		if err := db.table.Delete(ctx, &Header{Id: id}); err != nil {
+			return 0, errors.Wrap(err, "delete header")
+		}
+	}
+
+	return len(toDelete), nil
 }
 
 func toProto(h *types.Header) (*Header, error) {
