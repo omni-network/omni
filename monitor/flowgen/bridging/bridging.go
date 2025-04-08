@@ -17,7 +17,6 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/monitor/flowgen/types"
-	solver "github.com/omni-network/omni/solver/app"
 	sclient "github.com/omni-network/omni/solver/client"
 	stokens "github.com/omni-network/omni/solver/tokens"
 	stypes "github.com/omni-network/omni/solver/types"
@@ -34,7 +33,7 @@ func Jobs(
 	networkID netconf.ID,
 	backends ethbackend.Backends,
 	owner common.Address,
-	solverAddress string,
+	scl sclient.Client,
 ) []types.Job {
 	conf, ok := config[networkID]
 	if !ok {
@@ -42,8 +41,8 @@ func Jobs(
 	}
 
 	return []types.Job{
-		newJob(networkID, backends, conf, owner, solverAddress),
-		newJob(networkID, backends, conf.Flip(), owner, solverAddress), // Second job using flipped config
+		newJob(networkID, backends, conf, owner, scl),
+		newJob(networkID, backends, conf.Flip(), owner, scl), // Second job using flipped config
 	}
 }
 
@@ -53,14 +52,13 @@ func newJob(
 	backends ethbackend.Backends,
 	conf flowConfig,
 	owner common.Address,
-	solverAddress string,
+	scl sclient.Client,
 ) types.Job {
 	cadence := 25 * time.Minute
 	if networkID == netconf.Devnet {
 		cadence = time.Second * 20
 	}
 
-	solverClient := sclient.New(solverAddress)
 	namer := netconf.ChainNamer(networkID)
 
 	return types.Job{
@@ -68,7 +66,7 @@ func newJob(
 		Cadence:    cadence,
 		SrcChainID: conf.srcChain,
 		OpenOrdersFunc: func(ctx context.Context) ([]types.Result, error) {
-			return openOrders(ctx, backends, networkID, owner, conf, solverClient)
+			return openOrders(ctx, backends, networkID, owner, conf, scl)
 		},
 	}
 }
@@ -79,7 +77,7 @@ func openOrders(
 	networkID netconf.ID,
 	owner common.Address,
 	conf flowConfig,
-	solverClient sclient.Client,
+	scl sclient.Client,
 ) ([]types.Result, error) {
 	srcToken, ok := stokens.Native(conf.srcChain)
 	if !ok {
@@ -108,7 +106,7 @@ func openOrders(
 
 	var orderDatas []bindings.SolverNetOrderData
 	for _, amount := range splitOrderAmounts(dstToken, totalAmount, p) {
-		orderData, err := nativeOrderData(owner, srcToken, dstToken, amount)
+		orderData, err := nativeOrderData(ctx, scl, owner, srcToken, dstToken, amount)
 		if err != nil {
 			return nil, err
 		}
@@ -117,7 +115,7 @@ func openOrders(
 	}
 
 	work := func(ctx context.Context, orderData bindings.SolverNetOrderData) (types.Result, error) {
-		return openOrder(ctx, backends, networkID, owner, conf.srcChain, solverClient, orderData)
+		return openOrder(ctx, backends, networkID, owner, conf.srcChain, scl, orderData)
 	}
 
 	results, cancel := forkjoin.NewWithInputs(ctx, work, orderDatas, forkjoin.WithWorkers(16))
@@ -178,28 +176,34 @@ func check(ctx context.Context, scl sclient.Client, srcChainID uint64, orderData
 	return scl.Check(ctx, checkReq)
 }
 
-func nativeOrderData(owner common.Address, srcToken, dstToken stokens.Token, expenseAmt *big.Int) (bindings.SolverNetOrderData, error) {
-	expense := solver.TokenAmt{Token: dstToken, Amount: expenseAmt}
+func nativeOrderData(ctx context.Context, scl sclient.Client, owner common.Address, srcToken, dstToken stokens.Token, expenseAmt *big.Int) (bindings.SolverNetOrderData, error) {
+	quoteReq := stypes.QuoteRequest{
+		SourceChainID:      srcToken.ChainID,
+		DestinationChainID: dstToken.ChainID,
+		Expense: stypes.AddrAmt{
+			Token:  dstToken.Address,
+			Amount: expenseAmt,
+		},
+	}
 
-	depositWithFee, err := solver.QuoteDeposit(srcToken, expense)
+	quoteResp, err := scl.Quote(ctx, quoteReq)
 	if err != nil {
 		return bindings.SolverNetOrderData{}, errors.Wrap(err, "quote deposit")
+	} else if quoteResp.Rejected {
+		return bindings.SolverNetOrderData{}, errors.New("quote rejected", "description", quoteResp.RejectDescription, "reason", quoteResp.RejectCode)
 	}
 
 	call := solvernet.Call{
 		Target: owner,
-		Value:  expense.Amount,
+		Value:  expenseAmt,
 	}
 
 	return bindings.SolverNetOrderData{
 		Owner:       owner,
 		DestChainId: dstToken.ChainID,
-		Deposit: solvernet.Deposit{
-			Token:  depositWithFee.Token.Address,
-			Amount: depositWithFee.Amount,
-		},
-		Expenses: []solvernet.Expense{}, // Explicit expense not required for native transfer calls.
-		Calls:    []bindings.SolverNetCall{call.ToBinding()},
+		Deposit:     solvernet.Deposit(quoteResp.Deposit),
+		Expenses:    []solvernet.Expense{}, // Explicit expense not required for native transfer calls.
+		Calls:       []bindings.SolverNetCall{call.ToBinding()},
 	}, nil
 }
 
@@ -209,10 +213,10 @@ func openOrder(
 	networkID netconf.ID,
 	owner common.Address,
 	srcChainID uint64,
-	solverClient sclient.Client,
+	scl sclient.Client,
 	orderData bindings.SolverNetOrderData,
 ) (types.Result, error) {
-	if resp, err := check(ctx, solverClient, srcChainID, orderData); err != nil {
+	if resp, err := check(ctx, scl, srcChainID, orderData); err != nil {
 		return types.Result{}, errors.Wrap(err, "check")
 	} else if resp.Rejected {
 		return types.Result{}, errors.New("order rejected", "description", resp.RejectDescription, "reason", resp.RejectCode)

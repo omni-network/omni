@@ -12,18 +12,18 @@ import (
 )
 
 type flowConfig struct {
-	srcChain  uint64
-	dstChain  uint64
-	vaultAddr common.Address
-	orderSize *big.Int
+	srcChain    uint64
+	dstChain    uint64
+	vaultAddr   common.Address
+	orderAmount *big.Int
 }
 
 var config = map[netconf.ID]flowConfig{
 	netconf.Devnet: {
-		srcChain:  evmchain.IDMockL1,
-		dstChain:  evmchain.IDMockL2,
-		vaultAddr: solve.MockVaultAddress(netconf.Devnet),
-		orderSize: bi.Ether(0.02),
+		srcChain:    evmchain.IDMockL1,
+		dstChain:    evmchain.IDMockL2,
+		vaultAddr:   solve.MockVaultAddress(netconf.Devnet),
+		orderAmount: bi.Ether(0.02),
 	},
 
 	// TODO(christian): enable once this is needed.
@@ -31,6 +31,6 @@ var config = map[netconf.ID]flowConfig{
 	// 	srcChain:     evmchain.IDBaseSepolia,
 	// 	dstChain:     evmchain.IDHolesky,
 	// 	vaultAddr:    targets.SymbioticHoleskyWSTETHVault1,
-	//  orderSize: 	  bi.Ether(0.2),
+	//  orderAmount: 	  bi.Ether(0.2),
 	// },
 }
