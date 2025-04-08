@@ -62,7 +62,7 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         assertTrue(inbox.validate(order), "order should be valid");
         vm.prank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
-        bytes32 orderId = inbox.getOrderId(user, inbox.getOnchainUserNonce(user));
+        bytes32 orderId = inbox.getOrderId(user, inbox.getUserNonce(user));
 
         fundUser(orderData);
         vm.prank(user);
@@ -83,7 +83,7 @@ contract SolverNet_Inbox_Open_Test is TestBase {
         assertTrue(inbox.validate(order), "order should be valid");
         vm.prank(user);
         IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
-        bytes32 orderId = inbox.getOrderId(user, inbox.getOnchainUserNonce(user));
+        bytes32 orderId = inbox.getOrderId(user, inbox.getUserNonce(user));
 
         fundUser(orderData);
         vm.prank(user);

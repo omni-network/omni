@@ -1,23 +1,28 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
-import { IOriginSettler } from "../erc7683/IOriginSettler.sol";
+import { IOriginSettlerV2 } from "../erc7683/IOriginSettlerV2.sol";
 import { SolverNet } from "../lib/SolverNet.sol";
 
-interface ISolverNetInbox is IOriginSettler {
+interface ISolverNetInboxV2 is IOriginSettlerV2 {
     // Validation errors
     error InvalidOrderTypehash();
     error InvalidOrderData();
-    error InvalidChainId();
+    error InvalidOriginChainId();
+    error InvalidOriginSettler();
+    error InvalidDestinationChainId();
+    error InvalidOpenDeadline();
     error InvalidFillDeadline();
     error InvalidMissingCalls();
     error InvalidCallTarget();
     error InvalidExpenseToken();
     error InvalidExpenseAmount();
     error InvalidArrayLength();
+    error InvalidUser();
 
     // Open order errors
     error InvalidNativeDeposit();
+    error InvalidSignature();
 
     // Reject order errors
     error InvalidReason();
@@ -110,6 +115,28 @@ interface ISolverNetInbox is IOriginSettler {
     }
 
     /**
+     * @notice Pause the `open` function, preventing new orders from being opened.
+     * @dev Cannot override ALL_PAUSED state.
+     * @param pause True to pause, false to unpause.
+     */
+    function pauseOpen(bool pause) external;
+
+    /**
+     * @notice Pause the `close` function, preventing orders from being closed by users.
+     * @dev `close` should only be paused if the Omni Core relayer is not available.
+     * @dev Cannot override ALL_PAUSED state.
+     * @param pause True to pause, false to unpause.
+     */
+    function pauseClose(bool pause) external;
+
+    /**
+     * @notice Pause open and close functions.
+     * @dev Can override OPEN_PAUSED or CLOSE_PAUSED states.
+     * @param pause True to pause, false to unpause.
+     */
+    function pauseAll(bool pause) external;
+
+    /**
      * @notice Set the outbox addresses for the given chain IDs.
      * @param chainIds IDs of the chains.
      * @param outboxes Addresses of the outboxes.
@@ -127,22 +154,30 @@ interface ISolverNetInbox is IOriginSettler {
 
     /**
      * @notice Returns the order ID for the given user and nonce.
+     * @param gasless Whether the order is gasless.
      * @param user  Address of the user.
      * @param nonce Nonce of the order.
      */
-    function getOrderId(address user, uint256 nonce) external view returns (bytes32);
+    function getOrderId(bool gasless, address user, uint256 nonce) external view returns (bytes32);
 
     /**
-     * @notice Returns the next order ID for the given user.
-     * @param user Address of the user.
+     * @notice Returns the next onchain order ID for the given user.
+     * @param user Address of the user the order is opened for.
      */
-    function getNextOrderId(address user) external view returns (bytes32);
+    function getNextOnchainOrderId(address user) external view returns (bytes32);
 
     /**
-     * @notice Returns the nonce for the given user.
-     * @param user Address of the user.
+     * @notice Returns the next gasless order ID for the given user.
+     * @param user Address of the user paying for the order.
+     * @param nonce Nonce of the order.
      */
-    function getUserNonce(address user) external view returns (uint256);
+    function getNextGaslessOrderId(address user, uint256 nonce) external view returns (bytes32);
+
+    /**
+     * @notice Returns the onchain nonce for the given user.
+     * @param user Address of the user the order is opened for.
+     */
+    function getOnchainUserNonce(address user) external view returns (uint256);
 
     /**
      * @notice Returns the order offset of the latest order opened at this inbox.
@@ -154,6 +189,12 @@ interface ISolverNetInbox is IOriginSettler {
      * @param order OnchainCrossChainOrder to validate.
      */
     function validate(OnchainCrossChainOrder calldata order) external view returns (bool);
+
+    /**
+     * @dev Validate the gasless order.
+     * @param order GaslessCrossChainOrder to validate.
+     */
+    function validateFor(GaslessCrossChainOrder calldata order) external view returns (bool);
 
     /**
      * @notice Reject an open order and refund deposits.
