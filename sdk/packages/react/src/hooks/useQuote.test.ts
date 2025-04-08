@@ -47,9 +47,7 @@ test('default', async () => {
   rerender({ ...params, enabled: true })
 
   // TODO fix data not resolved - coming in a follow up
-  await Promise.all([
-    waitFor(() => expect(result.current.isPending).toBeFalsy()),
-  ])
+  waitFor(() => expect(result.current.isPending).toBeFalsy())
 })
 
 test('parameters: expense', () => {

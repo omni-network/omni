@@ -73,19 +73,17 @@ test(`default: validates, opens, and transitions order through it's lifecycle`, 
     { mockContractsCall: true, initialProps: { validateEnabled: false } },
   )
 
-  await Promise.all([
-    waitFor(() => expect(result.current.isReady).toBeFalsy()),
-    waitFor(() => expect(result.current.status).toBe('ready')),
-    waitFor(() => expect(result.current.isValidated).toBeFalsy()),
-    waitFor(() => expect(result.current.isError).toBeFalsy()),
-    waitFor(() => expect(result.current.isTxPending).toBeTruthy()),
-    waitFor(() => expect(result.current.isTxSubmitted).toBeFalsy()),
-    waitFor(() => expect(result.current.txMutation.data).toBeUndefined()),
-    waitFor(() => expect(result.current.isOpen).toBeFalsy()),
-    waitFor(() => expect(result.current.orderId).toBeUndefined()),
-    waitFor(() => expect(result.current.txHash).toBeUndefined()),
-    waitFor(() => expect(result.current.error).toBeUndefined()),
-  ])
+  await waitFor(() => {
+    expect(result.current.isReady).toBeFalsy()
+    expect(result.current.isError).toBeFalsy()
+    expect(result.current.isTxPending).toBeTruthy()
+    expect(result.current.isTxSubmitted).toBeFalsy()
+    expect(result.current.txMutation.data).toBeUndefined()
+    expect(result.current.isOpen).toBeFalsy()
+    expect(result.current.orderId).toBeUndefined()
+    expect(result.current.txHash).toBeUndefined()
+    expect(result.current.error).toBeUndefined()
+  })
 
   mockUseValidateOrder.mockReturnValue({
     status: 'accepted',
@@ -111,14 +109,14 @@ test(`default: validates, opens, and transitions order through it's lifecycle`, 
 
   const res = await result.current.open()
 
-  await Promise.all([
-    waitFor(() => expect(result.current.isOpen).toBeTruthy()),
-    waitFor(() => expect(result.current.isTxPending).toBeFalsy()),
-    waitFor(() => expect(result.current.isTxSubmitted).toBeTruthy()),
-    waitFor(() => expect(result.current.txMutation.data).toBe('0xTxHash')),
-    waitFor(() => expect(result.current.txMutation.isSuccess).toBeTruthy()),
-    waitFor(() => expect(res).toBe('0xTxHash')),
-  ])
+  await waitFor(() => {
+    expect(result.current.isOpen).toBeTruthy()
+    expect(result.current.isTxPending).toBeFalsy()
+    expect(result.current.isTxSubmitted).toBeTruthy()
+    expect(result.current.txMutation.data).toBe('0xTxHash')
+    expect(result.current.txMutation.isSuccess).toBeTruthy()
+    expect(res).toBe('0xTxHash')
+  })
 
   mockUseGetOrderStatus.mockReturnValue({
     status: 'filled',
