@@ -1,9 +1,7 @@
 package app
 
 import (
-	"bytes"
 	"encoding/json"
-	"io"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tutil"
+	"github.com/omni-network/omni/solver/client"
 	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -307,35 +306,25 @@ func TestQuote(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			handler := handlerAdapter(newQuoteHandler(quoter))
+			srv := httptest.NewServer(handlerAdapter(newQuoteHandler(quoter)))
 
-			body, err := json.Marshal(tt.req)
-			require.NoError(t, err)
+			var reqBody, respBody []byte
+			cl := client.New(srv.URL, client.WithDebugBodies(
+				func(b []byte) { reqBody = b },
+				func(b []byte) { respBody = b },
+			))
 
-			ctx := t.Context()
-			req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpointQuote, bytes.NewBuffer(body))
-			require.NoError(t, err)
-
-			rr := httptest.NewRecorder()
-			handler.ServeHTTP(rr, req)
-
-			respBody, err := io.ReadAll(rr.Body)
-			require.NoError(t, err)
-
-			// Response is either a QuoteResponse or a JSONErrorResponse
-			var res struct {
-				types.QuoteResponse
-				types.JSONErrorResponse
+			resp, err := cl.Quote(t.Context(), tt.req)
+			if err == nil {
+				require.Equal(t, tt.res, resp)
+			} else {
+				var errResp types.JSONErrorResponse
+				require.NoError(t, json.Unmarshal(respBody, &errResp))
+				require.Equal(t, tt.expErr, errResp.Error)
 			}
-			require.NoError(t, json.Unmarshal(respBody, &res))
-			if rr.Code != http.StatusOK {
-				require.Equal(t, res.Error.Code, rr.Code)
-			}
-			require.Equal(t, tt.res, res.QuoteResponse)
-			require.Equal(t, tt.expErr, res.Error)
 
 			if tt.testdata {
-				tutil.RequireGoldenBytes(t, indent(body), tutil.WithFilename(t.Name()+"/req_body.json"))
+				tutil.RequireGoldenBytes(t, indent(reqBody), tutil.WithFilename(t.Name()+"/req_body.json"))
 				tutil.RequireGoldenBytes(t, indent(respBody), tutil.WithFilename(t.Name()+"/resp_body.json"))
 			}
 		})
