@@ -12,7 +12,7 @@ import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 import { Permit2Lib } from "./lib/Permit2Lib.sol";
 import { SolverNet } from "./lib/SolverNet.sol";
 import { AddrUtils } from "./lib/AddrUtils.sol";
-import { IPermit2, ISignatureTransfer } from "../node_modules/@uniswap/permit2/src/interfaces/IPermit2.sol";
+import { IPermit2, ISignatureTransfer } from "@uniswap/permit2/src/interfaces/IPermit2.sol";
 import { IOmniPortalPausable } from "core/src/interfaces/IOmniPortalPausable.sol";
 
 /**
