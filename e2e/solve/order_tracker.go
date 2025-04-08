@@ -1,15 +1,22 @@
 package solve
 
 import (
+	"context"
 	"sync"
 
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/log"
 )
 
 type orderKey struct {
 	orderID    solvernet.OrderID
 	srcChainID uint64
+}
+
+func (k orderKey) SrcChain() string {
+	return evmchain.Name(k.srcChainID)
 }
 
 type orderTracker struct {
@@ -100,4 +107,17 @@ func (t *orderTracker) Remaining() (int, error) {
 	}
 
 	return remaining, nil
+}
+
+func (t *orderTracker) DebugFirstPending(ctx context.Context) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	for key := range t.orders {
+		status, ok := t.status[key]
+		if !ok || status == solvernet.StatusPending {
+			log.Debug(ctx, "First pending order", "order_id", key.orderID, "src_chain", key.SrcChain(), "status", status)
+			return
+		}
+	}
 }

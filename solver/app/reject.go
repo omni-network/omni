@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"strings"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/bi"
@@ -29,7 +30,13 @@ type RejectionError struct {
 
 // Error implements error.
 func (r *RejectionError) Error() string {
-	return fmt.Sprintf("%s: %v", r.Reason.String(), r.Err)
+	// TODO(corver): Improve how to add errors attributes, instead of using hacky empty wraps.
+	errMsg := errors.Format(r.Err)
+	for strings.HasPrefix(errMsg, ": ") {
+		errMsg = errMsg[2:]
+	}
+
+	return fmt.Sprintf("%s: %v", r.Reason.String(), errMsg)
 }
 
 // newRejection is a convenience function to create a new RejectionError error.

@@ -6,6 +6,7 @@
 package evmchain
 
 import (
+	"fmt"
 	"sort"
 	"time"
 
@@ -198,4 +199,14 @@ var static = map[uint64]Metadata{
 // TODO(corver): Remove once holesky issue resolved.
 func IsDisabled(_ uint64) bool {
 	return false // id == IDHolesky
+}
+
+// Name returns the name of the chain by its ID.
+func Name(id uint64) string {
+	metadata, ok := MetadataByID(id)
+	if !ok {
+		return fmt.Sprintf("unknown(%d)", id)
+	}
+
+	return metadata.Name
 }

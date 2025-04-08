@@ -104,6 +104,10 @@ func openOrder(
 	quoteReq := stypes.QuoteRequest{
 		SourceChainID:      srcToken.ChainID,
 		DestinationChainID: dstToken.ChainID,
+		Deposit: stypes.AddrAmt{
+			Token: srcToken.Address,
+			// Amount left empty, quote will return the required amount.
+		},
 		Expense: stypes.AddrAmt{
 			Token:  dstToken.Address,
 			Amount: conf.orderAmount,
