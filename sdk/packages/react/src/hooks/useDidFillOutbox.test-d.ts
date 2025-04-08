@@ -1,7 +1,7 @@
-import type { outboxABI } from '@omni-network/core'
 import { expectTypeOf, test } from 'vitest'
 import type { UseReadContractReturnType } from 'wagmi'
 import { resolvedOrder } from '../../test/shared.js'
+import type { outboxABI } from '../constants/abis.js'
 import { useDidFillOutbox } from './useDidFillOutbox.js'
 import type { useParseOpenEvent } from './useParseOpenEvent.js'
 

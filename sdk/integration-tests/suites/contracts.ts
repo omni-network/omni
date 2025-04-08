@@ -7,7 +7,7 @@ import {
   inboxABI,
   middlemanABI,
   outboxABI,
-} from '../../packages/core/src/constants/abis'
+} from '../../packages/react/src/constants/abis'
 
 const ASSETS_PATH = fileURLToPath(new URL('./assets', dirname(import.meta.url)))
 

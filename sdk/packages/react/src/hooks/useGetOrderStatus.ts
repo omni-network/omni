@@ -1,9 +1,6 @@
-import {
-  DidFillError,
-  GetOrderError,
-  type OrderStatus,
-} from '@omni-network/core'
 import type { Hex } from 'viem'
+import { DidFillError, GetOrderError } from '../errors/base.js'
+import type { OrderStatus } from '../types/order.js'
 import { useDidFillOutbox } from './useDidFillOutbox.js'
 import { useGetOrder } from './useGetOrder.js'
 import { type InboxStatus, useInboxStatus } from './useInboxStatus.js'

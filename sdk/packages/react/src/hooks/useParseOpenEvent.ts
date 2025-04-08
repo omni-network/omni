@@ -1,7 +1,8 @@
-import { ParseOpenEventError, inboxABI } from '@omni-network/core'
 import { useMemo } from 'react'
 import { type Log, decodeEventLog, parseEventLogs } from 'viem'
 import type { UseWaitForTransactionReceiptReturnType } from 'wagmi'
+import { inboxABI } from '../constants/abis.js'
+import { ParseOpenEventError } from '../errors/base.js'
 
 type UseParseOpenEventParams = {
   status: UseWaitForTransactionReceiptReturnType['status']

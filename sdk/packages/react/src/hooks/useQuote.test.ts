@@ -1,8 +1,8 @@
-import type { Quoteable } from '@omni-network/core'
 import { waitFor } from '@testing-library/react'
 import { zeroAddress } from 'viem'
 import { expect, test, vi } from 'vitest'
 import { renderHook } from '../../test/react.js'
+import type { Quoteable } from '../types/quote.js'
 import { useQuote } from './useQuote.js'
 
 const token = '0x123'

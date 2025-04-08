@@ -1,4 +1,3 @@
-import type { OmniContracts } from '@omni-network/core'
 import { testAccount } from '@omni-network/test-utils'
 import { type Hex, parseEther, toBytes, toHex } from 'viem'
 import { arbitrum, base, optimism } from 'viem/chains'
@@ -39,7 +38,7 @@ type FillInstruction = {
 }
 
 export const oneEth = parseEther('1')
-export const contracts: OmniContracts = {
+export const contracts = {
   inbox: '0x123',
   outbox: '0x456',
   middleman: '0x789',

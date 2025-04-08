@@ -1,9 +1,11 @@
-import type { FetchJSONError, OptionalAbis, Order } from '@omni-network/core'
-import { fetchJSON, isContractCall } from '@omni-network/core'
 import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { encodeFunctionData, zeroAddress } from 'viem'
 import { useOmniContext } from '../context/omni.js'
+import { type FetchJSONError, fetchJSON } from '../internal/api.js'
+import type { OptionalAbis } from '../types/abi.js'
+import type { Order } from '../types/order.js'
+import { isContractCall } from '../types/order.js'
 import { toJSON } from './util.js'
 
 type UseValidateOrderParams<abis extends OptionalAbis> = {

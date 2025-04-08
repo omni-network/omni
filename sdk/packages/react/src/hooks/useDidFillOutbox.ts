@@ -1,5 +1,5 @@
-import { outboxABI } from '@omni-network/core'
 import { useReadContract } from 'wagmi'
+import { outboxABI } from '../constants/abis.js'
 import { useOmniContracts } from './useOmniContracts.js'
 import type { useParseOpenEvent } from './useParseOpenEvent.js'
 

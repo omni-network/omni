@@ -59,8 +59,5 @@
   },
   "keywords": ["typescript", "web3", "ethereum", "omni"],
   "author": "Omni Network",
-  "homepage": "https://omni.network/",
-  "dependencies": {
-    "@omni-network/core": "workspace:^"
-  }
+  "homepage": "https://omni.network/"
 }

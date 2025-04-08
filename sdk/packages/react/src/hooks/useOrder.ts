@@ -1,20 +1,3 @@
-import type {
-  DidFillError,
-  OptionalAbis,
-  Order,
-  OrderStatus,
-  ParseOpenEventError,
-} from '@omni-network/core'
-import {
-  GetOrderError,
-  LoadContractsError,
-  OpenError,
-  TxReceiptError,
-  ValidateOrderError,
-  encodeOrder,
-  inboxABI,
-  typeHash,
-} from '@omni-network/core'
 import type { Hex } from 'viem'
 import { zeroAddress } from 'viem'
 import {
@@ -25,6 +8,20 @@ import {
   useWaitForTransactionReceipt,
   useWriteContract,
 } from 'wagmi'
+import { inboxABI } from '../constants/abis.js'
+import { typeHash } from '../constants/typehash.js'
+import {
+  type DidFillError,
+  GetOrderError,
+  LoadContractsError,
+  OpenError,
+  type ParseOpenEventError,
+  TxReceiptError,
+  ValidateOrderError,
+} from '../errors/base.js'
+import type { OptionalAbis } from '../types/abi.js'
+import type { Order, OrderStatus } from '../types/order.js'
+import { encodeOrder } from '../utils/encodeOrder.js'
 import { useGetOrderStatus } from './useGetOrderStatus.js'
 import {
   type UseOmniContractsResult,
