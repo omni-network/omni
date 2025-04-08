@@ -126,7 +126,7 @@ test('default: successfully processes order from quote to filled', async () => {
       },
     })
   })
-  await waitFor(() => expect(quoteHook.result.current.isSuccess).toBeTruthy())
+  await waitFor(() => expect(quoteHook.result.current.isSuccess).toBe(true))
 
   const quote = quoteHook.result.current.query.data as Quote
   expect(quote).toEqual({
@@ -148,13 +148,11 @@ test('default: successfully processes order from quote to filled', async () => {
     return useValidateOrder({ enabled: true, order: orderParams })
   })
   await waitFor(() => {
-    return expect(
-      validateHook.result.current.status === 'accepted',
-    ).toBeTruthy()
+    return expect(validateHook.result.current.status === 'accepted').toBe(true)
   })
 
   const orderRef = useOrderRef(testConnector, orderParams)
-  await waitFor(() => expect(orderRef.current?.isReady).toBeTruthy())
+  await waitFor(() => expect(orderRef.current?.isReady).toBe(true))
 
   act(() => {
     orderRef.current?.open()

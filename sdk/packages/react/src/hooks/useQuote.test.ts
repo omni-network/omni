@@ -42,7 +42,7 @@ test('default', async () => {
 
   expect(result.current.isPending).toBe(true)
   expect(result.current.query.data).toBeUndefined()
-  expect(result.current.query.isFetched).toBeFalsy()
+  expect(result.current.query.isFetched).toBe(false)
 
   fetchJSON.mockResolvedValue({
     deposit: { token, amount: '100' },
@@ -133,7 +133,7 @@ test('behaviour: quote does not fire when enabled is false', () => {
 
   expect(result.current.isPending).toBe(true)
   expect(result.current.query.data).toBeUndefined()
-  expect(result.current.query.isFetched).toBeFalsy()
+  expect(result.current.query.isFetched).toBe(false)
 })
 
 test.each([

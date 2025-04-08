@@ -40,7 +40,7 @@ describe('useQuote()', () => {
       { wrapper: ContextProvider },
     )
 
-    await waitFor(() => expect(result.current.isSuccess).toBeTruthy())
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
     expect(result.current.query.data).toEqual({
       deposit: { token: ZERO_ADDRESS, amount: 1n },
@@ -69,7 +69,7 @@ describe('useQuote()', () => {
       { wrapper: ContextProvider },
     )
 
-    await waitFor(() => expect(result.current.isSuccess).toBeTruthy())
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
     expect(result.current.query.data).toEqual({
       deposit: { token: ZERO_ADDRESS, amount: 2n },
@@ -93,7 +93,7 @@ describe('useQuote()', () => {
       { wrapper: ContextProvider },
     )
 
-    await waitFor(() => expect(result.current.isError).toBeTruthy())
+    await waitFor(() => expect(result.current.isError).toBe(true))
     if (result.current.isError) {
       expect(result.current.error).toEqual({
         code: 400,
@@ -120,7 +120,7 @@ describe('useQuote()', () => {
       { wrapper: ContextProvider },
     )
 
-    await waitFor(() => expect(result.current.isError).toBeTruthy())
+    await waitFor(() => expect(result.current.isError).toBe(true))
     if (result.current.isError) {
       expect(result.current.error).toEqual({
         code: 400,

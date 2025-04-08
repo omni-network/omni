@@ -72,7 +72,7 @@ test('behaviour: no contract read when orderId is undefined', () => {
 
   expect(result.current.data).toBeUndefined()
   expect(result.current.status).toBe('pending')
-  expect(result.current.isFetched).toBeFalsy()
+  expect(result.current.isFetched).toBe(false)
   // once on mount
   expect(useReadContract).toHaveBeenCalledOnce()
 })
@@ -88,7 +88,7 @@ test('behaviour: no contract read when chainId is undefined', () => {
 
   expect(result.current.data).toBeUndefined()
   expect(result.current.status).toBe('pending')
-  expect(result.current.isFetched).toBeFalsy()
+  expect(result.current.isFetched).toBe(false)
   // once on mount
   expect(useReadContract).toHaveBeenCalledOnce()
 })
@@ -100,7 +100,7 @@ test('behaviour: no contract read when all inputs undefined', () => {
 
   expect(result.current.data).toBeUndefined()
   expect(result.current.status).toBe('pending')
-  expect(result.current.isFetched).toBeFalsy()
+  expect(result.current.isFetched).toBe(false)
   // once on mount
   expect(useReadContract).toHaveBeenCalledOnce()
 })
