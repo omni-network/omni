@@ -2,6 +2,8 @@ package flowgen
 
 import (
 	"context"
+	"math/big"
+	"slices"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -14,9 +16,11 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/monitor/flowgen/bridging"
 	"github.com/omni-network/omni/monitor/flowgen/symbiotic"
 	"github.com/omni-network/omni/monitor/flowgen/types"
+	stokens "github.com/omni-network/omni/solver/tokens"
 	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -57,21 +61,14 @@ func startWithBackends(
 	owner common.Address,
 	solverAddress string,
 ) error {
-	var jobs []types.Job
+	j1 := bridging.Jobs(network.ID, backends, owner, solverAddress)
 
-	result, err := bridging.Jobs(network.ID, backends, owner, solverAddress)
-	if err != nil {
-		return errors.Wrap(err, "bridge jobs")
-	}
-	jobs = append(jobs, result...)
-
-	result, err = symbiotic.Jobs(ctx, backends, network.ID, owner)
+	j2, err := symbiotic.Jobs(ctx, backends, network.ID, owner)
 	if err != nil {
 		return errors.Wrap(err, "symbiotic jobs")
 	}
-	jobs = append(jobs, result...)
 
-	for _, job := range jobs {
+	for _, job := range slices.Concat(j1, j2) {
 		go func() {
 			timer := time.NewTimer(0)
 			defer timer.Stop()
@@ -81,18 +78,23 @@ func startWithBackends(
 				case <-ctx.Done():
 					return
 				case <-timer.C:
+					timer.Reset(job.Cadence)
 					jobsTotal.Inc()
-					runCtx := log.WithCtx(ctx, "job", job.Name)
-					ok, err := run(runCtx, job)
+					runCtx := log.WithCtx(ctx, "job", job.Name, "src_chain", network.ChainName(job.SrcChainID))
+
+					ok, err := run(runCtx, network.ID, backends, job)
 					if err != nil {
 						log.Warn(runCtx, "Flowgen: job failed (will retry)", err)
 						jobsFailed.Inc()
 					}
-					if ok {
-						timer.Reset(job.Cadence)
-					} else {
+					if !ok {
 						// If the job was skipped, we retry earlier.
-						timer.Reset(1 * time.Minute)
+						retry := time.Minute
+						if network.ID == netconf.Devnet {
+							retry = 5 * time.Second
+						}
+
+						timer.Reset(retry)
 					}
 				}
 			}
@@ -103,51 +105,80 @@ func startWithBackends(
 }
 
 // run runs a job exactly once. It returns false if the job was skipped.
-func run(ctx context.Context, job types.Job) (bool, error) {
+func run(ctx context.Context, network netconf.ID, backends ethbackend.Backends, job types.Job) (bool, error) {
 	log.Debug(ctx, "Flowgen: running job")
 	t0 := time.Now()
 
-	receipt, ok, err := job.OpenOrderFunc(ctx)
+	results, err := job.OpenOrdersFunc(ctx)
 	if err != nil {
-		return false, errors.Wrap(err, "open order")
+		return false, errors.Wrap(err, "open orders")
 	}
 
-	if !ok {
+	log.Debug(ctx, "Flowgen: orders opened", "count", len(results))
+
+	if len(results) == 0 {
 		return false, nil
 	}
 
-	ctx = log.WithCtx(ctx, "order_id", receipt.OrderID)
+	var token tokens.Token
+	var minAmt, maxAmt *big.Int
+	for i, result := range results {
+		loopCtx := log.WithCtx(ctx, "order_id", result.OrderID, "index", i)
 
-	log.Debug(ctx, "Flowgen: order opened")
+		if err := awaitClaimed(loopCtx, network, backends, job, result.OrderID); err != nil {
+			return false, errors.Wrap(err, "await claimed")
+		}
 
-	if err := awaitClaimed(ctx, job, receipt.OrderID); err != nil {
-		return false, errors.Wrap(err, "await claimed")
+		amt := result.Data.Deposit.Amount
+		if i == 0 {
+			minAmt = amt
+			maxAmt = amt
+
+			stkn, ok := stokens.ByAddress(job.SrcChainID, result.Data.Deposit.Token)
+			if !ok {
+				return false, errors.New("src token not found", "address", result.Data.Deposit.Token)
+			}
+			token = stkn.Token
+
+			continue
+		}
+
+		if bi.LT(amt, minAmt) {
+			minAmt = amt
+		} else if bi.GT(amt, maxAmt) {
+			maxAmt = amt
+		}
 	}
 
-	duration := time.Since(t0)
-	log.Info(ctx, "Flowgen: order claimed",
-		"amount", bi.ToEtherF64(receipt.Expense.Amount),
-		"token", receipt.Expense.Token.Symbol,
-		"duration", duration.Minutes(),
+	log.Info(ctx, "Flowgen: orders claimed",
+		"min_amount", token.FormatAmt(minAmt),
+		"max_amount", token.FormatAmt(maxAmt),
+		"count", len(results),
+		"duration", time.Since(t0),
 	)
 
 	return true, nil
 }
 
 // awaitClaimed blocks until the order is claimed.
-func awaitClaimed(ctx context.Context, job types.Job, orderID solvernet.OrderID) error {
-	addrs, err := contracts.GetAddresses(ctx, job.NetworkID)
+func awaitClaimed(ctx context.Context, network netconf.ID, backends ethbackend.Backends, job types.Job, orderID solvernet.OrderID) error {
+	addrs, err := contracts.GetAddresses(ctx, network)
 	if err != nil {
 		return errors.New("contract addresses")
 	}
 
-	inbox, err := bindings.NewSolverNetInbox(addrs.SolverNetInbox, job.SrcChainBackend)
+	backend, err := backends.Backend(job.SrcChainID)
+	if err != nil {
+		return errors.Wrap(err, "src chain backend")
+	}
+
+	inbox, err := bindings.NewSolverNetInbox(addrs.SolverNetInbox, backend)
 	if err != nil {
 		return errors.Wrap(err, "create inbox contract")
 	}
 
 	var checks uint16
-	const logFreq = 20
+	const logFreq = 100
 	for {
 		order, err := inbox.GetOrder(&bind.CallOpts{Context: ctx}, orderID)
 		if err != nil {

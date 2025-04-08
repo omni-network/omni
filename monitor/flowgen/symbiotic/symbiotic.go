@@ -72,14 +72,18 @@ func newJob(
 	}
 
 	return types.Job{
-		Name:      fmt.Sprintf("Symbiotic deposit (%v->%v)", namer(conf.srcChain), namer(conf.dstChain)),
-		Cadence:   cadence,
-		NetworkID: networkID,
+		Name:       fmt.Sprintf("Symbiotic deposit (%v->%v)", namer(conf.srcChain), namer(conf.dstChain)),
+		Cadence:    cadence,
+		SrcChainID: conf.srcChain,
+		OpenOrdersFunc: func(ctx context.Context) ([]types.Result, error) {
+			result, ok, err := openOrder(ctx, backends, networkID, owner, srcChainTkn, dstChainTkn, conf)
+			if err != nil {
+				return nil, errors.Wrap(err, "open order")
+			} else if !ok {
+				return nil, nil
+			}
 
-		SrcChainBackend: backend,
-
-		OpenOrderFunc: func(ctx context.Context) (types.Result, bool, error) {
-			return openOrder(ctx, backends, networkID, owner, srcChainTkn, dstChainTkn, conf)
+			return []types.Result{result}, nil
 		},
 	}, true, nil
 }
@@ -137,7 +141,7 @@ func openOrder(
 		return types.Result{}, false, errors.Wrap(err, "open order")
 	}
 
-	return types.Result{OrderID: orderID, Expense: expense}, true, nil
+	return types.Result{OrderID: orderID, Data: orderData}, true, nil
 }
 
 var metaData = &bind.MetaData{
