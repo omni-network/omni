@@ -133,7 +133,7 @@ export async function executeTestOrder(
 ): Promise<void> {
   const orderRef = useOrderRef(testConnector, order)
 
-  await waitFor(() => expect(orderRef.current?.isReady).toBe(true))
+  await waitFor(() => expect(orderRef.current?.isReady).toBeTruthy())
 
   // Wait for order to be validated
   await waitFor(() =>

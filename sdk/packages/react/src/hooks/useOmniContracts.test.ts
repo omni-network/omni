@@ -10,11 +10,11 @@ test('default: returns contracts when API call succeeds', async () => {
     mockContractsCall: true,
   })
 
-  expect(result.current.isPending).toBe(true)
+  expect(result.current.isPending).toBeTruthy()
 
-  await waitFor(() => expect(result.current.isPending).toBe(false))
+  await waitFor(() => expect(result.current.isPending).toBeFalsy())
 
-  expect(result.current.isSuccess).toBe(true)
+  expect(result.current.isSuccess).toBeTruthy()
   expect(result.current.data).toEqual(contracts)
 })
 
@@ -23,11 +23,11 @@ test('behaviour: handles API error gracefully', async () => {
     mockContractsCallFailure: true,
   })
 
-  expect(result.current.isPending).toBe(true)
+  expect(result.current.isPending).toBeTruthy()
 
-  await waitFor(() => expect(result.current.isPending).toBe(false))
+  await waitFor(() => expect(result.current.isPending).toBeFalsy())
 
-  expect(result.current.isError).toBe(true)
+  expect(result.current.isError).toBeTruthy()
   expect(result.current.error).toBeDefined()
   expect(result.current.data).toBeUndefined()
 })
@@ -40,9 +40,9 @@ test('behaviour: handles invalid response format', async () => {
 
   const { result } = renderHook(() => useOmniContracts())
 
-  await waitFor(() => expect(result.current.isPending).toBe(false))
+  await waitFor(() => expect(result.current.isPending).toBeFalsy())
 
-  expect(result.current.isError).toBe(true)
+  expect(result.current.isError).toBeTruthy()
   expect(result.current.error).toBeDefined()
   expect(result.current.error?.message).toContain(
     'Unexpected /contracts response',

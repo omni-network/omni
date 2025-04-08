@@ -40,7 +40,7 @@ describe('useQuote()', () => {
       { wrapper: ContextProvider },
     )
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    await waitFor(() => expect(result.current.isSuccess).toBeTruthy())
 
     expect(result.current.query.data).toEqual({
       deposit: { token: ZERO_ADDRESS, amount: 1n },
@@ -69,7 +69,7 @@ describe('useQuote()', () => {
       { wrapper: ContextProvider },
     )
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    await waitFor(() => expect(result.current.isSuccess).toBeTruthy())
 
     expect(result.current.query.data).toEqual({
       deposit: { token: ZERO_ADDRESS, amount: 2n },
@@ -93,7 +93,7 @@ describe('useQuote()', () => {
       { wrapper: ContextProvider },
     )
 
-    await waitFor(() => expect(result.current.isError).toBe(true))
+    await waitFor(() => expect(result.current.isError).toBeTruthy())
     if (result.current.isError) {
       expect(result.current.error).toEqual({
         code: 400,
@@ -120,7 +120,7 @@ describe('useQuote()', () => {
       { wrapper: ContextProvider },
     )
 
-    await waitFor(() => expect(result.current.isError).toBe(true))
+    await waitFor(() => expect(result.current.isError).toBeTruthy())
     if (result.current.isError) {
       expect(result.current.error).toEqual({
         code: 400,
@@ -169,7 +169,9 @@ describe('useValidateOrder()', () => {
     await waitFor(() => expect(result.current.status).toBe('rejected'))
     if (result.current.status === 'rejected') {
       expect(result.current.rejectReason).toBe('UnsupportedSrcChain')
-      expect(result.current.rejectDescription).toBe('unsupported source chain [chain_id=1234]')
+      expect(result.current.rejectDescription).toBe(
+        'unsupported source chain [chain_id=1234]',
+      )
     }
   })
 })
