@@ -1,29 +1,14 @@
 import { waitFor } from '@testing-library/react'
-import { beforeEach, expect, test, vi } from 'vitest'
+import { expect, test } from 'vitest'
 import { resolvedOrder } from '../../test/index.js'
-import { createMockReadContractResult } from '../../test/mocks.js'
+import {
+  createMockReadContractResult,
+  mockWagmiHooks,
+} from '../../test/mocks.js'
 import { renderHook } from '../../test/react.js'
 import { useDidFillOutbox } from './useDidFillOutbox.js'
 
-const { useReadContract } = vi.hoisted(() => {
-  return {
-    useReadContract: vi.fn().mockImplementation(() => {
-      return createMockReadContractResult()
-    }),
-  }
-})
-
-vi.mock('wagmi', async () => {
-  const actual = await vi.importActual('wagmi')
-  return {
-    ...actual,
-    useReadContract,
-  }
-})
-
-beforeEach(() => {
-  useReadContract.mockReturnValue(createMockReadContractResult())
-})
+const { useReadContract } = mockWagmiHooks()
 
 test('default: returns true when outbox read is truthy', async () => {
   const { result, rerender } = renderHook(
