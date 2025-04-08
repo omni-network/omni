@@ -16,14 +16,12 @@ import (
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
 	slkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
-	skeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 )
 
 type App interface {
 	GetModuleManager() *module.Manager
 	GetModuleConfigurator() module.Configurator
 	GetSlashingKeeper() slkeeper.Keeper
-	GetStakingKeeper() *skeeper.Keeper
 	GetMintKeeper() mintkeeper.Keeper
 	GetAccountKeeper() authkeeper.AccountKeeper
 }
@@ -73,7 +71,6 @@ var Upgrades = []Upgrade{
 			return drake3.CreateUpgradeHandler(
 				a.GetModuleManager(),
 				a.GetModuleConfigurator(),
-				a.GetStakingKeeper(),
 			)
 		},
 		Store:        drake3.StoreUpgrades,
