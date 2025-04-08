@@ -217,7 +217,7 @@ func startProcessingEvents(
 	ctx context.Context,
 	network netconf.Network,
 	xprov xchain.Provider,
-	jobDB job.DB,
+	jobDB *job.DB,
 	backends ethbackend.Backends,
 	solverAddr common.Address,
 	addrs contracts.Addresses,
@@ -367,7 +367,7 @@ func streamEventsForever(
 	xprov xchain.Provider,
 	cursors *cursors,
 	inboxAddr common.Address,
-	jobDB job.DB,
+	jobDB *job.DB,
 	asyncWork asyncWorkFunc,
 ) {
 	backoff := expbackoff.New(ctx)

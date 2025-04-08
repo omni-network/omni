@@ -4,6 +4,7 @@ package job
 import (
 	"context"
 	"encoding/json"
+	"sync"
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/umath"
@@ -20,7 +21,7 @@ import (
 )
 
 // New returns a new job DB backed by the given cosmos db.
-func New(db dbm.DB) (DB, error) {
+func New(db dbm.DB) (*DB, error) {
 	schema := &ormv1alpha1.ModuleSchemaDescriptor{SchemaFile: []*ormv1alpha1.ModuleSchemaDescriptor_FileEntry{
 		{Id: 1, ProtoFileName: File_solver_job_job_proto.Path()},
 	}}
@@ -29,15 +30,15 @@ func New(db dbm.DB) (DB, error) {
 
 	modDB, err := ormdb.NewModuleDB(schema, ormdb.ModuleDBOptions{KVStoreService: storeSvc})
 	if err != nil {
-		return DB{}, errors.Wrap(err, "create ormdb module db")
+		return nil, errors.Wrap(err, "create ormdb module db")
 	}
 
 	dbStore, err := NewJobStore(modDB)
 	if err != nil {
-		return DB{}, errors.Wrap(err, "create store")
+		return nil, errors.Wrap(err, "create store")
 	}
 
-	return DB{
+	return &DB{
 		table: dbStore.JobTable(),
 	}, nil
 }
@@ -48,10 +49,14 @@ func New(db dbm.DB) (DB, error) {
 // That goroutine simply retries until the job is done, then deletes it.
 type DB struct {
 	table JobTable
+	mu    sync.RWMutex
 }
 
 // All returns all jobs in the database.
-func (db DB) All(ctx context.Context) ([]*Job, error) {
+func (db *DB) All(ctx context.Context) ([]*Job, error) {
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+
 	iter, err := db.table.List(ctx, JobPrimaryKey{})
 	if err != nil {
 		return nil, errors.Wrap(err, "list all ids")
@@ -76,7 +81,10 @@ func (db DB) All(ctx context.Context) ([]*Job, error) {
 }
 
 // Delete removes a job from the database.
-func (db DB) Delete(ctx context.Context, id uint64) error {
+func (db *DB) Delete(ctx context.Context, id uint64) error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	err := db.table.DeleteBy(ctx, JobIdIndexKey{}.WithId(id))
 	if err != nil {
 		return errors.Wrap(err, "delete job")
@@ -86,7 +94,10 @@ func (db DB) Delete(ctx context.Context, id uint64) error {
 }
 
 // Exists returns true if the job exists in the database.
-func (db DB) Exists(ctx context.Context, id uint64) (bool, error) {
+func (db *DB) Exists(ctx context.Context, id uint64) (bool, error) {
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+
 	ok, err := db.table.Has(ctx, id)
 	if err != nil {
 		return false, errors.Wrap(err, "has job")
@@ -98,7 +109,10 @@ func (db DB) Exists(ctx context.Context, id uint64) (bool, error) {
 // Insert adds a new job to the database returning the created job.
 // It is idempotent, and will not insert the same job twice, instead returning the existing job.
 // It however errors if re-inserting reorged events, this isn't supported/expected.
-func (db DB) Insert(ctx context.Context, chainID uint64, elog types.Log) (*Job, error) {
+func (db *DB) Insert(ctx context.Context, chainID uint64, elog types.Log) (*Job, error) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	if j, ok, err := db.getUnique(ctx, chainID, elog.BlockNumber, elog.Index); err != nil {
 		return nil, err
 	} else if ok {
@@ -148,7 +162,7 @@ func (db DB) Insert(ctx context.Context, chainID uint64, elog types.Log) (*Job, 
 	return resp, nil
 }
 
-func (db DB) getUnique(ctx context.Context, chainID uint64, height uint64, index uint) (*Job, bool, error) {
+func (db *DB) getUnique(ctx context.Context, chainID uint64, height uint64, index uint) (*Job, bool, error) {
 	indexU64, err := umath.ToUint64(index)
 	if err != nil {
 		return nil, false, err
