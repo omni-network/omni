@@ -4,37 +4,36 @@ import { createMockReadContractResult } from '../../test/mocks.js'
 import { renderHook } from '../../test/react.js'
 import { useGetOrderStatus } from './useGetOrderStatus.js'
 
-const { mockUseGetOrder, mockUseInboxStatus, mockUseDidFillOutbox } =
-  vi.hoisted(() => {
-    return {
-      mockUseGetOrder: vi.fn(),
-      mockUseInboxStatus: vi.fn(),
-      mockUseDidFillOutbox: vi.fn(),
-    }
-  })
+const { useGetOrder, useInboxStatus, useDidFillOutbox } = vi.hoisted(() => {
+  return {
+    useGetOrder: vi.fn(),
+    useInboxStatus: vi.fn(),
+    useDidFillOutbox: vi.fn(),
+  }
+})
 
 vi.mock('./useGetOrder.js', async () => {
   return {
-    useGetOrder: mockUseGetOrder,
+    useGetOrder: useGetOrder,
   }
 })
 
 vi.mock('./useInboxStatus.js', async () => {
   return {
-    useInboxStatus: mockUseInboxStatus,
+    useInboxStatus: useInboxStatus,
   }
 })
 
 vi.mock('./useDidFillOutbox.js', async () => {
   return {
-    useDidFillOutbox: mockUseDidFillOutbox,
+    useDidFillOutbox: useDidFillOutbox,
   }
 })
 
 beforeEach(() => {
-  mockUseGetOrder.mockReturnValue(createMockReadContractResult())
-  mockUseInboxStatus.mockRestore()
-  mockUseDidFillOutbox.mockImplementation(() => ({
+  useGetOrder.mockReturnValue(createMockReadContractResult())
+  useInboxStatus.mockRestore()
+  useDidFillOutbox.mockImplementation(() => ({
     data: false,
     error: null,
   }))
@@ -56,19 +55,19 @@ const renderGetOrderStatusHook = () => {
 }
 
 test('default: if inbox status is open, returned status is open', async () => {
-  mockUseInboxStatus.mockReturnValue('open')
+  useInboxStatus.mockReturnValue('open')
 
   const { result } = renderGetOrderStatusHook()
 
   // once on mount only
-  expect(mockUseInboxStatus).toHaveBeenCalledOnce()
-  expect(mockUseDidFillOutbox).toHaveBeenCalledOnce()
+  expect(useInboxStatus).toHaveBeenCalledOnce()
+  expect(useDidFillOutbox).toHaveBeenCalledOnce()
   expect(result.current.status).toBe('open')
   expect(result.current.error).toBeUndefined()
 })
 
 test('behaviour: error defined if didFillOutbox error', async () => {
-  mockUseDidFillOutbox.mockReturnValue(
+  useDidFillOutbox.mockReturnValue(
     createMockReadContractResult({
       error: new Error('test error'),
     }),
@@ -81,7 +80,7 @@ test('behaviour: error defined if didFillOutbox error', async () => {
 })
 
 test('behaviour: error defined if getOrder error', async () => {
-  mockUseGetOrder.mockReturnValue(
+  useGetOrder.mockReturnValue(
     createMockReadContractResult({
       error: new Error('test error'),
     }),
@@ -94,7 +93,7 @@ test('behaviour: error defined if getOrder error', async () => {
 })
 
 test('behaviour: status filled if didFillOutbox is true', async () => {
-  mockUseDidFillOutbox.mockReturnValue({ data: true })
+  useDidFillOutbox.mockReturnValue({ data: true })
 
   const { result } = renderGetOrderStatusHook()
 
@@ -103,7 +102,7 @@ test('behaviour: status filled if didFillOutbox is true', async () => {
 })
 
 test('behaviour: status filled if inboxStatus is filled', async () => {
-  mockUseInboxStatus.mockReturnValue('filled')
+  useInboxStatus.mockReturnValue('filled')
 
   const { result } = renderGetOrderStatusHook()
 
@@ -112,7 +111,7 @@ test('behaviour: status filled if inboxStatus is filled', async () => {
 })
 
 test('behaviour: status rejected if inboxStatus is rejected', async () => {
-  mockUseInboxStatus.mockReturnValue('rejected')
+  useInboxStatus.mockReturnValue('rejected')
 
   const { result } = renderGetOrderStatusHook()
 
@@ -121,7 +120,7 @@ test('behaviour: status rejected if inboxStatus is rejected', async () => {
 })
 
 test('behaviour: status closed if inboxStatus is closed', async () => {
-  mockUseInboxStatus.mockReturnValue('closed')
+  useInboxStatus.mockReturnValue('closed')
 
   const { result } = renderGetOrderStatusHook()
 
@@ -130,7 +129,7 @@ test('behaviour: status closed if inboxStatus is closed', async () => {
 })
 
 test('behaviour: status not found if inboxStatus is unknown', async () => {
-  mockUseInboxStatus.mockReturnValue('unknown')
+  useInboxStatus.mockReturnValue('unknown')
 
   const { result } = renderGetOrderStatusHook()
 

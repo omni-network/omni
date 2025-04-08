@@ -84,6 +84,16 @@ const logs: Log[] = [
   },
 ]
 
+const renderParseOpenEventHook = (
+  params: Parameters<typeof useParseOpenEvent>[0],
+  options?: Parameters<typeof renderHook>[1],
+) => {
+  return renderHook(() => useParseOpenEvent(params), {
+    mockContractsCall: true,
+    ...options,
+  })
+}
+
 test('default: parses open event', async () => {
   const { result, rerender } = renderHook(
     ({
@@ -113,64 +123,49 @@ test('default: parses open event', async () => {
 })
 
 test('behaviour: no parsing when status is pending', () => {
-  const { result } = renderHook(
-    () =>
-      useParseOpenEvent({
-        status: 'pending',
-        logs,
-      }),
-    { mockContractsCall: true },
-  )
+  const { result } = renderParseOpenEventHook({
+    status: 'pending',
+    logs: [],
+  })
 
   expect(result.current.resolvedOrder).toBeUndefined()
 })
 
 test('behaviour: no parsing when logs is undefined', () => {
-  const { result } = renderHook(
-    () =>
-      useParseOpenEvent({
-        status: 'success',
-      }),
-    { mockContractsCall: true },
-  )
+  const { result } = renderParseOpenEventHook({
+    status: 'success',
+    logs: [],
+  })
 
   expect(result.current.resolvedOrder).toBeUndefined()
 })
 
 test('behaviour: error when status is success and logs is empty array', () => {
-  const { result } = renderHook(
-    () =>
-      useParseOpenEvent({
-        status: 'success',
-        logs: [],
-      }),
-    { mockContractsCall: true },
-  )
+  const { result } = renderParseOpenEventHook({
+    status: 'success',
+    logs: [],
+  })
 
   expect(result.current.error).toBeInstanceOf(ParseOpenEventError)
 })
 
 test('behaviour: error when status is success and logs not valid', () => {
-  const { result } = renderHook(
-    () =>
-      useParseOpenEvent({
-        status: 'success',
-        logs: [
-          {
-            address: accounts[0],
-            topics: ['0x1'],
-            data: '0x1',
-            blockHash: '0x1',
-            blockNumber: 1n,
-            logIndex: 1,
-            transactionHash: '0x1',
-            transactionIndex: 1,
-            removed: false,
-          },
-        ],
-      }),
-    { mockContractsCall: true },
-  )
+  const { result } = renderParseOpenEventHook({
+    status: 'success',
+    logs: [
+      {
+        address: accounts[0],
+        topics: ['0x1'],
+        data: '0x1',
+        blockHash: '0x1',
+        blockNumber: 1n,
+        logIndex: 1,
+        transactionHash: '0x1',
+        transactionIndex: 1,
+        removed: false,
+      },
+    ],
+  })
 
   expect(result.current.error).toBeInstanceOf(ParseOpenEventError)
 })
