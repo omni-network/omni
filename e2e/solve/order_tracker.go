@@ -53,40 +53,51 @@ func (t *orderTracker) UpdateStatus(id solvernet.OrderID, srcChainID uint64, sta
 	t.status[key] = status
 }
 
-func (t *orderTracker) Done() (bool, error) {
+func (t *orderTracker) Len() int {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+
+	return len(t.orders)
+}
+
+func (t *orderTracker) Remaining() (int, error) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
 	if !t.tracked {
-		return false, errors.New("not all orders tracked [BUG]")
+		return 0, errors.New("not all orders tracked [BUG]")
 	}
 
+	var remaining int
 	for key, order := range t.orders {
 		status, ok := t.status[key]
 		if !ok {
-			return false, nil
+			remaining++
+			continue
 		}
 
 		if order.ShouldReject {
 			if status == solvernet.StatusFilled || status == solvernet.StatusClaimed {
-				return false, errors.New("order should have been rejected", "order_id", key.orderID, "src_chain_id", key.srcChainID, "status", status)
+				return 0, errors.New("order should have been rejected", "order_id", key.orderID, "src_chain_id", key.srcChainID, "status", status)
 			}
 
 			if status != solvernet.StatusRejected {
-				return false, nil
+				remaining++
+				continue
 			}
 		}
 
 		if !order.ShouldReject {
 			if status == solvernet.StatusRejected {
-				return false, errors.New("order should have been filled", "order_id", key.orderID, "src_chain_id", key.srcChainID, "status", status)
+				return 0, errors.New("order should have been filled", "order_id", key.orderID, "src_chain_id", key.srcChainID, "status", status)
 			}
 
 			if status != solvernet.StatusClaimed {
-				return false, nil
+				remaining++
+				continue
 			}
 		}
 	}
 
-	return true, nil
+	return remaining, nil
 }

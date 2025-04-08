@@ -48,6 +48,7 @@ func newRejection(reason types.RejectReason, err error) *RejectionError {
 func newShouldRejector(
 	backends ethbackend.Backends,
 	isAllowedCall callAllowFunc,
+	priceFunc priceFunc,
 	solverAddr, outboxAddr common.Address,
 ) func(ctx context.Context, order Order) (types.RejectReason, bool, error) {
 	return func(ctx context.Context, order Order) (types.RejectReason, bool, error) {
@@ -77,7 +78,7 @@ func newShouldRejector(
 				return err
 			}
 
-			if err := checkQuote(deposits, expenses); err != nil {
+			if err := checkQuote(ctx, priceFunc, deposits, expenses); err != nil {
 				return err
 			}
 
@@ -275,8 +276,8 @@ func nativeAmt(ps []TokenAmt) *big.Int {
 
 // checkQuote checks if deposits match or exceed quote for expenses.
 // only single expense supported with matching deposit is supported.
-func checkQuote(deposits, expenses []TokenAmt) error {
-	quote, err := getQuote(tkns(deposits), expenses)
+func checkQuote(ctx context.Context, priceFunc priceFunc, deposits, expenses []TokenAmt) error {
+	quote, err := getQuote(ctx, priceFunc, tkns(deposits), expenses)
 	if err != nil {
 		return err
 	}

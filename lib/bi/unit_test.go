@@ -95,3 +95,45 @@ func TestWeiTo(t *testing.T) {
 	require.Equal(t, 10.0, bi.ToF64(bi.Ether(1), 17))
 	require.Equal(t, 100.0, bi.ToF64(bi.Ether(1), 16))
 }
+
+func TestMulF64(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t, "0", bi.MulF64(bi.Wei(1), 0).String())
+	require.Equal(t, "0", bi.MulF64(bi.Wei(1), 0.0000001).String())
+	require.Equal(t, "0", bi.MulF64(bi.Wei(1), 0.11).String())
+	require.Equal(t, "1", bi.MulF64(bi.Wei(1), 1).String())
+	require.Equal(t, "1", bi.MulF64(bi.Wei(1), 1.5).String())
+	require.Equal(t, "1", bi.MulF64(bi.Wei(1), 1.6).String())
+	require.Equal(t, "2", bi.MulF64(bi.Wei(1), 2).String())
+	require.Equal(t, "1000000", bi.MulF64(bi.Wei(1), 1_000_000.123).String())
+
+	require.Equal(t, "0", bi.MulF64(bi.Gwei(1), 0).String())
+	require.Equal(t, "99", bi.MulF64(bi.Gwei(1), 0.0000001).String())
+	require.Equal(t, "110000000", bi.MulF64(bi.Gwei(1), 0.11).String())
+	require.Equal(t, "1000000000", bi.MulF64(bi.Gwei(1), 1).String())
+	require.Equal(t, "1500000000", bi.MulF64(bi.Gwei(1), 1.5).String())
+	require.Equal(t, "1600000000", bi.MulF64(bi.Gwei(1), 1.6).String())
+	require.Equal(t, "2000000000", bi.MulF64(bi.Gwei(1), 2).String())
+	require.Equal(t, "1000000123000000", bi.MulF64(bi.Gwei(1), 1_000_000.123).String())
+
+	require.Equal(t, "0", bi.MulF64(bi.Ether(1), 0).String())
+	require.Equal(t, "99999999999", bi.MulF64(bi.Ether(1), 0.0000001).String())
+	require.Equal(t, "110000000000000000", bi.MulF64(bi.Ether(1), 0.11).String())
+	require.Equal(t, "1000000000000000000", bi.MulF64(bi.Ether(1), 1).String())
+	require.Equal(t, "1500000000000000000", bi.MulF64(bi.Ether(1), 1.5).String())
+	require.Equal(t, "1600000000000000088", bi.MulF64(bi.Ether(1), 1.6).String())
+	require.Equal(t, "2000000000000000000", bi.MulF64(bi.Ether(1), 2).String())
+	require.Equal(t, "1000000123000000021397504", bi.MulF64(bi.Ether(1), 1_000_000.123).String())
+
+	big.NewInt(1e18)
+	oneM := bi.Ether(1_000_000)
+	require.Equal(t, "0", bi.MulF64(oneM, 0).String())
+	require.Equal(t, "99999999999999995", bi.MulF64(oneM, 0.0000001).String())
+	require.Equal(t, "110000000000000000555111", bi.MulF64(oneM, 0.11).String())
+	require.Equal(t, "1000000000000000000000000", bi.MulF64(oneM, 1).String())
+	require.Equal(t, "1500000000000000000000000", bi.MulF64(oneM, 1.5).String())
+	require.Equal(t, "1600000000000000088817840", bi.MulF64(oneM, 1.6).String())
+	require.Equal(t, "2000000000000000000000000", bi.MulF64(oneM, 2).String())
+	require.Equal(t, "1000000123000000021420418531328", bi.MulF64(oneM, 1_000_000.123).String())
+}

@@ -306,7 +306,8 @@ func TestQuote(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			srv := httptest.NewServer(handlerAdapter(newQuoteHandler(quoter)))
+			priceFunc := unaryPrice
+			srv := httptest.NewServer(handlerAdapter(newQuoteHandler(newQuoter(priceFunc))))
 
 			var reqBody, respBody []byte
 			cl := client.New(srv.URL, client.WithDebugBodies(

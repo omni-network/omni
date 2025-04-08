@@ -47,12 +47,14 @@ func TestShouldReject(t *testing.T) {
 	require.NoError(t, err)
 	outbox := addrs.SolverNetOutbox
 
+	priceFunc := unaryPrice
+
 	for _, tt := range rejectTestCases(t, solver, outbox) {
 		t.Run(tt.name, func(t *testing.T) {
 			backends, clients := testBackends(t)
 
 			callAllower := func(_ uint64, _ common.Address, _ []byte) bool { return !tt.disallowCall }
-			shouldReject := newShouldRejector(backends, callAllower, solver, outbox)
+			shouldReject := newShouldRejector(backends, callAllower, priceFunc, solver, outbox)
 
 			if tt.mock != nil {
 				tt.mock(clients)

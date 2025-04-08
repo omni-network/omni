@@ -116,7 +116,10 @@ func Run(ctx context.Context, cfg Config) error {
 
 	pricer := newPricer(ctx, cfg.CoinGeckoAPIKey)
 
-	err = startProcessingEvents(ctx, network, xprov, jobDB, backends, solverAddr, addrs, cursors, pricer)
+	// TODO(corver): Replace with real price function to support swaps.
+	priceFunc := unaryPrice
+
+	err = startProcessingEvents(ctx, network, xprov, jobDB, backends, solverAddr, addrs, cursors, pricer, priceFunc)
 	if err != nil {
 		return errors.Wrap(err, "start event streams")
 	}
@@ -131,9 +134,9 @@ func Run(ctx context.Context, cfg Config) error {
 	log.Info(ctx, "Serving API", "address", cfg.APIAddr)
 	//nolint:contextcheck // False positive, inner context is used for shutdown
 	apiChan, apiCancel := serveAPI(cfg.APIAddr,
-		newCheckHandler(newChecker(backends, callAllower, solverAddr, addrs.SolverNetOutbox)),
+		newCheckHandler(newChecker(backends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox)),
 		newContractsHandler(addrs),
-		newQuoteHandler(quoter),
+		newQuoteHandler(newQuoter(priceFunc)),
 	)
 	defer apiCancel()
 
@@ -220,6 +223,7 @@ func startProcessingEvents(
 	addrs contracts.Addresses,
 	cursors *cursors,
 	pricer tokenslib.Pricer,
+	priceFunc priceFunc,
 ) error {
 	inboxChains, err := detectContractChains(ctx, network, backends, addrs.SolverNetInbox)
 	if err != nil {
@@ -316,7 +320,7 @@ func startProcessingEvents(
 		deps := procDeps{
 			ParseID:       newIDParser(inboxContracts),
 			GetOrder:      newOrderGetter(inboxContracts),
-			ShouldReject:  newShouldRejector(backends, callAllower, solverAddr, addrs.SolverNetOutbox),
+			ShouldReject:  newShouldRejector(backends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox),
 			DidFill:       newDidFiller(outboxContracts),
 			Reject:        newRejector(inboxContracts, backends, solverAddr, updatePnL),
 			Fill:          newFiller(outboxContracts, backends, solverAddr, addrs.SolverNetOutbox, filledPnL),
@@ -349,7 +353,8 @@ func startProcessingEvents(
 	// Start streaming events for all chains
 	for _, chainID := range inboxChains {
 		chainVer := chainVerFromID(network.ID, chainID)
-		go streamEventsForever(ctx, chainVer, xprov, cursors, addrs.SolverNetInbox, jobDB, asyncWork)
+		loopCtx := log.WithCtx(ctx, "chain_version", network.ChainVersionName(chainVer))
+		go streamEventsForever(loopCtx, chainVer, xprov, cursors, addrs.SolverNetInbox, jobDB, asyncWork)
 	}
 
 	return nil

@@ -70,6 +70,21 @@ func MulRaw[I constraints.Integer](a *big.Int, bs ...I) *big.Int {
 	return resp
 }
 
+// MulF64 returns a * b0 [* b1 * b2 ...].
+// Note that floats are not accurate.
+func MulF64(a *big.Int, bs ...float64) *big.Int {
+	f := new(big.Float)
+	f.SetMode(big.ToZero)
+	f = f.SetInt(a)
+	for _, b := range bs {
+		f.Mul(f, big.NewFloat(b))
+	}
+
+	resp, _ := f.Int(new(big.Int))
+
+	return resp
+}
+
 // Div returns a / b0 [/ b1 / b2 ...].
 func Div(a *big.Int, bs ...*big.Int) *big.Int {
 	resp := Clone(a)

@@ -30,6 +30,8 @@ func TestCheck(t *testing.T) {
 
 	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
 
+	priceFunc := unaryPrice
+
 	// inbox / outbox addr only matters for mocks, using devnet
 	addrs, err := contracts.GetAddresses(t.Context(), netconf.Devnet)
 	require.NoError(t, err)
@@ -40,7 +42,7 @@ func TestCheck(t *testing.T) {
 			backends, clients := testBackends(t)
 
 			callAllower := func(_ uint64, _ common.Address, _ []byte) bool { return !tt.disallowCall }
-			handler := handlerAdapter(newCheckHandler(newChecker(backends, callAllower, solver, outbox)))
+			handler := handlerAdapter(newCheckHandler(newChecker(backends, callAllower, priceFunc, solver, outbox)))
 
 			if tt.mock != nil {
 				tt.mock(clients)
