@@ -42,7 +42,7 @@ test('default', async () => {
 
   expect(result.current.isPending).toBeTruthy()
   expect(result.current.query.data).toBeUndefined()
-  expect(result.current.query.isFetched).toBeFalsy()
+  expect(result.current.query.isFetched).toBe(false)
 
   rerender({ ...params, enabled: true })
 
@@ -119,7 +119,7 @@ test('behaviour: quote does not fire when enabled is false', () => {
 
   expect(result.current.isPending).toBeTruthy()
   expect(result.current.query.data).toBeUndefined()
-  expect(result.current.query.isFetched).toBeFalsy()
+  expect(result.current.query.isFetched).toBe(false)
 })
 
 test.each([
