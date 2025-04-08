@@ -13,7 +13,6 @@ remappings = [
   "core/=.",
   # remapping for eigenlayers import
   '@openzeppelin-upgrades/contracts/=node_modules/@openzeppelin/contracts-upgradeable',
-  '@uniswap/=../solve/node_modules/@uniswap',
 ]
 
 fs_permissions = [
