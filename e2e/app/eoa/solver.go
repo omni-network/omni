@@ -6,7 +6,7 @@ import (
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tokenmeta"
 )
 
 type SolverNetThreshold struct {
@@ -24,26 +24,26 @@ func (t SolverNetThreshold) MinBalance() *big.Int {
 
 var (
 	// solverThresholds defines the solvernet  thresholds RoleSolver: network -> chain -> token -> threshold.
-	solverThresholds = map[netconf.ID]map[uint64]map[tokens.Token]SolverNetThreshold{
+	solverThresholds = map[netconf.ID]map[uint64]map[tokenmeta.Meta]SolverNetThreshold{
 		netconf.Mainnet: {
 			evmchain.IDEthereum: {
-				tokens.WSTETH: {minEther: 10},    // 10 wstETH
-				tokens.STETH:  {minEther: 10},    // 10 stETH
-				tokens.ETH:    {minEther: 10},    // 10 ETH
-				tokens.USDC:   {minDec6: 10_000}, // 10k USDC
+				tokenmeta.WSTETH: {minEther: 10},    // 10 wstETH
+				tokenmeta.STETH:  {minEther: 10},    // 10 stETH
+				tokenmeta.ETH:    {minEther: 10},    // 10 ETH
+				tokenmeta.USDC:   {minDec6: 10_000}, // 10k USDC
 			},
 			evmchain.IDBase: {
-				tokens.USDC: {minDec6: 10_000}, // 10k USDC
+				tokenmeta.USDC: {minDec6: 10_000}, // 10k USDC
 			},
 		},
 		netconf.Omega: {
 			evmchain.IDHolesky: {
-				tokens.WSTETH: {minEther: 1}, // 1 wstETH
+				tokenmeta.WSTETH: {minEther: 1}, // 1 wstETH
 			},
 		},
 		netconf.Staging: {
 			evmchain.IDHolesky: {
-				tokens.WSTETH: {minEther: 1}, // 1 wstETH
+				tokenmeta.WSTETH: {minEther: 1}, // 1 wstETH
 			},
 		},
 	}
@@ -55,8 +55,8 @@ func SolverNetRoles() []Role {
 }
 
 // GetSolverNetThreshold returns the solvernet threshold for the given role, network, chain, and token.
-func GetSolverNetThreshold(role Role, network netconf.ID, chainID uint64, tkn tokens.Token) (SolverNetThreshold, bool) {
-	m := map[Role]map[netconf.ID]map[uint64]map[tokens.Token]SolverNetThreshold{
+func GetSolverNetThreshold(role Role, network netconf.ID, chainID uint64, tkn tokenmeta.Meta) (SolverNetThreshold, bool) {
+	m := map[Role]map[netconf.ID]map[uint64]map[tokenmeta.Meta]SolverNetThreshold{
 		RoleSolver: solverThresholds,
 	}
 

@@ -11,8 +11,9 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/pnl"
-	"github.com/omni-network/omni/lib/tokens"
-	"github.com/omni-network/omni/lib/tokens/coingecko"
+	"github.com/omni-network/omni/lib/tokenmeta"
+	"github.com/omni-network/omni/lib/tokenpricer"
+	"github.com/omni-network/omni/lib/tokenpricer/coingecko"
 	"github.com/omni-network/omni/lib/xchain"
 
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -23,8 +24,8 @@ const (
 )
 
 // newTokenPricer creates a new cached pricer with priceCacheEvictInterval.
-func newTokenPricer(ctx context.Context, cgAPIKey string) tokens.Pricer {
-	pricer := tokens.NewCachedPricer(coingecko.New(coingecko.WithAPIKey(cgAPIKey)))
+func newTokenPricer(ctx context.Context, cgAPIKey string) tokenpricer.Pricer {
+	pricer := tokenpricer.NewCached(coingecko.New(coingecko.WithAPIKey(cgAPIKey)))
 
 	// use cached pricer avoid spamming coingecko public api
 	go pricer.ClearCacheForever(ctx, priceCacheEvictInterval)
@@ -34,11 +35,11 @@ func newTokenPricer(ctx context.Context, cgAPIKey string) tokens.Pricer {
 
 type pnlLogger struct {
 	network netconf.ID
-	pricer  tokens.Pricer
+	pricer  tokenpricer.Pricer
 }
 
 // newPnlLogger creates a new pnl logger.
-func newPnlLogger(network netconf.ID, pricer tokens.Pricer) pnlLogger {
+func newPnlLogger(network netconf.ID, pricer tokenpricer.Pricer) pnlLogger {
 	return pnlLogger{network: network, pricer: pricer}
 }
 
@@ -62,12 +63,12 @@ func (l pnlLogger) logE(ctx context.Context, tx *ethtypes.Transaction, receipt *
 	spendGwei := totalSpendGwei(tx, receipt)
 	spendTotal.WithLabelValues(dest.Name, dest.NativeToken.Symbol).Add(spendGwei)
 
-	prices, err := l.pricer.Prices(ctx, tokens.OMNI, tokens.ETH)
+	prices, err := l.pricer.Prices(ctx, tokenmeta.OMNI, tokenmeta.ETH)
 	if err != nil {
 		return errors.Wrap(err, "get prices")
 	}
 
-	log.Debug(ctx, "Using token prices", "omni", prices[tokens.OMNI], "eth", prices[tokens.ETH])
+	log.Debug(ctx, "Using token prices", "omni", prices[tokenmeta.OMNI], "eth", prices[tokenmeta.ETH])
 
 	spend, err := spendByDenom(dest, spendGwei, prices)
 	if err != nil {
@@ -151,7 +152,7 @@ type amtByDenom struct {
 func feeByDenom(
 	src evmchain.Metadata,
 	sub xchain.Submission,
-	prices map[tokens.Token]float64,
+	prices map[tokenmeta.Meta]float64,
 ) (amtByDenom, error) {
 	var fees amtByDenom
 
@@ -163,12 +164,12 @@ func feeByDenom(
 		feesGwei := bi.ToGweiF64(msg.Fees)
 
 		switch src.NativeToken {
-		case tokens.OMNI:
+		case tokenmeta.OMNI:
 			fees.nOMNI += feesGwei
-			fees.nUSD += feesGwei * prices[tokens.OMNI]
-		case tokens.ETH:
+			fees.nUSD += feesGwei * prices[tokenmeta.OMNI]
+		case tokenmeta.ETH:
 			fees.nETH += feesGwei
-			fees.nUSD += feesGwei * prices[tokens.ETH]
+			fees.nUSD += feesGwei * prices[tokenmeta.ETH]
 		default:
 			return amtByDenom{}, errors.New("unknown native token", "token", src.NativeToken)
 		}
@@ -181,17 +182,17 @@ func feeByDenom(
 func spendByDenom(
 	dest evmchain.Metadata,
 	spendGwei float64,
-	prices map[tokens.Token]float64,
+	prices map[tokenmeta.Meta]float64,
 ) (amtByDenom, error) {
 	var spend amtByDenom
 
 	switch dest.NativeToken {
-	case tokens.OMNI:
+	case tokenmeta.OMNI:
 		spend.nOMNI = spendGwei
-		spend.nUSD = spendGwei * prices[tokens.OMNI]
-	case tokens.ETH:
+		spend.nUSD = spendGwei * prices[tokenmeta.OMNI]
+	case tokenmeta.ETH:
 		spend.nETH = spendGwei
-		spend.nUSD = spendGwei * prices[tokens.ETH]
+		spend.nUSD = spendGwei * prices[tokenmeta.ETH]
 	default:
 		return amtByDenom{}, errors.New("unknown native token", "token", dest.NativeToken)
 	}

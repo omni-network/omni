@@ -17,8 +17,8 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/monitor/flowgen/types"
+	solver "github.com/omni-network/omni/solver/app"
 	sclient "github.com/omni-network/omni/solver/client"
-	stokens "github.com/omni-network/omni/solver/tokens"
 	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -79,12 +79,12 @@ func openOrders(
 	conf flowConfig,
 	scl sclient.Client,
 ) ([]types.Result, error) {
-	srcToken, ok := stokens.Native(conf.srcChain)
+	srcToken, ok := tokens.Native(conf.srcChain)
 	if !ok {
 		return nil, errors.New("src token not found")
 	}
 
-	dstToken, ok := stokens.Native(conf.dstChain)
+	dstToken, ok := tokens.Native(conf.dstChain)
 	if !ok {
 		return nil, errors.New("dst token not found")
 	}
@@ -94,7 +94,7 @@ func openOrders(
 		return nil, err
 	}
 
-	totalAmount, err := availableBalance(ctx, networkID, backend.Client, owner, srcToken.Token)
+	totalAmount, err := availableBalance(ctx, networkID, backend.Client, owner, srcToken)
 	if err != nil {
 		return nil, errors.Wrap(err, "get order size")
 	}
@@ -105,7 +105,7 @@ func openOrders(
 	}
 
 	var orderDatas []bindings.SolverNetOrderData
-	for _, amount := range splitOrderAmounts(dstToken, totalAmount, p) {
+	for _, amount := range splitOrderAmounts(solver.GetSpendBounds(dstToken), totalAmount, p) {
 		orderData, err := nativeOrderData(ctx, scl, owner, srcToken, dstToken, amount)
 		if err != nil {
 			return nil, err
@@ -124,13 +124,13 @@ func openOrders(
 	return results.Flatten()
 }
 
-func splitOrderAmounts(dstChain stokens.Token, total *big.Int, split int) []*big.Int {
+func splitOrderAmounts(bounds solver.SpendBounds, total *big.Int, split int) []*big.Int {
 	avg := bi.DivRaw(total, split)
 	remaining := bi.Clone(total)
 
 	var resp []*big.Int
 	for len(resp) < split {
-		next, ok := nextOrderAmount(dstChain, remaining, avg)
+		next, ok := nextOrderAmount(bounds, remaining, avg)
 		if !ok {
 			break
 		}
@@ -143,15 +143,15 @@ func splitOrderAmounts(dstChain stokens.Token, total *big.Int, split int) []*big
 	return resp
 }
 
-func nextOrderAmount(dstChain stokens.Token, remaining *big.Int, target *big.Int) (*big.Int, bool) {
+func nextOrderAmount(bounds solver.SpendBounds, remaining *big.Int, target *big.Int) (*big.Int, bool) {
 	// If not enough remaining, return nothing
-	if bi.LT(remaining, dstChain.MinSpend) {
+	if bi.LT(remaining, bounds.MinSpend) {
 		return nil, false
 	}
 
 	// If target amount is less than min spend, increase it
-	if bi.LT(target, dstChain.MinSpend) {
-		target = dstChain.MinSpend
+	if bi.LT(target, bounds.MinSpend) {
+		target = bounds.MinSpend
 	}
 
 	// If target amount is greater than remaining, decrease it
@@ -160,8 +160,8 @@ func nextOrderAmount(dstChain stokens.Token, remaining *big.Int, target *big.Int
 	}
 
 	// If target amount is greater than max spend, decrease it
-	if bi.GT(target, dstChain.MaxSpend) {
-		target = dstChain.MaxSpend
+	if bi.GT(target, bounds.MaxSpend) {
+		target = bounds.MaxSpend
 	}
 
 	return target, true
@@ -176,7 +176,7 @@ func check(ctx context.Context, scl sclient.Client, srcChainID uint64, orderData
 	return scl.Check(ctx, checkReq)
 }
 
-func nativeOrderData(ctx context.Context, scl sclient.Client, owner common.Address, srcToken, dstToken stokens.Token, expenseAmt *big.Int) (bindings.SolverNetOrderData, error) {
+func nativeOrderData(ctx context.Context, scl sclient.Client, owner common.Address, srcToken, dstToken tokens.Token, expenseAmt *big.Int) (bindings.SolverNetOrderData, error) {
 	quoteReq := stypes.QuoteRequest{
 		SourceChainID:      srcToken.ChainID,
 		DestinationChainID: dstToken.ChainID,
@@ -243,7 +243,7 @@ func availableBalance(
 		return nil, errors.Wrap(err, "balance at")
 	}
 
-	thresholds, ok := eoa.GetFundThresholds(srcToken, networkID, eoa.RoleFlowgen)
+	thresholds, ok := eoa.GetFundThresholds(srcToken.Meta, networkID, eoa.RoleFlowgen)
 	if !ok {
 		return nil, errors.New("no thresholds found", "role", eoa.RoleFlowgen)
 	}

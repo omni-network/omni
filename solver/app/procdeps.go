@@ -11,7 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	stokens "github.com/omni-network/omni/solver/tokens"
+	"github.com/omni-network/omni/lib/tokens"
 	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -140,8 +140,8 @@ func newFiller(
 			}
 
 			tknAddr := toEthAddr(output.Token)
-			tkn, ok := stokens.ByAddress(destChainID, tknAddr)
-			if !ok {
+			tkn, ok := tokens.ByAddress(destChainID, tknAddr)
+			if !ok || !IsSupportedToken(tkn) {
 				return errors.New("unsupported token, should have been rejected [BUG]", "addr", tknAddr.Hex(), "chain_id", destChainID)
 			}
 

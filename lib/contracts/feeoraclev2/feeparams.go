@@ -10,7 +10,8 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tokenmeta"
+	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
 )
 
@@ -145,9 +146,9 @@ func destDataCostParams(ctx context.Context, destChain evmchain.Metadata, backen
 }
 
 // nativeRateParams returns the native rate parameters for the given source chain.
-func nativeRateParams(ctx context.Context, pricer tokens.Pricer, srcChainID uint64) ([]bindings.IFeeOracleV2ToNativeRateParams, error) {
+func nativeRateParams(ctx context.Context, pricer tokenpricer.Pricer, srcChainID uint64) ([]bindings.IFeeOracleV2ToNativeRateParams, error) {
 	// used cached pricer, to avoid multiple price requests for same token
-	pricer = tokens.NewCachedPricer(pricer)
+	pricer = tokenpricer.NewCached(pricer)
 
 	srcChain, ok := evmchain.MetadataByID(srcChainID)
 	if !ok {
@@ -168,7 +169,7 @@ func nativeRateParams(ctx context.Context, pricer tokens.Pricer, srcChainID uint
 }
 
 // destNativeRateParams returns the native rate parameters for the given source chain and destination token.
-func destNativeRateParams(ctx context.Context, pricer tokens.Pricer, srcChain evmchain.Metadata, destToken tokens.Token,
+func destNativeRateParams(ctx context.Context, pricer tokenpricer.Pricer, srcChain evmchain.Metadata, destToken tokenmeta.Meta,
 ) (bindings.IFeeOracleV2ToNativeRateParams, error) {
 	// conversion rate from "dest token" to "src token"
 	// ex if dest chain is ETH, and src chain is OMNI, we need to know the rate of ETH to OMNI.
@@ -176,7 +177,7 @@ func destNativeRateParams(ctx context.Context, pricer tokens.Pricer, srcChain ev
 	if err != nil {
 		if destToken == srcChain.NativeToken {
 			toNativeRate = 1 // 1 ETH = 1 ETH || 1 OMNI = 1 OMNI
-		} else if destToken == tokens.OMNI {
+		} else if destToken == tokenmeta.OMNI {
 			toNativeRate = 0.0025 // 1 OMNI = 0.0025 ETH
 		} else {
 			toNativeRate = 400 // 1 ETH = 400 OMNI
@@ -198,7 +199,7 @@ func destNativeRateParams(ctx context.Context, pricer tokens.Pricer, srcChain ev
 // conversionRate returns the conversion rate C from token F to token T, where C = price(F) / price(T).
 // Ex. We want to convert from ETH to OMNI. We need to know the what X OMNI = 1 ETH.
 // If the price of OMNI is 10, the price of ETH is 1000. The conversion rate C is price(ETH) / price(OMNI) = 1000 / 10 = 100.
-func conversionRate(ctx context.Context, pricer tokens.Pricer, from, to tokens.Token) (float64, error) {
+func conversionRate(ctx context.Context, pricer tokenpricer.Pricer, from, to tokenmeta.Meta) (float64, error) {
 	if from == to {
 		return 1, nil
 	}
@@ -208,7 +209,7 @@ func conversionRate(ctx context.Context, pricer tokens.Pricer, from, to tokens.T
 		return 0, errors.Wrap(err, "get price", "from", from, "to", to)
 	}
 
-	has := func(t tokens.Token) bool {
+	has := func(t tokenmeta.Meta) bool {
 		p, ok := prices[t]
 		return ok && p > 0
 	}

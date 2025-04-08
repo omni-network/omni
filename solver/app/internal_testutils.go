@@ -13,8 +13,8 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/mock"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/umath"
-	"github.com/omni-network/omni/solver/tokens"
 	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum"

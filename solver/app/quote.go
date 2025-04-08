@@ -7,8 +7,8 @@ import (
 
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
-	ltokens "github.com/omni-network/omni/lib/tokens"
-	stokens "github.com/omni-network/omni/solver/tokens"
+	"github.com/omni-network/omni/lib/tokenmeta"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/solver/types"
 )
 
@@ -35,25 +35,26 @@ func newQuoter(priceFunc priceFunc) quoteFunc {
 			return returnErr(http.StatusBadRequest, "deposit and expense amount cannot be both zero or both non-zero")
 		}
 
-		depositTkn, ok := stokens.ByAddress(req.SourceChainID, req.Deposit.Token)
+		depositTkn, ok := tokens.ByAddress(req.SourceChainID, req.Deposit.Token)
 		if !ok {
 			return returnErr(http.StatusNotFound, "unsupported deposit token")
 		}
 
-		expenseTkn, ok := stokens.ByAddress(req.DestinationChainID, req.Expense.Token)
+		expenseTkn, ok := tokens.ByAddress(req.DestinationChainID, req.Expense.Token)
 		if !ok {
 			return returnErr(http.StatusNotFound, "unsupported expense token")
 		}
 
 		maybeMinMaxReject := func(expenseAmt *big.Int) error {
-			overMax := expenseTkn.MaxSpend != nil && bi.GT(expenseAmt, expenseTkn.MaxSpend)
-			underMin := expenseTkn.MinSpend != nil && bi.LT(expenseAmt, expenseTkn.MinSpend)
+			bounds := GetSpendBounds(expenseTkn)
+			overMax := bounds.MaxSpend != nil && bi.GT(expenseAmt, bounds.MaxSpend)
+			underMin := bounds.MinSpend != nil && bi.LT(expenseAmt, bounds.MinSpend)
 
 			if overMax {
 				return newRejection(types.RejectExpenseOverMax,
 					errors.New("requested expense exceeds maximum",
 						"ask", expenseTkn.FormatAmt(expenseAmt),
-						"max", expenseTkn.FormatAmt(expenseTkn.MaxSpend),
+						"max", expenseTkn.FormatAmt(bounds.MaxSpend),
 					))
 			}
 
@@ -61,7 +62,7 @@ func newQuoter(priceFunc priceFunc) quoteFunc {
 				return newRejection(types.RejectExpenseUnderMin,
 					errors.New("requested expense is below minimum",
 						"ask", expenseTkn.FormatAmt(expenseAmt),
-						"min", expenseTkn.FormatAmt(expenseTkn.MinSpend),
+						"min", expenseTkn.FormatAmt(bounds.MinSpend),
 					))
 			}
 
@@ -100,7 +101,7 @@ func newQuoter(priceFunc priceFunc) quoteFunc {
 }
 
 // getQuote returns payment in `depositTkns` required to pay for `expenses`.
-func getQuote(ctx context.Context, priceFunc priceFunc, depositTkns []stokens.Token, expenses []TokenAmt) ([]TokenAmt, error) {
+func getQuote(ctx context.Context, priceFunc priceFunc, depositTkns []tokens.Token, expenses []TokenAmt) ([]TokenAmt, error) {
 	if len(depositTkns) != 1 {
 		return nil, newRejection(types.RejectInvalidDeposit, errors.New("only single deposit token supported"))
 	}
@@ -121,7 +122,7 @@ func getQuote(ctx context.Context, priceFunc priceFunc, depositTkns []stokens.To
 }
 
 // quoteDeposit returns the source chain deposit required to cover `expense`.
-func quoteDeposit(ctx context.Context, priceFunc priceFunc, depositTkn stokens.Token, expense TokenAmt) (TokenAmt, error) {
+func quoteDeposit(ctx context.Context, priceFunc priceFunc, depositTkn tokens.Token, expense TokenAmt) (TokenAmt, error) {
 	price, err := priceFunc(ctx, expense.Token, depositTkn)
 	if err != nil {
 		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, errors.Wrap(err, "", "expense", expense, "deposit", depositTkn))
@@ -137,7 +138,7 @@ func quoteDeposit(ctx context.Context, priceFunc priceFunc, depositTkn stokens.T
 }
 
 // QuoteExpense returns the destination chain expense allowed for `deposit`.
-func quoteExpense(ctx context.Context, priceFunc priceFunc, expenseTkn stokens.Token, deposit TokenAmt) (TokenAmt, error) {
+func quoteExpense(ctx context.Context, priceFunc priceFunc, expenseTkn tokens.Token, deposit TokenAmt) (TokenAmt, error) {
 	price, err := priceFunc(ctx, deposit.Token, expenseTkn)
 	if err != nil {
 		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, errors.Wrap(err, "", "deposit", deposit, "expense", expenseTkn))
@@ -152,7 +153,7 @@ func quoteExpense(ctx context.Context, priceFunc priceFunc, expenseTkn stokens.T
 	}, nil
 }
 
-func areEqualBySymbol(a, b stokens.Token) bool {
+func areEqualBySymbol(a, b tokens.Token) bool {
 	if a.Symbol == b.Symbol {
 		return true
 	}
@@ -164,13 +165,13 @@ func areEqualBySymbol(a, b stokens.Token) bool {
 	}
 
 	// consider stETH and ETH as equivalent
-	makeEq(ltokens.STETH.Symbol, ltokens.ETH.Symbol)
+	makeEq(tokenmeta.STETH.Symbol, tokenmeta.ETH.Symbol)
 
 	return equivalents[a.Symbol] == b.Symbol
 }
 
 // feeBipsFor returns the fee in bips for a given token.
-func feeBipsFor(tkn stokens.Token) int64 {
+func feeBipsFor(tkn tokens.Token) int64 {
 	// if OMNI, charge no fee
 	if tkn.IsOMNI() {
 		return 0

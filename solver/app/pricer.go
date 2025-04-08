@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/lib/errors"
-	stokens "github.com/omni-network/omni/solver/tokens"
+	"github.com/omni-network/omni/lib/tokens"
 )
 
 // priceFunc returns the unit price of the `base` denominated in `quote`.
@@ -15,11 +15,11 @@ import (
 // Usage:
 //
 //	quoteAmount = baseAmount * priceFunc(base, quote)
-type priceFunc func(ctx context.Context, base, quote stokens.Token) (float64, error)
+type priceFunc func(ctx context.Context, base, quote tokens.Token) (float64, error)
 
 // unaryPrice is a priceFunc that returns a price for like-for-like 1-to-1 pairs or an error.
 // This is the legacy (pre-swaps) behavior.
-func unaryPrice(_ context.Context, base, quote stokens.Token) (float64, error) {
+func unaryPrice(_ context.Context, base, quote tokens.Token) (float64, error) {
 	if !areEqualBySymbol(base, quote) {
 		return 0, errors.New("deposit token must match expense token")
 	}
