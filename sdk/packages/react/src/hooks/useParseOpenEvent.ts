@@ -21,7 +21,9 @@ export function useParseOpenEvent(params: UseParseOpenEventParams) {
       })
 
       if (parsed.length !== 1) {
-        throw new ParseOpenEventError( `Expected exactly one 'Open' event but found ${parsed.length}.`)
+        throw new ParseOpenEventError(
+          `Expected exactly one 'Open' event but found ${parsed.length}.`,
+        )
       }
 
       const openLog = parsed[0]

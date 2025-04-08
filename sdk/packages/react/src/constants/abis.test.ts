@@ -3,13 +3,11 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from 'vitest'
 
-import {
-  inboxABI,
-  middlemanABI,
-  outboxABI,
-} from '../../packages/react/src/constants/abis'
+import { inboxABI, middlemanABI, outboxABI } from './abis.js'
 
-const ASSETS_PATH = fileURLToPath(new URL('./assets', dirname(import.meta.url)))
+const ASSETS_PATH = fileURLToPath(
+  new URL('../test/assets', dirname(import.meta.url)),
+)
 
 async function readContractFile(
   name: string,

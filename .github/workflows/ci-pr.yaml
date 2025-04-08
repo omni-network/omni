@@ -31,3 +31,5 @@ jobs:
     uses: ./.github/workflows/check-sol-artifacts.yaml
   pr-label:
     uses: ./.github/workflows/pr-label.yaml
+  sdk-unit-tests:
+    uses: ./.github/workflows/sdk-unit-test.yaml
