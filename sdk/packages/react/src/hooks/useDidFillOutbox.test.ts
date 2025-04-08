@@ -10,14 +10,18 @@ import { useDidFillOutbox } from './useDidFillOutbox.js'
 
 const { useReadContract } = mockWagmiHooks()
 
-test('default: returns true when outbox read is truthy', async () => {
-  const { result, rerender } = renderHook(
+const renderDidFillOutboxHook = () => {
+  return renderHook(
     () =>
       useDidFillOutbox({
         destChainId: 1,
       }),
     { mockContractsCall: true },
   )
+}
+
+test('default: returns true when outbox read is truthy', async () => {
+  const { result, rerender } = renderDidFillOutboxHook()
 
   expect(result.current.data).toBeUndefined()
   expect(useReadContract).toHaveBeenCalled()
@@ -47,14 +51,7 @@ test('behaviour: no exception if contract read fails', () => {
     }),
   )
 
-  const { result } = renderHook(
-    () =>
-      useDidFillOutbox({
-        destChainId: 1,
-        resolvedOrder,
-      }),
-    { mockContractsCall: true },
-  )
+  const { result } = renderDidFillOutboxHook()
 
   expect(result.current.status).toBe('error')
   expect(result.current.isError).toBe(true)
@@ -63,14 +60,7 @@ test('behaviour: no exception if contract read fails', () => {
 })
 
 test('behaviour: no contract read when resolvedOrder is undefined', async () => {
-  const { result } = renderHook(
-    () =>
-      useDidFillOutbox({
-        destChainId: 1,
-        resolvedOrder: undefined,
-      }),
-    { mockContractsCall: true },
-  )
+  const { result } = renderDidFillOutboxHook()
 
   expect(result.current.data).toBeUndefined()
   expect(result.current.status).toBe('pending')

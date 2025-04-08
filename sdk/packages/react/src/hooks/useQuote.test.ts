@@ -1,13 +1,18 @@
 import { waitFor } from '@testing-library/react'
-import { expect, test, vi } from 'vitest'
+import { beforeEach, expect, test, vi } from 'vitest'
 import { renderHook } from '../../test/react.js'
 import { quote } from '../../test/shared.js'
+import * as api from '../internal/api.js'
 import type { Quoteable } from '../types/quote.js'
 import { useQuote } from './useQuote.js'
 
 const token = '0x123'
 const deposit = { token, isNative: false } satisfies Quoteable
 const nativeExpense = { isNative: true } satisfies Quoteable
+
+beforeEach(() => {
+  vi.spyOn(api, 'fetchJSON').mockResolvedValue(quote)
+})
 
 const params = {
   srcChainId: 1,
@@ -18,45 +23,36 @@ const params = {
   enabled: true,
 } as const
 
-const { fetchJSON } = vi.hoisted(() => {
-  return {
-    fetchJSON: vi.fn(),
-  }
-})
+const renderQuoteHook = (params: Parameters<typeof useQuote>[0]) => {
+  return renderHook(() => useQuote(params), {
+    mockContractsCall: true,
+  })
+}
 
-vi.mock('../internal/api.js', async () => {
-  const actual = await vi.importActual('../internal/api.js')
-  return {
-    ...actual,
-    fetchJSON,
-  }
-})
-
-test('default', async () => {
-  fetchJSON.mockResolvedValue(quote)
-
+test('default: fetches a quote once enabled', async () => {
   const { result, rerender } = renderHook(
     ({ enabled }: { enabled: boolean }) => useQuote({ ...params, enabled }),
-    { mockContractsCall: true, initialProps: { enabled: false } },
+    { initialProps: { enabled: false } },
   )
 
-  expect(result.current.isPending).toBeTruthy()
+  expect(result.current.isPending).toBe(true)
   expect(result.current.query.data).toBeUndefined()
   expect(result.current.query.isFetched).toBe(false)
 
-  rerender({ ...params, enabled: true })
+  rerender({ enabled: true })
 
-  // TODO fix data not resolved - coming in a follow up
-  waitFor(() => expect(result.current.isPending).toBeFalsy())
+  await waitFor(() => {
+    expect(result.current.query.isFetched).toBe(true)
+    expect(result.current.isPending).toBe(false)
+    expect(result.current.query.data).toBeDefined()
+  })
 })
 
 test('parameters: expense', () => {
-  const { result, rerender } = renderHook(
-    () => useQuote({ ...params, expense: { token, isNative: false } }),
-    {
-      mockContractsCall: true,
-    },
-  )
+  const { result, rerender } = renderQuoteHook({
+    ...params,
+    expense: { token, isNative: false },
+  })
 
   expect(result.current).toBeDefined()
 
@@ -66,16 +62,10 @@ test('parameters: expense', () => {
 })
 
 test('parameters: deposit', () => {
-  const { result, rerender } = renderHook(
-    () =>
-      useQuote({
-        ...params,
-        deposit: { token, isNative: false },
-      }),
-    {
-      mockContractsCall: true,
-    },
-  )
+  const { result, rerender } = renderQuoteHook({
+    ...params,
+    deposit: { token, isNative: false },
+  })
 
   expect(result.current).toBeDefined()
 
@@ -85,26 +75,19 @@ test('parameters: deposit', () => {
 })
 
 test('parameters: mode', () => {
-  const { result, rerender } = renderHook(
-    () =>
-      useQuote({
-        ...params,
-        mode: 'expense',
-        deposit: { isNative: true, amount: 100n },
-        // TODO expense amount shouldn't be allowed if mode === 'expense'
-        expense: { isNative: true, amount: 100n },
-      }),
-    {
-      mockContractsCall: true,
-    },
-  )
+  const { result, rerender } = renderQuoteHook({
+    ...params,
+    mode: 'expense',
+    deposit: { isNative: true, amount: 100n },
+    // TODO expense amount shouldn't be allowed if mode === 'expense'
+    expense: { isNative: true, amount: 100n },
+  })
 
   expect(result.current).toBeDefined()
 
   rerender({
     ...params,
     mode: 'deposit',
-    // TODO deposit amount shouldn't be allowed if mode === 'deposit'
     deposit: { isNative: true, amount: 100n },
     expense: { isNative: true, amount: 100n },
   })
@@ -113,11 +96,9 @@ test('parameters: mode', () => {
 })
 
 test('behaviour: quote does not fire when enabled is false', () => {
-  const { result } = renderHook(() => useQuote({ ...params, enabled: false }), {
-    mockContractsCall: true,
-  })
+  const { result } = renderQuoteHook({ ...params, enabled: false })
 
-  expect(result.current.isPending).toBeTruthy()
+  expect(result.current.isPending).toBe(true)
   expect(result.current.query.data).toBeUndefined()
   expect(result.current.query.isFetched).toBe(false)
 })
@@ -132,15 +113,13 @@ test.each([
 ])(
   'behaviour: quote is error if response is not a quote: %s',
   async (mockReturn) => {
-    fetchJSON.mockResolvedValue(mockReturn)
+    vi.spyOn(api, 'fetchJSON').mockResolvedValue(mockReturn)
 
-    const { result } = renderHook(
-      () => useQuote({ ...params, enabled: true }),
-      {
-        mockContractsCall: true,
-      },
-    )
-    await waitFor(() => expect(result.current.query.isLoading).toBeFalsy())
-    await waitFor(() => expect(result.current.isError).toBeTruthy())
+    const { result } = renderQuoteHook({ ...params, enabled: true })
+
+    await waitFor(() => {
+      expect(result.current.query.isLoading).toBe(false)
+      expect(result.current.isError).toBe(true)
+    })
   },
 )

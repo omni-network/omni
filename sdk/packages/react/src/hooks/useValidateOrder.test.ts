@@ -1,49 +1,27 @@
 import { waitFor } from '@testing-library/react'
-import { erc20Abi } from 'viem'
 import { expect, test, vi } from 'vitest'
 import { accounts, renderHook } from '../../test/index.js'
+import { order } from '../../test/shared.js'
+import * as api from '../internal/api.js'
 import { useValidateOrder } from './useValidateOrder.js'
 
 // TODO calls as empty array should not be allowed // throw error
 
-const order = {
-  owner: accounts[0],
-  srcChainId: 1,
-  destChainId: 2,
-  calls: [
-    {
-      abi: erc20Abi,
-      functionName: 'transfer',
-      target: '0x23e98253f372ee29910e22986fe75bb287b011fc',
-      value: BigInt(0),
-      args: [accounts[0], 0n],
-    },
-  ],
-  deposit: {
-    token: '0x123',
-    amount: 0n,
-  },
-  expense: {
-    token: '0x123',
-    amount: 0n,
-  },
-} as const
-
-const { fetchJSON } = vi.hoisted(() => {
-  return {
-    fetchJSON: vi.fn(),
-  }
-})
-
-vi.mock('../internal/api.js', async () => {
-  const actual = await vi.importActual('../internal/api.js')
-  return {
-    ...actual,
-    fetchJSON,
-  }
-})
+const renderValidateOrderHook = (
+  params: Parameters<typeof useValidateOrder>[0],
+  options?: Parameters<typeof renderHook>[1],
+) => {
+  return renderHook(() => useValidateOrder(params), {
+    mockContractsCall: true,
+    ...options,
+  })
+}
 
 test('default: native transfer order', async () => {
+  vi.spyOn(api, 'fetchJSON').mockResolvedValue({
+    accepted: true,
+  })
+
   const { result, rerender } = renderHook(
     ({ enabled }: { enabled: boolean }) =>
       useValidateOrder({
@@ -73,10 +51,6 @@ test('default: native transfer order', async () => {
 
   expect(result.current.status).toBe('pending')
 
-  fetchJSON.mockResolvedValue({
-    accepted: true,
-  })
-
   rerender({
     enabled: true,
   })
@@ -85,6 +59,10 @@ test('default: native transfer order', async () => {
 })
 
 test('default: order', async () => {
+  vi.spyOn(api, 'fetchJSON').mockResolvedValue({
+    accepted: true,
+  })
+
   const { result, rerender } = renderHook(
     ({ enabled }: { enabled: boolean }) =>
       useValidateOrder({
@@ -97,10 +75,6 @@ test('default: order', async () => {
   )
 
   expect(result.current.status).toBe('pending')
-
-  fetchJSON.mockResolvedValue({
-    accepted: true,
-  })
 
   rerender({
     enabled: true,
@@ -118,15 +92,18 @@ test('behaviour: pending if query not fired', async () => {
 })
 
 test('behaviour: error if response is error', async () => {
-  fetchJSON.mockResolvedValue({
+  vi.spyOn(api, 'fetchJSON').mockResolvedValue({
     error: {
       code: 1,
       message: 'an error',
     },
   })
 
-  const { result } = renderHook(() =>
-    useValidateOrder({ order, enabled: true }),
+  const { result } = renderValidateOrderHook(
+    { order, enabled: true },
+    {
+      mockContractsCall: false,
+    },
   )
 
   await waitFor(() => expect(result.current.status).toBe('error'))
@@ -138,14 +115,17 @@ test('behaviour: error if response is error', async () => {
 })
 
 test('behaviour: rejected if response is rejected', async () => {
-  fetchJSON.mockResolvedValue({
+  vi.spyOn(api, 'fetchJSON').mockResolvedValue({
     rejected: true,
     rejectReason: 'a reason',
     rejectDescription: 'a description',
   })
 
-  const { result } = renderHook(() =>
-    useValidateOrder({ order, enabled: true }),
+  const { result } = renderValidateOrderHook(
+    { order, enabled: true },
+    {
+      mockContractsCall: false,
+    },
   )
 
   await waitFor(() => expect(result.current.status).toBe('rejected'))
@@ -163,11 +143,9 @@ test.each([
   { rejected: true, rejectReason: 'a reason' },
   { rejecetd: true, rejectDescription: 'a description' },
 ])('behaviour: error if response is not valid: %s', async (mockReturn) => {
-  const { result } = renderHook(() =>
-    useValidateOrder({ order, enabled: true }),
-  )
+  const { result } = renderValidateOrderHook({ order, enabled: true })
 
-  fetchJSON.mockReturnValue(mockReturn)
+  vi.spyOn(api, 'fetchJSON').mockResolvedValue(mockReturn)
 
   await waitFor(() => result.current.status === 'error')
 })
@@ -177,9 +155,9 @@ test('behaviour: returns an error instead of throwing when the order encoding th
     ...order,
     calls: [{ ...order.calls[0], args: ['0xinvalid', 0n] }],
   }
-  const { result } = renderHook(() => {
-    // @ts-expect-error: invalid order
-    return useValidateOrder({ order: invalidOrder, enabled: true })
+  const { result } = renderValidateOrderHook({
+    order: invalidOrder,
+    enabled: true,
   })
 
   await waitFor(() => {

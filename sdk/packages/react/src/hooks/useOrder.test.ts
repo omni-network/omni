@@ -6,7 +6,7 @@ import {
   mockWagmiHooks,
 } from '../../test/mocks.js'
 import { renderHook } from '../../test/react.js'
-import { contracts, order, resolvedOrder } from '../../test/shared.js'
+import { contracts, orderRequest, resolvedOrder } from '../../test/shared.js'
 import {
   DidFillError,
   GetOrderError,
@@ -94,10 +94,20 @@ beforeEach(() => {
   )
 })
 
+const renderOrderHook = (
+  params: Parameters<typeof useOrder>[0],
+  options?: Parameters<typeof renderHook>[1],
+) => {
+  return renderHook(() => useOrder({ ...params }), {
+    mockContractsCall: true,
+    ...options,
+  })
+}
+
 test(`default: validates, opens, and transitions order through it's lifecycle`, async () => {
   const { result, rerender } = renderHook(
     ({ validateEnabled }: { validateEnabled: boolean }) =>
-      useOrder({ ...order, validateEnabled }),
+      useOrder({ ...orderRequest, validateEnabled }),
     { mockContractsCall: true, initialProps: { validateEnabled: true } },
   )
 
@@ -150,10 +160,10 @@ test(`default: validates, opens, and transitions order through it's lifecycle`, 
 })
 
 test('behaviour: handles order rejection', async () => {
-  const { result, rerender } = renderHook(
-    () => useOrder({ ...order, validateEnabled: false }),
-    { mockContractsCall: true },
-  )
+  const { result, rerender } = renderOrderHook({
+    ...orderRequest,
+    validateEnabled: false,
+  })
 
   useWriteContract.mockImplementation(() => createMockWriteContractResult())
 
@@ -176,10 +186,10 @@ test('behaviour: handles order rejection', async () => {
 })
 
 test('behaviour: closed order is handled', async () => {
-  const { result, rerender } = renderHook(
-    () => useOrder({ ...order, validateEnabled: false }),
-    { mockContractsCall: true },
-  )
+  const { result, rerender } = renderOrderHook({
+    ...orderRequest,
+    validateEnabled: false,
+  })
 
   useWriteContract.mockImplementation(() => createMockWriteContractResult())
 
@@ -210,10 +220,10 @@ test('behaviour: handles tx mutation error', async () => {
     }),
   )
 
-  const { result } = renderHook(
-    () => useOrder({ ...order, validateEnabled: false }),
-    { mockContractsCall: true },
-  )
+  const { result } = renderOrderHook({
+    ...orderRequest,
+    validateEnabled: false,
+  })
 
   await waitFor(() => {
     expect(result.current.isError).toBe(true)
@@ -226,11 +236,10 @@ test('behaviour: validate false/true: toggles validation behavior', async () => 
     status: 'pending',
   })
 
-  const { result, rerender } = renderHook(
-    ({ validateEnabled }: { validateEnabled: boolean }) =>
-      useOrder({ ...order, validateEnabled }),
-    { mockContractsCall: true, initialProps: { validateEnabled: false } },
-  )
+  const { result, rerender } = renderOrderHook({
+    ...orderRequest,
+    validateEnabled: false,
+  })
 
   await waitFor(() => {
     expect(result.current.isValidated).toBe(false)
@@ -253,10 +262,7 @@ test('behaviour:  handles validation error', async () => {
     error: new Error('Validation failed'),
   })
 
-  const { result } = renderHook(
-    () => useOrder({ ...order, validateEnabled: true }),
-    { mockContractsCall: true },
-  )
+  const { result } = renderOrderHook({ ...orderRequest, validateEnabled: true })
 
   await waitFor(() => {
     expect(result.current.isError).toBe(true)
@@ -279,10 +285,10 @@ test('behaviour: handles transaction receipt error', async () => {
     }),
   )
 
-  const { result } = renderHook(
-    () => useOrder({ ...order, validateEnabled: false }),
-    { mockContractsCall: true },
-  )
+  const { result } = renderOrderHook({
+    ...orderRequest,
+    validateEnabled: false,
+  })
 
   await waitFor(() => {
     expect(result.current.isError).toBe(true)
@@ -311,10 +317,10 @@ test('behaviour: handles parse open event error', async () => {
     }),
   )
 
-  const { result } = renderHook(
-    () => useOrder({ ...order, validateEnabled: false }),
-    { mockContractsCall: true },
-  )
+  const { result } = renderOrderHook({
+    ...orderRequest,
+    validateEnabled: false,
+  })
 
   await waitFor(() => {
     expect(result.current.isError).toBe(true)
@@ -342,10 +348,10 @@ test('behaviour: handles order status error', async () => {
     }),
   )
 
-  const { result } = renderHook(
-    () => useOrder({ ...order, validateEnabled: false }),
-    { mockContractsCall: true },
-  )
+  const { result } = renderOrderHook({
+    ...orderRequest,
+    validateEnabled: false,
+  })
 
   await waitFor(() => {
     expect(result.current.isError).toBe(true)
@@ -368,10 +374,7 @@ test('behaviour: handles wait success but order not found', async () => {
     }),
   )
 
-  const { result } = renderHook(
-    () => useOrder({ ...order, validateEnabled: true }),
-    { mockContractsCall: true },
-  )
+  const { result } = renderOrderHook({ ...orderRequest, validateEnabled: true })
 
   await waitFor(() => {
     expect(result.current.isError).toBe(true)
@@ -390,8 +393,8 @@ test('behaviour: handles contracts load error', async () => {
     }
   })
 
-  const { result } = renderHook(
-    () => useOrder({ ...order, validateEnabled: true }),
+  const { result } = renderOrderHook(
+    { ...orderRequest, validateEnabled: true },
     { mockContractsCallFailure: true },
   )
 
@@ -403,8 +406,9 @@ test('behaviour: handles contracts load error', async () => {
 })
 
 test('behaviour: open rejects when inbox contract not loaded', async () => {
-  const { result, rerender } = renderHook(() =>
-    useOrder({ ...order, validateEnabled: false }),
+  const { result, rerender } = renderOrderHook(
+    { ...orderRequest, validateEnabled: false },
+    { mockContractsCall: false },
   )
 
   useOmniContracts.mockImplementation(() => {
