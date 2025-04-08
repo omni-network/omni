@@ -278,6 +278,10 @@ func (a App) GetSlashingKeeper() slashingkeeper.Keeper {
 	return a.SlashingKeeper
 }
 
+func (a App) GetStakingKeeper() *stakingkeeper.Keeper {
+	return a.StakingKeeper
+}
+
 func (a App) GetMintKeeper() mintkeeper.Keeper {
 	return a.MintKeeper
 }

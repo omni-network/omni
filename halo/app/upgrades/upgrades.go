@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	drake3 "github.com/omni-network/omni/halo/app/upgrades/drake"
 	magellan2 "github.com/omni-network/omni/halo/app/upgrades/magellan"
 	uluwatu1 "github.com/omni-network/omni/halo/app/upgrades/uluwatu"
 	"github.com/omni-network/omni/lib/errors"
@@ -15,12 +16,14 @@ import (
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
 	slkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
+	skeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 )
 
 type App interface {
 	GetModuleManager() *module.Manager
 	GetModuleConfigurator() module.Configurator
 	GetSlashingKeeper() slkeeper.Keeper
+	GetStakingKeeper() *skeeper.Keeper
 	GetMintKeeper() mintkeeper.Keeper
 	GetAccountKeeper() authkeeper.AccountKeeper
 }
@@ -63,6 +66,18 @@ var Upgrades = []Upgrade{
 		},
 		Store:        magellan2.StoreUpgrades,
 		GenesisState: magellan2.GenesisState,
+	},
+	{
+		Name: drake3.UpgradeName,
+		HandlerFunc: func(a App) upgradetypes.UpgradeHandler {
+			return drake3.CreateUpgradeHandler(
+				a.GetModuleManager(),
+				a.GetModuleConfigurator(),
+				a.GetStakingKeeper(),
+			)
+		},
+		Store:        drake3.StoreUpgrades,
+		GenesisState: drake3.GenesisState,
 	},
 }
 
