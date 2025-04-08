@@ -108,7 +108,12 @@ func (db DB) Insert(ctx context.Context, chainID uint64, elog types.Log) (*Job, 
 		}
 
 		if el.BlockHash != elog.BlockHash {
-			return nil, errors.New("duplicate job, but hash mismatch (reorg not supported) [BUG]")
+			return nil, errors.New("duplicate job, but hash mismatch (reorg not supported) [BUG]",
+				"existing_hash", el.BlockHash,
+				"new_hash", elog.BlockHash,
+				"height", elog.BlockNumber,
+				"index", elog.Index,
+			)
 		}
 
 		return j, nil

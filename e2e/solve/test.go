@@ -151,21 +151,22 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 		case <-ctx.Done():
 			return errors.Wrap(ctx.Err(), "context timeout or canceled")
 		case <-ticker.C:
-			done, err := tracker.Done()
+			remaining, err := tracker.Remaining()
 			if err != nil {
 				return errors.Wrap(err, "solver tracker failed")
+			} else if remaining > 0 {
+				log.Debug(ctx, "Pending orders", "remaining", remaining, "total", tracker.Len())
+				continue
 			}
 
-			if done {
-				// if done, wait for solver to rebalance OMNI (bridge L1 back to native)
-				if err := waitRebalance(ctx, backends); err != nil {
-					return errors.Wrap(err, "wait rebalance")
-				}
-
-				log.Info(ctx, "Solver test success")
-
-				return nil
+			// if done, wait for solver to rebalance OMNI (bridge L1 back to native)
+			if err := waitRebalance(ctx, backends); err != nil {
+				return errors.Wrap(err, "wait rebalance")
 			}
+
+			log.Info(ctx, "Solver test success")
+
+			return nil
 		}
 	}
 }

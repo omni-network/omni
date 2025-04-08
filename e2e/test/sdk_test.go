@@ -12,10 +12,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// disableSDKTest allows devs to skip SDK tests if local npm isn't setup correctly
+// by setting the environment variable DISABLE_SDK_TEST=true to skip the test.
+const disableSDKTest = "DISABLE_SDK_TEST"
+
 func TestSDK(t *testing.T) {
 	t.Parallel()
 	skipFunc := func(manifest types.Manifest) bool {
-		return !manifest.DeploySolve
+		return !manifest.DeploySolve || os.Getenv(disableSDKTest) == "true"
 	}
 	maybeTestNetwork(t, skipFunc, func(ctx context.Context, t *testing.T, _ NetworkDeps) {
 		t.Helper()

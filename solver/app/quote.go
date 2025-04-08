@@ -19,86 +19,88 @@ type quoteFunc func(context.Context, types.QuoteRequest) (types.QuoteResponse, e
 
 // quoter is quoteFunc that can be used to quoter an expense or deposit.
 // It is the logic behind the /quoter endpoint.
-func quoter(_ context.Context, req types.QuoteRequest) (types.QuoteResponse, error) {
-	deposit := req.Deposit
-	expense := req.Expense
+func newQuoter(priceFunc priceFunc) quoteFunc {
+	return func(ctx context.Context, req types.QuoteRequest) (types.QuoteResponse, error) {
+		deposit := req.Deposit
+		expense := req.Expense
 
-	isDepositQuote := deposit.Amount == nil || deposit.Amount.Sign() == 0
-	isExpenseQuote := expense.Amount == nil || expense.Amount.Sign() == 0
+		isDepositQuote := deposit.Amount == nil || deposit.Amount.Sign() == 0
+		isExpenseQuote := expense.Amount == nil || expense.Amount.Sign() == 0
 
-	returnErr := func(code int, msg string) (types.QuoteResponse, error) {
-		return types.QuoteResponse{}, newAPIError(errors.New(msg), code)
-	}
-
-	if isDepositQuote == isExpenseQuote {
-		return returnErr(http.StatusBadRequest, "deposit and expense amount cannot be both zero or both non-zero")
-	}
-
-	depositTkn, ok := stokens.ByAddress(req.SourceChainID, req.Deposit.Token)
-	if !ok {
-		return returnErr(http.StatusNotFound, "unsupported deposit token")
-	}
-
-	expenseTkn, ok := stokens.ByAddress(req.DestinationChainID, req.Expense.Token)
-	if !ok {
-		return returnErr(http.StatusNotFound, "unsupported expense token")
-	}
-
-	maybeMinMaxReject := func(expenseAmt *big.Int) error {
-		overMax := expenseTkn.MaxSpend != nil && bi.GT(expenseAmt, expenseTkn.MaxSpend)
-		underMin := expenseTkn.MinSpend != nil && bi.LT(expenseAmt, expenseTkn.MinSpend)
-
-		if overMax {
-			return newRejection(types.RejectExpenseOverMax,
-				errors.New("requested expense exceeds maximum",
-					"ask", expenseTkn.FormatAmt(expenseAmt),
-					"max", expenseTkn.FormatAmt(expenseTkn.MaxSpend),
-				))
+		returnErr := func(code int, msg string) (types.QuoteResponse, error) {
+			return types.QuoteResponse{}, newAPIError(errors.New(msg), code)
 		}
 
-		if underMin {
-			return newRejection(types.RejectExpenseUnderMin,
-				errors.New("requested expense is below minimum",
-					"ask", expenseTkn.FormatAmt(expenseAmt),
-					"min", expenseTkn.FormatAmt(expenseTkn.MinSpend),
-				))
+		if isDepositQuote == isExpenseQuote {
+			return returnErr(http.StatusBadRequest, "deposit and expense amount cannot be both zero or both non-zero")
 		}
 
-		return nil
-	}
+		depositTkn, ok := stokens.ByAddress(req.SourceChainID, req.Deposit.Token)
+		if !ok {
+			return returnErr(http.StatusNotFound, "unsupported deposit token")
+		}
 
-	returnQuote := func(depositAmt, expenseAmt *big.Int) (types.QuoteResponse, error) {
-		return types.QuoteResponse{
-			Deposit: types.AddrAmt{
-				Token:  deposit.Token,
-				Amount: depositAmt,
-			},
-			Expense: types.AddrAmt{
-				Token:  expense.Token,
-				Amount: expenseAmt,
-			},
-		}, maybeMinMaxReject(expenseAmt)
-	}
+		expenseTkn, ok := stokens.ByAddress(req.DestinationChainID, req.Expense.Token)
+		if !ok {
+			return returnErr(http.StatusNotFound, "unsupported expense token")
+		}
 
-	if isDepositQuote {
-		quoted, err := QuoteDeposit(depositTkn, TokenAmt{Token: expenseTkn, Amount: expense.Amount})
+		maybeMinMaxReject := func(expenseAmt *big.Int) error {
+			overMax := expenseTkn.MaxSpend != nil && bi.GT(expenseAmt, expenseTkn.MaxSpend)
+			underMin := expenseTkn.MinSpend != nil && bi.LT(expenseAmt, expenseTkn.MinSpend)
+
+			if overMax {
+				return newRejection(types.RejectExpenseOverMax,
+					errors.New("requested expense exceeds maximum",
+						"ask", expenseTkn.FormatAmt(expenseAmt),
+						"max", expenseTkn.FormatAmt(expenseTkn.MaxSpend),
+					))
+			}
+
+			if underMin {
+				return newRejection(types.RejectExpenseUnderMin,
+					errors.New("requested expense is below minimum",
+						"ask", expenseTkn.FormatAmt(expenseAmt),
+						"min", expenseTkn.FormatAmt(expenseTkn.MinSpend),
+					))
+			}
+
+			return nil
+		}
+
+		returnQuote := func(depositAmt, expenseAmt *big.Int) (types.QuoteResponse, error) {
+			return types.QuoteResponse{
+				Deposit: types.AddrAmt{
+					Token:  deposit.Token,
+					Amount: depositAmt,
+				},
+				Expense: types.AddrAmt{
+					Token:  expense.Token,
+					Amount: expenseAmt,
+				},
+			}, maybeMinMaxReject(expenseAmt)
+		}
+
+		if isDepositQuote {
+			quoted, err := quoteDeposit(ctx, priceFunc, depositTkn, TokenAmt{Token: expenseTkn, Amount: expense.Amount})
+			if err != nil {
+				return types.QuoteResponse{}, newAPIError(err, http.StatusBadRequest)
+			}
+
+			return returnQuote(quoted.Amount, expense.Amount)
+		}
+
+		quoted, err := quoteExpense(ctx, priceFunc, expenseTkn, TokenAmt{Token: depositTkn, Amount: deposit.Amount})
 		if err != nil {
 			return types.QuoteResponse{}, newAPIError(err, http.StatusBadRequest)
 		}
 
-		return returnQuote(quoted.Amount, expense.Amount)
+		return returnQuote(deposit.Amount, quoted.Amount)
 	}
-
-	quoted, err := quoteExpense(expenseTkn, TokenAmt{Token: depositTkn, Amount: deposit.Amount})
-	if err != nil {
-		return types.QuoteResponse{}, newAPIError(err, http.StatusBadRequest)
-	}
-
-	return returnQuote(deposit.Amount, quoted.Amount)
 }
 
 // getQuote returns payment in `depositTkns` required to pay for `expenses`.
-func getQuote(depositTkns []stokens.Token, expenses []TokenAmt) ([]TokenAmt, error) {
+func getQuote(ctx context.Context, priceFunc priceFunc, depositTkns []stokens.Token, expenses []TokenAmt) ([]TokenAmt, error) {
 	if len(depositTkns) != 1 {
 		return nil, newRejection(types.RejectInvalidDeposit, errors.New("only single deposit token supported"))
 	}
@@ -110,7 +112,7 @@ func getQuote(depositTkns []stokens.Token, expenses []TokenAmt) ([]TokenAmt, err
 	expense := expenses[0]
 	depositTkn := depositTkns[0]
 
-	deposit, err := QuoteDeposit(depositTkn, expense)
+	deposit, err := quoteDeposit(ctx, priceFunc, depositTkn, expense)
 	if err != nil {
 		return nil, err
 	}
@@ -118,37 +120,35 @@ func getQuote(depositTkns []stokens.Token, expenses []TokenAmt) ([]TokenAmt, err
 	return []TokenAmt{deposit}, nil
 }
 
-// QuoteDeposit returns the source chain deposit required to cover `expense`.
-func QuoteDeposit(depositTkn stokens.Token, expense TokenAmt) (TokenAmt, error) {
-	if !areEqualBySymbol(depositTkn, expense.Token) {
-		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, errors.New("deposit token must match expense token"))
+// quoteDeposit returns the source chain deposit required to cover `expense`.
+func quoteDeposit(ctx context.Context, priceFunc priceFunc, depositTkn stokens.Token, expense TokenAmt) (TokenAmt, error) {
+	price, err := priceFunc(ctx, expense.Token, depositTkn)
+	if err != nil {
+		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, err)
 	}
 
-	if expense.Token.ChainClass != depositTkn.ChainClass {
-		// we should reject with UnsupportedDestChain before quoting tokens of different chain classes.
-		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, errors.New("deposit and expense must be of the same chain class (e.g. mainnet, testnet)"))
-	}
+	depositAmount := bi.MulF64(expense.Amount, price)
+	depositAmount = depositFor(depositAmount, feeBipsFor(depositTkn))
 
 	return TokenAmt{
 		Token:  depositTkn,
-		Amount: depositFor(expense.Amount, feeBipsFor(depositTkn)),
+		Amount: depositAmount,
 	}, nil
 }
 
 // QuoteExpense returns the destination chain expense allowed for `deposit`.
-func quoteExpense(expenseTkn stokens.Token, deposit TokenAmt) (TokenAmt, error) {
-	if !areEqualBySymbol(deposit.Token, expenseTkn) {
-		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, errors.New("deposit token must match expense token"))
+func quoteExpense(ctx context.Context, priceFunc priceFunc, expenseTkn stokens.Token, deposit TokenAmt) (TokenAmt, error) {
+	price, err := priceFunc(ctx, deposit.Token, expenseTkn)
+	if err != nil {
+		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, err)
 	}
 
-	if deposit.Token.ChainClass != expenseTkn.ChainClass {
-		// we should reject with UnsupportedDestChain before quoting tokens of different chain classes.
-		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, errors.New("deposit and expense must be of the same chain class (e.g. mainnet, testnet)"))
-	}
+	expenseAmount := bi.MulF64(deposit.Amount, price)
+	expenseAmount = expenseFor(expenseAmount, feeBipsFor(expenseTkn))
 
 	return TokenAmt{
 		Token:  expenseTkn,
-		Amount: expenseFor(deposit.Amount, feeBipsFor(expenseTkn)),
+		Amount: expenseAmount,
 	}, nil
 }
 
