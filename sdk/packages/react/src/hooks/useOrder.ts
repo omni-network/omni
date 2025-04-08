@@ -160,7 +160,7 @@ export function useOrder<abis extends OptionalAbis>(
     isValidated: validation?.status === 'accepted',
     isTxPending: txMutation.isPending,
     isTxSubmitted: txMutation.isSuccess,
-    isOpen: !!wait.data,
+    isOpen: !!wait.data && status !== 'closed' && status !== 'rejected',
     isReady: !!inboxAddress,
     txMutation,
     waitForTx: wait,
