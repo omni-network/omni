@@ -24,8 +24,8 @@ func newQuoter(priceFunc priceFunc) quoteFunc {
 		deposit := req.Deposit
 		expense := req.Expense
 
-		isDepositQuote := deposit.Amount == nil || deposit.Amount.Sign() == 0
-		isExpenseQuote := expense.Amount == nil || expense.Amount.Sign() == 0
+		isDepositQuote := deposit.Amount == nil || bi.IsZero(deposit.Amount)
+		isExpenseQuote := expense.Amount == nil || bi.IsZero(expense.Amount)
 
 		returnErr := func(code int, msg string) (types.QuoteResponse, error) {
 			return types.QuoteResponse{}, newAPIError(errors.New(msg), code)
@@ -124,7 +124,7 @@ func getQuote(ctx context.Context, priceFunc priceFunc, depositTkns []stokens.To
 func quoteDeposit(ctx context.Context, priceFunc priceFunc, depositTkn stokens.Token, expense TokenAmt) (TokenAmt, error) {
 	price, err := priceFunc(ctx, expense.Token, depositTkn)
 	if err != nil {
-		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, err)
+		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, errors.Wrap(err, "", "expense", expense, "deposit", depositTkn))
 	}
 
 	depositAmount := bi.MulF64(expense.Amount, price)
@@ -140,7 +140,7 @@ func quoteDeposit(ctx context.Context, priceFunc priceFunc, depositTkn stokens.T
 func quoteExpense(ctx context.Context, priceFunc priceFunc, expenseTkn stokens.Token, deposit TokenAmt) (TokenAmt, error) {
 	price, err := priceFunc(ctx, deposit.Token, expenseTkn)
 	if err != nil {
-		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, err)
+		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, errors.Wrap(err, "", "deposit", deposit, "expense", expenseTkn))
 	}
 
 	expenseAmount := bi.MulF64(deposit.Amount, price)
