@@ -1,10 +1,30 @@
 import { vi } from 'vitest'
-import type { useReadContract } from 'wagmi'
+import type {
+  useReadContract,
+  useWaitForTransactionReceipt,
+  useWriteContract,
+} from 'wagmi'
 import * as apiModule from '../src/internal/api.js'
 import { contracts } from './shared.js'
 
 type UseReadContractReturn<Data> = Omit<
   ReturnType<typeof useReadContract>,
+  'error' | 'data'
+> & {
+  error: Error | null
+  data: Data
+}
+
+type UseWriteContractReturn<Data> = Omit<
+  ReturnType<typeof useWriteContract>,
+  'error' | 'data'
+> & {
+  error: Error | null
+  data: Data
+}
+
+type UseWaitForTransactionReceiptReturn<Data> = Omit<
+  ReturnType<typeof useWaitForTransactionReceipt>,
   'error' | 'data'
 > & {
   error: Error | null
@@ -60,4 +80,66 @@ export function createMockReadContractResult<
   }
 
   return result
+}
+
+export function createMockWriteContractResult<
+  TResult extends ReturnType<typeof useWriteContract> = never,
+>(
+  overrides?: Partial<UseWriteContractReturn<TResult['data']>>,
+): UseWriteContractReturn<TResult['data']> {
+  return {
+    isError: false,
+    isPending: false,
+    isSuccess: true,
+    status: 'success',
+    data: '0xTxHash',
+    error: null,
+    failureCount: 0,
+    failureReason: null,
+    isPaused: false,
+    variables: undefined,
+    isIdle: false,
+    reset: vi.fn(),
+    context: undefined,
+    submittedAt: 0,
+    writeContract: vi.fn().mockReturnValue('0xTxHash'),
+    writeContractAsync: vi.fn().mockResolvedValue('0xTxHash'),
+    ...overrides,
+  }
+}
+
+export function createMockWaitForTransactionReceiptResult<
+  TResult extends ReturnType<typeof useWaitForTransactionReceipt> = never,
+>(
+  overrides?: Partial<UseWaitForTransactionReceiptReturn<TResult['data']>>,
+): UseWaitForTransactionReceiptReturn<TResult['data']> {
+  return {
+    isError: false,
+    isPending: false,
+    isSuccess: true,
+    isLoading: false,
+    isStale: false,
+    isLoadingError: false,
+    isRefetchError: false,
+    isPlaceholderData: false,
+    dataUpdatedAt: 0,
+    errorUpdatedAt: 0,
+    failureCount: 0,
+    failureReason: null,
+    errorUpdateCount: 0,
+    isFetched: true,
+    isFetchedAfterMount: true,
+    isFetching: false,
+    isInitialLoading: false,
+    isRefetching: false,
+    status: 'success',
+    data: '0xTxHash',
+    isPaused: false,
+    refetch: vi.fn(),
+    fetchStatus: 'idle' as const,
+    queryKey: [],
+    promise: Promise.resolve(),
+    error: null,
+    ...overrides,
+  }
 }
