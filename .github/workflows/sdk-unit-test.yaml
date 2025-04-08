@@ -23,13 +23,13 @@ jobs:
         run: pnpm install
         working-directory: contracts/solve
       - name: Inspect SolverNetInbox contract
-        run: forge inspect --json src/SolverNetInbox.sol:SolverNetInbox abi > ../sdk/packages/react/test/assets/SolverNetInbox.json
+        run: forge inspect --json src/SolverNetInbox.sol:SolverNetInbox abi > ../../sdk/packages/react/test/assets/SolverNetInbox.json
         working-directory: contracts/solve
       - name: Inspect SolverNetMiddleman contract
-        run: forge inspect --json src/SolverNetMiddleman.sol:SolverNetMiddleman abi > ../sdk/packages/react/test/assets/SolverNetMiddleman.json
+        run: forge inspect --json src/SolverNetMiddleman.sol:SolverNetMiddleman abi > ../../sdk/packages/react/test/assets/SolverNetMiddleman.json
         working-directory: contracts/solve
       - name: Inspect SolverNetOutbox contract
-        run: forge inspect --json src/SolverNetOutbox.sol:SolverNetOutbox abi > ../sdk/packages/react/test/assets/SolverNetOutbox.json
+        run: forge inspect --json src/SolverNetOutbox.sol:SolverNetOutbox abi > ../../sdk/packages/react/test/assets/SolverNetOutbox.json
         working-directory: contracts/solve
 
       - name: Install SDK dependencies
