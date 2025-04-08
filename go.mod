@@ -43,7 +43,7 @@ require (
 	github.com/naoina/toml v0.1.2-0.20170918210437-9fafd6967416
 	github.com/pierrec/lz4/v4 v4.1.22
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.21.1
+	github.com/prometheus/client_golang v1.22.0
 	github.com/rs/cors v1.11.1
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
