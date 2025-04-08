@@ -10,7 +10,7 @@ import (
 
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/evmchain"
-	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tokenmeta"
 	"github.com/omni-network/omni/monitor/xfeemngr/contract"
 	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
 	"github.com/omni-network/omni/monitor/xfeemngr/ticker"
@@ -27,9 +27,9 @@ func TestStart(t *testing.T) {
 	chainIDs := []uint64{1, 2, 3, 4, 5}
 
 	// mock token prices / pricer
-	initialTokenPrices := map[tokens.Token]float64{
-		tokens.OMNI: randTokenPrice(tokens.OMNI),
-		tokens.ETH:  randTokenPrice(tokens.ETH),
+	initialTokenPrices := map[tokenmeta.Meta]float64{
+		tokenmeta.OMNI: randTokenPrice(tokenmeta.OMNI),
+		tokenmeta.ETH:  randTokenPrice(tokenmeta.ETH),
 	}
 
 	initialGasPrices := makeGasPrices(chainIDs)
@@ -57,7 +57,7 @@ func TestStart(t *testing.T) {
 		oracles: oracles,
 	}
 
-	expect := func(tprices map[tokens.Token]float64, gprices map[uint64]*big.Int) {
+	expect := func(tprices map[tokenmeta.Meta]float64, gprices map[uint64]*big.Int) {
 		for _, oracle := range oracles {
 			src := oracle.chain
 
@@ -73,10 +73,10 @@ func TestStart(t *testing.T) {
 				rate := tprices[dest.NativeToken] / tprices[src.NativeToken]
 
 				// handle maximum rate case
-				if src.NativeToken == tokens.OMNI && src.NativeToken != dest.NativeToken && rate > maxSaneOmniPerEth {
+				if src.NativeToken == tokenmeta.OMNI && src.NativeToken != dest.NativeToken && rate > maxSaneOmniPerEth {
 					rate = maxSaneOmniPerEth
 				}
-				if src.NativeToken == tokens.ETH && src.NativeToken != dest.NativeToken && rate > maxSaneEthPerOmni {
+				if src.NativeToken == tokenmeta.ETH && src.NativeToken != dest.NativeToken && rate > maxSaneEthPerOmni {
 					rate = maxSaneEthPerOmni
 				}
 
@@ -173,9 +173,9 @@ func makeChains(chainIDs []uint64) []evmchain.Metadata {
 
 	for i, chainID := range chainIDs {
 		// use ETH for all chains, except the first
-		token := tokens.ETH
+		token := tokenmeta.ETH
 		if i == 0 {
-			token = tokens.OMNI
+			token = tokenmeta.OMNI
 		}
 
 		// every even chian "postsTo" the last chain
@@ -217,11 +217,11 @@ func randGasPrice() *big.Int {
 }
 
 // randTokenPrice generates a random, reasonable token price.
-func randTokenPrice(token tokens.Token) float64 {
+func randTokenPrice(token tokenmeta.Meta) float64 {
 	// discriminate between ETH and other tokens (OMNI)
 	// so that test omni-per-eth conversion rates do not exceed maxOmniPerEth
 
-	if token == tokens.ETH {
+	if token == tokenmeta.ETH {
 		return float64(rand.Intn(500)) + rand.Float64() + 3000
 	}
 

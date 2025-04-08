@@ -10,14 +10,15 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tokenmeta"
+	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
 )
 
-func feeParams(ctx context.Context, srcChainID uint64, destChainIDs []uint64, backends ethbackend.Backends, pricer tokens.Pricer,
+func feeParams(ctx context.Context, srcChainID uint64, destChainIDs []uint64, backends ethbackend.Backends, pricer tokenpricer.Pricer,
 ) ([]bindings.IFeeOracleV1ChainFeeParams, error) {
 	// used cached pricer, to avoid multiple price requests for same token
-	pricer = tokens.NewCachedPricer(pricer)
+	pricer = tokenpricer.NewCached(pricer)
 
 	srcChain, ok := evmchain.MetadataByID(srcChainID)
 	if !ok {
@@ -53,7 +54,7 @@ func feeParams(ctx context.Context, srcChainID uint64, destChainIDs []uint64, ba
 }
 
 // feeParams returns the fee parameters for the given source token and destination chains.
-func destFeeParams(ctx context.Context, srcChain evmchain.Metadata, destChain evmchain.Metadata, backends ethbackend.Backends, pricer tokens.Pricer,
+func destFeeParams(ctx context.Context, srcChain evmchain.Metadata, destChain evmchain.Metadata, backends ethbackend.Backends, pricer tokenpricer.Pricer,
 ) (bindings.IFeeOracleV1ChainFeeParams, error) {
 	backend, err := backends.Backend(destChain.ChainID)
 	if err != nil {
@@ -66,7 +67,7 @@ func destFeeParams(ctx context.Context, srcChain evmchain.Metadata, destChain ev
 	if err != nil {
 		if srcChain.NativeToken == destChain.NativeToken {
 			toNativeRate = 1 // 1 ETH = 1 ETH || 1 OMNI = 1 OMNI
-		} else if destChain.NativeToken == tokens.OMNI {
+		} else if destChain.NativeToken == tokenmeta.OMNI {
 			toNativeRate = 0.0025 // 1 OMNI = 0.0025 ETH
 		} else {
 			toNativeRate = 400 // 1 ETH = 400 OMNI
@@ -98,7 +99,7 @@ func destFeeParams(ctx context.Context, srcChain evmchain.Metadata, destChain ev
 // conversionRate returns the conversion rate C from token F to token T, where C = price(F) / price(T).
 // Ex. We want to convert from ETH to OMNI. We need to know the what X OMNI = 1 ETH.
 // If the price of OMNI is 10, the price of ETH is 1000. The conversion rate C is price(ETH) / price(OMNI) = 1000 / 10 = 100.
-func conversionRate(ctx context.Context, pricer tokens.Pricer, from, to tokens.Token) (float64, error) {
+func conversionRate(ctx context.Context, pricer tokenpricer.Pricer, from, to tokenmeta.Meta) (float64, error) {
 	if from == to {
 		return 1, nil
 	}
@@ -108,7 +109,7 @@ func conversionRate(ctx context.Context, pricer tokens.Pricer, from, to tokens.T
 		return 0, errors.Wrap(err, "get price", "from", from, "to", to)
 	}
 
-	has := func(t tokens.Token) bool {
+	has := func(t tokenmeta.Meta) bool {
 		p, ok := prices[t]
 		return ok && p > 0
 	}

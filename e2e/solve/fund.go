@@ -12,7 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tokenmeta"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -23,11 +23,11 @@ func maybeFundERC20Solver(ctx context.Context, network netconf.ID, backends ethb
 		return nil
 	}
 
-	wstETHOnMockL1, err := Find(evmchain.IDMockL1, tokens.WSTETH.Symbol)
+	wstETHOnMockL1, err := Find(evmchain.IDMockL1, tokenmeta.WSTETH.Symbol)
 	if err != nil {
 		return err
 	}
-	wstETHOnMockL2, err := Find(evmchain.IDMockL2, tokens.WSTETH.Symbol)
+	wstETHOnMockL2, err := Find(evmchain.IDMockL2, tokenmeta.WSTETH.Symbol)
 	if err != nil {
 		return err
 	}
@@ -71,7 +71,7 @@ func maybeFundERC20Flowgen(ctx context.Context, network netconf.ID, backends eth
 		return nil
 	}
 
-	wstETHOnMockL1, err := Find(evmchain.IDMockL1, tokens.WSTETH.Symbol)
+	wstETHOnMockL1, err := Find(evmchain.IDMockL1, tokenmeta.WSTETH.Symbol)
 	if err != nil {
 		return err
 	}

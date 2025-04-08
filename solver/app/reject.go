@@ -11,7 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
-	stokens "github.com/omni-network/omni/solver/tokens"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum"
@@ -127,8 +127,8 @@ func parseMinReceived(order Order) ([]TokenAmt, error) {
 			return nil, newRejection(types.RejectUnsupportedDeposit, errors.New("non-eth addressed token", "addr", hexutil.Encode(output.Token[:])))
 		}
 
-		tkn, ok := stokens.ByAddress(chainID, addr)
-		if !ok {
+		tkn, ok := tokens.ByAddress(chainID, addr)
+		if !ok || !IsSupportedToken(tkn) {
 			return nil, newRejection(types.RejectUnsupportedDeposit, errors.New("unsupported token", "addr", addr))
 		}
 
@@ -233,8 +233,8 @@ func parseMaxSpent(pendingData PendingData, outboxAddr common.Address) ([]TokenA
 			return nil, newRejection(types.RejectUnsupportedExpense, errors.New("non-eth addressed token", "addr", hexutil.Encode(output.Token[:])))
 		}
 
-		tkn, ok := stokens.ByAddress(chainID, addr)
-		if !ok {
+		tkn, ok := tokens.ByAddress(chainID, addr)
+		if !ok || !IsSupportedToken(tkn) {
 			return nil, newRejection(types.RejectUnsupportedExpense, errors.New("unsupported token", "addr", addr))
 		}
 
@@ -247,12 +247,13 @@ func parseMaxSpent(pendingData PendingData, outboxAddr common.Address) ([]TokenA
 			hasNative = true
 		}
 
-		if tkn.MaxSpend != nil && bi.GT(output.Amount, tkn.MaxSpend) {
-			return nil, newRejection(types.RejectExpenseOverMax, errors.New("expense over max", "token", tkn.Symbol, "max", tkn.MaxSpend, "amount", output.Amount))
+		bounds := GetSpendBounds(tkn)
+		if bounds.MaxSpend != nil && bi.GT(output.Amount, bounds.MaxSpend) {
+			return nil, newRejection(types.RejectExpenseOverMax, errors.New("expense over max", "token", tkn.Symbol, "max", bounds.MaxSpend, "amount", output.Amount))
 		}
 
-		if tkn.MinSpend != nil && bi.LT(output.Amount, tkn.MinSpend) {
-			return nil, newRejection(types.RejectExpenseUnderMin, errors.New("expense under min", "token", tkn.Symbol, "min", tkn.MinSpend, "amount", output.Amount))
+		if bounds.MinSpend != nil && bi.LT(output.Amount, bounds.MinSpend) {
+			return nil, newRejection(types.RejectExpenseUnderMin, errors.New("expense under min", "token", tkn.Symbol, "min", bounds.MinSpend, "amount", output.Amount))
 		}
 
 		expenses = append(expenses, TokenAmt{
@@ -288,7 +289,7 @@ func checkQuote(ctx context.Context, priceFunc priceFunc, deposits, expenses []T
 // checkLiquidity checks that the solver has enough liquidity to pay for the expenses.
 func checkLiquidity(ctx context.Context, expenses []TokenAmt, backend *ethbackend.Backend, solverAddr common.Address) error {
 	for _, expense := range expenses {
-		bal, err := stokens.BalanceOf(ctx, backend, expense.Token, solverAddr)
+		bal, err := tokens.BalanceOf(ctx, backend, expense.Token, solverAddr)
 		if err != nil {
 			return errors.Wrap(err, "get balance", "token", expense.Token.Symbol)
 		}
@@ -347,8 +348,8 @@ func checkCalls(destChainID uint64, calls []types.Call, isAllowed callAllowFunc)
 	return nil
 }
 
-func tkns(payments []TokenAmt) []stokens.Token {
-	tkns := make([]stokens.Token, len(payments))
+func tkns(payments []TokenAmt) []tokens.Token {
+	tkns := make([]tokens.Token, len(payments))
 	for i, p := range payments {
 		tkns[i] = p.Token
 	}

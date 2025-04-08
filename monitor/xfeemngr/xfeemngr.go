@@ -10,8 +10,8 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/tokens"
-	"github.com/omni-network/omni/lib/tokens/coingecko"
+	"github.com/omni-network/omni/lib/tokenmeta"
+	"github.com/omni-network/omni/lib/tokenpricer/coingecko"
 	"github.com/omni-network/omni/lib/xchain"
 	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
 	"github.com/omni-network/omni/monitor/xfeemngr/ticker"
@@ -90,7 +90,7 @@ func Start(
 	}
 
 	tprice := tokenprice.NewBuffer(cgCl,
-		[]tokens.Token{tokens.OMNI, tokens.ETH},
+		[]tokenmeta.Meta{tokenmeta.OMNI, tokenmeta.ETH},
 		tokenPriceBufferThreshold,
 		ticker.New(tokenPriceBufferSyncInterval))
 

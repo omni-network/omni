@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/lib/evmchain"
-	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tokenmeta"
 
 	"github.com/stretchr/testify/require"
 )
@@ -13,7 +13,7 @@ import (
 func TestPublicChains(t *testing.T) {
 	t.Parallel()
 	for _, meta := range evmchain.All() {
-		if meta.NativeToken == tokens.OMNI {
+		if meta.NativeToken == tokenmeta.OMNI {
 			continue
 		}
 		if strings.Contains(meta.Name, "mock") {

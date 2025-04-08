@@ -9,7 +9,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tokenmeta"
 )
 
 // Source chain IDs as per https://chainlist.org/
@@ -47,7 +47,7 @@ type Metadata struct {
 	PostsTo     uint64 // chain id to which tx data is posted
 	Name        string
 	BlockPeriod time.Duration
-	NativeToken tokens.Token
+	NativeToken tokenmeta.Meta
 }
 
 func MetadataByID(chainID uint64) (Metadata, bool) {
@@ -88,109 +88,109 @@ var static = map[uint64]Metadata{
 		ChainID:     IDEthereum,
 		Name:        "ethereum",
 		BlockPeriod: 12 * time.Second,
-		NativeToken: tokens.ETH,
+		NativeToken: tokenmeta.ETH,
 	},
 	IDOmniMainnet: {
 		ChainID:     IDOmniMainnet,
 		Name:        omniEVMName,
 		BlockPeriod: omniEVMBlockPeriod,
-		NativeToken: tokens.OMNI,
+		NativeToken: tokenmeta.OMNI,
 	},
 	IDArbitrumOne: {
 		ChainID:     IDArbitrumOne,
 		Name:        "arbitrum_one",
 		BlockPeriod: 300 * time.Millisecond,
-		NativeToken: tokens.ETH,
+		NativeToken: tokenmeta.ETH,
 		PostsTo:     IDEthereum,
 	},
 	IDOptimism: {
 		ChainID:     IDOptimism,
 		Name:        "optimism",
 		BlockPeriod: 2 * time.Second,
-		NativeToken: tokens.ETH,
+		NativeToken: tokenmeta.ETH,
 		PostsTo:     IDEthereum,
 	},
 	IDBase: {
 		ChainID:     IDBase,
 		Name:        "base",
 		BlockPeriod: 2 * time.Second,
-		NativeToken: tokens.ETH,
+		NativeToken: tokenmeta.ETH,
 		PostsTo:     IDEthereum,
 	},
 	IDOmniOmega: {
 		ChainID:     IDOmniOmega,
 		Name:        omniEVMName,
 		BlockPeriod: omniEVMBlockPeriod,
-		NativeToken: tokens.OMNI,
+		NativeToken: tokenmeta.OMNI,
 	},
 	IDHolesky: {
 		ChainID:     IDHolesky,
 		Name:        "holesky",
 		BlockPeriod: 12 * time.Second,
-		NativeToken: tokens.ETH,
+		NativeToken: tokenmeta.ETH,
 	},
 	IDSepolia: {
 		ChainID:     IDSepolia,
 		Name:        "sepolia",
 		BlockPeriod: 12 * time.Second,
-		NativeToken: tokens.ETH,
+		NativeToken: tokenmeta.ETH,
 	},
 	IDArbSepolia: {
 		ChainID:     IDArbSepolia,
 		Name:        "arb_sepolia",
 		BlockPeriod: 300 * time.Millisecond,
-		NativeToken: tokens.ETH,
+		NativeToken: tokenmeta.ETH,
 		PostsTo:     IDSepolia,
 	},
 	IDOpSepolia: {
 		ChainID:     IDOpSepolia,
 		Name:        "op_sepolia",
 		BlockPeriod: 2 * time.Second,
-		NativeToken: tokens.ETH,
+		NativeToken: tokenmeta.ETH,
 		PostsTo:     IDSepolia,
 	},
 	IDBaseSepolia: {
 		ChainID:     IDBaseSepolia,
 		Name:        "base_sepolia",
 		BlockPeriod: 2 * time.Second,
-		NativeToken: tokens.ETH,
+		NativeToken: tokenmeta.ETH,
 		PostsTo:     IDSepolia,
 	},
 	IDOmniDevnet: {
 		ChainID:     IDOmniDevnet,
 		Name:        omniEVMName,
 		BlockPeriod: omniEVMBlockPeriod,
-		NativeToken: tokens.OMNI,
+		NativeToken: tokenmeta.OMNI,
 	},
 	IDOmniStaging: {
 		ChainID:     IDOmniStaging,
 		Name:        omniEVMName,
 		BlockPeriod: omniEVMBlockPeriod,
-		NativeToken: tokens.OMNI,
+		NativeToken: tokenmeta.OMNI,
 	},
 	IDMockL1: {
 		ChainID:     IDMockL1,
 		Name:        "mock_l1",
 		BlockPeriod: time.Second,
-		NativeToken: tokens.ETH,
+		NativeToken: tokenmeta.ETH,
 	},
 	IDMockL2: {
 		ChainID:     IDMockL2,
 		Name:        "mock_l2",
 		BlockPeriod: time.Second,
-		NativeToken: tokens.ETH,
+		NativeToken: tokenmeta.ETH,
 	},
 	IDMockOp: {
 		ChainID:     IDMockOp,
 		Name:        "mock_op",
 		BlockPeriod: time.Second * 2,
-		NativeToken: tokens.ETH,
+		NativeToken: tokenmeta.ETH,
 	},
 	IDMockArb: {
 		ChainID:     IDMockArb,
 		Name:        "mock_arb",
 		BlockPeriod: time.Second,
-		NativeToken: tokens.ETH,
+		NativeToken: tokenmeta.ETH,
 	},
 }
 

@@ -13,7 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tokenmeta"
 	"github.com/omni-network/omni/lib/txmgr"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -34,7 +34,7 @@ type Sender struct {
 	gasEstimator gasEstimator
 	abi          *abi.ABI
 	chain        netconf.Chain
-	gasToken     tokens.Token
+	gasToken     tokenmeta.Meta
 	chainNames   map[xchain.ChainVersion]string
 	ethCl        ethclient.Client
 	onSubmit     onSubmitFunc

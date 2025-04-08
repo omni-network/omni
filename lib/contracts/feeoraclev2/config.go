@@ -2,7 +2,7 @@ package feeoraclev2
 
 import (
 	"github.com/omni-network/omni/lib/evmchain"
-	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tokenmeta"
 )
 
 const defaultBaseGasLimitGwei = 100_000
@@ -122,13 +122,13 @@ var (
 			ID:         evmchain.IDEthereum,
 			BaseBytes:  defaultBaseBytes,
 			GasPerByte: defaultGasPerByteGwei,
-			GasToken:   gasTokenIDs[tokens.ETH],
+			GasToken:   gasTokenIDs[tokenmeta.ETH],
 		},
 		evmchain.IDOmniMainnet: {
 			ID:         evmchain.IDOmniMainnet,
 			BaseBytes:  defaultBaseBytes,
 			GasPerByte: defaultGasPerByteGwei,
-			GasToken:   gasTokenIDs[tokens.OMNI],
+			GasToken:   gasTokenIDs[tokenmeta.OMNI],
 		},
 
 		// Testnets.
@@ -136,25 +136,25 @@ var (
 			ID:         evmchain.IDOmniStaging,
 			BaseBytes:  defaultBaseBytes,
 			GasPerByte: defaultGasPerByteGwei,
-			GasToken:   gasTokenIDs[tokens.OMNI],
+			GasToken:   gasTokenIDs[tokenmeta.OMNI],
 		},
 		evmchain.IDOmniOmega: {
 			ID:         evmchain.IDOmniOmega,
 			BaseBytes:  defaultBaseBytes,
 			GasPerByte: defaultGasPerByteGwei,
-			GasToken:   gasTokenIDs[tokens.OMNI],
+			GasToken:   gasTokenIDs[tokenmeta.OMNI],
 		},
 		evmchain.IDHolesky: {
 			ID:         evmchain.IDHolesky,
 			BaseBytes:  defaultBaseBytes,
 			GasPerByte: defaultGasPerByteGwei,
-			GasToken:   gasTokenIDs[tokens.ETH],
+			GasToken:   gasTokenIDs[tokenmeta.ETH],
 		},
 		evmchain.IDSepolia: {
 			ID:         evmchain.IDSepolia,
 			BaseBytes:  defaultBaseBytes,
 			GasPerByte: defaultGasPerByteGwei,
-			GasToken:   gasTokenIDs[tokens.ETH],
+			GasToken:   gasTokenIDs[tokenmeta.ETH],
 		},
 
 		// Ephemeral chains.
@@ -162,31 +162,31 @@ var (
 			ID:         evmchain.IDOmniDevnet,
 			BaseBytes:  defaultBaseBytes,
 			GasPerByte: defaultGasPerByteGwei,
-			GasToken:   gasTokenIDs[tokens.OMNI],
+			GasToken:   gasTokenIDs[tokenmeta.OMNI],
 		},
 		evmchain.IDMockL1: {
 			ID:         evmchain.IDMockL1,
 			BaseBytes:  defaultBaseBytes,
 			GasPerByte: defaultGasPerByteGwei,
-			GasToken:   gasTokenIDs[tokens.ETH],
+			GasToken:   gasTokenIDs[tokenmeta.ETH],
 		},
 		evmchain.IDMockL2: {
 			ID:         evmchain.IDMockL2,
 			BaseBytes:  defaultBaseBytes,
 			GasPerByte: defaultGasPerByteGwei,
-			GasToken:   gasTokenIDs[tokens.ETH],
+			GasToken:   gasTokenIDs[tokenmeta.ETH],
 		},
 		evmchain.IDMockOp: {
 			ID:         evmchain.IDMockOp,
 			BaseBytes:  defaultBaseBytes,
 			GasPerByte: defaultGasPerByteGwei,
-			GasToken:   gasTokenIDs[tokens.ETH],
+			GasToken:   gasTokenIDs[tokenmeta.ETH],
 		},
 		evmchain.IDMockArb: {
 			ID:         evmchain.IDMockArb,
 			BaseBytes:  defaultBaseBytes,
 			GasPerByte: defaultGasPerByteGwei,
-			GasToken:   gasTokenIDs[tokens.ETH],
+			GasToken:   gasTokenIDs[tokenmeta.ETH],
 		},
 	}
 )

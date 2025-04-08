@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/omni-network/omni/lib/tokens"
-	"github.com/omni-network/omni/lib/tokens/coingecko"
+	"github.com/omni-network/omni/lib/tokenmeta"
+	"github.com/omni-network/omni/lib/tokenpricer/coingecko"
 	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/stretchr/testify/require"
@@ -29,20 +29,20 @@ func TestIntegration(t *testing.T) {
 	require.True(t, ok)
 
 	c := coingecko.New(coingecko.WithAPIKey(apikey))
-	prices, err := c.Prices(t.Context(), tokens.OMNI, tokens.ETH)
+	prices, err := c.Prices(t.Context(), tokenmeta.OMNI, tokenmeta.ETH)
 	tutil.RequireNoError(t, err)
 	require.NotEmpty(t, prices)
 }
 
 type testCase struct {
 	name         string
-	invalid      bool         // invalid response
-	empty        bool         // empty response
-	omitToken    tokens.Token // omit a requested token
-	renameToken  tokens.Token // rename a requested token
-	omitCurrency string       // omit a requested currency
-	zeros        bool         // include zero prices
-	negatives    bool         // include negative prices
+	invalid      bool           // invalid response
+	empty        bool           // empty response
+	omitToken    tokenmeta.Meta // omit a requested token
+	renameToken  tokenmeta.Meta // rename a requested token
+	omitCurrency string         // omit a requested currency
+	zeros        bool           // include zero prices
+	negatives    bool           // include negative prices
 }
 
 func TestGetPrice(t *testing.T) {
@@ -51,10 +51,10 @@ func TestGetPrice(t *testing.T) {
 	tests := []testCase{
 		{name: "success"},
 		{name: "empty", empty: true},
-		{name: "omit eth", omitToken: tokens.ETH},
-		{name: "rename eth", renameToken: tokens.ETH},
-		{name: "omit omni", omitToken: tokens.OMNI},
-		{name: "rename omni", renameToken: tokens.OMNI},
+		{name: "omit eth", omitToken: tokenmeta.ETH},
+		{name: "rename eth", renameToken: tokenmeta.ETH},
+		{name: "omit omni", omitToken: tokenmeta.OMNI},
+		{name: "rename omni", renameToken: tokenmeta.OMNI},
 		{name: "omit usd", omitCurrency: "usd"},
 		{name: "zeros", zeros: true},
 		{name: "negatives", negatives: true},
@@ -64,8 +64,8 @@ func TestGetPrice(t *testing.T) {
 		t.Helper()
 		return (test.invalid ||
 			test.empty ||
-			test.omitToken != tokens.Token{} ||
-			test.renameToken != tokens.Token{} ||
+			test.omitToken != tokenmeta.Meta{} ||
+			test.renameToken != tokenmeta.Meta{} ||
 			test.omitCurrency != "" ||
 			test.zeros ||
 			test.negatives)
@@ -79,7 +79,7 @@ func TestGetPrice(t *testing.T) {
 			defer server.Close()
 
 			c := coingecko.New(coingecko.WithHost(server.URL), coingecko.WithAPIKey(token))
-			prices, err := c.Prices(t.Context(), tokens.OMNI, tokens.ETH)
+			prices, err := c.Prices(t.Context(), tokenmeta.OMNI, tokenmeta.ETH)
 
 			if shouldErr(t, test) {
 				require.Error(t, err)
@@ -87,8 +87,8 @@ func TestGetPrice(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			require.InEpsilon(t, prices[tokens.OMNI], servedPrices[tokens.OMNI.CoingeckoID]["usd"], 0.01)
-			require.InEpsilon(t, prices[tokens.ETH], servedPrices[tokens.ETH.CoingeckoID]["usd"], 0.01)
+			require.InEpsilon(t, prices[tokenmeta.OMNI], servedPrices[tokenmeta.OMNI.CoingeckoID]["usd"], 0.01)
+			require.InEpsilon(t, prices[tokenmeta.ETH], servedPrices[tokenmeta.ETH.CoingeckoID]["usd"], 0.01)
 		})
 	}
 }

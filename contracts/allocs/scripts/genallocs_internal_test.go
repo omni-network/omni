@@ -8,7 +8,7 @@ import (
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts/omnitoken"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tokenmeta"
 
 	"github.com/stretchr/testify/require"
 )
@@ -22,7 +22,7 @@ func TestBridgeBalance(t *testing.T) {
 	// mainnet prefunds
 	mp := bi.Zero()
 	for _, role := range eoa.AllRoles() {
-		th, ok := eoa.GetFundThresholds(tokens.OMNI, netconf.Mainnet, role)
+		th, ok := eoa.GetFundThresholds(tokenmeta.OMNI, netconf.Mainnet, role)
 		if !ok {
 			continue
 		}
