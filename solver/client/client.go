@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -13,57 +14,104 @@ import (
 
 const (
 	endpointCheck = "/api/v1/check"
+	endpointQuote = "/api/v1/quote"
 )
 
-type Client struct {
-	host string
+// New creates a new solver Client.
+func New(host string, opts ...func(*Client)) Client {
+	cl := Client{
+		host:         host,
+		debugReqBody: func([]byte) {},
+		debugResBody: func([]byte) {},
+	}
+
+	for _, opt := range opts {
+		opt(&cl)
+	}
+
+	return cl
 }
 
-// New creates a new solver Client.
-func New(host string) Client {
-	return Client{
-		host: host,
+func WithDebugBodies(debugReqBody, debugResBody func([]byte)) func(*Client) {
+	return func(c *Client) {
+		c.debugReqBody = debugReqBody
+		c.debugResBody = debugResBody
 	}
 }
 
-// Check runs solver check on the provided request and returns solver's response.
+type Client struct {
+	host         string
+	debugReqBody func([]byte)
+	debugResBody func([]byte)
+}
+
+// Check calls the check API endpoint returning whether the order will be rejected or not.
 func (c Client) Check(ctx context.Context, req types.CheckRequest) (types.CheckResponse, error) {
+	var res types.CheckResponse
+
+	if err := c.do(ctx, endpointCheck, req, &res); err != nil {
+		return types.CheckResponse{}, err
+	}
+
+	return res, nil
+}
+
+// Quote calls the quote API endpoint returning the required deposit or expense amounts.
+func (c Client) Quote(ctx context.Context, req types.QuoteRequest) (types.QuoteResponse, error) {
+	var res types.QuoteResponse
+
+	if err := c.do(ctx, endpointQuote, req, &res); err != nil {
+		return types.QuoteResponse{}, err
+	}
+
+	return res, nil
+}
+
+func (c Client) do(ctx context.Context, endpoint string, req any, res any) error {
 	body, err := json.Marshal(req)
 	if err != nil {
-		return types.CheckResponse{}, errors.Wrap(err, "marshal request")
+		return errors.Wrap(err, "marshal request")
 	}
 
-	uri, err := c.uri(endpointCheck)
+	c.debugReqBody(body)
+
+	uri, err := c.uri(endpoint)
 	if err != nil {
-		return types.CheckResponse{}, err
+		return err
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, uri, bytes.NewReader(body))
 	if err != nil {
-		return types.CheckResponse{}, errors.Wrap(err, "create request")
+		return errors.Wrap(err, "create request")
 	}
 
 	resp, err := http.DefaultClient.Do(httpReq)
 	if err != nil {
-		return types.CheckResponse{}, errors.Wrap(err, "http req")
+		return errors.Wrap(err, "http req")
 	}
 	defer resp.Body.Close()
 
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return errors.Wrap(err, "read response")
+	}
+
+	c.debugResBody(respBody)
+
 	if resp.StatusCode != http.StatusOK {
 		var jsonError types.JSONErrorResponse
-		if err := json.NewDecoder(resp.Body).Decode(&jsonError); err == nil {
-			return types.CheckResponse{}, errors.New(jsonError.Error.Message, "status", resp.StatusCode)
+		if err := json.Unmarshal(respBody, &jsonError); err == nil {
+			return errors.New(jsonError.Error.Message, "status", resp.StatusCode)
 		}
 
-		return types.CheckResponse{}, errors.New("non-json-error response", "status", resp.StatusCode)
+		return errors.New("non-json-error response", "status", resp.StatusCode)
 	}
 
-	var response types.CheckResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return types.CheckResponse{}, errors.Wrap(err, "decode response")
+	if err := json.Unmarshal(respBody, res); err != nil {
+		return errors.Wrap(err, "decode response")
 	}
 
-	return response, nil
+	return nil
 }
 
 func (c Client) uri(path string) (string, error) {

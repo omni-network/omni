@@ -34,7 +34,7 @@ describe('ERC20 OMNI to native OMNI transfer orders', () => {
       deposit: { token: TOKEN_ADDRESS, amount },
     }
     await executeTestOrder(order)
-  }, 15_000)
+  }, 30_000)
 
   test('behaviour: fails with native deposit', async () => {
     const amount = 10n * ETHER

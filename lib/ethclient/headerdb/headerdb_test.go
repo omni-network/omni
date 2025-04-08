@@ -63,6 +63,52 @@ func TestGetSetPrune(t *testing.T) {
 	assertExists(ctx, t, db, h4, h5)
 }
 
+// TestPruneDeadlock ensures that the pruning process doesn't deadlock
+// since MemDB doesn't support writing while iterating.
+func TestPruneDeadlock(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+
+	db, err := headerdb.New(dbm.NewMemDB())
+	require.NoError(t, err)
+
+	const total = 2000
+	parent := fuzzHeader(t, 0, nil)
+	for i := range total {
+		h := fuzzHeader(t, uint64(i+1), parent)
+		require.NoError(t, db.Set(ctx, h))
+		parent = h
+	}
+
+	const limit = 1000
+	pruned, err := db.MaybePrune(ctx, limit)
+	require.NoError(t, err)
+	require.Equal(t, total-limit, pruned)
+}
+
+// TestDeleteFromDeadlock ensures that the deleteFrom doesn't deadlock
+// since MemDB doesn't support writing while iterating.
+func TestDeleteFromDeadlock(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+
+	db, err := headerdb.New(dbm.NewMemDB())
+	require.NoError(t, err)
+
+	const total = 2000
+	parent := fuzzHeader(t, 0, nil)
+	for i := range total {
+		h := fuzzHeader(t, uint64(i+1), parent)
+		require.NoError(t, db.Set(ctx, h))
+		parent = h
+	}
+
+	const from = 1000
+	pruned, err := db.DeleteFrom(ctx, from)
+	require.NoError(t, err)
+	require.Equal(t, total-from+1, pruned) // Add 1 since from is inclusive
+}
+
 func TestAddAndReorg(t *testing.T) {
 	t.Parallel()
 

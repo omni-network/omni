@@ -39,8 +39,8 @@ importers:
         specifier: github:dmfxyz/murky
         version: https://codeload.github.com/dmfxyz/murky/tar.gz/6f67641219549ca78f575a12493e25fe193da727
       solady:
-        specifier: ^0.1.12
-        version: 0.1.12
+        specifier: ^0.1.14
+        version: 0.1.14
       solmate:
         specifier: ^6.8.0
         version: 6.8.0
@@ -1183,8 +1183,8 @@ packages:
     resolution: {integrity: sha512-fDW/EZ6Q9RiO8eFG8Hj+7u/oW+XrPTIChwCOM2+th2A6OblDtYYIpve9m+KvI9Z4C9qSEXlaGR6bTEYHReuglA==}
     engines: {node: '>= 0.4'}
 
-  solady@0.1.12:
-    resolution: {integrity: sha512-wfgSFhxPKJzrd2jsxe9u7/XWIaiFzJcS8Jy8uc/9H2uSwGZ/XM7IxfVaZohJj/P9gTBdkFRJ7xzsyTFy7Hz7CA==}
+  solady@0.1.14:
+    resolution: {integrity: sha512-Gowq1vzo1xGErRFvtV5W10tvyeq9UafGVWh0WisWvJ04fx5gn4dmakwnzEIYr76Am9csHcL1jMhsuuc5/rmEsg==}
 
   solc@0.8.26:
     resolution: {integrity: sha512-yiPQNVf5rBFHwN6SIf3TUUvVAFKcQqmSUFeq+fb6pNRCo0ZCgpYOZDi3BVoezCPIAcKrVYd/qXlBLUP9wVrZ9g==}
@@ -2797,7 +2797,7 @@ snapshots:
       get-intrinsic: 1.2.4
       object-inspect: 1.13.2
 
-  solady@0.1.12: {}
+  solady@0.1.14: {}
 
   solc@0.8.26(debug@4.4.0):
     dependencies:
