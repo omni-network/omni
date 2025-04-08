@@ -1,0 +1,39 @@
+name: SDK unit test
+
+on:
+  workflow_call:
+
+jobs:
+  sdk-unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install foundry
+        uses: ./.github/actions/setup-foundry
+      - name: Install node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install contracts dependencies
+        run: pnpm install
+        working-directory: contracts
+      - name: Inspect SolverNetInbox contract
+        run: forge inspect --json src/SolverNetInbox.sol:SolverNetInbox abi > ../sdk/packages/react/test/assets/SolverNetInbox.json
+        working-directory: contracts
+      - name: Inspect SolverNetMiddleman contract
+        run: forge inspect --json src/SolverNetMiddleman.sol:SolverNetMiddleman abi > ../sdk/packages/react/test/assets/SolverNetMiddleman.json
+        working-directory: contracts
+      - name: Inspect SolverNetOutbox contract
+        run: forge inspect --json src/SolverNetOutbox.sol:SolverNetOutbox abi > ../sdk/packages/react/test/assets/SolverNetOutbox.json
+        working-directory: contracts
+
+      - name: Install SDK dependencies
+        run: pnpm install
+        working-directory: sdk
+      - name: Run SDK unit tests
+        run: pnpm run test:unit
+        working-directory: sdk

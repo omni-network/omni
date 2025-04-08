@@ -34,3 +34,5 @@ jobs:
   e2e-test-admin:
     uses: ./.github/workflows/e2etestadmin.yaml
     needs: [release-snapshot]
+  sdk-unit-tests:
+    uses: ./.github/workflows/sdk-unit-test.yaml
