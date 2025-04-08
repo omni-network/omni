@@ -20,6 +20,7 @@ import (
 	"github.com/omni-network/omni/monitor/flowgen/bridging"
 	"github.com/omni-network/omni/monitor/flowgen/symbiotic"
 	"github.com/omni-network/omni/monitor/flowgen/types"
+	sclient "github.com/omni-network/omni/solver/client"
 	stokens "github.com/omni-network/omni/solver/tokens"
 	stypes "github.com/omni-network/omni/solver/types"
 
@@ -51,7 +52,9 @@ func Start(
 
 	owner := eoa.MustAddress(network.ID, eoa.RoleFlowgen)
 
-	return startWithBackends(ctx, network, backends, owner, solverAddress)
+	scl := sclient.New(solverAddress)
+
+	return startWithBackends(ctx, network, backends, owner, scl)
 }
 
 func startWithBackends(
@@ -59,11 +62,11 @@ func startWithBackends(
 	network netconf.Network,
 	backends ethbackend.Backends,
 	owner common.Address,
-	solverAddress string,
+	scl sclient.Client,
 ) error {
-	j1 := bridging.Jobs(network.ID, backends, owner, solverAddress)
+	j1 := bridging.Jobs(network.ID, backends, owner, scl)
 
-	j2, err := symbiotic.Jobs(ctx, backends, network.ID, owner)
+	j2, err := symbiotic.Jobs(ctx, backends, network.ID, owner, scl)
 	if err != nil {
 		return errors.Wrap(err, "symbiotic jobs")
 	}

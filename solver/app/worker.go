@@ -19,7 +19,7 @@ import (
 type asyncWorkFunc func(context.Context, *job.Job) error
 
 func newAsyncWorkerFunc(
-	jobDB job.DB,
+	jobDB *job.DB,
 	procs map[uint64]eventProcFunc,
 	namer func(uint64) string,
 ) asyncWorkFunc {
@@ -76,7 +76,7 @@ func newAsyncWorkerFunc(
 	}
 }
 
-func processJobOnce(ctx context.Context, jobDB job.DB, proc eventProcFunc, jobID uint64, elog types.Log) error {
+func processJobOnce(ctx context.Context, jobDB *job.DB, proc eventProcFunc, jobID uint64, elog types.Log) error {
 	if ok, err := jobDB.Exists(ctx, jobID); err != nil {
 		return err
 	} else if !ok {

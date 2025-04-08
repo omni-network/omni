@@ -50,7 +50,7 @@ test('default: returns true when outbox read is truthy', async () => {
     resolvedOrder,
   })
 
-  await waitFor(() => expect(result.current.data).toBeTruthy())
+  await waitFor(() => expect(result.current.data).toBe(true))
 })
 
 test('behaviour: no exception if contract read fails', () => {
@@ -72,7 +72,7 @@ test('behaviour: no exception if contract read fails', () => {
   )
 
   expect(result.current.status).toBe('error')
-  expect(result.current.isError).toBeTruthy()
+  expect(result.current.isError).toBe(true)
   expect(result.current.data).toBeUndefined()
   expect(useReadContract).toHaveBeenCalled()
 })
@@ -89,7 +89,7 @@ test('behaviour: no contract read when resolvedOrder is undefined', async () => 
 
   expect(result.current.data).toBeUndefined()
   expect(result.current.status).toBe('pending')
-  expect(result.current.isFetched).toBeFalsy()
+  expect(result.current.isFetched).toBe(false)
   // once on mount
   expect(useReadContract).toHaveBeenCalledOnce()
 })

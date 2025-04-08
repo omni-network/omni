@@ -3,10 +3,10 @@ package symbiotic
 import (
 	"context"
 	"fmt"
-	"math/big"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
@@ -15,8 +15,9 @@ import (
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/monitor/flowgen/types"
 	"github.com/omni-network/omni/monitor/flowgen/util"
-	solver "github.com/omni-network/omni/solver/app"
+	sclient "github.com/omni-network/omni/solver/client"
 	stokens "github.com/omni-network/omni/solver/tokens"
+	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -33,6 +34,7 @@ func newJob(
 	backends ethbackend.Backends,
 	networkID netconf.ID,
 	owner common.Address,
+	scl sclient.Client,
 ) (types.Job, bool, error) {
 	addrs, err := contracts.GetAddresses(ctx, networkID)
 	if err != nil {
@@ -76,7 +78,7 @@ func newJob(
 		Cadence:    cadence,
 		SrcChainID: conf.srcChain,
 		OpenOrdersFunc: func(ctx context.Context) ([]types.Result, error) {
-			result, ok, err := openOrder(ctx, backends, networkID, owner, srcChainTkn, dstChainTkn, conf)
+			result, ok, err := openOrder(ctx, scl, backends, networkID, owner, srcChainTkn, dstChainTkn, conf)
 			if err != nil {
 				return nil, errors.Wrap(err, "open order")
 			} else if !ok {
@@ -92,17 +94,27 @@ func newJob(
 // it returns false if no order was opened or an error in case of an error.
 func openOrder(
 	ctx context.Context,
+	scl sclient.Client,
 	backends ethbackend.Backends,
 	networkID netconf.ID,
 	owner common.Address,
 	srcToken, dstToken stokens.Token,
 	conf flowConfig,
 ) (types.Result, bool, error) {
-	expense := solver.TokenAmt{Token: dstToken, Amount: conf.orderSize}
+	quoteReq := stypes.QuoteRequest{
+		SourceChainID:      srcToken.ChainID,
+		DestinationChainID: dstToken.ChainID,
+		Expense: stypes.AddrAmt{
+			Token:  dstToken.Address,
+			Amount: conf.orderAmount,
+		},
+	}
 
-	depositWithFee, err := solver.QuoteDeposit(srcToken, solver.TokenAmt{Token: srcToken, Amount: conf.orderSize})
+	quoteResp, err := scl.Quote(ctx, quoteReq)
 	if err != nil {
 		return types.Result{}, false, errors.Wrap(err, "quote deposit")
+	} else if quoteResp.Rejected {
+		return types.Result{}, false, errors.New("quote rejected", "description", quoteResp.RejectDescription, "reason", quoteResp.RejectCode)
 	}
 
 	abi, err := metaData.GetAbi()
@@ -110,7 +122,7 @@ func openOrder(
 		return types.Result{}, false, errors.Wrap(err, "get abi")
 	}
 
-	data, err := abi.Pack("deposit", owner, expense.Amount)
+	data, err := abi.Pack("deposit", owner, quoteReq.Expense.Amount)
 	if err != nil {
 		return types.Result{}, false, errors.Wrap(err, "packing")
 	}
@@ -118,20 +130,17 @@ func openOrder(
 	orderData := bindings.SolverNetOrderData{
 		Owner:       owner,
 		DestChainId: conf.dstChain,
-		Deposit: solvernet.Deposit{
-			Token:  depositWithFee.Token.Address,
-			Amount: depositWithFee.Amount,
-		},
+		Deposit:     solvernet.Deposit(quoteResp.Deposit),
 		Expenses: []solvernet.Expense{{
-			Token:   expense.Token.Address,
-			Amount:  expense.Amount,
+			Token:   quoteReq.Expense.Token,
+			Amount:  quoteReq.Expense.Amount,
 			Spender: conf.vaultAddr,
 		}},
 		Calls: []bindings.SolverNetCall{
 			solvernet.Call{
 				Target: conf.vaultAddr,
 				Data:   data,
-				Value:  new(big.Int),
+				Value:  bi.Zero(),
 			}.ToBinding(),
 		},
 	}
@@ -150,13 +159,20 @@ var metaData = &bind.MetaData{
 
 // Jobs creates the following jobs:
 // - deposit wstETH from the source to the destination chain.
-func Jobs(ctx context.Context, backends ethbackend.Backends, networkID netconf.ID, owner common.Address) ([]types.Job, error) {
+func Jobs(
+	ctx context.Context,
+	backends ethbackend.Backends,
+	networkID netconf.ID,
+	owner common.Address,
+	scl sclient.Client,
+) ([]types.Job, error) {
 	var jobs []types.Job
 	job, ok, err := newJob(
 		ctx,
 		backends,
 		networkID,
 		owner,
+		scl,
 	)
 	if err != nil {
 		return jobs, errors.Wrap(err, "symbiotic job")

@@ -20,6 +20,7 @@ import (
 	"context"
 	"maps"
 	"slices"
+	"sync"
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -49,6 +50,7 @@ type submitCursorFunc func(ctx context.Context, ref xchain.Ref, stream xchain.St
 
 // Store provides a persisted attestation streamer cursor store.
 type Store struct {
+	mu               sync.RWMutex
 	db               CursorTable
 	submitCursorFunc submitCursorFunc
 	network          netconf.Network
@@ -77,6 +79,9 @@ func (s *Store) WorkerOffsets(
 	ctx context.Context,
 	destChain uint64,
 ) (map[xchain.ChainVersion]uint64, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	all, err := listAll(ctx, s.db)
 	if err != nil {
 		return nil, err
@@ -110,6 +115,9 @@ func (s *Store) Insert(
 	attestOffset uint64,
 	submittedMsgs map[xchain.StreamID][]xchain.Msg,
 ) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	// Get the highest stream offset for each shard
 	offsetsByShard := make(map[uint64]uint64)
 	for streamID, msgs := range submittedMsgs {
@@ -187,6 +195,9 @@ func (s *Store) confirmForever(ctx context.Context) {
 // - if previous cursor is confirmed
 // - and if all xmsgs are submitted and finalized.
 func (s *Store) confirmOnce(ctx context.Context) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	all, err := listAll(ctx, s.db)
 	if err != nil {
 		return errors.Wrap(err, "listAll all cursors")
@@ -252,6 +263,9 @@ func (s *Store) trimForever(ctx context.Context) {
 // trimOnce iterates over all streamer's cursors and deletes all initial confirmed
 // cursors, except the last confirmed one before any unconfirmed cursors.
 func (s *Store) trimOnce(ctx context.Context) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	all, err := listAll(ctx, s.db)
 	if err != nil {
 		return errors.Wrap(err, "listAll all cursors")

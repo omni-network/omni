@@ -1,8 +1,10 @@
 import { testAccount } from '@omni-network/test-utils'
-import { type Hex, parseEther, toBytes, toHex } from 'viem'
+import { type Hex, parseEther, toBytes, toHex, zeroAddress } from 'viem'
 import { arbitrum, base, optimism } from 'viem/chains'
 import { http, createConfig, mock } from 'wagmi'
 import { mainnet } from 'wagmi/chains'
+import type { OptionalAbis } from '../src/types/abi.js'
+import type { Order } from '../src/types/order.js'
 
 ////////////////////////////////////////
 //// TEST DATA
@@ -76,3 +78,22 @@ export const resolvedOrder = {
     },
   ] as readonly FillInstruction[],
 } as const
+
+export const order: Order<OptionalAbis> = {
+  srcChainId: 1,
+  destChainId: 2,
+  deposit: {
+    token: zeroAddress,
+    amount: 100n,
+  },
+  expense: {
+    token: zeroAddress,
+    amount: 90n,
+  },
+  calls: [],
+}
+
+export const quote = {
+  deposit: { token: zeroAddress, amount: '100' },
+  expense: { token: zeroAddress, amount: '99' },
+}
