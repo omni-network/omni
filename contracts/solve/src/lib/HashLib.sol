@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import { IERC7683 } from "../erc7683/IERC7683.sol";
 import { SolverNet } from "./SolverNet.sol";
 
-library Permit2Lib {
+library HashLib {
     /**
      * @notice Type for the Deposit struct.
      */
@@ -120,7 +120,7 @@ library Permit2Lib {
      * @param deposit Deposit to hash.
      * @return _ Hashed deposit.
      */
-    function _hashDeposit(SolverNet.Deposit memory deposit) internal pure returns (bytes32) {
+    function hashDeposit(SolverNet.Deposit memory deposit) internal pure returns (bytes32) {
         return keccak256(abi.encode(DEPOSIT_TYPEHASH, deposit.token, deposit.amount));
     }
 
@@ -129,7 +129,7 @@ library Permit2Lib {
      * @param call Call to hash.
      * @return _ Hashed call.
      */
-    function _hashCall(SolverNet.Call memory call) internal pure returns (bytes32) {
+    function hashCall(SolverNet.Call memory call) internal pure returns (bytes32) {
         return keccak256(abi.encode(CALL_TYPEHASH, call.target, call.selector, call.value, keccak256(call.params)));
     }
 
@@ -138,10 +138,10 @@ library Permit2Lib {
      * @param calls Calls to hash.
      * @return _ Hashed calls.
      */
-    function _hashCalls(SolverNet.Call[] memory calls) internal pure returns (bytes32) {
+    function hashCalls(SolverNet.Call[] memory calls) internal pure returns (bytes32) {
         bytes32[] memory callHashes = new bytes32[](calls.length);
         for (uint256 i; i < calls.length; ++i) {
-            callHashes[i] = _hashCall(calls[i]);
+            callHashes[i] = hashCall(calls[i]);
         }
         return keccak256(abi.encodePacked(callHashes));
     }
@@ -151,7 +151,7 @@ library Permit2Lib {
      * @param expense Token expense to hash.
      * @return _ Hashed token expense.
      */
-    function _hashTokenExpense(SolverNet.TokenExpense memory expense) internal pure returns (bytes32) {
+    function hashTokenExpense(SolverNet.TokenExpense memory expense) internal pure returns (bytes32) {
         return keccak256(abi.encode(TOKENEXPENSE_TYPEHASH, expense.spender, expense.token, expense.amount));
     }
 
@@ -160,10 +160,10 @@ library Permit2Lib {
      * @param expenses Token expenses to hash.
      * @return _ Hashed token expenses.
      */
-    function _hashTokenExpenses(SolverNet.TokenExpense[] memory expenses) internal pure returns (bytes32) {
+    function hashTokenExpenses(SolverNet.TokenExpense[] memory expenses) internal pure returns (bytes32) {
         bytes32[] memory expenseHashes = new bytes32[](expenses.length);
         for (uint256 i; i < expenses.length; ++i) {
-            expenseHashes[i] = _hashTokenExpense(expenses[i]);
+            expenseHashes[i] = hashTokenExpense(expenses[i]);
         }
         return keccak256(abi.encodePacked(expenseHashes));
     }
@@ -173,15 +173,15 @@ library Permit2Lib {
      * @param orderData Order data to hash.
      * @return _ Hashed order data.
      */
-    function _hashOrderData(SolverNet.OrderData memory orderData) internal pure returns (bytes32) {
+    function hashOrderData(SolverNet.OrderData memory orderData) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
                 FULL_ORDERDATA_TYPEHASH,
                 orderData.owner,
                 orderData.destChainId,
-                _hashDeposit(orderData.deposit),
-                _hashCalls(orderData.calls),
-                _hashTokenExpenses(orderData.expenses)
+                hashDeposit(orderData.deposit),
+                hashCalls(orderData.calls),
+                hashTokenExpenses(orderData.expenses)
             )
         );
     }
@@ -192,7 +192,7 @@ library Permit2Lib {
      * @param orderDataHash Hashed order data.
      * @return _ Hashed gasless order.
      */
-    function _hashGaslessOrder(IERC7683.GaslessCrossChainOrder memory order, bytes32 orderDataHash)
+    function hashGaslessOrder(IERC7683.GaslessCrossChainOrder memory order, bytes32 orderDataHash)
         internal
         pure
         returns (bytes32)

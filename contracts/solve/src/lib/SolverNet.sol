@@ -3,7 +3,7 @@ pragma solidity =0.8.24;
 
 library SolverNet {
     /**
-     * @notice OrderData is the SolverNet's ERC7683 order data encoding, used when opening an order.
+     * @notice OrderData is SolverNet's ERC7683 order data encoding, used when opening an order.
      *  It describes the calls to execute, the expenses required, and the deposit backing the order.
      *
      *  Note that expenses only includes ERC20 expenses, native expenses are inferred from the calls.

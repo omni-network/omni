@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
-import { IOriginSettlerV2 } from "../erc7683/IOriginSettlerV2.sol";
+import { IOriginSettler } from "../erc7683/IOriginSettler.sol";
 import { SolverNet } from "../lib/SolverNet.sol";
 
-interface ISolverNetInboxV2 is IOriginSettlerV2 {
+interface ISolverNetInboxV2 is IOriginSettler {
     // Validation errors
     error InvalidOrderTypehash();
     error InvalidOrderData();

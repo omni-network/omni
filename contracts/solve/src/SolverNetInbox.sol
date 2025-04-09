@@ -261,7 +261,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      */
     function open(OnchainCrossChainOrder calldata order) external payable whenNotPaused(OPEN) nonReentrant {
         SolverNet.Order memory orderData = _validate(order);
-        _processDeposit(orderData.deposit);
+        _onchainDeposit(orderData.deposit);
         ResolvedCrossChainOrder memory resolved = _openOrder(orderData);
 
         emit FillOriginData(
@@ -527,7 +527,7 @@ contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, Deploye
      * @notice Validate and intake an ERC20 or native deposit.
      * @param deposit Deposit to process.
      */
-    function _processDeposit(SolverNet.Deposit memory deposit) internal {
+    function _onchainDeposit(SolverNet.Deposit memory deposit) internal {
         if (deposit.token == address(0)) {
             if (msg.value != deposit.amount) revert InvalidNativeDeposit();
         } else {

@@ -7,7 +7,7 @@ import { XAppBase } from "core/src/pkg/XAppBase.sol";
 import { IERC7683 } from "../../src/erc7683/IERC7683.sol";
 import { ISolverNetInboxV2 } from "../../src/interfaces/ISolverNetInboxV2.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
-import { Permit2Lib } from "../../src/lib/Permit2Lib.sol";
+import { HashLib } from "../../src/lib/HashLib.sol";
 import { SolverNet } from "../../src/lib/SolverNet.sol";
 import { AddrUtils } from "../../src/lib/AddrUtils.sol";
 import { IPermit2, ISignatureTransfer } from "@uniswap/permit2/src/interfaces/IPermit2.sol";
@@ -204,7 +204,7 @@ contract MockSolverNetInbox is ReentrancyGuard, DeployedAt, XAppBase, ISolverNet
      * @param user Address of the user the order is opened for.
      */
     function getNextOnchainOrderId(address user) external view returns (bytes32) {
-        return _getOrderId(false, user, _onchainUserNonce[user]);
+        return _getOrderId({ gasless: false, user: user, nonce: _onchainUserNonce[user] });
     }
 
     /**
@@ -213,7 +213,7 @@ contract MockSolverNetInbox is ReentrancyGuard, DeployedAt, XAppBase, ISolverNet
      * @param nonce Nonce of the order.
      */
     function getNextGaslessOrderId(address user, uint256 nonce) external view returns (bytes32) {
-        return _getOrderId(true, user, nonce);
+        return _getOrderId({ gasless: true, user: user, nonce: nonce });
     }
 
     /**
@@ -256,7 +256,11 @@ contract MockSolverNetInbox is ReentrancyGuard, DeployedAt, XAppBase, ISolverNet
     function resolve(OnchainCrossChainOrder calldata order) public view returns (ResolvedCrossChainOrder memory) {
         SolverNet.Order memory _order = _validate(order);
         address user = _order.header.owner;
-        return _resolve(_order, _getOrderId(false, user, _onchainUserNonce[user]), 0);
+        return _resolve({
+            order: _order,
+            id: _getOrderId({ gasless: false, user: user, nonce: _onchainUserNonce[user] }),
+            openDeadline: 0
+        });
     }
 
     /**
@@ -270,7 +274,11 @@ contract MockSolverNetInbox is ReentrancyGuard, DeployedAt, XAppBase, ISolverNet
     {
         (, SolverNet.Order memory _order) = _validateFor(order);
         address user = order.user;
-        return _resolve(_order, _getOrderId(true, user, order.nonce), order.openDeadline);
+        return _resolve({
+            order: _order,
+            id: _getOrderId({ gasless: true, user: user, nonce: order.nonce }),
+            openDeadline: order.openDeadline
+        });
     }
 
     /**
@@ -281,9 +289,10 @@ contract MockSolverNetInbox is ReentrancyGuard, DeployedAt, XAppBase, ISolverNet
     function open(OnchainCrossChainOrder calldata order) external payable whenNotPaused(OPEN) nonReentrant {
         SolverNet.Order memory _order = _validate(order);
         address user = _order.header.owner;
-        bytes32 id = _getOrderId(false, user, _onchainUserNonce[user]++);
+        bytes32 id = _getOrderId({ gasless: false, user: user, nonce: _onchainUserNonce[user]++ });
 
-        _open(_order, id, msg.sender, 0, false);
+        _onchainDeposit(_order.deposit, msg.sender);
+        _open({ order: _order, id: id, openDeadline: 0 });
     }
 
     /**
@@ -298,12 +307,12 @@ contract MockSolverNetInbox is ReentrancyGuard, DeployedAt, XAppBase, ISolverNet
         whenNotPaused(OPEN)
         nonReentrant
     {
-        address user = order.user;
         (SolverNet.OrderData memory orderData, SolverNet.Order memory _order) = _validateFor(order);
-        _permit2(order, orderData, signature);
+        address user = order.user;
+        bytes32 id = _getOrderId({ gasless: true, user: user, nonce: order.nonce });
 
-        bytes32 id = _getOrderId(true, user, order.nonce);
-        _open(_order, id, user, order.openDeadline, true);
+        _gaslessDeposit(order, orderData, signature);
+        _open({ order: _order, id: id, openDeadline: order.openDeadline });
     }
 
     /**
@@ -409,7 +418,8 @@ contract MockSolverNetInbox is ReentrancyGuard, DeployedAt, XAppBase, ISolverNet
      */
     function _validate(OnchainCrossChainOrder calldata order) internal view returns (SolverNet.Order memory) {
         _validateOnchainOrder(order);
-        (, SolverNet.Order memory _order) = _validateOrderData(order.orderData, order.fillDeadline, address(0));
+        (, SolverNet.Order memory _order) =
+            _validateOrderData({ orderDataBytes: order.orderData, fillDeadline: order.fillDeadline, user: address(0) });
         return _order;
     }
 
@@ -423,7 +433,8 @@ contract MockSolverNetInbox is ReentrancyGuard, DeployedAt, XAppBase, ISolverNet
         returns (SolverNet.OrderData memory, SolverNet.Order memory)
     {
         _validateGaslessOrder(order);
-        return _validateOrderData(order.orderData, order.fillDeadline, order.user);
+        return
+            _validateOrderData({ orderDataBytes: order.orderData, fillDeadline: order.fillDeadline, user: order.user });
     }
 
     /**
@@ -433,8 +444,8 @@ contract MockSolverNetInbox is ReentrancyGuard, DeployedAt, XAppBase, ISolverNet
     function _validateOnchainOrder(OnchainCrossChainOrder calldata order) internal view {
         if (order.fillDeadline <= block.timestamp) revert InvalidFillDeadline();
         if (
-            order.orderDataType != Permit2Lib.OLD_ORDERDATA_TYPEHASH
-                && order.orderDataType != Permit2Lib.FULL_ORDERDATA_TYPEHASH
+            order.orderDataType != HashLib.OLD_ORDERDATA_TYPEHASH
+                && order.orderDataType != HashLib.FULL_ORDERDATA_TYPEHASH
         ) {
             revert InvalidOrderTypehash();
         }
@@ -453,7 +464,7 @@ contract MockSolverNetInbox is ReentrancyGuard, DeployedAt, XAppBase, ISolverNet
             revert InvalidOpenDeadline();
         }
         if (order.fillDeadline <= block.timestamp) revert InvalidFillDeadline();
-        if (order.orderDataType != Permit2Lib.FULL_ORDERDATA_TYPEHASH) revert InvalidOrderTypehash();
+        if (order.orderDataType != HashLib.FULL_ORDERDATA_TYPEHASH) revert InvalidOrderTypehash();
         if (order.orderData.length == 0) revert InvalidOrderData();
     }
 
@@ -623,14 +634,13 @@ contract MockSolverNetInbox is ReentrancyGuard, DeployedAt, XAppBase, ISolverNet
      * @notice Validate and intake an ERC20 or native deposit.
      * @param deposit Deposit to process.
      * @param from Address to retrieve the deposit from.
-     * @param gasless Whether the order is gasless.
      */
-    function _processDeposit(SolverNet.Deposit memory deposit, address from, bool gasless) internal {
+    function _onchainDeposit(SolverNet.Deposit memory deposit, address from) internal {
         if (deposit.token == address(0)) {
             if (msg.value != deposit.amount) revert InvalidNativeDeposit();
         } else {
             if (msg.value > 0) revert InvalidNativeDeposit();
-            if (!gasless) deposit.token.safeTransferFrom2(from, address(this), deposit.amount);
+            deposit.token.safeTransferFrom2(from, address(this), deposit.amount);
         }
     }
 
@@ -640,43 +650,46 @@ contract MockSolverNetInbox is ReentrancyGuard, DeployedAt, XAppBase, ISolverNet
      * @param orderData Order data to validate.
      * @param signature Signature to validate.
      */
-    function _permit2(
+    function _gaslessDeposit(
         GaslessCrossChainOrder calldata order,
         SolverNet.OrderData memory orderData,
         bytes calldata signature
     ) internal {
-        ISignatureTransfer.TokenPermissions memory perms =
-            ISignatureTransfer.TokenPermissions({ token: orderData.deposit.token, amount: orderData.deposit.amount });
-        ISignatureTransfer.PermitTransferFrom memory permit = ISignatureTransfer.PermitTransferFrom({
-            permitted: perms,
-            nonce: order.nonce,
-            deadline: order.openDeadline
-        });
-        ISignatureTransfer.SignatureTransferDetails memory details = ISignatureTransfer.SignatureTransferDetails({
-            to: address(this),
-            requestedAmount: orderData.deposit.amount
-        });
+        if (orderData.deposit.token != address(0)) {
+            if (msg.value > 0) revert InvalidNativeDeposit();
 
-        bytes32 orderDataHash = Permit2Lib._hashOrderData(orderData);
-        bytes32 orderHash = Permit2Lib._hashGaslessOrder(order, orderDataHash);
+            ISignatureTransfer.TokenPermissions memory perms = ISignatureTransfer.TokenPermissions({
+                token: orderData.deposit.token,
+                amount: orderData.deposit.amount
+            });
+            ISignatureTransfer.PermitTransferFrom memory permit = ISignatureTransfer.PermitTransferFrom({
+                permitted: perms,
+                nonce: order.nonce,
+                deadline: order.openDeadline
+            });
+            ISignatureTransfer.SignatureTransferDetails memory details = ISignatureTransfer.SignatureTransferDetails({
+                to: address(this),
+                requestedAmount: orderData.deposit.amount
+            });
 
-        PERMIT2.permitWitnessTransferFrom(
-            permit, details, order.user, orderHash, Permit2Lib.PERMIT2_ORDER_TYPE, signature
-        );
+            bytes32 orderDataHash = HashLib.hashOrderData(orderData);
+            bytes32 orderHash = HashLib.hashGaslessOrder(order, orderDataHash);
+
+            PERMIT2.permitWitnessTransferFrom(
+                permit, details, order.user, orderHash, HashLib.PERMIT2_ORDER_TYPE, signature
+            );
+        } else if (msg.value != orderData.deposit.amount) {
+            revert InvalidNativeDeposit();
+        }
     }
 
     /**
      * @dev Opens a new order by retrieving the deposit and initializing its state.
      * @param order SolverNet order to open.
      * @param id ID of the order.
-     * @param user Address of the user paying for the order.
      * @param openDeadline Open deadline of the order.
-     * @param gasless Whether the order is gasless.
      */
-    function _open(SolverNet.Order memory order, bytes32 id, address user, uint32 openDeadline, bool gasless)
-        internal
-    {
-        _processDeposit(order.deposit, user, gasless);
+    function _open(SolverNet.Order memory order, bytes32 id, uint32 openDeadline) internal {
         ResolvedCrossChainOrder memory resolved = _openOrder(order, id, openDeadline);
 
         emit FillOriginData(
