@@ -3,7 +3,7 @@ package queryutil
 import (
 	"context"
 
-	"github.com/omni-network/omni/halo/app/upgrades"
+	"github.com/omni-network/omni/halo/app/upgrades/static"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/errors"
 )
@@ -14,7 +14,7 @@ import (
 // This is due to CosmosSDK not providing an API to actually fetch applied upgrades :(.
 func CurrentUpgrade(ctx context.Context, cprov cchain.Provider) (string, error) {
 	var latest string
-	for _, upgrade := range upgrades.AllUpgradeNames() {
+	for _, upgrade := range static.UpgradeNames {
 		plan, ok, err := cprov.AppliedPlan(ctx, upgrade)
 		if err != nil {
 			return "", errors.Wrap(err, "fetching applied plan")
@@ -37,5 +37,5 @@ func NextUpgrade(ctx context.Context, cprov cchain.Provider) (string, bool, erro
 		return "", false, err
 	}
 
-	return upgrades.NextUpgrade(current)
+	return static.NextUpgrade(current)
 }

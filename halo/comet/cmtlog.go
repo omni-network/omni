@@ -1,4 +1,4 @@
-package app
+package comet
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	cmtlog "github.com/cometbft/cometbft/libs/log"
 )
 
-var _ cmtlog.Logger = (*cmtLogger)(nil)
+var _ cmtlog.Logger = (*logger)(nil)
 
 const (
 	levelError = iota + 1
@@ -42,26 +42,26 @@ var dropCometDebugs = map[string]bool{
 	"TrySend":              true,
 }
 
-// cmtLogger implements cmtlog.Logger by using the omni logging pattern.
+// logger implements cmtlog.Logger by using the omni logging pattern.
 // Comet log level is controlled separately in config.toml, since comet logs are very noisy.
-type cmtLogger struct {
+type logger struct {
 	ctx   context.Context //nolint:containedctx // This is a wrapper around the omni logger which is context based.
 	level int
 }
 
-func NewCmtLogger(ctx context.Context, levelStr string) (cmtlog.Logger, error) {
+func NewLogger(ctx context.Context, levelStr string) (cmtlog.Logger, error) {
 	level, ok := levels[strings.ToLower(levelStr)]
 	if !ok {
-		return cmtLogger{}, errors.New("invalid comet log level", "level", levelStr)
+		return logger{}, errors.New("invalid comet log level", "level", levelStr)
 	}
 
-	return cmtLogger{
+	return logger{
 		ctx:   log.WithSkip(ctx, 4), // Skip this logger.
 		level: level,
 	}, nil
 }
 
-func (c cmtLogger) Debug(msg string, keyvals ...any) {
+func (c logger) Debug(msg string, keyvals ...any) {
 	if c.level < levelDebug {
 		return
 	} else if dropCometDebugs[msg] {
@@ -71,14 +71,14 @@ func (c cmtLogger) Debug(msg string, keyvals ...any) {
 	log.Debug(c.ctx, msg, keyvals...)
 }
 
-func (c cmtLogger) Info(msg string, keyvals ...any) {
+func (c logger) Info(msg string, keyvals ...any) {
 	if c.level < levelInfo {
 		return
 	}
 	log.Info(c.ctx, msg, keyvals...)
 }
 
-func (c cmtLogger) Error(msg string, keyvals ...any) {
+func (c logger) Error(msg string, keyvals ...any) {
 	if c.level < levelError {
 		return
 	}
@@ -88,9 +88,24 @@ func (c cmtLogger) Error(msg string, keyvals ...any) {
 	log.Error(c.ctx, msg, err, keyvals...)
 }
 
-func (c cmtLogger) With(keyvals ...any) cmtlog.Logger { //nolint:ireturn // This signature is required by interface.
-	return cmtLogger{
+func (c logger) With(keyvals ...any) cmtlog.Logger { //nolint:ireturn // This signature is required by interface.
+	return logger{
 		ctx:   log.WithCtx(c.ctx, keyvals...),
 		level: c.level,
 	}
+}
+
+// splitOutError splits the keyvals into a slice of keyvals without the error and the error.
+func splitOutError(keyvals []any) ([]any, error) {
+	var remaining []any
+	var err error
+	for i := 0; i < len(keyvals); i += 2 {
+		if keyErr, ok := keyvals[i+1].(error); ok {
+			err = keyErr
+		} else {
+			remaining = append(remaining, keyvals[i], keyvals[i+1])
+		}
+	}
+
+	return remaining, err
 }

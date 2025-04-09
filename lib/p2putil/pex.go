@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	haloapp "github.com/omni-network/omni/halo/app"
+	"github.com/omni-network/omni/halo/comet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
@@ -79,7 +79,7 @@ func makeSwitch(ctx context.Context, network netconf.ID) (*p2p.Switch, error) {
 
 	tranport := p2p.NewMultiplexTransport(nodeInfo, nodeKey, p2p.MConnConfig(cfg))
 
-	cmtlog, err := haloapp.NewCmtLogger(ctx, "debug")
+	cmtlog, err := comet.NewLogger(ctx, "debug")
 	if err != nil {
 		return nil, err
 	}

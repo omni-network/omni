@@ -15,8 +15,8 @@ import (
 	"time"
 
 	haloapp "github.com/omni-network/omni/halo/app"
-	"github.com/omni-network/omni/halo/app/upgrades"
 	magellan2 "github.com/omni-network/omni/halo/app/upgrades/magellan"
+	"github.com/omni-network/omni/halo/app/upgrades/static"
 	halocmd "github.com/omni-network/omni/halo/cmd"
 	halocfg "github.com/omni-network/omni/halo/config"
 	"github.com/omni-network/omni/lib/cchain"
@@ -255,7 +255,7 @@ func setupSimnet(t *testing.T) haloapp.Config {
 		HomeDir:        homeDir,
 		Network:        netconf.Simnet,
 		ExecutionHash:  executionGenesis.Hash(),
-		GenesisUpgrade: upgrades.LatestUpgrade(),
+		GenesisUpgrade: static.LatestUpgrade(),
 	})
 	tutil.RequireNoError(t, err)
 
