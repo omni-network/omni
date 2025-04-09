@@ -23,4 +23,5 @@ runs:
     - name: Install docker
       shell: bash
       if: ${{ inputs.docker == 'true' }}
-      run: docker pull ghcr.io/foundry-rs/foundry:${{ steps.foundry_version.outputs.version}}
+      run: docker pull docker.io/chrmllr/foundry-stable
+      # run: docker pull ghcr.io/foundry-rs/foundry:${{ steps.foundry_version.outputs.version}}
