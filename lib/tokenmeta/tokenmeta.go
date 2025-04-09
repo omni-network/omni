@@ -30,6 +30,13 @@ var (
 		CoingeckoID: "ethereum",
 	}
 
+	WETH = Meta{
+		Symbol:      "WETH",
+		Name:        "Wrapped Ether",
+		Decimals:    18,
+		CoingeckoID: "ethereum",
+	}
+
 	USDC = Meta{
 		Symbol:      "USDC",
 		Name:        "USD Coin",
@@ -51,7 +58,7 @@ var (
 		CoingeckoID: "wrapped-steth",
 	}
 
-	all = []Meta{OMNI, ETH, STETH, WSTETH}
+	all = []Meta{OMNI, ETH, WETH, STETH, WSTETH}
 )
 
 func All() []Meta {
