@@ -1,6 +1,13 @@
-import type { OmniContracts } from '@omni-network/core'
+import type { OmniContracts, OptionalAbis, Order } from '@omni-network/core'
 import { testAccount } from '@omni-network/test-utils'
-import { type Hex, parseEther, toBytes, toHex } from 'viem'
+import {
+  type Hex,
+  erc20Abi,
+  parseEther,
+  toBytes,
+  toHex,
+  zeroAddress,
+} from 'viem'
 import { arbitrum, base, optimism } from 'viem/chains'
 import { http, createConfig, mock } from 'wagmi'
 import { mainnet } from 'wagmi/chains'
@@ -76,4 +83,46 @@ export const resolvedOrder = {
       originData,
     },
   ] as readonly FillInstruction[],
+} as const
+
+export const orderRequest: Order<OptionalAbis> = {
+  srcChainId: 1,
+  destChainId: 2,
+  deposit: {
+    token: zeroAddress,
+    amount: 100n,
+  },
+  expense: {
+    token: zeroAddress,
+    amount: 90n,
+  },
+  calls: [],
+}
+
+export const quote = {
+  deposit: { token: zeroAddress, amount: '100' },
+  expense: { token: zeroAddress, amount: '99' },
+}
+
+export const order = {
+  owner: accounts[0],
+  srcChainId: 1,
+  destChainId: 2,
+  calls: [
+    {
+      abi: erc20Abi,
+      functionName: 'transfer',
+      target: '0x23e98253f372ee29910e22986fe75bb287b011fc',
+      value: BigInt(0),
+      args: [accounts[0], 0n],
+    },
+  ],
+  deposit: {
+    token: '0x123',
+    amount: 0n,
+  },
+  expense: {
+    token: '0x123',
+    amount: 0n,
+  },
 } as const
