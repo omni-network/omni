@@ -307,7 +307,7 @@ contract MockSolverNetInbox is ReentrancyGuard, DeployedAt, XAppBase, ISolverNet
         whenNotPaused(OPEN)
         nonReentrant
     {
-        (SolverNet.OrderData memory orderData, SolverNet.Order memory _order) = _validateFor(order);
+        (SolverNet.OmniOrderData memory orderData, SolverNet.Order memory _order) = _validateFor(order);
         address user = order.user;
         bytes32 id = _getOrderId({ gasless: true, user: user, nonce: order.nonce });
 
@@ -430,7 +430,7 @@ contract MockSolverNetInbox is ReentrancyGuard, DeployedAt, XAppBase, ISolverNet
     function _validateFor(GaslessCrossChainOrder calldata order)
         internal
         view
-        returns (SolverNet.OrderData memory, SolverNet.Order memory)
+        returns (SolverNet.OmniOrderData memory, SolverNet.Order memory)
     {
         _validateGaslessOrder(order);
         return
@@ -444,8 +444,8 @@ contract MockSolverNetInbox is ReentrancyGuard, DeployedAt, XAppBase, ISolverNet
     function _validateOnchainOrder(OnchainCrossChainOrder calldata order) internal view {
         if (order.fillDeadline <= block.timestamp) revert InvalidFillDeadline();
         if (
-            order.orderDataType != HashLib.OLD_ORDERDATA_TYPEHASH
-                && order.orderDataType != HashLib.FULL_ORDERDATA_TYPEHASH
+            order.orderDataType != HashLib.FULL_ORDERDATA_TYPEHASH
+                && order.orderDataType != HashLib.FULL_OMNIORDERDATA_TYPEHASH
         ) {
             revert InvalidOrderTypehash();
         }
@@ -464,24 +464,24 @@ contract MockSolverNetInbox is ReentrancyGuard, DeployedAt, XAppBase, ISolverNet
             revert InvalidOpenDeadline();
         }
         if (order.fillDeadline <= block.timestamp) revert InvalidFillDeadline();
-        if (order.orderDataType != HashLib.FULL_ORDERDATA_TYPEHASH) revert InvalidOrderTypehash();
+        if (order.orderDataType != HashLib.FULL_OMNIORDERDATA_TYPEHASH) revert InvalidOrderTypehash();
         if (order.orderData.length == 0) revert InvalidOrderData();
     }
 
     /**
-     * @dev Validate SolverNet.OrderData
-     * @param orderDataBytes Undecoded SolverNet.OrderData to validate
+     * @dev Validate SolverNet.OmniOrderData
+     * @param orderDataBytes Undecoded SolverNet.OmniOrderData to validate
      * @param fillDeadline Fill deadline of the order
      * @param user Address to override a missing order owner with
      */
     function _validateOrderData(bytes calldata orderDataBytes, uint32 fillDeadline, address user)
         internal
         view
-        returns (SolverNet.OrderData memory, SolverNet.Order memory)
+        returns (SolverNet.OmniOrderData memory, SolverNet.Order memory)
     {
-        SolverNet.OrderData memory orderData = abi.decode(orderDataBytes, (SolverNet.OrderData));
+        SolverNet.OmniOrderData memory orderData = abi.decode(orderDataBytes, (SolverNet.OmniOrderData));
 
-        // Validate SolverNet.OrderData.Header fields
+        // Validate SolverNet.OmniOrderData.Header fields
         if (orderData.owner == address(0)) {
             if (user == address(0)) orderData.owner = msg.sender;
             else orderData.owner = user;
@@ -491,7 +491,7 @@ contract MockSolverNetInbox is ReentrancyGuard, DeployedAt, XAppBase, ISolverNet
         SolverNet.Header memory header =
             SolverNet.Header({ owner: orderData.owner, destChainId: orderData.destChainId, fillDeadline: fillDeadline });
 
-        // Validate SolverNet.OrderData.Call
+        // Validate SolverNet.OmniOrderData.Call
         SolverNet.Call[] memory calls = orderData.calls;
         if (calls.length == 0) revert InvalidMissingCalls();
         if (calls.length > MAX_ARRAY_SIZE) revert InvalidArrayLength();
@@ -500,7 +500,7 @@ contract MockSolverNetInbox is ReentrancyGuard, DeployedAt, XAppBase, ISolverNet
             if (call.target == address(0)) revert InvalidCallTarget();
         }
 
-        // Validate SolverNet.OrderData.Expenses
+        // Validate SolverNet.OmniOrderData.Expenses
         SolverNet.TokenExpense[] memory expenses = orderData.expenses;
         if (expenses.length > MAX_ARRAY_SIZE) revert InvalidArrayLength();
         for (uint256 i; i < expenses.length; ++i) {
@@ -652,7 +652,7 @@ contract MockSolverNetInbox is ReentrancyGuard, DeployedAt, XAppBase, ISolverNet
      */
     function _gaslessDeposit(
         GaslessCrossChainOrder calldata order,
-        SolverNet.OrderData memory orderData,
+        SolverNet.OmniOrderData memory orderData,
         bytes calldata signature
     ) internal {
         if (orderData.deposit.token != address(0)) {

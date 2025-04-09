@@ -45,29 +45,35 @@ library HashLib {
     );
 
     /**
+     * @notice Type for the OmniOrderData struct.
+     */
+    bytes internal constant OMNIORDERDATA_TYPE = abi.encodePacked(
+        "OmniOrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)"
+    );
+
+    /**
      * @notice Previous full EIP-712 type for the OrderData struct.
      * @dev Included to maintain backwards compatibility.
      */
-    bytes internal constant OLD_FULL_ORDERDATA_TYPE =
+    bytes internal constant FULL_ORDERDATA_TYPE =
         abi.encodePacked(ORDERDATA_TYPE, DEPOSIT_TYPE, CALL_TYPE, TOKENEXPENSE_TYPE);
 
     /**
-     * @notice Full EIP-712 type for the OrderData struct.
-     * @dev "Omni" prefix is added so wallets can show that the signature is for an Omni order.
+     * @notice Full EIP-712 type for the OmniOrderData struct.
      */
-    bytes internal constant FULL_ORDERDATA_TYPE =
-        abi.encodePacked("Omni", ORDERDATA_TYPE, CALL_TYPE, DEPOSIT_TYPE, TOKENEXPENSE_TYPE);
+    bytes internal constant FULL_OMNIORDERDATA_TYPE =
+        abi.encodePacked(OMNIORDERDATA_TYPE, CALL_TYPE, DEPOSIT_TYPE, TOKENEXPENSE_TYPE);
 
     /**
      * @notice Old typehash for the full OrderData struct.
      * @dev Included to maintain backwards compatibility.
      */
-    bytes32 internal constant OLD_ORDERDATA_TYPEHASH = keccak256(OLD_FULL_ORDERDATA_TYPE);
+    bytes32 internal constant FULL_ORDERDATA_TYPEHASH = keccak256(FULL_ORDERDATA_TYPE);
 
     /**
-     * @notice Typehash for the full OrderData struct.
+     * @notice Typehash for the full OmniOrderData struct.
      */
-    bytes32 internal constant FULL_ORDERDATA_TYPEHASH = keccak256(FULL_ORDERDATA_TYPE);
+    bytes32 internal constant FULL_OMNIORDERDATA_TYPEHASH = keccak256(FULL_OMNIORDERDATA_TYPE);
 
     /**
      * @notice Type for the GaslessCrossChainOrder struct.
@@ -81,7 +87,7 @@ library HashLib {
      * @dev "Omni" prefix is added so wallets can show that the signature is for an Omni order.
      */
     bytes internal constant EIP712_GASLESS_ORDER_TYPE =
-        abi.encodePacked(GASLESS_ORDER_TYPE, CALL_TYPE, DEPOSIT_TYPE, "Omni", ORDERDATA_TYPE, TOKENEXPENSE_TYPE);
+        abi.encodePacked(GASLESS_ORDER_TYPE, CALL_TYPE, DEPOSIT_TYPE, OMNIORDERDATA_TYPE, TOKENEXPENSE_TYPE);
 
     /**
      * @notice EIP-712 typehash for the GaslessCrossChainOrder struct.
@@ -108,8 +114,7 @@ library HashLib {
             CALL_TYPE,
             DEPOSIT_TYPE,
             GASLESS_ORDER_TYPE,
-            "Omni",
-            ORDERDATA_TYPE,
+            OMNIORDERDATA_TYPE,
             TOKEN_PERMISSIONS_TYPE,
             TOKENEXPENSE_TYPE
         )
@@ -173,10 +178,10 @@ library HashLib {
      * @param orderData Order data to hash.
      * @return _ Hashed order data.
      */
-    function hashOrderData(SolverNet.OrderData memory orderData) internal pure returns (bytes32) {
+    function hashOrderData(SolverNet.OmniOrderData memory orderData) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
-                FULL_ORDERDATA_TYPEHASH,
+                FULL_OMNIORDERDATA_TYPEHASH,
                 orderData.owner,
                 orderData.destChainId,
                 hashDeposit(orderData.deposit),
