@@ -2,6 +2,7 @@ package solve
 
 import (
 	"context"
+	"github.com/omni-network/omni/lib/tokens"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
@@ -12,7 +13,6 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/tokenmeta"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -21,20 +21,20 @@ import (
 )
 
 type MockToken struct {
-	Meta      tokenmeta.Meta
+	tokens.Asset
 	ChainID   uint64
 	NetworkID netconf.ID
 }
 
 var mocks = []MockToken{
 	// staging mock wstETH
-	{Meta: tokenmeta.WSTETH, ChainID: evmchain.IDBaseSepolia, NetworkID: netconf.Staging}, // Note this is also used on omega.
+	{Asset: tokens.WSTETH, ChainID: evmchain.IDBaseSepolia, NetworkID: netconf.Staging}, // Note this is also used on omega.
 
 	// devnet L1 mock wstETH
-	{Meta: tokenmeta.WSTETH, ChainID: evmchain.IDMockL1, NetworkID: netconf.Devnet},
+	{Asset: tokens.WSTETH, ChainID: evmchain.IDMockL1, NetworkID: netconf.Devnet},
 
 	// devnet L2 mock wstETH
-	{Meta: tokenmeta.WSTETH, ChainID: evmchain.IDMockL2, NetworkID: netconf.Devnet},
+	{Asset: tokens.WSTETH, ChainID: evmchain.IDMockL2, NetworkID: netconf.Devnet},
 }
 
 func MockTokens() []MockToken {
@@ -43,7 +43,7 @@ func MockTokens() []MockToken {
 
 func Find(chainID uint64, symbol string) (common.Address, error) {
 	for _, t := range MockTokens() {
-		if t.ChainID == chainID && t.Meta.Symbol == symbol {
+		if t.ChainID == chainID && t.Symbol == symbol {
 			return t.Address(), nil
 		}
 	}
@@ -60,7 +60,7 @@ func (m MockToken) Address() common.Address {
 }
 
 func (m MockToken) Create3Salt() string {
-	return m.NetworkID.String() + "::mock::" + m.Meta.Symbol
+	return m.NetworkID.String() + "::mock::" + m.Symbol
 }
 
 // maybeDeployMockTokens deploys mintable ERC20 tokens on ephemeral networks, for solvernet testing.
@@ -119,7 +119,7 @@ func maybeDeployMockToken(ctx context.Context, network netconf.ID, backend *ethb
 	}
 
 	if deployed {
-		log.Info(ctx, "MockToken already deployed", "addr", addr, "salt", salt, "name", mock.Meta.Name, "symbol", mock.Meta.Symbol)
+		log.Info(ctx, "MockToken already deployed", "addr", addr, "salt", salt, "name", mock.Name, "symbol", mock.Symbol)
 		return nil
 	}
 
@@ -128,7 +128,7 @@ func maybeDeployMockToken(ctx context.Context, network netconf.ID, backend *ethb
 		return errors.Wrap(err, "get abi")
 	}
 
-	initCode, err := contracts.PackInitCode(abi, bindings.MockERC20Bin, mock.Meta.Name, mock.Meta.Symbol)
+	initCode, err := contracts.PackInitCode(abi, bindings.MockERC20Bin, mock.Name, mock.Symbol)
 	if err != nil {
 		return errors.Wrap(err, "pack init code")
 	}
@@ -143,7 +143,7 @@ func maybeDeployMockToken(ctx context.Context, network netconf.ID, backend *ethb
 		return errors.Wrap(err, "wait mined")
 	}
 
-	log.Info(ctx, "MockToken deployed", "addr", addr, "salt", salt, "name", mock.Meta.Name, "symbol", mock.Meta.Symbol)
+	log.Info(ctx, "MockToken deployed", "addr", addr, "salt", salt, "name", mock.Name, "symbol", mock.Symbol)
 
 	return nil
 }

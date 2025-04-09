@@ -1,14 +1,13 @@
 package tokens
 
 import (
-	e2e "github.com/omni-network/omni/e2e/solve"
+	_ "embed"
+	"encoding/json"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/tokenmeta"
-
-	"github.com/ethereum/go-ethereum/common"
 )
 
 // NativeAddr is the "address" of the native token; the zero address.
@@ -22,9 +21,10 @@ const (
 	ClassMainnet ChainClass = "mainnet"
 )
 
-// Token represents a token (erc20 or native) on a specific chain.
+// Token represents a deployed instance of an Asset on a specific blockchain.
+// It includes both ERC20 and native tokens.
 type Token struct {
-	tokenmeta.Meta
+	Asset
 	ChainID    uint64
 	ChainClass ChainClass
 	Address    common.Address // empty if native
@@ -35,12 +35,12 @@ func (t Token) IsNative() bool {
 	return t.Address == NativeAddr
 }
 
-func (t Token) Is(meta tokenmeta.Meta) bool {
-	return t.Meta == meta
+func (t Token) Is(asset Asset) bool {
+	return t.Asset == asset
 }
 
 func (t Token) IsOMNI() bool {
-	return t.Is(tokenmeta.OMNI)
+	return t.Is(OMNI)
 }
 
 var tokens = append([]Token{
@@ -106,22 +106,6 @@ func All() []Token {
 	return tokens
 }
 
-// UniqueMetas returns the unique set of tokenmeta.Token in the tokens list.
-func UniqueMetas() []tokenmeta.Meta {
-	uniq := make(map[tokenmeta.Meta]bool)
-
-	for _, t := range tokens {
-		uniq[t.Meta] = true
-	}
-
-	var resp []tokenmeta.Meta
-	for t := range uniq {
-		resp = append(resp, t)
-	}
-
-	return resp
-}
-
 // BySymbol returns the token with the given symbol and chain ID.
 func BySymbol(chainID uint64, symbol string) (Token, bool) {
 	for _, t := range tokens {
@@ -133,10 +117,10 @@ func BySymbol(chainID uint64, symbol string) (Token, bool) {
 	return Token{}, false
 }
 
-// ByMeta returns the token with the given tokenmeta.Token and chain ID.
-func ByMeta(chainID uint64, meta tokenmeta.Meta) (Token, bool) {
+// ByAsset returns the token with the given Asset and chain ID.
+func ByAsset(chainID uint64, asset Asset) (Token, bool) {
 	for _, t := range tokens {
-		if t.ChainID == chainID && t.Is(meta) {
+		if t.ChainID == chainID && t.Is(asset) {
 			return t, true
 		}
 	}
@@ -174,7 +158,7 @@ func ByChain(chainID uint64) []Token {
 
 func nativeETH(chainID uint64) Token {
 	return Token{
-		Meta:       tokenmeta.ETH,
+		Asset:      ETH,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    NativeAddr,
@@ -183,7 +167,7 @@ func nativeETH(chainID uint64) Token {
 
 func weth(chainID uint64, addr common.Address) Token {
 	return Token{
-		Meta:       tokenmeta.WETH,
+		Asset:      WETH,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    addr,
@@ -192,7 +176,7 @@ func weth(chainID uint64, addr common.Address) Token {
 
 func nativeOMNI(chainID uint64) Token {
 	return Token{
-		Meta:       tokenmeta.OMNI,
+		Asset:      OMNI,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    NativeAddr,
@@ -203,7 +187,7 @@ func omniERC20(network netconf.ID) Token {
 	chainID := netconf.EthereumChainID(network)
 
 	return Token{
-		Meta:       tokenmeta.OMNI,
+		Asset:      OMNI,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    contracts.TokenAddr(network),
@@ -213,7 +197,7 @@ func omniERC20(network netconf.ID) Token {
 // mockOMNI returns a manually deployed OMNI token on a given chain for testing purposes.
 func mockOMNI(chainID uint64, addr common.Address) Token {
 	return Token{
-		Meta:       tokenmeta.OMNI,
+		Asset:      OMNI,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    addr,
@@ -223,7 +207,7 @@ func mockOMNI(chainID uint64, addr common.Address) Token {
 
 func stETH(chainID uint64, addr common.Address) Token {
 	return Token{
-		Meta:       tokenmeta.STETH,
+		Asset:      STETH,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    addr,
@@ -232,7 +216,7 @@ func stETH(chainID uint64, addr common.Address) Token {
 
 func wstETH(chainID uint64, addr common.Address) Token {
 	return Token{
-		Meta:       tokenmeta.WSTETH,
+		Asset:      WSTETH,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    addr,
@@ -241,25 +225,24 @@ func wstETH(chainID uint64, addr common.Address) Token {
 
 func usdc(chainID uint64, addr common.Address) Token {
 	return Token{
-		Meta:       tokenmeta.USDC,
+		Asset:      USDC,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    addr,
 	}
 }
 
+//go:embed mock_tokens.json
+var mockTokenJSON []byte
+
 // mocks returns MockTokens deployed in e2e for testing purposes.
 func mocks() []Token {
+	// e2e/solve#MockTokens are embedded as json instead of imported.
+	// This prevents /lib/tokens from depending on e2e/solve.
+	// /lib/* packages should be proper libraries so only depend on other lib/* packages.
 	var tkns []Token
-
-	for _, mock := range e2e.MockTokens() {
-		tkns = append(tkns, Token{
-			Meta:       mock.Meta,
-			Address:    mock.Address(),
-			ChainID:    mock.ChainID,
-			ChainClass: mustChainClass(mock.ChainID),
-			IsMock:     true,
-		})
+	if err := json.Unmarshal(mockTokenJSON, &tkns); err != nil {
+		panic(errors.Wrap(err, "unmarshal mock tokens"))
 	}
 
 	// Add manually deployed tokens that aren't part of the automatic mock deployment
