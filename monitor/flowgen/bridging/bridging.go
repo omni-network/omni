@@ -243,7 +243,7 @@ func availableBalance(
 		return nil, errors.Wrap(err, "balance at")
 	}
 
-	thresholds, ok := eoa.GetFundThresholds(srcToken.Meta, networkID, eoa.RoleFlowgen)
+	thresholds, ok := eoa.GetFundThresholds(srcToken.Asset, networkID, eoa.RoleFlowgen)
 	if !ok {
 		return nil, errors.New("no thresholds found", "role", eoa.RoleFlowgen)
 	}

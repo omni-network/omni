@@ -10,7 +10,6 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/pnl"
-	"github.com/omni-network/omni/lib/tokenmeta"
 	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokens"
 
@@ -76,7 +75,7 @@ func newFilledPnlFunc(
 				ID:          order.ID.String(),
 			}
 			pnl.Log(ctx, p)
-			usdPnL(ctx, pricer, tknAmt.Token.Meta, p)
+			usdPnL(ctx, pricer, tknAmt.Token.Asset, p)
 		}
 
 		for _, tknAmt := range minReceived {
@@ -91,7 +90,7 @@ func newFilledPnlFunc(
 			}
 
 			pnl.Log(ctx, p)
-			usdPnL(ctx, pricer, tknAmt.Token.Meta, p)
+			usdPnL(ctx, pricer, tknAmt.Token.Asset, p)
 		}
 
 		return nil
@@ -149,7 +148,7 @@ func gasPnL(
 		ID:          id,
 	}
 	pnl.Log(ctx, p)
-	usdPnL(ctx, pricer, nativeToken.Meta, p)
+	usdPnL(ctx, pricer, nativeToken.Asset, p)
 
 	return nil
 }
@@ -174,7 +173,7 @@ func maybeParseXCallFee(rec *ethclient.Receipt) (*big.Int, bool) {
 
 // usdPnL logs the USD equivalent PnL.
 // This is best effort.
-func usdPnL(ctx context.Context, pricer tokenpricer.Pricer, token tokenmeta.Meta, p pnl.LogP) {
+func usdPnL(ctx context.Context, pricer tokenpricer.Pricer, token tokens.Asset, p pnl.LogP) {
 	usdPrice, err := pricer.Price(ctx, token)
 	if err != nil {
 		log.Warn(ctx, "Failed to get token USD price (will retry)", err, "token", token.Name)

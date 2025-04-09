@@ -8,7 +8,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/tokenmeta"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -21,7 +21,7 @@ func TestClaimants(t *testing.T) {
 
 	golden := map[string]map[netconf.ID]common.Address{}
 
-	for _, tkn := range tokenmeta.All() {
+	for _, tkn := range tokens.UniqueAssets() {
 		for _, netID := range netconf.All() {
 			claimant, ok := claimants[tkn][netID]
 			if !ok {

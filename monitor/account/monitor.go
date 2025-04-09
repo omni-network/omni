@@ -12,8 +12,8 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/tokenmeta"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tokens/tokenutil"
 	solver "github.com/omni-network/omni/solver/app"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -55,7 +55,7 @@ func StartMonitoring(ctx context.Context, network netconf.Network, rpcClients ma
 
 		// Also monitor solvernet claimant balances
 		// These claimants should maybe be added as proper roles and added to isSolverNetRole
-		for _, token := range tokens.UniqueMetas() {
+		for _, token := range tokens.UniqueAssets() {
 			claimantAddress, ok := solver.Claimant(network.ID, token)
 			if !ok {
 				continue
@@ -166,7 +166,7 @@ func monitorSolverNetRoleForever(
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			for _, token := range tokens.UniqueMetas() {
+			for _, token := range tokens.UniqueAssets() {
 				loopCtx := log.WithCtx(ctx, "token", token)
 				err := monitorSolverNetRoleTokenOnce(loopCtx, network, backend, token, role, address)
 				if ctx.Err() != nil {
@@ -184,7 +184,7 @@ func monitorSolverNetRoleTokenOnce(
 	ctx context.Context,
 	network netconf.ID,
 	backend *ethbackend.Backend,
-	meta tokenmeta.Meta,
+	meta tokens.Asset,
 	role eoa.Role,
 	address common.Address,
 ) error {
@@ -200,7 +200,7 @@ func monitorSolverNetRoleTokenOnce(
 		return nil
 	}
 
-	balance, err := tokens.BalanceOf(ctx, backend, token, address)
+	balance, err := tokenutil.BalanceOf(ctx, backend, token, address)
 	if err != nil {
 		return err
 	}

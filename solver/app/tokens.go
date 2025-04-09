@@ -4,22 +4,21 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/lib/bi"
-	"github.com/omni-network/omni/lib/tokenmeta"
 	"github.com/omni-network/omni/lib/tokens"
 )
 
 var (
-	supportedTokens = map[tokenmeta.Meta]bool{
-		tokenmeta.ETH:    true,
-		tokenmeta.OMNI:   true,
-		tokenmeta.WSTETH: true,
-		tokenmeta.STETH:  true,
-		tokenmeta.USDC:   true,
+	supportedTokens = map[tokens.Asset]bool{
+		tokens.ETH:    true,
+		tokens.OMNI:   true,
+		tokens.WSTETH: true,
+		tokens.STETH:  true,
+		tokens.USDC:   true,
 	}
 )
 
 func IsSupportedToken(token tokens.Token) bool {
-	return supportedTokens[token.Meta]
+	return supportedTokens[token.Asset]
 }
 
 type SpendBounds struct {
@@ -28,8 +27,8 @@ type SpendBounds struct {
 }
 
 var (
-	tokenSpendBounds = map[tokenmeta.Meta]map[tokens.ChainClass]SpendBounds{
-		tokenmeta.ETH: {
+	tokenSpendBounds = map[tokens.Asset]map[tokens.ChainClass]SpendBounds{
+		tokens.ETH: {
 			tokens.ClassMainnet: {
 				MinSpend: bi.Ether(0.001), // 0.001 ETH
 				MaxSpend: bi.Ether(6),     // 6 ETH
@@ -43,7 +42,7 @@ var (
 				MaxSpend: bi.Ether(3),     // 3 ETH
 			},
 		},
-		tokenmeta.OMNI: {
+		tokens.OMNI: {
 			tokens.ClassMainnet: {
 				MinSpend: bi.Ether(0.1),     // 0.1 OMNI
 				MaxSpend: bi.Ether(120_000), // 120k OMNI
@@ -57,7 +56,7 @@ var (
 				MaxSpend: bi.Ether(1_000), // 1k OMNI
 			},
 		},
-		tokenmeta.WSTETH: {
+		tokens.WSTETH: {
 			tokens.ClassMainnet: {
 				MinSpend: bi.Ether(0.001), // 0.001 wstETH
 				MaxSpend: bi.Ether(6),     // 6 wstETH
@@ -71,7 +70,7 @@ var (
 				MaxSpend: bi.Ether(1),     // 1 wstETH
 			},
 		},
-		tokenmeta.STETH: {
+		tokens.STETH: {
 			tokens.ClassMainnet: {
 				MinSpend: bi.Ether(0.001), // 0.001 stETH
 				MaxSpend: bi.Ether(6),     // 6 stETH
@@ -85,7 +84,7 @@ var (
 				MaxSpend: bi.Ether(1),     // 1 stETH
 			},
 		},
-		tokenmeta.USDC: {
+		tokens.USDC: {
 			tokens.ClassMainnet: {
 				MinSpend: bi.Dec6(0.1),    // 0.1 USDC
 				MaxSpend: bi.Dec6(10_000), // 10k USDC
@@ -103,5 +102,5 @@ var (
 )
 
 func GetSpendBounds(token tokens.Token) SpendBounds {
-	return tokenSpendBounds[token.Meta][token.ChainClass]
+	return tokenSpendBounds[token.Asset][token.ChainClass]
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/tokenmeta"
+	"github.com/omni-network/omni/lib/tokens"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -217,7 +217,7 @@ func mainnetPrefundAllocs() types.GenesisAlloc {
 	allocs := make(types.GenesisAlloc)
 
 	for _, role := range eoa.AllRoles() {
-		fund, ok := eoa.GetFundThresholds(tokenmeta.OMNI, netconf.Mainnet, role)
+		fund, ok := eoa.GetFundThresholds(tokens.OMNI, netconf.Mainnet, role)
 		if !ok {
 			continue
 		}

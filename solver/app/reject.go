@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tokens/tokenutil"
 	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum"
@@ -296,7 +297,7 @@ func checkQuote(ctx context.Context, priceFunc priceFunc, deposits, expenses []T
 // checkLiquidity checks that the solver has enough liquidity to pay for the expenses.
 func checkLiquidity(ctx context.Context, expenses []TokenAmt, backend *ethbackend.Backend, solverAddr common.Address) error {
 	for _, expense := range expenses {
-		bal, err := tokens.BalanceOf(ctx, backend, expense.Token, solverAddr)
+		bal, err := tokenutil.BalanceOf(ctx, backend, expense.Token, solverAddr)
 		if err != nil {
 			return errors.Wrap(err, "get balance", "token", expense.Token.Symbol)
 		}

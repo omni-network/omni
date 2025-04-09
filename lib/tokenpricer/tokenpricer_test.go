@@ -3,8 +3,8 @@ package tokenpricer_test
 import (
 	"testing"
 
-	"github.com/omni-network/omni/lib/tokenmeta"
 	"github.com/omni-network/omni/lib/tokenpricer"
+	"github.com/omni-network/omni/lib/tokens"
 
 	"github.com/stretchr/testify/require"
 )
@@ -13,10 +13,10 @@ func TestCachedPricer(t *testing.T) {
 	t.Parallel()
 	const epsilon = 1e-6
 
-	ETH := tokenmeta.ETH
-	OMNI := tokenmeta.OMNI
+	ETH := tokens.ETH
+	OMNI := tokens.OMNI
 
-	pricer := tokenpricer.NewMock(map[tokenmeta.Meta]float64{
+	pricer := tokenpricer.NewMock(map[tokens.Asset]float64{
 		ETH:  100,
 		OMNI: 200,
 	})

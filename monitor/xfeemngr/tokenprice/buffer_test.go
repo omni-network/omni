@@ -4,8 +4,8 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/omni-network/omni/lib/tokenmeta"
 	"github.com/omni-network/omni/lib/tokenpricer"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/monitor/xfeemngr/ticker"
 	"github.com/omni-network/omni/monitor/xfeemngr/tokenprice"
 
@@ -15,9 +15,9 @@ import (
 func TestBufferStream(t *testing.T) {
 	t.Parallel()
 
-	initial := map[tokenmeta.Meta]float64{
-		tokenmeta.OMNI: randPrice(),
-		tokenmeta.ETH:  randPrice(),
+	initial := map[tokens.Asset]float64{
+		tokens.OMNI: randPrice(),
+		tokens.ETH:  randPrice(),
 	}
 
 	pricer := tokenpricer.NewMock(initial)
@@ -26,7 +26,7 @@ func TestBufferStream(t *testing.T) {
 	tick := ticker.NewMock()
 	ctx := t.Context()
 
-	b := tokenprice.NewBuffer(pricer, []tokenmeta.Meta{tokenmeta.OMNI, tokenmeta.ETH}, thresh, tick)
+	b := tokenprice.NewBuffer(pricer, []tokens.Asset{tokens.OMNI, tokens.ETH}, thresh, tick)
 
 	b.Stream(ctx)
 
@@ -39,7 +39,7 @@ func TestBufferStream(t *testing.T) {
 	}
 
 	// 10 steps
-	buffed := make(map[tokenmeta.Meta]float64)
+	buffed := make(map[tokens.Asset]float64)
 	for i := 0; i < 10; i++ {
 		for token := range initial {
 			buffed[token] = b.Price(token)
@@ -48,7 +48,7 @@ func TestBufferStream(t *testing.T) {
 
 		tick.Tick()
 
-		live, err := pricer.Prices(ctx, tokenmeta.OMNI, tokenmeta.ETH)
+		live, err := pricer.Prices(ctx, tokens.OMNI, tokens.ETH)
 		require.NoError(t, err)
 
 		// check if any live price is outside threshold

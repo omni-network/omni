@@ -19,7 +19,7 @@ func TestSolverThresholds(t *testing.T) {
 	for _, network := range []netconf.ID{netconf.Devnet, netconf.Staging, netconf.Omega, netconf.Mainnet} {
 		for _, chain := range evmchain.All() {
 			for _, role := range eoa.SolverNetRoles() {
-				for _, token := range tokens.UniqueMetas() {
+				for _, token := range tokens.UniqueAssets() {
 					thresholds, ok := eoa.GetSolverNetThreshold(role, network, chain.ChainID, token)
 					if !ok {
 						continue

@@ -12,7 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/tokenmeta"
+	"github.com/omni-network/omni/lib/tokens"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -74,7 +74,7 @@ func maybeDeployMockVault(ctx context.Context, network netconf.Network, backends
 		return errors.Wrap(err, "get abi")
 	}
 
-	wstETHOnMockL2, err := Find(evmchain.IDMockL2, tokenmeta.WSTETH.Symbol)
+	wstETHOnMockL2, err := Find(evmchain.IDMockL2, tokens.WSTETH.Symbol)
 	if err != nil {
 		return err
 	}

@@ -60,16 +60,16 @@ func TestMaxSpendMinThreshold(t *testing.T) {
 			continue
 		}
 
-		bounds, ok := tokenSpendBounds[token.Meta][token.ChainClass]
+		bounds, ok := tokenSpendBounds[token.Asset][token.ChainClass]
 		if !ok {
 			continue
 		}
 
-		thresh, ok := eoa.GetSolverNetThreshold(eoa.RoleSolver, netconf.Mainnet, token.ChainID, token.Meta)
+		thresh, ok := eoa.GetSolverNetThreshold(eoa.RoleSolver, netconf.Mainnet, token.ChainID, token.Asset)
 		if !ok {
 			continue
 		}
 
-		require.True(t, bi.GTE(thresh.MinBalance(), bounds.MaxSpend), "solver min balance must be greater than max spend: token=%s, min_bal=%s, max_spend=%s", token.Meta, thresh.MinBalance(), bounds.MaxSpend)
+		require.True(t, bi.GTE(thresh.MinBalance(), bounds.MaxSpend), "solver min balance must be greater than max spend: token=%s, min_bal=%s, max_spend=%s", token.Asset, thresh.MinBalance(), bounds.MaxSpend)
 	}
 }

@@ -1,14 +1,17 @@
-package tokenmeta
+package tokens
 
 import (
 	"fmt"
 	"math/big"
+	"sort"
 	"strconv"
 
 	"github.com/omni-network/omni/lib/bi"
 )
 
-type Meta struct {
+// Asset represents the canonical definition of a token,
+// independent of any specific blockchain.
+type Asset struct {
 	Symbol      string
 	Name        string
 	Decimals    uint
@@ -16,63 +19,77 @@ type Meta struct {
 }
 
 var (
-	OMNI = Meta{
+	OMNI = Asset{
 		Symbol:      "OMNI",
 		Name:        "Omni Network",
 		Decimals:    18,
 		CoingeckoID: "omni-network",
 	}
 
-	ETH = Meta{
+	ETH = Asset{
 		Symbol:      "ETH",
 		Name:        "Ether",
 		Decimals:    18,
 		CoingeckoID: "ethereum",
 	}
 
-	WETH = Meta{
+	WETH = Asset{
 		Symbol:      "WETH",
 		Name:        "Wrapped Ether",
 		Decimals:    18,
 		CoingeckoID: "ethereum",
 	}
 
-	USDC = Meta{
+	USDC = Asset{
 		Symbol:      "USDC",
 		Name:        "USD Coin",
 		Decimals:    6,
 		CoingeckoID: "usdc",
 	}
 
-	STETH = Meta{
+	STETH = Asset{
 		Symbol:      "stETH",
 		Name:        "Lido Staked Ether",
 		Decimals:    18,
 		CoingeckoID: "lido-staked-ether",
 	}
 
-	WSTETH = Meta{
+	WSTETH = Asset{
 		Symbol:      "wstETH",
 		Name:        "Wrapped Staked Ether",
 		Decimals:    18,
 		CoingeckoID: "wrapped-steth",
 	}
-
-	all = []Meta{OMNI, ETH, WETH, STETH, WSTETH}
 )
 
-func All() []Meta {
-	return all
+// UniqueAssets returns all unique assets of all tokens.
+func UniqueAssets() []Asset {
+	uniq := make(map[Asset]bool)
+
+	for _, t := range tokens {
+		uniq[t.Asset] = true
+	}
+
+	var resp []Asset
+	for a := range uniq {
+		resp = append(resp, a)
+	}
+
+	sort.Slice(resp, func(i, j int) bool {
+		return resp[i].Symbol < resp[j].Symbol
+	})
+
+	return resp
 }
 
-func (t Meta) String() string {
-	return t.Symbol
+func (a Asset) String() string {
+	return a.Symbol
 }
 
 // F64ToAmt returns the float64 in primary units as a big.Int in base units.
 // E.g. 1.1 (ether) is returned as 1.1 * 10^18 (wei).
-func (t Meta) F64ToAmt(n float64) *big.Int {
-	if t.Decimals == 6 {
+func (a Asset) F64ToAmt(n float64) *big.Int {
+	if a.Decimals == 6 {
 		return bi.Dec6(n)
 	}
 
@@ -81,19 +98,19 @@ func (t Meta) F64ToAmt(n float64) *big.Int {
 
 // AmtToF64 returns amount in base units as a float64 in primary units.
 // E.g. 1.1 * 10^18 (wei) is returned as 1.1 (ether).
-func (t Meta) AmtToF64(n *big.Int) float64 {
-	return bi.ToF64(n, t.Decimals)
+func (a Asset) AmtToF64(n *big.Int) float64 {
+	return bi.ToF64(n, a.Decimals)
 }
 
 // FormatAmt returns a string representation of the provided base unit amount
 // in primary units with the token symbol appended. Note all decimals are shown.
-func (t Meta) FormatAmt(n *big.Int) string {
+func (a Asset) FormatAmt(n *big.Int) string {
 	if n == nil {
 		return "nil"
 	}
 
 	return fmt.Sprintf("%s %s",
-		strconv.FormatFloat(t.AmtToF64(n), 'f', -1, 64), // Use FormatFloat 'f' instead of %f since it avoids trailing zeros
-		t.Symbol,
+		strconv.FormatFloat(a.AmtToF64(n), 'f', -1, 64), // Use FormatFloat 'f' instead of %f since it avoids trailing zeros
+		a.Symbol,
 	)
 }
