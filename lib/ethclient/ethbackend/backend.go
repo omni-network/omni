@@ -233,6 +233,11 @@ func (b *Backend) SendTransaction(ctx context.Context, in *ethtypes.Transaction)
 		return errors.New("unknown from address", "from", from)
 	}
 
+	if err := acc.sema.Acquire(ctx, 1); err != nil {
+		return errors.Wrap(err, "acquire semaphore")
+	}
+	defer acc.sema.Release(1)
+
 	candidate := txmgr.TxCandidate{
 		TxData:   in.Data(),
 		To:       in.To(),
