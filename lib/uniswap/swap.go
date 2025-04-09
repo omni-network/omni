@@ -1,24 +1,35 @@
-//nolint:unparam // skeleton code
 package uniswap
 
 import (
 	"context"
+	"encoding/binary"
 	"math/big"
 
-	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/tokens"
+
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
-// SwapToUSDC swaps the given token to USDC.
+// Swap represents a single hop in a Uniswap V3 swap path.
+type Swap struct {
+	TokenIn  tokens.Token
+	TokenOut tokens.Token
+	PoolFee  uint32
+}
+
+// SwapToUSDC swaps a token for USDC using Uniswap V3.
 func SwapToUSDC(
 	ctx context.Context,
 	backend *ethbackend.Backend,
+	user common.Address,
 	token tokens.Token,
 	amount *big.Int,
 ) (*big.Int, error) {
-	if token.Is(tokens.USDC) { // Already USDC
+	if token.Is(tokens.USDC) {
 		return amount, nil
 	}
 
@@ -27,112 +38,103 @@ func SwapToUSDC(
 		return nil, errors.Wrap(err, "route to USDC")
 	}
 
-	if len(swaps) == 1 {
-		return singleSwap(ctx, backend, swaps[0], amount)
+	amountOut, _, err := executeSwaps(ctx, backend, user, swaps, amount)
+	if err != nil {
+		return nil, errors.Wrap(err, "execute swaps")
 	}
 
-	return mulitSwap(ctx, backend, swaps, amount)
+	return amountOut, nil
 }
 
-type Swap struct {
-	TokenIn  tokens.Token
-	TokenOut tokens.Token
-}
-
-// routeToUSDC returns a list of swap to get USDC.
-// Routes defined statically, dynamic route optimization not (yet) worth the complexity.
+// routeToUSDC returns the optimal swap path to convert a token to USDC.
 func routeToUSDC(tkn tokens.Token) ([]Swap, error) {
 	usdc, ok := tokens.ByAsset(tkn.ChainID, tokens.USDC)
 	if !ok {
 		return nil, errors.New("no USDC", "chain", tkn.ChainID)
 	}
 
-	// WETH required native ETH -> USDC. SwapRouter02 wraps ETH to WETH.
 	weth, ok := tokens.ByAsset(tkn.ChainID, tokens.WETH)
 	if !ok {
 		return nil, errors.New("no WETH", "chain", tkn.ChainID)
 	}
 
-	if tkn.Is(tokens.ETH) { // Swap ETH to USDC directly.
-		return []Swap{
-			{TokenIn: weth, TokenOut: usdc},
-		}, nil
+	if tkn.Is(tokens.ETH) { // Swap WETH to USDC, direct
+		return []Swap{wethToUSDC(weth, usdc)}, nil
 	}
 
-	if tkn.Is(tokens.WSTETH) { // Swap WSTETH to USDC via WETH.
-		return []Swap{
-			{TokenIn: tkn, TokenOut: weth},
-			{TokenIn: weth, TokenOut: usdc},
-		}, nil
+	if tkn.Is(tokens.WSTETH) { // Swap WSTETH to USDC, via WETH
+		return []Swap{wstethToWETH(tkn, weth), wethToUSDC(weth, usdc)}, nil
 	}
 
 	return nil, errors.New("no route to USDC", "token", tkn.Asset, "chain", tkn.ChainID)
 }
 
-// singleSwap executes a single swap.
-func singleSwap(
-	ctx context.Context,
-	backend *ethbackend.Backend,
-	swap Swap,
-	amountIn *big.Int,
-) (*big.Int, error) {
-	chainID := swap.TokenIn.ChainID
-
-	router, err := newRouter(chainID, backend)
-	if err != nil {
-		return nil, errors.Wrap(err, "new router")
-	}
-
-	quoter, err := newQuoter(chainID, backend)
-	if err != nil {
-		return nil, errors.Wrap(err, "new quoter")
-	}
-
-	_ = ctx
-	_ = amountIn
-	_ = swap
-	_ = quoter
-	_ = router
-
-	// TODO
-
-	return bi.Zero(), nil
+// wethToUSDC returns a swap from WETH to USDC, 0.05% fee tier.
+func wethToUSDC(weth, usdc tokens.Token) Swap {
+	return Swap{TokenIn: weth, TokenOut: usdc, PoolFee: FeeBips5}
 }
 
-// mulitSwap executes a multi hop swap.
-func mulitSwap(
+// wstethToWETH returns a swap from WSTETH to WETH, 0.01% fee tier.
+func wstethToWETH(wsteth, weth tokens.Token) Swap {
+	return Swap{TokenIn: wsteth, TokenOut: weth, PoolFee: FeeBips1}
+}
+
+// executeSwaps executes a series of Uniswap V3 swaps and returns the amount received.
+func executeSwaps(
 	ctx context.Context,
 	backend *ethbackend.Backend,
+	user common.Address,
 	swaps []Swap,
 	amountIn *big.Int,
-) (*big.Int, error) {
-	if len(swaps) < 2 {
-		return nil, errors.New("no multi hop", "swaps", len(swaps))
-	}
-
+) (*big.Int, *ethtypes.Receipt, error) {
 	chainID := swaps[0].TokenIn.ChainID
 
 	router, err := newRouter(chainID, backend)
 	if err != nil {
-		return nil, errors.Wrap(err, "new router")
+		return nil, nil, errors.Wrap(err, "new router")
 	}
 
 	quoter, err := newQuoter(chainID, backend)
 	if err != nil {
-		return nil, errors.Wrap(err, "new quoter")
+		return nil, nil, errors.Wrap(err, "new quoter")
 	}
 
-	_ = ctx
-	_ = amountIn
-	_ = swaps
-	_ = quoter
-	_ = router
+	path, err := encodePath(swaps)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "encode path")
+	}
 
-	// TODO
+	amountOut, err := quoter.CallQuoteExactInput(ctx, path, amountIn)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "quote exact input")
+	}
 
-	return bi.Zero(), nil
+	txOpts, err := backend.BindOpts(ctx, user)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "bind opts")
+	}
+
+	params := IV3SwapRouterExactInputParams{
+		Path:             path,
+		Recipient:        user,
+		AmountIn:         amountIn,
+		AmountOutMinimum: amountOut,
+	}
+
+	tx, err := router.ExactInput(txOpts, params)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "exact input")
+	}
+
+	receipt, err := bind.WaitMined(ctx, backend, tx)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "wait mined")
+	}
+
+	return amountOut, receipt, nil
 }
 
+// newRouter creates a new SwapRouter02 contract instance for the given chain.
 func newRouter(chainID uint64, backend *ethbackend.Backend) (*UniSwapRouter02, error) {
 	addr, ok := routers[chainID]
 	if !ok {
@@ -142,6 +144,7 @@ func newRouter(chainID uint64, backend *ethbackend.Backend) (*UniSwapRouter02, e
 	return NewUniSwapRouter02(addr, backend)
 }
 
+// newQuoter creates a new QuoterV2 contract instance for the given chain.
 func newQuoter(chainID uint64, backend *ethbackend.Backend) (*UniQuoterV2, error) {
 	addr, ok := quoters[chainID]
 	if !ok {
@@ -149,4 +152,36 @@ func newQuoter(chainID uint64, backend *ethbackend.Backend) (*UniQuoterV2, error
 	}
 
 	return NewUniQuoterV2(addr, backend)
+}
+
+// encodePath converts a series of swaps into the Uniswap V3 path format.
+// Format: tokenIn (20b) + fee (3b) + tokenOut (20b) for single hop,
+// or tokenIn + fee + intermediate + fee + tokenOut for multi-hop.
+func encodePath(swaps []Swap) ([]byte, error) {
+	if len(swaps) == 0 {
+		return nil, errors.New("empty swaps")
+	}
+
+	var path []byte
+
+	for i, swap := range swaps {
+		path = append(path, swap.TokenIn.Address.Bytes()...)
+
+		feeBytes := make([]byte, 3)
+		binary.BigEndian.PutUint32(feeBytes, swap.PoolFee)
+		path = append(path, feeBytes...)
+
+		// If last, append tokenOut address
+		if i != len(swaps)-1 {
+			path = append(path, swap.TokenOut.Address.Bytes()...)
+			continue
+		}
+
+		// If not last, asset swap.TokenOut == next.TokenIn
+		if swap.TokenOut != swaps[i+1].TokenIn {
+			return nil, errors.New("invalid swap path")
+		}
+	}
+
+	return path, nil
 }
