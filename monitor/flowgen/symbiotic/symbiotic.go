@@ -12,7 +12,6 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/tokenmeta"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/monitor/flowgen/types"
 	"github.com/omni-network/omni/monitor/flowgen/util"
@@ -51,7 +50,7 @@ func newJob(
 		return types.Job{}, false, errors.Wrap(err, "src chain backend")
 	}
 
-	token := tokenmeta.WSTETH
+	token := tokens.WSTETH
 
 	srcChainTkn, ok := tokens.BySymbol(conf.srcChain, token.Symbol)
 	if !ok {

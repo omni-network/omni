@@ -6,7 +6,7 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/tokenmeta"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -22,7 +22,7 @@ func TestThresholdReference(t *testing.T) {
 	resp := make(map[netconf.ID]map[string]map[eoa.Role]map[string]string)
 	for _, network := range []netconf.ID{netconf.Staging, netconf.Omega, netconf.Mainnet} {
 		resp[network] = make(map[string]map[eoa.Role]map[string]string)
-		for _, token := range []tokenmeta.Meta{tokenmeta.ETH, tokenmeta.OMNI} {
+		for _, token := range []tokens.Asset{tokens.ETH, tokens.OMNI} {
 			resp[network][token.Symbol] = make(map[eoa.Role]map[string]string)
 			for _, role := range eoa.AllRoles() {
 				resp[network][token.Symbol][role] = make(map[string]string)

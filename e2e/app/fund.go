@@ -12,7 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/tokenmeta"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/txmgr"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -260,11 +260,11 @@ func etherStr(amount *big.Int) string {
 	return fmt.Sprintf("%.4f", bi.ToEtherF64(amount))
 }
 
-func saneMax(token tokenmeta.Meta) *big.Int {
+func saneMax(token tokens.Asset) *big.Int {
 	saneETH := bi.Ether(saneMaxETH)
 	saneOmni := bi.Ether(saneMaxOmni)
 
-	if token == tokenmeta.OMNI {
+	if token == tokens.OMNI {
 		return saneOmni
 	}
 

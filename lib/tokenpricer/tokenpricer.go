@@ -6,31 +6,31 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/tokenmeta"
+	"github.com/omni-network/omni/lib/tokens"
 )
 
 // Pricer is the token price provider interface.
 type Pricer interface {
 	// Price returns the price of the token in USD.
-	Price(ctx context.Context, tokens tokenmeta.Meta) (float64, error)
+	Price(ctx context.Context, tokens tokens.Asset) (float64, error)
 	// Prices returns the price of each provided token in USD.
-	Prices(ctx context.Context, tokens ...tokenmeta.Meta) (map[tokenmeta.Meta]float64, error)
+	Prices(ctx context.Context, tokens ...tokens.Asset) (map[tokens.Asset]float64, error)
 }
 
 type Cached struct {
 	p     Pricer
 	mu    sync.Mutex
-	cache map[tokenmeta.Meta]float64
+	cache map[tokens.Asset]float64
 }
 
 func NewCached(p Pricer) *Cached {
 	return &Cached{
 		p:     p,
-		cache: make(map[tokenmeta.Meta]float64),
+		cache: make(map[tokens.Asset]float64),
 	}
 }
 
-func (c *Cached) Price(ctx context.Context, token tokenmeta.Meta) (float64, error) {
+func (c *Cached) Price(ctx context.Context, token tokens.Asset) (float64, error) {
 	prices, err := c.Prices(ctx, token)
 	if err != nil {
 		return 0, err
@@ -44,19 +44,19 @@ func (c *Cached) Price(ctx context.Context, token tokenmeta.Meta) (float64, erro
 	return price, nil
 }
 
-func (c *Cached) Prices(ctx context.Context, tokens ...tokenmeta.Meta) (map[tokenmeta.Meta]float64, error) {
+func (c *Cached) Prices(ctx context.Context, assets ...tokens.Asset) (map[tokens.Asset]float64, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	prices := make(map[tokenmeta.Meta]float64)
+	prices := make(map[tokens.Asset]float64)
 
-	var uncached []tokenmeta.Meta
+	var uncached []tokens.Asset
 
-	for _, token := range tokens {
-		if price, ok := c.cache[token]; ok {
-			prices[token] = price
+	for _, asset := range assets {
+		if price, ok := c.cache[asset]; ok {
+			prices[asset] = price
 		} else {
-			uncached = append(uncached, token)
+			uncached = append(uncached, asset)
 		}
 	}
 
@@ -81,7 +81,7 @@ func (c *Cached) ClearCache() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.cache = make(map[tokenmeta.Meta]float64)
+	c.cache = make(map[tokens.Asset]float64)
 }
 
 func (c *Cached) ClearCacheForever(ctx context.Context, evictInterval time.Duration) {

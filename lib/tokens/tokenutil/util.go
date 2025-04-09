@@ -2,11 +2,11 @@ package tokenutil
 
 import (
 	"context"
-	"github.com/omni-network/omni/lib/tokens"
 	"math/big"
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/tokens"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"

@@ -7,7 +7,6 @@ import (
 
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/tokenmeta"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/solver/types"
 )
@@ -165,7 +164,7 @@ func areEqualBySymbol(a, b tokens.Token) bool {
 	}
 
 	// consider stETH and ETH as equivalent
-	makeEq(tokenmeta.STETH.Symbol, tokenmeta.ETH.Symbol)
+	makeEq(tokens.STETH.Symbol, tokens.ETH.Symbol)
 
 	return equivalents[a.Symbol] == b.Symbol
 }

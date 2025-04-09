@@ -3,7 +3,7 @@ package tokens_test
 import (
 	"testing"
 
-	"github.com/omni-network/omni/lib/tokenmeta"
+	"github.com/omni-network/omni/lib/tokens"
 
 	"github.com/stretchr/testify/require"
 )
@@ -12,11 +12,11 @@ import (
 func TestDecimals(t *testing.T) {
 	t.Parallel()
 
-	for _, token := range tokenmeta.All() {
-		if token == tokenmeta.USDC {
-			require.Equal(t, uint(6), token.Decimals)
+	for _, asset := range tokens.UniqueAssets() {
+		if asset == tokens.USDC {
+			require.Equal(t, uint(6), asset.Decimals)
 		} else {
-			require.Equal(t, uint(18), token.Decimals)
+			require.Equal(t, uint(18), asset.Decimals)
 		}
 	}
 }

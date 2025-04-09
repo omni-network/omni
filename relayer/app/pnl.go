@@ -11,9 +11,9 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/pnl"
-	"github.com/omni-network/omni/lib/tokenmeta"
 	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokenpricer/coingecko"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/xchain"
 
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -63,12 +63,12 @@ func (l pnlLogger) logE(ctx context.Context, tx *ethtypes.Transaction, receipt *
 	spendGwei := totalSpendGwei(tx, receipt)
 	spendTotal.WithLabelValues(dest.Name, dest.NativeToken.Symbol).Add(spendGwei)
 
-	prices, err := l.pricer.Prices(ctx, tokenmeta.OMNI, tokenmeta.ETH)
+	prices, err := l.pricer.Prices(ctx, tokens.OMNI, tokens.ETH)
 	if err != nil {
 		return errors.Wrap(err, "get prices")
 	}
 
-	log.Debug(ctx, "Using token prices", "omni", prices[tokenmeta.OMNI], "eth", prices[tokenmeta.ETH])
+	log.Debug(ctx, "Using token prices", "omni", prices[tokens.OMNI], "eth", prices[tokens.ETH])
 
 	spend, err := spendByDenom(dest, spendGwei, prices)
 	if err != nil {
@@ -152,7 +152,7 @@ type amtByDenom struct {
 func feeByDenom(
 	src evmchain.Metadata,
 	sub xchain.Submission,
-	prices map[tokenmeta.Meta]float64,
+	prices map[tokens.Asset]float64,
 ) (amtByDenom, error) {
 	var fees amtByDenom
 
@@ -164,12 +164,12 @@ func feeByDenom(
 		feesGwei := bi.ToGweiF64(msg.Fees)
 
 		switch src.NativeToken {
-		case tokenmeta.OMNI:
+		case tokens.OMNI:
 			fees.nOMNI += feesGwei
-			fees.nUSD += feesGwei * prices[tokenmeta.OMNI]
-		case tokenmeta.ETH:
+			fees.nUSD += feesGwei * prices[tokens.OMNI]
+		case tokens.ETH:
 			fees.nETH += feesGwei
-			fees.nUSD += feesGwei * prices[tokenmeta.ETH]
+			fees.nUSD += feesGwei * prices[tokens.ETH]
 		default:
 			return amtByDenom{}, errors.New("unknown native token", "token", src.NativeToken)
 		}
@@ -182,17 +182,17 @@ func feeByDenom(
 func spendByDenom(
 	dest evmchain.Metadata,
 	spendGwei float64,
-	prices map[tokenmeta.Meta]float64,
+	prices map[tokens.Asset]float64,
 ) (amtByDenom, error) {
 	var spend amtByDenom
 
 	switch dest.NativeToken {
-	case tokenmeta.OMNI:
+	case tokens.OMNI:
 		spend.nOMNI = spendGwei
-		spend.nUSD = spendGwei * prices[tokenmeta.OMNI]
-	case tokenmeta.ETH:
+		spend.nUSD = spendGwei * prices[tokens.OMNI]
+	case tokens.ETH:
 		spend.nETH = spendGwei
-		spend.nUSD = spendGwei * prices[tokenmeta.ETH]
+		spend.nUSD = spendGwei * prices[tokens.ETH]
 	default:
 		return amtByDenom{}, errors.New("unknown native token", "token", dest.NativeToken)
 	}

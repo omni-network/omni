@@ -1,23 +1,23 @@
 package feeoraclev2
 
 import (
-	"github.com/omni-network/omni/lib/tokenmeta"
+	"github.com/omni-network/omni/lib/tokens"
 )
 
 var (
-	gasTokenIDs = map[tokenmeta.Meta]uint16{
-		tokenmeta.OMNI: 1,
-		tokenmeta.ETH:  2,
+	gasTokenIDs = map[tokens.Asset]uint16{
+		tokens.OMNI: 1,
+		tokens.ETH:  2,
 	}
 )
 
-func gasTokenID(t tokenmeta.Meta) (uint16, bool) {
+func gasTokenID(t tokens.Asset) (uint16, bool) {
 	id, ok := gasTokenIDs[t]
 	return id, ok
 }
 
-func allGasTokens() map[tokenmeta.Meta]uint16 {
-	result := make(map[tokenmeta.Meta]uint16, len(gasTokenIDs))
+func allGasTokens() map[tokens.Asset]uint16 {
+	result := make(map[tokens.Asset]uint16, len(gasTokenIDs))
 	for k, v := range gasTokenIDs {
 		result[k] = v
 	}
