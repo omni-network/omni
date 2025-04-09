@@ -10,7 +10,7 @@ import (
 	"github.com/omni-network/omni/e2e/netman/pingpong"
 	"github.com/omni-network/omni/e2e/solve"
 	"github.com/omni-network/omni/e2e/types"
-	"github.com/omni-network/omni/halo/app/upgrades"
+	"github.com/omni-network/omni/halo/app/upgrades/static"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/cchain/queryutil"
@@ -406,13 +406,13 @@ func maybeSubmitNetworkUpgrades(ctx context.Context, def Definition) error {
 	}
 
 	// Genesis always includes the first upgrade after ephemeral genesis at block=1.
-	upgrade, ok, err := upgrades.NextUpgrade(def.Manifest.EphemeralGenesis)
+	upgrade, ok, err := static.NextUpgrade(def.Manifest.EphemeralGenesis)
 	if err != nil {
 		return err
 	} else if !ok {
 		// No genesis upgrade needed, ephemeral genesis is latest upgrade.
-		if upgrades.LatestUpgrade() != def.Manifest.EphemeralGenesis {
-			return errors.New("ephemeral genesis is not the latest upgrade", "ephemeral", def.Manifest.EphemeralGenesis, "latest", upgrades.LatestUpgrade())
+		if static.LatestUpgrade() != def.Manifest.EphemeralGenesis {
+			return errors.New("ephemeral genesis is not the latest upgrade", "ephemeral", def.Manifest.EphemeralGenesis, "latest", static.LatestUpgrade())
 		}
 
 		return nil
@@ -420,7 +420,7 @@ func maybeSubmitNetworkUpgrades(ctx context.Context, def Definition) error {
 
 	for i := 0; ; i++ {
 		// Get the next upgrade to submit
-		upgrade, ok, err = upgrades.NextUpgrade(upgrade)
+		upgrade, ok, err = static.NextUpgrade(upgrade)
 		if err != nil {
 			return err
 		} else if !ok {
@@ -455,7 +455,7 @@ func maybeSubmitNetworkUpgrades(ctx context.Context, def Definition) error {
 			return errors.Wrap(err, "wait mined")
 		}
 
-		if _, ok, err := upgrades.NextUpgrade(upgrade); err != nil {
+		if _, ok, err := static.NextUpgrade(upgrade); err != nil {
 			return err
 		} else if !ok {
 			return nil // No next upgrade to plan, just return

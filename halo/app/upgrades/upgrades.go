@@ -7,7 +7,6 @@ import (
 	drake3 "github.com/omni-network/omni/halo/app/upgrades/drake"
 	magellan2 "github.com/omni-network/omni/halo/app/upgrades/magellan"
 	uluwatu1 "github.com/omni-network/omni/halo/app/upgrades/uluwatu"
-	"github.com/omni-network/omni/lib/errors"
 
 	storetypes "cosmossdk.io/store/types"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
@@ -76,41 +75,4 @@ var Upgrades = []Upgrade{
 		Store:        drake3.StoreUpgrades,
 		GenesisState: drake3.GenesisState,
 	},
-}
-
-// AllUpgradeNames returns the names of all known Upgrades.
-func AllUpgradeNames() []string {
-	var resp []string
-	for _, u := range Upgrades {
-		resp = append(resp, u.Name)
-	}
-
-	return resp
-}
-
-func LatestUpgrade() string {
-	return Upgrades[len(Upgrades)-1].Name
-}
-
-// NextUpgrade returns the next upgrade name after the provided previous upgrade,
-// or false if this the latest upgrade (no next), or an error if the name is not a
-// valid upgrade.
-func NextUpgrade(prev string) (string, bool, error) {
-	if prev == "" { // Return the first upgrade
-		return Upgrades[0].Name, true, nil
-	}
-
-	for i, u := range Upgrades {
-		if u.Name != prev {
-			continue
-		}
-
-		if i == len(Upgrades)-1 {
-			return "", false, nil // No next upgrade
-		}
-
-		return Upgrades[i+1].Name, true, nil
-	}
-
-	return "", false, errors.New("prev upgrade not found [BUG]")
 }

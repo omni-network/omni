@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/omni-network/omni/halo/app/upgrades"
+	"github.com/omni-network/omni/halo/app/upgrades/static"
 	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/log"
 
@@ -40,7 +40,7 @@ func monitorUpgradesForever(ctx context.Context, cprov cchain.Provider) {
 				Name:   "none",
 				Height: 0,
 			}
-			for _, upgrade := range upgrades.AllUpgradeNames() {
+			for _, upgrade := range static.UpgradeNames {
 				p, ok, err := cprov.AppliedPlan(ctx, upgrade)
 				if err != nil {
 					log.Warn(ctx, "Failed fetching applied upgrade (will retry)", err, "name", upgrade)

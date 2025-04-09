@@ -9,6 +9,7 @@ import (
 
 	haloapp "github.com/omni-network/omni/halo/app"
 	"github.com/omni-network/omni/halo/app/upgrades"
+	"github.com/omni-network/omni/halo/app/upgrades/static"
 	"github.com/omni-network/omni/halo/evmupgrade"
 	vtypes "github.com/omni-network/omni/halo/valsync/types"
 	"github.com/omni-network/omni/lib/buildinfo"
@@ -103,7 +104,7 @@ func MakeGenesis(
 	}
 
 	// Step 3b: Add the next upgrade transaction if needed. Will be applied in block 1.
-	nextUpgrade, ok, err := upgrades.NextUpgrade(fromUpgrade)
+	nextUpgrade, ok, err := static.NextUpgrade(fromUpgrade)
 	if err != nil {
 		return nil, errors.Wrap(err, "next upgrade")
 	} else if ok {

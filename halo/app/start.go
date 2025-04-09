@@ -308,7 +308,7 @@ func newCometNode(ctx context.Context, cfg *cmtcfg.Config, app *App, privVal cmt
 		return nil, errors.Wrap(err, "load or gen node key", "key_file", cfg.NodeKeyFile())
 	}
 
-	cmtLog, err := NewCmtLogger(ctx, cfg.LogLevel)
+	cmtLog, err := comet.NewLogger(ctx, cfg.LogLevel)
 	if err != nil {
 		return nil, err
 	}
