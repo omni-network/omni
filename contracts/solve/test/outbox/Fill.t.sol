@@ -14,7 +14,7 @@ contract SolverNet_Outbox_Fill_Test is TestBase {
 
     function test_fill_reverts() public {
         vm.chainId(destChainId);
-        bytes32 orderId = inbox.getNextOnchainOrderId(user);
+        bytes32 orderId = inbox.getNextOrderId(user);
         SolverNet.FillOriginData memory fillData = SolverNet.FillOriginData({
             srcChainId: srcChainId,
             destChainId: srcChainId,
