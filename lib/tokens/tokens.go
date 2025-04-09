@@ -67,16 +67,16 @@ var tokens = append([]Token{
 	nativeOMNI(evmchain.IDOmniDevnet),
 
 	// USDC (mainnet)
-	usdc(evmchain.IDEthereum, common.HexToAddress("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48")),
-	usdc(evmchain.IDArbitrumOne, common.HexToAddress("0xaf88d065e77c8cC2239327C5EDb3A432268e5831")),
-	usdc(evmchain.IDOptimism, common.HexToAddress("0x0b2c639c533813f4aa9d7837caf62653d097ff85")),
-	usdc(evmchain.IDBase, common.HexToAddress("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913")),
+	usdc(evmchain.IDEthereum, addr("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48")),
+	usdc(evmchain.IDArbitrumOne, addr("0xaf88d065e77c8cC2239327C5EDb3A432268e5831")),
+	usdc(evmchain.IDOptimism, addr("0x0b2c639c533813f4aa9d7837caf62653d097ff85")),
+	usdc(evmchain.IDBase, addr("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913")),
 
 	// USDC (testnet)
-	usdc(evmchain.IDSepolia, common.HexToAddress("0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238")),
-	usdc(evmchain.IDArbSepolia, common.HexToAddress("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d")),
-	usdc(evmchain.IDOpSepolia, common.HexToAddress("0x5fd84259d66Cd46123540766Be93DFE6D43130D7")),
-	usdc(evmchain.IDBaseSepolia, common.HexToAddress("0x036CbD53842c5426634e7929541eC2318f3dCF7e")),
+	usdc(evmchain.IDSepolia, addr("0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238")),
+	usdc(evmchain.IDArbSepolia, addr("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d")),
+	usdc(evmchain.IDOpSepolia, addr("0x5fd84259d66Cd46123540766Be93DFE6D43130D7")),
+	usdc(evmchain.IDBaseSepolia, addr("0x036CbD53842c5426634e7929541eC2318f3dCF7e")),
 
 	// ERC20 OMNI
 	omniERC20(netconf.Mainnet),
@@ -85,15 +85,21 @@ var tokens = append([]Token{
 	omniERC20(netconf.Devnet),
 
 	// wstETH
-	wstETH(evmchain.IDBase, common.HexToAddress("0xc1cba3fcea344f92d9239c08c0568f6f2f0ee452")),
-	wstETH(evmchain.IDEthereum, common.HexToAddress("0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0")),
-	wstETH(evmchain.IDHolesky, common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")),
-	wstETH(evmchain.IDSepolia, common.HexToAddress("0xB82381A3fBD3FaFA77B3a7bE693342618240067b")),
+	wstETH(evmchain.IDBase, addr("0xc1cba3fcea344f92d9239c08c0568f6f2f0ee452")),
+	wstETH(evmchain.IDEthereum, addr("0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0")),
+	wstETH(evmchain.IDHolesky, addr("0x8d09a4502cc8cf1547ad300e066060d043f6982d")),
+	wstETH(evmchain.IDSepolia, addr("0xB82381A3fBD3FaFA77B3a7bE693342618240067b")),
 	// Mocks contain wstETH on IDBaseSepolia for omega and staging
 
 	// stETH
-	stETH(evmchain.IDEthereum, common.HexToAddress("0xae7ab96520de3a18e5e111b5eaab095312d7fe84")),
-	stETH(evmchain.IDHolesky, common.HexToAddress("0x3f1c547b21f65e10480de3ad8e19faac46c95034")),
+	stETH(evmchain.IDEthereum, addr("0xae7ab96520de3a18e5e111b5eaab095312d7fe84")),
+	stETH(evmchain.IDHolesky, addr("0x3f1c547b21f65e10480de3ad8e19faac46c95034")),
+
+	// WETH
+	weth(evmchain.IDEthereum, addr("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2")),
+	weth(evmchain.IDArbitrumOne, addr("0x82af49447d8a07e3bd95bd0d56f35241523fbab1")),
+	weth(evmchain.IDBase, addr("0x4200000000000000000000000000000000000006")),
+	weth(evmchain.IDOptimism, addr("0x4200000000000000000000000000000000000006")),
 }, mocks()...)
 
 func All() []Token {
@@ -172,6 +178,15 @@ func nativeETH(chainID uint64) Token {
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    NativeAddr,
+	}
+}
+
+func weth(chainID uint64, addr common.Address) Token {
+	return Token{
+		Meta:       tokenmeta.WETH,
+		ChainID:    chainID,
+		ChainClass: mustChainClass(chainID),
+		Address:    addr,
 	}
 }
 
@@ -294,4 +309,8 @@ func chainClass(chainID uint64) (ChainClass, error) {
 	default:
 		return "", errors.New("unsupported chain ID", "chain_id", chainID)
 	}
+}
+
+func addr(hex string) common.Address {
+	return common.HexToAddress(hex)
 }
