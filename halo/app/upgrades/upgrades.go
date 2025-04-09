@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	drake3 "github.com/omni-network/omni/halo/app/upgrades/drake"
 	magellan2 "github.com/omni-network/omni/halo/app/upgrades/magellan"
 	uluwatu1 "github.com/omni-network/omni/halo/app/upgrades/uluwatu"
 	"github.com/omni-network/omni/lib/errors"
@@ -63,6 +64,17 @@ var Upgrades = []Upgrade{
 		},
 		Store:        magellan2.StoreUpgrades,
 		GenesisState: magellan2.GenesisState,
+	},
+	{
+		Name: drake3.UpgradeName,
+		HandlerFunc: func(a App) upgradetypes.UpgradeHandler {
+			return drake3.CreateUpgradeHandler(
+				a.GetModuleManager(),
+				a.GetModuleConfigurator(),
+			)
+		},
+		Store:        drake3.StoreUpgrades,
+		GenesisState: drake3.GenesisState,
 	},
 }
 

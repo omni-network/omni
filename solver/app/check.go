@@ -10,7 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
-	stokens "github.com/omni-network/omni/solver/tokens"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -45,7 +45,7 @@ func newChecker(backends ethbackend.Backends, isAllowedCall callAllowFunc, price
 			return err
 		}
 
-		quote, err := getQuote(ctx, priceFunc, []stokens.Token{deposit.Token}, expenses)
+		quote, err := getQuote(ctx, priceFunc, []tokens.Token{deposit.Token}, expenses)
 		if err != nil {
 			return err
 		}
@@ -100,8 +100,8 @@ func getFillOriginData(req types.CheckRequest) ([]byte, error) {
 
 // coversQuote checks if `deposits` match or exceed a `quote` for expenses.
 func coversQuote(deposits, quote []TokenAmt) error {
-	byTkn := func(ps []TokenAmt) map[stokens.Token]*big.Int {
-		res := make(map[stokens.Token]*big.Int)
+	byTkn := func(ps []TokenAmt) map[tokens.Token]*big.Int {
+		res := make(map[tokens.Token]*big.Int)
 		for _, p := range ps {
 			res[p.Token] = p.Amount
 		}
@@ -145,8 +145,8 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 			return nil, newRejection(types.RejectInvalidExpense, errors.New("expense amount not positive"))
 		}
 
-		tkn, ok := stokens.ByAddress(destChainID, e.Token)
-		if !ok {
+		tkn, ok := tokens.ByAddress(destChainID, e.Token)
+		if !ok || !IsSupportedToken(tkn) {
 			return nil, newRejection(types.RejectUnsupportedExpense, errors.New("unsupported expense token", "addr", e.Token))
 		}
 
@@ -159,19 +159,20 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 			nativeExpense = bi.Add(nativeExpense, e.Amount)
 		}
 
-		if tkn.MaxSpend != nil && bi.GT(e.Amount, tkn.MaxSpend) {
+		bounds := GetSpendBounds(tkn)
+		if bounds.MaxSpend != nil && bi.GT(e.Amount, bounds.MaxSpend) {
 			return nil, newRejection(types.RejectExpenseOverMax,
 				errors.New("requested expense exceeds maximum",
 					"ask", tkn.FormatAmt(e.Amount),
-					"max", tkn.FormatAmt(tkn.MaxSpend),
+					"max", tkn.FormatAmt(bounds.MaxSpend),
 				))
 		}
 
-		if tkn.MinSpend != nil && bi.LT(e.Amount, tkn.MinSpend) {
+		if bounds.MinSpend != nil && bi.LT(e.Amount, bounds.MinSpend) {
 			return nil, newRejection(types.RejectExpenseUnderMin,
 				errors.New("requested expense is below minimum",
 					"ask", tkn.FormatAmt(e.Amount),
-					"min", tkn.FormatAmt(tkn.MinSpend),
+					"min", tkn.FormatAmt(bounds.MinSpend),
 				))
 		}
 
@@ -181,7 +182,7 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 		})
 	}
 
-	native, ok := stokens.Native(destChainID)
+	native, ok := tokens.Native(destChainID)
 	if !ok {
 		return nil, errors.New("invalid destination chain ID [BUG]") // This shouldn't happen here.
 	}
@@ -199,7 +200,7 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 }
 
 func parseTokenAmt(srcChainID uint64, dep types.AddrAmt) (TokenAmt, error) {
-	tkn, ok := stokens.ByAddress(srcChainID, dep.Token)
+	tkn, ok := tokens.ByAddress(srcChainID, dep.Token)
 	if !ok {
 		return TokenAmt{}, newRejection(types.RejectUnsupportedDeposit, errors.New("unsupported source chain deposit token", "addr", dep.Token, "src_chain", srcChainID))
 	}
@@ -210,4 +211,4 @@ func parseTokenAmt(srcChainID uint64, dep types.AddrAmt) (TokenAmt, error) {
 	}, nil
 }
 
-func isNative(e types.Expense) bool { return e.Token == stokens.NativeAddr }
+func isNative(e types.Expense) bool { return e.Token == tokens.NativeAddr }

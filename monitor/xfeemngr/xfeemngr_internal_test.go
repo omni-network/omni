@@ -27,7 +27,7 @@ func TestStart(t *testing.T) {
 	chainIDs := []uint64{1, 2, 3, 4, 5}
 
 	// mock token prices / pricer
-	initialTokenPrices := map[tokens.Token]float64{
+	initialTokenPrices := map[tokens.Asset]float64{
 		tokens.OMNI: randTokenPrice(tokens.OMNI),
 		tokens.ETH:  randTokenPrice(tokens.ETH),
 	}
@@ -57,7 +57,7 @@ func TestStart(t *testing.T) {
 		oracles: oracles,
 	}
 
-	expect := func(tprices map[tokens.Token]float64, gprices map[uint64]*big.Int) {
+	expect := func(tprices map[tokens.Asset]float64, gprices map[uint64]*big.Int) {
 		for _, oracle := range oracles {
 			src := oracle.chain
 
@@ -217,7 +217,7 @@ func randGasPrice() *big.Int {
 }
 
 // randTokenPrice generates a random, reasonable token price.
-func randTokenPrice(token tokens.Token) float64 {
+func randTokenPrice(token tokens.Asset) float64 {
 	// discriminate between ETH and other tokens (OMNI)
 	// so that test omni-per-eth conversion rates do not exceed maxOmniPerEth
 

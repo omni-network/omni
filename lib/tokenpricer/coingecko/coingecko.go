@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokens"
 )
 
@@ -23,7 +24,7 @@ type Client struct {
 	apikey string
 }
 
-var _ tokens.Pricer = Client{}
+var _ tokenpricer.Pricer = Client{}
 
 // New creates a new coingecko Client with the given options.
 func New(opts ...func(*options)) Client {
@@ -39,7 +40,7 @@ func New(opts ...func(*options)) Client {
 }
 
 // Price returns the price of the token in USD.
-func (c Client) Price(ctx context.Context, tkn tokens.Token) (float64, error) {
+func (c Client) Price(ctx context.Context, tkn tokens.Asset) (float64, error) {
 	prices, err := c.Prices(ctx, tkn)
 	if err != nil {
 		return 0, err
@@ -54,7 +55,7 @@ func (c Client) Price(ctx context.Context, tkn tokens.Token) (float64, error) {
 }
 
 // Prices returns the price of each coin in USD.
-func (c Client) Prices(ctx context.Context, tkns ...tokens.Token) (map[tokens.Token]float64, error) {
+func (c Client) Prices(ctx context.Context, tkns ...tokens.Asset) (map[tokens.Asset]float64, error) {
 	return c.getPrice(ctx, "usd", tkns...)
 }
 
@@ -63,7 +64,7 @@ func (c Client) Prices(ctx context.Context, tkns ...tokens.Token) (map[tokens.To
 type simplePriceResponse map[string]map[string]float64
 
 // GetPrice returns the price of each coin in the given currency.
-func (c Client) getPrice(ctx context.Context, currency string, tkns ...tokens.Token) (map[tokens.Token]float64, error) {
+func (c Client) getPrice(ctx context.Context, currency string, tkns ...tokens.Asset) (map[tokens.Asset]float64, error) {
 	ids := make([]string, len(tkns))
 	for i, t := range tkns {
 		ids[i] = t.CoingeckoID
@@ -79,7 +80,7 @@ func (c Client) getPrice(ctx context.Context, currency string, tkns ...tokens.To
 		return nil, errors.Wrap(err, "do req", "endpoint", "get_price")
 	}
 
-	prices := make(map[tokens.Token]float64)
+	prices := make(map[tokens.Asset]float64)
 
 	for _, tkn := range tkns {
 		priceByCurrency, ok := resp[tkn.CoingeckoID]

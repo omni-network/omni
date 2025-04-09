@@ -1,92 +1,114 @@
 package tokens
 
 import (
-	"fmt"
-	"math/big"
-	"strconv"
+	"encoding/json"
 
-	"github.com/omni-network/omni/lib/bi"
+	"github.com/omni-network/omni/lib/errors"
+
+	"github.com/ethereum/go-ethereum/common"
+
+	_ "embed"
 )
 
+// NativeAddr is the "address" of the native token; the zero address.
+var NativeAddr common.Address
+
+type ChainClass string
+
+const (
+	ClassDevent  ChainClass = "devnet"
+	ClassTestnet ChainClass = "testnet"
+	ClassMainnet ChainClass = "mainnet"
+)
+
+// Token represents a deployed instance of an Asset on a specific blockchain.
+// It includes both ERC20 and native tokens.
 type Token struct {
-	Symbol      string
-	Name        string
-	Decimals    uint
-	CoingeckoID string
+	Asset
+	ChainID    uint64
+	ChainClass ChainClass
+	Address    common.Address // empty if native
+	IsMock     bool
 }
 
-var (
-	OMNI = Token{
-		Symbol:      "OMNI",
-		Name:        "Omni Network",
-		Decimals:    18,
-		CoingeckoID: "omni-network",
+func (t Token) IsNative() bool {
+	return t.Address == NativeAddr
+}
+
+func (t Token) Is(asset Asset) bool {
+	return t.Asset == asset
+}
+
+func (t Token) IsOMNI() bool {
+	return t.Is(OMNI)
+}
+
+//go:embed tokens.json
+var tokenJSON []byte
+
+var tokens = func() []Token {
+	// Load tokens from the embedded JSON file.
+	// This ensures that this lib/tokens package is self-contained
+	// and doesn't depend on external libraries which result in
+	// cyclic dependencies.
+	var tkns []Token
+	if err := json.Unmarshal(tokenJSON, &tkns); err != nil { //nolint:musttag // Tags not required
+		panic(errors.Wrap(err, "unmarshal tokens"))
 	}
 
-	ETH = Token{
-		Symbol:      "ETH",
-		Name:        "Ether",
-		Decimals:    18,
-		CoingeckoID: "ethereum",
-	}
-
-	USDC = Token{
-		Symbol:      "USDC",
-		Name:        "USD Coin",
-		Decimals:    6,
-		CoingeckoID: "usdc",
-	}
-
-	STETH = Token{
-		Symbol:      "stETH",
-		Name:        "Lido Staked Ether",
-		Decimals:    18,
-		CoingeckoID: "lido-staked-ether",
-	}
-
-	WSTETH = Token{
-		Symbol:      "wstETH",
-		Name:        "Wrapped Staked Ether",
-		Decimals:    18,
-		CoingeckoID: "wrapped-steth",
-	}
-
-	all = []Token{OMNI, ETH, STETH, WSTETH}
-)
+	return tkns
+}()
 
 func All() []Token {
-	return all
+	return tokens
 }
 
-func (t Token) String() string {
-	return t.Symbol
-}
-
-// F64ToAmt returns the float64 in primary units as a big.Int in base units.
-// E.g. 1.1 (ether) is returned as 1.1 * 10^18 (wei).
-func (t Token) F64ToAmt(n float64) *big.Int {
-	if t.Decimals == 6 {
-		return bi.Dec6(n)
+// BySymbol returns the token with the given symbol and chain ID.
+func BySymbol(chainID uint64, symbol string) (Token, bool) {
+	for _, t := range tokens {
+		if t.ChainID == chainID && t.Symbol == symbol {
+			return t, true
+		}
 	}
 
-	return bi.Ether(n)
+	return Token{}, false
 }
 
-// AmtToF64 returns amount in base units as a float64 in primary units.
-// E.g. 1.1 * 10^18 (wei) is returned as 1.1 (ether).
-func (t Token) AmtToF64(n *big.Int) float64 {
-	return bi.ToF64(n, t.Decimals)
-}
-
-// FormatAmt returns a string representation of the provided base unit amount
-// in primary units with the token symbol appended. Note all decimals are shown.
-func (t Token) FormatAmt(n *big.Int) string {
-	if n == nil {
-		return "nil"
+// ByAsset returns the token with the given Asset and chain ID.
+func ByAsset(chainID uint64, asset Asset) (Token, bool) {
+	for _, t := range tokens {
+		if t.ChainID == chainID && t.Is(asset) {
+			return t, true
+		}
 	}
 
-	return fmt.Sprintf("%s %s",
-		strconv.FormatFloat(t.AmtToF64(n), 'f', -1, 64), // Use FormatFloat 'f' instead of %f since it avoids trailing zeros
-		t.Symbol,
-	)
+	return Token{}, false
+}
+
+// Native is an alias for ByAddress with the native token address.
+func Native(chainID uint64) (Token, bool) {
+	return ByAddress(chainID, NativeAddr)
+}
+
+// ByAddress returns the token with the given address and chain ID.
+func ByAddress(chainID uint64, addr common.Address) (Token, bool) {
+	for _, t := range tokens {
+		if t.ChainID == chainID && t.Address == addr {
+			return t, true
+		}
+	}
+
+	return Token{}, false
+}
+
+func ByChain(chainID uint64) []Token {
+	var tkns []Token
+
+	for _, t := range tokens {
+		if t.ChainID == chainID {
+			tkns = append(tkns, t)
+		}
+	}
+
+	return tkns
 }

@@ -13,8 +13,8 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
-	solverapp "github.com/omni-network/omni/solver/app"
-	stokens "github.com/omni-network/omni/solver/tokens"
+	"github.com/omni-network/omni/lib/tokens/tokenutil"
+	solver "github.com/omni-network/omni/solver/app"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -55,8 +55,8 @@ func StartMonitoring(ctx context.Context, network netconf.Network, rpcClients ma
 
 		// Also monitor solvernet claimant balances
 		// These claimants should maybe be added as proper roles and added to isSolverNetRole
-		for _, token := range stokens.UniqueSymbols() {
-			claimantAddress, ok := solverapp.Claimant(network.ID, token)
+		for _, token := range tokens.UniqueAssets() {
+			claimantAddress, ok := solver.Claimant(network.ID, token)
 			if !ok {
 				continue
 			}
@@ -166,7 +166,7 @@ func monitorSolverNetRoleForever(
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			for _, token := range stokens.UniqueSymbols() {
+			for _, token := range tokens.UniqueAssets() {
 				loopCtx := log.WithCtx(ctx, "token", token)
 				err := monitorSolverNetRoleTokenOnce(loopCtx, network, backend, token, role, address)
 				if ctx.Err() != nil {
@@ -184,27 +184,32 @@ func monitorSolverNetRoleTokenOnce(
 	ctx context.Context,
 	network netconf.ID,
 	backend *ethbackend.Backend,
-	token tokens.Token,
+	meta tokens.Asset,
 	role eoa.Role,
 	address common.Address,
 ) error {
 	chainName, chainID := backend.Chain()
-	solverToken, ok := stokens.BySymbol(chainID, token.Symbol)
+	token, ok := tokens.BySymbol(chainID, meta.Symbol)
 	if !ok {
 		// Not all tokens are present on all chains.
 		return nil
 	}
 
-	balance, err := stokens.BalanceOf(ctx, backend, solverToken, address)
+	if !solver.IsSupportedToken(token) {
+		// No need to monitor unsupported tokens.
+		return nil
+	}
+
+	balance, err := tokenutil.BalanceOf(ctx, backend, token, address)
 	if err != nil {
 		return err
 	}
 
 	// Convert to float64 ether
-	balF64 := solverToken.AmtToF64(balance)
-	tokenBalance.WithLabelValues(chainName, string(role), token.Symbol).Set(balF64)
+	balF64 := token.AmtToF64(balance)
+	tokenBalance.WithLabelValues(chainName, string(role), meta.Symbol).Set(balF64)
 
-	thresh, ok := eoa.GetSolverNetThreshold(role, network, chainID, token)
+	thresh, ok := eoa.GetSolverNetThreshold(role, network, chainID, meta)
 	if !ok {
 		// Thresholds only exist for solver and flowgen role on dest fill chains
 		return nil
@@ -215,7 +220,7 @@ func monitorSolverNetRoleTokenOnce(
 		isLow = 1
 	}
 
-	tokenBalanceLow.WithLabelValues(chainName, string(role), token.Symbol).Set(isLow)
+	tokenBalanceLow.WithLabelValues(chainName, string(role), meta.Symbol).Set(isLow)
 
 	return nil
 }

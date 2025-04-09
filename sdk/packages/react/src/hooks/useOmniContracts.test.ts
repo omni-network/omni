@@ -5,8 +5,14 @@ import { contracts } from '../../test/shared.js'
 import * as apiModule from '../internal/api.js'
 import { useOmniContracts } from './useOmniContracts.js'
 
+const renderOmniContractsHook = (
+  options?: Parameters<typeof renderHook>[1],
+) => {
+  return renderHook(() => useOmniContracts(), options)
+}
+
 test('default: returns contracts when API call succeeds', async () => {
-  const { result } = renderHook(() => useOmniContracts(), {
+  const { result } = renderOmniContractsHook({
     mockContractsCall: true,
   })
 
@@ -19,7 +25,7 @@ test('default: returns contracts when API call succeeds', async () => {
 })
 
 test('behaviour: handles API error gracefully', async () => {
-  const { result } = renderHook(() => useOmniContracts(), {
+  const { result } = renderOmniContractsHook({
     mockContractsCallFailure: true,
   })
 
@@ -38,7 +44,7 @@ test('behaviour: handles invalid response format', async () => {
     invalidField: 'value',
   })
 
-  const { result } = renderHook(() => useOmniContracts())
+  const { result } = renderOmniContractsHook()
 
   await waitFor(() => expect(result.current.isPending).toBe(false))
 

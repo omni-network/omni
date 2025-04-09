@@ -1,37 +1,20 @@
 import { waitFor } from '@testing-library/react'
-import { beforeEach, expect, test, vi } from 'vitest'
+import { expect, test } from 'vitest'
 import { orderId, renderHook, resolvedOrder } from '../../test/index.js'
-import { createMockReadContractResult } from '../../test/mocks.js'
+import {
+  createMockReadContractResult,
+  mockWagmiHooks,
+} from '../../test/mocks.js'
 import { useGetOrder } from './useGetOrder.js'
 
-const { useReadContract } = vi.hoisted(() => {
-  return {
-    useReadContract: vi.fn().mockImplementation(() => {
-      return createMockReadContractResult()
-    }),
-  }
-})
+const { useReadContract } = mockWagmiHooks()
 
-vi.mock('wagmi', async () => {
-  const actual = await vi.importActual('wagmi')
-  return {
-    ...actual,
-    useReadContract,
-  }
-})
-
-beforeEach(() => {
-  useReadContract.mockReturnValue(createMockReadContractResult())
-})
+const renderGetOrderHook = (params: Parameters<typeof useGetOrder>[0]) => {
+  return renderHook(() => useGetOrder(params), { mockContractsCall: true })
+}
 
 test('default: returns order when contract read returns an order', async () => {
-  const { result, rerender } = renderHook(
-    () =>
-      useGetOrder({
-        chainId: 1,
-      }),
-    { mockContractsCall: true },
-  )
+  const { result, rerender } = renderGetOrderHook({ chainId: 1 })
 
   expect(result.current.data).toBeUndefined()
 
@@ -62,13 +45,7 @@ test('default: returns order when contract read returns an order', async () => {
 })
 
 test('behaviour: no contract read when orderId is undefined', () => {
-  const { result } = renderHook(
-    () =>
-      useGetOrder({
-        chainId: 1,
-      }),
-    { mockContractsCall: true },
-  )
+  const { result } = renderGetOrderHook({ chainId: 1 })
 
   expect(result.current.data).toBeUndefined()
   expect(result.current.status).toBe('pending')
@@ -78,13 +55,7 @@ test('behaviour: no contract read when orderId is undefined', () => {
 })
 
 test('behaviour: no contract read when chainId is undefined', () => {
-  const { result } = renderHook(
-    () =>
-      useGetOrder({
-        orderId,
-      }),
-    { mockContractsCall: true },
-  )
+  const { result } = renderGetOrderHook({ orderId })
 
   expect(result.current.data).toBeUndefined()
   expect(result.current.status).toBe('pending')
@@ -94,9 +65,7 @@ test('behaviour: no contract read when chainId is undefined', () => {
 })
 
 test('behaviour: no contract read when all inputs undefined', () => {
-  const { result } = renderHook(() => useGetOrder({}), {
-    mockContractsCall: true,
-  })
+  const { result } = renderGetOrderHook({})
 
   expect(result.current.data).toBeUndefined()
   expect(result.current.status).toBe('pending')

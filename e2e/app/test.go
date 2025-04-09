@@ -24,6 +24,7 @@ const (
 type TestConfig struct {
 	Verbose bool
 	RunArg  string
+	SkipArg string
 }
 
 // Test runs test cases under tests/.
@@ -83,6 +84,9 @@ func Test(ctx context.Context, def Definition, cfg TestConfig) error {
 	}
 	if cfg.RunArg != "" {
 		args = append(args, "-run", cfg.RunArg)
+	}
+	if cfg.SkipArg != "" {
+		args = append(args, "-skip", cfg.SkipArg)
 	}
 	args = append(args, "github.com/omni-network/omni/e2e/test")
 	log.Debug(ctx, "Test command", "args", args)

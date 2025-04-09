@@ -24,7 +24,7 @@ func (t SolverNetThreshold) MinBalance() *big.Int {
 
 var (
 	// solverThresholds defines the solvernet  thresholds RoleSolver: network -> chain -> token -> threshold.
-	solverThresholds = map[netconf.ID]map[uint64]map[tokens.Token]SolverNetThreshold{
+	solverThresholds = map[netconf.ID]map[uint64]map[tokens.Asset]SolverNetThreshold{
 		netconf.Mainnet: {
 			evmchain.IDEthereum: {
 				tokens.WSTETH: {minEther: 10},    // 10 wstETH
@@ -55,8 +55,8 @@ func SolverNetRoles() []Role {
 }
 
 // GetSolverNetThreshold returns the solvernet threshold for the given role, network, chain, and token.
-func GetSolverNetThreshold(role Role, network netconf.ID, chainID uint64, tkn tokens.Token) (SolverNetThreshold, bool) {
-	m := map[Role]map[netconf.ID]map[uint64]map[tokens.Token]SolverNetThreshold{
+func GetSolverNetThreshold(role Role, network netconf.ID, chainID uint64, tkn tokens.Asset) (SolverNetThreshold, bool) {
+	m := map[Role]map[netconf.ID]map[uint64]map[tokens.Asset]SolverNetThreshold{
 		RoleSolver: solverThresholds,
 	}
 

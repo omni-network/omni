@@ -260,7 +260,7 @@ func etherStr(amount *big.Int) string {
 	return fmt.Sprintf("%.4f", bi.ToEtherF64(amount))
 }
 
-func saneMax(token tokens.Token) *big.Int {
+func saneMax(token tokens.Asset) *big.Int {
 	saneETH := bi.Ether(saneMaxETH)
 	saneOmni := bi.Ether(saneMaxOmni)
 

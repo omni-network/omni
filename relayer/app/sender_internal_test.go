@@ -37,7 +37,7 @@ func TestSendAsync(t *testing.T) {
 		gasEstimator: mockGasEstimator,
 		abi:          nil,
 		chain:        netconf.Chain{},
-		gasToken:     tokens.Token{},
+		gasToken:     tokens.Asset{},
 		chainNames:   nil,
 		ethCl:        nil,
 	}

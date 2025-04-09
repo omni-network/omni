@@ -6,7 +6,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
-	stokens "github.com/omni-network/omni/solver/tokens"
+	"github.com/omni-network/omni/lib/tokens"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -21,7 +21,7 @@ type (
 // TokenAmt represents a token and an amount.
 // It differs from types.AddrAmt in that it contains fully resolved token type, not just the token address.
 type TokenAmt struct {
-	Token  stokens.Token
+	Token  tokens.Token
 	Amount *big.Int
 }
 

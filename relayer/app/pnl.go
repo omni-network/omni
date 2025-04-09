@@ -11,8 +11,9 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/pnl"
+	"github.com/omni-network/omni/lib/tokenpricer"
+	"github.com/omni-network/omni/lib/tokenpricer/coingecko"
 	"github.com/omni-network/omni/lib/tokens"
-	"github.com/omni-network/omni/lib/tokens/coingecko"
 	"github.com/omni-network/omni/lib/xchain"
 
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -23,8 +24,8 @@ const (
 )
 
 // newTokenPricer creates a new cached pricer with priceCacheEvictInterval.
-func newTokenPricer(ctx context.Context, cgAPIKey string) tokens.Pricer {
-	pricer := tokens.NewCachedPricer(coingecko.New(coingecko.WithAPIKey(cgAPIKey)))
+func newTokenPricer(ctx context.Context, cgAPIKey string) tokenpricer.Pricer {
+	pricer := tokenpricer.NewCached(coingecko.New(coingecko.WithAPIKey(cgAPIKey)))
 
 	// use cached pricer avoid spamming coingecko public api
 	go pricer.ClearCacheForever(ctx, priceCacheEvictInterval)
@@ -34,11 +35,11 @@ func newTokenPricer(ctx context.Context, cgAPIKey string) tokens.Pricer {
 
 type pnlLogger struct {
 	network netconf.ID
-	pricer  tokens.Pricer
+	pricer  tokenpricer.Pricer
 }
 
 // newPnlLogger creates a new pnl logger.
-func newPnlLogger(network netconf.ID, pricer tokens.Pricer) pnlLogger {
+func newPnlLogger(network netconf.ID, pricer tokenpricer.Pricer) pnlLogger {
 	return pnlLogger{network: network, pricer: pricer}
 }
 
@@ -151,7 +152,7 @@ type amtByDenom struct {
 func feeByDenom(
 	src evmchain.Metadata,
 	sub xchain.Submission,
-	prices map[tokens.Token]float64,
+	prices map[tokens.Asset]float64,
 ) (amtByDenom, error) {
 	var fees amtByDenom
 
@@ -181,7 +182,7 @@ func feeByDenom(
 func spendByDenom(
 	dest evmchain.Metadata,
 	spendGwei float64,
-	prices map[tokens.Token]float64,
+	prices map[tokens.Asset]float64,
 ) (amtByDenom, error) {
 	var spend amtByDenom
 

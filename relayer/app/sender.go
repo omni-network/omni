@@ -34,7 +34,7 @@ type Sender struct {
 	gasEstimator gasEstimator
 	abi          *abi.ABI
 	chain        netconf.Chain
-	gasToken     tokens.Token
+	gasToken     tokens.Asset
 	chainNames   map[xchain.ChainVersion]string
 	ethCl        ethclient.Client
 	onSubmit     onSubmitFunc

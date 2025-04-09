@@ -26,10 +26,16 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+
+	"golang.org/x/sync/semaphore"
 )
+
+// mempoolLimit is the maximum number of transactions that can be in-flight at once.
+const mempoolLimit = 16
 
 type account struct {
 	from       common.Address
+	sema       *semaphore.Weighted
 	privateKey *ecdsa.PrivateKey // Either local private key is set,
 	fireCl     fireblocks.Client // or, Fireblocks is used
 	txMgr      txmgr.TxManager
@@ -63,6 +69,7 @@ func NewFireBackend(ctx context.Context, chainName string, chainID uint64, block
 			from:   addr,
 			fireCl: fireCl,
 			txMgr:  txMgr,
+			sema:   semaphore.NewWeighted(mempoolLimit),
 		}
 	}
 
@@ -94,6 +101,7 @@ func NewBackend(chainName string, chainID uint64, blockPeriod time.Duration, eth
 			from:       addr,
 			privateKey: pk,
 			txMgr:      txMgr,
+			sema:       semaphore.NewWeighted(mempoolLimit),
 		}
 	}
 
@@ -120,6 +128,7 @@ func (b *Backend) AddAccount(privkey *ecdsa.PrivateKey) (common.Address, error) 
 		from:       addr,
 		privateKey: privkey,
 		txMgr:      txMgr,
+		sema:       semaphore.NewWeighted(mempoolLimit),
 	}
 
 	return addr, nil
@@ -156,6 +165,11 @@ func (b *Backend) Send(ctx context.Context, from common.Address, candidate txmgr
 	if !ok {
 		return nil, nil, errors.New("unknown from address", "from", from)
 	}
+
+	if err := acc.sema.Acquire(ctx, 1); err != nil {
+		return nil, nil, errors.Wrap(err, "acquire semaphore")
+	}
+	defer acc.sema.Release(1)
 
 	return acc.txMgr.Send(ctx, candidate)
 }

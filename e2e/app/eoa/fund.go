@@ -23,7 +23,7 @@ type dynamicThreshold struct {
 
 var (
 	// tokenConversion defines conversion rate for fund threshold amounts.
-	tokenConversion = map[tokens.Token]float64{
+	tokenConversion = map[tokens.Asset]float64{
 		tokens.OMNI: 500,
 		tokens.ETH:  1,
 	}
@@ -92,19 +92,19 @@ var (
 		RoleDeployer: thresholdMedium, // Ephemeral chains are deployed often and fees can spike by a lot
 	}
 
-	nativeTokens = map[tokens.Token]bool{
+	nativeTokens = map[tokens.Asset]bool{
 		tokens.ETH:  true,
 		tokens.OMNI: true,
 	}
 
 	// tokenOverrides specifies roles that support non-native-only tokens.
-	tokenOverrides = map[Role]map[tokens.Token]bool{
+	tokenOverrides = map[Role]map[tokens.Asset]bool{
 		// Flowgen only submits ETH-style solver orders
 		RoleFlowgen: {tokens.ETH: true},
 	}
 )
 
-func GetFundThresholds(token tokens.Token, network netconf.ID, role Role) (FundThresholds, bool) {
+func GetFundThresholds(token tokens.Asset, network netconf.ID, role Role) (FundThresholds, bool) {
 	thresh, ok := getThreshold(token, network, role)
 	if !ok {
 		return FundThresholds{}, false
@@ -132,7 +132,7 @@ func (t FundThresholds) TargetBalance() *big.Int {
 	return bi.Ether(t.targetEther)
 }
 
-func convert(threshold FundThresholds, token tokens.Token) (FundThresholds, error) {
+func convert(threshold FundThresholds, token tokens.Asset) (FundThresholds, error) {
 	conversion, ok := tokenConversion[token]
 	if !ok {
 		return FundThresholds{}, errors.New("fund conversion", "token", token.String())
@@ -145,7 +145,7 @@ func convert(threshold FundThresholds, token tokens.Token) (FundThresholds, erro
 }
 
 // multipleSum returns a function that calculates the sum of the thresholds for the given roles and multiplier.
-func multipleSum(token tokens.Token, network netconf.ID, multiplier uint64, roles []Role) FundThresholds {
+func multipleSum(token tokens.Asset, network netconf.ID, multiplier uint64, roles []Role) FundThresholds {
 	minSum, targetSum := bi.Zero(), bi.Zero()
 	for _, role := range roles {
 		thresh, ok := getThreshold(token, network, role)
@@ -163,11 +163,11 @@ func multipleSum(token tokens.Token, network netconf.ID, multiplier uint64, role
 	}
 }
 
-func getThreshold(token tokens.Token, network netconf.ID, role Role) (FundThresholds, bool) {
+func getThreshold(token tokens.Asset, network netconf.ID, role Role) (FundThresholds, bool) {
 	if supported, ok := tokenOverrides[role]; ok && !supported[token] {
 		return FundThresholds{}, false
 	} else if !ok && !nativeTokens[token] {
-		// Only native tokens are supported by default.
+		// Only native tokenmeta are supported by default.
 		return FundThresholds{}, false
 	}
 

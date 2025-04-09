@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/lib/bi"
-	stokens "github.com/omni-network/omni/solver/tokens"
+	solver "github.com/omni-network/omni/solver/app"
 
 	"github.com/stretchr/testify/require"
 )
@@ -74,11 +74,11 @@ func TestSplitOrderAmounts(t *testing.T) {
 		t.Run(test.Name, func(t *testing.T) {
 			t.Parallel()
 
-			tkn := stokens.Token{
+			bounds := solver.SpendBounds{
 				MinSpend: bi.Ether(test.MinSpend),
 				MaxSpend: bi.Ether(test.MaxSpend),
 			}
-			actual := splitOrderAmounts(tkn, bi.Ether(test.Total), test.Parallel)
+			actual := splitOrderAmounts(bounds, bi.Ether(test.Total), test.Parallel)
 
 			var actualFloats []float64
 			for _, amt := range actual {

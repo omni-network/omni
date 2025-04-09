@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/monitor/xfeemngr/ticker"
 )
@@ -12,15 +13,15 @@ import (
 type buffer struct {
 	mu        sync.RWMutex
 	once      sync.Once
-	buffer    map[tokens.Token]float64 // map token to price
-	pricer    tokens.Pricer
-	tokens    []tokens.Token
+	buffer    map[tokens.Asset]float64 // map token to price
+	pricer    tokenpricer.Pricer
+	tokens    []tokens.Asset
 	threshold float64
 	tick      ticker.Ticker
 }
 
 type Buffer interface {
-	Price(token tokens.Token) float64
+	Price(token tokens.Asset) float64
 	Stream(ctx context.Context)
 }
 
@@ -31,10 +32,10 @@ var _ Buffer = (*buffer)(nil)
 // A token price buffer maintains a buffered view of token prices for multiple
 // tokens. Buffered token prices are not updated unless they are outside the
 // threshold percentage. Start steaming token prices with Buffer.Stream(ctx).
-func NewBuffer(price tokens.Pricer, tkns []tokens.Token, threshold float64, ticker ticker.Ticker) Buffer {
+func NewBuffer(price tokenpricer.Pricer, tkns []tokens.Asset, threshold float64, ticker ticker.Ticker) Buffer {
 	return &buffer{
 		mu:        sync.RWMutex{},
-		buffer:    make(map[tokens.Token]float64),
+		buffer:    make(map[tokens.Asset]float64),
 		pricer:    price,
 		tokens:    tkns,
 		threshold: threshold,
@@ -44,7 +45,7 @@ func NewBuffer(price tokens.Pricer, tkns []tokens.Token, threshold float64, tick
 
 // Price returns the buffered price for the given token.
 // If the price is not known, returns 0.
-func (b *buffer) Price(token tokens.Token) float64 {
+func (b *buffer) Price(token tokens.Asset) float64 {
 	p, _ := b.price(token)
 
 	return p
@@ -97,7 +98,7 @@ func (b *buffer) stream(ctx context.Context) {
 }
 
 // guageLive updates "live" guages for token prices and conversion rates.
-func guageLive(prices map[tokens.Token]float64) {
+func guageLive(prices map[tokens.Asset]float64) {
 	for token, price := range prices {
 		if price == 0 {
 			continue
@@ -144,7 +145,7 @@ func (b *buffer) gaugeBuffered() {
 
 // price returns the buffered price for the given token.
 // If the price is not known, returns 0 and false.
-func (b *buffer) price(token tokens.Token) (float64, bool) {
+func (b *buffer) price(token tokens.Asset) (float64, bool) {
 	b.mu.RLock()
 	defer b.mu.RUnlock()
 
@@ -154,7 +155,7 @@ func (b *buffer) price(token tokens.Token) (float64, bool) {
 }
 
 // setPrice sets the buffered price for the given token.
-func (b *buffer) setPrice(token tokens.Token, price float64) {
+func (b *buffer) setPrice(token tokens.Asset, price float64) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 

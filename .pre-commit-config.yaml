@@ -9,7 +9,7 @@ repos:
         exclude: "testdata"
       - id: end-of-file-fixer # ensures that a file is either empty, or ends with one newline
         exclude_types: ["proto"]
-        exclude: "(testdata|.gas-snapshot|buf.gen.yaml|lib/netconf/.*/.*)"
+        exclude: "(testdata|.gas-snapshot|buf.gen.yaml|lib/netconf/.*/.*|lib/tokens/tokens.json)"
       - id: mixed-line-ending # ensures that a file doesn't contain a mix of LF and CRLF
       - id: no-commit-to-branch # Protect specific branches (default: main/master) from direct checkins
 

@@ -16,7 +16,6 @@ import (
 	"github.com/omni-network/omni/monitor/flowgen/types"
 	"github.com/omni-network/omni/monitor/flowgen/util"
 	sclient "github.com/omni-network/omni/solver/client"
-	stokens "github.com/omni-network/omni/solver/tokens"
 	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -53,12 +52,12 @@ func newJob(
 
 	token := tokens.WSTETH
 
-	srcChainTkn, ok := stokens.BySymbol(conf.srcChain, token.Symbol)
+	srcChainTkn, ok := tokens.BySymbol(conf.srcChain, token.Symbol)
 	if !ok {
 		return types.Job{}, false, errors.Wrap(err, "src token not found")
 	}
 
-	dstChainTkn, ok := stokens.BySymbol(conf.dstChain, token.Symbol)
+	dstChainTkn, ok := tokens.BySymbol(conf.dstChain, token.Symbol)
 	if !ok {
 		return types.Job{}, false, errors.Wrap(err, "dst token not found")
 	}
@@ -98,12 +97,16 @@ func openOrder(
 	backends ethbackend.Backends,
 	networkID netconf.ID,
 	owner common.Address,
-	srcToken, dstToken stokens.Token,
+	srcToken, dstToken tokens.Token,
 	conf flowConfig,
 ) (types.Result, bool, error) {
 	quoteReq := stypes.QuoteRequest{
 		SourceChainID:      srcToken.ChainID,
 		DestinationChainID: dstToken.ChainID,
+		Deposit: stypes.AddrAmt{
+			Token: srcToken.Address,
+			// Amount left empty, quote will return the required amount.
+		},
 		Expense: stypes.AddrAmt{
 			Token:  dstToken.Address,
 			Amount: conf.orderAmount,

@@ -16,8 +16,8 @@ import (
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/umath"
-	stokens "github.com/omni-network/omni/solver/tokens"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -79,7 +79,7 @@ func testSolverApprovals(ctx context.Context, t *testing.T, deps NetworkDeps) {
 
 	solverAddr := eoa.MustAddress(network, eoa.RoleSolver)
 
-	for _, tkn := range stokens.All() {
+	for _, tkn := range tokens.All() {
 		chain, ok := deps.Network.Chain(tkn.ChainID)
 		if !ok {
 			continue

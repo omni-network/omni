@@ -6,8 +6,8 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tutil"
-	stokens "github.com/omni-network/omni/solver/tokens"
 )
 
 //go:generate go test . -run=TestSolverThresholds -golden
@@ -19,7 +19,7 @@ func TestSolverThresholds(t *testing.T) {
 	for _, network := range []netconf.ID{netconf.Devnet, netconf.Staging, netconf.Omega, netconf.Mainnet} {
 		for _, chain := range evmchain.All() {
 			for _, role := range eoa.SolverNetRoles() {
-				for _, token := range stokens.UniqueSymbols() {
+				for _, token := range tokens.UniqueAssets() {
 					thresholds, ok := eoa.GetSolverNetThreshold(role, network, chain.ChainID, token)
 					if !ok {
 						continue

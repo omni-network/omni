@@ -248,7 +248,7 @@ func TestQuote(t *testing.T) {
 			expErr: types.JSONError{
 				Code:    http.StatusBadRequest,
 				Status:  http.StatusText(http.StatusBadRequest),
-				Message: "InvalidDeposit: deposit token must match expense token",
+				Message: "InvalidDeposit: deposit token must match expense token [expense=1 ETH, deposit=OMNI]",
 			},
 		},
 		{
@@ -262,7 +262,7 @@ func TestQuote(t *testing.T) {
 			expErr: types.JSONError{
 				Code:    http.StatusBadRequest,
 				Status:  http.StatusText(http.StatusBadRequest),
-				Message: "InvalidDeposit: deposit and expense must be of the same chain class (e.g. mainnet, testnet)",
+				Message: "InvalidDeposit: deposit and expense must be of the same chain class (e.g. mainnet, testnet) [deposit=1 ETH, expense=ETH]",
 			},
 			testdata: true,
 		},

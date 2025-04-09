@@ -12,6 +12,16 @@ const data = {
   rejectReason: 0,
 } as const
 
+const renderInboxStatusHook = () => {
+  return renderHook(
+    () =>
+      useInboxStatus({
+        chainId: 1,
+      }),
+    { mockContractsCall: true },
+  )
+}
+
 const { mockUseGetOrder } = vi.hoisted(() => {
   return {
     mockUseGetOrder: vi.fn().mockImplementation(() => {
@@ -33,12 +43,7 @@ beforeEach(() => {
 })
 
 test('default: returns appropriate inbox status when order is resolved', async () => {
-  const { result, rerender } = renderHook(
-    () => useInboxStatus({ chainId: 1 }),
-    {
-      mockContractsCall: true,
-    },
-  )
+  const { result, rerender } = renderInboxStatusHook()
 
   // once on mount
   expect(useGetOrder).toHaveBeenCalledOnce()
@@ -61,9 +66,7 @@ test('default: returns appropriate inbox status when order is resolved', async (
 })
 
 test('parameters: status unknown', () => {
-  const { result } = renderHook(() => useInboxStatus({ chainId: 1 }), {
-    mockContractsCall: true,
-  })
+  const { result } = renderInboxStatusHook()
 
   expect(result.current).toBe('unknown')
 })
@@ -75,9 +78,7 @@ test('parameters: status open', () => {
     }),
   )
 
-  const { result } = renderHook(() => useInboxStatus({ chainId: 1 }), {
-    mockContractsCall: true,
-  })
+  const { result } = renderInboxStatusHook()
 
   expect(result.current).toBe('open')
 })
@@ -89,9 +90,7 @@ test('parameters: status rejected', () => {
     }),
   )
 
-  const { result } = renderHook(() => useInboxStatus({ chainId: 1 }), {
-    mockContractsCall: true,
-  })
+  const { result } = renderInboxStatusHook()
 
   expect(result.current).toBe('rejected')
 })
@@ -103,9 +102,7 @@ test('parameters: status closed', () => {
     }),
   )
 
-  const { result } = renderHook(() => useInboxStatus({ chainId: 1 }), {
-    mockContractsCall: true,
-  })
+  const { result } = renderInboxStatusHook()
 
   expect(result.current).toBe('closed')
 })
@@ -117,9 +114,7 @@ test('parameters: status filled', () => {
     }),
   )
 
-  const { result } = renderHook(() => useInboxStatus({ chainId: 1 }), {
-    mockContractsCall: true,
-  })
+  const { result } = renderInboxStatusHook()
 
   expect(result.current).toBe('filled')
 })
@@ -131,9 +126,7 @@ test('parameters: status claimed', () => {
     }),
   )
 
-  const { result } = renderHook(() => useInboxStatus({ chainId: 1 }), {
-    mockContractsCall: true,
-  })
+  const { result } = renderInboxStatusHook()
 
   expect(result.current).toBe('filled')
 })

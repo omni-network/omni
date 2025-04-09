@@ -5,19 +5,19 @@ import (
 )
 
 var (
-	gasTokenIDs = map[tokens.Token]uint16{
+	gasTokenIDs = map[tokens.Asset]uint16{
 		tokens.OMNI: 1,
 		tokens.ETH:  2,
 	}
 )
 
-func gasTokenID(t tokens.Token) (uint16, bool) {
+func gasTokenID(t tokens.Asset) (uint16, bool) {
 	id, ok := gasTokenIDs[t]
 	return id, ok
 }
 
-func allGasTokens() map[tokens.Token]uint16 {
-	result := make(map[tokens.Token]uint16, len(gasTokenIDs))
+func allGasTokens() map[tokens.Asset]uint16 {
+	result := make(map[tokens.Asset]uint16, len(gasTokenIDs))
 	for k, v := range gasTokenIDs {
 		result[k] = v
 	}

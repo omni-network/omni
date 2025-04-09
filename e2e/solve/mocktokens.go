@@ -21,20 +21,20 @@ import (
 )
 
 type MockToken struct {
-	tokens.Token
+	tokens.Asset
 	ChainID   uint64
 	NetworkID netconf.ID
 }
 
 var mocks = []MockToken{
 	// staging mock wstETH
-	{Token: tokens.WSTETH, ChainID: evmchain.IDBaseSepolia, NetworkID: netconf.Staging}, // Note this is also used on omega.
+	{Asset: tokens.WSTETH, ChainID: evmchain.IDBaseSepolia, NetworkID: netconf.Staging}, // Note this is also used on omega.
 
 	// devnet L1 mock wstETH
-	{Token: tokens.WSTETH, ChainID: evmchain.IDMockL1, NetworkID: netconf.Devnet},
+	{Asset: tokens.WSTETH, ChainID: evmchain.IDMockL1, NetworkID: netconf.Devnet},
 
 	// devnet L2 mock wstETH
-	{Token: tokens.WSTETH, ChainID: evmchain.IDMockL2, NetworkID: netconf.Devnet},
+	{Asset: tokens.WSTETH, ChainID: evmchain.IDMockL2, NetworkID: netconf.Devnet},
 }
 
 func MockTokens() []MockToken {

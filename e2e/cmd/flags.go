@@ -48,6 +48,7 @@ func bindServiceFlags(flags *pflag.FlagSet, cfg *types.ServiceConfig) {
 
 func bindTestFlags(flags *pflag.FlagSet, cfg *app.TestConfig) {
 	flags.StringVar(&cfg.RunArg, "run", cfg.RunArg, "Optional -run flag to provide to 'go test'")
+	flags.StringVar(&cfg.SkipArg, "skip", cfg.SkipArg, "Optional -skip flag to provide to 'go test'")
 	flags.BoolVar(&cfg.Verbose, "verbose", true, "Enable verbose -v flag to provide to 'go test'")
 }
 

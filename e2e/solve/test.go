@@ -118,14 +118,12 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 			}
 
 			// Stream all inbox event logs and update order status in tracker
-			proc := func(ctx context.Context, _ *types.Header, logs []types.Log) error {
+			proc := func(_ context.Context, _ *types.Header, logs []types.Log) error {
 				for _, l := range logs {
 					orderID, status, err := solvernet.ParseEvent(l)
 					if err != nil {
 						return err
 					}
-
-					log.Debug(ctx, "Order status updated", "status", status, "order_id", orderID)
 
 					tracker.UpdateStatus(orderID, chain.ID, status)
 				}
@@ -155,7 +153,9 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 			if err != nil {
 				return errors.Wrap(err, "solver tracker failed")
 			} else if remaining > 0 {
-				log.Debug(ctx, "Pending orders", "remaining", remaining, "total", tracker.Len())
+				log.Debug(ctx, "Some orders still pending", "remaining", remaining, "total", tracker.Len())
+				tracker.DebugFirstPending(ctx)
+
 				continue
 			}
 

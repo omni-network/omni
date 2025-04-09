@@ -1,4 +1,4 @@
-package tokens
+package tokenutil
 
 import (
 	"context"
@@ -6,15 +6,17 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/tokens"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// BalanceOf retrieves the balance of a given address for a specific token.
 func BalanceOf(
 	ctx context.Context,
 	backend *ethbackend.Backend,
-	tkn Token,
+	tkn tokens.Token,
 	addr common.Address,
 ) (*big.Int, error) {
 	switch {

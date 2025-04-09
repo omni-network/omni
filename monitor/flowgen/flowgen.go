@@ -21,7 +21,6 @@ import (
 	"github.com/omni-network/omni/monitor/flowgen/symbiotic"
 	"github.com/omni-network/omni/monitor/flowgen/types"
 	sclient "github.com/omni-network/omni/solver/client"
-	stokens "github.com/omni-network/omni/solver/tokens"
 	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -137,11 +136,11 @@ func run(ctx context.Context, network netconf.ID, backends ethbackend.Backends, 
 			minAmt = amt
 			maxAmt = amt
 
-			stkn, ok := stokens.ByAddress(job.SrcChainID, result.Data.Deposit.Token)
+			tkn, ok := tokens.ByAddress(job.SrcChainID, result.Data.Deposit.Token)
 			if !ok {
 				return false, errors.New("src token not found", "address", result.Data.Deposit.Token)
 			}
-			token = stkn.Token
+			token = tkn
 
 			continue
 		}

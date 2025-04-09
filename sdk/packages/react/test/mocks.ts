@@ -1,4 +1,4 @@
-import { vi } from 'vitest'
+import { beforeEach, vi } from 'vitest'
 import type {
   useReadContract,
   useWaitForTransactionReceipt,
@@ -142,4 +142,35 @@ export function createMockWaitForTransactionReceiptResult<
     error: null,
     ...overrides,
   }
+}
+
+export function mockWagmiHooks() {
+  const { useReadContract, useWriteContract, useWaitForTransactionReceipt } =
+    vi.hoisted(() => {
+      return {
+        useReadContract: vi.fn(),
+        useWriteContract: vi.fn(),
+        useWaitForTransactionReceipt: vi.fn(),
+      }
+    })
+
+  vi.mock('wagmi', async () => {
+    const actual = await vi.importActual('wagmi')
+    return {
+      ...actual,
+      useReadContract,
+      useWriteContract,
+      useWaitForTransactionReceipt,
+    }
+  })
+
+  beforeEach(() => {
+    useReadContract.mockReturnValue(createMockReadContractResult())
+    useWriteContract.mockReturnValue(createMockWriteContractResult())
+    useWaitForTransactionReceipt.mockReturnValue(
+      createMockWaitForTransactionReceiptResult(),
+    )
+  })
+
+  return { useReadContract, useWriteContract, useWaitForTransactionReceipt }
 }

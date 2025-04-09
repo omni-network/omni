@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/omni-network/omni/lib/tokenpricer/coingecko"
 	"github.com/omni-network/omni/lib/tokens"
-	"github.com/omni-network/omni/lib/tokens/coingecko"
 	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/stretchr/testify/require"
@@ -38,8 +38,8 @@ type testCase struct {
 	name         string
 	invalid      bool         // invalid response
 	empty        bool         // empty response
-	omitToken    tokens.Token // omit a requested token
-	renameToken  tokens.Token // rename a requested token
+	omitToken    tokens.Asset // omit a requested token
+	renameToken  tokens.Asset // rename a requested token
 	omitCurrency string       // omit a requested currency
 	zeros        bool         // include zero prices
 	negatives    bool         // include negative prices
@@ -64,8 +64,8 @@ func TestGetPrice(t *testing.T) {
 		t.Helper()
 		return (test.invalid ||
 			test.empty ||
-			test.omitToken != tokens.Token{} ||
-			test.renameToken != tokens.Token{} ||
+			test.omitToken != tokens.Asset{} ||
+			test.renameToken != tokens.Asset{} ||
 			test.omitCurrency != "" ||
 			test.zeros ||
 			test.negatives)

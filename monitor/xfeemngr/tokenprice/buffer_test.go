@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/monitor/xfeemngr/ticker"
 	"github.com/omni-network/omni/monitor/xfeemngr/tokenprice"
@@ -14,18 +15,18 @@ import (
 func TestBufferStream(t *testing.T) {
 	t.Parallel()
 
-	initial := map[tokens.Token]float64{
+	initial := map[tokens.Asset]float64{
 		tokens.OMNI: randPrice(),
 		tokens.ETH:  randPrice(),
 	}
 
-	pricer := tokens.NewMockPricer(initial)
+	pricer := tokenpricer.NewMock(initial)
 
 	thresh := 0.1
 	tick := ticker.NewMock()
 	ctx := t.Context()
 
-	b := tokenprice.NewBuffer(pricer, []tokens.Token{tokens.OMNI, tokens.ETH}, thresh, tick)
+	b := tokenprice.NewBuffer(pricer, []tokens.Asset{tokens.OMNI, tokens.ETH}, thresh, tick)
 
 	b.Stream(ctx)
 
@@ -38,7 +39,7 @@ func TestBufferStream(t *testing.T) {
 	}
 
 	// 10 steps
-	buffed := make(map[tokens.Token]float64)
+	buffed := make(map[tokens.Asset]float64)
 	for i := 0; i < 10; i++ {
 		for token := range initial {
 			buffed[token] = b.Price(token)

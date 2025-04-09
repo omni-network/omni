@@ -10,8 +10,8 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/pnl"
-	tokenslib "github.com/omni-network/omni/lib/tokens"
-	stokens "github.com/omni-network/omni/solver/tokens"
+	"github.com/omni-network/omni/lib/tokenpricer"
+	"github.com/omni-network/omni/lib/tokens"
 
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -29,7 +29,7 @@ type targetFunc func(PendingData) string
 //
 // So technically, the claim can fail and the PnL income will still be logged.
 func newFilledPnlFunc(
-	pricer tokenslib.Pricer,
+	pricer tokenpricer.Pricer,
 	targetName targetFunc,
 	namer func(uint64) string,
 	outbox common.Address,
@@ -75,7 +75,7 @@ func newFilledPnlFunc(
 				ID:          order.ID.String(),
 			}
 			pnl.Log(ctx, p)
-			usdPnL(ctx, pricer, tknAmt.Token.Token, p)
+			usdPnL(ctx, pricer, tknAmt.Token.Asset, p)
 		}
 
 		for _, tknAmt := range minReceived {
@@ -90,7 +90,7 @@ func newFilledPnlFunc(
 			}
 
 			pnl.Log(ctx, p)
-			usdPnL(ctx, pricer, tknAmt.Token.Token, p)
+			usdPnL(ctx, pricer, tknAmt.Token.Asset, p)
 		}
 
 		return nil
@@ -98,7 +98,7 @@ func newFilledPnlFunc(
 }
 
 // newUpdatePnLFunc returns a updatePnLFunc that logs the gas expense PnL for updating order status, except for filled orders.
-func newUpdatePnLFunc(pricer tokenslib.Pricer, namer func(uint64) string) updatePnLFunc {
+func newUpdatePnLFunc(pricer tokenpricer.Pricer, namer func(uint64) string) updatePnLFunc {
 	return func(ctx context.Context, order Order, rec *ethclient.Receipt, update string) error {
 		srcChainName := namer(order.SourceChainID)
 		return gasPnL(ctx, pricer, order.SourceChainID, srcChainName, rec, update, order.ID.String())
@@ -106,7 +106,7 @@ func newUpdatePnLFunc(pricer tokenslib.Pricer, namer func(uint64) string) update
 }
 
 // newSimpleGasPnLFunc returns a simpleGasPnLFunc that logs simple gas PnL, not related to orders.
-func newSimpleGasPnLFunc(pricer tokenslib.Pricer, namer func(uint64) string) simpleGasPnLFunc {
+func newSimpleGasPnLFunc(pricer tokenpricer.Pricer, namer func(uint64) string) simpleGasPnLFunc {
 	return func(ctx context.Context, chainID uint64, rec *ethclient.Receipt, subCat string) error {
 		chainName := namer(chainID)
 		return gasPnL(ctx, pricer, chainID, chainName, rec, subCat, rec.TxHash.Hex())
@@ -115,7 +115,7 @@ func newSimpleGasPnLFunc(pricer tokenslib.Pricer, namer func(uint64) string) sim
 
 func gasPnL(
 	ctx context.Context,
-	pricer tokenslib.Pricer,
+	pricer tokenpricer.Pricer,
 	chainID uint64,
 	chainName string,
 	rec *ethclient.Receipt,
@@ -132,7 +132,7 @@ func gasPnL(
 		amount = bi.Add(amount, fee)
 	}
 
-	nativeToken, ok := stokens.Native(chainID)
+	nativeToken, ok := tokens.Native(chainID)
 	if !ok {
 		return errors.New("native token not found [BUG]")
 	}
@@ -148,7 +148,7 @@ func gasPnL(
 		ID:          id,
 	}
 	pnl.Log(ctx, p)
-	usdPnL(ctx, pricer, nativeToken.Token, p)
+	usdPnL(ctx, pricer, nativeToken.Asset, p)
 
 	return nil
 }
@@ -173,7 +173,7 @@ func maybeParseXCallFee(rec *ethclient.Receipt) (*big.Int, bool) {
 
 // usdPnL logs the USD equivalent PnL.
 // This is best effort.
-func usdPnL(ctx context.Context, pricer tokenslib.Pricer, token tokenslib.Token, p pnl.LogP) {
+func usdPnL(ctx context.Context, pricer tokenpricer.Pricer, token tokens.Asset, p pnl.LogP) {
 	usdPrice, err := pricer.Price(ctx, token)
 	if err != nil {
 		log.Warn(ctx, "Failed to get token USD price (will retry)", err, "token", token.Name)

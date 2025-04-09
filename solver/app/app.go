@@ -17,14 +17,14 @@ import (
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	tokenslib "github.com/omni-network/omni/lib/tokens"
-	"github.com/omni-network/omni/lib/tokens/coingecko"
+	"github.com/omni-network/omni/lib/tokenpricer"
+	"github.com/omni-network/omni/lib/tokenpricer/coingecko"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 	"github.com/omni-network/omni/solver/job"
 	"github.com/omni-network/omni/solver/targets"
-	stokens "github.com/omni-network/omni/solver/tokens"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -151,8 +151,8 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 }
 
-func newPricer(ctx context.Context, apiKey string) tokenslib.Pricer {
-	pricer := tokenslib.NewCachedPricer(coingecko.New(coingecko.WithAPIKey(apiKey)))
+func newPricer(ctx context.Context, apiKey string) tokenpricer.Pricer {
+	pricer := tokenpricer.NewCached(coingecko.New(coingecko.WithAPIKey(apiKey)))
 
 	// use cached pricer avoid spamming coingecko public api
 	const priceCacheEvictInterval = time.Minute * 10
@@ -222,7 +222,7 @@ func startProcessingEvents(
 	solverAddr common.Address,
 	addrs contracts.Addresses,
 	cursors *cursors,
-	pricer tokenslib.Pricer,
+	pricer tokenpricer.Pricer,
 	priceFunc priceFunc,
 ) error {
 	inboxChains, err := detectContractChains(ctx, network, backends, addrs.SolverNetInbox)
@@ -284,13 +284,13 @@ func startProcessingEvents(
 		// use last call target for target name
 		call := fill.Calls[len(fill.Calls)-1]
 
-		if tkn, ok := stokens.ByAddress(pendingData.DestinationChainID, call.Target); ok {
+		if tkn, ok := tokens.ByAddress(pendingData.DestinationChainID, call.Target); ok {
 			return "ERC20:" + tkn.Symbol
 		}
 
 		// Native bridging has zero call data and positive value
 		isNative := call.Selector == [4]byte{} && len(call.Params) == 0 && call.Value.Sign() > 0
-		if nativeTkn, ok := stokens.Native(pendingData.DestinationChainID); ok && isNative {
+		if nativeTkn, ok := tokens.Native(pendingData.DestinationChainID); ok && isNative {
 			return "Native:" + nativeTkn.Symbol
 		}
 
