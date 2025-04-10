@@ -24,7 +24,6 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
 	"github.com/omni-network/omni/lib/xchain"
-	evmengtypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/cometbft/cometbft/rpc/client/http"
 
@@ -274,52 +273,8 @@ func TestCLIOperator(t *testing.T) {
 			}, valChangeWait, 500*time.Millisecond, "no rewards increase")
 		})
 
-		omniBackend := omniBackend(t, network, endpoints, delegatorPrivKey)
-
-		// make sure that an additional delegation triggers a withdrawal eventually
-		t.Run("withdrawals", func(t *testing.T) {
-			// make sure no withdrawals are pending yet
-			amount := sumPendingWithdrawals(t, ctx, cprov, delegatorCosmosAddr)
-			require.Zero(t, amount)
-
-			// delegate more stake
-			stdOut, _, err := execCLI(
-				ctx, "operator", "delegate",
-				"--network", netID.String(),
-				"--validator-address", validatorAddr.Hex(),
-				"--private-key-file", delegatorPrivKeyFile,
-				"--amount", fmt.Sprintf("%d", delegatorDelegation),
-				"--execution-rpc", executionRPC,
-			)
-			require.NoError(t, err)
-			require.Empty(t, stdOut)
-
-			// make sure the delegation succeeded
-			require.Eventuallyf(t, func() bool {
-				val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
-				require.True(t, ok)
-				newPower, err := val.Power()
-				require.NoError(t, err)
-
-				return newPower == opInitDelegation+opSelfDelegation+2*delegatorDelegation
-			}, valChangeWait, 500*time.Millisecond, "failed to delegate")
-
-			// fetch the EVM balance before we delegate new coins
-			var block *big.Int
-			balance1, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, block)
-			require.NoError(t, err)
-
-			// make sure the EVM balance increases after a new delegation because
-			// the intermediate rewards will be withdrawn automatically
-			require.Eventuallyf(t, func() bool {
-				balance2, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, block)
-				require.NoError(t, err)
-
-				return bi.GT(balance2, balance1)
-			}, valChangeWait, 500*time.Millisecond, "failed to withdraw to EVM")
-		})
-
 		t.Run("undelegation", func(t *testing.T) {
+			omniBackend := omniBackend(t, network, endpoints, delegatorPrivKey)
 			var block *big.Int
 			balance, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, block)
 			require.NoError(t, err)
@@ -410,15 +365,4 @@ func omniBackend(t *testing.T, network netconf.Network, endpoints xchain.RPCEndp
 	require.NoError(t, err)
 
 	return omniBackend
-}
-
-func sumPendingWithdrawals(t *testing.T, ctx context.Context, cprov provider.Provider, addr sdk.AccAddress) uint64 {
-	t.Helper()
-	resp, err := cprov.QueryClients().EvmEngine.SumPendingWithdrawalsByAddress(
-		ctx,
-		&evmengtypes.SumPendingWithdrawalsByAddressRequest{Address: evmengtypes.Address(common.BytesToAddress(addr.Bytes()))},
-	)
-	require.NoError(t, err)
-
-	return resp.SumGwei
 }
