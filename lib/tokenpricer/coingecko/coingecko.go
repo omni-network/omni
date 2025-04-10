@@ -17,6 +17,7 @@ const (
 	defaultProdHost     = "https://api.coingecko.com"
 	proProdHost         = "https://pro-api.coingecko.com"
 	apikeyHeader        = "x-cg-pro-api-key" //nolint:gosec // This is the header
+	currencyUSD         = "usd"
 )
 
 type Client struct {
@@ -39,6 +40,26 @@ func New(opts ...func(*options)) Client {
 	}
 }
 
+// Price returns the price of the base asset denominated in the quote asset.
+func (c Client) Price(ctx context.Context, base, quote tokens.Asset) (float64, error) {
+	// Coingecko only supports a limited amount of "quote currencies",
+	// So convert to USD first, then to the quote currency.
+
+	m, err := c.getPrice(ctx, currencyUSD, base)
+	if err != nil {
+		return 0, errors.Wrap(err, "get price")
+	}
+	basePrice := m[base]
+
+	m, err = c.getPrice(ctx, currencyUSD, quote)
+	if err != nil {
+		return 0, errors.Wrap(err, "get price")
+	}
+	quotePrice := m[quote]
+
+	return basePrice / quotePrice, nil
+}
+
 // USDPrice returns the price of the token in USD.
 func (c Client) USDPrice(ctx context.Context, tkn tokens.Asset) (float64, error) {
 	prices, err := c.USDPrices(ctx, tkn)
@@ -46,24 +67,20 @@ func (c Client) USDPrice(ctx context.Context, tkn tokens.Asset) (float64, error)
 		return 0, err
 	}
 
-	price, ok := prices[tkn]
-	if !ok {
-		return 0, errors.New("missing token [BUG]", "token", tkn)
-	}
-
-	return price, nil
+	return prices[tkn], nil
 }
 
-// Prices returns the price of each coin in USD.
+// USDPrices returns the price of each coin in USD.
 func (c Client) USDPrices(ctx context.Context, tkns ...tokens.Asset) (map[tokens.Asset]float64, error) {
-	return c.getPrice(ctx, "usd", tkns...)
+	return c.getPrice(ctx, currencyUSD, tkns...)
 }
 
 // simplePriceResponse is the response from the simple/price endpoint.
-// It mapes coin id to currency to price.
+// It maps coin id to currency to price.
 type simplePriceResponse map[string]map[string]float64
 
 // GetPrice returns the price of each coin in the given currency.
+// See supported currencies: https://api.coingecko.com/api/v3/simple/supported_vs_currencies
 func (c Client) getPrice(ctx context.Context, currency string, tkns ...tokens.Asset) (map[tokens.Asset]float64, error) {
 	ids := make([]string, len(tkns))
 	for i, t := range tkns {

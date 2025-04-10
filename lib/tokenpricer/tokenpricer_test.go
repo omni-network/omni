@@ -16,7 +16,7 @@ func TestCachedPricer(t *testing.T) {
 	ETH := tokens.ETH
 	OMNI := tokens.OMNI
 
-	pricer := tokenpricer.NewMock(map[tokens.Asset]float64{
+	pricer := tokenpricer.NewUSDMock(map[tokens.Asset]float64{
 		ETH:  100,
 		OMNI: 200,
 	})
@@ -29,8 +29,8 @@ func TestCachedPricer(t *testing.T) {
 	require.InEpsilon(t, 200.0, prices[OMNI], epsilon)
 
 	// change prices
-	pricer.SetPrice(ETH, 150)
-	pricer.SetPrice(OMNI, 250)
+	pricer.SetUSDPrice(ETH, 150)
+	pricer.SetUSDPrice(OMNI, 250)
 
 	// prices should still be cached
 	prices, err = cached.USDPrices(t.Context(), ETH, OMNI)
