@@ -61,7 +61,8 @@ func MakeGenesis(
 	}
 
 	// Step 1: Create the default genesis app state for all modules.
-	appState1 := defaultAppState(network.Static().MaxValidators, executionBlockHash, encConf.Codec.MustMarshalJSON)
+	params := network.Static()
+	appState1 := defaultAppState(params.MaxValidators, params.UnbondingTime, executionBlockHash, encConf.Codec.MustMarshalJSON)
 
 	// Step 1b: Add all upgrades up to fromUpgrade genesis state
 	if err := maybeAddUpgradeGenesisState(appState1, encConf.Codec, fromUpgrade); err != nil {
@@ -305,11 +306,13 @@ func addUpgrade(txConfig client.TxConfig, name string) (sdk.Tx, error) {
 // defaultAppState returns the default genesis application state.
 func defaultAppState(
 	maxVals uint32,
+	unbondingTime time.Duration,
 	executionBlockHash common.Hash,
 	marshal func(proto.Message) []byte,
 ) map[string]json.RawMessage {
 	stakingGenesis := sttypes.DefaultGenesisState()
 	stakingGenesis.Params.MaxValidators = maxVals
+	stakingGenesis.Params.UnbondingTime = unbondingTime
 
 	slashingGenesis := sltypes.DefaultGenesisState()
 	slashingGenesis.Params.SignedBlocksWindow = slashingBlocksWindow

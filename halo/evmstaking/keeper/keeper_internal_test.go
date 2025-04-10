@@ -455,7 +455,7 @@ func setupKeeper(
 	authKeeperMock.EXPECT().HasAccount(gomock.Any(), gomock.Any()).AnyTimes().Return(true)
 	authKeeperMock.EXPECT().NewAccountWithAddress(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 
-	bKeeperMock := testutil.NewMockBankKeeper(ctrl)
+	bKeeperMock := testutil.NewMockWrappedBankKeeper(ctrl)
 	bKeeperMock.EXPECT().MintCoins(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 	bKeeperMock.EXPECT().SendCoinsFromModuleToAccountNoWithdrawal(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 

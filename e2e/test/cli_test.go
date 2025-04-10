@@ -6,11 +6,14 @@ import (
 	"crypto/ecdsa"
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/omni-network/omni/cli/cmd"
+	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cchain/provider"
@@ -24,6 +27,7 @@ import (
 
 	"github.com/cometbft/cometbft/rpc/client/http"
 
+	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
@@ -267,6 +271,38 @@ func TestCLIOperator(t *testing.T) {
 
 				return latestRewards.GT(originalRewards)
 			}, valChangeWait, 500*time.Millisecond, "no rewards increase")
+		})
+
+		t.Run("undelegation", func(t *testing.T) {
+			omniBackend := omniBackend(t, network, endpoints, delegatorPrivKey)
+			var block *big.Int
+			balance, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, block)
+			require.NoError(t, err)
+
+			contract, err := bindings.NewStaking(common.HexToAddress(predeploys.Staking), omniBackend)
+			require.NoError(t, err)
+
+			burnFee := bi.Ether(0.1)
+
+			txOpts, err := omniBackend.BindOpts(ctx, delegatorEthAddr)
+			require.NoError(t, err)
+			txOpts.Value = burnFee
+
+			// undelegate everything
+			undelegatedAmount := big.NewInt(int64(2 * delegatorDelegation))
+			tx, err := contract.Undelegate(txOpts, validatorAddr, undelegatedAmount)
+			require.NoError(t, err)
+
+			_, err = omniBackend.WaitMined(ctx, tx)
+			require.NoError(t, err)
+
+			require.Eventuallyf(t, func() bool {
+				newBalance, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, block)
+				require.NoError(t, err)
+
+				// we subtract the burn fee twice to account for the tx fees (which are expected to be below the burn fee)
+				return bi.GTE(newBalance, bi.Add(bi.Sub(balance, burnFee, burnFee), undelegatedAmount))
+			}, valChangeWait, 500*time.Millisecond, "failed to undeleate")
 		})
 	})
 }
