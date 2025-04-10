@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/fireblocks"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
@@ -283,6 +284,71 @@ func (b *Backend) EnsureSynced(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// WaitConfirmed is similar to WaitMined, except that it also waits for the (first) receipt block to be "confirmed".
+// "Confirmed" depends on the evmchain.Reorgs value, if false, it is just calls WaitMined and returns the receipt.
+// Otherwise, it also waits for "safe" confirmation (this is very slow up to 6min).
+// It returns an error if the (first) receipt is reorged out (even though the tx may still be included
+// in a different block).
+func (b *Backend) WaitConfirmed(ctx context.Context, tx *ethtypes.Transaction) (*ethclient.Receipt, error) {
+	rec, err := b.WaitMined(ctx, tx)
+	if err != nil {
+		return nil, errors.Wrap(err, "wait mined")
+	}
+
+	meta, ok := evmchain.MetadataByID(b.chainID)
+	if !ok {
+		return nil, errors.New("unknown chain id", "chain", b.chainName)
+	} else if !meta.Reorgs {
+		return rec, nil // No need to confirm if reorgs are not expected.
+	}
+
+	if err := b.confirmReceipt(ctx, rec); err != nil {
+		return nil, errors.Wrap(err, "confirm receipt")
+	}
+
+	return rec, nil
+}
+
+func (b *Backend) confirmReceipt(ctx context.Context, rec *ethclient.Receipt) error {
+	ticker := time.NewTicker(b.blockPeriod * 4)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return errors.Wrap(ctx.Err(), "confirm receipt timeout")
+		case <-ticker.C:
+			safeHead, err := b.HeaderByType(ctx, ethclient.HeadSafe)
+			if err != nil {
+				return err
+			}
+
+			// Check if the receipt's block number is safe.
+			if bi.LT(safeHead.Number, rec.BlockNumber) {
+				continue // Receipt block is not safe yet.
+			}
+
+			// Walk up the safe chain to confirm the receipt's block hash.
+			safe := safeHead
+			for {
+				if safe.Hash() == rec.BlockHash || safe.ParentHash == rec.BlockHash {
+					return nil // Receipt block hash is confirmed as safe.
+				}
+
+				if bi.EQ(safe.Number, rec.BlockNumber) {
+					return errors.New("receipt block reorged", "height", rec.BlockNumber, "actual_block_hash", safe.Hash(), "receipt_block_hash", rec.BlockHash)
+				}
+
+				// Move to the parent block.
+				safe, err = b.HeaderByHash(ctx, safe.ParentHash)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
 }
 
 func randomHex7() string {
