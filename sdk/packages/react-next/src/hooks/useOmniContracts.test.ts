@@ -1,6 +1,5 @@
-import * as core from '@omni-network/core'
 import { waitFor } from '@testing-library/react'
-import { expect, test, vi } from 'vitest'
+import { expect, test } from 'vitest'
 import { renderHook } from '../../test/react.js'
 import { contracts } from '../../test/shared.js'
 import { useOmniContracts } from './useOmniContracts.js'
