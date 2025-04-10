@@ -49,6 +49,7 @@ type Metadata struct {
 	Name        string
 	BlockPeriod time.Duration
 	NativeToken tokens.Asset
+	Reorgs      bool // Only if chain actually reorgs, e.g. L2s don't
 }
 
 func MetadataByID(chainID uint64) (Metadata, bool) {
@@ -90,6 +91,7 @@ var static = map[uint64]Metadata{
 		Name:        "ethereum",
 		BlockPeriod: 12 * time.Second,
 		NativeToken: tokens.ETH,
+		Reorgs:      true,
 	},
 	IDOmniMainnet: {
 		ChainID:     IDOmniMainnet,
@@ -129,12 +131,14 @@ var static = map[uint64]Metadata{
 		Name:        "holesky",
 		BlockPeriod: 12 * time.Second,
 		NativeToken: tokens.ETH,
+		Reorgs:      true,
 	},
 	IDSepolia: {
 		ChainID:     IDSepolia,
 		Name:        "sepolia",
 		BlockPeriod: 12 * time.Second,
 		NativeToken: tokens.ETH,
+		Reorgs:      true,
 	},
 	IDArbSepolia: {
 		ChainID:     IDArbSepolia,
@@ -174,6 +178,7 @@ var static = map[uint64]Metadata{
 		Name:        "mock_l1",
 		BlockPeriod: time.Second,
 		NativeToken: tokens.ETH,
+		Reorgs:      true,
 	},
 	IDMockL2: {
 		ChainID:     IDMockL2,
