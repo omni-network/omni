@@ -12,6 +12,7 @@ services:
       - --chain-id={{ .ChainID }}
       - --silent
       - --load-state=/anvil/state.json
+      {{ if .ForkURL }}- --fork-url={{ .ForkURL }}{{ end }}
     ports:
       - {{ .Port }}:8545
     volumes:
