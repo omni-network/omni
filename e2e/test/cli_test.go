@@ -94,7 +94,7 @@ func TestCLIOperator(t *testing.T) {
 		require.NoError(t, err)
 		cprov := provider.NewABCI(cl, network.ID)
 
-		const valChangeWait = 1 * time.Minute
+		const valChangeWait = 30 * time.Second
 
 		// operator's initial and self delegations
 		const opInitDelegation = uint64(100)
@@ -248,7 +248,7 @@ func TestCLIOperator(t *testing.T) {
 				originalRewards = resp.Rewards[0].Amount
 
 				return true
-			}, valChangeWait, 500*time.Millisecond, "no rewards")
+			}, valChangeWait, 500*time.Millisecond, "no rewards increase")
 
 			// fetch again and make sure they increased
 			require.Eventuallyf(t, func() bool {
