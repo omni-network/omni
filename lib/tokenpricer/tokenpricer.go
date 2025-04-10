@@ -11,27 +11,70 @@ import (
 
 // Pricer is the token price provider interface.
 type Pricer interface {
-	// Price returns the price of the token in USD.
-	Price(ctx context.Context, tokens tokens.Asset) (float64, error)
-	// Prices returns the price of each provided token in USD.
-	Prices(ctx context.Context, tokens ...tokens.Asset) (map[tokens.Asset]float64, error)
+	// USDPrice returns the price of the token in USD.
+	USDPrice(ctx context.Context, tokens tokens.Asset) (float64, error)
+	// USDPrices returns the price of each provided token in USD.
+	USDPrices(ctx context.Context, tokens ...tokens.Asset) (map[tokens.Asset]float64, error)
+	// Price returns the price of the base asset denominated in the quote asset.
+	Price(ctx context.Context, base, quote tokens.Asset) (float64, error)
 }
 
 type Cached struct {
 	p     Pricer
-	mu    sync.Mutex
-	cache map[tokens.Asset]float64
+	mu    sync.RWMutex
+	cache map[pair]float64
+}
+
+type pair struct {
+	Base  tokens.Asset
+	Quote tokens.Asset
 }
 
 func NewCached(p Pricer) *Cached {
 	return &Cached{
 		p:     p,
-		cache: make(map[tokens.Asset]float64),
+		cache: make(map[pair]float64),
 	}
 }
 
-func (c *Cached) Price(ctx context.Context, token tokens.Asset) (float64, error) {
-	prices, err := c.Prices(ctx, token)
+func (c *Cached) get(base, quote tokens.Asset) (float64, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	price, ok := c.cache[pair{Base: base, Quote: quote}]
+
+	return price, ok
+}
+
+func (c *Cached) set(base, quote tokens.Asset, price float64) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.cache[pair{Base: base, Quote: quote}] = price
+}
+
+func (c *Cached) Price(ctx context.Context, base, quote tokens.Asset) (float64, error) {
+	if base == quote {
+		return 1, nil
+	}
+
+	price, ok := c.get(base, quote)
+	if ok {
+		return price, nil
+	}
+
+	price, err := c.p.Price(ctx, base, quote)
+	if err != nil {
+		return 0, err
+	}
+
+	c.set(base, quote, price)
+
+	return price, nil
+}
+
+func (c *Cached) USDPrice(ctx context.Context, token tokens.Asset) (float64, error) {
+	prices, err := c.USDPrices(ctx, token)
 	if err != nil {
 		return 0, err
 	}
@@ -44,16 +87,13 @@ func (c *Cached) Price(ctx context.Context, token tokens.Asset) (float64, error)
 	return price, nil
 }
 
-func (c *Cached) Prices(ctx context.Context, assets ...tokens.Asset) (map[tokens.Asset]float64, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
+func (c *Cached) USDPrices(ctx context.Context, assets ...tokens.Asset) (map[tokens.Asset]float64, error) {
 	prices := make(map[tokens.Asset]float64)
 
 	var uncached []tokens.Asset
 
 	for _, asset := range assets {
-		if price, ok := c.cache[asset]; ok {
+		if price, ok := c.get(asset, tokens.USDC); ok {
 			prices[asset] = price
 		} else {
 			uncached = append(uncached, asset)
@@ -64,14 +104,14 @@ func (c *Cached) Prices(ctx context.Context, assets ...tokens.Asset) (map[tokens
 		return prices, nil
 	}
 
-	newPrices, err := c.p.Prices(ctx, uncached...)
+	newPrices, err := c.p.USDPrices(ctx, uncached...)
 	if err != nil {
 		return nil, err
 	}
 
 	for token, price := range newPrices {
 		prices[token] = price
-		c.cache[token] = price
+		c.set(token, tokens.USDC, price)
 	}
 
 	return prices, nil
@@ -81,7 +121,7 @@ func (c *Cached) ClearCache() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.cache = make(map[tokens.Asset]float64)
+	c.cache = make(map[pair]float64)
 }
 
 func (c *Cached) ClearCacheForever(ctx context.Context, evictInterval time.Duration) {

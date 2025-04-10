@@ -20,7 +20,7 @@ func TestBufferStream(t *testing.T) {
 		tokens.ETH:  randPrice(),
 	}
 
-	pricer := tokenpricer.NewMock(initial)
+	pricer := tokenpricer.NewUSDMock(initial)
 
 	thresh := 0.1
 	tick := ticker.NewMock()
@@ -43,12 +43,12 @@ func TestBufferStream(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		for token := range initial {
 			buffed[token] = b.Price(token)
-			pricer.SetPrice(token, randPrice())
+			pricer.SetUSDPrice(token, randPrice())
 		}
 
 		tick.Tick()
 
-		live, err := pricer.Prices(ctx, tokens.OMNI, tokens.ETH)
+		live, err := pricer.USDPrices(ctx, tokens.OMNI, tokens.ETH)
 		require.NoError(t, err)
 
 		// check if any live price is outside threshold

@@ -5,9 +5,13 @@ import (
 	"encoding/binary"
 	"math/big"
 
+	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -38,10 +42,21 @@ func SwapToUSDC(
 		return nil, errors.Wrap(err, "route to USDC")
 	}
 
-	amountOut, _, err := executeSwaps(ctx, backend, user, swaps, amount)
+	if err := maybeApproveRouter(ctx, backend, user, token, amount); err != nil {
+		return nil, errors.Wrap(err, "approve token")
+	}
+
+	amountOut, receipt, err := executeSwaps(ctx, backend, user, token, swaps, amount)
 	if err != nil {
 		return nil, errors.Wrap(err, "execute swaps")
 	}
+
+	log.Debug(ctx, "Swapped for USDC",
+		"in", token.FormatAmt(amount),
+		"out", swaps[len(swaps)-1].TokenOut.FormatAmt(amountOut),
+		"tx", receipt.TxHash,
+		"gas_used", receipt.GasUsed,
+	)
 
 	return amountOut, nil
 }
@@ -84,6 +99,7 @@ func executeSwaps(
 	ctx context.Context,
 	backend *ethbackend.Backend,
 	user common.Address,
+	tokenIn tokens.Token,
 	swaps []Swap,
 	amountIn *big.Int,
 ) (*big.Int, *ethtypes.Receipt, error) {
@@ -114,6 +130,10 @@ func executeSwaps(
 		return nil, nil, errors.Wrap(err, "bind opts")
 	}
 
+	if tokenIn.IsNative() {
+		txOpts.Value = amountIn
+	}
+
 	params := IV3SwapRouterExactInputParams{
 		Path:             path,
 		Recipient:        user,
@@ -132,6 +152,60 @@ func executeSwaps(
 	}
 
 	return amountOut, receipt, nil
+}
+
+// maybeApproveRouter checks if the router needs approval for the token and approves if necessary.
+func maybeApproveRouter(
+	ctx context.Context,
+	backend *ethbackend.Backend,
+	user common.Address,
+	token tokens.Token,
+	amount *big.Int,
+) error {
+	if token.IsNative() {
+		return nil
+	}
+
+	addr, ok := routers[token.ChainID]
+	if !ok {
+		return errors.New("no router", "chain", token.ChainID)
+	}
+
+	erc20, err := bindings.NewIERC20(token.Address, backend)
+	if err != nil {
+		return errors.Wrap(err, "new token")
+	}
+
+	allowance, err := erc20.Allowance(&bind.CallOpts{Context: ctx}, user, addr)
+	if err != nil {
+		return errors.Wrap(err, "get allowance")
+	}
+
+	if bi.GTE(allowance, amount) {
+		return nil
+	}
+
+	txOpts, err := backend.BindOpts(ctx, user)
+	if err != nil {
+		return errors.Wrap(err, "bind opts")
+	}
+
+	tx, err := erc20.Approve(txOpts, addr, umath.MaxUint256)
+	if err != nil {
+		return errors.Wrap(err, "approve")
+	}
+
+	if _, err = backend.WaitMined(ctx, tx); err != nil {
+		return errors.Wrap(err, "wait mined")
+	}
+
+	log.Info(ctx, "Approved token spend",
+		"token", token.Symbol,
+		"router", addr.Hex(),
+		"tx", tx.Hash().Hex(),
+	)
+
+	return nil
 }
 
 // newRouter creates a new SwapRouter02 contract instance for the given chain.
@@ -154,9 +228,9 @@ func newQuoter(chainID uint64, backend *ethbackend.Backend) (*UniQuoterV2, error
 	return NewUniQuoterV2(addr, backend)
 }
 
-// encodePath converts a series of swaps into the Uniswap V3 path format.
-// Format: tokenIn (20b) + fee (3b) + tokenOut (20b) for single hop,
-// or tokenIn + fee + intermediate + fee + tokenOut for multi-hop.
+// encodePath converts swaps to Uniswap V3 path format.
+// Each hop is tokenIn (20b) + fee (3b) + tokenOut (20b).
+// Multi-hop swaps use intermediate tokens.
 func encodePath(swaps []Swap) ([]byte, error) {
 	if len(swaps) == 0 {
 		return nil, errors.New("empty swaps")
@@ -167,12 +241,13 @@ func encodePath(swaps []Swap) ([]byte, error) {
 	for i, swap := range swaps {
 		path = append(path, swap.TokenIn.Address.Bytes()...)
 
-		feeBytes := make([]byte, 3)
+		// Write fee as 3 bytes (uint24)
+		feeBytes := make([]byte, 4)
 		binary.BigEndian.PutUint32(feeBytes, swap.PoolFee)
-		path = append(path, feeBytes...)
+		path = append(path, feeBytes[1:]...) // Take last 3 bytes
 
 		// If last, append tokenOut address
-		if i != len(swaps)-1 {
+		if i == len(swaps)-1 {
 			path = append(path, swap.TokenOut.Address.Bytes()...)
 			continue
 		}
