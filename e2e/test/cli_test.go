@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/cli/cmd"
+	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cchain/provider"
@@ -272,6 +274,8 @@ func TestCLIOperator(t *testing.T) {
 			}, valChangeWait, 500*time.Millisecond, "no rewards increase")
 		})
 
+		omniBackend := omniBackend(t, network, endpoints, delegatorPrivKey)
+
 		// make sure that an additional delegation triggers a withdrawal eventually
 		t.Run("withdrawals", func(t *testing.T) {
 			// make sure no withdrawals are pending yet
@@ -301,7 +305,6 @@ func TestCLIOperator(t *testing.T) {
 			}, valChangeWait, 500*time.Millisecond, "failed to delegate")
 
 			// fetch the EVM balance before we delegate new coins
-			omniBackend := omniBackend(t, network, endpoints)
 			var block *big.Int
 			balance1, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, block)
 			require.NoError(t, err)
@@ -314,6 +317,37 @@ func TestCLIOperator(t *testing.T) {
 
 				return bi.GT(balance2, balance1)
 			}, valChangeWait, 500*time.Millisecond, "failed to withdraw to EVM")
+		})
+
+		t.Run("undelegation", func(t *testing.T) {
+			var block *big.Int
+			balance, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, block)
+			require.NoError(t, err)
+
+			contract, err := bindings.NewStaking(common.HexToAddress(predeploys.Staking), &omniBackend)
+			require.NoError(t, err)
+
+			burnFee := bi.Ether(0.1)
+
+			txOpts, err := omniBackend.BindOpts(ctx, delegatorEthAddr)
+			require.NoError(t, err)
+			txOpts.Value = burnFee
+
+			// undelegate everything
+			undelegatedAmount := big.NewInt(int64(2 * delegatorDelegation))
+			tx, err := contract.Undelegate(txOpts, validatorAddr, undelegatedAmount)
+			require.NoError(t, err)
+
+			_, err = omniBackend.WaitMined(ctx, tx)
+			require.NoError(t, err)
+
+			require.Eventuallyf(t, func() bool {
+				newBalance, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, block)
+				require.NoError(t, err)
+
+				// we subtract the burn fee twice to account for the tx fees (which are expected to be below the burn fee)
+				return bi.GTE(newBalance, bi.Add(bi.Sub(balance, burnFee, burnFee), undelegatedAmount))
+			}, valChangeWait, 500*time.Millisecond, "failed to undeleate")
 		})
 	})
 }
