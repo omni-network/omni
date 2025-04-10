@@ -16,7 +16,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 )
 
 const (
@@ -131,21 +130,11 @@ func BackendsFrom(backends map[uint64]*Backend) Backends {
 }
 
 // BackendsFromTestnet returns a multi-backends backed by in-memory keys that supports configured all chains.
-func BackendsFromTestnet(ctx context.Context, testnet types.Testnet, deployKeyFile string) (Backends, error) {
-	var err error
-
-	var publicDeployKey *ecdsa.PrivateKey
-	if testnet.Network == netconf.Devnet {
-		if deployKeyFile != "" {
-			return Backends{}, errors.New("deploy key not supported in devnet")
-		}
-	} else if testnet.Network == netconf.Staging {
-		publicDeployKey, err = crypto.LoadECDSA(deployKeyFile)
-	} else {
-		return Backends{}, errors.New("unknown network")
-	}
-	if err != nil {
-		return Backends{}, errors.Wrap(err, "load deploy key")
+func BackendsFromTestnet(ctx context.Context, testnet types.Testnet) (Backends, error) {
+	if testnet.Network != netconf.Devnet {
+		return Backends{}, errors.New("only devnet supports in-memory keys")
+	} else if len(testnet.PublicChains) > 0 {
+		return Backends{}, errors.New("public chains doesn't support in-memory keys")
 	}
 
 	inner := make(map[uint64]*Backend)
@@ -181,26 +170,6 @@ func BackendsFromTestnet(ctx context.Context, testnet types.Testnet, deployKeyFi
 		}
 
 		inner[chain.Chain.ChainID] = backend
-	}
-
-	// Configure public EVM Backends
-	for _, chain := range testnet.PublicChains {
-		if publicDeployKey == nil {
-			return Backends{}, errors.New("public deploy key required")
-		}
-		ethCl, err := ethclient.DialContext(ctx, chain.Chain().Name, chain.NextRPCAddress())
-		if err != nil {
-			return Backends{}, errors.Wrap(err, "dial")
-		}
-
-		backend, err := NewBackend(chain.Chain().Name, chain.Chain().ChainID, chain.Chain().BlockPeriod, ethCl, publicDeployKey)
-		if err != nil {
-			return Backends{}, errors.Wrap(err, "new public Backend")
-		} else if err := backend.EnsureSynced(ctx); err != nil {
-			return Backends{}, errors.Wrap(err, "ensure public chain synced", "chain", chain.Chain().Name)
-		}
-
-		inner[chain.Chain().ChainID] = backend
 	}
 
 	return Backends{

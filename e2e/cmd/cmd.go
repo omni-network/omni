@@ -6,7 +6,9 @@ import (
 	"regexp"
 
 	"github.com/omni-network/omni/e2e/app"
+	"github.com/omni-network/omni/e2e/bridge"
 	"github.com/omni-network/omni/e2e/docker"
+	"github.com/omni-network/omni/e2e/gasstation"
 	"github.com/omni-network/omni/e2e/solve"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/e2e/xbridge"
@@ -267,7 +269,7 @@ func newDeployGasAppCmd(def *app.Definition) *cobra.Command {
 				return errors.New("only permanent networks")
 			}
 
-			return app.DeployEphemeralGasApp(cmd.Context(), *def)
+			return gasstation.DeployEphemeralGasApp(cmd.Context(), def.Testnet, def.Backends())
 		},
 	}
 
@@ -279,7 +281,7 @@ func newDeployBridgeCmd(def *app.Definition) *cobra.Command {
 		Use:   "deploy-bridge",
 		Short: "Deploys l1 bridge, setups native bridge.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return app.DeployBridge(cmd.Context(), *def)
+			return bridge.DeployBridge(cmd.Context(), def.Testnet, def.Backends())
 		},
 	}
 
