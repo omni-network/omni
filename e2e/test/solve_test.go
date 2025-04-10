@@ -16,6 +16,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/lib/umath"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -37,7 +38,7 @@ func TestSolver(t *testing.T) {
 		testSolverApprovals(ctx, t, deps)
 
 		err := solve.Test(ctx, deps.Network, deps.Backends, deps.SolverAddr)
-		require.NoError(t, err)
+		tutil.RequireNoError(t, err)
 	})
 }
 
