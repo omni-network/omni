@@ -48,7 +48,7 @@ func TestBufferStream(t *testing.T) {
 
 		tick.Tick()
 
-		live, err := pricer.Prices(ctx, tokens.OMNI, tokens.ETH)
+		live, err := pricer.USDPrices(ctx, tokens.OMNI, tokens.ETH)
 		require.NoError(t, err)
 
 		// check if any live price is outside threshold

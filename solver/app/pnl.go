@@ -174,7 +174,7 @@ func maybeParseXCallFee(rec *ethclient.Receipt) (*big.Int, bool) {
 // usdPnL logs the USD equivalent PnL.
 // This is best effort.
 func usdPnL(ctx context.Context, pricer tokenpricer.Pricer, token tokens.Asset, p pnl.LogP) {
-	usdPrice, err := pricer.Price(ctx, token)
+	usdPrice, err := pricer.USDPrice(ctx, token)
 	if err != nil {
 		log.Warn(ctx, "Failed to get token USD price (will retry)", err, "token", token.Name)
 		return
