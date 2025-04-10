@@ -28,6 +28,7 @@ type Static struct {
 	L1BridgeAddress      common.Address
 	Portals              []Deployment
 	MaxValidators        uint32
+	UnbondingTime        time.Duration
 	ConsensusGenesisJSON []byte
 	ConsensusSeedTXT     []byte
 	ConsensusArchiveTXT  []byte
@@ -199,16 +200,19 @@ var statics = map[ID]Static{
 		Network:              Simnet,
 		OmniExecutionChainID: evmchain.IDOmniDevnet,
 		MaxValidators:        maxValidators,
+		UnbondingTime:        1 * time.Second,
 	},
 	Devnet: {
 		Network:              Devnet,
 		OmniExecutionChainID: evmchain.IDOmniDevnet,
 		MaxValidators:        maxValidators,
+		UnbondingTime:        1 * time.Second,
 	},
 	Staging: {
 		Network:              Staging,
 		OmniExecutionChainID: evmchain.IDOmniStaging,
 		MaxValidators:        maxValidators,
+		UnbondingTime:        5 * time.Second,
 		ConsensusSeedTXT:     stagingConsensusSeedsTXT,
 		ConsensusArchiveTXT:  stagingConsensusArchivesTXT,
 		ExecutionSeedTXT:     stagingExecutionSeedsTXT,
@@ -219,6 +223,7 @@ var statics = map[ID]Static{
 		AVSContractAddress:   omegaAVS,
 		OmniExecutionChainID: evmchain.IDOmniOmega,
 		MaxValidators:        maxValidators,
+		UnbondingTime:        1814400 * time.Second,
 		TokenAddress:         omegaToken,
 		L1BridgeAddress:      omegaBridge,
 		Portals: []Deployment{
@@ -239,6 +244,7 @@ var statics = map[ID]Static{
 		AVSContractAddress:   mainnetAVS,
 		OmniExecutionChainID: evmchain.IDOmniMainnet,
 		MaxValidators:        maxValidators,
+		UnbondingTime:        1814400 * time.Second,
 		TokenAddress:         mainnetToken,
 		L1BridgeAddress:      mainnetBridge,
 		Portals: []Deployment{
