@@ -3,7 +3,7 @@ import type { UseQueryResult } from '@tanstack/react-query'
 import { expectTypeOf, test } from 'vitest'
 import { useQuote } from './useQuote.js'
 
-test('type: useInboxStatus', () => {
+test('type: useQuote', () => {
   const result = useQuote({
     destChainId: 2,
     mode: 'expense',
