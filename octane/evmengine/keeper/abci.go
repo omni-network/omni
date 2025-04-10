@@ -71,7 +71,7 @@ func (k *Keeper) PrepareProposal(ctx sdk.Context, req *abci.RequestPreparePropos
 	if reqHeight != height { //nolint:nestif // Not an issue
 		// Create a new payload (retrying on network errors).
 		err := retryForever(ctx, func(ctx context.Context) (bool, error) {
-			fcr, err := k.startBuild(ctx, appHash, req.Time)
+			fcr, err := k.startBuild(ctx, appHash, req.Time, reqHeight)
 			if err != nil {
 				log.Warn(ctx, "Preparing proposal failed: build new evm payload (will retry)", err)
 				return false, nil // Retry
@@ -248,7 +248,7 @@ func (k *Keeper) PostFinalize(ctx sdk.Context) error {
 	log.Debug(ctx, "Starting optimistic EVM payload build", logAttr)
 
 	// No need to wrap this in retryForever since this is a best-effort optimisation, if it fails, just skip it.
-	fcr, err := k.startBuild(ctx, appHash, timestamp)
+	fcr, err := k.startBuild(ctx, appHash, timestamp, nextHeight)
 	if err != nil {
 		log.Warn(ctx, "Starting optimistic build failed", err, logAttr)
 		return nil
@@ -270,7 +270,7 @@ func (k *Keeper) PostFinalize(ctx sdk.Context) error {
 
 // startBuild triggers the building of a new execution payload on top of the current execution head.
 // It returns the EngineAPI response which contains a status and payload ID.
-func (k *Keeper) startBuild(ctx context.Context, appHash common.Hash, timestamp time.Time) (engine.ForkChoiceResponse, error) {
+func (k *Keeper) startBuild(ctx context.Context, appHash common.Hash, timestamp time.Time, height uint64) (engine.ForkChoiceResponse, error) {
 	head, err := k.getExecutionHead(ctx)
 	if err != nil {
 		return engine.ForkChoiceResponse{}, errors.Wrap(err, "latest execution block")
@@ -300,11 +300,16 @@ func (k *Keeper) startBuild(ctx context.Context, appHash common.Hash, timestamp 
 		FinalizedBlockHash: headHash,
 	}
 
+	withdrawals, err := k.eligibleWithdrawals(ctx, height)
+	if err != nil {
+		return engine.ForkChoiceResponse{}, errors.Wrap(err, "eligible withdrawals")
+	}
+
 	attrs := &engine.PayloadAttributes{
 		Timestamp:             ts,
 		Random:                headHash, // We use head block hash as randao.
 		SuggestedFeeRecipient: k.feeRecProvider.LocalFeeRecipient(),
-		Withdrawals:           []*etypes.Withdrawal{}, // Withdrawals not supported yet.
+		Withdrawals:           withdrawals,
 		BeaconRoot:            &appHash,
 	}
 
