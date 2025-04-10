@@ -71,19 +71,6 @@ func (w *BankWrapper) UndelegateCoinsFromModuleToAccount(ctx context.Context, se
 // SendCoinsFromModuleToAccount intercepts all "normal" bank transfers from modules to users and
 // creates EVM withdrawal to the user account and burns the funds from the module.
 func (w *BankWrapper) SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, coins sdk.Coins) error {
-	if err := w.BurnCoins(ctx, senderModule, coins); err != nil {
-		return errors.Wrap(err, "burn coins")
-	}
-
-	if err := w.createWithdrawal(ctx, recipientAddr, coins); err != nil {
-		return errors.Wrap(err, "create withdrawal")
-	}
-
-	return nil
-}
-
-// createWithdrawal validates inputs and creates a withdrawal for a gwei amount and burns the dust.
-func (w *BankWrapper) createWithdrawal(ctx context.Context, recipientAddr sdk.AccAddress, coins sdk.Coins) error {
 	if w.EVMEngineKeeper == nil {
 		return errors.New("nil EVMEngineKeeper [BUG]")
 	} else if !coins.IsValid() { // This ensures amounts are positive
@@ -109,6 +96,10 @@ func (w *BankWrapper) createWithdrawal(ctx context.Context, recipientAddr sdk.Ac
 		log.Debug(ctx, "Not creating all-dust withdrawal", "addr", addr, "amount_wei", coins[0].Amount)
 	} else if err := w.EVMEngineKeeper.InsertWithdrawal(ctx, addr, gwei); err != nil {
 		return err
+	}
+
+	if err := w.BurnCoins(ctx, senderModule, coins); err != nil {
+		return errors.Wrap(err, "burn coins")
 	}
 
 	return nil
