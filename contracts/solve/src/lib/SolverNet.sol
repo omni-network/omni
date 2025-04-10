@@ -3,7 +3,7 @@ pragma solidity =0.8.24;
 
 library SolverNet {
     /**
-     * @notice OrderData is the SolverNet's ERC7683 order data encoding, used when opening an order.
+     * @notice OrderData is SolverNet's ERC7683 order data encoding, used when opening an order.
      *  It describes the calls to execute, the expenses required, and the deposit backing the order.
      *
      *  Note that expenses only includes ERC20 expenses, native expenses are inferred from the calls.
@@ -22,6 +22,18 @@ library SolverNet {
      * @custom:field expenses       The token expenses required to fill the order, paid by the solver.
      */
     struct OrderData {
+        address owner;
+        uint64 destChainId;
+        Deposit deposit;
+        Call[] calls;
+        TokenExpense[] expenses;
+    }
+
+    /**
+     * @notice OmniOrderData is the same struct as OrderData, but named properly so we are fully compliant with EIP-712.
+     * @dev This is currently only used in SolverNetInboxV2.
+     */
+    struct OmniOrderData {
         address owner;
         uint64 destChainId;
         Deposit deposit;

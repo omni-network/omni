@@ -204,7 +204,7 @@ func conversionRate(ctx context.Context, pricer tokenpricer.Pricer, from, to tok
 		return 1, nil
 	}
 
-	prices, err := pricer.Prices(ctx, from, to)
+	prices, err := pricer.USDPrices(ctx, from, to)
 	if err != nil {
 		return 0, errors.Wrap(err, "get price", "from", from, "to", to)
 	}

@@ -23,9 +23,17 @@ import (
 
 // Start starts a genesis anvil node and returns an ethclient and a stop function or an error.
 // The dir parameter is the location of the docker compose.
-// If useLogProxy is true, all requests are routed via a reserve proxy that logs all requests, which will be printed
-// at stop.
 func Start(ctx context.Context, dir string, chainID uint64) (ethclient.Client, func(), error) {
+	return start(ctx, dir, chainID, "")
+}
+
+// StartFork starts an anvil node forked from the provided RPC URL and returns an ethclient and a stop function or an error.
+// The dir parameter is the location of the docker compose.
+func StartFork(ctx context.Context, dir string, chainID uint64, forkURL string) (ethclient.Client, func(), error) {
+	return start(ctx, dir, chainID, forkURL)
+}
+
+func start(ctx context.Context, dir string, chainID uint64, forkURL string) (ethclient.Client, func(), error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Minute) // Allow 1 minute for edge case of pulling images.
 	defer cancel()
 	if !composeDown(ctx, dir) {
@@ -38,7 +46,7 @@ func Start(ctx context.Context, dir string, chainID uint64) (ethclient.Client, f
 		return nil, nil, errors.Wrap(err, "get available port")
 	}
 
-	if err := writeComposeFile(dir, chainID, port, scripts.FoundryVersion()); err != nil {
+	if err := writeComposeFile(dir, chainID, port, scripts.FoundryVersion(), forkURL); err != nil {
 		return nil, nil, errors.Wrap(err, "write compose file")
 	}
 
@@ -67,10 +75,15 @@ func Start(ctx context.Context, dir string, chainID uint64) (ethclient.Client, f
 		composeDown(stopCtx, dir)
 	}
 
-	// Wait up to 10 secs for RPC to be available
-	const retry = 10
-	for i := 0; i < retry; i++ {
-		if i == retry-1 {
+	// Wait for RPC to be available
+	// If forking, wait longer since it needs to sync state
+	retryCount := 10 // 10 seconds for non-fork
+	if forkURL != "" {
+		retryCount = 60 // 60 seconds for fork
+	}
+
+	for i := 0; i < retryCount; i++ {
+		if i == retryCount-1 {
 			stop()
 			return nil, nil, errors.New("wait for RPC timed out")
 		}
@@ -78,7 +91,7 @@ func Start(ctx context.Context, dir string, chainID uint64) (ethclient.Client, f
 		select {
 		case <-ctx.Done():
 			return nil, nil, errors.Wrap(ctx.Err(), "timeout")
-		case <-time.After(time.Millisecond * 500):
+		case <-time.After(time.Second):
 		}
 
 		_, err := ethCl.BlockNumber(ctx)
@@ -142,7 +155,7 @@ func writeAnvilState(dir string) error {
 //go:embed compose.yaml.tmpl
 var composeTpl []byte
 
-func writeComposeFile(dir string, chainID uint64, port, foundryVer string) error {
+func writeComposeFile(dir string, chainID uint64, port, foundryVer, forkURL string) error {
 	tpl, err := template.New("").Parse(string(composeTpl))
 	if err != nil {
 		return errors.Wrap(err, "parse compose template")
@@ -153,10 +166,12 @@ func writeComposeFile(dir string, chainID uint64, port, foundryVer string) error
 		ChainID uint64
 		Port    string
 		Version string
+		ForkURL string
 	}{
 		ChainID: chainID,
 		Port:    port,
 		Version: foundryVer,
+		ForkURL: forkURL,
 	})
 	if err != nil {
 		return errors.Wrap(err, "execute compose template")

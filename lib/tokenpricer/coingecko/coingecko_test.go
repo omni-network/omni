@@ -29,7 +29,7 @@ func TestIntegration(t *testing.T) {
 	require.True(t, ok)
 
 	c := coingecko.New(coingecko.WithAPIKey(apikey))
-	prices, err := c.Prices(t.Context(), tokens.OMNI, tokens.ETH)
+	prices, err := c.USDPrices(t.Context(), tokens.OMNI, tokens.ETH)
 	tutil.RequireNoError(t, err)
 	require.NotEmpty(t, prices)
 }
@@ -79,7 +79,7 @@ func TestGetPrice(t *testing.T) {
 			defer server.Close()
 
 			c := coingecko.New(coingecko.WithHost(server.URL), coingecko.WithAPIKey(token))
-			prices, err := c.Prices(t.Context(), tokens.OMNI, tokens.ETH)
+			prices, err := c.USDPrices(t.Context(), tokens.OMNI, tokens.ETH)
 
 			if shouldErr(t, test) {
 				require.Error(t, err)

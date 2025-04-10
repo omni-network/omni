@@ -75,9 +75,9 @@ func newClaimer(
 		if err != nil {
 			return errors.Wrap(err, "claim order")
 		}
-		rec, err := backend.WaitMined(ctx, tx)
+		rec, err := backend.WaitConfirmed(ctx, tx)
 		if err != nil {
-			return errors.Wrap(err, "wait mined")
+			return errors.Wrap(err, "wait confirmed")
 		}
 
 		return pnl(ctx, order, rec, "Inbox:Claim")
@@ -172,9 +172,9 @@ func newFiller(
 		if err != nil {
 			return errors.Wrap(err, "fill order", "custom", solvernet.DetectCustomError(err))
 		}
-		rec, err := backend.WaitMined(ctx, tx)
+		rec, err := backend.WaitConfirmed(ctx, tx)
 		if err != nil {
-			return errors.Wrap(err, "wait mined")
+			return errors.Wrap(err, "wait confirmed")
 		}
 
 		if ok, err := outbox.DidFill(callOpts, order.ID, pendingData.FillOriginData); err != nil {
@@ -220,9 +220,9 @@ func newRejector(
 		if err != nil {
 			return errors.Wrap(err, "reject order", "custom", solvernet.DetectCustomError(err))
 		}
-		rec, err := backend.WaitMined(ctx, tx)
+		rec, err := backend.WaitConfirmed(ctx, tx)
 		if err != nil {
-			return errors.Wrap(err, "wait mined")
+			return errors.Wrap(err, "wait confirmed")
 		}
 
 		return pnl(ctx, order, rec, "Inbox:Reject")

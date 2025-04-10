@@ -4,32 +4,20 @@ pragma solidity =0.8.24;
 import { OwnableRoles } from "solady/src/auth/OwnableRoles.sol";
 import { ReentrancyGuard } from "solady/src/utils/ReentrancyGuard.sol";
 import { Initializable } from "solady/src/utils/Initializable.sol";
-import { EIP712 } from "solady/src/utils/EIP712.sol";
 import { DeployedAt } from "./util/DeployedAt.sol";
 import { XAppBase } from "core/src/pkg/XAppBase.sol";
 import { IERC7683 } from "./erc7683/IERC7683.sol";
 import { ISolverNetInbox } from "./interfaces/ISolverNetInbox.sol";
-import { LibBytes } from "solady/src/utils/LibBytes.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
-import { SignatureCheckerLib } from "solady/src/utils/SignatureCheckerLib.sol";
 import { SolverNet } from "./lib/SolverNet.sol";
 import { AddrUtils } from "./lib/AddrUtils.sol";
-import { IPermit2 } from "./ext/IPermit2.sol";
 import { IOmniPortalPausable } from "core/src/interfaces/IOmniPortalPausable.sol";
 
 /**
  * @title SolverNetInbox
  * @notice Entrypoint and alt-mempool for user solve orders.
  */
-contract SolverNetInbox is
-    OwnableRoles,
-    ReentrancyGuard,
-    Initializable,
-    EIP712,
-    DeployedAt,
-    XAppBase,
-    ISolverNetInbox
-{
+contract SolverNetInbox is OwnableRoles, ReentrancyGuard, Initializable, DeployedAt, XAppBase, ISolverNetInbox {
     using SafeTransferLib for address;
     using AddrUtils for address;
 
@@ -37,12 +25,6 @@ contract SolverNetInbox is
      * @notice Maximum number of calls and expenses in an order.
      */
     uint8 internal constant MAX_ARRAY_SIZE = 32;
-
-    /**
-     * @notice Maximum allowed manual gasless nonce step.
-     * @dev Prevents a user's nonce from being maxed out, blocking future orders.
-     */
-    uint16 internal constant MAX_NONCE_STEP = 10_000;
 
     /**
      * @notice Buffer for closing orders after fill deadline to give Omni Core relayer time to act.
@@ -60,26 +42,6 @@ contract SolverNetInbox is
      */
     bytes32 internal constant ORDERDATA_TYPEHASH = keccak256(
         "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)TokenExpense(address spender,address token,uint96 amount)"
-    );
-
-    /**
-     * @notice Typehash for the GaslessCrossChainOrder struct.
-     */
-    bytes32 internal constant GASLESS_ORDER_TYPEHASH = keccak256(
-        "OmniGaslessCrossChainOrder(address originSettler,address user,uint256 nonce,uint256 originChainId,uint32 openDeadline,uint32 fillDeadline,bytes32 orderDataType,bytes orderData)"
-    );
-
-    /**
-     * @notice Typehash for the PermitDetails struct.
-     */
-    bytes32 internal constant PERMITDETAILS_TYPEHASH =
-        keccak256("PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)");
-
-    /**
-     * @notice Typehash for the PermitSingle struct.
-     */
-    bytes32 internal constant PERMITSINGLE_TYPEHASH = keccak256(
-        "PermitSingle(PermitDetails details,address spender,uint256 sigDeadline)PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)"
     );
 
     /**
@@ -101,11 +63,6 @@ contract SolverNetInbox is
     uint8 internal constant OPEN_PAUSED = 1;
     uint8 internal constant CLOSE_PAUSED = 2;
     uint8 internal constant ALL_PAUSED = 3;
-
-    /**
-     * @notice The canonical Permit2 contract.
-     */
-    IPermit2 internal constant PERMIT2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
 
     /**
      * @dev Incremental order offset for source inbox orders.
@@ -158,14 +115,9 @@ contract SolverNetInbox is
     mapping(bytes32 id => uint248) internal _orderOffset;
 
     /**
-     * @notice Map user to onchain nonce.
+     * @notice Map user to nonce.
      */
-    mapping(address user => uint256 nonce) internal _onchainUserNonce;
-
-    /**
-     * @notice Map user to gasless nonce.
-     */
-    mapping(address user => uint256 nonce) internal _gaslessUserNonce;
+    mapping(address user => uint256 nonce) internal _userNonce;
 
     /**
      * @notice Modifier to ensure contract functions are not paused.
@@ -248,7 +200,7 @@ contract SolverNetInbox is
         returns (ResolvedCrossChainOrder memory resolved, OrderState memory state, uint248 offset)
     {
         SolverNet.Order memory orderData = _getOrder(id);
-        return (_resolve(orderData, id, 0), _orderState[id], _orderOffset[id]);
+        return (_resolve(orderData, id), _orderState[id], _orderOffset[id]);
     }
 
     /**
@@ -261,35 +213,19 @@ contract SolverNetInbox is
     }
 
     /**
-     * @notice Returns the next onchain order ID for the given user.
-     * @param user Address of the user the order is opened for.
+     * @notice Returns the next order ID for the given user.
+     * @param user Address of the user.
      */
-    function getNextOnchainOrderId(address user) external view returns (bytes32) {
-        return _getOrderId(user, _onchainUserNonce[user]);
+    function getNextOrderId(address user) external view returns (bytes32) {
+        return _getOrderId(user, _userNonce[user]);
     }
 
     /**
-     * @notice Returns the next gasless order ID for the given user.
-     * @param user Address of the user paying for the order.
+     * @notice Returns the nonce for the given user.
+     * @param user Address of the user.
      */
-    function getNextGaslessOrderId(address user) external view returns (bytes32) {
-        return _getOrderId(user, _gaslessUserNonce[user]);
-    }
-
-    /**
-     * @notice Returns the onchain nonce for the given user.
-     * @param user Address of the user the order is opened for.
-     */
-    function getOnchainUserNonce(address user) external view returns (uint256) {
-        return _onchainUserNonce[user];
-    }
-
-    /**
-     * @notice Returns the gasless nonce for the given user.
-     * @param user Address of the user paying for the order.
-     */
-    function getGaslessUserNonce(address user) external view returns (uint256) {
-        return _gaslessUserNonce[user];
+    function getUserNonce(address user) external view returns (uint256) {
+        return _userNonce[user];
     }
 
     /**
@@ -297,40 +233,6 @@ contract SolverNetInbox is
      */
     function getLatestOrderOffset() external view returns (uint248) {
         return _offset;
-    }
-
-    /**
-     * @notice Returns the EIP-712 digest for the given gasless order.
-     * @param order GaslessCrossChainOrder being signed.
-     * @return _ EIP-712 digest for the given gasless order.
-     */
-    function getGaslessCrossChainOrderDigest(GaslessCrossChainOrder calldata order) public view returns (bytes32) {
-        bytes32 orderHash = keccak256(abi.encode(GASLESS_ORDER_TYPEHASH, order));
-        return _hashTypedData(orderHash);
-    }
-
-    /**
-     * @notice Returns the EIP-712 digest for the given Permit2 data.
-     * @param order GaslessCrossChainOrder containing user, deposit token/amount, and deadline.
-     * @return _ EIP-712 digest for the given Permit2 data.
-     */
-    function getPermit2Digest(GaslessCrossChainOrder calldata order) external view returns (bytes32) {
-        SolverNet.Order memory orderData = _validateFor(order, LibBytes.emptyCalldata());
-        address user = order.user;
-        address token = orderData.deposit.token;
-        address spender = address(this);
-        uint160 amount = orderData.deposit.amount;
-        uint48 expiration = type(uint48).max; // Set max value for expiration, consistent with SafeTransferLib's approach
-        uint256 deadline = order.openDeadline;
-
-        (,, uint48 nonce) = PERMIT2.allowance(user, token, spender);
-        bytes32 permit2DomainSeparator = PERMIT2.DOMAIN_SEPARATOR();
-
-        bytes32 permitDetailsHash = keccak256(abi.encode(PERMITDETAILS_TYPEHASH, token, amount, expiration, nonce));
-        bytes32 permitSingleHash = keccak256(abi.encode(PERMITSINGLE_TYPEHASH, permitDetailsHash, spender, deadline));
-
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", permit2DomainSeparator, permitSingleHash));
-        return digest;
     }
 
     /**
@@ -343,42 +245,13 @@ contract SolverNetInbox is
     }
 
     /**
-     * @dev Validate the gasless order.
-     * @param order GaslessCrossChainOrder to validate.
-     * @param originFillerData Permit2 data for the origin settler.
-     */
-    function validateFor(GaslessCrossChainOrder calldata order, bytes calldata originFillerData)
-        external
-        view
-        returns (bool)
-    {
-        _validateFor(order, originFillerData);
-        return true;
-    }
-
-    /**
      * @notice Resolve the onchain order with validation.
      * @param order OnchainCrossChainOrder to resolve.
      */
     function resolve(OnchainCrossChainOrder calldata order) public view returns (ResolvedCrossChainOrder memory) {
         SolverNet.Order memory orderData = _validate(order);
         address user = orderData.header.owner;
-        return _resolve(orderData, _getOrderId(user, _onchainUserNonce[user]), 0);
-    }
-
-    /**
-     * @notice Resolve the gasless order with validation.
-     * @param order GaslessCrossChainOrder to resolve.
-     * @param originFillerData Permit2 data for the origin settler.
-     */
-    function resolveFor(GaslessCrossChainOrder calldata order, bytes calldata originFillerData)
-        public
-        view
-        returns (ResolvedCrossChainOrder memory)
-    {
-        SolverNet.Order memory orderData = _validateFor(order, originFillerData);
-        address user = order.user;
-        return _resolve(orderData, _getOrderId(user, _gaslessUserNonce[user]), order.openDeadline);
+        return _resolve(orderData, _getOrderId(user, _userNonce[user]));
     }
 
     /**
@@ -388,31 +261,13 @@ contract SolverNetInbox is
      */
     function open(OnchainCrossChainOrder calldata order) external payable whenNotPaused(OPEN) nonReentrant {
         SolverNet.Order memory orderData = _validate(order);
-        address user = orderData.header.owner;
-        bytes32 id = _getOrderId(user, _onchainUserNonce[user]++);
+        _onchainDeposit(orderData.deposit);
+        ResolvedCrossChainOrder memory resolved = _openOrder(orderData);
 
-        _open(orderData, id, msg.sender, 0);
-    }
-
-    /**
-     * @notice Open a gasless order to execute a call on another chain, backed by deposits.
-     * @dev Token deposits are transferred from order.user to this inbox.
-     * @param order GaslessCrossChainOrder to open.
-     * @param signature Signature from order.user.
-     * @param originFillerData Permit2 data for the origin settler.
-     */
-    function openFor(GaslessCrossChainOrder calldata order, bytes calldata signature, bytes calldata originFillerData)
-        external
-        whenNotPaused(OPEN)
-        nonReentrant
-    {
-        address user = order.user;
-        SolverNet.Order memory orderData = _validateFor(order, originFillerData);
-        if (msg.sender != user) _validateSignature(order, signature);
-        if (originFillerData.length > 0) _permit2(order, orderData.deposit, originFillerData);
-
-        bytes32 id = _getOrderId(user, _gaslessUserNonce[user]++);
-        _open(orderData, id, user, order.openDeadline);
+        emit FillOriginData(
+            resolved.orderId, abi.decode(resolved.fillInstructions[0].originData, (SolverNet.FillOriginData))
+        );
+        emit Open(resolved.orderId, resolved);
     }
 
     /**
@@ -500,16 +355,6 @@ contract SolverNetInbox is
     }
 
     /**
-     * @notice Increment the gasless nonce for the sender.
-     * @dev This allows a user to invalidate unused nonces.
-     * @param amount Amount to increment the nonce by.
-     */
-    function incrementGaslessNonce(uint16 amount) external {
-        if (amount > MAX_NONCE_STEP) revert InvalidNonce();
-        _gaslessUserNonce[msg.sender] += amount;
-    }
-
-    /**
      * @dev Return the order for the given ID.
      * @param id ID of the order.
      */
@@ -523,79 +368,26 @@ contract SolverNetInbox is
     }
 
     /**
-     * @dev Validate and parse OnchainCrossChainOrder parameters
-     * @param order OnchainCrossChainOrder to validate
+     * @dev Parse and return order data, validate correctness.
+     * @param order OnchainCrossChainOrder to parse
      */
     function _validate(OnchainCrossChainOrder calldata order) internal view returns (SolverNet.Order memory) {
-        _validateOnchainOrder(order);
-        return _validateOrderData(order.orderData, order.fillDeadline);
-    }
-
-    /**
-     * @dev Validate and parse GaslessCrossChainOrder parameters
-     * @param order GaslessCrossChainOrder to validate
-     * @param originFillerData Permit2 data for the origin settler
-     */
-    function _validateFor(GaslessCrossChainOrder calldata order, bytes calldata originFillerData)
-        internal
-        view
-        returns (SolverNet.Order memory)
-    {
-        _validateGaslessOrder(order, originFillerData);
-        return _validateOrderData(order.orderData, order.fillDeadline);
-    }
-
-    /**
-     * @dev Validate OnchainCrossChainOrder parameters
-     * @param order OnchainCrossChainOrder to validate
-     */
-    function _validateOnchainOrder(OnchainCrossChainOrder calldata order) internal view {
+        // Validate OnchainCrossChainOrder
         if (order.fillDeadline <= block.timestamp) revert InvalidFillDeadline();
         if (order.orderDataType != ORDERDATA_TYPEHASH) revert InvalidOrderTypehash();
         if (order.orderData.length == 0) revert InvalidOrderData();
-    }
 
-    /**
-     * @dev Validate GaslessCrossChainOrder parameters
-     * @param order GaslessCrossChainOrder to validate
-     * @param originFillerData Permit2 data for the origin settler
-     */
-    function _validateGaslessOrder(GaslessCrossChainOrder calldata order, bytes calldata originFillerData)
-        internal
-        view
-    {
-        uint256 gaslessUserNonce = _gaslessUserNonce[order.user];
-        if (order.originSettler != address(this)) revert InvalidOriginSettler();
-        if (order.user == address(0)) revert InvalidUser();
-        if (order.nonce < gaslessUserNonce || order.nonce > gaslessUserNonce + MAX_NONCE_STEP) revert InvalidNonce();
-        if (order.originChainId != block.chainid) revert InvalidOriginChainId();
-        if (order.openDeadline < block.timestamp || order.openDeadline >= order.fillDeadline) {
-            revert InvalidOpenDeadline();
-        }
-        if (order.fillDeadline <= block.timestamp) revert InvalidFillDeadline();
-        if (order.orderDataType != ORDERDATA_TYPEHASH) revert InvalidOrderTypehash();
-        if (order.orderData.length == 0) revert InvalidOrderData();
-        if (originFillerData.length != 0 && originFillerData.length != 96) revert InvalidOriginFillerData();
-    }
-
-    /**
-     * @dev Validate SolverNet.OrderData
-     * @param orderDataBytes Undecoded SolverNet.OrderData to validate
-     * @param fillDeadline Fill deadline of the order
-     */
-    function _validateOrderData(bytes calldata orderDataBytes, uint32 fillDeadline)
-        internal
-        view
-        returns (SolverNet.Order memory)
-    {
-        SolverNet.OrderData memory orderData = abi.decode(orderDataBytes, (SolverNet.OrderData));
+        SolverNet.OrderData memory orderData = abi.decode(order.orderData, (SolverNet.OrderData));
 
         // Validate SolverNet.OrderData.Header fields
         if (orderData.owner == address(0)) orderData.owner = msg.sender;
-        if (orderData.destChainId == 0 || orderData.destChainId == block.chainid) revert InvalidDestinationChainId();
+        if (orderData.destChainId == 0 || orderData.destChainId == block.chainid) revert InvalidChainId();
 
-        SolverNet.Header memory header =
-            SolverNet.Header({ owner: orderData.owner, destChainId: orderData.destChainId, fillDeadline: fillDeadline });
+        SolverNet.Header memory header = SolverNet.Header({
+            owner: orderData.owner,
+            destChainId: orderData.destChainId,
+            fillDeadline: order.fillDeadline
+        });
 
         // Validate SolverNet.OrderData.Call
         SolverNet.Call[] memory calls = orderData.calls;
@@ -615,20 +407,6 @@ contract SolverNetInbox is
         }
 
         return SolverNet.Order({ header: header, calls: calls, deposit: orderData.deposit, expenses: expenses });
-    }
-
-    /**
-     * @dev Validate the signature for the given gasless order.
-     * @param order GaslessCrossChainOrder to validate.
-     * @param signature Signature to validate.
-     */
-    function _validateSignature(GaslessCrossChainOrder calldata order, bytes calldata signature) internal view {
-        bytes32 digest = getGaslessCrossChainOrderDigest(order);
-        if (!SignatureCheckerLib.isValidSignatureNowCalldata(order.user, digest, signature)) {
-            if (!SignatureCheckerLib.isValidERC1271SignatureNowCalldata(order.user, digest, signature)) {
-                revert InvalidSignature();
-            }
-        }
     }
 
     /**
@@ -721,10 +499,8 @@ contract SolverNetInbox is
     /**
      * @dev Resolve the order without validation.
      * @param orderData Order data to resolve.
-     * @param id ID of the order.
-     * @param openDeadline Open deadline of the order.
      */
-    function _resolve(SolverNet.Order memory orderData, bytes32 id, uint32 openDeadline)
+    function _resolve(SolverNet.Order memory orderData, bytes32 id)
         internal
         view
         returns (ResolvedCrossChainOrder memory)
@@ -738,7 +514,7 @@ contract SolverNetInbox is
         return ResolvedCrossChainOrder({
             user: header.owner,
             originChainId: block.chainid,
-            openDeadline: openDeadline,
+            openDeadline: 0,
             fillDeadline: header.fillDeadline,
             orderId: id,
             maxSpent: maxSpent,
@@ -748,61 +524,26 @@ contract SolverNetInbox is
     }
 
     /**
-     * @dev Approve the origin settler to spend the deposit using Permit2.
-     * @param order GaslessCrossChainOrder containing user and deadline.
-     * @param deposit Deposit to approve.
-     * @param originFillerData Permit2 data from the depositor.
-     */
-    function _permit2(
-        GaslessCrossChainOrder calldata order,
-        SolverNet.Deposit memory deposit,
-        bytes calldata originFillerData
-    ) internal {
-        if (deposit.token == address(0)) return;
-        (uint8 v, bytes32 r, bytes32 s) = abi.decode(originFillerData, (uint8, bytes32, bytes32));
-        deposit.token.permit2(order.user, address(this), deposit.amount, order.openDeadline, v, r, s);
-    }
-
-    /**
      * @notice Validate and intake an ERC20 or native deposit.
      * @param deposit Deposit to process.
-     * @param from Address to retrieve the deposit from.
      */
-    function _processDeposit(SolverNet.Deposit memory deposit, address from) internal {
+    function _onchainDeposit(SolverNet.Deposit memory deposit) internal {
         if (deposit.token == address(0)) {
             if (msg.value != deposit.amount) revert InvalidNativeDeposit();
         } else {
-            deposit.token.safeTransferFrom2(from, address(this), deposit.amount);
+            deposit.token.safeTransferFrom(msg.sender, address(this), deposit.amount);
         }
-    }
-
-    /**
-     * @dev Opens a new order by retrieving the deposit and initializing its state.
-     * @param orderData Order data to open.
-     * @param id ID of the order.
-     * @param user Address of the user paying for the order.
-     * @param openDeadline Open deadline of the order.
-     */
-    function _open(SolverNet.Order memory orderData, bytes32 id, address user, uint32 openDeadline) internal {
-        _processDeposit(orderData.deposit, user);
-        ResolvedCrossChainOrder memory resolved = _openOrder(orderData, id, openDeadline);
-
-        emit FillOriginData(
-            resolved.orderId, abi.decode(resolved.fillInstructions[0].originData, (SolverNet.FillOriginData))
-        );
-        emit Open(resolved.orderId, resolved);
     }
 
     /**
      * @dev Opens a new order by initializing its state.
      * @param orderData Order data to open.
-     * @param id ID of the order.
      */
-    function _openOrder(SolverNet.Order memory orderData, bytes32 id, uint32 openDeadline)
-        internal
-        returns (ResolvedCrossChainOrder memory resolved)
-    {
-        resolved = _resolve(orderData, id, openDeadline);
+    function _openOrder(SolverNet.Order memory orderData) internal returns (ResolvedCrossChainOrder memory resolved) {
+        address user = orderData.header.owner;
+        bytes32 id = _getOrderId(user, _userNonce[user]++);
+        resolved = _resolve(orderData, id);
+
         _orderHeader[id] = orderData.header;
         _orderDeposit[id] = orderData.deposit;
         _orderOffset[id] = _incrementOffset();
@@ -914,15 +655,5 @@ contract SolverNetInbox is
         if (pause ? _pauseState == targetState : _pauseState != targetState) revert IsPaused();
 
         pauseState = pause ? targetState : NONE_PAUSED;
-    }
-
-    /**
-     * @dev Returns the domain name and version for the EIP-712 domain separator.
-     * @return name Domain name.
-     * @return version Domain version.
-     */
-    function _domainNameAndVersion() internal pure override returns (string memory name, string memory version) {
-        name = "SolverNetInbox";
-        version = "1";
     }
 }

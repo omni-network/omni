@@ -127,7 +127,7 @@ func (k *Keeper) listWithdrawalsByAddress(ctx context.Context, withdrawalAddr co
 }
 
 // eligibleWithdrawals returns all withdrawals created below the specified height, sorted by the
-// id in ascending order, limited by the provided count.
+// id in ascending order, limited by the configured count.
 // Note we exclude the provided height, because this function is called during the proposal
 // verification and execution, but in the case of the latter we also execute BeginBlockers, which
 // can trigger creation of new withdrawals, that were not present during the proposal creation.

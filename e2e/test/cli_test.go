@@ -324,7 +324,7 @@ func TestCLIOperator(t *testing.T) {
 			balance, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, block)
 			require.NoError(t, err)
 
-			contract, err := bindings.NewStaking(common.HexToAddress(predeploys.Staking), &omniBackend)
+			contract, err := bindings.NewStaking(common.HexToAddress(predeploys.Staking), omniBackend)
 			require.NoError(t, err)
 
 			burnFee := bi.Ether(0.1)
@@ -370,17 +370,6 @@ func delegationFound(t *testing.T, ctx context.Context, cprov provider.Provider,
 	return false
 }
 
-func sumPendingWithdrawals(t *testing.T, ctx context.Context, cprov provider.Provider, addr sdk.AccAddress) uint64 {
-	t.Helper()
-	resp, err := cprov.QueryClients().EvmEngine.SumPendingWithdrawalsByAddress(
-		ctx,
-		&evmengtypes.SumPendingWithdrawalsByAddressRequest{Address: evmengtypes.Address(common.BytesToAddress(addr.Bytes()))},
-	)
-	require.NoError(t, err)
-
-	return resp.SumGwei
-}
-
 func GenFundedEOA(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) *ecdsa.PrivateKey {
 	t.Helper()
 
@@ -406,7 +395,7 @@ func GenFundedEOA(ctx context.Context, t *testing.T, network netconf.Network, en
 	return newKey
 }
 
-func omniBackend(t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints, privateKeys ...*ecdsa.PrivateKey) ethbackend.Backend {
+func omniBackend(t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints, privateKeys ...*ecdsa.PrivateKey) *ethbackend.Backend {
 	t.Helper()
 
 	omniEVM, ok := network.OmniEVMChain()
@@ -420,5 +409,16 @@ func omniBackend(t *testing.T, network netconf.Network, endpoints xchain.RPCEndp
 	omniBackend, err := ethbackend.NewBackend(omniEVM.Name, omniEVM.ID, omniEVM.BlockPeriod, omniClient, privateKeys...)
 	require.NoError(t, err)
 
-	return *omniBackend
+	return omniBackend
+}
+
+func sumPendingWithdrawals(t *testing.T, ctx context.Context, cprov provider.Provider, addr sdk.AccAddress) uint64 {
+	t.Helper()
+	resp, err := cprov.QueryClients().EvmEngine.SumPendingWithdrawalsByAddress(
+		ctx,
+		&evmengtypes.SumPendingWithdrawalsByAddressRequest{Address: evmengtypes.Address(common.BytesToAddress(addr.Bytes()))},
+	)
+	require.NoError(t, err)
+
+	return resp.SumGwei
 }
