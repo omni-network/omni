@@ -13,7 +13,9 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 )
 
 // BankWrapper wraps x/bank.Keeper by overriding methods with
@@ -21,11 +23,12 @@ import (
 type BankWrapper struct {
 	bankkeeper.Keeper
 
+	ak              AccountKeeper
 	EVMEngineKeeper EVMEngineKeeper
 }
 
-func NewBankWrapper(k bankkeeper.Keeper) *BankWrapper {
-	return &BankWrapper{Keeper: k}
+func NewBankWrapper(k bankkeeper.Keeper, ak AccountKeeper) *BankWrapper {
+	return &BankWrapper{Keeper: k, ak: ak}
 }
 
 func (w *BankWrapper) SetEVMEngineKeeper(keeper EVMEngineKeeper) {
@@ -48,26 +51,21 @@ func (w *BankWrapper) SendCoinsFromModuleToAccountNoWithdrawal(ctx context.Conte
 func (w *BankWrapper) UndelegateCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, coins sdk.Coins) error {
 	log.Debug(ctx, "Undelegating coins from module to account", "sender", senderModule, "recipient", recipientAddr, "coins", coins)
 
-	if err := w.Keeper.UndelegateCoinsFromModuleToAccount(ctx, senderModule, recipientAddr, coins); err != nil {
-		return errors.Wrap(err, "undelegate coins")
+	acc := w.ak.GetModuleAccount(ctx, senderModule)
+	if acc == nil {
+		return errors.New("module account does not exist", "module_name", senderModule)
 	}
 
-	// The standard undelegation mints coins on recipientAddr, so we need to burn them.
-	// Since we can only burn coins on module's accounts, we first move the coins to senderModule.
-	if err := w.SendCoinsFromAccountToModule(ctx, recipientAddr, senderModule, coins); err != nil {
-		return errors.Wrap(err, "send coins from account to module")
+	_, ok := acc.(banktypes.VestingAccount)
+	if ok {
+		return errors.New("vesting accounts are not supported")
 	}
 
-	// Burn the coins moved in the previous step.
-	if err := w.BurnCoins(ctx, senderModule, coins); err != nil {
-		return errors.Wrap(err, "burn coins")
+	if !acc.HasPermission(authtypes.Staking) {
+		return errors.New("module account does not have permissions to undelegate coins", "module_name", senderModule)
 	}
 
-	if err := w.createWithdrawal(ctx, recipientAddr, coins); err != nil {
-		return errors.Wrap(err, "create withdrawal")
-	}
-
-	return nil
+	return w.SendCoinsFromModuleToAccount(ctx, senderModule, recipientAddr, coins)
 }
 
 // SendCoinsFromModuleToAccount intercepts all "normal" bank transfers from modules to users and

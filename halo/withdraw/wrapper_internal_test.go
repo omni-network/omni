@@ -52,7 +52,7 @@ func TestWrapper(t *testing.T) {
 				return nil
 			})
 
-			w := NewBankWrapper(keeper)
+			w := NewBankWrapper(keeper, nil)
 			w.SetEVMEngineKeeper(engKeeper)
 			err := w.SendCoinsFromModuleToAccount(t.Context(), module, address.Bytes(), sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, tt.arg)))
 			require.NoError(t, err)
