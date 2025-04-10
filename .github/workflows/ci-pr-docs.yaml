@@ -2,6 +2,7 @@ name: ci pr docs
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_DOCS_PROJECT_ID }}
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 on:
   pull_request:
     paths:
@@ -33,11 +34,10 @@ jobs:
         if: env.external == 'false'
         run: |
           cd docs
-          echo '{"orgId":"${{ secrets.VERCEL_ORG_ID }}","projectId":"${{ secrets.VERCEL_DOCS_PROJECT_ID }}"}' > .vercel/project.json
-          vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-          vercel build --token=${{ secrets.VERCEL_TOKEN }}
-          echo "deployment_url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})" >> $GITHUB_OUTPUT
-        working-directory: ${{ github.workspace }}
+          mkdir -p .vercel
+          echo "{\"orgId\":\"$VERCEL_ORG_ID\",\"projectId\":\"$VERCEL_PROJECT_ID\"}" > .vercel/project.json
+          vercel deploy --token=$VERCEL_TOKEN --prod --yes > deployment_url.txt
+          echo "deployment_url=$(cat deployment_url.txt)" >> $GITHUB_OUTPUT
   comment:
     needs: deploy
     runs-on: ubuntu-latest
