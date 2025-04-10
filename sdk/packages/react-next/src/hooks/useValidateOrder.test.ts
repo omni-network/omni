@@ -18,7 +18,7 @@ const renderValidateOrderHook = (
 }
 
 test('default: native transfer order', async () => {
-  vi.spyOn(core, 'validateOrder').mockResolvedValue({
+  vi.spyOn(core, 'validateOrderWithEncoded').mockResolvedValue({
     accepted: true,
   })
 
@@ -59,7 +59,7 @@ test('default: native transfer order', async () => {
 })
 
 test('default: order', async () => {
-  vi.spyOn(core, 'validateOrder').mockResolvedValue({
+  vi.spyOn(core, 'validateOrderWithEncoded').mockResolvedValue({
     accepted: true,
   })
 
@@ -92,7 +92,7 @@ test('behaviour: pending if query not fired', async () => {
 })
 
 test('behaviour: error if response is error', async () => {
-  vi.spyOn(core, 'validateOrder').mockResolvedValue({
+  vi.spyOn(core, 'validateOrderWithEncoded').mockResolvedValue({
     error: {
       code: 1,
       message: 'an error',
@@ -115,7 +115,7 @@ test('behaviour: error if response is error', async () => {
 })
 
 test('behaviour: rejected if response is rejected', async () => {
-  vi.spyOn(core, 'validateOrder').mockResolvedValue({
+  vi.spyOn(core, 'validateOrderWithEncoded').mockResolvedValue({
     rejected: true,
     rejectReason: 'a reason',
     rejectDescription: 'a description',
@@ -136,18 +136,18 @@ test('behaviour: rejected if response is rejected', async () => {
   )
 })
 
-test.each([
-  'test',
-  {},
-  { rejected: true },
-  { rejected: true, rejectReason: 'a reason' },
-  { rejecetd: true, rejectDescription: 'a description' },
-])('behaviour: error if response is not valid: %s', async (mockReturn) => {
-  const { result } = renderValidateOrderHook({ order, enabled: true })
-  // @ts-expect-error: "test" string is not a valid response objec
-  vi.spyOn(core, 'validateOrder').mockResolvedValue(mockReturn)
+test('behaviour: error if call throws', async () => {
+  const error = new Error('Unexpected validation response')
+  vi.spyOn(core, 'validateOrderWithEncoded').mockRejectedValue(error)
 
-  await waitFor(() => result.current.status === 'error')
+  const { result } = renderValidateOrderHook({ order, enabled: true })
+
+  await waitFor(() => {
+    expect(result.current.status).toBe('error')
+    if (result.current.status === 'error') {
+      expect(result.current.error).toBe(error)
+    }
+  })
 })
 
 test('behaviour: returns an error instead of throwing when the order encoding throws', async () => {

@@ -6,11 +6,11 @@ import {
   MOCK_L2_ID,
   OMNI_DEVNET_ID,
   TOKEN_ADDRESS,
-  ZERO_ADDRESS,
   mintOMNI,
   testAccount,
 } from '@omni-network/test-utils'
 import { act, waitFor } from '@testing-library/react'
+import { zeroAddress } from 'viem'
 import { describe, expect, test } from 'vitest'
 
 import {
@@ -29,7 +29,7 @@ describe('ERC20 OMNI to native OMNI transfer orders', () => {
       owner: testAccount.address,
       srcChainId: MOCK_L1_ID,
       destChainId: OMNI_DEVNET_ID,
-      expense: { token: ZERO_ADDRESS, amount },
+      expense: { token: zeroAddress, amount },
       calls: [{ target: testAccount.address, value: amount }],
       deposit: { token: TOKEN_ADDRESS, amount },
     }
@@ -42,9 +42,9 @@ describe('ERC20 OMNI to native OMNI transfer orders', () => {
       owner: testAccount.address,
       srcChainId: MOCK_L1_ID,
       destChainId: OMNI_DEVNET_ID,
-      expense: { token: ZERO_ADDRESS, amount },
+      expense: { token: zeroAddress, amount },
       calls: [{ target: testAccount.address, value: amount }],
-      deposit: { token: ZERO_ADDRESS, amount },
+      deposit: { token: zeroAddress, amount },
     }
     await executeTestOrder(order, 'InvalidDeposit')
   })
@@ -55,7 +55,7 @@ describe('ERC20 OMNI to native OMNI transfer orders', () => {
       owner: testAccount.address,
       srcChainId: MOCK_L1_ID,
       destChainId: OMNI_DEVNET_ID,
-      expense: { token: ZERO_ADDRESS, amount },
+      expense: { token: zeroAddress, amount },
       calls: [{ target: testAccount.address, value: amount }],
       deposit: { token: INVALID_TOKEN_ADDRESS, amount },
     }
@@ -71,9 +71,9 @@ describe('ETH transfer orders', () => {
       owner: account.address,
       srcChainId: MOCK_L1_ID,
       destChainId: MOCK_L2_ID,
-      expense: { token: ZERO_ADDRESS, amount },
+      expense: { token: zeroAddress, amount },
       calls: [{ target: account.address, value: amount }],
-      deposit: { token: ZERO_ADDRESS, amount: amount + ETHER },
+      deposit: { token: zeroAddress, amount: amount + ETHER },
     }
     await executeTestOrder(order)
   })
@@ -85,9 +85,9 @@ describe('ETH transfer orders', () => {
       owner: account.address,
       srcChainId: MOCK_L1_ID,
       destChainId: MOCK_L2_ID,
-      expense: { token: ZERO_ADDRESS, amount },
+      expense: { token: zeroAddress, amount },
       calls: [{ target: account.address, value: amount }],
-      deposit: { token: ZERO_ADDRESS, amount: amount + ETHER },
+      deposit: { token: zeroAddress, amount: amount + ETHER },
     }
     await executeTestOrder(order, 'ExpenseOverMax')
   })
@@ -99,9 +99,9 @@ describe('ETH transfer orders', () => {
       owner: account.address,
       srcChainId: MOCK_L1_ID,
       destChainId: MOCK_L2_ID,
-      expense: { token: ZERO_ADDRESS, amount },
+      expense: { token: zeroAddress, amount },
       calls: [{ target: account.address, value: amount }],
-      deposit: { token: ZERO_ADDRESS, amount: amount + ETHER },
+      deposit: { token: zeroAddress, amount: amount + ETHER },
     }
     await executeTestOrder(order, 'ExpenseUnderMin')
   })
@@ -130,14 +130,14 @@ test('default: successfully processes order from quote to filled', async () => {
 
   const quote = quoteHook.result.current.query.data as Quote
   expect(quote).toEqual({
-    deposit: { token: ZERO_ADDRESS, amount: 2n * ETHER },
-    expense: { token: ZERO_ADDRESS, amount: expect.any(BigInt) },
+    deposit: { token: zeroAddress, amount: 2n * ETHER },
+    expense: { token: zeroAddress, amount: expect.any(BigInt) },
   })
   expect(quote.expense.amount).toBeLessThan(2n * ETHER)
 
   const orderParams = {
-    deposit: { token: ZERO_ADDRESS, amount: 2n * ETHER },
-    expense: { token: ZERO_ADDRESS, amount: 1n * ETHER },
+    deposit: { token: zeroAddress, amount: 2n * ETHER },
+    expense: { token: zeroAddress, amount: 1n * ETHER },
     calls: [{ target: testAccount.address, value: 1n * ETHER }],
     srcChainId: MOCK_L1_ID,
     destChainId: MOCK_L2_ID,

@@ -31,8 +31,6 @@ export const TOKEN_ADDRESS =
   '0x73cc960fb6705e9a6a3d9eaf4de94a828cfa6d2a' as const
 export const INVALID_TOKEN_ADDRESS =
   '0x1234000000000000000000000000000000000000' as const
-export const ZERO_ADDRESS =
-  '0x0000000000000000000000000000000000000000' as const
 
 export const MOCK_L1_CHAIN: Chain = {
   id: MOCK_L1_ID,

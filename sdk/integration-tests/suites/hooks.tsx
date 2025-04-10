@@ -6,10 +6,10 @@ import {
   MOCK_L1_ID,
   MOCK_L2_ID,
   TOKEN_ADDRESS,
-  ZERO_ADDRESS,
   testAccount,
 } from '@omni-network/test-utils'
 import { renderHook, waitFor } from '@testing-library/react'
+import { zeroAddress } from 'viem'
 import { describe, expect, test } from 'vitest'
 
 import {
@@ -43,8 +43,8 @@ describe('useQuote()', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
     expect(result.current.query.data).toEqual({
-      deposit: { token: ZERO_ADDRESS, amount: 1n },
-      expense: { token: ZERO_ADDRESS, amount: 0n },
+      deposit: { token: zeroAddress, amount: 1n },
+      expense: { token: zeroAddress, amount: 0n },
     })
   })
 
@@ -72,8 +72,8 @@ describe('useQuote()', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
     expect(result.current.query.data).toEqual({
-      deposit: { token: ZERO_ADDRESS, amount: 2n },
-      expense: { token: ZERO_ADDRESS, amount: 1n },
+      deposit: { token: zeroAddress, amount: 2n },
+      expense: { token: zeroAddress, amount: 1n },
     })
   })
 
@@ -138,8 +138,8 @@ describe('useValidateOrder()', () => {
     const order: AnyOrder = {
       srcChainId: MOCK_L1_ID,
       destChainId: MOCK_L2_ID,
-      expense: { token: ZERO_ADDRESS, amount },
-      deposit: { token: ZERO_ADDRESS, amount: ETHER },
+      expense: { token: zeroAddress, amount },
+      deposit: { token: zeroAddress, amount: ETHER },
       calls: [{ target: testAccount.address, value: amount }],
     }
 
@@ -156,8 +156,8 @@ describe('useValidateOrder()', () => {
     const order: AnyOrder = {
       srcChainId: INVALID_CHAIN_ID,
       destChainId: MOCK_L2_ID,
-      expense: { token: ZERO_ADDRESS, amount },
-      deposit: { token: ZERO_ADDRESS, amount: ETHER },
+      expense: { token: zeroAddress, amount },
+      deposit: { token: zeroAddress, amount: ETHER },
       calls: [{ target: testAccount.address, value: amount }],
     }
 
@@ -182,8 +182,8 @@ describe('useOrder()', () => {
     const order: AnyOrder = {
       srcChainId: MOCK_L1_ID,
       destChainId: MOCK_L2_ID,
-      expense: { token: ZERO_ADDRESS, amount },
-      deposit: { token: ZERO_ADDRESS, amount: ETHER },
+      expense: { token: zeroAddress, amount },
+      deposit: { token: zeroAddress, amount: ETHER },
       calls: [{ target: testAccount.address, value: amount }],
     }
     await executeTestOrder(order)
@@ -193,8 +193,8 @@ describe('useOrder()', () => {
     const order: AnyOrder = {
       srcChainId: INVALID_CHAIN_ID,
       destChainId: MOCK_L1_ID,
-      expense: { token: ZERO_ADDRESS, amount: 1n },
-      deposit: { token: ZERO_ADDRESS, amount: 1n },
+      expense: { token: zeroAddress, amount: 1n },
+      deposit: { token: zeroAddress, amount: 1n },
       calls: [{ target: testAccount.address, value: 1n }],
     }
     await executeTestOrder(order, 'UnsupportedSrcChain')
@@ -204,8 +204,8 @@ describe('useOrder()', () => {
     const order: AnyOrder = {
       srcChainId: MOCK_L1_ID,
       destChainId: INVALID_CHAIN_ID,
-      expense: { token: ZERO_ADDRESS, amount: 1n },
-      deposit: { token: ZERO_ADDRESS, amount: 1n },
+      expense: { token: zeroAddress, amount: 1n },
+      deposit: { token: zeroAddress, amount: 1n },
       calls: [{ target: testAccount.address, value: 1n }],
     }
     await executeTestOrder(order, 'UnsupportedDestChain')
@@ -215,8 +215,8 @@ describe('useOrder()', () => {
     const order: AnyOrder = {
       srcChainId: MOCK_L1_ID,
       destChainId: MOCK_L1_ID,
-      expense: { token: ZERO_ADDRESS, amount: 1n },
-      deposit: { token: ZERO_ADDRESS, amount: 1n },
+      expense: { token: zeroAddress, amount: 1n },
+      deposit: { token: zeroAddress, amount: 1n },
       calls: [{ target: testAccount.address, value: 1n }],
     }
     await executeTestOrder(order, 'SameChain')
