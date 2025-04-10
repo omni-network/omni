@@ -4,7 +4,10 @@ import type {
   Order,
   ValidationResponse,
 } from '@omni-network/core'
-import { encodeOrderForValidation, validateOrder } from '@omni-network/core'
+import {
+  encodeOrderForValidation,
+  validateOrderWithEncoded,
+} from '@omni-network/core'
 import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useOmniContext } from '../context/omni.js'
@@ -61,7 +64,7 @@ export function useValidateOrder<abis extends OptionalAbis>({
       if (!encoded.ok) {
         throw encoded.error
       }
-      return await validateOrder(apiBaseUrl, encoded.value)
+      return await validateOrderWithEncoded(apiBaseUrl, encoded.value)
     },
     enabled: enabled && encoded.ok,
   })

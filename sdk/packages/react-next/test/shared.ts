@@ -100,8 +100,8 @@ export const orderRequest: Order<OptionalAbis> = {
 }
 
 export const quote = {
-  deposit: { token: zeroAddress, amount: '100' },
-  expense: { token: zeroAddress, amount: '99' },
+  deposit: { token: zeroAddress, amount: 100n },
+  expense: { token: zeroAddress, amount: 99n },
 }
 
 export const order = {
