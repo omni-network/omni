@@ -2,6 +2,7 @@ import { type GetOrderReturn, getOrder } from '@omni-network/core'
 import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import type { Hex } from 'viem'
 import { useClient } from 'wagmi'
+import { invariant } from '../utils/invariant.js'
 import { useOmniContracts } from './useOmniContracts.js'
 
 export type UseGetOrderParameters = {
@@ -25,9 +26,7 @@ export function useGetOrder({
   return useQuery({
     queryKey: ['getOrder', chainId, orderId],
     queryFn: async () => {
-      if (!canQuery) {
-        throw new Error('Invalid query parameters')
-      }
+      invariant(canQuery)
       return await getOrder({ client, inboxAddress: contracts.inbox, orderId })
     },
     enabled: canQuery,
