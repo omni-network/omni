@@ -4,16 +4,15 @@
  * work well for content-centric websites.
  */
 
-/* Add main Manrope font, and Inter for titles and Geist Mono for subtitles */
-@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@300&display=swap");
+/* Add main Instrument Sans font, Inter for (optional) titles, and Geist Mono for code */
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&display=swap');
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400&display=swap");
 
 /* You can override the default Infima variables here. */
 :root {
-  /* --ifm-font-family-base: "Manrope"; */
-  --ifm-font-family-base: system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
-  --ifm-heading-font-family: "Inter";
+  --ifm-font-family-base: "Instrument Sans", sans-serif;
+  --ifm-heading-font-family: "Instrument Sans", sans-serif; /* Also set headings to Instrument Sans */
   --ifm-font-family-monospace: "Geist Mono", monospace;
   --ifm-color-primary: #edf4ff;
   --ifm-color-primary-dark: #0564ff;
@@ -215,4 +214,26 @@ figcaption {
   display: block;
   margin: 0 auto;
   margin-bottom: 1em;
+}
+
+/* Reduce the size and ensure font for the main H1 title on documentation pages */
+main article header h1 {
+  font-size: 2.0rem; /* Further reduced size */
+  margin-bottom: 1.5rem; /* Optional: Adjust bottom margin */
+}
+
+/* Reduce the size of subheading titles (H2, H3, H4) */
+main article h2 {
+  font-size: 1.75rem;
+  /* Optional: Adjust margins if needed */
+  /* margin-top: 2rem; */
+  /* margin-bottom: 1rem; */
+}
+
+main article h3 {
+  font-size: 1.5rem;
+}
+
+main article h4 {
+  font-size: 1.25rem;
 }

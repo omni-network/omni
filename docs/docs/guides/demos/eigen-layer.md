@@ -1,0 +1,354 @@
+---
+title: EigenLayer Deposit Demo
+---
+
+# EigenLayer stETH Deposit Example
+
+This example demonstrates depositing ETH from Base Sepolia into EigenLayer's stETH strategy on Holesky using Omni SolverNet. It utilizes the `depositIntoStrategyWithSignature` method, requiring an off-chain signature before opening the Omni order.
+
+:::info Note
+This example uses specific contract addresses for the Holesky testnet deployment of EigenLayer and associated tokens. Adapt addresses for mainnet or other deployments accordingly.
+:::
+
+## Component (`eigen.tsx`)
+
+```tsx
+import type { Hex } from 'viem'
+import { useMemo, useState } from 'react'
+import { useQuote, useOrder } from '@omni-network/react'
+import { useAccount, useSignTypedData, useSwitchChain, useReadContract } from 'wagmi'
+import { baseSepolia, holesky } from 'viem/chains'
+import { parseEther, formatEther } from 'viem'
+
+// --- Contract/Token Addresses (Holesky Testnet) ---
+const holeskySTETHStrat = '0x7D704507b76571a51d9caE8AdDAbBFd0ba0e63d3' as const
+const holeskyStratMngr = '0xdfB5f6CE42aAA7830E94ECFCcAd411beF4d4D5b6' as const
+const holeskySTETH = '0x3F1c547b21f65e10480dE3ad8E19fAAC46C95034' as const
+// ---------------------------------------------------
+
+// Example depositing Base Sepolia ETH into Eigen's stETH strategy on Holesky
+export function Eigen() {
+  const { address, chainId } = useAccount()
+  const { signTypedDataAsync } = useSignTypedData()
+  const { switchChainAsync } = useSwitchChain()
+
+  // Signature required by StrategyManager.depositIntoStrategyWithSignature(...)
+  const [sig, setSig] = useState<Hex | null>(null)
+
+  const user = address
+  const srcChain = baseSepolia
+  const destChain = holesky
+
+  // Nonce / expiry required for signature
+  const expiry = useMemo(() => Math.floor(Date.now() / 1000 + 1800), []) // 30 minutes from now
+  const { data: nonce } = useReadContract({
+    chainId: destChain.id,
+    address: holeskyStratMngr,
+    abi: stragMngrABI,
+    functionName: 'nonces',
+    args: user ? [user] : undefined,
+    query: {
+      enabled: !!user,
+    },
+  })
+
+  // Quote ETH deposit required for 0.1 stETH expense on holesky
+  // (User wants to effectively spend 0.1 stETH on the destination)
+  const quote = useQuote({
+    srcChainId: srcChain.id,
+    destChainId: destChain.id,
+    expense: {
+      isNative: false,
+      token: holeskySTETH,
+      amount: parseEther('0.1'),
+    },
+    deposit: { isNative: true }, // Calculate required native ETH deposit
+    mode: 'deposit',
+    enabled: !!user, // Only enable quote if user is connected
+  })
+
+  const depositAmt = quote.isSuccess ? quote.data.deposit.amount : 0n
+  const expenseAmt = quote.isSuccess ? quote.data.expense.amount : 0n
+
+  // Configure the order for StrategyManager.depositIntoStrategyWithSignature(...)
+  const order = useOrder({
+    destChainId: destChain.id,
+    srcChainId: srcChain.id,
+    deposit: { isNative: true, amount: depositAmt }, // From quote
+    expense: {
+      isNative: false, // Expense is stETH
+      amount: expenseAmt, // From quote
+      spender: holeskyStratMngr, // StrategyManager needs to spend solver's stETH
+      token: holeskySTETH,
+    },
+    calls: [
+      {
+        abi: stragMngrABI,
+        functionName: 'depositIntoStrategyWithSignature',
+        target: holeskyStratMngr,
+        args: [
+          holeskySTETHStrat, // strategy
+          holeskySTETH,      // token
+          expenseAmt,        // amount
+          user ?? '0x',      // staker
+          BigInt(expiry),    // expiry
+          sig ?? '0x',       // signature (initially '0x', updated after signing)
+        ],
+      },
+    ],
+    // Only validate when required params (user, sig, quote) are available
+    validateEnabled: !!user && !!sig && quote.isSuccess,
+  })
+
+  // Function to sign the EIP-712 message required by EigenLayer
+  const sign = async () => {
+    if (!user) throw new Error('Wallet not connected')
+    if (!chainId) throw new Error('No chainId')
+    if (!quote.isSuccess) throw new Error('Quote is not available')
+    if (nonce == null) throw new Error('Could not fetch nonce')
+
+    // Ensure the wallet is connected to the destination chain for signing
+    if (chainId !== destChain.id) {
+      try {
+        await switchChainAsync({ chainId: destChain.id })
+      } catch (switchError) {
+        console.error("Failed to switch chain:", switchError)
+        alert("Please switch your wallet to Holesky network to sign the message.")
+        return;
+      }
+    }
+
+    try {
+      const signature = await signTypedDataAsync({
+        account: user,
+        types: { // EIP-712 types definition
+          EIP712Domain: [
+            { name: 'name', type: 'string' },
+            { name: 'version', type: 'string' },
+            { name: 'chainId', type: 'uint256' },
+            { name: 'verifyingContract', type: 'address' },
+          ],
+          Deposit: [
+            { name: 'staker', type: 'address' },
+            { name: 'strategy', type: 'address' },
+            { name: 'token', type: 'address' },
+            { name: 'amount', type: 'uint256' },
+            { name: 'nonce', type: 'uint256' },
+            { name: 'expiry', type: 'uint256' },
+          ],
+        },
+        domain: { // EIP-712 domain separator
+          name: 'EigenLayer',
+          chainId: BigInt(destChain.id),
+          verifyingContract: holeskyStratMngr,
+          version: '1.', // Note: Check EigenLayer's current required version
+        },
+        primaryType: 'Deposit',
+        message: { // The actual message to sign
+          staker: user,
+          strategy: holeskySTETHStrat,
+          token: holeskySTETH,
+          amount: quote.data.expense.amount, // Use the precise quoted amount
+          nonce,
+          expiry: BigInt(expiry),
+        },
+      })
+      setSig(signature) // Store the signature in state
+    } catch (signError) {
+      console.error("Signing failed:", signError)
+      alert("Failed to sign the message. See console for details.")
+    }
+  }
+
+  // Function to open the Omni order after signing
+  const open = async () => {
+    if (!sig) {
+        alert("Signature missing. Please sign first.")
+        return;
+    }
+    if (!chainId) {
+        alert("Wallet disconnected?")
+        return
+    }
+
+    // Ensure the wallet is on the source chain to initiate the order
+    if (chainId !== srcChain.id) {
+      try {
+        await switchChainAsync({ chainId: srcChain.id })
+      } catch (switchError) {
+        console.error("Failed to switch chain:", switchError)
+        alert("Please switch your wallet back to Base Sepolia network to deposit.")
+        return;
+      }
+    }
+
+    order.open() // Trigger the order opening process
+  }
+
+  const validation = order.validation
+  const status = order.status
+  const filled = order.status === 'filled'
+  const isProcessing = order.status === 'opening' || order.status === 'open'
+
+  return (
+    <div style={{ marginTop: '1rem', border: '1px solid #ccc', padding: '1rem' }}>
+      <h2>EigenLayer stETH Deposit (Base Sepolia ETH -&gt; Holesky stETH Strat)</h2>
+
+      {!user && <p>Please connect your wallet.</p>}
+
+      {/* Quote Info */}
+      {user && quote.isLoading && <p>Fetching quote...</p>}
+      {user && quote.isError && <p>Quote Error: {quote.error.message}</p>}
+      {user && quote.isSuccess && (
+        <div>
+          <p>
+            Deposit ~{formatEther(depositAmt)} ETH from Base Sepolia to deposit exactly {formatEther(expenseAmt)} stETH into EigenLayer on Holesky.
+          </p>
+        </div>
+      )}
+
+      {/* Nonce Info */}
+      {user && nonce == null && <p>Fetching nonce...</p>}
+      {user && nonce != null && <p>Nonce: {nonce.toString()}</p>}
+
+      {/* Action Buttons */}
+      {user && quote.isSuccess && nonce != null && (
+        <div style={{ marginTop: '1rem' }}>
+          {!sig && <button onClick={sign} disabled={isProcessing}>1. Sign Deposit Message (on Holesky)</button>}
+          {!!sig && <p>✅ Signature Obtained: {sig.substring(0,10)}...</p>}
+
+          {!!sig && (
+            <button onClick={open} disabled={!order.isReady || validation?.status !== 'accepted' || isProcessing} style={{ marginLeft: '1rem' }}>
+                {isProcessing ? 'Processing...' : '2. Deposit via Omni (from Base Sepolia)'}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Validation Feedback */}
+      {user && !!sig && validation?.status === 'pending' && <p>Validating order...</p>}
+      {user && !!sig && validation?.status === 'rejected' && <p style={{ color: 'red' }}>Order Rejected: {validation.rejectReason} - {validation.rejectDescription}</p>}
+      {user && !!sig && validation?.status === 'accepted' && <p>✅ Order Validated</p>}
+
+      {/* Status Feedback */}
+      <div style={{ marginTop: '1rem' }}>
+        {status !== 'initializing' && status !== 'ready' && <p>Order Status: <strong>{status}</strong></p>}
+        {status === 'opening' && <p>Submitting deposit transaction on Base Sepolia...</p>}
+        {status === 'open' && <p>Order opened. Waiting for solver execution on Holesky...</p>}
+        {status === 'filled' && <p style={{ color: 'green' }}>✅ Success! Deposit complete.</p>}
+        {status === 'rejected' && !validation?.rejectReason && <p style={{ color: 'red' }}>Order Rejected (Reason unknown)</p>}
+        {order.isError && <p style={{ color: 'red' }}>Error: {order.error?.message}</p>}
+      </div>
+    </div>
+  )
+}
+
+// --- ABIs ---
+
+// StrategyManager ABI (relevant functions)
+const stragMngrABI = [
+  {
+    inputs: [
+      {
+        internalType: 'address',
+        name: 'strategy',
+        type: 'address',
+      },
+      {
+        internalType: 'address',
+        name: 'token',
+        type: 'address',
+      },
+      {
+        internalType: 'uint256',
+        name: 'amount',
+        type: 'uint256',
+      },
+      {
+        internalType: 'address',
+        name: 'staker',
+        type: 'address',
+      },
+      {
+        internalType: 'uint256',
+        name: 'expiry',
+        type: 'uint256',
+      },
+      {
+        internalType: 'bytes',
+        name: 'signature',
+        type: 'bytes',
+      },
+    ],
+    name: 'depositIntoStrategyWithSignature',
+    outputs: [
+      {
+        internalType: 'uint256',
+        name: 'depositShares',
+        type: 'uint256',
+      },
+    ],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+  {
+    inputs: [{ type: 'address', name: 'staker' }],
+    name: 'nonces',
+    outputs: [{ type: 'uint256' }],
+    stateMutability: 'view',
+    type: 'function',
+  },
+] as const
+```
+
+## App Setup (`EigenApp.tsx`)
+
+This demonstrates the necessary Wagmi, React Query, and OmniProvider setup.
+
+```tsx
+import { WagmiProvider } from 'wagmi'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { OmniProvider } from '@omni-network/react'
+import { Eigen } from './eigen' // Assuming Eigen component is in './eigen.tsx'
+import { ConnectWallet } from './connect' // Assuming a simple ConnectWallet component
+
+import { http, createConfig } from 'wagmi'
+import { baseSepolia, holesky } from 'wagmi/chains'
+
+// Configure Wagmi
+export const config = createConfig({
+  chains: [baseSepolia, holesky],
+  transports: {
+    [baseSepolia.id]: http(), // Replace with your RPC URLs if needed
+    [holesky.id]: http(),     // Replace with your RPC URLs if needed
+  },
+})
+
+const queryClient = new QueryClient()
+
+function EigenApp() {
+  return (
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryClient}>
+        {/* Make sure OmniProvider wraps your component */}
+        <OmniProvider env="testnet">
+          <div className="app">
+            <ConnectWallet />
+            <Eigen />
+          </div>
+        </OmniProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
+  )
+}
+
+export default EigenApp
+```
+
+## Key Concepts
+
+*   **Two-Step Process:** Because EigenLayer requires an EIP-712 signature containing parameters like `nonce` and `expiry`, the process involves: (1) Signing the message on the destination chain (Holesky), then (2) Opening the Omni order on the source chain (Base Sepolia) using that signature.
+*   **Chain Switching:** The component handles switching the user's wallet between the destination chain (for signing) and the source chain (for depositing).
+*   **`useQuote` Mode:** Uses `mode: 'deposit'` because we know the desired `expense` (0.1 stETH) and need to calculate the required `deposit` (ETH).
+*   **`useOrder` Args:** The `args` array for the `depositIntoStrategyWithSignature` call includes the `sig` state variable, which is updated after the user signs.
+*   **`validateEnabled`:** Validation is only enabled *after* a signature is obtained (`!!sig`) and the quote is successful.
