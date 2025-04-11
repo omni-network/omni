@@ -130,14 +130,14 @@ func parseMinReceived(order Order) ([]TokenAmt, error) {
 			return nil, errors.New("min received chain id mismatch [BUG]", "got", chainID, "expected", order.SourceChainID)
 		}
 
-		addr := toEthAddr(output.Token)
-		if !cmpAddrs(addr, output.Token) {
-			return nil, newRejection(types.RejectUnsupportedDeposit, errors.New("non-eth addressed token", "addr", hexutil.Encode(output.Token[:])))
+		addr, err := toEthAddr(output.Token)
+		if err != nil {
+			return nil, newRejection(types.RejectUnsupportedDeposit, err)
 		}
 
 		tkn, ok := tokens.ByAddress(chainID, addr)
 		if !ok || !IsSupportedToken(tkn) {
-			return nil, newRejection(types.RejectUnsupportedDeposit, errors.New("unsupported token", "addr", addr))
+			return nil, newRejection(types.RejectUnsupportedDeposit, errors.New("unsupported deposit token", "token", addr))
 		}
 
 		deposits = append(deposits, TokenAmt{
@@ -232,18 +232,20 @@ func parseMaxSpent(pendingData PendingData, outboxAddr common.Address) ([]TokenA
 		}
 
 		// order resolve ensures maxSpent[].output.recipient is outboxAddr
-		if toEthAddr(output.Recipient) != outboxAddr {
+		if recipient, err := toEthAddr(output.Recipient); err != nil {
+			return nil, errors.Wrap(err, "recipient")
+		} else if recipient != outboxAddr {
 			return nil, errors.New("unexpected max spent recipient [BUG]", "got", output.Recipient, "expected", outboxAddr)
 		}
 
-		addr := toEthAddr(output.Token)
-		if !cmpAddrs(addr, output.Token) {
-			return nil, newRejection(types.RejectUnsupportedExpense, errors.New("non-eth addressed token", "addr", hexutil.Encode(output.Token[:])))
+		addr, err := toEthAddr(output.Token)
+		if err != nil {
+			return nil, newRejection(types.RejectUnsupportedExpense, errors.Wrap(err, "expense token"))
 		}
 
 		tkn, ok := tokens.ByAddress(chainID, addr)
 		if !ok || !IsSupportedToken(tkn) {
-			return nil, newRejection(types.RejectUnsupportedExpense, errors.New("unsupported token", "addr", addr))
+			return nil, newRejection(types.RejectUnsupportedExpense, errors.New("unsupported expense token", "addr", addr))
 		}
 
 		if output.Token == [32]byte{} {
@@ -333,14 +335,7 @@ func checkOrderCalls(pendingData PendingData, isAllowed callAllowFunc) error {
 		return errors.Wrap(err, "parse fill origin data")
 	}
 
-	var calls []types.Call
-	for _, call := range fill.Calls {
-		calls = append(calls, types.Call{
-			Target: call.Target,
-			Value:  call.Value,
-			Data:   append(call.Selector[:], call.Params...),
-		})
-	}
+	calls := types.CallsFromBindings(fill.Calls)
 
 	return checkCalls(pendingData.DestinationChainID, calls, isAllowed)
 }

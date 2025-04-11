@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 // detectContractChains returns the chains on which the contract is deployed at the provided address.
@@ -35,8 +36,13 @@ func detectContractChains(ctx context.Context, network netconf.Network, backends
 }
 
 // toEthAddr converts a 32-byte address to an Ethereum address.
-func toEthAddr(bz [32]byte) common.Address {
-	return cast.MustEthAddress(bz[12:])
+func toEthAddr(bz [32]byte) (common.Address, error) {
+	addr := cast.MustEthAddress(bz[12:])
+	if !cmpAddrs(addr, bz) {
+		return common.Address{}, errors.New("invalid eth address", "address", hexutil.Encode(bz[:]))
+	}
+
+	return addr, nil
 }
 
 // cmpAddrs returns true if the eth address is equal to the 32-byte address.
