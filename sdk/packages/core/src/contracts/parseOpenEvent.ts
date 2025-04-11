@@ -7,12 +7,12 @@ import {
 import { inboxABI } from '../constants/abis.js'
 import { ParseOpenEventError } from '../errors/base.js'
 
-export type ParseOpenEventReturn = DecodeEventLogReturnType<
+export type ResolvedOrder = DecodeEventLogReturnType<
   typeof inboxABI,
   'Open'
 >['args']['resolvedOrder']
 
-export function parseOpenEvent(logs: Log[]): ParseOpenEventReturn {
+export function parseOpenEvent(logs: Log[]): ResolvedOrder {
   try {
     const parsed = parseEventLogs({
       abi: inboxABI,

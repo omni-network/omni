@@ -6,16 +6,16 @@ import {
   type PublicActions,
   type WalletClient,
   createWalletClient,
+  parseEther,
   publicActions,
 } from 'viem'
 import { type PrivateKeyAccount, privateKeyToAccount } from 'viem/accounts'
 
 import {
-  ETHER,
-  MOCK_L1_CHAIN,
-  OMNI_TOKEN_ABI,
-  SOLVERNET_INBOX_ADDRESS,
-  TOKEN_ADDRESS,
+  mockL1Chain,
+  omniTokenAbi,
+  solvernetInboxAddress,
+  tokenAddress,
 } from './constants.js'
 
 export const testAccount: PrivateKeyAccount = privateKeyToAccount(
@@ -38,28 +38,29 @@ export function createClient<ChainType extends Chain>({
   }).extend(publicActions)
 }
 
-export const mockL1Client: Client<typeof MOCK_L1_CHAIN> = createClient({
-  chain: MOCK_L1_CHAIN,
+export const mockL1Client: Client<typeof mockL1Chain> = createClient({
+  chain: mockL1Chain,
 })
 
 export async function mintOMNI(): Promise<void> {
+  const amount = parseEther('100')
   // mint token
   const mintHash = await mockL1Client.writeContract({
     account: testAccount.address,
-    address: TOKEN_ADDRESS,
-    abi: OMNI_TOKEN_ABI,
+    address: tokenAddress,
+    abi: omniTokenAbi,
     functionName: 'mint',
-    args: [testAccount.address, 100n * ETHER],
+    args: [testAccount.address, amount],
   })
   // wait for transaction to be mined
   await mockL1Client.waitForTransactionReceipt({ hash: mintHash })
   // approve transfers to inbox contract
   const approveHash = await mockL1Client.writeContract({
     account: testAccount.address,
-    address: TOKEN_ADDRESS,
-    abi: OMNI_TOKEN_ABI,
+    address: tokenAddress,
+    abi: omniTokenAbi,
     functionName: 'approve',
-    args: [SOLVERNET_INBOX_ADDRESS, 100n * ETHER],
+    args: [solvernetInboxAddress, amount],
   })
   // wait for transaction to be mined
   await mockL1Client.waitForTransactionReceipt({ hash: approveHash })

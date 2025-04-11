@@ -1,12 +1,12 @@
 import type { Address, Chain, Client, Transport } from 'viem'
 import { readContract } from 'viem/actions'
 import { outboxABI } from '../constants/abis.js'
-import type { ParseOpenEventReturn } from './parseOpenEvent.js'
+import type { ResolvedOrder } from './parseOpenEvent.js'
 
 export type DidFillParams<chain extends Chain> = {
   client: Client<Transport, chain>
   outboxAddress: Address
-  resolvedOrder: ParseOpenEventReturn
+  resolvedOrder: ResolvedOrder
 }
 
 export type DidFillReturn = boolean

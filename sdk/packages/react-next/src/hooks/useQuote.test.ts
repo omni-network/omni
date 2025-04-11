@@ -11,7 +11,7 @@ const deposit = { token, isNative: false } satisfies Quoteable
 const nativeExpense = { isNative: true } satisfies Quoteable
 
 beforeEach(() => {
-  vi.spyOn(core, 'getQuoteWithEncoded').mockResolvedValue(quote)
+  vi.spyOn(core, 'getQuoteEncoded').mockResolvedValue(quote)
 })
 
 const params = {
@@ -105,7 +105,7 @@ test('behaviour: quote does not fire when enabled is false', () => {
 
 test('behaviour: quote is error if call throws', async () => {
   const error = new Error('Unexpected quote response')
-  vi.spyOn(core, 'getQuoteWithEncoded').mockRejectedValue(error)
+  vi.spyOn(core, 'getQuoteEncoded').mockRejectedValue(error)
 
   const { result } = renderQuoteHook({ ...params, enabled: true })
 

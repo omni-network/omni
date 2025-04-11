@@ -1,7 +1,4 @@
-import type {
-  ParseOpenEventError,
-  ParseOpenEventReturn,
-} from '@omni-network/core'
+import type { ParseOpenEventError, ResolvedOrder } from '@omni-network/core'
 import type { Log } from 'viem'
 import { expectTypeOf, test } from 'vitest'
 import type { UseWaitForTransactionReceiptReturnType } from 'wagmi'
@@ -18,8 +15,6 @@ test('type: useParseOpenEvent return', () => {
     logs?: Log[]
   }>()
 
-  expectTypeOf(result.resolvedOrder).toMatchTypeOf<
-    ParseOpenEventReturn | undefined
-  >()
+  expectTypeOf(result.resolvedOrder).toMatchTypeOf<ResolvedOrder | undefined>()
   expectTypeOf(result.error).toEqualTypeOf<ParseOpenEventError | undefined>()
 })

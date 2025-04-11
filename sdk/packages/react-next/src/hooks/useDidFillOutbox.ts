@@ -1,14 +1,14 @@
-import { type ParseOpenEventReturn, didFillOutbox } from '@omni-network/core'
+import { type ResolvedOrder, didFillOutbox } from '@omni-network/core'
 import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import { useClient } from 'wagmi'
 import { useOmniContracts } from './useOmniContracts.js'
 
 export type UseDidFillOutboxParams = {
   destChainId: number
-  resolvedOrder?: ParseOpenEventReturn
+  resolvedOrder?: ResolvedOrder
 }
 
-export type UseDidFillOutboxReturn = UseQueryResult<ParseOpenEventReturn>
+export type UseDidFillOutboxReturn = UseQueryResult<boolean>
 
 export function useDidFillOutbox({
   resolvedOrder,
@@ -16,10 +16,12 @@ export function useDidFillOutbox({
 }: UseDidFillOutboxParams): UseDidFillOutboxReturn {
   const client = useClient({ chainId: destChainId })
   const { data: contracts } = useOmniContracts()
+  const canQuery = !!client && !!contracts && !!resolvedOrder
+
   return useQuery({
     queryKey: ['didFill', destChainId, resolvedOrder?.orderId],
     queryFn: async () => {
-      if (!client || !contracts || !resolvedOrder) {
+      if (!canQuery) {
         throw new Error('Invalid query parameters')
       }
       return await didFillOutbox({
@@ -28,7 +30,7 @@ export function useDidFillOutbox({
         resolvedOrder,
       })
     },
-    enabled: !!client && !!contracts && !!resolvedOrder,
+    enabled: canQuery,
     refetchInterval: 1000,
   })
 }
