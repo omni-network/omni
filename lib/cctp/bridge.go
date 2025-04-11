@@ -6,9 +6,11 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/bi"
+	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/umath"
@@ -29,12 +31,15 @@ func SendUSDC(
 	user common.Address,
 	amount *big.Int,
 ) error {
+	srcChain := evmchain.Name(srcChainID)
+	dstChain := evmchain.Name(destChainID)
+
 	usdc, ok := tokens.ByAsset(srcChainID, tokens.USDC)
 	if !ok {
-		return errors.New("no usdc", "chain_id", srcChainID)
+		return errors.New("no usdc", "src_chain", srcChain)
 	}
 
-	tknMessenger, err := newTokenMessenger(srcChainID, backend)
+	tknMessenger, tknMessengerAddr, err := newTokenMessenger(srcChainID, backend)
 	if err != nil {
 		return errors.Wrap(err, "new token messenger")
 	}
@@ -44,23 +49,19 @@ func SendUSDC(
 		return errors.Wrap(err, "new message transmitter")
 	}
 
-	if err := maybeApproveMessenger(ctx, backend, usdc, user, amount); err != nil {
+	if err := maybeApproveMessenger(ctx, backend, usdc, user, amount, tknMessengerAddr); err != nil {
 		return errors.Wrap(err, "approve")
 	}
 
 	// CCTP uses bytes32 addresses
-	var recipient [32]byte
-	copy(recipient[12:], user.Bytes())
+	recipient := cast.EthAddress32(user)
 
 	txOpts, err := backend.BindOpts(ctx, user)
 	if err != nil {
 		return errors.Wrap(err, "bind opts")
 	}
 
-	//nolint:gosec // chain ids are small
-	destChainID32 := uint32(destChainID)
-
-	tx, err := tknMessenger.DepositForBurn(txOpts, amount, destChainID32, recipient, usdc.Address)
+	tx, err := tknMessenger.DepositForBurn(txOpts, amount, umath.MustToUint32(destChainID), recipient, usdc.Address)
 	if err != nil {
 		return errors.Wrap(err, "deposit for burn")
 	}
@@ -89,9 +90,9 @@ func SendUSDC(
 
 	attrs := []any{
 		"tx", tx.Hash(),
-		"src_chain_id", srcChainID,
-		"dest_chain_id", destChainID,
-		"amount", amount,
+		"src_chain", srcChain,
+		"dest_chain", dstChain,
+		"amount", usdc.FormatAmt(amount),
 		"message_bytes", hexutil.Encode(messageBz),
 		"message_hash", messageHash,
 		"recipient", user,
@@ -100,28 +101,32 @@ func SendUSDC(
 	log.Info(ctx, "Sent USDC", attrs...)
 
 	if err := db.Insert(ctx, msg); err != nil {
-		log.Error(ctx, "Failed to insert message into DB", err, attrs...)
-		return errors.Wrap(err, "insert message")
+		return errors.Wrap(err, "insert message", "tx", tx.Hash())
 	}
 
 	return nil
 }
 
 // newTokenMessenger returns a new TokenMessenger instance for chainID.
-func newTokenMessenger(chainID uint64, backend *ethbackend.Backend) (*TokenMessenger, error) {
+func newTokenMessenger(chainID uint64, backend *ethbackend.Backend) (*TokenMessenger, common.Address, error) {
 	addr, ok := tokenMessengers[chainID]
 	if !ok {
-		return nil, errors.New("not found", "chain_id", chainID)
+		return nil, common.Address{}, errors.New("no messenger", "chain", evmchain.Name(chainID))
 	}
 
-	return NewTokenMessenger(addr, backend)
+	msgr, err := NewTokenMessenger(addr, backend)
+	if err != nil {
+		return nil, common.Address{}, err
+	}
+
+	return msgr, addr, nil
 }
 
 // newMessageTransmitter returns a new MessageTransmitter instance for chainID.
 func newMessageTransmitter(chainID uint64, backend *ethbackend.Backend) (*MessageTransmitter, error) {
 	addr, ok := messageTransmitters[chainID]
 	if !ok {
-		return nil, errors.New("not found", "chain_id", chainID)
+		return nil, errors.New("no transmitter", "chain", evmchain.Name(chainID))
 	}
 
 	return NewMessageTransmitter(addr, backend)
@@ -134,12 +139,8 @@ func maybeApproveMessenger(
 	usdc tokens.Token,
 	user common.Address,
 	amount *big.Int,
+	messenger common.Address,
 ) error {
-	messenger, ok := tokenMessengers[usdc.ChainID]
-	if !ok {
-		return errors.New("no token messenger", "chain_id", usdc.ChainID)
-	}
-
 	erc20, err := bindings.NewIERC20(usdc.Address, backend)
 	if err != nil {
 		return errors.Wrap(err, "new token")
@@ -168,7 +169,7 @@ func maybeApproveMessenger(
 		return errors.Wrap(err, "wait mined")
 	}
 
-	log.Info(ctx, "Approved USDC spend", "usdc", usdc.Address, "message", messenger, "tx", tx.Hash())
+	log.Info(ctx, "Approved USDC spend", "chain", backend.Name(), "usdc", usdc.Address, "messenger", messenger, "tx", tx.Hash())
 
 	return nil
 }
