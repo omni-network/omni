@@ -96,12 +96,6 @@ var (
 		tokens.ETH:  true,
 		tokens.OMNI: true,
 	}
-
-	// tokenOverrides specifies roles that support non-native-only tokens.
-	tokenOverrides = map[Role]map[tokens.Asset]bool{
-		// Flowgen only submits ETH-style solver orders
-		RoleFlowgen: {tokens.ETH: true},
-	}
 )
 
 func GetFundThresholds(token tokens.Asset, network netconf.ID, role Role) (FundThresholds, bool) {
@@ -164,9 +158,7 @@ func multipleSum(token tokens.Asset, network netconf.ID, multiplier uint64, role
 }
 
 func getThreshold(token tokens.Asset, network netconf.ID, role Role) (FundThresholds, bool) {
-	if supported, ok := tokenOverrides[role]; ok && !supported[token] {
-		return FundThresholds{}, false
-	} else if !ok && !nativeTokens[token] {
+	if !nativeTokens[token] {
 		// Only native tokenmeta are supported by default.
 		return FundThresholds{}, false
 	}

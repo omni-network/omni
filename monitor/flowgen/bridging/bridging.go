@@ -250,7 +250,7 @@ func availableBalance(
 
 	thresholds, ok := eoa.GetFundThresholds(srcToken.Asset, networkID, eoa.RoleFlowgen)
 	if !ok {
-		return nil, errors.New("no thresholds found", "role", eoa.RoleFlowgen)
+		return nil, errors.New("no flowgen thresholds found", "asset", srcToken.Asset)
 	}
 
 	reserved := bi.Ether(0.01) // overhead that should cover solver commission and tx fees

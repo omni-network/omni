@@ -212,7 +212,7 @@ func checkFill(
 	if err != nil {
 		return &RejectionError{
 			Reason: types.RejectDestCallReverts,
-			Err:    errors.Wrap(err, "return_data", hexutil.Encode(returnData), "custom", solvernet.DetectCustomError(err)),
+			Err:    errors.Wrap(err, "call contract", "return_data", hexutil.Encode(returnData), "solidity_err", solvernet.DetectCustomError(err)),
 		}
 	}
 

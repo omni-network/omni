@@ -78,7 +78,7 @@ func (m *Mock) USDPrices(_ context.Context, tkns ...tokens.Asset) (map[tokens.As
 		var ok bool
 		resp[t], ok = m.prices[pair{Base: t, Quote: tokens.USDC}]
 		if !ok {
-			return nil, errors.New("mock price not found", "token", t)
+			return nil, errors.New("mock usd price not found", "token", t)
 		}
 	}
 
@@ -98,4 +98,7 @@ func (m *Mock) SetPrice(base, quote tokens.Asset, price float64) {
 
 	m.prices[pair{Base: base, Quote: quote}] = price
 	m.prices[pair{Base: quote, Quote: base}] = 1 / price
+
+	m.prices[pair{Base: base, Quote: base}] = 1
+	m.prices[pair{Base: quote, Quote: quote}] = 1
 }
