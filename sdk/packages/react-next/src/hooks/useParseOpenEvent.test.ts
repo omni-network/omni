@@ -16,7 +16,7 @@ import {
 } from '../../test/index.js'
 import { useParseOpenEvent } from './useParseOpenEvent.js'
 
-const encodedOpenEvent = encodeAbiParameters(
+const eventData = encodeAbiParameters(
   [
     {
       type: 'tuple',
@@ -73,7 +73,7 @@ const logs: Log[] = [
   {
     address: accounts[0],
     topics,
-    data: encodedOpenEvent,
+    data: eventData,
     blockHash: '0x1',
     blockNumber: 1n,
     logIndex: 1,
