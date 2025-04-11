@@ -1,6 +1,6 @@
 import {
   type ParseOpenEventError,
-  type ParseOpenEventReturn,
+  type ResolvedOrder,
   parseOpenEvent,
 } from '@omni-network/core'
 import { useMemo } from 'react'
@@ -13,7 +13,7 @@ type UseParseOpenEventParams = {
 }
 
 type UseParseOpenEventReturn = {
-  resolvedOrder: ParseOpenEventReturn | undefined
+  resolvedOrder: ResolvedOrder | undefined
   error: ParseOpenEventError | undefined
 }
 

@@ -37,14 +37,14 @@ test('parameters: expense', async () => {
       ...params,
       expense: { token, isNative: false },
     }),
-  ).resolves.toBeDefined()
+  ).resolves.toEqual(testQuote)
 
   await expect(
     getQuote('http://localhost', {
       ...params,
       expense: { isNative: true },
     }),
-  ).resolves.toBeDefined()
+  ).resolves.toEqual(testQuote)
 })
 
 test('parameters: deposit', async () => {
@@ -53,14 +53,14 @@ test('parameters: deposit', async () => {
       ...params,
       deposit: { token, isNative: false },
     }),
-  ).resolves.toBeDefined()
+  ).resolves.toEqual(testQuote)
 
   await expect(
     getQuote('http://localhost', {
       ...params,
       deposit: { isNative: true },
     }),
-  ).resolves.toBeDefined()
+  ).resolves.toEqual(testQuote)
 })
 
 test('parameters: mode', async () => {
@@ -72,7 +72,7 @@ test('parameters: mode', async () => {
       // TODO expense amount shouldn't be allowed if mode === 'expense'
       expense: { isNative: true, amount: 100n },
     }),
-  ).resolves.toBeDefined()
+  ).resolves.toEqual(testQuote)
 
   await expect(
     getQuote('http://localhost', {
@@ -81,7 +81,7 @@ test('parameters: mode', async () => {
       deposit: { isNative: true, amount: 100n },
       expense: { isNative: true, amount: 100n },
     }),
-  ).resolves.toBeDefined()
+  ).resolves.toEqual(testQuote)
 })
 
 test.each([

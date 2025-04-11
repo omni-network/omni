@@ -17,7 +17,7 @@ export type QuoteResponse = {
   expense: { token: Address; amount: Hex }
 }
 
-export function encodeQuote(params: GetQuoteParams): string {
+export function encodeQuoteRequest(params: GetQuoteParams): string {
   const { srcChainId, destChainId, deposit, expense, mode } = params
   return toJSON({
     sourceChainId: srcChainId,
@@ -28,7 +28,7 @@ export function encodeQuote(params: GetQuoteParams): string {
 }
 
 // getQuoteWithEncoded calls the /quote endpoint, throwing on error
-export async function getQuoteWithEncoded(
+export async function getQuoteEncoded(
   apiBaseUrl: string,
   encodedQuote: string,
 ): Promise<Quote> {
@@ -53,8 +53,8 @@ export async function getQuote(
   apiBaseUrl: string,
   params: GetQuoteParams,
 ): Promise<Quote> {
-  const encoded = encodeQuote(params)
-  return await getQuoteWithEncoded(apiBaseUrl, encoded)
+  const encoded = encodeQuoteRequest(params)
+  return await getQuoteEncoded(apiBaseUrl, encoded)
 }
 
 // toQuoteUnit translates a Quoteable to "QuoteUnit", the format expected by /quote

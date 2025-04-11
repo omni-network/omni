@@ -1,4 +1,4 @@
-import type { ParseOpenEventReturn } from '@omni-network/core'
+import type { ResolvedOrder } from '@omni-network/core'
 import { expectTypeOf, test } from 'vitest'
 import { resolvedOrder } from '../../test/shared.js'
 import {
@@ -14,7 +14,7 @@ test('type: useDidFillOutbox', () => {
 
   expectTypeOf(useDidFillOutbox).parameter(0).toMatchTypeOf<{
     destChainId: number
-    resolvedOrder?: ParseOpenEventReturn
+    resolvedOrder?: ResolvedOrder
   }>()
 
   expectTypeOf(result).toEqualTypeOf<UseDidFillOutboxReturn>()

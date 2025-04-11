@@ -1,5 +1,5 @@
 import type { FetchJSONError, GetQuoteParams, Quote } from '@omni-network/core'
-import { encodeQuote, getQuoteWithEncoded } from '@omni-network/core'
+import { encodeQuoteRequest, getQuoteEncoded } from '@omni-network/core'
 import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useOmniContext } from '../context/omni.js'
@@ -38,10 +38,10 @@ export function useQuote(params: UseQuoteParams): UseQuoteResult {
   const { apiBaseUrl } = useOmniContext()
   const { enabled, ...quoteParams } = params
 
-  const request = encodeQuote(quoteParams)
+  const request = encodeQuoteRequest(quoteParams)
   const query = useQuery<Quote, QuoteError>({
     queryKey: ['quote', request],
-    queryFn: async () => await getQuoteWithEncoded(apiBaseUrl, request),
+    queryFn: async () => await getQuoteEncoded(apiBaseUrl, request),
     enabled,
   })
 
