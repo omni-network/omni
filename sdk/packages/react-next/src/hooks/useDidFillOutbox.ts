@@ -1,6 +1,7 @@
 import { type ResolvedOrder, didFillOutbox } from '@omni-network/core'
 import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import { useClient } from 'wagmi'
+import { invariant } from '../utils/invariant.js'
 import { useOmniContracts } from './useOmniContracts.js'
 
 export type UseDidFillOutboxParams = {
@@ -21,9 +22,7 @@ export function useDidFillOutbox({
   return useQuery({
     queryKey: ['didFill', destChainId, resolvedOrder?.orderId],
     queryFn: async () => {
-      if (!canQuery) {
-        throw new Error('Invalid query parameters')
-      }
+      invariant(canQuery)
       return await didFillOutbox({
         client,
         outboxAddress: contracts.outbox,
