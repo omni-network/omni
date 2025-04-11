@@ -1,3 +1,4 @@
+// Package cctp provides functionality for working with the Circle Cross-Chain Transfer Protocol (CCTP).
 package cctp
 
 import (
@@ -17,13 +18,13 @@ const (
 	TestnetAPI = "https://iris-api-sandbox.circle.com"
 )
 
-// NewAPIClient creates a new CCTP API client.
-func NewAPIClient(host string) APIClient {
-	return APIClient{host}
+// NewClient creates a new CCTP API client.
+func NewClient(host string) Client {
+	return Client{host}
 }
 
-// APIClient is a client for interacting with the CCTP API.
-type APIClient struct {
+// Client is a client for interacting with the CCTP API.
+type Client struct {
 	host string
 }
 
@@ -46,7 +47,7 @@ func (s AttestationStatus) Validate() error {
 }
 
 // GetAttestation retrieves the attestation (and status) for a given message hash.
-func (c APIClient) GetAttestation(ctx context.Context, messageHash string) ([]byte, AttestationStatus, error) {
+func (c Client) GetAttestation(ctx context.Context, messageHash string) ([]byte, AttestationStatus, error) {
 	var res attestationResponse
 
 	if err := c.do(ctx, "/v1/attestations/"+messageHash, &res); err != nil {
@@ -66,7 +67,7 @@ func (c APIClient) GetAttestation(ctx context.Context, messageHash string) ([]by
 	return signature, status, nil
 }
 
-func (c APIClient) do(ctx context.Context, path string, res any) error {
+func (c Client) do(ctx context.Context, path string, res any) error {
 	uri, err := c.uri(path)
 	if err != nil {
 		return err
@@ -108,7 +109,7 @@ func (c APIClient) do(ctx context.Context, path string, res any) error {
 	return nil
 }
 
-func (c APIClient) uri(path string) (string, error) {
+func (c Client) uri(path string) (string, error) {
 	uri, err := url.JoinPath(c.host, path)
 	if err != nil {
 		return "", errors.Wrap(err, "join path", "base", c.host, "path", path)
