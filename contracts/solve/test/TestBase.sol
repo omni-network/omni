@@ -64,7 +64,7 @@ contract TestBase is Test, MockHyperlaneEnvironment {
     uint32 defaultFillDeadline = uint32(block.timestamp + 1 hours);
     uint32 defaultFillBuffer = 6 hours;
 
-    bytes32 internal constant ORDER_DATA_TYPEHASH = keccak256(
+    bytes32 internal constant ORDERDATA_TYPEHASH = keccak256(
         "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)TokenExpense(address spender,address token,uint96 amount)"
     );
 
@@ -185,7 +185,7 @@ contract TestBase is Test, MockHyperlaneEnvironment {
     {
         return IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(fillDeadline),
-            orderDataType: ORDER_DATA_TYPEHASH,
+            orderDataType: ORDERDATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });
     }
@@ -209,7 +209,7 @@ contract TestBase is Test, MockHyperlaneEnvironment {
 
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: fillDeadline,
-            orderDataType: ORDER_DATA_TYPEHASH,
+            orderDataType: ORDERDATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });
 
@@ -243,7 +243,7 @@ contract TestBase is Test, MockHyperlaneEnvironment {
 
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: defaultFillDeadline,
-            orderDataType: ORDER_DATA_TYPEHASH,
+            orderDataType: ORDERDATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });
 
@@ -282,7 +282,7 @@ contract TestBase is Test, MockHyperlaneEnvironment {
 
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: defaultFillDeadline,
-            orderDataType: ORDER_DATA_TYPEHASH,
+            orderDataType: ORDERDATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });
 
@@ -339,7 +339,7 @@ contract TestBase is Test, MockHyperlaneEnvironment {
 
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: defaultFillDeadline,
-            orderDataType: ORDER_DATA_TYPEHASH,
+            orderDataType: ORDERDATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });
 

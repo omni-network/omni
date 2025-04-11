@@ -131,7 +131,7 @@ contract SolverNet_Inbox_Resolve_Test is TestBase {
 
         IERC7683.OnchainCrossChainOrder memory order = IERC7683.OnchainCrossChainOrder({
             fillDeadline: defaultFillDeadline,
-            orderDataType: ORDER_DATA_TYPEHASH,
+            orderDataType: ORDERDATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });
 

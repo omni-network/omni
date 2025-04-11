@@ -38,7 +38,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
     uint256 initialSupply = 1_000_000 ether;
     uint256 addrCount = 32;
 
-    bytes32 internal constant ORDER_DATA_TYPEHASH = keccak256(
+    bytes32 internal constant ORDERDATA_TYPEHASH = keccak256(
         "OrderData(address owner,uint64 destChainId,Deposit deposit,Call[] calls,TokenExpense[] expenses)Deposit(address token,uint96 amount)Call(address target,bytes4 selector,uint256 value,bytes params)TokenExpense(address spender,address token,uint96 amount)"
     );
 
@@ -176,7 +176,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
 
         return IERC7683.OnchainCrossChainOrder({
             fillDeadline: uint32(block.timestamp + 24 hours),
-            orderDataType: ORDER_DATA_TYPEHASH,
+            orderDataType: ORDERDATA_TYPEHASH,
             orderData: abi.encode(orderData)
         });
     }

@@ -95,6 +95,12 @@ library HashLib {
     bytes32 internal constant EIP712_GASLESS_ORDER_TYPEHASH = keccak256(EIP712_GASLESS_ORDER_TYPE);
 
     /**
+     * @notice Type for the PermitWitnessTransferFrom struct.
+     */
+    string internal constant PERMIT_WITNESS_TRANSFER_FROM_TYPE_STUB =
+        "PermitWitnessTransferFrom(TokenPermissions permitted,address spender,uint256 nonce,uint256 deadline,";
+
+    /**
      * @notice Type for the TokenPermissions struct.
      */
     string internal constant TOKEN_PERMISSIONS_TYPE = "TokenPermissions(address token,uint256 amount)";
@@ -115,8 +121,8 @@ library HashLib {
             DEPOSIT_TYPE,
             GASLESS_ORDER_TYPE,
             OMNIORDERDATA_TYPE,
-            TOKEN_PERMISSIONS_TYPE,
-            TOKENEXPENSE_TYPE
+            TOKENEXPENSE_TYPE,
+            TOKEN_PERMISSIONS_TYPE
         )
     );
 

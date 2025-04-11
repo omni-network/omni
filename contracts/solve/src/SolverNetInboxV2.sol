@@ -686,12 +686,10 @@ contract SolverNetInboxV2 is OwnableRoles, ReentrancyGuard, Initializable, Deplo
                 requestedAmount: orderData.deposit.amount
             });
 
-            bytes32 orderDataHash = HashLib.hashOrderData(orderData);
-            bytes32 orderHash = HashLib.hashGaslessOrder(order, orderDataHash);
+            bytes32 witnessHash;
+            string memory witnessTypeString;
 
-            PERMIT2.permitWitnessTransferFrom(
-                permit, details, order.user, orderHash, HashLib.PERMIT2_ORDER_TYPE, signature
-            );
+            PERMIT2.permitWitnessTransferFrom(permit, details, order.user, witnessHash, witnessTypeString, signature);
         } else if (msg.value != orderData.deposit.amount) {
             revert InvalidNativeDeposit();
         }

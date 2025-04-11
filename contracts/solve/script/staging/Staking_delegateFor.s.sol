@@ -5,6 +5,7 @@ import { SolverNetStagingFixtures } from "../SolverNetStagingFixtures.sol";
 import { SolverNet } from "src/lib/SolverNet.sol";
 import { IERC7683 } from "src/erc7683/IERC7683.sol";
 import { IStaking } from "core/src/interfaces/IStaking.sol";
+import { console2 } from "forge-std/console2.sol";
 
 contract Staking_delegateFor is SolverNetStagingFixtures {
     IStaking internal constant staking = IStaking(0xCCcCcC0000000000000000000000000000000001);
@@ -94,5 +95,28 @@ contract Staking_delegateFor is SolverNetStagingFixtures {
 
     function _setApprovals() internal {
         omni.approve(address(inbox), type(uint256).max);
+    }
+
+    function getData() public {
+        SolverNet.Deposit memory deposit =
+            SolverNet.Deposit({ token: 0xD036C60f46FF51dd7Fbf6a819b5B171c8A076b07, amount: 1 ether });
+
+        SolverNet.Call[] memory call = new SolverNet.Call[](1);
+        call[0] = SolverNet.Call({
+            target: address(staking),
+            selector: IStaking.delegateFor.selector,
+            value: 1 ether,
+            params: abi.encode(0xA779fC675Db318dab004Ab8D538CB320D0013F42, validator1)
+        });
+
+        SolverNet.OrderData memory orderData = SolverNet.OrderData({
+            owner: 0xA779fC675Db318dab004Ab8D538CB320D0013F42,
+            destChainId: 164,
+            deposit: deposit,
+            calls: call,
+            expenses: new SolverNet.TokenExpense[](0)
+        });
+
+        console2.logBytes(abi.encode(orderData));
     }
 }
