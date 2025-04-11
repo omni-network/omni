@@ -1,12 +1,8 @@
 package solve
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"math/big"
-	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -20,8 +16,11 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokenpricer"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
+	sclient "github.com/omni-network/omni/solver/client"
 	solver "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -74,10 +73,10 @@ func Test(ctx context.Context, network netconf.Network, backends ethbackend.Back
 
 	log.Info(ctx, "Running solver tests")
 
-	orders := makeOrders()
+	orders := makeOrders() //nolint:contextcheck // Not critical code
 
 	if err := mintAndApproveAll(ctx, backends, orders); err != nil {
-		return errors.Wrap(err, "mint omni")
+		return errors.Wrap(err, "mint all")
 	}
 
 	if err := testCheckAPI(ctx, backends, orders, solverAddr); err != nil {
@@ -168,6 +167,35 @@ func makeOrders() []TestOrder {
 	user := anvil.DevAccount8()
 	var orders []TestOrder
 
+	// swaps
+	{
+		swapOrder := func(addr common.Address, srcChain uint64, srcAsset tokens.Asset, dstChain uint64, dstAsset tokens.Asset) TestOrder {
+			amount := bi.Ether(2)
+			srcToken := mustTokenByAsset(srcChain, srcAsset)
+			dstToken := mustTokenByAsset(dstChain, dstAsset)
+			expense, call := expenseAndCall(amount, dstToken, addr)
+			depositAmount := mustDepositAmount(amount, srcToken, dstToken)
+
+			return TestOrder{
+				Owner:         addr,
+				FillDeadline:  time.Now().Add(1 * time.Hour),
+				DestChainID:   dstChain,
+				SourceChainID: srcChain,
+				Expenses:      expense,
+				Calls:         call,
+				Deposit: solvernet.Deposit{
+					Token:  srcToken.Address,
+					Amount: depositAmount,
+				},
+			}
+		}
+
+		orders = append(orders,
+			swapOrder(user, evmchain.IDMockL1, tokens.ETH, evmchain.IDOmniDevnet, tokens.OMNI),
+			swapOrder(user, evmchain.IDMockL1, tokens.OMNI, evmchain.IDMockL2, tokens.ETH),
+			swapOrder(user, evmchain.IDMockL1, tokens.USDC, evmchain.IDOmniDevnet, tokens.OMNI),
+		)
+	}
 	// erc20 OMNI -> native OMNI orders
 	{
 		omniBridgeOrder := func(addr common.Address, expense *big.Int, deposit solvernet.Deposit, rejectReason string) TestOrder {
@@ -187,7 +215,6 @@ func makeOrders() []TestOrder {
 		expense := bi.Ether(10) // Note that fee is not charged for OMNI, so deposit==expense
 		orders = append(orders,
 			omniBridgeOrder(user, expense, erc20Deposit(expense, addrs.Token), ""),
-			omniBridgeOrder(user, expense, nativeDeposit(expense), solver.RejectInvalidDeposit.String()),
 			omniBridgeOrder(user, expense, unsupportedERC20Deposit(expense), solver.RejectUnsupportedDeposit.String()),
 		)
 	}
@@ -393,10 +420,7 @@ func openOrder(ctx context.Context, backends ethbackend.Backends, order TestOrde
 }
 
 func testCheckAPI(ctx context.Context, backends ethbackend.Backends, orders []TestOrder, solverAddr string) error {
-	uri, err := url.JoinPath(solverAddr, "/api/v1/check")
-	if err != nil {
-		return errors.Wrap(err, "get api uri")
-	}
+	scl := sclient.New(solverAddr)
 
 	for i, order := range orders {
 		// If this order requires balance draining, do it before test logic.
@@ -416,31 +440,9 @@ func testCheckAPI(ctx context.Context, backends ethbackend.Backends, orders []Te
 			Deposit:            addrAmtFromDeposit(order.Deposit),
 		}
 
-		body, err := json.Marshal(checkReq)
+		checkResp, err := scl.Check(ctx, checkReq)
 		if err != nil {
-			return errors.Wrap(err, "marshal request")
-		}
-
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, uri, bytes.NewBuffer(body))
-		if err != nil {
-			return errors.Wrap(err, "new request")
-		}
-
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return errors.Wrap(err, "do request")
-		}
-		if resp.StatusCode != http.StatusOK {
-			return errors.New("bad status", "status", resp.StatusCode)
-		}
-
-		var checkResp solver.CheckResponse
-		if err = json.NewDecoder(resp.Body).Decode(&checkResp); err != nil {
-			return errors.Wrap(err, "decode response")
-		}
-
-		if err = resp.Body.Close(); err != nil {
-			return errors.Wrap(err, "close response body")
+			return errors.Wrap(err, "check request")
 		}
 
 		if checkResp.Rejected != order.ShouldReject {
@@ -508,4 +510,23 @@ func waitRebalance(ctx context.Context, backends ethbackend.Backends) error {
 			}
 		}
 	}
+}
+
+func mustTokenByAsset(chainID uint64, asset tokens.Asset) tokens.Token {
+	t, ok := tokens.ByAsset(chainID, asset)
+	if !ok {
+		panic("token not found by asset")
+	}
+
+	return t
+}
+
+func mustDepositAmount(expenseAmount *big.Int, srcToken tokens.Token, dstToken tokens.Token) *big.Int {
+	pricer := tokenpricer.NewDevnetMock()
+	price, err := pricer.Price(context.TODO(), dstToken.Asset, srcToken.Asset)
+	if err != nil {
+		panic(err)
+	}
+
+	return bi.MulF64(bi.MulF64(expenseAmount, price), 1.01) // Mul by 1.01 again to cover 30bips fee
 }

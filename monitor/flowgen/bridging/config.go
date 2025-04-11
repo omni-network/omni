@@ -17,24 +17,56 @@ func (c flowConfig) Flip() flowConfig {
 	}
 }
 
-var config = map[netconf.ID]flowConfig{
+var config = map[netconf.ID][]flowConfig{
 	netconf.Devnet: {
-		srcChain: evmchain.IDMockL1,
-		dstChain: evmchain.IDMockL2,
+		{
+			// Native ETH <> Native ETH
+			srcChain: evmchain.IDMockL1,
+			dstChain: evmchain.IDMockL2,
+		},
+		{
+			// Native ETH <> Native Omni
+			srcChain: evmchain.IDMockL1,
+			dstChain: evmchain.IDOmniDevnet,
+		},
 	},
 
 	netconf.Staging: {
-		srcChain: evmchain.IDBaseSepolia,
-		dstChain: evmchain.IDOpSepolia,
+		{
+			// Native ETH <> Native ETH
+			srcChain: evmchain.IDBaseSepolia,
+			dstChain: evmchain.IDOpSepolia,
+		},
+		{
+			// Native ETH <> Native Omni
+			srcChain: evmchain.IDArbSepolia,
+			dstChain: evmchain.IDOmniStaging,
+		},
 	},
 
 	netconf.Omega: {
-		srcChain: evmchain.IDOpSepolia,
-		dstChain: evmchain.IDArbSepolia,
+		{
+			// Native ETH <> Native ETH
+			srcChain: evmchain.IDOpSepolia,
+			dstChain: evmchain.IDArbSepolia,
+		},
+		{
+			// Native ETH <> Native Omni
+			srcChain: evmchain.IDBase,
+			dstChain: evmchain.IDOmniOmega,
+		},
 	},
 
 	netconf.Mainnet: {
-		srcChain: evmchain.IDOptimism,
-		dstChain: evmchain.IDArbitrumOne,
+		{
+			// Native ETH <> Native ETH
+			srcChain: evmchain.IDOptimism,
+			dstChain: evmchain.IDArbitrumOne,
+		},
+		{
+			// Native ETH <> Native Omni
+			srcChain: evmchain.IDBase,
+			dstChain: evmchain.IDOmniMainnet,
+		},
 	},
 }

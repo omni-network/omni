@@ -50,6 +50,40 @@ func erc20Deposit(amt *big.Int, addr common.Address) solvernet.Deposit {
 	return solvernet.Deposit{Token: addr, Amount: amt}
 }
 
+func expenseAndCall(amt *big.Int, dstToken tokens.Token, user common.Address) ([]solvernet.Expense, []solvernet.Call) {
+	if dstToken.IsNative() {
+		return nativeExpense(amt), nativeTransferCall(amt, user)
+	}
+
+	expense := solvernet.Expense{
+		Token:  dstToken.Address,
+		Amount: amt,
+	}
+
+	call, err := erc20Call(dstToken, amt, user)
+	if err != nil {
+		panic(err)
+	}
+
+	return []solvernet.Expense{expense}, call
+}
+
+func erc20Call(dstToken tokens.Token, amt *big.Int, user common.Address) ([]solvernet.Call, error) {
+	abi, err := bindings.IERC20MetaData.GetAbi()
+	if err != nil {
+		return nil, errors.Wrap(err, "get abi")
+	}
+	data, err := abi.Pack("transfer", user, amt)
+	if err != nil {
+		return nil, errors.Wrap(err, "pack transfer")
+	}
+
+	return []solvernet.Call{{
+		Target: dstToken.Address,
+		Data:   data,
+	}}, nil
+}
+
 func nativeTransferCall(amt *big.Int, to common.Address) []solvernet.Call {
 	return []solvernet.Call{{
 		Value:  amt,
