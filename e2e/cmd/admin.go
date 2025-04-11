@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/e2e/app/admin"
+	"github.com/omni-network/omni/e2e/bridge"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/netconf"
 
@@ -303,6 +304,10 @@ func newAdminTestCmd(def *app.Definition) *cobra.Command {
 					PingPongP: 0,
 					PingPongL: 0}); err != nil {
 					return errors.Wrap(err, "deploy")
+				}
+
+				if err := bridge.DeployBridge(ctx, def.Testnet, def.Backends()); err != nil {
+					return errors.Wrap(err, "deploy bridge")
 				}
 			}
 
