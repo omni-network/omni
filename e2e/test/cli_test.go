@@ -73,27 +73,17 @@ func TestCLIOperator(t *testing.T) {
 	maybeTestNetwork(t, skipFunc, func(ctx context.Context, t *testing.T, deps NetworkDeps) {
 		t.Helper()
 
-		endpoints := deps.RPCEndpoints
 		network := deps.Network
 		netID := network.ID
 		omniBackend, err := deps.OmniBackend()
 		require.NoError(t, err)
-		e, ok := network.OmniEVMChain()
-		require.True(t, ok)
-		executionRPC, err := endpoints.ByNameOrID(e.Name, e.ID)
-		require.NoError(t, err)
 
 		// use an existing test anvil account for new validator and write it's pkey to temp file
-		validatorPriv := GenFundedEOA(ctx, t, omniBackend)
+		validatorPriv, validatorAddr := GenFundedEOA(ctx, t, omniBackend)
 		validatorPubBz := ethcrypto.CompressPubkey(&validatorPriv.PublicKey)
-		validatorAddr := ethcrypto.PubkeyToAddress(validatorPriv.PublicKey)
 		tmpDir := t.TempDir()
 		privKeyFile := filepath.Join(tmpDir, "privkey")
-		require.NoError(
-			t,
-			ethcrypto.SaveECDSA(privKeyFile, validatorPriv),
-			"failed to save new validator private key to temp file",
-		)
+		require.NoError(t, ethcrypto.SaveECDSA(privKeyFile, validatorPriv))
 
 		cl, err := http.New(network.ID.Static().ConsensusRPC(), "/websocket")
 		require.NoError(t, err)
@@ -106,7 +96,7 @@ func TestCLIOperator(t *testing.T) {
 		const opSelfDelegation = uint64(1)
 
 		// create a new valdiator and self-delegate
-		t.Run("self delegation", func(t *testing.T) {
+		t.Run("create validator and self-delegate", func(t *testing.T) {
 			// operator create-validator test
 			stdOut, _, err := execCLI(
 				ctx, "operator", "create-validator",
@@ -115,7 +105,7 @@ func TestCLIOperator(t *testing.T) {
 				"--consensus-pubkey-hex", hex.EncodeToString(validatorPubBz),
 				// we use minimum stake so the new validator doesn't affect the network too much
 				"--self-delegation", fmt.Sprintf("%d", opInitDelegation),
-				"--execution-rpc", executionRPC,
+				"--execution-rpc", omniBackend.Address(),
 			)
 			require.NoError(t, err)
 			require.Empty(t, stdOut)
@@ -140,7 +130,7 @@ func TestCLIOperator(t *testing.T) {
 				"--network", netID.String(),
 				"--private-key-file", privKeyFile,
 				"--amount", fmt.Sprintf("%d", opSelfDelegation),
-				"--execution-rpc", executionRPC,
+				"--execution-rpc", omniBackend.Address(),
 				"--self",
 			)
 			require.NoError(t, err)
@@ -158,8 +148,7 @@ func TestCLIOperator(t *testing.T) {
 		})
 
 		// delegator's keys
-		delegatorPrivKey := GenFundedEOA(ctx, t, omniBackend)
-		delegatorEthAddr := ethcrypto.PubkeyToAddress(delegatorPrivKey.PublicKey)
+		delegatorPrivKey, delegatorEthAddr := GenFundedEOA(ctx, t, omniBackend)
 		delegatorCosmosAddr := sdk.AccAddress(delegatorEthAddr.Bytes())
 		delegatorPrivKeyFile := filepath.Join(tmpDir, "delegator_privkey")
 		err = ethcrypto.SaveECDSA(delegatorPrivKeyFile, delegatorPrivKey)
@@ -175,7 +164,7 @@ func TestCLIOperator(t *testing.T) {
 				"--validator-address", validatorAddr.Hex(),
 				"--private-key-file", delegatorPrivKeyFile,
 				"--amount", fmt.Sprintf("%d", delegatorDelegation),
-				"--execution-rpc", executionRPC,
+				"--execution-rpc", omniBackend.Address(),
 			)
 			require.NoError(t, err)
 			require.Empty(t, stdOut)
@@ -201,8 +190,9 @@ func TestCLIOperator(t *testing.T) {
 
 		// edit validator data
 		t.Run("edit validator", func(t *testing.T) {
-			val, _, err := cprov.SDKValidator(ctx, validatorAddr)
+			val, ok, err := cprov.SDKValidator(ctx, validatorAddr)
 			require.NoError(t, err)
+			require.True(t, ok)
 
 			// Edit validator moniker
 			newMoniker := val.Description.Moniker + "*"
@@ -213,7 +203,7 @@ func TestCLIOperator(t *testing.T) {
 				ctx, "operator", "edit-validator",
 				"--network", netID.String(),
 				"--private-key-file", privKeyFile,
-				"--execution-rpc", executionRPC,
+				"--execution-rpc", omniBackend.Address(),
 				"--moniker", newMoniker,
 				"--min-self-delegation", newMinSelfEther.String(),
 			)
@@ -233,7 +223,8 @@ func TestCLIOperator(t *testing.T) {
 		// test rewards distribution
 		var latestRewards math.LegacyDec
 		t.Run("distribution", func(t *testing.T) {
-			val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
+			val, ok, err := cprov.SDKValidator(ctx, validatorAddr)
+			require.NoError(t, err)
 			require.True(t, ok)
 
 			var originalRewards math.LegacyDec
@@ -287,7 +278,7 @@ func TestCLIOperator(t *testing.T) {
 				"--validator-address", validatorAddr.Hex(),
 				"--private-key-file", delegatorPrivKeyFile,
 				"--amount", fmt.Sprintf("%d", delegatorDelegation),
-				"--execution-rpc", executionRPC,
+				"--execution-rpc", omniBackend.Address(),
 			)
 			require.NoError(t, err)
 			require.Empty(t, stdOut)
@@ -352,7 +343,7 @@ func sumPendingWithdrawals(t *testing.T, ctx context.Context, cprov provider.Pro
 	return resp.SumGwei
 }
 
-func GenFundedEOA(ctx context.Context, t *testing.T, backend *ethbackend.Backend) *ecdsa.PrivateKey {
+func GenFundedEOA(ctx context.Context, t *testing.T, backend *ethbackend.Backend) (*ecdsa.PrivateKey, common.Address) {
 	t.Helper()
 
 	amount1k := bi.Ether(1_000)
@@ -369,7 +360,11 @@ func GenFundedEOA(ctx context.Context, t *testing.T, backend *ethbackend.Backend
 	require.NoError(t, err)
 	require.Equal(t, ethtypes.ReceiptStatusSuccessful, rec.Status)
 
-	log.Debug(ctx, "Funded new EOA", "addr", newAddr.Hex(), "amount", amount1k.String())
+	bal, err := backend.BalanceAt(ctx, newAddr, nil)
+	require.NoError(t, err)
+	require.True(t, bi.EQ(amount1k, bal))
 
-	return newKey
+	log.Debug(ctx, "Funded new EOA", "addr", newAddr.Hex(), "amount", bi.ToEtherF64(amount1k), "chain", backend.Name())
+
+	return newKey, newAddr
 }
