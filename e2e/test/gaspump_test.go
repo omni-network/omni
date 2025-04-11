@@ -4,30 +4,45 @@ import (
 	"context"
 	"math/big"
 	"testing"
+	"time"
 
-	"github.com/omni-network/omni/e2e/app"
+	"github.com/omni-network/omni/e2e/gasstation"
+	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/bi"
-	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/stretchr/testify/require"
 )
 
-// TestGasPumps ensures that bridge tests cases defined in e2e/app/gaspump.go were successful.
+// TestGasPumps deploys the gasstation app and pumps and tests them.
 func TestGasPumps(t *testing.T) {
 	t.Parallel()
-	testNetwork(t, func(ctx context.Context, t *testing.T, deps NetworkDeps) {
+	skipFunc := func(manifest types.Manifest) bool {
+		return !manifest.AllE2ETests
+	}
+	maybeTestNetwork(t, skipFunc, func(ctx context.Context, t *testing.T, deps NetworkDeps) {
 		t.Helper()
 
-		network := deps.Network
-		omniEVM, ok := network.OmniEVMChain()
-		require.True(t, ok)
-
-		omniRPC, err := deps.RPCEndpoints.ByNameOrID(omniEVM.Name, omniEVM.ID)
+		err := gasstation.DeployEphemeralGasApp(ctx, deps.Testnet, deps.Backends)
 		require.NoError(t, err)
 
-		omniClient, err := ethclient.Dial(omniEVM.Name, omniRPC)
+		tests := []gasstation.GasPumpTest{
+			{
+				Recipient:  tutil.RandomAddress(),
+				TargetOMNI: bi.Ether(0.1),
+			},
+			{
+				Recipient:  tutil.RandomAddress(),
+				TargetOMNI: bi.Ether(0.2),
+			},
+		}
+		err = gasstation.TestGasPumps(ctx, deps.Testnet, deps.Backends, tests)
+		require.NoError(t, err)
+
+		network := deps.Network
+		omniBackend, err := deps.OmniBackend()
 		require.NoError(t, err)
 
 		// Sum targetOMNI for each chain / test case pair
@@ -36,11 +51,11 @@ func TestGasPumps(t *testing.T) {
 		totalTargetOMNI := make(map[common.Address]*big.Int)
 		for _, chain := range network.EVMChains() {
 			// skip OmniEVM
-			if chain.ID == omniEVM.ID {
+			if chain.ID == network.ID.Static().OmniExecutionChainID {
 				continue
 			}
 
-			for _, test := range app.GasPumpTests {
+			for _, test := range tests {
 				current, ok := totalTargetOMNI[test.Recipient]
 				if !ok {
 					current = bi.Zero()
@@ -50,10 +65,11 @@ func TestGasPumps(t *testing.T) {
 			}
 		}
 
-		for _, test := range app.GasPumpTests {
-			balance, err := omniClient.BalanceAt(ctx, test.Recipient, nil)
-			require.NoError(t, err)
-			require.Equalf(t, totalTargetOMNI[test.Recipient], balance, "recipient: %s", test.Recipient.Hex())
+		for _, test := range tests {
+			require.Eventually(t, func() bool {
+				balance, err := omniBackend.BalanceAt(ctx, test.Recipient, nil)
+				return err == nil && bi.EQ(balance, totalTargetOMNI[test.Recipient])
+			}, time.Second*30, time.Second)
 		}
 	})
 }

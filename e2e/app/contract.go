@@ -6,6 +6,9 @@ import (
 
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/netman"
+	"github.com/omni-network/omni/e2e/solve"
+	"github.com/omni-network/omni/lib/contracts"
+	"github.com/omni-network/omni/lib/contracts/omnitoken"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
@@ -117,4 +120,48 @@ func xcall(ctx context.Context, backends ethbackend.Backends, sender common.Addr
 	}
 
 	return tx, nil
+}
+
+func maybeDeploySolver(ctx context.Context, def Definition) error {
+	if def.Testnet.Network == netconf.Devnet && !def.Manifest.AllE2ETests {
+		// Don't deploy solver on devnet if not running all tests
+		return nil
+	}
+
+	return solve.Deploy(ctx, networkFromDef(def), def.Backends())
+}
+
+func maybeDeployL1OmniERC20(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
+	if network.ID == netconf.Mainnet {
+		// Only deploy the token for non-mainnet if needed
+		return nil
+	}
+
+	l1Chain, ok := network.EthereumChain()
+	if !ok {
+		return nil
+	}
+
+	l1Backend, err := backends.Backend(l1Chain.ID)
+	if err != nil {
+		return err
+	}
+
+	addrs, err := contracts.GetAddresses(ctx, network.ID)
+	if err != nil {
+		return err
+	}
+
+	_, receipt, err := omnitoken.DeployIfNeeded(ctx, network.ID, l1Backend)
+	if err != nil {
+		return errors.Wrap(err, "deploy omni token")
+	}
+
+	if receipt != nil {
+		log.Info(ctx, "Deployed Omni Token", "chain", l1Chain.Name, "addr", addrs.Token.Hex(), "block", receipt.BlockNumber)
+	} else if addrs.Token != network.ID.Static().TokenAddress {
+		log.Warn(ctx, "Omni token already deployed, but not in network static", errors.New("missing static token addr"), "addr", addrs.Token.Hex())
+	}
+
+	return nil
 }

@@ -42,12 +42,12 @@ func Deploy(ctx context.Context, network netconf.Network, backends ethbackend.Ba
 func deployBoxes(ctx context.Context, network netconf.Network, backends ethbackend.Backends) error {
 	var eg errgroup.Group
 	for _, chain := range network.EVMChains() {
-		eg.Go(func() error {
-			backend, err := backends.Backend(chain.ID)
-			if err != nil {
-				return errors.Wrap(err, "get backend", "chain", chain.Name)
-			}
+		backend, err := backends.Backend(chain.ID)
+		if err != nil {
+			return errors.Wrap(err, "get backend", "chain", chain.Name)
+		}
 
+		eg.Go(func() error {
 			addr, receipt, err := inbox.Deploy(ctx, network, backend)
 			if err != nil {
 				return errors.Wrap(err, "deploy inbox", "chain", chain.Name)
@@ -55,21 +55,33 @@ func deployBoxes(ctx context.Context, network netconf.Network, backends ethbacke
 
 			log.Info(ctx, "SolverNetInbox deployed", "addr", addr.Hex(), "chain", chain.Name, "tx", maybeTxHash(receipt))
 
-			addr, receipt, err = outbox.Deploy(ctx, network, backend)
+			return nil
+		})
+
+		eg.Go(func() error {
+			addr, receipt, err := outbox.Deploy(ctx, network, backend)
 			if err != nil {
 				return errors.Wrap(err, "deploy outbox", "chain", chain.Name)
 			}
 
 			log.Info(ctx, "SolverNetOutbox deployed", "addr", addr.Hex(), "chain", chain.Name, "tx", maybeTxHash(receipt))
 
-			addr, receipt, err = middleman.Deploy(ctx, network, backend)
+			return nil
+		})
+
+		eg.Go(func() error {
+			addr, receipt, err := middleman.Deploy(ctx, network, backend)
 			if err != nil {
 				return errors.Wrap(err, "deploy middleman", "chain", chain.Name)
 			}
 
 			log.Info(ctx, "SolverNetMiddleman deployed", "addr", addr.Hex(), "chain", chain.Name, "tx", maybeTxHash(receipt))
 
-			addr, receipt, err = executor.Deploy(ctx, network, backend)
+			return nil
+		})
+
+		eg.Go(func() error {
+			addr, receipt, err := executor.Deploy(ctx, network, backend)
 			if err != nil {
 				return errors.Wrap(err, "deploy executor", "chain", chain.Name)
 			}

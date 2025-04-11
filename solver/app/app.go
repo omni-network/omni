@@ -18,7 +18,6 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokenpricer"
-	"github.com/omni-network/omni/lib/tokenpricer/coingecko"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/xchain"
@@ -114,10 +113,12 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "approve outboxes")
 	}
 
-	pricer := newPricer(ctx, cfg.CoinGeckoAPIKey)
+	pricer := newPricer(ctx, network.ID, cfg.CoinGeckoAPIKey)
 
-	// TODO(corver): Replace with real price function to support swaps.
 	priceFunc := unaryPrice
+	if network.ID.IsEphemeral() {
+		priceFunc = newPriceFunc(pricer)
+	}
 
 	err = startProcessingEvents(ctx, network, xprov, jobDB, backends, solverAddr, addrs, cursors, pricer, priceFunc)
 	if err != nil {
@@ -149,16 +150,6 @@ func Run(ctx context.Context, cfg Config) error {
 	case err := <-apiChan:
 		return err
 	}
-}
-
-func newPricer(ctx context.Context, apiKey string) tokenpricer.Pricer {
-	pricer := tokenpricer.NewCached(coingecko.New(coingecko.WithAPIKey(apiKey)))
-
-	// use cached pricer avoid spamming coingecko public api
-	const priceCacheEvictInterval = time.Minute * 10
-	go pricer.ClearCacheForever(ctx, priceCacheEvictInterval)
-
-	return pricer
 }
 
 // serveMonitoring starts a goroutine that serves the monitoring API. It

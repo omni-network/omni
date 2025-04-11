@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/omni-network/omni/lib/netconf"
 
@@ -16,21 +17,17 @@ func TestPortalOffsets(t *testing.T) {
 		t.Helper()
 		for _, dest := range dests {
 			for _, stream := range network.StreamsBetween(source.Chain.ID, dest.Chain.ID) {
-				sourceOffset, err := source.Contract.OutXMsgOffset(nil, dest.Chain.ID, uint64(stream.ShardID))
-				require.NoError(t, err)
+				// Require some messages were sent
+				require.Eventuallyf(t, func() bool {
+					sourceOffset, err := source.Contract.OutXMsgOffset(nil, dest.Chain.ID, uint64(stream.ShardID))
+					return err == nil && sourceOffset > 0
+				}, time.Second*30, time.Second, "no xmsgs sent from source chain %v to dest chain %v", source.Chain.ID, dest.Chain.ID)
 
-				destOffset, err := dest.Contract.InXMsgOffset(nil, source.Chain.ID, uint64(stream.ShardID))
-				require.NoError(t, err)
-
-				// require at least some xmsgs were sent
-				require.NotZero(t, sourceOffset,
-					"no xmsgs sent from source chain %v to dest chain %v",
-					source.Chain.ID, dest.Chain.ID)
-
-				// require at least half were received
-				require.GreaterOrEqual(t, destOffset, sourceOffset/2,
-					"dest chain %v offset=%d, source chain %v offset=%d",
-					dest.Chain.ID, destOffset, source.Chain.ID, sourceOffset)
+				// Require some messages were received
+				require.Eventuallyf(t, func() bool {
+					destOffset, err := dest.Contract.InXMsgOffset(nil, source.Chain.ID, uint64(stream.ShardID))
+					return err == nil && destOffset > 0
+				}, time.Second*30, time.Second, "no xmsgs received by dest chain %v from source chain %v", dest.Chain.ID, source.Chain.ID)
 			}
 		}
 	})

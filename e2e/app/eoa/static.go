@@ -7,6 +7,7 @@ import (
 //nolint:gochecknoglobals // Static mappings.
 var statics = map[netconf.ID][]Account{
 	netconf.Devnet: flatten(
+		// DevPrivKey0 used by JS integration tests
 		wellKnown(DevPrivateKey0(), RoleCreate3Deployer, RoleDeployer, RoleManager, RoleUpgrader),
 		wellKnown(DevPrivateKey2(), RoleFlowgen),
 		wellKnown(DevPrivateKey3(), RoleXCaller),

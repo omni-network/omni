@@ -25,7 +25,7 @@ import (
 )
 
 // parallel is the number of parallel orders to open.
-const parallelDev = 4
+const parallelDev = 2
 const parallel = 64
 
 // Jobs returns two jobs bridging native ETH from one chain to another one and back.
@@ -35,15 +35,20 @@ func Jobs(
 	owner common.Address,
 	scl sclient.Client,
 ) []types.Job {
-	conf, ok := config[networkID]
+	confs, ok := config[networkID]
 	if !ok {
 		return nil
 	}
 
-	return []types.Job{
-		newJob(networkID, backends, conf, owner, scl),
-		newJob(networkID, backends, conf.Flip(), owner, scl), // Second job using flipped config
+	var jobs []types.Job
+	for _, conf := range confs {
+		jobs = append(jobs,
+			newJob(networkID, backends, conf, owner, scl),
+			newJob(networkID, backends, conf.Flip(), owner, scl), // Second job using flipped config
+		)
 	}
+
+	return jobs
 }
 
 // NewJob returns a job that bridges native tokens.
@@ -245,7 +250,7 @@ func availableBalance(
 
 	thresholds, ok := eoa.GetFundThresholds(srcToken.Asset, networkID, eoa.RoleFlowgen)
 	if !ok {
-		return nil, errors.New("no thresholds found", "role", eoa.RoleFlowgen)
+		return nil, errors.New("no flowgen thresholds found", "asset", srcToken.Asset)
 	}
 
 	reserved := bi.Ether(0.01) // overhead that should cover solver commission and tx fees

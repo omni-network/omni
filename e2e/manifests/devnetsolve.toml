@@ -1,7 +1,6 @@
 # DevnetSolve is a simple devnet with solve contracts deployed
 network = "devnet"
 anvil_chains = ["mock_l1", "mock_l2"]
-deploy_solve = true
 
 prometheus = true
 

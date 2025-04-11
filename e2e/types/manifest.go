@@ -94,8 +94,8 @@ type Manifest struct {
 	// PingPongN defines the number of ping pong messages to send. Defaults 3 if 0.
 	PingPongN uint64 `toml:"pingpong_n"`
 
-	// DeploySolve defines whether to deploy the solve contracts
-	DeploySolve bool `toml:"deploy_solve"`
+	// AllE2ETests defines whether to run all e2e tests (not only fast ones).
+	AllE2ETests bool `toml:"all_e2e_tests"`
 
 	// Forks maps devnet chain name to name of public chain to fork from.
 	Forks map[string]string

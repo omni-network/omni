@@ -1,4 +1,4 @@
-package app
+package gasstation
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
@@ -13,6 +14,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts/gasstation"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
@@ -23,21 +25,21 @@ import (
 )
 
 // DeployEphemeralGasApp deploys OmniGasPump and OmniGasStation contracts to ephemeral networks.
-func DeployEphemeralGasApp(ctx context.Context, def Definition) error {
-	if !def.Testnet.Network.IsEphemeral() {
+func DeployEphemeralGasApp(ctx context.Context, testnet types.Testnet, backends ethbackend.Backends) error {
+	if !testnet.Network.IsEphemeral() {
 		return nil
 	}
 
-	if err := deployGasPumps(ctx, def); err != nil {
+	if err := deployGasPumps(ctx, testnet, backends); err != nil {
 		return errors.Wrap(err, "deploy gas pumps")
 	}
 
-	if err := deployGasStation(ctx, def); err != nil {
+	if err := deployGasStation(ctx, testnet, backends); err != nil {
 		return errors.Wrap(err, "deploy gas station")
 	}
 
-	if def.Testnet.Network != netconf.Mainnet {
-		if err := fundGasStation(ctx, def); err != nil {
+	if testnet.Network != netconf.Mainnet {
+		if err := fundGasStation(ctx, testnet, backends); err != nil {
 			return errors.Wrap(err, "fund gas station")
 		}
 	}
@@ -46,24 +48,24 @@ func DeployEphemeralGasApp(ctx context.Context, def Definition) error {
 }
 
 // deployGasPumps deploys OmniGasPump contracts to all chains except Omni's EVM.
-func deployGasPumps(ctx context.Context, def Definition) error {
-	omniEVM, ok := def.Testnet.OmniEVMChain()
+func deployGasPumps(ctx context.Context, testnet types.Testnet, backends ethbackend.Backends) error {
+	omniEVM, ok := testnet.OmniEVMChain()
 	if !ok {
 		return errors.New("no omni evm chain")
 	}
 
-	for _, chain := range def.Testnet.EVMChains() {
+	for _, chain := range testnet.EVMChains() {
 		// GasPump not deployed on OmniEVM
 		if chain.ChainID == omniEVM.ChainID {
 			continue
 		}
 
-		backend, err := def.Backends().Backend(chain.ChainID)
+		backend, err := backends.Backend(chain.ChainID)
 		if err != nil {
 			return errors.Wrap(err, "backend", "chain", chain.Name)
 		}
 
-		addr, receipt, err := gaspump.DeployIfNeeded(ctx, def.Testnet.Network, backend)
+		addr, receipt, err := gaspump.DeployIfNeeded(ctx, testnet.Network, backend)
 		if err != nil {
 			return errors.Wrap(err, "deploy", "chain", chain.Name, "tx", maybeTxHash(receipt))
 		}
@@ -75,24 +77,24 @@ func deployGasPumps(ctx context.Context, def Definition) error {
 }
 
 // deployGasStation deploys OmniGasStation contract to Omni's EVM.
-func deployGasStation(ctx context.Context, def Definition) error {
-	omniEVM, ok := def.Testnet.OmniEVMChain()
+func deployGasStation(ctx context.Context, testnet types.Testnet, backends ethbackend.Backends) error {
+	omniEVM, ok := testnet.OmniEVMChain()
 	if !ok {
 		return errors.New("no omni evm chain")
 	}
 
-	backend, err := def.Backends().Backend(omniEVM.ChainID)
+	backend, err := backends.Backend(omniEVM.ChainID)
 	if err != nil {
 		return errors.Wrap(err, "backend")
 	}
 
-	addrs, err := contracts.GetAddresses(ctx, def.Testnet.Network)
+	addrs, err := contracts.GetAddresses(ctx, testnet.Network)
 	if err != nil {
 		return errors.Wrap(err, "get addrs")
 	}
 
-	gasPumps := make([]bindings.OmniGasStationGasPump, 0, len(def.Testnet.EVMChains())-1)
-	for _, chain := range def.Testnet.EVMChains() {
+	gasPumps := make([]bindings.OmniGasStationGasPump, 0, len(testnet.EVMChains())-1)
+	for _, chain := range testnet.EVMChains() {
 		if chain.ChainID == omniEVM.ChainID {
 			continue
 		}
@@ -103,7 +105,7 @@ func deployGasStation(ctx context.Context, def Definition) error {
 		})
 	}
 
-	addr, receipt, err := gasstation.DeployIfNeeded(ctx, def.Testnet.Network, backend, gasPumps)
+	addr, receipt, err := gasstation.DeployIfNeeded(ctx, testnet.Network, backend, gasPumps)
 	if err != nil {
 		return errors.Wrap(err, "deploy", "tx", maybeTxHash(receipt))
 	}
@@ -114,20 +116,20 @@ func deployGasStation(ctx context.Context, def Definition) error {
 }
 
 // fundGasStation funds a network's OmniGasStation contract on Omni's EVM.
-func fundGasStation(ctx context.Context, def Definition) error {
-	omniEVM, ok := def.Testnet.OmniEVMChain()
+func fundGasStation(ctx context.Context, testnet types.Testnet, backends ethbackend.Backends) error {
+	omniEVM, ok := testnet.OmniEVMChain()
 	if !ok {
 		return errors.New("no omni evm chain")
 	}
 
-	backend, err := def.Backends().Backend(omniEVM.ChainID)
+	backend, err := backends.Backend(omniEVM.ChainID)
 	if err != nil {
 		return errors.Wrap(err, "backend")
 	}
 
-	funder := eoa.MustAddress(def.Testnet.Network, eoa.RoleHot)
+	funder := eoa.MustAddress(testnet.Network, eoa.RoleHot)
 
-	addrs, err := contracts.GetAddresses(ctx, def.Testnet.Network)
+	addrs, err := contracts.GetAddresses(ctx, testnet.Network)
 	if err != nil {
 		return errors.Wrap(err, "get addrs")
 	}
@@ -164,33 +166,15 @@ type GasPumpTest struct {
 	TargetOMNI *big.Int
 }
 
-var (
-	GasPumpTests = []GasPumpTest{
-		{
-			Recipient:  common.HexToAddress("0x0000000000000000000000000000000000001111"),
-			TargetOMNI: bi.Ether(0.005), // 0.005 OMNI
-		},
-		{
-			Recipient:  common.HexToAddress("0x0000000000000000000000000000000000002222"),
-			TargetOMNI: bi.Ether(0.01), // 0.01 OMNI
-		},
-		{
-			Recipient:  common.HexToAddress("0x0000000000000000000000000000000000003333"),
-			TargetOMNI: bi.Ether(0.015), // 0.015 OMNI
-		},
-	}
-)
-
-// TODO(corver): Move this to actual tests package.
-func testGasPumps(ctx context.Context, def Definition) error {
-	networkID := def.Testnet.Network
+func TestGasPumps(ctx context.Context, testnet types.Testnet, backends ethbackend.Backends, tests []GasPumpTest) error {
+	networkID := testnet.Network
 
 	addrs, err := contracts.GetAddresses(ctx, networkID)
 	if err != nil {
 		return errors.Wrap(err, "get addrs")
 	}
 
-	omniEVM, ok := def.Testnet.OmniEVMChain()
+	omniEVM, ok := testnet.OmniEVMChain()
 	if !ok {
 		return errors.New("no omni evm chain")
 	}
@@ -203,12 +187,12 @@ func testGasPumps(ctx context.Context, def Definition) error {
 	// just need an account with funds on ephemeral network chains
 	payor := anvil.DevAccount7()
 
-	for _, chain := range def.Testnet.EVMChains() {
+	for _, chain := range testnet.EVMChains() {
 		if chain.ChainID == omniEVM.ChainID {
 			continue
 		}
 
-		backend, err := def.Backends().Backend(chain.ChainID)
+		backend, err := backends.Backend(chain.ChainID)
 		if err != nil {
 			return errors.Wrap(err, "backend", "chain", chain.Name)
 		}
@@ -223,7 +207,7 @@ func testGasPumps(ctx context.Context, def Definition) error {
 			return errors.Wrap(err, "bind opts")
 		}
 
-		for _, test := range GasPumpTests {
+		for _, test := range tests {
 			neededETH, err := gasPump.Quote(&bind.CallOpts{Context: ctx}, test.TargetOMNI)
 			if err != nil {
 				return errors.Wrap(err, "quote", "chain", chain.Name)

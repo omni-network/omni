@@ -11,6 +11,8 @@ import (
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokenpricer"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/solver/client"
 	"github.com/omni-network/omni/solver/types"
@@ -238,17 +240,34 @@ func TestQuote(t *testing.T) {
 			},
 		},
 		{
-			name: "invalid deposit (OMNI for ETH)",
+			name: "valid native swap (OMNI for ETH)",
 			req: types.QuoteRequest{
 				SourceChainID:      evmchain.IDOmniMainnet,
 				DestinationChainID: evmchain.IDEthereum,
 				Deposit:            zeroAddrAmt,
 				Expense:            mockAddrAmt("1000000000000000000"),
 			},
-			expErr: types.JSONError{
-				Code:    http.StatusBadRequest,
-				Status:  http.StatusText(http.StatusBadRequest),
-				Message: "InvalidDeposit: deposit token must match expense token [expense=1 ETH, deposit=OMNI]",
+			res: types.QuoteResponse{
+				Deposit: mockAddrAmt("601800000000000000000"), // Price is 3000/5 ~= 600 OMNI/ETH
+				Expense: mockAddrAmt("1000000000000000000"),
+			},
+		},
+		{
+			name: "valid erc20 to native swap (base USDC for OMNI)",
+			req: types.QuoteRequest{
+				SourceChainID:      evmchain.IDBase,
+				DestinationChainID: evmchain.IDOmniMainnet,
+				Deposit: types.AddrAmt{
+					Token: erc20(evmchain.IDBase, tokens.USDC).Address,
+				},
+				Expense: mockAddrAmt("1000000000000000000"),
+			},
+			res: types.QuoteResponse{
+				Deposit: types.AddrAmt{
+					Token:  erc20(evmchain.IDBase, tokens.USDC).Address,
+					Amount: parseInt("5015000000000000000"), // Price is $5/OMNI
+				},
+				Expense: mockAddrAmt("1000000000000000000"),
 			},
 		},
 		{
@@ -306,7 +325,7 @@ func TestQuote(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			priceFunc := unaryPrice
+			priceFunc := newPriceFunc(tokenpricer.NewDevnetMock())
 			srv := httptest.NewServer(handlerAdapter(newQuoteHandler(newQuoter(priceFunc))))
 
 			var reqBody, respBody []byte

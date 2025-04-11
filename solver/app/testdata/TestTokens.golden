@@ -340,6 +340,16 @@
   "symbol": "wstETH"
  },
  {
+  "address": "0xFaC41d3e0777E7F5611bcedDD827A05C0cea985f",
+  "chainId": 1652,
+  "coingeckoId": "usdc",
+  "isMock": true,
+  "maxSpend": "10 USDC",
+  "minSpend": "0.1 USDC",
+  "name": "USD Coin",
+  "symbol": "USDC"
+ },
+ {
   "address": "0x86156a9225DCE4781005d8CDC48106e308A0F338",
   "chainId": 1654,
   "coingeckoId": "wrapped-steth",
@@ -348,6 +358,16 @@
   "minSpend": "0.001 wstETH",
   "name": "Wrapped Staked Ether",
   "symbol": "wstETH"
+ },
+ {
+  "address": "0xFaC41d3e0777E7F5611bcedDD827A05C0cea985f",
+  "chainId": 1654,
+  "coingeckoId": "usdc",
+  "isMock": true,
+  "maxSpend": "10 USDC",
+  "minSpend": "0.1 USDC",
+  "name": "USD Coin",
+  "symbol": "USDC"
  },
  {
   "address": "0xe4075366F03C286846dECE8AAF104cF2a542294d",

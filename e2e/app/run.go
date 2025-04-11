@@ -8,7 +8,6 @@ import (
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/netman"
 	"github.com/omni-network/omni/e2e/netman/pingpong"
-	"github.com/omni-network/omni/e2e/solve"
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/halo/app/upgrades/static"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
@@ -98,27 +97,24 @@ func Deploy(ctx context.Context, def Definition, cfg DeployConfig) (*pingpong.XD
 		return nil, errors.Wrap(err, "deploy create3")
 	}
 
-	// Deploy portals
+	// Deploy portals (allowing networkFromDef to succeed)
 	if err := def.Netman().DeployPortals(ctx, genesisValSetID, genesisVals); err != nil {
 		return nil, errors.Wrap(err, "deploy portals")
 	}
 
-	if def.Manifest.DeploySolve {
-		// Deploy solver before initPortalRegistry, so solver detects boxes after netconf.Await
-		if err := solve.Deploy(ctx, networkFromDef(def), def.Backends()); err != nil {
-			return nil, errors.Wrap(err, "deploy solve")
-		}
+	var eg1 errgroup.Group
+	eg1.Go(func() error { return maybeDeploySolver(ctx, def) })                                      // Deploy solver before initPortalRegistry, so solver detects boxes after netconf.Await
+	eg1.Go(func() error { return maybeDeployL1OmniERC20(ctx, networkFromDef(def), def.Backends()) }) // Solver also requires all tokens to be deployed
+	if err := eg1.Wait(); err != nil {
+		return nil, errors.Wrap(err, "deploy solver and erc20 contracts")
 	}
 
 	// Deploy other contracts (and other on-chain setup)
 	var eg2 errgroup.Group
 	eg2.Go(func() error { return initPortalRegistry(ctx, def) })
 	eg2.Go(func() error { return allowStagingValidators(ctx, def) })
-	eg2.Go(func() error { return DeployEphemeralGasApp(ctx, def) })
-	eg2.Go(func() error { return DeployBridge(ctx, def) })
 	eg2.Go(func() error { return maybeSubmitNetworkUpgrades(ctx, def) })
 	eg2.Go(func() error { return FundValidatorsForTesting(ctx, def) })
-	// eg2.Go(func() error { return xbridge.Deploy(ctx, networkFromDef(def), def.Backends()) }) // (zodomo): disabled for now
 	if err := eg2.Wait(); err != nil {
 		return nil, errors.Wrap(err, "deploy other contracts")
 	}
@@ -178,14 +174,6 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 
 	stopReceiptMonitor := StartMonitoringReceipts(ctx, def)
 
-	var eg errgroup.Group
-	eg.Go(func() error { return testGasPumps(ctx, def) })
-	eg.Go(func() error { return testBridge(ctx, def) })
-	// eg.Go(func() error { return xbridge.Test(ctx, networkFromDef(def), ExternalEndpoints(def)) }) // (zodomo): disabled for now
-	if err := eg.Wait(); err != nil {
-		return errors.Wrap(err, "test xdapps")
-	}
-
 	stopValidatorUpdates := StartValidatorUpdates(ctx, def)
 
 	stopAddingPortals := startAddingMockPortals(ctx, def)
@@ -223,6 +211,11 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 		}
 	}
 
+	// Start unit tests.
+	if err := Test(ctx, def, TestConfig{}); err != nil {
+		return err
+	}
+
 	// Wait for:
 	// - all xmsgs messages to be sent
 	// - all xmsgs to be submitted
@@ -258,11 +251,6 @@ func E2ETest(ctx context.Context, def Definition, cfg E2ETestConfig) error {
 
 	if err := stopValidatorUpdates(); err != nil {
 		return errors.Wrap(err, "stop validator updates")
-	}
-
-	// Start unit tests.
-	if err := Test(ctx, def, TestConfig{}); err != nil {
-		return err
 	}
 
 	if err := LogMetrics(ctx, def); err != nil {

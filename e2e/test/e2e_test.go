@@ -16,11 +16,10 @@ import (
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/feature"
-	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/lib/xchain"
 
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
@@ -35,12 +34,10 @@ import (
 
 //nolint:gochecknoglobals // This was copied from cometbft/test/e2e/test/e2e_test.go
 var (
-	endopintsCache  = map[string]xchain.RPCEndpoints{}
-	networkCache    = map[string]netconf.Network{}
-	testnetCache    = map[string]types.Testnet{}
-	testnetCacheMtx = sync.Mutex{}
-	blocksCache     = map[string][]*cmttypes.Block{}
-	blocksCacheMtx  = sync.Mutex{}
+	depsCache      = map[string]NetworkDeps{}
+	depsCacheMtx   = sync.Mutex{}
+	blocksCache    = map[string][]*cmttypes.Block{}
+	blocksCacheMtx = sync.Mutex{}
 )
 
 // Portal is a struct that contains the chain, client and contract for a portal.
@@ -51,9 +48,24 @@ type Portal struct {
 }
 
 type NetworkDeps struct {
+	Testnet      types.Testnet
+	Backends     ethbackend.Backends
 	Network      netconf.Network
 	RPCEndpoints xchain.RPCEndpoints
 	SolverAddr   string
+}
+
+func (d NetworkDeps) OmniBackend() (*ethbackend.Backend, error) {
+	return d.Backends.Backend(d.Network.ID.Static().OmniExecutionChainID)
+}
+
+func (d NetworkDeps) L1Backend() (*ethbackend.Backend, error) {
+	chainID, ok := d.Network.EthereumChain()
+	if !ok {
+		return nil, errors.New("no ethereum chain")
+	}
+
+	return d.Backends.Backend(chainID.ID)
 }
 
 type testFunc struct {
@@ -104,7 +116,8 @@ func test(t *testing.T, testFunc testFunc) {
 	t.Helper()
 	ctx := t.Context()
 
-	testnet, network, endpoints := loadEnv(t)
+	deps := loadEnv(t)
+	testnet := deps.Testnet
 	nodes := testnet.Nodes
 
 	if testFunc.skipFunc != nil && testFunc.skipFunc(testnet.Manifest) {
@@ -120,12 +133,7 @@ func test(t *testing.T, testFunc testFunc) {
 		nodes = []*e2e.Node{node}
 	}
 
-	portals := makePortals(t, network, endpoints)
-	log.Info(ctx, "Running tests for testnet",
-		"testnet", testnet.Name,
-		"nodes", len(nodes),
-		"portals", len(portals),
-	)
+	portals := makePortals(t, deps.Network, deps.Backends)
 	for _, node := range nodes {
 		if node.Stateless() {
 			continue
@@ -135,7 +143,7 @@ func test(t *testing.T, testFunc testFunc) {
 
 		t.Run(node.Name, func(t *testing.T) {
 			t.Parallel()
-			testFunc.TestNode(t, network, node, portals)
+			testFunc.TestNode(t, deps.Network, node, portals)
 		})
 	}
 
@@ -143,66 +151,50 @@ func test(t *testing.T, testFunc testFunc) {
 		for _, portal := range portals {
 			t.Run(portal.Chain.Name, func(t *testing.T) {
 				t.Parallel()
-				testFunc.TestPortal(t, network, portal, portals)
+				testFunc.TestPortal(t, deps.Network, portal, portals)
 			})
 		}
 	}
 
 	if testFunc.TestOmniEVM != nil {
-		for _, chain := range network.Chains {
-			if !netconf.IsOmniExecution(network.ID, chain.ID) {
-				continue
-			}
+		omniBackend, err := deps.Backends.Backend(deps.Network.ID.Static().OmniExecutionChainID)
+		require.NoError(t, err)
 
-			rpc, err := endpoints.ByNameOrID(chain.Name, chain.ID)
-			require.NoError(t, err)
-
-			client, err := ethclient.Dial(chain.Name, rpc)
-			require.NoError(t, err)
-
-			t.Run(chain.Name, func(t *testing.T) {
-				t.Parallel()
-				testFunc.TestOmniEVM(t, client)
-			})
-		}
+		t.Run(omniBackend.Name(), func(t *testing.T) {
+			t.Parallel()
+			testFunc.TestOmniEVM(t, omniBackend)
+		})
 	}
 
 	if testFunc.TestNetwork != nil {
 		t.Run("network", func(t *testing.T) {
 			t.Parallel()
-			testFunc.TestNetwork(ctx, t, NetworkDeps{
-				Network:      network,
-				RPCEndpoints: endpoints,
-				SolverAddr:   testnet.SolverExternalAddr,
-			})
+			testFunc.TestNetwork(ctx, t, deps)
 		})
 	}
 }
 
 // makePortals creates a portal struct for each chain in the network.
-func makePortals(t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) []Portal {
+func makePortals(t *testing.T, network netconf.Network, backends ethbackend.Backends) []Portal {
 	t.Helper()
 	resp := make([]Portal, 0, len(network.EVMChains()))
 	for _, chain := range network.EVMChains() {
 		if _, ok := evmchain.MetadataByID(chain.ID); !ok {
-			t.Log("Skipping mock chain", chain.ID)
+			t.Log("Skipping mock chain", chain.Name)
 			continue
 		}
 
-		rpc, err := endpoints.ByNameOrID(chain.Name, chain.ID)
-		tutil.RequireNoError(t, err)
-
-		ethClient, err := ethclient.Dial(chain.Name, rpc)
+		backend, err := backends.Backend(chain.ID)
 		require.NoError(t, err)
 
 		// create our Omni Portal Contract
-		contract, err := bindings.NewOmniPortal(chain.PortalAddress, ethClient)
+		contract, err := bindings.NewOmniPortal(chain.PortalAddress, backend)
 		require.NoError(t, err)
 		require.NotNil(t, contract, "contract is nil")
 
 		resp = append(resp, Portal{
 			Chain:    chain,
-			Client:   ethClient,
+			Client:   backend,
 			Contract: contract,
 		})
 	}
@@ -211,9 +203,7 @@ func makePortals(t *testing.T, network netconf.Network, endpoints xchain.RPCEndp
 }
 
 // loadEnv loads the testnet and network based on env vars.
-//
-
-func loadEnv(t *testing.T) (types.Testnet, netconf.Network, xchain.RPCEndpoints) {
+func loadEnv(t *testing.T) NetworkDeps {
 	t.Helper()
 
 	manifestFile := os.Getenv(app.EnvE2EManifest)
@@ -232,11 +222,12 @@ func loadEnv(t *testing.T) (types.Testnet, netconf.Network, xchain.RPCEndpoints)
 		require.Fail(t, app.EnvInfraFile+" must be an absolute path", "got", ifdFile)
 	}
 
-	testnetCacheMtx.Lock()
-	defer testnetCacheMtx.Unlock()
-	if testnet, ok := testnetCache[manifestFile]; ok {
-		return testnet, networkCache[manifestFile], endopintsCache[manifestFile]
+	depsCacheMtx.Lock()
+	defer depsCacheMtx.Unlock()
+	if deps, ok := depsCache[manifestFile]; ok {
+		return deps
 	}
+
 	m, err := app.LoadManifest(manifestFile)
 	require.NoError(t, err)
 	feature.SetGlobals(m.FeatureFlags)
@@ -257,7 +248,6 @@ func loadEnv(t *testing.T) (types.Testnet, netconf.Network, xchain.RPCEndpoints)
 	}
 	testnet, err := app.TestnetFromManifest(t.Context(), m, ifd, cfg)
 	require.NoError(t, err)
-	testnetCache[manifestFile] = testnet
 
 	endpointsFile := os.Getenv(app.EnvE2ERPCEndpoints)
 	if endpointsFile == "" {
@@ -267,16 +257,26 @@ func loadEnv(t *testing.T) (types.Testnet, netconf.Network, xchain.RPCEndpoints)
 	require.NoError(t, err)
 	var endpoints xchain.RPCEndpoints
 	require.NoError(t, json.Unmarshal(bz, &endpoints))
-	endopintsCache[manifestFile] = endpoints
 
 	portalReg, err := makePortalRegistry(testnet.Network, endpoints)
 	require.NoError(t, err)
 
 	network, err := netconf.AwaitOnExecutionChain(t.Context(), testnet.Network, portalReg, endpoints.Keys())
 	require.NoError(t, err)
-	networkCache[manifestFile] = network
 
-	return testnet, network, endpoints
+	backends, err := ethbackend.BackendsFromTestnet(t.Context(), testnet)
+	require.NoError(t, err)
+
+	deps := NetworkDeps{
+		Testnet:      testnet,
+		Backends:     backends,
+		Network:      network,
+		RPCEndpoints: endpoints,
+		SolverAddr:   testnet.SolverExternalAddr,
+	}
+	depsCache[manifestFile] = deps
+
+	return deps
 }
 
 // fetchBlockChain fetches a complete, up-to-date block history from
@@ -284,7 +284,8 @@ func loadEnv(t *testing.T) (types.Testnet, netconf.Network, xchain.RPCEndpoints)
 func fetchBlockChain(ctx context.Context, t *testing.T) []*cmttypes.Block {
 	t.Helper()
 
-	testnet, _, _ := loadEnv(t)
+	deps := loadEnv(t)
+	testnet := deps.Testnet
 
 	// Find the freshest archive node
 	var (

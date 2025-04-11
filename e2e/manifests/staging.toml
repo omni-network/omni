@@ -2,7 +2,6 @@ network = "staging"
 public_chains = ["holesky","sepolia","op_sepolia","base_sepolia","arb_sepolia"]
 multi_omni_evms = true
 prometheus = true
-deploy_solve = true
 
 feature_flags = []
 

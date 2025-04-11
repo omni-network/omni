@@ -1,4 +1,4 @@
-package app
+package bridge
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app/eoa"
+	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/bi"
@@ -14,8 +15,8 @@ import (
 	"github.com/omni-network/omni/lib/contracts/l1bridge"
 	"github.com/omni-network/omni/lib/contracts/omnitoken"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -23,15 +24,15 @@ import (
 )
 
 // DeployBridge deploys the OmniBridgeL1 & OmniToken contracts (if necessary), and configures the OmniBridgeNative predeploy.
-func DeployBridge(ctx context.Context, def Definition) error {
-	networkID := def.Testnet.Network
-	l1, ok := def.Testnet.EthereumChain()
+func DeployBridge(ctx context.Context, testnet types.Testnet, backends ethbackend.Backends) error {
+	networkID := testnet.Network
+	l1, ok := testnet.EthereumChain()
 	if !ok {
 		log.Warn(ctx, "Skipping token bridge setup", errors.New("no ethereum L1 chain"))
 		return nil
 	}
 
-	omniEVM, ok := def.Testnet.OmniEVMChain()
+	omniEVM, ok := testnet.OmniEVMChain()
 	if !ok {
 		return errors.New("no omni evm chain")
 	}
@@ -43,28 +44,14 @@ func DeployBridge(ctx context.Context, def Definition) error {
 		return errors.Wrap(err, "get addrs")
 	}
 
-	l1Backend, err := def.Backends().Backend(l1.ChainID)
+	l1Backend, err := backends.Backend(l1.ChainID)
 	if err != nil {
 		return errors.Wrap(err, "backend")
 	}
 
-	omniBackend, err := def.Backends().Backend(omniEVM.ChainID)
+	omniBackend, err := backends.Backend(omniEVM.ChainID)
 	if err != nil {
 		return errors.Wrap(err, "omni backend")
-	}
-
-	// Only deploy the token for non-mainnet
-	if networkID != netconf.Mainnet {
-		_, receipt, err := omnitoken.DeployIfNeeded(ctx, networkID, l1Backend)
-		if err != nil {
-			return errors.Wrap(err, "deploy omni token")
-		}
-
-		if receipt != nil {
-			log.Info(ctx, "Deployed Omni Token", "chain", l1.Name, "addr", addrs.Token.Hex(), "block", receipt.BlockNumber)
-		} else if addrs.Token != networkID.Static().TokenAddress {
-			log.Warn(ctx, "Omni token already deployed, but not in network static", errors.New("missing static token addr"), "addr", addrs.Token.Hex())
-		}
 	}
 
 	// Deploy the bridge
@@ -116,65 +103,34 @@ func DeployBridge(ctx context.Context, def Definition) error {
 	return nil
 }
 
-type BridgeTest struct {
+type ToAmount struct {
 	To     common.Address
 	Amount *big.Int
 }
 
-var ToNativeBridgeTests = []BridgeTest{
-	{
-		To:     common.HexToAddress("0x1111111111111111111111111111111111111111"),
-		Amount: ether(1000),
-	},
-	{
-		To:     common.HexToAddress("0x2222222222222222222222222222222222222222"),
-		Amount: ether(1000),
-	},
-	{
-		To:     common.HexToAddress("0x3333333333333333333333333333333333333333"),
-		Amount: ether(1000),
-	},
-}
-
-var ToL1BridgeTests = []BridgeTest{
-	{
-		To:     common.HexToAddress("0x1111111111111111111111111111111111111111"),
-		Amount: ether(100),
-	},
-	{
-		To:     common.HexToAddress("0x2222222222222222222222222222222222222222"),
-		Amount: ether(100),
-	},
-	{
-		To:     common.HexToAddress("0x3333333333333333333333333333333333333333"),
-		Amount: ether(100),
-	},
-}
-
-// testBridge bridges some tokens from L1 to OmniEVM, and some from OmniEVM to L1.
+// Test bridges some tokens from L1 to OmniEVM, and some from OmniEVM to L1.
 // Tokens must be bridged to OmniEVM first, before the native bridge contract will allow bridging back to L1.
-// TODO(corver): Move this to actual tests package.
-func testBridge(ctx context.Context, def Definition) error {
-	networkID := def.Testnet.Network
+func Test(ctx context.Context, testnet types.Testnet, backends ethbackend.Backends, toNatives, toL1s []ToAmount) error {
+	networkID := testnet.Network
 	if !networkID.IsEphemeral() {
 		log.Warn(ctx, "Skipping bridge test", errors.New("only ephemeral networks"))
 		return nil
 	}
 
-	if _, ok := def.Testnet.EthereumChain(); !ok {
+	if _, ok := testnet.EthereumChain(); !ok {
 		log.Warn(ctx, "Skipping bridge test ", errors.New("no ethereum L1 chain"))
 		return nil
 	}
 
-	if err := bridgeToNative(ctx, def, ToNativeBridgeTests); err != nil {
+	if err := bridgeToNative(ctx, testnet, backends, toNatives); err != nil {
 		return errors.Wrap(err, "bridge to native")
 	}
 
-	if err := waitNativeBridges(ctx, def, ToNativeBridgeTests); err != nil {
+	if err := waitNativeBridges(ctx, testnet, backends, toNatives); err != nil {
 		return errors.Wrap(err, "wait native bridges")
 	}
 
-	if err := bridgeToL1(ctx, def, ToL1BridgeTests); err != nil {
+	if err := bridgeToL1(ctx, testnet, backends, toL1s); err != nil {
 		return errors.Wrap(err, "bridge to L1")
 	}
 
@@ -182,10 +138,10 @@ func testBridge(ctx context.Context, def Definition) error {
 }
 
 // bridgeToNative bridges tokens from L1 to OmniEVM.
-func bridgeToNative(ctx context.Context, def Definition, toBridge []BridgeTest) error {
-	networkID := def.Testnet.Network
+func bridgeToNative(ctx context.Context, testnet types.Testnet, backends ethbackend.Backends, toBridge []ToAmount) error {
+	networkID := testnet.Network
 
-	l1, ok := def.Testnet.EthereumChain()
+	l1, ok := testnet.EthereumChain()
 	if !ok {
 		return errors.New("no ethereum L1 chain")
 	}
@@ -201,7 +157,7 @@ func bridgeToNative(ctx context.Context, def Definition, toBridge []BridgeTest) 
 		return errors.Wrap(err, "get addrs")
 	}
 
-	txOpts, backend, err := def.Backends().BindOpts(ctx, l1.ChainID, payor)
+	txOpts, backend, err := backends.BindOpts(ctx, l1.ChainID, payor)
 	if err != nil {
 		return errors.Wrap(err, "bind opts")
 	}
@@ -258,16 +214,13 @@ func bridgeToNative(ctx context.Context, def Definition, toBridge []BridgeTest) 
 
 // waitNativeBridges waits for all native bridge test cases to complete.
 // This is required before bridging back to L1, because the native bridge must be informed that L1 tokens are available.
-func waitNativeBridges(ctx context.Context, def Definition, bridges []BridgeTest) error {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-
-	omniEVM, ok := def.Testnet.OmniEVMChain()
+func waitNativeBridges(ctx context.Context, testnet types.Testnet, backends ethbackend.Backends, bridges []ToAmount) error {
+	omniEVM, ok := testnet.OmniEVMChain()
 	if !ok {
 		return errors.New("no omni evm")
 	}
 
-	backend, err := def.Backends().Backend(omniEVM.ChainID)
+	backend, err := backends.Backend(omniEVM.ChainID)
 	if err != nil {
 		return errors.Wrap(err, "backend")
 	}
@@ -297,18 +250,20 @@ func waitNativeBridges(ctx context.Context, def Definition, bridges []BridgeTest
 				log.Debug(ctx, "All native bridges complete")
 				return nil
 			}
+
+			log.Debug(ctx, "Waiting for native bridges", "bridged", bridged, "total", len(bridges))
 		}
 	}
 }
 
 // bridgeToL1 bridges tokens from OmniEVM to L1.
-func bridgeToL1(ctx context.Context, def Definition, toBridge []BridgeTest) error {
-	omniEVM, ok := def.Testnet.OmniEVMChain()
+func bridgeToL1(ctx context.Context, testnet types.Testnet, backends ethbackend.Backends, toBridge []ToAmount) error {
+	omniEVM, ok := testnet.OmniEVMChain()
 	if !ok {
 		return errors.New("no omni evm chain")
 	}
 
-	backend, err := def.Backends().Backend(omniEVM.ChainID)
+	backend, err := backends.Backend(omniEVM.ChainID)
 	if err != nil {
 		return errors.Wrap(err, "omni backend")
 	}
@@ -355,8 +310,4 @@ func bridgeToL1(ctx context.Context, def Definition, toBridge []BridgeTest) erro
 	}
 
 	return nil
-}
-
-func ether(n int64) *big.Int {
-	return bi.Ether(n)
 }

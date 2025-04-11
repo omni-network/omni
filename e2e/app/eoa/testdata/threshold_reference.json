@@ -52,8 +52,8 @@
   },
   "OMNI": {
    "cold": {
-    "min": "2024 OMNI",
-    "target": "7240 OMNI"
+    "min": "2124 OMNI",
+    "target": "8240 OMNI"
    },
    "create3-deployer": {
     "min": "0.5 OMNI",
@@ -64,12 +64,12 @@
     "target": "5 OMNI"
    },
    "flowgen": {
-    "min": "0 OMNI",
-    "target": "0 OMNI"
+    "min": "50 OMNI",
+    "target": "500 OMNI"
    },
    "hot": {
-    "min": "2024 OMNI",
-    "target": "7240 OMNI"
+    "min": "2124 OMNI",
+    "target": "8240 OMNI"
    },
    "manager": {
     "min": "0.5 OMNI",
@@ -154,8 +154,8 @@
   },
   "OMNI": {
    "cold": {
-    "min": "12024 OMNI",
-    "target": "57240 OMNI"
+    "min": "12124 OMNI",
+    "target": "58240 OMNI"
    },
    "create3-deployer": {
     "min": "0.5 OMNI",
@@ -166,12 +166,12 @@
     "target": "5 OMNI"
    },
    "flowgen": {
-    "min": "0 OMNI",
-    "target": "0 OMNI"
+    "min": "50 OMNI",
+    "target": "500 OMNI"
    },
    "hot": {
-    "min": "12024 OMNI",
-    "target": "57240 OMNI"
+    "min": "12124 OMNI",
+    "target": "58240 OMNI"
    },
    "manager": {
     "min": "0.5 OMNI",
@@ -256,8 +256,8 @@
   },
   "OMNI": {
    "cold": {
-    "min": "12523 OMNI",
-    "target": "59230 OMNI"
+    "min": "12623 OMNI",
+    "target": "60230 OMNI"
    },
    "create3-deployer": {
     "min": "0.5 OMNI",
@@ -268,12 +268,12 @@
     "target": "1000 OMNI"
    },
    "flowgen": {
-    "min": "0 OMNI",
-    "target": "0 OMNI"
+    "min": "50 OMNI",
+    "target": "500 OMNI"
    },
    "hot": {
-    "min": "12523 OMNI",
-    "target": "59230 OMNI"
+    "min": "12623 OMNI",
+    "target": "60230 OMNI"
    },
    "manager": {
     "min": "0.5 OMNI",

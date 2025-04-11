@@ -244,6 +244,15 @@ func rejectTestCases(t *testing.T, solver, outbox common.Address) []rejectTestCa
 	return append(tests, additional...)
 }
 
+func erc20(chainID uint64, asset tokens.Asset) tokens.Token {
+	token, ok := tokens.ByAsset(chainID, asset)
+	if !ok {
+		panic("OMNI token not found")
+	}
+
+	return token
+}
+
 func omniERC20(network netconf.ID) tokens.Token {
 	token, ok := tokens.BySymbol(netconf.EthereumChainID(network), "OMNI")
 	if !ok {
