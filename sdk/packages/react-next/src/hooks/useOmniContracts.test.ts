@@ -1,6 +1,5 @@
-import * as core from '@omni-network/core'
 import { waitFor } from '@testing-library/react'
-import { expect, test, vi } from 'vitest'
+import { expect, test } from 'vitest'
 import { renderHook } from '../../test/react.js'
 import { contracts } from '../../test/shared.js'
 import { useOmniContracts } from './useOmniContracts.js'
@@ -29,24 +28,5 @@ test('behaviour: handles API error gracefully', async () => {
 
   expect(result.current.isError).toBe(true)
   expect(result.current.error).toBeDefined()
-  expect(result.current.data).toBeUndefined()
-})
-
-// TODO: move check to core package tests
-test.skip('behaviour: handles invalid response format', async () => {
-  const fetchJSONSpy = vi.spyOn(core, 'fetchJSON')
-  fetchJSONSpy.mockResolvedValueOnce({
-    invalidField: 'value',
-  })
-
-  const { result } = renderHook(() => useOmniContracts())
-
-  await waitFor(() => expect(result.current.isPending).toBe(false))
-
-  expect(result.current.isError).toBe(true)
-  expect(result.current.error).toBeDefined()
-  expect(result.current.error?.message).toContain(
-    'Unexpected /contracts response',
-  )
   expect(result.current.data).toBeUndefined()
 })

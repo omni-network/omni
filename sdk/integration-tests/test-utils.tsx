@@ -1,12 +1,12 @@
 import { OmniProvider, type Order, useOrder } from '@omni-network/react'
 import {
-  MOCK_CHAINS,
-  MOCK_L1_CHAIN,
-  MOCK_L1_ID,
-  MOCK_L2_CHAIN,
-  OMNI_DEVNET_CHAIN,
   createClient,
+  mockChains,
+  mockL1Chain,
   mockL1Client,
+  mockL1Id,
+  mockL2Chain,
+  omniDevnetChain,
   testAccount,
 } from '@omni-network/test-utils'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -33,10 +33,10 @@ const mockConnector = mock({ accounts: [testAccount.address] as const })
 export function testConnector(config) {
   const connector = mockConnector(config)
   connector.getClient = async ({ chainId } = {}) => {
-    if (chainId === MOCK_L1_ID) {
+    if (chainId === mockL1Id) {
       return mockL1Client
     }
-    const chain = chainId ? MOCK_CHAINS[chainId] : MOCK_L1_CHAIN
+    const chain = chainId ? mockChains[chainId] : mockL1Chain
     if (chain == null) {
       throw new Error(`Unsupported chain: ${chainId}`)
     }
@@ -47,7 +47,7 @@ export function testConnector(config) {
 
 export function createWagmiConfig() {
   return createConfig({
-    chains: [MOCK_L1_CHAIN, MOCK_L2_CHAIN, OMNI_DEVNET_CHAIN],
+    chains: [mockL1Chain, mockL2Chain, omniDevnetChain],
     client: createClient,
   })
 }

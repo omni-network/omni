@@ -16,7 +16,7 @@ export type ValidationResponse = {
   rejectDescription?: string
 }
 
-export function encodeOrderForValidation<abis extends OptionalAbis>(
+export function encodeOrderRequest<abis extends OptionalAbis>(
   order: Order<abis>,
 ): string {
   try {
@@ -69,7 +69,10 @@ export function encodeOrderForValidation<abis extends OptionalAbis>(
   }
 }
 
-export async function validateOrder(apiBaseUrl: string, encodedOrder: string) {
+export async function validateOrderEncoded(
+  apiBaseUrl: string,
+  encodedOrder: string,
+) {
   const json = await fetchJSON(`${apiBaseUrl}/check`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -81,6 +84,13 @@ export async function validateOrder(apiBaseUrl: string, encodedOrder: string) {
   }
 
   return json as ValidationResponse
+}
+
+export async function validateOrder<abis extends OptionalAbis>(
+  apiBaseUrl: string,
+  order: Order<abis>,
+) {
+  return await validateOrderEncoded(apiBaseUrl, encodeOrderRequest(order))
 }
 
 // TODO schema validation

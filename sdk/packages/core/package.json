@@ -19,7 +19,9 @@
     "build": "pnpm clean && pnpm build:ts",
     "build:ts": "tsc -p tsconfig.build.json",
     "prepublishOnly": "pnpm build",
-    "clean": "rm -rf dist tsconfig.tsbuildinfo"
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage"
   },
   "files": ["dist/**", "src/**", "!dist/**/*.tsbuildinfo"],
   "engines": {
@@ -29,6 +31,9 @@
     "viem": "^2.23.13"
   },
   "devDependencies": {
-    "typescript": "^5.7.2"
+    "@omni-network/test-utils": "workspace:^",
+    "typescript": "^5.7.2",
+    "vite": "^6.2.6",
+    "vitest": "^3.0.7"
   }
 }
