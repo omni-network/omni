@@ -10,7 +10,9 @@ import (
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
+	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/umath"
 	solver "github.com/omni-network/omni/solver/types"
 
@@ -96,7 +98,18 @@ func nativeDeposit(amt *big.Int) solvernet.Deposit {
 func mintAndApproveAll(ctx context.Context, backends ethbackend.Backends, orders []TestOrder) error {
 	var eg errgroup.Group
 	for _, order := range orders {
-		eg.Go(func() error { return mintAndApprove(ctx, backends, order) })
+		eg.Go(func() error {
+			token, _ := tokens.ByAddress(order.SourceChainID, order.Deposit.Token)
+
+			if err := mintAndApprove(ctx, backends, order); err != nil {
+				return errors.Wrap(err, "mint and approve",
+					"chain", evmchain.Name(order.SourceChainID),
+					"token", token,
+				)
+			}
+
+			return nil
+		})
 	}
 
 	if err := eg.Wait(); err != nil {

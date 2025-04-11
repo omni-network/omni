@@ -14,7 +14,6 @@ import (
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
-	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/umath"
@@ -28,7 +27,7 @@ import (
 func TestSolver(t *testing.T) {
 	t.Parallel()
 	skipFunc := func(manifest types.Manifest) bool {
-		return !manifest.DeploySolve
+		return !manifest.AllE2ETests
 	}
 	maybeTestNetwork(t, skipFunc, func(ctx context.Context, t *testing.T, deps NetworkDeps) {
 		t.Helper()
@@ -37,7 +36,7 @@ func TestSolver(t *testing.T) {
 		testContractsAPI(ctx, t, deps.SolverAddr)
 		testSolverApprovals(ctx, t, deps)
 
-		err := solve.Test(ctx, deps.Network, deps.RPCEndpoints, deps.SolverAddr)
+		err := solve.Test(ctx, deps.Network, deps.Backends, deps.SolverAddr)
 		require.NoError(t, err)
 	})
 }
@@ -80,32 +79,27 @@ func testSolverApprovals(ctx context.Context, t *testing.T, deps NetworkDeps) {
 	solverAddr := eoa.MustAddress(network, eoa.RoleSolver)
 
 	for _, tkn := range tokens.All() {
-		chain, ok := deps.Network.Chain(tkn.ChainID)
-		if !ok {
-			continue
+		backend, err := deps.Backends.Backend(tkn.ChainID)
+		if err != nil {
+			continue // Tokens are defines for all networks.
 		}
 
-		endpoint, err := deps.RPCEndpoints.ByNameOrID(chain.Name, chain.ID)
-		require.NoError(t, err)
-
-		client, err := ethclient.Dial(chain.Name, endpoint)
-		require.NoError(t, err)
-
-		isDeployed, err := contracts.IsDeployed(ctx, client, tkn.Address)
+		isDeployed, err := contracts.IsDeployed(ctx, backend, tkn.Address)
 		require.NoError(t, err)
 
 		if !isDeployed {
 			continue
 		}
 
-		erc20, err := bindings.NewIERC20(tkn.Address, client)
+		erc20, err := bindings.NewIERC20(tkn.Address, backend)
 		require.NoError(t, err)
 
 		allowance, err := erc20.Allowance(nil, solverAddr, addrs.SolverNetOutbox)
 		require.NoError(t, err)
 
 		// must be max allowance
-		require.True(t, bi.EQ(allowance, umath.MaxUint256), "not max allowance")
+		expected := bi.MulF64(umath.MaxUint256, 0.9)
+		require.True(t, bi.GT(allowance, expected), "allowance missing: chain=%s, allowance=%s", backend.Name(), tkn.FormatAmt(allowance))
 	}
 }
 

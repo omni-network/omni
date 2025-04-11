@@ -19,7 +19,7 @@ const disableSDKTest = "DISABLE_SDK_TEST"
 func TestSDK(t *testing.T) {
 	t.Parallel()
 	skipFunc := func(manifest types.Manifest) bool {
-		return !manifest.DeploySolve || os.Getenv(disableSDKTest) == "true"
+		return !manifest.AllE2ETests || os.Getenv(disableSDKTest) == "true"
 	}
 	maybeTestNetwork(t, skipFunc, func(ctx context.Context, t *testing.T, _ NetworkDeps) {
 		t.Helper()

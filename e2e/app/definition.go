@@ -37,7 +37,6 @@ type DefinitionConfig struct {
 	InfraProvider string
 
 	// Secrets (not required for devnet)
-	DeployKeyFile   string
 	FireAPIKey      string
 	FireKeyPath     string
 	CoinGeckoAPIKey string
@@ -172,7 +171,7 @@ func MakeDefinition(ctx context.Context, cfg DefinitionConfig, commandName strin
 func newBackends(ctx context.Context, cfg DefinitionConfig, testnet types.Testnet, commandName string) (ethbackend.Backends, error) {
 	// If no fireblocks API key, use in-memory keys.
 	if cfg.FireAPIKey == "" {
-		return ethbackend.BackendsFromTestnet(ctx, testnet, cfg.DeployKeyFile)
+		return ethbackend.BackendsFromTestnet(ctx, testnet)
 	}
 
 	key, err := fireblocks.LoadKey(cfg.FireKeyPath)

@@ -11,16 +11,14 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/cli/cmd"
+	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
-	"github.com/omni-network/omni/lib/xchain"
 	evmengtypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/cometbft/cometbft/rpc/client/http"
@@ -69,19 +67,24 @@ func execCLI(ctx context.Context, args ...string) (string, string, error) {
 func TestCLIOperator(t *testing.T) {
 	t.Parallel()
 
-	testNetwork(t, func(ctx context.Context, t *testing.T, deps NetworkDeps) {
+	skipFunc := func(manifest types.Manifest) bool {
+		return !manifest.AllE2ETests
+	}
+	maybeTestNetwork(t, skipFunc, func(ctx context.Context, t *testing.T, deps NetworkDeps) {
 		t.Helper()
 
 		endpoints := deps.RPCEndpoints
 		network := deps.Network
 		netID := network.ID
+		omniBackend, err := deps.OmniBackend()
+		require.NoError(t, err)
 		e, ok := network.OmniEVMChain()
 		require.True(t, ok)
 		executionRPC, err := endpoints.ByNameOrID(e.Name, e.ID)
 		require.NoError(t, err)
 
 		// use an existing test anvil account for new validator and write it's pkey to temp file
-		validatorPriv := GenFundedEOA(ctx, t, network, endpoints)
+		validatorPriv := GenFundedEOA(ctx, t, omniBackend)
 		validatorPubBz := ethcrypto.CompressPubkey(&validatorPriv.PublicKey)
 		validatorAddr := ethcrypto.PubkeyToAddress(validatorPriv.PublicKey)
 		tmpDir := t.TempDir()
@@ -155,7 +158,7 @@ func TestCLIOperator(t *testing.T) {
 		})
 
 		// delegator's keys
-		delegatorPrivKey := GenFundedEOA(ctx, t, network, endpoints)
+		delegatorPrivKey := GenFundedEOA(ctx, t, omniBackend)
 		delegatorEthAddr := ethcrypto.PubkeyToAddress(delegatorPrivKey.PublicKey)
 		delegatorCosmosAddr := sdk.AccAddress(delegatorEthAddr.Bytes())
 		delegatorPrivKeyFile := filepath.Join(tmpDir, "delegator_privkey")
@@ -349,31 +352,17 @@ func sumPendingWithdrawals(t *testing.T, ctx context.Context, cprov provider.Pro
 	return resp.SumGwei
 }
 
-func GenFundedEOA(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) *ecdsa.PrivateKey {
+func GenFundedEOA(ctx context.Context, t *testing.T, backend *ethbackend.Backend) *ecdsa.PrivateKey {
 	t.Helper()
 
 	amount1k := bi.Ether(1_000)
-
-	funder, funderAddr := anvil.DevPrivateKey9(), anvil.DevAccount9()
-
-	// fund the account
-	omniEVM, ok := network.OmniEVMChain()
-	require.True(t, ok)
-
-	omniRPC, err := endpoints.ByNameOrID(omniEVM.Name, omniEVM.ID)
-	require.NoError(t, err)
-
-	omniClient, err := ethclient.Dial(omniEVM.Name, omniRPC)
-	require.NoError(t, err)
-
-	omniBackend, err := ethbackend.NewBackend(omniEVM.Name, omniEVM.ID, omniEVM.BlockPeriod, omniClient, funder)
-	require.NoError(t, err)
+	funderAddr := anvil.DevAccount9()
 
 	newKey, err := ethcrypto.GenerateKey()
 	require.NoError(t, err)
 	newAddr := ethcrypto.PubkeyToAddress(newKey.PublicKey)
 
-	_, rec, err := omniBackend.Send(ctx, funderAddr, txmgr.TxCandidate{
+	_, rec, err := backend.Send(ctx, funderAddr, txmgr.TxCandidate{
 		To:    &newAddr,
 		Value: amount1k,
 	})

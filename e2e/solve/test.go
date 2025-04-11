@@ -67,27 +67,20 @@ func isInvalidExpense(o TestOrder) bool {
 	return o.RejectReason == solver.RejectInvalidExpense.String()
 }
 
-func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndpoints, solverAddr string) error {
+func Test(ctx context.Context, network netconf.Network, backends ethbackend.Backends, solverAddr string) error {
 	if network.ID != netconf.Devnet {
 		return errors.New("only devnet")
 	}
 
 	log.Info(ctx, "Running solver tests")
 
-	// use anvil.DevAccounts instead of eoa.DevAccounts, because eoa.DevAccounts
-	// are used frequently elsewhere in e2e / e2e tests, and nonce issues get annoying
-	backends, err := ethbackend.BackendsFromNetwork(ctx, network, endpoints, anvil.DevPrivateKeys()...)
-	if err != nil {
-		return err
-	}
-
 	orders := makeOrders()
 
-	if err = mintAndApproveAll(ctx, backends, orders); err != nil {
+	if err := mintAndApproveAll(ctx, backends, orders); err != nil {
 		return errors.Wrap(err, "mint omni")
 	}
 
-	if err = testCheckAPI(ctx, backends, orders, solverAddr); err != nil {
+	if err := testCheckAPI(ctx, backends, orders, solverAddr); err != nil {
 		return errors.Wrap(err, "test check api")
 	}
 
@@ -172,7 +165,7 @@ func Test(ctx context.Context, network netconf.Network, endpoints xchain.RPCEndp
 }
 
 func makeOrders() []TestOrder {
-	users := anvil.DevAccounts()
+	user := anvil.DevAccount8()
 	var orders []TestOrder
 
 	// erc20 OMNI -> native OMNI orders
@@ -193,9 +186,9 @@ func makeOrders() []TestOrder {
 
 		expense := bi.Ether(10) // Note that fee is not charged for OMNI, so deposit==expense
 		orders = append(orders,
-			omniBridgeOrder(users[0], expense, erc20Deposit(expense, addrs.Token), ""),
-			omniBridgeOrder(users[1], expense, nativeDeposit(expense), solver.RejectInvalidDeposit.String()),
-			omniBridgeOrder(users[2], expense, unsupportedERC20Deposit(expense), solver.RejectUnsupportedDeposit.String()),
+			omniBridgeOrder(user, expense, erc20Deposit(expense, addrs.Token), ""),
+			omniBridgeOrder(user, expense, nativeDeposit(expense), solver.RejectInvalidDeposit.String()),
+			omniBridgeOrder(user, expense, unsupportedERC20Deposit(expense), solver.RejectUnsupportedDeposit.String()),
 		)
 	}
 
@@ -220,20 +213,20 @@ func makeOrders() []TestOrder {
 		overMaxExpense := bi.Ether(100) // Max is 1 ETH
 
 		orders = append(orders,
-			ethTransferOrder(users[3], validExpense, ""),
-			ethTransferOrder(users[4], underMinExpense, solver.RejectExpenseUnderMin.String()),
-			ethTransferOrder(users[5], overMaxExpense, solver.RejectExpenseOverMax.String()),
+			ethTransferOrder(user, validExpense, ""),
+			ethTransferOrder(user, underMinExpense, solver.RejectExpenseUnderMin.String()),
+			ethTransferOrder(user, overMaxExpense, solver.RejectExpenseOverMax.String()),
 		)
 	}
 
 	// bad src chain
 	orders = append(orders, TestOrder{
-		Owner:         users[0],
+		Owner:         user,
 		FillDeadline:  time.Now().Add(1 * time.Hour),
 		SourceChainID: invalidChainID,
 		DestChainID:   evmchain.IDMockL1,
 		Expenses:      nativeExpense(bi.Wei(1)),
-		Calls:         nativeTransferCall(bi.Wei(1), users[0]),
+		Calls:         nativeTransferCall(bi.Wei(1), user),
 		Deposit:       erc20Deposit(bi.Wei(1), zeroAddr),
 		ShouldReject:  true,
 		RejectReason:  solver.RejectUnsupportedSrcChain.String(),
@@ -241,12 +234,12 @@ func makeOrders() []TestOrder {
 
 	// bad dest chain
 	orders = append(orders, TestOrder{
-		Owner:         users[0],
+		Owner:         user,
 		FillDeadline:  time.Now().Add(1 * time.Hour),
 		SourceChainID: evmchain.IDMockL1,
 		DestChainID:   invalidChainID,
 		Expenses:      nativeExpense(bi.Wei(1)),
-		Calls:         nativeTransferCall(bi.Wei(1), users[0]),
+		Calls:         nativeTransferCall(bi.Wei(1), user),
 		Deposit:       erc20Deposit(bi.Wei(1), addrs.Token),
 		ShouldReject:  true,
 		RejectReason:  solver.RejectUnsupportedDestChain.String(),
@@ -254,12 +247,12 @@ func makeOrders() []TestOrder {
 
 	// same chain for src and dest
 	orders = append(orders, TestOrder{
-		Owner:         users[0],
+		Owner:         user,
 		FillDeadline:  time.Now().Add(1 * time.Hour),
 		SourceChainID: evmchain.IDMockL1,
 		DestChainID:   evmchain.IDMockL1,
 		Expenses:      nativeExpense(bi.Wei(1)),
-		Calls:         nativeTransferCall(bi.Wei(1), users[0]),
+		Calls:         nativeTransferCall(bi.Wei(1), user),
 		Deposit:       erc20Deposit(bi.Wei(1), addrs.Token),
 		ShouldReject:  true,
 		RejectReason:  solver.RejectSameChain.String(),
@@ -267,12 +260,12 @@ func makeOrders() []TestOrder {
 
 	// unsupported expense token
 	orders = append(orders, TestOrder{
-		Owner:         users[0],
+		Owner:         user,
 		FillDeadline:  time.Now().Add(1 * time.Hour),
 		SourceChainID: evmchain.IDMockL1,
 		DestChainID:   evmchain.IDMockL2,
 		Expenses:      unsupportedExpense(bi.Wei(1)),
-		Calls:         nativeTransferCall(bi.Wei(1), users[0]),
+		Calls:         nativeTransferCall(bi.Wei(1), user),
 		Deposit:       erc20Deposit(bi.Wei(1), addrs.Token),
 		ShouldReject:  true,
 		RejectReason:  solver.RejectUnsupportedExpense.String(),
@@ -280,12 +273,12 @@ func makeOrders() []TestOrder {
 
 	// invalid expense
 	orders = append(orders, TestOrder{
-		Owner:         users[0],
+		Owner:         user,
 		FillDeadline:  time.Now().Add(1 * time.Hour),
 		SourceChainID: evmchain.IDMockL1,
 		DestChainID:   evmchain.IDMockL2,
 		Expenses:      invalidExpenseOutOfBounds(),
-		Calls:         nativeTransferCall(bi.Wei(1), users[0]),
+		Calls:         nativeTransferCall(bi.Wei(1), user),
 		Deposit:       erc20Deposit(bi.Wei(1), addrs.Token),
 		ShouldReject:  true,
 		RejectReason:  solver.RejectInvalidExpense.String(),
@@ -293,12 +286,12 @@ func makeOrders() []TestOrder {
 
 	// invalid expense with multiple native expenses
 	orders = append(orders, TestOrder{
-		Owner:         users[0],
+		Owner:         user,
 		FillDeadline:  time.Now().Add(1 * time.Hour),
 		SourceChainID: evmchain.IDMockL1,
 		DestChainID:   evmchain.IDMockL2,
 		Expenses:      multipleNativeExpenses(validETHSpend),
-		Calls:         nativeTransferCall(validETHSpend, users[0]),
+		Calls:         nativeTransferCall(validETHSpend, user),
 		Deposit:       nativeDeposit(maxETHSpend),
 		ShouldReject:  true,
 		RejectReason:  solver.RejectInvalidExpense.String(),
@@ -306,7 +299,7 @@ func makeOrders() []TestOrder {
 
 	// invalid expense with multiple ERC20 expenses
 	orders = append(orders, TestOrder{
-		Owner:         users[0],
+		Owner:         user,
 		FillDeadline:  time.Now().Add(1 * time.Hour),
 		SourceChainID: evmchain.IDMockL2,
 		DestChainID:   evmchain.IDMockL1,
@@ -318,19 +311,19 @@ func makeOrders() []TestOrder {
 
 	// valid order with valid ETH spend
 	orders = append(orders, TestOrder{
-		Owner:         users[0],
+		Owner:         user,
 		FillDeadline:  time.Now().Add(1 * time.Hour),
 		SourceChainID: evmchain.IDMockL1,
 		DestChainID:   evmchain.IDMockL2,
 		Expenses:      nativeExpense(validETHSpend),
-		Calls:         nativeTransferCall(validETHSpend, users[0]),
+		Calls:         nativeTransferCall(validETHSpend, user),
 		Deposit:       nativeDeposit(maxETHSpend),
 		ShouldReject:  false,
 	})
 
 	// dest call reverts
 	orders = append(orders, TestOrder{
-		Owner:         users[0],
+		Owner:         user,
 		FillDeadline:  time.Now().Add(1 * time.Hour),
 		SourceChainID: evmchain.IDMockL1,
 		DestChainID:   evmchain.IDMockL2,
@@ -343,12 +336,12 @@ func makeOrders() []TestOrder {
 
 	// insufficient inventory for native expense
 	orders = append(orders, TestOrder{
-		Owner:         users[0],
+		Owner:         user,
 		FillDeadline:  time.Now().Add(1 * time.Hour),
 		SourceChainID: evmchain.IDMockL2,
 		DestChainID:   evmchain.IDMockL1,
 		Expenses:      nativeExpense(validETHSpend),
-		Calls:         nativeTransferCall(validETHSpend, users[0]),
+		Calls:         nativeTransferCall(validETHSpend, user),
 		Deposit:       nativeDeposit(maxETHSpend),
 		ShouldReject:  true,
 		RejectReason:  solver.RejectInsufficientInventory.String(),

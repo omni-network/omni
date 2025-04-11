@@ -153,19 +153,12 @@ func ephemeralPrefundAlloc(network netconf.ID) types.GenesisAlloc {
 }
 
 func anvilPrefundAlloc() types.GenesisAlloc {
-	return types.GenesisAlloc{
-		// anvil pre-funded accounts
-		anvil.DevAccount0(): {Balance: eth1m},
-		anvil.DevAccount1(): {Balance: eth1m},
-		anvil.DevAccount2(): {Balance: eth1m},
-		anvil.DevAccount3(): {Balance: eth1m},
-		anvil.DevAccount4(): {Balance: eth1m},
-		anvil.DevAccount5(): {Balance: eth1m},
-		anvil.DevAccount6(): {Balance: eth1m},
-		anvil.DevAccount7(): {Balance: eth1m},
-		anvil.DevAccount8(): {Balance: eth1m},
-		anvil.DevAccount9(): {Balance: eth1m},
+	resp := make(types.GenesisAlloc)
+	for _, addr := range anvil.DevAccounts() { // anvil pre-funded accounts
+		resp[addr] = types.Account{Balance: eth1m}
 	}
+
+	return resp
 }
 
 func omegaPrefundAlloc() types.GenesisAlloc {
