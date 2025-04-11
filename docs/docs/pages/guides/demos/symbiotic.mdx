@@ -1,8 +1,11 @@
 ---
-title: Symbiotic Deposit Demo
+sidebar_position: 1
+title: Symbiotic Restake
 ---
 
-# Symbiotic wstETH Deposit Example
+import { Callout } from 'vocs/components'
+
+# Symbiotic wstETH Deposit
 
 *   **Live Demo Vault (Holesky):** [app.holesky.symbiotic.fi](https://app.holesky.symbiotic.fi/vault/0xd88dDf98fE4d161a66FB836bee4Ca469eb0E4a75)
 *   **Base Sepolia Faucet (for ETH/wstETH):** [faucet.omni.network/base-sepolia](https://faucet.omni.network/base-sepolia)
@@ -12,10 +15,6 @@ title: Symbiotic Deposit Demo
 This example demonstrates depositing wstETH from an L2 (Base Sepolia) into a Symbiotic collateral vault (`DC_wstEth`) on L1 (Holesky) using Omni SolverNet.
 
 Since the Symbiotic vault contract used here (`0x23e...fc`) includes an `onBehalfOf` parameter in its `deposit` function (`deposit(address onBehalfOf, uint256 amount)`), we can directly specify the user's address in the `useOrder` call without needing `withExecAndTransfer`.
-
-:::info Note
-This example uses a simplified hook structure (`useL2Deposit`) for demonstration and specific testnet addresses. The core logic involves `useQuote` and `useOrder`. Adapt addresses and chain IDs as needed.
-:::
 
 ## Custom Hook (`useL2Deposit.ts`)
 
@@ -154,7 +153,7 @@ function SymbioticDepositComponent() {
 
   return (
     <div style={{ border: '1px solid #ccc', padding: '1rem', marginTop: '1rem' }}>
-      <h2>Symbiotic Vault Deposit (Base Sepolia wstETH -&gt; Holesky Vault)</h2>
+      <h2>Symbiotic Vault Deposit (Base Sepolia wstETH -> Holesky Vault)</h2>
       <label>
         Amount wstETH to Deposit (from Base Sepolia):
         <input
@@ -190,7 +189,6 @@ function SymbioticDepositComponent() {
 }
 
 export default SymbioticDepositComponent;
-
 ```
 
 ## Key Concepts

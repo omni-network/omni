@@ -1,0 +1,34 @@
+---
+title: Supported Assets
+sidebar_position: 5
+---
+
+import { Callout } from 'vocs/components'
+
+# Supported Assets
+
+The Omni SDK and SolverNet currently facilitate cross-chain operations primarily focused on **native gas tokens** (like ETH, MATIC) and **ERC20 tokens**.
+
+<Callout type="info" title="Like-Asset Only">
+Currently, SolverNet primarily supports **like-asset** operations, meaning you deposit an asset on the source chain to cover the expense of the *same type* of asset on the destination chain (e.g., deposit ETH on Base to spend ETH on Holesky, deposit USDC on Optimism to spend USDC on Arbitrum). Swaps between different assets are not yet enabled via the SDK.
+</Callout>
+
+## Native Assets
+
+When dealing with native gas tokens:
+
+*   Use `isNative: true` in the `deposit` or `expense` configuration objects for `useQuote` and `useOrder`.
+*   You do not need to provide a `token` address.
+*   Ensure the `amount` is specified in the smallest unit (e.g., wei for ETH).
+
+## ERC20 Tokens
+
+When dealing with ERC20 tokens:
+
+*   Use `isNative: false` (or omit it, as `false` is the default) in the `deposit` or `expense` configuration.
+*   Provide the correct ERC20 token contract `address` for the respective chain (`srcChainId` for deposit, `destChainId` for expense).
+*   Ensure the `amount` is specified in the token's smallest unit (considering its decimals).
+
+## NFTs and Other Standards
+
+While the underlying Omni Network infrastructure can support various message-passing and state synchronization use cases, the current SDK hooks (`useQuote`, `useOrder`) are optimized for native and ERC20 asset movements. Interacting with NFTs (ERC721, ERC1155) or other token standards across chains might require custom call data construction using the `calls` array in `useOrder`, potentially involving `withExecAndTransfer` if the destination contract requires it.

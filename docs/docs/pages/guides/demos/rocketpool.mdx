@@ -1,0 +1,80 @@
+---
+sidebar_position: 3
+title: Rocket Pool Deposit
+---
+
+import { Callout } from 'vocs/components'
+
+# Rocket Pool rETH Deposit
+
+<Callout type="info" title="Note">
+This example uses a simplified hook structure (`useL2Deposit`) for demonstration and specific testnet addresses. The core logic involves `useQuote` and `useOrder`. Adapt addresses and chain IDs as needed.
+</Callout>
+
+## Overview
+
+This guide demonstrates how to use the Omni SDK to allow users to deposit ETH from Arbitrum into Rocket Pool on Ethereum Mainnet to mint rETH.
+
+Since the Rocket Pool deposit contract (`0xDD3f50F8A6CafbE9b31a427582963f465E745AF8`) includes an `onBehalfOf` parameter in its `deposit` function (`deposit(address _onBehalfOf)`), we can directly specify the user's address in the `useOrder` call without needing `withExecAndTransfer`.
+
+## Custom Hook (`useL2Deposit.ts`)
+
+For clarity, this example uses a simplified custom hook `useL2Deposit` that wraps `useQuote` and `useOrder`. The full implementation is omitted here, but it handles:
+
+*   Fetching quotes for depositing ETH from the source chain (e.g., Arbitrum) to cover the ETH expense on the destination chain (Ethereum Mainnet).
+*   Creating the order object with the correct parameters, including the user's address in the `onBehalfOf` field within the `calls` array.
+
+```tsx
+// Simplified representation of the custom hook's usage
+import { useL2Deposit } from './useL2Deposit'; // Assume this hook exists
+import { parseEther } from 'viem';
+import { arbitrumSepolia, holesky } from 'viem/chains';
+
+const ROCKET_POOL_ADDRESS = '0xDD3f50F8A6CafbE9b31a427582963f465E745AF8'; // On Holesky
+const ROCKET_POOL_ABI = [
+  { inputs: [{ name: '_onBehalfOf', type: 'address' }], name: 'deposit', outputs: [], stateMutability: 'payable', type: 'function' }
+] as const;
+
+function RocketPoolDepositComponent() {
+  const depositAmount = parseEther('0.1'); // Example amount
+  const { address: userAddress } = useAccount();
+
+  const { open, status, validation, isReady, isTxPending } = useL2Deposit({
+    depositAmount,
+    srcChainId: arbitrumSepolia.id,
+    destChainId: holesky.id,
+    targetContract: ROCKET_POOL_ADDRESS,
+    targetAbi: ROCKET_POOL_ABI,
+    targetFunctionName: 'deposit',
+    targetArgs: userAddress ? [userAddress] : undefined, // Pass user address for onBehalfOf
+    enabled: !!userAddress,
+  });
+
+  const canOpen = isReady && validation?.status === 'accepted' && !isTxPending;
+
+  return (
+    <div>
+      {/* UI Elements similar to other deposit examples */}
+      <button disabled={!canOpen} onClick={() => open?.()}>Deposit to Rocket Pool</button>
+      <p>Status: {status}</p>
+    </div>
+  );
+}
+```
+
+## Key Points
+
+*   **`onBehalfOf`**: The target contract's `deposit` function takes `address _onBehalfOf`. We provide the connected user's address here.
+*   **`calls` Array**: In the `useOrder` configuration (likely inside `useL2Deposit`), the `calls` array would look something like this:
+    ```ts
+    calls: [
+      {
+        target: ROCKET_POOL_ADDRESS,
+        abi: ROCKET_POOL_ABI,
+        functionName: 'deposit',
+        value: quotedExpenseAmt, // ETH amount calculated by useQuote
+        args: [userAddress] // Pass user address as argument
+      }
+    ]
+    ```
+*   **No `withExecAndTransfer`**: Because the contract supports `onBehalfOf`, the simpler direct call method is used.

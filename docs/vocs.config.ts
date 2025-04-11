@@ -69,7 +69,7 @@ export default defineConfig({
           collapsed: true,
           items: [
             { text: 'Symbiotic', link: '/guides/demos/symbiotic' },
-            { text: 'EigenLayer', link: '/guides/demos/eigen-layer' },
+            { text: 'EigenLayer', link: '/guides/demos/eigenlayer' },
             { text: 'Rocketpool', link: '/guides/demos/rocketpool' },
           ],
         },

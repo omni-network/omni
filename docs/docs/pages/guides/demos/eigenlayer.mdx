@@ -1,14 +1,17 @@
 ---
-title: EigenLayer Deposit Demo
+sidebar_position: 2
+title: EigenLayer Restake
 ---
 
-# EigenLayer stETH Deposit Example
+import { Callout } from 'vocs/components'
+
+# EigenLayer stETH Deposit
 
 This example demonstrates depositing ETH from Base Sepolia into EigenLayer's stETH strategy on Holesky using Omni SolverNet. It utilizes the `depositIntoStrategyWithSignature` method, requiring an off-chain signature before opening the Omni order.
 
-:::info Note
+<Callout type="info" title="Note">
 This example uses specific contract addresses for the Holesky testnet deployment of EigenLayer and associated tokens. Adapt addresses for mainnet or other deployments accordingly.
-:::
+</Callout>
 
 ## Component (`eigen.tsx`)
 
