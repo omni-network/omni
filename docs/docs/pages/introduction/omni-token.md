@@ -7,7 +7,7 @@ title: OMNI Token
 
 OMNI is an ERC-20 token launched on Ethereum L1 (deployed to [`0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4`](https://etherscan.io/token/0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4)) with a maximum supply of 100,000,000.
 
-When the Omni network is live on mainnet, OMNI tokens can be bridged to the Omni EVM, where they can be staked to enhance network security. In the future, additional OMNI tokens may be issued on the Omni EVM as rewards for validators.
+OMNI tokens can be bridged to the Omni EVM, where they can be staked to enhance network security. In the future, additional OMNI tokens may be issued on the Omni EVM as rewards for validators.
 
 ## Utility
 
