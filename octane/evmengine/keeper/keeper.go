@@ -15,6 +15,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
+	etypes "github.com/ethereum/go-ethereum/core/types"
 
 	ormv1alpha1 "cosmossdk.io/api/cosmos/orm/v1alpha1"
 	"cosmossdk.io/core/store"
@@ -172,9 +173,19 @@ func (k *Keeper) parseAndVerifyProposedPayload(ctx context.Context, msg *types.M
 		return engine.ExecutableData{}, errors.Wrap(err, "unmarshal payload")
 	}
 
-	// Ensure no withdrawals are included in the payload.
-	if len(payload.Withdrawals) > 0 {
-		return engine.ExecutableData{}, errors.New("withdrawals not allowed in payload")
+	height, err := umath.ToUint64(sdk.UnwrapSDKContext(ctx).BlockHeight())
+	if err != nil {
+		return engine.ExecutableData{}, errors.Wrap(err, "height conversion")
+	}
+
+	eligibleWithdrawals, err := k.eligibleWithdrawals(ctx, height)
+	if err != nil {
+		return engine.ExecutableData{}, errors.Wrap(err, "eligible withdrawals")
+	}
+
+	if !withdrawalsEqual(payload.Withdrawals, eligibleWithdrawals) {
+		height := sdk.UnwrapSDKContext(ctx).BlockHeight()
+		return engine.ExecutableData{}, errors.New("mismatch with eligible withdrawals", "height", height)
 	}
 
 	// Ensure no witness
@@ -269,4 +280,22 @@ func (k *Keeper) getOptimisticPayload() (engine.PayloadID, uint64, time.Time) {
 	defer k.mutablePayload.Unlock()
 
 	return k.mutablePayload.ID, k.mutablePayload.Height, k.mutablePayload.UpdatedAt
+}
+
+// withdrawalsEqual returns true only if two non-nil slices contain identical
+// withdrawals in identical order.
+func withdrawalsEqual(w1, w2 []*etypes.Withdrawal) bool {
+	if len(w1) != len(w2) {
+		return false
+	}
+
+	for i, w := range w1 {
+		if w == nil || w2[i] == nil {
+			return false
+		} else if *w != *w2[i] {
+			return false
+		}
+	}
+
+	return true
 }

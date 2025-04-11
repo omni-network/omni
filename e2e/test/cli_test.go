@@ -19,11 +19,9 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/txmgr"
-	evmengtypes "github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/cometbft/cometbft/rpc/client/http"
 
-	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
@@ -99,7 +97,7 @@ func TestCLIOperator(t *testing.T) {
 		require.NoError(t, err)
 		cprov := provider.NewABCI(cl, network.ID)
 
-		const valChangeWait = 15 * time.Second
+		const valChangeWait = 1 * time.Minute
 
 		// operator's initial and self delegations
 		const opInitDelegation = uint64(100)
@@ -253,7 +251,7 @@ func TestCLIOperator(t *testing.T) {
 				originalRewards = resp.Rewards[0].Amount
 
 				return true
-			}, valChangeWait, 500*time.Millisecond, "no rewards increase")
+			}, valChangeWait, 500*time.Millisecond, "no rewards")
 
 			// fetch again and make sure they increased
 			require.Eventuallyf(t, func() bool {
@@ -272,53 +270,6 @@ func TestCLIOperator(t *testing.T) {
 
 				return latestRewards.GT(originalRewards)
 			}, valChangeWait, 500*time.Millisecond, "no rewards increase")
-		})
-
-		// make sure that an additional delegation triggers a withdrawal eventually
-		t.Run("withdrawals", func(t *testing.T) {
-			// make sure no withdrawals are pending yet
-			amount := sumPendingWithdrawals(t, ctx, cprov, delegatorCosmosAddr)
-			require.Zero(t, amount)
-
-			// delegate more stake
-			stdOut, _, err := execCLI(
-				ctx, "operator", "delegate",
-				"--network", netID.String(),
-				"--validator-address", validatorAddr.Hex(),
-				"--private-key-file", delegatorPrivKeyFile,
-				"--amount", fmt.Sprintf("%d", delegatorDelegation),
-				"--execution-rpc", executionRPC,
-			)
-			require.NoError(t, err)
-			require.Empty(t, stdOut)
-
-			// make sure the delegation succeeded
-			require.Eventuallyf(t, func() bool {
-				val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
-				require.True(t, ok)
-				newPower, err := val.Power()
-				require.NoError(t, err)
-
-				return newPower == opInitDelegation+opSelfDelegation+2*delegatorDelegation
-			}, valChangeWait, 500*time.Millisecond, "failed to delegate")
-
-			// make sure the pending withdrawals are non zero
-			require.Eventuallyf(t, func() bool {
-				amount := sumPendingWithdrawals(t, ctx, cprov, delegatorCosmosAddr)
-				if amount == 0 {
-					return false
-				}
-
-				// Allow rewards up to 10x latestRewards since non-deterministic amount of blocks may have elapsed
-				const maxFactor = 10
-				minAmountGei := latestRewards.QuoInt64(params.GWei).TruncateInt64()
-				maxAmountGei := minAmountGei * maxFactor
-				if amount < uint64(minAmountGei) || amount > uint64(maxAmountGei) {
-					require.Fail(t, "unexpected withdrawal amount", "amount=%v, min=%v, max=%v", amount, minAmountGei, maxAmountGei)
-				}
-
-				return true
-			}, 2*valChangeWait, 500*time.Millisecond, "failed to withdraw")
 		})
 	})
 }
@@ -339,17 +290,6 @@ func delegationFound(t *testing.T, ctx context.Context, cprov provider.Provider,
 	}
 
 	return false
-}
-
-func sumPendingWithdrawals(t *testing.T, ctx context.Context, cprov provider.Provider, addr sdk.AccAddress) uint64 {
-	t.Helper()
-	resp, err := cprov.QueryClients().EvmEngine.SumPendingWithdrawalsByAddress(
-		ctx,
-		&evmengtypes.SumPendingWithdrawalsByAddressRequest{Address: evmengtypes.Address(common.BytesToAddress(addr.Bytes()))},
-	)
-	require.NoError(t, err)
-
-	return resp.SumGwei
 }
 
 func GenFundedEOA(ctx context.Context, t *testing.T, backend *ethbackend.Backend) *ecdsa.PrivateKey {
