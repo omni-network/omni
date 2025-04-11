@@ -220,7 +220,6 @@ func TestCLIOperator(t *testing.T) {
 		})
 
 		// test rewards distribution
-		var latestRewards math.LegacyDec
 		t.Run("distribution", func(t *testing.T) {
 			val, ok, err := cprov.SDKValidator(ctx, validatorAddr)
 			require.NoError(t, err)
@@ -228,37 +227,20 @@ func TestCLIOperator(t *testing.T) {
 
 			var originalRewards math.LegacyDec
 
-			// fetch rewards and make sure they are positive
+			// fetch rewards and make sure they are present
 			require.Eventuallyf(t, func() bool {
-				resp, err := cprov.QueryClients().Distribution.DelegationRewards(ctx, &dtypes.QueryDelegationRewardsRequest{
-					DelegatorAddress: delegatorCosmosAddr.String(),
-					ValidatorAddress: val.OperatorAddress,
-				})
-				require.NoError(t, err)
-				if len(resp.Rewards) == 0 {
-					return false
-				}
-				require.Len(t, resp.Rewards, 1)
-				require.Equal(t, sdk.DefaultBondDenom, resp.Rewards[0].Denom)
-				originalRewards = resp.Rewards[0].Amount
+				var ok bool
+				originalRewards, ok = queryDelegationRewards(t, ctx, cprov, delegatorCosmosAddr, val.OperatorAddress)
 
-				return true
+				return ok
 			}, valChangeWait, 500*time.Millisecond, "no rewards")
 
 			// fetch again and make sure they increased
 			require.Eventuallyf(t, func() bool {
-				resp2, err := cprov.QueryClients().Distribution.DelegationRewards(ctx, &dtypes.QueryDelegationRewardsRequest{
-					DelegatorAddress: delegatorCosmosAddr.String(),
-					ValidatorAddress: val.OperatorAddress,
-				})
-				require.NoError(t, err)
-				if len(resp2.Rewards) == 0 {
+				latestRewards, ok := queryDelegationRewards(t, ctx, cprov, delegatorCosmosAddr, val.OperatorAddress)
+				if !ok {
 					return false
 				}
-				require.Len(t, resp2.Rewards, 1)
-				require.Equal(t, sdk.DefaultBondDenom, resp2.Rewards[0].Denom)
-
-				latestRewards = resp2.Rewards[0].Amount
 
 				return latestRewards.GT(originalRewards)
 			}, valChangeWait, 500*time.Millisecond, "no rewards increase")
@@ -282,6 +264,25 @@ func delegationFound(t *testing.T, ctx context.Context, cprov provider.Provider,
 	}
 
 	return false
+}
+
+func queryDelegationRewards(t *testing.T, ctx context.Context, cprov provider.Provider, delegatorAddr sdk.AccAddress, validatorAddr string) (math.LegacyDec, bool) {
+	t.Helper()
+
+	resp, err := cprov.QueryClients().Distribution.DelegationRewards(ctx, &dtypes.QueryDelegationRewardsRequest{
+		DelegatorAddress: delegatorAddr.String(),
+		ValidatorAddress: validatorAddr,
+	})
+	require.NoError(t, err)
+
+	if len(resp.Rewards) == 0 {
+		return math.LegacyDec{}, false
+	}
+
+	require.Len(t, resp.Rewards, 1)
+	require.Equal(t, sdk.DefaultBondDenom, resp.Rewards[0].Denom)
+
+	return resp.Rewards[0].Amount, true
 }
 
 func GenFundedEOA(ctx context.Context, t *testing.T, backend *ethbackend.Backend) (*ecdsa.PrivateKey, common.Address) {
