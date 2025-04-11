@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2 # Second in Concepts
-title: The Solution: Intents & SolverNet
+title: "The Solution: Intents & SolverNet"
 ---
 
 # The Solution: User-Centric Actions via Intents
