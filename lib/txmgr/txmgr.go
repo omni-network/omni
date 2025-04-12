@@ -29,8 +29,8 @@ const (
 	PriceBump int64 = 10
 
 	// retryNonceTooHigh defines the number of times to simply retry submitting
-	// 'nonce too high' errors. This mitigates race when multiple concurrent
-	// submissions reserve nonces and reach upstream geth nodes.
+	// 'nonce too high' errors. This mitigates races when multiple concurrent
+	// submissions reserve nonces and reach upstream geth nodes out of order.
 	retryNonceTooHigh = 3
 )
 
@@ -350,7 +350,7 @@ func (m *simple) sendTx(ctx context.Context, tx *types.Transaction) (*types.Tran
 // Returns the latest fee bumped tx, and a boolean indicating whether the tx was sent or not.
 func (m *simple) publishTx(ctx context.Context, tx *types.Transaction, sendState *SendState, bumpFeesImmediately bool) (*types.Transaction, bool) {
 	backoff := expbackoff.New(ctx, expbackoff.WithFastConfig())
-	for attempt := 1; ; attempt++ {
+	for attempt := 0; ; attempt++ {
 		if ctx.Err() != nil {
 			return tx, false
 		}
@@ -391,7 +391,7 @@ func (m *simple) publishTx(ctx context.Context, tx *types.Transaction, sendState
 				log.DebugErr(ctx, "Nonce too high (will retry)", err)
 				bumpFeesImmediately = false
 
-				continue // retry without fee bump, since this probably a race
+				continue // retry without fee bump, since this is probably a race
 			}
 
 			log.Warn(ctx, "Nonce too high (aborting)", err)
