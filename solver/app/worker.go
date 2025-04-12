@@ -65,7 +65,7 @@ func newAsyncWorkerFunc(
 					return
 				}
 
-				log.Warn(ctx, "Failed to process job (will retry)", err, "job_id", j.GetId(), "order_id", orderID.String(), "status", status)
+				log.Warn(ctx, "Failed to process job (will retry)", err, "job_id", j.GetId(), "order_id", orderID, "status", status)
 				workErrors.WithLabelValues(chainName, status.String()).Inc()
 				backoff()
 			}
