@@ -27,6 +27,11 @@ import (
 const (
 	// PriceBump geth requires a minimum fee bump of 10% for regular tx resubmission.
 	PriceBump int64 = 10
+
+	// retryNonceTooHigh defines the number of times to simply retry submitting
+	// 'nonce too high' errors. This mitigates race when multiple concurrent
+	// submissions reserve nonces and reach upstream geth nodes.
+	retryNonceTooHigh = 3
 )
 
 // TxManager is an interface that allows callers to reliably publish txs,
@@ -345,7 +350,7 @@ func (m *simple) sendTx(ctx context.Context, tx *types.Transaction) (*types.Tran
 // Returns the latest fee bumped tx, and a boolean indicating whether the tx was sent or not.
 func (m *simple) publishTx(ctx context.Context, tx *types.Transaction, sendState *SendState, bumpFeesImmediately bool) (*types.Transaction, bool) {
 	backoff := expbackoff.New(ctx, expbackoff.WithFastConfig())
-	for {
+	for attempt := 1; ; attempt++ {
 		if ctx.Err() != nil {
 			return tx, false
 		}
@@ -381,6 +386,15 @@ func (m *simple) publishTx(ctx context.Context, tx *types.Transaction, sendState
 		switch {
 		case errStringMatch(err, core.ErrNonceTooLow):
 			log.Warn(ctx, "Nonce too low", err)
+		case errStringMatch(err, core.ErrNonceTooHigh):
+			if attempt < retryNonceTooHigh {
+				log.DebugErr(ctx, "Nonce too high (will retry)", err)
+				bumpFeesImmediately = false
+
+				continue // retry without fee bump, since this probably a race
+			}
+
+			log.Warn(ctx, "Nonce too high (aborting)", err)
 		case errStringMatch(err, context.Canceled) || errStringMatch(err, context.DeadlineExceeded):
 			log.Warn(ctx, "Transaction send canceled", err)
 		case errStringMatch(err, txpool.ErrAlreadyKnown):
