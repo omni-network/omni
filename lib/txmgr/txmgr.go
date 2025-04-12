@@ -390,6 +390,7 @@ func (m *simple) publishTx(ctx context.Context, tx *types.Transaction, sendState
 			if attempt < retryNonceTooHigh {
 				log.DebugErr(ctx, "Nonce too high (will retry)", err)
 				bumpFeesImmediately = false
+				backoff()
 
 				continue // retry without fee bump, since this is probably a race
 			}
