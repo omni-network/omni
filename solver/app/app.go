@@ -309,7 +309,7 @@ func startProcessingEvents(
 		}
 
 		deps := procDeps{
-			ParseID:       newIDParser(inboxContracts),
+			ParseID:       newIDParser(),
 			GetOrder:      newOrderGetter(inboxContracts),
 			ShouldReject:  newShouldRejector(backends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox),
 			DidFill:       newDidFiller(outboxContracts),

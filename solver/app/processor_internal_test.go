@@ -81,7 +81,7 @@ func TestEventProcessor(t *testing.T) {
 			actual := ignored
 
 			deps := procDeps{
-				ParseID: func(_ uint64, log types.Log) (OrderID, error) {
+				ParseID: func(log types.Log) (OrderID, error) {
 					return OrderID(log.Topics[1]), nil // Return second topic as order ID
 				},
 				GetOrder: func(ctx context.Context, chainID uint64, id OrderID) (Order, bool, error) {
