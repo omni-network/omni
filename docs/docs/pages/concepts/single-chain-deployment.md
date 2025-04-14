@@ -5,7 +5,7 @@ title: "Developer Workflow: Single-Chain Deployment"
 
 # Developer Workflow: Single-Chain Deployment
 
-SolverNet, powered by [intents](../concepts/the-solution.md), enables a new, simplified paradigm for decentralized application development: **deploy on a single chain, make it accessible from anywhere.**
+SolverNet, powered by [intents](/concepts/the-solution.md), enables a new, simplified paradigm for decentralized application development: **deploy on a single chain, make it accessible from anywhere.**
 
 ## The New Model: Single Chain + Intents
 

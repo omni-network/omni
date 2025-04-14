@@ -11,7 +11,7 @@ This guide walks through the standard process of enabling a user to deposit asse
 
 ## Prerequisites
 
-*   Omni SDK installed and `OmniProvider` set up ([Getting Started](../sdk/getting-started.mdx)).
+*   Omni SDK installed and `OmniProvider` set up ([Getting Started](/sdk/getting-started.mdx)).
 *   `wagmi` and `@tanstack/react-query` configured.
 *   Target contract ABI and address known.
 *   Source and destination chain IDs and token addresses known.

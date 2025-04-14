@@ -1,9 +1,9 @@
 ---
 sidebar_position: 1 # Keep it first in Concepts
-title: "The Problem: Fragmentation & UX"
+title: "The Problem"
 ---
 
-# The Problem: Fragmentation and Poor UX
+# The Problem
 
 Historically, interacting with applications across different blockchains (Ethereum L1, L2s like Base, Arbitrum, Optimism, etc.) has been cumbersome:
 

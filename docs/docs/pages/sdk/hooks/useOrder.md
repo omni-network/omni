@@ -5,7 +5,7 @@ title: useOrder
 
 # `useOrder`
 
-After obtaining a valid quote with [`useQuote`](./useQuote), the `useOrder` hook is used to execute the actual cross-chain transaction via Omni SolverNet. It takes the details confirmed in the quote, validates them, and provides a function (`open`) to initiate the process and monitor its status.
+After obtaining a valid quote with [`useQuote`](/sdk/hooks/useQuote), the `useOrder` hook is used to execute the actual cross-chain transaction via Omni SolverNet. It takes the details confirmed in the quote, validates them, and provides a function (`open`) to initiate the process and monitor its status.
 
 ## High-Level Usage Flow
 

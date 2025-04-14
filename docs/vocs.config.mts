@@ -4,11 +4,11 @@ export default defineConfig({
   title: 'Omni Devs | Docs',
   rootDir: './docs/',
   baseUrl: '/',
-  description: 'Cross-chain dapps made easy | Documentation for the Omni Network SolverNet SDK and concepts.',
+  description: 'Documentation for the Omni Network SolverNet SDK and concepts.',
   logoUrl: '/img/logo.svg',
   iconUrl: '/img/favicon.svg',
   editLink: {
-    pattern: 'https://github.com/omni-network/omni/tree/main/docs/website/:path',
+    pattern: 'https://github.com/omni-network/omni/tree/main/docs/docs/pages/:path',
     text: 'Edit this page on GitHub',
   },
   socials: [

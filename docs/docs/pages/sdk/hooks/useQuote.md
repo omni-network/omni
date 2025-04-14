@@ -116,4 +116,4 @@ Key properties include:
 *   `isError`: `true` if there was an error fetching the quote.
 *   `error`: The error object if `isError` is `true`.
 
-Use the `data` property (specifically `data.deposit.amount` and `data.expense.amount`) to inform the parameters for the [`useOrder`](./useOrder.md) hook.
+Use the `data` property (specifically `data.deposit.amount` and `data.expense.amount`) to inform the parameters for the [`useOrder`](/sdk/hooks/useOrder.md) hook.
