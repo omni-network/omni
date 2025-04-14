@@ -30,93 +30,101 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 	t.Parallel()
 	fastBackoffForT()
 
-	cdc := getCodec(t)
-	txConfig := authtx.NewTxConfig(cdc, nil)
-
-	mockEngine, err := newMockEngineAPI(2)
-	require.NoError(t, err)
-	cmtAPI := newMockCometAPI(t, nil)
-	// set the header and proposer so we have the correct next proposer
-	header := cmtproto.Header{Height: 1, AppHash: tutil.RandomHash().Bytes(), Time: time.Now()}
-	header.ProposerAddress = cmtAPI.validatorSet.Validators[0].Address
-	nxtAddr, err := k1util.PubKeyToAddress(cmtAPI.validatorSet.Validators[1].PubKey)
-	require.NoError(t, err)
-
-	ctx, storeService := setupCtxStore(t, &header)
-	ctx = ctx.WithExecMode(sdk.ExecModeFinalize)
-
-	ap := mockAddressProvider{
-		address: nxtAddr,
-	}
-	frp := newRandomFeeRecipientProvider()
-	evmLogProc := mockEventProc{deliverErr: errors.New("test error")}
-	maxWithdrawalsPerBlock := uint64(32)
-	keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, maxWithdrawalsPerBlock, evmLogProc)
-	require.NoError(t, err)
-	keeper.SetCometAPI(cmtAPI)
-	populateGenesisHead(ctx, t, keeper)
-
 	withdrawalAddr := tutil.RandomAddress()
 	amountGwei := uint64(100)
-	err = keeper.InsertWithdrawal(ctx.WithBlockHeight(0), withdrawalAddr, amountGwei)
-	require.NoError(t, err)
-
-	msgSrv := NewMsgServerImpl(keeper)
-
-	var execPayload engine.ExecutableData
-	var payloadID engine.PayloadID
-	var latestHeight uint64
-	var block *etypes.Block
-	newPayload := func(ctx context.Context) {
-		// get latest block to build on top
-		latestBlock, err := mockEngine.HeaderByType(ctx, ethclient.HeadLatest)
-		require.NoError(t, err)
-		latestHeight = latestBlock.Number.Uint64()
-
-		sdkCtx := sdk.UnwrapSDKContext(ctx)
-		appHash := common.BytesToHash(sdkCtx.BlockHeader().AppHash)
-
-		block, execPayload = mockEngine.nextBlock(
-			t,
-			latestHeight+1,
-			uint64(sdkCtx.BlockHeader().Time.Unix()),
-			latestBlock.Hash(),
-			frp.LocalFeeRecipient(),
-			&appHash,
-			&etypes.Withdrawal{
-				Index:     1,
-				Validator: 0,
-				Address:   withdrawalAddr,
-				Amount:    amountGwei,
-			},
-		)
-
-		payloadID, err = ethclient.MockPayloadID(execPayload, &appHash)
-		require.NoError(t, err)
+	withdrawal := &etypes.Withdrawal{
+		Index:     1,
+		Validator: 0,
+		Address:   withdrawalAddr,
+		Amount:    amountGwei,
 	}
 
-	assertExecutionPayload := func(ctx context.Context) {
-		payloadProto, err := types.PayloadToProto(&execPayload)
+	// TODO(remove after drake): this test should pass both for empty withdrawals and the correct
+	// list of withdrawals. This is required because when we upgrade to drake, we execute a block
+	// without withdrawals created by the previous binary.
+	for _, withdrawals := range []etypes.Withdrawals{{withdrawal}, {}} {
+		cdc := getCodec(t)
+		txConfig := authtx.NewTxConfig(cdc, nil)
+
+		mockEngine, err := newMockEngineAPI(2)
+		require.NoError(t, err)
+		cmtAPI := newMockCometAPI(t, nil)
+		// set the header and proposer so we have the correct next proposer
+		header := cmtproto.Header{Height: 1, AppHash: tutil.RandomHash().Bytes(), Time: time.Now()}
+		header.ProposerAddress = cmtAPI.validatorSet.Validators[0].Address
+		nxtAddr, err := k1util.PubKeyToAddress(cmtAPI.validatorSet.Validators[1].PubKey)
 		require.NoError(t, err)
 
-		resp, err := msgSrv.ExecutionPayload(ctx, &types.MsgExecutionPayload{
-			Authority:             authtypes.NewModuleAddress(types.ModuleName).String(),
-			ExecutionPayloadDeneb: payloadProto,
-		})
-		tutil.RequireNoError(t, err)
-		require.NotNil(t, resp)
+		ctx, storeService := setupCtxStore(t, &header)
+		ctx = ctx.WithExecMode(sdk.ExecModeFinalize)
 
-		gotPayload, err := mockEngine.GetPayloadV3(ctx, payloadID)
+		ap := mockAddressProvider{
+			address: nxtAddr,
+		}
+		frp := newRandomFeeRecipientProvider()
+		evmLogProc := mockEventProc{deliverErr: errors.New("test error")}
+		maxWithdrawalsPerBlock := uint64(32)
+		keeper, err := NewKeeper(cdc, storeService, &mockEngine, txConfig, ap, frp, maxWithdrawalsPerBlock, evmLogProc)
 		require.NoError(t, err)
-		// make sure height is increasing in engine, blocks being built
-		require.Equal(t, gotPayload.ExecutionPayload.Number, latestHeight+1)
-		require.Equal(t, gotPayload.ExecutionPayload.BlockHash, block.Hash())
-		require.Equal(t, gotPayload.ExecutionPayload.FeeRecipient, frp.LocalFeeRecipient())
-		require.Len(t, gotPayload.ExecutionPayload.Withdrawals, 1)
+		keeper.SetCometAPI(cmtAPI)
+		populateGenesisHead(ctx, t, keeper)
+
+		err = keeper.InsertWithdrawal(ctx.WithBlockHeight(0), withdrawalAddr, amountGwei)
+		require.NoError(t, err)
+
+		msgSrv := NewMsgServerImpl(keeper)
+
+		var execPayload engine.ExecutableData
+		var payloadID engine.PayloadID
+		var latestHeight uint64
+		var block *etypes.Block
+
+		newPayload := func(ctx context.Context) {
+			// get latest block to build on top
+			latestBlock, err := mockEngine.HeaderByType(ctx, ethclient.HeadLatest)
+			require.NoError(t, err)
+			latestHeight = latestBlock.Number.Uint64()
+
+			sdkCtx := sdk.UnwrapSDKContext(ctx)
+			appHash := common.BytesToHash(sdkCtx.BlockHeader().AppHash)
+
+			block, execPayload = mockEngine.nextBlock(
+				t,
+				latestHeight+1,
+				uint64(sdkCtx.BlockHeader().Time.Unix()),
+				latestBlock.Hash(),
+				frp.LocalFeeRecipient(),
+				&appHash,
+				withdrawals...,
+			)
+
+			payloadID, err = ethclient.MockPayloadID(execPayload, &appHash)
+			require.NoError(t, err)
+		}
+
+		assertExecutionPayload := func(ctx context.Context) {
+			payloadProto, err := types.PayloadToProto(&execPayload)
+			require.NoError(t, err)
+
+			resp, err := msgSrv.ExecutionPayload(ctx, &types.MsgExecutionPayload{
+				Authority:             authtypes.NewModuleAddress(types.ModuleName).String(),
+				ExecutionPayloadDeneb: payloadProto,
+			})
+			tutil.RequireNoError(t, err)
+			require.NotNil(t, resp)
+
+			gotPayload, err := mockEngine.GetPayloadV3(ctx, payloadID)
+			require.NoError(t, err)
+			// make sure height is increasing in engine, blocks being built
+			require.Equal(t, gotPayload.ExecutionPayload.Number, latestHeight+1)
+			require.Equal(t, gotPayload.ExecutionPayload.BlockHash, block.Hash())
+			require.Equal(t, gotPayload.ExecutionPayload.FeeRecipient, frp.LocalFeeRecipient())
+			require.Len(t, gotPayload.ExecutionPayload.Withdrawals, len(withdrawals))
+		}
+
+		newPayload(ctx)
+		assertExecutionPayload(ctx)
 	}
-
-	newPayload(ctx)
-	assertExecutionPayload(ctx)
 }
 
 // populateGenesisHead inserts the mock genesis execution head into the database.
