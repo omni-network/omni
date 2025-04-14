@@ -39,7 +39,7 @@ function MyComponent() {
 }
 ```
 
-## Configuration
+## Parameters
 
 Crucially, a quote requires fixing *either* the `deposit` amount *or* the `expense` amount. You tell the hook which one you're fixing using the `mode` parameter.
 
