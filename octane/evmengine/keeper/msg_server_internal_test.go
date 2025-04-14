@@ -9,6 +9,7 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/octane/evmengine/types"
@@ -54,6 +55,12 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 	require.NoError(t, err)
 	keeper.SetCometAPI(cmtAPI)
 	populateGenesisHead(ctx, t, keeper)
+
+	withdrawalAddr := tutil.RandomAddress()
+	amountGwei := uint64(100)
+	err = keeper.InsertWithdrawal(ctx.WithBlockHeight(0), withdrawalAddr, amountGwei)
+	require.NoError(t, err)
+
 	msgSrv := NewMsgServerImpl(keeper)
 
 	var execPayload engine.ExecutableData
@@ -76,6 +83,12 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 			latestBlock.Hash(),
 			frp.LocalFeeRecipient(),
 			&appHash,
+			&etypes.Withdrawal{
+				Index:     1,
+				Validator: 0,
+				Address:   withdrawalAddr,
+				Amount:    amountGwei,
+			},
 		)
 
 		payloadID, err = ethclient.MockPayloadID(execPayload, &appHash)
@@ -99,7 +112,7 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 		require.Equal(t, gotPayload.ExecutionPayload.Number, latestHeight+1)
 		require.Equal(t, gotPayload.ExecutionPayload.BlockHash, block.Hash())
 		require.Equal(t, gotPayload.ExecutionPayload.FeeRecipient, frp.LocalFeeRecipient())
-		require.Empty(t, gotPayload.ExecutionPayload.Withdrawals)
+		require.Len(t, gotPayload.ExecutionPayload.Withdrawals, 1)
 	}
 
 	newPayload(ctx)
@@ -270,5 +283,13 @@ func Test_pushPayload(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func fastBackoffForT() {
+	backoffFuncMu.Lock()
+	defer backoffFuncMu.Unlock()
+	backoffFunc = func(context.Context, ...func(*expbackoff.Config)) func() {
+		return func() {}
 	}
 }
