@@ -31,11 +31,10 @@ func newAsyncWorkerFunc(
 			return errors.Wrap(err, "parse event log [BUG]")
 		}
 
-		event, ok := solvernet.EventByTopic(elog.Topics[0])
-		if !ok {
-			return errors.New("unknown event [BUG]")
+		orderID, status, err := solvernet.ParseEvent(elog)
+		if err != nil {
+			return errors.Wrap(err, "parse event [BUG]")
 		}
-		status := event.Status.String()
 
 		proc, ok := procs[j.GetChainId()]
 		if !ok {
@@ -61,13 +60,13 @@ func newAsyncWorkerFunc(
 				} else if err == nil {
 					// Done
 					duration := time.Since(j.GetCreatedAt().AsTime()).Seconds()
-					workDuration.WithLabelValues(chainName, status).Observe(duration)
+					workDuration.WithLabelValues(chainName, status.String()).Observe(duration)
 
 					return
 				}
 
-				log.Warn(ctx, "Failed to process job (will retry)", err, "job_id", j.GetId())
-				workErrors.WithLabelValues(chainName, status).Inc()
+				log.Warn(ctx, "Failed to process job (will retry)", err, "job_id", j.GetId(), "order_id", orderID, "status", status)
+				workErrors.WithLabelValues(chainName, status.String()).Inc()
 				backoff()
 			}
 		}()

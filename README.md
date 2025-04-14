@@ -6,7 +6,7 @@
 <a href="https://github.com/omni-network/omni/actions?query=workflow%3Aci-main"><img src="https://img.shields.io/github/actions/workflow/status/omni-network/omni/ci-main.yaml?label=Tests&logoColor=white" alt="Tests"></a>
 <a href="https://x.com/OmniFDN"><img src="https://img.shields.io/twitter/follow/OmniFDN.svg?label=Follow"></a></p>
 
-<div align="center"><img src="docs/website/static/img/omni-banner.png" alt="Logo"></div>
+<div align="center"><img src="docs/static/img/omni-banner.png" alt="Logo"></div>
 
 ## About Omni
 

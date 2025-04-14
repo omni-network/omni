@@ -23,7 +23,7 @@ func newEventProcFunc(deps procDeps, chainID uint64) eventProcFunc {
 			return errors.New("unknown event [BUG]")
 		}
 
-		orderID, err := deps.ParseID(chainID, elog)
+		orderID, err := deps.ParseID(elog)
 		if err != nil {
 			return errors.Wrap(err, "parse id")
 		}

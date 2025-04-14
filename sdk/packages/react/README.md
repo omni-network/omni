@@ -82,7 +82,7 @@ function App() {
         destChainId: holesky.id,
         deposit: { isNative: false, token: baseSepoliaWSTETH },
         expense: { isNative: false, token: holeskyWSTETH, amount: parseEther("0.1") },
-        mode: "deposit ", // quote deposit amount
+        mode: "deposit", // quote deposit amount
         enabled: true,
     })
 
@@ -150,7 +150,7 @@ function App() {
         },
 
         // request Vault.deposit(user, expenseAmt)
-        // Note we calldata also relies on quoted expense amount
+        // Note: the calldata also relies on the quoted expense amount
         calls: [
           {
             target: vault,
@@ -160,15 +160,13 @@ function App() {
           }
         ],
 
-        // when true, this will if check the order will be accepted by Omni
+        // when true, this will check if the order will be accepted by Omni
         // you can consume the result via order.validation
         validateEnabled: quote.isSuccess
     })
 }
 
-```
-
-With the order defined, and quote successfull, the order will be validated with Omni. You can read the result at `order.validation`.
+With the order defined, and quote successful, the order will be validated with Omni. You can read the result at `order.validation`.
 
 ```tsx
 order.validation?.status            // 'pending' | 'rejected'  | 'accepted' | 'rejected'
@@ -261,7 +259,7 @@ And that's it! That's all you need to use SolverNet to bridge eth across L2s.
 
 Some target contracts do not have `onBehalfOf`-style methods. If they, instead, credit a tokenized position to `msg.sender`, you can use the `withExecAndTransfer` util. This util wraps your call in a call to our [SolverNetMiddleman](https://github.com/omni-network/omni/blob/main/contracts/solve/src/SolverNetMiddleman.sol). The wrapped call executes a call on your target, and transfers all earned tokens to some `to` address.
 
-See ths solidity below code for reference.
+See the solidity code below for reference.
 
 ```solidity
 contract SolverNetMiddleman {

@@ -64,6 +64,13 @@ func Array32[A any](slice []A) ([32]A, error) {
 	return [32]A{}, errors.New("slice length not 32", "len", len(slice))
 }
 
+func EthAddress32(addr common.Address) [32]byte {
+	var resp [32]byte
+	copy(resp[12:], addr[:])
+
+	return resp
+}
+
 // EthAddress casts a byte slice to an Ethereum address.
 func EthAddress(b []byte) (common.Address, error) {
 	resp, err := Array20(b)

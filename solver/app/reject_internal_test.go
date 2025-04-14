@@ -19,21 +19,22 @@ func TestCmdAddrs(t *testing.T) {
 
 	// zero addr
 	var bz [32]byte
-	addr := toEthAddr(bz)
-	require.True(t, cmpAddrs(addr, bz))
+	addr, err := toEthAddr(bz)
+	require.NoError(t, err)
+	require.Equal(t, common.Address{}, addr)
 
 	// within 20 bytes
-	_, err := rand.Read(bz[12:])
+	_, err = rand.Read(bz[12:])
 	require.NoError(t, err)
-	addr = toEthAddr(bz)
-	require.True(t, cmpAddrs(addr, bz))
+	_, err = toEthAddr(bz)
+	require.NoError(t, err)
 
 	// not within 20 bytes
 	_, err = rand.Read(bz[:32])
 	bz[31] = 0x01 // just make sure it's not all zeros
 	require.NoError(t, err)
-	addr = toEthAddr(bz)
-	require.False(t, cmpAddrs(addr, bz))
+	_, err = toEthAddr(bz)
+	require.Error(t, err)
 }
 
 //nolint:tparallel,paralleltest // subtests use same mock controller

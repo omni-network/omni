@@ -74,6 +74,15 @@ func ToInt64[N constraints.Integer](n N) (int64, error) {
 	return int64(n), nil
 }
 
+func MustToUint32[N constraints.Integer](i N) uint32 {
+	resp, err := ToUint32(i)
+	if err != nil {
+		panic(err)
+	}
+
+	return resp
+}
+
 // ToUint32 returns i as an uint32 or an error if it cannot be represented as such.
 func ToUint32[N constraints.Integer](i N) (uint32, error) {
 	if i < 0 {

@@ -266,13 +266,14 @@ func (v *Voter) runOnce(ctx context.Context, chainVer xchain.ChainVersion) error
 				backoff()
 			}
 
-			if err := v.Vote(attHeader, block, first); err != nil {
+			vote, err := v.Vote(attHeader, block, first)
+			if err != nil {
 				return errors.Wrap(err, "vote")
 			}
 			first = false
 
 			// TODO(corver): Remove if this becomes too noisy.
-			logVoteCreated(ctx, v.network, attHeader, block)
+			logVoteCreated(ctx, v.network, vote, block)
 
 			return nil
 		},
@@ -305,18 +306,18 @@ func (v *Voter) getFromHeightAndOffset(ctx context.Context, chainVer xchain.Chai
 }
 
 // Vote creates a vote for the given block and adds it to the internal state.
-func (v *Voter) Vote(attHeader xchain.AttestHeader, block xchain.Block, allowSkip bool) error {
+func (v *Voter) Vote(attHeader xchain.AttestHeader, block xchain.Block, allowSkip bool) (*types.Vote, error) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 	if v.errAborted != nil {
-		return v.errAborted
+		return nil, v.errAborted
 	}
 
 	vote, err := CreateVote(v.privKey, attHeader, block)
 	if err != nil {
-		return err
+		return nil, err
 	} else if err := vote.Verify(); err != nil {
-		return errors.Wrap(err, "verify vote")
+		return nil, errors.Wrap(err, "verify vote")
 	}
 
 	chainVer := vote.AttestHeader.XChainVersion()
@@ -324,10 +325,10 @@ func (v *Voter) Vote(attHeader xchain.AttestHeader, block xchain.Block, allowSki
 	// Ensure attestation is sequential and not a duplicate.
 	latest, ok := v.latest[chainVer]
 	if ok && latest.AttestHeader.AttestOffset >= vote.AttestHeader.AttestOffset {
-		return errors.New("attestation height already exists",
+		return nil, errors.New("attestation height already exists",
 			"latest", latest.AttestHeader.AttestOffset, "new", vote.AttestHeader.AttestOffset)
 	} else if ok && !allowSkip && latest.AttestHeader.AttestOffset+1 != vote.AttestHeader.AttestOffset {
-		return errors.New("attestation is not sequential",
+		return nil, errors.New("attestation is not sequential",
 			"existing", latest.AttestHeader.AttestOffset, "new", vote.AttestHeader.AttestOffset)
 	}
 
@@ -343,7 +344,7 @@ func (v *Voter) Vote(attHeader xchain.AttestHeader, block xchain.Block, allowSki
 		createMsgOffset.WithLabelValues(v.network.StreamName(stream)).Set(float64(msgOffset))
 	}
 
-	return v.saveUnsafe()
+	return vote, v.saveUnsafe()
 }
 
 // UpdateValidatorSet caches whether this voter is a validator in the provided set.
@@ -744,7 +745,7 @@ func latestFromJSON(latest []*types.Vote) map[xchain.ChainVersion]*types.Vote {
 	return resp
 }
 
-func logVoteCreated(ctx context.Context, network netconf.Network, attHeader xchain.AttestHeader, block xchain.Block) {
+func logVoteCreated(ctx context.Context, network netconf.Network, vote *types.Vote, block xchain.Block) {
 	// Collect start offsets per shard.
 	startOffsets := make(map[string]uint64)
 	for _, msg := range block.Msgs {
@@ -755,9 +756,12 @@ func logVoteCreated(ctx context.Context, network netconf.Network, attHeader xcha
 		startOffsets[emitShard] = msg.StreamOffset
 	}
 
+	attRoot, _ := vote.AttestationRoot()
+
 	attrs := []any{
-		"offset", attHeader.AttestOffset,
+		"offset", vote.AttestHeader.AttestOffset,
 		"msgs", len(block.Msgs),
+		log.Hex7("attest_root", attRoot[:]),
 	}
 	for shard, offset := range startOffsets {
 		attrs = append(attrs, shard, offset)

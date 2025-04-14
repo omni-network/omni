@@ -80,7 +80,7 @@ func Dial(chainName string, url string) (Client, error) {
 // It will retry connecting on every call to a wrapped method. In this case, the context is ignored.
 // It will only return an error if the url is invalid.
 func DialContext(ctx context.Context, chainName string, url string) (Client, error) {
-	client := new(http.Client)
+	client := &http.Client{Timeout: defaultRPCHTTPTimeout}
 
 	rpcClient, err := rpc.DialOptions(ctx, url, rpc.WithHTTPClient(client))
 	if err != nil {

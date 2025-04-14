@@ -81,6 +81,11 @@ func newOrder(resolved OrderResolved, state OrderState, offset *big.Int) (Order,
 		return Order{}, errors.Wrap(err, "validate resolved")
 	}
 
+	settler, err := toEthAddr(resolved.FillInstructions[0].DestinationSettler)
+	if err != nil {
+		return Order{}, errors.Wrap(err, "settler")
+	}
+
 	return Order{
 		ID:            resolved.OrderId,
 		Offset:        offset.Uint64(),
@@ -95,7 +100,7 @@ func newOrder(resolved OrderResolved, state OrderState, offset *big.Int) (Order,
 			FillInstruction:    resolved.FillInstructions[0],
 			FillOriginData:     resolved.FillInstructions[0].OriginData,
 			DestinationChainID: resolved.FillInstructions[0].DestinationChainId,
-			DestinationSettler: toEthAddr(resolved.FillInstructions[0].DestinationSettler),
+			DestinationSettler: settler,
 			MaxSpent:           resolved.MaxSpent,
 		},
 	}, nil

@@ -5,11 +5,16 @@ import (
 	"context"
 
 	"github.com/omni-network/omni/lib/cast"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/netconf"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 // detectContractChains returns the chains on which the contract is deployed at the provided address.
@@ -35,8 +40,13 @@ func detectContractChains(ctx context.Context, network netconf.Network, backends
 }
 
 // toEthAddr converts a 32-byte address to an Ethereum address.
-func toEthAddr(bz [32]byte) common.Address {
-	return cast.MustEthAddress(bz[12:])
+func toEthAddr(bz [32]byte) (common.Address, error) {
+	addr := cast.MustEthAddress(bz[12:])
+	if !cmpAddrs(addr, bz) {
+		return common.Address{}, errors.New("invalid eth address", "address", hexutil.Encode(bz[:]))
+	}
+
+	return addr, nil
 }
 
 // cmpAddrs returns true if the eth address is equal to the 32-byte address.
@@ -54,4 +64,47 @@ func toBz32(addr common.Address) [32]byte {
 	copy(bz[12:], addr.Bytes())
 
 	return bz
+}
+
+func maybeDebugRevert(ctx context.Context, cl ethclient.Client, from common.Address, tx *ethtypes.Transaction, rec *ethclient.Receipt) (bool, error) {
+	if rec == nil || rec.Status == ethtypes.ReceiptStatusSuccessful {
+		return false, nil
+	}
+
+	// Try and get debug information of the reverted transaction
+	resp, err := cl.CallContract(ctx, callFromTx(from, tx), rec.BlockNumber)
+	if err == nil {
+		return false, nil // It didn't revert again
+	}
+
+	return true, errors.Wrap(err, "tx reverted",
+		"dest_chain", cl.Name(),
+		"tx", tx.Hash(),
+		"receipt_height", rec.BlockNumber,
+		"call_resp", hexutil.Encode(resp),
+		"custom", solvernet.DetectCustomError(err),
+	)
+}
+
+func callFromTx(from common.Address, tx *ethtypes.Transaction) ethereum.CallMsg {
+	resp := ethereum.CallMsg{
+		From:          from,
+		To:            tx.To(),
+		Gas:           tx.Gas(),
+		Value:         tx.Value(),
+		Data:          tx.Data(),
+		AccessList:    tx.AccessList(),
+		BlobGasFeeCap: tx.BlobGasFeeCap(),
+		BlobHashes:    tx.BlobHashes(),
+	}
+
+	// Either populate gas price or gas caps (not both).
+	if tx.GasPrice() != nil && tx.GasPrice().Sign() != 0 {
+		resp.GasPrice = tx.GasPrice()
+	} else {
+		resp.GasFeeCap = tx.GasFeeCap()
+		resp.GasTipCap = tx.GasTipCap()
+	}
+
+	return resp
 }

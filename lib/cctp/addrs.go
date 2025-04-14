@@ -1,4 +1,3 @@
-//nolint:unused // wip
 package cctp
 
 import (

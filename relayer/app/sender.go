@@ -180,8 +180,7 @@ func (s Sender) SendAsync(ctx context.Context, sub xchain.Submission) <-chan err
 			go s.onSubmit(ctx, tx, rec, sub)
 		}
 
-		const statusReverted = 0
-		if rec.Status == statusReverted {
+		if rec.Status == ethtypes.ReceiptStatusFailed {
 			// Try and get debug information of the reverted transaction
 			resp, err := s.ethCl.CallContract(ctx, callFromTx(s.txMgr.From(), tx), rec.BlockNumber)
 

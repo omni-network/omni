@@ -31,7 +31,7 @@ var (
 type EventMeta struct {
 	Topic   common.Hash
 	Status  OrderStatus
-	ParseID func(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error)
+	ParseID func(log types.Log) (OrderID, error)
 }
 
 var (
@@ -100,13 +100,7 @@ func ParseEvent(l types.Log) (OrderID, OrderStatus, error) {
 		return OrderID{}, 0, errors.New("unknown event")
 	}
 
-	// Safe to use dummy address and backend since we only parse events.
-	parser, err := bindings.NewSolverNetInbox(common.Address{}, nil)
-	if err != nil {
-		return OrderID{}, 0, errors.New("new solver inbox")
-	}
-
-	orderID, err := e.ParseID(parser.SolverNetInboxFilterer, l)
+	orderID, err := e.ParseID(l)
 	if err != nil {
 		return OrderID{}, 0, errors.Wrap(err, "parse id")
 	}
@@ -114,7 +108,13 @@ func ParseEvent(l types.Log) (OrderID, OrderStatus, error) {
 	return orderID, e.Status, nil
 }
 
-func ParseOpened(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error) {
+func ParseOpened(log types.Log) (OrderID, error) {
+	// Safe to use dummy values since we only parse events.
+	contract, err := bindings.NewSolverNetInbox(common.Address{}, nil)
+	if err != nil {
+		return OrderID{}, errors.New("dummy solver inbox")
+	}
+
 	e, err := contract.ParseOpen(log)
 	if err != nil {
 		return OrderID{}, errors.Wrap(err, "parse opened")
@@ -123,7 +123,13 @@ func ParseOpened(contract bindings.SolverNetInboxFilterer, log types.Log) (Order
 	return e.OrderId, nil
 }
 
-func ParseRejected(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error) {
+func ParseRejected(log types.Log) (OrderID, error) {
+	// Safe to use dummy values since we only parse events.
+	contract, err := bindings.NewSolverNetInbox(common.Address{}, nil)
+	if err != nil {
+		return OrderID{}, errors.New("dummy solver inbox")
+	}
+
 	e, err := contract.ParseRejected(log)
 	if err != nil {
 		return OrderID{}, errors.Wrap(err, "parse rejected")
@@ -132,7 +138,13 @@ func ParseRejected(contract bindings.SolverNetInboxFilterer, log types.Log) (Ord
 	return e.Id, nil
 }
 
-func ParseClosed(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error) {
+func ParseClosed(log types.Log) (OrderID, error) {
+	// Safe to use dummy values since we only parse events.
+	contract, err := bindings.NewSolverNetInbox(common.Address{}, nil)
+	if err != nil {
+		return OrderID{}, errors.New("dummy solver inbox")
+	}
+
 	e, err := contract.ParseClosed(log)
 	if err != nil {
 		return OrderID{}, errors.Wrap(err, "parse closed")
@@ -141,7 +153,13 @@ func ParseClosed(contract bindings.SolverNetInboxFilterer, log types.Log) (Order
 	return e.Id, nil
 }
 
-func ParseFilled(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error) {
+func ParseFilled(log types.Log) (OrderID, error) {
+	// Safe to use dummy values since we only parse events.
+	contract, err := bindings.NewSolverNetInbox(common.Address{}, nil)
+	if err != nil {
+		return OrderID{}, errors.New("dummy solver inbox")
+	}
+
 	e, err := contract.ParseFilled(log)
 	if err != nil {
 		return OrderID{}, errors.Wrap(err, "parse filled")
@@ -150,7 +168,13 @@ func ParseFilled(contract bindings.SolverNetInboxFilterer, log types.Log) (Order
 	return e.Id, nil
 }
 
-func ParseClaimed(contract bindings.SolverNetInboxFilterer, log types.Log) (OrderID, error) {
+func ParseClaimed(log types.Log) (OrderID, error) {
+	// Safe to use dummy values since we only parse events.
+	contract, err := bindings.NewSolverNetInbox(common.Address{}, nil)
+	if err != nil {
+		return OrderID{}, errors.New("dummy solver inbox")
+	}
+
 	e, err := contract.ParseClaimed(log)
 	if err != nil {
 		return OrderID{}, errors.Wrap(err, "parse claimed")

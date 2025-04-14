@@ -59,7 +59,7 @@ func TestAbort(t *testing.T) {
 	chainVer := xchain.ChainVersion{ID: chain1, ConfLevel: conf}
 	att1 := xchain.AttestHeader{ConsensusChainID: 1, ChainVersion: chainVer, AttestOffset: 1}
 	block := xchain.Block{BlockHeader: xchain.BlockHeader{ChainID: chain1, BlockHeight: 1}}
-	err = v.Vote(att1, block, true)
+	_, err = v.Vote(att1, block, true)
 	require.NoError(t, err)
 
 	// Assert it's available
@@ -74,7 +74,7 @@ func TestAbort(t *testing.T) {
 	// Create second vote (should abort)
 	const errAborted = "aborted"
 	att2 := xchain.AttestHeader{ConsensusChainID: 1, ChainVersion: chainVer, AttestOffset: 2}
-	err = v.Vote(att2, block, true)
+	_, err = v.Vote(att2, block, true)
 	require.ErrorContains(t, err, errAborted)
 
 	header1 := []*types.AttestHeader{{
@@ -86,7 +86,8 @@ func TestAbort(t *testing.T) {
 
 	// Assert that voter aborted
 	require.Empty(t, v.GetAvailable())
-	require.ErrorContains(t, v.Vote(att2, block, true), errAborted)
+	_, err = v.Vote(att2, block, true)
+	require.ErrorContains(t, err, errAborted)
 	require.ErrorContains(t, v.SetProposed(ctx, header1), errAborted)
 	require.ErrorContains(t, v.SetCommitted(ctx, header1), errAborted)
 	require.ErrorContains(t, v.UpdateValidatorSet(nil), errAborted)
@@ -432,7 +433,7 @@ func (w *wrappedVoter) Add(t *testing.T, chainID, offset uint64) {
 		BlockHash: common.Hash{},
 	}
 
-	err := w.v.Vote(attHeader, block, false)
+	_, err := w.v.Vote(attHeader, block, false)
 	require.NoError(t, err)
 }
 
@@ -510,7 +511,7 @@ func (w *wrappedVoter) AddErr(t *testing.T, chainID, offset uint64) {
 		AttestOffset:     offset,
 	}
 
-	err := w.v.Vote(attHeader, block, false)
+	_, err := w.v.Vote(attHeader, block, false)
 	require.Error(t, err)
 }
 

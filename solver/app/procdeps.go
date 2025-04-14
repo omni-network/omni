@@ -21,7 +21,7 @@ import (
 
 // procDeps abstracts dependencies for the event processor allowed simplified testing.
 type procDeps struct {
-	ParseID      func(chainID uint64, log types.Log) (OrderID, error)
+	ParseID      func(log types.Log) (OrderID, error)
 	GetOrder     func(ctx context.Context, chainID uint64, id OrderID) (Order, bool, error)
 	SetCursor    func(ctx context.Context, chainID uint64, height uint64) error
 	ShouldReject func(ctx context.Context, order Order) (stypes.RejectReason, bool, error)
@@ -76,7 +76,9 @@ func newClaimer(
 			return errors.Wrap(err, "claim order")
 		}
 		rec, err := backend.WaitConfirmed(ctx, tx)
-		if err != nil {
+		if ok, err2 := maybeDebugRevert(ctx, backend, solverAddr, tx, rec); ok {
+			return errors.Wrap(err2, "claim reverted") // Best effort improving of revert errors
+		} else if err != nil {
 			return errors.Wrap(err, "wait confirmed")
 		}
 
@@ -139,18 +141,19 @@ func newFiller(
 				continue
 			}
 
-			tknAddr := toEthAddr(output.Token)
+			tknAddr, err := toEthAddr(output.Token)
+			if err != nil {
+				return errors.Wrap(err, "output token address")
+			}
+
 			tkn, ok := tokens.ByAddress(destChainID, tknAddr)
 			if !ok || !IsSupportedToken(tkn) {
 				return errors.New("unsupported token, should have been rejected [BUG]", "addr", tknAddr.Hex(), "chain_id", destChainID)
 			}
 
-			isAppproved, err := isAppproved(ctx, tknAddr, backend, solverAddr, outboxAddr, output.Amount)
-			if err != nil {
+			if ok, err = isAppproved(ctx, tknAddr, backend, solverAddr, outboxAddr, output.Amount); err != nil {
 				return errors.Wrap(err, "is approved")
-			}
-
-			if !isAppproved {
+			} else if !ok {
 				return errors.New("outbox not approved to spend token",
 					"token", tkn.Symbol,
 					"chain_id", destChainID,
@@ -173,7 +176,9 @@ func newFiller(
 			return errors.Wrap(err, "fill order", "custom", solvernet.DetectCustomError(err))
 		}
 		rec, err := backend.WaitConfirmed(ctx, tx)
-		if err != nil {
+		if ok, err2 := maybeDebugRevert(ctx, backend, solverAddr, tx, rec); ok {
+			return errors.Wrap(err2, "fill reverted") // Best effort improving of revert errors
+		} else if err != nil {
 			return errors.Wrap(err, "wait confirmed")
 		}
 
@@ -221,7 +226,9 @@ func newRejector(
 			return errors.Wrap(err, "reject order", "custom", solvernet.DetectCustomError(err))
 		}
 		rec, err := backend.WaitConfirmed(ctx, tx)
-		if err != nil {
+		if ok, err2 := maybeDebugRevert(ctx, backend, solverAddr, tx, rec); ok {
+			return errors.Wrap(err2, "reject reverted") // Best effort improving of revert errors
+		} else if err != nil {
 			return errors.Wrap(err, "wait confirmed")
 		}
 
@@ -250,19 +257,14 @@ func newDidFiller(outboxContracts map[uint64]*bindings.SolverNetOutbox) func(ctx
 	}
 }
 
-func newIDParser(inboxContracts map[uint64]*bindings.SolverNetInbox) func(chainID uint64, log types.Log) (OrderID, error) {
-	return func(chainID uint64, log types.Log) (OrderID, error) {
-		inbox, ok := inboxContracts[chainID]
-		if !ok {
-			return OrderID{}, errors.New("unknown chain")
-		}
-
+func newIDParser() func(log types.Log) (OrderID, error) {
+	return func(log types.Log) (OrderID, error) {
 		event, ok := solvernet.EventByTopic(log.Topics[0])
 		if !ok {
 			return OrderID{}, errors.New("unknown event")
 		}
 
-		return event.ParseID(inbox.SolverNetInboxFilterer, log)
+		return event.ParseID(log)
 	}
 }
 
