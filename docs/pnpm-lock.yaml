@@ -346,8 +346,8 @@ packages:
     peerDependencies:
       rollup: '>=2'
 
-  '@noble/hashes@1.7.1':
-    resolution: {integrity: sha512-B8XBPsn4vT/KJAGqDzbwztd+6Yte3P4V7iafm24bxgDe/mlRuK6xmWPuCNrKt2vDafZ8MfJLlchDG/vYafQEjQ==}
+  '@noble/hashes@1.7.2':
+    resolution: {integrity: sha512-biZ0NUSxyjLLqo6KxEJ1b+C2NAx0wtDoFvCaXHGgUkeHzf3Xc1xKumFKREuT7f7DARNZ/slvYUwFG6B0f2b6hQ==}
     engines: {node: ^14.21.3 || >=16}
 
   '@nodelib/fs.scandir@2.1.5':
@@ -3102,7 +3102,7 @@ snapshots:
       - acorn
       - supports-color
 
-  '@noble/hashes@1.7.1': {}
+  '@noble/hashes@1.7.2': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
@@ -6016,7 +6016,7 @@ snapshots:
       '@hono/node-server': 1.14.1(hono@4.7.6)
       '@mdx-js/react': 3.1.0(@types/react@19.1.1)(react@19.1.0)
       '@mdx-js/rollup': 3.1.0(acorn@8.14.1)(rollup@4.40.0)
-      '@noble/hashes': 1.7.1
+      '@noble/hashes': 1.7.2
       '@radix-ui/colors': 3.0.0
       '@radix-ui/react-accordion': 1.2.4(@types/react@19.1.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@radix-ui/react-dialog': 1.1.7(@types/react@19.1.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)

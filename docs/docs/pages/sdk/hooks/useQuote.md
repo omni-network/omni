@@ -62,6 +62,22 @@ type QuoteAsset =
   | { isNative?: false; token: Address } // For ERC20 tokens
 ```
 
+## Return
+
+`useQuote` returns a standard query result object from [`@tanstack/react-query`](https://tanstack.com/query/latest/docs/react/reference/useQuery). Consult their documentation for all available properties.
+
+Key properties include:
+
+*   `data`: The quote result if the query is successful.
+    *   `deposit`: `{ amount: bigint, token?: Address, isNative: boolean }`
+    *   `expense`: `{ amount: bigint, token?: Address, isNative: boolean }`
+*   `isSuccess`: `true` if the quote was fetched successfully.
+*   `isLoading`: `true` while the quote is being fetched.
+*   `isError`: `true` if there was an error fetching the quote.
+*   `error`: The error object if `isError` is `true`.
+
+Use the `data` property (specifically `data.deposit.amount` and `data.expense.amount`) to inform the parameters for the [`useOrder`](/sdk/hooks/useOrder.md) hook.
+
 ## Examples
 
 ### Quote Expense Amount
@@ -101,19 +117,3 @@ if (quote.isSuccess) {
   console.log(`Spending ${quote.data.expense.amount} requires depositing ${quote.data.deposit.amount} on source`);
 }
 ```
-
-## Return
-
-`useQuote` returns a standard query result object from [`@tanstack/react-query`](https://tanstack.com/query/latest/docs/react/reference/useQuery). Consult their documentation for all available properties.
-
-Key properties include:
-
-*   `data`: The quote result if the query is successful.
-    *   `deposit`: `{ amount: bigint, token?: Address, isNative: boolean }`
-    *   `expense`: `{ amount: bigint, token?: Address, isNative: boolean }`
-*   `isSuccess`: `true` if the quote was fetched successfully.
-*   `isLoading`: `true` while the quote is being fetched.
-*   `isError`: `true` if there was an error fetching the quote.
-*   `error`: The error object if `isError` is `true`.
-
-Use the `data` property (specifically `data.deposit.amount` and `data.expense.amount`) to inform the parameters for the [`useOrder`](/sdk/hooks/useOrder.md) hook.
