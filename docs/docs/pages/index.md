@@ -1,6 +1,8 @@
 ---
 slug: / # Keep this to make it the root page
 title: Welcome
+description: Documentation for the Omni SDK, SolverNet, and related concepts.
+
 ---
 
 # Welcome
