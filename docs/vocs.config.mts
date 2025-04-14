@@ -4,12 +4,13 @@ export default defineConfig({
   title: 'Omni Devs | Docs',
   rootDir: './docs/',
   baseUrl: '/',
-  description: 'Documentation for the Omni Network SolverNet SDK and concepts.',
+  description: 'Documentation for the Omni SDK and concepts.',
   logoUrl: '/img/logo.svg',
   iconUrl: '/img/favicon.svg',
+  ogImageUrl: '/img/omni-banner.png',
   editLink: {
     pattern: 'https://github.com/omni-network/omni/tree/main/docs/docs/pages/:path',
-    text: 'Edit this page on GitHub',
+    text: 'Suggest changes to this page on GitHub',
   },
   socials: [
     {
