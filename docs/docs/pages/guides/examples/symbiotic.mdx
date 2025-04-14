@@ -1,0 +1,200 @@
+---
+sidebar_position: 1
+title: Symbiotic Restake
+---
+
+import { Callout } from 'vocs/components'
+
+# Symbiotic wstETH Deposit
+
+*   **Live Testnet Vault (Holesky):** [app.holesky.symbiotic.fi](https://app.holesky.symbiotic.fi/vault/0xd88dDf98fE4d161a66FB836bee4Ca469eb0E4a75)
+*   **Base Sepolia Faucet (for ETH/wstETH):** [faucet.omni.network/base-sepolia](https://faucet.omni.network/base-sepolia)
+
+---
+
+This example demonstrates depositing wstETH from an L2 (Base Sepolia) into a Symbiotic collateral vault (`DC_wstEth`) on L1 (Holesky) using Omni SolverNet.
+
+Since the Symbiotic vault contract used here (`0x23e...fc`) includes an `onBehalfOf` parameter in its `deposit` function (`deposit(address onBehalfOf, uint256 amount)`), we can directly specify the user's address in the `useOrder` call without needing `withExecAndTransfer`.
+
+## Custom Hook (`useL2Deposit.ts`)
+
+```typescript
+import { useQuote, useOrder } from '@omni-network/react' // Assuming hooks are available here
+import { type Address, zeroAddress } from 'viem'
+import { useAccount } from 'wagmi'
+
+// --- Configuration (Adapt as needed) ---
+// Symbiotic Vault (DC_wstEth) on Holesky
+const SYMBIOTIC_VAULT_ADDRESS = "0x23e98253f372ee29910e22986fe75bb287b011fc" as const
+// wstETH on Holesky
+const WSTETH_L1_ADDRESS = "0x8d09a4502cc8cf1547ad300e066060d043f6982d" as const
+// Mock wstETH on Base Sepolia (mintable)
+const WSTETH_L2_ADDRESS = "0x6319df7c227e34B967C1903A08a698A3cC43492B" as const
+
+// Simple ABI for deposit(address, uint256)
+const vaultABI = [
+    {
+        "inputs": [
+            { "internalType": "address", "name": "onBehalfOf", "type": "address" },
+            { "internalType": "uint256", "name": "amount", "type": "uint256" }
+        ],
+        "name": "deposit",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+] as const;
+// -------------------------------------
+
+type UseL2DepositParams = {
+  destChainId: number // e.g., holesky.id
+  srcChainId: number  // e.g., baseSepolia.id
+  depositAmount: bigint // Amount of wstETH to deposit from L2
+}
+
+export function useL2Deposit(params: UseL2DepositParams) {
+  const { address: userAddress, isConnected } = useAccount();
+
+  // 1. Quote: How much L1 wstETH expense for the L2 wstETH deposit?
+  const quote = useQuote({
+    srcChainId: params.srcChainId,
+    destChainId: params.destChainId,
+    deposit: {
+      isNative: false,
+      token: WSTETH_L2_ADDRESS,
+      amount: params.depositAmount
+    },
+    expense: {
+      isNative: false,
+      token: WSTETH_L1_ADDRESS
+    },
+    mode: "expense",
+    enabled: isConnected && params.depositAmount > 0n,
+  });
+
+  const quotedDepositAmt = quote.data?.deposit.amount ?? 0n;
+  const quotedExpenseAmt = quote.data?.expense.amount ?? 0n;
+
+  // 2. Configure Order (Direct call, no wrapping needed)
+  const order = useOrder({
+    srcChainId: params.srcChainId,
+    destChainId: params.destChainId,
+    deposit: {
+      token: WSTETH_L2_ADDRESS,
+      amount: quotedDepositAmt
+    },
+    expense: {
+        token: WSTETH_L1_ADDRESS,
+        spender: SYMBIOTIC_VAULT_ADDRESS, // Vault contract spends the solver's L1 wstETH
+        amount: quotedExpenseAmt
+    },
+    calls: [
+      {
+        target: SYMBIOTIC_VAULT_ADDRESS,
+        abi: vaultABI,
+        functionName: 'deposit',
+        // Directly pass user address and quoted L1 amount
+        args: [userAddress ?? zeroAddress, quotedExpenseAmt]
+      }
+    ],
+    validateEnabled: quote.isSuccess && isConnected && userAddress != null,
+  });
+
+  // Expose order controls and status
+  return {
+    mutation: order.txMutation,
+    waitOrder: order.waitForTx,
+    orderStatus: order.status,
+    openL2Deposit: order.open,
+    isReady: order.isReady && order.validation?.status === 'accepted',
+    validation: order.validation,
+    quote,
+  };
+}
+```
+
+## Usage in Component
+
+```tsx
+import React, { useState, useMemo } from 'react';
+import { useL2Deposit } from './useL2Deposit'; // Import the custom hook
+import { parseEther, formatEther } from 'viem';
+import { baseSepolia, holesky } from 'viem/chains';
+import { useAccount } from 'wagmi';
+
+function SymbioticDepositComponent() {
+  const [amountStr, setAmountStr] = useState('0.01');
+  const { isConnected } = useAccount();
+
+  const depositAmount = useMemo(() => {
+    try {
+      return parseEther(amountStr as `${number}`);
+    } catch {
+      return 0n;
+    }
+  }, [amountStr]);
+
+  const {
+    openL2Deposit,
+    orderStatus,
+    isReady,
+    validation,
+    quote
+  } = useL2Deposit({
+    srcChainId: baseSepolia.id,
+    destChainId: holesky.id,
+    depositAmount: depositAmount, // This is the wstETH amount from L2
+  });
+
+  const quotedDepositAmt = quote.data?.deposit.amount ?? 0n;
+  const quotedExpenseAmt = quote.data?.expense.amount ?? 0n;
+
+  const isLoading = orderStatus === 'opening' || orderStatus === 'open';
+
+  return (
+    <div style={{ border: '1px solid #ccc', padding: '1rem', marginTop: '1rem' }}>
+      <h2>Symbiotic Vault Deposit (Base Sepolia wstETH -> Holesky Vault)</h2>
+      <label>
+        Amount wstETH to Deposit (from Base Sepolia):
+        <input
+          type="text"
+          value={amountStr}
+          onChange={(e) => setAmountStr(e.target.value)}
+          disabled={isLoading || !isConnected}
+        />
+      </label>
+
+      <p style={{fontSize: '0.8em'}}>Make sure you have Mock wstETH on Base Sepolia. Mint <a href="https://basescan.org/address/0x6319df7c227e34B967C1903A08a698A3cC43492B#writeContract#F1" target="_blank" rel="noopener noreferrer">here</a>.</p>
+
+      {!isConnected && <p>Connect wallet to proceed.</p>}
+
+      {isConnected && depositAmount > 0n && (
+        <>
+          {quote.isLoading && <p>Getting quote...</p>}
+          {quote.isSuccess && <p>Quote: Deposit {formatEther(quotedDepositAmt)} L2 wstETH to deposit {formatEther(quotedExpenseAmt)} L1 wstETH.</p>}
+          {quote.isError && <p style={{color: 'red'}}>Quote Error: {quote.error.message}</p>}
+
+          {validation?.status === 'pending' && <p>Validating...</p>}
+          {validation?.status === 'rejected' && <p style={{color: 'red'}}>Rejected: {validation.rejectDescription}</p>}
+
+          <button onClick={openL2Deposit} disabled={!isReady || isLoading} style={{marginTop: '1rem'}}>
+            {isLoading ? 'Processing...' : 'Deposit via Omni'}
+          </button>
+          <p style={{ marginTop: '1rem' }}>Status: <strong>{orderStatus}</strong></p>
+          {orderStatus === 'filled' && <p style={{color: 'green'}}>✅ Success!</p>}
+        </>
+      )}
+    </div>
+  );
+}
+
+export default SymbioticDepositComponent;
+```
+
+## Key Concepts
+
+*   **Direct Call:** Because the target Symbiotic vault supports depositing `onBehalfOf` a user, we don't need `withExecAndTransfer`.
+*   **Order Configuration:**
+    *   `deposit`: wstETH from the source L2.
+    *   `expense`: wstETH required by the vault on L1, with the `spender` set to the vault contract address.
+    *   `calls`: Contains a single, direct call to the vault's `deposit` function, passing the connected user's address as `onBehalfOf`.
