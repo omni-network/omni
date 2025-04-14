@@ -251,6 +251,7 @@ func TestCLIOperator(t *testing.T) {
 
 		t.Run("undelegation", func(t *testing.T) {
 			var block *big.Int
+			require.NoError(t, err)
 			balance, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, block)
 			require.NoError(t, err)
 
@@ -339,6 +340,9 @@ func GenFundedEOA(ctx context.Context, t *testing.T, backend *ethbackend.Backend
 	bal, err := backend.BalanceAt(ctx, newAddr, nil)
 	require.NoError(t, err)
 	require.True(t, bi.EQ(amount1k, bal))
+
+	_, err = backend.AddAccount(newKey)
+	require.NoError(t, err)
 
 	log.Debug(ctx, "Funded new EOA", "addr", newAddr.Hex(), "amount", bi.ToEtherF64(amount1k), "chain", backend.Name())
 
