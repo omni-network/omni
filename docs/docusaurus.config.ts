@@ -122,7 +122,7 @@ const config: Config = {
           items: [
             {
               label: 'Careers',
-              to: 'https://boards.greenhouse.io/omnifdn',
+              to: ' https://job-boards.greenhouse.io/omnifdn',
             },
           ],
         },
