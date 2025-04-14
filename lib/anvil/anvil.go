@@ -55,7 +55,7 @@ func Start(ctx context.Context, dir string, chainID uint64) (ethclient.Client, f
 
 	endpoint := "http://localhost:" + port
 
-	ethCl, err := ethclient.Dial("anvil", endpoint)
+	ethCl, err := ethclient.DialContext(ctx, "anvil", endpoint)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "new eth client")
 	}

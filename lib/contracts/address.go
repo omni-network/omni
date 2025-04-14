@@ -90,7 +90,7 @@ func StagingID(ctx context.Context) (string, error) {
 		rpc = stagingOmniRPC
 	}
 
-	client, err := ethclient.Dial("omni_evm", rpc)
+	client, err := ethclient.DialContext(ctx, "omni_evm", rpc)
 	if err != nil {
 		return "", errors.Wrap(err, "dial omni")
 	}

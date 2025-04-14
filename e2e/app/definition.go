@@ -172,7 +172,7 @@ func MakeDefinition(ctx context.Context, cfg DefinitionConfig, commandName strin
 func newBackends(ctx context.Context, cfg DefinitionConfig, testnet types.Testnet, commandName string) (ethbackend.Backends, error) {
 	// If no fireblocks API key, use in-memory keys.
 	if cfg.FireAPIKey == "" {
-		return ethbackend.NewBackends(ctx, testnet, cfg.DeployKeyFile)
+		return ethbackend.BackendsFromTestnet(ctx, testnet, cfg.DeployKeyFile)
 	}
 
 	key, err := fireblocks.LoadKey(cfg.FireKeyPath)

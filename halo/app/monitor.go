@@ -109,7 +109,7 @@ func monitorEVMForever(ctx context.Context, cfg Config, ethCl ethclient.Client, 
 	omniEVM := cfg.Network.Static().OmniExecutionChainName()
 	omniEVMRPC, err := cfg.RPCEndpoints.ByNameOrID(omniEVM, cfg.Network.Static().OmniExecutionChainID)
 	if err == nil {
-		newEthCl, err := ethclient.Dial(omniEVM, omniEVMRPC)
+		newEthCl, err := ethclient.DialContext(ctx, omniEVM, omniEVMRPC)
 		if err == nil {
 			ethCl = newEthCl
 			log.Info(ctx, "Using rpc endpoint to monitor attached omni evm", "rpc", omniEVMRPC)

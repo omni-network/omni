@@ -2,6 +2,8 @@ package ethclient
 
 import (
 	"context"
+	"net/http"
+	"time"
 
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
@@ -52,6 +54,7 @@ const (
 // wrapper wraps an ethclient.Client adding metrics and wrapped errors.
 type wrapper struct {
 	cl      *ethclient.Client
+	httpCl  *http.Client
 	name    string
 	address string
 }
@@ -65,22 +68,54 @@ func NewClient(cl *rpc.Client, name, address string) (Client, error) {
 	})
 }
 
-// Dial connects a client to the given URL. It returns a wrapped  client adding metrics and wrapped errors and a header cache.
+// DialContext connects a client to the given URL. It returns a wrapped client adding metrics and wrapped errors and a header cache.
 //
 // Note if the URL is http(s), it doesn't return an error if it cannot connect to the URL.
-// It will retry connecting on every call to a wrapped method. It will only return an error if the
-// url is invalid.
 func Dial(chainName string, url string) (Client, error) {
-	cl, err := ethclient.Dial(url)
+	return DialContext(context.Background(), chainName, url)
+}
+
+// It will retry connecting on every call to a wrapped method. In this case, the context is ignored.
+// It will only return an error if the url is invalid.
+func DialContext(ctx context.Context, chainName string, url string) (Client, error) {
+	client := &http.Client{Timeout: defaultRPCHTTPTimeout}
+
+	rpcClient, err := rpc.DialOptions(ctx, url, rpc.WithHTTPClient(client))
 	if err != nil {
-		return wrapper{}, errors.Wrap(err, "dial", "chain", chainName, "url", url)
+		return engineClient{}, errors.Wrap(err, "dial", "chain", chainName, "url", url)
 	}
 
 	return newHeaderCache(wrapper{
-		cl:      cl,
+		cl:      ethclient.NewClient(rpcClient),
 		name:    chainName,
 		address: url,
+		httpCl:  client,
 	})
+}
+
+// CloseIdleConnectionsForever blocks and closes idle connections periodically.
+// It returns when the context is canceled.
+// This is useful to close TCP-keep-alive connections to load-balanced RPC servers
+// which could sometimes remain connected to stalled (but alive) servers.
+// Note this is a noop if the client wasn't created by Dial or DialContext.
+func (w wrapper) CloseIdleConnectionsForever(ctx context.Context) {
+	if w.httpCl == nil {
+		return
+	}
+
+	const period = time.Minute * 5
+
+	ticker := time.NewTicker(period)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			w.httpCl.CloseIdleConnections()
+		}
+	}
 }
 
 // Close closes the underlying RPC connection.
