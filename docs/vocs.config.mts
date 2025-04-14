@@ -1,5 +1,4 @@
 import { defineConfig } from 'vocs';
-import React from 'react';
 
 export default defineConfig({
   title: 'Omni Devs | Docs',
@@ -9,10 +8,6 @@ export default defineConfig({
   logoUrl: '/img/logo.svg',
   iconUrl: '/img/favicon.svg',
   ogImageUrl: '/img/omni-banner.png',
-  head: React.createElement('meta', {
-    property: 'og:description',
-    content: 'Documentation for the Omni SDK and concepts.'
-  }),
   editLink: {
     pattern: 'https://github.com/omni-network/omni/tree/main/docs/docs/pages/:path',
     text: 'Suggest changes to this page on GitHub',
