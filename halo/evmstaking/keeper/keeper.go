@@ -154,6 +154,7 @@ func (k Keeper) FilterParams() ([]common.Address, [][]common.Hash) {
 
 // Deliver processes a omni deposit log event, which must be one of:
 // - CreateValidator,
+// - EditValidator,
 // - Delegate,
 // - Undelegate.
 // Note that the event delivery is not immediate. Instead, every event is
@@ -306,15 +307,7 @@ func (k Keeper) deliverUndelegate(ctx context.Context, ev *bindings.StakingUndel
 	delAddr := sdk.AccAddress(ev.Delegator.Bytes())
 	valAddr := sdk.ValAddress(ev.Validator.Bytes())
 
-	if _, err := k.sKeeper.GetValidator(ctx, valAddr); err != nil {
-		return errors.New("validator does not exist", "validator", valAddr.String())
-	}
-
 	amountCoin, _ := omniToBondCoin(ev.Amount)
-
-	if !k.hasAccount(ctx, delAddr) {
-		return errors.New("no account", "delegator", delAddr.String())
-	}
 
 	log.Info(ctx, "EVM staking undelegation detected, undelegating",
 		"delegator", ev.Delegator.Hex(),
@@ -380,10 +373,6 @@ func (k Keeper) createAccIfNone(ctx context.Context, addr sdk.AccAddress) {
 		acc := k.aKeeper.NewAccountWithAddress(ctx, addr)
 		k.aKeeper.SetAccount(ctx, acc)
 	}
-}
-
-func (k Keeper) hasAccount(ctx context.Context, addr sdk.AccAddress) bool {
-	return k.aKeeper.HasAccount(ctx, addr)
 }
 
 // deliverCreateValidator processes a CreateValidator event, and creates a new validator.

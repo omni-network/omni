@@ -223,7 +223,7 @@ var statics = map[ID]Static{
 		AVSContractAddress:   omegaAVS,
 		OmniExecutionChainID: evmchain.IDOmniOmega,
 		MaxValidators:        maxValidators,
-		UnbondingTime:        1814400 * time.Second,
+		UnbondingTime:        time.Hour * 24 * 7 * 3, // 3 weeks
 		TokenAddress:         omegaToken,
 		L1BridgeAddress:      omegaBridge,
 		Portals: []Deployment{
@@ -244,7 +244,7 @@ var statics = map[ID]Static{
 		AVSContractAddress:   mainnetAVS,
 		OmniExecutionChainID: evmchain.IDOmniMainnet,
 		MaxValidators:        maxValidators,
-		UnbondingTime:        1814400 * time.Second,
+		UnbondingTime:        time.Hour * 24 * 7 * 3, // 3 weeks
 		TokenAddress:         mainnetToken,
 		L1BridgeAddress:      mainnetBridge,
 		Portals: []Deployment{
