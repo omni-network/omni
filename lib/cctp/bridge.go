@@ -7,6 +7,8 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cast"
+	"github.com/omni-network/omni/lib/cctp/db"
+	"github.com/omni-network/omni/lib/cctp/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -26,7 +28,7 @@ import (
 func SendUSDC(
 	ctx context.Context,
 	backend *ethbackend.Backend,
-	db DB,
+	db *db.DB,
 	srcChainID, destChainID uint64,
 	user common.Address,
 	amount *big.Int,
@@ -78,7 +80,7 @@ func SendUSDC(
 
 	messageHash := crypto.Keccak256Hash(messageBz)
 
-	msg := MsgSendUSDC{
+	msg := types.MsgSendUSDC{
 		TxHash:       tx.Hash(),
 		SrcChainID:   srcChainID,
 		DestChainID:  destChainID,
@@ -100,7 +102,7 @@ func SendUSDC(
 
 	log.Info(ctx, "Sent USDC", attrs...)
 
-	if err := db.Insert(ctx, msg); err != nil {
+	if err := db.InsertMsg(ctx, msg); err != nil {
 		return errors.Wrap(err, "insert message", "tx", tx.Hash())
 	}
 

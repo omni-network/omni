@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package lib.cctp.db;
+
+import "cosmos/orm/v1/orm.proto";
+
+option go_package = "github.com/omni-network/omni/lib/cctp/db";
+
+message MsgSendUSDC {
+  option (cosmos.orm.v1.table) = {
+    id: 1;
+    primary_key: { fields: "message_hash" }
+  };
+
+  bytes message_hash = 1;
+  bytes tx_hash = 2;
+  uint64 src_chain_id = 3;
+  uint64 dest_chain_id = 4;
+  bytes amount = 5;
+  bytes message_bytes = 6;
+  bytes recipient = 7;
+}
+
+message Cursor {
+  option (cosmos.orm.v1.table) = {
+    id: 2;
+    primary_key: { fields: "chain_id" }
+  };
+
+  uint64 chain_id = 1;
+  uint64 block_height = 2;
+}
