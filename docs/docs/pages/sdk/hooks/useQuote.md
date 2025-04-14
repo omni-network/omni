@@ -83,7 +83,7 @@ if (quote.isSuccess) {
 }
 ```
 
-### Quoting Deposit Amount
+### Quote Deposit Amount
 
 To find out how much `wstETH` needs to be deposited on Base Sepolia to spend exactly 0.1 `wstETH` on Holesky:
 
