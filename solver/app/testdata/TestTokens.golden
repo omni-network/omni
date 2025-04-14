@@ -4,7 +4,7 @@
   "chainId": 1,
   "coingeckoId": "ethereum",
   "isMock": false,
-  "maxSpend": "6 ETH",
+  "maxSpend": "65 ETH",
   "minSpend": "0.001 ETH",
   "name": "Ether",
   "symbol": "ETH"
@@ -144,7 +144,7 @@
   "chainId": 1,
   "coingeckoId": "usdc",
   "isMock": false,
-  "maxSpend": "10000 USDC",
+  "maxSpend": "100000 USDC",
   "minSpend": "0.1 USDC",
   "name": "USD Coin",
   "symbol": "USDC"
