@@ -14,9 +14,9 @@ type MsgSendUSDCTable interface {
 	Update(ctx context.Context, msgSendUsdc *MsgSendUSDC) error
 	Save(ctx context.Context, msgSendUsdc *MsgSendUSDC) error
 	Delete(ctx context.Context, msgSendUsdc *MsgSendUSDC) error
-	Has(ctx context.Context, message_hash []byte) (found bool, err error)
+	Has(ctx context.Context, tx_hash []byte) (found bool, err error)
 	// Get returns nil and an error which responds true to ormerrors.IsNotFound() if the record was not found.
-	Get(ctx context.Context, message_hash []byte) (*MsgSendUSDC, error)
+	Get(ctx context.Context, tx_hash []byte) (*MsgSendUSDC, error)
 	List(ctx context.Context, prefixKey MsgSendUSDCIndexKey, opts ...ormlist.Option) (MsgSendUSDCIterator, error)
 	ListRange(ctx context.Context, from, to MsgSendUSDCIndexKey, opts ...ormlist.Option) (MsgSendUSDCIterator, error)
 	DeleteBy(ctx context.Context, prefixKey MsgSendUSDCIndexKey) error
@@ -42,18 +42,18 @@ type MsgSendUSDCIndexKey interface {
 }
 
 // primary key starting index..
-type MsgSendUSDCPrimaryKey = MsgSendUSDCMessageHashIndexKey
+type MsgSendUSDCPrimaryKey = MsgSendUSDCTxHashIndexKey
 
-type MsgSendUSDCMessageHashIndexKey struct {
+type MsgSendUSDCTxHashIndexKey struct {
 	vs []interface{}
 }
 
-func (x MsgSendUSDCMessageHashIndexKey) id() uint32            { return 0 }
-func (x MsgSendUSDCMessageHashIndexKey) values() []interface{} { return x.vs }
-func (x MsgSendUSDCMessageHashIndexKey) msgSendUsdcindexKey()  {}
+func (x MsgSendUSDCTxHashIndexKey) id() uint32            { return 0 }
+func (x MsgSendUSDCTxHashIndexKey) values() []interface{} { return x.vs }
+func (x MsgSendUSDCTxHashIndexKey) msgSendUsdcindexKey()  {}
 
-func (this MsgSendUSDCMessageHashIndexKey) WithMessageHash(message_hash []byte) MsgSendUSDCMessageHashIndexKey {
-	this.vs = []interface{}{message_hash}
+func (this MsgSendUSDCTxHashIndexKey) WithTxHash(tx_hash []byte) MsgSendUSDCTxHashIndexKey {
+	this.vs = []interface{}{tx_hash}
 	return this
 }
 
@@ -77,13 +77,13 @@ func (this msgSendUsdctable) Delete(ctx context.Context, msgSendUsdc *MsgSendUSD
 	return this.table.Delete(ctx, msgSendUsdc)
 }
 
-func (this msgSendUsdctable) Has(ctx context.Context, message_hash []byte) (found bool, err error) {
-	return this.table.PrimaryKey().Has(ctx, message_hash)
+func (this msgSendUsdctable) Has(ctx context.Context, tx_hash []byte) (found bool, err error) {
+	return this.table.PrimaryKey().Has(ctx, tx_hash)
 }
 
-func (this msgSendUsdctable) Get(ctx context.Context, message_hash []byte) (*MsgSendUSDC, error) {
+func (this msgSendUsdctable) Get(ctx context.Context, tx_hash []byte) (*MsgSendUSDC, error) {
 	var msgSendUsdc MsgSendUSDC
-	found, err := this.table.PrimaryKey().Get(ctx, &msgSendUsdc, message_hash)
+	found, err := this.table.PrimaryKey().Get(ctx, &msgSendUsdc, tx_hash)
 	if err != nil {
 		return nil, err
 	}

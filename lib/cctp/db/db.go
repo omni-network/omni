@@ -93,12 +93,25 @@ func (db *DB) InsertMsg(ctx context.Context, msg types.MsgSendUSDC) error {
 	return nil
 }
 
-// GetMsg retrieves a message by hash.
-func (db *DB) GetMsg(ctx context.Context, hash common.Hash) (types.MsgSendUSDC, bool, error) {
+// SetMsg replaces an existing message with a new one (by tx hash).
+func (db *DB) SetMsg(ctx context.Context, msg types.MsgSendUSDC) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	proto, err := db.msgTable.Get(ctx, hash[:])
+	proto := msgToProto(msg)
+	if err := db.msgTable.Save(ctx, proto); err != nil {
+		return errors.Wrap(err, "save msg")
+	}
+
+	return nil
+}
+
+// GetMsg retrieves a message by tx hash.
+func (db *DB) GetMsg(ctx context.Context, txHash common.Hash) (types.MsgSendUSDC, bool, error) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	proto, err := db.msgTable.Get(ctx, txHash[:])
 	if ormerrors.IsNotFound(err) {
 		return types.MsgSendUSDC{}, false, nil
 	} else if err != nil {
@@ -118,7 +131,7 @@ func (db *DB) ListMsgs(ctx context.Context) ([]types.MsgSendUSDC, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	iter, err := db.msgTable.List(ctx, MsgSendUSDCMessageHashIndexKey{})
+	iter, err := db.msgTable.List(ctx, MsgSendUSDCTxHashIndexKey{})
 	if err != nil {
 		return nil, errors.Wrap(err, "list msg")
 	}
@@ -142,14 +155,14 @@ func (db *DB) ListMsgs(ctx context.Context) ([]types.MsgSendUSDC, error) {
 	return msgs, nil
 }
 
-// DeleteMsg deletes a message by hash.
-// A msg should be deleted after it's received.
-func (db *DB) DeleteMsg(ctx context.Context, hash common.Hash) error {
+// DeleteMsg deletes a message by tx hash.
+// A msg should be deleted after it's confirmed received.
+func (db *DB) DeleteMsg(ctx context.Context, txHash common.Hash) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
 	msg := &MsgSendUSDC{
-		MessageHash: hash[:],
+		TxHash: txHash[:],
 	}
 
 	if err := db.msgTable.Delete(ctx, msg); err != nil {
@@ -159,9 +172,9 @@ func (db *DB) DeleteMsg(ctx context.Context, hash common.Hash) error {
 	return nil
 }
 
-// HasMsg checks if a message exists in the database by its hash.
-func (db *DB) HasMsg(ctx context.Context, hash common.Hash) (bool, error) {
-	_, ok, err := db.GetMsg(ctx, hash)
+// HasMsg checks if a message exists in the database by its tx hash.
+func (db *DB) HasMsg(ctx context.Context, txHash common.Hash) (bool, error) {
+	_, ok, err := db.GetMsg(ctx, txHash)
 	if err != nil {
 		return false, errors.Wrap(err, "get msg")
 	}
@@ -179,8 +192,8 @@ func (db dbStoreService) OpenKVStore(context.Context) store.KVStore {
 
 func msgToProto(msg types.MsgSendUSDC) *MsgSendUSDC {
 	return &MsgSendUSDC{
-		MessageHash:  msg.MessageHash[:],
 		TxHash:       msg.TxHash[:],
+		MessageHash:  msg.MessageHash[:],
 		SrcChainId:   msg.SrcChainID,
 		DestChainId:  msg.DestChainID,
 		Amount:       msg.Amount.Bytes(),
@@ -206,8 +219,8 @@ func msgFromProto(msg *MsgSendUSDC) (types.MsgSendUSDC, error) {
 	}
 
 	return types.MsgSendUSDC{
-		MessageHash:  msgHash,
 		TxHash:       txHash,
+		MessageHash:  msgHash,
 		SrcChainID:   msg.GetSrcChainId(),
 		DestChainID:  msg.GetDestChainId(),
 		Amount:       new(big.Int).SetBytes(msg.GetAmount()),

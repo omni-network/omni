@@ -9,15 +9,15 @@ option go_package = "github.com/omni-network/omni/lib/cctp/db";
 message MsgSendUSDC {
   option (cosmos.orm.v1.table) = {
     id: 1;
-    primary_key: { fields: "message_hash" }
+    primary_key: { fields: "tx_hash" }
   };
 
-  bytes message_hash = 1;
-  bytes tx_hash = 2;
-  uint64 src_chain_id = 3;
-  uint64 dest_chain_id = 4;
-  bytes amount = 5;
-  bytes message_bytes = 6;
+  bytes tx_hash = 1;
+  bytes message_hash = 2;
+  bytes message_bytes = 3;
+  uint64 src_chain_id = 4;
+  uint64 dest_chain_id = 5;
+  bytes amount = 6;
   bytes recipient = 7;
 }
 

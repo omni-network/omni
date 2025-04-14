@@ -106,14 +106,26 @@ func StoreMessagesForever(
 // insertMsgs inserts a list of MsgSendUSDC into the database, if they don't already exist.
 func insertMsgs(ctx context.Context, db *db.DB, msgs []types.MsgSendUSDC) error {
 	for _, msg := range msgs {
-		ok, err := db.HasMsg(ctx, msg.MessageHash)
+		curr, ok, err := db.GetMsg(ctx, msg.TxHash)
 		if err != nil {
 			return errors.Wrap(err, "has msg")
-		} else if ok {
-			continue
 		}
 
-		if err := db.InsertMsg(ctx, msg); err != nil {
+		if ok {
+			if msg.MessageHash == curr.MessageHash {
+				// Already saved (expected)
+				// TODO(kevin): check full equality, log if buggy
+				continue
+			}
+
+			if err := db.SetMsg(ctx, curr); err != nil {
+				// Message hash changed, update it
+				return errors.Wrap(err, "set msg")
+			}
+		}
+
+		if err := db.InsertMsg(ctx, curr); err != nil {
+			// Message missed, insert it
 			return errors.Wrap(err, "insert msg")
 		}
 	}

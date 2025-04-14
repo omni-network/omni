@@ -24,12 +24,12 @@ const (
 
 type MsgSendUSDC struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	MessageHash   []byte                 `protobuf:"bytes,1,opt,name=message_hash,json=messageHash,proto3" json:"message_hash,omitempty"`
-	TxHash        []byte                 `protobuf:"bytes,2,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
-	SrcChainId    uint64                 `protobuf:"varint,3,opt,name=src_chain_id,json=srcChainId,proto3" json:"src_chain_id,omitempty"`
-	DestChainId   uint64                 `protobuf:"varint,4,opt,name=dest_chain_id,json=destChainId,proto3" json:"dest_chain_id,omitempty"`
-	Amount        []byte                 `protobuf:"bytes,5,opt,name=amount,proto3" json:"amount,omitempty"`
-	MessageBytes  []byte                 `protobuf:"bytes,6,opt,name=message_bytes,json=messageBytes,proto3" json:"message_bytes,omitempty"`
+	TxHash        []byte                 `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
+	MessageHash   []byte                 `protobuf:"bytes,2,opt,name=message_hash,json=messageHash,proto3" json:"message_hash,omitempty"`
+	MessageBytes  []byte                 `protobuf:"bytes,3,opt,name=message_bytes,json=messageBytes,proto3" json:"message_bytes,omitempty"`
+	SrcChainId    uint64                 `protobuf:"varint,4,opt,name=src_chain_id,json=srcChainId,proto3" json:"src_chain_id,omitempty"`
+	DestChainId   uint64                 `protobuf:"varint,5,opt,name=dest_chain_id,json=destChainId,proto3" json:"dest_chain_id,omitempty"`
+	Amount        []byte                 `protobuf:"bytes,6,opt,name=amount,proto3" json:"amount,omitempty"`
 	Recipient     []byte                 `protobuf:"bytes,7,opt,name=recipient,proto3" json:"recipient,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -65,6 +65,13 @@ func (*MsgSendUSDC) Descriptor() ([]byte, []int) {
 	return file_lib_cctp_db_db_proto_rawDescGZIP(), []int{0}
 }
 
+func (x *MsgSendUSDC) GetTxHash() []byte {
+	if x != nil {
+		return x.TxHash
+	}
+	return nil
+}
+
 func (x *MsgSendUSDC) GetMessageHash() []byte {
 	if x != nil {
 		return x.MessageHash
@@ -72,9 +79,9 @@ func (x *MsgSendUSDC) GetMessageHash() []byte {
 	return nil
 }
 
-func (x *MsgSendUSDC) GetTxHash() []byte {
+func (x *MsgSendUSDC) GetMessageBytes() []byte {
 	if x != nil {
-		return x.TxHash
+		return x.MessageBytes
 	}
 	return nil
 }
@@ -96,13 +103,6 @@ func (x *MsgSendUSDC) GetDestChainId() uint64 {
 func (x *MsgSendUSDC) GetAmount() []byte {
 	if x != nil {
 		return x.Amount
-	}
-	return nil
-}
-
-func (x *MsgSendUSDC) GetMessageBytes() []byte {
-	if x != nil {
-		return x.MessageBytes
 	}
 	return nil
 }
@@ -170,18 +170,18 @@ var File_lib_cctp_db_db_proto protoreflect.FileDescriptor
 
 const file_lib_cctp_db_db_proto_rawDesc = "" +
 	"\n" +
-	"\x14lib/cctp/db/db.proto\x12\vlib.cctp.db\x1a\x17cosmos/orm/v1/orm.proto\"\x84\x02\n" +
-	"\vMsgSendUSDC\x12!\n" +
-	"\fmessage_hash\x18\x01 \x01(\fR\vmessageHash\x12\x17\n" +
-	"\atx_hash\x18\x02 \x01(\fR\x06txHash\x12 \n" +
-	"\fsrc_chain_id\x18\x03 \x01(\x04R\n" +
+	"\x14lib/cctp/db/db.proto\x12\vlib.cctp.db\x1a\x17cosmos/orm/v1/orm.proto\"\xff\x01\n" +
+	"\vMsgSendUSDC\x12\x17\n" +
+	"\atx_hash\x18\x01 \x01(\fR\x06txHash\x12!\n" +
+	"\fmessage_hash\x18\x02 \x01(\fR\vmessageHash\x12#\n" +
+	"\rmessage_bytes\x18\x03 \x01(\fR\fmessageBytes\x12 \n" +
+	"\fsrc_chain_id\x18\x04 \x01(\x04R\n" +
 	"srcChainId\x12\"\n" +
-	"\rdest_chain_id\x18\x04 \x01(\x04R\vdestChainId\x12\x16\n" +
-	"\x06amount\x18\x05 \x01(\fR\x06amount\x12#\n" +
-	"\rmessage_bytes\x18\x06 \x01(\fR\fmessageBytes\x12\x1c\n" +
-	"\trecipient\x18\a \x01(\fR\trecipient:\x18\xf2\x9eӎ\x03\x12\n" +
-	"\x0e\n" +
-	"\fmessage_hash\x18\x01\"\\\n" +
+	"\rdest_chain_id\x18\x05 \x01(\x04R\vdestChainId\x12\x16\n" +
+	"\x06amount\x18\x06 \x01(\fR\x06amount\x12\x1c\n" +
+	"\trecipient\x18\a \x01(\fR\trecipient:\x13\xf2\x9eӎ\x03\r\n" +
+	"\t\n" +
+	"\atx_hash\x18\x01\"\\\n" +
 	"\x06Cursor\x12\x19\n" +
 	"\bchain_id\x18\x01 \x01(\x04R\achainId\x12!\n" +
 	"\fblock_height\x18\x02 \x01(\x04R\vblockHeight:\x14\xf2\x9eӎ\x03\x0e\n" +
