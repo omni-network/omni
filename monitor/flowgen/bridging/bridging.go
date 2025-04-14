@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/forkjoin"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/monitor/flowgen/types"
@@ -119,14 +120,29 @@ func openOrders(
 		orderDatas = append(orderDatas, orderData)
 	}
 
-	work := func(ctx context.Context, orderData bindings.SolverNetOrderData) (types.Result, error) {
+	work := func(ctx context.Context, orderData bindings.SolverNetOrderData) (output, error) {
 		return openOrder(ctx, backends, networkID, owner, conf.srcChain, scl, orderData)
 	}
 
-	results, cancel := forkjoin.NewWithInputs(ctx, work, orderDatas, forkjoin.WithWorkers(16))
+	outputs, cancel := forkjoin.NewWithInputs(ctx, work, orderDatas, forkjoin.WithWorkers(16))
 	defer cancel()
 
-	return results.Flatten()
+	all, err := outputs.Flatten()
+	if err != nil {
+		return nil, errors.Wrap(err, "open orders")
+	}
+
+	// Filter out skipped orders
+	var results []types.Result
+	for _, result := range all {
+		if result.Skip {
+			continue
+		}
+
+		results = append(results, result.Result)
+	}
+
+	return results, nil
 }
 
 func splitOrderAmounts(bounds solver.SpendBounds, total *big.Int, split int) []*big.Int {
@@ -212,6 +228,11 @@ func nativeOrderData(ctx context.Context, scl sclient.Client, owner common.Addre
 	}, nil
 }
 
+type output struct {
+	types.Result
+	Skip bool
+}
+
 func openOrder(
 	ctx context.Context,
 	backends ethbackend.Backends,
@@ -220,19 +241,22 @@ func openOrder(
 	srcChainID uint64,
 	scl sclient.Client,
 	orderData bindings.SolverNetOrderData,
-) (types.Result, error) {
+) (output, error) {
 	if resp, err := check(ctx, scl, srcChainID, orderData); err != nil {
-		return types.Result{}, errors.Wrap(err, "check")
+		return output{}, errors.Wrap(err, "check")
+	} else if resp.RejectCode == stypes.RejectInsufficientInventory {
+		log.Debug(ctx, "Skipping bridge order due to insufficient inventory", "description", resp.RejectDescription)
+		return output{Skip: true}, nil
 	} else if resp.Rejected {
-		return types.Result{}, errors.New("order rejected", "description", resp.RejectDescription, "reason", resp.RejectCode)
+		return output{}, errors.New("order rejected", "description", resp.RejectDescription, "reason", resp.RejectCode)
 	}
 
 	orderID, err := solvernet.OpenOrder(ctx, networkID, srcChainID, backends, owner, orderData)
 	if err != nil {
-		return types.Result{}, errors.Wrap(err, "open order")
+		return output{}, errors.Wrap(err, "open order")
 	}
 
-	return types.Result{OrderID: orderID, Data: orderData}, nil
+	return output{Result: types.Result{OrderID: orderID, Data: orderData}}, nil
 }
 
 // availableBalance returns the available flowgen balance to spend on orders.
