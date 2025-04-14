@@ -3,7 +3,7 @@ sidebar_position: 1
 title: withExecAndTransfer
 ---
 
-# `withExecAndTransfer` Utility
+# `withExecAndTransfer`
 
 Use the `withExecAndTransfer` utility when interacting with destination contracts whose functions credit assets directly to `msg.sender` instead of allowing a recipient address to be specified.
 
