@@ -46,7 +46,7 @@ func SendUSDC(
 		return errors.Wrap(err, "new token messenger")
 	}
 
-	msgTransmitter, err := newMessageTransmitter(srcChainID, backend)
+	msgTransmitter, _, err := newMessageTransmitter(srcChainID, backend)
 	if err != nil {
 		return errors.Wrap(err, "new message transmitter")
 	}
@@ -110,13 +110,13 @@ func SendUSDC(
 }
 
 // newTokenMessenger returns a new TokenMessenger instance for chainID.
-func newTokenMessenger(chainID uint64, backend *ethbackend.Backend) (*TokenMessenger, common.Address, error) {
+func newTokenMessenger(chainID uint64, client ethclient.Client) (*TokenMessenger, common.Address, error) {
 	addr, ok := tokenMessengers[chainID]
 	if !ok {
 		return nil, common.Address{}, errors.New("no messenger", "chain", evmchain.Name(chainID))
 	}
 
-	msgr, err := NewTokenMessenger(addr, backend)
+	msgr, err := NewTokenMessenger(addr, client)
 	if err != nil {
 		return nil, common.Address{}, err
 	}
@@ -125,13 +125,18 @@ func newTokenMessenger(chainID uint64, backend *ethbackend.Backend) (*TokenMesse
 }
 
 // newMessageTransmitter returns a new MessageTransmitter instance for chainID.
-func newMessageTransmitter(chainID uint64, backend *ethbackend.Backend) (*MessageTransmitter, error) {
+func newMessageTransmitter(chainID uint64, client ethclient.Client) (*MessageTransmitter, common.Address, error) {
 	addr, ok := messageTransmitters[chainID]
 	if !ok {
-		return nil, errors.New("no transmitter", "chain", evmchain.Name(chainID))
+		return nil, common.Address{}, errors.New("no transmitter", "chain", evmchain.Name(chainID))
 	}
 
-	return NewMessageTransmitter(addr, backend)
+	transmitter, err := NewMessageTransmitter(addr, client)
+	if err != nil {
+		return nil, common.Address{}, err
+	}
+
+	return transmitter, addr, nil
 }
 
 // maybeApproveMessenger approves the TokenMessenger to spend USDC, if needed.
@@ -178,10 +183,8 @@ func maybeApproveMessenger(
 
 // parseMessageSent finds and returns the message bytes from the MessageSent event in a transaction receipt.
 func parseMessageSent(receipt *ethclient.Receipt, msgTransmitter *MessageTransmitter) ([]byte, error) {
-	topic := crypto.Keccak256Hash([]byte("MessageSent(bytes)"))
-
 	for _, log := range receipt.Logs {
-		if len(log.Topics) > 0 && log.Topics[0] == topic {
+		if len(log.Topics) > 0 && log.Topics[0] == messageSentEvent.ID {
 			ev, err := msgTransmitter.ParseMessageSent(*log)
 			if err != nil {
 				return nil, errors.Wrap(err, "parse message sent")
