@@ -179,7 +179,7 @@ function DepositComponent() {
 }
 ```
 
-## Return Value
+## Return
 
 The `useOrder` hook returns an object with the following properties:
 
