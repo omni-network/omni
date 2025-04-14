@@ -102,7 +102,7 @@ if (quote.isSuccess) {
 }
 ```
 
-## Return Value
+## Return
 
 `useQuote` returns a standard query result object from [`@tanstack/react-query`](https://tanstack.com/query/latest/docs/react/reference/useQuery). Consult their documentation for all available properties.
 
