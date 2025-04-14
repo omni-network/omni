@@ -183,9 +183,13 @@ func (k *Keeper) parseAndVerifyProposedPayload(ctx context.Context, msg *types.M
 		return engine.ExecutableData{}, errors.Wrap(err, "eligible withdrawals")
 	}
 
-	if !withdrawalsEqual(payload.Withdrawals, eligibleWithdrawals) {
-		height := sdk.UnwrapSDKContext(ctx).BlockHeight()
-		return engine.ExecutableData{}, errors.New("mismatch with eligible withdrawals", "height", height)
+	// Allow 0 payload withdrawals until then ext release after drake.
+	// Since block built and verified by magellan, but executed by drake.
+	// So do strict validation unless in FinalizeBlock and payload is empty.
+	strictWithdrawals := sdk.UnwrapSDKContext(ctx).ExecMode() == sdk.ExecModeProcessProposal || len(payload.Withdrawals) > 0
+
+	if !withdrawalsEqual(payload.Withdrawals, eligibleWithdrawals) && strictWithdrawals {
+		return engine.ExecutableData{}, errors.New("mismatch with eligible withdrawals")
 	}
 
 	// Ensure no witness
