@@ -44,7 +44,7 @@ function InitiateAction() {
 }
 ```
 
-## Configuration
+## Parameters
 
 The hook accepts a configuration object:
 
