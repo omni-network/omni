@@ -192,6 +192,7 @@ func Setup(ctx context.Context, def Definition, depCfg DeployConfig) error {
 			HaloCfgFunc: func(cfg *halocfg.Config) {
 				cfg.RPCEndpoints = endpoints
 			},
+			Force: true,
 		}
 		if err := halocmd.InitFiles(log.WithNoopLogger(ctx), initCfg); err != nil {
 			return errors.Wrap(err, "init files")

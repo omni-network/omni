@@ -5,6 +5,7 @@ import (
 
 	"github.com/omni-network/omni/lib/contracts/feeoraclev2"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
 )
 
@@ -40,4 +41,12 @@ func getChainIDs(def Definition) []uint64 {
 	}
 
 	return chainIDs
+}
+
+func maybeTxHash(receipt *ethclient.Receipt) string {
+	if receipt != nil {
+		return receipt.TxHash.Hex()
+	}
+
+	return "nil"
 }

@@ -6,7 +6,6 @@ import (
 
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
-	"github.com/omni-network/omni/lib/ethclient"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -19,17 +18,11 @@ func TestPortalRegistry(t *testing.T) {
 		t.Helper()
 
 		network := deps.Network
-		omniEVM, ok := network.OmniEVMChain()
-		require.True(t, ok)
-
-		rpc, err := deps.RPCEndpoints.ByNameOrID(omniEVM.Name, omniEVM.ID)
-		require.NoError(t, err)
-
-		omniClient, err := ethclient.Dial(omniEVM.Name, rpc)
+		omniBackend, err := deps.OmniBackend()
 		require.NoError(t, err)
 
 		// test that all portals are registered
-		preg, err := bindings.NewPortalRegistry(common.HexToAddress(predeploys.PortalRegistry), omniClient)
+		preg, err := bindings.NewPortalRegistry(common.HexToAddress(predeploys.PortalRegistry), omniBackend)
 		require.NoError(t, err)
 
 		for _, chain := range network.EVMChains() {

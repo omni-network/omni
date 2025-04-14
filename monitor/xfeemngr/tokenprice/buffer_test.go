@@ -20,7 +20,7 @@ func TestBufferStream(t *testing.T) {
 		tokens.ETH:  randPrice(),
 	}
 
-	pricer := tokenpricer.NewMock(initial)
+	pricer := tokenpricer.NewUSDMock(initial)
 
 	thresh := 0.1
 	tick := ticker.NewMock()
@@ -43,7 +43,7 @@ func TestBufferStream(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		for token := range initial {
 			buffed[token] = b.Price(token)
-			pricer.SetPrice(token, randPrice())
+			pricer.SetUSDPrice(token, randPrice())
 		}
 
 		tick.Tick()

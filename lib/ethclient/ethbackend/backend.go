@@ -221,9 +221,13 @@ func (b *Backend) BindOpts(ctx context.Context, from common.Address) (*bind.Tran
 	}, nil
 }
 
-// SendTransaction intercepts the tx that bindings generates, extracts the from address (assuming the
+// SendTransaction intercepts the tx that bindings generates, extracts the from address (if the
 // backendStubSigner was used), the strips fields, and passes it to the txmgr for reliable broadcasting.
 func (b *Backend) SendTransaction(ctx context.Context, in *ethtypes.Transaction) error {
+	if !(backendStubSigner{}).IsStub(in) {
+		return b.Client.SendTransaction(ctx, in)
+	}
+
 	from, err := backendStubSigner{}.Sender(in)
 	if err != nil {
 		return errors.Wrap(err, "from signer sender")
@@ -376,6 +380,12 @@ type backendStubSigner struct {
 
 func (backendStubSigner) ChainID() *big.Int {
 	return bi.Zero()
+}
+
+func (backendStubSigner) IsStub(tx *ethtypes.Transaction) bool {
+	v, r, s := tx.RawSignatureValues()
+
+	return bi.IsZero(v) && bi.IsZero(s) && len(r.Bytes()) <= common.AddressLength
 }
 
 func (backendStubSigner) Sender(tx *ethtypes.Transaction) (common.Address, error) {

@@ -26,12 +26,34 @@ func TestIntegration(t *testing.T) {
 	}
 
 	apikey, ok := os.LookupEnv("COINGECKO_APIKEY")
-	require.True(t, ok)
+	require.False(t, ok)
 
 	c := coingecko.New(coingecko.WithAPIKey(apikey))
+
+	// USD prices for omni and eth
 	prices, err := c.USDPrices(t.Context(), tokens.OMNI, tokens.ETH)
 	tutil.RequireNoError(t, err)
 	require.NotEmpty(t, prices)
+
+	// eth price in omni
+	price1, err := c.Price(t.Context(), tokens.ETH, tokens.OMNI)
+	tutil.RequireNoError(t, err)
+	t.Logf("ETH/OMNI: %f", price1)
+
+	// omni price in eth
+	price2, err := c.Price(t.Context(), tokens.OMNI, tokens.ETH)
+	tutil.RequireNoError(t, err)
+	t.Logf("OMNI/ETH: %f", price2)
+
+	// alternate way to get omni price in eth (since eth is a supported currency)
+	prices, err = c.GetPrice(t.Context(), "eth", tokens.OMNI)
+	tutil.RequireNoError(t, err)
+	require.NotEmpty(t, prices)
+	price3 := prices[tokens.OMNI]
+	t.Logf("OMNI/eth: %f", price3)
+
+	require.InEpsilon(t, 1/price2, price1, 0.01)
+	require.InEpsilon(t, price2, price3, 0.01)
 }
 
 type testCase struct {
@@ -45,7 +67,7 @@ type testCase struct {
 	negatives    bool         // include negative prices
 }
 
-func TestGetPrice(t *testing.T) {
+func TestGetUSDPrice(t *testing.T) {
 	t.Parallel()
 
 	tests := []testCase{

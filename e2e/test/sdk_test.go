@@ -19,7 +19,7 @@ const disableSDKTest = "DISABLE_SDK_TEST"
 func TestSDK(t *testing.T) {
 	t.Parallel()
 	skipFunc := func(manifest types.Manifest) bool {
-		return !manifest.DeploySolve || os.Getenv(disableSDKTest) == "true"
+		return !manifest.AllE2ETests || os.Getenv(disableSDKTest) == "true"
 	}
 	maybeTestNetwork(t, skipFunc, func(ctx context.Context, t *testing.T, _ NetworkDeps) {
 		t.Helper()
@@ -30,11 +30,10 @@ func TestSDK(t *testing.T) {
 		exe := func(ctx context.Context, dir string, name string, args ...string) {
 			cmd := exec.CommandContext(ctx, name, args...)
 			cmd.Dir = dir
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
 
-			err := cmd.Run()
-			require.NoError(t, err, "failed to run command: %s %v", name, args)
+			out, err := cmd.CombinedOutput()
+			t.Logf("command: %s %s\n\n%s", name, args, out)
+			require.NoError(t, err)
 		}
 
 		exe(ctx, sdkPath, "pnpm", "install")

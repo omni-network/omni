@@ -36,7 +36,7 @@ describe('ERC20 OMNI to native OMNI transfer orders', () => {
     await executeTestOrder(order)
   }, 30_000)
 
-  test('behaviour: fails with native deposit', async () => {
+  test('behaviour: native ETH to native OMNI swap succeeds', async () => {
     const amount = 10n * ETHER
     const order: AnyOrder = {
       owner: testAccount.address,
@@ -46,7 +46,7 @@ describe('ERC20 OMNI to native OMNI transfer orders', () => {
       calls: [{ target: testAccount.address, value: amount }],
       deposit: { token: ZERO_ADDRESS, amount },
     }
-    await executeTestOrder(order, 'InvalidDeposit')
+    await executeTestOrder(order)
   })
 
   test('behaviour: fails with unsupported ERC20 deposit', async () => {

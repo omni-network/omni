@@ -30,11 +30,13 @@ var mocks = []MockToken{
 	// staging mock wstETH
 	{Asset: tokens.WSTETH, ChainID: evmchain.IDBaseSepolia, NetworkID: netconf.Staging}, // Note this is also used on omega.
 
-	// devnet L1 mock wstETH
+	// devnet L1 mocks
 	{Asset: tokens.WSTETH, ChainID: evmchain.IDMockL1, NetworkID: netconf.Devnet},
+	{Asset: tokens.USDC, ChainID: evmchain.IDMockL1, NetworkID: netconf.Devnet},
 
-	// devnet L2 mock wstETH
+	// devnet L2 mocks
 	{Asset: tokens.WSTETH, ChainID: evmchain.IDMockL2, NetworkID: netconf.Devnet},
+	{Asset: tokens.USDC, ChainID: evmchain.IDMockL2, NetworkID: netconf.Devnet},
 }
 
 func MockTokens() []MockToken {

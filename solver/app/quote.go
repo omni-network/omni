@@ -128,7 +128,7 @@ func quoteDeposit(ctx context.Context, priceFunc priceFunc, depositTkn tokens.To
 	}
 
 	depositAmount := bi.MulF64(expense.Amount, price)
-	depositAmount = depositFor(depositAmount, feeBipsFor(depositTkn))
+	depositAmount = depositFor(depositAmount, feeBips(depositTkn.Asset, expense.Token.Asset))
 
 	return TokenAmt{
 		Token:  depositTkn,
@@ -144,7 +144,7 @@ func quoteExpense(ctx context.Context, priceFunc priceFunc, expenseTkn tokens.To
 	}
 
 	expenseAmount := bi.MulF64(deposit.Amount, price)
-	expenseAmount = expenseFor(expenseAmount, feeBipsFor(expenseTkn))
+	expenseAmount = expenseFor(expenseAmount, feeBips(expenseTkn.Asset, deposit.Token.Asset))
 
 	return TokenAmt{
 		Token:  expenseTkn,
@@ -169,10 +169,10 @@ func areEqualBySymbol(a, b tokens.Token) bool {
 	return equivalents[a.Symbol] == b.Symbol
 }
 
-// feeBipsFor returns the fee in bips for a given token.
-func feeBipsFor(tkn tokens.Token) int64 {
-	// if OMNI, charge no fee
-	if tkn.IsOMNI() {
+// feeBips returns the fee in bips for a given pair.
+func feeBips(a, b tokens.Asset) int64 {
+	// if OMNI<>OMNI, charge no fee
+	if a == tokens.OMNI && b == tokens.OMNI {
 		return 0
 	}
 

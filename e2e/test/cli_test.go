@@ -13,17 +13,15 @@ import (
 
 	"github.com/omni-network/omni/cli/cmd"
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
-	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
-	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/txmgr"
-	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/cometbft/cometbft/rpc/client/http"
 
@@ -71,41 +69,36 @@ func execCLI(ctx context.Context, args ...string) (string, string, error) {
 func TestCLIOperator(t *testing.T) {
 	t.Parallel()
 
-	testNetwork(t, func(ctx context.Context, t *testing.T, deps NetworkDeps) {
+	skipFunc := func(manifest types.Manifest) bool {
+		return !manifest.AllE2ETests
+	}
+	maybeTestNetwork(t, skipFunc, func(ctx context.Context, t *testing.T, deps NetworkDeps) {
 		t.Helper()
 
-		endpoints := deps.RPCEndpoints
 		network := deps.Network
 		netID := network.ID
-		e, ok := network.OmniEVMChain()
-		require.True(t, ok)
-		executionRPC, err := endpoints.ByNameOrID(e.Name, e.ID)
+		omniBackend, err := deps.OmniBackend()
 		require.NoError(t, err)
 
 		// use an existing test anvil account for new validator and write it's pkey to temp file
-		validatorPriv := GenFundedEOA(ctx, t, network, endpoints)
+		validatorPriv, validatorAddr := GenFundedEOA(ctx, t, omniBackend)
 		validatorPubBz := ethcrypto.CompressPubkey(&validatorPriv.PublicKey)
-		validatorAddr := ethcrypto.PubkeyToAddress(validatorPriv.PublicKey)
 		tmpDir := t.TempDir()
 		privKeyFile := filepath.Join(tmpDir, "privkey")
-		require.NoError(
-			t,
-			ethcrypto.SaveECDSA(privKeyFile, validatorPriv),
-			"failed to save new validator private key to temp file",
-		)
+		require.NoError(t, ethcrypto.SaveECDSA(privKeyFile, validatorPriv))
 
 		cl, err := http.New(network.ID.Static().ConsensusRPC(), "/websocket")
 		require.NoError(t, err)
 		cprov := provider.NewABCI(cl, network.ID)
 
-		const valChangeWait = 30 * time.Second
+		const valChangeWait = 1 * time.Minute
 
 		// operator's initial and self delegations
 		const opInitDelegation = uint64(100)
 		const opSelfDelegation = uint64(1)
 
 		// create a new valdiator and self-delegate
-		t.Run("self delegation", func(t *testing.T) {
+		t.Run("create validator and self-delegate", func(t *testing.T) {
 			// operator create-validator test
 			stdOut, _, err := execCLI(
 				ctx, "operator", "create-validator",
@@ -114,7 +107,7 @@ func TestCLIOperator(t *testing.T) {
 				"--consensus-pubkey-hex", hex.EncodeToString(validatorPubBz),
 				// we use minimum stake so the new validator doesn't affect the network too much
 				"--self-delegation", fmt.Sprintf("%d", opInitDelegation),
-				"--execution-rpc", executionRPC,
+				"--execution-rpc", omniBackend.Address(),
 			)
 			require.NoError(t, err)
 			require.Empty(t, stdOut)
@@ -139,7 +132,7 @@ func TestCLIOperator(t *testing.T) {
 				"--network", netID.String(),
 				"--private-key-file", privKeyFile,
 				"--amount", fmt.Sprintf("%d", opSelfDelegation),
-				"--execution-rpc", executionRPC,
+				"--execution-rpc", omniBackend.Address(),
 				"--self",
 			)
 			require.NoError(t, err)
@@ -157,8 +150,7 @@ func TestCLIOperator(t *testing.T) {
 		})
 
 		// delegator's keys
-		delegatorPrivKey := GenFundedEOA(ctx, t, network, endpoints)
-		delegatorEthAddr := ethcrypto.PubkeyToAddress(delegatorPrivKey.PublicKey)
+		delegatorPrivKey, delegatorEthAddr := GenFundedEOA(ctx, t, omniBackend)
 		delegatorCosmosAddr := sdk.AccAddress(delegatorEthAddr.Bytes())
 		delegatorPrivKeyFile := filepath.Join(tmpDir, "delegator_privkey")
 		err = ethcrypto.SaveECDSA(delegatorPrivKeyFile, delegatorPrivKey)
@@ -174,7 +166,7 @@ func TestCLIOperator(t *testing.T) {
 				"--validator-address", validatorAddr.Hex(),
 				"--private-key-file", delegatorPrivKeyFile,
 				"--amount", fmt.Sprintf("%d", delegatorDelegation),
-				"--execution-rpc", executionRPC,
+				"--execution-rpc", omniBackend.Address(),
 			)
 			require.NoError(t, err)
 			require.Empty(t, stdOut)
@@ -200,8 +192,9 @@ func TestCLIOperator(t *testing.T) {
 
 		// edit validator data
 		t.Run("edit validator", func(t *testing.T) {
-			val, _, err := cprov.SDKValidator(ctx, validatorAddr)
+			val, ok, err := cprov.SDKValidator(ctx, validatorAddr)
 			require.NoError(t, err)
+			require.True(t, ok)
 
 			// Edit validator moniker
 			newMoniker := val.Description.Moniker + "*"
@@ -212,7 +205,7 @@ func TestCLIOperator(t *testing.T) {
 				ctx, "operator", "edit-validator",
 				"--network", netID.String(),
 				"--private-key-file", privKeyFile,
-				"--execution-rpc", executionRPC,
+				"--execution-rpc", omniBackend.Address(),
 				"--moniker", newMoniker,
 				"--min-self-delegation", newMinSelfEther.String(),
 			)
@@ -230,51 +223,33 @@ func TestCLIOperator(t *testing.T) {
 		})
 
 		// test rewards distribution
-		var latestRewards math.LegacyDec
 		t.Run("distribution", func(t *testing.T) {
-			val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
+			val, ok, err := cprov.SDKValidator(ctx, validatorAddr)
+			require.NoError(t, err)
 			require.True(t, ok)
 
 			var originalRewards math.LegacyDec
 
-			// fetch rewards and make sure they are positive
+			// fetch rewards and make sure they are present
 			require.Eventuallyf(t, func() bool {
-				resp, err := cprov.QueryClients().Distribution.DelegationRewards(ctx, &dtypes.QueryDelegationRewardsRequest{
-					DelegatorAddress: delegatorCosmosAddr.String(),
-					ValidatorAddress: val.OperatorAddress,
-				})
-				require.NoError(t, err)
-				if len(resp.Rewards) == 0 {
-					return false
-				}
-				require.Len(t, resp.Rewards, 1)
-				require.Equal(t, sdk.DefaultBondDenom, resp.Rewards[0].Denom)
-				originalRewards = resp.Rewards[0].Amount
+				var ok bool
+				originalRewards, ok = queryDelegationRewards(t, ctx, cprov, delegatorCosmosAddr, val.OperatorAddress)
 
-				return true
-			}, valChangeWait, 500*time.Millisecond, "no rewards increase")
+				return ok
+			}, valChangeWait, 500*time.Millisecond, "no rewards")
 
 			// fetch again and make sure they increased
 			require.Eventuallyf(t, func() bool {
-				resp2, err := cprov.QueryClients().Distribution.DelegationRewards(ctx, &dtypes.QueryDelegationRewardsRequest{
-					DelegatorAddress: delegatorCosmosAddr.String(),
-					ValidatorAddress: val.OperatorAddress,
-				})
-				require.NoError(t, err)
-				if len(resp2.Rewards) == 0 {
+				latestRewards, ok := queryDelegationRewards(t, ctx, cprov, delegatorCosmosAddr, val.OperatorAddress)
+				if !ok {
 					return false
 				}
-				require.Len(t, resp2.Rewards, 1)
-				require.Equal(t, sdk.DefaultBondDenom, resp2.Rewards[0].Denom)
-
-				latestRewards = resp2.Rewards[0].Amount
 
 				return latestRewards.GT(originalRewards)
 			}, valChangeWait, 500*time.Millisecond, "no rewards increase")
 		})
 
 		t.Run("undelegation", func(t *testing.T) {
-			omniBackend := omniBackend(t, network, endpoints, delegatorPrivKey)
 			var block *big.Int
 			balance, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, block)
 			require.NoError(t, err)
@@ -325,44 +300,47 @@ func delegationFound(t *testing.T, ctx context.Context, cprov provider.Provider,
 	return false
 }
 
-func GenFundedEOA(ctx context.Context, t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints) *ecdsa.PrivateKey {
+func queryDelegationRewards(t *testing.T, ctx context.Context, cprov provider.Provider, delegatorAddr sdk.AccAddress, validatorAddr string) (math.LegacyDec, bool) {
+	t.Helper()
+
+	resp, err := cprov.QueryClients().Distribution.DelegationRewards(ctx, &dtypes.QueryDelegationRewardsRequest{
+		DelegatorAddress: delegatorAddr.String(),
+		ValidatorAddress: validatorAddr,
+	})
+	require.NoError(t, err)
+
+	if len(resp.Rewards) == 0 {
+		return math.LegacyDec{}, false
+	}
+
+	require.Len(t, resp.Rewards, 1)
+	require.Equal(t, sdk.DefaultBondDenom, resp.Rewards[0].Denom)
+
+	return resp.Rewards[0].Amount, true
+}
+
+func GenFundedEOA(ctx context.Context, t *testing.T, backend *ethbackend.Backend) (*ecdsa.PrivateKey, common.Address) {
 	t.Helper()
 
 	amount1k := bi.Ether(1_000)
-
-	funder, funderAddr := anvil.DevPrivateKey9(), anvil.DevAccount9()
-
-	omniBackend := omniBackend(t, network, endpoints, funder)
+	funderAddr := anvil.DevAccount9()
 
 	newKey, err := ethcrypto.GenerateKey()
 	require.NoError(t, err)
 	newAddr := ethcrypto.PubkeyToAddress(newKey.PublicKey)
 
-	_, rec, err := omniBackend.Send(ctx, funderAddr, txmgr.TxCandidate{
+	_, rec, err := backend.Send(ctx, funderAddr, txmgr.TxCandidate{
 		To:    &newAddr,
 		Value: amount1k,
 	})
 	require.NoError(t, err)
 	require.Equal(t, ethtypes.ReceiptStatusSuccessful, rec.Status)
 
-	log.Debug(ctx, "Funded new EOA", "addr", newAddr.Hex(), "amount", amount1k.String())
-
-	return newKey
-}
-
-func omniBackend(t *testing.T, network netconf.Network, endpoints xchain.RPCEndpoints, privateKeys ...*ecdsa.PrivateKey) *ethbackend.Backend {
-	t.Helper()
-
-	omniEVM, ok := network.OmniEVMChain()
-	require.True(t, ok)
-
-	omniRPC, err := endpoints.ByNameOrID(omniEVM.Name, omniEVM.ID)
+	bal, err := backend.BalanceAt(ctx, newAddr, nil)
 	require.NoError(t, err)
-	omniClient, err := ethclient.Dial(omniEVM.Name, omniRPC)
-	require.NoError(t, err)
+	require.True(t, bi.EQ(amount1k, bal))
 
-	omniBackend, err := ethbackend.NewBackend(omniEVM.Name, omniEVM.ID, omniEVM.BlockPeriod, omniClient, privateKeys...)
-	require.NoError(t, err)
+	log.Debug(ctx, "Funded new EOA", "addr", newAddr.Hex(), "amount", bi.ToEtherF64(amount1k), "chain", backend.Name())
 
-	return omniBackend
+	return newKey, newAddr
 }
