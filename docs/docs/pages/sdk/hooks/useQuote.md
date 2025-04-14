@@ -64,7 +64,7 @@ type QuoteAsset =
 
 ## Examples
 
-### Quoting Expense Amount
+### Quote Expense Amount
 
 To find out how much `wstETH` can be spent on Holesky for a deposit of 0.1 `wstETH` from Base Sepolia:
 
