@@ -15,7 +15,7 @@ SolverNet empowers developers to **take their apps cross-chain in days**, giving
 
 Cross-chain integrations typically require months of development time. SolverNet removes these roadblocks with a plug-and-play SDK that gives developers the ability to scale their app across multiple networks in just days. This means faster deployment, quicker access to new users, and more time spent on improving products rather than worrying about cross-chain complexities.
 
-Adding cross-chain functionality often requires only **~100 lines of TypeScript code** using the Omni SDK. You can see practical examples in the [Demos section](/guides/demos/eigenlayer.mdx) (link points to the first demo).
+Adding cross-chain functionality often requires only **~100 lines of TypeScript code** using the Omni SDK. You can see practical examples in the [Examples section](/guides/examples/symbiotic.mdx) (link points to the first example).
 
 ### No Smart Contract Changes Needed
 
@@ -45,5 +45,5 @@ Instead of being locked into a single network, devs can onboard users from acros
 ### SDK Examples
 
 *   **[Basic ETH Deposit Example](/guides/basic-deposit.md):** Deposit ETH from Base Sepolia to Holesky.
-*   **[EigenLayer Restake Demo](/guides/demos/eigenlayer.mdx):** Deposit ETH from Base Sepolia into EigenLayer's stETH strategy on Holesky, showcasing signature handling.
+*   **[EigenLayer Restake Example](/guides/example/eigenlayer.mdx):** Deposit ETH from Base Sepolia into EigenLayer's stETH strategy on Holesky, showcasing signature handling.
 *   **[Handling Contracts Without "onBehalfOf"](/guides/contracts-without-onbehalfof.mdx):** Using `withExecAndTransfer` (for contracts that credit `msg.sender`).
