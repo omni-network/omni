@@ -68,19 +68,17 @@ func NewClient(cl *rpc.Client, name, address string) (Client, error) {
 	})
 }
 
-// Dial calls DialContext with a background context.
-// See DialContext for more details.
+// DialContext connects a client to the given URL. It returns a wrapped client adding metrics and wrapped errors and a header cache.
+//
+// Note if the URL is http(s), it doesn't return an error if it cannot connect to the URL.
 func Dial(chainName string, url string) (Client, error) {
 	return DialContext(context.Background(), chainName, url)
 }
 
-// DialContext connects a client to the given URL. It returns a wrapped client adding metrics and wrapped errors and a header cache.
-//
-// Note if the URL is http(s), it doesn't return an error if it cannot connect to the URL.
 // It will retry connecting on every call to a wrapped method. In this case, the context is ignored.
 // It will only return an error if the url is invalid.
 func DialContext(ctx context.Context, chainName string, url string) (Client, error) {
-	client := new(http.Client)
+	client := &http.Client{Timeout: defaultRPCHTTPTimeout}
 
 	rpcClient, err := rpc.DialOptions(ctx, url, rpc.WithHTTPClient(client))
 	if err != nil {
