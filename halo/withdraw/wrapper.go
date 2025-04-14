@@ -53,12 +53,7 @@ func (w *BankWrapper) UndelegateCoinsFromModuleToAccount(ctx context.Context, se
 
 	acc := w.ak.GetModuleAccount(ctx, senderModule)
 	if acc == nil {
-		return errors.New("module account does not exist", "module_name", senderModule)
-	}
-
-	_, ok := acc.(banktypes.VestingAccount)
-	if ok {
-		return errors.New("vesting accounts are not supported")
+		return errors.New("module account does not exist [BUG]", "module_name", senderModule)
 	}
 
 	if !acc.HasPermission(authtypes.Staking) {
@@ -71,6 +66,16 @@ func (w *BankWrapper) UndelegateCoinsFromModuleToAccount(ctx context.Context, se
 // SendCoinsFromModuleToAccount intercepts all "normal" bank transfers from modules to users and
 // creates EVM withdrawal to the user account and burns the funds from the module.
 func (w *BankWrapper) SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, coins sdk.Coins) error {
+	acc := w.ak.GetAccount(ctx, recipientAddr)
+	if acc == nil {
+		return errors.New("recipient account does not exist [BUG]", "recipient_addr", recipientAddr)
+	}
+
+	_, ok := acc.(banktypes.VestingAccount)
+	if ok {
+		return errors.New("vesting accounts are not supported [BUG]")
+	}
+
 	if w.EVMEngineKeeper == nil {
 		return errors.New("nil EVMEngineKeeper [BUG]")
 	} else if !coins.IsValid() { // This ensures amounts are positive

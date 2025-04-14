@@ -14,5 +14,6 @@ type EVMEngineKeeper interface {
 }
 
 type AccountKeeper interface {
+	GetAccount(ctx context.Context, addr sdk.AccAddress) sdk.AccountI
 	GetModuleAccount(ctx context.Context, moduleName string) sdk.ModuleAccountI
 }

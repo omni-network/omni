@@ -55,7 +55,7 @@ func TestWrapper(t *testing.T) {
 				return nil
 			})
 
-			w := NewBankWrapper(keeper, nil)
+			w := NewBankWrapper(keeper, testAccountKeeper{})
 			w.SetEVMEngineKeeper(engKeeper)
 			err := w.SendCoinsFromModuleToAccount(t.Context(), module, address.Bytes(), sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, tt.arg)))
 			require.NoError(t, err)
@@ -150,6 +150,10 @@ func (k testBankKeeper) BurnCoins(ctx context.Context, moduleName string, amt sd
 }
 
 type testAccountKeeper struct{}
+
+func (testAccountKeeper) GetAccount(ctx context.Context, addr sdk.AccAddress) sdk.AccountI {
+	return &types.BaseAccount{}
+}
 
 func (testAccountKeeper) GetModuleAccount(ctx context.Context, moduleName string) sdk.ModuleAccountI {
 	return types.NewModuleAccount(&types.BaseAccount{}, "fake", "staking")

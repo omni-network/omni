@@ -159,7 +159,7 @@ func WithMockUndelegation(validatorPubkey crypto.PubKey, delegatorAddr common.Ad
 				common.HexToHash(valAddr.Hex()),       // validator
 			},
 			Data:  data,
-			Index: 300,
+			Index: 400,
 		}
 
 		mock.pendingLogs[contractAddr] = append(mock.pendingLogs[contractAddr], eventLog)
