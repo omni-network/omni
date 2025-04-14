@@ -183,8 +183,8 @@ func (k *Keeper) parseAndVerifyProposedPayload(ctx context.Context, msg *types.M
 		return engine.ExecutableData{}, errors.Wrap(err, "eligible withdrawals")
 	}
 
-	// Allow 0 payload withdrawals for first block after drake upgrade.
-	// Since block built and verified by magellen, but executed by drake.
+	// Allow 0 payload withdrawals until then ext release after drake.
+	// Since block built and verified by magellan, but executed by drake.
 	// So do strict validation unless in FinalizeBlock and payload is empty.
 	strictWithdrawals := sdk.UnwrapSDKContext(ctx).ExecMode() == sdk.ExecModeProcessProposal || len(payload.Withdrawals) > 0
 

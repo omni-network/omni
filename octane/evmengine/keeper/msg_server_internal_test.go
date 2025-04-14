@@ -41,7 +41,8 @@ func Test_msgServer_ExecutionPayload(t *testing.T) {
 
 	// TODO(remove after drake): this test should pass both for empty withdrawals and the correct
 	// list of withdrawals. This is required because when we upgrade to drake, we execute a block
-	// without withdrawals created by the previous binary.
+	// without withdrawals created by the previous binary. With presence of at least one honest
+	// blockmaker, this is fine to do in general.
 	for _, withdrawals := range []etypes.Withdrawals{{withdrawal}, {}} {
 		cdc := getCodec(t)
 		txConfig := authtx.NewTxConfig(cdc, nil)
