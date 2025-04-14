@@ -30,7 +30,7 @@ import (
 )
 
 //nolint:paralleltest // Asserting insertion ids of sequential writes
-func TestInsertAndDeleteEVMEvents(t *testing.T) {
+func TestInsertAndDeliverEVMEvents(t *testing.T) {
 	tests := []struct {
 		name       string
 		event      etypes.EVMEvent
@@ -350,6 +350,87 @@ func TestNonSelfDelegationEventDelivery(t *testing.T) {
 	// Assert that the message was delivered to the msg server.
 	require.Len(t, delegateMsgBuffer, 1)
 	msg := delegateMsgBuffer[0]
+	// Sanity check of addresses
+	require.Len(t, msg.DelegatorAddress, 45)
+	require.Len(t, msg.ValidatorAddress, 52)
+	require.True(t, strings.HasPrefix(msg.DelegatorAddress, "cosmos"), msg.DelegatorAddress)
+	require.True(t, strings.HasPrefix(msg.ValidatorAddress, "cosmosvaloper"), msg.ValidatorAddress)
+	stake := sdk.NewInt64Coin("stake", ethStake*1000000000000000000)
+	require.Equal(t, msg.Amount, stake)
+}
+
+func TestUndelegationEventDelivery(t *testing.T) {
+	t.Parallel()
+
+	deliverInterval := int64(3)
+	ethStake := int64(1)
+
+	privKey := k1.GenPrivKey()
+	delegatorPrivKey := k1.GenPrivKey()
+	delegatorAddr, err := k1util.PubKeyToAddress(delegatorPrivKey.PubKey())
+	if err != nil {
+		panic(errors.Wrap(err, "pubkey to address"))
+	}
+
+	ethClientMock, err := ethclient.NewEngineMock(
+		ethclient.WithPortalRegister(netconf.SimnetNetwork()),
+		ethclient.WithMockValidatorCreation(privKey.PubKey()),
+		ethclient.WithMockUndelegation(privKey.PubKey(), delegatorAddr, ethStake),
+	)
+	require.NoError(t, err)
+
+	var undelegateMsgBuffer []*stypes.MsgUndelegate
+	var createValidatorMsgBuffer []*stypes.MsgCreateValidator
+
+	ctrl := gomock.NewController(t)
+	sServerMock := testutil.NewMockStakingMsgServer(ctrl)
+	sServerMock.EXPECT().
+		CreateValidator(gomock.Any(), gomock.Any()).
+		AnyTimes().Do(func(ctx context.Context, msg *stypes.MsgCreateValidator) {
+		createValidatorMsgBuffer = append(createValidatorMsgBuffer, msg)
+	}).
+		Return(new(stypes.MsgCreateValidatorResponse), nil)
+
+	sServerMock.EXPECT().
+		Undelegate(gomock.Any(), gomock.Any()).
+		AnyTimes().Do(func(ctx context.Context, msg *stypes.MsgUndelegate) {
+		undelegateMsgBuffer = append(undelegateMsgBuffer, msg)
+	}).
+		Return(new(stypes.MsgUndelegateResponse), nil)
+
+	keeper, ctx := setupKeeper(t, deliverInterval, sServerMock)
+
+	events, err := getStakingEvents(ctx, ethClientMock, keeper)
+	require.NoError(t, err)
+
+	expectUndelegates := 1
+	expectCreates := 1
+	expectTotalEvents := expectUndelegates + expectCreates
+
+	require.Len(t, events, expectTotalEvents)
+
+	for _, event := range events {
+		err := keeper.Deliver(ctx, common.Hash{}, event)
+		require.NoError(t, err)
+	}
+
+	// Make sure the events were persisted.
+	for id := 1; id <= expectTotalEvents; id++ {
+		assertContains(t, ctx, keeper, uint64(id))
+	}
+
+	ctx = ctx.WithBlockHeight(deliverInterval)
+	err = keeper.EndBlock(ctx)
+	require.NoError(t, err)
+
+	// Make sure the events were deleted.
+	for id := 1; id <= expectTotalEvents; id++ {
+		assertNotContains(t, ctx, keeper, uint64(id))
+	}
+
+	// Assert that the message was delivered to the msg server.
+	require.Len(t, undelegateMsgBuffer, 1)
+	msg := undelegateMsgBuffer[0]
 	// Sanity check of addresses
 	require.Len(t, msg.DelegatorAddress, 45)
 	require.Len(t, msg.ValidatorAddress, 52)

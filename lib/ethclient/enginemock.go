@@ -41,6 +41,7 @@ type payloadArgs struct {
 //nolint:gochecknoglobals // This is a static mapping.
 var (
 	delegateEvent    = mustGetABI(bindings.StakingMetaData).Events["Delegate"]
+	undelegateEvent  = mustGetABI(bindings.StakingMetaData).Events["Undelegate"]
 	portalRegEvent   = mustGetABI(bindings.PortalRegistryMetaData).Events["PortalRegistered"]
 	planUpgradeEvent = mustGetABI(bindings.UpgradeMetaData).Events["PlanUpgrade"]
 	createValEvent   = mustGetABI(bindings.StakingMetaData).Events["CreateValidator"]
@@ -129,7 +130,45 @@ func WithMockEditValidator(pubkey crypto.PubKey, params *bindings.StakingEditVal
 	}
 }
 
+// WithMockUndelegation returns an option to add an undelegation event to the mock from the specified address.
+//
+//nolint:dupl // similar, not dupl
+func WithMockUndelegation(validatorPubkey crypto.PubKey, delegatorAddr common.Address, ether int64) func(*engineMock) {
+	return func(mock *engineMock) {
+		mock.mu.Lock()
+		defer mock.mu.Unlock()
+
+		wei := bi.Ether(ether)
+
+		valAddr, err := k1util.PubKeyToAddress(validatorPubkey)
+		if err != nil {
+			panic(errors.Wrap(err, "pubkey to address"))
+		}
+
+		data, err := undelegateEvent.Inputs.NonIndexed().Pack(wei)
+		if err != nil {
+			panic(errors.Wrap(err, "pack delegate"))
+		}
+
+		contractAddr := common.HexToAddress(predeploys.Staking)
+		eventLog := types.Log{
+			Address: contractAddr,
+			Topics: []common.Hash{
+				undelegateEvent.ID,
+				common.HexToHash(delegatorAddr.Hex()), // delegator
+				common.HexToHash(valAddr.Hex()),       // validator
+			},
+			Data:  data,
+			Index: 300,
+		}
+
+		mock.pendingLogs[contractAddr] = append(mock.pendingLogs[contractAddr], eventLog)
+	}
+}
+
 // WithMockDelegation returns an option to add a delegation event to the mock from the specified address.
+//
+//nolint:dupl // similar, not dupl
 func WithMockDelegation(validatorPubkey crypto.PubKey, delegatorAddr common.Address, ether int64) func(*engineMock) {
 	return func(mock *engineMock) {
 		mock.mu.Lock()
