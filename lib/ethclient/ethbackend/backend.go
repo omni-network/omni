@@ -298,7 +298,8 @@ func (b *Backend) EnsureSynced(ctx context.Context) error {
 func (b *Backend) WaitConfirmed(ctx context.Context, tx *ethtypes.Transaction) (*ethclient.Receipt, error) {
 	rec, err := b.WaitMined(ctx, tx)
 	if err != nil {
-		return nil, errors.Wrap(err, "wait mined")
+		// Return receipt with error, in case it was mined but reverted
+		return rec, errors.Wrap(err, "wait mined")
 	}
 
 	meta, ok := evmchain.MetadataByID(b.chainID)
