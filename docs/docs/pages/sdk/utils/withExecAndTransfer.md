@@ -53,6 +53,13 @@ contract SolverNetMiddleman {
 }
 ```
 
+**Key Points:**
+*   The `spender` in the `expense` configuration for `useOrder` **must** be the `middlemanAddress` when using `withExecAndTransfer`. The solver sends the `expense` funds to the middleman, which then uses them to execute your `call` (including any `value`).
+
+*   The `token` in the `transfer` configuration of `withExecAndTransfer` is the address of the asset you expect the *middleman* to receive *as a result of* executing your `call`. This is the asset the middleman will forward to the final `to` address. Use `zeroAddress` if the `call` results in native ETH being sent to the middleman.
+
+*   If the target function requires sending ETH (like a payable function), include the `value` field in the original `call` object passed to `withExecAndTransfer`.
+
 ## Example
 
 ### High Level Usage
@@ -208,10 +215,3 @@ function DepositTokenizedVault() {
     return <div>{/* UI using order object */}</div>;
 }
 ```
-
-**Key Points:**
-*   The `spender` in the `expense` configuration for `useOrder` **must** be the `middlemanAddress` when using `withExecAndTransfer`. The solver sends the `expense` funds to the middleman, which then uses them to execute your `call` (including any `value`).
-
-*   The `token` in the `transfer` configuration of `withExecAndTransfer` is the address of the asset you expect the *middleman* to receive *as a result of* executing your `call`. This is the asset the middleman will forward to the final `to` address. Use `zeroAddress` if the `call` results in native ETH being sent to the middleman.
-
-*   If the target function requires sending ETH (like a payable function), include the `value` field in the original `call` object passed to `withExecAndTransfer`.
