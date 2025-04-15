@@ -77,6 +77,21 @@ type PriceResponse struct {
 	Price float64 `json:"price"`
 }
 
+type TokensResponse struct {
+	Tokens []TokenResponse `json:"tokens"`
+}
+
+type TokenResponse struct {
+	Enabled    bool           `json:"enabled"`
+	Name       string         `json:"name"`
+	Symbol     string         `json:"symbol"`
+	ChainID    uint64         `json:"chainId"`
+	Address    common.Address `json:"address"`
+	Decimals   uint           `json:"decimals"`
+	ExpenseMin *hexutil.Big   `json:"expenseMin"`
+	ExpenseMax *hexutil.Big   `json:"expenseMax"`
+}
+
 type addrAmtJSON struct {
 	Token  common.Address `json:"token"`
 	Amount *hexutil.Big   `json:"amount,omitempty"`

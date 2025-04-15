@@ -1,0 +1,134 @@
+{
+ "tokens": [
+  {
+   "enabled": true,
+   "name": "Ether",
+   "symbol": "ETH",
+   "chainId": 1,
+   "address": "0x0000000000000000000000000000000000000000",
+   "decimals": 18,
+   "expenseMin": "0x38d7ea4c68000",
+   "expenseMax": "0x3860e639d80640000"
+  },
+  {
+   "enabled": true,
+   "name": "Omni Network",
+   "symbol": "OMNI",
+   "chainId": 1,
+   "address": "0x36e66fbbce51e4cd5bd3c62b637eb411b18949d4",
+   "decimals": 18,
+   "expenseMin": "0x16345785d8a0000",
+   "expenseMax": "0x1969368974c05b000000"
+  },
+  {
+   "enabled": true,
+   "name": "USD Coin",
+   "symbol": "USDC",
+   "chainId": 1,
+   "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+   "decimals": 6,
+   "expenseMin": "0x186a0",
+   "expenseMax": "0x174876e800"
+  },
+  {
+   "enabled": true,
+   "name": "Lido Staked Ether",
+   "symbol": "stETH",
+   "chainId": 1,
+   "address": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+   "decimals": 18,
+   "expenseMin": "0x38d7ea4c68000",
+   "expenseMax": "0x53444835ec580000"
+  },
+  {
+   "enabled": true,
+   "name": "Wrapped Staked Ether",
+   "symbol": "wstETH",
+   "chainId": 1,
+   "address": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
+   "decimals": 18,
+   "expenseMin": "0x38d7ea4c68000",
+   "expenseMax": "0x53444835ec580000"
+  },
+  {
+   "enabled": true,
+   "name": "Ether",
+   "symbol": "ETH",
+   "chainId": 10,
+   "address": "0x0000000000000000000000000000000000000000",
+   "decimals": 18,
+   "expenseMin": "0x38d7ea4c68000",
+   "expenseMax": "0x53444835ec580000"
+  },
+  {
+   "enabled": true,
+   "name": "USD Coin",
+   "symbol": "USDC",
+   "chainId": 10,
+   "address": "0x0b2c639c533813f4aa9d7837caf62653d097ff85",
+   "decimals": 6,
+   "expenseMin": "0x186a0",
+   "expenseMax": "0x2540be400"
+  },
+  {
+   "enabled": true,
+   "name": "Omni Network",
+   "symbol": "OMNI",
+   "chainId": 166,
+   "address": "0x0000000000000000000000000000000000000000",
+   "decimals": 18,
+   "expenseMin": "0x16345785d8a0000",
+   "expenseMax": "0x1969368974c05b000000"
+  },
+  {
+   "enabled": true,
+   "name": "Ether",
+   "symbol": "ETH",
+   "chainId": 8453,
+   "address": "0x0000000000000000000000000000000000000000",
+   "decimals": 18,
+   "expenseMin": "0x38d7ea4c68000",
+   "expenseMax": "0x53444835ec580000"
+  },
+  {
+   "enabled": true,
+   "name": "USD Coin",
+   "symbol": "USDC",
+   "chainId": 8453,
+   "address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+   "decimals": 6,
+   "expenseMin": "0x186a0",
+   "expenseMax": "0x2540be400"
+  },
+  {
+   "enabled": true,
+   "name": "Wrapped Staked Ether",
+   "symbol": "wstETH",
+   "chainId": 8453,
+   "address": "0xc1cba3fcea344f92d9239c08c0568f6f2f0ee452",
+   "decimals": 18,
+   "expenseMin": "0x38d7ea4c68000",
+   "expenseMax": "0x53444835ec580000"
+  },
+  {
+   "enabled": true,
+   "name": "Ether",
+   "symbol": "ETH",
+   "chainId": 42161,
+   "address": "0x0000000000000000000000000000000000000000",
+   "decimals": 18,
+   "expenseMin": "0x38d7ea4c68000",
+   "expenseMax": "0x53444835ec580000"
+  },
+  {
+   "enabled": true,
+   "name": "USD Coin",
+   "symbol": "USDC",
+   "chainId": 42161,
+   "address": "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+   "decimals": 6,
+   "expenseMin": "0x186a0",
+   "expenseMax": "0x2540be400"
+  }
+ ]
+}
