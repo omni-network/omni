@@ -33,7 +33,7 @@ import (
 )
 
 //go:embed StakingProxy.json
-var stkaingProxy []byte
+var stakingProxy []byte
 
 // call encapsulates a delegate/undeleate call to Staking.sol.
 type call struct {
@@ -43,6 +43,7 @@ type call struct {
 	Amount    *big.Int
 }
 
+// burnFee is the fee burned on every undelegation.
 var burnFee = bi.Ether(0.1)
 
 //nolint:paralleltest // We have to run tests sequentially
@@ -69,13 +70,15 @@ func TestUndelegations(t *testing.T) {
 
 		validators, err := cprov.SDKValidators(ctx)
 		require.NoError(t, err)
-		require.Len(t, validators, 2)
+		// Skip if not enough validators
+		if len(validators) < 2 {
+			t.Skip()
+		}
 		validator := validators[0]
 		altValidator := validators[1]
 		validatorAddr, err := validator.OperatorEthAddr()
 		require.NoError(t, err)
 
-		// delegator's keys
 		delegatorPrivKey, delegatorEthAddr := GenFundedEOA(ctx, t, omniBackend)
 		delegatorCosmosAddr := sdk.AccAddress(delegatorEthAddr.Bytes())
 		delegatorPrivKeyFile := filepath.Join(tmpDir, "delegator_privkey")
@@ -87,9 +90,7 @@ func TestUndelegations(t *testing.T) {
 		contract, err := bindings.NewStaking(stakingContractAddr, omniBackend)
 		require.NoError(t, err)
 
-		const delegation = uint64(76)
-
-		// We deploy a proxy smart contract and let it stake and unstake in batches
+		// We deploy a proxy smart contract and let it stake and unstake in one batch
 		t.Run("batched delegations and undelegations", func(t *testing.T) {
 			proxyAddr, proxyContract, err := deploy(ctx, omniBackend, stakingContractAddr, delegatorEthAddr)
 			proxyCosmosAddr := sdk.AccAddress(proxyAddr.Bytes())
@@ -100,7 +101,7 @@ func TestUndelegations(t *testing.T) {
 			undelegation1 := bi.Ether(20)
 			undelegation2 := bi.Ether(5)
 
-			// Transfer 50 ETH to the proxy contract
+			// Transfer enough ETH to the proxy contract
 			gasPrice, err := omniBackend.SuggestGasPrice(ctx)
 			require.NoError(t, err)
 			nonce, err := omniBackend.PendingNonceAt(ctx, delegatorEthAddr)
@@ -118,6 +119,7 @@ func TestUndelegations(t *testing.T) {
 
 			require.NoError(t, err)
 
+			// These calls will be mined in one block and batched by octane
 			calls := []call{
 				{
 					Method:    "delegate",
@@ -142,15 +144,16 @@ func TestUndelegations(t *testing.T) {
 			err = proxyCall(ctx, proxyContract, omniBackend, delegatorEthAddr, calls)
 			require.NoError(t, err)
 
-			// make sure the validator power is increased and the delegation can be found
+			// make sure our delegated amount is delegation-undelegation1-undelegation2
 			require.Eventuallyf(t, func() bool {
 				amount := degelatedAmount(t, ctx, cprov, val.OperatorAddress, proxyCosmosAddr.String())
-
 				log.Debug(ctx, "delegated amount", "amount", amount)
 
 				return bi.EQ(bi.Sub(delegation, undelegation1, undelegation2), amount.Amount.BigInt())
-			}, valChangeWait, 500*time.Millisecond, "failed to delegate")
+			}, valChangeWait, 500*time.Millisecond, "failed to execute batched staking calls")
 		})
+
+		const delegation = uint64(76)
 
 		t.Run("delegation", func(t *testing.T) {
 			val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
@@ -203,6 +206,8 @@ func TestUndelegations(t *testing.T) {
 			_, err = omniBackend.WaitMined(ctx, tx)
 			require.NoError(t, err)
 
+			// Since we trigger an invalid undelegation, wait for 10 blocks to make sure
+			// the chain does not stall and our balance didn't change
 			waitForBlocks(ctx, t, cprov, 10)
 
 			require.Eventuallyf(t, func() bool {
@@ -227,6 +232,10 @@ func TestUndelegations(t *testing.T) {
 
 			_, err = omniBackend.WaitMined(ctx, tx)
 			require.NoError(t, err)
+
+			// Since we trigger an invalid undelegation, wait for 10 blocks to make sure
+			// the chain does not stall and our balance didn't change
+			waitForBlocks(ctx, t, cprov, 10)
 
 			require.Eventuallyf(t, func() bool {
 				newBalance, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, anyBlock)
@@ -254,6 +263,8 @@ func TestUndelegations(t *testing.T) {
 			_, err = omniBackend.WaitMined(ctx, tx)
 			require.NoError(t, err)
 
+			// Since we trigger an invalid undelegation, wait for 10 blocks to make sure
+			// the chain does not stall and our balance didn't change
 			waitForBlocks(ctx, t, cprov, 10)
 
 			require.Eventuallyf(t, func() bool {
@@ -290,7 +301,7 @@ func TestUndelegations(t *testing.T) {
 				return bi.GTE(newBalance, bi.Add(bi.Sub(balance, burnFee, burnFee), undelegatedAmount))
 			}, valChangeWait, 500*time.Millisecond, "failed to undeleate")
 
-			// ensure rewards are still accruing
+			// ensure rewards are still accruing after some time
 			waitForBlocks(ctx, t, cprov, 10)
 			_, ok := queryDelegationRewards(t, ctx, cprov, delegatorCosmosAddr, validator.OperatorAddress)
 			require.True(t, ok)
@@ -327,7 +338,7 @@ func TestUndelegations(t *testing.T) {
 			log.Debug(ctx, "remaining delegation", "amount", remainingAmt)
 			require.Equal(t, int64(0), remainingAmt.Amount.Int64())
 
-			// ensure no rewards accrue anymore
+			// ensure no rewards accrue anymore because we undelegated everything
 			waitForBlocks(ctx, t, cprov, 10)
 			_, ok := queryDelegationRewards(t, ctx, cprov, delegatorCosmosAddr, validator.OperatorAddress)
 			require.False(t, ok)
@@ -335,6 +346,7 @@ func TestUndelegations(t *testing.T) {
 	})
 }
 
+// deploy deploys a proxy smart contract that simply batches arbitrary calls to Staking.sol.
 func deploy(
 	ctx context.Context,
 	backend *ethbackend.Backend,
@@ -348,7 +360,7 @@ func deploy(
 		} `json:"contracts"`
 	}
 
-	if err := json.Unmarshal(stkaingProxy, &compiledContract); err != nil {
+	if err := json.Unmarshal(stakingProxy, &compiledContract); err != nil {
 		return common.Address{}, nil, errors.Wrap(err, "parsing JSON")
 	}
 
@@ -384,6 +396,7 @@ func deploy(
 	return address, contract, nil
 }
 
+// proxyCall executes batches delegations and undelegations to Staking.sol.
 func proxyCall(
 	ctx context.Context,
 	contract *bind.BoundContract,
