@@ -6,6 +6,12 @@ import "cosmos/orm/v1/orm.proto";
 
 option go_package = "github.com/omni-network/omni/lib/cctp/db";
 
+enum MsgStatus {
+  MSG_STATUS_UNKNOWN = 0;
+  MSG_STATUS_SUBMITTED = 1;
+  MSG_STATUS_MINTED = 2;
+}
+
 message MsgSendUSDC {
   option (cosmos.orm.v1.table) = {
     id: 1;
@@ -19,6 +25,7 @@ message MsgSendUSDC {
   uint64 dest_chain_id = 5;
   bytes amount = 6;
   bytes recipient = 7;
+  int32 status = 8;
 }
 
 message Cursor {

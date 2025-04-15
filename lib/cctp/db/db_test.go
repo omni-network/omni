@@ -1,15 +1,12 @@
 package db_test
 
 import (
-	crand "crypto/rand"
-	"math/big"
-	mrand "math/rand"
 	"testing"
 
 	"github.com/omni-network/omni/lib/cctp/db"
+	"github.com/omni-network/omni/lib/cctp/testutil"
 	"github.com/omni-network/omni/lib/cctp/types"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
 	cosmosdb "github.com/cosmos/cosmos-db"
@@ -57,19 +54,9 @@ func TestMsgDB(t *testing.T) {
 
 	numMsgs := 10
 	msgs := make([]types.MsgSendUSDC, numMsgs)
-	for i := 0; i < numMsgs; i++ {
-		msgBz := mustRandBytes(100)
-		msgHash := crypto.Keccak256Hash(msgBz)
 
-		msgs[i] = types.MsgSendUSDC{
-			TxHash:       common.BytesToHash(mustRandBytes(32)),
-			SrcChainID:   uint64(mrand.Uint32()), // cctp uses uint32 domain ids
-			DestChainID:  uint64(mrand.Uint32()),
-			Amount:       big.NewInt(mrand.Int63()),
-			MessageBytes: msgBz,
-			MessageHash:  msgHash,
-			Recipient:    common.BytesToAddress(mustRandBytes(20)),
-		}
+	for i := 0; i < numMsgs; i++ {
+		msgs[i] = testutil.RandMsg()
 	}
 
 	// Test InsertMsg and GetMsg
@@ -101,7 +88,7 @@ func TestMsgDB(t *testing.T) {
 	for _, msg := range msgs {
 		// Modify the message hash / bytes (simulates reorg)
 		updated := msg
-		updated.MessageBytes = mustRandBytes(200)
+		updated.MessageBytes = testutil.RandBytes(200)
 		updated.MessageHash = crypto.Keccak256Hash(updated.MessageBytes)
 
 		// Update the message
@@ -145,15 +132,4 @@ func TestMsgDB(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, listMsgs)
 	require.Empty(t, listMsgs)
-}
-
-func mustRandBytes(n int) []byte {
-	b := make([]byte, n)
-
-	_, err := crand.Read(b)
-	if err != nil {
-		panic(err)
-	}
-
-	return b
 }

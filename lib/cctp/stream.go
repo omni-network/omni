@@ -126,25 +126,50 @@ func upsertMsgs(ctx context.Context, db *db.DB, msgs []types.MsgSendUSDC) error 
 			return errors.Wrap(err, "has msg")
 		}
 
-		if ok {
-			if msg.MessageHash == curr.MessageHash {
-				// Already saved (expected)
-				// TODO(kevin): check full equality, log if buggy
-				continue
-			}
-
-			if err := db.SetMsg(ctx, msg); err != nil {
-				// Message hash changed, update it
-				return errors.Wrap(err, "set msg")
+		// Message missed, insert.
+		if !ok {
+			if err := db.InsertMsg(ctx, withStatus(msg, types.MsgStatusSubmitted)); err != nil {
+				return errors.Wrap(err, "insert msg")
 			}
 
 			continue
 		}
 
-		if err := db.InsertMsg(ctx, msg); err != nil {
-			// Message missed, insert it
-			return errors.Wrap(err, "insert msg")
+		sanityCheck := func() error {
+			// Minted, but message hash changed
+			if curr.Status == types.MsgStatusMinted && curr.MessageHash != msg.MessageHash {
+				return errors.New("message hash changed post mint", "tx_hash", msg.TxHash, "old", curr.MessageHash, "new", msg.MessageHash)
+			}
+
+			// Same message hash, but different content
+			if curr.MessageHash == msg.MessageHash && !curr.Equals(msg) {
+				return errors.New("message same for different content", "tx_hash", msg.TxHash, "msg_hash", msg.MessageHash)
+			}
+
+			return nil
 		}
+
+		// Maybe warn.
+		if err := sanityCheck(); err != nil {
+			log.Warn(ctx, "Failed sanity check [BUG]", err)
+		}
+
+		// Already minted, skip.
+		if curr.Status == types.MsgStatusMinted {
+			continue
+		}
+
+		// Already saved, skip (expected).
+		if curr.MessageHash == msg.MessageHash {
+			continue
+		}
+
+		// Message hash changed, update.
+		if err := db.SetMsg(ctx, withStatus(msg, types.MsgStatusSubmitted)); err != nil {
+			return errors.Wrap(err, "set msg")
+		}
+
+		continue
 	}
 
 	return nil
@@ -168,6 +193,7 @@ func eventPairToMsg(
 		Amount:       burn.Amount,
 		SrcChainID:   srcChainID,
 		DestChainID:  uint64(burn.DestinationDomain),
+		Status:       types.MsgStatusUnknown, // unknown, resolve in upsert
 	}
 }
 
@@ -215,4 +241,10 @@ func newMessageSentGetter(contract *MessageTransmitter, addr common.Address) get
 
 		return nil, false, nil
 	}
+}
+
+// withStatus sets the status of a MsgSendUSDC message.
+func withStatus(msg types.MsgSendUSDC, status types.MsgStatus) types.MsgSendUSDC {
+	msg.Status = status
+	return msg
 }

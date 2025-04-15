@@ -22,6 +22,55 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type MsgStatus int32
+
+const (
+	MsgStatus_MSG_STATUS_UNKNOWN   MsgStatus = 0
+	MsgStatus_MSG_STATUS_SUBMITTED MsgStatus = 1
+	MsgStatus_MSG_STATUS_MINTED    MsgStatus = 2
+)
+
+// Enum value maps for MsgStatus.
+var (
+	MsgStatus_name = map[int32]string{
+		0: "MSG_STATUS_UNKNOWN",
+		1: "MSG_STATUS_SUBMITTED",
+		2: "MSG_STATUS_MINTED",
+	}
+	MsgStatus_value = map[string]int32{
+		"MSG_STATUS_UNKNOWN":   0,
+		"MSG_STATUS_SUBMITTED": 1,
+		"MSG_STATUS_MINTED":    2,
+	}
+)
+
+func (x MsgStatus) Enum() *MsgStatus {
+	p := new(MsgStatus)
+	*p = x
+	return p
+}
+
+func (x MsgStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (MsgStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_lib_cctp_db_db_proto_enumTypes[0].Descriptor()
+}
+
+func (MsgStatus) Type() protoreflect.EnumType {
+	return &file_lib_cctp_db_db_proto_enumTypes[0]
+}
+
+func (x MsgStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use MsgStatus.Descriptor instead.
+func (MsgStatus) EnumDescriptor() ([]byte, []int) {
+	return file_lib_cctp_db_db_proto_rawDescGZIP(), []int{0}
+}
+
 type MsgSendUSDC struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	TxHash        []byte                 `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
@@ -31,6 +80,7 @@ type MsgSendUSDC struct {
 	DestChainId   uint64                 `protobuf:"varint,5,opt,name=dest_chain_id,json=destChainId,proto3" json:"dest_chain_id,omitempty"`
 	Amount        []byte                 `protobuf:"bytes,6,opt,name=amount,proto3" json:"amount,omitempty"`
 	Recipient     []byte                 `protobuf:"bytes,7,opt,name=recipient,proto3" json:"recipient,omitempty"`
+	Status        int32                  `protobuf:"varint,8,opt,name=status,proto3" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -114,6 +164,13 @@ func (x *MsgSendUSDC) GetRecipient() []byte {
 	return nil
 }
 
+func (x *MsgSendUSDC) GetStatus() int32 {
+	if x != nil {
+		return x.Status
+	}
+	return 0
+}
+
 type Cursor struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ChainId       uint64                 `protobuf:"varint,1,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
@@ -170,7 +227,7 @@ var File_lib_cctp_db_db_proto protoreflect.FileDescriptor
 
 const file_lib_cctp_db_db_proto_rawDesc = "" +
 	"\n" +
-	"\x14lib/cctp/db/db.proto\x12\vlib.cctp.db\x1a\x17cosmos/orm/v1/orm.proto\"\xff\x01\n" +
+	"\x14lib/cctp/db/db.proto\x12\vlib.cctp.db\x1a\x17cosmos/orm/v1/orm.proto\"\x97\x02\n" +
 	"\vMsgSendUSDC\x12\x17\n" +
 	"\atx_hash\x18\x01 \x01(\fR\x06txHash\x12!\n" +
 	"\fmessage_hash\x18\x02 \x01(\fR\vmessageHash\x12#\n" +
@@ -179,7 +236,8 @@ const file_lib_cctp_db_db_proto_rawDesc = "" +
 	"srcChainId\x12\"\n" +
 	"\rdest_chain_id\x18\x05 \x01(\x04R\vdestChainId\x12\x16\n" +
 	"\x06amount\x18\x06 \x01(\fR\x06amount\x12\x1c\n" +
-	"\trecipient\x18\a \x01(\fR\trecipient:\x13\xf2\x9eӎ\x03\r\n" +
+	"\trecipient\x18\a \x01(\fR\trecipient\x12\x16\n" +
+	"\x06status\x18\b \x01(\x05R\x06status:\x13\xf2\x9eӎ\x03\r\n" +
 	"\t\n" +
 	"\atx_hash\x18\x01\"\\\n" +
 	"\x06Cursor\x12\x19\n" +
@@ -187,7 +245,11 @@ const file_lib_cctp_db_db_proto_rawDesc = "" +
 	"\fblock_height\x18\x02 \x01(\x04R\vblockHeight:\x14\xf2\x9eӎ\x03\x0e\n" +
 	"\n" +
 	"\n" +
-	"\bchain_id\x18\x02B\x92\x01\n" +
+	"\bchain_id\x18\x02*T\n" +
+	"\tMsgStatus\x12\x16\n" +
+	"\x12MSG_STATUS_UNKNOWN\x10\x00\x12\x18\n" +
+	"\x14MSG_STATUS_SUBMITTED\x10\x01\x12\x15\n" +
+	"\x11MSG_STATUS_MINTED\x10\x02B\x92\x01\n" +
 	"\x0fcom.lib.cctp.dbB\aDbProtoP\x01Z(github.com/omni-network/omni/lib/cctp/db\xa2\x02\x03LCD\xaa\x02\vLib.Cctp.Db\xca\x02\vLib\\Cctp\\Db\xe2\x02\x17Lib\\Cctp\\Db\\GPBMetadata\xea\x02\rLib::Cctp::Dbb\x06proto3"
 
 var (
@@ -202,10 +264,12 @@ func file_lib_cctp_db_db_proto_rawDescGZIP() []byte {
 	return file_lib_cctp_db_db_proto_rawDescData
 }
 
+var file_lib_cctp_db_db_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_lib_cctp_db_db_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_lib_cctp_db_db_proto_goTypes = []any{
-	(*MsgSendUSDC)(nil), // 0: lib.cctp.db.MsgSendUSDC
-	(*Cursor)(nil),      // 1: lib.cctp.db.Cursor
+	(MsgStatus)(0),      // 0: lib.cctp.db.MsgStatus
+	(*MsgSendUSDC)(nil), // 1: lib.cctp.db.MsgSendUSDC
+	(*Cursor)(nil),      // 2: lib.cctp.db.Cursor
 }
 var file_lib_cctp_db_db_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -225,13 +289,14 @@ func file_lib_cctp_db_db_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_lib_cctp_db_db_proto_rawDesc), len(file_lib_cctp_db_db_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_lib_cctp_db_db_proto_goTypes,
 		DependencyIndexes: file_lib_cctp_db_db_proto_depIdxs,
+		EnumInfos:         file_lib_cctp_db_db_proto_enumTypes,
 		MessageInfos:      file_lib_cctp_db_db_proto_msgTypes,
 	}.Build()
 	File_lib_cctp_db_db_proto = out.File
