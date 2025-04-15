@@ -138,6 +138,7 @@ func Run(ctx context.Context, cfg Config) error {
 		newCheckHandler(newChecker(backends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox)),
 		newContractsHandler(addrs),
 		newQuoteHandler(newQuoter(priceFunc)),
+		newPriceHandler(wrapPriceHandlerFunc(priceFunc)),
 	)
 	defer apiCancel()
 

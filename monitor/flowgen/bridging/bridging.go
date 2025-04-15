@@ -98,6 +98,15 @@ func openOrders(
 	if err != nil {
 		return nil, err
 	}
+	destBackend, err := backends.Backend(dstToken.ChainID)
+	if err != nil {
+		return nil, err
+	}
+
+	price, err := swapPrice(ctx, scl, srcToken, dstToken)
+	if err != nil {
+		return nil, errors.Wrap(err, "price")
+	}
 
 	// Use all available flowgen balance (without dropping below minimums)
 	totalAmount, err := availableBalance(ctx, network, srcBackend, eoa.RoleFlowgen, srcToken)
@@ -106,11 +115,13 @@ func openOrders(
 	}
 
 	// Limit to available solver balance on destination.
-	if solverAvailable, err := solverAvailable(ctx, network, backends, scl, srcToken, dstToken); err != nil {
+	if solverDstAvail, err := availableBalance(ctx, network, destBackend, eoa.RoleSolver, dstToken); err != nil {
 		return nil, errors.Wrap(err, "get dest available")
-	} else if bi.GT(totalAmount, solverAvailable) {
-		totalAmount = solverAvailable
+	} else if solverSrcAvail := bi.MulF64(solverDstAvail, price); bi.GT(totalAmount, solverSrcAvail) {
+		totalAmount = solverSrcAvail
 	}
+
+	bounds := solver.GetSpendBounds(dstToken).DepositBounds(price)
 
 	p := parallel
 	if network == netconf.Devnet {
@@ -118,7 +129,7 @@ func openOrders(
 	}
 
 	var orderDatas []bindings.SolverNetOrderData
-	for _, amount := range splitOrderAmounts(solver.GetSpendBounds(dstToken), totalAmount, p) {
+	for _, amount := range splitOrderAmounts(bounds, totalAmount, p) {
 		orderData, err := nativeOrderData(ctx, scl, flowgenAddr, srcToken, dstToken, amount)
 		if err != nil {
 			return nil, err
@@ -204,39 +215,21 @@ func check(ctx context.Context, scl sclient.Client, srcChainID uint64, orderData
 	return scl.Check(ctx, checkReq)
 }
 
-// solverAvailable returns solver's available to spend on dest tokens denominated in source tokens.
-func solverAvailable(ctx context.Context, network netconf.ID, backends ethbackend.Backends, scl sclient.Client, srcToken, dstToken tokens.Token) (*big.Int, error) {
-	// Get solver's available destination token balance
-	destBackend, err := backends.Backend(dstToken.ChainID)
-	if err != nil {
-		return nil, err
-	}
-	destAvailable, err := availableBalance(ctx, network, destBackend, eoa.RoleSolver, dstToken)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the source token price
-	priceAmount := dstToken.F64ToAmt(1.0)
-	quoteReq := stypes.QuoteRequest{
+// swapPrice returns the price of the source token in destination tokens.
+func swapPrice(ctx context.Context, scl sclient.Client, srcToken, dstToken tokens.Token) (float64, error) {
+	priceReq := stypes.PriceRequest{
 		SourceChainID:      srcToken.ChainID,
 		DestinationChainID: dstToken.ChainID,
-		Expense: stypes.AddrAmt{
-			Token:  dstToken.Address,
-			Amount: priceAmount,
-		},
+		DepositToken:       srcToken.Address,
+		ExpenseToken:       dstToken.Address,
 	}
 
-	quoteResp, err := scl.Quote(ctx, quoteReq)
+	price, err := scl.Price(ctx, priceReq)
 	if err != nil {
-		return nil, errors.Wrap(err, "quote deposit")
-	} else if quoteResp.Rejected {
-		return nil, errors.New("quote rejected", "description", quoteResp.RejectDescription, "reason", quoteResp.RejectCode)
+		return 0, errors.Wrap(err, "price")
 	}
 
-	price := bi.Div(quoteResp.Deposit.Amount, priceAmount)
-
-	return bi.Mul(price, destAvailable), nil
+	return price, nil
 }
 
 func nativeOrderData(ctx context.Context, scl sclient.Client, owner common.Address, srcToken, dstToken tokens.Token, expenseAmt *big.Int) (bindings.SolverNetOrderData, error) {

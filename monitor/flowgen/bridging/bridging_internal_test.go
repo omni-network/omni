@@ -1,41 +1,13 @@
 package bridging
 
 import (
-	"flag"
 	"testing"
 
 	"github.com/omni-network/omni/lib/bi"
-	"github.com/omni-network/omni/lib/evmchain"
-	"github.com/omni-network/omni/lib/netconf"
-	"github.com/omni-network/omni/lib/tokens"
-	"github.com/omni-network/omni/lib/xchain/connect"
 	solver "github.com/omni-network/omni/solver/app"
 
 	"github.com/stretchr/testify/require"
 )
-
-var integration = flag.Bool("integration", false, "enable integration test")
-
-func TestSolverAvailable(t *testing.T) {
-	t.Parallel()
-	if !*integration {
-		t.Skip("skipping integration test")
-	}
-
-	network := netconf.Staging
-	conn, err := connect.New(t.Context(), network, connect.WithInfuraENV("INFURA_SECRET"))
-	require.NoError(t, err)
-
-	srcToken, ok := tokens.ByAsset(evmchain.IDOmniStaging, tokens.OMNI)
-	require.True(t, ok)
-	dstToken, ok := tokens.ByAsset(evmchain.IDOpSepolia, tokens.ETH)
-	require.True(t, ok)
-
-	avail, err := solverAvailable(t.Context(), network, conn.Backends, conn.SolverCl, srcToken, dstToken)
-	require.NoError(t, err)
-
-	t.Logf("available: %v", srcToken.FormatAmt(avail))
-}
 
 func TestSplitOrderAmounts(t *testing.T) {
 	t.Parallel()

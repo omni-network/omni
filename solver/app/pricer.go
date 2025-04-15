@@ -5,10 +5,12 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokenpricer/coingecko"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/solver/types"
 )
 
 func newPricer(ctx context.Context, network netconf.ID, apiKey string) tokenpricer.Pricer {
@@ -63,5 +65,29 @@ func newPriceFunc(pricer tokenpricer.Pricer) priceFunc {
 		}
 
 		return pricer.Price(ctx, base.Asset, quote.Asset)
+	}
+}
+
+type priceHandlerFunc func(ctx context.Context, request *types.PriceRequest) (*types.PriceResponse, error)
+
+func wrapPriceHandlerFunc(priceFunc priceFunc) priceHandlerFunc {
+	return func(ctx context.Context, req *types.PriceRequest) (*types.PriceResponse, error) {
+		srcToken, ok := tokens.ByAddress(req.SourceChainID, req.DepositToken)
+		if !ok {
+			return nil, errors.New("deposit token not found", "token", req.DepositToken, "src_chain", evmchain.Name(req.SourceChainID))
+		}
+		dstToken, ok := tokens.ByAddress(req.DestinationChainID, req.ExpenseToken)
+		if !ok {
+			return nil, errors.New("expense token not found", "token", req.ExpenseToken, "dst_chain", evmchain.Name(req.DestinationChainID))
+		}
+
+		price, err := priceFunc(ctx, srcToken, dstToken)
+		if err != nil {
+			return nil, errors.Wrap(err, "price")
+		}
+
+		return &types.PriceResponse{
+			Price: price,
+		}, nil
 	}
 }
