@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/omni-network/omni/lib/bi"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/tokens"
 )
 
@@ -99,8 +100,29 @@ var (
 			},
 		},
 	}
+
+	// chainOverrides map token -> chain id -> override spend bounds.
+	chainOverrides = map[tokens.Asset]map[uint64]SpendBounds{
+		tokens.ETH: {
+			evmchain.IDEthereum: {
+				MinSpend: bi.Ether(0.001), // 0.001 ETH
+				MaxSpend: bi.Ether(65),    // 65 ETH
+			},
+		},
+		tokens.USDC: {
+			evmchain.IDEthereum: {
+				MinSpend: bi.Dec6(0.1),     // 0.1 USDC
+				MaxSpend: bi.Dec6(100_000), // 100k USDC
+			},
+		},
+	}
 )
 
 func GetSpendBounds(token tokens.Token) SpendBounds {
+	override, ok := chainOverrides[token.Asset][token.ChainID]
+	if ok {
+		return override
+	}
+
 	return tokenSpendBounds[token.Asset][token.ChainClass]
 }
