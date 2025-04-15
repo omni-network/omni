@@ -395,8 +395,8 @@ describe('useGetOrder()', () => {
   })
 })
 
-describe('useValidateOrder()', () => {
-  test('default: returns true when the order is filled', async () => {
+describe('useOmniContracts()', () => {
+  test('default: returns the expected contract addresses', async () => {
     const renderHook = createRenderHook()
 
     const omniContractsHook = renderHook(() => {
