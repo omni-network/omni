@@ -127,6 +127,10 @@ func (s Static) ExecutionRPC() string {
 	return fmt.Sprintf("https://%s.omni.network", s.Network)
 }
 
+func (s Static) SolverURL() string {
+	return fmt.Sprintf("https://solver.%s.omni.network", s.Network)
+}
+
 func (s Static) ConsensusRPC() string {
 	if s.Network == Devnet {
 		// First halo in devnet docker-compose.

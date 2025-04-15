@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
-	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
@@ -24,7 +23,6 @@ import (
 	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -49,23 +47,20 @@ func Start(
 		return errors.Wrap(err, "backends")
 	}
 
-	owner := eoa.MustAddress(network.ID, eoa.RoleFlowgen)
-
 	scl := sclient.New(solverAddress)
 
-	return startWithBackends(ctx, network, backends, owner, scl)
+	return startWithBackends(ctx, network, backends, scl)
 }
 
 func startWithBackends(
 	ctx context.Context,
 	network netconf.Network,
 	backends ethbackend.Backends,
-	owner common.Address,
 	scl sclient.Client,
 ) error {
-	j1 := bridging.Jobs(network.ID, backends, owner, scl)
+	j1 := bridging.Jobs(network.ID, backends, scl)
 
-	j2, err := symbiotic.Jobs(ctx, backends, network.ID, owner, scl)
+	j2, err := symbiotic.Jobs(ctx, backends, network.ID, scl)
 	if err != nil {
 		return errors.Wrap(err, "symbiotic jobs")
 	}

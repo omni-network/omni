@@ -21,6 +21,7 @@ import (
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
+	sclient "github.com/omni-network/omni/solver/client"
 
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
@@ -36,6 +37,7 @@ type Connector struct {
 	EthClients map[uint64]ethclient.Client
 	Backends   ethbackend.Backends
 	CmtCl      rpcclient.Client
+	SolverCl   sclient.Client
 }
 
 // Backend returns an ethbackend for the given chainID.
@@ -242,6 +244,7 @@ func New(ctx context.Context, netID netconf.ID, opts ...option) (Connector, erro
 		EthClients: ethClients,
 		Backends:   backends,
 		CmtCl:      cometCl,
+		SolverCl:   sclient.New(network.ID.Static().SolverURL()),
 	}, nil
 }
 
