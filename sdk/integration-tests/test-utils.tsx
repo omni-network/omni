@@ -1,12 +1,19 @@
-import { OmniProvider, type Order, useOrder } from '@omni-network/react'
 import {
-  MOCK_CHAINS,
-  MOCK_L1_CHAIN,
-  MOCK_L1_ID,
-  MOCK_L2_CHAIN,
-  OMNI_DEVNET_CHAIN,
+  OmniProvider,
+  type Order,
+  useOrder,
+  type useParseOpenEvent,
+} from '@omni-network/react'
+import {
   createClient,
+  mockChains,
+  mockL1Chain,
   mockL1Client,
+  mockL1Id,
+  mockL2Chain,
+  mockL2Id,
+  omniDevnetChain,
+  outbox,
   testAccount,
 } from '@omni-network/test-utils'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -18,6 +25,7 @@ import {
   waitFor,
 } from '@testing-library/react'
 import { createRef } from 'react'
+import { pad, parseEther, zeroAddress } from 'viem'
 import { expect } from 'vitest'
 import {
   type Config,
@@ -30,13 +38,14 @@ import {
 
 const mockConnector = mock({ accounts: [testAccount.address] as const })
 
-export function testConnector(config) {
+// biome-ignore lint/suspicious/noExplicitAny: test file
+export function testConnector(config: any) {
   const connector = mockConnector(config)
   connector.getClient = async ({ chainId } = {}) => {
-    if (chainId === MOCK_L1_ID) {
+    if (chainId === mockL1Id) {
       return mockL1Client
     }
-    const chain = chainId ? MOCK_CHAINS[chainId] : MOCK_L1_CHAIN
+    const chain = chainId ? mockChains[chainId] : mockL1Chain
     if (chain == null) {
       throw new Error(`Unsupported chain: ${chainId}`)
     }
@@ -47,7 +56,7 @@ export function testConnector(config) {
 
 export function createWagmiConfig() {
   return createConfig({
-    chains: [MOCK_L1_CHAIN, MOCK_L2_CHAIN, OMNI_DEVNET_CHAIN],
+    chains: [mockL1Chain, mockL2Chain, omniDevnetChain],
     client: createClient,
   })
 }
@@ -103,7 +112,7 @@ export function useOrderRef(
   connector: CreateConnectorFn,
   order: AnyOrder,
 ): React.RefObject<UseOrderReturn | null> {
-  const connectRef = createRef()
+  const connectRef = createRef<ReturnType<typeof useConnect>>()
   const orderRef = createRef<UseOrderReturn>()
 
   // useOrder() can only be used with a connected account, so we need to render it conditionally
@@ -135,7 +144,6 @@ export async function executeTestOrder(
 
   await waitFor(() => expect(orderRef.current?.isReady).toBe(true))
 
-  // Wait for order to be validated
   await waitFor(() =>
     expect(orderRef.current?.validation?.status).toBeOneOf([
       'accepted',
@@ -144,6 +152,8 @@ export async function executeTestOrder(
   )
 
   if (rejectReason) {
+    if (orderRef.current?.validation?.status !== 'rejected')
+      throw new Error('Rejection expected')
     expect(orderRef.current?.validation?.status).toBe('rejected')
     expect(orderRef.current?.validation?.rejectReason).toBe(rejectReason)
     return
@@ -151,7 +161,6 @@ export async function executeTestOrder(
 
   expect(orderRef.current?.validation?.status).toBe('accepted')
 
-  // Open the order
   act(() => {
     orderRef.current?.open()
   })
@@ -161,22 +170,71 @@ export async function executeTestOrder(
     timeout: 5000,
   }
 
-  // Assert tx submitted
   await waitFor(() => {
     expect(orderRef.current?.error).toBeUndefined()
     expect(orderRef.current?.txHash).toBeDefined()
   }, waitForOpts)
 
-  // Assert the order was opened properly
   await waitFor(() => {
+    // allow filled, in case order was filled quickly
+    expect(orderRef.current?.status).toBeOneOf(['open', 'filled'])
+    expect(orderRef.current?.txHash).toBeDefined()
     expect(orderRef.current?.error).toBeUndefined()
     expect(orderRef.current?.orderId).toBeDefined()
-    expect(orderRef.current?.status).toBeOneOf(['open', 'filled']) // allow filled, in case order was filled quickly
   }, waitForOpts)
 
-  // Assert the order was filled
   await waitFor(() => {
+    expect(orderRef.current?.txHash).toBeDefined()
     expect(orderRef.current?.error).toBeUndefined()
+    expect(orderRef.current?.isError).toBe(false)
+    expect(orderRef.current?.isTxSubmitted).toBe(true)
+    expect(orderRef.current?.isTxPending).toBe(false)
     expect(orderRef.current?.status).toBe('filled')
   }, waitForOpts)
+}
+
+export function assertResolvedOrder(
+  resolvedOrder: ReturnType<typeof useParseOpenEvent>['resolvedOrder'],
+) {
+  if (!resolvedOrder) throw new Error('Resolved order must be defined')
+
+  expect(resolvedOrder.user).toEqual(testAccount.address)
+  expect(resolvedOrder.originChainId).toEqual(BigInt(mockL2Id))
+  expect(resolvedOrder.openDeadline).toEqual(0)
+  expect(resolvedOrder.fillDeadline).toBeTypeOf('number')
+  expect(resolvedOrder.orderId).toBeTypeOf('string')
+  expect(resolvedOrder.orderId).toContain('0x')
+
+  // maxSpent
+  expect(resolvedOrder.maxSpent).toBeInstanceOf(Array)
+  expect(resolvedOrder.maxSpent[0].token).toEqual(
+    pad(zeroAddress, { size: 32, dir: 'left' }),
+  )
+  expect(resolvedOrder.maxSpent[0].amount).toEqual(parseEther('1'))
+  expect(resolvedOrder.maxSpent[0].chainId).toEqual(BigInt(mockL1Id))
+  expect(resolvedOrder.maxSpent[0].recipient).toEqual(
+    pad(outbox, { size: 32, dir: 'left' }),
+  )
+
+  // minReceived
+  expect(resolvedOrder.minReceived).toBeInstanceOf(Array)
+  expect(resolvedOrder.minReceived[0].token).toEqual(
+    pad(zeroAddress, { size: 32, dir: 'left' }),
+  )
+  expect(resolvedOrder.minReceived[0].amount).toEqual(parseEther('2'))
+  expect(resolvedOrder.minReceived[0].chainId).toEqual(BigInt(mockL2Id))
+  expect(resolvedOrder.minReceived[0].recipient).toEqual(
+    pad(zeroAddress, { size: 32, dir: 'left' }),
+  )
+
+  // fillInstructions
+  expect(resolvedOrder.fillInstructions).toBeInstanceOf(Array)
+  expect(resolvedOrder.fillInstructions[0]).toBeTypeOf('object')
+  expect(resolvedOrder.fillInstructions[0].destinationChainId).toEqual(
+    BigInt(mockL1Id),
+  )
+  expect(resolvedOrder.fillInstructions[0].destinationSettler).toEqual(
+    pad(outbox, { size: 32, dir: 'left' }),
+  )
+  expect(resolvedOrder.fillInstructions[0].originData).toBeTypeOf('string')
 }
