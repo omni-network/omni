@@ -23,6 +23,9 @@ importers:
       react:
         specifier: ^19.0.0
         version: 19.1.0
+      viem:
+        specifier: ^2.23.13
+        version: 2.26.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
       wagmi:
         specifier: ^2.14.15
         version: 2.14.16(@tanstack/query-core@5.72.1)(@tanstack/react-query@5.72.1(react@19.1.0))(@types/react@19.1.0)(bufferutil@4.0.9)(react@19.1.0)(typescript@5.8.3)(utf-8-validate@5.0.10)(viem@2.26.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10))
