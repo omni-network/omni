@@ -15,6 +15,7 @@ import (
 const (
 	endpointCheck = "/api/v1/check"
 	endpointQuote = "/api/v1/quote"
+	endpointPrice = "/api/v1/price"
 )
 
 // New creates a new solver Client.
@@ -65,6 +66,17 @@ func (c Client) Quote(ctx context.Context, req types.QuoteRequest) (types.QuoteR
 	}
 
 	return res, nil
+}
+
+// expense amount = deposit amount / price.
+func (c Client) Price(ctx context.Context, req types.PriceRequest) (float64, error) {
+	var res types.PriceResponse
+
+	if err := c.do(ctx, endpointPrice, req, &res); err != nil {
+		return 0, err
+	}
+
+	return res.Price, nil
 }
 
 func (c Client) do(ctx context.Context, endpoint string, req any, res any) error {

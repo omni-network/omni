@@ -63,6 +63,20 @@ type QuoteRequest struct {
 	Expense            AddrAmt `json:"expense"`
 }
 
+type PriceRequest struct {
+	SourceChainID      uint64         `json:"sourceChainId"`
+	DestinationChainID uint64         `json:"destChainId"`
+	DepositToken       common.Address `json:"depositToken"`
+	ExpenseToken       common.Address `json:"expenseToken"`
+}
+
+type PriceResponse struct {
+	// Price of 1 unit of deposit token denominated in expense tokens.
+	// deposit amount = expense amount * price
+	// expense amount = deposit amount / price
+	Price float64 `json:"price"`
+}
+
 type addrAmtJSON struct {
 	Token  common.Address `json:"token"`
 	Amount *hexutil.Big   `json:"amount,omitempty"`

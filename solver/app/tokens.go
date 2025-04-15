@@ -26,6 +26,15 @@ type SpendBounds struct {
 	MaxSpend *big.Int // maximum spend amount
 }
 
+// DepositBounds returns the equivalent deposit bounds
+// by multiplies the spend bounds by the given price.
+func (b SpendBounds) DepositBounds(price float64) SpendBounds {
+	return SpendBounds{
+		MinSpend: bi.MulF64(b.MinSpend, price),
+		MaxSpend: bi.MulF64(b.MaxSpend, price),
+	}
+}
+
 var (
 	tokenSpendBounds = map[tokens.Asset]map[tokens.ChainClass]SpendBounds{
 		tokens.ETH: {
