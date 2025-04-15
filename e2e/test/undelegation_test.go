@@ -2,6 +2,7 @@ package e2e_test
 
 import (
 	"context"
+	"encoding/json"
 	"math/big"
 	"path/filepath"
 	"testing"
@@ -12,18 +13,37 @@ import (
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cchain/provider"
+	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/tutil"
 
 	"github.com/cometbft/cometbft/rpc/client/http"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	etypes "github.com/ethereum/go-ethereum/core/types"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/cosmos/cosmos-sdk/client/grpc/node"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
+
+	_ "embed"
 )
+
+//go:embed StakingProxy.json
+var stkaingProxy []byte
+
+// call encapsulates a delegate/undeleate call to Staking.sol.
+type call struct {
+	Method    string
+	Value     *big.Int
+	Validator common.Address
+	Amount    *big.Int
+}
+
+var burnFee = bi.Ether(0.1)
 
 //nolint:paralleltest // We have to run tests sequentially
 func TestUndelegations(t *testing.T) {
@@ -45,7 +65,7 @@ func TestUndelegations(t *testing.T) {
 		require.NoError(t, err)
 		cprov := provider.NewABCI(cl, network.ID)
 
-		const valChangeWait = 15 * time.Second
+		const valChangeWait = 30 * time.Second
 
 		validators, err := cprov.SDKValidators(ctx)
 		require.NoError(t, err)
@@ -53,8 +73,6 @@ func TestUndelegations(t *testing.T) {
 		validator := validators[0]
 		altValidator := validators[1]
 		validatorAddr, err := validator.OperatorEthAddr()
-		require.NoError(t, err)
-		valPower, err := validator.Power()
 		require.NoError(t, err)
 
 		// delegator's keys
@@ -64,12 +82,83 @@ func TestUndelegations(t *testing.T) {
 		err = ethcrypto.SaveECDSA(delegatorPrivKeyFile, delegatorPrivKey)
 		require.NoError(t, err)
 
-		contract, err := bindings.NewStaking(common.HexToAddress(predeploys.Staking), omniBackend)
+		stakingContractAddr := common.HexToAddress(predeploys.Staking)
+
+		contract, err := bindings.NewStaking(stakingContractAddr, omniBackend)
 		require.NoError(t, err)
 
 		const delegation = uint64(76)
 
+		// We deploy a proxy smart contract and let it stake and unstake in batches
+		t.Run("batched delegations and undelegations", func(t *testing.T) {
+			proxyAddr, proxyContract, err := deploy(ctx, omniBackend, stakingContractAddr, delegatorEthAddr)
+			proxyCosmosAddr := sdk.AccAddress(proxyAddr.Bytes())
+			require.NoError(t, err)
+			log.Debug(ctx, "staking proxy deployed", "address", proxyAddr)
+
+			delegation := bi.Ether(50)
+			undelegation1 := bi.Ether(20)
+			undelegation2 := bi.Ether(5)
+
+			// Transfer 50 ETH to the proxy contract
+			gasPrice, err := omniBackend.SuggestGasPrice(ctx)
+			require.NoError(t, err)
+			nonce, err := omniBackend.PendingNonceAt(ctx, delegatorEthAddr)
+			require.NoError(t, err)
+			tx := etypes.NewTransaction(nonce, proxyAddr, delegation, 21000, gasPrice, nil)
+			chainID := bi.N(network.ID.Static().OmniExecutionChainID)
+			signedTx, err := etypes.SignTx(tx, etypes.NewEIP155Signer(chainID), delegatorPrivKey)
+			require.NoError(t, err)
+			err = omniBackend.SendTransaction(ctx, signedTx)
+			require.NoError(t, err)
+			log.Debug(ctx, "transferred ETH to proxy contract", "amount", delegation)
+
+			val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
+			require.True(t, ok)
+
+			require.NoError(t, err)
+
+			calls := []call{
+				{
+					Method:    "delegate",
+					Validator: validatorAddr,
+					Value:     delegation,
+					Amount:    bi.N(0),
+				},
+				{
+					Method:    "undelegate",
+					Validator: validatorAddr,
+					Value:     burnFee,
+					Amount:    undelegation1,
+				},
+				{
+					Method:    "undelegate",
+					Validator: validatorAddr,
+					Value:     burnFee,
+					Amount:    undelegation2,
+				},
+			}
+
+			err = proxyCall(ctx, proxyContract, omniBackend, delegatorEthAddr, calls)
+			require.NoError(t, err)
+
+			// make sure the validator power is increased and the delegation can be found
+			require.Eventuallyf(t, func() bool {
+				amount := degelatedAmount(t, ctx, cprov, val.OperatorAddress, proxyCosmosAddr.String())
+
+				log.Debug(ctx, "delegated amount", "amount", amount)
+
+				return bi.EQ(bi.Sub(delegation, undelegation1, undelegation2), amount.Amount.BigInt())
+			}, valChangeWait, 500*time.Millisecond, "failed to delegate")
+		})
+
 		t.Run("delegation", func(t *testing.T) {
+			val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
+			require.True(t, ok)
+
+			valPower, err := val.Power()
+			require.NoError(t, err)
+
 			txOpts, err := omniBackend.BindOpts(ctx, delegatorEthAddr)
 			require.NoError(t, err)
 			txOpts.Value = bi.Ether(delegation)
@@ -95,7 +184,6 @@ func TestUndelegations(t *testing.T) {
 			}, valChangeWait, 500*time.Millisecond, "failed to delegate")
 		})
 
-		burnFee := bi.Ether(0.1)
 		var anyBlock *big.Int
 
 		t.Run("undelegate from a wrong validator", func(t *testing.T) {
@@ -244,34 +332,88 @@ func TestUndelegations(t *testing.T) {
 			_, ok := queryDelegationRewards(t, ctx, cprov, delegatorCosmosAddr, validator.OperatorAddress)
 			require.False(t, ok)
 		})
-
-		t.Run("Delegate and deploy a multiplicator contract", func(t *testing.T) {
-			// Delegate again
-			txOpts, err := omniBackend.BindOpts(ctx, delegatorEthAddr)
-			require.NoError(t, err)
-			txOpts.Value = bi.Ether(delegation)
-
-			tx, err := contract.Delegate(txOpts, validatorAddr)
-			require.NoError(t, err)
-
-			_, err = omniBackend.WaitMined(ctx, tx)
-			require.NoError(t, err)
-
-			// make sure the validator power is increased and the delegation can be found
-			require.Eventuallyf(t, func() bool {
-				val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
-				require.True(t, ok)
-				newPower, err := val.Power()
-				require.NoError(t, err)
-
-				if degelatedAmount(t, ctx, cprov, val.OperatorAddress, delegatorCosmosAddr.String()).IsZero() {
-					return false
-				}
-
-				return newPower >= valPower+delegation
-			}, valChangeWait, 500*time.Millisecond, "failed to delegate")
-		})
 	})
+}
+
+func deploy(
+	ctx context.Context,
+	backend *ethbackend.Backend,
+	stakingContractAddr,
+	deployer common.Address,
+) (common.Address, *bind.BoundContract, error) {
+	var compiledContract struct {
+		Contracts map[string]struct {
+			Bin string `json:"bin"`
+			Abi string `json:"abi"`
+		} `json:"contracts"`
+	}
+
+	if err := json.Unmarshal(stkaingProxy, &compiledContract); err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "parsing JSON")
+	}
+
+	contractKey := "StakingProxy.sol:StakingProxy"
+	bytecode := compiledContract.Contracts[contractKey].Bin
+	contractAbi := compiledContract.Contracts[contractKey].Abi
+
+	metaData := &bind.MetaData{
+		ABI: contractAbi,
+		Bin: bytecode,
+	}
+
+	parsed, err := metaData.GetAbi()
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "get abi")
+	}
+	if parsed == nil {
+		return common.Address{}, nil, errors.Wrap(err, "nil abi")
+	}
+	txOpts, err := backend.BindOpts(ctx, deployer)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "binding opts")
+	}
+
+	address, tx, contract, err := bind.DeployContract(txOpts, *parsed, common.FromHex(metaData.Bin), backend, stakingContractAddr)
+	if err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "deployment")
+	}
+	if _, err = backend.WaitMined(ctx, tx); err != nil {
+		return common.Address{}, nil, errors.Wrap(err, "mining")
+	}
+
+	return address, contract, nil
+}
+
+func proxyCall(
+	ctx context.Context,
+	contract *bind.BoundContract,
+	backend *ethbackend.Backend,
+	caller common.Address,
+	calls []call,
+) error {
+	totalValue := big.NewInt(0)
+	for _, call := range calls {
+		totalValue = bi.Add(totalValue, call.Value)
+	}
+
+	opts, err := backend.BindOpts(ctx, caller)
+	if err != nil {
+		return errors.Wrap(err, "bind oipts")
+	}
+
+	opts.Value = totalValue
+
+	tx, err := contract.Transact(opts, "proxy", calls)
+	if err != nil {
+		return errors.Wrap(err, "transact")
+	}
+
+	_, err = backend.WaitMined(ctx, tx)
+	if err != nil {
+		return errors.Wrap(err, "mined")
+	}
+
+	return nil
 }
 
 // waitForBlocks wait for `n` blocks.
