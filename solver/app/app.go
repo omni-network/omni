@@ -138,6 +138,7 @@ func Run(ctx context.Context, cfg Config) error {
 		newCheckHandler(newChecker(backends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox)),
 		newContractsHandler(addrs),
 		newQuoteHandler(newQuoter(priceFunc)),
+		newPriceHandler(wrapPriceHandlerFunc(priceFunc)),
 	)
 	defer apiCancel()
 
@@ -309,7 +310,7 @@ func startProcessingEvents(
 		}
 
 		deps := procDeps{
-			ParseID:       newIDParser(inboxContracts),
+			ParseID:       newIDParser(),
 			GetOrder:      newOrderGetter(inboxContracts),
 			ShouldReject:  newShouldRejector(backends, callAllower, priceFunc, solverAddr, addrs.SolverNetOutbox),
 			DidFill:       newDidFiller(outboxContracts),
@@ -372,11 +373,11 @@ func streamEventsForever(
 		}
 
 		req := xchain.EventLogsReq{
-			ChainID:       chainVer.ID,
-			Height:        from, // Note the previous height is re-processed (idempotency FTW)
-			ConfLevel:     chainVer.ConfLevel,
-			FilterAddress: inboxAddr,
-			FilterTopics:  solvernet.AllEventTopics(),
+			ChainID:         chainVer.ID,
+			Height:          from, // Note the previous height is re-processed (idempotency FTW)
+			ConfLevel:       chainVer.ConfLevel,
+			FilterAddresses: []common.Address{inboxAddr},
+			FilterTopics:    solvernet.AllEventTopics(),
 		}
 		err = xprov.StreamEventLogs(ctx, req, func(ctx context.Context, header *types.Header, elogs []types.Log) error {
 			for _, elog := range elogs {

@@ -18,6 +18,8 @@ var allowed = map[string]bool{
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys": true, // Contains static data only.
 	"github.com/omni-network/omni/halo/sdk":                    true, // sdk contains common config required for cosmos clients
 	"github.com/omni-network/omni/halo/comet":                  true, // comet is a lib containing cometbft client and types
+	"github.com/omni-network/omni/solver/client":               true, // Solver client lib
+	"github.com/omni-network/omni/solver/types":                true, // Solver client types lib
 	"github.com/omni-network/omni/e2e/app/static":              true, // Contains static data only.
 	"github.com/omni-network/omni/halo/app/upgrades/static":    true, // Contains static data only.
 	"github.com/omni-network/omni/scripts":                     true, // Contains static data only.

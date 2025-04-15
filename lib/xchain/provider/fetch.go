@@ -332,7 +332,8 @@ func (p *Provider) getMsgsAndReceipts(ctx context.Context, chainID uint64, block
 	}
 
 	topics := []common.Hash{msgEvent.ID, receiptEvent.ID}
-	events, err := getEventLogs(ctx, rpcClient, chain.PortalAddress, blockHash, topics)
+	addrs := []common.Address{chain.PortalAddress}
+	events, err := getEventLogs(ctx, rpcClient, addrs, blockHash, topics)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "get logs")
 	}
@@ -516,10 +517,10 @@ func spanName(method string) string {
 }
 
 // getEventLogs returns the logs for the contract address and block hash with any of the provided topics in the first position.
-func getEventLogs(ctx context.Context, rpcClient ethclient.Client, contractAddr common.Address, blockHash common.Hash, topics []common.Hash) ([]types.Log, error) {
+func getEventLogs(ctx context.Context, rpcClient ethclient.Client, contractAddrs []common.Address, blockHash common.Hash, topics []common.Hash) ([]types.Log, error) {
 	logs, err := rpcClient.FilterLogs(ctx, ethereum.FilterQuery{
 		BlockHash: &blockHash,
-		Addresses: []common.Address{contractAddr},
+		Addresses: contractAddrs,
 		Topics:    [][]common.Hash{topics}, // Match any of the topics in the first position.
 	})
 	if err != nil {

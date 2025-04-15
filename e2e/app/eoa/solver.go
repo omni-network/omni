@@ -27,10 +27,10 @@ var (
 	solverThresholds = map[netconf.ID]map[uint64]map[tokens.Asset]SolverNetThreshold{
 		netconf.Mainnet: {
 			evmchain.IDEthereum: {
-				tokens.WSTETH: {minEther: 10},    // 10 wstETH
-				tokens.STETH:  {minEther: 10},    // 10 stETH
-				tokens.ETH:    {minEther: 10},    // 10 ETH
-				tokens.USDC:   {minDec6: 10_000}, // 10k USDC
+				tokens.WSTETH: {minEther: 10},     // 10 wstETH
+				tokens.STETH:  {minEther: 10},     // 10 stETH
+				tokens.ETH:    {minEther: 70},     // 70 ETH
+				tokens.USDC:   {minDec6: 110_000}, // 110k USDC
 			},
 			evmchain.IDBase: {
 				tokens.USDC: {minDec6: 10_000}, // 10k USDC

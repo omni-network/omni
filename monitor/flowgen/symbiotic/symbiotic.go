@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
+	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/contracts"
 	"github.com/omni-network/omni/lib/contracts/solvernet"
@@ -32,7 +33,6 @@ func newJob(
 	ctx context.Context,
 	backends ethbackend.Backends,
 	networkID netconf.ID,
-	owner common.Address,
 	scl sclient.Client,
 ) (types.Job, bool, error) {
 	addrs, err := contracts.GetAddresses(ctx, networkID)
@@ -62,7 +62,9 @@ func newJob(
 		return types.Job{}, false, errors.Wrap(err, "dst token not found")
 	}
 
-	if err := util.ApproveToken(ctx, backend, srcChainTkn.Address, owner, addrs.SolverNetInbox); err != nil {
+	flowgenAddr := eoa.MustAddress(networkID, eoa.RoleFlowgen)
+
+	if err := util.ApproveToken(ctx, backend, srcChainTkn.Address, flowgenAddr, addrs.SolverNetInbox); err != nil {
 		return types.Job{}, false, errors.Wrap(err, "token approval")
 	}
 
@@ -77,7 +79,7 @@ func newJob(
 		Cadence:    cadence,
 		SrcChainID: conf.srcChain,
 		OpenOrdersFunc: func(ctx context.Context) ([]types.Result, error) {
-			result, ok, err := openOrder(ctx, scl, backends, networkID, owner, srcChainTkn, dstChainTkn, conf)
+			result, ok, err := openOrder(ctx, scl, backends, networkID, flowgenAddr, srcChainTkn, dstChainTkn, conf)
 			if err != nil {
 				return nil, errors.Wrap(err, "open order")
 			} else if !ok {
@@ -166,17 +168,10 @@ func Jobs(
 	ctx context.Context,
 	backends ethbackend.Backends,
 	networkID netconf.ID,
-	owner common.Address,
 	scl sclient.Client,
 ) ([]types.Job, error) {
 	var jobs []types.Job
-	job, ok, err := newJob(
-		ctx,
-		backends,
-		networkID,
-		owner,
-		scl,
-	)
+	job, ok, err := newJob(ctx, backends, networkID, scl)
 	if err != nil {
 		return jobs, errors.Wrap(err, "symbiotic job")
 	}

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/lib/ethclient"
-	"github.com/omni-network/omni/lib/expbackoff"
+	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/octane/evmengine/types"
 
 	"github.com/ethereum/go-ethereum/beacon/engine"
@@ -35,6 +35,11 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 	require.NoError(t, err)
 	populateGenesisHead(sdkCtx, t, keeper)
 
+	withdrawalAddr := tutil.RandomAddress()
+	amountGwei := uint64(100)
+	err = keeper.InsertWithdrawal(sdkCtx.WithBlockHeight(0), withdrawalAddr, amountGwei)
+	require.NoError(t, err)
+
 	propSrv := NewProposalServer(keeper)
 
 	var payload engine.ExecutableData
@@ -57,6 +62,12 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 			latestBlock.Hash(),
 			frp.LocalFeeRecipient(),
 			&appHash,
+			&etypes.Withdrawal{
+				Index:     1,
+				Validator: 0,
+				Address:   withdrawalAddr,
+				Amount:    amountGwei,
+			},
 		)
 
 		payloadID, err = ethclient.MockPayloadID(payload, &appHash)
@@ -79,17 +90,9 @@ func Test_proposalServer_ExecutionPayload(t *testing.T) {
 		require.Equal(t, latestHeight+1, gotPayload.ExecutionPayload.Number)
 		require.Equal(t, block.Hash(), gotPayload.ExecutionPayload.BlockHash)
 		require.Equal(t, frp.LocalFeeRecipient(), gotPayload.ExecutionPayload.FeeRecipient)
-		require.Empty(t, gotPayload.ExecutionPayload.Withdrawals)
+		require.Len(t, gotPayload.ExecutionPayload.Withdrawals, 1)
 	}
 
 	newPayload(sdkCtx)
 	assertExecutionPayload(sdkCtx)
-}
-
-func fastBackoffForT() {
-	backoffFuncMu.Lock()
-	defer backoffFuncMu.Unlock()
-	backoffFunc = func(context.Context, ...func(*expbackoff.Config)) func() {
-		return func() {}
-	}
 }

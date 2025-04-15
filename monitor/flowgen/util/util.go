@@ -13,8 +13,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// TODO (christian): consolidate with `ApproveToken` in the solver package.
 // ApproveToken gives the 'contract' max allowance to spend the 'user's 'tokens'.
+// TODO (christian): consolidate with `ApproveToken` in the solver package.
 func ApproveToken(ctx context.Context, backend *ethbackend.Backend, token, user, contract common.Address) error {
 	log.Debug(ctx, "Approving token", "token", token, "user", user, "contract", contract)
 

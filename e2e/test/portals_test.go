@@ -17,17 +17,22 @@ func TestPortalOffsets(t *testing.T) {
 		t.Helper()
 		for _, dest := range dests {
 			for _, stream := range network.StreamsBetween(source.Chain.ID, dest.Chain.ID) {
+				s := network.StreamName(stream)
 				// Require some messages were sent
 				require.Eventuallyf(t, func() bool {
 					sourceOffset, err := source.Contract.OutXMsgOffset(nil, dest.Chain.ID, uint64(stream.ShardID))
+					t.Logf("sourceOffset: %s=%v, err=%v", s, sourceOffset, err)
+
 					return err == nil && sourceOffset > 0
-				}, time.Second*30, time.Second, "no xmsgs sent from source chain %v to dest chain %v", source.Chain.ID, dest.Chain.ID)
+				}, time.Second*30, time.Second*3, "no xmsgs sent by source of stream: %v", s)
 
 				// Require some messages were received
 				require.Eventuallyf(t, func() bool {
 					destOffset, err := dest.Contract.InXMsgOffset(nil, source.Chain.ID, uint64(stream.ShardID))
+					t.Logf("destOffset: %s=%v, err=%v", s, destOffset, err)
+
 					return err == nil && destOffset > 0
-				}, time.Second*30, time.Second, "no xmsgs received by dest chain %v from source chain %v", dest.Chain.ID, source.Chain.ID)
+				}, time.Second*30, time.Second*3, "no xmsgs received by dest of stream: %v", s)
 			}
 		}
 	})

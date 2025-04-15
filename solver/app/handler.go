@@ -123,6 +123,26 @@ func newQuoteHandler(quoteFunc quoteFunc) Handler {
 	}
 }
 
+func newPriceHandler(priceFunc priceHandlerFunc) Handler {
+	return Handler{
+		Endpoint: endpointPrice,
+		ZeroReq:  func() any { return &types.PriceRequest{} },
+		HandleFunc: func(ctx context.Context, request any) (any, error) {
+			req, ok := request.(*types.PriceRequest)
+			if !ok {
+				return nil, errors.New("invalid request type [BUG]", "type", fmt.Sprintf("%T", request))
+			}
+
+			res, err := priceFunc(ctx, req)
+			if err != nil {
+				return types.PriceResponse{}, err
+			}
+
+			return res, nil
+		},
+	}
+}
+
 var gatewayTimeout = time.Second * 10
 
 func handlerAdapter(h Handler) http.Handler {

@@ -7,10 +7,10 @@
   },
   "ethereum": {
    "ETH": {
-    "min": "10 ETH"
+    "min": "70 ETH"
    },
    "USDC": {
-    "min": "10000 USDC"
+    "min": "110000 USDC"
    },
    "stETH": {
     "min": "10 stETH"

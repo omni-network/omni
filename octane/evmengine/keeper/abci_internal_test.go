@@ -695,6 +695,7 @@ func (m mockEngineAPI) nextBlock(
 	parentHash common.Hash,
 	feeRecipient common.Address,
 	beaconRoot *common.Hash,
+	withdrawals ...*types.Withdrawal,
 ) (*types.Block, eengine.ExecutableData) {
 	t.Helper()
 	var header types.Header
@@ -709,7 +710,7 @@ func (m mockEngineAPI) nextBlock(
 	// Convert header to block
 	block := types.NewBlock(
 		&header,
-		&types.Body{Withdrawals: []*types.Withdrawal{}},
+		&types.Body{Withdrawals: withdrawals},
 		nil,
 		trie.NewStackTrie(nil),
 	)

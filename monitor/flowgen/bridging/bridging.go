@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/forkjoin"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/monitor/flowgen/types"
@@ -32,7 +33,6 @@ const parallel = 64
 func Jobs(
 	networkID netconf.ID,
 	backends ethbackend.Backends,
-	owner common.Address,
 	scl sclient.Client,
 ) []types.Job {
 	confs, ok := config[networkID]
@@ -43,8 +43,8 @@ func Jobs(
 	var jobs []types.Job
 	for _, conf := range confs {
 		jobs = append(jobs,
-			newJob(networkID, backends, conf, owner, scl),
-			newJob(networkID, backends, conf.Flip(), owner, scl), // Second job using flipped config
+			newJob(networkID, backends, conf, scl),
+			newJob(networkID, backends, conf.Flip(), scl), // Second job using flipped config
 		)
 	}
 
@@ -56,7 +56,6 @@ func newJob(
 	networkID netconf.ID,
 	backends ethbackend.Backends,
 	conf flowConfig,
-	owner common.Address,
 	scl sclient.Client,
 ) types.Job {
 	cadence := 25 * time.Minute
@@ -71,7 +70,7 @@ func newJob(
 		Cadence:    cadence,
 		SrcChainID: conf.srcChain,
 		OpenOrdersFunc: func(ctx context.Context) ([]types.Result, error) {
-			return openOrders(ctx, backends, networkID, owner, conf, scl)
+			return openOrders(ctx, backends, networkID, conf, scl)
 		},
 	}
 }
@@ -79,11 +78,12 @@ func newJob(
 func openOrders(
 	ctx context.Context,
 	backends ethbackend.Backends,
-	networkID netconf.ID,
-	owner common.Address,
+	network netconf.ID,
 	conf flowConfig,
 	scl sclient.Client,
 ) ([]types.Result, error) {
+	flowgenAddr := eoa.MustAddress(network, eoa.RoleFlowgen)
+
 	srcToken, ok := tokens.Native(conf.srcChain)
 	if !ok {
 		return nil, errors.New("src token not found")
@@ -94,24 +94,43 @@ func openOrders(
 		return nil, errors.New("dst token not found")
 	}
 
-	backend, err := backends.Backend(conf.srcChain)
+	srcBackend, err := backends.Backend(conf.srcChain)
+	if err != nil {
+		return nil, err
+	}
+	destBackend, err := backends.Backend(dstToken.ChainID)
 	if err != nil {
 		return nil, err
 	}
 
-	totalAmount, err := availableBalance(ctx, networkID, backend.Client, owner, srcToken)
+	price, err := swapPrice(ctx, scl, srcToken, dstToken)
 	if err != nil {
-		return nil, errors.Wrap(err, "get order size")
+		return nil, errors.Wrap(err, "price")
 	}
 
+	// Use all available flowgen balance (without dropping below minimums)
+	totalAmount, err := availableBalance(ctx, network, srcBackend, eoa.RoleFlowgen, srcToken)
+	if err != nil {
+		return nil, errors.Wrap(err, "get source available")
+	}
+
+	// Limit to available solver balance on destination.
+	if solverDstAvail, err := availableBalance(ctx, network, destBackend, eoa.RoleSolver, dstToken); err != nil {
+		return nil, errors.Wrap(err, "get dest available")
+	} else if solverSrcAvail := bi.MulF64(solverDstAvail, price); bi.GT(totalAmount, solverSrcAvail) {
+		totalAmount = solverSrcAvail
+	}
+
+	bounds := solver.GetSpendBounds(dstToken).DepositBounds(price)
+
 	p := parallel
-	if networkID == netconf.Devnet {
+	if network == netconf.Devnet {
 		p = parallelDev
 	}
 
 	var orderDatas []bindings.SolverNetOrderData
-	for _, amount := range splitOrderAmounts(solver.GetSpendBounds(dstToken), totalAmount, p) {
-		orderData, err := nativeOrderData(ctx, scl, owner, srcToken, dstToken, amount)
+	for _, amount := range splitOrderAmounts(bounds, totalAmount, p) {
+		orderData, err := nativeOrderData(ctx, scl, flowgenAddr, srcToken, dstToken, amount)
 		if err != nil {
 			return nil, err
 		}
@@ -119,14 +138,29 @@ func openOrders(
 		orderDatas = append(orderDatas, orderData)
 	}
 
-	work := func(ctx context.Context, orderData bindings.SolverNetOrderData) (types.Result, error) {
-		return openOrder(ctx, backends, networkID, owner, conf.srcChain, scl, orderData)
+	work := func(ctx context.Context, orderData bindings.SolverNetOrderData) (output, error) {
+		return openOrder(ctx, backends, network, flowgenAddr, conf.srcChain, scl, orderData)
 	}
 
-	results, cancel := forkjoin.NewWithInputs(ctx, work, orderDatas, forkjoin.WithWorkers(16))
+	outputs, cancel := forkjoin.NewWithInputs(ctx, work, orderDatas, forkjoin.WithWorkers(16))
 	defer cancel()
 
-	return results.Flatten()
+	all, err := outputs.Flatten()
+	if err != nil {
+		return nil, errors.Wrap(err, "open orders")
+	}
+
+	// Filter out skipped orders
+	var results []types.Result
+	for _, result := range all {
+		if result.Skip {
+			continue
+		}
+
+		results = append(results, result.Result)
+	}
+
+	return results, nil
 }
 
 func splitOrderAmounts(bounds solver.SpendBounds, total *big.Int, split int) []*big.Int {
@@ -181,6 +215,23 @@ func check(ctx context.Context, scl sclient.Client, srcChainID uint64, orderData
 	return scl.Check(ctx, checkReq)
 }
 
+// swapPrice returns the price of the source token in destination tokens.
+func swapPrice(ctx context.Context, scl sclient.Client, srcToken, dstToken tokens.Token) (float64, error) {
+	priceReq := stypes.PriceRequest{
+		SourceChainID:      srcToken.ChainID,
+		DestinationChainID: dstToken.ChainID,
+		DepositToken:       srcToken.Address,
+		ExpenseToken:       dstToken.Address,
+	}
+
+	price, err := scl.Price(ctx, priceReq)
+	if err != nil {
+		return 0, errors.Wrap(err, "price")
+	}
+
+	return price, nil
+}
+
 func nativeOrderData(ctx context.Context, scl sclient.Client, owner common.Address, srcToken, dstToken tokens.Token, expenseAmt *big.Int) (bindings.SolverNetOrderData, error) {
 	quoteReq := stypes.QuoteRequest{
 		SourceChainID:      srcToken.ChainID,
@@ -212,6 +263,11 @@ func nativeOrderData(ctx context.Context, scl sclient.Client, owner common.Addre
 	}, nil
 }
 
+type output struct {
+	types.Result
+	Skip bool
+}
+
 func openOrder(
 	ctx context.Context,
 	backends ethbackend.Backends,
@@ -220,37 +276,49 @@ func openOrder(
 	srcChainID uint64,
 	scl sclient.Client,
 	orderData bindings.SolverNetOrderData,
-) (types.Result, error) {
+) (output, error) {
 	if resp, err := check(ctx, scl, srcChainID, orderData); err != nil {
-		return types.Result{}, errors.Wrap(err, "check")
+		return output{}, errors.Wrap(err, "check")
+	} else if resp.RejectCode == stypes.RejectInsufficientInventory {
+		log.Debug(ctx, "Skipping bridge order due to insufficient inventory", "description", resp.RejectDescription)
+		return output{Skip: true}, nil
 	} else if resp.Rejected {
-		return types.Result{}, errors.New("order rejected", "description", resp.RejectDescription, "reason", resp.RejectCode)
+		return output{}, errors.New("order rejected", "description", resp.RejectDescription, "reason", resp.RejectCode)
 	}
 
 	orderID, err := solvernet.OpenOrder(ctx, networkID, srcChainID, backends, owner, orderData)
 	if err != nil {
-		return types.Result{}, errors.Wrap(err, "open order")
+		return output{}, errors.Wrap(err, "open order")
 	}
 
-	return types.Result{OrderID: orderID, Data: orderData}, nil
+	return output{Result: types.Result{OrderID: orderID, Data: orderData}}, nil
 }
 
-// availableBalance returns the available flowgen balance to spend on orders.
+// availableBalance returns the available balance to spend on orders.
 func availableBalance(
 	ctx context.Context,
-	networkID netconf.ID,
+	network netconf.ID,
 	client ethclient.Client,
-	owner common.Address,
-	srcToken tokens.Token,
+	role eoa.Role,
+	token tokens.Token,
 ) (*big.Int, error) {
-	balance, err := client.BalanceAt(ctx, owner, nil)
+	if !token.IsNative() {
+		return nil, errors.New("only native tokens supported", "token", token)
+	}
+
+	addr, ok := eoa.Address(network, role)
+	if !ok {
+		return nil, errors.New("invalid role", "role", role)
+	}
+
+	balance, err := client.BalanceAt(ctx, addr, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "balance at")
 	}
 
-	thresholds, ok := eoa.GetFundThresholds(srcToken.Asset, networkID, eoa.RoleFlowgen)
+	thresholds, ok := eoa.GetFundThresholds(token.Asset, network, role)
 	if !ok {
-		return nil, errors.New("no flowgen thresholds found", "asset", srcToken.Asset)
+		return nil, errors.New("no role thresholds found", "asset", token.Asset, "role", role)
 	}
 
 	reserved := bi.Ether(0.01) // overhead that should cover solver commission and tx fees

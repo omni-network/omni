@@ -213,7 +213,7 @@ func (p *Provider) stream(
 
 	cb := (stream.Callback[xchain.Block])(callback)
 
-	ctx = log.WithCtx(ctx, "chain", chainVersionName)
+	ctx = log.WithCtx(ctx, "chain_version", chainVersionName)
 	log.Info(ctx, "Streaming xprovider blocks", "from_height", fromHeight)
 
 	return stream.Stream(ctx, deps, fromHeight, cb)

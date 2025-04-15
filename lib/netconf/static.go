@@ -128,6 +128,10 @@ func (s Static) ExecutionRPC() string {
 	return fmt.Sprintf("https://%s.omni.network", s.Network)
 }
 
+func (s Static) SolverURL() string {
+	return fmt.Sprintf("https://solver.%s.omni.network", s.Network)
+}
+
 func (s Static) ConsensusRPC() string {
 	if s.Network == Devnet {
 		// First halo in devnet docker-compose.
@@ -244,7 +248,7 @@ var statics = map[ID]Static{
 		AVSContractAddress:   mainnetAVS,
 		OmniExecutionChainID: evmchain.IDOmniMainnet,
 		MaxValidators:        maxValidators,
-		UnbondingTime:        1814400 * time.Second,
+		UnbondingTime:        time.Hour * 24 * 7 * 3, // 3 weeks
 		TokenAddress:         mainnetToken,
 		L1BridgeAddress:      mainnetBridge,
 		Portals: []Deployment{
