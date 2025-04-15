@@ -17,6 +17,9 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
+type getMessageSentFunc func(logs []ethtypes.Log) (*MessageTransmitterMessageSent, bool, error)
+type getDepositForBurnFunc func(logs []ethtypes.Log) (*TokenMessengerDepositForBurn, bool, error)
+
 // StoreMessagesForever streams CCTP SendUSDC messages, and saves them to the database.
 func StoreMessagesForever(
 	ctx context.Context,
@@ -36,8 +39,10 @@ func StoreMessagesForever(
 		return errors.Wrap(err, "token messenger")
 	}
 
-	getDepositForBurn := newDepositForBurnGetter(tknMessenger, tknMessengerAddr, recipient)
-	getMessageSent := newMessageSentGetter(msgTransmitter, msgTransmitterAddr)
+	proc := newEventProc(db, chainVer,
+		newDepositForBurnGetter(tknMessenger, tknMessengerAddr, recipient),
+		newMessageSentGetter(msgTransmitter, msgTransmitterAddr),
+	)
 
 	backoff := expbackoff.New(ctx)
 	for {
@@ -57,41 +62,7 @@ func StoreMessagesForever(
 			FilterTopics:    []common.Hash{depositForBurnEvent.ID, messageSentEvent.ID},
 		}
 
-		err = xprov.StreamEventLogs(ctx, req, func(ctx context.Context, header *ethtypes.Header, elogs []ethtypes.Log) error {
-			// Group logs by transaction hash
-			byTxHash := make(map[common.Hash][]ethtypes.Log)
-			for _, log := range elogs {
-				byTxHash[log.TxHash] = append(byTxHash[log.TxHash], log)
-			}
-
-			var msgs []types.MsgSendUSDC
-			for _, logs := range byTxHash {
-				// Get DepositForBurn event
-				burn, ok, err := getDepositForBurn(logs)
-				if err != nil {
-					return err
-				} else if !ok {
-					continue
-				}
-
-				// Get MessageSent event
-				send, ok, err := getMessageSent(logs)
-				if err != nil {
-					return err
-				} else if !ok {
-					continue
-				}
-
-				msg := eventPairToMsg(chainVer.ID, burn, send)
-				msgs = append(msgs, msg)
-			}
-
-			if err := insertMsgs(ctx, db, msgs); err != nil {
-				return errors.Wrap(err, "insert msgs")
-			}
-
-			return db.SetCursor(ctx, chainVer.ID, header.Number.Uint64())
-		})
+		err = xprov.StreamEventLogs(ctx, req, proc)
 
 		if ctx.Err() != nil {
 			//nolint:nilerr // Allow context timeout.
@@ -103,8 +74,52 @@ func StoreMessagesForever(
 	}
 }
 
-// insertMsgs inserts a list of MsgSendUSDC into the database, if they don't already exist.
-func insertMsgs(ctx context.Context, db *db.DB, msgs []types.MsgSendUSDC) error {
+// newEventProc returns an xchain.EventLogsCallback that processes CCTP DepositForBurn & MessageSent events.
+func newEventProc(
+	db *db.DB,
+	chainVer xchain.ChainVersion,
+	getDepositForBurn getDepositForBurnFunc,
+	getMessageSent getMessageSentFunc,
+) xchain.EventLogsCallback {
+	return func(ctx context.Context, header *ethtypes.Header, elogs []ethtypes.Log) error {
+		// Group logs by transaction hash
+		byTxHash := make(map[common.Hash][]ethtypes.Log)
+		for _, log := range elogs {
+			byTxHash[log.TxHash] = append(byTxHash[log.TxHash], log)
+		}
+
+		var msgs []types.MsgSendUSDC
+		for _, logs := range byTxHash {
+			// Get DepositForBurn event
+			burn, ok, err := getDepositForBurn(logs)
+			if err != nil {
+				return err
+			} else if !ok {
+				continue
+			}
+
+			// Get MessageSent event
+			send, ok, err := getMessageSent(logs)
+			if err != nil {
+				return err
+			} else if !ok {
+				continue
+			}
+
+			msg := eventPairToMsg(chainVer.ID, burn, send)
+			msgs = append(msgs, msg)
+		}
+
+		if err := upsertMsgs(ctx, db, msgs); err != nil {
+			return errors.Wrap(err, "upsert msgs")
+		}
+
+		return db.SetCursor(ctx, chainVer.ID, header.Number.Uint64())
+	}
+}
+
+// upsertMsgs upserts a list of MsgSendUSDC by tx hash, if necessary.
+func upsertMsgs(ctx context.Context, db *db.DB, msgs []types.MsgSendUSDC) error {
 	for _, msg := range msgs {
 		curr, ok, err := db.GetMsg(ctx, msg.TxHash)
 		if err != nil {
@@ -155,11 +170,7 @@ func eventPairToMsg(
 }
 
 // newDepositForBurnGetter returns a func that finds an TokenMessenger.DepositForBurn event in a list of logs.
-func newDepositForBurnGetter(
-	contract *TokenMessenger,
-	addr common.Address,
-	recipient common.Address,
-) func(logs []ethtypes.Log) (*TokenMessengerDepositForBurn, bool, error) {
+func newDepositForBurnGetter(contract *TokenMessenger, addr common.Address, recipient common.Address) getDepositForBurnFunc {
 	return func(logs []ethtypes.Log) (*TokenMessengerDepositForBurn, bool, error) {
 		for _, log := range logs {
 			// Skip if not TokenMessage.DepositForBurn event
@@ -184,10 +195,7 @@ func newDepositForBurnGetter(
 }
 
 // newMessageSentGetter returns a func that finds an MessageTransmitter.MessageSent event in a list of logs.
-func newMessageSentGetter(
-	contract *MessageTransmitter,
-	addr common.Address,
-) func(logs []ethtypes.Log) (*MessageTransmitterMessageSent, bool, error) {
+func newMessageSentGetter(contract *MessageTransmitter, addr common.Address) getMessageSentFunc {
 	return func(logs []ethtypes.Log) (*MessageTransmitterMessageSent, bool, error) {
 		for _, log := range logs {
 			// Skip if not MessageTransmitter.MessageSent event
