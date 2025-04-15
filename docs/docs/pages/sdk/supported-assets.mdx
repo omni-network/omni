@@ -7,10 +7,36 @@ import { Callout } from 'vocs/components'
 
 # Supported Assets
 
-The Omni SDK and SolverNet currently facilitate cross-chain operations primarily focused on **native gas tokens** (like ETH, MATIC) and **ERC20 tokens**.
+Currently, SolverNet primarily supports **like-asset** operations, meaning you deposit an asset on the source chain to cover the expense of the *same type* of asset on the destination chain. This is true for any asset that is pegged 1:1, such as USDC on Base to USDC on Arbitrum; but also ETH on Chain A to stETH on Chain B. Swaps between different assets are not yet enabled via the SDK.
 
-<Callout type="info" title="Like-Asset Only">
-Currently, SolverNet primarily supports **like-asset** operations, meaning you deposit an asset on the source chain to cover the expense of the *same type* of asset on the destination chain (e.g., deposit ETH on Base to spend ETH on Holesky, deposit USDC on Optimism to spend USDC on Arbitrum). Swaps between different assets are not yet enabled via the SDK.
+## Supported Asset List
+
+The following tables list the currently supported assets on Mainnet and Testnet networks.
+
+### Mainnet Assets
+
+| Network | Chain | Asset | Contract Address |
+| ------- | ----- | ----- | --------------- |
+| Mainnet | Ethereum, Base, Arbitrum One, Optimism | ETH | Native |
+| Mainnet | Ethereum | wstETH | 0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0 |
+| Mainnet | Ethereum | stETH | 0xae7ab96520de3a18e5e111b5eaab095312d7fe84 |
+| Mainnet | Base | wstETH | 0xc1cba3fcea344f92d9239c08c0568f6f2f0ee452 |
+| Mainnet | Ethereum | USDC | 0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48 |
+| Mainnet | Arbitrum One | USDC | 0xaf88d065e77c8cc2239327c5edb3a432268e5831 |
+| Mainnet | Optimism | USDC | 0x0b2c639c533813f4aa9d7837caf62653d097ff85 |
+| Mainnet | Base | USDC | 0x833589fcd6edb6e08f4c7c32d4f71b54bda02913 |
+
+### Testnet Assets
+
+| Network | Chain | Asset | Contract Address |
+| ------- | ----- | ----- | --------------- |
+| Testnet | Holesky, Arb/Base/Op Sepolia | ETH | Native |
+| Testnet | Holesky | wstETH | 0x8d09a4502cc8cf1547ad300e066060d043f6982d |
+| Testnet | Holesky | stETH | 0x3f1c547b21f65e10480de3ad8e19faac46c95034 |
+| Testnet | Base Sepolia | Mock wstETH (mintable) | 0x6319df7c227e34B967C1903A08a698A3cC43492B |
+
+<Callout type="info" title="Asset List Updates">
+Supported assets are updated frequently. Please ask the Omni team for the most up-to-date list of supported assets, including minimum and maximum limits.
 </Callout>
 
 ## Native Assets
