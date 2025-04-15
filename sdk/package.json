@@ -8,8 +8,8 @@
   "scripts": {
     "build": "pnpm run -r build",
     "check": "biome check --write",
-    "postinstall": "pnpm run build",
-    "test:unit": "pnpm run --filter='@omni-network/*' test",
+    "postinstall": "pnpm run -r build",
+    "test:unit": "cd packages/react && pnpm test",
     "test:integration": "cd integration-tests && pnpm test"
   },
   "devDependencies": {
