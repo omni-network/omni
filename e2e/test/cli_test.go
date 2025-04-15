@@ -6,12 +6,15 @@ import (
 	"crypto/ecdsa"
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/omni-network/omni/cli/cmd"
+	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/types"
+	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cchain/provider"
@@ -245,6 +248,38 @@ func TestCLIOperator(t *testing.T) {
 				return latestRewards.GT(originalRewards)
 			}, valChangeWait, 500*time.Millisecond, "no rewards increase")
 		})
+
+		t.Run("undelegation", func(t *testing.T) {
+			var block *big.Int
+			require.NoError(t, err)
+			balance, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, block)
+			require.NoError(t, err)
+
+			contract, err := bindings.NewStaking(common.HexToAddress(predeploys.Staking), omniBackend)
+			require.NoError(t, err)
+
+			burnFee := bi.Ether(0.1)
+
+			txOpts, err := omniBackend.BindOpts(ctx, delegatorEthAddr)
+			require.NoError(t, err)
+			txOpts.Value = burnFee
+
+			// undelegate everything
+			undelegatedAmount := big.NewInt(int64(2 * delegatorDelegation))
+			tx, err := contract.Undelegate(txOpts, validatorAddr, undelegatedAmount)
+			require.NoError(t, err)
+
+			_, err = omniBackend.WaitMined(ctx, tx)
+			require.NoError(t, err)
+
+			require.Eventuallyf(t, func() bool {
+				newBalance, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, block)
+				require.NoError(t, err)
+
+				// we subtract the burn fee twice to account for the tx fees (which are expected to be below the burn fee)
+				return bi.GTE(newBalance, bi.Add(bi.Sub(balance, burnFee, burnFee), undelegatedAmount))
+			}, valChangeWait, 500*time.Millisecond, "failed to undeleate")
+		})
 	})
 }
 
@@ -305,6 +340,9 @@ func GenFundedEOA(ctx context.Context, t *testing.T, backend *ethbackend.Backend
 	bal, err := backend.BalanceAt(ctx, newAddr, nil)
 	require.NoError(t, err)
 	require.True(t, bi.EQ(amount1k, bal))
+
+	_, err = backend.AddAccount(newKey)
+	require.NoError(t, err)
 
 	log.Debug(ctx, "Funded new EOA", "addr", newAddr.Hex(), "amount", bi.ToEtherF64(amount1k), "chain", backend.Name())
 

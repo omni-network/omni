@@ -27,11 +27,13 @@ var (
 	stakingABI           = mustGetABI(bindings.StakingMetaData)
 	createValidatorEvent = mustGetEvent(stakingABI, "CreateValidator")
 	delegateEvent        = mustGetEvent(stakingABI, "Delegate")
+	undelegateEvent      = mustGetEvent(stakingABI, "Undelegate")
 	editValidatorEvent   = mustGetEvent(stakingABI, "EditValidator")
 
 	eventsByID = map[common.Hash]abi.Event{
 		createValidatorEvent.ID: createValidatorEvent,
 		delegateEvent.ID:        delegateEvent,
+		undelegateEvent.ID:      undelegateEvent,
 		editValidatorEvent.ID:   editValidatorEvent,
 	}
 )
@@ -145,12 +147,16 @@ func (Keeper) Name() string {
 
 // FilterParams defines the matching EVM log events, see github.com/ethereum/go-ethereum#FilterQuery.
 func (k Keeper) FilterParams() ([]common.Address, [][]common.Hash) {
-	return []common.Address{k.address}, [][]common.Hash{{createValidatorEvent.ID, delegateEvent.ID, editValidatorEvent.ID}}
+	return []common.Address{k.address}, [][]common.Hash{{
+		createValidatorEvent.ID, delegateEvent.ID, undelegateEvent.ID, editValidatorEvent.ID,
+	}}
 }
 
 // Deliver processes a omni deposit log event, which must be one of:
-// - CreateValidator
-// - Delegate.
+// - CreateValidator,
+// - EditValidator,
+// - Delegate,
+// - Undelegate.
 // Note that the event delivery is not immediate. Instead, every event is
 // first stored in keeper's state. Then all stored events are periodically delivered
 // from `EndBlock` at once.
@@ -223,6 +229,15 @@ func (k Keeper) parseAndDeliver(ctx context.Context, elog *evmenginetypes.EVMEve
 		if err := k.deliverDelegate(ctx, delegate); err != nil {
 			return errors.Wrap(err, "delegate")
 		}
+	case undelegateEvent.ID:
+		undelegate, err := k.contract.ParseUndelegate(ethlog)
+		if err != nil {
+			return errors.Wrap(err, "parse undelegate")
+		}
+
+		if err := k.deliverUndelegate(ctx, undelegate); err != nil {
+			return errors.Wrap(err, "undelegate")
+		}
 	case editValidatorEvent.ID:
 		editVal, err := k.contract.ParseEditValidator(ethlog)
 		if err != nil {
@@ -246,8 +261,8 @@ func (k Keeper) parseAndDeliver(ctx context.Context, elog *evmenginetypes.EVMEve
 //
 // NOTE: if we error, the deposit is lost (on EVM). consider recovery methods.
 func (k Keeper) deliverDelegate(ctx context.Context, ev *bindings.StakingDelegate) error {
-	if err := verifyStakingDelegate(ev); err != nil {
-		return err
+	if ev.Amount == nil {
+		return errors.New("stake amount missing")
 	}
 
 	delAddr := sdk.AccAddress(ev.Delegator.Bytes())
@@ -278,6 +293,31 @@ func (k Keeper) deliverDelegate(ctx context.Context, ev *bindings.StakingDelegat
 	_, err := k.sServer.Delegate(ctx, msg)
 	if err != nil {
 		return errors.Wrap(err, "delegate")
+	}
+
+	return nil
+}
+
+// deliverUndelegate processes an Unelegate event.
+func (k Keeper) deliverUndelegate(ctx context.Context, ev *bindings.StakingUndelegate) error {
+	if ev.Amount == nil {
+		return errors.New("unstake amount missing")
+	}
+
+	delAddr := sdk.AccAddress(ev.Delegator.Bytes())
+	valAddr := sdk.ValAddress(ev.Validator.Bytes())
+
+	amountCoin, _ := omniToBondCoin(ev.Amount)
+
+	log.Info(ctx, "EVM staking undelegation detected, undelegating",
+		"delegator", ev.Delegator.Hex(),
+		"validator", ev.Validator.Hex(),
+		"amount", ev.Amount.String())
+
+	msg := stypes.NewMsgUndelegate(delAddr.String(), valAddr.String(), amountCoin)
+	_, err := k.sServer.Undelegate(ctx, msg)
+	if err != nil {
+		return errors.Wrap(err, "undelegate")
 	}
 
 	return nil
@@ -384,14 +424,6 @@ func (k Keeper) deliverCreateValidator(ctx context.Context, createValidator *bin
 	_, err = k.sServer.CreateValidator(ctx, msg)
 	if err != nil {
 		return errors.Wrap(err, "create validator")
-	}
-
-	return nil
-}
-
-func verifyStakingDelegate(delegate *bindings.StakingDelegate) error {
-	if delegate.Amount == nil {
-		return errors.New("stake amount missing")
 	}
 
 	return nil

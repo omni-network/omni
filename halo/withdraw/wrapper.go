@@ -13,7 +13,9 @@ import (
 
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 )
 
 // BankWrapper wraps x/bank.Keeper by overriding methods with
@@ -21,11 +23,12 @@ import (
 type BankWrapper struct {
 	bankkeeper.Keeper
 
+	ak              AccountKeeper
 	EVMEngineKeeper EVMEngineKeeper
 }
 
-func NewBankWrapper(k bankkeeper.Keeper) *BankWrapper {
-	return &BankWrapper{Keeper: k}
+func NewBankWrapper(k bankkeeper.Keeper, ak AccountKeeper) *BankWrapper {
+	return &BankWrapper{Keeper: k, ak: ak}
 }
 
 func (w *BankWrapper) SetEVMEngineKeeper(keeper EVMEngineKeeper) {
@@ -45,20 +48,34 @@ func (w *BankWrapper) SendCoinsFromModuleToAccountNoWithdrawal(ctx context.Conte
 
 // UndelegateCoinsFromModuleToAccount intercepts all principal undelegations and
 // creates EVM withdrawal to the user account.
-// TODO(corver): This is unexpected in magellan upgrade, must be implemented in drake.
-func (w *BankWrapper) UndelegateCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
-	log.Error(ctx, "Unexpected call to DelegateCoinsFromAccountToModule [BUG]", nil, "sender", senderModule, "recipient", recipientAddr, "amt", amt)
+func (w *BankWrapper) UndelegateCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, coins sdk.Coins) error {
+	log.Debug(ctx, "Undelegating coins from module to account", "sender", senderModule, "recipient", recipientAddr, "coins", coins)
 
-	if err := w.Keeper.UndelegateCoinsFromModuleToAccount(ctx, senderModule, recipientAddr, amt); err != nil {
-		return errors.Wrap(err, "undelegate coins from module to account")
+	acc := w.ak.GetModuleAccount(ctx, senderModule)
+	if acc == nil {
+		return errors.New("module account does not exist [BUG]", "module_name", senderModule)
 	}
 
-	return nil
+	if !acc.HasPermission(authtypes.Staking) {
+		return errors.New("module account does not have permissions to undelegate coins", "module_name", senderModule)
+	}
+
+	return w.SendCoinsFromModuleToAccount(ctx, senderModule, recipientAddr, coins)
 }
 
 // SendCoinsFromModuleToAccount intercepts all "normal" bank transfers from modules to users and
 // creates EVM withdrawal to the user account and burns the funds from the module.
 func (w *BankWrapper) SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, coins sdk.Coins) error {
+	acc := w.ak.GetAccount(ctx, recipientAddr)
+	if acc == nil {
+		return errors.New("recipient account does not exist [BUG]", "recipient_addr", recipientAddr)
+	}
+
+	_, ok := acc.(banktypes.VestingAccount)
+	if ok {
+		return errors.New("vesting accounts are not supported [BUG]")
+	}
+
 	if w.EVMEngineKeeper == nil {
 		return errors.New("nil EVMEngineKeeper [BUG]")
 	} else if !coins.IsValid() { // This ensures amounts are positive
