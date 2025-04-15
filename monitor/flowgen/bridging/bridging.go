@@ -121,7 +121,11 @@ func openOrders(
 		totalAmount = solverSrcAvail
 	}
 
-	bounds := solver.GetSpendBounds(dstToken).DepositBounds(price)
+	expenseBound, ok := solver.GetSpendBounds(dstToken)
+	if !ok {
+		return nil, errors.New("no expense bounds found", "token", dstToken)
+	}
+	depositBounds := expenseBound.DepositBounds(price)
 
 	p := parallel
 	if network == netconf.Devnet {
@@ -129,7 +133,7 @@ func openOrders(
 	}
 
 	var orderDatas []bindings.SolverNetOrderData
-	for _, amount := range splitOrderAmounts(bounds, totalAmount, p) {
+	for _, amount := range splitOrderAmounts(depositBounds, totalAmount, p) {
 		orderData, err := nativeOrderData(ctx, scl, flowgenAddr, srcToken, dstToken, amount)
 		if err != nil {
 			return nil, err

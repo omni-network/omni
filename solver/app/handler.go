@@ -143,6 +143,17 @@ func newPriceHandler(priceFunc priceHandlerFunc) Handler {
 	}
 }
 
+func newTokensHandler(chains []uint64) Handler {
+	return Handler{
+		Endpoint:       endpointTokens,
+		SkipInstrument: true, // Reduce noise as this endpoint returns static data.
+		ZeroReq:        func() any { return nil },
+		HandleFunc: func(context.Context, any) (any, error) {
+			return tokensResponse(chains)
+		},
+	}
+}
+
 var gatewayTimeout = time.Second * 10
 
 func handlerAdapter(h Handler) http.Handler {

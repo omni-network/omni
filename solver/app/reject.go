@@ -257,12 +257,12 @@ func parseMaxSpent(pendingData PendingData, outboxAddr common.Address) ([]TokenA
 			hasNative = true
 		}
 
-		bounds := GetSpendBounds(tkn)
-		if bounds.MaxSpend != nil && bi.GT(output.Amount, bounds.MaxSpend) {
+		bounds, ok := GetSpendBounds(tkn)
+		if ok && bi.GT(output.Amount, bounds.MaxSpend) {
 			return nil, newRejection(types.RejectExpenseOverMax, errors.New("expense over max", "token", tkn.Symbol, "max", bounds.MaxSpend, "amount", output.Amount))
 		}
 
-		if bounds.MinSpend != nil && bi.LT(output.Amount, bounds.MinSpend) {
+		if ok && bi.LT(output.Amount, bounds.MinSpend) {
 			return nil, newRejection(types.RejectExpenseUnderMin, errors.New("expense under min", "token", tkn.Symbol, "min", bounds.MinSpend, "amount", output.Amount))
 		}
 

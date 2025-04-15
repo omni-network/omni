@@ -159,8 +159,8 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 			nativeExpense = bi.Add(nativeExpense, e.Amount)
 		}
 
-		bounds := GetSpendBounds(tkn)
-		if bounds.MaxSpend != nil && bi.GT(e.Amount, bounds.MaxSpend) {
+		bounds, ok := GetSpendBounds(tkn)
+		if ok && bi.GT(e.Amount, bounds.MaxSpend) {
 			return nil, newRejection(types.RejectExpenseOverMax,
 				errors.New("requested expense exceeds maximum",
 					"ask", tkn.FormatAmt(e.Amount),
@@ -168,7 +168,7 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 				))
 		}
 
-		if bounds.MinSpend != nil && bi.LT(e.Amount, bounds.MinSpend) {
+		if ok && bi.LT(e.Amount, bounds.MinSpend) {
 			return nil, newRejection(types.RejectExpenseUnderMin,
 				errors.New("requested expense is below minimum",
 					"ask", tkn.FormatAmt(e.Amount),

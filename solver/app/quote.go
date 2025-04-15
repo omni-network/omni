@@ -45,9 +45,9 @@ func newQuoter(priceFunc priceFunc) quoteFunc {
 		}
 
 		maybeMinMaxReject := func(expenseAmt *big.Int) error {
-			bounds := GetSpendBounds(expenseTkn)
-			overMax := bounds.MaxSpend != nil && bi.GT(expenseAmt, bounds.MaxSpend)
-			underMin := bounds.MinSpend != nil && bi.LT(expenseAmt, bounds.MinSpend)
+			bounds, ok := GetSpendBounds(expenseTkn)
+			overMax := ok && bi.GT(expenseAmt, bounds.MaxSpend)
+			underMin := ok && bi.LT(expenseAmt, bounds.MinSpend)
 
 			if overMax {
 				return newRejection(types.RejectExpenseOverMax,

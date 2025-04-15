@@ -2,10 +2,15 @@ package app
 
 import (
 	"math/big"
+	"sort"
 
 	"github.com/omni-network/omni/lib/bi"
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/solver/types"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 var (
@@ -127,11 +132,53 @@ var (
 	}
 )
 
-func GetSpendBounds(token tokens.Token) SpendBounds {
+func GetSpendBounds(token tokens.Token) (SpendBounds, bool) {
 	override, ok := chainOverrides[token.Asset][token.ChainID]
 	if ok {
-		return override
+		return override, true
 	}
 
-	return tokenSpendBounds[token.Asset][token.ChainClass]
+	resp, ok := tokenSpendBounds[token.Asset][token.ChainClass]
+
+	return resp, ok
+}
+
+func tokensResponse(chains []uint64) (types.TokensResponse, error) {
+	var resp []types.TokenResponse
+	for _, chain := range chains {
+		for asset := range supportedTokens {
+			token, ok := tokens.ByAsset(chain, asset)
+			if !ok {
+				continue
+			}
+
+			bounds, ok := GetSpendBounds(token)
+			if !ok {
+				return types.TokensResponse{}, errors.New("invalid token")
+			}
+
+			resp = append(resp, types.TokenResponse{
+				Enabled:    true, // Disable not supported yet.
+				Name:       token.Name,
+				Symbol:     token.Symbol,
+				ChainID:    token.ChainID,
+				Address:    token.Address,
+				Decimals:   token.Decimals,
+				ExpenseMin: (*hexutil.Big)(bounds.MinSpend),
+				ExpenseMax: (*hexutil.Big)(bounds.MaxSpend),
+			})
+		}
+	}
+
+	sort.Slice(resp, func(i, j int) bool {
+		if resp[i].ChainID != resp[j].ChainID {
+			return resp[i].ChainID < resp[j].ChainID
+		}
+
+		return resp[i].Symbol < resp[j].Symbol
+	})
+
+	return types.TokensResponse{
+		Tokens: resp,
+	}, nil
 }

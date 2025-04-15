@@ -139,6 +139,7 @@ func Run(ctx context.Context, cfg Config) error {
 		newContractsHandler(addrs),
 		newQuoteHandler(newQuoter(priceFunc)),
 		newPriceHandler(wrapPriceHandlerFunc(priceFunc)),
+		newTokensHandler(network.ChainIDs()),
 	)
 	defer apiCancel()
 
