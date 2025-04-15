@@ -77,11 +77,11 @@ func TestMsgDB(t *testing.T) {
 		require.Equal(t, msg, gotMsg)
 
 		// List and verify all messages added so far
-		listMsgs, err := db.ListMsgs(ctx)
+		gotMsgs, err := db.GetMsgs(ctx)
 		require.NoError(t, err)
-		require.NotNil(t, listMsgs)
-		require.Len(t, listMsgs, i+1)
-		require.Contains(t, listMsgs, msg)
+		require.NotNil(t, gotMsgs)
+		require.Len(t, gotMsgs, i+1)
+		require.Contains(t, gotMsgs, msg)
 	}
 
 	// Test SetMsg
@@ -120,16 +120,16 @@ func TestMsgDB(t *testing.T) {
 		require.False(t, ok)
 
 		// List and verify remaining
-		listMsgs, err := db.ListMsgs(ctx)
+		gotMsgs, err := db.GetMsgs(ctx)
 		require.NoError(t, err)
-		require.NotNil(t, listMsgs)
-		require.Len(t, listMsgs, numMsgs-i-1)
-		require.NotContains(t, listMsgs, msg)
+		require.NotNil(t, gotMsgs)
+		require.Len(t, gotMsgs, numMsgs-i-1)
+		require.NotContains(t, gotMsgs, msg)
 	}
 
 	// Assert no messages left
-	listMsgs, err := db.ListMsgs(ctx)
+	gotMsgs, err := db.GetMsgs(ctx)
 	require.NoError(t, err)
-	require.NotNil(t, listMsgs)
-	require.Empty(t, listMsgs)
+	require.NotNil(t, gotMsgs)
+	require.Empty(t, gotMsgs)
 }
