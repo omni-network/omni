@@ -86,6 +86,10 @@ func (db *DB) InsertMsg(ctx context.Context, msg types.MsgSendUSDC) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
+	if err := msg.Validate(); err != nil {
+		return errors.Wrap(err, "validate msg")
+	}
+
 	if err := db.msgTable.Insert(ctx, msgToProto(msg)); err != nil {
 		return errors.Wrap(err, "insert msg")
 	}
@@ -98,8 +102,11 @@ func (db *DB) SetMsg(ctx context.Context, msg types.MsgSendUSDC) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	proto := msgToProto(msg)
-	if err := db.msgTable.Save(ctx, proto); err != nil {
+	if err := msg.Validate(); err != nil {
+		return errors.Wrap(err, "validate msg")
+	}
+
+	if err := db.msgTable.Save(ctx, msgToProto(msg)); err != nil {
 		return errors.Wrap(err, "save msg")
 	}
 

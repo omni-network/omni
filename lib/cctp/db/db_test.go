@@ -63,10 +63,10 @@ func TestMsgDB(t *testing.T) {
 
 		msgs[i] = types.MsgSendUSDC{
 			TxHash:       common.BytesToHash(mustRandBytes(32)),
-			SrcChainID:   mrand.Uint64(),
-			DestChainID:  mrand.Uint64(),
+			SrcChainID:   uint64(mrand.Uint32()), // cctp uses uint32 domain ids
+			DestChainID:  uint64(mrand.Uint32()),
 			Amount:       big.NewInt(mrand.Int63()),
-			MessageBytes: mustRandBytes(100),
+			MessageBytes: msgBz,
 			MessageHash:  msgHash,
 			Recipient:    common.BytesToAddress(mustRandBytes(20)),
 		}

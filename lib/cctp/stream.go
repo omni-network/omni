@@ -133,13 +133,15 @@ func upsertMsgs(ctx context.Context, db *db.DB, msgs []types.MsgSendUSDC) error 
 				continue
 			}
 
-			if err := db.SetMsg(ctx, curr); err != nil {
+			if err := db.SetMsg(ctx, msg); err != nil {
 				// Message hash changed, update it
 				return errors.Wrap(err, "set msg")
 			}
+
+			continue
 		}
 
-		if err := db.InsertMsg(ctx, curr); err != nil {
+		if err := db.InsertMsg(ctx, msg); err != nil {
 			// Message missed, insert it
 			return errors.Wrap(err, "insert msg")
 		}
@@ -149,7 +151,7 @@ func upsertMsgs(ctx context.Context, db *db.DB, msgs []types.MsgSendUSDC) error 
 }
 
 // eventPairToMsg converts a (TokenMessenger.DepositForBurn, MessageTransmitter.MessageSent) pair to a MsgSendUSDC.
-// It assumes the events are from the same transaction, and recipient is a valid address.
+// It assumes the events are from the same transaction, and recipient is a valid ETH address.
 func eventPairToMsg(
 	srcChainID uint64,
 	burn *TokenMessengerDepositForBurn,
@@ -160,7 +162,7 @@ func eventPairToMsg(
 
 	return types.MsgSendUSDC{
 		TxHash:       burn.Raw.TxHash,
-		Recipient:    cast.MustEthAddress(burn.MintRecipient[:]),
+		Recipient:    cast.MustEthAddress(burn.MintRecipient[12:]),
 		MessageBytes: messageBz,
 		MessageHash:  messageHash,
 		Amount:       burn.Amount,
