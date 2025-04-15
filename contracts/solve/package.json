@@ -10,6 +10,7 @@
     "forge-std": "github:foundry-rs/forge-std"
   },
   "dependencies": {
+    "@hyperlane-xyz/core": "^7.0.0",
     "@openzeppelin/contracts": "^5.2.0",
     "@uniswap/permit2": "github:Uniswap/permit2",
     "solady": "^0.1.14"
