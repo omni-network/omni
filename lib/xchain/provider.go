@@ -27,11 +27,11 @@ func (r ProviderRequest) ChainVersion() ChainVersion {
 
 // EventLogsReq is the request to fetch EVM event logs.
 type EventLogsReq struct {
-	ChainID       uint64         // Source chain ID to query for xblocks.
-	Height        uint64         // Height to query (from inclusive).
-	ConfLevel     ConfLevel      // Confirmation level to ensure
-	FilterAddress common.Address // Filter logs by optional address
-	FilterTopics  []common.Hash  // Filters zero or more topics (in the first position only).
+	ChainID         uint64           // Source chain ID to query for xblocks.
+	Height          uint64           // Height to query (from inclusive).
+	ConfLevel       ConfLevel        // Confirmation level to ensure
+	FilterAddresses []common.Address // Filter by zero or more addresses.
+	FilterTopics    []common.Hash    // Filters zero or more topics (in the first position only).
 }
 
 func (r EventLogsReq) ChainVersion() ChainVersion {

@@ -102,11 +102,11 @@ func Test(ctx context.Context, network netconf.Network, backends ethbackend.Back
 	for _, chain := range network.EVMChains() {
 		go func() {
 			req := xchain.EventLogsReq{
-				ChainID:       chain.ID,
-				ConfLevel:     xchain.ConfLatest,
-				Height:        1,
-				FilterAddress: addrs.SolverNetInbox,
-				FilterTopics:  solvernet.AllEventTopics(),
+				ChainID:         chain.ID,
+				ConfLevel:       xchain.ConfLatest,
+				Height:          1,
+				FilterAddresses: []common.Address{addrs.SolverNetInbox},
+				FilterTopics:    solvernet.AllEventTopics(),
 			}
 
 			// Stream all inbox event logs and update order status in tracker

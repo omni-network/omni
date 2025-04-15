@@ -45,11 +45,11 @@ func (p *Provider) StreamEventLogs(ctx context.Context, req xchain.EventLogsReq,
 		FetchWorkers: workers,
 		FetchBatch: func(ctx context.Context, height uint64) ([]events, error) {
 			fetchReq := xchain.EventLogsReq{
-				ChainID:       req.ChainID,
-				Height:        height,
-				ConfLevel:     req.ConfLevel,
-				FilterAddress: req.FilterAddress,
-				FilterTopics:  req.FilterTopics,
+				ChainID:         req.ChainID,
+				Height:          height,
+				ConfLevel:       req.ConfLevel,
+				FilterAddresses: req.FilterAddresses,
+				FilterTopics:    req.FilterTopics,
 			}
 
 			// Retry fetching logs a few times, since RPC providers load balance requests and some servers may lag a bit.
@@ -153,7 +153,7 @@ func (p *Provider) GetEventLogs(ctx context.Context, req xchain.EventLogsReq) ([
 		}
 	}
 
-	events, err := getEventLogs(ctx, ethCl, req.FilterAddress, header.Hash(), req.FilterTopics)
+	events, err := getEventLogs(ctx, ethCl, req.FilterAddresses, header.Hash(), req.FilterTopics)
 	if err != nil {
 		return nil, nil, false, err
 	}

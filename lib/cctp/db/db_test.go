@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/lib/cctp/types"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 
 	cosmosdb "github.com/cosmos/cosmos-db"
 	"github.com/stretchr/testify/require"
@@ -57,29 +58,33 @@ func TestMsgDB(t *testing.T) {
 	numMsgs := 10
 	msgs := make([]types.MsgSendUSDC, numMsgs)
 	for i := 0; i < numMsgs; i++ {
+		msgBz := mustRandBytes(100)
+		msgHash := crypto.Keccak256Hash(msgBz)
+
 		msgs[i] = types.MsgSendUSDC{
-			MessageHash:  common.BytesToHash(mustRandBytes(32)),
 			TxHash:       common.BytesToHash(mustRandBytes(32)),
 			SrcChainID:   mrand.Uint64(),
 			DestChainID:  mrand.Uint64(),
 			Amount:       big.NewInt(mrand.Int63()),
 			MessageBytes: mustRandBytes(100),
+			MessageHash:  msgHash,
 			Recipient:    common.BytesToAddress(mustRandBytes(20)),
 		}
 	}
 
+	// Test InsertMsg and GetMsg
 	for i, msg := range msgs {
 		// Insert message
 		err := db.InsertMsg(ctx, msg)
 		require.NoError(t, err)
 
 		// Assert message exists
-		ok, err := db.HasMsg(ctx, msg.MessageHash)
+		ok, err := db.HasMsg(ctx, msg.TxHash)
 		require.NoError(t, err)
 		require.True(t, ok)
 
 		// Assert message can be retrieved
-		gotMsg, ok, err := db.GetMsg(ctx, msg.MessageHash)
+		gotMsg, ok, err := db.GetMsg(ctx, msg.TxHash)
 		require.NoError(t, err)
 		require.True(t, ok)
 		require.Equal(t, msg, gotMsg)
@@ -92,18 +97,38 @@ func TestMsgDB(t *testing.T) {
 		require.Contains(t, listMsgs, msg)
 	}
 
+	// Test SetMsg
+	for _, msg := range msgs {
+		// Modify the message hash / bytes (simulates reorg)
+		updated := msg
+		updated.MessageBytes = mustRandBytes(200)
+		updated.MessageHash = crypto.Keccak256Hash(updated.MessageBytes)
+
+		// Update the message
+		err := db.SetMsg(ctx, updated)
+		require.NoError(t, err)
+
+		// Assert message was updated
+		gotMsg, ok, err := db.GetMsg(ctx, msg.TxHash)
+		require.NoError(t, err)
+		require.True(t, ok)
+		require.Equal(t, updated, gotMsg)
+		require.NotEqual(t, msg, gotMsg)
+	}
+
+	// Test DeleteMsg
 	for i, msg := range msgs {
 		// Delete message
-		err := db.DeleteMsg(ctx, msg.MessageHash)
+		err := db.DeleteMsg(ctx, msg.TxHash)
 		require.NoError(t, err)
 
 		// Assert message no longer exists
-		ok, err := db.HasMsg(ctx, msg.MessageHash)
+		ok, err := db.HasMsg(ctx, msg.TxHash)
 		require.NoError(t, err)
 		require.False(t, ok)
 
 		// Assert message cannot be retrieved
-		_, ok, err = db.GetMsg(ctx, msg.MessageHash)
+		_, ok, err = db.GetMsg(ctx, msg.TxHash)
 		require.NoError(t, err)
 		require.False(t, ok)
 
