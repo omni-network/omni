@@ -1,20 +1,17 @@
 package cctp
 
 import (
-	crand "crypto/rand"
-	"math/big"
-	mrand "math/rand"
 	"testing"
 
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/cctp/db"
+	"github.com/omni-network/omni/lib/cctp/testutil"
 	"github.com/omni-network/omni/lib/cctp/types"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/mock"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/xchain"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -49,7 +46,7 @@ func TestStreamEventProc(t *testing.T) {
 	tests := []func() testCase{
 		// inserts single new
 		func() testCase {
-			msg := randMsg(chainID, randAddr())
+			msg := randMsg(chainID, testutil.RandAddr())
 
 			ev1 := depositForBurnLog(tknMessengerAddr, msg)
 			ev2 := messageSentLog(msgTransmitterAddr, msg)
@@ -66,7 +63,7 @@ func TestStreamEventProc(t *testing.T) {
 
 		// inserts multiple new
 		func() testCase {
-			recipient := randAddr()
+			recipient := testutil.RandAddr()
 
 			msg1 := randMsg(chainID, recipient)
 			msg2 := randMsg(chainID, recipient)
@@ -88,11 +85,11 @@ func TestStreamEventProc(t *testing.T) {
 
 		// ignore different tx hash
 		func() testCase {
-			msg := randMsg(chainID, randAddr())
+			msg := randMsg(chainID, testutil.RandAddr())
 
 			ev1 := depositForBurnLog(tknMessengerAddr, msg)
 			ev2 := messageSentLog(msgTransmitterAddr, msg)
-			ev2.TxHash = common.BytesToHash(mustRandBytes(32)) // different tx hash
+			ev2.TxHash = common.BytesToHash(testutil.RandBytes(32)) // different tx hash
 
 			return testCase{
 				name:          "ignore different tx hash",
@@ -106,7 +103,7 @@ func TestStreamEventProc(t *testing.T) {
 
 		// ignore unknown recipient
 		func() testCase {
-			msg := randMsg(chainID, randAddr())
+			msg := randMsg(chainID, testutil.RandAddr())
 
 			ev1 := depositForBurnLog(tknMessengerAddr, msg)
 			ev2 := messageSentLog(msgTransmitterAddr, msg)
@@ -114,7 +111,7 @@ func TestStreamEventProc(t *testing.T) {
 			return testCase{
 				name:          "ignore unknown recipient",
 				chainID:       chainID,
-				recipient:     randAddr(), // different recipient
+				recipient:     testutil.RandAddr(), // different recipient
 				inititalState: []types.MsgSendUSDC{},
 				logs:          []ethtypes.Log{ev1, ev2},
 				expectedState: []types.MsgSendUSDC{},
@@ -123,7 +120,7 @@ func TestStreamEventProc(t *testing.T) {
 
 		// ignore unknown topic
 		func() testCase {
-			msg := randMsg(chainID, randAddr())
+			msg := randMsg(chainID, testutil.RandAddr())
 
 			ev1 := depositForBurnLog(tknMessengerAddr, msg)
 			ev2 := messageSentLog(msgTransmitterAddr, msg)
@@ -142,11 +139,11 @@ func TestStreamEventProc(t *testing.T) {
 		// updates existing message hash (sims reorg)
 		func() testCase {
 			// initial state
-			msg1 := randMsg(chainID, randAddr())
+			msg1 := randMsg(chainID, testutil.RandAddr())
 
 			// expected state, used for lgos
 			msg2 := msg1
-			msg2.MessageBytes = mustRandBytes(32 * 10)
+			msg2.MessageBytes = testutil.RandBytes(32 * 10)
 			msg2.MessageHash = crypto.Keccak256Hash(msg2.MessageBytes)
 
 			ev1 := depositForBurnLog(tknMessengerAddr, msg2)
@@ -164,8 +161,9 @@ func TestStreamEventProc(t *testing.T) {
 
 		// keeps existing db messages
 		func() testCase {
-			initialMsgs := []types.MsgSendUSDC{randMsg(chainID, randAddr()), randMsg(chainID, randAddr())}
-			newMsg := randMsg(chainID, randAddr())
+			recipient := testutil.RandAddr()
+			initialMsgs := []types.MsgSendUSDC{randMsg(chainID, recipient), randMsg(chainID, recipient)}
+			newMsg := randMsg(chainID, recipient)
 
 			ev1 := depositForBurnLog(tknMessengerAddr, newMsg)
 			ev2 := messageSentLog(msgTransmitterAddr, newMsg)
@@ -173,7 +171,7 @@ func TestStreamEventProc(t *testing.T) {
 			return testCase{
 				name:          "keeps existing db messages",
 				chainID:       chainID,
-				recipient:     newMsg.Recipient,
+				recipient:     recipient,
 				inititalState: initialMsgs,
 				logs:          []ethtypes.Log{ev1, ev2},
 				expectedState: append(initialMsgs, newMsg),
@@ -201,7 +199,7 @@ func TestStreamEventProc(t *testing.T) {
 			)
 
 			// TODO(kevin): move to test case when source block number tracked in db
-			header := &ethtypes.Header{Number: randBigInt()}
+			header := &ethtypes.Header{Number: testutil.RandBigInt()}
 
 			err = proc(ctx, header, tt.logs)
 			require.NoError(t, err)
@@ -209,32 +207,8 @@ func TestStreamEventProc(t *testing.T) {
 			list, err := db.ListMsgs(ctx)
 			require.NoError(t, err)
 
-			assertSameMsgs(t, tt.expectedState, list)
+			testutil.AssertMsgsEqual(t, tt.expectedState, list)
 		})
-	}
-}
-
-// assertSameMsgs asserts that the expected messages are the same as the actual messages.
-func assertSameMsgs(t *testing.T, expected, got []types.MsgSendUSDC) {
-	t.Helper()
-
-	require.Len(t, got, len(expected), "expected %d messages, got %d", len(expected), len(got))
-
-	for _, expectedMsg := range expected {
-		var match types.MsgSendUSDC
-		found := false
-
-		for _, gotMsg := range got {
-			if expectedMsg.TxHash == gotMsg.TxHash {
-				found = true
-				match = gotMsg
-
-				break
-			}
-		}
-
-		require.Truef(t, found, "expected message not found in result: %s", expectedMsg.TxHash.Hex())
-		require.Equalf(t, expectedMsg, match, "expected message does not match: %s", expectedMsg.TxHash.Hex())
 	}
 }
 
@@ -274,25 +248,7 @@ func messageSentLog(addr common.Address, msg types.MsgSendUSDC) ethtypes.Log {
 		TxHash:  msg.TxHash,
 		Address: addr,
 		Topics:  []common.Hash{messageSentEvent.ID},
-		Data:    mustABIEncodeBytes(msg.MessageBytes),
-	}
-}
-
-func randAddr() common.Address { return cast.MustEthAddress(mustRandBytes(20)) }
-func randBigInt() *big.Int     { return big.NewInt(mrand.Int63()) }
-
-func randMsg(srcChainID uint64, recipient common.Address) types.MsgSendUSDC {
-	msgBz := mustRandBytes(32 * 10)
-	msgHash := crypto.Keccak256Hash(msgBz)
-
-	return types.MsgSendUSDC{
-		TxHash:       common.BytesToHash(mustRandBytes(32)),
-		SrcChainID:   srcChainID,
-		DestChainID:  uint64(mrand.Uint32()),
-		Amount:       randBigInt(),
-		MessageBytes: msgBz,
-		MessageHash:  msgHash,
-		Recipient:    recipient,
+		Data:    testutil.ABIEncodeBytes(msg.MessageBytes),
 	}
 }
 
@@ -314,29 +270,11 @@ func mustTokenMessenger(chainID uint64, client ethclient.Client) (*TokenMessenge
 	return contract, addr
 }
 
-// mustRandBytes generates n random bytes.
-func mustRandBytes(n int) []byte {
-	bz := make([]byte, n)
+// randMsg returns a random MsgSendUSDC with known SrcChainID and Recipient.
+func randMsg(srcChainID uint64, recipient common.Address) types.MsgSendUSDC {
+	msg := testutil.RandMsg()
+	msg.SrcChainID = srcChainID
+	msg.Recipient = recipient
 
-	_, err := crand.Read(bz)
-	if err != nil {
-		panic(err)
-	}
-
-	return bz
-}
-
-// mustABIEncodeBytes encodes a byte slice into an ABI-encoded byte array.
-func mustABIEncodeBytes(bz []byte) []byte {
-	typ, err := abi.NewType("bytes", "", nil)
-	if err != nil {
-		panic(err)
-	}
-
-	packed, err := abi.Arguments{{Type: typ}}.Pack(bz)
-	if err != nil {
-		panic(err)
-	}
-
-	return packed
+	return msg
 }

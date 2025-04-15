@@ -2,12 +2,35 @@ package types
 
 import (
 	"math/big"
+	"reflect"
 
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
+
+//go:generate stringer -type=MsgStatus -trimprefix=MsgStatus
+
+// It matches status proto enum defined in lib/cctp/db/dp.proto.
+type MsgStatus int32
+
+const (
+	MsgStatusUnknown   MsgStatus = 0
+	MsgStatusSubmitted MsgStatus = 1
+	MsgStatusMinted    MsgStatus = 2
+)
+
+func (s MsgStatus) Validate() error {
+	switch s {
+	case MsgStatusSubmitted, MsgStatusMinted:
+		return nil
+	case MsgStatusUnknown:
+		return errors.New("unknown message status")
+	default:
+		return errors.New("invalid message status")
+	}
+}
 
 // MsgSendUSDC represents a USDC transfer message between chains.
 type MsgSendUSDC struct {
@@ -18,6 +41,7 @@ type MsgSendUSDC struct {
 	Amount       *big.Int
 	MessageBytes []byte
 	Recipient    common.Address
+	Status       MsgStatus
 }
 
 func (msg MsgSendUSDC) Validate() error {
@@ -60,5 +84,9 @@ func (msg MsgSendUSDC) Validate() error {
 		return errors.New("message hash != hash of message bytes")
 	}
 
-	return nil
+	return msg.Status.Validate()
+}
+
+func (msg MsgSendUSDC) Equals(other MsgSendUSDC) bool {
+	return reflect.DeepEqual(msg, other)
 }

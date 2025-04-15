@@ -88,6 +88,7 @@ func SendUSDC(
 		MessageBytes: messageBz,
 		MessageHash:  messageHash,
 		Recipient:    user,
+		Status:       types.MsgStatusSubmitted,
 	}
 
 	attrs := []any{

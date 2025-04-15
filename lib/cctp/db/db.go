@@ -206,6 +206,7 @@ func msgToProto(msg types.MsgSendUSDC) *MsgSendUSDC {
 		Amount:       msg.Amount.Bytes(),
 		MessageBytes: msg.MessageBytes,
 		Recipient:    msg.Recipient[:],
+		Status:       int32(msg.Status),
 	}
 }
 
@@ -233,5 +234,6 @@ func msgFromProto(msg *MsgSendUSDC) (types.MsgSendUSDC, error) {
 		Amount:       new(big.Int).SetBytes(msg.GetAmount()),
 		MessageBytes: msg.GetMessageBytes(),
 		Recipient:    recipient,
+		Status:       types.MsgStatus(msg.GetStatus()),
 	}, nil
 }
