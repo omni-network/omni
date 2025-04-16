@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/big"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -182,7 +183,7 @@ func TestCLIOperator(t *testing.T) {
 					return false
 				}
 
-				if !delegationFound(t, ctx, cprov, val.OperatorAddress, delegatorCosmosAddr.String()) {
+				if delegatedAmount(t, ctx, cprov, val.OperatorAddress, delegatorCosmosAddr.String()).IsZero() {
 					return false
 				}
 
@@ -283,7 +284,7 @@ func TestCLIOperator(t *testing.T) {
 	})
 }
 
-func delegationFound(t *testing.T, ctx context.Context, cprov provider.Provider, valAddr string, delegatorAddr string) bool {
+func delegatedAmount(t *testing.T, ctx context.Context, cprov provider.Provider, valAddr string, delegatorAddr string) sdk.Coin {
 	t.Helper()
 	response, err := cprov.QueryClients().Staking.ValidatorDelegations(ctx, &stypes.QueryValidatorDelegationsRequest{
 		ValidatorAddr: valAddr,
@@ -291,14 +292,18 @@ func delegationFound(t *testing.T, ctx context.Context, cprov provider.Provider,
 	})
 	require.NoError(t, err)
 	require.NotNil(t, response)
+
+	balance := sdk.Coin{
+		Denom:  "stake",
+		Amount: math.NewInt(0),
+	}
 	for _, response := range response.DelegationResponses {
-		log.Info(ctx, "delegation found", "del", response.Delegation.DelegatorAddress, "expect", delegatorAddr)
 		if response.Delegation.DelegatorAddress == delegatorAddr {
-			return true
+			balance = balance.Add(response.Balance)
 		}
 	}
 
-	return false
+	return balance
 }
 
 func queryDelegationRewards(t *testing.T, ctx context.Context, cprov provider.Provider, delegatorAddr sdk.AccAddress, validatorAddr string) (math.LegacyDec, bool) {
@@ -308,7 +313,10 @@ func queryDelegationRewards(t *testing.T, ctx context.Context, cprov provider.Pr
 		DelegatorAddress: delegatorAddr.String(),
 		ValidatorAddress: validatorAddr,
 	})
-	require.NoError(t, err)
+	if err != nil && strings.Contains(err.Error(), "no delegation for") {
+		// No delegation found
+		return math.LegacyDec{}, false
+	}
 
 	if len(resp.Rewards) == 0 {
 		return math.LegacyDec{}, false
