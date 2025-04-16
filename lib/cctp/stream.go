@@ -187,6 +187,7 @@ func eventPairToMsg(
 
 	return types.MsgSendUSDC{
 		TxHash:       burn.Raw.TxHash,
+		BlockHeight:  burn.Raw.BlockNumber,
 		Recipient:    cast.MustEthAddress(burn.MintRecipient[12:]),
 		MessageBytes: messageBz,
 		MessageHash:  messageHash,

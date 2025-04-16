@@ -34,8 +34,9 @@ func (s MsgStatus) Validate() error {
 
 // MsgSendUSDC represents a USDC transfer message between chains.
 type MsgSendUSDC struct {
-	MessageHash  common.Hash
 	TxHash       common.Hash
+	BlockHeight  uint64
+	MessageHash  common.Hash
 	SrcChainID   uint64
 	DestChainID  uint64
 	Amount       *big.Int
@@ -82,6 +83,10 @@ func (msg MsgSendUSDC) Validate() error {
 
 	if msg.MessageHash != crypto.Keccak256Hash(msg.MessageBytes) {
 		return errors.New("message hash != hash of message bytes")
+	}
+
+	if msg.BlockHeight == 0 {
+		return errors.New("zero block height")
 	}
 
 	return msg.Status.Validate()
