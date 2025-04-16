@@ -1,9 +1,9 @@
 ---
 sidebar_position: 1
-title: Basic Cross-Chain Deposit
+title: Cross-Chain Deposit
 ---
 
-# Guide: Basic Cross-Chain Deposit
+# Cross-Chain Deposit
 
 This guide walks through the standard process of enabling a user to deposit assets from one chain into a contract on another chain using the Omni SDK, assuming the target contract supports depositing on behalf of a user (e.g., via an `onBehalfOf` parameter).
 
@@ -16,7 +16,7 @@ This guide walks through the standard process of enabling a user to deposit asse
 *   Target contract ABI and address known.
 *   Source and destination chain IDs and token addresses known.
 
-## Steps
+## Walkthrough
 
 1.  **Import necessary hooks and utilities:**
 
@@ -60,7 +60,7 @@ const destChainId = holesky.id;
     Set up state for the deposit amount input.
 
 ```tsx
-function BasicDepositForm() {
+function Deposit() {
   const [depositAmountStr, setDepositAmountStr] = useState<string>('0.1');
   const { address: userAddress, isConnected } = useAccount();
 
@@ -209,7 +209,7 @@ function BasicDepositForm() {
 export default BasicDepositForm;
 ```
 
-## Complete Code Example
+## Example
 
 ```tsx
 import React, { useState, useMemo } from 'react';

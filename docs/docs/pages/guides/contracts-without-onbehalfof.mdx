@@ -3,17 +3,19 @@ sidebar_position: 2
 title: Handling Contracts Without "onBehalfOf"
 ---
 
-# Guide: Handling Contracts Without "onBehalfOf" (`withExecAndTransfer`)
+# Contracts without "onBehalfOf"
+
+## Overview
 
 This guide demonstrates how to use the `withExecAndTransfer` utility for cross-chain interactions with destination contracts that **do not** support acting `onBehalfOf` a user. Instead, these contracts might credit assets (like ERC20 tokens, NFTs, or even native ETH) directly to the `msg.sender` of the transaction.
 
 **Scenario:** A user has native ETH on Base Sepolia and wants to deposit it into a `SampleVault` contract on Holesky. This vault has a payable `deposit()` function that returns vault shares (an ERC20 token) directly to the `msg.sender`.
 
-## Problem
+### Problem
 
 If we directly call `SampleVault.deposit()` via SolverNet, the `msg.sender` on Holesky will be an **Omni Network contract** executing the solver's instructions, not the user's address. The Omni contract would receive the vault shares, not the user who initiated the deposit.
 
-## Solution: `withExecAndTransfer`
+## `withExecAndTransfer`
 
 We wrap the `SampleVault.deposit()` call using `withExecAndTransfer`. This tells the Omni system (via the solver) to:
 
@@ -29,7 +31,7 @@ We wrap the `SampleVault.deposit()` call using `withExecAndTransfer`. This tells
 *   The address of the asset (ERC20 token, NFT, or `zeroAddress` for ETH) returned/credited by the target contract is known.
 *   Source and destination chain IDs known.
 
-## Steps
+## Walkthrough
 
 1.  **Import necessary hooks and utilities:**
 
@@ -242,7 +244,7 @@ function TokenizedDepositForm() {
 export default TokenizedDepositForm;
 ```
 
-## Key Considerations
+##  Considerations
 
 *   **`spender`:** When using `withExecAndTransfer`, the `spender` in the `useOrder` expense configuration **must** be the `middlemanAddress` for the destination chain.
 *   **`transfer.token`:** This is the address of the asset you expect the *middleman* to receive (because it was the `msg.sender` of the wrapped `call`) and subsequently transfer to the `transfer.to` address. Use `zeroAddress` if the credited asset is native ETH.

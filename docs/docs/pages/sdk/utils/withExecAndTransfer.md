@@ -62,7 +62,7 @@ contract SolverNetMiddleman {
 
 ## Example
 
-### High Level Usage
+### Intro
 
 Before diving into the full React hook example, here's the basic idea:
 
@@ -111,7 +111,7 @@ const wrappedCall: Call = withExecAndTransfer({
 // });
 ```
 
-### React Example
+### Code
 
 Let's say you have a `TokenizedVault` that mints vault shares (ERC20 tokens) to `msg.sender` upon deposit. This example shows how to configure `useOrder` with `withExecAndTransfer` to handle this, including fetching the necessary middleman address.
 
