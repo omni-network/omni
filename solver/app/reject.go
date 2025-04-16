@@ -286,7 +286,7 @@ func nativeAmt(ps []TokenAmt) *big.Int {
 }
 
 // checkQuote checks if deposits match or exceed quote for expenses.
-// only single expense supported with matching deposit is supported.
+// Only a single deposit and expense supported.
 func checkQuote(ctx context.Context, priceFunc priceFunc, deposits, expenses []TokenAmt) error {
 	quote, err := getQuote(ctx, priceFunc, tkns(deposits), expenses)
 	if err != nil {

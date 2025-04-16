@@ -68,15 +68,14 @@ func (c Client) Quote(ctx context.Context, req types.QuoteRequest) (types.QuoteR
 	return res, nil
 }
 
-// expense amount = deposit amount / price.
-func (c Client) Price(ctx context.Context, req types.PriceRequest) (float64, error) {
-	var res types.PriceResponse
+func (c Client) Price(ctx context.Context, req types.PriceRequest) (types.Price, error) {
+	var res types.Price
 
 	if err := c.do(ctx, endpointPrice, req, &res); err != nil {
-		return 0, err
+		return types.Price{}, err
 	}
 
-	return res.Price, nil
+	return res, nil
 }
 
 func (c Client) do(ctx context.Context, endpoint string, req any, res any) error {

@@ -470,7 +470,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				srcChainID: evmchain.IDBaseSepolia,
 				dstChainID: evmchain.IDHolesky,
 				// includes fee
-				deposits: []types.AddrAmt{{Amount: depositFor(ether(1), standardFeeBips)}},
+				deposits: []types.AddrAmt{{Amount: depositFor(t, ether(1))}},
 				calls:    []types.Call{{Value: ether(1)}},
 				expenses: []types.Expense{{Amount: ether(1)}},
 			},
@@ -486,7 +486,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				srcChainID: evmchain.IDBaseSepolia,
 				dstChainID: evmchain.IDHolesky,
 				// includes fee
-				deposits: []types.AddrAmt{{Amount: depositFor(ether(1), standardFeeBips)}},
+				deposits: []types.AddrAmt{{Amount: depositFor(t, ether(1))}},
 				calls:    []types.Call{{Value: ether(1)}},
 				expenses: []types.Expense{{Amount: ether(1)}},
 			},
@@ -501,8 +501,8 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				dstChainID: evmchain.IDHolesky,
 				deposits: []types.AddrAmt{{
 					Amount: bi.Add(
-						depositFor(ether(1), standardFeeBips), // required deposit
-						gwei(1),                               // a little more
+						depositFor(t, ether(1)), // required deposit
+						gwei(1),                 // a little more
 					),
 				}},
 				calls:    []types.Call{{Value: ether(1)}},
@@ -560,7 +560,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			order: testOrder{
 				srcChainID: evmchain.IDBaseSepolia,
 				dstChainID: evmchain.IDHolesky,
-				deposits:   []types.AddrAmt{{Amount: depositFor(bi.Ether(0.1), standardFeeBips)}},
+				deposits:   []types.AddrAmt{{Amount: depositFor(t, bi.Ether(0.1))}},
 				calls:      []types.Call{{Target: common.HexToAddress("0x01"), Data: dummyCallData}}, // does not matter
 				expenses:   []types.Expense{{Amount: bi.Ether(0.1), Token: holeskySTETH}},
 			},
@@ -577,7 +577,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			order: testOrder{
 				srcChainID: evmchain.IDBaseSepolia,
 				dstChainID: evmchain.IDArbSepolia,
-				deposits:   []types.AddrAmt{{Amount: depositFor(bi.Dec6(1), standardFeeBips), Token: baseSepoliaUSDC}},
+				deposits:   []types.AddrAmt{{Amount: depositFor(t, bi.Dec6(1)), Token: baseSepoliaUSDC}},
 				calls:      []types.Call{{Target: common.HexToAddress("0x01"), Data: dummyCallData}}, // does not matter
 				expenses:   []types.Expense{{Amount: bi.Dec6(1), Token: arbSepoliaUSDC}},
 			},
@@ -610,7 +610,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			order: testOrder{
 				srcChainID: evmchain.IDBaseSepolia,
 				dstChainID: evmchain.IDArbSepolia,
-				deposits:   []types.AddrAmt{{Amount: depositFor(ether(1), standardFeeBips), Token: baseSepoliaUSDC}},
+				deposits:   []types.AddrAmt{{Amount: depositFor(t, ether(1)), Token: baseSepoliaUSDC}},
 				calls:      []types.Call{{Target: common.HexToAddress("0x01"), Data: dummyCallData}}, // does not matter
 				expenses:   []types.Expense{{Amount: ether(1), Token: arbSepoliaUSDC}},
 			},
@@ -862,4 +862,34 @@ func ether(x int64) *big.Int {
 
 func gwei(x int64) *big.Int {
 	return bi.Gwei(x)
+}
+
+// depositFor is equivalent to legacy DepositFor(...) function.
+func depositFor(t *testing.T, expense *big.Int) *big.Int {
+	t.Helper()
+
+	// feePrice is unary price function that is 1-to-1 WITH fees.
+	feePrice, err := wrapPriceHandlerFunc(unaryPrice)(t.Context(),
+		types.PriceRequest{
+			SourceChainID:      evmchain.IDMockL2,
+			DestinationChainID: evmchain.IDMockL1,
+		})
+	require.NoError(t, err)
+
+	return feePrice.ToDeposit(expense)
+}
+
+// expenseFor is equivalent to legacy ExpenseFor(...) function.
+func expenseFor(t *testing.T, deposit *big.Int) *big.Int {
+	t.Helper()
+
+	// feePrice is unary price function that is 1-to-1 with fees.
+	feePrice, err := wrapPriceHandlerFunc(unaryPrice)(t.Context(),
+		types.PriceRequest{
+			SourceChainID:      evmchain.IDMockL2,
+			DestinationChainID: evmchain.IDMockL1,
+		})
+	require.NoError(t, err)
+
+	return feePrice.ToExpense(deposit)
 }

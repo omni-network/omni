@@ -72,11 +72,11 @@ func TestQuoteExpense(t *testing.T) {
 				dep = bi.Ether(test.DepositEther)
 			}
 
-			expense := expenseFor(dep, standardFeeBips)
+			expense := expenseFor(t, dep)
 			expenseFormatted := addThousandSeparators(expense.String())
 			require.Equal(t, test.Expense, expenseFormatted)
 
-			deposit2 := depositFor(expense, standardFeeBips)
+			deposit2 := depositFor(t, expense)
 			require.Equal(t, dep, deposit2)
 		})
 	}
@@ -265,7 +265,7 @@ func TestQuote(t *testing.T) {
 			res: types.QuoteResponse{
 				Deposit: types.AddrAmt{
 					Token:  erc20(evmchain.IDBase, tokens.USDC).Address,
-					Amount: parseInt("5015000000000000000"), // Price is $5/OMNI
+					Amount: parseInt("5015000"), // Price is $5/OMNI (USDC has 6 decimals)
 				},
 				Expense: mockAddrAmt("1000000000000000000"),
 			},
@@ -281,7 +281,7 @@ func TestQuote(t *testing.T) {
 			expErr: types.JSONError{
 				Code:    http.StatusBadRequest,
 				Status:  http.StatusText(http.StatusBadRequest),
-				Message: "InvalidDeposit: deposit and expense must be of the same chain class (e.g. mainnet, testnet) [deposit=1 ETH, expense=ETH]",
+				Message: "InvalidDeposit: deposit and expense must be of the same chain class (e.g. mainnet, testnet) [deposit=mainnet, expense=testnet]",
 			},
 			testdata: true,
 		},
@@ -366,16 +366,16 @@ func TestFees(t *testing.T) {
 	// couple sanity checks w/ known values
 	require.Equal(t,
 		mustBigStr("1500000000000000000"),
-		expenseFor(
+		expenseFor(t,
 			mustBigStr("1504500000000000000"),
-			standardFeeBips),
+		),
 	)
 
 	require.Equal(t,
 		mustBigStr("1504500000000000000"),
-		depositFor(
+		depositFor(t,
 			mustBigStr("1500000000000000000"),
-			standardFeeBips),
+		),
 	)
 
 	f := fuzz.New().NilChance(0)
@@ -393,7 +393,7 @@ func TestFees(t *testing.T) {
 	require.True(t,
 		// withinOne, because 1 wei can be lost in rounding
 		withinOne(
-			depositFor(expenseFor(big, standardFeeBips), standardFeeBips),
+			depositFor(t, expenseFor(t, big)),
 			big,
 		),
 		"depositFor(expenseFor(x)) == x",

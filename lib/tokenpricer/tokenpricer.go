@@ -2,6 +2,7 @@ package tokenpricer
 
 import (
 	"context"
+	"math/big"
 	"sync"
 	"time"
 
@@ -13,16 +14,21 @@ import (
 type Pricer interface {
 	// USDPrice returns the price of the token in USD.
 	USDPrice(ctx context.Context, tokens tokens.Asset) (float64, error)
+	// USDPriceRat returns the price of the token in USD.
+	USDPriceRat(ctx context.Context, tokens tokens.Asset) (*big.Rat, error)
 	// USDPrices returns the price of each provided token in USD.
 	USDPrices(ctx context.Context, tokens ...tokens.Asset) (map[tokens.Asset]float64, error)
+	// USDPricesRat returns the price of each provided token in USD.
+	USDPricesRat(ctx context.Context, tokens ...tokens.Asset) (map[tokens.Asset]*big.Rat, error)
 	// Price returns the price of the base asset denominated in the quote asset.
-	Price(ctx context.Context, base, quote tokens.Asset) (float64, error)
+	// Note that for canonical solver prices, base=deposit and quote=expense.
+	Price(ctx context.Context, base, quote tokens.Asset) (*big.Rat, error)
 }
 
 type Cached struct {
 	p     Pricer
 	mu    sync.RWMutex
-	cache map[pair]float64
+	cache map[pair]*big.Rat
 }
 
 type pair struct {
@@ -33,11 +39,11 @@ type pair struct {
 func NewCached(p Pricer) *Cached {
 	return &Cached{
 		p:     p,
-		cache: make(map[pair]float64),
+		cache: make(map[pair]*big.Rat),
 	}
 }
 
-func (c *Cached) get(base, quote tokens.Asset) (float64, bool) {
+func (c *Cached) get(base, quote tokens.Asset) (*big.Rat, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -46,16 +52,18 @@ func (c *Cached) get(base, quote tokens.Asset) (float64, bool) {
 	return price, ok
 }
 
-func (c *Cached) set(base, quote tokens.Asset, price float64) {
+func (c *Cached) set(base, quote tokens.Asset, price *big.Rat) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	c.cache[pair{Base: base, Quote: quote}] = price
 }
 
-func (c *Cached) Price(ctx context.Context, base, quote tokens.Asset) (float64, error) {
+// Price returns the price of the base asset denominated in the quote asset.
+// Note that for canonical solver prices, base=deposit and quote=expense.
+func (c *Cached) Price(ctx context.Context, base, quote tokens.Asset) (*big.Rat, error) {
 	if base == quote {
-		return 1, nil
+		return big.NewRat(1, 1), nil
 	}
 
 	price, ok := c.get(base, quote)
@@ -65,7 +73,7 @@ func (c *Cached) Price(ctx context.Context, base, quote tokens.Asset) (float64, 
 
 	price, err := c.p.Price(ctx, base, quote)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	c.set(base, quote, price)
@@ -87,8 +95,33 @@ func (c *Cached) USDPrice(ctx context.Context, token tokens.Asset) (float64, err
 	return price, nil
 }
 
+// USDPrices returns the price of each coin in USD.
 func (c *Cached) USDPrices(ctx context.Context, assets ...tokens.Asset) (map[tokens.Asset]float64, error) {
+	rats, err := c.USDPricesRat(ctx, assets...)
+	if err != nil {
+		return nil, errors.Wrap(err, "get price")
+	}
+
 	prices := make(map[tokens.Asset]float64)
+	for asset, price := range rats {
+		f, _ := price.Float64()
+		prices[asset] = f
+	}
+
+	return prices, nil
+}
+
+func (c *Cached) USDPriceRat(ctx context.Context, asset tokens.Asset) (*big.Rat, error) {
+	prices, err := c.USDPricesRat(ctx, asset)
+	if err != nil {
+		return nil, err
+	}
+
+	return prices[asset], nil
+}
+
+func (c *Cached) USDPricesRat(ctx context.Context, assets ...tokens.Asset) (map[tokens.Asset]*big.Rat, error) {
+	prices := make(map[tokens.Asset]*big.Rat)
 
 	var uncached []tokens.Asset
 
@@ -104,7 +137,7 @@ func (c *Cached) USDPrices(ctx context.Context, assets ...tokens.Asset) (map[tok
 		return prices, nil
 	}
 
-	newPrices, err := c.p.USDPrices(ctx, uncached...)
+	newPrices, err := c.p.USDPricesRat(ctx, uncached...)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +154,7 @@ func (c *Cached) ClearCache() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.cache = make(map[pair]float64)
+	c.cache = make(map[pair]*big.Rat)
 }
 
 func (c *Cached) ClearCacheForever(ctx context.Context, evictInterval time.Duration) {

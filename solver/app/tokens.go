@@ -38,11 +38,11 @@ type SpendBounds struct {
 }
 
 // DepositBounds returns the equivalent deposit bounds
-// by multiplies the spend bounds by the given price.
-func (b SpendBounds) DepositBounds(price float64) SpendBounds {
+// by dividing the spend bounds (expense) by the given price.
+func (b SpendBounds) DepositBounds(price types.Price) SpendBounds {
 	return SpendBounds{
-		MinSpend: bi.MulF64(b.MinSpend, price),
-		MaxSpend: bi.MulF64(b.MaxSpend, price),
+		MinSpend: price.ToDeposit(b.MinSpend),
+		MaxSpend: price.ToDeposit(b.MaxSpend),
 	}
 }
 
