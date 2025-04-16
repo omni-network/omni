@@ -38,10 +38,10 @@ CORE_CONTRACTS := OmniPortal FeeOracleV1 Create3 TransparentUpgradeableProxy \
 			Staking Slashing OmniBridgeL1 OmniBridgeNative Omni WOmni \
 			PortalRegistry AllocPredeploys PingPong ProxyAdmin Admin \
 			OmniGasPump OmniGasStation FeeOracleV2 \
-			node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol:IERC20
+			node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol:IERC20 \
+			test/StakingProxy.sol:StakingProxy
 
 SOLVE_CONTRACTS := ISolverNetBindings SolverNetInbox SolverNetOutbox SolverNetMiddleman SolverNetExecutor test/utils/MockERC20.sol:MockERC20 test/utils/MockVault.sol:MockVault
-
 
 AVS_CONTRACTS := OmniAVS DelegationManager StrategyManager StrategyBase AVSDirectory
 
