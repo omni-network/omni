@@ -1,0 +1,156 @@
+---
+sidebar_position: 4 # Adjust position as needed
+title: Cross-Chain Deposit Template
+---
+
+# Generic Cross-Chain Deposit Template
+
+This template demonstrates an ERC20 cross chain deposit using Omni.
+
+## How to Use
+
+1.  **Replace Placeholders:** Update the constants in the Configuration section (chain IDs, token addresses, contract details).
+2.  **Adjust `calls.args`:** Modify the `args` array inside the `useOrder` hook's `calls` section to match the inputs required by your target contract function (`[YOUR_TARGET_FUNCTION_NAME]`)
+3. **Ship to production** 🚢
+
+## Code
+
+Replace the bracketed placeholders `[...]` with your specific details.
+
+```tsx
+import React, { useState, useMemo } from 'react';
+import { useQuote, useOrder } from '@omni-network/react'
+import { type Address, zeroAddress, parseEther } from 'viem';
+import { useAccount } from 'wagmi';
+import { baseSepolia, arbitrumSepolia } from 'viem/chains'; // replace with your chains
+
+// --- Configuration (REPLACE ALL PLACEHOLDERS) ---
+const DESTINATION_CHAIN_ID = arbitrumSepolia.id;
+const DESTINATION_TOKEN_ADDRESS: Address = '[YOUR_DESTINATION_TOKEN_ADDRESS]';
+const TARGET_CONTRACT_ADDRESS: Address = '[YOUR_TARGET_CONTRACT_ADDRESS]';
+const TARGET_ABI = '[YOUR_TARGET_CONTRACT_ABI]'
+const TARGET_FUNCTION_NAME = '[YOUR_TARGET_FUNCTION_NAME]';
+// -------------------------------------
+
+type UseOmniDepositParams = {
+  srcChainId: number;
+  srcTokenAddress: Address;
+  depositAmount: bigint;
+}
+
+export function useOmniDeposit(params: UseOmniDepositParams) {
+  const { address: userAddress, isConnected } = useAccount();
+
+  const quote = useQuote({
+    srcChainId: params.srcChainId,
+    destChainId: DESTINATION_CHAIN_ID,
+    deposit: {
+      token: params.srcTokenAddress,
+      amount: params.depositAmount
+    },
+    expense: {
+      token: DESTINATION_TOKEN_ADDRESS
+    },
+    mode: "expense",
+    enabled: isConnected && params.depositAmount > 0n,
+  });
+
+  const quotedDepositAmt = quote.data?.deposit.amount ?? 0n;
+  const quotedExpenseAmt = quote.data?.expense.amount ?? 0n;
+
+  const order = useOrder({
+    srcChainId: params.srcChainId,
+    destChainId: DESTINATION_CHAIN_ID,
+    deposit: {
+      token: params.srcTokenAddress,
+      amount: quotedDepositAmt,
+    },
+    expense: {
+        token: DESTINATION_TOKEN_ADDRESS,
+        spender: TARGET_CONTRACT_ADDRESS,
+        amount: quotedExpenseAmt,
+    },
+    calls: [
+      {
+        target: TARGET_CONTRACT_ADDRESS,
+        abi: TARGET_ABI,
+        functionName: TARGET_FUNCTION_NAME,
+        args: [
+          // ---  REPLACE WITH YOUR ARGS   ---
+          // --- ex: func(address, amount) ---
+          userAddress,
+          quotedExpenseAmt
+        ]
+      }
+    ],
+    validateEnabled: quote.isSuccess && isConnected && userAddress != null,
+  });
+
+  return {
+    mutation: order.txMutation,
+    waitOrder: order.waitForTx,
+    openDeposit: order.open,
+    orderStatus: order.status,
+    isReady: order.isReady && order.validation?.status === 'accepted',
+    validation: order.validation,
+    quote,
+  };
+}
+
+// --- Usage ---
+
+function DepositComponent() {
+  const srcChainForExample = baseSepolia.id;
+  const srcTokenForExample: Address = '[YOUR_SOURCE_TOKEN_ADDRESS]';
+
+  // Example: Using a fixed amount for simplicity
+  const fixedDepositAmount = parseEther('0.01');
+  const { isConnected } = useAccount();
+
+  const {
+    openDeposit,
+    orderStatus,
+    isReady,
+    validation,
+    quote,
+  } = useOmniDeposit({
+    srcChainId: srcChainForExample,
+    srcTokenAddress: srcTokenForExample,
+    depositAmount: fixedDepositAmount,
+  });
+
+  const isLoading = orderStatus === 'opening' || orderStatus === 'open';
+
+  return (
+    <div style={{ border: '1px solid #ccc', padding: '1rem', marginTop: '1rem' }}>
+      <h2>Deposit [Source Token] to [Target]</h2>
+
+      {!isConnected && <p>Please connect your wallet.</p>}
+
+      {isConnected && (
+        <>
+          {quote.isLoading && <p>Getting quote...</p>}
+          {quote.isError && <p style={{ color: 'red' }}>Quote Error</p>}
+          {quote.isSuccess && <p>Ready to deposit {fixedDepositAmount.toString()} [Source Token Symbol].</p>}
+
+          {validation?.status === 'pending' && <p>Validating...</p>}
+          {validation?.status === 'rejected' && <p style={{ color: 'red' }}>Rejected: {validation.rejectDescription}</p>}
+
+          <button
+            onClick={openDeposit}
+            disabled={!isReady || isLoading}
+            style={{ marginTop: '1rem' }}
+          >
+            {isLoading ? 'Processing...' : 'Deposit via Omni'}
+          </button>
+
+          <p style={{ marginTop: '1rem' }}>Status: <strong>{orderStatus}</strong></p>
+          {orderStatus === 'filled' && <p style={{ color: 'green' }}>✅ Success!</p>}
+          {orderStatus === 'error' && <p style={{ color: 'red' }}>Order Error</p>}
+        </>
+      )}
+    </div>
+  );
+}
+
+export default DepositComponent;
