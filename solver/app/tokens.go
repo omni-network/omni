@@ -21,6 +21,10 @@ var (
 		tokens.STETH:  true,
 		tokens.USDC:   true,
 	}
+
+	// minSafeETH is the minimum amount of ETH the solver can leave itself with post-fill,
+	// to ensure it can pay for gas of other orders.
+	minSafeETH = bi.Ether(0.05)
 )
 
 func IsSupportedToken(token tokens.Token) bool {

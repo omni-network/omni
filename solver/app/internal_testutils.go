@@ -475,7 +475,23 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				expenses: []types.Expense{{Amount: ether(1)}},
 			},
 			mock: func(clients MockClients) {
-				mockNativeBalance(t, clients.Client(t, evmchain.IDHolesky), solver, ether(1))
+				mockNativeBalance(t, clients.Client(t, evmchain.IDHolesky), solver, bi.Add(bi.Ether(1), minSafeETH)) // add min safe eth
+			},
+		},
+		{
+			name:   "spend below min safe eth",
+			reason: types.RejectInsufficientInventory,
+			reject: true,
+			order: testOrder{
+				srcChainID: evmchain.IDBaseSepolia,
+				dstChainID: evmchain.IDHolesky,
+				// includes fee
+				deposits: []types.AddrAmt{{Amount: depositFor(ether(1), standardFeeBips)}},
+				calls:    []types.Call{{Value: ether(1)}},
+				expenses: []types.Expense{{Amount: ether(1)}},
+			},
+			mock: func(clients MockClients) {
+				mockNativeBalance(t, clients.Client(t, evmchain.IDHolesky), solver, bi.Ether(1)) // do not add min safe eth
 			},
 		},
 		{
