@@ -20,7 +20,6 @@ import (
 	"github.com/cometbft/cometbft/rpc/client/http"
 
 	"github.com/ethereum/go-ethereum/common"
-	etypes "github.com/ethereum/go-ethereum/core/types"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/cosmos/cosmos-sdk/client/grpc/node"
@@ -92,19 +91,6 @@ func TestUndelegations(t *testing.T) {
 			delegation := bi.Ether(50)
 			undelegation1 := bi.Ether(20)
 			undelegation2 := bi.Ether(5)
-
-			// Transfer enough ETH to the proxy contract
-			gasPrice, err := omniBackend.SuggestGasPrice(ctx)
-			require.NoError(t, err)
-			nonce, err := omniBackend.PendingNonceAt(ctx, delegatorEthAddr)
-			require.NoError(t, err)
-			tx := etypes.NewTransaction(nonce, proxyAddr, delegation, 21000, gasPrice, nil)
-			chainID := bi.N(network.ID.Static().OmniExecutionChainID)
-			signedTx, err := etypes.SignTx(tx, etypes.NewEIP155Signer(chainID), delegatorPrivKey)
-			require.NoError(t, err)
-			err = omniBackend.SendTransaction(ctx, signedTx)
-			require.NoError(t, err)
-			log.Debug(ctx, "Transferred ETH to proxy contract", "amount", delegation)
 
 			val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
 			require.True(t, ok)
@@ -368,8 +354,6 @@ func proxyCall(
 	contractAddress, caller common.Address,
 	calls []bindings.StakingProxyCall,
 ) error {
-	log.Debug(ctx, "Calling staking proxy", "calls", len(calls))
-
 	totalValue := big.NewInt(0)
 	for _, call := range calls {
 		totalValue = bi.Add(totalValue, call.Value)
