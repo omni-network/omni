@@ -1,6 +1,7 @@
 package cctp
 
 import (
+	"context"
 	"testing"
 
 	"github.com/omni-network/omni/lib/cast"
@@ -21,7 +22,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func TestStreamEventProc(t *testing.T) {
+func TestAuditEventProc(t *testing.T) {
 	t.Parallel()
 
 	ctx := t.Context()
@@ -42,6 +43,8 @@ func TestStreamEventProc(t *testing.T) {
 		inititalState []types.MsgSendUSDC
 		logs          []ethtypes.Log
 		expectedState []types.MsgSendUSDC
+		isReceived    func(ctx context.Context, msg types.MsgSendUSDC) (bool, error)
+		expectError   bool
 	}
 	tests := []func() testCase{
 		// inserts single new
@@ -177,6 +180,102 @@ func TestStreamEventProc(t *testing.T) {
 				expectedState: append(initialMsgs, newMsg),
 			}
 		},
+
+		// Test keeps minted status, if confirmed received
+		func() testCase {
+			msg := randMsg(chainID, testutil.RandAddr())
+			msg.Status = types.MsgStatusMinted
+
+			ev1 := depositForBurnLog(tknMessengerAddr, msg)
+			ev2 := messageSentLog(msgTransmitterAddr, msg)
+
+			return testCase{
+				name:          "keeps minted status",
+				chainID:       chainID,
+				recipient:     msg.Recipient,
+				inititalState: []types.MsgSendUSDC{msg},
+				logs:          []ethtypes.Log{ev1, ev2},
+				expectedState: []types.MsgSendUSDC{msg},
+				isReceived: func(ctx context.Context, msg types.MsgSendUSDC) (bool, error) {
+					return true, nil // Mock that message is received
+				},
+			}
+		},
+
+		// Test status reset to submitted when not confirm received
+		func() testCase {
+			msg := randMsg(chainID, testutil.RandAddr())
+			msg.Status = types.MsgStatusMinted
+
+			ev1 := depositForBurnLog(tknMessengerAddr, msg)
+			ev2 := messageSentLog(msgTransmitterAddr, msg)
+
+			expected := msg
+			expected.Status = types.MsgStatusSubmitted
+
+			return testCase{
+				name:          "status reset to submitted",
+				chainID:       chainID,
+				recipient:     msg.Recipient,
+				inititalState: []types.MsgSendUSDC{msg},
+				logs:          []ethtypes.Log{ev1, ev2},
+				expectedState: []types.MsgSendUSDC{expected},
+			}
+		},
+
+		// Test message correction, if different in streamed logs
+		func() testCase {
+			msg := randMsg(chainID, testutil.RandAddr())
+
+			// Create new message with different hash and bytes
+			// Simulates reorg
+			newMsg := msg
+			newMsg.BlockHeight++
+			newMsg.MessageBytes = testutil.RandBytes(32)
+			newMsg.MessageHash = crypto.Keccak256Hash(newMsg.MessageBytes)
+
+			ev1 := depositForBurnLog(tknMessengerAddr, newMsg)
+			ev2 := messageSentLog(msgTransmitterAddr, newMsg)
+
+			return testCase{
+				name:          "message correction",
+				chainID:       chainID,
+				recipient:     msg.Recipient,
+				inititalState: []types.MsgSendUSDC{msg},
+				logs:          []ethtypes.Log{ev1, ev2},
+				expectedState: []types.MsgSendUSDC{newMsg},
+				isReceived: func(ctx context.Context, msg types.MsgSendUSDC) (bool, error) {
+					return true, nil
+				},
+			}
+		},
+
+		// Test error when minted message hash changes
+		func() testCase {
+			msg := randMsg(chainID, testutil.RandAddr())
+			msg.Status = types.MsgStatusMinted
+
+			// Create new message with different hash and bytes
+			newMsg := msg
+			newMsg.MessageBytes = testutil.RandBytes(32)
+			newMsg.MessageHash = crypto.Keccak256Hash(newMsg.MessageBytes)
+
+			ev1 := depositForBurnLog(tknMessengerAddr, newMsg)
+			ev2 := messageSentLog(msgTransmitterAddr, newMsg)
+
+			return testCase{
+				name:          "error on minted message hash change",
+				chainID:       chainID,
+				recipient:     msg.Recipient,
+				inititalState: []types.MsgSendUSDC{msg},
+				logs:          []ethtypes.Log{ev1, ev2},
+				expectedState: []types.MsgSendUSDC{msg}, // Original message should remain unchanged
+				isReceived: func(ctx context.Context, msg types.MsgSendUSDC) (bool, error) {
+					return true, nil // Mock that message is received
+				},
+				expectError: true,
+			}
+		},
 	}
 	for _, tf := range tests {
 		tt := tf()
@@ -192,8 +291,16 @@ func TestStreamEventProc(t *testing.T) {
 				err := db.InsertMsg(ctx, msg)
 				require.NoError(t, err)
 			}
+			isReceived := tt.isReceived
 
-			proc := newEventProc(db, chainVer,
+			if isReceived == nil {
+				isReceived = func(ctx context.Context, msg types.MsgSendUSDC) (bool, error) {
+					return false, nil
+				}
+			}
+
+			proc := newEventProc(db, chainVer.ID,
+				isReceived,
 				newDepositForBurnGetter(tknMessenger, tknMessengerAddr, tt.recipient),
 				newMessageSentGetter(msgTransmitter, msgTransmitterAddr),
 			)
@@ -202,7 +309,11 @@ func TestStreamEventProc(t *testing.T) {
 			header := &ethtypes.Header{Number: testutil.RandBigInt()}
 
 			err = proc(ctx, header, tt.logs)
-			require.NoError(t, err)
+			if tt.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 
 			msgs, err := db.GetMsgs(ctx)
 			require.NoError(t, err)
