@@ -19,36 +19,24 @@ const (
 	TestnetAPI = "https://iris-api-sandbox.circle.com"
 )
 
-// NewClient creates a new CCTP API client.
-func NewClient(host string) Client {
-	return Client{host}
+// Client is the interface for CCTP clients.
+type Client interface {
+	GetAttestation(ctx context.Context, messageHash common.Hash) ([]byte, AttestationStatus, error)
 }
 
-// Client is a client for interacting with the CCTP API.
-type Client struct {
+// NewClient returns a CCTP client for the given host.
+func NewClient(host string) Client {
+	return client{host}
+}
+
+type client struct {
 	host string
 }
 
-// AttestationStatus is the status of an attestation, 'complete' or 'pending_confirmations'.
-type AttestationStatus string
-
-const (
-	AttestationStatusComplete             AttestationStatus = "complete"
-	AttestationStatusPendingConfirmations AttestationStatus = "pending_confirmations"
-)
-
-// Validate checks if the status is a known status.
-func (s AttestationStatus) Validate() error {
-	switch s {
-	case AttestationStatusComplete, AttestationStatusPendingConfirmations:
-		return nil
-	default:
-		return errors.New("unexpected attestation status", "status", s)
-	}
-}
+var _ Client = (*client)(nil)
 
 // GetAttestation retrieves the attestation (and status) for a given message hash.
-func (c Client) GetAttestation(ctx context.Context, messageHash common.Hash) ([]byte, AttestationStatus, error) {
+func (c client) GetAttestation(ctx context.Context, messageHash common.Hash) ([]byte, AttestationStatus, error) {
 	var res attestationResponse
 
 	if err := c.do(ctx, "/v1/attestations/"+messageHash.Hex(), &res); err != nil {
@@ -68,7 +56,7 @@ func (c Client) GetAttestation(ctx context.Context, messageHash common.Hash) ([]
 	return signature, status, nil
 }
 
-func (c Client) do(ctx context.Context, path string, res any) error {
+func (c client) do(ctx context.Context, path string, res any) error {
 	uri, err := c.uri(path)
 	if err != nil {
 		return err
@@ -110,7 +98,7 @@ func (c Client) do(ctx context.Context, path string, res any) error {
 	return nil
 }
 
-func (c Client) uri(path string) (string, error) {
+func (c client) uri(path string) (string, error) {
 	uri, err := url.JoinPath(c.host, path)
 	if err != nil {
 		return "", errors.Wrap(err, "join path", "base", c.host, "path", path)
