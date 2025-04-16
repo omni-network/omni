@@ -347,7 +347,7 @@ function BasicDepositForm() {
 export default BasicDepositForm;
 ```
 
-## Key Considerations
+## Considerations
 
 *   **Error Handling:** Add more robust error handling for invalid inputs, quote failures, validation rejections, and transaction errors.
 *   **User Feedback:** Provide clear feedback to the user during each stage (quoting, validation, opening, tracking status).
