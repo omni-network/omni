@@ -10,6 +10,7 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -47,10 +48,10 @@ func (s AttestationStatus) Validate() error {
 }
 
 // GetAttestation retrieves the attestation (and status) for a given message hash.
-func (c Client) GetAttestation(ctx context.Context, messageHash string) ([]byte, AttestationStatus, error) {
+func (c Client) GetAttestation(ctx context.Context, messageHash common.Hash) ([]byte, AttestationStatus, error) {
 	var res attestationResponse
 
-	if err := c.do(ctx, "/v1/attestations/"+messageHash, &res); err != nil {
+	if err := c.do(ctx, "/v1/attestations/"+messageHash.Hex(), &res); err != nil {
 		return nil, "", err
 	}
 

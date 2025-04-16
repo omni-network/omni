@@ -133,8 +133,19 @@ func (db *DB) GetMsg(ctx context.Context, txHash common.Hash) (types.MsgSendUSDC
 	return msg, true, nil
 }
 
-// ListMsgs returns all messages.
-func (db *DB) ListMsgs(ctx context.Context) ([]types.MsgSendUSDC, error) {
+// MsgFilter contains optional filters for GetMsgsBy.
+type MsgFilter struct {
+	DestChainID uint64          // Filter by destination chain ID.
+	Status      types.MsgStatus // Filter by message status.
+}
+
+// GetMsgs returns all messages.
+func (db *DB) GetMsgs(ctx context.Context) ([]types.MsgSendUSDC, error) {
+	return db.GetMsgsBy(ctx, MsgFilter{})
+}
+
+// GetMsgsBy returns messages filtered by the provided filter.
+func (db *DB) GetMsgsBy(ctx context.Context, filter MsgFilter) ([]types.MsgSendUSDC, error) {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -154,6 +165,16 @@ func (db *DB) ListMsgs(ctx context.Context) ([]types.MsgSendUSDC, error) {
 		msg, err := msgFromProto(proto)
 		if err != nil {
 			return nil, errors.Wrap(err, "from proto")
+		}
+
+		// Filter by DestChainID
+		if filter.DestChainID != 0 && msg.DestChainID != filter.DestChainID {
+			continue
+		}
+
+		// Filter by Status
+		if filter.Status != types.MsgStatusUnknown && msg.Status != filter.Status {
+			continue
 		}
 
 		msgs = append(msgs, msg)

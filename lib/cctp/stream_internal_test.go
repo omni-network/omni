@@ -204,10 +204,10 @@ func TestStreamEventProc(t *testing.T) {
 			err = proc(ctx, header, tt.logs)
 			require.NoError(t, err)
 
-			list, err := db.ListMsgs(ctx)
+			msgs, err := db.GetMsgs(ctx)
 			require.NoError(t, err)
 
-			testutil.AssertMsgsEqual(t, tt.expectedState, list)
+			testutil.AssertMsgsEqual(t, tt.expectedState, msgs)
 		})
 	}
 }
