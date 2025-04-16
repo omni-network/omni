@@ -28,8 +28,8 @@ import (
 )
 
 const (
-	DELEGATE   = 0
-	UNDELEGATE = 1
+	StakingMethodDelegate   = 0
+	StakingMethodUndelegate = 1
 )
 
 // burnFee is the fee burned on every undelegation.
@@ -73,9 +73,9 @@ func TestUndelegations(t *testing.T) {
 		// We deploy a proxy smart contract and let it stake and unstake in one batch
 		t.Run("batched delegations and undelegations", func(t *testing.T) {
 			t.Parallel()
-			_, delegatorEthAddr := GenFundedEOA(ctx, t, omniBackend)
+			_, eoa := GenFundedEOA(ctx, t, omniBackend)
 
-			proxyAddr, err := deploy(ctx, omniBackend, stakingContractAddr, delegatorEthAddr)
+			proxyAddr, err := deploy(ctx, omniBackend, stakingContractAddr, eoa)
 			proxyCosmosAddr := sdk.AccAddress(proxyAddr.Bytes())
 			require.NoError(t, err)
 			log.Debug(ctx, "Staking proxy deployed", "address", proxyAddr)
@@ -92,34 +92,36 @@ func TestUndelegations(t *testing.T) {
 			// These calls will be mined in one block and batched by octane
 			calls := []bindings.StakingProxyCall{
 				{
-					Method:    DELEGATE,
+					Method:    StakingMethodDelegate,
 					Validator: validatorAddr,
 					Value:     delegation,
 					Amount:    bi.N(0),
 				},
 				{
-					Method:    UNDELEGATE,
+					Method:    StakingMethodUndelegate,
 					Validator: validatorAddr,
 					Value:     burnFee,
 					Amount:    undelegation1,
 				},
 				{
-					Method:    UNDELEGATE,
+					Method:    StakingMethodUndelegate,
 					Validator: validatorAddr,
 					Value:     burnFee,
 					Amount:    undelegation2,
 				},
 			}
 
-			err = proxyCall(ctx, omniBackend, proxyAddr, delegatorEthAddr, calls)
+			err = proxyCall(ctx, omniBackend, proxyAddr, eoa, calls)
 			require.NoError(t, err)
 
 			// make sure our delegated amount is delegation-undelegation1-undelegation2
 			require.Eventuallyf(t, func() bool {
-				amount := delegatedAmount(t, ctx, cprov, val.OperatorAddress, proxyCosmosAddr.String())
+				amount := delegatedAmount(t, ctx, cprov, val.OperatorAddress, proxyCosmosAddr.String()).Amount.BigInt()
 				log.Debug(ctx, "Delegated amount", "amount", amount)
 
-				return bi.EQ(bi.Sub(delegation, undelegation1, undelegation2), amount.Amount.BigInt())
+				expectedAmount := bi.Sub(delegation, undelegation1, undelegation2)
+
+				return bi.EQ(expectedAmount, amount)
 			}, valChangeWait, 500*time.Millisecond, "failed to execute batched staking calls")
 		})
 
@@ -156,7 +158,9 @@ func TestUndelegations(t *testing.T) {
 				require.NoError(t, err)
 
 				// Amounts are roughly equal (we need to account for tx fee expected to be below burnFee)
-				return bi.GT(bi.Add(balance, burnFee), newBalance)
+				maxExpectedAmount := bi.Add(balance, burnFee)
+
+				return bi.GT(maxExpectedAmount, newBalance)
 			}, valChangeWait, 500*time.Millisecond, "failed to undeleate")
 		})
 
@@ -186,7 +190,9 @@ func TestUndelegations(t *testing.T) {
 				require.NoError(t, err)
 
 				// Amounts are roughly equal (we need to account for tx fee expected to be below burnFee)
-				return bi.GT(bi.Add(balance, burnFee), newBalance)
+				maxExpectedAmount := bi.Add(balance, burnFee)
+
+				return bi.GT(maxExpectedAmount, newBalance)
 			}, valChangeWait, 500*time.Millisecond, "failed to undeleate")
 		})
 
@@ -219,7 +225,9 @@ func TestUndelegations(t *testing.T) {
 				require.NoError(t, err)
 
 				// Amounts are roughly equal (we need to account for tx fee expected to be below burnFee)
-				return bi.GT(bi.Add(balance, burnFee), newBalance)
+				maxExpectedAmount := bi.Add(balance, burnFee)
+
+				return bi.GT(maxExpectedAmount, newBalance)
 			}, valChangeWait, 500*time.Millisecond, "failed to undeleate")
 		})
 
@@ -269,7 +277,10 @@ func TestUndelegations(t *testing.T) {
 				require.NoError(t, err)
 
 				// we subtract the burn fee twice to account for the tx fees (which are expected to be below the burn fee)
-				return bi.GTE(newBalance, bi.Add(bi.Sub(balance, burnFee, burnFee), undelegatedAmount))
+				minBalanceAfterDelegation := bi.Sub(balance, burnFee, burnFee)
+				minExpectedBalance := bi.Add(minBalanceAfterDelegation, undelegatedAmount)
+
+				return bi.GTE(newBalance, minExpectedBalance)
 			}, valChangeWait, 500*time.Millisecond, "failed to undeleate")
 
 			// ensure rewards are still accruing after some time
@@ -298,7 +309,10 @@ func TestUndelegations(t *testing.T) {
 				require.NoError(t, err)
 
 				// we subtract the burn fee twice to account for the tx fees (which are expected to be below the burn fee)
-				return bi.GTE(newBalance, bi.Add(bi.Sub(balance, burnFee, burnFee), delegatedAmt))
+				minBalanceAfterDelegation := bi.Sub(balance, burnFee, burnFee)
+				minExpectedBalance := bi.Add(minBalanceAfterDelegation, delegatedAmt)
+
+				return bi.GTE(newBalance, minExpectedBalance)
 			}, valChangeWait, 500*time.Millisecond, "failed to undeleate")
 
 			// ensure nothing is staked anymore
