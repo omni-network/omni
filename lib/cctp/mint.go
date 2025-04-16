@@ -53,7 +53,7 @@ func MintForever(
 	ctx = log.WithCtx(ctx,
 		"process", "cctp.MintForever",
 		"chain", chain.Name,
-		"minter", minter.Hex())
+		"minter", minter)
 
 	o := defaultMintOpts()
 	for _, opt := range opts {
@@ -153,7 +153,7 @@ func tryMint(
 		return nil
 	}
 
-	received, err := hasBeenReceived(ctx, msgTransmitter, msg)
+	received, err := didReceive(ctx, msgTransmitter, msg)
 	if err != nil {
 		return errors.Wrap(err, "has been received")
 	}
@@ -206,13 +206,26 @@ func tryMint(
 	return nil
 }
 
-// hasBeenReceived checks if a MsgSendUSDC has been received by dest MessageTransmitter.
+// isReceived checks returns an isReceivedFunc for given chains / clients.
+func newIsReceived(clients map[uint64]ethclient.Client) isReceivedFunc {
+	return func(ctx context.Context, msg types.MsgSendUSDC) (bool, error) {
+		client, ok := clients[msg.DestChainID]
+		if !ok {
+			return false, errors.New("no client for dest chain", "chain_id", msg.DestChainID)
+		}
+
+		msgTransmitter, _, err := newMessageTransmitter(msg.DestChainID, client)
+		if err != nil {
+			return false, errors.Wrap(err, "message transmitter")
+		}
+
+		return didReceive(ctx, msgTransmitter, msg)
+	}
+}
+
+// didReceive checks if a MsgSendUSDC has been received by dest MessageTransmitter.
 // It checks MessageTransmitter.UsedNonces(...) to see message nonce has been used.
-func hasBeenReceived(
-	ctx context.Context,
-	msgTransmitter *MessageTransmitter,
-	msg types.MsgSendUSDC,
-) (bool, error) {
+func didReceive(ctx context.Context, msgTransmitter *MessageTransmitter, msg types.MsgSendUSDC) (bool, error) {
 	if len(msg.MessageBytes) < 84 {
 		return false, errors.New("message bytes too short", "len", len(msg.MessageBytes))
 	}
