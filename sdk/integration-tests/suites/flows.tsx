@@ -1,4 +1,9 @@
-import { type Quote, useQuote, useValidateOrder } from '@omni-network/react'
+import {
+  type Quote,
+  useQuote,
+  useValidateOrder,
+  withExecAndTransfer,
+} from '@omni-network/react'
 import {
   invalidTokenAddress,
   mintOMNI,
@@ -103,6 +108,106 @@ describe('ETH transfer orders', () => {
       deposit: { token: zeroAddress, amount: 2n * amount },
     }
     await executeTestOrder(order, 'ExpenseUnderMin')
+  })
+})
+
+describe('ETH deposit via middleman contract', () => {
+  test('default: successfully processes order from quote to filled', async () => {
+    const amount = parseEther('1')
+
+    const renderHook = createRenderHook()
+
+    const quoteHook = renderHook(() => {
+      return useQuote({
+        enabled: true,
+        mode: 'expense',
+        srcChainId: mockL2Id,
+        destChainId: mockL1Id,
+        deposit: {
+          amount,
+          isNative: true,
+        },
+        expense: {
+          isNative: true,
+        },
+      })
+    })
+
+    await waitFor(() => {
+      expect(quoteHook.result.current.query.error).toBeNull()
+      expect(quoteHook.result.current.query.data).toBeDefined()
+      expect(quoteHook.result.current.isSuccess).toBe(true)
+      expect(quoteHook.result.current.isPending).toBe(false)
+      expect(quoteHook.result.current.isError).toBe(false)
+    })
+
+    const quote = quoteHook.result.current.query.data as Quote
+
+    expect(quote).toEqual({
+      deposit: { token: zeroAddress, amount: parseEther('1') },
+      expense: { token: zeroAddress, amount: expect.any(BigInt) },
+    })
+    expect(quote.expense.amount).toBeLessThan(parseEther('1'))
+
+    const call = withExecAndTransfer({
+      call: {
+        target: '0x320f3aAB9405e38b955178BBe75c477dECBA0C27',
+        value: quote.expense.amount,
+        abi: [
+          {
+            type: 'function',
+            name: 'depositWithoutBehalfOf',
+            inputs: [],
+            outputs: [],
+            stateMutability: 'payable',
+          },
+        ],
+        functionName: 'depositWithoutBehalfOf',
+      },
+      transfer: {
+        token: zeroAddress,
+        to: testAccount.address,
+      },
+      middlemanAddress: '0x1b99E432d5F9e8110102b8d3DcE2d0b462a37942',
+    })
+
+    const order = {
+      owner: testAccount.address,
+      srcChainId: mockL2Id,
+      destChainId: mockL1Id,
+      expense: { token: zeroAddress, amount: quote.expense.amount },
+      calls: [call],
+      deposit: { token: zeroAddress, amount: quote.deposit.amount },
+    }
+
+    const validateHook = renderHook(() => {
+      return useValidateOrder({ enabled: true, order })
+    })
+
+    await waitFor(() => {
+      expect(validateHook.result.current.status === 'accepted').toBe(true)
+    })
+
+    const orderRef = useOrderRef(testConnector, order)
+
+    await waitFor(() => expect(orderRef.current?.isReady).toBe(true))
+
+    act(() => {
+      orderRef.current?.open()
+    })
+
+    await waitFor(() => {
+      expect(orderRef.current?.status).toBeOneOf(['open', 'opening'])
+      expect(orderRef.current?.txHash).toBeDefined()
+      expect(orderRef.current?.error).toBeUndefined()
+      expect(orderRef.current?.isError).toBe(false)
+      expect(orderRef.current?.isTxSubmitted).toBe(true)
+      expect(orderRef.current?.isTxPending).toBe(false)
+    })
+
+    await waitFor(() => expect(orderRef.current?.status).toBe('filled'), {
+      timeout: 10_000,
+    })
   })
 })
 
