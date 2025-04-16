@@ -284,7 +284,7 @@
   "chainId": 17000,
   "coingeckoId": "wrapped-steth",
   "isMock": false,
-  "maxSpend": "1 wstETH",
+  "maxSpend": "0.1 wstETH",
   "minSpend": "0.001 wstETH",
   "name": "Wrapped Staked Ether",
   "symbol": "wstETH"
@@ -294,7 +294,7 @@
   "chainId": 11155111,
   "coingeckoId": "wrapped-steth",
   "isMock": false,
-  "maxSpend": "1 wstETH",
+  "maxSpend": "0.1 wstETH",
   "minSpend": "0.001 wstETH",
   "name": "Wrapped Staked Ether",
   "symbol": "wstETH"
@@ -314,7 +314,7 @@
   "chainId": 17000,
   "coingeckoId": "lido-staked-ether",
   "isMock": false,
-  "maxSpend": "1 stETH",
+  "maxSpend": "0.1 stETH",
   "minSpend": "0.001 stETH",
   "name": "Lido Staked Ether",
   "symbol": "stETH"
@@ -324,7 +324,7 @@
   "chainId": 84532,
   "coingeckoId": "wrapped-steth",
   "isMock": true,
-  "maxSpend": "1 wstETH",
+  "maxSpend": "0.1 wstETH",
   "minSpend": "0.001 wstETH",
   "name": "Wrapped Staked Ether",
   "symbol": "wstETH"
@@ -334,7 +334,7 @@
   "chainId": 1652,
   "coingeckoId": "wrapped-steth",
   "isMock": true,
-  "maxSpend": "1 wstETH",
+  "maxSpend": "0.1 wstETH",
   "minSpend": "0.001 wstETH",
   "name": "Wrapped Staked Ether",
   "symbol": "wstETH"
@@ -354,7 +354,7 @@
   "chainId": 1654,
   "coingeckoId": "wrapped-steth",
   "isMock": true,
-  "maxSpend": "1 wstETH",
+  "maxSpend": "0.1 wstETH",
   "minSpend": "0.001 wstETH",
   "name": "Wrapped Staked Ether",
   "symbol": "wstETH"

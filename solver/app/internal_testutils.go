@@ -442,11 +442,11 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			order: testOrder{
 				srcChainID: evmchain.IDOmniOmega,
 				dstChainID: evmchain.IDHolesky,
-				deposits:   []types.AddrAmt{{Amount: ether(2)}},
-				calls:      []types.Call{{Value: ether(1)}},
+				deposits:   []types.AddrAmt{{Amount: bi.Ether(0.3)}},
+				calls:      []types.Call{{Value: bi.Ether(0.1)}},
 				expenses: []types.Expense{
-					{Amount: ether(1)},
-					{Amount: ether(1), Token: common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")},
+					{Amount: bi.Ether(0.1)},
+					{Amount: bi.Ether(0.1), Token: common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")},
 				},
 			},
 		},
@@ -544,9 +544,9 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 			order: testOrder{
 				srcChainID: evmchain.IDBaseSepolia,
 				dstChainID: evmchain.IDHolesky,
-				deposits:   []types.AddrAmt{{Amount: depositFor(ether(1), standardFeeBips)}},
+				deposits:   []types.AddrAmt{{Amount: depositFor(bi.Ether(0.1), standardFeeBips)}},
 				calls:      []types.Call{{Target: common.HexToAddress("0x01"), Data: dummyCallData}}, // does not matter
-				expenses:   []types.Expense{{Amount: ether(1), Token: holeskySTETH}},
+				expenses:   []types.Expense{{Amount: bi.Ether(0.1), Token: holeskySTETH}},
 			},
 			mock: func(clients MockClients) {
 				mockERC20Balance(t, clients.Client(t, evmchain.IDHolesky), holeskySTETH, ether(1))
