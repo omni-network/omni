@@ -11,13 +11,28 @@ import { Callout } from 'vocs/components'
 This example uses a simplified hook structure (`useL2Deposit`) for demonstration and specific testnet addresses. The core logic involves `useQuote` and `useOrder`. Adapt addresses and chain IDs as needed.
 </Callout>
 
-## Overview
-
 This guide demonstrates how to use the Omni SDK to allow users to deposit ETH from Arbitrum into Rocket Pool on Ethereum Mainnet to mint rETH.
 
 Since the Rocket Pool deposit contract (`0xDD3f50F8A6CafbE9b31a427582963f465E745AF8`) includes an `onBehalfOf` parameter in its `deposit` function (`deposit(address _onBehalfOf)`), we can directly specify the user's address in the `useOrder` call without needing `withExecAndTransfer`.
 
-## Custom Hook (`useL2Deposit.ts`)
+## Concepts
+
+*   **`onBehalfOf`**: The target contract's `deposit` function takes `address _onBehalfOf`. We provide the connected user's address here.
+*   **`calls` Array**: In the `useOrder` configuration (likely inside `useL2Deposit`), the `calls` array would look something like this:
+    ```ts
+    calls: [
+      {
+        target: ROCKET_POOL_ADDRESS,
+        abi: ROCKET_POOL_ABI,
+        functionName: 'deposit',
+        value: quotedExpenseAmt, // ETH amount calculated by useQuote
+        args: [userAddress] // Pass user address as argument
+      }
+    ]
+    ```
+*   **No `withExecAndTransfer`**: Because the contract supports `onBehalfOf`, the simpler direct call method is used.
+
+## Code
 
 For clarity, this example uses a simplified custom hook `useL2Deposit` that wraps `useQuote` and `useOrder`. The full implementation is omitted here, but it handles:
 
@@ -61,20 +76,3 @@ function RocketPoolDepositComponent() {
   );
 }
 ```
-
-## Key Points
-
-*   **`onBehalfOf`**: The target contract's `deposit` function takes `address _onBehalfOf`. We provide the connected user's address here.
-*   **`calls` Array**: In the `useOrder` configuration (likely inside `useL2Deposit`), the `calls` array would look something like this:
-    ```ts
-    calls: [
-      {
-        target: ROCKET_POOL_ADDRESS,
-        abi: ROCKET_POOL_ABI,
-        functionName: 'deposit',
-        value: quotedExpenseAmt, // ETH amount calculated by useQuote
-        args: [userAddress] // Pass user address as argument
-      }
-    ]
-    ```
-*   **No `withExecAndTransfer`**: Because the contract supports `onBehalfOf`, the simpler direct call method is used.

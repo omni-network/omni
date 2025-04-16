@@ -7,40 +7,83 @@ title: useOrder
 
 After obtaining a valid quote with [`useQuote`](/sdk/hooks/useQuote), the `useOrder` hook is used to execute the actual cross-chain transaction via Omni SolverNet. It takes the details confirmed in the quote, validates them, and provides a function (`open`) to initiate the process and monitor its status.
 
-## Parameters
+## Usage
 
-The hook accepts a configuration object:
+`import { useOrder } from '@omni-network/react'`
+
+```tsx
+import { useOrder } from '@omni-network/react'
+
+function Component() {
+  const order = useOrder({
+    // ... params
+  });
+}
+```
+
+## Parameters
 
 | Prop                | Type                                 | Required | Description                                                                                                                         |
 | ------------------- | ------------------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `srcChainId`        | `number`                             | Yes      | The chain ID of the source network. Must match `useQuote`.                                                                          |
-| `destChainId`       | `number`                             | Yes      | The chain ID of the destination network. Must match `useQuote`.                                                                     |
-| `deposit`           | `OrderAsset`                         | Yes      | Describes the asset and amount being deposited on the source chain (paid by the connected user). Typically from `quote.data.deposit`. |
-| `expense`           | `OrderAsset & { spender: Address }`  | Yes      | Describes the asset, amount, and spender on the destination chain (paid by the solver). Typically from `quote.data.expense`.            |
+| `srcChainId`        | `number`                             | Yes      | The chain ID of the source chain. Must match `useQuote`.                                                                          |
+| `destChainId`       | `number`                             | Yes      | The chain ID of the destination chain. Must match `useQuote`.                                                                     |
+| `deposit`           | `Deposit`                         | Yes      | Describes the asset and amount being deposited on the source chain (paid by the user) - taken from `quote.data.deposit`. |
+| `expense`           | `Expense`  | Yes      | Describes the asset, amount, and spender on the destination chain (paid by the solver) - taken from `quote.data.expense`.            |
 | `calls`             | `Call[]`                             | Yes      | An array of contract calls to be executed on the destination chain by the solver.                                                     |
-| `validateEnabled`   | `boolean`                            | No       | Defaults to `true`. Enables pre-validation of the order with Omni. Recommended to set based on `quote.isSuccess`.                    |
+| `validateEnabled`   | `boolean`                            | No       | Defaults to `true`. Enables pre-validation of the order with Omni. Use this to validate your calls. Recommended to set based on `quote.isSuccess`.                    |
 
-### `OrderAsset` Type
+## Types
+
+### `Deposit`
+
+Describes the deposit parameter.
 
 ```typescript
-type OrderAsset =
-  | { isNative: true; token?: never; amount: bigint } // Native ETH
-  | { isNative?: false; token: Address; amount: bigint } // ERC20
+type Deposit = {
+  readonly token?: Address
+  readonly amount: bigint
+}
 ```
 
-### `Call` Type
+### `Expense`
+
+Describes the expense parameter.
+
+```typescript
+type Expense = {
+  readonly spender?: Address
+  readonly token?: Address
+  readonly amount: bigint
+}
+```
+
+### `Order`
+
+Describes the order to placed by the user.
+
+```typescript
+export type Order<abis extends OptionalAbis> = {
+  readonly owner?: Address
+  readonly srcChainId?: number
+  readonly destChainId: number
+  readonly fillDeadline?: number
+  readonly calls: Calls<abis>
+  readonly deposit: Deposit
+  readonly expense: Expense
+}
+```
+
+### `Call`
 
 Describes a contract interaction on the destination chain.
 
 ```typescript
-import { type Abi } from 'viem'
-
 type Call = {
-  target: Address;       // The contract address to call
+  target: Address;      // The contract address to call
   abi: Abi;             // The ABI of the target contract
-  functionName: string; // The function to call
-  args?: any[];          // Arguments for the function call
-  value?: bigint;        // ETH value to send with the call (optional)
+  functionName: string; // The function to call - type inferred from the abi
+  args?: unknown[];     // Arguments for the function call - type inferred from the abi
+  value?: bigint;       // ETH value to send with the call (optional)
 }
 ```
 
@@ -65,7 +108,9 @@ The `useOrder` hook returns an object with the following properties:
 | `waitForTx`     | `UseWaitForTransactionReceiptReturnType` | The result object from `wagmi`'s `useWaitForTransactionReceipt` for the opening transaction.                                           |
 | `isReady`       | `boolean`                             | `true` when the hook is initialized and ready to attempt opening the order (status is `'ready'`). Does *not* imply validation passed. |
 
-### `OrderStatus` Type
+### `OrderStatus`
+
+Monitor the `status` to provide feedback to user's throughout the lifecycle of the cross-chain transaction.
 
 ```typescript
 export type OrderStatus =
@@ -79,7 +124,7 @@ export type OrderStatus =
   | 'filled'
 ```
 
-### `ValidationResult` Type
+### `ValidationResult`
 
 ```typescript
 type ValidationResult = {
@@ -89,11 +134,11 @@ type ValidationResult = {
 }
 ```
 
-Monitor the `status` property to provide feedback to the user throughout the cross-chain operation lifecycle.
 
-## Example
 
-### High-Level Usage Flow
+## Examples
+
+### Intro
 
 ```tsx
 import { useQuote, useOrder } from '@omni-network/react';
@@ -130,7 +175,7 @@ function InitiateAction() {
 }
 ```
 
-### Example
+### Code
 
 Building on the `useQuote` example, let's define and use `useOrder` to deposit into a vault:
 

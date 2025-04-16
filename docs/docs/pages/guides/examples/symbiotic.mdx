@@ -7,16 +7,27 @@ import { Callout } from 'vocs/components'
 
 # Symbiotic wstETH Deposit
 
-*   **Live Testnet Vault (Holesky):** [app.holesky.symbiotic.fi](https://app.holesky.symbiotic.fi/vault/0xd88dDf98fE4d161a66FB836bee4Ca469eb0E4a75)
-*   **Base Sepolia Faucet (for ETH/wstETH):** [faucet.omni.network/base-sepolia](https://faucet.omni.network/base-sepolia)
+<Callout type="info" title="Note">
+*   **Holesky Vault:** [app.holesky.symbiotic.fi](https://app.holesky.symbiotic.fi/vault/0xd88dDf98fE4d161a66FB836bee4Ca469eb0E4a75)
+*   **Base Sepolia Faucet (ETH/wstETH):** [faucet.omni.network/base-sepolia](https://faucet.omni.network/base-sepolia)
+</Callout>
 
----
+
 
 This example demonstrates depositing wstETH from an L2 (Base Sepolia) into a Symbiotic collateral vault (`DC_wstEth`) on L1 (Holesky) using Omni SolverNet.
 
 Since the Symbiotic vault contract used here (`0x23e...fc`) includes an `onBehalfOf` parameter in its `deposit` function (`deposit(address onBehalfOf, uint256 amount)`), we can directly specify the user's address in the `useOrder` call without needing `withExecAndTransfer`.
 
-## Custom Hook (`useL2Deposit.ts`)
+## Concepts
+
+*   **Direct Call:** Because the target Symbiotic vault supports depositing `onBehalfOf` a user, we don't need `withExecAndTransfer`.
+*   **Order Configuration:**
+    *   `deposit`: wstETH from the source L2.
+    *   `expense`: wstETH required by the vault on L1, with the `spender` set to the vault contract address.
+    *   `calls`: Contains a single, direct call to the vault's `deposit` function, passing the connected user's address as `onBehalfOf`.
+
+
+## Code
 
 ```typescript
 import { useQuote, useOrder } from '@omni-network/react' // Assuming hooks are available here
@@ -113,7 +124,7 @@ export function useL2Deposit(params: UseL2DepositParams) {
 }
 ```
 
-## Usage in Component
+## Usage
 
 ```tsx
 import React, { useState, useMemo } from 'react';
@@ -190,11 +201,3 @@ function SymbioticDepositComponent() {
 
 export default SymbioticDepositComponent;
 ```
-
-## Key Concepts
-
-*   **Direct Call:** Because the target Symbiotic vault supports depositing `onBehalfOf` a user, we don't need `withExecAndTransfer`.
-*   **Order Configuration:**
-    *   `deposit`: wstETH from the source L2.
-    *   `expense`: wstETH required by the vault on L1, with the `spender` set to the vault contract address.
-    *   `calls`: Contains a single, direct call to the vault's `deposit` function, passing the connected user's address as `onBehalfOf`.

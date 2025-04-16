@@ -40,7 +40,7 @@ export default defineConfig({
     },
     {
       text: 'SolverNet Concepts',
-      collapsed: true,
+      collapsed: false,
       items: [
         { text: 'Problem: Fragmentation & UX', link: '/concepts/the-problem' },
         { text: 'Solution: Intents & SolverNet', link: '/concepts/the-solution' },
@@ -50,25 +50,25 @@ export default defineConfig({
     },
     {
       text: 'SolverNet SDK',
-      collapsed: true,
+      collapsed: false,
       items: [
         { text: 'Getting Started', link: '/sdk/getting-started' },
-        { text: 'useQuote', link: '/sdk/hooks/useQuote' },
-        { text: 'useOrder', link: '/sdk/hooks/useOrder' },
-        { text: 'withExecAndTransfer', link: '/sdk/utils/withExecAndTransfer' },
         { text: 'Supported Assets', link: '/sdk/supported-assets' },
-      ],
-    },
-    {
-      text: 'SolverNet Guides',
-      collapsed: true,
-      items: [
-        { text: 'Basic Deposit', link: '/guides/basic-deposit' },
-        { text: 'Contracts without onBehalfOf', link: '/guides/contracts-without-onbehalfof' },
         {
-          text: 'Examples',
-          collapsed: true,
+          text: 'Hooks',
+          collapsed: false,
           items: [
+            { text: 'useQuote', link: '/sdk/hooks/useQuote' },
+            { text: 'useOrder', link: '/sdk/hooks/useOrder' },
+            { text: 'withExecAndTransfer', link: '/sdk/utils/withExecAndTransfer' },
+          ],
+        },
+        {
+          text: 'Guides',
+          collapsed: false,
+          items: [
+            { text: 'Basic Deposit', link: '/guides/basic-deposit' },
+            { text: 'Contracts without onBehalfOf', link: '/guides/contracts-without-onbehalfof' },
             { text: 'Symbiotic', link: '/guides/examples/symbiotic' },
             { text: 'EigenLayer', link: '/guides/examples/eigenlayer' },
             { text: 'Rocketpool', link: '/guides/examples/rocketpool' },
