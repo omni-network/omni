@@ -3,7 +3,6 @@ package e2e_test
 import (
 	"context"
 	"math/big"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -20,7 +19,6 @@ import (
 	"github.com/cometbft/cometbft/rpc/client/http"
 
 	"github.com/ethereum/go-ethereum/common"
-	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/cosmos/cosmos-sdk/client/grpc/node"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -37,7 +35,6 @@ const (
 // burnFee is the fee burned on every undelegation.
 var burnFee = bi.Ether(0.1)
 
-//nolint:paralleltest // We have to run tests sequentially
 func TestUndelegations(t *testing.T) {
 	t.Parallel()
 
@@ -50,8 +47,6 @@ func TestUndelegations(t *testing.T) {
 		network := deps.Network
 		omniBackend, err := deps.OmniBackend()
 		require.NoError(t, err)
-
-		tmpDir := t.TempDir()
 
 		cl, err := http.New(network.ID.Static().ConsensusRPC(), "/websocket")
 		require.NoError(t, err)
@@ -70,12 +65,6 @@ func TestUndelegations(t *testing.T) {
 		validatorAddr, err := validator.OperatorEthAddr()
 		require.NoError(t, err)
 
-		delegatorPrivKey, delegatorEthAddr := GenFundedEOA(ctx, t, omniBackend)
-		delegatorCosmosAddr := sdk.AccAddress(delegatorEthAddr.Bytes())
-		delegatorPrivKeyFile := filepath.Join(tmpDir, "delegator_privkey")
-		err = ethcrypto.SaveECDSA(delegatorPrivKeyFile, delegatorPrivKey)
-		require.NoError(t, err)
-
 		stakingContractAddr := common.HexToAddress(predeploys.Staking)
 
 		contract, err := bindings.NewStaking(stakingContractAddr, omniBackend)
@@ -83,6 +72,9 @@ func TestUndelegations(t *testing.T) {
 
 		// We deploy a proxy smart contract and let it stake and unstake in one batch
 		t.Run("batched delegations and undelegations", func(t *testing.T) {
+			t.Parallel()
+			_, delegatorEthAddr := GenFundedEOA(ctx, t, omniBackend)
+
 			proxyAddr, err := deploy(ctx, omniBackend, stakingContractAddr, delegatorEthAddr)
 			proxyCosmosAddr := sdk.AccAddress(proxyAddr.Bytes())
 			require.NoError(t, err)
@@ -133,41 +125,12 @@ func TestUndelegations(t *testing.T) {
 
 		const delegation = uint64(76)
 
-		t.Run("delegation", func(t *testing.T) {
-			val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
-			require.True(t, ok)
-
-			valPower, err := val.Power()
-			require.NoError(t, err)
-
-			txOpts, err := omniBackend.BindOpts(ctx, delegatorEthAddr)
-			require.NoError(t, err)
-			txOpts.Value = bi.Ether(delegation)
-
-			tx, err := contract.Delegate(txOpts, validatorAddr)
-			require.NoError(t, err)
-
-			_, err = omniBackend.WaitMined(ctx, tx)
-			require.NoError(t, err)
-
-			// make sure the validator power is increased and the delegation can be found
-			require.Eventuallyf(t, func() bool {
-				val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
-				require.True(t, ok)
-				newPower, err := val.Power()
-				require.NoError(t, err)
-
-				if delegatedAmount(t, ctx, cprov, val.OperatorAddress, delegatorCosmosAddr.String()).IsZero() {
-					return false
-				}
-
-				return newPower >= valPower+delegation
-			}, valChangeWait, 500*time.Millisecond, "failed to delegate")
-		})
-
 		var anyBlock *big.Int
 
 		t.Run("undelegate from a wrong validator", func(t *testing.T) {
+			t.Parallel()
+			_, delegatorEthAddr := GenFundedEOA(ctx, t, omniBackend)
+
 			txOpts, err := omniBackend.BindOpts(ctx, delegatorEthAddr)
 			require.NoError(t, err)
 			txOpts.Value = burnFee
@@ -198,6 +161,9 @@ func TestUndelegations(t *testing.T) {
 		})
 
 		t.Run("undelegate from a non-existent validator", func(t *testing.T) {
+			t.Parallel()
+			_, delegatorEthAddr := GenFundedEOA(ctx, t, omniBackend)
+
 			balance, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, anyBlock)
 			require.NoError(t, err)
 
@@ -225,6 +191,9 @@ func TestUndelegations(t *testing.T) {
 		})
 
 		t.Run("undelegation too big", func(t *testing.T) {
+			t.Parallel()
+			_, delegatorEthAddr := GenFundedEOA(ctx, t, omniBackend)
+
 			require.NoError(t, err)
 			balance, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, anyBlock)
 			require.NoError(t, err)
@@ -254,18 +223,42 @@ func TestUndelegations(t *testing.T) {
 			}, valChangeWait, 500*time.Millisecond, "failed to undeleate")
 		})
 
-		t.Run("partial undelegation", func(t *testing.T) {
-			require.NoError(t, err)
-			balance, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, anyBlock)
+		t.Run("delegate, then undelegate (partially and completely)", func(t *testing.T) {
+			t.Parallel()
+			_, delegatorEthAddr := GenFundedEOA(ctx, t, omniBackend)
+			delegatorCosmosAddr := sdk.AccAddress(delegatorEthAddr.Bytes())
+
+			val, ok, _ := cprov.SDKValidator(ctx, validatorAddr)
+			require.True(t, ok)
 			require.NoError(t, err)
 
 			txOpts, err := omniBackend.BindOpts(ctx, delegatorEthAddr)
 			require.NoError(t, err)
+			txOpts.Value = bi.Ether(delegation)
+
+			tx, err := contract.Delegate(txOpts, validatorAddr)
+			require.NoError(t, err)
+
+			_, err = omniBackend.WaitMined(ctx, tx)
+			require.NoError(t, err)
+
+			// make sure the validator power is increased and the delegation can be found
+			require.Eventuallyf(t, func() bool {
+				delegatedAmt := delegatedAmount(t, ctx, cprov, val.OperatorAddress, delegatorCosmosAddr.String()).Amount.BigInt()
+				return bi.EQ(delegatedAmt, bi.Ether(delegation))
+			}, valChangeWait, 500*time.Millisecond, "failed to delegate")
+
+			require.NoError(t, err)
+			balance, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, anyBlock)
+			require.NoError(t, err)
+
+			txOpts, err = omniBackend.BindOpts(ctx, delegatorEthAddr)
+			require.NoError(t, err)
 			txOpts.Value = burnFee
 
-			// undelegate half
+			// undelegate half of stake first
 			undelegatedAmount := bi.N(delegation / 2)
-			tx, err := contract.Undelegate(txOpts, validatorAddr, undelegatedAmount)
+			tx, err = contract.Undelegate(txOpts, validatorAddr, undelegatedAmount)
 			require.NoError(t, err)
 
 			_, err = omniBackend.WaitMined(ctx, tx)
@@ -281,23 +274,20 @@ func TestUndelegations(t *testing.T) {
 
 			// ensure rewards are still accruing after some time
 			waitForBlocks(ctx, t, cprov, 10)
-			_, ok := queryDelegationRewards(t, ctx, cprov, delegatorCosmosAddr, validator.OperatorAddress)
+			_, ok = queryDelegationRewards(t, ctx, cprov, delegatorCosmosAddr, validator.OperatorAddress)
 			require.True(t, ok)
-		})
 
-		t.Run("complete undelegation", func(t *testing.T) {
-			require.NoError(t, err)
-			balance, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, anyBlock)
+			balance, err = omniBackend.BalanceAt(ctx, delegatorEthAddr, anyBlock)
 			require.NoError(t, err)
 
-			txOpts, err := omniBackend.BindOpts(ctx, delegatorEthAddr)
+			txOpts, err = omniBackend.BindOpts(ctx, delegatorEthAddr)
 			require.NoError(t, err)
 			txOpts.Value = burnFee
 
 			delegatedAmt := delegatedAmount(t, ctx, cprov, validator.OperatorAddress, delegatorCosmosAddr.String()).Amount.BigInt()
 
 			// undelegate remaining half
-			tx, err := contract.Undelegate(txOpts, validatorAddr, delegatedAmt)
+			tx, err = contract.Undelegate(txOpts, validatorAddr, delegatedAmt)
 			require.NoError(t, err)
 
 			_, err = omniBackend.WaitMined(ctx, tx)
@@ -318,7 +308,7 @@ func TestUndelegations(t *testing.T) {
 
 			// ensure no rewards accrue anymore because we undelegated everything
 			waitForBlocks(ctx, t, cprov, 10)
-			_, ok := queryDelegationRewards(t, ctx, cprov, delegatorCosmosAddr, validator.OperatorAddress)
+			_, ok = queryDelegationRewards(t, ctx, cprov, delegatorCosmosAddr, validator.OperatorAddress)
 			require.False(t, ok)
 		})
 	})
