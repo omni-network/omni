@@ -304,9 +304,14 @@ func checkLiquidity(ctx context.Context, expenses []TokenAmt, backend *ethbacken
 			return errors.Wrap(err, "get balance", "token", expense.Token.Symbol)
 		}
 
+		minSafe := bi.Zero()
+		if expense.Token.Is(tokens.ETH) {
+			minSafe = minSafeETH
+		}
+
 		// TODO: for native tokens, even if we have enough, we don't want to
 		// spend out whole balance. we'll need to keep some for gas
-		if bi.LT(bal, expense.Amount) {
+		if bi.LT(bal, bi.Add(expense.Amount, minSafe)) {
 			if expense.Token.IsOMNI() && expense.Token.IsNative() {
 				// for native OMNI, instead of rejecting, we error. the solver
 				// will retry this order. this is a special case "fix" to handle
