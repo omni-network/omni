@@ -257,6 +257,29 @@ contract SolverNetOutboxHL is
         if (_filled[fillHash]) revert AlreadyFilled();
         _filled[fillHash] = true;
 
+        uint256 fee = _routeMsg(orderId, fillHash, claimant, fillData);
+        uint256 totalSpent = totalNativeValue + fee;
+        if (msg.value < totalSpent) revert InsufficientFee();
+
+        // refund any overpayment in native currency
+        uint256 refund = msg.value - totalSpent;
+        if (refund > 0) msg.sender.safeTransferETH(refund);
+
+        emit Filled(orderId, fillHash, msg.sender);
+    }
+
+    /**
+     * @notice Route a message to the inbox.
+     * @param orderId  ID of the order.
+     * @param fillHash Hash of the fill instructions origin data.
+     * @param claimant Address specified by the filler to claim the order (msg.sender if none specified).
+     * @param fillData ABI decoded fill originData.
+     * @return fee     Fee amount in native currency.
+     */
+    function _routeMsg(bytes32 orderId, bytes32 fillHash, address claimant, SolverNet.FillOriginData memory fillData)
+        internal
+        returns (uint256)
+    {
         InboxConfig memory inboxConfig = _inboxes[fillData.srcChainId];
         uint256 fee;
 
@@ -289,14 +312,7 @@ contract SolverNetOutboxHL is
             revert InvalidConfig();
         }
 
-        uint256 totalSpent = totalNativeValue + fee;
-        if (msg.value < totalSpent) revert InsufficientFee();
-
-        // refund any overpayment in native currency
-        uint256 refund = msg.value - totalSpent;
-        if (refund > 0) msg.sender.safeTransferETH(refund);
-
-        emit Filled(orderId, fillHash, msg.sender);
+        return fee;
     }
 
     /**

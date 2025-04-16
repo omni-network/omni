@@ -2,9 +2,10 @@
 pragma solidity ^0.8.24;
 
 import { IOriginSettler } from "../erc7683/IOriginSettler.sol";
+import { IMessageRecipient } from "@hyperlane-xyz/core/contracts/interfaces/IMessageRecipient.sol";
 import { SolverNet } from "../lib/SolverNet.sol";
 
-interface ISolverNetInboxHL is IOriginSettler {
+interface ISolverNetInboxHL is IOriginSettler, IMessageRecipient {
     // Validation errors
     error InvalidOrderTypehash();
     error InvalidOrderData();
@@ -178,15 +179,6 @@ interface ISolverNetInboxHL is IOriginSettler {
      * @param creditedTo Address deposits are credited to, provided by the filler.
      */
     function markFilled(bytes32 id, bytes32 fillHash, address creditedTo) external;
-
-    /**
-     * @notice Fill an order via Hyperlane.
-     * @dev Only callable by the outbox.
-     * @param origin The origin domain
-     * @param sender The sender address
-     * @param message The message
-     */
-    function handle(uint32 origin, bytes32 sender, bytes calldata message) external;
 
     /**
      * @notice Claim deposits for a filled order.

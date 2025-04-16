@@ -97,9 +97,15 @@ abstract contract MailboxClient is OwnableRoles, Initializable, PackageVersioned
         IPostDispatchHook _hook
     ) internal returns (bytes32) {
         bytes memory _hookMetadata = StandardHookMetadata.overrideGasLimit(_gasLimit);
-        return mailbox.dispatch{ value: _value }(
-            _destinationDomain, _target.toBytes32(), _messageBody, _hookMetadata, _hook
-        );
+        // Use default hook if none is configured
+        if (address(_hook) == address(0)) {
+            return
+                mailbox.dispatch{ value: _value }(_destinationDomain, _target.toBytes32(), _messageBody, _hookMetadata);
+        } else {
+            return mailbox.dispatch{ value: _value }(
+                _destinationDomain, _target.toBytes32(), _messageBody, _hookMetadata, _hook
+            );
+        }
     }
 
     /**
@@ -118,6 +124,11 @@ abstract contract MailboxClient is OwnableRoles, Initializable, PackageVersioned
         IPostDispatchHook _hook
     ) internal view returns (uint256) {
         bytes memory _hookMetadata = StandardHookMetadata.overrideGasLimit(_gasLimit);
-        return mailbox.quoteDispatch(_destinationDomain, _target.toBytes32(), _messageBody, _hookMetadata, _hook);
+        // Use default hook if none is configured
+        if (address(_hook) == address(0)) {
+            return mailbox.quoteDispatch(_destinationDomain, _target.toBytes32(), _messageBody, _hookMetadata);
+        } else {
+            return mailbox.quoteDispatch(_destinationDomain, _target.toBytes32(), _messageBody, _hookMetadata, _hook);
+        }
     }
 }
