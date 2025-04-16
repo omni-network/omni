@@ -81,7 +81,8 @@ func SendUSDC(
 	messageHash := crypto.Keccak256Hash(messageBz)
 
 	msg := types.MsgSendUSDC{
-		TxHash:       tx.Hash(),
+		TxHash:       receipt.TxHash,
+		BlockHeight:  receipt.BlockNumber.Uint64(),
 		SrcChainID:   srcChainID,
 		DestChainID:  destChainID,
 		Amount:       amount,
@@ -92,7 +93,8 @@ func SendUSDC(
 	}
 
 	attrs := []any{
-		"tx", tx.Hash(),
+		"tx", receipt.TxHash,
+		"block_height", receipt.BlockNumber.Uint64(),
 		"src_chain", srcChain,
 		"dest_chain", dstChain,
 		"amount", usdc.FormatAmt(amount),

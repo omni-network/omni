@@ -224,8 +224,9 @@ func depositForBurnLog(addr common.Address, msg types.MsgSendUSDC) ethtypes.Log 
 	}
 
 	return ethtypes.Log{
-		TxHash:  msg.TxHash,
-		Address: addr,
+		TxHash:      msg.TxHash,
+		Address:     addr,
+		BlockNumber: msg.BlockHeight,
 		Topics: []common.Hash{
 			depositForBurnEvent.ID,
 			common.HexToHash("0x123"),             // nonce (doesn't matter)
@@ -245,10 +246,11 @@ func depositForBurnLog(addr common.Address, msg types.MsgSendUSDC) ethtypes.Log 
 // messageSentLog creates a mock MessageSent event log.
 func messageSentLog(addr common.Address, msg types.MsgSendUSDC) ethtypes.Log {
 	return ethtypes.Log{
-		TxHash:  msg.TxHash,
-		Address: addr,
-		Topics:  []common.Hash{messageSentEvent.ID},
-		Data:    testutil.ABIEncodeBytes(msg.MessageBytes),
+		TxHash:      msg.TxHash,
+		BlockNumber: msg.BlockHeight,
+		Address:     addr,
+		Topics:      []common.Hash{messageSentEvent.ID},
+		Data:        testutil.ABIEncodeBytes(msg.MessageBytes),
 	}
 }
 

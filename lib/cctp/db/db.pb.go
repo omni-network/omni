@@ -73,14 +73,15 @@ func (MsgStatus) EnumDescriptor() ([]byte, []int) {
 
 type MsgSendUSDC struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	TxHash        []byte                 `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
-	MessageHash   []byte                 `protobuf:"bytes,2,opt,name=message_hash,json=messageHash,proto3" json:"message_hash,omitempty"`
-	MessageBytes  []byte                 `protobuf:"bytes,3,opt,name=message_bytes,json=messageBytes,proto3" json:"message_bytes,omitempty"`
-	SrcChainId    uint64                 `protobuf:"varint,4,opt,name=src_chain_id,json=srcChainId,proto3" json:"src_chain_id,omitempty"`
-	DestChainId   uint64                 `protobuf:"varint,5,opt,name=dest_chain_id,json=destChainId,proto3" json:"dest_chain_id,omitempty"`
-	Amount        []byte                 `protobuf:"bytes,6,opt,name=amount,proto3" json:"amount,omitempty"`
-	Recipient     []byte                 `protobuf:"bytes,7,opt,name=recipient,proto3" json:"recipient,omitempty"`
-	Status        int32                  `protobuf:"varint,8,opt,name=status,proto3" json:"status,omitempty"`
+	TxHash        []byte                 `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`                   // Source tx hash
+	BlockHeight   uint64                 `protobuf:"varint,2,opt,name=block_height,json=blockHeight,proto3" json:"block_height,omitempty"`   // Height of soruce chain block
+	MessageHash   []byte                 `protobuf:"bytes,3,opt,name=message_hash,json=messageHash,proto3" json:"message_hash,omitempty"`    // Hash of CCTP message bytes
+	MessageBytes  []byte                 `protobuf:"bytes,4,opt,name=message_bytes,json=messageBytes,proto3" json:"message_bytes,omitempty"` // CCTP message bytes
+	SrcChainId    uint64                 `protobuf:"varint,5,opt,name=src_chain_id,json=srcChainId,proto3" json:"src_chain_id,omitempty"`    // Source chain ID
+	DestChainId   uint64                 `protobuf:"varint,6,opt,name=dest_chain_id,json=destChainId,proto3" json:"dest_chain_id,omitempty"` // Destination chain ID
+	Amount        []byte                 `protobuf:"bytes,7,opt,name=amount,proto3" json:"amount,omitempty"`                                 // Amount of USDC sent
+	Recipient     []byte                 `protobuf:"bytes,8,opt,name=recipient,proto3" json:"recipient,omitempty"`                           // Recipient address
+	Status        int32                  `protobuf:"varint,9,opt,name=status,proto3" json:"status,omitempty"`                                // Status (submitted|minted)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -120,6 +121,13 @@ func (x *MsgSendUSDC) GetTxHash() []byte {
 		return x.TxHash
 	}
 	return nil
+}
+
+func (x *MsgSendUSDC) GetBlockHeight() uint64 {
+	if x != nil {
+		return x.BlockHeight
+	}
+	return 0
 }
 
 func (x *MsgSendUSDC) GetMessageHash() []byte {
@@ -227,17 +235,18 @@ var File_lib_cctp_db_db_proto protoreflect.FileDescriptor
 
 const file_lib_cctp_db_db_proto_rawDesc = "" +
 	"\n" +
-	"\x14lib/cctp/db/db.proto\x12\vlib.cctp.db\x1a\x17cosmos/orm/v1/orm.proto\"\x97\x02\n" +
+	"\x14lib/cctp/db/db.proto\x12\vlib.cctp.db\x1a\x17cosmos/orm/v1/orm.proto\"\xba\x02\n" +
 	"\vMsgSendUSDC\x12\x17\n" +
 	"\atx_hash\x18\x01 \x01(\fR\x06txHash\x12!\n" +
-	"\fmessage_hash\x18\x02 \x01(\fR\vmessageHash\x12#\n" +
-	"\rmessage_bytes\x18\x03 \x01(\fR\fmessageBytes\x12 \n" +
-	"\fsrc_chain_id\x18\x04 \x01(\x04R\n" +
+	"\fblock_height\x18\x02 \x01(\x04R\vblockHeight\x12!\n" +
+	"\fmessage_hash\x18\x03 \x01(\fR\vmessageHash\x12#\n" +
+	"\rmessage_bytes\x18\x04 \x01(\fR\fmessageBytes\x12 \n" +
+	"\fsrc_chain_id\x18\x05 \x01(\x04R\n" +
 	"srcChainId\x12\"\n" +
-	"\rdest_chain_id\x18\x05 \x01(\x04R\vdestChainId\x12\x16\n" +
-	"\x06amount\x18\x06 \x01(\fR\x06amount\x12\x1c\n" +
-	"\trecipient\x18\a \x01(\fR\trecipient\x12\x16\n" +
-	"\x06status\x18\b \x01(\x05R\x06status:\x13\xf2\x9eӎ\x03\r\n" +
+	"\rdest_chain_id\x18\x06 \x01(\x04R\vdestChainId\x12\x16\n" +
+	"\x06amount\x18\a \x01(\fR\x06amount\x12\x1c\n" +
+	"\trecipient\x18\b \x01(\fR\trecipient\x12\x16\n" +
+	"\x06status\x18\t \x01(\x05R\x06status:\x13\xf2\x9eӎ\x03\r\n" +
 	"\t\n" +
 	"\atx_hash\x18\x01\"\\\n" +
 	"\x06Cursor\x12\x19\n" +

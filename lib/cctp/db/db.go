@@ -221,6 +221,7 @@ func (db dbStoreService) OpenKVStore(context.Context) store.KVStore {
 func msgToProto(msg types.MsgSendUSDC) *MsgSendUSDC {
 	return &MsgSendUSDC{
 		TxHash:       msg.TxHash[:],
+		BlockHeight:  msg.BlockHeight,
 		MessageHash:  msg.MessageHash[:],
 		SrcChainId:   msg.SrcChainID,
 		DestChainId:  msg.DestChainID,
@@ -249,6 +250,7 @@ func msgFromProto(msg *MsgSendUSDC) (types.MsgSendUSDC, error) {
 
 	return types.MsgSendUSDC{
 		TxHash:       txHash,
+		BlockHeight:  msg.GetBlockHeight(),
 		MessageHash:  msgHash,
 		SrcChainID:   msg.GetSrcChainId(),
 		DestChainID:  msg.GetDestChainId(),

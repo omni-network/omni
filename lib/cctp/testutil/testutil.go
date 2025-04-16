@@ -23,6 +23,7 @@ func RandMsg() types.MsgSendUSDC {
 
 	return types.MsgSendUSDC{
 		TxHash:       common.BytesToHash(RandBytes(32)),
+		BlockHeight:  mrand.Uint64(),
 		SrcChainID:   uint64(mrand.Uint32()), // cctp uses uint32 domain ids
 		DestChainID:  uint64(mrand.Uint32()),
 		Amount:       RandBigInt(),
