@@ -293,21 +293,9 @@ contract SolverNetOutboxHL is
                 gasLimit: uint64(_fillGasLimit(fillData))
             });
         } else if (inboxConfig.provider == Provider.Hyperlane) {
-            fee = _quoteDispatch(
-                uint32(fillData.srcChainId),
-                inboxConfig.inbox,
-                abi.encode(TypeMax.Bytes32, TypeMax.Bytes32, TypeMax.Address),
-                _fillGasLimit(fillData),
-                hook
-            );
-            _dispatch(
-                uint32(fillData.srcChainId),
-                inboxConfig.inbox,
-                fee,
-                abi.encode(TypeMax.Bytes32, TypeMax.Bytes32, TypeMax.Address),
-                _fillGasLimit(fillData),
-                hook
-            );
+            bytes memory message = abi.encode(orderId, fillHash, claimant);
+            fee = _quoteDispatch(uint32(fillData.srcChainId), inboxConfig.inbox, message, _fillGasLimit(fillData), hook);
+            _dispatch(uint32(fillData.srcChainId), inboxConfig.inbox, fee, message, _fillGasLimit(fillData), hook);
         } else {
             revert InvalidConfig();
         }
