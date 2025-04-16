@@ -72,6 +72,7 @@ export default defineConfig({
             { text: 'Symbiotic', link: '/guides/examples/symbiotic' },
             { text: 'EigenLayer', link: '/guides/examples/eigenlayer' },
             { text: 'Rocketpool', link: '/guides/examples/rocketpool' },
+            { text: 'Template', link: '/guides/template' },
           ],
         },
       ],
