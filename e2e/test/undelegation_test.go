@@ -124,7 +124,7 @@ func TestUndelegations(t *testing.T) {
 
 			// make sure our delegated amount is delegation-undelegation1-undelegation2
 			require.Eventuallyf(t, func() bool {
-				amount := degelatedAmount(t, ctx, cprov, val.OperatorAddress, proxyCosmosAddr.String())
+				amount := delegatedAmount(t, ctx, cprov, val.OperatorAddress, proxyCosmosAddr.String())
 				log.Debug(ctx, "Delegated amount", "amount", amount)
 
 				return bi.EQ(bi.Sub(delegation, undelegation1, undelegation2), amount.Amount.BigInt())
@@ -157,7 +157,7 @@ func TestUndelegations(t *testing.T) {
 				newPower, err := val.Power()
 				require.NoError(t, err)
 
-				if degelatedAmount(t, ctx, cprov, val.OperatorAddress, delegatorCosmosAddr.String()).IsZero() {
+				if delegatedAmount(t, ctx, cprov, val.OperatorAddress, delegatorCosmosAddr.String()).IsZero() {
 					return false
 				}
 
@@ -294,10 +294,10 @@ func TestUndelegations(t *testing.T) {
 			require.NoError(t, err)
 			txOpts.Value = burnFee
 
-			delegatedAmount := degelatedAmount(t, ctx, cprov, validator.OperatorAddress, delegatorCosmosAddr.String()).Amount.BigInt()
+			delegatedAmt := delegatedAmount(t, ctx, cprov, validator.OperatorAddress, delegatorCosmosAddr.String()).Amount.BigInt()
 
 			// undelegate remaining half
-			tx, err := contract.Undelegate(txOpts, validatorAddr, delegatedAmount)
+			tx, err := contract.Undelegate(txOpts, validatorAddr, delegatedAmt)
 			require.NoError(t, err)
 
 			_, err = omniBackend.WaitMined(ctx, tx)
@@ -308,11 +308,11 @@ func TestUndelegations(t *testing.T) {
 				require.NoError(t, err)
 
 				// we subtract the burn fee twice to account for the tx fees (which are expected to be below the burn fee)
-				return bi.GTE(newBalance, bi.Add(bi.Sub(balance, burnFee, burnFee), delegatedAmount))
+				return bi.GTE(newBalance, bi.Add(bi.Sub(balance, burnFee, burnFee), delegatedAmt))
 			}, valChangeWait, 500*time.Millisecond, "failed to undeleate")
 
 			// ensure nothing is staked anymore
-			remainingAmt := degelatedAmount(t, ctx, cprov, validator.OperatorAddress, delegatorCosmosAddr.String())
+			remainingAmt := delegatedAmount(t, ctx, cprov, validator.OperatorAddress, delegatorCosmosAddr.String())
 			log.Debug(ctx, "Remaining delegation", "amount", remainingAmt)
 			require.Equal(t, int64(0), remainingAmt.Amount.Int64())
 

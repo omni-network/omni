@@ -183,7 +183,7 @@ func TestCLIOperator(t *testing.T) {
 					return false
 				}
 
-				if degelatedAmount(t, ctx, cprov, val.OperatorAddress, delegatorCosmosAddr.String()).IsZero() {
+				if delegatedAmount(t, ctx, cprov, val.OperatorAddress, delegatorCosmosAddr.String()).IsZero() {
 					return false
 				}
 
@@ -284,7 +284,7 @@ func TestCLIOperator(t *testing.T) {
 	})
 }
 
-func degelatedAmount(t *testing.T, ctx context.Context, cprov provider.Provider, valAddr string, delegatorAddr string) sdk.Coin {
+func delegatedAmount(t *testing.T, ctx context.Context, cprov provider.Provider, valAddr string, delegatorAddr string) sdk.Coin {
 	t.Helper()
 	response, err := cprov.QueryClients().Staking.ValidatorDelegations(ctx, &stypes.QueryValidatorDelegationsRequest{
 		ValidatorAddr: valAddr,
