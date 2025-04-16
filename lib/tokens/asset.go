@@ -47,6 +47,13 @@ var (
 		CoingeckoID: "usdc",
 	}
 
+	USDT = Asset{
+		Symbol:      "USDT",
+		Name:        "Tether",
+		Decimals:    6,
+		CoingeckoID: "tether",
+	}
+
 	STETH = Asset{
 		Symbol:      "stETH",
 		Name:        "Lido Staked Ether",

@@ -20,6 +20,7 @@ var (
 		tokens.WSTETH: true,
 		tokens.STETH:  true,
 		tokens.USDC:   true,
+		tokens.USDT:   true,
 	}
 
 	// minSafeETH is the minimum amount of ETH the solver can leave itself with post-fill,
@@ -115,6 +116,12 @@ var (
 			tokens.ClassDevent: {
 				MinSpend: bi.Dec6(0.1), // 0.1 USDC
 				MaxSpend: bi.Dec6(10),  // 10 USDC
+			},
+		},
+		tokens.USDT: {
+			tokens.ClassMainnet: {
+				MinSpend: bi.Dec6(0.1),    // 0.1 USDT
+				MaxSpend: bi.Dec6(10_000), // 10 USDT
 			},
 		},
 	}
