@@ -7,73 +7,69 @@ type RPCEndpoints = {
   mock_l2: string
 }
 
-let RPC_ENDPOINTS: RPCEndpoints = {
+let rpcEndpoints: RPCEndpoints = {
   omni_evm: 'http://127.0.0.1:8001',
   mock_l1: 'http://127.0.0.1:8003',
   mock_l2: 'http://127.0.0.1:8004',
 }
 const endpointsFilePath = process.env.E2E_RPC_ENDPOINTS
 if (endpointsFilePath != null && endpointsFilePath.trim() !== '') {
-  RPC_ENDPOINTS = JSON.parse(readFileSync(endpointsFilePath, 'utf-8'))
+  rpcEndpoints = JSON.parse(readFileSync(endpointsFilePath, 'utf-8'))
 }
 
-export const ETHER = 1_000_000_000_000_000_000n // 18 decimals
-
-export const INVALID_CHAIN_ID = 1234
-export const OMNI_DEVNET_ID = 1651
-export const MOCK_L1_ID = 1652
-export const MOCK_L2_ID = 1654
+export const invalidChainId = 1234
+export const omniDevnetId = 1651
+export const mockL1Id = 1652
+export const mockL2Id = 1654
 
 // Addresses from lib/contracts/testdata/TestContractAddressReference.golden
-export const SOLVERNET_INBOX_ADDRESS =
-  '0x7c7759b801078ecb2c41c9caecc2db13c3079c76' as const
-export const TOKEN_ADDRESS =
+export const inbox = '0x7c7759b801078ecb2c41c9caecc2db13c3079c76' as const
+export const tokenAddress =
   '0x73cc960fb6705e9a6a3d9eaf4de94a828cfa6d2a' as const
-export const INVALID_TOKEN_ADDRESS =
+export const invalidTokenAddress =
   '0x1234000000000000000000000000000000000000' as const
-export const ZERO_ADDRESS =
-  '0x0000000000000000000000000000000000000000' as const
+export const outbox = '0x29d9e8faa760841aacbe79a8632c1f42e0a858e6' as const
 
-export const MOCK_L1_CHAIN: Chain = {
-  id: MOCK_L1_ID,
+export const mockL1Chain: Chain = {
+  id: mockL1Id,
   name: 'Mock L1',
   nativeCurrency: { decimals: 18, name: 'Ether', symbol: 'ETH' },
   rpcUrls: {
     default: {
-      http: [RPC_ENDPOINTS.mock_l1],
+      http: [rpcEndpoints.mock_l1],
     },
   },
 }
 
-export const MOCK_L2_CHAIN: Chain = {
-  id: MOCK_L2_ID,
+export const mockL2Chain: Chain = {
+  id: mockL2Id,
   name: 'Mock L2',
   nativeCurrency: { decimals: 18, name: 'Ether', symbol: 'ETH' },
   rpcUrls: {
     default: {
-      http: [RPC_ENDPOINTS.mock_l2],
+      http: [rpcEndpoints.mock_l2],
     },
   },
 }
 
-export const OMNI_DEVNET_CHAIN: Chain = {
-  id: OMNI_DEVNET_ID,
+export const omniDevnetChain: Chain = {
+  id: omniDevnetId,
   name: 'Omni Devnet',
   nativeCurrency: { decimals: 18, name: 'Ether', symbol: 'ETH' },
   rpcUrls: {
     default: {
-      http: [RPC_ENDPOINTS.omni_evm],
+      http: [rpcEndpoints.omni_evm],
     },
   },
 }
 
-export const MOCK_CHAINS: Record<number, Chain> = {
-  [MOCK_L1_ID]: MOCK_L1_CHAIN,
-  [MOCK_L2_ID]: MOCK_L2_CHAIN,
-  [OMNI_DEVNET_ID]: OMNI_DEVNET_CHAIN,
+export const mockChains: Record<number, Chain> = {
+  [mockL1Id]: mockL1Chain,
+  [mockL2Id]: mockL2Chain,
+  [omniDevnetId]: omniDevnetChain,
 }
 
-export const OMNI_TOKEN_ABI = [
+export const omniTokenAbi = [
   {
     type: 'function',
     name: 'approve',

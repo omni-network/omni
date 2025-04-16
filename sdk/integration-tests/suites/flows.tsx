@@ -1,18 +1,17 @@
 import { type Quote, useQuote, useValidateOrder } from '@omni-network/react'
 import {
-  ETHER,
-  INVALID_TOKEN_ADDRESS,
-  MOCK_L1_ID,
-  MOCK_L2_ID,
-  OMNI_DEVNET_ID,
-  TOKEN_ADDRESS,
-  ZERO_ADDRESS,
+  invalidTokenAddress,
   mintOMNI,
+  mockL1Id,
+  mockL2Id,
+  omniDevnetId,
   testAccount,
+  tokenAddress,
 } from '@omni-network/test-utils'
 import { act, waitFor } from '@testing-library/react'
+import { parseEther, zeroAddress } from 'viem'
 import { describe, expect, test } from 'vitest'
-
+import { useBalance } from 'wagmi'
 import {
   type AnyOrder,
   createRenderHook,
@@ -24,40 +23,40 @@ import {
 describe('ERC20 OMNI to native OMNI transfer orders', () => {
   test('default: succeeds with valid expense', async () => {
     await mintOMNI()
-    const amount = 10n * ETHER
+    const amount = parseEther('10')
     const order: AnyOrder = {
       owner: testAccount.address,
-      srcChainId: MOCK_L1_ID,
-      destChainId: OMNI_DEVNET_ID,
-      expense: { token: ZERO_ADDRESS, amount },
+      srcChainId: mockL1Id,
+      destChainId: omniDevnetId,
+      expense: { token: zeroAddress, amount },
       calls: [{ target: testAccount.address, value: amount }],
-      deposit: { token: TOKEN_ADDRESS, amount },
+      deposit: { token: tokenAddress, amount },
     }
     await executeTestOrder(order)
   }, 30_000)
 
-  test('behaviour: native ETH to native OMNI swap succeeds', async () => {
-    const amount = 10n * ETHER
+  test('behaviour: fails with native deposit', async () => {
+    const amount = parseEther('10')
     const order: AnyOrder = {
       owner: testAccount.address,
-      srcChainId: MOCK_L1_ID,
-      destChainId: OMNI_DEVNET_ID,
-      expense: { token: ZERO_ADDRESS, amount },
+      srcChainId: mockL1Id,
+      destChainId: omniDevnetId,
+      expense: { token: zeroAddress, amount },
       calls: [{ target: testAccount.address, value: amount }],
-      deposit: { token: ZERO_ADDRESS, amount },
+      deposit: { token: zeroAddress, amount },
     }
     await executeTestOrder(order)
   })
 
   test('behaviour: fails with unsupported ERC20 deposit', async () => {
-    const amount = 10n * ETHER
+    const amount = parseEther('10')
     const order: AnyOrder = {
       owner: testAccount.address,
-      srcChainId: MOCK_L1_ID,
-      destChainId: OMNI_DEVNET_ID,
-      expense: { token: ZERO_ADDRESS, amount },
+      srcChainId: mockL1Id,
+      destChainId: omniDevnetId,
+      expense: { token: zeroAddress, amount },
       calls: [{ target: testAccount.address, value: amount }],
-      deposit: { token: INVALID_TOKEN_ADDRESS, amount },
+      deposit: { token: invalidTokenAddress, amount },
     }
     await executeTestOrder(order, 'UnsupportedDeposit')
   })
@@ -66,28 +65,28 @@ describe('ERC20 OMNI to native OMNI transfer orders', () => {
 describe('ETH transfer orders', () => {
   test('default: succeeds with valid expense', async () => {
     const account = testAccount
-    const amount = ETHER
+    const amount = parseEther('1')
     const order: AnyOrder = {
       owner: account.address,
-      srcChainId: MOCK_L1_ID,
-      destChainId: MOCK_L2_ID,
-      expense: { token: ZERO_ADDRESS, amount },
+      srcChainId: mockL1Id,
+      destChainId: mockL2Id,
+      expense: { token: zeroAddress, amount },
       calls: [{ target: account.address, value: amount }],
-      deposit: { token: ZERO_ADDRESS, amount: amount + ETHER },
+      deposit: { token: zeroAddress, amount: 2n * amount },
     }
     await executeTestOrder(order)
   })
 
   test('behaviour: fails with expense over max amount', async () => {
     const account = testAccount
-    const amount = 1000n * ETHER
+    const amount = parseEther('1000')
     const order: AnyOrder = {
       owner: account.address,
-      srcChainId: MOCK_L1_ID,
-      destChainId: MOCK_L2_ID,
-      expense: { token: ZERO_ADDRESS, amount },
+      srcChainId: mockL1Id,
+      destChainId: mockL2Id,
+      expense: { token: zeroAddress, amount },
       calls: [{ target: account.address, value: amount }],
-      deposit: { token: ZERO_ADDRESS, amount: amount + ETHER },
+      deposit: { token: zeroAddress, amount: amount + parseEther('1') },
     }
     await executeTestOrder(order, 'ExpenseOverMax')
   })
@@ -97,11 +96,11 @@ describe('ETH transfer orders', () => {
     const amount = 1n
     const order: AnyOrder = {
       owner: account.address,
-      srcChainId: MOCK_L1_ID,
-      destChainId: MOCK_L2_ID,
-      expense: { token: ZERO_ADDRESS, amount },
+      srcChainId: mockL1Id,
+      destChainId: mockL2Id,
+      expense: { token: zeroAddress, amount },
       calls: [{ target: account.address, value: amount }],
-      deposit: { token: ZERO_ADDRESS, amount: amount + ETHER },
+      deposit: { token: zeroAddress, amount: 2n * amount },
     }
     await executeTestOrder(order, 'ExpenseUnderMin')
   })
@@ -110,45 +109,68 @@ describe('ETH transfer orders', () => {
 test('default: successfully processes order from quote to filled', async () => {
   const renderHook = createRenderHook()
 
+  const preDestBalance = renderHook(() => {
+    return useBalance({
+      address: testAccount.address,
+      chainId: mockL2Id,
+    })
+  })
+
+  await waitFor(
+    () => {
+      expect(preDestBalance.result.current.data).toBeDefined()
+    },
+    { timeout: 5_000 },
+  )
+
   const quoteHook = renderHook(() => {
     return useQuote({
       enabled: true,
       mode: 'expense',
-      srcChainId: MOCK_L1_ID,
-      destChainId: MOCK_L2_ID,
+      srcChainId: mockL1Id,
+      destChainId: mockL2Id,
       deposit: {
-        amount: 2n * ETHER,
+        amount: parseEther('2'),
         isNative: true,
       },
       expense: {
-        amount: 1n * ETHER,
+        amount: parseEther('1'),
         isNative: true,
       },
     })
   })
-  await waitFor(() => expect(quoteHook.result.current.isSuccess).toBe(true))
+
+  await waitFor(() => {
+    expect(quoteHook.result.current.query.error).toBeNull()
+    expect(quoteHook.result.current.query.data).toBeDefined()
+    expect(quoteHook.result.current.isSuccess).toBe(true)
+    expect(quoteHook.result.current.isPending).toBe(false)
+    expect(quoteHook.result.current.isError).toBe(false)
+  })
 
   const quote = quoteHook.result.current.query.data as Quote
+
   expect(quote).toEqual({
-    deposit: { token: ZERO_ADDRESS, amount: 2n * ETHER },
-    expense: { token: ZERO_ADDRESS, amount: expect.any(BigInt) },
+    deposit: { token: zeroAddress, amount: parseEther('2') },
+    expense: { token: zeroAddress, amount: expect.any(BigInt) },
   })
-  expect(quote.expense.amount).toBeLessThan(2n * ETHER)
+  expect(quote.expense.amount).toBeLessThan(parseEther('2'))
 
   const orderParams = {
-    deposit: { token: ZERO_ADDRESS, amount: 2n * ETHER },
-    expense: { token: ZERO_ADDRESS, amount: 1n * ETHER },
-    calls: [{ target: testAccount.address, value: 1n * ETHER }],
-    srcChainId: MOCK_L1_ID,
-    destChainId: MOCK_L2_ID,
+    deposit: { token: zeroAddress, amount: parseEther('2') },
+    expense: { token: zeroAddress, amount: parseEther('1') },
+    calls: [{ target: testAccount.address, value: parseEther('1') }],
+    srcChainId: mockL1Id,
+    destChainId: mockL2Id,
     validateEnabled: false,
   }
 
   const validateHook = renderHook(() => {
     return useValidateOrder({ enabled: true, order: orderParams })
   })
+
   await waitFor(() => {
-    return expect(validateHook.result.current.status === 'accepted').toBe(true)
+    expect(validateHook.result.current.status === 'accepted').toBe(true)
   })
 
   const orderRef = useOrderRef(testConnector, orderParams)
@@ -157,5 +179,35 @@ test('default: successfully processes order from quote to filled', async () => {
   act(() => {
     orderRef.current?.open()
   })
-  await waitFor(() => expect(orderRef.current?.txHash).toBeDefined())
+
+  await waitFor(() => {
+    expect(orderRef.current?.status).toBeOneOf(['open', 'opening'])
+    expect(orderRef.current?.txHash).toBeDefined()
+    expect(orderRef.current?.error).toBeUndefined()
+    expect(orderRef.current?.isError).toBe(false)
+    expect(orderRef.current?.isTxSubmitted).toBe(true)
+    expect(orderRef.current?.isTxPending).toBe(false)
+  })
+
+  await waitFor(() => expect(orderRef.current?.status).toBe('filled'), {
+    timeout: 10_000,
+  })
+
+  const postDestBalance = renderHook(() => {
+    return useBalance({
+      address: testAccount.address,
+      chainId: mockL2Id,
+    })
+  })
+
+  await waitFor(
+    () => {
+      expect(postDestBalance.result.current.data).toBeDefined()
+      expect(postDestBalance.result.current.data?.value).toBe(
+        // biome-ignore lint/style/noNonNullAssertion: safe due to throwing condition above
+        preDestBalance.result.current.data?.value! + orderParams.calls[0].value,
+      )
+    },
+    { timeout: 5_000 },
+  )
 })
