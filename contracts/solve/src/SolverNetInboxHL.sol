@@ -30,6 +30,7 @@ contract SolverNetInboxHL is
 {
     using SafeTransferLib for address;
     using AddrUtils for address;
+    using AddrUtils for bytes32;
 
     /**
      * @notice Maximum number of calls and expenses in an order.
@@ -338,49 +339,19 @@ contract SolverNetInboxHL is
      * @param creditedTo Address deposits are credited to, provided by the filler.
      */
     function markFilled(bytes32 id, bytes32 fillHash, address creditedTo) external xrecv {
-        SolverNet.Header memory header = _orderHeader[id];
-        OrderState memory state = _orderState[id];
-
-        if (state.status != Status.Pending) revert OrderNotPending();
-        if (xmsg.sourceChainId != header.destChainId) revert WrongSourceChain();
-        if (xmsg.sender != _outboxes[xmsg.sourceChainId]) revert Unauthorized();
-
-        // Ensure reported fill hash matches origin data
-        if (fillHash != _fillHash(id)) {
-            revert WrongFillHash();
-        }
-
-        _upsertOrder(id, Status.Filled, 0, creditedTo);
-        _purgeState(id, Status.Filled);
-
-        emit Filled(id, fillHash, creditedTo);
+        _markFilled(id, fillHash, creditedTo, xmsg.sourceChainId, xmsg.sender);
     }
 
     /**
      * @notice Fill an order via Hyperlane.
      * @dev Only callable by the outbox.
-     * @param origin The origin domain
-     * @param sender The sender address
+     * @param origin  The origin domain
+     * @param sender  The sender address
      * @param message The message
      */
-    function handle(uint32 origin, bytes32 sender, bytes calldata message) external override onlyMailbox {
+    function handle(uint32 origin, bytes32 sender, bytes calldata message) external payable override onlyMailbox {
         (bytes32 id, bytes32 fillHash, address creditedTo) = abi.decode(message, (bytes32, bytes32, address));
-        SolverNet.Header memory header = _orderHeader[id];
-        OrderState memory state = _orderState[id];
-
-        if (state.status != Status.Pending) revert OrderNotPending();
-        if (origin != header.destChainId) revert WrongSourceChain();
-        if (sender != _outboxes[header.destChainId].toBytes32()) revert Unauthorized();
-
-        // Ensure reported fill hash matches origin data
-        if (fillHash != _fillHash(id)) {
-            revert WrongFillHash();
-        }
-
-        _upsertOrder(id, Status.Filled, 0, creditedTo);
-        _purgeState(id, Status.Filled);
-
-        emit Filled(id, fillHash, creditedTo);
+        _markFilled(id, fillHash, creditedTo, origin, sender.toAddress());
     }
 
     /**
@@ -604,6 +575,33 @@ contract SolverNetInboxHL is
         _upsertOrder(id, Status.Pending, 0, msg.sender);
 
         return resolved;
+    }
+
+    /**
+     * @dev Mark an order as filled.
+     * @param id ID of the order.
+     * @param fillHash Hash of fill instructions origin data.
+     * @param creditedTo Address deposits are credited to, provided by the filler.
+     * @param origin Origin chain ID.
+     * @param sender Remote sender address.
+     */
+    function _markFilled(bytes32 id, bytes32 fillHash, address creditedTo, uint64 origin, address sender) internal {
+        SolverNet.Header memory header = _orderHeader[id];
+        OrderState memory state = _orderState[id];
+
+        if (state.status != Status.Pending) revert OrderNotPending();
+        if (origin != header.destChainId) revert WrongSourceChain();
+        if (sender != _outboxes[origin]) revert Unauthorized();
+
+        // Ensure reported fill hash matches origin data
+        if (fillHash != _fillHash(id)) {
+            revert WrongFillHash();
+        }
+
+        _upsertOrder(id, Status.Filled, 0, creditedTo);
+        _purgeState(id, Status.Filled);
+
+        emit Filled(id, fillHash, creditedTo);
     }
 
     /**
