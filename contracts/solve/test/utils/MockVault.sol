@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity =0.8.24;
 
-import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
+import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
 
 contract MockVault {
     using SafeTransferLib for address;
@@ -15,8 +15,7 @@ contract MockVault {
     }
 
     function deposit(address onBehalfOf, uint256 amount) external payable {
-        if (collateral != address(0))
-            collateral.safeTransferFrom(msg.sender, address(this), amount);
+        if (collateral != address(0)) collateral.safeTransferFrom(msg.sender, address(this), amount);
         else require(msg.value == amount, "Invalid collateral");
         balances[onBehalfOf] += amount;
     }
