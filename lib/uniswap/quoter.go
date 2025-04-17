@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -28,7 +29,7 @@ func (q *UniQuoterV2) CallQuoteExactInput(ctx context.Context, path []byte, amou
 		return nil, errors.New("invalid type")
 	}
 
-	if amountOut.Cmp(big.NewInt(0)) == 0 {
+	if bi.IsZero(amountOut) {
 		return nil, errors.New("zero out")
 	}
 

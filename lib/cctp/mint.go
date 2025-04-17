@@ -72,9 +72,7 @@ func MintForever(
 			if ctx.Err() != nil {
 				return
 			} else if err != nil {
-				log.Error(ctx, "Mint failed (will retry)", err)
-
-				continue
+				log.Warn(ctx, "Mint failed (will retry)", err)
 			}
 		}
 	}
@@ -196,7 +194,7 @@ func tryMint(
 
 	// If balance has not increased, warn
 	// Do not mark failure, as this may be due to recipient spending USDC
-	if preMintBalance.Cmp(postMintBalance) >= 0 {
+	if bi.GTE(preMintBalance, postMintBalance) {
 		log.Warn(ctx, "USDC balance did not increase after mint",
 			errors.New("balance did not increase"),
 			"pre_mint_balance", preMintBalance,

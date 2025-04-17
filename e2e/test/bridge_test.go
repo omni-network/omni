@@ -92,7 +92,7 @@ func TestBridge(t *testing.T) {
 		trackedL1BridgeBalanceDelta := bi.Sub(trackedL1BridgeBalanceAfter, trackedL1BridgeBalanceBefore)
 		// Ensure the L1Bridge balance delta is greater than or equal to the expected delta
 		// Since Solver also does rebalancing which increases the L1Bridge balance
-		require.Truef(t, bi.LTE(expectedL1BridgeBalanceDelta, trackedL1BridgeBalanceDelta), "unexpected l1 bridge balance delta: min=%s, actual=%s", expectedL1BridgeBalanceDelta, trackedL1BridgeBalanceDelta)
+		tutil.RequireLTE(t, expectedL1BridgeBalanceDelta, trackedL1BridgeBalanceDelta, "unexpected l1 bridge balance delta: min=%s, actual=%s", expectedL1BridgeBalanceDelta, trackedL1BridgeBalanceDelta)
 
 		// assert actual token balance of l1 bridge is expected
 		l1BridgeBalanceAfter, err := l1Token.BalanceOf(nil, addrs.L1Bridge)
@@ -100,6 +100,6 @@ func TestBridge(t *testing.T) {
 		l1BridgeBalanceDelta := bi.Sub(l1BridgeBalanceAfter, l1BridgeBalanceBefore)
 		// Ensure the L1Bridge balance delta is greater than or equal to the expected delta
 		// Since Solver also does rebalancing which increases the L1Bridge balance
-		require.Truef(t, bi.LTE(expectedL1BridgeBalanceDelta, l1BridgeBalanceDelta), "unexpected l1 bridge balance delta: min=%s, actual=%s", expectedL1BridgeBalanceDelta, l1BridgeBalanceDelta)
+		tutil.RequireLTE(t, expectedL1BridgeBalanceDelta, l1BridgeBalanceDelta, "unexpected l1 bridge balance delta: min=%s, actual=%s", expectedL1BridgeBalanceDelta, l1BridgeBalanceDelta)
 	})
 }

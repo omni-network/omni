@@ -22,6 +22,7 @@ import (
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/lib/txmgr"
 
 	"github.com/cometbft/cometbft/rpc/client/http"
@@ -347,7 +348,7 @@ func GenFundedEOA(ctx context.Context, t *testing.T, backend *ethbackend.Backend
 
 	bal, err := backend.BalanceAt(ctx, newAddr, nil)
 	require.NoError(t, err)
-	require.True(t, bi.EQ(amount1k, bal))
+	tutil.RequireEQ(t, amount1k, bal)
 
 	_, err = backend.AddAccount(newKey)
 	require.NoError(t, err)

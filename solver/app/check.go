@@ -182,7 +182,7 @@ func parseExpenses(destChainID uint64, expenses []types.Expense, calls []types.C
 	}
 
 	// native expense must match sum of call values
-	if !bi.EQ(nativeExpense, callValues) {
+	if bi.NEQ(nativeExpense, callValues) {
 		return nil, newRejection(types.RejectInvalidExpense,
 			errors.New("native expense must match native value",
 				"expense", native.FormatAmt(nativeExpense),

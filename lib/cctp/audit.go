@@ -3,6 +3,7 @@ package cctp
 import (
 	"context"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cast"
 	"github.com/omni-network/omni/lib/cctp/db"
 	"github.com/omni-network/omni/lib/cctp/types"
@@ -88,7 +89,7 @@ func AuditForever(
 			return nil
 		}
 
-		log.Warn(ctx, "Failure processing inbox events (will retry)", err)
+		log.Warn(ctx, "Failure processing cctp events (will retry)", err)
 		backoff()
 	}
 }
@@ -157,7 +158,7 @@ func upsertMsgs(ctx context.Context, db *db.DB, msgs []types.MsgSendUSDC, isRece
 
 		// Maybe warn.
 		if err := sanityCheck(stored, streamed); err != nil {
-			log.Warn(ctx, "Failed sanity check [BUG]", err)
+			log.Error(ctx, "Failed sanity check [BUG]", err)
 		}
 
 		status := stored.Status
@@ -177,10 +178,7 @@ func upsertMsgs(ctx context.Context, db *db.DB, msgs []types.MsgSendUSDC, isRece
 
 		// Mint confirmed, but message hash changed -> BUG. Block processing.
 		if status == types.MsgStatusMinted && stored.MessageHash != streamed.MessageHash {
-			err := errors.New("message hash changed post confirmed mint", "tx_hash", streamed.TxHash, "stored", stored.MessageHash, "streamed", streamed.MessageHash)
-			log.Error(ctx, "Unexpected confirmed mint", err)
-
-			return err
+			return errors.New("message hash changed post confirmed mint [BUG]", "tx_hash", streamed.TxHash, "stored", stored.MessageHash, "streamed", streamed.MessageHash)
 		}
 
 		correction := withStatus(streamed, status)
@@ -307,7 +305,7 @@ func sanityCheck(stored, streamed types.MsgSendUSDC) error {
 	}
 
 	// Amount mismatch
-	if stored.Amount.Cmp(streamed.Amount) != 0 {
+	if bi.NEQ(stored.Amount, streamed.Amount) {
 		return errors.New("amount mismatch", "tx_hash", stored.TxHash, "stored", stored.Amount, "streamed", streamed.Amount)
 	}
 

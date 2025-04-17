@@ -5,7 +5,6 @@ import (
 
 	"github.com/omni-network/omni/e2e/app/eoa"
 	"github.com/omni-network/omni/e2e/manifests"
-	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
@@ -94,6 +93,6 @@ func TestMaxSpendMinThreshold(t *testing.T) {
 			continue
 		}
 
-		require.True(t, bi.GTE(thresh.MinBalance(), bounds.MaxSpend), "solver min balance must be greater than max spend: token=%s, min_bal=%s, max_spend=%s", token.Asset, thresh.MinBalance(), bounds.MaxSpend)
+		tutil.RequireGTE(t, thresh.MinBalance(), bounds.MaxSpend, "solver min balance must be greater than max spend: token=%s, min_bal=%s, max_spend=%s", token.Asset, thresh.MinBalance(), bounds.MaxSpend)
 	}
 }

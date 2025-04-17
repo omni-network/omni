@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"reflect"
 
+	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -130,7 +131,7 @@ func (m MsgSendUSDC) Diff(n MsgSendUSDC) map[string]string {
 	if m.DestChainID != n.DestChainID {
 		diff["dest_chain_id"] = notEq(m.DestChainID, n.DestChainID)
 	}
-	if m.Amount.Cmp(n.Amount) != 0 {
+	if bi.NEQ(m.Amount, n.Amount) {
 		diff["amount"] = notEq(m.Amount, n.Amount)
 	}
 	if m.Recipient != n.Recipient {

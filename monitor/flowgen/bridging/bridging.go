@@ -246,7 +246,7 @@ func nativeOrderData(ctx context.Context, scl sclient.Client, owner common.Addre
 		return bindings.SolverNetOrderData{}, errors.Wrap(err, "quote deposit")
 	} else if quoteResp.Rejected {
 		return bindings.SolverNetOrderData{}, errors.New("quote rejected", "description", quoteResp.RejectDescription, "reason", quoteResp.RejectCode)
-	} else if !bi.EQ(quoteResp.Deposit.Amount, depositAmt) {
+	} else if bi.NEQ(quoteResp.Deposit.Amount, depositAmt) {
 		return bindings.SolverNetOrderData{}, errors.New("quote deposit amount mismatch", "expected", depositAmt, "actual", quoteResp.Deposit.Amount)
 	}
 

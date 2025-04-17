@@ -100,7 +100,7 @@ func testSolverApprovals(ctx context.Context, t *testing.T, deps NetworkDeps) {
 
 		// must be max allowance
 		expected := bi.MulF64(umath.MaxUint256, 0.9)
-		require.True(t, bi.GT(allowance, expected), "allowance missing: chain=%s, allowance=%s", backend.Name(), tkn.FormatAmt(allowance))
+		tutil.RequireGT(t, allowance, expected, "allowance missing: chain=%s, allowance=%s", backend.Name(), tkn.FormatAmt(allowance))
 	}
 }
 
