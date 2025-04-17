@@ -25,7 +25,7 @@ import {
   waitFor,
 } from '@testing-library/react'
 import { createRef } from 'react'
-import { pad, parseEther, zeroAddress } from 'viem'
+import { type Abi, pad, parseEther, zeroAddress } from 'viem'
 import { expect } from 'vitest'
 import {
   type Config,
@@ -105,19 +105,36 @@ export function createRenderHook(config: TestConfig = {}) {
 }
 
 export type AnyOrder = Order<Array<unknown>>
+export type ContractOrder = Order<readonly Abi[]>
+
+function isContractOrder(
+  order: AnyOrder | ContractOrder,
+): order is ContractOrder {
+  return order.calls.every((call) => call.abi != null)
+}
 
 export type UseOrderReturn = ReturnType<typeof useOrder>
 
 export function useOrderRef(
   connector: CreateConnectorFn,
-  order: AnyOrder,
+  order: AnyOrder | ContractOrder,
 ): React.RefObject<UseOrderReturn | null> {
   const connectRef = createRef<ReturnType<typeof useConnect>>()
   const orderRef = createRef<UseOrderReturn>()
 
   // useOrder() can only be used with a connected account, so we need to render it conditionally
   function TestOrder() {
-    orderRef.current = useOrder({ validateEnabled: true, ...order })
+    if (isContractOrder(order)) {
+      orderRef.current = useOrder<readonly Abi[]>({
+        validateEnabled: true,
+        ...order,
+      })
+    } else {
+      orderRef.current = useOrder<Array<unknown>>({
+        validateEnabled: true,
+        ...order,
+      })
+    }
     return null
   }
 
