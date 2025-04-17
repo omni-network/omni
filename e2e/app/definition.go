@@ -488,13 +488,15 @@ func networkFromDef(def Definition) netconf.Network {
 	newChain := func(chain types.EVMChain) netconf.Chain {
 		portal := def.Netman().Portals()[chain.ChainID]
 		return netconf.Chain{
-			ID:             chain.ChainID,
-			Name:           chain.Name,
-			BlockPeriod:    chain.BlockPeriod,
-			Shards:         chain.Shards,
-			AttestInterval: chain.AttestInterval(def.Testnet.Network),
-			PortalAddress:  portal.DeployInfo.PortalAddress,
-			DeployHeight:   portal.DeployInfo.DeployHeight,
+			ID:              chain.ChainID,
+			Name:            chain.Name,
+			BlockPeriod:     chain.BlockPeriod,
+			Shards:          chain.Shards,
+			AttestInterval:  chain.AttestInterval(def.Testnet.Network),
+			PortalAddress:   portal.DeployInfo.PortalAddress,
+			DeployHeight:    portal.DeployInfo.DeployHeight,
+			HasEmitPortal:   true,
+			HasSubmitPortal: true,
 		}
 	}
 
