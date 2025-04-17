@@ -11,7 +11,7 @@ SolverNet is a network of solvers that execute intent-based actions on behalf of
 
 SolverNet empowers developers to **take their apps cross-chain in days**, giving them access to a wider user base at an accelerated pace.
 
-### Integration in Days, Not Months
+### Integration in Days, not Months
 
 Cross-chain integrations typically require months of development time. SolverNet removes these roadblocks with a plug-and-play SDK that gives developers the ability to scale their app across multiple networks in just days. This means faster deployment, quicker access to new users, and more time spent on improving products rather than worrying about cross-chain complexities.
 
@@ -21,7 +21,7 @@ Adding cross-chain functionality often requires only **~100 lines of TypeScript 
 
 Integrating SolverNet doesn't require any changes to existing smart contracts. This helps mitigate risk, saves developers time, and ensures that there is zero disruption to an app's existing architecture. You can stay laser-focused on product iteration.
 
-### Achieve a Great User Experience (in 1 Click)
+### A Great User Experience in 1 Click
 
 Users can interact with your protocol from anywhere in just a few seconds **and in 1 click**, without needing to bridge, swap, or leave your app.
 
