@@ -116,7 +116,7 @@ func Run(ctx context.Context, cfg Config) error {
 	pricer := newPricer(ctx, network.ID, cfg.CoinGeckoAPIKey)
 
 	priceFunc := unaryPrice
-	if network.ID.IsEphemeral() {
+	if network.ID != netconf.Mainnet {
 		priceFunc = newPriceFunc(pricer)
 	}
 
