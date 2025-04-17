@@ -63,10 +63,11 @@ var config = map[netconf.ID][]flowConfig{
 			srcChain: evmchain.IDOptimism,
 			dstChain: evmchain.IDArbitrumOne,
 		},
-		{
-			// Native ETH <> Native Omni
-			srcChain: evmchain.IDBase,
-			dstChain: evmchain.IDOmniMainnet,
-		},
+		// TODO(corver): Enable once mainnet supports swaps.
+		// {
+		//	// Native ETH <> Native Omni
+		//	srcChain: evmchain.IDBase,
+		//	dstChain: evmchain.IDOmniMainnet,
+		// },
 	},
 }
