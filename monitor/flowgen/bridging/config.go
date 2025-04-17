@@ -52,7 +52,7 @@ var config = map[netconf.ID][]flowConfig{
 		},
 		{
 			// Native ETH <> Native Omni
-			srcChain: evmchain.IDBase,
+			srcChain: evmchain.IDBaseSepolia,
 			dstChain: evmchain.IDOmniOmega,
 		},
 	},
