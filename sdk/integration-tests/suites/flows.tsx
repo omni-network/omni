@@ -6,12 +6,14 @@ import {
 } from '@omni-network/react'
 import {
   invalidTokenAddress,
+  middleman,
   mintOMNI,
   mockL1Id,
   mockL2Id,
   omniDevnetId,
   testAccount,
   tokenAddress,
+  vault,
 } from '@omni-network/test-utils'
 import { act, waitFor } from '@testing-library/react'
 import { parseEther, zeroAddress } from 'viem'
@@ -117,12 +119,19 @@ describe('ETH deposit via middleman contract', () => {
 
     const renderHook = createRenderHook()
 
+    const preDestBalance = renderHook(() => {
+      return useBalance({
+        address: testAccount.address,
+        chainId: mockL2Id,
+      })
+    })
+
     const quoteHook = renderHook(() => {
       return useQuote({
         enabled: true,
         mode: 'expense',
-        srcChainId: mockL2Id,
-        destChainId: mockL1Id,
+        srcChainId: mockL1Id,
+        destChainId: mockL2Id,
         deposit: {
           amount,
           isNative: true,
@@ -151,7 +160,7 @@ describe('ETH deposit via middleman contract', () => {
 
     const call = withExecAndTransfer({
       call: {
-        target: '0x320f3aAB9405e38b955178BBe75c477dECBA0C27',
+        target: vault,
         value: quote.expense.amount,
         abi: [
           {
@@ -168,16 +177,17 @@ describe('ETH deposit via middleman contract', () => {
         token: zeroAddress,
         to: testAccount.address,
       },
-      middlemanAddress: '0x1b99E432d5F9e8110102b8d3DcE2d0b462a37942',
+      middlemanAddress: middleman,
     })
 
     const order = {
       owner: testAccount.address,
-      srcChainId: mockL2Id,
-      destChainId: mockL1Id,
+      srcChainId: mockL1Id,
+      destChainId: mockL2Id,
       expense: { token: zeroAddress, amount: quote.expense.amount },
       calls: [call],
       deposit: { token: zeroAddress, amount: quote.deposit.amount },
+      value: quote.deposit.amount,
     }
 
     const validateHook = renderHook(() => {
@@ -208,6 +218,24 @@ describe('ETH deposit via middleman contract', () => {
     await waitFor(() => expect(orderRef.current?.status).toBe('filled'), {
       timeout: 10_000,
     })
+
+    const postDestBalance = renderHook(() => {
+      return useBalance({
+        address: testAccount.address,
+        chainId: mockL2Id,
+      })
+    })
+
+    await waitFor(
+      () => {
+        expect(postDestBalance.result.current.data).toBeDefined()
+        expect(postDestBalance.result.current.data?.value).toBe(
+          // biome-ignore lint/style/noNonNullAssertion: safe due to throwing condition above
+          preDestBalance.result.current.data?.value! + quote.expense.amount,
+        )
+      },
+      { timeout: 5_000 },
+    )
   })
 })
 

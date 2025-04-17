@@ -132,7 +132,7 @@ export function useOrderRef(
     } else {
       orderRef.current = useOrder<Array<unknown>>({
         validateEnabled: true,
-        ...(order as AnyOrder),
+        ...order,
       })
     }
     return null
