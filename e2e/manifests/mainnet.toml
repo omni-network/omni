@@ -5,9 +5,9 @@ multi_omni_evms = true
 prometheus   = true
 
 pinned_halo_tag = "v0.14.1"
-pinned_relayer_tag = "b64ab34"
-pinned_monitor_tag = "b64ab34"
-pinned_solver_tag = "b64ab34"
+pinned_relayer_tag = "74ecb74"
+pinned_monitor_tag = "74ecb74"
+pinned_solver_tag = "74ecb74"
 
 [node.validator01]
 [node.validator02]
