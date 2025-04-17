@@ -40,12 +40,12 @@ func TestSwapToUSDC(t *testing.T) {
 	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
 
 	// Prefer rpc from env, default to public rpc
-	rpcURL := os.Getenv("ETHEREUM_RPC_URL")
+	rpcURL := os.Getenv("ETH_RPC")
 	if rpcURL == "" {
 		rpcURL = types.PublicRPCByName(meta.Name)
 	}
 
-	ethCl, stop, err := anvil.Start(ctx, t.TempDir(), evmchain.IDEthereum, anvil.WithFork(rpcURL))
+	ethCl, stop, err := anvil.Start(ctx, tutil.TempDir(t), evmchain.IDEthereum, anvil.WithFork(rpcURL))
 	require.NoError(t, err)
 	defer stop()
 
