@@ -163,13 +163,15 @@ func networkFromPortals(ctx context.Context, network ID, portals []bindings.Port
 		}
 
 		chains = append(chains, Chain{
-			ID:             portal.ChainId,
-			Name:           portal.Name,
-			PortalAddress:  portal.Addr,
-			DeployHeight:   portal.DeployHeight,
-			BlockPeriod:    period,
-			Shards:         toShardIDs(portal.Shards),
-			AttestInterval: portal.AttestInterval,
+			ID:              portal.ChainId,
+			Name:            portal.Name,
+			PortalAddress:   portal.Addr,
+			DeployHeight:    portal.DeployHeight,
+			BlockPeriod:     period,
+			Shards:          toShardIDs(portal.Shards),
+			AttestInterval:  portal.AttestInterval,
+			HasSubmitPortal: true,
+			HasEmitPortal:   true,
 		})
 	}
 
