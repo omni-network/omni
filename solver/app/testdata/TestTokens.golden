@@ -220,6 +220,36 @@
   "symbol": "USDC"
  },
  {
+  "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+  "chainId": 1,
+  "coingeckoId": "tether",
+  "isMock": false,
+  "maxSpend": "10000 USDT",
+  "minSpend": "0.1 USDT",
+  "name": "Tether",
+  "symbol": "USDT"
+ },
+ {
+  "address": "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+  "chainId": 42161,
+  "coingeckoId": "tether",
+  "isMock": false,
+  "maxSpend": "10000 USDT",
+  "minSpend": "0.1 USDT",
+  "name": "Tether",
+  "symbol": "USDT"
+ },
+ {
+  "address": "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
+  "chainId": 10,
+  "coingeckoId": "tether",
+  "isMock": false,
+  "maxSpend": "10000 USDT",
+  "minSpend": "0.1 USDT",
+  "name": "Tether",
+  "symbol": "USDT"
+ },
+ {
   "address": "0x36E66fbBce51e4cD5bd3C62B637Eb411b18949D4",
   "chainId": 1,
   "coingeckoId": "omni-network",

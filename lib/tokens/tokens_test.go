@@ -59,6 +59,11 @@ func TestGenTokens(t *testing.T) {
 		usdc(evmchain.IDOpSepolia, addr("0x5fd84259d66Cd46123540766Be93DFE6D43130D7")),
 		usdc(evmchain.IDBaseSepolia, addr("0x036CbD53842c5426634e7929541eC2318f3dCF7e")),
 
+		// USDT (mainnet)
+		usdt(evmchain.IDEthereum, addr("0xdac17f958d2ee523a2206206994597c13d831ec7")),
+		usdt(evmchain.IDArbitrumOne, addr("0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9")),
+		usdt(evmchain.IDOptimism, addr("0x94b008aA00579c1307B0EF2c499aD98a8ce58e58")),
+
 		// ERC20 OMNI
 		omniERC20(netconf.Mainnet),
 		omniERC20(netconf.Omega),
@@ -178,6 +183,15 @@ func wstETH(chainID uint64, addr common.Address) tokens.Token {
 func usdc(chainID uint64, addr common.Address) tokens.Token {
 	return tokens.Token{
 		Asset:      tokens.USDC,
+		ChainID:    chainID,
+		ChainClass: mustChainClass(chainID),
+		Address:    addr,
+	}
+}
+
+func usdt(chainID uint64, addr common.Address) tokens.Token {
+	return tokens.Token{
+		Asset:      tokens.USDT,
 		ChainID:    chainID,
 		ChainClass: mustChainClass(chainID),
 		Address:    addr,

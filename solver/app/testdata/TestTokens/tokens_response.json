@@ -32,6 +32,16 @@
   },
   {
    "enabled": true,
+   "name": "Tether",
+   "symbol": "USDT",
+   "chainId": 1,
+   "address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+   "decimals": 6,
+   "expenseMin": "0x186a0",
+   "expenseMax": "0x2540be400"
+  },
+  {
+   "enabled": true,
    "name": "Lido Staked Ether",
    "symbol": "stETH",
    "chainId": 1,
@@ -66,6 +76,16 @@
    "symbol": "USDC",
    "chainId": 10,
    "address": "0x0b2c639c533813f4aa9d7837caf62653d097ff85",
+   "decimals": 6,
+   "expenseMin": "0x186a0",
+   "expenseMax": "0x2540be400"
+  },
+  {
+   "enabled": true,
+   "name": "Tether",
+   "symbol": "USDT",
+   "chainId": 10,
+   "address": "0x94b008aa00579c1307b0ef2c499ad98a8ce58e58",
    "decimals": 6,
    "expenseMin": "0x186a0",
    "expenseMax": "0x2540be400"
@@ -126,6 +146,16 @@
    "symbol": "USDC",
    "chainId": 42161,
    "address": "0xaf88d065e77c8cc2239327c5edb3a432268e5831",
+   "decimals": 6,
+   "expenseMin": "0x186a0",
+   "expenseMax": "0x2540be400"
+  },
+  {
+   "enabled": true,
+   "name": "Tether",
+   "symbol": "USDT",
+   "chainId": 42161,
+   "address": "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9",
    "decimals": 6,
    "expenseMin": "0x186a0",
    "expenseMax": "0x2540be400"
