@@ -64,9 +64,18 @@ importers:
         specifier: ^2.23.13
         version: 2.26.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
     devDependencies:
+      '@omni-network/test-utils':
+        specifier: workspace:^
+        version: link:../test-utils
       typescript:
         specifier: ^5.7.2
         version: 5.8.3
+      vite:
+        specifier: ^6.2.6
+        version: 6.2.6(@types/node@22.14.0)
+      vitest:
+        specifier: ^3.0.7
+        version: 3.1.1(@types/debug@4.1.12)(@types/node@22.14.0)(happy-dom@17.4.4)
 
   packages/react:
     dependencies:

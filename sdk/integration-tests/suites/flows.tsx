@@ -241,6 +241,8 @@ describe('ETH deposit via middleman contract', () => {
 
 test('default: successfully processes order from quote to filled', async () => {
   const renderHook = createRenderHook()
+  const oneEth = parseEther('1')
+  const twoEth = parseEther('2')
 
   const preDestBalance = renderHook(() => {
     return useBalance({

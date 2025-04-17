@@ -10,7 +10,6 @@ import {
   publicActions,
 } from 'viem'
 import { type PrivateKeyAccount, privateKeyToAccount } from 'viem/accounts'
-
 import { inbox, mockL1Chain, omniTokenAbi, tokenAddress } from './constants.js'
 
 export const testAccount: PrivateKeyAccount = privateKeyToAccount(
