@@ -117,7 +117,7 @@ func openOrders(
 	// Limit to available solver balance on destination.
 	if solverDstAvail, err := availableBalance(ctx, network, destBackend, eoa.RoleSolver, dstToken); err != nil {
 		return nil, errors.Wrap(err, "get dest available")
-	} else if solverSrcAvail := bi.MulF64(solverDstAvail, price); bi.GT(totalAmount, solverSrcAvail) {
+	} else if solverSrcAvail := price.ToDeposit(solverDstAvail); bi.GT(totalAmount, solverSrcAvail) {
 		totalAmount = solverSrcAvail
 	}
 
@@ -133,8 +133,8 @@ func openOrders(
 	}
 
 	var orderDatas []bindings.SolverNetOrderData
-	for _, amount := range splitOrderAmounts(depositBounds, totalAmount, p) {
-		orderData, err := nativeOrderData(ctx, scl, flowgenAddr, srcToken, dstToken, amount)
+	for _, depositAmount := range splitOrderAmounts(depositBounds, totalAmount, p) {
+		orderData, err := nativeOrderData(ctx, scl, flowgenAddr, srcToken, dstToken, depositAmount)
 		if err != nil {
 			return nil, err
 		}
@@ -220,7 +220,7 @@ func check(ctx context.Context, scl sclient.Client, srcChainID uint64, orderData
 }
 
 // swapPrice returns the price of the source token in destination tokens.
-func swapPrice(ctx context.Context, scl sclient.Client, srcToken, dstToken tokens.Token) (float64, error) {
+func swapPrice(ctx context.Context, scl sclient.Client, srcToken, dstToken tokens.Token) (stypes.Price, error) {
 	priceReq := stypes.PriceRequest{
 		SourceChainID:      srcToken.ChainID,
 		DestinationChainID: dstToken.ChainID,
@@ -228,21 +228,16 @@ func swapPrice(ctx context.Context, scl sclient.Client, srcToken, dstToken token
 		ExpenseToken:       dstToken.Address,
 	}
 
-	price, err := scl.Price(ctx, priceReq)
-	if err != nil {
-		return 0, errors.Wrap(err, "price")
-	}
-
-	return price, nil
+	return scl.Price(ctx, priceReq)
 }
 
-func nativeOrderData(ctx context.Context, scl sclient.Client, owner common.Address, srcToken, dstToken tokens.Token, expenseAmt *big.Int) (bindings.SolverNetOrderData, error) {
+func nativeOrderData(ctx context.Context, scl sclient.Client, owner common.Address, srcToken, dstToken tokens.Token, depositAmt *big.Int) (bindings.SolverNetOrderData, error) {
 	quoteReq := stypes.QuoteRequest{
 		SourceChainID:      srcToken.ChainID,
 		DestinationChainID: dstToken.ChainID,
-		Expense: stypes.AddrAmt{
-			Token:  dstToken.Address,
-			Amount: expenseAmt,
+		Deposit: stypes.AddrAmt{
+			Token:  srcToken.Address,
+			Amount: depositAmt,
 		},
 	}
 
@@ -251,8 +246,11 @@ func nativeOrderData(ctx context.Context, scl sclient.Client, owner common.Addre
 		return bindings.SolverNetOrderData{}, errors.Wrap(err, "quote deposit")
 	} else if quoteResp.Rejected {
 		return bindings.SolverNetOrderData{}, errors.New("quote rejected", "description", quoteResp.RejectDescription, "reason", quoteResp.RejectCode)
+	} else if !bi.EQ(quoteResp.Deposit.Amount, depositAmt) {
+		return bindings.SolverNetOrderData{}, errors.New("quote deposit amount mismatch", "expected", depositAmt, "actual", quoteResp.Deposit.Amount)
 	}
 
+	expenseAmt := quoteResp.Expense.Amount
 	call := solvernet.Call{
 		Target: owner,
 		Value:  expenseAmt,

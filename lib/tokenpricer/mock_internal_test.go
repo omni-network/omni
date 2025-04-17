@@ -1,6 +1,7 @@
 package tokenpricer
 
 import (
+	"math/big"
 	"testing"
 
 	"github.com/omni-network/omni/lib/tokens"
@@ -15,5 +16,5 @@ func TestDevnetPricer(t *testing.T) {
 
 	price, err := pricer.Price(t.Context(), tokens.OMNI, tokens.ETH)
 	require.NoError(t, err)
-	require.InEpsilon(t, 5.0/3000.0, price, 0.0001)
+	require.Equal(t, big.NewRat(5.0, 3000.0), price)
 }

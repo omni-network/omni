@@ -61,11 +61,22 @@ func ToF64(amt *big.Int, dec uint) float64 {
 
 // ToWei converts an amt with dec decimals to wei big.Int with 18 decimals.
 func ToWei(amt *big.Int, dec uint) *big.Int {
-	if dec < 18 {
-		return MulRaw(amt, int(math.Pow10(18-int(dec))))
+	return Rebase(amt, dec, 18)
+}
+
+// Rebase converts an amt from one decimal to another.
+//
+//nolint:gosec // Decimals don't overflow
+func Rebase(amt *big.Int, from, to uint) *big.Int {
+	if from == to {
+		return amt
 	}
 
-	return amt
+	if from < to {
+		return MulRaw(amt, int(math.Pow10(int(to)-int(from))))
+	}
+
+	return DivRaw(amt, int(math.Pow10(int(from)-int(to))))
 }
 
 // Gwei converts gwei float/int/uint in to wei big.Int; i * 1e9.

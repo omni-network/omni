@@ -133,9 +133,9 @@ func newPriceHandler(priceFunc priceHandlerFunc) Handler {
 				return nil, errors.New("invalid request type [BUG]", "type", fmt.Sprintf("%T", request))
 			}
 
-			res, err := priceFunc(ctx, req)
+			res, err := priceFunc(ctx, *req)
 			if err != nil {
-				return types.PriceResponse{}, err
+				return nil, err
 			}
 
 			return res, nil

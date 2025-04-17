@@ -20,15 +20,12 @@ type quoteFunc func(context.Context, types.QuoteRequest) (types.QuoteResponse, e
 // It is the logic behind the /quoter endpoint.
 func newQuoter(priceFunc priceFunc) quoteFunc {
 	return func(ctx context.Context, req types.QuoteRequest) (types.QuoteResponse, error) {
-		deposit := req.Deposit
-		expense := req.Expense
-
-		isDepositQuote := deposit.Amount == nil || bi.IsZero(deposit.Amount)
-		isExpenseQuote := expense.Amount == nil || bi.IsZero(expense.Amount)
-
 		returnErr := func(code int, msg string) (types.QuoteResponse, error) {
 			return types.QuoteResponse{}, newAPIError(errors.New(msg), code)
 		}
+
+		isDepositQuote := bi.IsZero(req.Deposit.Amount)
+		isExpenseQuote := bi.IsZero(req.Expense.Amount)
 
 		if isDepositQuote == isExpenseQuote {
 			return returnErr(http.StatusBadRequest, "deposit and expense amount cannot be both zero or both non-zero")
@@ -44,59 +41,51 @@ func newQuoter(priceFunc priceFunc) quoteFunc {
 			return returnErr(http.StatusNotFound, "unsupported expense token")
 		}
 
-		maybeMinMaxReject := func(expenseAmt *big.Int) error {
-			bounds, ok := GetSpendBounds(expenseTkn)
-			overMax := ok && bi.GT(expenseAmt, bounds.MaxSpend)
-			underMin := ok && bi.LT(expenseAmt, bounds.MinSpend)
-
-			if overMax {
-				return newRejection(types.RejectExpenseOverMax,
-					errors.New("requested expense exceeds maximum",
-						"ask", expenseTkn.FormatAmt(expenseAmt),
-						"max", expenseTkn.FormatAmt(bounds.MaxSpend),
-					))
-			}
-
-			if underMin {
-				return newRejection(types.RejectExpenseUnderMin,
-					errors.New("requested expense is below minimum",
-						"ask", expenseTkn.FormatAmt(expenseAmt),
-						"min", expenseTkn.FormatAmt(bounds.MinSpend),
-					))
-			}
-
-			return nil
+		// Get the price of the order
+		price, err := priceFunc(ctx, depositTkn, expenseTkn)
+		if err != nil {
+			return types.QuoteResponse{}, newAPIError(newRejection(types.RejectInvalidDeposit, err), http.StatusBadRequest)
 		}
 
-		returnQuote := func(depositAmt, expenseAmt *big.Int) (types.QuoteResponse, error) {
-			return types.QuoteResponse{
-				Deposit: types.AddrAmt{
-					Token:  deposit.Token,
-					Amount: depositAmt,
-				},
-				Expense: types.AddrAmt{
-					Token:  expense.Token,
-					Amount: expenseAmt,
-				},
-			}, maybeMinMaxReject(expenseAmt)
-		}
+		// Add solver fee to price
+		price = price.WithFeeBips(feeBips(depositTkn.Asset, expenseTkn.Asset))
 
 		if isDepositQuote {
-			quoted, err := quoteDeposit(ctx, priceFunc, depositTkn, TokenAmt{Token: expenseTkn, Amount: expense.Amount})
-			if err != nil {
-				return types.QuoteResponse{}, newAPIError(err, http.StatusBadRequest)
-			}
-
-			return returnQuote(quoted.Amount, expense.Amount)
+			req.Deposit.Amount = price.ToDeposit(req.Expense.Amount)
+		} else {
+			req.Expense.Amount = price.ToExpense(req.Deposit.Amount)
 		}
 
-		quoted, err := quoteExpense(ctx, priceFunc, expenseTkn, TokenAmt{Token: depositTkn, Amount: deposit.Amount})
-		if err != nil {
-			return types.QuoteResponse{}, newAPIError(err, http.StatusBadRequest)
-		}
-
-		return returnQuote(deposit.Amount, quoted.Amount)
+		return types.QuoteResponse{
+			Deposit: req.Deposit,
+			Expense: req.Expense,
+		}, maybeMinMaxReject(req.Expense.Amount, expenseTkn)
 	}
+}
+
+func maybeMinMaxReject(expenseAmt *big.Int, expenseTkn tokens.Token) error {
+	bounds, ok := GetSpendBounds(expenseTkn)
+	if !ok {
+		return nil
+	}
+
+	if bi.GT(expenseAmt, bounds.MaxSpend) {
+		return newRejection(types.RejectExpenseOverMax,
+			errors.New("requested expense exceeds maximum",
+				"ask", expenseTkn.FormatAmt(expenseAmt),
+				"max", expenseTkn.FormatAmt(bounds.MaxSpend),
+			))
+	}
+
+	if bi.LT(expenseAmt, bounds.MinSpend) {
+		return newRejection(types.RejectExpenseUnderMin,
+			errors.New("requested expense is below minimum",
+				"ask", expenseTkn.FormatAmt(expenseAmt),
+				"min", expenseTkn.FormatAmt(bounds.MinSpend),
+			))
+	}
+
+	return nil
 }
 
 // getQuote returns payment in `depositTkns` required to pay for `expenses`.
@@ -122,33 +111,17 @@ func getQuote(ctx context.Context, priceFunc priceFunc, depositTkns []tokens.Tok
 
 // quoteDeposit returns the source chain deposit required to cover `expense`.
 func quoteDeposit(ctx context.Context, priceFunc priceFunc, depositTkn tokens.Token, expense TokenAmt) (TokenAmt, error) {
-	price, err := priceFunc(ctx, expense.Token, depositTkn)
+	price, err := priceFunc(ctx, depositTkn, expense.Token)
 	if err != nil {
 		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, errors.Wrap(err, "", "expense", expense, "deposit", depositTkn))
 	}
 
-	depositAmount := bi.MulF64(expense.Amount, price)
-	depositAmount = depositFor(depositAmount, feeBips(depositTkn.Asset, expense.Token.Asset))
+	// Add fee to price.
+	price = price.WithFeeBips(feeBips(depositTkn.Asset, expense.Token.Asset))
 
 	return TokenAmt{
 		Token:  depositTkn,
-		Amount: depositAmount,
-	}, nil
-}
-
-// QuoteExpense returns the destination chain expense allowed for `deposit`.
-func quoteExpense(ctx context.Context, priceFunc priceFunc, expenseTkn tokens.Token, deposit TokenAmt) (TokenAmt, error) {
-	price, err := priceFunc(ctx, deposit.Token, expenseTkn)
-	if err != nil {
-		return TokenAmt{}, newRejection(types.RejectInvalidDeposit, errors.Wrap(err, "", "deposit", deposit, "expense", expenseTkn))
-	}
-
-	expenseAmount := bi.MulF64(deposit.Amount, price)
-	expenseAmount = expenseFor(expenseAmount, feeBips(expenseTkn.Asset, deposit.Token.Asset))
-
-	return TokenAmt{
-		Token:  expenseTkn,
-		Amount: expenseAmount,
+		Amount: price.ToDeposit(expense.Amount),
 	}, nil
 }
 
@@ -177,27 +150,4 @@ func feeBips(a, b tokens.Asset) int64 {
 	}
 
 	return standardFeeBips
-}
-
-// depositFor returns the deposit required to cover `expense` with a fee in bips.
-func depositFor(expense *big.Int, bips int64) *big.Int {
-	// deposit = expense + ceil(expense * bips / 10_000)
-
-	feeDividend := bi.Mul(expense, bi.N(bips))
-	feeDividend = bi.Add(feeDividend, bi.N(9_999)) // Add 9_999 to dividend to round up.
-	feeDivisor := bi.N(10_000)
-
-	fee := bi.Div(feeDividend, feeDivisor)
-
-	return bi.Add(expense, fee)
-}
-
-// expenseFor returns the expense allowed for `deposit` with a fee in bips.
-func expenseFor(deposit *big.Int, bips int64) *big.Int {
-	// expense = floor(d * 10_000 / (10_000 + bips))
-
-	return bi.DivRaw(
-		bi.MulRaw(deposit, 10_000),
-		10_000+bips,
-	)
 }

@@ -45,13 +45,7 @@ func newChecker(backends ethbackend.Backends, isAllowedCall callAllowFunc, price
 			return err
 		}
 
-		quote, err := getQuote(ctx, priceFunc, []tokens.Token{deposit.Token}, expenses)
-		if err != nil {
-			return err
-		}
-
-		err = coversQuote([]TokenAmt{deposit}, quote)
-		if err != nil {
+		if err := checkQuote(ctx, priceFunc, []TokenAmt{deposit}, expenses); err != nil {
 			return err
 		}
 

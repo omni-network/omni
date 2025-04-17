@@ -70,13 +70,6 @@ type PriceRequest struct {
 	ExpenseToken       common.Address `json:"expenseToken"`
 }
 
-type PriceResponse struct {
-	// Price of 1 unit of deposit token denominated in expense tokens.
-	// deposit amount = expense amount * price
-	// expense amount = deposit amount / price
-	Price float64 `json:"price"`
-}
-
 type TokensResponse struct {
 	Tokens []TokenResponse `json:"tokens"`
 }

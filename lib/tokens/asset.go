@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/omni-network/omni/lib/bi"
+	"github.com/omni-network/omni/lib/errors"
 )
 
 // Asset represents the canonical definition of a token,
@@ -68,6 +69,16 @@ var (
 		CoingeckoID: "wrapped-steth",
 	}
 )
+
+func AssetBySymbol(symbol string) (Asset, error) {
+	for _, t := range tokens {
+		if t.Symbol == symbol {
+			return t.Asset, nil
+		}
+	}
+
+	return Asset{}, errors.New("unknown asset", "symbol", symbol)
+}
 
 // UniqueAssets returns all unique assets of all tokens.
 func UniqueAssets() []Asset {

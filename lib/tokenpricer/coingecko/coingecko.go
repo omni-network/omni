@@ -3,6 +3,7 @@ package coingecko
 import (
 	"context"
 	"encoding/json"
+	"math/big"
 	"net/http"
 	"net/url"
 	"strings"
@@ -41,49 +42,75 @@ func New(opts ...func(*options)) Client {
 }
 
 // Price returns the price of the base asset denominated in the quote asset.
-func (c Client) Price(ctx context.Context, base, quote tokens.Asset) (float64, error) {
+// Note that for canonical solver prices, base=deposit and quote=expense.
+func (c Client) Price(ctx context.Context, base, quote tokens.Asset) (*big.Rat, error) {
 	// Coingecko only supports a limited amount of "quote currencies",
 	// So convert to USD first, then to the quote currency.
 
 	m, err := c.getPrice(ctx, currencyUSD, base)
 	if err != nil {
-		return 0, errors.Wrap(err, "get price")
+		return nil, errors.Wrap(err, "get price")
 	}
 	basePrice := m[base]
 
 	m, err = c.getPrice(ctx, currencyUSD, quote)
 	if err != nil {
-		return 0, errors.Wrap(err, "get price")
+		return nil, errors.Wrap(err, "get price")
 	}
 	quotePrice := m[quote]
 
-	return basePrice / quotePrice, nil
+	return new(big.Rat).Quo(basePrice, quotePrice), nil
 }
 
-// USDPrice returns the price of the token in USD.
-func (c Client) USDPrice(ctx context.Context, tkn tokens.Asset) (float64, error) {
-	prices, err := c.USDPrices(ctx, tkn)
+// USDPrice returns the price of the asset in USD.
+func (c Client) USDPrice(ctx context.Context, asset tokens.Asset) (float64, error) {
+	prices, err := c.USDPrices(ctx, asset)
 	if err != nil {
 		return 0, err
 	}
 
-	return prices[tkn], nil
+	return prices[asset], nil
 }
 
-// USDPrices returns the price of each coin in USD.
-func (c Client) USDPrices(ctx context.Context, tkns ...tokens.Asset) (map[tokens.Asset]float64, error) {
-	return c.getPrice(ctx, currencyUSD, tkns...)
+// USDPrices returns the price of each asset in USD.
+func (c Client) USDPrices(ctx context.Context, assets ...tokens.Asset) (map[tokens.Asset]float64, error) {
+	rats, err := c.getPrice(ctx, currencyUSD, assets...)
+	if err != nil {
+		return nil, errors.Wrap(err, "get price")
+	}
+
+	prices := make(map[tokens.Asset]float64)
+	for asset, price := range rats {
+		f, _ := price.Float64()
+		prices[asset] = f
+	}
+
+	return prices, nil
 }
 
-// simplePriceResponse is the response from the simple/price endpoint.
-// It maps coin id to currency to price.
-type simplePriceResponse map[string]map[string]float64
+// USDPricesRat returns the price of each asset in USD.
+func (c Client) USDPricesRat(ctx context.Context, assets ...tokens.Asset) (map[tokens.Asset]*big.Rat, error) {
+	return c.getPrice(ctx, currencyUSD, assets...)
+}
 
-// GetPrice returns the price of each coin in the given currency.
+// USDPriceRat returns the price of each asset in USD.
+func (c Client) USDPriceRat(ctx context.Context, asset tokens.Asset) (*big.Rat, error) {
+	rats, err := c.USDPricesRat(ctx, asset)
+	if err != nil {
+		return nil, errors.Wrap(err, "get price")
+	}
+
+	return rats[asset], nil
+}
+
+// map[asset.CoingeckoID]map[currency]price.
+type simplePriceResponse map[string]map[string]json.Number
+
+// GetPrice returns the price of each asset in the given currency.
 // See supported currencies: https://api.coingecko.com/api/v3/simple/supported_vs_currencies
-func (c Client) getPrice(ctx context.Context, currency string, tkns ...tokens.Asset) (map[tokens.Asset]float64, error) {
-	ids := make([]string, len(tkns))
-	for i, t := range tkns {
+func (c Client) getPrice(ctx context.Context, currency string, assets ...tokens.Asset) (map[tokens.Asset]*big.Rat, error) {
+	ids := make([]string, len(assets))
+	for i, t := range assets {
 		ids[i] = t.CoingeckoID
 	}
 
@@ -97,24 +124,29 @@ func (c Client) getPrice(ctx context.Context, currency string, tkns ...tokens.As
 		return nil, errors.Wrap(err, "do req", "endpoint", "get_price")
 	}
 
-	prices := make(map[tokens.Asset]float64)
+	prices := make(map[tokens.Asset]*big.Rat)
 
-	for _, tkn := range tkns {
-		priceByCurrency, ok := resp[tkn.CoingeckoID]
+	for _, asset := range assets {
+		priceByCurrency, ok := resp[asset.CoingeckoID]
 		if !ok {
-			return nil, errors.New("missing token in response", "token", tkn)
+			return nil, errors.New("missing asset in response", "asset", asset)
 		}
 
-		price, ok := priceByCurrency[currency]
+		priceStr, ok := priceByCurrency[currency]
 		if !ok {
-			return nil, errors.New("missing price in response", "token", tkn, "currency", currency)
+			return nil, errors.New("missing price in response", "asset", asset, "currency", currency)
 		}
 
-		if price <= 0 {
-			return nil, errors.New("invalid price in response", "token", tkn, "price", price)
+		// Parsing the json.Number as big.Rat floating point number
+		// This avoid going through float64 which can lose precision
+		price, ok := new(big.Rat).SetString(priceStr.String()) //nolint:gosec // CVE-2022-23772 fixed in go1.17
+		if !ok {
+			return nil, errors.New("invalid price string", "asset", asset, "price", priceStr)
+		} else if price.Sign() <= 0 {
+			return nil, errors.New("proic enot positive", "asset", asset, "price", price)
 		}
 
-		prices[tkn] = price
+		prices[asset] = price
 	}
 
 	return prices, nil
@@ -154,10 +186,12 @@ func (c Client) doReq(ctx context.Context, path string, params url.Values, respo
 }
 
 func (c Client) uri(path string, params url.Values) (*url.URL, error) {
-	uri, err := url.Parse(c.host + path + "?" + params.Encode())
+	uri, err := url.Parse(c.host)
 	if err != nil {
-		return nil, errors.Wrap(err, "parse url", "host", c.host, "path", path, "params", params.Encode())
+		return nil, errors.Wrap(err, "parse host", "host", c.host)
 	}
+	uri = uri.JoinPath(path)
+	uri.RawQuery = params.Encode()
 
 	return uri, nil
 }

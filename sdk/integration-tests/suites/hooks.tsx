@@ -136,7 +136,7 @@ describe('useQuote()', () => {
       code: 400,
       status: 'Bad Request',
       message:
-        'InvalidDeposit: deposit and expense must be of the same chain class (e.g. mainnet, testnet) [deposit=1 ETH, expense=ETH]',
+        'InvalidDeposit: deposit and expense must be of the same chain class (e.g. mainnet, testnet) [deposit=mainnet, expense=testnet]',
     })
   })
 

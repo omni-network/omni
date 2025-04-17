@@ -523,10 +523,19 @@ func mustTokenByAsset(chainID uint64, asset tokens.Asset) tokens.Token {
 
 func mustDepositAmount(expenseAmount *big.Int, srcToken tokens.Token, dstToken tokens.Token) *big.Int {
 	pricer := tokenpricer.NewDevnetMock()
-	price, err := pricer.Price(context.TODO(), dstToken.Asset, srcToken.Asset)
+	price, err := pricer.Price(context.TODO(), srcToken.Asset, dstToken.Asset)
 	if err != nil {
 		panic(err)
 	}
 
-	return bi.MulF64(bi.MulF64(expenseAmount, price), 1.01) // Mul by 1.01 again to cover 30bips fee
+	sprice := solver.Price{
+		Price:   price,
+		Deposit: srcToken.Asset,
+		Expense: dstToken.Asset,
+	}
+
+	// Add fee bips
+	sprice = sprice.WithFeeBips(30)
+
+	return sprice.ToDeposit(expenseAmount)
 }

@@ -70,6 +70,40 @@ func MulRaw[I constraints.Integer](a *big.Int, bs ...I) *big.Int {
 	return resp
 }
 
+// MulRatFloor returns a * b0 [* b1 * b2 ...]
+// It rounds down (toward zero).
+func MulRatFloor(a *big.Int, bs ...*big.Rat) *big.Int {
+	rat := new(big.Rat).SetInt(a)
+	for _, b := range bs {
+		rat = new(big.Rat).Mul(rat, b)
+	}
+
+	return new(big.Int).Quo(rat.Num(), rat.Denom())
+}
+
+// MulRatCeil returns a * b0 [* b1 * b2 ...]
+// It rounded up (toward +∞).
+func MulRatCeil(a *big.Int, bs ...*big.Rat) *big.Int {
+	rat := new(big.Rat).SetInt(a)
+	for _, b := range bs {
+		rat.Mul(rat, b)
+	}
+
+	num := rat.Num()
+	den := rat.Denom()
+
+	// result = num / den
+	quotient := new(big.Int).Quo(num, den)
+	remainder := new(big.Int).Rem(num, den)
+
+	// if there's a remainder, we need to add 1 to round up if the result is positive
+	if remainder.Sign() != 0 && rat.Sign() > 0 {
+		quotient.Add(quotient, big.NewInt(1))
+	}
+
+	return quotient
+}
+
 // MulF64 returns a * b0 [* b1 * b2 ...].
 // Note that floats are not accurate.
 func MulF64(a *big.Int, bs ...float64) *big.Int {
