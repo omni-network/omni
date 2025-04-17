@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"text/template"
 	"time"
 
@@ -21,23 +22,41 @@ import (
 	_ "embed"
 )
 
-// Start starts a genesis anvil node and returns an ethclient and a stop function or an error.
-// The dir parameter is the location of the docker compose.
-func Start(ctx context.Context, dir string, chainID uint64) (ethclient.Client, func(), error) {
-	return start(ctx, dir, chainID, "")
+type Option func(*options)
+
+type options struct {
+	flags []string
 }
 
-// StartFork starts an anvil node forked from the provided RPC URL and returns an ethclient and a stop function or an error.
-// The dir parameter is the location of the docker compose.
-func StartFork(ctx context.Context, dir string, chainID uint64, forkURL string) (ethclient.Client, func(), error) {
-	return start(ctx, dir, chainID, forkURL)
+func WithFork(forkURL string) Option {
+	return func(o *options) {
+		o.flags = append(o.flags, "--fork-url", forkURL)
+	}
 }
 
-func start(ctx context.Context, dir string, chainID uint64, forkURL string) (ethclient.Client, func(), error) {
+func WithAutoImpersonate() Option {
+	return func(o *options) {
+		o.flags = append(o.flags, "--auto-impersonate")
+	}
+}
+
+func WithFlags(flags ...string) Option {
+	return func(o *options) {
+		o.flags = append(o.flags, flags...)
+	}
+}
+
+// StartFork starts an anvil node  and returns an ethclient and a stop function or an error.
+func Start(ctx context.Context, dir string, chainID uint64, opts ...Option) (ethclient.Client, func(), error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Minute) // Allow 1 minute for edge case of pulling images.
 	defer cancel()
 	if !composeDown(ctx, dir) {
 		return nil, nil, errors.New("failure to clean up previous anvil instance")
+	}
+
+	o := options{}
+	for _, opt := range opts {
+		opt(&o)
 	}
 
 	// Ensure ports are available
@@ -46,7 +65,7 @@ func start(ctx context.Context, dir string, chainID uint64, forkURL string) (eth
 		return nil, nil, errors.Wrap(err, "get available port")
 	}
 
-	if err := writeComposeFile(dir, chainID, port, scripts.FoundryVersion(), forkURL); err != nil {
+	if err := writeComposeFile(dir, chainID, port, scripts.FoundryVersion(), o.flags); err != nil {
 		return nil, nil, errors.Wrap(err, "write compose file")
 	}
 
@@ -78,7 +97,7 @@ func start(ctx context.Context, dir string, chainID uint64, forkURL string) (eth
 	// Wait for RPC to be available
 	// If forking, wait longer since it needs to sync state
 	retryCount := 10 // 10 seconds for non-fork
-	if forkURL != "" {
+	if isFork(o) {
 		retryCount = 60 // 60 seconds for fork
 	}
 
@@ -112,6 +131,17 @@ func start(ctx context.Context, dir string, chainID uint64, forkURL string) (eth
 	log.Info(ctx, "Anvil: RPC is available", "addr", endpoint)
 
 	return ethCl, stop, nil
+}
+
+// isFork returns true if the --fork-url flag is set.
+func isFork(opts options) bool {
+	for _, flag := range opts.flags {
+		if strings.HasPrefix(flag, "--fork-url") {
+			return true
+		}
+	}
+
+	return false
 }
 
 // composeDown runs docker-compose down in the provided directory.
@@ -155,7 +185,7 @@ func writeAnvilState(dir string) error {
 //go:embed compose.yaml.tmpl
 var composeTpl []byte
 
-func writeComposeFile(dir string, chainID uint64, port, foundryVer, forkURL string) error {
+func writeComposeFile(dir string, chainID uint64, port, foundryVer string, flags []string) error {
 	tpl, err := template.New("").Parse(string(composeTpl))
 	if err != nil {
 		return errors.Wrap(err, "parse compose template")
@@ -166,12 +196,12 @@ func writeComposeFile(dir string, chainID uint64, port, foundryVer, forkURL stri
 		ChainID uint64
 		Port    string
 		Version string
-		ForkURL string
+		Flags   []string
 	}{
 		ChainID: chainID,
 		Port:    port,
 		Version: foundryVer,
-		ForkURL: forkURL,
+		Flags:   flags,
 	})
 	if err != nil {
 		return errors.Wrap(err, "execute compose template")

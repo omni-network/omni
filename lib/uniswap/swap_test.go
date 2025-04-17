@@ -45,7 +45,7 @@ func TestSwapToUSDC(t *testing.T) {
 		rpcURL = types.PublicRPCByName(meta.Name)
 	}
 
-	ethCl, stop, err := anvil.StartFork(ctx, t.TempDir(), evmchain.IDEthereum, rpcURL)
+	ethCl, stop, err := anvil.Start(ctx, t.TempDir(), evmchain.IDEthereum, anvil.WithFork(rpcURL))
 	require.NoError(t, err)
 	defer stop()
 
