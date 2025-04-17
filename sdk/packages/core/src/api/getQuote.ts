@@ -11,31 +11,25 @@ export type GetQuoteParams = {
   expense: Quoteable
 }
 
-// QuoteResponse is the response from the /quote endpoint, with hex encoded amounts
-export type QuoteResponse = {
+// the response from /quote endpoint (amounts are hex encoded bigints)
+type QuoteResponse = {
   deposit: { token: Address; amount: Hex }
   expense: { token: Address; amount: Hex }
 }
 
-export function encodeQuoteRequest(params: GetQuoteParams): string {
-  const { srcChainId, destChainId, deposit, expense, mode } = params
-  return toJSON({
-    sourceChainId: srcChainId,
-    destChainId: destChainId,
-    deposit: toQuoteUnit(deposit, mode === 'deposit'),
-    expense: toQuoteUnit(expense, mode === 'expense'),
-  })
-}
-
-// getQuoteWithEncoded calls the /quote endpoint, throwing on error
-export async function getQuoteEncoded(
+// getQuote calls the /quote endpoint
+export async function getQuote(
   apiBaseUrl: string,
-  encodedQuote: string,
+  quote: GetQuoteParams,
 ): Promise<Quote> {
   const json = await fetchJSON(`${apiBaseUrl}/quote`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: encodedQuote,
+    body: toJSON({
+      ...quote,
+      deposit: toQuoteUnit(quote.deposit, quote.mode === 'deposit'),
+      expense: toQuoteUnit(quote.expense, quote.mode === 'expense'),
+    }),
   })
 
   if (!isQuoteRes(json)) {
@@ -43,29 +37,22 @@ export async function getQuoteEncoded(
   }
 
   const { deposit, expense } = json
+
   return {
     deposit: { ...deposit, amount: fromHex(deposit.amount, 'bigint') },
     expense: { ...expense, amount: fromHex(expense.amount, 'bigint') },
-  } as Quote
+  } satisfies Quote
 }
 
-export async function getQuote(
-  apiBaseUrl: string,
-  params: GetQuoteParams,
-): Promise<Quote> {
-  const encoded = encodeQuoteRequest(params)
-  return await getQuoteEncoded(apiBaseUrl, encoded)
-}
-
-// toQuoteUnit translates a Quoteable to "QuoteUnit", the format expected by /quote
+// trim params to create obj expected by /quote endpoint
 export const toQuoteUnit = (q: Quoteable, omitAmount: boolean) => ({
   amount: omitAmount ? undefined : q.amount,
   token: q.isNative ? zeroAddress : q.token,
 })
 
-// isQuoteRes checks if a json is a QuoteResponse
-// TODO: use zod
+// asserts a json response is QuoteResponse
 function isQuoteRes(json: unknown): json is QuoteResponse {
+  // TODO: schema validation
   const quote = json as QuoteResponse
   return (
     json != null &&

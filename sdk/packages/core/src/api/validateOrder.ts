@@ -1,8 +1,7 @@
 import { encodeFunctionData, zeroAddress } from 'viem'
 import { fetchJSON } from '../internal/api.js'
 import type { OptionalAbis } from '../types/abi.js'
-import type { Order } from '../types/order.js'
-import { isContractCall } from '../types/order.js'
+import { type Order, isContractCall } from '../types/order.js'
 import { toJSON } from '../utils/toJSON.js'
 
 export type ValidationResponse = {
@@ -16,9 +15,25 @@ export type ValidationResponse = {
   rejectDescription?: string
 }
 
-export function encodeOrderRequest<abis extends OptionalAbis>(
+// validateOrder calls /check - checking if an order is valid
+export async function validateOrder<abis extends OptionalAbis>(
+  apiBaseUrl: string,
   order: Order<abis>,
-): string {
+) {
+  const json = await fetchJSON(`${apiBaseUrl}/check`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: serialize(order),
+  })
+
+  if (!isValidateRes(json)) {
+    throw new Error(`Unexpected validation response: ${JSON.stringify(json)}`)
+  }
+
+  return json satisfies ValidationResponse
+}
+
+const serialize = <abis extends OptionalAbis>(order: Order<abis>) => {
   try {
     const calls = order.calls.map((call) => {
       if (!isContractCall(call)) {
@@ -69,32 +84,9 @@ export function encodeOrderRequest<abis extends OptionalAbis>(
   }
 }
 
-export async function validateOrderEncoded(
-  apiBaseUrl: string,
-  encodedOrder: string,
-) {
-  const json = await fetchJSON(`${apiBaseUrl}/check`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: encodedOrder,
-  })
-
-  if (!isValidateRes(json)) {
-    throw new Error(`Unexpected validation response: ${JSON.stringify(json)}`)
-  }
-
-  return json as ValidationResponse
-}
-
-export async function validateOrder<abis extends OptionalAbis>(
-  apiBaseUrl: string,
-  order: Order<abis>,
-) {
-  return await validateOrderEncoded(apiBaseUrl, encodeOrderRequest(order))
-}
-
-// TODO schema validation
+// asserts a json response is ValidationResponse
 const isValidateRes = (json: unknown): json is ValidationResponse => {
+  // TODO schema validation
   const res = json as ValidationResponse
   return (
     json != null &&

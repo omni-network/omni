@@ -1,8 +1,9 @@
 import type { FetchJSONError, GetQuoteParams, Quote } from '@omni-network/core'
-import { encodeQuoteRequest, getQuoteEncoded } from '@omni-network/core'
+import { getQuote } from '@omni-network/core'
 import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useOmniContext } from '../context/omni.js'
+import { hashFn } from '../utils/query.js'
 
 type UseQuoteParams = GetQuoteParams & {
   enabled: boolean
@@ -33,22 +34,21 @@ type UseQuoteResult = (UseQuoteSuccess | UseQuoteError | UseQuotePending) & {
 
 type QuoteError = FetchJSONError
 
-// useQuote quotes an expense for deposit, or vice versa
+// quotes expense amount for a given deposit, or vice versa
 export function useQuote(params: UseQuoteParams): UseQuoteResult {
   const { apiBaseUrl } = useOmniContext()
   const { enabled, ...quoteParams } = params
-
-  const request = encodeQuoteRequest(quoteParams)
   const query = useQuery<Quote, QuoteError>({
-    queryKey: ['quote', request],
-    queryFn: async () => await getQuoteEncoded(apiBaseUrl, request),
+    queryKey: ['quote', quoteParams],
+    queryFn: async () => getQuote(apiBaseUrl, quoteParams),
+    queryKeyHashFn: hashFn,
     enabled,
   })
 
   return useResult(query)
 }
 
-// useResult memoizes a query into a UseQuoteResult
+// memoizes query result as UseQuoteResult
 const useResult = (q: UseQueryResult<Quote, QuoteError>): UseQuoteResult =>
   useMemo(() => {
     if (q.isError) {
