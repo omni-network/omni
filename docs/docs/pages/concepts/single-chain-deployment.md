@@ -3,15 +3,15 @@ sidebar_position: 3 # Or adjust if needed after restructuring
 title: "Developer Workflow: Single-Chain Deployment"
 ---
 
-# Developer Workflow: Single-Chain Deployment
+# Single-Chain Deployments
 
 SolverNet, powered by [intents](/concepts/the-solution.md), enables a new, simplified paradigm for decentralized application development: **deploy on a single chain, make it accessible from anywhere.**
 
-## The New Model: Single Chain + Intents
+## The New Model
 
-This approach offers a superior alternative to previous multi-chain strategies:
+_Single chain + intents_ - this approach offers a superior alternative to previous multi-chain strategies:
 
-1.  **Deploy Smart Contracts to ONE Chain:** Choose a single blockchain (L1 or L2) that best aligns with your project's values, security requirements, ecosystem preferences, or technical needs.
+1.  **Deploy Smart Contracts to _ONE_ Chain:** Choose a single blockchain (L1 or L2) that best aligns with your project's values, security requirements, ecosystem preferences, or technical needs.
     *   Need Ethereum's security? Deploy on L1.
     *   Value Optimism's public goods funding? Deploy on OP Mainnet.
     *   Want proximity to high DeFi activity? Choose Base or Arbitrum.
@@ -29,4 +29,4 @@ This approach offers a superior alternative to previous multi-chain strategies:
 *   **Unified Liquidity & State:** Your application logic and state remain consistent on a single chain.
 *   **Faster Iteration:** Avoid the delays and complexities of multi-chain deployments or re-architectures.
 
-This "Single Chain + Intents" model allows you to achieve the benefits of being multichain (wide user access, tapping into diverse liquidity) without the traditional drawbacks. You can build on the chain you believe in and let SolverNet handle the rest.
+This "Single chain + intents" model allows you to receive the array of benefits that comes with a multichain strategy, without the traditional drawbacks. You can build on the chain you believe in and let SolverNet handle the rest.

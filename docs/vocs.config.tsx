@@ -29,7 +29,6 @@ export default defineConfig({
   sidebar: [
     {
       text: 'Learn',
-      collapsed: true,
       items: [
         { text: 'Welcome', link: '/' },
         { text: 'Omni Overview', link: '/introduction/omni-overview' },
@@ -39,24 +38,21 @@ export default defineConfig({
       ],
     },
     {
-      text: 'SolverNet Concepts',
-      collapsed: false,
+      text: 'SolverNet',
       items: [
-        { text: 'Problem: Fragmentation & UX', link: '/concepts/the-problem' },
-        { text: 'Solution: Intents & SolverNet', link: '/concepts/the-solution' },
-        { text: 'Intent Mechanism', link: '/concepts/intent-mechanism' },
-        { text: 'Single Chain Deployment', link: '/concepts/single-chain-deployment' },
+        { text: 'The Problem', link: '/concepts/the-problem' },
+        { text: 'The Solution', link: '/concepts/the-solution' },
+        { text: 'Intents Mechanism', link: '/concepts/intent-mechanism' },
+        { text: 'Single Chain Deployments', link: '/concepts/single-chain-deployment' },
       ],
     },
     {
       text: 'SolverNet SDK',
-      collapsed: false,
       items: [
         { text: 'Getting Started', link: '/sdk/getting-started' },
         { text: 'Supported Assets', link: '/sdk/supported-assets' },
         {
           text: 'Hooks',
-          collapsed: false,
           items: [
             { text: 'useQuote', link: '/sdk/hooks/useQuote' },
             { text: 'useOrder', link: '/sdk/hooks/useOrder' },
@@ -65,7 +61,7 @@ export default defineConfig({
         },
         {
           text: 'Guides',
-          collapsed: false,
+          collapsed: true,
           items: [
             { text: 'Basic Deposit', link: '/guides/basic-deposit' },
             { text: 'Contracts without onBehalfOf', link: '/guides/contracts-without-onbehalfof' },
