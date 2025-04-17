@@ -142,6 +142,8 @@ func (p *Provider) GetEmittedCursor(ctx context.Context, ref xchain.Ref, stream 
 	chain, rpcClient, err := p.getEVMChain(stream.SourceChainID)
 	if err != nil {
 		return xchain.EmitCursor{}, false, err
+	} else if !chain.HasEmitPortal {
+		return xchain.EmitCursor{}, false, errors.New("emit portal not available on source chain")
 	}
 
 	caller, err := bindings.NewOmniPortalCaller(chain.PortalAddress, rpcClient)
@@ -181,6 +183,8 @@ func (p *Provider) GetSubmittedCursor(
 	chain, rpcClient, err := p.getEVMChain(stream.DestChainID)
 	if err != nil {
 		return xchain.SubmitCursor{}, false, err
+	} else if !chain.HasSubmitPortal {
+		return xchain.SubmitCursor{}, false, errors.New("submit portal not available on destination chain")
 	}
 
 	caller, err := bindings.NewOmniPortalCaller(chain.PortalAddress, rpcClient)

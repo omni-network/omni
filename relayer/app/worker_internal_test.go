@@ -145,9 +145,9 @@ func TestWorker_Run(t *testing.T) {
 	}
 
 	network := netconf.Network{Chains: []netconf.Chain{
-		{ID: srcChain, Name: "source", Shards: []xchain.ShardID{xchain.ShardFinalized0, xchain.ShardLatest0}},
-		{ID: destChainA, Name: "mock_l1"},
-		{ID: destChainB, Name: "mock_l2"},
+		{ID: srcChain, Name: "source", Shards: []xchain.ShardID{xchain.ShardFinalized0, xchain.ShardLatest0}, HasEmitPortal: true},
+		{ID: destChainA, Name: "mock_l1", HasSubmitPortal: true},
+		{ID: destChainB, Name: "mock_l2", HasSubmitPortal: true},
 	}}
 
 	noAwait := func(context.Context, uint64) error { return nil }

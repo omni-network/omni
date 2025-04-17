@@ -22,6 +22,15 @@ type Network struct {
 	Chains []Chain `json:"chains"` // Chains that are part of the network
 }
 
+// AddChains returns a new network with the provided chains added to the existing chains.
+// This is useful to add external non-xchain chains a network loaded from the portal registry.
+func (n Network) AddChains(chains ...Chain) Network {
+	return Network{
+		ID:     n.ID,
+		Chains: append(chains, n.Chains...),
+	}
+}
+
 // Verify returns an error if the configuration is invalid.
 func (n Network) Verify() error {
 	if err := n.ID.Verify(); err != nil {
@@ -183,6 +192,11 @@ func (n Network) ChainByName(name string) (Chain, bool) {
 
 // ChainVersionsTo returns the all chain versions submitted to the provided destination chain.
 func (n Network) ChainVersionsTo(dstChainID uint64) []xchain.ChainVersion {
+	if chain, ok := n.Chain(dstChainID); !ok || !chain.HasSubmitPortal {
+		// No submit portal (so no chain versions to) or chain not found.
+		return nil
+	}
+
 	var resp []xchain.ChainVersion
 	for _, chain := range n.Chains {
 		if chain.ID == dstChainID {
@@ -209,6 +223,9 @@ func (n Network) EVMStreams() []xchain.StreamID {
 func (n Network) StreamsTo(dstChainID uint64) []xchain.StreamID {
 	if dstChainID == n.ID.Static().OmniConsensusChainIDUint64() {
 		return nil // Consensus chain is never a destination chain.
+	} else if chain, ok := n.Chain(dstChainID); !ok || !chain.HasSubmitPortal {
+		// No submit portal (so no stream to) or chain not found.
+		return nil
 	}
 
 	var resp []xchain.StreamID
@@ -231,6 +248,11 @@ func (n Network) StreamsTo(dstChainID uint64) []xchain.StreamID {
 
 // StreamsFrom returns the all streams from the provided source chain.
 func (n Network) StreamsFrom(srcChainID uint64) []xchain.StreamID {
+	if chain, ok := n.Chain(srcChainID); !ok || !chain.HasEmitPortal {
+		// No emit portal (so no streams from) or chain not found.
+		return nil
+	}
+
 	srcChain, ok := n.Chain(srcChainID)
 	if !ok {
 		return nil
@@ -260,6 +282,12 @@ func (n Network) StreamsBetween(srcChainID uint64, dstChainID uint64) []xchain.S
 		return nil
 	} else if dstChainID == n.ID.Static().OmniConsensusChainIDUint64() {
 		return nil // Consensus chain is never a destination chain.
+	} else if chain, ok := n.Chain(dstChainID); !ok || !chain.HasSubmitPortal {
+		// No submit portal (so no stream to) on dest chain or chain not found.
+		return nil
+	} else if chain, ok := n.Chain(srcChainID); !ok || !chain.HasEmitPortal {
+		// No emit portal (so no streams from) on src chain or chain not found.
+		return nil
 	}
 
 	srcChain, ok := n.Chain(srcChainID)
@@ -284,13 +312,15 @@ func (n Network) StreamsBetween(srcChainID uint64, dstChainID uint64) []xchain.S
 // the Omni cross chain protocol. This is most supported Rollup EVMs, but
 // also the Omni EVM, and the Omni Consensus chain.
 type Chain struct {
-	ID             uint64           // Chain ID asa per https://chainlist.org
-	Name           string           // Chain name as per https://chainlist.org
-	PortalAddress  common.Address   // Address of the omni portal contract on the chain
-	DeployHeight   uint64           // Height that the portal contracts were deployed
-	BlockPeriod    time.Duration    // Block period of the chain
-	Shards         []xchain.ShardID // Supported xmsg shards
-	AttestInterval uint64           // Attest to every Nth block, even if empty.
+	ID              uint64           // Chain ID asa per https://chainlist.org
+	Name            string           // Chain name as per https://chainlist.org
+	PortalAddress   common.Address   // Address of the omni portal contract on the chain
+	DeployHeight    uint64           // Height that the portal contracts were deployed
+	BlockPeriod     time.Duration    // Block period of the chain
+	Shards          []xchain.ShardID // Supported xmsg shards
+	AttestInterval  uint64           // Attest to every Nth block, even if empty.
+	HasEmitPortal   bool             // HasEmitPortal is true for chains in the omni xchain protocol (incl omni consensus)
+	HasSubmitPortal bool             // HasSubmitPortal is true for chains in the omni xchain protocol (excl omni consensus)
 }
 
 // ConfLevels returns the uniq set of confirmation levels
@@ -351,7 +381,7 @@ func (c Chain) Verify() error {
 		return errors.New("empty chain name")
 	}
 
-	if len(c.Shards) == 0 {
+	if len(c.Shards) == 0 && c.HasEmitPortal {
 		return errors.New("empty shards")
 	}
 
