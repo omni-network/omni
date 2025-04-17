@@ -1,0 +1,108 @@
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.20;
+
+import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
+import {
+    MessagingParams,
+    MessagingFee,
+    MessagingReceipt
+} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
+import { OAppCore } from "./OAppCore.sol";
+
+/**
+ * @title OAppSender
+ * @dev Abstract contract implementing the OAppSender functionality for sending messages to a LayerZero endpoint.
+ */
+abstract contract OAppSender is OAppCore {
+    using SafeTransferLib for address;
+
+    // Custom error messages
+    error LzTokenUnavailable();
+
+    // @dev The version of the OAppSender implementation.
+    // @dev Version is bumped when changes are made to this contract.
+    uint64 internal constant SENDER_VERSION = 1;
+
+    /**
+     * @notice Retrieves the OApp version information.
+     * @return senderVersion The version of the OAppSender.sol contract.
+     * @return receiverVersion The version of the OAppReceiver.sol contract.
+     *
+     * @dev Providing 0 as the default for OAppReceiver version. Indicates that the OAppReceiver is not implemented.
+     * ie. this is a SEND only OApp.
+     * @dev If the OApp uses both OAppSender and OAppReceiver, then this needs to be override returning the correct versions
+     */
+    function oAppVersion() public view virtual returns (uint64 senderVersion, uint64 receiverVersion) {
+        return (SENDER_VERSION, 0);
+    }
+
+    /**
+     * @dev Internal function to interact with the LayerZero EndpointV2.quote() for fee calculation.
+     * @param _dstEid The destination endpoint ID.
+     * @param _message The message payload.
+     * @param _options Additional options for the message.
+     * @param _payInLzToken Flag indicating whether to pay the fee in LZ tokens.
+     * @return fee The calculated MessagingFee for the message.
+     *      - nativeFee: The native fee for the message.
+     *      - lzTokenFee: The LZ token fee for the message.
+     */
+    function _quote(uint32 _dstEid, bytes memory _message, bytes memory _options, bool _payInLzToken)
+        internal
+        view
+        virtual
+        returns (MessagingFee memory fee)
+    {
+        return endpoint.quote(
+            MessagingParams(_dstEid, _getPeerOrRevert(_dstEid), _message, _options, _payInLzToken), address(this)
+        );
+    }
+
+    /**
+     * @dev Internal function to interact with the LayerZero EndpointV2.send() for sending a message.
+     * @param _dstEid The destination endpoint ID.
+     * @param _message The message payload.
+     * @param _options Additional options for the message.
+     * @param _fee The calculated LayerZero fee for the message.
+     *      - nativeFee: The native fee.
+     *      - lzTokenFee: The lzToken fee.
+     * @param _refundAddress The address to receive any excess fee values sent to the endpoint.
+     * @return receipt The receipt for the sent message.
+     *      - guid: The unique identifier for the sent message.
+     *      - nonce: The nonce of the sent message.
+     *      - fee: The LayerZero fee incurred for the message.
+     */
+    function _lzSend(
+        uint32 _dstEid,
+        bytes memory _message,
+        bytes memory _options,
+        MessagingFee memory _fee,
+        address _refundAddress
+    ) internal virtual returns (MessagingReceipt memory receipt) {
+        // @dev Push corresponding fees to the endpoint, any excess is sent back to the _refundAddress from the endpoint.
+        // `_payNative` removed because fees are checked in SolverNetOutbox._markFilled()
+        if (_fee.lzTokenFee > 0) _payLzToken(_fee.lzTokenFee);
+
+        return endpoint
+            // solhint-disable-next-line check-send-result
+            .send{ value: _fee.nativeFee }(
+            MessagingParams(_dstEid, _getPeerOrRevert(_dstEid), _message, _options, _fee.lzTokenFee > 0), _refundAddress
+        );
+    }
+
+    /**
+     * @dev Internal function to pay the LZ token fee associated with the message.
+     * @param _lzTokenFee The LZ token fee to be paid.
+     *
+     * @dev If the caller is trying to pay in the specified lzToken, then the lzTokenFee is passed to the endpoint.
+     * @dev Any excess sent, is passed back to the specified _refundAddress in the _lzSend().
+     */
+    function _payLzToken(uint256 _lzTokenFee) internal virtual {
+        // @dev Cannot cache the token because it is not immutable in the endpoint.
+        address lzToken = endpoint.lzToken();
+        if (lzToken == address(0)) revert LzTokenUnavailable();
+
+        // Pay LZ token fee by sending tokens to the endpoint.
+        lzToken.safeTransferFrom(msg.sender, address(endpoint), _lzTokenFee);
+    }
+}
