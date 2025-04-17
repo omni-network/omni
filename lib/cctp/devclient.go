@@ -7,6 +7,7 @@ import (
 
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/xchain"
@@ -49,24 +50,26 @@ func (c *DevClient) GetAttestation(_ context.Context, messageHash common.Hash) (
 }
 
 // AttestForever watches MessageTransmitter events and signs attestations.
-func (c *DevClient) AttestForever(ctx context.Context, chainIDs []uint64, xprov xchain.Provider) error {
+func (c *DevClient) AttestForever(ctx context.Context, chains []evmchain.Metadata, xprov xchain.Provider) error {
 	transmitters, addrs, err := newMessageTransmitters(c.ethClients)
 	if err != nil {
 		return err
 	}
 
 	// Init cursors
-	for _, chainID := range chainIDs {
-		height, err := c.getLatestBlock(ctx, chainID)
+	for _, chain := range chains {
+		height, err := c.getLatestBlock(ctx, chain.ChainID)
 		if err != nil {
-			return errors.Wrap(err, "init cursor", "chain_id", chainID)
+			return errors.Wrap(err, "init cursor", "chain", chain.Name)
 		}
 
-		c.setCursor(chainID, height)
+		c.setCursor(chain.ChainID, height)
 	}
 
-	for _, chainID := range chainIDs {
+	for _, chain := range chains {
 		go func() {
+			chainID := chain.ChainID
+			ctx := log.WithCtx(ctx, "process", "cctp.DevClient.AttestForever", "chain", chain.Name)
 			proc := c.newEventProc(chainID, transmitters[chainID])
 			c.runEventProc(ctx, chainID, addrs[chainID], proc, xprov)
 		}()

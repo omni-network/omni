@@ -29,6 +29,16 @@ var (
 	}
 )
 
+func MessageTransmitterAddr(chainID uint64) (common.Address, bool) {
+	addr, ok := messageTransmitters[chainID]
+	return addr, ok
+}
+
+func TokenMessengerAddr(chainID uint64) (common.Address, bool) {
+	addr, ok := tokenMessengers[chainID]
+	return addr, ok
+}
+
 func addr(hex string) common.Address {
 	return common.HexToAddress(hex)
 }
