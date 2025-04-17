@@ -93,7 +93,7 @@ func TestSwapToUSDC(t *testing.T) {
 		// Swap to USDC, assert amount out is positive
 		amountOut, err := uniswap.SwapToUSDC(ctx, backend, solver, token, tt.amountIn)
 		tutil.RequireNoError(t, err)
-		require.Positive(t, amountOut.Cmp(big.NewInt(0)), "amount out should be positive")
+		tutil.RequireIsPositive(t, amountOut, "amount out should be positive")
 
 		// Add amount out to total
 		total.Add(total, amountOut)
@@ -102,5 +102,5 @@ func TestSwapToUSDC(t *testing.T) {
 	// Assert USDC balance is sum of swaps
 	balance, err := tokenutil.BalanceOf(ctx, backend, usdc, solver)
 	tutil.RequireNoError(t, err)
-	require.Equal(t, 0, balance.Cmp(total), "usdc balance should be equal to amount out")
+	tutil.RequireEQ(t, balance, total, "usdc balance should be equal to amount out")
 }

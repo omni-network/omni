@@ -164,9 +164,24 @@ func IsZero(i *big.Int) bool {
 	return i.Sign() == 0
 }
 
+// IsPositive returns true if i is positive.
+func IsPositive(i *big.Int) bool {
+	return i.Sign() > 0
+}
+
+// IsNegative returns true if i is negative.
+func IsNegative(i *big.Int) bool {
+	return i.Sign() < 0
+}
+
 // EQ returns true if a == b.
 func EQ(a, b *big.Int) bool {
 	return a.Cmp(b) == 0
+}
+
+// NEQ returns true if a != b.
+func NEQ(a, b *big.Int) bool {
+	return a.Cmp(b) != 0
 }
 
 // GT returns true if a > b.

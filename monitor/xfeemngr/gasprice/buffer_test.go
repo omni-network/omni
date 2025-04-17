@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/omni-network/omni/lib/bi"
+	"github.com/omni-network/omni/lib/tutil"
 	"github.com/omni-network/omni/monitor/xfeemngr/gasprice"
 	"github.com/omni-network/omni/monitor/xfeemngr/ticker"
 
@@ -54,7 +55,7 @@ func TestBufferStream(t *testing.T) {
 		// for each step, we check if buffer properly updates (or doesn't)
 		for chainID, mock := range mocks {
 			tier := gasprice.Tier(mock.Price())
-			require.True(t, bi.GTE(tier, live[chainID]), "tier greater than live")
+			tutil.RequireGTE(t, tier, live[chainID], "tier greater than live")
 			require.Equal(t, tier, b.GasPrice(chainID), "buffer equal to tier")
 		}
 	}

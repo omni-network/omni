@@ -222,7 +222,7 @@ func TestGasPumps(ctx context.Context, testnet types.Testnet, backends ethbacken
 				return errors.New("dry fill up failed", "chain", chain.Name, "revert_reason", revertReason)
 			}
 
-			if !bi.EQ(actualOMNI, test.TargetOMNI) {
+			if bi.NEQ(actualOMNI, test.TargetOMNI) {
 				return errors.New("inaccurate quote", "chain", chain.Name, "actual_omni", actualOMNI, "provided_eth", neededETH, "target_omni", test.TargetOMNI)
 			}
 

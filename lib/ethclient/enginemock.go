@@ -463,7 +463,7 @@ func (m *engineMock) BlockByNumber(ctx context.Context, number *big.Int) (*types
 		return m.head, nil
 	}
 
-	if !bi.EQ(number, m.head.Number()) {
+	if bi.NEQ(number, m.head.Number()) {
 		return nil, errors.New("block not found") // Only support latest block
 	}
 
