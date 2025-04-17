@@ -5,7 +5,7 @@ title: Omni Overview
 
 # Omni Overview
 
-## The Problem: Fragmentation
+## The Problem - Fragmentation
 
 The most glaring side effect of the multi-chain world is the fragmentation of users and capital across the crypto ecosystem. This has degraded both the developer and user experiences.
 
@@ -25,11 +25,11 @@ They must navigate complex application frontends, manually select networks, swit
 
 It's a nightmare.
 
-## The Solution: Unified Crypto Experience
+## The Solution - Unified Crypto Experience
 
 Omni simplifies and unifies the crypto ecosystem by abstracting away cross-chain complexity.
 
-### For Developers:
+### For Developers
 
 *   Deploy your application on a single chain.
 *   Instantly reach users and liquidity across the entire crypto ecosystem.
@@ -37,7 +37,7 @@ Omni simplifies and unifies the crypto ecosystem by abstracting away cross-chain
 *   No need to maintain multiple deployments of your application.
 *   No need to manage cross-chain logic or worry about cross-chain security.
 
-### For Users:
+### For Users
 
 *   Seamlessly access decentralized applications without bridging, network switching, or managing gas fees across multiple chains.
 *   Omni makes the crypto ecosystem feel like a single, unified chain.
