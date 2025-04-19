@@ -19,6 +19,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/feature"
+	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
@@ -126,6 +127,7 @@ func test(t *testing.T, testFunc testFunc) {
 	}
 
 	ctx = feature.WithFlags(ctx, testnet.Manifest.FeatureFlags)
+	ctx = log.WithTestLogger(ctx, t)
 
 	if name := os.Getenv(app.EnvE2ENode); name != "" {
 		node := testnet.LookupNode(name)
@@ -167,10 +169,7 @@ func test(t *testing.T, testFunc testFunc) {
 	}
 
 	if testFunc.TestNetwork != nil {
-		t.Run("network", func(t *testing.T) {
-			t.Parallel()
-			testFunc.TestNetwork(ctx, t, deps)
-		})
+		testFunc.TestNetwork(ctx, t, deps)
 	}
 }
 

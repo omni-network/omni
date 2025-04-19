@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"sync"
+	"testing"
 
 	"github.com/omni-network/omni/lib/errors"
 
@@ -128,15 +129,14 @@ func newConsoleLogger(opts ...func(*options)) *slog.Logger {
 		opt(&o)
 	}
 
-	timeFormat := "06-01-02 15:04:05.000"
 	if o.Test {
-		timeFormat = "00-00-00 00:00:00"
+		o.ConsoleTimeFormat = "00-00-00 00:00:00"
 	}
 
 	charmLevel, _ := charm.ParseLevel(o.Level.String()) // Ignore error as all slog levels are valid charm levels.
 
 	logger := charm.NewWithOptions(o.Writer, charm.Options{
-		TimeFormat:      timeFormat,
+		TimeFormat:      o.ConsoleTimeFormat,
 		ReportTimestamp: true,
 		Level:           charmLevel,
 	})
@@ -155,20 +155,40 @@ func newConsoleLogger(opts ...func(*options)) *slog.Logger {
 	return slog.New(logger)
 }
 
+// WithTestLogger returns a copy of the context with a test logger.
+// It ensures that logs are only logged when the `go test -v` is provided or if the test fails.
+// It also ensures that parallel test logs are grouped separately.
+// This is useful for e2e/test/* that runs many tests in parallel,
+// and aims to avoid log flooding in the test output.
+func WithTestLogger(ctx context.Context, t *testing.T) context.Context {
+	t.Helper()
+
+	logger := newConsoleLogger(func(o *options) {
+		o.Writer = testWriter{t: t}
+		o.Level = slog.LevelDebug
+		o.Color = termenv.TrueColor
+		o.ConsoleTimeFormat = "15:04:05.000" // Date not needed in tests.
+	})
+
+	return WithLogger(ctx, logger)
+}
+
 // options configure new loggers.
 type options struct {
-	Writer io.Writer // Write to some buffer
-	Level  slog.Level
-	Color  termenv.Profile
-	Test   bool // Stubs non-deterministic output for tests.
+	Writer            io.Writer // Write to some buffer
+	Level             slog.Level
+	Color             termenv.Profile
+	ConsoleTimeFormat string // Only applicable for console logger.
+	Test              bool   // Stubs non-deterministic output for tests.
 }
 
 func defaultOptions() options {
 	return options{
-		Writer: os.Stderr,
-		Level:  slog.LevelDebug,
-		Color:  termenv.ColorProfile(),
-		Test:   false,
+		Writer:            os.Stderr,
+		Level:             slog.LevelDebug,
+		Color:             termenv.ColorProfile(),
+		ConsoleTimeFormat: "06-01-02 15:04:05.000",
+		Test:              false,
 	}
 }
 

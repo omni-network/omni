@@ -59,9 +59,7 @@ func TestSimpleLogs(t *testing.T) {
 func AssertLogging(t *testing.T, testFunc func(*testing.T, context.Context)) {
 	t.Helper()
 
-	loggers := log.LoggersForT()
-
-	for name, initFunc := range loggers {
+	for name, initFunc := range log.LoggersForT() {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			var buf bytes.Buffer
