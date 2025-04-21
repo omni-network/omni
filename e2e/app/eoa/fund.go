@@ -72,7 +72,7 @@ var (
 
 		// Needs enough to cover gas, and bridge eth between chains
 		RoleFlowgen: {
-			minEther:    0.1,
+			minEther:    0.01,
 			targetEther: 1,
 		},
 	}

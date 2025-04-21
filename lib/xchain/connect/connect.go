@@ -26,7 +26,9 @@ import (
 	rpcclient "github.com/cometbft/cometbft/rpc/client"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 // Connector provides a simple abstraction to connect to the Omni network.
@@ -43,6 +45,25 @@ type Connector struct {
 // Backend returns an ethbackend for the given chainID.
 func (c Connector) Backend(chainID uint64) (*ethbackend.Backend, error) {
 	return c.Backends.Backend(chainID)
+}
+
+// BindOpts returns a new TransactOpts for interacting with bindings based contracts for the provided chain and account.
+func (c Connector) BindOpts(ctx context.Context, chainID uint64, from common.Address) (*bind.TransactOpts, error) {
+	backend, err := c.Backends.Backend(chainID)
+	if err != nil {
+		return nil, err
+	}
+
+	return backend.BindOpts(ctx, from)
+}
+
+func (c Connector) WaitMined(ctx context.Context, chainID uint64, tx *ethtypes.Transaction) (*ethclient.Receipt, error) {
+	backend, err := c.Backends.Backend(chainID)
+	if err != nil {
+		return nil, err
+	}
+
+	return backend.WaitMined(ctx, tx)
 }
 
 // Portal returns an OmniPortal contract.

@@ -2,7 +2,7 @@
  "mainnet": {
   "ETH": {
    "cold": {
-    "min": "4.248 ETH",
+    "min": "4.067999999 ETH",
     "target": "16.48 ETH"
    },
    "create3-deployer": {
@@ -14,11 +14,11 @@
     "target": "0.01 ETH"
    },
    "flowgen": {
-    "min": "0.1 ETH",
+    "min": "0.01 ETH",
     "target": "1 ETH"
    },
    "hot": {
-    "min": "4.248 ETH",
+    "min": "4.067999999 ETH",
     "target": "16.48 ETH"
    },
    "manager": {
@@ -52,7 +52,7 @@
   },
   "OMNI": {
    "cold": {
-    "min": "2124 OMNI",
+    "min": "2033.9999995 OMNI",
     "target": "8240 OMNI"
    },
    "create3-deployer": {
@@ -64,11 +64,11 @@
     "target": "5 OMNI"
    },
    "flowgen": {
-    "min": "50 OMNI",
+    "min": "5 OMNI",
     "target": "500 OMNI"
    },
    "hot": {
-    "min": "2124 OMNI",
+    "min": "2033.999999999 OMNI",
     "target": "8240 OMNI"
    },
    "manager": {
@@ -104,7 +104,7 @@
  "omega": {
   "ETH": {
    "cold": {
-    "min": "24.248 ETH",
+    "min": "24.068 ETH",
     "target": "116.48 ETH"
    },
    "create3-deployer": {
@@ -116,11 +116,11 @@
     "target": "0.01 ETH"
    },
    "flowgen": {
-    "min": "0.1 ETH",
+    "min": "0.01 ETH",
     "target": "1 ETH"
    },
    "hot": {
-    "min": "24.248 ETH",
+    "min": "24.068 ETH",
     "target": "116.48 ETH"
    },
    "manager": {
@@ -154,7 +154,7 @@
   },
   "OMNI": {
    "cold": {
-    "min": "12124 OMNI",
+    "min": "12034 OMNI",
     "target": "58240 OMNI"
    },
    "create3-deployer": {
@@ -166,11 +166,11 @@
     "target": "5 OMNI"
    },
    "flowgen": {
-    "min": "50 OMNI",
+    "min": "5 OMNI",
     "target": "500 OMNI"
    },
    "hot": {
-    "min": "12124 OMNI",
+    "min": "12034 OMNI",
     "target": "58240 OMNI"
    },
    "manager": {
@@ -206,7 +206,7 @@
  "staging": {
   "ETH": {
    "cold": {
-    "min": "25.246 ETH",
+    "min": "25.066 ETH",
     "target": "120.46 ETH"
    },
    "create3-deployer": {
@@ -218,11 +218,11 @@
     "target": "2 ETH"
    },
    "flowgen": {
-    "min": "0.1 ETH",
+    "min": "0.01 ETH",
     "target": "1 ETH"
    },
    "hot": {
-    "min": "25.246 ETH",
+    "min": "25.066 ETH",
     "target": "120.46 ETH"
    },
    "manager": {
@@ -256,7 +256,7 @@
   },
   "OMNI": {
    "cold": {
-    "min": "12623 OMNI",
+    "min": "12533 OMNI",
     "target": "60230 OMNI"
    },
    "create3-deployer": {
@@ -268,11 +268,11 @@
     "target": "1000 OMNI"
    },
    "flowgen": {
-    "min": "50 OMNI",
+    "min": "5 OMNI",
     "target": "500 OMNI"
    },
    "hot": {
-    "min": "12623 OMNI",
+    "min": "12533 OMNI",
     "target": "60230 OMNI"
    },
    "manager": {

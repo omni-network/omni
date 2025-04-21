@@ -109,16 +109,21 @@ func openOrders(
 	}
 
 	// Use all available flowgen balance (without dropping below minimums)
-	totalAmount, err := availableBalance(ctx, network, srcBackend, eoa.RoleFlowgen, srcToken)
+	flowgenSrcAvail, err := availableBalance(ctx, network, srcBackend, eoa.RoleFlowgen, srcToken)
 	if err != nil {
 		return nil, errors.Wrap(err, "get source available")
 	}
 
-	// Limit to available solver balance on destination.
-	if solverDstAvail, err := availableBalance(ctx, network, destBackend, eoa.RoleSolver, dstToken); err != nil {
+	// Get solver balance on destination.
+	solverDstAvail, err := availableBalance(ctx, network, destBackend, eoa.RoleSolver, dstToken)
+	if err != nil {
 		return nil, errors.Wrap(err, "get dest available")
-	} else if solverSrcAvail := price.ToDeposit(solverDstAvail); bi.GT(totalAmount, solverSrcAvail) {
-		totalAmount = solverSrcAvail
+	}
+
+	// Limit available balance to the solver's available balance.
+	totalAvail := bi.Clone(flowgenSrcAvail)
+	if solverSrcAvail := price.ToDeposit(solverDstAvail); bi.GT(flowgenSrcAvail, solverSrcAvail) {
+		totalAvail = solverSrcAvail
 	}
 
 	expenseBound, ok := solver.GetSpendBounds(dstToken)
@@ -133,13 +138,15 @@ func openOrders(
 	}
 
 	var orderDatas []bindings.SolverNetOrderData
-	for _, depositAmount := range splitOrderAmounts(depositBounds, totalAmount, p) {
+	sumDeposit := bi.Zero()
+	for _, depositAmount := range splitOrderAmounts(depositBounds, totalAvail, p) {
 		orderData, err := nativeOrderData(ctx, scl, flowgenAddr, srcToken, dstToken, depositAmount)
 		if err != nil {
 			return nil, err
 		}
 
 		orderDatas = append(orderDatas, orderData)
+		sumDeposit = bi.Add(sumDeposit, orderData.Deposit.Amount)
 	}
 
 	work := func(ctx context.Context, orderData bindings.SolverNetOrderData) (output, error) {
@@ -156,6 +163,7 @@ func openOrders(
 
 	// Filter out skipped orders
 	var results []types.Result
+	var skipped int
 	for _, result := range all {
 		if result.Skip {
 			continue
@@ -163,6 +171,20 @@ func openOrders(
 
 		results = append(results, result.Result)
 	}
+
+	avgDeposit := bi.Zero()
+	if len(results) > 0 {
+		avgDeposit = bi.DivRaw(sumDeposit, len(results))
+	}
+
+	log.Debug(ctx, "Opened bridging orders",
+		"opened", len(results),
+		"skipped", skipped,
+		"avg_deposit", srcToken.FormatAmt(avgDeposit),
+		"flowgen_avail", srcToken.FormatAmt(flowgenSrcAvail),
+		"total_avail", srcToken.FormatAmt(totalAvail),
+		"solver_avail", dstToken.FormatAmt(solverDstAvail),
+	)
 
 	return results, nil
 }
@@ -282,7 +304,7 @@ func openOrder(
 	if resp, err := check(ctx, scl, srcChainID, orderData); err != nil {
 		return output{}, errors.Wrap(err, "check")
 	} else if resp.RejectCode == stypes.RejectInsufficientInventory {
-		log.Debug(ctx, "Skipping bridge order due to insufficient inventory", "description", resp.RejectDescription)
+		log.Debug(ctx, "Flowgen: Skipping bridge order due to insufficient inventory", "description", resp.RejectDescription)
 		return output{Skip: true}, nil
 	} else if resp.Rejected {
 		return output{}, errors.New("order rejected", "description", resp.RejectDescription, "reason", resp.RejectCode)
