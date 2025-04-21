@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -163,11 +164,20 @@ func handlerAdapter(h Handler) http.Handler {
 		ctx, cancel := context.WithTimeout(ctx, gatewayTimeout)
 		defer cancel()
 
+		body, err := io.ReadAll(rr.Body)
+		if err != nil {
+			writeErrResponse(ctx, w, newAPIError(err, http.StatusBadRequest))
+			return
+		}
+
 		req := h.ZeroReq()
 		if req == nil { //nolint:revive // noop if-block for readability
 			// Skip request unmarshalling if ZeroReq returns nil.
-		} else if err := json.NewDecoder(rr.Body).Decode(req); err != nil {
+		} else if err := json.Unmarshal(body, req); err != nil {
+			// TODO(corver): remove once issue identified
+			log.DebugErr(ctx, "Failed to unmarshal request", err, "body", string(body))
 			writeErrResponse(ctx, w, newAPIError(err, http.StatusBadRequest))
+
 			return
 		}
 
