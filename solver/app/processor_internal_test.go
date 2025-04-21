@@ -32,6 +32,7 @@ func TestEventProcessor(t *testing.T) {
 		getStatus    solvernet.OrderStatus
 		rejectReason stypes.RejectReason
 		expect       string
+		err          string
 	}{
 		{
 			name:         "reject",
@@ -69,6 +70,12 @@ func TestEventProcessor(t *testing.T) {
 			event:     solvernet.TopicClaimed,
 			getStatus: solvernet.StatusClaimed,
 			expect:    ignored,
+		},
+		{
+			name:      "invalid transition",
+			event:     solvernet.TopicFilled,
+			getStatus: solvernet.StatusPending,
+			err:       "invalid order transition",
 		},
 	}
 	for _, test := range tests {
@@ -140,6 +147,10 @@ func TestEventProcessor(t *testing.T) {
 			proc := newEventProcFunc(deps, chainID)
 
 			err := proc(t.Context(), types.Log{Topics: []common.Hash{test.event, orderID}})
+			if test.err != "" {
+				require.ErrorContains(t, err, test.err)
+				return
+			}
 			require.NoError(t, err)
 			require.Equal(t, test.expect, actual)
 		})

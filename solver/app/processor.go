@@ -43,7 +43,10 @@ func newEventProcFunc(deps procDeps, chainID uint64) eventProcFunc {
 			"status", order.Status,
 		)
 
-		if event.Status != order.Status {
+		if !event.Status.ValidTarget(order.Status) {
+			// Invalid order transition can occur when RPCs return stale data, so just retry for now.
+			return errors.New("invalid order transition", "event_status", event.Status.String())
+		} else if event.Status != order.Status {
 			log.Debug(ctx, "Ignoring old order event (status already changed)", "event_status", event.Status.String())
 			return nil
 		}
