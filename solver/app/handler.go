@@ -167,7 +167,16 @@ func handlerAdapter(h Handler) http.Handler {
 		if req == nil { //nolint:revive // noop if-block for readability
 			// Skip request unmarshalling if ZeroReq returns nil.
 		} else if err := json.NewDecoder(rr.Body).Decode(req); err != nil {
+			origErr := err
+
+			// Try debug log json
+			var jsonBody map[string]any
+			if err := json.NewDecoder(rr.Body).Decode(&jsonBody); err == nil {
+				log.DebugErr(ctx, "Failed decoding request body", origErr, "body", jsonBody)
+			}
+
 			writeErrResponse(ctx, w, newAPIError(err, http.StatusBadRequest))
+
 			return
 		}
 
