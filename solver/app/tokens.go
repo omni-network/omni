@@ -9,8 +9,6 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/solver/types"
-
-	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 var (
@@ -175,8 +173,8 @@ func tokensResponse(chains []uint64) (types.TokensResponse, error) {
 				ChainID:    token.ChainID,
 				Address:    token.Address,
 				Decimals:   token.Decimals,
-				ExpenseMin: (*hexutil.Big)(bounds.MinSpend),
-				ExpenseMax: (*hexutil.Big)(bounds.MaxSpend),
+				ExpenseMin: bounds.MinSpend,
+				ExpenseMax: bounds.MaxSpend,
 			})
 		}
 	}

@@ -3,6 +3,7 @@ package types
 import (
 	"encoding/json"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -75,19 +76,109 @@ type TokensResponse struct {
 }
 
 type TokenResponse struct {
+	Enabled    bool
+	Name       string
+	Symbol     string
+	ChainID    uint64
+	Address    common.Address
+	Decimals   uint
+	ExpenseMin *big.Int
+	ExpenseMax *big.Int
+}
+
+type tokenResponseJSON struct {
 	Enabled    bool           `json:"enabled"`
 	Name       string         `json:"name"`
 	Symbol     string         `json:"symbol"`
 	ChainID    uint64         `json:"chainId"`
 	Address    common.Address `json:"address"`
 	Decimals   uint           `json:"decimals"`
-	ExpenseMin *hexutil.Big   `json:"expenseMin"`
-	ExpenseMax *hexutil.Big   `json:"expenseMax"`
+	ExpenseMin *bigIntJSON    `json:"expenseMin"`
+	ExpenseMax *bigIntJSON    `json:"expenseMax"`
+}
+
+func (t TokenResponse) MarshalJSON() ([]byte, error) {
+	return marshal(tokenResponseJSON{
+		Enabled:    t.Enabled,
+		Name:       t.Name,
+		Symbol:     t.Symbol,
+		ChainID:    t.ChainID,
+		Address:    t.Address,
+		Decimals:   t.Decimals,
+		ExpenseMin: (*bigIntJSON)(t.ExpenseMin),
+		ExpenseMax: (*bigIntJSON)(t.ExpenseMax),
+	})
+}
+
+func (t *TokenResponse) UnmarshalJSON(bz []byte) error {
+	v := new(tokenResponseJSON)
+	if err := unmarshal(bz, v); err != nil {
+		return err
+	}
+
+	t.Enabled = v.Enabled
+	t.Name = v.Name
+	t.Symbol = v.Symbol
+	t.ChainID = v.ChainID
+	t.Address = v.Address
+	t.Decimals = v.Decimals
+	t.ExpenseMin = v.ExpenseMin.ToIntOrZero()
+	t.ExpenseMax = v.ExpenseMax.ToIntOrZero()
+
+	return nil
+}
+
+// bigIntJSON is a wrapper around big.Int that can unmarshal both 0xhex and decimal string numbers.
+// Note that similar to *big.Int, it must always be a pointer.
+type bigIntJSON big.Int
+
+// ToIntOrZero returns the value of the bigIntJSON as a *big.Int or zero if nil.
+func (b *bigIntJSON) ToIntOrZero() *big.Int {
+	if b == nil {
+		return bi.Zero()
+	}
+
+	return (*big.Int)(b)
+}
+
+func (b *bigIntJSON) MarshalJSON() ([]byte, error) {
+	return marshal((*hexutil.Big)(b))
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (b *bigIntJSON) UnmarshalJSON(input []byte) error {
+	// First try hexutil.Big "0x1234".
+	h := new(hexutil.Big)
+	err := h.UnmarshalJSON(input)
+	if jerr := new(json.UnmarshalTypeError); errors.As(err, &jerr) && jerr.Value == hexutil.ErrMissingPrefix.Error() { //nolint:revive // Explicit empty block
+		// Swallow ErrMissingPrefix, number isn't 0xhex, try below as decimal.
+	} else if err != nil {
+		// Note that this also includes "not a string" errors.
+		return errors.Wrap(err, "unmarshal hex number")
+	} else /* err == nil */ {
+		i := h.ToInt()
+		*b = (bigIntJSON)(*i)
+
+		return nil
+	}
+
+	// Trim quotes from the input string.
+	decimal := strings.Trim(string(input), "\"")
+
+	// If ErrMissingPrefix, try to unmarshal as a decimal string.
+	i, ok := new(big.Int).SetString(decimal, 10)
+	if !ok {
+		return errors.New("invalid decimal number", "input", string(input))
+	}
+
+	*b = (bigIntJSON)(*i)
+
+	return nil
 }
 
 type addrAmtJSON struct {
 	Token  common.Address `json:"token"`
-	Amount *hexutil.Big   `json:"amount,omitempty"`
+	Amount *bigIntJSON    `json:"amount,omitempty"`
 }
 
 // AddrAmt represents a token address and amount pair, with the amount being optional.
@@ -100,7 +191,7 @@ type AddrAmt struct {
 func (u AddrAmt) MarshalJSON() ([]byte, error) {
 	return marshal(addrAmtJSON{
 		Token:  u.Token,
-		Amount: (*hexutil.Big)(u.Amount),
+		Amount: (*bigIntJSON)(u.Amount),
 	})
 }
 
@@ -111,7 +202,7 @@ func (u *AddrAmt) UnmarshalJSON(bz []byte) error {
 	}
 
 	u.Token = v.Token
-	u.Amount = intOrZero(v.Amount)
+	u.Amount = v.Amount.ToIntOrZero()
 
 	return nil
 }
@@ -139,7 +230,7 @@ type ContractsResponse struct {
 type expenseJSON struct {
 	Spender common.Address `json:"spender"`
 	Token   common.Address `json:"token"`
-	Amount  *hexutil.Big   `json:"amount"`
+	Amount  *bigIntJSON    `json:"amount"`
 }
 
 // Expense wraps solvernet.Expense to provide custom json marshaling.
@@ -153,7 +244,7 @@ func (e *Expense) UnmarshalJSON(bz []byte) error {
 
 	e.Spender = v.Spender
 	e.Token = v.Token
-	e.Amount = intOrZero(v.Amount)
+	e.Amount = v.Amount.ToIntOrZero()
 
 	return nil
 }
@@ -162,7 +253,7 @@ func (e Expense) MarshalJSON() ([]byte, error) {
 	return marshal(expenseJSON{
 		Spender: e.Spender,
 		Token:   e.Token,
-		Amount:  (*hexutil.Big)(e.Amount),
+		Amount:  (*bigIntJSON)(e.Amount),
 	})
 }
 
@@ -170,7 +261,7 @@ func (e Expense) MarshalJSON() ([]byte, error) {
 type callJSON struct {
 	Target common.Address `json:"target"`
 	Data   hexutil.Bytes  `json:"data"`
-	Value  *hexutil.Big   `json:"value"`
+	Value  *bigIntJSON    `json:"value"`
 }
 
 // Call wraps solvernet.Call to provide custom json marshaling.
@@ -183,7 +274,7 @@ func (c *Call) UnmarshalJSON(bz []byte) error {
 	}
 
 	c.Target = v.Target
-	c.Value = intOrZero(v.Value)
+	c.Value = v.Value.ToIntOrZero()
 	c.Data = v.Data
 
 	return nil
@@ -192,17 +283,9 @@ func (c *Call) UnmarshalJSON(bz []byte) error {
 func (c Call) MarshalJSON() ([]byte, error) {
 	return marshal(callJSON{
 		Target: c.Target,
-		Value:  (*hexutil.Big)(c.Value),
+		Value:  (*bigIntJSON)(c.Value),
 		Data:   c.Data,
 	})
-}
-
-func intOrZero(i *hexutil.Big) *big.Int {
-	if i == nil {
-		return bi.Zero()
-	}
-
-	return i.ToInt()
 }
 
 func marshal(v any) ([]byte, error) {
