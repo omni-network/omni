@@ -32,6 +32,11 @@ const (
 	// 'nonce too high' errors. This mitigates races when multiple concurrent
 	// submissions reserve nonces and reach upstream geth nodes out of order.
 	retryNonceTooHigh = 3
+
+	// gasFactorNum is the numerator by which to increase the gas limit for transactions.
+	gasFactorNum uint64 = 12
+	// gasFactorDenom is the denominator by which to increase the gas limit for transactions.
+	gasFactorDenom uint64 = 10
 )
 
 // TxManager is an interface that allows callers to reliably publish txs,
@@ -232,7 +237,7 @@ func (m *simple) craftTx(ctx context.Context, candidate TxCandidate) (*types.Tra
 	// If the gas limit is set, we can use that as the gas
 	if gasLimit == 0 {
 		// Calculate the intrinsic gas for the transaction
-		gas, err := m.backend.EstimateGas(ctx, ethereum.CallMsg{
+		gas, err := m.overEstimateGasLimit(ctx, ethereum.CallMsg{
 			From:      m.cfg.From,
 			To:        candidate.To,
 			GasTipCap: gasTipCap,
@@ -526,6 +531,21 @@ func (m *simple) queryReceipt(ctx context.Context, txHash common.Hash,
 	return nil, false, nil
 }
 
+// overEstimateGasLimit estimates the gas limit for a transaction and then multiplies it by the gasLimitFactor.
+// This is useful to avoid out-of-gas due to some tx gas usage being dynamic.
+func (m *simple) overEstimateGasLimit(ctx context.Context, call ethereum.CallMsg) (uint64, error) {
+	gasLimit, err := m.backend.EstimateGas(ctx, call)
+	if err != nil {
+		return 0, err
+	}
+
+	return bumpGasLimit(gasLimit), nil
+}
+
+func bumpGasLimit(gasLimit uint64) uint64 {
+	return gasLimit * gasFactorNum / gasFactorDenom
+}
+
 // increaseGasPrice returns a new transaction that is equivalent to the input transaction but with
 // higher fees that should satisfy geth's tx replacement rules. It also computes an updated gas
 // limit estimate. To avoid runaway price increases, fees are capped at a `feeLimitMultiplier`
@@ -543,7 +563,7 @@ func (m *simple) increaseGasPrice(ctx context.Context, tx *types.Transaction) (*
 	}
 
 	// Re-estimate gaslimit in case things have changed or a previous gaslimit estimate was wrong
-	gas, err := m.backend.EstimateGas(ctx, ethereum.CallMsg{
+	gas, err := m.overEstimateGasLimit(ctx, ethereum.CallMsg{
 		From:      m.cfg.From,
 		To:        tx.To(),
 		GasTipCap: bumpedTip,

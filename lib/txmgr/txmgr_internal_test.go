@@ -495,7 +495,7 @@ func TestTxMgr_EstimateGas(t *testing.T) {
 	require.NotNil(t, tx)
 
 	// Check that the gas was estimated correctly.
-	require.Equal(t, gasEstimate, tx.Gas())
+	require.Equal(t, bumpGasLimit(gasEstimate), tx.Gas())
 }
 
 func TestTxMgr_EstimateGasFails(t *testing.T) {
