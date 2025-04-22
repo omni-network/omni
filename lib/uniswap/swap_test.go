@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
-	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -39,18 +38,15 @@ func TestSwapToUSDC(t *testing.T) {
 
 	solver := eoa.MustAddress(netconf.Devnet, eoa.RoleSolver)
 
-	// Prefer rpc from env, default to public rpc
 	rpcURL := os.Getenv("ETH_RPC")
-	if rpcURL == "" {
-		rpcURL = types.PublicRPCByName(meta.Name)
-	}
+	require.NotEmpty(t, rpcURL, "ETH_RPC required")
 
 	ethCl, stop, err := anvil.Start(ctx, tutil.TempDir(t), evmchain.IDEthereum, anvil.WithFork(rpcURL))
-	require.NoError(t, err)
+	tutil.RequireNoError(t, err)
 	defer stop()
 
 	backend, err := ethbackend.NewDevBackend(meta.Name, meta.ChainID, time.Second, ethCl)
-	require.NoError(t, err)
+	tutil.RequireNoError(t, err)
 
 	wstETH, ok := tokens.ByAsset(evmchain.IDEthereum, tokens.WSTETH)
 	require.True(t, ok, "WSTETH token not found")
@@ -58,9 +54,13 @@ func TestSwapToUSDC(t *testing.T) {
 	usdc, ok := tokens.ByAsset(evmchain.IDEthereum, tokens.USDC)
 	require.True(t, ok, "USDC token not found")
 
+	usdt, ok := tokens.ByAsset(evmchain.IDEthereum, tokens.USDT)
+	require.True(t, ok, "USDT token not found")
+
 	eth1k := bi.Ether(1_000)
-	require.NoError(t, anvil.FundAccounts(ctx, ethCl, eth1k, solver))
-	require.NoError(t, anvil.FundERC20(ctx, ethCl, wstETH.Address, eth1k, solver))
+	tutil.RequireNoError(t, anvil.FundAccounts(ctx, ethCl, eth1k, solver))
+	tutil.RequireNoError(t, anvil.FundERC20(ctx, ethCl, wstETH.Address, eth1k, solver))
+	tutil.RequireNoError(t, anvil.FundUSDT(ctx, ethCl, usdt.Address, bi.Dec6(1000), solver))
 
 	tests := []struct {
 		name     string
@@ -77,10 +77,18 @@ func TestSwapToUSDC(t *testing.T) {
 			asset:    tokens.WSTETH,
 			amountIn: bi.Ether(1),
 		},
+		{
+			name:     "USDT to USDC",
+			asset:    tokens.USDT,
+			amountIn: bi.Dec6(1),
+		},
 	}
 
-	// Total USDC out
-	total := big.NewInt(0)
+	preSwapsBalance, err := tokenutil.BalanceOf(ctx, backend, usdc, solver)
+	tutil.RequireNoError(t, err)
+
+	// Total USDC swapped fo
+	totalSwapped := bi.Zero()
 
 	// Run tests synchronously, to avoid swaps in same block (reverts with 'Too little received"')
 	// TODO(kevin): consider decreasing amountOutMinimum to avoid reverts
@@ -90,17 +98,16 @@ func TestSwapToUSDC(t *testing.T) {
 		token, ok := tokens.ByAsset(evmchain.IDEthereum, tt.asset)
 		require.True(t, ok, "%s token not found", tt.asset)
 
-		// Swap to USDC, assert amount out is positive
 		amountOut, err := uniswap.SwapToUSDC(ctx, backend, solver, token, tt.amountIn)
 		tutil.RequireNoError(t, err)
 		tutil.RequireIsPositive(t, amountOut, "amount out should be positive")
 
 		// Add amount out to total
-		total.Add(total, amountOut)
+		totalSwapped.Add(totalSwapped, amountOut)
 	}
 
-	// Assert USDC balance is sum of swaps
-	balance, err := tokenutil.BalanceOf(ctx, backend, usdc, solver)
+	// Assert USDC balance increased by sum of swaps
+	postSwapsBalance, err := tokenutil.BalanceOf(ctx, backend, usdc, solver)
 	tutil.RequireNoError(t, err)
-	tutil.RequireEQ(t, balance, total, "usdc balance should be equal to amount out")
+	tutil.RequireEQ(t, postSwapsBalance, bi.Add(preSwapsBalance, totalSwapped), "USDC balance should be equal to sum of swaps")
 }
