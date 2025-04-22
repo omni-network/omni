@@ -6,13 +6,11 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
-	"github.com/omni-network/omni/e2e/app/static"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
@@ -30,7 +28,7 @@ type options struct {
 
 func WithFork(forkURL string) Option {
 	return func(o *options) {
-		o.flags = append(o.flags, "--fork-url", forkURL)
+		o.flags = append(o.flags, "--fork-url="+forkURL)
 	}
 }
 
@@ -46,7 +44,7 @@ func WithFlags(flags ...string) Option {
 	}
 }
 
-// StartFork starts an anvil node  and returns an ethclient and a stop function or an error.
+// Start starts an anvil node and returns an ethclient and a stop function or an error.
 func Start(ctx context.Context, dir string, chainID uint64, opts ...Option) (ethclient.Client, func(), error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Minute) // Allow 1 minute for edge case of pulling images.
 	defer cancel()
@@ -67,10 +65,6 @@ func Start(ctx context.Context, dir string, chainID uint64, opts ...Option) (eth
 
 	if err := writeComposeFile(dir, chainID, port, scripts.FoundryVersion(), o.flags); err != nil {
 		return nil, nil, errors.Wrap(err, "write compose file")
-	}
-
-	if err := writeAnvilState(dir); err != nil {
-		return nil, nil, errors.Wrap(err, "write anvil state")
 	}
 
 	log.Info(ctx, "Starting anvil")
@@ -97,8 +91,10 @@ func Start(ctx context.Context, dir string, chainID uint64, opts ...Option) (eth
 	// Wait for RPC to be available
 	// If forking, wait longer since it needs to sync state
 	retryCount := 10 // 10 seconds for non-fork
+	retryInterval := time.Second
 	if isFork(o) {
 		retryCount = 60 // 60 seconds for fork
+		retryInterval = time.Second * 5
 	}
 
 	for i := 0; i < retryCount; i++ {
@@ -110,7 +106,7 @@ func Start(ctx context.Context, dir string, chainID uint64, opts ...Option) (eth
 		select {
 		case <-ctx.Done():
 			return nil, nil, errors.Wrap(ctx.Err(), "timeout")
-		case <-time.After(time.Second):
+		case <-time.After(retryInterval):
 		}
 
 		_, err := ethCl.BlockNumber(ctx)
@@ -171,15 +167,6 @@ func execCmd(ctx context.Context, dir string, cmd string, args ...string) (strin
 	}
 
 	return string(out), nil
-}
-
-func writeAnvilState(dir string) error {
-	anvilStateFile := filepath.Join(dir, "state.json")
-	if err := os.WriteFile(anvilStateFile, static.GetDevnetElAnvilState(), 0o644); err != nil {
-		return errors.Wrap(err, "write anvil state")
-	}
-
-	return nil
 }
 
 //go:embed compose.yaml.tmpl

@@ -40,14 +40,36 @@ func defaultMintOpts() *mintForeverOpts {
 	}
 }
 
-// MintForever mints submitted CCTP MsgSendUSDC messages forever. Messages are read from the db.
+// MintForever mints submitted CCTP MsgSendUSDC messages (from the db) on all chains.
 func MintForever(
 	ctx context.Context,
 	db *cctpdb.DB,
+	client Client,
+	backends ethbackend.Backends,
+	chains []evmchain.Metadata,
 	minter common.Address,
-	chain evmchain.Metadata,
+	opts ...MintForeverOption,
+) error {
+	for _, chain := range chains {
+		backend, err := backends.Backend(chain.ChainID)
+		if err != nil {
+			return errors.Wrap(err, "get backend")
+		}
+
+		go mintChainForever(ctx, db, client, backend, chain, minter, opts...)
+	}
+
+	return nil
+}
+
+// mintChainForever mints submitted CCTP MsgSendUSDC on a chain forever.
+func mintChainForever(
+	ctx context.Context,
+	db *cctpdb.DB,
 	client Client,
 	backend *ethbackend.Backend,
+	chain evmchain.Metadata,
+	minter common.Address,
 	opts ...MintForeverOption,
 ) {
 	ctx = log.WithCtx(ctx,

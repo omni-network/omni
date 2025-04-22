@@ -4,18 +4,14 @@ services:
   anvil:
     labels:
       anvil: true
-    image: docker.io/chrmllr/foundry-stable
+    image: ghcr.io/foundry-rs/foundry:stable
     platform: linux/amd64
     entrypoint:
       - anvil
       - --host=0.0.0.0
       - --chain-id={{ .ChainID }}
-      - --silent
-      - --load-state=/anvil/state.json
       {{ range .Flags }}
       - {{ . }}
       {{ end }}
     ports:
       - {{ .Port }}:8545
-    volumes:
-      - ./state.json:/anvil/state.json

@@ -19,51 +19,56 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 )
+
+type SendUSDCArgs struct {
+	Sender      common.Address
+	Recipient   common.Address
+	SrcChainID  uint64
+	DestChainID uint64
+	Amount      *big.Int
+}
 
 // SendUSDC sends USDC from one chain to another using CCTP, storing the message in DB.
 // It does not receive USDC on the destination chain.
 func SendUSDC(
 	ctx context.Context,
-	backend *ethbackend.Backend,
 	db *db.DB,
-	srcChainID, destChainID uint64,
-	user common.Address,
-	amount *big.Int,
+	backend *ethbackend.Backend,
+	args SendUSDCArgs,
 ) error {
-	srcChain := evmchain.Name(srcChainID)
-	dstChain := evmchain.Name(destChainID)
+	srcChain := evmchain.Name(args.SrcChainID)
+	dstChain := evmchain.Name(args.DestChainID)
 
-	usdc, ok := tokens.ByAsset(srcChainID, tokens.USDC)
+	usdc, ok := tokens.ByAsset(args.SrcChainID, tokens.USDC)
 	if !ok {
 		return errors.New("no usdc", "src_chain", srcChain)
 	}
 
-	tknMessenger, tknMessengerAddr, err := newTokenMessenger(srcChainID, backend)
+	c, err := newContracts(args.SrcChainID, backend)
 	if err != nil {
-		return errors.Wrap(err, "new token messenger")
+		return errors.Wrap(err, "new contracts")
 	}
 
-	msgTransmitter, _, err := newMessageTransmitter(srcChainID, backend)
-	if err != nil {
-		return errors.Wrap(err, "new message transmitter")
-	}
-
-	if err := maybeApproveMessenger(ctx, backend, usdc, user, amount, tknMessengerAddr); err != nil {
+	if err := maybeApproveMessenger(ctx, backend, usdc, args.Sender, args.Amount, c.TokenMessageAddress); err != nil {
 		return errors.Wrap(err, "approve")
 	}
 
 	// CCTP uses bytes32 addresses
-	recipient := cast.EthAddress32(user)
+	recipient := cast.EthAddress32(args.Recipient)
 
-	txOpts, err := backend.BindOpts(ctx, user)
+	txOpts, err := backend.BindOpts(ctx, args.Sender)
 	if err != nil {
 		return errors.Wrap(err, "bind opts")
 	}
 
-	tx, err := tknMessenger.DepositForBurn(txOpts, amount, umath.MustToUint32(destChainID), recipient, usdc.Address)
+	domainID, ok := domains[args.DestChainID]
+	if !ok {
+		return errors.New("unknown domain ID", "dest_chain", dstChain)
+	}
+
+	tx, err := c.TokenMessenger.DepositForBurn(txOpts, args.Amount, domainID, recipient, usdc.Address)
 	if err != nil {
 		return errors.Wrap(err, "deposit for burn")
 	}
@@ -73,7 +78,7 @@ func SendUSDC(
 		return errors.Wrap(err, "wait mined")
 	}
 
-	messageBz, err := parseMessageSent(receipt, msgTransmitter)
+	messageBz, err := parseMessageSent(receipt, c.MessageTransmitter)
 	if err != nil {
 		return errors.Wrap(err, "parse message sent")
 	}
@@ -83,63 +88,29 @@ func SendUSDC(
 	msg := types.MsgSendUSDC{
 		TxHash:       receipt.TxHash,
 		BlockHeight:  receipt.BlockNumber.Uint64(),
-		SrcChainID:   srcChainID,
-		DestChainID:  destChainID,
-		Amount:       amount,
+		SrcChainID:   args.SrcChainID,
+		DestChainID:  args.DestChainID,
+		Amount:       args.Amount,
 		MessageBytes: messageBz,
 		MessageHash:  messageHash,
-		Recipient:    user,
+		Recipient:    args.Recipient,
 		Status:       types.MsgStatusSubmitted,
 	}
 
-	attrs := []any{
+	log.Info(ctx, "Sent USDC",
 		"tx", receipt.TxHash,
 		"block_height", receipt.BlockNumber.Uint64(),
 		"src_chain", srcChain,
 		"dest_chain", dstChain,
-		"amount", usdc.FormatAmt(amount),
-		"message_bytes", hexutil.Encode(messageBz),
+		"amount", usdc.FormatAmt(args.Amount),
 		"message_hash", messageHash,
-		"recipient", user,
-	}
-
-	log.Info(ctx, "Sent USDC", attrs...)
+		"recipient", args.Recipient)
 
 	if err := db.InsertMsg(ctx, msg); err != nil {
 		return errors.Wrap(err, "insert message", "tx", tx.Hash())
 	}
 
 	return nil
-}
-
-// newTokenMessenger returns a new TokenMessenger instance for chainID.
-func newTokenMessenger(chainID uint64, client ethclient.Client) (*TokenMessenger, common.Address, error) {
-	addr, ok := tokenMessengers[chainID]
-	if !ok {
-		return nil, common.Address{}, errors.New("no messenger", "chain", evmchain.Name(chainID))
-	}
-
-	msgr, err := NewTokenMessenger(addr, client)
-	if err != nil {
-		return nil, common.Address{}, err
-	}
-
-	return msgr, addr, nil
-}
-
-// newMessageTransmitter returns a new MessageTransmitter instance for chainID.
-func newMessageTransmitter(chainID uint64, client ethclient.Client) (*MessageTransmitter, common.Address, error) {
-	addr, ok := messageTransmitters[chainID]
-	if !ok {
-		return nil, common.Address{}, errors.New("no transmitter", "chain", evmchain.Name(chainID))
-	}
-
-	transmitter, err := NewMessageTransmitter(addr, client)
-	if err != nil {
-		return nil, common.Address{}, err
-	}
-
-	return transmitter, addr, nil
 }
 
 // maybeApproveMessenger approves the TokenMessenger to spend USDC, if needed.

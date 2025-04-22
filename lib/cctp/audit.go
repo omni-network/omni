@@ -24,6 +24,7 @@ type getDepositForBurnFunc func(logs []ethtypes.Log) (*TokenMessengerDepositForB
 type isReceivedFunc func(ctx context.Context, msg types.MsgSendUSDC) (bool, error)
 
 // AuditForever streams finalized CCTP SendUSDC messages to `recipient`, and reconiles them db state.
+// It does this for all chains in `chains`.
 // - messages missed are inserted
 // - messages with incorrect fields are corrected
 // - messages marked as `minted` are cofirmed minted, else re-marked as `submitted`.
@@ -33,35 +34,59 @@ func AuditForever(
 	db *db.DB,
 	xprov xchain.Provider,
 	clients map[uint64]ethclient.Client,
-	chain evmchain.Metadata,
+	chains []evmchain.Metadata,
 	recipient common.Address,
 ) error {
+	ctx = log.WithCtx(ctx, "process", "cctp.AuditForever")
+
+	if err := maybeInitCursors(ctx, db, chains, clients); err != nil {
+		return errors.Wrap(err, "init cursors")
+	}
+
+	for _, chain := range chains {
+		chainID := chain.ChainID
+
+		client, ok := clients[chainID]
+		if !ok {
+			return errors.New("chain client not found", "chain", chain.Name)
+		}
+
+		contracts, err := newContracts(chainID, client)
+		if err != nil {
+			return errors.Wrap(err, "new contracts")
+		}
+
+		go auditChainForever(
+			ctx,
+			db,
+			xprov,
+			clients,
+			contracts,
+			chain,
+			recipient)
+	}
+
+	return nil
+}
+
+// auditChainForever audits messages on a single chain forever.
+func auditChainForever(
+	ctx context.Context,
+	db *db.DB,
+	xprov xchain.Provider,
+	clients map[uint64]ethclient.Client,
+	contracts msgContracts,
+	chain evmchain.Metadata,
+	recipient common.Address,
+) {
 	chainID := chain.ChainID
 
-	ctx = log.WithCtx(ctx,
-		"process", "cctp.AuditForever",
-		"chain", chain.Name,
-		"recipient", recipient)
-
-	client, ok := clients[chainID]
-	if !ok {
-		return errors.New("chain client not found", "chain_id", chainID)
-	}
-
-	msgTransmitter, msgTransmitterAddr, err := newMessageTransmitter(chainID, client)
-	if err != nil {
-		return errors.Wrap(err, "message transmitter")
-	}
-
-	tknMessenger, tknMessengerAddr, err := newTokenMessenger(chainID, client)
-	if err != nil {
-		return errors.Wrap(err, "token messenger")
-	}
+	ctx = log.WithCtx(ctx, "chain", chain.Name, "recipient", recipient)
 
 	proc := newEventProc(db, chainID,
 		newIsReceived(clients),
-		newDepositForBurnGetter(tknMessenger, tknMessengerAddr, recipient),
-		newMessageSentGetter(msgTransmitter, msgTransmitterAddr),
+		newDepositForBurnGetter(contracts.TokenMessenger, contracts.TokenMessageAddress, recipient),
+		newMessageSentGetter(contracts.MessageTransmitter, contracts.MessageTransmitterAddress),
 	)
 
 	backoff := expbackoff.New(ctx)
@@ -78,15 +103,14 @@ func AuditForever(
 			ChainID:         chainID,
 			Height:          from,
 			ConfLevel:       xchain.ConfFinalized,
-			FilterAddresses: []common.Address{tknMessengerAddr, msgTransmitterAddr},
+			FilterAddresses: []common.Address{contracts.TokenMessageAddress, contracts.MessageTransmitterAddress},
 			FilterTopics:    []common.Hash{depositForBurnEvent.ID, messageSentEvent.ID},
 		}
 
 		err = xprov.StreamEventLogs(ctx, req, proc)
 
 		if ctx.Err() != nil {
-			//nolint:nilerr // Allow context timeout.
-			return nil
+			return
 		}
 
 		log.Warn(ctx, "Failure processing cctp events (will retry)", err)
@@ -312,6 +336,40 @@ func sanityCheck(stored, streamed types.MsgSendUSDC) error {
 	// Recipient mismatch
 	if stored.Recipient != streamed.Recipient {
 		return errors.New("recipient mismatch", "tx_hash", stored.TxHash, "stored", stored.Recipient, "streamed", streamed.Recipient)
+	}
+
+	return nil
+}
+
+// maybeInitCursors initializes cursors for each chain to the latest block (if they don't exist).
+func maybeInitCursors(ctx context.Context, db *db.DB, chains []evmchain.Metadata, clients map[uint64]ethclient.Client) error {
+	for _, chain := range chains {
+		chainID := chain.ChainID
+
+		_, ok, err := db.GetCursor(ctx, chainID)
+		if err != nil {
+			return errors.Wrap(err, "get cursor", "chain", chain.Name)
+		} else if ok {
+			// Already initialized, skip.
+			continue
+		}
+
+		client, ok := clients[chainID]
+		if !ok {
+			return errors.New("client not found", "chain", chain.Name)
+		}
+
+		blockNum, err := client.BlockNumber(ctx)
+		if err != nil {
+			return errors.Wrap(err, "get latest block", "chain", chain.Name)
+		}
+
+		// Set cursor to latest block
+		if err := db.SetCursor(ctx, chainID, blockNum); err != nil {
+			return errors.Wrap(err, "set cursor", "chain", chain.Name)
+		}
+
+		log.Info(ctx, "Initialized cursor", "chain", chain.Name, "block", blockNum)
 	}
 
 	return nil
