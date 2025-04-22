@@ -77,11 +77,20 @@ func routeToUSDC(tkn tokens.Token) ([]Swap, error) {
 		return []Swap{wethToUSDC(weth, usdc)}, nil
 	}
 
+	if tkn.Is(tokens.USDT) { // Swap USDT to USDC, direct
+		return []Swap{usdtToUSDC(tkn, usdc)}, nil
+	}
+
 	if tkn.Is(tokens.WSTETH) { // Swap WSTETH to USDC, via WETH
 		return []Swap{wstethToWETH(tkn, weth), wethToUSDC(weth, usdc)}, nil
 	}
 
 	return nil, errors.New("no route to USDC", "token", tkn.Asset, "chain", tkn.ChainID)
+}
+
+// usdtToUSDC returns a swap from USDT to USDC, 0.01% fee tier.
+func usdtToUSDC(usdt, usdc tokens.Token) Swap {
+	return Swap{TokenIn: usdt, TokenOut: usdc, PoolFee: FeeBips1}
 }
 
 // wethToUSDC returns a swap from WETH to USDC, 0.05% fee tier.

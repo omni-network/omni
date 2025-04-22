@@ -69,6 +69,11 @@ func FundUSDC(ctx context.Context, client ethclient.Client, token common.Address
 	return FundERC20(ctx, client, token, amount, account, WithSlotIdx(9))
 }
 
+func FundUSDT(ctx context.Context, client ethclient.Client, token common.Address, amount *big.Int, account common.Address) error {
+	// USDT mapping `_balances` at slot 2.
+	return FundERC20(ctx, client, token, amount, account, WithSlotIdx(2))
+}
+
 var (
 	// _balances[account] storage slot == keccak256(abi.encode(account, slot index)).
 	slotABI = abi.Arguments{
