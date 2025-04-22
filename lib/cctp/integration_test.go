@@ -4,21 +4,26 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"flag"
+	"log/slog"
 	"math/big"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/omni-network/omni/lib/anvil"
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cctp"
-	"github.com/omni-network/omni/lib/cctp/db"
+	cctpdb "github.com/omni-network/omni/lib/cctp/db"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
+	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tokens/tokenutil"
 	"github.com/omni-network/omni/lib/tutil"
+	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 
 	ethereum "github.com/ethereum/go-ethereum"
@@ -52,37 +57,79 @@ func TestIntegration(t *testing.T) {
 
 	ctx := t.Context()
 
+	logCfg := log.DefaultConfig()
+	logCfg.Level = slog.LevelDebug.String()
+	logCfg.Color = log.ColorForce
+
+	ctx, err := log.Init(ctx, logCfg)
+	require.NoError(t, err)
+
 	rpcs := getForkRPCs(t)
 	chains := getChains(t)
 	network := makeNetwork(t, chains)
 
-	clients, stop := startAnvilForks(t, rpcs, chains)
+	clients, stop := startAnvilForks(t, ctx, rpcs, chains)
 	defer stop()
 
 	attesterPk, attesterAddr := newAccount(t) // CCTP attester
 	devPk, devAddr := newAccount(t)           // Test user
 
+	backends, err := ethbackend.BackendsFromClients(clients, devPk)
+	require.NoError(t, err)
+
 	// Enable attester on all chains
-	enableAttester(t, clients, attesterAddr)
+	enableAttester(t, ctx, clients, attesterAddr)
 
 	// Fund dev account with USDC & ETH
-	fund(t, clients, devAddr)
+	fund(t, ctx, clients, devAddr)
 
 	// Create xchain provider
 	xprov := xprovider.New(network, clients, nil)
 
 	// Create CCTP client, start attesting
 	cctpClient := cctp.NewDevClient(attesterPk, clients)
-	err := cctpClient.AttestForever(ctx, chains, xprov)
+	err = cctpClient.AttestForever(ctx, chains, xprov)
 	require.NoError(t, err)
 
 	// In-mem CCTP DB
 	memDB := cosmosdb.NewMemDB()
-	cctpDB, err := db.New(memDB)
+	db, err := cctpdb.New(memDB)
 	require.NoError(t, err)
 
-	_ = cctpDB
-	_ = devPk
+	// Mint forever
+	err = cctp.MintForever(ctx, db, cctpClient, backends, chains, devAddr, cctp.WithInterval(1*time.Second))
+	require.NoError(t, err)
+
+	// Audit forever
+	err = cctp.AuditForever(ctx, db, xprov, clients, chains, devAddr)
+	require.NoError(t, err)
+
+	// Send once
+	backend, err := backends.Backend(evmchain.IDEthereum)
+	require.NoError(t, err)
+
+	err = cctp.SendUSDC(ctx, db, backend, cctp.SendUSDCArgs{
+		Sender:      devAddr,
+		Recipient:   devAddr,
+		SrcChainID:  evmchain.IDEthereum,
+		DestChainID: evmchain.IDArbitrumOne,
+		Amount:      bi.Dec6(100),
+	})
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		usdc := mustUSDC(t, evmchain.IDArbitrumOne)
+
+		backend, err := backends.Backend(evmchain.IDArbitrumOne)
+		require.NoError(t, err)
+
+		balance, err := tokenutil.BalanceOf(ctx, backend, usdc, devAddr)
+		require.NoError(t, err)
+
+		// Temp assertion for w/ initial balance + single bridge of 100 USDC
+		// TODO(kevin): more bridging, better assertions, test audit (perturbations)
+		return bi.EQ(balance, bi.Dec6(1100))
+	}, 20*time.Second, 1*time.Second)
 }
 
 // getForkRPCs returns mainnet rpcs urls from env vars.
@@ -105,10 +152,9 @@ func getForkRPCs(t *testing.T) map[uint64]string {
 }
 
 // startAnvilForks starts anvil forks fork each chain, returning a clients map and a "stop all" function.
-func startAnvilForks(t *testing.T, rpcs map[uint64]string, chains []evmchain.Metadata) (map[uint64]ethclient.Client, func()) {
+func startAnvilForks(t *testing.T, ctx context.Context, rpcs map[uint64]string, chains []evmchain.Metadata) (map[uint64]ethclient.Client, func()) {
 	t.Helper()
 
-	ctx := t.Context()
 	clients := make(map[uint64]ethclient.Client)
 
 	var stops []func()
@@ -119,7 +165,7 @@ func startAnvilForks(t *testing.T, rpcs map[uint64]string, chains []evmchain.Met
 		)
 		require.NoError(t, err)
 
-		log.Info(ctx, "Stated anvil fork", "chain", chain.Name, "rpc", rpcs[chain.ChainID])
+		log.Info(ctx, "Stated anvil fork", "chain", chain.Name, "fork_rpc", rpcs[chain.ChainID])
 
 		clients[chain.ChainID] = ethCl
 		stops = append(stops, stop)
@@ -135,15 +181,14 @@ func startAnvilForks(t *testing.T, rpcs map[uint64]string, chains []evmchain.Met
 }
 
 // fund funds accounts with USDC on each chain.
-func fund(t *testing.T, clients map[uint64]ethclient.Client, account common.Address) {
+func fund(t *testing.T, ctx context.Context, clients map[uint64]ethclient.Client, account common.Address) {
 	t.Helper()
-	ctx := t.Context()
 
 	// Fund USDC
 	for chainID, client := range clients {
 		amount := bi.Dec6(1000) // 1000 USDC
-		usdc := mustUsdc(t, chainID)
-		err := anvil.FundERC20(t.Context(), client, usdc.Address, amount, account)
+		usdc := mustUSDC(t, chainID)
+		err := anvil.FundUSDC(ctx, client, usdc.Address, amount, account)
 		require.NoError(t, err)
 		log.Info(ctx, "Funded USDC", "chain", chainID, "amount", amount, "account", account)
 	}
@@ -151,7 +196,7 @@ func fund(t *testing.T, clients map[uint64]ethclient.Client, account common.Addr
 	// Fund ETH
 	for chainID, client := range clients {
 		amount := bi.Ether(1) // 1 ETH
-		err := anvil.FundAccounts(t.Context(), client, amount, account)
+		err := anvil.FundAccounts(ctx, client, amount, account)
 		require.NoError(t, err)
 		log.Info(ctx, "Funded ETH", "chain", chainID, "amount", amount, "account", account)
 	}
@@ -185,8 +230,11 @@ func makeNetwork(t *testing.T, chains []evmchain.Metadata) netconf.Network {
 	network.Chains = make([]netconf.Chain, len(chains))
 	for i, chain := range chains {
 		network.Chains[i] = netconf.Chain{
-			ID:   chain.ChainID,
-			Name: chain.Name,
+			ID:             chain.ChainID,
+			Name:           chain.Name,
+			BlockPeriod:    chain.BlockPeriod,
+			Shards:         []xchain.ShardID{xchain.ShardFinalized0, xchain.ShardLatest0},
+			AttestInterval: 10000,
 		}
 	}
 
@@ -202,7 +250,7 @@ func mustMeta(t *testing.T, chainID uint64) evmchain.Metadata {
 	return meta
 }
 
-func mustUsdc(t *testing.T, chainID uint64) tokens.Token {
+func mustUSDC(t *testing.T, chainID uint64) tokens.Token {
 	t.Helper()
 	usdc, ok := tokens.ByAsset(chainID, tokens.USDC)
 	require.True(t, ok)
@@ -210,11 +258,9 @@ func mustUsdc(t *testing.T, chainID uint64) tokens.Token {
 	return usdc
 }
 
-// enableAttester enables the attester on each chains MessageTransmitter.
-func enableAttester(t *testing.T, clients map[uint64]ethclient.Client, newAttester common.Address) {
+// enableAttester enables the attester on each chains MessageTransmitter, and sets the signature threshold to 1.
+func enableAttester(t *testing.T, ctx context.Context, clients map[uint64]ethclient.Client, newAttester common.Address) {
 	t.Helper()
-
-	ctx := t.Context()
 
 	for chainID, client := range clients {
 		mtAddr, ok := cctp.MessageTransmitterAddr(chainID)
@@ -248,6 +294,26 @@ func enableAttester(t *testing.T, clients map[uint64]ethclient.Client, newAttest
 		require.True(t, enabled, "attester not enabled on chain %d", chainID)
 
 		log.Info(ctx, "Enabled attester", "chain", chainID, "attester", newAttester)
+
+		// Reduce signature threshold to 1 (number of attesters required)
+		calldata, err = messageTransmitterABI.Pack("setSignatureThreshold", bi.One())
+		require.NoError(t, err)
+		txHash, err = sendUnsignedTransaction(ctx, client, txArgs{
+			from:  mngr,
+			to:    mtAddr,
+			value: nil,
+			data:  calldata,
+		})
+		require.NoError(t, err)
+
+		_, err = bind.WaitMinedHash(ctx, client, txHash)
+		require.NoError(t, err)
+
+		threshold, err := mt.SignatureThreshold(&bind.CallOpts{Context: ctx})
+		require.NoError(t, err)
+		tutil.RequireEQ(t, threshold, bi.One(), "signature threshold not set to 1 on chain %d", chainID)
+
+		log.Info(ctx, "Signature threshold set", "chain", chainID, "threshold", threshold)
 	}
 }
 

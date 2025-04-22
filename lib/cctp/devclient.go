@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 )
@@ -51,6 +52,8 @@ func (c *DevClient) GetAttestation(_ context.Context, messageHash common.Hash) (
 
 // AttestForever watches MessageTransmitter events and signs attestations.
 func (c *DevClient) AttestForever(ctx context.Context, chains []evmchain.Metadata, xprov xchain.Provider) error {
+	ctx = log.WithCtx(ctx, "process", "cctp.DevClient.AttestForever")
+
 	transmitters, addrs, err := newMessageTransmitters(c.ethClients)
 	if err != nil {
 		return err
@@ -64,14 +67,21 @@ func (c *DevClient) AttestForever(ctx context.Context, chains []evmchain.Metadat
 		}
 
 		c.setCursor(chain.ChainID, height)
+
+		log.Info(ctx, "Initialized cursor", "chain", chain.Name, "height", height)
 	}
 
 	for _, chain := range chains {
+		chainID := chain.ChainID
+		chainName := chain.Name
+		transmitter := transmitters[chainID]
+		addr := addrs[chainID]
+
 		go func() {
-			chainID := chain.ChainID
-			ctx := log.WithCtx(ctx, "process", "cctp.DevClient.AttestForever", "chain", chain.Name)
-			proc := c.newEventProc(chainID, transmitters[chainID])
-			c.runEventProc(ctx, chainID, addrs[chainID], proc, xprov)
+			ctx := log.WithCtx(ctx, "chain", chainName)
+			log.Info(ctx, "Starting event processor")
+			proc := c.newEventProc(chainID, transmitter)
+			c.runEventProc(ctx, chainID, addr, proc, xprov)
 		}()
 	}
 
@@ -80,7 +90,9 @@ func (c *DevClient) AttestForever(ctx context.Context, chains []evmchain.Metadat
 
 // newEventProc returns an event processor for a chain.
 func (c *DevClient) newEventProc(chainID uint64, transmitter *MessageTransmitter) xchain.EventLogsCallback {
-	return func(_ context.Context, header *ethtypes.Header, elogs []ethtypes.Log) error {
+	return func(ctx context.Context, header *ethtypes.Header, elogs []ethtypes.Log) error {
+		log.Debug(ctx, "Processing event logs", "height", header.Number.Uint64(), "logs", len(elogs))
+
 		for _, elog := range elogs {
 			msg, err := transmitter.ParseMessageSent(elog)
 			if err != nil {
@@ -99,6 +111,11 @@ func (c *DevClient) newEventProc(chainID uint64, transmitter *MessageTransmitter
 			if err != nil {
 				return errors.Wrap(err, "sign message")
 			}
+
+			// Make v eth compatible (27 or 28)
+			sig[64] += 27
+
+			log.Debug(ctx, "Attesting message", "message_hash", messageHash, "sig", hexutil.Encode(sig))
 
 			c.setAttestation(messageHash, sig)
 		}
@@ -132,7 +149,7 @@ func (c *DevClient) runEventProc(
 			return
 		}
 
-		log.Warn(ctx, "Failed streaming events (will retry)", err, "chain_id", chainID)
+		log.Warn(ctx, "Failed streaming events (will retry)", err)
 		backoff()
 	}
 }
@@ -178,12 +195,12 @@ func (c *DevClient) getLatestBlock(ctx context.Context, chainID uint64) (uint64,
 		return 0, errors.New("no eth client for chain", "chain_id", chainID)
 	}
 
-	header, err := client.HeaderByNumber(ctx, nil)
+	blockNum, err := client.BlockNumber(ctx)
 	if err != nil {
-		return 0, errors.Wrap(err, "get header")
+		return 0, errors.Wrap(err, "block number")
 	}
 
-	return header.Number.Uint64(), nil
+	return blockNum, nil
 }
 
 func newMessageTransmitters(clients map[uint64]ethclient.Client) (map[uint64]*MessageTransmitter, map[uint64]common.Address, error) {
