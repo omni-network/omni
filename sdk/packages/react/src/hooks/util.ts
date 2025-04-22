@@ -25,9 +25,8 @@ const convertBigIntsToHex = (value: unknown): unknown => {
 }
 
 export const toJSON = (value: unknown) => {
-  const res = convertBigIntsToHex(value)
   // stringify w/out the replacer callback since we've seen browser
   // extensions bypass the replacer by attaching a toJSON method to BigInt
   // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify#:~:text=Attempting%20to%20serialize,by%20the%20user
-  return JSON.stringify(res)
+  return JSON.stringify(convertBigIntsToHex(value))
 }
