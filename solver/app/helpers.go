@@ -71,6 +71,17 @@ func maybeDebugRevert(ctx context.Context, cl ethclient.Client, from common.Addr
 		return false, nil
 	}
 
+	// Assume 95%+ gas usage was due to out of gas
+	if rec.GasUsed >= tx.Gas()*95/100 {
+		return true, errors.New("tx probably reverted due to out of gas",
+			"dest_chain", cl.Name(),
+			"tx", tx.Hash(),
+			"receipt_height", rec.BlockNumber,
+			"gas_used", rec.GasUsed,
+			"gas_limit", tx.Gas(),
+		)
+	}
+
 	// Try and get debug information of the reverted transaction
 	resp, err := cl.CallContract(ctx, callFromTx(from, tx), rec.BlockNumber)
 	if err == nil {

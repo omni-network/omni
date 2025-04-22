@@ -3,6 +3,7 @@ package indexer
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -452,6 +453,7 @@ func (i *indexer) instrumentMsg(ctx context.Context, link *MsgLink) error {
 		"stream", s.Stream,
 		"offset", msg.StreamOffset,
 		"success", s.Success,
+		"gas_usage", fmt.Sprintf("%.1f%%", float64(receipt.GasUsed)/float64(msg.DestGasLimit)),
 		"latency", s.Latency,
 		"msg_tx", msg.TxHash,
 		"receipt_tx", receipt.TxHash,
