@@ -16,7 +16,7 @@ import { type Order, isContractCall } from '../types/order.js'
  *
  * @example
  *
- * const encodedOrder = encodeOrder({
+ * const encodedOrderData = encodeOrderData({
  *  owner: '0x...',
  *  destChainId: 1,
  *  deposit: {
@@ -42,7 +42,7 @@ import { type Order, isContractCall } from '../types/order.js'
  *   ],
  * })
  */
-export function encodeOrder(order: Order<OptionalAbis>): Hex {
+export function encodeOrderData(order: Order<OptionalAbis>): Hex {
   const callsTuple = order.calls.map((call) => {
     if (!isContractCall(call)) {
       return {
