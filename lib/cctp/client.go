@@ -48,12 +48,12 @@ func (c client) GetAttestation(ctx context.Context, messageHash common.Hash) ([]
 		return nil, "", err
 	}
 
-	signature, err := hexutil.Decode(res.Data.Attestation)
+	attestation, err := hexutil.Decode(res.Data.Attestation)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "decode attestation hex")
 	}
 
-	return signature, status, nil
+	return attestation, status, nil
 }
 
 func (c client) do(ctx context.Context, path string, res any) error {

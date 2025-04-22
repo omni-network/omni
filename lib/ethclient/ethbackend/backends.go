@@ -117,7 +117,7 @@ func BackendsFromClients(ethClients map[uint64]ethclient.Client, privkeys ...*ec
 
 		backend, err := NewBackend(chain.Name, chainID, chain.BlockPeriod, ethCl, privkeys...)
 		if err != nil {
-			panic(err)
+			return Backends{}, errors.Wrap(err, "new backend")
 		}
 		inner[chainID] = backend
 	}

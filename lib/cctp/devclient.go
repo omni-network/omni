@@ -3,6 +3,7 @@ package cctp
 import (
 	"context"
 	"crypto/ecdsa"
+	"slices"
 	"sync"
 
 	"github.com/omni-network/omni/lib/errors"
@@ -91,8 +92,6 @@ func (c *DevClient) AttestForever(ctx context.Context, chains []evmchain.Metadat
 // newEventProc returns an event processor for a chain.
 func (c *DevClient) newEventProc(chainID uint64, transmitter *MessageTransmitter) xchain.EventLogsCallback {
 	return func(ctx context.Context, header *ethtypes.Header, elogs []ethtypes.Log) error {
-		log.Debug(ctx, "Processing event logs", "height", header.Number.Uint64(), "logs", len(elogs))
-
 		for _, elog := range elogs {
 			msg, err := transmitter.ParseMessageSent(elog)
 			if err != nil {
@@ -161,7 +160,7 @@ func (c *DevClient) getAttestation(hash common.Hash) ([]byte, bool) {
 
 	attestation, ok := c.attestations[hash]
 
-	return attestation, ok
+	return slices.Clone(attestation), ok
 }
 
 // setAttestation stores an attestation for a message hash.
@@ -169,7 +168,7 @@ func (c *DevClient) setAttestation(hash common.Hash, attestation []byte) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.attestations[hash] = attestation
+	c.attestations[hash] = slices.Clone(attestation)
 }
 
 // getCursor returns the cursor for a chain.

@@ -2,9 +2,11 @@
 package tutil
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/log"
@@ -89,4 +91,31 @@ func RequireLTE(tb testing.TB, a, b *big.Int, msgAndArgs ...any) {
 	}
 
 	require.Fail(tb, fmt.Sprintf("%s is not less than or equal to %s", a, b), msgAndArgs...)
+}
+
+// RequireEventually runs the provided function until it returns true, the context is canceled, or the timeout is reached.
+func RequireEventually(t *testing.T, ctx context.Context, fn func() bool, timeout time.Duration, interval time.Duration, msgAndArgs ...any) {
+	t.Helper()
+
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	deadline := time.After(timeout)
+
+	for {
+		select {
+		case <-ctx.Done():
+			require.Fail(t, "Context canceled", msgAndArgs...)
+		case <-deadline:
+			if fn() {
+				return
+			}
+
+			require.Fail(t, "Condition not met within timeout", msgAndArgs...)
+		case <-ticker.C:
+			if fn() {
+				return
+			}
+		}
+	}
 }

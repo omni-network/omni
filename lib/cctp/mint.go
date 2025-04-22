@@ -153,6 +153,10 @@ func tryMint(
 		"recipient", msg.Recipient,
 	)
 
+	if crypto.Keccak256Hash(msg.MessageBytes) != msg.MessageHash {
+		return errors.New("invalid message hash", "msg_hash", msg.MessageHash)
+	}
+
 	attestation, status, err := client.GetAttestation(ctx, msg.MessageHash)
 	if err != nil {
 		return errors.Wrap(err, "get attestation")
@@ -160,7 +164,6 @@ func tryMint(
 
 	// Attestations pendings, skip
 	if status == AttestationStatusPendingConfirmations {
-		log.Debug(ctx, "Attestation confirmations pending")
 		return nil
 	}
 
@@ -173,7 +176,7 @@ func tryMint(
 		return nil
 	}
 
-	received, err := didReceive(ctx, msgTransmitter, msg)
+	received, err := DidReceive(ctx, backend, msg)
 	if err != nil {
 		return errors.Wrap(err, "has been received")
 	}
@@ -200,14 +203,13 @@ func tryMint(
 		return errors.Wrap(err, "mint")
 	}
 
-	log.Info(ctx, "Mint received", "tx_hash", receipt.TxHash)
-
 	// Set minted
 	if err := setMinted(); err != nil {
+		log.Error(ctx, "Failed to set minted", err, "tx_hash", receipt.TxHash)
 		return err
 	}
 
-	log.Info(ctx, "Message marked as minted", "tx_hash", receipt.TxHash)
+	log.Info(ctx, "Mint received", "tx_hash", receipt.TxHash)
 
 	postMintBalance, err := tokenutil.BalanceOf(ctx, backend, usdc, msg.Recipient)
 	if err != nil {
@@ -234,20 +236,20 @@ func newIsReceived(clients map[uint64]ethclient.Client) isReceivedFunc {
 			return false, errors.New("no client for dest chain", "chain_id", msg.DestChainID)
 		}
 
-		msgTransmitter, _, err := newMessageTransmitter(msg.DestChainID, client)
-		if err != nil {
-			return false, errors.Wrap(err, "message transmitter")
-		}
-
-		return didReceive(ctx, msgTransmitter, msg)
+		return DidReceive(ctx, client, msg)
 	}
 }
 
-// didReceive checks if a MsgSendUSDC has been received by dest MessageTransmitter.
+// DidReceive checks if a MsgSendUSDC has been received by dest MessageTransmitter.
 // It checks MessageTransmitter.UsedNonces(...) to see message nonce has been used.
-func didReceive(ctx context.Context, msgTransmitter *MessageTransmitter, msg types.MsgSendUSDC) (bool, error) {
+func DidReceive(ctx context.Context, ethClient ethclient.Client, msg types.MsgSendUSDC) (bool, error) {
 	if len(msg.MessageBytes) < 84 {
 		return false, errors.New("message bytes too short", "len", len(msg.MessageBytes))
+	}
+
+	msgTransmitter, _, err := newMessageTransmitter(msg.DestChainID, ethClient)
+	if err != nil {
+		return false, errors.Wrap(err, "message transmitter")
 	}
 
 	// Message format:
@@ -260,11 +262,11 @@ func didReceive(ctx context.Context, msgTransmitter *MessageTransmitter, msg typ
 	//  recipient             32         bytes32    52
 	//  messageBody           dynamic    bytes      84
 	//
-	// Nonce key is keccak256(abi.encodePacked(nonce, sourceDomain))
-	nonceKey := crypto.Keccak256Hash(append(
-		msg.MessageBytes[12:20],  // nonce
-		msg.MessageBytes[4:8]..., // source domain
-	))
+	// Nonce key is keccak256(abi.encodePacked(sourceDomain, nonce))
+	var nonceBz []byte
+	nonceBz = append(nonceBz, msg.MessageBytes[4:8]...)   // source domain
+	nonceBz = append(nonceBz, msg.MessageBytes[12:20]...) // nonce
+	nonceKey := crypto.Keccak256Hash(nonceBz)
 
 	used, err := msgTransmitter.UsedNonces(&bind.CallOpts{Context: ctx}, nonceKey)
 	if err != nil {

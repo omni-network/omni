@@ -11,6 +11,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/mock"
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -31,6 +32,7 @@ func TestAuditEventProc(t *testing.T) {
 	client := mock.NewMockClient(ctrl)
 
 	chainID := evmchain.IDEthereum
+	networkID := netconf.Mainnet
 	chainVer := xchain.ChainVersion{ID: chainID, ConfLevel: xchain.ConfFinalized}
 
 	msgTransmitter, msgTransmitterAddr := mustMessageTransmitter(chainID, client)
@@ -299,7 +301,7 @@ func TestAuditEventProc(t *testing.T) {
 				}
 			}
 
-			proc := newEventProc(db, chainVer.ID,
+			proc := newEventProc(db, networkID, chainVer.ID,
 				isReceived,
 				newDepositForBurnGetter(tknMessenger, tknMessengerAddr, tt.recipient),
 				newMessageSentGetter(msgTransmitter, msgTransmitterAddr),
@@ -347,7 +349,7 @@ func depositForBurnLog(addr common.Address, msg types.MsgSendUSDC) ethtypes.Log 
 		Data: mustPackData(
 			msg.Amount,                       // amount
 			cast.EthAddress32(msg.Recipient), // mintRecipient
-			uint32(msg.DestChainID),          // destinationDomain
+			domains[msg.DestChainID],         // destinationDomain
 			common.HexToHash("0x1"),          // destinationTokenMessenger (doesn't matter)
 			common.HexToHash("0x1"),          // destinationCaller (doesn't matter)
 		),
@@ -387,6 +389,7 @@ func mustTokenMessenger(chainID uint64, client ethclient.Client) (*TokenMessenge
 func randMsg(srcChainID uint64, recipient common.Address) types.MsgSendUSDC {
 	msg := testutil.RandMsg()
 	msg.SrcChainID = srcChainID
+	msg.DestChainID = evmchain.IDArbitrumOne // we need a dest chain id w/ a cctp domain id
 	msg.Recipient = recipient
 
 	return msg

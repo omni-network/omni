@@ -37,22 +37,22 @@ func SendUSDC(
 	db *db.DB,
 	backend *ethbackend.Backend,
 	args SendUSDCArgs,
-) error {
+) (types.MsgSendUSDC, error) {
 	srcChain := evmchain.Name(args.SrcChainID)
 	dstChain := evmchain.Name(args.DestChainID)
 
 	usdc, ok := tokens.ByAsset(args.SrcChainID, tokens.USDC)
 	if !ok {
-		return errors.New("no usdc", "src_chain", srcChain)
+		return types.MsgSendUSDC{}, errors.New("no usdc", "src_chain", srcChain)
 	}
 
 	c, err := newContracts(args.SrcChainID, backend)
 	if err != nil {
-		return errors.Wrap(err, "new contracts")
+		return types.MsgSendUSDC{}, errors.Wrap(err, "new contracts")
 	}
 
-	if err := maybeApproveMessenger(ctx, backend, usdc, args.Sender, args.Amount, c.TokenMessageAddress); err != nil {
-		return errors.Wrap(err, "approve")
+	if err := maybeApproveMessenger(ctx, backend, usdc, args.Sender, args.Amount, c.TokenMessengerAddress); err != nil {
+		return types.MsgSendUSDC{}, errors.Wrap(err, "approve")
 	}
 
 	// CCTP uses bytes32 addresses
@@ -60,27 +60,27 @@ func SendUSDC(
 
 	txOpts, err := backend.BindOpts(ctx, args.Sender)
 	if err != nil {
-		return errors.Wrap(err, "bind opts")
+		return types.MsgSendUSDC{}, errors.Wrap(err, "bind opts")
 	}
 
 	domainID, ok := domains[args.DestChainID]
 	if !ok {
-		return errors.New("unknown domain ID", "dest_chain", dstChain)
+		return types.MsgSendUSDC{}, errors.New("unknown domain ID", "dest_chain", dstChain)
 	}
 
 	tx, err := c.TokenMessenger.DepositForBurn(txOpts, args.Amount, domainID, recipient, usdc.Address)
 	if err != nil {
-		return errors.Wrap(err, "deposit for burn")
+		return types.MsgSendUSDC{}, errors.Wrap(err, "deposit for burn")
 	}
 
 	receipt, err := backend.WaitMined(ctx, tx)
 	if err != nil {
-		return errors.Wrap(err, "wait mined")
+		return types.MsgSendUSDC{}, errors.Wrap(err, "wait mined")
 	}
 
 	messageBz, err := parseMessageSent(receipt, c.MessageTransmitter)
 	if err != nil {
-		return errors.Wrap(err, "parse message sent")
+		return types.MsgSendUSDC{}, errors.Wrap(err, "parse message sent")
 	}
 
 	messageHash := crypto.Keccak256Hash(messageBz)
@@ -106,11 +106,21 @@ func SendUSDC(
 		"message_hash", messageHash,
 		"recipient", args.Recipient)
 
-	if err := db.InsertMsg(ctx, msg); err != nil {
-		return errors.Wrap(err, "insert message", "tx", tx.Hash())
+	if stored, ok, err := db.GetMsg(ctx, receipt.TxHash); err != nil {
+		return types.MsgSendUSDC{}, errors.Wrap(err, "has msg")
+	} else if ok { // on chains with quick finality, audit event-stream may insert before receipt is returned
+		if !stored.Equals(withStatus(msg, stored.Status)) { // make sure they're equal (using stored status, in case of fast mint)
+			return types.MsgSendUSDC{}, errors.New("different message with same tx hash already exists [BUG]", "tx_hash", receipt.TxHash)
+		}
+
+		return msg, nil
 	}
 
-	return nil
+	if err := db.InsertMsg(ctx, msg); err != nil {
+		return types.MsgSendUSDC{}, errors.Wrap(err, "insert message", "tx", tx.Hash())
+	}
+
+	return msg, nil
 }
 
 // maybeApproveMessenger approves the TokenMessenger to spend USDC, if needed.
