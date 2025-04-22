@@ -12,7 +12,7 @@ describe('toJSON', () => {
     expect(toJSON(bigInt)).toBe('"0xab54a98ceb1f0ad2"')
   })
 
-  it('default: correctly serialize types', () => {
+  it('default: correctly serialize BigInt despite toJSON patch', () => {
     // default BigInt has no toJSON method
     // biome-ignore lint/suspicious/noExplicitAny: expected
     expect(typeof (BigInt(1) as any).toJSON).toBe('undefined')
