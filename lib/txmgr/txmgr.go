@@ -33,10 +33,12 @@ const (
 	// submissions reserve nonces and reach upstream geth nodes out of order.
 	retryNonceTooHigh = 3
 
-	// gasFactorNum is the numerator by which to increase the gas limit for transactions.
-	gasFactorNum uint64 = 12
-	// gasFactorDenom is the denominator by which to increase the gas limit for transactions.
-	gasFactorDenom uint64 = 10
+	// gasBumpNum is the numerator by which to increase the gas limit.
+	gasBumpNum uint64 = 1
+	// gasBumpDenom is the denominator by which to increase the gas limit.
+	gasBumpDenom uint64 = 1
+	// gasBumpMax is the maximum increase to gas limits.
+	gasBumpMax uint64 = 500_000
 )
 
 // TxManager is an interface that allows callers to reliably publish txs,
@@ -57,7 +59,7 @@ type TxManager interface {
 	// ReserveNextNonce returns the next available nonce and increments the available nonce.
 	ReserveNextNonce(ctx context.Context) (uint64, error)
 
-	// BumpGasLimit increases the gas limit of a transaction by a factor of gasFactorNum/gasFactorDenom.
+	// BumpGasLimit increases the gas limit of a transaction by a factor of gasBumpNum/gasBumpDenom.
 	BumpGasLimit(gas uint64) uint64
 }
 
@@ -67,8 +69,7 @@ type simple struct {
 	cfg       Config // embed the config directly
 	chainName string
 	chainID   *big.Int
-
-	backend ethclient.Client
+	backend   ethclient.Client
 
 	nonce     *uint64 // nil == unset, 0 == unused account
 	nonceLock sync.Mutex
@@ -549,8 +550,14 @@ func (m *simple) overEstimateGasLimit(ctx context.Context, call ethereum.CallMsg
 	return bumpGasLimit(gasLimit), nil
 }
 
+// bumpGasLimit returns an increased gas limit.
 func bumpGasLimit(gasLimit uint64) uint64 {
-	return gasLimit * gasFactorNum / gasFactorDenom
+	bump := gasLimit * gasBumpNum / gasBumpDenom
+	if bump > gasBumpMax {
+		bump = gasBumpMax
+	}
+
+	return gasLimit + bump
 }
 
 // increaseGasPrice returns a new transaction that is equivalent to the input transaction but with
