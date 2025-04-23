@@ -56,6 +56,9 @@ type TxManager interface {
 
 	// ReserveNextNonce returns the next available nonce and increments the available nonce.
 	ReserveNextNonce(ctx context.Context) (uint64, error)
+
+	// BumpGasLimit increases the gas limit of a transaction by a factor of gasFactorNum/gasFactorDenom.
+	BumpGasLimit(gas uint64) uint64
 }
 
 // simple is a implementation of TxManager that performs linear fee
@@ -83,6 +86,10 @@ func NewSimple(chainName string, conf Config) (TxManager, error) {
 		cfg:       conf,
 		backend:   conf.Backend,
 	}, nil
+}
+
+func (*simple) BumpGasLimit(gas uint64) uint64 {
+	return bumpGasLimit(gas)
 }
 
 func (m *simple) ReserveNextNonce(ctx context.Context) (uint64, error) {

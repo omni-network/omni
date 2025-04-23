@@ -97,6 +97,10 @@ func (m *mockTxMgr) Send(_ context.Context, candidate txmgr.TxCandidate) (*types
 	return nil, nil, errSentAsync
 }
 
+func (*mockTxMgr) BumpGasLimit(gas uint64) uint64 {
+	return gas
+}
+
 func (m *mockTxMgr) CompleteSends(expected int) {
 	for range expected {
 		<-m.sends
