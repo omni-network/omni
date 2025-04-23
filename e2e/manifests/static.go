@@ -3,6 +3,7 @@ package manifests
 import (
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/netconf"
 
 	"github.com/BurntSushi/toml"
 
@@ -56,4 +57,17 @@ func unmarshal(b []byte) (types.Manifest, error) {
 	}
 
 	return manifest, nil
+}
+
+func Manifest(network netconf.ID) (types.Manifest, error) {
+	switch network {
+	case netconf.Omega:
+		return Omega()
+	case netconf.Staging:
+		return Staging()
+	case netconf.Mainnet:
+		return Mainnet()
+	default:
+		return types.Manifest{}, errors.New("devnet not supported")
+	}
 }

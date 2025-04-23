@@ -47,6 +47,7 @@ type Metadata struct {
 	ChainID     uint64
 	PostsTo     uint64 // chain id to which tx data is posted
 	Name        string
+	PrettyName  string
 	BlockPeriod time.Duration
 	NativeToken tokens.Asset
 	Reorgs      bool // Only if chain actually reorgs, e.g. L2s don't
@@ -89,6 +90,7 @@ var static = map[uint64]Metadata{
 	IDEthereum: {
 		ChainID:     IDEthereum,
 		Name:        "ethereum",
+		PrettyName:  "Ethereum",
 		BlockPeriod: 12 * time.Second,
 		NativeToken: tokens.ETH,
 		Reorgs:      true,
@@ -96,12 +98,14 @@ var static = map[uint64]Metadata{
 	IDOmniMainnet: {
 		ChainID:     IDOmniMainnet,
 		Name:        omniEVMName,
+		PrettyName:  "Omni Mainnet",
 		BlockPeriod: omniEVMBlockPeriod,
 		NativeToken: tokens.OMNI,
 	},
 	IDArbitrumOne: {
 		ChainID:     IDArbitrumOne,
 		Name:        "arbitrum_one",
+		PrettyName:  "Arbitrum One",
 		BlockPeriod: 300 * time.Millisecond,
 		NativeToken: tokens.ETH,
 		PostsTo:     IDEthereum,
@@ -109,6 +113,7 @@ var static = map[uint64]Metadata{
 	IDOptimism: {
 		ChainID:     IDOptimism,
 		Name:        "optimism",
+		PrettyName:  "Optimism",
 		BlockPeriod: 2 * time.Second,
 		NativeToken: tokens.ETH,
 		PostsTo:     IDEthereum,
@@ -116,6 +121,7 @@ var static = map[uint64]Metadata{
 	IDBase: {
 		ChainID:     IDBase,
 		Name:        "base",
+		PrettyName:  "Base",
 		BlockPeriod: 2 * time.Second,
 		NativeToken: tokens.ETH,
 		PostsTo:     IDEthereum,
@@ -123,12 +129,14 @@ var static = map[uint64]Metadata{
 	IDOmniOmega: {
 		ChainID:     IDOmniOmega,
 		Name:        omniEVMName,
+		PrettyName:  "Omni Omega",
 		BlockPeriod: omniEVMBlockPeriod,
 		NativeToken: tokens.OMNI,
 	},
 	IDHolesky: {
 		ChainID:     IDHolesky,
 		Name:        "holesky",
+		PrettyName:  "Holesky",
 		BlockPeriod: 12 * time.Second,
 		NativeToken: tokens.ETH,
 		Reorgs:      true,
@@ -136,6 +144,7 @@ var static = map[uint64]Metadata{
 	IDSepolia: {
 		ChainID:     IDSepolia,
 		Name:        "sepolia",
+		PrettyName:  "Sepolia",
 		BlockPeriod: 12 * time.Second,
 		NativeToken: tokens.ETH,
 		Reorgs:      true,
@@ -143,6 +152,7 @@ var static = map[uint64]Metadata{
 	IDArbSepolia: {
 		ChainID:     IDArbSepolia,
 		Name:        "arb_sepolia",
+		PrettyName:  "Arb Sepolia",
 		BlockPeriod: 300 * time.Millisecond,
 		NativeToken: tokens.ETH,
 		PostsTo:     IDSepolia,
@@ -150,6 +160,7 @@ var static = map[uint64]Metadata{
 	IDOpSepolia: {
 		ChainID:     IDOpSepolia,
 		Name:        "op_sepolia",
+		PrettyName:  "OP Sepolia",
 		BlockPeriod: 2 * time.Second,
 		NativeToken: tokens.ETH,
 		PostsTo:     IDSepolia,
@@ -157,6 +168,7 @@ var static = map[uint64]Metadata{
 	IDBaseSepolia: {
 		ChainID:     IDBaseSepolia,
 		Name:        "base_sepolia",
+		PrettyName:  "Base Sepolia",
 		BlockPeriod: 2 * time.Second,
 		NativeToken: tokens.ETH,
 		PostsTo:     IDSepolia,
@@ -164,18 +176,21 @@ var static = map[uint64]Metadata{
 	IDOmniDevnet: {
 		ChainID:     IDOmniDevnet,
 		Name:        omniEVMName,
+		PrettyName:  "Omni Devnet",
 		BlockPeriod: omniEVMBlockPeriod,
 		NativeToken: tokens.OMNI,
 	},
 	IDOmniStaging: {
 		ChainID:     IDOmniStaging,
 		Name:        omniEVMName,
+		PrettyName:  "Omni Staging",
 		BlockPeriod: omniEVMBlockPeriod,
 		NativeToken: tokens.OMNI,
 	},
 	IDMockL1: {
 		ChainID:     IDMockL1,
 		Name:        "mock_l1",
+		PrettyName:  "Mock L1",
 		BlockPeriod: time.Second,
 		NativeToken: tokens.ETH,
 		Reorgs:      true,
@@ -183,18 +198,21 @@ var static = map[uint64]Metadata{
 	IDMockL2: {
 		ChainID:     IDMockL2,
 		Name:        "mock_l2",
+		PrettyName:  "Mock L2",
 		BlockPeriod: time.Second,
 		NativeToken: tokens.ETH,
 	},
 	IDMockOp: {
 		ChainID:     IDMockOp,
 		Name:        "mock_op",
+		PrettyName:  "Mock OP",
 		BlockPeriod: time.Second * 2,
 		NativeToken: tokens.ETH,
 	},
 	IDMockArb: {
 		ChainID:     IDMockArb,
 		Name:        "mock_arb",
+		PrettyName:  "Mock ARB",
 		BlockPeriod: time.Second,
 		NativeToken: tokens.ETH,
 	},

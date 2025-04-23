@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	supportedTokens = map[tokens.Asset]bool{
+	supportedAssets = map[tokens.Asset]bool{
 		tokens.ETH:    true,
 		tokens.OMNI:   true,
 		tokens.WSTETH: true,
@@ -29,7 +29,7 @@ var (
 )
 
 func IsSupportedToken(token tokens.Token) bool {
-	return supportedTokens[token.Asset]
+	return supportedAssets[token.Asset]
 }
 
 type SpendBounds struct {
@@ -157,7 +157,7 @@ func GetSpendBounds(token tokens.Token) (SpendBounds, bool) {
 func tokensResponse(chains []uint64) (types.TokensResponse, error) {
 	var resp []types.TokenResponse
 	for _, chain := range chains {
-		for asset := range supportedTokens {
+		for asset := range supportedAssets {
 			token, ok := tokens.ByAsset(chain, asset)
 			if !ok {
 				continue
