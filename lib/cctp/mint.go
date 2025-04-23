@@ -2,6 +2,7 @@ package cctp
 
 import (
 	"context"
+	"math/big"
 	"time"
 
 	"github.com/omni-network/omni/lib/bi"
@@ -176,7 +177,7 @@ func tryMint(
 		return nil
 	}
 
-	received, err := DidReceive(ctx, backend, msg)
+	received, err := DidReceive(ctx, backend, msg, nil)
 	if err != nil {
 		return errors.Wrap(err, "has been received")
 	}
@@ -236,13 +237,13 @@ func newIsReceived(clients map[uint64]ethclient.Client) isReceivedFunc {
 			return false, errors.New("no client for dest chain", "chain_id", msg.DestChainID)
 		}
 
-		return DidReceive(ctx, client, msg)
+		return DidReceive(ctx, client, msg, nil)
 	}
 }
 
 // DidReceive checks if a MsgSendUSDC has been received by dest MessageTransmitter.
 // It checks MessageTransmitter.UsedNonces(...) to see message nonce has been used.
-func DidReceive(ctx context.Context, ethClient ethclient.Client, msg types.MsgSendUSDC) (bool, error) {
+func DidReceive(ctx context.Context, ethClient ethclient.Client, msg types.MsgSendUSDC, blockNum *big.Int) (bool, error) {
 	if len(msg.MessageBytes) < 84 {
 		return false, errors.New("message bytes too short", "len", len(msg.MessageBytes))
 	}
@@ -268,7 +269,10 @@ func DidReceive(ctx context.Context, ethClient ethclient.Client, msg types.MsgSe
 	nonceBz = append(nonceBz, msg.MessageBytes[12:20]...) // nonce
 	nonceKey := crypto.Keccak256Hash(nonceBz)
 
-	used, err := msgTransmitter.UsedNonces(&bind.CallOpts{Context: ctx}, nonceKey)
+	used, err := msgTransmitter.UsedNonces(&bind.CallOpts{
+		Context:     ctx,
+		BlockNumber: blockNum,
+	}, nonceKey)
 	if err != nil {
 		return false, errors.Wrap(err, "used nonce")
 	}
@@ -279,6 +283,43 @@ func DidReceive(ctx context.Context, ethClient ethclient.Client, msg types.MsgSe
 	}
 
 	return true, nil
+}
+
+// IsConfirmed checks if the MsgSendUSDC has been audited, received and finalized on the destination chain.
+func IsConfirmed(ctx context.Context, db *cctpdb.DB, destClient ethclient.Client, msg types.MsgSendUSDC) (bool, error) {
+	// Confirm message is tracked in DB
+	stored, ok, err := db.GetMsg(ctx, msg.MessageHash)
+	if err != nil {
+		return false, errors.Wrap(err, "get msg")
+	} else if !ok {
+		return false, errors.New("msg not found", "msg_hash", msg.MessageHash)
+	} else if !stored.Equals(withStatus(msg, stored.Status)) {
+		return false, errors.New("msg conflict", "msg_hash", msg.MessageHash, "diff", stored.Diff(msg))
+	}
+
+	// Confirm audit cursor is past message block height
+	cursor, ok, err := db.GetCursor(ctx, msg.SrcChainID)
+	if err != nil {
+		return false, errors.Wrap(err, "get cursor", "chain_id", msg.SrcChainID)
+	} else if !ok {
+		return false, errors.New("cursor not found", "chain_id", msg.SrcChainID)
+	} else if cursor < msg.BlockHeight {
+		// Message tracked but not yet audited, so not confirmed
+		return false, nil
+	}
+
+	// Confirm dest chain message is received and finalized
+	header, err := destClient.HeaderByType(ctx, ethclient.HeadFinalized)
+	if err != nil {
+		return false, errors.Wrap(err, "get finalized header")
+	}
+
+	confirmed, err := DidReceive(ctx, destClient, msg, header.Number)
+	if err != nil {
+		return false, errors.Wrap(err, "did receive")
+	}
+
+	return confirmed, nil
 }
 
 // receiveMint submits the MsgSendUSDC and corresponding attestation to MessageTransmitter.receiveMessage.
