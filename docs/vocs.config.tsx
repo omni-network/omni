@@ -64,6 +64,7 @@ export default defineConfig({
           collapsed: true,
           items: [
             { text: 'Basic Deposit', link: '/guides/basic-deposit' },
+            { text: 'Multi-Step Deposit', link: '/guides/multistep-deposit' },
             { text: 'Contracts without onBehalfOf', link: '/guides/contracts-without-onbehalfof' },
             { text: 'Symbiotic', link: '/guides/examples/symbiotic' },
             { text: 'EigenLayer', link: '/guides/examples/eigenlayer' },
