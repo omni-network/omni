@@ -1,9 +1,9 @@
-import type { Address, Chain, Client, Hex, Transport } from 'viem'
+import type { Address, Client, Hex } from 'viem'
 import { type ReadContractReturnType, readContract } from 'viem/actions'
 import { inboxABI } from '../constants/abis.js'
 
-export type GetOrderParameters<chain extends Chain> = {
-  client: Client<Transport, chain>
+export type GetOrderParameters = {
+  client: Client
   inboxAddress: Address
   orderId: Hex
 }
@@ -14,11 +14,11 @@ export type GetOrderReturn = ReadContractReturnType<
   [Hex]
 >
 
-export async function getOrder<chain extends Chain>({
+export async function getOrder({
   client,
   inboxAddress,
   orderId,
-}: GetOrderParameters<chain>): Promise<GetOrderReturn> {
+}: GetOrderParameters): Promise<GetOrderReturn> {
   return readContract(client, {
     address: inboxAddress,
     abi: inboxABI,
