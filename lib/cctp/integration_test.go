@@ -173,7 +173,7 @@ func TestIntegration(t *testing.T) {
 			sendDB = wrongDB
 		}
 
-		msg, err := cctp.SendUSDC(ctx, sendDB, backend, cctp.SendUSDCArgs{
+		msg, err := cctp.SendUSDC(ctx, sendDB, netconf.Mainnet, backend, cctp.SendUSDCArgs{
 			Sender:      devAddr,
 			Recipient:   devAddr,
 			SrcChainID:  send.srcChainID,

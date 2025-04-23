@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/umath"
 
@@ -35,6 +36,7 @@ type SendUSDCArgs struct {
 func SendUSDC(
 	ctx context.Context,
 	db *db.DB,
+	networkID netconf.ID,
 	backend *ethbackend.Backend,
 	args SendUSDCArgs,
 ) (types.MsgSendUSDC, error) {
@@ -63,7 +65,7 @@ func SendUSDC(
 		return types.MsgSendUSDC{}, errors.Wrap(err, "bind opts")
 	}
 
-	domainID, ok := domains[args.DestChainID]
+	domainID, ok := domainIDForChain(networkID, args.DestChainID)
 	if !ok {
 		return types.MsgSendUSDC{}, errors.New("unknown domain ID", "dest_chain", dstChain)
 	}
