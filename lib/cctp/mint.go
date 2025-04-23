@@ -130,6 +130,8 @@ func tryMintSubmitted(
 		return errors.Wrap(err, "get submitted msgs")
 	}
 
+	gaugeInflight(msgs)
+
 	msgTransmitter, _, err := newMessageTransmitter(chainID, backend)
 	if err != nil {
 		return errors.Wrap(err, "new message transmitter")
@@ -239,6 +241,47 @@ func tryMint(
 	}
 
 	return nil
+}
+
+// gaugeInflight sets inflight metrics for the given messages.
+func gaugeInflight(msgs []types.MsgSendUSDC) {
+	type route struct {
+		src string
+		dst string
+	}
+
+	type inflight struct {
+		msgs int
+		amt  *big.Int
+	}
+
+	values := make(map[route]inflight)
+
+	for _, msg := range msgs {
+		src := evmchain.Name(msg.SrcChainID)
+		dst := evmchain.Name(msg.DestChainID)
+
+		r := route{src, dst}
+
+		v, ok := values[r]
+		if !ok {
+			values[r] = inflight{
+				msgs: 1,
+				amt:  msg.Amount,
+			}
+
+			continue
+		}
+
+		v.msgs++
+		v.amt = bi.Add(v.amt, msg.Amount)
+		values[r] = v
+	}
+
+	for r, v := range values {
+		usdcInFlight.WithLabelValues(r.src, r.dst).Set(float64(v.amt.Uint64()))
+		msgsInFlight.WithLabelValues(r.src, r.dst).Set(float64(v.msgs))
+	}
 }
 
 // isReceived checks returns an isReceivedFunc for given chains / clients.

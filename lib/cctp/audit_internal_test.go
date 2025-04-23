@@ -301,7 +301,7 @@ func TestAuditEventProc(t *testing.T) {
 				}
 			}
 
-			proc := newEventProc(db, networkID, chainVer.ID,
+			proc := newAuditEventProc(db, networkID, chainVer.ID, tt.recipient,
 				isReceived,
 				newDepositForBurnGetter(tknMessenger, tknMessengerAddr, tt.recipient),
 				newMessageSentGetter(msgTransmitter, msgTransmitterAddr),
