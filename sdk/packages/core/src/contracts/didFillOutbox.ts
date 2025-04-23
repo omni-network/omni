@@ -11,12 +11,12 @@ export type DidFillParams = {
 
 export type DidFillReturn = boolean
 
-export function didFillOutbox({
+export async function didFillOutbox({
   client,
   outboxAddress,
   resolvedOrder,
-}: DidFillParams) {
-  return readContract(client, {
+}: DidFillParams): Promise<DidFillReturn> {
+  return await readContract(client, {
     address: outboxAddress,
     abi: outboxABI,
     functionName: 'didFill',
