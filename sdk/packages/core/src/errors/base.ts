@@ -36,3 +36,7 @@ export class ParseOpenEventError extends BaseError {
 export class LoadContractsError extends BaseError {
   override name = 'LoadContractsError' as const
 }
+
+export class AccountRequiredError extends BaseError {
+  override name = 'AccountRequiredError' as const
+}
