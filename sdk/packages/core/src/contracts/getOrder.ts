@@ -19,7 +19,7 @@ export async function getOrder({
   inboxAddress,
   orderId,
 }: GetOrderParameters): Promise<GetOrderReturn> {
-  return readContract(client, {
+  return await readContract(client, {
     address: inboxAddress,
     abi: inboxABI,
     functionName: 'getOrder',
