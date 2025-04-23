@@ -48,6 +48,10 @@ func (c client) GetAttestation(ctx context.Context, messageHash common.Hash) ([]
 		return nil, "", err
 	}
 
+	if status == AttestationStatusPendingConfirmations {
+		return nil, status, nil
+	}
+
 	attestation, err := hexutil.Decode(res.Attestation)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "decode attestation hex")
