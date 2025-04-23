@@ -87,7 +87,7 @@ func auditChainForever(
 
 	ctx = log.WithCtx(ctx, "chain", chain.Name, "recipient", recipient)
 
-	proc := newEventProc(db, networkID, chainID,
+	proc := newAuditEventProc(db, networkID, chainID, recipient,
 		newIsReceived(clients),
 		newDepositForBurnGetter(contracts.TokenMessenger, contracts.TokenMessengerAddress, recipient),
 		newMessageSentGetter(contracts.MessageTransmitter, contracts.MessageTransmitterAddress),
@@ -124,16 +124,19 @@ func auditChainForever(
 	}
 }
 
-// newEventProc returns an xchain.EventLogsCallback that processes CCTP DepositForBurn & MessageSent events.
-func newEventProc(
+// newAuditEventProc returns an xchain.EventLogsCallback that processes CCTP DepositForBurn & MessageSent events.
+func newAuditEventProc(
 	db *db.DB,
 	networkID netconf.ID,
 	chainID uint64,
+	recipient common.Address,
 	isReceived isReceivedFunc,
 	getDepositForBurn getDepositForBurnFunc,
 	getMessageSent getMessageSentFunc,
 ) xchain.EventLogsCallback {
 	return func(ctx context.Context, header *ethtypes.Header, elogs []ethtypes.Log) error {
+		blockHeight := header.Number.Uint64()
+
 		// Group logs by transaction hash
 		byTxHash := make(map[common.Hash][]ethtypes.Log)
 		for _, log := range elogs {
@@ -166,23 +169,33 @@ func newEventProc(
 			msgs = append(msgs, msg)
 		}
 
-		if err := upsertMsgs(ctx, db, msgs, isReceived); err != nil {
+		numInserted, numCorrected, err := upsertMsgs(ctx, db, msgs, isReceived)
+		if err != nil {
 			return errors.Wrap(err, "upsert msgs")
 		}
 
-		return db.SetCursor(ctx, chainID, header.Number.Uint64())
+		if err := db.SetCursor(ctx, chainID, blockHeight); err != nil {
+			return errors.Wrap(err, "set cursor")
+		}
+
+		auditHeight.WithLabelValues(evmchain.Name(chainID), recipient.Hex()).Set(float64(blockHeight))
+		auditInsertsTotal.WithLabelValues(evmchain.Name(chainID), recipient.Hex()).Add(float64(numInserted))
+		auditCorrectionsTotal.WithLabelValues(evmchain.Name(chainID), recipient.Hex()).Add(float64(numCorrected))
+
+		return nil
 	}
 }
 
 // upsertMsgs upserts a list of MsgSendUSDC by tx hash, if necessary.
-func upsertMsgs(ctx context.Context, db *db.DB, msgs []types.MsgSendUSDC, isReceived isReceivedFunc) error {
+// It returns the number of inserted and corrected messages.
+func upsertMsgs(ctx context.Context, db *db.DB, msgs []types.MsgSendUSDC, isReceived isReceivedFunc) (int, int, error) {
 	var toInsert []types.MsgSendUSDC
 	var toUpdate []types.MsgSendUSDC
 
 	for _, streamed := range msgs {
 		stored, ok, err := db.GetMsg(ctx, streamed.TxHash)
 		if err != nil {
-			return errors.Wrap(err, "has msg")
+			return 0, 0, errors.Wrap(err, "has msg")
 		}
 
 		// Message missed, insert.
@@ -202,7 +215,7 @@ func upsertMsgs(ctx context.Context, db *db.DB, msgs []types.MsgSendUSDC, isRece
 		if status == types.MsgStatusMinted {
 			minted, err := isReceived(ctx, stored)
 			if err != nil {
-				return errors.Wrap(err, "is received")
+				return 0, 0, errors.Wrap(err, "is received")
 			}
 
 			// Message not received, re-mark as submitted.
@@ -214,7 +227,7 @@ func upsertMsgs(ctx context.Context, db *db.DB, msgs []types.MsgSendUSDC, isRece
 
 		// Mint confirmed, but message hash changed -> BUG. Block processing.
 		if status == types.MsgStatusMinted && stored.MessageHash != streamed.MessageHash {
-			return errors.New("message hash changed post confirmed mint [BUG]", "tx_hash", streamed.TxHash, "stored", stored.MessageHash, "streamed", streamed.MessageHash)
+			return 0, 0, errors.New("message hash changed post confirmed mint [BUG]", "tx_hash", streamed.TxHash, "stored", stored.MessageHash, "streamed", streamed.MessageHash)
 		}
 
 		correction := withStatus(streamed, status)
@@ -229,7 +242,7 @@ func upsertMsgs(ctx context.Context, db *db.DB, msgs []types.MsgSendUSDC, isRece
 	// Insert
 	for _, msg := range toInsert {
 		if err := db.InsertMsg(ctx, msg); err != nil {
-			return errors.Wrap(err, "insert msg")
+			return 0, 0, errors.Wrap(err, "insert msg")
 		}
 
 		log.Debug(ctx, "Inserted missing message", "tx_hash", msg.TxHash, "msg_hash", msg.MessageHash)
@@ -238,13 +251,13 @@ func upsertMsgs(ctx context.Context, db *db.DB, msgs []types.MsgSendUSDC, isRece
 	// Update
 	for _, msg := range toUpdate {
 		if err := db.SetMsg(ctx, msg); err != nil {
-			return errors.Wrap(err, "set msg")
+			return 0, 0, errors.Wrap(err, "set msg")
 		}
 
 		log.Debug(ctx, "Corrected message", "tx_hash", msg.TxHash, "msg_hash", msg.MessageHash)
 	}
 
-	return nil
+	return len(toInsert), len(toUpdate), nil
 }
 
 // eventPairToMsg converts a (TokenMessenger.DepositForBurn, MessageTransmitter.MessageSent) pair to a MsgSendUSDC.
