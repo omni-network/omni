@@ -55,12 +55,6 @@ func newEventProcFunc(deps procDeps, chainID uint64) eventProcFunc {
 
 		log.Debug(ctx, "Processing order event", age)
 
-		alreadyFilled := func() bool {
-			// ignore err. maybeReject will handle unsupported dest chain
-			filled, _ := deps.DidFill(ctx, order)
-			return filled
-		}
-
 		// maybeReject rejects orders if necessary, logging and counting them, returning true if rejected.
 		maybeReject := func() (bool, error) {
 			reason, reject, err := deps.ShouldReject(ctx, order)
@@ -87,8 +81,12 @@ func newEventProcFunc(deps procDeps, chainID uint64) eventProcFunc {
 
 		switch event.Status {
 		case solvernet.StatusPending:
-			if alreadyFilled() {
-				return nil
+			if filled, err := deps.DidFill(ctx, order); err != nil {
+				return errors.Wrap(err, "already filled")
+			} else if filled {
+				// TODO(corver): We don't wait for confirmation in this case, so this could still reorg out :(
+				log.Info(ctx, "Skipping already filled order")
+				break
 			}
 
 			debugPendingData(ctx, deps, order, elog)

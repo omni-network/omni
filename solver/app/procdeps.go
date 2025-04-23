@@ -9,6 +9,7 @@ import (
 	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
@@ -25,7 +26,7 @@ type procDeps struct {
 	GetOrder     func(ctx context.Context, chainID uint64, id OrderID) (Order, bool, error)
 	SetCursor    func(ctx context.Context, chainID uint64, height uint64) error
 	ShouldReject func(ctx context.Context, order Order) (stypes.RejectReason, bool, error)
-	DidFill      func(ctx context.Context, order Order) (bool, error)
+	DidFill      func(ctx context.Context, order Order) (bool, error) // Note DidFill return false/nil on invalid orders, it only returns temporary RPC errors, so it is safe to retry always.
 
 	Accept func(ctx context.Context, order Order) error
 	Reject func(ctx context.Context, order Order, reason stypes.RejectReason) error
@@ -103,6 +104,7 @@ func newFiller(
 		}
 
 		destChainID := pendingData.DestinationChainID
+		destChainName := evmchain.Name(destChainID)
 		outbox, ok := outboxContracts[destChainID]
 		if !ok {
 			return errors.New("unknown chain")
@@ -122,7 +124,8 @@ func newFiller(
 		if ok, err := outbox.DidFill(callOpts, order.ID, pendingData.FillOriginData); err != nil {
 			return errors.Wrap(err, "did fill")
 		} else if ok {
-			log.Info(ctx, "Skipping already filled order", "order_id", order.ID)
+			// TODO(corver): We don't wait for confirmation in this case, so this could still reorg out :(
+			log.Info(ctx, "Skipping already filled order")
 			return nil
 		}
 
@@ -132,7 +135,7 @@ func newFiller(
 				// We error on this case for now, as our contracts only allow single dest chain orders
 				// ERC7683 allows for orders with multiple destination chains, so continue-ing here
 				// would also be appropriate.
-				return errors.New("destination chain mismatch [BUG] ")
+				return errors.New("destination chain mismatch [BUG]")
 			}
 
 			// zero token address means native token
@@ -148,7 +151,7 @@ func newFiller(
 
 			tkn, ok := tokens.ByAddress(destChainID, tknAddr)
 			if !ok || !IsSupportedToken(tkn) {
-				return errors.New("unsupported token, should have been rejected [BUG]", "addr", tknAddr.Hex(), "chain_id", destChainID)
+				return errors.New("unsupported token, should have been rejected [BUG]", "addr", tknAddr.Hex(), "dst_chain", destChainName)
 			}
 
 			if ok, err = isAppproved(ctx, tknAddr, backend, solverAddr, outboxAddr, output.Amount); err != nil {
@@ -156,7 +159,7 @@ func newFiller(
 			} else if !ok {
 				return errors.New("outbox not approved to spend token",
 					"token", tkn.Symbol,
-					"chain_id", destChainID,
+					"dst_chain", destChainName,
 					"addr", tknAddr.Hex(),
 					"amount", output.Amount,
 				)
@@ -185,7 +188,7 @@ func newFiller(
 		if ok, err := outbox.DidFill(callOpts, order.ID, pendingData.FillOriginData); err != nil {
 			return errors.Wrap(err, "did fill")
 		} else if !ok {
-			return errors.New("fill failed [BUG]")
+			return errors.New("fill failed")
 		}
 
 		return pnl(ctx, order, rec)
@@ -236,16 +239,19 @@ func newRejector(
 	}
 }
 
+// newDidFiller returns a function that returns true if the order has been filled.
+// It returns false/nil on invalid orders, as invalid orders are never filled.
+// It only returns temporary RPC errors, so it is safe to retry always.
 func newDidFiller(outboxContracts map[uint64]*bindings.SolverNetOutbox) func(ctx context.Context, order Order) (bool, error) {
 	return func(ctx context.Context, order Order) (bool, error) {
 		pendingData, err := order.PendingData()
 		if err != nil {
-			return false, err
+			return false, nil //nolint:nilerr // Invalid orders are never filled, so we return false/nil
 		}
 
 		outbox, ok := outboxContracts[pendingData.DestinationChainID]
 		if !ok {
-			return false, errors.New("unknown chain")
+			return false, nil
 		}
 
 		filled, err := outbox.DidFill(&bind.CallOpts{Context: ctx}, order.ID, pendingData.FillOriginData)

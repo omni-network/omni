@@ -327,7 +327,7 @@ func (b *Backend) confirmReceipt(ctx context.Context, rec *ethclient.Receipt) er
 		case <-ticker.C:
 			safeHead, err := b.HeaderByType(ctx, ethclient.HeadSafe)
 			if err != nil {
-				return err
+				continue // Ignore RPC errors, just retry, same as in WaitMined.
 			}
 
 			// Check if the receipt's block number is safe.
@@ -349,7 +349,8 @@ func (b *Backend) confirmReceipt(ctx context.Context, rec *ethclient.Receipt) er
 				// Move to the parent block.
 				safe, err = b.HeaderByHash(ctx, safe.ParentHash)
 				if err != nil {
-					return err
+					// Ignore RPC errors, just retry, same as in WaitMined.
+					break
 				}
 			}
 		}
