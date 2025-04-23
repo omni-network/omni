@@ -15,24 +15,25 @@ This guide demonstrates how to configure a multi-step order using the `useOrder`
 
 Imagine a user wants to deposit USDC on a source chain (e.g., Ethereum) and have it automatically deposited into a stablecoin vault on a destination chain (e.g., Optimism). The vault issues a receipt token (let's call it `newUSD`). The user then wants to stake this `newUSD` in a separate staking contract on the same destination chain, receiving a final staked token (let's call it `stkNewUSD`).
 
-The required steps on the destination chain are:
+The required steps on the destination chain, executed by the SolverNet system, are:
 
-1.  Deposit USDC into the Vault contract (receiving `newUSD`).
-2.  Approve the Staking contract to spend the received `newUSD` tokens.
-3.  Stake the `newUSD` tokens in the Staking contract for the user (receiving `stkNewUSD`).
+1.  Deposit USDC into the Vault contract, crediting the SolverNet Executor with `newUSD`.
+2.  Approve the Staking contract to spend the Executor's received `newUSD` tokens.
+3.  Stake the Executor's `newUSD` tokens in the Staking contract for the user (crediting the user with `stkNewUSD`).
 
 We can bundle these destination chain actions into a single Omni SDK order.
 
 ## Key Considerations
 
-*   **Token Approvals via SolverNet Middleman:** When executing `calls`, the solver acts through a proxy contract called the `SolverNet Middleman` on the destination chain. This Middleman contract is the actual `msg.sender` for your target contract calls. In our example, the Middleman receives the `newUSD` from the vault. Consequently, the *Middleman* must be the one to call `approve` on the `newUSD` token contract, granting the Staking contract permission to spend its tokens.
+*   **SolverNet Executor:** The `calls` array you define in your order is executed sequentially by the `SolverNet Executor` contract on the destination chain. This Executor contract is the actual `msg.sender` for each call in the sequence. Therefore, any intermediate tokens generated (like `newUSD` in our example) are held by the Executor, and any necessary approvals must be performed by the Executor.
 
-<Callout type="info">
-The Middleman contract is deployed at `0x08711eb144a394755d88d987dedca4b411b3eebe` on mainnet and `0x1b99e432d5f9e8110102b8d3dce2d0b462a37942` on testnet.
-</Callout>
+*   **Token Approvals:** Since the Executor receives the intermediate `newUSD` token, *it* must call `approve` on the `newUSD` token contract, granting the Staking contract permission to spend *its* (`Executor`'s) tokens in the subsequent staking step.
 
 *   **Static Amounts:** The `amount` used within the `calls` sequence (e.g., for approvals or subsequent interactions like staking) must be statically defined when configuring the order. The system does **not** dynamically read the output amount from one call (like the amount of `newUSD` received from the vault) to use as input for a subsequent call. You must know and specify the exact amounts required for each step beforehand. For many deposit-and-stake scenarios where the vault issues tokens 1:1, the amount for the approval and staking steps will match the initial deposit amount.
 
+<Callout type="info">
+The SolverNet Executor contract is deployed at `0xf92dd37ae11f2ccb4de9355beced42deb4158815` on mainnet and `0x2b6bf280897cccbef827e8546cbd4d28367a8196` on testnet.
+</Callout>
 
 ## 🛠️ Step-by-Step Configuration
 
@@ -53,7 +54,9 @@ const quote = useQuote({
   },
   expense: {
     token: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85', // USDC on destination
-    amount: parseUnits('1000', 6), // Requesting 1000 USDC expense
+    // Amount specified here covers the initial USDC needed by the solver.
+    // We typically request the same amount if the vault exchange rate is 1:1.
+    amount: parseUnits('1000', 6),
   },
   mode: 'expense', // Calculate deposit based on desired expense
 });
@@ -125,7 +128,8 @@ import { useOrder } from '@omni-network/react'
 const vaultAddress = '0x...'; // Address of the vault contract on destination
 const newUSDTokenAddress = '0x...'; // Address of the vault's receipt token (newUSD)
 const stakingContractAddress = '0x...'; // Address of the staking contract
-const middlemanAddress = '0x...'; // Address of the SolverNet Middleman contract
+// Use the correct Executor address for the destination chain (Mainnet/Testnet)
+const executorAddress = '0x...'; // Address of the SolverNet Executor contract
 const userAddress = '0x...'; // User's wallet address
 const depositAmount = parseUnits('1000', 6); // The amount of USDC being deposited / newUSD being staked
 // --- End Replace ---
@@ -135,22 +139,22 @@ const order = useOrder({
   quote: quote.data,
   calls: [
     {
-      // 1. Deposit USDC into the Vault, crediting SolverNet Middleman
+      // 1. Deposit USDC into the Vault, crediting SolverNet Executor
       target: vaultAddress,
       abi: vaultABI,
       functionName: 'deposit',
-      // Vault receives USDC, credits `middlemanAddress` (Middleman) with `newUSD`
-      args: [middlemanAddress, depositAmount],
+      // Vault receives USDC, credits `executorAddress` with `newUSD`
+      args: [executorAddress, depositAmount],
     },
     {
-      // 2. SolverNet Middleman approves Staking contract to spend its `newUSD`
+      // 2. SolverNet Executor approves Staking contract to spend its `newUSD`
       target: newUSDTokenAddress,
       abi: erc20ABI,
       functionName: 'approve',
       args: [stakingContractAddress, depositAmount],
     },
     {
-      // 3. SolverNet Middleman stakes `newUSD` for the user (receiving stkNewUSD implicitly)
+      // 3. SolverNet Executor stakes its `newUSD` for the user (receiving stkNewUSD implicitly)
       target: stakingContractAddress,
       abi: stakingABI,
       functionName: 'stakeFor',
@@ -162,10 +166,10 @@ const order = useOrder({
 
 **Explanation:**
 
-*   `calls`: An array of objects, each defining a contract call to be executed sequentially on the destination chain by the solver via the `SolverNet Middleman`.
-*   **Call 1:** The Middleman calls the `vaultAddress`'s `deposit` function. We assume the vault credits the `recipient` (`middlemanAddress`) with `newUSD` tokens.
-*   **Call 2:** The Middleman calls `approve` on the `newUSDTokenAddress`, granting the `stakingContractAddress` permission to spend the `newUSD` tokens it received in step 1.
-*   **Call 3:** The Middleman calls the `stakingContractAddress`'s `stakeFor` function, staking the `newUSD` tokens on behalf of the `userAddress`. The user effectively receives `stkNewUSD` as a result of this action.
+*   `calls`: An array of objects, each defining a contract call to be executed sequentially on the destination chain by the `SolverNet Executor`.
+*   **Call 1:** The Executor calls the `vaultAddress`'s `deposit` function, receiving `newUSD` tokens itself.
+*   **Call 2:** The Executor calls `approve` on the `newUSDTokenAddress`, granting the `stakingContractAddress` permission to spend the `newUSD` tokens it received in step 1.
+*   **Call 3:** The Executor calls the `stakingContractAddress`'s `stakeFor` function, staking its `newUSD` tokens on behalf of the `userAddress`. The user effectively receives `stkNewUSD` as a result of this action.
 
 ### 4. Execute the Order
 
