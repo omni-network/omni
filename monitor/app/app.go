@@ -19,6 +19,7 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 	"github.com/omni-network/omni/monitor/account"
+	"github.com/omni-network/omni/monitor/cctpgen"
 	"github.com/omni-network/omni/monitor/contract"
 	"github.com/omni-network/omni/monitor/flowgen"
 	"github.com/omni-network/omni/monitor/loadgen"
@@ -95,6 +96,11 @@ func Run(ctx context.Context, cfg Config) error {
 
 	if err := xfeemngr.Start(ctx, network, cfg.XFeeMngr, cfg.PrivateKey, ethClients); err != nil {
 		log.Error(ctx, "Failed to start xfee manager [BUG]", err)
+	}
+
+	cctpDBDir := "" // use in-memory db TODO(kevin): use lvl db when schema stable
+	if err := cctpgen.Start(ctx, network, ethClients, cfg.PrivateKey, cctpDBDir); err != nil {
+		log.Error(ctx, "Failed to start cctpgen [BUG]", err)
 	}
 
 	startMonitoringSyncDiff(ctx, network, ethClients)
