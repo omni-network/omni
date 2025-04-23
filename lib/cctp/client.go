@@ -43,12 +43,12 @@ func (c client) GetAttestation(ctx context.Context, messageHash common.Hash) ([]
 		return nil, "", err
 	}
 
-	status := AttestationStatus(res.Data.Status)
+	status := AttestationStatus(res.Status)
 	if err := status.Validate(); err != nil {
 		return nil, "", err
 	}
 
-	attestation, err := hexutil.Decode(res.Data.Attestation)
+	attestation, err := hexutil.Decode(res.Attestation)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "decode attestation hex")
 	}
@@ -85,7 +85,7 @@ func (c client) do(ctx context.Context, path string, res any) error {
 	if resp.StatusCode != http.StatusOK {
 		var jsonError errorResponse
 		if err := json.Unmarshal(respBody, &jsonError); err == nil {
-			return errors.New("get attestation", "error", jsonError.Data.Error)
+			return errors.New("get attestation", "error", jsonError.Error)
 		}
 
 		return errors.New("unexpected status code", "code", resp.StatusCode)
@@ -108,14 +108,10 @@ func (c client) uri(path string) (string, error) {
 }
 
 type attestationResponse struct {
-	Data struct {
-		Attestation string `json:"attestation"`
-		Status      string `json:"status"`
-	} `json:"data"`
+	Attestation string `json:"attestation"`
+	Status      string `json:"status"`
 }
 
 type errorResponse struct {
-	Data struct {
-		Error string `json:"error"`
-	} `json:"data"`
+	Error string `json:"error"`
 }
