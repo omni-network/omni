@@ -110,7 +110,9 @@ func TestIntegration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Mint forever
-	err = cctp.MintForever(ctx, db, cctpClient, backends, chains, devAddr, cctp.WithInterval(1*time.Second))
+	err = cctp.MintForever(ctx, db, cctpClient, backends, chains, devAddr,
+		cctp.WithMintInterval(1*time.Second),
+		cctp.WithPurgeInterval(10*time.Second))
 	require.NoError(t, err)
 
 	// Audit forever
@@ -207,17 +209,26 @@ func TestIntegration(t *testing.T) {
 		return true
 	}, 2*time.Minute, 1*time.Second)
 
-	// Confirm all messages received and marked as minted
+	// Confirm all messages received
 	for _, msg := range msgs {
 		received, err := cctp.DidReceive(ctx, clients[msg.DestChainID], msg, nil)
 		require.NoError(t, err)
-		require.True(t, received, "message not received", "msg", msg)
-
-		dbMsg, ok, err := db.GetMsg(ctx, msg.TxHash)
-		require.NoError(t, err)
-		require.True(t, ok, "message not found in db", "msg", msg)
-		require.Equal(t, types.MsgStatusMinted, dbMsg.Status, "message not minted", "msg", msg)
+		require.True(t, received, "message not received on dest chain %d", msg.DestChainID)
 	}
+
+	// Wait for all purged (confirmed and deleted)
+	tutil.RequireEventually(t, ctx, func() bool {
+		msgs, err := db.GetMsgs(ctx)
+		require.NoError(t, err)
+
+		if len(msgs) > 0 {
+			return false
+		}
+
+		log.Info(ctx, "All messages purged")
+
+		return true
+	}, 2*time.Minute, 1*time.Second)
 }
 
 // getForkRPCs returns mainnet rpcs urls from env vars.
