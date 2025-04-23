@@ -246,8 +246,9 @@ func (b *Backend) SendTransaction(ctx context.Context, in *ethtypes.Transaction)
 	candidate := txmgr.TxCandidate{
 		TxData:   in.Data(),
 		To:       in.To(),
-		GasLimit: in.Gas(),
+		GasLimit: acc.txMgr.BumpGasLimit(in.Gas()), // If gas already estimated, just bump that (instead of re-estimating).
 		Value:    in.Value(),
+		// Nonce handled by txmgr
 	}
 
 	ctx = log.WithCtx(ctx, "req_id", randomHex7(), "chain", b.chainName)
