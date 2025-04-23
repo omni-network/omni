@@ -209,7 +209,7 @@ func TestIntegration(t *testing.T) {
 
 	// Confirm all messages received and marked as minted
 	for _, msg := range msgs {
-		received, err := cctp.DidReceive(ctx, clients[msg.DestChainID], msg)
+		received, err := cctp.DidReceive(ctx, clients[msg.DestChainID], msg, nil)
 		require.NoError(t, err)
 		require.True(t, received, "message not received", "msg", msg)
 
