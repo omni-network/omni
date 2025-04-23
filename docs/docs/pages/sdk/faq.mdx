@@ -1,0 +1,62 @@
+---
+sidebar_position: 1
+title: Frequently Asked Questions
+description: FAQ on the Omni SDK.
+---
+
+# Frequently Asked Questions
+
+### What does the Omni team need to do to integrate my protocol?
+
+Nothing! Omni is live on mainnet, permissionless, and allows arbitrary contract calls. If your protocol is live on mainnet and permissionless, you can integrate it into your dApp using the Omni SDK without the Omni team needing to do anything. Solvers will be able to interact with your contracts on the destination chain to fulfill user intents submitted via the SDK.
+
+### What happens if an order cannot be filled?
+
+Orders have a `fillDeadline`. If this deadline passes before a solver fills the order, the user who submitted the order can call the `close` function on the `SolverNetInbox` contract on the source chain to retrieve their deposited funds.
+
+Additionally, solvers have the ability to `reject` an order for various reasons (e.g., insufficient inventory, unsupported parameters). If an order is rejected by a solver, the user's deposited funds are refunded automatically. You can monitor the order status using the SDK hooks.
+
+### Are any changes necessary to my contracts?
+
+**No changes are required to your existing smart contracts.** The Omni system interacts *with* your contracts as they are deployed. Solvers simply call the functions you've already exposed on the destination chain, facilitated by the `SolverNetOutbox` and / or `SolverNetMiddleman`.
+
+Even smart contracts that don't expose `onBehalfOf` methods (which would enable the solver to deposit "on behalf of" a user) are compatible, because you can configure the `SolverNetMiddleman` to receive tokens and transfer them to the user afterwards. See the `withExecAndTransfer` hook for details.
+
+### What is the flow at a smart contract level?
+
+The typical flow is:
+
+1.  **Source Chain:** The user submits an order and deposits funds into escrow using the Omni SDK, which interacts with the `SolverNetInbox` contract.
+2.  **Destination Chain:** A solver executes the user's requested action by calling your target contract(s) via the `SolverNetOutbox` contract, using their own funds.
+3.  **Destination -> Source:** The solver submits proof of execution back to the source chain via a messaging layer.
+4.  **Source Chain:** The `SolverNetInbox` verifies the proof and releases the user's deposited funds to the solver.
+
+### How do swaps work?
+
+The SDK allows quoting orders where the deposit and expense assets differ. For example, a user could deposit USDC on a source chain, and have the solver provide ETH on their behalf on the destination.
+
+To initiate a swap, simply specify different assets for the `Deposit` and `Expense` parameters when quoting or creating an order. You can then execute contract calls on the destination chain using the swapped assets.
+
+Swaps are available for any [supported asset](/sdk/supported-assets.mdx).
+
+This is currently live on testnet, and will be available on mainnet soon.
+
+### Is there a way to determine what tokens are supported?
+
+Yes, the [Supported Assets](./supported-assets.mdx) page lists the currently supported assets and their associated limits.
+
+You can also fetch this information programmatically via the API: `https://solver.mainnet.omni.network/api/v1/tokens`.
+
+### What amounts are orders capped at?
+
+There are minimum and maximum limits on the *expense* amount (the amount the user requests to receive on the destination chain). These limits (`MinSpend` and `MaxSpend`) vary per asset and per chain.
+
+Since the required deposit is calculated based on the requested expense amount and the current price (including fees), these expense limits effectively place an indirect boundary on the deposit size. If the requested expense is too high or too low, the order will be rejected before submission.
+
+We are increasing expense limits over time, so you should use the API (`https://solver.mainnet.omni.network/api/v1/tokens`) to check the current bounds.
+
+If you receive an `ExpenseOverMax` or `ExpenseUnderMin` error from a quote, the requested amount is outside the acceptable bounds for that asset. Adjust the amount to fall within the limits provided by the tokens API. Solvers maintain these bounds to ensure efficient order fulfillment.
+
+### What happens if a solver doesn't have sufficient inventory to execute an order?
+
+The order quote will return an `InsufficientInventory` error. This error should be handled in your UI, potentially suggesting the user try again later.

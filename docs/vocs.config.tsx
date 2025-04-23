@@ -71,6 +71,7 @@ export default defineConfig({
             { text: 'Template', link: '/guides/template' },
           ],
         },
+        { text: 'FAQ', link: '/sdk/faq' },
       ],
     },
     { text: 'Resources', link: '/resources' },
