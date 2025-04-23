@@ -446,7 +446,7 @@ func orderTestCases(t *testing.T, solver common.Address) []orderTestCase {
 				calls:      []types.Call{{Value: bi.Ether(0.1)}},
 				expenses: []types.Expense{
 					{Amount: bi.Ether(0.1)},
-					{Amount: bi.Ether(0.1), Token: common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")},
+					{Amount: bi.Ether(0.01), Token: common.HexToAddress("0x8d09a4502cc8cf1547ad300e066060d043f6982d")},
 				},
 			},
 		},

@@ -83,11 +83,11 @@ var (
 			},
 			tokens.ClassTestnet: {
 				MinSpend: bi.Ether(0.001), // 0.001 wstETH
-				MaxSpend: bi.Ether(0.1),   // 0.1 wstETH
+				MaxSpend: bi.Ether(0.01),  // 0.1 wstETH
 			},
 			tokens.ClassDevent: {
 				MinSpend: bi.Ether(0.001), // 0.001 wstETH
-				MaxSpend: bi.Ether(0.1),   // 0.1 wstETH
+				MaxSpend: bi.Ether(0.01),  // 0.1 wstETH
 			},
 		},
 		tokens.STETH: {
