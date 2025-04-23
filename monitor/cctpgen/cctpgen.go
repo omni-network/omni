@@ -142,7 +142,7 @@ func doSendsOnce(
 	}{
 		{evmchain.IDArbSepolia, evmchain.IDBaseSepolia, bi.Dec6(1)}, // Arbitrum Sepolia -> Base Sepolia
 		{evmchain.IDBaseSepolia, evmchain.IDOpSepolia, bi.Dec6(1)},  // Base Sepolia -> Optimism Sepolia
-		{evmchain.IDOptimism, evmchain.IDArbitrumOne, bi.Dec6(1)},   // Optimism Sepolia -> Arbitrum Sepolia
+		{evmchain.IDOpSepolia, evmchain.IDArbitrumOne, bi.Dec6(1)},  // Optimism Sepolia -> Arbitrum Sepolia
 	}
 
 	for _, send := range sends {
