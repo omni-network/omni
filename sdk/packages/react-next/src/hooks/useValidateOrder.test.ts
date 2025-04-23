@@ -18,7 +18,7 @@ const renderValidateOrderHook = (
 }
 
 test('default: native transfer order', async () => {
-  vi.spyOn(core, 'validateOrderEncoded').mockResolvedValue({
+  vi.spyOn(core, 'validateOrder').mockResolvedValue({
     accepted: true,
   })
 
@@ -59,7 +59,7 @@ test('default: native transfer order', async () => {
 })
 
 test('default: order', async () => {
-  vi.spyOn(core, 'validateOrderEncoded').mockResolvedValue({
+  vi.spyOn(core, 'validateOrder').mockResolvedValue({
     accepted: true,
   })
 
@@ -92,7 +92,7 @@ test('behaviour: pending if query not fired', async () => {
 })
 
 test('behaviour: error if response is error', async () => {
-  vi.spyOn(core, 'validateOrderEncoded').mockResolvedValue({
+  vi.spyOn(core, 'validateOrder').mockResolvedValue({
     error: {
       code: 1,
       message: 'an error',
@@ -115,7 +115,7 @@ test('behaviour: error if response is error', async () => {
 })
 
 test('behaviour: rejected if response is rejected', async () => {
-  vi.spyOn(core, 'validateOrderEncoded').mockResolvedValue({
+  vi.spyOn(core, 'validateOrder').mockResolvedValue({
     rejected: true,
     rejectReason: 'a reason',
     rejectDescription: 'a description',
@@ -138,7 +138,7 @@ test('behaviour: rejected if response is rejected', async () => {
 
 test('behaviour: error if call throws', async () => {
   const error = new Error('Unexpected validation response')
-  vi.spyOn(core, 'validateOrderEncoded').mockRejectedValue(error)
+  vi.spyOn(core, 'validateOrder').mockRejectedValue(error)
 
   const { result } = renderValidateOrderHook({ order, enabled: true })
 
