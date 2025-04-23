@@ -1,6 +1,9 @@
 package app
 
 import (
+	"bytes"
+	"fmt"
+	"sort"
 	"testing"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
@@ -14,6 +17,56 @@ import (
 )
 
 //go:generate go test . -golden -clean
+
+// TestGenSupportTokensDoc generates the supported tokens docs.
+func TestGenSupportTokensDoc(t *testing.T) {
+	t.Parallel()
+	genSupportedTokens(t, netconf.Omega, "Testnet", "../../../docs/docs/pages/sdk/assets/testnet.mdx")
+	genSupportedTokens(t, netconf.Mainnet, "Mainnet", "../../../docs/docs/pages/sdk/assets/mainnet.mdx")
+}
+
+func genSupportedTokens(t *testing.T, network netconf.ID, networkName string, fileName string) {
+	t.Helper()
+	m, err := manifests.Manifest(network)
+	require.NoError(t, err)
+
+	metas, err := m.EVMChains()
+	require.NoError(t, err)
+
+	var lines []string
+	for _, meta := range metas {
+		if meta.ChainID == network.Static().OmniExecutionChainID {
+			continue
+		}
+
+		// Add native ETH asset
+		for asset := range supportedAssets {
+			token, ok := tokens.ByAsset(meta.ChainID, asset)
+			if !ok || token.IsMock {
+				continue
+			}
+
+			addr := token.Address.Hex()
+			if token.IsNative() {
+				addr = "Native"
+			}
+
+			lines = append(lines, fmt.Sprintf("| %s | %s | %d | %s | %s |", networkName, meta.PrettyName, meta.ChainID, token.Symbol, addr))
+		}
+	}
+
+	sort.Strings(lines)
+
+	var b bytes.Buffer
+	b.WriteString("| Network | Chain | Chain ID | Asset | Contract Address |\n")
+	b.WriteString("| ------- | ----- | -------- | ----- | ---------------- |\n")
+
+	for _, line := range lines {
+		b.WriteString(line + "\n")
+	}
+
+	tutil.RequireGoldenBytes(t, b.Bytes(), tutil.WithFilename(fileName))
+}
 
 // TestTokens ensures solver toke list does not change without explicit golden update.
 func TestTokens(t *testing.T) {

@@ -3,6 +3,7 @@ package types
 import (
 	"github.com/omni-network/omni/e2e/app/key"
 	"github.com/omni-network/omni/lib/errors"
+	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/feature"
 	"github.com/omni-network/omni/lib/netconf"
 
@@ -75,8 +76,6 @@ const (
 )
 
 // Manifest wraps e2e.Manifest with additional omni-specific fields.
-//
-
 type Manifest struct {
 	e2e.Manifest
 
@@ -189,4 +188,31 @@ func (m Manifest) OmniEVMs() map[string]Mode {
 	}
 
 	return resp
+}
+
+func (m Manifest) EVMChains() ([]evmchain.Metadata, error) {
+	var resp []evmchain.Metadata
+
+	for _, chain := range m.PublicChains {
+		meta, ok := evmchain.MetadataByName(chain)
+		if !ok {
+			return nil, errors.New("unknown public chain", "name", chain)
+		}
+		resp = append(resp, meta)
+	}
+
+	for _, chain := range m.AnvilChains {
+		meta, ok := evmchain.MetadataByName(chain)
+		if !ok {
+			return nil, errors.New("unknown anvil chain", "name", chain)
+		}
+		resp = append(resp, meta)
+	}
+
+	meta, ok := evmchain.MetadataByID(m.Network.Static().OmniExecutionChainID)
+	if !ok {
+		return nil, errors.New("unknown omni execution chain", "id", m.Network.Static().OmniExecutionChainID)
+	}
+
+	return append(resp, meta), nil
 }
