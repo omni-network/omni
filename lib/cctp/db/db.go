@@ -54,12 +54,10 @@ func (db *DB) SetCursor(ctx context.Context, chainID uint64, height uint64) erro
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	cursor := &Cursor{
+	if err := db.cursorTable.Save(ctx, &Cursor{
 		ChainId:     chainID,
 		BlockHeight: height,
-	}
-
-	if err := db.cursorTable.Insert(ctx, cursor); err != nil {
+	}); err != nil {
 		return errors.Wrap(err, "insert cursor")
 	}
 

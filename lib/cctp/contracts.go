@@ -12,7 +12,7 @@ type msgContracts struct {
 	MessageTransmitter        *MessageTransmitter
 	MessageTransmitterAddress common.Address
 	TokenMessenger            *TokenMessenger
-	TokenMessageAddress       common.Address
+	TokenMessengerAddress     common.Address
 }
 
 // Contracts returns a new contracts instance for chainID (TokenMessenger and MessageTransmitter).
@@ -31,7 +31,7 @@ func newContracts(chainID uint64, client ethclient.Client) (msgContracts, error)
 		MessageTransmitter:        msgr,
 		MessageTransmitterAddress: msgrAddr,
 		TokenMessenger:            tknMsgr,
-		TokenMessageAddress:       tknMsgrAddr,
+		TokenMessengerAddress:     tknMsgrAddr,
 	}, nil
 }
 

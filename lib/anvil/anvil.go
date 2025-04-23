@@ -3,6 +3,7 @@ package anvil
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net"
 	"os"
 	"os/exec"
@@ -35,6 +36,18 @@ func WithFork(forkURL string) Option {
 func WithAutoImpersonate() Option {
 	return func(o *options) {
 		o.flags = append(o.flags, "--auto-impersonate")
+	}
+}
+
+func WithBlockTime(seconds float64) Option {
+	return func(o *options) {
+		o.flags = append(o.flags, fmt.Sprintf("--block-time=%f", seconds))
+	}
+}
+
+func WithSlotsInEpoch(slots uint64) Option {
+	return func(o *options) {
+		o.flags = append(o.flags, fmt.Sprintf("--slots-in-an-epoch=%d", slots))
 	}
 }
 

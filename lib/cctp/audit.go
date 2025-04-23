@@ -12,6 +12,7 @@ import (
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/xchain"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -32,6 +33,7 @@ type isReceivedFunc func(ctx context.Context, msg types.MsgSendUSDC) (bool, erro
 func AuditForever(
 	ctx context.Context,
 	db *db.DB,
+	networkID netconf.ID,
 	xprov xchain.Provider,
 	clients map[uint64]ethclient.Client,
 	chains []evmchain.Metadata,
@@ -59,6 +61,7 @@ func AuditForever(
 		go auditChainForever(
 			ctx,
 			db,
+			networkID,
 			xprov,
 			clients,
 			contracts,
@@ -73,6 +76,7 @@ func AuditForever(
 func auditChainForever(
 	ctx context.Context,
 	db *db.DB,
+	networkID netconf.ID,
 	xprov xchain.Provider,
 	clients map[uint64]ethclient.Client,
 	contracts msgContracts,
@@ -83,9 +87,9 @@ func auditChainForever(
 
 	ctx = log.WithCtx(ctx, "chain", chain.Name, "recipient", recipient)
 
-	proc := newEventProc(db, chainID,
+	proc := newEventProc(db, networkID, chainID,
 		newIsReceived(clients),
-		newDepositForBurnGetter(contracts.TokenMessenger, contracts.TokenMessageAddress, recipient),
+		newDepositForBurnGetter(contracts.TokenMessenger, contracts.TokenMessengerAddress, recipient),
 		newMessageSentGetter(contracts.MessageTransmitter, contracts.MessageTransmitterAddress),
 	)
 
@@ -103,7 +107,7 @@ func auditChainForever(
 			ChainID:         chainID,
 			Height:          from,
 			ConfLevel:       xchain.ConfFinalized,
-			FilterAddresses: []common.Address{contracts.TokenMessageAddress, contracts.MessageTransmitterAddress},
+			FilterAddresses: []common.Address{contracts.TokenMessengerAddress, contracts.MessageTransmitterAddress},
 			FilterTopics:    []common.Hash{depositForBurnEvent.ID, messageSentEvent.ID},
 		}
 
@@ -121,6 +125,7 @@ func auditChainForever(
 // newEventProc returns an xchain.EventLogsCallback that processes CCTP DepositForBurn & MessageSent events.
 func newEventProc(
 	db *db.DB,
+	networkID netconf.ID,
 	chainID uint64,
 	isReceived isReceivedFunc,
 	getDepositForBurn getDepositForBurnFunc,
@@ -151,7 +156,11 @@ func newEventProc(
 				continue
 			}
 
-			msg := eventPairToMsg(chainID, burn, send)
+			msg, err := eventPairToMsg(networkID, chainID, burn, send)
+			if err != nil {
+				return errors.Wrap(err, "event pair to msg")
+			}
+
 			msgs = append(msgs, msg)
 		}
 
@@ -197,6 +206,7 @@ func upsertMsgs(ctx context.Context, db *db.DB, msgs []types.MsgSendUSDC, isRece
 			// Message not received, re-mark as submitted.
 			if !minted {
 				status = types.MsgStatusSubmitted
+				log.Warn(ctx, "Message not received, re-marking as submitted", errors.New("message not received"), "tx_hash", streamed.TxHash)
 			}
 		}
 
@@ -209,7 +219,7 @@ func upsertMsgs(ctx context.Context, db *db.DB, msgs []types.MsgSendUSDC, isRece
 
 		// Update if correction required.
 		if !stored.Equals(correction) {
-			log.Debug(ctx, "Correcting message", "tx_hash", streamed.TxHash, "diff", stored.Diff(correction))
+			log.Debug(ctx, "Message changed", "tx_hash", streamed.TxHash, "diff", stored.Diff(correction))
 			toUpdate = append(toUpdate, correction)
 		}
 	}
@@ -219,6 +229,8 @@ func upsertMsgs(ctx context.Context, db *db.DB, msgs []types.MsgSendUSDC, isRece
 		if err := db.InsertMsg(ctx, msg); err != nil {
 			return errors.Wrap(err, "insert msg")
 		}
+
+		log.Debug(ctx, "Inserted missing message", "tx_hash", msg.TxHash, "msg_hash", msg.MessageHash)
 	}
 
 	// Update
@@ -226,6 +238,8 @@ func upsertMsgs(ctx context.Context, db *db.DB, msgs []types.MsgSendUSDC, isRece
 		if err := db.SetMsg(ctx, msg); err != nil {
 			return errors.Wrap(err, "set msg")
 		}
+
+		log.Debug(ctx, "Corrected message", "tx_hash", msg.TxHash, "msg_hash", msg.MessageHash)
 	}
 
 	return nil
@@ -234,12 +248,18 @@ func upsertMsgs(ctx context.Context, db *db.DB, msgs []types.MsgSendUSDC, isRece
 // eventPairToMsg converts a (TokenMessenger.DepositForBurn, MessageTransmitter.MessageSent) pair to a MsgSendUSDC.
 // It assumes the events are from the same transaction, and recipient is a valid ETH address.
 func eventPairToMsg(
+	networkID netconf.ID,
 	srcChainID uint64,
 	burn *TokenMessengerDepositForBurn,
 	send *MessageTransmitterMessageSent,
-) types.MsgSendUSDC {
+) (types.MsgSendUSDC, error) {
 	messageBz := send.Message
 	messageHash := crypto.Keccak256Hash(messageBz)
+
+	destChainID, ok := chainIDForDomain(networkID, burn.DestinationDomain)
+	if !ok {
+		return types.MsgSendUSDC{}, errors.New("chain ID not found for domain", "domain", burn.DestinationDomain)
+	}
 
 	return types.MsgSendUSDC{
 		TxHash:       burn.Raw.TxHash,
@@ -249,9 +269,9 @@ func eventPairToMsg(
 		MessageHash:  messageHash,
 		Amount:       burn.Amount,
 		SrcChainID:   srcChainID,
-		DestChainID:  uint64(burn.DestinationDomain),
+		DestChainID:  destChainID,
 		Status:       types.MsgStatusSubmitted, // we know it's at least submitted, because we a processing a finalized event
-	}
+	}, nil
 }
 
 // newDepositForBurnGetter returns a func that finds an TokenMessenger.DepositForBurn event in a list of logs.

@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"math/big"
 	"os"
+	"os/signal"
+	"syscall"
 	"testing"
 	"time"
 
@@ -14,6 +16,7 @@ import (
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cctp"
 	cctpdb "github.com/omni-network/omni/lib/cctp/db"
+	"github.com/omni-network/omni/lib/cctp/types"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -64,12 +67,22 @@ func TestIntegration(t *testing.T) {
 	ctx, err := log.Init(ctx, logCfg)
 	require.NoError(t, err)
 
+	// Handle interrupts
+	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+
 	rpcs := getForkRPCs(t)
 	chains := getChains(t)
 	network := makeNetwork(t, chains)
 
 	clients, stop := startAnvilForks(t, ctx, rpcs, chains)
 	defer stop()
+
+	// Stop anvil on interrupt
+	go func() {
+		<-ctx.Done()
+		stop()
+	}()
 
 	attesterPk, attesterAddr := newAccount(t) // CCTP attester
 	devPk, devAddr := newAccount(t)           // Test user
@@ -101,35 +114,110 @@ func TestIntegration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Audit forever
-	err = cctp.AuditForever(ctx, db, xprov, clients, chains, devAddr)
+	err = cctp.AuditForever(ctx, db, netconf.Mainnet, xprov, clients, chains, devAddr)
 	require.NoError(t, err)
 
-	// Send once
-	backend, err := backends.Backend(evmchain.IDEthereum)
-	require.NoError(t, err)
-
-	err = cctp.SendUSDC(ctx, db, backend, cctp.SendUSDCArgs{
-		Sender:      devAddr,
-		Recipient:   devAddr,
-		SrcChainID:  evmchain.IDEthereum,
-		DestChainID: evmchain.IDArbitrumOne,
-		Amount:      bi.Dec6(100),
-	})
-	require.NoError(t, err)
-
-	require.Eventually(t, func() bool {
-		usdc := mustUSDC(t, evmchain.IDArbitrumOne)
-
-		backend, err := backends.Backend(evmchain.IDArbitrumOne)
+	// Track initial balances
+	initialBalances := make(map[uint64]*big.Int)
+	for _, chain := range chains {
+		usdc := mustUSDC(t, chain.ChainID)
+		backend, err := backends.Backend(chain.ChainID)
 		require.NoError(t, err)
 
 		balance, err := tokenutil.BalanceOf(ctx, backend, usdc, devAddr)
 		require.NoError(t, err)
 
-		// Temp assertion for w/ initial balance + single bridge of 100 USDC
-		// TODO(kevin): more bridging, better assertions, test audit (perturbations)
-		return bi.EQ(balance, bi.Dec6(1100))
-	}, 20*time.Second, 1*time.Second)
+		initialBalances[chain.ChainID] = balance
+	}
+
+	// Track expected final balances
+	expectedBalances := make(map[uint64]*big.Int)
+	for chainID, balance := range initialBalances {
+		expectedBalances[chainID] = new(big.Int).Set(balance)
+	}
+
+	// wrongDb is used to simulate messages missed, and not stored in the db.
+	// these should be caught by audit.
+	wrongCosmosDB := cosmosdb.NewMemDB()
+	wrongDB, err := cctpdb.New(wrongCosmosDB)
+	require.NoError(t, err)
+
+	// Define sends
+	sends := []struct {
+		srcChainID  uint64
+		destChainID uint64
+		amount      *big.Int
+		wrongDB     bool
+	}{
+		{evmchain.IDEthereum, evmchain.IDOptimism, bi.Dec6(50), false},
+		{evmchain.IDArbitrumOne, evmchain.IDBase, bi.Dec6(50), false},
+		{evmchain.IDOptimism, evmchain.IDBase, bi.Dec6(25), true}, // wrong db
+		{evmchain.IDBase, evmchain.IDEthereum, bi.Dec6(10), false},
+		{evmchain.IDEthereum, evmchain.IDOptimism, bi.Dec6(5), false},
+		{evmchain.IDOptimism, evmchain.IDBase, bi.Dec6(2), false},
+		{evmchain.IDBase, evmchain.IDArbitrumOne, bi.Dec6(1), true}, // wrong db
+		{evmchain.IDArbitrumOne, evmchain.IDEthereum, bi.Dec6(0.5), false},
+		{evmchain.IDEthereum, evmchain.IDBase, bi.Dec6(0.1), true}, // wrong db
+	}
+
+	// Do sends
+	msgs := make([]types.MsgSendUSDC, len(sends))
+	for i, send := range sends {
+		backend, err := backends.Backend(send.srcChainID)
+		require.NoError(t, err)
+
+		sendDB := db
+		if send.wrongDB {
+			sendDB = wrongDB
+		}
+
+		msg, err := cctp.SendUSDC(ctx, sendDB, backend, cctp.SendUSDCArgs{
+			Sender:      devAddr,
+			Recipient:   devAddr,
+			SrcChainID:  send.srcChainID,
+			DestChainID: send.destChainID,
+			Amount:      send.amount,
+		})
+		require.NoError(t, err)
+		msgs[i] = msg
+
+		// Update expected balances
+		expectedBalances[send.srcChainID] = bi.Sub(expectedBalances[send.srcChainID], send.amount)
+		expectedBalances[send.destChainID] = bi.Add(expectedBalances[send.destChainID], send.amount)
+	}
+
+	// Wait for all sends
+	tutil.RequireEventually(t, ctx, func() bool {
+		for chainID, expectedBalance := range expectedBalances {
+			usdc := mustUSDC(t, chainID)
+
+			backend, err := backends.Backend(chainID)
+			tutil.RequireNoError(t, err)
+
+			balance, err := tokenutil.BalanceOf(ctx, backend, usdc, devAddr)
+			tutil.RequireNoError(t, err)
+
+			if !bi.EQ(balance, expectedBalance) {
+				return false
+			}
+		}
+
+		log.Info(ctx, "All sends completed")
+
+		return true
+	}, 2*time.Minute, 1*time.Second)
+
+	// Confirm all messages received and marked as minted
+	for _, msg := range msgs {
+		received, err := cctp.DidReceive(ctx, clients[msg.DestChainID], msg)
+		require.NoError(t, err)
+		require.True(t, received, "message not received", "msg", msg)
+
+		dbMsg, ok, err := db.GetMsg(ctx, msg.TxHash)
+		require.NoError(t, err)
+		require.True(t, ok, "message not found in db", "msg", msg)
+		require.Equal(t, types.MsgStatusMinted, dbMsg.Status, "message not minted", "msg", msg)
+	}
 }
 
 // getForkRPCs returns mainnet rpcs urls from env vars.
@@ -162,6 +250,9 @@ func startAnvilForks(t *testing.T, ctx context.Context, rpcs map[uint64]string, 
 		ethCl, stop, err := anvil.Start(ctx, tutil.TempDir(t), chain.ChainID,
 			anvil.WithFork(rpcs[chain.ChainID]),
 			anvil.WithAutoImpersonate(),
+			// quick finalization for testing
+			anvil.WithBlockTime(1),
+			anvil.WithSlotsInEpoch(2),
 		)
 		require.NoError(t, err)
 
