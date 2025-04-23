@@ -25,19 +25,28 @@ import (
 type MintForeverOption func(*mintForeverOpts)
 
 type mintForeverOpts struct {
-	interval time.Duration
+	mintInterval  time.Duration
+	purgeInterval time.Duration
 }
 
-// WithInterval sets the cadence for the mint loop.
-func WithInterval(interval time.Duration) MintForeverOption {
+// WithMintInterval sets the cadence for the mint loop.
+func WithMintInterval(interval time.Duration) MintForeverOption {
 	return func(c *mintForeverOpts) {
-		c.interval = interval
+		c.mintInterval = interval
+	}
+}
+
+// WithPurgeInterval sets the cadence for the purge loop.
+func WithPurgeInterval(interval time.Duration) MintForeverOption {
+	return func(c *mintForeverOpts) {
+		c.purgeInterval = interval
 	}
 }
 
 func defaultMintOpts() *mintForeverOpts {
 	return &mintForeverOpts{
-		interval: 30 * time.Second,
+		mintInterval:  30 * time.Second,
+		purgeInterval: 20 * time.Minute,
 	}
 }
 
@@ -51,13 +60,19 @@ func MintForever(
 	minter common.Address,
 	opts ...MintForeverOption,
 ) error {
+	o := defaultMintOpts()
+	for _, opt := range opts {
+		opt(o)
+	}
+
 	for _, chain := range chains {
 		backend, err := backends.Backend(chain.ChainID)
 		if err != nil {
 			return errors.Wrap(err, "get backend")
 		}
 
-		go mintChainForever(ctx, db, client, backend, chain, minter, opts...)
+		go mintChainForever(ctx, db, client, backend, chain, minter, o.mintInterval)
+		go purgeChainForever(ctx, db, backend, chain, minter, o.purgeInterval)
 	}
 
 	return nil
@@ -71,20 +86,17 @@ func mintChainForever(
 	backend *ethbackend.Backend,
 	chain evmchain.Metadata,
 	minter common.Address,
-	opts ...MintForeverOption,
+	interval time.Duration,
 ) {
 	ctx = log.WithCtx(ctx,
 		"process", "cctp.MintForever",
 		"chain", chain.Name,
 		"minter", minter)
 
-	o := defaultMintOpts()
-	for _, opt := range opts {
-		opt(o)
-	}
-
-	ticker := time.NewTicker(o.interval)
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
+
+	log.Info(ctx, "Starting mint loop", "interval", interval)
 
 	for {
 		select {
@@ -115,7 +127,7 @@ func tryMintSubmitted(
 		DestChainID: chainID,
 	})
 	if err != nil {
-		return errors.Wrap(err, "list msgs")
+		return errors.Wrap(err, "get submitted msgs")
 	}
 
 	msgTransmitter, _, err := newMessageTransmitter(chainID, backend)
@@ -285,10 +297,11 @@ func DidReceive(ctx context.Context, ethClient ethclient.Client, msg types.MsgSe
 	return true, nil
 }
 
-// IsConfirmed checks if the MsgSendUSDC has been audited, received and finalized on the destination chain.
-func IsConfirmed(ctx context.Context, db *cctpdb.DB, destClient ethclient.Client, msg types.MsgSendUSDC) (bool, error) {
+// isConfirmed checks if the MsgSendUSDC has been audited, received and finalized on the destination chain.
+// After a confirmed messsage has been purged, isConfirmed will error.
+func isConfirmed(ctx context.Context, db *cctpdb.DB, destClient ethclient.Client, msg types.MsgSendUSDC) (bool, error) {
 	// Confirm message is tracked in DB
-	stored, ok, err := db.GetMsg(ctx, msg.MessageHash)
+	stored, ok, err := db.GetMsg(ctx, msg.TxHash)
 	if err != nil {
 		return false, errors.Wrap(err, "get msg")
 	} else if !ok {
@@ -347,4 +360,82 @@ func receiveMint(
 	}
 
 	return receipt, nil
+}
+
+// purgeChainForever purges all messages confirmed messages on a chain forever.
+func purgeChainForever(
+	ctx context.Context,
+	db *cctpdb.DB,
+	backend *ethbackend.Backend,
+	chain evmchain.Metadata,
+	minter common.Address,
+	interval time.Duration,
+) {
+	ctx = log.WithCtx(ctx,
+		"process", "cctp.PurgeForever",
+		"chain", chain.Name,
+		"minter", minter)
+
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	log.Info(ctx, "Starting purge loop", "interval", interval)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			err := tryPurge(ctx, db, backend, chain.ChainID)
+			if ctx.Err() != nil {
+				return
+			} else if err != nil {
+				log.Warn(ctx, "Purge failed (will retry)", err)
+			}
+		}
+	}
+}
+
+func tryPurge(
+	ctx context.Context,
+	db *cctpdb.DB,
+	backend *ethbackend.Backend,
+	chainID uint64,
+) error {
+	ctx = log.WithCtx(ctx, "chain_id", chainID)
+
+	msgs, err := db.GetMsgsBy(ctx, cctpdb.MsgFilter{
+		Status:      types.MsgStatusMinted,
+		DestChainID: chainID,
+	})
+	if err != nil {
+		return errors.Wrap(err, "get minted msgs")
+	}
+
+	var toDelete []types.MsgSendUSDC
+
+	// Mark confirmed messages for deletion
+	for _, msg := range msgs {
+		confirmed, err := isConfirmed(ctx, db, backend, msg)
+		if err != nil {
+			return errors.Wrap(err, "is confirmed")
+		}
+
+		if !confirmed {
+			continue
+		}
+
+		toDelete = append(toDelete, msg)
+	}
+
+	// Delete confirmed messages
+	for _, msg := range toDelete {
+		if err := db.DeleteMsg(ctx, msg.TxHash); err != nil {
+			return errors.Wrap(err, "delete msg")
+		}
+
+		log.Info(ctx, "Purged confirmed message", "msg_hash", msg.MessageHash, "tx_hash", msg.TxHash)
+	}
+
+	return nil
 }

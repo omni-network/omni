@@ -93,6 +93,8 @@ func auditChainForever(
 		newMessageSentGetter(contracts.MessageTransmitter, contracts.MessageTransmitterAddress),
 	)
 
+	log.Info(ctx, "Starting event processor")
+
 	backoff := expbackoff.New(ctx)
 	for {
 		from, ok, err := db.GetCursor(ctx, chainID)
