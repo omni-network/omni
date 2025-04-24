@@ -1,0 +1,24 @@
+# Executing Swaps
+
+Cross-chain swaps with the Omni SDK build directly on the like-asset transfer flow.
+
+## How To Execute Swaps
+
+To perform a swap instead of a like-asset transfer:
+
+1.  **Specify Different Assets:** When calling [`useQuote`](/sdk/hooks/useQuote.md), provide different assets for the `deposit` (on the source chain) and the `expense` (on the destination chain) by inputting the desired token addresses.
+2.  **Use Standard Hooks:** Continue with [`useOrder`](/sdk/hooks/useOrder.md) to execute the transaction, just as you would for a transfer.
+
+## Quote Frequency
+
+Asset prices fluctuate constantly. To ensure users see up-to-date rates and minimize potential slippage or order rejection by solvers, refresh quotes frequently using [`useQuote`](/sdk/hooks/useQuote.md). A common UX pattern is to refresh every 15-30 seconds.
+
+## Combining Swaps with Other Actions
+
+Swaps are composable with other on-chain actions. You can atomically perform a swap *and* another action on the destination chain (like depositing into a vault or calling a contract function) within a single transaction experience.
+
+*Example:* A user could swap USDC (source) for ETH (destination) and deposit that ETH into a vault (destination) in one seamless, near-instant step.
+
+## Supported Assets
+
+Swaps work between all supported assets, which can be found [here](/sdk/supported-assets.mdx).

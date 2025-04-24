@@ -59,6 +59,7 @@ export default defineConfig({
             { text: 'withExecAndTransfer', link: '/sdk/utils/withExecAndTransfer' },
           ],
         },
+        { text: 'Swaps', link: '/sdk/swaps' },
         {
           text: 'Guides',
           collapsed: true,
