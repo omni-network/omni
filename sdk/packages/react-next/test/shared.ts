@@ -126,3 +126,10 @@ export const order = {
     amount: 0n,
   },
 } as const
+
+export const orderStatusData = {
+  status: 1,
+  updatedBy: '0x123',
+  timestamp: 1,
+  rejectReason: 0,
+} as const

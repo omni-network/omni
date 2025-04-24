@@ -1,7 +1,9 @@
 import { beforeEach, expect, test, vi } from 'vitest'
-import { resolvedOrder } from '../../test/index.js'
-import { createMockQueryResult } from '../../test/mocks.js'
-import { renderHook } from '../../test/react.js'
+import {
+  createMockQueryResult,
+  renderHook,
+  resolvedOrder,
+} from '../../test/index.js'
 import { useGetOrderStatus } from './useGetOrderStatus.js'
 
 const { useGetOrder, useInboxStatus, useDidFillOutbox } = vi.hoisted(() => {
@@ -101,38 +103,16 @@ test('behaviour: status filled if didFillOutbox is true', async () => {
   expect(result.current.error).toBeUndefined()
 })
 
-test('behaviour: status filled if inboxStatus is filled', async () => {
-  useInboxStatus.mockReturnValue('filled')
+test.each(['filled', 'rejected', 'closed', 'unknown'])(
+  'behaviour: status %s if inboxStatus is %s',
+  async (status) => {
+    useInboxStatus.mockReturnValue(status)
 
-  const { result } = renderGetOrderStatusHook()
+    const { result } = renderGetOrderStatusHook()
 
-  expect(result.current.status).toBe('filled')
-  expect(result.current.error).toBeUndefined()
-})
-
-test('behaviour: status rejected if inboxStatus is rejected', async () => {
-  useInboxStatus.mockReturnValue('rejected')
-
-  const { result } = renderGetOrderStatusHook()
-
-  expect(result.current.status).toBe('rejected')
-  expect(result.current.error).toBeUndefined()
-})
-
-test('behaviour: status closed if inboxStatus is closed', async () => {
-  useInboxStatus.mockReturnValue('closed')
-
-  const { result } = renderGetOrderStatusHook()
-
-  expect(result.current.status).toBe('closed')
-  expect(result.current.error).toBeUndefined()
-})
-
-test('behaviour: status not found if inboxStatus is unknown', async () => {
-  useInboxStatus.mockReturnValue('unknown')
-
-  const { result } = renderGetOrderStatusHook()
-
-  expect(result.current.status).toBe('not-found')
-  expect(result.current.error).toBeUndefined()
-})
+    expect(result.current.status).toBe(
+      status === 'unknown' ? 'not-found' : status,
+    )
+    expect(result.current.error).toBeUndefined()
+  },
+)

@@ -1,5 +1,5 @@
 import { waitFor } from '@testing-library/react'
-import { beforeEach, expect, test, vi } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import { orderId, renderHook, resolvedOrder } from '../../test/index.js'
 import { type UseGetOrderParameters, useGetOrder } from './useGetOrder.js'
 
@@ -16,17 +16,12 @@ vi.mock('@omni-network/core', async () => {
   return { ...actual, getOrder }
 })
 
-beforeEach(() => {
-  getOrder.mockImplementation(() => {
-    return Promise.reject(new Error('No mock'))
-  })
-})
-
-test('default: returns order when contract read returns an order', async () => {
+test('default: returns order when core api returns an order', async () => {
   const { result, rerender } = renderHook(
     (props: UseGetOrderParameters) => useGetOrder({ chainId: 1, ...props }),
     { mockContractsCall: true },
   )
+
   expect(result.current.data).toBeUndefined()
 
   getOrder.mockReturnValue(
@@ -46,7 +41,7 @@ test('default: returns order when contract read returns an order', async () => {
   await waitFor(() => expect(result.current.data?.[1].status).toBe(1))
 })
 
-test('behaviour: no contract read when orderId is undefined', () => {
+test('behaviour: no core api call when orderId is undefined', () => {
   const { result } = renderHook(
     () =>
       useGetOrder({
@@ -61,7 +56,7 @@ test('behaviour: no contract read when orderId is undefined', () => {
   expect(getOrder).not.toHaveBeenCalled()
 })
 
-test('behaviour: no contract read when chainId is undefined', () => {
+test('behaviour: no core api call when chainId is undefined', () => {
   const { result } = renderHook(
     () =>
       useGetOrder({
@@ -76,7 +71,7 @@ test('behaviour: no contract read when chainId is undefined', () => {
   expect(getOrder).not.toHaveBeenCalled()
 })
 
-test('behaviour: no contract read when all inputs undefined', () => {
+test('behaviour: no core api call when all inputs undefined', () => {
   const { result } = renderHook(() => useGetOrder({}), {
     mockContractsCall: true,
   })

@@ -1,8 +1,7 @@
 import * as core from '@omni-network/core'
 import { waitFor } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
-import { accounts, renderHook } from '../../test/index.js'
-import { order } from '../../test/shared.js'
+import { order, renderHook } from '../../test/index.js'
 import { useValidateOrder } from './useValidateOrder.js'
 
 // TODO calls as empty array should not be allowed // throw error
@@ -18,47 +17,6 @@ const renderValidateOrderHook = (
 }
 
 test('default: native transfer order', async () => {
-  vi.spyOn(core, 'validateOrder').mockResolvedValue({
-    accepted: true,
-  })
-
-  const { result, rerender } = renderHook(
-    ({ enabled }: { enabled: boolean }) =>
-      useValidateOrder({
-        order: {
-          owner: accounts[0],
-          srcChainId: 1,
-          destChainId: 2,
-          calls: [
-            {
-              target: accounts[0],
-              value: 0n,
-            },
-          ],
-          deposit: {
-            amount: 0n,
-          },
-          expense: {
-            amount: 0n,
-          },
-        },
-        enabled,
-      }),
-    {
-      initialProps: { enabled: false },
-    },
-  )
-
-  expect(result.current.status).toBe('pending')
-
-  rerender({
-    enabled: true,
-  })
-
-  await waitFor(() => expect(result.current.status).toBe('accepted'))
-})
-
-test('default: order', async () => {
   vi.spyOn(core, 'validateOrder').mockResolvedValue({
     accepted: true,
   })
@@ -151,6 +109,9 @@ test('behaviour: error if call throws', async () => {
 })
 
 test('behaviour: returns an error instead of throwing when the order encoding throws', async () => {
+  const error = new Error('Address "0xinvalid" is invalid')
+  vi.spyOn(core, 'validateOrder').mockRejectedValue(error)
+
   const invalidOrder = {
     ...order,
     calls: [{ ...order.calls[0], args: ['0xinvalid', 0n] }],
