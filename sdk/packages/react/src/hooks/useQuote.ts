@@ -1,4 +1,8 @@
-import { type UseQueryOptions, type UseQueryResult, useQuery } from '@tanstack/react-query'
+import {
+  type UseQueryOptions,
+  type UseQueryResult,
+  useQuery,
+} from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { type Address, type Hex, fromHex, zeroAddress } from 'viem'
 import { useOmniContext } from '../context/omni.js'
@@ -13,7 +17,10 @@ type UseQuoteParams = {
   deposit: Quoteable
   expense: Quoteable
   enabled: boolean
-  queryOpts?: Omit<UseQueryOptions<Quote, QuoteError>,'queryKey' | 'queryFn' | 'enabled' >
+  queryOpts?: Omit<
+    UseQueryOptions<Quote, QuoteError>,
+    'queryKey' | 'queryFn' | 'enabled'
+  >
 }
 
 type UseQuoteSuccess = Quote & {
@@ -63,7 +70,7 @@ export function useQuote(params: UseQuoteParams): UseQuoteResult {
     queryKey: ['quote', request],
     queryFn: async () => doQuote(apiBaseUrl, request),
     enabled,
-    ...params.queryOpts
+    ...params.queryOpts,
   })
 
   return useResult(query)
