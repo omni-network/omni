@@ -1,7 +1,4 @@
-import {
-  type UseQueryResult,
-  useQuery,
-} from '@tanstack/react-query'
+import { type UseQueryResult, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { encodeFunctionData, zeroAddress } from 'viem'
 import { useOmniContext } from '../context/omni.js'
