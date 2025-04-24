@@ -43,8 +43,9 @@ The hook accepts a configuration object with the following properties.
 | `destChainId` | `number`                               | Yes      | Chain ID of the destination chain (where the action occurs and the `expense` is spent).                                               |
 | `deposit`     | `QuoteAsset & { amount?: bigint }`     | Yes      | Aasset to deposit on the source chain. Provide `amount` only if using `mode: 'expense'`.                                     |
 | `expense`     | `QuoteAsset & { amount?: bigint }`     | Yes      | Asset to spend on the destination chain. Provide `amount` only if using `mode: 'deposit'`.                                     |
-| `mode`        | `'deposit' \| 'expense'`                | Yes     | Defines the direction of the quote. |
+| `mode`        | `'deposit' \| 'expense'`               | Yes      | Defines the direction of the quote. |
 | `enabled`     | `boolean`                              | No       | Defaults to `true`. Set to `false` to disable fetching the quote.                                                                          |
+| `queryOpts`     | `UseQueryOptions<Quote, QuoteError>` | No       | React query options, we omit some keys here (`enabled`, `queryKey`, and `queryFn`) to prevent overriding some default behaviour. See [`useQuery`](https://tanstack.com/query/latest/docs/react/reference/useQuery) docs for available options. |
 
 ## Types
 
