@@ -1,10 +1,12 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"testing"
 
+	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/evmchain"
 	"github.com/omni-network/omni/lib/tokenpricer"
 	"github.com/omni-network/omni/lib/tokens"
@@ -92,4 +94,23 @@ func TestPriceHandler(t *testing.T) {
 			require.Equalf(t, expected, actual, "expected=%v, actual=%v", expected, actual)
 		})
 	}
+}
+
+// unaryPrice is a priceFunc that returns a price for like-for-like 1-to-1 pairs or an error.
+// This is the legacy (pre-swaps) behavior.
+func unaryPrice(_ context.Context, deposit, expense tokens.Token) (types.Price, error) {
+	if !areEqualBySymbol(deposit, expense) {
+		return types.Price{}, errors.New("deposit token must match expense token", "deposit", deposit, "expense", expense)
+	}
+
+	if deposit.ChainClass != expense.ChainClass {
+		// we should reject with UnsupportedDestChain before quoting tokens of different chain classes.
+		return types.Price{}, errors.New("deposit and expense must be of the same chain class (e.g. mainnet, testnet)", "deposit", deposit.ChainClass, "expense", expense.ChainClass)
+	}
+
+	return types.Price{
+		Price:   big.NewRat(1, 1),
+		Deposit: deposit.Asset,
+		Expense: expense.Asset,
+	}, nil
 }
