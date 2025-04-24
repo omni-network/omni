@@ -17,6 +17,13 @@ func (c flowConfig) Flip() flowConfig {
 	}
 }
 
+func (c flowConfig) IsSwap() bool {
+	src, _ := evmchain.MetadataByID(c.srcChain)
+	dst, _ := evmchain.MetadataByID(c.dstChain)
+
+	return src.NativeToken != dst.NativeToken
+}
+
 var config = map[netconf.ID][]flowConfig{
 	netconf.Devnet: {
 		{

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"math/rand/v2"
 	"time"
 
 	"github.com/omni-network/omni/contracts/bindings"
@@ -150,6 +151,11 @@ func openOrders(
 	}
 
 	work := func(ctx context.Context, orderData bindings.SolverNetOrderData) (output, error) {
+		if conf.IsSwap() && network == netconf.Staging {
+			// Delay swaps by 10-30s to simulate human behavior
+			delay(ctx, 10, 30)
+		}
+
 		return openOrder(ctx, backends, network, flowgenAddr, conf.srcChain, scl, orderData)
 	}
 
@@ -187,6 +193,17 @@ func openOrders(
 	)
 
 	return results, nil
+}
+
+func delay(ctx context.Context, lowSecs int64, highSecs int64) {
+	jitterSecs := rand.Int64N(highSecs - lowSecs) //nolint:gosec // Not critical randomness
+	delay := time.Duration(lowSecs+jitterSecs) * time.Second
+	log.Debug(ctx, "Flowgen: Delaying order opening", "delay", delay)
+
+	select {
+	case <-ctx.Done():
+	case <-time.After(delay):
+	}
 }
 
 func splitOrderAmounts(bounds solver.SpendBounds, total *big.Int, split int) []*big.Int {
