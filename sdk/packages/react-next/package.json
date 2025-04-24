@@ -22,7 +22,8 @@
     "prepublishOnly": "pnpm build",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "test": "vitest run",
-    "coverage": "vitest run --coverage"
+    "coverage": "vitest run --coverage",
+    "check": "biome check --write"
   },
   "files": [
     "dist/**",
