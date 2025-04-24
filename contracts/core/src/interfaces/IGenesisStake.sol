@@ -16,11 +16,6 @@ interface IGenesisStake {
     function stakeFor(address recipient, uint256 amount) external;
 
     /**
-     * @notice Unstake your entire balance, starting the unbonding period.
-     */
-    function unstake() external;
-
-    /**
      * @notice Withdraw your entire balance after the unbonding period.
      */
     function withdraw() external;
