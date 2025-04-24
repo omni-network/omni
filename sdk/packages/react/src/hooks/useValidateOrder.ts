@@ -1,5 +1,4 @@
 import {
-  type UseQueryOptions,
   type UseQueryResult,
   useQuery,
 } from '@tanstack/react-query'
@@ -15,10 +14,6 @@ import { toJSON } from './util.js'
 type UseValidateOrderParams<abis extends OptionalAbis> = {
   order: Order<abis>
   enabled: boolean
-  queryOpts?: Omit<
-    UseQueryOptions<ValidationResponse, FetchJSONError>,
-    'queryKey' | 'queryFn' | 'enabled'
-  >
 }
 
 type ValidationResponse = {
