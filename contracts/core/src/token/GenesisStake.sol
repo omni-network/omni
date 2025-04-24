@@ -26,25 +26,11 @@ contract GenesisStake is IGenesisStake, OwnableUpgradeable, PausableUpgradeable 
     event Unstaked(address indexed account, uint256 amount);
 
     /**
-     * @notice Emitted when a user withdraws tokens.
-     * @param account   The account that withdrew tokens.
-     * @param amount    The amount of tokens withdrawn.
-     */
-    event Withdrawn(address indexed account, uint256 amount);
-
-    /**
      * @notice Emitted when a user migrates their stake.
      * @param account   The account that migrated their stake.
      * @param amount    The amount of tokens migrated.
      */
     event Migrated(address indexed account, uint256 amount);
-
-    /**
-     * @notice Emitted when the unboding period is changed.
-     * @param newDuration   The new unboding period.
-     * @param prevDuration  The previous unboding period.
-     */
-    event UnbondingPeriodChanged(uint256 newDuration, uint256 prevDuration);
 
     /**
      * @notice Emitted when staking is opened.
@@ -66,12 +52,6 @@ contract GenesisStake is IGenesisStake, OwnableUpgradeable, PausableUpgradeable 
      * @dev This contract is allowed to withdraw user staking deposits for migration to Omni.
      */
     address public immutable rewardsDistributor;
-
-    /**
-     * @notice Duration (in seconds) that a user must wait to withdraw after unstaking.
-     */
-    uint256 public unbondingPeriod;
-
     /**
      * @notice The staked balance of each user.
      */
@@ -104,13 +84,11 @@ contract GenesisStake is IGenesisStake, OwnableUpgradeable, PausableUpgradeable 
     /**
      * @notice Initialize the contract.
      * @param owner_            The owner of the contract.
-     * @param unbondingPeriod_  The unboding period.
      */
-    function initialize(address owner_, uint256 unbondingPeriod_) external initializer {
+    function initialize(address owner_) external initializer {
         __Ownable_init();
         __Pausable_init();
         _transferOwnership(owner_);
-        _setUnbondingPeriod(unbondingPeriod_);
         _open();
     }
 
@@ -149,39 +127,6 @@ contract GenesisStake is IGenesisStake, OwnableUpgradeable, PausableUpgradeable 
     }
 
     /**
-     * @notice Withdraw your entire balance after the unbonding period.
-     */
-    function withdraw() external whenNotPaused {
-        require(balanceOf[msg.sender] > 0, "GenesisStake: not staked");
-        require(unstakedAt[msg.sender] > 0, "GenesisStake: not unstaked");
-        require(block.timestamp >= unstakedAt[msg.sender] + unbondingPeriod, "GenesisStake: not unbonded");
-
-        uint256 amount = balanceOf[msg.sender];
-
-        // reset balance & timestamps
-        _resetValues(msg.sender);
-
-        require(token.transfer(msg.sender, amount), "GenesisStake: transfer failed");
-
-        emit Withdrawn(msg.sender, amount);
-    }
-
-    /**
-     * @notice Unstake the balance for a specific user, starting the unbonding period.
-     * @dev Can only be called by the authorized rewards distributor.
-     * @param addr The address of the user to unstake.
-     */
-    function unstakeAccount(address addr) external whenNotPaused {
-        require(msg.sender == rewardsDistributor, "GenesisStake: unauthorized");
-        require(balanceOf[addr] > 0, "GenesisStake: not staked");
-        require(unstakedAt[addr] == 0, "GenesisStake: already unstaked");
-
-        unstakedAt[addr] = block.timestamp;
-
-        emit Unstaked(addr, balanceOf[addr]);
-    }
-
-    /**
      * @notice Migrate a user's stake to the rewards distributor.
      * @param addr The address of the user to migrate.
      * @return The amount of tokens migrated.
@@ -199,25 +144,6 @@ contract GenesisStake is IGenesisStake, OwnableUpgradeable, PausableUpgradeable 
 
         emit Migrated(addr, amount);
         return amount;
-    }
-
-    /**
-     * @notice Returns timestamp at which `account` can withdraw.
-     *         Reverts if the account has not staked & unstaked.
-     */
-    function canWithdrawAt(address account) external view returns (uint256) {
-        require(balanceOf[account] > 0, "GenesisStake: not staked");
-        require(unstakedAt[account] > 0, "GenesisStake: not unstaked");
-
-        return unstakedAt[account] + unbondingPeriod;
-    }
-
-    /**
-     * @notice Set the unboding period.
-     * @param duration The unboding period.
-     */
-    function setUnbondingPeriod(uint256 duration) external onlyOwner {
-        _setUnbondingPeriod(duration);
     }
 
     /**
@@ -246,17 +172,6 @@ contract GenesisStake is IGenesisStake, OwnableUpgradeable, PausableUpgradeable 
      */
     function close() external onlyOwner {
         _close();
-    }
-
-    /**
-     * @notice Set the unboding period.
-     * @param duration The unboding period.
-     */
-    function _setUnbondingPeriod(uint256 duration) internal {
-        require(duration > 0, "GenesisStake: dur must be > 0");
-        uint256 prev = unbondingPeriod;
-        unbondingPeriod = duration;
-        emit UnbondingPeriodChanged(duration, prev);
     }
 
     /**

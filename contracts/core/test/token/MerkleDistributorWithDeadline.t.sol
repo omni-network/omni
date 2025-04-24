@@ -107,7 +107,7 @@ contract MerkleDistributorWithDeadline_Test is Test {
                 abi.encodePacked(
                     type(TransparentUpgradeableProxy).creationCode,
                     abi.encode(
-                        genesisStakeImpl, proxyAdmin, abi.encodeCall(GenesisStake.initialize, (address(this), 30 days))
+                        genesisStakeImpl, proxyAdmin, abi.encodeCall(GenesisStake.initialize, (address(this)))
                     )
                 )
             )
@@ -320,51 +320,52 @@ contract MerkleDistributorWithDeadline_Test is Test {
             vm.prank(stakers[i]);
             merkleDistributor.unstake(i, amounts[i], proofs[i]);
 
-            // verify stake is marked for removal but not yet removed
-            assertEq(genesisStake.balanceOf(stakers[i]), initialStake);
-            assertGt(genesisStake.unstakedAt(stakers[i]), 0);
-            // verify rewards were claimed
-            assertEq(omni.balanceOf(stakers[i]), initialBalance + amounts[i]);
+            // verify stake is removed and rewards were claimed
+            assertEq(genesisStake.balanceOf(stakers[i]), 0);
+            assertEq(omni.balanceOf(stakers[i]), initialBalance + amounts[i] + initialStake);
         }
     }
 
-    function test_unstakeUser_reverts() public {
+    function test_unstake_without_rewards() public {
+        // claim rewards first so they're not available
         for (uint256 i; i < addrCount; ++i) {
-            bytes32 digest = merkleDistributor.getUnstakeDigest(stakers[i], endTime - 1);
-            (uint8 v, bytes32 r, bytes32 s) = vm.sign(pks[i], digest);
-            vm.warp(endTime);
-
-            // cannot unstake if signature is expired
-            vm.expectRevert(MerkleDistributorWithDeadline.Expired.selector);
-            merkleDistributor.unstakeUser(stakers[i], 0, amounts[i], proofs[i], v, r, s, endTime - 1);
-
-            vm.warp(1);
-            digest = merkleDistributor.getUnstakeDigest(stakers[i], block.timestamp + 1);
-            (v, r,) = vm.sign(pks[i], digest);
-
-            // cannot unstake if signature is invalid
-            vm.expectRevert(MerkleDistributorWithDeadline.InvalidSignature.selector);
-            merkleDistributor.unstakeUser(stakers[i], 0, amounts[i], proofs[i], v, r, s, block.timestamp + 1);
+            vm.prank(stakers[i]);
+            merkleDistributor.claim(i, stakers[i], amounts[i], proofs[i]);
         }
-    }
 
-    function test_unstakeUser_succeeds() public {
+        // now try to unstake - should only get stake back
         for (uint256 i; i < addrCount; ++i) {
             uint256 initialBalance = omni.balanceOf(stakers[i]);
             uint256 initialStake = genesisStake.balanceOf(stakers[i]);
 
-            // Get user signature for unstaking
-            bytes32 digest = merkleDistributor.getUnstakeDigest(stakers[i], block.timestamp + 1);
-            (uint8 v, bytes32 r, bytes32 s) = vm.sign(pks[i], digest);
+            vm.prank(stakers[i]);
+            merkleDistributor.unstake(i, amounts[i], proofs[i]);
 
-            // Unstake and claim rewards
-            merkleDistributor.unstakeUser(stakers[i], i, amounts[i], proofs[i], v, r, s, block.timestamp + 1);
+            // verify stake is removed but no additional rewards claimed
+            assertEq(genesisStake.balanceOf(stakers[i]), 0);
+            assertEq(omni.balanceOf(stakers[i]), initialBalance + initialStake);
+        }
+    }
 
-            // Verify stake is marked for removal but not yet removed
-            assertEq(genesisStake.balanceOf(stakers[i]), initialStake);
-            assertGt(genesisStake.unstakedAt(stakers[i]), 0);
-            // Verify rewards were claimed
-            assertEq(omni.balanceOf(stakers[i]), initialBalance + amounts[i]);
+    function test_unstake_without_stake_or_rewards() public {
+        // unstake all stakes first
+        for (uint256 i; i < addrCount; ++i) {
+            vm.prank(stakers[i]);
+            merkleDistributor.unstake(i, amounts[i], proofs[i]);
+        }
+
+        // try to unstake again - should do nothing
+        for (uint256 i; i < addrCount; ++i) {
+            uint256 initialBalance = omni.balanceOf(stakers[i]);
+            uint256 initialStake = genesisStake.balanceOf(stakers[i]);
+            assertEq(initialStake, 0, "should have no stake");
+
+            vm.prank(stakers[i]);
+            merkleDistributor.unstake(i, amounts[i], proofs[i]);
+
+            // verify no stake to remove and no rewards claimed
+            assertEq(genesisStake.balanceOf(stakers[i]), 0);
+            assertEq(omni.balanceOf(stakers[i]), initialBalance);
         }
     }
 }
