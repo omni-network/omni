@@ -14,6 +14,7 @@ import (
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/tokens"
 	"github.com/omni-network/omni/lib/tokens/tokenutil"
+	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum"
@@ -60,6 +61,9 @@ func newShouldRejector(
 	solverAddr, outboxAddr common.Address,
 ) func(ctx context.Context, order Order) (types.RejectReason, bool, error) {
 	return func(ctx context.Context, order Order) (types.RejectReason, bool, error) {
+		ctx, span := tracer.Start(ctx, "proc/should_reject")
+		defer span.End()
+
 		pendingData, err := order.PendingData()
 		if err != nil {
 			return types.RejectNone, false, err
