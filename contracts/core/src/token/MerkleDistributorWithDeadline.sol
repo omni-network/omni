@@ -31,8 +31,6 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
     );
     bytes32 internal constant UPGRADE_TYPEHASH =
         keccak256("Upgrade(address user,address validator,uint256 nonce,uint256 expiry)");
-    bytes32 internal constant UNSTAKE_TYPEHASH =
-        keccak256("Unstake(address account,uint256 nonce,uint256 expiry)");
 
     address internal constant STAKING = 0xCCcCcC0000000000000000000000000000000001;
 
@@ -74,18 +72,6 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
         if (expiry != 0 && block.timestamp > expiry) revert Expired();
         bytes32 migrationHash = keccak256(abi.encode(UPGRADE_TYPEHASH, account, validator, nonces[account], expiry));
         return _hashTypedData(migrationHash);
-    }
-
-    /**
-     * @notice Get the EIP-712 digest for an unstake signature
-     * @param account   Address of the user unstaking
-     * @param expiry    Signature expiry
-     * @return _        Unstake digest
-     */
-    function getUnstakeDigest(address account, uint256 expiry) public view returns (bytes32) {
-        if (expiry != 0 && block.timestamp > expiry) revert Expired();
-        bytes32 hash = keccak256(abi.encode(UNSTAKE_TYPEHASH, account, nonces[account], expiry));
-        return _hashTypedData(hash);
     }
 
     /**
@@ -174,45 +160,6 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
     }
 
     /**
-     * @notice Unstake from Genesis Staking and claim rewards on behalf of a user
-     * @param account      Address of the user unstaking
-     * @param index        Index of the claim
-     * @param amount       Amount of tokens to claim
-     * @param merkleProof  Merkle proof for the claim
-     * @param v            Signature v
-     * @param r            Signature r
-     * @param s            Signature s
-     * @param expiry       Signature expiry
-     */
-    function unstakeUser(
-        address account,
-        uint256 index,
-        uint256 amount,
-        bytes32[] calldata merkleProof,
-        uint8 v,
-        bytes32 r,
-        bytes32 s,
-        uint256 expiry
-    ) external {
-        // If the user isn't the caller, verify the signature
-        if (account != msg.sender) {
-            bytes32 digest = getUnstakeDigest(account, expiry);
-
-            if (!SignatureCheckerLib.isValidSignatureNow(account, digest, v, r, s)) {
-                if (!SignatureCheckerLib.isValidERC1271SignatureNow(account, digest, v, r, s)) {
-                    revert InvalidSignature();
-                }
-            }
-
-            unchecked {
-                ++nonces[account];
-            }
-        }
-
-        _unstake(account, index, amount, merkleProof);
-    }
-
-    /**
      * @notice Withdraw tokens from the contract
      * @dev Reverts if called before the claim window has ended
      * @param to Address to send the tokens to
@@ -266,18 +213,17 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
     function _unstake(address account, uint256 index, uint256 amount, bytes32[] calldata merkleProof) internal {
         if (block.timestamp > endTime) revert ClaimWindowFinished();
 
-        // Initiate unstaking in GenesisStake contract
-        genesisStaking.unstakeAccount(account);
+        uint256 totalAmount = genesisStaking.migrateStake(account);
+        
+        // if proofs provided and rewards not already claimed, add them to total
+        if (merkleProof.length > 0 && _claimRewards(account, index, amount, merkleProof)) {
+            totalAmount += amount;
+            emit Claimed(index, account, amount);
+        }
 
-        // If proofs are provided, attempt to claim rewards
-        if (merkleProof.length > 0) {
-            // _claimRewards handles the AlreadyClaimed case internally by returning false
-            // and reverts on InvalidProof.
-            if (_claimRewards(account, index, amount, merkleProof)) {
-                // If claim was successful (not already claimed and proof valid), transfer tokens.
-                token.safeTransfer(account, amount);
-                emit Claimed(index, account, amount);
-            }
+        // transfer total amount if greater than 0
+        if (totalAmount > 0) {
+            token.safeTransfer(account, totalAmount);
         }
     }
 
