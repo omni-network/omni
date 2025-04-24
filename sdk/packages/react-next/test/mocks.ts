@@ -1,7 +1,16 @@
 import * as core from '@omni-network/core'
 import type { UseQueryResult } from '@tanstack/react-query'
 import { vi } from 'vitest'
+import type { useWaitForTransactionReceipt } from 'wagmi'
 import { contracts } from './shared.js'
+
+type UseWaitForTransactionReceiptReturn<Data> = Omit<
+  ReturnType<typeof useWaitForTransactionReceipt>,
+  'error' | 'data'
+> & {
+  error: Error | null
+  data: Data
+}
 
 export function mockContractsQuery(failure = false) {
   vi.spyOn(core, 'getContracts').mockImplementation(() => {
@@ -46,4 +55,40 @@ export function createMockQueryResult<TData = never>(
   }
 
   return result as UseQueryResult<TData>
+}
+
+export function createMockWaitForTransactionReceiptResult<
+  TResult extends ReturnType<typeof useWaitForTransactionReceipt> = never,
+>(
+  overrides?: Partial<UseWaitForTransactionReceiptReturn<TResult['data']>>,
+): UseWaitForTransactionReceiptReturn<TResult['data']> {
+  return {
+    isError: false,
+    isPending: false,
+    isSuccess: true,
+    isLoading: false,
+    isStale: false,
+    isLoadingError: false,
+    isRefetchError: false,
+    isPlaceholderData: false,
+    dataUpdatedAt: 0,
+    errorUpdatedAt: 0,
+    failureCount: 0,
+    failureReason: null,
+    errorUpdateCount: 0,
+    isFetched: true,
+    isFetchedAfterMount: true,
+    isFetching: false,
+    isInitialLoading: false,
+    isRefetching: false,
+    status: 'success',
+    data: '0xTxHash',
+    isPaused: false,
+    refetch: vi.fn(),
+    fetchStatus: 'idle' as const,
+    queryKey: [],
+    promise: Promise.resolve(),
+    error: null,
+    ...overrides,
+  }
 }

@@ -14,7 +14,11 @@ import {
   ValidateOrderError,
   openOrder,
 } from '@omni-network/core'
-import { type UseMutationResult, useMutation } from '@tanstack/react-query'
+import {
+  type UseMutateFunction,
+  type UseMutationResult,
+  useMutation,
+} from '@tanstack/react-query'
 import type { Hex, WriteContractErrorType } from 'viem'
 import {
   type Config,
@@ -59,7 +63,7 @@ type UseOrderError =
   | undefined
 
 type UseOrderReturnType = {
-  open: () => Promise<Hex>
+  open: UseMutateFunction<`0x${string}`, MutationError, void, unknown>
   orderId?: Hex
   validation?: UseValidateOrderResult
   txHash?: Hex
@@ -145,7 +149,7 @@ export function useOrder<abis extends OptionalAbis>(
   })
 
   return {
-    open: txMutation.mutateAsync,
+    open: txMutation.mutate,
     orderId: resolvedOrder?.orderId,
     validation,
     txHash: txMutation.data,
