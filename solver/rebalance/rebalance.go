@@ -1,106 +1,179 @@
+//nolint:revive,staticcheck,unparam // WIP
 package rebalance
 
 import (
 	"context"
+	"time"
 
-	"github.com/omni-network/omni/lib/cctp"
 	cctpdb "github.com/omni-network/omni/lib/cctp/db"
-	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
+	"github.com/omni-network/omni/lib/expbackoff"
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
-	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 
 	"github.com/ethereum/go-ethereum/common"
-
-	cosmosdb "github.com/cosmos/cosmos-db"
 )
 
-// Start starts rebalancing the solver's balance on the given network.
-func Start(
+// rebalanceForever starts rebalancing loops for each chain in the network.
+func rebalanceForever(
 	ctx context.Context,
+	cfg Config,
+	db *cctpdb.DB,
 	network netconf.Network,
 	backends ethbackend.Backends,
 	solver common.Address,
-	dbDir string,
+) {
+	for _, chain := range network.EVMChains() {
+		ctx := log.WithCtx(ctx, "chain", evmchain.Name(chain.ID))
+
+		go swapSurplusForever(ctx, cfg, db, network, backends, solver, chain.ID)
+		go sendSurplusForever(ctx, cfg, db, network, backends, solver, chain.ID)
+		go fillDeficitForever(ctx, cfg, db, network, backends, solver, chain.ID)
+	}
+}
+
+// swapSurplusForever swaps surplus tokens to USDC on `chainID` forever.
+func swapSurplusForever(
+	ctx context.Context,
+	cfg Config,
+	db *cctpdb.DB,
+	network netconf.Network,
+	backends ethbackend.Backends,
+	solver common.Address,
+	chainID uint64,
+) {
+	ticker := time.NewTicker(0)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			ticker.Reset(cfg.Interval)
+
+			do := func() error {
+				return swapSurplusOnce(ctx, db, network.ID, backends, chainID, solver)
+			}
+
+			if err := expbackoff.Retry(ctx, do); err != nil {
+				log.Error(ctx, "Swap surplus failed", err)
+			}
+		}
+	}
+}
+
+// sendSurplusForever sends surplus USDC on `chainID` to chains in deficit forever.
+func sendSurplusForever(
+	ctx context.Context,
+	cfg Config,
+	db *cctpdb.DB,
+	network netconf.Network,
+	backends ethbackend.Backends,
+	solver common.Address,
+	chainID uint64,
+) {
+	ticker := time.NewTicker(0)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			ticker.Reset(cfg.Interval)
+
+			do := func() error {
+				return sendSurplusOnce(ctx, db, network.ID, backends, chainID, solver)
+			}
+
+			if err := expbackoff.Retry(ctx, do); err != nil {
+				log.Error(ctx, "Send surplus failed", err)
+			}
+		}
+	}
+}
+
+// fillDeficitForever fills token deficits from surplus USDC on `chainID` forever.
+func fillDeficitForever(
+	ctx context.Context,
+	cfg Config,
+	db *cctpdb.DB,
+	network netconf.Network,
+	backends ethbackend.Backends,
+	solver common.Address,
+	chainID uint64,
+) {
+	ticker := time.NewTicker(0)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			ticker.Reset(cfg.Interval)
+
+			do := func() error {
+				return fillDeficitOnce(ctx, db, network.ID, backends, chainID, solver)
+			}
+
+			if err := expbackoff.Retry(ctx, do); err != nil {
+				log.Error(ctx, "Fill deficit failed", err)
+			}
+		}
+	}
+}
+
+// sendSurplusOnce sends surplus USDC on `chainID` to chains in deficit.
+func sendSurplusOnce(
+	ctx context.Context,
+	db *cctpdb.DB,
+	networkID netconf.ID,
+	backends ethbackend.Backends,
+	chainID uint64,
+	solver common.Address,
 ) error {
-	ctx = log.WithCtx(ctx, "process", "rebalance")
-
-	network, chains, err := newRebalanceNetwork(network)
-	if err != nil {
-		return err
+	if chainID != evmchain.IDBase {
+		// Only sending surplus wstETH on Base.
 	}
-
-	xprov := xprovider.New(network, backends.Clients(), nil)
-
-	db, err := newCCTPDB(dbDir)
-	if err != nil {
-		return errors.Wrap(err, "new cctp db")
-	}
-
-	cctpClient := newCCTPClient(network.ID)
-
-	if err := cctp.MintForever(ctx, db, cctpClient, backends, chains, solver); err != nil {
-		return errors.Wrap(err, "mint forever")
-	}
-
-	if err := cctp.AuditForever(ctx, db, network.ID, xprov, backends.Clients(), chains, solver); err != nil {
-		return errors.Wrap(err, "rebalance forever")
-	}
-
-	// TODO: start rebalancing
 
 	return nil
 }
 
-func newCCTPClient(networkID netconf.ID) cctp.Client {
-	if networkID == netconf.Mainnet {
-		return cctp.NewClient(cctp.MainnetAPI)
+// swapSurplusOnce swaps surplus tokens to USDC on `chainID`.
+func swapSurplusOnce(
+	ctx context.Context,
+	db *cctpdb.DB,
+	networkID netconf.ID,
+	backends ethbackend.Backends,
+	chainID uint64,
+	solver common.Address,
+) error {
+	if chainID != evmchain.IDBase {
+		// Only swapping surplus wstETH on Base.
 	}
 
-	return cctp.NewClient(cctp.TestnetAPI)
+	// TODO
+	return nil
 }
 
-// newCCTPDB returns a new CCTP DB instance based on the given directory.
-func newCCTPDB(dbDir string) (*cctpdb.DB, error) {
-	if dbDir == "" {
-		memDB := cosmosdb.NewMemDB()
-		return cctpdb.New(memDB)
+// fillDeficitOnce fills token deficits from surplus USDC on `chainID`.
+func fillDeficitOnce(
+	ctx context.Context,
+	db *cctpdb.DB,
+	networkID netconf.ID,
+	backends ethbackend.Backends,
+	chainID uint64,
+	solver common.Address,
+) error {
+	if chainID != evmchain.IDEthereum {
+		// Only filling deficit wstETH on Ethereum.
+		return nil
 	}
 
-	var err error
-	lvlDB, err := cosmosdb.NewGoLevelDB("solver.rebalance.cctp", dbDir, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "new golevel db")
-	}
+	// TODO
 
-	return cctpdb.New(lvlDB)
-}
-
-// newRebalanceNetwork returns the subset of `network` that can be rebalanced, along with list of in-network chains.
-func newRebalanceNetwork(network netconf.Network) (netconf.Network, []evmchain.Metadata, error) {
-	out := netconf.Network{ID: network.ID}
-	chains := []evmchain.Metadata{}
-
-	for _, chain := range network.EVMChains() {
-		meta, ok := evmchain.MetadataByID(chain.ID)
-		if !ok {
-			return netconf.Network{}, nil, errors.New("no chain metadata", "chain", chain.Name)
-		}
-
-		if !canRebalance(chain.ID) {
-			continue
-		}
-
-		chains = append(chains, meta)
-		out.Chains = append(out.Chains, chain)
-	}
-
-	return out, chains, nil
-}
-
-// canRebalance returns true if the chain can be rebalanced.
-func canRebalance(chainID uint64) bool {
-	return cctp.IsSupportedChain(chainID)
+	return nil
 }
