@@ -67,6 +67,14 @@ var (
 		421614:   OmniCore,  // Arbitrum Sepolia
 		11155111: Hyperlane, // Ethereum Sepolia
 		11155420: OmniCore,  // Optimism Sepolia
+
+		// Devnet
+		1650: OmniCore, // Omni Staging
+		1651: OmniCore, // Omni Devnet
+		1652: OmniCore, // Mock L1
+		1654: OmniCore, // Mock L2
+		1655: OmniCore, // Mock Op
+		1656: OmniCore, // Mock Arb
 	}
 )
 
