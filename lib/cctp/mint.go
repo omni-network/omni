@@ -89,7 +89,7 @@ func mintChainForever(
 	interval time.Duration,
 ) {
 	ctx = log.WithCtx(ctx,
-		"process", "cctp.MintForever",
+		"subprocess", "cctp.MintForever",
 		"chain", chain.Name,
 		"minter", minter)
 
@@ -415,7 +415,7 @@ func purgeChainForever(
 	interval time.Duration,
 ) {
 	ctx = log.WithCtx(ctx,
-		"process", "cctp.PurgeForever",
+		"subprocess", "cctp.PurgeForever",
 		"chain", chain.Name,
 		"minter", minter)
 

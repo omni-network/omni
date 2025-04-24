@@ -39,7 +39,7 @@ func AuditForever(
 	chains []evmchain.Metadata,
 	recipient common.Address,
 ) error {
-	ctx = log.WithCtx(ctx, "process", "cctp.AuditForever")
+	ctx = log.WithCtx(ctx, "subprocess", "cctp.AuditForever")
 
 	if err := maybeInitCursors(ctx, db, chains, clients); err != nil {
 		return errors.Wrap(err, "init cursors")

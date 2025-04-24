@@ -125,9 +125,9 @@ func Run(ctx context.Context, cfg Config) error {
 		return errors.Wrap(err, "start event streams")
 	}
 
-	err = startRebalancing(ctx, network, backends, newSimpleGasPnLFunc(pricer, network.ChainName))
+	err = startRebalancingOMNI(ctx, network, backends, newSimpleGasPnLFunc(pricer, network.ChainName))
 	if err != nil {
-		return errors.Wrap(err, "start rebalancing")
+		return errors.Wrap(err, "start rebalancing omni")
 	}
 
 	callAllower := newCallAllower(network.ID, addrs.SolverNetMiddleman)
