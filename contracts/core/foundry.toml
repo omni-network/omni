@@ -12,8 +12,7 @@ remappings = [
   "solve/=../solve",
   "core/=.",
   # remapping for eigenlayers import
-  '@openzeppelin-upgrades/contracts/=node_modules/@openzeppelin/contracts-upgradeable',
-  '@hyperlane-xyz/=../solve/node_modules/@hyperlane-xyz/'
+  '@openzeppelin-upgrades/contracts/=node_modules/@openzeppelin/contracts-upgradeable'
 ]
 
 fs_permissions = [
