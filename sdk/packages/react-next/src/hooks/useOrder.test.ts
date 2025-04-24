@@ -10,8 +10,6 @@ import {
 } from '../../test/index.js'
 import { useOrder } from './useOrder.js'
 
-// TODO no client error
-
 const {
   useValidateOrder,
   useGetOrderStatus,
