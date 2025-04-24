@@ -121,7 +121,7 @@ test('default: parses open event', async () => {
   )
 })
 
-test('behaviour: no parsing when status is pending', () => {
+test('parameters: no parsing when status is pending', () => {
   const { result } = renderParseOpenEventHook({
     status: 'pending',
     logs: [],
@@ -130,21 +130,13 @@ test('behaviour: no parsing when status is pending', () => {
   expect(result.current.resolvedOrder).toBeUndefined()
 })
 
-test('behaviour: no parsing when logs is undefined', () => {
+test('parameters: no parsing and error when logs is undefined', () => {
   const { result } = renderParseOpenEventHook({
     status: 'success',
     logs: [],
   })
 
   expect(result.current.resolvedOrder).toBeUndefined()
-})
-
-test('behaviour: error when status is success and logs is empty array', () => {
-  const { result } = renderParseOpenEventHook({
-    status: 'success',
-    logs: [],
-  })
-
   expect(result.current.error).toBeInstanceOf(ParseOpenEventError)
 })
 

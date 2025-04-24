@@ -2,13 +2,10 @@ import type { Quoteable } from '@omni-network/core'
 import * as core from '@omni-network/core'
 import { waitFor } from '@testing-library/react'
 import { beforeEach, expect, test, vi } from 'vitest'
-import { renderHook } from '../../test/react.js'
-import { quote } from '../../test/shared.js'
+import { quote, renderHook } from '../../test/index.js'
 import { useQuote } from './useQuote.js'
 
 const token = '0x123'
-const deposit = { token, isNative: false } satisfies Quoteable
-const nativeExpense = { isNative: true } satisfies Quoteable
 
 beforeEach(() => {
   vi.spyOn(core, 'getQuote').mockResolvedValue(quote)
@@ -18,8 +15,8 @@ const params = {
   srcChainId: 1,
   destChainId: 2,
   mode: 'expense',
-  deposit: deposit,
-  expense: nativeExpense,
+  deposit: { token, isNative: false } satisfies Quoteable,
+  expense: { isNative: true } satisfies Quoteable,
   enabled: true,
 } as const
 

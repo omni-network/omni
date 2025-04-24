@@ -1,7 +1,6 @@
 import { waitFor } from '@testing-library/react'
 import { expect, test } from 'vitest'
-import { renderHook } from '../../test/react.js'
-import { contracts } from '../../test/shared.js'
+import { contracts, renderHook } from '../../test/index.js'
 import { useOmniContracts } from './useOmniContracts.js'
 
 test('default: returns contracts when API call succeeds', async () => {

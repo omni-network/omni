@@ -1,7 +1,6 @@
 import { waitFor } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
-import { resolvedOrder } from '../../test/index.js'
-import { renderHook } from '../../test/react.js'
+import { renderHook, resolvedOrder } from '../../test/index.js'
 import {
   type UseDidFillOutboxParams,
   useDidFillOutbox,
@@ -32,7 +31,7 @@ const renderDidFillOutboxHook = (withResolvedOrder = false) => {
   )
 }
 
-test('default: returns true when outbox read is truthy', async () => {
+test('default: returns true when core api returns truthy', async () => {
   const { result, rerender } = renderDidFillOutboxHook()
 
   expect(result.current.data).toBeUndefined()
@@ -49,7 +48,7 @@ test('default: returns true when outbox read is truthy', async () => {
   expect(didFillOutbox).toHaveBeenCalled()
 })
 
-test('behaviour: no exception if contract read fails', async () => {
+test('behaviour: no exception if core api throws', async () => {
   didFillOutbox.mockRejectedValue(new Error('Contract read failed'))
 
   const { result } = renderDidFillOutboxHook(true)
@@ -60,7 +59,7 @@ test('behaviour: no exception if contract read fails', async () => {
   expect(didFillOutbox).toHaveBeenCalled()
 })
 
-test('behaviour: no contract read when resolvedOrder is undefined', async () => {
+test('behaviour: no core api call when resolvedOrder is undefined', async () => {
   const { result } = renderDidFillOutboxHook()
 
   expect(result.current.data).toBeUndefined()
