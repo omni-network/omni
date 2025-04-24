@@ -147,19 +147,6 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
     }
 
     /**
-     * @notice Unstake from Genesis Staking and claim rewards
-     * @param index        Index of the claim
-     * @param amount       Amount of tokens to claim
-     * @param merkleProof  Merkle proof for the claim
-     */
-    function unstake(uint256 index, uint256 amount, bytes32[] calldata merkleProof) external {
-        unchecked {
-            ++nonces[msg.sender];
-        }
-        _unstake(msg.sender, index, amount, merkleProof);
-    }
-
-    /**
      * @notice Withdraw tokens from the contract
      * @dev Reverts if called before the claim window has ended
      * @param to Address to send the tokens to
@@ -201,30 +188,6 @@ contract MerkleDistributorWithDeadline is MerkleDistributor, Ownable, EIP712 {
         // Generate and send the order
         IERC7683.OnchainCrossChainOrder memory order = _generateOrder(account, validator, stake);
         solvernetInbox.open(order);
-    }
-
-    /**
-     * @notice Unstake from Genesis Staking and potentially claim rewards
-     * @param account      Address of the user unstaking
-     * @param index        Index of the claim (if claiming)
-     * @param amount       Amount of tokens to claim (if claiming)
-     * @param merkleProof  Merkle proof for the claim (if claiming)
-     */
-    function _unstake(address account, uint256 index, uint256 amount, bytes32[] calldata merkleProof) internal {
-        if (block.timestamp > endTime) revert ClaimWindowFinished();
-
-        uint256 totalAmount = genesisStaking.migrateStake(account);
-        
-        // if proofs provided and rewards not already claimed, add them to total
-        if (merkleProof.length > 0 && _claimRewards(account, index, amount, merkleProof)) {
-            totalAmount += amount;
-            emit Claimed(index, account, amount);
-        }
-
-        // transfer total amount if greater than 0
-        if (totalAmount > 0) {
-            token.safeTransfer(account, totalAmount);
-        }
     }
 
     /**
