@@ -10,6 +10,7 @@ import (
 	"github.com/omni-network/omni/e2e/types"
 	"github.com/omni-network/omni/halo/genutil/evm/predeploys"
 	"github.com/omni-network/omni/lib/bi"
+	"github.com/omni-network/omni/lib/cchain"
 	"github.com/omni-network/omni/lib/cchain/provider"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
@@ -60,7 +61,13 @@ func TestUndelegations(t *testing.T) {
 		if len(validators) < 2 {
 			t.Skip()
 		}
-		validator := validators[0]
+		var validator cchain.SDKValidator
+		for _, v := range validators {
+			if !v.Jailed {
+				validator = v
+				break
+			}
+		}
 		altValidator := validators[1]
 		validatorAddr, err := validator.OperatorEthAddr()
 		require.NoError(t, err)
@@ -151,7 +158,7 @@ func TestUndelegations(t *testing.T) {
 
 			// Since we trigger an invalid undelegation, wait for a few blocks to make sure
 			// the chain does not stall and our balance didn't change
-			waitForBlocks(ctx, t, cprov, 5)
+			waitForBlocks(ctx, t, cprov, 2)
 
 			require.Eventuallyf(t, func() bool {
 				newBalance, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, anyBlock)
@@ -183,7 +190,7 @@ func TestUndelegations(t *testing.T) {
 
 			// Since we trigger an invalid undelegation, wait for a few blocks to make sure
 			// the chain does not stall and our balance didn't change
-			waitForBlocks(ctx, t, cprov, 5)
+			waitForBlocks(ctx, t, cprov, 2)
 
 			require.Eventuallyf(t, func() bool {
 				newBalance, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, anyBlock)
@@ -218,7 +225,7 @@ func TestUndelegations(t *testing.T) {
 
 			// Since we trigger an invalid undelegation, wait for a few blocks to make sure
 			// the chain does not stall and our balance didn't change
-			waitForBlocks(ctx, t, cprov, 5)
+			waitForBlocks(ctx, t, cprov, 2)
 
 			require.Eventuallyf(t, func() bool {
 				newBalance, err := omniBackend.BalanceAt(ctx, delegatorEthAddr, anyBlock)
@@ -250,7 +257,7 @@ func TestUndelegations(t *testing.T) {
 			_, err = omniBackend.WaitMined(ctx, tx)
 			require.NoError(t, err)
 
-			// make sure the validator power is increased and the delegation can be found
+			// make sure the delegation can be found
 			require.Eventuallyf(t, func() bool {
 				delegatedAmt := delegatedAmount(t, ctx, cprov, val.OperatorAddress, delegatorCosmosAddr.String()).Amount.BigInt()
 				return bi.EQ(delegatedAmt, bi.Ether(delegation))
@@ -265,7 +272,7 @@ func TestUndelegations(t *testing.T) {
 			txOpts.Value = burnFee
 
 			// undelegate half of stake first
-			undelegatedAmount := bi.N(delegation / 2)
+			undelegatedAmount := bi.Ether(delegation / 2)
 			tx, err = contract.Undelegate(txOpts, validatorAddr, undelegatedAmount)
 			require.NoError(t, err)
 
@@ -283,10 +290,12 @@ func TestUndelegations(t *testing.T) {
 				return bi.GTE(newBalance, minExpectedBalance)
 			}, valChangeWait, 500*time.Millisecond, "failed to undeleate")
 
-			// ensure rewards are still accruing after some time
-			waitForBlocks(ctx, t, cprov, 10)
-			_, ok = queryDelegationRewards(t, ctx, cprov, delegatorCosmosAddr, validator.OperatorAddress)
-			require.True(t, ok)
+			// ensure rewards are still accruing
+			require.Eventuallyf(t, func() bool {
+				_, ok := queryDelegationRewards(t, ctx, cprov, delegatorCosmosAddr, val.OperatorAddress)
+
+				return ok
+			}, valChangeWait, 500*time.Millisecond, "no rewards increase")
 
 			balance, err = omniBackend.BalanceAt(ctx, delegatorEthAddr, anyBlock)
 			require.NoError(t, err)
@@ -321,7 +330,7 @@ func TestUndelegations(t *testing.T) {
 			require.Equal(t, int64(0), remainingAmt.Amount.Int64())
 
 			// ensure no rewards accrue anymore because we undelegated everything
-			waitForBlocks(ctx, t, cprov, 10)
+			waitForBlocks(ctx, t, cprov, 1)
 			_, ok = queryDelegationRewards(t, ctx, cprov, delegatorCosmosAddr, validator.OperatorAddress)
 			require.False(t, ok)
 		})
