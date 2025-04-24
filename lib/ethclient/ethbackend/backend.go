@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/omni-network/omni/e2e/app/eoa"
@@ -45,6 +46,7 @@ type account struct {
 type Backend struct {
 	ethclient.Client
 
+	mu          sync.RWMutex
 	accounts    map[common.Address]account
 	chainName   string
 	chainID     uint64
@@ -125,6 +127,9 @@ func (b *Backend) AddAccount(privkey *ecdsa.PrivateKey) (common.Address, error) 
 
 	addr := crypto.PubkeyToAddress(privkey.PublicKey)
 
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
 	b.accounts[addr] = account{
 		from:       addr,
 		privateKey: privkey,
@@ -140,7 +145,10 @@ func (b *Backend) Chain() (string, uint64) {
 }
 
 func (b *Backend) Sign(ctx context.Context, from common.Address, input [32]byte) ([65]byte, error) {
+	b.mu.RLock()
 	acc, ok := b.accounts[from]
+	b.mu.RUnlock()
+
 	if !ok {
 		return [65]byte{}, errors.New("unknown from address", "from", from)
 	} else if acc.privateKey == nil {
@@ -153,7 +161,10 @@ func (b *Backend) Sign(ctx context.Context, from common.Address, input [32]byte)
 }
 
 func (b *Backend) PublicKey(from common.Address) (*ecdsa.PublicKey, error) {
+	b.mu.RLock()
 	acc, ok := b.accounts[from]
+	b.mu.RUnlock()
+
 	if !ok {
 		return nil, errors.New("unknown from address", "from", from)
 	}
@@ -162,7 +173,10 @@ func (b *Backend) PublicKey(from common.Address) (*ecdsa.PublicKey, error) {
 }
 
 func (b *Backend) Send(ctx context.Context, from common.Address, candidate txmgr.TxCandidate) (*ethtypes.Transaction, *ethclient.Receipt, error) {
+	b.mu.RLock()
 	acc, ok := b.accounts[from]
+	b.mu.RUnlock()
+
 	if !ok {
 		return nil, nil, errors.New("unknown from address", "from", from)
 	}
@@ -199,7 +213,10 @@ func (b *Backend) BindOpts(ctx context.Context, from common.Address) (*bind.Tran
 		return nil, errors.New("only dynamic transaction Backends supported")
 	}
 
+	b.mu.RLock()
 	_, ok := b.accounts[from]
+	b.mu.RUnlock()
+
 	if !ok {
 		return nil, errors.New("unknown from address", "from", from)
 	}
@@ -233,7 +250,10 @@ func (b *Backend) SendTransaction(ctx context.Context, in *ethtypes.Transaction)
 		return errors.Wrap(err, "from signer sender")
 	}
 
+	b.mu.RLock()
 	acc, ok := b.accounts[from]
+	b.mu.RUnlock()
+
 	if !ok {
 		return errors.New("unknown from address", "from", from)
 	}
