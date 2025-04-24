@@ -149,18 +149,6 @@ contract GenesisStake is IGenesisStake, OwnableUpgradeable, PausableUpgradeable 
     }
 
     /**
-     * @notice Unstake your entire balance.
-     */
-    function unstake() external whenNotPaused {
-        require(balanceOf[msg.sender] > 0, "GenesisStake: not staked");
-        require(unstakedAt[msg.sender] == 0, "GenesisStake: already unstaked");
-
-        unstakedAt[msg.sender] = block.timestamp;
-
-        emit Unstaked(msg.sender, balanceOf[msg.sender]);
-    }
-
-    /**
      * @notice Withdraw your entire balance after the unbonding period.
      */
     function withdraw() external whenNotPaused {
