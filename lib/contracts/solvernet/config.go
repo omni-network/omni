@@ -70,13 +70,13 @@ var (
 	}
 )
 
-func HyperlaneMailbox(chainID uint64) (common.Address, error) {
+func HyperlaneMailbox(chainID uint64) (common.Address, bool) {
 	addr, ok := mailbox[chainID]
 	if !ok {
-		return common.Address{}, errors.New("hyperlane mailbox not found for chainID", "chain_id", chainID)
+		return common.Address{}, false
 	}
 
-	return addr, nil
+	return addr, true
 }
 
 func Provider(chainID uint64) (uint8, error) {

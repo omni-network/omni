@@ -53,8 +53,10 @@ abstract contract MailboxClient is OwnableRoles, Initializable, PackageVersioned
 
     constructor(address _mailbox) {
         mailbox = IMailbox(_mailbox);
-        interchainSecurityModule = mailbox.defaultIsm();
-        localDomain = mailbox.localDomain();
+        if (_mailbox != address(0)) {
+            interchainSecurityModule = mailbox.defaultIsm();
+            localDomain = mailbox.localDomain();
+        }
     }
 
     // ============ Internal functions ============

@@ -109,10 +109,7 @@ func deploy(ctx context.Context, cfg DeploymentConfig, network netconf.Network, 
 		return common.Address{}, nil, errors.Wrap(err, "get chain id")
 	}
 
-	mailbox, err := solvernet.HyperlaneMailbox(chainID.Uint64())
-	if err != nil {
-		return common.Address{}, nil, errors.Wrap(err, "get hyperlane mailbox")
-	}
+	mailbox, _ := solvernet.HyperlaneMailbox(chainID.Uint64())
 
 	txOpts, err := backend.BindOpts(ctx, cfg.Deployer)
 	if err != nil {

@@ -344,7 +344,6 @@ func upgradePortalRegistry(ctx context.Context, s shared, c chain) error {
 	return nil
 }
 
-//nolint:dupl // (Zodomo): would prefer these remain separate as they are different contracts
 func upgradeSolverNetInbox(ctx context.Context, s shared, c chain) error {
 	// TODO: replace if re-initialization is required
 	initializer := []byte{}
@@ -354,10 +353,7 @@ func upgradeSolverNetInbox(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "get addrs")
 	}
 
-	mailbox, err := solvernet.HyperlaneMailbox(c.ChainID)
-	if err != nil {
-		return errors.Wrap(err, "get hyperlane mailbox")
-	}
+	mailbox, _ := solvernet.HyperlaneMailbox(c.ChainID)
 
 	calldata, err := adminABI.Pack("upgradeSolverNetInbox", s.upgrader, s.deployer, addrs.SolverNetInbox, mailbox, initializer)
 	if err != nil {
@@ -374,7 +370,6 @@ func upgradeSolverNetInbox(ctx context.Context, s shared, c chain) error {
 	return nil
 }
 
-//nolint:dupl // (Zodomo): would prefer these remain separate as they are different contracts
 func upgradeSolverNetOutbox(ctx context.Context, s shared, c chain) error {
 	// TODO: replace if re-initialization is required
 	initializer := []byte{}
@@ -384,10 +379,7 @@ func upgradeSolverNetOutbox(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "get addrs")
 	}
 
-	mailbox, err := solvernet.HyperlaneMailbox(c.ChainID)
-	if err != nil {
-		return errors.Wrap(err, "get hyperlane mailbox")
-	}
+	mailbox, _ := solvernet.HyperlaneMailbox(c.ChainID)
 
 	calldata, err := adminABI.Pack("upgradeSolverNetOutbox", s.upgrader, s.deployer, addrs.SolverNetOutbox, mailbox, initializer)
 	if err != nil {
