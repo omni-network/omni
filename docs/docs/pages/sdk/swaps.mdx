@@ -11,7 +11,7 @@ To perform a swap instead of a like-asset transfer:
 
 ## Quote Frequency
 
-Asset prices fluctuate constantly. To ensure users see up-to-date rates and minimize potential slippage or order rejection by solvers, refresh quotes frequently using [`useQuote`](/sdk/hooks/useQuote.md). A common UX pattern is to refresh every 15-30 seconds.
+Asset prices fluctuate constantly. To ensure users see up-to-date rates and minimize potential slippage or order rejection by solvers, refetch quotes frequently using [`useQuote`](/sdk/hooks/useQuote.md). A common UX pattern is to refresh every ~30 seconds using react-query.
 
 ## Combining Swaps with Other Actions
 
