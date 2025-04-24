@@ -19,6 +19,9 @@ contract Staking_Test is Test {
     /// @dev Matches Staking.Undelegate event
     event Undelegate(address indexed delegator, address indexed validator, uint256 amount);
 
+    /// @dev Matches Staking.Withdraw event
+    event Withdraw(address indexed delegator, address indexed validator);
+
     address owner;
     address validator;
     address[] validators;
@@ -246,16 +249,16 @@ contract Staking_Test is Test {
         uint256 amount = 1 ether;
 
         vm.expectRevert("Staking: insufficient fee");
-        staking.undelegate{ value: 0 }(validator, amount);
+        staking.undelegate{ value: 0 }(owner, amount);
 
-        vm.deal(validator, amount + fee);
+        vm.deal(owner, amount + fee);
 
         // if allowlist enabled, must be in allowlist
         vm.prank(owner);
         staking.enableAllowlist();
 
         vm.expectRevert("Staking: not allowed val");
-        vm.prank(validator);
+        vm.prank(owner);
         staking.undelegate{ value: fee }(validator, amount);
 
         // succeeds
@@ -263,10 +266,24 @@ contract Staking_Test is Test {
         staking.allowValidators(validators);
 
         vm.expectEmit();
-        emit Undelegate(validator, validator, amount);
+        emit Undelegate(owner, validator, amount);
 
-        vm.prank(validator);
+        vm.prank(owner);
         staking.undelegate{ value: fee }(validator, amount);
+        emit Undelegate(owner, validator, amount);
+    }
+
+    function test_withdraw() public {
+        uint256 fee = 0.1 ether;
+
+        vm.expectRevert("Staking: insufficient fee");
+        staking.withdraw{ value: 0 }(owner);
+
+        vm.deal(owner, fee);
+        vm.prank(owner);
+        vm.expectEmit();
+        emit Withdraw(owner, validator);
+        staking.withdraw{ value: fee }(validator);
     }
 
     function _sign(bytes32 digest, uint256 privkey) private pure returns (bytes memory) {
