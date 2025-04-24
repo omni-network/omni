@@ -107,7 +107,8 @@ contract MainnetGenesisStakeScript is Script, StdCheats {
     function _maybeEtchSolverNetInbox() internal {
         if (address(inbox).code.length != 0) return;
 
-        SolverNetInbox inboxImpl = new SolverNetInbox();
+        // NOTE: If this is ever required again, we need to pass in the correct address for the mailbox
+        SolverNetInbox inboxImpl = new SolverNetInbox(address(0));
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
             address(inboxImpl),
             address(deployer),

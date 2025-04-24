@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity =0.8.24;
+pragma solidity ^0.8.24;
 
 import { IOriginSettler } from "../erc7683/IOriginSettler.sol";
+import { IMessageRecipient } from "@hyperlane-xyz/core/contracts/interfaces/IMessageRecipient.sol";
 import { SolverNet } from "../lib/SolverNet.sol";
 
-interface ISolverNetInbox is IOriginSettler {
+interface ISolverNetInbox is IOriginSettler, IMessageRecipient {
     // Validation errors
     error InvalidOrderTypehash();
     error InvalidOrderData();
@@ -171,7 +172,7 @@ interface ISolverNetInbox is IOriginSettler {
     function close(bytes32 id) external;
 
     /**
-     * @notice Fill an order.
+     * @notice Fill an order via Omni Core.
      * @dev Only callable by the outbox.
      * @param id         ID of the order.
      * @param fillHash   Hash of fill instructions origin data.

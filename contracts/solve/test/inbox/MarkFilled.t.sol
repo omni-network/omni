@@ -14,12 +14,14 @@ contract SolverNet_Inbox_MarkFilled_Test is TestBase {
         (SolverNet.OrderData memory orderData, IERC7683.OnchainCrossChainOrder memory order) =
             getNativeForNativeVaultOrder(defaultAmount, defaultAmount);
         assertTrue(inbox.validate(order), "order should be valid");
-        vm.prank(user);
-        IERC7683.ResolvedCrossChainOrder memory resolvedOrder = inbox.resolve(order);
 
         fundUser(orderData);
         vm.prank(user);
         inbox.open{ value: defaultAmount }(order);
+
+        // call must come from the Omni portal
+        vm.expectRevert(ISolverNetInbox.WrongSourceChain.selector);
+        inbox.markFilled(orderId, bytes32(0), address(0));
 
         // order must be filled on the correct chain
         vm.expectRevert(ISolverNetInbox.WrongSourceChain.selector);
@@ -40,14 +42,12 @@ contract SolverNet_Inbox_MarkFilled_Test is TestBase {
         );
 
         // order must have a matching fill hash
-        bytes32 fillhash = fillHash(orderId, resolvedOrder.fillInstructions[0].originData);
-        fillhash = bytes32(uint256(fillhash) + 1);
         vm.expectRevert(ISolverNetInbox.WrongFillHash.selector);
         portal.mockXCall(
             destChainId,
             address(outbox),
             address(inbox),
-            abi.encodeWithSelector(ISolverNetInbox.markFilled.selector, orderId, fillhash, address(0))
+            abi.encodeWithSelector(ISolverNetInbox.markFilled.selector, orderId, bytes32(0), address(0))
         );
     }
 
