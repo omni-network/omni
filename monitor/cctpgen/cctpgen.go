@@ -123,8 +123,6 @@ func doSendsForever(ctx context.Context, db *cctpdb.DB, networkID netconf.ID, ba
 				log.Warn(ctx, "CCTP sends failed (will retry)", err)
 				timer.Reset(retryInterval)
 			}
-
-			return
 		}
 	}
 }
