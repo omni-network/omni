@@ -8,7 +8,7 @@ import (
 
 var (
 	// routers maps chainID to Uniswap SwapRouter02 addreses
-	// Reference: https://docs.uniswap.org/contracts/v3/reference/deployments/[]
+	// Reference: https://docs.uniswap.org/contracts/v3/reference/deployments/
 	routers = map[uint64]common.Address{
 		evmchain.IDEthereum:    addr("0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45"),
 		evmchain.IDArbitrumOne: addr("0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45"),
