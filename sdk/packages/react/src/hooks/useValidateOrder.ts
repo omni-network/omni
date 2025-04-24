@@ -1,4 +1,4 @@
-import { type UseQueryResult, useQuery } from '@tanstack/react-query'
+import { type UseQueryOptions, type UseQueryResult, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { encodeFunctionData, zeroAddress } from 'viem'
 import { useOmniContext } from '../context/omni.js'
@@ -11,6 +11,7 @@ import { toJSON } from './util.js'
 type UseValidateOrderParams<abis extends OptionalAbis> = {
   order: Order<abis>
   enabled: boolean
+  queryOpts?:  Omit<UseQueryOptions<ValidationResponse, FetchJSONError>,'queryKey' | 'queryFn' | 'enabled' >
 }
 
 type ValidationResponse = {
