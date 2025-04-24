@@ -293,4 +293,78 @@ contract MerkleDistributorWithDeadline_Test is Test {
             assertEq(omni.balanceOf(stakers[i]), 0);
         }
     }
+
+    function test_unstake_reverts() public {
+        // Cannot unstake after claim window
+        vm.warp(endTime + 1);
+        vm.prank(stakers[0]);
+        vm.expectRevert(MerkleDistributorWithDeadline.ClaimWindowFinished.selector);
+        merkleDistributor.unstake(0, amounts[0], proofs[0]);
+
+        // Reset time and test invalid proof
+        vm.warp(endTime - 1);
+        bytes32 proof = proofs[0][0];
+        proofs[0][0] = bytes32(uint256(proof) + 1);
+        vm.prank(stakers[0]);
+        vm.expectRevert(MerkleDistributor.InvalidProof.selector);
+        merkleDistributor.unstake(0, amounts[0], proofs[0]);
+        proofs[0][0] = proof;
+    }
+
+    function test_unstake_succeeds() public {
+        for (uint256 i; i < addrCount; ++i) {
+            uint256 initialBalance = omni.balanceOf(stakers[i]);
+            uint256 initialStake = genesisStake.balanceOf(stakers[i]);
+
+            // unstake and claim rewards
+            vm.prank(stakers[i]);
+            merkleDistributor.unstake(i, amounts[i], proofs[i]);
+
+            // verify stake is marked for removal but not yet removed
+            assertEq(genesisStake.balanceOf(stakers[i]), initialStake);
+            assertGt(genesisStake.unstakedAt(stakers[i]), 0);
+            // verify rewards were claimed
+            assertEq(omni.balanceOf(stakers[i]), initialBalance + amounts[i]);
+        }
+    }
+
+    function test_unstakeUser_reverts() public {
+        for (uint256 i; i < addrCount; ++i) {
+            bytes32 digest = merkleDistributor.getUnstakeDigest(stakers[i], endTime - 1);
+            (uint8 v, bytes32 r, bytes32 s) = vm.sign(pks[i], digest);
+            vm.warp(endTime);
+
+            // cannot unstake if signature is expired
+            vm.expectRevert(MerkleDistributorWithDeadline.Expired.selector);
+            merkleDistributor.unstakeUser(stakers[i], 0, amounts[i], proofs[i], v, r, s, endTime - 1);
+
+            vm.warp(1);
+            digest = merkleDistributor.getUnstakeDigest(stakers[i], block.timestamp + 1);
+            (v, r,) = vm.sign(pks[i], digest);
+
+            // cannot unstake if signature is invalid
+            vm.expectRevert(MerkleDistributorWithDeadline.InvalidSignature.selector);
+            merkleDistributor.unstakeUser(stakers[i], 0, amounts[i], proofs[i], v, r, s, block.timestamp + 1);
+        }
+    }
+
+    function test_unstakeUser_succeeds() public {
+        for (uint256 i; i < addrCount; ++i) {
+            uint256 initialBalance = omni.balanceOf(stakers[i]);
+            uint256 initialStake = genesisStake.balanceOf(stakers[i]);
+
+            // Get user signature for unstaking
+            bytes32 digest = merkleDistributor.getUnstakeDigest(stakers[i], block.timestamp + 1);
+            (uint8 v, bytes32 r, bytes32 s) = vm.sign(pks[i], digest);
+
+            // Unstake and claim rewards
+            merkleDistributor.unstakeUser(stakers[i], i, amounts[i], proofs[i], v, r, s, block.timestamp + 1);
+
+            // Verify stake is marked for removal but not yet removed
+            assertEq(genesisStake.balanceOf(stakers[i]), initialStake);
+            assertGt(genesisStake.unstakedAt(stakers[i]), 0);
+            // Verify rewards were claimed
+            assertEq(omni.balanceOf(stakers[i]), initialBalance + amounts[i]);
+        }
+    }
 }
