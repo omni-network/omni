@@ -43,7 +43,7 @@ func SwapToUSDC(
 	}
 
 	if err := maybeApproveRouter(ctx, backend, user, token, amount); err != nil {
-		return nil, errors.Wrap(err, "approve token")
+		return nil, errors.Wrap(err, "approve router")
 	}
 
 	amountOut, receipt, err := executeSwaps(ctx, backend, user, token, swaps, amount)
@@ -51,12 +51,63 @@ func SwapToUSDC(
 		return nil, errors.Wrap(err, "execute swaps")
 	}
 
-	log.Debug(ctx, "Swapped for USDC",
+	log.Debug(ctx, "Swapped to USDC",
 		"in", token.FormatAmt(amount),
 		"out", swaps[len(swaps)-1].TokenOut.FormatAmt(amountOut),
 		"tx", receipt.TxHash,
 		"gas_used", receipt.GasUsed,
 	)
+
+	return amountOut, nil
+}
+
+func SwapFromUSDC(
+	ctx context.Context,
+	backend *ethbackend.Backend,
+	user common.Address,
+	token tokens.Token,
+	amount *big.Int,
+) (*big.Int, error) {
+	if token.Is(tokens.USDC) {
+		return amount, nil
+	}
+
+	swapsTo, err := routeToUSDC(token)
+	if err != nil {
+		return nil, errors.Wrap(err, "route to USDC")
+	}
+
+	// Reverse the swaps to get the path from USDC to the token
+	swaps := reverse(swapsTo)
+
+	if err := maybeApproveRouter(ctx, backend, user, swaps[0].TokenIn, amount); err != nil {
+		return nil, errors.Wrap(err, "approve router")
+	}
+
+	amountOut, receipt, err := executeSwaps(ctx, backend, user, swaps[0].TokenIn, swaps, amount)
+	if err != nil {
+		return nil, errors.Wrap(err, "execute swaps")
+	}
+
+	// If output token is ETH, swap will return WETH. We need to unwrap
+	// TODO(kevin): unwrap a single tx using SwapRouter02.multicall
+	if token.Is(tokens.ETH) {
+		receipt, err := unwrapWETH(ctx, token.ChainID, backend, user, amountOut)
+		if err != nil {
+			return nil, errors.Wrap(err, "unwrap WETH")
+		}
+
+		log.Debug(ctx, "Unwrapped WETH",
+			"amount", tokens.WETH.FormatAmt(amountOut),
+			"tx", receipt.TxHash,
+			"gas_used", receipt.GasUsed)
+	}
+
+	log.Debug(ctx, "Swapped from USDC",
+		"in", swaps[0].TokenIn.FormatAmt(amount),
+		"out", token.FormatAmt(amountOut),
+		"tx", receipt.TxHash,
+		"gas_used", receipt.GasUsed)
 
 	return amountOut, nil
 }
@@ -101,6 +152,20 @@ func wethToUSDC(weth, usdc tokens.Token) Swap {
 // wstethToWETH returns a swap from WSTETH to WETH, 0.01% fee tier.
 func wstethToWETH(wsteth, weth tokens.Token) Swap {
 	return Swap{TokenIn: wsteth, TokenOut: weth, PoolFee: FeeBips1}
+}
+
+// reverse reverses a swap path, swapping order and token in <> out for each swap.
+func reverse(swaps []Swap) []Swap {
+	reversed := make([]Swap, len(swaps))
+	for i, swap := range swaps {
+		reversed[len(swaps)-1-i] = Swap{
+			TokenIn:  swap.TokenOut,
+			TokenOut: swap.TokenIn,
+			PoolFee:  swap.PoolFee,
+		}
+	}
+
+	return reversed
 }
 
 // executeSwaps executes a series of Uniswap V3 swaps and returns the amount received.
@@ -161,6 +226,41 @@ func executeSwaps(
 	}
 
 	return amountOut, receipt, nil
+}
+
+func unwrapWETH(
+	ctx context.Context,
+	chainID uint64,
+	backend *ethbackend.Backend,
+	user common.Address,
+	amount *big.Int,
+) (*ethtypes.Receipt, error) {
+	txOpts, err := backend.BindOpts(ctx, user)
+	if err != nil {
+		return nil, errors.Wrap(err, "bind opts")
+	}
+
+	weth, ok := tokens.ByAsset(chainID, tokens.WETH)
+	if !ok {
+		return nil, errors.New("no WETH", "chain", chainID)
+	}
+
+	contract, err := NewWETH9(weth.Address, backend)
+	if err != nil {
+		return nil, errors.Wrap(err, "new WETH9")
+	}
+
+	tx, err := contract.Withdraw(txOpts, amount)
+	if err != nil {
+		return nil, errors.Wrap(err, "unwrap WETH")
+	}
+
+	receipt, err := bind.WaitMined(ctx, backend, tx)
+	if err != nil {
+		return nil, errors.Wrap(err, "wait mined")
+	}
+
+	return receipt, nil
 }
 
 // maybeApproveRouter checks if the router needs approval for the token and approves if necessary.
