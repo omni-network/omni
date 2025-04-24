@@ -8,6 +8,7 @@ import (
 	attestkeeper "github.com/omni-network/omni/halo/attest/keeper"
 	atypes "github.com/omni-network/omni/halo/attest/types"
 	"github.com/omni-network/omni/halo/comet"
+	"github.com/omni-network/omni/halo/evmdistribution"
 	"github.com/omni-network/omni/halo/evmslashing"
 	evmstakinkeeper "github.com/omni-network/omni/halo/evmstaking/keeper"
 	"github.com/omni-network/omni/halo/evmupgrade"
@@ -87,8 +88,9 @@ type App struct {
 	UpgradeKeeper         *upgradekeeper.Keeper
 	MintKeeper            mintkeeper.Keeper
 
-	SlashingEventProc evmslashing.EventProcessor
-	UpgradeEventProc  evmupgrade.EventProcessor
+	SlashingEventProc     evmslashing.EventProcessor
+	UpgradeEventProc      evmupgrade.EventProcessor
+	DistributionEventProc evmdistribution.EventProcessor
 }
 
 // newApp returns a reference to an initialized App.
@@ -147,6 +149,7 @@ func newApp(
 		&app.MintKeeper,
 		&app.SlashingEventProc,
 		&app.UpgradeEventProc,
+		&app.DistributionEventProc,
 	}
 
 	if err := depinject.Inject(depCfg, dependencies...); err != nil {
