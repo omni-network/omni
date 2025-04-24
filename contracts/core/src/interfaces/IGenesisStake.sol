@@ -26,6 +26,13 @@ interface IGenesisStake {
     function withdraw() external;
 
     /**
+     * @notice Unstake the balance for a specific user, starting the unbonding period.
+     * @dev Can only be called by the authorized rewards distributor.
+     * @param addr The address of the user to unstake.
+     */
+    function unstakeAccount(address addr) external;
+
+    /**
      * @notice Migrate a user's stake to the rewards distributor.
      * @param addr The address of the user to migrate.
      * @return The amount of tokens migrated.
