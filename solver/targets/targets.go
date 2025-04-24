@@ -39,15 +39,15 @@ var (
 )
 
 // refreshOnce refreshes the dynamic targets once.
-func refreshOnce(ctx context.Context) error {
-	symbiotic, err := getSymbiotic(ctx)
+func refreshOnce(ctx context.Context, network netconf.ID) error {
+	symbiotic, err := getSymbiotic(ctx, network)
 	if err != nil {
 		return errors.Wrap(err, "symbiotic target")
 	}
 
 	dynamicMu.Lock()
 	defer dynamicMu.Unlock()
-	dynamic = []Target{symbiotic}
+	dynamic = symbiotic
 
 	return nil
 }
@@ -57,7 +57,7 @@ func refreshOnce(ctx context.Context) error {
 //
 // Note that technically refreshing is only required on mainnet, but testing it
 // on all networks is useful.
-func RefreshForever(ctx context.Context) {
+func RefreshForever(ctx context.Context, network netconf.ID) {
 	ticker := time.NewTimer(0) // Immediately refresh on startup
 	defer ticker.Stop()
 
@@ -69,7 +69,7 @@ func RefreshForever(ctx context.Context) {
 		}
 		ticker.Reset(time.Hour) // Then refresh every hour
 
-		if err := refreshOnce(ctx); err != nil {
+		if err := refreshOnce(ctx, network); err != nil {
 			log.Warn(ctx, "Failed to refresh targets (will retry)", err)
 		}
 	}

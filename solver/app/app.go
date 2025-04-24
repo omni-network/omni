@@ -56,7 +56,7 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 	defer stopTracer(ctx) //nolint:errcheck // Tracing shutdown errors not critical
 
-	go targets.RefreshForever(ctx)
+	go targets.RefreshForever(ctx, cfg.Network)
 
 	// Start monitoring first, so app is "up"
 	monitorChan := serveMonitoring(cfg.MonitoringAddr)
