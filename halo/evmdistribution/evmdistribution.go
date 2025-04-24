@@ -1,4 +1,4 @@
-// Package evmdistribution monitors the Staking pre-deploy contract and converts
+// Package evmdistribution monitors the Distribution pre-deploy contract and converts
 // the Withdraw log events to cosmosSDK x/distribution logic.
 package evmdistribution
 
@@ -25,13 +25,13 @@ const ModuleName = "evmdistribution"
 var _ evmenginetypes.EvmEventProcessor = EventProcessor{}
 
 var (
-	stakingABI    = mustGetABI(bindings.StakingMetaData)
-	withdrawEvent = mustGetEvent(stakingABI, "Withdraw")
+	distributionABI = mustGetABI(bindings.DistributionMetaData)
+	withdrawEvent   = mustGetEvent(distributionABI, "Withdraw")
 )
 
 // EventProcessor implements the evmenginetypes.EvmEventProcessor interface.
 type EventProcessor struct {
-	contract *bindings.Staking
+	contract *bindings.Distribution
 	ethCl    ethclient.Client
 	address  common.Address
 	dKeeper  dkeeper.Keeper
@@ -39,8 +39,8 @@ type EventProcessor struct {
 
 // New returns a new EventProcessor.
 func New(ethCl ethclient.Client, dKeeper dkeeper.Keeper) (EventProcessor, error) {
-	address := common.HexToAddress(predeploys.Staking)
-	contract, err := bindings.NewStaking(address, ethCl)
+	address := common.HexToAddress(predeploys.Distribution)
+	contract, err := bindings.NewDistribution(address, ethCl)
 	if err != nil {
 		return EventProcessor{}, errors.Wrap(err, "new upgrade")
 	}
@@ -83,7 +83,7 @@ func (p EventProcessor) Deliver(ctx context.Context, _ common.Hash, elog evmengi
 }
 
 // deliverWithdraw processes a Withdraw event.
-func (p EventProcessor) deliverWithdraw(ctx context.Context, event *bindings.StakingWithdraw) error {
+func (p EventProcessor) deliverWithdraw(ctx context.Context, event *bindings.DistributionWithdraw) error {
 	log.Info(ctx, "EVM rewards withdraw detected", "delegator", event.Delegator, "validator", event.Validator)
 
 	msg := dtypes.MsgWithdrawDelegatorReward{

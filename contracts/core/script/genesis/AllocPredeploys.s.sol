@@ -7,6 +7,7 @@ import { PortalRegistry } from "src/xchain/PortalRegistry.sol";
 import { OmniBridgeNative } from "src/token/OmniBridgeNative.sol";
 import { Staking } from "src/octane/Staking.sol";
 import { Upgrade } from "src/octane/Upgrade.sol";
+import { Distribution } from "src/octane/Distribution.sol";
 import { Preinstalls } from "src/octane/Preinstalls.sol";
 import { InitializableHelper } from "script/utils/InitializableHelper.sol";
 import { EIP1967Helper } from "script/utils/EIP1967Helper.sol";
@@ -92,6 +93,7 @@ contract AllocPredeploys is Script {
         setStaking();
         setSlashing();
         setUpgrade();
+        setDistribution();
     }
 
     /**
@@ -240,5 +242,16 @@ contract AllocPredeploys is Script {
 
         InitializableHelper.disableInitializers(impl);
         Upgrade(Predeploys.Upgrade).initialize(cfg.upgrader);
+    }
+
+    /**
+     * @notice Setup Distribution predeploy
+     */
+    function setDistribution() internal {
+        address impl = Predeploys.impl(Predeploys.Distribution);
+        vm.etch(impl, vm.getDeployedCode("Distribution.sol:Distribution"));
+
+        InitializableHelper.disableInitializers(impl);
+        Distribution(Predeploys.Distribution).initialize(cfg.manager);
     }
 }

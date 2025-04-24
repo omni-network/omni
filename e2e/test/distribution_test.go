@@ -56,11 +56,6 @@ func TestDistribution(t *testing.T) {
 		validatorAddr, err := validator.OperatorEthAddr()
 		require.NoError(t, err)
 
-		stakingContractAddr := common.HexToAddress(predeploys.Staking)
-
-		contract, err := bindings.NewStaking(stakingContractAddr, omniBackend)
-		require.NoError(t, err)
-
 		t.Run("delegate and withdraw rewards", func(t *testing.T) {
 			t.Parallel()
 
@@ -77,6 +72,9 @@ func TestDistribution(t *testing.T) {
 			require.NoError(t, err)
 			txOpts.Value = delegation
 
+			stakingContractAddr := common.HexToAddress(predeploys.Staking)
+			contract, err := bindings.NewStaking(stakingContractAddr, omniBackend)
+			require.NoError(t, err)
 			tx, err := contract.Delegate(txOpts, validatorAddr)
 			require.NoError(t, err)
 
@@ -94,7 +92,10 @@ func TestDistribution(t *testing.T) {
 			require.True(t, ok)
 
 			// withdraw rewards
-			_, err = contract.Withdraw(txOpts, validatorAddr)
+			distrContractAddr := common.HexToAddress(predeploys.Distribution)
+			dContract, err := bindings.NewDistribution(distrContractAddr, omniBackend)
+			require.NoError(t, err)
+			_, err = dContract.Withdraw(txOpts, validatorAddr)
 			require.NoError(t, err)
 
 			// Make sure the rewards balance decreases eventually
