@@ -349,7 +349,7 @@ func depositForBurnLog(addr common.Address, msg types.MsgSendUSDC) ethtypes.Log 
 		Data: mustPackData(
 			msg.Amount,                       // amount
 			cast.EthAddress32(msg.Recipient), // mintRecipient
-			domains[msg.DestChainID],         // destinationDomain
+			mainnetDomains[msg.DestChainID],  // destinationDomain
 			common.HexToHash("0x1"),          // destinationTokenMessenger (doesn't matter)
 			common.HexToHash("0x1"),          // destinationCaller (doesn't matter)
 		),

@@ -82,7 +82,7 @@ func Start(
 		return errors.Wrap(err, "audit forever")
 	}
 
-	go doSendsForever(ctx, db, backends, sender)
+	go doSendsForever(ctx, db, network.ID, backends, sender)
 
 	return nil
 }
@@ -104,7 +104,7 @@ func newDB(dbDir string) (*cctpdb.DB, error) {
 }
 
 // doSendsForever continuously bridges USDC between chains.
-func doSendsForever(ctx context.Context, db *cctpdb.DB, backends ethbackend.Backends, bridger common.Address) {
+func doSendsForever(ctx context.Context, db *cctpdb.DB, networkID netconf.ID, backends ethbackend.Backends, bridger common.Address) {
 	interval := 30 * time.Minute
 	retryInterval := 10 * time.Second
 
@@ -118,7 +118,7 @@ func doSendsForever(ctx context.Context, db *cctpdb.DB, backends ethbackend.Back
 		case <-timer.C:
 			timer.Reset(interval)
 
-			err := doSendsOnce(ctx, db, backends, bridger)
+			err := doSendsOnce(ctx, db, networkID, backends, bridger)
 			if err != nil {
 				log.Warn(ctx, "CCTP sends failed (will retry)", err)
 				timer.Reset(retryInterval)
@@ -132,6 +132,7 @@ func doSendsForever(ctx context.Context, db *cctpdb.DB, backends ethbackend.Back
 func doSendsOnce(
 	ctx context.Context,
 	db *cctpdb.DB,
+	networkID netconf.ID,
 	backends ethbackend.Backends,
 	bridger common.Address,
 ) error {
@@ -142,7 +143,7 @@ func doSendsOnce(
 	}{
 		{evmchain.IDArbSepolia, evmchain.IDBaseSepolia, bi.Dec6(1)}, // Arbitrum Sepolia -> Base Sepolia
 		{evmchain.IDBaseSepolia, evmchain.IDOpSepolia, bi.Dec6(1)},  // Base Sepolia -> Optimism Sepolia
-		{evmchain.IDOpSepolia, evmchain.IDArbitrumOne, bi.Dec6(1)},  // Optimism Sepolia -> Arbitrum Sepolia
+		{evmchain.IDOpSepolia, evmchain.IDArbSepolia, bi.Dec6(1)},   // Optimism Sepolia -> Arbitrum Sepolia
 	}
 
 	for _, send := range sends {
@@ -151,7 +152,7 @@ func doSendsOnce(
 			return errors.Wrap(err, "get backend")
 		}
 
-		_, err = cctp.SendUSDC(ctx, db, backend, cctp.SendUSDCArgs{
+		_, err = cctp.SendUSDC(ctx, db, networkID, backend, cctp.SendUSDCArgs{
 			Sender:      bridger,
 			Recipient:   bridger,
 			SrcChainID:  send.srcChain,

@@ -21,10 +21,20 @@ var (
 		evmchain.IDArbSepolia:  3,
 		evmchain.IDBaseSepolia: 6,
 	}
-
-	// mainnet and testnet merged.
-	domains = mustMergeDomains(mainnetDomains, testnetDomains)
 )
+
+func domainIDForChain(networkID netconf.ID, chainID uint64) (uint32, bool) {
+	switch networkID {
+	case netconf.Mainnet:
+		d, ok := mainnetDomains[chainID]
+		return d, ok
+	case netconf.Omega, netconf.Staging:
+		d, ok := testnetDomains[chainID]
+		return d, ok
+	default:
+		return 0, false
+	}
+}
 
 func chainIDForDomain(networkID netconf.ID, domainID uint32) (uint64, bool) {
 	findIn := func(ds map[uint64]uint32) (uint64, bool) {
@@ -45,21 +55,4 @@ func chainIDForDomain(networkID netconf.ID, domainID uint32) (uint64, bool) {
 	default:
 		return 0, false
 	}
-}
-
-func mustMergeDomains(mainnet, testnet map[uint64]uint32) map[uint64]uint32 {
-	merged := make(map[uint64]uint32)
-	for k, v := range mainnet {
-		merged[k] = v
-	}
-
-	for k, v := range testnet {
-		if _, ok := merged[k]; ok {
-			panic("duplicate chain id")
-		}
-
-		merged[k] = v
-	}
-
-	return merged
 }
