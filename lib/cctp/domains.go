@@ -23,6 +23,18 @@ var (
 	}
 )
 
+// IsSupportedChain returns true if the chain is supported by CCTP.
+func IsSupportedChain(chainID uint64) bool {
+	_, ok := mainnetDomains[chainID]
+	if ok {
+		return true
+	}
+
+	_, ok = testnetDomains[chainID]
+
+	return ok
+}
+
 func domainIDForChain(networkID netconf.ID, chainID uint64) (uint32, bool) {
 	switch networkID {
 	case netconf.Mainnet:

@@ -32,20 +32,6 @@ var maxL1OMNI = map[netconf.ID]*big.Int{
 	netconf.Mainnet: bi.Ether(1000),
 }
 
-// startRebalancing starts rebalancing of tokens that the solver is able to rebalance.
-func startRebalancing(
-	ctx context.Context,
-	network netconf.Network,
-	backends ethbackend.Backends,
-	gasPnL simpleGasPnLFunc,
-) error {
-	if err := startRebalancingOMNI(ctx, network, backends, gasPnL); err != nil {
-		return errors.Wrap(err, "rebalance OMNI")
-	}
-
-	return nil
-}
-
 // startRebalancingOMNI starts the rebalancing of solved OMNI tokens.
 func startRebalancingOMNI(
 	ctx context.Context,
