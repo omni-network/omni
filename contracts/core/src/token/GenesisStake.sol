@@ -179,6 +179,21 @@ contract GenesisStake is IGenesisStake, OwnableUpgradeable, PausableUpgradeable 
     }
 
     /**
+     * @notice Unstake the balance for a specific user, starting the unbonding period.
+     * @dev Can only be called by the authorized rewards distributor.
+     * @param addr The address of the user to unstake.
+     */
+    function unstakeAccount(address addr) external whenNotPaused {
+        require(msg.sender == rewardsDistributor, "GenesisStake: unauthorized");
+        require(balanceOf[addr] > 0, "GenesisStake: not staked");
+        require(unstakedAt[addr] == 0, "GenesisStake: already unstaked");
+
+        unstakedAt[addr] = block.timestamp;
+
+        emit Unstaked(addr, balanceOf[addr]);
+    }
+
+    /**
      * @notice Migrate a user's stake to the rewards distributor.
      * @param addr The address of the user to migrate.
      * @return The amount of tokens migrated.
