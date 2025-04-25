@@ -1,4 +1,5 @@
 import type { OptionalAbis, Order } from '@omni-network/core'
+import type { UseMutateFunction } from '@tanstack/react-query'
 import type { Hex } from 'viem'
 import { expectTypeOf, test } from 'vitest'
 import type { Config, UseWaitForTransactionReceiptReturnType } from 'wagmi'
@@ -17,7 +18,7 @@ test('type: useOrder', () => {
   const result = useOrder(order)
 
   expectTypeOf(result).toMatchTypeOf<{
-    open: () => Promise<Hex>
+    open: UseMutateFunction<Hex, Error, void, unknown>
     orderId?: Hex
     validation?: UseValidateOrderResult
     txHash?: Hex
@@ -33,8 +34,9 @@ test('type: useOrder', () => {
     waitForTx: UseWaitForTransactionReceiptReturnType<Config, number>
   }>()
 
-  expectTypeOf(result.open).toBeFunction()
-  expectTypeOf(result.open).returns.toEqualTypeOf<Promise<Hex>>()
+  expectTypeOf(result.open).toMatchTypeOf<
+    UseMutateFunction<`0x${string}`, Error, void, unknown>
+  >()
 
   expectTypeOf(result.orderId).toEqualTypeOf<Hex | undefined>()
   expectTypeOf(result.txHash).toEqualTypeOf<Hex | undefined>()
