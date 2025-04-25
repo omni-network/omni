@@ -17,6 +17,7 @@ import { OmniBridgeNative } from "src/token/OmniBridgeNative.sol";
 import { OmniBridgeL1 } from "src/token/OmniBridgeL1.sol";
 import { Staking } from "src/octane/Staking.sol";
 import { Slashing } from "src/octane/Slashing.sol";
+import { Distribution } from "src/octane/Distribution.sol";
 import { Predeploys } from "src/libraries/Predeploys.sol";
 import { SolverNetInbox } from "solve/src/SolverNetInbox.sol";
 import { SolverNetOutbox } from "solve/src/SolverNetOutbox.sol";
@@ -319,6 +320,21 @@ contract Admin is Script {
         vm.stopBroadcast();
 
         _upgradeProxy(admin, Predeploys.Slashing, impl, data, false, false); // Slashing has no initializers
+
+        // TODO: add post upgrade tests
+    }
+
+    /**
+     * @notice Upgrade the Distribution predeploy.
+     * @param admin     The address of the admin account, owner of the proxy admin
+     * @param deployer  The address of the account that will deploy the new implementation.
+     */
+    function upgradeDistribution(address admin, address deployer, bytes calldata data) public {
+        vm.startBroadcast(deployer);
+        address impl = address(new Distribution());
+        vm.stopBroadcast();
+
+        _upgradeProxy(admin, Predeploys.Distribution, impl, data, false, false); // Distribution has no initializers
 
         // TODO: add post upgrade tests
     }

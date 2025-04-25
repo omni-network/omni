@@ -30,6 +30,7 @@ func newAdminCmd(def *app.Definition) *cobra.Command {
 		newUpgradeGasPumpCmd(def, &cfg),
 		newUpgradeStakingCmd(def, &cfg),
 		newUpgradeSlashingCmd(def, &cfg),
+		newUpgradeDistributionCmd(def, &cfg),
 		newUpgradeBridgeNativeCmd(def, &cfg),
 		newUpgradeBridgeL1(def, &cfg),
 		newUpgradePortalRegistryCmd(def, &cfg),
@@ -185,6 +186,18 @@ func newUpgradeSlashingCmd(def *app.Definition, cfg *admin.Config) *cobra.Comman
 		Short: "Upgrade the Slashing predeploy.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return admin.UpgradeSlashing(cmd.Context(), *def, *cfg)
+		},
+	}
+
+	return cmd
+}
+
+func newUpgradeDistributionCmd(def *app.Definition, cfg *admin.Config) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "upgrade-distribution",
+		Short: "Upgrade the Distribution predeploy.",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return admin.UpgradeDistribution(cmd.Context(), *def, *cfg)
 		},
 	}
 

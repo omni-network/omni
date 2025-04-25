@@ -52,6 +52,18 @@ func UpgradeSlashing(ctx context.Context, def app.Definition, cfg Config) error 
 	return ugpradeSlashing(ctx, s, c)
 }
 
+// UpgradeDistribution upgrades the Slashing predeploy.
+func UpgradeDistribution(ctx context.Context, def app.Definition, cfg Config) error {
+	s := setup(def, cfg)
+
+	c, err := setupChain(ctx, s, omniEVMName)
+	if err != nil {
+		return errors.Wrap(err, "setup chain")
+	}
+
+	return ugpradeDistribution(ctx, s, c)
+}
+
 // UpgradeStaking upgrades the Staking predeploy.
 func UpgradeStaking(ctx context.Context, def app.Definition, cfg Config) error {
 	s := setup(def, cfg)
@@ -249,6 +261,25 @@ func ugpradeSlashing(ctx context.Context, s shared, c chain) error {
 	}
 
 	log.Info(ctx, "Slashing upgraded ✅", "chain", c.Name, "out", out)
+
+	return nil
+}
+
+func ugpradeDistribution(ctx context.Context, s shared, c chain) error {
+	// TODO: replace if re-initialization is required
+	initializer := []byte{}
+
+	calldata, err := adminABI.Pack("upgradeDistribution", s.upgrader, s.deployer, initializer)
+	if err != nil {
+		return errors.Wrap(err, "pack calldata")
+	}
+
+	out, err := s.runForge(ctx, c.RPCEndpoint, calldata, s.upgrader, s.deployer)
+	if err != nil {
+		return errors.Wrap(err, "run forge", "out", out)
+	}
+
+	log.Info(ctx, "Distribution upgraded ✅", "chain", c.Name, "out", out)
 
 	return nil
 }
