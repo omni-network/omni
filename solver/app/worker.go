@@ -50,7 +50,10 @@ func newAsyncWorkerFunc(
 			workActive.WithLabelValues(chainName).Inc()
 			defer workActive.WithLabelValues(chainName).Dec()
 
-			ctx := log.WithCtx(ctx, "height", elog.BlockNumber, "src_chain", chainName)
+			ctx, span := startTrace(ctx, chainName, orderID)
+			defer span.End()
+
+			ctx = log.WithCtx(ctx, "height", elog.BlockNumber, "src_chain", chainName)
 
 			backoff := expbackoff.New(ctx)
 			for {

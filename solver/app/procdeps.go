@@ -13,6 +13,7 @@ import (
 	"github.com/omni-network/omni/lib/log"
 	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/tracer"
 	stypes "github.com/omni-network/omni/solver/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -48,6 +49,9 @@ func newClaimer(
 	pnl updatePnLFunc,
 ) func(ctx context.Context, order Order) error {
 	return func(ctx context.Context, order Order) error {
+		ctx, span := tracer.Start(ctx, "proc/claim_order")
+		defer span.End()
+
 		inbox, ok := inboxContracts[order.SourceChainID]
 		if !ok {
 			return errors.New("unknown chain")
@@ -94,6 +98,9 @@ func newFiller(
 	pnl filledPnLFunc,
 ) func(ctx context.Context, order Order) error {
 	return func(ctx context.Context, order Order) error {
+		ctx, span := tracer.Start(ctx, "proc/fill_order")
+		defer span.End()
+
 		pendingData, err := order.PendingData()
 		if err != nil {
 			return err
@@ -202,6 +209,9 @@ func newRejector(
 	pnl updatePnLFunc,
 ) func(ctx context.Context, order Order, reason stypes.RejectReason) error {
 	return func(ctx context.Context, order Order, reason stypes.RejectReason) error {
+		ctx, span := tracer.Start(ctx, "proc/reject_order")
+		defer span.End()
+
 		inbox, ok := inboxContracts[order.SourceChainID]
 		if !ok {
 			return errors.New("unknown chain")
@@ -244,9 +254,12 @@ func newRejector(
 // It only returns temporary RPC errors, so it is safe to retry always.
 func newDidFiller(outboxContracts map[uint64]*bindings.SolverNetOutbox) func(ctx context.Context, order Order) (bool, error) {
 	return func(ctx context.Context, order Order) (bool, error) {
+		ctx, span := tracer.Start(ctx, "proc/did_fill")
+		defer span.End()
+
 		pendingData, err := order.PendingData()
 		if err != nil {
-			return false, nil //nolint:nilerr // Invalid orders are never filled, so we return false/nil
+			return false, nil
 		}
 
 		outbox, ok := outboxContracts[pendingData.DestinationChainID]
@@ -276,6 +289,9 @@ func newIDParser() func(log types.Log) (OrderID, error) {
 
 func newOrderGetter(inboxContracts map[uint64]*bindings.SolverNetInbox) func(ctx context.Context, chainID uint64, id OrderID) (Order, bool, error) {
 	return func(ctx context.Context, chainID uint64, id OrderID) (Order, bool, error) {
+		ctx, span := tracer.Start(ctx, "proc/get_order")
+		defer span.End()
+
 		inbox, ok := inboxContracts[chainID]
 		if !ok {
 			return Order{}, false, errors.New("unknown chain")

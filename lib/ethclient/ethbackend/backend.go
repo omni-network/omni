@@ -18,6 +18,7 @@ import (
 	"github.com/omni-network/omni/lib/fireblocks"
 	"github.com/omni-network/omni/lib/k1util"
 	"github.com/omni-network/omni/lib/log"
+	"github.com/omni-network/omni/lib/tracer"
 	"github.com/omni-network/omni/lib/txmgr"
 	"github.com/omni-network/omni/lib/umath"
 
@@ -173,6 +174,9 @@ func (b *Backend) PublicKey(from common.Address) (*ecdsa.PublicKey, error) {
 }
 
 func (b *Backend) Send(ctx context.Context, from common.Address, candidate txmgr.TxCandidate) (*ethtypes.Transaction, *ethclient.Receipt, error) {
+	ctx, span := tracer.Start(ctx, "ethbackend/send")
+	defer span.End()
+
 	b.mu.RLock()
 	acc, ok := b.accounts[from]
 	b.mu.RUnlock()
@@ -191,6 +195,9 @@ func (b *Backend) Send(ctx context.Context, from common.Address, candidate txmgr
 
 // WaitMined waits for the transaction to be mined and asserts the receipt is successful.
 func (b *Backend) WaitMined(ctx context.Context, tx *ethtypes.Transaction) (*ethclient.Receipt, error) {
+	ctx, span := tracer.Start(ctx, "ethbackend/wait_mined")
+	defer span.End()
+
 	rec, err := waitMinedHash(ctx, b, tx.Hash())
 	if err != nil {
 		return nil, errors.Wrap(err, "wait mined", "chain", b.chainName, "tx", tx.Hash())
@@ -241,6 +248,9 @@ func (b *Backend) BindOpts(ctx context.Context, from common.Address) (*bind.Tran
 // SendTransaction intercepts the tx that bindings generates, extracts the from address (if the
 // backendStubSigner was used), the strips fields, and passes it to the txmgr for reliable broadcasting.
 func (b *Backend) SendTransaction(ctx context.Context, in *ethtypes.Transaction) error {
+	ctx, span := tracer.Start(ctx, "ethbackend/send_transaction")
+	defer span.End()
+
 	if !(backendStubSigner{}).IsStub(in) {
 		return b.Client.SendTransaction(ctx, in)
 	}
@@ -317,6 +327,9 @@ func (b *Backend) EnsureSynced(ctx context.Context) error {
 // It returns an error if the (first) receipt is reorged out (even though the tx may still be included
 // in a different block).
 func (b *Backend) WaitConfirmed(ctx context.Context, tx *ethtypes.Transaction) (*ethclient.Receipt, error) {
+	ctx, span := tracer.Start(ctx, "ethbackend/wait_confirmed")
+	defer span.End()
+
 	rec, err := b.WaitMined(ctx, tx)
 	if err != nil {
 		// Return receipt with error, in case it was mined but reverted
