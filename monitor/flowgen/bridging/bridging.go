@@ -152,8 +152,8 @@ func openOrders(
 
 	work := func(ctx context.Context, orderData bindings.SolverNetOrderData) (output, error) {
 		if conf.IsSwap() && network == netconf.Staging {
-			// Delay swaps by 10-30s to simulate human behavior
-			delay(ctx, 10, 30)
+			// Delay swaps by 10s-2m to simulate human behavior
+			delay(ctx, 10, 120)
 		}
 
 		return openOrder(ctx, backends, network, flowgenAddr, conf.srcChain, scl, orderData)
