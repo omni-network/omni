@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity =0.8.24;
+pragma solidity ^0.8.24;
 
 /// @title IERC7683
 /// @notice Standard type definitions for ERC-7683 compliant settlement contracts

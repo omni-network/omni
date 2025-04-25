@@ -6,6 +6,7 @@ import (
 	"github.com/omni-network/omni/contracts/bindings"
 	"github.com/omni-network/omni/e2e/app"
 	"github.com/omni-network/omni/lib/contracts"
+	"github.com/omni-network/omni/lib/contracts/solvernet"
 	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/log"
@@ -352,7 +353,9 @@ func upgradeSolverNetInbox(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "get addrs")
 	}
 
-	calldata, err := adminABI.Pack("upgradeSolverNetInbox", s.upgrader, s.deployer, addrs.SolverNetInbox, initializer)
+	mailbox, _ := solvernet.HyperlaneMailbox(c.ChainID)
+
+	calldata, err := adminABI.Pack("upgradeSolverNetInbox", s.upgrader, s.deployer, addrs.SolverNetInbox, mailbox, initializer)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}
@@ -376,7 +379,9 @@ func upgradeSolverNetOutbox(ctx context.Context, s shared, c chain) error {
 		return errors.Wrap(err, "get addrs")
 	}
 
-	calldata, err := adminABI.Pack("upgradeSolverNetOutbox", s.upgrader, s.deployer, addrs.SolverNetOutbox, initializer)
+	mailbox, _ := solvernet.HyperlaneMailbox(c.ChainID)
+
+	calldata, err := adminABI.Pack("upgradeSolverNetOutbox", s.upgrader, s.deployer, addrs.SolverNetOutbox, mailbox, initializer)
 	if err != nil {
 		return errors.Wrap(err, "pack calldata")
 	}

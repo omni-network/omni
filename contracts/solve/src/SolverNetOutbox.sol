@@ -6,6 +6,7 @@ import { ReentrancyGuard } from "solady/src/utils/ReentrancyGuard.sol";
 import { Initializable } from "solady/src/utils/Initializable.sol";
 import { DeployedAt } from "./util/DeployedAt.sol";
 import { XAppBase } from "core/src/pkg/XAppBase.sol";
+import { MailboxClient } from "./ext/MailboxClient.sol";
 import { ISolverNetOutbox } from "./interfaces/ISolverNetOutbox.sol";
 import { SolverNetExecutor } from "./SolverNetExecutor.sol";
 import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
@@ -20,7 +21,15 @@ import { ISolverNetInbox } from "./interfaces/ISolverNetInbox.sol";
  * @title SolverNetOutbox
  * @notice Entrypoint for fulfillments of user solve requests.
  */
-contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, DeployedAt, XAppBase, ISolverNetOutbox {
+contract SolverNetOutbox is
+    OwnableRoles,
+    ReentrancyGuard,
+    Initializable,
+    DeployedAt,
+    XAppBase,
+    MailboxClient,
+    ISolverNetOutbox
+{
     using SafeTransferLib for address;
     using AddrUtils for bytes32;
 
@@ -40,7 +49,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
     /**
      * @notice Addresses of the inbox contracts.
      */
-    mapping(uint64 chainId => address inbox) internal _inboxes;
+    mapping(uint64 chainId => InboxConfig) internal _inboxes;
 
     /**
      * @notice Executor contract handling calls.
@@ -54,7 +63,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
      */
     mapping(bytes32 fillHash => bool filled) internal _filled;
 
-    constructor() {
+    constructor(address _mailbox) MailboxClient(_mailbox) {
         _disableInitializers();
     }
 
@@ -76,13 +85,13 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
     /**
      * @notice Set the inbox addresses for the given chain IDs.
      * @param chainIds IDs of the chains.
-     * @param inboxes  Addresses of the inboxes.
+     * @param configs  Configurations for the inboxes.
      */
-    function setInboxes(uint64[] calldata chainIds, address[] calldata inboxes) external onlyOwner {
-        if (chainIds.length != inboxes.length) revert InvalidArrayLength();
+    function setInboxes(uint64[] calldata chainIds, InboxConfig[] calldata configs) external onlyOwner {
+        if (chainIds.length != configs.length) revert InvalidArrayLength();
         for (uint256 i; i < chainIds.length; ++i) {
-            _inboxes[chainIds[i]] = inboxes[i];
-            emit InboxSet(chainIds[i], inboxes[i]);
+            _inboxes[chainIds[i]] = configs[i];
+            emit InboxSet(chainIds[i], configs[i].inbox, configs[i].provider);
         }
     }
 
@@ -100,7 +109,20 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
      */
     function fillFee(bytes calldata originData) public view returns (uint256) {
         SolverNet.FillOriginData memory fillData = abi.decode(originData, (SolverNet.FillOriginData));
-        return feeFor(fillData.srcChainId, MARK_FILLED_STUB_CDATA, uint64(_fillGasLimit(fillData)));
+        InboxConfig memory inboxConfig = _inboxes[fillData.srcChainId];
+
+        if (inboxConfig.provider == Provider.OmniCore) {
+            return feeFor(fillData.srcChainId, MARK_FILLED_STUB_CDATA, uint64(_fillGasLimit(fillData)));
+        } else if (inboxConfig.provider == Provider.Hyperlane) {
+            return _quoteDispatch(
+                uint32(fillData.srcChainId),
+                inboxConfig.inbox,
+                abi.encode(TypeMax.Bytes32, TypeMax.Bytes32, TypeMax.Address),
+                _fillGasLimit(fillData)
+            );
+        } else {
+            revert InvalidConfig();
+        }
     }
 
     /**
@@ -222,14 +244,7 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         if (_filled[fillHash]) revert AlreadyFilled();
         _filled[fillHash] = true;
 
-        // mark filled on inbox
-        uint256 fee = xcall({
-            destChainId: fillData.srcChainId,
-            conf: ConfLevel.Finalized,
-            to: _inboxes[fillData.srcChainId],
-            data: abi.encodeCall(ISolverNetInbox.markFilled, (orderId, fillHash, claimant)),
-            gasLimit: uint64(_fillGasLimit(fillData))
-        });
+        uint256 fee = _routeMsg(orderId, fillHash, claimant, fillData);
         uint256 totalSpent = totalNativeValue + fee;
         if (msg.value < totalSpent) revert InsufficientFee();
 
@@ -238,6 +253,41 @@ contract SolverNetOutbox is OwnableRoles, ReentrancyGuard, Initializable, Deploy
         if (refund > 0) msg.sender.safeTransferETH(refund);
 
         emit Filled(orderId, fillHash, msg.sender);
+    }
+
+    /**
+     * @notice Route a message to the inbox.
+     * @param orderId  ID of the order.
+     * @param fillHash Hash of the fill instructions origin data.
+     * @param claimant Address specified by the filler to claim the order (msg.sender if none specified).
+     * @param fillData ABI decoded fill originData.
+     * @return fee     Fee amount in native currency.
+     */
+    function _routeMsg(bytes32 orderId, bytes32 fillHash, address claimant, SolverNet.FillOriginData memory fillData)
+        internal
+        returns (uint256)
+    {
+        InboxConfig memory inboxConfig = _inboxes[fillData.srcChainId];
+        uint256 fee;
+
+        if (inboxConfig.provider == Provider.OmniCore) {
+            // mark filled on inbox
+            fee = xcall({
+                destChainId: fillData.srcChainId,
+                conf: ConfLevel.Finalized,
+                to: inboxConfig.inbox,
+                data: abi.encodeCall(ISolverNetInbox.markFilled, (orderId, fillHash, claimant)),
+                gasLimit: uint64(_fillGasLimit(fillData))
+            });
+        } else if (inboxConfig.provider == Provider.Hyperlane) {
+            bytes memory message = abi.encode(orderId, fillHash, claimant);
+            fee = _quoteDispatch(uint32(fillData.srcChainId), inboxConfig.inbox, message, _fillGasLimit(fillData));
+            _dispatch(uint32(fillData.srcChainId), inboxConfig.inbox, fee, message, _fillGasLimit(fillData));
+        } else {
+            revert InvalidConfig();
+        }
+
+        return fee;
     }
 
     /**

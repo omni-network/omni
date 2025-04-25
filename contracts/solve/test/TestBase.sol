@@ -10,10 +10,13 @@ import { ISolverNetInbox } from "src/interfaces/ISolverNetInbox.sol";
 import { ISolverNetOutbox } from "src/interfaces/ISolverNetOutbox.sol";
 
 import { IERC20 } from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import { IOmniPortal } from "core/src/interfaces/IOmniPortal.sol";
+import { IMailbox } from "@hyperlane-xyz/core/contracts/interfaces/IMailbox.sol";
 import { MockERC20 } from "test/utils/MockERC20.sol";
 import { MockVault } from "test/utils/MockVault.sol";
 import { MockMultiTokenVault } from "test/utils/MockMultiTokenVault.sol";
 import { MockPortal } from "core/test/utils/MockPortal.sol";
+import { MockHyperlaneEnvironment } from "test/utils/hyperlane/MockHyperlaneEnvironment.sol";
 
 import { IERC7683 } from "src/erc7683/IERC7683.sol";
 import { SolverNet } from "src/lib/SolverNet.sol";
@@ -27,7 +30,7 @@ import { AddrUtils } from "src/lib/AddrUtils.sol";
  * @title TestBase
  * @dev Shared test utils / fixtures.
  */
-contract TestBase is Test {
+contract TestBase is Test, MockHyperlaneEnvironment {
     using AddrUtils for address;
     using AddrUtils for bytes32;
 
@@ -66,6 +69,8 @@ contract TestBase is Test {
         vm.stopPrank();
     }
 
+    constructor() MockHyperlaneEnvironment(uint32(srcChainId), uint32(destChainId)) { }
+
     function setUp() public virtual {
         token1 = new MockERC20("Token 1", "TKN1");
         token2 = new MockERC20("Token 2", "TKN2");
@@ -81,6 +86,7 @@ contract TestBase is Test {
         executor = new SolverNetExecutor(address(outbox));
         initializeInbox();
         initializeOutbox();
+        setRoutes(ISolverNetOutbox.Provider.OmniCore);
 
         vm.chainId(srcChainId);
     }
@@ -359,33 +365,39 @@ contract TestBase is Test {
     // Setup functions
 
     function deploySolverNetInbox() internal returns (SolverNetInbox) {
-        address impl = address(new SolverNetInbox());
+        address mailbox = address(mailboxes[uint32(srcChainId)]);
+        address impl = address(new SolverNetInbox(mailbox));
         return SolverNetInbox(address(new TransparentUpgradeableProxy(impl, proxyAdmin, bytes(""))));
     }
 
     function deploySolverNetOutbox() internal returns (SolverNetOutbox) {
-        address impl = address(new SolverNetOutbox());
+        address mailbox = address(mailboxes[uint32(destChainId)]);
+        address impl = address(new SolverNetOutbox(mailbox));
         return SolverNetOutbox(address(new TransparentUpgradeableProxy(impl, proxyAdmin, bytes(""))));
     }
 
     function initializeInbox() internal {
         inbox.initialize(address(this), solver, address(portal));
+    }
 
+    function initializeOutbox() internal {
+        outbox.initialize(address(this), solver, address(portal), address(executor));
+    }
+
+    function setRoutes(ISolverNetOutbox.Provider provider) internal {
+        // Configure inbox
         uint64[] memory chainIds = new uint64[](1);
         chainIds[0] = destChainId;
         address[] memory outboxes = new address[](1);
         outboxes[0] = address(outbox);
         inbox.setOutboxes(chainIds, outboxes);
-    }
 
-    function initializeOutbox() internal {
-        outbox.initialize(address(this), solver, address(portal), address(executor));
-
-        uint64[] memory chainIds = new uint64[](1);
+        // Configure outbox
+        chainIds = new uint64[](1);
         chainIds[0] = srcChainId;
-        address[] memory inboxes = new address[](1);
-        inboxes[0] = address(inbox);
-        outbox.setInboxes(chainIds, inboxes);
+        ISolverNetOutbox.InboxConfig[] memory configs = new ISolverNetOutbox.InboxConfig[](1);
+        configs[0] = ISolverNetOutbox.InboxConfig({ inbox: address(inbox), provider: provider });
+        outbox.setInboxes(chainIds, configs);
     }
 
     function assertStatus(bytes32 orderId, ISolverNetInbox.Status status) internal view {

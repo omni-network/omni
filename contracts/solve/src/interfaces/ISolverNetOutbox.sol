@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity =0.8.24;
+pragma solidity ^0.8.24;
 
 import { IDestinationSettler } from "../erc7683/IDestinationSettler.sol";
 
 interface ISolverNetOutbox is IDestinationSettler {
     error BadFillerData();
     error AlreadyFilled();
+    error InvalidConfig();
     error WrongDestChain();
     error InsufficientFee();
     error FillDeadlinePassed();
@@ -13,10 +14,11 @@ interface ISolverNetOutbox is IDestinationSettler {
 
     /**
      * @notice Emitted when an inbox is set.
-     * @param chainId ID of the chain.
-     * @param inbox   Address of the inbox.
+     * @param chainId  ID of the chain.
+     * @param inbox    Address of the inbox.
+     * @param provider The messaging provider used to reach the inbox.
      */
-    event InboxSet(uint64 indexed chainId, address indexed inbox);
+    event InboxSet(uint64 indexed chainId, address indexed inbox, Provider indexed provider);
 
     /**
      * @notice Emitted when a cross-chain request is filled on the destination chain
@@ -27,11 +29,30 @@ interface ISolverNetOutbox is IDestinationSettler {
     event Filled(bytes32 indexed orderId, bytes32 indexed fillHash, address indexed filledBy);
 
     /**
+     * @notice The messaging provider used to reach the inbox.
+     */
+    enum Provider {
+        None,
+        OmniCore,
+        Hyperlane
+    }
+
+    /**
+     * @notice The configuration for an inbox.
+     * @param inbox    Address of the inbox.
+     * @param provider The messaging provider used to reach the inbox.
+     */
+    struct InboxConfig {
+        address inbox;
+        Provider provider;
+    }
+
+    /**
      * @notice Set the inbox addresses for the given chain IDs.
      * @param chainIds IDs of the chains.
-     * @param inboxes  Addresses of the inboxes.
+     * @param configs  Configurations for the inboxes.
      */
-    function setInboxes(uint64[] calldata chainIds, address[] calldata inboxes) external;
+    function setInboxes(uint64[] calldata chainIds, InboxConfig[] calldata configs) external;
 
     /**
      * @notice Returns the address of the executor contract.
