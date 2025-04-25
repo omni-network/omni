@@ -67,10 +67,10 @@ export function useQuote(params: UseQuoteParams): UseQuoteResult {
   })
 
   const query = useQuery<Quote, QuoteError>({
+    ...params.queryOpts,
     queryKey: ['quote', request],
     queryFn: async () => doQuote(apiBaseUrl, request),
     enabled,
-    ...params.queryOpts,
   })
 
   return useResult(query)
