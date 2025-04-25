@@ -1,43 +1,59 @@
 // This file mirrors e2e/app/eoa/solver.go and extends
 // The two should be merged in the future, or reconciled in tests.
 //
-//nolint:unused // WIP
+
 package rebalance
 
 import (
+	"math"
 	"math/big"
 
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/evmchain"
-	"github.com/omni-network/omni/lib/netconf"
 	"github.com/omni-network/omni/lib/tokens"
+	"github.com/omni-network/omni/lib/umath"
 )
 
-const noMax = -1
+var inf = math.Inf(1)
 
 type FundThreshold struct {
-	token  tokens.Token
-	min    float64 // alert if below
-	target float64 // fund target, below which, consider deficit
-	max    float64 // above which, consider surplus (-1 for no max)
+	token   tokens.Token
+	min     float64 // alert if below
+	target  float64 // fund target, below which, consider deficit
+	surplus float64 // above, consider surplus
+	minSwap float64 // min amount needed to swap
 }
 
-func (t FundThreshold) MinBalance() *big.Int {
+// Min returns the minimum balance, below which we should alert.
+func (t FundThreshold) Min() *big.Int {
 	return t.balance(t.min)
 }
 
-func (t FundThreshold) TargetBalance() *big.Int {
+// Target returns the target balance, below which we should fund.
+func (t FundThreshold) Target() *big.Int {
 	return t.balance(t.target)
 }
 
-func (t FundThreshold) MaxBalance() (*big.Int, bool) {
-	if t.max == noMax {
-		return nil, false
+// Surplus returns the surplus treshold, if any, above which we can swap/send elsewhere.
+// If surplus threshold set to inf, it returns the max uint256.
+func (t FundThreshold) Surplus() *big.Int {
+	if t.surplus == inf {
+		return bi.Clone(umath.MaxUint256)
 	}
 
-	return t.balance(t.max), true
+	return t.balance(t.surplus)
 }
 
+// MinSwap returns the minimum amount needed to swap.
+func (t FundThreshold) MinSwap() *big.Int {
+	if t.minSwap == 0 {
+		return nil
+	}
+
+	return t.balance(t.minSwap)
+}
+
+// balance returns the float balance as a big.Int, normalized to the token's decimals.
 func (t FundThreshold) balance(f float64) *big.Int {
 	if t.token.Decimals == 6 {
 		return bi.Dec6(f)
@@ -46,18 +62,31 @@ func (t FundThreshold) balance(f float64) *big.Int {
 	return bi.Ether(f)
 }
 
+// GetFundThreshold returns the fund thesholds for `token`.
+func GetFundThreshold(token tokens.Token) FundThreshold {
+	t, ok := thresholds[token]
+	if !ok {
+		// Return zero thresholds for token.
+		return FundThreshold{token: token}
+	}
+
+	return t
+}
+
 var (
-	// starting with just wstETH on L1 and Base, for simplicity.
-	thresholds = map[netconf.ID]map[tokens.Token]FundThreshold{
-		netconf.Mainnet: {
-			mustToken(evmchain.IDEthereum, tokens.WSTETH): {
-				min:    10,
-				target: 50,
-				max:    noMax,
-			},
-			mustToken(evmchain.IDBase, tokens.WSTETH): {
-				max: 1,
-			},
+	thresholds = map[tokens.Token]FundThreshold{
+		mustToken(evmchain.IDEthereum, tokens.WSTETH): {
+			min:     10,
+			target:  50,
+			surplus: inf,
+		},
+		mustToken(evmchain.IDEthereum, tokens.USDC): {
+			min:     50_000,
+			target:  100_000,
+			surplus: 110_000,
+		},
+		mustToken(evmchain.IDBase, tokens.WSTETH): {
+			minSwap: 1,
 		},
 	}
 )
