@@ -70,6 +70,7 @@ func Run(ctx context.Context, cfg Config) error {
 	if err != nil {
 		return err
 	}
+	network = solvernet.AddHLNetwork(network)
 
 	if cfg.SolverPrivKey == "" {
 		return errors.New("private key not set")
