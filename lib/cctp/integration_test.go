@@ -2,7 +2,6 @@ package cctp_test
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"flag"
 	"log/slog"
 	"math/big"
@@ -16,8 +15,8 @@ import (
 	"github.com/omni-network/omni/lib/bi"
 	"github.com/omni-network/omni/lib/cctp"
 	cctpdb "github.com/omni-network/omni/lib/cctp/db"
+	"github.com/omni-network/omni/lib/cctp/testutil"
 	"github.com/omni-network/omni/lib/cctp/types"
-	"github.com/omni-network/omni/lib/errors"
 	"github.com/omni-network/omni/lib/ethclient"
 	"github.com/omni-network/omni/lib/ethclient/ethbackend"
 	"github.com/omni-network/omni/lib/evmchain"
@@ -29,20 +28,14 @@ import (
 	"github.com/omni-network/omni/lib/xchain"
 	xprovider "github.com/omni-network/omni/lib/xchain/provider"
 
-	ethereum "github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto"
 
 	cosmosdb "github.com/cosmos/cosmos-db"
 	"github.com/stretchr/testify/require"
 )
 
 var (
-	integration           = flag.Bool("integration", false, "run integration tests")
-	messageTransmitterABI = mustGetABI(cctp.MessageTransmitterMetaData)
+	integration = flag.Bool("integration", false, "run integration tests")
 )
 
 //go:generate go test . -integration -v -run=TestIntegration
@@ -75,7 +68,7 @@ func TestIntegration(t *testing.T) {
 	chains := getChains(t)
 	network := makeNetwork(t, chains)
 
-	clients, stop := startAnvilForks(t, ctx, rpcs, chains)
+	clients, stop := testutil.StartAnvilForks(t, ctx, rpcs, chains)
 	defer stop()
 
 	// Stop anvil on interrupt
@@ -84,14 +77,10 @@ func TestIntegration(t *testing.T) {
 		stop()
 	}()
 
-	attesterPk, attesterAddr := newAccount(t) // CCTP attester
-	devPk, devAddr := newAccount(t)           // Test user
+	devPk, devAddr := testutil.NewAccount(t) // Test user
 
 	backends, err := ethbackend.BackendsFromClients(clients, devPk)
 	require.NoError(t, err)
-
-	// Enable attester on all chains
-	enableAttester(t, ctx, clients, attesterAddr)
 
 	// Fund dev account with USDC & ETH
 	fund(t, ctx, clients, devAddr)
@@ -99,10 +88,8 @@ func TestIntegration(t *testing.T) {
 	// Create xchain provider
 	xprov := xprovider.New(network, clients, nil)
 
-	// Create CCTP client, start attesting
-	cctpClient := cctp.NewDevClient(attesterPk, clients)
-	err = cctpClient.AttestForever(ctx, chains, xprov)
-	require.NoError(t, err)
+	// Start attesting
+	cctpClient := cctp.StartTestClient(ctx, t, xprov, chains, clients)
 
 	// In-mem CCTP DB
 	memDB := cosmosdb.NewMemDB()
@@ -250,38 +237,6 @@ func getForkRPCs(t *testing.T) map[uint64]string {
 	}
 }
 
-// startAnvilForks starts anvil forks fork each chain, returning a clients map and a "stop all" function.
-func startAnvilForks(t *testing.T, ctx context.Context, rpcs map[uint64]string, chains []evmchain.Metadata) (map[uint64]ethclient.Client, func()) {
-	t.Helper()
-
-	clients := make(map[uint64]ethclient.Client)
-
-	var stops []func()
-	for _, chain := range chains {
-		ethCl, stop, err := anvil.Start(ctx, tutil.TempDir(t), chain.ChainID,
-			anvil.WithFork(rpcs[chain.ChainID]),
-			anvil.WithAutoImpersonate(),
-			// quick finalization for testing
-			anvil.WithBlockTime(1),
-			anvil.WithSlotsInEpoch(2),
-		)
-		require.NoError(t, err)
-
-		log.Info(ctx, "Stated anvil fork", "chain", chain.Name, "fork_rpc", rpcs[chain.ChainID])
-
-		clients[chain.ChainID] = ethCl
-		stops = append(stops, stop)
-	}
-
-	stopAll := func() {
-		for _, stop := range stops {
-			stop()
-		}
-	}
-
-	return clients, stopAll
-}
-
 // fund funds accounts with USDC on each chain.
 func fund(t *testing.T, ctx context.Context, clients map[uint64]ethclient.Client, account common.Address) {
 	t.Helper()
@@ -313,16 +268,6 @@ func getChains(t *testing.T) []evmchain.Metadata {
 		mustMeta(t, evmchain.IDOptimism),
 		mustMeta(t, evmchain.IDBase),
 	}
-}
-
-func newAccount(t *testing.T) (*ecdsa.PrivateKey, common.Address) {
-	t.Helper()
-
-	pk, err := crypto.GenerateKey()
-	require.NoError(t, err)
-	addr := crypto.PubkeyToAddress(pk.PublicKey)
-
-	return pk, addr
 }
 
 func makeNetwork(t *testing.T, chains []evmchain.Metadata) netconf.Network {
@@ -358,116 +303,4 @@ func mustUSDC(t *testing.T, chainID uint64) tokens.Token {
 	require.True(t, ok)
 
 	return usdc
-}
-
-// enableAttester enables the attester on each chains MessageTransmitter, and sets the signature threshold to 1.
-func enableAttester(t *testing.T, ctx context.Context, clients map[uint64]ethclient.Client, newAttester common.Address) {
-	t.Helper()
-
-	for chainID, client := range clients {
-		mtAddr, ok := cctp.MessageTransmitterAddr(chainID)
-		require.True(t, ok)
-
-		mt, err := cctp.NewMessageTransmitter(mtAddr, client)
-		require.NoError(t, err)
-
-		// AttesterManager is account allowed to enable attesters
-		mngr, err := mt.AttesterManager(&bind.CallOpts{Context: ctx})
-		require.NoError(t, err)
-
-		// Send unsigned MessageTransmitter.enableAttester tx from attester manager
-		// This requires anvil auto impersonation
-		calldata, err := messageTransmitterABI.Pack("enableAttester", newAttester)
-		require.NoError(t, err)
-		txHash, err := sendUnsignedTransaction(ctx, client, txArgs{
-			from:  mngr,
-			to:    mtAddr,
-			value: nil,
-			data:  calldata,
-		})
-		require.NoError(t, err)
-
-		_, err = bind.WaitMinedHash(ctx, client, txHash)
-		require.NoError(t, err)
-
-		// Verify attester is enabled
-		enabled, err := mt.IsEnabledAttester(&bind.CallOpts{Context: ctx}, newAttester)
-		require.NoError(t, err)
-		require.True(t, enabled, "attester not enabled on chain %d", chainID)
-
-		log.Info(ctx, "Enabled attester", "chain", chainID, "attester", newAttester)
-
-		// Reduce signature threshold to 1 (number of attesters required)
-		calldata, err = messageTransmitterABI.Pack("setSignatureThreshold", bi.One())
-		require.NoError(t, err)
-		txHash, err = sendUnsignedTransaction(ctx, client, txArgs{
-			from:  mngr,
-			to:    mtAddr,
-			value: nil,
-			data:  calldata,
-		})
-		require.NoError(t, err)
-
-		_, err = bind.WaitMinedHash(ctx, client, txHash)
-		require.NoError(t, err)
-
-		threshold, err := mt.SignatureThreshold(&bind.CallOpts{Context: ctx})
-		require.NoError(t, err)
-		tutil.RequireEQ(t, threshold, bi.One(), "signature threshold not set to 1 on chain %d", chainID)
-
-		log.Info(ctx, "Signature threshold set", "chain", chainID, "threshold", threshold)
-	}
-}
-
-type txArgs struct {
-	from  common.Address
-	to    common.Address
-	value *big.Int
-	data  []byte
-}
-
-// This is used to send auto impersonated txs on anvil.
-func sendUnsignedTransaction(ctx context.Context, client ethclient.Client, args txArgs) (common.Hash, error) {
-	value := bi.Zero()
-	if args.value != nil {
-		value = args.value
-	}
-
-	to := args.to
-	msg := ethereum.CallMsg{
-		From:  args.from,
-		To:    &to,
-		Value: value,
-		Data:  args.data,
-	}
-
-	gas, err := client.EstimateGas(ctx, msg)
-	if err != nil {
-		return common.Hash{}, errors.Wrap(err, "estimate gas")
-	}
-
-	jsonArgs := map[string]any{
-		"from":  args.from,
-		"to":    to,
-		"value": (*hexutil.Big)(value),
-		"data":  hexutil.Bytes(args.data),
-		"gas":   hexutil.Uint64(gas),
-	}
-
-	var result common.Hash
-	err = client.CallContext(ctx, &result, "eth_sendTransaction", jsonArgs)
-	if err != nil {
-		return common.Hash{}, errors.Wrap(err, "send transaction")
-	}
-
-	return result, nil
-}
-
-func mustGetABI(metadata *bind.MetaData) *abi.ABI {
-	abi, err := metadata.GetAbi()
-	if err != nil {
-		panic(err)
-	}
-
-	return abi
 }
